@@ -34,16 +34,17 @@ import matplotlib
 import matplotlib.pyplot as plt
 import uvicorn
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from matplotlib.figure import Figure
 from pydantic import BaseModel
 
 from ..util import save_formats
 from ._config import (
-    append_history,
+    delete_preset,
     load_config,
     load_presets,
     save_config,
+    save_preset,
     set_base_dir,
 )
 from ._param import ParamModel
@@ -60,8 +61,17 @@ matplotlib.use("Agg")
 
 
 class PresetSaveRequest(BaseModel):
+    """Request body for saving a preset."""
+
     label: str
     params: dict[str, Any]
+
+
+class ServerSaveRequest(BaseModel):
+    """Request body for server-side save with optional name."""
+
+    params: dict[str, Any]
+    filename: str | None = None
 
 
 # ============================================================================
@@ -126,7 +136,14 @@ def run(
 
     @app.post("/api/render")
     async def render(params: dict[str, Any]) -> dict[str, str]:
-        model = _build_model(params, param_model, descriptors)
+        try:
+            model = _build_model(params, param_model, descriptors)
+        except Exception as exc:
+            error_msg = _format_validation_error(exc)
+            return JSONResponse(
+                status_code=422,
+                content={"detail": error_msg},
+            )
         fig = figure_fn(model)
         buf = io.BytesIO()
         fig.savefig(buf, format="png", bbox_inches="tight")
@@ -134,11 +151,21 @@ def run(
         buf.seek(0)
         b64 = base64.b64encode(buf.getvalue()).decode("ascii")
 
-        # Auto-save config
-        save_config(model.model_dump(), function_name=figure_fn.__name__)
-        append_history(model.model_dump())
-
         return {"image": b64}
+
+    @app.post("/api/save-state")
+    async def save_state(
+        body: dict[str, Any],
+    ) -> dict[str, str]:
+        """Save full UI state (tabs) to config."""
+        tabs = body.get("tabs", [])
+        params = body.get("params", {})
+        save_config(
+            params,
+            function_name=figure_fn.__name__,
+            tabs=tabs,
+        )
+        return {"status": "ok"}
 
     @app.post("/api/export/{fmt}")
     async def export(fmt: str, params: dict[str, Any]) -> Response:
@@ -164,10 +191,15 @@ def run(
 
     @app.get("/api/config")
     async def get_config() -> dict[str, Any]:
-        cfg = load_config()
-        if cfg is None:
-            return {"params": None}
-        return {"params": cfg}
+        """Return saved config (params + tabs)."""
+        return load_config() or {}
+
+    @app.get("/api/meta")
+    async def get_meta() -> dict[str, str]:
+        """Return metadata for frontend defaults."""
+        return {
+            "function_name": figure_fn.__name__,
+        }
 
     @app.post("/api/config")
     async def post_config(params: dict[str, Any]) -> dict[str, str]:
@@ -175,13 +207,35 @@ def run(
         return {"status": "ok"}
 
     @app.post("/api/preset")
-    async def save_preset(req: PresetSaveRequest) -> dict[str, str]:
-        append_history(req.params, label=req.label)
+    async def save_preset_endpoint(
+        req: PresetSaveRequest,
+    ) -> dict[str, str]:
+        save_preset(req.label, req.params)
         return {"status": "ok"}
 
     @app.get("/api/presets")
     async def get_presets() -> list[dict[str, Any]]:
         return load_presets()
+
+    @app.delete("/api/preset/{index}")
+    async def delete_preset_endpoint(
+        index: int,
+    ) -> dict[str, str]:
+        """Delete a preset by index."""
+        ok = delete_preset(index)
+        if not ok:
+            return JSONResponse(
+                status_code=404,
+                content={"detail": "Preset not found"},
+            )
+        return {"status": "ok"}
+
+    @app.get("/api/defaults")
+    async def get_defaults() -> dict[str, Any]:
+        """Return default parameter values for reset."""
+        return {
+            d.name: d.default for d in descriptors
+        }
 
     # ── Script generation ────────────────────────────────────────────
 
@@ -202,17 +256,25 @@ def run(
 
     @app.post("/api/save-server/image/{fmt}")
     async def save_image_server(
-        fmt: str, params: dict[str, Any]
+        fmt: str, req: ServerSaveRequest,
     ) -> dict[str, str]:
-        """Save figure image to the script directory on the server."""
-        model = _build_model(params, param_model, descriptors)
+        """Save figure image to the script directory."""
+        model = _build_model(
+            req.params, param_model, descriptors,
+        )
         fig = figure_fn(model)
 
-        ts = _timestamp_slug()
-        stem = f"{figure_fn.__name__}_{ts}"
+        if req.filename:
+            stem = req.filename
+        else:
+            ts = _timestamp_slug()
+            stem = f"{figure_fn.__name__}_{ts}"
         image_stem = str(script_path / stem)
 
-        save_formats(fig, image_stem, formats=(fmt,), bbox_inches="tight")
+        save_formats(
+            fig, image_stem, formats=(fmt,),
+            bbox_inches="tight",
+        )
         plt.close(fig)
 
         filename = f"{stem}.{fmt}"
@@ -223,17 +285,34 @@ def run(
         }
 
     @app.post("/api/save-server/script")
-    async def save_script_server(params: dict[str, Any]) -> dict[str, str]:
-        """Save a standalone Python script to the script directory."""
-        model = _build_model(params, param_model, descriptors)
-        code = _generate_script(model, param_model, figure_fn, script_path)
+    async def save_script_server(
+        req: ServerSaveRequest,
+    ) -> dict[str, str]:
+        """Save standalone Python script to the script dir."""
+        model = _build_model(
+            req.params, param_model, descriptors,
+        )
+        code = _generate_script(
+            model, param_model, figure_fn, script_path,
+        )
 
-        ts = _timestamp_slug()
-        filename = f"{figure_fn.__name__}_{ts}.py"
+        if req.filename:
+            filename = (
+                req.filename
+                if req.filename.endswith(".py")
+                else f"{req.filename}.py"
+            )
+        else:
+            ts = _timestamp_slug()
+            filename = f"{figure_fn.__name__}_{ts}.py"
         out_path = script_path / filename
         out_path.write_text(code, encoding="utf-8")
 
-        return {"status": "ok", "path": str(out_path), "filename": filename}
+        return {
+            "status": "ok",
+            "path": str(out_path),
+            "filename": filename,
+        }
 
     # ── Reload ───────────────────────────────────────────────────────
 
@@ -274,6 +353,35 @@ def run(
 # ============================================================================
 # Helpers
 # ============================================================================
+
+
+def _format_validation_error(exc: Exception) -> str:
+    """Format a Pydantic ValidationError into a readable string.
+
+    Parameters
+    ----------
+    exc : Exception
+        The exception to format. If it is a Pydantic
+        ``ValidationError``, field-level details are
+        extracted.
+
+    Returns
+    ----------
+    str
+        Human-readable error message.
+    """
+    try:
+        from pydantic import ValidationError
+
+        if isinstance(exc, ValidationError):
+            parts: list[str] = []
+            for err in exc.errors():
+                loc = " → ".join(str(x) for x in err["loc"])
+                parts.append(f"{loc}: {err['msg']}")
+            return "; ".join(parts)
+    except ImportError:
+        pass
+    return str(exc)
 
 
 def _build_model(

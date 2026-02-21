@@ -107,6 +107,44 @@ html, body {{
 /* ── Controls ─────────────────────────────────────── */
 .param-group {{ margin-bottom: 14px; }}
 
+.param-section-header {{
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 0;
+  margin-top: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}}
+
+.param-section-header:hover {{ color: var(--text-secondary); }}
+
+.param-section-header .chevron {{
+  transition: transform var(--transition);
+  flex-shrink: 0;
+}}
+
+.param-section-header.collapsed .chevron {{
+  transform: rotate(-90deg);
+}}
+
+.param-section-body {{
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+}}
+
+.param-section-body.collapsed {{
+  max-height: 0 !important;
+  overflow: hidden;
+}}
+
 .param-label {{
   display: block;
   font-size: 11px;
@@ -353,6 +391,21 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 .tab:hover .tab-close {{ opacity: 0.5; }}
 .tab-close:hover {{ opacity: 1 !important; background: rgba(207,34,46,0.1); color: var(--danger); }}
 
+.tab-rename {{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity var(--transition);
+}}
+
+.tab:hover .tab-rename {{ opacity: 0.4; }}
+.tab-rename:hover {{ opacity: 1 !important; color: var(--accent); }}
+
 .tab-add {{
   display: flex;
   align-items: center;
@@ -404,12 +457,33 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 
 .figure-placeholder {{
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 280px;
   min-width: 460px;
   color: var(--text-muted);
   font-size: 13px;
+  gap: 10px;
+  text-align: center;
+  padding: 32px;
+}}
+
+.onboarding-hints {{
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}}
+
+.onboarding-hints kbd {{
+  display: inline-block;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-family: var(--font);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.06);
 }}
 
 /* ── Loading ──────────────────────────────────────── */
@@ -512,6 +586,9 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 .preset-list {{ max-height: 200px; overflow-y: auto; margin: 6px 0; }}
 
 .preset-item {{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 7px 10px;
   border-radius: var(--radius);
   cursor: pointer;
@@ -520,6 +597,26 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 }}
 
 .preset-item:hover {{ background: var(--accent-light); color: var(--accent); }}
+
+.preset-delete {{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: all var(--transition);
+}}
+
+.preset-item:hover .preset-delete {{ opacity: 0.6; }}
+.preset-delete:hover {{ opacity: 1 !important; background: rgba(207,34,46,0.1); color: var(--danger); }}
 
 /* ── Tooltip ──────────────────────────────────────── */
 #tooltip {{
@@ -622,16 +719,17 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
           <input type="checkbox" id="auto-redraw" checked>
           Auto
         </label>
-        <button class="btn" onclick="renderFigure()" data-tip="Re-render figure (Cmd+Enter)"><i data-lucide="refresh-cw" style="width:12px;height:12px"></i> Redraw</button>
+        <button class="btn" onclick="renderFigure()" data-tip="Redraw (Cmd+Enter)"><i data-lucide="refresh-cw" style="width:12px;height:12px"></i> Redraw</button>
+        <button class="btn" onclick="resetDefaults()" data-tip="Reset to defaults (Cmd+Shift+R)"><i data-lucide="undo-2" style="width:12px;height:12px"></i> Reset</button>
 
         <span class="topbar-divider"></span>
 
-        <button class="btn" onclick="showSaveModal()" data-tip="Save current parameters as preset"><i data-lucide="save" style="width:12px;height:12px"></i> Save</button>
-        <button class="btn" onclick="showLoadModal()" data-tip="Load a saved preset"><i data-lucide="folder-open" style="width:12px;height:12px"></i> Load</button>
+        <button class="btn" onclick="showSaveModal()" data-tip="Save preset (Cmd+S)"><i data-lucide="save" style="width:12px;height:12px"></i> Save</button>
+        <button class="btn" onclick="showLoadModal()" data-tip="Load preset (Cmd+L)"><i data-lucide="folder-open" style="width:12px;height:12px"></i> Load</button>
 
         <span class="topbar-divider"></span>
 
-        <div class="width-control" data-tip="Adjust figure display width">
+        <div class="width-control" data-tip="Figure width (Cmd+Plus / Cmd+Minus)">
           <i data-lucide="arrows-horizontal" style="width:12px;height:12px"></i>
           <input type="range" id="fig-width" min="30" max="100" value="70" oninput="setFigureWidth(this.value)">
           <span id="fig-width-label">70%</span>
@@ -652,17 +750,18 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
           <option value="svg">SVG</option>
           <option value="pdf">PDF</option>
         </select>
-        <button class="btn" onclick="exportFigure()" data-tip="Download image to browser"><i data-lucide="download" style="width:12px;height:12px"></i></button>
-        <button class="btn" onclick="saveImageServer()" data-tip="Save image to server directory"><i data-lucide="hard-drive-download" style="width:12px;height:12px"></i></button>
+        <button class="btn" onclick="exportFigure()" data-tip="Download image (Cmd+E)"><i data-lucide="download" style="width:12px;height:12px"></i></button>
+        <button class="btn" onclick="showSaveImageModal()" data-tip="Save image to server (Cmd+Shift+S)"><i data-lucide="hard-drive-download" style="width:12px;height:12px"></i></button>
 
         <span class="topbar-divider"></span>
 
-        <button class="btn" onclick="downloadScript()" data-tip="Download Python reproduction script"><i data-lucide="file-code" style="width:12px;height:12px"></i> Script</button>
-        <button class="btn" onclick="saveScriptServer()" data-tip="Save script to server directory"><i data-lucide="hard-drive-download" style="width:12px;height:12px"></i></button>
+        <button class="btn" onclick="downloadScript()" data-tip="Download script (Cmd+D)"><i data-lucide="file-code" style="width:12px;height:12px"></i> Script</button>
+        <button class="btn" onclick="showSaveScriptModal()" data-tip="Save script to server (Cmd+Shift+D)"><i data-lucide="hard-drive-download" style="width:12px;height:12px"></i></button>
 
         <span class="topbar-divider"></span>
 
-        <button class="btn" onclick="reloadServer()" data-tip="Reload server (pick up code changes)"><i data-lucide="rotate-cw" style="width:12px;height:12px"></i></button>
+        <button class="btn" onclick="reloadServer()" data-tip="Reload server (Cmd+R)"><i data-lucide="rotate-cw" style="width:12px;height:12px"></i></button>
+        <button class="btn" onclick="toggleHelp()" data-tip="Shortcuts (?)"><i data-lucide="help-circle" style="width:12px;height:12px"></i></button>
       </div>
     </header>
 
@@ -672,7 +771,13 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 
     <div class="figure-area">
       <div class="figure-container" id="figure-container" style="width:70%">
-        <div class="figure-placeholder" id="placeholder">Waiting for render...</div>
+        <div class="figure-placeholder" id="placeholder">
+          <i data-lucide="image" style="width:24px;height:24px;opacity:0.4"></i>
+          <div>Adjust parameters in the sidebar — the figure updates automatically.</div>
+          <div class="onboarding-hints">
+            <kbd>Cmd+Enter</kbd> Redraw &nbsp;&middot;&nbsp; <kbd>Cmd+S</kbd> Save preset &nbsp;&middot;&nbsp; <kbd>Cmd+E</kbd> Export
+          </div>
+        </div>
         <img id="figure-img" src="" alt="Figure" style="display:none">
         <div class="loading-overlay" id="loading"><div class="spinner"></div></div>
       </div>
@@ -707,6 +812,46 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
   </div>
 </div>
 
+<!-- Server save filename modal -->
+<div class="modal-overlay" id="filename-modal">
+  <div class="modal">
+    <h3 id="filename-modal-title">Save to Server</h3>
+    <label class="param-label">Filename</label>
+    <input type="text" class="param-input" id="filename-input" placeholder="figure"
+           onkeydown="if(event.key==='Enter'){{event.preventDefault();confirmFilenameModal()}}">
+    <div class="modal-actions">
+      <button class="btn" onclick="closeFilenameModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmFilenameModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Help overlay -->
+<div class="modal-overlay" id="help-modal">
+  <div class="modal" style="max-width:420px">
+    <h3>Keyboard Shortcuts</h3>
+    <div style="font-size:12px;line-height:2">
+      <div><kbd>Cmd+Enter</kbd> &mdash; Redraw figure</div>
+      <div><kbd>Cmd+S</kbd> &mdash; Save preset</div>
+      <div><kbd>Cmd+L</kbd> &mdash; Load preset</div>
+      <div><kbd>Cmd+E</kbd> &mdash; Export (download)</div>
+      <div><kbd>Cmd+Shift+S</kbd> &mdash; Save image to server</div>
+      <div><kbd>Cmd+D</kbd> &mdash; Download script</div>
+      <div><kbd>Cmd+Shift+D</kbd> &mdash; Save script to server</div>
+      <div><kbd>Cmd+R</kbd> &mdash; Reload server</div>
+      <div><kbd>Cmd+Shift+R</kbd> &mdash; Reset to defaults</div>
+      <div><kbd>Cmd+T</kbd> &mdash; New tab</div>
+      <div><kbd>Cmd+Plus</kbd> &mdash; Zoom in</div>
+      <div><kbd>Cmd+Minus</kbd> &mdash; Zoom out</div>
+      <div><kbd>?</kbd> &mdash; Toggle this help</div>
+      <div><kbd>Esc</kbd> &mdash; Close any modal</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeHelp()">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toast-container"></div>
 <div id="tooltip"></div>
 
@@ -731,21 +876,42 @@ let tabs = [{{ id: 1, name: "Tab 1", params: {{}} }}];
 let activeTabId = 1;
 let nextTabId = 2;
 let renderTimer = null;
+let saveStateTimer = null;
+let _functionName = "figure";
 const DEBOUNCE_MS = 300;
+const SAVE_STATE_MS = 1000;
 
 async function init() {{
   const resp = await fetch("/api/descriptors");
   descriptors = await resp.json();
 
+  // Load function meta
+  try {{
+    const metaResp = await fetch("/api/meta");
+    if (metaResp.ok) {{
+      const meta = await metaResp.json();
+      if (meta.function_name) _functionName = meta.function_name;
+    }}
+  }} catch (e) {{}}
+
+  // Load saved config (params + tabs)
   const cfgResp = await fetch("/api/config");
   let saved = null;
   if (cfgResp.ok) {{
     const cfg = await cfgResp.json();
     if (cfg && cfg.params) saved = cfg.params;
+    if (cfg && cfg.tabs && cfg.tabs.length) {{
+      tabs = cfg.tabs;
+      activeTabId = tabs[0].id;
+      nextTabId = Math.max(...tabs.map(t => t.id)) + 1;
+    }}
   }}
 
-  if (saved) tabs[0].params = saved;
-  buildControls(saved);
+  const activeTab = getActiveTab();
+  const hasTabParams = activeTab && activeTab.params && Object.keys(activeTab.params).length > 0;
+  const overrides = hasTabParams ? activeTab.params : saved;
+  if (saved && !hasTabParams) tabs[0].params = saved;
+  buildControls(overrides);
   renderTabBar();
   renderFigure();
   lucide.createIcons();
@@ -771,19 +937,58 @@ function removeTab(id, e) {{
     renderFigure();
   }}
   renderTabBar();
+  debouncedSaveState();
 }}
 
 function switchTab(id) {{
   saveCurrentParams();
   activeTabId = id;
-  buildControls(getActiveTab().params);
+  const tab = getActiveTab();
+  buildControls(tab.params);
   renderTabBar();
-  renderFigure();
+
+  // Show cached image instantly if available
+  const img = document.getElementById("figure-img");
+  const ph = document.getElementById("placeholder");
+  if (tab._cachedImage) {{
+    img.src = tab._cachedImage;
+    img.style.display = "block";
+    ph.style.display = "none";
+  }} else {{
+    renderFigure();
+  }}
 }}
 
 function saveCurrentParams() {{
   const tab = getActiveTab();
-  if (tab) tab.params = collectParams();
+  if (tab) {{
+    const oldParams = JSON.stringify(tab.params);
+    tab.params = collectParams();
+    // Invalidate cache if params changed
+    if (JSON.stringify(tab.params) !== oldParams) {{
+      tab._cachedImage = null;
+    }}
+  }}
+  debouncedSaveState();
+}}
+
+function debouncedSaveState() {{
+  clearTimeout(saveStateTimer);
+  saveStateTimer = setTimeout(persistState, SAVE_STATE_MS);
+}}
+
+async function persistState() {{
+  const tab = getActiveTab();
+  const params = tab ? tab.params : collectParams();
+  // Strip cached images before saving
+  const cleanTabs = tabs.map(t => ({{ id: t.id, name: t.name, params: t.params }}));
+  try {{
+    await fetch("/api/save-state", {{
+      method: "POST",
+      headers: {{"Content-Type": "application/json"}},
+      body: JSON.stringify({{ params, tabs: cleanTabs }}),
+    }});
+  }} catch (e) {{}}
 }}
 
 function renderTabBar() {{
@@ -795,57 +1000,139 @@ function renderTabBar() {{
     const el = document.createElement("div");
     el.className = "tab" + (t.id === activeTabId ? " active" : "");
     el.onclick = () => switchTab(t.id);
-    let closeHtml = tabs.length > 1
-      ? `<span class="tab-close" onclick="removeTab(${{t.id}}, event)">&times;</span>`
-      : "";
-    el.innerHTML = t.name + closeHtml;
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "tab-name";
+    nameSpan.textContent = t.name;
+    el.appendChild(nameSpan);
+
+    if (t.id === activeTabId) {{
+      const renameBtn = document.createElement("span");
+      renameBtn.className = "tab-rename";
+      renameBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
+      renameBtn.onclick = (e) => {{ e.stopPropagation(); renameTab(t.id, el); }};
+      el.appendChild(renameBtn);
+    }}
+
+    if (tabs.length > 1) {{
+      const closeBtn = document.createElement("span");
+      closeBtn.className = "tab-close";
+      closeBtn.innerHTML = "&times;";
+      closeBtn.onclick = (e) => removeTab(t.id, e);
+      el.appendChild(closeBtn);
+    }}
+
     bar.insertBefore(el, addBtn);
   }}
 }}
 
-// ── Controls ─────────────────────────────────────────────
+function renameTab(id, tabEl) {{
+  const tab = tabs.find(t => t.id === id);
+  if (!tab) return;
+  const nameSpan = tabEl.querySelector(".tab-name");
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = tab.name;
+  input.style.cssText = "width:80px;font-size:12px;border:1px solid var(--border-focus);border-radius:3px;padding:1px 4px;outline:none;font-family:var(--font);background:var(--bg)";
+  nameSpan.replaceWith(input);
+  input.focus();
+  input.select();
+  const finish = () => {{
+    tab.name = input.value.trim() || tab.name;
+    renderTabBar();
+    debouncedSaveState();
+  }};
+  input.addEventListener("blur", finish);
+  input.addEventListener("keydown", (e) => {{
+    if (e.key === "Enter") {{ e.preventDefault(); input.blur(); }}
+    if (e.key === "Escape") {{ input.value = tab.name; input.blur(); }}
+  }});
+}}
+
+// ── Controls ─────────────────────────────────────────────────
+function buildControlWidget(d, val) {{
+  const g = document.createElement("div");
+  g.className = "param-group";
+
+  if (d.choices) {{
+    g.innerHTML = `<label class="param-label">${{d.label}}</label>
+      <select class="param-input param-select" data-name="${{d.name}}">
+        ${{d.choices.map(c => `<option value="${{c}}" ${{c==val?"selected":""}}>${{c}}</option>`).join("")}}
+      </select>`;
+  }} else if (d.widget_hint === "color") {{
+    g.innerHTML = `<label class="param-label">${{d.label}}</label>
+      <input type="color" class="param-color" data-name="${{d.name}}" value="${{val||"#000000"}}">`;
+  }} else if (d.type_name === "bool") {{
+    g.innerHTML = `<label class="param-checkbox">
+        <input type="checkbox" data-name="${{d.name}}" ${{val?"checked":""}}>
+        <span>${{d.label}}</span></label>`;
+  }} else if ((d.type_name==="int"||d.type_name==="float") && d.min_value!==null && d.max_value!==null) {{
+    const step = d.step || (d.type_name==="int" ? 1 : 0.01);
+    const disp = d.type_name==="float" ? Number(val).toFixed(2) : val;
+    g.innerHTML = `<label class="param-label">${{d.label}}</label>
+      <div class="range-row">
+        <input type="range" data-name="${{d.name}}" data-type="${{d.type_name}}"
+               min="${{d.min_value}}" max="${{d.max_value}}" step="${{step}}" value="${{val}}">
+        <span class="range-value" id="rv-${{d.name}}">${{disp}}</span></div>`;
+  }} else if (d.type_name==="int"||d.type_name==="float") {{
+    g.innerHTML = `<label class="param-label">${{d.label}}</label>
+      <input type="number" class="param-input" data-name="${{d.name}}" data-type="${{d.type_name}}"
+             value="${{val||0}}" step="${{d.step||(d.type_name==="int"?1:0.01)}}"
+             ${{d.min_value!==null?`min="${{d.min_value}}"`:""}}
+             ${{d.max_value!==null?`max="${{d.max_value}}"`:""}}>` ;
+  }} else {{
+    g.innerHTML = `<label class="param-label">${{d.label}}</label>
+      <input type="text" class="param-input" data-name="${{d.name}}" value="${{val||""}}">` ;
+  }}
+  return g;
+}}
+
 function buildControls(overrides) {{
   const c = document.getElementById("params-container");
   c.innerHTML = "";
 
+  // Group descriptors
+  const groups = new Map(); // group name -> descriptors
+  const ungrouped = [];
   for (const d of descriptors) {{
-    const val = (overrides && overrides[d.name] !== undefined) ? overrides[d.name] : d.default;
-    const g = document.createElement("div");
-    g.className = "param-group";
-
-    if (d.choices) {{
-      g.innerHTML = `<label class="param-label">${{d.label}}</label>
-        <select class="param-input param-select" data-name="${{d.name}}">
-          ${{d.choices.map(c => `<option value="${{c}}" ${{c==val?"selected":""}}>${{c}}</option>`).join("")}}
-        </select>`;
-    }} else if (d.widget_hint === "color") {{
-      g.innerHTML = `<label class="param-label">${{d.label}}</label>
-        <input type="color" class="param-color" data-name="${{d.name}}" value="${{val||"#000000"}}">`;
-    }} else if (d.type_name === "bool") {{
-      g.innerHTML = `<label class="param-checkbox">
-          <input type="checkbox" data-name="${{d.name}}" ${{val?"checked":""}}>
-          <span>${{d.label}}</span></label>`;
-    }} else if ((d.type_name==="int"||d.type_name==="float") && d.min_value!==null && d.max_value!==null) {{
-      const step = d.step || (d.type_name==="int" ? 1 : 0.01);
-      const disp = d.type_name==="float" ? Number(val).toFixed(2) : val;
-      g.innerHTML = `<label class="param-label">${{d.label}}</label>
-        <div class="range-row">
-          <input type="range" data-name="${{d.name}}" data-type="${{d.type_name}}"
-                 min="${{d.min_value}}" max="${{d.max_value}}" step="${{step}}" value="${{val}}">
-          <span class="range-value" id="rv-${{d.name}}">${{disp}}</span></div>`;
-    }} else if (d.type_name==="int"||d.type_name==="float") {{
-      g.innerHTML = `<label class="param-label">${{d.label}}</label>
-        <input type="number" class="param-input" data-name="${{d.name}}" data-type="${{d.type_name}}"
-               value="${{val||0}}" step="${{d.step||(d.type_name==="int"?1:0.01)}}"
-               ${{d.min_value!==null?`min="${{d.min_value}}"`:""}}
-               ${{d.max_value!==null?`max="${{d.max_value}}"`:""}}>`;
+    if (d.group) {{
+      if (!groups.has(d.group)) groups.set(d.group, []);
+      groups.get(d.group).push(d);
     }} else {{
-      g.innerHTML = `<label class="param-label">${{d.label}}</label>
-        <input type="text" class="param-input" data-name="${{d.name}}" value="${{val||""}}">`;
+      ungrouped.push(d);
     }}
-    c.appendChild(g);
   }}
 
+  // Render ungrouped first
+  for (const d of ungrouped) {{
+    const val = (overrides && overrides[d.name] !== undefined) ? overrides[d.name] : d.default;
+    c.appendChild(buildControlWidget(d, val));
+  }}
+
+  // Render grouped sections
+  for (const [groupName, items] of groups) {{
+    const header = document.createElement("div");
+    header.className = "param-section-header";
+    header.innerHTML = `<svg class="chevron" width="10" height="10" viewBox="0 0 10 10"><path d="M3 2L7 5L3 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>${{groupName}}`;
+
+    const body = document.createElement("div");
+    body.className = "param-section-body";
+
+    for (const d of items) {{
+      const val = (overrides && overrides[d.name] !== undefined) ? overrides[d.name] : d.default;
+      body.appendChild(buildControlWidget(d, val));
+    }}
+
+    header.addEventListener("click", () => {{
+      header.classList.toggle("collapsed");
+      body.classList.toggle("collapsed");
+    }});
+
+    c.appendChild(header);
+    c.appendChild(body);
+  }}
+
+  // Bind events
   c.querySelectorAll("[data-name]").forEach(el => {{
     const evt = el.type==="checkbox" ? "change" : el.type==="range" ? "input" : "change";
     el.addEventListener(evt, () => {{
@@ -861,13 +1148,27 @@ function buildControls(overrides) {{
 
 function collectParams() {{
   const p = {{}};
-  document.querySelectorAll("[data-name]").forEach(el => {{
+  document.querySelectorAll("#params-container [data-name]").forEach(el => {{
     const n = el.dataset.name;
     if (el.type==="checkbox") p[n] = el.checked;
     else if (el.type==="range"||el.type==="number") p[n] = el.dataset.type==="int" ? parseInt(el.value) : parseFloat(el.value);
     else p[n] = el.value;
   }});
   return p;
+}}
+
+// ── Reset ─────────────────────────────────────────────────
+async function resetDefaults() {{
+  try {{
+    const resp = await fetch("/api/defaults");
+    if (!resp.ok) throw new Error(await resp.text());
+    const defaults = await resp.json();
+    const tab = getActiveTab();
+    if (tab) tab.params = defaults;
+    buildControls(defaults);
+    renderFigure();
+    toast("Reset to defaults", "success");
+  }} catch (err) {{ toast("Reset failed: " + err.message, "error"); }}
 }}
 
 // ── Render ────────────────────────────────────────────────
@@ -891,13 +1192,20 @@ async function renderFigure() {{
       headers: {{"Content-Type": "application/json"}},
       body: JSON.stringify(params),
     }});
-    if (!resp.ok) throw new Error(await resp.text());
+    if (!resp.ok) {{
+      const errData = await resp.json().catch(() => ({{}}));
+      throw new Error(errData.detail || resp.statusText);
+    }}
     const data = await resp.json();
-    img.src = "data:image/png;base64," + data.image;
+    const imgSrc = "data:image/png;base64," + data.image;
+    img.src = imgSrc;
     img.style.display = "block";
     ph.style.display = "none";
     status.textContent = "Ready";
     status.className = "status status-ok";
+    // Cache rendered image on active tab
+    const tab = getActiveTab();
+    if (tab) tab._cachedImage = imgSrc;
   }} catch (err) {{
     status.textContent = "Error";
     status.className = "status status-error";
@@ -911,6 +1219,13 @@ async function renderFigure() {{
 function setFigureWidth(pct) {{
   document.getElementById("figure-container").style.width = pct + "%";
   document.getElementById("fig-width-label").textContent = pct + "%";
+  document.getElementById("fig-width").value = pct;
+}}
+
+function zoomFigure(delta) {{
+  const slider = document.getElementById("fig-width");
+  const v = Math.min(100, Math.max(30, parseInt(slider.value) + delta));
+  setFigureWidth(v);
 }}
 
 function setFigureBg(color) {{
@@ -937,7 +1252,45 @@ async function exportFigure() {{
   }} catch (err) {{ toast("Export failed: " + err.message, "error"); }}
 }}
 
-async function saveImageServer() {{
+// ── Server save (with filename modal) ─────────────────
+let _filenameCb = null;
+
+function showFilenameModal(title, defaultName, cb) {{
+  document.getElementById("filename-modal-title").textContent = title;
+  const input = document.getElementById("filename-input");
+  input.value = defaultName;
+  _filenameCb = cb;
+  document.getElementById("filename-modal").classList.add("active");
+  input.focus();
+  input.select();
+}}
+
+function closeFilenameModal() {{
+  document.getElementById("filename-modal").classList.remove("active");
+  _filenameCb = null;
+}}
+
+function confirmFilenameModal() {{
+  const name = document.getElementById("filename-input").value.trim();
+  const cb = _filenameCb;
+  closeFilenameModal();
+  if (cb) cb(name || null);
+}}
+
+function showSaveImageModal() {{
+  const fmt = document.getElementById("export-fmt").value;
+  showFilenameModal("Save Image to Server", _functionName, (filename) => {{
+    _doSaveImageServer(filename);
+  }});
+}}
+
+function showSaveScriptModal() {{
+  showFilenameModal("Save Script to Server", _functionName, (filename) => {{
+    _doSaveScriptServer(filename);
+  }});
+}}
+
+async function _doSaveImageServer(filename) {{
   const tab = getActiveTab();
   const params = tab ? tab.params : collectParams();
   const fmt = document.getElementById("export-fmt").value;
@@ -945,12 +1298,27 @@ async function saveImageServer() {{
     const resp = await fetch("/api/save-server/image/" + fmt, {{
       method: "POST",
       headers: {{"Content-Type": "application/json"}},
-      body: JSON.stringify(params),
+      body: JSON.stringify({{ params, filename }}),
     }});
     if (!resp.ok) throw new Error(await resp.text());
     const data = await resp.json();
     toast("Saved to server: " + data.filename, "success");
   }} catch (err) {{ toast("Server save failed: " + err.message, "error"); }}
+}}
+
+async function _doSaveScriptServer(filename) {{
+  const tab = getActiveTab();
+  const params = tab ? tab.params : collectParams();
+  try {{
+    const resp = await fetch("/api/save-server/script", {{
+      method: "POST",
+      headers: {{"Content-Type": "application/json"}},
+      body: JSON.stringify({{ params, filename }}),
+    }});
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    toast("Script saved: " + data.filename, "success");
+  }} catch (err) {{ toast("Script save failed: " + err.message, "error"); }}
 }}
 
 async function downloadScript() {{
@@ -969,21 +1337,6 @@ async function downloadScript() {{
     URL.revokeObjectURL(url);
     toast("Script downloaded", "success");
   }} catch (err) {{ toast("Script failed: " + err.message, "error"); }}
-}}
-
-async function saveScriptServer() {{
-  const tab = getActiveTab();
-  const params = tab ? tab.params : collectParams();
-  try {{
-    const resp = await fetch("/api/save-server/script", {{
-      method: "POST",
-      headers: {{"Content-Type": "application/json"}},
-      body: JSON.stringify(params),
-    }});
-    if (!resp.ok) throw new Error(await resp.text());
-    const data = await resp.json();
-    toast("Script saved: " + data.filename, "success");
-  }} catch (err) {{ toast("Script save failed: " + err.message, "error"); }}
 }}
 
 // ── Presets ──────────────────────────────────────────────
@@ -1016,9 +1369,12 @@ async function showLoadModal() {{
     return;
   }}
   list.innerHTML = presets.map((p, i) => `
-    <div class="preset-item" onclick="loadPreset(${{i}})">
-      <strong>${{p.label}}</strong>
-      <span style="color:var(--text-muted);font-size:11px;margin-left:6px">${{p.timestamp?.slice(0,19)||""}}</span>
+    <div class="preset-item">
+      <span onclick="loadPreset(${{i}})" style="flex:1;cursor:pointer">
+        <strong>${{p.label}}</strong>
+        <span style="color:var(--text-muted);font-size:11px;margin-left:6px">${{p.timestamp?.slice(0,19)||""}}</span>
+      </span>
+      <button class="preset-delete" onclick="deletePreset(${{i}}, event)" title="Delete">&times;</button>
     </div>`).join("");
   window._presets = presets;
 }}
@@ -1033,6 +1389,16 @@ function loadPreset(idx) {{
   renderFigure();
   closeLoadModal();
   toast("Loaded: " + p.label, "success");
+}}
+
+async function deletePreset(idx, e) {{
+  if (e) e.stopPropagation();
+  try {{
+    const resp = await fetch("/api/preset/" + idx, {{ method: "DELETE" }});
+    if (!resp.ok) throw new Error(await resp.text());
+    toast("Preset deleted", "success");
+    showLoadModal(); // Refresh
+  }} catch (err) {{ toast("Delete failed: " + err.message, "error"); }}
 }}
 
 // ── Toast ────────────────────────────────────────────────
@@ -1118,9 +1484,40 @@ async function checkConnection() {{
   }}
 }}
 
+// ── Help ────────────────────────────────────────────────
+function toggleHelp() {{ document.getElementById("help-modal").classList.toggle("active"); }}
+function closeHelp() {{ document.getElementById("help-modal").classList.remove("active"); }}
+
 // ── Keyboard ─────────────────────────────────────────────
+function _isModalOpen() {{
+  return !!document.querySelector(".modal-overlay.active");
+}}
+
 document.addEventListener("keydown", (e) => {{
-  if ((e.metaKey||e.ctrlKey) && e.key === "Enter") {{ e.preventDefault(); renderFigure(); }}
+  // Esc closes any open modal
+  if (e.key === "Escape") {{
+    document.querySelectorAll(".modal-overlay.active").forEach(m => m.classList.remove("active"));
+    return;
+  }}
+  // ? toggles help (only when not in an input)
+  if (e.key === "?" && !e.metaKey && !e.ctrlKey && e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA" && e.target.tagName !== "SELECT") {{
+    e.preventDefault(); toggleHelp(); return;
+  }}
+  // Skip shortcuts while a modal is open (except Esc handled above)
+  if (_isModalOpen()) return;
+  const mod = e.metaKey || e.ctrlKey;
+  if (mod && e.shiftKey && e.key === "S") {{ e.preventDefault(); showSaveImageModal(); return; }}
+  if (mod && e.shiftKey && e.key === "D") {{ e.preventDefault(); showSaveScriptModal(); return; }}
+  if (mod && e.shiftKey && e.key === "R") {{ e.preventDefault(); resetDefaults(); return; }}
+  if (mod && e.key === "Enter") {{ e.preventDefault(); renderFigure(); return; }}
+  if (mod && e.key === "s") {{ e.preventDefault(); showSaveModal(); return; }}
+  if (mod && e.key === "l") {{ e.preventDefault(); showLoadModal(); return; }}
+  if (mod && e.key === "e") {{ e.preventDefault(); exportFigure(); return; }}
+  if (mod && e.key === "d") {{ e.preventDefault(); downloadScript(); return; }}
+  if (mod && e.key === "r") {{ e.preventDefault(); reloadServer(); return; }}
+  if (mod && e.key === "t") {{ e.preventDefault(); addTab(); return; }}
+  if (mod && (e.key === "=" || e.key === "+")) {{ e.preventDefault(); zoomFigure(5); return; }}
+  if (mod && e.key === "-") {{ e.preventDefault(); zoomFigure(-5); return; }}
 }});
 
 init();

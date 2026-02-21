@@ -6,9 +6,10 @@ an append-only history file in the working directory.
 Files created (in CWD):
     ``.dartwork_ui_config.json``
         Last-used parameter set — auto-loaded on startup.
+    ``.dartwork_ui_presets.json``
+        Named presets saved by the user (JSON array).
     ``.dartwork_ui_history.jsonl``
-        Append-only log of every parameter set used, one JSON
-        object per line.
+        Legacy append-only log (kept for backward compat).
 """
 
 import json
@@ -18,6 +19,7 @@ from typing import Any
 
 # Default file names
 CONFIG_FILENAME = ".dartwork_ui_config.json"
+PRESET_FILENAME = ".dartwork_ui_presets.json"
 HISTORY_FILENAME = ".dartwork_ui_history.jsonl"
 
 # Base directory — set to the script's parent directory by ui.run()
@@ -63,6 +65,17 @@ def _config_path() -> Path:
     return _get_base_dir() / CONFIG_FILENAME
 
 
+def _preset_path() -> Path:
+    """프리셋 파일의 전체 경로를 반환한다.
+
+    Returns
+    ----------
+    Path
+        ``.dartwork_ui_presets.json`` 파일 경로.
+    """
+    return _get_base_dir() / PRESET_FILENAME
+
+
 def _history_path() -> Path:
     """이력 파일의 전체 경로를 반환한다.
 
@@ -79,8 +92,12 @@ def _history_path() -> Path:
 # ============================================================================
 
 
-def save_config(params: dict[str, Any], function_name: str = "") -> None:
-    """Persist the current parameter set to ``.dartwork_ui_config.json``.
+def save_config(
+    params: dict[str, Any],
+    function_name: str = "",
+    tabs: list[dict[str, Any]] | None = None,
+) -> None:
+    """Persist state to ``.dartwork_ui_config.json``.
 
     Parameters
     ----------
@@ -88,42 +105,157 @@ def save_config(params: dict[str, Any], function_name: str = "") -> None:
         Current parameter values.
     function_name : str
         Name of the figure generator function.
+    tabs : list[dict], optional
+        Tab state to persist.
     """
-    data = {
+    data: dict[str, Any] = {
         "function": function_name,
         "params": _serializable(params),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(
+            timezone.utc
+        ).isoformat(),
     }
+    if tabs is not None:
+        data["tabs"] = tabs
     _config_path().write_text(
-        json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        json.dumps(
+            data, indent=2, ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
     )
 
 
 def load_config() -> dict[str, Any] | None:
-    """Load parameters from ``.dartwork_ui_config.json`` if it exists.
+    """Load full config from ``.dartwork_ui_config.json``.
 
     Returns
-    -------
+    ----------
     dict or None
-        The ``params`` mapping, or ``None`` if the file doesn't exist.
+        The full config (``params``, ``tabs``, etc.),
+        or ``None`` if the file doesn't exist.
     """
     path = _config_path()
     if not path.exists():
         return None
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        return data.get("params")
+        return json.loads(
+            path.read_text(encoding="utf-8"),
+        )
     except (json.JSONDecodeError, KeyError):
         return None
 
 
 # ============================================================================
-# History (append-only JSONL)
+# Presets (JSON array)
 # ============================================================================
 
 
-def append_history(params: dict[str, Any], label: str | None = None) -> None:
+def save_preset(
+    label: str,
+    params: dict[str, Any],
+) -> None:
+    """Save a named preset to ``.dartwork_ui_presets.json``.
+
+    Parameters
+    ----------
+    label : str
+        User-defined name for this preset.
+    params : dict
+        Parameter values.
+    """
+    presets = _load_preset_file()
+    presets.append({
+        "label": label,
+        "params": _serializable(params),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    })
+    _write_preset_file(presets)
+
+
+def load_presets() -> list[dict[str, Any]]:
+    """Load all named presets.
+
+    Returns
+    -------
+    list[dict]
+        Each dict has ``label``, ``params``, and ``timestamp``.
+    """
+    return _load_preset_file()
+
+
+def delete_preset(index: int) -> bool:
+    """Delete a preset by its index.
+
+    Parameters
+    ----------
+    index : int
+        Zero-based index of the preset to delete.
+
+    Returns
+    -------
+    bool
+        ``True`` if the preset was deleted, ``False`` if
+        the index is out of range.
+    """
+    presets = _load_preset_file()
+    if index < 0 or index >= len(presets):
+        return False
+    presets.pop(index)
+    _write_preset_file(presets)
+    return True
+
+
+def _load_preset_file() -> list[dict[str, Any]]:
+    """Read the preset JSON file.
+
+    Returns
+    ----------
+    list[dict[str, Any]]
+        Preset list, or empty list if file is missing.
+    """
+    path = _preset_path()
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(data, list):
+            return data
+    except (json.JSONDecodeError, TypeError):
+        pass
+    return []
+
+
+def _write_preset_file(
+    presets: list[dict[str, Any]],
+) -> None:
+    """Write the preset list to the JSON file.
+
+    Parameters
+    ----------
+    presets : list[dict[str, Any]]
+        Full preset list to write.
+    """
+    _preset_path().write_text(
+        json.dumps(presets, indent=2, ensure_ascii=False)
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+# ============================================================================
+# History — legacy (kept for backward compatibility)
+# ============================================================================
+
+
+def append_history(
+    params: dict[str, Any],
+    label: str | None = None,
+) -> None:
     """Append a parameter snapshot to ``.dartwork_ui_history.jsonl``.
+
+    .. deprecated::
+        Use :func:`save_preset` for named presets instead.
 
     Parameters
     ----------
@@ -132,31 +264,44 @@ def append_history(params: dict[str, Any], label: str | None = None) -> None:
     label : str, optional
         User-defined label for this snapshot (preset name).
     """
-    record = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+    record: dict[str, Any] = {
+        "timestamp": datetime.now(
+            timezone.utc
+        ).isoformat(),
         "params": _serializable(params),
     }
     if label:
         record["label"] = label
 
-    with open(_history_path(), "a", encoding="utf-8") as f:
-        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    with open(
+        _history_path(), "a", encoding="utf-8"
+    ) as f:
+        f.write(
+            json.dumps(record, ensure_ascii=False)
+            + "\n"
+        )
 
 
 def load_history() -> list[dict[str, Any]]:
     """Load all history records.
 
+    .. deprecated::
+        Use :func:`load_presets` instead.
+
     Returns
     -------
     list[dict]
-        Each dict has ``timestamp``, ``params``, and optionally ``label``.
+        Each dict has ``timestamp``, ``params``,
+        and optionally ``label``.
     """
     path = _history_path()
     if not path.exists():
         return []
 
     records: list[dict[str, Any]] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    for line in path.read_text(
+        encoding="utf-8"
+    ).splitlines():
         line = line.strip()
         if not line:
             continue
@@ -165,17 +310,6 @@ def load_history() -> list[dict[str, Any]]:
         except json.JSONDecodeError:
             continue
     return records
-
-
-def load_presets() -> list[dict[str, Any]]:
-    """Load only labelled history records (user-saved presets).
-
-    Returns
-    -------
-    list[dict]
-        Records that have a non-empty ``label`` field.
-    """
-    return [r for r in load_history() if r.get("label")]
 
 
 # ============================================================================
