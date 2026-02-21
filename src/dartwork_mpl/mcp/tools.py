@@ -12,7 +12,7 @@ def register_tools(mcp: FastMCP) -> None:
     Register all tools with the MCP server.
 
     Parameters
-    ----
+    ----------
     mcp : FastMCP
         The FastMCP server instance to register tools with.
     """
@@ -29,19 +29,19 @@ def register_tools(mcp: FastMCP) -> None:
         https://raw.githubusercontent.com/owner/repo/branch/path/to/file
 
         Parameters
-        ----
+        ----------
         url : str
             GitHub Raw URL to fetch the document from.
             Example: https://raw.githubusercontent.com/dartworklabs/
             dartwork-mpl/main/README.md
 
         Returns
-        ----
+        ----------
         str
             The content of the document as a string.
 
         Raises
-        ----
+        ----------
         ValueError
             If the URL is invalid or the request fails.
         """

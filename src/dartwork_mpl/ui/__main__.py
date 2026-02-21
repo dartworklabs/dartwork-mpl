@@ -11,8 +11,6 @@ Usage (non-interactive)::
     dartwork-ui init ./my-viewer --example complex
 """
 
-from __future__ import annotations
-
 import argparse
 import sys
 
@@ -20,7 +18,11 @@ from ._scaffold import scaffold
 
 
 def _interactive_init() -> None:
-    """Run the init command with interactive prompts via InquirerPy."""
+    """대화형 프롬프트를 통해 init 명령을 실행한다.
+
+    InquirerPy를 사용하여 대상 디렉토리와 예제 템플릿을
+    사용자에게 질의한 뒤 scaffold를 실행한다.
+    """
     from InquirerPy import inquirer
 
     print()
@@ -50,7 +52,11 @@ def _interactive_init() -> None:
 
 
 def main() -> None:
-    """Parse CLI arguments and run the scaffold."""
+    """CLI 인자를 파싱하고 스캐폴드를 실행한다.
+
+    ``init`` 서브커맨드를 지원하며, 대상 디렉토리가
+    생략되면 대화형 모드로 전환한다.
+    """
     parser = argparse.ArgumentParser(
         prog="ui", description="Dartwork UI project scaffolder"
     )

@@ -14,7 +14,7 @@ def register_resources(mcp: FastMCP) -> None:
     Register all resources with the MCP server.
 
     Parameters
-    ----
+    ----------
     mcp : FastMCP
         The FastMCP server instance to register resources with.
     """
@@ -26,7 +26,7 @@ def register_resources(mcp: FastMCP) -> None:
         Get the general usage guide for dartwork-mpl.
 
         Returns
-        ----
+        ----------
         str
             The content of the general-guide markdown file.
         """
@@ -39,7 +39,7 @@ def register_resources(mcp: FastMCP) -> None:
         Get the layout guide for dartwork-mpl.
 
         Returns
-        ----
+        ----------
         str
             The content of the layout-guide markdown file.
         """

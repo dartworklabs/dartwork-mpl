@@ -87,7 +87,8 @@ Type `/dartwork-mpl` to get help with dartwork-mpl library usage.
     print("🔧 Usage:")
     print("- In Claude Code: Type '/dartwork-mpl' for help")
     print(
-        "- In Cursor IDE: The AI will automatically have access to dartwork-mpl context"
+        "- In Cursor IDE: The AI will automatically"
+        " have access to dartwork-mpl context"
     )
 
 

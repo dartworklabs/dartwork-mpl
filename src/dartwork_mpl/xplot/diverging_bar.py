@@ -43,7 +43,7 @@ def plot_diverging_bar(
     and figure positioned vertically.
 
     Parameters
-    ----
+    ----------
     labels : list[str] | None, optional
         List of category labels to display on the left side of the plot.
         Labels are displayed from top to bottom in reverse order. If None,
@@ -103,14 +103,14 @@ def plot_diverging_bar(
         is 0.06.
 
     Returns
-    ----
+    ----------
     fig : matplotlib.figure.Figure
         The created figure object.
     ax : matplotlib.axes.Axes
         The axes containing the plot.
 
     Examples
-    -----
+    ----------
     >>> import numpy as np
     >>> import dartwork_mpl as dm
     >>> dm.style.use('scientific')
@@ -151,7 +151,7 @@ def plot_diverging_bar(
     >>> dm.save_and_show(fig)
 
     Notes
-    -----
+    ----------
     - The function uses a cascading layout where title, legend, and figure
       are positioned vertically with automatic spacing.
     - Labels are positioned using blended_transform_factory to combine
@@ -161,7 +161,7 @@ def plot_diverging_bar(
       right for positive).
 
     See Also
-    -----
+    ----------
     dartwork_mpl.style.use : Apply dartwork-mpl style presets
     dartwork_mpl.simple_layout : Optimize figure layout
     matplotlib.transforms.blended_transform_factory : Create mixed
@@ -384,12 +384,12 @@ def get_source_code() -> str:
     as input for further development or modification.
 
     Returns
-    ----
+    ----------
     str
         The complete source code of this module.
 
     Examples
-    -----
+    ----------
     >>> source = get_source_code()
     >>> print(source)
     """

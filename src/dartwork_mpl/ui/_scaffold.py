@@ -9,8 +9,6 @@ Template files are stored as real assets in the ``templates/``
 directory next to this module and read at runtime.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 
 _TEMPLATES_DIR = Path(__file__).parent / "templates"

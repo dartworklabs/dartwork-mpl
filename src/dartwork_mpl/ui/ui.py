@@ -19,8 +19,6 @@ Usage
     run(my_plot)           # auto-extracted from type annotation
 """
 
-from __future__ import annotations
-
 import base64
 import inspect
 import io

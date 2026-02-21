@@ -1,3 +1,9 @@
+"""Utility functions for matplotlib figure management.
+
+This module provides helper functions for figure layout, font/line
+scaling, color mixing, SVG display, and prompt file management.
+"""
+
 from pathlib import Path
 from shutil import copy2
 from tempfile import NamedTemporaryFile
@@ -100,40 +106,42 @@ def simple_layout(
     use_all_axes: bool = True,
     importance_weights: tuple[float, float, float, float] = (1, 1, 1, 1),
 ) -> OptimizeResult:
-    """Apply simple layout to figure for given grid spec.
+    """주어진 GridSpec에 대해 간단한 레이아웃을 적용한다.
 
     Parameters
     ----------
     fig : matplotlib.figure.Figure
-        Figure object.
-    gs : matplotlib.gridspec.GridSpec, optional(default=None)
-        Grid spec object. If None, use the first grid spec.
-    margins : tuple(float, float, float, float), optional(default=(0.05, 0.05, 0.05, 0.05))
-        Margins in inches, (left, right, bottom, top).
-    bbox : tuple(float, float, float, float), optional(default=(0, 1, 0, 1))
-        Bounding box in figure coordinates, (left, right, bottom, top).
-    verbose : bool, optional(default=True)
-        Print verbose.
-    gtol : float, optional(default=1e-2)
-        Gradient tolerance. If the maximum change in the objective function is
-        less than gtol, the optimization will stop.
-    bound_margin : float, optional(default=0.1)
-        Margin for bounds generation.
-    use_all_axes : bool, optional(default=True)
-        Use all axes in the figure. If False, use only axes in the given grid spec.
-        IF True, use all axes in the figure.
-    importance_weights : tuple(float, float, float, float), optional(default=(1, 1, 1, 1))
-        Importance weights for each target. (left, right, bottom, top).
+        Figure 객체.
+    gs : matplotlib.gridspec.GridSpec, optional
+        GridSpec 객체. None이면 첫 번째 GridSpec 사용.
+        기본값은 None.
+    margins : tuple[float, float, float, float], optional
+        인치 단위 여백 (left, right, bottom, top).
+        기본값은 (0.05, 0.05, 0.05, 0.05).
+    bbox : tuple[float, float, float, float], optional
+        Figure 좌표계 바운딩 박스
+        (left, right, bottom, top).
+        기본값은 (0, 1, 0, 1).
+    verbose : bool, optional
+        상세 출력 여부. 기본값은 False.
+    gtol : float, optional
+        기울기 허용 오차. 목적 함수의 최대 변화량이
+        이 값보다 작으면 최적화 중단. 기본값은 1e-2.
+    bound_margin : float, optional
+        경계 생성을 위한 여백. 기본값은 0.2.
+    use_all_axes : bool, optional
+        True이면 Figure 내 모든 Axes 사용.
+        False이면 주어진 GridSpec의 Axes만 사용.
+        기본값은 True.
+    importance_weights : tuple[float, float, float, float], optional
+        각 타겟의 중요도 가중치
+        (left, right, bottom, top).
+        기본값은 (1, 1, 1, 1).
 
     Returns
-    -------
+    ----------
     result : scipy.optimize.OptimizeResult
-        Optimization result.
-
-    TODO
-    ----
-    - Upgrade bounds generation algorithm.
-    - Readable code.
+        최적화 결과.
     """
     if gs is None:
         gs = fig.axes[0].get_gridspec()
@@ -473,17 +481,18 @@ def prompt_path(name: str) -> Path:
     Get the path to a prompt guide file.
 
     Parameters
-    ----
+    ----------
     name : str
-        Name of the prompt guide ('layout-guide' or 'general-guide').
+        Name of the prompt guide
+        ('layout-guide' or 'general-guide').
 
     Returns
-    ----
+    ----------
     Path
         Path to the prompt guide file.
 
     Raises
-    ----
+    ----------
     ValueError
         If the prompt guide is not found.
     """
@@ -499,17 +508,18 @@ def get_prompt(name: str) -> str:
     Read and return the content of a prompt guide file.
 
     Parameters
-    ----
+    ----------
     name : str
-        Name of the prompt guide ('layout-guide' or 'general-guide').
+        Name of the prompt guide
+        ('layout-guide' or 'general-guide').
 
     Returns
-    ----
+    ----------
     str
         Content of the prompt guide file.
 
     Raises
-    ----
+    ----------
     ValueError
         If the prompt guide is not found.
     """
@@ -522,7 +532,7 @@ def list_prompts() -> list[str]:
     List all available prompt guide files.
 
     Returns
-    ----
+    ----------
     list[str]
         List of available prompt guide names.
     """
@@ -537,29 +547,31 @@ def copy_prompt(name: str, destination: str | Path) -> Path:
     Copy a prompt guide file to the specified destination.
 
     Parameters
-    ----
+    ----------
     name : str
-        Name of the prompt guide ('layout-guide' or 'general-guide').
+        Name of the prompt guide
+        ('layout-guide' or 'general-guide').
     destination : str or Path
-        Destination path where the prompt file should be copied.
-        If a directory path is provided, the file will be copied with
-        its original name. If a file path is provided, the file will
-        be copied to that exact location.
+        Destination path where the prompt file should
+        be copied. If a directory path is provided, the
+        file will be copied with its original name. If a
+        file path is provided, the file will be copied
+        to that exact location.
 
     Returns
-    ----
+    ----------
     Path
         Path to the copied file.
 
     Raises
-    ----
+    ----------
     ValueError
         If the prompt guide is not found.
     FileNotFoundError
-        If the destination directory does not exist and cannot be created.
+        If the destination directory does not exist.
 
     Examples
-    -----
+    ----------
     >>> import dartwork_mpl as dm
     >>> 
     >>> # Copy to a directory (keeps original filename)

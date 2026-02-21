@@ -11,8 +11,6 @@ Files created (in CWD):
         object per line.
 """
 
-from __future__ import annotations
-
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,25 +25,52 @@ _base_dir: Path | None = None
 
 
 def set_base_dir(path: Path) -> None:
-    """Set the base directory for config/history files.
+    """설정/이력 파일의 기본 디렉토리를 설정한다.
 
-    Called by ``ui.run()`` with the script's parent directory
-    so that files are saved alongside the user's script, not in CWD.
+    ``ui.run()``이 스크립트의 상위 디렉토리를 전달하여
+    파일이 CWD가 아닌 사용자 스크립트 옆에 저장되도록 한다.
+
+    Parameters
+    ----------
+    path : Path
+        기본 디렉토리 경로.
     """
     global _base_dir
     _base_dir = Path(path)
 
 
 def _get_base_dir() -> Path:
-    """Return the configured base dir, falling back to CWD."""
+    """설정된 기본 디렉토리를 반환한다.
+
+    설정되지 않은 경우 현재 작업 디렉토리로 대체한다.
+
+    Returns
+    ----------
+    Path
+        기본 디렉토리 경로.
+    """
     return _base_dir if _base_dir is not None else Path.cwd()
 
 
 def _config_path() -> Path:
+    """설정 파일의 전체 경로를 반환한다.
+
+    Returns
+    ----------
+    Path
+        ``.dartwork_ui_config.json`` 파일 경로.
+    """
     return _get_base_dir() / CONFIG_FILENAME
 
 
 def _history_path() -> Path:
+    """이력 파일의 전체 경로를 반환한다.
+
+    Returns
+    ----------
+    Path
+        ``.dartwork_ui_history.jsonl`` 파일 경로.
+    """
     return _get_base_dir() / HISTORY_FILENAME
 
 
@@ -159,7 +184,18 @@ def load_presets() -> list[dict[str, Any]]:
 
 
 def _serializable(params: dict[str, Any]) -> dict[str, Any]:
-    """Convert parameter values to JSON-serializable types."""
+    """파라미터 값을 JSON 직렬화 가능한 타입으로 변환한다.
+
+    Parameters
+    ----------
+    params : dict[str, Any]
+        원본 파라미터 딕셔너리.
+
+    Returns
+    ----------
+    dict[str, Any]
+        JSON 직렬화 가능한 파라미터 딕셔너리.
+    """
     out: dict[str, Any] = {}
     for k, v in params.items():
         if isinstance(v, (int, float, str, bool, type(None))):

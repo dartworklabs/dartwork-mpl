@@ -8,8 +8,6 @@ Run with:
     uv run --extra ui python app.py
 """
 
-from __future__ import annotations
-
 from typing import Literal
 
 import matplotlib.pyplot as plt

@@ -15,8 +15,6 @@ Supported types
 - ``tuple[int, ...]``, ``tuple[float, ...]`` — comma-separated text input
 """
 
-from __future__ import annotations
-
 import typing
 from dataclasses import asdict, dataclass, field
 from typing import Any, get_args, get_origin
@@ -51,12 +49,35 @@ class ParamDescriptor:
 
 
 def _humanize(name: str) -> str:
-    """Convert snake_case to Title Case label."""
+    """snake_case 이름을 Title Case 레이블로 변환한다.
+
+    Parameters
+    ----------
+    name : str
+        snake_case 파라미터 이름.
+
+    Returns
+    ----------
+    str
+        Title Case로 변환된 레이블.
+    """
     return name.replace("_", " ").title()
 
 
 def _type_name(t: type) -> str:
-    """Get a simple string name for a type."""
+    """타입의 간단한 문자열 이름을 반환한다.
+
+    Parameters
+    ----------
+    t : type
+        Python 타입.
+
+    Returns
+    ----------
+    str
+        타입 이름 문자열 (int, float, str, bool,
+        list_int, list_float, list_str).
+    """
     simple = {int: "int", float: "float", str: "str", bool: "bool"}
     if t in simple:
         return simple[t]
@@ -83,7 +104,22 @@ def _type_name(t: type) -> str:
 
 
 def _serialize_default(val: Any, type_name: str) -> Any:
-    """Make default values JSON-safe for list/tuple types."""
+    """기본값을 JSON 안전한 형태로 변환한다.
+
+    list/tuple 타입의 기본값을 콤마 구분 문자열로 변환한다.
+
+    Parameters
+    ----------
+    val : Any
+        변환할 기본값.
+    type_name : str
+        파라미터 타입 이름.
+
+    Returns
+    ----------
+    Any
+        JSON 직렬화 가능한 기본값.
+    """
     if val is None:
         return "" if type_name.startswith("list_") else val
     if isinstance(val, (list, tuple)):
