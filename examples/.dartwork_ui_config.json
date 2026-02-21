@@ -1,0 +1,45 @@
+{
+  "function": "signal_figure",
+  "params": {
+    "n_points": 997,
+    "harmonics": 5,
+    "random_seed": 42,
+    "base_frequency": 5.8,
+    "amplitude": 2.0,
+    "noise_level": 1.25,
+    "line_width": 0.5,
+    "phase_offset": 0.01,
+    "title_text": "Signal Analysis",
+    "x_label": "Time (s)",
+    "y_label": "Amplitude",
+    "signal_color": "#0969da",
+    "envelope_color": "#cf222e",
+    "bg_color": "#ffffff",
+    "grid_color": "#e1e4e8",
+    "show_grid": true,
+    "show_envelope": false,
+    "show_noise": true,
+    "fill_under": true,
+    "waveform": "cosine",
+    "line_style": "-",
+    "window_fn": "hanning",
+    "custom_yticks": [],
+    "harmonic_weights": [
+      1.0,
+      0.5,
+      0.25
+    ],
+    "highlight_samples": [
+      100,
+      200,
+      300
+    ],
+    "annotations": [
+      "Hello",
+      "World",
+      "Hi"
+    ],
+    "y_limits": []
+  },
+  "updated_at": "2026-02-21T14:04:28.178611+00:00"
+}
