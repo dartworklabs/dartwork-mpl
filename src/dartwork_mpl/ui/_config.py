@@ -96,6 +96,7 @@ def save_config(
     params: dict[str, Any],
     function_name: str = "",
     tabs: list[dict[str, Any]] | None = None,
+    fig_width: int | None = None,
 ) -> None:
     """Persist state to ``.dartwork_ui_config.json``.
 
@@ -107,6 +108,8 @@ def save_config(
         Name of the figure generator function.
     tabs : list[dict], optional
         Tab state to persist.
+    fig_width : int, optional
+        Figure display width percentage.
     """
     data: dict[str, Any] = {
         "function": function_name,
@@ -117,6 +120,8 @@ def save_config(
     }
     if tabs is not None:
         data["tabs"] = tabs
+    if fig_width is not None:
+        data["figWidth"] = fig_width
     _config_path().write_text(
         json.dumps(
             data, indent=2, ensure_ascii=False,

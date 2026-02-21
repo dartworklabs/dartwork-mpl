@@ -894,9 +894,10 @@ async function init() {{
     }}
   }} catch (e) {{}}
 
-  // Load saved config (params + tabs)
+  // Load saved config (params + tabs + figWidth)
   const cfgResp = await fetch("/api/config");
   let saved = null;
+  let savedFigWidth = null;
   if (cfgResp.ok) {{
     const cfg = await cfgResp.json();
     if (cfg && cfg.params) saved = cfg.params;
@@ -905,6 +906,7 @@ async function init() {{
       activeTabId = tabs[0].id;
       nextTabId = Math.max(...tabs.map(t => t.id)) + 1;
     }}
+    if (cfg && cfg.figWidth) savedFigWidth = cfg.figWidth;
   }}
 
   const activeTab = getActiveTab();
@@ -914,6 +916,7 @@ async function init() {{
   buildControls(overrides);
   renderTabBar();
   renderFigure();
+  if (savedFigWidth) setFigureWidth(savedFigWidth);
   lucide.createIcons();
   startHeartbeat();
 }}
@@ -986,7 +989,7 @@ async function persistState() {{
     await fetch("/api/save-state", {{
       method: "POST",
       headers: {{"Content-Type": "application/json"}},
-      body: JSON.stringify({{ params, tabs: cleanTabs }}),
+      body: JSON.stringify({{ params, tabs: cleanTabs, figWidth: parseInt(document.getElementById("fig-width").value) }}),
     }});
   }} catch (e) {{}}
 }}

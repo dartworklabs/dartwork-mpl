@@ -157,13 +157,15 @@ def run(
     async def save_state(
         body: dict[str, Any],
     ) -> dict[str, str]:
-        """Save full UI state (tabs) to config."""
+        """Save full UI state to config."""
         tabs = body.get("tabs", [])
         params = body.get("params", {})
+        fig_width = body.get("figWidth")
         save_config(
             params,
             function_name=figure_fn.__name__,
             tabs=tabs,
+            fig_width=fig_width,
         )
         return {"status": "ok"}
 
