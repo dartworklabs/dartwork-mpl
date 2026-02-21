@@ -29,8 +29,8 @@ import numpy as np
 from matplotlib.figure import Figure
 from pydantic import Field
 
+import dartwork_mpl as dm
 from dartwork_mpl.ui import ParamModel, run
-
 
 # ============================================================================
 # Parameter model — every supported type
@@ -156,6 +156,8 @@ class SignalParams(ParamModel):
 
 
 def signal_figure(p: SignalParams) -> Figure:
+    dm.style.use("scientific")
+
     """Generate a multi-harmonic signal analysis figure."""
     rng = np.random.default_rng(p.random_seed)
     t = np.linspace(0, 2 * np.pi, p.n_points)

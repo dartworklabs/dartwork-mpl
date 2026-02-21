@@ -21,8 +21,11 @@ Usage
 from __future__ import annotations
 
 import base64
+import inspect
 import io
 import sys
+import textwrap
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -34,6 +37,7 @@ from fastapi.responses import HTMLResponse, Response
 from matplotlib.figure import Figure
 from pydantic import BaseModel
 
+from ..util import save_formats
 from ._config import (
     append_history,
     load_config,
@@ -114,7 +118,7 @@ def run(
         model = _build_model(params, param_model, descriptors)
         fig = figure_fn(model)
         buf = io.BytesIO()
-        fig.savefig(buf, format="png", bbox_inches="tight", dpi=150)
+        fig.savefig(buf, format="png", bbox_inches="tight")
         plt.close(fig)
         buf.seek(0)
         b64 = base64.b64encode(buf.getvalue()).decode("ascii")
@@ -132,7 +136,7 @@ def run(
         model = _build_model(params, param_model, descriptors)
         fig = figure_fn(model)
         buf = io.BytesIO()
-        fig.savefig(buf, format=fmt, bbox_inches="tight", dpi=150)
+        fig.savefig(buf, format=fmt, bbox_inches="tight")
         plt.close(fig)
         buf.seek(0)
 
@@ -169,6 +173,62 @@ def run(
     @app.get("/api/presets")
     async def get_presets() -> list[dict[str, Any]]:
         return load_presets()
+
+    # ── Script generation ────────────────────────────────────────────
+
+    @app.post("/api/script")
+    async def generate_script(params: dict[str, Any]) -> Response:
+        """Generate a standalone Python script and return as download."""
+        model = _build_model(params, param_model, descriptors)
+        code = _generate_script(
+            model, param_model, figure_fn, script_path
+        )
+        return Response(
+            content=code.encode("utf-8"),
+            media_type="text/x-python",
+            headers={
+                "Content-Disposition": 'attachment; filename="generate_figure.py"'
+            },
+        )
+
+    # ── Server-side save ─────────────────────────────────────────────
+
+    @app.post("/api/save-server/image/{fmt}")
+    async def save_image_server(
+        fmt: str, params: dict[str, Any]
+    ) -> dict[str, str]:
+        """Save figure image to the script directory on the server."""
+        model = _build_model(params, param_model, descriptors)
+        fig = figure_fn(model)
+
+        ts = _timestamp_slug()
+        stem = f"{figure_fn.__name__}_{ts}"
+        image_stem = str(script_path / stem)
+
+        save_formats(
+            fig, image_stem, formats=(fmt,), bbox_inches="tight"
+        )
+        plt.close(fig)
+
+        filename = f"{stem}.{fmt}"
+        return {"status": "ok", "path": image_stem + f".{fmt}", "filename": filename}
+
+    @app.post("/api/save-server/script")
+    async def save_script_server(
+        params: dict[str, Any],
+    ) -> dict[str, str]:
+        """Save a standalone Python script to the script directory."""
+        model = _build_model(params, param_model, descriptors)
+        code = _generate_script(
+            model, param_model, figure_fn, script_path
+        )
+
+        ts = _timestamp_slug()
+        filename = f"{figure_fn.__name__}_{ts}.py"
+        out_path = script_path / filename
+        out_path.write_text(code, encoding="utf-8")
+
+        return {"status": "ok", "path": str(out_path), "filename": filename}
 
     # ── Launch (retry ports if in use) ──────────────────────────────
     current_port = port
@@ -239,3 +299,99 @@ def _parse_list(value: Any, item_type: type) -> list:
         raw = [s.strip() for s in value.split(",") if s.strip()]
         return [item_type(x) for x in raw]
     return [item_type(value)]
+
+
+def _timestamp_slug() -> str:
+    """Return a compact timestamp string for filenames."""
+    return datetime.now().strftime("%Y%m%d_%H%M%S")
+
+
+def _generate_script(
+    model: ParamModel,
+    model_cls: type[ParamModel],
+    figure_fn: Callable,
+    script_dir: Path,
+) -> str:
+    """Generate a standalone Python script that reproduces the figure.
+
+    The script includes the figure function source, the ParamModel class
+    source, and the current parameter values.
+    """
+    # Get source of the figure function and model class
+    try:
+        fn_source = textwrap.dedent(inspect.getsource(figure_fn))
+    except (OSError, TypeError):
+        fn_source = f"# Could not retrieve source for {figure_fn.__name__}"
+
+    try:
+        model_source = textwrap.dedent(inspect.getsource(model_cls))
+    except (OSError, TypeError):
+        model_source = f"# Could not retrieve source for {model_cls.__name__}"
+
+    # Get the module where figure_fn is defined for imports
+    fn_module = inspect.getmodule(figure_fn)
+    try:
+        module_source = inspect.getsource(fn_module)
+        # Extract import lines from the top of the module
+        import_lines = []
+        for line in module_source.split("\n"):
+            stripped = line.strip()
+            if stripped.startswith(("import ", "from ")):
+                # Skip the 'run' function import (not needed in standalone)
+                if "import run" in stripped or "import run," in stripped:
+                    # Keep ParamModel but drop run
+                    cleaned = stripped.replace(", run", "").replace("run, ", "")
+                    if "import" in cleaned and cleaned != stripped:
+                        import_lines.append(cleaned)
+                else:
+                    import_lines.append(line)
+            elif stripped and not stripped.startswith(("#", '"""', "'''", '"')) and import_lines:
+                # Stop after the import block ends
+                if not stripped.startswith(("import ", "from ")):
+                    break
+        imports_block = "\n".join(import_lines)
+    except (OSError, TypeError):
+        imports_block = (
+            "import matplotlib.pyplot as plt\n"
+            "from matplotlib.figure import Figure\n"
+            "from dartwork_mpl.ui import ParamModel"
+        )
+
+    # Serialize current params
+    params_dict = model.model_dump()
+    params_lines = []
+    for key, val in params_dict.items():
+        params_lines.append(f"    {key}={val!r},")
+    params_str = "\n".join(params_lines)
+
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    script = f'''"""Auto-generated figure script.
+
+Generated at: {ts}
+Parameters: {model_cls.__name__}
+Function:   {figure_fn.__name__}
+"""
+
+{imports_block}
+from pydantic import Field
+
+from dartwork_mpl.util import save_formats
+
+
+{model_source}
+
+
+{fn_source}
+
+
+if __name__ == "__main__":
+    params = {model_cls.__name__}(
+{params_str}
+    )
+    fig = {figure_fn.__name__}(params)
+    save_formats(fig, "{figure_fn.__name__}", bbox_inches="tight")
+    print("Saved: {figure_fn.__name__}.[svg|png|pdf|eps]")
+    plt.show()
+'''
+    return script

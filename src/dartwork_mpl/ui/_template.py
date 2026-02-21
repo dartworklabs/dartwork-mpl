@@ -449,12 +449,13 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 }}
 
 .toast {{
-  padding: 8px 14px;
+  padding: 12px 20px;
   border-radius: var(--radius);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   animation: fadeInUp 0.25s ease;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  min-width: 200px;
 }}
 
 .toast-success {{ background: #f0fdf4; border: 1px solid #bbf7d0; color: var(--success); }}
@@ -506,6 +507,34 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 }}
 
 .preset-item:hover {{ background: var(--accent-light); color: var(--accent); }}
+
+/* ── Tooltip ──────────────────────────────────────── */
+[data-tip] {{
+  position: relative;
+}}
+
+[data-tip]::after {{
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s;
+  z-index: 200;
+}}
+
+[data-tip]:hover::after {{
+  opacity: 1;
+}}
 </style>
 </head>
 <body>
@@ -524,20 +553,20 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
         <span class="status status-ok" id="status">Ready</span>
       </div>
       <div class="topbar-right">
-        <label class="toggle">
+        <label class="toggle" data-tip="Auto-redraw on parameter change">
           <input type="checkbox" id="auto-redraw" checked>
           Auto
         </label>
-        <button class="btn" onclick="renderFigure()"><i data-lucide="refresh-cw" style="width:12px;height:12px"></i> Redraw</button>
+        <button class="btn" onclick="renderFigure()" data-tip="Re-render figure (Cmd+Enter)"><i data-lucide="refresh-cw" style="width:12px;height:12px"></i> Redraw</button>
 
         <span class="topbar-divider"></span>
 
-        <button class="btn" onclick="showSaveModal()"><i data-lucide="save" style="width:12px;height:12px"></i> Save</button>
-        <button class="btn" onclick="showLoadModal()"><i data-lucide="folder-open" style="width:12px;height:12px"></i> Load</button>
+        <button class="btn" onclick="showSaveModal()" data-tip="Save current parameters as preset"><i data-lucide="save" style="width:12px;height:12px"></i> Save</button>
+        <button class="btn" onclick="showLoadModal()" data-tip="Load a saved preset"><i data-lucide="folder-open" style="width:12px;height:12px"></i> Load</button>
 
         <span class="topbar-divider"></span>
 
-        <div class="width-control">
+        <div class="width-control" data-tip="Adjust figure display width">
           <i data-lucide="arrows-horizontal" style="width:12px;height:12px"></i>
           <input type="range" id="fig-width" min="30" max="100" value="70" oninput="setFigureWidth(this.value)">
           <span id="fig-width-label">70%</span>
@@ -545,7 +574,7 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 
         <span class="topbar-divider"></span>
 
-        <label class="toggle" title="Figure background">
+        <label class="toggle" data-tip="Figure container background color">
           <input type="color" class="topbar-color" id="fig-bg-color" value="#ffffff"
                  onchange="setFigureBg(this.value)">
           BG
@@ -553,12 +582,18 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 
         <span class="topbar-divider"></span>
 
-        <select id="export-fmt" class="param-input param-select" style="width:60px;padding:4px 20px 4px 6px;font-size:11px">
+        <select id="export-fmt" class="param-input param-select" data-tip="Image export format" style="width:60px;padding:4px 20px 4px 6px;font-size:11px">
           <option value="png">PNG</option>
           <option value="svg">SVG</option>
           <option value="pdf">PDF</option>
         </select>
-        <button class="btn" onclick="exportFigure()"><i data-lucide="download" style="width:12px;height:12px"></i></button>
+        <button class="btn" onclick="exportFigure()" data-tip="Download image to browser"><i data-lucide="download" style="width:12px;height:12px"></i></button>
+        <button class="btn" onclick="saveImageServer()" data-tip="Save image to server directory"><i data-lucide="hard-drive-download" style="width:12px;height:12px"></i></button>
+
+        <span class="topbar-divider"></span>
+
+        <button class="btn" onclick="downloadScript()" data-tip="Download Python reproduction script"><i data-lucide="file-code" style="width:12px;height:12px"></i> Script</button>
+        <button class="btn" onclick="saveScriptServer()" data-tip="Save script to server directory"><i data-lucide="hard-drive-download" style="width:12px;height:12px"></i></button>
       </div>
     </header>
 
@@ -815,6 +850,55 @@ async function exportFigure() {{
   }} catch (err) {{ toast("Export failed: " + err.message, "error"); }}
 }}
 
+async function saveImageServer() {{
+  const tab = getActiveTab();
+  const params = tab ? tab.params : collectParams();
+  const fmt = document.getElementById("export-fmt").value;
+  try {{
+    const resp = await fetch("/api/save-server/image/" + fmt, {{
+      method: "POST",
+      headers: {{"Content-Type": "application/json"}},
+      body: JSON.stringify(params),
+    }});
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    toast("Saved to server: " + data.filename, "success");
+  }} catch (err) {{ toast("Server save failed: " + err.message, "error"); }}
+}}
+
+async function downloadScript() {{
+  const tab = getActiveTab();
+  const params = tab ? tab.params : collectParams();
+  try {{
+    const resp = await fetch("/api/script", {{
+      method: "POST",
+      headers: {{"Content-Type": "application/json"}},
+      body: JSON.stringify(params),
+    }});
+    if (!resp.ok) throw new Error(await resp.text());
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "generate_figure.py"; a.click();
+    URL.revokeObjectURL(url);
+    toast("Script downloaded", "success");
+  }} catch (err) {{ toast("Script failed: " + err.message, "error"); }}
+}}
+
+async function saveScriptServer() {{
+  const tab = getActiveTab();
+  const params = tab ? tab.params : collectParams();
+  try {{
+    const resp = await fetch("/api/save-server/script", {{
+      method: "POST",
+      headers: {{"Content-Type": "application/json"}},
+      body: JSON.stringify(params),
+    }});
+    if (!resp.ok) throw new Error(await resp.text());
+    const data = await resp.json();
+    toast("Script saved: " + data.filename, "success");
+  }} catch (err) {{ toast("Script save failed: " + err.message, "error"); }}
+}}
+
 // ── Presets ──────────────────────────────────────────────
 function showSaveModal() {{ document.getElementById("save-modal").classList.add("active"); document.getElementById("preset-name").focus(); }}
 function closeSaveModal() {{ document.getElementById("save-modal").classList.remove("active"); }}
@@ -867,7 +951,7 @@ function toast(msg, type) {{
   const tc = document.getElementById("toast-container");
   const t = document.createElement("div"); t.className = "toast toast-" + type; t.textContent = msg;
   tc.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  setTimeout(() => t.remove(), 6000);
 }}
 
 // ── Keyboard ─────────────────────────────────────────────
