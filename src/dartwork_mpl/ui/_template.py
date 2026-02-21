@@ -540,6 +540,66 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 #tooltip.visible {{
   opacity: 1;
 }}
+
+/* ── Disconnect overlay ──────────────────────────── */
+.disconnect-overlay {{
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}}
+
+.disconnect-overlay.active {{
+  display: flex;
+}}
+
+.disconnect-modal {{
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  min-width: 280px;
+}}
+
+.disconnect-modal .disconnect-icon {{
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}}
+
+.disconnect-modal h3 {{
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}}
+
+.disconnect-modal p {{
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  line-height: 1.4;
+}}
+
+.disconnect-status {{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}}
+
+.disconnect-status .spinner {{
+  width: 12px;
+  height: 12px;
+}}
 </style>
 </head>
 <body>
@@ -650,6 +710,21 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 <div class="toast-container" id="toast-container"></div>
 <div id="tooltip"></div>
 
+<!-- Disconnect overlay -->
+<div class="disconnect-overlay" id="disconnect-overlay">
+  <div class="disconnect-modal">
+    <div class="disconnect-icon">
+      <i data-lucide="unplug" style="width:20px;height:20px"></i>
+    </div>
+    <h3>Connection lost</h3>
+    <p>The server is not responding.</p>
+    <div class="disconnect-status">
+      <div class="spinner"></div>
+      Reconnecting
+    </div>
+  </div>
+</div>
+
 <script>
 let descriptors = [];
 let tabs = [{{ id: 1, name: "Tab 1", params: {{}} }}];
@@ -674,6 +749,7 @@ async function init() {{
   renderTabBar();
   renderFigure();
   lucide.createIcons();
+  startHeartbeat();
 }}
 
 // ── Tabs ─────────────────────────────────────────────────
@@ -1007,6 +1083,39 @@ async function reloadServer() {{
     const el = e.target.closest("[data-tip]");
     if (el) tip.classList.remove("visible");
   }});
+}}
+
+// ── Heartbeat (server connection check) ─────────────────
+let heartbeatInterval = null;
+let isDisconnected = false;
+const HEARTBEAT_NORMAL_MS = 3000;
+const HEARTBEAT_RETRY_MS = 1000;
+
+function startHeartbeat() {{
+  heartbeatInterval = setInterval(checkConnection, HEARTBEAT_NORMAL_MS);
+}}
+
+async function checkConnection() {{
+  try {{
+    const resp = await fetch("/api/health", {{ signal: AbortSignal.timeout(2000) }});
+    if (resp.ok && isDisconnected) {{
+      // Reconnected
+      isDisconnected = false;
+      document.getElementById("disconnect-overlay").classList.remove("active");
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = setInterval(checkConnection, HEARTBEAT_NORMAL_MS);
+      toast("Reconnected to server", "success");
+      renderFigure();
+    }}
+  }} catch (e) {{
+    if (!isDisconnected) {{
+      isDisconnected = true;
+      document.getElementById("disconnect-overlay").classList.add("active");
+      lucide.createIcons({{ nodes: document.querySelectorAll("#disconnect-overlay [data-lucide]") }});
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = setInterval(checkConnection, HEARTBEAT_RETRY_MS);
+    }}
+  }}
 }}
 
 // ── Keyboard ─────────────────────────────────────────────

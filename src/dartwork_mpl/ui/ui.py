@@ -251,6 +251,13 @@ def run(
         threading.Thread(target=_restart, daemon=True).start()
         return {"status": "reloading"}
 
+    # ── Health check (heartbeat for frontend) ────────────────────────
+
+    @app.get("/api/health")
+    async def health() -> dict[str, str]:
+        """Return server health status for frontend heartbeat."""
+        return {"status": "ok"}
+
     # ── Launch (retry ports if in use) ──────────────────────────────
     current_port = port
     while True:
