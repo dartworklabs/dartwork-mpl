@@ -39,23 +39,26 @@ class SignalParams(ParamModel):
         ge=50,
         le=3000,
         description="Sample count",
+        json_schema_extra={"group": "Signal"},
     )
     harmonics: int = Field(
         default=3,
         ge=1,
         le=10,
         description="Number of harmonics",
+        json_schema_extra={"group": "Signal"},
     )
     n_bins: int = Field(
         default=40,
         ge=10,
         le=100,
         description="Histogram bins",
+        json_schema_extra={"group": "Display"},
     )
 
     # ── int number input (no bounds) ──────────────────────
     random_seed: int = Field(
-        default=42, description="Random seed"
+        default=42, description="Random seed", json_schema_extra={"group": "Signal"}
     )
 
     # ── float slider (ge / le / step) ─────────────────────
@@ -63,129 +66,154 @@ class SignalParams(ParamModel):
         default=2.0,
         ge=0.1,
         le=20.0,
-        json_schema_extra={"step": 0.1},
+        json_schema_extra={"step": 0.1, "group": "Signal"},
         description="Base frequency (Hz)",
     )
     amplitude: float = Field(
         default=1.0,
         ge=0.1,
         le=5.0,
-        json_schema_extra={"step": 0.1},
+        json_schema_extra={"step": 0.1, "group": "Signal"},
         description="Amplitude",
     )
     noise_level: float = Field(
         default=0.1,
         ge=0.0,
         le=2.0,
-        json_schema_extra={"step": 0.05},
+        json_schema_extra={"step": 0.05, "group": "Signal"},
         description="Noise level",
     )
     line_width: float = Field(
         default=1.5,
         ge=0.5,
         le=6.0,
-        json_schema_extra={"step": 0.5},
+        json_schema_extra={"step": 0.5, "group": "Display"},
         description="Line width",
     )
 
     # ── float number input (no bounds) ────────────────────
     phase_offset: float = Field(
-        default=0.0, description="Phase offset (rad)"
+        default=0.0,
+        description="Phase offset (rad)",
+        json_schema_extra={"group": "Signal"},
     )
 
     # ── str text input ────────────────────────────────────
     title_text: str = Field(
         default="Signal Analysis",
         description="Chart title",
+        json_schema_extra={"group": "Display"},
     )
     x_label: str = Field(
-        default="Time (s)", description="X-axis label"
+        default="Time (s)",
+        description="X-axis label",
+        json_schema_extra={"group": "Display"},
     )
     y_label: str = Field(
-        default="Amplitude", description="Y-axis label"
+        default="Amplitude",
+        description="Y-axis label",
+        json_schema_extra={"group": "Display"},
     )
 
     # ── str color picker (explicit widget hint) ───────────
     signal_color: str = Field(
         default="#0969da",
-        json_schema_extra={"widget": "color"},
+        json_schema_extra={"widget": "color", "group": "Colors"},
         description="Signal line color",
     )
     envelope_color: str = Field(
         default="#cf222e",
-        json_schema_extra={"widget": "color"},
+        json_schema_extra={"widget": "color", "group": "Colors"},
         description="Envelope / accent color",
     )
 
     # ── str color picker (auto-detected) ──────────────────
     bg_color: str = Field(
-        default="#ffffff", description="Background color"
+        default="#ffffff",
+        description="Background color",
+        json_schema_extra={"group": "Colors"},
     )
     grid_color: str = Field(
-        default="#e1e4e8", description="Grid color"
+        default="#e1e4e8",
+        description="Grid color",
+        json_schema_extra={"group": "Colors"},
     )
 
     # ── bool checkbox ─────────────────────────────────────
     show_grid: bool = Field(
-        default=True, description="Show grid"
+        default=True, description="Show grid", json_schema_extra={"group": "Toggles"}
     )
     show_noise: bool = Field(
-        default=True, description="Add noise"
+        default=True, description="Add noise", json_schema_extra={"group": "Toggles"}
     )
     fill_under: bool = Field(
-        default=False, description="Fill under curve"
+        default=False,
+        description="Fill under curve",
+        json_schema_extra={"group": "Toggles"},
     )
     show_fft: bool = Field(
-        default=True, description="Show FFT subplot"
+        default=True,
+        description="Show FFT subplot",
+        json_schema_extra={"group": "Toggles"},
     )
     show_histogram: bool = Field(
         default=True,
         description="Show histogram subplot",
+        json_schema_extra={"group": "Toggles"},
     )
 
     # ── Literal select dropdown ───────────────────────────
     waveform: Literal[
         "sine", "cosine", "square", "sawtooth"
-    ] = Field(default="sine", description="Waveform type")
+    ] = Field(
+        default="sine",
+        description="Waveform type",
+        json_schema_extra={"group": "Waveform"},
+    )
     line_style: Literal["-", "--", "-.", ":"] = Field(
-        default="-", description="Line style"
+        default="-",
+        description="Line style",
+        json_schema_extra={"group": "Display"},
     )
     window_fn: Literal[
         "none", "hanning", "hamming", "blackman"
     ] = Field(
-        default="none", description="Window function"
+        default="none",
+        description="Window function",
+        json_schema_extra={"group": "Waveform"},
     )
 
     # ── list[float] comma-separated ───────────────────────
     custom_yticks: list[float] = Field(
         default=[],
         description="Custom Y ticks (e.g. -1, 0, 1)",
+        json_schema_extra={"group": "Data"},
     )
     harmonic_weights: list[float] = Field(
         default=[1.0, 0.5, 0.25],
-        description=(
-            "Harmonic weights (e.g. 1.0, 0.5, 0.25)"
-        ),
+        description=("Harmonic weights (e.g. 1.0, 0.5, 0.25)"),
+        json_schema_extra={"group": "Signal"},
     )
 
     # ── list[int] comma-separated ─────────────────────────
     highlight_samples: list[int] = Field(
         default=[],
-        description=(
-            "Highlight sample indices "
-            "(e.g. 100, 200, 300)"
-        ),
+        description=("Highlight sample indices " "(e.g. 100, 200, 300)"),
+        json_schema_extra={"group": "Data"},
     )
 
     # ── list[str] comma-separated ─────────────────────────
     annotations: list[str] = Field(
         default=[],
         description="Annotation labels at highlights",
+        json_schema_extra={"group": "Data"},
     )
 
     # ── tuple[float, ...] comma-separated ─────────────────
     y_limits: tuple[float, ...] = Field(
-        default=(), description="Y-axis limits (min, max)"
+        default=(),
+        description="Y-axis limits (min, max)",
+        json_schema_extra={"group": "Display"},
     )
 
 

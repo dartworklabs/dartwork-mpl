@@ -17,11 +17,14 @@ from pydantic import Field
 from dartwork_mpl.ui._config import (
     CONFIG_FILENAME,
     HISTORY_FILENAME,
+    PRESET_FILENAME,
     append_history,
+    delete_preset,
     load_config,
     load_history,
     load_presets,
     save_config,
+    save_preset,
 )
 from dartwork_mpl.ui._param import ParamModel
 from dartwork_mpl.ui._widget import (
@@ -158,6 +161,27 @@ class TestDescriptorsFromModel:
         assert descs[0].type_name == "list_float"
         assert descs[0].default == ""
 
+    def test_group_from_extra(self) -> None:
+        """Group metadata from json_schema_extra is extracted."""
+
+        class M(ParamModel):
+            n: int = Field(
+                default=10,
+                json_schema_extra={"group": "Signal"},
+            )
+
+        descs = descriptors_from_model(M)
+        assert descs[0].group == "Signal"
+
+    def test_group_default_none(self) -> None:
+        """Fields without group metadata have group=None."""
+
+        class M(ParamModel):
+            n: int = Field(default=10)
+
+        descs = descriptors_from_model(M)
+        assert descs[0].group is None
+
 
 # ============================================================================
 # Tests: config persistence
@@ -179,8 +203,8 @@ class TestConfigPersistence:
             loaded = load_config()
 
         assert loaded is not None
-        assert loaded["n"] == 42
-        assert loaded["alpha"] == 0.7
+        assert loaded["params"]["n"] == 42
+        assert loaded["params"]["alpha"] == 0.7
 
     def test_load_config_missing(self, tmp_path: Path) -> None:
         config_file = tmp_path / CONFIG_FILENAME
@@ -202,11 +226,8 @@ class TestConfigPersistence:
 
             records = load_history()
             assert len(records) == 3
-
-            presets = load_presets()
-            assert len(presets) == 1
-            assert presets[0]["label"] == "preset_a"
-            assert presets[0]["params"]["n"] == 2
+            assert records[1]["label"] == "preset_a"
+            assert records[1]["params"]["n"] == 2
 
     def test_history_jsonl_format(self, tmp_path: Path) -> None:
         history_file = tmp_path / HISTORY_FILENAME
@@ -223,3 +244,56 @@ class TestConfigPersistence:
             data = json.loads(line)
             assert "timestamp" in data
             assert "params" in data
+
+    def test_save_and_load_preset_json(
+        self, tmp_path: Path,
+    ) -> None:
+        """Presets are saved to and loaded from JSON."""
+        preset_file = tmp_path / PRESET_FILENAME
+        with patch(
+            "dartwork_mpl.ui._config._preset_path",
+            return_value=preset_file,
+        ):
+            save_preset("test_a", {"n": 1})
+            save_preset("test_b", {"n": 2})
+            presets = load_presets()
+
+        assert len(presets) == 2
+        assert presets[0]["label"] == "test_a"
+        assert presets[0]["params"]["n"] == 1
+        assert presets[1]["label"] == "test_b"
+
+    def test_delete_preset(
+        self, tmp_path: Path,
+    ) -> None:
+        """Deleting a preset removes it from the list."""
+        preset_file = tmp_path / PRESET_FILENAME
+        with patch(
+            "dartwork_mpl.ui._config._preset_path",
+            return_value=preset_file,
+        ):
+            save_preset("a", {"x": 1})
+            save_preset("b", {"x": 2})
+            save_preset("c", {"x": 3})
+
+            ok = delete_preset(1)  # delete "b"
+            assert ok is True
+
+            remaining = load_presets()
+            assert len(remaining) == 2
+            assert remaining[0]["label"] == "a"
+            assert remaining[1]["label"] == "c"
+
+    def test_delete_preset_invalid_index(
+        self, tmp_path: Path,
+    ) -> None:
+        """Deleting with invalid index returns False."""
+        preset_file = tmp_path / PRESET_FILENAME
+        with patch(
+            "dartwork_mpl.ui._config._preset_path",
+            return_value=preset_file,
+        ):
+            save_preset("a", {"x": 1})
+            assert delete_preset(5) is False
+            assert delete_preset(-1) is False
+            assert len(load_presets()) == 1

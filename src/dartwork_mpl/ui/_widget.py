@@ -37,6 +37,7 @@ class ParamDescriptor:
     min_value: Any = None
     max_value: Any = None
     step: Any = None
+    group: str | None = None
     choices: list[Any] | None = None
     widget_hint: str | None = None  # "color", "slider", etc.
 
@@ -170,6 +171,7 @@ def descriptors_from_model(
         min_val: Any = None
         max_val: Any = None
         step: Any = None
+        group: str | None = None
         widget_hint: str | None = None
         extra: dict[str, Any] = {}
 
@@ -192,6 +194,8 @@ def descriptors_from_model(
             widget_hint = extra.get("widget")
             if "step" in extra:
                 step = extra["step"]
+            if "group" in extra:
+                group = extra["group"]
 
         # Auto-detect color from name (for str fields only)
         if widget_hint is None and tname == "str" and "color" in name.lower():
@@ -212,6 +216,7 @@ def descriptors_from_model(
                 min_value=min_val,
                 max_value=max_val,
                 step=step,
+                group=group,
                 choices=choices,
                 widget_hint=widget_hint,
                 extra=extra,
