@@ -34,3 +34,5 @@ venv/
 *.swo
 *~
 .DS_Store
+.agent*
+agent-playbooks
