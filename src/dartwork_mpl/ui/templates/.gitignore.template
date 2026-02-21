@@ -1,0 +1,8 @@
+# Dartwork UI generated files
+*.png
+*.svg
+*.pdf
+*.eps
+*_????????_??????.py
+.dartwork_ui_config.json
+.dartwork_ui_history.jsonl

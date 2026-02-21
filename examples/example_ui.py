@@ -341,4 +341,4 @@ def signal_figure(p: SignalParams) -> Figure:
 # ============================================================================
 
 if __name__ == "__main__":
-    run(signal_figure, SignalParams, title="Signal Analysis")
+    run(signal_figure, title="Signal Analysis")

@@ -19,6 +19,7 @@ dependencies = [
 
 [project.scripts]
 mcp = "dartwork_mpl.cli:main"
+ui = "dartwork_mpl.ui.__main__:main"
 
 [project.optional-dependencies]
 mcp = [
@@ -29,6 +30,7 @@ ui = [
     "fastapi>=0.110.0",
     "pydantic>=2.0.0",
     "uvicorn[standard]>=0.27.0",
+    "InquirerPy>=0.3.4",
 ]
 
 [build-system]

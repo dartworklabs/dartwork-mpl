@@ -15,7 +15,8 @@ Usage
         ...
         return fig
 
-    run(my_plot, Params)
+    run(my_plot, Params)  # explicit
+    run(my_plot)           # auto-extracted from type annotation
 """
 
 from __future__ import annotations
@@ -73,7 +74,7 @@ class PresetSaveRequest(BaseModel):
 
 def run(
     figure_fn: Callable[[ParamModel], Figure],
-    param_model: type[ParamModel],
+    param_model: type[ParamModel] | None = None,
     *,
     title: str = "Dartwork Viewer",
     host: str = "127.0.0.1",
@@ -86,15 +87,27 @@ def run(
     figure_fn : callable
         A function that accepts a single ``ParamModel`` instance and
         returns a ``matplotlib.figure.Figure``.
-    param_model : type[ParamModel]
+    param_model : type[ParamModel], optional
         The Pydantic model class defining the parameters.
+        If omitted, it is automatically extracted from the
+        function's type annotation.
     title : str
         Page / app title.
     host : str
         Server host. Defaults to ``"127.0.0.1"``.
     port : int
         Server port. Defaults to ``8501``.
+
+    Raises
+    ------
+    TypeError
+        If the function signature does not match
+        ``(params: ParamModel) -> Figure``.
     """
+    # ── Extract / validate param model ────────────────────────────
+    if param_model is None:
+        param_model = _extract_param_model(figure_fn)
+
     # Set base dir to script location for config persistence
     script_path = Path(sys.argv[0]).resolve().parent
     set_base_dir(script_path)
@@ -306,6 +319,60 @@ def _build_model(
             coerced[k] = v
 
     return model_cls(**coerced)
+
+
+def _extract_param_model(fn: Callable) -> type[ParamModel]:
+    """Extract the ParamModel subclass from a figure function's signature.
+
+    Validates that ``fn`` has exactly one parameter whose annotation
+    is a ``ParamModel`` subclass.
+
+    Raises
+    ------
+    TypeError
+        If the signature does not match expectations.
+    """
+    import typing
+
+    try:
+        hints = typing.get_type_hints(fn)
+    except Exception:
+        hints = dict(fn.__annotations__)
+
+    ret = hints.pop("return", None)
+
+    if len(hints) == 0:
+        raise TypeError(
+            f"{fn.__name__}() has no type annotations. "
+            "Expected signature: (params: YourParamModel) -> Figure"
+        )
+
+    if len(hints) > 1:
+        raise TypeError(
+            f"{fn.__name__}() has {len(hints)} annotated parameters, "
+            "expected exactly 1. "
+            "Expected signature: (params: YourParamModel) -> Figure"
+        )
+
+    param_name, param_type = next(iter(hints.items()))
+
+    if not (isinstance(param_type, type) and issubclass(param_type, ParamModel)):
+        raise TypeError(
+            f"{fn.__name__}({param_name}: {param_type!r}) — "
+            f"annotation must be a ParamModel subclass"
+        )
+
+    # Optional: warn if return type is not Figure
+    if ret is not None and ret is not Figure:
+        import warnings
+
+        warnings.warn(
+            f"{fn.__name__}() return type is annotated as {ret!r}, "
+            f"expected Figure.",
+            stacklevel=3,
+        )
+
+    return param_type
 
 
 def _parse_list(value: Any, item_type: type) -> list:
