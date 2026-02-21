@@ -1223,6 +1223,7 @@ function setFigureWidth(pct) {{
   document.getElementById("figure-container").style.width = pct + "%";
   document.getElementById("fig-width-label").textContent = pct + "%";
   document.getElementById("fig-width").value = pct;
+  debouncedSaveState();
 }}
 
 function zoomFigure(delta) {{
