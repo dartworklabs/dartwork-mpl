@@ -36,3 +36,7 @@ venv/
 .DS_Store
 .agent*
 agent-playbooks
+
+# dartwork-mpl UI runtime files
+.dartwork_ui_config.json
+.dartwork_ui_history.jsonl
