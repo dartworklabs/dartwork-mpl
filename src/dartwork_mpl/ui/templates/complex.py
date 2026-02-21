@@ -20,7 +20,6 @@ from pydantic import Field
 import dartwork_mpl as dm
 from dartwork_mpl.ui import ParamModel, run
 
-
 # ============================================================================
 # Parameters — every supported widget type is shown here
 # ============================================================================
@@ -77,9 +76,7 @@ class Params(ParamModel):
     phase: float = Field(default=0.0, description="Phase offset (rad)")
 
     # str — plain text input
-    title: str = Field(
-        default="Signal Analysis", description="Chart title"
-    )
+    title: str = Field(default="Signal Analysis", description="Chart title")
     x_label: str = Field(default="Time (s)", description="X-axis label")
     y_label: str = Field(default="Amplitude", description="Y-axis label")
 
@@ -168,9 +165,7 @@ def my_figure(p: Params) -> Figure:
             return 2 * (raw / (2 * np.pi) % 1) - 1
         return np.sin(raw)
 
-    weights = p.harmonic_weights or [
-        1.0 / (k + 1) for k in range(p.harmonics)
-    ]
+    weights = p.harmonic_weights or [1.0 / (k + 1) for k in range(p.harmonics)]
     y = np.zeros_like(t)
     for k in range(min(p.harmonics, len(weights))):
         w = weights[k] if k < len(weights) else 1.0 / (k + 1)
@@ -228,23 +223,38 @@ def my_figure(p: Params) -> Figure:
 
     # ── Subplot 1: Signal ─────────────────────────────────────────
     style_ax(ax_signal)
-    ax_signal.plot(t, y, color=p.signal_color, linewidth=p.line_width,
-                   linestyle=p.line_style, label="Signal")
+    ax_signal.plot(
+        t,
+        y,
+        color=p.signal_color,
+        linewidth=p.line_width,
+        linestyle=p.line_style,
+        label="Signal",
+    )
 
     if p.fill_under:
         ax_signal.fill_between(t, y, alpha=0.1, color=p.signal_color)
 
     for i, idx in enumerate(p.highlight_indices):
         if 0 <= idx < len(t):
-            ax_signal.axvline(t[idx], color=p.accent_color, alpha=0.4,
-                              linewidth=1, linestyle=":")
-            ax_signal.plot(t[idx], y[idx], "o", color=p.accent_color,
-                           markersize=5)
+            ax_signal.axvline(
+                t[idx],
+                color=p.accent_color,
+                alpha=0.4,
+                linewidth=1,
+                linestyle=":",
+            )
+            ax_signal.plot(
+                t[idx], y[idx], "o", color=p.accent_color, markersize=5
+            )
             if p.annotations and i < len(p.annotations):
                 ax_signal.annotate(
-                    p.annotations[i], (t[idx], y[idx]),
-                    textcoords="offset points", xytext=(8, 8),
-                    fontsize=8, color=text_c,
+                    p.annotations[i],
+                    (t[idx], y[idx]),
+                    textcoords="offset points",
+                    xytext=(8, 8),
+                    fontsize=8,
+                    color=text_c,
                 )
 
     ax_signal.set_xlim(0, 2 * np.pi)
@@ -263,17 +273,28 @@ def my_figure(p: Params) -> Figure:
         fft_vals = np.abs(np.fft.rfft(y))
         freqs = np.fft.rfftfreq(len(t), d=(t[1] - t[0]))
         max_i = min(len(freqs), 50)
-        ax_fft.bar(freqs[1:max_i], fft_vals[1:max_i],
-                   width=freqs[1] - freqs[0],
-                   color=p.signal_color, alpha=0.8)
+        ax_fft.bar(
+            freqs[1:max_i],
+            fft_vals[1:max_i],
+            width=freqs[1] - freqs[0],
+            color=p.signal_color,
+            alpha=0.8,
+        )
         ax_fft.set_xlabel("Frequency", color=text_c, fontsize=8)
         ax_fft.set_ylabel("Magnitude", color=text_c, fontsize=8)
 
     # ── Subplot 3: Histogram ──────────────────────────────────────
     if ax_hist is not None:
         style_ax(ax_hist, "Distribution")
-        ax_hist.hist(y, bins=p.n_bins, color=p.signal_color, alpha=0.7,
-                     edgecolor=spine_c, linewidth=0.5, orientation="horizontal")
+        ax_hist.hist(
+            y,
+            bins=p.n_bins,
+            color=p.signal_color,
+            alpha=0.7,
+            edgecolor=spine_c,
+            linewidth=0.5,
+            orientation="horizontal",
+        )
         ax_hist.set_xlabel("Count", color=text_c, fontsize=8)
         ax_hist.set_ylabel("Value", color=text_c, fontsize=8)
 

@@ -54,10 +54,7 @@ def _history_path() -> Path:
 # ============================================================================
 
 
-def save_config(
-    params: dict[str, Any],
-    function_name: str = "",
-) -> None:
+def save_config(params: dict[str, Any], function_name: str = "") -> None:
     """Persist the current parameter set to ``.dartwork_ui_config.json``.
 
     Parameters
@@ -73,8 +70,7 @@ def save_config(
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     _config_path().write_text(
-        json.dumps(data, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
+        json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
 
 
@@ -101,10 +97,7 @@ def load_config() -> dict[str, Any] | None:
 # ============================================================================
 
 
-def append_history(
-    params: dict[str, Any],
-    label: str | None = None,
-) -> None:
+def append_history(params: dict[str, Any], label: str | None = None) -> None:
     """Append a parameter snapshot to ``.dartwork_ui_history.jsonl``.
 
     Parameters

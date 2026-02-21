@@ -26,7 +26,6 @@ from pydantic import Field
 import dartwork_mpl as dm
 from dartwork_mpl.ui import ParamModel, run
 
-
 # ============================================================================
 # Parameter model — every supported type
 # ============================================================================
@@ -42,9 +41,7 @@ class SignalParams(ParamModel):
     harmonics: int = Field(
         default=3, ge=1, le=10, description="Number of harmonics"
     )
-    n_bins: int = Field(
-        default=40, ge=10, le=100, description="Histogram bins"
-    )
+    n_bins: int = Field(default=40, ge=10, le=100, description="Histogram bins")
 
     # ── int number input (no bounds) ──────────────────────────────
     random_seed: int = Field(default=42, description="Random seed")
@@ -136,8 +133,7 @@ class SignalParams(ParamModel):
 
     # ── list[int] comma-separated ─────────────────────────────────
     highlight_samples: list[int] = Field(
-        default=[],
-        description="Highlight sample indices (e.g. 100, 200, 300)",
+        default=[], description="Highlight sample indices (e.g. 100, 200, 300)"
     )
 
     # ── list[str] comma-separated ─────────────────────────────────
@@ -175,9 +171,7 @@ def signal_figure(p: SignalParams) -> Figure:
             return 2 * (raw / (2 * np.pi) % 1) - 1
         return np.sin(raw)
 
-    weights = p.harmonic_weights or [
-        1.0 / (k + 1) for k in range(p.harmonics)
-    ]
+    weights = p.harmonic_weights or [1.0 / (k + 1) for k in range(p.harmonics)]
     y = np.zeros_like(t)
     for k in range(min(p.harmonics, len(weights))):
         w = weights[k] if k < len(weights) else 1.0 / (k + 1)

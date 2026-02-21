@@ -19,10 +19,9 @@ from __future__ import annotations
 
 import typing
 from dataclasses import asdict, dataclass, field
-from typing import Any, get_args, get_origin, get_type_hints
+from typing import Any, get_args, get_origin
 
 from ._param import ParamModel
-
 
 # ============================================================================
 # Parameter descriptor
@@ -159,11 +158,7 @@ def descriptors_from_model(
                 step = extra["step"]
 
         # Auto-detect color from name (for str fields only)
-        if (
-            widget_hint is None
-            and tname == "str"
-            and "color" in name.lower()
-        ):
+        if widget_hint is None and tname == "str" and "color" in name.lower():
             widget_hint = "color"
 
         # Description as label

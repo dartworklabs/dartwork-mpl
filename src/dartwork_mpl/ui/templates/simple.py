@@ -20,7 +20,6 @@ from pydantic import Field
 import dartwork_mpl as dm
 from dartwork_mpl.ui import ParamModel, run
 
-
 # ============================================================================
 # Parameters — every supported widget type is shown here
 # ============================================================================
@@ -150,8 +149,9 @@ def my_figure(p: Params) -> Figure:
     text_c = "#e6edf3" if is_dark else "#1f2328"
     spine_c = "#30363d" if is_dark else "#d0d4d9"
 
-    ax.plot(t, y, color=p.line_color, linewidth=p.line_width,
-            linestyle=p.line_style)
+    ax.plot(
+        t, y, color=p.line_color, linewidth=p.line_width, linestyle=p.line_style
+    )
 
     if p.fill_under:
         ax.fill_between(t, y, alpha=0.12, color=p.line_color)
@@ -161,9 +161,14 @@ def my_figure(p: Params) -> Figure:
         if 0 <= idx < len(t):
             ax.plot(t[idx], y[idx], "o", color="#cf222e", markersize=6)
             if p.annotations and i < len(p.annotations):
-                ax.annotate(p.annotations[i], (t[idx], y[idx]),
-                            textcoords="offset points", xytext=(8, 8),
-                            fontsize=9, color=text_c)
+                ax.annotate(
+                    p.annotations[i],
+                    (t[idx], y[idx]),
+                    textcoords="offset points",
+                    xytext=(8, 8),
+                    fontsize=9,
+                    color=text_c,
+                )
 
     # Axes styling
     ax.set_xlim(0, 2 * np.pi)

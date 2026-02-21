@@ -27,9 +27,10 @@ import io
 import os
 import sys
 import textwrap
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -49,9 +50,7 @@ from ._config import (
 )
 from ._param import ParamModel
 from ._template import get_html
-from ._widget import (
-    descriptors_from_model,
-)
+from ._widget import descriptors_from_model
 
 # Use non-interactive backend for server usage
 matplotlib.use("Agg")
@@ -138,9 +137,7 @@ def run(
         b64 = base64.b64encode(buf.getvalue()).decode("ascii")
 
         # Auto-save config
-        save_config(
-            model.model_dump(), function_name=figure_fn.__name__
-        )
+        save_config(model.model_dump(), function_name=figure_fn.__name__)
         append_history(model.model_dump())
 
         return {"image": b64}
@@ -194,9 +191,7 @@ def run(
     async def generate_script(params: dict[str, Any]) -> Response:
         """Generate a standalone Python script and return as download."""
         model = _build_model(params, param_model, descriptors)
-        code = _generate_script(
-            model, param_model, figure_fn, script_path
-        )
+        code = _generate_script(model, param_model, figure_fn, script_path)
         return Response(
             content=code.encode("utf-8"),
             media_type="text/x-python",
@@ -219,23 +214,21 @@ def run(
         stem = f"{figure_fn.__name__}_{ts}"
         image_stem = str(script_path / stem)
 
-        save_formats(
-            fig, image_stem, formats=(fmt,), bbox_inches="tight"
-        )
+        save_formats(fig, image_stem, formats=(fmt,), bbox_inches="tight")
         plt.close(fig)
 
         filename = f"{stem}.{fmt}"
-        return {"status": "ok", "path": image_stem + f".{fmt}", "filename": filename}
+        return {
+            "status": "ok",
+            "path": image_stem + f".{fmt}",
+            "filename": filename,
+        }
 
     @app.post("/api/save-server/script")
-    async def save_script_server(
-        params: dict[str, Any],
-    ) -> dict[str, str]:
+    async def save_script_server(params: dict[str, Any]) -> dict[str, str]:
         """Save a standalone Python script to the script directory."""
         model = _build_model(params, param_model, descriptors)
-        code = _generate_script(
-            model, param_model, figure_fn, script_path
-        )
+        code = _generate_script(model, param_model, figure_fn, script_path)
 
         ts = _timestamp_slug()
         filename = f"{figure_fn.__name__}_{ts}.py"
@@ -264,18 +257,13 @@ def run(
     current_port = port
     while True:
         try:
-            print(f"\n  Dartwork Viewer running at:")
+            print("\n  Dartwork Viewer running at:")
             print(f"  \033[1;36mhttp://{host}:{current_port}\033[0m\n")
-            uvicorn.run(
-                app, host=host, port=current_port, log_level="warning"
-            )
+            uvicorn.run(app, host=host, port=current_port, log_level="warning")
             break
         except SystemExit:
             current_port += 1
-            print(
-                f"  Port {current_port - 1} in use, "
-                f"trying {current_port}..."
-            )
+            print(f"  Port {current_port - 1} in use, trying {current_port}...")
 
 
 # ============================================================================
@@ -284,9 +272,7 @@ def run(
 
 
 def _build_model(
-    raw_params: dict[str, Any],
-    model_cls: type[ParamModel],
-    descriptors: list,
+    raw_params: dict[str, Any], model_cls: type[ParamModel], descriptors: list
 ) -> ParamModel:
     """Coerce raw params from the frontend and build a model instance.
 
@@ -356,7 +342,9 @@ def _extract_param_model(fn: Callable) -> type[ParamModel]:
 
     param_name, param_type = next(iter(hints.items()))
 
-    if not (isinstance(param_type, type) and issubclass(param_type, ParamModel)):
+    if not (
+        isinstance(param_type, type) and issubclass(param_type, ParamModel)
+    ):
         raise TypeError(
             f"{fn.__name__}({param_name}: {param_type!r}) — "
             f"annotation must be a ParamModel subclass"
@@ -429,7 +417,11 @@ def _generate_script(
                         import_lines.append(cleaned)
                 else:
                     import_lines.append(line)
-            elif stripped and not stripped.startswith(("#", '"""', "'''", '"')) and import_lines:
+            elif (
+                stripped
+                and not stripped.startswith(("#", '"""', "'''", '"'))
+                and import_lines
+            ):
                 # Stop after the import block ends
                 if not stripped.startswith(("import ", "from ")):
                     break

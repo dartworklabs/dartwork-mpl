@@ -28,15 +28,20 @@ def _interactive_init() -> None:
     print()
 
     target = inquirer.text(
-        message="Target directory:",
-        default="./my-viewer",
+        message="Target directory:", default="./my-viewer"
     ).execute()
 
     example = inquirer.select(
         message="Example template:",
         choices=[
-            {"name": "simple  — single subplot, basic waveform", "value": "simple"},
-            {"name": "complex — 3 subplots (signal + FFT + histogram)", "value": "complex"},
+            {
+                "name": "simple  — single subplot, basic waveform",
+                "value": "simple",
+            },
+            {
+                "name": "complex — 3 subplots (signal + FFT + histogram)",
+                "value": "complex",
+            },
         ],
         default="simple",
     ).execute()
@@ -47,14 +52,12 @@ def _interactive_init() -> None:
 def main() -> None:
     """Parse CLI arguments and run the scaffold."""
     parser = argparse.ArgumentParser(
-        prog="ui",
-        description="Dartwork UI project scaffolder",
+        prog="ui", description="Dartwork UI project scaffolder"
     )
     sub = parser.add_subparsers(dest="command")
 
     init_parser = sub.add_parser(
-        "init",
-        help="Create a new Dartwork UI project folder",
+        "init", help="Create a new Dartwork UI project folder"
     )
     init_parser.add_argument(
         "target",

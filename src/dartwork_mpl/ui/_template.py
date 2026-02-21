@@ -8,7 +8,7 @@ from __future__ import annotations
 
 def get_html(title: str = "Dartwork Viewer") -> str:
     """Return the complete HTML page as a string."""
-    return f'''<!DOCTYPE html>
+    return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1008,4 +1008,4 @@ document.addEventListener("keydown", (e) => {{
 init();
 </script>
 </body>
-</html>'''
+</html>"""
