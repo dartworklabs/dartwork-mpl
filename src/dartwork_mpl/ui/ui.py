@@ -265,7 +265,16 @@ def run(
         fig = figure_fn(model)
 
         if req.filename:
-            stem = req.filename
+            # User may provide full name with extension
+            name = req.filename
+            # Check if user specified a different image ext
+            known_exts = (".png", ".svg", ".pdf")
+            for ext in known_exts:
+                if name.lower().endswith(ext):
+                    fmt = ext[1:]  # override format
+                    name = name[: -len(ext)]
+                    break
+            stem = name
         else:
             ts = _timestamp_slug()
             stem = f"{figure_fn.__name__}_{ts}"
@@ -297,11 +306,11 @@ def run(
         )
 
         if req.filename:
-            filename = (
-                req.filename
-                if req.filename.endswith(".py")
-                else f"{req.filename}.py"
-            )
+            name = req.filename
+            # Strip .py if user included it (prevent .py.py)
+            if name.lower().endswith(".py"):
+                name = name[:-3]
+            filename = f"{name}.py"
         else:
             ts = _timestamp_slug()
             filename = f"{figure_fn.__name__}_{ts}.py"

@@ -1279,13 +1279,13 @@ function confirmFilenameModal() {{
 
 function showSaveImageModal() {{
   const fmt = document.getElementById("export-fmt").value;
-  showFilenameModal("Save Image to Server", _functionName, (filename) => {{
+  showFilenameModal("Save Image to Server", _functionName + "." + fmt, (filename) => {{
     _doSaveImageServer(filename);
   }});
 }}
 
 function showSaveScriptModal() {{
-  showFilenameModal("Save Script to Server", _functionName, (filename) => {{
+  showFilenameModal("Save Script to Server", _functionName + ".py", (filename) => {{
     _doSaveScriptServer(filename);
   }});
 }}
