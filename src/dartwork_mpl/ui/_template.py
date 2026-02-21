@@ -66,7 +66,10 @@ html, body {{
 }}
 
 .sidebar-header {{
-  padding: 16px 14px 10px;
+  padding: 0 14px;
+  min-height: 41px;
+  display: flex;
+  align-items: center;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }}
@@ -200,7 +203,8 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
+  padding: 0 16px;
+  min-height: 41px;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
