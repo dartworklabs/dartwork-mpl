@@ -1,19 +1,13 @@
 """Example: Dartwork Viewer — Signal Analysis Dashboard.
 
-Demonstrates all supported widget types:
-- int (slider with ge/le)
-- int (number input, no bounds)
-- float (slider with ge/le + step)
-- float (number input, no bounds)
-- str (text input)
-- str (color picker via widget hint)
-- str (color picker via name auto-detect)
+Demonstrates all supported widget types with a multi-subplot figure:
+- int (slider / number input)
+- float (slider / number input)
+- str (text / color picker)
 - bool (checkbox)
 - Literal[...] (select dropdown)
-- list[float] (comma-separated)
-- list[int] (comma-separated)
-- list[str] (comma-separated)
-- tuple[float, ...] (comma-separated)
+- list[float], list[int], list[str]
+- tuple[float, ...]
 
 Run with:
 
@@ -32,6 +26,7 @@ from pydantic import Field
 import dartwork_mpl as dm
 from dartwork_mpl.ui import ParamModel, run
 
+
 # ============================================================================
 # Parameter model — every supported type
 # ============================================================================
@@ -46,6 +41,9 @@ class SignalParams(ParamModel):
     )
     harmonics: int = Field(
         default=3, ge=1, le=10, description="Number of harmonics"
+    )
+    n_bins: int = Field(
+        default=40, ge=10, le=100, description="Histogram bins"
     )
 
     # ── int number input (no bounds) ──────────────────────────────
@@ -100,7 +98,7 @@ class SignalParams(ParamModel):
     envelope_color: str = Field(
         default="#cf222e",
         json_schema_extra={"widget": "color"},
-        description="Envelope color",
+        description="Envelope / accent color",
     )
 
     # ── str color picker (auto-detected from field name) ──────────
@@ -109,9 +107,12 @@ class SignalParams(ParamModel):
 
     # ── bool checkbox ─────────────────────────────────────────────
     show_grid: bool = Field(default=True, description="Show grid")
-    show_envelope: bool = Field(default=False, description="Show envelope")
     show_noise: bool = Field(default=True, description="Add noise")
     fill_under: bool = Field(default=False, description="Fill under curve")
+    show_fft: bool = Field(default=True, description="Show FFT subplot")
+    show_histogram: bool = Field(
+        default=True, description="Show histogram subplot"
+    )
 
     # ── Literal select dropdown ───────────────────────────────────
     waveform: Literal["sine", "cosine", "square", "sawtooth"] = Field(
@@ -126,7 +127,7 @@ class SignalParams(ParamModel):
 
     # ── list[float] comma-separated ───────────────────────────────
     custom_yticks: list[float] = Field(
-        default=[], description="Custom Y-axis ticks (e.g. -1, 0, 1)"
+        default=[], description="Custom Y ticks (e.g. -1, 0, 1)"
     )
     harmonic_weights: list[float] = Field(
         default=[1.0, 0.5, 0.25],
@@ -156,13 +157,14 @@ class SignalParams(ParamModel):
 
 
 def signal_figure(p: SignalParams) -> Figure:
+    """Generate a multi-subplot signal analysis figure."""
     dm.style.use("scientific")
 
-    """Generate a multi-harmonic signal analysis figure."""
     rng = np.random.default_rng(p.random_seed)
     t = np.linspace(0, 2 * np.pi, p.n_points)
 
-    # Build base waveform
+    # ── Build waveform ────────────────────────────────────────────
+
     def wave(freq: float, phase: float) -> np.ndarray:
         raw = freq * t + phase
         if p.waveform == "cosine":
@@ -173,15 +175,15 @@ def signal_figure(p: SignalParams) -> Figure:
             return 2 * (raw / (2 * np.pi) % 1) - 1
         return np.sin(raw)
 
-    # Sum harmonics with weights
-    weights = p.harmonic_weights or [1.0 / (k + 1) for k in range(p.harmonics)]
+    weights = p.harmonic_weights or [
+        1.0 / (k + 1) for k in range(p.harmonics)
+    ]
     y = np.zeros_like(t)
     for k in range(min(p.harmonics, len(weights))):
         w = weights[k] if k < len(weights) else 1.0 / (k + 1)
         y += w * wave(p.base_frequency * (k + 1), p.phase_offset * (k + 1))
     y *= p.amplitude
 
-    # Optional window function
     if p.window_fn != "none":
         win_fn = {
             "hanning": np.hanning,
@@ -190,20 +192,54 @@ def signal_figure(p: SignalParams) -> Figure:
         }[p.window_fn]
         y *= win_fn(len(y))
 
-    # Add noise
     if p.show_noise:
         y += rng.normal(0, p.noise_level, size=len(t))
 
-    # ── Plot ──────────────────────────────────────────────────────
+    # ── Determine subplot layout ──────────────────────────────────
+    n_extra = int(p.show_fft) + int(p.show_histogram)
+    if n_extra == 0:
+        fig, axes = plt.subplots(1, 1, figsize=(11, 5))
+        ax_signal = axes
+        ax_fft = None
+        ax_hist = None
+    elif n_extra == 1:
+        fig, axes = plt.subplots(
+            1, 2, figsize=(14, 5), gridspec_kw={"width_ratios": [3, 1]}
+        )
+        ax_signal = axes[0]
+        ax_fft = axes[1] if p.show_fft else None
+        ax_hist = axes[1] if p.show_histogram and not p.show_fft else None
+    else:
+        fig, axes = plt.subplots(
+            1, 3, figsize=(16, 5), gridspec_kw={"width_ratios": [3, 1, 1]}
+        )
+        ax_signal = axes[0]
+        ax_fft = axes[1]
+        ax_hist = axes[2]
+
     is_dark = p.bg_color < "#888888"
     text_c = "#e6edf3" if is_dark else "#1f2328"
     spine_c = "#30363d" if is_dark else "#d0d4d9"
 
-    fig, ax = plt.subplots(figsize=(11, 5))
-    fig.patch.set_facecolor(p.bg_color)
-    ax.set_facecolor(p.bg_color)
+    # ── Helper: style an axis ─────────────────────────────────────
 
-    ax.plot(
+    def style_ax(ax, title: str = "") -> None:
+        ax.set_facecolor(p.bg_color)
+        for spine in ax.spines.values():
+            spine.set_color(spine_c)
+        ax.tick_params(colors=text_c, labelsize=8)
+        if title:
+            ax.set_title(title, color=text_c, fontsize=10, pad=8)
+        if p.show_grid:
+            ax.grid(True, alpha=0.2, color=p.grid_color)
+        else:
+            ax.grid(False)
+
+    fig.patch.set_facecolor(p.bg_color)
+
+    # ── Subplot 1: Signal ─────────────────────────────────────────
+    style_ax(ax_signal)
+    ax_signal.plot(
         t,
         y,
         color=p.signal_color,
@@ -213,77 +249,89 @@ def signal_figure(p: SignalParams) -> Figure:
     )
 
     if p.fill_under:
-        ax.fill_between(t, y, alpha=0.1, color=p.signal_color)
-
-    # Envelope
-    if p.show_envelope:
-        from scipy.signal import hilbert
-
-        analytic = hilbert(y)
-        env = np.abs(analytic)
-        ax.plot(
-            t,
-            env,
-            color=p.envelope_color,
-            linewidth=1.0,
-            linestyle="--",
-            alpha=0.8,
-            label="Envelope",
-        )
-        ax.plot(t, -env, color=p.envelope_color, linewidth=1.0, linestyle="--", alpha=0.8)
+        ax_signal.fill_between(t, y, alpha=0.1, color=p.signal_color)
 
     # Highlight samples
     if p.highlight_samples:
         for idx_i, sample_idx in enumerate(p.highlight_samples):
             if 0 <= sample_idx < len(t):
-                ax.axvline(
+                ax_signal.axvline(
                     t[sample_idx],
                     color=p.envelope_color,
                     alpha=0.4,
                     linewidth=1,
                     linestyle=":",
                 )
-                ax.plot(
+                ax_signal.plot(
                     t[sample_idx],
                     y[sample_idx],
                     "o",
                     color=p.envelope_color,
-                    markersize=6,
+                    markersize=5,
                 )
-                # Add annotation label if available
                 if p.annotations and idx_i < len(p.annotations):
-                    ax.annotate(
+                    ax_signal.annotate(
                         p.annotations[idx_i],
                         (t[sample_idx], y[sample_idx]),
                         textcoords="offset points",
                         xytext=(8, 8),
-                        fontsize=9,
+                        fontsize=8,
                         color=text_c,
                     )
 
-    # Styling
-    ax.set_xlim(0, 2 * np.pi)
+    ax_signal.set_xlim(0, 2 * np.pi)
     if p.y_limits and len(p.y_limits) >= 2:
-        ax.set_ylim(p.y_limits[0], p.y_limits[1])
+        ax_signal.set_ylim(p.y_limits[0], p.y_limits[1])
 
-    for spine in ax.spines.values():
-        spine.set_color(spine_c)
-
-    ax.tick_params(colors=text_c, labelsize=9)
-    ax.set_xlabel(p.x_label, color=text_c, fontsize=10)
-    ax.set_ylabel(p.y_label, color=text_c, fontsize=10)
+    ax_signal.set_xlabel(p.x_label, color=text_c, fontsize=9)
+    ax_signal.set_ylabel(p.y_label, color=text_c, fontsize=9)
 
     if p.custom_yticks:
-        ax.set_yticks(p.custom_yticks)
+        ax_signal.set_yticks(p.custom_yticks)
 
-    if p.show_grid:
-        ax.grid(True, alpha=0.3, color=p.grid_color)
-    else:
-        ax.grid(False)
+    ax_signal.legend(loc="upper right", fontsize=8, framealpha=0.5)
 
-    ax.set_title(p.title_text, color=text_c, fontsize=13, pad=12, fontweight=500)
-    ax.legend(loc="upper right", fontsize=9, framealpha=0.5)
-    fig.tight_layout()
+    # ── Subplot 2: FFT ────────────────────────────────────────────
+    if ax_fft is not None:
+        style_ax(ax_fft, "Frequency Spectrum")
+        fft_vals = np.abs(np.fft.rfft(y))
+        freqs = np.fft.rfftfreq(len(t), d=(t[1] - t[0]))
+        # Show up to a reasonable frequency range
+        max_freq_idx = min(len(freqs), 50)
+        ax_fft.bar(
+            freqs[1:max_freq_idx],
+            fft_vals[1:max_freq_idx],
+            width=freqs[1] - freqs[0],
+            color=p.signal_color,
+            alpha=0.8,
+        )
+        ax_fft.set_xlabel("Frequency", color=text_c, fontsize=8)
+        ax_fft.set_ylabel("Magnitude", color=text_c, fontsize=8)
+
+    # ── Subplot 3: Histogram ──────────────────────────────────────
+    if ax_hist is not None:
+        style_ax(ax_hist, "Distribution")
+        ax_hist.hist(
+            y,
+            bins=p.n_bins,
+            color=p.signal_color,
+            alpha=0.7,
+            edgecolor=spine_c,
+            linewidth=0.5,
+            orientation="horizontal",
+        )
+        ax_hist.set_xlabel("Count", color=text_c, fontsize=8)
+        ax_hist.set_ylabel("Value", color=text_c, fontsize=8)
+
+    # ── Title ─────────────────────────────────────────────────────
+    label = p.title_text
+    if not label:
+        label = (
+            f"{p.waveform}  f={p.base_frequency:.1f}  "
+            f"A={p.amplitude:.1f}  phase={p.phase_offset:.2f}"
+        )
+    fig.suptitle(label, color=text_c, fontsize=13, fontweight=500, y=0.98)
+    fig.tight_layout(rect=[0, 0, 1, 0.94])
 
     return fig
 

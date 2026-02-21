@@ -509,16 +509,8 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 .preset-item:hover {{ background: var(--accent-light); color: var(--accent); }}
 
 /* ── Tooltip ──────────────────────────────────────── */
-[data-tip] {{
-  position: relative;
-}}
-
-[data-tip]::after {{
-  content: attr(data-tip);
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
+#tooltip {{
+  position: fixed;
   padding: 5px 10px;
   background: var(--text);
   color: var(--bg);
@@ -529,10 +521,10 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.1s;
-  z-index: 200;
+  z-index: 1000;
 }}
 
-[data-tip]:hover::after {{
+#tooltip.visible {{
   opacity: 1;
 }}
 </style>
@@ -594,6 +586,10 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 
         <button class="btn" onclick="downloadScript()" data-tip="Download Python reproduction script"><i data-lucide="file-code" style="width:12px;height:12px"></i> Script</button>
         <button class="btn" onclick="saveScriptServer()" data-tip="Save script to server directory"><i data-lucide="hard-drive-download" style="width:12px;height:12px"></i></button>
+
+        <span class="topbar-divider"></span>
+
+        <button class="btn" onclick="reloadServer()" data-tip="Reload server (pick up code changes)"><i data-lucide="rotate-cw" style="width:12px;height:12px"></i></button>
       </div>
     </header>
 
@@ -616,7 +612,8 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
   <div class="modal">
     <h3>Save Preset</h3>
     <label class="param-label">Name</label>
-    <input type="text" class="param-input" id="preset-name" placeholder="My preset">
+    <input type="text" class="param-input" id="preset-name" placeholder="My preset"
+           onkeydown="if(event.key==='Enter'){{event.preventDefault();savePreset()}}">
     <div class="modal-actions">
       <button class="btn" onclick="closeSaveModal()">Cancel</button>
       <button class="btn btn-primary" onclick="savePreset()">Save</button>
@@ -638,6 +635,7 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 </div>
 
 <div class="toast-container" id="toast-container"></div>
+<div id="tooltip"></div>
 
 <script>
 let descriptors = [];
@@ -904,13 +902,15 @@ function showSaveModal() {{ document.getElementById("save-modal").classList.add(
 function closeSaveModal() {{ document.getElementById("save-modal").classList.remove("active"); }}
 
 async function savePreset() {{
+  const modal = document.getElementById("save-modal");
+  if (!modal.classList.contains("active")) return;
   const label = document.getElementById("preset-name").value.trim();
   if (!label) {{ toast("Enter a name", "error"); return; }}
+  modal.classList.remove("active");
   const tab = getActiveTab();
   const params = tab ? tab.params : collectParams();
   try {{
     await fetch("/api/preset", {{ method: "POST", headers: {{"Content-Type": "application/json"}}, body: JSON.stringify({{ label, params }}) }});
-    closeSaveModal();
     document.getElementById("preset-name").value = "";
     toast("Saved: " + label, "success");
   }} catch (err) {{ toast("Save failed", "error"); }}
@@ -952,6 +952,48 @@ function toast(msg, type) {{
   const t = document.createElement("div"); t.className = "toast toast-" + type; t.textContent = msg;
   tc.appendChild(t);
   setTimeout(() => t.remove(), 6000);
+}}
+
+// ── Reload ───────────────────────────────────────────────
+async function reloadServer() {{
+  toast("Reloading server...", "success");
+  try {{
+    await fetch("/api/reload", {{ method: "POST" }});
+  }} catch (e) {{}}
+  // Poll until server is back
+  const poll = setInterval(async () => {{
+    try {{
+      const r = await fetch("/api/descriptors");
+      if (r.ok) {{
+        clearInterval(poll);
+        location.reload();
+      }}
+    }} catch (e) {{}}
+  }}, 500);
+}}
+
+// ── Smart tooltip ─────────────────────────────────────────
+{{
+  const tip = document.getElementById("tooltip");
+  document.addEventListener("mouseover", (e) => {{
+    const el = e.target.closest("[data-tip]");
+    if (!el) return;
+    tip.textContent = el.getAttribute("data-tip");
+    tip.classList.add("visible");
+    const rect = el.getBoundingClientRect();
+    const tipW = tip.offsetWidth;
+    const vw = window.innerWidth;
+    let left = rect.left + rect.width / 2 - tipW / 2;
+    // Clamp to viewport edges with 6px margin
+    if (left < 6) left = 6;
+    if (left + tipW > vw - 6) left = vw - 6 - tipW;
+    tip.style.top = (rect.bottom + 6) + "px";
+    tip.style.left = left + "px";
+  }});
+  document.addEventListener("mouseout", (e) => {{
+    const el = e.target.closest("[data-tip]");
+    if (el) tip.classList.remove("visible");
+  }});
 }}
 
 // ── Keyboard ─────────────────────────────────────────────

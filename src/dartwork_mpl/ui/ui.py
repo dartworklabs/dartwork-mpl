@@ -23,6 +23,7 @@ from __future__ import annotations
 import base64
 import inspect
 import io
+import os
 import sys
 import textwrap
 from datetime import datetime, timezone
@@ -229,6 +230,22 @@ def run(
         out_path.write_text(code, encoding="utf-8")
 
         return {"status": "ok", "path": str(out_path), "filename": filename}
+
+    # ── Reload ───────────────────────────────────────────────────────
+
+    @app.post("/api/reload")
+    async def reload_server() -> dict[str, str]:
+        """Restart the server process to pick up code changes."""
+        import threading
+
+        def _restart() -> None:
+            import time
+
+            time.sleep(0.3)  # Let the response return first
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+
+        threading.Thread(target=_restart, daemon=True).start()
+        return {"status": "reloading"}
 
     # ── Launch (retry ports if in use) ──────────────────────────────
     current_port = port

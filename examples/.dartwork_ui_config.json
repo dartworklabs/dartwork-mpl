@@ -1,27 +1,29 @@
 {
   "function": "signal_figure",
   "params": {
-    "n_points": 997,
-    "harmonics": 5,
-    "random_seed": 42,
-    "base_frequency": 5.8,
-    "amplitude": 2.0,
-    "noise_level": 1.25,
-    "line_width": 0.5,
-    "phase_offset": 0.01,
+    "n_points": 1094,
+    "harmonics": 2,
+    "n_bins": 69,
+    "random_seed": 422,
+    "base_frequency": 16.8,
+    "amplitude": 1.4,
+    "noise_level": 0.1,
+    "line_width": 1.5,
+    "phase_offset": 0.0,
     "title_text": "Signal Analysis",
     "x_label": "Time (s)",
     "y_label": "Amplitude",
-    "signal_color": "#0969da",
-    "envelope_color": "#cf222e",
+    "signal_color": "#909ba7",
+    "envelope_color": "#7822ce",
     "bg_color": "#ffffff",
     "grid_color": "#e1e4e8",
     "show_grid": true,
-    "show_envelope": false,
     "show_noise": true,
     "fill_under": true,
-    "waveform": "cosine",
-    "line_style": "-",
+    "show_fft": true,
+    "show_histogram": true,
+    "waveform": "sawtooth",
+    "line_style": "--",
     "window_fn": "hanning",
     "custom_yticks": [],
     "harmonic_weights": [
@@ -29,17 +31,9 @@
       0.5,
       0.25
     ],
-    "highlight_samples": [
-      100,
-      200,
-      300
-    ],
-    "annotations": [
-      "Hello",
-      "World",
-      "Hi"
-    ],
+    "highlight_samples": [],
+    "annotations": [],
     "y_limits": []
   },
-  "updated_at": "2026-02-21T14:04:28.178611+00:00"
+  "updated_at": "2026-02-21T15:14:48.968653+00:00"
 }
