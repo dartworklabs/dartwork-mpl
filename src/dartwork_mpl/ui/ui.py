@@ -20,6 +20,7 @@ Usage
 """
 
 import base64
+import shutil
 import inspect
 import io
 import os
@@ -84,6 +85,7 @@ def run(
     param_model: type[ParamModel] | None = None,
     *,
     title: str = "Dartwork Viewer",
+    copy_to: list[Path] | Path | None = None,
     host: str = "127.0.0.1",
     port: int = 8501,
 ) -> None:
@@ -100,6 +102,12 @@ def run(
         function's type annotation.
     title : str
         Page / app title.
+    copy_to : list[Path] | Path | None
+        Additional directory (or directories) to copy saved images
+        into. When the user saves an image via the UI, it is first
+        written to the script directory and then copied to each
+        directory listed here. Useful for mirroring outputs to a
+        manuscript ``images/`` folder.
     host : str
         Server host. Defaults to ``"127.0.0.1"``.
     port : int
@@ -118,6 +126,14 @@ def run(
     # Set base dir to script location for config persistence
     script_path = Path(sys.argv[0]).resolve().parent
     set_base_dir(script_path)
+
+    # Normalize copy_to into a list of Paths
+    if copy_to is None:
+        copy_targets: list[Path] = []
+    elif isinstance(copy_to, Path):
+        copy_targets = [copy_to]
+    else:
+        copy_targets = list(copy_to)
 
     # Resolve parameter descriptors from the model
     descriptors = descriptors_from_model(param_model)
@@ -259,7 +275,7 @@ def run(
     @app.post("/api/save-server/image/{fmt}")
     async def save_image_server(
         fmt: str, req: ServerSaveRequest,
-    ) -> dict[str, str]:
+    ) -> dict[str, Any]:
         """Save figure image to the script directory."""
         model = _build_model(
             req.params, param_model, descriptors,
@@ -289,10 +305,26 @@ def run(
         plt.close(fig)
 
         filename = f"{stem}.{fmt}"
+        saved_path = Path(image_stem + f".{fmt}")
+
+        # Copy to additional directories
+        copied_paths: list[str] = []
+        for dest_dir in copy_targets:
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest = dest_dir / filename
+            shutil.copy2(saved_path, dest)
+            copied_paths.append(str(dest))
+
+        # Server-side logging
+        print(f"  \u2713 Saved: {saved_path}")
+        for cp in copied_paths:
+            print(f"  \u2713 Copied: {cp}")
+
         return {
             "status": "ok",
-            "path": image_stem + f".{fmt}",
+            "path": str(saved_path),
             "filename": filename,
+            "copied_to": copied_paths,
         }
 
     @app.post("/api/save-server/script")

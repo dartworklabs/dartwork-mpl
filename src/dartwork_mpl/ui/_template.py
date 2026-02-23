@@ -538,11 +538,12 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 .toast {{
   padding: 12px 20px;
   border-radius: var(--radius);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   animation: fadeInUp 0.25s ease;
   box-shadow: 0 4px 12px rgba(0,0,0,0.12);
   min-width: 200px;
+  white-space: pre-line;
 }}
 
 .toast-success {{ background: #f0fdf4; border: 1px solid #bbf7d0; color: var(--success); }}
@@ -1306,7 +1307,9 @@ async function _doSaveImageServer(filename) {{
     }});
     if (!resp.ok) throw new Error(await resp.text());
     const data = await resp.json();
-    toast("Saved to server: " + data.filename, "success");
+    const paths = [data.path];
+    if (data.copied_to) paths.push(...data.copied_to);
+    toast("Saved:\\n" + paths.join("\\n"), "success");
   }} catch (err) {{ toast("Server save failed: " + err.message, "error"); }}
 }}
 
