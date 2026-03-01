@@ -11,6 +11,7 @@ __version__ = "0.1.0"
 from . import (
     cmap,  # noqa: F401
     font,  # noqa: F401
+    icon,  # noqa: F401
 )
 
 # Import asset_viz module exports
@@ -18,6 +19,9 @@ from .asset_viz import *  # noqa: F403
 
 # Import color module exports
 from .color import Color, cspace, hex, named, oklab, oklch, rgb
+
+# Import icon module exports
+from .icon import icon_font, icon_font_path, list_icon_fonts
 
 # Import constant module exports
 from .constant import DW, SW
@@ -41,6 +45,10 @@ __all__ = [
     "oklab",
     "oklch",
     "rgb",
+    # Icon module
+    "icon_font",
+    "icon_font_path",
+    "list_icon_fonts",
     # Constant module
     "DW",
     "SW",

@@ -14,5 +14,6 @@ plain language plus defaults that work in most cases.
    Layout Utilities <layout>
    Color Utilities <color>
    Font Utilities <font>
+   Icon Font System <icon>
    File I/O <io>
    Visualization Tools <visualization>

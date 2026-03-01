@@ -60,37 +60,61 @@ plt.show()
 
 **Auto-Registration**
 : All 130 fonts are automatically registered with matplotlib's font manager when
-  you import dartwork-mpl. No need for manual font installation or configuration.
+you import dartwork-mpl. No need for manual font installation or configuration.
 
 **Professional Font Selection**
 : Curated collection includes Roboto (default), Inter, Noto Sans family, and more—all
-  chosen for excellent legibility in charts and figures.
+chosen for excellent legibility in charts and figures.
 
 **Relative Sizing**
 : Use `fs(n)` to adjust font sizes relative to your base style, keeping your
-  typography consistent across different output formats.
+typography consistent across different output formats.
 
 **Weight Flexibility**
 : Use `fw(n)` to adjust font weights in standardized steps, perfect for creating
-  visual hierarchy in your figures.
+visual hierarchy in your figures.
 
 **Math Support**
 : Noto Sans Math provides comprehensive mathematical symbol coverage for
-  scientific notation and equations.
+scientific notation and equations.
 
 ## Bundled Fonts Summary
 
-| Family | Variants | Primary Use Case |
-|--------|----------|-----------------|
-| **Roboto** | 15 | Default body text, general purpose |
-| **Inter** | 20 | UI text, presentations |
-| **InterDisplay** | 20 | Headings, titles |
-| **Noto Sans** | 15 | Multi-language documents |
-| **Noto Sans Condensed** | 20 | Tables, dense layouts |
-| **Noto Sans SemiCondensed** | 20 | Labels, legends |
-| **Noto Sans ExtraCondensed** | 20 | Axis labels, tight spaces |
-| **Noto Sans Math** | 1 | Mathematical expressions |
-| **Paperlogy** | 9 | Academic papers, reports |
+| Family                       | Variants | Primary Use Case                   |
+| ---------------------------- | -------- | ---------------------------------- |
+| **Roboto**                   | 15       | Default body text, general purpose |
+| **Inter**                    | 20       | UI text, presentations             |
+| **InterDisplay**             | 20       | Headings, titles                   |
+| **Noto Sans**                | 15       | Multi-language documents           |
+| **Noto Sans Condensed**      | 20       | Tables, dense layouts              |
+| **Noto Sans SemiCondensed**  | 20       | Labels, legends                    |
+| **Noto Sans ExtraCondensed** | 20       | Axis labels, tight spaces          |
+| **Noto Sans Math**           | 1        | Mathematical expressions           |
+| **Paperlogy**                | 9        | Academic papers, reports           |
+
+## Bundled Icon Fonts
+
+In addition to text fonts, dartwork-mpl bundles **icon fonts** for use in
+data visualizations. Icons are rendered as text using Unicode codepoints.
+
+| Identifier       | Font                               | Icons  | Style            |
+| ---------------- | ---------------------------------- | ------ | ---------------- |
+| **`mdi`**        | Material Design Icons (Templarian) | 7,448+ | Filled + Outline |
+| **`fa-solid`**   | Font Awesome 6 Free Solid          | 2,000+ | Filled           |
+| **`fa-regular`** | Font Awesome 6 Free Regular        | 160+   | Outline          |
+| **`fa-brands`**  | Font Awesome 6 Brands              | 460+   | Brand logos      |
+
+```python
+import dartwork_mpl as dm
+
+mdi = dm.icon_font('mdi')          # Material Design Icons
+fa  = dm.icon_font('fa-solid')     # Font Awesome 6 Solid
+
+ax.text(0.5, 0.5, "\U000F050F",    # MDI: thermometer
+        fontproperties=mdi, fontsize=20)
+```
+
+See [API Reference → Icon Font System](../api/icon.rst) for full details.
 
 ## Regenerating the Visuals
 

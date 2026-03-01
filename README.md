@@ -10,10 +10,10 @@
 - **Enhanced Aesthetics**: Apply our curated themes to make your charts visually appealing.
 - **Easy Customization**: Effortlessly adjust plot styles to fit your publication's needs.
 - **Advanced Color System**: Use custom colors with simple prefixes (`oc.`, `tw.`) and extended Tailwind CSS palette.
+- **Icon Font System**: Built-in Material Design Icons (MDI) and Font Awesome 6 for data-rich visualizations.
 - **Streamlined Workflow**: Simplify your plotting code with our intuitive interface, saving time and reducing complexity.
 - **Publication-Ready Layout**: Automatic layout optimization with `simple_layout()` for professional results.
-<br/>
-
+  <br/>
 
 ## Getting Started
 
@@ -51,34 +51,44 @@ dm.style.use('scientific')
 # For Korean text support
 dm.style.use('scientific-kr')
 ```
-<br/>
 
+<br/>
 
 ## Core Features
 
 ### Style Management
+
 - **Preset Styles**: Ready-to-use presets for scientific papers, presentations, and reports
 - **Flexible Customization**: Combine individual styles for fine-grained control
 - **Korean Language Support**: Built-in Korean font support with `-kr` presets
 
 ### Color System
+
 - **dartwork-mpl Colors**: Custom color palette with `oc.red5`, `oc.blue2`, etc.
 - **Tailwind CSS Integration**: Full Tailwind palette with `tw.blue500`, `tw.gray200`, etc.
 - **Color Utilities**: Mix colors and apply pseudo-transparency
 
 ### Layout & Utilities
+
 - **Smart Layout Optimization**: `simple_layout()` replaces `tight_layout()` with better control
 - **Unit Conversion**: `cm2in()` for precise figure sizing
 - **Multi-format Export**: Save figures in SVG, PNG, PDF, and EPS simultaneously
 - **Font Utilities**: Relative font size (`fs()`) and weight (`fw()`) adjustments
 
+### Icon Font System
+
+- **Material Design Icons (MDI)**: 7,448+ icons built-in as the default icon library
+- **Font Awesome 6**: Solid, Regular, and Brands variants included as fallback
+- **Simple API**: `icon_font('mdi')` returns a ready-to-use `FontProperties` object
+- **Path Access**: `icon_font_path('mdi')` for direct file path when needed
+
 ### Visualization Tools
+
 - **Colormap Explorer**: Preview and classify colormaps by type
 - **Color Palette Viewer**: Display all available colors with names
 - **Font Gallery**: Preview available fonts
 
 <br/>
-
 
 ## Example Usage
 
@@ -121,17 +131,16 @@ dm.save_formats(fig, 'output/figure',
 
 <br/>
 
-
 ## Documentation
 
 📚 **[Full Documentation](https://dartworklabs.github.io/dartwork-mpl/)** - Complete Sphinx documentation with:
+
 - **[Usage Guide](https://dartworklabs.github.io/dartwork-mpl/DARTWORK_MPL_USAGE_GUIDE.html)** - Comprehensive guide to all features
 - **[Example Gallery](https://dartworklabs.github.io/dartwork-mpl/gallery/index.html)** - Interactive examples with code and plots
 - **[Color System](https://dartworklabs.github.io/dartwork-mpl/COLOR_SYSTEM.html)** - Full-width Colors and Colormaps reference
 - **[API Reference](https://dartworklabs.github.io/dartwork-mpl/API_REFERENCE.html)** - Detailed API documentation
 
 <br/>
-
 
 ## Example Gallery
 
@@ -148,20 +157,35 @@ Each example includes complete source code and rendered output.
 
 <br/>
 
-
 ## Available Presets
 
-| Preset | Description |
-|--------|-------------|
-| `scientific` | Small fonts for academic papers |
-| `presentation` | Large fonts for presentations |
-| `investment` | Style for investment reports |
-| `scientific-kr` | Scientific style with Korean support |
+| Preset            | Description                            |
+| ----------------- | -------------------------------------- |
+| `scientific`      | Small fonts for academic papers        |
+| `presentation`    | Large fonts for presentations          |
+| `investment`      | Style for investment reports           |
+| `scientific-kr`   | Scientific style with Korean support   |
 | `presentation-kr` | Presentation style with Korean support |
-| `investment-kr` | Investment style with Korean support |
+| `investment-kr`   | Investment style with Korean support   |
+
+### Icon Fonts
+
+```python
+import dartwork_mpl as dm
+
+# Load icon font (returns FontProperties)
+mdi = dm.icon_font('mdi')          # Material Design Icons (default)
+fa  = dm.icon_font('fa-solid')     # Font Awesome 6 Solid
+
+# Render icon in a plot
+ax.text(0.5, 0.5, "\U000F050F",    # MDI: thermometer
+        fontproperties=mdi, fontsize=20)
+
+# List available icon fonts
+dm.list_icon_fonts()  # ['fa-brands', 'fa-regular', 'fa-solid', 'mdi']
+```
 
 <br/>
-
 
 ## AI-Assisted Development
 
@@ -200,4 +224,5 @@ For more details on AI-assisted development best practices, see the [AI-Assisted
 <br/>
 
 ## Reporting Issues
+
 Encountered a bug or have a feature request? Please open an issue through our [GitHub issue tracker](https://github.com/dartworklabs/dartwork-mpl/issues). We appreciate your feedback and contributions.

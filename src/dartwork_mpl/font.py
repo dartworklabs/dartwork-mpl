@@ -21,7 +21,10 @@ def _add_fonts() -> None:
     -----
     This function is automatically called when the module is imported.
     """
-    font_dir: list[Path] = [Path(__file__).parent / "asset/font"]
+    font_dir: list[Path] = [
+        Path(__file__).parent / "asset/font",
+        Path(__file__).parent / "asset/icon",
+    ]
     for font in font_manager.findSystemFonts(font_dir):
         font_manager.fontManager.addfont(font)
 
