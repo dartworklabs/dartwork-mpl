@@ -257,6 +257,86 @@ def lw(n: int | float) -> float:
     return plt.rcParams["lines.linewidth"] + n
 
 
+def label_axes(
+    axes: list[Axes] | np.ndarray,
+    labels: list[str] | None = None,
+    fontsize: float = 10,
+    fontweight: str = "bold",
+    x: float | str = "auto",
+    y: float = 1.05,
+    **kwargs,
+) -> list:
+    """
+    Add standardized panel labels (a, b, c, ...) to subplot axes.
+
+    Labels are placed at the top-left corner of each axes using
+    the axes coordinate system. Default style: bold 11pt lowercase
+    letters without parentheses.
+
+    Parameters
+    ----------
+    axes : list of Axes or ndarray
+        Axes objects to label.
+    labels : list of str, optional
+        Custom labels. If None, uses lowercase alphabet (a, b, c, ...).
+    fontsize : float, optional
+        Font size in points. Default is 11.
+    fontweight : str, optional
+        Font weight. Default is 'bold'.
+    x : float or 'auto', optional
+        X position in axes coordinates. If 'auto' (default), uses
+        -0.18 for axes with a y-axis label, -0.02 for axes without.
+    y : float, optional
+        Y position in axes coordinates. Default is 1.06.
+    **kwargs
+        Additional keyword arguments passed to ``ax.text()``.
+
+    Returns
+    -------
+    list
+        List of Text objects created.
+
+    Examples
+    --------
+    >>> import dartwork_mpl as dm
+    >>> fig, axes = plt.subplots(1, 3)
+    >>> dm.label_axes(axes)           # labels: a, b, c
+    >>> dm.label_axes([ax1, ax2])     # same
+    >>> dm.label_axes(axes, labels=['i', 'ii', 'iii'])  # custom
+    """
+    import string
+
+    if isinstance(axes, np.ndarray):
+        axes = axes.flatten().tolist()
+
+    if labels is None:
+        labels = list(string.ascii_lowercase[: len(axes)])
+
+    texts = []
+    for ax, label in zip(axes, labels, strict=False):
+        # Auto-detect x position based on ylabel presence
+        if x == "auto":
+            has_ylabel = ax.get_ylabel().strip() != ""
+            x_pos = -0.18 if has_ylabel else -0.02
+        else:
+            x_pos = x
+
+        t = ax.text(
+            x_pos,
+            y,
+            label,
+            transform=ax.transAxes,
+            fontsize=fontsize,
+            fontweight=fontweight,
+            va="bottom",
+            ha="left",
+            **kwargs,
+        )
+        texts.append(t)
+
+    return texts
+
+
 def mix_colors(
     color1: str | tuple[float, float, float],
     color2: str | tuple[float, float, float],

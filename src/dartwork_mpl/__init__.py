@@ -58,4 +58,6 @@ __all__ = [
     "get_prompt",
     "list_prompts",
     "copy_prompt",
+    # Figure utilities (from util module)
+    "label_axes",
 ]

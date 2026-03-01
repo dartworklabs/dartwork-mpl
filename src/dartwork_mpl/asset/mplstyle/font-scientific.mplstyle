@@ -21,18 +21,18 @@ mathtext.default: it  # The default font to use for math.
 #font.variant: normal
 font.weight:  300
 #font.stretch: normal
-font.size:    7.5
+font.size:    8
 
-axes.titlesize:     8.5   # font size of the axes title
+axes.titlesize:     9     # font size of the axes title
 axes.titleweight:   400  # font weight of title
-axes.labelsize:     7.5  # font size of the x and y labels
+axes.labelsize:     8     # font size of the x and y labels
 axes.labelweight:   400  # weight of the x and y labels
 
-xtick.labelsize:     7  # font size of the tick labels
-ytick.labelsize:     7  # font size of the tick labels
+xtick.labelsize:     7.5  # font size of the tick labels
+ytick.labelsize:     7.5  # font size of the tick labels
 
-legend.fontsize:      5.5
+legend.fontsize:      6
 
 figure.titleweight: 400    # weight of the figure title
-figure.labelsize:   7.5     # size of the figure label (``Figure.sup[x|y]label()``)
+figure.labelsize:   8       # size of the figure label (``Figure.sup[x|y]label()``)
 figure.labelweight: 300    # weight of the figure label
