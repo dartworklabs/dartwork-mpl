@@ -337,6 +337,138 @@ def label_axes(
     return texts
 
 
+def arrow_axis(
+    ax: Axes,
+    direction: str,
+    label: str,
+    *,
+    offset: float = -0.05,
+    low: str = "Low",
+    high: str = "High",
+    fontsize: float | None = None,
+    fontsize_label: float | None = None,
+    pad: float = -0.005,
+    weight: str = "normal",
+    color: str = "black",
+    arrow_kw: dict | None = None,
+) -> None:
+    """Draw a bidirectional arrow axis with Low/High labels.
+
+    Creates  ``Low ◄── label ──► High``  along a spine edge.
+    Text extents are measured dynamically so that *low*'s leading edge
+    aligns with the spine start and *high*'s trailing edge aligns with
+    the spine end.  Arrows fill the remaining space.
+
+    Parameters
+    ----------
+    ax : Axes
+        Target axes.
+    direction : {'x', 'y'}
+        ``'x'`` places a horizontal axis below the x-spine;
+        ``'y'`` places a vertical axis left of the y-spine
+        (text rotated 90° CCW).
+    label : str
+        Center axis label (e.g. ``'Installation cost'``).
+    offset : float, optional
+        Axes-fraction distance from the spine.
+        Negative values move outside the plot area.
+        Default is ``-0.05``.
+    low : str, optional
+        Text for the low end. Default ``'Low'``.
+    high : str, optional
+        Text for the high end. Default ``'High'``.
+    fontsize : float or None, optional
+        Font size for *low*/*high* labels.
+        ``None`` → ``fs(-1)`` (current base size − 1).
+    fontsize_label : float or None, optional
+        Font size for the center *label*.
+        ``None`` → ``fs(0)`` (current base size).
+    pad : float, optional
+        Axes-fraction gap between text edges and arrowheads.
+        Negative values push arrows into font side-bearing space
+        for a tighter visual fit.  Default ``-0.005``.
+    weight : str, optional
+        Font weight for all text elements.  Default ``'normal'``.
+    color : str, optional
+        Color for text and arrows.  Default ``'black'``.
+    arrow_kw : dict or None, optional
+        Override ``arrowprops`` dict passed to ``ax.annotate``.
+        ``None`` → ``dict(arrowstyle='-|>,head_width=0.1',
+        color=color, lw=0.25)``.
+
+    Examples
+    --------
+    >>> import dartwork_mpl as dm
+    >>> fig, ax = plt.subplots()
+    >>> dm.arrow_axis(ax, 'x', 'Installation cost')
+    >>> dm.arrow_axis(ax, 'y', 'Information richness')
+    """
+    if fontsize is None:
+        fontsize = fs(-1)
+    if fontsize_label is None:
+        fontsize_label = fs(0)
+    if arrow_kw is None:
+        arrow_kw = {"arrowstyle": "-|>,head_width=0.1", "color": color, "lw": 0.25}
+
+    renderer = ax.get_figure().canvas.get_renderer()
+    inv = ax.transAxes.inverted()
+    rot_kw = (
+        {"rotation": 90, "rotation_mode": "anchor"} if direction == "y" else {}
+    )
+
+    # ── place texts ──────────────────────────────────────────
+    if direction == "x":
+        p_lo, p_hi, p_lb = (0, offset), (1, offset), (0.5, offset)
+    else:
+        p_lo, p_hi, p_lb = (offset, 0), (offset, 1), (offset, 0.5)
+
+    t_lo = ax.text(
+        *p_lo, low, transform=ax.transAxes,
+        fontsize=fontsize, fontweight=weight, color=color,
+        ha="left", va="center", clip_on=False, **rot_kw,
+    )
+    t_hi = ax.text(
+        *p_hi, high, transform=ax.transAxes,
+        fontsize=fontsize, fontweight=weight, color=color,
+        ha="right", va="center", clip_on=False, **rot_kw,
+    )
+    t_lb = ax.text(
+        *p_lb, label, transform=ax.transAxes,
+        fontsize=fontsize_label, fontweight=weight, color=color,
+        ha="center", va="center", clip_on=False, **rot_kw,
+    )
+
+    # ── measure extents in axes fraction ─────────────────────
+    ax.get_figure().canvas.draw()
+
+    def _edges(t):
+        bb = t.get_window_extent(renderer)
+        return inv.transform([[bb.x0, bb.y0], [bb.x1, bb.y1]])
+
+    i = 0 if direction == "x" else 1
+    lo_end = _edges(t_lo)[1][i]
+    hi_start = _edges(t_hi)[0][i]
+    lb_lo = _edges(t_lb)[0][i]
+    lb_hi = _edges(t_lb)[1][i]
+
+    # ── draw arrows ──────────────────────────────────────────
+    def _arrow(tip, tail):
+        if direction == "x":
+            ax.annotate(
+                "", xy=(tip, offset), xytext=(tail, offset),
+                xycoords="axes fraction", arrowprops=arrow_kw,
+                annotation_clip=False,
+            )
+        else:
+            ax.annotate(
+                "", xy=(offset, tip), xytext=(offset, tail),
+                xycoords="axes fraction", arrowprops=arrow_kw,
+                annotation_clip=False,
+            )
+
+    _arrow(lo_end + pad, lb_lo - pad)    # Low  ◄── label
+    _arrow(hi_start - pad, lb_hi + pad)  # label ──► High
+
 def mix_colors(
     color1: str | tuple[float, float, float],
     color2: str | tuple[float, float, float],
