@@ -35,6 +35,9 @@ from .style import Style, list_styles, load_style_dict, style, style_path
 # Import util module exports
 from .util import *  # noqa: F403
 
+# Import validate module exports
+from .validate import validate_figure
+
 # Define __all__ for explicit exports
 __all__ = [
     # Color module
@@ -69,4 +72,6 @@ __all__ = [
     # Figure utilities (from util module)
     "label_axes",
     "arrow_axis",
+    # Validation
+    "validate_figure",
 ]

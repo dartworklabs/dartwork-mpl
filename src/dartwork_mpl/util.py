@@ -156,9 +156,7 @@ def simple_layout(
             ax_bboxes = [ax.get_tightbbox() for ax in fig.axes]
         else:
             ax_bboxes = [
-                ax.get_tightbbox()
-                for ax in fig.axes
-                if id(ax.get_gridspec()) == id(gs)
+                ax.get_tightbbox() for ax in fig.axes if id(ax.get_gridspec()) == id(gs)
             ]
 
         all_bbox = get_bounding_box(ax_bboxes)
@@ -412,9 +410,7 @@ def arrow_axis(
 
     renderer = ax.get_figure().canvas.get_renderer()
     inv = ax.transAxes.inverted()
-    rot_kw = (
-        {"rotation": 90, "rotation_mode": "anchor"} if direction == "y" else {}
-    )
+    rot_kw = {"rotation": 90, "rotation_mode": "anchor"} if direction == "y" else {}
 
     # ── place texts ──────────────────────────────────────────
     if direction == "x":
@@ -423,19 +419,40 @@ def arrow_axis(
         p_lo, p_hi, p_lb = (offset, 0), (offset, 1), (offset, 0.5)
 
     t_lo = ax.text(
-        *p_lo, low, transform=ax.transAxes,
-        fontsize=fontsize, fontweight=weight, color=color,
-        ha="left", va="center", clip_on=False, **rot_kw,
+        *p_lo,
+        low,
+        transform=ax.transAxes,
+        fontsize=fontsize,
+        fontweight=weight,
+        color=color,
+        ha="left",
+        va="center",
+        clip_on=False,
+        **rot_kw,
     )
     t_hi = ax.text(
-        *p_hi, high, transform=ax.transAxes,
-        fontsize=fontsize, fontweight=weight, color=color,
-        ha="right", va="center", clip_on=False, **rot_kw,
+        *p_hi,
+        high,
+        transform=ax.transAxes,
+        fontsize=fontsize,
+        fontweight=weight,
+        color=color,
+        ha="right",
+        va="center",
+        clip_on=False,
+        **rot_kw,
     )
     t_lb = ax.text(
-        *p_lb, label, transform=ax.transAxes,
-        fontsize=fontsize_label, fontweight=weight, color=color,
-        ha="center", va="center", clip_on=False, **rot_kw,
+        *p_lb,
+        label,
+        transform=ax.transAxes,
+        fontsize=fontsize_label,
+        fontweight=weight,
+        color=color,
+        ha="center",
+        va="center",
+        clip_on=False,
+        **rot_kw,
     )
 
     # ── measure extents in axes fraction ─────────────────────
@@ -455,19 +472,26 @@ def arrow_axis(
     def _arrow(tip, tail):
         if direction == "x":
             ax.annotate(
-                "", xy=(tip, offset), xytext=(tail, offset),
-                xycoords="axes fraction", arrowprops=arrow_kw,
+                "",
+                xy=(tip, offset),
+                xytext=(tail, offset),
+                xycoords="axes fraction",
+                arrowprops=arrow_kw,
                 annotation_clip=False,
             )
         else:
             ax.annotate(
-                "", xy=(offset, tip), xytext=(offset, tail),
-                xycoords="axes fraction", arrowprops=arrow_kw,
+                "",
+                xy=(offset, tip),
+                xytext=(offset, tail),
+                xycoords="axes fraction",
+                arrowprops=arrow_kw,
                 annotation_clip=False,
             )
 
-    _arrow(lo_end + pad, lb_lo - pad)    # Low  ◄── label
+    _arrow(lo_end + pad, lb_lo - pad)  # Low  ◄── label
     _arrow(hi_start - pad, lb_hi + pad)  # label ──► High
+
 
 def mix_colors(
     color1: str | tuple[float, float, float],
@@ -495,8 +519,7 @@ def mix_colors(
     color2 = mcolors.to_rgb(color2)
 
     return tuple(
-        alpha * c1 + (1 - alpha) * c2
-        for c1, c2 in zip(color1, color2, strict=False)
+        alpha * c1 + (1 - alpha) * c2 for c1, c2 in zip(color1, color2, strict=False)
     )
 
 
@@ -571,6 +594,7 @@ def save_formats(
     image_stem: str,
     formats: tuple[str, ...] = ("svg", "png", "pdf", "eps"),
     bbox_inches: str | None = None,
+    validate: bool = True,
     **kwargs,
 ) -> None:
     """
@@ -586,9 +610,17 @@ def save_formats(
         Tuple of format extensions to save.
     bbox_inches : str or Bbox, optional
         Bounding box in inches.
+    validate : bool, optional
+        If True, run visual validation before saving and print
+        ``[VISUAL]`` warnings to stdout.  Default True.
     **kwargs
         Additional arguments passed to savefig.
     """
+    if validate:
+        from .validate import validate_figure
+
+        validate_figure(fig)
+
     _create_parent_path_if_not_exists(image_stem)
     for fmt in formats:
         fig.savefig(f"{image_stem}.{fmt}", bbox_inches=bbox_inches, **kwargs)
@@ -785,12 +817,12 @@ def copy_prompt(name: str, destination: str | Path) -> Path:
     Examples
     ----------
     >>> import dartwork_mpl as dm
-    >>> 
+    >>>
     >>> # Copy to a directory (keeps original filename)
     >>> copied_path = dm.copy_prompt('layout-guide', '.cursor/rules/')
     >>> print(copied_path)
     PosixPath('.cursor/rules/layout-guide.md')
-    >>> 
+    >>>
     >>> # Copy to a specific file path
     >>> copied_path = dm.copy_prompt('general-guide', '.cursor/rules/my-guide.md')
     >>> print(copied_path)
