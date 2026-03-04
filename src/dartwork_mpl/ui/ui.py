@@ -162,7 +162,7 @@ def run(
             )
         fig = figure_fn(model)
         buf = io.BytesIO()
-        fig.savefig(buf, format="png", bbox_inches="tight")
+        fig.savefig(buf, format="png")
         plt.close(fig)
         buf.seek(0)
         b64 = base64.b64encode(buf.getvalue()).decode("ascii")
@@ -190,7 +190,7 @@ def run(
         model = _build_model(params, param_model, descriptors)
         fig = figure_fn(model)
         buf = io.BytesIO()
-        fig.savefig(buf, format=fmt, bbox_inches="tight")
+        fig.savefig(buf, format=fmt)
         plt.close(fig)
         buf.seek(0)
 
@@ -300,7 +300,7 @@ def run(
 
         save_formats(
             fig, image_stem, formats=(fmt,),
-            bbox_inches="tight",
+            bbox_inches=None,
         )
         plt.close(fig)
 
@@ -622,7 +622,7 @@ if __name__ == "__main__":
 {params_str}
     )
     fig = {figure_fn.__name__}(params)
-    save_formats(fig, "{figure_fn.__name__}", bbox_inches="tight")
+    save_formats(fig, "{figure_fn.__name__}")
     print("Saved: {figure_fn.__name__}.[svg|png|pdf|eps]")
     plt.show()
 '''
