@@ -64,14 +64,33 @@ __all__ = [
     # Install module
     "install_llm_txt",
     "uninstall_llm_txt",
+    # Scaling helpers (from util module)
+    "fs",
+    "fw",
+    "lw",
+    # Layout (from util module)
+    "simple_layout",
+    "get_bounding_box",
+    # Color utilities (from util module)
+    "mix_colors",
+    "pseudo_alpha",
+    # Units (from util module)
+    "cm2in",
+    "make_offset",
+    # Formatting (from util module)
+    "set_decimal",
+    # I/O (from util module)
+    "save_formats",
+    "save_and_show",
+    "show",
+    # Axes annotation (from util module)
+    "label_axes",
+    "arrow_axis",
     # Prompt utilities (from util module)
     "prompt_path",
     "get_prompt",
     "list_prompts",
     "copy_prompt",
-    # Figure utilities (from util module)
-    "label_axes",
-    "arrow_axis",
     # Validation
     "validate_figure",
 ]

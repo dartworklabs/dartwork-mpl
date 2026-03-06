@@ -128,7 +128,7 @@ def get_bounding_box(boxes: list) -> tuple[float, float, float, float]:
 def simple_layout(
     fig: Figure,
     gs: GridSpec | None = None,
-    margins: tuple[float, float, float, float] = (0.05, 0.05, 0.05, 0.05),
+    margins: tuple[float, float, float, float] = (0.15, 0.05, 0.05, 0.05),
     bbox: tuple[float, float, float, float] = (0, 1, 0, 1),
     verbose: bool = False,
     gtol: float = 1e-2,
