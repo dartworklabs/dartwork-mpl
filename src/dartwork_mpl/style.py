@@ -155,6 +155,13 @@ class Style:
         >>> import dartwork_mpl as dm
         >>> dm.style.stack(["base", "font-scientific", "lang-kr"])
         """
+        from .cmap import ensure_loaded as ensure_cmaps_loaded
+        from .font import ensure_loaded as ensure_fonts_loaded
+
+        # Ensure fonts and colormaps are registered before Matplotlib tries to resolve them
+        ensure_fonts_loaded()
+        ensure_cmaps_loaded()
+
         plt.rcParams.update(plt.rcParamsDefault)
         plt.style.use(style_path(style_name) for style_name in style_names)
 

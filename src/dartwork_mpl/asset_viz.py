@@ -239,6 +239,10 @@ def plot_colormaps(
     >>> # Group by type - creates separate figures for each category
     >>> fig, axs = plot_colormaps(ncols=3, group_by_type=True)
     """
+    from .cmap import ensure_loaded as ensure_cmaps_loaded
+
+    ensure_cmaps_loaded()
+
     if cmap_list is None:
         cmap_list = list(mpl.colormaps.keys())
         cmap_list = [c for c in cmap_list if not c.endswith("_r")]

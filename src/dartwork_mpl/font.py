@@ -27,5 +27,12 @@ def _add_fonts() -> None:
     for font in font_manager.findSystemFonts(font_dir):
         font_manager.fontManager.addfont(font)
 
+_loaded: bool = False
 
-_add_fonts()
+
+def ensure_loaded() -> None:
+    """Ensure custom fonts are loaded and registered."""
+    global _loaded
+    if not _loaded:
+        _add_fonts()
+        _loaded = True

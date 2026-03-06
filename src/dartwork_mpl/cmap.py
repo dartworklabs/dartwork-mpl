@@ -71,5 +71,12 @@ def _load_colormaps() -> None:
         cmap_r: mcolors.ListedColormap = _parse_colormap(path, reverse=True)
         mpl.colormaps.register(cmap=cmap_r)
 
+_loaded: bool = False
 
-_load_colormaps()
+
+def ensure_loaded() -> None:
+    """Ensure colormaps are loaded and registered."""
+    global _loaded
+    if not _loaded:
+        _load_colormaps()
+        _loaded = True

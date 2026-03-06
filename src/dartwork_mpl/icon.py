@@ -54,6 +54,8 @@ def icon_font_path(name: str = "mdi") -> Path:
     >>> path.name
     'materialdesignicons-webfont.ttf'
     """
+    ensure_loaded()
+
     if name not in _REGISTRY:
         available = ", ".join(sorted(_REGISTRY))
         raise ValueError(
@@ -93,6 +95,7 @@ def icon_font(name: str = "mdi") -> fm.FontProperties:
     ...         fontproperties=mdi, fontsize=20,
     ...         ha='center', va='center')
     """
+    ensure_loaded()
     return fm.FontProperties(fname=str(icon_font_path(name)))
 
 
@@ -118,6 +121,12 @@ def _register_icon_fonts() -> None:
         if font_path.exists():
             fm.fontManager.addfont(str(font_path))
 
+_loaded: bool = False
 
-# Auto-register on import
-_register_icon_fonts()
+
+def ensure_loaded() -> None:
+    """Ensure icon fonts are loaded and registered."""
+    global _loaded
+    if not _loaded:
+        _register_icon_fonts()
+        _loaded = True
