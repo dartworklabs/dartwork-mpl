@@ -32,8 +32,24 @@ from .install import install_llm_txt, uninstall_llm_txt
 # Import style module exports
 from .style import Style, list_styles, load_style_dict, style, style_path
 
-# Import util module exports
-from .util import *  # noqa: F403
+# --- Explicit imports from split modules (formerly in util.py) ---
+# Scaling helpers
+from .scale import fs, fw, lw
+
+# Layout
+from .layout import get_bounding_box, simple_layout
+
+# Color utilities
+from .util import cm2in, make_offset, mix_colors, pseudo_alpha, set_decimal
+
+# I/O
+from .io import save_and_show, save_formats, show
+
+# Axes annotation
+from .annotation import arrow_axis, label_axes
+
+# Prompt utilities
+from .prompt import copy_prompt, get_prompt, list_prompts, prompt_path
 
 # Import validate module exports
 from .validate import validate_figure
@@ -64,29 +80,29 @@ __all__ = [
     # Install module
     "install_llm_txt",
     "uninstall_llm_txt",
-    # Scaling helpers (from util module)
+    # Scaling helpers
     "fs",
     "fw",
     "lw",
-    # Layout (from util module)
+    # Layout
     "simple_layout",
     "get_bounding_box",
-    # Color utilities (from util module)
+    # Color utilities
     "mix_colors",
     "pseudo_alpha",
-    # Units (from util module)
+    # Units
     "cm2in",
     "make_offset",
-    # Formatting (from util module)
+    # Formatting
     "set_decimal",
-    # I/O (from util module)
+    # I/O
     "save_formats",
     "save_and_show",
     "show",
-    # Axes annotation (from util module)
+    # Axes annotation
     "label_axes",
     "arrow_axis",
-    # Prompt utilities (from util module)
+    # Prompt utilities
     "prompt_path",
     "get_prompt",
     "list_prompts",
