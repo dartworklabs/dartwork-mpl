@@ -592,7 +592,7 @@ def make_offset(x: float, y: float, fig: Figure) -> ScaledTranslation:
 def save_formats(
     fig: Figure,
     image_stem: str,
-    formats: tuple[str, ...] = ("svg", "png", "pdf", "eps"),
+    formats: tuple[str, ...] = ("png", "pdf"),
     bbox_inches: str | None = None,
     validate: bool = True,
     **kwargs,
