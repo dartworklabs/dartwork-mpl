@@ -4,6 +4,36 @@ This module provides helper functions for figure layout, font/line
 scaling, color mixing, SVG display, and prompt file management.
 """
 
+__all__ = [
+    # Scaling helpers
+    "fs",
+    "fw",
+    "lw",
+    # Layout
+    "simple_layout",
+    "get_bounding_box",
+    # Formatting
+    "set_decimal",
+    # Color utilities
+    "mix_colors",
+    "pseudo_alpha",
+    # Units
+    "cm2in",
+    "make_offset",
+    # I/O
+    "save_formats",
+    "save_and_show",
+    "show",
+    # Axes annotation
+    "label_axes",
+    "arrow_axis",
+    # Prompt utilities
+    "prompt_path",
+    "get_prompt",
+    "list_prompts",
+    "copy_prompt",
+]
+
 from pathlib import Path
 from shutil import copy2
 from tempfile import NamedTemporaryFile
@@ -220,10 +250,30 @@ def fs(n: int | float) -> float:
     return plt.rcParams["font.size"] + n
 
 
+_WEIGHT_MAP: dict[str, int] = {
+    "ultralight": 100,
+    "light": 200,
+    "normal": 400,
+    "regular": 400,
+    "book": 400,
+    "medium": 500,
+    "roman": 500,
+    "semibold": 600,
+    "demibold": 600,
+    "demi": 600,
+    "bold": 700,
+    "heavy": 800,
+    "extra bold": 800,
+    "black": 900,
+}
+
+
 def fw(n: int) -> int:
     """
     Return base font weight + 100 * n.
-    Only works for integer weights and n.
+
+    String weights (e.g. ``'normal'``, ``'bold'``) are converted to
+    their numeric equivalents before arithmetic.
 
     Parameters
     ----------
@@ -235,7 +285,10 @@ def fw(n: int) -> int:
     int
         Base font weight + 100 * n.
     """
-    return plt.rcParams["font.weight"] + 100 * n
+    base = plt.rcParams["font.weight"]
+    if isinstance(base, str):
+        base = _WEIGHT_MAP.get(base.lower(), 400)
+    return int(base) + 100 * n
 
 
 def lw(n: int | float) -> float:
@@ -639,45 +692,49 @@ def show(image_path: str, size: int = 600, unit: str = "pt") -> None:
     unit : str, optional
         Unit for size ('pt', 'px', etc.).
     """
-    # SVG 객체 생성
     svg_obj = SVG(data=image_path)
 
-    # 원하는 가로 폭 또는 세로 높이 설정
     desired_width = size
 
-    # SVG 코드에서 현재 가로 폭과 세로 높이 가져오기
+    # Parse SVG dimensions with defensive handling.
     dom = minidom.parseString(svg_obj.data)
-    width = float(dom.documentElement.getAttribute("width")[: -len(unit)])
-    height = float(dom.documentElement.getAttribute("height")[: -len(unit)])
+    width_attr = dom.documentElement.getAttribute("width") or ""
+    height_attr = dom.documentElement.getAttribute("height") or ""
 
-    # 비율 계산
+    try:
+        width = float(width_attr.replace(unit, ""))
+        height = float(height_attr.replace(unit, ""))
+    except ValueError:
+        # Cannot parse dimensions — display as-is.
+        display(HTML(svg_obj.data))
+        return
+
+    if width <= 0:
+        display(HTML(svg_obj.data))
+        return
+
     aspect_ratio = height / width
     desired_height = int(desired_width * aspect_ratio)
 
-    # 가로 폭과 세로 높이 설정
-    if f'width="{width}{unit}"' in svg_obj.data:
-        svg_obj.data = svg_obj.data.replace(
-            f'width="{width}{unit}"', f'width="{desired_width}{unit}"'
-        )
-    else:
-        width = int(width)
-        svg_obj.data = svg_obj.data.replace(
-            f'width="{width}{unit}"', f'width="{desired_width}{unit}"'
-        )
+    # Replace width attribute.
+    for w_str in (str(width), str(int(width))):
+        old = f'width="{w_str}{unit}"'
+        if old in svg_obj.data:
+            svg_obj.data = svg_obj.data.replace(
+                old, f'width="{desired_width}{unit}"'
+            )
+            break
 
-    if f'height="{height}{unit}"' in svg_obj.data:
-        svg_obj.data = svg_obj.data.replace(
-            f'height="{height}{unit}"', f'height="{desired_height}{unit}"'
-        )
-    else:
-        height = int(height)
-        svg_obj.data = svg_obj.data.replace(
-            f'height="{height}{unit}"', f'height="{desired_height}{unit}"'
-        )
+    # Replace height attribute.
+    for h_str in (str(height), str(int(height))):
+        old = f'height="{h_str}{unit}"'
+        if old in svg_obj.data:
+            svg_obj.data = svg_obj.data.replace(
+                old, f'height="{desired_height}{unit}"'
+            )
+            break
 
-    # HTML을 사용하여 SVG 이미지 표시
-    svg_code = svg_obj.data
-    display(HTML(svg_code))
+    display(HTML(svg_obj.data))
 
 
 def save_and_show(
@@ -704,14 +761,15 @@ def save_and_show(
         Additional arguments passed to savefig.
     """
     if image_path is None:
-        with NamedTemporaryFile(suffix=".svg") as f:
-            f.close()
-            image_path = f.name
-
-            fig.savefig(image_path, bbox_inches=None, **kwargs)
+        tmp = NamedTemporaryFile(suffix=".svg", delete=False)
+        tmp_path = tmp.name
+        tmp.close()
+        try:
+            fig.savefig(tmp_path, bbox_inches=None, **kwargs)
             plt.close(fig)
-
-            show(image_path, size=size, unit=unit)
+            show(tmp_path, size=size, unit=unit)
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
     else:
         _create_parent_path_if_not_exists(image_path)
         fig.savefig(image_path, bbox_inches=None, **kwargs)

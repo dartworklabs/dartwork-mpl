@@ -44,17 +44,36 @@ class TestFs:
 class TestFw:
     """Tests for fw() font weight scaling."""
 
-    def test_base_increment(self) -> None:
-        """fw(n) should return base weight + 100*n."""
-        base = plt.rcParams["font.weight"]
-        # If base is string, fw() will crash (known bug).
-        # Test the current behavior.
-        if isinstance(base, str):
-            with pytest.raises(TypeError):
-                fw(1)
-        else:
-            result = fw(1)
-            assert result == base + 100
+    def test_integer_weight(self) -> None:
+        """fw(n) should return base weight + 100*n for int weights."""
+        original = plt.rcParams["font.weight"]
+        try:
+            plt.rcParams["font.weight"] = 300
+            assert fw(0) == 300
+            assert fw(1) == 400
+            assert fw(-1) == 200
+        finally:
+            plt.rcParams["font.weight"] = original
+
+    def test_string_weight_normal(self) -> None:
+        """fw() should map 'normal' to 400."""
+        original = plt.rcParams["font.weight"]
+        try:
+            plt.rcParams["font.weight"] = "normal"
+            assert fw(0) == 400
+            assert fw(1) == 500
+        finally:
+            plt.rcParams["font.weight"] = original
+
+    def test_string_weight_bold(self) -> None:
+        """fw() should map 'bold' to 700."""
+        original = plt.rcParams["font.weight"]
+        try:
+            plt.rcParams["font.weight"] = "bold"
+            assert fw(0) == 700
+            assert fw(1) == 800
+        finally:
+            plt.rcParams["font.weight"] = original
 
 
 class TestLw:
