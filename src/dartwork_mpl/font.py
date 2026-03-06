@@ -23,7 +23,6 @@ def _add_fonts() -> None:
     """
     font_dir: list[Path] = [
         Path(__file__).parent / "asset/font",
-        Path(__file__).parent / "asset/icon",
     ]
     for font in font_manager.findSystemFonts(font_dir):
         font_manager.fontManager.addfont(font)

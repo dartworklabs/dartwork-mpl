@@ -116,11 +116,8 @@ def _register_icon_fonts() -> None:
     for filename in _REGISTRY.values():
         font_path = _ICON_DIR / filename
         if font_path.exists():
-            font_manager.fontManager.addfont(str(font_path))
+            fm.fontManager.addfont(str(font_path))
 
-
-# Alias for direct access
-font_manager = fm
 
 # Auto-register on import
 _register_icon_fonts()
