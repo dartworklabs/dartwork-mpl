@@ -69,20 +69,26 @@ def load_style_dict(name: str) -> dict[str, float | str]:
     style_dict: dict[str, float | str] = {}
     with open(path) as f:
         for line in f:
-            if line.strip().startswith("#"):
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
                 continue
 
-            if line.strip() == "":
+            # Split on first colon only (values may contain colons).
+            if ":" not in stripped:
                 continue
+            key, raw_value = stripped.split(":", maxsplit=1)
+            key = key.strip()
 
-            key: str = line.split(":")[0].strip()
-            value: str = line.split(":")[1].split()[0].strip()
+            # Strip inline comments: find ' #' outside of quotes.
+            value_str = raw_value.split(" #")[0].strip()
+            if not value_str:
+                continue
 
             try:
-                value_float: float = float(value)
+                value_float: float = float(value_str)
                 style_dict[key] = value_float
             except ValueError:
-                style_dict[key] = value
+                style_dict[key] = value_str
 
     return style_dict
 

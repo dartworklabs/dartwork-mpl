@@ -49,12 +49,27 @@ class TestLoadStyleDict:
         d = load_style_dict("base")
         assert isinstance(d, dict)
         assert len(d) > 0
-        # At least some well-known keys should be present
-        # (the exact keys depend on the style file content)
 
     def test_nonexistent_style_raises(self) -> None:
         with pytest.raises(ValueError):
             load_style_dict("nonexistent_style_xyzzy")
+
+    def test_font_family_full_value(self) -> None:
+        """Multi-word values like font.sans-serif list should be preserved."""
+        d = load_style_dict("base")
+        if "font.sans-serif" in d:
+            value = d["font.sans-serif"]
+            assert isinstance(value, str)
+            # Should contain multiple fonts, not just the first token
+            assert "," in value
+
+    def test_inline_comments_stripped(self) -> None:
+        """Inline comments after values should be stripped."""
+        d = load_style_dict("base")
+        for key, value in d.items():
+            if isinstance(value, str):
+                # No value should end with a comment fragment
+                assert not value.strip().startswith("#")
 
 
 class TestStyleUse:
