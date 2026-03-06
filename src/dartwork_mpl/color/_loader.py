@@ -44,7 +44,7 @@ def _parse_color_data(path: str | Path) -> dict[str, str]:
 
         k: str
         v: str
-        k, v = line.split(":")
+        k, v = line.split(":", maxsplit=1)
         color_dict[k.strip()] = v.strip()
 
     return color_dict
