@@ -4,7 +4,7 @@ This package provides enhanced styling, color management, and utility
 functions for matplotlib visualizations.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 # Import font module to register fonts (no public exports)
 # Import cmap module to register colormaps (no public exports)
