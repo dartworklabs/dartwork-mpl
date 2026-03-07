@@ -11,7 +11,7 @@ from matplotlib.sankey import Sankey
 import dartwork_mpl as dm
 
 # Apply consistent styling
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 # Flows sum to zero: inflow = 100, outflows = -40, -25, -20, -15
 flows = [100, -40, -25, -20, -15]

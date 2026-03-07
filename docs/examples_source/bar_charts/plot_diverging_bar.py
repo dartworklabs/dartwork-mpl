@@ -11,7 +11,7 @@ import numpy as np
 import dartwork_mpl as dm
 
 # Apply scientific style preset
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 # Sample data
 categories = ["Item A", "Item B", "Item C", "Item D", "Item E"]

@@ -10,7 +10,7 @@ import numpy as np
 
 import dartwork_mpl as dm
 
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 x = np.arange(0, 10, 0.1)
 y1 = np.exp(x / 3)

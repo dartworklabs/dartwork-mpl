@@ -11,7 +11,7 @@ from cycler import cycler
 
 import dartwork_mpl as dm
 
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 np.random.seed(42)
 x = np.linspace(0, 10, 100)

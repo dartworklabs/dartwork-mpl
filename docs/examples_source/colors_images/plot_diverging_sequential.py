@@ -10,7 +10,7 @@ import numpy as np
 
 import dartwork_mpl as dm
 
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 # Generate data
 x = y = np.linspace(-3, 3, 100)

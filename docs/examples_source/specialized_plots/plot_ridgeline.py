@@ -11,7 +11,7 @@ from scipy import stats
 
 import dartwork_mpl as dm
 
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 np.random.seed(42)
 

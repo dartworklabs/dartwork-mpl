@@ -11,7 +11,7 @@ import numpy as np
 import dartwork_mpl as dm
 
 # Apply scientific style
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 # Generate data
 delta = 0.025

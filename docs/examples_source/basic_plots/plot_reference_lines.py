@@ -10,7 +10,7 @@ import numpy as np
 
 import dartwork_mpl as dm
 
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 # Synthetic signal with slow trend and oscillation
 x = np.linspace(0, 12, 240)

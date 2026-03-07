@@ -59,7 +59,7 @@ plt.show()
 # %%
 # Scientific preset
 # -----------------
-dm.style.use("scientific")
+dm.style.use("presentation")
 plot_example("Scientific Preset")
 plt.show()
 

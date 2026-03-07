@@ -2,7 +2,7 @@
 
 /* Add a subtle shadow to the header for better separation */
 .shibuya-header {
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 /* Adjust the sidebar width slightly if needed (optional, keeping default for now) */
@@ -14,49 +14,49 @@
 
 /* Make the "Edit on GitHub" button more prominent */
 .edit-this-page {
-    font-weight: 600;
-    color: var(--accent-9);
+  font-weight: 600;
+  color: var(--accent-9);
 }
 
 /* Ensure code blocks have a nice border radius */
 div[class^="highlight"] {
-    border-radius: 6px;
+  border-radius: 6px;
 }
 
 /* Keep code blocks readable without hovering */
 :root {
-    --dm-code-bg-light: #f6f8fa;
-    --dm-code-bg-dark: #111827;
-    --dm-code-border-light: #e5e7eb;
-    --dm-code-border-dark: #1f2937;
+  --dm-code-bg-light: #f6f8fa;
+  --dm-code-bg-dark: #111827;
+  --dm-code-border-light: #e5e7eb;
+  --dm-code-border-dark: #1f2937;
 }
 
 html.light,
 body[data-theme="light"] {
-    --dm-code-bg: var(--dm-code-bg-light);
-    --dm-code-border: var(--dm-code-border-light);
+  --dm-code-bg: var(--dm-code-bg-light);
+  --dm-code-border: var(--dm-code-border-light);
 }
 
 html.dark,
 body[data-theme="dark"] {
-    --dm-code-bg: var(--dm-code-bg-dark);
-    --dm-code-border: var(--dm-code-border-dark);
+  --dm-code-bg: var(--dm-code-bg-dark);
+  --dm-code-border: var(--dm-code-border-dark);
 }
 
 .yue div.highlight,
 .yue div.highlight pre {
-    background-color: var(--dm-code-bg) !important;
+  background-color: var(--dm-code-bg) !important;
 }
 
 .yue div.highlight {
-    border: 1px solid var(--dm-code-border) !important;
+  border: 1px solid var(--dm-code-border) !important;
 }
 
 .yue :not(pre) > code {
-    background-color: var(--dm-code-bg);
-    border: 1px solid var(--dm-code-border);
-    border-radius: 4px;
-    padding: 0.1em 0.35em;
+  background-color: var(--dm-code-bg);
+  border: 1px solid var(--dm-code-border);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
 }
 
 /* Furo sidebar styles removed */
@@ -65,142 +65,156 @@ body[data-theme="dark"] {
 .sphx-glr-download-python,
 .sphx-glr-download-jupyter,
 .sphx-glr-download-zip {
-    background-color: var(--sy-c-bg-weak) !important;
-    border: 1px solid var(--sy-c-bg-weak) !important;
-    border-radius: 6px;
-    padding: 10px 14px;
-    box-shadow: none !important;
-    margin-bottom: 10px;
-    color: var(--sy-c-text) !important;
-    transition: all 0.2s ease;
+  background-color: var(--sy-c-bg-weak) !important;
+  border: 1px solid var(--sy-c-bg-weak) !important;
+  border-radius: 6px;
+  padding: 10px 14px;
+  box-shadow: none !important;
+  margin-bottom: 10px;
+  color: var(--sy-c-text) !important;
+  transition: all 0.2s ease;
 }
 
 .sphx-glr-download-python:hover,
 .sphx-glr-download-jupyter:hover,
 .sphx-glr-download-zip:hover {
-    background-color: transparent !important;
-    border-color: var(--sy-c-link) !important;
-    color: var(--sy-c-link) !important;
+  background-color: transparent !important;
+  border-color: var(--sy-c-link) !important;
+  color: var(--sy-c-link) !important;
 }
 
 /* Style the download links */
 .sphx-glr-download a {
-    color: inherit !important;
-    /* Inherit from the button container */
-    text-decoration: none;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
+  color: inherit !important;
+  /* Inherit from the button container */
+  text-decoration: none;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
 }
 
 .sphx-glr-download a:hover {
-    color: inherit !important;
-    text-decoration: none;
+  color: inherit !important;
+  text-decoration: none;
 }
 
 /* Remove background from the footer container */
 .sphx-glr-footer {
-    background-color: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* Add icon styling if needed, though usually handled by Sphinx Gallery text */
 .sphx-glr-download code.xref {
-    color: inherit !important;
+  color: inherit !important;
 }
 
 /* Override sphinx-gallery default button gradient colors */
 :root {
-    --sg-download-a-background-image: none !important;
-    --sg-download-a-hover-background-color: transparent !important;
-    --sg-download-a-hover-background-image: none !important;
+  --sg-download-a-background-image: none !important;
+  --sg-download-a-hover-background-color: transparent !important;
+  --sg-download-a-hover-background-image: none !important;
 }
 
 /* Hide "Made with Sphinx and Shibuya theme" text in footer */
 .sy-foot-copyright > p:nth-child(2) {
-    display: none !important;
+  display: none !important;
 }
 
 /* Color system cards */
 .color-card,
 .colormap-card {
-    border: 1px solid #ebe9e2;
-    box-shadow: 0 8px 28px rgba(24, 31, 41, 0.05);
-    background: #fbfaf7;
+  border: 1px solid #ebe9e2;
+  box-shadow: 0 8px 28px rgba(24, 31, 41, 0.05);
+  background: #fbfaf7;
 }
 
 .color-card img,
 .colormap-card img {
-    border-radius: 10px;
-    border: 1px solid #e7e5dc;
+  border-radius: 10px;
+  border: 1px solid #e7e5dc;
 }
 
 /* Keep the sidebar focused: hide levels deeper than 2 */
 .globaltoc .toctree-l3,
 .globaltoc .toctree-l4 {
-    display: none;
+  display: none;
 }
 
 /* Keep anchor targets from hiding behind the fixed header */
 main :is(h1, h2, h3)[id] {
-    scroll-margin-top: 80px;
+  scroll-margin-top: 80px;
 }
 
 /* Gallery: four-up grid on wide screens with responsive breakpoints */
 .sphx-glr-thumbnails {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    width: 100%;
-    max-width: 100%;
-    margin: 0 auto 32px;
-    box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto 32px;
+  box-sizing: border-box;
 }
 
 .sphx-glr-thumbcontainer {
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    background: #fff;
-    border: 1px solid #ece8e1;
-    box-shadow: 0 10px 30px rgba(24, 31, 41, 0.06);
-    overflow: hidden;
-    padding: 12px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid #ece8e1;
+  box-shadow: 0 10px 30px rgba(24, 31, 41, 0.06);
+  overflow: hidden;
+  padding: 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 @media (max-width: 1200px) {
-    .sphx-glr-thumbnails {
-        grid-template-columns: repeat(3, 1fr);
-    }
+  .sphx-glr-thumbnails {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 @media (max-width: 900px) {
-    .sphx-glr-thumbnails {
-        grid-template-columns: repeat(2, 1fr);
-    }
+  .sphx-glr-thumbnails {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 560px) {
-    .sphx-glr-thumbnails {
-        grid-template-columns: 1fr;
-    }
+  .sphx-glr-thumbnails {
+    grid-template-columns: 1fr;
+  }
 }
 
 .sphx-glr-thumbcontainer img {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: auto !important;
-    border-radius: 10px;
-    display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  border-radius: 10px;
+  display: block;
 }
 
 .sphx-glr-thumbnail-title {
-    text-align: center;
-    font-weight: 600;
-    line-height: 1.25;
-    padding: 4px 6px 2px;
+  text-align: center;
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 4px 6px 2px;
+}
+
+/* Gallery detail page: scale SVG/PNG images to fill container width */
+.sphx-glr-single-img,
+.sphx-glr-multi-img {
+  width: 100%;
+  max-width: 100%;
+}
+
+.sphx-glr-single-img img,
+.sphx-glr-multi-img img {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
 }

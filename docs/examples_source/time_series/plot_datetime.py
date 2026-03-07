@@ -19,7 +19,7 @@ locale.setlocale(locale.LC_TIME, "C")
 
 # Apply scientific style preset
 # Default: font.size=7.5, lines.linewidth=0.5, axes.linewidth=0.3
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 # Generate sample time series data
 start_date = datetime(2024, 1, 1)

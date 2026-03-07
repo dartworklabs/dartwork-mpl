@@ -14,7 +14,7 @@ from matplotlib.patches import Polygon
 
 import dartwork_mpl as dm
 
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 
 # ---------------------------------------------------------------------------

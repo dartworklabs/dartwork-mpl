@@ -109,7 +109,12 @@ sphinx_gallery_conf = {
     "backreferences_dir": None,
     "show_signature": False,
     "remove_config_comments": True,
+    "image_scrapers": ("matplotlib",),
+    "matplotlib_animations": False,
 }
+
+# Gallery image format: SVG for crisp vector output on web
+plot_formats = [("svg", 200)]
 
 # -- MyST Parser configuration -----------------------------------------------
 myst_enable_extensions = ["colon_fence", "deflist"]

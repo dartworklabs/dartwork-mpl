@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 import dartwork_mpl as dm
 
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 # %%
 # Named colors

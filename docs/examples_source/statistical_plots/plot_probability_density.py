@@ -12,7 +12,7 @@ from scipy import stats
 import dartwork_mpl as dm
 
 # Apply scientific style
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 # Generate synthetic data
 np.random.seed(42)

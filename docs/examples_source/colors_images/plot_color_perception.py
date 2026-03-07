@@ -10,7 +10,7 @@ import numpy as np
 
 import dartwork_mpl as dm
 
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 fig = plt.figure(figsize=(dm.cm2in(16), dm.cm2in(12)), dpi=300)
 gs = fig.add_gridspec(

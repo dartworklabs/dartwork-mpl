@@ -11,7 +11,7 @@ import numpy as np
 import dartwork_mpl as dm
 
 # Apply scientific style preset
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 # Generate data
 x = np.linspace(0, 10, 200)

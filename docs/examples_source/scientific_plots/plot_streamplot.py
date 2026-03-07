@@ -11,7 +11,7 @@ import numpy as np
 import dartwork_mpl as dm
 
 # Apply scientific style
-dm.style.use("scientific")
+dm.style.use("presentation")
 
 # Generate vector field
 Y, X = np.mgrid[-3:3:100j, -3:3:100j]
