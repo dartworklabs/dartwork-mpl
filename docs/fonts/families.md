@@ -3,211 +3,226 @@
 dartwork-mpl bundles 9 professional font families with a total of 130 font
 variants. Each family is optimized for different use cases in data visualization.
 
+## Font Selection Guide
+
+Not sure which font to use? Pick based on your primary need:
+
+| Need                         | Recommended Font           | Why                                         |
+| ---------------------------- | -------------------------- | ------------------------------------------- |
+| **General chart text**       | Roboto (default)           | Clean, legible at all sizes                 |
+| **UI-style dashboards**      | Inter                      | Tall x-height, excellent screen readability |
+| **Titles & headings**        | InterDisplay               | Tighter spacing optimized for large text    |
+| **Dense tables / legends**   | Noto Sans Condensed family | Same readability, narrower footprint        |
+| **Korean text (한글)**       | Paperlogy                  | Native Korean design, 9 weights             |
+| **CJK (日本語 / 中文)**      | Noto Sans CJK              | Comprehensive CJK glyph coverage            |
+| **Math / scientific**        | Noto Sans Math             | Full symbol set: ∑ ∫ √ ∞ π θ α β γ          |
+| **Multi-language documents** | Noto Sans                  | Broadest Unicode coverage                   |
+
+## Multi-Language Support
+
+All fonts below are **bundled** — no system font installation required:
+
+```{raw} html
+:file: _generated/multilang.html
+```
+
+---
+
 ## Roboto (Default)
 
-:::{figure} images/font_roboto.png
-:alt: Roboto font family preview
-:width: 100%
-:::
+```{raw} html
+:file: _generated/roboto.html
+```
 
 Google's flagship sans-serif typeface and the **default font in dartwork-mpl**.
 Roboto features friendly, open curves while maintaining a mechanical skeleton,
 making it highly legible at all sizes.
 
-**Variants:** 15 (Thin, Light, Regular, Medium, Bold, Black + Italics)
+**Variants:** 15 (Thin, Light, Regular, Medium, Bold, Black + Italics)\
+**Author:** Christian Robertson · **License:** [Apache 2.0](https://fonts.google.com/specimen/Roboto)
 
 **Best For:**
+
 - General-purpose body text
 - Axis labels and tick marks
 - Legends and annotations
 
 **Usage:**
+
 ```python
-import matplotlib.pyplot as plt
-plt.rcParams['font.family'] = 'Roboto'
-plt.rcParams['font.weight'] = 300  # Light weight (dartwork default)
+import dartwork_mpl as dm
+
+dm.style.use("scientific")  # Roboto Light (300) is already the default
 ```
 
 ---
 
 ## Inter
 
-:::{figure} images/font_inter.png
-:alt: Inter font family preview
-:width: 100%
-:::
+```{raw} html
+:file: _generated/inter.html
+```
 
 A modern sans-serif typeface designed specifically for computer screens. Inter
 features a tall x-height for improved readability at small sizes and includes
 many OpenType features.
 
-**Variants:** 20 (Thin through Black, with Italics)
+**Variants:** 20 (Thin through Black, with Italics)\
+**Author:** [Rasmus Andersson](https://rsms.me/inter/) · **License:** [OFL 1.1](https://github.com/rsms/inter)
 
 **Best For:**
+
 - UI-style visualizations
 - Presentations and slides
 - Screen-first publications
 
 **Usage:**
+
 ```python
-plt.rcParams['font.family'] = 'Inter'
+import dartwork_mpl as dm
+import matplotlib.pyplot as plt
+
+dm.style.use("scientific")
+plt.rcParams['font.family'] = 'Inter'  # Override just the font family
 ```
 
 ---
 
 ## InterDisplay
 
-:::{figure} images/font_interdisplay.png
-:alt: InterDisplay font family preview
-:width: 100%
-:::
+```{raw} html
+:file: _generated/interdisplay.html
+```
 
 The display variant of Inter, optimized for larger sizes. Features tighter
 letter-spacing and refined details that shine at headline sizes.
 
-**Variants:** 20 (Thin through Black, with Italics)
+**Variants:** 20 (Thin through Black, with Italics)\
+**Author:** [Rasmus Andersson](https://rsms.me/inter/) · **License:** [OFL 1.1](https://github.com/rsms/inter)
 
 **Best For:**
+
 - Figure titles
 - Section headings
 - Large callout text
 
 **Usage:**
+
 ```python
-ax.set_title("Main Title", fontfamily='Inter Display', fontsize=24)
+# Use InterDisplay for titles only, keep default font for body
+ax.set_title("Main Title", fontfamily='Inter Display', fontsize=dm.fs(6))
 ```
 
 ---
 
 ## Noto Sans
 
-:::{figure} images/font_notosans.png
-:alt: Noto Sans font family preview
-:width: 100%
-:::
+```{raw} html
+:file: _generated/notosans.html
+```
 
 Google's Noto Sans provides harmonious typography across hundreds of languages.
 The name "Noto" comes from "No Tofu"—the goal of eliminating the blank boxes
 (tofu) that appear when a font lacks a glyph.
 
-**Variants:** 15 (ExtraLight through Black, with Italics)
+**Variants:** 15 (ExtraLight through Black, with Italics)\
+**Author:** Google · **License:** [OFL 1.1](https://fonts.google.com/noto/specimen/Noto+Sans)
 
 **Best For:**
+
 - Multi-language documents
 - International publications
 - Unicode-heavy content
 
 **Usage:**
+
 ```python
+import dartwork_mpl as dm
+import matplotlib.pyplot as plt
+
+dm.style.use("scientific")
 plt.rcParams['font.family'] = 'Noto Sans'
 ```
 
 ---
 
-## Noto Sans Condensed
+## Condensed Variants
 
-:::{figure} images/font_notosans_condensed.png
-:alt: Noto Sans Condensed font family preview
-:width: 100%
-:::
+The Noto Sans family includes three condensed variants ([Google Noto](https://fonts.google.com/noto), OFL 1.1).
+Choose based on how much horizontal space you need to save:
 
-The condensed variant of Noto Sans, providing the same excellent character
-coverage in a narrower form factor.
+### Noto Sans Condensed
 
-**Variants:** 20 (Thin through Black, with Italics)
-
-**Best For:**
-- Tables with many columns
-- Dense data visualizations
-- Space-constrained layouts
-
-**Usage:**
-```python
-plt.rcParams['font.family'] = 'Noto Sans Condensed'
+```{raw} html
+:file: _generated/notosans_condensed.html
 ```
 
----
-
-## Noto Sans SemiCondensed
-
-:::{figure} images/font_notosans_semicondensed.png
-:alt: Noto Sans SemiCondensed font family preview
-:width: 100%
-:::
-
-A middle ground between regular Noto Sans and the fully condensed variant.
-Offers good space efficiency while maintaining excellent readability.
-
 **Variants:** 20 (Thin through Black, with Italics)
+**Best For:** Tables with many columns, dense data visualizations
 
-**Best For:**
-- Legends with many entries
-- Compact labels
-- Moderate space savings
+### Noto Sans SemiCondensed
 
-**Usage:**
-```python
-plt.rcParams['font.family'] = 'Noto Sans SemiCondensed'
+```{raw} html
+:file: _generated/notosans_semicondensed.html
 ```
 
----
+**Variants:** 20 (Thin through Black, with Italics)
+**Best For:** Legends with many entries, compact labels
 
-## Noto Sans ExtraCondensed
+### Noto Sans ExtraCondensed
 
-:::{figure} images/font_notosans_extracondensed.png
-:alt: Noto Sans ExtraCondensed font family preview
-:width: 100%
-:::
-
-The most condensed variant in the Noto Sans family. Use when space is at an
-absolute premium.
+```{raw} html
+:file: _generated/notosans_extracondensed.html
+```
 
 **Variants:** 20 (Thin through Black, with Italics)
+**Best For:** Very tight axis labels, narrow figure margins
 
-**Best For:**
-- Very tight axis labels
-- Narrow figure margins
-- Maximum information density
+**Usage (condensed for tick labels):**
 
-**Usage:**
 ```python
-plt.rcParams['font.family'] = 'Noto Sans ExtraCondensed'
+import dartwork_mpl as dm
+
+dm.style.use("scientific")
+
+fig, ax = plt.subplots()
+# Switch to condensed only where space is tight
+for label in ax.get_xticklabels():
+    label.set_fontfamily('Noto Sans Condensed')
 ```
 
 ---
 
 ## Noto Sans Math
 
-:::{figure} images/font_notosansmath.png
-:alt: Noto Sans Math font preview
-:width: 100%
-:::
+```{raw} html
+:file: _generated/notosansmath.html
+```
 
 A dedicated font for mathematical typesetting. Noto Sans Math provides
 comprehensive coverage of mathematical symbols, operators, and special
 characters used in scientific notation.
 
-**Variants:** 1 (Regular only)
+**Variants:** 1 (Regular only)\
+**Author:** Google · **License:** [OFL 1.1](https://fonts.google.com/noto/specimen/Noto+Sans+Math)
 
 **Best For:**
+
 - Scientific equations
 - Mathematical notation
 - Greek letters and symbols
 
 **Usage in dartwork-mpl:**
 
-Noto Sans Math is automatically configured for mathtext rendering:
+Noto Sans Math is automatically configured for mathtext rendering by all
+dartwork-mpl styles — no manual setup needed:
 
 ```python
-# These settings are applied by dartwork-mpl styles
-plt.rcParams['mathtext.fontset'] = 'custom'
-plt.rcParams['mathtext.rm'] = 'Noto Sans Math'
-plt.rcParams['mathtext.it'] = 'Noto Sans Math:italic'
-plt.rcParams['mathtext.bf'] = 'Noto Sans Math:bold'
-```
+import dartwork_mpl as dm
 
-**Example:**
-```python
+dm.style.use("scientific")
+
+# Math text just works
 ax.set_xlabel(r'$\alpha = \frac{\Delta x}{\Delta t}$')
 ax.set_ylabel(r'$\sum_{i=1}^{n} x_i^2$')
 ```
@@ -216,25 +231,36 @@ ax.set_ylabel(r'$\sum_{i=1}^{n} x_i^2$')
 
 ## Paperlogy
 
-:::{figure} images/font_paperlogy.png
-:alt: Paperlogy font family preview
-:width: 100%
-:::
+```{raw} html
+:file: _generated/paperlogy.html
+```
 
 A clean, professional typeface designed specifically for documents and papers.
 Paperlogy offers excellent readability in dense text environments typical of
-academic and business publications.
+academic and business publications. **Includes full Korean (한글) glyph support.**
 
-**Variants:** 9 (Light through Black)
+**Variants:** 9 (Thin through Black)\
+**Author:** [Freesentation](https://freesentation.blog/paperlogyfont) · **License:** OFL 1.1
 
 **Best For:**
+
+- Korean-language charts and reports
 - Academic papers
-- Technical reports
 - Professional documents
 
 **Usage:**
+
 ```python
+import dartwork_mpl as dm
+import matplotlib.pyplot as plt
+
+dm.style.use("scientific")
 plt.rcParams['font.family'] = 'Paperlogy'
+
+fig, ax = plt.subplots()
+ax.set_title("분기별 매출 추이", fontweight=dm.fw(4))
+ax.set_xlabel("분기")
+ax.set_ylabel("매출액 (억원)")
 ```
 
 ---
@@ -243,28 +269,26 @@ plt.rcParams['font.family'] = 'Paperlogy'
 
 All font families (except Noto Sans Math) include multiple weights:
 
-| Weight Name | Numeric Value | Description |
-|-------------|---------------|-------------|
-| Thin | 100 | Extremely light |
-| ExtraLight | 200 | Very light |
-| Light | 300 | Light (dartwork default) |
-| Regular | 400 | Normal |
-| Medium | 500 | Slightly bold |
-| SemiBold | 600 | Semi-bold |
-| Bold | 700 | Bold |
-| ExtraBold | 800 | Extra bold |
-| Black | 900 | Maximum weight |
-
-:::{figure} images/font_weights.png
-:alt: Font weight comparison
-:width: 100%
-:::
+| Weight Name | Numeric Value | Description              |
+| ----------- | ------------- | ------------------------ |
+| Thin        | 100           | Extremely light          |
+| ExtraLight  | 200           | Very light               |
+| Light       | 300           | Light (dartwork default) |
+| Regular     | 400           | Normal                   |
+| Medium      | 500           | Slightly bold            |
+| SemiBold    | 600           | Semi-bold                |
+| Bold        | 700           | Bold                     |
+| ExtraBold   | 800           | Extra bold               |
+| Black       | 900           | Maximum weight           |
 
 **Using Weights:**
-```python
-# Direct weight specification
-ax.set_title("Title", fontweight=700)
 
-# Or use the fw() helper for relative weights
-ax.set_title("Title", fontweight=dm.fw(2))  # base + 200
+```python
+import dartwork_mpl as dm
+
+dm.style.use("scientific")  # Base weight = 300 (Light)
+
+# Use the fw() helper for relative weight adjustments
+ax.set_title("Title", fontweight=dm.fw(4))   # 300 + 400 = 700 (Bold)
+ax.set_xlabel("Label", fontweight=dm.fw(0))  # 300 (base, Light)
 ```
