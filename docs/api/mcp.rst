@@ -50,22 +50,33 @@ Tool                            Description
 Practical use-cases
 ^^^^^^^^^^^^^^^^^^^
 
-1. **Style selection** — Ask the assistant *"Which dartwork-mpl preset
-   should I use for a Korean-language investment chart?"* and it can
-   look up the ``general-guide`` resource to answer accurately.
+Here are specific examples of how an AI assistant behaves differently
+when the ``dartwork-mpl`` MCP server is connected:
 
-2. **Layout debugging** — Paste your figure code and ask *"My title
-   overlaps the axes after simple_layout — how do I fix it?"*.  The
-   assistant reads the ``layout-guide`` resource and proposes one of
-   the five documented solutions.
+1. **Zero-shot accurate coding**
+   
+   * **You ask:** *"I need a bar chart for a Korean investment report. How do I set the style using dartwork-mpl?"*
+   * **MCP in action:** The assistant reads the ``general-guide`` resource and immediately outputs:
 
-3. **Color palette lookup** — *"Give me a warm OC palette for a bar
-   chart"* — the assistant can reference the color section in the
-   general guide.
+     .. code-block:: python
 
-4. **Remote doc retrieval** — The ``fetch_github_document`` tool lets
-   the assistant pull the latest docs from GitHub when local resources
-   are outdated.
+        import dartwork_mpl as dm
+        dm.style.use('investment-kr')
+
+2. **Automated layout debugging**
+   
+   * **You ask:** *"I used simple_layout but my legend is overlapping the plot. Fix it using bbox techniques."*
+   * **MCP in action:** The assistant reads the ``layout-guide`` resource, understands the library's specific constraints regarding hardcoded ``bbox_to_anchor``, and provides the exact code to move the legend cleanly using the prescribed methods.
+
+3. **Style and Color lookup without browsing docs**
+   
+   * **You ask:** *"Give me the hex codes for the 'warm' OC color palette for a pie chart."*
+   * **MCP in action:** The assistant extracts the exact hex codes from the color section of the built-in guide without guessing or hallucinating standard hex values.
+
+4. **Pulling remote examples**
+   
+   * **You ask:** *"Can you check the dartwork-mpl GitHub repo for the latest example of a waterfall chart and adapt it for my code?"*
+   * **MCP in action:** Using the ``fetch_github_document`` tool, the assistant downloads the raw file directly from GitHub and writes the adapted code for you.
 
 ----
 
