@@ -139,6 +139,32 @@ copy-paste-ready snippets for the most popular ones.
            }
          }
 
+   .. tab-item:: Antigravity (Gemini)
+      :sync: antigravity
+
+      Add to ``~/.gemini/antigravity/mcp_config.json``:
+
+      .. code-block:: json
+
+         {
+           "mcpServers": {
+             "dartwork-mpl": {
+               "command": "uv",
+               "args": [
+                 "run",
+                 "--directory", "/absolute/path/to/dartwork-mpl",
+                 "dartwork-mpl-mcp"
+               ],
+               "env": {}
+             }
+           }
+         }
+
+      After saving the config, **restart Antigravity** (or start a new
+      conversation) for the server to be picked up.  You can verify the
+      connection by asking the assistant to list its available MCP
+      resources.
+
    .. tab-item:: Generic stdio
       :sync: generic
 
