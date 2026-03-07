@@ -56,6 +56,10 @@ def generate_gallery_assets(_app):
 
     build_api_assets()
 
+    from fonts.generate_assets import build_font_assets
+
+    build_font_assets()
+
 
 def copy_fonts_to_static(app):
     """Copy bundled TTF fonts to _static/fonts/ for HTML specimens."""

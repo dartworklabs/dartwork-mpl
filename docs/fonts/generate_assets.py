@@ -199,8 +199,8 @@ def _save_all_fonts_preview(images_dir: Path) -> Path:
                 color="#444",
             )
 
-    path = images_dir / "fonts_all_families.png"
-    fig.savefig(path, dpi=220, bbox_inches="tight")
+    path = images_dir / "fonts_all_families.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -325,8 +325,8 @@ def _save_family_preview(
                     color="#333", va="center",
                 )
 
-        path = images_dir / f"font_{family.lower()}.png"
-        fig.savefig(path, dpi=220, bbox_inches="tight")
+        path = images_dir / f"font_{family.lower()}.svg"
+        fig.savefig(path, format="svg", bbox_inches="tight")
         plt.close(fig)
         return path
 
@@ -360,8 +360,8 @@ def _save_family_preview(
             va="center",
         )
 
-    path = images_dir / f"font_{family.lower()}.png"
-    fig.savefig(path, dpi=220, bbox_inches="tight")
+    path = images_dir / f"font_{family.lower()}.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -432,8 +432,8 @@ def _save_weight_comparison(images_dir: Path) -> Path:
                 va="center",
             )
 
-    path = images_dir / "font_weights.png"
-    fig.savefig(path, dpi=220, bbox_inches="tight")
+    path = images_dir / "font_weights.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -510,8 +510,8 @@ def _save_utilities_demo(images_dir: Path) -> Path:
         )
 
     plt.tight_layout()
-    path = images_dir / "font_utilities.png"
-    fig.savefig(path, dpi=220, bbox_inches="tight")
+    path = images_dir / "font_utilities.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -578,8 +578,8 @@ def _save_condensed_comparison(images_dir: Path) -> Path:
                 va="center",
             )
 
-    path = images_dir / "font_condensed_comparison.png"
-    fig.savefig(path, dpi=220, bbox_inches="tight")
+    path = images_dir / "font_condensed_comparison.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -658,8 +658,8 @@ def _save_multilang_specimen(images_dir: Path) -> Path:
                 ha="right",
             )
 
-    path = images_dir / "font_multilang.png"
-    fig.savefig(path, dpi=220, bbox_inches="tight")
+    path = images_dir / "font_multilang.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight")
     plt.close(fig)
     return path
 
