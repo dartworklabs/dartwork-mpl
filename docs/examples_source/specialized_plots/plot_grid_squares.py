@@ -20,7 +20,7 @@ dm.style.use("scientific")
 # ---------------------------------------------------------------------------
 # Data
 # ---------------------------------------------------------------------------
-col_labels = ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"]
+col_labels = ["18–24", "25–34", "35–44", "45–54", "55–64", "65+"]
 row_labels = [
     "Has extensive\nfamiliarity with gen AI",
     "Is comfortable using\ngen AI at work",
@@ -120,24 +120,16 @@ for r in range(nrows):
         y = (nrows - 1 - r) * cell_h
         draw_cell(ax, values[r, c], cell_colors[c], x, y, cell_w, cell_h)
 
-# Row labels
-for r, label in enumerate(row_labels):
-    y = (nrows - 1 - r) * cell_h + cell_h / 2
-    ax.text(
-        -0.1,
-        y,
-        label,
-        ha="right",
-        va="center",
-        fontsize=dm.fs(-0.5),
-    )
+# Row labels as ticks
+ax.set_yticks([(nrows - 1 - r) * cell_h + cell_h / 2 for r in range(nrows)])
+ax.set_yticklabels(row_labels, fontsize=dm.fs(-0.5))
+ax.tick_params(axis="y", length=0, pad=8)
 
 # Column labels as ticks
 ax.set_xticks([c * cell_w + cell_w / 2 for c in range(ncols)])
-ax.set_xticklabels(col_labels, weight="bold", fontsize=dm.fs(-0.5))
+ax.set_xticklabels(col_labels, fontsize=dm.fs(-0.5))
 ax.xaxis.tick_top()
-ax.tick_params(axis="x", length=0, pad=5)
-ax.yaxis.set_visible(False)
+ax.tick_params(axis="x", length=0, pad=8)
 
 for spine in ax.spines.values():
     spine.set_visible(False)
