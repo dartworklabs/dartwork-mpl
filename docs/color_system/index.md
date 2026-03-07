@@ -42,20 +42,20 @@ import dartwork_mpl as dm
 import matplotlib.pyplot as plt
 import numpy as np
 
-dm.style.use("scientific")  # style + fonts
+dm.style.use("scientific")
+
+# Named colors work anywhere matplotlib accepts a color string
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(dm.cm2in(15), dm.cm2in(6)), dpi=300)
+
 x = np.linspace(0, 10, 200)
 signal = np.sin(x) * np.exp(-0.08 * x)
+ax1.plot(x, signal, color="tw.emerald500", linewidth=2, label="Emerald 500")
+ax1.legend(fontsize=dm.fs(-1))
 
-plt.plot(x, signal, color="tw.emerald500", linewidth=2.6, label="Emerald 500")
-plt.imshow(np.outer(signal, signal), cmap="dm.sunset")
-plt.colorbar(label="normalized response")
-plt.legend()
-plt.show()
+# Custom colormaps prefixed with 'dm.'
+data = np.random.randn(50, 50).cumsum(axis=0)
+im = ax2.imshow(data, cmap="dm.sunset")
+plt.colorbar(im, ax=ax2, label="normalized response")
+
+dm.simple_layout(fig)
 ```
-
-## Regenerating the visuals
-
-- All preview PNGs live in `docs/color_system/images/`.
-- Sphinx runs `color_system/generate_assets.py` during a build; run it manually to
-  refresh assets after editing colors or colormaps.
-- Exports are high-DPI so the single-column layouts remain crisp when embedded.

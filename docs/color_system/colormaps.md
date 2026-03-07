@@ -59,9 +59,3 @@ plt.show()
   values remain visible without clipping.
 - Use `imshow(..., interpolation="nearest")` when you want hard edges; drop the
   argument for smooth gradients.
-
-## Refreshing the panels
-
-- HTML panels and fallback PNGs live in `docs/color_system/images/`.
-- Sphinx runs `color_system/generate_assets.py` during a build; run it directly
-  after editing the colormap set to regenerate just these assets.

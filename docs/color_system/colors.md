@@ -83,9 +83,3 @@ you need desaturated accents with strong contrast.
 - Keep a single library per figure unless you need deliberate contrast (Primer
   background with Tailwind accents, for example).
 - Turn off `edgecolor` on dense scatters to keep swatches clean in exports.
-
-## Refreshing the sheets
-
-- HTML sheets and fallback PNGs live in `docs/color_system/images/`.
-- A Sphinx build runs `color_system/generate_assets.py`; run it directly if you
-  tweak palette data and want to update only the assets.

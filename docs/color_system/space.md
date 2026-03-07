@@ -172,50 +172,18 @@ converted back to OKLab (the internal storage format) to maintain consistency.
 
 ### Copying colors
 
-The `copy()` method creates an independent copy of a Color object. This is useful
-when you want to modify a color without affecting the original:
+Use `copy()` to create an independent clone you can modify without affecting
+the original:
 
 ```python
 import dartwork_mpl as dm
 
-# Create a color
-color = dm.oklab(0.7, 0.1, 0.2)
-
-# Create a copy
-new_color = color.copy()
-
-# Modify the copy without affecting the original
-new_color.oklab.L += 0.1
-new_color.oklab.a = 0.3
-
-print(color.oklab.L)      # 0.7 (unchanged)
-print(new_color.oklab.L)  # 0.8 (modified)
-```
-
-The copied color preserves all color space values and can be modified
-independently:
-
-```python
-import dartwork_mpl as dm
-
-# Create color from any space
 color = dm.oklch(0.7, 0.2, 120)
+brighter = color.copy()
+brighter.oklab.L += 0.1  # original is unchanged
 
-# Copy it
-new_color = color.copy()
-
-# Both have the same values in all spaces
-L1, C1, h1 = color.oklch
-L2, C2, h2 = new_color.oklch
-assert L1 == L2 and C1 == C2 and h1 == h2
-
-# Modify independently
-color.oklch.C += 0.1
-new_color.oklch.h += 30
-
-# Now they differ
-assert color.oklch.C != new_color.oklch.C
-assert color.oklch.h != new_color.oklch.h
+print(color.oklab.L)      # 0.7
+print(brighter.oklab.L)   # 0.8
 ```
 
 ### Color space overview
@@ -246,6 +214,14 @@ showing how the same color can be expressed in multiple ways.
 The `cspace()` function generates smooth color gradients by interpolating between
 two colors in a specified color space. This is inspired by `np.linspace` but for
 colors.
+
+**Try it live:** Pick two colors below to see how OKLCH, OKLab, and RGB produce
+different gradients. Notice how RGB often creates muddy intermediate colors, while
+OKLCH maintains perceptual brightness throughout.
+
+```{raw} html
+:file: images/gradient_picker.html
+```
 
 ```python
 import dartwork_mpl as dm
@@ -355,46 +331,21 @@ mpl.colormaps.register(cmap=cmap)
 
 ## Quick reference
 
-```python
-import dartwork_mpl as dm
-
-# Create Color objects
-color1 = dm.oklab(L, a, b)
-color2 = dm.oklch(L, C, h)      # h in degrees
-color3 = dm.rgb(r, g, b)        # auto-detects range
-color4 = dm.hex("#ff5733")
-color5 = dm.named("oc.blue5")
-
-# Convert between spaces (method-based)
-L, a, b = color.to_oklab()
-L, C, h = color.to_oklch()      # h in degrees
-r, g, b = color.to_rgb()        # 0-1 range
-hex_str = color.to_hex()
-
-# Access color components (view-based, recommended)
-L = color.oklab.L               # Attribute access
-a = color.oklab.a
-L, a, b = color.oklab           # Unpacking
-a = color.oklab[1]              # Index access
-
-# Modify color components
-color.oklab.L += 0.1            # Arithmetic operations
-color.oklab.a = 0.2             # Direct assignment
-color.oklch.C *= 1.2             # Modify chroma
-color.rgb.r = 0.9                # Modify RGB
-
-# Copy colors
-new_color = color.copy()         # Create independent copy
-
-# Interpolate colors
-gradient = dm.cspace(start, end, n=10, space="oklch")  # default
-gradient = dm.cspace(start, end, n=10, space="oklab")
-gradient = dm.cspace(start, end, n=10, space="rgb")
-```
+| Task                  | Code                                           |
+| --------------------- | ---------------------------------------------- |
+| Create from OKLab     | `dm.oklab(L, a, b)`                            |
+| Create from OKLCH     | `dm.oklch(L, C, h)` — h in degrees             |
+| Create from RGB       | `dm.rgb(r, g, b)` — auto-detects 0–1 vs 0–255  |
+| Create from hex       | `dm.hex("#ff5733")`                            |
+| Create from name      | `dm.named("oc.blue5")`                         |
+| Convert to tuple      | `color.to_oklab()`, `.to_oklch()`, `.to_rgb()` |
+| Convert to hex        | `color.to_hex()`                               |
+| Read/write components | `color.oklch.C *= 1.2`, `color.rgb.r = 0.9`    |
+| Copy                  | `color.copy()`                                 |
+| Interpolate           | `dm.cspace(start, end, n=10, space="oklch")`   |
 
 ## See also
 
 - [Colors](colors) for named color palettes
 - [Colormaps](colormaps) for predefined colormap collections
 - [Usage Guide](../usage_guide/index) for general dartwork-mpl patterns
-

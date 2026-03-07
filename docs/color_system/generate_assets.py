@@ -58,7 +58,7 @@ COLOR_LIBRARY_ORDER = [
     "primer",
 ]
 COLOR_LIBRARY_LABELS = {
-    "dm": "Dartwork",
+    "dm": "dartwork",
     "opencolor": "OpenColor",
     "tw": "Tailwind",
     "md": "Material Design",
@@ -230,6 +230,33 @@ def _save_color_sheets(images_dir: Path) -> list[Path]:
 # ─── HTML/CSS native rendering ─────────────────────────────────────────
 
 
+def _oklch_lightness(hex_str: str) -> float:
+    """Compute OKLCH Lightness from a hex color string.
+
+    Uses the OKLab intermediate: hex → linear sRGB → OKLab L.
+    """
+    r_srgb, g_srgb, b_srgb = _hex_to_rgb01(hex_str)
+
+    # sRGB → linear RGB
+    def _lin(c: float) -> float:
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+    r_lin, g_lin, b_lin = _lin(r_srgb), _lin(g_srgb), _lin(b_srgb)
+
+    # linear RGB → LMS (via OKLab matrix)
+    l_ = 0.4122214708 * r_lin + 0.5363325363 * g_lin + 0.0514459929 * b_lin
+    m_ = 0.2119034982 * r_lin + 0.6806995451 * g_lin + 0.1073969566 * b_lin
+    s_ = 0.0883024619 * r_lin + 0.2817188376 * g_lin + 0.6299787005 * b_lin
+
+    # LMS → OKLab L (cube root)
+    l_cr = l_ ** (1 / 3) if l_ >= 0 else 0.0
+    m_cr = m_ ** (1 / 3) if m_ >= 0 else 0.0
+    s_cr = s_ ** (1 / 3) if s_ >= 0 else 0.0
+
+    L = 0.2104542553 * l_cr + 0.7936177850 * m_cr - 0.0040720468 * s_cr
+    return L
+
+
 def _relative_luminance_rgb(r: float, g: float, b: float) -> float:
     """ITU-R BT.709 relative luminance."""
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
@@ -306,11 +333,21 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
                 return (1, int(m2.group(2)), m2.group(1))
             return (2, 0, w)
 
+        # For dm palettes: sort by OKLCH lightness (light→dark)
+        def _oklch_sort_key(
+            item: tuple[str, str, str],
+        ) -> float:
+            """Sort by OKLCH lightness descending (light first)."""
+            return -_oklch_lightness(item[2])
+
+        is_dm = library_key == "dm"
+
         html_parts = ['<div class="dm-color-sheet">']
         html_parts.append(f'<div class="dm-sheet-title">{label}</div>')
 
         for base in sorted(lib_colors.keys()):
-            colors_list = sorted(lib_colors[base], key=_weight_sort_key)
+            sort_fn = _oklch_sort_key if is_dm else _weight_sort_key
+            colors_list = sorted(lib_colors[base], key=sort_fn)
             # Group label shows prefix+base (e.g. "tw.amber", "dm.vivid")
             group_label = f"{prefix}{base}"
 
