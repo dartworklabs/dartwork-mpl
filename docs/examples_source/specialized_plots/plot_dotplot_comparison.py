@@ -83,7 +83,7 @@ ax.plot(success_values, y_pos, "o", ms=track_lw, ls="none", color=pal.success, z
 
 # Multiples annotation
 for i, (sv, m) in enumerate(zip(success_values, multiples, strict=False)):
-    ax.text(sv + 3, i, m, va="center", ha="left", fontsize=dm.fs(-1))
+    ax.text(sv + 3, i, m, va="center", ha="left", fontsize=dm.fs(-0.5))
 
 # Axes
 ax.set_yticks(y_pos)
@@ -109,7 +109,7 @@ legend_elements = [
            markerfacecolor=pal.success, ms=8),
 ]
 ax.legend(handles=legend_elements, loc="lower right", bbox_to_anchor=(1, 1.01),
-          ncol=2, frameon=False, fontsize=dm.fs(-1), columnspacing=1.5)
+          ncol=2, frameon=False, fontsize=dm.fs(-0.5), columnspacing=1.5)
 
 dm.simple_layout(fig, margins=(0.1, 0.05, 0.1, 0.15))
 plt.show()

@@ -77,22 +77,18 @@ def draw_treemap(ax, columns, total, title, padding=0.008):
                     h - 2 * padding,
                     facecolor=color,
                     edgecolor="white",
-                    lw=1.5,
+                    lw=0.75,
                 )
             )
             # Label
-            label = (
-                f"{name}\n{val}%"
-                if col_width > 0.15 and h > 0.15
-                else f"{val}%"
-            )
+            label = f"{name}\n{val}%"
             ax.text(
                 x + col_width / 2,
                 y + h / 2,
                 label,
                 ha="center",
                 va="center",
-                fontsize=dm.fs(-1),
+                fontsize=dm.fs(-0.5),
                 color=text_color(color),
                 weight="bold",
             )

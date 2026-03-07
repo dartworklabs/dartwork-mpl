@@ -43,11 +43,11 @@ def text_color(fill, threshold=0.6):
 # Data
 # ---------------------------------------------------------------------------
 categories = [
-    ("Category 1", 20, 15),
-    ("Category 2", 10, 25),
-    ("Category 3", 25, 10),
-    ("Category 4", 30, 30),
-    ("Category 5", 15, 20),
+    ("Category 1", 20, 15, 18),
+    ("Category 2", 10, 25, 20),
+    ("Category 3", 25, 10, 15),
+    ("Category 4", 30, 30, 25),
+    ("Category 5", 15, 20, 22),
 ]
 
 colors = [
@@ -58,42 +58,49 @@ colors = [
     "tw.emerald600",
 ]
 
+years = ["2020", "2023", "2026"]
+
 # ---------------------------------------------------------------------------
 # Plot
 # ---------------------------------------------------------------------------
-left_x, right_x = 0.0, 0.7
+n_years = len(years)
+x_pos = np.linspace(0, 1.2, n_years)
 bar_width = 0.2
 label_offset = 0.02
 
-values_left = [c[1] for c in categories]
-values_right = [c[2] for c in categories]
-left_bottoms, left_total = stack_bottoms(values_left)
-right_bottoms, right_total = stack_bottoms(values_right)
+# Extract values and bottoms per year
+all_values = []
+all_bottoms = []
+all_totals = []
+for y_idx in range(n_years):
+    vals = [c[y_idx + 1] for c in categories]
+    all_values.append(vals)
+    bots, tot = stack_bottoms(vals)
+    all_bottoms.append(bots)
+    all_totals.append(tot)
 
 fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
-fig.suptitle("Category Mix Shift (2022 vs 2025)", fontsize=dm.fs(1), weight="bold", y=1.05)
+fig.suptitle("Category Mix Shift (2020–2026)", fontsize=dm.fs(1), weight="bold", y=1.05)
 
-for idx, (label, left_val, right_val) in enumerate(categories):
-    lb, rb = left_bottoms[idx], right_bottoms[idx]
+for idx, cat_data in enumerate(categories):
+    label = cat_data[0]
+    vals = cat_data[1:]
     color = colors[idx]
 
-    # Bars
-    ax.add_patch(
-        plt.Rectangle((left_x, lb), bar_width, left_val, color=color, lw=0)
-    )
-    ax.add_patch(
-        plt.Rectangle((right_x, rb), bar_width, right_val, color=color, lw=0)
-    )
+    # Draw bars and value labels
+    for y_idx in range(n_years):
+        bx = x_pos[y_idx]
+        b_val = vals[y_idx]
+        b_bot = all_bottoms[y_idx][idx]
 
-    # Value labels
-    for cx, cy, val in [
-        (left_x + bar_width / 2, lb + left_val / 2, left_val),
-        (right_x + bar_width / 2, rb + right_val / 2, right_val),
-    ]:
+        ax.add_patch(
+            plt.Rectangle((bx, b_bot), bar_width, b_val, color=color, lw=0)
+        )
+
         ax.text(
-            cx,
-            cy,
-            str(val),
+            bx + bar_width / 2,
+            b_bot + b_val / 2,
+            str(b_val),
             ha="center",
             va="center",
             fontsize=dm.fs(-0.5),
@@ -101,10 +108,10 @@ for idx, (label, left_val, right_val) in enumerate(categories):
             weight=dm.fw(1),
         )
 
-    # Category label
+    # Category label on the far right
     ax.text(
-        right_x + bar_width + label_offset,
-        rb + right_val / 2,
+        x_pos[-1] + bar_width + label_offset,
+        all_bottoms[-1][idx] + vals[-1] / 2,
         label,
         ha="left",
         va="center",
@@ -113,54 +120,52 @@ for idx, (label, left_val, right_val) in enumerate(categories):
         weight=dm.fw(1),
     )
 
-    # Connecting polygon
-    lt, lb_ = lb + left_val, max(0, lb)
-    rt, rb_ = rb + right_val, max(0, rb)
-    polygon = Polygon(
-        [
-            [left_x + bar_width, lt],
-            [right_x, rt],
-            [right_x, rb_],
-            [left_x + bar_width, lb_],
-        ],
-        closed=True,
-        color=dm.pseudo_alpha(color, alpha=0.35),
-        zorder=0,
-        linewidth=0,
-    )
-    ax.add_patch(polygon)
+    # Connecting polygons and change labels
+    for y_idx in range(n_years - 1):
+        x1, x2 = x_pos[y_idx], x_pos[y_idx + 1]
+        v1, v2 = vals[y_idx], vals[y_idx + 1]
+        b1, b2 = all_bottoms[y_idx][idx], all_bottoms[y_idx + 1][idx]
 
-    # Change label
-    pct = (right_val - left_val) / left_val * 100
-    label_text = f"+{pct:.0f}%" if pct > 0 else f"{pct:.0f}%"
-    mid_x = np.mean([left_x + bar_width, right_x])
-    mid_y = (lt + rt + lb_ + rb_) / 4
-    ax.text(
-        mid_x, mid_y, label_text, ha="center", va="center", fontsize=dm.fs(0)
-    )
+        lt, lb_ = b1 + v1, max(0, b1)
+        rt, rb_ = b2 + v2, max(0, b2)
+        
+        polygon = Polygon(
+            [
+                [x1 + bar_width, lt],
+                [x2, rt],
+                [x2, rb_],
+                [x1 + bar_width, lb_],
+            ],
+            closed=True,
+            color=dm.pseudo_alpha(color, alpha=0.35),
+            zorder=0,
+            linewidth=0,
+        )
+        ax.add_patch(polygon)
+
+        # Change label
+        pct = (v2 - v1) / v1 * 100
+        label_text = f"+{pct:.0f}%" if pct > 0 else f"{pct:.0f}%"
+        mid_x = np.mean([x1 + bar_width, x2])
+        mid_y = (lt + rt + lb_ + rb_) / 4
+        ax.text(
+            mid_x, mid_y, label_text, ha="center", va="center", fontsize=dm.fs(-0.5)
+        )
 
 # Year labels
-ax.text(
-    left_x + bar_width / 2,
-    -3,
-    "2022",
-    ha="center",
-    va="top",
-    fontsize=dm.fs(-0.5),
-    weight="bold",
-)
-ax.text(
-    right_x + bar_width / 2,
-    -3,
-    "2025",
-    ha="center",
-    va="top",
-    fontsize=dm.fs(-0.5),
-    weight="bold",
-)
+for y_idx, year_str in enumerate(years):
+    ax.text(
+        x_pos[y_idx] + bar_width / 2,
+        -3,
+        year_str,
+        ha="center",
+        va="top",
+        fontsize=dm.fs(-0.5),
+        weight="bold",
+    )
 
-ax.set_xlim(left_x - 0.05, right_x + bar_width + label_offset + 0.5)
-ax.set_ylim(-6, max(left_total, right_total) * 1.05)
+ax.set_xlim(x_pos[0] - 0.05, x_pos[-1] + bar_width + label_offset + 0.5)
+ax.set_ylim(-6, max(all_totals) * 1.05)
 ax.axis("off")
 
 dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05))
