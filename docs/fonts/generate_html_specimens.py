@@ -7,7 +7,6 @@ Output: docs/fonts/_generated/ (CSS + HTML snippets)
 from __future__ import annotations
 
 import os
-
 import shutil
 from collections import defaultdict
 from pathlib import Path
@@ -29,38 +28,41 @@ WEIGHT_ORDER = {
     "Black": 9,
 }
 
+# Key weights to feature in the compact showcase
+KEY_WEIGHTS = {"Light", "Regular", "Medium", "Bold", "Black"}
+
 FONT_META = {
     "Inter": {
         "description": "Modern, highly legible sans-serif designed for computer screens",
-        "sample": "Sphinx of black quartz, judge my vow — designing beautiful charts & graphs since 2024. (0123456789)",
+        "sample": "The dartwork designs beautiful data artworks since 2021.",
     },
     "InterDisplay": {
         "description": "Display variant of Inter optimized for larger sizes",
-        "sample": "Sphinx of black quartz, judge my vow — designing beautiful charts & graphs since 2024. (0123456789)",
+        "sample": "The dartwork designs beautiful data artworks since 2021.",
     },
     "NotoSans": {
         "description": "Google's versatile sans-serif with excellent language coverage",
-        "sample": "Sphinx of black quartz, judge my vow — designing beautiful charts & graphs since 2024. (0123456789)",
+        "sample": "The dartwork designs beautiful data artworks since 2021.",
     },
     "NotoSans_Condensed": {
         "description": "Condensed variant of Noto Sans for space-constrained layouts",
-        "sample": "Sphinx of black quartz, judge my vow — designing beautiful charts & graphs since 2024. (0123456789)",
+        "sample": "The dartwork designs beautiful data artworks since 2021.",
     },
     "NotoSans_SemiCondensed": {
         "description": "Semi-condensed variant balancing readability and compactness",
-        "sample": "Sphinx of black quartz, judge my vow — designing beautiful charts & graphs since 2024. (0123456789)",
+        "sample": "The dartwork designs beautiful data artworks since 2021.",
     },
     "NotoSans_ExtraCondensed": {
         "description": "Extra condensed for maximum space efficiency",
-        "sample": "Sphinx of black quartz, judge my vow — designing beautiful charts & graphs since 2024. (0123456789)",
+        "sample": "The dartwork designs beautiful data artworks since 2021.",
     },
     "Paperlogy": {
-        "description": "Clean, professional font designed for documents",
-        "sample": "김도균 & 이주임 님이 만든 아름다운 페이퍼로지 폰트. 0123456789",
+        "description": "Clean, professional font designed for documents · Korean (한글) support",
+        "sample": "김도균 & 이주임 님이 만든 아름다운 페이퍼로지 폰트.",
     },
     "Roboto": {
         "description": "Google's flagship sans-serif, default font in dartwork-mpl",
-        "sample": "Sphinx of black quartz, judge my vow — designing beautiful charts & graphs since 2024. (0123456789)",
+        "sample": "The dartwork designs beautiful data artworks since 2021.",
     },
 }
 
@@ -111,6 +113,14 @@ def _find_regular(fonts: list[str]) -> str | None:
     return fonts[0] if fonts else None
 
 
+def _is_key_weight(filename: str) -> bool:
+    """Check if a font file represents a key weight (non-italic)."""
+    if "Italic" in filename:
+        return False
+    label = _variant_label(filename)
+    return label in KEY_WEIGHTS
+
+
 # ── Generators ───────────────────────────────────────────────────────────────
 
 
@@ -136,12 +146,17 @@ def generate_fontface_css() -> str:
 
 
 def generate_family_html(family: str, fonts: list[str]) -> str:
-    """Generate HTML specimen for one font family."""
+    """Generate HTML specimen for one font family (all weights)."""
     meta = FONT_META.get(family, {})
     desc = meta.get("description", "")
-    sample = meta.get("sample", "The quick brown fox jumps over the lazy dog. 0123456789")
+    sample = meta.get(
+        "sample",
+        "The quick brown fox jumps over the lazy dog. 0123456789",
+    )
 
-    sorted_fonts = sorted(fonts, key=_get_weight_score)
+    # Exclude italic variants — show only upright weights
+    upright_fonts = [f for f in fonts if "Italic" not in f]
+    sorted_fonts = sorted(upright_fonts, key=_get_weight_score)
     regular = _find_regular(sorted_fonts)
     regular_css = _font_face_name(regular) if regular else "sans-serif"
 
@@ -150,8 +165,10 @@ def generate_family_html(family: str, fonts: list[str]) -> str:
         label = _variant_label(font)
         css_name = _font_face_name(font)
         rows.append(
-            f'  <span class="label" style="font-family:\'{regular_css}\'">{label}</span>\n'
-            f'  <span class="sample" style="font-family:\'{css_name}\'">{sample}</span>'
+            f'  <span class="label" style="font-family:\'{regular_css}\'">'
+            f"{label}</span>\n"
+            f'  <span class="sample" style="font-family:\'{css_name}\'">'
+            f"{sample}</span>"
         )
 
     grid = "\n".join(rows)
@@ -164,31 +181,181 @@ def generate_family_html(family: str, fonts: list[str]) -> str:
     )
 
 
+def generate_family_showcase_html(
+    family: str,
+    fonts: list[str],
+) -> str:
+    """Generate a compact showcase: hero text + key weights only."""
+    meta = FONT_META.get(family, {})
+    desc = meta.get("description", "")
+
+    sorted_fonts = sorted(fonts, key=_get_weight_score)
+    regular = _find_regular(sorted_fonts)
+    regular_css = _font_face_name(regular) if regular else "sans-serif"
+
+    # Find key weight fonts
+    key_fonts = [f for f in sorted_fonts if _is_key_weight(f)]
+    if not key_fonts:
+        key_fonts = sorted_fonts[:5]
+
+    # Hero line — large display text in Regular weight
+    hero = (
+        f'  <div class="dm-showcase-hero" '
+        f"style=\"font-family:'{regular_css}'\">"
+        f"Aa Bb Cc Dd Ee 0123456789</div>"
+    )
+
+    # Key weight rows
+    weight_numeric = {
+        "Thin": 100,
+        "ExtraLight": 200,
+        "Light": 300,
+        "Regular": 400,
+        "Medium": 500,
+        "SemiBold": 600,
+        "Bold": 700,
+        "ExtraBold": 800,
+        "Black": 900,
+    }
+
+    rows = []
+    for font in key_fonts:
+        label = _variant_label(font)
+        css_name = _font_face_name(font)
+        num = weight_numeric.get(label, "")
+        rows.append(
+            f'  <div class="dm-showcase-row">\n'
+            f'    <span class="dm-showcase-weight">{label}</span>\n'
+            f'    <span class="dm-showcase-num">{num}</span>\n'
+            f'    <span class="dm-showcase-sample" '
+            f"style=\"font-family:'{css_name}'\">"
+            f"The quick brown fox jumps over the lazy dog.</span>\n"
+            f"  </div>"
+        )
+
+    weight_rows = "\n".join(rows)
+
+    # Variant count summary
+    total = len(fonts)
+    italic_count = sum(1 for f in fonts if "Italic" in f)
+    upright_count = total - italic_count
+    variant_info = f"{upright_count} weights"
+    if italic_count:
+        variant_info += f" + {italic_count} italics"
+
+    return (
+        f'<div class="dm-font-showcase">\n'
+        f"  <h3>{family}</h3>\n"
+        f'  <p class="desc">{desc} · '
+        f"<strong>{variant_info}</strong></p>\n"
+        f"{hero}\n"
+        f'  <div class="dm-showcase-grid">\n'
+        f"{weight_rows}\n  </div>\n"
+        f"</div>"
+    )
+
+
+def generate_condensed_comparison_html(
+    families: dict[str, list[str]],
+) -> str:
+    """Generate side-by-side comparison of condensed variants."""
+    condensed_families = [
+        ("NotoSans", "Regular"),
+        ("NotoSans_SemiCondensed", "Semi Condensed"),
+        ("NotoSans_Condensed", "Condensed"),
+        ("NotoSans_ExtraCondensed", "Extra Condensed"),
+    ]
+
+    sample = (
+        "Revenue growth accelerated to 24.1% YoY in Q3 2025, "
+        "driven by strong demand."
+    )
+
+    rows = []
+    for family_key, display_name in condensed_families:
+        fonts = families.get(family_key)
+        if not fonts:
+            continue
+        regular = _find_regular(fonts)
+        if not regular:
+            continue
+        css_name = _font_face_name(regular)
+        rows.append(
+            f'  <div class="dm-condensed-row">\n'
+            f'    <span class="dm-condensed-label">'
+            f"{display_name}</span>\n"
+            f'    <span class="dm-condensed-sample" '
+            f"style=\"font-family:'{css_name}'\">"
+            f"{sample}</span>\n"
+            f"  </div>"
+        )
+
+    grid = "\n".join(rows)
+    return (
+        f'<div class="dm-font-showcase">\n'
+        f"  <h3>Condensed Variants Comparison</h3>\n"
+        f'  <p class="desc">Same text rendered at four widths '
+        f"— choose based on available space</p>\n"
+        f'  <div class="dm-condensed-grid">\n{grid}\n  </div>\n'
+        f"</div>"
+    )
+
+
 def generate_multilang_html() -> str:
     """Generate multi-language specimen HTML."""
-    # Each entry: (label, sample_text, font_file, font_display_name)
     langs = [
-        ("한국어", "데이터 시각화를 위한 전문 타이포그래피", "Paperlogy-4Regular.ttf", "Paperlogy"),
-        ("English", "Professional typography for data visualization", "NotoSans-Regular.ttf", "Noto Sans"),
-        ("日本語", "データ可視化のためのタイポグラフィ", "NotoSans-Regular.ttf", "Noto Sans CJK"),
-        ("中文", "用于数据可视化的专业排版", "NotoSans-Regular.ttf", "Noto Sans CJK"),
-        ("Math", "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∉ ⊂ ∪ ∩ ∀ ∃", "NotoSansMath-Regular.ttf", "Noto Sans Math"),
+        (
+            "한국어",
+            "데이터 시각화를 위한 전문 타이포그래피",
+            "Paperlogy-4Regular.ttf",
+            "Paperlogy",
+        ),
+        (
+            "English",
+            "Professional typography for data visualization",
+            "NotoSans-Regular.ttf",
+            "Noto Sans",
+        ),
+        (
+            "日本語",
+            "データ可視化のためのタイポグラフィ",
+            "NotoSans-Regular.ttf",
+            "Noto Sans CJK",
+        ),
+        (
+            "中文",
+            "用于数据可视化的专业排版",
+            "NotoSans-Regular.ttf",
+            "Noto Sans CJK",
+        ),
+        (
+            "Math",
+            "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∉ ⊂ ∪ ∩ ∀ ∃",
+            "NotoSansMath-Regular.ttf",
+            "Noto Sans Math",
+        ),
     ]
 
     rows = []
     for label, sample, font_file, display_name in langs:
         css_name = _font_face_name(font_file)
         rows.append(
-            f'  <span class="lang-label" style="font-family:\'{css_name}\'">{label}</span>\n'
-            f'  <span class="lang-sample" style="font-family:\'{css_name}\'">{sample}</span>\n'
-            f'  <span class="lang-font-name">{display_name}</span>'
+            f'  <span class="lang-label" '
+            f"style=\"font-family:'{css_name}'\">"
+            f"{label}</span>\n"
+            f'  <span class="lang-sample" '
+            f"style=\"font-family:'{css_name}'\">"
+            f"{sample}</span>\n"
+            f'  <span class="lang-font-name">'
+            f"{display_name}</span>"
         )
 
     grid = "\n".join(rows)
     return (
         f'<div class="dm-font-specimen">\n'
         f"  <h3>Multi-Language Support</h3>\n"
-        f'  <p class="desc">All rendered with bundled fonts — no system font installation required</p>\n'
+        f'  <p class="desc">All rendered with bundled fonts '
+        f"— no system font installation required</p>\n"
         f'  <div class="dm-multilang-grid">\n{grid}\n  </div>\n'
         f"</div>"
     )
@@ -198,27 +365,41 @@ def generate_math_html() -> str:
     """Generate NotoSansMath specimen HTML."""
     css_name = "dm-NotoSansMath-Regular"
     equations = [
-        ("Symbols", "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∉ ⊂ ∪ ∩ ∀ ∃"),
+        (
+            "Symbols",
+            "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∉ ⊂ ∪ ∩ ∀ ∃",
+        ),
         ("Quadratic", "x = (−b ± √(b² − 4ac)) / 2a"),
         ("Gaussian", "∫₋∞^∞ e^(−x²) dx = √π"),
-        ("Green's Function", "G(r,t) = 1/(4παt)^(3/2) exp(−(x²+y²+z²)/(4αt))"),
+        (
+            "Green's Function",
+            "G(r,t) = 1/(4παt)^(3/2) exp(−(x²+y²+z²)/(4αt))",
+        ),
         ("Entropy", "H(X) = −∑ᵢ p(xᵢ) log p(xᵢ)"),
-        ("Heat Equation", "∂u/∂t = α(∂²u/∂x² + ∂²u/∂y² + ∂²u/∂z²)"),
+        (
+            "Heat Equation",
+            "∂u/∂t = α(∂²u/∂x² + ∂²u/∂y² + ∂²u/∂z²)",
+        ),
         ("Navier-Stokes", "ρ(∂v/∂t + v·∇v) = −∇p + μ∇²v"),
     ]
 
     rows = []
     for label, expr in equations:
         rows.append(
-            f'  <span class="label" style="font-family:\'{css_name}\'">{label}</span>\n'
-            f'  <span class="expr" style="font-family:\'{css_name}\'">{expr}</span>'
+            f'  <span class="label" '
+            f"style=\"font-family:'{css_name}'\">"
+            f"{label}</span>\n"
+            f'  <span class="expr" '
+            f"style=\"font-family:'{css_name}'\">"
+            f"{expr}</span>"
         )
 
     grid = "\n".join(rows)
     return (
         f'<div class="dm-font-specimen">\n'
         f"  <h3>NotoSansMath</h3>\n"
-        f'  <p class="desc">Mathematical symbols and equations font</p>\n'
+        f'  <p class="desc">'
+        f"Mathematical symbols and equations font</p>\n"
         f'  <div class="dm-math-grid">\n{grid}\n  </div>\n'
         f"</div>"
     )
@@ -240,7 +421,7 @@ def build_html_specimens() -> None:
     css_path.write_text(css)
     print(f"[html-specimens] wrote {css_path}")
 
-    # 3. Generate per-family HTML snippets
+    # 3. Generate per-family HTML snippets (full weight grid)
     families = _collect_fonts()
     for family, fonts in families.items():
         if family == "NotoSansMath":
@@ -250,12 +431,26 @@ def build_html_specimens() -> None:
         out = OUT_DIR / f"{family.lower()}.html"
         out.write_text(html)
 
-    # 4. Generate multi-language HTML
+    # 4. Generate per-family showcase HTML (compact key weights)
+    for family, fonts in families.items():
+        if family == "NotoSansMath":
+            continue
+        html = generate_family_showcase_html(family, fonts)
+        out = OUT_DIR / f"{family.lower()}_showcase.html"
+        out.write_text(html)
+
+    # 5. Generate condensed comparison HTML
+    condensed_html = generate_condensed_comparison_html(families)
+    (OUT_DIR / "condensed_comparison.html").write_text(condensed_html)
+
+    # 6. Generate multi-language HTML
     ml_html = generate_multilang_html()
     (OUT_DIR / "multilang.html").write_text(ml_html)
 
-    count = len(families) + 1  # +1 for multilang
-    print(f"[html-specimens] wrote {count} HTML specimens to {OUT_DIR}")
+    count = len(list(OUT_DIR.glob("*.html")))
+    print(
+        f"[html-specimens] wrote {count} HTML specimens to {OUT_DIR}"
+    )
 
 
 if __name__ == "__main__":

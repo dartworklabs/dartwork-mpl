@@ -119,10 +119,3 @@ ax.text(0.5, 0.5, "\U000F050F",    # MDI: thermometer
 ```
 
 See [API Reference → Icon Font System](../api/icon.rst) for full details.
-
-## Regenerating the Visuals
-
-- HTML specimens live in `docs/fonts/_generated/` (auto-generated).
-- Legacy preview PNGs live in `docs/fonts/images/`.
-- Run `python docs/fonts/generate_html_specimens.py` to refresh HTML specimens.
-- Run `python docs/fonts/generate_assets.py` to refresh PNG assets.

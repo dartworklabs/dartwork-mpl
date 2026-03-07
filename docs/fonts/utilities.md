@@ -8,34 +8,21 @@ simplify typography management in your visualizations.
 
 ## Automatic Font Registration
 
-When you import dartwork-mpl, all bundled fonts are automatically registered
-with matplotlib's font manager:
+When you import dartwork-mpl, all 130 bundled fonts are automatically
+registered with matplotlib's font manager — no manual installation or
+system-level configuration required:
 
 ```python
 import dartwork_mpl as dm  # Fonts are now available!
 ```
 
-This happens through the `_add_fonts()` function in the font module:
-
-```python
-from pathlib import Path
-from matplotlib import font_manager
-
-def _add_fonts():
-    font_dir = [Path(__file__).parent / 'asset/font']
-    for font in font_manager.findSystemFonts(font_dir):
-        font_manager.fontManager.addfont(font)
-
-_add_fonts()  # Called on import
-```
-
-No manual installation or system-level font configuration required.
-
 ---
 
-## `fs(n)` - Font Size Helper
+## `fs(n)` — Font Size Helper
 
-Adjusts font size relative to the current base size from `rcParams`.
+Adjusts font size relative to the current base size from your active style.
+This keeps your typography consistent when switching between presets or output
+formats.
 
 **Signature:**
 
@@ -51,46 +38,39 @@ dm.fs(n)
 
 - `float`: The adjusted font size
 
-**How It Works:**
-
-```python
-def fs(n):
-    return plt.rcParams['font.size'] + n
-```
-
 **Example:**
 
 ```python
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
 
-dm.style.use("scientific")  # Base font size is 8.5
+dm.style.use("scientific")  # Base font size is 7.5
 
 fig, ax = plt.subplots()
-ax.set_title("Main Title", fontsize=dm.fs(6))      # 14.5pt
-ax.set_xlabel("X Label", fontsize=dm.fs(2))        # 10.5pt
-ax.set_ylabel("Y Label", fontsize=dm.fs(0))        # 8.5pt (base)
-ax.text(0.5, 0.5, "Note", fontsize=dm.fs(-2))      # 6.5pt
+ax.set_title("Main Title", fontsize=dm.fs(6))      # 13.5pt
+ax.set_xlabel("X Label", fontsize=dm.fs(2))        # 9.5pt
+ax.set_ylabel("Y Label", fontsize=dm.fs(0))        # 7.5pt (base)
+ax.text(0.5, 0.5, "Note", fontsize=dm.fs(-2))      # 5.5pt
 ```
 
-**Why Use `fs()`?**
-
-Using relative sizes keeps your typography consistent when switching between
-styles or output formats:
+**Why use `fs()` instead of hardcoded sizes?** If you switch from `scientific`
+(base 7.5pt) to `presentation` (base 8.5pt), all your `fs()` calls
+automatically adjust — no manual updates needed:
 
 ```python
-# Instead of hardcoding:
-ax.set_title("Title", fontsize=14)  # May not fit your style
-
-# Use relative sizing:
+# This adapts automatically to any preset:
 ax.set_title("Title", fontsize=dm.fs(4))  # Always 4pt larger than base
+
+# This breaks when you change presets:
+ax.set_title("Title", fontsize=14)  # Wrong size for scientific, right for presentation?
 ```
 
 ---
 
-## `fw(n)` - Font Weight Helper
+## `fw(n)` — Font Weight Helper
 
-Adjusts font weight relative to the current base weight from `rcParams`.
+Adjusts font weight relative to the current base weight from your active style.
+Each step corresponds to one standard weight increment (100).
 
 **Signature:**
 
@@ -105,13 +85,6 @@ dm.fw(n)
 **Returns:**
 
 - `int`: The adjusted font weight
-
-**How It Works:**
-
-```python
-def fw(n):
-    return plt.rcParams['font.weight'] + 100 * n
-```
 
 **Example:**
 
@@ -144,7 +117,7 @@ ax.text(0.5, 0.5, "Thin", fontweight=dm.fw(-2))    # 100 (Thin)
 
 ---
 
-## `plot_fonts()` - Font Preview Gallery
+## `plot_fonts()` — Font Preview Gallery
 
 Generates a visual preview of all available fonts.
 
@@ -198,7 +171,7 @@ font.family: roboto
 font.weight: 300
 
 # Base font size
-font.size: 8.5
+font.size: 7.5
 
 # Math text configuration
 mathtext.fontset: custom

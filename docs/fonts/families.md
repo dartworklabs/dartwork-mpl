@@ -18,6 +18,11 @@ Not sure which font to use? Pick based on your primary need:
 | **Math / scientific**        | Noto Sans Math             | Full symbol set: ∑ ∫ √ ∞ π θ α β γ          |
 | **Multi-language documents** | Noto Sans                  | Broadest Unicode coverage                   |
 
+## Live Font Specimens
+
+Every specimen below is rendered **live in your browser** using the actual
+bundled font files — what you see is exactly what you get in your charts.
+
 ## Multi-Language Support
 
 All fonts below are **bundled** — no system font installation required:
@@ -31,15 +36,15 @@ All fonts below are **bundled** — no system font installation required:
 ## Roboto (Default)
 
 ```{raw} html
-:file: _generated/roboto.html
+:file: _generated/roboto_showcase.html
 ```
 
 Google's flagship sans-serif typeface and the **default font in dartwork-mpl**.
 Roboto features friendly, open curves while maintaining a mechanical skeleton,
 making it highly legible at all sizes.
 
-**Variants:** 15 (Thin, Light, Regular, Medium, Bold, Black + Italics)\
-**Author:** Christian Robertson · **License:** [Apache 2.0](https://fonts.google.com/specimen/Roboto)
+**Author:** Christian Robertson · **License:** [Apache 2.0](https://fonts.google.com/specimen/Roboto)\
+**Italic:** 9 italic variants included (Thin Italic – Black Italic)
 
 **Best For:**
 
@@ -55,20 +60,29 @@ import dartwork_mpl as dm
 dm.style.use("scientific")  # Roboto Light (300) is already the default
 ```
 
+:::{admonition} All weights
+:class: dropdown
+
+```{raw} html
+:file: _generated/roboto.html
+```
+
+:::
+
 ---
 
 ## Inter
 
 ```{raw} html
-:file: _generated/inter.html
+:file: _generated/inter_showcase.html
 ```
 
 A modern sans-serif typeface designed specifically for computer screens. Inter
 features a tall x-height for improved readability at small sizes and includes
 many OpenType features.
 
-**Variants:** 20 (Thin through Black, with Italics)\
-**Author:** [Rasmus Andersson](https://rsms.me/inter/) · **License:** [OFL 1.1](https://github.com/rsms/inter)
+**Author:** [Rasmus Andersson](https://rsms.me/inter/) · **License:** [OFL 1.1](https://github.com/rsms/inter)\
+**Italic:** 9 italic variants included (Thin Italic – Black Italic)
 
 **Best For:**
 
@@ -86,19 +100,28 @@ dm.style.use("scientific")
 plt.rcParams['font.family'] = 'Inter'  # Override just the font family
 ```
 
+:::{admonition} All weights
+:class: dropdown
+
+```{raw} html
+:file: _generated/inter.html
+```
+
+:::
+
 ---
 
 ## InterDisplay
 
 ```{raw} html
-:file: _generated/interdisplay.html
+:file: _generated/interdisplay_showcase.html
 ```
 
 The display variant of Inter, optimized for larger sizes. Features tighter
 letter-spacing and refined details that shine at headline sizes.
 
-**Variants:** 20 (Thin through Black, with Italics)\
-**Author:** [Rasmus Andersson](https://rsms.me/inter/) · **License:** [OFL 1.1](https://github.com/rsms/inter)
+**Author:** [Rasmus Andersson](https://rsms.me/inter/) · **License:** [OFL 1.1](https://github.com/rsms/inter)\
+**Italic:** 9 italic variants included (Thin Italic – Black Italic)
 
 **Best For:**
 
@@ -113,20 +136,29 @@ letter-spacing and refined details that shine at headline sizes.
 ax.set_title("Main Title", fontfamily='Inter Display', fontsize=dm.fs(6))
 ```
 
+:::{admonition} All weights
+:class: dropdown
+
+```{raw} html
+:file: _generated/interdisplay.html
+```
+
+:::
+
 ---
 
 ## Noto Sans
 
 ```{raw} html
-:file: _generated/notosans.html
+:file: _generated/notosans_showcase.html
 ```
 
 Google's Noto Sans provides harmonious typography across hundreds of languages.
 The name "Noto" comes from "No Tofu"—the goal of eliminating the blank boxes
 (tofu) that appear when a font lacks a glyph.
 
-**Variants:** 15 (ExtraLight through Black, with Italics)\
-**Author:** Google · **License:** [OFL 1.1](https://fonts.google.com/noto/specimen/Noto+Sans)
+**Author:** Google · **License:** [OFL 1.1](https://fonts.google.com/noto/specimen/Noto+Sans)\
+**Italic:** 9 italic variants included (Thin Italic – Black Italic)
 
 **Best For:**
 
@@ -144,39 +176,77 @@ dm.style.use("scientific")
 plt.rcParams['font.family'] = 'Noto Sans'
 ```
 
+:::{admonition} All weights
+:class: dropdown
+
+```{raw} html
+:file: _generated/notosans.html
+```
+
+:::
+
 ---
 
 ## Condensed Variants
 
 The Noto Sans family includes three condensed variants ([Google Noto](https://fonts.google.com/noto), OFL 1.1).
-Choose based on how much horizontal space you need to save:
+Choose based on how much horizontal space you need to save. All condensed variants
+also include 9 italic weights (Thin Italic – Black Italic).
+
+```{raw} html
+:file: _generated/condensed_comparison.html
+```
 
 ### Noto Sans Condensed
+
+```{raw} html
+:file: _generated/notosans_condensed_showcase.html
+```
+
+**Best For:** Tables with many columns, dense data visualizations
+
+:::{admonition} All weights
+:class: dropdown
 
 ```{raw} html
 :file: _generated/notosans_condensed.html
 ```
 
-**Variants:** 20 (Thin through Black, with Italics)
-**Best For:** Tables with many columns, dense data visualizations
+:::
 
 ### Noto Sans SemiCondensed
+
+```{raw} html
+:file: _generated/notosans_semicondensed_showcase.html
+```
+
+**Best For:** Legends with many entries, compact labels
+
+:::{admonition} All weights
+:class: dropdown
 
 ```{raw} html
 :file: _generated/notosans_semicondensed.html
 ```
 
-**Variants:** 20 (Thin through Black, with Italics)
-**Best For:** Legends with many entries, compact labels
+:::
 
 ### Noto Sans ExtraCondensed
+
+```{raw} html
+:file: _generated/notosans_extracondensed_showcase.html
+```
+
+**Best For:** Very tight axis labels, narrow figure margins
+
+:::{admonition} All weights
+:class: dropdown
 
 ```{raw} html
 :file: _generated/notosans_extracondensed.html
 ```
 
-**Variants:** 20 (Thin through Black, with Italics)
-**Best For:** Very tight axis labels, narrow figure margins
+:::
 
 **Usage (condensed for tick labels):**
 
@@ -232,15 +302,14 @@ ax.set_ylabel(r'$\sum_{i=1}^{n} x_i^2$')
 ## Paperlogy
 
 ```{raw} html
-:file: _generated/paperlogy.html
+:file: _generated/paperlogy_showcase.html
 ```
 
 A clean, professional typeface designed specifically for documents and papers.
 Paperlogy offers excellent readability in dense text environments typical of
 academic and business publications. **Includes full Korean (한글) glyph support.**
 
-**Variants:** 9 (Thin through Black)\
-**Author:** [Freesentation](https://freesentation.blog/paperlogyfont) · **License:** OFL 1.1
+**Author:** 김도균 (Paperlogy), 이주임 ([Freesentation](https://freesentation.blog/paperlogyfont)) · **License:** OFL 1.1
 
 **Best For:**
 
@@ -262,6 +331,15 @@ ax.set_title("분기별 매출 추이", fontweight=dm.fw(4))
 ax.set_xlabel("분기")
 ax.set_ylabel("매출액 (억원)")
 ```
+
+:::{admonition} All weights
+:class: dropdown
+
+```{raw} html
+:file: _generated/paperlogy.html
+```
+
+:::
 
 ---
 
