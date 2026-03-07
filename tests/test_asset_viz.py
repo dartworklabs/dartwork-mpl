@@ -1,0 +1,179 @@
+"""Tests for asset_viz subpackage (color, font, colormap)."""
+
+from __future__ import annotations
+
+from unittest.mock import patch
+
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+
+matplotlib.use("Agg")
+
+
+class TestPlotColors:
+    """Tests for plot_colors()."""
+
+    def test_returns_list_of_figures(self) -> None:
+        """plot_colors() returns a non-empty list of Figure."""
+        from dartwork_mpl.asset_viz import plot_colors
+
+        figs = plot_colors()
+        assert isinstance(figs, list)
+        assert len(figs) > 0
+        for fig in figs:
+            assert isinstance(fig, Figure)
+        for fig in figs:
+            plt.close(fig)
+
+    def test_custom_dict(self) -> None:
+        """plot_colors() works with a custom color dict."""
+        from dartwork_mpl.asset_viz import plot_colors
+
+        custom = {
+            "oc.red0": "#fff5f5",
+            "oc.red5": "#ff6b6b",
+            "tw.blue500": "#3b82f6",
+        }
+        figs = plot_colors(custom, ncols=2)
+        assert isinstance(figs, list)
+        assert len(figs) > 0
+        for fig in figs:
+            plt.close(fig)
+
+    def test_show_hex_false(self) -> None:
+        """plot_colors(show_hex=False) still returns figures."""
+        from dartwork_mpl.asset_viz import plot_colors
+
+        figs = plot_colors(
+            {"oc.red0": "#fff5f5"}, show_hex=False
+        )
+        assert len(figs) > 0
+        for fig in figs:
+            plt.close(fig)
+
+    def test_empty_dict_returns_empty(self) -> None:
+        """plot_colors({}) returns an empty list."""
+        from dartwork_mpl.asset_viz import plot_colors
+
+        figs = plot_colors({})
+        assert figs == []
+
+
+class TestPlotFonts:
+    """Tests for plot_fonts()."""
+
+    def test_returns_figure(self) -> None:
+        """plot_fonts() returns a Figure."""
+        from dartwork_mpl.asset_viz import plot_fonts
+
+        fig = plot_fonts()
+        assert isinstance(fig, Figure)
+        plt.close(fig)
+
+    def test_custom_ncols(self) -> None:
+        """plot_fonts(ncols=1) returns a Figure."""
+        from dartwork_mpl.asset_viz import plot_fonts
+
+        fig = plot_fonts(ncols=1)
+        assert isinstance(fig, Figure)
+        plt.close(fig)
+
+
+class TestPlotColormaps:
+    """Tests for plot_colormaps()."""
+
+    def test_returns_list_of_figures(self) -> None:
+        """plot_colormaps() returns a list of Figure."""
+        from dartwork_mpl.asset_viz import plot_colormaps
+
+        figs = plot_colormaps()
+        assert isinstance(figs, list)
+        assert len(figs) > 0
+        for fig in figs:
+            assert isinstance(fig, Figure)
+        for fig in figs:
+            plt.close(fig)
+
+    def test_no_plt_show_called(self) -> None:
+        """plot_colormaps() must not call plt.show()."""
+        from dartwork_mpl.asset_viz import plot_colormaps
+
+        with patch.object(plt, "show") as mock_show:
+            figs = plot_colormaps(
+                cmap_list=["viridis", "plasma"]
+            )
+            mock_show.assert_not_called()
+        for fig in figs:
+            plt.close(fig)
+
+    def test_flat_mode(self) -> None:
+        """plot_colormaps(group_by_type=False) returns single fig."""
+        from dartwork_mpl.asset_viz import plot_colormaps
+
+        figs = plot_colormaps(
+            cmap_list=["viridis", "plasma"],
+            group_by_type=False,
+        )
+        assert isinstance(figs, list)
+        assert len(figs) == 1
+        for fig in figs:
+            plt.close(fig)
+
+    def test_custom_cmap_list(self) -> None:
+        """plot_colormaps() works with a custom cmap list."""
+        from dartwork_mpl.asset_viz import plot_colormaps
+
+        figs = plot_colormaps(
+            cmap_list=["viridis", "coolwarm", "tab10"]
+        )
+        assert isinstance(figs, list)
+        assert len(figs) > 0
+        for fig in figs:
+            plt.close(fig)
+
+
+class TestClassifyColormap:
+    """Tests for classify_colormap()."""
+
+    def test_known_categories(self) -> None:
+        """Known colormaps should be classified correctly."""
+        import matplotlib
+
+        from dartwork_mpl.asset_viz import classify_colormap
+
+        # Sequential
+        result = classify_colormap(
+            matplotlib.colormaps["viridis"]
+        )
+        assert result in (
+            "Sequential Single-Hue",
+            "Sequential Multi-Hue",
+        )
+
+        # Coolwarm — may classify as diverging or sequential
+        result = classify_colormap(
+            matplotlib.colormaps["coolwarm"]
+        )
+        assert result in (
+            "Diverging",
+            "Sequential Multi-Hue",
+            "Sequential Single-Hue",
+        )
+
+        # Categorical
+        assert (
+            classify_colormap(matplotlib.colormaps["tab10"])
+            == "Categorical"
+        )
+
+    def test_returns_string(self) -> None:
+        """classify_colormap always returns a string."""
+        import matplotlib
+
+        from dartwork_mpl.asset_viz import classify_colormap
+
+        result = classify_colormap(
+            matplotlib.colormaps["viridis"]
+        )
+        assert isinstance(result, str)

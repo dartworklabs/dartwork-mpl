@@ -1,6 +1,7 @@
 """Colormap visualization functions.
 
-Functions for classifying and plotting colormaps.
+Functions for classifying and plotting colormaps with category
+badges and row-major layout.
 """
 
 from __future__ import annotations
@@ -17,9 +18,23 @@ if TYPE_CHECKING:
     from matplotlib.colors import Colormap
 
 
-def classify_colormap(cmap: "Colormap") -> str:
-    """
-    Classify a colormap into one of the following categories:
+# ---------------------------------------------------------------------------
+# Category badge colors (background, text)
+# ---------------------------------------------------------------------------
+_CATEGORY_STYLE: dict[str, tuple[str, str]] = {
+    "Sequential Single-Hue": ("#e3f2fd", "#1565c0"),
+    "Sequential Multi-Hue": ("#e8f5e9", "#2e7d32"),
+    "Diverging": ("#fff3e0", "#e65100"),
+    "Cyclical": ("#f3e5f5", "#7b1fa2"),
+    "Categorical": ("#fce4ec", "#c62828"),
+}
+
+
+def classify_colormap(cmap: Colormap) -> str:
+    """Classify a colormap into one of the following categories.
+
+    Categories
+    ----------
     - Categorical
     - Sequential Single-Hue
     - Sequential Multi-Hue
@@ -36,22 +51,20 @@ def classify_colormap(cmap: "Colormap") -> str:
     str
         Category of the colormap.
     """
-    # Get colormap samples
     n_samples = 256
-    samples = cmap(np.linspace(0, 1, n_samples))[:, :3]  # Ignore alpha
+    samples = cmap(np.linspace(0, 1, n_samples))[:, :3]
 
-    # Convert to HSV for easier analysis
-    hsv_samples = np.array([mcolors.rgb_to_hsv(rgb) for rgb in samples])
+    hsv_samples = np.array(
+        [mcolors.rgb_to_hsv(rgb) for rgb in samples]
+    )
     hues = hsv_samples[:, 0]
     saturations = hsv_samples[:, 1]
     values = hsv_samples[:, 2]
 
-    # Calculate differences between consecutive samples
     hue_diffs = np.abs(np.diff(hues))
-    # Handle circular nature of hue
     hue_diffs = np.minimum(hue_diffs, 1 - hue_diffs)
 
-    # Known categorical colormaps (hardcoded for better accuracy)
+    # Known categorical colormaps
     categorical_cmaps = [
         "Accent",
         "Dark2",
@@ -76,56 +89,76 @@ def classify_colormap(cmap: "Colormap") -> str:
     if hasattr(cmap, "name") and cmap.name in categorical_cmaps:
         return "Categorical"
 
-    # 1. Check if colormap is cyclical - stricter criteria
-    start_end_diff = np.sqrt(np.sum((samples[0] - samples[-1]) ** 2))
+    # Cyclical check
+    start_end_diff = np.sqrt(
+        np.sum((samples[0] - samples[-1]) ** 2)
+    )
     if start_end_diff < 0.01:
         mid_idx = n_samples // 2
-        mid_diff = np.sqrt(np.sum((samples[0] - samples[mid_idx]) ** 2))
+        mid_diff = np.sqrt(
+            np.sum((samples[0] - samples[mid_idx]) ** 2)
+        )
         if mid_diff > 0.3:
             return "Cyclical"
 
-    # 2. Improved check for categorical colormaps based on repeated colors
-    color_diffs = np.sqrt(np.sum(np.diff(samples, axis=0) ** 2, axis=1))
-
-    # Find regions where colors are very similar (plateaus)
+    # Categorical by plateau detection
+    color_diffs = np.sqrt(
+        np.sum(np.diff(samples, axis=0) ** 2, axis=1)
+    )
     plateau_mask = color_diffs < 0.001
     plateau_indices = np.where(plateau_mask)[0]
 
     if len(plateau_indices) > 0:
         plateau_runs = np.split(
-            plateau_indices, np.where(np.diff(plateau_indices) != 1)[0] + 1
+            plateau_indices,
+            np.where(np.diff(plateau_indices) != 1)[0] + 1,
         )
-        significant_plateaus = [run for run in plateau_runs if len(run) >= 3]
-
+        significant_plateaus = [
+            run for run in plateau_runs if len(run) >= 3
+        ]
         if len(significant_plateaus) >= 3:
-            plateau_positions = [np.mean(run) for run in significant_plateaus]
-            position_range = max(plateau_positions) - min(plateau_positions)
+            plateau_positions = [
+                np.mean(run) for run in significant_plateaus
+            ]
+            position_range = (
+                max(plateau_positions) - min(plateau_positions)
+            )
             if position_range > n_samples * 0.3:
                 return "Categorical"
 
-    # Additional check for categorical: large jumps in color
+    # Categorical by large jumps
     large_color_jumps = np.where(color_diffs > 0.1)[0]
-    if len(large_color_jumps) > 3 and len(large_color_jumps) < n_samples // 8:
+    if (
+        len(large_color_jumps) > 3
+        and len(large_color_jumps) < n_samples // 8
+    ):
         jump_diffs = np.diff(large_color_jumps)
         if np.std(jump_diffs) < np.mean(jump_diffs) * 0.8:
             return "Categorical"
 
-    # 3. Check if colormap is diverging
+    # Diverging check
     mid_idx = n_samples // 2
     mid_value = values[mid_idx]
     start_value = values[0]
     end_value = values[-1]
 
-    if (mid_value > start_value + 0.2 and mid_value > end_value + 0.2) or (
-        mid_value < start_value - 0.2 and mid_value < end_value - 0.2
+    if (
+        mid_value > start_value + 0.2
+        and mid_value > end_value + 0.2
+    ) or (
+        mid_value < start_value - 0.2
+        and mid_value < end_value - 0.2
     ):
         start_hue = hues[0]
         end_hue = hues[-1]
-        hue_diff = min(abs(end_hue - start_hue), 1 - abs(end_hue - start_hue))
+        hue_diff = min(
+            abs(end_hue - start_hue),
+            1 - abs(end_hue - start_hue),
+        )
         if hue_diff > 0.1:
             return "Diverging"
 
-    # 4. Improved check for sequential single-hue vs multi-hue
+    # Sequential single vs multi-hue
     high_sat_indices = np.where(saturations > 0.3)[0]
 
     if len(high_sat_indices) > n_samples // 4:
@@ -150,7 +183,8 @@ def classify_colormap(cmap: "Colormap") -> str:
         hue_range = 1 - hue_range
 
     is_monotonic = np.all(
-        np.diff(values[: n_samples // 2]) * np.diff(values[n_samples // 2 :])
+        np.diff(values[: n_samples // 2])
+        * np.diff(values[n_samples // 2 :])
         >= 0
     )
 
@@ -166,36 +200,31 @@ def classify_colormap(cmap: "Colormap") -> str:
 
 
 def plot_colormaps(
-    cmap_list: list[str] | list["Colormap"] | None = None,
+    cmap_list: list[str] | list[Colormap] | None = None,
     ncols: int = 3,
     group_by_type: bool = True,
-    group_spacing: float = 0.5,
-) -> tuple[Figure, np.ndarray]:
-    """Plot a list of colormaps.
+) -> list[Figure]:
+    """Plot colormaps grouped by type.
 
-    When group_by_type=True, creates separate figures for each category
-    and displays them automatically.
+    Returns a list of figures, one per category.  Does **not** call
+    ``plt.show()`` — the caller decides when to display.
 
     Parameters
     ----------
-    cmap_list : list, optional(default=None)
-        List of colormap names.
-    ncols : int, optional(default=3)
-        Number of columns to display colormaps.
-    group_by_type : bool, optional(default=True)
-        If True, group colormaps by their type and create separate
-        figures for each category.
-    group_spacing : float, optional(default=0.5)
-        Spacing between groups in inches (unused when
-        group_by_type=True).
+    cmap_list : list, optional
+        List of colormap names or objects.  Defaults to all registered
+        colormaps (excluding ``_r`` reversed variants).
+    ncols : int, optional
+        Number of columns, default 3.
+    group_by_type : bool, optional
+        If True, group colormaps by their classified type and return
+        one figure per category.  Otherwise return a single figure.
 
     Returns
     -------
-    fig : matplotlib.figure.Figure
-        Figure object. When group_by_type=True, returns the last
-        category's figure.
-    axs : numpy.ndarray of matplotlib.axes.Axes
-        Array of Axes objects.
+    list of matplotlib.figure.Figure
+        One figure per category (or a single-element list when
+        *group_by_type* is False).
     """
     from ..cmap import ensure_loaded as ensure_cmaps_loaded
 
@@ -206,158 +235,220 @@ def plot_colormaps(
         cmap_list = [c for c in cmap_list if not c.endswith("_r")]
 
     cmap_list = [
-        mpl.cm.get_cmap(c) if isinstance(c, str) else c for c in cmap_list
+        mpl.colormaps.get_cmap(c) if isinstance(c, str) else c
+        for c in cmap_list
     ]
 
-    if group_by_type:
-        category_order = [
-            "Sequential Single-Hue",
-            "Sequential Multi-Hue",
-            "Diverging",
-            "Cyclical",
-            "Categorical",
-        ]
+    gradient = np.linspace(0, 1, 256)
+    gradient = np.vstack((gradient, gradient))
 
-        categories = {category: [] for category in category_order}
+    if not group_by_type:
+        return [_plot_flat(cmap_list, gradient, ncols)]
 
-        for cmap in cmap_list:
-            category = classify_colormap(cmap)
-            categories[category].append(cmap)
+    # ----- Group by category -----
+    category_order = [
+        "Sequential Single-Hue",
+        "Sequential Multi-Hue",
+        "Diverging",
+        "Cyclical",
+        "Categorical",
+    ]
 
-        categories = {k: v for k, v in categories.items() if v}
+    categories: dict[str, list] = {
+        cat: [] for cat in category_order
+    }
+    for cmap in cmap_list:
+        category = classify_colormap(cmap)
+        categories[category].append(cmap)
 
-        gradient = np.linspace(0, 1, 256)
-        gradient = np.vstack((gradient, gradient))
+    categories = {k: v for k, v in categories.items() if v}
 
-        sorted_categories = [
-            cat for cat in category_order if cat in categories
-        ]
+    figures: list[Figure] = []
 
-        fig = None
-        axs = None
+    for category in category_order:
+        if category not in categories:
+            continue
 
-        for category in sorted_categories:
-            cmaps = categories[category]
-
-            cmaps.sort(
-                key=lambda cmap: (
-                    0 if cmap.name.startswith("dm.") else 1,
-                    cmap.name.lower(),
-                )
+        cmaps = categories[category]
+        cmaps.sort(
+            key=lambda c: (
+                0 if c.name.startswith("dm.") else 1,
+                c.name.lower(),
             )
+        )
 
-            nrows = (len(cmaps) + ncols - 1) // ncols
+        fig = _plot_category(cmaps, category, gradient, ncols)
+        figures.append(fig)
 
-            figw = 6.4 * ncols / 1.5
-            figh = 0.35 + 0.15 + (nrows + 1 + (nrows + 1 - 1) * 0.1) * 0.44
+    return figures
 
-            fig = plt.figure(figsize=(figw, figh))
 
-            gs = plt.GridSpec(
-                nrows + 1,
-                ncols,
-                figure=fig,
-                height_ratios=[0.3] + [1] * nrows,
-            )
+# ---------------------------------------------------------------------------
+# Internal drawing helpers
+# ---------------------------------------------------------------------------
 
-            axs = []
 
-            title_ax = fig.add_subplot(gs[0, :])
-            title_ax.text(
+def _plot_category(
+    cmaps: list,
+    category: str,
+    gradient: np.ndarray,
+    ncols: int,
+) -> Figure:
+    """Draw a single category figure with badge header."""
+    nrows = (len(cmaps) + ncols - 1) // ncols
+
+    figw = 6.4 * ncols / 1.5
+    figh = 0.35 + 0.15 + (nrows + 1 + (nrows) * 0.1) * 0.44
+
+    fig = plt.figure(figsize=(figw, figh))
+
+    gs = plt.GridSpec(
+        nrows + 1,
+        ncols,
+        figure=fig,
+        height_ratios=[0.35] + [1] * nrows,
+    )
+
+    # --- Category title with badge ---
+    title_ax = fig.add_subplot(gs[0, :])
+    bg_color, text_color = _CATEGORY_STYLE.get(
+        category, ("#f5f5f5", "#333333")
+    )
+
+    title_ax.set_facecolor(bg_color)
+    count_str = f"  ({len(cmaps)})"
+    title_ax.text(
+        0.5,
+        0.5,
+        category,
+        fontsize=14,
+        fontweight="bold",
+        color=text_color,
+        ha="center",
+        va="center",
+        transform=title_ax.transAxes,
+    )
+    title_ax.text(
+        0.5 + len(category) * 0.012,
+        0.5,
+        count_str,
+        fontsize=10,
+        color=text_color,
+        alpha=0.7,
+        ha="left",
+        va="center",
+        transform=title_ax.transAxes,
+    )
+    title_ax.set_axis_off()
+
+    # --- Colormap strips (row-major order) ---
+    for i, cmap in enumerate(cmaps):
+        row = i // ncols
+        col = i % ncols
+        ax = fig.add_subplot(gs[row + 1, col])
+        ax.imshow(gradient, aspect="auto", cmap=cmap)
+
+        # Name label — bold + accent for dm.* cmaps
+        is_dm = cmap.name.startswith("dm.")
+        ax.text(
+            -0.01,
+            0.5,
+            cmap.name,
+            va="center",
+            ha="right",
+            fontsize=10,
+            fontweight="bold" if is_dm else "normal",
+            color="#1565c0" if is_dm else "#333333",
+            transform=ax.transAxes,
+        )
+        ax.set_axis_off()
+
+    # Hide empty cells
+    total_subplots = (nrows + 1) * ncols
+    used = 1 + len(cmaps)  # title + cmap axes
+    for i in range(used, total_subplots):
+        r = i // ncols
+        c = i % ncols
+        if r <= nrows and c < ncols:
+            ax = fig.add_subplot(gs[r, c])
+            ax.set_visible(False)
+
+    fig.subplots_adjust(
+        left=0.15 / ncols,
+        right=0.99,
+        top=1 - 0.2 / figh,
+        bottom=0.1 / figh,
+        hspace=0.15,
+    )
+
+    return fig
+
+
+def _plot_flat(
+    cmap_list: list,
+    gradient: np.ndarray,
+    ncols: int,
+) -> Figure:
+    """Draw all colormaps in a single figure without grouping."""
+    cmap_list.sort(
+        key=lambda c: (
+            0 if c.name.startswith("dm.") else 1,
+            c.name.lower(),
+        )
+    )
+
+    nrows = (len(cmap_list) + ncols - 1) // ncols
+
+    figw = 6.4 * ncols / 1.5
+    figh = 0.35 + 0.15 + (nrows + (nrows - 1) * 0.1) * 0.44
+    fig, axs = plt.subplots(
+        nrows=nrows, ncols=ncols, figsize=(figw, figh)
+    )
+    fig.subplots_adjust(
+        top=1 - 0.35 / figh,
+        bottom=0.15 / figh,
+        left=0.2 / ncols,
+        right=0.99,
+    )
+
+    if nrows == 1 and ncols == 1:
+        axs = np.array([axs])
+
+    axs_flat = axs.flatten()
+
+    # Row-major order
+    for i, cmap in enumerate(cmap_list):
+        row = i // ncols
+        col = i % ncols
+        ax_idx = row * ncols + col
+        if ax_idx < len(axs_flat):
+            ax = axs_flat[ax_idx]
+            ax.imshow(gradient, aspect="auto", cmap=cmap)
+            is_dm = cmap.name.startswith("dm.")
+            ax.text(
+                -0.01,
                 0.5,
-                0.5,
-                category,
-                fontsize=14,
-                fontweight="bold",
-                ha="center",
+                cmap.name,
                 va="center",
-                transform=title_ax.transAxes,
+                ha="right",
+                fontsize=10,
+                fontweight="bold" if is_dm else "normal",
+                color="#1565c0" if is_dm else "#333333",
+                transform=ax.transAxes,
             )
-            title_ax.set_axis_off()
-            axs.append(title_ax)
 
-            for i, cmap in enumerate(cmaps):
-                row = i % nrows
-                col = i // nrows
-                ax = fig.add_subplot(gs[row + 1, col])
-                ax.imshow(gradient, aspect="auto", cmap=cmap)
-                ax.text(
-                    -0.01,
-                    0.5,
-                    cmap.name,
-                    va="center",
-                    ha="right",
-                    fontsize=10,
-                    transform=ax.transAxes,
-                )
-                ax.set_axis_off()
-                axs.append(ax)
+    for ax in axs_flat:
+        ax.set_axis_off()
 
-            total_subplots = (nrows + 1) * ncols
-            for i in range(len(axs), total_subplots):
-                ax = fig.add_subplot(gs[i // ncols, i % ncols])
-                ax.set_visible(False)
+    for i in range(len(cmap_list), len(axs_flat)):
+        axs_flat[i].set_visible(False)
 
-            plt.tight_layout()
-            plt.show()
+    fig.subplots_adjust(
+        left=0.15 / ncols,
+        right=0.99,
+        top=1 - 0.2 / figh,
+        bottom=0.1 / figh,
+        hspace=0.15,
+    )
 
-        if axs is not None:
-            axs = np.array(axs)
-
-    else:
-        gradient = np.linspace(0, 1, 256)
-        gradient = np.vstack((gradient, gradient))
-
-        cmap_list.sort(
-            key=lambda cmap: (
-                0 if cmap.name.startswith("oc.") else 1,
-                cmap.name.lower(),
-            )
-        )
-
-        nrows = (len(cmap_list) + ncols - 1) // ncols
-
-        figw = 6.4 * ncols / 1.5
-        figh = 0.35 + 0.15 + (nrows + (nrows - 1) * 0.1) * 0.44
-        fig, axs = plt.subplots(
-            nrows=nrows, ncols=ncols, figsize=(figw, figh)
-        )
-        fig.subplots_adjust(
-            top=1 - 0.35 / figh,
-            bottom=0.15 / figh,
-            left=0.2 / ncols,
-            right=0.99,
-        )
-
-        if nrows == 1 and ncols == 1:
-            axs = np.array([axs])
-
-        axs = axs.flatten()
-
-        for i, cmap in enumerate(cmap_list):
-            if i < len(axs):
-                row = i % nrows
-                col = i // nrows
-                ax_idx = row * ncols + col
-                if ax_idx < len(axs):
-                    ax = axs[ax_idx]
-                    ax.imshow(gradient, aspect="auto", cmap=cmap)
-                    ax.text(
-                        -0.01,
-                        0.5,
-                        cmap.name,
-                        va="center",
-                        ha="right",
-                        fontsize=10,
-                        transform=ax.transAxes,
-                    )
-
-        for ax in axs:
-            ax.set_axis_off()
-
-        for i in range(len(cmap_list), len(axs)):
-            axs[i].set_visible(False)
-
-        plt.tight_layout()
-
-    return fig, axs
+    return fig

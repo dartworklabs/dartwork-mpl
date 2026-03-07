@@ -13,8 +13,7 @@ from pathlib import Path
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-from matplotlib.patches import Rectangle
-
+from matplotlib.patches import FancyBboxPatch
 
 # ---------------------------------------------------------------------------
 # Internal helpers
@@ -60,36 +59,6 @@ def _classify_color_library(color_name: str) -> str:
     return "other"
 
 
-def _detect_color_weight_system(
-    color_names: list[str],
-) -> int | None:
-    """Detect the weight system used in a group of color names."""
-    weights = []
-    for color_name in color_names:
-        weight = _extract_number_from_color_name(color_name)
-        if weight is not None:
-            weights.append(weight)
-
-    if weights:
-        return min(weights)
-    return None
-
-
-def _detect_weight_range(
-    color_names: list[str],
-) -> tuple[int, int] | None:
-    """Detect the weight range used in a group of color names."""
-    weights = []
-    for color_name in color_names:
-        weight = _extract_number_from_color_name(color_name)
-        if weight is not None:
-            weights.append(weight)
-
-    if weights:
-        return (min(weights), max(weights))
-    return None
-
-
 def _extract_base_color_name(color_name: str) -> str:
     """Extract base color name from color name."""
     name = color_name
@@ -119,6 +88,21 @@ def _extract_number_from_color_name(
     if match:
         return int(match.group(1))
 
+    return None
+
+
+def _detect_weight_range(
+    color_names: list[str],
+) -> tuple[int, int] | None:
+    """Detect the weight range used in a group of color names."""
+    weights = []
+    for color_name in color_names:
+        weight = _extract_number_from_color_name(color_name)
+        if weight is not None:
+            weights.append(weight)
+
+    if weights:
+        return (min(weights), max(weights))
     return None
 
 
@@ -170,194 +154,62 @@ def _separate_colors_by_library(
     }
 
 
-def _sort_colors_by_library(
-    colors: dict[str, str | tuple[float, float, float]],
-) -> list[tuple[str, str | tuple[float, float, float]]]:
-    """Sort colors by library, then by base color name and number."""
-    library_groups: dict[str, list[str]] = {
-        "opencolor": [],
-        "tw": [],
-        "md": [],
-        "ant": [],
-        "chakra": [],
-        "primer": [],
-        "other": [],
-    }
+def _relative_luminance(
+    color_spec: str | tuple[float, float, float],
+) -> float:
+    """Compute relative luminance of a color (ITU-R BT.709).
 
-    for color_name in colors:
-        library = _classify_color_library(color_name)
-        library_groups[library].append(color_name)
+    Parameters
+    ----------
+    color_spec : str or tuple
+        Color specification accepted by matplotlib.
 
-    sorted_names: list[tuple[str, str | tuple[float, float, float]]] = []
-
-    library_labels = {
-        "opencolor": "OpenColor Colors",
-        "tw": "Tailwind Colors",
-        "md": "Material Design Colors",
-        "ant": "Ant Design Colors",
-        "chakra": "Chakra UI Colors",
-        "primer": "Primer Colors",
-        "other": "Other Colors",
-    }
-
-    for library in [
-        "opencolor",
-        "tw",
-        "md",
-        "ant",
-        "chakra",
-        "primer",
-        "other",
-    ]:
-        color_list = library_groups[library]
-
-        if not color_list:
-            continue
-
-        sorted_names.append(("__TITLE__", library_labels[library]))
-
-        base_color_groups: dict[
-            str, list[tuple[str, tuple[float, float, float]]]
-        ] = defaultdict(list)
-        for color_name in color_list:
-            base_color = _extract_base_color_name(color_name)
-            try:
-                rgb = mcolors.to_rgb(colors[color_name])
-                hsv = mcolors.rgb_to_hsv(rgb)
-                base_color_groups[base_color].append((color_name, hsv))
-            except (ValueError, TypeError):
-                base_color_groups[base_color].append(
-                    (color_name, (0, 0, 0))
-                )
-
-        sorted_base_colors = sorted(base_color_groups.items())
-
-        for _, color_items in sorted_base_colors:
-
-            def sort_key(
-                x: tuple[str, tuple[float, float, float]],
-            ) -> tuple[int, float]:
-                color_name, hsv = x
-                number = _extract_number_from_color_name(color_name)
-                if number is not None:
-                    return (0, number)
-                else:
-                    return (1, -hsv[2])
-
-            color_items.sort(key=sort_key)
-
-            sorted_names.extend(
-                [(name, colors[name]) for name, _ in color_items]
-            )
-
-    return sorted_names
+    Returns
+    -------
+    float
+        Relative luminance in [0, 1].
+    """
+    r, g, b = mcolors.to_rgb(color_spec)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 
-def _group_colors_by_hue(
-    colors: dict[str, str | tuple[float, float, float]],
-) -> list[
-    dict[
-        str,
-        str
-        | list[tuple[str, str | tuple[float, float, float]]]
-        | None
-        | float,
-    ]
-]:
-    """Group colors by HSV hue ranges for better visual organization."""
-    hue_ranges = [
-        ("red", [(0, 30), (330, 360)]),
-        ("orange", [(30, 50)]),
-        ("yellow", [(50, 90)]),
-        ("green", [(90, 150)]),
-        ("cyan", [(150, 180)]),
-        ("blue", [(180, 240)]),
-        ("purple", [(240, 270)]),
-        ("pink", [(270, 330)]),
-    ]
+def _contrast_text_color(
+    color_spec: str | tuple[float, float, float],
+) -> str:
+    """Return black or white text color for best contrast.
 
-    color_items: list[
-        tuple[str, str | tuple[float, float, float], tuple]
-    ] = []
-    for color_name, color_spec in colors.items():
-        try:
-            rgb = mcolors.to_rgb(color_spec)
-            hsv = mcolors.rgb_to_hsv(rgb)
-            color_items.append((color_name, color_spec, hsv))
-        except (ValueError, TypeError):
-            color_items.append((color_name, color_spec, (0, 0, 0)))
+    Parameters
+    ----------
+    color_spec : str or tuple
+        Background color.
 
-    grayscale = []
-    colored = []
-    for name, spec, hsv in color_items:
-        if hsv[1] < 0.1:
-            grayscale.append((name, spec, hsv))
-        else:
-            colored.append((name, spec, hsv))
+    Returns
+    -------
+    str
+        ``"white"`` or ``"#333333"`` depending on background
+        luminance.
+    """
+    return (
+        "#333333" if _relative_luminance(color_spec) > 0.45 else "white"
+    )
 
-    hue_groups: dict[str, list] = defaultdict(list)
-    for name, spec, hsv in colored:
-        hue = hsv[0] * 360
-        assigned = False
-        for group_name, ranges in hue_ranges:
-            for min_hue, max_hue in ranges:
-                if group_name == "red":
-                    if (0 <= hue < 30) or (330 <= hue < 360):
-                        hue_groups[group_name].append(
-                            (name, spec, hsv)
-                        )
-                        assigned = True
-                        break
-                elif min_hue <= hue < max_hue:
-                    hue_groups[group_name].append(
-                        (name, spec, hsv)
-                    )
-                    assigned = True
-                    break
-            if assigned:
-                break
-        if not assigned:
-            hue_groups["other"].append((name, spec, hsv))
 
-    if grayscale:
-        hue_groups["grayscale"] = grayscale
+def _color_to_hex(
+    color_spec: str | tuple[float, float, float],
+) -> str:
+    """Convert any color spec to uppercase hex string.
 
-    color_groups = []
+    Parameters
+    ----------
+    color_spec : str or tuple
+        Color specification accepted by matplotlib.
 
-    for group_name, items in hue_groups.items():
-        if not items:
-            continue
-
-        if group_name == "grayscale":
-            avg_hue = -1
-        elif group_name == "other":
-            avg_hue = 1000
-        else:
-            hues = [hsv[0] * 360 for _, _, hsv in items]
-            if group_name == "red":
-                normalized_hues = [
-                    h if h < 180 else h - 360 for h in hues
-                ]
-                avg_hue = sum(normalized_hues) / len(
-                    normalized_hues
-                )
-            else:
-                avg_hue = sum(hues) / len(hues)
-
-        items.sort(key=lambda x: -x[2][2])
-
-        color_groups.append(
-            {
-                "base_color": group_name,
-                "colors": [(name, spec) for name, spec, _ in items],
-                "min_weight": None,
-                "avg_hue": avg_hue,
-            }
-        )
-
-    color_groups.sort(key=lambda g: g["avg_hue"])
-
-    return color_groups
+    Returns
+    -------
+    str
+        Uppercase hex string like ``"#3B82F6"``.
+    """
+    return mcolors.to_hex(color_spec).upper()
 
 
 def _plot_single_library(
@@ -365,16 +217,41 @@ def _plot_single_library(
     library_name: str,
     ncols: int = 6,
     sort_colors: bool = True,
+    show_hex: bool = True,
 ) -> Figure | None:
-    """Plot colors for a single library."""
+    """Plot colors for a single library.
+
+    Parameters
+    ----------
+    colors : dict
+        Dictionary mapping color names to color specs.
+    library_name : str
+        Library identifier key (e.g. ``"tw"``, ``"opencolor"``).
+    ncols : int
+        Number of columns.
+    sort_colors : bool
+        Sort by base color name and weight.
+    show_hex : bool
+        Show hex value beneath color name.
+
+    Returns
+    -------
+    Figure or None
+        The created figure, or *None* when *colors* is empty.
+    """
     if not colors:
         return None
 
-    cell_width = 212
-    cell_height = 22
+    cell_width = 220
+    cell_height = 22 if not show_hex else 30
     swatch_width = 48
+    swatch_height = 20
     margin = 12
+    rounding = 3
 
+    # ------------------------------------------------------------------
+    # Group and sort
+    # ------------------------------------------------------------------
     if sort_colors:
         base_color_groups: dict[str, list] = defaultdict(list)
         for color_name in colors:
@@ -395,7 +272,7 @@ def _plot_single_library(
         color_groups = []
         for base_color, color_items in sorted_base_colors:
 
-            def sort_key(x):
+            def sort_key(x):  # noqa: E301
                 color_name, hsv = x
                 number = _extract_number_from_color_name(color_name)
                 if number is not None:
@@ -406,7 +283,6 @@ def _plot_single_library(
             color_items.sort(key=sort_key)
             sorted_names = [name for name, _ in color_items]
 
-            min_weight = _detect_color_weight_system(sorted_names)
             weight_range = _detect_weight_range(sorted_names)
 
             color_groups.append(
@@ -415,7 +291,6 @@ def _plot_single_library(
                     "colors": [
                         (name, colors[name]) for name in sorted_names
                     ],
-                    "min_weight": min_weight,
                     "weight_range": weight_range,
                 }
             )
@@ -426,20 +301,24 @@ def _plot_single_library(
                 "colors": [
                     (name, colors[name]) for name in colors
                 ],
-                "min_weight": None,
                 "weight_range": None,
             }
         ]
 
-    title_height = cell_height
+    # ------------------------------------------------------------------
+    # Column bin-packing
+    # ------------------------------------------------------------------
+    title_height = cell_height + 4
     title_margin = 0.5
 
-    color_grid = []
+    color_grid: list[
+        tuple[int, int, str, str | tuple[float, float, float]]
+    ] = []
     column_heights = [0] * ncols
     prev_weight_range = None
-    prev_base_color_per_col = [None] * ncols
+    prev_base_color_per_col: list[str | None] = [None] * ncols
 
-    for _group_idx, group in enumerate(color_groups):
+    for group in color_groups:
         group_colors = group["colors"]
         current_weight_range = group.get("weight_range")
         current_base_color = group.get("base_color")
@@ -469,9 +348,7 @@ def _plot_single_library(
             for col in range(ncols):
                 column_heights[col] += 1
 
-        for _color_idx, (name, color_spec) in enumerate(
-            group_colors
-        ):
+        for _idx, (name, color_spec) in enumerate(group_colors):
             row = column_heights[target_col]
             color_grid.append((target_col, row, name, color_spec))
             column_heights[target_col] += 1
@@ -481,6 +358,9 @@ def _plot_single_library(
 
     nrows = max(column_heights) if column_heights else 0
 
+    # ------------------------------------------------------------------
+    # Figure setup
+    # ------------------------------------------------------------------
     width = cell_width * ncols + 2 * margin
     total_title_height = title_height + title_margin * cell_height
     bottom_extra_margin = 0.5 * cell_height
@@ -502,7 +382,6 @@ def _plot_single_library(
         (height - margin) / height,
     )
     ax.set_xlim(0, cell_width * ncols)
-    bottom_extra_margin = 0.5 * cell_height
     ax.set_ylim(
         -total_title_height,
         cell_height * nrows + bottom_extra_margin,
@@ -512,51 +391,123 @@ def _plot_single_library(
     ax.xaxis.set_visible(False)
     ax.set_axis_off()
 
+    # ------------------------------------------------------------------
+    # Title with divider
+    # ------------------------------------------------------------------
     library_labels = {
-        "opencolor": "OpenColor Colors",
-        "tw": "Tailwind Colors",
-        "md": "Material Design Colors",
-        "ant": "Ant Design Colors",
-        "chakra": "Chakra UI Colors",
-        "primer": "Primer Colors",
+        "opencolor": "Open Color",
+        "tw": "Tailwind CSS",
+        "md": "Material Design",
+        "ant": "Ant Design",
+        "chakra": "Chakra UI",
+        "primer": "Primer",
         "other": "Other Colors",
     }
     title_text = library_labels.get(library_name, library_name)
+    count_text = f"  ({len(colors)} colors)"
     title_y = -title_height / 2
+
     ax.text(
         cell_width * ncols / 2,
-        title_y,
+        title_y - 2,
         title_text,
-        fontsize=14,
+        fontsize=15,
         fontweight="bold",
         horizontalalignment="center",
         verticalalignment="center",
+        color="#1a1a2e",
+    )
+    ax.text(
+        cell_width * ncols / 2
+        + len(title_text) * 4.5,
+        title_y - 2,
+        count_text,
+        fontsize=10,
+        horizontalalignment="left",
+        verticalalignment="center",
+        color="#888888",
     )
 
+    # Divider line beneath title
+    divider_y = title_y + title_height / 2 - 2
+    ax.plot(
+        [0, cell_width * ncols],
+        [divider_y, divider_y],
+        color="#e0e0e0",
+        linewidth=0.8,
+        zorder=0,
+    )
+
+    # ------------------------------------------------------------------
+    # Draw color swatches
+    # ------------------------------------------------------------------
     title_margin_offset = title_margin * cell_height
     for col, row, name, color_spec in color_grid:
         y = title_margin_offset + (row + 0.5) * cell_height
         swatch_start_x = cell_width * col
-        text_pos_x = cell_width * col + swatch_width + 7
+        text_pos_x = cell_width * col + swatch_width + 8
 
+        # Rounded swatch
+        try:
+            patch = FancyBboxPatch(
+                (swatch_start_x, y - swatch_height / 2),
+                swatch_width,
+                swatch_height,
+                boxstyle=f"round,pad=0,rounding_size={rounding}",
+                facecolor=color_spec,
+                edgecolor="#d0d0d0",
+                linewidth=0.5,
+            )
+            ax.add_patch(patch)
+        except (ValueError, TypeError):
+            # Fallback for invalid colors
+            pass
+
+        # Hex overlay on swatch
+        if show_hex:
+            try:
+                hex_str = _color_to_hex(color_spec)
+                text_color = _contrast_text_color(color_spec)
+                ax.text(
+                    swatch_start_x + swatch_width / 2,
+                    y,
+                    hex_str,
+                    fontsize=6.5,
+                    fontweight="bold",
+                    horizontalalignment="center",
+                    verticalalignment="center",
+                    color=text_color,
+                    alpha=0.85,
+                )
+            except (ValueError, TypeError):
+                pass
+
+        # Color name
         ax.text(
             text_pos_x,
-            y,
+            y - (3 if show_hex else 0),
             name,
-            fontsize=14,
+            fontsize=11,
             horizontalalignment="left",
             verticalalignment="center",
+            color="#1a1a2e",
         )
 
-        ax.add_patch(
-            Rectangle(
-                xy=(swatch_start_x, y - 9),
-                width=swatch_width,
-                height=18,
-                facecolor=color_spec,
-                edgecolor="0.7",
-            )
-        )
+        # Hex label beneath name
+        if show_hex:
+            try:
+                hex_str = _color_to_hex(color_spec)
+                ax.text(
+                    text_pos_x,
+                    y + 8,
+                    hex_str,
+                    fontsize=8,
+                    horizontalalignment="left",
+                    verticalalignment="center",
+                    color="#999999",
+                )
+            except (ValueError, TypeError):
+                pass
 
     return fig
 
@@ -572,24 +523,27 @@ def plot_colors(
     *,
     ncols: int = 4,
     sort_colors: bool = True,
+    show_hex: bool = True,
 ) -> list[Figure]:
-    """
-    Plot a grid of named colors with their names.
+    """Plot a grid of named colors with their names and hex values.
 
-    Creates separate plots for each color library (opencolor,
-    tw/tailwind, other).
+    Creates separate figures for each color library (Open Color,
+    Tailwind, Material Design, Ant Design, Chakra UI, Primer, Other).
 
     Parameters
     ----------
     colors : dict, optional
         Dictionary mapping color names to color specifications.
         If None, uses all named colors from matplotlib except those
-        starting with 'dartwork_mpl.'.
+        starting with ``'dartwork_mpl.'`` or ``'xkcd:'``.
     ncols : int, optional
         Number of columns in the color grid, default is 4.
     sort_colors : bool, optional
-        If True, sorts colors by base color name, then by number or
+        If True, sorts colors by base color name, then by weight or
         HSV value.
+    show_hex : bool, optional
+        If True, shows the hex color value beneath each color name
+        and overlaid on the swatch.  Default True.
 
     Returns
     -------
@@ -637,6 +591,7 @@ def plot_colors(
                 library_name,
                 ncols=ncols,
                 sort_colors=sort_colors,
+                show_hex=show_hex,
             )
             if fig is not None:
                 figures.append(fig)
