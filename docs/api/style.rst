@@ -43,6 +43,16 @@ programmatically.
 - Returns:
   - ``dict`` mapping rcParam keys to values.
 
+``style_path(name)``
+Returns the ``pathlib.Path`` to a style file.
+
+- Parameters:
+  - ``name``: style stem (e.g. ``"base"``).
+- Returns:
+  - ``pathlib.Path`` to the ``.mplstyle`` file.
+- Raises:
+  - ``ValueError`` if the style is not found.
+
 Typical usage
 
 .. code-block:: python

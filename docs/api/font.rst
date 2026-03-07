@@ -2,9 +2,9 @@ Font Utilities
 ==============
 
 Custom fonts bundled in ``asset/font`` are registered with matplotlib on import,
-so they are available without manual configuration. ``fs`` and ``fw`` are small
-helpers for offsetting the global rcParams font size/weight, and the gallery
-utility ``plot_fonts`` previews every installed family.
+so they are available without manual configuration. ``fs``, ``fw``, and ``lw``
+are small helpers for offsetting the global rcParams font size, weight, and line
+width, and the gallery utility ``plot_fonts`` previews every installed family.
 
 ``fs(n)``
    - Parameters:
@@ -15,8 +15,16 @@ utility ``plot_fonts`` previews every installed family.
 ``fw(n)``
    - Parameters:
      - ``n``: integer weight step multiplied by 100 and added to ``plt.rcParams["font.weight"]``.
+       String weights (e.g. ``'normal'``, ``'bold'``) are converted to their numeric
+       equivalents before arithmetic.
    - Returns:
      - integer font weight.
+
+``lw(n)``
+   - Parameters:
+     - ``n``: number to add to ``plt.rcParams["lines.linewidth"]``.
+   - Returns:
+     - new line width (float).
 
 ``plot_fonts(font_dir=None, ncols=3, font_size=11)``
    - Parameters:
@@ -27,6 +35,7 @@ utility ``plot_fonts`` previews every installed family.
      - ``matplotlib.figure.Figure`` containing the preview grid.
 
 Example
+-------
 
 .. code-block:: python
 
@@ -35,6 +44,7 @@ Example
 
    fig, ax = plt.subplots()
    ax.set_title("Paper-ready", fontsize=dm.fs(2), fontweight=dm.fw(1))
+   ax.plot(x, y, lw=dm.lw(0.5))       # base linewidth + 0.5
    dm.plot_fonts(ncols=4, font_size=12)  # inspect available families
 
 .. automodule:: dartwork_mpl.font
@@ -44,3 +54,4 @@ Example
 
 .. autofunction:: dartwork_mpl.fs
 .. autofunction:: dartwork_mpl.fw
+.. autofunction:: dartwork_mpl.lw
