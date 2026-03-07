@@ -132,26 +132,21 @@ for r, label in enumerate(row_labels):
         fontsize=dm.fs(-0.5),
     )
 
-# Column labels
-for c, label in enumerate(col_labels):
-    x = c * cell_w + cell_w / 2
-    y = nrows * cell_h + 0.15
-    ax.text(
-        x,
-        y,
-        label,
-        ha="center",
-        va="bottom",
-        fontsize=dm.fs(-0.5),
-        weight="bold",
-    )
+# Column labels as ticks
+ax.set_xticks([c * cell_w + cell_w / 2 for c in range(ncols)])
+ax.set_xticklabels(col_labels, weight="bold", fontsize=dm.fs(-0.5))
+ax.xaxis.tick_top()
+ax.tick_params(axis="x", length=0, pad=5)
+ax.yaxis.set_visible(False)
+
+for spine in ax.spines.values():
+    spine.set_visible(False)
 
 ax.set_xlim(0, ncols * cell_w)
-ax.set_ylim(-0.3, nrows * cell_h + 0.8)
+ax.set_ylim(-0.2, nrows * cell_h)
 ax.set_aspect("equal")
-ax.axis("off")
 ax.set_title(
-    "US employee sentiment on gen AI, by age group", fontsize=dm.fs(1), pad=20
+    "US employee sentiment on gen AI, by age group", fontsize=dm.fs(1), pad=12
 )
 
 dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05))
