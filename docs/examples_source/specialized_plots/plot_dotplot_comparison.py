@@ -87,10 +87,10 @@ for i, (sv, m) in enumerate(zip(success_values, multiples, strict=False)):
 
 # Axes
 ax.set_yticks(y_pos)
-ax.set_yticklabels(categories, fontsize=dm.fs(0))
+ax.set_yticklabels(categories, fontsize=dm.fs(-0.5))
 ax.invert_yaxis()
 ax.tick_params(axis="y", length=0, pad=4)
-ax.set_xlabel("Result of transformation [%]", loc="center", fontsize=dm.fs(1))
+ax.set_xlabel("Result of transformation [%]", loc="center", fontsize=dm.fs(0))
 ax.set_xlim(0, 80)
 ax.set_ylim(len(categories) - 0.5, -0.5)
 ax.xaxis.grid(True, ls=":", which="major", color="gray", alpha=0.3)
@@ -100,7 +100,7 @@ for sp in ax.spines.values():
 
 # Title and legend
 fig.suptitle("AI Adoption Gap: AI-First vs. Traditional Companies",
-             fontsize=dm.fs(2), fontweight=dm.fw(1), x=0.5, ha="center", y=1.05)
+             fontsize=dm.fs(1), weight="bold", x=0.5, ha="center", y=1.05)
 
 legend_elements = [
     Line2D([0], [0], marker="o", color="w", label="Other organizations",

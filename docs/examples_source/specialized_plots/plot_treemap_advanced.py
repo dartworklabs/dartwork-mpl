@@ -103,7 +103,7 @@ def draw_treemap(ax, columns, total, title, padding=0.008):
     ax.set_ylim(0, 1)
     ax.set_aspect("equal")
     ax.axis("off")
-    ax.set_title(title, fontsize=dm.fs(1), pad=8)
+    ax.set_title(title, fontsize=dm.fs(1), weight="bold", pad=12)
 
 
 # ---------------------------------------------------------------------------

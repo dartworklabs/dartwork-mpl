@@ -70,7 +70,8 @@ values_right = [c[2] for c in categories]
 left_bottoms, left_total = stack_bottoms(values_left)
 right_bottoms, right_total = stack_bottoms(values_right)
 
-fig, ax = plt.subplots(figsize=(dm.cm2in(10), dm.cm2in(8)), dpi=300)
+fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
+fig.suptitle("Category Mix Shift (2022 vs 2025)", fontsize=dm.fs(1), weight="bold", y=1.05)
 
 for idx, (label, left_val, right_val) in enumerate(categories):
     lb, rb = left_bottoms[idx], right_bottoms[idx]
@@ -146,7 +147,7 @@ ax.text(
     ha="center",
     va="top",
     fontsize=dm.fs(-0.5),
-    weight=dm.fw(1),
+    weight="bold",
 )
 ax.text(
     right_x + bar_width / 2,
@@ -155,7 +156,7 @@ ax.text(
     ha="center",
     va="top",
     fontsize=dm.fs(-0.5),
-    weight=dm.fw(1),
+    weight="bold",
 )
 
 ax.set_xlim(left_x - 0.05, right_x + bar_width + label_offset + 0.5)

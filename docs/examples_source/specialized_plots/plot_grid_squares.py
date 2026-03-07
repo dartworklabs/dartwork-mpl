@@ -106,13 +106,7 @@ def draw_cell(ax, pct, facecolor, x, y, w, h, align="center"):
 # ---------------------------------------------------------------------------
 nrows, ncols = values.shape
 cell_w, cell_h = 1.0, 1.0
-
-fig_w = 2.5 + ncols * cell_w + 0.5
-fig_h = ncols * 0.3 + nrows * cell_h + 0.5
-
-fig, ax = plt.subplots(
-    figsize=(dm.cm2in(fig_w * 2.0), dm.cm2in(fig_h * 2.0)), dpi=300
-)
+fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
 
 for r in range(nrows):
     for c in range(ncols):
@@ -123,13 +117,13 @@ for r in range(nrows):
 # Row labels as ticks
 ax.set_yticks([(nrows - 1 - r) * cell_h + cell_h / 2 for r in range(nrows)])
 ax.set_yticklabels(row_labels, fontsize=dm.fs(-0.5))
-ax.tick_params(axis="y", length=0, pad=8)
+ax.tick_params(axis="y", length=0, pad=3)
 
 # Column labels as ticks
 ax.set_xticks([c * cell_w + cell_w / 2 for c in range(ncols)])
 ax.set_xticklabels(col_labels, fontsize=dm.fs(-0.5))
 ax.xaxis.tick_top()
-ax.tick_params(axis="x", length=0, pad=8)
+ax.tick_params(axis="x", length=0, pad=3)
 
 for spine in ax.spines.values():
     spine.set_visible(False)
@@ -138,7 +132,7 @@ ax.set_xlim(0, ncols * cell_w)
 ax.set_ylim(-0.2, nrows * cell_h)
 ax.set_aspect("equal")
 ax.set_title(
-    "US employee sentiment on gen AI, by age group", fontsize=dm.fs(1), pad=12
+    "US employee sentiment on gen AI, by age group", fontsize=dm.fs(1), weight="bold", pad=12
 )
 
 dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05))
