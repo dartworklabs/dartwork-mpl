@@ -218,3 +218,71 @@ class TestSimpleLayout:
             ax.plot([1, 2, 3])
         simple_layout(fig)
         plt.close(fig)
+
+
+# ============================================================================
+# Set decimal
+# ============================================================================
+
+
+class TestSetDecimal:
+    """Tests for set_decimal()."""
+
+    def test_x_decimal(self) -> None:
+        from dartwork_mpl.util import set_decimal
+
+        fig, ax = plt.subplots()
+        ax.plot([0, 1, 2], [0, 1, 2])
+        fig.canvas.draw()  # Ensure ticks are set
+        set_decimal(ax, xn=2)
+        labels = [t.get_text() for t in ax.get_xticklabels()]
+        # Should contain decimal formatted labels
+        assert any("." in label for label in labels if label)
+        plt.close(fig)
+
+    def test_y_decimal(self) -> None:
+        from dartwork_mpl.util import set_decimal
+
+        fig, ax = plt.subplots()
+        ax.plot([0, 1, 2], [0, 1, 2])
+        fig.canvas.draw()
+        set_decimal(ax, yn=1)
+        labels = [t.get_text() for t in ax.get_yticklabels()]
+        assert any("." in label for label in labels if label)
+        plt.close(fig)
+
+    def test_both_decimals(self) -> None:
+        from dartwork_mpl.util import set_decimal
+
+        fig, ax = plt.subplots()
+        ax.plot([0, 1, 2], [0, 1, 2])
+        fig.canvas.draw()
+        set_decimal(ax, xn=3, yn=0)
+        plt.close(fig)
+
+
+# ============================================================================
+# Make offset
+# ============================================================================
+
+
+class TestMakeOffset:
+    """Tests for make_offset()."""
+
+    def test_creates_transform(self) -> None:
+        from matplotlib.transforms import ScaledTranslation
+
+        from dartwork_mpl.util import make_offset
+
+        fig, _ax = plt.subplots()
+        offset = make_offset(4, -4, fig)
+        assert isinstance(offset, ScaledTranslation)
+        plt.close(fig)
+
+    def test_zero_offset(self) -> None:
+        from dartwork_mpl.util import make_offset
+
+        fig, _ax = plt.subplots()
+        offset = make_offset(0, 0, fig)
+        assert offset is not None
+        plt.close(fig)
