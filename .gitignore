@@ -44,3 +44,12 @@ agent-playbooks
 # dartwork-mpl UI runtime files
 .dartwork_ui_config.json
 .dartwork_ui_history.jsonl
+
+# Copied font files for docs HTML specimens
+docs/_static/fonts/
+
+# Generated font documentation assets
+docs/fonts/_preview.html
+docs/fonts/_generated/
+docs/fonts/images/
+docs/_static/font-face.css
