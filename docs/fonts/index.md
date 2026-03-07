@@ -29,7 +29,7 @@ all weights and variants.
 
 [Explore all font families →](families.md)
 
-:::{figure} images/font_utilities.png
+:::{figure} images/font_utilities.svg
 :alt: Font utility functions demonstration
 :width: 100%
 

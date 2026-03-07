@@ -10,6 +10,12 @@ opinionated styles, curated color libraries, and layout utilities.
 - Browse the **Examples Gallery** for ready-to-use patterns.
 - See **API Reference** for function-level details.
 
+**See the difference — drag to compare:**
+
+```{raw} html
+:file: _static/compare_slider.html
+```
+
 ```{toctree}
 :maxdepth: 2
 :titlesonly:

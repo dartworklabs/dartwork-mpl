@@ -490,8 +490,8 @@ def _save_color_space_creation(images_dir: Path) -> Path:
         )
 
     dm.simple_layout(fig, gs=gs)
-    path = images_dir / "color_space_creation.png"
-    fig.savefig(path, dpi=220, bbox_inches="tight")
+    path = images_dir / "color_space_creation.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -604,8 +604,8 @@ def _save_color_space_conversion(images_dir: Path) -> Path:
     # 레이아웃 최적화 (GridSpec 지정)
     dm.simple_layout(fig, gs=gs)
 
-    path = images_dir / "color_space_conversion.png"
-    fig.savefig(path, dpi=220, bbox_inches="tight")
+    path = images_dir / "color_space_conversion.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -720,8 +720,8 @@ def _save_color_space_interpolation(images_dir: Path) -> Path:
     # 레이아웃 최적화 (GridSpec 지정)
     dm.simple_layout(fig, gs=gs)
 
-    path = images_dir / "color_space_interpolation.png"
-    fig.savefig(path, dpi=220, bbox_inches="tight")
+    path = images_dir / "color_space_interpolation.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -878,8 +878,8 @@ cmap = mpl.colors.ListedColormap(
     # 레이아웃 최적화 (GridSpec 지정)
     dm.simple_layout(fig, gs=gs)
 
-    path = images_dir / "color_space_colormap.png"
-    fig.savefig(path, dpi=220, bbox_inches="tight")
+    path = images_dir / "color_space_colormap.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight")
     plt.close(fig)
     return path
 

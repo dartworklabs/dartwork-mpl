@@ -152,7 +152,7 @@ fig = dm.plot_fonts(font_dir="/path/to/custom/fonts", ncols=2)
 plt.savefig("custom_fonts.png", dpi=150)
 ```
 
-:::{figure} images/fonts_all_families.png
+:::{figure} images/fonts_all_families.svg
 :alt: plot_fonts() output showing all font families
 :width: 100%
 :::
@@ -218,6 +218,12 @@ plt.rcParams['font.size'] = 10
 ## Tips and Best Practices
 
 ### Consistent Typography Hierarchy
+
+**Try it — drag the sliders to see how `fs()` and `fw()` interact:**
+
+```{raw} html
+:file: images/hierarchy_inspector.html
+```
 
 Use `fs()` to create a consistent sizing hierarchy:
 

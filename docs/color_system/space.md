@@ -82,7 +82,7 @@ color2 = dm.named("oc.blue5")      # dartwork-mpl colors
 color3 = dm.named("tw.blue500")    # Tailwind colors
 ```
 
-:::{figure} images/color_space_creation.png
+:::{figure} images/color_space_creation.svg
 :alt: Examples of creating Color objects from different sources
 :width: 100%
 
@@ -201,7 +201,7 @@ print(brighter.oklab.L)   # 0.8
 
 - **Hex**: Web-standard color representation as hexadecimal strings (e.g., `#ff5733`).
 
-:::{figure} images/color_space_conversion.png
+:::{figure} images/color_space_conversion.svg
 :alt: Converting a single color between different color spaces
 :width: 100%
 
@@ -260,7 +260,7 @@ end = dm.hex("#ff5733")
 gradient = dm.cspace(start, end, n=20, space="oklch")
 ```
 
-:::{figure} images/color_space_interpolation.png
+:::{figure} images/color_space_interpolation.svg
 :alt: Comparing color interpolation in different color spaces
 :width: 100%
 
@@ -321,7 +321,7 @@ mpl.colormaps.register(cmap=cmap)
 # Now you can use it: plt.imshow(data, cmap="custom_blue_orange")
 ```
 
-:::{figure} images/color_space_colormap.png
+:::{figure} images/color_space_colormap.svg
 :alt: Custom colormaps created using cspace
 :width: 100%
 

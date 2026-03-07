@@ -20,6 +20,12 @@ ax.set_ylabel("Response", fontsize=dm.fs(0))
 dm.simple_layout(fig)  # auto-optimizes margins — replaces tight_layout()
 ```
 
+**Try it — drag the sliders to see how figure dimensions map onto an A4 page:**
+
+```{raw} html
+:file: images/ruler_widget.html
+```
+
 ### Multi-panel figures
 
 For multi-panel layouts, use GridSpec and pass it to `simple_layout`:
