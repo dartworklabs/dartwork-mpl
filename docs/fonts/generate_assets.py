@@ -86,8 +86,8 @@ WEIGHT_ORDER = {
     "Regular": 4,
     "Medium": 5,
     "SemiBold": 6,
-    "Bold": 7,
     "ExtraBold": 8,
+    "Bold": 7,
     "Black": 9,
 }
 
@@ -214,7 +214,7 @@ def _save_family_preview(
 
     # Calculate figure size based on number of fonts
     n_fonts = len(sorted_fonts)
-    fig_height = max(4, n_fonts * 0.5 + 2)
+    fig_height = max(4, n_fonts * 0.6 + 2.5)
 
     fig, ax = plt.subplots(figsize=(12, fig_height))
     fig.patch.set_facecolor("#fbfaf7")
@@ -224,41 +224,130 @@ def _save_family_preview(
     ax.set_ylim(0, n_fonts + 1)
     ax.axis("off")
 
-    # Title
+    # Title (left-aligned)
     meta = FONT_FAMILIES.get(family, {})
-    fig.suptitle(f"{family}", fontsize=18, fontweight="bold", y=0.96)
+    fig.suptitle(
+        f"{family}", fontsize=18, fontweight="bold", y=0.97,
+        x=0.08, ha="left",
+    )
 
     if meta.get("description"):
         fig.text(
-            0.5,
-            0.92,
+            0.08,
+            0.90,
             meta["description"],
             fontsize=11,
             color="#555",
-            ha="center",
+            ha="left",
         )
 
-    # Sample text
-    sample_text = "The quick brown fox jumps over the lazy dog. 0123456789"
+    # Find Regular/Medium font for weight labels
+    regular_font_prop = None
+    for f in sorted_fonts:
+        fname_lower = f.lower()
+        if "-regular" in fname_lower or fname_lower.endswith("regular.ttf"):
+            regular_font_prop = fm.FontProperties(
+                fname=str(font_dir / f),
+            )
+            break
+    if regular_font_prop is None:
+        for f in sorted_fonts:
+            fname_lower = f.lower()
+            if "-medium" in fname_lower or "4regular" in fname_lower:
+                regular_font_prop = fm.FontProperties(
+                    fname=str(font_dir / f),
+                )
+                break
+
+    # Sample text — use math symbols for NotoSansMath, Korean for Paperlogy
+    if family == "NotoSansMath":
+        sample_text = "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∉ ⊂ ∪ ∩ ∀ ∃"
+    elif family == "Paperlogy":
+        sample_text = "김도균 & 이주임 님이 만든 아름다운 페이퍼로지 폰트. 0123456789"
+    else:
+        sample_text = "Sphinx of black quartz, judge my vow — designing beautiful charts & graphs since 2024. (0123456789)"
+    # NotoSansMath: add extra LaTeX math expression lines (only 1 weight)
+    if family == "NotoSansMath":
+        math_expressions = [
+            ("Symbols", "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∉ ⊂ ∪ ∩ ∀ ∃"),
+            ("Quadratic", r"$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$"),
+            ("Gaussian", r"$\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}$"),
+            ("Green's Function", r"$G(\mathbf{r}, t) = \frac{1}{(4\pi \alpha t)^{3/2}} \exp\left( -\frac{x^2 + y^2 + z^2}{4 \alpha t} \right)$"),
+            ("Entropy", r"$H(X) = -\sum_{i} p(x_i) \log p(x_i)$"),
+            ("Heat Equation", r"$\frac{\partial u}{\partial t} = \alpha \left( \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} + \frac{\partial^2 u}{\partial z^2} \right)$"),
+            ("Navier-Stokes", r"$\rho \left( \frac{\partial \mathbf{v}}{\partial t} + \mathbf{v} \cdot \nabla \mathbf{v} \right) = -\nabla p + \mu \nabla^2 \mathbf{v}$"),
+            ("Maxwell-Boltzmann", r"$f(v) = 4\pi \left( \frac{m}{2\pi k_B T} \right)^{3/2} v^2 \, e^{-mv^2 / 2k_B T}$"),
+            ("Planck", r"$B(\nu, T) = \frac{2 h \nu^3}{c^2} \cdot \frac{1}{e^{h\nu / k_B T} - 1}$"),
+        ]
+
+        n_lines = len(math_expressions)
+        fig_height = max(4, n_lines * 0.7 + 2.5)
+
+        # Recreate figure with proper size for math lines
+        plt.close(fig)
+        fig, ax = plt.subplots(figsize=(12, fig_height))
+        fig.patch.set_facecolor("#fbfaf7")
+        ax.set_facecolor("#ffffff")
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, n_lines + 1)
+        ax.axis("off")
+
+        fig.suptitle(
+            f"{family}", fontsize=18, fontweight="bold", y=0.97,
+            x=0.08, ha="left",
+        )
+        if meta.get("description"):
+            fig.text(
+                0.08, 0.90, meta["description"],
+                fontsize=11, color="#555", ha="left",
+            )
+
+        font_path = font_dir / sorted_fonts[0]
+        font_prop = fm.FontProperties(fname=str(font_path))
+
+        for idx, (label, expr) in enumerate(math_expressions):
+            y_pos = n_lines - idx - 0.3
+
+            ax.text(
+                0.1, y_pos, label,
+                fontproperties=font_prop, size=15, color="#666", va="center",
+            )
+
+            if expr.startswith("$"):
+                ax.text(
+                    2.2, y_pos, expr,
+                    size=15, color="#333", va="center",
+                )
+            else:
+                ax.text(
+                    2.2, y_pos, expr,
+                    fontproperties=font_prop, size=15,
+                    color="#333", va="center",
+                )
+
+        path = images_dir / f"font_{family.lower()}.png"
+        fig.savefig(path, dpi=220, bbox_inches="tight")
+        plt.close(fig)
+        return path
 
     for idx, font_file in enumerate(sorted_fonts):
         font_path = font_dir / font_file
         font_name = os.path.splitext(font_file)[0]
         variant = font_name.split("-")[1] if "-" in font_name else "Regular"
+        variant = variant.lstrip("0123456789")  # strip numeric prefix
 
         font_prop = fm.FontProperties(fname=str(font_path))
         y_pos = n_fonts - idx - 0.5
 
-        # Variant label
-        ax.text(
-            0.1,
-            y_pos,
-            f"{variant}",
-            size=10,
-            weight="bold",
-            color="#666",
-            va="center",
+        # Variant label — use family's own Regular font
+        label_kwargs = dict(
+            size=14, color="#666", va="center",
         )
+        if regular_font_prop is not None:
+            label_kwargs["fontproperties"] = regular_font_prop
+        else:
+            label_kwargs["weight"] = "bold"
+        ax.text(0.1, y_pos, f"{variant}", **label_kwargs)
 
         # Sample text
         ax.text(
@@ -266,7 +355,7 @@ def _save_family_preview(
             y_pos,
             sample_text,
             fontproperties=font_prop,
-            size=12,
+            size=14,
             color="#333",
             va="center",
         )
@@ -278,12 +367,22 @@ def _save_family_preview(
 
 
 def _save_weight_comparison(images_dir: Path) -> Path:
-    """Generate a weight comparison chart using Roboto."""
+    """Generate a weight comparison chart using Inter (full 100-900)."""
     font_dir = _get_font_dir()
 
-    weights = ["Thin", "Light", "Regular", "Medium", "Bold", "Black"]
+    weights = [
+        ("Thin", 100),
+        ("ExtraLight", 200),
+        ("Light", 300),
+        ("Regular", 400),
+        ("Medium", 500),
+        ("SemiBold", 600),
+        ("Bold", 700),
+        ("ExtraBold", 800),
+        ("Black", 900),
+    ]
 
-    fig, ax = plt.subplots(figsize=(14, 5))
+    fig, ax = plt.subplots(figsize=(14, 6.5))
     fig.patch.set_facecolor("#fbfaf7")
     ax.set_facecolor("#ffffff")
 
@@ -292,22 +391,22 @@ def _save_weight_comparison(images_dir: Path) -> Path:
     ax.axis("off")
 
     fig.suptitle(
-        "Font Weight Comparison (Roboto)",
+        "Font Weight Reference (Inter)",
         fontsize=18,
         fontweight="bold",
-        y=0.95,
+        y=0.97,
     )
     fig.text(
         0.5,
-        0.88,
+        0.91,
         "Use fw(n) to adjust weight relative to base: fw(0)=base, fw(1)=+100, fw(-1)=-100",
         fontsize=11,
         color="#555",
         ha="center",
     )
 
-    for idx, weight in enumerate(weights):
-        font_file = f"Roboto-{weight}.ttf"
+    for idx, (weight_name, weight_num) in enumerate(weights):
+        font_file = f"Inter-{weight_name}.ttf"
         font_path = font_dir / font_file
 
         if font_path.exists():
@@ -315,17 +414,16 @@ def _save_weight_comparison(images_dir: Path) -> Path:
             y_pos = len(weights) - idx - 0.5
 
             ax.text(
-                0.2,
+                0.1,
                 y_pos,
-                weight,
-                size=11,
-                weight="bold",
-                color="#666",
+                f"{weight_name} ({weight_num})",
+                size=10,
+                color="#888",
                 va="center",
             )
 
             ax.text(
-                2.0,
+                2.2,
                 y_pos,
                 "Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk",
                 fontproperties=font_prop,
@@ -418,6 +516,154 @@ def _save_utilities_demo(images_dir: Path) -> Path:
     return path
 
 
+def _save_condensed_comparison(images_dir: Path) -> Path:
+    """Generate a side-by-side comparison of Noto Sans width variants."""
+    font_dir = _get_font_dir()
+
+    variants = [
+        ("NotoSans", "Regular"),
+        ("NotoSans_SemiCondensed", "SemiCondensed"),
+        ("NotoSans_Condensed", "Condensed"),
+        ("NotoSans_ExtraCondensed", "ExtraCondensed"),
+    ]
+
+    sample = "Revenue Growth Rate: 12.5% YoY | Operating Margin: 18.3%"
+
+    fig, ax = plt.subplots(figsize=(14, 4.5))
+    fig.patch.set_facecolor("#fbfaf7")
+    ax.set_facecolor("#ffffff")
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, len(variants) + 1.5)
+    ax.axis("off")
+
+    fig.suptitle(
+        "Noto Sans Width Comparison",
+        fontsize=18,
+        fontweight="bold",
+        y=0.97,
+    )
+    fig.text(
+        0.5,
+        0.90,
+        "Same text rendered at different widths — choose by available space",
+        fontsize=11,
+        color="#555",
+        ha="center",
+    )
+
+    for idx, (family, label) in enumerate(variants):
+        font_file = f"{family}-Regular.ttf"
+        font_path = font_dir / font_file
+
+        if font_path.exists():
+            font_prop = fm.FontProperties(fname=str(font_path))
+            y_pos = len(variants) - idx - 0.2
+
+            ax.text(
+                0.1,
+                y_pos,
+                label,
+                size=10,
+                color="#888",
+                va="center",
+            )
+
+            ax.text(
+                2.2,
+                y_pos,
+                sample,
+                fontproperties=font_prop,
+                size=13,
+                color="#333",
+                va="center",
+            )
+
+    path = images_dir / "font_condensed_comparison.png"
+    fig.savefig(path, dpi=220, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def _save_multilang_specimen(images_dir: Path) -> Path:
+    """Generate a multi-language specimen using bundled fonts."""
+    font_dir = _get_font_dir()
+
+    specimens = [
+        ("Paperlogy", "Paperlogy-4Regular.ttf", "한국어", "데이터 시각화를 위한 전문 타이포그래피"),
+        ("Noto Sans", "NotoSans-Regular.ttf", "English", "Professional typography for data visualization"),
+        ("Noto Sans CJK", "NotoSansCJK-Regular.ttc", "日本語", "データ可視化のためのタイポグラフィ"),
+        ("Noto Sans CJK", "NotoSansCJK-Regular.ttc", "中文", "用于数据可视化的专业排版"),
+        ("Noto Sans Math", "NotoSansMath-Regular.ttf", "Math", "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ⊂ ∪ ∩ ∀ ∃"),
+    ]
+
+    fig, ax = plt.subplots(figsize=(14, 5.5))
+    fig.patch.set_facecolor("#fbfaf7")
+    ax.set_facecolor("#ffffff")
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, len(specimens) + 1.5)
+    ax.axis("off")
+
+    fig.suptitle(
+        "Multi-Language Support",
+        fontsize=18,
+        fontweight="bold",
+        y=0.97,
+    )
+    fig.text(
+        0.5,
+        0.90,
+        "All rendered with bundled fonts — no system font installation required",
+        fontsize=11,
+        color="#555",
+        ha="center",
+    )
+
+    for idx, (family, font_file, lang, text) in enumerate(specimens):
+        font_path = font_dir / font_file
+
+        if font_path.exists():
+            font_prop = fm.FontProperties(fname=str(font_path))
+            y_pos = len(specimens) - idx - 0.2
+
+            # Language label
+            ax.text(
+                0.1,
+                y_pos,
+                lang,
+                size=10,
+                fontweight="bold",
+                color="#666",
+                va="center",
+            )
+
+            # Sample text
+            ax.text(
+                1.6,
+                y_pos,
+                text,
+                fontproperties=font_prop,
+                size=14,
+                color="#333",
+                va="center",
+            )
+
+            # Font name
+            ax.text(
+                9.5,
+                y_pos,
+                family,
+                size=9,
+                color="#aaa",
+                va="center",
+                ha="right",
+            )
+
+    path = images_dir / "font_multilang.png"
+    fig.savefig(path, dpi=220, bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
 def build_font_assets(base_dir: Path | None = None) -> dict[str, list[Path]]:
     """Generate all font gallery assets and return their paths."""
     images_dir = _prepare_images_dir(base_dir)
@@ -436,15 +682,24 @@ def build_font_assets(base_dir: Path | None = None) -> dict[str, list[Path]]:
     # Generate weight comparison
     weight_path = _save_weight_comparison(images_dir)
 
+    # Generate condensed width comparison
+    condensed_path = _save_condensed_comparison(images_dir)
+
+    # Generate multi-language specimen
+    multilang_path = _save_multilang_specimen(images_dir)
+
     # Generate utilities demo
     utils_path = _save_utilities_demo(images_dir)
 
-    print(f"[fonts] wrote {len(family_paths) + 3} font preview images")
+    total = len(family_paths) + 5
+    print(f"[fonts] wrote {total} font preview images")
 
     return {
         "all_fonts": [all_fonts_path],
         "families": family_paths,
         "weights": [weight_path],
+        "condensed": [condensed_path],
+        "multilang": [multilang_path],
         "utilities": [utils_path],
     }
 
