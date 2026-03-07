@@ -1,8 +1,10 @@
 [project]
 name = "dartwork-mpl"
 version = "0.1.1"
-description = "Add your description here"
+description = "Enhanced matplotlib styling, color management, and utility library for publication-quality figures"
 readme = "README.md"
+license = { text = "MIT" }
+keywords = ["matplotlib", "visualization", "color", "styling", "publication"]
 authors = [
     { name = "Sangwon Lee", email = "lsw91.main@gmail.com" },
     { name = "Wonjun Choi", email = "wonjunn.choi@gmail.com" }
@@ -16,6 +18,12 @@ dependencies = [
     "palettable>=3.3.3",
     "scipy>=1.15.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/dartworklabs/dartwork-mpl"
+Documentation = "https://dartworklabs.github.io/dartwork-mpl/"
+Repository = "https://github.com/dartworklabs/dartwork-mpl"
+Issues = "https://github.com/dartworklabs/dartwork-mpl/issues"
 
 [project.scripts]
 mcp = "dartwork_mpl.cli:main"
