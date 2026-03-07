@@ -5,11 +5,8 @@ functionality including support for OKLab, OKLCH, RGB, and hex color
 spaces.
 """
 
-# Load and register colors on import (side-effect).
-from . import _loader  # noqa: F401
-
-# Public API — backward-compatible with the old single-file module.
 from ._color import Color, cspace, hex, named, oklab, oklch, rgb
+from ._loader import ensure_loaded as _ensure_colors_loaded
 from ._views import (
     OklabView,
     OklabViewIterator,
@@ -37,3 +34,6 @@ __all__ = [
     "RgbView",
     "RgbViewIterator",
 ]
+
+# Register bundled color palettes with matplotlib on first import.
+_ensure_colors_loaded()

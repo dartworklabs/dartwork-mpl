@@ -140,8 +140,3 @@ def ensure_loaded() -> None:
         return
     _load_colors()
     _loaded = True
-
-
-# Eager load for backward compatibility — will be switched to lazy
-# in a later phase.
-ensure_loaded()
