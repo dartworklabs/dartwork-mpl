@@ -168,6 +168,22 @@ main :is(h1, h2, h3)[id] {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.sphx-glr-thumbcontainer:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(24, 31, 41, 0.12);
+}
+
+.sphx-glr-thumbcontainer:hover img {
+  transform: scale(1.03);
+}
+
+.sphx-glr-thumbcontainer img {
+  transition: transform 0.25s ease;
 }
 
 @media (max-width: 1200px) {
@@ -326,6 +342,38 @@ body[data-theme="dark"] .dm-group-label {
   opacity: 0.75;
 }
 
+/* Click-to-copy feedback tooltip */
+.dm-swatch::after {
+  content: "Copied!";
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%) scale(0.85);
+  background: #1a1a2e;
+  color: #fff;
+  font-size: 0.6em;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.dm-swatch.copied::after {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+html.dark .dm-swatch::after,
+body[data-theme="dark"] .dm-swatch::after {
+  background: #e0e0e0;
+  color: #1a1a2e;
+}
+
 /* Section divider within a sheet */
 .dm-section-divider {
   font-size: 0.72em;
@@ -442,6 +490,87 @@ body[data-theme="dark"] .dm-cmap-tag {
 .dm-cmap-bar {
   height: 24px;
   border-radius: 4px;
+  position: relative;
+  cursor: crosshair;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Colormap Hover Inspector
+   ═══════════════════════════════════════════════════════════════════════ */
+.dm-cmap-inspector {
+  position: absolute;
+  z-index: 10;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.dm-cmap-bar:hover .dm-cmap-inspector {
+  opacity: 1;
+}
+
+.dm-cmap-inspector-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.dm-cmap-inspector-label {
+  background: #1a1a2e;
+  color: #fff;
+  font-size: 0.62em;
+  font-weight: 600;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+html.dark .dm-cmap-inspector-label,
+body[data-theme="dark"] .dm-cmap-inspector-label {
+  background: #e0e0e0;
+  color: #1a1a2e;
+}
+
+/* Copied! feedback on colormap bar */
+.dm-cmap-bar::after {
+  content: "Copied!";
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%) scale(0.85);
+  background: #1a1a2e;
+  color: #fff;
+  font-size: 0.6em;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.dm-cmap-bar.copied::after {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+html.dark .dm-cmap-bar::after,
+body[data-theme="dark"] .dm-cmap-bar::after {
+  background: #e0e0e0;
+  color: #1a1a2e;
 }
 
 /* Responsive label width */
@@ -457,4 +586,963 @@ body[data-theme="dark"] .dm-cmap-tag {
   .dm-swatch-hex {
     display: none;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Font Specimen — Interactive Type Tester
+   ═══════════════════════════════════════════════════════════════════════ */
+.dm-type-tester {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1.2em;
+  padding: 10px 14px;
+  background: #f0efe9;
+  border: 1px solid #e4e2dd;
+  border-radius: 8px;
+}
+
+html.dark .dm-type-tester,
+body[data-theme="dark"] .dm-type-tester {
+  background: #222233;
+  border-color: #333348;
+}
+
+.dm-type-tester-input {
+  flex: 1;
+  font-size: 0.9em;
+  padding: 6px 10px;
+  border: 1px solid #d5d3cc;
+  border-radius: 5px;
+  background: #fff;
+  color: #333;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.dm-type-tester-input:focus {
+  border-color: var(--accent-9, #0d9488);
+}
+
+html.dark .dm-type-tester-input,
+body[data-theme="dark"] .dm-type-tester-input {
+  background: #1a1a2e;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+.dm-type-tester-size {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.dm-type-tester-slider {
+  width: 80px;
+  cursor: pointer;
+  accent-color: var(--accent-9, #0d9488);
+}
+
+.dm-type-tester-size-label {
+  font-size: 0.72em;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: #777;
+  min-width: 32px;
+  text-align: right;
+}
+
+html.dark .dm-type-tester-size-label,
+body[data-theme="dark"] .dm-type-tester-size-label {
+  color: #999;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Color Swatch — Detail Panel on Hover
+   ═══════════════════════════════════════════════════════════════════════ */
+.dm-swatch-detail {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 20;
+  background: #fff;
+  border: 1px solid #e4e2dd;
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 28px rgba(24, 31, 41, 0.12);
+  font-size: 0.78em;
+  min-width: 160px;
+  pointer-events: none;
+  animation: dm-detail-in 0.15s ease;
+}
+
+@keyframes dm-detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+html.dark .dm-swatch-detail,
+body[data-theme="dark"] .dm-swatch-detail {
+  background: #1e1e32;
+  border-color: #333348;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+}
+
+.dm-detail-name {
+  font-weight: 700;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e4e2dd;
+  color: #333;
+}
+
+html.dark .dm-detail-name,
+body[data-theme="dark"] .dm-detail-name {
+  color: #e0e0e0;
+  border-bottom-color: #444;
+}
+
+.dm-detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 0;
+}
+
+.dm-detail-key {
+  font-weight: 600;
+  color: #888;
+  font-size: 0.85em;
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+.dm-detail-val {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: #333;
+}
+
+html.dark .dm-detail-val,
+body[data-theme="dark"] .dm-detail-val {
+  color: #d0d0d0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Color Space — Live Gradient Picker
+   ═══════════════════════════════════════════════════════════════════════ */
+.dm-gradient-picker {
+  margin: 1.5em 0 2em;
+  padding: 1.5em;
+  background: #fbfaf7;
+  border: 1px solid #ebe9e2;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(24, 31, 41, 0.05);
+}
+
+html.dark .dm-gradient-picker,
+body[data-theme="dark"] .dm-gradient-picker {
+  background: #1a1a2e;
+  border-color: #2a2a3e;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+}
+
+.dm-gp-header {
+  margin-bottom: 1.2em;
+}
+
+.dm-gp-title {
+  font-size: 1.1em;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 0.2em;
+}
+
+html.dark .dm-gp-title,
+body[data-theme="dark"] .dm-gp-title {
+  color: #e0e0e0;
+}
+
+.dm-gp-subtitle {
+  font-size: 0.82em;
+  color: #777;
+}
+
+html.dark .dm-gp-subtitle,
+body[data-theme="dark"] .dm-gp-subtitle {
+  color: #999;
+}
+
+.dm-gp-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 1.2em;
+  flex-wrap: wrap;
+}
+
+.dm-gp-color-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dm-gp-label {
+  font-size: 0.78em;
+  font-weight: 600;
+  color: #555;
+  min-width: 32px;
+}
+
+html.dark .dm-gp-label,
+body[data-theme="dark"] .dm-gp-label {
+  color: #aaa;
+}
+
+.dm-gp-picker {
+  width: 36px;
+  height: 28px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 0;
+  background: none;
+}
+
+.dm-gp-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.dm-gp-picker::-webkit-color-swatch {
+  border-radius: 5px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.dm-gp-hex {
+  width: 72px;
+  font-size: 0.78em;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  padding: 4px 6px;
+  border: 1px solid #d5d3cc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  text-align: center;
+}
+
+html.dark .dm-gp-hex,
+body[data-theme="dark"] .dm-gp-hex {
+  background: #222;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+.dm-gp-arrow {
+  font-size: 1.2em;
+  color: #999;
+  flex-shrink: 0;
+}
+
+.dm-gp-steps-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.dm-gp-slider {
+  width: 80px;
+  cursor: pointer;
+  accent-color: var(--accent-9, #0d9488);
+}
+
+.dm-gp-steps-label {
+  font-size: 0.78em;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: #777;
+  min-width: 20px;
+}
+
+.dm-gp-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dm-gp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dm-gp-space-label {
+  min-width: 80px;
+  font-size: 0.78em;
+  font-weight: 600;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: #555;
+  flex-shrink: 0;
+}
+
+html.dark .dm-gp-space-label,
+body[data-theme="dark"] .dm-gp-space-label {
+  color: #aaa;
+}
+
+.dm-gp-badge {
+  font-size: 0.82em;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.dm-gp-badge-rec {
+  background: #e1f4f1;
+  color: #03675f;
+  border: 1px solid #b9e2dc;
+}
+
+html.dark .dm-gp-badge-rec,
+body[data-theme="dark"] .dm-gp-badge-rec {
+  background: #0d2e2a;
+  border-color: #1a4a44;
+  color: #4ecabc;
+}
+
+.dm-gp-bar {
+  display: flex;
+  flex: 1;
+  gap: 2px;
+  min-height: 38px;
+}
+
+.dm-gp-cell {
+  flex: 1;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.dm-gp-cell:first-child {
+  border-radius: 6px 4px 4px 6px;
+}
+
+.dm-gp-cell:last-child {
+  border-radius: 4px 6px 6px 4px;
+}
+
+.dm-gp-cell:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+.dm-gp-code {
+  margin-top: 1em;
+  font-size: 0.78em;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: #555;
+  background: #f0efe9;
+  padding: 6px 12px;
+  border-radius: 5px;
+  border: 1px solid #e4e2dd;
+}
+
+html.dark .dm-gp-code,
+body[data-theme="dark"] .dm-gp-code {
+  background: #222233;
+  border-color: #333348;
+  color: #aaa;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Preset Visual Comparison
+   ═══════════════════════════════════════════════════════════════════════ */
+.dm-preset-compare {
+  margin: 1.5em 0 2em;
+  padding: 1.5em;
+  background: #fbfaf7;
+  border: 1px solid #ebe9e2;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(24, 31, 41, 0.05);
+}
+
+html.dark .dm-preset-compare,
+body[data-theme="dark"] .dm-preset-compare {
+  background: #1a1a2e;
+  border-color: #2a2a3e;
+}
+
+.dm-pc-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 1em;
+}
+
+.dm-pc-tab {
+  padding: 6px 16px;
+  font-size: 0.82em;
+  font-weight: 600;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  border: 1px solid #d5d3cc;
+  border-radius: 6px;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dm-pc-tab:hover {
+  border-color: var(--accent-9, #0d9488);
+  color: var(--accent-9, #0d9488);
+}
+
+.dm-pc-tab-active {
+  background: var(--accent-9, #0d9488);
+  color: #fff;
+  border-color: var(--accent-9, #0d9488);
+}
+
+html.dark .dm-pc-tab,
+body[data-theme="dark"] .dm-pc-tab {
+  background: #222;
+  border-color: #444;
+  color: #aaa;
+}
+
+html.dark .dm-pc-tab-active,
+body[data-theme="dark"] .dm-pc-tab-active {
+  background: var(--accent-9, #0d9488);
+  color: #fff;
+  border-color: var(--accent-9, #0d9488);
+}
+
+.dm-pc-preview {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+@media (max-width: 700px) {
+  .dm-pc-preview {
+    flex-direction: column;
+  }
+}
+
+.dm-pc-chart {
+  flex: 1;
+  border: 1px solid #e4e2dd;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+html.dark .dm-pc-chart,
+body[data-theme="dark"] .dm-pc-chart {
+  border-color: #444;
+  background: #fff;
+}
+
+.dm-pc-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.dm-pc-svg text,
+.dm-pc-svg line {
+  transition: all 0.3s ease;
+}
+
+.dm-pc-info {
+  min-width: 180px;
+  flex-shrink: 0;
+}
+
+.dm-pc-info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid #ebe9e2;
+}
+
+.dm-pc-info-row:last-child {
+  border-bottom: none;
+}
+
+html.dark .dm-pc-info-row,
+body[data-theme="dark"] .dm-pc-info-row {
+  border-bottom-color: #333;
+}
+
+.dm-pc-info-key {
+  font-size: 0.75em;
+  font-weight: 600;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: #888;
+}
+
+.dm-pc-info-val {
+  font-size: 0.75em;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: #333;
+  text-align: right;
+  transition: color 0.2s ease;
+}
+
+html.dark .dm-pc-info-val,
+body[data-theme="dark"] .dm-pc-info-val {
+  color: #d0d0d0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ⑨ Named Color Search — toolbar with search + CVD toggle
+   ═══════════════════════════════════════════════════════════════════════ */
+.dm-color-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  margin: 0 0 1.5em;
+  padding: 0.75em 1em;
+  background: #fbfaf7;
+  border: 1px solid #ebe9e2;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(24, 31, 41, 0.04);
+  position: sticky;
+  top: 60px;
+  z-index: 20;
+}
+
+html.dark .dm-color-toolbar,
+body[data-theme="dark"] .dm-color-toolbar {
+  background: #1a1a2e;
+  border-color: #2a2a3e;
+}
+
+.dm-color-search-wrap {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 0.5em;
+  position: relative;
+}
+
+.dm-color-search-icon {
+  font-size: 1.2em;
+  color: #888;
+  pointer-events: none;
+}
+
+.dm-color-search {
+  flex: 1;
+  padding: 0.4em 0.6em;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.85em;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  background: #fff;
+  color: #333;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.dm-color-search:focus {
+  border-color: var(--accent-9, #0d9488);
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
+}
+
+html.dark .dm-color-search,
+body[data-theme="dark"] .dm-color-search {
+  background: #222;
+  border-color: #444;
+  color: #eee;
+}
+
+.dm-color-search-count {
+  font-size: 0.75em;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: #888;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ⑧ Color Vision Deficiency (CVD) Simulator Buttons
+   ═══════════════════════════════════════════════════════════════════════ */
+.dm-cvd-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  flex-shrink: 0;
+}
+
+.dm-cvd-label {
+  font-size: 0.7em;
+  font-weight: 700;
+  color: #999;
+  margin-right: 0.3em;
+  letter-spacing: 0.05em;
+}
+
+.dm-cvd-btn {
+  padding: 0.25em 0.55em;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background: #fff;
+  font-size: 0.7em;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1.2;
+}
+
+.dm-cvd-btn:hover {
+  border-color: #bbb;
+  background: #f5f5f5;
+}
+
+.dm-cvd-btn.active {
+  background: var(--accent-9, #0d9488);
+  color: #fff;
+  border-color: var(--accent-9, #0d9488);
+}
+
+html.dark .dm-cvd-btn,
+body[data-theme="dark"] .dm-cvd-btn {
+  background: #2a2a3e;
+  border-color: #444;
+  color: #aaa;
+}
+
+html.dark .dm-cvd-btn:hover,
+body[data-theme="dark"] .dm-cvd-btn:hover {
+  background: #333;
+}
+
+html.dark .dm-cvd-btn.active,
+body[data-theme="dark"] .dm-cvd-btn.active {
+  background: var(--accent-9, #0d9488);
+  color: #fff;
+}
+
+/* transition on swatch opacity/scale for smooth filtering */
+.dm-swatch {
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.dm-color-group {
+  transition: opacity 0.25s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ⑦ Before/After Comparison Slider
+   ═══════════════════════════════════════════════════════════════════════ */
+.dm-compare-slider {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid #ebe9e2;
+  box-shadow: 0 8px 28px rgba(24, 31, 41, 0.06);
+  margin: 1.5em 0 2em;
+  cursor: col-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html.dark .dm-compare-slider,
+body[data-theme="dark"] .dm-compare-slider {
+  border-color: #2a2a3e;
+}
+
+.dm-compare-slider img {
+  display: block;
+  width: 100%;
+  pointer-events: none;
+}
+
+.dm-compare-after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.dm-compare-after img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dm-compare-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #fff;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+  z-index: 5;
+  pointer-events: none;
+}
+
+.dm-compare-handle::after {
+  content: "⟨⟩";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  color: #444;
+  font-size: 0.7em;
+  font-weight: 700;
+  padding: 6px 4px;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  letter-spacing: -1px;
+}
+
+.dm-compare-label {
+  position: absolute;
+  top: 10px;
+  padding: 3px 10px;
+  font-size: 0.7em;
+  font-weight: 600;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 6;
+  letter-spacing: 0.03em;
+}
+
+.dm-compare-label-before {
+  left: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+}
+
+.dm-compare-label-after {
+  right: 10px;
+  background: rgba(13, 148, 136, 0.8);
+  color: #fff;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ⑫ cm2in Ruler Widget
+   ═══════════════════════════════════════════════════════════════════════ */
+.dm-ruler-widget {
+  margin: 1.5em 0 2em;
+  padding: 1.5em;
+  background: #fbfaf7;
+  border: 1px solid #ebe9e2;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(24, 31, 41, 0.05);
+}
+
+html.dark .dm-ruler-widget,
+body[data-theme="dark"] .dm-ruler-widget {
+  background: #1a1a2e;
+  border-color: #2a2a3e;
+}
+
+.dm-ruler-controls {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  margin-bottom: 1em;
+}
+
+.dm-ruler-controls label {
+  font-size: 0.8em;
+  font-weight: 600;
+  color: #555;
+}
+
+html.dark .dm-ruler-controls label,
+body[data-theme="dark"] .dm-ruler-controls label {
+  color: #bbb;
+}
+
+.dm-ruler-controls input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent-9, #0d9488);
+}
+
+.dm-ruler-value {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.85em;
+  color: #333;
+  min-width: 120px;
+  text-align: right;
+}
+
+html.dark .dm-ruler-value,
+body[data-theme="dark"] .dm-ruler-value {
+  color: #ddd;
+}
+
+.dm-ruler-preview {
+  position: relative;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 0.5em;
+}
+
+html.dark .dm-ruler-preview,
+body[data-theme="dark"] .dm-ruler-preview {
+  background: #222;
+  border-color: #444;
+}
+
+.dm-ruler-page {
+  width: 100%;
+  padding-top: 70.7%; /* A4 aspect ratio (1:√2) */
+  position: relative;
+}
+
+.dm-ruler-fig {
+  position: absolute;
+  top: 5%;
+  left: 5%;
+  background: rgba(13, 148, 136, 0.15);
+  border: 2px dashed var(--accent-9, #0d9488);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.dm-ruler-fig-label {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.7em;
+  color: var(--accent-9, #0d9488);
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ⑩ fs/fw Hierarchy Inspector
+   ═══════════════════════════════════════════════════════════════════════ */
+.dm-hierarchy-widget {
+  margin: 1.5em 0 2em;
+  padding: 1.5em;
+  background: #fbfaf7;
+  border: 1px solid #ebe9e2;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(24, 31, 41, 0.05);
+}
+
+html.dark .dm-hierarchy-widget,
+body[data-theme="dark"] .dm-hierarchy-widget {
+  background: #1a1a2e;
+  border-color: #2a2a3e;
+}
+
+.dm-hierarchy-controls {
+  display: flex;
+  gap: 2em;
+  margin-bottom: 1.2em;
+  flex-wrap: wrap;
+}
+
+.dm-hierarchy-slider-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  flex: 1;
+  min-width: 200px;
+}
+
+.dm-hierarchy-slider-group label {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.8em;
+  font-weight: 600;
+  color: #555;
+  white-space: nowrap;
+}
+
+html.dark .dm-hierarchy-slider-group label,
+body[data-theme="dark"] .dm-hierarchy-slider-group label {
+  color: #bbb;
+}
+
+.dm-hierarchy-slider-group input[type="range"] {
+  flex: 1;
+  accent-color: var(--accent-9, #0d9488);
+}
+
+.dm-hierarchy-slider-group .dm-hierarchy-val {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.8em;
+  color: var(--accent-9, #0d9488);
+  font-weight: 600;
+  min-width: 5em;
+  text-align: right;
+}
+
+.dm-hierarchy-preview {
+  padding: 1em;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+html.dark .dm-hierarchy-preview,
+body[data-theme="dark"] .dm-hierarchy-preview {
+  background: #222;
+  border-color: #333;
+}
+
+.dm-hierarchy-sample {
+  transition:
+    font-size 0.2s ease,
+    font-weight 0.2s ease;
+  color: #333;
+  line-height: 1.6;
+}
+
+html.dark .dm-hierarchy-sample,
+body[data-theme="dark"] .dm-hierarchy-sample {
+  color: #eee;
+}
+
+.dm-hierarchy-meta {
+  display: flex;
+  gap: 1.5em;
+  margin-top: 0.8em;
+  padding-top: 0.8em;
+  border-top: 1px solid #eee;
+}
+
+html.dark .dm-hierarchy-meta,
+body[data-theme="dark"] .dm-hierarchy-meta {
+  border-top-color: #333;
+}
+
+.dm-hierarchy-meta span {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.72em;
+  color: #888;
 }

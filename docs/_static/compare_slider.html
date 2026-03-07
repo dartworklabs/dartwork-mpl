@@ -1,0 +1,71 @@
+<div class="dm-compare-slider" id="dm-compare-slider">
+  <img src="../_static/compare_before.png" alt="Vanilla matplotlib" />
+  <div class="dm-compare-after" id="dm-compare-after">
+    <img src="../_static/compare_after.png" alt="dartwork-mpl styled" />
+  </div>
+  <div class="dm-compare-handle" id="dm-compare-handle"></div>
+  <div class="dm-compare-label dm-compare-label-before">VANILLA MATPLOTLIB</div>
+  <div class="dm-compare-label dm-compare-label-after">DARTWORK-MPL</div>
+</div>
+
+<script>
+  (function () {
+    document.addEventListener("DOMContentLoaded", function () {
+      var slider = document.getElementById("dm-compare-slider");
+      var afterEl = document.getElementById("dm-compare-after");
+      var handle = document.getElementById("dm-compare-handle");
+      if (!slider || !afterEl || !handle) return;
+
+      var dragging = false;
+
+      function setPosition(x) {
+        var rect = slider.getBoundingClientRect();
+        var pct = Math.max(0, Math.min(1, (x - rect.left) / rect.width));
+        afterEl.style.clipPath = "inset(0 0 0 " + pct * 100 + "%)";
+        handle.style.left = pct * 100 + "%";
+      }
+
+      // Set initial position at 50%
+      setTimeout(function () {
+        afterEl.style.clipPath = "inset(0 0 0 50%)";
+        handle.style.left = "50%";
+      }, 100);
+
+      slider.addEventListener("mousedown", function (e) {
+        dragging = true;
+        setPosition(e.clientX);
+        e.preventDefault();
+      });
+
+      document.addEventListener("mousemove", function (e) {
+        if (dragging) setPosition(e.clientX);
+      });
+
+      document.addEventListener("mouseup", function () {
+        dragging = false;
+      });
+
+      // Touch support
+      slider.addEventListener(
+        "touchstart",
+        function (e) {
+          dragging = true;
+          setPosition(e.touches[0].clientX);
+        },
+        { passive: true },
+      );
+
+      document.addEventListener(
+        "touchmove",
+        function (e) {
+          if (dragging) setPosition(e.touches[0].clientX);
+        },
+        { passive: true },
+      );
+
+      document.addEventListener("touchend", function () {
+        dragging = false;
+      });
+    });
+  })();
+</script>
