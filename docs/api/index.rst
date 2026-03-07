@@ -15,11 +15,11 @@ in plain language plus defaults that work in most cases.
    Color Utilities <color>
    Font Utilities <font>
    Icon Font System <icon>
-   File I/O <io>
+   Save & Export <io>
+   Prompt Utilities <prompt>
    Visualization Tools <visualization>
    Visual Validation <validate>
    Extended Plots <xplot>
    Interactive Viewer <ui>
    Figure Constants <constant>
-   LLM Integration <install>
-   MCP Server <mcp>
+
