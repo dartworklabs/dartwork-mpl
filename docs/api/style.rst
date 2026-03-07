@@ -2,8 +2,8 @@ Style Management
 ================
 
 Helpers for discovering and applying the packaged matplotlib styles. The
-``Style`` manager reads ``asset/mplstyle`` and preset combinations (scientific,
-investment, presentation, and Korean variants) from ``presets.json``, resets
+``Style`` manager reads ``asset/mplstyle``, provides preset combinations
+(scientific, investment, presentation, and Korean variants), resets
 ``rcParams``, and stacks multiple style files when needed.
 
 Typical usage

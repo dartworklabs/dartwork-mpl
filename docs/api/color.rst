@@ -30,6 +30,10 @@ Example
    for i, c in enumerate(palette):
        ax.bar(i, 1, color=c.to_hex())
 
+.. figure:: images/color_example.svg
+   :alt: Color utilities: named colors, mix_colors, pseudo_alpha, cspace interpolation
+   :width: 100%
+
 API
 ---
 
@@ -38,7 +42,11 @@ API
    :undoc-members:
    :show-inheritance:
 
-.. autofunction:: dartwork_mpl.rgb
+.. note::
+
+   ``mix_colors`` and ``pseudo_alpha`` are defined in the ``util`` module
+   but re-exported from the top-level ``dartwork_mpl`` namespace for
+   convenience alongside other color helpers.
+
 .. autofunction:: dartwork_mpl.mix_colors
 .. autofunction:: dartwork_mpl.pseudo_alpha
-.. autofunction:: dartwork_mpl.classify_colormap

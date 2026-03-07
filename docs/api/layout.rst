@@ -33,6 +33,10 @@ Example
    dm.arrow_axis(axes[1], 'x', 'Installation cost')
    dm.arrow_axis(axes[2], 'y', 'Information richness')
 
+.. figure:: images/layout_example.svg
+   :alt: 3-panel layout with label_axes, arrow_axis, and set_decimal
+   :width: 100%
+
 API
 ---
 
@@ -41,5 +45,5 @@ API
 .. autofunction:: dartwork_mpl.make_offset
 .. autofunction:: dartwork_mpl.label_axes
 .. autofunction:: dartwork_mpl.arrow_axis
-.. autofunction:: dartwork_mpl.util.get_bounding_box
+.. autofunction:: dartwork_mpl.layout.get_bounding_box
 .. autofunction:: dartwork_mpl.util.set_decimal

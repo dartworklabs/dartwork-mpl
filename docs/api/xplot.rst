@@ -19,6 +19,10 @@ Example
        pos_label='Increase',
    )
 
+.. figure:: images/xplot_example.svg
+   :alt: Diverging bar chart from plot_diverging_bar
+   :width: 100%
+
 API
 ---
 

@@ -54,6 +54,10 @@ Example
    # Get font file path directly
    path = dm.icon_font_path('mdi')
 
+.. figure:: images/icon_example.svg
+   :alt: MDI icon font rendering with icon_font
+   :width: 100%
+
 API
 ---
 

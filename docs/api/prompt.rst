@@ -4,7 +4,7 @@ Prompt Utilities
 Bundled prompt guide files for AI coding assistants are stored in
 ``asset/prompt/*.md``.  These utilities let you list, read, and copy
 them into your project.  Use them together with the
-:doc:`MCP Server </usage_guide/mcp_server>` for the richest AI
+:doc:`MCP Server </integrations/mcp_server>` for the richest AI
 integration, or stand-alone for manual context injection.
 
 Example
@@ -33,3 +33,12 @@ API
 .. autofunction:: dartwork_mpl.get_prompt
 .. autofunction:: dartwork_mpl.list_prompts
 .. autofunction:: dartwork_mpl.copy_prompt
+
+LLM Integration
+---------------
+
+Install or remove static guide files for IDE-based AI assistants that
+do not support MCP.
+
+.. autofunction:: dartwork_mpl.install_llm_txt
+.. autofunction:: dartwork_mpl.uninstall_llm_txt

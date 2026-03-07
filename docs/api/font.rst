@@ -36,6 +36,10 @@ Example
    ax.plot(x, y, lw=dm.lw(0.5))       # base linewidth + 0.5
    dm.plot_fonts(ncols=4, font_size=12)  # inspect available families
 
+.. figure:: images/font_example.svg
+   :alt: Typography scaling hierarchy with fs() and fw()
+   :width: 100%
+
 .. automodule:: dartwork_mpl.font
    :members:
    :undoc-members:
