@@ -6,6 +6,8 @@ and hex color representations. No external dependencies beyond numpy.
 
 from __future__ import annotations
 
+__all__: list[str] = []  # All functions are private (_-prefixed)
+
 import math
 
 import numpy as np

@@ -7,6 +7,16 @@ the cspace() interpolation function and convenience constructors.
 
 from __future__ import annotations
 
+__all__ = [
+    "Color",
+    "cspace",
+    "hex",
+    "named",
+    "oklab",
+    "oklch",
+    "rgb",
+]
+
 import math
 
 import matplotlib.colors as mcolors

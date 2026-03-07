@@ -8,6 +8,8 @@ Ant Design (ad.), Chakra UI (cu.), and Primer (pr.).
 
 from __future__ import annotations
 
+__all__ = ["ensure_loaded"]
+
 import json
 from pathlib import Path
 
