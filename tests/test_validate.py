@@ -4,13 +4,8 @@ from __future__ import annotations
 
 import matplotlib
 import matplotlib.pyplot as plt
-import pytest
 
-from dartwork_mpl.validate import (
-    Severity,
-    VisualWarning,
-    validate_figure,
-)
+from dartwork_mpl.validate import Severity, VisualWarning, validate_figure
 
 matplotlib.use("Agg")  # Non-interactive backend for testing.
 

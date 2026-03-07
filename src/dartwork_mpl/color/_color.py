@@ -14,16 +14,15 @@ import numpy as np
 
 from ._conversion import (
     _linear_srgb_to_oklab,
+    _linear_to_srgb,
     _oklab_to_linear_srgb,
     _oklab_to_oklch,
     _oklch_to_oklab,
-    _linear_to_srgb,
     _parse_hex,
     _rgb_to_hex,
     _srgb_to_linear,
 )
 from ._views import OklabView, OklchView, RgbView
-
 
 # ============================================================================
 # Color Class

@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Literal
 from unittest.mock import patch
 
-import pytest
 from pydantic import Field
 
 from dartwork_mpl.ui._config import (
@@ -27,11 +26,7 @@ from dartwork_mpl.ui._config import (
     save_preset,
 )
 from dartwork_mpl.ui._param import ParamModel
-from dartwork_mpl.ui._widget import (
-    ParamDescriptor,
-    descriptors_from_model,
-)
-
+from dartwork_mpl.ui._widget import descriptors_from_model
 
 # ============================================================================
 # Tests: descriptors_from_model

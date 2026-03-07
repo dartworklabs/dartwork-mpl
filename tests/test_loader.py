@@ -4,10 +4,7 @@ from __future__ import annotations
 
 import matplotlib.colors as mcolors
 
-from dartwork_mpl.color._loader import (
-    _load_json_palette,
-    ensure_loaded,
-)
+from dartwork_mpl.color._loader import _load_json_palette, ensure_loaded
 
 
 class TestEnsureLoaded:

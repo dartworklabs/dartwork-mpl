@@ -7,11 +7,7 @@ from pathlib import Path
 import pytest
 from matplotlib.font_manager import FontProperties
 
-from dartwork_mpl.icon import (
-    icon_font,
-    icon_font_path,
-    list_icon_fonts,
-)
+from dartwork_mpl.icon import icon_font, icon_font_path, list_icon_fonts
 
 
 class TestListIconFonts:

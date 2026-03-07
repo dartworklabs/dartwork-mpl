@@ -20,10 +20,10 @@ Usage
 """
 
 import base64
-import shutil
 import inspect
 import io
 import os
+import shutil
 import sys
 import textwrap
 from collections.abc import Callable

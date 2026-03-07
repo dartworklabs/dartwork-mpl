@@ -8,17 +8,12 @@ from __future__ import annotations
 
 import math
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Iterator
+from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from ._conversion import (
-    _linear_srgb_to_oklab,
-    _oklab_to_oklch,
-    _oklch_to_oklab,
-    _linear_to_srgb,
-    _srgb_to_linear,
-)
+from ._conversion import _linear_srgb_to_oklab, _oklch_to_oklab, _srgb_to_linear
 
 if TYPE_CHECKING:
     from ._color import Color

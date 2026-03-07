@@ -6,6 +6,7 @@ import math
 
 import pytest
 
+from dartwork_mpl.color import Color
 from dartwork_mpl.color._conversion import (
     _linear_srgb_to_oklab,
     _linear_to_srgb,
@@ -16,8 +17,6 @@ from dartwork_mpl.color._conversion import (
     _rgb_to_hex,
     _srgb_to_linear,
 )
-from dartwork_mpl.color import Color
-
 
 # ============================================================================
 # sRGB ↔ Linear RGB

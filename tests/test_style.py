@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 import pytest
 
 import dartwork_mpl as dm
@@ -66,7 +65,7 @@ class TestLoadStyleDict:
     def test_inline_comments_stripped(self) -> None:
         """Inline comments after values should be stripped."""
         d = load_style_dict("base")
-        for key, value in d.items():
+        for _key, value in d.items():
             if isinstance(value, str):
                 # No value should end with a comment fragment
                 assert not value.strip().startswith("#")
