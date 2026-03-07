@@ -47,7 +47,7 @@ for mu, sigma, color, label in [
 ax1.set_xlabel("X value", fontsize=dm.fs(0))
 ax1.set_ylabel("Probability density", fontsize=dm.fs(0))
 ax1.set_title("Normal Distributions", fontsize=dm.fs(1))
-ax1.legend(loc="best", fontsize=dm.fs(-2), ncol=2)
+ax1.legend(loc="upper right", fontsize=dm.fs(-2), ncol=2)
 ax1.set_xticks([-4, -2, 0, 2, 4])
 ax1.set_yticks([0, 0.2, 0.4, 0.6, 0.8])
 
@@ -66,7 +66,7 @@ ax2.plot(x_range, y_norm, "k--", lw=0.5, label="Normal")
 ax2.set_xlabel("X value", fontsize=dm.fs(0))
 ax2.set_ylabel("Probability density", fontsize=dm.fs(0))
 ax2.set_title("t-Distributions", fontsize=dm.fs(1))
-ax2.legend(loc="best", fontsize=dm.fs(-2), ncol=2)
+ax2.legend(loc="upper right", fontsize=dm.fs(-2), ncol=2)
 ax2.set_xticks([-4, -2, 0, 2, 4])
 ax2.set_yticks([0, 0.1, 0.2, 0.3, 0.4])
 
@@ -84,7 +84,7 @@ for df, color, label in [
 ax3.set_xlabel("X value", fontsize=dm.fs(0))
 ax3.set_ylabel("Probability density", fontsize=dm.fs(0))
 ax3.set_title("Chi-Square Distributions", fontsize=dm.fs(1))
-ax3.legend(loc="best", fontsize=dm.fs(-2), ncol=2)
+ax3.legend(loc="upper right", fontsize=dm.fs(-2), ncol=2)
 ax3.set_xticks([0, 3, 6, 9, 12, 15])
 ax3.set_yticks([0, 0.1, 0.2, 0.3, 0.4, 0.5])
 
@@ -126,7 +126,7 @@ ax4.hist(
 ax4.set_xlabel("X value", fontsize=dm.fs(0))
 ax4.set_ylabel("Probability density", fontsize=dm.fs(0))
 ax4.set_title("Distribution Comparison", fontsize=dm.fs(1))
-ax4.legend(loc="best", fontsize=dm.fs(-1))
+ax4.legend(loc="upper right", fontsize=dm.fs(-1))
 ax4.set_xticks([-2, -1, 0, 1, 2])
 ax4.set_yticks([0, 0.2, 0.4, 0.6])
 

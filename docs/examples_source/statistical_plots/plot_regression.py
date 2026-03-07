@@ -45,7 +45,7 @@ ax1.plot(x, y_fit, color="oc.red5", lw=0.7, label=f"Fit (R²={r_value**2:.3f})")
 ax1.set_xlabel("X value", fontsize=dm.fs(0))
 ax1.set_ylabel("Y value", fontsize=dm.fs(0))
 ax1.set_title("Linear Regression", fontsize=dm.fs(1))
-ax1.legend(loc="best", fontsize=dm.fs(-1))
+ax1.legend(loc="upper right", fontsize=dm.fs(-1))
 ax1.set_xticks([0, 2, 4, 6, 8, 10])
 
 # Panel B: Polynomial regression
@@ -57,7 +57,7 @@ ax2.plot(x, y_poly_fit, color="oc.red5", lw=0.7, label="2nd order fit")
 ax2.set_xlabel("X value", fontsize=dm.fs(0))
 ax2.set_ylabel("Y value", fontsize=dm.fs(0))
 ax2.set_title("Polynomial Regression", fontsize=dm.fs(1))
-ax2.legend(loc="best", fontsize=dm.fs(-1))
+ax2.legend(loc="upper right", fontsize=dm.fs(-1))
 ax2.set_xticks([0, 2, 4, 6, 8, 10])
 
 # Panel C: Residuals plot
@@ -83,7 +83,7 @@ ax4.fill_between(
 ax4.set_xlabel("X value", fontsize=dm.fs(0))
 ax4.set_ylabel("Y value", fontsize=dm.fs(0))
 ax4.set_title("With Confidence Interval", fontsize=dm.fs(1))
-ax4.legend(loc="best", fontsize=dm.fs(-1))
+ax4.legend(loc="upper right", fontsize=dm.fs(-1))
 ax4.set_xticks([0, 2, 4, 6, 8, 10])
 
 # Optimize layout

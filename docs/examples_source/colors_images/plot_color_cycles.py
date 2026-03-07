@@ -36,7 +36,7 @@ for i in range(6):
 ax1.set_xlabel("X", fontsize=dm.fs(0))
 ax1.set_ylabel("Y", fontsize=dm.fs(0))
 ax1.set_title("Default Color Cycle", fontsize=dm.fs(1))
-ax1.legend(loc="best", fontsize=dm.fs(-2), ncol=2)
+ax1.legend(loc="upper right", fontsize=dm.fs(-2), ncol=2)
 
 # Panel B: Custom color cycle (blues)
 ax2 = fig.add_subplot(gs[0, 1])
@@ -50,7 +50,7 @@ for i in range(5):
 ax2.set_xlabel("X", fontsize=dm.fs(0))
 ax2.set_ylabel("Y", fontsize=dm.fs(0))
 ax2.set_title("Blue Gradient Cycle", fontsize=dm.fs(1))
-ax2.legend(loc="best", fontsize=dm.fs(-2), ncol=2)
+ax2.legend(loc="upper right", fontsize=dm.fs(-2), ncol=2)
 
 # Panel C: Tailwind color cycle
 ax3 = fig.add_subplot(gs[1, 0])
@@ -71,7 +71,7 @@ for i in range(6):
 ax3.set_xlabel("X", fontsize=dm.fs(0))
 ax3.set_ylabel("Y", fontsize=dm.fs(0))
 ax3.set_title("Tailwind Color Cycle", fontsize=dm.fs(1))
-ax3.legend(loc="best", fontsize=dm.fs(-2), ncol=2)
+ax3.legend(loc="upper right", fontsize=dm.fs(-2), ncol=2)
 
 # Panel D: Combined style cycle (color + linestyle)
 ax4 = fig.add_subplot(gs[1, 1])

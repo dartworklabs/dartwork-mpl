@@ -64,7 +64,7 @@ ax1.fill_between(
 ax1.set_xlabel("Date", fontsize=dm.fs(0))
 ax1.set_ylabel("Value", fontsize=dm.fs(0))
 ax1.set_title("Forecast with CI", fontsize=dm.fs(1))
-ax1.legend(loc="best", fontsize=dm.fs(-2))
+ax1.legend(loc="upper right", fontsize=dm.fs(-2))
 ax1.tick_params(axis="x", rotation=45, labelsize=dm.fs(-2))
 
 # Panel B: Components decomposition
@@ -74,7 +74,7 @@ ax2.plot(dates, seasonal, color="oc.green5", lw=0.7, label="Seasonal")
 ax2.set_xlabel("Date", fontsize=dm.fs(0))
 ax2.set_ylabel("Component value", fontsize=dm.fs(0))
 ax2.set_title("Decomposition", fontsize=dm.fs(1))
-ax2.legend(loc="best", fontsize=dm.fs(-1))
+ax2.legend(loc="upper right", fontsize=dm.fs(-1))
 ax2.tick_params(axis="x", rotation=45, labelsize=dm.fs(-2))
 
 # Panel C: Residuals
@@ -112,7 +112,7 @@ ax4.plot(
 ax4.set_xlabel("Date", fontsize=dm.fs(0))
 ax4.set_ylabel("Value", fontsize=dm.fs(0))
 ax4.set_title("Forecast Scenarios", fontsize=dm.fs(1))
-ax4.legend(loc="best", fontsize=dm.fs(-2))
+ax4.legend(loc="upper right", fontsize=dm.fs(-2))
 ax4.tick_params(axis="x", rotation=45, labelsize=dm.fs(-2))
 
 # Optimize layout

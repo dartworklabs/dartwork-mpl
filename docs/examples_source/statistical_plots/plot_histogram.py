@@ -52,7 +52,7 @@ n1, bins1, patches1 = ax1.hist(
 ax1.set_xlabel("Value", fontsize=dm.fs(0))
 ax1.set_ylabel("Frequency", fontsize=dm.fs(0))
 ax1.set_title("Basic Histogram", fontsize=dm.fs(1))
-ax1.legend(loc="best", fontsize=dm.fs(-1), ncol=1)
+ax1.legend(loc="upper right", fontsize=dm.fs(-1), ncol=1)
 # Set explicit ticks
 ax1.set_xticks([-4, -2, 0, 2, 4])
 ax1.set_yticks([0, 50, 100, 150])
@@ -73,7 +73,7 @@ n2, bins2, patches2 = ax2.hist(
 ax2.set_xlabel("Value", fontsize=dm.fs(0))
 ax2.set_ylabel("Frequency", fontsize=dm.fs(0))
 ax2.set_title("Stacked Histogram", fontsize=dm.fs(1))
-ax2.legend(loc="best", fontsize=dm.fs(-1), ncol=1)
+ax2.legend(loc="upper right", fontsize=dm.fs(-1), ncol=1)
 # Set explicit ticks
 ax2.set_xticks([-4, -2, 0, 2, 4, 6])
 
@@ -99,7 +99,7 @@ ax3.plot(x_kde, y_kde, color="oc.red5", lw=0.7, label="KDE")
 ax3.set_xlabel("Value", fontsize=dm.fs(0))
 ax3.set_ylabel("Density", fontsize=dm.fs(0))
 ax3.set_title("Histogram with KDE", fontsize=dm.fs(1))
-ax3.legend(loc="best", fontsize=dm.fs(-1), ncol=1)
+ax3.legend(loc="upper right", fontsize=dm.fs(-1), ncol=1)
 # Set explicit ticks
 ax3.set_xticks([-4, -2, 0, 2, 4])
 ax3.set_yticks([0, 0.1, 0.2, 0.3, 0.4])
@@ -137,7 +137,7 @@ n4c, bins4c, patches4c = ax4.hist(
 ax4.set_xlabel("Value", fontsize=dm.fs(0))
 ax4.set_ylabel("Frequency", fontsize=dm.fs(0))
 ax4.set_title("Overlaid Histograms", fontsize=dm.fs(1))
-ax4.legend(loc="best", fontsize=dm.fs(-1), ncol=1)
+ax4.legend(loc="upper right", fontsize=dm.fs(-1), ncol=1)
 # Set explicit ticks
 ax4.set_xticks([-4, -2, 0, 2, 4, 6])
 ax4.set_yticks([0, 50, 100, 150])

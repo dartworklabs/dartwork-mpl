@@ -81,15 +81,15 @@ ax.set_xlabel("Time [s]", fontsize=dm.fs(0))
 ax.set_ylabel("Amplitude", fontsize=dm.fs(0))
 ax.set_title("Styled Signal with dartwork-mpl", fontsize=dm.fs(1))
 ax.set_xlim(0, 8)
-ax.set_ylim(-1.1, 1.35)
+ax.set_ylim(-1.1, 1.6)
 ax.set_xticks([0, 2, 4, 6, 8])
 ax.set_yticks([-1, -0.5, 0, 0.5, 1, 1.5])
 ax.grid(axis="y", linestyle=":", color="oc.gray3", alpha=0.5)
 
 # Legend placed above the plot to avoid overlaps
 ax.legend(
-    loc="best",
-    ncol=2,
+    loc="upper right",
+    ncol=3,
     fontsize=dm.fs(-1),
     frameon=False,
     columnspacing=1.3,

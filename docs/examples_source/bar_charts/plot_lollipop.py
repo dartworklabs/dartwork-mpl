@@ -134,7 +134,7 @@ ax4.set_yticks(y_pos_comp)
 ax4.set_yticklabels(categories, fontsize=dm.fs(-1))
 ax4.set_xlabel("Value", fontsize=dm.fs(0))
 ax4.set_title("Comparison Lollipop", fontsize=dm.fs(1))
-ax4.legend(loc="best", fontsize=dm.fs(-1))
+ax4.legend(loc="upper right", fontsize=dm.fs(-1))
 ax4.set_xticks([0, 20, 40, 60])
 
 for ax in (ax1, ax2, ax3, ax4):

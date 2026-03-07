@@ -83,7 +83,7 @@ ax1.set_ylabel("Value", fontsize=dm.fs(0))
 ax1.set_title("Vertical Stacked Bars", fontsize=dm.fs(1))
 ax1.set_xticks(x_pos)
 ax1.set_xticklabels(categories, fontsize=dm.fs(-1))
-ax1.legend(loc="best", fontsize=dm.fs(-1), ncol=1)
+ax1.legend(loc="upper right", fontsize=dm.fs(-1), ncol=1)
 ax1.set_yticks([0, 20, 40, 60])
 
 # Panel B: Horizontal stacked bars
@@ -128,7 +128,7 @@ ax2.set_ylabel("Quarter", fontsize=dm.fs(0))
 ax2.set_title("Horizontal Stacked Bars", fontsize=dm.fs(1))
 ax2.set_yticks(y_pos)
 ax2.set_yticklabels(categories, fontsize=dm.fs(-1))
-ax2.legend(loc="best", fontsize=dm.fs(-1), ncol=1)
+ax2.legend(loc="upper right", fontsize=dm.fs(-1), ncol=1)
 ax2.set_xticks([0, 20, 40, 60])
 
 # Panel C: Percentage stacked bars
@@ -171,7 +171,7 @@ ax3.set_ylabel("Percentage [%]", fontsize=dm.fs(0))
 ax3.set_title("Percentage Stacked Bars", fontsize=dm.fs(1))
 ax3.set_xticks(x_pos)
 ax3.set_xticklabels(categories, fontsize=dm.fs(-1))
-ax3.legend(loc="best", fontsize=dm.fs(-1), ncol=1)
+ax3.legend(loc="upper right", fontsize=dm.fs(-1), ncol=1)
 ax3.set_yticks([0, 25, 50, 75, 100])
 ax3.set_ylim(0, 100)
 
@@ -219,7 +219,7 @@ for bar in bars4:
         fontsize=dm.fs(-2),
     )
 ax4.set_ylim(0, max(total_values) * 1.2)
-ax4.legend(fontsize=dm.fs(-1), loc="best")
+ax4.legend(fontsize=dm.fs(-1), loc="upper right")
 
 # Optimize layout
 dm.simple_layout(fig, gs=gs)

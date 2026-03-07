@@ -47,7 +47,7 @@ for _, (rm, w, c) in enumerate(
 ax1.set_xlabel("Time", fontsize=dm.fs(0))
 ax1.set_ylabel("Value", fontsize=dm.fs(0))
 ax1.set_title("Moving Averages", fontsize=dm.fs(1))
-ax1.legend(loc="best", fontsize=dm.fs(-2), ncol=2)
+ax1.legend(loc="upper right", fontsize=dm.fs(-2), ncol=2)
 
 # Panel B: Rolling standard deviation
 ax2 = fig.add_subplot(gs[0, 1])
@@ -71,7 +71,7 @@ ax3.plot(t, ema, color="oc.violet5", lw=0.7, label=f"EMA (α={alpha})")
 ax3.set_xlabel("Time", fontsize=dm.fs(0))
 ax3.set_ylabel("Value", fontsize=dm.fs(0))
 ax3.set_title("Exponential Moving Average", fontsize=dm.fs(1))
-ax3.legend(loc="best", fontsize=dm.fs(-1))
+ax3.legend(loc="upper right", fontsize=dm.fs(-1))
 
 # Panel D: Bollinger bands
 ax4 = fig.add_subplot(gs[1, 1])
@@ -87,7 +87,7 @@ ax4.fill_between(
 ax4.set_xlabel("Time", fontsize=dm.fs(0))
 ax4.set_ylabel("Value", fontsize=dm.fs(0))
 ax4.set_title("Bollinger Bands", fontsize=dm.fs(1))
-ax4.legend(loc="best", fontsize=dm.fs(-1))
+ax4.legend(loc="upper right", fontsize=dm.fs(-1))
 
 dm.simple_layout(fig, gs=gs)
 plt.show()

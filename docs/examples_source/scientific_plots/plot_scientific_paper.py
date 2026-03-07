@@ -58,7 +58,7 @@ ax1.fill_between(
 ax1.set_xlabel("Time [hours]", fontsize=dm.fs(0))
 ax1.set_ylabel("Response [a.u.]", fontsize=dm.fs(0))
 ax1.set_title("Temporal Response Analysis", fontsize=dm.fs(1))
-ax1.legend(loc="best", fontsize=dm.fs(-1), ncol=1)
+ax1.legend(loc="upper right", fontsize=dm.fs(-1), ncol=1)
 
 # Annotation
 ax1.annotate(

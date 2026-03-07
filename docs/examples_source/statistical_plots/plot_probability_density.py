@@ -49,7 +49,7 @@ ax.plot(x_grid, p, color="oc.red5", lw=1.5, linestyle="--", label="Normal Fit")
 ax.set_xlabel("Value", fontsize=dm.fs(0))
 ax.set_ylabel("Probability Density", fontsize=dm.fs(0))
 ax.set_title("Distribution Analysis", fontsize=dm.fs(1))
-ax.legend(fontsize=dm.fs(-1), loc="best", ncol=1)
+ax.legend(fontsize=dm.fs(-1), loc="upper right", ncol=3, frameon=False)
 
 dm.simple_layout(fig, gs=gs)
 plt.show()

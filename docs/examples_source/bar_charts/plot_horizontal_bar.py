@@ -112,7 +112,7 @@ ax3.set_yticks(y_pos)
 ax3.set_yticklabels(categories, fontsize=dm.fs(-1))
 ax3.set_xlabel("Value", fontsize=dm.fs(0))
 ax3.set_title("Grouped Horizontal Bars", fontsize=dm.fs(1))
-ax3.legend(loc="best", fontsize=dm.fs(-1))
+ax3.legend(loc="upper right", fontsize=dm.fs(-1))
 ax3.set_xticks([0, 20, 40, 60])
 
 # Panel D: Horizontal bar with value labels

@@ -41,7 +41,7 @@ ax1 = fig.add_subplot(gs[0, 0])
 ax1.plot(x, y1, color="oc.blue5", lw=0.7, label="Sin", alpha=0.8)
 ax1.plot(x, y2, color="oc.red5", lw=0.7, label="Cos", alpha=0.8)
 # Legend: loc='best', fontsize=dm.fs(-1), ncol=1
-ax1.legend(loc="best", fontsize=dm.fs(-1), ncol=1, framealpha=0.9)
+ax1.legend(loc="upper right", fontsize=dm.fs(-1), ncol=1, framealpha=0.9)
 ax1.set_xlabel("Time [s]", fontsize=dm.fs(0))
 ax1.set_ylabel("Amplitude", fontsize=dm.fs(0))
 ax1.set_title("Legend: Auto Placement", fontsize=dm.fs(1))
@@ -72,7 +72,7 @@ custom_handles = [
 ]
 ax2.legend(
     handles=custom_handles,
-    loc="best",
+    loc="upper right",
     fontsize=dm.fs(-1),
     ncol=1,
     framealpha=0.9,
@@ -89,7 +89,7 @@ ax3.plot(x, y1, color="oc.blue5", lw=0.7, label="Sin", alpha=0.8)
 ax3.plot(x, y2, color="oc.red5", lw=0.7, label="Cos", alpha=0.8)
 ax3.plot(x, y3, color="oc.green5", lw=0.7, label="Sin×Cos", alpha=0.8)
 # Legend tucked inside to avoid overflow
-ax3.legend(loc="best", fontsize=dm.fs(-1), ncol=1, framealpha=0.9)
+ax3.legend(loc="upper right", fontsize=dm.fs(-1), ncol=1, framealpha=0.9)
 ax3.set_xlabel("Time [s]", fontsize=dm.fs(0))
 ax3.set_ylabel("Amplitude", fontsize=dm.fs(0))
 ax3.set_title("Legend: Auto (Compact)", fontsize=dm.fs(1))
@@ -114,7 +114,7 @@ ax4.set_xticks(idx)
 ax4.set_xticklabels(cats, fontsize=dm.fs(-1))
 ax4.set_ylabel("Score", fontsize=dm.fs(0))
 ax4.set_title("Categorical Legend", fontsize=dm.fs(1))
-ax4.legend(loc="best", fontsize=dm.fs(-1), framealpha=0.9)
+ax4.legend(loc="upper right", fontsize=dm.fs(-1), framealpha=0.9)
 
 # Optimize layout
 dm.simple_layout(fig, gs=gs)

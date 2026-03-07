@@ -55,7 +55,7 @@ ax1.fill(angles, values1, color="oc.blue5", alpha=0.25)
 apply_theta_labels(ax1)
 ax1.set_ylim(0, 100)
 ax1.set_title("Basic Radar Chart", fontsize=dm.fs(1), pad=15)
-ax1.legend(loc="best", fontsize=dm.fs(-1))
+ax1.legend(loc="upper right", fontsize=dm.fs(-1))
 ax1.grid(True, linewidth=0.3)
 
 # Panel B: Multiple series
@@ -67,7 +67,7 @@ ax2.fill(angles, values2, color="oc.red5", alpha=0.15)
 apply_theta_labels(ax2)
 ax2.set_ylim(0, 100)
 ax2.set_title("Comparison", fontsize=dm.fs(1), pad=15)
-ax2.legend(loc="best", fontsize=dm.fs(-2))
+ax2.legend(loc="upper right", fontsize=dm.fs(-2))
 ax2.grid(True, linewidth=0.3)
 
 # Panel C: Three series
@@ -81,7 +81,7 @@ ax3.fill(angles, values3, color="oc.green5", alpha=0.1)
 apply_theta_labels(ax3)
 ax3.set_ylim(0, 100)
 ax3.set_title("Multi-series", fontsize=dm.fs(1), pad=15)
-ax3.legend(loc="best", fontsize=dm.fs(-2))
+ax3.legend(loc="upper right", fontsize=dm.fs(-2))
 ax3.grid(True, linewidth=0.3)
 
 # Panel D: Highlighted radar
@@ -100,7 +100,7 @@ ax4.plot(
 apply_theta_labels(ax4)
 ax4.set_ylim(0, 100)
 ax4.set_title("Highlighted", fontsize=dm.fs(1), pad=15)
-ax4.legend(loc="best", fontsize=dm.fs(-2))
+ax4.legend(loc="upper right", fontsize=dm.fs(-2))
 ax4.grid(True, linewidth=0.3)
 
 dm.simple_layout(fig, gs=gs)

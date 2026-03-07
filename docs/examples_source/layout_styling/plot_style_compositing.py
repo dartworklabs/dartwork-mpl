@@ -20,7 +20,7 @@ def plot_example(title=""):
     """Draw a small two-panel figure to visualise the active style."""
     x = np.linspace(0, 10, 100)
     fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=(dm.cm2in(13), dm.cm2in(10)), dpi=300
+        2, 1, figsize=(dm.cm2in(13), dm.cm2in(11)), dpi=300
     )
 
     ax1.plot(x, np.sin(x), label="sin(x)")

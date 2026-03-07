@@ -46,9 +46,10 @@ ax1.plot(x, y4, "D-", color="oc.orange5", lw=0.5, ms=2.5, label="Diamond")
 ax1.set_xlabel("X value", fontsize=dm.fs(0))
 ax1.set_ylabel("Y value", fontsize=dm.fs(0))
 ax1.set_title("Basic Markers", fontsize=dm.fs(1))
-ax1.legend(loc="best", fontsize=dm.fs(-2), ncol=2, frameon=False)
+ax1.legend(loc="upper right", fontsize=dm.fs(-2), ncol=2, frameon=False)
 ax1.set_xticks([0, 2, 4, 6, 8, 10])
 ax1.set_yticks([4, 6, 8, 10, 12])
+ax1.set_ylim(3, 13.5)
 
 # Panel B: Markers without lines
 ax2 = fig.add_subplot(gs[0, 1])
@@ -59,9 +60,10 @@ ax2.plot(x, y4, "v", color="oc.orange5", ms=4, label="Down Triangle")
 ax2.set_xlabel("X value", fontsize=dm.fs(0))
 ax2.set_ylabel("Y value", fontsize=dm.fs(0))
 ax2.set_title("Markers Only", fontsize=dm.fs(1))
-ax2.legend(loc="best", fontsize=dm.fs(-2), ncol=2, frameon=False)
+ax2.legend(loc="upper right", fontsize=dm.fs(-2), ncol=2, frameon=False)
 ax2.set_xticks([0, 2, 4, 6, 8, 10])
 ax2.set_yticks([4, 6, 8, 10, 12])
+ax2.set_ylim(3, 13.5)
 
 # Panel C: Filled and empty markers
 ax3 = fig.add_subplot(gs[1, 0])
@@ -110,9 +112,10 @@ ax3.plot(
 ax3.set_xlabel("X value", fontsize=dm.fs(0))
 ax3.set_ylabel("Y value", fontsize=dm.fs(0))
 ax3.set_title("Filled vs Empty", fontsize=dm.fs(1))
-ax3.legend(loc="best", fontsize=dm.fs(-2), ncol=2, frameon=False)
+ax3.legend(loc="upper right", fontsize=dm.fs(-2), ncol=2, frameon=False)
 ax3.set_xticks([0, 2, 4, 6, 8, 10])
 ax3.set_yticks([4, 6, 8, 10, 12])
+ax3.set_ylim(3, 13.5)
 
 # Panel D: Various marker sizes
 ax4 = fig.add_subplot(gs[1, 1])
@@ -123,9 +126,10 @@ ax4.plot(x, y4, "o-", color="oc.green5", lw=0.5, ms=6.5, label="MS=6.5")
 ax4.set_xlabel("X value", fontsize=dm.fs(0))
 ax4.set_ylabel("Y value", fontsize=dm.fs(0))
 ax4.set_title("Different Sizes", fontsize=dm.fs(1))
-ax4.legend(loc="best", fontsize=dm.fs(-2), ncol=2, frameon=False)
+ax4.legend(loc="upper right", fontsize=dm.fs(-2), ncol=2, frameon=False)
 ax4.set_xticks([0, 2, 4, 6, 8, 10])
 ax4.set_yticks([4, 6, 8, 10, 12])
+ax4.set_ylim(3, 13.5)
 
 # Optimize layout
 dm.simple_layout(fig, gs=gs)

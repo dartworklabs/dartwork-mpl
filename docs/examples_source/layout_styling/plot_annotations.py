@@ -187,7 +187,7 @@ ax3.text(
 ax3.set_xlabel("Time [s]", fontsize=dm.fs(0))
 ax3.set_ylabel("Amplitude", fontsize=dm.fs(0))
 ax3.set_title("Custom Markers", fontsize=dm.fs(1))
-ax3.legend(loc="best", fontsize=dm.fs(-1), ncol=1)
+ax3.legend(loc="upper right", fontsize=dm.fs(-1), ncol=1)
 ax3.set_xticks([0, 2, 4, 6, 8, 10])
 ax3.set_yticks([-1, -0.5, 0, 0.5, 1])
 

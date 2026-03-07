@@ -111,7 +111,7 @@ ax4.plot(
 )
 ax4.fill(theta_groups, group_a, color="oc.purple2", alpha=0.25)
 ax4.set_title("Radial Multi-Series", fontsize=dm.fs(1), pad=20)
-ax4.legend(loc="best", fontsize=dm.fs(-1))
+ax4.legend(loc="upper right", fontsize=dm.fs(-1))
 ax4.set_theta_zero_location("N")
 ax4.set_theta_direction(-1)
 ax4.grid(True, linestyle="--", linewidth=0.3, alpha=0.5)
