@@ -12,7 +12,7 @@ import numpy as np
 
 import dartwork_mpl as dm
 
-# Apply scientific style preset
+# Apply presentation style for web docs
 dm.style.use("presentation")
 
 # Generate time series data

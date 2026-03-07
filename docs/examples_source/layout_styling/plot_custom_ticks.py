@@ -11,7 +11,7 @@ import numpy as np
 
 import dartwork_mpl as dm
 
-# Apply scientific style preset
+# Apply presentation style for web docs
 # Default: font.size=7.5, lines.linewidth=0.5, axes.linewidth=0.3
 dm.style.use("presentation")
 

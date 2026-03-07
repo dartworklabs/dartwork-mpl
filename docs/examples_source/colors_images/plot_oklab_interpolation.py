@@ -70,7 +70,7 @@ ax_rgb.set_xlim(-0.5, n_steps - 0.5)
 ax_rgb.set_ylim(0, 1)
 ax_rgb.set_xticks([])
 ax_rgb.set_yticks([])
-ax_rgb.set_title("RGB Interpolation (blue → yellow)",
+ax_rgb.set_title("RGB Interpolation (blue to yellow)",
                  fontsize=dm.fs(0.5))
 
 # Bottom: OKLCH interpolation via dm.cspace
@@ -83,7 +83,7 @@ ax_oklch.set_xlim(-0.5, n_steps - 0.5)
 ax_oklch.set_ylim(0, 1)
 ax_oklch.set_xticks([])
 ax_oklch.set_yticks([])
-ax_oklch.set_title("OKLCH Interpolation (blue → yellow)",
+ax_oklch.set_title("OKLCH Interpolation (blue to yellow)",
                    fontsize=dm.fs(0.5))
 
 dm.simple_layout(fig)
@@ -99,9 +99,9 @@ fig, ax = plt.subplots(
 )
 
 pairs = [
-    ("oc.red5", "oc.blue5", "Red → Blue"),
-    ("oc.green5", "oc.purple5", "Green → Purple"),
-    ("oc.cyan5", "oc.orange5", "Cyan → Orange"),
+    ("oc.red5", "oc.blue5", "Red to Blue"),
+    ("oc.green5", "oc.purple5", "Green to Purple"),
+    ("oc.cyan5", "oc.orange5", "Cyan to Orange"),
 ]
 
 for row, (c1, c2, label) in enumerate(pairs):
