@@ -85,7 +85,7 @@ After installation, verify that **dartwork-mpl** is properly installed and acces
 import dartwork_mpl as dm
 
 # Check installed version
-print(dm.__version__)  # Should print something like '0.2.0'
+print(dm.__version__)  # Should print something like '0.2.1'
 
 # List all available style files
 print(dm.list_styles())  # ['base', 'dmpl', 'dmpl_light', 'font-investment', ...]
