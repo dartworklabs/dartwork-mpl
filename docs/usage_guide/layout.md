@@ -2,28 +2,52 @@
 
 ## Layout optimization
 
+For most figures, `simple_layout(fig)` is all you need — it automatically
+optimizes margins so labels and titles don't clip or overlap:
+
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 import numpy as np
+
 dm.style.use("scientific")
 
+fig, ax = plt.subplots(figsize=(dm.cm2in(12), dm.cm2in(8)), dpi=300)
+ax.plot(np.linspace(0, 10, 100), np.sin(np.linspace(0, 10, 100)), color="oc.blue6")
+ax.set_xlabel("Time [s]", fontsize=dm.fs(0))
+ax.set_ylabel("Response", fontsize=dm.fs(0))
+
+dm.simple_layout(fig)  # auto-optimizes margins — replaces tight_layout()
+```
+
+### Multi-panel figures
+
+For multi-panel layouts, use GridSpec and pass it to `simple_layout`:
+
+```python
 fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
-gs = fig.add_gridspec(2, 2, left=0.08, right=0.98, top=0.9, bottom=0.12,
-                      hspace=0.35, wspace=0.25)
+gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.25)
 axes = [fig.add_subplot(gs[i, j]) for i in range(2) for j in range(2)]
+
 for ax in axes:
     ax.plot(np.linspace(0, 1, 40), np.random.rand(40), color="oc.blue6", lw=0.8)
 
-# Panel labels (a, b, c, d)
-dm.label_axes(axes)
+dm.label_axes(axes)                    # adds (a), (b), (c), (d) panel labels
+dm.set_decimal(axes[0], xn=2, yn=1)    # format tick labels to fixed decimals
 
-# Decimal formatting
-dm.set_decimal(axes[0], xn=2, yn=1)
-
-# Layout optimization
-dm.simple_layout(fig, gs=gs, margins=(0.05, 0.08, 0.06, 0.08))
+# Pass gs so simple_layout respects your GridSpec spacing
+dm.simple_layout(fig, gs=gs)
 ```
+
+:::{figure} images/layout_gridspec.svg
+:alt: 2×2 GridSpec layout with panel labels and decimal formatting
+:width: 100%
+:::
+
+> **Tip:** You generally don't need to set explicit `left`, `right`, `top`,
+> `bottom` values on GridSpec — `simple_layout` finds optimal margins
+> automatically. Only add manual margins when you need fine positional control
+> (e.g., making room for a colorbar or external legend).
 
 **Key functions:**
 
@@ -39,6 +63,7 @@ dm.simple_layout(fig, gs=gs, margins=(0.05, 0.08, 0.06, 0.08))
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
+
 dm.style.use("scientific-kr")  # English/Korean fonts set together
 
 fig, ax = plt.subplots(figsize=(dm.cm2in(10), dm.cm2in(6)), dpi=300)
@@ -52,11 +77,18 @@ dm.simple_layout(fig)
 dm.plot_fonts(ncols=4, font_size=12)
 ```
 
+:::{figure} images/layout_typography.svg
+:alt: Typography demo with fs() and fw() font scaling helpers
+:width: 100%
+:::
+
 **Scaling helpers:**
 
-- `fs(delta)`: font size relative to the active preset
-- `fw(delta)`: weight relative to the preset default
-- `lw(delta)`: line width relative to `lines.linewidth`
+| Helper  | What it does                                                                  |
+| ------- | ----------------------------------------------------------------------------- |
+| `fs(n)` | Font size = base size + `n` points. `fs(0)` = base, `fs(2)` = 2pt larger      |
+| `fw(n)` | Weight = base weight + `n` × 100. `fw(0)` = Light (300), `fw(4)` = Bold (700) |
+| `lw(n)` | Line width relative to `lines.linewidth`. `lw(0)` = default                   |
 
 See [Font Families](../fonts/families) for the full font catalog and
 [Font Utilities](../fonts/utilities) for detailed usage.

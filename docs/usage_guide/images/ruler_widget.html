@@ -1,0 +1,82 @@
+<div class="dm-ruler-widget">
+  <div class="dm-ruler-controls">
+    <label>Width:</label>
+    <input
+      type="range"
+      id="dm-ruler-w"
+      min="2"
+      max="21"
+      step="0.5"
+      value="6.7"
+    />
+    <label style="margin-left: 0.5em">Height:</label>
+    <input
+      type="range"
+      id="dm-ruler-h"
+      min="2"
+      max="29"
+      step="0.5"
+      value="5.0"
+    />
+    <span class="dm-ruler-value" id="dm-ruler-value"
+      >6.7 × 5.0 cm → 2.64 × 1.97 in</span
+    >
+  </div>
+  <div class="dm-ruler-preview">
+    <div class="dm-ruler-page" id="dm-ruler-page">
+      <div class="dm-ruler-fig" id="dm-ruler-fig">
+        <span class="dm-ruler-fig-label" id="dm-ruler-fig-label"
+          >figsize=(2.64, 1.97)</span
+        >
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var CM_PER_INCH = 2.54;
+    // A4: 21cm × 29.7cm
+    var pageW = 21.0;
+    var pageH = 29.7;
+
+    document.addEventListener("DOMContentLoaded", function () {
+      var wSlider = document.getElementById("dm-ruler-w");
+      var hSlider = document.getElementById("dm-ruler-h");
+      var valueEl = document.getElementById("dm-ruler-value");
+      var figEl = document.getElementById("dm-ruler-fig");
+      var labelEl = document.getElementById("dm-ruler-fig-label");
+      if (!wSlider || !hSlider) return;
+
+      function update() {
+        var wcm = parseFloat(wSlider.value);
+        var hcm = parseFloat(hSlider.value);
+        var win = wcm / CM_PER_INCH;
+        var hin = hcm / CM_PER_INCH;
+
+        valueEl.textContent =
+          wcm.toFixed(1) +
+          " × " +
+          hcm.toFixed(1) +
+          " cm → " +
+          win.toFixed(2) +
+          " × " +
+          hin.toFixed(2) +
+          " in";
+
+        // Scale figure within page preview
+        var pctW = Math.min(90, (wcm / pageW) * 90);
+        var pctH = Math.min(90, (hcm / pageH) * 90);
+        figEl.style.width = pctW + "%";
+        figEl.style.height = pctH + "%";
+
+        labelEl.textContent =
+          "figsize=(" + win.toFixed(2) + ", " + hin.toFixed(2) + ")";
+      }
+
+      wSlider.addEventListener("input", update);
+      hSlider.addEventListener("input", update);
+      update();
+    });
+  })();
+</script>

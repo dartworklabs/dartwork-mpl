@@ -8,6 +8,8 @@ Ant Design, Chakra, and Primer. Use them anywhere matplotlib accepts a color.
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
+import numpy as np
+
 dm.style.use("presentation")
 
 fig, ax = plt.subplots(figsize=(dm.cm2in(8), dm.cm2in(5)), dpi=300)
@@ -20,6 +22,11 @@ ax.plot([0, 1, 2], [0.8, 1.1, 1.4], color=muted_line, label="Pseudo alpha")
 ax.legend(fontsize=dm.fs(-1))
 dm.simple_layout(fig)
 ```
+
+:::{figure} images/colors_named.svg
+:alt: Plot showing OpenColor, Tailwind, Material, and Primer named colors in use
+:width: 100%
+:::
 
 ## Color class
 
@@ -50,10 +57,15 @@ brighter = color.copy()
 brighter.oklab.L += 0.1
 ```
 
+See [Color Space](../color_system/space) for the full guide on perceptual color
+manipulation, including interpolation and custom colormap creation.
+
 ## Color interpolation
 
 ```python
-# Perceptual interpolation between colors
+import dartwork_mpl as dm
+
+# Perceptual interpolation between colors (OKLCH by default)
 palette = dm.cspace('#FF6B6B', '#4ECDC4', n=5, space='oklch')
 for i, c in enumerate(palette):
     ax.bar(i, 1, color=c.to_hex())
@@ -62,14 +74,27 @@ for i, c in enumerate(palette):
 gradient = dm.cspace(dm.named('oc.red5'), dm.named('oc.blue5'), n=10)
 ```
 
+:::{figure} images/colors_interpolation.svg
+:alt: Perceptual color interpolation with cspace in OKLCH space
+:width: 100%
+:::
+
 ## Colormaps
+
+dartwork-mpl bundles custom colormaps prefixed with `dm.`, designed for
+perceptually uniform gradients. They work like any matplotlib colormap:
 
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
+
 cmap = plt.colormaps["dm.mint"]
-print(cmap.name, dm.classify_colormap(cmap))
+print(cmap.name)                       # 'dm.mint'
+print(dm.classify_colormap(cmap))      # 'sequential' (tells you the type)
 ```
+
+Add `_r` to reverse any colormap (e.g., `dm.sunset_r`). Browse all available
+colormaps on the [Colormaps](../color_system/colormaps) page.
 
 ## Where things live
 

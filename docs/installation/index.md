@@ -80,7 +80,7 @@ import dartwork_mpl as dm
 print(dm.__version__)  # Current installed version
 
 # List all available style files
-print(dm.list_styles())  # ['base', 'dmpl', 'dmpl_light', 'font-investment', ...]
+print(dm.list_styles())  # Returns available style names (base, presets, etc.)
 
 # Verify color system is working
 color = dm.oklch(0.7, 0.15, 150)

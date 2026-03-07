@@ -1,0 +1,299 @@
+<!-- Preset Visual Comparison — interactive toggle -->
+<div class="dm-preset-compare" id="dm-preset-compare">
+  <div class="dm-pc-tabs">
+    <button class="dm-pc-tab dm-pc-tab-active" data-preset="scientific">
+      scientific
+    </button>
+    <button class="dm-pc-tab" data-preset="investment">investment</button>
+    <button class="dm-pc-tab" data-preset="presentation">presentation</button>
+  </div>
+  <div class="dm-pc-preview">
+    <div class="dm-pc-chart" id="dm-pc-chart">
+      <!-- Simulated chart preview -->
+      <svg
+        viewBox="0 0 320 200"
+        xmlns="http://www.w3.org/2000/svg"
+        class="dm-pc-svg"
+      >
+        <!-- Background -->
+        <rect width="320" height="200" fill="#ffffff" rx="4" />
+        <!-- Axes area -->
+        <g id="dm-pc-axes">
+          <!-- Spines -->
+          <line
+            id="dm-pc-spine-bottom"
+            x1="50"
+            y1="170"
+            x2="300"
+            y2="170"
+            stroke="#333"
+            stroke-width="0.8"
+          />
+          <line
+            id="dm-pc-spine-left"
+            x1="50"
+            y1="20"
+            x2="50"
+            y2="170"
+            stroke="#333"
+            stroke-width="0.8"
+          />
+          <line
+            id="dm-pc-spine-top"
+            x1="50"
+            y1="20"
+            x2="300"
+            y2="20"
+            stroke="#333"
+            stroke-width="0.8"
+          />
+          <line
+            id="dm-pc-spine-right"
+            x1="300"
+            y1="20"
+            x2="300"
+            y2="170"
+            stroke="#333"
+            stroke-width="0.8"
+          />
+          <!-- Plot line -->
+          <polyline
+            points="60,140 100,80 140,100 180,50 220,70 260,40 290,60"
+            fill="none"
+            stroke="#0d9488"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <!-- Scatter dots -->
+          <circle cx="60" cy="140" r="3" fill="#0d9488" />
+          <circle cx="100" cy="80" r="3" fill="#0d9488" />
+          <circle cx="140" cy="100" r="3" fill="#0d9488" />
+          <circle cx="180" cy="50" r="3" fill="#0d9488" />
+          <circle cx="220" cy="70" r="3" fill="#0d9488" />
+          <circle cx="260" cy="40" r="3" fill="#0d9488" />
+          <circle cx="290" cy="60" r="3" fill="#0d9488" />
+          <!-- Title -->
+          <text
+            id="dm-pc-title"
+            x="175"
+            y="14"
+            text-anchor="middle"
+            fill="#333"
+            font-family="Roboto, sans-serif"
+          >
+            Sample Plot Title
+          </text>
+          <!-- X label -->
+          <text
+            id="dm-pc-xlabel"
+            x="175"
+            y="195"
+            text-anchor="middle"
+            fill="#555"
+            font-family="Roboto, sans-serif"
+          >
+            X Axis Label
+          </text>
+          <!-- Y label -->
+          <text
+            id="dm-pc-ylabel"
+            x="14"
+            y="95"
+            text-anchor="middle"
+            fill="#555"
+            font-family="Roboto, sans-serif"
+            transform="rotate(-90 14 95)"
+          >
+            Y Axis Label
+          </text>
+          <!-- Tick labels -->
+          <text
+            class="dm-pc-tick"
+            x="60"
+            y="184"
+            text-anchor="middle"
+            fill="#666"
+            font-family="Roboto, sans-serif"
+          >
+            0
+          </text>
+          <text
+            class="dm-pc-tick"
+            x="140"
+            y="184"
+            text-anchor="middle"
+            fill="#666"
+            font-family="Roboto, sans-serif"
+          >
+            2
+          </text>
+          <text
+            class="dm-pc-tick"
+            x="220"
+            y="184"
+            text-anchor="middle"
+            fill="#666"
+            font-family="Roboto, sans-serif"
+          >
+            4
+          </text>
+          <text
+            class="dm-pc-tick"
+            x="290"
+            y="184"
+            text-anchor="middle"
+            fill="#666"
+            font-family="Roboto, sans-serif"
+          >
+            6
+          </text>
+          <!-- Legend -->
+          <rect
+            id="dm-pc-legend-bg"
+            x="230"
+            y="24"
+            width="66"
+            height="22"
+            rx="2"
+            fill="#fff"
+            stroke="#ddd"
+            stroke-width="0.5"
+          />
+          <line
+            x1="234"
+            y1="35"
+            x2="248"
+            y2="35"
+            stroke="#0d9488"
+            stroke-width="1.5"
+          />
+          <circle cx="241" cy="35" r="2" fill="#0d9488" />
+          <text
+            id="dm-pc-legend"
+            x="252"
+            y="39"
+            fill="#666"
+            font-family="Roboto, sans-serif"
+          >
+            Series A
+          </text>
+        </g>
+      </svg>
+    </div>
+    <div class="dm-pc-info" id="dm-pc-info">
+      <div class="dm-pc-info-row">
+        <span class="dm-pc-info-key">font.size</span
+        ><span class="dm-pc-info-val" id="dm-pc-fs"></span>
+      </div>
+      <div class="dm-pc-info-row">
+        <span class="dm-pc-info-key">axes.titlesize</span
+        ><span class="dm-pc-info-val" id="dm-pc-ts"></span>
+      </div>
+      <div class="dm-pc-info-row">
+        <span class="dm-pc-info-key">legend.fontsize</span
+        ><span class="dm-pc-info-val" id="dm-pc-ls"></span>
+      </div>
+      <div class="dm-pc-info-row">
+        <span class="dm-pc-info-key">spines</span
+        ><span class="dm-pc-info-val" id="dm-pc-sp"></span>
+      </div>
+      <div class="dm-pc-info-row">
+        <span class="dm-pc-info-key">best for</span
+        ><span class="dm-pc-info-val" id="dm-pc-use"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var presets = {
+      scientific: {
+        fs: "7.5 pt",
+        ts: "8.5 pt",
+        ls: "5.5 pt",
+        spines: "all four visible",
+        use: "journal figures",
+        titleSize: 10.5,
+        labelSize: 9.5,
+        tickSize: 8.5,
+        legendSize: 7,
+        showTopSpine: true,
+        showRightSpine: true,
+      },
+      investment: {
+        fs: "8.0 pt",
+        ts: "9.0 pt",
+        ls: "6.0 pt",
+        spines: "top + right hidden",
+        use: "equity research",
+        titleSize: 11,
+        labelSize: 10,
+        tickSize: 8.5,
+        legendSize: 7.5,
+        showTopSpine: false,
+        showRightSpine: false,
+      },
+      presentation: {
+        fs: "8.5 pt",
+        ts: "9.5 pt",
+        ls: "6.5 pt",
+        spines: "all four visible",
+        use: "slides & web",
+        titleSize: 12,
+        labelSize: 10.5,
+        tickSize: 9.5,
+        legendSize: 8,
+        showTopSpine: true,
+        showRightSpine: true,
+      },
+    };
+
+    function applyPreset(name) {
+      var p = presets[name];
+
+      // Update info panel
+      document.getElementById("dm-pc-fs").textContent = p.fs;
+      document.getElementById("dm-pc-ts").textContent = p.ts;
+      document.getElementById("dm-pc-ls").textContent = p.ls;
+      document.getElementById("dm-pc-sp").textContent = p.spines;
+      document.getElementById("dm-pc-use").textContent = p.use;
+
+      // Update SVG sizes
+      var title = document.getElementById("dm-pc-title");
+      var xlabel = document.getElementById("dm-pc-xlabel");
+      var ylabel = document.getElementById("dm-pc-ylabel");
+      var legend = document.getElementById("dm-pc-legend");
+      var ticks = document.querySelectorAll(".dm-pc-tick");
+
+      title.setAttribute("font-size", p.titleSize);
+      xlabel.setAttribute("font-size", p.labelSize);
+      ylabel.setAttribute("font-size", p.labelSize);
+      legend.setAttribute("font-size", p.legendSize);
+      ticks.forEach(function (t) {
+        t.setAttribute("font-size", p.tickSize);
+      });
+
+      // Update spines
+      var top = document.getElementById("dm-pc-spine-top");
+      var right = document.getElementById("dm-pc-spine-right");
+      top.style.opacity = p.showTopSpine ? "1" : "0";
+      right.style.opacity = p.showRightSpine ? "1" : "0";
+
+      // Update active tab
+      document.querySelectorAll(".dm-pc-tab").forEach(function (tab) {
+        tab.classList.toggle("dm-pc-tab-active", tab.dataset.preset === name);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll(".dm-pc-tab").forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          applyPreset(this.dataset.preset);
+        });
+      });
+      applyPreset("scientific");
+    });
+  })();
+</script>

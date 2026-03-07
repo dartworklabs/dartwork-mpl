@@ -6,6 +6,7 @@
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 import numpy as np
+
 dm.style.use("investment")
 
 fig, ax = plt.subplots(figsize=(dm.cm2in(11), dm.cm2in(7)), dpi=300)
@@ -18,17 +19,22 @@ dm.save_formats(
     formats=("png", "svg", "pdf"),
     dpi=300,
     bbox_inches="tight",
-    validate=True,   # runs validate_figure() before saving
+    validate=True,   # runs visual checks before saving (see below)
 )
-dm.save_and_show(fig, size=720)  # preview + plt.show()
-dm.show("output/forecast.svg", size=540)
+dm.save_and_show(fig, size=720)  # preview at 720px wide + plt.show()
+dm.show("output/forecast.svg", size=540)  # display a saved file in notebooks
 ```
+
+:::{figure} images/save_investment.svg
+:alt: Investment-style line chart saved with save_formats
+:width: 100%
+:::
 
 **Key points:**
 
 - `save_formats` writes multiple formats in one call, with optional visual validation
-- `save_and_show` emits a small preview (PNG/SVG) and shows the figure
-- `show` reuses an existing SVG for notebooks or reports
+- `save_and_show` renders a preview (matching the final saved output) and calls `plt.show()`
+- `show` displays an existing SVG/PNG for notebooks or reports
 - See [API › Save & Export](../api/io) for argument details
 
 ## Visual validation
@@ -46,11 +52,13 @@ for w in warnings:
 
 # Run specific checks only
 warnings = dm.validate_figure(fig, checks=('overflow', 'tick_crowding'))
-
-# Automatically called by save_formats() (validate=True by default)
 ```
 
-Checks include: overflow detection, text overlap, legend overflow,
+When `validate=True` is passed to `save_formats()`, validation runs before
+saving. If issues are found, they're printed as warnings — the file is still
+saved, but you'll know what to fix.
+
+**Available checks:** overflow detection, text overlap, legend overflow,
 tick crowding, and empty axes. See [API › Visual Validation](../api/validate)
 for details.
 
@@ -70,13 +78,25 @@ fig, ax = plot_diverging_bar(
 )
 ```
 
+:::{figure} images/save_diverging_bar.svg
+:alt: Diverging bar chart from xplot module
+:width: 100%
+:::
+
 See [API › Extended Plots](../api/xplot) for the full parameter list.
 
 ## Interactive viewer
 
-For rapid parameter exploration, use the FastAPI-powered interactive viewer:
+dartwork-mpl includes an optional interactive viewer powered by FastAPI for
+rapid parameter exploration. This is useful when you want to tweak chart
+parameters with sliders in a browser instead of re-running code.
+
+> **Requires the `ui` extra:** `uv add "dartwork-mpl[ui]"` (installs FastAPI
+> and Pydantic).
 
 ```python
+import matplotlib.pyplot as plt
+import numpy as np
 from dartwork_mpl.ui import ParamModel, run
 from pydantic import Field
 
@@ -92,7 +112,6 @@ def scatter(params: Params):
 run(scatter)  # opens browser at http://127.0.0.1:8501
 ```
 
-Install the optional `ui` extra: `uv add "dartwork-mpl[ui]"`.
 See [API › Interactive Viewer](../api/ui) for details.
 
 ## Diagnostics & previews
@@ -104,5 +123,10 @@ dm.plot_colors(ncols=5, sort_colors=True)          # inspect each color library
 dm.plot_colormaps(group_by_type=True, ncols=4)     # compare sequential/diverging sets
 dm.plot_fonts(font_size=11, ncols=3)               # audit bundled fonts
 ```
+
+:::{figure} images/save_diagnostics.svg
+:alt: OpenColor palette preview from plot_colors diagnostic tool
+:width: 100%
+:::
 
 See [API › Visualization Tools](../api/visualization) for full details.

@@ -18,7 +18,7 @@ Save, Export, and Validation <save_export>
 
 | Category         | Location                                                            |
 | ---------------- | ------------------------------------------------------------------- |
-| Styles           | `asset/mplstyle/*.mplstyle`, presets: `asset/mplstyle/presets.json` |
+| Styles           | `asset/mplstyle/*.mplstyle`                                         |
 | Colors/colormaps | `asset/color/*.txt`                                                 |
 | Fonts            | `asset/font/*` (auto-registered on import)                          |
 | Icons            | `asset/icon/*`                                                      |
