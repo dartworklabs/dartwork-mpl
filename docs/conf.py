@@ -76,6 +76,7 @@ html_theme_options = {
         {"title": "Color System", "url": "color_system/index"},
         {"title": "Fonts", "url": "fonts/index"},
         {"title": "Examples Gallery", "url": "examples_gallery/index"},
+        {"title": "Integrations", "url": "integrations/index"},
         {"title": "API Reference", "url": "api/index"},
     ],
 }

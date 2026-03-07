@@ -43,10 +43,18 @@ def create_placeholder_index(app):
 
 
 def generate_gallery_assets(_app):
-    """Bake high-res color system images during the build."""
+    """Bake high-res color system, usage guide, and API images during the build."""
     from color_system.generate_assets import build_gallery_assets
 
     build_gallery_assets()
+
+    from usage_guide.generate_assets import build_usage_guide_assets
+
+    build_usage_guide_assets()
+
+    from api.generate_assets import build_api_assets
+
+    build_api_assets()
 
 
 def copy_fonts_to_static(app):
