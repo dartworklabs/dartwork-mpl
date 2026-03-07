@@ -67,6 +67,7 @@ dm.style.use('scientific')  # Academic papers
 ```
 
 Available presets (from `presets.json`) are:
+
 - `scientific`, `investment`, `presentation`
 - `scientific-kr`, `investment-kr`, `presentation-kr`
 
@@ -87,15 +88,20 @@ import dartwork_mpl as dm
 print(dm.__version__)  # Should print something like '0.1.1'
 
 # List all available style files
-dm.list_styles()  # ['base', 'dmpl', 'dmpl_light', 'font-investment', ...]
+print(dm.list_styles())  # ['base', 'dmpl', 'dmpl_light', 'font-investment', ...]
 
-# Verify color palettes are available
-print(len(dm.colors.PALETTES))  # Should show available color collections
+# Verify color system is working
+color = dm.oklch(0.7, 0.15, 150)
+print(color.to_hex())  # Should print a hex color string
+
+# Check available prompts
+print(dm.list_prompts())  # Available AI assistant prompt guides
 ```
 
 If these commands run without errors, you're all set! 🎉
 
 > **Troubleshooting:** If you encounter import errors, make sure:
+>
 > - Your Python environment is activated (if using virtual environments)
 > - The package was installed in the correct environment
 > - You have matplotlib installed as a dependency
