@@ -47,11 +47,13 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
+    "mypy>=1.8.0",
     "myst-parser>=4.0.1",
     "notebook>=7.4.1",
     "openpyxl>=3.1.5",
     "pandas>=2.2.3",
     "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
     "ruff>=0.4.0",
     "shibuya>=2025.11.10",
     "sphinx>=8.1.3",
@@ -102,3 +104,23 @@ split-on-trailing-comma = false
 "docs/color_system/generate_assets.py" = ["E402"]
 "docs/fonts/generate_assets.py" = ["E402"]
 "docs/examples_source/layout_styling/plot_legend.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[tool.coverage.run]
+source = ["src/dartwork_mpl"]
+omit = ["*/ui/*", "*/mcp/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.",
+    "if TYPE_CHECKING:",
+]
