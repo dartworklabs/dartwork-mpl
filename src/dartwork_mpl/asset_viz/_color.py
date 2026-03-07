@@ -44,6 +44,8 @@ _OPENCOLOR_NAMES = _load_color_library_names()
 
 def _classify_color_library(color_name: str) -> str:
     """Classify a color name into its library category."""
+    if color_name.startswith("dm."):
+        return "dm"
     if color_name.startswith("tw."):
         return "tw"
     if color_name.startswith("md."):
@@ -56,13 +58,13 @@ def _classify_color_library(color_name: str) -> str:
         return "primer"
     if color_name.startswith("oc."):
         return "opencolor"
-    return "other"
+    return None
 
 
 def _extract_base_color_name(color_name: str) -> str:
     """Extract base color name from color name."""
     name = color_name
-    for prefix in ["oc.", "tw.", "md.", "ad.", "cu.", "pr."]:
+    for prefix in ["dm.", "oc.", "tw.", "md.", "ad.", "cu.", "pr."]:
         if name.startswith(prefix):
             name = name[len(prefix) :]
             break
@@ -134,18 +136,19 @@ def _separate_colors_by_library(
     library_groups: dict[
         str, dict[str, str | tuple[float, float, float]]
     ] = {
+        "dm": {},
         "opencolor": {},
         "tw": {},
         "md": {},
         "ant": {},
         "chakra": {},
         "primer": {},
-        "other": {},
     }
 
     for color_name, color_spec in colors.items():
         library = _classify_color_library(color_name)
-        library_groups[library][color_name] = color_spec
+        if library is not None:
+            library_groups[library][color_name] = color_spec
 
     return {
         lib: colors_dict
@@ -401,7 +404,6 @@ def _plot_single_library(
         "ant": "Ant Design",
         "chakra": "Chakra UI",
         "primer": "Primer",
-        "other": "Other Colors",
     }
     title_text = library_labels.get(library_name, library_name)
     count_text = f"  ({len(colors)} colors)"
@@ -561,6 +563,7 @@ def plot_colors(
     library_colors = _separate_colors_by_library(colors)
 
     skip_duplicate_removal = {
+        "dm",
         "tw",
         "md",
         "ant",
@@ -574,13 +577,13 @@ def plot_colors(
             )
 
     library_order = [
+        "dm",
         "opencolor",
         "tw",
         "md",
         "ant",
         "chakra",
         "primer",
-        "other",
     ]
 
     figures = []

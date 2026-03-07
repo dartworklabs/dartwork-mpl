@@ -3,7 +3,8 @@
 Loads color definitions from asset files and registers them with
 matplotlib's internal color mapping. Supports multiple color systems:
 Open Color (oc.), Tailwind CSS (tw.), Material Design (md.),
-Ant Design (ad.), Chakra UI (cu.), and Primer (pr.).
+Ant Design (ad.), Chakra UI (cu.), Primer (pr.), and
+Dartwork categorical palettes (dm.).
 """
 
 from __future__ import annotations
@@ -91,6 +92,7 @@ _JSON_PALETTES: list[tuple[str, str]] = [
     ("ad", "ant_colors.json"),
     ("cu", "chakra_colors.json"),
     ("pr", "primer_colors.json"),
+    ("dm", "dm_palettes.json"),
 ]
 
 
@@ -99,8 +101,9 @@ def _load_colors() -> None:
 
     This function loads colors from text files (Open Color, ``oc.``
     prefix) and JSON files (Tailwind ``tw.``, Material Design ``md.``,
-    Ant Design ``ad.``, Chakra UI ``cu.``, Primer ``pr.``) in the
-    ``asset/color`` directory and registers them with matplotlib.
+    Ant Design ``ad.``, Chakra UI ``cu.``, Primer ``pr.``,
+    Dartwork ``dm.``) in the ``asset/color`` directory and registers
+    them with matplotlib.
 
     Notes
     -----
@@ -123,8 +126,9 @@ def _load_colors() -> None:
     # Register with matplotlib.
     mcolors.get_named_colors_mapping().update(color_dict)
 
-    # Remove xkcd colors — they clutter the 'other' category in
-    # color galleries and are not used by this library.
+    # Remove xkcd colors — they clutter color galleries and are not
+    # used by this library.  CSS4 named colours (e.g. 'black') are
+    # kept because matplotlib itself relies on them for rcParams.
     mapping: dict[str, str] = mcolors.get_named_colors_mapping()
     for key in [k for k in mapping if k.startswith("xkcd:")]:
         del mapping[key]
