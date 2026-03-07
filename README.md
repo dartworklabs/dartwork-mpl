@@ -246,18 +246,23 @@ dartwork-mpl provides an **MCP (Model Context Protocol) server** that enables AI
 {
   "mcpServers": {
     "dartwork-mpl": {
-      "command": "uvx",
+      "command": "uv",
       "args": [
-        "--from",
-        "git+https://github.com/dartworklabs/dartwork-mpl.git#egg=dartwork-mpl[mcp]",
-        "mcp"
+        "run",
+        "--directory",
+        "/path/to/dartwork-mpl",
+        "dartwork-mpl-mcp"
       ]
     }
   }
 }
 ```
 
-For more details, see the [AI-Assisted Development Guide](https://dartworklabs.github.io/dartwork-mpl/usage_guide/ai_assisted.html).
+> **Note:** Replace `/path/to/dartwork-mpl` with the actual path to your local clone.
+> Install MCP dependencies with `uv pip install -e ".[mcp]"`.
+
+Supported clients: **Claude Code**, **Cursor**, **Windsurf**, **Antigravity (Gemini)**.
+For detailed setup per client, see the [MCP Server docs](https://dartworklabs.github.io/dartwork-mpl/api/mcp.html).
 
 <br/>
 
@@ -265,24 +270,38 @@ For more details, see the [AI-Assisted Development Guide](https://dartworklabs.g
 
 ```
 src/dartwork_mpl/
-├── __init__.py         # Public API exports
+├── __init__.py         # Public API exports + lazy init
 ├── py.typed            # PEP 561 type marker
 ├── style.py            # Style class + preset management
 ├── color/              # Color class (OKLab/OKLCH/RGB/hex) + named palettes
-├── util.py             # Scaling, I/O, prompt utilities
-├── layout.py           # Layout helpers (label_axes, arrow_axis, etc.)
-├── annotation.py       # Annotation helpers (set_decimal, make_offset)
+│   ├── _color.py       #   Color class core
+│   ├── _conversion.py  #   Color space conversion
+│   ├── _views.py       #   Mutable color space views
+│   └── _loader.py      #   Lazy palette registration
+├── layout.py           # simple_layout(), label_axes(), arrow_axis()
+├── annotation.py       # set_decimal(), make_offset()
+├── scale.py            # fs(), fw(), lw(), cm2in()
+├── io.py               # save_formats(), save_and_show()
+├── prompt.py           # get_prompt(), copy_prompt(), list_prompts()
 ├── validate.py         # Visual validation checks
 ├── constant.py         # Figure width constants (SW, DW)
 ├── icon.py             # Icon font system (MDI, Font Awesome)
 ├── font.py             # Font registration
 ├── cmap.py             # Custom colormap registration
-├── asset_viz/          # Plot diagnostics (colormaps, colors, fonts)
+├── util.py             # Legacy re-exports (backward compat)
+├── _helpers.py         # Internal shared helpers
+├── asset_viz/          # Visualization diagnostics
+│   ├── _cmap.py        #   Colormap visualization
+│   ├── _color.py       #   Color swatch visualization
+│   └── _font.py        #   Font preview visualization
 ├── install.py          # LLM integration installer
-├── cli.py              # CLI entry point
+├── cli.py              # CLI entry point (dartwork-mpl-mcp)
 ├── xplot/              # Extended plot templates
 ├── ui/                 # Interactive FastAPI viewer
 ├── mcp/                # MCP server for AI assistants
+│   ├── server.py       #   FastMCP instance + wiring
+│   ├── resources.py    #   Guide resources
+│   └── tools.py        #   fetch_github_document etc.
 └── asset/              # Bundled styles, colors, fonts, icons, prompts
 ```
 
