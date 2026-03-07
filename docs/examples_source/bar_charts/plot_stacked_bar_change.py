@@ -70,7 +70,7 @@ values_right = [c[2] for c in categories]
 left_bottoms, left_total = stack_bottoms(values_left)
 right_bottoms, right_total = stack_bottoms(values_right)
 
-fig, ax = plt.subplots(figsize=(dm.cm2in(8), dm.cm2in(7)), dpi=300)
+fig, ax = plt.subplots(figsize=(dm.cm2in(10), dm.cm2in(8)), dpi=300)
 
 for idx, (label, left_val, right_val) in enumerate(categories):
     lb, rb = left_bottoms[idx], right_bottoms[idx]
@@ -158,9 +158,9 @@ ax.text(
     weight=dm.fw(1),
 )
 
-ax.set_xlim(left_x, right_x + bar_width + label_offset + 0.05)
-ax.set_ylim(-6, max(left_total, right_total))
+ax.set_xlim(left_x - 0.2, right_x + bar_width + label_offset + 0.2)
+ax.set_ylim(-6, max(left_total, right_total) * 1.05)
 ax.axis("off")
 
-dm.simple_layout(fig)
+dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05))
 plt.show()

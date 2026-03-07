@@ -43,12 +43,12 @@ multiples = [f"{s / o:.1f}×" for s, o in zip(success_values, other_values, stri
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class Layout:
-    left: float = 0.3
+    left: float = 0.35
     right: float = 0.95
-    top: float = 0.87
-    bottom: float = 0.1
-    fig_w: float = 13
-    fig_h: float = 9
+    top: float = 0.85
+    bottom: float = 0.15
+    fig_w: float = 15
+    fig_h: float = 10
 
 
 @dataclass(frozen=True)
@@ -99,8 +99,8 @@ for sp in ax.spines.values():
     sp.set_edgecolor("oc.gray6")
 
 # Title and legend
-fig.text(0.02, 0.95, "AI Adoption Gap: AI-First vs. Traditional Companies",
-         fontsize=dm.fs(2), fontweight=dm.fw(1), ha="left")
+fig.suptitle("AI Adoption Gap: AI-First vs. Traditional Companies",
+             fontsize=dm.fs(2), fontweight=dm.fw(1), x=lo.left, ha="left", y=0.98)
 
 legend_elements = [
     Line2D([0], [0], marker="o", color="w", label="Other organizations",
@@ -108,7 +108,8 @@ legend_elements = [
     Line2D([0], [0], marker="o", color="w", label="Successfully transformed",
            markerfacecolor=pal.success, ms=8),
 ]
-ax.legend(handles=legend_elements, loc="upper right", bbox_to_anchor=(1, 1.13),
+ax.legend(handles=legend_elements, loc="upper right", bbox_to_anchor=(1, 1.12),
           ncol=2, frameon=False, fontsize=dm.fs(-1), columnspacing=1.5)
 
+dm.simple_layout(fig, margins=(0.1, 0.05, 0.1, 0.15))
 plt.show()

@@ -106,9 +106,8 @@ def draw_cell(ax, pct, facecolor, x, y, w, h, align="center"):
 # ---------------------------------------------------------------------------
 nrows, ncols = values.shape
 cell_w, cell_h = 1.0, 1.0
-row_label_width = 2.5
 
-fig_w = row_label_width + ncols * cell_w + 0.5
+fig_w = 2.5 + ncols * cell_w + 0.5
 fig_h = ncols * 0.3 + nrows * cell_h + 0.5
 
 fig, ax = plt.subplots(
@@ -117,7 +116,7 @@ fig, ax = plt.subplots(
 
 for r in range(nrows):
     for c in range(ncols):
-        x = row_label_width + c * cell_w
+        x = c * cell_w
         y = (nrows - 1 - r) * cell_h
         draw_cell(ax, values[r, c], cell_colors[c], x, y, cell_w, cell_h)
 
@@ -125,7 +124,7 @@ for r in range(nrows):
 for r, label in enumerate(row_labels):
     y = (nrows - 1 - r) * cell_h + cell_h / 2
     ax.text(
-        row_label_width - 0.1,
+        -0.1,
         y,
         label,
         ha="right",
@@ -135,7 +134,7 @@ for r, label in enumerate(row_labels):
 
 # Column labels
 for c, label in enumerate(col_labels):
-    x = row_label_width + c * cell_w + cell_w / 2
+    x = c * cell_w + cell_w / 2
     y = nrows * cell_h + 0.15
     ax.text(
         x,
@@ -147,12 +146,12 @@ for c, label in enumerate(col_labels):
         weight="bold",
     )
 
-ax.set_xlim(0, row_label_width + ncols * cell_w)
-ax.set_ylim(-0.3, nrows * cell_h + 0.5)
+ax.set_xlim(0, ncols * cell_w)
+ax.set_ylim(-0.3, nrows * cell_h + 0.8)
 ax.axis("off")
 ax.set_title(
-    "US employee sentiment on gen AI, by age group", fontsize=dm.fs(1), pad=15
+    "US employee sentiment on gen AI, by age group", fontsize=dm.fs(1), pad=20
 )
 
-dm.simple_layout(fig)
+dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05))
 plt.show()

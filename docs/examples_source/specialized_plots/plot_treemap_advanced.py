@@ -110,11 +110,11 @@ def draw_treemap(ax, columns, total, title, padding=0.008):
 # Plot
 # ---------------------------------------------------------------------------
 fig, (ax1, ax2) = plt.subplots(
-    1, 2, figsize=(dm.cm2in(16), dm.cm2in(7)), dpi=300
+    1, 2, figsize=(dm.cm2in(18), dm.cm2in(8)), dpi=300
 )
 
 draw_treemap(ax1, product_columns, 100, "Product Mix")
 draw_treemap(ax2, region_columns, 100, "Regional Split")
 
-dm.simple_layout(fig)
+dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05))
 plt.show()
