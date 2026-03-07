@@ -19,15 +19,15 @@ dartwork-mpl includes **130 professional fonts** from **9 font families**, all
 optimized for data visualization and publication-quality figures. When you
 import the library, these fonts become immediately available to matplotlib.
 
-:::{figure} images/fonts_all_families.png
-:alt: All available font families preview
-:width: 100%
+**Default Font: Roboto.** Nine curated font families are bundled and auto-registered.
+Roboto is the default for all presets. Click through for the full catalog with
+all weights and variants.
 
-**All Font Families.** Nine curated font families covering everything from
-general-purpose body text to mathematical expressions. Each family includes
-multiple weights and styles.
+```{raw} html
+:file: _generated/roboto.html
+```
+
 [Explore all font families →](families.md)
-:::
 
 :::{figure} images/font_utilities.png
 :alt: Font utility functions demonstration
@@ -52,7 +52,7 @@ ax.set_xlabel("X Axis Label", fontsize=dm.fs(0))
 ax.set_ylabel("Y Axis Label", fontsize=dm.fs(0))
 
 # Preview all available fonts
-dm.plot_fonts(ncols=3, font_size=12)
+dm.plot_fonts(ncols=2, font_size=12)
 plt.show()
 ```
 
@@ -77,6 +77,10 @@ visual hierarchy in your figures.
 **Math Support**
 : Noto Sans Math provides comprehensive mathematical symbol coverage for
 scientific notation and equations.
+
+**Multi-Language**
+: Paperlogy for Korean (한글), Noto Sans CJK for Japanese/Chinese — all bundled
+and auto-registered. No system font installation needed.
 
 ## Bundled Fonts Summary
 
@@ -118,6 +122,7 @@ See [API Reference → Icon Font System](../api/icon.rst) for full details.
 
 ## Regenerating the Visuals
 
-- All preview PNGs live in `docs/fonts/images/`.
-- Run `python docs/fonts/generate_assets.py` to refresh assets after any changes.
-- Exports are high-DPI for crisp rendering when embedded in documentation.
+- HTML specimens live in `docs/fonts/_generated/` (auto-generated).
+- Legacy preview PNGs live in `docs/fonts/images/`.
+- Run `python docs/fonts/generate_html_specimens.py` to refresh HTML specimens.
+- Run `python docs/fonts/generate_assets.py` to refresh PNG assets.

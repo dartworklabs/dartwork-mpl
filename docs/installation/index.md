@@ -53,27 +53,19 @@ pip install git+https://github.com/dartwork-repo/dartwork-mpl@main
 
 ## Basic Import
 
-Once installed, import **dartwork-mpl** alongside matplotlib. The package is typically imported as `dm` for convenience.
+Once installed, import **dartwork-mpl** alongside matplotlib:
 
-```{code-block} python
-:caption: example.py
-
+```python
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
-import numpy as np
 
-# Apply a style preset (Recommended)
-dm.style.use('scientific')  # Academic papers
+dm.style.use('scientific')  # Apply a style preset
 ```
 
-Available presets (from `presets.json`) are:
-
-- `scientific`, `investment`, `presentation`
-- `scientific-kr`, `investment-kr`, `presentation-kr`
-
-Each preset layers one or more of the bundled styles from `asset/mplstyle`
-(e.g., `base`, `dmpl`, `dmpl_light`, `font-*`, `lang-kr`). See the
-[Usage Guide](../usage_guide/index.md) for the exact mappings.
+Available presets: `scientific`, `investment`, `presentation`, and
+`-kr` variants for Korean. See the [Quick Start](../usage_guide/quickstart)
+for a full end-to-end example and [Styles and Presets](../usage_guide/styles)
+for a detailed comparison.
 
 ## Verify Installation
 
@@ -85,7 +77,7 @@ After installation, verify that **dartwork-mpl** is properly installed and acces
 import dartwork_mpl as dm
 
 # Check installed version
-print(dm.__version__)  # Should print something like '0.2.1'
+print(dm.__version__)  # Current installed version
 
 # List all available style files
 print(dm.list_styles())  # ['base', 'dmpl', 'dmpl_light', 'font-investment', ...]

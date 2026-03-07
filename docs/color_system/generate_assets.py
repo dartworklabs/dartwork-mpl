@@ -49,22 +49,22 @@ CATEGORY_BLURBS: dict[str, str] = {
 }
 
 COLOR_LIBRARY_ORDER = [
+    "dm",
     "opencolor",
     "tw",
     "md",
     "ant",
     "chakra",
     "primer",
-    "other",
 ]
 COLOR_LIBRARY_LABELS = {
+    "dm": "Dartwork",
     "opencolor": "OpenColor",
     "tw": "Tailwind",
     "md": "Material Design",
     "ant": "Ant Design",
     "chakra": "Chakra UI",
     "primer": "Primer",
-    "other": "Other & Matplotlib",
 }
 
 
@@ -227,43 +227,196 @@ def _save_color_sheets(images_dir: Path) -> list[Path]:
     return paths
 
 
+# ─── HTML/CSS native rendering ─────────────────────────────────────────
+
+
+def _relative_luminance_rgb(r: float, g: float, b: float) -> float:
+    """ITU-R BT.709 relative luminance."""
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def _hex_to_rgb01(hex_str: str) -> tuple[float, float, float]:
+    """Convert hex color to (r,g,b) in 0-1 range."""
+    h = hex_str.lstrip("#")
+    return tuple(int(h[i : i + 2], 16) / 255.0 for i in (0, 2, 4))
+
+
+def _text_color_for_bg(hex_str: str) -> str:
+    """Return white or dark text depending on background luminance."""
+    r, g, b = _hex_to_rgb01(hex_str)
+    return "#fff" if _relative_luminance_rgb(r, g, b) < 0.45 else "#333"
+
+
+def _save_color_sheets_html(images_dir: Path) -> list[Path]:
+    """Generate HTML fragment files for each color library."""
+    from dartwork_mpl.color._loader import ensure_loaded
+
+    ensure_loaded()
+    mapping = mpl.colors.get_named_colors_mapping()
+
+    # Prefix → library key mapping
+    prefix_map = {
+        "dm": "dm.",
+        "opencolor": "oc.",
+        "tw": "tw.",
+        "md": "md.",
+        "ant": "ad.",
+        "chakra": "cu.",
+        "primer": "pr.",
+    }
+
+    paths: list[Path] = []
+    for library_key in COLOR_LIBRARY_ORDER:
+        prefix = prefix_map.get(library_key, "")
+        label = COLOR_LIBRARY_LABELS.get(library_key, library_key)
+
+        # Collect colors for this library, grouped by base name
+        lib_colors: dict[str, list[tuple[str, str, str]]] = {}
+        for name, spec in mapping.items():
+            if not name.startswith(prefix):
+                continue
+            suffix = name[len(prefix):]
+            # Split into alpha base + numeric/alphanumeric weight
+            import re
+
+            m = re.match(r"^([a-zA-Z_]+)(.*)", suffix)
+            if not m:
+                continue
+            base = m.group(1)
+            weight = m.group(2)  # e.g. "50", "500", "A100", "0"
+            hex_val = (
+                spec if isinstance(spec, str) else mpl.colors.to_hex(spec)
+            )
+            lib_colors.setdefault(base, []).append(
+                (name, weight, hex_val)
+            )
+
+        if not lib_colors:
+            continue
+
+        # Sort groups alphabetically, weights numerically within each
+        def _weight_sort_key(item: tuple[str, str, str]) -> tuple:
+            """Sort key: pure digits first numerically, then alpha."""
+            w = item[1]
+            if w.isdigit():
+                return (0, int(w), "")
+            # Mixed alpha-numeric (e.g. "A100")
+            m2 = re.match(r"([A-Za-z]*)(\d+)", w)
+            if m2:
+                return (1, int(m2.group(2)), m2.group(1))
+            return (2, 0, w)
+
+        html_parts = ['<div class="dm-color-sheet">']
+        html_parts.append(f'<div class="dm-sheet-title">{label}</div>')
+
+        for base in sorted(lib_colors.keys()):
+            colors_list = sorted(lib_colors[base], key=_weight_sort_key)
+            # Group label shows prefix+base (e.g. "tw.amber", "dm.vivid")
+            group_label = f"{prefix}{base}"
+
+            html_parts.append('<div class="dm-color-group">')
+            html_parts.append(
+                f'<span class="dm-group-label">{group_label}</span>'
+            )
+            html_parts.append('<div class="dm-swatch-row">')
+            for _cname, weight, hex_val in colors_list:
+                tc = _text_color_for_bg(hex_val)
+                html_parts.append(
+                    f'<div class="dm-swatch" style="background:{hex_val}"'
+                    f' title="{_cname}">'
+                    f'<span class="dm-swatch-name" style="color:{tc}">'
+                    f"{weight}</span>"
+                    f'<span class="dm-swatch-hex" style="color:{tc}">'
+                    f"{hex_val}</span></div>"
+                )
+            html_parts.append("</div></div>")
+
+        html_parts.append("</div>")
+
+        path = images_dir / f"colors_{library_key}.html"
+        path.write_text("\n".join(html_parts), encoding="utf-8")
+        paths.append(path)
+
+    return paths
+
+
+def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
+    """Generate HTML fragment files for each colormap category."""
+    categories = _collect_colormaps()
+    n_samples = 32  # gradient stops
+
+    paths: list[Path] = []
+    for category in CATEGORY_ORDER:
+        cmaps = categories.get(category)
+        if not cmaps:
+            continue
+
+        blurb = CATEGORY_BLURBS.get(category, "")
+        html_parts = ['<div class="dm-cmap-panel">']
+        html_parts.append(
+            f'<div class="dm-cmap-panel-title">{category}</div>'
+        )
+        if blurb:
+            html_parts.append(
+                f'<div class="dm-cmap-panel-desc">{blurb}</div>'
+            )
+        html_parts.append('<div class="dm-cmap-grid">')
+
+        for cmap in cmaps:
+            # Sample colormap to CSS gradient stops
+            stops = []
+            for i in range(n_samples):
+                t = i / (n_samples - 1)
+                rgba = cmap(t)
+                hex_c = mpl.colors.to_hex(rgba[:3])
+                pct = round(t * 100, 1)
+                stops.append(f"{hex_c} {pct}%")
+            gradient = f"linear-gradient(to right, {', '.join(stops)})"
+
+            is_dm = cmap.name.startswith("dm.")
+            tag = (
+                '<span class="dm-cmap-tag">dartwork</span>' if is_dm else ""
+            )
+
+            html_parts.append(
+                f'<div class="dm-cmap-item">'
+                f'<div><span class="dm-cmap-name">{cmap.name}</span>'
+                f"{tag}</div>"
+                f'<div class="dm-cmap-bar" style="background:{gradient}">'
+                f"</div></div>"
+            )
+
+        html_parts.append("</div></div>")
+
+        slug = category.lower().replace(" ", "_").replace("-", "_")
+        path = images_dir / f"colormaps_{slug}.html"
+        path.write_text("\n".join(html_parts), encoding="utf-8")
+        paths.append(path)
+    return paths
+
+
 def _save_color_space_creation(images_dir: Path) -> Path:
     """Generate example showing different ways to create Color objects."""
     dm.style.use("scientific")
 
-    # Figure 생성
     fig = plt.figure(figsize=(dm.cm2in(14), dm.cm2in(8)), dpi=300)
     fig.patch.set_facecolor("#fbfaf7")
 
-    # GridSpec 구성: title 행 + 2x3 색상 샘플
-    # height_ratios: title 12%, 각 샘플 행 44%
     gs = fig.add_gridspec(
-        nrows=3,
-        ncols=3,
-        left=0.05,
-        right=0.98,
-        top=0.95,
-        bottom=0.08,
-        hspace=0.5,
-        wspace=0.25,
+        nrows=3, ncols=3,
+        left=0.05, right=0.98, top=0.95, bottom=0.08,
+        hspace=0.5, wspace=0.25,
         height_ratios=[0.12, 0.44, 0.44],
     )
 
-    # Title axes (첫 행 전체 사용)
     ax_title = fig.add_subplot(gs[0, :])
     ax_title.axis("off")
     ax_title.text(
-        0.5,
-        0.5,
-        "Creating Color Objects",
-        fontsize=16,
-        fontweight="bold",
-        ha="center",
-        va="center",
+        0.5, 0.5, "Creating Color Objects",
+        fontsize=16, fontweight="bold", ha="center", va="center",
         transform=ax_title.transAxes,
     )
 
-    # Examples
     examples = [
         ("OKLab", dm.oklab(0.7, 0.1, 0.2), "dm.oklab(0.7, 0.1, 0.2)"),
         ("OKLCH", dm.oklch(0.7, 0.2, 120), "dm.oklch(0.7, 0.2, 120)"),
@@ -273,23 +426,16 @@ def _save_color_space_creation(images_dir: Path) -> Path:
         ("RGB 255", dm.rgb(200, 50, 75), "dm.rgb(200, 50, 75)"),
     ]
 
-    # 2x3 배열로 axes 생성
     for idx, (label, color, code) in enumerate(examples):
-        row = idx // 3 + 1  # 1 또는 2 (title 행 이후)
-        col = idx % 3  # 0, 1, 2
+        row = idx // 3 + 1
+        col = idx % 3
         ax = fig.add_subplot(gs[row, col])
         ax.set_facecolor("#ffffff")
-
         rgb_val = color.to_rgb()
-        # 색상 박스를 axes 상단 35%-100% 영역에 배치 (하단 35%는 라벨 공간)
         ax.add_patch(
             plt.Rectangle(
-                (0, 0.35),
-                1,
-                0.65,
-                facecolor=rgb_val,
-                edgecolor="#e4e2dd",
-                linewidth=1.5,
+                (0, 0.35), 1, 0.65,
+                facecolor=rgb_val, edgecolor="#e4e2dd", linewidth=1.5,
             )
         )
         ax.set_xlim(0, 1)
@@ -297,34 +443,16 @@ def _save_color_space_creation(images_dir: Path) -> Path:
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_frame_on(False)
-
-        # 라벨 (axes 내부)
         ax.text(
-            0.5,
-            0.22,
-            label,
-            ha="center",
-            va="top",
-            transform=ax.transAxes,
-            fontsize=10,
-            fontweight="bold",
+            0.5, 0.22, label, ha="center", va="top",
+            transform=ax.transAxes, fontsize=10, fontweight="bold",
         )
-        # 코드 (axes 내부)
         ax.text(
-            0.5,
-            0.08,
-            code,
-            ha="center",
-            va="top",
-            transform=ax.transAxes,
-            fontsize=8,
-            family="monospace",
-            color="#555",
+            0.5, 0.08, code, ha="center", va="top",
+            transform=ax.transAxes, fontsize=8, family="monospace", color="#555",
         )
 
-    # 레이아웃 최적화 (GridSpec 지정)
     dm.simple_layout(fig, gs=gs)
-
     path = images_dir / "color_space_creation.png"
     fig.savefig(path, dpi=220, bbox_inches="tight")
     plt.close(fig)
@@ -734,13 +862,28 @@ def build_gallery_assets(base_dir: Path | None = None) -> dict[str, list[Path]]:
     """Generate all gallery assets and return their paths."""
     images_dir = _prepare_images_dir(base_dir)
     print(f"[gallery] generating assets to {images_dir}")
+
+    # HTML-native rendering (color sheets + colormaps)
+    color_html_paths = _save_color_sheets_html(images_dir)
+    cmap_html_paths = _save_colormap_panels_html(images_dir)
+
+    # PNG fallback (still generated for backward compat)
     colormap_paths = _save_colormap_panels(images_dir)
     color_paths = _save_color_sheets(images_dir)
+
+    # Color space examples (must remain PNG)
     color_space_paths = _save_color_space_examples(images_dir)
+
     print(
-        f"[gallery] wrote {len(color_paths)} color sheets, {len(colormap_paths)} colormap panels, and {len(color_space_paths)} color space examples"
+        f"[gallery] wrote {len(color_html_paths)} color HTML sheets, "
+        f"{len(cmap_html_paths)} colormap HTML panels, "
+        f"{len(color_space_paths)} color space examples "
+        f"(+ {len(color_paths)} PNG sheets, "
+        f"{len(colormap_paths)} PNG panels as fallback)"
     )
     return {
+        "colors_html": color_html_paths,
+        "colormaps_html": cmap_html_paths,
         "colors": color_paths,
         "colormaps": colormap_paths,
         "color_space": color_space_paths,

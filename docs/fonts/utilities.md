@@ -3,6 +3,9 @@
 dartwork-mpl provides helper functions and automatic font registration to
 simplify typography management in your visualizations.
 
+> **API signatures:** See [API Reference › Font Utilities](../api/font) for the
+> concise API listing and autodoc output.
+
 ## Automatic Font Registration
 
 When you import dartwork-mpl, all bundled fonts are automatically registered
@@ -35,23 +38,28 @@ No manual installation or system-level font configuration required.
 Adjusts font size relative to the current base size from `rcParams`.
 
 **Signature:**
+
 ```python
 dm.fs(n)
 ```
 
 **Parameters:**
+
 - `n` (int/float): Points to add to the base font size
 
 **Returns:**
+
 - `float`: The adjusted font size
 
 **How It Works:**
+
 ```python
 def fs(n):
     return plt.rcParams['font.size'] + n
 ```
 
 **Example:**
+
 ```python
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
@@ -85,23 +93,28 @@ ax.set_title("Title", fontsize=dm.fs(4))  # Always 4pt larger than base
 Adjusts font weight relative to the current base weight from `rcParams`.
 
 **Signature:**
+
 ```python
 dm.fw(n)
 ```
 
 **Parameters:**
+
 - `n` (int): Weight steps to add (each step = 100)
 
 **Returns:**
+
 - `int`: The adjusted font weight
 
 **How It Works:**
+
 ```python
 def fw(n):
     return plt.rcParams['font.weight'] + 100 * n
 ```
 
 **Example:**
+
 ```python
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
@@ -117,17 +130,17 @@ ax.text(0.5, 0.5, "Thin", fontweight=dm.fw(-2))    # 100 (Thin)
 
 **Weight Scale Reference:**
 
-| `fw()` Call | Result | Weight Name |
-|-------------|--------|-------------|
-| `fw(-2)` | 100 | Thin |
-| `fw(-1)` | 200 | ExtraLight |
-| `fw(0)` | 300 | Light (base) |
-| `fw(1)` | 400 | Regular |
-| `fw(2)` | 500 | Medium |
-| `fw(3)` | 600 | SemiBold |
-| `fw(4)` | 700 | Bold |
-| `fw(5)` | 800 | ExtraBold |
-| `fw(6)` | 900 | Black |
+| `fw()` Call | Result | Weight Name  |
+| ----------- | ------ | ------------ |
+| `fw(-2)`    | 100    | Thin         |
+| `fw(-1)`    | 200    | ExtraLight   |
+| `fw(0)`     | 300    | Light (base) |
+| `fw(1)`     | 400    | Regular      |
+| `fw(2)`     | 500    | Medium       |
+| `fw(3)`     | 600    | SemiBold     |
+| `fw(4)`     | 700    | Bold         |
+| `fw(5)`     | 800    | ExtraBold    |
+| `fw(6)`     | 900    | Black        |
 
 ---
 
@@ -136,19 +149,23 @@ ax.text(0.5, 0.5, "Thin", fontweight=dm.fw(-2))    # 100 (Thin)
 Generates a visual preview of all available fonts.
 
 **Signature:**
+
 ```python
-dm.plot_fonts(font_dir=None, ncols=3, font_size=11)
+dm.plot_fonts(font_dir=None, ncols=2, font_size=11)
 ```
 
 **Parameters:**
+
 - `font_dir` (str, optional): Directory containing `.ttf` files. Defaults to the bundled fonts.
-- `ncols` (int): Number of columns in the preview grid. Default: 3
+- `ncols` (int): Number of columns in the preview grid. Default: 2
 - `font_size` (int): Sample text size in points. Default: 11
 
 **Returns:**
+
 - `matplotlib.figure.Figure`: The preview figure
 
 **Example:**
+
 ```python
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt

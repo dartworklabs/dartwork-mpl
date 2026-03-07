@@ -59,8 +59,6 @@ body[data-theme="dark"] {
   padding: 0.1em 0.35em;
 }
 
-/* Furo sidebar styles removed */
-
 /* Flatten the Sphinx-Gallery download buttons to match Shibuya theme */
 .sphx-glr-download-python,
 .sphx-glr-download-jupyter,
@@ -217,4 +215,246 @@ main :is(h1, h2, h3)[id] {
   width: 100% !important;
   max-width: 100% !important;
   height: auto !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Color Palette Sheets — HTML/CSS native
+   ═══════════════════════════════════════════════════════════════════════ */
+.dm-color-sheet {
+  margin: 1.5em 0 2em;
+  padding: 1.5em;
+  background: #fbfaf7;
+  border: 1px solid #ebe9e2;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(24, 31, 41, 0.05);
+}
+
+html.dark .dm-color-sheet,
+body[data-theme="dark"] .dm-color-sheet {
+  background: #1a1a2e;
+  border-color: #2a2a3e;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+}
+
+.dm-sheet-title {
+  font-size: 1.1em;
+  font-weight: 700;
+  margin: 0 0 1em 0.2em;
+  padding-bottom: 0.5em;
+  border-bottom: 2px solid #e4e2dd;
+  color: #1a1a2e;
+}
+
+html.dark .dm-sheet-title,
+body[data-theme="dark"] .dm-sheet-title {
+  color: #e0e0e0;
+  border-bottom-color: #333;
+}
+
+.dm-color-group {
+  display: flex;
+  align-items: stretch;
+  margin-bottom: 4px;
+  gap: 0;
+}
+
+.dm-group-label {
+  min-width: 120px;
+  max-width: 120px;
+  display: flex;
+  align-items: center;
+  font-size: 0.78em;
+  font-weight: 600;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  color: #555;
+  padding-right: 8px;
+  flex-shrink: 0;
+}
+
+html.dark .dm-group-label,
+body[data-theme="dark"] .dm-group-label {
+  color: #aaa;
+}
+
+.dm-swatch-row {
+  display: flex;
+  flex: 1;
+  gap: 2px;
+}
+
+.dm-swatch {
+  flex: 1;
+  min-height: 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+  position: relative;
+}
+
+.dm-swatch:first-child {
+  border-radius: 6px 4px 4px 6px;
+}
+
+.dm-swatch:last-child {
+  border-radius: 4px 6px 6px 4px;
+}
+
+.dm-swatch:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+.dm-swatch-name {
+  font-size: 0.58em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  opacity: 0.9;
+}
+
+.dm-swatch-hex {
+  font-size: 0.52em;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  opacity: 0.75;
+}
+
+/* Section divider within a sheet */
+.dm-section-divider {
+  font-size: 0.72em;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 12px 0 6px 0.2em;
+  padding-top: 8px;
+  border-top: 1px solid #e4e2dd;
+}
+
+.dm-section-divider:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+html.dark .dm-section-divider,
+body[data-theme="dark"] .dm-section-divider {
+  color: #777;
+  border-top-color: #333;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Colormap Bars — CSS linear-gradient
+   ═══════════════════════════════════════════════════════════════════════ */
+.dm-cmap-panel {
+  margin: 1.5em 0 2em;
+  padding: 1.5em;
+  background: #fbfaf7;
+  border: 1px solid #ebe9e2;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(24, 31, 41, 0.05);
+}
+
+html.dark .dm-cmap-panel,
+body[data-theme="dark"] .dm-cmap-panel {
+  background: #1a1a2e;
+  border-color: #2a2a3e;
+}
+
+.dm-cmap-panel-title {
+  font-size: 1.1em;
+  font-weight: 700;
+  margin: 0 0 0.4em 0;
+  color: #1a1a2e;
+}
+
+html.dark .dm-cmap-panel-title,
+body[data-theme="dark"] .dm-cmap-panel-title {
+  color: #e0e0e0;
+}
+
+.dm-cmap-panel-desc {
+  font-size: 0.85em;
+  color: #555;
+  margin: 0 0 1em;
+}
+
+html.dark .dm-cmap-panel-desc,
+body[data-theme="dark"] .dm-cmap-panel-desc {
+  color: #aaa;
+}
+
+.dm-cmap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 700px) {
+  .dm-cmap-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dm-cmap-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dm-cmap-name {
+  font-size: 0.78em;
+  font-weight: 600;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: #1a1a2e;
+}
+
+html.dark .dm-cmap-name,
+body[data-theme="dark"] .dm-cmap-name {
+  color: #e0e0e0;
+}
+
+.dm-cmap-tag {
+  font-size: 0.65em;
+  font-weight: 600;
+  color: #03675f;
+  background: #e1f4f1;
+  border: 1px solid #b9e2dc;
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+}
+
+html.dark .dm-cmap-tag,
+body[data-theme="dark"] .dm-cmap-tag {
+  background: #0d2e2a;
+  border-color: #1a4a44;
+  color: #4ecabc;
+}
+
+.dm-cmap-bar {
+  height: 24px;
+  border-radius: 4px;
+}
+
+/* Responsive label width */
+@media (max-width: 700px) {
+  .dm-group-label {
+    min-width: 80px;
+    max-width: 80px;
+    font-size: 0.65em;
+  }
+  .dm-swatch-name {
+    font-size: 0.5em;
+  }
+  .dm-swatch-hex {
+    display: none;
+  }
 }
