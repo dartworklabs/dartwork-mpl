@@ -266,15 +266,18 @@ For more details, see the [AI-Assisted Development Guide](https://dartworklabs.g
 ```
 src/dartwork_mpl/
 ├── __init__.py         # Public API exports
+├── py.typed            # PEP 561 type marker
 ├── style.py            # Style class + preset management
 ├── color/              # Color class (OKLab/OKLCH/RGB/hex) + named palettes
-├── util.py             # Layout, scaling, I/O, annotation, prompt utilities
+├── util.py             # Scaling, I/O, prompt utilities
+├── layout.py           # Layout helpers (label_axes, arrow_axis, etc.)
+├── annotation.py       # Annotation helpers (set_decimal, make_offset)
 ├── validate.py         # Visual validation checks
 ├── constant.py         # Figure width constants (SW, DW)
 ├── icon.py             # Icon font system (MDI, Font Awesome)
 ├── font.py             # Font registration
 ├── cmap.py             # Custom colormap registration
-├── asset_viz.py        # Plot diagnostics (colormaps, colors, fonts)
+├── asset_viz/          # Plot diagnostics (colormaps, colors, fonts)
 ├── install.py          # LLM integration installer
 ├── cli.py              # CLI entry point
 ├── xplot/              # Extended plot templates
