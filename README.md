@@ -1,27 +1,33 @@
-# dartwork-mpl: matplotlib utilities and assets library engineered by dartwork
+# dartwork-mpl
 
-`dartwork-mpl` is a sophisticated utility collection designed to elevate `matplotlib` visuals to publication-level elegance with added convenience features. It is being developed to resolve personal inconveniences in visualization using matplotlib and to provide more intuitive customization especially to beginners.
+Enhanced matplotlib styling, color management, and utility library engineered by dartwork.
+
+`dartwork-mpl` is a utility collection designed to elevate matplotlib visuals to publication-level elegance. Instead of wrapping matplotlib with a new API layer, it provides **thin utilities** that enhance matplotlib's native capabilities while keeping you in full control.
+
 <br/>
 
 ## Features
 
-`dartwork-mpl` enriches plotting experience with:
+- **Style Presets**: Apply curated themes (`scientific`, `investment`, `presentation`) with one call.
+- **Advanced Color System**: Named color palettes (`oc.*`, `tw.*`, `md.*`, `ad.*`, `cu.*`, `pr.*`) plus a `Color` class supporting OKLab / OKLCH / RGB / hex color spaces with perceptual interpolation via `cspace()`.
+- **Smart Layout**: `simple_layout()` optimizes margins via L-BFGS-B optimization — a drop-in replacement for `tight_layout()`.
+- **Scaling Helpers**: Relative font size (`fs`), font weight (`fw`), and line width (`lw`) that respect the active style preset.
+- **Icon Fonts**: Built-in Material Design Icons (7,448+) and Font Awesome 6.
+- **Visual Validation**: Automatic detection of overflow, text overlap, legend overflow, tick crowding, and empty axes via `validate_figure()`.
+- **Extended Plots**: Ready-to-use plot templates like `plot_diverging_bar()`.
+- **Interactive Viewer**: FastAPI-powered web UI (`dartwork_mpl.ui`) for real-time parameter tuning.
+- **Multi-format Export**: Save figures in SVG, PNG, PDF, and EPS simultaneously.
+- **Prompt System**: Bundled prompt guides for AI coding assistants, with `get_prompt()` and `copy_prompt()`.
+- **MCP Server**: AI coding assistant integration via Model Context Protocol.
+- **LLM Integration**: Install usage guides to `.claude/` and `.cursor/` with `install_llm_txt()`.
 
-- **Enhanced Aesthetics**: Apply our curated themes to make your charts visually appealing.
-- **Easy Customization**: Effortlessly adjust plot styles to fit your publication's needs.
-- **Advanced Color System**: Use custom colors with simple prefixes (`oc.`, `tw.`) and extended Tailwind CSS palette.
-- **Icon Font System**: Built-in Material Design Icons (MDI) and Font Awesome 6 for data-rich visualizations.
-- **Streamlined Workflow**: Simplify your plotting code with our intuitive interface, saving time and reducing complexity.
-- **Publication-Ready Layout**: Automatic layout optimization with `simple_layout()` for professional results.
-  <br/>
+<br/>
 
 ## Getting Started
 
 ### Installation
 
 #### Using uv (Recommended)
-
-[uv](https://github.com/astral-sh/uv) is a fast Python package installer and resolver. To install `dartwork-mpl` with uv:
 
 ```shell
 # Add to your project
@@ -39,121 +45,168 @@ pip install git+https://github.com/dartworklabs/dartwork-mpl
 
 ### Quick Start
 
-After installation, import and apply a style preset:
-
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
-# Apply scientific publication style
-dm.style.use('scientific')
+# Apply a style preset
+dm.style.use('scientific')        # for papers
+dm.style.use('scientific-kr')     # with Korean font support
 
-# For Korean text support
-dm.style.use('scientific-kr')
-```
-
-<br/>
-
-## Core Features
-
-### Style Management
-
-- **Preset Styles**: Ready-to-use presets for scientific papers, presentations, and reports
-- **Flexible Customization**: Combine individual styles for fine-grained control
-- **Korean Language Support**: Built-in Korean font support with `-kr` presets
-
-### Color System
-
-- **dartwork-mpl Colors**: Custom color palette with `oc.red5`, `oc.blue2`, etc.
-- **Tailwind CSS Integration**: Full Tailwind palette with `tw.blue500`, `tw.gray200`, etc.
-- **Color Utilities**: Mix colors and apply pseudo-transparency
-
-### Layout & Utilities
-
-- **Smart Layout Optimization**: `simple_layout()` replaces `tight_layout()` with better control
-- **Unit Conversion**: `cm2in()` for precise figure sizing
-- **Multi-format Export**: Save figures in SVG, PNG, PDF, and EPS simultaneously
-- **Font Utilities**: Relative font size (`fs()`) and weight (`fw()`) adjustments
-
-### Icon Font System
-
-- **Material Design Icons (MDI)**: 7,448+ icons built-in as the default icon library
-- **Font Awesome 6**: Solid, Regular, and Brands variants included as fallback
-- **Simple API**: `icon_font('mdi')` returns a ready-to-use `FontProperties` object
-- **Path Access**: `icon_font_path('mdi')` for direct file path when needed
-
-### Visualization Tools
-
-- **Colormap Explorer**: Preview and classify colormaps by type
-- **Color Palette Viewer**: Display all available colors with names
-- **Font Gallery**: Preview available fonts
-
-<br/>
-
-## Example Usage
-
-```python
-import numpy as np
-import matplotlib.pyplot as plt
-import dartwork_mpl as dm
-
-# Set style
-dm.style.use('scientific')
-
-# Create figure with precise sizing (single-column paper figure)
-fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(7)), dpi=200)
-
-# Set up layout
-gs = fig.add_gridspec(nrows=1, ncols=1,
-                      left=0.17, right=0.95,
-                      top=0.95, bottom=0.17)
-ax = fig.add_subplot(gs[0, 0])
-
-# Plot with custom colors
-x = np.linspace(0, 10, 100)
-ax.plot(x, np.sin(x), c='oc.red5', lw=0.7, label='Sin')
-ax.plot(x, np.cos(x), c='tw.blue500', lw=0.7, label='Cos')
-
-# Customize
-ax.set_xlabel('X value')
-ax.set_ylabel('Y value')
-ax.legend(fontsize=dm.fs(-1))
+# Create a figure
+fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(7)), dpi=300)
+ax.plot(x, y, color='oc.blue5', lw=dm.lw(0))
+ax.set_xlabel('Time [s]', fontsize=dm.fs(0))
 
 # Optimize layout and save
 dm.simple_layout(fig)
-dm.save_and_show(fig)  # Display in Jupyter
-
-# Export in multiple formats
-dm.save_formats(fig, 'output/figure',
-                formats=('svg', 'png', 'pdf', 'eps'),
-                dpi=600)
+dm.save_formats(fig, 'output/figure', formats=('svg', 'png'), dpi=300)
 ```
 
 <br/>
 
-## Documentation
+## Core Modules
 
-📚 **[Full Documentation](https://dartworklabs.github.io/dartwork-mpl/)** - Complete Sphinx documentation with:
+### Style Management
 
-- **[Usage Guide](https://dartworklabs.github.io/dartwork-mpl/DARTWORK_MPL_USAGE_GUIDE.html)** - Comprehensive guide to all features
-- **[Example Gallery](https://dartworklabs.github.io/dartwork-mpl/gallery/index.html)** - Interactive examples with code and plots
-- **[Color System](https://dartworklabs.github.io/dartwork-mpl/COLOR_SYSTEM.html)** - Full-width Colors and Colormaps reference
-- **[API Reference](https://dartworklabs.github.io/dartwork-mpl/API_REFERENCE.html)** - Detailed API documentation
+Ready-to-use presets with `style.use()`, or stack individual styles for fine-grained control with `style.stack()`.
 
-<br/>
+```python
+dm.style.use('scientific')                     # apply preset
+dm.style.stack(['base', 'font-scientific', 'lang-kr'])  # stack custom
+dm.list_styles()                               # list available .mplstyle files
+dm.load_style_dict('font-presentation')        # inspect style params
+```
 
-## Example Gallery
+### Color System
 
-Explore our comprehensive [example gallery](https://dartworklabs.github.io/dartwork-mpl/gallery/index.html) featuring:
+#### Named Colors
 
-- **Basic Usage** - Getting started with dartwork-mpl
-- **Color System** - Custom colors and Tailwind CSS integration
-- **Layout Optimization** - Advanced layout control with `simple_layout()`
-- **Scientific Figures** - Multi-panel publication-ready plots
-- **Statistical Plots** - Probability density, violin, and box plots
-- **Advanced Visualizations** - Heatmaps, contours, streamplots, and 3D plots
+Importing `dartwork_mpl` registers palettes with `oc.*`, `tw.*`, `md.*`, `ad.*`, `cu.*`, `pr.*` prefixes:
 
-Each example includes complete source code and rendered output.
+```python
+ax.plot(x, y, color='oc.blue5')       # Open Color
+ax.bar(x, y, color='tw.emerald500')   # Tailwind CSS
+lighter = dm.mix_colors('oc.blue5', 'white', alpha=0.35)
+muted = dm.pseudo_alpha('oc.blue7', alpha=0.6)
+```
+
+#### Color Class
+
+The `Color` class provides perceptually uniform color manipulation across OKLab, OKLCH, RGB, and hex:
+
+```python
+# Create from any color space
+color = dm.oklch(0.7, 0.15, 150)      # L, C, h (degrees)
+color = dm.rgb(66, 133, 244)          # auto-detects 0-255 range
+color = dm.hex('#4285F4')
+color = dm.named('oc.blue5')
+
+# Read/write via views (mutable references)
+color.oklch.C *= 1.2                  # boost chroma
+r, g, b = color.rgb                   # unpack RGB
+
+# Perceptual interpolation
+palette = dm.cspace('#FF0000', '#0000FF', n=5, space='oklch')
+```
+
+### Layout & Annotation
+
+```python
+dm.simple_layout(fig)                   # L-BFGS-B margin optimization
+dm.label_axes(axes)                     # add (a), (b), (c) panel labels
+dm.arrow_axis(ax, 'x', 'Cost')         # Low ◄── Cost ──► High
+dm.set_decimal(ax, xn=2, yn=1)         # format tick decimals
+offset = dm.make_offset(4, -4, fig)    # point-based translation
+```
+
+### Scaling Helpers
+
+```python
+dm.fs(2)     # base font size + 2pt
+dm.fw(1)     # base font weight + 100
+dm.lw(-0.3)  # base line width - 0.3
+dm.cm2in(9)  # centimeters → inches
+```
+
+### Figure Constants
+
+```python
+dm.SW  # single-column width (9 cm → inches)
+dm.DW  # double-column width (17 cm → inches)
+```
+
+### Visual Validation
+
+Automatic detection of rendering issues invisible in stdout-only environments (e.g., AI agent pipelines):
+
+```python
+warnings = dm.validate_figure(fig)
+# Checks: overflow, overlap, legend_overflow, tick_crowding, empty_axes
+# Integrated into save_formats() by default
+```
+
+### Icon Font System
+
+```python
+mdi = dm.icon_font('mdi')              # Material Design Icons
+fa  = dm.icon_font('fa-solid')         # Font Awesome 6 Solid
+ax.text(0.5, 0.5, "\U000F050F", fontproperties=mdi, fontsize=20)
+dm.list_icon_fonts()                   # ['fa-brands', 'fa-regular', 'fa-solid', 'mdi']
+```
+
+### File I/O & Prompts
+
+```python
+dm.save_formats(fig, 'output/fig', formats=('png', 'svg', 'pdf'), dpi=300)
+dm.save_and_show(fig, size=720)        # save + inline preview
+
+# Prompt guides for AI assistants
+dm.list_prompts()                      # available guides
+dm.get_prompt('layout-guide')          # read guide content
+dm.copy_prompt('layout-guide', '.cursor/rules/')
+```
+
+### Extended Plots (xplot)
+
+Ready-to-use specialized visualization templates:
+
+```python
+from dartwork_mpl.xplot import plot_diverging_bar
+
+fig, ax = plot_diverging_bar(
+    categories=['A', 'B', 'C'],
+    negatives=[-30, -15, -25],
+    positives=[40, 55, 35],
+)
+```
+
+### Interactive Viewer (UI)
+
+FastAPI-powered web UI for real-time parameter tuning:
+
+```python
+from dartwork_mpl.ui import ParamModel, run
+from pydantic import Field
+
+class Params(ParamModel):
+    n: int = Field(default=100, ge=10, le=1000)
+    alpha: float = Field(default=0.5, ge=0, le=1)
+
+def my_plot(params: Params):
+    fig, ax = plt.subplots()
+    ax.scatter(range(params.n), np.random.randn(params.n), alpha=params.alpha)
+    return fig
+
+run(my_plot)  # opens browser at localhost:8501
+```
+
+### LLM Integration
+
+```python
+dm.install_llm_txt()      # install usage guides to .claude/ and .cursor/
+dm.uninstall_llm_txt()    # remove installed guides
+```
 
 <br/>
 
@@ -168,39 +221,26 @@ Each example includes complete source code and rendered output.
 | `presentation-kr` | Presentation style with Korean support |
 | `investment-kr`   | Investment style with Korean support   |
 
-### Icon Fonts
+<br/>
 
-```python
-import dartwork_mpl as dm
+## Documentation
 
-# Load icon font (returns FontProperties)
-mdi = dm.icon_font('mdi')          # Material Design Icons (default)
-fa  = dm.icon_font('fa-solid')     # Font Awesome 6 Solid
+📚 **[Full Documentation](https://dartworklabs.github.io/dartwork-mpl/)** — Sphinx docs with:
 
-# Render icon in a plot
-ax.text(0.5, 0.5, "\U000F050F",    # MDI: thermometer
-        fontproperties=mdi, fontsize=20)
-
-# List available icon fonts
-dm.list_icon_fonts()  # ['fa-brands', 'fa-regular', 'fa-solid', 'mdi']
-```
+- **[Installation](https://dartworklabs.github.io/dartwork-mpl/installation/index.html)** — Setup guide
+- **[Design Philosophy](https://dartworklabs.github.io/dartwork-mpl/philosophy/index.html)** — Why thin utilities, not wrappers
+- **[Usage Guide](https://dartworklabs.github.io/dartwork-mpl/usage_guide/index.html)** — Workflows and patterns
+- **[Color System](https://dartworklabs.github.io/dartwork-mpl/color_system/index.html)** — Colors and colormaps reference
+- **[API Reference](https://dartworklabs.github.io/dartwork-mpl/api/index.html)** — Function-level docs
+- **[Example Gallery](https://dartworklabs.github.io/dartwork-mpl/examples_gallery/index.html)** — Interactive examples
 
 <br/>
 
 ## AI-Assisted Development
 
-dartwork-mpl provides an **MCP (Model Context Protocol) server** that enables AI coding assistants like Cursor, GitHub Copilot, and Claude Code to automatically access the latest dartwork-mpl documentation and guidelines.
+dartwork-mpl provides an **MCP (Model Context Protocol) server** that enables AI coding assistants to automatically access documentation and guidelines.
 
-### Why Use MCP?
-
-- **Automatic access**: AI assistants can directly access the latest dartwork-mpl documentation
-- **No manual updates**: Documentation updates are automatically available to your AI assistant
-- **Seamless integration**: Works seamlessly with Cursor and other MCP-compatible AI assistants
-- **Always up-to-date**: Your AI assistant always has access to the latest library information
-
-### Setup Instructions
-
-To use dartwork-mpl's MCP server with Cursor, add the following configuration to your MCP settings file:
+### MCP Setup
 
 ```json
 {
@@ -217,12 +257,34 @@ To use dartwork-mpl's MCP server with Cursor, add the following configuration to
 }
 ```
 
-After adding this configuration, your AI assistant will have automatic access to dartwork-mpl's documentation and guidelines.
+For more details, see the [AI-Assisted Development Guide](https://dartworklabs.github.io/dartwork-mpl/usage_guide/ai_assisted.html).
 
-For more details on AI-assisted development best practices, see the [AI-Assisted Development Guide](https://dartworklabs.github.io/dartwork-mpl/usage_guide/ai_assisted.html).
+<br/>
+
+## Project Structure
+
+```
+src/dartwork_mpl/
+├── __init__.py         # Public API exports
+├── style.py            # Style class + preset management
+├── color/              # Color class (OKLab/OKLCH/RGB/hex) + named palettes
+├── util.py             # Layout, scaling, I/O, annotation, prompt utilities
+├── validate.py         # Visual validation checks
+├── constant.py         # Figure width constants (SW, DW)
+├── icon.py             # Icon font system (MDI, Font Awesome)
+├── font.py             # Font registration
+├── cmap.py             # Custom colormap registration
+├── asset_viz.py        # Plot diagnostics (colormaps, colors, fonts)
+├── install.py          # LLM integration installer
+├── cli.py              # CLI entry point
+├── xplot/              # Extended plot templates
+├── ui/                 # Interactive FastAPI viewer
+├── mcp/                # MCP server for AI assistants
+└── asset/              # Bundled styles, colors, fonts, icons, prompts
+```
 
 <br/>
 
 ## Reporting Issues
 
-Encountered a bug or have a feature request? Please open an issue through our [GitHub issue tracker](https://github.com/dartworklabs/dartwork-mpl/issues). We appreciate your feedback and contributions.
+Encountered a bug or have a feature request? Please open an issue through our [GitHub issue tracker](https://github.com/dartworklabs/dartwork-mpl/issues).
