@@ -28,6 +28,10 @@ docs/images/*.png
 htmlcov/
 *.log
 .env
+
+# Jupyter notebooks — use examples/ .py scripts instead
+*.ipynb
+.ipynb_checkpoints/
 .venv/
 venv/
 *.swp
