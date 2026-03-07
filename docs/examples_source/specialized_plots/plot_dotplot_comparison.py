@@ -108,7 +108,7 @@ legend_elements = [
     Line2D([0], [0], marker="o", color="w", label="Successfully transformed",
            markerfacecolor=pal.success, ms=8),
 ]
-ax.legend(handles=legend_elements, loc="upper right", bbox_to_anchor=(1, 1.12),
+ax.legend(handles=legend_elements, loc="lower left", bbox_to_anchor=(0, 1.02),
           ncol=2, frameon=False, fontsize=dm.fs(-1), columnspacing=1.5)
 
 dm.simple_layout(fig, margins=(0.1, 0.05, 0.1, 0.15))

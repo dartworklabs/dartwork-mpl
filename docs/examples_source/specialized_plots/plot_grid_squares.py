@@ -148,6 +148,7 @@ for c, label in enumerate(col_labels):
 
 ax.set_xlim(0, ncols * cell_w)
 ax.set_ylim(-0.3, nrows * cell_h + 0.8)
+ax.set_aspect("equal")
 ax.axis("off")
 ax.set_title(
     "US employee sentiment on gen AI, by age group", fontsize=dm.fs(1), pad=20

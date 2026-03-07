@@ -45,7 +45,7 @@ def plot_example(title=""):
 # %%
 # Base style only
 # ---------------
-dm.style.use("base")
+dm.style.stack(["base"])
 plot_example("Base Style")
 plt.show()
 
