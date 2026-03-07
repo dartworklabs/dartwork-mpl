@@ -204,21 +204,9 @@ def mix_colors(color1, color2, alpha=0.5):
     return tuple(alpha * a + (1 - alpha) * b for a, b in zip(c1, c2))
 ```
 
-### Future: Pure matplotlib Export
-
-We plan to add a feature that converts dartwork-mpl enhanced code back to pure matplotlib:
-
-```python
-# Your code with dartwork-mpl
-fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(7)))
-ax.plot(x, y, color='oc.red5')
-dm.simple_layout(fig)
-
-# Exported pure matplotlib (planned feature)
-fig = plt.figure(figsize=(3.543, 2.756))  # cm2in(9), cm2in(7)
-ax.plot(x, y, color='#ff6b6b')  # oc.red5 resolved
-fig.subplots_adjust(left=0.15, right=0.95, ...)  # layout values baked in
-```
+> **Roadmap:** We plan to add a pure-matplotlib export feature that resolves
+> dartwork-mpl utilities (color names, `cm2in` values) into standard matplotlib
+> code, so you can completely remove the dependency when needed.
 
 ---
 
@@ -384,36 +372,8 @@ When something doesn't work as expected, you can:
 
 ## Summary
 
-This document covered the following topics:
-
-**The Problem with Wrapper Libraries**
-
-- Additional abstraction layers require understanding both the wrapper's API and matplotlib's API
-- Diminishing returns as customization needs increase
-- AI coding agents face challenges due to limited training data for less popular libraries
-- Dependency concerns: maintenance, version compatibility, debugging complexity
-
-**Why matplotlib Directly**
-
-- Predictable behavior and low-level control over every element
-- Extensive documentation, community resources, and stable API
-- Agent-friendly code that AI can generate and modify reliably
-
-**The shadcn/ui Approach**
-
-- Ownable code: utilities can be copied into your project and modified freely
-- Copy-paste ready: each utility works independently
-- Future plan: pure matplotlib export feature
-
-**Design Principles**
-
-- Thin and Simple: avoid over-engineered abstractions
-- Minimal Inter-Module Dependencies: each utility works without importing others
-- Clarity Over Extensibility: prioritize readable code over edge case handling
-- Utilities, Not Wrappers: enhance matplotlib rather than replace it
-
-**dartwork-mpl in Practice**
-
-- Your code remains fundamentally matplotlib code
-- Minimal learning curve: a few utility functions and color name extensions
-- Designed for modern AI-assisted development workflows
+dartwork-mpl is a library you can adopt incrementally and leave at any time.
+You keep writing standard matplotlib — we just supply curated styles, named
+colors, and a handful of utilities that are simple enough to copy into your
+project. This approach works for human developers who want full control and for
+AI coding agents that perform best with familiar APIs.

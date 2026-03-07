@@ -213,48 +213,6 @@ print(mcp.name)   # → "dartwork-mpl"
 print(mcp)        # FastMCP instance info
 ```
 
-### Unit tests
-
-```bash
-uv run pytest tests/test_mcp.py -v
-```
-
-All 7 tests should pass:
-
-```text
-tests/test_mcp.py::TestMcpServer::test_mcp_instance_is_fastmcp      PASSED
-tests/test_mcp.py::TestMcpServer::test_mcp_server_name               PASSED
-tests/test_mcp.py::TestMcpResources::test_register_resources_no_error PASSED
-tests/test_mcp.py::TestMcpResources::test_register_resources_calls_resource_decorator PASSED
-tests/test_mcp.py::TestMcpTools::test_register_tools_no_error         PASSED
-tests/test_mcp.py::TestMcpTools::test_register_tools_calls_tool_decorator PASSED
-tests/test_mcp.py::TestMcpPackage::test_mcp_package_exports           PASSED
-```
-
----
-
-## Architecture
-
-```text
-dartwork_mpl/
-├── mcp/
-│   ├── __init__.py      # Exports the ``mcp`` FastMCP instance
-│   ├── server.py        # Creates + wires the FastMCP server
-│   ├── resources.py     # Registers guide resources
-│   └── tools.py         # Registers helper tools
-├── cli.py               # ``dartwork-mpl-mcp`` entry point
-└── asset/prompt/
-    ├── general-guide.md  # General usage guide (~390 lines)
-    └── layout-guide.md   # Layout deep-dive (~1 150 lines)
-```
-
-- **server.py** instantiates `FastMCP("dartwork-mpl")` and calls `register_resources()` / `register_tools()`.
-- **resources.py** reads bundled Markdown guides via `dartwork_mpl.prompt.get_prompt()` and exposes them as MCP resources under the `dartwork-mpl://guide/` URI scheme.
-- **tools.py** registers callable tools (currently `fetch_github_document`).
-- **cli.py** simply calls `mcp.run()` — used by the `dartwork-mpl-mcp` console script.
-
----
-
 ## Troubleshooting
 
 | Symptom                                     | Fix                                                                                                          |
