@@ -6,6 +6,8 @@ in scientific publications and presentations.
 
 from .util import cm2in
 
+__all__ = ["DW", "SW"]
+
 # Single column figure width.
 SW: float = cm2in(9)
 

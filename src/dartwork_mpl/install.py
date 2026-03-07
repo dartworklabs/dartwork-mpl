@@ -6,6 +6,8 @@ guides for various IDE integrations and LLM assistants.
 
 from pathlib import Path
 
+__all__ = ["install_llm_txt", "uninstall_llm_txt"]
+
 
 def install_llm_txt(project_dir: str | Path | None = None) -> None:
     """

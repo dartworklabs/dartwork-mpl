@@ -9,6 +9,8 @@ from pathlib import Path
 import matplotlib as mpl
 import matplotlib.colors as mcolors
 
+__all__ = ["ensure_loaded"]
+
 
 def _parse_colormap(
     path: str | Path, reverse: bool = False

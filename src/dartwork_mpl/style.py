@@ -9,6 +9,14 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+__all__ = [
+    "Style",
+    "style",
+    "style_path",
+    "list_styles",
+    "load_style_dict",
+]
+
 
 def style_path(name: str) -> Path:
     """

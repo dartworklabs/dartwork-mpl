@@ -25,6 +25,8 @@ if TYPE_CHECKING:
 
 
 # ───────────────────────────────────────────────────────
+__all__ = ["validate_figure", "VisualWarning", "Severity"]
+
 # Data structures
 # ───────────────────────────────────────────────────────
 

@@ -8,6 +8,8 @@ from pathlib import Path
 
 from matplotlib import font_manager
 
+__all__ = ["ensure_loaded"]
+
 
 def _add_fonts() -> None:
     """
