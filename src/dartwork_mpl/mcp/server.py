@@ -10,6 +10,8 @@ from fastmcp import FastMCP
 from .resources import register_resources
 from .tools import register_tools
 
+__all__ = ["mcp"]
+
 # Create the MCP server instance
 mcp = FastMCP("dartwork-mpl")
 

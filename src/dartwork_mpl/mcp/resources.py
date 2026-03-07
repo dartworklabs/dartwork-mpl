@@ -8,6 +8,8 @@ from fastmcp import FastMCP
 
 from ..util import get_prompt
 
+__all__ = ["register_resources"]
+
 
 def register_resources(mcp: FastMCP) -> None:
     """

@@ -5,6 +5,8 @@ This module provides a command-line entry point for running the
 dartwork-mpl Model Context Protocol server.
 """
 
+__all__ = ["main"]
+
 from .mcp.server import mcp
 
 

@@ -6,6 +6,8 @@ for accessing dartwork-mpl documentation and resources.
 
 from fastmcp import FastMCP
 
+__all__ = ["register_tools"]
+
 
 def register_tools(mcp: FastMCP) -> None:
     """
