@@ -26,7 +26,7 @@ Repository = "https://github.com/dartworklabs/dartwork-mpl"
 Issues = "https://github.com/dartworklabs/dartwork-mpl/issues"
 
 [project.scripts]
-mcp = "dartwork_mpl.cli:main"
+dartwork-mpl-mcp = "dartwork_mpl.cli:main"
 ui = "dartwork_mpl.ui.__main__:main"
 
 [project.optional-dependencies]
