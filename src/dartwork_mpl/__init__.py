@@ -6,11 +6,12 @@ functions for matplotlib visualizations.
 
 __version__ = "0.1.1"
 
-# Import cmap, font, and icon modules for explicit access
+# Import cmap, font, icon, and xplot modules for explicit access
 from . import (
     cmap,  # noqa: F401
     font,  # noqa: F401
     icon,  # noqa: F401
+    xplot,  # noqa: F401
 )
 
 # Import asset_viz module exports
@@ -46,6 +47,9 @@ from .io import save_and_show, save_formats, show
 
 # Axes annotation
 from .annotation import arrow_axis, label_axes
+
+# Extended plot functions
+from .xplot import plot_diverging_bar
 
 # Prompt utilities
 from .prompt import copy_prompt, get_prompt, list_prompts, prompt_path
@@ -108,4 +112,6 @@ __all__ = [
     "copy_prompt",
     # Validation
     "validate_figure",
+    # Extended plots
+    "plot_diverging_bar",
 ]
