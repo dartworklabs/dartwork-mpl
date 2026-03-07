@@ -15,18 +15,7 @@ from xml.dom import minidom
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
-
-def _create_parent_path_if_not_exists(path: str | Path) -> None:
-    """Create parent directory if it doesn't exist.
-
-    Parameters
-    ----------
-    path : str or Path
-        Path to check and create parent directory for.
-    """
-    path = Path(path)
-    if not path.parent.exists():
-        path.parent.mkdir(parents=True)
+from ._helpers import create_parent_path
 
 
 def save_formats(
@@ -60,7 +49,7 @@ def save_formats(
 
         validate_figure(fig)
 
-    _create_parent_path_if_not_exists(image_stem)
+    create_parent_path(image_stem)
     for fmt in formats:
         fig.savefig(f"{image_stem}.{fmt}", bbox_inches=bbox_inches, **kwargs)
 
@@ -156,7 +145,7 @@ def save_and_show(
         finally:
             Path(tmp_path).unlink(missing_ok=True)
     else:
-        _create_parent_path_if_not_exists(image_path)
+        create_parent_path(image_path)
         fig.savefig(image_path, bbox_inches=None, **kwargs)
         plt.close(fig)
         show(image_path, size=size, unit=unit)

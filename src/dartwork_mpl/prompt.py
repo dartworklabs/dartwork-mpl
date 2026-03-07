@@ -11,12 +11,7 @@ __all__ = ["prompt_path", "get_prompt", "list_prompts", "copy_prompt"]
 from pathlib import Path
 from shutil import copy2
 
-
-def _create_parent_path_if_not_exists(path: str | Path) -> None:
-    """Create parent directory if it doesn't exist."""
-    path = Path(path)
-    if not path.parent.exists():
-        path.parent.mkdir(parents=True)
+from ._helpers import create_parent_path
 
 
 def prompt_path(name: str) -> Path:
@@ -102,7 +97,7 @@ def copy_prompt(name: str, destination: str | Path) -> Path:
     if dest_path.is_dir() or (not dest_path.exists() and not dest_path.suffix):
         dest_path = dest_path / f"{name}.md"
 
-    _create_parent_path_if_not_exists(dest_path)
+    create_parent_path(dest_path)
     copy2(source_path, dest_path)
 
     return dest_path
