@@ -17,8 +17,8 @@ project = "dartwork-mpl"
 copyright = "2025 Dartwork"
 author = " Sangwon Lee, Wonjun Choi"
 
-version = "0.1.1"
-release = "0.1.1"
+version = "0.2.0"
+release = "0.2.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -110,11 +110,8 @@ sphinx_gallery_conf = {
     "show_signature": False,
     "remove_config_comments": True,
     "image_scrapers": ("matplotlib",),
-    "matplotlib_animations": False,
+    "image_srcset": ["2x"],
 }
-
-# Gallery image format: SVG for crisp vector output on web
-plot_formats = [("svg", 200)]
 
 # -- MyST Parser configuration -----------------------------------------------
 myst_enable_extensions = ["colon_fence", "deflist"]

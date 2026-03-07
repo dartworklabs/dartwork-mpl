@@ -4,7 +4,7 @@ This package provides enhanced styling, color management, and utility
 functions for matplotlib visualizations.
 """
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
 # Import cmap, font, icon, and xplot modules for explicit access
 from . import (
