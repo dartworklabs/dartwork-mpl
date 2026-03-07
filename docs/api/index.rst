@@ -22,3 +22,4 @@ in plain language plus defaults that work in most cases.
    Interactive Viewer <ui>
    Figure Constants <constant>
    LLM Integration <install>
+   MCP Server <mcp>
