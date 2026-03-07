@@ -1,5 +1,5 @@
 Interactive Viewer (UI)
-======================
+=======================
 
 A FastAPI-powered web UI that auto-generates parameter controls from
 function signatures or Pydantic models and renders matplotlib figures

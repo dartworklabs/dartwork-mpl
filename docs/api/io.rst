@@ -18,6 +18,7 @@ Save & Display
      - ``validate``: if ``True`` (default), runs ``validate_figure()`` before saving
        and prints ``[VISUAL]`` warnings to stdout.
      - ``**kwargs``: any extra arguments passed to ``savefig``.
+
    - Returns:
      - ``None`` after writing one file per requested format.
 

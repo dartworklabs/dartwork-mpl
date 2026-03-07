@@ -158,7 +158,7 @@ ax.text(
     weight=dm.fw(1),
 )
 
-ax.set_xlim(left_x - 0.2, right_x + bar_width + label_offset + 0.2)
+ax.set_xlim(left_x - 0.05, right_x + bar_width + label_offset + 0.5)
 ax.set_ylim(-6, max(left_total, right_total) * 1.05)
 ax.axis("off")
 

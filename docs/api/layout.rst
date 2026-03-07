@@ -53,6 +53,7 @@ and ``set_decimal``/``get_bounding_box`` provide quick helpers when formatting a
        a y-label, ``-0.02`` otherwise.
      - ``y``: y position in axes coordinates.  Default ``1.05``.
      - ``**kwargs``: forwarded to ``ax.text()``.
+
    - Returns:
      - list of ``Text`` objects.
 

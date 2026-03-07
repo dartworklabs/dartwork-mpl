@@ -111,7 +111,7 @@ fig_w = 2.5 + ncols * cell_w + 0.5
 fig_h = ncols * 0.3 + nrows * cell_h + 0.5
 
 fig, ax = plt.subplots(
-    figsize=(dm.cm2in(fig_w * 2.5), dm.cm2in(fig_h * 2.5)), dpi=300
+    figsize=(dm.cm2in(fig_w * 2.0), dm.cm2in(fig_h * 2.0)), dpi=300
 )
 
 for r in range(nrows):

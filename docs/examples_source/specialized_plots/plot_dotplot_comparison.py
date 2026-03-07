@@ -100,7 +100,7 @@ for sp in ax.spines.values():
 
 # Title and legend
 fig.suptitle("AI Adoption Gap: AI-First vs. Traditional Companies",
-             fontsize=dm.fs(2), fontweight=dm.fw(1), x=lo.left, ha="left", y=0.98)
+             fontsize=dm.fs(2), fontweight=dm.fw(1), x=0.5, ha="center", y=1.05)
 
 legend_elements = [
     Line2D([0], [0], marker="o", color="w", label="Other organizations",

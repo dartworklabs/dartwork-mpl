@@ -4,14 +4,14 @@ dartwork-mpl takes a fundamentally different approach from typical visualization
 
 This document explains the reasoning behind this design and how it benefits both human developers and AI coding agents.
 
-### Core Ideas
+## Core Ideas
 
-| Traditional Wrappers | dartwork-mpl |
-|---------------------|--------------|
-| New API to learn | matplotlib API + thin utilities |
-| Hidden transformations | Transparent operations |
-| Dependency on library internals | Copy-paste ready code |
-| AI agents struggle with unfamiliar APIs | AI agents work efficiently with familiar matplotlib |
+| Traditional Wrappers                     | dartwork-mpl                                         |
+| ---------------------------------------- | ---------------------------------------------------- |
+| New API to learn                         | matplotlib API + thin utilities                      |
+| Hidden transformations                   | Transparent operations                               |
+| Dependency on library internals          | Copy-paste ready code                                |
+| AI agents struggle with unfamiliar APIs  | AI agents work efficiently with familiar matplotlib  |
 | "What does this function do internally?" | "I can read and understand the source in 30 seconds" |
 
 Our goal is simple: matplotlib knowledge combined with minimal dartwork-mpl familiarity should be enough to create publication-quality visualizations with efficient AI assistance.
@@ -160,22 +160,23 @@ def simple_layout(
 ) -> OptimizeResult:
     """
     Optimize figure layout by adjusting GridSpec parameters.
-    
+
     Uses scipy.optimize.minimize to find optimal margins.
     """
     if gs is None:
         gs = fig.axes[0].get_gridspec()
-    
+
     def objective(x):
         gs.update(left=x[0], right=x[1], bottom=x[2], top=x[3])
         # Calculate bounding box and compare with targets
         ...
-    
+
     result = minimize(objective, x0=initial_guess, bounds=bounds)
     return result
 ```
 
 This function:
+
 - Uses only standard libraries (scipy, matplotlib)
 - Has no dartwork-mpl internal dependencies
 - Can be copied directly into your project and modified
@@ -238,7 +239,7 @@ class UnitConverter:
         self.source = source_unit
         self.target = target_unit
         self.precision = precision
-    
+
     def convert(self, value):
         # ... complex conversion logic
         pass
@@ -267,7 +268,7 @@ def fs(n: int | float) -> float:
     return plt.rcParams["font.size"] + n
 
 # Not this: extensible but complex
-def font_size(delta=0, unit='pt', relative_to='base', 
+def font_size(delta=0, unit='pt', relative_to='base',
               min_size=None, max_size=None, scale_factor=1.0):
     # ... 50 lines of handling edge cases
     pass
@@ -346,11 +347,12 @@ dartwork-mpl is designed for modern AI-assisted development workflows:
 **Context prompts over predefined functions**: Instead of memorizing a library of specialized plot functions, you can describe what you want to an AI coding agent:
 
 ```
-"Create a publication-quality line plot with two y-axes, 
+"Create a publication-quality line plot with two y-axes,
 use dartwork-mpl's scientific style, and optimize the layout"
 ```
 
 The agent can generate correct code because:
+
 - The underlying matplotlib API is well-known
 - dartwork-mpl utilities are simple and well-documented
 - There are no hidden behaviors to account for
@@ -361,7 +363,7 @@ The agent can generate correct code because:
 # AI agents can reliably generate this because it's standard matplotlib
 fig, ax = plt.subplots(figsize=(dm.cm2in(12), dm.cm2in(8)))
 ax.plot(data['x'], data['y'], color='oc.blue5', label='Measurement')
-ax.fill_between(data['x'], data['y_low'], data['y_high'], 
+ax.fill_between(data['x'], data['y_low'], data['y_high'],
                 color='oc.blue2', alpha=0.3, label='Confidence')
 ax.set_xlabel('Time [hours]')
 ax.set_ylabel('Temperature [°C]')
@@ -385,29 +387,33 @@ When something doesn't work as expected, you can:
 This document covered the following topics:
 
 **The Problem with Wrapper Libraries**
+
 - Additional abstraction layers require understanding both the wrapper's API and matplotlib's API
 - Diminishing returns as customization needs increase
 - AI coding agents face challenges due to limited training data for less popular libraries
 - Dependency concerns: maintenance, version compatibility, debugging complexity
 
 **Why matplotlib Directly**
+
 - Predictable behavior and low-level control over every element
 - Extensive documentation, community resources, and stable API
 - Agent-friendly code that AI can generate and modify reliably
 
 **The shadcn/ui Approach**
+
 - Ownable code: utilities can be copied into your project and modified freely
 - Copy-paste ready: each utility works independently
 - Future plan: pure matplotlib export feature
 
 **Design Principles**
+
 - Thin and Simple: avoid over-engineered abstractions
 - Minimal Inter-Module Dependencies: each utility works without importing others
 - Clarity Over Extensibility: prioritize readable code over edge case handling
 - Utilities, Not Wrappers: enhance matplotlib rather than replace it
 
 **dartwork-mpl in Practice**
+
 - Your code remains fundamentally matplotlib code
 - Minimal learning curve: a few utility functions and color name extensions
 - Designed for modern AI-assisted development workflows
-
