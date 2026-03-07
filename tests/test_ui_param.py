@@ -292,3 +292,134 @@ class TestConfigPersistence:
             assert delete_preset(5) is False
             assert delete_preset(-1) is False
             assert len(load_presets()) == 1
+
+    def test_save_config_with_tabs_and_fig_width(
+        self, tmp_path: Path,
+    ) -> None:
+        """save_config persists tabs and figWidth when given."""
+        config_file = tmp_path / CONFIG_FILENAME
+        with patch(
+            "dartwork_mpl.ui._config._config_path",
+            return_value=config_file,
+        ):
+            save_config(
+                {"n": 1},
+                function_name="fn",
+                tabs=[{"id": "tab1"}],
+                fig_width=80,
+            )
+            loaded = load_config()
+
+        assert loaded is not None
+        assert loaded["tabs"] == [{"id": "tab1"}]
+        assert loaded["figWidth"] == 80
+
+    def test_load_config_corrupt_json(
+        self, tmp_path: Path,
+    ) -> None:
+        """Corrupt JSON returns None instead of crashing."""
+        config_file = tmp_path / CONFIG_FILENAME
+        config_file.write_text("{invalid json!!!", encoding="utf-8")
+        with patch(
+            "dartwork_mpl.ui._config._config_path",
+            return_value=config_file,
+        ):
+            assert load_config() is None
+
+    def test_load_presets_corrupt_json(
+        self, tmp_path: Path,
+    ) -> None:
+        """Corrupt preset file returns empty list."""
+        preset_file = tmp_path / PRESET_FILENAME
+        preset_file.write_text("not valid json", encoding="utf-8")
+        with patch(
+            "dartwork_mpl.ui._config._preset_path",
+            return_value=preset_file,
+        ):
+            assert load_presets() == []
+
+    def test_load_presets_non_list_json(
+        self, tmp_path: Path,
+    ) -> None:
+        """Preset file with a non-list JSON returns empty list."""
+        preset_file = tmp_path / PRESET_FILENAME
+        preset_file.write_text('{"not": "a list"}', encoding="utf-8")
+        with patch(
+            "dartwork_mpl.ui._config._preset_path",
+            return_value=preset_file,
+        ):
+            assert load_presets() == []
+
+    def test_load_history_with_blank_and_corrupt_lines(
+        self, tmp_path: Path,
+    ) -> None:
+        """Blank lines and corrupt JSON lines are silently skipped."""
+        history_file = tmp_path / HISTORY_FILENAME
+        history_file.write_text(
+            '{"timestamp":"t","params":{"x":1}}\n'
+            "\n"
+            "NOT JSON\n"
+            '{"timestamp":"t","params":{"x":2}}\n',
+            encoding="utf-8",
+        )
+        with patch(
+            "dartwork_mpl.ui._config._history_path",
+            return_value=history_file,
+        ):
+            records = load_history()
+            assert len(records) == 2
+
+
+# ============================================================================
+# Tests: set_base_dir & _serializable
+# ============================================================================
+
+
+class TestConfigInternals:
+    """Tests for internal config helpers."""
+
+    def test_set_and_get_base_dir(self, tmp_path: Path) -> None:
+        """set_base_dir sets the directory used by path helpers."""
+        from dartwork_mpl.ui._config import (
+            _get_base_dir,
+            set_base_dir,
+        )
+
+
+        try:
+            set_base_dir(tmp_path)
+            assert _get_base_dir() == tmp_path
+        finally:
+            # Restore
+            import dartwork_mpl.ui._config as cfg
+            cfg._base_dir = None
+
+    def test_serializable_scalar_types(self) -> None:
+        """Scalar types pass through unchanged."""
+        from dartwork_mpl.ui._config import _serializable
+
+        result = _serializable({
+            "i": 42, "f": 3.14, "s": "hello",
+            "b": True, "n": None,
+        })
+        assert result == {
+            "i": 42, "f": 3.14, "s": "hello",
+            "b": True, "n": None,
+        }
+
+    def test_serializable_list_and_tuple(self) -> None:
+        """Lists pass through, tuples are converted to lists."""
+        from dartwork_mpl.ui._config import _serializable
+
+        result = _serializable({
+            "lst": [1, 2], "tup": (3, 4),
+        })
+        assert result["lst"] == [1, 2]
+        assert result["tup"] == [3, 4]
+
+    def test_serializable_unknown_type(self) -> None:
+        """Unknown types are str()-ified."""
+        from dartwork_mpl.ui._config import _serializable
+
+        result = _serializable({"obj": {"nested": True}})
+        assert isinstance(result["obj"], str)

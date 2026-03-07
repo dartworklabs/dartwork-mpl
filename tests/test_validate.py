@@ -170,3 +170,59 @@ class TestCheckSubset:
         # EMPTY_AXES should NOT appear since it's not selected
         assert all(w.check_id != "EMPTY_AXES" for w in warnings)
         plt.close(fig)
+
+
+class TestValidateEdgeCases:
+    """Edge case tests for increased coverage."""
+
+    def test_verbose_mode_prints_warnings(self, capsys) -> None:
+        """Non-quiet mode with warnings should print them."""
+        fig, _ax = plt.subplots(figsize=(4, 3))
+        # Empty axes triggers EMPTY_AXES warning
+        validate_figure(fig, checks=("EMPTY_AXES",), quiet=False)
+        captured = capsys.readouterr()
+        assert "[VISUAL]" in captured.out
+        assert "EMPTY_AXES" in captured.out
+        plt.close(fig)
+
+    def test_verbose_mode_prints_ok_when_clean(self, capsys) -> None:
+        """Non-quiet mode with no warnings prints success."""
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.plot([1, 2, 3])
+        validate_figure(fig, quiet=False)
+        captured = capsys.readouterr()
+        assert "No visual issues detected" in captured.out
+        plt.close(fig)
+
+    def test_all_checks_run_by_default(self) -> None:
+        """When checks=None, all check types are executed."""
+        fig, _ax = plt.subplots(figsize=(4, 3))
+        # Empty axes → should find EMPTY_AXES at minimum
+        warnings = validate_figure(fig, quiet=True)
+        check_ids = {w.check_id for w in warnings}
+        assert "EMPTY_AXES" in check_ids
+        plt.close(fig)
+
+    def test_visual_warning_detail_dict(self) -> None:
+        """VisualWarning.detail stores arbitrary metadata."""
+        w = VisualWarning(
+            severity=Severity.WARNING,
+            check_id="TEST",
+            message="msg",
+            detail={"px": 10.5, "side": "left"},
+        )
+        assert w.detail["px"] == 10.5
+        assert w.detail["side"] == "left"
+
+    def test_multi_axes_partial_empty(self) -> None:
+        """Mixed figure: one axes with data, one empty."""
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 3))
+        ax1.plot([1, 2, 3])
+        # ax2 is empty
+        warnings = validate_figure(
+            fig, checks=("EMPTY_AXES",), quiet=True,
+        )
+        empty = [w for w in warnings if w.check_id == "EMPTY_AXES"]
+        assert len(empty) == 1
+        assert empty[0].detail["axes_index"] == 1
+        plt.close(fig)
