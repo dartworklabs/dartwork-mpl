@@ -1,0 +1,121 @@
+/* Font Specimen Styles — auto-loaded by conf.py */
+
+/* ── specimen card ── */
+.dm-font-specimen {
+  background: #fbfaf7;
+  border: 1px solid #ebe9e2;
+  border-radius: 10px;
+  padding: 1.8em 2em 1.4em;
+  margin: 1.2em 0 0.6em;
+}
+
+.dm-font-specimen h3 {
+  margin: 0 0 0.2em;
+  font-size: 1.35em;
+  font-weight: 700;
+  color: #333;
+  text-align: left;
+}
+
+.dm-font-specimen .desc {
+  margin: 0 0 1.2em;
+  font-size: 0.92em;
+  color: #777;
+  text-align: left;
+}
+
+/* ── weight grid ── */
+.dm-font-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  row-gap: 0.65em;
+  align-items: baseline;
+}
+
+.dm-font-grid .label {
+  font-size: 14px;
+  color: #555;
+}
+
+.dm-font-grid .sample {
+  font-size: 14px;
+  color: #333;
+}
+
+/* ── multi-language grid ── */
+.dm-multilang-grid {
+  display: grid;
+  grid-template-columns: 100px 1fr 120px;
+  row-gap: 1em;
+  align-items: baseline;
+}
+
+.dm-multilang-grid .lang-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.dm-multilang-grid .lang-sample {
+  font-size: 16px;
+  color: #333;
+}
+
+.dm-multilang-grid .lang-font-name {
+  font-size: 12px;
+  color: #aaa;
+  text-align: right;
+}
+
+/* ── math specimen ── */
+.dm-math-grid {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  row-gap: 1em;
+  align-items: baseline;
+}
+
+.dm-math-grid .label {
+  font-size: 15px;
+  color: #555;
+}
+
+.dm-math-grid .expr {
+  font-size: 18px;
+  color: #333;
+}
+
+/* ── dark theme adjustments (Shibuya) ── */
+html.dark .dm-font-specimen,
+body[data-theme="dark"] .dm-font-specimen {
+  background: #1a1a1a;
+  border-color: #2a2a2a;
+}
+
+html.dark .dm-font-specimen h3,
+body[data-theme="dark"] .dm-font-specimen h3 {
+  color: #e0e0e0;
+}
+
+html.dark .dm-font-specimen .desc,
+body[data-theme="dark"] .dm-font-specimen .desc {
+  color: #888;
+}
+
+html.dark .dm-font-grid .label,
+body[data-theme="dark"] .dm-font-grid .label {
+  color: #999;
+}
+
+html.dark .dm-font-grid .sample,
+html.dark .dm-multilang-grid .lang-label,
+html.dark .dm-multilang-grid .lang-sample,
+html.dark .dm-math-grid .label,
+html.dark .dm-math-grid .expr,
+body[data-theme="dark"] .dm-font-grid .sample,
+body[data-theme="dark"] .dm-multilang-grid .lang-label,
+body[data-theme="dark"] .dm-multilang-grid .lang-sample,
+body[data-theme="dark"] .dm-math-grid .label,
+body[data-theme="dark"] .dm-math-grid .expr {
+  color: #d0d0d0;
+}

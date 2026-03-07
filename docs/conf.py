@@ -1,3 +1,5 @@
+import datetime
+import importlib.metadata
 import os
 import sys
 from pathlib import Path
@@ -14,11 +16,11 @@ sys.path.insert(0, str(Path(__file__).parent.resolve()))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "dartwork-mpl"
-copyright = "2025 Dartwork"
-author = " Sangwon Lee, Wonjun Choi"
+copyright = f"{datetime.datetime.now().year} Dartwork"
+author = "Sangwon Lee, Wonjun Choi"
 
-version = "0.2.1"
-release = "0.2.1"
+version = importlib.metadata.version("dartwork-mpl")
+release = version
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -52,7 +54,7 @@ exclude_patterns = [
 
 html_theme = "shibuya"
 html_static_path = ["_static"]
-html_css_files = ["custom.css"]
+html_css_files = ["custom.css", "font-specimens.css", "font-face.css"]
 html_js_files = ["custom.js"]
 
 # Prevent sections from gallery/index from appearing in the global toctree
@@ -80,7 +82,7 @@ html_theme_options = {
 
 
 # -- Sphinx Gallery configuration --------------------------------------------
-# -- Sphinx Gallery configuration --------------------------------------------
+
 
 sphinx_gallery_conf = {
     "examples_dirs": [
@@ -92,6 +94,7 @@ sphinx_gallery_conf = {
         "examples_source/specialized_plots",
         "examples_source/layout_styling",
         "examples_source/colors_images",
+        "examples_source/real_world",
     ],
     "gallery_dirs": [
         "examples_gallery/basic_plots",
@@ -102,6 +105,7 @@ sphinx_gallery_conf = {
         "examples_gallery/specialized_plots",
         "examples_gallery/layout_styling",
         "examples_gallery/colors_images",
+        "examples_gallery/real_world",
     ],
     "filename_pattern": "/plot_",
     "nested_sections": False,
@@ -145,6 +149,7 @@ def _write_manual_indices(app, env, docnames):
         "specialized_plots",
         "layout_styling",
         "colors_images",
+        "real_world",
     ]
 
     content_parts = [_GALLERY_HEADER]
@@ -236,10 +241,25 @@ def _create_placeholder_index(app):
         print("Created placeholder: examples_gallery/index.rst")
 
 
+def _copy_fonts_to_static(app):
+    """Copy bundled TTF fonts to _static/fonts/ so HTML specimens can load them."""
+    import shutil
+
+    font_src = Path(app.srcdir).parent / "src" / "dartwork_mpl" / "asset" / "font"
+    font_dst = Path(app.srcdir) / "_static" / "fonts"
+    font_dst.mkdir(parents=True, exist_ok=True)
+
+    for ttf in font_src.glob("*.ttf"):
+        dst_file = font_dst / ttf.name
+        if not dst_file.exists() or ttf.stat().st_mtime > dst_file.stat().st_mtime:
+            shutil.copy2(ttf, dst_file)
+
+
 def setup(app):
     # Create placeholder index FIRST so toctree can find it
     app.connect("builder-inited", _create_placeholder_index)
     app.connect("builder-inited", _generate_gallery_assets)
+    app.connect("builder-inited", _copy_fonts_to_static)
     # Write manual indices AFTER sphinx-gallery runs but BEFORE docs are read
     app.connect("env-before-read-docs", _write_manual_indices)
     return {"parallel_read_safe": True}
