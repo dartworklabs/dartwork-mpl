@@ -122,144 +122,21 @@ myst_enable_extensions = ["colon_fence", "deflist"]
 myst_heading_anchors = 3
 
 
-# -- Manual gallery index system ----------------------------------------------
-# sphinx-gallery overwrites index files, so we write our manual indices
-# AFTER sphinx-gallery runs but BEFORE Sphinx reads the rst files
+# -- Build hooks (extracted to _ext/build_hooks.py) ---------------------------
+sys.path.insert(0, str(Path(__file__).parent / "_ext"))
 
-_GALLERY_HEADER = """Examples Gallery
-================
-
-This gallery contains examples demonstrating the features and capabilities
-of dartwork-mpl. Browse the categories below for ready-to-use patterns
-and techniques.
-"""
-
-
-def _write_manual_indices(app, env, docnames):
-    """Write manual index files AFTER sphinx-gallery but BEFORE Sphinx reads docs."""
-    gallery_dir = Path(app.srcdir) / "examples_gallery"
-
-    # Define the order of categories
-    categories = [
-        "basic_plots",
-        "statistical_plots",
-        "bar_charts",
-        "scientific_plots",
-        "time_series",
-        "specialized_plots",
-        "layout_styling",
-        "colors_images",
-        "real_world",
-    ]
-
-    content_parts = [_GALLERY_HEADER]
-    toctree_entries = []
-
-    for cat in categories:
-        cat_index_path = gallery_dir / cat / "index.rst"
-        if not cat_index_path.exists():
-            print(f"Warning: Category index not found: {cat_index_path}")
-            continue
-
-        # Read the generated category index
-        content = cat_index_path.read_text()
-
-        # Remove :orphan: from category index files to include them in toctree/sidebar
-        if ":orphan:" in content:
-            clean_content = content.replace(":orphan:\n", "").replace(
-                ":orphan:", ""
-            )
-            cat_index_path.write_text(clean_content)
-
-        # Extract content before the toctree
-        # The generated file usually ends with a toctree or a footer
-        # We want the header, description, and thumbnail grid
-
-        # 1. Remove :orphan: if present
-        content = content.replace(":orphan:", "")
-
-        # 2. Find where the toctree starts and cut off
-        if ".. toctree::" in content:
-            content = content.split(".. toctree::")[0]
-
-        # 3. Downgrade headers (=== -> ---)
-        # Assuming the first header is the title with === underline
-        lines = content.splitlines()
-        new_lines = []
-        for line in lines:
-            if (
-                line.strip()
-                and all(c == "=" for c in line.strip())
-                and len(line.strip()) > 3
-            ):
-                # Replace === with --- for H2
-                new_lines.append("-" * len(line))
-            else:
-                new_lines.append(line)
-
-        processed_content = "\n".join(new_lines)
-        content_parts.append(processed_content)
-
-        # Add to toctree list
-        toctree_entries.append(f"{cat}/index")
-
-    # Add the hidden toctree at the end to maintain sidebar structure
-    toctree_block = "\n.. toctree::\n   :hidden:\n\n"
-    for entry in toctree_entries:
-        toctree_block += f"   {entry}\n"
-
-    content_parts.append(toctree_block)
-
-    # Write the concatenated main index
-    main_index = gallery_dir / "index.rst"
-    main_index.write_text("\n".join(content_parts))
-    print("Wrote concatenated manual index: examples_gallery/index.rst")
-
-    # Add to docnames so Sphinx builds the newly written index
-    if "examples_gallery/index" not in docnames:
-        docnames.append("examples_gallery/index")
-
-
-def _generate_gallery_assets(_app):
-    """Bake high-res color system images during the build."""
-    from color_system.generate_assets import build_gallery_assets
-
-    build_gallery_assets()  # Outputs to color_system/images/ by default
-
-
-def _create_placeholder_index(app):
-    """Create placeholder index.rst so toctree can find it before sphinx-gallery runs."""
-    gallery_dir = Path(app.srcdir) / "examples_gallery"
-    gallery_dir.mkdir(parents=True, exist_ok=True)
-
-    index_file = gallery_dir / "index.rst"
-    if not index_file.exists():
-        # Write minimal placeholder that will be overwritten later
-        index_file.write_text(
-            "Examples Gallery\n================\n\nLoading...\n"
-        )
-        print("Created placeholder: examples_gallery/index.rst")
-
-
-def _copy_fonts_to_static(app):
-    """Copy bundled TTF fonts to _static/fonts/ so HTML specimens can load them."""
-    import shutil
-
-    font_src = Path(app.srcdir).parent / "src" / "dartwork_mpl" / "asset" / "font"
-    font_dst = Path(app.srcdir) / "_static" / "fonts"
-    font_dst.mkdir(parents=True, exist_ok=True)
-
-    for ttf in font_src.glob("*.ttf"):
-        dst_file = font_dst / ttf.name
-        if not dst_file.exists() or ttf.stat().st_mtime > dst_file.stat().st_mtime:
-            shutil.copy2(ttf, dst_file)
+from build_hooks import (  # noqa: E402
+    copy_fonts_to_static,
+    create_placeholder_index,
+    generate_gallery_assets,
+    write_manual_indices,
+)
 
 
 def setup(app):
-    # Create placeholder index FIRST so toctree can find it
-    app.connect("builder-inited", _create_placeholder_index)
-    app.connect("builder-inited", _generate_gallery_assets)
-    app.connect("builder-inited", _copy_fonts_to_static)
-    # Write manual indices AFTER sphinx-gallery runs but BEFORE docs are read
-    app.connect("env-before-read-docs", _write_manual_indices)
+    app.connect("builder-inited", create_placeholder_index)
+    app.connect("builder-inited", generate_gallery_assets)
+    app.connect("builder-inited", copy_fonts_to_static)
+    app.connect("env-before-read-docs", write_manual_indices)
     return {"parallel_read_safe": True}
+

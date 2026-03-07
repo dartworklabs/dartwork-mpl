@@ -20,5 +20,6 @@ Usage Guide <usage_guide/index>
 Color System <color_system/index>
 Fonts <fonts/index>
 Examples Gallery <examples_gallery/index>
+Integrations <integrations/index>
 API Reference <api/index>
 ```
