@@ -31,7 +31,7 @@ dm.simple_layout(fig)  # auto-optimizes margins — replaces tight_layout()
 For multi-panel layouts, use GridSpec and pass it to `simple_layout`:
 
 ```python
-fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
+fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(8)), dpi=300)
 gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.25)
 axes = [fig.add_subplot(gs[i, j]) for i in range(2) for j in range(2)]
 

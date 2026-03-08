@@ -34,16 +34,15 @@ All presets share the same `base` layer (thin lines, no grid,
 lightweight Roboto font family). They differ in **font scale**,
 **spine visibility**, **figure size**, and **color scheme**:
 
-| rcParam           | `scientific` | `report`  | `presentation` | `poster`  | `web`     | `minimal` | `dark`    |
-| ----------------- | ------------ | --------- | -------------- | --------- | --------- | --------- | --------- |
-| `font.size`       | 7.5 pt       | 8.0 pt    | 10.5 pt        | 12.0 pt   | 11.0 pt   | 7.5 pt    | 7.5 pt    |
-| `axes.titlesize`  | 8.5 pt       | 9.0 pt    | 11.5 pt        | 14.0 pt   | 13.0 pt   | 8.5 pt    | 8.5 pt    |
-| `axes.labelsize`  | 7.5 pt       | 8.0 pt    | 10.5 pt        | 12.0 pt   | 11.0 pt   | 7.5 pt    | 7.5 pt    |
-| `xtick.labelsize` | 7.0 pt       | 7.0 pt    | 10.0 pt        | 11.0 pt   | 10.0 pt   | 7.0 pt    | 7.0 pt    |
-| `legend.fontsize` | 5.5 pt       | 6.0 pt    | 8.5 pt         | 9.0 pt    | 8.5 pt    | 5.5 pt    | 5.5 pt    |
-| `figure.figsize`  | 3.5 × 3.0    | 3.5 × 3.0 | 3.5 × 3.0      | 8.0 × 6.0 | 6.0 × 4.5 | 3.5 × 3.0 | 3.5 × 3.0 |
-| Top/right spines  | ✓            | ✗         | ✓              | ✗         | ✗         | all off   | ✓         |
-| Background        | white        | white     | white          | white     | white     | white     | `#1e1e1e` |
+| rcParam           | `scientific` | `report` | `presentation` | `poster` | `web`   | `minimal` | `dark`    |
+| ----------------- | ------------ | -------- | -------------- | -------- | ------- | --------- | --------- |
+| `font.size`       | 7.5 pt       | 8.0 pt   | 10.5 pt        | 12.0 pt  | 11.0 pt | 7.5 pt    | 11.0 pt   |
+| `axes.titlesize`  | 8.5 pt       | 9.0 pt   | 11.5 pt        | 14.0 pt  | 13.0 pt | 8.5 pt    | 13.0 pt   |
+| `axes.labelsize`  | 7.5 pt       | 8.0 pt   | 10.5 pt        | 12.0 pt  | 11.0 pt | 7.5 pt    | 11.0 pt   |
+| `xtick.labelsize` | 7.0 pt       | 7.0 pt   | 10.0 pt        | 11.0 pt  | 10.0 pt | 7.0 pt    | 10.0 pt   |
+| `legend.fontsize` | 5.5 pt       | 6.0 pt   | 8.5 pt         | 9.0 pt   | 8.5 pt  | 5.5 pt    | 8.5 pt    |
+| Top/right spines  | ✓            | ✗        | ✓              | ✗        | ✗       | all off   | ✗         |
+| Background        | white        | white    | white          | white    | white   | white     | `#1e1e1e` |
 
 **When to use which:**
 
@@ -54,13 +53,13 @@ lightweight Roboto font family). They differ in **font scale**,
 - **`presentation`** — Large font scale for slides. Text stays readable when
   projected.
 - **`poster`** — Extra-large fonts and thick lines for conference posters and
-  large displays. Uses 8 × 6″ figure size.
-- **`web`** — Optimized for web pages and documentation. Larger than
-  scientific but lower DPI (150) for fast page loads. 6 × 4.5″ figure size.
+  large displays.
+- **`web`** — Optimized for web pages and documentation. Larger fonts than
+  scientific for screen readability.
 - **`minimal`** — Tufte-inspired: no spines, no tick marks, no grid. Puts
   maximum ink on the data itself.
 - **`dark`** — Inverted color scheme for dark Jupyter themes, dark slides, or
-  dark web pages. Uses scientific font sizes.
+  dark web pages. Uses web font sizes for screen readability.
 
 ## Korean variants (`-kr`)
 

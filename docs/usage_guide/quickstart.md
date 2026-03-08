@@ -103,7 +103,7 @@ import numpy as np
 
 dm.style.use("presentation")
 
-fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
+fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(8)), dpi=300)
 gs = fig.add_gridspec(1, 2, wspace=0.3)
 ax1 = fig.add_subplot(gs[0])
 ax2 = fig.add_subplot(gs[1])
