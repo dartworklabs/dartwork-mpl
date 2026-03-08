@@ -13,7 +13,7 @@
 
 dartwork-mpl provides three layers of AI integration, each building on the last:
 
-:::{card} 
+:::{card}
 :class-header: sd-bg-light
 
 **Layer 3 — MCP Server** 🔌
@@ -25,7 +25,7 @@ dartwork-mpl provides three layers of AI integration, each building on the last:
 **Layer 1 — AI-Friendly API** 🎯
 : `dm.style.use` · `dm.simple_layout` · `oc.blue5`
 
-*Each layer builds on the one below.*
+_Each layer builds on the one below._
 :::
 
 **Layer 1** works out of the box — no setup required. AI assistants naturally produce better code because the API has fewer ways to go wrong.
