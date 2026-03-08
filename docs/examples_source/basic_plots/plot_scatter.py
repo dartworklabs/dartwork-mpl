@@ -81,9 +81,9 @@ ax1.set_ylim(-3, 3)
 
 # Panel B: Scatter with color mapping
 ax2 = fig.add_subplot(gs[0, 1])
-# Color mapping: c=colors, cmap='dm.Spectral', s=20 (size), alpha=0.7
+# Color mapping: c=colors, cmap='dc.Spectral', s=20 (size), alpha=0.7
 scatter2 = ax2.scatter(
-    x1, y1, c=colors, s=20, cmap="dm.Spectral", edgecolors="none", alpha=0.7
+    x1, y1, c=colors, s=20, cmap="dc.Spectral", edgecolors="none", alpha=0.7
 )
 ax2.set_xlabel("X value", fontsize=dm.fs(0))
 ax2.set_ylabel("Y value", fontsize=dm.fs(0))
@@ -127,7 +127,7 @@ grid_x, grid_y = np.meshgrid(np.linspace(-3, 3, 80), np.linspace(-3, 3, 80))
 dens = np.exp(-((grid_x - 1) ** 2 + (grid_y + 0.5) ** 2)) + 0.6 * np.exp(
     -((grid_x + 1) ** 2 + (grid_y - 0.5) ** 2)
 )
-ax4.contourf(grid_x, grid_y, dens, cmap="dm.Spectral", alpha=0.7, levels=12)
+ax4.contourf(grid_x, grid_y, dens, cmap="dc.Spectral", alpha=0.7, levels=12)
 ax4.contour(grid_x, grid_y, dens, colors="oc.gray6", linewidths=0.3, levels=12)
 ax4.scatter(
     x2, y2, c="white", s=12, edgecolors="oc.gray7", linewidths=0.4, alpha=0.8

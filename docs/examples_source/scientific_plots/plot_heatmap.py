@@ -33,7 +33,7 @@ gs = fig.add_gridspec(
 
 # Panel A: Diverging heatmap
 ax1 = fig.add_subplot(gs[0, 0])
-im1 = ax1.imshow(data, cmap="dm.coolwarm", vmin=-1, vmax=1)
+im1 = ax1.imshow(data, cmap="dc.coolwarm", vmin=-1, vmax=1)
 cbar1 = fig.colorbar(im1, ax=ax1, fraction=0.04, pad=0.02)
 cbar1.set_label("Value", fontsize=dm.fs(0))
 ax1.set_title("Random Field (Diverging)", fontsize=dm.fs(1))
@@ -42,7 +42,7 @@ ax1.set_ylabel("Y Axis", fontsize=dm.fs(0))
 
 # Panel B: Correlation matrix
 ax2 = fig.add_subplot(gs[0, 1])
-im2 = ax2.imshow(corr, cmap="dm.Spectral", vmin=-1, vmax=1)
+im2 = ax2.imshow(corr, cmap="dc.Spectral", vmin=-1, vmax=1)
 cbar2 = fig.colorbar(im2, ax=ax2, fraction=0.04, pad=0.02)
 cbar2.set_label("Correlation", fontsize=dm.fs(0))
 ax2.set_xticks(range(corr.shape[0]))

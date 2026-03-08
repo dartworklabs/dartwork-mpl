@@ -25,7 +25,7 @@ Z = np.sin(R)
 
 # Plot the surface
 surf = ax.plot_surface(
-    X, Y, Z, cmap="dm.Spectral", linewidth=0, antialiased=False
+    X, Y, Z, cmap="dc.Spectral", linewidth=0, antialiased=False
 )
 
 # Customize axis labels with font size utilities

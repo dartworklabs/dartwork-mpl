@@ -25,7 +25,7 @@ ax = fig.add_subplot(gs[0, 0])
 
 # Streamplot
 # Use dartwork-mpl's viridis colormap
-strm = ax.streamplot(X, Y, U, V, color=speed, linewidth=2, cmap="dm.viridis")
+strm = ax.streamplot(X, Y, U, V, color=speed, linewidth=2, cmap="dc.viridis")
 
 # Add colorbar
 cbar = fig.colorbar(strm.lines, ax=ax)

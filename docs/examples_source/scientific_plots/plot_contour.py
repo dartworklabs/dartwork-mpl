@@ -28,7 +28,7 @@ ax = fig.add_subplot(gs[0, 0])
 
 # Filled contour
 # Use dartwork-mpl's coolwarm colormap
-cs = ax.contourf(X, Y, Z, levels=20, cmap="dm.coolwarm")
+cs = ax.contourf(X, Y, Z, levels=20, cmap="dc.coolwarm")
 
 # Add contour lines
 line_cs = ax.contour(X, Y, Z, levels=20, colors="k", linewidths=0.5, alpha=0.5)

@@ -37,10 +37,10 @@ gs = fig.add_gridspec(
 
 # Panel A: imshow with colormap
 ax1 = fig.add_subplot(gs[0, 0])
-# Explicit parameters: cmap='dm.Spectral', interpolation='bilinear'
+# Explicit parameters: cmap='dc.Spectral', interpolation='bilinear'
 im1 = ax1.imshow(
     data1,
-    cmap="dm.Spectral",
+    cmap="dc.Spectral",
     interpolation="bilinear",
     aspect="auto",
     origin="lower",
@@ -55,10 +55,10 @@ cbar1.ax.tick_params(labelsize=dm.fs(-1))
 
 # Panel B: Image with different colormap
 ax2 = fig.add_subplot(gs[0, 1])
-# Explicit parameters: cmap='dm.coolwarm', interpolation='nearest'
+# Explicit parameters: cmap='dc.coolwarm', interpolation='nearest'
 im2 = ax2.imshow(
     data2,
-    cmap="dm.coolwarm",
+    cmap="dc.coolwarm",
     interpolation="nearest",
     aspect="auto",
     origin="lower",
@@ -95,7 +95,7 @@ ax4 = fig.add_subplot(gs[1, 1])
 edges = np.abs(np.gradient(data1, axis=0)) + np.abs(np.gradient(data1, axis=1))
 im4 = ax4.imshow(
     edges,
-    cmap="dm.Greys",
+    cmap="dc.Greys",
     interpolation="nearest",
     aspect="auto",
     origin="lower",
