@@ -606,6 +606,7 @@ document.addEventListener("click", function (e) {
           if (!query || searchText.indexOf(query) !== -1) {
             card.style.display = "";
             card.style.opacity = "";
+            card.style.transform = "";
             sectionMatch = true;
             matched++;
           } else {
@@ -646,6 +647,7 @@ document.addEventListener("click", function (e) {
     // Find all code blocks and output images
     var codeBlocks = article.querySelectorAll(".highlight-Python");
     var outputImgs = article.querySelectorAll(".sphx-glr-single-img");
+    var scriptOuts = article.querySelectorAll(".sphx-glr-script-out");
     if (!codeBlocks.length && !outputImgs.length) return;
 
     // Build control bar
@@ -687,30 +689,37 @@ document.addEventListener("click", function (e) {
     }
 
     function applyMode() {
+      // Code blocks: hide in output-only
       codeBlocks.forEach(function (block) {
-        if (activeMode === "output-only") {
-          block.style.display = "none";
-        } else {
-          block.style.display = "";
-        }
+        block.style.display = activeMode === "output-only" ? "none" : "";
       });
 
+      // Output images: hide in code-only
       outputImgs.forEach(function (img) {
-        if (activeMode === "code-only") {
-          img.style.display = "none";
-        } else {
-          img.style.display = "";
-        }
+        img.style.display = activeMode === "code-only" ? "none" : "";
       });
 
-      // Hide timing and footnote text in output-only mode
+      // Stdout outputs: hide in output-only (they're code output, not visual)
+      scriptOuts.forEach(function (out) {
+        out.style.display = activeMode === "output-only" ? "none" : "";
+      });
+
+      // Timing footer: hide in output-only
       var timing = article.querySelector(".sphx-glr-timing");
       if (timing) {
         timing.style.display = activeMode === "output-only" ? "none" : "";
       }
 
-      // Also hide text between code blocks in code-only mode
-      // (descriptive paragraphs from sphinx-gallery sections)
+      // Download section: hide in output-only
+      var downloadSection = article.querySelector("[id*='sphx-glr-download']");
+      if (downloadSection) {
+        var downloadParent =
+          downloadSection.closest("section") || downloadSection.parentElement;
+        if (downloadParent) {
+          downloadParent.style.display =
+            activeMode === "output-only" ? "none" : "";
+        }
+      }
     }
   });
 })();
