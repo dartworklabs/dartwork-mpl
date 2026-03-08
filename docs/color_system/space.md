@@ -300,7 +300,7 @@ cmap = mcolors.ListedColormap([c.to_rgb() for c in colors],
                                name="custom_blue_orange")
 
 # Use it in a plot
-fig, ax = plt.subplots(figsize=(dm.cm2in(10), dm.cm2in(6)), dpi=300)
+fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(9)), dpi=300)
 data = np.random.randn(100, 100)
 im = ax.imshow(data, cmap=cmap)
 plt.colorbar(im, ax=ax, label="Value")

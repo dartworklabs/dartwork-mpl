@@ -52,12 +52,26 @@ font is used where:
 
 ## Font Pairing Recommendations
 
-Curated combinations for common chart styles.
+Curated combinations for common chart styles:
+
+| Style         | Title                 | Body            | Ticks               | Why it works                                 |
+| ------------- | --------------------- | --------------- | ------------------- | -------------------------------------------- |
+| **Academic**  | InterDisplay SemiBold | Roboto Light    | Roboto Light        | High contrast between display and body       |
+| **Dashboard** | Inter Medium          | Inter Regular   | Noto Sans Condensed | Uniform feel, condensed ticks save space     |
+| **Poster**    | InterDisplay Bold     | Roboto Regular  | Roboto Regular      | Large-scale readability                      |
+| **Korean**    | Paperlogy SemiBold    | Paperlogy Light | Paperlogy Light     | Native Korean design, consistent weight axis |
 
 ## Size Scale
 
-See how each font performs at the sizes commonly used in charts (8px tick labels
-→ 24px titles).
+Common size ranges used in charts, mapped to `fs()` offsets:
+
+| Role        | Typical pt | `fs()` offset        | Notes                                      |
+| ----------- | ---------- | -------------------- | ------------------------------------------ |
+| Tick labels | 5.5–7      | `fs(-2)` to `fs(-1)` | Keep light (300) for minimal distraction   |
+| Axis labels | 7.5–10.5   | `fs(0)`              | Base size — matches the active preset      |
+| Legend      | 5.5–9      | `fs(-2)` to `fs(1)`  | Smaller than axis labels                   |
+| Subtitles   | 9–13       | `fs(2)` to `fs(4)`   | Medium weight (500) adds hierarchy         |
+| Titles      | 8.5–14     | `fs(1)` to `fs(6)`   | Use InterDisplay or bold weight for impact |
 
 ---
 

@@ -26,8 +26,8 @@ plt.show()
 
 ## Palette sheets
 
-**dartwork Color.** 23 hand-curated categorical palettes — dartwork 큐레이션 색조합 —
-designed for data visualization. Use `dc.vivid0`–`dc.vivid5` for high-contrast
+**dartwork Color.** 23 hand-curated categorical palettes built specifically for
+data visualization. Use `dc.vivid0`–`dc.vivid5` for high-contrast
 presentations, `dc.pastel0`–`dc.pastel5` for soft backgrounds, or
 `dc.acid0`–`dc.acid5` for bold fluorescent accents.
 

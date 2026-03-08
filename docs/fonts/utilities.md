@@ -54,7 +54,7 @@ ax.text(0.5, 0.5, "Note", fontsize=dm.fs(-2))      # 5.5pt
 ```
 
 **Why use `fs()` instead of hardcoded sizes?** If you switch from `scientific`
-(base 7.5pt) to `presentation` (base 8.5pt), all your `fs()` calls
+(base 7.5pt) to `presentation` (base 10.5pt), all your `fs()` calls
 automatically adjust — no manual updates needed:
 
 ```python

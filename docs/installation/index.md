@@ -86,8 +86,8 @@ print(dm.list_styles())  # Returns available style names (base, presets, etc.)
 color = dm.oklch(0.7, 0.15, 150)
 print(color.to_hex())  # Should print a hex color string
 
-# Check available prompts
-print(dm.list_prompts())  # Available AI assistant prompt guides
+# Check available AI assistant prompts (see AI Integration section)
+print(dm.list_prompts())  # Available prompt guides for AI coding agents
 ```
 
 If these commands run without errors, you're all set! 🎉

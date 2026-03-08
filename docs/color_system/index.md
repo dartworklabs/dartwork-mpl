@@ -25,9 +25,9 @@ into matplotlib (`tw.blue500`, `md.red700`, `oc.gray6`, and more).
 
 ---
 
-**Colormaps.** Sequential, diverging, cyclical, and categorical ramps—plus the
-dartwork Color set prefixed with `dc.`—rendered as wide gradients sized for
-slides and exports.
+**Colormaps.** Sequential, diverging, cyclical, and categorical ramps—plus
+dartwork-mpl's own curated set (prefixed with `dc.`)—rendered as wide gradients
+sized for slides and exports.
 
 ```{raw} html
 :file: images/colormaps_sequential_multi_hue.html
@@ -45,7 +45,7 @@ import numpy as np
 dm.style.use("scientific")
 
 # Named colors work anywhere matplotlib accepts a color string
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(dm.cm2in(9), dm.cm2in(5)), dpi=300)
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(dm.cm2in(15), dm.cm2in(8.5)), dpi=300)
 
 x = np.linspace(0, 10, 200)
 signal = np.sin(x) * np.exp(-0.08 * x)

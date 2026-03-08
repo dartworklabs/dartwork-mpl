@@ -36,7 +36,7 @@ import dartwork_mpl as dm
 import numpy as np
 
 dm.style.use("scientific")  # curated fonts, colors, line weights
-fig, ax = plt.subplots(figsize=(dm.cm2in(7.5), dm.cm2in(5)), dpi=300)
+fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
 
 x = np.linspace(0, 10, 200)
 ax.plot(x, np.sin(x), color="oc.blue5", label="signal", lw=dm.lw(1.5))
@@ -90,7 +90,7 @@ plt.show()
 
 ::::
 
-Same data, same 6 lines of plotting code — the difference is one `dm.style.use()` call, named colors, and `simple_layout`.
+Same data, same plotting logic — the difference is one `dm.style.use()` call, named colors, and `simple_layout`.
 
 **What each dartwork-mpl call does:**
 
@@ -125,7 +125,8 @@ import numpy as np
 
 dm.style.use("presentation")
 
-fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(5)), dpi=300)
+x = np.linspace(0, 10, 100)
+fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(8.5)), dpi=300)
 gs = fig.add_gridspec(1, 2, wspace=0.3)
 ax1 = fig.add_subplot(gs[0])
 ax2 = fig.add_subplot(gs[1])

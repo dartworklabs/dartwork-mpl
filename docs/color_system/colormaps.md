@@ -6,8 +6,8 @@ matplotlib.
 
 ## Use them at a glance
 
-- Any matplotlib name works (`viridis`, `plasma`, `twilight`, etc.) plus the
-  dartwork Color set prefixed with `dc.`.
+- Any matplotlib name works (`viridis`, `plasma`, `twilight`, etc.) plus
+  dartwork-mpl's own curated set prefixed with `dc.`.
 - Add `_r` to reverse a map (`dc.sunset_r`) when dark-to-light needs flipping.
 - Set `vmin`/`vmax` yourself for stable colorbars across facets or animations.
 - `dm.style.use("scientific")` keeps colorbar labels and ticks consistent with

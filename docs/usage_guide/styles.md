@@ -49,7 +49,7 @@ overrides specific values on top.
 All sizes in **pt**. Every preset uses `font.weight: 300` and
 `axes.labelweight: 400` uniformly.
 
-### Chrome comparison
+### Axes decoration comparison
 
 | Property         | scientific | report | minimal | presentation | poster | web    | dark      |
 | ---------------- | ---------- | ------ | ------- | ------------ | ------ | ------ | --------- |

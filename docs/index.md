@@ -2,133 +2,100 @@
 
 ```{raw} html
 <div class="dm-landing-hero">
-  <p class="dm-landing-tagline">Publication-quality matplotlib —<br>one import away</p>
+  <p class="dm-landing-tagline">matplotlib, but beautiful.</p>
   <p class="dm-landing-subtitle">
-    Curated styles, 900+ named colors, and smart layout utilities.<br>
-    No new API to learn — you're still writing matplotlib.
+    One import. No new API to learn.<br>
+    Publication-quality plots by default.
   </p>
 
-  <div class="dm-landing-code">
-    <pre><code><span class="kn">import</span> <span class="nn">dartwork_mpl</span> <span class="k">as</span> <span class="nn">dm</span>
-
-<span class="n">dm</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s">"scientific"</span><span class="p">)</span>   <span class="c"># fonts, colors, weights — done</span>
-<span class="n">dm</span><span class="o">.</span><span class="n">simple_layout</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>        <span class="c"># optimized margins — done</span></code></pre>
-  </div>
-
   <div class="dm-landing-cta">
-    <a href="installation/index.html" class="dm-landing-btn dm-landing-btn-primary">Install</a>
+    <div class="dm-landing-install">
+      <code>pip install dartwork-mpl</code>
+      <button class="dm-landing-copy-btn" onclick="navigator.clipboard.writeText('pip install dartwork-mpl').then(()=>{this.textContent='✓';setTimeout(()=>{this.textContent='⎘'},1500)})">⎘</button>
+    </div>
     <a href="usage_guide/quickstart.html" class="dm-landing-btn dm-landing-btn-secondary">Quick Start →</a>
   </div>
 </div>
 ```
 
-**See the difference — drag to compare:**
+```{raw} html
+<div class="dm-landing-proof">
+  <p class="dm-landing-proof-label">Drag to compare</p>
+</div>
+```
 
 ```{raw} html
 :file: _static/compare_slider.html
 ```
 
+```{raw} html
+<div class="dm-landing-numbers">
+  <div class="dm-landing-number-item">
+    <span class="dm-landing-number-big">7</span>
+    <span class="dm-landing-number-label">Style Presets</span>
+  </div>
+  <div class="dm-landing-number-sep">·</div>
+  <div class="dm-landing-number-item">
+    <span class="dm-landing-number-big">900+</span>
+    <span class="dm-landing-number-label">Named Colors</span>
+  </div>
+  <div class="dm-landing-number-sep">·</div>
+  <div class="dm-landing-number-item">
+    <span class="dm-landing-number-big">0</span>
+    <span class="dm-landing-number-label">New APIs to learn</span>
+  </div>
+</div>
+```
+
 ---
 
-## What you get
+## All it takes
 
-::::{grid} 1 2 3 3
+```python
+import dartwork_mpl as dm
+
+dm.style.use("scientific")          # ① Pick a style
+ax.plot(x, y, color="oc.blue5")     # ② Use named colors
+dm.simple_layout(fig)               # ③ Optimize layout
+dm.save_formats(fig, "out")         # ④ Export SVG + PNG
+```
+
+```{raw} html
+<p class="dm-landing-code-tagline"><em>You're still writing matplotlib — we just make it look good.</em></p>
+```
+
+## Core pillars
+
+::::{grid} 1 1 3 3
 :gutter: 3
 
-:::{grid-item-card} 🎨 Style Presets
+:::{grid-item-card} 🎨 Style in One Call
 :link: usage_guide/styles
 :link-type: doc
 
-One-call themes for every context — `scientific`, `report`, `presentation`, `poster`, `web`, `dark`, and Korean variants.
-:::
-
-:::{grid-item-card} 🌈 Named Colors
-:link: color_system/index
-:link-type: doc
-
-900+ perceptual colors from Open Color, Tailwind, and Material Design — just use `"oc.blue5"` anywhere matplotlib takes a color.
+Pick from `scientific`, `report`, `presentation`, `poster`, `web`, `dark`, or `minimal` — each with a `-kr` Korean variant. 900+ named colors from Open Color, Tailwind, and Material Design.
 :::
 
 :::{grid-item-card} 📐 Smart Layout
 :link: usage_guide/layout
 :link-type: doc
 
-`simple_layout()` uses L-BFGS-B optimization for uniform margins — a drop-in `tight_layout()` replacement that actually works.
+`simple_layout()` replaces `tight_layout()` with L-BFGS-B optimized margins. Built-in visual validation catches overflow, text overlap, and tick crowding automatically.
 :::
 
-:::{grid-item-card} 🔍 Visual Validation
-:link: api/validate
-:link-type: doc
-
-Auto-detect overflow, text overlap, legend overflow, tick crowding, and empty axes — catches issues invisible in terminal-only workflows.
-:::
-
-:::{grid-item-card} 🤖 AI-Native Design
-:link: integrations/index
-:link-type: doc
-
-MCP server + prompt system for AI coding agents. Designed so agents use familiar matplotlib calls, not a custom API.
-:::
-
-:::{grid-item-card} 📦 Own Your Code
+:::{grid-item-card} 📦 Zero Lock-in
 :link: philosophy/index
 :link-type: doc
 
-Inspired by shadcn/ui — every utility is simple enough to copy into your project. No lock-in, no black boxes.
+Every utility is simple enough to copy into your project. AI-native design with MCP server + prompt system — agents write familiar matplotlib, not a custom API.
 :::
 
 ::::
-
----
-
-## How it works
-
-::::{grid} 1 2 4 4
-:gutter: 2
-
-:::{grid-item}
-**① Pick a style**
-
-```python
-dm.style.use("scientific")
-```
-
-:::
-
-:::{grid-item}
-**② Add color**
-
-```python
-color="oc.blue5"
-```
-
-:::
-
-:::{grid-item}
-**③ Optimize layout**
-
-```python
-dm.simple_layout(fig)
-```
-
-:::
-
-:::{grid-item}
-**④ Export**
-
-```python
-dm.save_formats(fig, "out")
-```
-
-:::
-
-::::
-
----
 
 ```{toctree}
 :maxdepth: 2
 :titlesonly:
+:hidden:
 
 Installation <installation/index>
 Usage Guide <usage_guide/index>

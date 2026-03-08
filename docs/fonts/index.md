@@ -94,7 +94,7 @@ and auto-registered. No system font installation needed.
 | **Noto Sans SemiCondensed**  | 20       | Labels, legends                    |
 | **Noto Sans ExtraCondensed** | 20       | Axis labels, tight spaces          |
 | **Noto Sans Math**           | 1        | Mathematical expressions           |
-| **Paperlogy**                | 9        | Academic papers, reports           |
+| **Paperlogy**                | 9        | Korean (한글) text                 |
 
 ## Bundled Icon Fonts
 

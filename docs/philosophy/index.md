@@ -204,9 +204,10 @@ def mix_colors(color1, color2, alpha=0.5):
     return tuple(alpha * a + (1 - alpha) * b for a, b in zip(c1, c2))
 ```
 
-> **Roadmap:** We plan to add a pure-matplotlib export feature that resolves
-> dartwork-mpl utilities (color names, `cm2in` values) into standard matplotlib
-> code, so you can completely remove the dependency when needed.
+> **Roadmap (not yet implemented):** We plan to add a pure-matplotlib export
+> feature that resolves dartwork-mpl utilities (color names, `cm2in` values)
+> into standard matplotlib code, so you can completely remove the dependency
+> when needed.
 
 ---
 
