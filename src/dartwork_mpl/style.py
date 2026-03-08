@@ -173,7 +173,7 @@ class Style:
         plt.rcParams.update(plt.rcParamsDefault)
         plt.style.use(style_path(style_name) for style_name in style_names)
 
-    def use(self, preset_name: str) -> None:
+    def use(self, preset_name: str, **kwargs: float | str) -> None:
         """
         Apply a preset style configuration.
 
@@ -198,6 +198,9 @@ class Style:
             - "web-kr": Web/docs with Korean font
             - "minimal-kr": Minimal with Korean font
             - "dark-kr": Dark theme with Korean font
+        **kwargs : float | str
+            Additional rcParams to override the preset defaults (e.g., font_size=12).
+            Keys can use either underscore notation (font_size) or dot notation (font.size).
 
         Raises
         ------
@@ -213,6 +216,16 @@ class Style:
         if preset_name not in self.presets:
             raise KeyError(f"Preset '{preset_name}' not found")
         self.stack(self.presets[preset_name])
+
+        if kwargs:
+            overrides = {}
+            for k, v in kwargs.items():
+                k_dot = k.replace("_", ".")
+                if k_dot in plt.rcParams:
+                    overrides[k_dot] = v
+                else:
+                    overrides[k] = v
+            plt.rcParams.update(overrides)
 
     def presets_dict(self) -> dict[str, list[str]]:
         """
