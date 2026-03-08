@@ -42,7 +42,7 @@ def _save_quickstart_first_figure(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     fig, ax = plt.subplots(
-        figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
+        figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300
     )
     x = np.linspace(0, 10, 200)
     ax.plot(x, np.sin(x), color="oc.blue5", label="signal")
@@ -63,7 +63,7 @@ def _save_quickstart_multi_panel(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     x = np.linspace(0, 10, 200)
-    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(8)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(5)), dpi=300)
     gs = fig.add_gridspec(1, 2, wspace=0.3)
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
@@ -88,12 +88,79 @@ def _save_quickstart_multi_panel(images_dir: Path) -> Path:
 # ── layout.md ──────────────────────────────────────────────────────────
 
 
+def _make_challenging_figure(
+    use_simple_layout: bool = True,
+) -> plt.Figure:
+    """Create a multi-panel figure that exposes tight_layout weaknesses.
+
+    Left panel: line chart with long Y-axis label + title.
+    Right panel: heatmap with colorbar.
+    Both share an x-label to stress margin negotiation.
+    """
+    np.random.seed(42)
+    dm.style.use("scientific")
+
+    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(4.2)), dpi=300)
+    gs = fig.add_gridspec(1, 2, wspace=0.45)
+    ax1 = fig.add_subplot(gs[0])
+    ax2 = fig.add_subplot(gs[1])
+
+    # Left: line chart with long labels
+    x = np.linspace(0, 10, 200)
+    ax1.plot(x, np.sin(x) * np.exp(-0.1 * x), color="oc.blue6", lw=0.8)
+    ax1.set_ylabel(
+        "Thermal conductivity\n[W/(m·K)]",
+        fontsize=dm.fs(0),
+    )
+    ax1.set_xlabel("Time [s]", fontsize=dm.fs(0))
+    ax1.set_title("Transient response", fontsize=dm.fs(1))
+
+    # Right: heatmap with colorbar
+    data = np.random.randn(8, 8).cumsum(axis=0)
+    im = ax2.imshow(data, cmap="dc.Crest", aspect="auto")
+    cb = plt.colorbar(im, ax=ax2, shrink=0.85, pad=0.03)
+    cb.set_label(
+        "Δ Temperature [K]", fontsize=dm.fs(0),
+    )
+    cb.outline.set_visible(False)
+    ax2.set_xlabel("Sensor index", fontsize=dm.fs(0))
+    ax2.set_ylabel("Layer", fontsize=dm.fs(0))
+    ax2.set_title("Heat distribution", fontsize=dm.fs(1))
+
+    dm.label_axes([ax1, ax2])
+
+    if use_simple_layout:
+        dm.simple_layout(fig, gs=gs)
+    else:
+        fig.tight_layout()
+
+    return fig
+
+
+def _save_layout_tight(images_dir: Path) -> Path:
+    """Layout comparison: tight_layout version."""
+    fig = _make_challenging_figure(use_simple_layout=False)
+    path = images_dir / "layout_tight.svg"
+    fig.savefig(path, format="svg")
+    plt.close(fig)
+    return path
+
+
+def _save_layout_simple(images_dir: Path) -> Path:
+    """Layout comparison: simple_layout version."""
+    fig = _make_challenging_figure(use_simple_layout=True)
+    path = images_dir / "layout_simple.svg"
+    fig.savefig(path, format="svg")
+    plt.close(fig)
+    return path
+
+
 def _save_layout_gridspec(images_dir: Path) -> Path:
     """Layout 'Layout optimization': 2×2 GridSpec + panel labels."""
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300)
     gs = fig.add_gridspec(
         2, 2,
         left=0.08, right=0.98, top=0.9, bottom=0.12,
@@ -124,7 +191,7 @@ def _save_layout_typography(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     fig, ax = plt.subplots(
-        figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
+        figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300
     )
     x = np.array([0, 1, 2])
     y = np.array([0, 1, 0.4])
@@ -153,7 +220,7 @@ def _save_colors_named(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     fig, ax = plt.subplots(
-        figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
+        figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300
     )
     x = np.array([0, 1, 2])
 
@@ -194,50 +261,12 @@ def _save_colors_named(images_dir: Path) -> Path:
     return path
 
 
-def _save_colors_interpolation(images_dir: Path) -> Path:
-    """Colors 'Color interpolation': cspace 5-color gradient bars."""
-    dm.style.use("presentation")
-
-    palette = dm.cspace("#FF6B6B", "#4ECDC4", n=5, space="oklch")
-
-    fig, ax = plt.subplots(
-        figsize=(dm.cm2in(15), dm.cm2in(6)), dpi=300
-    )
-    for i, c in enumerate(palette):
-        ax.bar(i, 1, color=c.to_hex(), edgecolor="white", lw=0.5)
-        ax.text(
-            i, 0.5, c.to_hex(),
-            ha="center", va="center",
-            fontsize=dm.fs(-1), fontweight="bold",
-            color="white" if c.oklab.L < 0.65 else "#333",
-        )
-
-    ax.set_xlim(-0.6, 4.6)
-    ax.set_ylim(0, 1.05)
-    ax.set_xticks(range(5))
-    ax.set_xticklabels([f"Step {i}" for i in range(5)])
-    ax.set_yticks([])
-    ax.set_title(
-        "cspace('#FF6B6B', '#4ECDC4', n=5, space='oklch')",
-        fontsize=dm.fs(0),
-        family="monospace",
-    )
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-    dm.simple_layout(fig)
-
-    path = images_dir / "colors_interpolation.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
-    plt.close(fig)
-    return path
-
-
 def _save_colors_colormap(images_dir: Path) -> Path:
     """Colors 'Colormaps': dm.Crest imshow + colorbar."""
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300)
     gs = fig.add_gridspec(1, 1)
     ax = fig.add_subplot(gs[0, 0])
 
@@ -269,7 +298,7 @@ def _save_scientific_chart(images_dir: Path) -> Path:
     dm.style.use("scientific")
 
     fig, ax = plt.subplots(
-        figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
+        figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300
     )
     ax.plot(
         np.arange(50),
@@ -300,7 +329,7 @@ def _save_diverging_bar(images_dir: Path) -> Path:
         neg_label="Decrease",
         pos_label="Increase",
         add_total=False,
-        figsize=(dm.cm2in(15), dm.cm2in(10)),
+        figsize=(dm.cm2in(9), dm.cm2in(6)),
     )
 
     path = images_dir / "save_diverging_bar.svg"
@@ -351,10 +380,12 @@ def build_usage_guide_assets(
     generators = [
         ("quickstart_first_figure", _save_quickstart_first_figure),
         ("quickstart_multi_panel", _save_quickstart_multi_panel),
+        ("layout_tight", _save_layout_tight),
+        ("layout_simple", _save_layout_simple),
         ("layout_gridspec", _save_layout_gridspec),
         ("layout_typography", _save_layout_typography),
         ("colors_named", _save_colors_named),
-        ("colors_interpolation", _save_colors_interpolation),
+
         ("colors_colormap", _save_colors_colormap),
         ("save_scientific", _save_scientific_chart),
         ("save_diverging_bar", _save_diverging_bar),
