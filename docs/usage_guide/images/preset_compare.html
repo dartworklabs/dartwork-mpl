@@ -334,7 +334,7 @@
         ls: "5.5 pt",
         fig: "3.5 × 3.0",
         spines: "all hidden",
-        use: "data-ink focus",
+        use: "data-ink focus (Tufte)",
         titleSize: 10.5,
         labelSize: 9.5,
         tickSize: 8.5,
@@ -351,18 +351,18 @@
         spineColor: "#333",
       },
       dark: {
-        fs: "7.5 pt",
-        ts: "8.5 pt",
-        ls: "5.5 pt",
+        fs: "11.0 pt",
+        ts: "13.0 pt",
+        ls: "8.5 pt",
         fig: "3.5 × 3.0",
-        spines: "all four visible",
-        use: "dark themes",
-        titleSize: 10.5,
-        labelSize: 9.5,
-        tickSize: 8.5,
-        legendSize: 7,
-        showTopSpine: true,
-        showRightSpine: true,
+        spines: "top + right hidden",
+        use: "dark themes & Jupyter",
+        titleSize: 13.5,
+        labelSize: 12,
+        tickSize: 11,
+        legendSize: 9.5,
+        showTopSpine: false,
+        showRightSpine: false,
         showLeftSpine: true,
         showBottomSpine: true,
         lineWidth: 1.5,
@@ -414,7 +414,7 @@
       var line = document.getElementById("dm-pc-line");
       line.setAttribute("stroke-width", p.lineWidth);
 
-      // Update colors
+      // Update colors (background, text, spines)
       var bg = document.getElementById("dm-pc-bg");
       bg.setAttribute("fill", p.bgColor);
       title.setAttribute("fill", p.textColor);
