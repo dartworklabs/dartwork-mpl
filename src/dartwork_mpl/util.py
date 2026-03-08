@@ -12,7 +12,7 @@ from __future__ import annotations
 # dedicated modules but many consumers still import from util.
 from .annotation import arrow_axis, label_axes
 from .io import save_and_show, save_formats, show
-from .layout import get_bounding_box, simple_layout
+from .layout import get_bounding_box, set_xmargin, set_ymargin, simple_layout
 from .prompt import copy_prompt, get_prompt, list_prompts, prompt_path
 from .scale import fs, fw, lw
 
@@ -23,6 +23,8 @@ __all__ = [
     "lw",
     "simple_layout",
     "get_bounding_box",
+    "set_xmargin",
+    "set_ymargin",
     "save_formats",
     "save_and_show",
     "show",

@@ -49,7 +49,7 @@ from .install import install_llm_txt, uninstall_llm_txt
 from .io import save_and_show, save_formats, show
 
 # Layout
-from .layout import get_bounding_box, simple_layout
+from .layout import get_bounding_box, set_xmargin, set_ymargin, simple_layout
 
 # Prompt utilities
 from .prompt import copy_prompt, get_prompt, list_prompts, prompt_path
@@ -105,6 +105,8 @@ __all__ = [
     # Layout
     "simple_layout",
     "get_bounding_box",
+    "set_xmargin",
+    "set_ymargin",
     # Color utilities
     "mix_colors",
     "pseudo_alpha",
