@@ -26,6 +26,7 @@ EFFICIENCY = [18.5, 19.2, 20.1, 21.0, 22.3, 23.1, 24.0, 24.8]
 
 def generate_before_after() -> None:
     """Generate Before (default mpl) vs After (dartwork) SVGs."""
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     import dartwork_mpl as dm
 
     # ── LEFT: Default matplotlib (reset to defaults) ──
@@ -80,6 +81,7 @@ def generate_before_after() -> None:
 
 def generate_chart_context() -> None:
     """Generate annotated chart showing font roles in context."""
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     import dartwork_mpl as dm
 
     dm.style.use("presentation")
