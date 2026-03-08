@@ -26,12 +26,13 @@ plt.show()
 
 ## Palette sheets
 
-**Dartwork.** 23 hand-curated categorical palettes for data visualization. Use
-`dm.vivid0`–`dm.vivid5` for high-contrast presentations, `dm.pastel0`–`dm.pastel5`
-for soft backgrounds, or `dm.acid0`–`dm.acid5` for bold fluorescent accents.
+**dartwork Color.** 23 hand-curated categorical palettes — dartwork 큐레이션 색조합 —
+designed for data visualization. Use `dc.vivid0`–`dc.vivid5` for high-contrast
+presentations, `dc.pastel0`–`dc.pastel5` for soft backgrounds, or
+`dc.acid0`–`dc.acid5` for bold fluorescent accents.
 
 ```{raw} html
-:file: images/colors_dm.html
+:file: images/colors_dc.html
 ```
 
 **OpenColor.** Balanced neutrals and calm hues for dashboards and UI frames. Even

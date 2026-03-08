@@ -49,7 +49,7 @@ CATEGORY_BLURBS: dict[str, str] = {
 }
 
 COLOR_LIBRARY_ORDER = [
-    "dm",
+    "dc",
     "opencolor",
     "tw",
     "md",
@@ -58,7 +58,7 @@ COLOR_LIBRARY_ORDER = [
     "primer",
 ]
 COLOR_LIBRARY_LABELS = {
-    "dm": "dartwork",
+    "dc": "dartwork Color",
     "opencolor": "OpenColor",
     "tw": "Tailwind",
     "md": "Material Design",
@@ -78,7 +78,10 @@ def _prepare_images_dir(base_dir: Path | None = None) -> Path:
 def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
     """Bucket colormaps by category."""
     cmap_list: Iterable[str] = (
-        name for name in mpl.colormaps if not str(name).endswith("_r")
+        name
+        for name in mpl.colormaps
+        if not str(name).endswith("_r")
+        and not str(name).startswith("dc.")
     )
     cmaps = [mpl.colormaps[name] for name in cmap_list]
 
@@ -91,12 +94,7 @@ def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
             categories[category].append(cmap)
 
     for values in categories.values():
-        values.sort(
-            key=lambda cmap: (
-                0 if cmap.name.startswith("dm.") else 1,
-                cmap.name,
-            )
-        )
+        values.sort(key=lambda cmap: cmap.name)
 
     return {k: v for k, v in categories.items() if v}
 
@@ -151,7 +149,6 @@ def _save_colormap_category(
         ax.set_yticks([])
         ax.set_frame_on(False)
 
-        tag = "dartwork" if cmap.name.startswith("dm.") else None
         ax.text(
             0,
             1.15,
@@ -168,23 +165,6 @@ def _save_colormap_category(
                 "linewidth": 0.8,
             },
         )
-        if tag:
-            ax.text(
-                1.0,
-                1.15,
-                tag,
-                fontsize=9,
-                ha="right",
-                va="bottom",
-                transform=ax.transAxes,
-                color="#03675f",
-                bbox={
-                    "boxstyle": "round,pad=0.2",
-                    "facecolor": "#e1f4f1",
-                    "edgecolor": "#b9e2dc",
-                    "linewidth": 0.8,
-                },
-            )
 
     filename = f"colormaps_{category.lower().replace(' ', '_')}.png"
     path = images_dir / filename
@@ -283,7 +263,7 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
 
     # Prefix → library key mapping
     prefix_map = {
-        "dm": "dm.",
+        "dc": "dc.",
         "opencolor": "oc.",
         "tw": "tw.",
         "md": "md.",
@@ -340,15 +320,15 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
             """Sort by OKLCH lightness descending (light first)."""
             return -_oklch_lightness(item[2])
 
-        is_dm = library_key == "dm"
+        is_dc = library_key == "dc"
 
         html_parts = ['<div class="dm-color-sheet">']
         html_parts.append(f'<div class="dm-sheet-title">{label}</div>')
 
         for base in sorted(lib_colors.keys()):
-            sort_fn = _oklch_sort_key if is_dm else _weight_sort_key
+            sort_fn = _oklch_sort_key if is_dc else _weight_sort_key
             colors_list = sorted(lib_colors[base], key=sort_fn)
-            # Group label shows prefix+base (e.g. "tw.amber", "dm.vivid")
+            # Group label shows prefix+base (e.g. "tw.amber", "dc.vivid")
             group_label = f"{prefix}{base}"
 
             html_parts.append('<div class="dm-color-group">')
@@ -410,15 +390,10 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
                 stops.append(f"{hex_c} {pct}%")
             gradient = f"linear-gradient(to right, {', '.join(stops)})"
 
-            is_dm = cmap.name.startswith("dm.")
-            tag = (
-                '<span class="dm-cmap-tag">dartwork</span>' if is_dm else ""
-            )
-
             html_parts.append(
                 f'<div class="dm-cmap-item">'
                 f'<div><span class="dm-cmap-name">{cmap.name}</span>'
-                f"{tag}</div>"
+                f"</div>"
                 f'<div class="dm-cmap-bar" style="background:{gradient}">'
                 f"</div></div>"
             )

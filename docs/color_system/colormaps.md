@@ -7,8 +7,8 @@ matplotlib.
 ## Use them at a glance
 
 - Any matplotlib name works (`viridis`, `plasma`, `twilight`, etc.) plus the
-  dartwork-specific set prefixed with `dm.`.
-- Add `_r` to reverse a map (`dm.sunset_r`) when dark-to-light needs flipping.
+  dartwork Color set prefixed with `dc.`.
+- Add `_r` to reverse a map (`dc.sunset_r`) when dark-to-light needs flipping.
 - Set `vmin`/`vmax` yourself for stable colorbars across facets or animations.
 - `dm.style.use("scientific")` keeps colorbar labels and ticks consistent with
   the rest of the style.
@@ -20,7 +20,7 @@ import numpy as np
 
 dm.style.use("scientific")
 data = np.random.randn(50, 50).cumsum(axis=0)
-im = plt.imshow(data, cmap="dm.sunset", vmin=-8, vmax=8)
+im = plt.imshow(data, cmap="dc.sunset", vmin=-8, vmax=8)
 cb = plt.colorbar(im, extend="both", shrink=0.9, pad=0.02)
 cb.set_label("normalized signal")
 cb.outline.set_visible(False)

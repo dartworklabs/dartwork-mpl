@@ -26,7 +26,7 @@ into matplotlib (`tw.blue500`, `md.red700`, `oc.gray6`, and more).
 ---
 
 **Colormaps.** Sequential, diverging, cyclical, and categorical ramps—plus the
-dartwork-specific set prefixed with `dm.`—rendered as wide gradients sized for
+dartwork Color set prefixed with `dc.`—rendered as wide gradients sized for
 slides and exports.
 
 ```{raw} html
@@ -52,9 +52,9 @@ signal = np.sin(x) * np.exp(-0.08 * x)
 ax1.plot(x, signal, color="tw.emerald500", linewidth=2, label="Emerald 500")
 ax1.legend(fontsize=dm.fs(-1))
 
-# Custom colormaps prefixed with 'dm.'
+# Custom colormaps prefixed with 'dc.'
 data = np.random.randn(50, 50).cumsum(axis=0)
-im = ax2.imshow(data, cmap="dm.sunset")
+im = ax2.imshow(data, cmap="dc.sunset")
 plt.colorbar(im, ax=ax2, label="normalized response")
 
 dm.simple_layout(fig)
