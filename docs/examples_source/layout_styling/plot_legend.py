@@ -7,6 +7,7 @@ Design legends with columns, geoms, backgrounds, and aligned handles that match 
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
 
 import dartwork_mpl as dm
 
@@ -53,8 +54,6 @@ ax2 = fig.add_subplot(gs[0, 1])
 (line1,) = ax2.plot(x, y1, color="oc.blue5", lw=0.7, alpha=0.8)
 (line2,) = ax2.plot(x, y2, color="oc.red5", lw=0.7, alpha=0.8)
 # Create custom handles: explicit marker and line styles
-from matplotlib.lines import Line2D
-
 custom_handles = [
     Line2D(
         [0],

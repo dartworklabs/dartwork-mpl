@@ -23,7 +23,7 @@ SRC_DIR = ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-import dartwork_mpl as dm
+import dartwork_mpl as dm  # noqa: E402
 
 
 def _prepare_images_dir(base_dir: Path | None = None) -> Path:
@@ -128,7 +128,7 @@ def _save_icon_example(images_dir: Path) -> Path:
     """API icon: MDI icon font rendering on matplotlib axes."""
     import warnings
     warnings.filterwarnings("ignore", message=".*missing from font.*Material Design Icons.*")
-    
+
     dm.style.use("presentation")
 
     mdi = dm.icon_font("mdi")

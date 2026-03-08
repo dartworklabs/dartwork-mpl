@@ -28,7 +28,7 @@ SRC_DIR = ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-import dartwork_mpl as dm
+import dartwork_mpl as dm  # noqa: E402
 
 # Font family metadata
 FONT_FAMILIES = {
@@ -340,9 +340,9 @@ def _save_family_preview(
         y_pos = n_fonts - idx - 0.5
 
         # Variant label — use family's own Regular font
-        label_kwargs = dict(
-            size=14, color="#666", va="center",
-        )
+        label_kwargs = {
+            "size": 14, "color": "#666", "va": "center",
+        }
         if regular_font_prop is not None:
             label_kwargs["fontproperties"] = regular_font_prop
         else:

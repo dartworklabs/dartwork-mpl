@@ -128,7 +128,7 @@ for idx, cat_data in enumerate(categories):
 
         lt, lb_ = b1 + v1, max(0, b1)
         rt, rb_ = b2 + v2, max(0, b2)
-        
+
         polygon = Polygon(
             [
                 [x1 + bar_width, lt],

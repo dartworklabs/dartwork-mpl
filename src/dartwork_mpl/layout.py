@@ -57,8 +57,8 @@ def set_xmargin(
     right: float | None = None,
 ) -> None:
     """Set responsive specific margin bounds on x-axis limit.
-    
-    This function modifies ``set_xlim`` to establish 
+
+    This function modifies ``set_xlim`` to establish
     a one-side or bounded margins while preserving the dynamic data span.
 
     Parameters
@@ -89,8 +89,8 @@ def set_ymargin(
     top: float | None = None,
 ) -> None:
     """Set responsive specific margin bounds on y-axis limit.
-    
-    This function modifies ``set_ylim`` to establish 
+
+    This function modifies ``set_ylim`` to establish
     a one-side or bounded margins while preserving the dynamic data span.
 
     Parameters

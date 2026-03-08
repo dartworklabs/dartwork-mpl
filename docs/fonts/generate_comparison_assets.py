@@ -127,14 +127,14 @@ def generate_chart_context() -> None:
     )
 
     # Annotations pointing to font roles
-    anno_kw = dict(
-        fontsize=9, color="#555",
-        bbox=dict(
-            boxstyle="round,pad=0.4", fc="#f8f8f6",
-            ec="#ccc", lw=0.8,
-        ),
-    )
-    arrow_kw = dict(arrowstyle="->", color="#999", lw=1.2)
+    anno_kw = {
+        "fontsize": 9, "color": "#555",
+        "bbox": {
+            "boxstyle": "round,pad=0.4", "fc": "#f8f8f6",
+            "ec": "#ccc", "lw": 0.8,
+        },
+    }
+    arrow_kw = {"arrowstyle": "->", "color": "#999", "lw": 1.2}
 
     ax.annotate(
         "Title -> Inter Display Bold",

@@ -23,7 +23,7 @@ SRC_DIR = ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-import dartwork_mpl as dm
+import dartwork_mpl as dm  # noqa: E402
 
 
 def _prepare_images_dir(base_dir: Path | None = None) -> Path:
@@ -403,7 +403,12 @@ def build_usage_guide_assets(
 
     # ── Preset comparison widget (separate generator) ──
     try:
-        from generate_preset_compare import build_preset_compare_html
+        try:
+            from usage_guide.generate_preset_compare import (
+                build_preset_compare_html,
+            )
+        except ModuleNotFoundError:
+            from generate_preset_compare import build_preset_compare_html
 
         p = build_preset_compare_html(images_dir / "preset_compare.html")
         paths.append(p)
