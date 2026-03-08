@@ -1,0 +1,43 @@
+font.family: sans-serif
+font.sans-serif: Roboto, Lato, Inter, Open Sans, Arial, Helvetica, sans-serif
+
+mathtext.fontset: custom
+
+mathtext.bf:  Noto Sans Math:bold
+mathtext.cal: Noto Sans Math
+mathtext.it:  Noto Sans Math:italic
+mathtext.rm:  Noto Sans Math
+mathtext.sf:  Noto Sans Math
+mathtext.tt:  Noto Sans Math
+mathtext.fallback: None
+mathtext.default: it
+
+font.weight:  400
+font.size:    12.0
+
+axes.titlesize:     14.0
+axes.titleweight:   500
+axes.labelsize:     12.0
+axes.labelweight:   400
+
+xtick.labelsize:     11.0
+ytick.labelsize:     11.0
+
+xtick.major.size:    4
+xtick.major.width:   0.5
+ytick.major.size:    4
+ytick.major.width:   0.5
+
+lines.linewidth:     1.5
+
+legend.fontsize:      9.0
+
+figure.titlesize:   14.0
+figure.titleweight: 500
+figure.labelsize:   12.0
+figure.labelweight: 400
+figure.figsize:     8.0, 6.0
+
+axes.linewidth:     0.5
+axes.spines.top:    False
+axes.spines.right:  False

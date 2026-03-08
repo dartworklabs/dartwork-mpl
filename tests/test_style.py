@@ -74,13 +74,13 @@ class TestLoadStyleDict:
 class TestStyleUse:
     """Tests for Style.use()."""
 
-    def test_apply_investment_kr(self) -> None:
-        """Applying 'investment-kr' should change rcParams."""
+    def test_apply_report_kr(self) -> None:
+        """Applying 'report-kr' should change rcParams."""
         # Save original
         original_family = mpl.rcParams["font.family"].copy()
 
         try:
-            dm.style.use("investment-kr")
+            dm.style.use("report-kr")
             # After applying, font.family should be set
             assert isinstance(mpl.rcParams["font.family"], list)
         finally:

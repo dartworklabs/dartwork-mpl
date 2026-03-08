@@ -1,0 +1,22 @@
+# Dark mode color scheme
+figure.facecolor:   "#1e1e1e"
+figure.edgecolor:   "#1e1e1e"
+
+axes.facecolor:     "#1e1e1e"
+axes.edgecolor:     "#555555"
+axes.labelcolor:    "#cccccc"
+
+text.color:         "#e0e0e0"
+
+xtick.color:        "#aaaaaa"
+xtick.labelcolor:   "#cccccc"
+ytick.color:        "#aaaaaa"
+ytick.labelcolor:   "#cccccc"
+
+grid.color:         "#333333"
+
+legend.edgecolor:   "#555555"
+legend.facecolor:   "#1e1e1e"
+legend.labelcolor:  "#cccccc"
+
+savefig.facecolor:  "#1e1e1e"

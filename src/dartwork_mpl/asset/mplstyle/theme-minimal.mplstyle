@@ -1,0 +1,16 @@
+# Tufte-style minimal chrome: no spines, no grid, subtle ticks
+axes.spines.top:    False
+axes.spines.right:  False
+axes.spines.left:   False
+axes.spines.bottom: False
+
+axes.linewidth:     0
+axes.grid:          False
+
+xtick.major.size:    0
+xtick.minor.size:    0
+ytick.major.size:    0
+ytick.minor.size:    0
+
+xtick.direction:     out
+ytick.direction:     out

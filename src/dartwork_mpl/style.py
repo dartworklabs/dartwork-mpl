@@ -185,11 +185,19 @@ class Style:
         preset_name : str
             Name of the preset to apply. Available presets:
             - "scientific": For academic papers
-            - "investment": For investment reports
+            - "report": For reports and dashboards
             - "presentation": For presentations
+            - "poster": For conference posters and large displays
+            - "web": For web pages and documentation
+            - "minimal": Tufte-style, no spines/ticks
+            - "dark": Dark background theme
             - "scientific-kr": Scientific with Korean font
-            - "investment-kr": Investment with Korean font
+            - "report-kr": Report with Korean font
             - "presentation-kr": Presentation with Korean font
+            - "poster-kr": Poster with Korean font
+            - "web-kr": Web/docs with Korean font
+            - "minimal-kr": Minimal with Korean font
+            - "dark-kr": Dark theme with Korean font
 
         Raises
         ------
