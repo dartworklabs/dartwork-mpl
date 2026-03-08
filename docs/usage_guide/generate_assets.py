@@ -233,7 +233,7 @@ def _save_colors_interpolation(images_dir: Path) -> Path:
 
 
 def _save_colors_colormap(images_dir: Path) -> Path:
-    """Colors 'Colormaps': dm.mint imshow + colorbar."""
+    """Colors 'Colormaps': dm.Crest imshow + colorbar."""
     np.random.seed(42)
     dm.style.use("presentation")
 
@@ -241,7 +241,7 @@ def _save_colors_colormap(images_dir: Path) -> Path:
         figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
     )
     data = np.random.randn(50, 50).cumsum(axis=0)
-    cmap = plt.colormaps["dm.mint"]
+    cmap = plt.colormaps["dc.Crest"]
     im = ax.imshow(data, cmap=cmap, vmin=-8, vmax=8)
     cb = plt.colorbar(im, ax=ax, extend="both", shrink=0.9, pad=0.02)
     cb.set_label("normalized signal", fontsize=dm.fs(0))

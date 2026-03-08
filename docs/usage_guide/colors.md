@@ -90,19 +90,20 @@ human eye:
 
 ## Colormaps
 
-dartwork-mpl bundles custom colormaps prefixed with `dm.`, designed for
-perceptually uniform gradients. They work like any matplotlib colormap:
+dartwork-mpl bundles custom colormaps prefixed with `dc.` — dartwork Color
+curated colormaps designed for perceptually uniform gradients. They work like
+any matplotlib colormap:
 
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
-cmap = plt.colormaps["dm.mint"]
-print(cmap.name)                       # 'dm.mint'
+cmap = plt.colormaps["dc.Crest"]
+print(cmap.name)                       # 'dc.Crest'
 print(dm.classify_colormap(cmap))      # 'sequential' (tells you the type)
 ```
 
-Add `_r` to reverse any colormap (e.g., `dm.sunset_r`). Browse all available
+Add `_r` to reverse any colormap (e.g., `dc.sunset_r`). Browse all available
 colormaps on the [Colormaps](../color_system/colormaps) page.
 
 ## Where things live

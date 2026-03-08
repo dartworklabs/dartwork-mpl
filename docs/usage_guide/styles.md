@@ -21,8 +21,8 @@ dm.style.use("scientific-kr")  # any preset + Korean fonts
 
 ## Interactive comparison
 
-Toggle between presets to see how font sizes, spines, and colors change
-on the same chart:
+Toggle between presets below to see how font sizes, spines, line weights,
+tick marks, and colors change on the same chart:
 
 ```{raw} html
 :file: images/preset_compare.html

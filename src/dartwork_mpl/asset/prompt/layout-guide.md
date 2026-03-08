@@ -26,13 +26,13 @@ The `simple_layout` function works as follows:
 def fun(x: np.ndarray) -> float:
     # x = [left, right, bottom, top] (GridSpec parameters)
     gs.update(left=x[0], right=x[1], bottom=x[2], top=x[3])
-    
+
     # Collect all axes tightbbox
     ax_bboxes = [ax.get_tightbbox() for ax in fig.axes]
-    
+
     # Calculate minimum bbox containing all tightbbox
     all_bbox = get_bounding_box(ax_bboxes)
-    
+
     # Calculate target bbox (figure coordinates + margins)
     targets = [
         fbox.width * bbox[0] + margins[0],      # left
@@ -40,7 +40,7 @@ def fun(x: np.ndarray) -> float:
         fbox.width * (bbox[1] - bbox[0]) - 2 * margins[1],   # width
         fbox.height * (bbox[3] - bbox[2]) - 2 * margins[3],  # height
     ]
-    
+
     # Calculate loss and optimize
     loss = np.square((values - targets) / scales * importance_weights).sum()
     return loss
@@ -159,7 +159,7 @@ ax.set_xlabel('X value [Hour]', fontsize=dm.fs(0))
 ax.set_ylabel('Y value [kW]', fontsize=dm.fs(0))
 
 # Hardcoded title (figure coordinates)
-fig.text(0.5, 0.98, 'Title', 
+fig.text(0.5, 0.98, 'Title',
          fontsize=dm.fs(2), fontweight=dm.fw(1),
          ha='center', va='top')
 
@@ -237,7 +237,7 @@ ax.set_xlabel('X value [Hour]', fontsize=dm.fs(0))
 ax.set_ylabel('Y value [kW]', fontsize=dm.fs(0))
 
 # Hardcoded title (figure coordinates)
-fig.text(0.5, title_y, 'Comparison Plot', 
+fig.text(0.5, title_y, 'Comparison Plot',
          fontsize=dm.fs(2), fontweight=dm.fw(1),
          ha='center', va='top')
 
@@ -300,7 +300,7 @@ gs = fig.add_gridspec(
 ax = fig.add_subplot(gs[0, 0])
 
 # Plot
-im = ax.contourf(X, Y, Z, cmap='dm.Spectral', levels=20)
+im = ax.contourf(X, Y, Z, cmap='dc.Spectral', levels=20)
 ax.set_xlabel('X value', fontsize=dm.fs(0))
 ax.set_ylabel('Y value', fontsize=dm.fs(0))
 
@@ -324,10 +324,12 @@ dm.save_and_show(fig)
 ### 6.3 Advantages and Disadvantages
 
 **Advantages:**
+
 - Relative positions are maintained even when axes positions change
 - Compatible with `simple_layout` optimization
 
 **Disadvantages:**
+
 - Requires `make_axes_locatable`, so additional import needed
 - Cannot be applied to all elements (suitable for colorbar, inset axes, etc.)
 
@@ -367,7 +369,7 @@ gs = fig.add_gridspec(
 # Title axes
 ax_title = fig.add_subplot(gs[0, 0])
 ax_title.axis('off')  # Hide axes
-ax_title.text(0.5, 0.5, 'Title', 
+ax_title.text(0.5, 0.5, 'Title',
               fontsize=dm.fs(2), fontweight=dm.fw(1),
               ha='center', va='center',
               transform=ax_title.transAxes)
@@ -418,7 +420,7 @@ gs = fig.add_gridspec(
 # Title axes
 ax_title = fig.add_subplot(gs[0, 0])
 ax_title.axis('off')
-ax_title.text(0.5, 0.5, 'Comparison Plot', 
+ax_title.text(0.5, 0.5, 'Comparison Plot',
               fontsize=dm.fs(2), fontweight=dm.fw(1),
               ha='center', va='center',
               transform=ax_title.transAxes)
@@ -455,10 +457,12 @@ dm.save_and_show(fig)
 ### 7.4 Advantages and Disadvantages
 
 **Advantages:**
+
 - All elements are included in GridSpec, perfectly compatible with `simple_layout`
 - Relative positions between elements are automatically maintained
 
 **Disadvantages:**
+
 - GridSpec structure can become complex
 - Need to adjust `height_ratios` or `width_ratios` appropriately
 
@@ -593,10 +597,12 @@ dm.save_and_show(fig)
 ### 8.4 Advantages and Disadvantages
 
 **Advantages:**
+
 - Each GridSpec is optimized independently without interfering with each other
 - Can flexibly handle complex layouts
 
 **Disadvantages:**
+
 - Requires multiple `simple_layout` calls
 - Need to accurately calculate bbox for each GridSpec
 
@@ -605,6 +611,7 @@ dm.save_and_show(fig)
 ### 9.1 Basic Principle
 
 In practice, multiple solutions are often combined. For example:
+
 - Make Title into axes inside GridSpec
 - Make Legend using axes_divider
 - Make Colorbar using axes_divider
@@ -643,14 +650,14 @@ gs = fig.add_gridspec(
 # Title axes
 ax_title = fig.add_subplot(gs[0, 0])
 ax_title.axis('off')
-ax_title.text(0.5, 0.5, 'Contour Plot with Colorbar', 
+ax_title.text(0.5, 0.5, 'Contour Plot with Colorbar',
               fontsize=dm.fs(2), fontweight=dm.fw(1),
               ha='center', va='center',
               transform=ax_title.transAxes)
 
 # Plot axes
 ax = fig.add_subplot(gs[1, 0])
-im = ax.contourf(X, Y, Z, cmap='dm.Spectral', levels=20)
+im = ax.contourf(X, Y, Z, cmap='dc.Spectral', levels=20)
 ax.set_xlabel('X value', fontsize=dm.fs(0))
 ax.set_ylabel('Y value', fontsize=dm.fs(0))
 
@@ -717,7 +724,7 @@ gs = fig.add_gridspec(
 # Title axes
 ax_title = fig.add_subplot(gs[0, 0])
 ax_title.axis('off')
-ax_title.text(0.5, 0.5, 'Complex Layout Example', 
+ax_title.text(0.5, 0.5, 'Complex Layout Example',
               fontsize=dm.fs(2), fontweight=dm.fw(1),
               ha='center', va='center',
               transform=ax_title.transAxes)
@@ -754,11 +761,13 @@ dm.save_and_show(fig)
 ### 11.1 How to Decide Number of GridSpecs
 
 **Using One GridSpec:**
+
 - When spine alignment is important for axes
 - When all axes need to be aligned with each other
 - For simple layouts
 
 **Using Multiple GridSpecs:**
+
 - When independent layout areas are needed
 - When spine alignment is not important
 - For complex layouts
@@ -766,25 +775,30 @@ dm.save_and_show(fig)
 ### 11.2 Splitting Strategy for Each GridSpec
 
 **Vertical Split (using nrows):**
+
 - When placing Title, Legend, Plot vertically
 - When placing multiple subplots vertically
 
 **Horizontal Split (using ncols):**
+
 - When placing multiple subplots horizontally
 - When placing Colorbar next to axes
 
 **Combined Split (nrows + ncols):**
+
 - Grid layouts like 2x2, 3x2
 - Complex multi-subplot layouts
 
 ### 11.3 How to Specify bbox
 
 **Using Entire Figure:**
+
 ```python
 dm.simple_layout(fig, bbox=(0, 1, 0, 1))  # default
 ```
 
 **Using Partial Region:**
+
 ```python
 # Left half
 dm.simple_layout(fig, bbox=(0, 0.5, 0, 1))
@@ -915,12 +929,14 @@ dm.save_and_show(fig)
 ### 13.1 How use_all_axes Works
 
 When `use_all_axes=True` (default):
+
 - **Considers tightbbox of all axes**.
 - However, **only parameters of the given GridSpec (or first GridSpec) are optimized**.
 
 ### 13.2 Problem Situation
 
 When multiple GridSpecs exist and `use_all_axes=True` is used:
+
 - All axes tightbbox are considered, but
 - Only the first GridSpec is optimized, so
 - Other GridSpecs' axes are considered but not optimized, which can cause unexpected results.
@@ -1005,7 +1021,7 @@ gs = fig.add_gridspec(
 ax = fig.add_subplot(gs[0, 0])
 
 # Plot
-im = ax.contourf(X, Y, Z, cmap='dm.Spectral', levels=20)
+im = ax.contourf(X, Y, Z, cmap='dc.Spectral', levels=20)
 ax.set_xlabel('X value', fontsize=dm.fs(0))
 ax.set_ylabel('Y value', fontsize=dm.fs(0))
 
@@ -1084,7 +1100,7 @@ ax.set_xlabel('X value [Hour]', fontsize=dm.fs(0))
 ax.set_ylabel('Y value [kW]', fontsize=dm.fs(0))
 
 # Hardcoded element
-fig.text(0.5, title_y, 'Title', 
+fig.text(0.5, title_y, 'Title',
          fontsize=dm.fs(2), fontweight=dm.fw(1),
          ha='center', va='top')
 
@@ -1124,13 +1140,13 @@ dm.save_and_show(fig)
 
 ### 15.2 Solution Selection Guide
 
-| Situation | Recommended Solution |
-|-----------|----------------------|
-| Simple plot with Title/Legend | Solution 1: Set bbox smaller |
-| Plot with Colorbar | Solution 2: Use axes_divider |
-| Complex multi-element layout | Solution 3: Include in GridSpec |
-| Independent subplots | Solution 4: Independent GridSpecs |
-| Combined layout | Solution 5: Combine multiple solutions |
+| Situation                     | Recommended Solution                   |
+| ----------------------------- | -------------------------------------- |
+| Simple plot with Title/Legend | Solution 1: Set bbox smaller           |
+| Plot with Colorbar            | Solution 2: Use axes_divider           |
+| Complex multi-element layout  | Solution 3: Include in GridSpec        |
+| Independent subplots          | Solution 4: Independent GridSpecs      |
+| Combined layout               | Solution 5: Combine multiple solutions |
 
 ### 15.3 Checklist
 
@@ -1149,4 +1165,3 @@ When designing layouts, check the following:
 **Last Updated**: 2025
 
 **Note**: This guide explains how to use the `simple_layout` function in `dartwork-mpl`. For more details, refer to the general guide and coding rules.
-

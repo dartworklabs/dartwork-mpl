@@ -242,7 +242,7 @@ for ax, label in zip(axs, 'ab'):
 ```python
 # Check available colormaps
 fig, axs = dm.plot_colormaps(
-    cmap_list=['viridis', 'dm.spectral'],  # None for all
+    cmap_list=['viridis', 'dc.spectral'],  # None for all
     ncols=3,
     group_by_type=True  # Group by type
 )
@@ -328,7 +328,7 @@ Available presets:
 1. **Avoid tight_layout**: Use `dm.simple_layout()` instead
 2. **Work based on savefig**: Work based on saved files, not `plt.show()`
 3. **Check units**: matplotlib uses various units (inch, point, pixel)
-4. **Color naming**: Distinguish prefixes `dm.`, `tw.`, `tailwind.`
+4. **Color naming**: Distinguish prefixes `dc.`, `tw.`, `tailwind.`
 
 ## 7. Complete Example
 
