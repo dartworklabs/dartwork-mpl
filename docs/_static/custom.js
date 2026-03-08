@@ -263,7 +263,7 @@ document.addEventListener("click", function (e) {
       sheet.style.position = "relative";
       sheet.appendChild(panel);
 
-      sheet.addEventListener("mouseover", function (e) {
+      sheet.addEventListener("mousemove", function (e) {
         var swatch = e.target.closest(".dm-swatch");
         if (!swatch) {
           panel.style.display = "none";
@@ -298,6 +298,27 @@ document.addEventListener("click", function (e) {
         panel.querySelector(".dm-detail-rgb").textContent =
           rr + ", " + gg + ", " + bb;
 
+        // Position panel near cursor (fixed positioning)
+        var offsetX = 16,
+          offsetY = 16;
+        var panelW = panel.offsetWidth || 180;
+        var panelH = panel.offsetHeight || 100;
+        var cx = e.clientX,
+          cy = e.clientY;
+
+        // Flip to left/above if near viewport edge
+        var left =
+          cx + offsetX + panelW > window.innerWidth
+            ? cx - offsetX - panelW
+            : cx + offsetX;
+        var top =
+          cy + offsetY + panelH > window.innerHeight
+            ? cy - offsetY - panelH
+            : cy + offsetY;
+
+        panel.style.left = left + "px";
+        panel.style.top = top + "px";
+        panel.style.transform = "none";
         panel.style.display = "";
       });
 
@@ -461,5 +482,235 @@ document.addEventListener("click", function (e) {
         searchCount.textContent = "";
       }
     });
+  });
+})();
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ⑪ Gallery Metadata Filter — search + category pills on gallery index
+   ═══════════════════════════════════════════════════════════════════════ */
+(function () {
+  document.addEventListener("DOMContentLoaded", function () {
+    // Only activate on the gallery index page
+    var heading = document.getElementById("examples-gallery");
+    if (!heading) return;
+
+    var article = heading.closest("article") || heading.parentElement;
+    if (!article) return;
+
+    // Collect all category sections
+    var sections = article.querySelectorAll(
+      "section[id]:not(#examples-gallery)",
+    );
+    if (!sections.length) return;
+
+    // Build toolbar
+    var toolbar = document.createElement("div");
+    toolbar.className = "dm-gallery-toolbar";
+
+    // Search input
+    var searchWrap = document.createElement("div");
+    searchWrap.className = "dm-gallery-search-wrap";
+    var searchInput = document.createElement("input");
+    searchInput.type = "text";
+    searchInput.className = "dm-gallery-search";
+    searchInput.placeholder = "Filter examples… (e.g. bar, scatter, legend)";
+    searchInput.setAttribute("aria-label", "Filter gallery examples");
+    var searchCount = document.createElement("span");
+    searchCount.className = "dm-gallery-search-count";
+    searchWrap.appendChild(searchInput);
+    searchWrap.appendChild(searchCount);
+
+    // Category pills
+    var pillWrap = document.createElement("div");
+    pillWrap.className = "dm-gallery-pills";
+
+    var pillAll = document.createElement("button");
+    pillAll.className = "dm-gallery-pill active";
+    pillAll.textContent = "All";
+    pillAll.setAttribute("data-category", "all");
+    pillWrap.appendChild(pillAll);
+
+    var activeCategory = "all";
+    var categoryMap = {};
+
+    sections.forEach(function (sec) {
+      var h2 = sec.querySelector("h2");
+      if (!h2) return;
+      var name = h2.textContent.replace("¶", "").trim();
+      var id = sec.id;
+      categoryMap[id] = { name: name, section: sec };
+
+      var pill = document.createElement("button");
+      pill.className = "dm-gallery-pill";
+      pill.textContent = name;
+      pill.setAttribute("data-category", id);
+      pillWrap.appendChild(pill);
+    });
+
+    toolbar.appendChild(searchWrap);
+    toolbar.appendChild(pillWrap);
+
+    // Insert toolbar after the h1 (and its description)
+    var firstSection = sections[0];
+    firstSection.parentElement.insertBefore(toolbar, firstSection);
+
+    // Total count
+    var allCards = article.querySelectorAll(".sphx-glr-thumbcontainer");
+    var totalExamples = allCards.length;
+
+    // Pill click handler
+    pillWrap.addEventListener("click", function (e) {
+      var btn = e.target.closest(".dm-gallery-pill");
+      if (!btn) return;
+
+      activeCategory = btn.getAttribute("data-category");
+      pillWrap.querySelectorAll(".dm-gallery-pill").forEach(function (p) {
+        p.classList.toggle(
+          "active",
+          p.getAttribute("data-category") === activeCategory,
+        );
+      });
+      applyFilter();
+    });
+
+    // Search handler
+    searchInput.addEventListener("input", function () {
+      applyFilter();
+    });
+
+    function applyFilter() {
+      var query = searchInput.value.trim().toLowerCase();
+      var matched = 0;
+
+      sections.forEach(function (sec) {
+        var sectionId = sec.id;
+        var categoryHidden =
+          activeCategory !== "all" && sectionId !== activeCategory;
+
+        if (categoryHidden) {
+          sec.style.display = "none";
+          return;
+        }
+
+        sec.style.display = "";
+        var cards = sec.querySelectorAll(".sphx-glr-thumbcontainer");
+        var sectionMatch = false;
+
+        cards.forEach(function (card) {
+          var title =
+            (card.querySelector(".sphx-glr-thumbnail-title") || {})
+              .textContent || "";
+          var tooltip = card.getAttribute("tooltip") || "";
+          var searchText = (title + " " + tooltip).toLowerCase();
+
+          if (!query || searchText.indexOf(query) !== -1) {
+            card.style.display = "";
+            card.style.opacity = "";
+            sectionMatch = true;
+            matched++;
+          } else {
+            card.style.opacity = "0.08";
+            card.style.transform = "scale(0.92)";
+          }
+        });
+
+        // Hide empty sections
+        if (!sectionMatch && query) {
+          sec.style.display = "none";
+        }
+      });
+
+      // Update count
+      if (query || activeCategory !== "all") {
+        searchCount.textContent = matched + " / " + totalExamples;
+        searchCount.style.color = matched === 0 ? "#e53935" : "";
+      } else {
+        searchCount.textContent = "";
+      }
+    }
+  });
+})();
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ⑬ Code Output Preview — toggle between code/output on example pages
+   ═══════════════════════════════════════════════════════════════════════ */
+(function () {
+  document.addEventListener("DOMContentLoaded", function () {
+    // Only activate on sphinx-gallery example pages
+    var exTitle = document.querySelector(".sphx-glr-example-title");
+    if (!exTitle) return;
+
+    var article = exTitle.closest("article") || exTitle.parentElement;
+    if (!article) return;
+
+    // Find all code blocks and output images
+    var codeBlocks = article.querySelectorAll(".highlight-Python");
+    var outputImgs = article.querySelectorAll(".sphx-glr-single-img");
+    if (!codeBlocks.length && !outputImgs.length) return;
+
+    // Build control bar
+    var ctrlBar = document.createElement("div");
+    ctrlBar.className = "dm-example-controls";
+
+    var modes = [
+      { id: "full", label: "Full", icon: "📄" },
+      { id: "code-only", label: "Code", icon: "⌨" },
+      { id: "output-only", label: "Output", icon: "🖼" },
+    ];
+
+    var activeMode = "full";
+
+    modes.forEach(function (mode) {
+      var btn = document.createElement("button");
+      btn.className =
+        "dm-example-mode-btn" + (mode.id === "full" ? " active" : "");
+      btn.innerHTML = mode.icon + " " + mode.label;
+      btn.setAttribute("data-mode", mode.id);
+      btn.addEventListener("click", function () {
+        activeMode = mode.id;
+        ctrlBar.querySelectorAll(".dm-example-mode-btn").forEach(function (b) {
+          b.classList.toggle("active", b.getAttribute("data-mode") === mode.id);
+        });
+        applyMode();
+      });
+      ctrlBar.appendChild(btn);
+    });
+
+    // Insert controls after the h1
+    var h1 = exTitle.querySelector("h1");
+    var desc = h1 ? h1.nextElementSibling : null;
+    // Insert after description paragraph
+    if (desc && desc.tagName === "P") {
+      desc.parentElement.insertBefore(ctrlBar, desc.nextSibling);
+    } else if (h1) {
+      h1.parentElement.insertBefore(ctrlBar, h1.nextSibling);
+    }
+
+    function applyMode() {
+      codeBlocks.forEach(function (block) {
+        if (activeMode === "output-only") {
+          block.style.display = "none";
+        } else {
+          block.style.display = "";
+        }
+      });
+
+      outputImgs.forEach(function (img) {
+        if (activeMode === "code-only") {
+          img.style.display = "none";
+        } else {
+          img.style.display = "";
+        }
+      });
+
+      // Hide timing and footnote text in output-only mode
+      var timing = article.querySelector(".sphx-glr-timing");
+      if (timing) {
+        timing.style.display = activeMode === "output-only" ? "none" : "";
+      }
+
+      // Also hide text between code blocks in code-only mode
+      // (descriptive paragraphs from sphinx-gallery sections)
+    }
   });
 })();
