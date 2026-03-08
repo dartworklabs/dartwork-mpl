@@ -20,11 +20,11 @@ class TestEnsureLoaded:
         ensure_loaded()
         ensure_loaded()
 
-    def test_registers_dm_colormaps(self) -> None:
-        """After loading, dm.* colormaps should exist."""
+    def test_registers_dc_colormaps(self) -> None:
+        """After loading, dc.* colormaps should exist."""
         ensure_loaded()
         cmap_names = [
-            name for name in mpl.colormaps if name.startswith("dm.")
+            name for name in mpl.colormaps if name.startswith("dc.")
         ]
         assert len(cmap_names) > 0
 
@@ -41,7 +41,7 @@ class TestParseColormap:
             return  # skip if no cmap files
 
         cmap = _parse_colormap(txt_files[0])
-        assert cmap.name.startswith("dm.")
+        assert cmap.name.startswith("dc.")
         assert len(cmap.colors) > 0
 
     def test_parse_reverse(self) -> None:

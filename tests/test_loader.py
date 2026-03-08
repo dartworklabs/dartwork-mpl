@@ -67,28 +67,28 @@ class TestEnsureLoaded:
         assert mapping["oc.blue5"].startswith("#")
         assert mapping["tw.blue500"].startswith("#")
 
-    def test_dm_palettes_registered(self) -> None:
-        """Dartwork palettes (dm.* prefix) are available."""
+    def test_dc_palettes_registered(self) -> None:
+        """Dartwork Color palettes (dc.* prefix) are available."""
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
-        assert "dm.vivid0" in mapping
-        assert "dm.vivid5" in mapping
-        assert "dm.pastel3" in mapping
-        assert "dm.acid0" in mapping
+        assert "dc.vivid0" in mapping
+        assert "dc.vivid5" in mapping
+        assert "dc.pastel3" in mapping
+        assert "dc.acid0" in mapping
 
-    def test_dm_palette_count(self) -> None:
-        """All 23 dm palettes × 6 colors = 138 entries."""
+    def test_dc_palette_count(self) -> None:
+        """All 23 dc palettes × 6 colors = 138 entries."""
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
-        dm_keys = [k for k in mapping if k.startswith("dm.")]
-        assert len(dm_keys) >= 138
+        dc_keys = [k for k in mapping if k.startswith("dc.")]
+        assert len(dc_keys) >= 138
 
-    def test_dm_color_values_are_hex(self) -> None:
-        """dm.* colours are valid hex strings."""
+    def test_dc_color_values_are_hex(self) -> None:
+        """dc.* colours are valid hex strings."""
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
-        assert mapping["dm.vivid0"].startswith("#")
-        assert mapping["dm.ocean2"].startswith("#")
+        assert mapping["dc.vivid0"].startswith("#")
+        assert mapping["dc.ocean2"].startswith("#")
 
 
 class TestLoadJsonPalette:
