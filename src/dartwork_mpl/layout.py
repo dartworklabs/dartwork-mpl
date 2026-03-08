@@ -8,10 +8,14 @@ from __future__ import annotations
 
 __all__ = ["simple_layout", "get_bounding_box"]
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
-from scipy.optimize import OptimizeResult, minimize
+
+if TYPE_CHECKING:
+    from scipy.optimize import OptimizeResult
 
 
 def get_bounding_box(boxes: list) -> tuple[float, float, float, float]:
@@ -130,6 +134,7 @@ def simple_layout(
         (bbox[3] - bound_margin, bbox[3]),
     ]
 
+    from scipy.optimize import minimize
     result = minimize(
         fun,
         x0=np.array(bounds).mean(axis=1),
