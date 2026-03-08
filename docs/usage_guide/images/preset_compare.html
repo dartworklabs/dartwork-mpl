@@ -1,6 +1,6 @@
 <!-- Preset Visual Comparison — interactive toggle -->
 <div class="dm-preset-compare" id="dm-preset-compare">
-  <div class="dm-pc-tabs">
+  <div class="dm-pc-tabs" id="dm-pc-tabs">
     <button class="dm-pc-tab dm-pc-tab-active" data-preset="scientific">
       scientific
     </button>
@@ -13,176 +13,489 @@
   </div>
   <div class="dm-pc-preview">
     <div class="dm-pc-chart" id="dm-pc-chart">
-      <!-- Simulated chart preview -->
+      <!-- Simulated matplotlib-like chart preview -->
       <svg
-        viewBox="0 0 320 200"
+        viewBox="0 0 380 240"
         xmlns="http://www.w3.org/2000/svg"
         class="dm-pc-svg"
       >
         <!-- Background -->
-        <rect id="dm-pc-bg" width="320" height="200" fill="#ffffff" rx="4" />
-        <!-- Axes area -->
+        <rect id="dm-pc-bg" width="380" height="240" fill="#ffffff" rx="4" />
+
         <g id="dm-pc-axes">
-          <!-- Spines -->
+          <!-- ═══ Spines ═══ -->
           <line
             id="dm-pc-spine-bottom"
-            x1="50"
-            y1="170"
-            x2="300"
-            y2="170"
+            x1="56"
+            y1="190"
+            x2="350"
+            y2="190"
             stroke="#333"
             stroke-width="0.8"
           />
           <line
             id="dm-pc-spine-left"
-            x1="50"
-            y1="20"
-            x2="50"
-            y2="170"
+            x1="56"
+            y1="24"
+            x2="56"
+            y2="190"
             stroke="#333"
             stroke-width="0.8"
           />
           <line
             id="dm-pc-spine-top"
-            x1="50"
-            y1="20"
-            x2="300"
-            y2="20"
+            x1="56"
+            y1="24"
+            x2="350"
+            y2="24"
             stroke="#333"
             stroke-width="0.8"
           />
           <line
             id="dm-pc-spine-right"
-            x1="300"
-            y1="20"
-            x2="300"
-            y2="170"
+            x1="350"
+            y1="24"
+            x2="350"
+            y2="190"
             stroke="#333"
             stroke-width="0.8"
           />
-          <!-- Plot line -->
+
+          <!-- ═══ X-axis tick marks ═══ -->
+          <g id="dm-pc-xticks">
+            <line
+              class="dm-pc-xtick-mark"
+              x1="80"
+              y1="190"
+              x2="80"
+              y2="193"
+              stroke="#333"
+              stroke-width="0.6"
+            />
+            <line
+              class="dm-pc-xtick-mark"
+              x1="134"
+              y1="190"
+              x2="134"
+              y2="193"
+              stroke="#333"
+              stroke-width="0.6"
+            />
+            <line
+              class="dm-pc-xtick-mark"
+              x1="188"
+              y1="190"
+              x2="188"
+              y2="193"
+              stroke="#333"
+              stroke-width="0.6"
+            />
+            <line
+              class="dm-pc-xtick-mark"
+              x1="242"
+              y1="190"
+              x2="242"
+              y2="193"
+              stroke="#333"
+              stroke-width="0.6"
+            />
+            <line
+              class="dm-pc-xtick-mark"
+              x1="296"
+              y1="190"
+              x2="296"
+              y2="193"
+              stroke="#333"
+              stroke-width="0.6"
+            />
+            <line
+              class="dm-pc-xtick-mark"
+              x1="350"
+              y1="190"
+              x2="350"
+              y2="193"
+              stroke="#333"
+              stroke-width="0.6"
+            />
+          </g>
+
+          <!-- ═══ Y-axis tick marks ═══ -->
+          <g id="dm-pc-yticks">
+            <line
+              class="dm-pc-ytick-mark"
+              x1="53"
+              y1="190"
+              x2="56"
+              y2="190"
+              stroke="#333"
+              stroke-width="0.6"
+            />
+            <line
+              class="dm-pc-ytick-mark"
+              x1="53"
+              y1="157"
+              x2="56"
+              y2="157"
+              stroke="#333"
+              stroke-width="0.6"
+            />
+            <line
+              class="dm-pc-ytick-mark"
+              x1="53"
+              y1="124"
+              x2="56"
+              y2="124"
+              stroke="#333"
+              stroke-width="0.6"
+            />
+            <line
+              class="dm-pc-ytick-mark"
+              x1="53"
+              y1="91"
+              x2="56"
+              y2="91"
+              stroke="#333"
+              stroke-width="0.6"
+            />
+            <line
+              class="dm-pc-ytick-mark"
+              x1="53"
+              y1="58"
+              x2="56"
+              y2="58"
+              stroke="#333"
+              stroke-width="0.6"
+            />
+            <line
+              class="dm-pc-ytick-mark"
+              x1="53"
+              y1="24"
+              x2="56"
+              y2="24"
+              stroke="#333"
+              stroke-width="0.6"
+            />
+          </g>
+
+          <!-- ═══ Data: Series A (line + markers) ═══ -->
           <polyline
-            id="dm-pc-line"
-            points="60,140 100,80 140,100 180,50 220,70 260,40 290,60"
+            id="dm-pc-line-a"
+            points="80,168 134,120 188,138 242,72 296,90 350,48"
             fill="none"
             stroke="#0d9488"
-            stroke-width="1.5"
+            stroke-width="1.2"
             stroke-linecap="round"
             stroke-linejoin="round"
           />
-          <!-- Scatter dots -->
-          <circle class="dm-pc-dot" cx="60" cy="140" r="3" fill="#0d9488" />
-          <circle class="dm-pc-dot" cx="100" cy="80" r="3" fill="#0d9488" />
-          <circle class="dm-pc-dot" cx="140" cy="100" r="3" fill="#0d9488" />
-          <circle class="dm-pc-dot" cx="180" cy="50" r="3" fill="#0d9488" />
-          <circle class="dm-pc-dot" cx="220" cy="70" r="3" fill="#0d9488" />
-          <circle class="dm-pc-dot" cx="260" cy="40" r="3" fill="#0d9488" />
-          <circle class="dm-pc-dot" cx="290" cy="60" r="3" fill="#0d9488" />
-          <!-- Title -->
+          <circle class="dm-pc-dot-a" cx="80" cy="168" r="2.5" fill="#0d9488" />
+          <circle
+            class="dm-pc-dot-a"
+            cx="134"
+            cy="120"
+            r="2.5"
+            fill="#0d9488"
+          />
+          <circle
+            class="dm-pc-dot-a"
+            cx="188"
+            cy="138"
+            r="2.5"
+            fill="#0d9488"
+          />
+          <circle class="dm-pc-dot-a" cx="242" cy="72" r="2.5" fill="#0d9488" />
+          <circle class="dm-pc-dot-a" cx="296" cy="90" r="2.5" fill="#0d9488" />
+          <circle class="dm-pc-dot-a" cx="350" cy="48" r="2.5" fill="#0d9488" />
+
+          <!-- ═══ Data: Series B (line + markers, dashed) ═══ -->
+          <polyline
+            id="dm-pc-line-b"
+            points="80,178 134,155 188,145 242,118 296,105 350,78"
+            fill="none"
+            stroke="#e8590c"
+            stroke-width="1.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-dasharray="4,2"
+          />
+          <rect
+            class="dm-pc-dot-b"
+            x="77"
+            y="175"
+            width="5"
+            height="5"
+            fill="#e8590c"
+            rx="0.5"
+          />
+          <rect
+            class="dm-pc-dot-b"
+            x="131"
+            y="152"
+            width="5"
+            height="5"
+            fill="#e8590c"
+            rx="0.5"
+          />
+          <rect
+            class="dm-pc-dot-b"
+            x="185"
+            y="142"
+            width="5"
+            height="5"
+            fill="#e8590c"
+            rx="0.5"
+          />
+          <rect
+            class="dm-pc-dot-b"
+            x="239"
+            y="115"
+            width="5"
+            height="5"
+            fill="#e8590c"
+            rx="0.5"
+          />
+          <rect
+            class="dm-pc-dot-b"
+            x="293"
+            y="102"
+            width="5"
+            height="5"
+            fill="#e8590c"
+            rx="0.5"
+          />
+          <rect
+            class="dm-pc-dot-b"
+            x="347"
+            y="75"
+            width="5"
+            height="5"
+            fill="#e8590c"
+            rx="0.5"
+          />
+
+          <!-- ═══ Title ═══ -->
           <text
             id="dm-pc-title"
-            x="175"
-            y="14"
+            x="203"
+            y="16"
             text-anchor="middle"
             fill="#333"
             font-family="Roboto, sans-serif"
+            font-weight="400"
           >
-            Sample Plot Title
+            Thermal Conductivity vs. Temperature
           </text>
-          <!-- X label -->
+
+          <!-- ═══ X axis label ═══ -->
           <text
             id="dm-pc-xlabel"
-            x="175"
-            y="195"
+            x="203"
+            y="228"
             text-anchor="middle"
             fill="#555"
             font-family="Roboto, sans-serif"
+            font-weight="400"
           >
-            X Axis Label
+            Temperature (K)
           </text>
-          <!-- Y label -->
+
+          <!-- ═══ Y axis label ═══ -->
           <text
             id="dm-pc-ylabel"
-            x="14"
-            y="95"
+            x="12"
+            y="107"
             text-anchor="middle"
             fill="#555"
             font-family="Roboto, sans-serif"
-            transform="rotate(-90 14 95)"
+            font-weight="400"
+            transform="rotate(-90 12 107)"
           >
-            Y Axis Label
+            k (W/m·K)
           </text>
-          <!-- Tick labels -->
+
+          <!-- ═══ X tick labels ═══ -->
           <text
-            class="dm-pc-tick"
-            x="60"
-            y="184"
+            class="dm-pc-xtick"
+            x="80"
+            y="204"
             text-anchor="middle"
+            fill="#666"
+            font-family="Roboto, sans-serif"
+          >
+            200
+          </text>
+          <text
+            class="dm-pc-xtick"
+            x="134"
+            y="204"
+            text-anchor="middle"
+            fill="#666"
+            font-family="Roboto, sans-serif"
+          >
+            400
+          </text>
+          <text
+            class="dm-pc-xtick"
+            x="188"
+            y="204"
+            text-anchor="middle"
+            fill="#666"
+            font-family="Roboto, sans-serif"
+          >
+            600
+          </text>
+          <text
+            class="dm-pc-xtick"
+            x="242"
+            y="204"
+            text-anchor="middle"
+            fill="#666"
+            font-family="Roboto, sans-serif"
+          >
+            800
+          </text>
+          <text
+            class="dm-pc-xtick"
+            x="296"
+            y="204"
+            text-anchor="middle"
+            fill="#666"
+            font-family="Roboto, sans-serif"
+          >
+            1000
+          </text>
+          <text
+            class="dm-pc-xtick"
+            x="350"
+            y="204"
+            text-anchor="middle"
+            fill="#666"
+            font-family="Roboto, sans-serif"
+          >
+            1200
+          </text>
+
+          <!-- ═══ Y tick labels ═══ -->
+          <text
+            class="dm-pc-ytick"
+            x="50"
+            y="193"
+            text-anchor="end"
             fill="#666"
             font-family="Roboto, sans-serif"
           >
             0
           </text>
           <text
-            class="dm-pc-tick"
-            x="140"
-            y="184"
-            text-anchor="middle"
+            class="dm-pc-ytick"
+            x="50"
+            y="160"
+            text-anchor="end"
             fill="#666"
             font-family="Roboto, sans-serif"
           >
-            2
+            20
           </text>
           <text
-            class="dm-pc-tick"
-            x="220"
-            y="184"
-            text-anchor="middle"
+            class="dm-pc-ytick"
+            x="50"
+            y="127"
+            text-anchor="end"
             fill="#666"
             font-family="Roboto, sans-serif"
           >
-            4
+            40
           </text>
           <text
-            class="dm-pc-tick"
-            x="290"
-            y="184"
-            text-anchor="middle"
+            class="dm-pc-ytick"
+            x="50"
+            y="94"
+            text-anchor="end"
             fill="#666"
             font-family="Roboto, sans-serif"
           >
-            6
+            60
           </text>
-          <!-- Legend -->
-          <rect
-            id="dm-pc-legend-bg"
-            x="230"
-            y="24"
-            width="66"
-            height="22"
-            rx="2"
-            fill="#fff"
-            stroke="#ddd"
-            stroke-width="0.5"
-          />
-          <line
-            x1="234"
-            y1="35"
-            x2="248"
-            y2="35"
-            stroke="#0d9488"
-            stroke-width="1.5"
-          />
-          <circle cx="241" cy="35" r="2" fill="#0d9488" />
           <text
-            id="dm-pc-legend"
-            x="252"
-            y="39"
+            class="dm-pc-ytick"
+            x="50"
+            y="61"
+            text-anchor="end"
             fill="#666"
             font-family="Roboto, sans-serif"
           >
-            Series A
+            80
           </text>
+          <text
+            class="dm-pc-ytick"
+            x="50"
+            y="28"
+            text-anchor="end"
+            fill="#666"
+            font-family="Roboto, sans-serif"
+          >
+            100
+          </text>
+
+          <!-- ═══ Legend ═══ -->
+          <g id="dm-pc-legend-group">
+            <rect
+              id="dm-pc-legend-bg"
+              x="255"
+              y="28"
+              width="90"
+              height="36"
+              rx="3"
+              fill="#fff"
+              stroke="#ddd"
+              stroke-width="0.5"
+            />
+            <!-- Series A legend entry -->
+            <line
+              x1="260"
+              y1="40"
+              x2="274"
+              y2="40"
+              stroke="#0d9488"
+              stroke-width="1.2"
+            />
+            <circle cx="267" cy="40" r="2" fill="#0d9488" />
+            <text
+              id="dm-pc-legend-a"
+              x="278"
+              y="43"
+              fill="#666"
+              font-family="Roboto, sans-serif"
+            >
+              Sample A
+            </text>
+            <!-- Series B legend entry -->
+            <line
+              x1="260"
+              y1="54"
+              x2="274"
+              y2="54"
+              stroke="#e8590c"
+              stroke-width="1.2"
+              stroke-dasharray="4,2"
+            />
+            <rect
+              x="264"
+              y="51.5"
+              width="4"
+              height="4"
+              fill="#e8590c"
+              rx="0.5"
+            />
+            <text
+              id="dm-pc-legend-b"
+              x="278"
+              y="57"
+              fill="#666"
+              font-family="Roboto, sans-serif"
+            >
+              Sample B
+            </text>
+          </g>
         </g>
       </svg>
     </div>
@@ -196,12 +509,28 @@
         ><span class="dm-pc-info-val" id="dm-pc-ts"></span>
       </div>
       <div class="dm-pc-info-row">
+        <span class="dm-pc-info-key">axes.labelsize</span
+        ><span class="dm-pc-info-val" id="dm-pc-als"></span>
+      </div>
+      <div class="dm-pc-info-row">
+        <span class="dm-pc-info-key">xtick.labelsize</span
+        ><span class="dm-pc-info-val" id="dm-pc-xts"></span>
+      </div>
+      <div class="dm-pc-info-row">
+        <span class="dm-pc-info-key">ytick.labelsize</span
+        ><span class="dm-pc-info-val" id="dm-pc-yts"></span>
+      </div>
+      <div class="dm-pc-info-row">
         <span class="dm-pc-info-key">legend.fontsize</span
         ><span class="dm-pc-info-val" id="dm-pc-ls"></span>
       </div>
       <div class="dm-pc-info-row">
-        <span class="dm-pc-info-key">figure.figsize</span
-        ><span class="dm-pc-info-val" id="dm-pc-fig"></span>
+        <span class="dm-pc-info-key">lines.linewidth</span
+        ><span class="dm-pc-info-val" id="dm-pc-lw"></span>
+      </div>
+      <div class="dm-pc-info-row">
+        <span class="dm-pc-info-key">axes.linewidth</span
+        ><span class="dm-pc-info-val" id="dm-pc-alw"></span>
       </div>
       <div class="dm-pc-info-row">
         <span class="dm-pc-info-key">spines</span
@@ -217,221 +546,334 @@
 
 <script>
   (function () {
+    /* ── Preset data: values match the actual .mplstyle files ── */
     var presets = {
       scientific: {
-        fs: "7.5 pt",
-        ts: "8.5 pt",
-        ls: "5.5 pt",
-        fig: "3.5 × 3.0",
+        fs: "7.5",
+        ts: "8.5",
+        als: "7.5",
+        xts: "7.0",
+        yts: "7.0",
+        ls: "5.5",
+        lw: "0.5",
+        alw: "0.3",
         spines: "all four visible",
         use: "journal figures",
-        titleSize: 10.5,
-        labelSize: 9.5,
-        tickSize: 8.5,
-        legendSize: 7,
-        showTopSpine: true,
-        showRightSpine: true,
-        showLeftSpine: true,
-        showBottomSpine: true,
-        lineWidth: 1.5,
+        /* SVG rendering sizes (scaled for viewBox readability) */
+        titleSize: 10,
+        labelSize: 9,
+        tickSize: 8,
+        legendSize: 6.5,
+        showTop: true,
+        showRight: true,
+        showLeft: true,
+        showBottom: true,
+        showTicks: true,
+        tickLen: 3,
+        lineWidth: 1.2,
+        spineWidth: 0.8,
         bgColor: "#ffffff",
         textColor: "#333",
         labelColor: "#555",
         tickColor: "#666",
         spineColor: "#333",
+        dotR: 2.5,
       },
       report: {
-        fs: "8.0 pt",
-        ts: "9.0 pt",
-        ls: "6.0 pt",
-        fig: "3.5 × 3.0",
+        fs: "8.0",
+        ts: "9.0",
+        als: "8.0",
+        xts: "7.0",
+        yts: "7.0",
+        ls: "6.0",
+        lw: "0.5",
+        alw: "0.3",
         spines: "top + right hidden",
         use: "reports & dashboards",
-        titleSize: 11,
-        labelSize: 10,
-        tickSize: 8.5,
-        legendSize: 7.5,
-        showTopSpine: false,
-        showRightSpine: false,
-        showLeftSpine: true,
-        showBottomSpine: true,
-        lineWidth: 1.5,
+        titleSize: 10.5,
+        labelSize: 9.5,
+        tickSize: 8,
+        legendSize: 7,
+        showTop: false,
+        showRight: false,
+        showLeft: true,
+        showBottom: true,
+        showTicks: true,
+        tickLen: 3,
+        lineWidth: 1.2,
+        spineWidth: 0.8,
         bgColor: "#ffffff",
         textColor: "#333",
         labelColor: "#555",
         tickColor: "#666",
         spineColor: "#333",
+        dotR: 2.5,
       },
       presentation: {
-        fs: "10.5 pt",
-        ts: "11.5 pt",
-        ls: "8.5 pt",
-        fig: "3.5 × 3.0",
+        fs: "10.5",
+        ts: "11.5",
+        als: "10.5",
+        xts: "10.0",
+        yts: "10.0",
+        ls: "8.5",
+        lw: "0.5",
+        alw: "0.3",
         spines: "all four visible",
-        use: "slides",
-        titleSize: 13,
+        use: "slides & talks",
+        titleSize: 12.5,
         labelSize: 11.5,
         tickSize: 10.5,
         legendSize: 9,
-        showTopSpine: true,
-        showRightSpine: true,
-        showLeftSpine: true,
-        showBottomSpine: true,
-        lineWidth: 1.5,
+        showTop: true,
+        showRight: true,
+        showLeft: true,
+        showBottom: true,
+        showTicks: true,
+        tickLen: 3,
+        lineWidth: 1.2,
+        spineWidth: 0.8,
         bgColor: "#ffffff",
         textColor: "#333",
         labelColor: "#555",
         tickColor: "#666",
         spineColor: "#333",
+        dotR: 3,
       },
       poster: {
-        fs: "12.0 pt",
-        ts: "14.0 pt",
-        ls: "9.0 pt",
-        fig: "8.0 × 6.0",
+        fs: "12.0",
+        ts: "14.0",
+        als: "12.0",
+        xts: "11.0",
+        yts: "11.0",
+        ls: "9.0",
+        lw: "1.5",
+        alw: "0.5",
         spines: "top + right hidden",
         use: "conference posters",
-        titleSize: 14.5,
+        titleSize: 14,
         labelSize: 12.5,
-        tickSize: 11.5,
+        tickSize: 11,
         legendSize: 10,
-        showTopSpine: false,
-        showRightSpine: false,
-        showLeftSpine: true,
-        showBottomSpine: true,
+        showTop: false,
+        showRight: false,
+        showLeft: true,
+        showBottom: true,
+        showTicks: true,
+        tickLen: 5,
         lineWidth: 2,
+        spineWidth: 1.2,
         bgColor: "#ffffff",
         textColor: "#333",
         labelColor: "#555",
         tickColor: "#666",
         spineColor: "#333",
+        dotR: 3.5,
       },
       web: {
-        fs: "11.0 pt",
-        ts: "13.0 pt",
-        ls: "8.5 pt",
-        fig: "6.0 × 4.5",
+        fs: "11.0",
+        ts: "13.0",
+        als: "11.0",
+        xts: "10.0",
+        yts: "10.0",
+        ls: "8.5",
+        lw: "0.5",
+        alw: "0.4",
         spines: "top + right hidden",
         use: "web & documentation",
-        titleSize: 13.5,
-        labelSize: 12,
-        tickSize: 11,
-        legendSize: 9.5,
-        showTopSpine: false,
-        showRightSpine: false,
-        showLeftSpine: true,
-        showBottomSpine: true,
-        lineWidth: 1.5,
+        titleSize: 13,
+        labelSize: 11.5,
+        tickSize: 10,
+        legendSize: 9,
+        showTop: false,
+        showRight: false,
+        showLeft: true,
+        showBottom: true,
+        showTicks: true,
+        tickLen: 3,
+        lineWidth: 1.2,
+        spineWidth: 0.8,
         bgColor: "#ffffff",
         textColor: "#333",
         labelColor: "#555",
         tickColor: "#666",
         spineColor: "#333",
+        dotR: 3,
       },
       minimal: {
-        fs: "7.5 pt",
-        ts: "8.5 pt",
-        ls: "5.5 pt",
-        fig: "3.5 × 3.0",
+        fs: "7.5",
+        ts: "8.5",
+        als: "7.5",
+        xts: "7.0",
+        yts: "7.0",
+        ls: "5.5",
+        lw: "0.5",
+        alw: "0",
         spines: "all hidden",
         use: "data-ink focus (Tufte)",
-        titleSize: 10.5,
-        labelSize: 9.5,
-        tickSize: 8.5,
-        legendSize: 7,
-        showTopSpine: false,
-        showRightSpine: false,
-        showLeftSpine: false,
-        showBottomSpine: false,
-        lineWidth: 1.5,
+        titleSize: 10,
+        labelSize: 9,
+        tickSize: 8,
+        legendSize: 6.5,
+        showTop: false,
+        showRight: false,
+        showLeft: false,
+        showBottom: false,
+        showTicks: false,
+        tickLen: 0,
+        lineWidth: 1.2,
+        spineWidth: 0,
         bgColor: "#ffffff",
         textColor: "#333",
         labelColor: "#555",
         tickColor: "#666",
         spineColor: "#333",
+        dotR: 2.5,
       },
       dark: {
-        fs: "11.0 pt",
-        ts: "13.0 pt",
-        ls: "8.5 pt",
-        fig: "3.5 × 3.0",
+        fs: "11.0",
+        ts: "13.0",
+        als: "11.0",
+        xts: "10.0",
+        yts: "10.0",
+        ls: "8.5",
+        lw: "0.5",
+        alw: "0.3",
         spines: "top + right hidden",
         use: "dark themes & Jupyter",
-        titleSize: 13.5,
-        labelSize: 12,
-        tickSize: 11,
-        legendSize: 9.5,
-        showTopSpine: false,
-        showRightSpine: false,
-        showLeftSpine: true,
-        showBottomSpine: true,
-        lineWidth: 1.5,
+        titleSize: 13,
+        labelSize: 11.5,
+        tickSize: 10,
+        legendSize: 9,
+        showTop: false,
+        showRight: false,
+        showLeft: true,
+        showBottom: true,
+        showTicks: true,
+        tickLen: 3,
+        lineWidth: 1.2,
+        spineWidth: 0.8,
         bgColor: "#1e1e1e",
         textColor: "#e0e0e0",
         labelColor: "#cccccc",
         tickColor: "#aaaaaa",
         spineColor: "#555555",
+        dotR: 3,
       },
     };
 
     function applyPreset(name) {
       var p = presets[name];
 
-      // Update info panel
-      document.getElementById("dm-pc-fs").textContent = p.fs;
-      document.getElementById("dm-pc-ts").textContent = p.ts;
-      document.getElementById("dm-pc-ls").textContent = p.ls;
-      document.getElementById("dm-pc-fig").textContent = p.fig;
+      /* ── Info panel ── */
+      document.getElementById("dm-pc-fs").textContent = p.fs + " pt";
+      document.getElementById("dm-pc-ts").textContent = p.ts + " pt";
+      document.getElementById("dm-pc-als").textContent = p.als + " pt";
+      document.getElementById("dm-pc-xts").textContent = p.xts + " pt";
+      document.getElementById("dm-pc-yts").textContent = p.yts + " pt";
+      document.getElementById("dm-pc-ls").textContent = p.ls + " pt";
+      document.getElementById("dm-pc-lw").textContent = p.lw + " pt";
+      document.getElementById("dm-pc-alw").textContent = p.alw;
       document.getElementById("dm-pc-sp").textContent = p.spines;
       document.getElementById("dm-pc-use").textContent = p.use;
 
-      // Update SVG sizes
+      /* ── SVG text sizes ── */
       var title = document.getElementById("dm-pc-title");
       var xlabel = document.getElementById("dm-pc-xlabel");
       var ylabel = document.getElementById("dm-pc-ylabel");
-      var legend = document.getElementById("dm-pc-legend");
-      var ticks = document.querySelectorAll(".dm-pc-tick");
+      var legA = document.getElementById("dm-pc-legend-a");
+      var legB = document.getElementById("dm-pc-legend-b");
 
       title.setAttribute("font-size", p.titleSize);
       xlabel.setAttribute("font-size", p.labelSize);
       ylabel.setAttribute("font-size", p.labelSize);
-      legend.setAttribute("font-size", p.legendSize);
-      ticks.forEach(function (t) {
+      legA.setAttribute("font-size", p.legendSize);
+      legB.setAttribute("font-size", p.legendSize);
+
+      document.querySelectorAll(".dm-pc-xtick").forEach(function (t) {
+        t.setAttribute("font-size", p.tickSize);
+      });
+      document.querySelectorAll(".dm-pc-ytick").forEach(function (t) {
         t.setAttribute("font-size", p.tickSize);
       });
 
-      // Update spines
-      var top = document.getElementById("dm-pc-spine-top");
-      var right = document.getElementById("dm-pc-spine-right");
-      var left = document.getElementById("dm-pc-spine-left");
-      var bottom = document.getElementById("dm-pc-spine-bottom");
-      top.style.opacity = p.showTopSpine ? "1" : "0";
-      right.style.opacity = p.showRightSpine ? "1" : "0";
-      left.style.opacity = p.showLeftSpine ? "1" : "0";
-      bottom.style.opacity = p.showBottomSpine ? "1" : "0";
+      /* ── Spines ── */
+      var spTop = document.getElementById("dm-pc-spine-top");
+      var spRight = document.getElementById("dm-pc-spine-right");
+      var spLeft = document.getElementById("dm-pc-spine-left");
+      var spBottom = document.getElementById("dm-pc-spine-bottom");
+      spTop.style.opacity = p.showTop ? "1" : "0";
+      spRight.style.opacity = p.showRight ? "1" : "0";
+      spLeft.style.opacity = p.showLeft ? "1" : "0";
+      spBottom.style.opacity = p.showBottom ? "1" : "0";
+      [spTop, spRight, spLeft, spBottom].forEach(function (s) {
+        s.setAttribute("stroke", p.spineColor);
+        s.setAttribute("stroke-width", p.spineWidth);
+      });
 
-      // Update line width
-      var line = document.getElementById("dm-pc-line");
-      line.setAttribute("stroke-width", p.lineWidth);
+      /* ── Tick marks ── */
+      document.querySelectorAll(".dm-pc-xtick-mark").forEach(function (t) {
+        t.style.opacity = p.showTicks ? "1" : "0";
+        t.setAttribute("stroke", p.spineColor);
+        var y1 = 190;
+        t.setAttribute("y2", y1 + p.tickLen);
+      });
+      document.querySelectorAll(".dm-pc-ytick-mark").forEach(function (t) {
+        t.style.opacity = p.showTicks ? "1" : "0";
+        t.setAttribute("stroke", p.spineColor);
+        var x2 = 56;
+        t.setAttribute("x1", x2 - p.tickLen);
+      });
 
-      // Update colors (background, text, spines)
-      var bg = document.getElementById("dm-pc-bg");
-      bg.setAttribute("fill", p.bgColor);
+      /* ── Line widths ── */
+      document
+        .getElementById("dm-pc-line-a")
+        .setAttribute("stroke-width", p.lineWidth);
+      document
+        .getElementById("dm-pc-line-b")
+        .setAttribute("stroke-width", p.lineWidth);
+
+      /* ── Dot sizes ── */
+      document.querySelectorAll(".dm-pc-dot-a").forEach(function (d) {
+        d.setAttribute("r", p.dotR);
+      });
+      document.querySelectorAll(".dm-pc-dot-b").forEach(function (d) {
+        var sz = p.dotR * 2;
+        d.setAttribute("width", sz);
+        d.setAttribute("height", sz);
+        /* re-center squares */
+        var cx = parseFloat(d.getAttribute("x")) + 2.5 - p.dotR;
+        var cy = parseFloat(d.getAttribute("y")) + 2.5 - p.dotR;
+      });
+
+      /* ── Colors ── */
+      document.getElementById("dm-pc-bg").setAttribute("fill", p.bgColor);
       title.setAttribute("fill", p.textColor);
       xlabel.setAttribute("fill", p.labelColor);
       ylabel.setAttribute("fill", p.labelColor);
-      legend.setAttribute("fill", p.tickColor);
-      ticks.forEach(function (t) {
-        t.setAttribute("fill", p.tickColor);
-      });
-      [top, right, left, bottom].forEach(function (s) {
-        s.setAttribute("stroke", p.spineColor);
-      });
+      legA.setAttribute("fill", p.tickColor);
+      legB.setAttribute("fill", p.tickColor);
+
+      document
+        .querySelectorAll(".dm-pc-xtick, .dm-pc-ytick")
+        .forEach(function (t) {
+          t.setAttribute("fill", p.tickColor);
+        });
+
       var legendBg = document.getElementById("dm-pc-legend-bg");
       legendBg.setAttribute("fill", p.bgColor);
-      legendBg.setAttribute("stroke", p.spineColor);
+      legendBg.setAttribute("stroke", name === "dark" ? p.spineColor : "#ddd");
 
-      // Update active tab
+      /* ── Chart container border — match dark bg ── */
+      var chart = document.getElementById("dm-pc-chart");
+      if (name === "dark") {
+        chart.style.background = p.bgColor;
+        chart.style.borderColor = p.spineColor;
+      } else {
+        chart.style.background = "#fff";
+        chart.style.borderColor = "";
+      }
+
+      /* ── Active tab ── */
       document.querySelectorAll(".dm-pc-tab").forEach(function (tab) {
         tab.classList.toggle("dm-pc-tab-active", tab.dataset.preset === name);
       });
