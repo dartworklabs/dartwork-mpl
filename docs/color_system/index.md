@@ -45,7 +45,7 @@ import numpy as np
 dm.style.use("scientific")
 
 # Named colors work anywhere matplotlib accepts a color string
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(dm.cm2in(15), dm.cm2in(6)), dpi=300)
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(dm.cm2in(9), dm.cm2in(3.6)), dpi=300)
 
 x = np.linspace(0, 10, 200)
 signal = np.sin(x) * np.exp(-0.08 * x)

@@ -349,7 +349,7 @@ The agent can generate correct code because:
 
 ```python
 # AI agents can reliably generate this because it's standard matplotlib
-fig, ax = plt.subplots(figsize=(dm.cm2in(12), dm.cm2in(8)))
+fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(6)))
 ax.plot(data['x'], data['y'], color='oc.blue5', label='Measurement')
 ax.fill_between(data['x'], data['y_low'], data['y_high'],
                 color='oc.blue2', alpha=0.3, label='Confidence')
