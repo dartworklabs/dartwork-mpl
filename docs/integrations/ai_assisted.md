@@ -108,12 +108,12 @@ dm.save_and_show(fig)
 
 When asking AI to modify your plots, refer to specific parameters:
 
-| ✅ Specific (better results)   | ❌ Vague (slower, error-prone) |
-| ------------------------------ | ------------------------------ |
-| "Change color to `oc.red5`"    | "Make it a bit redder"         |
-| "Set linewidth to 1.2"         | "Make the line thicker"        |
-| "Use figsize `(12, 8)`"        | "Make the chart bigger"        |
-| "Add title `'Revenue Growth'`" | "Make it look better"          |
+| ✅ Specific (better results)    | ❌ Vague (slower, error-prone) |
+| ------------------------------- | ------------------------------ |
+| "Change color to `oc.red5`"     | "Make it a bit redder"         |
+| "Set linewidth to 1.2"          | "Make the line thicker"        |
+| "Use figsize `(12, 8)`"         | "Make the chart bigger"        |
+| "Add title `'Signal Response'`" | "Make it look better"          |
 
 ## 3. Rapid Iteration with Autoreload
 

@@ -33,12 +33,12 @@ These are read-only text resources that the AI assistant can retrieve on demand.
 Here are specific examples of how an AI assistant behaves differently when the `dartwork-mpl` MCP server is connected:
 
 1. **Zero-shot accurate coding**
-   - **You ask:** _"I need a bar chart for a Korean investment report. How do I set the style using dartwork-mpl?"_
+   - **You ask:** _"I need a bar chart for a Korean research paper. How do I set the style using dartwork-mpl?"_
    - **MCP in action:** The assistant reads the `general-guide` resource and immediately outputs:
 
      ```python
      import dartwork_mpl as dm
-     dm.style.use('investment-kr')
+     dm.style.use('scientific-kr')
      ```
 
 2. **Automated layout debugging**

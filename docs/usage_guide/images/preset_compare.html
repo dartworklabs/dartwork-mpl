@@ -6,6 +6,10 @@
     </button>
     <button class="dm-pc-tab" data-preset="report">report</button>
     <button class="dm-pc-tab" data-preset="presentation">presentation</button>
+    <button class="dm-pc-tab" data-preset="poster">poster</button>
+    <button class="dm-pc-tab" data-preset="web">web</button>
+    <button class="dm-pc-tab" data-preset="minimal">minimal</button>
+    <button class="dm-pc-tab" data-preset="dark">dark</button>
   </div>
   <div class="dm-pc-preview">
     <div class="dm-pc-chart" id="dm-pc-chart">
@@ -16,7 +20,7 @@
         class="dm-pc-svg"
       >
         <!-- Background -->
-        <rect width="320" height="200" fill="#ffffff" rx="4" />
+        <rect id="dm-pc-bg" width="320" height="200" fill="#ffffff" rx="4" />
         <!-- Axes area -->
         <g id="dm-pc-axes">
           <!-- Spines -->
@@ -58,6 +62,7 @@
           />
           <!-- Plot line -->
           <polyline
+            id="dm-pc-line"
             points="60,140 100,80 140,100 180,50 220,70 260,40 290,60"
             fill="none"
             stroke="#0d9488"
@@ -66,13 +71,13 @@
             stroke-linejoin="round"
           />
           <!-- Scatter dots -->
-          <circle cx="60" cy="140" r="3" fill="#0d9488" />
-          <circle cx="100" cy="80" r="3" fill="#0d9488" />
-          <circle cx="140" cy="100" r="3" fill="#0d9488" />
-          <circle cx="180" cy="50" r="3" fill="#0d9488" />
-          <circle cx="220" cy="70" r="3" fill="#0d9488" />
-          <circle cx="260" cy="40" r="3" fill="#0d9488" />
-          <circle cx="290" cy="60" r="3" fill="#0d9488" />
+          <circle class="dm-pc-dot" cx="60" cy="140" r="3" fill="#0d9488" />
+          <circle class="dm-pc-dot" cx="100" cy="80" r="3" fill="#0d9488" />
+          <circle class="dm-pc-dot" cx="140" cy="100" r="3" fill="#0d9488" />
+          <circle class="dm-pc-dot" cx="180" cy="50" r="3" fill="#0d9488" />
+          <circle class="dm-pc-dot" cx="220" cy="70" r="3" fill="#0d9488" />
+          <circle class="dm-pc-dot" cx="260" cy="40" r="3" fill="#0d9488" />
+          <circle class="dm-pc-dot" cx="290" cy="60" r="3" fill="#0d9488" />
           <!-- Title -->
           <text
             id="dm-pc-title"
@@ -195,6 +200,10 @@
         ><span class="dm-pc-info-val" id="dm-pc-ls"></span>
       </div>
       <div class="dm-pc-info-row">
+        <span class="dm-pc-info-key">figure.figsize</span
+        ><span class="dm-pc-info-val" id="dm-pc-fig"></span>
+      </div>
+      <div class="dm-pc-info-row">
         <span class="dm-pc-info-key">spines</span
         ><span class="dm-pc-info-val" id="dm-pc-sp"></span>
       </div>
@@ -213,6 +222,7 @@
         fs: "7.5 pt",
         ts: "8.5 pt",
         ls: "5.5 pt",
+        fig: "3.5 × 3.0",
         spines: "all four visible",
         use: "journal figures",
         titleSize: 10.5,
@@ -221,11 +231,20 @@
         legendSize: 7,
         showTopSpine: true,
         showRightSpine: true,
+        showLeftSpine: true,
+        showBottomSpine: true,
+        lineWidth: 1.5,
+        bgColor: "#ffffff",
+        textColor: "#333",
+        labelColor: "#555",
+        tickColor: "#666",
+        spineColor: "#333",
       },
       report: {
         fs: "8.0 pt",
         ts: "9.0 pt",
         ls: "6.0 pt",
+        fig: "3.5 × 3.0",
         spines: "top + right hidden",
         use: "reports & dashboards",
         titleSize: 11,
@@ -234,19 +253,124 @@
         legendSize: 7.5,
         showTopSpine: false,
         showRightSpine: false,
+        showLeftSpine: true,
+        showBottomSpine: true,
+        lineWidth: 1.5,
+        bgColor: "#ffffff",
+        textColor: "#333",
+        labelColor: "#555",
+        tickColor: "#666",
+        spineColor: "#333",
       },
       presentation: {
-        fs: "9.5 pt",
-        ts: "10.5 pt",
-        ls: "7.5 pt",
+        fs: "10.5 pt",
+        ts: "11.5 pt",
+        ls: "8.5 pt",
+        fig: "3.5 × 3.0",
         spines: "all four visible",
-        use: "slides & web",
+        use: "slides",
         titleSize: 13,
         labelSize: 11.5,
         tickSize: 10.5,
         legendSize: 9,
         showTopSpine: true,
         showRightSpine: true,
+        showLeftSpine: true,
+        showBottomSpine: true,
+        lineWidth: 1.5,
+        bgColor: "#ffffff",
+        textColor: "#333",
+        labelColor: "#555",
+        tickColor: "#666",
+        spineColor: "#333",
+      },
+      poster: {
+        fs: "12.0 pt",
+        ts: "14.0 pt",
+        ls: "9.0 pt",
+        fig: "8.0 × 6.0",
+        spines: "top + right hidden",
+        use: "conference posters",
+        titleSize: 14.5,
+        labelSize: 12.5,
+        tickSize: 11.5,
+        legendSize: 10,
+        showTopSpine: false,
+        showRightSpine: false,
+        showLeftSpine: true,
+        showBottomSpine: true,
+        lineWidth: 2,
+        bgColor: "#ffffff",
+        textColor: "#333",
+        labelColor: "#555",
+        tickColor: "#666",
+        spineColor: "#333",
+      },
+      web: {
+        fs: "11.0 pt",
+        ts: "13.0 pt",
+        ls: "8.5 pt",
+        fig: "6.0 × 4.5",
+        spines: "top + right hidden",
+        use: "web & documentation",
+        titleSize: 13.5,
+        labelSize: 12,
+        tickSize: 11,
+        legendSize: 9.5,
+        showTopSpine: false,
+        showRightSpine: false,
+        showLeftSpine: true,
+        showBottomSpine: true,
+        lineWidth: 1.5,
+        bgColor: "#ffffff",
+        textColor: "#333",
+        labelColor: "#555",
+        tickColor: "#666",
+        spineColor: "#333",
+      },
+      minimal: {
+        fs: "7.5 pt",
+        ts: "8.5 pt",
+        ls: "5.5 pt",
+        fig: "3.5 × 3.0",
+        spines: "all hidden",
+        use: "data-ink focus",
+        titleSize: 10.5,
+        labelSize: 9.5,
+        tickSize: 8.5,
+        legendSize: 7,
+        showTopSpine: false,
+        showRightSpine: false,
+        showLeftSpine: false,
+        showBottomSpine: false,
+        lineWidth: 1.5,
+        bgColor: "#ffffff",
+        textColor: "#333",
+        labelColor: "#555",
+        tickColor: "#666",
+        spineColor: "#333",
+      },
+      dark: {
+        fs: "7.5 pt",
+        ts: "8.5 pt",
+        ls: "5.5 pt",
+        fig: "3.5 × 3.0",
+        spines: "all four visible",
+        use: "dark themes",
+        titleSize: 10.5,
+        labelSize: 9.5,
+        tickSize: 8.5,
+        legendSize: 7,
+        showTopSpine: true,
+        showRightSpine: true,
+        showLeftSpine: true,
+        showBottomSpine: true,
+        lineWidth: 1.5,
+        bgColor: "#1e1e1e",
+        textColor: "#e0e0e0",
+        labelColor: "#cccccc",
+        tickColor: "#aaaaaa",
+        spineColor: "#555555",
       },
     };
 
@@ -257,6 +381,7 @@
       document.getElementById("dm-pc-fs").textContent = p.fs;
       document.getElementById("dm-pc-ts").textContent = p.ts;
       document.getElementById("dm-pc-ls").textContent = p.ls;
+      document.getElementById("dm-pc-fig").textContent = p.fig;
       document.getElementById("dm-pc-sp").textContent = p.spines;
       document.getElementById("dm-pc-use").textContent = p.use;
 
@@ -278,8 +403,33 @@
       // Update spines
       var top = document.getElementById("dm-pc-spine-top");
       var right = document.getElementById("dm-pc-spine-right");
+      var left = document.getElementById("dm-pc-spine-left");
+      var bottom = document.getElementById("dm-pc-spine-bottom");
       top.style.opacity = p.showTopSpine ? "1" : "0";
       right.style.opacity = p.showRightSpine ? "1" : "0";
+      left.style.opacity = p.showLeftSpine ? "1" : "0";
+      bottom.style.opacity = p.showBottomSpine ? "1" : "0";
+
+      // Update line width
+      var line = document.getElementById("dm-pc-line");
+      line.setAttribute("stroke-width", p.lineWidth);
+
+      // Update colors
+      var bg = document.getElementById("dm-pc-bg");
+      bg.setAttribute("fill", p.bgColor);
+      title.setAttribute("fill", p.textColor);
+      xlabel.setAttribute("fill", p.labelColor);
+      ylabel.setAttribute("fill", p.labelColor);
+      legend.setAttribute("fill", p.tickColor);
+      ticks.forEach(function (t) {
+        t.setAttribute("fill", p.tickColor);
+      });
+      [top, right, left, bottom].forEach(function (s) {
+        s.setAttribute("stroke", p.spineColor);
+      });
+      var legendBg = document.getElementById("dm-pc-legend-bg");
+      legendBg.setAttribute("fill", p.bgColor);
+      legendBg.setAttribute("stroke", p.spineColor);
 
       // Update active tab
       document.querySelectorAll(".dm-pc-tab").forEach(function (tab) {

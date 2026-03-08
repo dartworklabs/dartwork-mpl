@@ -62,8 +62,8 @@ import matplotlib.pyplot as plt
 dm.style.use('scientific')  # Apply a style preset
 ```
 
-Available presets: `scientific`, `investment`, `presentation`, and
-`-kr` variants for Korean. See the [Quick Start](../usage_guide/quickstart)
+Available presets: `scientific`, `report`, `presentation`, `poster`, `web`,
+`minimal`, `dark`, and `-kr` variants for Korean. See the [Quick Start](../usage_guide/quickstart)
 for a full end-to-end example and [Styles and Presets](../usage_guide/styles)
 for a detailed comparison.
 

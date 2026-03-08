@@ -8,7 +8,7 @@ Enhanced matplotlib styling, color management, and utility library engineered by
 
 ## Features
 
-- **Style Presets**: Apply curated themes (`scientific`, `investment`, `presentation`) with one call.
+- **Style Presets**: Apply curated themes (`scientific`, `report`, `presentation`) with one call.
 - **Advanced Color System**: Named color palettes (`oc.*`, `tw.*`, `md.*`, `ad.*`, `cu.*`, `pr.*`) plus a `Color` class supporting OKLab / OKLCH / RGB / hex color spaces with perceptual interpolation via `cspace()`.
 - **Smart Layout**: `simple_layout()` optimizes margins via L-BFGS-B optimization — a drop-in replacement for `tight_layout()`.
 - **Scaling Helpers**: Relative font size (`fs`), font weight (`fw`), and line width (`lw`) that respect the active style preset.
@@ -216,10 +216,10 @@ dm.uninstall_llm_txt()    # remove installed guides
 | ----------------- | -------------------------------------- |
 | `scientific`      | Small fonts for academic papers        |
 | `presentation`    | Large fonts for presentations          |
-| `investment`      | Style for investment reports           |
+| `report`          | Style for reports and dashboards       |
 | `scientific-kr`   | Scientific style with Korean support   |
 | `presentation-kr` | Presentation style with Korean support |
-| `investment-kr`   | Investment style with Korean support   |
+| `report-kr`       | Report style with Korean support       |
 
 <br/>
 
