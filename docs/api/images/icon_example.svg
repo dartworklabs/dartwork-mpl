@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="430.165321pt" height="148.889519pt" viewBox="0 0 430.165321 148.889519" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="260.517378pt" height="92.870973pt" viewBox="0 0 260.517378 92.870973" xmlns="http://www.w3.org/2000/svg" version="1.1">
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-03-08T18:42:05.901498</dc:date>
+    <dc:date>2026-03-08T20:15:38.870548</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -21,18 +21,18 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 148.889519 
-L 430.165321 148.889519 
-L 430.165321 0 
-L 0 0 
+   <path d="M 0 92.870973 
+L 260.517378 92.870973 
+L 260.517378 -0 
+L 0 -0 
 z
 " style="fill: #ffffff"/>
   </g>
   <g id="axes_1">
    <g id="patch_2">
-    <path d="M 7.2 141.689519 
-L 422.965321 141.689519 
-L 422.965321 22.274219 
+    <path d="M 7.2 85.670973 
+L 252.84717 85.670973 
+L 252.84717 22.274219 
 L 7.2 22.274219 
 z
 " style="fill: #ffffff"/>
@@ -41,7 +41,7 @@ z
    <g id="matplotlib.axis_2"/>
    <g id="text_1">
     <!-- 󰔏 -->
-    <g style="fill: #14b8a6" transform="translate(47.095505 72.579319) scale(0.28 -0.28)">
+    <g style="fill: #14b8a6" transform="translate(25.043152 53.90647) scale(0.28 -0.28)">
      <defs>
       <path id="MaterialDesignIcons-f050f" d="M 4000 2138 
 L 4000 4263 
@@ -75,7 +75,7 @@ z
    </g>
    <g id="text_2">
     <!-- Thermometer -->
-    <g style="fill: #666666" transform="translate(32.489372 116.970439) scale(0.095 -0.095)">
+    <g style="fill: #666666" transform="translate(10.437019 75.890172) scale(0.095 -0.095)">
      <defs>
       <path id="Roboto-Light-54" d="M 3663 4222 
 L 2103 4222 
@@ -243,7 +243,7 @@ z
    </g>
    <g id="text_3">
     <!-- 󰖐 -->
-    <g style="fill: #f59e0b" transform="translate(124.089083 70.227756) scale(0.28 -0.28)">
+    <g style="fill: #f59e0b" transform="translate(70.533368 51.554908) scale(0.28 -0.28)">
      <defs>
       <path id="MaterialDesignIcons-f0590" d="M 1600 538 
 Q 1238 538 931 713 
@@ -290,7 +290,7 @@ z
    </g>
    <g id="text_4">
     <!-- Weather-sunny -->
-    <g style="fill: #666666" transform="translate(106.797715 116.970439) scale(0.095 -0.095)">
+    <g style="fill: #666666" transform="translate(53.242001 75.890172) scale(0.095 -0.095)">
      <defs>
       <path id="Roboto-Light-57" d="M 1416 1228 
 L 1556 522 
@@ -457,7 +457,7 @@ z
    </g>
    <g id="text_5">
     <!-- 󰖎 -->
-    <g style="fill: #94a3b8" transform="translate(201.08266 71.868381) scale(0.28 -0.28)">
+    <g style="fill: #94a3b8" transform="translate(116.023585 53.195533) scale(0.28 -0.28)">
      <defs>
       <path id="MaterialDesignIcons-f058e" d="M 3200 4738 
 Q 3075 4588 2950 4438 
@@ -507,7 +507,7 @@ z
    </g>
    <g id="text_6">
     <!-- Weather-cloudy -->
-    <g style="fill: #666666" transform="translate(182.605278 116.970439) scale(0.095 -0.095)">
+    <g style="fill: #666666" transform="translate(97.546202 75.890172) scale(0.095 -0.095)">
      <defs>
       <path id="Roboto-Light-63" d="M 1738 253 
 Q 2128 253 2392 473 
@@ -584,7 +584,7 @@ z
    </g>
    <g id="text_7">
     <!-- 󰖙 -->
-    <g style="fill: #0ea5e9" transform="translate(278.076238 72.579319) scale(0.28 -0.28)">
+    <g style="fill: #0ea5e9" transform="translate(161.513802 53.90647) scale(0.28 -0.28)">
      <defs>
       <path id="MaterialDesignIcons-f0599" d="M 3200 3738 
 Q 3563 3738 3869 3556 
@@ -653,7 +653,7 @@ z
    </g>
    <g id="text_8">
     <!-- Weather-windy -->
-    <g style="fill: #666666" transform="translate(261.124793 116.970439) scale(0.095 -0.095)">
+    <g style="fill: #666666" transform="translate(144.562357 75.890172) scale(0.095 -0.095)">
      <defs>
       <path id="Roboto-Light-77" d="M 1297 778 
 L 1353 488 
@@ -712,7 +712,7 @@ z
    </g>
    <g id="text_9">
     <!-- 󰖗 -->
-    <g style="fill: #93c5fd" transform="translate(355.069816 72.579319) scale(0.28 -0.28)">
+    <g style="fill: #93c5fd" transform="translate(207.004019 53.90647) scale(0.28 -0.28)">
      <defs>
       <path id="MaterialDesignIcons-f0597" d="M 1600 1863 
 Q 1713 1863 1788 1781 
@@ -791,7 +791,7 @@ z
    </g>
    <g id="text_10">
     <!-- Weather-snowy -->
-    <g style="fill: #666666" transform="translate(336.756457 116.970439) scale(0.095 -0.095)">
+    <g style="fill: #666666" transform="translate(188.690659 75.890172) scale(0.095 -0.095)">
      <use xlink:href="#Roboto-Light-57"/>
      <use xlink:href="#Roboto-Light-65" transform="translate(89.648438 0)"/>
      <use xlink:href="#Roboto-Light-61" transform="translate(141.308594 0)"/>
@@ -809,7 +809,7 @@ z
    </g>
    <g id="text_11">
     <!-- Icon Font: Material Design Icons (MDI) -->
-    <g transform="translate(115.762192 16.274219) scale(0.115 -0.115)">
+    <g transform="translate(30.703116 16.274219) scale(0.115 -0.115)">
      <defs>
       <path id="Roboto-Bold-49" d="M 1403 0 
 L 466 0 
