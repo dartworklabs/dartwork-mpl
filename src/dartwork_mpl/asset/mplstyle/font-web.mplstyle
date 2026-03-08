@@ -29,11 +29,8 @@ figure.titlesize:   13.0
 figure.titleweight: 500
 figure.labelsize:   11.0
 figure.labelweight: 400
-figure.figsize:     6.0, 4.5
-figure.dpi:         150
 
 axes.linewidth:     0.4
 axes.spines.top:    False
 axes.spines.right:  False
 
-savefig.dpi:        150

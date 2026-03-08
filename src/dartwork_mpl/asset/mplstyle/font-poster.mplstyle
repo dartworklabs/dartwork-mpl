@@ -36,7 +36,6 @@ figure.titlesize:   14.0
 figure.titleweight: 500
 figure.labelsize:   12.0
 figure.labelweight: 400
-figure.figsize:     8.0, 6.0
 
 axes.linewidth:     0.5
 axes.spines.top:    False
