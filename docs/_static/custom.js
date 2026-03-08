@@ -647,8 +647,10 @@ document.addEventListener("click", function (e) {
     // Find all code blocks and output images
     var codeBlocks = article.querySelectorAll(".highlight-Python");
     var outputImgs = article.querySelectorAll(".sphx-glr-single-img");
+    var multiImgLists = article.querySelectorAll("ul.sphx-glr-horizontal");
     var scriptOuts = article.querySelectorAll(".sphx-glr-script-out");
-    if (!codeBlocks.length && !outputImgs.length) return;
+    if (!codeBlocks.length && !outputImgs.length && !multiImgLists.length)
+      return;
 
     // Build control bar
     var ctrlBar = document.createElement("div");
@@ -694,9 +696,14 @@ document.addEventListener("click", function (e) {
         block.style.display = activeMode === "output-only" ? "none" : "";
       });
 
-      // Output images: hide in code-only
+      // Output images (single): hide in code-only
       outputImgs.forEach(function (img) {
         img.style.display = activeMode === "code-only" ? "none" : "";
+      });
+
+      // Output images (multi): hide in code-only
+      multiImgLists.forEach(function (ul) {
+        ul.style.display = activeMode === "code-only" ? "none" : "";
       });
 
       // Stdout outputs: hide in output-only (they're code output, not visual)
@@ -710,15 +717,13 @@ document.addEventListener("click", function (e) {
         timing.style.display = activeMode === "output-only" ? "none" : "";
       }
 
-      // Download section: hide in output-only
-      var downloadSection = article.querySelector("[id*='sphx-glr-download']");
-      if (downloadSection) {
-        var downloadParent =
-          downloadSection.closest("section") || downloadSection.parentElement;
-        if (downloadParent) {
-          downloadParent.style.display =
-            activeMode === "output-only" ? "none" : "";
-        }
+      // Download footer: hide in output-only
+      // Target the footer div directly — do NOT use .closest("section")
+      // which would climb up and hide the entire page content section.
+      var downloadFooter = article.querySelector(".sphx-glr-footer");
+      if (downloadFooter) {
+        downloadFooter.style.display =
+          activeMode === "output-only" ? "none" : "";
       }
     }
   });

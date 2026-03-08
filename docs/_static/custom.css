@@ -1249,14 +1249,17 @@ body[data-theme="dark"] .dm-cvd-btn.active {
    ═══════════════════════════════════════════════════════════════════════ */
 .dm-compare-slider {
   position: relative;
+  width: 100%;
+  max-width: 720px;
+  margin: 1.5em auto 2em;
   overflow: hidden;
   border-radius: 12px;
   border: 1px solid #ebe9e2;
   box-shadow: 0 8px 28px rgba(24, 31, 41, 0.06);
-  margin: 1.5em 0 2em;
   cursor: col-resize;
   user-select: none;
   -webkit-user-select: none;
+  aspect-ratio: 670 / 460;
 }
 
 html.dark .dm-compare-slider,
@@ -1267,6 +1270,8 @@ body[data-theme="dark"] .dm-compare-slider {
 .dm-compare-slider img {
   display: block;
   width: 100%;
+  height: 100%;
+  object-fit: fill;
   pointer-events: none;
 }
 
@@ -1285,7 +1290,7 @@ body[data-theme="dark"] .dm-compare-slider {
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: fill;
 }
 
 .dm-compare-handle {
@@ -3117,7 +3122,7 @@ body[data-theme="dark"] .dm-compare-toggle-btn:hover:not(.active) {
   margin-left: auto;
 }
 
-.dm-compare-slider {
+.dm-compare-range-slider {
   width: 100px;
   cursor: pointer;
   accent-color: var(--accent-9, #0d9488);
@@ -3298,19 +3303,25 @@ body[data-theme="dark"] .dm-compare-verdict {
 /* ═══════════════════════════════════════════════════════════════════════
    Landing Page — Hero Section
    ═══════════════════════════════════════════════════════════════════════ */
+
+/* Hide the auto-generated h1 from MyST "# dartwork-mpl" on the landing page */
+section:has(> .dm-landing-hero) > h1:first-child {
+  display: none;
+}
+
 .dm-landing-hero {
   text-align: center;
-  padding: 2.5em 1em 1.5em;
-  margin: -0.5em 0 0.5em;
+  padding: 3em 1em 2em;
+  margin: -0.5em 0 0;
 }
 
 .dm-landing-tagline {
-  font-size: 2.2em;
+  font-size: 2.8em;
   font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
   color: #1a1a2e;
-  margin: 0 0 0.5em;
+  margin: 0 0 0.4em;
 }
 
 html.dark .dm-landing-tagline,
@@ -3319,11 +3330,11 @@ body[data-theme="dark"] .dm-landing-tagline {
 }
 
 .dm-landing-subtitle {
-  font-size: 1.1em;
+  font-size: 1.15em;
   line-height: 1.6;
   color: #555;
-  max-width: 580px;
-  margin: 0 auto 1.5em;
+  max-width: 520px;
+  margin: 0 auto 1.8em;
 }
 
 html.dark .dm-landing-subtitle,
@@ -3331,109 +3342,66 @@ body[data-theme="dark"] .dm-landing-subtitle {
   color: #aaa;
 }
 
-/* Hero code block */
-.dm-landing-code {
-  display: inline-block;
-  text-align: left;
+/* ── Install inline block ── */
+.dm-landing-install {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
   background: #f6f8fa;
   border: 1px solid #e5e7eb;
-  border-left: 4px solid var(--accent-9, #0d9488);
   border-radius: 8px;
-  padding: 1em 1.5em;
-  margin: 0 auto 1.5em;
-  max-width: 520px;
-  box-shadow: 0 4px 16px rgba(24, 31, 41, 0.06);
+  padding: 8px 10px 8px 18px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.92em;
+  color: #1a1a2e;
+  box-shadow: 0 2px 8px rgba(24, 31, 41, 0.06);
+  transition: border-color 0.2s ease;
 }
 
-html.dark .dm-landing-code,
-body[data-theme="dark"] .dm-landing-code {
+.dm-landing-install:hover {
+  border-color: var(--accent-9, #0d9488);
+}
+
+html.dark .dm-landing-install,
+body[data-theme="dark"] .dm-landing-install {
   background: #111827;
   border-color: #1f2937;
-  border-left-color: var(--accent-9, #0d9488);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  color: #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-.dm-landing-code pre {
-  margin: 0;
-  padding: 0;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  overflow-x: auto;
-}
-
-.dm-landing-code code {
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 0.88em;
-  line-height: 1.65;
-  color: #1a1a2e;
+.dm-landing-install code {
   background: transparent !important;
   border: none !important;
   padding: 0 !important;
+  font-size: 1em;
+  color: inherit;
 }
 
-html.dark .dm-landing-code code,
-body[data-theme="dark"] .dm-landing-code code {
-  color: #e0e0e0;
-}
-
-/* Syntax highlighting tokens */
-.dm-landing-code .kn {
-  color: #7c3aed;
-} /* keyword */
-.dm-landing-code .nn {
-  color: #0d9488;
-} /* module name */
-.dm-landing-code .k {
-  color: #7c3aed;
-} /* keyword as */
-.dm-landing-code .n {
-  color: #1a1a2e;
-} /* name */
-.dm-landing-code .o {
+.dm-landing-copy-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1em;
   color: #888;
-} /* operator */
-.dm-landing-code .p {
-  color: #888;
-} /* punctuation */
-.dm-landing-code .s {
-  color: #059669;
-} /* string */
-.dm-landing-code .c {
-  color: #9ca3af;
-  font-style: italic;
-} /* comment */
+  padding: 4px 6px;
+  margin-left: 8px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
 
-html.dark .dm-landing-code .kn,
-body[data-theme="dark"] .dm-landing-code .kn {
-  color: #a78bfa;
-}
-html.dark .dm-landing-code .nn,
-body[data-theme="dark"] .dm-landing-code .nn {
-  color: #5eead4;
-}
-html.dark .dm-landing-code .k,
-body[data-theme="dark"] .dm-landing-code .k {
-  color: #a78bfa;
-}
-html.dark .dm-landing-code .n,
-body[data-theme="dark"] .dm-landing-code .n {
-  color: #e0e0e0;
-}
-html.dark .dm-landing-code .s,
-body[data-theme="dark"] .dm-landing-code .s {
-  color: #34d399;
-}
-html.dark .dm-landing-code .c,
-body[data-theme="dark"] .dm-landing-code .c {
-  color: #6b7280;
+.dm-landing-copy-btn:hover {
+  background: rgba(13, 148, 136, 0.1);
+  color: var(--accent-9, #0d9488);
 }
 
 /* CTA buttons */
 .dm-landing-cta {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  align-items: center;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
@@ -3484,23 +3452,174 @@ body[data-theme="dark"] .dm-landing-btn-secondary:hover {
   background: rgba(94, 234, 212, 0.1);
 }
 
-/* ── Responsive ── */
+/* ── Proof label ── */
+.dm-landing-proof {
+  text-align: center;
+  margin: 1.5em 0 0.5em;
+}
+
+.dm-landing-proof-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+}
+
+.dm-landing-proof-label::before,
+.dm-landing-proof-label::after {
+  content: "";
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  background: #d5d3cc;
+  vertical-align: middle;
+}
+
+html.dark .dm-landing-proof-label::before,
+html.dark .dm-landing-proof-label::after,
+body[data-theme="dark"] .dm-landing-proof-label::before,
+body[data-theme="dark"] .dm-landing-proof-label::after {
+  background: #444;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Landing Page — Diff Annotation (below slider)
+   ═══════════════════════════════════════════════════════════════════════ */
+.dm-landing-diff {
+  text-align: center;
+  margin: 1.5em auto 0.5em;
+  max-width: 420px;
+}
+
+.dm-landing-diff pre {
+  display: inline-block;
+  text-align: left;
+  margin: 0;
+  padding: 0.8em 1.4em;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-left: 4px solid #22c55e;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(24, 31, 41, 0.04);
+}
+
+html.dark .dm-landing-diff pre,
+body[data-theme="dark"] .dm-landing-diff pre {
+  background: #0a1f14;
+  border-color: #14532d;
+  border-left-color: #22c55e;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.dm-landing-diff code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.85em;
+  line-height: 1.8;
+  color: #1a1a2e;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+html.dark .dm-landing-diff code,
+body[data-theme="dark"] .dm-landing-diff code {
+  color: #e0e0e0;
+}
+
+.dm-diff-plus {
+  color: #22c55e;
+  font-weight: 700;
+  user-select: none;
+}
+
+/* Syntax highlighting tokens for diff block */
+.dm-landing-diff .kn {
+  color: #7c3aed;
+}
+.dm-landing-diff .nn {
+  color: #0d9488;
+}
+.dm-landing-diff .k {
+  color: #7c3aed;
+}
+.dm-landing-diff .n {
+  color: #1a1a2e;
+}
+.dm-landing-diff .o {
+  color: #888;
+}
+.dm-landing-diff .p {
+  color: #888;
+}
+.dm-landing-diff .s {
+  color: #059669;
+}
+
+html.dark .dm-landing-diff .kn,
+body[data-theme="dark"] .dm-landing-diff .kn {
+  color: #a78bfa;
+}
+html.dark .dm-landing-diff .nn,
+body[data-theme="dark"] .dm-landing-diff .nn {
+  color: #5eead4;
+}
+html.dark .dm-landing-diff .k,
+body[data-theme="dark"] .dm-landing-diff .k {
+  color: #a78bfa;
+}
+html.dark .dm-landing-diff .n,
+body[data-theme="dark"] .dm-landing-diff .n {
+  color: #e0e0e0;
+}
+html.dark .dm-landing-diff .s,
+body[data-theme="dark"] .dm-landing-diff .s {
+  color: #34d399;
+}
+
+.dm-landing-diff-caption {
+  font-size: 0.85em;
+  color: #666;
+  margin: 0.6em 0 0;
+  font-weight: 500;
+}
+
+html.dark .dm-landing-diff-caption,
+body[data-theme="dark"] .dm-landing-diff-caption {
+  color: #999;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Landing Page — Responsive
+   ═══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
+  .dm-landing-hero {
+    padding: 2em 0.5em 1.5em;
+  }
   .dm-landing-tagline {
-    font-size: 1.5em;
+    font-size: 1.8em;
   }
   .dm-landing-subtitle {
     font-size: 0.95em;
   }
-  .dm-landing-code {
-    max-width: 100%;
-    padding: 0.8em 1em;
-  }
-  .dm-landing-code code {
-    font-size: 0.8em;
+  .dm-landing-install {
+    font-size: 0.82em;
+    padding: 6px 8px 6px 14px;
   }
   .dm-landing-btn {
     padding: 8px 18px;
     font-size: 0.85em;
+  }
+  .dm-landing-diff pre {
+    font-size: 0.82em;
+    padding: 0.6em 1em;
+  }
+
+  /* Slider responsive */
+  .dm-compare-slider {
+    aspect-ratio: auto;
   }
 }
