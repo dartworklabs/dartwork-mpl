@@ -527,7 +527,7 @@ def _save_condensed_comparison(images_dir: Path) -> Path:
         ("NotoSans_ExtraCondensed", "ExtraCondensed"),
     ]
 
-    sample = "Revenue Growth Rate: 12.5% YoY | Operating Margin: 18.3%"
+    sample = "Signal-to-Noise Ratio: 12.5 dB | Detection Rate: 18.3%"
 
     fig, ax = plt.subplots(figsize=(14, 4.5))
     fig.patch.set_facecolor("#fbfaf7")

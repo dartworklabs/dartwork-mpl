@@ -267,8 +267,8 @@ def generate_condensed_comparison_html(
     ]
 
     sample = (
-        "Revenue growth accelerated to 24.1% YoY in Q3 2025, "
-        "driven by strong demand."
+        "Signal throughput increased to 24.1 Gbps in Phase 3, "
+        "driven by improved buffer management."
     )
 
     rows = []

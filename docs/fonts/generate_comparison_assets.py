@@ -17,11 +17,11 @@ matplotlib.use("Agg")
 OUT_DIR = Path(__file__).parent / "_generated"
 
 QUARTERS = [
-    "Q1'23", "Q2'23", "Q3'23", "Q4'23",
-    "Q1'24", "Q2'24", "Q3'24", "Q4'24",
+    "t=0", "t=1", "t=2", "t=3",
+    "t=4", "t=5", "t=6", "t=7",
 ]
-REVENUE = [820, 870, 910, 980, 1050, 1120, 1190, 1280]
-MARGIN = [18.5, 19.2, 20.1, 21.0, 22.3, 23.1, 24.0, 24.8]
+OUTPUT = [820, 870, 910, 980, 1050, 1120, 1190, 1280]
+EFFICIENCY = [18.5, 19.2, 20.1, 21.0, 22.3, 23.1, 24.0, 24.8]
 
 
 def generate_before_after() -> None:
@@ -31,13 +31,13 @@ def generate_before_after() -> None:
     # ── LEFT: Default matplotlib (reset to defaults) ──
     plt.rcdefaults()
     fig_before, ax = plt.subplots(figsize=(5.5, 4))
-    ax.bar(QUARTERS, REVENUE, color="#1f77b4", alpha=0.7)
+    ax.bar(QUARTERS, OUTPUT, color="#1f77b4", alpha=0.7)
     ax.set_title("Default matplotlib", fontsize=14)
-    ax.set_ylabel("Revenue ($M)")
-    ax.set_xlabel("Quarter")
+    ax.set_ylabel("Output (units/s)")
+    ax.set_xlabel("Phase")
     ax2 = ax.twinx()
-    ax2.plot(QUARTERS, MARGIN, "r-o", markersize=4)
-    ax2.set_ylabel("Margin (%)")
+    ax2.plot(QUARTERS, EFFICIENCY, "r-o", markersize=4)
+    ax2.set_ylabel("Efficiency (%)")
     ax.tick_params(axis="x", rotation=45)
     fig_before.tight_layout()
     fig_before.savefig(
@@ -51,21 +51,21 @@ def generate_before_after() -> None:
     dm.style.use("presentation")
     fig_after, ax = plt.subplots(figsize=(5.5, 4))
     ax.bar(
-        QUARTERS, REVENUE, color="oc.teal5",
+        QUARTERS, OUTPUT, color="oc.teal5",
         width=0.6, edgecolor="white", linewidth=0.5,
     )
     ax.set_title(
         "dartwork-mpl", fontsize=dm.fs(1),
         fontweight="bold", pad=12,
     )
-    ax.set_ylabel("Revenue ($M)", fontsize=dm.fs(0))
-    ax.set_xlabel("Quarter", fontsize=dm.fs(0))
+    ax.set_ylabel("Output (units/s)", fontsize=dm.fs(0))
+    ax.set_xlabel("Phase", fontsize=dm.fs(0))
     ax2 = ax.twinx()
     ax2.plot(
-        QUARTERS, MARGIN, "-o", color="oc.orange5",
+        QUARTERS, EFFICIENCY, "-o", color="oc.orange5",
         markersize=5, linewidth=2,
     )
-    ax2.set_ylabel("Margin (%)", fontsize=dm.fs(0))
+    ax2.set_ylabel("Efficiency (%)", fontsize=dm.fs(0))
     ax.tick_params(axis="x", rotation=45, labelsize=dm.fs(-0.5))
     ax.tick_params(axis="y", labelsize=dm.fs(-0.5))
     ax2.tick_params(axis="y", labelsize=dm.fs(-0.5))
@@ -84,39 +84,39 @@ def generate_chart_context() -> None:
 
     dm.style.use("presentation")
 
-    quarters = [
-        "Q1'24", "Q2'24", "Q3'24", "Q4'24",
-        "Q1'25", "Q2'25", "Q3'25",
+    phases = [
+        "t=0", "t=1", "t=2", "t=3",
+        "t=4", "t=5", "t=6",
     ]
-    revenue = [450, 480, 520, 560, 610, 670, 720]
-    opex = [320, 340, 350, 370, 390, 410, 430]
+    throughput = [450, 480, 520, 560, 610, 670, 720]
+    overhead = [320, 340, 350, 370, 390, 410, 430]
 
     fig, ax = plt.subplots(figsize=(10, 5.5))
 
-    x = np.arange(len(quarters))
+    x = np.arange(len(phases))
     w = 0.35
     ax.bar(
-        x - w / 2, revenue, w, color="oc.teal5",
-        label="Revenue", edgecolor="white", linewidth=0.5,
+        x - w / 2, throughput, w, color="oc.teal5",
+        label="Throughput", edgecolor="white", linewidth=0.5,
     )
     ax.bar(
-        x + w / 2, opex, w, color="oc.gray4",
-        label="OpEx", edgecolor="white", linewidth=0.5,
+        x + w / 2, overhead, w, color="oc.gray4",
+        label="Overhead", edgecolor="white", linewidth=0.5,
     )
 
     # Title — InterDisplay Bold
     ax.set_title(
-        "Quarterly Revenue vs Operating Expenses",
+        "Experimental Throughput vs Overhead",
         fontfamily="Inter Display", fontsize=dm.fs(2),
         fontweight="bold", pad=16,
     )
 
     # Axis labels — default (Roboto)
-    ax.set_ylabel("USD (millions)", fontsize=dm.fs(0))
-    ax.set_xlabel("Quarter", fontsize=dm.fs(0))
+    ax.set_ylabel("Rate (units/s)", fontsize=dm.fs(0))
+    ax.set_xlabel("Phase", fontsize=dm.fs(0))
 
     ax.set_xticks(x)
-    ax.set_xticklabels(quarters, fontsize=dm.fs(-0.5))
+    ax.set_xticklabels(phases, fontsize=dm.fs(-0.5))
     ax.tick_params(axis="y", labelsize=dm.fs(-0.5))
 
     ax.legend(
