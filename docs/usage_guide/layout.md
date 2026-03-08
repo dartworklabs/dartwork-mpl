@@ -55,6 +55,25 @@ dm.simple_layout(fig, gs=gs)
 > automatically. Only add manual margins when you need fine positional control
 > (e.g., making room for a colorbar or external legend).
 
+### `simple_layout` vs `tight_layout`
+
+The same bar chart rendered with matplotlib's `tight_layout()` versus dartwork-mpl's `simple_layout()`:
+
+::::{grid} 1 1 2 2
+:gutter: 2
+
+:::{grid-item-card} tight_layout()
+:class-card: sd-border-secondary
+![tight_layout result](images/layout_tight.svg)
+:::
+
+:::{grid-item-card} simple_layout()
+:class-card: sd-border-primary
+![simple_layout result](images/layout_simple.svg)
+:::
+
+::::
+
 **Key functions:**
 
 - [`simple_layout(fig, gs=gs)`](../api/layout) — respects your GridSpec margins

@@ -79,6 +79,15 @@ gradient = dm.cspace(dm.named('oc.red5'), dm.named('oc.blue5'), n=10)
 :width: 100%
 :::
 
+**Why OKLCH matters:** Interpolating in RGB produces muddy, desaturated midtones.
+OKLCH maintains perceptual uniformity — every step looks equally spaced to the
+human eye:
+
+:::{figure} images/colors_oklch_vs_rgb.svg
+:alt: OKLCH vs RGB interpolation comparison showing muddy RGB midtones
+:width: 100%
+:::
+
 ## Colormaps
 
 dartwork-mpl bundles custom colormaps prefixed with `dm.`, designed for

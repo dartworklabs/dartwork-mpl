@@ -53,10 +53,22 @@ plt.show()
 
 ::::
 
-:::{figure} images/quickstart_first_figure.svg
-:alt: Sine wave plot using dartwork-mpl with oc.blue5 color
-:width: 100%
+::::{grid} 1 1 2 2
+:gutter: 2
+
+:::{grid-item-card} 🔧 Vanilla matplotlib
+:class-card: sd-border-secondary
+![Before — matplotlib defaults](images/compare_before.svg)
 :::
+
+:::{grid-item-card} ✨ With dartwork-mpl
+:class-card: sd-border-primary
+![After — dartwork-mpl scientific preset](images/compare_after.svg)
+:::
+
+::::
+
+Same data, same 6 lines of plotting code — the difference is one `dm.style.use()` call, named colors, and `simple_layout`.
 
 **What each dartwork-mpl call does:**
 
