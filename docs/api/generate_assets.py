@@ -41,7 +41,7 @@ def _save_layout_example(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(7)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(12)), dpi=300)
     gs = fig.add_gridspec(2, 2, hspace=0.45, wspace=0.35)
     ax1 = fig.add_subplot(gs[0, 0])
     ax2 = fig.add_subplot(gs[0, 1])
@@ -79,7 +79,7 @@ def _save_color_example(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(7)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(12)), dpi=300)
     gs = fig.add_gridspec(
         2, 1, hspace=0.4,
         left=0.08, right=0.98, top=0.92, bottom=0.08,
@@ -143,7 +143,7 @@ def _save_icon_example(images_dir: Path) -> Path:
     ]
 
     fig, ax = plt.subplots(
-        figsize=(dm.cm2in(9), dm.cm2in(3.5)), dpi=300
+        figsize=(dm.cm2in(15), dm.cm2in(6)), dpi=300
     )
     colors = ["tw.teal500", "tw.amber500", "tw.slate400", "tw.sky500", "tw.blue300"]
 
@@ -189,7 +189,7 @@ def _save_font_example(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     fig, ax = plt.subplots(
-        figsize=(dm.cm2in(9), dm.cm2in(5.5)), dpi=300
+        figsize=(dm.cm2in(15), dm.cm2in(9)), dpi=300
     )
 
     # Show hierarchy levels
@@ -244,7 +244,7 @@ def _save_xplot_example(images_dir: Path) -> Path:
         neg_label="Decrease",
         pos_label="Increase",
         add_total=False,
-        figsize=(dm.cm2in(9), dm.cm2in(6)),
+        figsize=(dm.cm2in(15), dm.cm2in(10)),
     )
 
     path = images_dir / "xplot_example.svg"
@@ -263,7 +263,7 @@ def _save_viz_example(images_dir: Path) -> Path:
     figs = dm.plot_colors(ncols=5, sort_colors=True)
     if figs:
         fig = figs[0]
-        fig.set_size_inches(dm.cm2in(9), dm.cm2in(6))
+        fig.set_size_inches(dm.cm2in(15), dm.cm2in(10))
         path = images_dir / "viz_example.svg"
         fig.savefig(path, format="svg", bbox_inches="tight")
         for f in figs:

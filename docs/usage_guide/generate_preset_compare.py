@@ -1,7 +1,8 @@
 """Generate a self-contained preset comparison HTML widget.
 
 Renders the same plot with every dartwork-mpl preset, inlines the SVGs,
-and wraps them in a tabbed HTML viewer with CSS fade transitions.
+and wraps them in a tabbed HTML viewer with CSS fade transitions and
+a parameter info panel.
 
     python docs/usage_guide/generate_preset_compare.py
 """
@@ -9,6 +10,8 @@ and wraps them in a tabbed HTML viewer with CSS fade transitions.
 from __future__ import annotations
 
 import io
+import json
+import re
 import sys
 import textwrap
 from pathlib import Path
@@ -69,12 +72,69 @@ PRESET_META: dict[str, dict[str, str]] = {
     },
 }
 
+# Key rcParams to show in the info panel
+_PANEL_PARAMS = [
+    ("font.size", "pt"),
+    ("axes.titlesize", "pt"),
+    ("axes.labelsize", "pt"),
+    ("xtick.labelsize", "pt"),
+    ("ytick.labelsize", "pt"),
+    ("legend.fontsize", "pt"),
+    ("lines.linewidth", "pt"),
+    ("axes.linewidth", ""),
+]
+
 # Fixed figure size so all presets align perfectly
 FIG_WIDTH_CM = 9.0
 FIG_HEIGHT_CM = 6.0
 
 
 # ── Plot function ──────────────────────────────────────────────────────
+
+
+def _get_spine_desc(preset: str) -> str:
+    """Return a human-readable spine description for *preset*."""
+    dm.style.use(preset)
+    rc = plt.rcParams
+    top = rc.get("axes.spines.top", True)
+    right = rc.get("axes.spines.right", True)
+    bottom = rc.get("axes.spines.bottom", True)
+    left = rc.get("axes.spines.left", True)
+
+    if not any([top, right, bottom, left]):
+        return "all hidden"
+    if all([top, right, bottom, left]):
+        return "all visible"
+    hidden = []
+    if not top:
+        hidden.append("top")
+    if not right:
+        hidden.append("right")
+    if not bottom:
+        hidden.append("bottom")
+    if not left:
+        hidden.append("left")
+    return f"{'/'.join(hidden)} hidden"
+
+
+def _collect_preset_params(preset: str) -> dict[str, str]:
+    """Collect rcParam values for the info panel."""
+    dm.style.use(preset)
+    rc = plt.rcParams
+    params: dict[str, str] = {}
+    for key, unit in _PANEL_PARAMS:
+        val = rc.get(key, "—")
+        if isinstance(val, float):
+            if val == int(val):
+                params[key] = f"{int(val)}"
+            else:
+                params[key] = f"{val:.1f}"
+            if unit:
+                params[key] += f" {unit}"
+        else:
+            params[key] = str(val)
+    params["spines"] = _get_spine_desc(preset)
+    return params
 
 
 def _render_preset_svg(preset: str) -> str:
@@ -87,9 +147,9 @@ def _render_preset_svg(preset: str) -> str:
     )
 
     # Sample data: thermal conductivity vs temperature
-    temp = np.array([200, 300, 400, 500, 600, 700, 800])
-    sample_a = np.array([13, 42, 31, 71, 61, 85, 90])
-    sample_b = np.array([5, 21, 27, 43, 44, 51, 68])
+    temp = np.array([200, 400, 600, 800, 1000, 1200])
+    sample_a = np.array([13, 42, 31, 71, 61, 90])
+    sample_b = np.array([5, 21, 27, 43, 44, 68])
 
     ax.plot(
         temp,
@@ -115,7 +175,7 @@ def _render_preset_svg(preset: str) -> str:
         fontweight=dm.fw(1),
     )
     ax.set_xlabel("Temperature (K)", fontsize=dm.fs(0))
-    ax.set_ylabel("Thermal Conductivity (W/m·K)", fontsize=dm.fs(0))
+    ax.set_ylabel("Thermal Conductivity (W/m\u00b7K)", fontsize=dm.fs(0))
     ax.legend(
         fontsize=dm.fs(-1),
         frameon=False,
@@ -124,11 +184,25 @@ def _render_preset_svg(preset: str) -> str:
 
     dm.simple_layout(fig)
 
-    # Render SVG to string
+    # Render SVG to string — NO bbox_inches='tight' for uniform size
     buf = io.StringIO()
-    fig.savefig(buf, format="svg", bbox_inches="tight")
+    fig.savefig(buf, format="svg")
     plt.close(fig)
     return buf.getvalue()
+
+
+def _normalize_svg_viewbox(svg: str, target_vb: str) -> str:
+    """Force a uniform viewBox on an SVG so all presets occupy
+    the exact same pixel footprint."""
+    svg = re.sub(
+        r'viewBox="[^"]*"',
+        f'viewBox="{target_vb}"',
+        svg,
+        count=1,
+    )
+    svg = re.sub(r'width="[^"]*"', 'width="100%"', svg, count=1)
+    svg = re.sub(r'height="[^"]*"', 'height="100%"', svg, count=1)
+    return svg
 
 
 def _strip_xml_declaration(svg: str) -> str:
@@ -177,39 +251,92 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     color: #fff;
     border-color: #333;
   }}
-  .dm-pc-info {{
-    font-size: 11px;
-    color: #888;
-    margin-bottom: 8px;
-    min-height: 1.4em;
+  /* ── Main layout: chart left, params right ── */
+  .dm-pc-body {{
+    display: flex;
+    gap: 16px;
+    align-items: stretch;
   }}
+  /* ── Chart stage (fixed size) ── */
   .dm-pc-stage {{
     position: relative;
     background: #fafafa;
     border: 1px solid #e0e0e0;
     border-radius: 6px;
     overflow: hidden;
-    /* Fixed aspect ratio container */
-    width: 100%;
+    flex: 1 1 0;
+    /* Fixed aspect ratio via padding-bottom */
+    aspect-ratio: {aspect_ratio};
   }}
   .dm-pc-panel {{
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
   }}
   .dm-pc-panel.active {{
-    position: relative;
     opacity: 1;
     pointer-events: auto;
   }}
   .dm-pc-panel svg {{
     display: block;
     width: 100%;
-    height: auto;
+    height: 100%;
+  }}
+  /* ── Parameter info panel (fixed width) ── */
+  .dm-pc-params {{
+    flex: 0 0 240px;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }}
+  .dm-pc-params table {{
+    width: 100%;
+    border-collapse: collapse;
+  }}
+  .dm-pc-params td {{
+    padding: 4px 0;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+  }}
+  .dm-pc-params td:first-child {{
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    color: #555;
+    white-space: nowrap;
+    width: 140px;
+  }}
+  .dm-pc-params td:last-child {{
+    text-align: right;
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+  }}
+  .dm-pc-params tr:last-child td {{
+    border-bottom: none;
+    padding-top: 8px;
+    font-style: italic;
+    color: #888;
+    font-weight: 500;
+  }}
+  .dm-pc-params tr:last-child td:first-child {{
+    font-family: inherit;
+    font-style: italic;
+  }}
+  .dm-pc-params tr:last-child td:last-child {{
+    font-weight: 600;
+  }}
+  /* ── Responsive: stack on narrow screens ── */
+  @media (max-width: 680px) {{
+    .dm-pc-body {{
+      flex-direction: column;
+    }}
+    .dm-pc-params {{
+      flex: none;
+      width: 100%;
+    }}
   }}
 </style>
 
@@ -217,19 +344,24 @@ _HTML_TEMPLATE = textwrap.dedent("""\
   <div class="dm-pc-tabs" id="dm-pc-tabs">
 {tabs_html}
   </div>
-  <div class="dm-pc-info" id="dm-pc-info"></div>
-  <div class="dm-pc-stage" id="dm-pc-stage">
+  <div class="dm-pc-body">
+    <div class="dm-pc-stage" id="dm-pc-stage">
 {panels_html}
+    </div>
+    <div class="dm-pc-params" id="dm-pc-params">
+      <table id="dm-pc-params-table"></table>
+    </div>
   </div>
 </div>
 
 <script>
 (function() {{
   var meta = {meta_json};
+  var params = {params_json};
   document.addEventListener("DOMContentLoaded", function() {{
     var tabs = document.querySelectorAll(".dm-pc-tab");
     var panels = document.querySelectorAll(".dm-pc-panel");
-    var info = document.getElementById("dm-pc-info");
+    var ptable = document.getElementById("dm-pc-params-table");
 
     function activate(preset) {{
       tabs.forEach(function(t) {{
@@ -238,8 +370,23 @@ _HTML_TEMPLATE = textwrap.dedent("""\
       panels.forEach(function(p) {{
         p.classList.toggle("active", p.dataset.preset === preset);
       }});
-      if (meta[preset]) {{
-        info.textContent = meta[preset].use + " — " + meta[preset].desc;
+      // Update params table
+      if (params[preset]) {{
+        var html = "";
+        var p = params[preset];
+        var keys = Object.keys(p);
+        for (var i = 0; i < keys.length; i++) {{
+          var k = keys[i];
+          if (k === "spines" || k === "best_for") continue;
+          html += "<tr><td>" + k + "</td><td>" + p[k] + "</td></tr>";
+        }}
+        if (p["spines"]) {{
+          html += "<tr><td>spines</td><td>" + p["spines"] + "</td></tr>";
+        }}
+        if (meta[preset]) {{
+          html += "<tr><td>best for</td><td>" + meta[preset].use + "</td></tr>";
+        }}
+        ptable.innerHTML = html;
       }}
     }}
 
@@ -281,10 +428,28 @@ def build_preset_compare_html(
 
     # ── Render all presets ──
     svgs: dict[str, str] = {}
+    all_params: dict[str, dict[str, str]] = {}
     for preset in PRESETS:
         print(f"  rendering '{preset}' ...")
         raw_svg = _render_preset_svg(preset)
         svgs[preset] = _strip_xml_declaration(raw_svg)
+        all_params[preset] = _collect_preset_params(preset)
+
+    # ── Extract the largest viewBox to use as common base ──
+    max_w, max_h = 0.0, 0.0
+    for svg in svgs.values():
+        m = re.search(r'viewBox="[\d.]+ [\d.]+ ([\d.]+) ([\d.]+)"', svg)
+        if m:
+            w, h = float(m.group(1)), float(m.group(2))
+            max_w = max(max_w, w)
+            max_h = max(max_h, h)
+
+    target_vb = f"0 0 {max_w:.6f} {max_h:.6f}"
+    aspect_ratio = f"{max_w:.2f} / {max_h:.2f}"
+
+    # Normalize all SVGs to the same viewBox
+    for preset in PRESETS:
+        svgs[preset] = _normalize_svg_viewbox(svgs[preset], target_vb)
 
     # ── Build tabs HTML ──
     tabs_lines = []
@@ -299,23 +464,24 @@ def build_preset_compare_html(
     panels_lines = []
     for preset in PRESETS:
         panels_lines.append(
-            f'    <div class="dm-pc-panel" data-preset="{preset}">'
+            f'      <div class="dm-pc-panel" data-preset="{preset}">'
         )
-        panels_lines.append(f"      {svgs[preset]}")
-        panels_lines.append("    </div>")
+        panels_lines.append(f"        {svgs[preset]}")
+        panels_lines.append("      </div>")
     panels_html = "\n".join(panels_lines)
 
-    # ── Meta JSON for info line ──
-    import json
-
+    # ── JSON data ──
     meta_json = json.dumps(PRESET_META, ensure_ascii=False)
+    params_json = json.dumps(all_params, ensure_ascii=False)
 
     # ── Assemble ──
     html = _HTML_TEMPLATE.format(
         tabs_html=tabs_html,
         panels_html=panels_html,
         meta_json=meta_json,
+        params_json=params_json,
         default_preset=PRESETS[0],
+        aspect_ratio=aspect_ratio,
     )
 
     output_path.write_text(html, encoding="utf-8")

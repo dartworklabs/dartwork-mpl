@@ -411,7 +411,7 @@ def _save_color_space_creation(images_dir: Path) -> Path:
     """Generate example showing different ways to create Color objects."""
     dm.style.use("scientific")
 
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(8)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(13)), dpi=300)
     fig.patch.set_facecolor("#fbfaf7")
 
     gs = fig.add_gridspec(
@@ -475,7 +475,7 @@ def _save_color_space_conversion(images_dir: Path) -> Path:
     """Generate example showing color space conversions."""
     dm.style.use("scientific")
 
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(4)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(6.5)), dpi=300)
     fig.patch.set_facecolor("#fbfaf7")
 
     # GridSpec: title + 2×(label row + box row)
@@ -564,7 +564,7 @@ def _save_color_space_interpolation(images_dir: Path) -> Path:
     dm.style.use("scientific")
 
     # Figure 생성
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(5.8)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
     fig.patch.set_facecolor("#fbfaf7")
 
     # GridSpec 구성: title + 3x(gradient + Lightness) = 7행
@@ -680,7 +680,7 @@ def _save_color_space_colormap(images_dir: Path) -> Path:
     dm.style.use("scientific")
 
     # Figure 생성
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(5.8)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
     fig.patch.set_facecolor("#fbfaf7")
 
     # GridSpec 구성: title 행 + 2x2 (이미지 행 + 코드 행)

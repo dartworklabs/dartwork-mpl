@@ -42,7 +42,7 @@ def _save_quickstart_first_figure(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     fig, ax = plt.subplots(
-        figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300
+        figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
     )
     x = np.linspace(0, 10, 200)
     ax.plot(x, np.sin(x), color="oc.blue5", label="signal")
@@ -63,7 +63,7 @@ def _save_quickstart_multi_panel(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     x = np.linspace(0, 10, 200)
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(5)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(8.5)), dpi=300)
     gs = fig.add_gridspec(1, 2, wspace=0.3)
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
@@ -100,7 +100,7 @@ def _make_challenging_figure(
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(5)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(8.5)), dpi=300)
     gs = fig.add_gridspec(1, 2, wspace=0.45)
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
@@ -160,7 +160,7 @@ def _save_layout_gridspec(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(7)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(12)), dpi=300)
     gs = fig.add_gridspec(
         2, 2,
         left=0.08, right=0.98, top=0.9, bottom=0.12,
@@ -191,7 +191,7 @@ def _save_layout_typography(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     fig, ax = plt.subplots(
-        figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300
+        figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
     )
     x = np.array([0, 1, 2])
     y = np.array([0, 1, 0.4])
@@ -220,7 +220,7 @@ def _save_colors_named(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     fig, ax = plt.subplots(
-        figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300
+        figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
     )
     x = np.array([0, 1, 2])
 
@@ -266,7 +266,7 @@ def _save_colors_colormap(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
     gs = fig.add_gridspec(1, 1)
     ax = fig.add_subplot(gs[0, 0])
 
@@ -298,7 +298,7 @@ def _save_scientific_chart(images_dir: Path) -> Path:
     dm.style.use("scientific")
 
     fig, ax = plt.subplots(
-        figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300
+        figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
     )
     ax.plot(
         np.arange(50),
@@ -329,7 +329,7 @@ def _save_diverging_bar(images_dir: Path) -> Path:
         neg_label="Decrease",
         pos_label="Increase",
         add_total=False,
-        figsize=(dm.cm2in(9), dm.cm2in(6)),
+        figsize=(dm.cm2in(15), dm.cm2in(10)),
     )
 
     path = images_dir / "save_diverging_bar.svg"
@@ -401,7 +401,17 @@ def build_usage_guide_assets(
         except Exception as e:
             print(f"  ✗ {name} FAILED: {e}")
 
-    print(f"Done. {len(paths)}/{len(generators)} assets generated.")
+    # ── Preset comparison widget (separate generator) ──
+    try:
+        from generate_preset_compare import build_preset_compare_html
+
+        p = build_preset_compare_html(images_dir / "preset_compare.html")
+        paths.append(p)
+        print(f"  ✓ preset_compare → {p.name}")
+    except Exception as e:
+        print(f"  ✗ preset_compare FAILED: {e}")
+
+    print(f"Done. {len(paths)}/{len(generators) + 1} assets generated.")
     return paths
 
 
