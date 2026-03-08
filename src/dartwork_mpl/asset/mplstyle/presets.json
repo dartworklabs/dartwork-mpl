@@ -5,12 +5,12 @@
   "poster": ["base", "font-poster"],
   "web": ["base", "font-web"],
   "minimal": ["base", "font-minimal", "theme-minimal"],
-  "dark": ["base", "font-scientific", "theme-dark"],
+  "dark": ["base", "font-web", "theme-dark"],
   "scientific-kr": ["base", "font-scientific", "lang-kr"],
   "report-kr": ["base", "font-report", "lang-kr"],
   "presentation-kr": ["base", "font-presentation", "lang-kr"],
   "poster-kr": ["base", "font-poster", "lang-kr"],
   "web-kr": ["base", "font-web", "lang-kr"],
   "minimal-kr": ["base", "font-minimal", "theme-minimal", "lang-kr"],
-  "dark-kr": ["base", "font-scientific", "theme-dark", "lang-kr"]
+  "dark-kr": ["base", "font-web", "theme-dark", "lang-kr"]
 }

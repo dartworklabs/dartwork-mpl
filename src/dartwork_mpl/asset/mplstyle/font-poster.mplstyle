@@ -1,18 +1,4 @@
-font.family: sans-serif
-font.sans-serif: Roboto, Lato, Inter, Open Sans, Arial, Helvetica, sans-serif
-
-mathtext.fontset: custom
-
-mathtext.bf:  Noto Sans Math:bold
-mathtext.cal: Noto Sans Math
-mathtext.it:  Noto Sans Math:italic
-mathtext.rm:  Noto Sans Math
-mathtext.sf:  Noto Sans Math
-mathtext.tt:  Noto Sans Math
-mathtext.fallback: None
-mathtext.default: it
-
-font.weight:  400
+font.weight:  300
 font.size:    12.0
 
 axes.titlesize:     14.0

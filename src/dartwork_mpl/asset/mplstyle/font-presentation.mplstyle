@@ -1,27 +1,4 @@
-font.family: sans-serif
-font.sans-serif: Roboto, Lato, Inter, Open Sans, Arial, Helvetica, sans-serif
-
-mathtext.fontset: custom  # Should be 'dejavusans' (default),
-
-mathtext.bf:  Noto Sans Math:bold
-mathtext.cal: Noto Sans Math
-mathtext.it:  Noto Sans Math:italic
-mathtext.rm:  Noto Sans Math
-mathtext.sf:  Noto Sans Math
-mathtext.tt:  Noto Sans Math
-mathtext.fallback: None  # Select fallback font from ['cm' (Computer Modern), 'stix'
-                        # 'stixsans'] when a symbol can not be found in one of the
-                        # custom math fonts. Select 'None' to not perform fallback
-                        # and replace the missing character by a dummy symbol.
-mathtext.default: it  # The default font to use for math.
-                       # Can be any of the LaTeX font names, including
-                       # the special name "regular" for the same font
-                       # used in regular text.
-
-#font.style:   normal
-#font.variant: normal
 font.weight:  300
-#font.stretch: normal
 font.size:    10.5
 
 axes.titlesize:     11.5  # font size of the axes title
@@ -34,6 +11,7 @@ ytick.labelsize:     10  # font size of the tick labels
 
 legend.fontsize:      8.5
 
+figure.titlesize:   11.5   # size of the figure title
 figure.titleweight: 400    # weight of the figure title
-figure.labelsize:   10.5     # size of the figure label (``Figure.sup[x|y]label()``)
+figure.labelsize:   10.5     # size of the figure label
 figure.labelweight: 300    # weight of the figure label
