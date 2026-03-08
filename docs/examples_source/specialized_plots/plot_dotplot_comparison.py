@@ -28,7 +28,7 @@ categories = [
     "Fraud Detection",
     "Personalized Marketing",
     "Talent Acquisition",
-    "Financial Forecasting",
+    "Signal Processing",
     "Cybersecurity Threat Detection",
     "Legal Document Review",
 ]

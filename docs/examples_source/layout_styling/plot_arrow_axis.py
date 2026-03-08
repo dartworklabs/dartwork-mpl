@@ -3,7 +3,7 @@ Arrow Axis Annotations
 ======================
 
 ``dm.arrow_axis`` draws bidirectional arrows with Low/High labels along
-a spine edge — perfect for risk-return matrices and conceptual diagrams.
+a spine edge — perfect for trade-off matrices and conceptual diagrams.
 """
 
 import matplotlib.pyplot as plt
@@ -14,8 +14,8 @@ import dartwork_mpl as dm
 dm.style.use("presentation")
 
 # %%
-# Risk–Return scatter matrix
-# --------------------------
+# Complexity–Accuracy scatter matrix
+# -----------------------------------
 # A classic 2D matrix with arrow axes indicating the conceptual
 # direction of each dimension.
 np.random.seed(42)
@@ -26,16 +26,16 @@ fig, ax = plt.subplots(
 
 # Generate cluster data for four quadrants
 categories = {
-    "Growth Stocks": (7, 12, "oc.red5"),
-    "Value Stocks": (3, 5, "oc.blue5"),
-    "Bonds": (1.5, 2, "oc.green5"),
-    "Commodities": (5, 8, "oc.yellow6"),
+    "Neural Networks": (7, 12, "oc.red5"),
+    "Random Forests": (3, 5, "oc.blue5"),
+    "Linear Models": (1.5, 2, "oc.green5"),
+    "SVMs": (5, 8, "oc.yellow6"),
 }
 
-for name, (ret, risk, color) in categories.items():
+for name, (acc, comp, color) in categories.items():
     n = 15
-    x = np.random.normal(risk, 1.5, n)
-    y = np.random.normal(ret, 2, n)
+    x = np.random.normal(comp, 1.5, n)
+    y = np.random.normal(acc, 2, n)
     ax.scatter(x, y, color=color, s=20, alpha=0.7, label=name,
                edgecolors="white", linewidths=0.3)
 
@@ -43,12 +43,12 @@ ax.set_xlim(-2, 16)
 ax.set_ylim(-4, 18)
 ax.set_xticks([])
 ax.set_yticks([])
-ax.set_title("Risk\u2013Return Matrix", fontsize=dm.fs(1), pad=16)
+ax.set_title("Complexity\u2013Accuracy Trade-off", fontsize=dm.fs(1), pad=16)
 
 # Add arrow axes
-dm.arrow_axis(ax, "x", "Risk", low="Low", high="High",
+dm.arrow_axis(ax, "x", "Complexity", low="Low", high="High",
               offset=-0.08)
-dm.arrow_axis(ax, "y", "Return", low="Low", high="High",
+dm.arrow_axis(ax, "y", "Accuracy", low="Low", high="High",
               offset=-0.10)
 
 ax.legend(loc="upper left", fontsize=dm.fs(-0.5), frameon=True,

@@ -13,9 +13,9 @@ import dartwork_mpl as dm
 # Apply presentation style for web docs
 dm.style.use("presentation")
 
-# Sample data for financial waterfall
-categories = ["Start", "Rev+", "COGS-", "OpEx-", "Tax-", "End"]
-values = [100, 50, -30, -15, -5, 100]  # End = Start + sum of changes
+# Sample data for energy balance waterfall
+categories = ["Input", "Gain", "Loss-A", "Loss-B", "Loss-C", "Output"]
+values = [100, 50, -30, -15, -5, 100]  # Output = Input + sum of changes
 cumulative = np.cumsum(values)
 
 # Create figure
@@ -38,12 +38,12 @@ gs = fig.add_gridspec(
 ax1 = fig.add_subplot(gs[0, 0])
 x_pos = np.arange(len(categories))
 colors = ["oc.blue5" if v >= 0 else "oc.red5" for v in values]
-colors[0] = "oc.gray5"  # Start
-colors[-1] = "oc.gray5"  # End
+colors[0] = "oc.gray5"  # Input
+colors[-1] = "oc.gray5"  # Output
 # Calculate bottom positions
 bottom = np.zeros(len(categories))
 bottom[1:] = cumulative[:-1]
-bottom[-1] = 0  # End bar starts from 0
+bottom[-1] = 0  # Output bar starts from 0
 ax1.bar(
     x_pos,
     np.abs(values),
@@ -55,7 +55,7 @@ ax1.bar(
 )
 ax1.set_xticks(x_pos)
 ax1.set_xticklabels(categories, fontsize=dm.fs(-1))
-ax1.set_ylabel("Value", fontsize=dm.fs(0))
+ax1.set_ylabel("Energy (kJ)", fontsize=dm.fs(0))
 ax1.set_title("Basic Waterfall", fontsize=dm.fs(1))
 ax1.set_yticks([0, 50, 100, 150])
 
@@ -81,7 +81,7 @@ for i in range(len(categories) - 1):
         )
 ax2.set_xticks(x_pos)
 ax2.set_xticklabels(categories, fontsize=dm.fs(-1))
-ax2.set_ylabel("Value", fontsize=dm.fs(0))
+ax2.set_ylabel("Energy (kJ)", fontsize=dm.fs(0))
 ax2.set_title("With Connecting Lines", fontsize=dm.fs(1))
 ax2.set_yticks([0, 50, 100, 150])
 
@@ -114,13 +114,13 @@ for i, (_bar, val) in enumerate(zip(bars, values, strict=False)):
     )
 ax3.set_xticks(x_pos)
 ax3.set_xticklabels(categories, fontsize=dm.fs(-1))
-ax3.set_ylabel("Value", fontsize=dm.fs(0))
+ax3.set_ylabel("Energy (kJ)", fontsize=dm.fs(0))
 ax3.set_title("With Value Labels", fontsize=dm.fs(1))
 ax3.set_yticks([0, 50, 100, 150])
 
 # Panel D: Detailed breakdown
 ax4 = fig.add_subplot(gs[1, 1])
-detailed_cats = ["Q1", "Sales", "Costs", "Q2", "Sales", "Costs", "Q3"]
+detailed_cats = ["Phase 1", "Gain", "Loss", "Phase 2", "Gain", "Loss", "Phase 3"]
 detailed_vals = [100, 30, -20, 0, 25, -15, 0]
 detailed_cum = [100, 130, 110, 110, 135, 120, 120]
 x_detailed = np.arange(len(detailed_cats))
@@ -150,7 +150,7 @@ ax4.bar(
 )
 ax4.set_xticks(x_detailed)
 ax4.set_xticklabels(detailed_cats, fontsize=dm.fs(-2))
-ax4.set_ylabel("Value", fontsize=dm.fs(0))
+ax4.set_ylabel("Energy (kJ)", fontsize=dm.fs(0))
 ax4.set_title("Detailed Breakdown", fontsize=dm.fs(1))
 ax4.set_yticks([0, 50, 100, 150])
 
