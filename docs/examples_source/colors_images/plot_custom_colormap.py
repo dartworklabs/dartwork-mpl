@@ -26,8 +26,8 @@ gs = fig.add_gridspec(
     right=0.95,
     top=0.95,
     bottom=0.08,
-    wspace=0.35,
-    hspace=0.4,
+    wspace=0.4,
+    hspace=0.5,
 )
 
 # Panel A: Custom sequential colormap

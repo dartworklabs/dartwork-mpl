@@ -35,7 +35,7 @@ gs = fig.add_gridspec(
     right=0.98,
     top=0.92,
     bottom=0.12,
-    wspace=0.25,
+    wspace=0.4,
     hspace=0.5,
 )
 

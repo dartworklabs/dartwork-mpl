@@ -33,7 +33,7 @@ gs = fig.add_gridspec(
     right=0.98,
     top=0.95,
     bottom=0.12,
-    wspace=0.3,
+    wspace=0.4,
 )
 
 # Panel A: Regression with Error Bars

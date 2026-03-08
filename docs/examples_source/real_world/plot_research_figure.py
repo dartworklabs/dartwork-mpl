@@ -25,7 +25,7 @@ gs = fig.add_gridspec(
     2, 2,
     left=0.12, right=0.96,
     top=0.94, bottom=0.10,
-    wspace=0.35, hspace=0.40,
+    wspace=0.4, hspace=0.5,
 )
 
 # Panel (a): Time series

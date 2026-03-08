@@ -19,7 +19,7 @@ data = [np.random.normal(0, std, 100) for std in range(1, 5)]
 
 fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(8)), dpi=300)
 gs = fig.add_gridspec(
-    1, 2, left=0.08, right=0.98, top=0.92, bottom=0.12, wspace=0.3
+    1, 2, left=0.08, right=0.98, top=0.92, bottom=0.12, wspace=0.4
 )
 
 # Box Plot

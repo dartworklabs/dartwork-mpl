@@ -15,7 +15,7 @@ dm.style.use("presentation")
 # Create a figure with multiple subplots
 fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
 gs = fig.add_gridspec(
-    2, 2, left=0.1, right=0.95, top=0.95, bottom=0.1, hspace=0.4, wspace=0.3
+    2, 2, left=0.1, right=0.95, top=0.95, bottom=0.1, hspace=0.5, wspace=0.4
 )
 
 ax1 = fig.add_subplot(gs[0, 0])

@@ -51,8 +51,8 @@ gs = fig.add_gridspec(
     right=0.96,
     top=0.94,
     bottom=0.10,
-    wspace=0.12,
-    hspace=0.34,
+    wspace=0.4,
+    hspace=0.5,
 )
 
 # Panel A: Basic pie chart

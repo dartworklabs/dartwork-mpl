@@ -32,8 +32,8 @@ gs = fig.add_gridspec(
     right=0.98,
     top=0.95,
     bottom=0.05,
-    wspace=0.15,
-    hspace=0.45,
+    wspace=0.4,
+    hspace=0.5,
 )
 
 # Panel A: Surface plot

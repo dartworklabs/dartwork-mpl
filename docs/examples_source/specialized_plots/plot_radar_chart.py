@@ -44,8 +44,8 @@ gs = fig.add_gridspec(
     right=0.94,
     top=0.95,
     bottom=0.07,
-    wspace=0.18,
-    hspace=0.32,
+    wspace=0.4,
+    hspace=0.5,
 )
 
 # Panel A: Basic radar

@@ -28,7 +28,7 @@ gs = fig.add_gridspec(
     right=0.94,
     top=0.92,
     bottom=0.12,
-    wspace=0.28,
+    wspace=0.4,
 )
 
 # Panel A: Diverging heatmap

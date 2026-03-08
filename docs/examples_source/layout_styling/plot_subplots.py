@@ -34,7 +34,7 @@ gs = fig.add_gridspec(
     top=0.95,
     bottom=0.08,
     hspace=0.5,
-    wspace=0.3,
+    wspace=0.4,
 )
 
 # Panel A: Top-left

@@ -31,8 +31,8 @@ gs = fig.add_gridspec(
     right=0.95,
     top=0.96,
     bottom=0.08,
-    wspace=0.16,
-    hspace=0.34,
+    wspace=0.4,
+    hspace=0.5,
 )
 
 theta_labels_deg = np.arange(0, 360, 45)

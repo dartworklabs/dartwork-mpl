@@ -33,8 +33,8 @@ gs = fig.add_gridspec(
     right=0.98,
     top=0.95,
     bottom=0.08,
-    wspace=0.3,
-    hspace=0.4,
+    wspace=0.4,
+    hspace=0.5,
 )
 
 # Panel A: Basic fill_between

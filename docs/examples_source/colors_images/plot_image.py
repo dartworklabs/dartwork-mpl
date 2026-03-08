@@ -31,8 +31,8 @@ gs = fig.add_gridspec(
     right=0.98,
     top=0.92,
     bottom=0.12,
-    wspace=0.2,
-    hspace=0.45,
+    wspace=0.4,
+    hspace=0.5,
 )
 
 # Panel A: imshow with colormap
