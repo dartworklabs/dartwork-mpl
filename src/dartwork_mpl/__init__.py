@@ -21,7 +21,17 @@ from .annotation import arrow_axis, label_axes
 from .asset_viz import *  # noqa: F403
 
 # Import color module exports
-from .color import Color, cspace, hex, named, oklab, oklch, rgb
+from .color import (
+    Color, 
+    cspace, 
+    hex, 
+    named, 
+    oklab, 
+    oklch, 
+    rgb,
+    DartworkColor,
+    DartworkColormap
+)
 
 # Import constant module exports
 from .constant import DW, SW
@@ -34,6 +44,9 @@ from .install import install_llm_txt, uninstall_llm_txt
 
 # I/O
 from .io import save_and_show, save_formats, show
+
+# Explore
+from .explore import list_colormaps, list_palettes, show_palette
 
 # Layout
 from .layout import get_bounding_box, simple_layout
@@ -67,6 +80,8 @@ __all__ = [
     "oklab",
     "oklch",
     "rgb",
+    "DartworkColor",
+    "DartworkColormap",
     # Icon module
     "icon_font",
     "icon_font_path",
@@ -102,6 +117,10 @@ __all__ = [
     "save_formats",
     "save_and_show",
     "show",
+    # Explore
+    "list_palettes",
+    "list_colormaps",
+    "show_palette",
     # Axes annotation
     "label_axes",
     "arrow_axis",

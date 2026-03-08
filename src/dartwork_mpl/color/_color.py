@@ -629,4 +629,13 @@ def named(color_name: str) -> Color:
     Color
         Color instance.
     """
+    import warnings
+
+    if color_name.startswith("dm."):
+        warnings.warn(
+            f"The 'dm.' color prefix is deprecated and will be removed in a future version. "
+            f"Please use 'dc.{color_name[3:]}' instead of '{color_name}'.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
     return Color.from_name(color_name)

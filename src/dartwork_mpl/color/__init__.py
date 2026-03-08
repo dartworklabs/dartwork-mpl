@@ -15,6 +15,7 @@ from ._views import (
     RgbView,
     RgbViewIterator,
 )
+from ._typing import DartworkColor, DartworkColormap
 
 __all__ = [
     # Core
@@ -33,6 +34,9 @@ __all__ = [
     "OklchViewIterator",
     "RgbView",
     "RgbViewIterator",
+    # Typing
+    "DartworkColor",
+    "DartworkColormap",
 ]
 
 # Register bundled color palettes with matplotlib on first import.

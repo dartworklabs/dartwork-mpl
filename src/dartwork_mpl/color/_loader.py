@@ -123,6 +123,13 @@ def _load_colors() -> None:
     for prefix, filename in _JSON_PALETTES:
         color_dict.update(_load_json_palette(root_dir, filename, prefix))
 
+    # Add backward compatibility aliases for 'dc.' -> 'dm.'
+    compat_dict: dict[str, str] = {}
+    for k, v in color_dict.items():
+        if k.startswith("dc."):
+            compat_dict["dm." + k[3:]] = v
+    color_dict.update(compat_dict)
+
     # Register with matplotlib.
     mcolors.get_named_colors_mapping().update(color_dict)
 
