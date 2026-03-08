@@ -1,69 +1,170 @@
 # Styles and Presets
 
-dartwork-mpl ships with curated style presets that configure palette, fonts,
-line weights, and spine visibility in one call.
+dartwork-mpl ships with **7 curated presets** that configure fonts, line
+weights, spine visibility, and color scheme in one call — plus Korean (`-kr`)
+variants for each, giving **14 presets** total.
 
-## Using presets
+## Quick start
 
 ```python
 import dartwork_mpl as dm
 
-dm.style.use("scientific")              # papers/journals (default)
-dm.style.use("report")                  # reports/dashboards
-dm.style.use("presentation")            # slides
-dm.style.use("poster")                  # conference posters
-dm.style.use("web")                     # web pages/documentation
-dm.style.use("minimal")                 # Tufte-style, data-ink focus
-dm.style.use("dark")                    # dark backgrounds
-dm.style.use("scientific-kr")           # includes Korean fonts
+dm.style.use("scientific")     # papers & journals
+dm.style.use("report")         # reports & dashboards
+dm.style.use("presentation")   # slides
+dm.style.use("poster")         # conference posters
+dm.style.use("web")            # web pages & documentation
+dm.style.use("minimal")        # Tufte-style, data-ink focus
+dm.style.use("dark")           # dark backgrounds (Jupyter, dark slides)
+dm.style.use("scientific-kr")  # any preset + Korean fonts
 ```
 
-Each preset is a named combination of style layers.
-The `-kr` variants add Korean font support on top of the equivalent English preset.
+## Interactive comparison
 
-## Preset comparison
-
-Toggle between presets below to see how font sizes and spines change on the
-same chart:
+Toggle between presets to see how font sizes, spines, and colors change
+on the same chart:
 
 ```{raw} html
 :file: images/preset_compare.html
 ```
 
-All presets share the same `base` layer (thin lines, no grid,
-lightweight Roboto font family). They differ in **font scale**,
-**spine visibility**, **figure size**, and **color scheme**:
+---
 
-| rcParam           | `scientific` | `report` | `presentation` | `poster` | `web`   | `minimal` | `dark`    |
-| ----------------- | ------------ | -------- | -------------- | -------- | ------- | --------- | --------- |
-| `font.size`       | 7.5 pt       | 8.0 pt   | 10.5 pt        | 12.0 pt  | 11.0 pt | 7.5 pt    | 11.0 pt   |
-| `axes.titlesize`  | 8.5 pt       | 9.0 pt   | 11.5 pt        | 14.0 pt  | 13.0 pt | 8.5 pt    | 13.0 pt   |
-| `axes.labelsize`  | 7.5 pt       | 8.0 pt   | 10.5 pt        | 12.0 pt  | 11.0 pt | 7.5 pt    | 11.0 pt   |
-| `xtick.labelsize` | 7.0 pt       | 7.0 pt   | 10.0 pt        | 11.0 pt  | 10.0 pt | 7.0 pt    | 10.0 pt   |
-| `legend.fontsize` | 5.5 pt       | 6.0 pt   | 8.5 pt         | 9.0 pt   | 8.5 pt  | 5.5 pt    | 8.5 pt    |
-| Top/right spines  | ✓            | ✗        | ✓              | ✗        | ✗       | all off   | ✗         |
-| Background        | white        | white    | white          | white    | white   | white     | `#1e1e1e` |
+## Preset details
 
-**When to use which:**
+All presets share a common **`base` layer** that sets thin lines (`0.5 pt`),
+no grid, `Roboto` font family, and `300` font weight. Each preset then
+overrides specific values on top.
 
-- **`scientific`** — Compact sizing for journal figures at 3.5″ column width.
-  All four spines are visible.
-- **`report`** — Slightly larger fonts for reports and dashboards with
-  hidden top/right spines for a cleaner look.
-- **`presentation`** — Large font scale for slides. Text stays readable when
-  projected.
-- **`poster`** — Extra-large fonts and thick lines for conference posters and
-  large displays.
-- **`web`** — Optimized for web pages and documentation. Larger fonts than
-  scientific for screen readability.
-- **`minimal`** — Tufte-inspired: no spines, no tick marks, no grid. Puts
-  maximum ink on the data itself.
-- **`dark`** — Inverted color scheme for dark Jupyter themes, dark slides, or
-  dark web pages. Uses web font sizes for screen readability.
+### Font size comparison
+
+| rcParam           | scientific | report | presentation | poster | web  | minimal | dark |
+| ----------------- | ---------- | ------ | ------------ | ------ | ---- | ------- | ---- |
+| `font.size`       | 7.5        | 8.0    | 10.5         | 12.0   | 11.0 | 7.5     | 11.0 |
+| `axes.titlesize`  | 8.5        | 9.0    | 11.5         | 14.0   | 13.0 | 8.5     | 13.0 |
+| `axes.labelsize`  | 7.5        | 8.0    | 10.5         | 12.0   | 11.0 | 7.5     | 11.0 |
+| `xtick.labelsize` | 7.0        | 7.0    | 10.0         | 11.0   | 10.0 | 7.0     | 10.0 |
+| `legend.fontsize` | 5.5        | 6.0    | 8.5          | 9.0    | 8.5  | 5.5     | 8.5  |
+
+All sizes in **pt**. Every preset uses `font.weight: 300` and
+`axes.labelweight: 400` uniformly.
+
+### Chrome comparison
+
+| Property         | scientific | report | presentation | poster | web    | minimal | dark      |
+| ---------------- | ---------- | ------ | ------------ | ------ | ------ | ------- | --------- |
+| Top/right spines | ✓          | ✗      | ✓            | ✗      | ✗      | all off | ✗         |
+| Tick marks       | ✓          | ✓      | ✓            | large  | ✓      | none    | ✓         |
+| Lines            | 0.5 pt     | 0.5 pt | 0.5 pt       | 1.5 pt | 0.5 pt | 0.5 pt  | 0.5 pt    |
+| `axes.linewidth` | 0.3        | 0.3    | 0.3          | 0.5    | 0.4    | 0       | 0.3       |
+| Background       | white      | white  | white        | white  | white  | white   | `#1e1e1e` |
+
+---
+
+### `scientific` — papers & journals
+
+The default preset. Compact font sizes designed for single-column journal
+figures at 3.5″ width. All four spines are visible to match traditional
+academic conventions.
+
+```python
+dm.style.use("scientific")
+fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(6)))
+```
+
+**Best for:** LaTeX papers, IEEE/Elsevier submissions, technical notes.
+
+---
+
+### `report` — reports & dashboards
+
+Slightly larger fonts than `scientific`, with **top and right spines hidden**
+for a cleaner, less boxy feel. Ideal for PDF reports, internal memos, or
+dashboard exports.
+
+```python
+dm.style.use("report")
+```
+
+**Best for:** Business reports, data dashboards, executive summaries.
+
+---
+
+### `presentation` — slides
+
+Large fonts (10.5 pt base) so text remains readable when projected. All four
+spines are kept to give charts clear boundaries on busy slide backgrounds.
+
+```python
+dm.style.use("presentation")
+```
+
+**Best for:** PowerPoint/Keynote slides, screen-shared figures, talks.
+
+---
+
+### `poster` — conference posters
+
+The largest font scale (12 pt base, 14 pt titles) with **thicker lines**
+(1.5 pt) and larger tick marks (4 pt). Top/right spines hidden for a modern
+look. Designed to be readable from 1–2 meters away.
+
+```python
+dm.style.use("poster")
+fig, ax = plt.subplots(figsize=(8, 6))  # poster-sized panel
+```
+
+**Best for:** A0/A1 conference posters, large wall displays, signage.
+
+---
+
+### `web` — web & documentation
+
+Tuned for on-screen readability at typical browser zoom levels. Fonts are
+larger than `scientific` (11 pt) but smaller than `poster`. Top/right spines
+hidden. This is the preset used for the dartwork-mpl docs themselves.
+
+```python
+dm.style.use("web")
+```
+
+**Best for:** Sphinx/MkDocs documentation, blog posts, Jupyter notebooks
+shared as HTML, README figures.
+
+---
+
+### `minimal` — Tufte-style data focus
+
+Inspired by Edward Tufte's principle of _maximizing the data-ink ratio_.
+Removes all spines, tick marks, and grid lines — only the data and labels
+remain. Uses compact `scientific` font sizes.
+
+```python
+dm.style.use("minimal")
+```
+
+**Best for:** Infographics, editorial charts, minimalist data storytelling.
+
+---
+
+### `dark` — dark mode
+
+Inverts the color scheme for dark backgrounds (`#1e1e1e`). Uses `web` font
+sizes (11 pt) for screen readability, with top/right spines hidden. Spine
+and tick colors are set to subtle grays so they don't overpower the data.
+
+```python
+dm.style.use("dark")
+```
+
+**Best for:** Dark Jupyter themes, dark-mode slides, dark-themed web pages.
+
+---
 
 ## Korean variants (`-kr`)
 
-Appending `-kr` swaps the primary font family to Korean-capable fonts:
+Append `-kr` to any preset name to swap the font family to Korean-capable
+typefaces:
 
 | Layer       | Primary font fallback chain                           |
 | ----------- | ----------------------------------------------------- |
@@ -71,7 +172,8 @@ Appending `-kr` swaps the primary font family to Korean-capable fonts:
 | **Korean**  | Noto Sans CJK KR → Paperlogy → Pretendard → Gothic A1 |
 
 ```python
-dm.style.use("report-kr")  # report sizing + Korean fonts
+dm.style.use("report-kr")       # report sizing + Korean fonts
+dm.style.use("dark-kr")         # dark theme + Korean fonts
 ```
 
 All 7 base presets have a `-kr` variant: `scientific-kr`, `report-kr`,
@@ -79,52 +181,62 @@ All 7 base presets have a `-kr` variant: `scientific-kr`, `report-kr`,
 
 ## How presets work
 
-Presets are built by **stacking** style layers in order — each layer overrides
-the previous. For example, `scientific` applies the `base` layer first (shared
-defaults), then `font-scientific` on top (which sets the compact font sizes).
+Presets are built by **stacking** style layers — each subsequent layer
+overrides only the values it cares about:
 
-The `-kr` variants simply add a `lang-kr` layer that overrides the font family
-with Korean-capable fonts. You don't need to manage layers manually — just call
-`dm.style.use()` with a preset name.
-
-## Advanced: stacking and inspection
-
-For advanced use cases, you can compose custom styles or inspect what a preset
-changes:
-
-```python
-# List all available style files
-available = dm.list_styles()
-# → ['base', 'font-report', 'font-presentation', 'font-scientific', ...]
-
-# Inspect what a specific style layer changes
-style_dict = dm.load_style_dict("font-presentation")
-# → {'font.size': 10.5, 'axes.titlesize': 11.5, ...}
-
-# Stack multiple styles manually
-dm.style.stack(["base", "font-scientific", "lang-kr"])
-
-# Combine presets with theme fragments
-dm.style.stack(["base", "font-report", "theme-dark"])  # dark report
+```
+scientific  =  base  →  font-scientific
+report      =  base  →  font-report
+dark        =  base  →  font-web       →  theme-dark
+minimal     =  base  →  font-minimal   →  theme-minimal
+dark-kr     =  base  →  font-web       →  theme-dark    →  lang-kr
 ```
 
-## Standalone styles
+The `base` layer provides shared defaults (line widths, tick sizes, Roboto
+font family). Font layers (`font-*`) configure sizes and spine visibility.
+Theme layers (`theme-*`) override colors or chrome. `lang-kr` swaps font
+families. You don't need to manage layers manually — `dm.style.use()` handles
+the stacking.
 
-These standalone styles can be combined with `style.stack`:
+## Advanced: custom stacking
 
-| Style           | Purpose                                                           |
-| --------------- | ----------------------------------------------------------------- |
-| `dmpl`          | Original dartwork-mpl defaults (pre-preset system; rarely needed) |
-| `dmpl_light`    | Lighter variant of `dmpl` (pre-preset system; rarely needed)      |
-| `spine-no`      | Hides top + right spines                                          |
-| `spine-yes`     | Shows all four spines                                             |
-| `lang-kr`       | Korean font family override                                       |
-| `theme-dark`    | Dark color scheme (can add to any font preset)                    |
-| `theme-minimal` | Removes all spines, ticks, and grid lines                         |
+For use cases not covered by presets, you can compose layers directly:
 
-> **Note:** `dmpl` and `dmpl_light` predate the current preset system and are
-> retained for backwards compatibility. For new projects, use `scientific`,
-> `report`, or `presentation` instead.
+```python
+# Dark report — report fonts + dark colors
+dm.style.stack(["base", "font-report", "theme-dark"])
+
+# Minimal with large fonts — web sizes + no chrome
+dm.style.stack(["base", "font-web", "theme-minimal"])
+
+# List all available style layers
+dm.list_styles()
+# → ['base', 'font-scientific', 'font-report', 'font-presentation',
+#     'font-poster', 'font-web', 'font-minimal', 'theme-dark',
+#     'theme-minimal', 'lang-kr', 'spine-no', 'spine-yes', ...]
+
+# Inspect any single layer
+dm.load_style_dict("font-web")
+# → {'font.size': 11.0, 'axes.titlesize': 13.0, ...}
+```
+
+## Standalone style layers
+
+Individual layers for use with `style.stack`:
+
+| Layer           | Purpose                                            |
+| --------------- | -------------------------------------------------- |
+| `base`          | Shared defaults (line widths, Roboto, tick sizes)  |
+| `font-*`        | Font sizes + spine visibility for each preset      |
+| `theme-dark`    | Dark color scheme (backgrounds, text, tick colors) |
+| `theme-minimal` | Removes all spines, ticks, and grid lines          |
+| `lang-kr`       | Korean font family override                        |
+| `spine-no`      | Hides top + right spines                           |
+| `spine-yes`     | Shows all four spines                              |
+
+> **Legacy note:** `dmpl` and `dmpl_light` predate the current preset system
+> and are retained for backwards compatibility. For new projects, use a named
+> preset instead.
 
 ## See also
 
