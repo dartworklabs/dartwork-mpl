@@ -29,7 +29,7 @@ def _parse_colormap(
     -------
     matplotlib.colors.ListedColormap
         A ListedColormap object with the parsed colors.
-        The colormap name will be 'dm.{filename}' or 'dm.{filename}_r'
+        The colormap name will be 'dc.{filename}' or 'dc.{filename}_r'
         if reversed.
     """
     path_obj: Path = Path(path)
@@ -46,9 +46,9 @@ def _parse_colormap(
 
     if reverse:
         colors = colors[::-1]
-        name: str = f"dm.{path_obj.stem}_r"
+        name: str = f"dc.{path_obj.stem}_r"
     else:
-        name = f"dm.{path_obj.stem}"
+        name = f"dc.{path_obj.stem}"
 
     return mcolors.ListedColormap(colors, name=name)
 

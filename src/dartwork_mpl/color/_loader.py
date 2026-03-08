@@ -4,7 +4,7 @@ Loads color definitions from asset files and registers them with
 matplotlib's internal color mapping. Supports multiple color systems:
 Open Color (oc.), Tailwind CSS (tw.), Material Design (md.),
 Ant Design (ad.), Chakra UI (cu.), Primer (pr.), and
-Dartwork categorical palettes (dm.).
+Dartwork Color curated palettes (dc.).
 """
 
 from __future__ import annotations
@@ -92,7 +92,7 @@ _JSON_PALETTES: list[tuple[str, str]] = [
     ("ad", "ant_colors.json"),
     ("cu", "chakra_colors.json"),
     ("pr", "primer_colors.json"),
-    ("dm", "dm_palettes.json"),
+    ("dc", "dm_palettes.json"),
 ]
 
 
@@ -102,8 +102,8 @@ def _load_colors() -> None:
     This function loads colors from text files (Open Color, ``oc.``
     prefix) and JSON files (Tailwind ``tw.``, Material Design ``md.``,
     Ant Design ``ad.``, Chakra UI ``cu.``, Primer ``pr.``,
-    Dartwork ``dm.``) in the ``asset/color`` directory and registers
-    them with matplotlib.
+    Dartwork Color ``dc.``) in the ``asset/color`` directory and
+    registers them with matplotlib.
 
     Notes
     -----

@@ -44,8 +44,8 @@ _OPENCOLOR_NAMES = _load_color_library_names()
 
 def _classify_color_library(color_name: str) -> str:
     """Classify a color name into its library category."""
-    if color_name.startswith("dm."):
-        return "dm"
+    if color_name.startswith("dc."):
+        return "dc"
     if color_name.startswith("tw."):
         return "tw"
     if color_name.startswith("md."):
@@ -64,7 +64,7 @@ def _classify_color_library(color_name: str) -> str:
 def _extract_base_color_name(color_name: str) -> str:
     """Extract base color name from color name."""
     name = color_name
-    for prefix in ["dm.", "oc.", "tw.", "md.", "ad.", "cu.", "pr."]:
+    for prefix in ["dc.", "oc.", "tw.", "md.", "ad.", "cu.", "pr."]:
         if name.startswith(prefix):
             name = name[len(prefix) :]
             break
@@ -81,7 +81,7 @@ def _extract_number_from_color_name(
 ) -> int | None:
     """Extract number from color name if present."""
     name = color_name
-    for prefix in ["dm.", "tw.", "md.", "ad.", "cu.", "pr."]:
+    for prefix in ["dc.", "tw.", "md.", "ad.", "cu.", "pr."]:
         if name.startswith(prefix):
             name = name[len(prefix) :]
             break
@@ -136,7 +136,7 @@ def _separate_colors_by_library(
     library_groups: dict[
         str, dict[str, str | tuple[float, float, float]]
     ] = {
-        "dm": {},
+        "dc": {},
         "opencolor": {},
         "tw": {},
         "md": {},
@@ -563,7 +563,7 @@ def plot_colors(
     library_colors = _separate_colors_by_library(colors)
 
     skip_duplicate_removal = {
-        "dm",
+        "dc",
         "tw",
         "md",
         "ant",
@@ -577,7 +577,7 @@ def plot_colors(
             )
 
     library_order = [
-        "dm",
+        "dc",
         "opencolor",
         "tw",
         "md",

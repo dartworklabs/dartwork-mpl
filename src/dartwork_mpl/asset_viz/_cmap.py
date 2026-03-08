@@ -270,12 +270,7 @@ def plot_colormaps(
             continue
 
         cmaps = categories[category]
-        cmaps.sort(
-            key=lambda c: (
-                0 if c.name.startswith("dm.") else 1,
-                c.name.lower(),
-            )
-        )
+        cmaps.sort(key=lambda c: c.name.lower())
 
         fig = _plot_category(cmaps, category, gradient, ncols)
         figures.append(fig)
@@ -348,8 +343,6 @@ def _plot_category(
         ax = fig.add_subplot(gs[row + 1, col])
         ax.imshow(gradient, aspect="auto", cmap=cmap)
 
-        # Name label — bold + accent for dm.* cmaps
-        is_dm = cmap.name.startswith("dm.")
         ax.text(
             -0.01,
             0.5,
@@ -357,8 +350,7 @@ def _plot_category(
             va="center",
             ha="right",
             fontsize=10,
-            fontweight="bold" if is_dm else "normal",
-            color="#1565c0" if is_dm else "#333333",
+            color="#333333",
             transform=ax.transAxes,
         )
         ax.set_axis_off()
@@ -390,12 +382,7 @@ def _plot_flat(
     ncols: int,
 ) -> Figure:
     """Draw all colormaps in a single figure without grouping."""
-    cmap_list.sort(
-        key=lambda c: (
-            0 if c.name.startswith("dm.") else 1,
-            c.name.lower(),
-        )
-    )
+    cmap_list.sort(key=lambda c: c.name.lower())
 
     nrows = (len(cmap_list) + ncols - 1) // ncols
 
@@ -424,7 +411,6 @@ def _plot_flat(
         if ax_idx < len(axs_flat):
             ax = axs_flat[ax_idx]
             ax.imshow(gradient, aspect="auto", cmap=cmap)
-            is_dm = cmap.name.startswith("dm.")
             ax.text(
                 -0.01,
                 0.5,
@@ -432,8 +418,7 @@ def _plot_flat(
                 va="center",
                 ha="right",
                 fontsize=10,
-                fontweight="bold" if is_dm else "normal",
-                color="#1565c0" if is_dm else "#333333",
+                color="#333333",
                 transform=ax.transAxes,
             )
 
