@@ -723,3 +723,314 @@ document.addEventListener("click", function (e) {
     }
   });
 })();
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Color Interpolation Widget — interactive cspace() demo
+   ═══════════════════════════════════════════════════════════════════════ */
+(function () {
+  // ── Color math utilities ──────────────────────────────────────────
+  function srgbLinearize(c) {
+    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  }
+
+  function srgbDelinearize(c) {
+    return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1.0 / 2.4) - 0.055;
+  }
+
+  function hexToLinearRgb(hex) {
+    var r = parseInt(hex.slice(1, 3), 16) / 255;
+    var g = parseInt(hex.slice(3, 5), 16) / 255;
+    var b = parseInt(hex.slice(5, 7), 16) / 255;
+    return [srgbLinearize(r), srgbLinearize(g), srgbLinearize(b)];
+  }
+
+  function linearRgbToOklab(lr, lg, lb) {
+    var l_ = Math.cbrt(
+      0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb,
+    );
+    var m_ = Math.cbrt(
+      0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb,
+    );
+    var s_ = Math.cbrt(
+      0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb,
+    );
+    return [
+      0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_,
+      1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_,
+      0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_,
+    ];
+  }
+
+  function oklabToLinearRgb(L, a, b) {
+    var l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+    var m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+    var s_ = L - 0.0894841775 * a - 1.291485548 * b;
+    var l = l_ * l_ * l_;
+    var m = m_ * m_ * m_;
+    var s = s_ * s_ * s_;
+    return [
+      +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+      -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+      -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+    ];
+  }
+
+  function oklabToOklch(L, a, b) {
+    var C = Math.sqrt(a * a + b * b);
+    var h = (Math.atan2(b, a) * 180) / Math.PI;
+    if (h < 0) h += 360;
+    return [L, C, h];
+  }
+
+  function oklchToOklab(L, C, h) {
+    var rad = (h * Math.PI) / 180;
+    return [L, C * Math.cos(rad), C * Math.sin(rad)];
+  }
+
+  function clamp01(x) {
+    return Math.max(0, Math.min(1, x));
+  }
+
+  function linearRgbToHex(lr, lg, lb) {
+    var r = Math.round(clamp01(srgbDelinearize(lr)) * 255);
+    var g = Math.round(clamp01(srgbDelinearize(lg)) * 255);
+    var b = Math.round(clamp01(srgbDelinearize(lb)) * 255);
+    return (
+      "#" +
+      ("0" + r.toString(16)).slice(-2) +
+      ("0" + g.toString(16)).slice(-2) +
+      ("0" + b.toString(16)).slice(-2)
+    );
+  }
+
+  // ── Interpolation functions ───────────────────────────────────────
+  function interpolateOklch(hex1, hex2, n) {
+    var rgb1 = hexToLinearRgb(hex1);
+    var rgb2 = hexToLinearRgb(hex2);
+    var lab1 = linearRgbToOklab(rgb1[0], rgb1[1], rgb1[2]);
+    var lab2 = linearRgbToOklab(rgb2[0], rgb2[1], rgb2[2]);
+    var lch1 = oklabToOklch(lab1[0], lab1[1], lab1[2]);
+    var lch2 = oklabToOklch(lab2[0], lab2[1], lab2[2]);
+
+    // Handle hue wrapping (shortest path)
+    var h1 = lch1[2],
+      h2 = lch2[2];
+    var dh = h2 - h1;
+    if (dh > 180) h2 -= 360;
+    else if (dh < -180) h2 += 360;
+
+    var colors = [];
+    for (var i = 0; i < n; i++) {
+      var t = n === 1 ? 0 : i / (n - 1);
+      var L = lch1[0] + t * (lch2[0] - lch1[0]);
+      var C = lch1[1] + t * (lch2[1] - lch1[1]);
+      var h = h1 + t * (h2 - h1);
+      if (h < 0) h += 360;
+      if (h >= 360) h -= 360;
+      var lab = oklchToOklab(L, C, h);
+      var rgb = oklabToLinearRgb(lab[0], lab[1], lab[2]);
+      colors.push(linearRgbToHex(rgb[0], rgb[1], rgb[2]));
+    }
+    return colors;
+  }
+
+  function interpolateRgb(hex1, hex2, n) {
+    var r1 = parseInt(hex1.slice(1, 3), 16);
+    var g1 = parseInt(hex1.slice(3, 5), 16);
+    var b1 = parseInt(hex1.slice(5, 7), 16);
+    var r2 = parseInt(hex2.slice(1, 3), 16);
+    var g2 = parseInt(hex2.slice(3, 5), 16);
+    var b2 = parseInt(hex2.slice(5, 7), 16);
+
+    var colors = [];
+    for (var i = 0; i < n; i++) {
+      var t = n === 1 ? 0 : i / (n - 1);
+      var r = Math.round(r1 + t * (r2 - r1));
+      var g = Math.round(g1 + t * (g2 - g1));
+      var b = Math.round(b1 + t * (b2 - b1));
+      colors.push(
+        "#" +
+          ("0" + r.toString(16)).slice(-2) +
+          ("0" + g.toString(16)).slice(-2) +
+          ("0" + b.toString(16)).slice(-2),
+      );
+    }
+    return colors;
+  }
+
+  // Determine text color for readability
+  function textColorFor(hex) {
+    var r = parseInt(hex.slice(1, 3), 16) / 255;
+    var g = parseInt(hex.slice(3, 5), 16) / 255;
+    var b = parseInt(hex.slice(5, 7), 16) / 255;
+    var lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return lum < 0.45 ? "#fff" : "#333";
+  }
+
+  // ── Widget 1: Interpolation ───────────────────────────────────────
+  document.addEventListener("DOMContentLoaded", function () {
+    var widget = document.querySelector(".dm-interp-widget");
+    if (!widget) return;
+
+    var picker1 = widget.querySelector(".dm-interp-picker-from");
+    var picker2 = widget.querySelector(".dm-interp-picker-to");
+    var hex1Input = widget.querySelector(".dm-interp-hex-from");
+    var hex2Input = widget.querySelector(".dm-interp-hex-to");
+    var slider = widget.querySelector(".dm-interp-slider");
+    var stepsLabel = widget.querySelector(".dm-interp-steps-label");
+    var bar = widget.querySelector(".dm-interp-bar");
+    var codeEl = widget.querySelector(".dm-interp-code");
+
+    function render() {
+      var c1 = picker1.value;
+      var c2 = picker2.value;
+      var n = parseInt(slider.value, 10);
+
+      hex1Input.value = c1;
+      hex2Input.value = c2;
+      stepsLabel.textContent = "n=" + n;
+
+      var colors = interpolateOklch(c1, c2, n);
+      bar.innerHTML = "";
+      colors.forEach(function (hex) {
+        var cell = document.createElement("div");
+        cell.className = "dm-interp-cell";
+        cell.style.backgroundColor = hex;
+        var label = document.createElement("span");
+        label.className = "dm-interp-cell-hex";
+        label.style.color = textColorFor(hex);
+        label.textContent = hex;
+        cell.appendChild(label);
+        cell.addEventListener("click", function () {
+          navigator.clipboard.writeText(hex).then(function () {
+            cell.classList.add("copied");
+            setTimeout(function () {
+              cell.classList.remove("copied");
+            }, 1200);
+          });
+        });
+        bar.appendChild(cell);
+      });
+
+      if (codeEl) {
+        codeEl.textContent =
+          "dm.cspace('" + c1 + "', '" + c2 + "', n=" + n + ", space='oklch')";
+      }
+    }
+
+    picker1.addEventListener("input", render);
+    picker2.addEventListener("input", render);
+    slider.addEventListener("input", render);
+
+    hex1Input.addEventListener("change", function () {
+      if (/^#[0-9a-fA-F]{6}$/.test(hex1Input.value)) {
+        picker1.value = hex1Input.value;
+        render();
+      }
+    });
+    hex2Input.addEventListener("change", function () {
+      if (/^#[0-9a-fA-F]{6}$/.test(hex2Input.value)) {
+        picker2.value = hex2Input.value;
+        render();
+      }
+    });
+
+    render();
+  });
+
+  // ── Widget 2: OKLCH vs RGB comparison ─────────────────────────────
+  document.addEventListener("DOMContentLoaded", function () {
+    var widget = document.querySelector(".dm-compare-widget");
+    if (!widget) return;
+
+    var slider = widget.querySelector(".dm-compare-slider");
+    var stepsLabel = widget.querySelector(".dm-compare-steps-label");
+    var oklchBar = widget.querySelector(".dm-compare-bar-oklch");
+    var rgbBar = widget.querySelector(".dm-compare-bar-rgb");
+    var toggleBtns = widget.querySelectorAll(".dm-compare-toggle-btn");
+    var verdictEl = widget.querySelector(".dm-compare-verdict");
+
+    var activeMode = "both";
+    var color1 = "#FF6B6B";
+    var color2 = "#4ECDC4";
+
+    function renderBar(barEl, colors) {
+      barEl.innerHTML = "";
+      colors.forEach(function (hex) {
+        var cell = document.createElement("div");
+        cell.className = "dm-compare-cell";
+        cell.style.backgroundColor = hex;
+        cell.setAttribute("data-hex", hex);
+        cell.addEventListener("click", function () {
+          navigator.clipboard.writeText(hex).then(function () {
+            cell.classList.add("copied");
+            setTimeout(function () {
+              cell.classList.remove("copied");
+            }, 1200);
+          });
+        });
+        barEl.appendChild(cell);
+      });
+    }
+
+    function render() {
+      var n = parseInt(slider.value, 10);
+      stepsLabel.textContent = "n=" + n;
+
+      var oklchColors = interpolateOklch(color1, color2, n);
+      var rgbColors = interpolateRgb(color1, color2, n);
+
+      renderBar(oklchBar, oklchColors);
+      renderBar(rgbBar, rgbColors);
+
+      // Visibility based on mode
+      var oklchRow = oklchBar.closest(".dm-compare-row");
+      var rgbRow = rgbBar.closest(".dm-compare-row");
+      if (activeMode === "oklch") {
+        oklchRow.style.display = "";
+        rgbRow.style.display = "none";
+      } else if (activeMode === "rgb") {
+        oklchRow.style.display = "none";
+        rgbRow.style.display = "";
+      } else {
+        oklchRow.style.display = "";
+        rgbRow.style.display = "";
+      }
+
+      // Update verdict text
+      if (verdictEl) {
+        if (activeMode === "both") {
+          verdictEl.innerHTML =
+            "↑ <strong>OKLCH</strong> maintains vivid hues through the transition. " +
+            "↓ <strong>RGB</strong> produces muddy, desaturated midtones — " +
+            "notice the grey-brown colors in the middle.";
+        } else if (activeMode === "oklch") {
+          verdictEl.innerHTML =
+            "<strong>OKLCH</strong> — every step looks equally spaced to the human eye. " +
+            "Brightness, saturation, and hue all shift uniformly.";
+        } else {
+          verdictEl.innerHTML =
+            "<strong>RGB</strong> — linear component mixing produces uneven " +
+            "perceptual steps and desaturated midtones.";
+        }
+      }
+    }
+
+    // Toggle buttons
+    toggleBtns.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        activeMode = btn.getAttribute("data-mode");
+        toggleBtns.forEach(function (b) {
+          b.classList.toggle(
+            "active",
+            b.getAttribute("data-mode") === activeMode,
+          );
+        });
+        render();
+      });
+    });
+
+    slider.addEventListener("input", render);
+    render();
+  });
+})();
