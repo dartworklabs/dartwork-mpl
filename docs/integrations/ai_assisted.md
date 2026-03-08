@@ -2,6 +2,8 @@
 
 dartwork-mpl is designed to work seamlessly with AI coding assistants like Cursor, GitHub Copilot, and Claude Code. This guide explains best practices for efficiently creating publication-quality graphs with AI assistance.
 
+> **New here?** Read **[Why AI-Ready?](why_ai_ready.md)** first to understand the design decisions that make dartwork-mpl uniquely suited for AI-assisted workflows.
+
 ## Overview
 
 When working with AI assistants to create graphs, follow these three key principles:
