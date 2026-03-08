@@ -691,6 +691,9 @@ def build_font_assets(base_dir: Path | None = None) -> dict[str, list[Path]]:
     # Generate utilities demo
     utils_path = _save_utilities_demo(images_dir)
 
+    # Generate before/after comparison & chart context SVGs
+    _build_comparison_assets()
+
     total = len(family_paths) + 5
     print(f"[fonts] wrote {total} font preview images")
 
@@ -702,6 +705,27 @@ def build_font_assets(base_dir: Path | None = None) -> dict[str, list[Path]]:
         "multilang": [multilang_path],
         "utilities": [utils_path],
     }
+
+
+def _build_comparison_assets() -> None:
+    """Generate comparison SVGs and copy to _static/ for Sphinx serving."""
+    import shutil
+
+    from fonts.generate_comparison_assets import (
+        generate_before_after,
+        generate_chart_context,
+    )
+
+    generate_before_after()
+    generate_chart_context()
+
+    # Copy SVGs to _static/ (raw HTML img tags need _static/ path)
+    gen_dir = Path(__file__).parent / "_generated"
+    static_dir = Path(__file__).parent.parent / "_static"
+    for svg in ("before_default.svg", "after_dartwork.svg"):
+        src = gen_dir / svg
+        if src.exists():
+            shutil.copy2(src, static_dir / svg)
 
 
 if __name__ == "__main__":
