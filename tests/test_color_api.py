@@ -6,7 +6,6 @@ import pytest
 
 from dartwork_mpl.color import Color, cspace, hex, named, oklab, oklch, rgb
 
-
 # ============================================================================
 # Convenience constructors
 # ============================================================================

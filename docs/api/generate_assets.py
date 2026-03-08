@@ -37,14 +37,17 @@ def _prepare_images_dir(base_dir: Path | None = None) -> Path:
 
 
 def _save_layout_example(images_dir: Path) -> Path:
-    """API layout: 3-panel with label_axes, arrow_axis, set_decimal."""
+    """API layout: 2×2-panel with label_axes, arrow_axis, set_decimal."""
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig, axes = plt.subplots(
-        1, 3, figsize=(dm.cm2in(9), dm.cm2in(3.6)), dpi=300
-    )
-    for ax in axes:
+    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(7)), dpi=300)
+    gs = fig.add_gridspec(2, 2, hspace=0.45, wspace=0.35)
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[0, 1])
+    ax3 = fig.add_subplot(gs[1, 0])
+
+    for ax in [ax1, ax2, ax3]:
         ax.plot(
             np.linspace(0, 1, 40),
             np.random.rand(40),
@@ -52,11 +55,15 @@ def _save_layout_example(images_dir: Path) -> Path:
             lw=0.8,
         )
 
-    dm.label_axes(axes)
-    dm.simple_layout(fig, margins=(0.08, 0.05, 0.1, 0.08))
-    dm.set_decimal(axes[0], xn=2, yn=1)
-    dm.arrow_axis(axes[1], "x", "Installation cost")
-    dm.arrow_axis(axes[2], "y", "Information richness")
+    # Hide the 4th subplot (bottom-right)
+    ax4 = fig.add_subplot(gs[1, 1])
+    ax4.axis("off")
+
+    dm.label_axes([ax1, ax2, ax3])
+    dm.simple_layout(fig, gs=gs)
+    dm.set_decimal(ax1, xn=2, yn=1)
+    dm.arrow_axis(ax2, "x", "Installation cost")
+    dm.arrow_axis(ax3, "y", "Information richness")
 
     path = images_dir / "layout_example.svg"
     fig.savefig(path, format="svg", bbox_inches="tight")
@@ -72,7 +79,7 @@ def _save_color_example(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(7)), dpi=300)
     gs = fig.add_gridspec(
         2, 1, hspace=0.4,
         left=0.08, right=0.98, top=0.92, bottom=0.08,
@@ -136,7 +143,7 @@ def _save_icon_example(images_dir: Path) -> Path:
     ]
 
     fig, ax = plt.subplots(
-        figsize=(dm.cm2in(9), dm.cm2in(3)), dpi=300
+        figsize=(dm.cm2in(9), dm.cm2in(3.5)), dpi=300
     )
     colors = ["tw.teal500", "tw.amber500", "tw.slate400", "tw.sky500", "tw.blue300"]
 
@@ -182,7 +189,7 @@ def _save_font_example(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     fig, ax = plt.subplots(
-        figsize=(dm.cm2in(9), dm.cm2in(4.8)), dpi=300
+        figsize=(dm.cm2in(9), dm.cm2in(5.5)), dpi=300
     )
 
     # Show hierarchy levels

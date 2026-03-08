@@ -71,13 +71,13 @@ html_theme_options = {
     "dark_code": False,  # Use light code blocks (default Shibuya style)
     "nav_links": [
         {"title": "Installation", "url": "installation/index"},
-        {"title": "Design Philosophy", "url": "philosophy/index"},
         {"title": "Usage Guide", "url": "usage_guide/index"},
-        {"title": "AI Integration", "url": "integrations/index"},
+        {"title": "Examples Gallery", "url": "examples_gallery/index"},
         {"title": "Color System", "url": "color_system/index"},
         {"title": "Fonts", "url": "fonts/index"},
-        {"title": "Examples Gallery", "url": "examples_gallery/index"},
         {"title": "API Reference", "url": "api/index"},
+        {"title": "Design Philosophy", "url": "philosophy/index"},
+        {"title": "AI Integration", "url": "integrations/index"},
     ],
 }
 

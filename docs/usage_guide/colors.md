@@ -5,6 +5,15 @@
 dartwork-mpl registers named palettes from OpenColor, Tailwind, Material,
 Ant Design, Chakra, and Primer. Use them anywhere matplotlib accepts a color.
 
+| Prefix | Library         | Example      |
+| ------ | --------------- | ------------ |
+| `oc.*` | OpenColor       | `oc.blue5`   |
+| `tw.*` | Tailwind CSS    | `tw.blue500` |
+| `md.*` | Material Design | `md.red500`  |
+| `an.*` | Ant Design      | `an.blue6`   |
+| `ch.*` | Chakra UI       | `ch.teal500` |
+| `pr.*` | Primer          | `pr.blue5`   |
+
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
@@ -57,7 +66,7 @@ brighter = color.copy()
 brighter.oklab.L += 0.1
 ```
 
-See [Color Space](../color_system/space) for the full guide on perceptual color
+See [Color Space](../color_system/space.md) for the full guide on perceptual color
 manipulation, including interpolation and custom colormap creation.
 
 ## Color interpolation
@@ -155,7 +164,7 @@ print(dm.classify_colormap(cmap))      # 'sequential' (tells you the type)
 ```
 
 Add `_r` to reverse any colormap (e.g., `dc.sunset_r`). Browse all available
-colormaps on the [Colormaps](../color_system/colormaps) page.
+colormaps on the [Colormaps](../color_system/colormaps.md) page.
 
 ## Where things live
 

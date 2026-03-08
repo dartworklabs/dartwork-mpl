@@ -380,10 +380,7 @@ class TestConfigInternals:
 
     def test_set_and_get_base_dir(self, tmp_path: Path) -> None:
         """set_base_dir sets the directory used by path helpers."""
-        from dartwork_mpl.ui._config import (
-            _get_base_dir,
-            set_base_dir,
-        )
+        from dartwork_mpl.ui._config import _get_base_dir, set_base_dir
 
 
         try:

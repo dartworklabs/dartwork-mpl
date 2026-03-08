@@ -31,7 +31,7 @@ dm.simple_layout(fig)  # auto-optimizes margins — replaces tight_layout()
 For multi-panel layouts, use GridSpec and pass it to `simple_layout`:
 
 ```python
-fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300)
+fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(7)), dpi=300)
 gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.25)
 axes = [fig.add_subplot(gs[i, j]) for i in range(2) for j in range(2)]
 
@@ -140,5 +140,5 @@ dm.plot_fonts(ncols=4, font_size=12)
 | `fw(n)` | Weight = base weight + `n` × 100. `fw(0)` = Light (300), `fw(4)` = Bold (700) |
 | `lw(n)` | Line width relative to `lines.linewidth`. `lw(0)` = default                   |
 
-See [Font Families](../fonts/families) for the full font catalog and
-[Font Utilities](../fonts/utilities) for detailed usage.
+See [Font Families](../fonts/families.md) for the full font catalog and
+[Font Utilities](../fonts/utilities.md) for detailed usage.

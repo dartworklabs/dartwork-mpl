@@ -63,8 +63,8 @@ dm.style.use('scientific')  # Apply a style preset
 ```
 
 Available presets: `scientific`, `report`, `minimal`, `presentation`, `poster`, `web`,
-`dark`, and `-kr` variants for Korean. See the [Quick Start](../usage_guide/quickstart)
-for a full end-to-end example and [Styles and Presets](../usage_guide/styles)
+`dark`, and `-kr` variants for Korean. See the [Quick Start](../usage_guide/quickstart.md)
+for a full end-to-end example and [Styles and Presets](../usage_guide/styles.md)
 for a detailed comparison.
 
 ## Verify Installation

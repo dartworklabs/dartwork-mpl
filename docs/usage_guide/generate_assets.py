@@ -100,7 +100,7 @@ def _make_challenging_figure(
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(4.2)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(5)), dpi=300)
     gs = fig.add_gridspec(1, 2, wspace=0.45)
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
@@ -160,7 +160,7 @@ def _save_layout_gridspec(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(7)), dpi=300)
     gs = fig.add_gridspec(
         2, 2,
         left=0.08, right=0.98, top=0.9, bottom=0.12,

@@ -7,6 +7,7 @@ spaces.
 
 from ._color import Color, cspace, hex, named, oklab, oklch, rgb
 from ._loader import ensure_loaded as _ensure_colors_loaded
+from ._typing import DartworkColor, DartworkColormap
 from ._views import (
     OklabView,
     OklabViewIterator,
@@ -15,7 +16,6 @@ from ._views import (
     RgbView,
     RgbViewIterator,
 )
-from ._typing import DartworkColor, DartworkColormap
 
 __all__ = [
     # Core

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="260.50967pt" height="143.242235pt" viewBox="0 0 260.50967 143.242235" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="259.932682pt" height="163.287775pt" viewBox="0 0 259.932682 163.287775" xmlns="http://www.w3.org/2000/svg" version="1.1">
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-03-08T20:15:38.935887</dc:date>
+    <dc:date>2026-03-08T21:14:16.678301</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -21,18 +21,18 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 143.242235 
-L 260.50967 143.242235 
-L 260.50967 0 
+   <path d="M 0 163.287775 
+L 259.932682 163.287775 
+L 259.932682 0 
 L 0 0 
 z
 " style="fill: #ffffff"/>
   </g>
   <g id="axes_1">
    <g id="patch_2">
-    <path d="M 7.2 136.042235 
-L 253.30967 136.042235 
-L 253.30967 23.063281 
+    <path d="M 7.2 156.087775 
+L 252.732682 156.087775 
+L 252.732682 23.063281 
 L 7.2 23.063281 
 z
 " style="fill: #ffffff"/>
@@ -41,7 +41,7 @@ z
    <g id="matplotlib.axis_2"/>
    <g id="text_1">
     <!-- fs(6) = 16.5pt — Title -->
-    <g style="fill: #333333" transform="translate(19.505483 39.037895) scale(0.165 -0.165)">
+    <g style="fill: #333333" transform="translate(19.476634 41.042449) scale(0.165 -0.165)">
      <defs>
       <path id="Roboto-Bold-66" d="M 594 0 
 L 594 2719 
@@ -358,7 +358,7 @@ z
    </g>
    <g id="text_2">
     <!-- fs(3) = 13.5pt — Subtitle -->
-    <g style="fill: #333333" transform="translate(19.505483 58.546998) scale(0.135 -0.135)">
+    <g style="fill: #333333" transform="translate(19.476634 64.159749) scale(0.135 -0.135)">
      <defs>
       <path id="Roboto-Medium-66" d="M 656 0 
 L 656 2819 
@@ -743,7 +743,7 @@ z
    </g>
    <g id="text_3">
     <!-- fs(0) = 10.5pt — Body / Labels -->
-    <g style="fill: #333333" transform="translate(19.505483 78.012154) scale(0.105 -0.105)">
+    <g style="fill: #333333" transform="translate(19.476634 87.233103) scale(0.105 -0.105)">
      <defs>
       <path id="Roboto-Light-66" d="M 756 0 
 L 756 3075 
@@ -1219,7 +1219,7 @@ z
    </g>
    <g id="text_4">
     <!-- fs(-1) = 9.5pt — Annotations -->
-    <g style="fill: #333333" transform="translate(19.505483 98.064694) scale(0.095 -0.095)">
+    <g style="fill: #333333" transform="translate(19.476634 110.89384) scale(0.095 -0.095)">
      <defs>
       <path id="Roboto-Light-2d" d="M 1650 1850 
 L 153 1850 
@@ -1345,7 +1345,7 @@ z
    </g>
    <g id="text_5">
     <!-- fs(-2) = 8.5pt — Fine print -->
-    <g style="fill: #333333" transform="translate(19.505483 118.09864) scale(0.085 -0.085)">
+    <g style="fill: #333333" transform="translate(19.476634 134.535984) scale(0.085 -0.085)">
      <defs>
       <path id="Roboto-Thin-66" d="M 794 0 
 L 794 3209 
@@ -1737,7 +1737,7 @@ z
    </g>
    <g id="text_6">
     <!-- Typography Scaling: fs(), fw() -->
-    <g transform="translate(46.971632 17.063281) scale(0.125 -0.125)">
+    <g transform="translate(46.683138 17.063281) scale(0.125 -0.125)">
      <defs>
       <path id="Roboto-Bold-79" d="M 1609 1278 
 L 2234 3381 

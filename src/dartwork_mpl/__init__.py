@@ -22,19 +22,22 @@ from .asset_viz import *  # noqa: F403
 
 # Import color module exports
 from .color import (
-    Color, 
-    cspace, 
-    hex, 
-    named, 
-    oklab, 
-    oklch, 
-    rgb,
+    Color,
     DartworkColor,
-    DartworkColormap
+    DartworkColormap,
+    cspace,
+    hex,
+    named,
+    oklab,
+    oklch,
+    rgb,
 )
 
 # Import constant module exports
 from .constant import DW, SW
+
+# Explore
+from .explore import list_colormaps, list_palettes, show_palette
 
 # Import icon module exports
 from .icon import icon_font, icon_font_path, list_icon_fonts
@@ -44,9 +47,6 @@ from .install import install_llm_txt, uninstall_llm_txt
 
 # I/O
 from .io import save_and_show, save_formats, show
-
-# Explore
-from .explore import list_colormaps, list_palettes, show_palette
 
 # Layout
 from .layout import get_bounding_box, simple_layout

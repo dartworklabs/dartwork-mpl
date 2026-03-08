@@ -69,7 +69,7 @@ def _load_colormaps() -> None:
     for path in root_dir.glob("*.txt"):
         cmap: mcolors.ListedColormap = _parse_colormap(path)
         mpl.colormaps.register(cmap=cmap)
-        
+
         # backward compatibility
         alias_cmap = mcolors.ListedColormap(cmap.colors, name=cmap.name.replace("dc.", "dm."))
         try:
@@ -79,7 +79,7 @@ def _load_colormaps() -> None:
 
         cmap_r: mcolors.ListedColormap = _parse_colormap(path, reverse=True)
         mpl.colormaps.register(cmap=cmap_r)
-        
+
         alias_cmap_r = mcolors.ListedColormap(cmap_r.colors, name=cmap_r.name.replace("dc.", "dm."))
         try:
             mpl.colormaps.register(cmap=alias_cmap_r)

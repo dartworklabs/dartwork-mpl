@@ -411,14 +411,14 @@ def _save_color_space_creation(images_dir: Path) -> Path:
     """Generate example showing different ways to create Color objects."""
     dm.style.use("scientific")
 
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(5.1)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(8)), dpi=300)
     fig.patch.set_facecolor("#fbfaf7")
 
     gs = fig.add_gridspec(
-        nrows=3, ncols=3,
-        left=0.05, right=0.98, top=0.95, bottom=0.08,
+        nrows=4, ncols=2,
+        left=0.05, right=0.98, top=0.95, bottom=0.05,
         hspace=0.5, wspace=0.25,
-        height_ratios=[0.12, 0.44, 0.44],
+        height_ratios=[0.08, 0.31, 0.31, 0.31],
     )
 
     ax_title = fig.add_subplot(gs[0, :])
@@ -439,8 +439,8 @@ def _save_color_space_creation(images_dir: Path) -> Path:
     ]
 
     for idx, (label, color, code) in enumerate(examples):
-        row = idx // 3 + 1
-        col = idx % 3
+        row = idx // 2 + 1  # rows 1, 2, 3
+        col = idx % 2       # cols 0, 1
         ax = fig.add_subplot(gs[row, col])
         ax.set_facecolor("#ffffff")
         rgb_val = color.to_rgb()
@@ -475,48 +475,38 @@ def _save_color_space_conversion(images_dir: Path) -> Path:
     """Generate example showing color space conversions."""
     dm.style.use("scientific")
 
-    # Figure 생성 (높이 줄임)
-    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(2.9)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(4)), dpi=300)
     fig.patch.set_facecolor("#fbfaf7")
 
-    # GridSpec 구성: title 행 + 라벨 행 + 박스 행
-    # height_ratios: title 18%, 라벨 15%, 박스 67%
+    # GridSpec: title + 2×(label row + box row)
     gs = fig.add_gridspec(
-        nrows=3,
-        ncols=4,
+        nrows=5,
+        ncols=2,
         left=0.05,
         right=0.98,
         top=0.95,
-        bottom=0.08,
+        bottom=0.05,
         hspace=0.08,
         wspace=0.18,
-        height_ratios=[0.18, 0.15, 0.67],
+        height_ratios=[0.14, 0.10, 0.38, 0.10, 0.38],
     )
 
-    # Title axes (첫 행 전체 사용)
+    # Title
     ax_title = fig.add_subplot(gs[0, :])
     ax_title.axis("off")
     ax_title.text(
-        0.5,
-        0.5,
-        "Color Space Conversion",
-        fontsize=16,
-        fontweight="bold",
-        ha="center",
-        va="bottom",
+        0.5, 0.5, "Color Space Conversion",
+        fontsize=16, fontweight="bold",
+        ha="center", va="bottom",
         transform=ax_title.transAxes,
     )
 
-    # Start with one color (밝은 색상)
     color = dm.named("tw.blue600")
-
-    # Convert to different spaces
     L, a, b = color.to_oklab()
     L_ch, C, h = color.to_oklch()
     r, g, b_rgb = color.to_rgb()
     hex_str = color.to_hex()
 
-    # 포맷 수정: OKLCH는 내부 왼쪽정렬 (multialignment), RGB는 유효숫자 3개
     conversions = [
         ("OKLab", f"L = {L: .3f}\na = {a: .3f}\nb = {b: .3f}", "center"),
         ("OKLCH", f"L = {L_ch:.3f}\nC = {C:.3f}\nh = {h:.1f}°", "left"),
@@ -524,36 +514,29 @@ def _save_color_space_conversion(images_dir: Path) -> Path:
         ("Hex", hex_str, "center"),
     ]
 
-    # 텍스트 색상 결정 (밝기에 따라 흰색 또는 검정색)
     text_color = "white" if L < 0.6 else "#333333"
 
     for idx, (label, values, align) in enumerate(conversions):
-        # 라벨 axes (박스 위)
-        ax_label = fig.add_subplot(gs[1, idx])
+        grid_row = idx // 2  # 0 or 1
+        grid_col = idx % 2   # 0 or 1
+        label_row = 1 + grid_row * 2  # rows 1, 3
+        box_row = 2 + grid_row * 2    # rows 2, 4
+
+        ax_label = fig.add_subplot(gs[label_row, grid_col])
         ax_label.axis("off")
         ax_label.text(
-            0.5,
-            0.5,
-            label,
-            ha="center",
-            va="center",
+            0.5, 0.5, label,
+            ha="center", va="center",
             transform=ax_label.transAxes,
-            fontsize=11,
-            fontweight="bold",
+            fontsize=11, fontweight="bold",
         )
 
-        # 박스 axes
-        ax = fig.add_subplot(gs[2, idx])
+        ax = fig.add_subplot(gs[box_row, grid_col])
         rgb_val = color.to_rgb()
-        # 색상 박스를 axes 전체에 배치
         ax.add_patch(
             plt.Rectangle(
-                (0, 0),
-                1,
-                1,
-                facecolor=rgb_val,
-                edgecolor="#e4e2dd",
-                linewidth=1.5,
+                (0, 0), 1, 1,
+                facecolor=rgb_val, edgecolor="#e4e2dd", linewidth=1.5,
             )
         )
         ax.set_xlim(0, 1)
@@ -561,24 +544,15 @@ def _save_color_space_conversion(images_dir: Path) -> Path:
         ax.set_xticks([])
         ax.set_yticks([])
         ax.set_frame_on(False)
-
-        # 값 (박스 안, 중앙 배치 + 내부 정렬)
         ax.text(
-            0.5,
-            0.5,
-            values,
-            ha="center",
-            va="center",
-            multialignment=align,  # 여러 줄 텍스트 내부 정렬
+            0.5, 0.5, values,
+            ha="center", va="center",
+            multialignment=align,
             transform=ax.transAxes,
-            fontsize=9,
-            family="monospace",
-            color=text_color,
+            fontsize=9, family="monospace", color=text_color,
         )
 
-    # 레이아웃 최적화 (GridSpec 지정)
     dm.simple_layout(fig, gs=gs)
-
     path = images_dir / "color_space_conversion.svg"
     fig.savefig(path, format="svg", bbox_inches="tight")
     plt.close(fig)

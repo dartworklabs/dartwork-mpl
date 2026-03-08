@@ -37,7 +37,7 @@ def list_palettes() -> list[str]:
         match = pattern.match(c)
         if match:
             palettes.add(f"{match.group(1)}.{match.group(2)}")
-    return sorted(list(palettes))
+    return sorted(palettes)
 
 
 def list_colormaps(include_reversed: bool = False) -> list[str]:
@@ -109,11 +109,11 @@ def show_palette(palette_name: str) -> None:
                 edgecolor="none",
             )
         )
-        
+
         # Simple contrast heuristic: lighter text for darker shades (index >= 5 usually)
         shade_idx = palette_colors[i][0]
         text_color = "white" if shade_idx >= 5 else "black"
-        
+
         ax.text(
             i + 0.5,
             0.5,
@@ -130,7 +130,7 @@ def show_palette(palette_name: str) -> None:
     ax.set_xticks([])
     ax.set_yticks([])
     ax.set_title(palette_name, loc="left", pad=10, fontweight="bold")
-    
+
     for spine in ax.spines.values():
         spine.set_visible(False)
 

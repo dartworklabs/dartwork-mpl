@@ -4,6 +4,26 @@ A minimal end-to-end workflow: apply a style, create a figure, and export it.
 
 ## Why dartwork-mpl?
 
+::::{grid} 1 1 3 3
+:gutter: 2
+
+:::{grid-item-card} 🎨 One-call styling
+No more hunting through `rcParams`. `dm.style.use()` applies a complete
+theme — fonts, weights, spines, ticks — instantly.
+:::
+
+:::{grid-item-card} 🌈 Design-system colors
+`"oc.blue5"`, `"tw.emerald500"`, `"md.red500"` — 1,500+ curated swatches
+work anywhere matplotlib accepts a color.
+:::
+
+:::{grid-item-card} 📐 Smart layout
+`dm.simple_layout(fig)` uses L-BFGS-B optimization for uniform margins.
+No more `tight_layout()` guesswork.
+:::
+
+::::
+
 Here's a typical matplotlib figure, then the same figure with dartwork-mpl:
 
 ::::{tab-set}
@@ -74,13 +94,13 @@ Same data, same 6 lines of plotting code — the difference is one `dm.style.use
 
 **What each dartwork-mpl call does:**
 
-| Call                         | Purpose                                                        |
-| ---------------------------- | -------------------------------------------------------------- |
-| `dm.style.use("scientific")` | Sets palette, fonts, line weights — see [Styles](styles)       |
-| `dm.cm2in(9)`                | Converts 9 cm to inches for `figsize`                          |
-| `dm.fs(0)`                   | Base font size relative to the active preset                   |
-| `dm.simple_layout(fig)`      | Auto-optimizes margins (replaces `tight_layout`)               |
-| `dm.save_and_show(fig)`      | Preview in notebooks + `plt.show()`. `size` sets preview width |
+| Call                              | Purpose                                                                            |
+| --------------------------------- | ---------------------------------------------------------------------------------- |
+| `dm.style.use("scientific")`      | Sets palette, fonts, line weights — see [Styles](styles.md)                        |
+| `dm.cm2in(9)`                     | Converts 9 cm to inches for `figsize`                                              |
+| `dm.fs(0)`                        | Returns the base font size of the active preset (`fs(2)` = base + 2 pt, and so on) |
+| `dm.simple_layout(fig)`           | Auto-optimizes margins (replaces `tight_layout`)                                   |
+| `dm.save_and_show(fig, size=720)` | Preview at 720 px wide in the notebook, then call `plt.show()`                     |
 
 ## Adding color
 
@@ -94,7 +114,7 @@ ax.fill_between(x, y1, y2, color="tw.emerald200")  # Tailwind
 ax.bar(categories, values, color="md.red500")       # Material Design
 ```
 
-See [Colors and Colormaps](colors) for the full palette reference.
+See [Colors and Colormaps](colors.md) for the full palette reference.
 
 ## Multi-panel layout
 
@@ -136,7 +156,31 @@ dm.save_formats(
 
 ## Next steps
 
-- **[Styles and Presets](styles)** — choose the right preset for your use case
-- **[Colors and Colormaps](colors)** — browse all named palettes
-- **[Layout and Typography](layout)** — panel labels, arrows, font scaling
-- **[Save, Export, and Validation](save_export)** — multi-format export + visual checks
+::::{grid} 1 1 2 2
+:gutter: 2
+
+:::{grid-item-card} 🎨 Styles and Presets
+Choose the right preset for your use case — papers, reports, slides, posters.
+
+→ [Browse presets](styles.md)
+:::
+
+:::{grid-item-card} 🌈 Colors and Colormaps
+Explore 1,500+ named palettes and perceptual OKLCH interpolation.
+
+→ [See palettes](colors.md)
+:::
+
+:::{grid-item-card} 📐 Layout and Typography
+Panel labels, arrows, font scaling, and margin optimization.
+
+→ [Learn layout](layout.md)
+:::
+
+:::{grid-item-card} 💾 Save and Validation
+Multi-format export + automatic visual quality checks.
+
+→ [Export guide](save_export.md)
+:::
+
+::::

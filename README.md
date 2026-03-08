@@ -212,14 +212,17 @@ dm.uninstall_llm_txt()    # remove installed guides
 
 ## Available Presets
 
-| Preset            | Description                            |
-| ----------------- | -------------------------------------- |
-| `scientific`      | Small fonts for academic papers        |
-| `presentation`    | Large fonts for presentations          |
-| `report`          | Style for reports and dashboards       |
-| `scientific-kr`   | Scientific style with Korean support   |
-| `presentation-kr` | Presentation style with Korean support |
-| `report-kr`       | Report style with Korean support       |
+| Preset         | Description                                       |
+| -------------- | ------------------------------------------------- |
+| `scientific`   | Compact fonts for academic papers and journals    |
+| `report`       | Reports and dashboards, cleaner spines            |
+| `minimal`      | Tufte-style, data-ink focus — no spines or ticks  |
+| `presentation` | Large fonts for projected slides                  |
+| `poster`       | Extra-large fonts and thick lines for posters     |
+| `web`          | On-screen readability for docs and notebooks      |
+| `dark`         | Dark backgrounds for Jupyter and dark-mode slides |
+
+All presets have a `-kr` Korean variant (e.g., `scientific-kr`, `report-kr`).
 
 <br/>
 
