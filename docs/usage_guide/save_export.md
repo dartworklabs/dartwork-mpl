@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 import numpy as np
 
-dm.style.use("investment")
+dm.style.use("scientific")
 
 fig, ax = plt.subplots(figsize=(dm.cm2in(11), dm.cm2in(7)), dpi=300)
 ax.plot(np.arange(50), np.cumsum(np.random.randn(50)) + 20, color="oc.blue6")
@@ -15,7 +15,7 @@ dm.simple_layout(fig)
 
 dm.save_formats(
     fig,
-    "output/forecast",
+    "output/experiment",
     formats=("png", "svg", "pdf"),
     dpi=300,
     bbox_inches="tight",
@@ -25,8 +25,8 @@ dm.save_and_show(fig, size=720)  # preview at 720px wide + plt.show()
 dm.show("output/forecast.svg", size=540)  # display a saved file in notebooks
 ```
 
-:::{figure} images/save_investment.svg
-:alt: Investment-style line chart saved with save_formats
+:::{figure} images/save_scientific.svg
+:alt: Scientific-style line chart saved with save_formats
 :width: 100%
 :::
 
@@ -70,7 +70,7 @@ dartwork-mpl provides ready-to-use plot templates in `dartwork_mpl.xplot`:
 from dartwork_mpl.xplot import plot_diverging_bar
 
 fig, ax = plot_diverging_bar(
-    categories=['Revenue', 'Costs', 'Profit'],
+    categories=['Accuracy', 'Recall', 'F1-Score'],
     negatives=[-30, -55, -10],
     positives=[60, 20, 45],
     neg_label='Decrease',

@@ -63,7 +63,7 @@ def _save_quickstart_multi_panel(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     x = np.linspace(0, 10, 200)
-    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(8)), dpi=300)
     gs = fig.add_gridspec(1, 2, wspace=0.3)
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
@@ -262,10 +262,10 @@ def _save_colors_colormap(images_dir: Path) -> Path:
 # ── save_export.md ─────────────────────────────────────────────────────
 
 
-def _save_investment_chart(images_dir: Path) -> Path:
-    """Save & Export: investment style line chart."""
+def _save_scientific_chart(images_dir: Path) -> Path:
+    """Save & Export: scientific style line chart."""
     np.random.seed(42)
-    dm.style.use("investment")
+    dm.style.use("scientific")
 
     fig, ax = plt.subplots(
         figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
@@ -276,12 +276,12 @@ def _save_investment_chart(images_dir: Path) -> Path:
         color="oc.blue6",
         lw=1.2,
     )
-    ax.set_xlabel("Trading Day", fontsize=dm.fs(0))
-    ax.set_ylabel("Price (USD)", fontsize=dm.fs(0))
-    ax.set_title("Investment Style Preview", fontsize=dm.fs(1))
+    ax.set_xlabel("Sample Index", fontsize=dm.fs(0))
+    ax.set_ylabel("Signal Amplitude", fontsize=dm.fs(0))
+    ax.set_title("Scientific Style Preview", fontsize=dm.fs(1))
     dm.simple_layout(fig)
 
-    path = images_dir / "save_investment.svg"
+    path = images_dir / "save_scientific.svg"
     fig.savefig(path, format="svg", bbox_inches="tight")
     plt.close(fig)
     return path
@@ -293,7 +293,7 @@ def _save_diverging_bar(images_dir: Path) -> Path:
     from dartwork_mpl.xplot import plot_diverging_bar
 
     fig, ax = plot_diverging_bar(
-        labels=["Revenue", "Costs", "Profit", "Growth", "Margin"],
+        labels=["Accuracy", "Precision", "Recall", "F1-Score", "AUC"],
         neg_values=np.array([-30, -55, -10, -20, -15]),
         pos_values=np.array([60, 20, 45, 50, 35]),
         neg_label="Decrease",
@@ -312,11 +312,10 @@ def _save_diagnostics_preview(images_dir: Path) -> Path:
     """Save & Export: plot_colors excerpt (SVG)."""
     dm.style.use("presentation")
 
-    # Generate a single OpenColor sheet as a compact preview
-    figs = dm.plot_colors(ncols=5, sort_colors=True)
-    if figs:
-        fig = figs[0]  # First library (OpenColor)
-        fig.set_size_inches(dm.cm2in(15), dm.cm2in(10))
+    # Generate an OpenColor sheet — keep natural figure size
+    figs = dm.plot_colors(ncols=4, sort_colors=True, show_hex=False)
+    if len(figs) >= 2:
+        fig = figs[1]  # OpenColor (library order: dm, opencolor, ...)
 
         path = images_dir / "save_diagnostics.svg"
         fig.savefig(path, format="svg", bbox_inches="tight")
@@ -356,7 +355,7 @@ def build_usage_guide_assets(
         ("colors_named", _save_colors_named),
         ("colors_interpolation", _save_colors_interpolation),
         ("colors_colormap", _save_colors_colormap),
-        ("save_investment", _save_investment_chart),
+        ("save_scientific", _save_scientific_chart),
         ("save_diverging_bar", _save_diverging_bar),
         ("save_diagnostics", _save_diagnostics_preview),
     ]

@@ -10,7 +10,7 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")              # papers/technical (recommended)
 dm.style.use("presentation")            # slides/reports
-dm.style.use("investment")              # finance decks (spines hidden)
+dm.style.use("report")                  # clean reports (spines hidden)
 dm.style.use("scientific-kr")           # includes Korean fonts
 ```
 
@@ -30,22 +30,22 @@ All three English presets share the same `base` layer (thin lines, no grid,
 lightweight Roboto font family). They differ only in **font scale** and
 **spine visibility**:
 
-| rcParam             | `scientific` | `investment` | `presentation` |
-| ------------------- | ------------ | ------------ | -------------- |
-| `font.size`         | 7.5 pt       | 8.0 pt       | 8.5 pt         |
-| `axes.titlesize`    | 8.5 pt       | 9.0 pt       | 9.5 pt         |
-| `axes.labelsize`    | 7.5 pt       | 8.0 pt       | 8.5 pt         |
-| `xtick.labelsize`   | 7.0 pt       | 7.0 pt       | 8.0 pt         |
-| `legend.fontsize`   | 5.5 pt       | 6.0 pt       | 6.5 pt         |
-| `axes.spines.top`   | True (base)  | **False**    | True (base)    |
-| `axes.spines.right` | True (base)  | **False**    | True (base)    |
+| rcParam             | `scientific` | `report`  | `presentation` |
+| ------------------- | ------------ | --------- | -------------- |
+| `font.size`         | 7.5 pt       | 8.0 pt    | 9.5 pt         |
+| `axes.titlesize`    | 8.5 pt       | 9.0 pt    | 10.5 pt        |
+| `axes.labelsize`    | 7.5 pt       | 8.0 pt    | 9.5 pt         |
+| `xtick.labelsize`   | 7.0 pt       | 7.0 pt    | 9.0 pt         |
+| `legend.fontsize`   | 5.5 pt       | 6.0 pt    | 7.5 pt         |
+| `axes.spines.top`   | True (base)  | **False** | True (base)    |
+| `axes.spines.right` | True (base)  | **False** | True (base)    |
 
 **When to use which:**
 
 - **`scientific`** — Compact sizing for journal figures at 3.5″ column width.
   All four spines are visible.
-- **`investment`** — Slightly larger fonts for equity research reports and
-  financial dashboards. Top/right spines are hidden for a cleaner look.
+- **`report`** — Slightly larger fonts for reports and dashboards with
+  hidden top/right spines for a cleaner, minimal look.
 - **`presentation`** — Largest font scale for slides and web. Text stays
   readable when projected or viewed on a monitor.
 
@@ -59,7 +59,7 @@ Appending `-kr` swaps the primary font family to Korean-capable fonts:
 | **Korean**  | Noto Sans CJK KR → Paperlogy → Pretendard → Gothic A1 |
 
 ```python
-dm.style.use("investment-kr")  # investment sizing + Korean fonts
+dm.style.use("report-kr")  # report sizing + Korean fonts
 ```
 
 ## How presets work
@@ -80,11 +80,11 @@ changes:
 ```python
 # List all available style files
 available = dm.list_styles()
-# → ['base', 'font-investment', 'font-presentation', 'font-scientific', ...]
+# → ['base', 'font-report', 'font-presentation', 'font-scientific', ...]
 
 # Inspect what a specific style layer changes
 style_dict = dm.load_style_dict("font-presentation")
-# → {'font.size': 8.5, 'axes.titlesize': 9.5, ...}
+# → {'font.size': 9.5, 'axes.titlesize': 10.5, ...}
 
 # Stack multiple styles manually
 dm.style.stack(["base", "font-scientific", "lang-kr"])
@@ -104,7 +104,7 @@ These standalone styles can be combined with `style.stack`:
 
 > **Note:** `dmpl` and `dmpl_light` predate the current preset system and are
 > retained for backwards compatibility. For new projects, use `scientific`,
-> `investment`, or `presentation` instead.
+> `report`, or `presentation` instead.
 
 ## See also
 

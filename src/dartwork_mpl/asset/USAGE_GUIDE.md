@@ -9,7 +9,7 @@ import dartwork_mpl as dm
 
 # Apply a style preset
 dm.style.use("scientific")          # academic papers
-dm.style.use("investment-kr")       # Korean investment reports
+dm.style.use("report-kr")            # Korean reports
 
 # Scale helpers (relative to rcParams base)
 font_size = dm.fs(0)    # base font size
@@ -109,11 +109,11 @@ dm.validate_figure(fig)    # check overflow, overlap, crowding
 
 ## Available Style Presets
 
-| Preset          | Use Case                   |
-| --------------- | -------------------------- |
-| `scientific`    | Academic papers            |
-| `investment`    | English investment reports |
-| `investment-kr` | Korean investment reports  |
+| Preset       | Use Case        |
+| ------------ | --------------- |
+| `scientific` | Academic papers |
+| `report`     | English reports |
+| `report-kr`  | Korean reports  |
 
 ## Tips
 

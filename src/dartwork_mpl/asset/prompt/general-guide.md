@@ -5,11 +5,13 @@
 ### Installation
 
 #### Using pip
+
 ```bash
 pip install git+https://github.com/dartworklabs/dartwork-mpl
 ```
 
 #### Using uv (Recommended)
+
 ```bash
 # Add to project
 uv add git+https://github.com/dartworklabs/dartwork-mpl
@@ -19,6 +21,7 @@ uv add git+https://github.com/dartworklabs/dartwork-mpl@main
 ```
 
 ### Basic Import
+
 ```python
 import dartwork_mpl as dm
 import matplotlib.pyplot as plt
@@ -33,23 +36,25 @@ dm.style.use('scientific')  # Default style for papers
 ### 2.1 Style Management
 
 #### Check Available Styles
+
 ```python
 # List all individual styles
 dm.list_styles()
-# ['base', 'dmpl', 'dmpl_light', 'font-investment', 'font-presentation', 
+# ['base', 'dmpl', 'dmpl_light', 'font-report', 'font-presentation',
 #  'font-scientific', 'lang-kr', 'spine-no', 'spine-yes']
 
 # Check available presets
 dm.style.presets_dict()
 # {'scientific': ['base', 'font-scientific'],
-#  'investment': ['base', 'font-investment'],
+#  'report': ['base', 'font-report'],
 #  'presentation': ['base', 'font-presentation'],
 #  'scientific-kr': ['base', 'font-scientific', 'lang-kr'],
-#  'investment-kr': ['base', 'font-investment', 'lang-kr'],
+#  'report-kr': ['base', 'font-report', 'lang-kr'],
 #  'presentation-kr': ['base', 'font-presentation', 'lang-kr']}
 ```
 
 #### Apply Styles
+
 ```python
 # Use presets (recommended)
 dm.style.use('scientific')  # For papers
@@ -61,6 +66,7 @@ dm.style.stack(['base', 'spine-no', 'font-presentation'])
 ```
 
 #### Check Style Contents
+
 ```python
 # Check style file contents
 style_dict = dm.load_style_dict('font-presentation')
@@ -75,6 +81,7 @@ preset_path = dm.style.presets_path()
 ### 2.2 Color System
 
 #### dartwork-mpl Custom Colors
+
 ```python
 # Use with dm. prefix
 ax.plot(x, y, color='oc.red5')
@@ -82,6 +89,7 @@ ax.scatter(x, y, c='oc.blue2')
 ```
 
 #### Tailwind CSS Colors
+
 ```python
 # Use tw. or tailwind. prefix
 # Format: tw.{color}:{weight}
@@ -90,6 +98,7 @@ ax.fill_between(x, y1, y2, color='tailwind.gray:200')
 ```
 
 #### Color Utilities
+
 ```python
 # Mix two colors
 mixed = dm.mix_colors('oc.red5', 'oc.blue5', alpha=0.5)
@@ -101,6 +110,7 @@ transparent = dm.pseudo_alpha('oc.red5', alpha=0.3, background='white')
 ### 2.3 Layout Utilities
 
 #### Recommended Figure Creation Pattern
+
 ```python
 # Create figure for papers (unit conversion: cm → inch)
 # Single column figure: 9cm width
@@ -117,9 +127,9 @@ fig = plt.figure(
 
 # Set layout with GridSpec
 gs = fig.add_gridspec(
-    nrows=1, ncols=1, 
-    left=0.17, right=0.95, 
-    top=0.95, bottom=0.17, 
+    nrows=1, ncols=1,
+    left=0.17, right=0.95,
+    top=0.95, bottom=0.17,
     hspace=0.3, wspace=0
 )
 ax = fig.add_subplot(gs[0, 0])
@@ -146,7 +156,7 @@ dm.simple_layout(fig, bbox=(0, 1, 0, 1))
 # Optimize only left half of figure
 dm.simple_layout(fig, bbox=(0, 0.5, 0, 1))
 
-# Optimize only right half of figure  
+# Optimize only right half of figure
 dm.simple_layout(fig, bbox=(0.5, 1, 0, 1))
 
 # Optimize only top half of figure
@@ -157,6 +167,7 @@ dm.simple_layout(fig, use_all_axes=True)
 ```
 
 **Key Parameters:**
+
 - `margins`: Margins in inches (left, right, bottom, top)
 - `bbox`: Target region for optimization in figure coordinates (left, right, bottom, top)
 - `gs`: Specify a GridSpec (uses first GridSpec if None)
@@ -183,10 +194,11 @@ ax.legend(fontsize=dm.fs(-2))
 ### 2.5 Save and Display
 
 #### Save in Multiple Formats
+
 ```python
 # Save in multiple formats simultaneously
 dm.save_formats(
-    fig, 
+    fig,
     'output/figure',  # without extension
     formats=('svg', 'png', 'pdf', 'eps'),
     bbox_inches='tight',
@@ -195,6 +207,7 @@ dm.save_formats(
 ```
 
 #### Save and Display in Jupyter
+
 ```python
 # Use instead of plt.show() - saves to temp file and displays immediately (recommended)
 dm.save_and_show(fig, size=600)
@@ -215,7 +228,7 @@ for ax, label in zip(axs, 'ab'):
     # Always use make_offset function when setting text offset
     offset = dm.make_offset(4, -4, fig)  # x=4pt, y=-4pt
     ax.text(
-        0, 1, label, 
+        0, 1, label,
         transform=ax.transAxes + offset,
         weight='bold',
         verticalalignment='top'
@@ -246,6 +259,7 @@ fig = dm.plot_fonts()  # Display available fonts
 ### Steps for Creating Publication-Quality Graphs
 
 1. **Separate Data Preparation and Plot Code**
+
 ```python
 # Data preparation cell
 x = np.linspace(0, 10, 100)
@@ -258,6 +272,7 @@ fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(7)))
 ```
 
 2. **GridSpec-Based Layout**
+
 ```python
 gs = fig.add_gridspec(
     nrows=2, ncols=1,
@@ -268,6 +283,7 @@ gs = fig.add_gridspec(
 ```
 
 3. **Handle-Based Legend**
+
 ```python
 line1, = ax.plot(x, y1, color='oc.red5', lw=0.7)
 scatter1 = ax.scatter([], [], c='oc.red5', s=1)  # dummy for legend
@@ -275,12 +291,14 @@ ax.legend([scatter1, line1], ['Data', 'Model'])
 ```
 
 4. **Explicit Tick Settings**
+
 ```python
 ax.set_xticks([0, 2, 4, 6, 8, 10])
 ax.set_yticks([-1, -0.5, 0, 0.5, 1])
 ```
 
 5. **Verify Based on Saved File**
+
 ```python
 # Use instead of plt.show() - can verify actual saved result
 dm.save_and_show(fig)
@@ -299,10 +317,11 @@ dm.style.use('scientific-kr')
 ## 5. Preset Styles
 
 Available presets:
+
 - `scientific`: For papers (small font)
-- `investment`: For investment reports
+- `report`: For reports and dashboards
 - `presentation`: For presentations (large font)
-- `scientific-kr`, `investment-kr`, `presentation-kr`: Korean versions
+- `scientific-kr`, `report-kr`, `presentation-kr`: Korean versions
 
 ## 6. Notes
 
@@ -383,4 +402,3 @@ dm.save_formats(
     dpi=600
 )
 ```
-
