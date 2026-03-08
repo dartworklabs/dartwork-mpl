@@ -504,3 +504,101 @@ html.dark .dm-comparison-panel,
 body[data-theme="dark"] .dm-comparison-panel {
   border-color: #333;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Responsive — Small screens (≤ 600px)
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  /* ── Reduce container padding ── */
+  .dm-font-specimen,
+  .dm-font-showcase,
+  .dm-type-tester {
+    padding: 1.2em 1em 1em;
+  }
+
+  /* ── Weight grid: stack label above sample ── */
+  .dm-font-grid {
+    grid-template-columns: 1fr;
+    row-gap: 0.3em;
+  }
+
+  .dm-font-grid .label {
+    font-size: 13px;
+    color: #888;
+  }
+
+  /* ── Showcase row: collapse 3-col to 2-col ── */
+  .dm-showcase-row {
+    grid-template-columns: 90px 1fr;
+    gap: 0.3em;
+  }
+
+  .dm-showcase-num {
+    display: none;
+  }
+
+  .dm-showcase-hero {
+    font-size: 1.6em;
+  }
+
+  /* ── Condensed comparison: stack ── */
+  .dm-condensed-row {
+    grid-template-columns: 1fr;
+    gap: 0.2em;
+  }
+
+  /* ── Multi-language grid: stack ── */
+  .dm-multilang-grid {
+    grid-template-columns: 1fr;
+    row-gap: 0.5em;
+  }
+
+  .dm-multilang-grid .lang-font-name {
+    text-align: left;
+    font-size: 11px;
+  }
+
+  /* ── Math specimen: stack ── */
+  .dm-math-grid {
+    grid-template-columns: 1fr;
+    row-gap: 0.5em;
+  }
+
+  .dm-math-grid .expr {
+    font-size: 15px;
+    overflow-x: auto;
+  }
+
+  /* ── Type tester: controls and results ── */
+  .dm-tester-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6em;
+  }
+
+  .dm-tester-input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .dm-tester-row {
+    grid-template-columns: 1fr;
+    gap: 0.2em;
+  }
+
+  .dm-tester-sample {
+    font-size: 15px;
+  }
+
+  /* ── Size scale strip: stack ── */
+  .dm-scale-family {
+    grid-template-columns: 1fr;
+    gap: 0.3em;
+  }
+
+  /* ── Before/after comparison: stack ── */
+  .dm-comparison-grid {
+    grid-template-columns: 1fr;
+    gap: 0.8em;
+  }
+}

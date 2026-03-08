@@ -469,24 +469,6 @@ body[data-theme="dark"] .dm-cmap-name {
   color: #e0e0e0;
 }
 
-.dm-cmap-tag {
-  font-size: 0.65em;
-  font-weight: 600;
-  color: #03675f;
-  background: #e1f4f1;
-  border: 1px solid #b9e2dc;
-  border-radius: 4px;
-  padding: 1px 6px;
-  margin-left: 6px;
-}
-
-html.dark .dm-cmap-tag,
-body[data-theme="dark"] .dm-cmap-tag {
-  background: #0d2e2a;
-  border-color: #1a4a44;
-  color: #4ecabc;
-}
-
 .dm-cmap-bar {
   height: 24px;
   border-radius: 4px;
@@ -983,6 +965,7 @@ body[data-theme="dark"] .dm-preset-compare {
 
 .dm-pc-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   margin-bottom: 1em;
 }
@@ -1034,6 +1017,17 @@ body[data-theme="dark"] .dm-pc-tab-active {
 @media (max-width: 700px) {
   .dm-pc-preview {
     flex-direction: column;
+  }
+  .dm-pc-info {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .dm-pc-tab {
+    padding: 4px 10px;
+    font-size: 0.72em;
   }
 }
 
@@ -1368,6 +1362,18 @@ body[data-theme="dark"] .dm-ruler-widget {
   align-items: center;
   gap: 1em;
   margin-bottom: 1em;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .dm-ruler-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .dm-ruler-value {
+    text-align: center;
+    min-width: 0;
+  }
 }
 
 .dm-ruler-controls label {
@@ -1533,6 +1539,7 @@ body[data-theme="dark"] .dm-hierarchy-sample {
   margin-top: 0.8em;
   padding-top: 0.8em;
   border-top: 1px solid #eee;
+  flex-wrap: wrap;
 }
 
 html.dark .dm-hierarchy-meta,
@@ -2560,4 +2567,137 @@ body[data-theme="dark"] .dm-example-mode-btn.active {
 .sphx-glr-single-img,
 .highlight-Python {
   transition: opacity 0.3s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Responsive — Medium screens (≤ 900px)
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  /* Color Space: creation grid 2-col */
+  .dm-cs-creation-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Color Space: converter cards 2-col */
+  .dm-cs-conv-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Responsive — Small screens (≤ 600px)
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  /* ── Color Palette Groups: stack label above swatches ── */
+  .dm-color-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+
+  .dm-group-label {
+    min-width: unset;
+    max-width: unset;
+    padding-right: 0;
+    padding-bottom: 2px;
+    font-size: 0.7em;
+  }
+
+  /* ── Color Toolbar: stack vertically ── */
+  .dm-color-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6em;
+  }
+
+  .dm-cvd-buttons {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  /* ── Gradient Picker: rows stack vertically ── */
+  .dm-gp-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .dm-gp-space-label {
+    min-width: unset;
+  }
+
+  .dm-gp-steps-control {
+    margin-left: 0;
+  }
+
+  /* ── Color Space Converter: controls wrap ── */
+  .dm-cs-conv-controls {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .dm-cs-conv-cards {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Color Space Creation: single column ── */
+  .dm-cs-creation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Color Space Interpolation: rows stack ── */
+  .dm-cs-interp-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .dm-cs-interp-space-label {
+    min-width: unset;
+    padding-top: 0;
+  }
+
+  .dm-cs-interp-steps-control {
+    margin-left: 0;
+  }
+
+  /* ── Colormap Builder: full-width inputs ── */
+  .dm-cs-cmap-color-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  /* ── Hierarchy Widget: slider groups stack ── */
+  .dm-hierarchy-slider-group {
+    min-width: unset;
+  }
+
+  /* ── Widget containers: reduce padding ── */
+  .dm-gradient-picker,
+  .dm-preset-compare,
+  .dm-ruler-widget,
+  .dm-hierarchy-widget,
+  .dm-cs-converter,
+  .dm-cs-interp,
+  .dm-cs-cmap-builder,
+  .dm-color-sheet,
+  .dm-cmap-panel {
+    padding: 1em;
+  }
+
+  /* ── Gallery toolbar: search wrap ── */
+  .dm-gallery-search-wrap {
+    flex-wrap: wrap;
+  }
+
+  .dm-gallery-search-count {
+    min-width: unset;
+  }
+
+  /* ── Example controls: wrap on narrow ── */
+  .dm-example-controls {
+    flex-wrap: wrap;
+    width: auto;
+  }
 }
