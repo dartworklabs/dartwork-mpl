@@ -21,14 +21,6 @@ the same data plotted with default matplotlib fonts (left) and dartwork-mpl font
 </div>
 ```
 
-## Interactive Type Tester
-
-Type your own text and compare how it looks across all bundled fonts:
-
-```{raw} html
-:file: _generated/type_tester.html
-```
-
 ## Font Selection Guide
 
 Not sure which font to use? Pick based on your primary need:
@@ -60,21 +52,12 @@ font is used where:
 
 ## Font Pairing Recommendations
 
-Curated combinations for common chart styles — all rendered live with the actual
-bundled fonts:
-
-```{raw} html
-:file: _generated/font_pairing.html
-```
+Curated combinations for common chart styles.
 
 ## Size Scale
 
 See how each font performs at the sizes commonly used in charts (8px tick labels
-→ 24px titles):
-
-```{raw} html
-:file: _generated/size_scale.html
-```
+→ 24px titles).
 
 ---
 

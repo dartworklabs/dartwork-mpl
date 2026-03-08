@@ -13,24 +13,20 @@
 
 dartwork-mpl provides three layers of AI integration, each building on the last:
 
-```{mermaid}
-graph TB
-    subgraph L3["Layer 3 — MCP Server"]
-        MCP["🔌 Model Context Protocol<br/>AI reads docs in real time"]
-    end
-    subgraph L2["Layer 2 — Bundled Guides"]
-        PROMPT["📖 Prompt Guides<br/>get_prompt · copy_prompt · install_llm_txt"]
-    end
-    subgraph L1["Layer 1 — AI-Friendly API"]
-        API["🎯 Consistent API Surface<br/>dm.style.use · dm.simple_layout · oc.blue5"]
-    end
+:::{card} 
+:class-header: sd-bg-light
 
-    L3 --> L2 --> L1
+**Layer 3 — MCP Server** 🔌
+: AI reads docs in real time via Model Context Protocol
 
-    style L3 fill:#e8f5e9,stroke:#43a047
-    style L2 fill:#e3f2fd,stroke:#1e88e5
-    style L1 fill:#fff3e0,stroke:#fb8c00
-```
+**Layer 2 — Bundled Guides** 📖
+: `get_prompt` · `copy_prompt` · `install_llm_txt`
+
+**Layer 1 — AI-Friendly API** 🎯
+: `dm.style.use` · `dm.simple_layout` · `oc.blue5`
+
+*Each layer builds on the one below.*
+:::
 
 **Layer 1** works out of the box — no setup required. AI assistants naturally produce better code because the API has fewer ways to go wrong.
 

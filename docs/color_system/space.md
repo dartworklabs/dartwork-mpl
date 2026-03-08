@@ -56,8 +56,9 @@ You can create Color objects from any supported format. Pick whichever matches
 your input — all methods produce identical `Color` instances that can be
 freely converted.
 
-```{raw} html
-:file: images/color_creation_demo.html
+```{image} images/color_space_creation.svg
+:alt: Creating Color objects from different formats
+:align: center
 ```
 
 ### From OKLab coordinates
@@ -156,8 +157,9 @@ a = color.oklab[1]  # Same as color.oklab.a
 **Try it live:** Pick any color below to see its values across all four
 color spaces in real time.
 
-```{raw} html
-:file: images/color_conversion_demo.html
+```{image} images/color_space_conversion.svg
+:alt: Color space conversion example
+:align: center
 ```
 
 ### Modifying color components
@@ -234,8 +236,9 @@ purple → yellow pair. Notice how:
 - **OKLCH** maintains vivid hues throughout — it takes the scenic route
   around the color wheel
 
-```{raw} html
-:file: images/color_interpolation_demo.html
+```{image} images/color_space_interpolation.svg
+:alt: Color interpolation comparison across RGB, OKLab, and OKLCH
+:align: center
 ```
 
 ```python
@@ -273,8 +276,9 @@ specifying color stops in RGB.
 **Sequential** and **Diverging** modes, pick your colors, and copy
 the generated Python code.
 
-```{raw} html
-:file: images/colormap_builder_demo.html
+```{image} images/color_space_colormap.svg
+:alt: Custom colormap creation with cspace
+:align: center
 ```
 
 ### Sequential colormaps

@@ -219,12 +219,6 @@ plt.rcParams['font.size'] = 10
 
 ### Consistent Typography Hierarchy
 
-**Try it — drag the sliders to see how `fs()` and `fw()` interact:**
-
-```{raw} html
-:file: images/hierarchy_inspector.html
-```
-
 Use `fs()` to create a consistent sizing hierarchy:
 
 ```python
