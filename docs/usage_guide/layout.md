@@ -12,7 +12,7 @@ import numpy as np
 
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=(dm.cm2in(12), dm.cm2in(8)), dpi=300)
+fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300)
 ax.plot(np.linspace(0, 10, 100), np.sin(np.linspace(0, 10, 100)), color="oc.blue6")
 ax.set_xlabel("Time [s]", fontsize=dm.fs(0))
 ax.set_ylabel("Response", fontsize=dm.fs(0))
@@ -31,7 +31,7 @@ dm.simple_layout(fig)  # auto-optimizes margins — replaces tight_layout()
 For multi-panel layouts, use GridSpec and pass it to `simple_layout`:
 
 ```python
-fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(8)), dpi=300)
+fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300)
 gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.25)
 axes = [fig.add_subplot(gs[i, j]) for i in range(2) for j in range(2)]
 
@@ -57,31 +57,56 @@ dm.simple_layout(fig, gs=gs)
 
 ### `simple_layout` vs `tight_layout`
 
-The same bar chart rendered with matplotlib's `tight_layout()` versus dartwork-mpl's `simple_layout()`:
+Simple layouts look fine with either method. The real difference shows up when
+figures get more complex — multi-panel grids, long axis labels, colorbars, and
+titles all competing for space.
+
+Below is the **same figure** — a two-panel layout with a multi-line y-label and
+a colorbar — rendered with each approach:
 
 ::::{grid} 1 1 2 2
 :gutter: 2
 
-:::{grid-item-card} tight_layout()
+:::{grid-item-card} `tight_layout()`
 :class-card: sd-border-secondary
 ![tight_layout result](images/layout_tight.svg)
 :::
 
-:::{grid-item-card} simple_layout()
+:::{grid-item-card} `simple_layout()`
 :class-card: sd-border-primary
 ![simple_layout result](images/layout_simple.svg)
 :::
 
 ::::
 
-**Key functions:**
+**What's different?**
 
-- [`simple_layout(fig, gs=gs)`](../api/layout) — respects your GridSpec margins
-- [`label_axes(axes)`](../api/layout) — adds standardized panel labels with auto-positioning
-- [`arrow_axis(ax, 'x', 'Cost')`](../api/layout) — creates `Low ◄── Cost ──► High` annotations
-- [`make_offset`](../api/layout) — gives consistent point-based text offsets
-- [`set_decimal(ax, xn, yn)`](../api/layout) — formats tick labels neatly
-- [`get_bounding_box`](../api/layout) — merges multiple axes bounds
+`tight_layout()` calculates padding heuristically — it tries to prevent
+overlap but doesn't guarantee uniform margins or optimal use of space. When
+panels have **different label lengths** (e.g., a multi-line ylabel vs. a
+short one), or when a **colorbar** shifts the effective axes width, the
+heuristic can produce lopsided spacing or wasted whitespace.
+
+`simple_layout()` uses **scipy's L-BFGS-B optimizer** to minimize the gap
+between the actual tight bounding boxes and target margins you specify in
+inches. This means:
+
+- **Uniform margins** — every figure edge gets exactly the space you request
+- **Colorbar-aware** — the optimizer sees the full bounding box, including
+  colorbars and legends, not just the axes
+- **GridSpec-native** — pass `gs=gs` and it respects your `hspace`/`wspace`
+  while only adjusting outer margins
+
+**Key layout functions:**
+
+| Function                      | What it solves                                                |
+| ----------------------------- | ------------------------------------------------------------- |
+| `simple_layout(fig, gs=gs)`   | Optimizes outer margins via scipy — replaces `tight_layout()` |
+| `label_axes(axes)`            | Adds (a), (b), (c) labels with auto-positioning for ylabels   |
+| `arrow_axis(ax, 'x', 'Cost')` | Creates `Low ◄── Cost ──► High` bidirectional annotations     |
+| `set_decimal(ax, xn, yn)`     | Fixes tick decimal places for publication-ready labels        |
+| `make_offset(x, y, fig)`      | Creates point-based offsets for precise text positioning      |
+| `get_bounding_box(boxes)`     | Merges multiple axes bounding boxes into one                  |
 
 ## Typography
 
@@ -91,7 +116,7 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific-kr")  # English/Korean fonts set together
 
-fig, ax = plt.subplots(figsize=(dm.cm2in(10), dm.cm2in(6)), dpi=300)
+fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300)
 ax.plot([0, 1, 2], [0, 1, 0.4], color="oc.green6", lw=dm.lw(0.5))
 ax.set_title("Experiment result", fontsize=dm.fs(2), fontweight=dm.fw(1))
 ax.set_xlabel("Time", fontsize=dm.fs(0))

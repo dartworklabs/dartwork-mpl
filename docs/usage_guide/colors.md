@@ -74,19 +74,70 @@ for i, c in enumerate(palette):
 gradient = dm.cspace(dm.named('oc.red5'), dm.named('oc.blue5'), n=10)
 ```
 
-:::{figure} images/colors_interpolation.svg
-:alt: Perceptual color interpolation with cspace in OKLCH space
-:width: 100%
-:::
+```{raw} html
+<div class="dm-interp-widget">
+  <div class="dm-interp-controls">
+    <div class="dm-interp-color-input">
+      <span class="dm-interp-label">From</span>
+      <input type="color" class="dm-interp-picker dm-interp-picker-from" value="#FF6B6B">
+      <input type="text" class="dm-interp-hex dm-interp-hex-from" value="#FF6B6B">
+    </div>
+    <span class="dm-interp-arrow">→</span>
+    <div class="dm-interp-color-input">
+      <span class="dm-interp-label">To</span>
+      <input type="color" class="dm-interp-picker dm-interp-picker-to" value="#4ECDC4">
+      <input type="text" class="dm-interp-hex dm-interp-hex-to" value="#4ECDC4">
+    </div>
+    <div class="dm-interp-slider-group">
+      <span class="dm-interp-label">Steps</span>
+      <input type="range" class="dm-interp-slider" min="3" max="20" value="5">
+      <span class="dm-interp-steps-label">n=5</span>
+    </div>
+  </div>
+  <div class="dm-interp-bar"></div>
+  <div class="dm-interp-code">dm.cspace('#FF6B6B', '#4ECDC4', n=5, space='oklch')</div>
+</div>
+```
 
 **Why OKLCH matters:** Interpolating in RGB produces muddy, desaturated midtones.
 OKLCH maintains perceptual uniformity — every step looks equally spaced to the
 human eye:
 
-:::{figure} images/colors_oklch_vs_rgb.svg
-:alt: OKLCH vs RGB interpolation comparison showing muddy RGB midtones
-:width: 100%
-:::
+```{raw} html
+<div class="dm-compare-widget">
+  <div class="dm-compare-header">
+    <div class="dm-compare-title">OKLCH vs RGB Interpolation</div>
+    <div class="dm-compare-subtitle">Why color space matters for gradient quality</div>
+  </div>
+  <div class="dm-compare-controls">
+    <div class="dm-compare-toggle">
+      <button class="dm-compare-toggle-btn active" data-mode="both">Side by Side</button>
+      <button class="dm-compare-toggle-btn" data-mode="oklch">OKLCH Only</button>
+      <button class="dm-compare-toggle-btn" data-mode="rgb">RGB Only</button>
+    </div>
+    <div class="dm-compare-slider-group">
+      <span class="dm-interp-label">Steps</span>
+      <input type="range" class="dm-compare-slider" min="5" max="40" value="20">
+      <span class="dm-compare-steps-label">n=20</span>
+    </div>
+  </div>
+  <div class="dm-compare-rows">
+    <div class="dm-compare-row">
+      <div class="dm-compare-row-label">OKLCH<small>perceptually uniform</small></div>
+      <div class="dm-compare-bar dm-compare-bar-oklch"></div>
+    </div>
+    <div class="dm-compare-row">
+      <div class="dm-compare-row-label">RGB<small>muddy midtones</small></div>
+      <div class="dm-compare-bar dm-compare-bar-rgb"></div>
+    </div>
+  </div>
+  <div class="dm-compare-verdict">
+    ↑ <strong>OKLCH</strong> maintains vivid hues through the transition.
+    ↓ <strong>RGB</strong> produces muddy, desaturated midtones —
+    notice the grey-brown colors in the middle.
+  </div>
+</div>
+```
 
 ## Colormaps
 

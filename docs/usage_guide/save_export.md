@@ -9,7 +9,7 @@ import numpy as np
 
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=(dm.cm2in(11), dm.cm2in(7)), dpi=300)
+fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300)
 ax.plot(np.arange(50), np.cumsum(np.random.randn(50)) + 20, color="oc.blue6")
 dm.simple_layout(fig)
 

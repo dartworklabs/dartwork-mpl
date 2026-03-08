@@ -11,10 +11,10 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")     # papers & journals
 dm.style.use("report")         # reports & dashboards
+dm.style.use("minimal")        # Tufte-style, data-ink focus
 dm.style.use("presentation")   # slides
 dm.style.use("poster")         # conference posters
 dm.style.use("web")            # web pages & documentation
-dm.style.use("minimal")        # Tufte-style, data-ink focus
 dm.style.use("dark")           # dark backgrounds (Jupyter, dark slides)
 dm.style.use("scientific-kr")  # any preset + Korean fonts
 ```
@@ -38,26 +38,26 @@ overrides specific values on top.
 
 ### Font size comparison
 
-| rcParam           | scientific | report | presentation | poster | web  | minimal | dark |
-| ----------------- | ---------- | ------ | ------------ | ------ | ---- | ------- | ---- |
-| `font.size`       | 7.5        | 8.0    | 10.5         | 12.0   | 11.0 | 7.5     | 11.0 |
-| `axes.titlesize`  | 8.5        | 9.0    | 11.5         | 14.0   | 13.0 | 8.5     | 13.0 |
-| `axes.labelsize`  | 7.5        | 8.0    | 10.5         | 12.0   | 11.0 | 7.5     | 11.0 |
-| `xtick.labelsize` | 7.0        | 7.0    | 10.0         | 11.0   | 10.0 | 7.0     | 10.0 |
-| `legend.fontsize` | 5.5        | 6.0    | 8.5          | 9.0    | 8.5  | 5.5     | 8.5  |
+| rcParam           | scientific | report | minimal | presentation | poster | web  | dark |
+| ----------------- | ---------- | ------ | ------- | ------------ | ------ | ---- | ---- |
+| `font.size`       | 7.5        | 8.0    | 7.5     | 10.5         | 12.0   | 11.0 | 11.0 |
+| `axes.titlesize`  | 8.5        | 9.0    | 8.5     | 11.5         | 14.0   | 13.0 | 13.0 |
+| `axes.labelsize`  | 7.5        | 8.0    | 7.5     | 10.5         | 12.0   | 11.0 | 11.0 |
+| `xtick.labelsize` | 7.0        | 7.0    | 7.0     | 10.0         | 11.0   | 10.0 | 10.0 |
+| `legend.fontsize` | 5.5        | 6.0    | 5.5     | 8.5          | 9.0    | 8.5  | 8.5  |
 
 All sizes in **pt**. Every preset uses `font.weight: 300` and
 `axes.labelweight: 400` uniformly.
 
 ### Chrome comparison
 
-| Property         | scientific | report | presentation | poster | web    | minimal | dark      |
-| ---------------- | ---------- | ------ | ------------ | ------ | ------ | ------- | --------- |
-| Top/right spines | ✓          | ✗      | ✓            | ✗      | ✗      | all off | ✗         |
-| Tick marks       | ✓          | ✓      | ✓            | large  | ✓      | none    | ✓         |
-| Lines            | 0.5 pt     | 0.5 pt | 0.5 pt       | 1.5 pt | 0.5 pt | 0.5 pt  | 0.5 pt    |
-| `axes.linewidth` | 0.3        | 0.3    | 0.3          | 0.5    | 0.4    | 0       | 0.3       |
-| Background       | white      | white  | white        | white  | white  | white   | `#1e1e1e` |
+| Property         | scientific | report | minimal | presentation | poster | web    | dark      |
+| ---------------- | ---------- | ------ | ------- | ------------ | ------ | ------ | --------- |
+| Top/right spines | ✓          | ✗      | all off | ✓            | ✗      | ✗      | ✗         |
+| Tick marks       | ✓          | ✓      | none    | ✓            | large  | ✓      | ✓         |
+| Lines            | 0.5 pt     | 0.5 pt | 0.5 pt  | 0.5 pt       | 1.5 pt | 0.5 pt | 0.5 pt    |
+| `axes.linewidth` | 0.3        | 0.3    | 0       | 0.3          | 0.5    | 0.4    | 0.3       |
+| Background       | white      | white  | white   | white        | white  | white  | `#1e1e1e` |
 
 ---
 
@@ -87,6 +87,20 @@ dm.style.use("report")
 ```
 
 **Best for:** Business reports, data dashboards, executive summaries.
+
+---
+
+### `minimal` — Tufte-style data focus
+
+Inspired by Edward Tufte's principle of _maximizing the data-ink ratio_.
+Removes all spines, tick marks, and grid lines — only the data and labels
+remain. Uses compact `scientific` font sizes.
+
+```python
+dm.style.use("minimal")
+```
+
+**Best for:** Infographics, editorial charts, minimalist data storytelling.
 
 ---
 
@@ -133,20 +147,6 @@ shared as HTML, README figures.
 
 ---
 
-### `minimal` — Tufte-style data focus
-
-Inspired by Edward Tufte's principle of _maximizing the data-ink ratio_.
-Removes all spines, tick marks, and grid lines — only the data and labels
-remain. Uses compact `scientific` font sizes.
-
-```python
-dm.style.use("minimal")
-```
-
-**Best for:** Infographics, editorial charts, minimalist data storytelling.
-
----
-
 ### `dark` — dark mode
 
 Inverts the color scheme for dark backgrounds (`#1e1e1e`). Uses `web` font
@@ -177,7 +177,7 @@ dm.style.use("dark-kr")         # dark theme + Korean fonts
 ```
 
 All 7 base presets have a `-kr` variant: `scientific-kr`, `report-kr`,
-`presentation-kr`, `poster-kr`, `web-kr`, `minimal-kr`, `dark-kr`.
+`minimal-kr`, `presentation-kr`, `poster-kr`, `web-kr`, `dark-kr`.
 
 ## How presets work
 
@@ -187,8 +187,8 @@ overrides only the values it cares about:
 ```
 scientific  =  base  →  font-scientific
 report      =  base  →  font-report
-dark        =  base  →  font-web       →  theme-dark
 minimal     =  base  →  font-minimal   →  theme-minimal
+dark        =  base  →  font-web       →  theme-dark
 dark-kr     =  base  →  font-web       →  theme-dark    →  lang-kr
 ```
 
@@ -211,9 +211,9 @@ dm.style.stack(["base", "font-web", "theme-minimal"])
 
 # List all available style layers
 dm.list_styles()
-# → ['base', 'font-scientific', 'font-report', 'font-presentation',
-#     'font-poster', 'font-web', 'font-minimal', 'theme-dark',
-#     'theme-minimal', 'lang-kr', 'spine-no', 'spine-yes', ...]
+# → ['base', 'font-scientific', 'font-report', 'font-minimal',
+#     'font-presentation', 'font-poster', 'font-web', 'theme-minimal',
+#     'theme-dark', 'lang-kr', 'spine-no', 'spine-yes', ...]
 
 # Inspect any single layer
 dm.load_style_dict("font-web")

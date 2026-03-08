@@ -16,10 +16,11 @@ import dartwork_mpl as dm
 import numpy as np
 
 dm.style.use("scientific")  # curated fonts, colors, line weights
-fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300)
+fig, ax = plt.subplots(figsize=(dm.cm2in(7.5), dm.cm2in(5)), dpi=300)
 
 x = np.linspace(0, 10, 200)
-ax.plot(x, np.sin(x), color="oc.blue5", label="signal")
+ax.plot(x, np.sin(x), color="oc.blue5", label="signal", lw=dm.lw(1.5))
+ax.set_xticks(np.arange(0, 11, 2))
 ax.set_xlabel("Time [s]", fontsize=dm.fs(0))
 ax.set_ylabel("Amplitude", fontsize=dm.fs(0))
 ax.legend(fontsize=dm.fs(-1))
@@ -36,10 +37,11 @@ dm.save_and_show(fig, size=720) # preview at 720px wide + save
 import matplotlib.pyplot as plt
 import numpy as np
 
-fig, ax = plt.subplots(figsize=(3.54, 2.36), dpi=300)
+fig, ax = plt.subplots(figsize=(2.95, 1.97), dpi=300)
 
 x = np.linspace(0, 10, 200)
-ax.plot(x, np.sin(x), color="#1c7ed6", label="signal")
+ax.plot(x, np.sin(x), color="#1c7ed6", label="signal", lw=1.5)
+ax.set_xticks(np.arange(0, 11, 2))
 ax.set_xlabel("Time [s]", fontsize=7.5)
 ax.set_ylabel("Amplitude", fontsize=7.5)
 ax.legend(fontsize=6.5)
@@ -103,7 +105,7 @@ import numpy as np
 
 dm.style.use("presentation")
 
-fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(8)), dpi=300)
+fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(5)), dpi=300)
 gs = fig.add_gridspec(1, 2, wspace=0.3)
 ax1 = fig.add_subplot(gs[0])
 ax2 = fig.add_subplot(gs[1])
