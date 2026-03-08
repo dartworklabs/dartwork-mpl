@@ -1,16 +1,16 @@
 {
   "scientific": ["base", "font-scientific"],
   "report": ["base", "font-report"],
+  "minimal": ["base", "font-minimal", "theme-minimal"],
   "presentation": ["base", "font-presentation"],
   "poster": ["base", "font-poster"],
   "web": ["base", "font-web"],
-  "minimal": ["base", "font-minimal", "theme-minimal"],
   "dark": ["base", "font-web", "theme-dark"],
   "scientific-kr": ["base", "font-scientific", "lang-kr"],
   "report-kr": ["base", "font-report", "lang-kr"],
+  "minimal-kr": ["base", "font-minimal", "theme-minimal", "lang-kr"],
   "presentation-kr": ["base", "font-presentation", "lang-kr"],
   "poster-kr": ["base", "font-poster", "lang-kr"],
   "web-kr": ["base", "font-web", "lang-kr"],
-  "minimal-kr": ["base", "font-minimal", "theme-minimal", "lang-kr"],
   "dark-kr": ["base", "font-web", "theme-dark", "lang-kr"]
 }

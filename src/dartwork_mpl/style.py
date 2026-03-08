@@ -186,17 +186,17 @@ class Style:
             Name of the preset to apply. Available presets:
             - "scientific": For academic papers
             - "report": For reports and dashboards
+            - "minimal": Tufte-style, no spines/ticks
             - "presentation": For presentations
             - "poster": For conference posters and large displays
             - "web": For web pages and documentation
-            - "minimal": Tufte-style, no spines/ticks
             - "dark": Dark background theme
             - "scientific-kr": Scientific with Korean font
             - "report-kr": Report with Korean font
+            - "minimal-kr": Minimal with Korean font
             - "presentation-kr": Presentation with Korean font
             - "poster-kr": Poster with Korean font
             - "web-kr": Web/docs with Korean font
-            - "minimal-kr": Minimal with Korean font
             - "dark-kr": Dark theme with Korean font
         **kwargs : float | str
             Additional rcParams to override the preset defaults (e.g., font_size=12).
