@@ -1572,6 +1572,12 @@ body[data-theme="dark"] .dm-hierarchy-meta {
   }
 }
 
+@media (max-width: 480px) {
+  .dm-cs-creation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .dm-cs-card {
   background: #fbfaf7;
   border: 1px solid #ebe9e2;
@@ -1684,6 +1690,12 @@ body[data-theme="dark"] .dm-cs-card-code {
 
 .dm-cs-card:hover .dm-cs-card-conversions {
   display: block;
+}
+
+@media (hover: none), (max-width: 900px) {
+  .dm-cs-card-conversions {
+    display: block;
+  }
 }
 
 html.dark .dm-cs-card-conversions,
@@ -1815,6 +1827,12 @@ body[data-theme="dark"] .dm-cs-conv-hex-input {
 @media (max-width: 700px) {
   .dm-cs-conv-cards {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .dm-cs-conv-cards {
+    grid-template-columns: 1fr;
   }
 }
 
