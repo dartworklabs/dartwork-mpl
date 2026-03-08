@@ -631,7 +631,7 @@ def _save_multilang_specimen(images_dir: Path) -> Path:
                 y_pos,
                 lang,
                 size=10,
-                fontweight="bold",
+                fontproperties=font_prop,
                 color="#666",
                 va="center",
             )
@@ -711,10 +711,22 @@ def _build_comparison_assets() -> None:
     """Generate comparison SVGs and copy to _static/ for Sphinx serving."""
     import shutil
 
-    from fonts.generate_comparison_assets import (
-        generate_before_after,
-        generate_chart_context,
-    )
+    try:
+        from fonts.generate_comparison_assets import (
+            generate_before_after,
+            generate_chart_context,
+        )
+    except ModuleNotFoundError:
+        try:
+            from fonts.generate_comparison_assets import (
+                generate_before_after,
+                generate_chart_context,
+            )
+        except ModuleNotFoundError:
+            from generate_comparison_assets import (
+                generate_before_after,
+                generate_chart_context,
+            )
 
     generate_before_after()
     generate_chart_context()

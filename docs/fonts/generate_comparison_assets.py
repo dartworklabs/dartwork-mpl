@@ -137,17 +137,17 @@ def generate_chart_context() -> None:
     arrow_kw = dict(arrowstyle="->", color="#999", lw=1.2)
 
     ax.annotate(
-        "Title → Inter Display Bold",
+        "Title -> Inter Display Bold",
         xy=(3.5, 740), xytext=(5.2, 780),
         arrowprops=arrow_kw, **anno_kw,
     )
     ax.annotate(
-        "Axis Labels → Roboto Regular",
+        "Axis Labels -> Roboto Regular",
         xy=(-0.5, 400), xytext=(0.8, 200),
         arrowprops=arrow_kw, **anno_kw,
     )
     ax.annotate(
-        "Ticks → Roboto Light",
+        "Ticks -> Roboto Light",
         xy=(0, 30), xytext=(2.0, 100),
         arrowprops=arrow_kw, **anno_kw,
     )

@@ -237,9 +237,10 @@ def _save_colors_colormap(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig, ax = plt.subplots(
-        figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
-    )
+    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
+    gs = fig.add_gridspec(1, 1)
+    ax = fig.add_subplot(gs[0, 0])
+
     data = np.random.randn(50, 50).cumsum(axis=0)
     cmap = plt.colormaps["dc.Crest"]
     im = ax.imshow(data, cmap=cmap, vmin=-8, vmax=8)
@@ -251,7 +252,7 @@ def _save_colors_colormap(images_dir: Path) -> Path:
         fontsize=dm.fs(1),
         fontweight="bold",
     )
-    dm.simple_layout(fig)
+    dm.simple_layout(fig, gs=gs)
 
     path = images_dir / "colors_colormap.svg"
     fig.savefig(path, format="svg", bbox_inches="tight")

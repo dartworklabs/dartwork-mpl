@@ -119,6 +119,9 @@ def _save_color_example(images_dir: Path) -> Path:
 
 def _save_icon_example(images_dir: Path) -> Path:
     """API icon: MDI icon font rendering on matplotlib axes."""
+    import warnings
+    warnings.filterwarnings("ignore", message=".*missing from font.*Material Design Icons.*")
+    
     dm.style.use("presentation")
 
     mdi = dm.icon_font("mdi")
