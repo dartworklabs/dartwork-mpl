@@ -59,5 +59,12 @@ saving. If issues are found, they're printed as warnings — the file is still
 saved, but you'll know what to fix.
 
 **Available checks:** overflow detection, text overlap, legend overflow,
-tick crowding, and empty axes. See [API › Visual Validation](../api/validate.rst)
+tick crowding, and empty axes. Example output:
+
+```text
+⚠ OVERFLOW: Text 'ylabel' extends beyond figure bounds by 3.2 pt
+⚠ TICK_CROWDING: X-axis has 24 ticks in 3.5 inches (>6 per inch)
+```
+
+See [API › Visual Validation](../api/validate.rst)
 for details.

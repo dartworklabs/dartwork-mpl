@@ -2,28 +2,6 @@
 
 A minimal end-to-end workflow: apply a style, create a figure, and export it.
 
-## Why dartwork-mpl?
-
-::::{grid} 1 1 3 3
-:gutter: 2
-
-:::{grid-item-card} 🎨 One-call styling
-No more hunting through `rcParams`. `dm.style.use()` applies a complete
-theme — fonts, weights, spines, ticks — instantly.
-:::
-
-:::{grid-item-card} 🌈 Design-system colors
-`"oc.blue5"`, `"tw.emerald500"`, `"md.red500"` — 1,500+ curated swatches
-work anywhere matplotlib accepts a color.
-:::
-
-:::{grid-item-card} 📐 Smart layout
-`dm.simple_layout(fig)` uses L-BFGS-B optimization for uniform margins.
-No more `tight_layout()` guesswork.
-:::
-
-::::
-
 Here's a typical matplotlib figure, then the same figure with dartwork-mpl:
 
 ::::{tab-set}

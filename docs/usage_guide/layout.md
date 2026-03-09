@@ -1,4 +1,4 @@
-# Layout, Typography, and Annotations
+# Layout and Typography
 
 ## Layout optimization
 

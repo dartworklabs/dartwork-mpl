@@ -1,4 +1,4 @@
-# Extra Utilities
+# Extended Plots & Tools
 
 ## Extended plots
 

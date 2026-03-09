@@ -51,39 +51,8 @@ Styles and Presets <styles>
 Colors and Colormaps <colors>
 Layout and Typography <layout>
 Save and Validation <save_export>
-Extra Utilities <extras>
+Extended Plots & Tools <extras>
 ```
-
-## Explore more
-
-::::{grid} 1 1 2 2
-:gutter: 2
-
-:::{grid-item-card} 🖼️ Examples Gallery
-Finished plots by category — copy the code and adapt.
-
-→ [Browse examples](../examples_gallery/index)
-:::
-
-:::{grid-item-card} 🎨 Color System
-Full palette sheets, colormap panels, and the OKLCH color-space guide.
-
-→ [Explore colors](../color_system/index)
-:::
-
-:::{grid-item-card} 🔤 Fonts
-Bundled typefaces and weight references.
-
-→ [See fonts](../fonts/index)
-:::
-
-:::{grid-item-card} 📖 API Reference
-Detailed call signatures for every module.
-
-→ [Read the API](../api/index)
-:::
-
-::::
 
 :::{admonition} Under the hood
 :class: dropdown
