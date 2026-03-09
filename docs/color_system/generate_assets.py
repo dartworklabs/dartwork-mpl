@@ -68,10 +68,12 @@ def _prepare_images_dir(base_dir: Path | None = None) -> Path:
 
 def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
     """Bucket colormaps by category."""
+    from dartwork_mpl.cmap import ensure_loaded as cmap_ensure_loaded
+    cmap_ensure_loaded()
     cmap_list: Iterable[str] = (
         name
         for name in mpl.colormaps
-        if not str(name).endswith("_r") and not str(name).startswith("dc.")
+        if str(name).startswith("dc.") and not str(name).endswith("_r")
     )
     cmaps = [mpl.colormaps[name] for name in cmap_list]
 
@@ -299,9 +301,16 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
     """Generate HTML fragment files for each colormap category."""
     categories = _collect_colormaps()
     n_samples = 32  # gradient stops
+    
+    # We maintain a list of known custom OKLCH colormap roots to label them
+    oklch_cmaps = {"ocean", "sunset", "emerald", "berry", "balance", "earth", "twilight_oklch", "nebula", "marine", "neon", "steel", "flame", "lavender", "ash"}
 
     paths: list[Path] = []
-    for category in CATEGORY_ORDER:
+    
+    # We skip generating the "Categorical" panel which just had standard matplotlib maps
+    display_categories = [c for c in CATEGORY_ORDER if c != "Categorical"]
+    
+    for category in display_categories:
         cmaps = categories.get(category)
         if not cmaps:
             continue
@@ -323,10 +332,13 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
                 pct = round(t * 100, 1)
                 stops.append(f"{hex_c} {pct}%")
             gradient = f"linear-gradient(to right, {', '.join(stops)})"
+            
+            base_name = cmap.name.replace("dc.", "")
+            origin_badge = '<span class="dm-cmap-origin-oklch" style="font-size: 0.65em; padding: 2px 4px; border-radius: 4px; background: #e3f2fd; color: #1565c0; margin-left: 6px;">OKLCH</span>' if base_name in oklch_cmaps else '<span class="dm-cmap-origin-crameri" style="font-size: 0.65em; padding: 2px 4px; border-radius: 4px; background: #f5f5f5; color: #666; margin-left: 6px;">Crameri</span>'
 
             html_parts.append(
                 f'<div class="dm-cmap-item">'
-                f'<div><span class="dm-cmap-name">{cmap.name}</span>'
+                f'<div><span class="dm-cmap-name">{cmap.name}</span>{origin_badge}'
                 f"</div>"
                 f'<div class="dm-cmap-bar" style="background:{gradient}">'
                 f"</div></div>"

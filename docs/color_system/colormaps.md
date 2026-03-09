@@ -6,8 +6,10 @@ matplotlib.
 
 ## Use them at a glance
 
-- Any matplotlib name works (`viridis`, `plasma`, `twilight`, etc.) plus
-  dartwork-mpl's own curated set prefixed with `dc.`.
+- **Any Matplotlib name works natively**: You don't need `dartwork-mpl` to use standard scales (`cmap="viridis"`, `cmap="Blues"`, `cmap="tab10"`, etc.).
+- **Curated DC namespace**: dartwork-mpl provides a focused set of strictly curated or custom-generated colormaps prefixed with `dc.` (e.g., `dc.ocean`, `dc.sunset`, `dc.balance`).
+  - **OKLCH Custom Maps**: Interpolated purely in the perceptually uniform OKLCH space (e.g. `dc.emerald`, `dc.berry`, `dc.twilight_oklch`, `dc.steel`, `dc.flame`). Marked with an <span style="font-size: 0.65em; padding: 2px 4px; border-radius: 4px; background: #e3f2fd; color: #1565c0;">OKLCH</span> badge.
+  - **Crameri Scientific Maps**: High-quality, perceptually uniform maps for scientific data (e.g. `dc.batlow`, `dc.vik`, `dc.roma`). Marked with a <span style="font-size: 0.65em; padding: 2px 4px; border-radius: 4px; background: #f5f5f5; color: #666;">Crameri</span> badge.
 - Add `_r` to reverse a map (`dc.sunset_r`) when dark-to-light needs flipping.
 - Set `vmin`/`vmax` yourself for stable colorbars across facets or animations.
 - `dm.style.use("scientific")` keeps colorbar labels and ticks consistent with
@@ -45,9 +47,11 @@ plt.show()
 :file: images/colormaps_cyclical.html
 ```
 
-```{raw} html
-:file: images/colormaps_categorical.html
-```
+### Categorical (Qualitative) Maps
+
+For discrete labels, `dartwork-mpl` fully supports and recommends the built-in [Matplotlib Qualitative colormaps](https://matplotlib.org/stable/users/explain/colors/colormaps.html#qualitative) (such as `tab10`, `Set2`, `Dark2`, etc.).
+
+Alternatively, you can manually build highly distinct categorical color palettes using discrete hex codes from the `dm.color` palettes.
 
 ## Colorbar and rendering notes
 

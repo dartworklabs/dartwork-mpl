@@ -30,6 +30,25 @@ _CATEGORY_STYLE: dict[str, tuple[str, str]] = {
 }
 
 
+_CLASSIFICATION_OVERRIDES: dict[str, str] = {
+    "dc.ocean": "Sequential Multi-Hue",
+    "dc.sunset": "Sequential Multi-Hue",
+    "dc.emerald": "Sequential Single-Hue",
+    "dc.berry": "Sequential Single-Hue",
+    "dc.balance": "Diverging",
+    "dc.earth": "Diverging",
+    "dc.twilight_oklch": "Cyclical",
+    "dc.nebula": "Sequential Multi-Hue",
+    "dc.marine": "Sequential Multi-Hue",
+    "dc.neon": "Sequential Multi-Hue",
+    "dc.steel": "Sequential Single-Hue",
+    "dc.flame": "Sequential Single-Hue",
+    "dc.lavender": "Sequential Single-Hue",
+    "dc.ash": "Sequential Single-Hue",
+    "dc.buda": "Sequential Multi-Hue",
+    "dc.hawaii": "Sequential Multi-Hue",
+}
+
 def classify_colormap(cmap: Colormap) -> str:
     """Classify a colormap into one of the following categories.
 
@@ -51,6 +70,9 @@ def classify_colormap(cmap: Colormap) -> str:
     str
         Category of the colormap.
     """
+    if hasattr(cmap, "name") and cmap.name in _CLASSIFICATION_OVERRIDES:
+        return _CLASSIFICATION_OVERRIDES[cmap.name]
+        
     n_samples = 256
     samples = cmap(np.linspace(0, 1, n_samples))[:, :3]
 
