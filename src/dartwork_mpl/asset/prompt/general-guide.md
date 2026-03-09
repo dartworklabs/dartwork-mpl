@@ -91,10 +91,10 @@ ax.scatter(x, y, c='oc.blue2')
 #### Tailwind CSS Colors
 
 ```python
-# Use tw. or tailwind. prefix
-# Format: tw.{color}:{weight}
-ax.plot(x, y, color='tw.blue:500')
-ax.fill_between(x, y1, y2, color='tailwind.gray:200')
+# Use tw. prefix
+# Format: tw.{color}{weight}
+ax.plot(x, y, color='tw.blue500')
+ax.fill_between(x, y1, y2, color='tw.gray200')
 ```
 
 #### Color Utilities
@@ -328,7 +328,7 @@ Available presets:
 1. **Avoid tight_layout**: Use `dm.simple_layout()` instead
 2. **Work based on savefig**: Work based on saved files, not `plt.show()`
 3. **Check units**: matplotlib uses various units (inch, point, pixel)
-4. **Color naming**: Distinguish prefixes `dc.`, `tw.`, `tailwind.`
+4. **Color naming**: Use prefix `oc.`, `tw.`, `dc.`, `md.`, etc.
 
 ## 7. Complete Example
 
