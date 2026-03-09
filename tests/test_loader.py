@@ -73,15 +73,15 @@ class TestEnsureLoaded:
         mapping = mcolors.get_named_colors_mapping()
         assert "dc.vivid0" in mapping
         assert "dc.vivid5" in mapping
-        assert "dc.pastel3" in mapping
-        assert "dc.acid0" in mapping
+        assert "dc.0" in mapping
+        assert "dc.5" in mapping
 
     def test_dc_palette_count(self) -> None:
-        """All 23 dc palettes × 6 colors = 138 entries."""
+        """All 9 dc palettes × 6 colors = 54 entries."""
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
         dc_keys = [k for k in mapping if k.startswith("dc.")]
-        assert len(dc_keys) >= 138
+        assert len(dc_keys) == 54
 
     def test_dc_color_values_are_hex(self) -> None:
         """dc.* colours are valid hex strings."""

@@ -104,3 +104,4 @@ savefig.dpi:       500      # figure dots per inch or 'figure'
 savefig.facecolor: white        # figure face color when saving
 savefig.bbox:      standard    # {tight, standard}
 ps.fonttype:       42       # Output Type 3 (Type3) or Type 42 (TrueType)
+axes.prop_cycle: cycler('color', ['dc.0', 'dc.1', 'dc.2', 'dc.3', 'dc.4', 'dc.5'])

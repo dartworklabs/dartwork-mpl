@@ -90,7 +90,7 @@ _JSON_PALETTES: list[tuple[str, str]] = [
     ("ad", "ant_colors.json"),
     ("cu", "chakra_colors.json"),
     ("pr", "primer_colors.json"),
-    ("dc", "dm_palettes.json"),
+    ("dc", "dc_palettes.json"),
 ]
 
 
