@@ -36,8 +36,32 @@ extensions = [
     "sphinx_design",
     "sphinx_tabs.tabs",
 ]
-
 autodoc_mock_imports = ["pydantic", "fastapi"]
+
+nitpick_ignore_regex = [
+    (r'py:.*', r'optional'),
+    (r'py:.*', r'colour'),
+    (r'py:.*', r'dartwork_mpl\.color\._views\..*'),
+    (r'py:.*', r'matplotlib\..*'),
+    (r'py:.*', r'numpy\..*'),
+    (r'py:.*', r'np\..*'),
+    (r'py:.*', r'scipy\..*'),
+    (r'py:.*', r'pathlib\..*'),
+    (r'py:.*', r'Path'),
+    (r'py:.*', r'Figure'),
+    (r'py:.*', r'Axes'),
+    (r'py:.*', r'GridSpec'),
+    (r'py:.*', r'OptimizeResult'),
+    (r'py:.*', r'ndarray'),
+    (r'py:.*', r'Colormap'),
+    (r'py:.*', r'FontProperties'),
+    (r'py:.*', r"'auto'"),
+    (r'py:.*', r"\{'x'"),
+    (r'py:.*', r"'y'\}"),
+    (r'py:.*', r'dartwork_mpl\.style\.use'),
+    (r'py:.*', r'Bbox'),
+    (r'py:.*', r'VisualWarning'),
+]
 
 templates_path = ["_templates"]
 exclude_patterns = [
