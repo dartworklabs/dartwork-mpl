@@ -1,52 +1,55 @@
 # Designed for AI Agents
 
-Perhaps the most critical issue with wrapper libraries in modern development workflows is **AI coding agent inefficiency**.
+AI coding agents — Cursor, Copilot, Claude, and other LLM-powered assistants — already know matplotlib. It is one of the most heavily represented Python libraries in any LLM's training data, with **40M+ monthly PyPI downloads** and **70k+ Stack Overflow questions**.
 
-AI agents (like Cursor, GitHub Copilot, or conversational agents) face significant challenges when working with highly abstracted libraries:
+dartwork-mpl is built to leverage this fact. By keeping everything as standard matplotlib code with thin utilities on top, we ensure that AI agents produce correct, publication-quality plots **on the first try**.
 
-- **Training data scarcity**: Less popular libraries have fewer examples in training data.
-- **API uncertainty**: Agents may hallucinate non-existent methods or parameters.
-- **Internal behavior opacity**: Agents cannot reliably predict how wrappers transform their inputs.
-- **Version sensitivity**: Wrapper APIs change more frequently than matplotlib's stable core.
+## One Right Way to Do Things
 
-## AI-Native Visualization
+The most common source of AI errors is **ambiguity**. When there are multiple ways to achieve the same result, LLMs pick different approaches across conversations — leading to inconsistent output.
 
-dartwork-mpl is built from the ground up for **Vibe Coding** and AI-assisted development workflows.
+dartwork-mpl provides **one canonical function** for each task:
 
-Because we use pure matplotlib under the hood, coding agents already know exactly how to use it. matplotlib is arguably one of the most heavily represented libraries in any LLM's Python training data.
+| Task          | Raw matplotlib (many ways)                                  | dartwork-mpl (one way)       |
+| ------------- | ----------------------------------------------------------- | ---------------------------- |
+| Apply a style | `plt.style.use()`, `rcParams`, `with plt.style.context()`   | `dm.style.use('scientific')` |
+| Set layout    | `tight_layout()`, `constrained_layout`, `subplots_adjust()` | `dm.simple_layout(fig)`      |
+| Save figures  | `savefig()` with many kwargs                                | `dm.save_formats(fig, path)` |
+| Set font size | `fontsize=12`, `fontsize='large'`                           | `fontsize=dm.fs(2)`          |
 
-Agents can reliably:
+## Semantic Color Names
 
-- Generate correct matplotlib code
-- Understand and modify existing matplotlib code
-- Debug issues effectively
-- Suggest optimizations based on established patterns
+AI assistants are unreliable with hex codes. Ask for "a nice blue" and you'll get a different `#hex` every time.
 
-## Context Prompts vs. Predefined Functions
-
-Instead of memorizing a library of specialized plot functions, you can describe what you want to an AI coding agent:
-
-```text
-"Create a publication-quality line plot with two y-axes,
-use dartwork-mpl's scientific style, and optimize the layout"
-```
-
-The agent generates correct code because the underlying matplotlib API is well-known, and dartwork-mpl's utilities (`dm.style.use`, `dm.simple_layout`) are simple, predictable, and transparent.
-
-### Efficient Collaboration Example
+dartwork-mpl solves this with **human-readable, deterministic color names**:
 
 ```python
-# AI agents can reliably generate this because it's standard matplotlib
-fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(6)))
-ax.plot(data['x'], data['y'], color='oc.blue5', label='Measurement')
-ax.fill_between(data['x'], data['y_low'], data['y_high'],
-                color='oc.blue2', alpha=0.3, label='Confidence')
-ax.set_xlabel('Time [hours]')
-ax.set_ylabel('Temperature [°C]')
-ax.legend(loc='upper right', fontsize=dm.fs(-1))
+# AI can describe and produce these reliably
+ax.plot(x, y1, color='oc.red5')       # OpenColor red, weight 5
+ax.plot(x, y2, color='tw.blue500')    # Tailwind blue 500
 
-# dartwork-mpl handles the tedious margin calculations
-dm.simple_layout(fig)
+# Compare with raw matplotlib
+ax.plot(x, y1, color='#e03131')       # What color is this? 🤷
 ```
 
-By sticking to standard matplotlib for structure and providing thin styling/layout helpers, dartwork-mpl eliminates the friction between what you want to draw and what the AI understands how to code.
+## Context Prompts over Predefined Functions
+
+Instead of memorizing specialized plot functions, describe what you want in plain language:
+
+```text
+"Create a line plot for a Korean research paper with two y-axes,
+use dartwork-mpl's scientific-kr style, and optimize the layout"
+```
+
+The agent generates correct code because the underlying matplotlib API is well-known, and dartwork-mpl's utilities (`dm.style.use`, `dm.simple_layout`) are simple and predictable.
+
+## Built-in Knowledge Base
+
+dartwork-mpl bundles its documentation **inside the package**, accessible even in air-gapped environments:
+
+```python
+dm.list_prompts()                       # ['general-guide', 'layout-guide']
+content = dm.get_prompt('general-guide') # read guide programmatically
+```
+
+For real-time access, dartwork-mpl also ships a **Model Context Protocol (MCP) server** — see [AI Integration](../integrations/index) for setup.
