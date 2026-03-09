@@ -157,11 +157,33 @@ a = color.oklab[1]  # Same as color.oklab.a
 **Try it live:** Pick any color below to see its values across all four
 color spaces in real time.
 
-```{image} images/color_space_conversion.svg
-:alt: Color space conversion example
-:align: center
-```
-
+<div class="dm-conv-widget">
+  <div class="dm-conv-header">
+    <div class="dm-conv-header-title">Live Converter</div>
+    <div class="dm-conv-input-wrap">
+      <input type="color" class="dm-conv-picker" value="#0047b3" aria-label="Color picker">
+      <input type="text" class="dm-conv-hex-input" value="#0047b3" aria-label="Hex input">
+    </div>
+  </div>
+  <div class="dm-conv-grid">
+    <div class="dm-conv-box">
+      <div class="dm-conv-label">OKLab</div>
+      <div class="dm-conv-value dm-conv-val-oklab">0.381, -0.015, -0.143</div>
+    </div>
+    <div class="dm-conv-box">
+      <div class="dm-conv-label">OKLCH</div>
+      <div class="dm-conv-value dm-conv-val-oklch">0.381, 0.144, 264.1°</div>
+    </div>
+    <div class="dm-conv-box">
+      <div class="dm-conv-label">RGB (Linear)</div>
+      <div class="dm-conv-value dm-conv-val-rgb">0.000, 0.057, 0.384</div>
+    </div>
+    <div class="dm-conv-box">
+      <div class="dm-conv-label">Hex / sRGB</div>
+      <div class="dm-conv-value dm-conv-val-hex">#0047B3</div>
+    </div>
+  </div>
+</div>
 ### Modifying color components
 
 View objects support direct modification — changes in any space are
@@ -276,10 +298,44 @@ specifying color stops in RGB.
 **Sequential** and **Diverging** modes, pick your colors, and copy
 the generated Python code.
 
-```{image} images/color_space_colormap.svg
-:alt: Custom colormap creation with cspace
-:align: center
-```
+<div class="dm-cmap-builder">
+  <div class="dm-cb-header">
+    <div class="dm-cb-title">Colormap Builder</div>
+    <div class="dm-cb-tabs">
+      <button class="dm-cb-tab active" data-type="sequential">Sequential</button>
+      <button class="dm-cb-tab" data-type="diverging">Diverging</button>
+    </div>
+  </div>
+  <div class="dm-cb-body">
+    <div class="dm-cb-controls">
+      <div class="dm-cb-color-group">
+        <label>Start</label>
+        <div class="dm-cb-input-wrap">
+          <input type="color" class="dm-cb-picker dm-cb-start" value="#1a237e" aria-label="Start color">
+          <span class="dm-cb-hex">#1A237E</span>
+        </div>
+      </div>
+      <div class="dm-cb-color-group dm-cb-mid-group" style="display: none;">
+        <label>Midpoint</label>
+        <div class="dm-cb-input-wrap">
+          <input type="color" class="dm-cb-picker dm-cb-mid" value="#ffffff" aria-label="Midpoint color">
+          <span class="dm-cb-hex">#FFFFFF</span>
+        </div>
+      </div>
+      <div class="dm-cb-color-group">
+        <label>End</label>
+        <div class="dm-cb-input-wrap">
+          <input type="color" class="dm-cb-picker dm-cb-end" value="#ff6f00" aria-label="End color">
+          <span class="dm-cb-hex">#FF6F00</span>
+        </div>
+      </div>
+    </div>
+    <div class="dm-cb-preview">
+      <div class="dm-cb-bar"></div>
+    </div>
+    <pre class="dm-cb-code"><code>colors = dm.cspace("#1A237E", "#FF6F00", n=256, space="oklch")</code></pre>
+  </div>
+</div>
 
 ### Sequential colormaps
 
