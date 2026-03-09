@@ -8,7 +8,7 @@ Run with:
     uv run --extra ui python app.py
 """
 
-from typing import Literal
+from typing import Literal, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -178,12 +178,12 @@ def _build_waveform(p: Params, t: np.ndarray) -> np.ndarray:
         """
         raw: np.ndarray = freq * t + phase
         if p.waveform == "cosine":
-            return np.cos(raw)
+            return np.cos(raw)  # type: ignore[no-any-return]
         if p.waveform == "square":
-            return np.sign(np.sin(raw))
+            return np.sign(np.sin(raw))  # type: ignore[no-any-return]
         if p.waveform == "sawtooth":
-            return 2 * (raw / (2 * np.pi) % 1) - 1
-        return np.sin(raw)
+            return 2 * (raw / (2 * np.pi) % 1) - 1  # type: ignore[no-any-return]
+        return np.sin(raw)  # type: ignore[no-any-return]
 
     weights: list[float] = p.harmonic_weights or [
         1.0 / (k + 1) for k in range(p.harmonics)
@@ -195,7 +195,7 @@ def _build_waveform(p: Params, t: np.ndarray) -> np.ndarray:
     y *= p.amplitude
 
     if p.window_fn != "none":
-        win_map: dict[str, type] = {
+        win_map: dict[str, Any] = {
             "hanning": np.hanning,
             "hamming": np.hamming,
             "blackman": np.blackman,
@@ -375,4 +375,4 @@ def my_figure(p: Params) -> Figure:
 # ================================================================
 
 if __name__ == "__main__":
-    run(my_figure, title="Signal Analysis")
+    run(my_figure, title="Signal Analysis")  # type: ignore[arg-type]

@@ -42,7 +42,7 @@ def _load_color_library_names() -> set[str]:
 _OPENCOLOR_NAMES = _load_color_library_names()
 
 
-def _classify_color_library(color_name: str) -> str:
+def _classify_color_library(color_name: str) -> str | None:
     """Classify a color name into its library category."""
     if color_name.startswith("dc."):
         return "dc"
@@ -254,7 +254,9 @@ def _plot_single_library(
 
         sorted_base_colors = sorted(base_color_groups.items())
 
-        color_groups = []
+        from typing import Any
+
+        color_groups: list[dict[str, Any]] = []
         for base_color, color_items in sorted_base_colors:
 
             def sort_key(x):  # noqa: E301
@@ -277,7 +279,6 @@ def _plot_single_library(
                     "weight_range": weight_range,
                 }
             )
-    else:
         color_groups = [
             {
                 "base_color": "all",
@@ -517,7 +518,7 @@ def plot_colors(
     """
     if colors is None:
         colors = {
-            k: v
+            k: v  # type: ignore[misc]
             for k, v in mcolors.get_named_colors_mapping().items()
             if not k.startswith("dartwork_mpl.") and not k.startswith("xkcd:")
         }

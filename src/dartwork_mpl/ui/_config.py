@@ -138,7 +138,10 @@ def load_config() -> dict[str, Any] | None:
     if not path.exists():
         return None
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        from typing import cast
+
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return cast(dict[str, Any], data)
     except (json.JSONDecodeError, KeyError):
         return None
 

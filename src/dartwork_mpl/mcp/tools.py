@@ -59,7 +59,7 @@ def register_tools(mcp: FastMCP) -> None:
 
             try:
                 with urlopen(url, timeout=10) as response:
-                    return response.read().decode("utf-8")
+                    return str(response.read().decode("utf-8"))
             except Exception as e:
                 raise ValueError(f"Failed to fetch document: {e}") from e
         except Exception as e:

@@ -1,7 +1,7 @@
-"""Axes annotation helpers.
+"""축(Axes) 기반의 주석 생성 헬퍼 모듈.
 
-Provides ``label_axes`` for panel labels (a, b, c, …) and
-``arrow_axis`` for bidirectional axis annotations.
+피규어 패널들에 표준 알파벳 서브라벨을 달아주는 ``label_axes`` 함수나,
+Low-High 같은 양방향 화살표 축을 그리는 ``arrow_axis`` 기능을 제공합니다.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ import string
 
 import numpy as np
 from matplotlib.axes import Axes
+from typing import Any
 
 from .scale import fs
 
@@ -25,33 +26,34 @@ def label_axes(
     y: float = 1.05,
     **kwargs,
 ) -> list:
-    """Add standardised panel labels (a, b, c, …) to subplot axes.
+    """서브플롯 패널에 표준화된 식별 라벨(a, b, c, ...)을 자동으로 추가합니다.
 
-    Labels are placed at the top-left corner of each axes using
-    the axes coordinate system.
+    주로 학술 논문 및 보고서에서 피규어의 여러 패널을 설명하기 위해,
+    각 Axes 공간의 왼쪽 가장자리 또는 상단 모서리에 라벨을 일괄 배치시키는데 사용됩니다.
 
     Parameters
     ----------
-    axes : list of Axes or ndarray
-        Axes objects to label.
-    labels : list of str, optional
-        Custom labels. If None, uses lowercase alphabet (a, b, c, …).
+    axes : list[Axes] | np.ndarray
+        라벨을 지정해줄 Axes 객체 목록이나 배열.
+    labels : list[str] | None, optional
+        사용자 정의 텍스트 라벨. None이 주어지면 기본 소문자 알파벳
+        리스트를 (a, b, c, 등등) 자동으로 할당합니다.
     fontsize : float, optional
-        Font size in points. Default is 10.
+        라벨의 폰트 크기. 기본값은 10 포인트.
     fontweight : str, optional
-        Font weight. Default is ``'bold'``.
-    x : float or 'auto', optional
-        X position in axes coordinates. If ``'auto'`` (default), uses
-        −0.18 for axes with a y-axis label, −0.02 for axes without.
+        라벨의 폰트 두께. 기본값은 "bold".
+    x : float | str, optional
+        Axes 상대 좌표(0.0~1.0 구간 넘어섬)계에서의 가로 위치 좌표.
+        "auto"일 경우 y축 이름 유무에 따라 가장 적절한 x 위치를 자동으로 찾습니다(-0.18 또는 -0.02).
     y : float, optional
-        Y position in axes coordinates. Default is 1.05.
+        Axes 상대 좌표계에서의 세로 위치 좌표. 기본값은 1.05.
     **kwargs
-        Additional keyword arguments passed to ``ax.text()``.
+        ``ax.text()`` 함수로 추가 전달할 여분의 텍스트 설정 인자들.
 
     Returns
     -------
     list
-        List of Text objects created.
+        생성된 내부 Text 객체들의 리스트.
     """
     if isinstance(axes, np.ndarray):
         axes = axes.flatten().tolist()
@@ -65,7 +67,7 @@ def label_axes(
             has_ylabel = ax.get_ylabel().strip() != ""
             x_pos = -0.18 if has_ylabel else -0.02
         else:
-            x_pos = x
+            x_pos = float(x)  # type: ignore[arg-type]
 
         t = ax.text(
             x_pos,
@@ -98,37 +100,38 @@ def arrow_axis(
     color: str = "black",
     arrow_kw: dict | None = None,
 ) -> None:
-    """Draw a bidirectional arrow axis with Low/High labels.
+    """그리프의 가장자리나 내부에 높음(High)-낮음(Low)을 가리키는 양방향 라벨과 화살표 축을 그립니다.
 
-    Creates  ``Low ◄── label ──► High``  along a spine edge.
+    결과물 시각화 컨셉: ``Low ◄── label ──► High`` 형태로 spine의 바깥쪽 주변을 꾸며줍니다.
 
     Parameters
     ----------
     ax : Axes
-        Target axes.
+        주석을 적용할 대상 축 객체.
     direction : {'x', 'y'}
-        ``'x'`` places a horizontal axis below the x-spine;
-        ``'y'`` places a vertical axis left of the y-spine.
+        "x": x축 스파인 하단에 가로 축 화살표 삽입.
+        "y": y축 스파인 왼쪽 바깥에 세로 축 화살표 삽입.
     label : str
-        Center axis label.
+        축 중간(가운데)에 위치할 중심 라벨의 텍스트 지정.
     offset : float, optional
-        Axes-fraction distance from the spine. Default ``-0.05``.
+        Axes 스케일 기준으로 스파인 외부로 떨어트려 그릴 간격 차이 수준값.
+        기본값은 약간 바깥쪽인 -0.05 입니다.
     low : str, optional
-        Text for the low end. Default ``'Low'``.
+        축의 최하단/최좌측에 나타낼 방향성에 해당하는 텍스트 값 ("Low").
     high : str, optional
-        Text for the high end. Default ``'High'``.
-    fontsize : float or None, optional
-        Font size for *low*/*high* labels. Default ``fs(-1)``.
-    fontsize_label : float or None, optional
-        Font size for the center *label*. Default ``fs(0)``.
+        축의 최상단/최우측에 나타낼 방향성에 해당하는 텍스트 값 ("High").
+    fontsize : float | None, optional
+        상하단(Low/High)을 표시하는 서브 텍스트들의 폰트 사이즈. 기본값은 fs(-1).
+    fontsize_label : float | None, optional
+        가운데 중심 문자열의 텍스트 사이즈. 기본값은 fs(0).
     pad : float, optional
-        Axes-fraction gap between text edges and arrowheads.
+        글자와 화살촉 사이의 여백 및 공백 거리 비율. 기본값은 -0.005.
     weight : str, optional
-        Font weight for all text elements. Default ``'normal'``.
+        모든 적용될 텍스트 파츠들의 활자체 가중치 굵기.
     color : str, optional
-        Color for text and arrows. Default ``'black'``.
-    arrow_kw : dict or None, optional
-        Override ``arrowprops`` for ``ax.annotate``.
+        텍스트 및 화살표 양측에 할당시킬 색상. 기본값은 "black".
+    arrow_kw : dict | None, optional
+        내부적으로 호출되는 화살표 생성함수 ``ax.annotate``의 화살표형상 속성을 결정하는 arrowprops를 재정의합니다.
     """
     if fontsize is None:
         fontsize = fs(-1)
@@ -141,17 +144,24 @@ def arrow_axis(
             "lw": 0.25,
         }
 
-    renderer = ax.get_figure().canvas.get_renderer()
+    fig = ax.get_figure()
+    if fig is None or fig.canvas is None:
+        raise ValueError("Axes must be part of a Figure with a canvas")
+    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
     inv = ax.transAxes.inverted()
-    rot_kw = (
+    rot_kw: dict[str, Any] = (
         {"rotation": 90, "rotation_mode": "anchor"} if direction == "y" else {}
     )
 
     # ── place texts ──────────────────────────────────────────
     if direction == "x":
-        p_lo, p_hi, p_lb = (0, offset), (1, offset), (0.5, offset)
+        p_lo: tuple[float, float] = (0.0, float(offset))
+        p_hi: tuple[float, float] = (1.0, float(offset))
+        p_lb: tuple[float, float] = (0.5, float(offset))
     else:
-        p_lo, p_hi, p_lb = (offset, 0), (offset, 1), (offset, 0.5)
+        p_lo = (float(offset), 0.0)
+        p_hi = (float(offset), 1.0)
+        p_lb = (float(offset), 0.5)
 
     t_lo = ax.text(
         *p_lo,
@@ -191,7 +201,7 @@ def arrow_axis(
     )
 
     # ── measure extents in axes fraction ─────────────────────
-    ax.get_figure().canvas.draw()
+    fig.canvas.draw()
 
     def _edges(t):
         bb = t.get_window_extent(renderer)

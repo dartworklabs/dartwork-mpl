@@ -1,4 +1,4 @@
-"""Dartwork interactive figure viewer — FastAPI server.
+"""Dartwork 인터랙티브 피규어 뷰어 — FastAPI 서버.
 
 Usage
 -----
@@ -15,8 +15,8 @@ Usage
         ...
         return fig
 
-    run(my_plot, Params)  # explicit
-    run(my_plot)           # auto-extracted from type annotation
+    run(my_plot, Params)  # 명시적 파라미터 전달
+    run(my_plot)           # 타입 힌트에서 자동 추출
 """
 
 import base64
@@ -89,35 +89,33 @@ def run(
     host: str = "127.0.0.1",
     port: int = 8501,
 ) -> None:
-    """Launch the FastAPI interactive figure viewer.
+    """FastAPI 기반의 인터랙티브 피규어 뷰어를 실행합니다.
 
     Parameters
     ----------
     figure_fn : callable
-        A function that accepts a single ``ParamModel`` instance and
-        returns a ``matplotlib.figure.Figure``.
+        단일 ``ParamModel`` 인스턴스를 받아
+        ``matplotlib.figure.Figure``를 반환하는 함수.
     param_model : type[ParamModel], optional
-        The Pydantic model class defining the parameters.
-        If omitted, it is automatically extracted from the
-        function's type annotation.
+        파라미터를 정의하는 Pydantic 모델 클래스.
+        생략할 경우, 함수의 타입 힌트 어노테이션에서 자동으로 추출됩니다.
     title : str
-        Page / app title.
+        페이지 및 앱의 제목.
     copy_to : list[Path] | Path | None
-        Additional directory (or directories) to copy saved images
-        into. When the user saves an image via the UI, it is first
-        written to the script directory and then copied to each
-        directory listed here. Useful for mirroring outputs to a
-        manuscript ``images/`` folder.
+        저장된 이미지를 추가로 복사할 디렉토리(들).
+        사용자가 UI를 통해 이미지를 저장하면, 먼저 스크립트 디렉토리에
+        저장된 후 여기에 나열된 각 디렉토리로 복사됩니다.
+        논문의 ``images/`` 폴더 등으로 결과를 미러링할 때 유용합니다.
     host : str
-        Server host. Defaults to ``"127.0.0.1"``.
+        서버 호스트 주소. 기본값은 ``"127.0.0.1"``.
     port : int
-        Server port. Defaults to ``8501``.
+        서버 포트 번호. 기본값은 ``8501``.
 
     Raises
     ------
     TypeError
-        If the function signature does not match
-        ``(params: ParamModel) -> Figure``.
+        함수 시그니처가 ``(params: ParamModel) -> Figure`` 형식과
+        일치하지 않을 경우 발생합니다.
     """
     # ── Extract / validate param model ────────────────────────────
     if param_model is None:
@@ -151,12 +149,12 @@ def run(
         return descriptor_dicts
 
     @app.post("/api/render")
-    async def render(params: dict[str, Any]) -> dict[str, str]:
+    async def render(params: dict[str, Any]) -> dict[str, str] | JSONResponse:
         try:
             model = _build_model(params, param_model, descriptors)
         except Exception as exc:
             error_msg = _format_validation_error(exc)
-            return JSONResponse(status_code=422, content={"detail": error_msg})
+            return JSONResponse(status_code=422, content={"detail": error_msg})  # type: ignore[return-value]
         fig = figure_fn(model)
         buf = io.BytesIO()
         fig.savefig(buf, format="png")
@@ -227,13 +225,13 @@ def run(
         return load_presets()
 
     @app.delete("/api/preset/{index}")
-    async def delete_preset_endpoint(index: int) -> dict[str, str]:
+    async def delete_preset_endpoint(index: int) -> dict[str, str] | JSONResponse:
         """Delete a preset by index."""
         ok = delete_preset(index)
         if not ok:
             return JSONResponse(
                 status_code=404, content={"detail": "Preset not found"}
-            )
+            )  # type: ignore[return-value]
         return {"status": "ok"}
 
     @app.get("/api/defaults")
@@ -530,7 +528,7 @@ def _generate_script(
     # Get the module where figure_fn is defined for imports
     fn_module = inspect.getmodule(figure_fn)
     try:
-        module_source = inspect.getsource(fn_module)
+        module_source = inspect.getsource(fn_module)  # type: ignore[arg-type]
         # Extract import lines from the top of the module
         import_lines = []
         for line in module_source.split("\n"):

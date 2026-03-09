@@ -74,7 +74,7 @@ class _BaseColorView(ABC):
             raise IndexError(
                 f"Index {index} out of range for {cls_name}"
             ) from None
-        return getattr(self, name)
+        return float(getattr(self, name))
 
     def __len__(self) -> int:
         """Return number of components (always 3)."""

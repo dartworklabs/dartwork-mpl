@@ -119,7 +119,9 @@ def plot_fonts(
         font_families[family].append(font)
 
     # For each family, group by weight and separate italic
-    family_data: list[dict[str, str | int | list[dict]]] = []
+    from typing import Any
+
+    family_data: list[dict[str, Any]] = []
 
     for family_name, files in sorted(font_families.items()):
         weight_groups: dict[str, dict[str, str | None]] = defaultdict(

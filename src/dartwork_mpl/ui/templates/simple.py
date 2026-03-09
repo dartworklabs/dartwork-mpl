@@ -224,4 +224,4 @@ def my_figure(p: Params) -> Figure:
 # ================================================================
 
 if __name__ == "__main__":
-    run(my_figure, title="Waveform Viewer")
+    run(my_figure, title="Waveform Viewer")  # type: ignore[arg-type]

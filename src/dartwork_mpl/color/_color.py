@@ -1,8 +1,8 @@
-"""Color class and public API wrapper functions.
+"""색상 클래스(Color) 및 공개 API 래퍼 함수 모듈.
 
-Provides the main Color class for creating and manipulating colors
-across multiple color spaces (OKLab, OKLCH, RGB, hex), along with
-the cspace() interpolation function and convenience constructors.
+다양한 색상 공간(OKLab, OKLCH, RGB, Hex)을 넘나들며 색상을 생성하고 조작할 수 있는
+핵심 ``Color`` 클래스와, 색상 보간을 위한 ``cspace()`` 함수,
+그리고 편리한 생성자 함수들을 제공합니다.
 """
 
 from __future__ import annotations
@@ -33,11 +33,11 @@ from ._views import OklabView, OklchView, RgbView
 
 class Color:
     """
-    A color class that supports OKLab, OKLCH, RGB, and hex color spaces.
+    OKLab, OKLCH, RGB, Hex 색상 공간을 자유롭게 넘나드는 컬러 클래스.
 
-    Colors are stored internally as OKLab coordinates for efficient
-    conversion. Use classmethods to create Color instances:
-    from_oklab(), from_oklch(), from_rgb(), from_hex().
+    고속 변환을 위해 내부적으로는 항상 OKLab 좌표계로 색상을 저장합니다.
+    인스턴스를 생성할 때는 ``from_oklab()``, ``from_oklch()``,
+    ``from_rgb()``, ``from_hex()``와 같은 클래스 메서드를 사용하세요.
     """
 
     def __init__(self, L: float, a: float, b: float) -> None:
@@ -400,34 +400,33 @@ def cspace(
     space: str = "oklch",
 ) -> list[Color]:
     """
-    Generate a list of colors by interpolating between two colors.
+    두 색상 사이를 보간(Interpolate)하여 연속된 색상 리스트를 생성합니다.
 
-    Inspired by np.linspace, but for colors.
+    numpy의 ``linspace``와 유사하지만, 색상에 특화된 기능을 수행합니다.
 
     Parameters
     ----------
-    start_color : Color or str
-        Starting color (Color instance or hex string).
-    end_color : Color or str
-        Ending color (Color instance or hex string).
+    start_color : Color | str
+        시작 색상 (Color 인스턴스 또는 Hex 문자열).
+    end_color : Color | str
+        끝 색상 (Color 인스턴스 또는 Hex 문자열).
     n : int
-        Number of colors to generate (including start and end).
+        생성할 전체 색상의 개수 (시작과 끝 색상 포함).
     space : str, optional
-        Color space for interpolation: 'oklch' (default), 'oklab', or
-        'rgb'. Default is 'oklch'.
+        보간 조작을 수행할 색상 공간: 'oklch' (기본값), 'oklab', 또는 'rgb'.
+        인간의 시각 인지에 가장 자연스러운 'oklch'가 기본으로 사용됩니다.
 
     Returns
     -------
     list[Color]
-        List of interpolated Color objects.
+        보간되어 생성된 Color 객체들의 리스트.
 
     Raises
     ------
     TypeError
-        If start_color or end_color is not a Color instance or hex
-        string.
+        start_color나 end_color가 Color 인스턴스 또는 Hex 문자열이 아닌 경우 발생.
     ValueError
-        If space is not one of the supported color spaces.
+        지원하지 않는 색상 공간(space)을 지정한 경우 발생.
     """
     # Convert input colors to Color objects if needed
     start_color_obj: Color
@@ -503,19 +502,19 @@ def cspace(
         ]
 
     elif space == "rgb":
-        start_r: float
-        start_g: float
-        start_b: float
-        start_r, start_g, start_b = start_color_obj.to_rgb()
-        end_r: float
-        end_g: float
-        end_b: float
-        end_r, end_g, end_b = end_color_obj.to_rgb()
+        rgb_start_r: float
+        rgb_start_g: float
+        rgb_start_b: float
+        rgb_start_r, rgb_start_g, rgb_start_b = start_color_obj.to_rgb()
+        rgb_end_r: float
+        rgb_end_g: float
+        rgb_end_b: float
+        rgb_end_r, rgb_end_g, rgb_end_b = end_color_obj.to_rgb()
 
         # Interpolate
-        r_values: np.ndarray = np.linspace(start_r, end_r, n)
-        g_values: np.ndarray = np.linspace(start_g, end_g, n)
-        b_values = np.linspace(start_b, end_b, n)
+        r_values: np.ndarray = np.linspace(rgb_start_r, rgb_end_r, n)
+        g_values: np.ndarray = np.linspace(rgb_start_g, rgb_end_g, n)
+        b_values = np.linspace(rgb_start_b, rgb_end_b, n)
 
         # Convert back to Color objects
         colors = [
@@ -538,88 +537,88 @@ def cspace(
 
 def oklab(L: float, a: float, b: float) -> Color:
     """
-    Convenience function to create a Color from OKLab coordinates.
+    OKLab 좌표계로부터 Color 객체를 생성하는 편리한 래퍼 함수.
 
     Parameters
     ----------
     L, a, b : float
-        OKLab coordinates.
+        OKLab 색상 좌표값.
 
     Returns
     -------
     Color
-        Color instance.
+        생성된 Color 인스턴스.
     """
     return Color.from_oklab(L, a, b)
 
 
 def oklch(L: float, C: float, h: float) -> Color:
     """
-    Convenience function to create a Color from OKLCH coordinates.
+    OKLCH 좌표계로부터 Color 객체를 생성하는 편리한 래퍼 함수.
 
     Parameters
     ----------
     L, C : float
-        Lightness and Chroma.
+        명도(Lightness)와 채도(Chroma).
     h : float
-        Hue in degrees [0, 360).
+        색상 각도(Hue), 도(degree) 단위 [0, 360).
 
     Returns
     -------
     Color
-        Color instance.
+        생성된 Color 인스턴스.
     """
     return Color.from_oklch(L, C, h)
 
 
 def rgb(r: float, g: float, b: float) -> Color:
     """
-    Convenience function to create a Color from RGB values.
+    RGB 값으로부터 Color 객체를 생성하는 편리한 래퍼 함수.
 
     Parameters
     ----------
     r, g, b : float
-        RGB values (auto-detected range: 0-1 or 0-255).
+        RGB 색상값 (입력 범위 [0-1] 또는 [0-255] 자동 감지).
 
     Returns
     -------
     Color
-        Color instance.
+        생성된 Color 인스턴스.
     """
     return Color.from_rgb(r, g, b)
 
 
 def hex(hex_str: str) -> Color:
     """
-    Convenience function to create a Color from hex color string.
+    Hex 색상 문자열로부터 Color 객체를 생성하는 편리한 래퍼 함수.
 
     Parameters
     ----------
     hex_str : str
-        Hex color string (#RGB or #RRGGBB).
+        Hex 색상 코드 문자열 (#RGB 또는 #RRGGBB 형식).
 
     Returns
     -------
     Color
-        Color instance.
+        생성된 Color 인스턴스.
     """
     return Color.from_hex(hex_str)
 
 
 def named(color_name: str) -> Color:
     """
-    Convenience function to create a Color from matplotlib color name.
+    Matplotlib 지정 색상 이름(Named color)으로부터 Color 객체를 생성합니다.
 
     Parameters
     ----------
     color_name : str
-        Matplotlib color name (e.g., 'red', 'oc.blue5',
-        'tw.blue500').
+        Matplotlib에서 인식 가능한 색상 이름
+        (예: 'red', 'oc.blue5', 'tw.blue500' 등).
 
     Returns
     -------
     Color
-        Color instance.
+        생성된 Color 인스턴스.
     """
     import warnings
 
