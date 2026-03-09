@@ -18,6 +18,51 @@ import dartwork_mpl as dm  # Fonts are now available!
 
 ---
 
+## Interactive Utilities Playground
+
+<div class="dm-util-playground">
+  <div class="dm-up-header">
+    <div class="dm-up-title">Font Utilities Tester</div>
+  </div>
+  <div class="dm-up-body">
+    <div class="dm-up-controls">
+      <div class="dm-up-control-group">
+        <label>Base Preset</label>
+        <select class="dm-up-base" aria-label="Base Preset">
+          <option value="scientific">scientific (Base: 7.5pt / Light)</option>
+          <option value="report">report (Base: 9pt / Light)</option>
+          <option value="presentation">presentation (Base: 10.5pt / Light)</option>
+          <option value="minimal">minimal (Base: 10pt / Light)</option>
+          <option value="web" selected>web (Base: 16px / Regular)</option>
+        </select>
+      </div>
+      <div class="dm-up-control-group">
+        <label>fs() Size Offset</label>
+        <input type="range" class="dm-up-fs" min="-4" max="8" value="2" step="1">
+        <div class="dm-up-val-display dm-up-fs-val">+2</div>
+      </div>
+      <div class="dm-up-control-group">
+        <label>fw() Weight Offset</label>
+        <input type="range" class="dm-up-fw" min="-2" max="6" value="1" step="1">
+        <div class="dm-up-val-display dm-up-fw-val">+1</div>
+      </div>
+    </div>
+    
+    <div class="dm-up-preview">
+      <div class="dm-up-sample">
+        Sample Text
+        <div class="dm-up-details">
+          Resulting Size: <span class="dm-up-calc-size">18px</span> | Resulting Weight: <span class="dm-up-calc-weight">500</span>
+        </div>
+      </div>
+    </div>
+
+    <pre class="dm-cb-code" style="margin:0"><code class="dm-up-code">ax.set_title("Sample Text", fontsize=dm.fs(2), fontweight=dm.fw(1))</code></pre>
+  </div>
+</div>
+
+---
+
 ## `fs(n)` — Font Size Helper
 
 Adjusts font size relative to the current base size from your active style.

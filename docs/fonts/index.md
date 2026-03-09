@@ -29,14 +29,9 @@ all weights and variants.
 
 [Explore all font families →](families.md)
 
-:::{figure} images/font_utilities.svg
-:alt: Font utility functions demonstration
-:width: 100%
-
 **Font Utilities.** Helper functions `fs()` and `fw()` for relative font sizing
-and weighting, plus `plot_fonts()` for previewing all available fonts.
+and weighting, plus an interactive playground to test them out.
 [Learn about font utilities →](utilities.md)
-:::
 
 ## Quick Start
 

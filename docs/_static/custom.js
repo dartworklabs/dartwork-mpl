@@ -872,6 +872,253 @@ document.addEventListener("click", function (e) {
     return lum < 0.45 ? "#fff" : "#333";
   }
 
+  // ── Widget 0: Color Space Converter ─────────────────────────────
+  document.addEventListener("DOMContentLoaded", function () {
+    var widget = document.querySelector(".dm-conv-widget");
+    if (!widget) return;
+
+    var picker = widget.querySelector(".dm-conv-picker");
+    var hexInput = widget.querySelector(".dm-conv-hex-input");
+    var valOklab = widget.querySelector(".dm-conv-val-oklab");
+    var valOklch = widget.querySelector(".dm-conv-val-oklch");
+    var valRgb = widget.querySelector(".dm-conv-val-rgb");
+    var valHex = widget.querySelector(".dm-conv-val-hex");
+
+    function render(hex) {
+      // Basic hex validation
+      if (!/^#[0-9a-fA-F]{6}$/i.test(hex)) return;
+
+      var hexUpper = hex.toUpperCase();
+      picker.value = hex;
+      if (document.activeElement !== hexInput) {
+        hexInput.value = hexUpper;
+      }
+      valHex.textContent = hexUpper;
+
+      var rgb = hexToLinearRgb(hex);
+      valRgb.textContent =
+        rgb[0].toFixed(3) + ", " + rgb[1].toFixed(3) + ", " + rgb[2].toFixed(3);
+
+      var lab = linearRgbToOklab(rgb[0], rgb[1], rgb[2]);
+      valOklab.textContent =
+        lab[0].toFixed(3) + ", " + lab[1].toFixed(3) + ", " + lab[2].toFixed(3);
+
+      var lch = oklabToOklch(lab[0], lab[1], lab[2]);
+      valOklch.textContent =
+        lch[0].toFixed(3) +
+        ", " +
+        lch[1].toFixed(3) +
+        ", " +
+        lch[2].toFixed(1) +
+        "°";
+    }
+
+    picker.addEventListener("input", function (e) {
+      render(e.target.value);
+    });
+
+    hexInput.addEventListener("input", function (e) {
+      var val = e.target.value.trim();
+      if (!val.startsWith("#")) val = "#" + val;
+      if (val.length === 7) {
+        render(val);
+      }
+    });
+
+    // Initial render
+    render(picker.value);
+  });
+
+  // ── Widget 0.5: Colormap Builder ────────────────────────────────
+  document.addEventListener("DOMContentLoaded", function () {
+    var widget = document.querySelector(".dm-cmap-builder");
+    if (!widget) return;
+
+    var tabs = widget.querySelectorAll(".dm-cb-tab");
+    var startInput = widget.querySelector(".dm-cb-start");
+    var midInput = widget.querySelector(".dm-cb-mid");
+    var endInput = widget.querySelector(".dm-cb-end");
+    var midGroup = widget.querySelector(".dm-cb-mid-group");
+    var bar = widget.querySelector(".dm-cb-bar");
+    var codeLabel = widget.querySelector(".dm-cb-code code");
+
+    var activeMode = "sequential"; // or "diverging"
+
+    function renderLabel(input) {
+      var wrap = input.closest(".dm-cb-input-wrap");
+      if (wrap) {
+        var hexSpan = wrap.querySelector(".dm-cb-hex");
+        if (hexSpan) hexSpan.textContent = input.value.toUpperCase();
+      }
+    }
+
+    function render() {
+      renderLabel(startInput);
+      renderLabel(midInput);
+      renderLabel(endInput);
+
+      var c1 = startInput.value;
+      var c2 = midInput.value;
+      var c3 = endInput.value;
+
+      if (activeMode === "sequential") {
+        var hexes = interpolateOklch(c1, c3, 100);
+        var stops = hexes
+          .map(function (h, i) {
+            return h + " " + i + "%";
+          })
+          .join(", ");
+        bar.style.background = "linear-gradient(to right, " + stops + ")";
+        codeLabel.textContent =
+          'colors = dm.cspace("' +
+          c1.toUpperCase() +
+          '", "' +
+          c3.toUpperCase() +
+          '", n=256, space="oklch")';
+      } else {
+        var hexes1 = interpolateOklch(c1, c2, 50);
+        var hexes2 = interpolateOklch(c2, c3, 50);
+        var hexes = hexes1.concat(hexes2);
+        var stops = hexes
+          .map(function (h, i) {
+            return h + " " + i + "%";
+          })
+          .join(", ");
+        bar.style.background = "linear-gradient(to right, " + stops + ")";
+        codeLabel.textContent =
+          'colors1 = dm.cspace("' +
+          c1.toUpperCase() +
+          '", "' +
+          c2.toUpperCase() +
+          '", n=128)\ncolors2 = dm.cspace("' +
+          c2.toUpperCase() +
+          '", "' +
+          c3.toUpperCase() +
+          '", n=128)\ncolors = colors1[:-1] + colors2';
+      }
+    }
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        activeMode = tab.getAttribute("data-type");
+        tabs.forEach(function (t) {
+          t.classList.remove("active");
+        });
+        tab.classList.add("active");
+        midGroup.style.display = activeMode === "diverging" ? "flex" : "none";
+        render();
+      });
+    });
+
+    [startInput, midInput, endInput].forEach(function (input) {
+      input.addEventListener("input", render);
+    });
+
+    render();
+  });
+
+  // ── Widget 0.7: Font Specimen Tester ────────────────────────────
+  document.addEventListener("DOMContentLoaded", function () {
+    var testers = document.querySelectorAll(".dm-font-tester");
+    if (!testers.length) return;
+
+    testers.forEach(function (widget) {
+      var familySelect = widget.querySelector(".dm-ft-family");
+      var weightSelect = widget.querySelector(".dm-ft-weight");
+      var sizeInput = widget.querySelector(".dm-ft-size");
+      var textarea = widget.querySelector(".dm-ft-textarea");
+
+      function update() {
+        var family = familySelect.value; // e.g., dm-Roboto
+        var weight = weightSelect.value;
+        var size = sizeInput.value + "px";
+
+        textarea.style.fontFamily = "'" + family + "', sans-serif";
+        textarea.style.fontWeight = weight;
+        textarea.style.fontSize = size;
+      }
+
+      [familySelect, weightSelect, sizeInput].forEach(function (input) {
+        input.addEventListener("input", update);
+        input.addEventListener("change", update);
+      });
+
+      update();
+    });
+  });
+
+  // ── Widget 0.8: Font Utilities Playground ───────────────────────
+  document.addEventListener("DOMContentLoaded", function () {
+    var playgrounds = document.querySelectorAll(".dm-util-playground");
+    if (!playgrounds.length) return;
+
+    var presets = {
+      scientific: { baseSize: 7.5, baseWeight: 300, isPx: false },
+      report: { baseSize: 9, baseWeight: 300, isPx: false },
+      presentation: { baseSize: 10.5, baseWeight: 300, isPx: false },
+      minimal: { baseSize: 10, baseWeight: 300, isPx: false },
+      web: { baseSize: 16, baseWeight: 400, isPx: true },
+    };
+
+    playgrounds.forEach(function (widget) {
+      var baseSelect = widget.querySelector(".dm-up-base");
+      var fsRange = widget.querySelector(".dm-up-fs");
+      var fwRange = widget.querySelector(".dm-up-fw");
+
+      var fsValDisplay = widget.querySelector(".dm-up-fs-val");
+      var fwValDisplay = widget.querySelector(".dm-up-fw-val");
+
+      var sampleText = widget.querySelector(".dm-up-sample");
+      var calcSizeDisplay = widget.querySelector(".dm-up-calc-size");
+      var calcWeightDisplay = widget.querySelector(".dm-up-calc-weight");
+      var codeDisplay = widget.querySelector(".dm-up-code");
+
+      function update() {
+        var presetKey = baseSelect.value;
+        var preset = presets[presetKey];
+        var fsOffset = parseInt(fsRange.value);
+        var fwOffset = parseInt(fwRange.value);
+
+        fsValDisplay.textContent = fsOffset > 0 ? "+" + fsOffset : fsOffset;
+        fwValDisplay.textContent = fwOffset > 0 ? "+" + fwOffset : fwOffset;
+
+        var finalSize = Math.max(
+          1,
+          preset.baseSize + (preset.isPx ? fsOffset * 2 : fsOffset),
+        ); // approximate pt to px for visualization if needed, but here we just map 1 unit to 1pt or 2px
+        var unit = preset.isPx ? "px" : "pt";
+        var renderSize = preset.isPx
+          ? finalSize + "px"
+          : finalSize * 1.333 + "px"; // CSS uses px, 1pt approx 1.333px
+
+        var finalWeight = Math.max(
+          100,
+          Math.min(900, preset.baseWeight + fwOffset * 100),
+        );
+
+        sampleText.style.fontSize = renderSize;
+        sampleText.style.fontWeight = finalWeight;
+
+        calcSizeDisplay.textContent = finalSize + unit;
+        calcWeightDisplay.textContent = finalWeight;
+
+        codeDisplay.textContent =
+          'ax.set_title("Sample Text", fontsize=dm.fs(' +
+          fsOffset +
+          "), fontweight=dm.fw(" +
+          fwOffset +
+          "))";
+      }
+
+      [baseSelect, fsRange, fwRange].forEach(function (el) {
+        el.addEventListener("input", update);
+        el.addEventListener("change", update);
+      });
+
+      update();
+    });
+  });
+
   // ── Widget 1: Interpolation ───────────────────────────────────────
   document.addEventListener("DOMContentLoaded", function () {
     var widget = document.querySelector(".dm-interp-widget");

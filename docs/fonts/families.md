@@ -276,6 +276,36 @@ support.**
 
 ## Font Weight Reference
 
+<div class="dm-font-tester">
+  <div class="dm-ft-header">
+    <div class="dm-ft-title">Interactive Font Tester</div>
+    <div class="dm-ft-controls">
+      <select class="dm-ft-family" aria-label="Font Family">
+        <option value="dm-Roboto">Roboto</option>
+        <option value="dm-Inter">Inter</option>
+        <option value="dm-InterDisplay">Inter Display</option>
+        <option value="dm-NotoSans" selected>Noto Sans</option>
+        <option value="dm-NotoSans_Condensed">Noto Sans Condensed</option>
+        <option value="dm-Paperlogy">Paperlogy</option>
+      </select>
+      <select class="dm-ft-weight" aria-label="Font Weight">
+        <option value="100">Thin (100)</option>
+        <option value="200">ExtraLight (200)</option>
+        <option value="300">Light (300)</option>
+        <option value="400" selected>Regular (400)</option>
+        <option value="500">Medium (500)</option>
+        <option value="600">SemiBold (600)</option>
+        <option value="700">Bold (700)</option>
+        <option value="800">ExtraBold (800)</option>
+        <option value="900">Black (900)</option>
+      </select>
+      <input type="number" class="dm-ft-size" value="28" min="8" max="72" aria-label="Font Size">
+    </div>
+  </div>
+  <textarea class="dm-ft-textarea" rows="2" spellcheck="false">The quick brown fox jumps over the lazy dog.
+데이터 시각화를 위한 전문 타이포그래피.</textarea>
+</div>
+
 | Weight Name | Numeric Value | Description              |
 | ----------- | ------------- | ------------------------ |
 | Thin        | 100           | Extremely light          |
