@@ -4,7 +4,7 @@
 시각화를 위한 다양한 유틸리티 함수들을 제공합니다.
 """
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 # Import cmap, font, icon, and xplot modules for explicit access
 from . import (
