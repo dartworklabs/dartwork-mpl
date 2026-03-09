@@ -266,29 +266,12 @@ def _save_family_preview(
     if family == "NotoSansMath":
         math_expressions = [
             ("Symbols", "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∉ ⊂ ∪ ∩ ∀ ∃"),
-            ("Quadratic", r"$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$"),
-            ("Gaussian", r"$\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}$"),
-            (
-                "Green's Function",
-                r"$G(\mathbf{r}, t) = \frac{1}{(4\pi \alpha t)^{3/2}} \exp\left( -\frac{x^2 + y^2 + z^2}{4 \alpha t} \right)$",
-            ),
-            ("Entropy", r"$H(X) = -\sum_{i} p(x_i) \log p(x_i)$"),
-            (
-                "Heat Equation",
-                r"$\frac{\partial u}{\partial t} = \alpha \left( \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} + \frac{\partial^2 u}{\partial z^2} \right)$",
-            ),
-            (
-                "Navier-Stokes",
-                r"$\rho \left( \frac{\partial \mathbf{v}}{\partial t} + \mathbf{v} \cdot \nabla \mathbf{v} \right) = -\nabla p + \mu \nabla^2 \mathbf{v}$",
-            ),
-            (
-                "Maxwell-Boltzmann",
-                r"$f(v) = 4\pi \left( \frac{m}{2\pi k_B T} \right)^{3/2} v^2 \, e^{-mv^2 / 2k_B T}$",
-            ),
-            (
-                "Planck",
-                r"$B(\nu, T) = \frac{2 h \nu^3}{c^2} \cdot \frac{1}{e^{h\nu / k_B T} - 1}$",
-            ),
+            ("Arithmetic", "1 + 2 − 3 × 4 ÷ 5 = ± 6"),
+            ("Inequalities", "x ≤ y ∧ y ≥ z ⇒ x ≈ z"),
+            ("Set Theory", "A ∪ B = B ∩ A ⊂ ℝ"),
+            ("Geometry", "α^2 + β^2 = γ^2"),
+            ("Euler", "e^(iπ) + 1 = 0"),
+            ("Logic", "∀x ∃y : P(x) ∨ ¬Q(y)"),
         ]
 
         n_lines = len(math_expressions)

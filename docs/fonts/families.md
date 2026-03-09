@@ -295,7 +295,7 @@ support.**
       <input type="number" class="dm-ft-size" value="28" min="8" max="72" aria-label="Font Size">
     </div>
   </div>
-  <textarea class="dm-ft-textarea" rows="2" spellcheck="false">The quick brown fox jumps over the lazy dog.
+  <textarea class="dm-ft-textarea" rows="2" spellcheck="false">The dartwork designs beautiful data artworks since 2021.
 데이터 시각화를 위한 전문 타이포그래피.</textarea>
 </div>
 

@@ -149,7 +149,7 @@ def generate_family_html(family: str, fonts: list[str]) -> str:
     meta = FONT_META.get(family, {})
     desc = meta.get("description", "")
     sample = meta.get(
-        "sample", "The quick brown fox jumps over the lazy dog. 0123456789"
+        "sample", "The dartwork designs beautiful data artworks since 2021. 0123456789"
     )
 
     # Exclude italic variants — show only upright weights
@@ -224,7 +224,7 @@ def generate_family_showcase_html(family: str, fonts: list[str]) -> str:
             f'    <span class="dm-showcase-num">{num}</span>\n'
             f'    <span class="dm-showcase-sample" '
             f"style=\"font-family:'{css_name}'\">"
-            f"The quick brown fox jumps over the lazy dog.</span>\n"
+            f"The dartwork designs beautiful data artworks since 2021.</span>\n"
             f"  </div>"
         )
 
@@ -260,8 +260,7 @@ def generate_condensed_comparison_html(families: dict[str, list[str]]) -> str:
     ]
 
     sample = (
-        "Signal throughput increased to 24.1 Gbps in Phase 3, "
-        "driven by improved buffer management."
+        "The dartwork designs beautiful data artworks since 2021."
     )
 
     rows = []
@@ -359,12 +358,12 @@ def generate_math_html() -> str:
     css_name = "dm-NotoSansMath-Regular"
     equations = [
         ("Symbols", "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∉ ⊂ ∪ ∩ ∀ ∃"),
-        ("Quadratic", "x = (−b ± √(b² − 4ac)) / 2a"),
-        ("Gaussian", "∫₋∞^∞ e^(−x²) dx = √π"),
-        ("Green's Function", "G(r,t) = 1/(4παt)^(3/2) exp(−(x²+y²+z²)/(4αt))"),
-        ("Entropy", "H(X) = −∑ᵢ p(xᵢ) log p(xᵢ)"),
-        ("Heat Equation", "∂u/∂t = α(∂²u/∂x² + ∂²u/∂y² + ∂²u/∂z²)"),
-        ("Navier-Stokes", "ρ(∂v/∂t + v·∇v) = −∇p + μ∇²v"),
+        ("Arithmetic", "1 + 2 − 3 × 4 ÷ 5 = ± 6"),
+        ("Inequalities", "x ≤ y ∧ y ≥ z ⇒ x ≈ z"),
+        ("Set Theory", "A ∪ B = B ∩ A ⊂ ℝ"),
+        ("Geometry", "α^2 + β^2 = γ^2"),
+        ("Euler", "e^(iπ) + 1 = 0"),
+        ("Logic", "∀x ∃y : P(x) ∨ ¬Q(y)"),
     ]
 
     rows = []

@@ -30,7 +30,7 @@ _WEIGHT_ORDER: dict[str, int] = {
     "Black": 900,
 }
 
-_PANGRAM = "The quick brown fox jumps over the lazy dog. 0123456789"
+_PANGRAM = "The dartwork designs beautiful data artworks since 2021. 0123456789"
 
 
 def _parse_font_weight(font_file: str) -> tuple[str, bool]:
