@@ -20,6 +20,7 @@ import dartwork_mpl as dm  # Fonts are now available!
 
 ## Interactive Utilities Playground
 
+```{raw} html
 <div class="dm-util-playground">
   <div class="dm-up-header">
     <div class="dm-up-title">Font Utilities Tester</div>
@@ -47,7 +48,7 @@ import dartwork_mpl as dm  # Fonts are now available!
         <div class="dm-up-val-display dm-up-fw-val">+1</div>
       </div>
     </div>
-    
+
     <div class="dm-up-preview">
       <div class="dm-up-sample">
         Sample Text
@@ -60,6 +61,7 @@ import dartwork_mpl as dm  # Fonts are now available!
     <pre class="dm-cb-code" style="margin:0"><code class="dm-up-code">ax.set_title("Sample Text", fontsize=dm.fs(2), fontweight=dm.fw(1))</code></pre>
   </div>
 </div>
+```
 
 ---
 
