@@ -183,12 +183,8 @@ def simple_layout(
             ]
         )
 
-        scales = np.array(
-            [fbox.width, fbox.height, fbox.width, fbox.height],
-        )
-        loss = np.square(
-            (values - targets) / scales * importance_weights,
-        ).sum()
+        scales = np.array([fbox.width, fbox.height, fbox.width, fbox.height])
+        loss = np.square((values - targets) / scales * importance_weights).sum()
 
         return loss
 
@@ -200,6 +196,7 @@ def simple_layout(
     ]
 
     from scipy.optimize import minimize
+
     result = minimize(
         fun,
         x0=np.array(bounds).mean(axis=1),

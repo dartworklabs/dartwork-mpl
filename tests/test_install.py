@@ -19,8 +19,7 @@ _USAGE_GUIDE_EXISTS = (
 
 
 @pytest.mark.skipif(
-    not _USAGE_GUIDE_EXISTS,
-    reason="USAGE_GUIDE.md asset not present",
+    not _USAGE_GUIDE_EXISTS, reason="USAGE_GUIDE.md asset not present"
 )
 class TestInstallLlmTxt:
     """Tests for install_llm_txt()."""
@@ -29,14 +28,9 @@ class TestInstallLlmTxt:
         install_llm_txt(project_dir=tmp_path)
 
         claude_file = (
-            tmp_path
-            / ".claude"
-            / "commands"
-            / "dartwork-mpl-usage.md"
+            tmp_path / ".claude" / "commands" / "dartwork-mpl-usage.md"
         )
-        cursor_file = (
-            tmp_path / ".cursor" / "dartwork-mpl-usage.md"
-        )
+        cursor_file = tmp_path / ".cursor" / "dartwork-mpl-usage.md"
 
         assert claude_file.exists()
         assert cursor_file.exists()
@@ -45,10 +39,7 @@ class TestInstallLlmTxt:
         install_llm_txt(project_dir=tmp_path)
 
         claude_file = (
-            tmp_path
-            / ".claude"
-            / "commands"
-            / "dartwork-mpl-usage.md"
+            tmp_path / ".claude" / "commands" / "dartwork-mpl-usage.md"
         )
         content = claude_file.read_text(encoding="utf-8")
         assert "dartwork-mpl" in content
@@ -56,23 +47,17 @@ class TestInstallLlmTxt:
 
 
 @pytest.mark.skipif(
-    not _USAGE_GUIDE_EXISTS,
-    reason="USAGE_GUIDE.md asset not present",
+    not _USAGE_GUIDE_EXISTS, reason="USAGE_GUIDE.md asset not present"
 )
 class TestUninstallLlmTxt:
     """Tests for uninstall_llm_txt()."""
 
-    def test_removes_installed_files(
-        self, tmp_path: Path
-    ) -> None:
+    def test_removes_installed_files(self, tmp_path: Path) -> None:
         install_llm_txt(project_dir=tmp_path)
         uninstall_llm_txt(project_dir=tmp_path)
 
         claude_file = (
-            tmp_path
-            / ".claude"
-            / "commands"
-            / "dartwork-mpl-usage.md"
+            tmp_path / ".claude" / "commands" / "dartwork-mpl-usage.md"
         )
         assert not claude_file.exists()
 
@@ -80,8 +65,6 @@ class TestUninstallLlmTxt:
 class TestUninstallWhenEmpty:
     """Tests for uninstall when nothing is installed."""
 
-    def test_no_error_when_nothing_installed(
-        self, tmp_path: Path
-    ) -> None:
+    def test_no_error_when_nothing_installed(self, tmp_path: Path) -> None:
         """Should not crash when no files exist."""
         uninstall_llm_txt(project_dir=tmp_path)

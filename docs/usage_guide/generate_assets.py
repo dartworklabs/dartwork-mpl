@@ -41,9 +41,7 @@ def _save_quickstart_first_figure(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig, ax = plt.subplots(
-        figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
-    )
+    fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
     x = np.linspace(0, 10, 200)
     ax.plot(x, np.sin(x), color="oc.blue5", label="signal")
     ax.set_xlabel("Time [s]", fontsize=dm.fs(0))
@@ -88,9 +86,7 @@ def _save_quickstart_multi_panel(images_dir: Path) -> Path:
 # ── layout.md ──────────────────────────────────────────────────────────
 
 
-def _make_challenging_figure(
-    use_simple_layout: bool = True,
-) -> plt.Figure:
+def _make_challenging_figure(use_simple_layout: bool = True) -> plt.Figure:
     """Create a multi-panel figure that exposes tight_layout weaknesses.
 
     Left panel: line chart with long Y-axis label + title.
@@ -108,10 +104,7 @@ def _make_challenging_figure(
     # Left: line chart with long labels
     x = np.linspace(0, 10, 200)
     ax1.plot(x, np.sin(x) * np.exp(-0.1 * x), color="oc.blue6", lw=0.8)
-    ax1.set_ylabel(
-        "Thermal conductivity\n[W/(m·K)]",
-        fontsize=dm.fs(0),
-    )
+    ax1.set_ylabel("Thermal conductivity\n[W/(m·K)]", fontsize=dm.fs(0))
     ax1.set_xlabel("Time [s]", fontsize=dm.fs(0))
     ax1.set_title("Transient response", fontsize=dm.fs(1))
 
@@ -119,9 +112,7 @@ def _make_challenging_figure(
     data = np.random.randn(8, 8).cumsum(axis=0)
     im = ax2.imshow(data, cmap="dc.Crest", aspect="auto")
     cb = plt.colorbar(im, ax=ax2, shrink=0.85, pad=0.03)
-    cb.set_label(
-        "Δ Temperature [K]", fontsize=dm.fs(0),
-    )
+    cb.set_label("Δ Temperature [K]", fontsize=dm.fs(0))
     cb.outline.set_visible(False)
     ax2.set_xlabel("Sensor index", fontsize=dm.fs(0))
     ax2.set_ylabel("Layer", fontsize=dm.fs(0))
@@ -162,17 +153,19 @@ def _save_layout_gridspec(images_dir: Path) -> Path:
 
     fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(12)), dpi=300)
     gs = fig.add_gridspec(
-        2, 2,
-        left=0.08, right=0.98, top=0.9, bottom=0.12,
-        hspace=0.35, wspace=0.25,
+        2,
+        2,
+        left=0.08,
+        right=0.98,
+        top=0.9,
+        bottom=0.12,
+        hspace=0.35,
+        wspace=0.25,
     )
     axes = [fig.add_subplot(gs[i, j]) for i in range(2) for j in range(2)]
     for ax in axes:
         ax.plot(
-            np.linspace(0, 1, 40),
-            np.random.rand(40),
-            color="oc.blue6",
-            lw=0.8,
+            np.linspace(0, 1, 40), np.random.rand(40), color="oc.blue6", lw=0.8
         )
 
     dm.label_axes(axes)
@@ -190,17 +183,11 @@ def _save_layout_typography(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig, ax = plt.subplots(
-        figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
-    )
+    fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
     x = np.array([0, 1, 2])
     y = np.array([0, 1, 0.4])
     ax.plot(x, y, color="oc.green6", lw=dm.lw(0.5))
-    ax.set_title(
-        "Experiment result",
-        fontsize=dm.fs(2),
-        fontweight=dm.fw(1),
-    )
+    ax.set_title("Experiment result", fontsize=dm.fs(2), fontweight=dm.fw(1))
     ax.set_xlabel("Time", fontsize=dm.fs(0))
     ax.set_ylabel("Response", fontsize=dm.fs(0))
     dm.simple_layout(fig)
@@ -219,17 +206,11 @@ def _save_colors_named(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig, ax = plt.subplots(
-        figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
-    )
+    fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
     x = np.array([0, 1, 2])
 
     ax.plot(
-        x,
-        [1, 2, 1.5],
-        marker="o",
-        color="oc.green5",
-        label="OpenColor (oc.*)",
+        x, [1, 2, 1.5], marker="o", color="oc.green5", label="OpenColor (oc.*)"
     )
     ax.plot(
         x,
@@ -243,13 +224,7 @@ def _save_colors_named(images_dir: Path) -> Path:
         x, 0.9, 1.3, color=highlight, label="mix_colors()", alpha=0.9
     )
     muted_line = dm.pseudo_alpha("pr.blue5", alpha=0.65, background="white")
-    ax.plot(
-        x,
-        [0.8, 1.1, 1.4],
-        color=muted_line,
-        lw=2,
-        label="pseudo_alpha()",
-    )
+    ax.plot(x, [0.8, 1.1, 1.4], color=muted_line, lw=2, label="pseudo_alpha()")
     ax.legend(fontsize=dm.fs(-1))
     ax.set_xlabel("Index", fontsize=dm.fs(0))
     ax.set_ylabel("Value", fontsize=dm.fs(0))
@@ -277,7 +252,7 @@ def _save_colors_colormap(images_dir: Path) -> Path:
     cb.set_label("normalized signal", fontsize=dm.fs(0))
     cb.outline.set_visible(False)
     ax.set_title(
-        f'{cmap.name}  ({dm.classify_colormap(cmap)})',
+        f"{cmap.name}  ({dm.classify_colormap(cmap)})",
         fontsize=dm.fs(1),
         fontweight="bold",
     )
@@ -297,9 +272,7 @@ def _save_scientific_chart(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig, ax = plt.subplots(
-        figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
-    )
+    fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
     ax.plot(
         np.arange(50),
         np.cumsum(np.random.randn(50)) + 20,
@@ -358,9 +331,7 @@ def _save_diagnostics_preview(images_dir: Path) -> Path:
 # ── Entrypoint ─────────────────────────────────────────────────────────
 
 
-def build_usage_guide_assets(
-    base_dir: Path | None = None,
-) -> list[Path]:
+def build_usage_guide_assets(base_dir: Path | None = None) -> list[Path]:
     """Generate all usage guide figures.
 
     Parameters
@@ -385,7 +356,6 @@ def build_usage_guide_assets(
         ("layout_gridspec", _save_layout_gridspec),
         ("layout_typography", _save_layout_typography),
         ("colors_named", _save_colors_named),
-
         ("colors_colormap", _save_colors_colormap),
         ("save_scientific", _save_scientific_chart),
         ("save_diverging_bar", _save_diverging_bar),

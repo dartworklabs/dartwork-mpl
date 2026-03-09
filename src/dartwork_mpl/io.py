@@ -96,7 +96,7 @@ def show(image_path: str, size: int = 600, unit: str = "pt") -> None:
         old = f'width="{w_str}{unit}"'
         if old in svg_obj.data:
             svg_obj.data = svg_obj.data.replace(
-                old, f'width="{desired_width}{unit}"',
+                old, f'width="{desired_width}{unit}"'
             )
             break
 
@@ -105,7 +105,7 @@ def show(image_path: str, size: int = 600, unit: str = "pt") -> None:
         old = f'height="{h_str}{unit}"'
         if old in svg_obj.data:
             svg_obj.data = svg_obj.data.replace(
-                old, f'height="{desired_height}{unit}"',
+                old, f'height="{desired_height}{unit}"'
             )
             break
 

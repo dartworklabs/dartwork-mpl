@@ -132,7 +132,10 @@ ax.set_xlim(0, ncols * cell_w)
 ax.set_ylim(0, nrows * cell_h)
 ax.set_aspect("equal")
 ax.set_title(
-    "US employee sentiment on gen AI, by age group", fontsize=dm.fs(1), weight="bold", pad=24
+    "US employee sentiment on gen AI, by age group",
+    fontsize=dm.fs(1),
+    weight="bold",
+    pad=24,
 )
 
 dm.simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05))

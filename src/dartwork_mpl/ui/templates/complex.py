@@ -28,28 +28,17 @@ class Params(ParamModel):
 
     # int slider (bounded with ge / le)
     n_points: int = Field(
-        default=500,
-        ge=50,
-        le=3000,
-        description="Number of sample points",
+        default=500, ge=50, le=3000, description="Number of sample points"
     )
     harmonics: int = Field(
-        default=3,
-        ge=1,
-        le=10,
-        description="Number of harmonics to sum",
+        default=3, ge=1, le=10, description="Number of harmonics to sum"
     )
     n_bins: int = Field(
-        default=40,
-        ge=10,
-        le=100,
-        description="Histogram bin count",
+        default=40, ge=10, le=100, description="Histogram bin count"
     )
 
     # int number input (no bounds)
-    random_seed: int = Field(
-        default=42, description="Random seed for noise"
-    )
+    random_seed: int = Field(default=42, description="Random seed for noise")
 
     # float slider (bounded with ge / le / step)
     frequency: float = Field(
@@ -82,21 +71,12 @@ class Params(ParamModel):
     )
 
     # float number input (no bounds)
-    phase: float = Field(
-        default=0.0, description="Phase offset (rad)"
-    )
+    phase: float = Field(default=0.0, description="Phase offset (rad)")
 
     # str — plain text input
-    title: str = Field(
-        default="Signal Analysis",
-        description="Chart title",
-    )
-    x_label: str = Field(
-        default="Time (s)", description="X-axis label"
-    )
-    y_label: str = Field(
-        default="Amplitude", description="Y-axis label"
-    )
+    title: str = Field(default="Signal Analysis", description="Chart title")
+    x_label: str = Field(default="Time (s)", description="X-axis label")
+    y_label: str = Field(default="Amplitude", description="Y-axis label")
 
     # str — color picker (explicit widget hint)
     signal_color: str = Field(
@@ -111,70 +91,47 @@ class Params(ParamModel):
     )
 
     # str — color picker (auto-detected from field name)
-    bg_color: str = Field(
-        default="#ffffff", description="Background color"
-    )
-    grid_color: str = Field(
-        default="#e1e4e8", description="Grid color"
-    )
+    bg_color: str = Field(default="#ffffff", description="Background color")
+    grid_color: str = Field(default="#e1e4e8", description="Grid color")
 
     # bool — checkbox
-    show_grid: bool = Field(
-        default=True, description="Show grid lines"
-    )
-    show_noise: bool = Field(
-        default=True, description="Add noise"
-    )
-    fill_under: bool = Field(
-        default=False,
-        description="Fill area under curve",
-    )
-    show_fft: bool = Field(
-        default=True, description="Show FFT subplot"
-    )
+    show_grid: bool = Field(default=True, description="Show grid lines")
+    show_noise: bool = Field(default=True, description="Add noise")
+    fill_under: bool = Field(default=False, description="Fill area under curve")
+    show_fft: bool = Field(default=True, description="Show FFT subplot")
     show_histogram: bool = Field(
-        default=True,
-        description="Show histogram subplot",
+        default=True, description="Show histogram subplot"
     )
 
     # Literal — dropdown select
-    waveform: Literal[
-        "sine", "cosine", "square", "sawtooth"
-    ] = Field(default="sine", description="Waveform shape")
+    waveform: Literal["sine", "cosine", "square", "sawtooth"] = Field(
+        default="sine", description="Waveform shape"
+    )
     line_style: Literal["-", "--", "-.", ":"] = Field(
         default="-", description="Line style"
     )
-    window_fn: Literal[
-        "none", "hanning", "hamming", "blackman"
-    ] = Field(
+    window_fn: Literal["none", "hanning", "hamming", "blackman"] = Field(
         default="none", description="Window function"
     )
 
     # list[float] — comma-separated text input
     custom_yticks: list[float] = Field(
-        default=[],
-        description="Custom Y-axis ticks (e.g. -1, 0, 1)",
+        default=[], description="Custom Y-axis ticks (e.g. -1, 0, 1)"
     )
     harmonic_weights: list[float] = Field(
         default=[1.0, 0.5, 0.25],
-        description=(
-            "Harmonic weights (e.g. 1.0, 0.5, 0.25)"
-        ),
+        description=("Harmonic weights (e.g. 1.0, 0.5, 0.25)"),
     )
 
     # list[int] — comma-separated text input
     highlight_indices: list[int] = Field(
         default=[],
-        description=(
-            "Sample indices to highlight "
-            "(e.g. 100, 250, 400)"
-        ),
+        description=("Sample indices to highlight (e.g. 100, 250, 400)"),
     )
 
     # list[str] — comma-separated text input
     annotations: list[str] = Field(
-        default=[],
-        description="Labels for highlighted points",
+        default=[], description="Labels for highlighted points"
     )
 
     # tuple[float, ...] — comma-separated text input
@@ -188,10 +145,7 @@ class Params(ParamModel):
 # ================================================================
 
 
-def _build_waveform(
-    p: Params,
-    t: np.ndarray,
-) -> np.ndarray:
+def _build_waveform(p: Params, t: np.ndarray) -> np.ndarray:
     """Build a composite waveform from parameters.
 
     Parameters
@@ -236,14 +190,8 @@ def _build_waveform(
     ]
     y: np.ndarray = np.zeros_like(t)
     for k in range(min(p.harmonics, len(weights))):
-        w: float = (
-            weights[k]
-            if k < len(weights)
-            else 1.0 / (k + 1)
-        )
-        y += w * _wave(
-            p.frequency * (k + 1), p.phase * (k + 1)
-        )
+        w: float = weights[k] if k < len(weights) else 1.0 / (k + 1)
+        y += w * _wave(p.frequency * (k + 1), p.phase * (k + 1))
     y *= p.amplitude
 
     if p.window_fn != "none":
@@ -261,9 +209,7 @@ def _build_waveform(
     return y
 
 
-def _determine_layout(
-    p: Params,
-) -> tuple[float, int, list[int]]:
+def _determine_layout(p: Params) -> tuple[float, int, list[int]]:
     """Determine figure width and subplot column count.
 
     Parameters
@@ -299,17 +245,12 @@ def my_figure(p: Params) -> Figure:
         Matplotlib figure with signal, FFT, and histogram.
     """
     dm.style.use("scientific")
-    t: np.ndarray = np.linspace(
-        0, 2 * np.pi, p.n_points
-    )
+    t: np.ndarray = np.linspace(0, 2 * np.pi, p.n_points)
     y: np.ndarray = _build_waveform(p, t)
 
     # ── Determine layout ──────────────────────────────────
     fig_w, ncols, ratios = _determine_layout(p)
-    fig: Figure = plt.figure(
-        figsize=(dm.cm2in(fig_w), dm.cm2in(9)),
-        dpi=200,
-    )
+    fig: Figure = plt.figure(figsize=(dm.cm2in(fig_w), dm.cm2in(9)), dpi=200)
 
     # ── GridSpec: title row + plot row ─────────────────────
     gs = fig.add_gridspec(
@@ -351,9 +292,7 @@ def my_figure(p: Params) -> Figure:
     )
 
     if p.fill_under:
-        ax_signal.fill_between(
-            t, y, alpha=0.1, color=p.signal_color
-        )
+        ax_signal.fill_between(t, y, alpha=0.1, color=p.signal_color)
 
     for i, idx in enumerate(p.highlight_indices):
         if 0 <= idx < len(t):
@@ -365,11 +304,7 @@ def my_figure(p: Params) -> Figure:
                 linestyle=":",
             )
             ax_signal.plot(
-                t[idx],
-                y[idx],
-                "o",
-                color=p.accent_color,
-                markersize=5,
+                t[idx], y[idx], "o", color=p.accent_color, markersize=5
             )
             if p.annotations and i < len(p.annotations):
                 ax_signal.annotate(
@@ -386,17 +321,9 @@ def my_figure(p: Params) -> Figure:
     if p.custom_yticks:
         ax_signal.set_yticks(p.custom_yticks)
 
-    ax_signal.set_xlabel(
-        p.x_label, fontsize=dm.fs(0)
-    )
-    ax_signal.set_ylabel(
-        p.y_label, fontsize=dm.fs(0)
-    )
-    ax_signal.legend(
-        loc="upper right",
-        fontsize=dm.fs(-1),
-        framealpha=0.5,
-    )
+    ax_signal.set_xlabel(p.x_label, fontsize=dm.fs(0))
+    ax_signal.set_ylabel(p.y_label, fontsize=dm.fs(0))
+    ax_signal.legend(loc="upper right", fontsize=dm.fs(-1), framealpha=0.5)
     if p.show_grid:
         ax_signal.grid(True, alpha=0.2, color=p.grid_color)
 
@@ -405,9 +332,7 @@ def my_figure(p: Params) -> Figure:
     if p.show_fft and ncols >= 2:
         ax_fft = fig.add_subplot(gs[1, col_idx])
         fft_vals: np.ndarray = np.abs(np.fft.rfft(y))
-        freqs: np.ndarray = np.fft.rfftfreq(
-            len(t), d=(t[1] - t[0])
-        )
+        freqs: np.ndarray = np.fft.rfftfreq(len(t), d=(t[1] - t[0]))
         max_i: int = min(len(freqs), 50)
         ax_fft.bar(
             freqs[1:max_i],
@@ -416,19 +341,11 @@ def my_figure(p: Params) -> Figure:
             color=p.signal_color,
             alpha=0.8,
         )
-        ax_fft.set_xlabel(
-            "Frequency", fontsize=dm.fs(-1)
-        )
-        ax_fft.set_ylabel(
-            "Magnitude", fontsize=dm.fs(-1)
-        )
-        ax_fft.set_title(
-            "Frequency Spectrum", fontsize=dm.fs(0)
-        )
+        ax_fft.set_xlabel("Frequency", fontsize=dm.fs(-1))
+        ax_fft.set_ylabel("Magnitude", fontsize=dm.fs(-1))
+        ax_fft.set_title("Frequency Spectrum", fontsize=dm.fs(0))
         if p.show_grid:
-            ax_fft.grid(
-                True, alpha=0.2, color=p.grid_color
-            )
+            ax_fft.grid(True, alpha=0.2, color=p.grid_color)
         col_idx += 1
 
     # ── Subplot 3: Histogram ──────────────────────────────
@@ -442,19 +359,11 @@ def my_figure(p: Params) -> Figure:
             linewidth=0.5,
             orientation="horizontal",
         )
-        ax_hist.set_xlabel(
-            "Count", fontsize=dm.fs(-1)
-        )
-        ax_hist.set_ylabel(
-            "Value", fontsize=dm.fs(-1)
-        )
-        ax_hist.set_title(
-            "Distribution", fontsize=dm.fs(0)
-        )
+        ax_hist.set_xlabel("Count", fontsize=dm.fs(-1))
+        ax_hist.set_ylabel("Value", fontsize=dm.fs(-1))
+        ax_hist.set_title("Distribution", fontsize=dm.fs(0))
         if p.show_grid:
-            ax_hist.grid(
-                True, alpha=0.2, color=p.grid_color
-            )
+            ax_hist.grid(True, alpha=0.2, color=p.grid_color)
 
     # ── Layout optimization ───────────────────────────────
     dm.simple_layout(fig, gs=gs)

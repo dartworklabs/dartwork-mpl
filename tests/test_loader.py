@@ -103,10 +103,7 @@ class TestLoadJsonPalette:
         json_file.write_text(json.dumps(data))
 
         result = _load_json_palette(tmp_path, "test_colors.json", "xx")
-        assert result == {
-            "xx.blue100": "#aabbcc",
-            "xx.blue200": "#ddeeff",
-        }
+        assert result == {"xx.blue100": "#aabbcc", "xx.blue200": "#ddeeff"}
 
     def test_strips_spaces_from_names(self, tmp_path) -> None:
         """Spaces in colour names are removed."""

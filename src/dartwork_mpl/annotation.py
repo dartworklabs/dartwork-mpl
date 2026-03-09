@@ -144,9 +144,7 @@ def arrow_axis(
     renderer = ax.get_figure().canvas.get_renderer()
     inv = ax.transAxes.inverted()
     rot_kw = (
-        {"rotation": 90, "rotation_mode": "anchor"}
-        if direction == "y"
-        else {}
+        {"rotation": 90, "rotation_mode": "anchor"} if direction == "y" else {}
     )
 
     # ── place texts ──────────────────────────────────────────

@@ -54,9 +54,7 @@ def classify_colormap(cmap: Colormap) -> str:
     n_samples = 256
     samples = cmap(np.linspace(0, 1, n_samples))[:, :3]
 
-    hsv_samples = np.array(
-        [mcolors.rgb_to_hsv(rgb) for rgb in samples]
-    )
+    hsv_samples = np.array([mcolors.rgb_to_hsv(rgb) for rgb in samples])
     hues = hsv_samples[:, 0]
     saturations = hsv_samples[:, 1]
     values = hsv_samples[:, 2]
@@ -90,48 +88,32 @@ def classify_colormap(cmap: Colormap) -> str:
         return "Categorical"
 
     # Cyclical check
-    start_end_diff = np.sqrt(
-        np.sum((samples[0] - samples[-1]) ** 2)
-    )
+    start_end_diff = np.sqrt(np.sum((samples[0] - samples[-1]) ** 2))
     if start_end_diff < 0.01:
         mid_idx = n_samples // 2
-        mid_diff = np.sqrt(
-            np.sum((samples[0] - samples[mid_idx]) ** 2)
-        )
+        mid_diff = np.sqrt(np.sum((samples[0] - samples[mid_idx]) ** 2))
         if mid_diff > 0.3:
             return "Cyclical"
 
     # Categorical by plateau detection
-    color_diffs = np.sqrt(
-        np.sum(np.diff(samples, axis=0) ** 2, axis=1)
-    )
+    color_diffs = np.sqrt(np.sum(np.diff(samples, axis=0) ** 2, axis=1))
     plateau_mask = color_diffs < 0.001
     plateau_indices = np.where(plateau_mask)[0]
 
     if len(plateau_indices) > 0:
         plateau_runs = np.split(
-            plateau_indices,
-            np.where(np.diff(plateau_indices) != 1)[0] + 1,
+            plateau_indices, np.where(np.diff(plateau_indices) != 1)[0] + 1
         )
-        significant_plateaus = [
-            run for run in plateau_runs if len(run) >= 3
-        ]
+        significant_plateaus = [run for run in plateau_runs if len(run) >= 3]
         if len(significant_plateaus) >= 3:
-            plateau_positions = [
-                np.mean(run) for run in significant_plateaus
-            ]
-            position_range = (
-                max(plateau_positions) - min(plateau_positions)
-            )
+            plateau_positions = [np.mean(run) for run in significant_plateaus]
+            position_range = max(plateau_positions) - min(plateau_positions)
             if position_range > n_samples * 0.3:
                 return "Categorical"
 
     # Categorical by large jumps
     large_color_jumps = np.where(color_diffs > 0.1)[0]
-    if (
-        len(large_color_jumps) > 3
-        and len(large_color_jumps) < n_samples // 8
-    ):
+    if len(large_color_jumps) > 3 and len(large_color_jumps) < n_samples // 8:
         jump_diffs = np.diff(large_color_jumps)
         if np.std(jump_diffs) < np.mean(jump_diffs) * 0.8:
             return "Categorical"
@@ -142,19 +124,12 @@ def classify_colormap(cmap: Colormap) -> str:
     start_value = values[0]
     end_value = values[-1]
 
-    if (
-        mid_value > start_value + 0.2
-        and mid_value > end_value + 0.2
-    ) or (
-        mid_value < start_value - 0.2
-        and mid_value < end_value - 0.2
+    if (mid_value > start_value + 0.2 and mid_value > end_value + 0.2) or (
+        mid_value < start_value - 0.2 and mid_value < end_value - 0.2
     ):
         start_hue = hues[0]
         end_hue = hues[-1]
-        hue_diff = min(
-            abs(end_hue - start_hue),
-            1 - abs(end_hue - start_hue),
-        )
+        hue_diff = min(abs(end_hue - start_hue), 1 - abs(end_hue - start_hue))
         if hue_diff > 0.1:
             return "Diverging"
 
@@ -183,8 +158,7 @@ def classify_colormap(cmap: Colormap) -> str:
         hue_range = 1 - hue_range
 
     is_monotonic = np.all(
-        np.diff(values[: n_samples // 2])
-        * np.diff(values[n_samples // 2 :])
+        np.diff(values[: n_samples // 2]) * np.diff(values[n_samples // 2 :])
         >= 0
     )
 
@@ -254,9 +228,7 @@ def plot_colormaps(
         "Categorical",
     ]
 
-    categories: dict[str, list] = {
-        cat: [] for cat in category_order
-    }
+    categories: dict[str, list] = {cat: [] for cat in category_order}
     for cmap in cmap_list:
         category = classify_colormap(cmap)
         categories[category].append(cmap)
@@ -284,10 +256,7 @@ def plot_colormaps(
 
 
 def _plot_category(
-    cmaps: list,
-    category: str,
-    gradient: np.ndarray,
-    ncols: int,
+    cmaps: list, category: str, gradient: np.ndarray, ncols: int
 ) -> Figure:
     """Draw a single category figure with badge header."""
     nrows = (len(cmaps) + ncols - 1) // ncols
@@ -298,17 +267,12 @@ def _plot_category(
     fig = plt.figure(figsize=(figw, figh))
 
     gs = plt.GridSpec(
-        nrows + 1,
-        ncols,
-        figure=fig,
-        height_ratios=[0.35] + [1] * nrows,
+        nrows + 1, ncols, figure=fig, height_ratios=[0.35] + [1] * nrows
     )
 
     # --- Category title with badge ---
     title_ax = fig.add_subplot(gs[0, :])
-    bg_color, text_color = _CATEGORY_STYLE.get(
-        category, ("#f5f5f5", "#333333")
-    )
+    bg_color, text_color = _CATEGORY_STYLE.get(category, ("#f5f5f5", "#333333"))
 
     title_ax.set_facecolor(bg_color)
     count_str = f"  ({len(cmaps)})"
@@ -376,11 +340,7 @@ def _plot_category(
     return fig
 
 
-def _plot_flat(
-    cmap_list: list,
-    gradient: np.ndarray,
-    ncols: int,
-) -> Figure:
+def _plot_flat(cmap_list: list, gradient: np.ndarray, ncols: int) -> Figure:
     """Draw all colormaps in a single figure without grouping."""
     cmap_list.sort(key=lambda c: c.name.lower())
 
@@ -388,14 +348,9 @@ def _plot_flat(
 
     figw = 6.4 * ncols / 1.5
     figh = 0.35 + 0.15 + (nrows + (nrows - 1) * 0.1) * 0.44
-    fig, axs = plt.subplots(
-        nrows=nrows, ncols=ncols, figsize=(figw, figh)
-    )
+    fig, axs = plt.subplots(nrows=nrows, ncols=ncols, figsize=(figw, figh))
     fig.subplots_adjust(
-        top=1 - 0.35 / figh,
-        bottom=0.15 / figh,
-        left=0.2 / ncols,
-        right=0.99,
+        top=1 - 0.35 / figh, bottom=0.15 / figh, left=0.2 / ncols, right=0.99
     )
 
     if nrows == 1 and ncols == 1:

@@ -114,20 +114,14 @@ def save_config(
     data: dict[str, Any] = {
         "function": function_name,
         "params": _serializable(params),
-        "updated_at": datetime.now(
-            timezone.utc
-        ).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     if tabs is not None:
         data["tabs"] = tabs
     if fig_width is not None:
         data["figWidth"] = fig_width
     _config_path().write_text(
-        json.dumps(
-            data, indent=2, ensure_ascii=False,
-        )
-        + "\n",
-        encoding="utf-8",
+        json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
 
 
@@ -144,9 +138,7 @@ def load_config() -> dict[str, Any] | None:
     if not path.exists():
         return None
     try:
-        return json.loads(
-            path.read_text(encoding="utf-8"),
-        )
+        return json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, KeyError):
         return None
 
@@ -156,10 +148,7 @@ def load_config() -> dict[str, Any] | None:
 # ============================================================================
 
 
-def save_preset(
-    label: str,
-    params: dict[str, Any],
-) -> None:
+def save_preset(label: str, params: dict[str, Any]) -> None:
     """Save a named preset to ``.dartwork_ui_presets.json``.
 
     Parameters
@@ -170,11 +159,13 @@ def save_preset(
         Parameter values.
     """
     presets = _load_preset_file()
-    presets.append({
-        "label": label,
-        "params": _serializable(params),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    })
+    presets.append(
+        {
+            "label": label,
+            "params": _serializable(params),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
     _write_preset_file(presets)
 
 
@@ -231,9 +222,7 @@ def _load_preset_file() -> list[dict[str, Any]]:
     return []
 
 
-def _write_preset_file(
-    presets: list[dict[str, Any]],
-) -> None:
+def _write_preset_file(presets: list[dict[str, Any]]) -> None:
     """Write the preset list to the JSON file.
 
     Parameters
@@ -242,8 +231,7 @@ def _write_preset_file(
         Full preset list to write.
     """
     _preset_path().write_text(
-        json.dumps(presets, indent=2, ensure_ascii=False)
-        + "\n",
+        json.dumps(presets, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
 
@@ -253,10 +241,7 @@ def _write_preset_file(
 # ============================================================================
 
 
-def append_history(
-    params: dict[str, Any],
-    label: str | None = None,
-) -> None:
+def append_history(params: dict[str, Any], label: str | None = None) -> None:
     """Append a parameter snapshot to ``.dartwork_ui_history.jsonl``.
 
     .. deprecated::
@@ -270,21 +255,14 @@ def append_history(
         User-defined label for this snapshot (preset name).
     """
     record: dict[str, Any] = {
-        "timestamp": datetime.now(
-            timezone.utc
-        ).isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "params": _serializable(params),
     }
     if label:
         record["label"] = label
 
-    with open(
-        _history_path(), "a", encoding="utf-8"
-    ) as f:
-        f.write(
-            json.dumps(record, ensure_ascii=False)
-            + "\n"
-        )
+    with open(_history_path(), "a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
 def load_history() -> list[dict[str, Any]]:
@@ -304,9 +282,7 @@ def load_history() -> list[dict[str, Any]]:
         return []
 
     records: list[dict[str, Any]] = []
-    for line in path.read_text(
-        encoding="utf-8"
-    ).splitlines():
+    for line in path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line:
             continue

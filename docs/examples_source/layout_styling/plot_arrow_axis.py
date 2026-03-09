@@ -20,9 +20,7 @@ dm.style.use("presentation")
 # direction of each dimension.
 np.random.seed(42)
 
-fig, ax = plt.subplots(
-    figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
-)
+fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
 
 # Generate cluster data for four quadrants
 categories = {
@@ -36,8 +34,16 @@ for name, (acc, comp, color) in categories.items():
     n = 15
     x = np.random.normal(comp, 1.5, n)
     y = np.random.normal(acc, 2, n)
-    ax.scatter(x, y, color=color, s=20, alpha=0.7, label=name,
-               edgecolors="white", linewidths=0.3)
+    ax.scatter(
+        x,
+        y,
+        color=color,
+        s=20,
+        alpha=0.7,
+        label=name,
+        edgecolors="white",
+        linewidths=0.3,
+    )
 
 ax.set_xlim(-2, 16)
 ax.set_ylim(-4, 18)
@@ -46,13 +52,16 @@ ax.set_yticks([])
 ax.set_title("Complexity\u2013Accuracy Trade-off", fontsize=dm.fs(1), pad=16)
 
 # Add arrow axes
-dm.arrow_axis(ax, "x", "Complexity", low="Low", high="High",
-              offset=-0.08)
-dm.arrow_axis(ax, "y", "Accuracy", low="Low", high="High",
-              offset=-0.10)
+dm.arrow_axis(ax, "x", "Complexity", low="Low", high="High", offset=-0.08)
+dm.arrow_axis(ax, "y", "Accuracy", low="Low", high="High", offset=-0.10)
 
-ax.legend(loc="upper left", fontsize=dm.fs(-0.5), frameon=True,
-          framealpha=0.9, edgecolor="oc.gray3")
+ax.legend(
+    loc="upper left",
+    fontsize=dm.fs(-0.5),
+    frameon=True,
+    framealpha=0.9,
+    edgecolor="oc.gray3",
+)
 
 dm.simple_layout(fig)
 plt.show()
@@ -66,21 +75,17 @@ fig, (ax1, ax2) = plt.subplots(
 
 # Left panel: horizontal arrow only
 x = np.linspace(0, 10, 50)
-ax1.plot(x, np.cumsum(np.random.randn(50) * 0.3), color="oc.blue5",
-         lw=1)
+ax1.plot(x, np.cumsum(np.random.randn(50) * 0.3), color="oc.blue5", lw=1)
 ax1.set_xticks([])
 ax1.set_title("Horizontal Arrow", fontsize=dm.fs(1), pad=16)
-dm.arrow_axis(ax1, "x", "Time", low="Start", high="End",
-              offset=-0.10)
+dm.arrow_axis(ax1, "x", "Time", low="Start", high="End", offset=-0.10)
 
 # Right panel: vertical arrow only
 y = np.sort(np.random.uniform(0, 100, 8))
-ax2.barh(range(len(y)), y, color="oc.green4", edgecolor="white",
-         linewidth=0.3)
+ax2.barh(range(len(y)), y, color="oc.green4", edgecolor="white", linewidth=0.3)
 ax2.set_yticks([])
 ax2.set_title("Vertical Arrow", fontsize=dm.fs(1), pad=16)
-dm.arrow_axis(ax2, "y", "Priority", low="Low", high="High",
-              offset=-0.14)
+dm.arrow_axis(ax2, "y", "Priority", low="Low", high="High", offset=-0.14)
 
 dm.simple_layout(fig)
 plt.show()

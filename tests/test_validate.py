@@ -15,9 +15,7 @@ class TestVisualWarning:
 
     def test_str_format(self) -> None:
         w = VisualWarning(
-            severity=Severity.WARNING,
-            check_id="TEST",
-            message="test message",
+            severity=Severity.WARNING, check_id="TEST", message="test message"
         )
         s = str(w)
         assert "[VISUAL]" in s
@@ -26,9 +24,7 @@ class TestVisualWarning:
 
     def test_info_severity(self) -> None:
         w = VisualWarning(
-            severity=Severity.INFO,
-            check_id="INFO_TEST",
-            message="info message",
+            severity=Severity.INFO, check_id="INFO_TEST", message="info message"
         )
         s = str(w)
         assert "💡" in s
@@ -136,9 +132,7 @@ class TestCheckLegendOverflow:
         for i in range(20):
             ax.plot([0, 1], [i, i + 1], label=f"Series {i:02d} long label")
         ax.legend(loc="center")
-        warnings = validate_figure(
-            fig, checks=("LEGEND_OVERFLOW",), quiet=True
-        )
+        warnings = validate_figure(fig, checks=("LEGEND_OVERFLOW",), quiet=True)
         legend_warnings = [
             w for w in warnings if w.check_id == "LEGEND_OVERFLOW"
         ]
@@ -149,9 +143,7 @@ class TestCheckLegendOverflow:
         """No legend should not trigger LEGEND_OVERFLOW."""
         fig, ax = plt.subplots(figsize=(4, 3))
         ax.plot([1, 2, 3])
-        warnings = validate_figure(
-            fig, checks=("LEGEND_OVERFLOW",), quiet=True
-        )
+        warnings = validate_figure(fig, checks=("LEGEND_OVERFLOW",), quiet=True)
         legend_warnings = [
             w for w in warnings if w.check_id == "LEGEND_OVERFLOW"
         ]
@@ -219,9 +211,7 @@ class TestValidateEdgeCases:
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 3))
         ax1.plot([1, 2, 3])
         # ax2 is empty
-        warnings = validate_figure(
-            fig, checks=("EMPTY_AXES",), quiet=True,
-        )
+        warnings = validate_figure(fig, checks=("EMPTY_AXES",), quiet=True)
         empty = [w for w in warnings if w.check_id == "EMPTY_AXES"]
         assert len(empty) == 1
         assert empty[0].detail["axes_index"] == 1

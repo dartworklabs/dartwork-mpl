@@ -26,8 +26,7 @@ class TestMainCli:
 
         dest = tmp_path / "proj"
         with patch.object(
-            sys, "argv",
-            ["ui", "init", str(dest), "--example", "simple"],
+            sys, "argv", ["ui", "init", str(dest), "--example", "simple"]
         ):
             main()
 
@@ -40,8 +39,7 @@ class TestMainCli:
 
         dest = tmp_path / "proj"
         with patch.object(
-            sys, "argv",
-            ["ui", "init", str(dest), "--example", "complex"],
+            sys, "argv", ["ui", "init", str(dest), "--example", "complex"]
         ):
             main()
 
@@ -53,11 +51,9 @@ class TestMainCli:
         from dartwork_mpl.ui.__main__ import main
 
         with (
-            patch.object(
-                sys, "argv", ["ui", "init", "/tmp/dummy"],
-            ),
+            patch.object(sys, "argv", ["ui", "init", "/tmp/dummy"]),
             patch(
-                "dartwork_mpl.ui.__main__._interactive_init",
+                "dartwork_mpl.ui.__main__._interactive_init"
             ) as mock_interactive,
         ):
             main()
@@ -70,7 +66,7 @@ class TestMainCli:
         with (
             patch.object(sys, "argv", ["ui", "init"]),
             patch(
-                "dartwork_mpl.ui.__main__._interactive_init",
+                "dartwork_mpl.ui.__main__._interactive_init"
             ) as mock_interactive,
         ):
             main()

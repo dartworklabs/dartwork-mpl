@@ -28,7 +28,6 @@ SRC_DIR = ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-import dartwork_mpl as dm  # noqa: E402
 
 # Font family metadata
 FONT_FAMILIES = {
@@ -227,8 +226,7 @@ def _save_family_preview(
     # Title (left-aligned)
     meta = FONT_FAMILIES.get(family, {})
     fig.suptitle(
-        f"{family}", fontsize=18, fontweight="bold", y=0.97,
-        x=0.08, ha="left",
+        f"{family}", fontsize=18, fontweight="bold", y=0.97, x=0.08, ha="left"
     )
 
     if meta.get("description"):
@@ -246,24 +244,22 @@ def _save_family_preview(
     for f in sorted_fonts:
         fname_lower = f.lower()
         if "-regular" in fname_lower or fname_lower.endswith("regular.ttf"):
-            regular_font_prop = fm.FontProperties(
-                fname=str(font_dir / f),
-            )
+            regular_font_prop = fm.FontProperties(fname=str(font_dir / f))
             break
     if regular_font_prop is None:
         for f in sorted_fonts:
             fname_lower = f.lower()
             if "-medium" in fname_lower or "4regular" in fname_lower:
-                regular_font_prop = fm.FontProperties(
-                    fname=str(font_dir / f),
-                )
+                regular_font_prop = fm.FontProperties(fname=str(font_dir / f))
                 break
 
     # Sample text — use math symbols for NotoSansMath, Korean for Paperlogy
     if family == "NotoSansMath":
         sample_text = "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∉ ⊂ ∪ ∩ ∀ ∃"
     elif family == "Paperlogy":
-        sample_text = "김도균 & 이주임 님이 만든 아름다운 페이퍼로지 폰트. 0123456789"
+        sample_text = (
+            "김도균 & 이주임 님이 만든 아름다운 페이퍼로지 폰트. 0123456789"
+        )
     else:
         sample_text = "Sphinx of black quartz, judge my vow — designing beautiful charts & graphs since 2024. (0123456789)"
     # NotoSansMath: add extra LaTeX math expression lines (only 1 weight)
@@ -272,12 +268,27 @@ def _save_family_preview(
             ("Symbols", "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∉ ⊂ ∪ ∩ ∀ ∃"),
             ("Quadratic", r"$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$"),
             ("Gaussian", r"$\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}$"),
-            ("Green's Function", r"$G(\mathbf{r}, t) = \frac{1}{(4\pi \alpha t)^{3/2}} \exp\left( -\frac{x^2 + y^2 + z^2}{4 \alpha t} \right)$"),
+            (
+                "Green's Function",
+                r"$G(\mathbf{r}, t) = \frac{1}{(4\pi \alpha t)^{3/2}} \exp\left( -\frac{x^2 + y^2 + z^2}{4 \alpha t} \right)$",
+            ),
             ("Entropy", r"$H(X) = -\sum_{i} p(x_i) \log p(x_i)$"),
-            ("Heat Equation", r"$\frac{\partial u}{\partial t} = \alpha \left( \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} + \frac{\partial^2 u}{\partial z^2} \right)$"),
-            ("Navier-Stokes", r"$\rho \left( \frac{\partial \mathbf{v}}{\partial t} + \mathbf{v} \cdot \nabla \mathbf{v} \right) = -\nabla p + \mu \nabla^2 \mathbf{v}$"),
-            ("Maxwell-Boltzmann", r"$f(v) = 4\pi \left( \frac{m}{2\pi k_B T} \right)^{3/2} v^2 \, e^{-mv^2 / 2k_B T}$"),
-            ("Planck", r"$B(\nu, T) = \frac{2 h \nu^3}{c^2} \cdot \frac{1}{e^{h\nu / k_B T} - 1}$"),
+            (
+                "Heat Equation",
+                r"$\frac{\partial u}{\partial t} = \alpha \left( \frac{\partial^2 u}{\partial x^2} + \frac{\partial^2 u}{\partial y^2} + \frac{\partial^2 u}{\partial z^2} \right)$",
+            ),
+            (
+                "Navier-Stokes",
+                r"$\rho \left( \frac{\partial \mathbf{v}}{\partial t} + \mathbf{v} \cdot \nabla \mathbf{v} \right) = -\nabla p + \mu \nabla^2 \mathbf{v}$",
+            ),
+            (
+                "Maxwell-Boltzmann",
+                r"$f(v) = 4\pi \left( \frac{m}{2\pi k_B T} \right)^{3/2} v^2 \, e^{-mv^2 / 2k_B T}$",
+            ),
+            (
+                "Planck",
+                r"$B(\nu, T) = \frac{2 h \nu^3}{c^2} \cdot \frac{1}{e^{h\nu / k_B T} - 1}$",
+            ),
         ]
 
         n_lines = len(math_expressions)
@@ -293,13 +304,21 @@ def _save_family_preview(
         ax.axis("off")
 
         fig.suptitle(
-            f"{family}", fontsize=18, fontweight="bold", y=0.97,
-            x=0.08, ha="left",
+            f"{family}",
+            fontsize=18,
+            fontweight="bold",
+            y=0.97,
+            x=0.08,
+            ha="left",
         )
         if meta.get("description"):
             fig.text(
-                0.08, 0.90, meta["description"],
-                fontsize=11, color="#555", ha="left",
+                0.08,
+                0.90,
+                meta["description"],
+                fontsize=11,
+                color="#555",
+                ha="left",
             )
 
         font_path = font_dir / sorted_fonts[0]
@@ -309,20 +328,26 @@ def _save_family_preview(
             y_pos = n_lines - idx - 0.3
 
             ax.text(
-                0.1, y_pos, label,
-                fontproperties=font_prop, size=15, color="#666", va="center",
+                0.1,
+                y_pos,
+                label,
+                fontproperties=font_prop,
+                size=15,
+                color="#666",
+                va="center",
             )
 
             if expr.startswith("$"):
-                ax.text(
-                    2.2, y_pos, expr,
-                    size=15, color="#333", va="center",
-                )
+                ax.text(2.2, y_pos, expr, size=15, color="#333", va="center")
             else:
                 ax.text(
-                    2.2, y_pos, expr,
-                    fontproperties=font_prop, size=15,
-                    color="#333", va="center",
+                    2.2,
+                    y_pos,
+                    expr,
+                    fontproperties=font_prop,
+                    size=15,
+                    color="#333",
+                    va="center",
                 )
 
         path = images_dir / f"font_{family.lower()}.svg"
@@ -340,9 +365,7 @@ def _save_family_preview(
         y_pos = n_fonts - idx - 0.5
 
         # Variant label — use family's own Regular font
-        label_kwargs = {
-            "size": 14, "color": "#666", "va": "center",
-        }
+        label_kwargs = {"size": 14, "color": "#666", "va": "center"}
         if regular_font_prop is not None:
             label_kwargs["fontproperties"] = regular_font_prop
         else:
@@ -387,10 +410,7 @@ def build_font_assets(base_dir: Path | None = None) -> dict[str, list[Path]]:
     total = len(family_paths) + 1
     print(f"[fonts] wrote {total} font preview images")
 
-    return {
-        "all_fonts": [all_fonts_path],
-        "families": family_paths,
-    }
+    return {"all_fonts": [all_fonts_path], "families": family_paths}
 
 
 def _build_comparison_assets() -> None:

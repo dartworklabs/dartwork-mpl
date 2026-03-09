@@ -76,9 +76,7 @@ def _extract_base_color_name(color_name: str) -> str:
     return name
 
 
-def _extract_number_from_color_name(
-    color_name: str,
-) -> int | None:
+def _extract_number_from_color_name(color_name: str) -> int | None:
     """Extract number from color name if present."""
     name = color_name
     for prefix in ["dc.", "tw.", "md.", "ad.", "cu.", "pr."]:
@@ -93,9 +91,7 @@ def _extract_number_from_color_name(
     return None
 
 
-def _detect_weight_range(
-    color_names: list[str],
-) -> tuple[int, int] | None:
+def _detect_weight_range(color_names: list[str]) -> tuple[int, int] | None:
     """Detect the weight range used in a group of color names."""
     weights = []
     for color_name in color_names:
@@ -133,9 +129,7 @@ def _separate_colors_by_library(
     colors: dict[str, str | tuple[float, float, float]],
 ) -> dict[str, dict[str, str | tuple[float, float, float]]]:
     """Separate colors by library."""
-    library_groups: dict[
-        str, dict[str, str | tuple[float, float, float]]
-    ] = {
+    library_groups: dict[str, dict[str, str | tuple[float, float, float]]] = {
         "dc": {},
         "opencolor": {},
         "tw": {},
@@ -157,9 +151,7 @@ def _separate_colors_by_library(
     }
 
 
-def _relative_luminance(
-    color_spec: str | tuple[float, float, float],
-) -> float:
+def _relative_luminance(color_spec: str | tuple[float, float, float]) -> float:
     """Compute relative luminance of a color (ITU-R BT.709).
 
     Parameters
@@ -176,9 +168,7 @@ def _relative_luminance(
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 
-def _contrast_text_color(
-    color_spec: str | tuple[float, float, float],
-) -> str:
+def _contrast_text_color(color_spec: str | tuple[float, float, float]) -> str:
     """Return black or white text color for best contrast.
 
     Parameters
@@ -192,14 +182,10 @@ def _contrast_text_color(
         ``"white"`` or ``"#333333"`` depending on background
         luminance.
     """
-    return (
-        "#333333" if _relative_luminance(color_spec) > 0.45 else "white"
-    )
+    return "#333333" if _relative_luminance(color_spec) > 0.45 else "white"
 
 
-def _color_to_hex(
-    color_spec: str | tuple[float, float, float],
-) -> str:
+def _color_to_hex(color_spec: str | tuple[float, float, float]) -> str:
     """Convert any color spec to uppercase hex string.
 
     Parameters
@@ -262,13 +248,9 @@ def _plot_single_library(
             try:
                 rgb = mcolors.to_rgb(colors[color_name])
                 hsv = mcolors.rgb_to_hsv(rgb)
-                base_color_groups[base_color].append(
-                    (color_name, hsv)
-                )
+                base_color_groups[base_color].append((color_name, hsv))
             except (ValueError, TypeError):
-                base_color_groups[base_color].append(
-                    (color_name, (0, 0, 0))
-                )
+                base_color_groups[base_color].append((color_name, (0, 0, 0)))
 
         sorted_base_colors = sorted(base_color_groups.items())
 
@@ -291,9 +273,7 @@ def _plot_single_library(
             color_groups.append(
                 {
                     "base_color": base_color,
-                    "colors": [
-                        (name, colors[name]) for name in sorted_names
-                    ],
+                    "colors": [(name, colors[name]) for name in sorted_names],
                     "weight_range": weight_range,
                 }
             )
@@ -301,9 +281,7 @@ def _plot_single_library(
         color_groups = [
             {
                 "base_color": "all",
-                "colors": [
-                    (name, colors[name]) for name in colors
-                ],
+                "colors": [(name, colors[name]) for name in colors],
                 "weight_range": None,
             }
         ]
@@ -326,25 +304,17 @@ def _plot_single_library(
         current_weight_range = group.get("weight_range")
         current_base_color = group.get("base_color")
 
-        min_height_col = min(
-            range(ncols), key=lambda c: column_heights[c]
-        )
+        min_height_col = min(range(ncols), key=lambda c: column_heights[c])
         target_col = min_height_col
 
         should_add_spacing = False
 
-        if (
-            prev_weight_range is not None
-            and current_weight_range is not None
-        ):
+        if prev_weight_range is not None and current_weight_range is not None:
             if prev_weight_range != current_weight_range:
                 should_add_spacing = True
 
         if prev_base_color_per_col[target_col] is not None:
-            if (
-                prev_base_color_per_col[target_col]
-                != current_base_color
-            ):
+            if prev_base_color_per_col[target_col] != current_base_color:
                 column_heights[target_col] += 1
 
         if should_add_spacing:
@@ -375,9 +345,7 @@ def _plot_single_library(
     )
     dpi = 72
 
-    fig, ax = plt.subplots(
-        figsize=(width / dpi, height / dpi), dpi=dpi
-    )
+    fig, ax = plt.subplots(figsize=(width / dpi, height / dpi), dpi=dpi)
     fig.subplots_adjust(
         margin / width,
         margin / height,
@@ -385,10 +353,7 @@ def _plot_single_library(
         (height - margin) / height,
     )
     ax.set_xlim(0, cell_width * ncols)
-    ax.set_ylim(
-        -total_title_height,
-        cell_height * nrows + bottom_extra_margin,
-    )
+    ax.set_ylim(-total_title_height, cell_height * nrows + bottom_extra_margin)
     ax.invert_yaxis()
     ax.yaxis.set_visible(False)
     ax.xaxis.set_visible(False)
@@ -420,8 +385,7 @@ def _plot_single_library(
         color="#1a1a2e",
     )
     ax.text(
-        cell_width * ncols / 2
-        + len(title_text) * 4.5,
+        cell_width * ncols / 2 + len(title_text) * 4.5,
         title_y - 2,
         count_text,
         fontsize=10,
@@ -520,8 +484,7 @@ def _plot_single_library(
 
 
 def plot_colors(
-    colors: dict[str, str | tuple[float, float, float]]
-    | None = None,
+    colors: dict[str, str | tuple[float, float, float]] | None = None,
     *,
     ncols: int = 4,
     sort_colors: bool = True,
@@ -556,35 +519,19 @@ def plot_colors(
         colors = {
             k: v
             for k, v in mcolors.get_named_colors_mapping().items()
-            if not k.startswith("dartwork_mpl.")
-            and not k.startswith("xkcd:")
+            if not k.startswith("dartwork_mpl.") and not k.startswith("xkcd:")
         }
 
     library_colors = _separate_colors_by_library(colors)
 
-    skip_duplicate_removal = {
-        "dc",
-        "tw",
-        "md",
-        "ant",
-        "chakra",
-        "primer",
-    }
+    skip_duplicate_removal = {"dc", "tw", "md", "ant", "chakra", "primer"}
     for library_name in library_colors:
         if library_name not in skip_duplicate_removal:
             library_colors[library_name] = _remove_duplicate_colors(
                 library_colors[library_name]
             )
 
-    library_order = [
-        "dc",
-        "opencolor",
-        "tw",
-        "md",
-        "ant",
-        "chakra",
-        "primer",
-    ]
+    library_order = ["dc", "opencolor", "tw", "md", "ant", "chakra", "primer"]
 
     figures = []
     for library_name in library_order:

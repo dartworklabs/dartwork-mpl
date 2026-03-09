@@ -54,9 +54,7 @@ def _parse_color_data(path: str | Path) -> dict[str, str]:
 
 
 def _load_json_palette(
-    root_dir: Path,
-    filename: str,
-    prefix: str,
+    root_dir: Path, filename: str, prefix: str
 ) -> dict[str, str]:
     """Load a JSON color palette and return prefixed color entries.
 
@@ -116,7 +114,7 @@ def _load_colors() -> None:
     # Open Color (.txt files → "oc." prefix).
     for path in root_dir.glob("*.txt"):
         color_dict.update(
-            {f"oc.{k}": v for k, v in _parse_color_data(path).items()},
+            {f"oc.{k}": v for k, v in _parse_color_data(path).items()}
         )
 
     # JSON-based palettes.

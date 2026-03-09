@@ -80,7 +80,9 @@ for y_idx in range(n_years):
     all_totals.append(tot)
 
 fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
-fig.suptitle("Category Mix Shift (2020–2026)", fontsize=dm.fs(1), weight="bold", y=1.05)
+fig.suptitle(
+    "Category Mix Shift (2020–2026)", fontsize=dm.fs(1), weight="bold", y=1.05
+)
 
 for idx, cat_data in enumerate(categories):
     label = cat_data[0]
@@ -130,12 +132,7 @@ for idx, cat_data in enumerate(categories):
         rt, rb_ = b2 + v2, max(0, b2)
 
         polygon = Polygon(
-            [
-                [x1 + bar_width, lt],
-                [x2, rt],
-                [x2, rb_],
-                [x1 + bar_width, lb_],
-            ],
+            [[x1 + bar_width, lt], [x2, rt], [x2, rb_], [x1 + bar_width, lb_]],
             closed=True,
             color=dm.pseudo_alpha(color, alpha=0.35),
             zorder=0,
@@ -149,7 +146,12 @@ for idx, cat_data in enumerate(categories):
         mid_x = np.mean([x1 + bar_width, x2])
         mid_y = (lt + rt + lb_ + rb_) / 4
         ax.text(
-            mid_x, mid_y, label_text, ha="center", va="center", fontsize=dm.fs(-0.5)
+            mid_x,
+            mid_y,
+            label_text,
+            ha="center",
+            va="center",
+            fontsize=dm.fs(-0.5),
         )
 
 # Year labels

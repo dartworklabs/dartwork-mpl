@@ -10,7 +10,6 @@ directly:
 
 from __future__ import annotations
 
-import os
 import sys
 from collections.abc import Iterable
 from pathlib import Path
@@ -48,15 +47,7 @@ CATEGORY_BLURBS: dict[str, str] = {
     "Categorical": "Distinct steps with little interpolation. Use for discrete classes.",
 }
 
-COLOR_LIBRARY_ORDER = [
-    "dc",
-    "opencolor",
-    "tw",
-    "md",
-    "ant",
-    "chakra",
-    "primer",
-]
+COLOR_LIBRARY_ORDER = ["dc", "opencolor", "tw", "md", "ant", "chakra", "primer"]
 COLOR_LIBRARY_LABELS = {
     "dc": "dartwork Color",
     "opencolor": "OpenColor",
@@ -80,8 +71,7 @@ def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
     cmap_list: Iterable[str] = (
         name
         for name in mpl.colormaps
-        if not str(name).endswith("_r")
-        and not str(name).startswith("dc.")
+        if not str(name).endswith("_r") and not str(name).startswith("dc.")
     )
     cmaps = [mpl.colormaps[name] for name in cmap_list]
 
@@ -174,7 +164,7 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
         for name, spec in mapping.items():
             if not name.startswith(prefix):
                 continue
-            suffix = name[len(prefix):]
+            suffix = name[len(prefix) :]
             # Split into alpha base + numeric/alphanumeric weight
             import re
 
@@ -183,12 +173,8 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
                 continue
             base = m.group(1)
             weight = m.group(2)  # e.g. "50", "500", "A100", "0"
-            hex_val = (
-                spec if isinstance(spec, str) else mpl.colors.to_hex(spec)
-            )
-            lib_colors.setdefault(base, []).append(
-                (name, weight, hex_val)
-            )
+            hex_val = spec if isinstance(spec, str) else mpl.colors.to_hex(spec)
+            lib_colors.setdefault(base, []).append((name, weight, hex_val))
 
         if not lib_colors:
             continue
@@ -206,9 +192,7 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
             return (2, 0, w)
 
         # For dm palettes: sort by OKLCH lightness (light→dark)
-        def _oklch_sort_key(
-            item: tuple[str, str, str],
-        ) -> float:
+        def _oklch_sort_key(item: tuple[str, str, str]) -> float:
             """Sort by OKLCH lightness descending (light first)."""
             return -_oklch_lightness(item[2])
 
@@ -262,13 +246,9 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
 
         blurb = CATEGORY_BLURBS.get(category, "")
         html_parts = ['<div class="dm-cmap-panel">']
-        html_parts.append(
-            f'<div class="dm-cmap-panel-title">{category}</div>'
-        )
+        html_parts.append(f'<div class="dm-cmap-panel-title">{category}</div>')
         if blurb:
-            html_parts.append(
-                f'<div class="dm-cmap-panel-desc">{blurb}</div>'
-            )
+            html_parts.append(f'<div class="dm-cmap-panel-desc">{blurb}</div>')
         html_parts.append('<div class="dm-cmap-grid">')
 
         for cmap in cmaps:
@@ -307,17 +287,27 @@ def _save_color_space_creation(images_dir: Path) -> Path:
     fig.patch.set_facecolor("#fbfaf7")
 
     gs = fig.add_gridspec(
-        nrows=4, ncols=2,
-        left=0.05, right=0.98, top=0.95, bottom=0.05,
-        hspace=0.5, wspace=0.25,
+        nrows=4,
+        ncols=2,
+        left=0.05,
+        right=0.98,
+        top=0.95,
+        bottom=0.05,
+        hspace=0.5,
+        wspace=0.25,
         height_ratios=[0.08, 0.31, 0.31, 0.31],
     )
 
     ax_title = fig.add_subplot(gs[0, :])
     ax_title.axis("off")
     ax_title.text(
-        0.5, 0.5, "Creating Color Objects",
-        fontsize=16, fontweight="bold", ha="center", va="center",
+        0.5,
+        0.5,
+        "Creating Color Objects",
+        fontsize=16,
+        fontweight="bold",
+        ha="center",
+        va="center",
         transform=ax_title.transAxes,
     )
 
@@ -332,14 +322,18 @@ def _save_color_space_creation(images_dir: Path) -> Path:
 
     for idx, (label, color, code) in enumerate(examples):
         row = idx // 2 + 1  # rows 1, 2, 3
-        col = idx % 2       # cols 0, 1
+        col = idx % 2  # cols 0, 1
         ax = fig.add_subplot(gs[row, col])
         ax.set_facecolor("#ffffff")
         rgb_val = color.to_rgb()
         ax.add_patch(
             plt.Rectangle(
-                (0, 0.35), 1, 0.65,
-                facecolor=rgb_val, edgecolor="#e4e2dd", linewidth=1.5,
+                (0, 0.35),
+                1,
+                0.65,
+                facecolor=rgb_val,
+                edgecolor="#e4e2dd",
+                linewidth=1.5,
             )
         )
         ax.set_xlim(0, 1)
@@ -348,12 +342,25 @@ def _save_color_space_creation(images_dir: Path) -> Path:
         ax.set_yticks([])
         ax.set_frame_on(False)
         ax.text(
-            0.5, 0.22, label, ha="center", va="top",
-            transform=ax.transAxes, fontsize=10, fontweight="bold",
+            0.5,
+            0.22,
+            label,
+            ha="center",
+            va="top",
+            transform=ax.transAxes,
+            fontsize=10,
+            fontweight="bold",
         )
         ax.text(
-            0.5, 0.08, code, ha="center", va="top",
-            transform=ax.transAxes, fontsize=8, family="monospace", color="#555",
+            0.5,
+            0.08,
+            code,
+            ha="center",
+            va="top",
+            transform=ax.transAxes,
+            fontsize=8,
+            family="monospace",
+            color="#555",
         )
 
     dm.simple_layout(fig, gs=gs)
@@ -387,9 +394,13 @@ def _save_color_space_conversion(images_dir: Path) -> Path:
     ax_title = fig.add_subplot(gs[0, :])
     ax_title.axis("off")
     ax_title.text(
-        0.5, 0.5, "Color Space Conversion",
-        fontsize=16, fontweight="bold",
-        ha="center", va="bottom",
+        0.5,
+        0.5,
+        "Color Space Conversion",
+        fontsize=16,
+        fontweight="bold",
+        ha="center",
+        va="bottom",
         transform=ax_title.transAxes,
     )
 
@@ -410,25 +421,33 @@ def _save_color_space_conversion(images_dir: Path) -> Path:
 
     for idx, (label, values, align) in enumerate(conversions):
         grid_row = idx // 2  # 0 or 1
-        grid_col = idx % 2   # 0 or 1
+        grid_col = idx % 2  # 0 or 1
         label_row = 1 + grid_row * 2  # rows 1, 3
-        box_row = 2 + grid_row * 2    # rows 2, 4
+        box_row = 2 + grid_row * 2  # rows 2, 4
 
         ax_label = fig.add_subplot(gs[label_row, grid_col])
         ax_label.axis("off")
         ax_label.text(
-            0.5, 0.5, label,
-            ha="center", va="center",
+            0.5,
+            0.5,
+            label,
+            ha="center",
+            va="center",
             transform=ax_label.transAxes,
-            fontsize=11, fontweight="bold",
+            fontsize=11,
+            fontweight="bold",
         )
 
         ax = fig.add_subplot(gs[box_row, grid_col])
         rgb_val = color.to_rgb()
         ax.add_patch(
             plt.Rectangle(
-                (0, 0), 1, 1,
-                facecolor=rgb_val, edgecolor="#e4e2dd", linewidth=1.5,
+                (0, 0),
+                1,
+                1,
+                facecolor=rgb_val,
+                edgecolor="#e4e2dd",
+                linewidth=1.5,
             )
         )
         ax.set_xlim(0, 1)
@@ -437,11 +456,16 @@ def _save_color_space_conversion(images_dir: Path) -> Path:
         ax.set_yticks([])
         ax.set_frame_on(False)
         ax.text(
-            0.5, 0.5, values,
-            ha="center", va="center",
+            0.5,
+            0.5,
+            values,
+            ha="center",
+            va="center",
             multialignment=align,
             transform=ax.transAxes,
-            fontsize=9, family="monospace", color=text_color,
+            fontsize=9,
+            family="monospace",
+            color=text_color,
         )
 
     dm.simple_layout(fig, gs=gs)
@@ -493,11 +517,7 @@ def _save_color_space_interpolation(images_dir: Path) -> Path:
     end_color = dm.hex("#fbbf24")  # 노란색
     n = 20
 
-    spaces = [
-        ("OKLCH", "oklch"),
-        ("OKLab", "oklab"),
-        ("RGB", "rgb"),
-    ]
+    spaces = [("OKLCH", "oklch"), ("OKLab", "oklab"), ("RGB", "rgb")]
 
     for space_idx, (label, space) in enumerate(spaces):
         # gradient 행 인덱스: 1, 3, 5

@@ -21,9 +21,7 @@ dm.style.use("presentation")
 # %%
 # Clean figure (passes all checks)
 # ---------------------------------
-fig, ax = plt.subplots(
-    figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
-)
+fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
 x = np.linspace(0, 10, 100)
 ax.plot(x, np.sin(x), label="sin(x)", color="oc.blue5")
 ax.set_title("Clean Figure", fontsize=dm.fs(1))
@@ -43,9 +41,7 @@ plt.show()
 # --------------------------------
 # Here we deliberately set 50 tick marks on the x-axis,
 # which ``validate_figure`` flags as tick crowding.
-fig, ax = plt.subplots(
-    figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
-)
+fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
 ax.plot(x, np.cos(x), color="oc.red5")
 ax.set_title("Crowded Ticks (50 ticks)", fontsize=dm.fs(1))
 ax.set_xlabel("x", fontsize=dm.fs(0))
@@ -66,19 +62,37 @@ plt.show()
 # Overlapping text labels
 # -----------------------
 # Two text annotations placed at the same position will overlap.
-fig, ax = plt.subplots(
-    figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
-)
+fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
 ax.plot(x, np.sin(x), color="oc.green5")
 ax.set_title("Overlapping Text", fontsize=dm.fs(1))
 
 # Place two labels on top of each other
-ax.text(5, 0.5, "Label A", fontsize=dm.fs(1), ha="center",
-        bbox={"boxstyle": "round", "facecolor": "oc.green2",
-              "edgecolor": "oc.green7", "linewidth": 0.3})
-ax.text(5.2, 0.5, "Label B", fontsize=dm.fs(1), ha="center",
-        bbox={"boxstyle": "round", "facecolor": "oc.yellow2",
-              "edgecolor": "oc.yellow7", "linewidth": 0.3})
+ax.text(
+    5,
+    0.5,
+    "Label A",
+    fontsize=dm.fs(1),
+    ha="center",
+    bbox={
+        "boxstyle": "round",
+        "facecolor": "oc.green2",
+        "edgecolor": "oc.green7",
+        "linewidth": 0.3,
+    },
+)
+ax.text(
+    5.2,
+    0.5,
+    "Label B",
+    fontsize=dm.fs(1),
+    ha="center",
+    bbox={
+        "boxstyle": "round",
+        "facecolor": "oc.yellow2",
+        "edgecolor": "oc.yellow7",
+        "linewidth": 0.3,
+    },
+)
 
 dm.simple_layout(fig)
 

@@ -45,9 +45,7 @@ class TestPlotColors:
         """plot_colors(show_hex=False) still returns figures."""
         from dartwork_mpl.asset_viz import plot_colors
 
-        figs = plot_colors(
-            {"oc.red0": "#fff5f5"}, show_hex=False
-        )
+        figs = plot_colors({"oc.red0": "#fff5f5"}, show_hex=False)
         assert len(figs) > 0
         for fig in figs:
             plt.close(fig)
@@ -100,9 +98,7 @@ class TestPlotColormaps:
         from dartwork_mpl.asset_viz import plot_colormaps
 
         with patch.object(plt, "show") as mock_show:
-            figs = plot_colormaps(
-                cmap_list=["viridis", "plasma"]
-            )
+            figs = plot_colormaps(cmap_list=["viridis", "plasma"])
             mock_show.assert_not_called()
         for fig in figs:
             plt.close(fig)
@@ -112,8 +108,7 @@ class TestPlotColormaps:
         from dartwork_mpl.asset_viz import plot_colormaps
 
         figs = plot_colormaps(
-            cmap_list=["viridis", "plasma"],
-            group_by_type=False,
+            cmap_list=["viridis", "plasma"], group_by_type=False
         )
         assert isinstance(figs, list)
         assert len(figs) == 1
@@ -124,9 +119,7 @@ class TestPlotColormaps:
         """plot_colormaps() works with a custom cmap list."""
         from dartwork_mpl.asset_viz import plot_colormaps
 
-        figs = plot_colormaps(
-            cmap_list=["viridis", "coolwarm", "tab10"]
-        )
+        figs = plot_colormaps(cmap_list=["viridis", "coolwarm", "tab10"])
         assert isinstance(figs, list)
         assert len(figs) > 0
         for fig in figs:
@@ -143,18 +136,11 @@ class TestClassifyColormap:
         from dartwork_mpl.asset_viz import classify_colormap
 
         # Sequential
-        result = classify_colormap(
-            matplotlib.colormaps["viridis"]
-        )
-        assert result in (
-            "Sequential Single-Hue",
-            "Sequential Multi-Hue",
-        )
+        result = classify_colormap(matplotlib.colormaps["viridis"])
+        assert result in ("Sequential Single-Hue", "Sequential Multi-Hue")
 
         # Coolwarm — may classify as diverging or sequential
-        result = classify_colormap(
-            matplotlib.colormaps["coolwarm"]
-        )
+        result = classify_colormap(matplotlib.colormaps["coolwarm"])
         assert result in (
             "Diverging",
             "Sequential Multi-Hue",
@@ -162,10 +148,7 @@ class TestClassifyColormap:
         )
 
         # Categorical
-        assert (
-            classify_colormap(matplotlib.colormaps["tab10"])
-            == "Categorical"
-        )
+        assert classify_colormap(matplotlib.colormaps["tab10"]) == "Categorical"
 
     def test_returns_string(self) -> None:
         """classify_colormap always returns a string."""
@@ -173,7 +156,5 @@ class TestClassifyColormap:
 
         from dartwork_mpl.asset_viz import classify_colormap
 
-        result = classify_colormap(
-            matplotlib.colormaps["viridis"]
-        )
+        result = classify_colormap(matplotlib.colormaps["viridis"])
         assert isinstance(result, str)

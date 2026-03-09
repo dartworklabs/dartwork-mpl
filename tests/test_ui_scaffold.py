@@ -36,9 +36,7 @@ class TestScaffold:
         content = (dest / "app.py").read_text()
         assert len(content) > 100
 
-    def test_non_empty_dir_aborts(
-        self, tmp_path: Path, capsys: object
-    ) -> None:
+    def test_non_empty_dir_aborts(self, tmp_path: Path, capsys: object) -> None:
         """Scaffold refuses to overwrite a non-empty directory."""
         dest = tmp_path / "existing"
         dest.mkdir()

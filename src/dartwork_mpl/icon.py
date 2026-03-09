@@ -8,7 +8,7 @@ Examples
 --------
 >>> import dartwork_mpl as dm
 >>> mdi = dm.icon_font('mdi')
->>> ax.text(0.5, 0.5, "\U000F050F",  # thermometer
+>>> ax.text(0.5, 0.5, "\U000f050f",  # thermometer
 ...         fontproperties=mdi, fontsize=20)
 """
 
@@ -25,12 +25,7 @@ _REGISTRY: dict[str, str] = {
     "fa-brands": "Font Awesome 6 Brands-Regular-400.otf",
 }
 
-__all__ = [
-    "icon_font",
-    "icon_font_path",
-    "list_icon_fonts",
-    "ensure_loaded",
-]
+__all__ = ["icon_font", "icon_font_path", "list_icon_fonts", "ensure_loaded"]
 
 
 def icon_font_path(name: str = "mdi") -> Path:
@@ -65,16 +60,12 @@ def icon_font_path(name: str = "mdi") -> Path:
 
     if name not in _REGISTRY:
         available = ", ".join(sorted(_REGISTRY))
-        raise ValueError(
-            f"Unknown icon font '{name}'. "
-            f"Available: {available}"
-        )
+        raise ValueError(f"Unknown icon font '{name}'. Available: {available}")
 
     path = _ICON_DIR / _REGISTRY[name]
     if not path.exists():
         raise FileNotFoundError(
-            f"Icon font file not found: {path}. "
-            f"Please reinstall dartwork-mpl."
+            f"Icon font file not found: {path}. Please reinstall dartwork-mpl."
         )
     return path
 
@@ -98,7 +89,7 @@ def icon_font(name: str = "mdi") -> fm.FontProperties:
     --------
     >>> import dartwork_mpl as dm
     >>> mdi = dm.icon_font('mdi')
-    >>> ax.text(0.5, 0.5, "\U000F050F",
+    >>> ax.text(0.5, 0.5, "\U000f050f",
     ...         fontproperties=mdi, fontsize=20,
     ...         ha='center', va='center')
     """
@@ -127,6 +118,7 @@ def _register_icon_fonts() -> None:
         font_path = _ICON_DIR / filename
         if font_path.exists():
             fm.fontManager.addfont(str(font_path))
+
 
 _loaded: bool = False
 

@@ -156,10 +156,7 @@ def run(
             model = _build_model(params, param_model, descriptors)
         except Exception as exc:
             error_msg = _format_validation_error(exc)
-            return JSONResponse(
-                status_code=422,
-                content={"detail": error_msg},
-            )
+            return JSONResponse(status_code=422, content={"detail": error_msg})
         fig = figure_fn(model)
         buf = io.BytesIO()
         fig.savefig(buf, format="png")
@@ -170,9 +167,7 @@ def run(
         return {"image": b64}
 
     @app.post("/api/save-state")
-    async def save_state(
-        body: dict[str, Any],
-    ) -> dict[str, str]:
+    async def save_state(body: dict[str, Any]) -> dict[str, str]:
         """Save full UI state to config."""
         tabs = body.get("tabs", [])
         params = body.get("params", {})
@@ -215,9 +210,7 @@ def run(
     @app.get("/api/meta")
     async def get_meta() -> dict[str, str]:
         """Return metadata for frontend defaults."""
-        return {
-            "function_name": figure_fn.__name__,
-        }
+        return {"function_name": figure_fn.__name__}
 
     @app.post("/api/config")
     async def post_config(params: dict[str, Any]) -> dict[str, str]:
@@ -225,9 +218,7 @@ def run(
         return {"status": "ok"}
 
     @app.post("/api/preset")
-    async def save_preset_endpoint(
-        req: PresetSaveRequest,
-    ) -> dict[str, str]:
+    async def save_preset_endpoint(req: PresetSaveRequest) -> dict[str, str]:
         save_preset(req.label, req.params)
         return {"status": "ok"}
 
@@ -236,24 +227,19 @@ def run(
         return load_presets()
 
     @app.delete("/api/preset/{index}")
-    async def delete_preset_endpoint(
-        index: int,
-    ) -> dict[str, str]:
+    async def delete_preset_endpoint(index: int) -> dict[str, str]:
         """Delete a preset by index."""
         ok = delete_preset(index)
         if not ok:
             return JSONResponse(
-                status_code=404,
-                content={"detail": "Preset not found"},
+                status_code=404, content={"detail": "Preset not found"}
             )
         return {"status": "ok"}
 
     @app.get("/api/defaults")
     async def get_defaults() -> dict[str, Any]:
         """Return default parameter values for reset."""
-        return {
-            d.name: d.default for d in descriptors
-        }
+        return {d.name: d.default for d in descriptors}
 
     # ── Script generation ────────────────────────────────────────────
 
@@ -274,12 +260,10 @@ def run(
 
     @app.post("/api/save-server/image/{fmt}")
     async def save_image_server(
-        fmt: str, req: ServerSaveRequest,
+        fmt: str, req: ServerSaveRequest
     ) -> dict[str, Any]:
         """Save figure image to the script directory."""
-        model = _build_model(
-            req.params, param_model, descriptors,
-        )
+        model = _build_model(req.params, param_model, descriptors)
         fig = figure_fn(model)
 
         if req.filename:
@@ -298,10 +282,7 @@ def run(
             stem = f"{figure_fn.__name__}_{ts}"
         image_stem = str(script_path / stem)
 
-        save_formats(
-            fig, image_stem, formats=(fmt,),
-            bbox_inches=None,
-        )
+        save_formats(fig, image_stem, formats=(fmt,), bbox_inches=None)
         plt.close(fig)
 
         filename = f"{stem}.{fmt}"
@@ -328,16 +309,10 @@ def run(
         }
 
     @app.post("/api/save-server/script")
-    async def save_script_server(
-        req: ServerSaveRequest,
-    ) -> dict[str, str]:
+    async def save_script_server(req: ServerSaveRequest) -> dict[str, str]:
         """Save standalone Python script to the script dir."""
-        model = _build_model(
-            req.params, param_model, descriptors,
-        )
-        code = _generate_script(
-            model, param_model, figure_fn, script_path,
-        )
+        model = _build_model(req.params, param_model, descriptors)
+        code = _generate_script(model, param_model, figure_fn, script_path)
 
         if req.filename:
             name = req.filename
@@ -351,11 +326,7 @@ def run(
         out_path = script_path / filename
         out_path.write_text(code, encoding="utf-8")
 
-        return {
-            "status": "ok",
-            "path": str(out_path),
-            "filename": filename,
-        }
+        return {"status": "ok", "path": str(out_path), "filename": filename}
 
     # ── Reload ───────────────────────────────────────────────────────
 

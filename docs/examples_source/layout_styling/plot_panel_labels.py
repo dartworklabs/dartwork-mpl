@@ -18,9 +18,7 @@ dm.style.use("presentation")
 # %%
 # Default labels (a, b, c, d)
 # ----------------------------
-fig, axes = plt.subplots(
-    2, 2, figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
-)
+fig, axes = plt.subplots(2, 2, figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
 
 x = np.linspace(0, 2 * np.pi, 100)
 plots = [
@@ -46,9 +44,7 @@ plt.show()
 # Custom labels and positioning
 # -----------------------------
 # Use Roman numerals and explicit positioning.
-fig, axes = plt.subplots(
-    1, 3, figsize=(dm.cm2in(15), dm.cm2in(6)), dpi=300
-)
+fig, axes = plt.subplots(1, 3, figsize=(dm.cm2in(15), dm.cm2in(6)), dpi=300)
 
 data = [
     (np.random.randn(200), "oc.blue4", "Histogram"),
@@ -57,8 +53,9 @@ data = [
 ]
 
 for ax, (d, color, title) in zip(axes, data, strict=False):
-    ax.hist(d, bins=20, color=color, edgecolor="white",
-            linewidth=0.3, alpha=0.8)
+    ax.hist(
+        d, bins=20, color=color, edgecolor="white", linewidth=0.3, alpha=0.8
+    )
     ax.set_title(title, fontsize=dm.fs(0))
 
 # Custom Roman numeral labels at specific position

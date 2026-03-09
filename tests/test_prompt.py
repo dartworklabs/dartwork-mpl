@@ -68,9 +68,7 @@ class TestCopyPrompt:
         result = copy_prompt("general-guide", tmp_path)
         assert result.exists()
         assert result.name == "general-guide.md"
-        assert result.read_text(encoding="utf-8") == get_prompt(
-            "general-guide"
-        )
+        assert result.read_text(encoding="utf-8") == get_prompt("general-guide")
 
     def test_copy_to_file_path(self, tmp_path: Path) -> None:
         dest = tmp_path / "my_prompt.md"

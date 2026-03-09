@@ -142,8 +142,7 @@ def _render_preset_svg(preset: str) -> str:
     dm.style.use(preset)
 
     fig, ax = plt.subplots(
-        figsize=(dm.cm2in(FIG_WIDTH_CM), dm.cm2in(FIG_HEIGHT_CM)),
-        dpi=150,
+        figsize=(dm.cm2in(FIG_WIDTH_CM), dm.cm2in(FIG_HEIGHT_CM)), dpi=150
     )
 
     # Sample data: thermal conductivity vs temperature
@@ -176,11 +175,7 @@ def _render_preset_svg(preset: str) -> str:
     )
     ax.set_xlabel("Temperature (K)", fontsize=dm.fs(0))
     ax.set_ylabel("Thermal Conductivity (W/m\u00b7K)", fontsize=dm.fs(0))
-    ax.legend(
-        fontsize=dm.fs(-1),
-        frameon=False,
-        loc="upper left",
-    )
+    ax.legend(fontsize=dm.fs(-1), frameon=False, loc="upper left")
 
     dm.simple_layout(fig)
 
@@ -194,12 +189,7 @@ def _render_preset_svg(preset: str) -> str:
 def _normalize_svg_viewbox(svg: str, target_vb: str) -> str:
     """Force a uniform viewBox on an SVG so all presets occupy
     the exact same pixel footprint."""
-    svg = re.sub(
-        r'viewBox="[^"]*"',
-        f'viewBox="{target_vb}"',
-        svg,
-        count=1,
-    )
+    svg = re.sub(r'viewBox="[^"]*"', f'viewBox="{target_vb}"', svg, count=1)
     svg = re.sub(r'width="[^"]*"', 'width="100%"', svg, count=1)
     svg = re.sub(r'height="[^"]*"', 'height="100%"', svg, count=1)
     return svg
@@ -404,9 +394,7 @@ _HTML_TEMPLATE = textwrap.dedent("""\
 """)
 
 
-def build_preset_compare_html(
-    output_path: Path | None = None,
-) -> Path:
+def build_preset_compare_html(output_path: Path | None = None) -> Path:
     """Generate the preset comparison widget.
 
     Parameters
@@ -421,9 +409,7 @@ def build_preset_compare_html(
         Path to the generated file.
     """
     if output_path is None:
-        output_path = (
-            Path(__file__).parent / "images" / "preset_compare.html"
-        )
+        output_path = Path(__file__).parent / "images" / "preset_compare.html"
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # ── Render all presets ──

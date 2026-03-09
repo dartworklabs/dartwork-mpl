@@ -140,4 +140,3 @@ def setup(app):
     app.connect("builder-inited", copy_fonts_to_static)
     app.connect("env-before-read-docs", write_manual_indices)
     return {"parallel_read_safe": True}
-

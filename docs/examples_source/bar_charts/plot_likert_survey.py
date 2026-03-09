@@ -48,12 +48,7 @@ plt.show()
 # Product feedback scores
 # ------------------------
 # A simpler example with default styling.
-products = [
-    "Product A",
-    "Product B",
-    "Product C",
-    "Product D",
-]
+products = ["Product A", "Product B", "Product C", "Product D"]
 
 neg = np.array([-15, -22, -8, -35])
 pos = np.array([65, 48, 80, 42])

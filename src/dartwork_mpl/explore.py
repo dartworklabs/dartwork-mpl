@@ -32,7 +32,9 @@ def list_palettes() -> list[str]:
     colors: list[str] = _get_all_colors()
     palettes: set[str] = set()
     # match prefix.name + digits
-    pattern: re.Pattern[str] = re.compile(r"^([a-z]+)\.([a-z]+(?:\-[a-z]+)?)\d+$")
+    pattern: re.Pattern[str] = re.compile(
+        r"^([a-z]+)\.([a-z]+(?:\-[a-z]+)?)\d+$"
+    )
     for c in colors:
         match = pattern.match(c)
         if match:
@@ -101,13 +103,7 @@ def show_palette(palette_name: str) -> None:
 
     for i, cname in enumerate(color_names):
         ax.add_patch(
-            plt.Rectangle(
-                (i, 0),
-                1,
-                1,
-                facecolor=cname,
-                edgecolor="none",
-            )
+            plt.Rectangle((i, 0), 1, 1, facecolor=cname, edgecolor="none")
         )
 
         # Simple contrast heuristic: lighter text for darker shades (index >= 5 usually)

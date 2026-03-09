@@ -66,7 +66,11 @@ def _check_overflow(fig: Figure, renderer) -> list[VisualWarning]:
     for ax in fig.axes:
         # --- text objects (titles, labels, annotations) ---
         for txt in ax.texts + [ax.title, ax.xaxis.label, ax.yaxis.label]:
-            if txt is None or not txt.get_visible() or txt.get_text().strip() == "":
+            if (
+                txt is None
+                or not txt.get_visible()
+                or txt.get_text().strip() == ""
+            ):
                 continue
             try:
                 ext = txt.get_window_extent(renderer)
@@ -124,7 +128,10 @@ def _check_overflow(fig: Figure, renderer) -> list[VisualWarning]:
                             severity=Severity.WARNING,
                             check_id="OVERFLOW",
                             message=f"Tick label {repr(tick.get_text()[:20])} overflows figure by {overflow:.1f}px",
-                            detail={"text": tick.get_text(), "px": round(overflow, 1)},
+                            detail={
+                                "text": tick.get_text(),
+                                "px": round(overflow, 1),
+                            },
                         )
                     )
                     break  # one per axis is enough
@@ -139,7 +146,11 @@ def _check_overlap(fig: Figure, renderer) -> list[VisualWarning]:
     for ax in fig.axes:
         texts = []
         for txt in ax.texts + [ax.title, ax.xaxis.label, ax.yaxis.label]:
-            if txt is None or not txt.get_visible() or txt.get_text().strip() == "":
+            if (
+                txt is None
+                or not txt.get_visible()
+                or txt.get_text().strip() == ""
+            ):
                 continue
             try:
                 ext = txt.get_window_extent(renderer)
@@ -163,7 +174,9 @@ def _check_overlap(fig: Figure, renderer) -> list[VisualWarning]:
                 if inter == 0:
                     continue
 
-                union = bb_a.width * bb_a.height + bb_b.width * bb_b.height - inter
+                union = (
+                    bb_a.width * bb_a.height + bb_b.width * bb_b.height - inter
+                )
                 iou = inter / union if union > 0 else 0
                 if iou > 0.05:
                     warnings.append(
@@ -312,7 +325,9 @@ def _check_empty_axes(fig: Figure) -> list[VisualWarning]:
             + len(ax.tables)
         )
         # Also count texts that look like annotations (not axis labels)
-        has_content = n_artists > 0 or any(t.get_text().strip() for t in ax.texts)
+        has_content = n_artists > 0 or any(
+            t.get_text().strip() for t in ax.texts
+        )
         if not has_content:
             warnings.append(
                 VisualWarning(
@@ -332,10 +347,7 @@ def _check_empty_axes(fig: Figure) -> list[VisualWarning]:
 
 
 def validate_figure(
-    fig: Figure,
-    *,
-    checks: tuple[str, ...] | None = None,
-    quiet: bool = False,
+    fig: Figure, *, checks: tuple[str, ...] | None = None, quiet: bool = False
 ) -> list[VisualWarning]:
     """Run visual validation checks on a matplotlib Figure.
 
@@ -385,6 +397,10 @@ def validate_figure(
             for w in warnings:
                 print(str(w), file=sys.stdout, flush=True)
         else:
-            print("[VISUAL] ✅ No visual issues detected.", file=sys.stdout, flush=True)
+            print(
+                "[VISUAL] ✅ No visual issues detected.",
+                file=sys.stdout,
+                flush=True,
+            )
 
     return warnings

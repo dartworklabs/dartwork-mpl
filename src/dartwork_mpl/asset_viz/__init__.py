@@ -19,9 +19,4 @@ from ._cmap import classify_colormap, plot_colormaps
 from ._color import plot_colors
 from ._font import plot_fonts
 
-__all__ = [
-    "classify_colormap",
-    "plot_colormaps",
-    "plot_colors",
-    "plot_fonts",
-]
+__all__ = ["classify_colormap", "plot_colormaps", "plot_colors", "plot_fonts"]

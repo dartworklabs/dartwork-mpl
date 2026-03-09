@@ -44,15 +44,19 @@ plt.show()
 # %%
 # Percentage axis with 1-decimal precision
 # ------------------------------------------
-fig, ax = plt.subplots(
-    figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300
-)
+fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
 
 conditions = ["Cond. A", "Cond. B", "Cond. C", "Cond. D", "Cond. E"]
 efficiency = [23.4, 25.1, 22.8, 26.7, 28.3]
 
-ax.bar(conditions, efficiency, color="oc.teal5", edgecolor="white",
-       linewidth=0.3, width=0.6)
+ax.bar(
+    conditions,
+    efficiency,
+    color="oc.teal5",
+    edgecolor="white",
+    linewidth=0.3,
+    width=0.6,
+)
 ax.set_ylim(0, 35)
 
 # Format y-axis to 1 decimal
@@ -64,8 +68,14 @@ ax.set_xlabel("Condition", fontsize=dm.fs(0))
 
 # Add value labels on bars
 for i, v in enumerate(efficiency):
-    ax.text(i, v + 0.5, f"{v:.1f}%", ha="center",
-            fontsize=dm.fs(-0.5), color="oc.gray7")
+    ax.text(
+        i,
+        v + 0.5,
+        f"{v:.1f}%",
+        ha="center",
+        fontsize=dm.fs(-0.5),
+        color="oc.gray7",
+    )
 
 dm.simple_layout(fig)
 plt.show()

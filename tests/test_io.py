@@ -32,9 +32,7 @@ class TestSaveFormats:
         ax.plot([1, 2, 3])
 
         stem = str(tmp_path / "test_multi")
-        save_formats(
-            fig, stem, formats=("png", "pdf"), dpi=72
-        )
+        save_formats(fig, stem, formats=("png", "pdf"), dpi=72)
 
         assert (tmp_path / "test_multi.png").exists()
         assert (tmp_path / "test_multi.pdf").exists()
@@ -52,18 +50,14 @@ class TestSaveFormats:
         assert (tmp_path / "nested" / "dir" / "chart.png").exists()
         plt.close(fig)
 
-    def test_validate_false_skips_validation(
-        self, tmp_path: Path
-    ) -> None:
+    def test_validate_false_skips_validation(self, tmp_path: Path) -> None:
         from dartwork_mpl.io import save_formats
 
         fig, ax = plt.subplots()
         ax.plot([1, 2, 3])
 
         stem = str(tmp_path / "no_validate")
-        save_formats(
-            fig, stem, formats=("png",), dpi=72, validate=False
-        )
+        save_formats(fig, stem, formats=("png",), dpi=72, validate=False)
 
         assert (tmp_path / "no_validate.png").exists()
         plt.close(fig)

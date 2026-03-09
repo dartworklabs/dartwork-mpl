@@ -4,6 +4,7 @@
 Run: python docs/fonts/generate_html_specimens.py
 Output: docs/fonts/_generated/ (CSS + HTML snippets)
 """
+
 from __future__ import annotations
 
 import os
@@ -135,9 +136,7 @@ def generate_fontface_css() -> str:
             css_name = _font_face_name(font)
             lines.append("@font-face {")
             lines.append(f"  font-family: '{css_name}';")
-            lines.append(
-                f"  src: url('fonts/{font}') format('truetype');"
-            )
+            lines.append(f"  src: url('fonts/{font}') format('truetype');")
             lines.append("  font-display: swap;")
             lines.append("}")
             lines.append("")
@@ -150,8 +149,7 @@ def generate_family_html(family: str, fonts: list[str]) -> str:
     meta = FONT_META.get(family, {})
     desc = meta.get("description", "")
     sample = meta.get(
-        "sample",
-        "The quick brown fox jumps over the lazy dog. 0123456789",
+        "sample", "The quick brown fox jumps over the lazy dog. 0123456789"
     )
 
     # Exclude italic variants — show only upright weights
@@ -181,10 +179,7 @@ def generate_family_html(family: str, fonts: list[str]) -> str:
     )
 
 
-def generate_family_showcase_html(
-    family: str,
-    fonts: list[str],
-) -> str:
+def generate_family_showcase_html(family: str, fonts: list[str]) -> str:
     """Generate a compact showcase: hero text + key weights only."""
     meta = FONT_META.get(family, {})
     desc = meta.get("description", "")
@@ -255,9 +250,7 @@ def generate_family_showcase_html(
     )
 
 
-def generate_condensed_comparison_html(
-    families: dict[str, list[str]],
-) -> str:
+def generate_condensed_comparison_html(families: dict[str, list[str]]) -> str:
     """Generate side-by-side comparison of condensed variants."""
     condensed_families = [
         ("NotoSans", "Regular"),
@@ -365,21 +358,12 @@ def generate_math_html() -> str:
     """Generate NotoSansMath specimen HTML."""
     css_name = "dm-NotoSansMath-Regular"
     equations = [
-        (
-            "Symbols",
-            "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∉ ⊂ ∪ ∩ ∀ ∃",
-        ),
+        ("Symbols", "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∉ ⊂ ∪ ∩ ∀ ∃"),
         ("Quadratic", "x = (−b ± √(b² − 4ac)) / 2a"),
         ("Gaussian", "∫₋∞^∞ e^(−x²) dx = √π"),
-        (
-            "Green's Function",
-            "G(r,t) = 1/(4παt)^(3/2) exp(−(x²+y²+z²)/(4αt))",
-        ),
+        ("Green's Function", "G(r,t) = 1/(4παt)^(3/2) exp(−(x²+y²+z²)/(4αt))"),
         ("Entropy", "H(X) = −∑ᵢ p(xᵢ) log p(xᵢ)"),
-        (
-            "Heat Equation",
-            "∂u/∂t = α(∂²u/∂x² + ∂²u/∂y² + ∂²u/∂z²)",
-        ),
+        ("Heat Equation", "∂u/∂t = α(∂²u/∂x² + ∂²u/∂y² + ∂²u/∂z²)"),
         ("Navier-Stokes", "ρ(∂v/∂t + v·∇v) = −∇p + μ∇²v"),
     ]
 
@@ -448,9 +432,7 @@ def build_html_specimens() -> None:
     (OUT_DIR / "multilang.html").write_text(ml_html)
 
     count = len(list(OUT_DIR.glob("*.html")))
-    print(
-        f"[html-specimens] wrote {count} HTML specimens to {OUT_DIR}"
-    )
+    print(f"[html-specimens] wrote {count} HTML specimens to {OUT_DIR}")
 
 
 if __name__ == "__main__":

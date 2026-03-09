@@ -65,8 +65,7 @@ class TestDescriptorsFromModel:
     def test_color_widget_hint(self) -> None:
         class M(ParamModel):
             bg_color: str = Field(
-                default="#000",
-                json_schema_extra={"widget": "color"},
+                default="#000", json_schema_extra={"widget": "color"}
             )
 
         descs = descriptors_from_model(M)
@@ -89,10 +88,7 @@ class TestDescriptorsFromModel:
     def test_step_from_extra(self) -> None:
         class M(ParamModel):
             freq: float = Field(
-                default=1.0,
-                ge=0.0,
-                le=10.0,
-                json_schema_extra={"step": 0.5},
+                default=1.0, ge=0.0, le=10.0, json_schema_extra={"step": 0.5}
             )
 
         descs = descriptors_from_model(M)
@@ -160,10 +156,7 @@ class TestDescriptorsFromModel:
         """Group metadata from json_schema_extra is extracted."""
 
         class M(ParamModel):
-            n: int = Field(
-                default=10,
-                json_schema_extra={"group": "Signal"},
-            )
+            n: int = Field(default=10, json_schema_extra={"group": "Signal"})
 
         descs = descriptors_from_model(M)
         assert descs[0].group == "Signal"
@@ -189,12 +182,9 @@ class TestConfigPersistence:
     def test_save_and_load_config(self, tmp_path: Path) -> None:
         config_file = tmp_path / CONFIG_FILENAME
         with patch(
-            "dartwork_mpl.ui._config._config_path",
-            return_value=config_file,
+            "dartwork_mpl.ui._config._config_path", return_value=config_file
         ):
-            save_config(
-                {"n": 42, "alpha": 0.7}, function_name="test_fn"
-            )
+            save_config({"n": 42, "alpha": 0.7}, function_name="test_fn")
             loaded = load_config()
 
         assert loaded is not None
@@ -204,16 +194,14 @@ class TestConfigPersistence:
     def test_load_config_missing(self, tmp_path: Path) -> None:
         config_file = tmp_path / CONFIG_FILENAME
         with patch(
-            "dartwork_mpl.ui._config._config_path",
-            return_value=config_file,
+            "dartwork_mpl.ui._config._config_path", return_value=config_file
         ):
             assert load_config() is None
 
     def test_append_and_load_history(self, tmp_path: Path) -> None:
         history_file = tmp_path / HISTORY_FILENAME
         with patch(
-            "dartwork_mpl.ui._config._history_path",
-            return_value=history_file,
+            "dartwork_mpl.ui._config._history_path", return_value=history_file
         ):
             append_history({"n": 1})
             append_history({"n": 2}, label="preset_a")
@@ -227,8 +215,7 @@ class TestConfigPersistence:
     def test_history_jsonl_format(self, tmp_path: Path) -> None:
         history_file = tmp_path / HISTORY_FILENAME
         with patch(
-            "dartwork_mpl.ui._config._history_path",
-            return_value=history_file,
+            "dartwork_mpl.ui._config._history_path", return_value=history_file
         ):
             append_history({"x": 10})
             append_history({"x": 20})
@@ -240,14 +227,11 @@ class TestConfigPersistence:
             assert "timestamp" in data
             assert "params" in data
 
-    def test_save_and_load_preset_json(
-        self, tmp_path: Path,
-    ) -> None:
+    def test_save_and_load_preset_json(self, tmp_path: Path) -> None:
         """Presets are saved to and loaded from JSON."""
         preset_file = tmp_path / PRESET_FILENAME
         with patch(
-            "dartwork_mpl.ui._config._preset_path",
-            return_value=preset_file,
+            "dartwork_mpl.ui._config._preset_path", return_value=preset_file
         ):
             save_preset("test_a", {"n": 1})
             save_preset("test_b", {"n": 2})
@@ -258,14 +242,11 @@ class TestConfigPersistence:
         assert presets[0]["params"]["n"] == 1
         assert presets[1]["label"] == "test_b"
 
-    def test_delete_preset(
-        self, tmp_path: Path,
-    ) -> None:
+    def test_delete_preset(self, tmp_path: Path) -> None:
         """Deleting a preset removes it from the list."""
         preset_file = tmp_path / PRESET_FILENAME
         with patch(
-            "dartwork_mpl.ui._config._preset_path",
-            return_value=preset_file,
+            "dartwork_mpl.ui._config._preset_path", return_value=preset_file
         ):
             save_preset("a", {"x": 1})
             save_preset("b", {"x": 2})
@@ -279,28 +260,22 @@ class TestConfigPersistence:
             assert remaining[0]["label"] == "a"
             assert remaining[1]["label"] == "c"
 
-    def test_delete_preset_invalid_index(
-        self, tmp_path: Path,
-    ) -> None:
+    def test_delete_preset_invalid_index(self, tmp_path: Path) -> None:
         """Deleting with invalid index returns False."""
         preset_file = tmp_path / PRESET_FILENAME
         with patch(
-            "dartwork_mpl.ui._config._preset_path",
-            return_value=preset_file,
+            "dartwork_mpl.ui._config._preset_path", return_value=preset_file
         ):
             save_preset("a", {"x": 1})
             assert delete_preset(5) is False
             assert delete_preset(-1) is False
             assert len(load_presets()) == 1
 
-    def test_save_config_with_tabs_and_fig_width(
-        self, tmp_path: Path,
-    ) -> None:
+    def test_save_config_with_tabs_and_fig_width(self, tmp_path: Path) -> None:
         """save_config persists tabs and figWidth when given."""
         config_file = tmp_path / CONFIG_FILENAME
         with patch(
-            "dartwork_mpl.ui._config._config_path",
-            return_value=config_file,
+            "dartwork_mpl.ui._config._config_path", return_value=config_file
         ):
             save_config(
                 {"n": 1},
@@ -314,44 +289,35 @@ class TestConfigPersistence:
         assert loaded["tabs"] == [{"id": "tab1"}]
         assert loaded["figWidth"] == 80
 
-    def test_load_config_corrupt_json(
-        self, tmp_path: Path,
-    ) -> None:
+    def test_load_config_corrupt_json(self, tmp_path: Path) -> None:
         """Corrupt JSON returns None instead of crashing."""
         config_file = tmp_path / CONFIG_FILENAME
         config_file.write_text("{invalid json!!!", encoding="utf-8")
         with patch(
-            "dartwork_mpl.ui._config._config_path",
-            return_value=config_file,
+            "dartwork_mpl.ui._config._config_path", return_value=config_file
         ):
             assert load_config() is None
 
-    def test_load_presets_corrupt_json(
-        self, tmp_path: Path,
-    ) -> None:
+    def test_load_presets_corrupt_json(self, tmp_path: Path) -> None:
         """Corrupt preset file returns empty list."""
         preset_file = tmp_path / PRESET_FILENAME
         preset_file.write_text("not valid json", encoding="utf-8")
         with patch(
-            "dartwork_mpl.ui._config._preset_path",
-            return_value=preset_file,
+            "dartwork_mpl.ui._config._preset_path", return_value=preset_file
         ):
             assert load_presets() == []
 
-    def test_load_presets_non_list_json(
-        self, tmp_path: Path,
-    ) -> None:
+    def test_load_presets_non_list_json(self, tmp_path: Path) -> None:
         """Preset file with a non-list JSON returns empty list."""
         preset_file = tmp_path / PRESET_FILENAME
         preset_file.write_text('{"not": "a list"}', encoding="utf-8")
         with patch(
-            "dartwork_mpl.ui._config._preset_path",
-            return_value=preset_file,
+            "dartwork_mpl.ui._config._preset_path", return_value=preset_file
         ):
             assert load_presets() == []
 
     def test_load_history_with_blank_and_corrupt_lines(
-        self, tmp_path: Path,
+        self, tmp_path: Path
     ) -> None:
         """Blank lines and corrupt JSON lines are silently skipped."""
         history_file = tmp_path / HISTORY_FILENAME
@@ -363,8 +329,7 @@ class TestConfigPersistence:
             encoding="utf-8",
         )
         with patch(
-            "dartwork_mpl.ui._config._history_path",
-            return_value=history_file,
+            "dartwork_mpl.ui._config._history_path", return_value=history_file
         ):
             records = load_history()
             assert len(records) == 2
@@ -382,35 +347,35 @@ class TestConfigInternals:
         """set_base_dir sets the directory used by path helpers."""
         from dartwork_mpl.ui._config import _get_base_dir, set_base_dir
 
-
         try:
             set_base_dir(tmp_path)
             assert _get_base_dir() == tmp_path
         finally:
             # Restore
             import dartwork_mpl.ui._config as cfg
+
             cfg._base_dir = None
 
     def test_serializable_scalar_types(self) -> None:
         """Scalar types pass through unchanged."""
         from dartwork_mpl.ui._config import _serializable
 
-        result = _serializable({
-            "i": 42, "f": 3.14, "s": "hello",
-            "b": True, "n": None,
-        })
+        result = _serializable(
+            {"i": 42, "f": 3.14, "s": "hello", "b": True, "n": None}
+        )
         assert result == {
-            "i": 42, "f": 3.14, "s": "hello",
-            "b": True, "n": None,
+            "i": 42,
+            "f": 3.14,
+            "s": "hello",
+            "b": True,
+            "n": None,
         }
 
     def test_serializable_list_and_tuple(self) -> None:
         """Lists pass through, tuples are converted to lists."""
         from dartwork_mpl.ui._config import _serializable
 
-        result = _serializable({
-            "lst": [1, 2], "tup": (3, 4),
-        })
+        result = _serializable({"lst": [1, 2], "tup": (3, 4)})
         assert result["lst"] == [1, 2]
         assert result["tup"] == [3, 4]
 

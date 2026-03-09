@@ -35,7 +35,9 @@ categories = [
 
 success_values = np.array([64, 58, 57, 54, 51, 49, 45, 43, 42], dtype=float)
 other_values = np.array([20, 23, 24, 25, 26, 28, 26, 25, 24], dtype=float)
-multiples = [f"{s / o:.1f}×" for s, o in zip(success_values, other_values, strict=False)]
+multiples = [
+    f"{s / o:.1f}×" for s, o in zip(success_values, other_values, strict=False)
+]
 
 
 # ---------------------------------------------------------------------------
@@ -69,7 +71,9 @@ y_pos = np.arange(len(categories))
 # Plot
 # ---------------------------------------------------------------------------
 fig = plt.figure(figsize=(dm.cm2in(lo.fig_w), dm.cm2in(lo.fig_h)), dpi=300)
-gs = fig.add_gridspec(1, 1, left=lo.left, right=lo.right, top=lo.top, bottom=lo.bottom)
+gs = fig.add_gridspec(
+    1, 1, left=lo.left, right=lo.right, top=lo.top, bottom=lo.bottom
+)
 ax = fig.add_subplot(gs[0, 0])
 
 # Background tracks
@@ -78,8 +82,18 @@ for i, (ov, sv) in enumerate(zip(other_values, success_values, strict=False)):
     ax.hlines(i, ov, sv, lw=track_lw, color=pal.track_fg, zorder=1)
 
 # Markers
-ax.plot(other_values, y_pos, "o", ms=track_lw, ls="none", color=pal.other, zorder=2)
-ax.plot(success_values, y_pos, "o", ms=track_lw, ls="none", color=pal.success, zorder=3)
+ax.plot(
+    other_values, y_pos, "o", ms=track_lw, ls="none", color=pal.other, zorder=2
+)
+ax.plot(
+    success_values,
+    y_pos,
+    "o",
+    ms=track_lw,
+    ls="none",
+    color=pal.success,
+    zorder=3,
+)
 
 # Multiples annotation
 for i, (sv, m) in enumerate(zip(success_values, multiples, strict=False)):
@@ -99,17 +113,44 @@ for sp in ax.spines.values():
     sp.set_edgecolor("oc.gray6")
 
 # Title and legend
-fig.suptitle("AI Adoption Gap: AI-First vs. Traditional Companies",
-             fontsize=dm.fs(1), weight="bold", x=0.5, ha="center", y=1.05)
+fig.suptitle(
+    "AI Adoption Gap: AI-First vs. Traditional Companies",
+    fontsize=dm.fs(1),
+    weight="bold",
+    x=0.5,
+    ha="center",
+    y=1.05,
+)
 
 legend_elements = [
-    Line2D([0], [0], marker="o", color="w", label="Other organizations",
-           markerfacecolor=pal.other, ms=8),
-    Line2D([0], [0], marker="o", color="w", label="Successfully transformed",
-           markerfacecolor=pal.success, ms=8),
+    Line2D(
+        [0],
+        [0],
+        marker="o",
+        color="w",
+        label="Other organizations",
+        markerfacecolor=pal.other,
+        ms=8,
+    ),
+    Line2D(
+        [0],
+        [0],
+        marker="o",
+        color="w",
+        label="Successfully transformed",
+        markerfacecolor=pal.success,
+        ms=8,
+    ),
 ]
-ax.legend(handles=legend_elements, loc="lower right", bbox_to_anchor=(1, 1.01),
-          ncol=2, frameon=False, fontsize=dm.fs(-0.5), columnspacing=1.5)
+ax.legend(
+    handles=legend_elements,
+    loc="lower right",
+    bbox_to_anchor=(1, 1.01),
+    ncol=2,
+    frameon=False,
+    fontsize=dm.fs(-0.5),
+    columnspacing=1.5,
+)
 
 dm.simple_layout(fig, margins=(0.1, 0.05, 0.1, 0.15))
 plt.show()

@@ -23,9 +23,7 @@ class TestEnsureLoaded:
     def test_registers_dc_colormaps(self) -> None:
         """After loading, dc.* colormaps should exist."""
         ensure_loaded()
-        cmap_names = [
-            name for name in mpl.colormaps if name.startswith("dc.")
-        ]
+        cmap_names = [name for name in mpl.colormaps if name.startswith("dc.")]
         assert len(cmap_names) > 0
 
 

@@ -41,9 +41,7 @@ class TestMcpResources:
         mock_mcp = MagicMock()
         register_resources(mock_mcp)
 
-    def test_register_resources_calls_resource_decorator(
-        self,
-    ) -> None:
+    def test_register_resources_calls_resource_decorator(self) -> None:
         """register_resources() should call mcp.resource()."""
         from dartwork_mpl.mcp.resources import register_resources
 
@@ -63,6 +61,7 @@ class TestMcpResources:
             def decorator(fn):
                 captured_fns[uri] = fn
                 return fn
+
             return decorator
 
         mock_mcp.resource = fake_resource
@@ -83,6 +82,7 @@ class TestMcpResources:
             def decorator(fn):
                 captured_fns[uri] = fn
                 return fn
+
             return decorator
 
         mock_mcp.resource = fake_resource
@@ -122,6 +122,7 @@ class TestMcpTools:
             def decorator(fn):
                 captured_fns[fn.__name__] = fn
                 return fn
+
             return decorator
 
         mock_mcp.tool = fake_tool
@@ -148,6 +149,7 @@ class TestMcpTools:
             def decorator(fn):
                 captured_fns[fn.__name__] = fn
                 return fn
+
             return decorator
 
         mock_mcp.tool = fake_tool

@@ -117,12 +117,7 @@ class TestParamDescriptor:
     """Tests for ParamDescriptor dataclass."""
 
     def test_to_dict_contains_all_fields(self) -> None:
-        desc = ParamDescriptor(
-            name="n",
-            label="N",
-            type_name="int",
-            default=10,
-        )
+        desc = ParamDescriptor(name="n", label="N", type_name="int", default=10)
         d = desc.to_dict()
         assert d["name"] == "n"
         assert d["label"] == "N"
@@ -132,7 +127,5 @@ class TestParamDescriptor:
         assert d["max_value"] is None
 
     def test_extra_defaults_to_empty_dict(self) -> None:
-        desc = ParamDescriptor(
-            name="x", label="X", type_name="float"
-        )
+        desc = ParamDescriptor(name="x", label="X", type_name="float")
         assert desc.extra == {}

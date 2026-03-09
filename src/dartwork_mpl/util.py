@@ -48,11 +48,7 @@ from matplotlib.figure import Figure
 from matplotlib.transforms import ScaledTranslation
 
 
-def set_decimal(
-    ax: Axes,
-    xn: int | None = None,
-    yn: int | None = None,
-) -> None:
+def set_decimal(ax: Axes, xn: int | None = None, yn: int | None = None) -> None:
     """Set decimal places for tick labels.
 
     Parameters

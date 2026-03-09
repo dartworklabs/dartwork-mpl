@@ -120,7 +120,15 @@ ax3.set_yticks([0, 50, 100, 150])
 
 # Panel D: Detailed breakdown
 ax4 = fig.add_subplot(gs[1, 1])
-detailed_cats = ["Phase 1", "Gain", "Loss", "Phase 2", "Gain", "Loss", "Phase 3"]
+detailed_cats = [
+    "Phase 1",
+    "Gain",
+    "Loss",
+    "Phase 2",
+    "Gain",
+    "Loss",
+    "Phase 3",
+]
 detailed_vals = [100, 30, -20, 0, 25, -15, 0]
 detailed_cum = [100, 130, 110, 110, 135, 120, 120]
 x_detailed = np.arange(len(detailed_cats))

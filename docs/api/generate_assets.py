@@ -49,10 +49,7 @@ def _save_layout_example(images_dir: Path) -> Path:
 
     for ax in [ax1, ax2, ax3]:
         ax.plot(
-            np.linspace(0, 1, 40),
-            np.random.rand(40),
-            color="oc.blue6",
-            lw=0.8,
+            np.linspace(0, 1, 40), np.random.rand(40), color="oc.blue6", lw=0.8
         )
 
     # Hide the 4th subplot (bottom-right)
@@ -81,8 +78,7 @@ def _save_color_example(images_dir: Path) -> Path:
 
     fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(12)), dpi=300)
     gs = fig.add_gridspec(
-        2, 1, hspace=0.4,
-        left=0.08, right=0.98, top=0.92, bottom=0.08,
+        2, 1, hspace=0.4, left=0.08, right=0.98, top=0.92, bottom=0.08
     )
 
     # Top: named + mix + pseudo_alpha
@@ -106,10 +102,7 @@ def _save_color_example(images_dir: Path) -> Path:
     ax2.set_yticks([])
     ax2.set_xticks(range(8))
     ax2.set_xticklabels([c.to_hex() for c in palette], fontsize=dm.fs(-2))
-    ax2.set_title(
-        "cspace() — OKLCH interpolation",
-        fontsize=dm.fs(1),
-    )
+    ax2.set_title("cspace() — OKLCH interpolation", fontsize=dm.fs(1))
     for spine in ax2.spines.values():
         spine.set_visible(False)
 
@@ -127,7 +120,10 @@ def _save_color_example(images_dir: Path) -> Path:
 def _save_icon_example(images_dir: Path) -> Path:
     """API icon: MDI icon font rendering on matplotlib axes."""
     import warnings
-    warnings.filterwarnings("ignore", message=".*missing from font.*Material Design Icons.*")
+
+    warnings.filterwarnings(
+        "ignore", message=".*missing from font.*Material Design Icons.*"
+    )
 
     dm.style.use("presentation")
 
@@ -135,29 +131,39 @@ def _save_icon_example(images_dir: Path) -> Path:
 
     # A few recognizable MDI codepoints
     icons = [
-        ("\U000F050F", "Thermometer"),
-        ("\U000F0590", "Weather-sunny"),
-        ("\U000F058E", "Weather-cloudy"),
-        ("\U000F0599", "Weather-windy"),
-        ("\U000F0597", "Weather-snowy"),
+        ("\U000f050f", "Thermometer"),
+        ("\U000f0590", "Weather-sunny"),
+        ("\U000f058e", "Weather-cloudy"),
+        ("\U000f0599", "Weather-windy"),
+        ("\U000f0597", "Weather-snowy"),
     ]
 
-    fig, ax = plt.subplots(
-        figsize=(dm.cm2in(15), dm.cm2in(6)), dpi=300
-    )
-    colors = ["tw.teal500", "tw.amber500", "tw.slate400", "tw.sky500", "tw.blue300"]
+    fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(6)), dpi=300)
+    colors = [
+        "tw.teal500",
+        "tw.amber500",
+        "tw.slate400",
+        "tw.sky500",
+        "tw.blue300",
+    ]
 
     for i, (glyph, label) in enumerate(icons):
         ax.text(
-            i, 0.5, glyph,
+            i,
+            0.5,
+            glyph,
             fontproperties=mdi,
             fontsize=28,
-            ha="center", va="center",
+            ha="center",
+            va="center",
             color=colors[i],
         )
         ax.text(
-            i, -0.1, label,
-            ha="center", va="top",
+            i,
+            -0.1,
+            label,
+            ha="center",
+            va="top",
             fontsize=dm.fs(-1),
             color="#666",
         )
@@ -188,23 +194,34 @@ def _save_font_example(images_dir: Path) -> Path:
     """API font: fs(), fw(), lw() scaling demo."""
     dm.style.use("presentation")
 
-    fig, ax = plt.subplots(
-        figsize=(dm.cm2in(15), dm.cm2in(9)), dpi=300
-    )
+    fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(9)), dpi=300)
 
     # Show hierarchy levels
     levels = [
         (0.9, f"fs(6) = {dm.fs(6):.1f}pt — Title", dm.fs(6), dm.fw(4)),
         (0.72, f"fs(3) = {dm.fs(3):.1f}pt — Subtitle", dm.fs(3), dm.fw(2)),
         (0.54, f"fs(0) = {dm.fs(0):.1f}pt — Body / Labels", dm.fs(0), dm.fw(0)),
-        (0.36, f"fs(-1) = {dm.fs(-1):.1f}pt — Annotations", dm.fs(-1), dm.fw(0)),
-        (0.18, f"fs(-2) = {dm.fs(-2):.1f}pt — Fine print", dm.fs(-2), dm.fw(-1)),
+        (
+            0.36,
+            f"fs(-1) = {dm.fs(-1):.1f}pt — Annotations",
+            dm.fs(-1),
+            dm.fw(0),
+        ),
+        (
+            0.18,
+            f"fs(-2) = {dm.fs(-2):.1f}pt — Fine print",
+            dm.fs(-2),
+            dm.fw(-1),
+        ),
     ]
 
     for y, text, fsize, fweight in levels:
         ax.text(
-            0.05, y, text,
-            fontsize=fsize, fontweight=fweight,
+            0.05,
+            y,
+            text,
+            fontsize=fsize,
+            fontweight=fweight,
             transform=ax.transAxes,
             va="center",
             color="#333",
@@ -217,9 +234,7 @@ def _save_font_example(images_dir: Path) -> Path:
     for spine in ax.spines.values():
         spine.set_visible(False)
     ax.set_title(
-        "Typography Scaling: fs(), fw()",
-        fontsize=dm.fs(2),
-        fontweight="bold",
+        "Typography Scaling: fs(), fw()", fontsize=dm.fs(2), fontweight="bold"
     )
     dm.simple_layout(fig)
 
@@ -275,9 +290,7 @@ def _save_viz_example(images_dir: Path) -> Path:
 # ── Entrypoint ─────────────────────────────────────────────────────────
 
 
-def build_api_assets(
-    base_dir: Path | None = None,
-) -> list[Path]:
+def build_api_assets(base_dir: Path | None = None) -> list[Path]:
     """Generate all API reference figures.
 
     Parameters

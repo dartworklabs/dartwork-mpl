@@ -58,7 +58,9 @@ class SignalParams(ParamModel):
 
     # ── int number input (no bounds) ──────────────────────
     random_seed: int = Field(
-        default=42, description="Random seed", json_schema_extra={"group": "Signal"}
+        default=42,
+        description="Random seed",
+        json_schema_extra={"group": "Signal"},
     )
 
     # ── float slider (ge / le / step) ─────────────────────
@@ -141,10 +143,14 @@ class SignalParams(ParamModel):
 
     # ── bool checkbox ─────────────────────────────────────
     show_grid: bool = Field(
-        default=True, description="Show grid", json_schema_extra={"group": "Toggles"}
+        default=True,
+        description="Show grid",
+        json_schema_extra={"group": "Toggles"},
     )
     show_noise: bool = Field(
-        default=True, description="Add noise", json_schema_extra={"group": "Toggles"}
+        default=True,
+        description="Add noise",
+        json_schema_extra={"group": "Toggles"},
     )
     fill_under: bool = Field(
         default=False,
@@ -163,9 +169,7 @@ class SignalParams(ParamModel):
     )
 
     # ── Literal select dropdown ───────────────────────────
-    waveform: Literal[
-        "sine", "cosine", "square", "sawtooth"
-    ] = Field(
+    waveform: Literal["sine", "cosine", "square", "sawtooth"] = Field(
         default="sine",
         description="Waveform type",
         json_schema_extra={"group": "Waveform"},
@@ -175,9 +179,7 @@ class SignalParams(ParamModel):
         description="Line style",
         json_schema_extra={"group": "Display"},
     )
-    window_fn: Literal[
-        "none", "hanning", "hamming", "blackman"
-    ] = Field(
+    window_fn: Literal["none", "hanning", "hamming", "blackman"] = Field(
         default="none",
         description="Window function",
         json_schema_extra={"group": "Waveform"},
@@ -198,7 +200,7 @@ class SignalParams(ParamModel):
     # ── list[int] comma-separated ─────────────────────────
     highlight_samples: list[int] = Field(
         default=[],
-        description=("Highlight sample indices " "(e.g. 100, 200, 300)"),
+        description=("Highlight sample indices (e.g. 100, 200, 300)"),
         json_schema_extra={"group": "Data"},
     )
 
@@ -222,10 +224,7 @@ class SignalParams(ParamModel):
 # ================================================================
 
 
-def _build_signal(
-    p: SignalParams,
-    t: np.ndarray,
-) -> np.ndarray:
+def _build_signal(p: SignalParams, t: np.ndarray) -> np.ndarray:
     """Build composite waveform signal.
 
     Parameters
@@ -270,15 +269,8 @@ def _build_signal(
     ]
     y: np.ndarray = np.zeros_like(t)
     for k in range(min(p.harmonics, len(weights))):
-        w: float = (
-            weights[k]
-            if k < len(weights)
-            else 1.0 / (k + 1)
-        )
-        y += w * _wave(
-            p.base_frequency * (k + 1),
-            p.phase_offset * (k + 1),
-        )
+        w: float = weights[k] if k < len(weights) else 1.0 / (k + 1)
+        y += w * _wave(p.base_frequency * (k + 1), p.phase_offset * (k + 1))
     y *= p.amplitude
 
     if p.window_fn != "none":
@@ -311,15 +303,11 @@ def signal_figure(p: SignalParams) -> Figure:
         and histogram subplots.
     """
     dm.style.use("scientific")
-    t: np.ndarray = np.linspace(
-        0, 2 * np.pi, p.n_points
-    )
+    t: np.ndarray = np.linspace(0, 2 * np.pi, p.n_points)
     y: np.ndarray = _build_signal(p, t)
 
     # ── Determine layout ──────────────────────────────────
-    n_extra: int = (
-        int(p.show_fft) + int(p.show_histogram)
-    )
+    n_extra: int = int(p.show_fft) + int(p.show_histogram)
     if n_extra == 0:
         fig_w: float = 17.0
         ncols: int = 1
@@ -334,10 +322,7 @@ def signal_figure(p: SignalParams) -> Figure:
         ratios = [3, 1, 1]
 
     # ── Figure creation (guide pattern) ───────────────────
-    fig: Figure = plt.figure(
-        figsize=(dm.cm2in(fig_w), dm.cm2in(9)),
-        dpi=200,
-    )
+    fig: Figure = plt.figure(figsize=(dm.cm2in(fig_w), dm.cm2in(9)), dpi=200)
 
     # GridSpec: title row + plot row
     gs = fig.add_gridspec(
@@ -387,14 +372,10 @@ def signal_figure(p: SignalParams) -> Figure:
     )
 
     if p.fill_under:
-        ax_signal.fill_between(
-            t, y, alpha=0.1, color=p.signal_color
-        )
+        ax_signal.fill_between(t, y, alpha=0.1, color=p.signal_color)
 
     # Highlight samples
-    for idx_i, sample_idx in enumerate(
-        p.highlight_samples
-    ):
+    for idx_i, sample_idx in enumerate(p.highlight_samples):
         if 0 <= sample_idx < len(t):
             ax_signal.axvline(
                 t[sample_idx],
@@ -410,10 +391,7 @@ def signal_figure(p: SignalParams) -> Figure:
                 color=p.envelope_color,
                 markersize=5,
             )
-            if (
-                p.annotations
-                and idx_i < len(p.annotations)
-            ):
+            if p.annotations and idx_i < len(p.annotations):
                 ax_signal.annotate(
                     p.annotations[idx_i],
                     (t[sample_idx], y[sample_idx]),
@@ -424,39 +402,25 @@ def signal_figure(p: SignalParams) -> Figure:
 
     ax_signal.set_xlim(0, 2 * np.pi)
     if p.y_limits and len(p.y_limits) >= 2:
-        ax_signal.set_ylim(
-            p.y_limits[0], p.y_limits[1]
-        )
+        ax_signal.set_ylim(p.y_limits[0], p.y_limits[1])
 
-    ax_signal.set_xlabel(
-        p.x_label, fontsize=dm.fs(0)
-    )
-    ax_signal.set_ylabel(
-        p.y_label, fontsize=dm.fs(0)
-    )
+    ax_signal.set_xlabel(p.x_label, fontsize=dm.fs(0))
+    ax_signal.set_ylabel(p.y_label, fontsize=dm.fs(0))
 
     if p.custom_yticks:
         ax_signal.set_yticks(p.custom_yticks)
 
-    ax_signal.legend(
-        loc="upper right",
-        fontsize=dm.fs(-1),
-        framealpha=0.5,
-    )
+    ax_signal.legend(loc="upper right", fontsize=dm.fs(-1), framealpha=0.5)
 
     if p.show_grid:
-        ax_signal.grid(
-            True, alpha=0.2, color=p.grid_color
-        )
+        ax_signal.grid(True, alpha=0.2, color=p.grid_color)
 
     # ── Subplot 2: FFT ────────────────────────────────────
     col_idx: int = 1
     if p.show_fft and ncols >= 2:
         ax_fft = fig.add_subplot(gs[1, col_idx])
         fft_vals: np.ndarray = np.abs(np.fft.rfft(y))
-        freqs: np.ndarray = np.fft.rfftfreq(
-            len(t), d=(t[1] - t[0])
-        )
+        freqs: np.ndarray = np.fft.rfftfreq(len(t), d=(t[1] - t[0]))
         max_freq_idx: int = min(len(freqs), 50)
         ax_fft.bar(
             freqs[1:max_freq_idx],
@@ -465,19 +429,11 @@ def signal_figure(p: SignalParams) -> Figure:
             color=p.signal_color,
             alpha=0.8,
         )
-        ax_fft.set_xlabel(
-            "Frequency", fontsize=dm.fs(-1)
-        )
-        ax_fft.set_ylabel(
-            "Magnitude", fontsize=dm.fs(-1)
-        )
-        ax_fft.set_title(
-            "Frequency Spectrum", fontsize=dm.fs(0)
-        )
+        ax_fft.set_xlabel("Frequency", fontsize=dm.fs(-1))
+        ax_fft.set_ylabel("Magnitude", fontsize=dm.fs(-1))
+        ax_fft.set_title("Frequency Spectrum", fontsize=dm.fs(0))
         if p.show_grid:
-            ax_fft.grid(
-                True, alpha=0.2, color=p.grid_color
-            )
+            ax_fft.grid(True, alpha=0.2, color=p.grid_color)
         col_idx += 1
 
     # ── Subplot 3: Histogram ──────────────────────────────
@@ -491,19 +447,11 @@ def signal_figure(p: SignalParams) -> Figure:
             linewidth=0.5,
             orientation="horizontal",
         )
-        ax_hist.set_xlabel(
-            "Count", fontsize=dm.fs(-1)
-        )
-        ax_hist.set_ylabel(
-            "Value", fontsize=dm.fs(-1)
-        )
-        ax_hist.set_title(
-            "Distribution", fontsize=dm.fs(0)
-        )
+        ax_hist.set_xlabel("Count", fontsize=dm.fs(-1))
+        ax_hist.set_ylabel("Value", fontsize=dm.fs(-1))
+        ax_hist.set_title("Distribution", fontsize=dm.fs(0))
         if p.show_grid:
-            ax_hist.grid(
-                True, alpha=0.2, color=p.grid_color
-            )
+            ax_hist.grid(True, alpha=0.2, color=p.grid_color)
 
     # ── Layout optimization ───────────────────────────────
     dm.simple_layout(fig, gs=gs)

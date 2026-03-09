@@ -98,8 +98,5 @@ class TestArrowAxis:
         ax.plot([1, 2, 3])
         fig.canvas.draw()
 
-        arrow_axis(
-            ax, "x", "Price",
-            low="Cheap", high="Expensive",
-        )
+        arrow_axis(ax, "x", "Price", low="Cheap", high="Expensive")
         plt.close(fig)

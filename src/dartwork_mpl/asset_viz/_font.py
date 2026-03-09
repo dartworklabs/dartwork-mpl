@@ -75,9 +75,7 @@ def _weight_sort_key(weight_name: str) -> int:
 
 
 def plot_fonts(
-    font_dir: str | None = None,
-    ncols: int = 2,
-    font_size: int = 11,
+    font_dir: str | None = None, ncols: int = 2, font_size: int = 11
 ) -> Figure:
     """Plot available font families with weight spectrum and samples.
 
@@ -103,9 +101,7 @@ def plot_fonts(
     """
     if font_dir is None:
         font_dir = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "asset",
-            "font",
+            os.path.dirname(os.path.dirname(__file__)), "asset", "font"
         )
 
     # Collect font files
@@ -123,14 +119,12 @@ def plot_fonts(
         font_families[family].append(font)
 
     # For each family, group by weight and separate italic
-    family_data: list[
-        dict[str, str | int | list[dict]]
-    ] = []
+    family_data: list[dict[str, str | int | list[dict]]] = []
 
     for family_name, files in sorted(font_families.items()):
-        weight_groups: dict[
-            str, dict[str, str | None]
-        ] = defaultdict(lambda: {"roman": None, "italic": None})
+        weight_groups: dict[str, dict[str, str | None]] = defaultdict(
+            lambda: {"roman": None, "italic": None}
+        )
 
         for f in files:
             weight_name, is_italic = _parse_font_weight(f)
@@ -139,8 +133,7 @@ def plot_fonts(
 
         # Sort by weight
         sorted_weights = sorted(
-            weight_groups.items(),
-            key=lambda x: _weight_sort_key(x[0]),
+            weight_groups.items(), key=lambda x: _weight_sort_key(x[0])
         )
 
         weights = []
@@ -185,7 +178,9 @@ def plot_fonts(
             col = ncols - 1
         family_col_map.append(col)
         n_lines = len(fam["weights"])
-        col_heights[col] += header_line_height + n_lines * weight_line_height + family_gap
+        col_heights[col] += (
+            header_line_height + n_lines * weight_line_height + family_gap
+        )
 
     total_height = max(col_heights) if col_heights else 10
     col_width = 7.5
@@ -215,17 +210,10 @@ def plot_fonts(
         # --- Family header ---
         cursor -= 0.3
         header_text = f"{family_name}"
-        meta_text = (
-            f"  {n_weights} weights · {n_files} files"
-        )
+        meta_text = f"  {n_weights} weights · {n_files} files"
 
         ax.text(
-            x_pos,
-            cursor,
-            header_text,
-            size=13,
-            weight="bold",
-            color="#1a1a2e",
+            x_pos, cursor, header_text, size=13, weight="bold", color="#1a1a2e"
         )
         ax.text(
             x_pos + len(family_name) * 0.08 + 0.05,
@@ -257,9 +245,7 @@ def plot_fonts(
             # Weight label
             weight_num = _WEIGHT_ORDER.get(weight_name, "")
             label = (
-                f"{weight_name} ({weight_num})"
-                if weight_num
-                else weight_name
+                f"{weight_name} ({weight_num})" if weight_num else weight_name
             )
 
             # Draw label

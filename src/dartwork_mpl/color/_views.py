@@ -72,7 +72,7 @@ class _BaseColorView(ABC):
         except IndexError:
             cls_name = type(self).__name__
             raise IndexError(
-                f"Index {index} out of range for {cls_name}",
+                f"Index {index} out of range for {cls_name}"
             ) from None
         return getattr(self, name)
 
@@ -337,7 +337,7 @@ class RgbView(_BaseColorView):
         b_lin: float | np.ndarray = _srgb_to_linear(b_c)
 
         L, a, b_val = _linear_srgb_to_oklab(
-            float(r_lin), float(g_lin), float(b_lin),
+            float(r_lin), float(g_lin), float(b_lin)
         )
         self._color._L = float(L)
         self._color._a = float(a)

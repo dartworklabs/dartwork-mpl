@@ -28,16 +28,11 @@ class Params(ParamModel):
 
     # int slider (bounded with ge / le)
     n_points: int = Field(
-        default=500,
-        ge=50,
-        le=3000,
-        description="Number of sample points",
+        default=500, ge=50, le=3000, description="Number of sample points"
     )
 
     # int number input (no bounds)
-    random_seed: int = Field(
-        default=42, description="Random seed for noise"
-    )
+    random_seed: int = Field(default=42, description="Random seed for noise")
 
     # float slider (bounded with ge / le / step)
     frequency: float = Field(
@@ -70,14 +65,10 @@ class Params(ParamModel):
     )
 
     # float number input (no bounds)
-    phase: float = Field(
-        default=0.0, description="Phase offset (rad)"
-    )
+    phase: float = Field(default=0.0, description="Phase offset (rad)")
 
     # str — plain text input
-    title: str = Field(
-        default="My Waveform", description="Chart title"
-    )
+    title: str = Field(default="My Waveform", description="Chart title")
 
     # str — color picker (explicit widget hint)
     line_color: str = Field(
@@ -87,45 +78,33 @@ class Params(ParamModel):
     )
 
     # str — color picker (auto-detected from field name)
-    bg_color: str = Field(
-        default="#ffffff", description="Background color"
-    )
+    bg_color: str = Field(default="#ffffff", description="Background color")
 
     # bool — checkbox
-    show_grid: bool = Field(
-        default=True, description="Show grid lines"
-    )
-    fill_under: bool = Field(
-        default=False,
-        description="Fill area under curve",
-    )
+    show_grid: bool = Field(default=True, description="Show grid lines")
+    fill_under: bool = Field(default=False, description="Fill area under curve")
 
     # Literal — dropdown select
-    waveform: Literal[
-        "sine", "cosine", "square", "sawtooth"
-    ] = Field(default="sine", description="Waveform shape")
+    waveform: Literal["sine", "cosine", "square", "sawtooth"] = Field(
+        default="sine", description="Waveform shape"
+    )
     line_style: Literal["-", "--", "-.", ":"] = Field(
         default="-", description="Line style"
     )
 
     # list[float] — comma-separated text input
     custom_yticks: list[float] = Field(
-        default=[],
-        description="Custom Y-axis ticks (e.g. -1, 0, 1)",
+        default=[], description="Custom Y-axis ticks (e.g. -1, 0, 1)"
     )
 
     # list[int] — comma-separated text input
     highlight_indices: list[int] = Field(
-        default=[],
-        description=(
-            "Sample indices to highlight (e.g. 100, 250)"
-        ),
+        default=[], description=("Sample indices to highlight (e.g. 100, 250)")
     )
 
     # list[str] — comma-separated text input
     annotations: list[str] = Field(
-        default=[],
-        description="Labels for highlighted points",
+        default=[], description="Labels for highlighted points"
     )
 
     # tuple[float, ...] — comma-separated text input
@@ -163,9 +142,7 @@ def my_figure(p: Params) -> Figure:
     elif p.waveform == "square":
         y = p.amplitude * np.sign(np.sin(raw))
     elif p.waveform == "sawtooth":
-        y = p.amplitude * (
-            2 * (raw / (2 * np.pi) % 1) - 1
-        )
+        y = p.amplitude * (2 * (raw / (2 * np.pi) % 1) - 1)
     else:
         y = p.amplitude * np.sin(raw)
 
@@ -173,10 +150,7 @@ def my_figure(p: Params) -> Figure:
     y += rng.normal(0, p.noise_level, size=len(t))
 
     # ── Figure creation (guide pattern) ───────────────────
-    fig: Figure = plt.figure(
-        figsize=(dm.cm2in(17), dm.cm2in(9)),
-        dpi=200,
-    )
+    fig: Figure = plt.figure(figsize=(dm.cm2in(17), dm.cm2in(9)), dpi=200)
 
     # GridSpec: title row + plot row
     gs = fig.add_gridspec(
@@ -208,28 +182,16 @@ def my_figure(p: Params) -> Figure:
     ax = fig.add_subplot(gs[1, 0])
 
     ax.plot(
-        t,
-        y,
-        color=p.line_color,
-        linewidth=p.line_width,
-        linestyle=p.line_style,
+        t, y, color=p.line_color, linewidth=p.line_width, linestyle=p.line_style
     )
 
     if p.fill_under:
-        ax.fill_between(
-            t, y, alpha=0.12, color=p.line_color
-        )
+        ax.fill_between(t, y, alpha=0.12, color=p.line_color)
 
     # Highlights
     for i, idx in enumerate(p.highlight_indices):
         if 0 <= idx < len(t):
-            ax.plot(
-                t[idx],
-                y[idx],
-                "o",
-                color="oc.red5",
-                markersize=6,
-            )
+            ax.plot(t[idx], y[idx], "o", color="oc.red5", markersize=6)
             if p.annotations and i < len(p.annotations):
                 ax.annotate(
                     p.annotations[i],
