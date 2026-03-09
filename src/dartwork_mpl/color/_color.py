@@ -37,7 +37,7 @@ class Color:
 
     고속 변환을 위해 내부적으로는 항상 OKLab 좌표계로 색상을 저장합니다.
     인스턴스를 생성할 때는 ``from_oklab()``, ``from_oklch()``,
-    ``from_rgb()``, ``from_hex()``와 같은 클래스 메서드를 사용하세요.
+    ``from_rgb()``, ``from_hex()``\ 와 같은 클래스 메서드를 사용하세요.
     """
 
     def __init__(self, L: float, a: float, b: float) -> None:
@@ -402,7 +402,7 @@ def cspace(
     """
     두 색상 사이를 보간(Interpolate)하여 연속된 색상 리스트를 생성합니다.
 
-    numpy의 ``linspace``와 유사하지만, 색상에 특화된 기능을 수행합니다.
+    numpy의 ``linspace``\ 와 유사하지만, 색상에 특화된 기능을 수행합니다.
 
     Parameters
     ----------

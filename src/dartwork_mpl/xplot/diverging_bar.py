@@ -74,7 +74,7 @@ def plot_diverging_bar(
     hbar_height : float, optional
         각 가로 바의 높이. 기본값은 0.5.
     hbar_spacing_factor : float, optional
-        ``hbar_height``의 배수로 나타낸 바 사이의 간격. 기본값은 1.6.
+        ``hbar_height``\ 의 배수로 나타낸 바 사이의 간격. 기본값은 1.6.
     left_margin : float, optional
         피규어 좌표계(0-1) 기준 Axes의 왼쪽 여백. 기본값은 0.35.
     right_margin : float, optional
@@ -143,9 +143,9 @@ def plot_diverging_bar(
     -----
     - 이 함수는 제목, 범례, 차트가 위에서 아래로 자동 간격을 두고
       배치되는 계단식(cascading) 레이아웃을 사용합니다.
-    - 라벨은 ``blended_transform_factory``를 사용하여 피규어의 x 좌표와
+    - 라벨은 ``blended_transform_factory``\ 를 사용하여 피규어의 x 좌표와
       데이터의 y 좌표를 혼합하여 배치됩니다.
-    - "Total" 행(활성화된 경우)은 자동으로 ``dm.fw(1)``이 적용되어 굵게 표시됩니다.
+    - "Total" 행(활성화된 경우)은 자동으로 ``dm.fw(1)``\ 이 적용되어 굵게 표시됩니다.
     - 값 라벨은 바 안에 위치합니다 (음수는 왼쪽, 양수는 오른쪽).
 
     See Also

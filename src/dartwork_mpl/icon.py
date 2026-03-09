@@ -36,7 +36,7 @@ def icon_font_path(name: str = "mdi") -> Path:
     name : str, optional
         접근할 아이콘 폰트의 식별자 이름.
         사용 가능한 값: ``'mdi'``, ``'fa-solid'``, ``'fa-regular'``,
-        ``'fa-brands'``. 기본값은 ``'mdi'``입니다.
+        ``'fa-brands'``. 기본값은 ``'mdi'``\ 입니다.
 
     Returns
     -------
@@ -46,7 +46,7 @@ def icon_font_path(name: str = "mdi") -> Path:
     Raises
     ------
     ValueError
-        요청한 이름(*name*)이 등록된 폰트 식별자가 아닌 경우.
+        요청한 이름(*name*)\ 이 등록된 폰트 식별자가 아닌 경우.
     FileNotFoundError
         폰트 파일이 디스크 경로에 실제로 존재하지 않는 경우.
 
@@ -72,7 +72,7 @@ def icon_font_path(name: str = "mdi") -> Path:
 
 
 def icon_font(name: str = "mdi") -> fm.FontProperties:
-    """``ax.text()`` 등 텍스트 출력 파라미터로 바로 전달 가능한
+    """``ax.text()``\ 등 텍스트 출력 파라미터로 바로 전달 가능한
     :class:`~matplotlib.font_manager.FontProperties` 객체를 생성합니다.
 
     Parameters
@@ -80,7 +80,7 @@ def icon_font(name: str = "mdi") -> fm.FontProperties:
     name : str, optional
         불러올 아이콘 폰트 식별자 이름.
         사용 가능한 값: ``'mdi'``, ``'fa-solid'``, ``'fa-regular'``,
-        ``'fa-brands'``. 기본값은 ``'mdi'``입니다.
+        ``'fa-brands'``. 기본값은 ``'mdi'``\ 입니다.
 
     Returns
     -------

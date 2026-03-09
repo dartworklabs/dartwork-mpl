@@ -131,7 +131,7 @@ def arrow_axis(
     color : str, optional
         텍스트 및 화살표 양측에 할당시킬 색상. 기본값은 "black".
     arrow_kw : dict | None, optional
-        내부적으로 호출되는 화살표 생성함수 ``ax.annotate``의 화살표형상 속성을 결정하는 arrowprops를 재정의합니다.
+        내부적으로 호출되는 화살표 생성함수 ``ax.annotate``\ 의 화살표형상 속성을 결정하는 arrowprops를 재정의합니다.
     """
     if fontsize is None:
         fontsize = fs(-1)

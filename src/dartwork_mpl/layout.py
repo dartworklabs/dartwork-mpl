@@ -130,14 +130,14 @@ def simple_layout(
 
     이 함수는 L-BFGS-B 최적화 알고리즘을 사용해서 지정한 마진(margins)과
     바운딩 박스(bbox) 내에 내부 플롯들이 가장 잘 들어맞도록 GridSpec의 파라미터를 계산합니다.
-    기본 제공되는 `tight_layout`보다 일관되고 예측 가능한 여백 구조를 제공합니다.
+    기본 제공되는 ``tight_layout``\ 보다 일관되고 예측 가능한 여백 구조를 제공합니다.
 
     Parameters
     ----------
     fig : Figure
         레이아웃을 적용할 Matplotlib Figure 객체.
     gs : GridSpec | None, optional
-        최적화를 수행할 GridSpec 객체. None일 경우 기본적으로 `fig.axes[0]`의 GridSpec을 사용합니다.
+        최적화를 수행할 GridSpec 객체. None일 경우 기본적으로 ``fig.axes[0]``\ 의 GridSpec을 사용합니다.
     margins : tuple[float, float, float, float], optional
         인치(inch) 단위의 여백값 설정 (왼쪽, 오른쪽, 아래, 위). 기본값은 (0.15, 0.05, 0.05, 0.05).
     bbox : tuple[float, float, float, float], optional
@@ -151,7 +151,7 @@ def simple_layout(
         파라미터 경계를 생성하기 위한 버퍼 마진. 최적화 탐색 공간 크기를 결정합니다. 기본값은 0.2.
     use_all_axes : bool, optional
         True이면 Figure 내의 모든 축(Axes) 텍스트/요소를 기준으로 경계를 계산합니다.
-        False이면 `gs`에 포함된 축들만 계산에 포함시킵니다. 기본값은 True.
+        False이면 ``gs``\ 에 포함된 축들만 계산에 포함시킵니다. 기본값은 True.
     importance_weights : tuple[float, float, float, float], optional
         (왼쪽, 오른쪽, 아래, 위) 여백을 맞추는 데 부여할 가중치(중요도). 기본값은 (1, 1, 1, 1).
 

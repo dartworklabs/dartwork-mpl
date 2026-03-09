@@ -29,12 +29,12 @@ _WEIGHT_MAP: dict[str, int] = {
 
 
 def fs(n: int | float) -> float:
-    """기본 폰트 크기(font size)에 *n*을 더한 값을 반환합니다.
+    """기본 폰트 크기(font size)에 *n*\ 을 더한 값을 반환합니다.
 
     Parameters
     ----------
     n : int | float
-        기본 ``rcParams['font.size']``에 더할 오프셋 값.
+        기본 ``rcParams['font.size']``\ 에 더할 오프셋 값.
         양수면 폰트가 더 커지고, 음수면 작아집니다.
 
     Returns
@@ -46,7 +46,7 @@ def fs(n: int | float) -> float:
 
 
 def fw(n: int) -> int:
-    """기본 폰트 굵기(font weight)에 100 × *n*을 더한 값을 반환합니다.
+    """기본 폰트 굵기(font weight)에 100 × *n*\ 을 더한 값을 반환합니다.
 
     문자열로 된 굵기 속성(예: ``'normal'``, ``'bold'``)은 연산을 수행하기 전에
     매칭되는 숫자형 단위(예: 400, 700)로 자동 변환됩니다.
@@ -69,12 +69,12 @@ def fw(n: int) -> int:
 
 
 def lw(n: int | float) -> float:
-    """기본 선 두께(line width)에 *n*을 더한 값을 반환합니다.
+    """기본 선 두께(line width)에 *n*\ 을 더한 값을 반환합니다.
 
     Parameters
     ----------
     n : int | float
-        기본 ``rcParams['lines.linewidth']``에 더할 오프셋 값.
+        기본 ``rcParams['lines.linewidth']``\ 에 더할 오프셋 값.
         양수면 선이 굵어지고, 음수면 얇아집니다.
 
     Returns
