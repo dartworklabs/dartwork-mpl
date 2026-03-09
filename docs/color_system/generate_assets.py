@@ -10,7 +10,7 @@ directly:
 
 from __future__ import annotations
 
-import math
+import os
 import sys
 from collections.abc import Iterable
 from pathlib import Path
@@ -97,114 +97,6 @@ def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
         values.sort(key=lambda cmap: cmap.name)
 
     return {k: v for k, v in categories.items() if v}
-
-
-def _gradient(resolution: int = 720, height: int = 28) -> np.ndarray:
-    grad = np.linspace(0, 1, resolution)
-    return np.repeat(grad[np.newaxis, :], height, axis=0)
-
-
-def _save_colormap_category(
-    category: str, cmaps: list[mpl.colors.Colormap], images_dir: Path
-) -> Path:
-    """Draw a wide, high-DPI panel for a single category."""
-    ncols = 2
-    nrows = math.ceil(len(cmaps) / ncols)
-    fig_width = 14
-    fig_height = 1.4 + nrows * 1.45
-
-    fig, axes = plt.subplots(nrows, ncols, figsize=(fig_width, fig_height))
-    fig.patch.set_facecolor("#fbfaf7")
-    fig.subplots_adjust(
-        left=0.06, right=0.97, top=0.9, bottom=0.05, hspace=0.38, wspace=0.22
-    )
-    fig.suptitle(
-        f"{category}",
-        fontsize=18,
-        fontweight="bold",
-        x=0.07,
-        ha="left",
-        va="center",
-    )
-    fig.text(
-        0.07,
-        0.93,
-        CATEGORY_BLURBS.get(category, ""),
-        fontsize=11,
-        color="#555",
-        ha="left",
-    )
-
-    gradient = _gradient()
-    axes_flat = axes.ravel() if hasattr(axes, "ravel") else [axes]
-    for idx, ax in enumerate(axes_flat):
-        if idx >= len(cmaps):
-            ax.axis("off")
-            continue
-
-        cmap = cmaps[idx]
-        ax.set_facecolor("#ffffff")
-        ax.imshow(gradient, aspect="auto", cmap=cmap)
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_frame_on(False)
-
-        ax.text(
-            0,
-            1.15,
-            cmap.name,
-            fontsize=11.5,
-            fontweight="bold",
-            ha="left",
-            va="bottom",
-            transform=ax.transAxes,
-            bbox={
-                "boxstyle": "round,pad=0.2",
-                "facecolor": "#ffffff",
-                "edgecolor": "#e4e2dd",
-                "linewidth": 0.8,
-            },
-        )
-
-    filename = f"colormaps_{category.lower().replace(' ', '_')}.png"
-    path = images_dir / filename
-    fig.savefig(path, dpi=220, bbox_inches="tight")
-    plt.close(fig)
-    return path
-
-
-def _save_colormap_panels(images_dir: Path) -> list[Path]:
-    categories = _collect_colormaps()
-    output: list[Path] = []
-
-    for category in CATEGORY_ORDER:
-        colormaps = categories.get(category)
-        if not colormaps:
-            continue
-        output.append(_save_colormap_category(category, colormaps, images_dir))
-    return output
-
-
-def _scale_figure(fig: plt.Figure, scale: float) -> None:
-    width, height = fig.get_size_inches()
-    fig.set_size_inches(width * scale, height * scale)
-
-
-def _save_color_sheets(images_dir: Path) -> list[Path]:
-    figs = dm.plot_colors(ncols=4, sort_colors=True)
-    paths: list[Path] = []
-
-    for fig, library_name in zip(figs, COLOR_LIBRARY_ORDER, strict=False):
-        _scale_figure(fig, 1.08)
-        fig.patch.set_facecolor("#fbfaf7")
-        for ax in fig.get_axes():
-            ax.set_facecolor("#ffffff")
-        path = images_dir / f"colors_{library_name}.png"
-        fig.savefig(path, dpi=220, bbox_inches="tight")
-        plt.close(fig)
-        paths.append(path)
-
-    return paths
 
 
 # ─── HTML/CSS native rendering ─────────────────────────────────────────
@@ -853,25 +745,17 @@ def build_gallery_assets(base_dir: Path | None = None) -> dict[str, list[Path]]:
     color_html_paths = _save_color_sheets_html(images_dir)
     cmap_html_paths = _save_colormap_panels_html(images_dir)
 
-    # PNG fallback (still generated for backward compat)
-    colormap_paths = _save_colormap_panels(images_dir)
-    color_paths = _save_color_sheets(images_dir)
-
-    # Color space examples (must remain PNG)
+    # Color space examples (must remain SVG)
     color_space_paths = _save_color_space_examples(images_dir)
 
     print(
         f"[gallery] wrote {len(color_html_paths)} color HTML sheets, "
         f"{len(cmap_html_paths)} colormap HTML panels, "
-        f"{len(color_space_paths)} color space examples "
-        f"(+ {len(color_paths)} PNG sheets, "
-        f"{len(colormap_paths)} PNG panels as fallback)"
+        f"{len(color_space_paths)} color space examples"
     )
     return {
         "colors_html": color_html_paths,
         "colormaps_html": cmap_html_paths,
-        "colors": color_paths,
-        "colormaps": colormap_paths,
         "color_space": color_space_paths,
     }
 
