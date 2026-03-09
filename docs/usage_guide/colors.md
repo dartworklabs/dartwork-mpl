@@ -41,11 +41,8 @@ dm.simple_layout(fig)
 
 For most plots, named color strings like `"oc.blue5"` are all you need. Use the
 `Color` class when you want to programmatically adjust hue, saturation, or
-lightness—or when you need to interpolate between colors in a perceptually
-uniform space.
-
-The `Color` class provides perceptually uniform color manipulation across
-OKLab, OKLCH, RGB, and hex color spaces:
+lightness — or when you need to interpolate between colors in a perceptually
+uniform space (OKLab, OKLCH, RGB, and hex):
 
 ```python
 import dartwork_mpl as dm

@@ -6,7 +6,7 @@ mobile.
 
 ## How to read the labels
 
-- Format: `library.base:weight` (`tw.blue500`, `md.red700`, `oc.gray6`).
+- Format: `library.colorweight` (e.g. `tw.blue500`, `md.red700`, `oc.gray6`).
 - Works anywhere matplotlib accepts a color—no extra API layer required.
 - `dm.style.use("scientific")` loads the dartwork style so these names look
   consistent across lines, fills, markers, and legends.
