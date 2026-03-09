@@ -5,9 +5,11 @@ import sys
 from pathlib import Path
 
 # Fix for PIL truncated image errors during sphinx-gallery generation
-from PIL import ImageFile
+from PIL import Image, ImageFile
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+# Sphinx-Gallery composites can exceed PIL's default decompression bomb limit
+Image.MAX_IMAGE_PIXELS = 300_000_000
 
 sys.path.insert(0, os.path.abspath("../src"))
 sys.path.insert(0, str(Path(__file__).parent.resolve()))
@@ -61,6 +63,8 @@ nitpick_ignore_regex = [
     (r'py:.*', r'dartwork_mpl\.style\.use'),
     (r'py:.*', r'Bbox'),
     (r'py:.*', r'VisualWarning'),
+    (r'py:.*', r'pydantic\..*'),
+    (r'py:.*', r'BaseModel'),
 ]
 
 templates_path = ["_templates"]
