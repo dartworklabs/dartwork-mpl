@@ -53,20 +53,11 @@ plt.show()
 
 ::::
 
-::::{grid} 1 1 2 2
-:gutter: 2
+**Drag the slider to compare — same data, different styling:**
 
-:::{grid-item-card} 🔧 Vanilla matplotlib
-:class-card: sd-border-secondary
-![Before — matplotlib defaults](images/compare_before.svg)
-:::
-
-:::{grid-item-card} ✨ With dartwork-mpl
-:class-card: sd-border-primary
-![After — dartwork-mpl scientific preset](images/compare_after.svg)
-:::
-
-::::
+```{raw} html
+:file: images/compare_slider.html
+```
 
 Same data, same plotting logic — the difference is one `dm.style.use()` call, named colors, and `simple_layout`.
 

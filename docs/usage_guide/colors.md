@@ -32,10 +32,9 @@ ax.legend(fontsize=dm.fs(-1))
 dm.simple_layout(fig)
 ```
 
-:::{figure} images/colors_named.svg
-:alt: Plot showing OpenColor, Tailwind, Material, and Primer named colors in use
-:width: 100%
-:::
+```{raw} html
+:file: ../color_system/images/palette_explorer.html
+```
 
 ## Color class
 

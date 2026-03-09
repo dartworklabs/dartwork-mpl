@@ -201,40 +201,6 @@ def _save_layout_typography(images_dir: Path) -> Path:
 # ── colors.md ──────────────────────────────────────────────────────────
 
 
-def _save_colors_named(images_dir: Path) -> Path:
-    """Colors 'Named colors': 4 color systems + mix + pseudo_alpha."""
-    np.random.seed(42)
-    dm.style.use("presentation")
-
-    fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
-    x = np.array([0, 1, 2])
-
-    ax.plot(
-        x, [1, 2, 1.5], marker="o", color="oc.green5", label="OpenColor (oc.*)"
-    )
-    ax.plot(
-        x,
-        [1.2, 1.6, 2.1],
-        marker="s",
-        color="tw.blue500",
-        label="Tailwind (tw.*)",
-    )
-    highlight = dm.mix_colors("md.orange600", "white", alpha=0.45)
-    ax.fill_between(
-        x, 0.9, 1.3, color=highlight, label="mix_colors()", alpha=0.9
-    )
-    muted_line = dm.pseudo_alpha("pr.blue5", alpha=0.65, background="white")
-    ax.plot(x, [0.8, 1.1, 1.4], color=muted_line, lw=2, label="pseudo_alpha()")
-    ax.legend(fontsize=dm.fs(-1))
-    ax.set_xlabel("Index", fontsize=dm.fs(0))
-    ax.set_ylabel("Value", fontsize=dm.fs(0))
-    dm.simple_layout(fig)
-
-    path = images_dir / "colors_named.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
-    plt.close(fig)
-    return path
-
 
 def _save_colors_colormap(images_dir: Path) -> Path:
     """Colors 'Colormaps': dm.Crest imshow + colorbar."""
@@ -355,7 +321,6 @@ def build_usage_guide_assets(base_dir: Path | None = None) -> list[Path]:
         ("layout_simple", _save_layout_simple),
         ("layout_gridspec", _save_layout_gridspec),
         ("layout_typography", _save_layout_typography),
-        ("colors_named", _save_colors_named),
         ("colors_colormap", _save_colors_colormap),
         ("save_scientific", _save_scientific_chart),
         ("save_diverging_bar", _save_diverging_bar),

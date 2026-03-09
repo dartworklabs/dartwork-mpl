@@ -230,6 +230,68 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
         path.write_text("\n".join(html_parts), encoding="utf-8")
         paths.append(path)
 
+    # --- Assemble Tabbed Palette Explorer ---
+    import textwrap
+
+    _PE_TEMPLATE = textwrap.dedent("""\
+    <div class="dm-pe-widget">
+      <div class="dm-pc-tabs" id="dm-pe-tabs">
+    {tabs_html}
+      </div>
+      <div class="dm-pe-body" id="dm-pe-stage">
+    {panels_html}
+      </div>
+    </div>
+    <script>
+    (function() {{
+      document.addEventListener("DOMContentLoaded", function() {{
+        var tabs = document.querySelectorAll(".dm-pe-tab");
+        var panels = document.querySelectorAll(".dm-pe-panel");
+        function activate(preset) {{
+          tabs.forEach(function(t) {{
+            t.classList.toggle("active", t.dataset.preset === preset);
+          }});
+          panels.forEach(function(p) {{
+            p.classList.toggle("active", p.dataset.preset === preset);
+            if (p.dataset.preset === preset) {{
+              p.style.display = "block";
+            }} else {{
+              p.style.display = "none";
+            }}
+          }});
+        }}
+        tabs.forEach(function(t) {{
+          t.addEventListener("click", function() {{ activate(t.dataset.preset); }});
+        }});
+        if (tabs.length > 0) {{ activate(tabs[0].dataset.preset); }}
+      }});
+    }})();
+    </script>
+    """)
+
+    tabs_html = []
+    panels_html = []
+    for i, library_key in enumerate(COLOR_LIBRARY_ORDER):
+        label = COLOR_LIBRARY_LABELS.get(library_key, library_key)
+        # Tab
+        tabs_html.append(f'    <button class="dm-pc-tab dm-pe-tab" data-preset="{library_key}">{label}</button>')
+        # Panel content - read from the file we just wrote
+        sheet_path = images_dir / f"colors_{library_key}.html"
+        if sheet_path.exists():
+            content = sheet_path.read_text(encoding="utf-8")
+            display_style = "block" if i == 0 else "none"
+            panels_html.append(f'    <div class="dm-pe-panel" data-preset="{library_key}" style="display: {display_style};">')
+            panels_html.append(content)
+            panels_html.append('    </div>')
+
+    pe_html = _PE_TEMPLATE.format(
+        tabs_html="\n".join(tabs_html),
+        panels_html="\n".join(panels_html)
+    )
+    pe_path = images_dir / "palette_explorer.html"
+    pe_path.write_text(pe_html, encoding="utf-8")
+    paths.append(pe_path)
+
     return paths
 
 

@@ -8,17 +8,10 @@ variants. Each family is optimized for different use cases in data visualization
 The right typeface can transform a chart from amateur to professional. Here's
 the same data plotted with default matplotlib fonts (left) and dartwork-mpl fonts (right):
 
+**Drag the slider to compare — default matplotlib (left) vs dartwork-mpl (right):**
+
 ```{raw} html
-<div class="dm-comparison-grid">
-  <div class="dm-comparison-panel">
-    <span class="dm-comparison-label">Before — Default matplotlib</span>
-    <img src="../_static/before_default.svg" alt="Default matplotlib fonts">
-  </div>
-  <div class="dm-comparison-panel">
-    <span class="dm-comparison-label">After — dartwork-mpl</span>
-    <img src="../_static/after_dartwork.svg" alt="dartwork-mpl fonts">
-  </div>
-</div>
+:file: _generated/compare_slider.html
 ```
 
 ## Font Selection Guide

@@ -61,6 +61,12 @@ Simple layouts look fine with either method. The real difference shows up when
 figures get more complex — multi-panel grids, long axis labels, colorbars, and
 titles all competing for space.
 
+**Interactive visualizer — see how dartwork-mpl calculates margins dynamically:**
+
+```{raw} html
+:file: images/layout_debugger.html
+```
+
 Below is the **same figure** — a two-panel layout with a multi-line y-label and
 a colorbar — rendered with each approach:
 
