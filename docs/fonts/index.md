@@ -59,20 +59,13 @@ plt.show()
 ## Key Features
 
 **Auto-Registration**
-: All 130 fonts are automatically registered with matplotlib's font manager when
-you import dartwork-mpl. No need for manual font installation or configuration.
-
-**Professional Font Selection**
-: Curated collection includes Roboto (default), Inter, Noto Sans family, and more—all
-chosen for excellent legibility in charts and figures.
+: All 130 fonts are registered with matplotlib's font manager on import.
+No manual font installation or configuration needed.
 
 **Relative Sizing**
-: Use `fs(n)` to adjust font sizes relative to your base style, keeping your
-typography consistent across different output formats.
-
-**Weight Flexibility**
-: Use `fw(n)` to adjust font weights in standardized steps, perfect for creating
-visual hierarchy in your figures.
+: `fs(n)` adjusts font sizes relative to your base style. `fw(n)` adjusts
+weights in standardized steps. Both keep typography consistent across
+different output formats.
 
 **Math Support**
 : Noto Sans Math provides comprehensive mathematical symbol coverage for

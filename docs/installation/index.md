@@ -71,23 +71,11 @@ for a detailed comparison.
 
 After installation, verify that **dartwork-mpl** is properly installed and accessible:
 
-```{code-block} python
-:caption: verify.py
-
+```python
 import dartwork_mpl as dm
 
-# Check installed version
-print(dm.__version__)  # Current installed version
-
-# List all available style files
-print(dm.list_styles())  # Returns available style names (base, presets, etc.)
-
-# Verify color system is working
-color = dm.oklch(0.7, 0.15, 150)
-print(color.to_hex())  # Should print a hex color string
-
-# Check available AI assistant prompts (see AI Integration section)
-print(dm.list_prompts())  # Available prompt guides for AI coding agents
+print(dm.__version__)     # Current installed version
+print(dm.list_styles())   # Available style presets
 ```
 
 If these commands run without errors, you're all set! 🎉

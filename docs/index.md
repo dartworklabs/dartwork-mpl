@@ -52,12 +52,14 @@
 ## All it takes
 
 ```python
+import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
-dm.style.use("scientific")          # ① Pick a style
-ax.plot(x, y, color="oc.blue5")     # ② Use named colors
-dm.simple_layout(fig)               # ③ Optimize layout
-dm.save_formats(fig, "out")         # ④ Export SVG + PNG
+dm.style.use("scientific")              # ① Pick a style
+fig, ax = plt.subplots()
+ax.plot(x, y, color="oc.blue5")         # ② Use named colors
+dm.simple_layout(fig)                   # ③ Optimize layout
+dm.save_formats(fig, "out")             # ④ Export SVG + PNG
 ```
 
 ```{raw} html
@@ -87,7 +89,7 @@ Pick from `scientific`, `report`, `presentation`, `poster`, `web`, `dark`, or `m
 :link: philosophy/index
 :link-type: doc
 
-Every utility is simple enough to copy into your project. AI-native design with MCP server + prompt system — agents write familiar matplotlib, not a custom API.
+Every utility is simple enough to copy into your project. No lock-in — leave anytime by taking the code with you.
 :::
 
 ::::
