@@ -1,0 +1,178 @@
+<style>
+  .dm-ba-widget {
+    position: relative;
+    margin: 2rem 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e4e2dd;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    max-width: 720px;
+    cursor: col-resize;
+  }
+  .dm-ba-widget img {
+    display: block;
+    width: 100%;
+    height: auto;
+    pointer-events: none;
+  }
+  .dm-ba-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+  }
+  .dm-ba-layer img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    min-width: 100%;
+    min-height: 100%;
+    object-fit: contain;
+  }
+  .dm-ba-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #fff;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.35);
+    z-index: 10;
+    pointer-events: none;
+  }
+  .dm-ba-handle {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    z-index: 11;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .dm-ba-handle svg {
+    width: 20px;
+    height: 20px;
+    fill: #555;
+  }
+  .dm-ba-label {
+    position: absolute;
+    bottom: 10px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    z-index: 5;
+    pointer-events: none;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .dm-ba-label.before {
+    left: 10px;
+    background: rgba(220, 53, 69, 0.85);
+    color: #fff;
+  }
+  .dm-ba-label.after {
+    right: 10px;
+    background: rgba(25, 135, 84, 0.85);
+    color: #fff;
+  }
+  /* Dark mode */
+  html.dark .dm-ba-widget,
+  body[data-theme="dark"] .dm-ba-widget {
+    border-color: #444;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+</style>
+
+<div class="dm-ba-widget" id="dm-ba-set-decimal">
+  <!-- After (base layer, always fully visible) -->
+  <img src="images/set_decimal_dm.svg" alt="dm.set_decimal()" />
+
+  <!-- Before (overlay, clipped by slider) -->
+  <div
+    class="dm-ba-layer"
+    id="dm-ba-sd-overlay"
+    style="clip-path: inset(0 50% 0 0)"
+  >
+    <img src="images/set_decimal_vanilla.svg" alt="Vanilla matplotlib" />
+  </div>
+
+  <!-- Divider line + handle -->
+  <div class="dm-ba-divider" id="dm-ba-sd-divider" style="left: 50%"></div>
+  <div class="dm-ba-handle" id="dm-ba-sd-handle" style="left: 50%">
+    <svg viewBox="0 0 24 24">
+      <path d="M8.5 5l-5 7 5 7V5zm7 0v14l5-7-5-7z" />
+    </svg>
+  </div>
+
+  <span class="dm-ba-label before">Vanilla</span>
+  <span class="dm-ba-label after">dm.set_decimal()</span>
+</div>
+
+<script>
+  (function () {
+    function initSlider(widgetId, overlayId, dividerId, handleId) {
+      var widget = document.getElementById(widgetId);
+      var overlay = document.getElementById(overlayId);
+      var divider = document.getElementById(dividerId);
+      var handle = document.getElementById(handleId);
+      if (!widget || !overlay) return;
+
+      var dragging = false;
+
+      function setPosition(x) {
+        var rect = widget.getBoundingClientRect();
+        var pct = Math.max(0, Math.min(1, (x - rect.left) / rect.width));
+        var rightPct = ((1 - pct) * 100).toFixed(2) + "%";
+        overlay.style.clipPath = "inset(0 " + rightPct + " 0 0)";
+        divider.style.left = (pct * 100).toFixed(2) + "%";
+        handle.style.left = (pct * 100).toFixed(2) + "%";
+      }
+
+      widget.addEventListener("pointerdown", function (e) {
+        dragging = true;
+        widget.setPointerCapture(e.pointerId);
+        setPosition(e.clientX);
+      });
+      widget.addEventListener("pointermove", function (e) {
+        if (dragging) setPosition(e.clientX);
+      });
+      widget.addEventListener("pointerup", function () {
+        dragging = false;
+      });
+      widget.addEventListener("pointercancel", function () {
+        dragging = false;
+      });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", function () {
+        initSlider(
+          "dm-ba-set-decimal",
+          "dm-ba-sd-overlay",
+          "dm-ba-sd-divider",
+          "dm-ba-sd-handle",
+        );
+      });
+    } else {
+      initSlider(
+        "dm-ba-set-decimal",
+        "dm-ba-sd-overlay",
+        "dm-ba-sd-divider",
+        "dm-ba-sd-handle",
+      );
+    }
+  })();
+</script>

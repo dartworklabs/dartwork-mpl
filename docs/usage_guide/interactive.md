@@ -1,0 +1,86 @@
+# Interactive UI
+
+dartwork-mpl includes an optional, powerful interactive viewer powered by FastAPI and Pydantic. It allows you to rapidly explore parameter spaces, adjust plot details in real-time through a web browser, and export both the final images and reproducible Python code.
+
+> **Requirement**: The interactive UI requires the `ui` extra. Install it with `pip install "dartwork-mpl[ui]"` or `uv add "dartwork-mpl[ui]"`.
+
+## Quick Start
+
+You can quickly scaffold a new interactive viewer project using the command-line interface:
+
+```bash
+# Interactive prompt
+dartwork-ui init
+
+# Or specify target and template directly
+dartwork-ui init ./my-viewer --example simple
+```
+
+This will create a standalone directory with a ready-to-use viewer script.
+
+## Building Your Own Viewer
+
+To build a viewer from scratch, define your parameters using a Pydantic `ParamModel` and a rendering function that takes those parameters to return a matplotlib `Figure`.
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+import dartwork_mpl as dm
+from dartwork_mpl.ui import ParamModel, run
+from pydantic import Field
+
+class ScatterParams(ParamModel):
+    n: int = Field(default=100, ge=10, le=1000, description="Number of points")
+    alpha: float = Field(default=0.5, ge=0.0, le=1.0, description="Transparency")
+    color: str = Field(default="oc.blue5", description="Point color")
+
+def plot_scatter(params: ScatterParams):
+    dm.style.use("scientific")
+    fig, ax = plt.subplots(figsize=(5, 4))
+
+    x = np.random.randn(params.n)
+    y = np.random.randn(params.n)
+
+    ax.scatter(x, y, alpha=params.alpha, color=params.color)
+    ax.set_title("Interactive Scatter Plot")
+
+    dm.simple_layout(fig)
+    return fig
+
+if __name__ == "__main__":
+    # Starts a local web server at http://127.0.0.1:8501
+    run(plot_scatter)
+```
+
+## Key Features
+
+The interactive UI provides several powerful capabilities directly from the browser:
+
+### 1. Live Parameter Tuning
+
+Because your parameters are defined via a Pydantic `ParamModel`, the UI automatically generates appropriate HTML controls:
+
+- **Integer/Float types with `ge` and `le` bounds** become sliders.
+- **Strings and unbounded numbers** become text inputs.
+- **Booleans** become toggle switches.
+
+As you change parameters in the UI, the plot rerenders instantly.
+
+### 2. Export & Download
+
+Found the perfect plot? You don't need to write saving code. From the UI, you can:
+
+- **Download Locally**: Save the current plot directly to your browser's downloads folder as PNG, SVG, or PDF.
+- **Save to Server**: Save the image to the directory where the script is running. You can even configure `run(copy_to=[...])` to automatically mirror saved images to your paper or report directory.
+
+### 3. Reproducible Code Generation
+
+Perhaps the most powerful feature is code generation. Once you have tweaked the parameters to your liking, you can click **"Download Script"**.
+
+The viewer will dynamically generate and download a standalone, reproducible Python script containing:
+
+- Your exact `ParamModel` and rendering function.
+- The **exact parameter values** you settled on in the UI.
+- The necessary boilerplate to run the script and save the plot without the UI dependency.
+
+This bridges the gap between exploratory data analysis and rigorous, reproducible publication graphics.
