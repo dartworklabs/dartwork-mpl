@@ -553,12 +553,12 @@ def _save_color_space_interpolation(images_dir: Path) -> Path:
     """Generate example comparing interpolation in different color spaces."""
     dm.style.use("scientific")
 
-    # Figure 생성
+    # Create figure
     fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
     fig.patch.set_facecolor("#fbfaf7")
 
-    # GridSpec 구성: title + 3x(gradient + Lightness) = 7행
-    # 그룹 내 간격(hspace)은 좁게, 그룹 간 간격은 height_ratios로 조절
+    # GridSpec layout: title + 3x(gradient + Lightness) = 7 rows
+    # Keep hspace tight within groups; control between-group spacing via height_ratios
     gs = fig.add_gridspec(
         nrows=7,
         ncols=2,
@@ -572,7 +572,7 @@ def _save_color_space_interpolation(images_dir: Path) -> Path:
         width_ratios=[0.10, 0.9],
     )
 
-    # Title axes (첫 행 전체 사용)
+    # Title axes (spans entire first row)
     ax_title = fig.add_subplot(gs[0, :])
     ax_title.axis("off")
     ax_title.text(
@@ -586,20 +586,20 @@ def _save_color_space_interpolation(images_dir: Path) -> Path:
         transform=ax_title.transAxes,
     )
 
-    # RGB에서 보간 문제가 잘 보이는 색상 (보라-노랑, 보색 관계)
-    start_color = dm.hex("#7c3aed")  # 보라색
-    end_color = dm.hex("#fbbf24")  # 노란색
+    # Colors where RGB interpolation artifacts are visible (purple-yellow, complementary pair)
+    start_color = dm.hex("#7c3aed")  # purple
+    end_color = dm.hex("#fbbf24")  # yellow
     n = 20
 
     spaces = [("OKLCH", "oklch"), ("OKLab", "oklab"), ("RGB", "rgb")]
 
     for space_idx, (label, space) in enumerate(spaces):
-        # gradient 행 인덱스: 1, 3, 5
-        # Lightness 행 인덱스: 2, 4, 6
+        # gradient row indices: 1, 3, 5
+        # Lightness row indices: 2, 4, 6
         grad_row = 1 + space_idx * 2
         lval_row = 2 + space_idx * 2
 
-        # 라벨 axes (왼쪽 열, gradient 행에만)
+        # Label axes (left column, gradient rows only)
         ax_label = fig.add_subplot(gs[grad_row, 0])
         ax_label.axis("off")
         ax_label.text(
@@ -613,7 +613,7 @@ def _save_color_space_interpolation(images_dir: Path) -> Path:
             fontweight="bold",
         )
 
-        # Gradient axes (오른쪽 열)
+        # Gradient axes (right column)
         ax = fig.add_subplot(gs[grad_row, 1])
         colors = dm.cspace(start_color, end_color, n=n, space=space)
         gradient = np.array([c.to_rgb() for c in colors])
@@ -625,7 +625,7 @@ def _save_color_space_interpolation(images_dir: Path) -> Path:
         ax.set_yticks([])
         ax.set_frame_on(False)
 
-        # Lightness 라벨 axes (왼쪽 열)
+        # Lightness label axes (left column)
         ax_l_label = fig.add_subplot(gs[lval_row, 0])
         ax_l_label.axis("off")
         ax_l_label.text(
@@ -640,9 +640,9 @@ def _save_color_space_interpolation(images_dir: Path) -> Path:
             color="#666",
         )
 
-        # Lightness 박스 axes (오른쪽 열)
+        # Lightness box axes (right column)
         ax_l = fig.add_subplot(gs[lval_row, 1])
-        # 각 색상의 L값을 grayscale로 시각화
+        # Visualize each color's L value as grayscale
         l_values = np.array([c.oklab.L for c in colors])
         l_gradient = np.stack([l_values, l_values, l_values], axis=1)
         l_gradient = l_gradient[np.newaxis, :, :]
@@ -652,7 +652,7 @@ def _save_color_space_interpolation(images_dir: Path) -> Path:
         ax_l.set_yticks([])
         ax_l.set_frame_on(False)
 
-    # 레이아웃 최적화 (GridSpec 지정)
+    # Optimize layout (GridSpec-specific)
     dm.simple_layout(fig, gs=gs)
 
     path = images_dir / "color_space_interpolation.svg"
@@ -665,12 +665,12 @@ def _save_color_space_colormap(images_dir: Path) -> Path:
     """Generate example showing custom colormap creation."""
     dm.style.use("scientific")
 
-    # Figure 생성
+    # Create figure
     fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
     fig.patch.set_facecolor("#fbfaf7")
 
-    # GridSpec 구성: title 행 + 2x2 (이미지 행 + 코드 행)
-    # height_ratios: title 10%, 이미지 45%, 코드 45%
+    # GridSpec layout: title row + 2x2 (image row + code row)
+    # height_ratios: title 10%, image 45%, code 45%
     gs = fig.add_gridspec(
         nrows=3,
         ncols=2,
@@ -683,7 +683,7 @@ def _save_color_space_colormap(images_dir: Path) -> Path:
         height_ratios=[0.10, 0.45, 0.45],
     )
 
-    # Title axes (첫 행 전체 사용)
+    # Title axes (spans entire first row)
     ax_title = fig.add_subplot(gs[0, :])
     ax_title.axis("off")
     ax_title.text(
@@ -718,7 +718,7 @@ def _save_color_space_colormap(images_dir: Path) -> Path:
     ax1.set_xticks([])
     ax1.set_yticks([])
 
-    # Colorbar using axes_divider (axes에 상대적 위치)
+    # Colorbar using axes_divider (positioned relative to axes)
     divider1 = make_axes_locatable(ax1)
     cax1 = divider1.append_axes("right", size="5%", pad=0.08)
     cbar1 = fig.colorbar(im1, cax=cax1)
@@ -733,7 +733,7 @@ def _save_color_space_colormap(images_dir: Path) -> Path:
     ax2.set_xticks([])
     ax2.set_yticks([])
 
-    # Colorbar using axes_divider (axes에 상대적 위치)
+    # Colorbar using axes_divider (positioned relative to axes)
     divider2 = make_axes_locatable(ax2)
     cax2 = divider2.append_axes("right", size="5%", pad=0.08)
     cbar2 = fig.colorbar(im2, cax=cax2)
@@ -810,7 +810,7 @@ cmap = mpl.colors.ListedColormap(
     ax4.set_yticks([])
     ax4.set_frame_on(False)
 
-    # 레이아웃 최적화 (GridSpec 지정)
+    # Optimize layout (GridSpec-specific)
     dm.simple_layout(fig, gs=gs)
 
     path = images_dir / "color_space_colormap.svg"

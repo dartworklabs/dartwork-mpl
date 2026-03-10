@@ -146,8 +146,8 @@ perceptually uniform gradients. They work like any matplotlib colormap:
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
-cmap = plt.colormaps["dc.Crest"]
-print(cmap.name)                       # 'dc.Crest'
+cmap = plt.colormaps["dc.ocean"]
+print(cmap.name)                       # 'dc.ocean'
 print(dm.classify_colormap(cmap))      # 'sequential' (tells you the type)
 ```
 
