@@ -66,6 +66,10 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     "dc.arctic_heat": "Diverging",
     "dc.frost_flame": "Diverging",
     "dc.water_fire": "Diverging",
+    "dc.spring_autumn": "Diverging",
+    "dc.summer_winter": "Diverging",
+    "dc.electric_surge": "Diverging",
+    "dc.neon_pulse": "Diverging",
 
     # Cyclical
     "dc.twilight_oklch": "Cyclical",

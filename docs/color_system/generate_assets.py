@@ -307,12 +307,14 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
     import textwrap  # noqa: E402
 
     _CE_TEMPLATE = textwrap.dedent("""\
-    <div class="dm-pe-widget" style="border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; padding-right: 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+    <div class="dm-pe-widget" style="border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px; position: relative;">
+      <div style="position: absolute; top: 10px; right: 12px; z-index: 10;">
+          <button id="dm-mono-toggle" style="height: 30px; padding: 0 12px; font-size: 0.85em; font-weight: 500; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; color: #475569; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">Preview Monochrome</button>
+      </div>
+      <div style="border-bottom: 1px solid #e2e8f0; background: #f8fafc; border-top-left-radius: 8px; border-top-right-radius: 8px; padding-right: 140px;">
           <div class="dm-pc-tabs" id="dm-ce-tabs" style="border-bottom: none; background: transparent; border-radius: 0;">
         {tabs_html}
           </div>
-          <button id="dm-mono-toggle" style="height: 30px; padding: 0 12px; font-size: 0.85em; font-weight: 500; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; color: #475569; transition: all 0.2s;">Preview Monochrome</button>
       </div>
       <div class="dm-pe-body" id="dm-ce-stage" style="border: none;">
     {panels_html}
