@@ -58,22 +58,13 @@ Styles and Presets <styles>
 Colors and Colormaps <colors>
 Layout and Typography <layout>
 Save and Validation <save_export>
+Extended Plots & Diagnostics <extras>
 Interactive UI <interactive>
-Extended Plots & Tools <extras>
 ```
 
-:::{admonition} Under the hood
-:class: dropdown
-
-For contributors or those curious about where assets are stored:
-
-| Category         | Location                                                   |
-| ---------------- | ---------------------------------------------------------- |
-| Styles           | `asset/mplstyle/*.mplstyle`                                |
-| Colors/colormaps | `asset/color/*.txt`                                        |
-| Fonts            | `asset/font/*` (auto-registered on import)                 |
-| Icons            | `asset/icon/*`                                             |
-| Prompts          | `asset/prompt/*.md`                                        |
-| Constants        | `dm.SW`, `dm.DW` — [Figure Constants](../api/constant.rst) |
-
+:::{tip}
+**Where do assets live?** Style files are in `asset/mplstyle/`, colors in
+`asset/color/`, fonts in `asset/font/`, and figure constants in
+[`dm.SW`, `dm.DW`](../api/constant.rst). See [Design Philosophy](../philosophy/index)
+for the architecture behind these choices.
 :::

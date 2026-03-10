@@ -179,3 +179,9 @@ dm.plot_fonts(ncols=4, font_size=12)
 
 See [Font Families](../fonts/families.md) for the full font catalog and
 [Font Utilities](../fonts/utilities.md) for detailed usage.
+
+## See also
+
+- **Next →** [Save and Validation](save_export.md) — multi-format export and automatic visual quality checks
+- [API › Layout Utilities](../api/layout.rst) for all layout helper functions and arguments
+- [Colors and Colormaps](colors.md) for named colors and gradients

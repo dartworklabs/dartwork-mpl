@@ -84,3 +84,12 @@ The viewer will dynamically generate and download a standalone, reproducible Pyt
 - The necessary boilerplate to run the script and save the plot without the UI dependency.
 
 This bridges the gap between exploratory data analysis and rigorous, reproducible publication graphics.
+
+> 💡 **Tip:** The viewer also supports dark mode and automatically adapts to
+> your dartwork-mpl style preset.
+
+## See also
+
+- [API › Interactive Viewer](../api/ui.rst) for all `run()`, `ParamModel`, and CLI arguments
+- [Save and Validation](save_export.md) — for batch export without the interactive UI
+- [Design Philosophy](../philosophy/index) — understand the "Utilities, Not Wrappers" approach

@@ -1,8 +1,9 @@
-# Extended Plots & Tools
+# Extended Plots & Diagnostics
 
-## Extended plots
+## Extended plots (`xplot`)
 
-dartwork-mpl provides ready-to-use plot templates in `dartwork_mpl.xplot`:
+dartwork-mpl provides ready-to-use plot templates in `dartwork_mpl.xplot`
+for common chart types that are tedious to build from scratch:
 
 ```python
 from dartwork_mpl.xplot import plot_diverging_bar
@@ -23,13 +24,10 @@ fig, ax = plot_diverging_bar(
 
 See [API › Extended Plots](../api/xplot.rst) for the full parameter list.
 
-## Interactive viewer
-
-dartwork-mpl includes a powerful interactive viewer powered by FastAPI for rapid parameter exploration, real-time plotting, and automated reproducible code generation.
-
-See the dedicated [Interactive UI Guide](interactive.md) or the [API Reference](../api/ui.rst) for full details.
-
 ## Diagnostics & previews
+
+Quickly inspect what's available in your current environment — useful for
+debugging font registration, checking color coverage, or previewing colormaps:
 
 ```python
 import dartwork_mpl as dm
@@ -45,3 +43,8 @@ dm.plot_fonts(font_size=11, ncols=3)               # audit bundled fonts
 :::
 
 See [API › Visualization Tools](../api/visualization.rst) for full details.
+
+## Next
+
+→ [Interactive UI](interactive.md) — launch a local web app to tweak parameters
+with sliders, export plots, and generate reproducible scripts.

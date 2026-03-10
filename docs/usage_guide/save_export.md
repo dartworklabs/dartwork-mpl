@@ -73,3 +73,9 @@ tick crowding, and empty axes. Example output:
 
 See [API › Visual Validation](../api/validate.rst)
 for details.
+
+## See also
+
+- **Next →** [Extended Plots & Diagnostics](extras.md) — ready-to-use plot templates and inspection tools
+- [API › Save & Export](../api/io.rst) for all save/export function arguments
+- [Layout and Typography](layout.md) — optimize margins before saving
