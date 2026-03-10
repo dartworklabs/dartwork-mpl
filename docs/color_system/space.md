@@ -444,6 +444,7 @@ mpl.colormaps.register(cmap=cmap)
 
 ## See also
 
-- [Colors](colors.md) for named color palettes
-- [Colormaps](colormaps.md) for predefined colormap collections
-- [Usage Guide](../usage_guide/index) for general dartwork-mpl patterns
+- [Colors](colors.md) — full named palette catalog
+- [Colormaps](colormaps.md) — predefined colormap collections with design philosophy
+- [Usage Guide › Colors](../usage_guide/colors.md) — practical color usage and mixing
+- [API › Color Utilities](../api/color.rst) for all color functions

@@ -22,7 +22,8 @@ fig, ax = plot_diverging_bar(
 :width: 100%
 :::
 
-See [API › Extended Plots](../api/xplot.rst) for the full parameter list.
+See [API › Extended Plots](../api/xplot.rst) for the full parameter list and
+all available plot templates.
 
 ## Diagnostics & previews
 
@@ -44,7 +45,9 @@ dm.plot_fonts(font_size=11, ncols=3)               # audit bundled fonts
 
 See [API › Visualization Tools](../api/visualization.rst) for full details.
 
-## Next
+## See also
 
-→ [Interactive UI](interactive.md) — launch a local web app to tweak parameters
-with sliders, export plots, and generate reproducible scripts.
+- **Next →** [Interactive UI](interactive.md) — launch a local web app to tweak
+  parameters with sliders, export plots, and generate reproducible scripts
+- [API › Extended Plots](../api/xplot.rst) for all xplot function signatures
+- [API › Visualization Tools](../api/visualization.rst) for diagnostic plot functions

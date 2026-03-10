@@ -106,6 +106,7 @@ html_theme_options = {
         {"title": "API Reference", "url": "api/index"},
         {"title": "Design Philosophy", "url": "philosophy/index"},
         {"title": "AI Integration", "url": "integrations/index"},
+        {"title": "Changelog", "url": "https://github.com/dartwork-repo/dartwork-mpl/blob/main/CHANGELOG.md"},
     ],
 }
 

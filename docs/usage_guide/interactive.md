@@ -2,7 +2,16 @@
 
 dartwork-mpl includes an optional, powerful interactive viewer powered by FastAPI and Pydantic. It allows you to rapidly explore parameter spaces, adjust plot details in real-time through a web browser, and export both the final images and reproducible Python code.
 
-> **Requirement**: The interactive UI requires the `ui` extra. Install it with `pip install "dartwork-mpl[ui]"` or `uv add "dartwork-mpl[ui]"`.
+:::{admonition} Preview
+:class: tip
+
+The interactive UI opens in your browser at `http://127.0.0.1:8501`. It renders
+a split-pane layout: parameter sliders on the left, live plot preview on the
+right, with download and code-export buttons at the bottom.
+:::
+
+> **Requirement**: The interactive UI requires the `ui` extra. Install it with
+> `pip install "dartwork-mpl[ui]"` or `uv add "dartwork-mpl[ui]"`.
 
 ## Quick Start
 
