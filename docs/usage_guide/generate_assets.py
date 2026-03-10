@@ -198,8 +198,135 @@ def _save_layout_typography(images_dir: Path) -> Path:
     return path
 
 
-# ── colors.md ──────────────────────────────────────────────────────────
+def _make_label_axes_compare(use_dm: bool) -> plt.Figure:
+    """Compare vanilla matplotlib text placement vs dm.label_axes()."""
+    np.random.seed(42)
+    dm.style.use("presentation")
 
+    fig, axes = plt.subplots(
+        3, 1, figsize=(dm.cm2in(10), dm.cm2in(12)), dpi=300
+    )
+    ylabels = ["y", "Velocity [m/s]", "A very long descriptive label"]
+
+    for i, ax in enumerate(axes):
+        ax.plot(np.random.randn(10), color=f"oc.blue{i + 4}")
+        ax.set_ylabel(ylabels[i], fontsize=dm.fs(-1))
+        if i < 2:
+            ax.set_xticks([])
+
+    if use_dm:
+        dm.label_axes(axes)
+    else:
+        labels = ["(a)", "(b)", "(c)"]
+        for ax, label in zip(axes, labels, strict=False):
+            # Vanilla approach: manual generic positioning
+            ax.text(
+                -0.15,
+                1.05,
+                label,
+                transform=ax.transAxes,
+                fontsize=dm.fs(0),
+                fontweight="bold",
+                va="bottom",
+                ha="left",
+            )
+
+    dm.simple_layout(fig)
+    return fig
+
+
+def _save_label_axes_vanilla(images_dir: Path) -> Path:
+    """Save vanilla matplotlib version of label_axes comparison."""
+    fig = _make_label_axes_compare(use_dm=False)
+    path = images_dir / "label_axes_vanilla.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def _save_label_axes_dm(images_dir: Path) -> Path:
+    """Save dartwork-mpl version of label_axes comparison."""
+    fig = _make_label_axes_compare(use_dm=True)
+    path = images_dir / "label_axes_dm.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def _make_set_decimal_compare(use_dm: bool) -> plt.Figure:
+    """Compare vanilla unformatted ticks vs dm.set_decimal()."""
+    np.random.seed(42)
+    dm.style.use("presentation")
+
+    fig, ax = plt.subplots(figsize=(dm.cm2in(12), dm.cm2in(6)), dpi=300)
+    x = np.linspace(0, 10, 100)
+    y = np.sin(x) * 0.5 + 1.0
+
+    ax.plot(x, y, color="oc.teal6")
+
+    # Force some uneven ticks for vanilla
+    ax.set_yticks([0.5, 0.75, 1, 1.25, 1.5])
+
+    if use_dm:
+        dm.set_decimal(ax, yn=1)
+
+    dm.simple_layout(fig)
+    return fig
+
+
+def _save_set_decimal_vanilla(images_dir: Path) -> Path:
+    """Save vanilla matplotlib version of set_decimal comparison."""
+    fig = _make_set_decimal_compare(use_dm=False)
+    path = images_dir / "set_decimal_vanilla.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def _save_set_decimal_dm(images_dir: Path) -> Path:
+    """Save dartwork-mpl version of set_decimal comparison."""
+    fig = _make_set_decimal_compare(use_dm=True)
+    path = images_dir / "set_decimal_dm.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def _save_arrow_axis_example(images_dir: Path) -> Path:
+    """Showcase dm.arrow_axis() conceptually."""
+    np.random.seed(42)
+    dm.style.use("presentation")
+
+    fig, ax = plt.subplots(figsize=(dm.cm2in(10), dm.cm2in(10)), dpi=300)
+
+    x = np.random.rand(20)
+    y = x + np.random.randn(20) * 0.2
+    ax.scatter(x, y, color="oc.indigo5", alpha=0.7, edgecolors="white", s=60)
+
+    # Hide default spines and ticks
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    dm.arrow_axis(ax, direction="x", label="Risk", color="gray", offset=-0.02)
+    dm.arrow_axis(
+        ax, direction="y", label="Expected Return", color="gray", pad=0.03
+    )
+
+    dm.simple_layout(fig)
+    path = images_dir / "arrow_axis_example.svg"
+    try:
+        fig.savefig(path, format="svg", bbox_inches="tight")
+    except Exception as e:
+        print(f"Warning: arrow_axis failed {e}")
+    plt.close(fig)
+    return path
+
+
+# ── colors.md ──────────────────────────────────────────────────────────
 
 
 def _save_colors_colormap(images_dir: Path) -> Path:
@@ -226,6 +353,66 @@ def _save_colors_colormap(images_dir: Path) -> Path:
 
     path = images_dir / "colors_colormap.svg"
     fig.savefig(path, format="svg", bbox_inches="tight")
+    plt.close(fig)
+    return path
+
+
+def _save_validation_example(images_dir: Path) -> Path:
+    """Create a 'bad' figure and draw validation overlay."""
+    dm.style.use("presentation")
+
+    # Force a tight figsize
+    fig, ax = plt.subplots(figsize=(dm.cm2in(10), dm.cm2in(6)), dpi=300)
+    ax.plot([1, 2, 3], [1, 4, 9], color="oc.red6")
+    ax.set_ylabel(
+        "A very very long y-axis label that overflows bounds", fontsize=dm.fs(1)
+    )
+    ax.set_title("Validation Error", color="oc.red7")
+
+    # Attempt to force cutoff
+    fig.subplots_adjust(left=0.1)
+
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    bbox = ax.yaxis.label.get_window_extent(renderer)
+
+    inv = fig.transFigure.inverted()
+    fig_bbox = bbox.transformed(inv)
+
+    from matplotlib.patches import Rectangle
+
+    rect = Rectangle(
+        (fig_bbox.x0, fig_bbox.y0),
+        fig_bbox.width,
+        fig_bbox.height,
+        transform=fig.transFigure,
+        fill=True,
+        facecolor="red",
+        alpha=0.2,
+        edgecolor="red",
+        linestyle="--",
+        linewidth=2,
+        zorder=100,
+        clip_on=False,
+    )
+    fig.patches.append(rect)
+
+    fig.text(
+        fig_bbox.x1 + 0.05,
+        (fig_bbox.y0 + fig_bbox.y1) / 2,
+        "[WARNING] OVERFLOW",
+        color="#c92a2a",
+        fontsize=dm.fs(0),
+        fontweight="bold",
+        transform=fig.transFigure,
+        ha="left",
+        va="center",
+    )
+
+    path = images_dir / "validation_example.svg"
+    fig.savefig(
+        path, format="svg"
+    )  # don't use bbox_inches="tight" so it actually cuts off
     plt.close(fig)
     return path
 
@@ -321,6 +508,12 @@ def build_usage_guide_assets(base_dir: Path | None = None) -> list[Path]:
         ("layout_simple", _save_layout_simple),
         ("layout_gridspec", _save_layout_gridspec),
         ("layout_typography", _save_layout_typography),
+        ("label_axes_vanilla", _save_label_axes_vanilla),
+        ("label_axes_dm", _save_label_axes_dm),
+        ("set_decimal_vanilla", _save_set_decimal_vanilla),
+        ("set_decimal_dm", _save_set_decimal_dm),
+        ("arrow_axis_example", _save_arrow_axis_example),
+        ("validation_example", _save_validation_example),
         ("colors_colormap", _save_colors_colormap),
         ("save_scientific", _save_scientific_chart),
         ("save_diverging_bar", _save_diverging_bar),

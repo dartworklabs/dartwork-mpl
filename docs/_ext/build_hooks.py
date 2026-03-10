@@ -17,15 +17,11 @@ and techniques.
 """
 
 _GALLERY_CATEGORIES = [
-    "basic_plots",
-    "statistical_plots",
-    "bar_charts",
-    "scientific_plots",
-    "time_series",
-    "specialized_plots",
-    "layout_styling",
-    "colors_images",
-    "real_world",
+    "01_styling_and_themes",
+    "02_color_system",
+    "03_layout_and_annotations",
+    "04_advanced_components",
+    "05_real_world_dashboards",
 ]
 
 

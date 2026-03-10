@@ -66,5 +66,10 @@ tick crowding, and empty axes. Example output:
 ⚠ TICK_CROWDING: X-axis has 24 ticks in 3.5 inches (>6 per inch)
 ```
 
+:::{figure} images/validation_example.svg
+:alt: Visual validation error example showing a bounding box overflow overlay
+:width: 100%
+:::
+
 See [API › Visual Validation](../api/validate.rst)
 for details.

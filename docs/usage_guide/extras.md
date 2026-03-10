@@ -25,32 +25,9 @@ See [API › Extended Plots](../api/xplot.rst) for the full parameter list.
 
 ## Interactive viewer
 
-dartwork-mpl includes an optional interactive viewer powered by FastAPI for
-rapid parameter exploration. This is useful when you want to tweak chart
-parameters with sliders in a browser instead of re-running code.
+dartwork-mpl includes a powerful interactive viewer powered by FastAPI for rapid parameter exploration, real-time plotting, and automated reproducible code generation.
 
-> **Requires the `ui` extra:** `uv add "dartwork-mpl[ui]"` (installs FastAPI
-> and Pydantic).
-
-```python
-import matplotlib.pyplot as plt
-import numpy as np
-from dartwork_mpl.ui import ParamModel, run
-from pydantic import Field
-
-class Params(ParamModel):
-    n: int = Field(default=100, ge=10, le=1000)
-    alpha: float = Field(default=0.5, ge=0, le=1)
-
-def scatter(params: Params):
-    fig, ax = plt.subplots()
-    ax.scatter(range(params.n), np.random.randn(params.n), alpha=params.alpha)
-    return fig
-
-run(scatter)  # opens browser at http://127.0.0.1:8501
-```
-
-See [API › Interactive Viewer](../api/ui.rst) for details.
+See the dedicated [Interactive UI Guide](interactive.md) or the [API Reference](../api/ui.rst) for full details.
 
 ## Diagnostics & previews
 

@@ -241,11 +241,11 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     color: #fff;
     border-color: #333;
   }}
-  /* ── Main layout: chart left, params right ── */
+  /* ── Main layout: chart top, params bottom ── */
   .dm-pc-body {{
     display: flex;
+    flex-direction: column;
     gap: 16px;
-    align-items: stretch;
   }}
   /* ── Chart stage (fixed size) ── */
   .dm-pc-stage {{
@@ -254,7 +254,7 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     border: 1px solid #e0e0e0;
     border-radius: 6px;
     overflow: hidden;
-    flex: 1 1 0;
+    width: 100%;
     /* Fixed aspect ratio via padding-bottom */
     aspect-ratio: {aspect_ratio};
   }}
@@ -275,59 +275,46 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     width: 100%;
     height: 100%;
   }}
-  /* ── Parameter info panel (fixed width) ── */
+  /* ── Parameter info panel (multi-column grid) ── */
   .dm-pc-params {{
-    flex: 0 0 240px;
-    font-size: 12px;
+    font-size: 13px;
+    background: #fdfdfd;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 16px;
+  }}
+  .dm-pc-params-grid {{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px 48px; /* wider gap between columns */
+  }}
+  .dm-pc-param-item {{
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }}
-  .dm-pc-params table {{
-    width: 100%;
-    border-collapse: collapse;
-  }}
-  .dm-pc-params td {{
-    padding: 4px 0;
+    justify-content: flex-start;
+    align-items: baseline;
     border-bottom: 1px solid #eee;
-    vertical-align: middle;
+    padding-bottom: 6px;
   }}
-  .dm-pc-params td:first-child {{
+  .dm-pc-param-key {{
+    flex: 0 0 130px; /* fixed width for alignment */
     font-family: "SF Mono", "Fira Code", "Consolas", monospace;
     color: #555;
     white-space: nowrap;
-    width: 140px;
   }}
-  .dm-pc-params td:last-child {{
-    text-align: right;
+  .dm-pc-param-val {{
     font-weight: 600;
     color: #333;
     white-space: nowrap;
   }}
-  .dm-pc-params tr:last-child td {{
+  .dm-pc-param-special {{
+    grid-column: 1 / -1; /* Make 'best for' span full width if needed, or just let it flow */
     border-bottom: none;
-    padding-top: 8px;
-    font-style: italic;
-    color: #888;
-    font-weight: 500;
+    padding-top: 4px;
+    align-items: center;
   }}
-  .dm-pc-params tr:last-child td:first-child {{
-    font-family: inherit;
-    font-style: italic;
-  }}
-  .dm-pc-params tr:last-child td:last-child {{
-    font-weight: 600;
-  }}
-  /* ── Responsive: stack on narrow screens ── */
-  @media (max-width: 680px) {{
-    .dm-pc-body {{
-      flex-direction: column;
-    }}
-    .dm-pc-params {{
-      flex: none;
-      width: 100%;
-    }}
-  }}
+  .dm-pc-param-special .dm-pc-param-key {{
+    flex: 0 0 auto;
+    margin-right: 12px;
 </style>
 
 <div class="dm-pc-widget">
@@ -339,7 +326,7 @@ _HTML_TEMPLATE = textwrap.dedent("""\
 {panels_html}
     </div>
     <div class="dm-pc-params" id="dm-pc-params">
-      <table id="dm-pc-params-table"></table>
+      <div class="dm-pc-params-grid" id="dm-pc-params-grid"></div>
     </div>
   </div>
 </div>
@@ -351,7 +338,7 @@ _HTML_TEMPLATE = textwrap.dedent("""\
   document.addEventListener("DOMContentLoaded", function() {{
     var tabs = document.querySelectorAll(".dm-pc-tab");
     var panels = document.querySelectorAll(".dm-pc-panel");
-    var ptable = document.getElementById("dm-pc-params-table");
+    var pgrid = document.getElementById("dm-pc-params-grid");
 
     function activate(preset) {{
       tabs.forEach(function(t) {{
@@ -360,7 +347,7 @@ _HTML_TEMPLATE = textwrap.dedent("""\
       panels.forEach(function(p) {{
         p.classList.toggle("active", p.dataset.preset === preset);
       }});
-      // Update params table
+      // Update params grid
       if (params[preset]) {{
         var html = "";
         var p = params[preset];
@@ -368,15 +355,15 @@ _HTML_TEMPLATE = textwrap.dedent("""\
         for (var i = 0; i < keys.length; i++) {{
           var k = keys[i];
           if (k === "spines" || k === "best_for") continue;
-          html += "<tr><td>" + k + "</td><td>" + p[k] + "</td></tr>";
+          html += "<div class='dm-pc-param-item'><span class='dm-pc-param-key'>" + k + "</span><span class='dm-pc-param-val'>" + p[k] + "</span></div>";
         }}
         if (p["spines"]) {{
-          html += "<tr><td>spines</td><td>" + p["spines"] + "</td></tr>";
+          html += "<div class='dm-pc-param-item'><span class='dm-pc-param-key'>spines</span><span class='dm-pc-param-val'>" + p["spines"] + "</span></div>";
         }}
         if (meta[preset]) {{
-          html += "<tr><td>best for</td><td>" + meta[preset].use + "</td></tr>";
+          html += "<div class='dm-pc-param-item dm-pc-param-special'><span class='dm-pc-param-key'>best for</span><span class='dm-pc-param-val'>" + meta[preset].use + "</span></div>";
         }}
-        ptable.innerHTML = html;
+        pgrid.innerHTML = html;
       }}
     }}
 

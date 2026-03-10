@@ -48,27 +48,47 @@ This means the AI assistant always has **the latest, most accurate documentation
 
 ## Putting It All Together
 
-```
-┌─────────────────────────────────────────────────────┐
-│  You say: "Plot the signal response with a red line │
-│  and save it as SVG for my paper."                  │
-└───────────────────────┬─────────────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────┐
-│  AI reads dartwork-mpl guide via MCP                │
-│  → Knows to use dm.style.use('scientific')          │
-│  → Knows to use dm.simple_layout(), not tight_layout│
-│  → Knows color syntax: 'oc.red5'                    │
-│  → Knows to save with dm.save_formats()             │
-└───────────────────────┬─────────────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────┐
-│  AI generates correct code on first attempt         │
-│  → dm.validate_figure() confirms no issues          │
-│  → Paper-ready SVG saved                            │
-└─────────────────────────────────────────────────────┘
-```
+::::{grid} 1
+:gutter: 3
+:class-container: w-75 mx-auto
+
+:::{grid-item-card} 🗣️ User Prompt
+:class-header: text-primary font-weight-bold
+
+You say: _"Plot the signal response with a red line and save it as SVG for my paper."_
+:::
+
+:::{grid-item}
+:class: text-center text-muted fs-3
+
+↓
+:::
+
+:::{grid-item-card} 🧠 Context Retrieval (MCP)
+:class-header: text-info font-weight-bold
+
+AI reads **dartwork-mpl guide** via MCP:
+
+- Knows to use `dm.style.use('scientific')`
+- Knows to use `dm.simple_layout()`, not `tight_layout`
+- Knows color syntax: `'oc.red5'`
+- Knows to save with `dm.save_formats()`
+  :::
+
+:::{grid-item}
+:class: text-center text-muted fs-3
+
+↓
+:::
+
+:::{grid-item-card} ✅ Execution & Validation
+:class-header: text-success font-weight-bold
+:class-card: border-success
+
+- ✨ **AI generates correct code on first attempt**
+- 🔍 `dm.validate_figure()` confirms no issues
+- 📄 Paper-ready SVG saved
+  :::
+  ::::
 
 → Ready to set this up? See **[AI-Assisted Development](ai_assisted.md)** for the workflow guide, or jump straight to **[MCP Server](mcp_server.md)** for configuration.

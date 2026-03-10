@@ -68,7 +68,7 @@ dm.save_formats(fig, "out")             # ④ Export SVG + PNG
 
 ## Core pillars
 
-::::{grid} 1 1 3 3
+::::{grid} 1 1 2 2
 :gutter: 3
 
 :::{grid-item-card} 🎨 Style in One Call
@@ -83,6 +83,13 @@ Pick from `scientific`, `report`, `presentation`, `poster`, `web`, `dark`, or `m
 :link-type: doc
 
 `simple_layout()` replaces `tight_layout()` with L-BFGS-B optimized margins. Built-in visual validation catches overflow, text overlap, and tick crowding automatically.
+:::
+
+:::{grid-item-card} 🎛️ Interactive UI
+:link: usage_guide/interactive
+:link-type: doc
+
+Launch a local web app to interactively tweak plot parameters with sliders. Export perfect charts and download reproducible scripts instantly.
 :::
 
 :::{grid-item-card} 📦 Zero Lock-in

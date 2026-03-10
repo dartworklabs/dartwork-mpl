@@ -114,6 +114,37 @@ inches. This means:
 | `make_offset(x, y, fig)`      | Creates point-based offsets for precise text positioning      |
 | `get_bounding_box(boxes)`     | Merges multiple axes bounding boxes into one                  |
 
+## Annotation & Formatting
+
+Dartwork-mpl includes several helpers that automate tedious formatting tasks.
+
+### Auto-aligned panel labels (`label_axes`)
+
+Manually positioning `(a)`, `(b)`, `(c)` labels across panels with different y-axis label lengths often results in misaligned text. `dm.label_axes(axes)` calculates the bounding boxes of your y-labels and perfectly aligns the panel labels to the leftmost edge.
+
+**Interactive visualizer — drag the slider to compare:**
+
+```{raw} html
+:file: images/label_axes_slider.html
+```
+
+### Consistent tick decimals (`set_decimal`)
+
+Raw matplotlib ticks can sometimes mix integers and floats (e.g. `0.5`, `1`, `1.5`), which looks unprofessional. `dm.set_decimal()` forces consistent decimal places for publication-ready formatting.
+
+```{raw} html
+:file: images/set_decimal_slider.html
+```
+
+### Bidirectional arrow axes (`arrow_axis`)
+
+For conceptual or qualitative plots (like "Risk vs Return"), drawing bidirectional label axes manually is surprisingly difficult in matplotlib. `dm.arrow_axis()` handles the positioning, offsets, and arrows automatically.
+
+:::{figure} images/arrow_axis_example.svg
+:alt: Arrow axis example showing Risk vs Expected Return
+:width: 100%
+:::
+
 ## Typography
 
 ```python

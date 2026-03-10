@@ -40,6 +40,13 @@ overlap, and crowding before saving.
 → [Save and Validation](save_export.md)
 :::
 
+:::{grid-item-card} **5. Interactive UI**
+Launch a local web UI to tweak parameters with sliders, download plots,
+and generate reproducible Python scripts on the fly.
+
+→ [Interactive UI](interactive.md)
+:::
+
 ::::
 
 ```{toctree}
@@ -51,6 +58,7 @@ Styles and Presets <styles>
 Colors and Colormaps <colors>
 Layout and Typography <layout>
 Save and Validation <save_export>
+Interactive UI <interactive>
 Extended Plots & Tools <extras>
 ```
 
