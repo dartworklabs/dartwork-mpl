@@ -53,3 +53,9 @@ content = dm.get_prompt('general-guide') # read guide programmatically
 ```
 
 For real-time access, dartwork-mpl also ships a **Model Context Protocol (MCP) server** — see [AI Integration](../integrations/index) for setup.
+
+## See also
+
+- [Why AI-Ready?](../integrations/why_ai_ready.md) — concrete features: validation, MCP, and a worked example
+- [MCP Server](../integrations/mcp_server.md) — step-by-step setup
+- [AI-Assisted Development](../integrations/ai_assisted.md) — IDE integration and bundled guides

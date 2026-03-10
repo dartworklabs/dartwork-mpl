@@ -2,9 +2,13 @@ API Reference
 =============
 
 Dartwork-mpl ships one import (``import dartwork_mpl as dm``) but several
-small domains. Jump to the area you need—styles, layout, colors, fonts,
-exports, validation, or extended plots—and each page explains the arguments
-in plain language plus defaults that work in most cases.
+small domains. Each page explains arguments in plain language plus defaults
+that work in most cases.
+
+Core
+----
+
+The essential modules you'll use in every project.
 
 .. toctree::
    :maxdepth: 1
@@ -13,13 +17,22 @@ in plain language plus defaults that work in most cases.
    Style Management <style>
    Layout Utilities <layout>
    Color Utilities <color>
+   Save & Export <io>
+   Visual Validation <validate>
+
+Extensions
+----------
+
+Additional tools for specialized use cases.
+
+.. toctree::
+   :maxdepth: 1
+   :titlesonly:
+
    Font Utilities <font>
    Icon Font System <icon>
-   Save & Export <io>
-   Prompt Utilities <prompt>
-   Visualization Tools <visualization>
-   Visual Validation <validate>
    Extended Plots <xplot>
    Interactive Viewer <ui>
+   Visualization Tools <visualization>
+   Prompt Utilities <prompt>
    Figure Constants <constant>
-
