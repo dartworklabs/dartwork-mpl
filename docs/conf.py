@@ -75,6 +75,8 @@ exclude_patterns = [
     # Helper READMEs inside example sources
     "examples_source/README.rst",
     "examples_source/*/README.rst",
+    # Internal quality standards (not user-facing docs)
+    "examples_source/_LAYOUT_RECIPES.md",
 ]
 
 # -- Options for HTML output -------------------------------------------------

@@ -22,8 +22,8 @@ if TYPE_CHECKING:
 # Category badge colors (background, text)
 # ---------------------------------------------------------------------------
 _CATEGORY_STYLE: dict[str, tuple[str, str]] = {
-    "Sequential Single-Hue": ("#e3f2fd", "#1565c0"),
-    "Sequential Multi-Hue": ("#e8f5e9", "#2e7d32"),
+    "Single-Hue": ("#e3f2fd", "#1565c0"),
+    "Multi-Hue": ("#e8f5e9", "#2e7d32"),
     "Diverging": ("#fff3e0", "#e65100"),
     "Cyclical": ("#f3e5f5", "#7b1fa2"),
     "Categorical": ("#fce4ec", "#c62828"),
@@ -33,25 +33,25 @@ _CATEGORY_STYLE: dict[str, tuple[str, str]] = {
 # Override classification for standard dartwork customized maps
 # 30+ maps mapped into 5 core types
 _CLASSIFICATION_OVERRIDES: dict[str, str] = {
-    # Sequential Single-Hue
-    "dc.obsidian": "Sequential Single-Hue",
-    "dc.sapphire": "Sequential Single-Hue",
-    "dc.emerald": "Sequential Single-Hue",
-    "dc.ruby": "Sequential Single-Hue",
-    "dc.amethyst": "Sequential Single-Hue",
-    "dc.topaz": "Sequential Single-Hue",
-    "dc.graphite": "Sequential Single-Hue",
-    "dc.coral": "Sequential Single-Hue",
+    # Single-Hue
+    "dc.obsidian": "Single-Hue",
+    "dc.sapphire": "Single-Hue",
+    "dc.emerald": "Single-Hue",
+    "dc.ruby": "Single-Hue",
+    "dc.amethyst": "Single-Hue",
+    "dc.topaz": "Single-Hue",
+    "dc.graphite": "Single-Hue",
+    "dc.coral": "Single-Hue",
 
-    # Sequential Multi-Hue
-    "dc.aurora": "Sequential Multi-Hue",
-    "dc.sunset_glow": "Sequential Multi-Hue",
-    "dc.plasma_arc": "Sequential Multi-Hue",
-    "dc.spring_bloom": "Sequential Multi-Hue",
-    "dc.deep_sea": "Sequential Multi-Hue",
-    "dc.autumn_leaf": "Sequential Multi-Hue",
-    "dc.nebula_dust": "Sequential Multi-Hue",
-    "dc.tropical_fruit": "Sequential Multi-Hue",
+    # Multi-Hue
+    "dc.aurora": "Multi-Hue",
+    "dc.sunset_glow": "Multi-Hue",
+    "dc.plasma_arc": "Multi-Hue",
+    "dc.spring_bloom": "Multi-Hue",
+    "dc.deep_sea": "Multi-Hue",
+    "dc.autumn_leaf": "Multi-Hue",
+    "dc.nebula_dust": "Multi-Hue",
+    "dc.tropical_fruit": "Multi-Hue",
 
     # Diverging
     "dc.ice_fire": "Diverging",
@@ -98,8 +98,8 @@ def classify_colormap(cmap: Colormap) -> str:
     Categories
     ----------
     - Categorical
-    - Sequential Single-Hue
-    - Sequential Multi-Hue
+    - Single-Hue
+    - Multi-Hue
     - Diverging
     - Cyclical
 
@@ -212,9 +212,9 @@ def classify_colormap(cmap: Colormap) -> str:
                 hue_range = 1 - hue_range
 
             if hue_range < 0.01:
-                return "Sequential Single-Hue"
+                return "Single-Hue"
             else:
-                return "Sequential Multi-Hue"
+                return "Multi-Hue"
 
     hue_min = np.min(hues)
     hue_max = np.max(hues)
@@ -228,14 +228,14 @@ def classify_colormap(cmap: Colormap) -> str:
     )
 
     if hue_range < 0.01 and is_monotonic:
-        return "Sequential Single-Hue"
+        return "Single-Hue"
     elif hue_range > 0.01:
-        return "Sequential Multi-Hue"
+        return "Multi-Hue"
     else:
         if np.std(hue_diffs) < 0.02:
-            return "Sequential Single-Hue"
+            return "Single-Hue"
         else:
-            return "Sequential Multi-Hue"
+            return "Multi-Hue"
 
 
 def plot_colormaps(
@@ -286,8 +286,8 @@ def plot_colormaps(
 
     # ----- Group by category -----
     category_order = [
-        "Sequential Single-Hue",
-        "Sequential Multi-Hue",
+        "Single-Hue",
+        "Multi-Hue",
         "Diverging",
         "Cyclical",
         "Categorical",

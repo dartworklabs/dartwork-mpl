@@ -88,9 +88,13 @@ If these commands run without errors, you're all set! 🎉
 
 ## Next Steps
 
+::::{grid} 1
+
 :::{grid-item-card} 🚀 Quick Start
 Ready to create your first publication-quality figure? Follow the end-to-end
 workflow — apply a style, plot, and export in under a minute.
 
 → [Quick Start](../usage_guide/quickstart.md)
 :::
+
+::::

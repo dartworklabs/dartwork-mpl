@@ -32,16 +32,16 @@ import dartwork_mpl as dm
 
 # Sane defaults for how we display things.
 CATEGORY_ORDER = [
-    "Sequential Single-Hue",
-    "Sequential Multi-Hue",
+    "Single-Hue",
+    "Multi-Hue",
     "Diverging",
     "Cyclical",
     "Categorical",
 ]
 
 CATEGORY_BLURBS: dict[str, str] = {
-    "Sequential Single-Hue": "One hue that ramps value cleanly. Great for magnitude and density.",
-    "Sequential Multi-Hue": "Colorful ramps that stay perceptually smooth. Ideal for heatmaps.",
+    "Single-Hue": "One hue that ramps value cleanly. Great for magnitude and density.",
+    "Multi-Hue": "Colorful ramps that stay perceptually smooth. Ideal for heatmaps.",
     "Diverging": "Two anchored hues split around a midpoint. Perfect for anomalies or signed values.",
     "Cyclical": "Start equals end. Use for angles, phases, or anything periodic.",
     "Categorical": "Distinct steps with little interpolation. Use for discrete classes.",

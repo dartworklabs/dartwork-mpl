@@ -1,8 +1,8 @@
 """Generate OKLCH-native colormaps for dartwork-mpl.
 
 Produces 30+ colormaps across categories:
-- Sequential Single-Hue
-- Sequential Multi-Hue
+- Single-Hue
+- Multi-Hue
 - Diverging
 - Cyclical
 - Discrete Qualitative
@@ -27,7 +27,7 @@ CMAP_DIR = Path("src/dartwork_mpl/asset/cmap")
 # ──────────────────────────────────────────────────
 
 COLORMAPS: dict[str, list[str]] = {
-    # --- Sequential Single-Hue (8+ maps) ---
+    # --- Single-Hue (8+ maps) ---
     "obsidian": [
         "#050505", "#1A1A1A", "#333333",
         "#666666", "#999999", "#CCCCCC", "#F5F5F5",
@@ -60,13 +60,13 @@ COLORMAPS: dict[str, list[str]] = {
         "#2B0E0B", "#5C1E18", "#943329",
         "#CF4C3F", "#FA796B", "#FCB5AD", "#FEEAE8",
     ],
-    # --- Sequential Single-Hue (Vibrant) ---
-    "neon_blue": ["#EFF6FF", "#3B82F6", "#1D4ED8"],
-    "neon_green": ["#F0FDF4", "#22C55E", "#15803D"],
-    "neon_pink": ["#FDF2F8", "#EC4899", "#BE185D"],
-    "neon_orange": ["#FFF7ED", "#F97316", "#C2410C"],
+    # --- Single-Hue (Vibrant) ---
+    "neon_blue": ["#EFF6FF", "#3B82F6", "#1D4ED8", "#1E3A8A", "#0F172A"],
+    "neon_green": ["#F0FDF4", "#22C55E", "#15803D", "#064E3B", "#022C22"],
+    "neon_pink": ["#FDF2F8", "#EC4899", "#BE185D", "#831843", "#4C0519"],
+    "neon_orange": ["#FFF7ED", "#F97316", "#C2410C", "#7C2D12", "#431407"],
 
-    # --- Sequential Multi-Hue (Classic) ---
+    # --- Multi-Hue (Classic) ---
     "aurora": ["#081736", "#2B478B", "#4DB39A", "#D1F5D8"],
     "sunset_glow": ["#1A0724", "#611051", "#B82E47", "#F07B37", "#FCE09D"],
     "plasma_arc": ["#0D0221", "#4A066B", "#9C1777", "#ED3B4A", "#F2AA33", "#FCEEBA"],
@@ -75,11 +75,11 @@ COLORMAPS: dict[str, list[str]] = {
     "autumn_leaf": ["#1C060B", "#521217", "#993116", "#D9681C", "#F0B54F"],
     "nebula_dust": ["#090517", "#27154A", "#5E2980", "#A84C9C", "#E38BBA", "#FCE3F5"],
     "tropical_fruit": ["#2E062B", "#6E1346", "#B52B4D", "#ED653E", "#F5B44C", "#FDF3C2"],
-    # --- Sequential Multi-Hue (Vibrant) ---
-    "cyberpunk": ["#0F172A", "#6366F1", "#EC4899", "#FDE047"],
-    "synthwave": ["#170F11", "#9D174D", "#D946EF", "#38BDF8", "#F1F5F9"],
-    "vivid_dusk": ["#1E1B4B", "#7C3AED", "#F43F5E", "#FCD34D"],
-    "toxic_glow": ["#022C22", "#059669", "#84CC16", "#FEF08A"],
+    # --- Multi-Hue (Vibrant) ---
+    "cyberpunk": ["#020617", "#0F172A", "#6366F1", "#EC4899", "#FDE047", "#FEF08A"],
+    "synthwave": ["#050505", "#170F11", "#9D174D", "#D946EF", "#38BDF8", "#F1F5F9", "#FFFFFF"],
+    "vivid_dusk": ["#0F0A2A", "#1E1B4B", "#7C3AED", "#F43F5E", "#FCD34D", "#FEF3C7"],
+    "toxic_glow": ["#011511", "#022C22", "#059669", "#84CC16", "#FEF08A", "#FEF9C3"],
 
     # --- Diverging (Classic) ---
     "ice_fire": ["#0C275C", "#2966C7", "#F2F5F7", "#D42A38", "#570911"],
@@ -91,14 +91,14 @@ COLORMAPS: dict[str, list[str]] = {
     "magenta_cyan": ["#380A2B", "#8C1B6C", "#F5F2F5", "#15828C", "#063033"],
     "slate_orange": ["#121A21", "#364A5C", "#F2F4F5", "#C75A1C", "#471D05"],
     # --- Diverging (Vibrant) ---
-    "cool_warm": ["#2563EB", "#60A5FA", "#F8FAFC", "#F87171", "#DC2626"],
-    "arctic_heat": ["#0891B2", "#67E8F9", "#F8FAFC", "#FDBA74", "#EA580C"],
-    "frost_flame": ["#0369A1", "#38BDF8", "#F8FAFC", "#FB7185", "#BE123C"],
-    "water_fire": ["#4338CA", "#818CF8", "#F8FAFC", "#FBBF24", "#B45309"],
-    "spring_autumn": ["#10B981", "#6EE7B7", "#F8FAFC", "#F59E0B", "#D97706"],
-    "summer_winter": ["#EC4899", "#F472B6", "#F8FAFC", "#06B6D4", "#0891B2"],
-    "electric_surge": ["#8B5CF6", "#C4B5FD", "#F8FAFC", "#EAB308", "#A16207"],
-    "neon_pulse": ["#D946EF", "#F0ABFC", "#F8FAFC", "#14B8A6", "#0F766E"],
+    "cool_warm": ["#1E3A8A", "#2563EB", "#60A5FA", "#F8FAFC", "#F87171", "#DC2626", "#7F1D1D"],
+    "arctic_heat": ["#164E63", "#0891B2", "#67E8F9", "#F8FAFC", "#FDBA74", "#EA580C", "#7C2D12"],
+    "frost_flame": ["#0C4A6E", "#0369A1", "#38BDF8", "#F8FAFC", "#FB7185", "#BE123C", "#881337"],
+    "water_fire": ["#312E81", "#4338CA", "#818CF8", "#F8FAFC", "#FBBF24", "#B45309", "#78350F"],
+    "spring_autumn": ["#064E3B", "#10B981", "#6EE7B7", "#F8FAFC", "#F59E0B", "#D97706", "#78350F"],
+    "summer_winter": ["#831843", "#EC4899", "#F472B6", "#F8FAFC", "#06B6D4", "#0891B2", "#164E63"],
+    "electric_surge": ["#4C1D95", "#8B5CF6", "#C4B5FD", "#F8FAFC", "#EAB308", "#A16207", "#713F12"],
+    "neon_pulse": ["#701A75", "#D946EF", "#F0ABFC", "#F8FAFC", "#14B8A6", "#0F766E", "#134E4A"],
 
     # --- Cyclical (6 maps) ---
     "twilight_oklch": [
@@ -110,10 +110,10 @@ COLORMAPS: dict[str, list[str]] = {
         "#093247", "#228587", "#84D1C1", "#FADEEB",
     ],
     "color_wheel": [
-        "#FF595E", "#FFCA3A", "#8AC926", "#1982C4", "#6A4C93", "#FF595E"
+        "#FF0000", "#FFEA00", "#00E676", "#2962FF", "#4A148C", "#FF0000"
     ],
     "seasons": [
-        "#A8E6CF", "#DCEDC1", "#FFD3B6", "#FFAAA5", "#FF8B94", "#A8E6CF"
+        "#E8F5E9", "#FBC02D", "#D84315", "#1A237E", "#E8F5E9"
     ],
     "day_night": [
         "#111111", "#F89035", "#FAD87F", "#8EE4AF", "#1E688A", "#111111"
@@ -122,8 +122,8 @@ COLORMAPS: dict[str, list[str]] = {
         "#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#9400D3", "#FF0000"
     ],
     # --- Cyclical (Vibrant) ---
-    "neon_wheel": ["#FF0055", "#FFBB00", "#00FF66", "#00DDFF", "#AA00FF", "#FF0055"],
-    "electric_cycle": ["#EC4899", "#FBBF24", "#34D399", "#60A5FA", "#A78BFA", "#EC4899"]
+    "neon_wheel": ["#4C0519", "#FF0055", "#FFBB00", "#F0FDF4", "#00FF66", "#00DDFF", "#1E1B4B", "#AA00FF", "#4C0519"],
+    "electric_cycle": ["#831843", "#EC4899", "#FBBF24", "#FEF3C7", "#34D399", "#60A5FA", "#312E81", "#A78BFA", "#831843"]
 }
 
 
@@ -165,20 +165,23 @@ def generate_continuous(
 # ──────────────────────────────────────────────────
 
 DISCRETE_SPECS: dict[str, dict] = {
-    "vivid": {"L": 0.65, "C": 0.22, "n": 8, "h_offset": 20},
-    "lucid": {"L": 0.75, "C": 0.16, "n": 8, "h_offset": 20},
-    "chalk": {"L": 0.88, "C": 0.08, "n": 8, "h_offset": 20},
+    "vivid": {"L": 0.60, "L_amp": 0.25, "C": 0.22, "n": 8, "h_offset": 20},
+    "lucid": {"L": 0.65, "L_amp": 0.20, "C": 0.16, "n": 8, "h_offset": 20},
+    "chalk": {"L": 0.75, "L_amp": 0.15, "C": 0.08, "n": 8, "h_offset": 20},
 }
 
 
 def generate_discrete(name: str, spec: dict) -> None:
-    """Generate N equispaced hues on the OKLCH wheel."""
+    """Generate N equispaced hues on the OKLCH wheel, varying L for monochrome safety."""
+    import math
     n = spec["n"]
     out_path = CMAP_DIR / f"{name}.txt"
     with open(out_path, "w") as f:
         for i in range(n):
             h = (spec["h_offset"] + i * 360.0 / n) % 360.0
-            c = dm.Color.from_oklch(spec["L"], spec["C"], h)
+            L_val = spec["L"] + spec.get("L_amp", 0.0) * math.sin(math.radians(h))
+            L_val = max(0.0, min(1.0, L_val))
+            c = dm.Color.from_oklch(L_val, spec["C"], h)
             r, g, b = c.to_rgb()
             r = max(0.0, min(1.0, r))
             g = max(0.0, min(1.0, g))
@@ -194,24 +197,24 @@ _load_colors()
 
 CATEGORICAL_PRESETS: dict[str, list[str]] = {
     "vibrant": [
-        "oc.red6", "oc.orange5", "oc.yellow5", "oc.green5",
-        "oc.cyan5", "oc.blue6", "oc.grape5"
+        "oc.red7", "oc.orange5", "oc.yellow2", "oc.green6",
+        "oc.cyan4", "oc.blue8", "oc.grape9"
     ],
     "pastel": [
-        "oc.red3", "oc.orange3", "oc.yellow3", "oc.teal3",
-        "oc.blue3", "oc.violet3", "oc.pink3"
+        "oc.red2", "oc.orange4", "oc.yellow1", "oc.teal5",
+        "oc.blue3", "oc.violet6", "oc.pink4"
     ],
     "candy": [
-        "tw.rose400", "tw.amber400", "tw.lime400", "tw.emerald400",
-        "tw.cyan400", "tw.blue400", "tw.violet400"
+        "tw.rose500", "tw.amber300", "tw.lime400", "tw.emerald600",
+        "tw.cyan200", "tw.blue700", "tw.violet800"
     ],
     "pop": [
-        "tw.red500", "tw.orange500", "tw.yellow400", "tw.green500",
-        "tw.sky500", "tw.indigo500", "tw.fuchsia500"
+        "tw.red600", "tw.orange400", "tw.yellow200", "tw.green500",
+        "tw.sky300", "tw.indigo700", "tw.fuchsia800"
     ],
     "macaron": [
-        "tw.pink300", "tw.orange300", "tw.yellow300", "tw.lime300",
-        "tw.cyan300", "tw.blue300", "tw.purple300"
+        "tw.pink400", "tw.orange300", "tw.yellow100", "tw.lime500",
+        "tw.cyan200", "tw.blue600", "tw.purple700"
     ],
 }
 
