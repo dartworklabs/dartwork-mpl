@@ -80,6 +80,10 @@ COLORMAPS: dict[str, list[str]] = {
     "forest_brick": ["#06331A", "#1D7541", "#F5F7F5", "#AD3C2B", "#421008"],
     "magenta_cyan": ["#380A2B", "#8C1B6C", "#F5F2F5", "#15828C", "#063033"],
     "slate_orange": ["#121A21", "#364A5C", "#F2F4F5", "#C75A1C", "#471D05"],
+    "cool_warm": ["#2563EB", "#60A5FA", "#F8FAFC", "#F87171", "#DC2626"],
+    "arctic_heat": ["#0891B2", "#67E8F9", "#F8FAFC", "#FDBA74", "#EA580C"],
+    "frost_flame": ["#0369A1", "#38BDF8", "#F8FAFC", "#FB7185", "#BE123C"],
+    "water_fire": ["#4338CA", "#818CF8", "#F8FAFC", "#FBBF24", "#B45309"],
 
     # --- Cyclical (6 maps) ---
     "twilight_oklch": [

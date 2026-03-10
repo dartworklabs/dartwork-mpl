@@ -62,20 +62,28 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     "dc.forest_brick": "Diverging",
     "dc.magenta_cyan": "Diverging",
     "dc.slate_orange": "Diverging",
+    "dc.cool_warm": "Diverging",
+    "dc.arctic_heat": "Diverging",
+    "dc.frost_flame": "Diverging",
+    "dc.water_fire": "Diverging",
 
     # Cyclical
     "dc.twilight_oklch": "Cyclical",
     "dc.phase_wheel": "Cyclical",
+    "dc.color_wheel": "Cyclical",
+    "dc.seasons": "Cyclical",
+    "dc.day_night": "Cyclical",
+    "dc.rainbow_cycle": "Cyclical",
 
     # Discrete
     "dc.vivid": "Categorical",
     "dc.lucid": "Categorical",
     "dc.chalk": "Categorical",
-    "dc.oc_vibrant": "Categorical",
-    "dc.oc_pastel": "Categorical",
-    "dc.tw_candy": "Categorical",
-    "dc.tw_pop": "Categorical",
-    "dc.tw_macaron": "Categorical",
+    "dc.vibrant": "Categorical",
+    "dc.pastel": "Categorical",
+    "dc.candy": "Categorical",
+    "dc.pop": "Categorical",
+    "dc.macaron": "Categorical",
 }
 
 def classify_colormap(cmap: Colormap) -> str:
