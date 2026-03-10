@@ -54,10 +54,12 @@
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
+import numpy as np
 
 dm.style.use("scientific")              # ① Pick a style
 fig, ax = plt.subplots()
-ax.plot(x, y, color="oc.blue5")         # ② Use named colors
+x = np.linspace(0, 10, 200)
+ax.plot(x, np.sin(x), color="oc.blue5") # ② Use named colors
 dm.simple_layout(fig)                   # ③ Optimize layout
 dm.save_formats(fig, "out")             # ④ Export SVG + PNG
 ```
@@ -106,11 +108,12 @@ Every utility is simple enough to copy into your project. No lock-in — leave a
 :titlesonly:
 :hidden:
 
-Installation <installation/index>
+Getting Started <installation/index>
+Quick Start <usage_guide/quickstart>
 Usage Guide <usage_guide/index>
-Examples Gallery <examples_gallery/index>
 Color System <color_system/index>
 Fonts <fonts/index>
+Examples Gallery <examples_gallery/index>
 API Reference <api/index>
 Design Philosophy <philosophy/index>
 AI Integration <integrations/index>

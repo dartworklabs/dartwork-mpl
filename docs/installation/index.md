@@ -85,3 +85,12 @@ If these commands run without errors, you're all set! 🎉
 > - Your Python environment is activated (if using virtual environments)
 > - The package was installed in the correct environment
 > - You have matplotlib installed as a dependency
+
+## Next Steps
+
+:::{grid-item-card} 🚀 Quick Start
+Ready to create your first publication-quality figure? Follow the end-to-end
+workflow — apply a style, plot, and export in under a minute.
+
+→ [Quick Start](../usage_guide/quickstart.md)
+:::
