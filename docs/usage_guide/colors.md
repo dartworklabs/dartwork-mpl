@@ -1,5 +1,9 @@
 # Colors and Colormaps
 
+This page covers practical usage: picking colors, mixing them, interpolating
+gradients, and using colormaps. For full visual catalogs of every palette and
+colormap, see the [Color System](../color_system/index.md) reference.
+
 ## Named colors
 
 dartwork-mpl registers named palettes from OpenColor, Tailwind, Material,

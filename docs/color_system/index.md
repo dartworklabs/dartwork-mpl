@@ -1,61 +1,55 @@
 # Color System
 
-A single, scrollable hub for everything color-related in dartwork-mpl. Each
-section below is a full-width preview; click through to the dedicated page if
-you want the complete sheets and usage details.
+The color reference hub for dartwork-mpl. Browse complete palette sheets,
+explore colormap collections, and dive into the `Color` class for
+programmatic manipulation in perceptually uniform color spaces.
+
+> **Looking for a quick how-to?** See the
+> [Colors and Colormaps](../usage_guide/colors.md) guide for practical usage
+> patterns, named color shortcuts, and mixing utilities.
 
 ```{toctree}
 :maxdepth: 1
 :titlesonly:
 :hidden:
 
-Colors <colors>
-Colormaps <colormaps>
-Color Space <space>
+Palette Catalog <colors>
+Colormap Catalog <colormaps>
+Color Space & Manipulation <space>
 ```
 
-**Colors.** All named palettes ship as weight-aware labels you can drop straight
-into matplotlib (`tw.blue500`, `md.red700`, `oc.gray6`, and more).
+---
+
+## Named palette catalog
+
+All named palettes rendered as full-width sheets — use `library.colorweight`
+anywhere matplotlib accepts a color string (e.g. `tw.blue500`, `oc.gray6`).
 
 ```{raw} html
 :file: images/colors_opencolor.html
 ```
 
-[Open the full color sheets →](colors.md)
+[Open the full palette sheets →](colors.md)
 
 ---
 
-**Colormaps.** Sequential, diverging, cyclical, and categorical ramps—plus
-dartwork-mpl's own curated set (prefixed with `dc.`)—rendered as wide gradients
-sized for slides and exports.
+## Colormap catalog
+
+Sequential, diverging, cyclical, and categorical ramps — including
+dartwork-mpl's own OKLCH-designed `dc.*` collection.
 
 ```{raw} html
 :file: images/colormaps_sequential_multi_hue.html
 ```
 
-[Browse the colormap panels →](colormaps.md)
+[Browse all colormaps →](colormaps.md)
 
-## Quick start
+---
 
-```python
-import dartwork_mpl as dm
-import matplotlib.pyplot as plt
-import numpy as np
+## Color class & interpolation
 
-dm.style.use("scientific")
+The `Color` class provides perceptually uniform manipulation in OKLab/OKLCH
+space — adjust hue, saturation, and lightness with predictable results, and
+build smooth custom gradients.
 
-# Named colors work anywhere matplotlib accepts a color string
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(dm.cm2in(15), dm.cm2in(8.5)), dpi=300)
-
-x = np.linspace(0, 10, 200)
-signal = np.sin(x) * np.exp(-0.08 * x)
-ax1.plot(x, signal, color="tw.emerald500", linewidth=2, label="Emerald 500")
-ax1.legend(fontsize=dm.fs(-1))
-
-# Custom colormaps prefixed with 'dc.'
-data = np.random.randn(50, 50).cumsum(axis=0)
-im = ax2.imshow(data, cmap="dc.sunset")
-plt.colorbar(im, ax=ax2, label="normalized response")
-
-dm.simple_layout(fig)
-```
+[Learn color space manipulation →](space.md)
