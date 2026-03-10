@@ -42,37 +42,21 @@ dm.simple_layout(fig)
 
 ## Color class
 
-For most plots, named color strings like `"oc.blue5"` are all you need. Use the
-`Color` class when you want to programmatically adjust hue, saturation, or
-lightness — or when you need to interpolate between colors in a perceptually
-uniform space (OKLab, OKLCH, RGB, and hex):
+For most plots, named color strings like `"oc.blue5"` are all you need. When
+you need to programmatically adjust hue, saturation, or lightness — or
+interpolate between colors in a perceptually uniform space — use the `Color`
+class:
 
 ```python
 import dartwork_mpl as dm
 
-# Create colors from any color space
-color = dm.oklch(0.7, 0.15, 150)       # OKLCH (L, C, h°)
-color = dm.rgb(66, 133, 244)           # auto-detects 0-255 range
-color = dm.hex('#4285F4')              # hex string
-color = dm.named('oc.blue5')           # matplotlib color name
-
-# Read/write via views (mutable references to internal state)
-color.oklch.C *= 1.2                   # boost chroma in-place
-L, C, h = color.oklch                  # unpack OKLCH
-r, g, b = color.rgb                    # unpack RGB
-
-# Convert to any representation
-print(color.to_hex())                  # '#...'
-print(color.to_rgb())                  # (r, g, b)
-print(color.to_oklch())               # (L, C, h)
-
-# Copy to avoid mutation
-brighter = color.copy()
-brighter.oklab.L += 0.1
+color = dm.oklch(0.7, 0.15, 150)    # OKLCH (L, C, h°)
+color.oklch.C *= 1.2                 # boost chroma in-place
+print(color.to_hex())                # '#...'
 ```
 
-See [Color Space](../color_system/space.md) for the full guide on perceptual color
-manipulation, including interpolation and custom colormap creation.
+→ **Full guide:** [Color Space & Manipulation](../color_system/space.md) —
+constructors, views, interpolation, and custom colormaps.
 
 ## Color interpolation
 
