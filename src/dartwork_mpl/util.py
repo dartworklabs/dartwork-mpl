@@ -1,8 +1,8 @@
-"""Matplotlib 피규어 관리를 위한 기타 범용 유틸리티.
+"""Miscellaneous utilities for Matplotlib figure management.
 
-별도의 단일 모듈로 분리하기 다소 애매한 작은 유틸리티성 함수들을
-모아두었습니다. 기존 하위 버전들과의 하위 호환성을 위해 다른 폴더로
-이동된 핵심 함수들도 해당 모듈을 거쳐 re-exports 되고 있습니다.
+Collects small helper functions that do not warrant their own module.
+Also re-exports core functions that were moved to dedicated modules
+for backward compatibility.
 """
 
 from __future__ import annotations
@@ -48,18 +48,18 @@ from matplotlib.transforms import ScaledTranslation
 
 
 def set_decimal(ax: Axes, xn: int | None = None, yn: int | None = None) -> None:
-    """x축 및/또는 y축 눈금 라벨의 소수점 자릿수를 고정시킵니다.
+    """Fix the number of decimal places displayed on tick labels.
 
     Parameters
     ----------
     ax : matplotlib.axes.Axes
-        설정을 변경할 Axes 객체.
+        The Axes to modify.
     xn : int | None, optional
-        x축 눈금 라벨에 표시할 소수점 이하 자릿수 깊이.
-        None일 경우 변경하지 않습니다.
+        Number of decimal places for x-axis tick labels.
+        If None, the x-axis is left unchanged.
     yn : int | None, optional
-        y축 눈금 라벨에 표시할 소수점 이하 자릿수 깊이.
-        None일 경우 변경하지 않습니다.
+        Number of decimal places for y-axis tick labels.
+        If None, the y-axis is left unchanged.
     """
     if xn is not None:
         xticks = ax.get_xticks()
@@ -77,21 +77,21 @@ def mix_colors(
     color2: str | tuple[float, float, float],
     alpha: float = 0.5,
 ) -> tuple[float, float, float]:
-    """두 개의 색상을 지정된 가중치(alpha)에 따라 섞습니다.
+    """Blend two colors according to a given weight (alpha).
 
     Parameters
     ----------
     color1 : str | tuple[float, float, float]
-        혼합할 첫 번째 색상. matplotlib에서 인식할 수 있는 어떤 형태든 지원합니다.
+        First color to blend. Any format recognized by matplotlib.
     color2 : str | tuple[float, float, float]
-        혼합할 두 번째 색상.
+        Second color to blend.
     alpha : float, optional
-        첫 번째 색상이 가지는 가중치 혹은 불투명도(0과 1사이). 기본 설정값은 0.5.
+        Weight of the first color (between 0 and 1). Default is 0.5.
 
     Returns
     -------
     tuple[float, float, float]
-        두 색상이 섞인 결과물의 RGB 튜플.
+        RGB tuple of the blended result.
     """
     color1 = mcolors.to_rgb(color1)
     color2 = mcolors.to_rgb(color2)
@@ -108,61 +108,61 @@ def pseudo_alpha(
     alpha: float = 1.0,
     background: str | tuple[float, float, float] = "white",
 ) -> tuple[float, float, float]:
-    """배경색과 섞어서 투명도(alpha)가 적용된 것처럼 보이는 색상의 실제 RGB를 반환합니다.
+    """Return an opaque RGB that simulates alpha transparency against a background.
 
-    실제로 alpha가 적용되면 선이 겹치거나 이미지를 덮을 때 색이 진해지는 문제가 생길 수 있습니다.
-    이럴 경우 불투명한 새로운 색상을 배경과 직접 믹스하여 "시각적인 모의 투명도"를 부여할 수 있게
-    해 주는 편리한 함수입니다.
+    True alpha can cause darkening artifacts when lines overlap or
+    cover images. This function blends the color with the background
+    to produce a flat (opaque) color that visually mimics transparency.
 
     Parameters
     ----------
     color : str | tuple[float, float, float]
-        목표로 하는 원본 대상 색상.
+        The target foreground color.
     alpha : float, optional
-        적용하고자 하는 모의 투명도(0에서 1사이값). 기본값은 1.0(불투명 원본).
+        Simulated opacity (0 to 1). Default is 1.0 (fully opaque).
     background : str | tuple[float, float, float], optional
-        색상을 믹스할 배경 색상. 기본값은 "white".
+        Background color to blend against. Default is "white".
 
     Returns
     -------
     tuple[float, float, float]
-        투명도 효과가 처리된 결과 색상의 RGB 튜플.
+        RGB tuple of the composited color.
     """
     return mix_colors(color, background, alpha=alpha)
 
 
 def cm2in(cm: float) -> float:
-    """주어진 센티미터(cm) 단위를 인치(inch) 값으로 변환합니다.
+    """Convert centimeters to inches.
 
     Parameters
     ----------
     cm : float
-        센티미터 단위의 스케일 크기.
+        Value in centimeters.
 
     Returns
     -------
     float
-        변환된 인치 단위의 스케일 크기.
+        Equivalent value in inches.
     """
     return cm / 2.54
 
 
 def make_offset(x: float, y: float, fig: Figure) -> ScaledTranslation:
-    """피규어 내부 요소(텍스트 등)를 이동시키기 위한 오프셋 변환 객체를 생성합니다.
+    """Create a translation offset transform for positioning figure elements.
 
     Parameters
     ----------
     x : float
-        이동할 x축 오프셋 (단위: points).
+        Horizontal offset in points.
     y : float
-        이동할 y축 오프셋 (단위: points).
+        Vertical offset in points.
     fig : matplotlib.figure.Figure
-        기준이 되는 Figure 캔버스 범위.
+        The Figure whose DPI scale is used.
 
     Returns
     -------
     matplotlib.transforms.ScaledTranslation
-        적용 가능한 오프셋 좌표 변환 도구.
+        A translation transform that can be added to other transforms.
     """
     dx, dy = x / 72, y / 72
     offset = ScaledTranslation(dx, dy, fig.dpi_scale_trans)

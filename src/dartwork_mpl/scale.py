@@ -1,7 +1,7 @@
-"""rcParams 기본값을 기준으로 한 폰트 및 선 굵기 스케일링 도구.
+"""Font and line-width scaling helpers relative to rcParams defaults.
 
-현재 설정된 matplotlib 스타일의 기본 크기로부터 일정한 오프셋을
-더하거나 빼서 크기를 조절하는 ``fs``, ``fw``, ``lw`` 헬퍼 함수를 제공합니다.
+Provides ``fs``, ``fw``, and ``lw`` helper functions that add or
+subtract fixed offsets from the current matplotlib style defaults.
 """
 
 from __future__ import annotations
@@ -29,38 +29,38 @@ _WEIGHT_MAP: dict[str, int] = {
 
 
 def fs(n: int | float) -> float:
-    """기본 폰트 크기(font size)에 *n*\ 을 더한 값을 반환합니다.
+    """Return the base font size plus *n*.
 
     Parameters
     ----------
     n : int | float
-        기본 ``rcParams['font.size']``\ 에 더할 오프셋 값.
-        양수면 폰트가 더 커지고, 음수면 작아집니다.
+        Offset to add to ``rcParams['font.size']``.
+        Positive values increase, negative values decrease.
 
     Returns
     -------
     float
-        스케일링이 완료된 새로운 폰트 크기.
+        Scaled font size.
     """
     return float(plt.rcParams["font.size"]) + float(n)
 
 
 def fw(n: int) -> int:
-    """기본 폰트 굵기(font weight)에 100 × *n*\ 을 더한 값을 반환합니다.
+    """Return the base font weight plus 100 × *n*.
 
-    문자열로 된 굵기 속성(예: ``'normal'``, ``'bold'``)은 연산을 수행하기 전에
-    매칭되는 숫자형 단위(예: 400, 700)로 자동 변환됩니다.
+    String weight names (e.g., ``'normal'``, ``'bold'``) are automatically
+    converted to their numeric equivalents (e.g., 400, 700) before computation.
 
     Parameters
     ----------
     n : int
-        기본 폰트 굵기에 더할 가중치 단계별 횟수(한 단계당 100).
-        예컨대 n=1을 지정하면 기존 폰트보다 한 단계 굵은 폰트를 사용하게 됩니다.
+        Number of weight steps to add (each step = 100).
+        For example, n=1 selects one step bolder than the base weight.
 
     Returns
     -------
     int
-        숫자형태로 계산된 새로운 폰트 굵기.
+        Computed numeric font weight.
     """
     base = plt.rcParams["font.weight"]
     if isinstance(base, str):
@@ -69,17 +69,17 @@ def fw(n: int) -> int:
 
 
 def lw(n: int | float) -> float:
-    """기본 선 두께(line width)에 *n*\ 을 더한 값을 반환합니다.
+    """Return the base line width plus *n*.
 
     Parameters
     ----------
     n : int | float
-        기본 ``rcParams['lines.linewidth']``\ 에 더할 오프셋 값.
-        양수면 선이 굵어지고, 음수면 얇아집니다.
+        Offset to add to ``rcParams['lines.linewidth']``.
+        Positive values thicken, negative values thin.
 
     Returns
     -------
     float
-        스케일링이 완료된 새로운 선 두께.
+        Scaled line width.
     """
     return float(plt.rcParams["lines.linewidth"]) + float(n)

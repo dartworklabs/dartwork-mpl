@@ -5,17 +5,17 @@ Light corporate theme with Lucide icons. No gradients, no emojis.
 
 
 def get_html(title: str = "Dartwork Viewer") -> str:
-    """완전한 HTML 페이지를 문자열로 반환한다.
+    """Return the complete HTML page as a string.
 
     Parameters
     ----------
     title : str, optional
-        페이지 제목. 기본값은 ``"Dartwork Viewer"``.
+        Page title. Default is ``"Dartwork Viewer"``.
 
     Returns
     ----------
     str
-        HTML 문서 전체 문자열.
+        Full HTML document string.
     """
     return f"""<!DOCTYPE html>
 <html lang="en">

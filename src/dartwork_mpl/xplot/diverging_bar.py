@@ -1,7 +1,8 @@
-"""발산형(Diverging) 바 차트 시각화 모듈.
+"""Diverging bar chart visualization module.
 
-중앙 축을 기준으로 양수와 음수 값을 반대 방향으로 표시하는 발산형 바 차트를
-생성하는 기능을 제공합니다.
+Provides functions for creating horizontal bar charts that display
+positive and negative values extending in opposite directions from
+a central axis.
 """
 
 import matplotlib.pyplot as plt
@@ -34,69 +35,73 @@ def plot_diverging_bar(
     title_to_legend_gap: float = 0.05,
     legend_to_figure_gap: float = 0.06,
 ) -> tuple[Figure, Axes]:
-    """양수와 음수 값을 가지는 발산형(diverging) 바 차트를 생성합니다.
+    """Create a diverging bar chart with positive and negative values.
 
-    이 함수는 중앙 축을 기준으로 음수는 왼쪽으로, 양수는 오른쪽으로 뻗어나가는
-    가로형 바 차트를 생성합니다. 제목, 범례, 피규어가 세로로 배치되는
-    계단식(cascading) 레이아웃을 사용합니다.
+    Generates a horizontal bar chart where negative values extend left
+    and positive values extend right from a central axis. Uses a
+    cascading layout with title, legend, and figure stacked vertically.
 
     Parameters
     ----------
     labels : list[str] | None, optional
-        차트 왼쪽에 표시될 카테고리 라벨 리스트. 라벨은 위에서 아래로 역순으로
-        표시됩니다. None인 경우 기본 샘플 데이터를 사용합니다. 기본값은 None.
+        Category labels shown on the left. Labels are displayed from
+        top to bottom in reverse order. If None, default sample data
+        is used. Default is None.
     neg_values : np.ndarray | None, optional
-        음수 값 배열 (라벨당 하나). 값은 음수여야 합니다. None인 경우
-        기본 샘플 데이터를 사용합니다. 기본값은 None.
+        Array of negative values (one per label). Values should be
+        negative. If None, default sample data is used. Default is None.
     pos_values : np.ndarray | None, optional
-        양수 값 배열 (라벨당 하나). 값은 양수여야 합니다. None인 경우
-        기본 샘플 데이터를 사용합니다. 기본값은 None.
+        Array of positive values (one per label). Values should be
+        positive. If None, default sample data is used. Default is None.
     add_total : bool, optional
-        True이면 평균값을 포함하는 "Total" 행을 추가합니다. 기본값은 True.
+        If True, appends a "Total" row with mean values. Default is True.
     figsize : tuple[float, float] | None, optional
-        피규어 크기 (너비, 높이) 인치 단위. None인 경우 (12cm, 12cm)를
-        사용합니다. 기본값은 None.
+        Figure size (width, height) in inches. If None, (12cm, 12cm)
+        is used. Default is None.
     dpi : int, optional
-        피규어 해상도 (인치당 도트 수). 기본값은 300.
+        Figure resolution in dots per inch. Default is 300.
     title : str | None, optional
-        상단에 표시될 제목 텍스트. None인 경우 기본 제목을 사용합니다.
-        기본값은 None.
+        Title text shown at the top. If None, a default title is used.
+        Default is None.
     neg_label : str, optional
-        범례(legend)에 표시될 음수 바의 라벨.
-        기본값은 "Review & Refactoring overhead".
+        Legend label for negative bars.
+        Default is "Review & Refactoring overhead".
     pos_label : str, optional
-        범례(legend)에 표시될 양수 바의 라벨.
-        기본값은 "Code Generation savings".
+        Legend label for positive bars.
+        Default is "Code Generation savings".
     colors : dict[str, str] | None, optional
-        'neg'와 'pos' 키를 가지는 색상 딕셔너리. None인 경우 기본 색상
-        (음수는 MidnightBlue 계열, 양수는 CornflowerBlue 계열)을
-        사용합니다. 기본값은 None.
+        Dictionary with 'neg' and 'pos' keys. If None, default colors
+        (MidnightBlue for negative, CornflowerBlue for positive) are
+        used. Default is None.
     hbar_height : float, optional
-        각 가로 바의 높이. 기본값은 0.5.
+        Height of each horizontal bar. Default is 0.5.
     hbar_spacing_factor : float, optional
-        ``hbar_height``\ 의 배수로 나타낸 바 사이의 간격. 기본값은 1.6.
+        Bar spacing as a multiple of ``hbar_height``. Default is 1.6.
     left_margin : float, optional
-        피규어 좌표계(0-1) 기준 Axes의 왼쪽 여백. 기본값은 0.35.
+        Left margin of the Axes in figure coordinates (0–1). Default is 0.35.
     right_margin : float, optional
-        피규어 좌표계(0-1) 기준 Axes의 오른쪽 여백. 기본값은 0.95.
+        Right margin of the Axes in figure coordinates (0–1). Default is 0.95.
     figure_bottom : float, optional
-        피규어 좌표계(0-1) 기준 Axes의 아래쪽 여백. 기본값은 0.03.
+        Bottom margin of the Axes in figure coordinates (0–1). Default is 0.03.
     base_x : float, optional
-        피규어 좌표계(0-1) 기준 제목, 범례, 라벨의 공통 x 좌표.
-        기본값은 0.02.
+        Common x-coordinate for title, legend, and labels in figure
+        coordinates (0–1). Default is 0.02.
     title_y : float, optional
-        피규어 좌표계(0-1) 기준 제목의 시작 y 좌표. 기본값은 0.95.
+        Starting y-coordinate of the title in figure coordinates (0–1).
+        Default is 0.95.
     title_to_legend_gap : float, optional
-        피규어 좌표계(0-1) 기준 제목과 범례 사이의 간격. 기본값은 0.05.
+        Gap between title and legend in figure coordinates (0–1).
+        Default is 0.05.
     legend_to_figure_gap : float, optional
-        피규어 좌표계(0-1) 기준 범례와 피규어 사이의 간격. 기본값은 0.06.
+        Gap between legend and figure area in figure coordinates (0–1).
+        Default is 0.06.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
-        생성된 피규어 객체.
+        The created Figure object.
     ax : matplotlib.axes.Axes
-        차트가 포함된 Axes 객체.
+        The Axes containing the chart.
 
     Examples
     --------
@@ -104,11 +109,11 @@ def plot_diverging_bar(
     >>> import dartwork_mpl as dm
     >>> dm.style.use('scientific')
     >>>
-    >>> # 최소한의 설정 - 기본 샘플 데이터 사용
+    >>> # Minimal setup — uses default sample data
     >>> fig, ax = plot_diverging_bar()
     >>> dm.save_and_show(fig)
     >>>
-    >>> # 커스텀 데이터 사용
+    >>> # Custom data
     >>> labels = [
     ...     "Frontend Development",
     ...     "Backend Architecture",
@@ -128,7 +133,7 @@ def plot_diverging_bar(
     ... )
     >>> dm.save_and_show(fig)
     >>>
-    >>> # Total 행 없이 제목 및 색상 커스터마이징
+    >>> # Customize title and colors without Total row
     >>> fig, ax = plot_diverging_bar(
     ...     labels,
     ...     neg_values,
@@ -141,18 +146,19 @@ def plot_diverging_bar(
 
     Notes
     -----
-    - 이 함수는 제목, 범례, 차트가 위에서 아래로 자동 간격을 두고
-      배치되는 계단식(cascading) 레이아웃을 사용합니다.
-    - 라벨은 ``blended_transform_factory``\ 를 사용하여 피규어의 x 좌표와
-      데이터의 y 좌표를 혼합하여 배치됩니다.
-    - "Total" 행(활성화된 경우)은 자동으로 ``dm.fw(1)``\ 이 적용되어 굵게 표시됩니다.
-    - 값 라벨은 바 안에 위치합니다 (음수는 왼쪽, 양수는 오른쪽).
+    - This function uses a cascading layout where the title, legend,
+      and chart are spaced automatically from top to bottom.
+    - Labels are positioned using ``blended_transform_factory`` which
+      blends figure x-coordinates with data y-coordinates.
+    - The "Total" row (if enabled) is automatically bolded via ``dm.fw(1)``.
+    - Value labels are placed inside the bars (left for negative, right
+      for positive).
 
     See Also
     --------
-    dartwork_mpl.style.use : dartwork-mpl 스타일 프리셋 적용
-    dartwork_mpl.simple_layout : 피규어 레이아웃 최적화
-    matplotlib.transforms.blended_transform_factory : 혼합 좌표 변환 생성
+    dartwork_mpl.style.use : Apply a dartwork-mpl style preset
+    dartwork_mpl.simple_layout : Optimize figure layout
+    matplotlib.transforms.blended_transform_factory : Create blended transforms
     """
     # Use default sample data if not provided
     if labels is None:
@@ -364,15 +370,15 @@ def plot_diverging_bar(
 
 
 def get_source_code() -> str:
-    """이 모듈의 소스 코드를 문자열 형식으로 반환합니다.
+    """Return the source code of this module as a string.
 
-    이 함수는 코딩 에이전트(AI)에게 추가 개발이나 수정을 위한
-    입력값으로 소스 코드를 제공할 때 사용됩니다.
+    Intended for providing source code as input to coding agents (AI)
+    for further development or modification.
 
     Returns
     -------
     str
-        이 모듈의 전체 소스 코드.
+        The complete source code of this module.
 
     Examples
     --------

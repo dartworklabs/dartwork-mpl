@@ -1,7 +1,7 @@
-"""프롬프트 가이드 파일 관리 모듈.
+"""Prompt guide file management module.
 
-다트워크 패키지에 번들로 포함된 프롬프트 가이드 마크다운 파일들을
-찾고, 읽고, 조회하고, 복사하기 위한 헬퍼 함수들을 제공합니다.
+Provides helper functions for finding, reading, listing, and copying
+the prompt guide Markdown files bundled with the dartwork package.
 """
 
 from __future__ import annotations
@@ -15,23 +15,23 @@ from ._helpers import create_parent_path
 
 
 def prompt_path(name: str) -> Path:
-    """지정된 프롬프트 가이드 파일의 절대 경로를 가져옵니다.
+    """Get the absolute path to a prompt guide file.
 
     Parameters
     ----------
     name : str
-        가져올 프롬프트 가이드의 이름
-        (예: ``'layout-guide'``, ``'general-guide'`` 등).
+        Name of the prompt guide to retrieve
+        (e.g., ``'layout-guide'``, ``'general-guide'``).
 
     Returns
     -------
     Path
-        조회된 프롬프트 가이드 파일(.md)의 경로.
+        Path to the prompt guide Markdown file.
 
     Raises
     ------
     ValueError
-        해당 이름의 프롬프트 가이드를 라이브러리 내에서 찾을 수 없을 때 발생합니다.
+        If the specified guide cannot be found in the library.
     """
     path: Path = Path(__file__).parent / f"asset/prompt/{name}.md"
     if not path.exists():
@@ -40,29 +40,29 @@ def prompt_path(name: str) -> Path:
 
 
 def get_prompt(name: str) -> str:
-    """프롬프트 가이드 파일을 읽어서 전체 내용을 문자열로 반환합니다.
+    """Read a prompt guide file and return its full content as a string.
 
     Parameters
     ----------
     name : str
-        내용을 조회할 프롬프트 가이드의 이름.
+        Name of the prompt guide to read.
 
     Returns
     -------
     str
-        프롬프트 가이드 파일의 실제 마크다운 문자열 내용.
+        The Markdown content of the prompt guide.
     """
     path = prompt_path(name)
     return path.read_text(encoding="utf-8")
 
 
 def list_prompts() -> list[str]:
-    """사용 가능한 모든 프롬프트 가이드 파일 목록을 조회합니다.
+    """List all available prompt guide files.
 
     Returns
     -------
     list[str]
-        활용할 수 있는 프롬프트 가이드 이름들의 정렬된 리스트.
+        Sorted list of available prompt guide names.
     """
     path: Path = Path(__file__).parent / "asset/prompt"
     if not path.exists():
@@ -71,26 +71,26 @@ def list_prompts() -> list[str]:
 
 
 def copy_prompt(name: str, destination: str | Path) -> Path:
-    """라이브러리 내장 프롬프트 가이드 파일을 지정된 목적지 경로로 복사합니다.
+    """Copy a bundled prompt guide file to the specified destination.
 
     Parameters
     ----------
     name : str
-        복사할 프롬프트 가이드의 이름.
+        Name of the prompt guide to copy.
     destination : str | Path
-        복사될 목적지 경로.
-        만약 디렉토리라면 원본 이름 그대로(``name.md``) 복사되며,
-        파일 경로라면 그 이름으로 복사가 완료됩니다.
+        Destination path.
+        If a directory, the file is copied with its original name
+        (``name.md``). If a file path, that name is used.
 
     Returns
     -------
     Path
-        복사가 완료된 새 파일의 절대 경로.
+        Absolute path of the newly copied file.
 
     Raises
     ------
     ValueError
-        원본 프롬프트 가이드를 찾을 수 없을 때 발생합니다.
+        If the source prompt guide cannot be found.
     """
     source_path = prompt_path(name)
     dest_path = Path(destination)

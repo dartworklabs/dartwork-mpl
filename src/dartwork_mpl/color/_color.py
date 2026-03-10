@@ -1,8 +1,8 @@
-"""색상 클래스(Color) 및 공개 API 래퍼 함수 모듈.
+"""Color class and public API wrapper functions.
 
-다양한 색상 공간(OKLab, OKLCH, RGB, Hex)을 넘나들며 색상을 생성하고 조작할 수 있는
-핵심 ``Color`` 클래스와, 색상 보간을 위한 ``cspace()`` 함수,
-그리고 편리한 생성자 함수들을 제공합니다.
+Provides the core ``Color`` class for creating and manipulating colors
+across OKLab, OKLCH, RGB, and Hex color spaces, the ``cspace()``
+interpolation function, and convenient constructor functions.
 """
 
 from __future__ import annotations
@@ -33,11 +33,11 @@ from ._views import OklabView, OklchView, RgbView
 
 class Color:
     """
-    OKLab, OKLCH, RGB, Hex 색상 공간을 자유롭게 넘나드는 컬러 클래스.
+    Color class supporting OKLab, OKLCH, RGB, and Hex color spaces.
 
-    고속 변환을 위해 내부적으로는 항상 OKLab 좌표계로 색상을 저장합니다.
-    인스턴스를 생성할 때는 ``from_oklab()``, ``from_oklch()``,
-    ``from_rgb()``, ``from_hex()``\ 와 같은 클래스 메서드를 사용하세요.
+    Internally stores colors in OKLab coordinates for fast conversion.
+    Use the class methods ``from_oklab()``, ``from_oklch()``,
+    ``from_rgb()``, ``from_hex()`` to create instances.
     """
 
     def __init__(self, L: float, a: float, b: float) -> None:
@@ -400,33 +400,33 @@ def cspace(
     space: str = "oklch",
 ) -> list[Color]:
     """
-    두 색상 사이를 보간(Interpolate)하여 연속된 색상 리스트를 생성합니다.
+    Interpolate between two colors to produce a list of evenly spaced colors.
 
-    numpy의 ``linspace``\ 와 유사하지만, 색상에 특화된 기능을 수행합니다.
+    Similar to numpy's ``linspace``, but operating in color space.
 
     Parameters
     ----------
     start_color : Color | str
-        시작 색상 (Color 인스턴스 또는 Hex 문자열).
+        Starting color (Color instance or hex string).
     end_color : Color | str
-        끝 색상 (Color 인스턴스 또는 Hex 문자열).
+        Ending color (Color instance or hex string).
     n : int
-        생성할 전체 색상의 개수 (시작과 끝 색상 포함).
+        Total number of colors to generate (including start and end).
     space : str, optional
-        보간 조작을 수행할 색상 공간: 'oklch' (기본값), 'oklab', 또는 'rgb'.
-        인간의 시각 인지에 가장 자연스러운 'oklch'가 기본으로 사용됩니다.
+        Color space for interpolation: 'oklch' (default), 'oklab', or 'rgb'.
+        'oklch' produces the most perceptually uniform results.
 
     Returns
     -------
     list[Color]
-        보간되어 생성된 Color 객체들의 리스트.
+        List of interpolated Color objects.
 
     Raises
     ------
     TypeError
-        start_color나 end_color가 Color 인스턴스 또는 Hex 문자열이 아닌 경우 발생.
+        If start_color or end_color is not a Color instance or hex string.
     ValueError
-        지원하지 않는 색상 공간(space)을 지정한 경우 발생.
+        If an unsupported color space is specified.
     """
     # Convert input colors to Color objects if needed
     start_color_obj: Color
@@ -537,88 +537,88 @@ def cspace(
 
 def oklab(L: float, a: float, b: float) -> Color:
     """
-    OKLab 좌표계로부터 Color 객체를 생성하는 편리한 래퍼 함수.
+    Convenience wrapper to create a Color from OKLab coordinates.
 
     Parameters
     ----------
     L, a, b : float
-        OKLab 색상 좌표값.
+        OKLab color coordinates.
 
     Returns
     -------
     Color
-        생성된 Color 인스턴스.
+        A new Color instance.
     """
     return Color.from_oklab(L, a, b)
 
 
 def oklch(L: float, C: float, h: float) -> Color:
     """
-    OKLCH 좌표계로부터 Color 객체를 생성하는 편리한 래퍼 함수.
+    Convenience wrapper to create a Color from OKLCH coordinates.
 
     Parameters
     ----------
     L, C : float
-        명도(Lightness)와 채도(Chroma).
+        Lightness and chroma values.
     h : float
-        색상 각도(Hue), 도(degree) 단위 [0, 360).
+        Hue angle in degrees [0, 360).
 
     Returns
     -------
     Color
-        생성된 Color 인스턴스.
+        A new Color instance.
     """
     return Color.from_oklch(L, C, h)
 
 
 def rgb(r: float, g: float, b: float) -> Color:
     """
-    RGB 값으로부터 Color 객체를 생성하는 편리한 래퍼 함수.
+    Convenience wrapper to create a Color from RGB values.
 
     Parameters
     ----------
     r, g, b : float
-        RGB 색상값 (입력 범위 [0-1] 또는 [0-255] 자동 감지).
+        RGB color values (auto-detected as [0-1] or [0-255] range).
 
     Returns
     -------
     Color
-        생성된 Color 인스턴스.
+        A new Color instance.
     """
     return Color.from_rgb(r, g, b)
 
 
 def hex(hex_str: str) -> Color:
     """
-    Hex 색상 문자열로부터 Color 객체를 생성하는 편리한 래퍼 함수.
+    Convenience wrapper to create a Color from a hex string.
 
     Parameters
     ----------
     hex_str : str
-        Hex 색상 코드 문자열 (#RGB 또는 #RRGGBB 형식).
+        Hex color code string (#RGB or #RRGGBB format).
 
     Returns
     -------
     Color
-        생성된 Color 인스턴스.
+        A new Color instance.
     """
     return Color.from_hex(hex_str)
 
 
 def named(color_name: str) -> Color:
     """
-    Matplotlib 지정 색상 이름(Named color)으로부터 Color 객체를 생성합니다.
+    Create a Color from a Matplotlib named color.
 
     Parameters
     ----------
     color_name : str
-        Matplotlib에서 인식 가능한 색상 이름
-        (예: 'red', 'oc.blue5', 'tw.blue500' 등).
+        A color name recognized by Matplotlib
+        (e.g., 'red', 'oc.blue5', 'tw.blue500').
 
     Returns
     -------
     Color
-        생성된 Color 인스턴스.
+        A new Color instance.
     """
     import warnings
 

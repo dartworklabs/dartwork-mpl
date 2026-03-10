@@ -50,33 +50,33 @@ class ParamDescriptor:
 
 
 def _humanize(name: str) -> str:
-    """snake_case 이름을 Title Case 레이블로 변환한다.
+    """Convert a snake_case name to a Title Case label.
 
     Parameters
     ----------
     name : str
-        snake_case 파라미터 이름.
+        snake_case parameter name.
 
     Returns
     ----------
     str
-        Title Case로 변환된 레이블.
+        Label converted to Title Case.
     """
     return name.replace("_", " ").title()
 
 
 def _type_name(t: type) -> str:
-    """타입의 간단한 문자열 이름을 반환한다.
+    """Return a simple string name for a Python type.
 
     Parameters
     ----------
     t : type
-        Python 타입.
+        A Python type.
 
     Returns
     ----------
     str
-        타입 이름 문자열 (int, float, str, bool,
+        Type name string (int, float, str, bool,
         list_int, list_float, list_str).
     """
     simple = {int: "int", float: "float", str: "str", bool: "bool"}
@@ -105,21 +105,21 @@ def _type_name(t: type) -> str:
 
 
 def _serialize_default(val: Any, type_name: str) -> Any:
-    """기본값을 JSON 안전한 형태로 변환한다.
+    """Convert a default value to a JSON-safe representation.
 
-    list/tuple 타입의 기본값을 콤마 구분 문자열로 변환한다.
+    Converts list/tuple defaults to comma-separated strings.
 
     Parameters
     ----------
     val : Any
-        변환할 기본값.
+        Default value to convert.
     type_name : str
-        파라미터 타입 이름.
+        Parameter type name.
 
     Returns
     ----------
     Any
-        JSON 직렬화 가능한 기본값.
+        JSON-serializable default value.
     """
     if val is None:
         return "" if type_name.startswith("list_") else val

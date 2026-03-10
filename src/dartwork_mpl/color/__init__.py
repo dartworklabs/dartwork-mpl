@@ -1,7 +1,7 @@
-"""Matplotlib을 위한 색상 관리 및 변환 유틸리티 패키지.
+"""Color management and conversion utilities for Matplotlib.
 
-이 패키지는 색상의 로드, 등록, 변환 기능을 제공하며,
-OKLab, OKLCH, RGB, Hex 색상 공간을 모두 지원합니다.
+Provides facilities for loading, registering, and converting colors
+across OKLab, OKLCH, RGB, and Hex color spaces.
 """
 
 from ._color import Color, cspace, hex, named, oklab, oklch, rgb

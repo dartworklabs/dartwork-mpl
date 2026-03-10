@@ -1,7 +1,7 @@
-"""색상, 팔레트, 컬러맵(colormap) 탐색 도구.
+"""Color, palette, and colormap exploration tools.
 
-dartwork-mpl에서 사용할 수 있는 불연속 팔레트와 컬러맵 목록을
-조회하고 시각화해 볼 수 있는 유틸리티 함수들을 제공합니다.
+Provides utility functions for listing and visualizing the discrete
+palettes and colormaps available in dartwork-mpl.
 """
 
 from __future__ import annotations
@@ -22,12 +22,12 @@ def _get_all_colors() -> list[str]:
 
 
 def list_palettes() -> list[str]:
-    """사용 가능한 모든 불연속형 색상 팔레트의 목록을 조회합니다.
+    """List all available discrete color palettes.
 
     Returns
     -------
     list[str]
-        팔레트 이름들의 정렬된 리스트 (예: 'dc.vivid', 'oc.blue' 등).
+        Sorted list of palette names (e.g., 'dc.vivid', 'oc.blue').
     """
     colors: list[str] = _get_all_colors()
     palettes: set[str] = set()
@@ -43,18 +43,18 @@ def list_palettes() -> list[str]:
 
 
 def list_colormaps(include_reversed: bool = False) -> list[str]:
-    """등록된 다트워크 전용 컬러맵(Colormap)들의 목록을 조회합니다.
+    """List all registered dartwork colormaps.
 
     Parameters
     ----------
     include_reversed : bool, default=False
-        이름 끝에 '_r'이 붙은 반전된(reversed) 컬러맵도 목록에 포함할지 여부.
-        기본값은 False입니다.
+        Whether to include reversed colormaps (names ending with '_r').
+        Default is False.
 
     Returns
     -------
     list[str]
-        등록된 컬러맵 이름들의 정렬된 리스트.
+        Sorted list of registered colormap names.
     """
     from .cmap import ensure_loaded
 
@@ -66,22 +66,21 @@ def list_colormaps(include_reversed: bool = False) -> list[str]:
 
 
 def show_palette(palette_name: str) -> None:
-    """특정 불연속 팔레트의 색상들을 시각적으로 출력합니다.
+    """Visually display the colors of a specific discrete palette.
 
-    지정된 팔레트에 포함된 모든 색조(shades)를 네모난 형태의
-    색상표로 나란히 나열하여 보여줍니다. Jupyter 노트북 환경 등에서
-    색상을 미리 확인할 때 유용합니다.
+    Renders all shades in the specified palette as a row of color
+    swatches. Useful for previewing colors in Jupyter notebooks.
 
     Parameters
     ----------
     palette_name : str
-        시각화하여 확인할 팔레트의 이름 (예: 'dc.acid', 'oc.gray').
+        Name of the palette to visualize (e.g., 'dc.acid', 'oc.gray').
 
     Raises
     ------
     ValueError
-        팔레트 이름이 존재하지 않거나 해당 팔레트에 번호가 매겨진
-        색상 요소들이 없는 경우 발생합니다.
+        If the palette name does not exist or contains no numbered
+        color entries.
     """
     colors: list[str] = _get_all_colors()
     # find all colors that start with palette_name followed by a number

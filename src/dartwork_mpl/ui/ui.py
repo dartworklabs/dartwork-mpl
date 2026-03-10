@@ -1,4 +1,4 @@
-"""Dartwork 인터랙티브 피규어 뷰어 — FastAPI 서버.
+"""Dartwork interactive figure viewer — FastAPI server.
 
 Usage
 -----
@@ -15,8 +15,8 @@ Usage
         ...
         return fig
 
-    run(my_plot, Params)  # 명시적 파라미터 전달
-    run(my_plot)           # 타입 힌트에서 자동 추출
+    run(my_plot, Params)  # Explicit parameter model
+    run(my_plot)           # Auto-extract from type hints
 """
 
 import base64
@@ -89,33 +89,33 @@ def run(
     host: str = "127.0.0.1",
     port: int = 8501,
 ) -> None:
-    """FastAPI 기반의 인터랙티브 피규어 뷰어를 실행합니다.
+    """Launch the FastAPI-based interactive figure viewer.
 
     Parameters
     ----------
     figure_fn : callable
-        단일 ``ParamModel`` 인스턴스를 받아
-        ``matplotlib.figure.Figure``를 반환하는 함수.
+        A function accepting a single ``ParamModel`` instance and
+        returning a ``matplotlib.figure.Figure``.
     param_model : type[ParamModel], optional
-        파라미터를 정의하는 Pydantic 모델 클래스.
-        생략할 경우, 함수의 타입 힌트 어노테이션에서 자동으로 추출됩니다.
+        Pydantic model class defining the parameters.
+        If omitted, it is auto-extracted from the function's type hints.
     title : str
-        페이지 및 앱의 제목.
+        Page and app title.
     copy_to : list[Path] | Path | None
-        저장된 이미지를 추가로 복사할 디렉토리(들).
-        사용자가 UI를 통해 이미지를 저장하면, 먼저 스크립트 디렉토리에
-        저장된 후 여기에 나열된 각 디렉토리로 복사됩니다.
-        논문의 ``images/`` 폴더 등으로 결과를 미러링할 때 유용합니다.
+        Additional directories to copy saved images to.
+        When a user saves an image via the UI, it is first saved to the
+        script directory and then copied to each listed directory.
+        Useful for mirroring outputs to a paper's ``images/`` folder.
     host : str
-        서버 호스트 주소. 기본값은 ``"127.0.0.1"``.
+        Server host address. Default is ``"127.0.0.1"``.
     port : int
-        서버 포트 번호. 기본값은 ``8501``.
+        Server port number. Default is ``8501``.
 
     Raises
     ------
     TypeError
-        함수 시그니처가 ``(params: ParamModel) -> Figure`` 형식과
-        일치하지 않을 경우 발생합니다.
+        If the function signature does not match
+        ``(params: ParamModel) -> Figure``.
     """
     # ── Extract / validate param model ────────────────────────────
     if param_model is None:

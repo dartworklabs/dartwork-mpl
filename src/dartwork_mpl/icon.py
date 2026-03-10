@@ -8,7 +8,7 @@ Examples
 --------
 >>> import dartwork_mpl as dm
 >>> mdi = dm.icon_font('mdi')
->>> ax.text(0.5, 0.5, "\U000f050f",  # 온도계 아이콘
+>>> ax.text(0.5, 0.5, "\U000f050f",  # thermometer icon
 ...         fontproperties=mdi, fontsize=20)
 """
 

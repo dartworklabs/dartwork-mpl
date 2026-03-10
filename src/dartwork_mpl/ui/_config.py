@@ -27,62 +27,62 @@ _base_dir: Path | None = None
 
 
 def set_base_dir(path: Path) -> None:
-    """설정/이력 파일의 기본 디렉토리를 설정한다.
+    """Set the base directory for config and history files.
 
-    ``ui.run()``이 스크립트의 상위 디렉토리를 전달하여
-    파일이 CWD가 아닌 사용자 스크립트 옆에 저장되도록 한다.
+    Called by ``ui.run()`` with the script's parent directory so that
+    files are stored next to the user script rather than in the CWD.
 
     Parameters
     ----------
     path : Path
-        기본 디렉토리 경로.
+        Base directory path.
     """
     global _base_dir
     _base_dir = Path(path)
 
 
 def _get_base_dir() -> Path:
-    """설정된 기본 디렉토리를 반환한다.
+    """Return the configured base directory.
 
-    설정되지 않은 경우 현재 작업 디렉토리로 대체한다.
+    Falls back to the current working directory if not set.
 
     Returns
     ----------
     Path
-        기본 디렉토리 경로.
+        Base directory path.
     """
     return _base_dir if _base_dir is not None else Path.cwd()
 
 
 def _config_path() -> Path:
-    """설정 파일의 전체 경로를 반환한다.
+    """Return the full path to the config file.
 
     Returns
     ----------
     Path
-        ``.dartwork_ui_config.json`` 파일 경로.
+        Path to ``.dartwork_ui_config.json``.
     """
     return _get_base_dir() / CONFIG_FILENAME
 
 
 def _preset_path() -> Path:
-    """프리셋 파일의 전체 경로를 반환한다.
+    """Return the full path to the presets file.
 
     Returns
     ----------
     Path
-        ``.dartwork_ui_presets.json`` 파일 경로.
+        Path to ``.dartwork_ui_presets.json``.
     """
     return _get_base_dir() / PRESET_FILENAME
 
 
 def _history_path() -> Path:
-    """이력 파일의 전체 경로를 반환한다.
+    """Return the full path to the history file.
 
     Returns
     ----------
     Path
-        ``.dartwork_ui_history.jsonl`` 파일 경로.
+        Path to ``.dartwork_ui_history.jsonl``.
     """
     return _get_base_dir() / HISTORY_FILENAME
 
@@ -302,17 +302,17 @@ def load_history() -> list[dict[str, Any]]:
 
 
 def _serializable(params: dict[str, Any]) -> dict[str, Any]:
-    """파라미터 값을 JSON 직렬화 가능한 타입으로 변환한다.
+    """Convert parameter values to JSON-serializable types.
 
     Parameters
     ----------
     params : dict[str, Any]
-        원본 파라미터 딕셔너리.
+        Original parameter dictionary.
 
     Returns
     ----------
     dict[str, Any]
-        JSON 직렬화 가능한 파라미터 딕셔너리.
+        JSON-serializable parameter dictionary.
     """
     out: dict[str, Any] = {}
     for k, v in params.items():

@@ -1,9 +1,9 @@
-"""Matplotlib 피규어를 위한 시각적 유효성 검사 도구.
+"""Visual validation tools for Matplotlib figures.
 
-콘솔(stdout) 기반으로만 실행되는 환경(예: AI 에이전트 파이프라인)에서는
-육안으로 확인할 수 없는 흔한 렌더링 오류(레이블 겹침, 여백 초과 등)를
-자동으로 감지합니다. 모든 검사는 구조화된 ``[VISUAL]`` 로그를 출력하여
-에이전트가 그랩(grep)하고 자동 수정을 시도할 수 있도록 돕습니다.
+Detects common rendering issues (label overlap, margin overflow, etc.)
+that are invisible in console-only (stdout) environments such as AI
+agent pipelines. Every check emits structured ``[VISUAL]`` log lines
+so that agents can grep for them and attempt automated fixes.
 
 Usage
 -----
@@ -11,7 +11,7 @@ Usage
 >>> fig, ax = plt.subplots()
 >>> ax.plot([1, 2, 3])
 >>> warnings = dm.validate_figure(fig)
->>> # 콘솔 출력: [VISUAL] ✅ No visual issues detected.
+>>> # Console output: [VISUAL] ✅ No visual issues detected.
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ class Severity(str, Enum):
 
 @dataclass
 class VisualWarning:
-    """피규어에서 감지된 단일 시각적 문제(예: 오버플로우, 겹침 등) 정보 객체."""
+    """A single visual issue detected in a figure (e.g., overflow, overlap)."""
 
     severity: Severity
     check_id: str
@@ -60,7 +60,7 @@ class VisualWarning:
 
 
 def _check_overflow(fig: Figure, renderer) -> list[VisualWarning]:
-    """경계 상자(Bounding Box)가 피규어 캔버스 영역 밖으로 벗어난 요소를 감지합니다."""
+    """Detect elements whose bounding boxes extend beyond the figure canvas."""
     warnings: list[VisualWarning] = []
     fig_bbox = fig.bbox  # pixel coords
 
@@ -141,7 +141,7 @@ def _check_overflow(fig: Figure, renderer) -> list[VisualWarning]:
 
 
 def _check_overlap(fig: Figure, renderer) -> list[VisualWarning]:
-    """각 Axes 영역 내에서 텍스트 라벨들이 서로 겹치는 현상을 감지합니다."""
+    """Detect overlapping text labels within each Axes."""
     warnings: list[VisualWarning] = []
 
     for ax in fig.axes:
@@ -197,7 +197,7 @@ def _check_overlap(fig: Figure, renderer) -> list[VisualWarning]:
 
 
 def _check_legend_overflow(fig: Figure, renderer) -> list[VisualWarning]:
-    """범례(Legend)가 Axes 영역의 너무 많은 비중을 차지하는 문제를 감지합니다."""
+    """Detect legends consuming too large a fraction of the Axes area."""
     warnings: list[VisualWarning] = []
     THRESHOLD = 0.30  # 30% of axes area
 
@@ -244,7 +244,7 @@ def _check_legend_overflow(fig: Figure, renderer) -> list[VisualWarning]:
 
 
 def _check_tick_crowding(fig: Figure, renderer) -> list[VisualWarning]:
-    """서로 지나치게 밀집된 축 눈금 라벨(Tick Labels) 현상을 감지합니다."""
+    """Detect overcrowded tick labels on axes."""
     warnings: list[VisualWarning] = []
     MAX_DENSITY = 4.0  # ticks per inch
 
@@ -314,7 +314,7 @@ def _check_tick_crowding(fig: Figure, renderer) -> list[VisualWarning]:
 
 
 def _check_empty_axes(fig: Figure) -> list[VisualWarning]:
-    """눈으로 보이는 어떤 데이터나 내용물이 아예 없는 빈 Axes 영역을 감지합니다."""
+    """Detect empty Axes that contain no visible data or content."""
     warnings: list[VisualWarning] = []
 
     for i, ax in enumerate(fig.axes):
@@ -350,23 +350,23 @@ def _check_empty_axes(fig: Figure) -> list[VisualWarning]:
 def validate_figure(
     fig: Figure, *, checks: tuple[str, ...] | None = None, quiet: bool = False
 ) -> list[VisualWarning]:
-    """Matplotlib 피규어에 대해 종합적인 시각적 검증을 실시간으로 실행합니다.
+    """Run comprehensive visual validation on a Matplotlib figure.
 
     Parameters
     ----------
     fig : matplotlib.figure.Figure
-        시각적 결함을 검사할 대상 피규어.
+        The figure to inspect for visual defects.
     checks : tuple[str, ...] | None, optional
-        선택적으로 실행할 검사 항목 ID들의 목록. None을 지정하면 등록된 모든 검사를 수행합니다.
-        지원하는 ID들: ``OVERFLOW``, ``OVERLAP``, ``LEGEND_OVERFLOW``,
+        Check IDs to run. If None, all registered checks are executed.
+        Supported IDs: ``OVERFLOW``, ``OVERLAP``, ``LEGEND_OVERFLOW``,
         ``TICK_CROWD``, ``EMPTY_AXES``.
     quiet : bool, optional
-        True이면 평가 결과의 stdout 시스템 출력을 생략(소음 억제)합니다. 기본값은 False.
+        If True, suppresses stdout output. Default is False.
 
     Returns
     -------
     list[VisualWarning]
-        감지된 모든 시각적 문제들에 대한 시그널 객체 리스트.
+        List of detected visual issues.
     """
     # Render once so all bounding boxes are computed.
     fig.canvas.draw()
