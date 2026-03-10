@@ -341,25 +341,47 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
         if (tabs.length > 0) {{ activate(tabs[0].dataset.preset); }}
         
         var isMono = false;
-        var checkboxes = document.querySelectorAll(".dm-mono-checkbox");
-        checkboxes.forEach(function(cb) {{
-            cb.addEventListener("change", function(e) {{
-                isMono = e.target.checked;
-                checkboxes.forEach(function(other) {{
-                    other.checked = isMono;
-                    var track = other.previousElementSibling;
-                    var thumb = track.firstElementChild;
-                    if(isMono) {{
-                        track.style.background = "#0f172a";
-                        thumb.style.transform = "translateX(14px)";
-                    }} else {{
-                        track.style.background = "#cbd5e1";
-                        thumb.style.transform = "translateX(0)";
-                    }}
-                }});
-                document.querySelectorAll(".dm-cmap-bar").forEach(function(b) {{
-                    b.style.filter = isMono ? "grayscale(100%)" : "none";
-                }});
+        var segs = document.querySelectorAll(".dm-mono-seg");
+        
+        function setMonoState(mono) {{
+            isMono = mono;
+            document.querySelectorAll(".dm-mono-seg").forEach(function(seg) {{
+                var btnColor = seg.querySelector(".dm-seg-color");
+                var btnMono = seg.querySelector(".dm-seg-mono");
+                if (mono) {{
+                    btnColor.style.background = "transparent";
+                    btnColor.style.color = "#64748b";
+                    btnColor.style.boxShadow = "none";
+                    btnMono.style.background = "#fff";
+                    btnMono.style.color = "#0f172a";
+                    btnMono.style.boxShadow = "0 1px 2px rgba(0,0,0,0.1)";
+                }} else {{
+                    btnMono.style.background = "transparent";
+                    btnMono.style.color = "#64748b";
+                    btnMono.style.boxShadow = "none";
+                    btnColor.style.background = "#fff";
+                    btnColor.style.color = "#0f172a";
+                    btnColor.style.boxShadow = "0 1px 2px rgba(0,0,0,0.1)";
+                }}
+            }});
+            document.querySelectorAll(".dm-cmap-bar").forEach(function(b) {{
+                b.style.filter = isMono ? "grayscale(100%)" : "none";
+            }});
+        }}
+
+        segs.forEach(function(seg) {{
+            var btnColor = seg.querySelector(".dm-seg-color");
+            var btnMono = seg.querySelector(".dm-seg-mono");
+            
+            btnColor.addEventListener("click", function(e) {{
+                e.preventDefault();
+                if (!isMono) return;
+                setMonoState(false);
+            }});
+            btnMono.addEventListener("click", function(e) {{
+                e.preventDefault();
+                if (isMono) return;
+                setMonoState(true);
             }});
         }});
       }});
@@ -384,13 +406,10 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
         html_parts = ['<div class="dm-cmap-panel">']
         
         switch_html = (
-            '<label style="display: flex; align-items: center; cursor: pointer; font-size: 0.85em; color: #475569; user-select: none;">'
-            '<span style="margin-right: 8px; font-weight: 500;">Mono</span>'
-            '<div style="position: relative; width: 34px; height: 20px; background: #cbd5e1; border-radius: 10px; transition: background 0.3s;" class="dm-mono-track">'
-            '<div style="position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: transform 0.3s, background 0.3s; box-shadow: 0 1px 2px rgba(0,0,0,0.1);" class="dm-mono-thumb"></div>'
+            '<div style="display: flex; background: #e2e8f0; border-radius: 4px; padding: 2px; user-select: none;" class="dm-mono-seg">'
+            '<div style="border-radius: 3px; padding: 2px 10px; font-size: 0.75em; font-weight: 600; cursor: pointer; background: #fff; color: #0f172a; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.2s;" class="dm-seg-color">Color</div>'
+            '<div style="border-radius: 3px; padding: 2px 10px; font-size: 0.75em; font-weight: 600; cursor: pointer; background: transparent; color: #64748b; transition: all 0.2s;" class="dm-seg-mono">Mono</div>'
             '</div>'
-            '<input type="checkbox" style="display: none;" class="dm-mono-checkbox">'
-            '</label>'
         )
 
         html_parts.append(
