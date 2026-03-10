@@ -23,6 +23,7 @@ EXPECTED_DC_NAMES = {
     "twilight_oklch", "phase_wheel",
     # Discrete
     "vivid", "lucid", "chalk",
+    "oc_vibrant", "oc_pastel", "tw_candy", "tw_pop", "tw_macaron",
 }
 
 EXPECTED_DC_CMAPS = set()
@@ -30,8 +31,8 @@ for name in EXPECTED_DC_NAMES:
     EXPECTED_DC_CMAPS.add(f"dc.{name}")
     EXPECTED_DC_CMAPS.add(f"dc.{name}_r")
 
-assert len(EXPECTED_DC_NAMES) == 29
-assert len(EXPECTED_DC_CMAPS) == 58
+assert len(EXPECTED_DC_NAMES) == 34
+assert len(EXPECTED_DC_CMAPS) == 68
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -52,8 +53,8 @@ class TestEnsureLoaded:
         ensure_loaded()
         ensure_loaded()
 
-    def test_registers_exactly_29_dc_colormaps(self) -> None:
-        """After loading, exactly 29 dc.* colormaps (non-reversed) should exist."""
+    def test_registers_exactly_34_dc_colormaps(self) -> None:
+        """After loading, exactly 34 dc.* colormaps (non-reversed) should exist."""
         dc_names = {
             name for name in mpl.colormaps
             if name.startswith("dc.") and not name.endswith("_r")
@@ -71,16 +72,16 @@ class TestEnsureLoaded:
             )
 
     def test_cmap_count_and_names(self) -> None:
-        """Verify exactly 58 `dc.*` colormaps exist (29 base + 29 reversed)."""
+        """Verify exactly 68 `dc.*` colormaps exist (34 base + 34 reversed)."""
         # 1. Get all colormaps currently registered in Matplotlib
         all_mpl_cmaps = set(plt.colormaps())
 
         # 2. Filter for only those starting with 'dc.'
         dc_cmaps_registered = {name for name in all_mpl_cmaps if name.startswith("dc.")}
 
-        # 3. Assert the count is exactly 58
-        assert len(dc_cmaps_registered) == 58, (
-            f"Expected exactly 58 'dc.' colormaps, but found {len(dc_cmaps_registered)}."
+        # 3. Assert the count is exactly 68
+        assert len(dc_cmaps_registered) == 68, (
+            f"Expected exactly 68 'dc.' colormaps, but found {len(dc_cmaps_registered)}."
         )
         assert dc_cmaps_registered == EXPECTED_DC_CMAPS, (
             f"Missing: {EXPECTED_DC_CMAPS - dc_cmaps_registered}, "
@@ -89,7 +90,10 @@ class TestEnsureLoaded:
 
     def test_discrete_cmap_colors(self) -> None:
         """Test that the discrete (categorical) maps have exactly 8 colors."""
-        discrete_names = ["vivid", "lucid", "chalk"]
+        discrete_names = [
+            "vivid", "lucid", "chalk",
+            "oc_vibrant", "oc_pastel", "tw_candy", "tw_pop", "tw_macaron",
+        ]
         for name in discrete_names:
             cmap = dm.cmap(f"dc.{name}")
             assert isinstance(cmap, mpl.colors.ListedColormap)

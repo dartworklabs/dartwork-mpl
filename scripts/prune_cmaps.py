@@ -16,6 +16,7 @@ KEEP_CMAPS: set[str] = {
     "twilight_oklch.txt", "phase_wheel.txt",
     # Discrete
     "vivid.txt", "lucid.txt", "chalk.txt",
+    "oc_vibrant.txt", "oc_pastel.txt", "tw_candy.txt", "tw_pop.txt", "tw_macaron.txt",
 }
 
 

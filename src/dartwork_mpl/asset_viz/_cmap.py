@@ -71,6 +71,11 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     "dc.vivid": "Categorical",
     "dc.lucid": "Categorical",
     "dc.chalk": "Categorical",
+    "dc.oc_vibrant": "Categorical",
+    "dc.oc_pastel": "Categorical",
+    "dc.tw_candy": "Categorical",
+    "dc.tw_pop": "Categorical",
+    "dc.tw_macaron": "Categorical",
 }
 
 def classify_colormap(cmap: Colormap) -> str:

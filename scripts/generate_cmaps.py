@@ -11,6 +11,10 @@ Produces 30+ colormaps across categories:
 import sys
 from pathlib import Path
 
+import matplotlib.colors as mcolors
+
+from dartwork_mpl.color._loader import _load_colors
+
 # Add src to sys.path if needed
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
@@ -146,7 +150,47 @@ def generate_discrete(name: str, spec: dict) -> None:
             g = max(0.0, min(1.0, g))
             b = max(0.0, min(1.0, b))
             f.write(f"{r:.6f} {g:.6f} {b:.6f}\n")
-    print(f"Generated {name}.txt ({n} discrete colors)")
+    print(f"Generated {name}.txt ({n} colors)")
+
+# ──────────────────────────────────────────────────
+# Categorical Presets (from tw. and oc.)
+# ──────────────────────────────────────────────────
+
+_load_colors()
+
+CATEGORICAL_PRESETS: dict[str, list[str]] = {
+    "oc_vibrant": [
+        "oc.red5", "oc.orange5", "oc.yellow5", "oc.lime5",
+        "oc.cyan5", "oc.blue5", "oc.grape5", "oc.pink5"
+    ],
+    "oc_pastel": [
+        "oc.red3", "oc.orange3", "oc.yellow3", "oc.teal3",
+        "oc.cyan3", "oc.blue3", "oc.violet3", "oc.pink3"
+    ],
+    "tw_candy": [
+        "tw.rose400", "tw.amber400", "tw.lime400", "tw.emerald400",
+        "tw.cyan400", "tw.blue400", "tw.violet400", "tw.fuchsia400"
+    ],
+    "tw_pop": [
+        "tw.red500", "tw.orange500", "tw.yellow400", "tw.green500",
+        "tw.teal500", "tw.sky500", "tw.indigo500", "tw.pink500"
+    ],
+    "tw_macaron": [
+        "tw.pink300", "tw.orange300", "tw.yellow300", "tw.lime300",
+        "tw.cyan300", "tw.blue300", "tw.purple300", "tw.rose300"
+    ],
+}
+
+def generate_preset_categorical(name: str, keys: list[str]) -> None:
+    """Generate categorical colormaps from named color keys."""
+    out_path = CMAP_DIR / f"{name}.txt"
+    mapping = mcolors.get_named_colors_mapping()
+    with open(out_path, "w") as f:
+        for k in keys:
+            hex_val = mapping[k]
+            r, g, b = mcolors.to_rgb(hex_val)
+            f.write(f"{r:.6f} {g:.6f} {b:.6f}\n")
+    print(f"Generated {name}.txt from presets ({len(keys)} colors)")
 
 
 def main() -> None:
@@ -161,9 +205,15 @@ def main() -> None:
     for name, spec in DISCRETE_SPECS.items():
         generate_discrete(name, spec)
 
+    print("\n=== Preset Categorical colormaps ===")
+    for name, keys in CATEGORICAL_PRESETS.items():
+        generate_preset_categorical(name, keys)
+
+    print("\n--- DONE ---")
+    print(f"Total: {len(COLORMAPS)} continuous, {len(DISCRETE_SPECS)} discrete, {len(CATEGORICAL_PRESETS)} preset categorical")
+
     # Note: after expanding the list, `prune_cmaps.py`, `cmap.py` loaders
     # or testing scripts might need updates to account for the new mapped names.
 
 if __name__ == "__main__":
     main()
-
