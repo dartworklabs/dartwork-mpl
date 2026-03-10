@@ -31,36 +31,27 @@ _CATEGORY_STYLE: dict[str, tuple[str, str]] = {
 
 
 _CLASSIFICATION_OVERRIDES: dict[str, str] = {
-    "dc.ocean": "Sequential Multi-Hue",
-    "dc.sunset": "Sequential Multi-Hue",
-    "dc.emerald": "Sequential Single-Hue",
-    "dc.berry": "Sequential Single-Hue",
-    "dc.balance": "Diverging",
-    "dc.earth": "Diverging",
-    "dc.twilight_oklch": "Cyclical",
-    "dc.nebula": "Sequential Multi-Hue",
-    "dc.marine": "Sequential Multi-Hue",
-    "dc.neon": "Sequential Multi-Hue",
+    # Sequential Single-Hue
     "dc.steel": "Sequential Single-Hue",
     "dc.flame": "Sequential Single-Hue",
-    "dc.lavender": "Sequential Single-Hue",
-    "dc.ash": "Sequential Single-Hue",
-    "dc.buda": "Sequential Multi-Hue",
-    "dc.hawaii": "Sequential Multi-Hue",
-    # --- New maps ---
-    "dc.amber": "Sequential Single-Hue",
-    "dc.teal": "Sequential Single-Hue",
-    "dc.copper": "Sequential Single-Hue",
-    "dc.arctic": "Sequential Multi-Hue",
-    "dc.thermal": "Sequential Multi-Hue",
-    "dc.verdant": "Sequential Multi-Hue",
-    "dc.dusk": "Sequential Multi-Hue",
-    "dc.delta": "Diverging",
-    "dc.polar": "Diverging",
-    "dc.spectrum": "Diverging",
-    "dc.fiscal": "Diverging",
-    "dc.prism": "Sequential Single-Hue",
     "dc.monochrome": "Sequential Single-Hue",
+    "dc.lajolla": "Sequential Single-Hue",
+    # Sequential Multi-Hue
+    "dc.ocean": "Sequential Multi-Hue",
+    "dc.sunset": "Sequential Multi-Hue",
+    "dc.thermal": "Sequential Multi-Hue",
+    "dc.batlow": "Sequential Multi-Hue",
+    # Diverging
+    "dc.balance": "Diverging",
+    "dc.earth": "Diverging",
+    "dc.delta": "Diverging",
+    "dc.berlin": "Diverging",
+    # Cyclical
+    "dc.twilight_oklch": "Cyclical",
+    # Discrete / Categorical
+    "dc.bold": "Categorical",
+    "dc.muted": "Categorical",
+    "dc.pastel": "Categorical",
 }
 
 def classify_colormap(cmap: Colormap) -> str:

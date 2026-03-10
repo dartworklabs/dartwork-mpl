@@ -1,44 +1,43 @@
+"""Remove any colormap files not in the curated 16-map set."""
+
 from pathlib import Path
 
 CMAP_DIR = Path("src/dartwork_mpl/asset/cmap")
 
-KEEP_CMAPS = {
-    # Seaborn Premium Colormaps
-    "rocket.txt", "mako.txt", "flare.txt", "crest.txt", "vlag.txt", "icefire.txt",
-    
-    # Scientific Colormaps (Crameri) - Highly curated, perceptually uniform
-    "batlow.txt", "batlowK.txt", "batlowW.txt", 
-    "roma.txt", "romaO.txt",
-    "vik.txt", "vikO.txt", 
-    "oslo.txt", "tokyo.txt", "lajolla.txt", "lapaz.txt", "devon.txt", 
-    "bam.txt", "bamO.txt", "berlin.txt", "broc.txt", "brocO.txt", "cork.txt", "corkO.txt", 
-    "fes.txt", "imola.txt", "lisbon.txt", "nuuk.txt", "oleron.txt", "turku.txt",
-    "buda.txt", "bukavu.txt", "davos.txt", "hawaii.txt", "bamako.txt", "acton.txt",
-    
-    # Dartwork Custom 
-    # (Will be generated next, so we can delete their old versions if they exist to be safe,
-    # but let's actually let generate_cmaps.py overwrite them, or just delete them now.)
+KEEP_CMAPS: set[str] = {
+    # Sequential Single-Hue
+    "steel.txt", "flame.txt", "monochrome.txt",
+    # Sequential Multi-Hue
+    "ocean.txt", "sunset.txt", "thermal.txt",
+    # Diverging
+    "balance.txt", "earth.txt", "delta.txt",
+    # Cyclical
+    "twilight_oklch.txt",
+    # Crameri OKLCH recreations
+    "batlow.txt", "berlin.txt", "lajolla.txt",
+    # Discrete / Categorical
+    "bold.txt", "muted.txt", "pastel.txt",
 }
 
-def main():
+
+def main() -> None:
+    """Delete all .txt files not in KEEP_CMAPS."""
     if not CMAP_DIR.exists():
         print(f"Directory {CMAP_DIR} not found.")
         return
 
-    deleted_count = 0
-    kept_count = 0
-
-    for file_path in CMAP_DIR.glob("*.txt"):
-        if file_path.name not in KEEP_CMAPS:
-            print(f"Deleting redundant colormap: {file_path.name}")
-            file_path.unlink()
-            deleted_count += 1
+    deleted = 0
+    kept = 0
+    for file_path in sorted(CMAP_DIR.glob("*.txt")):
+        if file_path.name in KEEP_CMAPS:
+            kept += 1
         else:
-            kept_count += 1
+            print(f"Deleting: {file_path.name}")
+            file_path.unlink()
+            deleted += 1
 
-    print("\nColormap Cleanup Complete.")
-    print(f"Deleted: {deleted_count}")
-    print(f"Kept: {kept_count}")
+    print(f"\nDeleted: {deleted}, Kept: {kept}")
+
 
 if __name__ == "__main__":
     main()
