@@ -47,6 +47,20 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     "dc.ash": "Sequential Single-Hue",
     "dc.buda": "Sequential Multi-Hue",
     "dc.hawaii": "Sequential Multi-Hue",
+    # --- New maps ---
+    "dc.amber": "Sequential Single-Hue",
+    "dc.teal": "Sequential Single-Hue",
+    "dc.copper": "Sequential Single-Hue",
+    "dc.arctic": "Sequential Multi-Hue",
+    "dc.thermal": "Sequential Multi-Hue",
+    "dc.verdant": "Sequential Multi-Hue",
+    "dc.dusk": "Sequential Multi-Hue",
+    "dc.delta": "Diverging",
+    "dc.polar": "Diverging",
+    "dc.spectrum": "Diverging",
+    "dc.fiscal": "Diverging",
+    "dc.prism": "Sequential Single-Hue",
+    "dc.monochrome": "Sequential Single-Hue",
 }
 
 def classify_colormap(cmap: Colormap) -> str:
