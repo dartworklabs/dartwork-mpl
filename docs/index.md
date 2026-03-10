@@ -10,8 +10,8 @@
 
   <div class="dm-landing-cta">
     <div class="dm-landing-install">
-      <code>pip install dartwork-mpl</code>
-      <button class="dm-landing-copy-btn" onclick="navigator.clipboard.writeText('pip install dartwork-mpl').then(()=>{this.textContent='✓';setTimeout(()=>{this.textContent='⎘'},1500)})">⎘</button>
+      <code>pip install git+https://github.com/dartwork-repo/dartwork-mpl</code>
+      <button class="dm-landing-copy-btn" onclick="navigator.clipboard.writeText('pip install git+https://github.com/dartwork-repo/dartwork-mpl').then(()=>{this.textContent='✓';setTimeout(()=>{this.textContent='⎘'},1500)})">⎘</button>
     </div>
     <a href="usage_guide/quickstart.html" class="dm-landing-btn dm-landing-btn-secondary">Quick Start →</a>
   </div>
@@ -109,7 +109,6 @@ Every utility is simple enough to copy into your project. No lock-in — leave a
 :hidden:
 
 Getting Started <installation/index>
-Quick Start <usage_guide/quickstart>
 Usage Guide <usage_guide/index>
 Color System <color_system/index>
 Fonts <fonts/index>
