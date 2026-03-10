@@ -304,14 +304,17 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
     
     paths: list[Path] = []
     
-    import textwrap
+    import textwrap  # noqa: E402
 
     _CE_TEMPLATE = textwrap.dedent("""\
-    <div class="dm-pe-widget">
-      <div class="dm-pc-tabs" id="dm-ce-tabs">
-    {tabs_html}
+    <div class="dm-pe-widget" style="border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-right: 12px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+          <div class="dm-pc-tabs" id="dm-ce-tabs" style="border-bottom: none; background: transparent; border-radius: 0;">
+        {tabs_html}
+          </div>
+          <button id="dm-mono-toggle" style="height: 30px; padding: 0 12px; font-size: 0.85em; font-weight: 500; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; color: #475569; transition: all 0.2s;">Preview Monochrome</button>
       </div>
-      <div class="dm-pe-body" id="dm-ce-stage">
+      <div class="dm-pe-body" id="dm-ce-stage" style="border: none;">
     {panels_html}
       </div>
     </div>
@@ -337,6 +340,21 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
           t.addEventListener("click", function() {{ activate(t.dataset.preset); }});
         }});
         if (tabs.length > 0) {{ activate(tabs[0].dataset.preset); }}
+        
+        var isMono = false;
+        var btn = document.getElementById("dm-mono-toggle");
+        if(btn) {{
+            btn.addEventListener("click", function() {{
+                isMono = !isMono;
+                document.querySelectorAll(".dm-cmap-bar").forEach(function(b) {{
+                    b.style.filter = isMono ? "grayscale(100%)" : "none";
+                }});
+                btn.textContent = isMono ? "Color Palette" : "Preview Monochrome";
+                btn.style.background = isMono ? "#1e293b" : "#fff";
+                btn.style.color = isMono ? "#fff" : "#475569";
+                btn.style.borderColor = isMono ? "#1e293b" : "#cbd5e1";
+            }});
+        }}
       }});
     }})();
     </script>
@@ -348,8 +366,7 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
     # We include Categorical now because we have dc.bold, dc.muted, dc.pastel
     display_categories = CATEGORY_ORDER
     
-    # We will use an "OKLCH" badge for all since they are all pure OKLCH generated now
-    origin_badge = '<span class="dm-cmap-origin-oklch" style="font-size: 0.65em; padding: 2px 4px; border-radius: 4px; background: #e3f2fd; color: #1565c0; margin-left: 6px;">OKLCH Vector</span>'
+    display_categories = CATEGORY_ORDER
 
     for i, category in enumerate(display_categories):
         cmaps = categories.get(category)
@@ -391,7 +408,7 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
 
             html_parts.append(
                 f'<div class="dm-cmap-item">'
-                f'<div><span class="dm-cmap-name">{cmap.name}</span>{origin_badge}'
+                f'<div><span class="dm-cmap-name">{cmap.name}</span>'
                 f"</div>"
                 f'<div class="dm-cmap-bar" style="background:{gradient}">'
                 f"</div></div>"

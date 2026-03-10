@@ -81,7 +81,7 @@ COLORMAPS: dict[str, list[str]] = {
     "magenta_cyan": ["#380A2B", "#8C1B6C", "#F5F2F5", "#15828C", "#063033"],
     "slate_orange": ["#121A21", "#364A5C", "#F2F4F5", "#C75A1C", "#471D05"],
 
-    # --- Cyclical (2 maps) ---
+    # --- Cyclical (6 maps) ---
     "twilight_oklch": [
         "#E8B8DB", "#6441A5", "#2A0845",
         "#0F2027", "#203A43", "#3B8D99", "#E8B8DB",
@@ -89,6 +89,18 @@ COLORMAPS: dict[str, list[str]] = {
     "phase_wheel": [
         "#FADEEB", "#DD7CB8", "#87277E", "#2C0947",
         "#093247", "#228587", "#84D1C1", "#FADEEB",
+    ],
+    "color_wheel": [
+        "#FF595E", "#FFCA3A", "#8AC926", "#1982C4", "#6A4C93", "#FF595E"
+    ],
+    "seasons": [
+        "#A8E6CF", "#DCEDC1", "#FFD3B6", "#FFAAA5", "#FF8B94", "#A8E6CF"
+    ],
+    "day_night": [
+        "#111111", "#F89035", "#FAD87F", "#8EE4AF", "#1E688A", "#111111"
+    ],
+    "rainbow_cycle": [
+        "#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#9400D3", "#FF0000"
     ],
 }
 
@@ -159,38 +171,48 @@ def generate_discrete(name: str, spec: dict) -> None:
 _load_colors()
 
 CATEGORICAL_PRESETS: dict[str, list[str]] = {
-    "oc_vibrant": [
-        "oc.red5", "oc.orange5", "oc.yellow5", "oc.lime5",
-        "oc.cyan5", "oc.blue5", "oc.grape5", "oc.pink5"
+    "vibrant": [
+        "oc.red6", "oc.orange5", "oc.yellow5", "oc.green5",
+        "oc.cyan5", "oc.blue6", "oc.grape5"
     ],
-    "oc_pastel": [
+    "pastel": [
         "oc.red3", "oc.orange3", "oc.yellow3", "oc.teal3",
-        "oc.cyan3", "oc.blue3", "oc.violet3", "oc.pink3"
+        "oc.blue3", "oc.violet3", "oc.pink3"
     ],
-    "tw_candy": [
+    "candy": [
         "tw.rose400", "tw.amber400", "tw.lime400", "tw.emerald400",
-        "tw.cyan400", "tw.blue400", "tw.violet400", "tw.fuchsia400"
+        "tw.cyan400", "tw.blue400", "tw.violet400"
     ],
-    "tw_pop": [
+    "pop": [
         "tw.red500", "tw.orange500", "tw.yellow400", "tw.green500",
-        "tw.teal500", "tw.sky500", "tw.indigo500", "tw.pink500"
+        "tw.sky500", "tw.indigo500", "tw.fuchsia500"
     ],
-    "tw_macaron": [
+    "macaron": [
         "tw.pink300", "tw.orange300", "tw.yellow300", "tw.lime300",
-        "tw.cyan300", "tw.blue300", "tw.purple300", "tw.rose300"
+        "tw.cyan300", "tw.blue300", "tw.purple300"
     ],
 }
 
 def generate_preset_categorical(name: str, keys: list[str]) -> None:
-    """Generate categorical colormaps from named color keys."""
+    """Generate categorical colormaps from preset colors, sorted by OKLCH lightness."""
     out_path = CMAP_DIR / f"{name}.txt"
     mapping = mcolors.get_named_colors_mapping()
+    import dartwork_mpl.color as dc
+    
+    color_objects = []
+    for k in keys:
+        hex_val = mapping[k]
+        c = dc.Color.from_hex(hex_val)
+        color_objects.append((c.oklch[0], hex_val))
+    
+    # Sort ascending lightness (darkest to lightest)
+    color_objects.sort(key=lambda x: x[0])
+    
     with open(out_path, "w") as f:
-        for k in keys:
-            hex_val = mapping[k]
+        for _l, hex_val in color_objects:
             r, g, b = mcolors.to_rgb(hex_val)
             f.write(f"{r:.6f} {g:.6f} {b:.6f}\n")
-    print(f"Generated {name}.txt from presets ({len(keys)} colors)")
+    print(f"Generated {name}.txt from presets ({len(color_objects)} colors, sorted by Lightness)")
 
 
 def main() -> None:
