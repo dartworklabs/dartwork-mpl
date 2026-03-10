@@ -2,7 +2,7 @@
 
 AI coding agents — Cursor, Copilot, Claude, and other LLM-powered assistants — already know matplotlib. It is one of the most heavily represented Python libraries in any LLM's training data, with **40M+ monthly PyPI downloads** and **70k+ Stack Overflow questions**.
 
-dartwork-mpl is built to leverage this fact. By keeping everything as standard matplotlib code with thin utilities on top, we ensure that AI agents produce correct, publication-quality plots **on the first try**.
+dartwork-mpl is built to leverage this fact. This page explains the **design principles** behind our AI-friendly API. For concrete features and setup instructions, see the [AI Integration](../integrations/index) guide.
 
 ## One Right Way to Do Things
 

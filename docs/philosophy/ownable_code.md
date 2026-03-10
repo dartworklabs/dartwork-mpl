@@ -51,6 +51,5 @@ def simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05)):
     # ... ~30 lines of standard scipy + matplotlib
 ```
 
-> **Roadmap:** We plan to add a pure-matplotlib export feature that resolves
-> dartwork-mpl utilities (color names, `cm2in` values) into standard matplotlib
-> code, so you can completely remove the dependency when the project is done.
+> **Zero lock-in:** At every level, dartwork-mpl is designed to be optional.
+> You can adopt it incrementally, and if you outgrow it, take the code with you.
