@@ -17,12 +17,12 @@ interpolate linearly between them. This creates two hidden problems:
    lighter, destroying print/greyscale readability.
 
 dartwork-mpl solves both by **designing entirely in OKLCH space**, the most
-modern perceptually uniform colour model (an improvement over CIE-LAB):
+modern perceptually uniform color model (an improvement over CIE-LAB):
 
 | Principle                  | How we enforce it                                                                                                                                                                                                    |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Lightness monotonicity** | Every sequential map has strictly increasing (or decreasing) OKLCH _L_. This guarantees greyscale readability.                                                                                                       |
-| **Smooth hue path**        | Anchor colours are placed along natural hue arcs (no purple-yellow shortcuts that produce muddy brown in RGB).                                                                                                       |
+| **Smooth hue path**        | Anchor colors are placed along natural hue arcs (no purple-yellow shortcuts that produce muddy brown in RGB).                                                                                                        |
 | **Bow-shaped chroma**      | Chroma peaks in the middle and tapers at both ends, avoiding clipping at gamut boundaries.                                                                                                                           |
 | **Color-blind awareness**  | All maps are verified under deuteranopia, protanopia, and tritanopia simulations. Maps relying on lightness (Single-Hue, `monochrome`, `ash`) remain fully usable; hue-dependent maps are documented with CVD notes. |
 
@@ -80,8 +80,8 @@ print-safe applications.
 
 ### Sequential Multi-Hue
 
-Colourful ramps that sweep across two or more hue families while keeping
-lightness smooth. Best for heatmaps and false-colour images.
+Colorful ramps that sweep across two or more hue families while keeping
+lightness smooth. Best for heatmaps and false-color images.
 
 | Name         | Hue path                            | Recommended use                               |
 | ------------ | ----------------------------------- | --------------------------------------------- |
@@ -111,7 +111,7 @@ values, and comparisons against a reference.
 
 ### Cyclical
 
-Start colour equals end colour. Use for angles, phases, or any periodic
+Start color equals end color. Use for angles, phases, or any periodic
 variable.
 
 | Name                | Hue loop                    | Recommended use              |
@@ -157,19 +157,19 @@ For discrete labels, `dartwork-mpl` fully supports the built-in
 
 ## Color-blind safety
 
-All `dc.*` maps are verified under three colour-vision-deficiency (CVD)
+All `dc.*` maps are verified under three color-vision-deficiency (CVD)
 simulations — **deuteranopia**, **protanopia**, and **tritanopia** — using the
 Brettel 1997 algorithm.
 
 **Key findings:**
 
 - Every sequential map has **strictly monotonic lightness**, so data ordering
-  is preserved even when colour perception is reduced.
+  is preserved even when color perception is reduced.
 - Single-hue and achromatic maps (`ash`, `monochrome`, `steel`, `copper`) are
   **inherently CVD-safe** because their discriminability comes from lightness
   differences, not hue.
 - `dc.fiscal` deliberately pairs green and red for financial convention (profit / loss).
-  If your audience may include colour-blind readers, prefer `dc.delta`
+  If your audience may include color-blind readers, prefer `dc.delta`
   (teal ↔ orange) or `dc.spectrum` (navy ↔ crimson) instead.
 
 > **Recommendation**: For the highest accessibility, choose maps whose primary
@@ -182,6 +182,13 @@ Brettel 1997 algorithm.
 
 - Set `vmin` / `vmax` yourself for stable colorbars across facets or animations.
 - Reverse any map with the `_r` suffix (`dc.flame_r`).
-- Hide colourbar outlines for a cleaner look: `cb.outline.set_visible(False)`.
+- Hide colorbar outlines for a cleaner look: `cb.outline.set_visible(False)`.
 - For diverging data, use symmetric limits and `extend="both"`.
 - Use `imshow(..., interpolation="nearest")` for hard edges.
+
+## See also
+
+- [Colors](colors.md) — full named palette catalog
+- [Color Space & Manipulation](space.md) — programmatic color manipulation and custom colormap creation
+- [Usage Guide › Colors](../usage_guide/colors.md) — practical color usage patterns
+- [API › Color Utilities](../api/color.rst) for all color functions
