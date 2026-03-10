@@ -20,6 +20,10 @@ EXPECTED_DC_NAMES = {
     "ice_fire", "earth_sky", "teal_rose", "purple_lime", "navy_gold", "forest_brick", "magenta_cyan", "slate_orange",
     "cool_warm", "arctic_heat", "frost_flame", "water_fire",
     "spring_autumn", "summer_winter", "electric_surge", "neon_pulse",
+    # Additional Vibrant
+    "neon_blue", "neon_green", "neon_pink", "neon_orange",
+    "cyberpunk", "synthwave", "vivid_dusk", "toxic_glow",
+    "neon_wheel", "electric_cycle",
     # Cyclical
     "twilight_oklch", "phase_wheel", "color_wheel", "seasons", "day_night", "rainbow_cycle",
     # Discrete
@@ -32,8 +36,8 @@ for name in EXPECTED_DC_NAMES:
     EXPECTED_DC_CMAPS.add(f"dc.{name}")
     EXPECTED_DC_CMAPS.add(f"dc.{name}_r")
 
-assert len(EXPECTED_DC_NAMES) == 46
-assert len(EXPECTED_DC_CMAPS) == 92
+assert len(EXPECTED_DC_NAMES) == 56
+assert len(EXPECTED_DC_CMAPS) == 112
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -54,8 +58,8 @@ class TestEnsureLoaded:
         ensure_loaded()
         ensure_loaded()
 
-    def test_registers_exactly_46_dc_colormaps(self) -> None:
-        """After loading, exactly 46 dc.* colormaps (non-reversed) should exist."""
+    def test_registers_exactly_56_dc_colormaps(self) -> None:
+        """After loading, exactly 56 dc.* colormaps (non-reversed) should exist."""
         dc_names = {
             name for name in mpl.colormaps
             if name.startswith("dc.") and not name.endswith("_r")
@@ -74,16 +78,16 @@ class TestEnsureLoaded:
             )
 
     def test_cmap_count_and_names(self) -> None:
-        """Verify exactly 92 `dc.*` colormaps exist (46 base + 46 reversed)."""
+        """Verify exactly 112 `dc.*` colormaps exist (56 base + 56 reversed)."""
         # 1. Get all colormaps currently registered in Matplotlib
         all_mpl_cmaps = set(plt.colormaps())
 
         # 2. Filter for only those starting with 'dc.'
         dc_cmaps_registered = {name for name in all_mpl_cmaps if name.startswith("dc.")}
 
-        # 3. Assert the count is exactly 92
-        assert len(dc_cmaps_registered) == 92, (
-            f"Expected exactly 92 'dc.' colormaps, but found {len(dc_cmaps_registered)}."
+        # 3. Assert the count is exactly 112
+        assert len(dc_cmaps_registered) == 112, (
+            f"Expected exactly 112 'dc.' colormaps, but found {len(dc_cmaps_registered)}."
         )
         assert dc_cmaps_registered == EXPECTED_DC_CMAPS, (
             f"Missing: {EXPECTED_DC_CMAPS - dc_cmaps_registered}, "
@@ -141,13 +145,13 @@ class TestParseColormap:
         assert cmap_fwd.colors[0] == cmap_rev.colors[-1]
         assert cmap_fwd.colors[-1] == cmap_rev.colors[0]
 
-    def test_file_count_is_46(self) -> None:
-        """asset/cmap/ should contain exactly 46 .txt files."""
+    def test_file_count_is_56(self) -> None:
+        """asset/cmap/ should contain exactly 56 .txt files."""
         cmap_dir = Path(__file__).parent.parent / (
             "src/dartwork_mpl/asset/cmap"
         )
         txt_files = list(cmap_dir.glob("*.txt"))
-        assert len(txt_files) == 46, (
-            f"Expected 46 .txt files, got {len(txt_files)}: "
+        assert len(txt_files) == 56, (
+            f"Expected 56 .txt files, got {len(txt_files)}: "
             f"{sorted(f.name for f in txt_files)}"
         )

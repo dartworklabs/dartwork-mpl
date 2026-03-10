@@ -60,8 +60,13 @@ COLORMAPS: dict[str, list[str]] = {
         "#2B0E0B", "#5C1E18", "#943329",
         "#CF4C3F", "#FA796B", "#FCB5AD", "#FEEAE8",
     ],
+    # --- Sequential Single-Hue (Vibrant) ---
+    "neon_blue": ["#EFF6FF", "#3B82F6", "#1D4ED8"],
+    "neon_green": ["#F0FDF4", "#22C55E", "#15803D"],
+    "neon_pink": ["#FDF2F8", "#EC4899", "#BE185D"],
+    "neon_orange": ["#FFF7ED", "#F97316", "#C2410C"],
 
-    # --- Sequential Multi-Hue (8+ maps) ---
+    # --- Sequential Multi-Hue (Classic) ---
     "aurora": ["#081736", "#2B478B", "#4DB39A", "#D1F5D8"],
     "sunset_glow": ["#1A0724", "#611051", "#B82E47", "#F07B37", "#FCE09D"],
     "plasma_arc": ["#0D0221", "#4A066B", "#9C1777", "#ED3B4A", "#F2AA33", "#FCEEBA"],
@@ -70,6 +75,11 @@ COLORMAPS: dict[str, list[str]] = {
     "autumn_leaf": ["#1C060B", "#521217", "#993116", "#D9681C", "#F0B54F"],
     "nebula_dust": ["#090517", "#27154A", "#5E2980", "#A84C9C", "#E38BBA", "#FCE3F5"],
     "tropical_fruit": ["#2E062B", "#6E1346", "#B52B4D", "#ED653E", "#F5B44C", "#FDF3C2"],
+    # --- Sequential Multi-Hue (Vibrant) ---
+    "cyberpunk": ["#0F172A", "#6366F1", "#EC4899", "#FDE047"],
+    "synthwave": ["#170F11", "#9D174D", "#D946EF", "#38BDF8", "#F1F5F9"],
+    "vivid_dusk": ["#1E1B4B", "#7C3AED", "#F43F5E", "#FCD34D"],
+    "toxic_glow": ["#022C22", "#059669", "#84CC16", "#FEF08A"],
 
     # --- Diverging (Classic) ---
     "ice_fire": ["#0C275C", "#2966C7", "#F2F5F7", "#D42A38", "#570911"],
@@ -111,6 +121,9 @@ COLORMAPS: dict[str, list[str]] = {
     "rainbow_cycle": [
         "#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#9400D3", "#FF0000"
     ],
+    # --- Cyclical (Vibrant) ---
+    "neon_wheel": ["#FF0055", "#FFBB00", "#00FF66", "#00DDFF", "#AA00FF", "#FF0055"],
+    "electric_cycle": ["#EC4899", "#FBBF24", "#34D399", "#60A5FA", "#A78BFA", "#EC4899"]
 }
 
 

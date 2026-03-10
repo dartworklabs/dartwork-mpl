@@ -78,6 +78,8 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     "dc.seasons": "Cyclical",
     "dc.day_night": "Cyclical",
     "dc.rainbow_cycle": "Cyclical",
+    "dc.neon_wheel": "Cyclical",
+    "dc.electric_cycle": "Cyclical",
 
     # Discrete
     "dc.vivid": "Categorical",

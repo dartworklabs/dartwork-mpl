@@ -307,11 +307,8 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
     import textwrap  # noqa: E402
 
     _CE_TEMPLATE = textwrap.dedent("""\
-    <div class="dm-pe-widget" style="border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px; position: relative;">
-      <div style="position: absolute; top: 10px; right: 12px; z-index: 10;">
-          <button id="dm-mono-toggle" style="height: 30px; padding: 0 12px; font-size: 0.85em; font-weight: 500; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; color: #475569; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">Preview Monochrome</button>
-      </div>
-      <div style="border-bottom: 1px solid #e2e8f0; background: #f8fafc; border-top-left-radius: 8px; border-top-right-radius: 8px; padding-right: 140px;">
+    <div class="dm-pe-widget" style="border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px;">
+      <div style="border-bottom: 1px solid #e2e8f0; background: #f8fafc; border-top-left-radius: 8px; border-top-right-radius: 8px;">
           <div class="dm-pc-tabs" id="dm-ce-tabs" style="border-bottom: none; background: transparent; border-radius: 0;">
         {tabs_html}
           </div>
@@ -344,19 +341,27 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
         if (tabs.length > 0) {{ activate(tabs[0].dataset.preset); }}
         
         var isMono = false;
-        var btn = document.getElementById("dm-mono-toggle");
-        if(btn) {{
-            btn.addEventListener("click", function() {{
-                isMono = !isMono;
+        var checkboxes = document.querySelectorAll(".dm-mono-checkbox");
+        checkboxes.forEach(function(cb) {{
+            cb.addEventListener("change", function(e) {{
+                isMono = e.target.checked;
+                checkboxes.forEach(function(other) {{
+                    other.checked = isMono;
+                    var track = other.previousElementSibling;
+                    var thumb = track.firstElementChild;
+                    if(isMono) {{
+                        track.style.background = "#0f172a";
+                        thumb.style.transform = "translateX(14px)";
+                    }} else {{
+                        track.style.background = "#cbd5e1";
+                        thumb.style.transform = "translateX(0)";
+                    }}
+                }});
                 document.querySelectorAll(".dm-cmap-bar").forEach(function(b) {{
                     b.style.filter = isMono ? "grayscale(100%)" : "none";
                 }});
-                btn.textContent = isMono ? "Color Palette" : "Preview Monochrome";
-                btn.style.background = isMono ? "#1e293b" : "#fff";
-                btn.style.color = isMono ? "#fff" : "#475569";
-                btn.style.borderColor = isMono ? "#1e293b" : "#cbd5e1";
             }});
-        }}
+        }});
       }});
     }})();
     </script>
@@ -377,7 +382,23 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
 
         blurb = CATEGORY_BLURBS.get(category, "")
         html_parts = ['<div class="dm-cmap-panel">']
-        html_parts.append(f'<div class="dm-cmap-panel-title">{category}</div>')
+        
+        switch_html = (
+            '<label style="display: flex; align-items: center; cursor: pointer; font-size: 0.85em; color: #475569; user-select: none;">'
+            '<span style="margin-right: 8px; font-weight: 500;">Mono</span>'
+            '<div style="position: relative; width: 34px; height: 20px; background: #cbd5e1; border-radius: 10px; transition: background 0.3s;" class="dm-mono-track">'
+            '<div style="position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: transform 0.3s, background 0.3s; box-shadow: 0 1px 2px rgba(0,0,0,0.1);" class="dm-mono-thumb"></div>'
+            '</div>'
+            '<input type="checkbox" style="display: none;" class="dm-mono-checkbox">'
+            '</label>'
+        )
+
+        html_parts.append(
+            '<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px;">'
+            f'<div class="dm-cmap-panel-title" style="margin: 0;">{category}</div>'
+            f'{switch_html}'
+            '</div>'
+        )
         if blurb:
             html_parts.append(f'<div class="dm-cmap-panel-desc">{blurb}</div>')
         html_parts.append('<div class="dm-cmap-grid">')
