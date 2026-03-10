@@ -303,7 +303,7 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
     n_samples = 32  # gradient stops
     
     # We maintain a list of known custom OKLCH colormap roots to label them
-    oklch_cmaps = {"ocean", "sunset", "emerald", "berry", "balance", "earth", "twilight_oklch", "nebula", "marine", "neon", "steel", "flame", "lavender", "ash"}
+    oklch_cmaps = {"ocean", "sunset", "emerald", "berry", "balance", "earth", "twilight_oklch", "nebula", "marine", "neon", "steel", "flame", "lavender", "ash", "amber", "teal", "copper", "arctic", "thermal", "verdant", "dusk", "delta", "polar", "spectrum", "fiscal", "prism", "monochrome"}
 
     paths: list[Path] = []
     
