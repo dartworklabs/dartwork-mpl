@@ -18,7 +18,7 @@ web, and dark mode. No manual `rcParams` guessing.
 
 :::{grid-item-card} **2. Add color**
 Use named colors like `"oc.blue5"` or `"tw.emerald500"` anywhere matplotlib
-accepts a color string. 1,500+ curated swatches from 6 design systems,
+accepts a color string. 900+ curated swatches from 6 design systems,
 plus perceptual OKLCH interpolation.
 
 → [Colors and Colormaps](colors.md)

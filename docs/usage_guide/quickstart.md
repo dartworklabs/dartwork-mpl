@@ -136,7 +136,7 @@ Choose the right preset for your use case — papers, reports, slides, posters.
 :::
 
 :::{grid-item-card} 🌈 Colors and Colormaps
-Explore 1,500+ named palettes and perceptual OKLCH interpolation.
+Explore 900+ named palettes and perceptual OKLCH interpolation.
 
 → [See palettes](colors.md)
 :::
