@@ -55,62 +55,23 @@ plt.show()
 
 ---
 
-## Colormap reference
+## Colormap catalog
 
-### Sequential Single-Hue
+Explore all 16 built-in colormaps dynamically using the catalog below. Use the tabs to browse by data type.
 
-One dominant hue ramping from dark to light. Ideal for magnitude, density, and
-print-safe applications. **3 flavors + 1 earth tone:**
+```{raw} html
+:file: images/colormap_explorer.html
+```
 
-| Name            | Flavor     | Hue         | Recommended use                |
-| --------------- | ---------- | ----------- | ------------------------------ |
-| `dc.steel`      | 🧊 Cool    | Blue-gray   | Temperature (cold), depth maps |
-| `dc.flame`      | 🔥 Warm    | Red-orange  | Heat intensity, risk scores    |
-| `dc.monochrome` | ⬜ Neutral | Pure gray   | B&W print, accessibility-first |
-| `dc.lajolla`    | 🏜️ Earth   | Cream→brown | Terrain, geology, commodities  |
+---
 
-### Sequential Multi-Hue
+## Creating custom colormaps
 
-Colorful ramps sweeping across hue families with smooth lightness.
-Best for heatmaps and false-color images. **3 flavors + 1 scientific:**
+If the built-in maps don't fit your specific need, you can create perfectly smooth, perceptually uniform custom ramps using the `dm.cspace()` function.
 
-| Name         | Flavor        | Hue path                     | Recommended use                 |
-| ------------ | ------------- | ---------------------------- | ------------------------------- |
-| `dc.ocean`   | 🧊 Cool       | Navy → teal → mint           | Bathymetry, fluid dynamics      |
-| `dc.sunset`  | 🔥 Warm       | Indigo → crimson → gold      | Spectroscopy, general heatmaps  |
-| `dc.thermal` | ⚡ Vivid      | Purple → magenta → amber     | Infrared imaging, heat transfer |
-| `dc.batlow`  | 🌈 Scientific | Teal → green → yellow → pink | Rainbow substitute (papers)     |
+By interpolating in **OKLCH space**, you ensure the lightness transition remains strictly monotonic and vivid, completely avoiding the "muddy" or desaturated midtones that appear when interpolating standard RGB hex codes.
 
-### Diverging
-
-Two saturated hues flanking a neutral midpoint. Perfect for anomalies,
-signed values, and comparisons against a reference. **3 flavors + 1 dark-center:**
-
-| Name         | Flavor         | Polarity          | Recommended use            |
-| ------------ | -------------- | ----------------- | -------------------------- |
-| `dc.balance` | 🧊 Cool        | Blue ↔ Red        | Temperature anomaly        |
-| `dc.earth`   | 🌿 Natural     | Brown ↔ Green     | Land-use change, elevation |
-| `dc.delta`   | 🔶 Modern      | Teal ↔ Orange     | CVD-safe, correlations     |
-| `dc.berlin`  | 🌑 Dark-center | Blue → dark → Red | Depth-weighted diverging   |
-
-### Cyclical
-
-Start color equals end color. Use for angles, phases, or any periodic variable.
-
-| Name                | Hue loop                    | Recommended use              |
-| ------------------- | --------------------------- | ---------------------------- |
-| `dc.twilight_oklch` | Pink → purple → teal → pink | Wind direction, phase angles |
-
-### Discrete (Categorical)
-
-OKLCH hue-wheel equispaced colors for labeling distinct categories.
-**3 intensity levels** — same hues, different lightness × chroma:
-
-| Name        | Flavor           | Design                           | Recommended use          |
-| ----------- | ---------------- | -------------------------------- | ------------------------ |
-| `dc.bold`   | ⚡ High-contrast | L=0.55, C=0.19 — vivid, punchy   | Dense plots, many labels |
-| `dc.muted`  | 📄 Professional  | L=0.65, C=0.10 — calm, scholarly | Papers, reports          |
-| `dc.pastel` | 🎨 Soft          | L=0.85, C=0.07 — light, airy     | Presentations, fills     |
+![Custom Colormaps Preview](images/color_space_colormap.svg)
 
 ---
 

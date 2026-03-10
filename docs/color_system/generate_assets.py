@@ -302,15 +302,56 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
     categories = _collect_colormaps()
     n_samples = 32  # gradient stops
     
-    # We maintain a list of known custom OKLCH colormap roots to label them
-    oklch_cmaps = {"ocean", "sunset", "emerald", "berry", "balance", "earth", "twilight_oklch", "nebula", "marine", "neon", "steel", "flame", "lavender", "ash", "amber", "teal", "copper", "arctic", "thermal", "verdant", "dusk", "delta", "polar", "spectrum", "fiscal", "prism", "monochrome"}
-
     paths: list[Path] = []
     
-    # We skip generating the "Categorical" panel which just had standard matplotlib maps
-    display_categories = [c for c in CATEGORY_ORDER if c != "Categorical"]
+    import textwrap
+
+    _CE_TEMPLATE = textwrap.dedent("""\
+    <div class="dm-pe-widget">
+      <div class="dm-pc-tabs" id="dm-ce-tabs">
+    {tabs_html}
+      </div>
+      <div class="dm-pe-body" id="dm-ce-stage">
+    {panels_html}
+      </div>
+    </div>
+    <script>
+    (function() {{
+      document.addEventListener("DOMContentLoaded", function() {{
+        var tabs = document.querySelectorAll(".dm-ce-tab");
+        var panels = document.querySelectorAll(".dm-ce-panel");
+        function activate(preset) {{
+          tabs.forEach(function(t) {{
+            t.classList.toggle("active", t.dataset.preset === preset);
+          }});
+          panels.forEach(function(p) {{
+            p.classList.toggle("active", p.dataset.preset === preset);
+            if (p.dataset.preset === preset) {{
+              p.style.display = "block";
+            }} else {{
+              p.style.display = "none";
+            }}
+          }});
+        }}
+        tabs.forEach(function(t) {{
+          t.addEventListener("click", function() {{ activate(t.dataset.preset); }});
+        }});
+        if (tabs.length > 0) {{ activate(tabs[0].dataset.preset); }}
+      }});
+    }})();
+    </script>
+    """)
+
+    tabs_html = []
+    panels_html = []
     
-    for category in display_categories:
+    # We include Categorical now because we have dc.bold, dc.muted, dc.pastel
+    display_categories = CATEGORY_ORDER
+    
+    # We will use an "OKLCH" badge for all since they are all pure OKLCH generated now
+    origin_badge = '<span class="dm-cmap-origin-oklch" style="font-size: 0.65em; padding: 2px 4px; border-radius: 4px; background: #e3f2fd; color: #1565c0; margin-left: 6px;">OKLCH Vector</span>'
+
+    for i, category in enumerate(display_categories):
         cmaps = categories.get(category)
         if not cmaps:
             continue
@@ -323,18 +364,30 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
         html_parts.append('<div class="dm-cmap-grid">')
 
         for cmap in cmaps:
-            # Sample colormap to CSS gradient stops
-            stops = []
-            for i in range(n_samples):
-                t = i / (n_samples - 1)
-                rgba = cmap(t)
-                hex_c = mpl.colors.to_hex(rgba[:3])
-                pct = round(t * 100, 1)
-                stops.append(f"{hex_c} {pct}%")
-            gradient = f"linear-gradient(to right, {', '.join(stops)})"
+            is_categorical = hasattr(cmap, 'colors') and len(cmap.colors) < 15
             
-            base_name = cmap.name.replace("dc.", "")
-            origin_badge = '<span class="dm-cmap-origin-oklch" style="font-size: 0.65em; padding: 2px 4px; border-radius: 4px; background: #e3f2fd; color: #1565c0; margin-left: 6px;">OKLCH</span>' if base_name in oklch_cmaps else '<span class="dm-cmap-origin-crameri" style="font-size: 0.65em; padding: 2px 4px; border-radius: 4px; background: #f5f5f5; color: #666; margin-left: 6px;">Crameri</span>'
+            if is_categorical:
+                # render sharp discrete blocks
+                stops = []
+                num_colors = len(cmap.colors)
+                step = 100.0 / num_colors
+                for j, color in enumerate(cmap.colors):
+                    hex_c = mpl.colors.to_hex(color[:3])
+                    start = j * step
+                    end = (j + 1) * step
+                    stops.append(f"{hex_c} {start}%")
+                    stops.append(f"{hex_c} {end}%")
+                gradient = f"linear-gradient(to right, {', '.join(stops)})"
+            else:
+                # render smooth continuous stops
+                stops = []
+                for j in range(n_samples):
+                    t = j / (n_samples - 1)
+                    rgba = cmap(t)
+                    hex_c = mpl.colors.to_hex(rgba[:3])
+                    pct = round(t * 100, 1)
+                    stops.append(f"{hex_c} {pct}%")
+                gradient = f"linear-gradient(to right, {', '.join(stops)})"
 
             html_parts.append(
                 f'<div class="dm-cmap-item">'
@@ -350,6 +403,22 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
         path = images_dir / f"colormaps_{slug}.html"
         path.write_text("\n".join(html_parts), encoding="utf-8")
         paths.append(path)
+        
+        # Add to tabbed explorer
+        tabs_html.append(f'    <button class="dm-pc-tab dm-ce-tab" data-preset="{slug}">{category}</button>')
+        display_style = "block" if i == 0 else "none"
+        panels_html.append(f'    <div class="dm-ce-panel dm-pe-panel" data-preset="{slug}" style="display: {display_style};">')
+        panels_html.append("\n".join(html_parts))
+        panels_html.append('    </div>')
+        
+    ce_html = _CE_TEMPLATE.format(
+        tabs_html="\n".join(tabs_html),
+        panels_html="\n".join(panels_html)
+    )
+    ce_path = images_dir / "colormap_explorer.html"
+    ce_path.write_text(ce_html, encoding="utf-8")
+    paths.append(ce_path)
+    
     return paths
 
 

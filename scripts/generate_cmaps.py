@@ -1,9 +1,11 @@
 """Generate OKLCH-native colormaps for dartwork-mpl.
 
-Produces 16 colormaps:
-- 10 continuous (sequential / diverging / cyclical)
-- 3 continuous Crameri OKLCH recreations (batlow, berlin, lajolla)
-- 3 discrete qualitative (bold, muted, pastel)
+Produces 30+ colormaps across categories:
+- Sequential Single-Hue
+- Sequential Multi-Hue
+- Diverging
+- Cyclical
+- Discrete Qualitative
 """
 
 import sys
@@ -21,53 +23,68 @@ CMAP_DIR = Path("src/dartwork_mpl/asset/cmap")
 # ──────────────────────────────────────────────────
 
 COLORMAPS: dict[str, list[str]] = {
-    # --- Sequential Single-Hue ---
-    "steel": [
-        "#081226", "#142D4C", "#2A5580",
-        "#5A8BBA", "#A6C8E6", "#EBF3FA",
+    # --- Sequential Single-Hue (8+ maps) ---
+    "obsidian": [
+        "#050505", "#1A1A1A", "#333333",
+        "#666666", "#999999", "#CCCCCC", "#F5F5F5",
     ],
-    "flame": [
-        "#360812", "#6E1322", "#B32930",
-        "#ED654C", "#F7B296", "#FDEBE3",
+    "sapphire": [
+        "#041029", "#0B265C", "#15428F",
+        "#2463C4", "#4A8BE8", "#8CB6F0", "#D9E8FA",
     ],
-    "monochrome": [
-        "#0A0A0A", "#2A2A2A", "#505050",
-        "#808080", "#B0B0B0", "#E8E8E8", "#FAFAFA",
+    "emerald": [
+        "#031C14", "#083B2C", "#11634B",
+        "#1D916E", "#34C498", "#74E0BF", "#D1F5E8",
     ],
-    # --- Sequential Multi-Hue ---
-    "ocean": ["#0B1B3D", "#1A5F7A", "#47B5A4", "#E8F9FD"],
-    "sunset": [
-        "#1A1235", "#6B1F5E", "#D84A49",
-        "#F2A73B", "#FDF1D6",
+    "ruby": [
+        "#29060B", "#5C0C17", "#961325",
+        "#D4243A", "#F25569", "#F797A4", "#FDE3E6",
     ],
-    "thermal": [
-        "#0D0221", "#3D0F58", "#8C1B6E",
-        "#D44040", "#F0A030", "#FCE4A8",
+    "amethyst": [
+        "#180629", "#340D5C", "#571891",
+        "#8229D1", "#A857ED", "#CFA1F5", "#F2E8FA",
     ],
-    # --- Diverging ---
-    "balance": ["#1D3557", "#457B9D", "#F1FAEE", "#E63946", "#85182A"],
-    "earth": [
-        "#3E2723", "#795548", "#FFF8E1",
-        "#4CAF50", "#1B5E20",
+    "topaz": [
+        "#291D04", "#5C410A", "#966A12",
+        "#D1971F", "#F2BB46", "#FAD88E", "#FEF3D9",
     ],
-    "delta": ["#0B4F4A", "#3AAFA9", "#F0F0EC", "#E88A3A", "#8B4513"],
-    # --- Cyclical ---
+    "graphite": [
+        "#0D1117", "#1E2633", "#384457",
+        "#5E6E85", "#8E9EB3", "#C4D0E0", "#F0F4F7",
+    ],
+    "coral": [
+        "#2B0E0B", "#5C1E18", "#943329",
+        "#CF4C3F", "#FA796B", "#FCB5AD", "#FEEAE8",
+    ],
+
+    # --- Sequential Multi-Hue (8+ maps) ---
+    "aurora": ["#081736", "#2B478B", "#4DB39A", "#D1F5D8"],
+    "sunset_glow": ["#1A0724", "#611051", "#B82E47", "#F07B37", "#FCE09D"],
+    "plasma_arc": ["#0D0221", "#4A066B", "#9C1777", "#ED3B4A", "#F2AA33", "#FCEEBA"],
+    "spring_bloom": ["#09212E", "#155963", "#4CA161", "#A9D95B", "#F2F5BD"],
+    "deep_sea": ["#020A1A", "#082F57", "#13637D", "#3AA0A3", "#8AEDE5"],
+    "autumn_leaf": ["#1C060B", "#521217", "#993116", "#D9681C", "#F0B54F"],
+    "nebula_dust": ["#090517", "#27154A", "#5E2980", "#A84C9C", "#E38BBA", "#FCE3F5"],
+    "tropical_fruit": ["#2E062B", "#6E1346", "#B52B4D", "#ED653E", "#F5B44C", "#FDF3C2"],
+
+    # --- Diverging (8+ maps) ---
+    "ice_fire": ["#0C275C", "#2966C7", "#F2F5F7", "#D42A38", "#570911"],
+    "earth_sky": ["#382412", "#7A5029", "#F7F5F0", "#3E8FA3", "#123F4D"],
+    "teal_rose": ["#064240", "#1A8A85", "#F2F7F7", "#CF3E5C", "#4A0A19"],
+    "purple_lime": ["#250C42", "#5A2594", "#F5F2F7", "#76BD24", "#203806"],
+    "navy_gold": ["#071638", "#1A4196", "#F2F5F7", "#D1961F", "#4D3404"],
+    "forest_brick": ["#06331A", "#1D7541", "#F5F7F5", "#AD3C2B", "#421008"],
+    "magenta_cyan": ["#380A2B", "#8C1B6C", "#F5F2F5", "#15828C", "#063033"],
+    "slate_orange": ["#121A21", "#364A5C", "#F2F4F5", "#C75A1C", "#471D05"],
+
+    # --- Cyclical (2 maps) ---
     "twilight_oklch": [
         "#E8B8DB", "#6441A5", "#2A0845",
         "#0F2027", "#203A43", "#3B8D99", "#E8B8DB",
     ],
-    # --- Crameri OKLCH recreations ---
-    "batlow": [
-        "#1D1147", "#1B4B5A", "#2D7A4A", "#7CB342",
-        "#F5C842", "#E8734A", "#D4508A", "#F0C4D8",
-    ],
-    "berlin": [
-        "#7EB8DA", "#2477A4", "#0A1929",
-        "#8B2020", "#E8A0A0",
-    ],
-    "lajolla": [
-        "#FFFDE7", "#F9E547", "#E6A817",
-        "#B5651D", "#5D2906", "#1A0A00",
+    "phase_wheel": [
+        "#FADEEB", "#DD7CB8", "#87277E", "#2C0947",
+        "#093247", "#228587", "#84D1C1", "#FADEEB",
     ],
 }
 
@@ -85,7 +102,11 @@ def generate_continuous(
         seg_steps = base_steps + (
             remainder if i == num_segments - 1 else 0
         )
-        segment = dm.cspace(
+        
+        # Determine stops explicitly keeping them in OKLCH
+        from dartwork_mpl.color._color import cspace
+        
+        segment = cspace(
             anchors[i], anchors[i + 1], n=seg_steps, space="oklch"
         )
         if i < num_segments - 1:
@@ -106,9 +127,9 @@ def generate_continuous(
 # ──────────────────────────────────────────────────
 
 DISCRETE_SPECS: dict[str, dict] = {
-    "bold": {"L": 0.55, "C": 0.19, "n": 8, "h_offset": 30},
-    "muted": {"L": 0.65, "C": 0.10, "n": 8, "h_offset": 30},
-    "pastel": {"L": 0.85, "C": 0.07, "n": 8, "h_offset": 30},
+    "vivid": {"L": 0.65, "C": 0.22, "n": 8, "h_offset": 20},
+    "lucid": {"L": 0.75, "C": 0.16, "n": 8, "h_offset": 20},
+    "chalk": {"L": 0.88, "C": 0.08, "n": 8, "h_offset": 20},
 }
 
 
@@ -140,6 +161,9 @@ def main() -> None:
     for name, spec in DISCRETE_SPECS.items():
         generate_discrete(name, spec)
 
+    # Note: after expanding the list, `prune_cmaps.py`, `cmap.py` loaders
+    # or testing scripts might need updates to account for the new mapped names.
 
 if __name__ == "__main__":
     main()
+

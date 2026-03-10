@@ -4,19 +4,18 @@ from pathlib import Path
 
 CMAP_DIR = Path("src/dartwork_mpl/asset/cmap")
 
+# We keep ONLY the newly generated bright, curated set (30+ maps)
 KEEP_CMAPS: set[str] = {
     # Sequential Single-Hue
-    "steel.txt", "flame.txt", "monochrome.txt",
+    "obsidian.txt", "sapphire.txt", "emerald.txt", "ruby.txt", "amethyst.txt", "topaz.txt", "graphite.txt", "coral.txt",
     # Sequential Multi-Hue
-    "ocean.txt", "sunset.txt", "thermal.txt",
+    "aurora.txt", "sunset_glow.txt", "plasma_arc.txt", "spring_bloom.txt", "deep_sea.txt", "autumn_leaf.txt", "nebula_dust.txt", "tropical_fruit.txt",
     # Diverging
-    "balance.txt", "earth.txt", "delta.txt",
+    "ice_fire.txt", "earth_sky.txt", "teal_rose.txt", "purple_lime.txt", "navy_gold.txt", "forest_brick.txt", "magenta_cyan.txt", "slate_orange.txt",
     # Cyclical
-    "twilight_oklch.txt",
-    # Crameri OKLCH recreations
-    "batlow.txt", "berlin.txt", "lajolla.txt",
-    # Discrete / Categorical
-    "bold.txt", "muted.txt", "pastel.txt",
+    "twilight_oklch.txt", "phase_wheel.txt",
+    # Discrete
+    "vivid.txt", "lucid.txt", "chalk.txt",
 }
 
 

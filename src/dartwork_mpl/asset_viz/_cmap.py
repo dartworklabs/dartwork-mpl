@@ -30,28 +30,47 @@ _CATEGORY_STYLE: dict[str, tuple[str, str]] = {
 }
 
 
+# Override classification for standard dartwork customized maps
+# 30+ maps mapped into 5 core types
 _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     # Sequential Single-Hue
-    "dc.steel": "Sequential Single-Hue",
-    "dc.flame": "Sequential Single-Hue",
-    "dc.monochrome": "Sequential Single-Hue",
-    "dc.lajolla": "Sequential Single-Hue",
+    "dc.obsidian": "Sequential Single-Hue",
+    "dc.sapphire": "Sequential Single-Hue",
+    "dc.emerald": "Sequential Single-Hue",
+    "dc.ruby": "Sequential Single-Hue",
+    "dc.amethyst": "Sequential Single-Hue",
+    "dc.topaz": "Sequential Single-Hue",
+    "dc.graphite": "Sequential Single-Hue",
+    "dc.coral": "Sequential Single-Hue",
+
     # Sequential Multi-Hue
-    "dc.ocean": "Sequential Multi-Hue",
-    "dc.sunset": "Sequential Multi-Hue",
-    "dc.thermal": "Sequential Multi-Hue",
-    "dc.batlow": "Sequential Multi-Hue",
+    "dc.aurora": "Sequential Multi-Hue",
+    "dc.sunset_glow": "Sequential Multi-Hue",
+    "dc.plasma_arc": "Sequential Multi-Hue",
+    "dc.spring_bloom": "Sequential Multi-Hue",
+    "dc.deep_sea": "Sequential Multi-Hue",
+    "dc.autumn_leaf": "Sequential Multi-Hue",
+    "dc.nebula_dust": "Sequential Multi-Hue",
+    "dc.tropical_fruit": "Sequential Multi-Hue",
+
     # Diverging
-    "dc.balance": "Diverging",
-    "dc.earth": "Diverging",
-    "dc.delta": "Diverging",
-    "dc.berlin": "Diverging",
+    "dc.ice_fire": "Diverging",
+    "dc.earth_sky": "Diverging",
+    "dc.teal_rose": "Diverging",
+    "dc.purple_lime": "Diverging",
+    "dc.navy_gold": "Diverging",
+    "dc.forest_brick": "Diverging",
+    "dc.magenta_cyan": "Diverging",
+    "dc.slate_orange": "Diverging",
+
     # Cyclical
     "dc.twilight_oklch": "Cyclical",
-    # Discrete / Categorical
-    "dc.bold": "Categorical",
-    "dc.muted": "Categorical",
-    "dc.pastel": "Categorical",
+    "dc.phase_wheel": "Cyclical",
+
+    # Discrete
+    "dc.vivid": "Categorical",
+    "dc.lucid": "Categorical",
+    "dc.chalk": "Categorical",
 }
 
 def classify_colormap(cmap: Colormap) -> str:
