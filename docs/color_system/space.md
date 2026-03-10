@@ -56,9 +56,45 @@ You can create Color objects from any supported format. Pick whichever matches
 your input — all methods produce identical `Color` instances that can be
 freely converted.
 
-```{image} images/color_space_creation.svg
-:alt: Creating Color objects from different formats
-:align: center
+```{raw} html
+<div class="dm-constructor-widget">
+  <div class="dm-cw-header">
+    <div class="dm-cw-title">Live Universal Constructor</div>
+    <div class="dm-cw-subtitle">Pick a master color to see exactly how to generate it across all Python formats.</div>
+  </div>
+  <div class="dm-cw-master-stage" style="background-color: #f2711c;">
+    <input type="color" class="dm-cw-master-picker" value="#f2711c" aria-label="Pick color">
+    <div class="dm-cw-master-label">
+      <span class="dm-cw-master-hex">#F2711C</span>
+      <span class="dm-cw-master-hint">(Click to change)</span>
+    </div>
+  </div>
+  <div class="dm-cw-grid">
+    <div class="dm-cw-card" data-format="oklab">
+      <div class="dm-cw-fw">OKLab <span class="dm-cw-badge">Default</span></div>
+      <div class="dm-cw-code">dm.oklab(0.680, 0.140, 0.120)</div>
+    </div>
+    <div class="dm-cw-card" data-format="oklch">
+      <div class="dm-cw-fw">OKLCH <span class="dm-cw-badge">Intuitive</span></div>
+      <div class="dm-cw-code">dm.oklch(0.680, 0.184, 40.6)</div>
+    </div>
+    <div class="dm-cw-card" data-format="rgb">
+      <div class="dm-cw-fw">RGB 0–1</div>
+      <div class="dm-cw-code">dm.rgb(0.949, 0.443, 0.110)</div>
+    </div>
+    <div class="dm-cw-card" data-format="rgb255">
+      <div class="dm-cw-fw">RGB 0–255</div>
+      <div class="dm-cw-code">dm.rgb(242, 113, 28)</div>
+    </div>
+    <div class="dm-cw-card dm-cw-card-full" data-format="hex">
+      <div class="dm-cw-fw">Hexadecimal</div>
+      <div class="dm-cw-code">dm.hex('#f2711c')</div>
+    </div>
+  </div>
+  <div class="dm-cw-footer">
+    <span class="dm-cw-copy-hint">Click any snippet to copy the Python code</span>
+  </div>
+</div>
 ```
 
 ### From OKLab coordinates

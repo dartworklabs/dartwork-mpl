@@ -1,4 +1,37 @@
 /* ═══════════════════════════════════════════════════════════════════════
+   Click-to-copy clipboard utility
+   ═══════════════════════════════════════════════════════════════════════ */
+function copyToClipboardFallback(text, onSuccess) {
+  if (navigator.clipboard) {
+    navigator.clipboard
+      .writeText(text)
+      .then(onSuccess)
+      .catch(function () {
+        fallbackCopy(text, onSuccess);
+      });
+  } else {
+    fallbackCopy(text, onSuccess);
+  }
+
+  function fallbackCopy(text, cb) {
+    var textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand("copy");
+      if (cb) cb();
+    } catch (err) {
+      console.error("Fallback clipboard copy failed", err);
+    }
+    document.body.removeChild(textArea);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    Click-to-copy hex code for color swatches
    ═══════════════════════════════════════════════════════════════════════ */
 document.addEventListener("click", function (e) {
@@ -9,7 +42,7 @@ document.addEventListener("click", function (e) {
   if (!hexEl) return;
 
   var hex = hexEl.textContent.trim();
-  navigator.clipboard.writeText(hex).then(function () {
+  copyToClipboardFallback(hex, function () {
     swatch.classList.add("copied");
     setTimeout(function () {
       swatch.classList.remove("copied");
@@ -128,7 +161,7 @@ document.addEventListener("click", function (e) {
         var rgb = sampleGradient(bar._stops, t);
         var hex = rgbToHex(rgb);
 
-        navigator.clipboard.writeText(hex).then(function () {
+        copyToClipboardFallback(hex, function () {
           bar.classList.add("copied");
           setTimeout(function () {
             bar.classList.remove("copied");
@@ -1028,12 +1061,27 @@ document.addEventListener("click", function (e) {
       var sizeInput = widget.querySelector(".dm-ft-size");
       var textarea = widget.querySelector(".dm-ft-textarea");
 
+      var weightMap = {
+        100: "Thin",
+        200: "ExtraLight",
+        300: "Light",
+        400: "Regular",
+        500: "Medium",
+        600: "SemiBold",
+        700: "Bold",
+        800: "ExtraBold",
+        900: "Black",
+      };
+
       function update() {
         var family = familySelect.value; // e.g., dm-Roboto
         var weight = weightSelect.value;
+        var weightSuffix = weightMap[weight] || "Regular";
+        var fullFamily = family + "-" + weightSuffix;
         var size = sizeInput.value + "px";
 
-        textarea.style.fontFamily = "'" + family + "', sans-serif";
+        textarea.style.fontFamily =
+          "'" + fullFamily + "', '" + family + "', sans-serif";
         textarea.style.fontWeight = weight;
         textarea.style.fontSize = size;
       }
@@ -1154,7 +1202,7 @@ document.addEventListener("click", function (e) {
         label.textContent = hex;
         cell.appendChild(label);
         cell.addEventListener("click", function () {
-          navigator.clipboard.writeText(hex).then(function () {
+          copyToClipboardFallback(hex, function () {
             cell.classList.add("copied");
             setTimeout(function () {
               cell.classList.remove("copied");
@@ -1214,7 +1262,7 @@ document.addEventListener("click", function (e) {
         cell.style.backgroundColor = hex;
         cell.setAttribute("data-hex", hex);
         cell.addEventListener("click", function () {
-          navigator.clipboard.writeText(hex).then(function () {
+          copyToClipboardFallback(hex, function () {
             cell.classList.add("copied");
             setTimeout(function () {
               cell.classList.remove("copied");
@@ -1286,3 +1334,99 @@ document.addEventListener("click", function (e) {
     render();
   });
 })();
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Live Color Constructor Widget
+   ═══════════════════════════════════════════════════════════════════════ */
+document.addEventListener("DOMContentLoaded", function () {
+  var cwWidget = document.querySelector(".dm-constructor-widget");
+  if (!cwWidget) return;
+
+  var stage = cwWidget.querySelector(".dm-cw-master-stage");
+  var picker = cwWidget.querySelector(".dm-cw-master-picker");
+  var hexLabel = cwWidget.querySelector(".dm-cw-master-hex");
+  var codeOklab = cwWidget.querySelector('.dm-cw-card[data-format="oklab"] .dm-cw-code');
+  var codeOklch = cwWidget.querySelector('.dm-cw-card[data-format="oklch"] .dm-cw-code');
+  var codeRgb = cwWidget.querySelector('.dm-cw-card[data-format="rgb"] .dm-cw-code');
+  var codeRgb255 = cwWidget.querySelector('.dm-cw-card[data-format="rgb255"] .dm-cw-code');
+  var codeHex = cwWidget.querySelector('.dm-cw-card[data-format="hex"] .dm-cw-code');
+
+  function srgbLinearize(x) {
+    return x >= 0.04045 ? Math.pow((x + 0.055) / 1.055, 2.4) : x / 12.92;
+  }
+  function hexToLinearRgb(hex) {
+    var r = parseInt(hex.slice(1, 3), 16) / 255;
+    var g = parseInt(hex.slice(3, 5), 16) / 255;
+    var b = parseInt(hex.slice(5, 7), 16) / 255;
+    return [srgbLinearize(r), srgbLinearize(g), srgbLinearize(b)];
+  }
+  function linearRgbToOklab(lr, lg, lb) {
+    var l_ = Math.cbrt(0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb);
+    var m_ = Math.cbrt(0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb);
+    var s_ = Math.cbrt(0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb);
+    return [
+      0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_,
+      1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_,
+      0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_,
+    ];
+  }
+  function oklabToOklch(L, a, b) {
+    var C = Math.sqrt(a * a + b * b);
+    var h = (Math.atan2(b, a) * 180) / Math.PI;
+    if (h < 0) h += 360;
+    return [L, C, h];
+  }
+
+  function formatF(v, d) { return v.toFixed(d); }
+
+  function updateCodes(hex) {
+    stage.style.backgroundColor = hex;
+    hexLabel.textContent = hex.toUpperCase();
+
+    var match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    var r255 = 0, g255 = 0, b255 = 0;
+    if (match) {
+      r255 = parseInt(match[1], 16);
+      g255 = parseInt(match[2], 16);
+      b255 = parseInt(match[3], 16);
+    }
+    
+    codeHex.textContent = "dm.hex('" + hex + "')";
+    codeRgb255.textContent = "dm.rgb(" + r255 + ", " + g255 + ", " + b255 + ")";
+    codeRgb.textContent = "dm.rgb(" + formatF(r255/255, 3) + ", " + formatF(g255/255, 3) + ", " + formatF(b255/255, 3) + ")";
+
+    var lrgb = hexToLinearRgb(hex);
+    var lab = linearRgbToOklab(lrgb[0], lrgb[1], lrgb[2]);
+    var lch = oklabToOklch(lab[0], lab[1], lab[2]);
+    
+    codeOklab.textContent = "dm.oklab(" + formatF(lab[0], 3) + ", " + formatF(lab[1], 3) + ", " + formatF(lab[2], 3) + ")";
+    codeOklch.textContent = "dm.oklch(" + formatF(lch[0], 3) + ", " + formatF(lch[1], 3) + ", " + formatF(lch[2], 1) + ")";
+  }
+
+  picker.addEventListener("input", function (e) {
+    updateCodes(e.target.value);
+  });
+
+  var cards = cwWidget.querySelectorAll(".dm-cw-card");
+  cards.forEach(function(card) {
+    card.addEventListener("click", function() {
+      var snippet = card.querySelector(".dm-cw-code").textContent;
+      if (typeof copyToClipboardFallback === "function") {
+        copyToClipboardFallback(snippet, function() {
+          card.classList.add("copied");
+          setTimeout(function(){ card.classList.remove("copied"); }, 1200);
+        });
+      } else {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(snippet).then(function() {
+            card.classList.add("copied");
+            setTimeout(function(){ card.classList.remove("copied"); }, 1200);
+          });
+        }
+      }
+    });
+  });
+
+  // Init
+  updateCodes(picker.value);
+});

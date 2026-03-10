@@ -305,6 +305,7 @@ body[data-theme="dark"] .dm-group-label {
 
 .dm-swatch {
   flex: 1;
+  min-width: 0;
   min-height: 38px;
   display: flex;
   flex-direction: column;
@@ -3330,7 +3331,7 @@ body[data-theme="dark"] .dm-up-val-display {
   margin-bottom: 1.2em;
   color: #1a1a2e;
   transition: all 0.2s ease;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 html.dark .dm-up-preview,
@@ -3495,6 +3496,7 @@ body[data-theme="dark"] .dm-interp-steps-label {
 
 .dm-interp-cell {
   flex: 1;
+  min-width: 0;
   border-radius: 4px;
   cursor: pointer;
   transition:
@@ -3766,6 +3768,7 @@ body[data-theme="dark"] .dm-compare-row-label small {
 
 .dm-compare-cell {
   flex: 1;
+  min-width: 0;
   border-radius: 4px;
   cursor: pointer;
   transition:
@@ -4199,3 +4202,153 @@ body[data-theme="dark"] .dm-landing-diff-caption {
     aspect-ratio: auto;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Live Color Constructor Widget
+   ═══════════════════════════════════════════════════════════════════════ */
+.dm-constructor-widget {
+  margin: 2rem 0;
+  border: 1px solid var(--sy-c-divider);
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: var(--sy-f-sys);
+  background-color: var(--sy-c-bg);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+.dm-cw-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--sy-c-divider);
+  text-align: center;
+}
+.dm-cw-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--sy-c-text);
+  margin-bottom: 0.25rem;
+}
+.dm-cw-subtitle {
+  font-size: 0.85rem;
+  color: var(--sy-c-text-weak);
+}
+.dm-cw-master-stage {
+  position: relative;
+  height: 7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.1s ease;
+}
+.dm-cw-master-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  pointer-events: none;
+  transition: background 0.2s ease;
+}
+.dm-cw-master-stage:hover .dm-cw-master-label {
+  background: rgba(0,0,0,0.5);
+}
+.dm-cw-master-hex {
+  color: #fff;
+  font-family: var(--sy-f-mono);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.dm-cw-master-hint {
+  color: rgba(255,255,255,0.8);
+  font-size: 0.75rem;
+  margin-top: 0.2rem;
+}
+.dm-cw-master-picker {
+  opacity: 0;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%; height: 100%;
+  cursor: pointer;
+}
+.dm-cw-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background-color: var(--sy-c-divider);
+}
+.dm-cw-card-full {
+  grid-column: span 2;
+}
+@media (max-width: 500px) {
+  .dm-cw-grid {
+    grid-template-columns: 1fr;
+  }
+  .dm-cw-card-full {
+    grid-column: span 1;
+  }
+}
+.dm-cw-card {
+  background-color: var(--sy-c-bg);
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+.dm-cw-card:hover {
+  background-color: var(--sy-c-bg-mute);
+}
+.dm-cw-fw {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--sy-c-text-weak);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.dm-cw-badge {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  background-color: var(--sy-c-primary-soft);
+  color: var(--sy-c-primary);
+  text-transform: none;
+  letter-spacing: normal;
+}
+.dm-cw-code {
+  font-family: var(--sy-f-mono);
+  font-size: 0.95rem;
+  color: var(--sy-c-text);
+  margin: 0;
+}
+.dm-cw-footer {
+  padding: 0.75rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--sy-c-text-weak);
+  background-color: var(--sy-c-bg-mute);
+  border-top: 1px solid var(--sy-c-divider);
+}
+@keyframes dmFadeOutUp {
+  0% { opacity: 1; transform: translate(-50%, -50%); }
+  50% { opacity: 1; transform: translate(-50%, -60%); }
+  100% { opacity: 0; transform: translate(-50%, -70%); }
+}
+.dm-cw-card.copied::after {
+  content: "Copied!";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background-color: var(--sy-c-primary);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  animation: dmFadeOutUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
