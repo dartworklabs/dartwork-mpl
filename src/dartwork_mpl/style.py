@@ -1,11 +1,13 @@
-"""Matplotlib 스타일 관리 유틸리티.
+"""Matplotlib style management utilities.
 
-이 모듈은 패키지의 내장 스타일 라이브러리에서 matplotlib 스타일을
-가져오고 적용하기 위한 함수와 클래스를 제공합니다.
+This module provides functions and classes for loading and applying
+matplotlib styles from the package's built-in style library.
 """
 
+import contextlib
 import json
 from pathlib import Path
+from typing import Iterator
 
 import matplotlib.pyplot as plt
 
@@ -14,22 +16,22 @@ __all__ = ["Style", "style", "style_path", "list_styles", "load_style_dict"]
 
 def style_path(name: str) -> Path:
     """
-    스타일 파일의 경로를 가져옵니다.
+    Get the path to a style file.
 
     Parameters
     ----------
     name : str
-        스타일의 이름 (예: 'report', 'scientific' 등).
+        Name of the style (e.g., 'report', 'scientific').
 
     Returns
     -------
     Path
-        해당 스타일 파일(.mplstyle)의 절대 경로.
+        Absolute path to the style file (.mplstyle).
 
     Raises
     ------
     ValueError
-        해당 이름의 스타일을 찾을 수 없는 경우 발생합니다.
+        If the specified style name cannot be found.
     """
     path: Path = Path(__file__).parent / f"asset/mplstyle/{name}.mplstyle"
     if not path.exists():
@@ -40,12 +42,12 @@ def style_path(name: str) -> Path:
 
 def list_styles() -> list[str]:
     """
-    사용 가능한 모든 스타일의 목록을 반환합니다.
+    Return a list of all available styles.
 
     Returns
     -------
     list[str]
-        스타일 이름들이 담긴 리스트.
+        List of style names.
     """
     path: Path = Path(__file__).parent / "asset/mplstyle"
     return sorted([p.stem for p in path.glob("*.mplstyle")])
@@ -53,18 +55,18 @@ def list_styles() -> list[str]:
 
 def load_style_dict(name: str) -> dict[str, float | str]:
     """
-    mplstyle 파일에서 키와 값 쌍을 읽어옵니다.
+    Read key-value pairs from an mplstyle file.
 
     Parameters
     ----------
     name : str
-        불러올 스타일의 이름.
+        Name of the style to load.
 
     Returns
     -------
     dict[str, float | str]
-        스타일 파라미터가 담긴 딕셔너리. 가능한 경우 값은 float로
-        변환되며, 그렇지 않은 경우 문자열 그대로 유지됩니다.
+        Dictionary of style parameters. Values are converted to float
+        where possible; otherwise they are kept as strings.
     """
     # Load key, value pair from mplstyle files.
     path: Path = style_path(name)
@@ -97,20 +99,20 @@ def load_style_dict(name: str) -> dict[str, float | str]:
 
 class Style:
     """
-    여러 matplotlib 스타일을 관리하고 적용하기 위한 클래스입니다.
+    Class for managing and applying multiple matplotlib styles.
 
-    이 클래스는 스타일 프리셋을 불러오고, 여러 스타일을 순차적으로
-    적용(스태킹)하는 기능을 제공합니다.
+    This class provides functionality for loading style presets and
+    stacking multiple styles sequentially.
 
     Examples
     --------
     >>> import dartwork_mpl as dm
-    >>> dm.style.use("scientific")  # 단일 프리셋 적용
-    >>> dm.style.stack(["base", "lang-kr"])  # 여러 스타일 겹쳐서 적용
+    >>> dm.style.use("scientific")  # Apply a single preset
+    >>> dm.style.stack(["base", "lang-kr"])  # Stack multiple styles
     """
 
     def __init__(self) -> None:
-        """Style 인스턴스를 초기화하고 프리셋을 불러옵니다."""
+        """Initialize the Style instance and load presets."""
         self.presets: dict[str, list[str]] = {}
         # Load presets
         self.load_presets()
@@ -118,20 +120,21 @@ class Style:
     @staticmethod
     def presets_path() -> Path:
         """
-        프리셋 설정 파일(presets.json)의 경로를 가져옵니다.
+        Get the path to the presets configuration file (presets.json).
 
         Returns
         -------
         Path
-            조합된 스타일 프리셋이 정의되어 있는 presets.json 파일의 경로.
+            Path to the presets.json file containing combined style presets.
         """
         return Path(__file__).parent / "asset/mplstyle/presets.json"
 
     def load_presets(self) -> None:
         """
-        JSON 파일에서 스타일 프리셋을 불러옵니다.
+        Load style presets from the JSON file.
 
-        presets.json 파일을 읽어서 인스턴스의 presets 속성에 설정값들을 저장합니다.
+        Reads presets.json and stores the configuration in the instance's
+        presets attribute.
         """
         with open(self.presets_path()) as f:
             self.presets = json.load(f)
@@ -139,16 +142,16 @@ class Style:
     @staticmethod
     def stack(style_names: list[str]) -> None:
         """
-        여러 스타일을 순서대로 스태킹(적용)합니다.
+        Stack multiple styles in order.
 
-        여러 스타일 파일을 순차적으로 적용합니다. 나중에 적용된 스타일이
-        이전에 설정된 같은 항목의 값을 덮어씁니다.
+        Applies multiple style files sequentially. Later styles override
+        values set by earlier ones for the same keys.
 
         Parameters
         ----------
         style_names : list[str]
-            적용할 스타일 이름들의 리스트. 리스트의 순서대로 적용되며,
-            뒤에 있는 스타일이 우선순위를 가집니다.
+            List of style names to apply. Styles are applied in order,
+            with later entries taking precedence.
 
         Examples
         --------
@@ -167,37 +170,38 @@ class Style:
 
     def use(self, preset_name: str, **kwargs: float | str) -> None:
         """
-        프리셋 스타일 설정을 적용합니다.
+        Apply a preset style configuration.
 
-        이 모듈에서 스타일을 적용할 때 가장 권장되는 방법입니다.
-        프리셋은 특정 사용 목적에 맞게 미리 최적화된 스타일들의 조합입니다.
+        This is the recommended way to apply styles in this module.
+        Presets are pre-optimized combinations of styles for specific use cases.
 
         Parameters
         ----------
         preset_name : str
-            적용할 프리셋의 이름. 사용 가능한 프리셋 목록:
-            - "scientific": 학술 논문용 (기본 영문)
-            - "report": 문서 보고서 및 대시보드용
-            - "minimal": 선과 눈금이 없는 Tufte 스타일
-            - "presentation": 프레젠테이션(발표)용
-            - "poster": 컨퍼런스 포스터 및 대형 디스플레이용
-            - "web": 웹페이지 및 공식 문서용
-            - "dark": 어두운 배경의 다크 테마
-            - "scientific-kr": 학술 논문용 (한국어 폰트 적용)
-            - "report-kr": 문서 보고서 및 대시보드용 (한국어 폰트 적용)
-            - "minimal-kr": 미니멀 스타일 (한국어 폰트 적용)
-            - "presentation-kr": 프레젠테이션용 (한국어 폰트 적용)
-            - "poster-kr": 컨퍼런스 포스터용 (한국어 폰트 적용)
-            - "web-kr": 웹페이지용 (한국어 폰트 적용)
-            - "dark-kr": 다크 테마 (한국어 폰트 적용)
+            Name of the preset to apply. Available presets:
+            - "scientific": Academic papers (default English)
+            - "report": Documents, reports, and dashboards
+            - "minimal": Tufte-style with minimal lines and ticks
+            - "presentation": Slide presentations
+            - "poster": Conference posters and large displays
+            - "web": Web pages and documentation
+            - "dark": Dark background theme
+            - "scientific-kr": Academic papers (Korean fonts)
+            - "report-kr": Reports and dashboards (Korean fonts)
+            - "minimal-kr": Minimal style (Korean fonts)
+            - "presentation-kr": Presentations (Korean fonts)
+            - "poster-kr": Conference posters (Korean fonts)
+            - "web-kr": Web pages (Korean fonts)
+            - "dark-kr": Dark theme (Korean fonts)
         **kwargs : float | str
-            프리셋의 기본 설정을 덮어쓸 추가적인 rcParams 설정 (예: font_size=12).
-            키 값으로는 언더스코어(font_size) 또는 마침표(font.size) 표기법 모두 지원합니다.
+            Additional rcParams to override the preset defaults (e.g.,
+            font_size=12). Both underscore (font_size) and dot (font.size)
+            notation are supported.
 
         Raises
         ------
         KeyError
-            요청한 프리셋 이름이 presets 딕셔너리에 존재하지 않을 때 발생합니다.
+            If the requested preset name is not found in the presets dictionary.
 
         Examples
         --------
@@ -219,15 +223,52 @@ class Style:
                     overrides[k] = v
             plt.rcParams.update(overrides)
 
+    @contextlib.contextmanager
+    def context(self, preset_name: str, **kwargs: float | str) -> Iterator[None]:
+        """
+        Context manager that temporarily applies a style within a code block.
+
+        Parameters
+        ----------
+        preset_name : str
+            Name of the preset to apply.
+        **kwargs : float | str
+            Additional rcParams to override.
+
+        Examples
+        --------
+        >>> with dm.style.context("dark"):
+        ...     plt.plot([1, 2, 3])
+        """
+        if preset_name not in self.presets:
+            raise KeyError(f"Preset '{preset_name}' not found")
+
+        style_list: list[Path | dict[str, float | str]] = [
+            style_path(style_name) for style_name in self.presets[preset_name]
+        ]
+        
+        if kwargs:
+            overrides: dict[str, float | str] = {}
+            for k, v in kwargs.items():
+                k_dot = k.replace("_", ".")
+                if k_dot in plt.rcParams:
+                    overrides[k_dot] = v
+                else:
+                    overrides[k] = v
+            style_list.append(overrides)
+
+        with plt.style.context(style_list):
+            yield
+
     def presets_dict(self) -> dict[str, list[str]]:
         """
-        사용 가능한 모든 프리셋을 딕셔너리 형태로 반환합니다.
+        Return all available presets as a dictionary.
 
         Returns
         -------
         dict[str, list[str]]
-            프리셋 이름을 키(key)로 하고 구성 스타일 리스트를 값(value)으로
-            갖는 딕셔너리.
+            Dictionary mapping preset names (keys) to their constituent
+            style lists (values).
         """
         return dict(self.presets.items())
 

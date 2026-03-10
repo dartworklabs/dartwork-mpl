@@ -1,7 +1,7 @@
-"""축(Axes) 기반의 주석 생성 헬퍼 모듈.
+"""Axes-based annotation helper module.
 
-피규어 패널들에 표준 알파벳 서브라벨을 달아주는 ``label_axes`` 함수나,
-Low-High 같은 양방향 화살표 축을 그리는 ``arrow_axis`` 기능을 제공합니다.
+Provides ``label_axes`` for adding standard alphabetic sub-labels to figure
+panels, and ``arrow_axis`` for drawing bidirectional Low–High arrow axes.
 """
 
 from __future__ import annotations
@@ -26,34 +26,35 @@ def label_axes(
     y: float = 1.05,
     **kwargs,
 ) -> list:
-    """서브플롯 패널에 표준화된 식별 라벨(a, b, c, ...)을 자동으로 추가합니다.
+    """Add standardized identification labels (a, b, c, ...) to subplot panels.
 
-    주로 학술 논문 및 보고서에서 피규어의 여러 패널을 설명하기 위해,
-    각 Axes 공간의 왼쪽 가장자리 또는 상단 모서리에 라벨을 일괄 배치시키는데 사용됩니다.
+    Commonly used in academic papers and reports to annotate multiple panels
+    of a figure, placing labels at the left edge or top corner of each Axes.
 
     Parameters
     ----------
     axes : list[Axes] | np.ndarray
-        라벨을 지정해줄 Axes 객체 목록이나 배열.
+        List or array of Axes objects to label.
     labels : list[str] | None, optional
-        사용자 정의 텍스트 라벨. None이 주어지면 기본 소문자 알파벳
-        리스트를 (a, b, c, 등등) 자동으로 할당합니다.
+        Custom text labels. If None, lowercase letters (a, b, c, ...)
+        are assigned automatically.
     fontsize : float, optional
-        라벨의 폰트 크기. 기본값은 10 포인트.
+        Font size for the labels. Default is 10 points.
     fontweight : str, optional
-        라벨의 폰트 두께. 기본값은 "bold".
+        Font weight for the labels. Default is "bold".
     x : float | str, optional
-        Axes 상대 좌표(0.0~1.0 구간 넘어섬)계에서의 가로 위치 좌표.
-        "auto"일 경우 y축 이름 유무에 따라 가장 적절한 x 위치를 자동으로 찾습니다(-0.18 또는 -0.02).
+        Horizontal position in Axes-relative coordinates (may exceed 0.0–1.0).
+        If "auto", the optimal x position is determined based on whether
+        a y-axis label is present (-0.18 or -0.02).
     y : float, optional
-        Axes 상대 좌표계에서의 세로 위치 좌표. 기본값은 1.05.
+        Vertical position in Axes-relative coordinates. Default is 1.05.
     **kwargs
-        ``ax.text()`` 함수로 추가 전달할 여분의 텍스트 설정 인자들.
+        Additional text properties passed to ``ax.text()``.
 
     Returns
     -------
     list
-        생성된 내부 Text 객체들의 리스트.
+        List of created Text objects.
     """
     if isinstance(axes, np.ndarray):
         axes = axes.flatten().tolist()
@@ -100,38 +101,38 @@ def arrow_axis(
     color: str = "black",
     arrow_kw: dict | None = None,
 ) -> None:
-    """그리프의 가장자리나 내부에 높음(High)-낮음(Low)을 가리키는 양방향 라벨과 화살표 축을 그립니다.
+    """Draw a bidirectional Low–High arrow axis along the edge of a plot.
 
-    결과물 시각화 컨셉: ``Low ◄── label ──► High`` 형태로 spine의 바깥쪽 주변을 꾸며줍니다.
+    Produces a visual like ``Low ◄── label ──► High`` near the spine exterior.
 
     Parameters
     ----------
     ax : Axes
-        주석을 적용할 대상 축 객체.
+        Target Axes object for the annotation.
     direction : {'x', 'y'}
-        "x": x축 스파인 하단에 가로 축 화살표 삽입.
-        "y": y축 스파인 왼쪽 바깥에 세로 축 화살표 삽입.
+        "x": insert a horizontal arrow axis below the x-axis spine.
+        "y": insert a vertical arrow axis to the left of the y-axis spine.
     label : str
-        축 중간(가운데)에 위치할 중심 라벨의 텍스트 지정.
+        Center label text placed at the midpoint of the axis.
     offset : float, optional
-        Axes 스케일 기준으로 스파인 외부로 떨어트려 그릴 간격 차이 수준값.
-        기본값은 약간 바깥쪽인 -0.05 입니다.
+        Offset from the spine in Axes-fraction units. Default is -0.05
+        (slightly outside).
     low : str, optional
-        축의 최하단/최좌측에 나타낼 방향성에 해당하는 텍스트 값 ("Low").
+        Text for the low end (bottom/left) of the axis. Default is "Low".
     high : str, optional
-        축의 최상단/최우측에 나타낼 방향성에 해당하는 텍스트 값 ("High").
+        Text for the high end (top/right) of the axis. Default is "High".
     fontsize : float | None, optional
-        상하단(Low/High)을 표시하는 서브 텍스트들의 폰트 사이즈. 기본값은 fs(-1).
+        Font size for the Low/High endpoint labels. Default is fs(-1).
     fontsize_label : float | None, optional
-        가운데 중심 문자열의 텍스트 사이즈. 기본값은 fs(0).
+        Font size for the center label. Default is fs(0).
     pad : float, optional
-        글자와 화살촉 사이의 여백 및 공백 거리 비율. 기본값은 -0.005.
+        Fractional gap between text and arrowheads. Default is -0.005.
     weight : str, optional
-        모든 적용될 텍스트 파츠들의 활자체 가중치 굵기.
+        Font weight applied to all text elements.
     color : str, optional
-        텍스트 및 화살표 양측에 할당시킬 색상. 기본값은 "black".
+        Color for both text and arrows. Default is "black".
     arrow_kw : dict | None, optional
-        내부적으로 호출되는 화살표 생성함수 ``ax.annotate``\ 의 화살표형상 속성을 결정하는 arrowprops를 재정의합니다.
+        Override the arrowprops passed to the internal ``ax.annotate`` calls.
     """
     if fontsize is None:
         fontsize = fs(-1)

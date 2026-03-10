@@ -1,7 +1,8 @@
-"""IDE 연동 및 LLM 어시스턴트를 위한 설치 유틸리티 모듈.
+"""Installation utilities for IDE integration and LLM assistants.
 
-이 모듈은 다양한 IDE 환경(Cursor 등)과 AI 코딩 어시스턴트(Claude Code 등)에
-dartwork-mpl 사용 가이드를 자동으로 설치하거나 제거하는 함수들을 제공합니다.
+This module provides functions for automatically installing or removing
+the dartwork-mpl usage guide in various IDE environments (e.g., Cursor)
+and AI coding assistants (e.g., Claude Code).
 """
 
 from pathlib import Path
@@ -10,23 +11,23 @@ __all__ = ["install_llm_txt", "uninstall_llm_txt"]
 
 
 def install_llm_txt(project_dir: str | Path | None = None) -> None:
-    """프로젝트의 IDE 연동 폴더들에 dartwork-mpl 사용 가이드를 설치합니다.
+    """Install the dartwork-mpl usage guide into project IDE integration folders.
 
-    이 함수는 다음과 같은 경로에 사용 가이드를 복사하여
-    다양한 AI 코딩 어시스턴트들이 라이브러리 컨텍스트를 파악할 수 있도록 돕습니다:
-    - ``.claude/commands/`` (Claude Code 용)
-    - ``.cursor/`` (Cursor IDE 용)
+    Copies the usage guide to the following paths so that various AI coding
+    assistants can discover library context:
+    - ``.claude/commands/`` (for Claude Code)
+    - ``.cursor/`` (for Cursor IDE)
 
     Parameters
     ----------
     project_dir : str | Path | None, optional
-        설치할 대상 프로젝트 디렉토리 경로. None인 경우
-        현재 작업 디렉토리(CWD)를 사용합니다. 기본값은 None.
+        Target project directory. If None, the current working directory
+        is used. Default is None.
 
     Raises
     ------
     FileNotFoundError
-        패키지 에셋에서 사용 가이드(USAGE_GUIDE.md) 파일을 찾을 수 없을 때 발생합니다.
+        If the USAGE_GUIDE.md file cannot be found in the package assets.
     """
     # Get the usage guide path from the asset folder
     usage_guide_path: Path = Path(__file__).parent / "asset" / "USAGE_GUIDE.md"
@@ -95,13 +96,13 @@ Type `/dartwork-mpl` to get help with dartwork-mpl library usage.
 
 
 def uninstall_llm_txt(project_dir: str | Path | None = None) -> None:
-    """프로젝트의 IDE 연동 폴더들에서 dartwork-mpl 사용 가이드를 제거합니다.
+    """Remove the dartwork-mpl usage guide from project IDE integration folders.
 
     Parameters
     ----------
     project_dir : str | Path | None, optional
-        제거할 대상 프로젝트 디렉토리 경로. None인 경우
-        현재 작업 디렉토리(CWD)를 사용합니다. 기본값은 None.
+        Target project directory. If None, the current working directory
+        is used. Default is None.
     """
     # Get project directory (current working directory if not specified)
     if project_dir is None:

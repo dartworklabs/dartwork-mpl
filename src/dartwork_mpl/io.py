@@ -1,7 +1,7 @@
-"""피규어(Figure) 입출력 관리 유틸리티.
+"""Figure I/O management utilities.
 
-Matplotlib 피규어를 다양한 포맷으로 저장하거나, Jupyter 환경에서
-SVG 등 이미지 포맷으로 렌더링하기 위한 함수들을 제공합니다.
+Provides functions for saving Matplotlib figures in various formats and
+rendering them as SVG or other image formats in Jupyter environments.
 """
 
 from __future__ import annotations
@@ -26,24 +26,24 @@ def save_formats(
     validate: bool = True,
     **kwargs,
 ) -> None:
-    """피규어를 여러 지정된 포맷으로 한 번에 저장합니다.
+    """Save a figure in multiple specified formats at once.
 
     Parameters
     ----------
     fig : matplotlib.figure.Figure
-        저장할 Matplotlib 피규어 객체.
+        The Matplotlib figure to save.
     image_stem : str
-        확장자를 제외한 저장할 파일의 기본 경로 및 이름.
+        Base path and filename without extension.
     formats : tuple[str, ...], optional
-        저장할 포맷 확장자들의 튜플. 기본값은 ("png", "pdf").
+        Tuple of format extensions to save. Default is ("png", "pdf").
     bbox_inches : str | None, optional
-        저장될 피규어의 경계 상자 설정. 주로 "tight"를 사용하여
-        여백을 최소화할 때 씁니다. 기본값은 None.
+        Bounding box setting for the saved figure. Commonly "tight"
+        to minimize whitespace. Default is None.
     validate : bool, optional
-        True이면 저장하기 전에 피규어에 대한 시각적 유효성 검사를 수행하고
-        문제가 있을 시 stdout에 ``[VISUAL]`` 경고를 출력합니다. 기본값은 True.
+        If True, performs visual validation before saving and prints
+        ``[VISUAL]`` warnings to stdout on issues. Default is True.
     **kwargs
-        ``savefig`` 함수로 전달될 추가 인자들.
+        Additional keyword arguments passed to ``savefig``.
     """
     if validate:
         from .validate import validate_figure
@@ -56,16 +56,16 @@ def save_formats(
 
 
 def show(image_path: str, size: int = 600, unit: str = "pt") -> None:
-    """SVG 이미지를 불러와서 지정된 크기로 브라우저/Jupyter에 표시합니다.
+    """Load an SVG image and display it at the specified size in a browser or Jupyter.
 
     Parameters
     ----------
     image_path : str
-        표시할 SVG 이미지의 위치 경로.
+        Path to the SVG image to display.
     size : int, optional
-        원하는 출력 너비. 기본값은 600.
+        Desired output width. Default is 600.
     unit : str, optional
-        너비를 지정하는 단위 ('pt', 'px' 등). 기본값은 'pt'.
+        Unit for the width ('pt', 'px', etc.). Default is 'pt'.
     """
     from IPython.display import HTML, SVG, display
 
@@ -121,20 +121,20 @@ def save_and_show(
     unit: str = "pt",
     **kwargs,
 ) -> None:
-    """피규어를 디스크에 저장한 뒤, Jupyter나 웹 환경에서 바로 표시합니다.
+    """Save a figure to disk, then display it in a Jupyter or web environment.
 
     Parameters
     ----------
     fig : matplotlib.figure.Figure
-        저장하고 표시할 Matplotlib 피규어 객체.
+        The Matplotlib figure to save and display.
     image_path : str | None, optional
-        이미지를 저장할 경로. None이면 시스템 임시 파일을 사용합니다.
+        Path to save the image. If None, a system temporary file is used.
     size : int, optional
-        출력되어 보일 너비 크기. 기본값은 600.
+        Display width. Default is 600.
     unit : str, optional
-        크기의 단위 ('pt', 'px' 등). 기본값은 'pt'.
+        Unit for the size ('pt', 'px', etc.). Default is 'pt'.
     **kwargs
-        ``savefig`` 호출 시 함께 전달될 추가 인자들.
+        Additional keyword arguments passed to ``savefig``.
     """
     if image_path is None:
         tmp = NamedTemporaryFile(suffix=".svg", delete=False)

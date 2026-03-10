@@ -1,7 +1,7 @@
-"""dartwork-mpl: 향상된 Matplotlib 스타일링 및 색상 유틸리티 패키지.
+"""dartwork-mpl: Enhanced styling and color utilities for Matplotlib.
 
-이 패키지는 향상된 스타일링, 색상 관리, 그리고 Matplotlib 
-시각화를 위한 다양한 유틸리티 함수들을 제공합니다.
+This package provides enhanced styling, color management, and various
+utility functions for Matplotlib visualizations.
 """
 
 __version__ = "0.3.0"

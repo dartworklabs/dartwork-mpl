@@ -1,7 +1,7 @@
-"""Matplotlib 피규어(Figure)의 레이아웃 최적화 유틸리티.
+"""Layout optimization utilities for Matplotlib figures.
 
-``scipy.optimize``를 사용하여 피규어 내부의 서브플롯 영역들을
-자동으로 알맞게 배치해 주는 ``simple_layout`` 함수를 제공합니다.
+Provides the ``simple_layout`` function, which uses ``scipy.optimize``
+to automatically arrange subplot areas for optimal placement.
 """
 
 from __future__ import annotations
@@ -21,18 +21,18 @@ if TYPE_CHECKING:
 
 def get_bounding_box(boxes: list) -> tuple[float, float, float, float]:
     """
-    주어진 모든 박스 영역을 포함하는 최소 크기의 경계 상자(Bounding Box)를 계산합니다.
+    Compute the minimum bounding box that encloses all given box regions.
 
     Parameters
     ----------
     boxes : list
-        p0 (좌하단 좌표), width (너비), height (높이) 속성을 최소한으로 가지고 있는
-        박스 객체들의 리스트.
+        List of box objects, each having at minimum p0 (bottom-left
+        coordinate), width, and height attributes.
 
     Returns
     -------
     tuple[float, float, float, float]
-        전체 경계 상자의 (min_x, min_y, bbox_width, bbox_height).
+        Overall bounding box as (min_x, min_y, bbox_width, bbox_height).
     """
     min_x = float("inf")
     min_y = float("inf")
@@ -58,21 +58,21 @@ def set_xmargin(
     left: float | None = None,
     right: float | None = None,
 ) -> None:
-    """x축 제한(limits)에 반응형(responsive) 마진 또는 고정 경계를 설정합니다.
+    """Set responsive margins or fixed bounds on the x-axis limits.
 
-    이 함수는 ``set_xlim``을 감싸서 전역 마진 비율과 동시에
-    한쪽, 혹은 양쪽의 고정된 스케일 경계값을 함께 지정할 수 있게 해줍니다.
+    Wraps ``set_xlim`` to allow specifying a global margin ratio while
+    optionally pinning one or both edges to fixed values.
 
     Parameters
     ----------
     ax : Axes
-        설정을 변경할 matplotlib Axes 객체.
+        The matplotlib Axes to modify.
     margin : float, optional
-        기본적인 좌우 여백의 비율. 기본값은 0.05.
+        Fractional margin applied to both sides. Default is 0.05.
     left : float | None, optional
-        x축의 고정된 시작값(가장 왼쪽). 지정하면 해당 부분의 margin은 무시됩니다.
+        Fixed left bound for the x-axis. Overrides the margin on that side.
     right : float | None, optional
-        x축의 고정된 끝값(가장 오른쪽). 지정하면 해당 부분의 margin은 무시됩니다.
+        Fixed right bound for the x-axis. Overrides the margin on that side.
     """
     ax.margins(x=margin)
     xlim = list(ax.get_xlim())
@@ -90,21 +90,21 @@ def set_ymargin(
     bottom: float | None = None,
     top: float | None = None,
 ) -> None:
-    """y축 제한(limits)에 반응형(responsive) 마진 또는 고정 경계를 설정합니다.
+    """Set responsive margins or fixed bounds on the y-axis limits.
 
-    이 함수는 ``set_ylim``을 감싸서 전역 마진 비율과 동시에
-    한쪽, 혹은 양쪽의 고정된 스케일 경계값을 함께 지정할 수 있게 해줍니다.
+    Wraps ``set_ylim`` to allow specifying a global margin ratio while
+    optionally pinning one or both edges to fixed values.
 
     Parameters
     ----------
     ax : Axes
-        설정을 변경할 matplotlib Axes 객체.
+        The matplotlib Axes to modify.
     margin : float, optional
-        기본적인 위아래 여백의 비율. 기본값은 0.05.
+        Fractional margin applied to both sides. Default is 0.05.
     bottom : float | None, optional
-        y축의 고정된 바닥값(가장 아래). 지정하면 해당 부분의 margin은 무시됩니다.
+        Fixed bottom bound for the y-axis. Overrides the margin on that side.
     top : float | None, optional
-        y축의 고정된 천장값(가장 위). 지정하면 해당 부분의 margin은 무시됩니다.
+        Fixed top bound for the y-axis. Overrides the margin on that side.
     """
     ax.margins(y=margin)
     ylim = list(ax.get_ylim())
@@ -126,39 +126,44 @@ def simple_layout(
     use_all_axes: bool = True,
     importance_weights: tuple[float, float, float, float] = (1, 1, 1, 1),
 ) -> OptimizeResult:
-    """GridSpec에 최적화된 레이아웃을 적용해 서브플롯 위치를 미세 조정합니다.
+    """Apply an optimized layout to a GridSpec for fine-tuned subplot positioning.
 
-    이 함수는 L-BFGS-B 최적화 알고리즘을 사용해서 지정한 마진(margins)과
-    바운딩 박스(bbox) 내에 내부 플롯들이 가장 잘 들어맞도록 GridSpec의 파라미터를 계산합니다.
-    기본 제공되는 ``tight_layout``\ 보다 일관되고 예측 가능한 여백 구조를 제공합니다.
+    Uses the L-BFGS-B optimization algorithm to compute GridSpec parameters
+    that best fit subplots within the specified margins and bounding box.
+    Provides more consistent and predictable margin control than the built-in
+    ``tight_layout``.
 
     Parameters
     ----------
     fig : Figure
-        레이아웃을 적용할 Matplotlib Figure 객체.
+        The Matplotlib Figure to apply the layout to.
     gs : GridSpec | None, optional
-        최적화를 수행할 GridSpec 객체. None일 경우 기본적으로 ``fig.axes[0]``\ 의 GridSpec을 사용합니다.
+        GridSpec to optimize. If None, defaults to the GridSpec of
+        ``fig.axes[0]``.
     margins : tuple[float, float, float, float], optional
-        인치(inch) 단위의 여백값 설정 (왼쪽, 오른쪽, 아래, 위). 기본값은 (0.15, 0.05, 0.05, 0.05).
+        Margins in inches (left, right, bottom, top). Default is
+        (0.15, 0.05, 0.05, 0.05).
     bbox : tuple[float, float, float, float], optional
-        최적화 대상 영역을 Figure 기준 상대 좌표로 지정 (왼쪽, 오른쪽, 아래, 위).
-        기본값 (0, 1, 0, 1)은 Figure 전체 공간을 의미합니다.
+        Target region in figure-relative coordinates (left, right,
+        bottom, top). Default (0, 1, 0, 1) covers the entire figure.
     verbose : bool, optional
-        최적화 과정에 대한 진단 로그를 출력할지 여부. 기본값은 False.
+        Whether to print diagnostic logs during optimization. Default is False.
     gtol : float, optional
-        L-BFGS-B 최적화의 그라디언트(경사) 허용 오차. 기본값은 1e-2.
+        Gradient tolerance for L-BFGS-B optimization. Default is 1e-2.
     bound_margin : float, optional
-        파라미터 경계를 생성하기 위한 버퍼 마진. 최적화 탐색 공간 크기를 결정합니다. 기본값은 0.2.
+        Buffer margin for generating parameter bounds, controlling the
+        optimization search space. Default is 0.2.
     use_all_axes : bool, optional
-        True이면 Figure 내의 모든 축(Axes) 텍스트/요소를 기준으로 경계를 계산합니다.
-        False이면 ``gs``\ 에 포함된 축들만 계산에 포함시킵니다. 기본값은 True.
+        If True, uses all Axes in the Figure for bounding-box computation.
+        If False, only Axes belonging to *gs* are considered. Default is True.
     importance_weights : tuple[float, float, float, float], optional
-        (왼쪽, 오른쪽, 아래, 위) 여백을 맞추는 데 부여할 가중치(중요도). 기본값은 (1, 1, 1, 1).
+        Weights (left, right, bottom, top) controlling the importance of
+        matching each margin. Default is (1, 1, 1, 1).
 
     Returns
     -------
     OptimizeResult
-        scipy의 최적화 결과를 담은 객체.
+        The scipy optimization result object.
     """
     actual_gs: GridSpec = gs if gs is not None else fig.axes[0].get_gridspec()  # type: ignore[assignment]
 

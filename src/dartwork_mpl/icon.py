@@ -1,8 +1,8 @@
-"""Matplotlib 피규어를 위한 아이콘 폰트 유틸리티.
+"""Icon font utilities for Matplotlib figures.
 
-이 모듈은 Matplotlib에서 직접 Material Design Icons,
-Font Awesome 6 등의 외부 아이콘 폰트를 편리하게 불러와
-유니코드 문자로 표시할 수 있도록 지원합니다.
+This module enables convenient loading of external icon fonts such as
+Material Design Icons and Font Awesome 6, rendering them as Unicode
+glyphs directly in Matplotlib.
 
 Examples
 --------
@@ -29,26 +29,26 @@ __all__ = ["icon_font", "icon_font_path", "list_icon_fonts", "ensure_loaded"]
 
 
 def icon_font_path(name: str = "mdi") -> Path:
-    """패키지에 내장된 아이콘 폰트 파일의 절대 경로를 반환합니다.
+    """Return the absolute path to a bundled icon font file.
 
     Parameters
     ----------
     name : str, optional
-        접근할 아이콘 폰트의 식별자 이름.
-        사용 가능한 값: ``'mdi'``, ``'fa-solid'``, ``'fa-regular'``,
-        ``'fa-brands'``. 기본값은 ``'mdi'``\ 입니다.
+        Identifier of the icon font to access.
+        Supported values: ``'mdi'``, ``'fa-solid'``, ``'fa-regular'``,
+        ``'fa-brands'``. Default is ``'mdi'``.
 
     Returns
     -------
     Path
-        해당 폰트 파일(.ttf 혹은 .otf)의 절대 경로.
+        Absolute path to the font file (.ttf or .otf).
 
     Raises
     ------
     ValueError
-        요청한 이름(*name*)\ 이 등록된 폰트 식별자가 아닌 경우.
+        If *name* is not a registered font identifier.
     FileNotFoundError
-        폰트 파일이 디스크 경로에 실제로 존재하지 않는 경우.
+        If the font file does not exist on disk.
 
     Examples
     --------
@@ -72,26 +72,26 @@ def icon_font_path(name: str = "mdi") -> Path:
 
 
 def icon_font(name: str = "mdi") -> fm.FontProperties:
-    """``ax.text()``\ 등 텍스트 출력 파라미터로 바로 전달 가능한
-    :class:`~matplotlib.font_manager.FontProperties` 객체를 생성합니다.
+    """Create a :class:`~matplotlib.font_manager.FontProperties` object
+    ready to pass directly to ``ax.text()`` and similar text functions.
 
     Parameters
     ----------
     name : str, optional
-        불러올 아이콘 폰트 식별자 이름.
-        사용 가능한 값: ``'mdi'``, ``'fa-solid'``, ``'fa-regular'``,
-        ``'fa-brands'``. 기본값은 ``'mdi'``\ 입니다.
+        Identifier of the icon font to load.
+        Supported values: ``'mdi'``, ``'fa-solid'``, ``'fa-regular'``,
+        ``'fa-brands'``. Default is ``'mdi'``.
 
     Returns
     -------
     FontProperties
-        해당 폰트에 맞게 설정이 완료된 Matplotlib FontProperties 인스턴스.
+        A configured Matplotlib FontProperties instance for the font.
 
     Examples
     --------
     >>> import dartwork_mpl as dm
     >>> mdi = dm.icon_font('mdi')
-    >>> # 가운데에 아이콘 텍스트 출력
+    >>> # Render an icon glyph at the center
     >>> ax.text(0.5, 0.5, "\U000f050f",
     ...         fontproperties=mdi, fontsize=20,
     ...         ha='center', va='center')
@@ -101,21 +101,22 @@ def icon_font(name: str = "mdi") -> fm.FontProperties:
 
 
 def list_icon_fonts() -> list[str]:
-    """사용 가능한 아이콘 폰트 식별자 목록을 반환합니다.
+    """Return a list of available icon font identifiers.
 
     Returns
     -------
     list[str]
-        사용 가능한 식별자 목록 (예: ``['fa-brands', 'fa-regular',
-        'fa-solid', 'mdi']``).
+        Sorted list of available identifiers (e.g., ``['fa-brands',
+        'fa-regular', 'fa-solid', 'mdi']``).
     """
     return sorted(_REGISTRY.keys())
 
 
 def _register_icon_fonts() -> None:
-    """번들된 모든 아이콘 폰트를 시스템 matplotlib 폰트 매니저에 등록합니다.
+    """Register all bundled icon fonts with matplotlib's font manager.
 
-    이 함수는 모듈이 처음 import 되거나 내부적으로 load가 필요할 때 자동으로 호출됩니다.
+    This function is called automatically on first import or when an
+    internal load is required.
     """
     for filename in _REGISTRY.values():
         font_path = _ICON_DIR / filename
@@ -127,7 +128,7 @@ _loaded: bool = False
 
 
 def ensure_loaded() -> None:
-    """아이콘 폰트가 시스템에 아직 로드되지 않았다면 로드(등록)를 보장합니다."""
+    """Ensure icon fonts are loaded and registered if not already done."""
     global _loaded
     if not _loaded:
         _register_icon_fonts()
