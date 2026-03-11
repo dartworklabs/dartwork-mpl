@@ -16,8 +16,8 @@ import dartwork_mpl as dm
 dm.style.use('presentation')
 
 np.random.seed(42)
-fig = plt.figure(figsize=(dm.DW * 1.1, dm.DW * 0.95))
-gs = gridspec.GridSpec(3, 2, height_ratios=[1, 1, 1], hspace=0.4, wspace=0.35,
+fig = plt.figure(figsize=(dm.DW * 1.20, dm.DW * 1.35))
+gs = gridspec.GridSpec(3, 2, height_ratios=[1, 1, 1], hspace=0.55, wspace=0.45,
                        figure=fig)
 
 # ── (a) Time series with trend ──
@@ -29,23 +29,24 @@ ax_a.plot(t, signal, color='oc.blue5', lw=dm.lw(0), alpha=0.6)
 ax_a.plot(t, trend, color='oc.red7', lw=dm.lw(1.5), label='Trend')
 fill = dm.pseudo_alpha('oc.blue5', 0.10, background='white')
 ax_a.fill_between(t, signal, trend, color=fill)
-ax_a.set_title("Temporal Drift Analysis")
+ax_a.set_title("Temporal Drift Analysis", pad=12)
 ax_a.set_xlabel("Sample index")
 ax_a.set_ylabel("Response")
-ax_a.legend(fontsize=dm.fs(-1))
+ax_a.set_ylim(4, 28)
+ax_a.legend(fontsize=dm.fs(-1), loc='upper left', frameon=False)
 
 # ── (b) Correlation heatmap ──
 ax_b = fig.add_subplot(gs[0, 1])
 corr_data = np.random.randn(5, 5)
 corr = np.corrcoef(corr_data)
-im = ax_b.imshow(corr, cmap='dc.balance', vmin=-1, vmax=1, aspect='equal')
+im = ax_b.imshow(corr, cmap='dc.cool_warm', vmin=-1, vmax=1, aspect='equal')
 fig.colorbar(im, ax=ax_b, shrink=0.8)
-labels = ['X\u2081', 'X\u2082', 'X\u2083', 'X\u2084', 'X\u2085']
+labels = ['$X_1$', '$X_2$', '$X_3$', '$X_4$', '$X_5$']
 ax_b.set_xticks(range(5))
 ax_b.set_xticklabels(labels)
 ax_b.set_yticks(range(5))
 ax_b.set_yticklabels(labels)
-ax_b.set_title("Correlation Matrix")
+ax_b.set_title("Correlation Matrix", pad=12)
 
 # ── (c) Grouped bar chart ──
 ax_c = fig.add_subplot(gs[1, 0])
@@ -60,8 +61,8 @@ for i, (metric, vals) in enumerate(metrics.items()):
 ax_c.set_xticks(x_pos + width / 2)
 ax_c.set_xticklabels(categories)
 ax_c.set_ylabel("Score")
-ax_c.set_title("Method Benchmarks")
-ax_c.legend(fontsize=dm.fs(-1))
+ax_c.set_title("Method Benchmarks", pad=12)
+ax_c.legend(fontsize=dm.fs(-1), loc='lower right', frameon=False)
 ax_c.set_ylim(0, 110)
 
 # ── (d) Radar / Polygon chart ──
@@ -100,7 +101,7 @@ for body, color in zip(vp['bodies'], violin_colors):
 vp['cmedians'].set_color('oc.gray8')
 ax_e.set_xticks([1, 2, 3, 4])
 ax_e.set_xticklabels(['Ctrl', 'Treat 1', 'Treat 2', 'Treat 3'])
-ax_e.set_title("Response Distribution")
+ax_e.set_title("Response Distribution", pad=12)
 ax_e.set_ylabel("Value")
 
 # ── (f) Summary text panel ──
@@ -128,4 +129,4 @@ ax_f.text(0.08, 0.92, summary_text, transform=ax_f.transAxes,
 non_polar = [ax_a, ax_b, ax_c]
 dm.label_axes(non_polar + [ax_d, ax_e, ax_f])
 
-dm.simple_layout(fig)
+fig.tight_layout(pad=1.5, h_pad=2.0, w_pad=2.0)

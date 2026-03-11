@@ -74,4 +74,4 @@ dm.label_axes([ax_top, ax_bl, ax_br])
 dm.set_decimal(ax_top, yn=0)
 dm.set_decimal(ax_bl, yn=0)
 
-dm.simple_layout(fig)
+fig.tight_layout(pad=1.5, h_pad=2.0, w_pad=2.0)

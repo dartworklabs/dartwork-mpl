@@ -15,8 +15,8 @@ import dartwork_mpl as dm
 
 dm.style.use('report')
 
-fig = plt.figure(figsize=(dm.DW, dm.DW * 0.55))
-gs = gridspec.GridSpec(2, 2, hspace=0.45, wspace=0.35, figure=fig)
+fig = plt.figure(figsize=(dm.DW, dm.DW * 0.60))
+gs = gridspec.GridSpec(2, 2, hspace=0.60, wspace=0.40, figure=fig)
 
 mdi = dm.icon_font('mdi')
 np.random.seed(42)
@@ -70,6 +70,6 @@ for idx, (icon, label, value, unit, color, trend) in enumerate(kpis):
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-fig.suptitle("Sustainability KPI Dashboard", fontsize=dm.fs(2),
-             weight='bold', y=1.02)
-dm.simple_layout(fig)
+fig.suptitle("Sustainability KPI Dashboard", fontsize=dm.fs(1.5),
+             weight='bold', y=1.05)
+fig.tight_layout(pad=1.5, h_pad=2.0, w_pad=2.0)

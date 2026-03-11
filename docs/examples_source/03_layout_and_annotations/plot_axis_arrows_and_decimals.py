@@ -23,4 +23,4 @@ ax.plot(x, y, color='tw.rose500', lw=dm.lw(2))
 dm.arrow_axis(ax, 'x', "Standard Deviation")
 dm.arrow_axis(ax, 'y', "Probability Density")
 
-dm.simple_layout(fig)
+fig.tight_layout(pad=1.5)

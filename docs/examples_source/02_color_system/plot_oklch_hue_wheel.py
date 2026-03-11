@@ -17,7 +17,7 @@ import dartwork_mpl as dm
 
 dm.style.use('presentation')
 
-fig, ax = plt.subplots(figsize=(dm.SW * 1.4, dm.SW * 1.4),
+fig, ax = plt.subplots(figsize=(dm.SW * 1.5, dm.SW * 1.5),
                        subplot_kw={'projection': 'polar'})
 
 n_hues = 72  # 5° steps
@@ -45,7 +45,8 @@ ax.set_xticks(np.radians([0, 45, 90, 135, 180, 225, 270, 315]))
 ax.set_xticklabels(['0°', '45°', '90°', '135°', '180°', '225°', '270°', '315°'],
                    fontsize=dm.fs(-0.5))
 ax.set_title("OKLCH Hue Wheel\u2009\u2014\u2009Perceptual Uniformity",
-             fontsize=dm.fs(1), weight='bold', pad=20)
+             fontsize=dm.fs(1), weight='bold', pad=30)
 ax.legend(loc='lower right', bbox_to_anchor=(1.25, -0.05),
-          fontsize=dm.fs(-0.5), frameon=False)
+          fontsize=dm.fs(-0.5), framealpha=0.9, edgecolor='white')
 ax.grid(True, alpha=0.2)
+fig.tight_layout(pad=1.5)

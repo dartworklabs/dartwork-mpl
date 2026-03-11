@@ -25,4 +25,4 @@ for ax in axes.flat:
 # Automatically add (a), (b), (c), (d) using label_axes
 dm.label_axes(axes.flat)
 
-dm.simple_layout(fig)
+fig.tight_layout(pad=1.5, h_pad=2.0, w_pad=2.0)

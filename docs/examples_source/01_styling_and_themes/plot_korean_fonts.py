@@ -28,4 +28,4 @@ for i, v in enumerate(values):
 
 ax.set_ylim(0, 11)
 
-dm.simple_layout(fig)
+fig.tight_layout(pad=1.5)

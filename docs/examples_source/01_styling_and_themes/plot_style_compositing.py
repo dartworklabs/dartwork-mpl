@@ -30,8 +30,8 @@ stages = [
     (['base', 'dmpl', 'font-scientific', 'spine-no'], 'Layer 1\u20134: + spine-no'),
 ]
 
-fig = plt.figure(figsize=(dm.DW, dm.DW * 0.65))
-gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.35)
+fig = plt.figure(figsize=(dm.DW, dm.DW * 0.70))
+gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.55, wspace=0.40)
 
 for idx, (layers, title) in enumerate(stages):
     ax = fig.add_subplot(gs[idx // 2, idx % 2])
@@ -39,12 +39,13 @@ for idx, (layers, title) in enumerate(stages):
     ax.plot(t, signal + noise, color='oc.blue5', lw=dm.lw(0), alpha=0.4,
             label='Noisy')
     ax.plot(t, signal, color='oc.red7', lw=dm.lw(1), label='Clean')
-    ax.set_title(title, fontsize=dm.fs(0), weight='bold')
+    ax.set_title(title, fontsize=dm.fs(0), weight='bold', pad=12)
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Amplitude")
-    ax.legend(loc='upper right', fontsize=dm.fs(-1))
+    ax.set_ylim(-1.5, 2.0)
+    ax.legend(loc='upper right', fontsize=dm.fs(-1), frameon=False)
 
 # Reset to presentation for the panel labels
 dm.style.use('presentation')
 dm.label_axes(fig.axes)
-dm.simple_layout(fig)
+fig.tight_layout(pad=1.5, h_pad=2.0, w_pad=2.0)

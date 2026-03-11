@@ -42,4 +42,4 @@ for ax in axs:
     ax.set_xlabel("Time")
     ax.set_ylabel("Intensity")
 
-dm.simple_layout(fig)
+fig.tight_layout(pad=1.5, h_pad=2.0, w_pad=2.0)

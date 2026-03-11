@@ -17,8 +17,8 @@ import dartwork_mpl as dm
 dm.style.use('scientific')
 
 np.random.seed(42)
-fig = plt.figure(figsize=(dm.DW, dm.DW * 0.85))
-gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.4)
+fig = plt.figure(figsize=(dm.DW, dm.DW * 0.90))
+gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.55, wspace=0.45)
 
 # ── (a) Line plot with error band ──
 ax = fig.add_subplot(gs[0, 0])
@@ -31,10 +31,11 @@ ax.fill_between(x, y_true - 0.15, y_true + 0.15,
                 color=band, label='95% CI')
 ax.scatter(x[::8], y_noise[::8], s=8, color='oc.gray6',
            zorder=3, label='Observations')
-ax.set_title("Damped Oscillation", fontsize=dm.fs(0), weight='bold')
+ax.set_title("Damped Oscillation", fontsize=dm.fs(0), weight='bold', pad=12)
 ax.set_xlabel("Time (s)")
 ax.set_ylabel("Amplitude")
-ax.legend(fontsize=dm.fs(-1), loc='upper right')
+ax.set_ylim(-1.2, 1.8)
+ax.legend(fontsize=dm.fs(-1), loc='upper right', frameon=False)
 
 # ── (b) Scatter with regression ──
 ax = fig.add_subplot(gs[0, 1])
@@ -46,10 +47,11 @@ m, b = np.polyfit(x_s, y_s, 1)
 x_fit = np.linspace(0, 10, 50)
 ax.plot(x_fit, m * x_fit + b, color='oc.red7', lw=dm.lw(1),
         label=f'y = {m:.1f}x + {b:.1f}')
-ax.set_title("Linear Regression", fontsize=dm.fs(0), weight='bold')
+ax.set_title("Linear Regression", fontsize=dm.fs(0), weight='bold', pad=12)
 ax.set_xlabel("Feature X")
 ax.set_ylabel("Response Y")
-ax.legend(fontsize=dm.fs(-1), loc='upper left')
+ax.set_ylim(0, 35)
+ax.legend(fontsize=dm.fs(-1), loc='upper left', frameon=False)
 
 # ── (c) Histogram ──
 ax = fig.add_subplot(gs[1, 0])
@@ -59,10 +61,11 @@ ax.hist(data1, bins=25, color=dm.pseudo_alpha('tw.teal500', 0.6, background='whi
         edgecolor='white', lw=0.5, label='Group A')
 ax.hist(data2, bins=25, color=dm.pseudo_alpha('tw.rose500', 0.5, background='white'),
         edgecolor='white', lw=0.5, label='Group B')
-ax.set_title("Distribution Comparison", fontsize=dm.fs(0), weight='bold')
+ax.set_title("Distribution Comparison", fontsize=dm.fs(0), weight='bold', pad=12)
 ax.set_xlabel("Value")
 ax.set_ylabel("Frequency")
-ax.legend(fontsize=dm.fs(-1))
+ax.set_ylim(0, 110)
+ax.legend(fontsize=dm.fs(-1), frameon=False)
 
 # ── (d) Box plot ──
 ax = fig.add_subplot(gs[1, 1])
@@ -74,7 +77,7 @@ for patch, color in zip(bp['boxes'], box_colors):
     patch.set_facecolor(color)
     patch.set_edgecolor('oc.gray6')
 ax.set_xticklabels(['A', 'B', 'C', 'D', 'E'])
-ax.set_title("Group Comparison", fontsize=dm.fs(0), weight='bold')
+ax.set_title("Group Comparison", fontsize=dm.fs(0), weight='bold', pad=12)
 ax.set_xlabel("Group")
 ax.set_ylabel("Measurement")
 
@@ -82,4 +85,4 @@ ax.set_ylabel("Measurement")
 dm.label_axes(fig.axes)
 for a in fig.axes:
     dm.set_decimal(a, yn=0)
-dm.simple_layout(fig)
+fig.tight_layout(pad=1.5, h_pad=2.0, w_pad=2.0)

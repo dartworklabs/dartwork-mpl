@@ -36,7 +36,7 @@ anomaly -= np.mean(anomaly[:30])  # baseline to 1900–1930 mean
 
 # Display as a horizontal strip (1 row × N columns)
 anomaly_2d = anomaly.reshape(1, -1)
-im = ax_a.imshow(anomaly_2d, cmap='dc.balance', aspect='auto',
+im = ax_a.imshow(anomaly_2d, cmap='dc.cool_warm', aspect='auto',
                  vmin=-1.0, vmax=1.5,
                  extent=[years[0], years[-1], 0, 1])
 ax_a.set_yticks([])
@@ -52,7 +52,7 @@ cb = fig.colorbar(im, ax=ax_a, orientation='horizontal',
 cb.set_label("Temperature Anomaly (\u00b0C)", fontsize=dm.fs(-0.5))
 
 ax_a.set_title("Global Temperature Anomaly (1900\u20132025)",
-               fontsize=dm.fs(1), weight='bold', pad=12)
+               fontsize=dm.fs(1), weight='bold', pad=15)
 
 # ── (b) CO₂ concentration ──
 ax_b = fig.add_subplot(gs[1, 0])
@@ -67,10 +67,10 @@ ax_b.plot(co2_years, co2, color='oc.red7', lw=dm.lw(1))
 fill_co2 = dm.pseudo_alpha('oc.red5', 0.12, background='white')
 ax_b.fill_between(co2_years, 310, co2, color=fill_co2)
 ax_b.set_xlim(1960, 2025)
-ax_b.set_ylim(310, 430)
-ax_b.set_title("Atmospheric CO\u2082 Concentration", fontsize=dm.fs(0), weight='bold')
+ax_b.set_ylim(310, 440)
+ax_b.set_title("Atmospheric CO$_2$ Concentration", fontsize=dm.fs(0), weight='bold', pad=12)
 ax_b.set_xlabel("Year")
-ax_b.set_ylabel("CO\u2082 (ppm)")
+ax_b.set_ylabel("CO$_2$ (ppm)")
 dm.set_decimal(ax_b, yn=0)
 
 # Annotate milestone
@@ -107,11 +107,11 @@ for i in range(n_bands):
 
 ax_c.plot(sl_years, sea_level, color='oc.blue9', lw=dm.lw(0.5), zorder=5)
 ax_c.set_xlim(1900, 2025)
-ax_c.set_ylim(0, sl_max)
-ax_c.set_title("Sea Level Rise (relative)", fontsize=dm.fs(0), weight='bold')
+ax_c.set_ylim(0, sl_max * 1.1)
+ax_c.set_title("Sea Level Rise (relative)", fontsize=dm.fs(0), weight='bold', pad=12)
 ax_c.set_xlabel("Year")
 ax_c.set_ylabel("Rise (cm)")
 dm.set_decimal(ax_c, yn=0)
 
 dm.label_axes([ax_a, ax_b, ax_c])
-fig.tight_layout()
+fig.tight_layout(pad=1.5, h_pad=2.0, w_pad=2.0)

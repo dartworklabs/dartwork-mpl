@@ -26,4 +26,4 @@ bars = ax.bar(categories, values, color=colors, edgecolor='none', width=0.6)
 ax.set_title("Native Named Palette Support")
 ax.set_ylabel("Measured Value")
 
-dm.simple_layout(fig)
+fig.tight_layout(pad=1.5)

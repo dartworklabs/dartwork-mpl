@@ -29,24 +29,24 @@ Z = (1.5 * np.exp(-((X - 1)**2 + (Y - 1)**2) / 0.8)
 
 # Four scientifically useful colormaps
 colormaps = [
-    ('dc.ocean',   'dc.ocean \u2014 sequential cool'),
-    ('dc.sunset',  'dc.sunset \u2014 sequential warm'),
-    ('dc.balance', 'dc.balance \u2014 diverging'),
-    ('dc.thermal', 'dc.thermal \u2014 perceptual multi-hue'),
+    ('dc.deep_sea',   'dc.deep_sea \u2014 sequential cool'),
+    ('dc.sunset_glow',  'dc.sunset_glow \u2014 sequential warm'),
+    ('dc.cool_warm', 'dc.cool_warm \u2014 diverging'),
+    ('dc.neon_pulse', 'dc.neon_pulse \u2014 perceptual multi-hue'),
 ]
 
-fig = plt.figure(figsize=(dm.DW, dm.DW * 0.85))
-gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.35, wspace=0.35)
+fig = plt.figure(figsize=(dm.DW, dm.DW * 0.90))
+gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.45)
 
 for idx, (cmap_name, title) in enumerate(colormaps):
     ax = fig.add_subplot(gs[idx // 2, idx % 2])
     cf = ax.contourf(X, Y, Z, levels=20, cmap=cmap_name)
     ax.contour(X, Y, Z, levels=10, colors='white', linewidths=0.3, alpha=0.5)
-    fig.colorbar(cf, ax=ax, shrink=0.85, pad=0.02)
-    ax.set_title(title, fontsize=dm.fs(0), weight='bold')
+    fig.colorbar(cf, ax=ax, shrink=0.85, pad=0.04)
+    ax.set_title(title, fontsize=dm.fs(0), weight='bold', pad=12)
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.set_aspect('equal')
 
 dm.label_axes(fig.axes[:4])
-fig.tight_layout()
+fig.tight_layout(pad=1.5, h_pad=2.0, w_pad=2.0)

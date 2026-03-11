@@ -28,7 +28,7 @@ gradient_colors = dm.cspace(
 )
 
 # Draw horizontal bands as stacked fill_between slices
-y_min, y_max = 0, y.max() * 1.05
+y_min, y_max = 0, y.max() * 1.15
 band_edges = np.linspace(y_min, y_max, n_bands + 1)
 
 for i in range(n_bands):
@@ -46,9 +46,9 @@ ax.plot(x, y, color='oc.teal9', lw=dm.lw(1.5), zorder=5)
 ax.set_xlim(0, 8)
 ax.set_ylim(0, y_max)
 ax.set_title("Gradient Area Fill via OKLCH Interpolation",
-             fontsize=dm.fs(1), weight='bold')
+             fontsize=dm.fs(1), weight='bold', pad=15)
 ax.set_xlabel("Time (s)")
 ax.set_ylabel("Signal Intensity")
 
 dm.set_decimal(ax, yn=1)
-dm.simple_layout(fig)
+fig.tight_layout(pad=1.5)

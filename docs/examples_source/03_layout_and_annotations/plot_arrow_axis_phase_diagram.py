@@ -31,7 +31,7 @@ ax.fill_between(x, 0, boundary1,
 ax.fill_between(x, boundary1, boundary2,
                 color=dm.pseudo_alpha('oc.grape6', 0.20, background='white'),
                 label='Phase II  (Liquid)')
-ax.fill_between(x, boundary2, 12,
+ax.fill_between(x, boundary2, 14,
                 color=dm.pseudo_alpha('oc.red6', 0.20, background='white'),
                 label='Phase III  (Gas)')
 
@@ -47,12 +47,13 @@ ax.annotate('Critical\nPoint', xy=(cp_x, cp_y),
             fontsize=dm.fs(-0.5), ha='center',
             arrowprops=dict(arrowstyle='->', color='oc.gray6', lw=0.8))
 
+ax.set_title("Theoretical Phase Diagram", fontsize=dm.fs(1), weight='bold', pad=15)
 ax.set_xlim(0, 10)
-ax.set_ylim(0, 12)
-ax.legend(loc='upper left', fontsize=dm.fs(-0.5), frameon=False)
+ax.set_ylim(0, 14)
+ax.legend(loc='upper left', fontsize=dm.fs(-0.5), framealpha=0.9, edgecolor='white')
 
 # Replace standard spines with semantic directional arrows
 dm.arrow_axis(ax, 'x', "Temperature")
 dm.arrow_axis(ax, 'y', "Pressure")
 
-dm.simple_layout(fig)
+fig.tight_layout(pad=1.5)

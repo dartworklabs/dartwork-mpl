@@ -53,12 +53,12 @@ ax.set_xticks([i + 0.5 for i in range(n)])
 ax.set_xticklabels([f"dc.{i}" for i in range(n)], fontsize=dm.fs(-0.5))
 ax.set_yticks([i + 0.5 for i in range(n)])
 ax.set_yticklabels([f"dc.{n - 1 - i}" for i in range(n)], fontsize=dm.fs(-0.5))
-ax.tick_params(length=0, pad=6)
+ax.tick_params(bottom=False, left=False, labelbottom=True, labelleft=True, pad=8)
 
 ax.set_title("50/50 Color Mixing Matrix (dc.0\u2013dc.5)",
-             fontsize=dm.fs(1), weight='bold', pad=16)
+             fontsize=dm.fs(1), weight='bold', pad=24)
 
 for spine in ax.spines.values():
     spine.set_visible(False)
 
-dm.simple_layout(fig)
+fig.tight_layout(pad=1.5)
