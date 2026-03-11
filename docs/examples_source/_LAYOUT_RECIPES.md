@@ -128,7 +128,7 @@ The gallery as a whole must cover every public API at least once:
 | Pseudo-alpha         | `dm.pseudo_alpha()`            | ≥3                |
 | Color mixing         | `dm.mix_colors()`              | ≥1                |
 | Named palettes       | `oc.*`, `tw.*`, `dc.*` strings | ≥5                |
-| Custom colormaps     | `cmap='dc.ocean'` etc.         | ≥2                |
+| Custom colormaps     | `cmap='dc.deep_sea'` etc.      | ≥2                |
 | Font scaling         | `dm.fs()`                      | every example     |
 | Line weight scaling  | `dm.lw()`                      | every example     |
 | Layout optimizer     | `dm.simple_layout()`           | default           |

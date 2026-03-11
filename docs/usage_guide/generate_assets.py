@@ -110,7 +110,7 @@ def _make_challenging_figure(use_simple_layout: bool = True) -> plt.Figure:
 
     # Right: heatmap with colorbar
     data = np.random.randn(8, 8).cumsum(axis=0)
-    im = ax2.imshow(data, cmap="dc.ocean", aspect="auto")
+    im = ax2.imshow(data, cmap="dc.deep_sea", aspect="auto")
     cb = plt.colorbar(im, ax=ax2, shrink=0.85, pad=0.03)
     cb.set_label("Δ Temperature [K]", fontsize=dm.fs(0))
     cb.outline.set_visible(False)
@@ -339,7 +339,7 @@ def _save_colors_colormap(images_dir: Path) -> Path:
     ax = fig.add_subplot(gs[0, 0])
 
     data = np.random.randn(50, 50).cumsum(axis=0)
-    cmap = plt.colormaps["dc.ocean"]
+    cmap = plt.colormaps["dc.deep_sea"]
     im = ax.imshow(data, cmap=cmap, vmin=-8, vmax=8)
     cb = plt.colorbar(im, ax=ax, extend="both", shrink=0.9, pad=0.02)
     cb.set_label("normalized signal", fontsize=dm.fs(0))
