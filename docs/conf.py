@@ -14,6 +14,10 @@ Image.MAX_IMAGE_PIXELS = 300_000_000
 sys.path.insert(0, os.path.abspath("../src"))
 sys.path.insert(0, str(Path(__file__).parent.resolve()))
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
+warnings.filterwarnings("ignore", category=UserWarning, module="dartwork_mpl")
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
@@ -139,6 +143,7 @@ sphinx_gallery_conf = {
     "remove_config_comments": True,
     "image_scrapers": ("matplotlib",),
     "image_srcset": ["2x"],
+    "capture_repr": (),
 }
 
 # -- MyST Parser configuration -----------------------------------------------
