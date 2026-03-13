@@ -1,6 +1,6 @@
 font.family: sans-serif
 font.sans-serif: Roboto, Lato, Inter, Open Sans, Arial, Helvetica, sans-serif
-lines.linewidth: 0.5               # line width in points
+lines.linewidth: 1.0               # line width in points
 lines.color:     oc.blue4                # has no affect on plot(); see axes.prop_cycle
 lines.dashed_pattern: 3, 1.5
 lines.dashdot_pattern: 1, 1.25, 4, 1.25
@@ -34,22 +34,22 @@ mathtext.default: it  # The default font to use for math.
 axes.linewidth:     0.3     # edge line width
 axes.grid:          False   # display grid or not
 axes.titlesize:     8.5   # font size of the axes title
-axes.titleweight:   400  # font weight of title
+axes.titleweight:   bold  # font weight of title
 axes.labelsize:     7.5  # font size of the x and y labels
 axes.labelweight:   400  # weight of the x and y labels
-axes.axisbelow:     line    # draw axis gridlines and ticks:
+axes.axisbelow:     True    # draw axis gridlines and ticks:
                              #     - below patches (True)
                              #     - above patches but below lines ('line')
                              #     - above all (False)
 
 #axes.spines.left:   True  # display axis spines
 #axes.spines.bottom: True
-axes.spines.top:    True
-axes.spines.right:  True
+axes.spines.top:    False
+axes.spines.right:  False
 
-axes.xmargin:   0.0  # x margin.  See `axes.Axes.margins`
-axes.ymargin:   0.0  # y margin.  See `axes.Axes.margins`
-axes.zmargin:   0.0  # z margin.  See `axes.Axes.margins`
+axes.xmargin:   0.05  # x margin.  See `axes.Axes.margins`
+axes.ymargin:   0.1   # y margin.  See `axes.Axes.margins`
+axes.zmargin:   0.05  # z margin.  See `axes.Axes.margins`
 
 xtick.major.size:    2     # major tick size in points
 xtick.minor.size:    1       # minor tick size in points
@@ -84,7 +84,7 @@ legend.framealpha:    1.0      # legend patch transparency
 legend.edgecolor:     0.0      # background patch boundary color
 legend.fancybox:      False     # if True, use a rounded box for the
 legend.numpoints:     1        # the number of marker points in the legend line
-legend.fontsize:      5.5
+legend.fontsize:      6.5
 
 ## Dimensions as fraction of font size:
 legend.borderpad:     0.1  # border whitespace

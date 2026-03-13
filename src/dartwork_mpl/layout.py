@@ -118,7 +118,7 @@ def set_ymargin(
 def simple_layout(
     fig: Figure,
     gs: GridSpec | None = None,
-    margins: tuple[float, float, float, float] = (0.15, 0.05, 0.05, 0.05),
+    margins: tuple[float, float, float, float] = (0.10, 0.10, 0.08, 0.05),
     bbox: tuple[float, float, float, float] = (0, 1, 0, 1),
     verbose: bool = False,
     gtol: float = 1e-2,

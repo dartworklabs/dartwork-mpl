@@ -421,9 +421,9 @@ axes.prop_cycle: cycler('color', ['dc.0', 'dc.1', 'dc.2', 'dc.3', 'dc.4', 'dc.5'
                   # e.g. '1f77b4', instead of 1f77b4.
                   # See also https://matplotlib.org/stable/tutorials/intermediate/color_cycle.html
                   # for more details on prop_cycle usage.
-axes.xmargin:   0.002  # x margin.  See `axes.Axes.margins`
-axes.ymargin:   0.003  # y margin.  See `axes.Axes.margins`
-axes.zmargin:   0.002  # z margin.  See `axes.Axes.margins`
+axes.xmargin:   0.05   # x margin.  See `axes.Axes.margins`
+axes.ymargin:   0.1    # y margin.  See `axes.Axes.margins`
+axes.zmargin:   0.05   # z margin.  See `axes.Axes.margins`
 #axes.autolimit_mode: data  # If "data", use axes.xmargin and axes.ymargin as is.
                             # If "round_numbers", after application of margins, axis
                             # limits are further expanded to the nearest "round" number.
