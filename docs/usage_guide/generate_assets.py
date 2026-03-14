@@ -198,6 +198,110 @@ def _save_layout_typography(images_dir: Path) -> Path:
     return path
 
 
+def _make_evolution_figure(step: int) -> plt.Figure:
+    """Generate one of the 4 steps of the 'Evolution of a Plot' showcase.
+    
+    Step 1: Base Matplotlib (default style, poor formatting, tight_layout)
+    Step 2: Apply dartwork-mpl style ('report' -> 'scientific' for physics)
+    Step 3: Apply dm.set_decimal & dm.label_axes
+    Step 4: Apply dm.simple_layout
+    """
+    np.random.seed(42)
+    
+    # Physics Data: Damped Harmonic Oscillator
+    t = np.linspace(0, 10, 500)
+    omega = 2 * np.pi * 0.5
+    gamma = 0.3
+    x = np.exp(-gamma * t) * np.cos(omega * t)
+    v = -gamma * np.exp(-gamma * t) * np.cos(omega * t) - omega * np.exp(-gamma * t) * np.sin(omega * t)
+
+    # Apply Style (Step 1 vs Step 2+)
+    if step == 1:
+        plt.style.use("default")
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4.5), dpi=300)
+        c_pos, c_env = "tab:blue", "tab:gray"
+    else:
+        dm.style.use("scientific")
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(dm.cm2in(25), dm.cm2in(10)), dpi=300)
+        c_pos, c_env = "oc.indigo6", "oc.gray5"
+
+    # Panel 1: Time Domain
+    ax1.plot(t, x, color=c_pos, lw=1.5 if step==1 else dm.lw(1.2), label="Position $x(t)$")
+    ax1.plot(t, np.exp(-gamma * t), color=c_env, ls="--", lw=1 if step==1 else dm.lw(0.8), label="Envelope")
+    ax1.plot(t, -np.exp(-gamma * t), color=c_env, ls="--", lw=1 if step==1 else dm.lw(0.8))
+    
+    ax1.set_xlabel("Time [s]", fontsize=10 if step==1 else dm.fs(0))
+    ax1.set_ylabel("Displacement [m]", fontsize=10 if step==1 else dm.fs(0))
+    ax1.set_title("Damped Oscillator: Time Domain", fontsize=12 if step==1 else dm.fs(1))
+    ax1.legend(loc="upper right", fontsize=10 if step==1 else dm.fs(-1))
+
+    # Panel 2: Phase Portrait (x vs v)
+    # Color by time to show evolution
+    scatter = ax2.scatter(x, v, c=t, cmap="viridis" if step==1 else "dc.deep_sea", s=4 if step==1 else 2)
+    ax2.set_xlabel("Position $x$ [m]", fontsize=10 if step==1 else dm.fs(0))
+    ax2.set_ylabel("Velocity $v$ [m/s]", fontsize=10 if step==1 else dm.fs(0))
+    ax2.set_title("Phase Space Trajectory", fontsize=12 if step==1 else dm.fs(1))
+    
+    cb = plt.colorbar(scatter, ax=ax2, pad=0.02)
+    cb.set_label("Time [s]", fontsize=10 if step==1 else dm.fs(0))
+    if step > 1:
+        cb.outline.set_visible(False)
+
+    # Add Panel Labels (Step 1/2 vs Step 3+)
+    if step < 3:
+        # Manual messy labels
+        ax1.text(-0.1, 1.05, "(a)", transform=ax1.transAxes, fontweight="bold")
+        ax2.text(-0.1, 1.05, "(b)", transform=ax2.transAxes, fontweight="bold")
+        
+        # Purposefully messy ticks for Step 1/2
+        ax1.set_yticks([-1.0, -0.75, -0.5, 0, 0.5, 0.75, 1.0])
+        ax2.set_xticks([-1.0, -0.5, 0, 0.5, 1.0])
+    else:
+        # Step 3 introduces label_axes & set_decimal
+        dm.label_axes([ax1, ax2])
+        ax1.set_yticks([-1.0, -0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75, 1.0])
+        ax2.set_xticks([-1.0, -0.5, 0, 0.5, 1.0])
+        dm.set_decimal(ax1, yn=2)
+        dm.set_decimal(ax2, xn=1, yn=1)
+
+    # Apply Layout (Step 4 adds simple_layout)
+    if step < 4:
+        fig.tight_layout()
+    else:
+        dm.simple_layout(fig)
+        
+    return fig
+
+
+def _save_evolution_step1(images_dir: Path) -> Path:
+    fig = _make_evolution_figure(1)
+    path = images_dir / "evolution_step1.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight" if False else None)
+    plt.close(fig)
+    return path
+
+def _save_evolution_step2(images_dir: Path) -> Path:
+    fig = _make_evolution_figure(2)
+    path = images_dir / "evolution_step2.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight" if False else None)
+    plt.close(fig)
+    return path
+
+def _save_evolution_step3(images_dir: Path) -> Path:
+    fig = _make_evolution_figure(3)
+    path = images_dir / "evolution_step3.svg"
+    fig.savefig(path, format="svg", bbox_inches="tight" if False else None)
+    plt.close(fig)
+    return path
+
+def _save_evolution_step4(images_dir: Path) -> Path:
+    fig = _make_evolution_figure(4)
+    path = images_dir / "evolution_step4.svg"
+    fig.savefig(path, format="svg") # no bbox_inches for simple_layout
+    plt.close(fig)
+    return path
+
+
 def _make_label_axes_compare(use_dm: bool) -> plt.Figure:
     """Compare vanilla matplotlib text placement vs dm.label_axes()."""
     np.random.seed(42)
@@ -518,6 +622,10 @@ def build_usage_guide_assets(base_dir: Path | None = None) -> list[Path]:
         ("save_scientific", _save_scientific_chart),
         ("save_diverging_bar", _save_diverging_bar),
         ("save_diagnostics", _save_diagnostics_preview),
+        ("evolution_step1", _save_evolution_step1),
+        ("evolution_step2", _save_evolution_step2),
+        ("evolution_step3", _save_evolution_step3),
+        ("evolution_step4", _save_evolution_step4),
     ]
 
     paths: list[Path] = []

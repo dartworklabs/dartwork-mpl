@@ -185,3 +185,16 @@ See [Font Families](../fonts/families.md) for the full font catalog and
 - **Next →** [Save and Validation](save_export.md) — multi-format export and automatic visual quality checks
 - [API › Layout Utilities](../api/layout.rst) for all layout helper functions and arguments
 - [Colors and Colormaps](colors.md) for named colors and gradients
+
+:::{image} images/label_axes_vanilla.svg
+:class: d-none
+:::
+:::{image} images/label_axes_dm.svg
+:class: d-none
+:::
+:::{image} images/set_decimal_vanilla.svg
+:class: d-none
+:::
+:::{image} images/set_decimal_dm.svg
+:class: d-none
+:::

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="423.147016pt" height="284.549576pt" viewBox="0 0 423.147016 284.549576" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="411.297666pt" height="284.549576pt" viewBox="0 0 411.297666 284.549576" xmlns="http://www.w3.org/2000/svg" version="1.1">
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-03-12T02:00:38.391266</dc:date>
+    <dc:date>2026-03-14T03:11:34.965626</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -22,8 +22,8 @@
  <g id="figure_1">
   <g id="patch_1">
    <path d="M 0 284.549576 
-L 423.147016 284.549576 
-L 423.147016 0 
+L 411.297666 284.549576 
+L 411.297666 0 
 L 0 0 
 z
 " style="fill: #ffffff"/>
@@ -37,64 +37,64 @@ L 147.727559 48.026738
 z
 " style="fill: #ffffff"/>
    </g>
-   <g id="patch_3">
-    <path d="M 237.619176 277.349576 
-L 162.709495 277.349576 
-L 162.709495 222.7489 
-L 237.619176 222.7489 
-z
-" clip-path="url(#pe8e892c9cf)" style="fill: #191970"/>
-   </g>
-   <g id="patch_4">
-    <path d="M 237.619176 189.988495 
-L 192.673367 189.988495 
-L 192.673367 135.387819 
-L 237.619176 135.387819 
-z
-" clip-path="url(#pe8e892c9cf)" style="fill: #191970"/>
-   </g>
-   <g id="patch_5">
-    <path d="M 237.619176 102.627414 
-L 147.727559 102.627414 
-L 147.727559 48.026738 
-L 237.619176 48.026738 
-z
-" clip-path="url(#pe8e892c9cf)" style="fill: #191970"/>
-   </g>
-   <g id="patch_6">
-    <path d="M 237.619176 277.349576 
-L 342.492728 277.349576 
-L 342.492728 222.7489 
-L 237.619176 222.7489 
-z
-" clip-path="url(#pe8e892c9cf)" style="fill: #6495ed"/>
-   </g>
-   <g id="patch_7">
-    <path d="M 237.619176 189.988495 
-L 402.420472 189.988495 
-L 402.420472 135.387819 
-L 237.619176 135.387819 
-z
-" clip-path="url(#pe8e892c9cf)" style="fill: #6495ed"/>
-   </g>
-   <g id="patch_8">
-    <path d="M 237.619176 102.627414 
-L 357.474664 102.627414 
-L 357.474664 48.026738 
-L 237.619176 48.026738 
-z
-" clip-path="url(#pe8e892c9cf)" style="fill: #6495ed"/>
-   </g>
    <g id="matplotlib.axis_1"/>
    <g id="matplotlib.axis_2"/>
+   <g id="patch_3">
+    <path d="M 241.024161 258.239339 
+L 172.924452 258.239339 
+L 172.924452 212.738776 
+L 241.024161 212.738776 
+z
+" clip-path="url(#p7b06f4f0ad)" style="fill: #191970"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 241.024161 185.438438 
+L 200.164335 185.438438 
+L 200.164335 139.937875 
+L 241.024161 139.937875 
+z
+" clip-path="url(#p7b06f4f0ad)" style="fill: #191970"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 241.024161 112.637538 
+L 159.30451 112.637538 
+L 159.30451 67.136975 
+L 241.024161 67.136975 
+z
+" clip-path="url(#p7b06f4f0ad)" style="fill: #191970"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 241.024161 258.239339 
+L 336.363754 258.239339 
+L 336.363754 212.738776 
+L 241.024161 212.738776 
+z
+" clip-path="url(#p7b06f4f0ad)" style="fill: #6495ed"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 241.024161 185.438438 
+L 390.843522 185.438438 
+L 390.843522 139.937875 
+L 241.024161 139.937875 
+z
+" clip-path="url(#p7b06f4f0ad)" style="fill: #6495ed"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 241.024161 112.637538 
+L 349.983696 112.637538 
+L 349.983696 67.136975 
+L 241.024161 67.136975 
+z
+" clip-path="url(#p7b06f4f0ad)" style="fill: #6495ed"/>
+   </g>
    <g id="line2d_1">
-    <path d="M 237.619176 277.349576 
-L 237.619176 48.026738 
-" clip-path="url(#pe8e892c9cf)" style="fill: none; stroke: #d3d3d3; stroke-width: 0.8; stroke-linecap: square"/>
+    <path d="M 241.024161 277.349576 
+L 241.024161 48.026738 
+" clip-path="url(#p7b06f4f0ad)" style="fill: none; stroke: #d3d3d3; stroke-width: 0.8; stroke-linecap: square"/>
    </g>
    <g id="text_1">
     <!-- Category C -->
-    <g transform="translate(7.2 252.81205) scale(0.105 -0.105)">
+    <g transform="translate(7.2 238.25187) scale(0.105 -0.105)">
      <defs>
       <path id="Roboto-Light-43" d="M 3797 1419 
 Q 3719 700 3283 318 
@@ -361,7 +361,7 @@ z
    </g>
    <g id="text_3">
     <!-- Category A -->
-    <g transform="translate(7.2 78.089888) scale(0.105 -0.105)">
+    <g transform="translate(7.2 92.650069) scale(0.105 -0.105)">
      <defs>
       <path id="Roboto-Light-41" d="M 3031 1275 
 L 966 1275 
@@ -394,7 +394,7 @@ z
    </g>
    <g id="text_4">
     <!-- -25 -->
-    <g transform="translate(146.465061 252.646894) scale(0.095 -0.095)">
+    <g transform="translate(156.952416 238.086714) scale(0.095 -0.095)">
      <defs>
       <path id="Roboto-Light-2d" d="M 1650 1850 
 L 153 1850 
@@ -459,7 +459,7 @@ z
    </g>
    <g id="text_5">
     <!-- -15 -->
-    <g transform="translate(176.428933 165.285813) scale(0.095 -0.095)">
+    <g transform="translate(184.1923 165.285813) scale(0.095 -0.095)">
      <defs>
       <path id="Roboto-Light-31" d="M 2169 0 
 L 1794 0 
@@ -479,7 +479,7 @@ z
    </g>
    <g id="text_6">
     <!-- -30 -->
-    <g transform="translate(131.483125 77.924732) scale(0.095 -0.095)">
+    <g transform="translate(143.332474 92.484912) scale(0.095 -0.095)">
      <defs>
       <path id="Roboto-Light-33" d="M 1259 2478 
 L 1647 2478 
@@ -549,21 +549,21 @@ z
    </g>
    <g id="text_7">
     <!-- 35 -->
-    <g transform="translate(345.489115 252.646894) scale(0.095 -0.095)">
+    <g transform="translate(339.087743 238.086714) scale(0.095 -0.095)">
      <use xlink:href="#Roboto-Light-33"/>
      <use xlink:href="#Roboto-Light-35" transform="translate(55.419922 0)"/>
     </g>
    </g>
    <g id="text_8">
     <!-- 55 -->
-    <g transform="translate(405.41686 165.285813) scale(0.095 -0.095)">
+    <g transform="translate(393.56751 165.285813) scale(0.095 -0.095)">
      <use xlink:href="#Roboto-Light-35"/>
      <use xlink:href="#Roboto-Light-35" transform="translate(55.419922 0)"/>
     </g>
    </g>
    <g id="text_9">
     <!-- 40 -->
-    <g transform="translate(360.471051 77.924732) scale(0.095 -0.095)">
+    <g transform="translate(352.707685 92.484912) scale(0.095 -0.095)">
      <defs>
       <path id="Roboto-Light-34" d="M 2725 1466 
 L 3434 1466 
@@ -1305,7 +1305,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="pe8e892c9cf">
+  <clipPath id="p7b06f4f0ad">
    <rect x="147.727559" y="48.026738" width="254.692913" height="229.322837"/>
   </clipPath>
  </defs>

@@ -40,13 +40,17 @@
     var pageW = 21.0;
     var pageH = 29.7;
 
-    document.addEventListener("DOMContentLoaded", function () {
+    function initRuler() {
       var wSlider = document.getElementById("dm-ruler-w");
       var hSlider = document.getElementById("dm-ruler-h");
       var valueEl = document.getElementById("dm-ruler-value");
       var figEl = document.getElementById("dm-ruler-fig");
       var labelEl = document.getElementById("dm-ruler-fig-label");
       if (!wSlider || !hSlider) return;
+
+      // Force initial values — browsers may ignore HTML value="" on range inputs
+      wSlider.value = "6.7";
+      hSlider.value = "5.0";
 
       function update() {
         var wcm = parseFloat(wSlider.value);
@@ -77,6 +81,12 @@
       wSlider.addEventListener("input", update);
       hSlider.addEventListener("input", update);
       update();
-    });
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initRuler);
+    } else {
+      initRuler();
+    }
   })();
 </script>

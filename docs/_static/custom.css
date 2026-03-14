@@ -800,6 +800,11 @@ body[data-theme="dark"] .dm-gp-label {
   background: none;
 }
 
+/* Hide images injected to force Sphinx asset collection */
+.d-none {
+  display: none !important;
+}
+
 .dm-gp-picker::-webkit-color-swatch-wrapper {
   padding: 0;
 }

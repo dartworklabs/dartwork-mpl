@@ -241,7 +241,7 @@
       />
     </div>
     <div class="dm-ld-control">
-      <label>Label Size <span id="ld-lsize-val">10 pt</span></label>
+      <label>Label Size <span id="ld-lsize-val">30 pt</span></label>
       <input
         type="range"
         id="ld-lsize-slider"
@@ -268,70 +268,85 @@
 
 <script>
   (function () {
-    const marginsSlider = document.getElementById("ld-margins-slider");
-    const padSlider = document.getElementById("ld-pad-slider");
-    const lsizeSlider = document.getElementById("ld-lsize-slider");
+    function initDebugger() {
+      var marginsSlider = document.getElementById("ld-margins-slider");
+      var padSlider = document.getElementById("ld-pad-slider");
+      var lsizeSlider = document.getElementById("ld-lsize-slider");
 
-    const marginsVal = document.getElementById("ld-margins-val");
-    const padVal = document.getElementById("ld-pad-val");
-    const lsizeVal = document.getElementById("ld-lsize-val");
+      var marginsVal = document.getElementById("ld-margins-val");
+      var padVal = document.getElementById("ld-pad-val");
+      var lsizeVal = document.getElementById("ld-lsize-val");
 
-    const stage = document.getElementById("ld-stage");
-    const axes = document.getElementById("ld-axes");
+      var stage = document.getElementById("ld-stage");
+      var axes = document.getElementById("ld-axes");
 
-    function update() {
-      const margins = parseFloat(marginsSlider.value);
-      const pad = parseFloat(padSlider.value);
-      const lsize = parseFloat(lsizeSlider.value);
+      if (!marginsSlider || !padSlider || !lsizeSlider) return;
 
-      marginsVal.textContent = margins.toFixed(2) + " in";
-      padVal.textContent = pad.toFixed(2) + " in";
-      lsizeVal.textContent = Math.round(lsize) + " pt";
+      // Force initial values — browsers may ignore HTML value="" on range inputs
+      marginsSlider.value = "0.10";
+      padSlider.value = "0.05";
+      lsizeSlider.value = "30";
 
-      // Convert conceptual inches to pixels for the visualization
-      const scale = 400; // 1 conceptual inch = 400px
-      const padPx = pad * scale;
-      const marginsPx = margins * scale;
-      const lsizePx = lsize; // let 1pt roughly map to 1px for visualization scale
-      const lpadPx = 10; // fixed label padding
+      function update() {
+        var margins = parseFloat(marginsSlider.value);
+        var pad = parseFloat(padSlider.value);
+        var lsize = parseFloat(lsizeSlider.value);
 
-      stage.style.setProperty("--pad-px", padPx + "px");
-      stage.style.setProperty("--margins-px", marginsPx + "px");
-      stage.style.setProperty("--label-size-px", lsizePx + "px");
-      stage.style.setProperty("--label-pad-px", lpadPx + "px");
+        marginsVal.textContent = margins.toFixed(2) + " in";
+        padVal.textContent = pad.toFixed(2) + " in";
+        lsizeVal.textContent = Math.round(lsize) + " pt";
 
-      // Simulate L-BFGS-B optimizer:
-      // Axes wants to be at `marginsPx` from the edge.
-      // BUT the label bounding box extends `lsizePx + lpadPx` outwards from the axes.
-      // The label bounding box MUST NOT violate `padPx` from the edge.
+        // Convert conceptual inches to pixels for the visualization
+        var scale = 400; // 1 conceptual inch = 400px
+        var padPx = pad * scale;
+        var marginsPx = margins * scale;
+        var lsizePx = lsize; // let 1pt roughly map to 1px for visualization scale
+        var lpadPx = 10; // fixed label padding
 
-      // Calculate required margin to fit labels safely
-      const requiredMarginForLabels = lsizePx + lpadPx + padPx;
+        stage.style.setProperty("--pad-px", padPx + "px");
+        stage.style.setProperty("--margins-px", marginsPx + "px");
+        stage.style.setProperty("--label-size-px", lsizePx + "px");
+        stage.style.setProperty("--label-pad-px", lpadPx + "px");
 
-      // Effective margin optimizer logic: take max of target margin and required margin
-      const effectiveMargin = Math.max(marginsPx, requiredMarginForLabels);
+        // Simulate L-BFGS-B optimizer:
+        // Axes wants to be at `marginsPx` from the edge.
+        // BUT the label bounding box extends `lsizePx + lpadPx` outwards from the axes.
+        // The label bounding box MUST NOT violate `padPx` from the edge.
 
-      // Apply to axes
-      axes.style.top = effectiveMargin + "px";
-      axes.style.bottom = effectiveMargin + "px";
-      axes.style.left = effectiveMargin + "px";
-      axes.style.right = effectiveMargin + "px";
+        // Calculate required margin to fit labels safely
+        var requiredMarginForLabels = lsizePx + lpadPx + padPx;
 
-      // Highlight if constraint is active
-      if (effectiveMargin > marginsPx) {
-        axes.style.borderColor = "#dc3545"; // red to show layout shifted
-        axes.style.boxShadow = "0 0 15px rgba(220,53,69,0.4)";
-      } else {
-        axes.style.borderColor = "#212529"; // normal
-        axes.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
+        // Effective margin optimizer logic: take max of target margin and required margin
+        var effectiveMargin = Math.max(marginsPx, requiredMarginForLabels);
+
+        // Apply to axes
+        axes.style.top = effectiveMargin + "px";
+        axes.style.bottom = effectiveMargin + "px";
+        axes.style.left = effectiveMargin + "px";
+        axes.style.right = effectiveMargin + "px";
+
+        // Highlight if constraint is active
+        if (effectiveMargin > marginsPx) {
+          axes.style.borderColor = "#dc3545"; // red to show layout shifted
+          axes.style.boxShadow = "0 0 15px rgba(220,53,69,0.4)";
+        } else {
+          axes.style.borderColor = "#212529"; // normal
+          axes.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)";
+        }
       }
+
+      marginsSlider.addEventListener("input", update);
+      padSlider.addEventListener("input", update);
+      lsizeSlider.addEventListener("input", update);
+
+      // Initial draw
+      update();
     }
 
-    marginsSlider.addEventListener("input", update);
-    padSlider.addEventListener("input", update);
-    lsizeSlider.addEventListener("input", update);
-
-    // Initial draw
-    update();
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initDebugger);
+    } else {
+      initDebugger();
+    }
   })();
 </script>

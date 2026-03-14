@@ -1,0 +1,134 @@
+<div class="evolution-container">
+  <div class="evolution-header">
+    <h3 style="margin-top: 0; margin-bottom: 0.5rem;">The Evolution of a Plot</h3>
+    <p style="margin-bottom: 1.5rem; color: var(--pst-color-text-muted); font-size: 0.9em;">Drag the slider to experience the dartwork-mpl pipeline step-by-step.</p>
+  </div>
+  <div class="evolution-images">
+    <img id="evo-img-0" src="../_images/evolution_step1.svg" class="evo-img active">
+    <img id="evo-img-1" src="../_images/evolution_step2.svg" class="evo-img">
+    <img id="evo-img-2" src="../_images/evolution_step3.svg" class="evo-img">
+    <img id="evo-img-3" src="../_images/evolution_step4.svg" class="evo-img">
+  </div>
+  <div class="evolution-controls">
+    <input type="range" id="evo-slider" min="0" max="3" step="0.02" value="0">
+    <div class="evo-labels">
+      <span class="evo-label" onclick="setEvo(0)">1. Base</span>
+      <span class="evo-label" onclick="setEvo(1)">2. Apply Style</span>
+      <span class="evo-label" onclick="setEvo(2)">3. Label & Format</span>
+      <span class="evo-label" onclick="setEvo(3)">4. Smart Layout</span>
+    </div>
+  </div>
+  <div class="evolution-description" id="evo-desc">
+    <!-- Updated via JS -->
+  </div>
+</div>
+
+<style>
+.evolution-container { 
+  margin: 2rem 0; 
+  border: 1px solid var(--pst-color-border); 
+  border-radius: 8px; 
+  padding: 1.5rem; 
+  background: var(--pst-color-surface); 
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.evolution-images { 
+  position: relative; 
+  width: 100%; 
+  aspect-ratio: 2.5 / 1; 
+  overflow: hidden; 
+  margin-bottom: 1.5rem; 
+  background: white; 
+  border-radius: 4px;
+  border: 1px solid var(--pst-color-border-muted);
+}
+@media (max-width: 768px) {
+  .evolution-images { aspect-ratio: 1.5 / 1; }
+}
+.evo-img { 
+  position: absolute; 
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%; 
+  object-fit: contain; 
+  opacity: 0; 
+  will-change: opacity; 
+}
+.evo-img.active { opacity: 1; z-index: 2; }
+.evolution-controls { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
+#evo-slider { 
+  width: 100%; 
+  cursor: pointer; 
+  accent-color: var(--pst-color-primary);
+}
+.evo-labels { 
+  display: flex; 
+  justify-content: space-between; 
+  font-size: 0.85rem; 
+  font-weight: 500; 
+  color: var(--pst-color-text-muted); 
+}
+.evo-label {
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+.evo-label:hover { 
+  color: var(--pst-color-text-base); 
+  background: var(--pst-color-surface-hover, rgba(0,0,0,0.05));
+}
+.evo-label.active { 
+  color: var(--pst-color-primary); 
+  font-weight: 700; 
+}
+.evolution-description { 
+  font-size: 0.95rem; 
+  color: var(--pst-color-text-base); 
+  min-height: 4em; 
+  padding: 1rem;
+  background: var(--pst-color-background);
+  border-left: 4px solid var(--pst-color-primary);
+  border-radius: 0 4px 4px 0;
+}
+</style>
+
+<script>
+const evoSlider = document.getElementById('evo-slider');
+const evoLabels = document.querySelectorAll('.evo-label');
+const evoDesc = document.getElementById('evo-desc');
+const descs = [
+  "<strong>Raw Matplotlib.</strong> Generic aesthetics, unformatted ticks, overlapping titles, and poorly aligned manual panel labels.",
+  "<strong>dm.style.use('report').</strong> Instantly elevates aesthetics with the Open Color palette and elegant typography. No boilerplate required.",
+  "<strong>dm.set_decimal() & dm.label_axes().</strong> Ticks are perfectly formatted intuitively. Panel labels (a) & (b) are automatically and precisely aligned.",
+  "<strong>dm.simple_layout().</strong> L-BFGS-B optimized margins resolve all cut-offs and awkward spacing effortlessly. Publication-ready."
+];
+
+function updateEvo(val) {
+  for (let i = 0; i <= 3; i++) {
+    const img = document.getElementById(`evo-img-${i}`);
+    if (img) {
+      const opacity = Math.max(0, 1 - Math.abs(val - i));
+      img.style.opacity = opacity;
+      img.style.zIndex = opacity > 0.5 ? 2 : 1;
+    }
+  }
+  
+  const nearest = Math.round(val);
+  evoLabels.forEach((l, i) => l.classList.toggle('active', i === nearest));
+  if (evoDesc) evoDesc.innerHTML = descs[nearest];
+}
+
+function setEvo(val) {
+  if (evoSlider) {
+    evoSlider.value = val;
+    updateEvo(val);
+  }
+}
+
+if (evoSlider) {
+  evoSlider.addEventListener('input', (e) => updateEvo(parseFloat(e.target.value)));
+  updateEvo(0);
+}
+</script>

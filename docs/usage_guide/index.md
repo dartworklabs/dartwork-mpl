@@ -3,6 +3,10 @@
 dartwork-mpl bundles stylistic presets, curated colors/colormaps, and
 layout/font helpers so you get **predictable results** fast.
 
+```{raw} html
+:file: ../_static/evolution_widget.html
+```
+
 ## Typical workflow
 
 ::::{grid} 1 1 2 2
@@ -67,4 +71,17 @@ Interactive UI <interactive>
 `asset/color/`, fonts in `asset/font/`, and figure constants in
 [`dm.SW`, `dm.DW`](../api/constant.rst). See [Design Philosophy](../philosophy/index)
 for the architecture behind these choices.
+:::
+
+:::{image} images/evolution_step1.svg
+:class: d-none
+:::
+:::{image} images/evolution_step2.svg
+:class: d-none
+:::
+:::{image} images/evolution_step3.svg
+:class: d-none
+:::
+:::{image} images/evolution_step4.svg
+:class: d-none
 :::
