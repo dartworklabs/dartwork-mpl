@@ -305,3 +305,113 @@ class TestCheckPieLabelOffset:
         pie_w = [w for w in warnings if w.check_id == "PIE_LABEL_OFFSET"]
         assert len(pie_w) == 0
         plt.close(fig)
+
+    def test_donut_no_autopct(self) -> None:
+        """Donut without autopct should not trigger label offset check."""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        ax.pie([40, 30, 20, 10], wedgeprops=dict(width=0.4))
+        warnings = validate_figure(
+            fig, checks=("PIE_LABEL_OFFSET",), quiet=True
+        )
+        assert len(warnings) == 0
+        plt.close(fig)
+
+    def test_thin_donut_centered(self) -> None:
+        """Very thin donut (width=0.15) with ideal pctdistance."""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        width = 0.15
+        ax.pie(
+            [50, 30, 20],
+            autopct="%.0f%%",
+            pctdistance=1.0 - width / 2.0,
+            wedgeprops=dict(width=width),
+        )
+        warnings = validate_figure(
+            fig, checks=("PIE_LABEL_OFFSET",), quiet=True
+        )
+        assert len(warnings) == 0
+        plt.close(fig)
+
+    def test_wide_donut_off_center(self) -> None:
+        """Wide donut (width=0.7) with pctdistance far from ideal."""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        ax.pie(
+            [50, 30, 20],
+            autopct="%.0f%%",
+            pctdistance=0.4,  # ideal = 0.65
+            wedgeprops=dict(width=0.7),
+        )
+        warnings = validate_figure(
+            fig, checks=("PIE_LABEL_OFFSET",), quiet=True
+        )
+        assert len(warnings) > 0
+        plt.close(fig)
+
+    def test_many_slices_off_center(self) -> None:
+        """Donut with many slices and wrong pctdistance."""
+        fig, ax = plt.subplots(figsize=(5, 5))
+        sizes = [5, 8, 12, 15, 20, 10, 7, 3, 5, 15]
+        ax.pie(
+            sizes,
+            autopct="%.0f%%",
+            pctdistance=0.5,
+            wedgeprops=dict(width=0.35),
+        )
+        warnings = validate_figure(
+            fig, checks=("PIE_LABEL_OFFSET",), quiet=True
+        )
+        assert len(warnings) > 0
+        plt.close(fig)
+
+
+class TestMarginAsymmetryEdgeCases:
+    """Edge-case tests for MARGIN_ASYMMETRY."""
+
+    def test_empty_figure_no_crash(self) -> None:
+        """Empty figure with no axes should not crash."""
+        fig = plt.figure(figsize=(6, 4))
+        warnings = validate_figure(
+            fig, checks=("MARGIN_ASYMMETRY",), quiet=True
+        )
+        assert len(warnings) == 0
+        plt.close(fig)
+
+    def test_tiny_figure_no_false_positive(self) -> None:
+        """Very small figure should not trigger false positives."""
+        fig, ax = plt.subplots(figsize=(1.5, 1))
+        ax.plot([1, 2, 3])
+        warnings = validate_figure(
+            fig, checks=("MARGIN_ASYMMETRY",), quiet=True
+        )
+        asym = [w for w in warnings if w.check_id == "MARGIN_ASYMMETRY"]
+        assert len(asym) == 0
+        plt.close(fig)
+
+    def test_extreme_vertical_asymmetry(self) -> None:
+        """Extreme top/bottom asymmetry should be detected."""
+        fig, ax = plt.subplots(figsize=(6, 8))
+        ax.bar([0, 1, 2], [5, 10, 3])
+        fig.subplots_adjust(bottom=0.60, top=0.95)
+        warnings = validate_figure(
+            fig, checks=("MARGIN_ASYMMETRY",), quiet=True
+        )
+        asym = [w for w in warnings if w.check_id == "MARGIN_ASYMMETRY"]
+        v_warnings = [
+            w for w in asym if w.detail.get("axis") == "vertical"
+        ]
+        assert len(v_warnings) > 0
+        plt.close(fig)
+
+    def test_multi_subplot_balanced(self) -> None:
+        """2x2 subplot grid should be balanced by default."""
+        fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+        for ax in axes.flat:
+            ax.plot([1, 2, 3])
+            ax.set_ylabel("Y")
+        warnings = validate_figure(
+            fig, checks=("MARGIN_ASYMMETRY",), quiet=True
+        )
+        asym = [w for w in warnings if w.check_id == "MARGIN_ASYMMETRY"]
+        assert len(asym) == 0
+        plt.close(fig)
+

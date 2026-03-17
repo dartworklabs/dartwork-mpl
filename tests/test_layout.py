@@ -121,3 +121,53 @@ class TestAutoLayout:
         auto_layout(fig, padding=(0.15, 0.10, 0.10, 0.05))
         plt.close(fig)
 
+
+class TestAutoLayoutEdgeCases:
+    """Edge-case tests for auto_layout convergence."""
+
+    def test_twinx_convergence(self) -> None:
+        """auto_layout should converge on twinx with long labels."""
+        fig, ax1 = plt.subplots(figsize=(8, 4))
+        ax1.plot(range(20), [x**2 for x in range(20)])
+        ax1.set_ylabel("Long Left Y-Axis Label (units)")
+        ax2 = ax1.twinx()
+        ax2.plot(range(20), [x * 5 for x in range(20)], color="red")
+        ax2.set_ylabel("Right Axis With Long Label (%)")
+        auto_layout(fig)
+        overflow = _measure_overflow(fig)
+        assert max(overflow.values()) <= 2.0
+        plt.close(fig)
+
+    def test_annotation_outside_axes(self) -> None:
+        """Annotation extending beyond axes should converge."""
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.plot([1, 2, 3])
+        ax.annotate(
+            "Far left annotation",
+            xy=(1, 1),
+            xytext=(-0.3, 0.5),
+            textcoords="axes fraction",
+            fontsize=12,
+        )
+        auto_layout(fig, max_iter=15)
+        overflow = _measure_overflow(fig)
+        assert max(overflow.values()) <= 2.0
+        plt.close(fig)
+
+    def test_large_tick_labels(self) -> None:
+        """Large tick labels (billion-scale) should converge."""
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.plot(range(10), [x * 1_000_000_000 for x in range(10)])
+        ax.set_ylabel("Revenue")
+        auto_layout(fig)
+        overflow = _measure_overflow(fig)
+        assert max(overflow.values()) <= 2.0
+        plt.close(fig)
+
+    def test_empty_axes(self) -> None:
+        """auto_layout on empty axes should not crash."""
+        fig, ax = plt.subplots(figsize=(6, 4))
+        auto_layout(fig)
+        plt.close(fig)
+
+

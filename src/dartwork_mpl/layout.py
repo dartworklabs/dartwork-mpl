@@ -255,6 +255,7 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
                 ext = txt.get_window_extent(renderer)
             except Exception:
                 continue
+                
             overflow["left"] = max(overflow["left"], fig_bbox.x0 - ext.x0)
             overflow["right"] = max(overflow["right"], ext.x1 - fig_bbox.x1)
             overflow["bottom"] = max(overflow["bottom"], fig_bbox.y0 - ext.y0)
@@ -262,17 +263,30 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
 
         # Tick labels
         for axis in (ax.xaxis, ax.yaxis):
+            vmin, vmax = axis.get_view_interval()
+            tol = (vmax - vmin) * 1e-5
+            
             for tick in axis.get_ticklabels():
                 if not tick.get_visible() or not tick.get_text().strip():
                     continue
                 try:
                     ext = tick.get_window_extent(renderer)
+                    pos = tick.get_position()
                 except Exception:
                     continue
+                
+                # Ignore ticks that are outside the view limits 
+                # (e.g., auto-generated ticks outside manually set ylim)
+                val = pos[0] if axis == ax.xaxis else pos[1]
+                if val < vmin - tol or val > vmax + tol:
+                    continue
+                
                 overflow["left"] = max(overflow["left"], fig_bbox.x0 - ext.x0)
                 overflow["right"] = max(overflow["right"], ext.x1 - fig_bbox.x1)
                 overflow["bottom"] = max(overflow["bottom"], fig_bbox.y0 - ext.y0)
                 overflow["top"] = max(overflow["top"], ext.y1 - fig_bbox.y1)
+
+
 
     return overflow
 
@@ -281,7 +295,7 @@ def auto_layout(
     fig: Figure,
     *,
     padding: float | tuple[float, float, float, float] = 0.08,
-    max_iter: int = 3,
+    max_iter: int = 5,
     tolerance: float = 2.0,
     verbose: bool = False,
 ) -> None:
@@ -290,7 +304,8 @@ def auto_layout(
     Wraps ``simple_layout`` with a Validate → Measure → Adjust → Retry loop.
     Starts with minimal margins, measures actual per-side overflow using
     text and tick-label bounding boxes, and increases margins only on
-    overflowing sides. Converges in 1–3 iterations for typical charts.
+    overflowing sides. Converges in 1–3 iterations for typical charts;
+    axes-relative annotations (which move with the subplot) may need more.
 
     Parameters
     ----------
@@ -300,7 +315,7 @@ def auto_layout(
         Initial padding in inches for all four sides (left, right, bottom, top).
         If a single float, it is used for all sides. Default is 0.08.
     max_iter : int, optional
-        Maximum number of measure-and-adjust iterations. Default is 3.
+        Maximum number of measure-and-adjust iterations. Default is 5.
     tolerance : float, optional
         Overflow tolerance in pixels. Overflows below this threshold are
         ignored. Default is 2.0 px.
@@ -323,6 +338,9 @@ def auto_layout(
 
     BUFFER = 0.02  # extra buffer in inches added to the overflowing side
     SIDE_MAP = {"left": 0, "right": 1, "bottom": 2, "top": 3}
+
+    # Track per-side consecutive overflow count for escalation
+    consec: dict[str, int] = {s: 0 for s in SIDE_MAP}
 
     for iteration in range(max_iter):
         # Apply layout with current margins
@@ -349,12 +367,18 @@ def auto_layout(
                 print(f"[auto_layout] Converged in {iteration + 1} iteration(s).")
             return
 
-        # Increase margins only on overflowing sides
+        # Increase margins on overflowing sides with escalation
         dpi = fig.get_dpi()
         for side, idx in SIDE_MAP.items():
             if overflow[side] > tolerance:
-                increment = (overflow[side] + tolerance) / dpi + BUFFER
+                consec[side] += 1
+                # Escalation: multiply increment for persistent overflow
+                # (handles axes-relative content that moves with subplot)
+                scale = 1.0 + 1.0 * (consec[side] - 1)
+                increment = ((overflow[side] + tolerance) / dpi + BUFFER) * scale
                 margins[idx] += increment
+            else:
+                consec[side] = 0
 
     if verbose:
         print(

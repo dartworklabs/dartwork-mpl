@@ -34,7 +34,7 @@ from .color import (
 )
 
 # Import constant module exports
-from .constant import DW, SW
+from .constant import DW, FS_DOUBLE, FS_SINGLE, SW
 
 # Explore
 from .explore import list_colormaps, list_palettes, show_palette
@@ -89,6 +89,8 @@ __all__ = [
     # Constant module
     "DW",
     "SW",
+    "FS_SINGLE",
+    "FS_DOUBLE",
     # Style module
     "Style",
     "list_styles",

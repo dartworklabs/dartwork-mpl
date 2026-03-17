@@ -598,7 +598,7 @@ figure.facecolor:   white     # figure face color
 ## ***************************************************************************
 ## * IMAGES                                                                  *
 ## ***************************************************************************
-#image.aspect:          equal        # {equal, auto} or a number
+image.aspect:          equal        # {equal, auto} or a number
 #image.interpolation:   antialiased  # see help(imshow) for options
 #image.cmap:            viridis      # A colormap name (plasma, magma, etc.)
 #image.lut:             256          # the size of the colormap lookup table
