@@ -139,3 +139,18 @@ __all__ = [
     # Extended plots
     "plot_diverging_bar",
 ]
+
+# --- Monkey-patch matplotlib.axes.Axes.twinx to always show right spine ---
+import matplotlib as mpl
+import matplotlib.axes
+
+_original_twinx = matplotlib.axes.Axes.twinx
+
+def _patched_twinx(self, *args, **kwargs):
+    ax2 = _original_twinx(self, *args, **kwargs)
+    ax2.spines["right"].set_visible(True)
+    ax2.spines["right"].set_linewidth(mpl.rcParams.get("axes.linewidth", 0.3))
+    return ax2
+
+matplotlib.axes.Axes.twinx = _patched_twinx
+
