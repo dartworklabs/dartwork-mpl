@@ -216,3 +216,92 @@ class TestValidateEdgeCases:
         assert len(empty) == 1
         assert empty[0].detail["axes_index"] == 1
         plt.close(fig)
+
+
+class TestCheckMarginAsymmetry:
+    """Tests for MARGIN_ASYMMETRY detection."""
+
+    def test_asymmetric_margin_detected(self) -> None:
+        """A chart pushed to one side should trigger MARGIN_ASYMMETRY."""
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.barh([0], [1])
+        # Squeeze subplot into the left 25% of the figure canvas.
+        fig.subplots_adjust(left=0.08, right=0.30)
+        warnings = validate_figure(
+            fig, checks=("MARGIN_ASYMMETRY",), quiet=True
+        )
+        asym = [w for w in warnings if w.check_id == "MARGIN_ASYMMETRY"]
+        assert len(asym) > 0
+        # The large empty area should be on the right.
+        h_warnings = [w for w in asym if w.detail.get("axis") == "horizontal"]
+        assert any(w.detail["side"] == "right" for w in h_warnings)
+        plt.close(fig)
+
+    def test_balanced_margin_clean(self) -> None:
+        """A centered chart should NOT trigger MARGIN_ASYMMETRY."""
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.plot([1, 2, 3], [1, 2, 3])
+        ax.set_ylabel("Y Label")
+        ax.set_xlabel("X Label")
+        warnings = validate_figure(
+            fig, checks=("MARGIN_ASYMMETRY",), quiet=True
+        )
+        asym = [w for w in warnings if w.check_id == "MARGIN_ASYMMETRY"]
+        assert len(asym) == 0
+        plt.close(fig)
+
+
+class TestCheckPieLabelOffset:
+    """Tests for PIE_LABEL_OFFSET detection."""
+
+    def test_donut_default_pctdistance(self) -> None:
+        """Donut with default pctdistance=0.6 should flag offset labels."""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        # Default pctdistance=0.6, wedge width=0.4 → ideal_r = 0.8
+        ax.pie(
+            [40, 30, 20, 10],
+            labels=["A", "B", "C", "D"],
+            autopct="%.0f%%",
+            pctdistance=0.6,
+            wedgeprops=dict(width=0.4),
+        )
+        warnings = validate_figure(
+            fig, checks=("PIE_LABEL_OFFSET",), quiet=True
+        )
+        pie_w = [w for w in warnings if w.check_id == "PIE_LABEL_OFFSET"]
+        assert len(pie_w) > 0
+        plt.close(fig)
+
+    def test_donut_centered_pctdistance(self) -> None:
+        """Donut with correctly centered pctdistance should be clean."""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        width = 0.4
+        ideal_pct = 1.0 - width / 2.0  # = 0.8
+        ax.pie(
+            [40, 30, 20, 10],
+            labels=["A", "B", "C", "D"],
+            autopct="%.0f%%",
+            pctdistance=ideal_pct,
+            wedgeprops=dict(width=width),
+        )
+        warnings = validate_figure(
+            fig, checks=("PIE_LABEL_OFFSET",), quiet=True
+        )
+        pie_w = [w for w in warnings if w.check_id == "PIE_LABEL_OFFSET"]
+        assert len(pie_w) == 0
+        plt.close(fig)
+
+    def test_regular_pie_ignored(self) -> None:
+        """Regular pie (not donut) should be skipped entirely."""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        ax.pie(
+            [40, 30, 20, 10],
+            labels=["A", "B", "C", "D"],
+            autopct="%.0f%%",
+        )
+        warnings = validate_figure(
+            fig, checks=("PIE_LABEL_OFFSET",), quiet=True
+        )
+        pie_w = [w for w in warnings if w.check_id == "PIE_LABEL_OFFSET"]
+        assert len(pie_w) == 0
+        plt.close(fig)

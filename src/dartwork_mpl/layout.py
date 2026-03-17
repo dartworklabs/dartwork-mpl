@@ -6,7 +6,13 @@ to automatically arrange subplot areas for optimal placement.
 
 from __future__ import annotations
 
-__all__ = ["simple_layout", "get_bounding_box", "set_xmargin", "set_ymargin"]
+__all__ = [
+    "auto_layout",
+    "simple_layout",
+    "get_bounding_box",
+    "set_xmargin",
+    "set_ymargin",
+]
 
 from typing import TYPE_CHECKING
 
@@ -218,3 +224,141 @@ def simple_layout(
     )
 
     return result
+
+
+def _measure_overflow(fig: Figure) -> dict[str, float]:
+    """Measure per-side overflow of all visual elements beyond figure bounds.
+
+    Parameters
+    ----------
+    fig : Figure
+        The figure to inspect (must already be drawn).
+
+    Returns
+    -------
+    dict[str, float]
+        Maximum overflow in pixels for each side: left, right, bottom, top.
+        Positive values mean the content extends beyond the figure edge.
+    """
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+    fig_bbox = fig.bbox
+
+    overflow: dict[str, float] = {"left": 0.0, "right": 0.0, "bottom": 0.0, "top": 0.0}
+
+    for ax in fig.axes:
+        # Text objects: titles, labels, annotations
+        for txt in ax.texts + [ax.title, ax.xaxis.label, ax.yaxis.label]:
+            if txt is None or not txt.get_visible() or not txt.get_text().strip():
+                continue
+            try:
+                ext = txt.get_window_extent(renderer)
+            except Exception:
+                continue
+            overflow["left"] = max(overflow["left"], fig_bbox.x0 - ext.x0)
+            overflow["right"] = max(overflow["right"], ext.x1 - fig_bbox.x1)
+            overflow["bottom"] = max(overflow["bottom"], fig_bbox.y0 - ext.y0)
+            overflow["top"] = max(overflow["top"], ext.y1 - fig_bbox.y1)
+
+        # Tick labels
+        for axis in (ax.xaxis, ax.yaxis):
+            for tick in axis.get_ticklabels():
+                if not tick.get_visible() or not tick.get_text().strip():
+                    continue
+                try:
+                    ext = tick.get_window_extent(renderer)
+                except Exception:
+                    continue
+                overflow["left"] = max(overflow["left"], fig_bbox.x0 - ext.x0)
+                overflow["right"] = max(overflow["right"], ext.x1 - fig_bbox.x1)
+                overflow["bottom"] = max(overflow["bottom"], fig_bbox.y0 - ext.y0)
+                overflow["top"] = max(overflow["top"], ext.y1 - fig_bbox.y1)
+
+    return overflow
+
+
+def auto_layout(
+    fig: Figure,
+    *,
+    padding: float | tuple[float, float, float, float] = 0.08,
+    max_iter: int = 3,
+    tolerance: float = 2.0,
+    verbose: bool = False,
+) -> None:
+    """Content-aware layout that auto-adjusts margins to eliminate overflow.
+
+    Wraps ``simple_layout`` with a Validate → Measure → Adjust → Retry loop.
+    Starts with minimal margins, measures actual per-side overflow using
+    text and tick-label bounding boxes, and increases margins only on
+    overflowing sides. Converges in 1–3 iterations for typical charts.
+
+    Parameters
+    ----------
+    fig : Figure
+        The Matplotlib Figure to lay out.
+    padding : float or tuple of four floats, optional
+        Initial padding in inches for all four sides (left, right, bottom, top).
+        If a single float, it is used for all sides. Default is 0.08.
+    max_iter : int, optional
+        Maximum number of measure-and-adjust iterations. Default is 3.
+    tolerance : float, optional
+        Overflow tolerance in pixels. Overflows below this threshold are
+        ignored. Default is 2.0 px.
+    verbose : bool, optional
+        If True, prints per-iteration diagnostics. Default is False.
+
+    Examples
+    --------
+    >>> import dartwork_mpl as dm
+    >>> fig, ax = plt.subplots()
+    >>> ax.plot([1, 2, 3])
+    >>> ax.set_ylabel("Revenue ($M)")
+    >>> dm.auto_layout(fig)
+    """
+    # Normalize padding to a 4-tuple
+    if isinstance(padding, (int, float)):
+        margins = [float(padding)] * 4
+    else:
+        margins = list(padding)
+
+    BUFFER = 0.02  # extra buffer in inches added to the overflowing side
+    SIDE_MAP = {"left": 0, "right": 1, "bottom": 2, "top": 3}
+
+    for iteration in range(max_iter):
+        # Apply layout with current margins
+        simple_layout(fig, margins=tuple(margins))  # type: ignore[arg-type]
+
+        # Measure overflow on each side
+        overflow = _measure_overflow(fig)
+
+        if verbose:
+            print(
+                f"[auto_layout] iter {iteration + 1}: "
+                f"margins=({margins[0]:.3f}, {margins[1]:.3f}, "
+                f"{margins[2]:.3f}, {margins[3]:.3f})  "
+                f"overflow=L:{overflow['left']:.1f}px "
+                f"R:{overflow['right']:.1f}px "
+                f"B:{overflow['bottom']:.1f}px "
+                f"T:{overflow['top']:.1f}px"
+            )
+
+        # Check if all sides are within tolerance
+        max_overflow = max(overflow.values())
+        if max_overflow <= tolerance:
+            if verbose:
+                print(f"[auto_layout] Converged in {iteration + 1} iteration(s).")
+            return
+
+        # Increase margins only on overflowing sides
+        dpi = fig.get_dpi()
+        for side, idx in SIDE_MAP.items():
+            if overflow[side] > tolerance:
+                increment = (overflow[side] + tolerance) / dpi + BUFFER
+                margins[idx] += increment
+
+    if verbose:
+        print(
+            f"[auto_layout] Reached max_iter={max_iter}. "
+            f"Residual overflow: {overflow}"
+        )
+
