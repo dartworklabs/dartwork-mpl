@@ -9,15 +9,17 @@ from fastmcp import FastMCP
 
 from .resources import register_resources
 from .tools import register_tools
+from .prompts import register_prompts
 
 __all__ = ["mcp"]
 
 # Create the MCP server instance
 mcp = FastMCP("dartwork-mpl")
 
-# Register resources and tools
+# Register resources, tools, and prompts
 register_resources(mcp)
 register_tools(mcp)
+register_prompts(mcp)
 
 # Server entry point
 if __name__ == "__main__":
