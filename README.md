@@ -49,18 +49,14 @@ pip install git+https://github.com/dartworklabs/dartwork-mpl
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
-# Apply a style preset
-dm.style.use('scientific')        # for papers
-dm.style.use('scientific-kr')     # with Korean font support
-
-# Create a figure
-fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(7)), dpi=300)
+# Create a styled figure (Zero-Resize Policy: no figsize or dpi)
+fig, ax = dm.subplots(style=['font-scientific'])
 ax.plot(x, y, color='oc.blue5', lw=dm.lw(0))
-ax.set_xlabel('Time [s]', fontsize=dm.fs(0))
+ax.set_xlabel('Time [s]')
 
 # Optimize layout and save
 dm.simple_layout(fig)
-dm.save_formats(fig, 'output/figure', formats=('svg', 'png'), dpi=300)
+dm.save_formats(fig, 'output/figure', formats=('svg', 'png'))
 ```
 
 <br/>
@@ -303,8 +299,9 @@ src/dartwork_mpl/
 ├── ui/                 # Interactive FastAPI viewer
 ├── mcp/                # MCP server for AI assistants
 │   ├── server.py       #   FastMCP instance + wiring
-│   ├── resources.py    #   Guide resources
-│   └── tools.py        #   fetch_github_document etc.
+│   ├── resources.py    #   8 resources (guides, palettes, styles, templates)
+│   ├── tools.py        #   7 tools (color, linting, validation, info)
+│   └── prompts.py      #   2 prompts (create_plot, style_review)
 └── asset/              # Bundled styles, colors, fonts, icons, prompts
 ```
 

@@ -11,47 +11,73 @@
 
 ## What can MCP do?
 
-When the `dartwork-mpl` MCP server is connected, your AI assistant gains access to the following **resources** and **tools** without you having to copy-paste documentation:
+When the `dartwork-mpl` MCP server is connected, your AI assistant gains access to **resources**, **tools**, and **prompts** without you having to copy-paste documentation.
 
 ### Resources
 
-| URI                                  | Description                                                                                                                     |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| `dartwork-mpl://guide/general-guide` | Complete usage guide — styles, colors, layout, fonts, save/export, workflow, and full examples.                                 |
-| `dartwork-mpl://guide/layout-guide`  | Deep-dive into `simple_layout`, GridSpec strategies, hardcoded-element conflicts, and combined-layout solutions (1 100+ lines). |
+Read-only data that the AI assistant can retrieve on demand.
 
-These are read-only text resources that the AI assistant can retrieve on demand. They contain the same content as the Markdown files under `dartwork_mpl/asset/prompt/`.
+| URI                                       | Description                                                                 |
+| ----------------------------------------- | --------------------------------------------------------------------------- |
+| `dartwork-mpl://guide/general-guide`      | Complete usage guide — styles, colors, layout, fonts, save/export, workflow |
+| `dartwork-mpl://guide/layout-guide`       | Deep-dive into `simple_layout`, GridSpec strategies, and layout solutions   |
+| `dartwork-mpl://palette/colors`           | Full list of registered colors with hex codes (`dc.*`, `tw.*`, `oc.*`, …)  |
+| `dartwork-mpl://palette/fonts`            | Sorted list of all fonts available to matplotlib                            |
+| `dartwork-mpl://styles/list`              | Available mplstyle preset names                                             |
+| `dartwork-mpl://styles/{preset}`          | Content of a specific mplstyle preset file                                  |
+| `dartwork-mpl://templates/list`           | Available plot template types                                               |
+| `dartwork-mpl://templates/{plot_type}`    | Boilerplate Python script for a specific plot type                          |
 
 ### Tools
 
-| Tool                         | Description                                                                                                                                |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `fetch_github_document(url)` | Fetch any raw file from GitHub. Useful for pulling the latest README, CHANGELOG, or example scripts from the dartwork-mpl repo at runtime. |
+Callable functions the AI assistant can invoke during a conversation.
+
+| Tool                                        | Description                                                                     |
+| ------------------------------------------- | ------------------------------------------------------------------------------- |
+| `fetch_github_document(url)`                | Fetch any raw file from GitHub (README, CHANGELOG, examples, etc.)              |
+| `get_color_value(name)`                     | Get the hex code for a dartwork-mpl or matplotlib color name                    |
+| `mix_colors(color1, color2, ratio)`         | Blend two colors and return the resulting hex code                              |
+| `list_color_families()`                     | List color families (`dc.*`, `tw.*`, `oc.*`, …) with counts and samples        |
+| `lint_dartwork_mpl_code(code)`              | Analyze Python code for dartwork-mpl best practices and antipatterns            |
+| `validate_plot_data(plot_type, data_json)`  | Validate whether a data structure matches a plot type's requirements            |
+| `dartwork_mpl_info()`                       | Get a structured summary of all capabilities, presets, and templates            |
+
+### Prompts
+
+Interactive prompt templates that guide the AI through multi-step tasks.
+
+| Prompt                              | Description                                                                 |
+| ----------------------------------- | --------------------------------------------------------------------------- |
+| `create_plot(description, data)`    | Generate a complete dartwork-mpl script from a natural language description  |
+| `style_review(code)`               | Review and fix a script for dartwork-mpl style compliance                   |
 
 ### Practical use-cases
 
 Here are specific examples of how an AI assistant behaves differently when the `dartwork-mpl` MCP server is connected:
 
 1. **Zero-shot accurate coding**
-   - **You ask:** _"I need a bar chart for a Korean research paper. How do I set the style using dartwork-mpl?"_
-   - **MCP in action:** The assistant reads the `general-guide` resource and immediately outputs:
-
-     ```python
-     import dartwork_mpl as dm
-     dm.style.use('scientific-kr')
-     ```
+   - **You ask:** _"I need a bar chart for a Korean research paper."_
+   - **MCP in action:** The assistant reads the `general-guide` resource and immediately outputs correct code using `dm.subplots(style=['lang-kr'])`.
 
 2. **Automated layout debugging**
-   - **You ask:** _"I used simple_layout but my legend is overlapping the plot. Fix it using bbox techniques."_
-   - **MCP in action:** The assistant reads the `layout-guide` resource, understands the library's specific constraints regarding hardcoded `bbox_to_anchor`, and provides the exact code to move the legend cleanly using the prescribed methods.
+   - **You ask:** _"I used simple_layout but my legend is overlapping the plot."_
+   - **MCP in action:** The assistant reads the `layout-guide` resource, understands the library's specific constraints, and provides the exact code to fix the issue.
 
-3. **Style and Color lookup without browsing docs**
-   - **You ask:** _"Give me the hex codes for the 'warm' OC color palette for a pie chart."_
-   - **MCP in action:** The assistant extracts the exact hex codes from the color section of the built-in guide without guessing or hallucinating standard hex values.
+3. **Live color lookup**
+   - **You ask:** _"What's the hex code for dc.blue500?"_
+   - **MCP in action:** The assistant calls `get_color_value("dc.blue500")` and returns the exact hex code — no guessing.
 
-4. **Pulling remote examples**
-   - **You ask:** _"Can you check the dartwork-mpl GitHub repo for the latest example of a waterfall chart and adapt it for my code?"_
-   - **MCP in action:** Using the `fetch_github_document` tool, the assistant downloads the raw file directly from GitHub and writes the adapted code for you.
+4. **Code quality check**
+   - **You ask:** _"Review my plotting script for dartwork-mpl best practices."_
+   - **MCP in action:** The assistant uses the `lint_dartwork_mpl_code` tool to check for antipatterns (e.g., `figsize=`, `tight_layout()`, `plt.subplots()`) and suggests fixes.
+
+5. **Guided plot creation**
+   - **You ask:** _"Create a tornado chart comparing energy savings."_
+   - **MCP in action:** The assistant uses the `create_plot` prompt with the `tornado` template from `dartwork-mpl://templates/tornado` to generate a complete, standards-compliant script.
+
+6. **Data validation before plotting**
+   - **You ask:** _"Plot this data as a heatmap."_
+   - **MCP in action:** The assistant calls `validate_plot_data("heatmap", ...)` to verify the data structure is correct before generating the plot code.
 
 ---
 
@@ -195,7 +221,8 @@ Expected output (key fields):
     "protocolVersion": "2024-11-05",
     "capabilities": {
       "resources": { "subscribe": false, "listChanged": false },
-      "tools": { "listChanged": true }
+      "tools": { "listChanged": true },
+      "prompts": { "listChanged": false }
     },
     "serverInfo": { "name": "dartwork-mpl", "version": "..." }
   }

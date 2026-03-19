@@ -5,6 +5,32 @@ All notable changes to dartwork-mpl will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-03-20
+
+### Added
+
+- **MCP Tools**: 6 new tools — `get_color_value`, `mix_colors`, `list_color_families`, `lint_dartwork_mpl_code`, `validate_plot_data`, `dartwork_mpl_info`.
+- **MCP Resources**: 6 new resources — `palette/colors`, `palette/fonts`, `styles/list`, `styles/{preset}`, `templates/list`, `templates/{plot_type}`.
+- **MCP Prompts**: 2 interactive prompts — `create_plot` (guided plot generation), `style_review` (code compliance review).
+- **Korean font fallback**: `Pretendard` → `NanumBarunGothic` fallback chain in mplstyles.
+- **`twinx()` auto-spine**: Monkey-patch ensures right spine is always visible on twin axes.
+- **Validation checks**: `MARGIN_ASYMMETRY` and `PIE_LABEL_OFFSET` in `validate_figure()`.
+- **Heatmap default**: `image.aspect=equal` set as default rcParam.
+- **Gallery examples**: Advanced ML and Bayesian visualization examples.
+- **Colormaps**: 9+ new vibrant colormaps across all categories; cyclical cmaps.
+
+### Changed
+
+- **Colormap curation**: Reduced from 232 → 16 core colormaps with descriptive names.
+- **Default tick labelsize**: Changed to 8.0pt.
+- **Plot readability**: Thicker lines, bold titles, and adjusted margins.
+- **Docstrings**: All docstrings translated from Korean to English.
+- **Monochrome toggle**: Replaced toggle switch with explicit segmented control in UI.
+
+### Fixed
+
+- **`dc.ocean` colormap**: Replaced removed `dc.ocean` with `dc.deep_sea` throughout docs.
+
 ## [0.2.0] - 2026-03-07
 
 ### Added

@@ -90,8 +90,7 @@ Even without any configuration, dartwork-mpl's consistent API makes AI-generated
 ```python
 import dartwork_mpl as dm
 
-dm.style.use('scientific')
-fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(7)))
+fig, ax = dm.subplots(style=['font-scientific'])
 ax.plot(x, y, color='oc.blue5')
 dm.simple_layout(fig)
 dm.save_and_show(fig)

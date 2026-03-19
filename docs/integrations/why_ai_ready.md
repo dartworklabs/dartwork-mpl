@@ -35,18 +35,21 @@ gate.
 ## MCP Protocol: Real-Time AI Access
 
 The **Model Context Protocol (MCP)** gives AI assistants **live access** to
-dartwork-mpl's documentation:
+dartwork-mpl's documentation, colors, styles, and validation tools:
 
-| Resource                             | What the AI gets                                                  |
-| ------------------------------------ | ----------------------------------------------------------------- |
-| `dartwork-mpl://guide/general-guide` | Complete usage guide — styles, colors, layout, fonts, save/export |
-| `dartwork-mpl://guide/layout-guide`  | Deep-dive into `simple_layout`, GridSpec strategies, edge cases   |
-| `fetch_github_document(url)`         | Any raw file from the dartwork-mpl GitHub repo, on demand         |
+| Category       | Count | Examples                                                           |
+| -------------- | ----- | ------------------------------------------------------------------ |
+| **Resources**  | 8     | Usage guides, color palettes, font lists, style presets, plot templates |
+| **Tools**      | 7     | Color lookup, code linting, data validation, GitHub file fetch     |
+| **Prompts**    | 2     | Guided plot creation, style compliance review                      |
 
-This means the AI assistant always has **the latest, most accurate
-documentation** — no copy-paste, no stale caches, no hallucinated APIs.
+The AI assistant always has **the latest, most accurate documentation** —
+no copy-paste, no stale caches, no hallucinated APIs. Tools like
+`lint_dartwork_mpl_code` catch antipatterns (e.g., `figsize=`, `tight_layout()`)
+automatically, and `validate_plot_data` ensures data structures are correct
+before plotting.
 
-→ For setup instructions, see **[MCP Server](mcp_server.md)**.
+→ For the full list and setup instructions, see **[MCP Server](mcp_server.md)**.
 
 ---
 
