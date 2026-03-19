@@ -5,6 +5,13 @@ All notable changes to dartwork-mpl will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-03-20
+
+### Fixed
+
+- **Documentation**: Extensive updates to MCP Server documentation (8 resources, 7 tools, 2 prompts) and README.
+- **Tests**: Expanded MCP test suite from 9 to 28 tests for full coverage.
+
 ## [0.3.0] - 2026-03-20
 
 ### Added
