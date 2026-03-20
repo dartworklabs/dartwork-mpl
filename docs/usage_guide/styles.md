@@ -169,7 +169,7 @@ typefaces:
 | Layer       | Primary font fallback chain                           |
 | ----------- | ----------------------------------------------------- |
 | **English** | Roboto → Lato → Inter → Open Sans → Arial             |
-| **Korean**  | Noto Sans CJK KR → Paperlogy → Pretendard → Gothic A1 |
+| **Korean**  | Paperlogy → Noto Sans CJK KR → Pretendard → Gothic A1 |
 
 ```python
 dm.style.use("report-kr")       # report sizing + Korean fonts

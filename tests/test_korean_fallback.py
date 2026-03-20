@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 import os
 
-dm.style.use('report')
+dm.style.use('report-kr')
 
 fig, ax = plt.subplots(figsize=dm.FS_SINGLE)
 ax.plot([1, 2, 3], [1, 4, 9])
