@@ -6,14 +6,39 @@ utility functions for Matplotlib visualizations.
 
 __version__ = "0.3.1"
 
-# Import cmap, font, icon, and xplot modules for explicit access
+# Import cmap, font, icon, and templates modules for explicit access
 from . import (
-    agent_utils,  # noqa: F401
+    helpers,  # noqa: F401
     cmap,  # noqa: F401
     font,  # noqa: F401
     icon,  # noqa: F401
-    xplot,  # noqa: F401
 )
+
+# Backward compatibility aliases with deprecation warnings
+import warnings
+
+def _import_with_warning(old_name, new_module):
+    """Helper to create deprecated module aliases."""
+    warnings.warn(
+        f"{old_name} is deprecated, use {new_module.__name__} instead",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return new_module
+
+# Create deprecated aliases
+import sys
+
+# Import templates (formerly xplot)
+from . import templates  # noqa: F401
+
+# Set up module aliases for backward compatibility
+sys.modules['dartwork_mpl.agent_utils'] = helpers
+sys.modules['dartwork_mpl.xplot'] = templates
+
+# Create attribute aliases for backward compatibility
+agent_utils = helpers
+xplot = templates
 
 # Axes annotation
 from .annotation import arrow_axis, label_axes
@@ -105,10 +130,11 @@ from .util import cm2in, make_offset, mix_colors, pseudo_alpha, set_decimal
 # Import validate module exports
 from .validate import validate_figure
 
-# Extended plot functions
-from .xplot import plot_diverging_bar
+# Extended plot functions (from templates, formerly xplot)
+from .templates import plot_diverging_bar
 
 # Define __all__ for explicit exports
+
 __all__ = [
     # Color module
     "Color",
@@ -216,4 +242,24 @@ def _patched_twinx(self, *args, **kwargs):
     return ax2
 
 matplotlib.axes.Axes.twinx = _patched_twinx
+
+
+# Provide deprecated attribute access with warnings
+def __getattr__(name):
+    """Provide deprecated attribute access with warnings."""
+    if name == 'agent_utils':
+        warnings.warn(
+            "agent_utils is deprecated, use helpers instead",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return helpers
+    elif name == 'xplot':
+        warnings.warn(
+            "xplot is deprecated, use templates instead",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return templates
+    raise AttributeError(f"module 'dartwork_mpl' has no attribute '{name}'")
 
