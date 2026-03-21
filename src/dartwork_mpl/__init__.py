@@ -35,10 +35,35 @@ from .color import (
 )
 
 # Import constant module exports
-from .constant import DW, FS_DOUBLE, FS_SINGLE, SW
+from .constant import (
+    DW,
+    FS_A4,
+    FS_DOUBLE,
+    FS_GOLDEN,
+    FS_SINGLE,
+    FS_SLIDE,
+    FS_SQUARE,
+    FS_TALL,
+    FS_WIDE,
+    SW,
+)
 
 # Explore
 from .explore import list_colormaps, list_palettes, show_palette
+
+# Figure creation
+from .figure import figure, subplots
+
+# Formatting utilities
+from .formatting import (
+    format_axis_billions,
+    format_axis_currency,
+    format_axis_millions,
+    format_axis_percent,
+    format_axis_si,
+    format_axis_thousands,
+    rotate_tick_labels,
+)
 
 # Import icon module exports
 from .icon import icon_font, icon_font_path, list_icon_fonts
@@ -51,6 +76,18 @@ from .io import save_and_show, save_formats, show
 
 # Layout
 from .layout import auto_layout, get_bounding_box, set_xmargin, set_ymargin, simple_layout
+
+# Spine and grid utilities
+from .spines import (
+    add_frame,
+    add_grid,
+    hide_all_spines,
+    hide_spines,
+    minimal_axes,
+    remove_grid,
+    show_only_spines,
+    style_spines,
+)
 
 # Prompt utilities
 from .prompt import copy_prompt, get_prompt, list_prompts, prompt_path
@@ -92,6 +129,12 @@ __all__ = [
     "SW",
     "FS_SINGLE",
     "FS_DOUBLE",
+    "FS_SQUARE",
+    "FS_WIDE",
+    "FS_TALL",
+    "FS_GOLDEN",
+    "FS_SLIDE",
+    "FS_A4",
     # Style module
     "Style",
     "list_styles",
@@ -119,6 +162,13 @@ __all__ = [
     "make_offset",
     # Formatting
     "set_decimal",
+    "format_axis_percent",
+    "format_axis_thousands",
+    "format_axis_millions",
+    "format_axis_billions",
+    "format_axis_currency",
+    "format_axis_si",
+    "rotate_tick_labels",
     # I/O
     "save_formats",
     "save_and_show",
@@ -127,6 +177,18 @@ __all__ = [
     "list_palettes",
     "list_colormaps",
     "show_palette",
+    # Figure creation
+    "figure",
+    "subplots",
+    # Spine and grid utilities
+    "hide_spines",
+    "hide_all_spines",
+    "show_only_spines",
+    "style_spines",
+    "add_grid",
+    "remove_grid",
+    "add_frame",
+    "minimal_axes",
     # Axes annotation
     "label_axes",
     "arrow_axis",
