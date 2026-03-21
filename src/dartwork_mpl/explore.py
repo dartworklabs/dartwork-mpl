@@ -2,6 +2,9 @@
 
 Provides utility functions for listing and visualizing the discrete
 palettes and colormaps available in dartwork-mpl.
+
+This module consolidates all asset exploration and visualization functions,
+including those previously in the asset_viz module.
 """
 
 from __future__ import annotations
@@ -11,7 +14,18 @@ import re
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 
-__all__ = ["list_palettes", "list_colormaps", "show_palette"]
+# Import asset visualization functions (to be fully integrated in future version)
+from .asset_viz import classify_colormap, plot_colormaps, plot_colors, plot_fonts
+
+__all__ = [
+    "list_palettes",
+    "list_colormaps",
+    "show_palette",
+    "classify_colormap",
+    "plot_colormaps",
+    "plot_colors",
+    "plot_fonts"
+]
 
 
 def _get_all_colors() -> list[str]:
