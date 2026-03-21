@@ -137,14 +137,14 @@ class TestClassifyColormap:
 
         # Sequential
         result = classify_colormap(matplotlib.colormaps["viridis"])
-        assert result in ("Sequential Single-Hue", "Sequential Multi-Hue")
+        assert result in ("Single-Hue", "Multi-Hue")
 
-        # Coolwarm — may classify as diverging or sequential
+        # Coolwarm — may classify as diverging or multi-hue
         result = classify_colormap(matplotlib.colormaps["coolwarm"])
         assert result in (
             "Diverging",
-            "Sequential Multi-Hue",
-            "Sequential Single-Hue",
+            "Multi-Hue",
+            "Single-Hue",
         )
 
         # Categorical

@@ -33,6 +33,7 @@ class TestMainCli:
         assert (dest / "app.py").exists()
         assert (dest / "README.md").exists()
 
+    @pytest.mark.skip(reason="complex template removed - dashboards no longer supported")
     def test_init_complex_example(self, tmp_path: Path) -> None:
         """'init' with --example complex generates complex template."""
         from dartwork_mpl.ui.__main__ import main

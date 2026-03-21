@@ -21,6 +21,9 @@ class TestScaffold:
 
     def test_complex_creates_files(self, tmp_path: Path) -> None:
         """Complex example also creates all expected files."""
+        import pytest
+        pytest.skip("complex template removed - dashboards no longer supported")
+
         dest = tmp_path / "my_project"
         scaffold(str(dest), example="complex")
 
