@@ -254,7 +254,101 @@ fig = dm.plot_colors()  # Display all colors
 fig = dm.plot_fonts()  # Display available fonts
 ```
 
-## 3. Recommended Workflow
+## 3. Agent Best Practices
+
+### 3.1 For AI Agents and Automated Code Generation
+
+When using dartwork-mpl in automated contexts (AI agents, code generators, etc.), follow these guidelines:
+
+#### Quick Start Template
+
+```python
+# Standard imports and setup
+import matplotlib
+matplotlib.use("Agg")  # Required for headless environments
+import matplotlib.pyplot as plt
+import numpy as np
+import dartwork_mpl as dm
+from pathlib import Path
+
+# Apply style first
+dm.style.use("report-kr")  # Choose appropriate style
+
+# Create output directory
+OUTPUT_DIR = Path("figures/output")
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Generate chart
+fig = plt.figure(figsize=(dm.DW, dm.DW * 0.6), dpi=200)
+gs = fig.add_gridspec(1, 1, left=0.15, right=0.95, top=0.9, bottom=0.15)
+ax = fig.add_subplot(gs[0, 0])
+
+# Your plotting code here...
+
+# Save and close
+dm.auto_layout(fig)
+dm.save_formats(fig, OUTPUT_DIR / "chart_name", formats=("png",), dpi=300)
+plt.close(fig)
+```
+
+#### Using Helper Functions
+
+```python
+from dartwork_mpl.agent_utils import (
+    validate_data,
+    auto_select_colors,
+    format_axis_labels,
+    save_figure,
+    check_figure_quality
+)
+
+# Validate input data
+x, y = validate_data(x_data, y_data, allow_nan=False)
+
+# Auto-select appropriate colors
+colors = auto_select_colors(n_series=3, color_type="categorical")
+
+# Apply consistent formatting
+format_axis_labels(ax, "Time", "Revenue", y_unit="억원")
+
+# Check quality before saving
+issues = check_figure_quality(fig)
+if issues:
+    print("Warning: Quality issues detected:", issues)
+```
+
+#### Using Chart Templates
+
+```python
+from dartwork_mpl.templates.financial import (
+    create_dual_axis_chart,
+    create_waterfall_chart
+)
+
+# Use pre-built templates for common patterns
+fig, (ax1, ax2) = create_dual_axis_chart(
+    quarters, revenue, margins,
+    bar_label="Revenue", line_label="Margin"
+)
+```
+
+### 3.2 Common Agent Pitfalls to Avoid
+
+1. **Forgetting to set style**: Always apply style before creating figures
+2. **Using matplotlib defaults**: Never use 'b', 'r', 'g' colors
+3. **Missing units**: Always include units in axis labels
+4. **Low DPI**: Always use at least 200 DPI
+5. **Using tight_layout**: Use `dm.auto_layout()` instead
+6. **Not validating data**: Always check for NaN/Inf values
+7. **Hardcoding positions**: Use GridSpec for layout management
+
+### 3.3 Refer to Additional Resources
+
+- **Coding Rules**: See `coding-rules.md` for detailed agent guidelines
+- **Templates**: Check `templates/` module for ready-to-use chart patterns
+- **Utilities**: Use `agent_utils.py` for common helper functions
+
+## 4. Recommended Workflow (Manual)
 
 ### Steps for Creating Publication-Quality Graphs
 

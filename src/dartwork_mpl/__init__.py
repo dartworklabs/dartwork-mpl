@@ -8,6 +8,7 @@ __version__ = "0.3.1"
 
 # Import cmap, font, icon, and xplot modules for explicit access
 from . import (
+    agent_utils,  # noqa: F401
     cmap,  # noqa: F401
     font,  # noqa: F401
     icon,  # noqa: F401
