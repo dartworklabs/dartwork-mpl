@@ -15,8 +15,11 @@ The essential modules you'll use in every project.
    :titlesonly:
 
    Style Management <style>
+   Figure Creation <figure>
    Layout Utilities <layout>
    Color Utilities <color>
+   Formatting Utilities <formatting>
+   Spine and Grid Utilities <spines>
    Save & Export <io>
    Visual Validation <validate>
 
@@ -32,6 +35,7 @@ Additional tools for specialized use cases.
    Font Utilities <font>
    Icon Font System <icon>
    Extended Plots <xplot>
+   Agent Helper Utilities <helpers>
    Interactive Viewer <ui>
    Visualization Tools <visualization>
    Prompt Utilities <prompt>
