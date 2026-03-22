@@ -91,7 +91,7 @@ def arrow_axis(
     direction: str,
     label: str,
     *,
-    offset: float = -0.05,
+    offset: float = -0.10,
     low: str = "Low",
     high: str = "High",
     fontsize: float | None = None,
@@ -115,8 +115,8 @@ def arrow_axis(
     label : str
         Center label text placed at the midpoint of the axis.
     offset : float, optional
-        Offset from the spine in Axes-fraction units. Default is -0.05
-        (slightly outside).
+        Offset from the spine in Axes-fraction units. Default is -0.10
+        (sufficiently outside to avoid overlap with tick labels).
     low : str, optional
         Text for the low end (bottom/left) of the axis. Default is "Low".
     high : str, optional
