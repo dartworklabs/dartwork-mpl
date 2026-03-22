@@ -1,16 +1,16 @@
 """
-Diverging Bar Charts (xplot)
+Diverging Bar Charts (templates)
 ============================
 
 Diverging bar charts are notoriously tricky to align in standard matplotlib.
-The ``xplot`` module provides ``plot_diverging_bar`` — a pre-configured,
+The ``templates`` module provides ``plot_diverging_bar`` — a pre-configured,
 highly styled template that handles text placement, axis centering, and
 cascading legend layout automatically.
 """
 
 import numpy as np
 import dartwork_mpl as dm
-from dartwork_mpl.xplot import plot_diverging_bar
+from dartwork_mpl.templates import plot_diverging_bar
 
 dm.style.use('report')
 
