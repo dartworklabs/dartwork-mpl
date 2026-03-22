@@ -168,16 +168,16 @@ class Style:
         plt.rcParams.update(plt.rcParamsDefault)
         plt.style.use([style_path(style_name) for style_name in style_names])
 
-    def use(self, preset_name: str, **kwargs: float | str) -> None:
+    def use(self, preset_name: str | list[str], **kwargs: float | str) -> None:
         """
-        Apply a preset style configuration.
+        Apply a preset style configuration or a list of presets.
 
         This is the recommended way to apply styles in this module.
         Presets are pre-optimized combinations of styles for specific use cases.
 
         Parameters
         ----------
-        preset_name : str
+        preset_name : str or list of str
             Name of the preset to apply. Available presets:
             - "scientific": Academic papers (default English)
             - "report": Documents, reports, and dashboards
@@ -208,10 +208,22 @@ class Style:
         >>> import dartwork_mpl as dm
         >>> dm.style.use("scientific")
         >>> dm.style.use("presentation-kr", font_size=16)
+        >>> dm.style.use(["scientific", "dark"])  # Stack multiple presets
         """
-        if preset_name not in self.presets:
-            raise KeyError(f"Preset '{preset_name}' not found")
-        self.stack(self.presets[preset_name])
+        # Handle both single string and list of strings
+        if isinstance(preset_name, list):
+            # Stack multiple presets in order
+            style_list = []
+            for name in preset_name:
+                if name not in self.presets:
+                    raise KeyError(f"Preset '{name}' not found")
+                style_list.extend(self.presets[name])
+            self.stack(style_list)
+        else:
+            # Single preset
+            if preset_name not in self.presets:
+                raise KeyError(f"Preset '{preset_name}' not found")
+            self.stack(self.presets[preset_name])
 
         if kwargs:
             overrides = {}
