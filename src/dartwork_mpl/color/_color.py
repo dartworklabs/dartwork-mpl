@@ -431,13 +431,19 @@ def cspace(
     # Convert input colors to Color objects if needed
     start_color_obj: Color
     if isinstance(start_color, str):
-        start_color_obj = Color.from_hex(start_color)
+        if start_color.startswith("#"):
+            start_color_obj = Color.from_hex(start_color)
+        else:
+            start_color_obj = Color.from_name(start_color)
     else:
         start_color_obj = start_color
 
     end_color_obj: Color
     if isinstance(end_color, str):
-        end_color_obj = Color.from_hex(end_color)
+        if end_color.startswith("#"):
+            end_color_obj = Color.from_hex(end_color)
+        else:
+            end_color_obj = Color.from_name(end_color)
     else:
         end_color_obj = end_color
 
