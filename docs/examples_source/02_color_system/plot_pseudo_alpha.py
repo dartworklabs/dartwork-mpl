@@ -41,4 +41,5 @@ ax.legend(loc='upper right')
 ax.set_title("Solid Colors Simulating Opacity")
 ax.set_ylim(-2.5, 1.5)
 
-fig.tight_layout(pad=1.5)
+dm.simple_layout(fig)
+plt.show()

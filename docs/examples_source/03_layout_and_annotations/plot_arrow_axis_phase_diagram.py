@@ -53,7 +53,10 @@ ax.set_ylim(0, 14)
 ax.legend(loc='upper left', fontsize=dm.fs(-0.5), framealpha=0.9, edgecolor='white')
 
 # Replace standard spines with semantic directional arrows
+# Note: Default offset has been improved to -0.10 to avoid overlap
 dm.arrow_axis(ax, 'x', "Temperature")
 dm.arrow_axis(ax, 'y', "Pressure")
 
-fig.tight_layout(pad=1.5)
+# Use simple_layout with sufficient margins for arrow axes
+dm.simple_layout(fig, margins=(0.12, 0.08, 0.12, 0.08))
+plt.show()

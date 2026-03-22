@@ -48,4 +48,5 @@ for idx, (layers, title) in enumerate(stages):
 # Reset to presentation for the panel labels
 dm.style.use('presentation')
 dm.label_axes(fig.axes)
-fig.tight_layout(pad=1.5, h_pad=2.0, w_pad=2.0)
+dm.simple_layout(fig)
+plt.show()

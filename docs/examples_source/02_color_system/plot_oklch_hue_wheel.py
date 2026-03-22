@@ -49,4 +49,5 @@ ax.set_title("OKLCH Hue Wheel\u2009\u2014\u2009Perceptual Uniformity",
 ax.legend(loc='lower right', bbox_to_anchor=(1.25, -0.05),
           fontsize=dm.fs(-0.5), framealpha=0.9, edgecolor='white')
 ax.grid(True, alpha=0.2)
-fig.tight_layout(pad=1.5)
+dm.simple_layout(fig)
+plt.show()

@@ -89,3 +89,4 @@ fig.suptitle("Bivariate Joint Distribution (EDA)",
 # Because we manually tight-packed the gridspec, we don't automatically call tight_layout
 # or if we do, we need to respect the GridSpec layout. 
 # simple_layout can disrupt finely tuned GridSpecs.
+plt.show()

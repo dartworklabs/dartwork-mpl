@@ -70,4 +70,5 @@ with plt.style.context('dark_background'):
     ax.set_title("t-SNE Embedding\nLatent Space Distribution", 
                  color='white', fontsize=dm.fs(1.5), weight='bold', pad=20, ha='center')
     
-    fig.tight_layout(pad=1.5)
+    dm.simple_layout(fig)
+plt.show()

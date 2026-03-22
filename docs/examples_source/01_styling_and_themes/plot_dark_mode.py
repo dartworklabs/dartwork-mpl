@@ -25,4 +25,5 @@ ax.set_title("Latent Space Distribution")
 ax.set_xlabel("Principal Component 1")
 ax.set_ylabel("Principal Component 2")
 
-fig.tight_layout(pad=1.5)
+dm.simple_layout(fig)
+plt.show()

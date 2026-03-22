@@ -48,5 +48,5 @@ for idx, (cmap_name, title) in enumerate(colormaps):
     ax.set_ylabel("y")
     ax.set_aspect('equal')
 
-dm.label_axes(fig.axes[:4])
 fig.tight_layout(pad=1.5, h_pad=2.0, w_pad=2.0)
+plt.show()

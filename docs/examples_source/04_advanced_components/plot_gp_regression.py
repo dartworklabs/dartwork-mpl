@@ -59,4 +59,5 @@ ax.set_ylabel("Target ($Y$)")
 
 ax.legend(loc='upper right', framealpha=0.9, edgecolor='white', fontsize=dm.fs(-0.5))
 ax.grid(True, alpha=0.3, ls=':')
-fig.tight_layout(pad=2.0)
+dm.simple_layout(fig)
+plt.show()

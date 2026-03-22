@@ -61,4 +61,5 @@ ax.set_title("50/50 Color Mixing Matrix (dc.0\u2013dc.5)",
 for spine in ax.spines.values():
     spine.set_visible(False)
 
-fig.tight_layout(pad=1.5)
+dm.simple_layout(fig)
+plt.show()

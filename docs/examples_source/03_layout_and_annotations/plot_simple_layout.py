@@ -2,7 +2,7 @@
 Smart Layout Solver (L-BFGS-B)
 ==============================
 
-``dm.simple_layout(fig)`` replaces ``fig.tight_layout()`` using an L-BFGS-B
+``dm.simple_layout(fig)`` replaces ``dm.simple_layout(fig)`` using an L-BFGS-B
 numerical optimizer to find the optimal margins that prevent label clipping
 without excessive whitespace — especially when titles span multiple lines
 or y-axis labels are very wide.
@@ -25,3 +25,4 @@ ax.set_ylabel("Extremely Large Amplitude (units)")
 
 # dm.simple_layout handles multi-line titles and wide labels better than tight_layout
 dm.simple_layout(fig)
+plt.show()

@@ -85,4 +85,5 @@ ax.set_ylabel("Measurement")
 dm.label_axes(fig.axes)
 for a in fig.axes:
     dm.set_decimal(a, yn=0)
-fig.tight_layout(pad=1.5, h_pad=2.0, w_pad=2.0)
+dm.simple_layout(fig)
+plt.show()

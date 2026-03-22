@@ -31,4 +31,5 @@ ax.set_title("Icon Embedded Vector Graphics")
 ax.set_ylabel("Active Users")
 ax.set_ylim(0, 110)
 
-fig.tight_layout(pad=1.5)
+dm.simple_layout(fig)
+plt.show()

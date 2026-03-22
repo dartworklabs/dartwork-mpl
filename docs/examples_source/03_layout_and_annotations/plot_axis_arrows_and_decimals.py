@@ -20,7 +20,10 @@ y = np.exp(-x**2)
 ax.plot(x, y, color='tw.rose500', lw=dm.lw(2))
 
 # Convert traditional axes to semantic directional arrows
+# Note: Default offset has been improved to -0.10 to avoid overlap
 dm.arrow_axis(ax, 'x', "Standard Deviation")
 dm.arrow_axis(ax, 'y', "Probability Density")
 
-fig.tight_layout(pad=1.5)
+# Use simple_layout with sufficient margins for arrow axes
+dm.simple_layout(fig, margins=(0.12, 0.08, 0.12, 0.08))
+plt.show()

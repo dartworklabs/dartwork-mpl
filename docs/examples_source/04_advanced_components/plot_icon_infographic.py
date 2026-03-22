@@ -72,4 +72,5 @@ for idx, (icon, label, value, unit, color, trend) in enumerate(kpis):
 
 fig.suptitle("Sustainability KPI Dashboard", fontsize=dm.fs(1.5),
              weight='bold', y=1.05)
-fig.tight_layout(pad=1.5, h_pad=2.0, w_pad=2.0)
+dm.simple_layout(fig)
+plt.show()

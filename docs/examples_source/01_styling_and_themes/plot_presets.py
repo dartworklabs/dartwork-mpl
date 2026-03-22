@@ -34,4 +34,5 @@ for preset in presets:
     ax.set_ylabel("Amplitude")
     ax.legend(loc='upper right')
 
-    fig.tight_layout(pad=1.5)
+    dm.simple_layout(fig)
+plt.show()
