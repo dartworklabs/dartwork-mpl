@@ -55,6 +55,65 @@ dm.simple_layout(fig, gs=gs)
 > automatically. Only add manual margins when you need fine positional control
 > (e.g., making room for a colorbar or external legend).
 
+### Content-Aware Layout with `auto_layout`
+
+For figures with complex text elements that might overflow, `auto_layout()` provides
+an intelligent alternative that automatically detects and fixes overflow:
+
+```python
+import dartwork_mpl as dm
+import matplotlib.pyplot as plt
+import numpy as np
+
+fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(6)))
+ax.plot(np.linspace(0, 10, 100), np.sin(np.linspace(0, 10, 100)))
+ax.set_ylabel("Very Long Label That Might\nOverflow the Figure Bounds")
+ax.set_title("Complex Multi-Line Title\nWith Potential Overflow", fontsize=dm.fs(2))
+
+# Auto-adjusts margins to prevent any overflow
+dm.auto_layout(fig, padding=0.08, max_iter=5, verbose=True)
+```
+
+**How it works:**
+1. Applies initial layout with minimal margins
+2. Measures actual text overflow on all four sides
+3. Increases margins only where needed
+4. Repeats until convergence (typically 1-3 iterations)
+
+This is especially useful for:
+- Axes with very long y-axis labels
+- Multi-line titles that extend beyond figure bounds
+- Figures with many annotations
+- Automatically generated charts where label length is unknown
+
+### Responsive Margins with `set_xmargin` and `set_ymargin`
+
+Control axis data margins responsively based on data range:
+
+```python
+# Add 10% margin to x-axis data range
+dm.set_xmargin(ax, margin=0.1)
+
+# Add different margins for y-axis
+dm.set_ymargin(ax, margin=0.05)
+
+# Useful for:
+# - Preventing data from touching axis edges
+# - Creating visual breathing room
+# - Ensuring markers aren't clipped at boundaries
+```
+
+### Which Layout Function to Use?
+
+| Scenario | Recommended Function | Why |
+|----------|---------------------|-----|
+| Simple plots with standard labels | `simple_layout()` | Fast, consistent margins |
+| Complex multi-line titles/labels | `auto_layout()` | Automatic overflow detection |
+| GridSpec with spacing control | `simple_layout(fig, gs=gs)` | Respects hspace/wspace |
+| Need exact margin control | `simple_layout(margins=(...))` | Precise inch-based margins |
+| Unknown label lengths (AI-generated) | `auto_layout()` | Adapts to content |
+| Debugging layout issues | `auto_layout(verbose=True)` | Shows iteration diagnostics |
+
 ### `simple_layout` vs `tight_layout`
 
 Simple layouts look fine with either method. The real difference shows up when
@@ -108,6 +167,9 @@ inches. This means:
 | Function                      | What it solves                                                |
 | ----------------------------- | ------------------------------------------------------------- |
 | `simple_layout(fig, gs=gs)`   | Optimizes outer margins via scipy — replaces `tight_layout()` |
+| `auto_layout(fig)`            | Content-aware layout that prevents text overflow              |
+| `set_xmargin(ax, margin)`     | Sets responsive x-axis margins based on data range            |
+| `set_ymargin(ax, margin)`     | Sets responsive y-axis margins based on data range            |
 | `label_axes(axes)`            | Adds (a), (b), (c) labels with auto-positioning for ylabels   |
 | `arrow_axis(ax, 'x', 'Cost')` | Creates `Low ◄── Cost ──► High` bidirectional annotations     |
 | `set_decimal(ax, xn, yn)`     | Fixes tick decimal places for publication-ready labels        |

@@ -58,6 +58,43 @@ print(color.to_hex())                # '#...'
 → **Full guide:** [Color Space & Manipulation](../color_system/space.md) —
 constructors, views, interpolation, and custom colormaps.
 
+## Exploring Available Colors
+
+dartwork-mpl provides utilities to discover and explore available color palettes:
+
+```python
+import dartwork_mpl as dm
+
+# List all discrete color palettes
+palettes = dm.list_palettes()
+print(palettes[:5])  # ['dc.vivid', 'oc.blue', 'oc.red', 'tw.emerald', ...]
+
+# List all colormaps
+cmaps = dm.list_colormaps()
+print(cmaps[:5])  # ['dc.deep_sea', 'dc.forest', 'dc.sunset', ...]
+
+# Preview a specific palette
+dm.show_palette('oc.blue')  # Shows all shades: blue0, blue1, ..., blue9
+
+# Visualize multiple palettes at once
+dm.plot_colors(['oc.blue', 'tw.emerald', 'md.purple'])
+
+# Visualize colormaps
+dm.plot_colormaps(['dc.deep_sea', 'dc.forest'])
+
+# Classify a colormap by type
+cmap_type = dm.classify_colormap('viridis')
+print(cmap_type)  # 'sequential'
+```
+
+**Interactive Palette Explorer:**
+
+Use the widget below to explore all available palettes interactively:
+
+```{raw} html
+:file: ../color_system/images/palette_explorer.html
+```
+
 ## Color interpolation
 
 ```python

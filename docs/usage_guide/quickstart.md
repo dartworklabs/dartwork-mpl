@@ -71,6 +71,51 @@ Same data, same plotting logic — the difference is one `dm.style.use()` call, 
 | `dm.simple_layout(fig)`           | Auto-optimizes margins (replaces `tight_layout`)                                   |
 | `dm.save_and_show(fig, size=720)` | Preview at 720 px wide in the notebook, then call `plt.show()`                     |
 
+## Creating Figures with Styles
+
+dartwork-mpl provides `dm.subplots()` and `dm.figure()` wrappers that apply
+styles during figure creation:
+
+```python
+# Apply style automatically when creating figure
+fig, ax = dm.subplots(style='scientific')
+
+# Stack multiple styles
+fig, axes = dm.subplots(2, 2, style=['font-libertine', 'theme-dark'])
+
+# Override style defaults
+fig, ax = dm.subplots(style='report', figsize=(10, 6), dpi=150)
+```
+
+These functions follow the Zero-Resize Policy: when you specify a style,
+figsize and dpi are determined by the style unless explicitly overridden.
+
+**Comparison with standard matplotlib:**
+
+```python
+# Standard matplotlib approach
+plt.style.use('seaborn')
+fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
+
+# dartwork-mpl approach - more concise
+fig, ax = dm.subplots(style='scientific', figsize=(8, 6), dpi=100)
+```
+
+**Multi-panel figures with automatic styling:**
+
+```python
+# Create 2x2 grid with custom ratios
+fig, axes = dm.subplots(2, 2,
+                       style='scientific',
+                       width_ratios=[2, 1],
+                       height_ratios=[1, 2])
+
+for ax in axes.flat:
+    ax.plot(np.random.randn(100))
+
+dm.simple_layout(fig)
+```
+
 ## Adding color
 
 dartwork-mpl registers named colors from several design systems. Use them
