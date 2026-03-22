@@ -59,4 +59,37 @@ Example
 API
 ---
 
+Core Validation
+^^^^^^^^^^^^^^^
+
 .. autofunction:: dartwork_mpl.validate_figure
+
+Enhanced Validation with Auto-Fix
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``validate_enhanced`` module provides advanced validation with automatic fix suggestions,
+particularly useful for AI agents and automated pipelines.
+
+.. automodule:: dartwork_mpl.validate_enhanced
+   :members: validate_with_fixes, get_fix_suggestions, check_agent_requirements, generate_validation_report
+   :noindex:
+
+Example with Auto-Fix
+^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: python
+
+   import dartwork_mpl as dm
+   from dartwork_mpl.validate_enhanced import validate_with_fixes
+
+   # Validate and get fix suggestions
+   issues, fixes = validate_with_fixes(fig)
+
+   # Apply suggested fixes
+   for fix in fixes:
+       if fix['auto_fixable']:
+           fix['apply'](fig, **fix['params'])
+
+   # Generate report for logging
+   report = generate_validation_report(issues, fixes)
+   print(report)
