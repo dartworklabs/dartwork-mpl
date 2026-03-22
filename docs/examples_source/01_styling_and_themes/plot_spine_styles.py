@@ -191,7 +191,8 @@ dm.simple_layout(fig)
 #
 # Spine utilities work seamlessly with dark themes.
 
-dm.style.use(['theme-dark', 'scientific'])
+dm.style.use('dark')
+dm.style.use('scientific')
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(dm.cm2in(16), dm.cm2in(8)),
                                 facecolor='#1a1a1a')
 
