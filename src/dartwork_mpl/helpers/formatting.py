@@ -152,7 +152,7 @@ def add_value_labels(
     y_range = ax.get_ylim()[1] - ax.get_ylim()[0]
     offset = y_range * offset_y
 
-    for xi, yi in zip(x, y):
+    for xi, yi in zip(x, y, strict=False):
         ax.text(xi, yi + offset, f"{yi:{format_str}}",
                ha="center", va="bottom",
                fontsize=fontsize, color=color)

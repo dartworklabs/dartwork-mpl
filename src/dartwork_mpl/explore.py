@@ -15,7 +15,12 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 
 # Import asset visualization functions (to be fully integrated in future version)
-from .asset_viz import classify_colormap, plot_colormaps, plot_colors, plot_fonts
+from .asset_viz import (
+    classify_colormap,
+    plot_colormaps,
+    plot_colors,
+    plot_fonts,
+)
 
 __all__ = [
     "list_palettes",

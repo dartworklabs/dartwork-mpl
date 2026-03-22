@@ -9,10 +9,10 @@ from __future__ import annotations
 __all__ = ["label_axes", "arrow_axis"]
 
 import string
+from typing import Any
 
 import numpy as np
 from matplotlib.axes import Axes
-from typing import Any
 
 from .scale import fs
 

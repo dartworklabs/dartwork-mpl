@@ -6,16 +6,19 @@ utility functions for Matplotlib visualizations.
 
 __version__ = "0.3.1"
 
+# ruff: noqa: E402
+
 # Import cmap, font, icon, and templates modules for explicit access
+# Backward compatibility aliases with deprecation warnings
+import warnings
+
 from . import (
-    helpers,  # noqa: F401
     cmap,  # noqa: F401
     font,  # noqa: F401
+    helpers,  # noqa: F401
     icon,  # noqa: F401
 )
 
-# Backward compatibility aliases with deprecation warnings
-import warnings
 
 def _import_with_warning(old_name, new_module):
     """Helper to create deprecated module aliases."""
@@ -100,7 +103,20 @@ from .install import install_llm_txt, uninstall_llm_txt
 from .io import save_and_show, save_formats, show
 
 # Layout
-from .layout import auto_layout, get_bounding_box, set_xmargin, set_ymargin, simple_layout
+from .layout import (
+    auto_layout,
+    get_bounding_box,
+    set_xmargin,
+    set_ymargin,
+    simple_layout,
+)
+
+# Prompt utilities
+from .prompt import copy_prompt, get_prompt, list_prompts, prompt_path
+
+# --- Explicit imports from split modules (formerly in util.py) ---
+# Scaling helpers
+from .scale import fs, fw, lw
 
 # Spine and grid utilities
 from .spines import (
@@ -114,24 +130,17 @@ from .spines import (
     style_spines,
 )
 
-# Prompt utilities
-from .prompt import copy_prompt, get_prompt, list_prompts, prompt_path
-
-# --- Explicit imports from split modules (formerly in util.py) ---
-# Scaling helpers
-from .scale import fs, fw, lw
-
 # Import style module exports
 from .style import Style, list_styles, load_style_dict, style, style_path
+
+# Extended plot functions (from templates, formerly xplot)
+from .templates import plot_diverging_bar
 
 # Color utilities
 from .util import cm2in, make_offset, mix_colors, pseudo_alpha, set_decimal
 
 # Import validate module exports
 from .validate import validate_figure
-
-# Extended plot functions (from templates, formerly xplot)
-from .templates import plot_diverging_bar
 
 # Define __all__ for explicit exports
 

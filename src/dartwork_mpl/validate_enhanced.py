@@ -8,7 +8,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
-from .validate import validate_figure, VisualWarning, Severity
+from .validate import Severity, VisualWarning, validate_figure
 
 
 def get_fix_suggestions(warning: VisualWarning) -> list[str]:
@@ -48,7 +48,7 @@ def get_fix_suggestions(warning: VisualWarning) -> list[str]:
         suggestions.append("# Reduce font size\nax.legend(fontsize=dm.fs(-1))")
 
     elif warning.check_id == "LEGEND_OVERFLOW":
-        ratio = warning.detail.get("ratio", 0)
+        warning.detail.get("ratio", 0)
         suggestions.append("# Move legend outside\nax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')")
         suggestions.append("# Reduce legend columns\nax.legend(ncol=1)")
         suggestions.append("# Reduce legend font\nax.legend(fontsize=dm.fs(-2))")
@@ -128,7 +128,7 @@ def validate_with_fixes(
                     dm.auto_layout(fig)
                     applied_fixes.append(f"Applied dm.auto_layout() for {warning.check_id}")
                     if verbose:
-                        print(f"  ✓ Auto-applied: dm.auto_layout()")
+                        print("  ✓ Auto-applied: dm.auto_layout()")
                 except Exception as e:
                     if verbose:
                         print(f"  ✗ Failed to auto-fix: {e}")

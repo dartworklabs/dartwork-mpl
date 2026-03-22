@@ -71,14 +71,14 @@ def validate_data(
             x = x[mask]
             if y is not None:
                 y = y[mask]
-            warnings.warn(f"Removed {(~mask).sum()} NaN/Inf values from data")
+            warnings.warn(f"Removed {(~mask).sum()} NaN/Inf values from data", stacklevel=2)
 
         if y is not None:
             if np.any(np.isnan(y)) or np.any(np.isinf(y)):
                 mask = ~(np.isnan(y) | np.isinf(y))
                 x = x[mask]
                 y = y[mask]
-                warnings.warn(f"Removed {(~mask).sum()} NaN/Inf values from data")
+                warnings.warn(f"Removed {(~mask).sum()} NaN/Inf values from data", stacklevel=2)
 
     # Final check
     if len(x) < min_points:

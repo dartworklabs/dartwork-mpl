@@ -263,7 +263,7 @@ class TestCheckPieLabelOffset:
             labels=["A", "B", "C", "D"],
             autopct="%.0f%%",
             pctdistance=0.6,
-            wedgeprops=dict(width=0.4),
+            wedgeprops={"width": 0.4},
         )
         warnings = validate_figure(
             fig, checks=("PIE_LABEL_OFFSET",), quiet=True
@@ -282,7 +282,7 @@ class TestCheckPieLabelOffset:
             labels=["A", "B", "C", "D"],
             autopct="%.0f%%",
             pctdistance=ideal_pct,
-            wedgeprops=dict(width=width),
+            wedgeprops={"width": width},
         )
         warnings = validate_figure(
             fig, checks=("PIE_LABEL_OFFSET",), quiet=True
@@ -309,7 +309,7 @@ class TestCheckPieLabelOffset:
     def test_donut_no_autopct(self) -> None:
         """Donut without autopct should not trigger label offset check."""
         fig, ax = plt.subplots(figsize=(4, 4))
-        ax.pie([40, 30, 20, 10], wedgeprops=dict(width=0.4))
+        ax.pie([40, 30, 20, 10], wedgeprops={"width": 0.4})
         warnings = validate_figure(
             fig, checks=("PIE_LABEL_OFFSET",), quiet=True
         )
@@ -324,7 +324,7 @@ class TestCheckPieLabelOffset:
             [50, 30, 20],
             autopct="%.0f%%",
             pctdistance=1.0 - width / 2.0,
-            wedgeprops=dict(width=width),
+            wedgeprops={"width": width},
         )
         warnings = validate_figure(
             fig, checks=("PIE_LABEL_OFFSET",), quiet=True
@@ -339,7 +339,7 @@ class TestCheckPieLabelOffset:
             [50, 30, 20],
             autopct="%.0f%%",
             pctdistance=0.4,  # ideal = 0.65
-            wedgeprops=dict(width=0.7),
+            wedgeprops={"width": 0.7},
         )
         warnings = validate_figure(
             fig, checks=("PIE_LABEL_OFFSET",), quiet=True
@@ -355,7 +355,7 @@ class TestCheckPieLabelOffset:
             sizes,
             autopct="%.0f%%",
             pctdistance=0.5,
-            wedgeprops=dict(width=0.35),
+            wedgeprops={"width": 0.35},
         )
         warnings = validate_figure(
             fig, checks=("PIE_LABEL_OFFSET",), quiet=True

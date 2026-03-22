@@ -8,8 +8,8 @@ code linting, and data validation.
 import json
 import re
 
-from fastmcp import FastMCP
 import matplotlib.colors as mcolors
+from fastmcp import FastMCP
 
 __all__ = ["register_tools"]
 
@@ -118,7 +118,7 @@ def register_tools(mcp: FastMCP) -> None:
         try:
             c1 = mcolors.to_rgb(color1)
             c2 = mcolors.to_rgb(color2)
-            blended = tuple(ratio * a + (1 - ratio) * b for a, b in zip(c1, c2))
+            blended = tuple(ratio * a + (1 - ratio) * b for a, b in zip(c1, c2, strict=False))
             return mcolors.to_hex(blended)
         except Exception as e:
             return f"Error blending colors: {e}"

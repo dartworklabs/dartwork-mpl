@@ -275,7 +275,7 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
                 ext = txt.get_window_extent(renderer)
             except Exception:
                 continue
-                
+
             overflow["left"] = max(overflow["left"], fig_bbox.x0 - ext.x0)
             overflow["right"] = max(overflow["right"], ext.x1 - fig_bbox.x1)
             overflow["bottom"] = max(overflow["bottom"], fig_bbox.y0 - ext.y0)
@@ -285,7 +285,7 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
         for axis in (ax.xaxis, ax.yaxis):
             vmin, vmax = axis.get_view_interval()
             tol = (vmax - vmin) * 1e-5
-            
+
             for tick in axis.get_ticklabels():
                 if not tick.get_visible() or not tick.get_text().strip():
                     continue
@@ -294,13 +294,13 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
                     pos = tick.get_position()
                 except Exception:
                     continue
-                
-                # Ignore ticks that are outside the view limits 
+
+                # Ignore ticks that are outside the view limits
                 # (e.g., auto-generated ticks outside manually set ylim)
                 val = pos[0] if axis == ax.xaxis else pos[1]
                 if val < vmin - tol or val > vmax + tol:
                     continue
-                
+
                 overflow["left"] = max(overflow["left"], fig_bbox.x0 - ext.x0)
                 overflow["right"] = max(overflow["right"], ext.x1 - fig_bbox.x1)
                 overflow["bottom"] = max(overflow["bottom"], fig_bbox.y0 - ext.y0)
@@ -360,7 +360,7 @@ def auto_layout(
     SIDE_MAP = {"left": 0, "right": 1, "bottom": 2, "top": 3}
 
     # Track per-side consecutive overflow count for escalation
-    consec: dict[str, int] = {s: 0 for s in SIDE_MAP}
+    consec: dict[str, int] = dict.fromkeys(SIDE_MAP, 0)
 
     for iteration in range(max_iter):
         # Apply layout with current margins

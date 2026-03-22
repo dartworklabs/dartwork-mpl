@@ -7,8 +7,12 @@ import matplotlib.pyplot as plt
 
 matplotlib.use("Agg")
 
-from dartwork_mpl.layout import get_bounding_box, simple_layout
-from dartwork_mpl.layout import auto_layout, _measure_overflow
+from dartwork_mpl.layout import (
+    _measure_overflow,
+    auto_layout,
+    get_bounding_box,
+    simple_layout,
+)
 
 
 class TestGetBoundingBox:

@@ -13,8 +13,6 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from .style import style
-
 
 def subplots(
     nrows: int = 1,

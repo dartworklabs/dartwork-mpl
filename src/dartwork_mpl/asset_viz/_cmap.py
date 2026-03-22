@@ -115,7 +115,7 @@ def classify_colormap(cmap: Colormap) -> str:
     """
     if hasattr(cmap, "name") and cmap.name in _CLASSIFICATION_OVERRIDES:
         return _CLASSIFICATION_OVERRIDES[cmap.name]
-        
+
     n_samples = 256
     samples = cmap(np.linspace(0, 1, n_samples))[:, :3]
 

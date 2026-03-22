@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import matplotlib as mpl
-import pytest
 import matplotlib.pyplot as plt
+import pytest
 
 from dartwork_mpl.cmap import _parse_colormap, ensure_loaded
 

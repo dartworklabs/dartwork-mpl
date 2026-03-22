@@ -5,11 +5,11 @@ color palettes, fonts, styles, and plot templates
 through the Model Context Protocol.
 """
 
+import json
 from pathlib import Path
 
-from fastmcp import FastMCP
-import json
 import matplotlib.colors as mcolors
+from fastmcp import FastMCP
 from matplotlib import font_manager
 
 from ..util import get_prompt
@@ -62,7 +62,7 @@ def register_resources(mcp: FastMCP) -> None:
     @mcp.resource("dartwork-mpl://palette/fonts")
     def palette_fonts() -> str:
         """Get a sorted list of all fonts available to matplotlib."""
-        fonts = sorted(list({f.name for f in font_manager.fontManager.ttflist}))
+        fonts = sorted({f.name for f in font_manager.fontManager.ttflist})
         return json.dumps(fonts, indent=2)
 
     # ── Style Preset Resources ───────────────────────────────────────

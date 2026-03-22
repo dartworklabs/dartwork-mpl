@@ -7,9 +7,9 @@ Context Protocol.
 
 from fastmcp import FastMCP
 
+from .prompts import register_prompts
 from .resources import register_resources
 from .tools import register_tools
-from .prompts import register_prompts
 
 __all__ = ["mcp"]
 

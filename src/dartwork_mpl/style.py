@@ -6,8 +6,8 @@ matplotlib styles from the package's built-in style library.
 
 import contextlib
 import json
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 import matplotlib.pyplot as plt
 
@@ -258,7 +258,7 @@ class Style:
         style_list: list[Path | dict[str, float | str]] = [
             style_path(style_name) for style_name in self.presets[preset_name]
         ]
-        
+
         if kwargs:
             overrides: dict[str, float | str] = {}
             for k, v in kwargs.items():
