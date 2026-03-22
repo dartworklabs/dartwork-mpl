@@ -40,10 +40,24 @@ Example
 API
 ---
 
+Layout Functions
+^^^^^^^^^^^^^^^^
+
 .. autofunction:: dartwork_mpl.cm2in
 .. autofunction:: dartwork_mpl.simple_layout
+.. autofunction:: dartwork_mpl.auto_layout
+.. autofunction:: dartwork_mpl.set_xmargin
+.. autofunction:: dartwork_mpl.set_ymargin
+
+Annotation Functions
+^^^^^^^^^^^^^^^^^^^^
+
 .. autofunction:: dartwork_mpl.make_offset
 .. autofunction:: dartwork_mpl.label_axes
 .. autofunction:: dartwork_mpl.arrow_axis
+
+Utility Functions
+^^^^^^^^^^^^^^^^^
+
 .. autofunction:: dartwork_mpl.layout.get_bounding_box
-.. autofunction:: dartwork_mpl.util.set_decimal
+.. autofunction:: dartwork_mpl.set_decimal

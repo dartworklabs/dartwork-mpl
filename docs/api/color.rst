@@ -37,6 +37,9 @@ Example
 API
 ---
 
+Color Manipulation
+^^^^^^^^^^^^^^^^^^
+
 .. automodule:: dartwork_mpl.color
    :members:
    :undoc-members:
@@ -50,3 +53,22 @@ API
 
 .. autofunction:: dartwork_mpl.mix_colors
 .. autofunction:: dartwork_mpl.pseudo_alpha
+
+Color Interpolation
+^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: dartwork_mpl.cspace
+
+Palette Discovery
+^^^^^^^^^^^^^^^^^
+
+.. autofunction:: dartwork_mpl.list_palettes
+.. autofunction:: dartwork_mpl.list_colormaps
+.. autofunction:: dartwork_mpl.show_palette
+
+Visualization Tools
+^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: dartwork_mpl.plot_colors
+.. autofunction:: dartwork_mpl.plot_colormaps
+.. autofunction:: dartwork_mpl.classify_colormap
