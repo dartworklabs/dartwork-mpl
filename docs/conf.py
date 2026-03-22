@@ -14,7 +14,8 @@ Image.MAX_IMAGE_PIXELS = 300_000_000
 sys.path.insert(0, os.path.abspath("../src"))
 sys.path.insert(0, str(Path(__file__).parent.resolve()))
 
-import warnings
+import warnings  # noqa: E402
+
 warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
 warnings.filterwarnings("ignore", category=UserWarning, module="dartwork_mpl")
 
@@ -45,30 +46,32 @@ extensions = [
 autodoc_mock_imports = ["pydantic", "fastapi"]
 
 nitpick_ignore_regex = [
-    (r'py:.*', r'optional'),
-    (r'py:.*', r'colour'),
-    (r'py:.*', r'dartwork_mpl\.color\._views\..*'),
-    (r'py:.*', r'matplotlib\..*'),
-    (r'py:.*', r'numpy\..*'),
-    (r'py:.*', r'np\..*'),
-    (r'py:.*', r'scipy\..*'),
-    (r'py:.*', r'pathlib\..*'),
-    (r'py:.*', r'Path'),
-    (r'py:.*', r'Figure'),
-    (r'py:.*', r'Axes'),
-    (r'py:.*', r'GridSpec'),
-    (r'py:.*', r'OptimizeResult'),
-    (r'py:.*', r'ndarray'),
-    (r'py:.*', r'Colormap'),
-    (r'py:.*', r'FontProperties'),
-    (r'py:.*', r"'auto'"),
-    (r'py:.*', r"\{'x'"),
-    (r'py:.*', r"'y'\}"),
-    (r'py:.*', r'dartwork_mpl\.style\.use'),
-    (r'py:.*', r'Bbox'),
-    (r'py:.*', r'VisualWarning'),
-    (r'py:.*', r'pydantic\..*'),
-    (r'py:.*', r'BaseModel'),
+    (r"py:.*", r"optional"),
+    (r"py:.*", r"colour"),
+    (r"py:.*", r"dartwork_mpl\.color\._views\..*"),
+    (r"py:.*", r"matplotlib\..*"),
+    (r"py:.*", r"numpy\..*"),
+    (r"py:.*", r"np\..*"),
+    (r"py:.*", r"scipy\..*"),
+    (r"py:.*", r"pathlib\..*"),
+    (r"py:.*", r"Path"),
+    (r"py:.*", r"Figure"),
+    (r"py:.*", r"Axes"),
+    (r"py:.*", r"GridSpec"),
+    (r"py:.*", r".*SubplotSpec.*"),
+    (r"py:.*", r"OptimizeResult"),
+    (r"py:.*", r"ndarray"),
+    (r"py:.*", r"Colormap"),
+    (r"py:.*", r"FontProperties"),
+    (r"py:.*", r"'auto'"),
+    (r"py:.*", r"\{'x'"),
+    (r"py:.*", r"'y'\}"),
+    (r"py:.*", r"dartwork_mpl\.style\.use"),
+    (r"py:.*", r"Bbox"),
+    (r"py:.*", r"collections\.abc\.Iterator"),
+    (r"py:.*", r".*VisualWarning.*"),
+    (r"py:.*", r"pydantic\..*"),
+    (r"py:.*", r"BaseModel"),
 ]
 
 templates_path = ["_templates"]
@@ -112,7 +115,10 @@ html_theme_options = {
         {"title": "API Reference", "url": "api/index"},
         {"title": "Design Philosophy", "url": "philosophy/index"},
         {"title": "AI Integration", "url": "integrations/index"},
-        {"title": "Changelog", "url": "https://github.com/dartwork-repo/dartwork-mpl/blob/main/CHANGELOG.md"},
+        {
+            "title": "Changelog",
+            "url": "https://github.com/dartwork-repo/dartwork-mpl/blob/main/CHANGELOG.md",
+        },
     ],
 }
 

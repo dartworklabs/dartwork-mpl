@@ -11,64 +11,89 @@ without complex shader logic.
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 import dartwork_mpl as dm
 
 # Use dark_background + dartwork-mpl's precise presentation sizing
-with plt.style.context('dark_background'):
-    dm.style.use('presentation')
-    
+with plt.style.context("dark_background"):
+    dm.style.use("presentation")
+
     # Generate synthetic clustered data
     np.random.seed(42)
     n_samples = 400
-    
+
     centers = [[0, 0], [4, 3], [-2, 5]]
     covs = [
         [[1.5, 0.4], [0.4, 0.8]],
         [[0.6, -0.3], [-0.3, 0.5]],
-        [[1.2, 0.8], [0.8, 1.8]]
+        [[1.2, 0.8], [0.8, 1.8]],
     ]
-    
-    cluster_colors = ['oc.lime5', 'oc.pink5', 'oc.cyan5']
-    
+
+    cluster_colors = ["oc.lime5", "oc.pink5", "oc.cyan5"]
+
     fig, ax = plt.subplots(figsize=(dm.SW * 1.5, dm.SW * 1.5))
-    fig.patch.set_facecolor('#111111')
-    ax.set_facecolor('#111111')
-    
+    fig.patch.set_facecolor("#111111")
+    ax.set_facecolor("#111111")
+
     # We create a "glow" effect by plotting the same points multiple times
     # with increasing size and decreasing opacity (alpha)
     glow_layers = [
-        (dm.fs(3) ** 2, 0.03),   # Large faint glow
+        (dm.fs(3) ** 2, 0.03),  # Large faint glow
         (dm.fs(1.5) ** 2, 0.1),  # Medium glow
-        (dm.fs(-1) ** 2, 0.4),   # Inner core
-        (dm.fs(-3) ** 2, 0.9)    # Bright center pin
+        (dm.fs(-1) ** 2, 0.4),  # Inner core
+        (dm.fs(-3) ** 2, 0.9),  # Bright center pin
     ]
-    
-    for i, (center, cov, color_name) in enumerate(zip(centers, covs, cluster_colors)):
+
+    for i, (center, cov, color_name) in enumerate(
+        zip(centers, covs, cluster_colors, strict=False)
+    ):
         points = np.random.multivariate_normal(center, cov, n_samples)
         x, y = points[:, 0], points[:, 1]
-        
+
         core_hex = dm.named(color_name).to_hex()
-        
+
         for s, alpha in glow_layers:
-            ax.scatter(x, y, s=s, color=core_hex, alpha=alpha, 
-                       edgecolors='none', zorder=2)
-            
+            ax.scatter(
+                x,
+                y,
+                s=s,
+                color=core_hex,
+                alpha=alpha,
+                edgecolors="none",
+                zorder=2,
+            )
+
         # Add a subtle label near the center
-        ax.annotate(f"Cluster {i}", xy=center, xytext=(0, -25), 
-                    textcoords='offset points', ha='center',
-                    fontsize=dm.fs(0), weight='bold', color='white',
-                    bbox=dict(boxstyle='round,pad=0.2', fc='black', ec='none', alpha=0.6))
+        ax.annotate(
+            f"Cluster {i}",
+            xy=center,
+            xytext=(0, -25),
+            textcoords="offset points",
+            ha="center",
+            fontsize=dm.fs(0),
+            weight="bold",
+            color="white",
+            bbox={
+                "boxstyle": "round,pad=0.2", "fc": "black", "ec": "none", "alpha": 0.6
+            },
+        )
 
     # Tweak aesthetics for the dark theme
-    ax.grid(True, color='white', alpha=0.1, zorder=0)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['bottom'].set_color('#444444')
-    ax.spines['left'].set_color('#444444')
-    ax.tick_params(colors='#888888')
-    
-    ax.set_title("t-SNE Embedding\nLatent Space Distribution", 
-                 color='white', fontsize=dm.fs(1.5), weight='bold', pad=20, ha='center')
-    
+    ax.grid(True, color="white", alpha=0.1, zorder=0)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_color("#444444")
+    ax.spines["left"].set_color("#444444")
+    ax.tick_params(colors="#888888")
+
+    ax.set_title(
+        "t-SNE Embedding\nLatent Space Distribution",
+        color="white",
+        fontsize=dm.fs(1.5),
+        weight="bold",
+        pad=20,
+        ha="center",
+    )
+
     dm.simple_layout(fig)
 plt.show()

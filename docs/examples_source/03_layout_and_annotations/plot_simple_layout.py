@@ -10,16 +10,19 @@ or y-axis labels are very wide.
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 import dartwork_mpl as dm
 
-dm.style.use('scientific')
+dm.style.use("scientific")
 
 fig, ax = plt.subplots(figsize=(dm.SW, dm.SW * 0.7))
 
 x = np.linspace(0, 10, 100)
-ax.plot(x, np.sin(x) * 10000, color='tw.blue500', lw=dm.lw(1))
+ax.plot(x, np.sin(x) * 10000, color="tw.blue500", lw=dm.lw(1))
 
-ax.set_title("A Very Long and Descriptive Title\nThat Spans Multiple Lines to Test\nMargin Calculations Thoroughly")
+ax.set_title(
+    "A Very Long and Descriptive Title\nThat Spans Multiple Lines to Test\nMargin Calculations Thoroughly"
+)
 ax.set_xlabel("Time Axis Label (with unit)")
 ax.set_ylabel("Extremely Large Amplitude (units)")
 

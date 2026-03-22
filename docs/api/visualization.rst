@@ -22,6 +22,9 @@ API
 ---
 
 .. autofunction:: dartwork_mpl.plot_colormaps
+   :no-index:
 .. autofunction:: dartwork_mpl.plot_colors
+   :no-index:
 .. autofunction:: dartwork_mpl.plot_fonts
 .. autofunction:: dartwork_mpl.classify_colormap
+   :no-index:

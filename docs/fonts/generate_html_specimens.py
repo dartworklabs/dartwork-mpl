@@ -149,7 +149,8 @@ def generate_family_html(family: str, fonts: list[str]) -> str:
     meta = FONT_META.get(family, {})
     desc = meta.get("description", "")
     sample = meta.get(
-        "sample", "The dartwork designs beautiful data artworks since 2021. 0123456789"
+        "sample",
+        "The dartwork designs beautiful data artworks since 2021. 0123456789",
     )
 
     # Exclude italic variants — show only upright weights
@@ -259,9 +260,7 @@ def generate_condensed_comparison_html(families: dict[str, list[str]]) -> str:
         ("NotoSans_ExtraCondensed", "Extra Condensed"),
     ]
 
-    sample = (
-        "The dartwork designs beautiful data artworks since 2021."
-    )
+    sample = "The dartwork designs beautiful data artworks since 2021."
 
     rows = []
     for family_key, display_name in condensed_families:

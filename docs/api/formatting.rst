@@ -350,4 +350,3 @@ See Also
 
 - :doc:`helpers` - AI helper utilities including formatting
 - :doc:`../usage_guide/quickstart` - Getting started guide
-- :doc:`../examples_source/02_formatting/plot_axis_formatting` - Formatting examples

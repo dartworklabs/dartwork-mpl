@@ -9,9 +9,10 @@ instead of naively inverting all colors.
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 import dartwork_mpl as dm
 
-dm.style.use('dark')
+dm.style.use("dark")
 
 fig, ax = plt.subplots(figsize=(dm.SW, dm.SW * 0.7))
 
@@ -19,7 +20,7 @@ np.random.seed(42)
 x = np.random.randn(300)
 y = x + np.random.randn(300) * 0.6
 
-ax.scatter(x, y, color='oc.violet6', alpha=0.7, edgecolor='none', s=15)
+ax.scatter(x, y, color="oc.violet6", alpha=0.7, edgecolor="none", s=15)
 
 ax.set_title("Latent Space Distribution")
 ax.set_xlabel("Principal Component 1")

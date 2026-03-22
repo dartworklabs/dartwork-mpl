@@ -10,10 +10,11 @@ or multi-line titles that might extend beyond figure boundaries.
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 import dartwork_mpl as dm
 
 # Apply scientific style for consistent formatting
-dm.style.use('scientific')
+dm.style.use("scientific")
 
 # Create figure with potentially problematic layout
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(dm.cm2in(16), dm.cm2in(8)))
@@ -24,15 +25,19 @@ y1 = np.sin(x) + 0.1 * np.random.randn(100)
 y2 = np.cos(x) + 0.1 * np.random.randn(100)
 
 # Left plot with very long labels that would typically overflow
-ax1.plot(x, y1, color='oc.blue5', lw=dm.lw(1))
-ax1.set_title("Panel A: Demonstration of\nMulti-Line Title with Potential Overflow\nThird Line for Extra Challenge",
-              fontsize=dm.fs(1))
-ax1.set_ylabel("Extremely Long Y-Axis Label\nThat Spans Multiple Lines\n(Units: km/h)",
-               fontsize=dm.fs(0))
+ax1.plot(x, y1, color="oc.blue5", lw=dm.lw(1))
+ax1.set_title(
+    "Panel A: Demonstration of\nMulti-Line Title with Potential Overflow\nThird Line for Extra Challenge",
+    fontsize=dm.fs(1),
+)
+ax1.set_ylabel(
+    "Extremely Long Y-Axis Label\nThat Spans Multiple Lines\n(Units: km/h)",
+    fontsize=dm.fs(0),
+)
 ax1.set_xlabel("Time [seconds]", fontsize=dm.fs(0))
 
 # Right plot with normal labels for comparison
-ax2.plot(x, y2, color='oc.red5', lw=dm.lw(1))
+ax2.plot(x, y2, color="oc.red5", lw=dm.lw(1))
 ax2.set_title("Panel B: Normal Title", fontsize=dm.fs(1))
 ax2.set_ylabel("Value", fontsize=dm.fs(0))
 ax2.set_xlabel("Time [seconds]", fontsize=dm.fs(0))
@@ -63,17 +68,34 @@ fig2, (ax3, ax4) = plt.subplots(1, 2, figsize=(dm.cm2in(16), dm.cm2in(8)))
 
 # Create identical plots
 for ax in [ax3, ax4]:
-    ax.plot(x, y1, color='oc.green5', lw=dm.lw(1))
-    ax.set_title("Complex Title with\nMultiple Lines\nThat Might Overflow",
-                 fontsize=dm.fs(1))
-    ax.set_ylabel("Long Y-Axis Label\nWith Units\n(measurement)",
-                  fontsize=dm.fs(0))
+    ax.plot(x, y1, color="oc.green5", lw=dm.lw(1))
+    ax.set_title(
+        "Complex Title with\nMultiple Lines\nThat Might Overflow",
+        fontsize=dm.fs(1),
+    )
+    ax.set_ylabel(
+        "Long Y-Axis Label\nWith Units\n(measurement)", fontsize=dm.fs(0)
+    )
     ax.set_xlabel("X-Axis Label", fontsize=dm.fs(0))
 
-ax3.text(0.5, 1.15, "simple_layout()", transform=ax3.transAxes,
-         ha='center', fontsize=dm.fs(2), weight='bold')
-ax4.text(0.5, 1.15, "auto_layout()", transform=ax4.transAxes,
-         ha='center', fontsize=dm.fs(2), weight='bold')
+ax3.text(
+    0.5,
+    1.15,
+    "simple_layout()",
+    transform=ax3.transAxes,
+    ha="center",
+    fontsize=dm.fs(2),
+    weight="bold",
+)
+ax4.text(
+    0.5,
+    1.15,
+    "auto_layout()",
+    transform=ax4.transAxes,
+    ha="center",
+    fontsize=dm.fs(2),
+    weight="bold",
+)
 
 # Apply auto_layout for the full figure
 dm.auto_layout(fig2)
@@ -95,18 +117,26 @@ for i in range(3):
 
         # Generate random data
         data = np.random.randn(50).cumsum()
-        ax.plot(data, color=f'oc.{["blue", "red", "green"][j]}{4+i}', lw=dm.lw(0.8))
+        ax.plot(
+            data,
+            color=f"oc.{['blue', 'red', 'green'][j]}{4 + i}",
+            lw=dm.lw(0.8),
+        )
 
         # Vary label complexity
         if i == 0 and j == 0:
-            ax.set_ylabel("Very Long Label\nWith Multiple\nLines of Text\n(Complex Units)")
-            ax.set_title("Panel with Extremely Long Title\nThat Would Normally Overflow")
+            ax.set_ylabel(
+                "Very Long Label\nWith Multiple\nLines of Text\n(Complex Units)"
+            )
+            ax.set_title(
+                "Panel with Extremely Long Title\nThat Would Normally Overflow"
+            )
         elif i == 1 and j == 1:
             ax.set_ylabel("Medium Label\n(units)")
             ax.set_title("Moderate Title")
         else:
             ax.set_ylabel("Value")
-            ax.set_title(f"Panel {i*3 + j + 1}")
+            ax.set_title(f"Panel {i * 3 + j + 1}")
 
         ax.set_xlabel("Time" if i == 2 else "")
 
@@ -116,9 +146,9 @@ dm.label_axes(axes)
 # Apply auto layout with custom parameters
 dm.auto_layout(
     fig3,
-    padding=0.08,      # Minimum padding around text (in inches)
-    max_iter=10,       # Maximum iterations to prevent infinite loops
-    verbose=False      # Set to True to see convergence details
+    padding=0.08,  # Minimum padding around text (in inches)
+    max_iter=10,  # Maximum iterations to prevent infinite loops
+    verbose=False,  # Set to True to see convergence details
 )
 
 plt.suptitle("Dashboard with Auto Layout", fontsize=dm.fs(3), y=1.02)

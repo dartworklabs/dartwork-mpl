@@ -69,6 +69,7 @@ def _prepare_images_dir(base_dir: Path | None = None) -> Path:
 def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
     """Bucket colormaps by category."""
     from dartwork_mpl.cmap import ensure_loaded as cmap_ensure_loaded
+
     cmap_ensure_loaded()
     cmap_list: Iterable[str] = (
         name
@@ -276,19 +277,22 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
     for i, library_key in enumerate(COLOR_LIBRARY_ORDER):
         label = COLOR_LIBRARY_LABELS.get(library_key, library_key)
         # Tab
-        tabs_html.append(f'    <button class="dm-pc-tab dm-pe-tab" data-preset="{library_key}">{label}</button>')
+        tabs_html.append(
+            f'    <button class="dm-pc-tab dm-pe-tab" data-preset="{library_key}">{label}</button>'
+        )
         # Panel content - read from the file we just wrote
         sheet_path = images_dir / f"colors_{library_key}.html"
         if sheet_path.exists():
             content = sheet_path.read_text(encoding="utf-8")
             display_style = "block" if i == 0 else "none"
-            panels_html.append(f'    <div class="dm-pe-panel" data-preset="{library_key}" style="display: {display_style};">')
+            panels_html.append(
+                f'    <div class="dm-pe-panel" data-preset="{library_key}" style="display: {display_style};">'
+            )
             panels_html.append(content)
-            panels_html.append('    </div>')
+            panels_html.append("    </div>")
 
     pe_html = _PE_TEMPLATE.format(
-        tabs_html="\n".join(tabs_html),
-        panels_html="\n".join(panels_html)
+        tabs_html="\n".join(tabs_html), panels_html="\n".join(panels_html)
     )
     pe_path = images_dir / "palette_explorer.html"
     pe_path.write_text(pe_html, encoding="utf-8")
@@ -301,9 +305,9 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
     """Generate HTML fragment files for each colormap category."""
     categories = _collect_colormaps()
     n_samples = 32  # gradient stops
-    
+
     paths: list[Path] = []
-    
+
     import textwrap  # noqa: E402
 
     _CE_TEMPLATE = textwrap.dedent("""\
@@ -391,10 +395,10 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
 
     tabs_html = []
     panels_html = []
-    
+
     # We include Categorical now because we have dc.bold, dc.muted, dc.pastel
     display_categories = CATEGORY_ORDER
-    
+
     display_categories = CATEGORY_ORDER
 
     for i, category in enumerate(display_categories):
@@ -404,27 +408,27 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
 
         blurb = CATEGORY_BLURBS.get(category, "")
         html_parts = ['<div class="dm-cmap-panel">']
-        
+
         switch_html = (
             '<div style="display: flex; background: #e2e8f0; border-radius: 4px; padding: 2px; user-select: none;" class="dm-mono-seg">'
             '<div style="border-radius: 3px; padding: 2px 10px; font-size: 0.75em; font-weight: 600; cursor: pointer; background: #fff; color: #0f172a; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.2s;" class="dm-seg-color">Color</div>'
             '<div style="border-radius: 3px; padding: 2px 10px; font-size: 0.75em; font-weight: 600; cursor: pointer; background: transparent; color: #64748b; transition: all 0.2s;" class="dm-seg-mono">Mono</div>'
-            '</div>'
+            "</div>"
         )
 
         html_parts.append(
             '<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px;">'
             f'<div class="dm-cmap-panel-title" style="margin: 0;">{category}</div>'
-            f'{switch_html}'
-            '</div>'
+            f"{switch_html}"
+            "</div>"
         )
         if blurb:
             html_parts.append(f'<div class="dm-cmap-panel-desc">{blurb}</div>')
         html_parts.append('<div class="dm-cmap-grid">')
 
         for cmap in cmaps:
-            is_categorical = hasattr(cmap, 'colors') and len(cmap.colors) < 15
-            
+            is_categorical = hasattr(cmap, "colors") and len(cmap.colors) < 15
+
             if is_categorical:
                 # render sharp discrete blocks
                 stops = []
@@ -462,22 +466,25 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
         path = images_dir / f"colormaps_{slug}.html"
         path.write_text("\n".join(html_parts), encoding="utf-8")
         paths.append(path)
-        
+
         # Add to tabbed explorer
-        tabs_html.append(f'    <button class="dm-pc-tab dm-ce-tab" data-preset="{slug}">{category}</button>')
+        tabs_html.append(
+            f'    <button class="dm-pc-tab dm-ce-tab" data-preset="{slug}">{category}</button>'
+        )
         display_style = "block" if i == 0 else "none"
-        panels_html.append(f'    <div class="dm-ce-panel dm-pe-panel" data-preset="{slug}" style="display: {display_style};">')
+        panels_html.append(
+            f'    <div class="dm-ce-panel dm-pe-panel" data-preset="{slug}" style="display: {display_style};">'
+        )
         panels_html.append("\n".join(html_parts))
-        panels_html.append('    </div>')
-        
+        panels_html.append("    </div>")
+
     ce_html = _CE_TEMPLATE.format(
-        tabs_html="\n".join(tabs_html),
-        panels_html="\n".join(panels_html)
+        tabs_html="\n".join(tabs_html), panels_html="\n".join(panels_html)
     )
     ce_path = images_dir / "colormap_explorer.html"
     ce_path.write_text(ce_html, encoding="utf-8")
     paths.append(ce_path)
-    
+
     return paths
 
 

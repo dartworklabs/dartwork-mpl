@@ -113,6 +113,7 @@ Usage Guide <usage_guide/index>
 Color System <color_system/index>
 Fonts <fonts/index>
 Examples Gallery <examples_gallery/index>
+Migration Guide <migration>
 API Reference <api/index>
 Design Philosophy <philosophy/index>
 AI Integration <integrations/index>

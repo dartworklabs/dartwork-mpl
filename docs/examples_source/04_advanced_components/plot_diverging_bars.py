@@ -1,6 +1,6 @@
 """
 Diverging Bar Charts (templates)
-============================
+================================
 
 Diverging bar charts are notoriously tricky to align in standard matplotlib.
 The ``templates`` module provides ``plot_diverging_bar`` — a pre-configured,
@@ -9,14 +9,18 @@ cascading legend layout automatically.
 """
 
 import numpy as np
+
 import dartwork_mpl as dm
 from dartwork_mpl.templates import plot_diverging_bar
 
-dm.style.use('report')
+dm.style.use("report")
 
 labels = [
-    'Reliability', 'Performance', 'Usability',
-    'Design', 'Cost Efficiency',
+    "Reliability",
+    "Performance",
+    "Usability",
+    "Design",
+    "Cost Efficiency",
 ]
 negatives = np.array([-15, -30, -5, -45, -20])
 positives = np.array([80, 60, 90, 45, 70])
