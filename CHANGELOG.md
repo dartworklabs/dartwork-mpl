@@ -48,6 +48,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **CI pipeline**: GitHub Actions with lint (ruff + mypy), test (pytest + coverage), and docs (sphinx) jobs.
 - **Pre-commit hooks**: Ruff lint/format and mypy via `.pre-commit-config.yaml`.
 - **`__all__` exports**: Explicit public API for 15 modules.
+- **`auto_layout()` function**: Content-aware layout that automatically detects and fixes text overflow.
+- **`set_xmargin()` and `set_ymargin()` functions**: Set responsive axis margins based on data range.
+- **`dm.subplots()` and `dm.figure()` wrappers**: Enhanced figure creation with integrated styling.
+- **Helper utilities**: AI-focused utilities for data validation, color selection, formatting, and quality checks.
+
+### Changed
+
+- **Module renames for clarity**:
+  - `agent_utils` → `helpers`: Better reflects general-purpose utility nature
+  - `xplot` → `templates`: More descriptive of ready-to-use visualization templates
+
+### Deprecated
+
+- **`agent_utils` module**: Renamed to `helpers`. Import `dartwork_mpl.helpers` instead. Backward-compatible alias provided with deprecation warning.
+- **`xplot` module**: Renamed to `templates`. Import `dartwork_mpl.templates` instead. Old name available as alias with deprecation warning.
 - **`xplot` re-export**: `plot_diverging_bar` accessible via `dm.plot_diverging_bar()`.
 - **`USAGE_GUIDE.md` asset**: Bundled guide for LLM install command.
 - **Test coverage**: 228 tests, 91% line coverage.
