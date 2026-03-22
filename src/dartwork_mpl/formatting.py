@@ -93,6 +93,20 @@ def format_axis_millions(
     >>> format_axis_millions(ax)  # Show as 1.5M instead of 1500000
     """
     def millions_formatter(x, pos):
+        """Internal formatter function for millions scale.
+
+        Parameters
+        ----------
+        x : float
+            The tick value to format
+        pos : int
+            The tick position (unused but required by matplotlib)
+
+        Returns
+        -------
+        str
+            Formatted string with millions suffix
+        """
         if x == 0:
             return "0"
         return f"{x/1e6:.{decimals}f}{suffix}"
@@ -129,6 +143,20 @@ def format_axis_billions(
     >>> format_axis_billions(ax)  # Show as 1.5B instead of 1500000000
     """
     def billions_formatter(x, pos):
+        """Internal formatter function for billions scale.
+
+        Parameters
+        ----------
+        x : float
+            The tick value to format
+        pos : int
+            The tick position (unused but required by matplotlib)
+
+        Returns
+        -------
+        str
+            Formatted string with billions suffix
+        """
         if x == 0:
             return "0"
         return f"{x/1e9:.{decimals}f}{suffix}"
@@ -169,6 +197,20 @@ def format_axis_currency(
     >>> format_axis_currency(ax, symbol="€", position="suffix")  # Format as 1,000€
     """
     def currency_formatter(x, pos):
+        """Internal formatter function for currency values.
+
+        Parameters
+        ----------
+        x : float
+            The tick value to format
+        pos : int
+            The tick position (unused but required by matplotlib)
+
+        Returns
+        -------
+        str
+            Formatted string with currency symbol
+        """
         formatted = f"{x:,.{decimals}f}"
         if position == "prefix":
             return f"{symbol}{formatted}"
@@ -204,6 +246,20 @@ def format_axis_si(
     >>> format_axis_si(ax)  # Show as 1.5k, 2.3M, etc.
     """
     def si_formatter(x, pos):
+        """Internal formatter function for SI prefix notation.
+
+        Parameters
+        ----------
+        x : float
+            The tick value to format
+        pos : int
+            The tick position (unused but required by matplotlib)
+
+        Returns
+        -------
+        str
+            Formatted string with SI prefix (k, M, G, T)
+        """
         if x == 0:
             return "0"
 

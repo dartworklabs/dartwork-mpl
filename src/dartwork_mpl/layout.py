@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from matplotlib.gridspec import GridSpec
+from matplotlib.gridspec import GridSpec, SubplotSpec
 
 if TYPE_CHECKING:
     from scipy.optimize import OptimizeResult
@@ -123,7 +123,7 @@ def set_ymargin(
 
 def simple_layout(
     fig: Figure,
-    gs: GridSpec | None = None,
+    gs: GridSpec | SubplotSpec | None = None,
     margins: tuple[float, float, float, float] = (0.10, 0.10, 0.08, 0.05),
     bbox: tuple[float, float, float, float] = (0, 1, 0, 1),
     verbose: bool = False,
@@ -143,9 +143,10 @@ def simple_layout(
     ----------
     fig : Figure
         The Matplotlib Figure to apply the layout to.
-    gs : GridSpec | None, optional
-        GridSpec to optimize. If None, defaults to the GridSpec of
-        ``fig.axes[0]``.
+    gs : GridSpec | SubplotSpec | None, optional
+        GridSpec or SubplotSpec to optimize. If None, defaults to the GridSpec of
+        ``fig.axes[0]``. If a SubplotSpec is provided, its parent GridSpec
+        will be used.
     margins : tuple[float, float, float, float], optional
         Margins in inches (left, right, bottom, top). Default is
         (0.15, 0.05, 0.05, 0.05).
@@ -171,12 +172,31 @@ def simple_layout(
     OptimizeResult
         The scipy optimization result object.
     """
-    actual_gs: GridSpec = gs if gs is not None else fig.axes[0].get_gridspec()  # type: ignore[assignment]
+    # Handle SubplotSpec by getting its parent GridSpec
+    if gs is not None:
+        if isinstance(gs, SubplotSpec):
+            actual_gs: GridSpec = gs.get_gridspec()
+        else:
+            actual_gs = gs
+    else:
+        actual_gs = fig.axes[0].get_gridspec()  # type: ignore[assignment]
 
     _import_weights = np.array(importance_weights)
     _margins = np.array(margins) * fig.get_dpi()
 
     def fun(x: np.ndarray) -> float:
+        """Objective function for layout optimization.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            Array of [left, right, bottom, top] GridSpec parameters
+
+        Returns
+        -------
+        float
+            Loss value representing distance from target margins
+        """
         actual_gs.update(left=x[0], right=x[1], bottom=x[2], top=x[3])
 
         if use_all_axes:
