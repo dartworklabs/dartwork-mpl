@@ -75,12 +75,8 @@ ax3.text(0.5, 1.15, "simple_layout()", transform=ax3.transAxes,
 ax4.text(0.5, 1.15, "auto_layout()", transform=ax4.transAxes,
          ha='center', fontsize=dm.fs(2), weight='bold')
 
-# Apply different layout methods
-# Note: In practice you'd use one or the other, this is for comparison
-import matplotlib.gridspec as gridspec
-gs = fig2.add_gridspec(1, 2)
-dm.simple_layout(fig2, gs=gs[:, 0])  # Left subplot only
-dm.auto_layout(fig2)  # Will handle the full figure
+# Apply auto_layout for the full figure
+dm.auto_layout(fig2)
 
 # %%
 # Advanced Usage
