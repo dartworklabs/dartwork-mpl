@@ -11,6 +11,7 @@ import numpy as np
 import dartwork_mpl as dm
 from matplotlib.patches import Rectangle, Circle
 import matplotlib.patches as mpatches
+from matplotlib.colors import LinearSegmentedColormap
 
 np.random.seed(42)
 
@@ -272,10 +273,10 @@ for ax, (name, n_sources) in zip(axes.flat, patterns):
 
     # Create custom colormap
     colors_wave = dm.cspace('oc.indigo9', 'oc.cyan3', n=256, space='oklch')
-    wave_cmap = dm.color.DartworkColormap.from_colors(colors_wave, name='wave')
+    wave_cmap = LinearSegmentedColormap.from_list('wave', [c.to_hex() for c in colors_wave])
 
     # Plot interference pattern
-    im = ax.contourf(X, Y, Z, levels=20, cmap=wave_cmap.to_mpl(), alpha=0.9)
+    im = ax.contourf(X, Y, Z, levels=20, cmap=wave_cmap, alpha=0.9)
 
     # Add source points
     for sx, sy in sources:

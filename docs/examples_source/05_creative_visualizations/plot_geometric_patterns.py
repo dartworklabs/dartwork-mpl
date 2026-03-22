@@ -239,7 +239,7 @@ for i in range(-grid_size, grid_size + 1):
 
 # Color gradient from center
 max_dist = np.sqrt(2 * grid_size**2) * 2
-colors_islamic = dm.cspace('oc.indigo9', 'oc.gold5', n=100, space='oklch')
+colors_islamic = dm.cspace('oc.indigo9', 'oc.yellow5', n=100, space='oklch')
 
 # Draw stars
 for center in centers:
@@ -279,7 +279,7 @@ ax.add_patch(frame)
 
 # Inner frame
 inner_frame = Rectangle((-8, -8), 16, 16, fill=False,
-                       edgecolor='oc.gold5', linewidth=1)
+                       edgecolor='oc.yellow5', linewidth=1)
 ax.add_patch(inner_frame)
 
 # Styling
@@ -350,7 +350,7 @@ for ring_idx, (radius, n_petal, colors) in enumerate(zip(radii, n_petals, ring_c
 theta_center = np.linspace(0, 2*np.pi, 100)
 for r, alpha in [(0.3, 0.8), (0.2, 0.6), (0.1, 0.4)]:
     r_center = r * (1 + 0.2 * np.sin(6 * theta_center))
-    ax.fill(theta_center, r_center, color='oc.gold5', alpha=alpha)
+    ax.fill(theta_center, r_center, color='oc.yellow5', alpha=alpha)
 
 # Add radial lines
 for angle in np.linspace(0, 2*np.pi, 12, endpoint=False):
@@ -432,7 +432,7 @@ def draw_fractal_tree(ax, x, y, angle, length, depth, max_depth, colors):
                          depth + 1, max_depth, colors)
 
 # Create color gradient for branches
-branch_colors = dm.cspace('oc.brown8', 'oc.green6', n=10)
+branch_colors = dm.cspace('oc.orange8', 'oc.green6', n=10)
 
 # Draw multiple trees for a forest effect
 tree_positions = [(-3, -5), (0, -5), (3, -5), (-1.5, -5), (1.5, -5)]
@@ -449,7 +449,7 @@ for x_pos, y_pos in tree_positions:
 # Add ground
 ground_y = -5
 ax.fill_between([-6, 6], ground_y, ground_y - 1,
-               color='oc.brown9', alpha=0.8)
+               color='oc.orange9', alpha=0.8)
 
 # Add decorative elements
 for i in range(50):

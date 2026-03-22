@@ -11,6 +11,7 @@ import numpy as np
 import dartwork_mpl as dm
 from matplotlib.patches import FancyBboxPatch
 import matplotlib.patheffects as path_effects
+from matplotlib.colors import LinearSegmentedColormap
 
 # Set random seed for reproducibility
 np.random.seed(42)
@@ -42,12 +43,12 @@ M = np.sqrt(U**2 + V**2)
 
 # Create custom colormap using dartwork's color interpolation
 colors_flow = dm.cspace('oc.violet9', 'oc.cyan3', n=256, space='oklch')
-flow_cmap = dm.color.DartworkColormap.from_colors(colors_flow, name='flow')
+flow_cmap = LinearSegmentedColormap.from_list('flow', [c.to_hex() for c in colors_flow])
 
 # Plot streamlines with varying thickness
 strm = ax.streamplot(X, Y, U, V,
                      color=M,
-                     cmap=flow_cmap.to_mpl(),
+                     cmap=flow_cmap,
                      linewidth=2 * M / M.max(),
                      density=2,
                      arrowsize=0.8,

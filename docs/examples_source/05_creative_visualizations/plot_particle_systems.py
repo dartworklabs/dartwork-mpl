@@ -12,6 +12,7 @@ import dartwork_mpl as dm
 from matplotlib.patches import Circle, Wedge, Ellipse
 from matplotlib.collections import LineCollection
 import matplotlib.patheffects as path_effects
+from matplotlib.colors import LinearSegmentedColormap
 
 np.random.seed(42)
 
@@ -284,12 +285,12 @@ speed = np.sqrt(U_bg**2 + V_bg**2)
 
 # Create custom colormap
 colors_flow = dm.cspace('oc.indigo2', 'oc.teal6', n=256)
-flow_cmap = dm.color.DartworkColormap.from_colors(colors_flow, name='flow')
+flow_cmap = LinearSegmentedColormap.from_list('flow', [c.to_hex() for c in colors_flow])
 
 # Stream plot
 strm = ax.streamplot(X_bg, Y_bg, U_bg, V_bg,
-                     color=speed, cmap=flow_cmap.to_mpl(),
-                     linewidth=0.5, density=1, alpha=0.3)
+                     color=speed, cmap=flow_cmap,
+                     linewidth=0.5, density=1)
 
 # Draw particles and trails
 for particle in particles:
@@ -409,9 +410,9 @@ for i in range(n_filings):
 # Draw field lines
 colors_field = dm.cspace('oc.blue5', 'oc.red5', n=10)
 strm = ax.streamplot(X, Y, Bx, By,
-                     color=B_mag, cmap='dc.thermal',
+                     color=B_mag, cmap='dc.ice_fire',
                      linewidth=1, density=0.8,
-                     arrowsize=1, alpha=0.6)
+                     arrowsize=1)
 
 # Draw dipoles
 for dipole in dipoles:
