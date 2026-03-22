@@ -76,7 +76,7 @@ ax1 = axes[0, 0]
 n_categories = 5
 colors_qual = dm.helpers.colors.auto_select_colors(
     n_series=n_categories,
-    color_type='qualitative',
+    color_type='categorical',
     highlight_index=2  # Highlight third category
 )
 
@@ -87,7 +87,7 @@ for i, color in enumerate(colors_qual):
                   edgecolor='black' if i == 2 else 'none',
                   linewidth=2 if i == 2 else 0)
 
-ax1.set_title('Qualitative Colors (Category 3 Highlighted)', fontsize=dm.fs(1))
+ax1.set_title('Categorical Colors (Category 3 Highlighted)', fontsize=dm.fs(1))
 ax1.set_xlabel('Category', fontsize=dm.fs(0))
 ax1.set_ylabel('Value', fontsize=dm.fs(0))
 dm.minimal_axes(ax1)
@@ -132,21 +132,19 @@ ax4 = axes[1, 1]
 n_mixed = 8
 colors_mixed = dm.helpers.colors.auto_select_colors(
     n_series=n_mixed,
-    color_type='qualitative',
-    highlight_index=[0, 3, 7]  # Multiple highlights
+    color_type='categorical',
+    highlight_index=0  # Single highlight
 )
 
 for i, color in enumerate(colors_mixed):
     angle = i * 45
-    radius = 0.8 if i not in [0, 3, 7] else 1.0
+    radius = 0.8 if i != 0 else 1.0
     ax4.bar(angle, radius, width=40, color=color,
-           alpha=0.6 if i not in [0, 3, 7] else 1.0,
+           alpha=0.6 if i != 0 else 1.0,
            bottom=0.2)
 
-ax4.set_theta_zero_location('N')
-ax4.set_theta_direction(-1)
-ax4.set_title('Radial with Highlights', fontsize=dm.fs(1), pad=20)
-ax4.set_ylim(0, 1.2)
+ax4.set_title('Categorical with Highlight', fontsize=dm.fs(1))
+dm.minimal_axes(ax4)
 
 dm.label_axes(axes.flat)
 dm.simple_layout(fig)
@@ -169,9 +167,10 @@ ax1 = axes[0, 0]
 ax1.plot(x, y1, color='oc.blue5', lw=dm.lw(1))
 dm.helpers.formatting.format_axis_labels(
     ax1,
-    xlabel='Time (seconds)',
-    ylabel='Amplitude (mV)',
-    use_latex=False  # Set True for LaTeX rendering
+    x_label='Time',
+    y_label='Amplitude',
+    x_unit='seconds',
+    y_unit='mV',
 )
 ax1.set_title('Auto-Formatted Labels', fontsize=dm.fs(1))
 dm.minimal_axes(ax1)
@@ -183,9 +182,7 @@ ax2.plot(x, y2, color='oc.green5', label='Signal B', lw=dm.lw(1))
 ax2.fill_between(x[40:60], -0.5, 0.5, alpha=0.3, color='gray', label='Region')
 dm.helpers.formatting.optimize_legend(
     ax2,
-    loc='best',  # Automatically finds best position
-    frameon=False,
-    fontsize=dm.fs(-1)
+    preferred_loc='best',  # Automatically finds best position
 )
 ax2.set_title('Optimized Legend', fontsize=dm.fs(1))
 ax2.set_xlabel('X', fontsize=dm.fs(0))
@@ -200,10 +197,9 @@ ax3.bar(x_points, y_points, color='oc.purple5')
 dm.helpers.formatting.add_value_labels(
     ax3,
     x_points, y_points,
-    format_str="{:.1f}",
-    offset=(0, 2),  # Offset in points
+    format_str=".1f",
+    offset_y=0.02,
     fontsize=dm.fs(-1),
-    ha='center'
 )
 ax3.set_title('Value Labels on Bars', fontsize=dm.fs(1))
 ax3.set_xlabel('Category', fontsize=dm.fs(0))
@@ -217,8 +213,8 @@ y_scatter = 2 * x_scatter + np.random.randn(20) * 0.5
 ax4.scatter(x_scatter, y_scatter, c=y_scatter, cmap='dc.deep_sea', s=50)
 dm.helpers.formatting.format_axis_labels(
     ax4,
-    xlabel='Independent Variable',
-    ylabel='Dependent Variable'
+    x_label='Independent Variable',
+    y_label='Dependent Variable'
 )
 # Add trend line
 z = np.polyfit(x_scatter, y_scatter, 1)
@@ -273,17 +269,18 @@ print("=" * 50)
 
 # Different data types
 data_examples = [
-    (np.arange(5), np.random.rand(5), 'discrete', 'Categorical data'),
-    (np.linspace(0, 10, 100), np.sin(np.linspace(0, 10, 100)), 'continuous', 'Time series'),
-    (np.random.randn(100), np.random.randn(100), 'scatter', 'Correlation data'),
-    (None, np.random.rand(5), 'categorical', 'Single categorical'),
+    ('categorical', 'continuous', 5, 1, 'Categorical data'),
+    ('temporal', 'continuous', 100, 1, 'Time series'),
+    ('continuous', 'continuous', 100, 1, 'Correlation data'),
+    ('categorical', None, 5, 1, 'Single categorical'),
 ]
 
-for x_data, y_data, data_type, description in data_examples:
+for x_type, y_type, n_points, n_series, description in data_examples:
     suggestion = dm.helpers.quality.suggest_chart_type(
-        x_data=x_data,
-        y_data=y_data,
-        data_type=data_type
+        x_type=x_type,
+        y_type=y_type,
+        n_points=n_points,
+        n_series=n_series,
     )
     print(f"{description}: {suggestion}")
 
@@ -294,11 +291,12 @@ for x_data, y_data, data_type, description in data_examples:
 # Create and save figures with optimal settings.
 
 # Create figure with pre-applied style
-fig1, ax1 = dm.helpers.io.create_figure_with_style(
+fig1 = dm.helpers.io.create_figure_with_style(
     style='scientific',
     figsize=(8, 6),
     dpi=100
 )
+ax1 = fig1.add_subplot(111)
 
 # Plot data
 x = np.linspace(0, 10, 100)
@@ -360,7 +358,11 @@ def ai_create_visualization(data_dict, chart_request="auto"):
     # Step 2: Determine chart type
     print("\nStep 2: Determining chart type...")
     if chart_request == "auto":
-        chart_type = dm.helpers.quality.suggest_chart_type(x, y)
+        chart_type = dm.helpers.quality.suggest_chart_type(
+            x_type='continuous',
+            y_type='continuous',
+            n_points=len(x),
+        )
         print(f"✓ Suggested chart type: {chart_type}")
     else:
         chart_type = chart_request
@@ -369,10 +371,11 @@ def ai_create_visualization(data_dict, chart_request="auto"):
     # Step 3: Create figure with appropriate style
     print("\nStep 3: Creating figure...")
     style = 'scientific' if chart_type in ['scatter', 'line'] else 'web'
-    fig, ax = dm.helpers.io.create_figure_with_style(
+    fig = dm.helpers.io.create_figure_with_style(
         style=style,
         figsize=(10, 6)
     )
+    ax = fig.add_subplot(111)
     print(f"✓ Figure created with style: {style}")
 
     # Step 4: Auto-select colors
@@ -380,9 +383,9 @@ def ai_create_visualization(data_dict, chart_request="auto"):
     if chart_type == 'line':
         color_type = 'sequential'
     elif chart_type == 'bar':
-        color_type = 'qualitative'
+        color_type = 'categorical'
     else:
-        color_type = 'qualitative'
+        color_type = 'categorical'
 
     colors = dm.helpers.colors.auto_select_colors(
         n_series=1,
@@ -400,29 +403,29 @@ def ai_create_visualization(data_dict, chart_request="auto"):
         ax.bar(x if x is not None else range(len(y)), y, color=colors[0])
     else:
         ax.plot(x, y, 'o-', color=colors[0])
-    print(f"✓ Plot created")
+    print("✓ Plot created")
 
     # Step 6: Format and optimize
     print("\nStep 6: Formatting...")
     dm.helpers.formatting.format_axis_labels(
         ax,
-        xlabel='X Variable' if x is not None else 'Index',
-        ylabel='Y Variable'
+        x_label='X Variable' if x is not None else 'Index',
+        y_label='Y Variable'
     )
     ax.set_title('AI-Generated Visualization', fontsize=dm.fs(2))
     dm.minimal_axes(ax)
     dm.simple_layout(fig)
-    print(f"✓ Formatting applied")
+    print("✓ Formatting applied")
 
     # Step 7: Check quality
     print("\nStep 7: Quality check...")
     issues = dm.helpers.quality.check_figure_quality(fig)
     if issues:
-        print(f"⚠ Quality issues found:")
+        print("⚠ Quality issues found:")
         for issue in issues:
             print(f"  - {issue}")
     else:
-        print(f"✓ No quality issues detected")
+        print("✓ No quality issues detected")
 
     return fig, issues
 
