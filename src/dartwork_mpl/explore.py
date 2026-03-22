@@ -29,7 +29,7 @@ __all__ = [
     "classify_colormap",
     "plot_colormaps",
     "plot_colors",
-    "plot_fonts"
+    "plot_fonts",
 ]
 
 
@@ -66,7 +66,7 @@ def list_colormaps(include_reversed: bool = False) -> list[str]:
 
     Parameters
     ----------
-    include_reversed : bool, default=False
+    include_reversed : bool, optional
         Whether to include reversed colormaps (names ending with '_r').
         Default is False.
 

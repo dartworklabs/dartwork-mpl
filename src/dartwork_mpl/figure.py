@@ -39,9 +39,9 @@ def subplots(
 
     Parameters
     ----------
-    nrows : int, default: 1
+    nrows : int, optional
         Number of rows of the subplot grid.
-    ncols : int, default: 1
+    ncols : int, optional
         Number of columns of the subplot grid.
     style : str | list[str] | None, optional
         Style preset(s) to apply. Can be a single style name or a list
@@ -53,11 +53,11 @@ def subplots(
     dpi : int | None, optional
         Dots per inch. If None and a style is specified, uses the style's
         default dpi.
-    sharex : bool | str, default: False
-        Controls sharing of x-axis properties. True/False or 'none'/'all'/'row'/'col'.
-    sharey : bool | str, default: False
-        Controls sharing of y-axis properties. True/False or 'none'/'all'/'row'/'col'.
-    squeeze : bool, default: True
+    sharex : bool | str, optional
+        Controls sharing of x-axis among subplots.
+    sharey : bool | str, optional
+        Controls sharing of y-axis among subplots.
+    squeeze : bool, optional
         If True, single Axes object is returned if nrows=ncols=1.
         If False, always returns 2D array of Axes.
     width_ratios : list[float] | None, optional
@@ -118,6 +118,7 @@ def subplots(
 
         # Apply the requested style
         from . import style as style_module
+
         if isinstance(style, str):
             style_module.use(style)
         elif isinstance(style, list):
@@ -129,39 +130,43 @@ def subplots(
     if style is not None:
         if figsize is None:
             # Check if style set a figsize
-            style_figsize = plt.rcParams.get('figure.figsize')
-            if original_rcParams and style_figsize != original_rcParams.get('figure.figsize'):
+            style_figsize = plt.rcParams.get("figure.figsize")
+            if original_rcParams and style_figsize != original_rcParams.get(
+                "figure.figsize"
+            ):
                 figsize = tuple(style_figsize)
 
         if dpi is None:
             # Check if style set a dpi
-            style_dpi = plt.rcParams.get('figure.dpi')
-            if original_rcParams and style_dpi != original_rcParams.get('figure.dpi'):
+            style_dpi = plt.rcParams.get("figure.dpi")
+            if original_rcParams and style_dpi != original_rcParams.get(
+                "figure.dpi"
+            ):
                 dpi = style_dpi
 
     # Build keyword arguments for plt.subplots
     kwargs = {}
     if figsize is not None:
-        kwargs['figsize'] = figsize
+        kwargs["figsize"] = figsize
     if dpi is not None:
-        kwargs['dpi'] = dpi
+        kwargs["dpi"] = dpi
 
     # Set up gridspec_kw
     if gridspec_kw is None:
         gridspec_kw = {}
 
     if width_ratios is not None:
-        gridspec_kw['width_ratios'] = width_ratios
+        gridspec_kw["width_ratios"] = width_ratios
     if height_ratios is not None:
-        gridspec_kw['height_ratios'] = height_ratios
+        gridspec_kw["height_ratios"] = height_ratios
 
     # Add gridspec_kw if it has content
     if gridspec_kw:
-        kwargs['gridspec_kw'] = gridspec_kw
+        kwargs["gridspec_kw"] = gridspec_kw
 
     # Add subplot_kw if provided
     if subplot_kw is not None:
-        kwargs['subplot_kw'] = subplot_kw
+        kwargs["subplot_kw"] = subplot_kw
 
     # Add any additional figure kwargs
     kwargs.update(fig_kw)
@@ -173,7 +178,7 @@ def subplots(
         sharex=sharex,
         sharey=sharey,
         squeeze=squeeze,
-        **kwargs
+        **kwargs,
     )
 
     return fig, ax
@@ -219,6 +224,7 @@ def figure(
         original_rcParams = plt.rcParams.copy()
 
         from . import style as style_module
+
         if isinstance(style, str):
             style_module.use(style)
         elif isinstance(style, list):
@@ -229,21 +235,25 @@ def figure(
     # Extract figsize and dpi from style if not explicitly provided
     if style is not None:
         if figsize is None:
-            style_figsize = plt.rcParams.get('figure.figsize')
-            if original_rcParams and style_figsize != original_rcParams.get('figure.figsize'):
+            style_figsize = plt.rcParams.get("figure.figsize")
+            if original_rcParams and style_figsize != original_rcParams.get(
+                "figure.figsize"
+            ):
                 figsize = tuple(style_figsize)
 
         if dpi is None:
-            style_dpi = plt.rcParams.get('figure.dpi')
-            if original_rcParams and style_dpi != original_rcParams.get('figure.dpi'):
+            style_dpi = plt.rcParams.get("figure.dpi")
+            if original_rcParams and style_dpi != original_rcParams.get(
+                "figure.dpi"
+            ):
                 dpi = style_dpi
 
     # Build kwargs
     fig_kwargs = {}
     if figsize is not None:
-        fig_kwargs['figsize'] = figsize
+        fig_kwargs["figsize"] = figsize
     if dpi is not None:
-        fig_kwargs['dpi'] = dpi
+        fig_kwargs["dpi"] = dpi
     fig_kwargs.update(kwargs)
 
     # Create the figure

@@ -225,7 +225,9 @@ def run(
         return load_presets()
 
     @app.delete("/api/preset/{index}")
-    async def delete_preset_endpoint(index: int) -> dict[str, str] | JSONResponse:
+    async def delete_preset_endpoint(
+        index: int,
+    ) -> dict[str, str] | JSONResponse:
         """Delete a preset by index."""
         ok = delete_preset(index)
         if not ok:

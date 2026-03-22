@@ -10,10 +10,7 @@ from typing import Literal
 from matplotlib.axes import Axes
 
 
-def hide_spines(
-    ax: Axes,
-    which: list[str] | None = None,
-) -> None:
+def hide_spines(ax: Axes, which: list[str] | None = None) -> None:
     """Hide specified spines from the axes.
 
     Parameters
@@ -53,10 +50,7 @@ def hide_all_spines(ax: Axes) -> None:
         spine.set_visible(False)
 
 
-def show_only_spines(
-    ax: Axes,
-    which: list[str],
-) -> None:
+def show_only_spines(ax: Axes, which: list[str]) -> None:
     """Show only specified spines, hide others.
 
     Parameters
@@ -101,7 +95,9 @@ def style_spines(
     >>> style_spines(ax, color="oc.blue5", which=["bottom", "left"])
     """
     if which is None:
-        spines_to_style = [name for name, spine in ax.spines.items() if spine.get_visible()]
+        spines_to_style = [
+            name for name, spine in ax.spines.items() if spine.get_visible()
+        ]
     else:
         spines_to_style = which
 
@@ -130,9 +126,9 @@ def add_grid(
     ----------
     ax : Axes
         Matplotlib axes
-    which : {"major", "minor", "both"}
+    which : Literal["major", "minor", "both"]
         Which tick marks to use for grid
-    axis : {"x", "y", "both"}
+    axis : Literal["x", "y", "both"], optional
         Which axis to add grid lines
     alpha : float
         Transparency of grid lines
@@ -159,7 +155,7 @@ def add_grid(
         color=color,
         linestyle=linestyle,
         linewidth=linewidth,
-        **kwargs
+        **kwargs,
     )
     ax.set_axisbelow(True)  # Ensure grid is behind plot elements
 
@@ -180,9 +176,7 @@ def remove_grid(ax: Axes) -> None:
 
 
 def add_frame(
-    ax: Axes,
-    color: str = "oc.gray5",
-    linewidth: float = 1.0,
+    ax: Axes, color: str = "oc.gray5", linewidth: float = 1.0
 ) -> None:
     """Add a frame (all spines) with consistent styling.
 

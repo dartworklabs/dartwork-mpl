@@ -141,11 +141,7 @@ class TestClassifyColormap:
 
         # Coolwarm — may classify as diverging or multi-hue
         result = classify_colormap(matplotlib.colormaps["coolwarm"])
-        assert result in (
-            "Diverging",
-            "Multi-Hue",
-            "Single-Hue",
-        )
+        assert result in ("Diverging", "Multi-Hue", "Single-Hue")
 
         # Categorical
         assert classify_colormap(matplotlib.colormaps["tab10"]) == "Categorical"

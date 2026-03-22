@@ -13,22 +13,67 @@ from dartwork_mpl.cmap import _parse_colormap, ensure_loaded
 # The 16 curated colormaps (no _r variants).
 EXPECTED_DC_NAMES = {
     # Sequential Single-Hue
-    "obsidian", "sapphire", "emerald", "ruby", "amethyst", "topaz", "graphite", "coral",
+    "obsidian",
+    "sapphire",
+    "emerald",
+    "ruby",
+    "amethyst",
+    "topaz",
+    "graphite",
+    "coral",
     # Sequential Multi-Hue
-    "aurora", "sunset_glow", "plasma_arc", "spring_bloom", "deep_sea", "autumn_leaf", "nebula_dust", "tropical_fruit",
+    "aurora",
+    "sunset_glow",
+    "plasma_arc",
+    "spring_bloom",
+    "deep_sea",
+    "autumn_leaf",
+    "nebula_dust",
+    "tropical_fruit",
     # Diverging
-    "ice_fire", "earth_sky", "teal_rose", "purple_lime", "navy_gold", "forest_brick", "magenta_cyan", "slate_orange",
-    "cool_warm", "arctic_heat", "frost_flame", "water_fire",
-    "spring_autumn", "summer_winter", "electric_surge", "neon_pulse",
+    "ice_fire",
+    "earth_sky",
+    "teal_rose",
+    "purple_lime",
+    "navy_gold",
+    "forest_brick",
+    "magenta_cyan",
+    "slate_orange",
+    "cool_warm",
+    "arctic_heat",
+    "frost_flame",
+    "water_fire",
+    "spring_autumn",
+    "summer_winter",
+    "electric_surge",
+    "neon_pulse",
     # Additional Vibrant
-    "neon_blue", "neon_green", "neon_pink", "neon_orange",
-    "cyberpunk", "synthwave", "vivid_dusk", "toxic_glow",
-    "neon_wheel", "electric_cycle",
+    "neon_blue",
+    "neon_green",
+    "neon_pink",
+    "neon_orange",
+    "cyberpunk",
+    "synthwave",
+    "vivid_dusk",
+    "toxic_glow",
+    "neon_wheel",
+    "electric_cycle",
     # Cyclical
-    "twilight_oklch", "phase_wheel", "color_wheel", "seasons", "day_night", "rainbow_cycle",
+    "twilight_oklch",
+    "phase_wheel",
+    "color_wheel",
+    "seasons",
+    "day_night",
+    "rainbow_cycle",
     # Discrete
-    "vivid", "lucid", "chalk",
-    "vibrant", "pastel", "candy", "pop", "macaron",
+    "vivid",
+    "lucid",
+    "chalk",
+    "vibrant",
+    "pastel",
+    "candy",
+    "pop",
+    "macaron",
 }
 
 EXPECTED_DC_CMAPS = set()
@@ -61,13 +106,13 @@ class TestEnsureLoaded:
     def test_registers_exactly_56_dc_colormaps(self) -> None:
         """After loading, exactly 56 dc.* colormaps (non-reversed) should exist."""
         dc_names = {
-            name for name in mpl.colormaps
+            name
+            for name in mpl.colormaps
             if name.startswith("dc.") and not name.endswith("_r")
         }
         expected = {f"dc.{name}" for name in EXPECTED_DC_NAMES}
         assert dc_names == expected, (
-            f"Missing: {expected - dc_names}, "
-            f"Extra: {dc_names - expected}"
+            f"Missing: {expected - dc_names}, Extra: {dc_names - expected}"
         )
 
     def test_reversed_variants_exist(self) -> None:
@@ -83,7 +128,9 @@ class TestEnsureLoaded:
         all_mpl_cmaps = set(plt.colormaps())
 
         # 2. Filter for only those starting with 'dc.'
-        dc_cmaps_registered = {name for name in all_mpl_cmaps if name.startswith("dc.")}
+        dc_cmaps_registered = {
+            name for name in all_mpl_cmaps if name.startswith("dc.")
+        }
 
         # 3. Assert the count is exactly 112
         assert len(dc_cmaps_registered) == 112, (
@@ -97,13 +144,21 @@ class TestEnsureLoaded:
     def test_discrete_cmap_colors(self) -> None:
         """Test that the discrete (categorical) maps have a reasonable number of colors."""
         discrete_names = [
-            "vivid", "lucid", "chalk",
-            "vibrant", "pastel", "candy", "pop", "macaron",
+            "vivid",
+            "lucid",
+            "chalk",
+            "vibrant",
+            "pastel",
+            "candy",
+            "pop",
+            "macaron",
         ]
         for name in discrete_names:
             cmap = mpl.colormaps[f"dc.{name}"]
             assert isinstance(cmap, mpl.colors.ListedColormap)
-            assert len(cmap.colors) >= 5, f"Expected >=5 colors for dc.{name}, got {len(cmap.colors)}"
+            assert len(cmap.colors) >= 5, (
+                f"Expected >=5 colors for dc.{name}, got {len(cmap.colors)}"
+            )
 
 
 class TestParseColormap:

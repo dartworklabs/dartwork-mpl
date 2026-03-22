@@ -55,7 +55,10 @@ def register_resources(mcp: FastMCP) -> None:
         colors = {
             k: mcolors.to_hex(v)
             for k, v in mcolors.get_named_colors_mapping().items()
-            if any(k.startswith(prefix) for prefix in ["dc.", "tw.", "md.", "ad.", "cu.", "pr.", "oc."])
+            if any(
+                k.startswith(prefix)
+                for prefix in ["dc.", "tw.", "md.", "ad.", "cu.", "pr.", "oc."]
+            )
         }
         return json.dumps(colors, indent=2)
 
@@ -95,7 +98,9 @@ def register_resources(mcp: FastMCP) -> None:
         """
         style_file = _MPLSTYLE_DIR / f"{preset}.mplstyle"
         if not style_file.exists():
-            available = sorted([p.stem for p in _MPLSTYLE_DIR.glob("*.mplstyle")])
+            available = sorted(
+                [p.stem for p in _MPLSTYLE_DIR.glob("*.mplstyle")]
+            )
             return f"Style preset '{preset}' not found. Available presets: {available}"
         return style_file.read_text(encoding="utf-8")
 

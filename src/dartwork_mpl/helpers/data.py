@@ -56,12 +56,16 @@ def validate_data(
 
     # Check minimum points
     if len(x) < min_points:
-        raise ValueError(f"Need at least {min_points} data points, got {len(x)}")
+        raise ValueError(
+            f"Need at least {min_points} data points, got {len(x)}"
+        )
 
     # Check length matching
     if y is not None and require_same_length:
         if len(x) != len(y):
-            raise ValueError(f"Data length mismatch: x({len(x)}) != y({len(y)})")
+            raise ValueError(
+                f"Data length mismatch: x({len(x)}) != y({len(y)})"
+            )
 
     # Handle NaN/Inf values
     if not allow_nan:
@@ -71,17 +75,25 @@ def validate_data(
             x = x[mask]
             if y is not None:
                 y = y[mask]
-            warnings.warn(f"Removed {(~mask).sum()} NaN/Inf values from data", stacklevel=2)
+            warnings.warn(
+                f"Removed {(~mask).sum()} NaN/Inf values from data",
+                stacklevel=2,
+            )
 
         if y is not None:
             if np.any(np.isnan(y)) or np.any(np.isinf(y)):
                 mask = ~(np.isnan(y) | np.isinf(y))
                 x = x[mask]
                 y = y[mask]
-                warnings.warn(f"Removed {(~mask).sum()} NaN/Inf values from data", stacklevel=2)
+                warnings.warn(
+                    f"Removed {(~mask).sum()} NaN/Inf values from data",
+                    stacklevel=2,
+                )
 
     # Final check
     if len(x) < min_points:
-        raise ValueError(f"After cleaning, only {len(x)} points remain (need {min_points})")
+        raise ValueError(
+            f"After cleaning, only {len(x)} points remain (need {min_points})"
+        )
 
     return x, y

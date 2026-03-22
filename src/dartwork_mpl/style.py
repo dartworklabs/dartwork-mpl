@@ -236,7 +236,9 @@ class Style:
             plt.rcParams.update(overrides)
 
     @contextlib.contextmanager
-    def context(self, preset_name: str, **kwargs: float | str) -> Iterator[None]:
+    def context(
+        self, preset_name: str, **kwargs: float | str
+    ) -> Iterator[None]:
         """
         Context manager that temporarily applies a style within a code block.
 

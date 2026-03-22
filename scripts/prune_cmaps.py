@@ -7,16 +7,44 @@ CMAP_DIR = Path("src/dartwork_mpl/asset/cmap")
 # We keep ONLY the newly generated bright, curated set (30+ maps)
 KEEP_CMAPS: set[str] = {
     # Sequential Single-Hue
-    "obsidian.txt", "sapphire.txt", "emerald.txt", "ruby.txt", "amethyst.txt", "topaz.txt", "graphite.txt", "coral.txt",
+    "obsidian.txt",
+    "sapphire.txt",
+    "emerald.txt",
+    "ruby.txt",
+    "amethyst.txt",
+    "topaz.txt",
+    "graphite.txt",
+    "coral.txt",
     # Sequential Multi-Hue
-    "aurora.txt", "sunset_glow.txt", "plasma_arc.txt", "spring_bloom.txt", "deep_sea.txt", "autumn_leaf.txt", "nebula_dust.txt", "tropical_fruit.txt",
+    "aurora.txt",
+    "sunset_glow.txt",
+    "plasma_arc.txt",
+    "spring_bloom.txt",
+    "deep_sea.txt",
+    "autumn_leaf.txt",
+    "nebula_dust.txt",
+    "tropical_fruit.txt",
     # Diverging
-    "ice_fire.txt", "earth_sky.txt", "teal_rose.txt", "purple_lime.txt", "navy_gold.txt", "forest_brick.txt", "magenta_cyan.txt", "slate_orange.txt",
+    "ice_fire.txt",
+    "earth_sky.txt",
+    "teal_rose.txt",
+    "purple_lime.txt",
+    "navy_gold.txt",
+    "forest_brick.txt",
+    "magenta_cyan.txt",
+    "slate_orange.txt",
     # Cyclical
-    "twilight_oklch.txt", "phase_wheel.txt",
+    "twilight_oklch.txt",
+    "phase_wheel.txt",
     # Discrete
-    "vivid.txt", "lucid.txt", "chalk.txt",
-    "oc_vibrant.txt", "oc_pastel.txt", "tw_candy.txt", "tw_pop.txt", "tw_macaron.txt",
+    "vivid.txt",
+    "lucid.txt",
+    "chalk.txt",
+    "oc_vibrant.txt",
+    "oc_pastel.txt",
+    "tw_candy.txt",
+    "tw_pop.txt",
+    "tw_macaron.txt",
 }
 
 

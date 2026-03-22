@@ -202,13 +202,9 @@ class TestMcpTools:
         captured = _capture_decorators(mock_mcp, "tool")
         register_tools(mock_mcp)
 
-        with patch(
-            "httpx.get", side_effect=Exception("timeout")
-        ):
+        with patch("httpx.get", side_effect=Exception("timeout")):
             with pytest.raises(ValueError, match="Failed"):
-                captured["fetch_github_document"](
-                    "https://invalid.example.com"
-                )
+                captured["fetch_github_document"]("https://invalid.example.com")
 
     def test_get_color_value_known(self) -> None:
         """get_color_value returns hex for a known color."""
@@ -229,9 +225,7 @@ class TestMcpTools:
         captured = _capture_decorators(mock_mcp, "tool")
         register_tools(mock_mcp)
 
-        result = captured["get_color_value"](
-            "nonexistent_color_xyz"
-        )
+        result = captured["get_color_value"]("nonexistent_color_xyz")
         assert "not found" in result
 
     def test_mix_colors(self) -> None:
@@ -299,10 +293,9 @@ class TestMcpTools:
         captured = _capture_decorators(mock_mcp, "tool")
         register_tools(mock_mcp)
 
-        data = json.dumps({
-            "categories": ["A", "B", "C"],
-            "values": [10, 20, 30],
-        })
+        data = json.dumps(
+            {"categories": ["A", "B", "C"], "values": [10, 20, 30]}
+        )
         result = captured["validate_plot_data"]("bar", data)
         assert "valid" in result.lower()
 
@@ -363,9 +356,7 @@ class TestMcpPrompts:
         captured = _capture_decorators(mock_mcp, "prompt")
         register_prompts(mock_mcp)
 
-        result = captured["create_plot"](
-            "bar chart of quarterly revenue"
-        )
+        result = captured["create_plot"]("bar chart of quarterly revenue")
         assert isinstance(result, str)
         assert "dartwork-mpl" in result
         assert "dm.subplots" in result

@@ -294,11 +294,7 @@ class TestCheckPieLabelOffset:
     def test_regular_pie_ignored(self) -> None:
         """Regular pie (not donut) should be skipped entirely."""
         fig, ax = plt.subplots(figsize=(4, 4))
-        ax.pie(
-            [40, 30, 20, 10],
-            labels=["A", "B", "C", "D"],
-            autopct="%.0f%%",
-        )
+        ax.pie([40, 30, 20, 10], labels=["A", "B", "C", "D"], autopct="%.0f%%")
         warnings = validate_figure(
             fig, checks=("PIE_LABEL_OFFSET",), quiet=True
         )
@@ -352,10 +348,7 @@ class TestCheckPieLabelOffset:
         fig, ax = plt.subplots(figsize=(5, 5))
         sizes = [5, 8, 12, 15, 20, 10, 7, 3, 5, 15]
         ax.pie(
-            sizes,
-            autopct="%.0f%%",
-            pctdistance=0.5,
-            wedgeprops={"width": 0.35},
+            sizes, autopct="%.0f%%", pctdistance=0.5, wedgeprops={"width": 0.35}
         )
         warnings = validate_figure(
             fig, checks=("PIE_LABEL_OFFSET",), quiet=True
@@ -396,9 +389,7 @@ class TestMarginAsymmetryEdgeCases:
             fig, checks=("MARGIN_ASYMMETRY",), quiet=True
         )
         asym = [w for w in warnings if w.check_id == "MARGIN_ASYMMETRY"]
-        v_warnings = [
-            w for w in asym if w.detail.get("axis") == "vertical"
-        ]
+        v_warnings = [w for w in asym if w.detail.get("axis") == "vertical"]
         assert len(v_warnings) > 0
         plt.close(fig)
 
@@ -414,4 +405,3 @@ class TestMarginAsymmetryEdgeCases:
         asym = [w for w in warnings if w.check_id == "MARGIN_ASYMMETRY"]
         assert len(asym) == 0
         plt.close(fig)
-

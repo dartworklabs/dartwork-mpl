@@ -42,7 +42,6 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     "dc.topaz": "Single-Hue",
     "dc.graphite": "Single-Hue",
     "dc.coral": "Single-Hue",
-
     # Multi-Hue
     "dc.aurora": "Multi-Hue",
     "dc.sunset_glow": "Multi-Hue",
@@ -52,7 +51,6 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     "dc.autumn_leaf": "Multi-Hue",
     "dc.nebula_dust": "Multi-Hue",
     "dc.tropical_fruit": "Multi-Hue",
-
     # Diverging
     "dc.ice_fire": "Diverging",
     "dc.earth_sky": "Diverging",
@@ -70,7 +68,6 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     "dc.summer_winter": "Diverging",
     "dc.electric_surge": "Diverging",
     "dc.neon_pulse": "Diverging",
-
     # Cyclical
     "dc.twilight_oklch": "Cyclical",
     "dc.phase_wheel": "Cyclical",
@@ -80,7 +77,6 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     "dc.rainbow_cycle": "Cyclical",
     "dc.neon_wheel": "Cyclical",
     "dc.electric_cycle": "Cyclical",
-
     # Discrete
     "dc.vivid": "Categorical",
     "dc.lucid": "Categorical",
@@ -91,6 +87,7 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     "dc.pop": "Categorical",
     "dc.macaron": "Categorical",
 }
+
 
 def classify_colormap(cmap: Colormap) -> str:
     """Classify a colormap into one of the following categories.

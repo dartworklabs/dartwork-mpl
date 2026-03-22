@@ -11,7 +11,9 @@ from typing import Literal
 
 def auto_select_colors(
     n_series: int,
-    color_type: Literal["categorical", "sequential", "diverging"] = "categorical",
+    color_type: Literal[
+        "categorical", "sequential", "diverging"
+    ] = "categorical",
     highlight_index: int | None = None,
 ) -> list[str]:
     """Automatically select appropriate colors for data series.
@@ -38,8 +40,14 @@ def auto_select_colors(
     if color_type == "categorical":
         # Distinct colors for categorical data
         base_colors = [
-            "oc.blue5", "oc.red5", "oc.green5", "oc.orange5",
-            "oc.purple5", "oc.teal5", "oc.pink5", "oc.yellow5"
+            "oc.blue5",
+            "oc.red5",
+            "oc.green5",
+            "oc.orange5",
+            "oc.purple5",
+            "oc.teal5",
+            "oc.pink5",
+            "oc.yellow5",
         ]
     elif color_type == "sequential":
         # Gradient from light to dark
@@ -50,11 +58,23 @@ def auto_select_colors(
     elif color_type == "diverging":
         # Red to blue through gray
         if n_series <= 5:
-            base_colors = ["oc.red6", "oc.red4", "oc.gray5", "oc.blue4", "oc.blue6"]
+            base_colors = [
+                "oc.red6",
+                "oc.red4",
+                "oc.gray5",
+                "oc.blue4",
+                "oc.blue6",
+            ]
         else:
-            base_colors = ["oc.red7", "oc.red5", "oc.red3",
-                          "oc.gray5",
-                          "oc.blue3", "oc.blue5", "oc.blue7"]
+            base_colors = [
+                "oc.red7",
+                "oc.red5",
+                "oc.red3",
+                "oc.gray5",
+                "oc.blue3",
+                "oc.blue5",
+                "oc.blue7",
+            ]
     else:
         raise ValueError(f"Unknown color_type: {color_type}")
 

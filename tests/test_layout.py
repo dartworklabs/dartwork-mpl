@@ -173,5 +173,3 @@ class TestAutoLayoutEdgeCases:
         fig, ax = plt.subplots(figsize=(6, 4))
         auto_layout(fig)
         plt.close(fig)
-
-

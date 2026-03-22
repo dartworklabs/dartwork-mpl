@@ -69,9 +69,7 @@ def _load_colormaps() -> None:
         cmap: mcolors.ListedColormap = _parse_colormap(path)
         mpl.colormaps.register(cmap=cmap)
 
-        cmap_r: mcolors.ListedColormap = _parse_colormap(
-            path, reverse=True
-        )
+        cmap_r: mcolors.ListedColormap = _parse_colormap(path, reverse=True)
         mpl.colormaps.register(cmap=cmap_r)
 
 

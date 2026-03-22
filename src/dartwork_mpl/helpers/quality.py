@@ -11,10 +11,7 @@ from matplotlib.figure import Figure
 
 
 def suggest_chart_type(
-    x_type: str,
-    y_type: str | None,
-    n_points: int,
-    n_series: int = 1,
+    x_type: str, y_type: str | None, n_points: int, n_series: int = 1
 ) -> str:
     """Suggest appropriate chart type based on data characteristics.
 
@@ -131,7 +128,7 @@ def check_figure_quality(fig: Figure) -> list[str]:
         # Check for missing data
         has_data = False
         for artist in ax.get_children():
-            if hasattr(artist, 'get_data') or hasattr(artist, 'get_offsets'):
+            if hasattr(artist, "get_data") or hasattr(artist, "get_offsets"):
                 has_data = True
                 break
         if not has_data:

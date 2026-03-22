@@ -13,9 +13,7 @@ from matplotlib.axes import Axes
 
 
 def format_axis_percent(
-    ax: Axes,
-    axis: Literal["x", "y", "both"] = "y",
-    decimals: int = 0,
+    ax: Axes, axis: Literal["x", "y", "both"] = "y", decimals: int = 0
 ) -> None:
     """Format axis tick labels as percentages.
 
@@ -23,7 +21,7 @@ def format_axis_percent(
     ----------
     ax : Axes
         Matplotlib axes
-    axis : {"x", "y", "both"}
+    axis : Literal["x", "y", "both"]
         Which axis to format
     decimals : int
         Number of decimal places
@@ -42,9 +40,7 @@ def format_axis_percent(
 
 
 def format_axis_thousands(
-    ax: Axes,
-    axis: Literal["x", "y", "both"] = "y",
-    sep: str = ",",
+    ax: Axes, axis: Literal["x", "y", "both"] = "y", sep: str = ","
 ) -> None:
     """Format axis tick labels with thousands separator.
 
@@ -52,7 +48,7 @@ def format_axis_thousands(
     ----------
     ax : Axes
         Matplotlib axes
-    axis : {"x", "y", "both"}
+    axis : Literal["x", "y", "both"]
         Which axis to format
     sep : str
         Thousands separator (default: comma)
@@ -81,7 +77,7 @@ def format_axis_millions(
     ----------
     ax : Axes
         Matplotlib axes
-    axis : {"x", "y", "both"}
+    axis : Literal["x", "y", "both"]
         Which axis to format
     suffix : str
         Suffix to add (default: "M")
@@ -92,6 +88,7 @@ def format_axis_millions(
     --------
     >>> format_axis_millions(ax)  # Show as 1.5M instead of 1500000
     """
+
     def millions_formatter(x, pos):
         """Internal formatter function for millions scale.
 
@@ -109,7 +106,7 @@ def format_axis_millions(
         """
         if x == 0:
             return "0"
-        return f"{x/1e6:.{decimals}f}{suffix}"
+        return f"{x / 1e6:.{decimals}f}{suffix}"
 
     formatter = ticker.FuncFormatter(millions_formatter)
 
@@ -131,7 +128,7 @@ def format_axis_billions(
     ----------
     ax : Axes
         Matplotlib axes
-    axis : {"x", "y", "both"}
+    axis : Literal["x", "y", "both"]
         Which axis to format
     suffix : str
         Suffix to add (default: "B")
@@ -142,6 +139,7 @@ def format_axis_billions(
     --------
     >>> format_axis_billions(ax)  # Show as 1.5B instead of 1500000000
     """
+
     def billions_formatter(x, pos):
         """Internal formatter function for billions scale.
 
@@ -159,7 +157,7 @@ def format_axis_billions(
         """
         if x == 0:
             return "0"
-        return f"{x/1e9:.{decimals}f}{suffix}"
+        return f"{x / 1e9:.{decimals}f}{suffix}"
 
     formatter = ticker.FuncFormatter(billions_formatter)
 
@@ -182,11 +180,11 @@ def format_axis_currency(
     ----------
     ax : Axes
         Matplotlib axes
-    axis : {"x", "y", "both"}
+    axis : Literal["x", "y", "both"]
         Which axis to format
     symbol : str
         Currency symbol
-    position : {"prefix", "suffix"}
+    position : Literal["prefix", "suffix"], optional
         Position of currency symbol
     decimals : int
         Number of decimal places
@@ -196,6 +194,7 @@ def format_axis_currency(
     >>> format_axis_currency(ax)  # Format as $1,000
     >>> format_axis_currency(ax, symbol="€", position="suffix")  # Format as 1,000€
     """
+
     def currency_formatter(x, pos):
         """Internal formatter function for currency values.
 
@@ -226,9 +225,7 @@ def format_axis_currency(
 
 
 def format_axis_si(
-    ax: Axes,
-    axis: Literal["x", "y", "both"] = "y",
-    decimals: int = 1,
+    ax: Axes, axis: Literal["x", "y", "both"] = "y", decimals: int = 1
 ) -> None:
     """Format axis tick labels with SI prefixes (k, M, G, etc.).
 
@@ -236,7 +233,7 @@ def format_axis_si(
     ----------
     ax : Axes
         Matplotlib axes
-    axis : {"x", "y", "both"}
+    axis : Literal["x", "y", "both"]
         Which axis to format
     decimals : int
         Number of decimal places
@@ -245,6 +242,7 @@ def format_axis_si(
     --------
     >>> format_axis_si(ax)  # Show as 1.5k, 2.3M, etc.
     """
+
     def si_formatter(x, pos):
         """Internal formatter function for SI prefix notation.
 
@@ -267,13 +265,13 @@ def format_axis_si(
         sign = "-" if x < 0 else ""
 
         if abs_x >= 1e12:
-            return f"{sign}{abs_x/1e12:.{decimals}f}T"
+            return f"{sign}{abs_x / 1e12:.{decimals}f}T"
         elif abs_x >= 1e9:
-            return f"{sign}{abs_x/1e9:.{decimals}f}G"
+            return f"{sign}{abs_x / 1e9:.{decimals}f}G"
         elif abs_x >= 1e6:
-            return f"{sign}{abs_x/1e6:.{decimals}f}M"
+            return f"{sign}{abs_x / 1e6:.{decimals}f}M"
         elif abs_x >= 1e3:
-            return f"{sign}{abs_x/1e3:.{decimals}f}k"
+            return f"{sign}{abs_x / 1e3:.{decimals}f}k"
         else:
             return f"{x:.{decimals}f}"
 
@@ -297,7 +295,7 @@ def rotate_tick_labels(
     ----------
     ax : Axes
         Matplotlib axes
-    axis : {"x", "y", "both"}
+    axis : Literal["x", "y", "both"]
         Which axis to rotate
     rotation : float
         Rotation angle in degrees

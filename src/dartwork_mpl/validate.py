@@ -459,7 +459,10 @@ def _check_pie_label_offset(fig: Figure, renderer) -> list[VisualWarning]:
                 continue
             x, y = txt.get_position()
             actual_r = (x**2 + y**2) ** 0.5
-            if ideal_r > 0 and abs(actual_r - ideal_r) / ideal_r > TOLERANCE_RATIO:
+            if (
+                ideal_r > 0
+                and abs(actual_r - ideal_r) / ideal_r > TOLERANCE_RATIO
+            ):
                 warnings.append(
                     VisualWarning(
                         severity=Severity.INFO,

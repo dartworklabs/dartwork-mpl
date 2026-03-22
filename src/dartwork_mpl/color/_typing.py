@@ -948,7 +948,7 @@ DartworkColor = Literal[
     "tw.zinc700",
     "tw.zinc800",
     "tw.zinc900",
-    "tw.zinc950"
+    "tw.zinc950",
 ]
 
 DartworkColormap = Literal[
@@ -1033,5 +1033,5 @@ DartworkColormap = Literal[
     "dc.vik",
     "dc.vikO",
     "dc.vikO_r",
-    "dc.vik_r"
+    "dc.vik_r",
 ]

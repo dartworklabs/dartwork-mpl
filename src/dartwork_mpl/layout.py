@@ -264,12 +264,21 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
     renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
     fig_bbox = fig.bbox
 
-    overflow: dict[str, float] = {"left": 0.0, "right": 0.0, "bottom": 0.0, "top": 0.0}
+    overflow: dict[str, float] = {
+        "left": 0.0,
+        "right": 0.0,
+        "bottom": 0.0,
+        "top": 0.0,
+    }
 
     for ax in fig.axes:
         # Text objects: titles, labels, annotations
         for txt in ax.texts + [ax.title, ax.xaxis.label, ax.yaxis.label]:
-            if txt is None or not txt.get_visible() or not txt.get_text().strip():
+            if (
+                txt is None
+                or not txt.get_visible()
+                or not txt.get_text().strip()
+            ):
                 continue
             try:
                 ext = txt.get_window_extent(renderer)
@@ -303,10 +312,10 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
 
                 overflow["left"] = max(overflow["left"], fig_bbox.x0 - ext.x0)
                 overflow["right"] = max(overflow["right"], ext.x1 - fig_bbox.x1)
-                overflow["bottom"] = max(overflow["bottom"], fig_bbox.y0 - ext.y0)
+                overflow["bottom"] = max(
+                    overflow["bottom"], fig_bbox.y0 - ext.y0
+                )
                 overflow["top"] = max(overflow["top"], ext.y1 - fig_bbox.y1)
-
-
 
     return overflow
 
@@ -331,7 +340,7 @@ def auto_layout(
     ----------
     fig : Figure
         The Matplotlib Figure to lay out.
-    padding : float or tuple of four floats, optional
+    padding : float | tuple[float, float, float, float], optional
         Initial padding in inches for all four sides (left, right, bottom, top).
         If a single float, it is used for all sides. Default is 0.08.
     max_iter : int, optional
@@ -384,7 +393,9 @@ def auto_layout(
         max_overflow = max(overflow.values())
         if max_overflow <= tolerance:
             if verbose:
-                print(f"[auto_layout] Converged in {iteration + 1} iteration(s).")
+                print(
+                    f"[auto_layout] Converged in {iteration + 1} iteration(s)."
+                )
             return
 
         # Increase margins on overflowing sides with escalation
@@ -395,7 +406,9 @@ def auto_layout(
                 # Escalation: multiply increment for persistent overflow
                 # (handles axes-relative content that moves with subplot)
                 scale = 1.0 + 1.0 * (consec[side] - 1)
-                increment = ((overflow[side] + tolerance) / dpi + BUFFER) * scale
+                increment = (
+                    (overflow[side] + tolerance) / dpi + BUFFER
+                ) * scale
                 margins[idx] += increment
             else:
                 consec[side] = 0
@@ -405,4 +418,3 @@ def auto_layout(
             f"[auto_layout] Reached max_iter={max_iter}. "
             f"Residual overflow: {overflow}"
         )
-

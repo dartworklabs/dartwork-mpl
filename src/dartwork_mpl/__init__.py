@@ -25,9 +25,10 @@ def _import_with_warning(old_name, new_module):
     warnings.warn(
         f"{old_name} is deprecated, use {new_module.__name__} instead",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
     return new_module
+
 
 # Create deprecated aliases
 import sys
@@ -36,8 +37,8 @@ import sys
 from . import templates  # noqa: F401
 
 # Set up module aliases for backward compatibility
-sys.modules['dartwork_mpl.agent_utils'] = helpers
-sys.modules['dartwork_mpl.xplot'] = templates
+sys.modules["dartwork_mpl.agent_utils"] = helpers
+sys.modules["dartwork_mpl.xplot"] = templates
 
 # Create attribute aliases for backward compatibility
 agent_utils = helpers
@@ -244,11 +245,13 @@ import matplotlib.axes
 
 _original_twinx = matplotlib.axes.Axes.twinx
 
+
 def _patched_twinx(self, *args, **kwargs):
     ax2 = _original_twinx(self, *args, **kwargs)
     ax2.spines["right"].set_visible(True)
     ax2.spines["right"].set_linewidth(mpl.rcParams.get("axes.linewidth", 0.3))
     return ax2
+
 
 matplotlib.axes.Axes.twinx = _patched_twinx
 
@@ -256,19 +259,18 @@ matplotlib.axes.Axes.twinx = _patched_twinx
 # Provide deprecated attribute access with warnings
 def __getattr__(name):
     """Provide deprecated attribute access with warnings."""
-    if name == 'agent_utils':
+    if name == "agent_utils":
         warnings.warn(
             "agent_utils is deprecated, use helpers instead",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         return helpers
-    elif name == 'xplot':
+    elif name == "xplot":
         warnings.warn(
             "xplot is deprecated, use templates instead",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
         return templates
     raise AttributeError(f"module 'dartwork_mpl' has no attribute '{name}'")
-

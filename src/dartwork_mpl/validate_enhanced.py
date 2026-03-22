@@ -31,37 +31,59 @@ def get_fix_suggestions(warning: VisualWarning) -> list[str]:
         px = warning.detail.get("px", 0)
 
         if side == "left":
-            suggestions.append(f"# Increase left margin\nfig.subplots_adjust(left={0.15 + px/100:.2f})")
+            suggestions.append(
+                f"# Increase left margin\nfig.subplots_adjust(left={0.15 + px / 100:.2f})"
+            )
             suggestions.append("# Or use auto_layout\ndm.auto_layout(fig)")
         elif side == "right":
-            suggestions.append(f"# Increase right margin\nfig.subplots_adjust(right={0.95 - px/100:.2f})")
+            suggestions.append(
+                f"# Increase right margin\nfig.subplots_adjust(right={0.95 - px / 100:.2f})"
+            )
             suggestions.append("# Or use auto_layout\ndm.auto_layout(fig)")
         elif side == "bottom":
-            suggestions.append(f"# Increase bottom margin\nfig.subplots_adjust(bottom={0.15 + px/100:.2f})")
-            suggestions.append("# Rotate x-tick labels\nax.tick_params(axis='x', rotation=45)")
+            suggestions.append(
+                f"# Increase bottom margin\nfig.subplots_adjust(bottom={0.15 + px / 100:.2f})"
+            )
+            suggestions.append(
+                "# Rotate x-tick labels\nax.tick_params(axis='x', rotation=45)"
+            )
         elif side == "top":
-            suggestions.append(f"# Increase top margin\nfig.subplots_adjust(top={0.9 - px/100:.2f})")
+            suggestions.append(
+                f"# Increase top margin\nfig.subplots_adjust(top={0.9 - px / 100:.2f})"
+            )
 
     elif warning.check_id == "OVERLAP":
-        suggestions.append("# Adjust text positions\nax.text(..., ha='left')  # Change alignment")
+        suggestions.append(
+            "# Adjust text positions\nax.text(..., ha='left')  # Change alignment"
+        )
         suggestions.append("# Use auto_layout\ndm.auto_layout(fig)")
         suggestions.append("# Reduce font size\nax.legend(fontsize=dm.fs(-1))")
 
     elif warning.check_id == "LEGEND_OVERFLOW":
         warning.detail.get("ratio", 0)
-        suggestions.append("# Move legend outside\nax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')")
+        suggestions.append(
+            "# Move legend outside\nax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')"
+        )
         suggestions.append("# Reduce legend columns\nax.legend(ncol=1)")
-        suggestions.append("# Reduce legend font\nax.legend(fontsize=dm.fs(-2))")
+        suggestions.append(
+            "# Reduce legend font\nax.legend(fontsize=dm.fs(-2))"
+        )
 
     elif warning.check_id == "TICK_CROWD":
         axis = warning.detail.get("axis", "")
         count = warning.detail.get("count", 0)
 
         if axis == "x":
-            suggestions.append(f"# Reduce x-ticks\nax.xaxis.set_major_locator(plt.MaxNLocator(nbins={count//2}))")
-            suggestions.append("# Rotate labels\nax.tick_params(axis='x', rotation=45)")
+            suggestions.append(
+                f"# Reduce x-ticks\nax.xaxis.set_major_locator(plt.MaxNLocator(nbins={count // 2}))"
+            )
+            suggestions.append(
+                "# Rotate labels\nax.tick_params(axis='x', rotation=45)"
+            )
         else:
-            suggestions.append(f"# Reduce y-ticks\nax.yaxis.set_major_locator(plt.MaxNLocator(nbins={count//2}))")
+            suggestions.append(
+                f"# Reduce y-ticks\nax.yaxis.set_major_locator(plt.MaxNLocator(nbins={count // 2}))"
+            )
 
     elif warning.check_id == "EMPTY_AXES":
         suggestions.append("# Remove empty axes\nax.remove()")
@@ -76,15 +98,15 @@ def get_fix_suggestions(warning: VisualWarning) -> list[str]:
 
     elif warning.check_id == "PIE_LABEL_OFFSET":
         ideal_r = warning.detail.get("ideal_r", 0.7)
-        suggestions.append(f"# Adjust label position\nax.pie(..., pctdistance={ideal_r:.2f})")
+        suggestions.append(
+            f"# Adjust label position\nax.pie(..., pctdistance={ideal_r:.2f})"
+        )
 
     return suggestions
 
 
 def validate_with_fixes(
-    fig: Figure,
-    auto_apply: bool = False,
-    verbose: bool = True
+    fig: Figure, auto_apply: bool = False, verbose: bool = True
 ) -> tuple[list[VisualWarning], list[str]]:
     """Validate figure and provide fix suggestions.
 
@@ -119,14 +141,18 @@ def validate_with_fixes(
         if verbose and suggestions:
             print(f"\n{warning.check_id}: {warning.message}")
             for i, suggestion in enumerate(suggestions, 1):
-                print(f"  Option {i}:\n    {suggestion.replace(chr(10), chr(10) + '    ')}")
+                print(
+                    f"  Option {i}:\n    {suggestion.replace(chr(10), chr(10) + '    ')}"
+                )
 
         # Auto-apply simple fixes
         if auto_apply and warning.severity == Severity.WARNING:
             if warning.check_id in ["OVERFLOW", "MARGIN_ASYMMETRY"]:
                 try:
                     dm.auto_layout(fig)
-                    applied_fixes.append(f"Applied dm.auto_layout() for {warning.check_id}")
+                    applied_fixes.append(
+                        f"Applied dm.auto_layout() for {warning.check_id}"
+                    )
                     if verbose:
                         print("  ✓ Auto-applied: dm.auto_layout()")
                 except Exception as e:
@@ -137,7 +163,9 @@ def validate_with_fixes(
     if applied_fixes and auto_apply:
         new_warnings = validate_figure(fig, quiet=True)
         if verbose:
-            print(f"\n=== AFTER AUTO-FIX: {len(new_warnings)} warnings (was {len(warnings)}) ===")
+            print(
+                f"\n=== AFTER AUTO-FIX: {len(new_warnings)} warnings (was {len(warnings)}) ==="
+            )
         return new_warnings, applied_fixes
 
     return warnings, applied_fixes
@@ -177,8 +205,12 @@ def check_agent_requirements(fig: Figure) -> dict[str, bool]:
     # Check for data
     has_data = False
     for ax in fig.axes:
-        if (len(ax.lines) > 0 or len(ax.patches) > 0 or
-            len(ax.collections) > 0 or len(ax.images) > 0):
+        if (
+            len(ax.lines) > 0
+            or len(ax.patches) > 0
+            or len(ax.collections) > 0
+            or len(ax.images) > 0
+        ):
             has_data = True
             break
     requirements["has_data"] = has_data
@@ -242,7 +274,9 @@ def generate_validation_report(fig: Figure) -> str:
     n_total = len(requirements)
     score = n_passed / n_total * 100 if n_total > 0 else 0
 
-    report.append(f"\nOVERALL SCORE: {score:.0f}% ({n_passed}/{n_total} requirements met)")
+    report.append(
+        f"\nOVERALL SCORE: {score:.0f}% ({n_passed}/{n_total} requirements met)"
+    )
 
     # Recommendation
     if score == 100 and not warnings:
