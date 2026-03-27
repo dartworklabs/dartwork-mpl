@@ -3895,30 +3895,37 @@ section:has(> .dm-landing-hero) > h1:first-child {
 
 .dm-landing-hero {
   text-align: center;
-  padding: 3em 1em 2em;
-  margin: -0.5em 0 0;
+  padding: 4em 1em 3em;
+  margin: -1em 0 0;
 }
 
 .dm-landing-tagline {
-  font-size: 2.8em;
-  font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
-  color: #1a1a2e;
-  margin: 0 0 0.4em;
+  font-size: 3.2em;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 0.3em;
 }
 
 html.dark .dm-landing-tagline,
 body[data-theme="dark"] .dm-landing-tagline {
-  color: #f0f0f0;
+  background: linear-gradient(135deg, #a78bfa 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .dm-landing-subtitle {
-  font-size: 1.15em;
-  line-height: 1.6;
-  color: #555;
-  max-width: 520px;
-  margin: 0 auto 1.8em;
+  font-size: 1.25em;
+  line-height: 1.5;
+  color: #64748b;
+  max-width: 480px;
+  margin: 0 auto 2em;
+  font-weight: 400;
 }
 
 html.dark .dm-landing-subtitle,
@@ -3931,19 +3938,21 @@ body[data-theme="dark"] .dm-landing-subtitle {
   display: inline-flex;
   align-items: center;
   gap: 0;
-  background: #f6f8fa;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 8px 10px 8px 18px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px 10px 20px;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 0.92em;
-  color: #1a1a2e;
-  box-shadow: 0 2px 8px rgba(24, 31, 41, 0.06);
-  transition: border-color 0.2s ease;
+  font-size: 0.95em;
+  color: #1e293b;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dm-landing-install:hover {
-  border-color: var(--accent-9, #0d9488);
+  border-color: #8b5cf6;
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.15);
+  transform: translateY(-1px);
 }
 
 html.dark .dm-landing-install,
@@ -3992,36 +4001,37 @@ body[data-theme="dark"] .dm-landing-install {
 .dm-landing-btn {
   display: inline-flex;
   align-items: center;
-  padding: 10px 24px;
+  padding: 12px 28px;
   font-size: 0.95em;
   font-weight: 600;
-  border-radius: 8px;
+  border-radius: 10px;
   text-decoration: none !important;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
 }
 
 .dm-landing-btn-primary {
-  background: var(--accent-9, #0d9488);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: #fff !important;
-  border: 1px solid var(--accent-9, #0d9488);
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
+  border: 1px solid transparent;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25);
 }
 
 .dm-landing-btn-primary:hover {
-  background: var(--accent-10, #0f766e);
-  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.35);
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.35);
+  transform: translateY(-2px);
 }
 
 .dm-landing-btn-secondary {
   background: transparent;
-  color: var(--accent-9, #0d9488) !important;
-  border: 1px solid var(--accent-9, #0d9488);
+  color: #8b5cf6 !important;
+  border: 1.5px solid #8b5cf6;
 }
 
 .dm-landing-btn-secondary:hover {
-  background: rgba(13, 148, 136, 0.08);
+  background: rgba(139, 92, 246, 0.08);
+  border-color: #7c3aed;
   transform: translateY(-1px);
 }
 
