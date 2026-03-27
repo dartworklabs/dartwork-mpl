@@ -53,6 +53,13 @@ plt.show()
 
 ::::
 
+:::{figure} images/quickstart_first_figure.svg
+:alt: Scientific-style line chart created with dartwork-mpl
+:width: 100%
+
+The same chart rendered with `dm.style.use("scientific")` — professional typography, optimized margins, and named colors.
+:::
+
 **Drag the slider to compare — same data, different styling:**
 
 ```{raw} html

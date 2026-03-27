@@ -4,117 +4,107 @@
 <div class="dm-landing-hero">
   <p class="dm-landing-tagline">matplotlib, but beautiful.</p>
   <p class="dm-landing-subtitle">
-    One import. No new API to learn.<br>
-    Publication-quality plots by default.
+    Publication-quality plots with zero learning curve.
   </p>
 
   <div class="dm-landing-cta">
     <div class="dm-landing-install">
-      <code>pip install git+https://github.com/dartwork-repo/dartwork-mpl</code>
-      <button class="dm-landing-copy-btn" onclick="navigator.clipboard.writeText('pip install git+https://github.com/dartwork-repo/dartwork-mpl').then(()=>{this.textContent='✓';setTimeout(()=>{this.textContent='⎘'},1500)})">⎘</button>
+      <code>pip install git+https://github.com/dartworklabs/dartwork-mpl</code>
+      <button class="dm-landing-copy-btn" onclick="navigator.clipboard.writeText('pip install git+https://github.com/dartworklabs/dartwork-mpl').then(()=>{this.textContent='✓';setTimeout(()=>{this.textContent='⎘'},1500)})">⎘</button>
     </div>
-    <a href="usage_guide/quickstart.html" class="dm-landing-btn dm-landing-btn-secondary">Quick Start →</a>
+    <a href="usage_guide/quickstart.html" class="dm-landing-btn dm-landing-btn-secondary">Get Started →</a>
   </div>
 </div>
 ```
 
-```{raw} html
-<div class="dm-landing-proof">
-  <p class="dm-landing-proof-label">Drag to compare</p>
-</div>
-```
-
-```{raw} html
-:file: _static/compare_slider.html
-```
-
-```{raw} html
-<div class="dm-landing-numbers">
-  <div class="dm-landing-number-item">
-    <span class="dm-landing-number-big">7</span>
-    <span class="dm-landing-number-label">Style Presets</span>
-  </div>
-  <div class="dm-landing-number-sep">·</div>
-  <div class="dm-landing-number-item">
-    <span class="dm-landing-number-big">900+</span>
-    <span class="dm-landing-number-label">Named Colors</span>
-  </div>
-  <div class="dm-landing-number-sep">·</div>
-  <div class="dm-landing-number-item">
-    <span class="dm-landing-number-big">0</span>
-    <span class="dm-landing-number-label">New APIs to learn</span>
-  </div>
-</div>
-```
-
----
-
-## All it takes
+## Quick Example
 
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
-import numpy as np
 
-dm.style.use("scientific")              # ① Pick a style
+dm.style.use("scientific")              # Pick a style
 fig, ax = plt.subplots()
-x = np.linspace(0, 10, 200)
-ax.plot(x, np.sin(x), color="oc.blue5") # ② Use named colors
-dm.simple_layout(fig)                   # ③ Optimize layout
-dm.save_formats(fig, "out")             # ④ Export SVG + PNG
+ax.plot([1, 2, 3], [1, 4, 2])          # Regular matplotlib
+dm.simple_layout(fig)                   # Better layout
+dm.save_formats(fig, "output")          # Export SVG + PNG
 ```
 
-```{raw} html
-<p class="dm-landing-code-tagline"><em>You're still writing matplotlib — we just make it look good.</em></p>
-```
+:::{figure} usage_guide/images/quickstart_first_figure.svg
+:alt: Scientific-style line chart created with dartwork-mpl
+:width: 80%
+:::
 
-## Core pillars
+## Key Features
 
-::::{grid} 1 1 2 2
-:gutter: 3
+::::{grid} 1 1 2 3
+:gutter: 2
 
-:::{grid-item-card} 🎨 Style in One Call
+:::{grid-item-card} **Style Presets**
 :link: usage_guide/styles
 :link-type: doc
-
-Pick from `scientific`, `report`, `presentation`, `poster`, `web`, `dark`, or `minimal` — each with a `-kr` Korean variant. 900+ named colors from Open Color, Tailwind, and Material Design.
+Professional themes for every context: `scientific`, `report`, `presentation`, `poster`, `web`, `dark`, `minimal`
 :::
 
-:::{grid-item-card} 📐 Smart Layout
+:::{grid-item-card} **Smart Layout**
 :link: usage_guide/layout
 :link-type: doc
-
-`simple_layout()` replaces `tight_layout()` with L-BFGS-B optimized margins. Built-in visual validation catches overflow, text overlap, and tick crowding automatically.
+Advanced optimization algorithms for perfect margins and spacing automatically
 :::
 
-:::{grid-item-card} 🎛️ Interactive UI
+:::{grid-item-card} **900+ Colors**
+:link: color_system/index
+:link-type: doc
+Named colors from Open Color, Tailwind, and Material Design palettes
+:::
+
+:::{grid-item-card} **Interactive UI**
 :link: usage_guide/interactive
 :link-type: doc
-
-Launch a local web app to interactively tweak plot parameters with sliders. Export perfect charts and download reproducible scripts instantly.
+Web-based parameter tuning with real-time preview and code export
 :::
 
-:::{grid-item-card} 📦 Zero Lock-in
+:::{grid-item-card} **Zero API Changes**
 :link: philosophy/index
 :link-type: doc
+Works with your existing matplotlib code — no new syntax to learn
+:::
 
-Every utility is simple enough to copy into your project. No lock-in — leave anytime by taking the code with you.
+:::{grid-item-card} **Export Formats**
+:link: api/io
+:link-type: doc
+One-line export to SVG, PNG, PDF with optimized settings
 :::
 
 ::::
 
-```{toctree}
-:maxdepth: 2
-:titlesonly:
-:hidden:
+## Documentation
 
-Getting Started <installation/index>
-Usage Guide <usage_guide/index>
-Color System <color_system/index>
-Fonts <fonts/index>
-Examples Gallery <examples_gallery/index>
-Migration Guide <migration>
-API Reference <api/index>
-Design Philosophy <philosophy/index>
-AI Integration <integrations/index>
+```{toctree}
+:maxdepth: 1
+:caption: Getting Started
+
+installation/index
+usage_guide/quickstart
+usage_guide/index
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Reference
+
+color_system/index
+fonts/index
+examples_gallery/index
+api/index
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: More
+
+philosophy/index
+integrations/index
+troubleshooting
+migration
 ```

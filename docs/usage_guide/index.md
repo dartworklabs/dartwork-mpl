@@ -7,6 +7,41 @@ layout/font helpers so you get **predictable results** fast.
 :file: ../_static/evolution_widget.html
 ```
 
+## Choosing the right tools
+
+### Which preset?
+
+| Your context | Preset | Why |
+|-------------|--------|-----|
+| Academic paper / journal | `scientific` | Compact fonts (7.5 pt), all 4 spines, fits 3.5" column |
+| Business report / memo | `report` | Clean look, no top/right spines, 8 pt fonts |
+| Infographic / editorial | `minimal` | Tufte-style, no spines/ticks, data-ink focus |
+| PowerPoint / Keynote | `presentation` | Large fonts (10.5 pt), readable when projected |
+| Conference poster | `poster` | Largest fonts (12 pt), thick lines, 1-2m reading distance |
+| Web docs / blog | `web` | Screen-optimized 11 pt, clean for HTML/Jupyter |
+| Dark Jupyter / dark slides | `dark` | Inverted colors on `#1e1e1e` background |
+| **Any of the above + Korean** | Add `-kr` suffix | Swaps to Paperlogy/Pretendard fonts |
+
+### Which layout function?
+
+| Situation | Function | Notes |
+|-----------|----------|-------|
+| Most figures | `simple_layout(fig)` | Fast, consistent margins via L-BFGS-B optimizer |
+| Long labels or multi-line titles | `auto_layout(fig)` | Detects and fixes text overflow automatically |
+| Multi-panel with GridSpec | `simple_layout(fig, gs=gs)` | Respects your `hspace`/`wspace` settings |
+| Need exact margin control | `simple_layout(fig, margins=(...))` | Specify margins in inches |
+
+### Which color palette?
+
+| Style | Prefix | Best for |
+|-------|--------|----------|
+| Open Color | `oc.*` | General purpose, well-balanced (recommended default) |
+| Tailwind CSS | `tw.*` | Web-style designs, wider shade range (50–950) |
+| Material Design | `md.*` | Google-style, vibrant |
+| Ant Design | `an.*` | Enterprise UI aesthetics |
+| Chakra UI | `ch.*` | Modern web app colors |
+| Primer | `pr.*` | GitHub-style, subtle |
+
 ## Typical workflow
 
 ::::{grid} 1 1 2 2
@@ -64,6 +99,7 @@ Layout and Typography <layout>
 Save and Validation <save_export>
 Extended Plots & Diagnostics <extras>
 Interactive UI <interactive>
+Tutorials <tutorials>
 ```
 
 :::{tip}
