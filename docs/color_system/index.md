@@ -39,7 +39,7 @@ Sequential, diverging, cyclical, and categorical ramps — including
 dartwork-mpl's own OKLCH-designed `dc.*` collection.
 
 ```{raw} html
-:file: images/colormaps_sequential_multi_hue.html
+:file: images/colormaps_multi_hue.html
 ```
 
 [Browse all colormaps →](colormaps.md)

@@ -87,14 +87,6 @@ cmap_type = dm.classify_colormap('viridis')
 print(cmap_type)  # 'sequential'
 ```
 
-**Interactive Palette Explorer:**
-
-Use the widget below to explore all available palettes interactively:
-
-```{raw} html
-:file: ../color_system/images/palette_explorer.html
-```
-
 ## Color interpolation
 
 ```python

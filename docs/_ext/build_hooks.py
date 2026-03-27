@@ -19,9 +19,10 @@ and techniques.
 _GALLERY_CATEGORIES = [
     "01_styling_and_themes",
     "02_color_system",
-    "03_layout_and_annotations",
-    "04_advanced_components",
-    "05_real_world_dashboards",
+    "03_formatting",
+    "04_layout_and_annotations",
+    "05_advanced_components",
+    "06_creative_visualizations",
 ]
 
 
