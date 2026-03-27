@@ -6,7 +6,7 @@ with dartwork-mpl's style system.
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -131,21 +131,25 @@ def subplots(
         if figsize is None:
             # Check if style set a figsize
             style_figsize = plt.rcParams.get("figure.figsize")
-            if original_rcParams and style_figsize != original_rcParams.get(
-                "figure.figsize"
+            if (
+                original_rcParams
+                and style_figsize is not None
+                and style_figsize != original_rcParams.get("figure.figsize")
             ):
-                figsize = tuple(style_figsize)
+                figsize = cast(tuple[float, float], tuple(style_figsize))
 
         if dpi is None:
             # Check if style set a dpi
             style_dpi = plt.rcParams.get("figure.dpi")
-            if original_rcParams and style_dpi != original_rcParams.get(
-                "figure.dpi"
+            if (
+                original_rcParams
+                and style_dpi is not None
+                and style_dpi != original_rcParams.get("figure.dpi")
             ):
-                dpi = style_dpi
+                dpi = int(style_dpi)
 
     # Build keyword arguments for plt.subplots
-    kwargs = {}
+    kwargs: dict[str, Any] = {}
     if figsize is not None:
         kwargs["figsize"] = figsize
     if dpi is not None:
@@ -236,20 +240,24 @@ def figure(
     if style is not None:
         if figsize is None:
             style_figsize = plt.rcParams.get("figure.figsize")
-            if original_rcParams and style_figsize != original_rcParams.get(
-                "figure.figsize"
+            if (
+                original_rcParams
+                and style_figsize is not None
+                and style_figsize != original_rcParams.get("figure.figsize")
             ):
-                figsize = tuple(style_figsize)
+                figsize = cast(tuple[float, float], tuple(style_figsize))
 
         if dpi is None:
             style_dpi = plt.rcParams.get("figure.dpi")
-            if original_rcParams and style_dpi != original_rcParams.get(
-                "figure.dpi"
+            if (
+                original_rcParams
+                and style_dpi is not None
+                and style_dpi != original_rcParams.get("figure.dpi")
             ):
-                dpi = style_dpi
+                dpi = int(style_dpi)
 
     # Build kwargs
-    fig_kwargs = {}
+    fig_kwargs: dict[str, Any] = {}
     if figsize is not None:
         fig_kwargs["figsize"] = figsize
     if dpi is not None:

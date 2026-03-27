@@ -127,7 +127,7 @@ def validate_with_fixes(
     import dartwork_mpl as dm
 
     warnings = validate_figure(fig, quiet=not verbose)
-    applied_fixes = []
+    applied_fixes: list[str] = []
 
     if not warnings:
         return warnings, applied_fixes

@@ -253,7 +253,7 @@ def _patched_twinx(self, *args, **kwargs):
     return ax2
 
 
-matplotlib.axes.Axes.twinx = _patched_twinx
+matplotlib.axes.Axes.twinx = _patched_twinx  # type: ignore[method-assign]
 
 
 # Provide deprecated attribute access with warnings

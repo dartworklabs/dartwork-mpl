@@ -175,7 +175,7 @@ def simple_layout(
     # Handle SubplotSpec by getting its parent GridSpec
     if gs is not None:
         if isinstance(gs, SubplotSpec):
-            actual_gs: GridSpec = gs.get_gridspec()
+            actual_gs: GridSpec = gs.get_gridspec()  # type: ignore[assignment]
         else:
             actual_gs = gs
     else:

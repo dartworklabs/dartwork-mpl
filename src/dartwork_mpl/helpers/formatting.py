@@ -119,7 +119,7 @@ def add_value_labels(
     format_str: str = ".1f",
     offset_y: float = 0.02,
     color: str | None = None,
-    fontsize: int | None = None,
+    fontsize: float | None = None,
 ) -> None:
     """Add value labels to data points.
 

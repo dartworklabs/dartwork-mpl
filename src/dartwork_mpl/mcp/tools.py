@@ -124,7 +124,9 @@ def register_tools(mcp: FastMCP) -> None:
                 ratio * a + (1 - ratio) * b
                 for a, b in zip(c1, c2, strict=False)
             )
-            return mcolors.to_hex(blended)
+            return mcolors.to_hex(
+                blended  # type: ignore[arg-type]
+            )
         except Exception as e:
             return f"Error blending colors: {e}"
 
