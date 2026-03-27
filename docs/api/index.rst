@@ -34,7 +34,7 @@ Additional tools for specialized use cases.
 
    Font Utilities <font>
    Icon Font System <icon>
-   Extended Plots <xplot>
+   Extended Plots (templates) <xplot>
    Agent Helper Utilities <helpers>
    Interactive Viewer <ui>
    Visualization Tools <visualization>

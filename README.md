@@ -163,12 +163,12 @@ dm.get_prompt('layout-guide')          # read guide content
 dm.copy_prompt('layout-guide', '.cursor/rules/')
 ```
 
-### Extended Plots (xplot)
+### Extended Plots (templates)
 
 Ready-to-use specialized visualization templates:
 
 ```python
-from dartwork_mpl.xplot import plot_diverging_bar
+from dartwork_mpl.templates import plot_diverging_bar
 
 fig, ax = plot_diverging_bar(
     categories=['A', 'B', 'C'],
@@ -295,7 +295,7 @@ src/dartwork_mpl/
 │   └── _font.py        #   Font preview visualization
 ├── install.py          # LLM integration installer
 ├── cli.py              # CLI entry point (dartwork-mpl-mcp)
-├── xplot/              # Extended plot templates
+├── templates/          # Extended plot templates
 ├── ui/                 # Interactive FastAPI viewer
 ├── mcp/                # MCP server for AI assistants
 │   ├── server.py       #   FastMCP instance + wiring

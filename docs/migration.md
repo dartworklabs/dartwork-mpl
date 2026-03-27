@@ -171,9 +171,9 @@ The v1.0.0 release will:
 
 If you encounter issues during migration:
 
-1. Check the [CHANGELOG](https://github.com/dartwork/dartwork-mpl/blob/main/CHANGELOG.md) for detailed version notes
+1. Check the [CHANGELOG](https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md) for detailed version notes
 2. Review the [API documentation](api/index.rst) for current module structure
-3. Open an issue on [GitHub](https://github.com/dartwork/dartwork-mpl/issues) if you need assistance
+3. Open an issue on [GitHub](https://github.com/dartworklabs/dartwork-mpl/issues) if you need assistance
 
 ## Best Practices
 

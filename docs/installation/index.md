@@ -16,13 +16,13 @@ Install **dartwork-mpl** directly from GitHub. The package includes matplotlib s
 ```bash
 # Add to your project dependencies (Recommended)
 # This automatically updates your pyproject.toml
-uv add git+https://github.com/dartwork-repo/dartwork-mpl
+uv add git+https://github.com/dartworklabs/dartwork-mpl
 
 # Or install directly into the current environment
-uv pip install git+https://github.com/dartwork-repo/dartwork-mpl
+uv pip install git+https://github.com/dartworklabs/dartwork-mpl
 
 # Install a specific branch or tag
-uv add git+https://github.com/dartwork-repo/dartwork-mpl@main
+uv add git+https://github.com/dartworklabs/dartwork-mpl@main
 ```
 
 > **Why uv?** It's 10-100x faster than pip, handles dependency resolution better, and integrates seamlessly with modern Python workflows.
@@ -36,13 +36,13 @@ Use the standard Python package installer. This works with any Python environmen
 
 ```bash
 # Install from GitHub
-pip install git+https://github.com/dartwork-repo/dartwork-mpl
+pip install git+https://github.com/dartworklabs/dartwork-mpl
 
 # Upgrade to the latest version
-pip install --upgrade git+https://github.com/dartwork-repo/dartwork-mpl
+pip install --upgrade git+https://github.com/dartworklabs/dartwork-mpl
 
 # Install a specific branch
-pip install git+https://github.com/dartwork-repo/dartwork-mpl@main
+pip install git+https://github.com/dartworklabs/dartwork-mpl@main
 ```
 
 > **Note:** Make sure you have Git installed on your system, as pip needs it to clone the repository.

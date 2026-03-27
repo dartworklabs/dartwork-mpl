@@ -1,12 +1,12 @@
 # Extended Plots & Diagnostics
 
-## Extended plots (`xplot`)
+## Extended plots (`templates`)
 
-dartwork-mpl provides ready-to-use plot templates in `dartwork_mpl.xplot`
+dartwork-mpl provides ready-to-use plot templates in `dartwork_mpl.templates`
 for common chart types that are tedious to build from scratch:
 
 ```python
-from dartwork_mpl.xplot import plot_diverging_bar
+from dartwork_mpl.templates import plot_diverging_bar
 
 fig, ax = plot_diverging_bar(
     categories=['Accuracy', 'Recall', 'F1-Score'],
@@ -18,7 +18,7 @@ fig, ax = plot_diverging_bar(
 ```
 
 :::{figure} images/save_diverging_bar.svg
-:alt: Diverging bar chart from xplot module
+:alt: Diverging bar chart from templates module
 :width: 100%
 :::
 
