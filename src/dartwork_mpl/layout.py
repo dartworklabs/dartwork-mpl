@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from matplotlib.gridspec import GridSpec, SubplotSpec
+from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec, SubplotSpec
 
 if TYPE_CHECKING:
     from scipy.optimize import OptimizeResult
@@ -180,6 +180,11 @@ def simple_layout(
             actual_gs = gs
     else:
         actual_gs = fig.axes[0].get_gridspec()  # type: ignore[assignment]
+
+    # GridSpecFromSubplotSpec (created by e.g. fig.colorbar) has no
+    # .update() — walk up to the root GridSpec that does.
+    while isinstance(actual_gs, GridSpecFromSubplotSpec):
+        actual_gs = actual_gs._subplot_spec.get_gridspec()  # type: ignore[assignment]
 
     _import_weights = np.array(importance_weights)
     _margins = np.array(margins) * fig.get_dpi()

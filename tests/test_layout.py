@@ -173,3 +173,17 @@ class TestAutoLayoutEdgeCases:
         fig, ax = plt.subplots(figsize=(6, 4))
         auto_layout(fig)
         plt.close(fig)
+
+    def test_colorbar_gridspec(self) -> None:
+        """``fig.colorbar(im, ax=ax)`` wraps the axis in a
+        ``GridSpecFromSubplotSpec`` which has no ``.update()``. The
+        optimizer must walk up to the root ``GridSpec``. Regression for
+        a crash on heatmaps with attached colorbars.
+        """
+        import numpy as np
+
+        fig, ax = plt.subplots(figsize=(6, 4))
+        im = ax.imshow(np.random.rand(10, 10))
+        fig.colorbar(im, ax=ax, shrink=0.8)
+        auto_layout(fig)
+        plt.close(fig)
