@@ -148,7 +148,7 @@ def run(
     async def get_descriptors() -> list[dict[str, Any]]:
         return descriptor_dicts
 
-    @app.post("/api/render")
+    @app.post("/api/render", response_model=None)
     async def render(params: dict[str, Any]) -> dict[str, str] | JSONResponse:
         try:
             model = _build_model(params, param_model, descriptors)
@@ -224,7 +224,7 @@ def run(
     async def get_presets() -> list[dict[str, Any]]:
         return load_presets()
 
-    @app.delete("/api/preset/{index}")
+    @app.delete("/api/preset/{index}", response_model=None)
     async def delete_preset_endpoint(
         index: int,
     ) -> dict[str, str] | JSONResponse:
