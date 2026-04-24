@@ -103,7 +103,6 @@ split-on-trailing-comma = false
 # These files intentionally modify sys.path before importing
 "docs/color_system/generate_assets.py" = ["E402"]
 "docs/fonts/generate_assets.py" = ["E402"]
-"docs/examples_source/layout_styling/plot_legend.py" = ["E402"]
 
 [tool.mypy]
 python_version = "3.10"
