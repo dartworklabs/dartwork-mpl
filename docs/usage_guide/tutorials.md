@@ -13,11 +13,11 @@ Create a publication-ready two-panel figure for an academic paper using the
 [Paper figure tutorial](#paper-figure)
 :::
 
-:::{grid-item-card} Business Report
-Build a quarterly revenue chart with Korean labels for an internal report
-using the `report-kr` preset and bar+line combo.
+:::{grid-item-card} Korean Operations Report
+Build a weekly operations chart with Korean labels using the `report-kr`
+preset and bar+line combo.
 
-[Business report tutorial](#business-report)
+[Korean operations report tutorial](#korean-operations-report)
 :::
 
 :::{grid-item-card} Dark Mode Notebook
@@ -85,10 +85,11 @@ dm.save_formats(fig, "fig_signal_analysis",
 
 ---
 
-(business-report)=
-## Business Report (report-kr preset)
+(korean-operations-report)=
+## Korean Operations Report (report-kr preset)
 
-A quarterly revenue chart with Korean labels for an internal report:
+A weekly operations chart with Korean labels — bar series for a
+primary count, line series for a secondary percentage on a twin axis:
 
 ```python
 import matplotlib.pyplot as plt
@@ -102,32 +103,32 @@ dm.style.use("report-kr")
 # 2. Create figure
 fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(9)), dpi=200)
 
-# 3. Quarterly data
-quarters = ["1Q24", "2Q24", "3Q24", "4Q24", "1Q25"]
-revenue = [1234, 1456, 1389, 1567, 1650]
-margin = [12.5, 14.2, 13.1, 15.8, 16.3]
+# 3. Weekly data (synthetic)
+weeks = ["1주차", "2주차", "3주차", "4주차", "5주차"]
+throughput = [1234, 1456, 1389, 1567, 1650]   # primary: 처리량 (건)
+utilization = [82.5, 84.2, 83.1, 85.8, 86.3]  # secondary: 가동률 (%)
 
-# 4. Bar chart for revenue
-bars = ax.bar(quarters, revenue, color="oc.blue4", width=0.6, zorder=2)
-ax.set_ylabel("매출액 (억원)", fontsize=dm.fs(0))
+# 4. Bar chart for the primary series
+bars = ax.bar(weeks, throughput, color="oc.blue4", width=0.6, zorder=2)
+ax.set_ylabel("처리량 (건)", fontsize=dm.fs(0))
 ax.yaxis.set_major_formatter(mticker.StrMethodFormatter("{x:,.0f}"))
 
-# 5. Line chart for margin on secondary axis
+# 5. Line chart for the secondary series on a twin axis
 ax2 = ax.twinx()
-ax2.plot(quarters, margin, color="oc.red5", marker="o",
+ax2.plot(weeks, utilization, color="oc.red5", marker="o",
          markersize=4, lw=dm.lw(1.5), zorder=3)
-ax2.set_ylabel("영업이익률 (%)", fontsize=dm.fs(0))
+ax2.set_ylabel("가동률 (%)", fontsize=dm.fs(0))
 ax2.yaxis.set_major_formatter(mticker.PercentFormatter(decimals=1))
 ax2.spines["right"].set_visible(True)
 
 # 6. Add value labels on bars
-for bar, val in zip(bars, revenue):
+for bar, val in zip(bars, throughput):
     ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 20,
             f"{val:,}", ha="center", va="bottom", fontsize=dm.fs(-1.5))
 
 # 7. Layout and save
 dm.auto_layout(fig)
-dm.save_formats(fig, "quarterly_revenue",
+dm.save_formats(fig, "korean_report",
                 formats=("png", "pdf"), dpi=200)
 ```
 
