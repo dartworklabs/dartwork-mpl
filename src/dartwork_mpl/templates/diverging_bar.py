@@ -22,8 +22,8 @@ def plot_diverging_bar(
     figsize: tuple[float, float] | None = None,
     dpi: int = 300,
     title: str | None = None,
-    neg_label: str = "Review & Refactoring overhead",
-    pos_label: str = "Code Generation savings",
+    neg_label: str = "Negative",
+    pos_label: str = "Positive",
     colors: dict[str, str] | None = None,
     hbar_height: float = 0.5,
     hbar_spacing_factor: float = 1.6,
@@ -64,11 +64,9 @@ def plot_diverging_bar(
         Title text shown at the top. If None, a default title is used.
         Default is None.
     neg_label : str, optional
-        Legend label for negative bars.
-        Default is "Review & Refactoring overhead".
+        Legend label for negative bars. Default is ``"Negative"``.
     pos_label : str, optional
-        Legend label for positive bars.
-        Default is "Code Generation savings".
+        Legend label for positive bars. Default is ``"Positive"``.
     colors : dict[str, str] | None, optional
         Dictionary with 'neg' and 'pos' keys. If None, default colors
         (MidnightBlue for negative, CornflowerBlue for positive) are
@@ -115,21 +113,23 @@ def plot_diverging_bar(
     >>>
     >>> # Custom data
     >>> labels = [
-    ...     "Frontend Development",
-    ...     "Backend Architecture",
-    ...     "Data Engineering",
-    ...     "API Integration",
-    ...     "Quality Assurance",
-    ...     "DevOps & Infrastructure",
-    ...     "Security Compliance",
-    ...     "Technical Documentation",
+    ...     "Category A",
+    ...     "Category B",
+    ...     "Category C",
+    ...     "Category D",
+    ...     "Category E",
+    ...     "Category F",
+    ...     "Category G",
+    ...     "Category H",
     ... ]
     >>> neg_values = np.array([-5, -8, -10, -10, -8, -9, -10, -7])
     >>> pos_values = np.array([20, 35, 32, 40, 20, 28, 38, 30])
     >>> fig, ax = plot_diverging_bar(
     ...     labels,
     ...     neg_values,
-    ...     pos_values
+    ...     pos_values,
+    ...     neg_label="Loss",
+    ...     pos_label="Gain",
     ... )
     >>> dm.save_and_show(fig)
     >>>
@@ -160,17 +160,20 @@ def plot_diverging_bar(
     dartwork_mpl.simple_layout : Optimize figure layout
     matplotlib.transforms.blended_transform_factory : Create blended transforms
     """
-    # Use default sample data if not provided
+    # Use default sample data if not provided.
+    # Defaults are deliberately neutral placeholders so the output of
+    # plot_diverging_bar() with no arguments is not branded with any
+    # particular domain.
     if labels is None:
         labels = [
-            "Frontend Development",
-            "Backend Architecture",
-            "Data Engineering",
-            "API Integration",
-            "Quality Assurance",
-            "DevOps & Infrastructure",
-            "Security Compliance",
-            "Technical Documentation",
+            "Category A",
+            "Category B",
+            "Category C",
+            "Category D",
+            "Category E",
+            "Category F",
+            "Category G",
+            "Category H",
         ]
     if neg_values is None:
         neg_values = np.array([-5, -8, -10, -10, -8, -9, -10, -7])
@@ -204,11 +207,11 @@ def plot_diverging_bar(
             "pos": "#6495ED",  # CornflowerBlue-like
         }
 
-    # Set default title
+    # Set default title.
+    # Default is a neutral placeholder; callers are expected to supply
+    # a meaningful title via the ``title`` argument.
     if title is None:
-        title = (
-            "Engineering hours shifted by AI assistants, % of sprint capacity"
-        )
+        title = "Diverging bar chart"
 
     # Create figure with publication-ready settings
     fig = plt.figure(figsize=figsize, dpi=dpi)
