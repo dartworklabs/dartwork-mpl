@@ -1,20 +1,19 @@
-"""Agent utility functions for dartwork-mpl.
+"""General-purpose helper utilities for dartwork-mpl.
 
-Helper functions to assist AI agents in creating consistent,
-high-quality visualizations.
+Composition helpers that sit above the low-level matplotlib and
+dartwork-mpl primitives. This module is organised into submodules:
 
-This module is organized into submodules:
-- data: Data validation and cleaning
-- colors: Color selection and management
-- formatting: Axis labels, legends, and annotations
-- quality: Quality checks and suggestions
-- io: Figure creation and saving
+- ``data``: data validation and cleaning.
+- ``colors``: palette selection.
+- ``labels``: axis-label / legend / value-annotation helpers.
+- ``quality``: figure quality checks and chart-type suggestion.
+- ``io``: styled figure creation and optimised save.
 """
 
 from .colors import auto_select_colors
 from .data import validate_data
-from .formatting import add_value_labels, format_axis_labels, optimize_legend
 from .io import create_figure_with_style, save_figure
+from .labels import add_value_labels, format_axis_labels, optimize_legend
 from .quality import check_figure_quality, suggest_chart_type
 
 __all__ = [

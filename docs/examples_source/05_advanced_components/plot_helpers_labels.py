@@ -1,8 +1,8 @@
 """
-helpers.formatting — Labels, Legend, and Value Annotations
-===========================================================
+helpers.labels — Labels, Legend, and Value Annotations
+=======================================================
 
-``dm.helpers.formatting`` bundles a few common labelling chores into
+``dm.helpers.labels`` bundles a few common labelling chores into
 single calls: assembling axis labels from name + unit, picking a
 reasonable legend location, adding numeric labels above data points,
 and combining those with a trend-line annotation.
@@ -28,7 +28,7 @@ y2 = np.cos(x) * np.exp(-x / 10)
 # Format axis labels from name + unit.
 ax1 = axes[0, 0]
 ax1.plot(x, y1, color="oc.blue5", lw=dm.lw(1))
-dm.helpers.formatting.format_axis_labels(
+dm.helpers.labels.format_axis_labels(
     ax1, x_label="Time", y_label="Amplitude", x_unit="seconds", y_unit="mV"
 )
 ax1.set_title("Auto-Formatted Labels", fontsize=dm.fs(1))
@@ -39,7 +39,7 @@ ax2 = axes[0, 1]
 ax2.plot(x, y1, color="oc.red5", label="Signal A", lw=dm.lw(1))
 ax2.plot(x, y2, color="oc.green5", label="Signal B", lw=dm.lw(1))
 ax2.fill_between(x[40:60], -0.5, 0.5, alpha=0.3, color="gray", label="Region")
-dm.helpers.formatting.optimize_legend(ax2, preferred_loc="best")
+dm.helpers.labels.optimize_legend(ax2, preferred_loc="best")
 ax2.set_title("Optimized Legend", fontsize=dm.fs(1))
 ax2.set_xlabel("X", fontsize=dm.fs(0))
 ax2.set_ylabel("Y", fontsize=dm.fs(0))
@@ -50,7 +50,7 @@ ax3 = axes[1, 0]
 x_points = np.array([1, 2, 3, 4, 5])
 y_points = np.array([23.5, 45.2, 38.9, 52.1, 41.3])
 ax3.bar(x_points, y_points, color="oc.purple5")
-dm.helpers.formatting.add_value_labels(
+dm.helpers.labels.add_value_labels(
     ax3, x_points, y_points, format_str=".1f", offset_y=0.02, fontsize=dm.fs(-1)
 )
 ax3.set_title("Value Labels on Bars", fontsize=dm.fs(1))
@@ -63,7 +63,7 @@ ax4 = axes[1, 1]
 x_scatter = np.random.randn(20)
 y_scatter = 2 * x_scatter + np.random.randn(20) * 0.5
 ax4.scatter(x_scatter, y_scatter, c=y_scatter, cmap="dc.deep_sea", s=50)
-dm.helpers.formatting.format_axis_labels(
+dm.helpers.labels.format_axis_labels(
     ax4, x_label="Independent Variable", y_label="Dependent Variable"
 )
 z = np.polyfit(x_scatter, y_scatter, 1)
