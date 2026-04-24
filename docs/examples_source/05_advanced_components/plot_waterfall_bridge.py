@@ -1,12 +1,20 @@
 """
-Ultimate Bridge (Waterfall) Chart
-=================================
+Bridge (Waterfall) Chart
+========================
 
-A bridge chart (or waterfall chart) is a staple in financial and management reporting
-to explain the bridge between two periods (e.g., Year-over-Year profit change).
-This example demonstrates how to build a highly polished bridge chart using
-``dartwork-mpl``'s color system (``oc.teal5`` for positive, ``oc.red5`` for negative),
-unobtrusive connector lines, and automated annotations via ``dm.set_decimal()`` logic.
+A bridge chart — also known as a waterfall chart — decomposes how a starting
+value is transformed into a final value by a sequence of positive and
+negative contributions, with optional intermediate totals along the way.
+
+It works for any domain where a sequence of gains and losses between two
+endpoints needs to be made legible at a glance: energy accounting, mass
+balance, population flow, project scheduling slack, algorithmic step
+budgets, and so on. The example below uses a synthetic energy-balance
+walk: primary input → end-use consumption.
+
+The chart demonstrates dartwork-mpl's color palette (``oc.teal5`` for
+positive contributions, ``oc.red5`` for negative contributions), subtle
+connector lines, and tick formatting via ``dm.set_decimal()``.
 """
 
 import matplotlib.pyplot as plt
@@ -16,46 +24,45 @@ import dartwork_mpl as dm
 
 dm.style.use("report")
 
-# Data Setup
+# Data: synthetic energy-balance walk (arbitrary units).
+# Positive = additions, negative = losses. Three "total" bars anchor
+# the walk: primary input, subtotal after losses, and final output.
 categories = [
-    "Revenue",
-    "COGS",
-    "SG&A",
-    "Operating\nProfit",
-    "Non-Op\nItems",
-    "Taxes",
-    "Net\nIncome",
+    "Primary\ninput",
+    "Conversion\nloss",
+    "Transmission\nloss",
+    "Net\ndelivered",
+    "Standby\nloss",
+    "End-use\nloss",
+    "Useful\noutput",
 ]
-values = [1000, -550, -250, 200, -15, -45, 140]
+values = [1000, -180, -60, 760, -20, -40, 700]
 is_total = [True, False, False, True, False, False, True]
 
-# Calculate baselines (bottom of each bar)
+# Calculate baselines (bottom of each bar).
 baselines = np.zeros(len(values))
 current = 0
 for i in range(len(values)):
     if is_total[i]:
-        # Total bars (Revenue, OP, Net Income)
         baselines[i] = 0
         current = values[i]
     else:
-        # Floating bars
         if values[i] >= 0:
             baselines[i] = current
         else:
             baselines[i] = current + values[i]
         current += values[i]
 
-# Determine colors
+# Determine colors.
 colors = []
 for i, v in enumerate(values):
     if is_total[i]:
-        colors.append("tw.slate700")  # Totals
+        colors.append("tw.slate700")  # Totals: neutral dark.
     else:
         colors.append("oc.teal5" if v >= 0 else "oc.red5")
 
 fig, ax = plt.subplots(figsize=(dm.DW, dm.DW * 0.55))
 
-# Plot bars
 bars = ax.bar(
     categories,
     np.abs(values),
@@ -65,10 +72,9 @@ bars = ax.bar(
     zorder=3,
 )
 
-# Add connector lines
+# Connector lines between the top of one bar and the bottom of the next.
 current_total = values[0]
 for i in range(1, len(values)):
-    # Connect right edge of i-1 bar to left edge of i bar
     ax.plot(
         [i - 1 + 0.3, i - 0.3],
         [current_total, current_total],
@@ -82,9 +88,8 @@ for i in range(1, len(values)):
     else:
         current_total += values[i]
 
-# Add text annotations directly onto or above the bars
+# Value labels above/below each bar.
 for i, (b, v, _bar) in enumerate(zip(baselines, values, bars, strict=False)):
-    # Calculate position: hardcode a fixed offset (~2% of max value)
     offset = 20
     if v >= 0:
         y_pos = b + abs(v) + offset
@@ -93,7 +98,6 @@ for i, (b, v, _bar) in enumerate(zip(baselines, values, bars, strict=False)):
         y_pos = b - offset
         va = "top"
 
-    # Format text
     if is_total[i]:
         val_str = str(v)
     else:
@@ -110,16 +114,15 @@ for i, (b, v, _bar) in enumerate(zip(baselines, values, bars, strict=False)):
         color=colors[i],
     )
 
-# Title and Formatting
-ax.set_title("Income Statement Bridge (Revenue to Net Income)")
-ax.set_ylabel("Amount ($M)")
+ax.set_title("Energy balance bridge (input to useful output)")
+ax.set_ylabel("Energy (arbitrary units)")
 dm.set_decimal(ax, yn=0)
 
-# Hide x-axis spine to make it cleaner and draw a solid baseline
+# Hide x-axis spine for a cleaner baseline, draw an explicit zero line.
 ax.spines["bottom"].set_visible(False)
 ax.axhline(0, color="tw.slate800", lw=dm.lw(1.5), zorder=1)
 
-# Add top Y-margin to fit annotations
+# Top margin to fit annotations.
 ax.set_ylim(-100, 1150)
 
 dm.simple_layout(fig)
