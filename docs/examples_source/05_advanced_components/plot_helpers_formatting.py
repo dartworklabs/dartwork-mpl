@@ -1,0 +1,87 @@
+"""
+helpers.formatting — Labels, Legend, and Value Annotations
+===========================================================
+
+``dm.helpers.formatting`` bundles a few common labelling chores into
+single calls: assembling axis labels from name + unit, picking a
+reasonable legend location, adding numeric labels above data points,
+and combining those with a trend-line annotation.
+
+The 2×2 grid below shows each of the four utilities on synthetic
+data.
+"""
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+import dartwork_mpl as dm
+
+np.random.seed(42)
+
+dm.style.use("scientific")
+fig, axes = plt.subplots(2, 2, figsize=(dm.cm2in(16), dm.cm2in(12)))
+
+x = np.linspace(0, 10, 100)
+y1 = np.sin(x) * np.exp(-x / 10)
+y2 = np.cos(x) * np.exp(-x / 10)
+
+# Format axis labels from name + unit.
+ax1 = axes[0, 0]
+ax1.plot(x, y1, color="oc.blue5", lw=dm.lw(1))
+dm.helpers.formatting.format_axis_labels(
+    ax1, x_label="Time", y_label="Amplitude", x_unit="seconds", y_unit="mV"
+)
+ax1.set_title("Auto-Formatted Labels", fontsize=dm.fs(1))
+dm.minimal_axes(ax1)
+
+# Optimized legend placement.
+ax2 = axes[0, 1]
+ax2.plot(x, y1, color="oc.red5", label="Signal A", lw=dm.lw(1))
+ax2.plot(x, y2, color="oc.green5", label="Signal B", lw=dm.lw(1))
+ax2.fill_between(x[40:60], -0.5, 0.5, alpha=0.3, color="gray", label="Region")
+dm.helpers.formatting.optimize_legend(ax2, preferred_loc="best")
+ax2.set_title("Optimized Legend", fontsize=dm.fs(1))
+ax2.set_xlabel("X", fontsize=dm.fs(0))
+ax2.set_ylabel("Y", fontsize=dm.fs(0))
+dm.minimal_axes(ax2)
+
+# Value labels above bars.
+ax3 = axes[1, 0]
+x_points = np.array([1, 2, 3, 4, 5])
+y_points = np.array([23.5, 45.2, 38.9, 52.1, 41.3])
+ax3.bar(x_points, y_points, color="oc.purple5")
+dm.helpers.formatting.add_value_labels(
+    ax3, x_points, y_points, format_str=".1f", offset_y=0.02, fontsize=dm.fs(-1)
+)
+ax3.set_title("Value Labels on Bars", fontsize=dm.fs(1))
+ax3.set_xlabel("Category", fontsize=dm.fs(0))
+ax3.set_ylabel("Value", fontsize=dm.fs(0))
+dm.minimal_axes(ax3)
+
+# Scatter with a fitted trend line and regression-equation annotation.
+ax4 = axes[1, 1]
+x_scatter = np.random.randn(20)
+y_scatter = 2 * x_scatter + np.random.randn(20) * 0.5
+ax4.scatter(x_scatter, y_scatter, c=y_scatter, cmap="dc.deep_sea", s=50)
+dm.helpers.formatting.format_axis_labels(
+    ax4, x_label="Independent Variable", y_label="Dependent Variable"
+)
+z = np.polyfit(x_scatter, y_scatter, 1)
+p = np.poly1d(z)
+x_trend = np.linspace(x_scatter.min(), x_scatter.max(), 100)
+ax4.plot(x_trend, p(x_trend), "r--", alpha=0.8, lw=dm.lw(0.8))
+ax4.text(
+    0.05,
+    0.95,
+    f"y = {z[0]:.2f}x + {z[1]:.2f}",
+    transform=ax4.transAxes,
+    fontsize=dm.fs(-1),
+    verticalalignment="top",
+    bbox={"boxstyle": "round", "facecolor": "wheat", "alpha": 0.5},
+)
+ax4.set_title("Scatter with Trend", fontsize=dm.fs(1))
+dm.minimal_axes(ax4)
+
+dm.label_axes(axes.flat)
+dm.simple_layout(fig)
+plt.show()
