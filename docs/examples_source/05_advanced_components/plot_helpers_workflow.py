@@ -82,7 +82,7 @@ def automated_visualization(
 
     # Step 6 — format labels, spines, layout.
     print("Step 6: Formatting ...")
-    dm.helpers.formatting.format_axis_labels(
+    dm.helpers.labels.format_axis_labels(
         ax, x_label="X Variable", y_label="Y Variable"
     )
     ax.set_title("Automated Visualisation", fontsize=dm.fs(2))

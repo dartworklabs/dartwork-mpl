@@ -84,12 +84,13 @@ Example:
    for i, color in enumerate(colors):
        ax.plot(x, data[i], color=color, label=f"Series {i+1}")
 
-Formatting Utilities
---------------------
+Label, Legend, and Annotation Helpers
+-------------------------------------
 
-Functions for formatting axes, legends, and annotations.
+Functions for composing axis labels, placing legends, and adding
+value annotations.
 
-.. automodule:: dartwork_mpl.helpers.formatting
+.. automodule:: dartwork_mpl.helpers.labels
    :members:
    :undoc-members:
    :show-inheritance:
@@ -105,7 +106,7 @@ Example:
    ax.plot(x, y)
 
    # Format axis labels automatically
-   dm.helpers.formatting.format_axis_labels(
+   dm.helpers.labels.format_axis_labels(
        ax,
        xlabel="Time",
        ylabel="Value",
@@ -113,14 +114,14 @@ Example:
    )
 
    # Optimize legend placement
-   dm.helpers.formatting.optimize_legend(
+   dm.helpers.labels.optimize_legend(
        ax,
        loc='best',
        frameon=False
    )
 
    # Add value labels to data points
-   dm.helpers.formatting.add_value_labels(
+   dm.helpers.labels.add_value_labels(
        ax,
        x, y,
        format_str="{:.1f}",
@@ -231,8 +232,8 @@ The helpers module is designed to be easily used by AI agents and automation too
            ax.scatter(x, y, color=colors[0])
 
        # Format and optimize
-       dm.helpers.formatting.format_axis_labels(ax)
-       dm.helpers.formatting.optimize_legend(ax)
+       dm.helpers.labels.format_axis_labels(ax)
+       dm.helpers.labels.optimize_legend(ax)
 
        # Check quality
        issues = dm.helpers.quality.check_figure_quality(fig)
