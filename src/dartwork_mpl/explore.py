@@ -3,8 +3,10 @@
 Provides utility functions for listing and visualizing the discrete
 palettes and colormaps available in dartwork-mpl.
 
-This module consolidates all asset exploration and visualization functions,
-including those previously in the asset_viz module.
+Lightweight listing/preview helpers live here; the heavier
+``plot_colormaps`` / ``plot_colors`` / ``plot_fonts`` /
+``classify_colormap`` diagnostics are re-exported from
+:mod:`dartwork_mpl.diagnostics` for backwards compatibility.
 """
 
 from __future__ import annotations
@@ -14,8 +16,9 @@ import re
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 
-# Import asset visualization functions (to be fully integrated in future version)
-from .asset_viz import (
+# Re-export asset diagnostics so ``dm.explore.plot_colormaps`` etc.
+# keep working after the v0.3.x ``asset_viz`` → ``diagnostics`` rename.
+from .diagnostics import (
     classify_colormap,
     plot_colormaps,
     plot_colors,

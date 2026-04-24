@@ -37,14 +37,6 @@ from . import validate_enhanced
 # Axes annotation
 from .annotation import arrow_axis, label_axes
 
-# Import asset_viz module exports (visualization diagnostics).
-from .asset_viz import (
-    classify_colormap,
-    plot_colormaps,
-    plot_colors,
-    plot_fonts,
-)
-
 # Import color module exports
 from .color import (
     Color,
@@ -73,6 +65,14 @@ from .constant import (
     SW,
     TW,
     WIDTHS,
+)
+
+# Import asset-diagnostic visualization helpers.
+from .diagnostics import (
+    classify_colormap,
+    plot_colormaps,
+    plot_colors,
+    plot_fonts,
 )
 
 # Explore
@@ -241,7 +241,7 @@ __all__ = [
     "validate_enhanced",
     # Extended plots
     "plot_diverging_bar",
-    # Visualization diagnostics (from asset_viz)
+    # Asset diagnostics (from diagnostics)
     "plot_colormaps",
     "plot_colors",
     "plot_fonts",

@@ -42,9 +42,13 @@
 - Users get clear deprecation warnings pointing to new module names
 
 ### 4. ✅ Consolidated Asset Visualization
-- `asset_viz` functions now accessible through `explore` module
-- Future: Fully merge `asset_viz` into `explore.py` for better organization
-- Both modules serve the same purpose: exploring and visualizing library assets
+- `asset_viz` functions moved to a dedicated `diagnostics.py` module
+  in the v0.3.x series (see issue #57). The legacy `asset_viz`
+  subpackage is a thin deprecation shim that re-exports the same
+  four helpers.
+- `dm.explore` re-exports `classify_colormap` / `plot_colormaps` /
+  `plot_colors` / `plot_fonts` so discovery-oriented workflows can
+  reach every asset-introspection helper through a single module.
 
 ## Final Structure
 
@@ -59,8 +63,9 @@ dartwork-mpl/
 │   │   └── quality.py
 │   ├── templates/          # ✅ Renamed from xplot
 │   │   └── diverging_bar.py
-│   ├── explore.py          # Enhanced with asset_viz functions
-│   ├── asset_viz/          # To be fully merged into explore.py
+│   ├── explore.py          # Re-exports diagnostics helpers
+│   ├── diagnostics.py      # ✅ New home of the four asset helpers
+│   ├── asset_viz/          # Deprecation shim — re-exports from diagnostics
 │   ├── color/
 │   ├── ui/
 │   ├── mcp/
@@ -106,17 +111,21 @@ dm.templates.plot_diverging_bar(data)
 
 ## Outstanding follow-up
 
-Items from the original "Next Steps" list have been split out. Only
-the first one is still pending; the others have all shipped.
+Every item from the original "Next Steps" list has now shipped; the
+only remaining work is the eventual removal of the deprecation shims,
+which is scheduled for the next major release.
 
-- **Merge `asset_viz` module into `explore.py`** — tracked in
-  [issue #57](https://github.com/dartworklabs/dartwork-mpl/issues/57).
+- ✅ **Merge `asset_viz` module into a dedicated module** — shipped in
+  v0.3.x as `dartwork_mpl.diagnostics` (issue #57). The `asset_viz`
+  subpackage is retained as a thin deprecation shim that re-exports
+  the four helpers and emits a `DeprecationWarning` on import.
 - Documentation and test migrations for the `agent_utils → helpers` and
   `xplot → templates` renames are complete (see CHANGELOG entries for
   the PRs in the #43–#51 range).
 - Removal of the deprecated aliases themselves (`dm.agent_utils`,
-  `dm.xplot`, `dm.helpers.formatting`) is scheduled for the next major
-  release and is called out in the CHANGELOG "Deprecated" sections.
+  `dm.xplot`, `dm.helpers.formatting`, `dm.asset_viz`) is scheduled for
+  the next major release and is called out in the CHANGELOG
+  "Deprecated" sections.
 
 ## Summary
 

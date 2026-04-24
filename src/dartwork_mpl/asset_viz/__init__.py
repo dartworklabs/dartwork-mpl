@@ -1,22 +1,30 @@
-"""Asset visualization subpackage for dartwork-mpl.
+"""Deprecated alias for :mod:`dartwork_mpl.diagnostics`.
 
-This package provides functions to visualize available colormaps,
-colors, and fonts in the matplotlib/dartwork-mpl ecosystem.
-
-Re-exports
-----------
-classify_colormap : from ._cmap
-    Classify a colormap by type.
-plot_colormaps : from ._cmap
-    Plot colormaps grouped by type.
-plot_colors : from ._color
-    Plot named color libraries.
-plot_fonts : from ._font
-    Plot available font families.
+The four asset-inspection helpers (``classify_colormap``,
+``plot_colormaps``, ``plot_colors``, ``plot_fonts``) moved to the
+top-level :mod:`dartwork_mpl.diagnostics` module in v0.3.x as the
+final step of the v0.2.0 folder restructuring (see issue #57).
+Importing from this path still works but emits a
+``DeprecationWarning`` so callers can migrate.
 """
 
-from ._cmap import classify_colormap, plot_colormaps
-from ._color import plot_colors
-from ._font import plot_fonts
+from __future__ import annotations
+
+import warnings
+
+from ..diagnostics import (
+    classify_colormap,
+    plot_colormaps,
+    plot_colors,
+    plot_fonts,
+)
+
+warnings.warn(
+    "dartwork_mpl.asset_viz is deprecated; import from "
+    "dartwork_mpl.diagnostics (or the top-level dartwork_mpl "
+    "namespace) instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 __all__ = ["classify_colormap", "plot_colormaps", "plot_colors", "plot_fonts"]
