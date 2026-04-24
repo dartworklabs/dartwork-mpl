@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- **Guardrail scope expanded to `docs/` and `examples/`**: `tests/test_domain_neutrality.py` now runs a second parametrised test `test_no_finance_terms_in_docs_and_examples` that scans every `.py` / `.md` / `.rst` / `.mplstyle` file under `docs/` and the top-level `examples/` tree for the same finance-domain vocabulary (English: revenue, profit, ebitda, earnings, fiscal, valuation, dcf; Korean: 매출, 매출액, 영업이익, 억원, 조원). Build artefacts (`_build`, `examples_gallery`, `_static`, `_templates`, `__pycache__`) are excluded. The original `test_no_finance_terms_in_shipped_source` coverage is unchanged. The full guardrail now scans 184 files per run.
+- **Guardrail scope expanded to `docs/` and `examples/`**: `tests/test_domain_neutrality.py` now runs a second parametrised test `test_no_finance_terms_in_docs_and_examples` that scans every `.py` / `.md` / `.rst` / `.mplstyle` file under `docs/` and the top-level `examples/` tree for the same finance-domain vocabulary (English: revenue, profit, ebitda, earnings, fiscal, valuation, dcf; Korean: 매출, 매출액, 영업이익, 억원, 조원). Build artefacts (`_build`, `examples_gallery`, `_static`, `_templates`, `__pycache__`) are excluded. The original `test_no_finance_terms_in_shipped_source` coverage is unchanged. The full guardrail now scans 184+ files per run.
+- **Gallery: six new single-plot spine / grid examples** under `docs/examples_source/01_styling_and_themes/` — `plot_spine_minimal.py`, `plot_spine_visibility.py`, `plot_spine_styling.py`, `plot_grid_customization.py`, `plot_spine_publication_styles.py`, `plot_spine_dark_theme.py`, `plot_spine_dashboard.py`. Each renders exactly one figure, per the repo's one-plot-per-file convention.
 
 ### Changed
 
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Removed
 
 - **`AGENT_IMPROVEMENTS.md`**: Removed root-level planning document that described phantom modules (`agent_utils.py`, `templates/financial.py`, `templates/scientific.py`, `templates/business.py`) and phantom functions (`create_dual_axis_chart`, `create_waterfall_chart`, `create_multiple_comparison`, `create_band_chart`, etc.) as if they were implemented. The document also framed the library as finance-domain oriented, contradicting dartwork-mpl's identity as a general-purpose matplotlib design utility. Real features (MCP tools, `validate_enhanced`, prompt guides) are tracked in this changelog and their own source files.
+- **`docs/examples_source/01_styling_and_themes/plot_spine_styles.py`**: Removed the monolithic seven-figure gallery script and replaced it with the seven single-plot files listed under "Added" above. Each new file preserves the original narrative of its section (minimal / visibility / styling / grid / publication / dark / dashboard) but renders exactly one `Figure`.
 
 ## [0.3.1] - 2026-03-20
 
