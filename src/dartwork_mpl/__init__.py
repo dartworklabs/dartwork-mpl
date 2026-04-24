@@ -74,7 +74,10 @@ from .constant import (
     FS_SQUARE,
     FS_TALL,
     FS_WIDE,
+    MW,
     SW,
+    TW,
+    WIDTHS,
 )
 
 # Explore
@@ -163,6 +166,9 @@ __all__ = [
     # Constant module
     "DW",
     "SW",
+    "MW",
+    "TW",
+    "WIDTHS",
     "FS_SINGLE",
     "FS_DOUBLE",
     "FS_SQUARE",
