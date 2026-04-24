@@ -280,56 +280,77 @@ ax.set_ylabel("Temperature (°C)")
 dm.save_formats(fig, "chart", dpi=300)
 ```
 
-## 12. Chart Type Templates
+## 12. Reusable Snippet Patterns
 
-### Dual-Axis Time Series (bar + line)
+These are copy-into-your-script recipes, not shipped helpers. Adapt the
+variable names and cosmetics; the structure is the part worth keeping.
+
+### Dual-axis series (bar + line)
 
 ```python
-def create_dual_axis_chart(x_labels, bar_values, line_values,
-                           y_label_bar, y_label_line):
-    fig = plt.figure(figsize=(dm.DW, dm.DW * 0.5))
-    gs = fig.add_gridspec(1, 1, left=0.15, right=0.95, top=0.9, bottom=0.15)
-    ax = fig.add_subplot(gs[0, 0])
+# x_labels, bar_values, line_values are your own arrays.
+fig = plt.figure(figsize=(dm.DW, dm.DW * 0.5))
+gs = fig.add_gridspec(1, 1, left=0.15, right=0.95, top=0.9, bottom=0.15)
+ax = fig.add_subplot(gs[0, 0])
 
-    # Bar series (primary y-axis)
-    ax.bar(x_labels, bar_values, color="oc.blue5", width=0.6, alpha=0.9)
-    ax.set_ylabel(y_label_bar)
+# Primary series on the left y-axis.
+ax.bar(x_labels, bar_values, color="oc.blue5", width=0.6, alpha=0.9)
+ax.set_ylabel("Primary (unit)")
 
-    # Line series (secondary y-axis)
-    ax2 = ax.twinx()
-    ax2.plot(x_labels, line_values, color="oc.red5", marker="o", linewidth=1.5)
-    ax2.set_ylabel(y_label_line, color="oc.red5")
-    ax2.tick_params(axis="y", labelcolor="oc.red5")
+# Secondary series on the right y-axis via twinx().
+ax2 = ax.twinx()
+ax2.plot(
+    x_labels, line_values,
+    color="oc.red5", marker="o", linewidth=1.5,
+)
+ax2.set_ylabel("Secondary (unit)", color="oc.red5")
+ax2.tick_params(axis="y", labelcolor="oc.red5")
 
-    dm.auto_layout(fig)
-    return fig, (ax, ax2)
+dm.auto_layout(fig)
 ```
 
-### Categorical Bar Comparison (with highlight)
+### Categorical bars with a highlighted member
 
 ```python
-def create_categorical_bars(categories, values, highlight=None):
-    fig = plt.figure(figsize=(dm.DW * 0.8, dm.DW * 0.5))
-    gs = fig.add_gridspec(1, 1, left=0.15, right=0.95, top=0.9, bottom=0.2)
-    ax = fig.add_subplot(gs[0, 0])
+# categories, values are your own arrays; highlight is one category name.
+fig = plt.figure(figsize=(dm.DW * 0.8, dm.DW * 0.5))
+gs = fig.add_gridspec(1, 1, left=0.15, right=0.95, top=0.9, bottom=0.2)
+ax = fig.add_subplot(gs[0, 0])
 
-    x = np.arange(len(categories))
-    width = 0.6
+x = np.arange(len(categories))
+colors = [
+    "oc.blue5" if c == highlight else "oc.gray5"
+    for c in categories
+]
+ax.bar(x, values, width=0.6, color=colors, alpha=0.9)
 
-    # Highlight one category by color; others stay neutral
-    colors = ["oc.blue5" if c == highlight else "oc.gray5" for c in categories]
-    ax.bar(x, values, width, color=colors, alpha=0.9)
+# Value labels above each bar.
+for i, val in enumerate(values):
+    ax.text(
+        i, val + max(values) * 0.02, f"{val:.1f}",
+        ha="center", va="bottom", fontsize=dm.fs(-1),
+    )
 
-    # Add value labels above each bar
-    for i, val in enumerate(values):
-        ax.text(i, val + max(values) * 0.02, f"{val:.1f}",
-                ha="center", va="bottom", fontsize=dm.fs(-1))
+ax.set_xticks(x)
+ax.set_xticklabels(categories, rotation=45, ha="right")
 
-    ax.set_xticks(x)
-    ax.set_xticklabels(categories, rotation=45, ha="right")
+dm.auto_layout(fig)
+```
 
-    dm.auto_layout(fig)
-    return fig, ax
+### Shipped template: diverging bar
+
+For the one composite template that *is* shipped, call the function
+directly — do not reimplement it.
+
+```python
+fig, ax = dm.plot_diverging_bar(
+    labels=["Category A", "Category B", "Category C"],
+    neg_values=np.array([-30, -15, -25]),
+    pos_values=np.array([40, 55, 35]),
+    neg_label="Loss",
+    pos_label="Gain",
+    title="Diverging contributions",
+)
 ```
 
 ## 13. Performance Optimization
