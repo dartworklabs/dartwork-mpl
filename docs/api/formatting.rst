@@ -18,7 +18,7 @@ Key Features
 - **Automatic formatting**: Convert raw numbers to human-readable formats
 - **Locale support**: Format numbers according to regional conventions
 - **Scientific notation**: SI prefixes and engineering notation
-- **Financial formats**: Currency, millions, billions with appropriate suffixes
+- **Currency-style formats**: Symbols, thousands separators, millions, billions with appropriate suffixes
 - **Label rotation**: Rotate tick labels for better readability
 
 API Reference
@@ -70,31 +70,31 @@ Percentage Formatting
    # With custom decimal places
    dm.format_axis_percent(ax, axis='y', decimals=1)  # Shows: 15.0%, 32.0%, etc.
 
-Financial Data Formatting
-^^^^^^^^^^^^^^^^^^^^^^^^^
+Large Number Formatting
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
    # Thousands separator
    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12, 4))
 
-   # Revenue in thousands
-   revenue = np.array([125000, 248000, 392000, 516000, 687000])
-   ax1.plot(revenue)
+   # Sample counts in thousands
+   sample_counts = np.array([125000, 248000, 392000, 516000, 687000])
+   ax1.plot(sample_counts)
    dm.format_axis_thousands(ax1, axis='y')  # Shows: 125,000, 248,000, etc.
-   ax1.set_title('Revenue ($)')
+   ax1.set_title('Sample Count')
 
-   # Market cap in millions
-   market_cap = np.array([1.2e6, 2.5e6, 4.8e6, 8.3e6])
-   ax2.bar(range(len(market_cap)), market_cap)
+   # Dataset size in millions of rows
+   dataset_rows = np.array([1.2e6, 2.5e6, 4.8e6, 8.3e6])
+   ax2.bar(range(len(dataset_rows)), dataset_rows)
    dm.format_axis_millions(ax2, axis='y')  # Shows: 1.2M, 2.5M, etc.
-   ax2.set_title('Market Cap')
+   ax2.set_title('Dataset Rows')
 
-   # GDP in billions
-   gdp = np.array([1.8e9, 2.1e9, 2.4e9, 2.7e9])
-   ax3.plot(gdp)
+   # World population in billions
+   population = np.array([1.8e9, 2.1e9, 2.4e9, 2.7e9])
+   ax3.plot(population)
    dm.format_axis_billions(ax3, axis='y', suffix='B')  # Shows: 1.8B, 2.1B, etc.
-   ax3.set_title('GDP')
+   ax3.set_title('Population')
 
 Currency Formatting
 ^^^^^^^^^^^^^^^^^^^
@@ -177,58 +177,63 @@ Rotating Labels
 
    dm.simple_layout(fig)
 
-Complete Example: Financial Dashboard
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Complete Example: Multi-format Dashboard
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A 2×2 dashboard that exercises all four numeric formatters side by
+side (thousands, percent, currency, billions). The metrics are a
+neutral mix — sample count, efficiency, unit price, cumulative energy
+— so the page reads as a *formatter* showcase rather than a finance
+template.
 
 .. code-block:: python
 
    import dartwork_mpl as dm
    import matplotlib.pyplot as plt
    import numpy as np
-   import pandas as pd
 
-   # Create sample financial data
-   quarters = ['Q1 2023', 'Q2 2023', 'Q3 2023', 'Q4 2023', 'Q1 2024']
-   revenue = np.array([1.2e6, 1.5e6, 1.8e6, 2.1e6, 2.4e6])
-   profit_margin = np.array([0.12, 0.15, 0.18, 0.14, 0.16])
-   stock_price = np.array([45.20, 52.30, 61.50, 58.40, 67.80])
-   market_cap = revenue * 50  # Simplified calculation
+   # Create sample measurement data
+   periods = ['T1', 'T2', 'T3', 'T4', 'T5']
+   samples = np.array([125_000, 248_000, 392_000, 516_000, 687_000])
+   efficiency = np.array([0.62, 0.68, 0.73, 0.71, 0.76])
+   unit_price = np.array([45.20, 52.30, 61.50, 58.40, 67.80])
+   cumulative_energy = np.array([1.8e9, 3.9e9, 6.3e9, 9.0e9, 11.8e9])
 
    # Create dashboard
    fig = plt.figure(figsize=(12, 8))
    gs = fig.add_gridspec(2, 2, hspace=0.3, wspace=0.3)
 
-   # Revenue (top-left)
+   # Sample count (top-left) — thousands formatter
    ax1 = fig.add_subplot(gs[0, 0])
-   ax1.bar(quarters, revenue, color='oc.green5')
-   dm.format_axis_millions(ax1, axis='y', suffix='M')
-   ax1.set_title('Quarterly Revenue')
-   ax1.set_ylabel('Revenue ($)')
+   ax1.bar(periods, samples, color='oc.green5')
+   dm.format_axis_thousands(ax1, axis='y')
+   ax1.set_title('Sample Count')
+   ax1.set_ylabel('Samples')
    dm.rotate_tick_labels(ax1, axis='x', rotation=45)
 
-   # Profit Margin (top-right)
+   # Efficiency (top-right) — percent formatter
    ax2 = fig.add_subplot(gs[0, 1])
-   ax2.plot(quarters, profit_margin, 'o-', color='oc.blue5', lw=2)
+   ax2.plot(periods, efficiency, 'o-', color='oc.blue5', lw=2)
    dm.format_axis_percent(ax2, axis='y')
-   ax2.set_title('Profit Margin')
-   ax2.set_ylabel('Margin')
-   ax2.set_ylim(0, 0.25)
+   ax2.set_title('Efficiency')
+   ax2.set_ylabel('Ratio')
+   ax2.set_ylim(0, 1.0)
    dm.rotate_tick_labels(ax2, axis='x', rotation=45)
 
-   # Stock Price (bottom-left)
+   # Unit price (bottom-left) — currency formatter
    ax3 = fig.add_subplot(gs[1, 0])
-   ax3.plot(quarters, stock_price, 's-', color='oc.purple5', lw=2)
+   ax3.plot(periods, unit_price, 's-', color='oc.purple5', lw=2)
    dm.format_axis_currency(ax3, axis='y', symbol='$')
-   ax3.set_title('Stock Price')
-   ax3.set_ylabel('Price per Share')
+   ax3.set_title('Unit Price')
+   ax3.set_ylabel('Price per unit')
    dm.rotate_tick_labels(ax3, axis='x', rotation=45)
 
-   # Market Cap (bottom-right)
+   # Cumulative energy (bottom-right) — billions formatter
    ax4 = fig.add_subplot(gs[1, 1])
-   ax4.bar(quarters, market_cap, color='oc.orange5')
+   ax4.bar(periods, cumulative_energy, color='oc.orange5')
    dm.format_axis_billions(ax4, axis='y', suffix='B')
-   ax4.set_title('Market Capitalization')
-   ax4.set_ylabel('Market Cap ($)')
+   ax4.set_title('Cumulative Energy')
+   ax4.set_ylabel('Joules')
    dm.rotate_tick_labels(ax4, axis='x', rotation=45)
 
    # Style all axes
@@ -284,7 +289,7 @@ Best Practices
 --------------
 
 1. **Choose appropriate units**: Use millions/billions for large numbers to avoid too many digits
-2. **Decimal places**: Use 0-1 decimals for general audiences, 2-3 for technical/financial
+2. **Decimal places**: Use 0-1 decimals for general audiences, 2-3 for technical or currency values
 3. **Consistency**: Use the same format across related charts
 4. **Label rotation**: Use 45° for moderate-length labels, 90° for very long labels
 5. **SI prefixes**: Prefer for scientific/engineering contexts
@@ -293,13 +298,13 @@ Best Practices
 Common Patterns
 ---------------
 
-Financial Reports
-^^^^^^^^^^^^^^^^^
+Currency & Percent Reports
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
-   # Standard financial formatting
-   dm.format_axis_millions(ax_revenue, axis='y', suffix='M')
+   # Typical mix: large counts, a growth ratio, and a unit price
+   dm.format_axis_millions(ax_count, axis='y', suffix='M')
    dm.format_axis_percent(ax_growth, axis='y', decimals=1)
    dm.format_axis_currency(ax_price, axis='y', symbol='$')
 
@@ -338,7 +343,7 @@ Formatting utilities work seamlessly with dartwork-mpl themes:
    ax.plot(data)
 
    # Format based on data type
-   if data_type == 'financial':
+   if data_type == 'currency':
        dm.format_axis_currency(ax, axis='y', symbol='$')
    elif data_type == 'percentage':
        dm.format_axis_percent(ax, axis='y')
