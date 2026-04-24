@@ -89,12 +89,12 @@ ax = fig.add_subplot(gs[0, 0])
 ### Semantic Color Mapping
 
 ```python
-# Financial charts
+# Dual-series / diverging data
 COLORS = {
-    "positive": "oc.blue5",    # Profits, gains
-    "negative": "oc.red5",     # Losses, declines
+    "positive": "oc.blue5",    # Above reference, gains
+    "negative": "oc.red5",     # Below reference, losses
     "neutral": "oc.gray5",     # Reference lines
-    "forecast": "oc.orange5",  # Projections
+    "predicted": "oc.orange5", # Forecasts, projections
     "highlight": "oc.blue7",   # Emphasis
 }
 ```
@@ -134,8 +134,8 @@ ax.text(x, y, "Bold", fontweight=dm.fw(1))  # base + 100
 
 ```python
 # Numbers on charts - always include units
-ax.set_ylabel("Revenue (억원)")
-ax.set_xlabel("Quarter")
+ax.set_ylabel("Temperature (°C)")
+ax.set_xlabel("Time (s)")
 
 # Data labels - use consistent precision
 for val in values:
@@ -251,7 +251,7 @@ plt.tight_layout()  # Use dm.auto_layout instead
 ax.text(0.5, 0.98, "Title")  # Use GridSpec instead
 
 # Don't forget units
-ax.set_ylabel("Revenue")  # Missing unit!
+ax.set_ylabel("Temperature")  # Missing unit!
 
 # Don't use low DPI
 fig.savefig("chart.png", dpi=72)  # Too low!
@@ -274,7 +274,7 @@ dm.auto_layout(fig)
 gs = fig.add_gridspec(...)
 
 # Include units
-ax.set_ylabel("Revenue (억원)")
+ax.set_ylabel("Temperature (°C)")
 
 # High quality output
 dm.save_formats(fig, "chart", dpi=300)
@@ -282,51 +282,51 @@ dm.save_formats(fig, "chart", dpi=300)
 
 ## 12. Chart Type Templates
 
-### Financial Time Series
+### Dual-Axis Time Series (bar + line)
 
 ```python
-def create_financial_chart(quarters, revenue, profit):
+def create_dual_axis_chart(x_labels, bar_values, line_values,
+                           y_label_bar, y_label_line):
     fig = plt.figure(figsize=(dm.DW, dm.DW * 0.5))
     gs = fig.add_gridspec(1, 1, left=0.15, right=0.95, top=0.9, bottom=0.15)
     ax = fig.add_subplot(gs[0, 0])
 
-    # Bar for revenue
-    bars = ax.bar(quarters, revenue, color="oc.blue5", width=0.6, alpha=0.9)
+    # Bar series (primary y-axis)
+    ax.bar(x_labels, bar_values, color="oc.blue5", width=0.6, alpha=0.9)
+    ax.set_ylabel(y_label_bar)
 
-    # Line for profit margin
+    # Line series (secondary y-axis)
     ax2 = ax.twinx()
-    ax2.plot(quarters, profit, color="oc.red5", marker="o", linewidth=1.5)
-
-    # Styling
-    ax.set_ylabel("Revenue (억원)")
-    ax2.set_ylabel("Profit Margin (%)", color="oc.red5")
+    ax2.plot(x_labels, line_values, color="oc.red5", marker="o", linewidth=1.5)
+    ax2.set_ylabel(y_label_line, color="oc.red5")
     ax2.tick_params(axis="y", labelcolor="oc.red5")
 
     dm.auto_layout(fig)
     return fig, (ax, ax2)
 ```
 
-### Comparison Charts
+### Categorical Bar Comparison (with highlight)
 
 ```python
-def create_peer_comparison(companies, metrics):
+def create_categorical_bars(categories, values, highlight=None):
     fig = plt.figure(figsize=(dm.DW * 0.8, dm.DW * 0.5))
     gs = fig.add_gridspec(1, 1, left=0.15, right=0.95, top=0.9, bottom=0.2)
     ax = fig.add_subplot(gs[0, 0])
 
-    x = np.arange(len(companies))
+    x = np.arange(len(categories))
     width = 0.6
 
-    colors = ["oc.blue5" if c == "target" else "oc.gray5" for c in companies]
-    bars = ax.bar(x, metrics, width, color=colors, alpha=0.9)
+    # Highlight one category by color; others stay neutral
+    colors = ["oc.blue5" if c == highlight else "oc.gray5" for c in categories]
+    ax.bar(x, values, width, color=colors, alpha=0.9)
 
-    # Add value labels
-    for i, val in enumerate(metrics):
-        ax.text(i, val + max(metrics)*0.02, f"{val:.1f}",
+    # Add value labels above each bar
+    for i, val in enumerate(values):
+        ax.text(i, val + max(values) * 0.02, f"{val:.1f}",
                 ha="center", va="bottom", fontsize=dm.fs(-1))
 
     ax.set_xticks(x)
-    ax.set_xticklabels(companies, rotation=45, ha="right")
+    ax.set_xticklabels(categories, rotation=45, ha="right")
 
     dm.auto_layout(fig)
     return fig, ax
