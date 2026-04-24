@@ -31,6 +31,9 @@ from . import (
 sys.modules["dartwork_mpl.agent_utils"] = helpers
 sys.modules["dartwork_mpl.xplot"] = templates
 
+# Validation helpers — submodule for extended auto-fix utilities.
+from . import validate_enhanced
+
 # Axes annotation
 from .annotation import arrow_axis, label_axes
 
@@ -135,8 +138,9 @@ from .templates import plot_diverging_bar
 # Color utilities
 from .util import cm2in, make_offset, mix_colors, pseudo_alpha, set_decimal
 
-# Import validate module exports
+# Validation entry points
 from .validate import validate_figure
+from .validate_enhanced import validate_with_fixes
 
 # Define __all__ for explicit exports
 
@@ -233,6 +237,8 @@ __all__ = [
     "copy_prompt",
     # Validation
     "validate_figure",
+    "validate_with_fixes",
+    "validate_enhanced",
     # Extended plots
     "plot_diverging_bar",
     # Visualization diagnostics (from asset_viz)
