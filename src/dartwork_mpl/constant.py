@@ -9,8 +9,8 @@ from .util import cm2in
 __all__ = [
     "DW",
     "SW",
-    "MW",      # Medium width (SW ↔ DW 중간)
-    "TW",      # Two-thirds width
+    "MW",  # Medium width (SW ↔ DW 중간)
+    "TW",  # Two-thirds width
     "WIDTHS",  # 4-tier width tuple (SW, MW, TW, DW)
     "FS_SINGLE",
     "FS_DOUBLE",
@@ -28,7 +28,7 @@ __all__ = [
 
 # Single width — 좁은 사이드 차트·범례·개요 등
 # STRICTLY FOR WIDTH, DO NOT USE AS HEIGHT.
-SW: float = cm2in(9)   # 3.54 in
+SW: float = cm2in(9)  # 3.54 in
 
 # Medium width — 나란히 배치 2개 또는 본문 삽입용
 # STRICTLY FOR WIDTH, DO NOT USE AS HEIGHT.

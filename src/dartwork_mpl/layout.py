@@ -184,7 +184,7 @@ def simple_layout(
     # GridSpecFromSubplotSpec (created by e.g. fig.colorbar) has no
     # .update() — walk up to the root GridSpec that does.
     while isinstance(actual_gs, GridSpecFromSubplotSpec):
-        actual_gs = actual_gs._subplot_spec.get_gridspec()  # type: ignore[assignment]
+        actual_gs = actual_gs._subplot_spec.get_gridspec()  # type: ignore[attr-defined,assignment]
 
     _import_weights = np.array(importance_weights)
     _margins = np.array(margins) * fig.get_dpi()
