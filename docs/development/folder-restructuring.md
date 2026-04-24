@@ -1,5 +1,13 @@
 # dartwork-mpl Folder Structure Improvements
 
+> **Historical reference.** This document records the v0.2.0 folder
+> restructuring (`agent_utils` → `helpers`, `xplot` → `templates`). The
+> content below is kept as a reference for the migration contract
+> (deprecation aliases, removal timeline) and is not a live task list.
+> Remaining follow-up work is tracked as GitHub issues rather than as
+> bullets in this file — see the "Outstanding follow-up" section at
+> the bottom.
+
 ## Completed Restructuring
 
 ### 1. ✅ Removed Unnecessary Nested Directory
@@ -96,12 +104,19 @@ colors = dm.helpers.colors.auto_select_colors(5)
 dm.templates.plot_diverging_bar(data)
 ```
 
-## Next Steps (Optional)
+## Outstanding follow-up
 
-1. **Full integration**: Merge `asset_viz` module code directly into `explore.py`
-2. **Documentation update**: Update all documentation to use new module names
-3. **Test updates**: Update test files to use new imports
-4. **Remove deprecated aliases**: In future major version (e.g., v1.0.0)
+Items from the original "Next Steps" list have been split out. Only
+the first one is still pending; the others have all shipped.
+
+- **Merge `asset_viz` module into `explore.py`** — tracked in
+  [issue #57](https://github.com/dartworklabs/dartwork-mpl/issues/57).
+- Documentation and test migrations for the `agent_utils → helpers` and
+  `xplot → templates` renames are complete (see CHANGELOG entries for
+  the PRs in the #43–#51 range).
+- Removal of the deprecated aliases themselves (`dm.agent_utils`,
+  `dm.xplot`, `dm.helpers.formatting`) is scheduled for the next major
+  release and is called out in the CHANGELOG "Deprecated" sections.
 
 ## Summary
 
