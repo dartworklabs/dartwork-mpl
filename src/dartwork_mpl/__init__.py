@@ -34,8 +34,13 @@ sys.modules["dartwork_mpl.xplot"] = templates
 # Axes annotation
 from .annotation import arrow_axis, label_axes
 
-# Import asset_viz module exports
-from .asset_viz import *  # noqa: F403
+# Import asset_viz module exports (visualization diagnostics).
+from .asset_viz import (
+    classify_colormap,
+    plot_colormaps,
+    plot_colors,
+    plot_fonts,
+)
 
 # Import color module exports
 from .color import (
@@ -230,6 +235,11 @@ __all__ = [
     "validate_figure",
     # Extended plots
     "plot_diverging_bar",
+    # Visualization diagnostics (from asset_viz)
+    "plot_colormaps",
+    "plot_colors",
+    "plot_fonts",
+    "classify_colormap",
 ]
 
 # --- Monkey-patch matplotlib.axes.Axes.twinx to always show right spine ---
