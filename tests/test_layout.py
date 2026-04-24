@@ -95,7 +95,7 @@ class TestAutoLayout:
         """auto_layout should eliminate overflow on a twinx chart."""
         fig, ax1 = plt.subplots(figsize=(6, 4))
         ax1.plot([1, 2, 3], label="Left")
-        ax1.set_ylabel("Left Axis (억원)")
+        ax1.set_ylabel("Left Axis (온도 ℃)")
 
         ax2 = ax1.twinx()
         ax2.plot([10, 20, 30], color="red", label="Right")
