@@ -294,22 +294,22 @@ plt.close(fig)
 #### Using Helper Functions
 
 ```python
-from dartwork_mpl.agent_utils import (
+from dartwork_mpl.helpers import (
     validate_data,
     auto_select_colors,
     format_axis_labels,
     save_figure,
-    check_figure_quality
+    check_figure_quality,
 )
 
-# Validate input data
+# Validate input data (drops NaN/Inf or raises on invalid input)
 x, y = validate_data(x_data, y_data, allow_nan=False)
 
 # Auto-select appropriate colors
 colors = auto_select_colors(n_series=3, color_type="categorical")
 
 # Apply consistent formatting
-format_axis_labels(ax, "Time", "Revenue", y_unit="억원")
+format_axis_labels(ax, "Time (s)", "Temperature (°C)")
 
 # Check quality before saving
 issues = check_figure_quality(fig)
@@ -320,15 +320,19 @@ if issues:
 #### Using Chart Templates
 
 ```python
-from dartwork_mpl.templates.financial import (
-    create_dual_axis_chart,
-    create_waterfall_chart
-)
+import numpy as np
+import dartwork_mpl as dm
 
-# Use pre-built templates for common patterns
-fig, (ax1, ax2) = create_dual_axis_chart(
-    quarters, revenue, margins,
-    bar_label="Revenue", line_label="Margin"
+# Ready-to-use templates live in dartwork_mpl.templates and are also
+# re-exported at the package top level. Currently available:
+# plot_diverging_bar — symmetric horizontal bars diverging left/right
+# from a shared center axis, useful for A vs B category comparisons.
+fig, ax = dm.plot_diverging_bar(
+    labels=["Category 1", "Category 2", "Category 3"],
+    neg_values=np.array([10.0, 12.5, 8.0]),
+    pos_values=np.array([9.0, 11.0, 10.5]),
+    neg_label="Series A",
+    pos_label="Series B",
 )
 ```
 
@@ -345,8 +349,8 @@ fig, (ax1, ax2) = create_dual_axis_chart(
 ### 3.3 Refer to Additional Resources
 
 - **Coding Rules**: See `coding-rules.md` for detailed agent guidelines
-- **Templates**: Check `templates/` module for ready-to-use chart patterns
-- **Utilities**: Use `agent_utils.py` for common helper functions
+- **Templates**: Check the `dartwork_mpl.templates` submodule for ready-to-use chart patterns
+- **Utilities**: Use `dartwork_mpl.helpers` for common helper functions
 
 ## 4. Recommended Workflow (Manual)
 
