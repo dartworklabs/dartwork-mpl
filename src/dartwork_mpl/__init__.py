@@ -8,41 +8,28 @@ __version__ = "0.3.1"
 
 # ruff: noqa: E402
 
-# Import cmap, font, icon, and templates modules for explicit access
-# Backward compatibility aliases with deprecation warnings
+import sys
 import warnings
 
+# Import submodules for explicit access under ``dm.<submodule>``.
+# ``templates`` is the renamed ``xplot`` (see ``sys.modules`` shim and
+# the ``__getattr__`` below).
 from . import (
     cmap,  # noqa: F401
     font,  # noqa: F401
     helpers,  # noqa: F401
     icon,  # noqa: F401
+    templates,  # noqa: F401
 )
 
-
-def _import_with_warning(old_name, new_module):
-    """Helper to create deprecated module aliases."""
-    warnings.warn(
-        f"{old_name} is deprecated, use {new_module.__name__} instead",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return new_module
-
-
-# Create deprecated aliases
-import sys
-
-# Import templates (formerly xplot)
-from . import templates  # noqa: F401
-
-# Set up module aliases for backward compatibility
+# Set up legacy submodule aliases for ``import dartwork_mpl.agent_utils``
+# and ``import dartwork_mpl.xplot``. ``__getattr__`` below handles the
+# attribute-access path (``dm.agent_utils`` / ``dm.xplot``); do NOT bind
+# these aliases as module attributes here, because module attributes
+# would shadow ``__getattr__`` and silently swallow the deprecation
+# warning.
 sys.modules["dartwork_mpl.agent_utils"] = helpers
 sys.modules["dartwork_mpl.xplot"] = templates
-
-# Create attribute aliases for backward compatibility
-agent_utils = helpers
-xplot = templates
 
 # Axes annotation
 from .annotation import arrow_axis, label_axes
