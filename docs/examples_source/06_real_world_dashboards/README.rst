@@ -1,80 +1,50 @@
 Real-World Dashboards
 =====================
 
-This gallery showcases production-ready dashboards and reporting templates
-that demonstrate dartwork-mpl's capabilities for financial and business
-intelligence visualization.
+This gallery showcases complete, production-ready dashboard examples that
+combine multiple dartwork-mpl features — composite layouts, semantic colors,
+hierarchical typography, and auto-layout — on realistic sample data.
 
-.. contents:: Dashboard Types
+Each example focuses on one chart in one figure so that the techniques are
+easy to isolate, remix, and drop into a larger multi-panel report.
+
+.. contents:: Examples
    :local:
    :depth: 1
 
-Financial Dashboards
---------------------
-
-Multi-panel dashboards for financial analysis including:
-
-- **Trading Dashboards**: Real-time market data visualization
-- **Portfolio Analytics**: Performance attribution and risk metrics
-- **Earnings Reports**: Quarterly results and KPI tracking
-- **Market Microstructure**: Order flow and liquidity analysis
-
-Business Intelligence
----------------------
-
-Enterprise reporting templates featuring:
-
-- **Executive Dashboards**: High-level KPI summaries
-- **Sales Analytics**: Revenue trends and forecasting
-- **Operations Monitoring**: Process metrics and efficiency tracking
-- **Customer Analytics**: Segmentation and behavior patterns
-
-Technical Features
-------------------
-
-These examples demonstrate advanced dartwork-mpl features:
-
-- **Composite Layouts**: Complex multi-panel arrangements using GridSpec
-- **Dynamic Theming**: Switching between light/dark modes
-- **Interactive Elements**: Hover effects and drill-down capabilities
-- **Performance Optimization**: Efficient rendering for large datasets
-- **Export Ready**: Publication-quality PDF and PNG output
-
-Best Practices
+Example Domain
 --------------
+
+All examples in this gallery render a consistent synthetic dataset: a small
+fleet of environmental sensors reporting temperature, humidity, and power
+draw at several sites over time. The choice of domain is incidental — the
+visual patterns (dual-axis trends, stacked components, threshold overlays,
+grouped comparisons, summary cards) transfer directly to any time series
+or categorical data.
+
+Techniques Demonstrated
+-----------------------
+
+- **Composite dashboards**: `plt.figure` + `GridSpec` for multi-panel layouts
+- **Dual-axis time series**: bar + line on shared x-axis with a secondary y-axis
+- **Stacked area charts**: component mix over time
+- **Threshold-annotated trends**: reference lines and shaded bands
+- **Grouped bar comparisons**: side-by-side categories across periods
+- **Text-only summary cards**: `axis("off")` + `ax.text` for KPI tiles
+
+Conventions
+-----------
 
 All dashboards follow dartwork-mpl conventions:
 
-1. **Consistent Styling**: Using preset styles for professional appearance
-2. **Smart Layouts**: Automatic spacing with ``dm.auto_layout()``
-3. **Color Theory**: Semantic color usage with OKLCH color space
-4. **Typography**: Hierarchical text sizing with ``dm.fs()``
-5. **Data-Ink Ratio**: Minimal visual elements for maximum clarity
-
-Integration
------------
-
-These templates integrate with:
-
-- **pandas**: Direct DataFrame plotting
-- **numpy**: Efficient numerical computations
-- **scipy**: Statistical analysis and optimization
-- **scikit-learn**: Machine learning visualizations
-- **MCP Servers**: AI-powered data analysis
-
-Usage
------
-
-Each example includes:
-
-- Complete source code with comments
-- Sample data generation or loading
-- Export configuration for different formats
-- Performance optimization tips
-- Customization guidelines
-
-.. note::
-
-   These dashboards are designed for production use. They include
-   error handling, responsive layouts, and performance optimizations
-   suitable for enterprise deployment.
+1. **Preset styles**: ``dm.style.use("report")`` (or ``"report-kr"`` for
+   Korean copy) is applied before any figure is created.
+2. **Relative typography**: titles and labels use ``dm.fs(n)`` so that a
+   preset change rescales the whole figure uniformly.
+3. **Named colors**: charts pull from the ``oc.*`` and ``tw.*`` palettes
+   instead of raw hex strings.
+4. **Auto-layout**: ``dm.auto_layout(fig)`` is called before ``plt.show``
+   so that margins adapt to actual content rather than static values.
+5. **Single chart per file**: each example renders exactly one figure.
+   To assemble a multi-panel dashboard, compose the individual snippets
+   inside a single `GridSpec`.
