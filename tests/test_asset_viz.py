@@ -1,156 +1,68 @@
-"""Tests for asset_viz subpackage (color, font, colormap)."""
+"""Deprecation regression for :mod:`dartwork_mpl.asset_viz`.
+
+The real implementations moved to :mod:`dartwork_mpl.diagnostics` in
+the v0.3.x series (see issue #57). The legacy ``asset_viz`` import
+path is retained as a thin shim that must:
+
+1. keep exposing the same four names, and
+2. emit a :class:`DeprecationWarning` on import.
+
+The functional behaviour of the four helpers is covered by
+``tests/test_diagnostics.py`` — we only pin the shim contract here.
+"""
 
 from __future__ import annotations
 
-from unittest.mock import patch
+import importlib
+import sys
+import warnings
 
 import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 
 matplotlib.use("Agg")
 
 
-class TestPlotColors:
-    """Tests for plot_colors()."""
-
-    def test_returns_list_of_figures(self) -> None:
-        """plot_colors() returns a non-empty list of Figure."""
-        from dartwork_mpl.asset_viz import plot_colors
-
-        figs = plot_colors()
-        assert isinstance(figs, list)
-        assert len(figs) > 0
-        for fig in figs:
-            assert isinstance(fig, Figure)
-        for fig in figs:
-            plt.close(fig)
-
-    def test_custom_dict(self) -> None:
-        """plot_colors() works with a custom color dict."""
-        from dartwork_mpl.asset_viz import plot_colors
-
-        custom = {
-            "oc.red0": "#fff5f5",
-            "oc.red5": "#ff6b6b",
-            "tw.blue500": "#3b82f6",
-        }
-        figs = plot_colors(custom, ncols=2)
-        assert isinstance(figs, list)
-        assert len(figs) > 0
-        for fig in figs:
-            plt.close(fig)
-
-    def test_show_hex_false(self) -> None:
-        """plot_colors(show_hex=False) still returns figures."""
-        from dartwork_mpl.asset_viz import plot_colors
-
-        figs = plot_colors({"oc.red0": "#fff5f5"}, show_hex=False)
-        assert len(figs) > 0
-        for fig in figs:
-            plt.close(fig)
-
-    def test_empty_dict_returns_empty(self) -> None:
-        """plot_colors({}) returns an empty list."""
-        from dartwork_mpl.asset_viz import plot_colors
-
-        figs = plot_colors({})
-        assert figs == []
+def _reimport_asset_viz():
+    """Force a fresh import so ``__init__`` re-runs and re-warns."""
+    sys.modules.pop("dartwork_mpl.asset_viz", None)
+    return importlib.import_module("dartwork_mpl.asset_viz")
 
 
-class TestPlotFonts:
-    """Tests for plot_fonts()."""
+def test_legacy_path_still_works() -> None:
+    """``from dartwork_mpl.asset_viz import ...`` continues to work."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        module = _reimport_asset_viz()
 
-    def test_returns_figure(self) -> None:
-        """plot_fonts() returns a Figure."""
-        from dartwork_mpl.asset_viz import plot_fonts
-
-        fig = plot_fonts()
-        assert isinstance(fig, Figure)
-        plt.close(fig)
-
-    def test_custom_ncols(self) -> None:
-        """plot_fonts(ncols=1) returns a Figure."""
-        from dartwork_mpl.asset_viz import plot_fonts
-
-        fig = plot_fonts(ncols=1)
-        assert isinstance(fig, Figure)
-        plt.close(fig)
+    assert hasattr(module, "classify_colormap")
+    assert hasattr(module, "plot_colormaps")
+    assert hasattr(module, "plot_colors")
+    assert hasattr(module, "plot_fonts")
 
 
-class TestPlotColormaps:
-    """Tests for plot_colormaps()."""
+def test_legacy_path_emits_deprecation_warning() -> None:
+    """Importing ``dartwork_mpl.asset_viz`` fires ``DeprecationWarning``."""
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        _reimport_asset_viz()
 
-    def test_returns_list_of_figures(self) -> None:
-        """plot_colormaps() returns a list of Figure."""
-        from dartwork_mpl.asset_viz import plot_colormaps
-
-        figs = plot_colormaps()
-        assert isinstance(figs, list)
-        assert len(figs) > 0
-        for fig in figs:
-            assert isinstance(fig, Figure)
-        for fig in figs:
-            plt.close(fig)
-
-    def test_no_plt_show_called(self) -> None:
-        """plot_colormaps() must not call plt.show()."""
-        from dartwork_mpl.asset_viz import plot_colormaps
-
-        with patch.object(plt, "show") as mock_show:
-            figs = plot_colormaps(cmap_list=["viridis", "plasma"])
-            mock_show.assert_not_called()
-        for fig in figs:
-            plt.close(fig)
-
-    def test_flat_mode(self) -> None:
-        """plot_colormaps(group_by_type=False) returns single fig."""
-        from dartwork_mpl.asset_viz import plot_colormaps
-
-        figs = plot_colormaps(
-            cmap_list=["viridis", "plasma"], group_by_type=False
-        )
-        assert isinstance(figs, list)
-        assert len(figs) == 1
-        for fig in figs:
-            plt.close(fig)
-
-    def test_custom_cmap_list(self) -> None:
-        """plot_colormaps() works with a custom cmap list."""
-        from dartwork_mpl.asset_viz import plot_colormaps
-
-        figs = plot_colormaps(cmap_list=["viridis", "coolwarm", "tab10"])
-        assert isinstance(figs, list)
-        assert len(figs) > 0
-        for fig in figs:
-            plt.close(fig)
+    messages = [str(w.message) for w in caught]
+    assert any(
+        issubclass(w.category, DeprecationWarning)
+        and "asset_viz" in str(w.message)
+        for w in caught
+    ), f"Expected DeprecationWarning mentioning 'asset_viz', got {messages}"
 
 
-class TestClassifyColormap:
-    """Tests for classify_colormap()."""
+def test_legacy_symbols_match_canonical() -> None:
+    """Legacy re-exports must be the same object as the canonical ones."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        legacy = _reimport_asset_viz()
 
-    def test_known_categories(self) -> None:
-        """Known colormaps should be classified correctly."""
-        import matplotlib
+    from dartwork_mpl import diagnostics
 
-        from dartwork_mpl.asset_viz import classify_colormap
-
-        # Sequential
-        result = classify_colormap(matplotlib.colormaps["viridis"])
-        assert result in ("Single-Hue", "Multi-Hue")
-
-        # Coolwarm — may classify as diverging or multi-hue
-        result = classify_colormap(matplotlib.colormaps["coolwarm"])
-        assert result in ("Diverging", "Multi-Hue", "Single-Hue")
-
-        # Categorical
-        assert classify_colormap(matplotlib.colormaps["tab10"]) == "Categorical"
-
-    def test_returns_string(self) -> None:
-        """classify_colormap always returns a string."""
-        import matplotlib
-
-        from dartwork_mpl.asset_viz import classify_colormap
-
-        result = classify_colormap(matplotlib.colormaps["viridis"])
-        assert isinstance(result, str)
+    assert legacy.classify_colormap is diagnostics.classify_colormap
+    assert legacy.plot_colormaps is diagnostics.plot_colormaps
+    assert legacy.plot_colors is diagnostics.plot_colors
+    assert legacy.plot_fonts is diagnostics.plot_fonts
