@@ -356,7 +356,7 @@ class TestMcpPrompts:
         captured = _capture_decorators(mock_mcp, "prompt")
         register_prompts(mock_mcp)
 
-        result = captured["create_plot"]("bar chart of quarterly revenue")
+        result = captured["create_plot"]("bar chart of temperature over time")
         assert isinstance(result, str)
         assert "dartwork-mpl" in result
         assert "dm.subplots" in result
