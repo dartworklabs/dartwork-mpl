@@ -26,12 +26,13 @@ Example
 
 .. code-block:: python
 
+   import numpy as np
    from dartwork_mpl.templates import plot_diverging_bar  # New import path
 
    fig, ax = plot_diverging_bar(
-       categories=['Category A', 'Category B', 'Category C'],
-       negatives=[-30, -15, -25],
-       positives=[40, 55, 35],
+       labels=['Category A', 'Category B', 'Category C'],
+       neg_values=np.array([-30, -15, -25]),
+       pos_values=np.array([40, 55, 35]),
        neg_label='Decrease',
        pos_label='Increase',
    )
