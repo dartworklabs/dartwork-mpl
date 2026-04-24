@@ -39,7 +39,7 @@ def format_axis_labels(
 
     Examples
     --------
-    >>> format_axis_labels(ax, "Time", "Revenue", x_unit="Quarter", y_unit="억원")
+    >>> format_axis_labels(ax, "Time", "Temperature", x_unit="s", y_unit="°C")
     """
     if x_label:
         if x_unit:
@@ -142,7 +142,7 @@ def add_value_labels(
 
     Examples
     --------
-    >>> add_value_labels(ax, quarters, revenue, format_str=".0f")
+    >>> add_value_labels(ax, x_positions, y_values, format_str=".0f")
     """
     if color is None:
         color = "oc.gray7"
