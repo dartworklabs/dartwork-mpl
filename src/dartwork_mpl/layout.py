@@ -361,7 +361,7 @@ def auto_layout(
     >>> import dartwork_mpl as dm
     >>> fig, ax = plt.subplots()
     >>> ax.plot([1, 2, 3])
-    >>> ax.set_ylabel("Revenue ($M)")
+    >>> ax.set_ylabel("Temperature (°C)")
     >>> dm.auto_layout(fig)
     """
     # Normalize padding to a 4-tuple
