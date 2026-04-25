@@ -220,10 +220,15 @@ get a one-line health check before you `save_formats`.
 
 If you'd rather see the effect of every parameter before committing
 it to code, dartwork-mpl ships a local web app that wires sliders to
-`rcParams` and exports the resulting Python script:
+your render function and exports the resulting Python script:
 
 ```bash
-python -m dartwork_mpl.ui  # opens http://localhost:8765
+# 1. scaffold a starter viewer (first time only)
+pip install "dartwork-mpl[ui]"
+dartwork-ui init ./my-viewer --example simple
+
+# 2. run it — opens http://127.0.0.1:8501
+cd my-viewer && python viewer.py
 ```
 
 → [Interactive UI guide](interactive.md)

@@ -237,9 +237,16 @@ Check that the port is not already in use:
 ```bash
 # Default port is 8501
 lsof -i :8501
+```
 
-# Use a different port
-dartwork-ui run --port 8502
+If something else is bound to 8501, pass a different port directly to
+`run(...)` inside your viewer script:
+
+```python
+from dartwork_mpl.ui import run
+
+if __name__ == "__main__":
+    run(plot_my_chart, port=8502)
 ```
 
 ---
