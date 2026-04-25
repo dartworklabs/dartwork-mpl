@@ -1,14 +1,23 @@
-Agent Helper Utilities
-======================
+Helper Utilities (``dm.helpers``)
+=================================
 
-AI-focused utilities for creating consistent, high-quality visualizations.
-This module provides helper functions organized into submodules designed to
-assist AI agents and automation tools in generating professional charts.
+General-purpose helpers for building consistent, high-quality
+visualizations. They cover the small ergonomic gaps that show up
+between matplotlib and a polished figure — data validation, color
+picking, label/legend formatting, quality checks, and figure I/O.
+
+These helpers compose well with the rest of dartwork-mpl, but they
+also work as a standalone toolkit on top of plain matplotlib.
 
 .. note::
 
-   The ``helpers`` module was previously named ``agent_utils`` in versions before 0.2.0.
-   The old name is available as a deprecated alias for backward compatibility.
+   **Module renames you may still run into.** The ``helpers`` module
+   was previously called ``agent_utils`` (renamed in v0.2.0), and its
+   ``formatting`` submodule was renamed to :mod:`dartwork_mpl.helpers.labels`
+   in the v0.3.x series to avoid clashing with the top-level
+   :mod:`dartwork_mpl.formatting` (axis tick formatters). Both old
+   paths still work but emit a ``DeprecationWarning`` — see the
+   :doc:`../migration` for one-shot migration scripts.
 
 Overview
 --------
@@ -17,7 +26,7 @@ The helpers module is organized into specialized submodules:
 
 - **data**: Data validation and cleaning utilities
 - **colors**: Automatic color selection and management
-- **formatting**: Axis labels, legends, and annotations
+- **labels**: Axis labels, legends, and value annotations
 - **quality**: Quality checks and chart suggestions
 - **io**: Figure creation and saving utilities
 
@@ -194,48 +203,49 @@ Example:
        optimize=True
    )
 
-Integration with AI Agents
---------------------------
+End-to-end Example: Automated Visualization
+-------------------------------------------
 
-The helpers module is designed to be easily used by AI agents and automation tools:
+The helpers module composes naturally with the rest of dartwork-mpl
+when you want a single function to take raw data and return a
+finished, quality-checked figure — useful for batch reporting,
+automated dashboards, or letting an LLM agent produce charts
+without hand-tuning every call.
 
 .. code-block:: python
 
    import dartwork_mpl as dm
-   import matplotlib.pyplot as plt
 
-   def ai_create_chart(data, chart_type=None):
-       """Example function an AI agent might use."""
+   def automated_visualization(data, chart_type=None):
+       """Take raw ``{'x': ..., 'y': ...}`` data and return a polished figure."""
 
-       # Validate input data
-       x, y = dm.helpers.data.validate_data(data['x'], data['y'])
+       # 1. Validate input data
+       x, y = dm.helpers.data.validate_data(data["x"], data["y"])
 
-       # Suggest chart type if not specified
+       # 2. Suggest a chart type if not specified
        if chart_type is None:
            chart_type = dm.helpers.quality.suggest_chart_type(x, y)
 
-       # Create figure with appropriate style
+       # 3. Create the figure with an appropriate style
        fig, ax = dm.helpers.io.create_figure_with_style(
-           style='scientific' if chart_type == 'scatter' else 'web'
+           style="scientific" if chart_type == "scatter" else "web",
        )
 
-       # Auto-select colors
+       # 4. Auto-select colors
        colors = dm.helpers.colors.auto_select_colors(
            n_series=1,
-           color_type='sequential' if chart_type == 'line' else 'qualitative'
+           color_type="sequential" if chart_type == "line" else "qualitative",
        )
 
-       # Create the plot
-       if chart_type == 'line':
+       # 5. Render
+       if chart_type == "line":
            ax.plot(x, y, color=colors[0])
-       elif chart_type == 'scatter':
+       elif chart_type == "scatter":
            ax.scatter(x, y, color=colors[0])
 
-       # Format and optimize
+       # 6. Format and quality-check
        dm.helpers.labels.format_axis_labels(ax)
        dm.helpers.labels.optimize_legend(ax)
-
-       # Check quality
        issues = dm.helpers.quality.check_figure_quality(fig)
 
        return fig, issues
@@ -243,6 +253,6 @@ The helpers module is designed to be easily used by AI agents and automation too
 See Also
 --------
 
-- :doc:`../integrations/ai_assisted` - Guide for using dartwork-mpl with AI tools
-- :doc:`../integrations/mcp_server` - MCP server for AI integration
-- :doc:`../usage_guide/quickstart` - Getting started with dartwork-mpl
+- :doc:`../integrations/ai_assisted` — using dartwork-mpl from AI assistants
+- :doc:`../integrations/mcp_server` — MCP server for AI integration
+- :doc:`../usage_guide/quickstart` — getting started

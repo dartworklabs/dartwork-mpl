@@ -17,6 +17,17 @@
 </div>
 ```
 
+## Drag the slider — same data, two worlds
+
+```{raw} html
+:file: _static/compare_slider.html
+```
+
+The chart on the left is what `plt.savefig()` gives you out of the
+box. The chart on the right is the same script with three
+dartwork-mpl lines added: pick a style, lay it out, save. No new
+plotting API to learn.
+
 ## Quick Example
 
 ```python
@@ -25,7 +36,7 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")              # Pick a style
 fig, ax = plt.subplots()
-ax.plot([1, 2, 3], [1, 4, 2])          # Regular matplotlib
+ax.plot([1, 2, 3], [1, 4, 2])           # Regular matplotlib
 dm.simple_layout(fig)                   # Better layout
 dm.save_formats(fig, "output")          # Export SVG + PNG
 ```
@@ -35,6 +46,88 @@ dm.save_formats(fig, "output")          # Export SVG + PNG
 :width: 80%
 :::
 
+## Why dartwork-mpl?
+
+::::{grid} 1 1 2 2
+:gutter: 2
+
+:::{grid-item-card} 🎯 **Zero learning curve**
+You already know matplotlib. dartwork-mpl just makes the defaults
+beautiful and gives you a few one-liners (`simple_layout`,
+`save_formats`, named colors) for the parts that always hurt.
+:::
+
+:::{grid-item-card} 🎨 **Curated, not invented**
+900+ named colors from real design systems (Open Color, Tailwind,
+Material, Ant, Chakra, Primer) and 30+ perceptually-uniform
+colormaps. Use them as drop-in color strings everywhere matplotlib
+accepts a color.
+:::
+
+:::{grid-item-card} 📐 **Layouts that just work**
+`simple_layout` and `auto_layout` solve the "labels overflow,
+margins look weird" problem properly — including with twinx,
+colorbars, and long Korean labels.
+:::
+
+:::{grid-item-card} 🧪 **Lint your figures**
+`dm.validate_figure(fig)` flags overflow, asymmetric margins, and
+pie-label cutoffs *before* you save. `validate_with_fixes` applies
+the obvious fixes for you.
+:::
+
+:::{grid-item-card} 🤖 **AI-ready**
+A built-in [MCP server](integrations/mcp_server.md) lets Claude /
+Cursor query palettes, lint chart code, and ask for style review —
+without leaving the editor.
+:::
+
+:::{grid-item-card} 🛠️ **Interactive UI**
+Tweak font sizes, line weights, colors, and margins in a local web
+app, then [download the exact Python script that reproduces your
+plot](usage_guide/interactive.md).
+:::
+
+::::
+
+## Try it without installing — interactive widgets
+
+Drag, click, and hover the live previews below. Everything you see
+runs entirely in your browser.
+
+::::{grid} 1 1 2 2
+:gutter: 2
+
+:::{grid-item-card} 🎚️ **Pick a preset**
+Toggle through `scientific` / `report` / `presentation` / `poster`
+on a real chart and watch the typography and spines respond.
+
+→ [Compare presets live](usage_guide/styles.md#interactive-comparison)
+:::
+
+:::{grid-item-card} 🌈 **Browse 900+ colors**
+Click any swatch to copy its name, filter by library, or scrub
+through OKLCH lightness ramps to see how shades evolve.
+
+→ [Open palette explorer](color_system/colors.md)
+:::
+
+:::{grid-item-card} 🗺️ **Inspect colormaps**
+Filter by category (Single-Hue, Multi-Hue, Diverging, Cyclical,
+Categorical) and preview gradients side-by-side.
+
+→ [Open colormap explorer](color_system/colormaps.md)
+:::
+
+:::{grid-item-card} 📏 **See `dm.fs()` in action**
+A live ruler maps `dm.fs(-2)` … `dm.fs(+3)` to actual point sizes
+under each preset, so you can pick the right offset by eye.
+
+→ [Try the size ruler](usage_guide/styles.md)
+:::
+
+::::
+
 ## Key Features
 
 ::::{grid} 1 1 2 3
@@ -43,37 +136,37 @@ dm.save_formats(fig, "output")          # Export SVG + PNG
 :::{grid-item-card} **Style Presets**
 :link: usage_guide/styles
 :link-type: doc
-Professional themes for every context: `scientific`, `report`, `presentation`, `poster`, `web`, `dark`, `minimal`
+Professional themes for every context: `scientific`, `report`, `presentation`, `poster`, `web`, `dark`, `minimal` — each one tunes fonts, line weights, spines, and tick styling in a single call.
 :::
 
 :::{grid-item-card} **Smart Layout**
 :link: usage_guide/layout
 :link-type: doc
-Advanced optimization algorithms for perfect margins and spacing automatically
+`simple_layout` and `auto_layout` use real numerical optimizers to give you uniform margins, even with colorbars and long labels. No more `bbox_inches="tight"` guesswork.
 :::
 
 :::{grid-item-card} **900+ Colors**
 :link: color_system/index
 :link-type: doc
-Named colors from Open Color, Tailwind, and Material Design palettes
+Named colors from Open Color, Tailwind, Material Design, Ant Design, Chakra UI, and Primer. Use them as plain color strings: `color="oc.blue5"`.
 :::
 
 :::{grid-item-card} **Interactive UI**
 :link: usage_guide/interactive
 :link-type: doc
-Web-based parameter tuning with real-time preview and code export
+Web-based parameter tuning with real-time preview and one-click code export. Adjust until it looks right, then take the script home.
 :::
 
 :::{grid-item-card} **Zero API Changes**
 :link: philosophy/index
 :link-type: doc
-Works with your existing matplotlib code — no new syntax to learn
+Works with your existing matplotlib code. dartwork-mpl never wraps `Figure` or `Axes`; it just sets up the environment and stays out of your way.
 :::
 
 :::{grid-item-card} **Export Formats**
 :link: api/io
 :link-type: doc
-One-line export to SVG, PNG, PDF with optimized settings
+One-line export to SVG, PNG, and PDF with sensible DPI defaults — and an optional `validate=True` pass to catch problems before they ship.
 :::
 
 ::::

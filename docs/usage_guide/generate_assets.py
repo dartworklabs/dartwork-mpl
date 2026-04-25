@@ -584,9 +584,9 @@ def _save_scientific_chart(images_dir: Path) -> Path:
 
 
 def _save_diverging_bar(images_dir: Path) -> Path:
-    """Save & Export: xplot diverging bar chart."""
+    """Save & Export: templates diverging bar chart."""
     dm.style.use("presentation")
-    from dartwork_mpl.xplot import plot_diverging_bar
+    from dartwork_mpl.templates import plot_diverging_bar
 
     fig, ax = plot_diverging_bar(
         labels=["Accuracy", "Precision", "Recall", "F1-Score", "AUC"],

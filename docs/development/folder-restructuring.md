@@ -1,12 +1,17 @@
+---
+orphan: true
+---
+
 # dartwork-mpl Folder Structure Improvements
 
-> **Historical reference.** This document records the v0.2.0 folder
-> restructuring (`agent_utils` → `helpers`, `xplot` → `templates`). The
-> content below is kept as a reference for the migration contract
-> (deprecation aliases, removal timeline) and is not a live task list.
-> Remaining follow-up work is tracked as GitHub issues rather than as
-> bullets in this file — see the "Outstanding follow-up" section at
-> the bottom.
+> **Historical reference.** This document records the v0.2.0–v0.3.x
+> folder restructuring (`agent_utils` → `helpers`, `xplot` → `templates`,
+> `helpers.formatting` → `helpers.labels`, `asset_viz` → `diagnostics`).
+> It is kept as a reference for the migration contract (deprecation
+> aliases, removal timeline) and is intentionally outside the main
+> toctree. For an end-user-facing migration walk-through, see
+> [Migration Guide](../migration.md). The "Outstanding follow-up"
+> section at the bottom tracks remaining items.
 
 ## Completed Restructuring
 

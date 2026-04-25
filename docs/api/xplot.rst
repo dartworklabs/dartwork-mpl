@@ -1,25 +1,22 @@
-Extended Plots (templates)
-===========================
+Plot Templates (``dm.templates``)
+=================================
 
-Ready-to-use specialized visualization templates that extend core
-dartwork-mpl with opinionated, publication-ready plot functions.
+A small, intentionally-narrow set of ready-to-use plot templates for
+chart types that are tedious to build from raw matplotlib but show
+up constantly in real reports. Templates are added only when a
+pattern repeats across enough projects to deserve a curated default.
 
-.. warning::
+Currently available:
 
-   **Module Renamed**: The ``xplot`` module has been renamed to ``templates`` in v0.2.0.
-   The old ``xplot`` name is available as a deprecated alias for backward compatibility.
-   Please update your imports to use the new name:
+- :func:`~dartwork_mpl.plot_diverging_bar` — symmetrical
+  positive / negative bar layout with integrated legend.
 
-   .. code-block:: python
+.. note::
 
-      # Old (deprecated - will be removed in v1.0)
-      from dartwork_mpl.xplot import plot_diverging_bar
-
-      # New (recommended)
-      from dartwork_mpl.templates import plot_diverging_bar
-      # or
-      import dartwork_mpl as dm
-      dm.plot_diverging_bar(...)
+   The module was previously named ``xplot`` (renamed to
+   ``templates`` in v0.2.0). Imports from ``dartwork_mpl.xplot``
+   still work but emit a ``DeprecationWarning`` and will be removed
+   in v1.0. See :doc:`../migration` for one-shot migration scripts.
 
 Example
 -------
@@ -27,19 +24,28 @@ Example
 .. code-block:: python
 
    import numpy as np
-   from dartwork_mpl.templates import plot_diverging_bar  # New import path
+   import dartwork_mpl as dm
+   from dartwork_mpl.templates import plot_diverging_bar
+
+   dm.style.use("presentation")
 
    fig, ax = plot_diverging_bar(
-       labels=['Category A', 'Category B', 'Category C'],
+       labels=["Category A", "Category B", "Category C"],
        neg_values=np.array([-30, -15, -25]),
        pos_values=np.array([40, 55, 35]),
-       neg_label='Decrease',
-       pos_label='Increase',
+       neg_label="Decrease",
+       pos_label="Increase",
    )
+
+   dm.simple_layout(fig)
+   dm.save_formats(fig, "diverging_bar", formats=("png", "svg"))
 
 .. figure:: images/xplot_example.svg
    :alt: Diverging bar chart from plot_diverging_bar
    :width: 100%
+
+The same callable is exposed at the top level as
+``dm.plot_diverging_bar(...)``.
 
 API
 ---
@@ -53,14 +59,3 @@ API
    :members:
    :undoc-members:
    :show-inheritance:
-
-Legacy Compatibility
---------------------
-
-For backward compatibility, the old ``xplot`` module name is still available:
-
-.. automodule:: dartwork_mpl.xplot
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :noindex:

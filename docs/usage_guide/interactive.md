@@ -1,45 +1,55 @@
 # Interactive UI
 
-dartwork-mpl includes an optional, powerful interactive viewer powered by FastAPI and Pydantic. It allows you to rapidly explore parameter spaces, adjust plot details in real-time through a web browser, and export both the final images and reproducible Python code.
+dartwork-mpl ships an optional in-browser viewer (FastAPI + Pydantic)
+for tweaking plot parameters with sliders, downloading the result,
+and — most importantly — exporting the **exact Python script** that
+reproduces what you see. It's the fastest way to figure out the
+parameters you actually want before locking them into code.
 
-:::{admonition} Preview
+```{admonition} What the UI gives you
 :class: tip
 
-The interactive UI opens in your browser at `http://127.0.0.1:8501`. It renders
-a split-pane layout: parameter sliders on the left, live plot preview on the
-right, with download and code-export buttons at the bottom.
-:::
+A split-pane web app at `http://127.0.0.1:8501`:
 
-:::{admonition} What the UI looks like
-:class: note
-
-The viewer opens a split-pane web interface at `http://127.0.0.1:8501`:
-
-- **Left panel:** Auto-generated parameter controls (sliders, text inputs, toggles) based on your `ParamModel` fields
-- **Right panel:** Live matplotlib figure that re-renders as you adjust parameters
-- **Bottom bar:** Download buttons (PNG/SVG/PDF), server save, and "Download Script" for reproducible code export
-:::
-
-> **Requirement**: The interactive UI requires the `ui` extra. Install it with
-> `pip install "dartwork-mpl[ui]"` or `uv add "dartwork-mpl[ui]"`.
-
-## Quick Start
-
-You can quickly scaffold a new interactive viewer project using the command-line interface:
-
-```bash
-# Interactive prompt
-dartwork-ui init
-
-# Or specify target and template directly
-dartwork-ui init ./my-viewer --example simple
+- **Left panel** — auto-generated controls (sliders, text inputs,
+  toggles, dropdowns) derived from your `ParamModel` fields.
+- **Right panel** — live matplotlib figure that re-renders on every
+  change, in any dartwork-mpl style preset.
+- **Bottom bar** — Download (PNG / SVG / PDF), Save-to-Server (with
+  optional mirror copies), and **Download Script** for one-click
+  reproducible export.
 ```
 
-This will create a standalone directory with a ready-to-use viewer script.
+```{admonition} Install the optional extra
+:class: note
 
-## Building Your Own Viewer
+The interactive UI is gated behind the `ui` extra:
 
-To build a viewer from scratch, define your parameters using a Pydantic `ParamModel` and a rendering function that takes those parameters to return a matplotlib `Figure`.
+    pip install "dartwork-mpl[ui]"
+    uv add "dartwork-mpl[ui]"
+```
+
+## 30-second tour
+
+```bash
+# 1. scaffold a starter viewer
+dartwork-ui init ./my-viewer --example simple
+
+# 2. run it
+cd my-viewer
+python viewer.py
+# → opens http://127.0.0.1:8501 in your browser
+```
+
+Adjust the sliders. When the figure looks right, click
+**Download Script** at the bottom — you get a standalone `.py` file
+that reproduces the figure with no UI dependency.
+
+## Building your own viewer
+
+A viewer is two things: a Pydantic `ParamModel` describing what the
+user can tweak, and a function that turns those parameters into a
+matplotlib `Figure`.
 
 ```python
 import matplotlib.pyplot as plt
@@ -48,10 +58,12 @@ import dartwork_mpl as dm
 from dartwork_mpl.ui import ParamModel, run
 from pydantic import Field
 
+
 class ScatterParams(ParamModel):
     n: int = Field(default=100, ge=10, le=1000, description="Number of points")
     alpha: float = Field(default=0.5, ge=0.0, le=1.0, description="Transparency")
     color: str = Field(default="oc.blue5", description="Point color")
+
 
 def plot_scatter(params: ScatterParams):
     dm.style.use("scientific")
@@ -59,56 +71,103 @@ def plot_scatter(params: ScatterParams):
 
     x = np.random.randn(params.n)
     y = np.random.randn(params.n)
-
     ax.scatter(x, y, alpha=params.alpha, color=params.color)
-    ax.set_title("Interactive Scatter Plot")
 
     dm.simple_layout(fig)
     return fig
+
 
 if __name__ == "__main__":
     # Starts a local web server at http://127.0.0.1:8501
     run(plot_scatter)
 ```
 
-## Key Features
+That's it. The UI introspects `ScatterParams`, generates the right
+control for each field, and starts re-rendering on every change.
 
-The interactive UI provides several powerful capabilities directly from the browser:
+## What field type maps to which control?
 
-### 1. Live Parameter Tuning
+| Pydantic field                                  | Auto-generated control      | Tip                                          |
+| ----------------------------------------------- | --------------------------- | -------------------------------------------- |
+| `int = Field(ge=…, le=…)`                       | Integer slider              | Always set both bounds for sliders           |
+| `float = Field(ge=…, le=…)`                     | Float slider                | Add `multiple_of=` for snap-to steps         |
+| `int` / `float` (no bounds)                     | Number text input           | Free-form numeric entry                      |
+| `bool`                                          | Toggle switch               | —                                            |
+| `Literal["a", "b", "c"]`                        | Dropdown                    | Cleanest way to expose presets / colors      |
+| `str`                                           | Text input                  | Use `Literal[…]` instead when values are fixed |
+| `list[float]` with `min_length` / `max_length`  | Repeated number inputs      | Good for piecewise breakpoints               |
 
-Because your parameters are defined via a Pydantic `ParamModel`, the UI automatically generates appropriate HTML controls:
+```python
+from typing import Literal
+from pydantic import Field
 
-- **Integer/Float types with `ge` and `le` bounds** become sliders.
-- **Strings and unbounded numbers** become text inputs.
-- **Booleans** become toggle switches.
+class FontParams(ParamModel):
+    preset: Literal[
+        "scientific", "report", "presentation", "poster",
+    ] = Field(default="scientific")
+    fs_offset: int = Field(default=0, ge=-3, le=4, description="dm.fs offset")
+    bold_title: bool = Field(default=False)
+```
 
-As you change parameters in the UI, the plot rerenders instantly.
+Wire that to a render function and you've built a one-page font /
+preset comparator.
 
-### 2. Export & Download
+## Common patterns
 
-Found the perfect plot? You don't need to write saving code. From the UI, you can:
+### Browse a parameter sweep
 
-- **Download Locally**: Save the current plot directly to your browser's downloads folder as PNG, SVG, or PDF.
-- **Save to Server**: Save the image to the directory where the script is running. You can even configure `run(copy_to=[...])` to automatically mirror saved images to your paper or report directory.
+Set wide bounds and step through them with the keyboard arrow keys
+once focus is on a slider:
 
-### 3. Reproducible Code Generation
+```python
+class SweepParams(ParamModel):
+    sigma: float = Field(default=1.0, ge=0.1, le=5.0)
+    samples: int = Field(default=500, ge=50, le=5000)
+```
 
-Perhaps the most powerful feature is code generation. Once you have tweaked the parameters to your liking, you can click **"Download Script"**.
+### Compare style presets live
 
-The viewer will dynamically generate and download a standalone, reproducible Python script containing:
+```python
+from typing import Literal
 
-- Your exact `ParamModel` and rendering function.
-- The **exact parameter values** you settled on in the UI.
-- The necessary boilerplate to run the script and save the plot without the UI dependency.
+class PresetParams(ParamModel):
+    preset: Literal[
+        "scientific", "report", "presentation", "poster", "web", "minimal", "dark",
+    ] = Field(default="scientific")
 
-This bridges the gap between exploratory data analysis and rigorous, reproducible publication graphics.
+def plot_preset(params: PresetParams):
+    dm.style.use(params.preset)
+    fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(9)))
+    ...
+    return fig
+```
 
-**Example generated script:**
+### Mirror exports to your paper / report directory
+
+```python
+run(
+    plot_scatter,
+    copy_to=["~/Papers/2026-acl/figures/", "../report/figures/"],
+)
+```
+
+Every "Save to Server" click also writes a copy into each path in
+`copy_to`, so you can iterate in the UI and keep your manuscript /
+slides up to date without manual copying.
+
+## Reproducible code export
+
+When you click **Download Script**, the viewer generates a
+self-contained `.py` file capturing:
+
+1. Your exact `ParamModel` and render function.
+2. The current parameter values from the UI.
+3. The minimal boilerplate to recreate the figure with no UI
+   dependency.
 
 ```python
 # Auto-generated by dartwork-mpl Interactive UI
-# Parameters captured at 2024-03-15 14:30:22
+# Parameters captured at 2026-04-25 14:30:22
 
 from scatter_viewer import ScatterParams, plot_scatter
 import dartwork_mpl as dm
@@ -118,11 +177,21 @@ fig = plot_scatter(params)
 dm.save_formats(fig, "scatter_final", formats=("png", "svg"), dpi=300)
 ```
 
-> 💡 **Tip:** The viewer also supports dark mode and automatically adapts to
-> your dartwork-mpl style preset.
+This is the whole reason the UI exists: tune by feel, lock the
+result into version control, and never ship "I forgot which
+parameters made this plot" again.
+
+```{tip}
+The viewer respects whatever `dm.style.use(...)` you call inside the
+render function — including `dark`, `report-kr`, and stacked styles
+like `["scientific", "font-libertine"]`.
+```
 
 ## See also
 
-- [API › Interactive Viewer](../api/ui.rst) for all `run()`, `ParamModel`, and CLI arguments
-- [Save and Validation](save_export.md) — for batch export without the interactive UI
-- [Design Philosophy](../philosophy/index) — understand the "Utilities, Not Wrappers" approach
+- [API › Interactive Viewer](../api/ui.rst) for all `run()`,
+  `ParamModel`, and CLI arguments.
+- [Save and Validation](save_export.md) for batch export without the
+  interactive UI.
+- [Design Philosophy](../philosophy/index) for the "Utilities, Not
+  Wrappers" approach behind the UI.
