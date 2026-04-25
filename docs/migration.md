@@ -1,204 +1,258 @@
 # Migration Guide
 
-This guide helps you migrate your code when upgrading dartwork-mpl versions.
+This guide covers the rename / deprecation events that have shipped
+since v0.1, with one-shot migration scripts at the end. Every legacy
+import path still works, but they all emit a `DeprecationWarning` and
+will be removed in v1.0.
 
-## v0.1.x to v0.2.0+
+## At a glance
 
-### Module Renames
+| Old path                              | New path                              | Deprecated since | Remove in |
+| ------------------------------------- | ------------------------------------- | ---------------- | --------- |
+| `dartwork_mpl.agent_utils`            | `dartwork_mpl.helpers`                | v0.2.0           | v1.0.0    |
+| `dartwork_mpl.xplot`                  | `dartwork_mpl.templates`              | v0.2.0           | v1.0.0    |
+| `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`         | v0.3.x           | v1.0.0    |
+| `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`            | v0.3.x           | v1.0.0    |
 
-Several modules have been renamed for better clarity and consistency. The old names
-are still available as deprecated aliases but will be removed in v1.0.
+The four diagnostic helpers (`classify_colormap`, `plot_colormaps`,
+`plot_colors`, `plot_fonts`) are also reachable as `dm.<name>` at the
+top level, which is the recommended way to call them and is not
+affected by any of the renames below.
 
-#### `agent_utils` → `helpers`
+## v0.1.x → v0.2.0
 
-The `agent_utils` module has been renamed to `helpers` to better reflect its
-general-purpose utility nature:
+### `agent_utils` → `helpers`
+
+Renamed to make clear these are general-purpose utilities, not
+AI-agent-specific.
 
 ```python
-# Old (deprecated - will show warning)
+# Old (deprecated — emits DeprecationWarning)
 from dartwork_mpl import agent_utils
-from dartwork_mpl.agent_utils import auto_select_colors
+from dartwork_mpl.agent_utils.colors import auto_select_colors
 
 # New (recommended)
 from dartwork_mpl import helpers
-from dartwork_mpl.helpers import auto_select_colors
+from dartwork_mpl.helpers.colors import auto_select_colors
 ```
 
-#### `xplot` → `templates`
+### `xplot` → `templates`
 
-The `xplot` module has been renamed to `templates` to better describe its
-purpose as ready-to-use visualization templates:
+Renamed to better describe its purpose: a small, curated set of
+ready-to-use plot templates.
 
 ```python
-# Old (deprecated - will show warning)
+# Old (deprecated)
 from dartwork_mpl.xplot import plot_diverging_bar
 import dartwork_mpl.xplot as xp
 
-# New (recommended)
+# New
 from dartwork_mpl.templates import plot_diverging_bar
 import dartwork_mpl.templates as tpl
 
-# Also available from top-level
+# Or — preferred — top-level
 import dartwork_mpl as dm
-dm.plot_diverging_bar(...)  # If exported at top level
+dm.plot_diverging_bar(...)
 ```
 
-### New Features in v0.2.0+
+## v0.3.x
 
-These features are new additions that don't require migration but are worth adopting:
+### `helpers.formatting` → `helpers.labels`
 
-#### Enhanced Figure Creation
-
-New `dm.subplots()` and `dm.figure()` functions with integrated styling:
+The `formatting` submodule of `helpers` was renamed to `labels` to
+remove a long-standing name clash with the top-level
+`dartwork_mpl.formatting` module (which houses the `format_axis_*`
+tick formatters). The contents (`format_axis_labels`, `optimize_legend`,
+`add_value_labels`) are unchanged.
 
 ```python
-# New way - style applied during creation
-fig, ax = dm.subplots(style='scientific')
+# Old (deprecated)
+from dartwork_mpl.helpers.formatting import format_axis_labels
 
-# Replaces this pattern
-dm.style.use('scientific')
+# New
+from dartwork_mpl.helpers.labels import format_axis_labels
+# Or via the namespace:
+import dartwork_mpl as dm
+dm.helpers.labels.format_axis_labels(...)
+```
+
+### `asset_viz` → `diagnostics`
+
+The four asset-inspection helpers (`classify_colormap`,
+`plot_colormaps`, `plot_colors`, `plot_fonts`) moved to a single
+top-level `dartwork_mpl.diagnostics` module. The old `asset_viz`
+subpackage is now a thin shim that re-exports the same four names.
+Behaviour is unchanged.
+
+```python
+# Old (deprecated)
+from dartwork_mpl.asset_viz import plot_colors, plot_fonts
+
+# New (canonical)
+from dartwork_mpl.diagnostics import plot_colors, plot_fonts
+
+# Best — top-level (was already supported, also unchanged)
+import dartwork_mpl as dm
+dm.plot_colors()
+dm.plot_fonts()
+```
+
+## Worth adopting
+
+These additions don't *require* migration but pay off if you bump
+into them:
+
+### `dm.subplots()` / `dm.figure()`
+
+Apply a style during figure creation, in one call:
+
+```python
+# Before
+dm.style.use("scientific")
 fig, ax = plt.subplots()
+
+# After
+fig, ax = dm.subplots(style="scientific")
 ```
 
-#### Content-Aware Layout
-
-New `auto_layout()` function for handling text overflow:
+Stack styles or override defaults inline:
 
 ```python
-# Automatically prevents text overflow
-dm.auto_layout(fig)
-
-# Can be used alongside or instead of simple_layout
-dm.simple_layout(fig)  # Still available and recommended for most cases
+fig, axes = dm.subplots(2, 2, style=["font-libertine", "theme-dark"])
+fig, ax = dm.subplots(style="report", figsize=(10, 6), dpi=150)
 ```
 
-#### Responsive Margins
+### `dm.auto_layout(fig)`
 
-New margin control functions:
+When `simple_layout` doesn't quite handle long labels or multi-line
+titles, call `auto_layout` instead — it iteratively shrinks the axes
+until no text overflows the canvas:
 
 ```python
-# Set data margins as percentage of range
-dm.set_xmargin(ax, margin=0.1)  # 10% margin
-dm.set_ymargin(ax, margin=0.05)  # 5% margin
+dm.auto_layout(fig)              # automatic margin negotiation
+dm.simple_layout(fig)            # fast, fine for most cases
 ```
 
-### Deprecation Timeline
+### `dm.set_xmargin(ax)` / `dm.set_ymargin(ax)`
 
-| Feature | Deprecated in | Will be removed in | Alternative |
-|---------|--------------|-------------------|-------------|
-| `agent_utils` module | v0.2.0 | v1.0.0 | Use `helpers` module |
-| `xplot` module | v0.2.0 | v1.0.0 | Use `templates` module |
+Set data-side margins as a fraction of the visible range:
 
-### Handling Deprecation Warnings
+```python
+dm.set_xmargin(ax, margin=0.1)   # 10 % padding on each side
+dm.set_ymargin(ax, margin=0.05)
+```
 
-To silence deprecation warnings while you migrate your code:
+### `dm.validate_with_fixes(fig)`
+
+A lightweight quality check that returns *and* fixes common figure
+issues (margin asymmetry, pie label cutoff, etc.):
+
+```python
+result = dm.validate_with_fixes(fig)
+print(result.report())
+```
+
+## Silencing legacy warnings
+
+If you can't migrate everything immediately:
 
 ```python
 import warnings
-
-# Silence specific dartwork-mpl deprecation warnings
-with warnings.catch_warnings():
-    warnings.filterwarnings('ignore', category=DeprecationWarning, module='dartwork_mpl')
-    from dartwork_mpl.xplot import plot_diverging_bar  # Old import
+warnings.filterwarnings(
+    "ignore",
+    category=DeprecationWarning,
+    module="dartwork_mpl",
+)
 ```
 
-However, we recommend updating your imports as soon as possible to avoid issues
-when upgrading to v1.0.
-
-### Migration Script
-
-For large codebases, you can use this script to find deprecated imports:
+For test runs, instead surface them so you don't lose track:
 
 ```bash
-# Find all uses of deprecated modules
-grep -r "from dartwork_mpl.agent_utils" . --include="*.py"
-grep -r "from dartwork_mpl.xplot" . --include="*.py"
-grep -r "import dartwork_mpl.agent_utils" . --include="*.py"
-grep -r "import dartwork_mpl.xplot" . --include="*.py"
+python -W default::DeprecationWarning -m pytest
 ```
 
-Or use this Python script to automatically update imports:
+## One-shot migration script
+
+For larger codebases, run this once to rewrite every deprecated
+import in-place. It covers all four renames:
 
 ```python
-import os
 import re
 from pathlib import Path
 
-def update_imports(directory):
-    """Update deprecated imports in all Python files."""
+REPLACEMENTS = [
+    # Module-level renames
+    (r"\bdartwork_mpl\.agent_utils\b", "dartwork_mpl.helpers"),
+    (r"\bdartwork_mpl\.xplot\b", "dartwork_mpl.templates"),
+    (r"\bdartwork_mpl\.asset_viz\b", "dartwork_mpl.diagnostics"),
+    # Submodule rename
+    (
+        r"\bdartwork_mpl\.helpers\.formatting\b",
+        "dartwork_mpl.helpers.labels",
+    ),
+]
 
-    replacements = [
-        (r'from dartwork_mpl\.agent_utils', 'from dartwork_mpl.helpers'),
-        (r'import dartwork_mpl\.agent_utils', 'import dartwork_mpl.helpers'),
-        (r'dartwork_mpl\.agent_utils', 'dartwork_mpl.helpers'),
-        (r'from dartwork_mpl\.xplot', 'from dartwork_mpl.templates'),
-        (r'import dartwork_mpl\.xplot', 'import dartwork_mpl.templates'),
-        (r'dartwork_mpl\.xplot', 'dartwork_mpl.templates'),
-    ]
 
-    for py_file in Path(directory).rglob('*.py'):
-        with open(py_file, 'r') as f:
-            content = f.read()
+def migrate(directory: str) -> None:
+    """Rewrite deprecated imports under *directory* in-place."""
+    for py in Path(directory).rglob("*.py"):
+        original = py.read_text()
+        updated = original
+        for pattern, replacement in REPLACEMENTS:
+            updated = re.sub(pattern, replacement, updated)
+        if updated != original:
+            py.write_text(updated)
+            print(f"updated: {py}")
 
-        original = content
-        for pattern, replacement in replacements:
-            content = re.sub(pattern, replacement, content)
 
-        if content != original:
-            with open(py_file, 'w') as f:
-                f.write(content)
-            print(f"Updated: {py_file}")
+if __name__ == "__main__":
+    import sys
 
-# Run on your project
-update_imports('.')
+    migrate(sys.argv[1] if len(sys.argv) > 1 else ".")
 ```
 
-## Future Versions
+Save as `migrate_dartwork.py` and run `python migrate_dartwork.py` in
+your project root. Diff the result with version control, run your
+test suite, and commit.
 
-### v0.3.0+ (Current)
+## Sanity-check before upgrading to v1.0
 
-The v0.3.x series focuses on stability and bug fixes. No breaking changes are
-planned.
+Once v1.0 lands, the legacy paths above will be removed. Until then,
+you can audit your project for them with:
 
-### v1.0.0 (Future)
+```bash
+grep -rE "(dartwork_mpl\.agent_utils|dartwork_mpl\.xplot|dartwork_mpl\.helpers\.formatting|dartwork_mpl\.asset_viz)" \
+     --include='*.py' .
+```
 
-The v1.0.0 release will:
-- Remove all deprecated aliases (`agent_utils`, `xplot`)
-- Stabilize the API with semantic versioning guarantees
-- Potentially reorganize internal module structure (with migration paths)
+Anything that comes back is something v1.0 will break.
 
-## Getting Help
+## Best practices going forward
 
-If you encounter issues during migration:
+1. **Use top-level imports when available.** `dm.simple_layout(fig)`
+   is shorter and survives any internal reorganization that keeps the
+   public API stable:
 
-1. Check the [CHANGELOG](https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md) for detailed version notes
-2. Review the [API documentation](api/index.rst) for current module structure
-3. Open an issue on [GitHub](https://github.com/dartworklabs/dartwork-mpl/issues) if you need assistance
-
-## Best Practices
-
-To minimize migration pain in the future:
-
-1. **Use top-level imports when available:**
    ```python
    import dartwork_mpl as dm
-   dm.simple_layout(fig)  # Preferred over module imports
+   dm.simple_layout(fig)
    ```
 
-2. **Pin your dependencies:**
+2. **Pin a range, not an exact version.** Patch and minor releases
+   shouldn't break you; majors will:
+
    ```toml
    # pyproject.toml
-   dependencies = [
-       "dartwork-mpl>=0.3,<1.0",  # Avoid unexpected breaking changes
-   ]
+   dependencies = ["dartwork-mpl>=0.3,<1.0"]
    ```
 
-3. **Run tests with deprecation warnings enabled:**
-   ```bash
-   python -W default::DeprecationWarning -m pytest
-   ```
+3. **Surface deprecation warnings in CI** — add
+   `-W default::DeprecationWarning` to the pytest invocation in your
+   CI workflow so you find legacy usage before v1.0 forces you to.
 
-4. **Update incrementally:**
-   - First update deprecated imports
-   - Then adopt new features
-   - Finally remove workarounds that new features obsolete
+## Getting help
+
+- Detailed version notes:
+  [CHANGELOG](https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md)
+- Current API reference: [API documentation](api/index.rst)
+- Open an issue: [GitHub Issues](https://github.com/dartworklabs/dartwork-mpl/issues)

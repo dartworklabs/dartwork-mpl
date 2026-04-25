@@ -1,6 +1,18 @@
 # Quick Start
 
-A minimal end-to-end workflow: apply a style, create a figure, and export it.
+A minimal end-to-end workflow: apply a style, create a figure, and
+export it. Skim this in five minutes — you'll already know enough to
+ship a publication-grade plot.
+
+## At-a-glance ROI
+
+| What used to hurt                   | dartwork-mpl                                    |
+| ----------------------------------- | ----------------------------------------------- |
+| Hand-tuning `figsize` and `dpi`     | `dm.style.use("scientific")` (or pass to `dm.subplots`) |
+| `tight_layout` clipping labels      | `dm.simple_layout(fig)` — real optimizer        |
+| Reaching for hex codes              | `color="oc.blue5"` (Open Color), `"tw.*"`, `"md.*"`, `"ad.*"`, `"cu.*"`, `"pr.*"` |
+| Saving in 3 formats                 | `dm.save_formats(fig, "out", formats=("png", "svg", "pdf"))` |
+| Catching margin / overflow problems | `dm.validate_with_fixes(fig)`                   |
 
 Here's a typical matplotlib figure, then the same figure with dartwork-mpl:
 
@@ -130,12 +142,24 @@ anywhere matplotlib accepts a color string:
 
 ```python
 # Named color prefixes
-ax.plot(x, y, color="oc.blue5")       # OpenColor
+ax.plot(x, y, color="oc.blue5")                    # OpenColor
 ax.fill_between(x, y1, y2, color="tw.emerald200")  # Tailwind
-ax.bar(categories, values, color="md.red500")       # Material Design
+ax.bar(categories, values, color="md.red500")      # Material Design
 ```
 
-See [Colors and Colormaps](colors.md) for the full palette reference.
+**Discover what's available without leaving Python:**
+
+```python
+import dartwork_mpl as dm
+
+dm.list_palettes()[:5]   # → ['ad.blue', 'ad.cyan', 'ad.geekblue', ...]
+dm.show_palette("oc.blue")  # renders the 9-shade swatch row in Jupyter
+dm.plot_colors(ncols=4)     # full library overview, one figure per system
+```
+
+See [Colors and Colormaps](colors.md) for the full palette reference,
+or open the [interactive palette explorer](../color_system/colors.md)
+to click-and-copy color names from your browser.
 
 ## Multi-panel layout
 
@@ -176,9 +200,37 @@ dm.save_formats(
 )
 ```
 
+## Catch problems before you export
+
+`validate=True` above runs the same checks as the standalone
+`validate_with_fixes` helper, which can also patch the easy issues
+in-place:
+
+```python
+result = dm.validate_with_fixes(fig)
+print(result.report())     # human-readable summary of warnings
+# margin_asymmetry → auto-fixed via dm.auto_layout()
+# pie_label_offset → auto-adjusted pctdistance
+```
+
+Use it in CI to fail a build when a figure breaks; use it locally to
+get a one-line health check before you `save_formats`.
+
+## Try the interactive UI
+
+If you'd rather see the effect of every parameter before committing
+it to code, dartwork-mpl ships a local web app that wires sliders to
+`rcParams` and exports the resulting Python script:
+
+```bash
+python -m dartwork_mpl.ui  # opens http://localhost:8765
+```
+
+→ [Interactive UI guide](interactive.md)
+
 ## Next steps
 
-::::{grid} 1 1 2 2
+::::{grid} 1 1 2 3
 :gutter: 2
 
 :::{grid-item-card} 🎨 Styles and Presets
@@ -203,6 +255,20 @@ Panel labels, arrows, font scaling, and margin optimization.
 Multi-format export + automatic visual quality checks.
 
 → [Export guide](save_export.md)
+:::
+
+:::{grid-item-card} 🛠️ Interactive UI
+Tune fonts, line weights, margins with sliders. Export the exact
+script that reproduces what you see.
+
+→ [Interactive UI](interactive.md)
+:::
+
+:::{grid-item-card} 🔬 Diagnostics & Templates
+`dm.plot_colors()` / `plot_colormaps()` / `plot_fonts()` for asset
+audit, plus ready-to-use plot templates like `plot_diverging_bar`.
+
+→ [Extras guide](extras.md)
 :::
 
 ::::

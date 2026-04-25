@@ -248,9 +248,9 @@ def _save_font_example(images_dir: Path) -> Path:
 
 
 def _save_xplot_example(images_dir: Path) -> Path:
-    """API xplot: diverging bar chart."""
+    """API xplot/templates: diverging bar chart."""
     dm.style.use("presentation")
-    from dartwork_mpl.xplot import plot_diverging_bar
+    from dartwork_mpl.templates import plot_diverging_bar
 
     fig, ax = plot_diverging_bar(
         labels=["Category A", "Category B", "Category C"],
