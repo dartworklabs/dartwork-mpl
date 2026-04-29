@@ -261,9 +261,10 @@ class TestMcpTools:
 
         clean_code = (
             "import dartwork_mpl as dm\n"
-            "fig, ax = dm.subplots()\n"
-            "ax.plot([1,2,3])\n"
-            "plt.show()\n"
+            'fig, ax = dm.subplots(width="13cm", aspect="standard")\n'
+            'ax.plot([1, 2, 3], color="dc.blue500")\n'
+            "dm.auto_layout(fig)\n"
+            'dm.save_and_show(fig, "out")\n'
         )
         result = captured["lint_dartwork_mpl_code"](clean_code)
         assert "No issues found" in result
@@ -279,7 +280,7 @@ class TestMcpTools:
         bad_code = (
             "import dartwork_mpl as dm\n"
             "fig, ax = dm.subplots(figsize=(10, 6))\n"
-            "plt.show()\n"
+            'dm.save_and_show(fig, "out")\n'
         )
         result = captured["lint_dartwork_mpl_code"](bad_code)
         assert "CRITICAL" in result
