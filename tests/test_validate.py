@@ -71,6 +71,43 @@ class TestCheckOverflow:
         assert len(overflow_warnings) > 0
         plt.close(fig)
 
+    def test_long_tick_label_triggers_overflow(self) -> None:
+        """A tick label that genuinely cannot fit on the canvas
+        should trigger OVERFLOW even after the in-axes filter."""
+        import dartwork_mpl as dm
+
+        fig, ax = dm.subplots(width="9cm", aspect="standard")
+        ax.bar([1, 2, 3], [1, 2, 3])
+        ax.set_yticks([1, 2, 3])
+        # 60-char tick labels — far wider than a 9 cm canvas.
+        ax.set_yticklabels(["A" * 60, "B" * 60, "C" * 60])
+        warnings = validate_figure(fig, checks=("OVERFLOW",), quiet=True)
+        overflow = [w for w in warnings if w.check_id == "OVERFLOW"]
+        assert len(overflow) > 0
+        plt.close(fig)
+
+    def test_out_of_range_locator_tick_does_not_trigger_overflow(self) -> None:
+        """matplotlib's auto tick locator emits ticks at "nice" round
+        positions which can lie just past the data range; those ticks
+        are clipped from the rendered axes and must not trigger
+        OVERFLOW. (Regression: 11 of 12 0.4 plot templates produced
+        spurious warnings before this fix.)"""
+        import dartwork_mpl as dm
+
+        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        # Data tops out at 78 → matplotlib auto-locator extends ticks
+        # to 90 (a "nice" round number outside the axis ylim of ~82).
+        ax.bar(["A", "B", "C", "D", "E"], [23, 45, 56, 78, 33])
+        ax.set_ylabel("Value")
+        dm.auto_layout(fig)
+        warnings = validate_figure(fig, checks=("OVERFLOW",), quiet=True)
+        overflow = [w for w in warnings if w.check_id == "OVERFLOW"]
+        assert overflow == [], (
+            f"Spurious OVERFLOW for clipped tick: "
+            f"{[w.message for w in overflow]}"
+        )
+        plt.close(fig)
+
 
 class TestCheckOverlap:
     """Tests for OVERLAP detection."""
