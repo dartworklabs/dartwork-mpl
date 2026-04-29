@@ -159,14 +159,27 @@ def lint(code: str, *, rules: Iterable[Rule] | None = None) -> list[Issue]:
 
 
 def format_report(issues: list[Issue]) -> str:
-    """Render issues as newline-separated `[SEV] rule-id: message` lines."""
+    """Render issues as a multi-line `[SEV] rule-id: message` report.
+
+    The full message is preserved (including any subsequent lines from
+    a YAML ``|`` block scalar) and indented under the header line so
+    reports stay readable in plain-text MCP/CLI output.
+    """
     if not issues:
         return "✅ No issues found."
     lines: list[str] = []
     for issue in issues:
         line_part = f" (line {issue.line})" if issue.line else ""
+        msg_lines = [ln.rstrip() for ln in issue.message.splitlines()]
+        # Drop trailing blank lines but keep internal structure.
+        while msg_lines and not msg_lines[-1]:
+            msg_lines.pop()
+        if not msg_lines:
+            msg_lines = [""]
         lines.append(
-            f"[{issue.severity.upper()}] {issue.rule_id}{line_part}: "
-            f"{issue.message.splitlines()[0]}"
+            f"[{issue.severity.upper()}] {issue.rule_id}"
+            f"{line_part}: {msg_lines[0]}"
         )
+        for tail in msg_lines[1:]:
+            lines.append(f"    {tail}" if tail else "")
     return "\n".join(lines)
