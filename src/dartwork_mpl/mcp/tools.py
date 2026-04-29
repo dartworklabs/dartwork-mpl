@@ -6,7 +6,6 @@ code linting, and data validation.
 """
 
 import json
-import re
 
 import matplotlib.colors as mcolors
 from fastmcp import FastMCP
@@ -158,120 +157,27 @@ def register_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     def lint_dartwork_mpl_code(code: str) -> str:
-        """Analyze Python code for dartwork-mpl best practices.
+        """Analyze Python code against the dartwork-mpl anti-pattern
+        catalog (asset/prompt/02-anti-patterns.yaml).
 
-        Checks for common antipatterns:
-        - Using figsize= (violates Zero-Resize Policy)
-        - Using dpi= in subplots/figure (should use mplstyle)
-        - Using plt.subplots() instead of dm.subplots()
-        - Using plt.figure() instead of dm.subplots()
-        - Not using dartwork-mpl at all
-        - Missing plot display or save call
-        - Using width=/height= params on savefig
-        - Using tight_layout() (conflicts with dartwork-mpl layout)
-        - Using plt.style.use() instead of dartwork-mpl styles
+        Returns a newline-separated list of
+        ``[SEVERITY] rule-id (line N): message`` entries, or a success
+        line.
 
         Parameters
         ----------
         code : str
-            Python source code to analyze.
+            Python source to analyze.
 
         Returns
         -------
         str
-            Newline-separated list of warnings, or a success message.
+            Lint report.
         """
-        issues = []
+        from dartwork_mpl.lint import format_report
+        from dartwork_mpl.lint import lint as _lint
 
-        # --- Critical: Zero-Resize Policy ---
-        if "figsize=" in code:
-            issues.append(
-                "[CRITICAL] 'figsize=' detected — violates Zero-Resize Policy. "
-                "dartwork-mpl controls figure dimensions via mplstyle presets. "
-                "If you need a custom size, use dm.subplots() without figsize "
-                "and adjust the mplstyle's figure.figsize setting."
-            )
-
-        # --- Warning: dpi in subplots/figure ---
-        if re.search(r"(subplots|figure)\(.*dpi\s*=", code):
-            issues.append(
-                "[WARNING] 'dpi=' set in subplots/figure call. "
-                "dartwork-mpl manages DPI via the mplstyle preset "
-                "(default: 300 display, 500 savefig). Remove dpi= parameter."
-            )
-
-        # --- Warning: plt.subplots instead of dm.subplots ---
-        if "plt.subplots(" in code and "dm.subplots(" not in code:
-            issues.append(
-                "[WARNING] Using plt.subplots() instead of dm.subplots(). "
-                "dm.subplots() applies dartwork-mpl's default styles, fonts, "
-                "and layout automatically."
-            )
-
-        # --- Warning: plt.figure instead of dm.subplots ---
-        if "plt.figure(" in code and "dm.subplots(" not in code:
-            issues.append(
-                "[WARNING] Using plt.figure() instead of dm.subplots(). "
-                "Use dm.subplots() to get properly styled figures."
-            )
-
-        # --- Info: not using dartwork-mpl ---
-        if "dm." not in code and "dartwork_mpl" not in code:
-            issues.append(
-                "[WARNING] No dartwork-mpl usage detected. "
-                "Import dartwork_mpl as dm and use dm.subplots() "
-                "to apply the design system."
-            )
-
-        # --- Info: missing save/show ---
-        if (
-            "plt.show()" not in code
-            and "savefig" not in code
-            and "dm.show(" not in code
-            and "dm.save_and_show(" not in code
-        ):
-            issues.append(
-                "[NOTE] Script neither saves nor shows the plot. "
-                "Add plt.show() or fig.savefig() at the end."
-            )
-
-        # --- Warning: tight_layout ---
-        if "tight_layout" in code:
-            issues.append(
-                "[WARNING] tight_layout() detected. "
-                "dartwork-mpl manages layout via dm.simple_layout() or "
-                "constrained_layout. Prefer dm.simple_layout(fig) instead."
-            )
-
-        # --- Warning: plt.style.use ---
-        if "plt.style.use" in code:
-            issues.append(
-                "[NOTE] plt.style.use() detected. "
-                "dartwork-mpl automatically applies its styles on import. "
-                "If you need a specific preset, pass it to dm.subplots(): "
-                "dm.subplots(style=['font-scientific'])"
-            )
-
-        # --- Warning: width/height in savefig ---
-        if re.search(r"savefig\(.*(?:width|height)\s*=", code):
-            issues.append(
-                "[WARNING] width=/height= in savefig() — this is not a "
-                "standard matplotlib parameter and may cause errors."
-            )
-
-        # --- Info: recommend save_and_show ---
-        if "savefig" in code and "save_and_show" not in code:
-            issues.append(
-                "[TIP] Consider using dm.save_and_show(fig, 'filename') "
-                "instead of manual fig.savefig(). It handles bbox, DPI, "
-                "and optionally shows the plot."
-            )
-
-        if not issues:
-            return (
-                "✅ No issues found. Code follows dartwork-mpl best practices."
-            )
-        return "\n".join(issues)
+        return format_report(_lint(code))
 
     # ── Data Validation Tool ─────────────────────────────────────────
 
