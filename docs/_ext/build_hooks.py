@@ -21,8 +21,10 @@ _GALLERY_CATEGORIES = [
     "02_color_system",
     "03_formatting",
     "04_layout_and_annotations",
-    "05_advanced_components",
-    "06_creative_visualizations",
+    "05_helpers_api",
+    "06_chart_recipes",
+    "07_real_world_dashboards",
+    "08_creative_visualizations",
 ]
 
 
@@ -37,6 +39,24 @@ def create_placeholder_index(app):
             "Examples Gallery\n================\n\nLoading...\n"
         )
         print("Created placeholder: examples_gallery/index.rst")
+
+
+def cleanup_sg_execution_times(app):
+    """Remove sphinx-gallery's auto-generated execution-times index before build.
+
+    sphinx-gallery writes ``sg_execution_times.rst`` at the end of every build,
+    listing every example it executed. When examples are renamed or deleted
+    between builds, the previous file leaves stale cross-references that
+    Sphinx then reports as "undefined label" warnings. The file is fully
+    regenerated each build, so deleting it up-front is safe and removes the
+    noise without losing any information.
+    """
+    src = Path(app.srcdir)
+    for stale in src.glob("**/sg_execution_times.rst"):
+        try:
+            stale.unlink()
+        except OSError:
+            pass
 
 
 def generate_gallery_assets(_app):

@@ -132,16 +132,20 @@ sphinx_gallery_conf = {
         "examples_source/02_color_system",
         "examples_source/03_formatting",
         "examples_source/04_layout_and_annotations",
-        "examples_source/05_advanced_components",
-        "examples_source/06_creative_visualizations",
+        "examples_source/05_helpers_api",
+        "examples_source/06_chart_recipes",
+        "examples_source/07_real_world_dashboards",
+        "examples_source/08_creative_visualizations",
     ],
     "gallery_dirs": [
         "examples_gallery/01_styling_and_themes",
         "examples_gallery/02_color_system",
         "examples_gallery/03_formatting",
         "examples_gallery/04_layout_and_annotations",
-        "examples_gallery/05_advanced_components",
-        "examples_gallery/06_creative_visualizations",
+        "examples_gallery/05_helpers_api",
+        "examples_gallery/06_chart_recipes",
+        "examples_gallery/07_real_world_dashboards",
+        "examples_gallery/08_creative_visualizations",
     ],
     "filename_pattern": "/plot_",
     "nested_sections": False,
@@ -163,6 +167,7 @@ myst_heading_anchors = 3
 sys.path.insert(0, str(Path(__file__).parent / "_ext"))
 
 from build_hooks import (  # noqa: E402
+    cleanup_sg_execution_times,
     copy_fonts_to_static,
     create_placeholder_index,
     generate_gallery_assets,
@@ -171,6 +176,9 @@ from build_hooks import (  # noqa: E402
 
 
 def setup(app):
+    # Cleanup runs first so sphinx-gallery starts from a clean slate
+    # (priority < 500 = default; lower number runs earlier).
+    app.connect("builder-inited", cleanup_sg_execution_times, priority=100)
     app.connect("builder-inited", create_placeholder_index)
     app.connect("builder-inited", generate_gallery_assets)
     app.connect("builder-inited", copy_fonts_to_static)
