@@ -1,4 +1,5 @@
 """Tests for dartwork_mpl.units (free-form width parsing)."""
+
 from __future__ import annotations
 
 import math
