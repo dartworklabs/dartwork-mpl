@@ -132,7 +132,16 @@ def pseudo_alpha(
 
 
 def cm2in(cm: float) -> float:
-    """Convert centimeters to inches.
+    """Convert centimeters to inches (legacy helper).
+
+    Returns a plain ``float``. For 0.4+ code prefer
+    :func:`dartwork_mpl.cm` (alias of :func:`dartwork_mpl.units.cm`),
+    which returns an :class:`~dartwork_mpl.units.Inches` tagged value
+    that ``dm.subplots(width=...)`` and :func:`parse_width` recognise
+    without re-interpreting it as centimeters again.
+
+    This function is kept for back-compat with 0.3 callers; new
+    figure-sizing code paths should use ``dm.cm``.
 
     Parameters
     ----------

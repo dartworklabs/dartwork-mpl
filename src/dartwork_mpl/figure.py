@@ -194,6 +194,8 @@ def subplots(
 
 def figure(
     *,
+    width: str | int | float | None = None,
+    aspect: str | int | float = "standard",
     style: str | list[str] | None = None,
     figsize: tuple[float, float] | None = None,
     dpi: int | None = None,
@@ -201,17 +203,30 @@ def figure(
 ) -> Figure:
     """Create a figure with optional style application.
 
-    This is a wrapper around matplotlib.pyplot.figure that integrates with
-    dartwork-mpl's style system.
+    Mirrors :func:`subplots`'s width/aspect contract for callers that
+    need a bare :class:`~matplotlib.figure.Figure` (e.g. to attach a
+    custom GridSpec). Most agent-generated code should reach for
+    :func:`subplots` instead.
 
     Parameters
     ----------
+    width : str | int | float | None, optional
+        Figure width. Accepts ``"<num><unit>"`` strings (cm/in/mm),
+        the inch helpers ``dm.cm/inch/mm``, or a raw number
+        (interpreted as cm). If ``None`` and a style is provided,
+        the style's default figsize is used.
+    aspect : str | int | float, optional
+        Height/width ratio. Either a named token in
+        ``{"square","portrait","standard","golden","wide","cinema"}``
+        or a positive float. Default ``"standard"`` (3:4).
     style : str | list[str] | None, optional
         Style preset(s) to apply.
     figsize : tuple[float, float] | None, optional
-        Figure dimension (width, height) in inches.
+        DEPRECATED. Use ``width`` and ``aspect`` instead. Will be
+        removed in 0.5.0.
     dpi : int | None, optional
-        Dots per inch.
+        DEPRECATED. The active style controls dpi. Will be removed
+        in 0.5.0.
     **kwargs : Any
         Additional keyword arguments passed to plt.figure().
 
@@ -222,15 +237,15 @@ def figure(
 
     Examples
     --------
-    >>> fig = dm.figure(style='report')
+    >>> fig = dm.figure(width="13cm", aspect="wide", style="report")
     >>> ax = fig.add_subplot(111)
-    >>> ax.plot(x, y)
     """
-    # Apply style if provided
+    from .units import DEFAULT_ASPECT, parse_aspect, parse_width
+
+    # Apply style first.
     original_rcParams = None
     if style is not None:
         original_rcParams = plt.rcParams.copy()
-
         from . import style as style_module
 
         if isinstance(style, str):
@@ -240,33 +255,63 @@ def figure(
         else:
             raise ValueError(f"style must be str or list, got {type(style)}")
 
-    # Extract figsize and dpi from style if not explicitly provided
-    if style is not None:
-        if figsize is None:
+    # Deprecation handling.
+    if figsize is not None:
+        import warnings as _warnings
+
+        _warnings.warn(
+            "figsize= on dm.figure is deprecated and will be removed "
+            "in 0.5.0. Use dm.figure(width=..., aspect=...) instead "
+            '(e.g. width="13cm", aspect="wide").',
+            DeprecationWarning,
+            stacklevel=2,
+        )
+    if dpi is not None:
+        import warnings as _warnings
+
+        _warnings.warn(
+            "dpi= on dm.figure is deprecated and will be removed in "
+            "0.5.0. The active style controls dpi.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+    # Resolve final figsize.
+    resolved_figsize: tuple[float, float] | None = None
+    if figsize is not None:
+        resolved_figsize = figsize
+    elif width is not None:
+        w_in = parse_width(width)
+        ratio = parse_aspect(aspect if aspect is not None else DEFAULT_ASPECT)
+        resolved_figsize = (w_in, w_in * ratio)
+    else:
+        if style is not None:
             style_figsize = plt.rcParams.get("figure.figsize")
             if (
-                original_rcParams
+                original_rcParams is not None
                 and style_figsize is not None
                 and style_figsize != original_rcParams.get("figure.figsize")
             ):
-                figsize = cast(tuple[float, float], tuple(style_figsize))
+                resolved_figsize = cast(
+                    tuple[float, float], tuple(style_figsize)
+                )
 
-        if dpi is None:
-            style_dpi = plt.rcParams.get("figure.dpi")
-            if (
-                original_rcParams
-                and style_dpi is not None
-                and style_dpi != original_rcParams.get("figure.dpi")
-            ):
-                dpi = int(style_dpi)
+    # Resolve dpi.
+    resolved_dpi: int | None = dpi
+    if resolved_dpi is None and style is not None:
+        style_dpi = plt.rcParams.get("figure.dpi")
+        if (
+            original_rcParams is not None
+            and style_dpi is not None
+            and style_dpi != original_rcParams.get("figure.dpi")
+        ):
+            resolved_dpi = int(style_dpi)
 
-    # Build kwargs
     fig_kwargs: dict[str, Any] = {}
-    if figsize is not None:
-        fig_kwargs["figsize"] = figsize
-    if dpi is not None:
-        fig_kwargs["dpi"] = dpi
+    if resolved_figsize is not None:
+        fig_kwargs["figsize"] = resolved_figsize
+    if resolved_dpi is not None:
+        fig_kwargs["dpi"] = resolved_dpi
     fig_kwargs.update(kwargs)
 
-    # Create the figure
     return plt.figure(**fig_kwargs)

@@ -102,7 +102,7 @@ rules:
     severity: warning
     detector:
       kind: regex
-      pattern: '(subplots|figure)\s*\([^)]*\bdpi\s*='
+      pattern: '\b(?:plt|dm)\.(?:subplots|figure)\s*\([^)]*\bdpi\s*='
     message: |
       `dpi=` should not be set per-figure. The active dartwork-mpl
       style controls dpi (display vs savefig).

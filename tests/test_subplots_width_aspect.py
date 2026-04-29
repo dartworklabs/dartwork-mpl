@@ -129,3 +129,54 @@ class TestErrors:
     def test_negative_width(self):
         with pytest.raises(ValueError, match="positive"):
             dm.subplots(width="-1cm")
+
+
+class TestFigureWidthAspect:
+    """dm.figure() must mirror dm.subplots() width/aspect behaviour."""
+
+    def test_width_string_cm(self):
+        fig = dm.figure(width="13cm", aspect="standard")
+        try:
+            w, h = fig.get_size_inches()
+            assert math.isclose(w, 13 / 2.54, rel_tol=1e-6)
+            assert math.isclose(h / w, 3 / 4, rel_tol=1e-6)
+        finally:
+            _close(fig)
+
+    def test_aspect_default_is_standard(self):
+        fig = dm.figure(width="9cm")
+        try:
+            w, h = fig.get_size_inches()
+            assert math.isclose(h / w, 3 / 4, rel_tol=1e-6)
+        finally:
+            _close(fig)
+
+    def test_figsize_emits_deprecation(self):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            fig = dm.figure(figsize=(5, 3))
+            try:
+                pass
+            finally:
+                _close(fig)
+        msgs = [
+            str(w.message)
+            for w in caught
+            if issubclass(w.category, DeprecationWarning)
+        ]
+        assert any("figsize" in m for m in msgs), msgs
+
+    def test_dpi_emits_deprecation(self):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            fig = dm.figure(dpi=150)
+            try:
+                pass
+            finally:
+                _close(fig)
+        msgs = [
+            str(w.message)
+            for w in caught
+            if issubclass(w.category, DeprecationWarning)
+        ]
+        assert any("dpi" in m for m in msgs)
