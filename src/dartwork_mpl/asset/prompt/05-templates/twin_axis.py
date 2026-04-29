@@ -10,9 +10,9 @@ precip = [50, 40, 45, 55, 70, 80, 90, 85, 65, 60, 55, 50]
 
 fig, ax1 = dm.subplots(width="15cm", aspect="wide")
 ax2 = ax1.twinx()
-ax1.bar(x, precip, color="dc.blue300", alpha=0.7, label="Precipitation")
+ax1.bar(x, precip, color="oc.blue3", alpha=0.7, label="Precipitation")
 ax2.plot(
-    x, temp, color="dc.red500", marker="o", markersize=3, label="Temperature"
+    x, temp, color="oc.red6", marker="o", markersize=3, label="Temperature"
 )
 ax1.set_xlabel("Month")
 ax1.set_ylabel("Precipitation (mm)")
@@ -21,4 +21,4 @@ lines1, labels1 = ax1.get_legend_handles_labels()
 lines2, labels2 = ax2.get_legend_handles_labels()
 ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
 dm.auto_layout(fig)
-dm.save_and_show(fig, "twin_axis")
+dm.save_formats(fig, "twin_axis")

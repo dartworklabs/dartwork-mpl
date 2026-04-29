@@ -57,12 +57,51 @@ class Inches(float):
     :func:`parse_width` can distinguish "user already converted"
     values from raw numbers (which are interpreted as cm).
 
-    Behaves exactly like a plain ``float`` for arithmetic and for
-    matplotlib, so existing callers that treat the helpers' return
-    value as a number continue to work.
+    Arithmetic with another scalar preserves the ``Inches`` tag —
+    ``dm.cm(9) * 2`` returns ``Inches(7.087)``, not a plain
+    ``float`` that ``parse_width`` would re-interpret as cm. This
+    closes a unit-corruption hole where doubled widths silently lost
+    the cm→inches conversion.
     """
 
     __slots__ = ()
+
+    def _wrap(self, value: float) -> Inches:
+        if isinstance(value, Inches):
+            return value
+        if isinstance(value, float):
+            return Inches(value)
+        return value  # type: ignore[return-value]
+
+    def __add__(self, other):
+        return self._wrap(float.__add__(self, other))
+
+    def __radd__(self, other):
+        return self._wrap(float.__radd__(self, other))
+
+    def __sub__(self, other):
+        return self._wrap(float.__sub__(self, other))
+
+    def __rsub__(self, other):
+        return self._wrap(float.__rsub__(self, other))
+
+    def __mul__(self, other):
+        return self._wrap(float.__mul__(self, other))
+
+    def __rmul__(self, other):
+        return self._wrap(float.__rmul__(self, other))
+
+    def __truediv__(self, other):
+        return self._wrap(float.__truediv__(self, other))
+
+    def __rtruediv__(self, other):
+        return self._wrap(float.__rtruediv__(self, other))
+
+    def __neg__(self):
+        return Inches(float.__neg__(self))
+
+    def __abs__(self):
+        return Inches(float.__abs__(self))
 
 
 def cm(value: float) -> Inches:

@@ -48,8 +48,10 @@ Every rule below has a matching entry in
   `dc.*` (dartwork core), `md.*` (Material), `ad.*` (Ant),
   `cu.*` (Chakra), `pr.*` (Primer).
 - Raw hex strings work but trigger a lint info (prefer named).
-- For colormaps: `viridis`, `dc.spectral`, etc. — perceptually uniform
-  recommended.
+- For colormaps: `viridis`, `magma`, `cividis`, `plasma`, etc. —
+  perceptually uniform recommended. Avoid `jet` and other rainbow
+  colormaps. dartwork-mpl also registers domain-specific palettes
+  via `dm.cmap` — see `dm.list_colormaps()` for the current set.
 
 ## Font and weight
 
