@@ -109,7 +109,21 @@ def _check_overflow(fig: Figure, renderer) -> list[VisualWarning]:
                 )
 
         # --- tick labels ---
+        #
+        # matplotlib's default tick locators emit ticks at "nice" round
+        # values (e.g. y = 0, 10, …, 90 for an axis whose data range is
+        # 0 – 82). The extra ticks past the axis limits are still
+        # registered on the artist tree even though they are clipped
+        # away from the rendered axes — calling `get_window_extent` on
+        # them therefore returns coordinates outside the axes patch
+        # (and frequently outside the figure canvas).
+        #
+        # Only flag ticks whose anchor lies inside the visible axes
+        # data range; ticks at out-of-range positions are visually
+        # absent and not a layout problem.
+        ax_bbox = ax.get_window_extent(renderer)
         for axis in (ax.xaxis, ax.yaxis):
+            is_x = axis is ax.xaxis
             for tick in axis.get_ticklabels():
                 if not tick.get_visible() or tick.get_text().strip() == "":
                     continue
@@ -117,6 +131,15 @@ def _check_overflow(fig: Figure, renderer) -> list[VisualWarning]:
                     ext = tick.get_window_extent(renderer)
                 except Exception:
                     continue
+                # Tick label center on the axis-perpendicular dimension.
+                if is_x:
+                    anchor = (ext.x0 + ext.x1) / 2
+                    if not (ax_bbox.x0 - 0.5 <= anchor <= ax_bbox.x1 + 0.5):
+                        continue
+                else:
+                    anchor = (ext.y0 + ext.y1) / 2
+                    if not (ax_bbox.y0 - 0.5 <= anchor <= ax_bbox.y1 + 0.5):
+                        continue
                 overflow = max(
                     fig_bbox.x0 - ext.x0,
                     ext.x1 - fig_bbox.x1,
