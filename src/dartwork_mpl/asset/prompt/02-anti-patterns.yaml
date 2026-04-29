@@ -1,0 +1,108 @@
+# dartwork-mpl anti-pattern catalog (SSOT for lint engine).
+#
+# Each rule has:
+#   id          unique kebab-case identifier
+#   severity    critical | warning | info
+#   detector
+#     kind      regex | substring
+#     pattern   regex pattern (Python re, MULTILINE) for kind=regex
+#     literal   literal substring (case-sensitive) for kind=substring
+#   message     short user-facing text shown in the lint report
+#   why         (optional) longer rationale; shown only on demand
+#   fix_suggestion  (optional) one-line replacement or pointer
+#
+# Rule IDs are part of the public API: tools, docs, and tests refer
+# to them. Do not rename without bumping the dartwork-mpl version.
+
+version: 1
+rules:
+  - id: figsize-direct
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\bfigsize\s*=\s*\('
+    message: |
+      `figsize=` is forbidden. Use `dm.subplots(width="13cm", aspect="wide")`
+      with width as cm/in/mm string or `dm.cm(...)`.
+    why: |
+      Width and aspect are decided separately so chart-wide width
+      consistency can be enforced and so the height follows from the
+      content's aspect intent.
+    fix_suggestion: 'dm.subplots(width="13cm", aspect="standard")'
+
+  - id: tight-layout
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\btight_layout\s*\('
+    message: |
+      `tight_layout()` collides with dartwork-mpl's spine and legend
+      handling. Use `dm.auto_layout(fig)` (or `dm.simple_layout` for
+      advanced GridSpec cases).
+    fix_suggestion: 'dm.auto_layout(fig)'
+
+  - id: zero-resize-mention
+    severity: warning
+    detector:
+      kind: substring
+      literal: 'Zero-Resize'
+    message: |
+      "Zero-Resize Policy" was retired in 0.4.0. dartwork-mpl now uses
+      free-form width input plus a lint consistency guard.
+
+  - id: plt-style-use
+    severity: warning
+    detector:
+      kind: regex
+      pattern: '\bplt\.style\.use\s*\('
+    message: |
+      Use `dm.style.use(...)` (or stack styles via dm.subplots(style=...))
+      instead of `plt.style.use(...)`.
+    fix_suggestion: 'dm.style.use("scientific")'
+
+  - id: plt-show-only
+    severity: info
+    detector:
+      kind: regex
+      pattern: '\bplt\.show\s*\(\)'
+    message: |
+      Prefer `dm.save_and_show(fig, "name")` or `dm.save_formats(fig,
+      "name")` so the figure ships with its rendered artifact.
+
+  - id: plt-subplots
+    severity: warning
+    detector:
+      kind: regex
+      pattern: '\bplt\.subplots\s*\('
+    message: |
+      Use `dm.subplots(...)` so dartwork-mpl can apply style, width,
+      and aspect handling.
+
+  - id: cm2in-figsize
+    severity: warning
+    detector:
+      kind: regex
+      pattern: 'figsize\s*=\s*\([^)]*cm2in'
+    message: |
+      `figsize=(dm.cm2in(...), dm.cm2in(...))` is the legacy 0.3
+      pattern. Use `width="<n>cm"` plus an aspect token instead.
+    fix_suggestion: 'dm.subplots(width="9cm", aspect="standard")'
+
+  - id: deprecated-width-token
+    severity: warning
+    detector:
+      kind: regex
+      pattern: '\bdm\.(SW|MW|TW|DW|FS_[A-Z_]+|WIDTHS)\b'
+    message: |
+      `dm.SW/MW/TW/DW/FS_*/WIDTHS` are deprecated and slated for
+      removal in 0.5.0. Use `dm.subplots(width="...cm", aspect="...")`,
+      or `dm.col1`/`dm.col2` for academic columns.
+
+  - id: dpi-arg
+    severity: warning
+    detector:
+      kind: regex
+      pattern: '(subplots|figure)\s*\([^)]*\bdpi\s*='
+    message: |
+      `dpi=` should not be set per-figure. The active dartwork-mpl
+      style controls dpi (display vs savefig).
