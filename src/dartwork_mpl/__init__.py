@@ -135,8 +135,15 @@ from .style import Style, list_styles, load_style_dict, style, style_path
 # Extended plot functions (from templates, formerly xplot)
 from .templates import plot_diverging_bar
 
+# Unit helpers (0.4+: free-form width input)
+from .units import cm, inch, mm
+
 # Color utilities
 from .util import cm2in, make_offset, mix_colors, pseudo_alpha, set_decimal
+
+# Academic column-width sugar (0.4+).
+col1: float = cm(9)
+col2: float = cm(17)
 
 # Validation entry points
 from .validate import validate_figure
@@ -195,7 +202,13 @@ __all__ = [
     # Color utilities
     "mix_colors",
     "pseudo_alpha",
-    # Units
+    # Units (0.4+)
+    "cm",
+    "inch",
+    "mm",
+    "col1",
+    "col2",
+    # Units (legacy helpers, kept for compatibility)
     "cm2in",
     "make_offset",
     # Formatting

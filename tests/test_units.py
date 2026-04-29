@@ -87,3 +87,20 @@ class TestParseAspect:
             parse_aspect(-0.5)
         with pytest.raises(ValueError, match="positive"):
             parse_aspect(0)
+
+
+class TestPublicSurface:
+    def test_cm_inch_mm_exposed_at_top_level(self):
+        import dartwork_mpl as dm
+
+        assert callable(dm.cm)
+        assert callable(dm.inch)
+        assert callable(dm.mm)
+        assert math.isclose(dm.cm(2.54), 1.0, rel_tol=1e-6)
+
+    def test_col1_and_col2_are_constants(self):
+        import dartwork_mpl as dm
+
+        # 9 cm and 17 cm in inches.
+        assert math.isclose(dm.col1, 9 / 2.54, rel_tol=1e-9)
+        assert math.isclose(dm.col2, 17 / 2.54, rel_tol=1e-9)
