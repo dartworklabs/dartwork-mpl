@@ -265,17 +265,19 @@ _DEPRECATED_WIDTHS_CM: dict[str, float] = {
 # Deprecated 0.3.x figure-size tuples and aggregate. Names map to
 # attributes on the constant module which we still resolve via lazy
 # import (without re-exporting in __all__).
-_DEPRECATED_TUPLE_NAMES: frozenset[str] = frozenset({
-    "FS_SINGLE",
-    "FS_DOUBLE",
-    "FS_SQUARE",
-    "FS_WIDE",
-    "FS_TALL",
-    "FS_GOLDEN",
-    "FS_SLIDE",
-    "FS_A4",
-    "WIDTHS",
-})
+_DEPRECATED_TUPLE_NAMES: frozenset[str] = frozenset(
+    {
+        "FS_SINGLE",
+        "FS_DOUBLE",
+        "FS_SQUARE",
+        "FS_WIDE",
+        "FS_TALL",
+        "FS_GOLDEN",
+        "FS_SLIDE",
+        "FS_A4",
+        "WIDTHS",
+    }
+)
 
 
 def __getattr__(name):
@@ -298,13 +300,14 @@ def __getattr__(name):
         cm_value = _DEPRECATED_WIDTHS_CM[name]
         warnings.warn(
             f"dm.{name} is deprecated and will be removed in 0.5.0. "
-            f"Use width=\"{cm_value:g}cm\" with dm.subplots(...), or "
+            f'Use width="{cm_value:g}cm" with dm.subplots(...), or '
             f"dm.cm({cm_value:g}) for a raw inches value. "
             f"For academic columns prefer dm.col1 / dm.col2.",
             DeprecationWarning,
             stacklevel=2,
         )
         from .units import cm as _cm
+
         return _cm(cm_value)
     if name in _DEPRECATED_TUPLE_NAMES:
         warnings.warn(
@@ -315,5 +318,6 @@ def __getattr__(name):
             stacklevel=2,
         )
         from . import constant as _constant
+
         return getattr(_constant, name)
     raise AttributeError(f"module 'dartwork_mpl' has no attribute {name!r}")

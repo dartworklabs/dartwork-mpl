@@ -149,7 +149,6 @@ def parse_aspect(value: str | int | float) -> float:
     key = value.strip().lower()
     if key not in ASPECT_TOKENS:
         raise ValueError(
-            f"unknown aspect token {value!r}; known: "
-            f"{sorted(ASPECT_TOKENS)}"
+            f"unknown aspect token {value!r}; known: {sorted(ASPECT_TOKENS)}"
         )
     return ASPECT_TOKENS[key]

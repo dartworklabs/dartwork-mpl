@@ -1,4 +1,5 @@
 """Verify SW/MW/TW/DW/WIDTHS/FS_* emit DeprecationWarning in 0.4."""
+
 from __future__ import annotations
 
 import math
@@ -48,9 +49,9 @@ def test_fs_and_widths_tokens_warn(name):
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         value = getattr(dm, name)
-    assert any(
-        issubclass(w.category, DeprecationWarning) for w in caught
-    ), f"{name} should emit DeprecationWarning"
+    assert any(issubclass(w.category, DeprecationWarning) for w in caught), (
+        f"{name} should emit DeprecationWarning"
+    )
     assert value is not None
 
 
