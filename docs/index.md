@@ -95,6 +95,13 @@ plot](usage_guide/interactive.md).
 Drag, click, and hover the live previews below. Everything you see
 runs entirely in your browser.
 
+:::{tip}
+Press <kbd>?</kbd> anywhere on this site to open the keyboard shortcuts
+overlay (`/` focuses search, `g h` jumps home, `g q` to Quick Start, `g c`
+to Color System, …). The teal `?` button in the bottom-right corner opens
+the same overlay.
+:::
+
 ::::{grid} 1 1 2 2
 :gutter: 2
 

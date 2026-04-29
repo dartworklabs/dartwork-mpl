@@ -4,6 +4,12 @@ A minimal end-to-end workflow: apply a style, create a figure, and
 export it. Skim this in five minutes — you'll already know enough to
 ship a publication-grade plot.
 
+:::{tip}
+A **live ruler** below this section maps `dm.fs(n)` / `dm.fw(n)` / `dm.lw(n)`
+to actual point sizes and stroke widths under each preset — drag the sliders
+to read off the resolved values without leaving the docs.
+:::
+
 ## At-a-glance ROI
 
 | What used to hurt                   | dartwork-mpl                                    |

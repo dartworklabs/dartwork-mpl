@@ -40,7 +40,14 @@ dm.show("output/forecast.svg", size=540)  # display a saved file in notebooks
 ## Visual validation
 
 Detect common rendering issues automatically — especially useful in
-AI agent pipelines where visual inspection is not available:
+AI agent pipelines where visual inspection is not available.
+
+:::{tip}
+**Try the live lint simulator** that appears below this heading — slide
+figure dimensions, tick counts, and label lengths to see exactly which
+warnings `dm.validate_figure()` would emit. The same heuristics that ship
+with the package are running in your browser.
+:::
 
 ```python
 import dartwork_mpl as dm
