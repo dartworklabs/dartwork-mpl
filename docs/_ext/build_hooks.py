@@ -21,8 +21,10 @@ _GALLERY_CATEGORIES = [
     "02_color_system",
     "03_formatting",
     "04_layout_and_annotations",
-    "05_advanced_components",
-    "06_creative_visualizations",
+    "05_helpers_api",
+    "06_chart_recipes",
+    "07_real_world_dashboards",
+    "08_creative_visualizations",
 ]
 
 
