@@ -21,6 +21,7 @@ __all__ = [
     "Inches",
 ]
 
+import math
 import re
 
 CM_PER_INCH: float = 2.54
@@ -41,7 +42,7 @@ DEFAULT_ASPECT: str = "standard"
 _WIDTH_RE = re.compile(
     r"""
     ^\s*
-    (?P<value>[+-]?\d+(?:\.\d+)?)
+    (?P<value>[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)
     \s*
     (?P<unit>cm|in|mm)?
     \s*$
@@ -144,17 +145,19 @@ def parse_width(value: str | int | float) -> float:
     """
     # An Inches instance is "already in inches" — pass through.
     if isinstance(value, Inches):
-        if float(value) <= 0:
-            raise ValueError(f"width must be positive (got {float(value)})")
-        return float(value)
+        v = float(value)
+        if not math.isfinite(v) or v <= 0:
+            raise ValueError(f"width must be positive and finite (got {v})")
+        return v
 
     if isinstance(value, (int, float)) and not isinstance(value, bool):
-        if value <= 0:
+        v = float(value)
+        if not math.isfinite(v) or v <= 0:
             raise ValueError(
-                f"width must be positive (got {value}); raw numbers "
-                f"are interpreted as cm"
+                f"width must be positive and finite (got {value}); raw "
+                f"numbers are interpreted as cm"
             )
-        return float(cm(value))
+        return float(cm(v))
 
     if not isinstance(value, str):
         raise ValueError(
@@ -171,8 +174,8 @@ def parse_width(value: str | int | float) -> float:
 
     number = float(match.group("value"))
     unit = (match.group("unit") or "cm").lower()
-    if number <= 0:
-        raise ValueError(f"width must be positive (got {number})")
+    if not math.isfinite(number) or number <= 0:
+        raise ValueError(f"width must be positive and finite (got {number})")
 
     if unit == "cm":
         return cm(number)
@@ -200,8 +203,10 @@ def parse_aspect(value: str | int | float) -> float:
     """
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         ratio = float(value)
-        if ratio <= 0:
-            raise ValueError(f"aspect must be positive (got {ratio})")
+        if not math.isfinite(ratio) or ratio <= 0:
+            raise ValueError(
+                f"aspect must be positive and finite (got {ratio})"
+            )
         return ratio
 
     if not isinstance(value, str):

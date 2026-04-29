@@ -53,6 +53,65 @@ class TestParseWidth:
         with pytest.raises(ValueError):
             parse_width("abc")
 
+    def test_rejects_nan(self):
+        with pytest.raises(ValueError, match="finite"):
+            parse_width(float("nan"))
+
+    def test_rejects_inf(self):
+        with pytest.raises(ValueError, match="finite"):
+            parse_width(float("inf"))
+
+    def test_accepts_scientific_notation(self):
+        # 1e-1 cm = 0.1 cm = 0.1/2.54 inches
+        assert math.isclose(parse_width("1e-1cm"), 0.1 / 2.54, rel_tol=1e-9)
+        # 5e0 in = 5 inches
+        assert math.isclose(parse_width("5e0in"), 5.0, rel_tol=1e-9)
+
+
+class TestInchesArithmetic:
+    """0.4 contract: arithmetic preserves the Inches tag so a doubled
+    or summed Inches value is not silently re-interpreted as cm by
+    parse_width."""
+
+    def test_mul_preserves_inches(self):
+        from dartwork_mpl.units import Inches
+
+        v = cm(9) * 2
+        assert isinstance(v, Inches)
+        assert math.isclose(v, 18 / 2.54, rel_tol=1e-9)
+
+    def test_rmul_preserves_inches(self):
+        from dartwork_mpl.units import Inches
+
+        v = 2 * cm(9)
+        assert isinstance(v, Inches)
+
+    def test_add_preserves_inches(self):
+        from dartwork_mpl.units import Inches
+
+        assert isinstance(cm(3) + cm(4), Inches)
+
+    def test_sub_preserves_inches(self):
+        from dartwork_mpl.units import Inches
+
+        assert isinstance(cm(9) - cm(2), Inches)
+
+    def test_div_preserves_inches(self):
+        from dartwork_mpl.units import Inches
+
+        assert isinstance(cm(9) / 2, Inches)
+
+    def test_neg_preserves_inches(self):
+        from dartwork_mpl.units import Inches
+
+        assert isinstance(-cm(9), Inches)
+
+    def test_parse_width_passes_through_inches_arithmetic(self):
+        # The whole point: dm.cm(9) * 2 → 18 cm-equivalent in inches,
+        # NOT re-interpreted as 7.087 cm.
+        v = cm(9) * 2
+        assert math.isclose(parse_width(v), 18 / 2.54, rel_tol=1e-9)
+
 
 class TestParseAspect:
     @pytest.mark.parametrize(

@@ -4,7 +4,7 @@ This package provides enhanced styling, color management, and various
 utility functions for Matplotlib visualizations.
 """
 
-__version__ = "0.3.1"
+__version__ = "0.4.0.dev0"
 
 # ruff: noqa: E402
 
@@ -122,7 +122,7 @@ from .style import Style, list_styles, load_style_dict, style, style_path
 from .templates import plot_diverging_bar
 
 # Unit helpers (0.4+: free-form width input)
-from .units import cm, inch, mm
+from .units import Inches, cm, inch, mm
 
 # Color utilities
 from .util import cm2in, make_offset, mix_colors, pseudo_alpha, set_decimal
@@ -183,6 +183,7 @@ __all__ = [
     "mm",
     "col1",
     "col2",
+    "Inches",
     # Units (legacy helpers, kept for compatibility)
     "cm2in",
     "make_offset",

@@ -1,26 +1,35 @@
 # dartwork-mpl 0.4 Policy
 
-Every rule below has a matching entry in
-`asset/prompt/02-anti-patterns.yaml`; the lint engine enforces them.
+Rules in this document are split into two tiers:
+
+- **Enforced** — there is a matching entry in
+  `asset/prompt/02-anti-patterns.yaml` and the lint engine flags
+  violations.
+- **Recommended** — followed by all bundled templates and assumed by
+  the design, but not currently checked by the lint engine. Treat
+  these as guidance for human authors and AI agents both.
 
 ## Width
 
-- `dm.subplots(width=...)` is the only legal way to set a figure
-  width.
+- **Enforced.** `dm.subplots(width=...)` is the only legal way to set
+  a figure width.
+- **Enforced.** `figsize=` is forbidden (lint critical; will be
+  removed in 0.5.0).
 - `width=` accepts:
   - a unit-suffixed string: `"13cm"`, `"9.5cm"`, `"6.7in"`, `"170mm"`
   - a helper call: `dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`
     (these return `Inches`, a `float` subclass that `parse_width`
-    treats as already-converted)
-  - a raw number: `13` (interpreted as cm — lint emits an info-level
-    note suggesting an explicit unit)
+    treats as already-converted, so `dm.cm(9) * 2` stays in inches)
+  - a raw number: `13` (interpreted as cm)
   - the academic sugar constants `dm.col1` (= 9 cm) or `dm.col2`
     (= 17 cm).
-- `figsize=` is **forbidden** (lint critical, removal in 0.5.0).
-- The maximum width is 17 cm.
-- Prefer the 0.5 cm grid (9.0, 9.5, 10.0…) for cross-figure
-  consistency. Lint emits an info if you stray from it.
-- Within one project, keep the number of distinct widths ≤ 5.
+- **Recommended.** Keep widths at or below 17 cm — most page layouts
+  break beyond that.
+- **Recommended.** Snap widths to the 0.5 cm grid (9.0, 9.5, 10.0…)
+  for cross-figure consistency.
+- **Recommended.** Within one project, keep the number of distinct
+  widths ≤ 5; many small variations make multi-figure reports look
+  ragged.
 
 ## Aspect (height / width)
 
