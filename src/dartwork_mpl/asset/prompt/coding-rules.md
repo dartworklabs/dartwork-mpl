@@ -1,5 +1,17 @@
 # dartwork-mpl Agent Coding Rules
 
+> **DEPRECATED in 0.4.0.** This file is retained only so MCP
+> resource URIs from prior versions keep resolving. The canonical
+> guides are now:
+> - `00-index.md` — agent entry point
+> - `01-policy.md` — policy / rules
+> - `03-recipes.md` — cookbook
+>
+> This file will be removed in a follow-up PR once `mcp/resources.py`
+> updates its URI mapping.
+
+---
+
 ## 1. Essential Import Pattern
 
 Always start with this standard import pattern:

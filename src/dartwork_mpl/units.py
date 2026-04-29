@@ -18,6 +18,7 @@ __all__ = [
     "parse_aspect",
     "ASPECT_TOKENS",
     "DEFAULT_ASPECT",
+    "Inches",
 ]
 
 import re
@@ -49,19 +50,34 @@ _WIDTH_RE = re.compile(
 )
 
 
-def cm(value: float) -> float:
+class Inches(float):
+    """A ``float`` carrying the contract "I am already inches.".
+
+    Returned by :func:`cm`, :func:`inch`, and :func:`mm` so that
+    :func:`parse_width` can distinguish "user already converted"
+    values from raw numbers (which are interpreted as cm).
+
+    Behaves exactly like a plain ``float`` for arithmetic and for
+    matplotlib, so existing callers that treat the helpers' return
+    value as a number continue to work.
+    """
+
+    __slots__ = ()
+
+
+def cm(value: float) -> Inches:
     """Convert centimeters to inches."""
-    return float(value) / CM_PER_INCH
+    return Inches(float(value) / CM_PER_INCH)
 
 
-def inch(value: float) -> float:
-    """Identity helper — kept for symmetry with cm/mm."""
-    return float(value)
+def inch(value: float) -> Inches:
+    """Identity helper — tags the value as already-in-inches."""
+    return Inches(float(value))
 
 
-def mm(value: float) -> float:
+def mm(value: float) -> Inches:
     """Convert millimeters to inches."""
-    return float(value) / MM_PER_INCH
+    return Inches(float(value) / MM_PER_INCH)
 
 
 def parse_width(value: str | int | float) -> float:
@@ -70,9 +86,11 @@ def parse_width(value: str | int | float) -> float:
     Parameters
     ----------
     value : str | int | float
-        A width like ``"9cm"``, ``"6.7in"``, ``"170mm"``, or a bare
-        number (interpreted as cm). Surrounding whitespace and matched
-        quote characters are stripped.
+        A width like ``"9cm"``, ``"6.7in"``, ``"170mm"``, an
+        :class:`Inches` value (returned by :func:`cm`/:func:`inch`/
+        :func:`mm`), or a bare number (interpreted as cm).
+        Surrounding whitespace and matched quote characters are
+        stripped.
 
     Returns
     -------
@@ -85,13 +103,19 @@ def parse_width(value: str | int | float) -> float:
         If the input cannot be parsed, has an unknown unit, or is
         non-positive.
     """
+    # An Inches instance is "already in inches" — pass through.
+    if isinstance(value, Inches):
+        if float(value) <= 0:
+            raise ValueError(f"width must be positive (got {float(value)})")
+        return float(value)
+
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         if value <= 0:
             raise ValueError(
                 f"width must be positive (got {value}); raw numbers "
                 f"are interpreted as cm"
             )
-        return cm(value)
+        return float(cm(value))
 
     if not isinstance(value, str):
         raise ValueError(
