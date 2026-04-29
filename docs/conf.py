@@ -167,6 +167,7 @@ myst_heading_anchors = 3
 sys.path.insert(0, str(Path(__file__).parent / "_ext"))
 
 from build_hooks import (  # noqa: E402
+    cleanup_sg_execution_times,
     copy_fonts_to_static,
     create_placeholder_index,
     generate_gallery_assets,
@@ -175,6 +176,9 @@ from build_hooks import (  # noqa: E402
 
 
 def setup(app):
+    # Cleanup runs first so sphinx-gallery starts from a clean slate
+    # (priority < 500 = default; lower number runs earlier).
+    app.connect("builder-inited", cleanup_sg_execution_times, priority=100)
     app.connect("builder-inited", create_placeholder_index)
     app.connect("builder-inited", generate_gallery_assets)
     app.connect("builder-inited", copy_fonts_to_static)

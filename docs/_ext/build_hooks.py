@@ -41,6 +41,24 @@ def create_placeholder_index(app):
         print("Created placeholder: examples_gallery/index.rst")
 
 
+def cleanup_sg_execution_times(app):
+    """Remove sphinx-gallery's auto-generated execution-times index before build.
+
+    sphinx-gallery writes ``sg_execution_times.rst`` at the end of every build,
+    listing every example it executed. When examples are renamed or deleted
+    between builds, the previous file leaves stale cross-references that
+    Sphinx then reports as "undefined label" warnings. The file is fully
+    regenerated each build, so deleting it up-front is safe and removes the
+    noise without losing any information.
+    """
+    src = Path(app.srcdir)
+    for stale in src.glob("**/sg_execution_times.rst"):
+        try:
+            stale.unlink()
+        except OSError:
+            pass
+
+
 def generate_gallery_assets(_app):
     """Bake high-res color system, usage guide, and API images during the build."""
     from color_system.generate_assets import build_gallery_assets
