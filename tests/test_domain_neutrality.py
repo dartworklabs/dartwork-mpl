@@ -62,12 +62,15 @@ _SCAN_SUFFIXES = {".py", ".md", ".rst", ".mplstyle"}
 #     copies of docs/examples_source/*.py (not tracked; regenerated
 #     on build)
 #   - _static, _templates: Sphinx static and template trees (assets)
+#   - superpowers: internal design specs and implementation plans
+#     (excluded from sphinx via docs/conf.py; not user-facing)
 _SKIP_DIR_PARTS = {
     "__pycache__",
     "_build",
     "examples_gallery",
     "_static",
     "_templates",
+    "superpowers",
 }
 
 # Finance-domain vocabulary that should not appear in the shipped package.

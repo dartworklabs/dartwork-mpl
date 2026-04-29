@@ -8,7 +8,6 @@ import pytest
 
 import dartwork_mpl as dm
 
-
 DEPRECATED_WIDTH_TOKENS: dict[str, float] = {
     # token -> expected width in cm
     "SW": 9.0,
