@@ -18,6 +18,8 @@ def subplots(
     nrows: int = 1,
     ncols: int = 1,
     *,
+    width: str | int | float | None = None,
+    aspect: str | int | float = "standard",
     style: str | list[str] | None = None,
     figsize: tuple[float, float] | None = None,
     dpi: int | None = None,
@@ -32,91 +34,72 @@ def subplots(
 ) -> tuple[Figure, Axes | np.ndarray]:
     """Create a figure and a set of subplots with optional style application.
 
-    This is a wrapper around matplotlib.pyplot.subplots that integrates with
-    dartwork-mpl's style system. It allows applying styles directly when
-    creating the figure, following the "Zero-Resize Policy" where figsize
-    and dpi can be determined by the style.
+    The 0.4 API takes ``width`` (free-form, e.g. ``"13cm"``,
+    ``dm.cm(11.3)``, or a bare number interpreted as cm) plus a
+    height/width ratio via ``aspect`` (named token or positive float).
+
+    The legacy ``figsize=``/``dpi=`` parameters still work but emit
+    ``DeprecationWarning`` and will be removed in 0.5.0.
 
     Parameters
     ----------
-    nrows : int, optional
-        Number of rows of the subplot grid.
-    ncols : int, optional
-        Number of columns of the subplot grid.
+    nrows, ncols : int, optional
+        Subplot grid dimensions.
+    width : str | int | float | None, optional
+        Figure width. Accepts ``"<num><unit>"`` strings (cm/in/mm),
+        the helpers ``dm.cm(x)``/``dm.inch(x)``/``dm.mm(x)``, or a
+        raw number (interpreted as cm). If ``None`` and a style is
+        provided, the style's default figsize is used.
+    aspect : str | int | float, optional
+        Height/width ratio. Either a named token in
+        ``{"square","portrait","standard","golden","wide","cinema"}``
+        or a positive float. Default ``"standard"`` (3:4).
     style : str | list[str] | None, optional
-        Style preset(s) to apply. Can be a single style name or a list
-        of styles to stack. If None, uses current matplotlib style.
-        Examples: 'scientific', 'report-kr', ['font-libertine', 'color-pro']
+        Style preset(s) to apply. See :func:`dartwork_mpl.style.use`.
     figsize : tuple[float, float] | None, optional
-        Figure dimension (width, height) in inches. If None and a style
-        is specified, uses the style's default figsize.
+        DEPRECATED. Use ``width`` and ``aspect`` instead. Will be
+        removed in 0.5.0.
     dpi : int | None, optional
-        Dots per inch. If None and a style is specified, uses the style's
-        default dpi.
-    sharex : bool | str, optional
-        Controls sharing of x-axis among subplots.
-    sharey : bool | str, optional
-        Controls sharing of y-axis among subplots.
+        DEPRECATED. The active style controls dpi; remove this
+        argument. Will be removed in 0.5.0.
+    sharex, sharey : bool | str, optional
+        Axis sharing flags forwarded to ``plt.subplots``.
     squeeze : bool, optional
-        If True, single Axes object is returned if nrows=ncols=1.
-        If False, always returns 2D array of Axes.
-    width_ratios : list[float] | None, optional
-        Width ratios of the columns. Length must equal ncols.
-    height_ratios : list[float] | None, optional
-        Height ratios of the rows. Length must equal nrows.
-    subplot_kw : dict | None, optional
-        Dict with keywords passed to add_subplot for each subplot.
-    gridspec_kw : dict | None, optional
-        Dict with keywords passed to GridSpec constructor.
+        If True (default), single Axes object is returned when
+        nrows=ncols=1; otherwise an ndarray of Axes is always returned.
+    width_ratios, height_ratios : list[float] | None, optional
+        GridSpec ratios.
+    subplot_kw, gridspec_kw : dict | None, optional
+        Forwarded to matplotlib.
     **fig_kw : Any
-        Additional keyword arguments passed to plt.figure().
+        Additional keyword arguments forwarded to ``plt.figure``.
 
     Returns
     -------
-    fig : Figure
-        The created figure.
-    ax : Axes or array of Axes
-        Single Axes object or array of Axes objects. The shape depends on
-        nrows, ncols, and squeeze parameters.
+    tuple[Figure, Axes | np.ndarray]
+        The created figure and axes.
 
     Examples
     --------
-    Create a simple figure with scientific style:
+    Create a 13 cm-wide figure with a wide aspect ratio:
 
-    >>> fig, ax = dm.subplots(style='scientific')
-    >>> ax.plot(x, y)
+    >>> fig, ax = dm.subplots(width="13cm", aspect="wide")
 
-    Create a 2x2 grid with custom style stack:
+    Use the academic single-column sugar:
 
-    >>> fig, axes = dm.subplots(2, 2, style=['font-libertine', 'color-pro'])
-    >>> for ax in axes.flat:
-    ...     ax.plot(x, y)
+    >>> fig, ax = dm.subplots(width=dm.col1, aspect="standard")
 
-    Create with specific size overriding style defaults:
+    Stack a style preset alongside width/aspect:
 
-    >>> fig, ax = dm.subplots(style='report', figsize=(8, 6), dpi=150)
-
-    Create with shared axes:
-
-    >>> fig, axes = dm.subplots(3, 1, style='scientific', sharex=True)
-
-    Notes
-    -----
-    This function follows dartwork-mpl's "Zero-Resize Policy": when a style
-    is provided, you don't need to specify figsize or dpi unless you want
-    to override the style's defaults. This ensures consistent sizing across
-    your visualizations.
-
-    The style is applied before creating the figure, so all matplotlib
-    elements created within the figure will inherit the style properties.
+    >>> fig, axes = dm.subplots(2, 1, width="17cm", aspect="cinema",
+    ...                         style="scientific")
     """
-    # Apply style if provided
+    from .units import DEFAULT_ASPECT, parse_aspect, parse_width
+
+    # Apply style first so its rcParams are visible to the rest.
     original_rcParams = None
     if style is not None:
-        # Store original rcParams to potentially extract figsize/dpi
         original_rcParams = plt.rcParams.copy()
-
-        # Apply the requested style
         from . import style as style_module
 
         if isinstance(style, str):
@@ -126,57 +109,80 @@ def subplots(
         else:
             raise ValueError(f"style must be str or list, got {type(style)}")
 
-    # Extract figsize and dpi from style if not explicitly provided
-    if style is not None:
-        if figsize is None:
-            # Check if style set a figsize
+    # Deprecation handling for figsize / dpi.
+    if figsize is not None:
+        import warnings as _warnings
+
+        _warnings.warn(
+            "figsize= on dm.subplots is deprecated and will be removed "
+            "in 0.5.0. Use dm.subplots(width=..., aspect=...) instead "
+            '(e.g. width="13cm", aspect="wide").',
+            DeprecationWarning,
+            stacklevel=2,
+        )
+    if dpi is not None:
+        import warnings as _warnings
+
+        _warnings.warn(
+            "dpi= on dm.subplots is deprecated and will be removed in "
+            "0.5.0. The active style controls dpi.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+    # Resolve width/aspect → final figsize, unless legacy figsize was
+    # supplied (legacy wins for back-compat in 0.4.x).
+    resolved_figsize: tuple[float, float] | None = None
+    if figsize is not None:
+        resolved_figsize = figsize
+    elif width is not None:
+        w_in = parse_width(width)
+        ratio = parse_aspect(aspect if aspect is not None else DEFAULT_ASPECT)
+        resolved_figsize = (w_in, w_in * ratio)
+    else:
+        # Fall back to style's figsize if a style was applied.
+        if style is not None:
             style_figsize = plt.rcParams.get("figure.figsize")
             if (
-                original_rcParams
+                original_rcParams is not None
                 and style_figsize is not None
                 and style_figsize != original_rcParams.get("figure.figsize")
             ):
-                figsize = cast(tuple[float, float], tuple(style_figsize))
+                resolved_figsize = cast(
+                    tuple[float, float], tuple(style_figsize)
+                )
 
-        if dpi is None:
-            # Check if style set a dpi
-            style_dpi = plt.rcParams.get("figure.dpi")
-            if (
-                original_rcParams
-                and style_dpi is not None
-                and style_dpi != original_rcParams.get("figure.dpi")
-            ):
-                dpi = int(style_dpi)
+    # Resolve dpi from style if not explicitly provided.
+    resolved_dpi: int | None = dpi
+    if resolved_dpi is None and style is not None:
+        style_dpi = plt.rcParams.get("figure.dpi")
+        if (
+            original_rcParams is not None
+            and style_dpi is not None
+            and style_dpi != original_rcParams.get("figure.dpi")
+        ):
+            resolved_dpi = int(style_dpi)
 
-    # Build keyword arguments for plt.subplots
+    # Build kwargs.
     kwargs: dict[str, Any] = {}
-    if figsize is not None:
-        kwargs["figsize"] = figsize
-    if dpi is not None:
-        kwargs["dpi"] = dpi
+    if resolved_figsize is not None:
+        kwargs["figsize"] = resolved_figsize
+    if resolved_dpi is not None:
+        kwargs["dpi"] = resolved_dpi
 
-    # Set up gridspec_kw
     if gridspec_kw is None:
         gridspec_kw = {}
-
     if width_ratios is not None:
         gridspec_kw["width_ratios"] = width_ratios
     if height_ratios is not None:
         gridspec_kw["height_ratios"] = height_ratios
-
-    # Add gridspec_kw if it has content
     if gridspec_kw:
         kwargs["gridspec_kw"] = gridspec_kw
-
-    # Add subplot_kw if provided
     if subplot_kw is not None:
         kwargs["subplot_kw"] = subplot_kw
-
-    # Add any additional figure kwargs
     kwargs.update(fig_kw)
 
-    # Create the figure and axes using matplotlib's subplots
-    fig, ax = plt.subplots(
+    return plt.subplots(
         nrows=nrows,
         ncols=ncols,
         sharex=sharex,
@@ -184,8 +190,6 @@ def subplots(
         squeeze=squeeze,
         **kwargs,
     )
-
-    return fig, ax
 
 
 def figure(
