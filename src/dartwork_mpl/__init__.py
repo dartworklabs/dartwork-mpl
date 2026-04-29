@@ -282,7 +282,27 @@ _DEPRECATED_TUPLE_NAMES: frozenset[str] = frozenset(
 
 
 def __getattr__(name):
-    """Provide deprecated attribute access with warnings."""
+    """Provide deprecated attribute access with warnings.
+
+    A ``DeprecationWarning`` is emitted on **every** access (not just
+    the first), so a busy script can produce many lines of output.
+    Suppress the duplicates with the standard library's ``warnings``
+    module:
+
+        import warnings
+        warnings.simplefilter("once", DeprecationWarning)
+
+    or filter just dartwork-mpl warnings:
+
+        warnings.filterwarnings(
+            "once", category=DeprecationWarning, module="dartwork_mpl"
+        )
+
+    The deprecated names — ``SW``, ``MW``, ``TW``, ``DW``, ``WIDTHS``,
+    and ``FS_*`` — are scheduled for removal in 0.5.0; migrate to
+    ``dm.subplots(width="...cm", aspect="...")`` or to ``dm.col1`` /
+    ``dm.col2`` for academic-column sugar.
+    """
     if name == "agent_utils":
         warnings.warn(
             "agent_utils is deprecated, use helpers instead",
