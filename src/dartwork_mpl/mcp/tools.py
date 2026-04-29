@@ -234,11 +234,27 @@ def register_tools(mcp: FastMCP) -> None:
                 "name": "dartwork-mpl",
                 "description": "Publication-quality matplotlib design system",
                 "design_rules": {
-                    "zero_resize": "Never set figsize manually; use mplstyle presets",
-                    "default_dpi": "300 (display), 500 (savefig)",
-                    "default_figsize": "3.5 x 3.0 inches (Nature single-column)",
-                    "font": "Roboto sans-serif family, weight 300, size 7.5pt",
-                    "save_format": "Use dm.save_and_show() for consistent output",
+                    "width_aspect": (
+                        "Use dm.subplots(width='13cm', aspect='wide'). "
+                        "width accepts cm/in/mm strings, dm.cm/inch/mm "
+                        "helpers, or a raw number (cm). aspect is one of "
+                        "{square, portrait, standard, golden, wide, "
+                        "cinema} or a positive float."
+                    ),
+                    "max_width": "17 cm",
+                    "default_dpi": "Controlled by the active style preset.",
+                    "font": (
+                        "Roboto sans-serif family; sizes scaled via dm.fs(n)."
+                    ),
+                    "save_format": (
+                        "Use dm.save_formats(fig, 'name') for scripts or "
+                        "dm.save_and_show(fig, 'name.svg') for notebooks."
+                    ),
+                    "color": (
+                        "Use named palettes (oc.*, tw.*, dc.*, md.*, "
+                        "ad.*, cu.*, pr.*); raw hex is allowed but "
+                        "discouraged."
+                    ),
                 },
                 "resources": [
                     "dartwork-mpl://guide/general-guide",

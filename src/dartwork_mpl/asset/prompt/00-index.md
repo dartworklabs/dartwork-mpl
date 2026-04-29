@@ -11,8 +11,10 @@ fetch the specific guide you need.
 | A specific plot type (bar, line, heatmap, scatter, …) | `dartwork-mpl://templates/{plot}` |
 | Width / aspect / layout / color / save policy | `dartwork-mpl://guide/policy` |
 | "How do I do X with dartwork-mpl" cookbook | `dartwork-mpl://guide/recipes` |
-| Anti-patterns to avoid | `dartwork-mpl://guide/anti-patterns` |
-| A function signature you don't remember | `dartwork-mpl://api/{name}` |
+| Anti-patterns to avoid (machine-readable YAML) | `dartwork-mpl://guide/anti-patterns` |
+| List of every public dartwork-mpl name | `dartwork-mpl://api/index` |
+| A specific function signature + docstring | `dartwork-mpl://api/{name}` |
+| All available plot template types | `dartwork-mpl://templates/list` |
 | Color name → hex code | call `get_color_value(name)` |
 | Sanity-check a generated script | call `lint_dartwork_mpl_code(code)` |
 

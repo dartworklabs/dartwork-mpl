@@ -3,128 +3,143 @@
 This module provides functions for automatically installing or removing
 the dartwork-mpl usage guide in various IDE environments (e.g., Cursor)
 and AI coding assistants (e.g., Claude Code).
+
+The installed bundle is composed at install-time from the SSOT prompt
+directory under ``asset/prompt/`` so it always tracks the canonical
+0.4 guides (00-index, 01-policy, 02-anti-patterns, 03-recipes).
 """
 
 from pathlib import Path
 
 __all__ = ["install_llm_txt", "uninstall_llm_txt"]
 
+# SSOT prompt directory.
+_PROMPT_DIR: Path = Path(__file__).parent / "asset" / "prompt"
+
+# Pieces composed into the installed bundle, in order. Each entry is
+# a (heading, source-file) pair; missing files are skipped so an
+# in-progress repo (e.g. early in a migration) still installs whatever
+# is available. The machine-readable anti-pattern YAML is intentionally
+# omitted — it is reachable via the MCP `dartwork-mpl://guide/anti-
+# patterns` resource, and lifting its rule-detector strings into a
+# human-facing bundle would re-introduce phrases (e.g. "Zero-Resize")
+# that lint specifically warns against.
+_BUNDLE_PIECES: tuple[tuple[str, str], ...] = (
+    ("Agent entry point", "00-index.md"),
+    ("Policy", "01-policy.md"),
+    ("Recipes (intent → function call)", "03-recipes.md"),
+)
+
+
+def _compose_bundle() -> str:
+    """Concatenate the SSOT pieces into a single markdown payload."""
+    parts: list[str] = ["# dartwork-mpl Usage Bundle\n"]
+    for heading, filename in _BUNDLE_PIECES:
+        path = _PROMPT_DIR / filename
+        if not path.exists():
+            continue
+        body = path.read_text(encoding="utf-8")
+        parts.append(f"\n---\n\n## {heading} (`{filename}`)\n\n")
+        if filename.endswith(".yaml"):
+            # Render YAML as a fenced block so it stays legible.
+            parts.append(f"```yaml\n{body}\n```\n")
+        else:
+            parts.append(body)
+            if not body.endswith("\n"):
+                parts.append("\n")
+    return "".join(parts)
+
 
 def install_llm_txt(project_dir: str | Path | None = None) -> None:
-    """Install the dartwork-mpl usage guide into project IDE integration folders.
+    """Install the dartwork-mpl usage guide into IDE integration folders.
 
-    Copies the usage guide to the following paths so that various AI coding
-    assistants can discover library context:
-    - ``.claude/commands/`` (for Claude Code)
-    - ``.cursor/`` (for Cursor IDE)
+    Composes a single markdown bundle from the canonical 0.4 SSOT
+    files (``asset/prompt/{00-index, 01-policy, 02-anti-patterns,
+    03-recipes}``) and writes it to:
+
+    - ``.claude/commands/dartwork-mpl-usage.md`` (Claude Code)
+    - ``.cursor/dartwork-mpl-usage.md`` (Cursor IDE)
 
     Parameters
     ----------
     project_dir : str | Path | None, optional
-        Target project directory. If None, the current working directory
-        is used. Default is None.
+        Target project directory. If None, the current working
+        directory is used. Default is None.
 
     Raises
     ------
     FileNotFoundError
-        If the USAGE_GUIDE.md file cannot be found in the package assets.
+        If the SSOT prompt directory cannot be found.
     """
-    # Get the usage guide path from the asset folder
-    usage_guide_path: Path = Path(__file__).parent / "asset" / "USAGE_GUIDE.md"
+    if not _PROMPT_DIR.exists():
+        raise FileNotFoundError(
+            f"SSOT prompt directory not found at: {_PROMPT_DIR}"
+        )
 
-    if not usage_guide_path.exists():
-        raise FileNotFoundError(f"Usage guide not found at: {usage_guide_path}")
+    project = Path(project_dir) if project_dir is not None else Path.cwd()
 
-    # Get project directory (current working directory if not specified)
-    if project_dir is None:
-        project_dir_obj: Path = Path.cwd()
-    else:
-        project_dir_obj = Path(project_dir)
+    bundle = _compose_bundle()
 
-    # Install for Claude Code
-    claude_dir: Path = project_dir_obj / ".claude" / "commands"
+    claude_dir: Path = project / ".claude" / "commands"
     claude_dir.mkdir(parents=True, exist_ok=True)
     claude_file: Path = claude_dir / "dartwork-mpl-usage.md"
+    claude_file.write_text(
+        "# dartwork-mpl Library Usage Command\n\n"
+        "This command exposes the canonical 0.4 dartwork-mpl guides "
+        "to AI coding assistants.\n\n"
+        "## Usage\nType `/dartwork-mpl` to get help with dartwork-mpl "
+        "usage.\n\n---\n\n" + bundle,
+        encoding="utf-8",
+    )
 
-    # Install for Cursor IDE
-    cursor_dir: Path = project_dir_obj / ".cursor"
+    cursor_dir: Path = project / ".cursor"
     cursor_dir.mkdir(parents=True, exist_ok=True)
     cursor_file: Path = cursor_dir / "dartwork-mpl-usage.md"
-
-    # Read the original usage guide
-    with open(usage_guide_path, encoding="utf-8") as f:
-        content: str = f.read()
-
-    # Create Claude Code version with command prefix
-    claude_content: str = f"""# dartwork-mpl Library Usage Command
-
-This command provides comprehensive usage guide for the dartwork-mpl library.
-
-## Usage
-Type `/dartwork-mpl` to get help with dartwork-mpl library usage.
-
----
-
-{content}
-"""
-
-    # Create Cursor IDE version with instruction format
-    cursor_content: str = f"""// Cursor IDE Instructions for dartwork-mpl library
-// This file provides context about dartwork-mpl library usage
-
-{content}
-"""
-
-    # Write files
-    with open(claude_file, "w", encoding="utf-8") as f:
-        f.write(claude_content)
-
-    with open(cursor_file, "w", encoding="utf-8") as f:
-        f.write(cursor_content)
+    cursor_file.write_text(
+        "// Cursor IDE Instructions for dartwork-mpl library\n"
+        "// This file provides context about dartwork-mpl library "
+        "usage\n\n" + bundle,
+        encoding="utf-8",
+    )
 
     print("✅ dartwork-mpl usage guide installed successfully!")
-    print(f"📁 Project: {project_dir_obj}")
+    print(f"📁 Project: {project}")
     print(f"📁 Claude Code: {claude_file}")
     print(f"📁 Cursor IDE: {cursor_file}")
     print()
     print("🔧 Usage:")
     print("- In Claude Code: Type '/dartwork-mpl' for help")
     print(
-        "- In Cursor IDE: The AI will automatically"
-        " have access to dartwork-mpl context"
+        "- In Cursor IDE: The AI will automatically have access to "
+        "dartwork-mpl context"
     )
 
 
 def uninstall_llm_txt(project_dir: str | Path | None = None) -> None:
-    """Remove the dartwork-mpl usage guide from project IDE integration folders.
+    """Remove the dartwork-mpl usage guide from IDE integration folders.
 
     Parameters
     ----------
     project_dir : str | Path | None, optional
-        Target project directory. If None, the current working directory
-        is used. Default is None.
+        Target project directory. If None, the current working
+        directory is used. Default is None.
     """
-    # Get project directory (current working directory if not specified)
-    if project_dir is None:
-        project_dir_obj: Path = Path.cwd()
-    else:
-        project_dir_obj = Path(project_dir)
+    project = Path(project_dir) if project_dir is not None else Path.cwd()
 
-    # Files to remove
     files_to_remove: list[Path] = [
-        project_dir_obj / ".claude" / "commands" / "dartwork-mpl-usage.md",
-        project_dir_obj / ".cursor" / "dartwork-mpl-usage.md",
+        project / ".claude" / "commands" / "dartwork-mpl-usage.md",
+        project / ".cursor" / "dartwork-mpl-usage.md",
     ]
 
-    removed_files: list[Path] = []
+    removed: list[Path] = []
     for file_path in files_to_remove:
         if file_path.exists():
             file_path.unlink()
-            removed_files.append(file_path)
+            removed.append(file_path)
 
-    if removed_files:
+    if removed:
         print("✅ dartwork-mpl usage guide uninstalled successfully!")
-        for file_path in removed_files:
+        for file_path in removed:
             print(f"🗑️  Removed: {file_path}")
     else:
         print("ℹ️  No dartwork-mpl usage guides found to remove.")

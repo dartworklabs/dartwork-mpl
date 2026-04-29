@@ -8,7 +8,7 @@ A short cookbook keyed by user intent. Each entry shows the canonical
 
 ```python
 fig, ax = dm.subplots(width="13cm", aspect="standard")
-ax.bar(categories, values, color="dc.blue500", edgecolor="white",
+ax.bar(categories, values, color="oc.blue5", edgecolor="white",
        linewidth=0.3)
 ax.set_ylabel("Value")
 dm.auto_layout(fig)
@@ -27,7 +27,7 @@ dm.auto_layout(fig)
 
 ```python
 fig, ax = dm.subplots(width="11cm", aspect="square")
-ax.scatter(x, y, color="dc.blue500", edgecolor="white", linewidth=0.3,
+ax.scatter(x, y, color="oc.blue5", edgecolor="white", linewidth=0.3,
            s=20)
 dm.auto_layout(fig)
 ```
@@ -45,8 +45,8 @@ dm.auto_layout(fig)
 
 ```python
 fig, ax = dm.subplots(width="13cm", aspect="standard")
-ax.bar(x, a, color="dc.blue500", label="A")
-ax.bar(x, b, bottom=a, color="dc.green500", label="B")
+ax.bar(x, a, color="oc.blue5", label="A")
+ax.bar(x, b, bottom=a, color="oc.green5", label="B")
 ax.legend()
 dm.auto_layout(fig)
 ```
@@ -56,8 +56,8 @@ dm.auto_layout(fig)
 ```python
 fig, ax1 = dm.subplots(width="15cm", aspect="wide")
 ax2 = ax1.twinx()
-ax1.bar(x, precip, color="dc.blue300", alpha=0.7)
-ax2.plot(x, temp, color="dc.red500", marker="o", markersize=3)
+ax1.bar(x, precip, color="oc.blue3", alpha=0.7)
+ax2.plot(x, temp, color="oc.red6", marker="o", markersize=3)
 dm.auto_layout(fig)
 ```
 

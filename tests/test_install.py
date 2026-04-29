@@ -8,18 +8,22 @@ import pytest
 
 from dartwork_mpl.install import install_llm_txt, uninstall_llm_txt
 
-# USAGE_GUIDE.md may not exist in all environments
-_USAGE_GUIDE_EXISTS = (
+# SSOT prompt directory must exist for install_llm_txt to compose its
+# bundle. In well-formed checkouts it always does; the skip is only a
+# safety net for partial vendoring scenarios.
+_SSOT_DIR_EXISTS = (
     Path(__file__).parent.parent
     / "src"
     / "dartwork_mpl"
     / "asset"
-    / "USAGE_GUIDE.md"
+    / "prompt"
+    / "00-index.md"
 ).exists()
 
 
 @pytest.mark.skipif(
-    not _USAGE_GUIDE_EXISTS, reason="USAGE_GUIDE.md asset not present"
+    not _SSOT_DIR_EXISTS,
+    reason="asset/prompt SSOT not present in this checkout",
 )
 class TestInstallLlmTxt:
     """Tests for install_llm_txt()."""
@@ -35,19 +39,41 @@ class TestInstallLlmTxt:
         assert claude_file.exists()
         assert cursor_file.exists()
 
-    def test_claude_has_content(self, tmp_path: Path) -> None:
+    def test_claude_bundle_includes_ssot_pieces(self, tmp_path: Path) -> None:
         install_llm_txt(project_dir=tmp_path)
 
         claude_file = (
             tmp_path / ".claude" / "commands" / "dartwork-mpl-usage.md"
         )
         content = claude_file.read_text(encoding="utf-8")
+        # The bundle composes the SSOT pieces; verify each is named.
         assert "dartwork-mpl" in content
-        assert len(content) > 100
+        assert "00-index.md" in content
+        assert "01-policy.md" in content
+        assert "03-recipes.md" in content
+        assert len(content) > 500
+
+    def test_cursor_bundle_does_not_use_legacy_zero_resize(
+        self, tmp_path: Path
+    ) -> None:
+        """Installed bundle must reflect the 0.4 width/aspect policy.
+
+        The retired "Zero-Resize" phrase must not appear anywhere in
+        the bundle. If a future SSOT file ever needs to mention it
+        (e.g. a migration note in the human-facing guide), that file
+        should be excluded from the install bundle, not allowed to
+        leak the deprecated language to AI assistants.
+        """
+        install_llm_txt(project_dir=tmp_path)
+
+        cursor_file = tmp_path / ".cursor" / "dartwork-mpl-usage.md"
+        content = cursor_file.read_text(encoding="utf-8")
+        assert "Zero-Resize" not in content
 
 
 @pytest.mark.skipif(
-    not _USAGE_GUIDE_EXISTS, reason="USAGE_GUIDE.md asset not present"
+    not _SSOT_DIR_EXISTS,
+    reason="asset/prompt SSOT not present in this checkout",
 )
 class TestUninstallLlmTxt:
     """Tests for uninstall_llm_txt()."""
