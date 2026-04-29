@@ -2,6 +2,13 @@
 
 **dartwork-mpl** is a library of utilities and assets for matplotlib that makes creating publication-quality figures easier.
 
+:::{tip}
+The **live install picker** above auto-detects your OS and lets you switch
+between `uv`, `pip`, `Poetry`, and `conda` with one click — the command box
+updates and the **Copy** button copies the exact line you'll paste into your
+terminal.
+:::
+
 ## Quick Install
 
 Install **dartwork-mpl** directly from GitHub. The package includes matplotlib style presets, curated color palettes, and layout utilities.

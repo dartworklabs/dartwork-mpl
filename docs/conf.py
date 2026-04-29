@@ -91,8 +91,13 @@ exclude_patterns = [
 
 html_theme = "shibuya"
 html_static_path = ["_static"]
-html_css_files = ["custom.css", "font-specimens.css", "font-face.css"]
-html_js_files = ["custom.js"]
+html_css_files = [
+    "custom.css",
+    "font-specimens.css",
+    "font-face.css",
+    "dynamic_ux.css",
+]
+html_js_files = ["custom.js", "dynamic_ux.js"]
 
 # Prevent sections from gallery/index from appearing in the global toctree
 # toctree_object_entries = False  # Removed as it might interfere with sidebar

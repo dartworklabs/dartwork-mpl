@@ -2,6 +2,12 @@
 
 Common issues and their solutions when working with dartwork-mpl.
 
+:::{tip}
+Use the **filter bar** below the title to search by keyword (`font`, `svg`,
+`Korean`, …) or jump straight to a category by clicking a pill. The bar is
+sticky as you scroll. Press <kbd>?</kbd> for site-wide shortcuts.
+:::
+
 ## Installation
 
 ### `ModuleNotFoundError: No module named 'dartwork_mpl'`
