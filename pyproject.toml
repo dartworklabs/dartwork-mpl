@@ -111,6 +111,11 @@ warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
 check_untyped_defs = true
+# asset/prompt/05-templates/*.py are bundled documentation samples,
+# not package source. They are intentionally untyped scripts.
+exclude = [
+    'asset/prompt/05-templates/.*\.py$',
+]
 
 [tool.coverage.run]
 source = ["src/dartwork_mpl"]
