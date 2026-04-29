@@ -53,7 +53,6 @@ from .color import (
 # Note: legacy constants (SW/MW/TW/DW/WIDTHS/FS_*) are no longer
 # eagerly imported. They resolve via the module-level __getattr__
 # below, which emits DeprecationWarning on access.
-
 # Import asset-diagnostic visualization helpers.
 from .diagnostics import (
     classify_colormap,

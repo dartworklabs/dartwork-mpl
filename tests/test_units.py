@@ -5,13 +5,7 @@ import math
 
 import pytest
 
-from dartwork_mpl.units import (
-    cm,
-    inch,
-    mm,
-    parse_aspect,
-    parse_width,
-)
+from dartwork_mpl.units import cm, inch, mm, parse_aspect, parse_width
 
 
 class TestUnitConverters:
