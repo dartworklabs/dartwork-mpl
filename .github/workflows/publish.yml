@@ -1,0 +1,86 @@
+name: Publish to PyPI
+
+# Triggered by tags matching v*.*.*. Builds sdist + wheel and uploads
+# them via the PyPI Trusted Publisher (OIDC) flow — no API token is
+# stored in repo secrets. Set up the trusted publisher once on PyPI:
+#
+#   https://pypi.org/manage/project/dartwork-mpl/settings/publishing/
+#
+# with:
+#   Owner: dartworklabs
+#   Repository: dartwork-mpl
+#   Workflow file: publish.yml
+#   Environment: pypi (recommended)
+#
+# Manual dispatch is also allowed for dry runs.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+# Single concurrent publish per ref; cancel stale runs.
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build sdist + wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Build distributions
+        run: uv build
+
+      - name: Sanity-check sdist scope
+        # Fails the build if dev-only paths sneak into the tarball
+        # (regression guard for the hatch ``include`` vs ``only-include``
+        # gotcha we hit pre-0.4.0).
+        run: |
+          set -euo pipefail
+          tarball=$(ls dist/*.tar.gz)
+          unwanted=$(tar tzf "$tarball" | awk -F/ '{print $2}' | sort -u | grep -E '^(\.claude|docs|tests|examples|scripts|\.github|\.venv|uv\.lock)$' || true)
+          if [ -n "$unwanted" ]; then
+            echo "::error ::sdist contains dev-only paths: $unwanted"
+            exit 1
+          fi
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    # Use a GitHub Environment so the OIDC token has the right scope
+    # and PyPI's Trusted Publisher rule can match it.
+    environment:
+      name: pypi
+      url: https://pypi.org/p/dartwork-mpl
+    permissions:
+      # Required for OIDC-based PyPI publishing (no API tokens).
+      id-token: write
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # dartwork-mpl AI-Agent Readiness 0.4.0 — Design
 
 - **Status**: Approved (pending user review of this written spec)
@@ -345,7 +349,7 @@ dartwork-mpl validate path/to/figure.png       # 향후
 
 `validate_figure(fig)`에 width 검증 추가:
 
-```python
+```text
 # 새로 추가되는 체크들
 - WIDTH_OVER_MAX:  fig.get_size_inches()[0] > 17cm
 - WIDTH_VARIETY:   현재 figure의 width가 같은 디렉토리 내 ≤5종에 속하는지 (선택적)
@@ -405,7 +409,7 @@ def install_llm_txt(project_dir: str | Path | None = None) -> None:
 
 `docs/usage_guide/styles.md` 등에서 정책 본문은 직접 작성하지 않고 SSOT를 임포트:
 
-```myst
+```text
 ```{include} ../../src/dartwork_mpl/asset/prompt/01-policy.md
 :start-after: "<!-- POLICY:WIDTH:START -->"
 :end-before: "<!-- POLICY:WIDTH:END -->"

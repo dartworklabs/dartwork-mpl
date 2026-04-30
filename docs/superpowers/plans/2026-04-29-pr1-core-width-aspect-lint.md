@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # PR 1 — Core: Width/Aspect API + Lint Module + Asset SSOT (M0–M4)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
