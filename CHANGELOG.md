@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Removed (font asset slimming, no API impact)
+
+- **`NotoSans_ExtraCondensed` family (18 files, ~10 MB)** — the family
+  was bundled but never referenced by any mplstyle preset, helper,
+  example, or test. Removed wholesale.
+- **Roboto Thin/Black weights and all italic variants (8 files,
+  ~0.7 MB)** — `Roboto-Thin`, `Roboto-ThinItalic`, `Roboto-Black`,
+  `Roboto-BlackItalic`, `Roboto-Italic`, `Roboto-LightItalic`,
+  `Roboto-MediumItalic`, `Roboto-BoldItalic` are not exercised by any
+  bundled preset (presets only call weights 300/400/500/700 and never
+  italic).
+- **Paperlogy 1Thin / 2ExtraLight / 6SemiBold / 8ExtraBold / 9Black
+  weights (5 files, ~6.3 MB)** — bundled presets only reference
+  `Paperlogy-3Light`, `Paperlogy-4Regular`, `Paperlogy-5Medium`,
+  `Paperlogy-7Bold`. Other Paperlogy weights are not loaded by any
+  shipped style.
+- **Wheel size reduction**: ~50 MB → ~41.5 MB (≈17%, ~17 MB freed
+  uncompressed). sdist drops from ~50 MB to ~41.4 MB. No public API
+  changes; users targeting the removed weights can fall back to
+  nearby weights via matplotlib's weight-resolution heuristics, or
+  install the originals as system fonts.
+
 ### Added
 
 - **`dartwork-mpl://guide/migration` MCP resource** — the 0.3 → 0.4

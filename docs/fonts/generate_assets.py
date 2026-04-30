@@ -56,11 +56,6 @@ FONT_FAMILIES = {
         "use_case": "Labels, legends, compact text",
         "variants": 20,
     },
-    "NotoSans_ExtraCondensed": {
-        "description": "Extra condensed for maximum space efficiency",
-        "use_case": "Very tight layouts, axis labels",
-        "variants": 20,
-    },
     "NotoSansMath": {
         "description": "Mathematical symbols and equations font",
         "use_case": "Scientific notation, mathematical expressions",
@@ -69,12 +64,12 @@ FONT_FAMILIES = {
     "Paperlogy": {
         "description": "Clean, professional font designed for documents",
         "use_case": "Reports, academic papers, professional documents",
-        "variants": 9,
+        "variants": 4,
     },
     "Roboto": {
         "description": "Google's flagship sans-serif, default font in dartwork-mpl",
         "use_case": "Default body text, general purpose (dartwork-mpl default)",
-        "variants": 15,
+        "variants": 4,
     },
 }
 
