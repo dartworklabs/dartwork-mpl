@@ -10,6 +10,22 @@ authors = [
     { name = "Wonjun Choi", email = "wonjunn.choi@gmail.com" }
 ]
 requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Framework :: Matplotlib",
+    "Typing :: Typed",
+]
 dependencies = [
     "colorspacious>=1.1.2",
     "ipython>=8.32.0",
@@ -28,7 +44,7 @@ Issues = "https://github.com/dartworklabs/dartwork-mpl/issues"
 
 [project.scripts]
 dartwork-mpl-mcp = "dartwork_mpl.cli:main"
-ui = "dartwork_mpl.ui.__main__:main"
+dartwork-mpl-ui = "dartwork_mpl.ui.__main__:main"
 
 [project.optional-dependencies]
 mcp = [
@@ -49,13 +65,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 # Explicit sdist whitelist. Without this, hatch defaults to "everything
-# not in .gitignore", which sweeps in worktree caches, docs/_build, .venv
-# leftovers, etc. — easily pushing the tarball past PyPI's 100 MB
-# per-file ceiling. We ship just the package + license + top-level
-# metadata; the bundled fonts (~87 MB) live under src/dartwork_mpl/asset
-# and are picked up by the package include.
+# not in .gitignore", which sweeps in worktree caches (`.claude/`),
+# docs/_build, dev-only docs/examples, and similar cruft. ``include``
+# is *additive* on top of hatch's default file discovery, so we use
+# ``only-include`` to make the whitelist authoritative. The bundled
+# fonts (~70 MB) live under src/dartwork_mpl/asset and are picked up
+# transitively because src/dartwork_mpl is whitelisted.
 [tool.hatch.build.targets.sdist]
-include = [
+only-include = [
     "src/dartwork_mpl",
     "LICENSE",
     "README.md",

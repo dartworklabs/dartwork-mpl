@@ -7,195 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Added (post-release minor cleanup)
-
-- **`__dir__` exposes deprecated 0.3 names** — `dir(dartwork_mpl)`
-  now lists `SW`/`MW`/`TW`/`DW`, `FS_*`, `WIDTHS`, `agent_utils`, and
-  `xplot` so IDE autocomplete can find them during migration. Each
-  access still emits a DeprecationWarning via `__getattr__`.
-- **`oversize-width` lint rule covers fractional widths** — the rule
-  now flags `width="17.5cm"`, `"17.1cm"`, etc. Previously only
-  integer widths above 17 cm were caught.
-
-### Changed (post-release minor cleanup)
-
-- **Clearer `parse_aspect(True)` / `parse_width(True)` errors** — both
-  parsers now reject `bool` upfront with a message that explicitly
-  says "bool is not accepted", rather than silently treating
-  `True`/`False` as 1.0/0.0 (or producing an indirect "got bool"
-  message).
-- **MCP prompt input cap** — `create_plot` and `style_review` now
-  truncate `description`, `data_sample`, and `code` to 8192 characters
-  with a clear `... [truncated; ... exceeded ... chars]` marker, so
-  pathologically large inputs cannot blow the model's context budget.
-- **Narrowed `except Exception` blocks in `layout.py` and
-  `validate.py`** — the silent skip blocks around
-  `get_window_extent` now catch `(RuntimeError, ValueError,
-  AttributeError)` only, so unexpected matplotlib regressions surface
-  instead of being swallowed.
-- **`anti-patterns.yaml` resource ships `application/yaml` mime type**
-  — clients that key off mime can now auto-detect the format.
-
-### Fixed (post-release minor cleanup)
-
-- **`_check_pie_label_offset` no longer crashes on regular pies** —
-  matplotlib pie wedges have `width=None` for non-donut pies, which
-  caused a `TypeError` once the broad `except Exception` was
-  narrowed. Coerced to `1.0` at the source.
-- **`fetch_github_document` URL allowlist** — only
-  `https://raw.githubusercontent.com/` URLs are accepted; other
-  schemes (`file://`, `http://`, `ftp://`) and other hosts are
-  rejected with a clear `ValueError`. Error messages now show only
-  the exception type, not the underlying traceback.
-- **`lint(code)` docstring clarifies "Python source only"** — the
-  rules are regex-based, so feeding YAML/Markdown produces false
-  positives. The docstring now flags this explicitly.
-
-### Removed (font asset slimming, no API impact)
-
-- **`NotoSans_ExtraCondensed` family (18 files, ~10 MB)** — the family
-  was bundled but never referenced by any mplstyle preset, helper,
-  example, or test. Removed wholesale.
-- **Roboto Thin/Black weights and all italic variants (8 files,
-  ~0.7 MB)** — `Roboto-Thin`, `Roboto-ThinItalic`, `Roboto-Black`,
-  `Roboto-BlackItalic`, `Roboto-Italic`, `Roboto-LightItalic`,
-  `Roboto-MediumItalic`, `Roboto-BoldItalic` are not exercised by any
-  bundled preset (presets only call weights 300/400/500/700 and never
-  italic).
-- **Paperlogy 1Thin / 2ExtraLight / 6SemiBold / 8ExtraBold / 9Black
-  weights (5 files, ~6.3 MB)** — bundled presets only reference
-  `Paperlogy-3Light`, `Paperlogy-4Regular`, `Paperlogy-5Medium`,
-  `Paperlogy-7Bold`. Other Paperlogy weights are not loaded by any
-  shipped style.
-- **Wheel size reduction**: ~50 MB → ~41.5 MB (≈17%, ~17 MB freed
-  uncompressed). sdist drops from ~50 MB to ~41.4 MB. No public API
-  changes; users targeting the removed weights can fall back to
-  nearby weights via matplotlib's weight-resolution heuristics, or
-  install the originals as system fonts.
-
-### Added
-
-- **`dartwork-mpl://guide/migration` MCP resource** — the 0.3 → 0.4
-  migration guide is now exposed at a stable URI (sourced from
-  `asset/prompt/_legacy/migration-from-0.3.md`) so 0.3 clients
-  landing on the deprecated guides have a clear next step. Listed in
-  `dartwork_mpl_info()` and the `00-index.md` decision tree.
-- **Lint output now surfaces fix suggestions** —
-  `format_report(...)` emits `→ fix: <suggestion>` directly under
-  each issue when the rule's YAML entry includes a `fix_suggestion`.
-  Lets MCP/CLI consumers (and AI agents) apply replacements without
-  a second round-trip.
-- **`Issue.column` and `Issue.fix_suggestion` fields** — the lint
-  `Issue` dataclass now carries the absolute match offset and the
-  rule's fix suggestion. The dedupe key inside `lint(...)` switched
-  from `(rule_id, line)` to `(rule_id, column)` so multiple
-  violations on the same line are reported separately.
-- **Thread-safe `ensure_loaded` for fonts and colormaps** —
-  `dartwork_mpl.cmap.ensure_loaded()` and
-  `dartwork_mpl.font.ensure_loaded()` now use a module-level
-  `threading.Lock` with double-checked locking, eliminating a
-  `ValueError` race when two threads first import the package
-  concurrently. `dartwork_mpl.style.Style.stack(...)` is likewise
-  guarded so concurrent `dm.style.use(...)` calls cannot interleave
-  `rcParams` mutations.
-- **Test isolation conftest** — `tests/conftest.py` now ships an
-  autouse fixture that closes every figure and restores rcParams
-  defaults between tests, preventing style/figure leak across the
-  834-test suite.
-- **Smoke tests for `dartwork_mpl.helpers.*`** — `test_helpers_*.py`
-  files cover `quality`, `formatting` (deprecated alias),
-  `colors`, `labels`, and `data`, raising the previously
-  near-zero coverage on those modules.
-- **Branch coverage for `validate_enhanced.get_fix_suggestions`** —
-  added cases for OVERFLOW (right/bottom/top), OVERLAP,
-  LEGEND_OVERFLOW, TICK_CROWD (x/y), EMPTY_AXES, MARGIN_ASYMMETRY,
-  and PIE_LABEL_OFFSET so every public branch of the suggestion
-  table is exercised.
-- **Branch coverage for `style.Style`** — kwargs override
-  (`font_size=14` and dot-notation), list-of-presets `use(...)`,
-  `presets_dict()` mutation isolation, and the `context(...)`
-  context manager.
-
-### Changed
-
-- **`dpi-arg` lint severity raised to `critical`** — `dpi=` on
-  `plt.figure` / `dm.figure` / `dm.subplots` now matches
-  `figsize-direct` in severity, aligning the rule with the
-  always-true facts in `00-index.md`. `savefig(dpi=...)` remains
-  owned by `savefig-direct` (warning).
-- **Deprecated 0.3 prompt files reduced to redirect stubs** —
-  `coding-rules.md`, `general-guide.md`, and `layout-guide.md` no
-  longer carry stale 0.3 content (which contradicted the 0.4
-  width/aspect API). They now point at `00-index.md`,
-  `01-policy.md`, `03-recipes.md`, and the migration guide. MCP
-  URIs are unchanged.
-- **`03-recipes.md` heatmap and bundled `heatmap.py` / `contour.py`
-  templates** — switched from `plt.colorbar(...)` to
-  `fig.colorbar(...)` so the figure-first idiom is consistent and
-  copy-pasted recipes don't depend on an unimported `plt`.
-
-### Fixed
-
-- **`Axes.twinx` reentrance guard** — the monkey-patch in
-  `dartwork_mpl/__init__.py` now tags the wrapper with
-  `__dm_patched__` and skips re-patching when that marker is
-  present, so `importlib.reload(dartwork_mpl)` no longer self-wraps
-  into a `RecursionError` on the next `ax.twinx()` call.
-- **`auto_layout(fig)` / `simple_layout(fig)` no-op on empty figures**
-  — both functions used to `IndexError` on `fig.axes[0]` when given a
-  figure with no axes; they now return cleanly.
-- **`Inches` survives numpy ufunc dispatch** — the `Inches` `float`
-  subclass returned by `dm.cm` / `dm.inch` / `dm.mm` now sets
-  `__array_ufunc__ = None`, so `np.float64(2) * dm.cm(9)` falls back
-  to `Inches.__rmul__` and keeps the inches tag instead of silently
-  becoming a bare `np.float64` that `parse_width` would re-interpret
-  as cm.
-- **sdist whitelist** — `[tool.hatch.build.targets.sdist]` now
-  enumerates `src/dartwork_mpl`, `LICENSE`, `README.md`,
-  `CHANGELOG.md`, `pyproject.toml`. Previous default-everything
-  behaviour swept in worktree caches and `docs/_build`, pushing the
-  tarball over PyPI's 100 MB per-file ceiling. The 0.4.0 sdist now
-  builds at ~50 MB.
-- **`dpi-arg` lint regex now sees through `figsize=(...)`** — the
-  prior `[^)]*` pattern stopped at the first `)` and silently missed
-  `plt.figure(figsize=(8,6), dpi=200)`. Updated to allow one level
-  of nested parens. `savefig(dpi=...)` remains owned by
-  `savefig-direct`.
-- **`linewidth-literal` lint relaxed for sub-1 hairlines** — the
-  rule now only fires on literals whose integer part is `>= 1`.
-  Sub-1 widths (`0.3`, `0.5`, `0.8`) are common, intentional
-  decoration in the bundled templates, which now lint clean against
-  the rules they teach. `linewidth=0` (no-border idiom) and
-  `linewidth=2.5` (true bypass) keep their previous behaviour.
-- **`dartwork-mpl-mcp` console script** prints a friendly install
-  hint and exits `1` when the `[mcp]` extra is missing, instead of
-  raising `ModuleNotFoundError` from a top-of-module import.
-- **`dm.subplots(width=..., figsize=...)` and `dm.figure(...)`** now
-  emit an explicit `UserWarning` saying the new `width=` argument
-  was ignored and the legacy `figsize=` won, on top of the existing
-  `DeprecationWarning` on `figsize=`.
-
-### Changed
-
-- **`validate_plot_data` now covers all 12 advertised templates** —
-  added validators for `violin`, `boxplot`, `histogram`, `contour`,
-  and `twin_axis` to match the catalog returned by
-  `dartwork_mpl_info()`.
-- **`fastmcp` capped below 4** in the `[mcp]` extra
-  (`fastmcp>=2.13.3,<4`). 3.x is the latest tested major; 4.x has
-  not been vetted and may rename the introspection APIs we relied
-  on.
-- **`dartwork_mpl_info()` registered-prompt list is now static** —
-  previously poked at `mcp._prompt_manager._prompts`, a private
-  fastmcp attribute that shifted between 2.x and 3.x. The static
-  list is kept in sync with `register_prompts` in `prompts.py`.
-- **README** — updated MCP server line to "11 resources +
-  3 resource templates / 7 tools / 2 prompts", swapped the
-  layout-helper example to lead with `dm.auto_layout(fig)` (the 0.4
-  default) with `dm.simple_layout(fig, gs=gs)` shown as the advanced
-  fall-through, and changed the `dm.get_prompt(...)` example to
-  reference shipped 0.4 prompt names (`00-index`, `01-policy`).
-
 ## [0.4.0] - 2026-04-30
 
 Highlights:
@@ -265,6 +76,60 @@ Highlights:
 - **`docs/examples_source/01_styling_and_themes/plot_spine_styles.py`**: Removed the monolithic seven-figure gallery script and replaced it with the seven single-plot files listed under "Added" above. Each new file preserves the original narrative of its section (minimal / visibility / styling / grid / publication / dark / dashboard) but renders exactly one `Figure`.
 - **`docs/examples_source/05_advanced_components/plot_helpers_usage.py`**: Removed the monolithic six-figure gallery script and replaced it with the six single-plot files listed under "Added" above (one per `dm.helpers` submodule, plus a workflow demo). Each new file renders exactly one `Figure`.
 - **`docs/api/xplot.rst`** removed in favor of the canonically-named `docs/api/templates.rst`. The new page covers the same surface (`dm.plot_diverging_bar`) and links back to the migration guide for the rename history.
+
+### Post-release polish (rolled into 0.4.0 prior to publish)
+
+The following fixes landed between the 0.4.0 cut commit and the PyPI publish.
+
+#### Added
+
+- **`dartwork-mpl://guide/migration` MCP resource** so 0.3 → 0.4 migration is reachable from the agent entry point and from `dartwork_mpl_info()`.
+- **`dm.lint` output now surfaces `→ fix: <suggestion>` lines** when the rule's YAML entry includes a `fix_suggestion`. `Issue.column` and `Issue.fix_suggestion` fields added; the dedupe key inside `lint(...)` switched from `(rule_id, line)` to `(rule_id, column)` so multiple violations on the same line are reported separately.
+- **Thread-safe `ensure_loaded` for fonts and colormaps** — `cmap.ensure_loaded()`, `font.ensure_loaded()`, and `style.Style.stack(...)` now use a module-level `threading.Lock` with double-checked locking, eliminating a `ValueError` race when two threads first import the package concurrently.
+- **`tests/conftest.py` autouse fixture** closes every figure and restores rcParams defaults between tests, preventing style/figure leak across the suite.
+- **Smoke tests for `dartwork_mpl.helpers.*`** (quality, formatting, colors, labels, data) and branch coverage for `validate_enhanced.get_fix_suggestions` and `style.Style` (kwargs, list-of-presets, `presets_dict()` isolation, `context(...)`).
+- **`__dir__()` exposes deprecated 0.3 names** so IDE autocomplete can suggest `SW`/`MW`/`TW`/`DW`, `FS_*`, `WIDTHS`, `agent_utils`, and `xplot` during migration. Each access still emits a `DeprecationWarning` via `__getattr__`.
+- **PyPI classifiers** — Development Status, Intended Audience, License (OSI MIT), Python 3.10/11/12/13, Topic :: Scientific/Engineering :: Visualization, Framework :: Matplotlib, Typing :: Typed.
+
+#### Changed
+
+- **`dpi-arg` lint severity raised to `critical`** to align with `figsize-direct` and `00-index.md`. `savefig(dpi=...)` remains owned by `savefig-direct` (warning).
+- **Deprecated 0.3 prompt files reduced to redirect stubs** — `coding-rules.md`, `general-guide.md`, `layout-guide.md` no longer carry stale 0.3 content.
+- **Heatmap recipes / templates use `fig.colorbar(...)`** instead of `plt.colorbar(...)` so copy-pasted snippets don't depend on an unimported `plt`.
+- **`validate_plot_data` covers all 12 advertised templates** — added validators for `violin`, `boxplot`, `histogram`, `contour`, and `twin_axis`.
+- **`fastmcp` capped below 4** (`>=2.13.3,<4`) in the `[mcp]` extra. 3.x is the latest tested major.
+- **`dartwork_mpl_info()` registered-prompt list is now static** instead of poking at the private `mcp._prompt_manager._prompts` attribute that shifted between fastmcp 2.x and 3.x.
+- **MCP prompt input cap (8192 chars)** — `create_plot` and `style_review` now truncate `description`, `data_sample`, and `code` with a clear `... [truncated]` marker.
+- **Narrowed `except Exception` blocks in `layout.py` and `validate.py`** to `(RuntimeError, ValueError, AttributeError)` so unexpected matplotlib regressions surface instead of being swallowed.
+- **Console script renamed `ui` → `dartwork-mpl-ui`** to avoid colliding with whatever `ui` command might already be on a user's PATH.
+- **`anti-patterns.yaml` MCP resource ships `application/yaml`** mime type so clients that key off mime auto-detect the format.
+- **`oversize-width` lint rule covers fractional widths** (`width="17.5cm"`, `"17.1cm"`, etc.). Previously only integer widths above 17 cm were caught.
+- **Clearer `parse_aspect(True)` / `parse_width(True)` errors** — both parsers reject `bool` upfront with "bool is not accepted".
+- **`lint(code)` docstring clarifies "Python source only"** to prevent agents from feeding YAML/Markdown into the regex-based lint engine.
+- **README "Project Structure" tree refreshed** to reflect the actual 0.4 layout (adds `figure.py`, `lint.py`, `units.py`, `spines.py`, `formatting.py`, `helpers/`, `diagnostics.py`, `explore.py`, `validate_enhanced.py`; marks `constant.py` as deprecated).
+- **README MCP resource counts corrected** to `12 resources + 3 resource templates / 7 tools / 2 prompts` (was 11+3).
+- **README MCP docs link** points at the actual page (`/integrations/mcp_server.html`, was a broken `/api/mcp.html`).
+
+#### Fixed
+
+- **`Axes.twinx` reentrance guard** — the monkey-patch tags itself with `__dm_patched__` and skips re-patching, so `importlib.reload(dartwork_mpl)` no longer self-wraps into a `RecursionError`.
+- **`auto_layout(fig)` / `simple_layout(fig)` no-op on empty figures** instead of `IndexError` on `fig.axes[0]`.
+- **`Inches` survives numpy ufunc dispatch** — `__array_ufunc__ = None` on the `Inches` class so `np.float64(2) * dm.cm(9)` keeps the inches tag instead of decaying to a bare `np.float64` that `parse_width` would re-interpret as cm.
+- **`_check_pie_label_offset` no longer crashes on regular pies** — coerces `wedge.width=None` (matplotlib's default for non-donut pies) to `1.0` at the source.
+- **sdist whitelist now authoritative** — `[tool.hatch.build.targets.sdist]` switched from `include` (additive) to `only-include` (replaces hatch's default file discovery), so the published tarball no longer ships `.claude/`, `docs/`, `tests/`, `examples/`, or `uv.lock`.
+- **`dpi-arg` lint regex sees through `figsize=(...)`** — the prior `[^)]*` pattern stopped at the first `)` and silently missed `plt.figure(figsize=(8,6), dpi=200)`.
+- **`linewidth-literal` lint relaxed for sub-1 hairlines** — only fires on literals whose integer part is `>= 1`. Sub-1 widths (`0.3`, `0.5`, `0.8`) are common, intentional decoration in the bundled templates.
+- **`dartwork-mpl-mcp` console script** prints a friendly install hint and exits `1` when the `[mcp]` extra is missing.
+- **`dm.subplots(width=, figsize=)` and `dm.figure(...)`** emit an explicit `UserWarning` saying the new `width=` was ignored and the legacy `figsize=` won.
+- **`fetch_github_document` URL allowlist** — only `https://raw.githubusercontent.com/` URLs accepted; other schemes/hosts rejected with a clear `ValueError`. Error messages trimmed to exception type, not full traceback.
+- **`dm.cm2in` now actually emits the `DeprecationWarning`** the rest of this changelog promised. (It was supposed to warn since 0.4 but the body of the function was a plain return.)
+
+#### Removed (font asset slimming, no API impact)
+
+- **`NotoSans_ExtraCondensed` family** (18 files, ~10 MB) — never referenced by any mplstyle preset, helper, example, or test.
+- **Roboto Thin/Black weights and all italic variants** (8 files, ~0.7 MB) — not exercised by any bundled preset (presets only call weights 300/400/500/700, no italic).
+- **Paperlogy 1Thin / 2ExtraLight / 6SemiBold / 8ExtraBold / 9Black** weights (5 files, ~6.3 MB) — bundled presets only reference the four weights kept.
+- **Wheel size**: ~50 MB → ~41.5 MB (≈17%, ~17 MB freed uncompressed). sdist now ~5 MB once the worktree-cache leak is fixed by `only-include`.
 
 ## [0.3.1] - 2026-03-20
 

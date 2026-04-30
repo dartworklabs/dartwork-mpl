@@ -19,7 +19,7 @@ Enhanced matplotlib styling, color management, and utility library engineered by
 - **Interactive Viewer**: FastAPI-powered web UI (`dartwork_mpl.ui`) for real-time parameter tuning.
 - **Multi-format Export**: Save figures in SVG, PNG, PDF, and EPS simultaneously.
 - **Prompt System**: Bundled prompt guides for AI coding assistants, with `get_prompt()` and `copy_prompt()`.
-- **MCP Server**: AI coding assistant integration via Model Context Protocol (11 resources + 3 resource templates / 7 tools / 2 prompts).
+- **MCP Server**: AI coding assistant integration via Model Context Protocol (12 resources + 3 resource templates / 7 tools / 2 prompts).
 - **LLM Integration**: Install usage guides to `.claude/` and `.cursor/` with `install_llm_txt()`.
 
 <br/>
@@ -277,7 +277,7 @@ dartwork-mpl provides an **MCP (Model Context Protocol) server** that enables AI
 > Install MCP dependencies with `uv pip install -e ".[mcp]"`.
 
 Supported clients: **Claude Code**, **Cursor**, **Windsurf**, **Antigravity (Gemini)**.
-For detailed setup per client, see the [MCP Server docs](https://dartworklabs.github.io/dartwork-mpl/api/mcp.html).
+For detailed setup per client, see the [MCP Server docs](https://dartworklabs.github.io/dartwork-mpl/integrations/mcp_server.html).
 
 <br/>
 
@@ -285,41 +285,40 @@ For detailed setup per client, see the [MCP Server docs](https://dartworklabs.gi
 
 ```
 src/dartwork_mpl/
-├── __init__.py         # Public API exports + lazy init
-├── py.typed            # PEP 561 type marker
-├── style.py            # Style class + preset management
-├── color/              # Color class (OKLab/OKLCH/RGB/hex) + named palettes
-│   ├── _color.py       #   Color class core
-│   ├── _conversion.py  #   Color space conversion
-│   ├── _views.py       #   Mutable color space views
-│   └── _loader.py      #   Lazy palette registration
-├── layout.py           # simple_layout(), label_axes(), arrow_axis()
-├── annotation.py       # set_decimal(), make_offset()
-├── scale.py            # fs(), fw(), lw()
-├── units.py            # cm(), inch(), mm(), col1, col2, parse_width
-├── io.py               # save_formats(), save_and_show()
-├── prompt.py           # get_prompt(), copy_prompt(), list_prompts()
-├── validate.py         # Visual validation checks
-├── constant.py         # Figure width constants (SW, DW)
-├── icon.py             # Icon font system (MDI, Font Awesome)
-├── font.py             # Font registration
-├── cmap.py             # Custom colormap registration
-├── util.py             # Legacy re-exports (backward compat)
-├── _helpers.py         # Internal shared helpers
-├── asset_viz/          # Visualization diagnostics
-│   ├── _cmap.py        #   Colormap visualization
-│   ├── _color.py       #   Color swatch visualization
-│   └── _font.py        #   Font preview visualization
-├── install.py          # LLM integration installer
-├── cli.py              # CLI entry point (dartwork-mpl-mcp)
-├── templates/          # Extended plot templates
-├── ui/                 # Interactive FastAPI viewer
-├── mcp/                # MCP server for AI assistants
-│   ├── server.py       #   FastMCP instance + wiring
-│   ├── resources.py    #   11 resources + 3 resource templates (guides, palettes, styles, templates)
-│   ├── tools.py        #   7 tools (color, linting, validation, info)
-│   └── prompts.py      #   2 prompts (create_plot, style_review)
-└── asset/              # Bundled styles, colors, fonts, icons, prompts
+├── __init__.py             # Public API exports + lazy 0.3 alias shim
+├── py.typed                # PEP 561 type marker
+├── figure.py               # subplots(), figure() with width/aspect API
+├── units.py                # cm/inch/mm, col1/col2, parse_width/parse_aspect
+├── style.py                # Style class + preset management
+├── color/                  # Color class (OKLab/OKLCH/RGB/hex) + palettes
+├── layout.py               # auto_layout(), simple_layout(), label_axes()
+├── annotation.py           # arrow_axis(), label_axes()
+├── scale.py                # fs(), fw(), lw()
+├── spines.py               # hide_spines(), add_grid(), minimal_axes()
+├── formatting.py           # format_axis_*(), rotate_tick_labels()
+├── io.py                   # save_formats(), save_and_show()
+├── prompt.py               # get_prompt(), copy_prompt(), list_prompts()
+├── validate.py             # validate_figure() — visual checks
+├── validate_enhanced.py    # validate_with_fixes() — auto-fix helpers
+├── lint.py                 # lint() against the anti-pattern catalog
+├── diagnostics.py          # plot_colormaps/plot_colors/plot_fonts
+├── explore.py              # list_palettes/list_colormaps/show_palette
+├── icon.py                 # Icon font system (MDI, Font Awesome)
+├── font.py                 # Font registration (lazy, locked)
+├── cmap.py                 # Custom colormap registration (lazy, locked)
+├── helpers/                # Stable helper utilities (data, labels, …)
+├── templates/              # Extended plot templates (plot_diverging_bar)
+├── install.py              # LLM integration installer
+├── cli.py                  # console-script entry (dartwork-mpl-mcp)
+├── util.py                 # Legacy re-exports (deprecated cm2in, etc.)
+├── constant.py             # Deprecated 0.3 width constants (SW/MW/TW/DW)
+├── ui/                     # Interactive FastAPI viewer
+├── mcp/                    # MCP server for AI assistants
+│   ├── server.py           #   FastMCP instance + wiring
+│   ├── resources.py        #   12 resources + 3 templates
+│   ├── tools.py            #   7 tools (color, linting, validation, info)
+│   └── prompts.py          #   2 prompts (create_plot, style_review)
+└── asset/                  # Bundled styles, colors, fonts, icons, prompts
 ```
 
 <br/>
