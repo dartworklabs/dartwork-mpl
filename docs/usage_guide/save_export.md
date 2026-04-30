@@ -3,26 +3,24 @@
 ## Save and preview
 
 ```python
-import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 import numpy as np
 
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300)
+fig, ax = dm.subplots(width="9cm", aspect="standard")
 ax.plot(np.arange(50), np.cumsum(np.random.randn(50)) + 20, color="oc.blue6")
-dm.simple_layout(fig)
+dm.auto_layout(fig)
 
 dm.save_formats(
     fig,
     "output/experiment",
     formats=("png", "svg", "pdf"),
-    dpi=300,
     bbox_inches="tight",
     validate=True,   # runs visual checks before saving (see below)
 )
-dm.save_and_show(fig, size=720)  # preview at 720px wide + plt.show()
-dm.show("output/forecast.svg", size=540)  # display a saved file in notebooks
+dm.save_and_show(fig, "output/experiment")  # save + inline preview
+dm.show("output/forecast.svg", size=540)    # display a saved file in notebooks
 ```
 
 :::{figure} images/save_scientific.svg

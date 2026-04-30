@@ -2,10 +2,15 @@
 Smart Layout Solver (L-BFGS-B)
 ==============================
 
-``dm.simple_layout(fig)`` replaces ``dm.simple_layout(fig)`` using an L-BFGS-B
-numerical optimizer to find the optimal margins that prevent label clipping
-without excessive whitespace — especially when titles span multiple lines
-or y-axis labels are very wide.
+``dm.simple_layout(fig)`` runs an L-BFGS-B optimizer on the GridSpec
+margins to keep multi-line titles and wide y-labels from clipping —
+without bleeding excessive whitespace.
+
+In 0.4 the everyday entry point for layout is ``dm.auto_layout(fig)``,
+which wraps ``simple_layout`` in a measure→adjust→retry loop. Reach
+for ``simple_layout`` directly when (a) you have a custom GridSpec
+(spans, nested grids, attached colorbars) or (b) you want the cheaper
+non-iterative call for many small figures.
 """
 
 import matplotlib.pyplot as plt
@@ -15,7 +20,9 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=(dm.SW, dm.SW * 0.7))
+# 0.4 API: dm.subplots(width=..., aspect=...). 9 cm × standard is the
+# academic single-column default (also available as dm.col1).
+fig, ax = dm.subplots(width="9cm", aspect="standard")
 
 x = np.linspace(0, 10, 100)
 ax.plot(x, np.sin(x) * 10000, color="tw.blue500", lw=dm.lw(1))
@@ -26,6 +33,7 @@ ax.set_title(
 ax.set_xlabel("Time Axis Label (with unit)")
 ax.set_ylabel("Extremely Large Amplitude (units)")
 
-# dm.simple_layout handles multi-line titles and wide labels better than tight_layout
+# simple_layout handles multi-line titles and wide labels; for uniform
+# grids, prefer dm.auto_layout(fig) which iterates simple_layout.
 dm.simple_layout(fig)
 plt.show()

@@ -6,18 +6,17 @@ For most figures, `simple_layout(fig)` is all you need — it automatically
 optimizes margins so labels and titles don't clip or overlap:
 
 ```python
-import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 import numpy as np
 
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
+fig, ax = dm.subplots(width="15cm", aspect="wide")
 ax.plot(np.linspace(0, 10, 100), np.sin(np.linspace(0, 10, 100)), color="oc.blue6")
-ax.set_xlabel("Time [s]", fontsize=dm.fs(0))
-ax.set_ylabel("Response", fontsize=dm.fs(0))
+ax.set_xlabel("Time [s]")
+ax.set_ylabel("Response")
 
-dm.simple_layout(fig)  # auto-optimizes margins — replaces tight_layout()
+dm.auto_layout(fig)  # default optimizer — replaces fig.tight_layout
 ```
 
 **Try it — drag the sliders to see how figure dimensions map onto an A4 page:**
@@ -31,7 +30,7 @@ dm.simple_layout(fig)  # auto-optimizes margins — replaces tight_layout()
 For multi-panel layouts, use GridSpec and pass it to `simple_layout`:
 
 ```python
-fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(12)), dpi=300)
+fig = dm.figure(width="15cm", aspect="portrait")
 gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.25)
 axes = [fig.add_subplot(gs[i, j]) for i in range(2) for j in range(2)]
 
@@ -62,10 +61,9 @@ an intelligent alternative that automatically detects and fixes overflow:
 
 ```python
 import dartwork_mpl as dm
-import matplotlib.pyplot as plt
 import numpy as np
 
-fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(6)))
+fig, ax = dm.subplots(width="9cm", aspect="standard")
 ax.plot(np.linspace(0, 10, 100), np.sin(np.linspace(0, 10, 100)))
 ax.set_ylabel("Very Long Label That Might\nOverflow the Figure Bounds")
 ax.set_title("Complex Multi-Line Title\nWith Potential Overflow", fontsize=dm.fs(2))
@@ -107,12 +105,12 @@ dm.set_ymargin(ax, margin=0.05)
 
 | Scenario | Recommended Function | Why |
 |----------|---------------------|-----|
-| Simple plots with standard labels | `simple_layout()` | Fast, consistent margins |
-| Complex multi-line titles/labels | `auto_layout()` | Automatic overflow detection |
-| GridSpec with spacing control | `simple_layout(fig, gs=gs)` | Respects hspace/wspace |
-| Need exact margin control | `simple_layout(margins=(...))` | Precise inch-based margins |
-| Unknown label lengths (AI-generated) | `auto_layout()` | Adapts to content |
-| Debugging layout issues | `auto_layout(verbose=True)` | Shows iteration diagnostics |
+| Default — most figures | `auto_layout(fig)` | Content-aware margin pass; the 0.4 default |
+| Complex multi-line titles/labels | `auto_layout(fig)` | Automatic overflow detection |
+| Unknown label lengths (AI-generated) | `auto_layout(fig)` | Adapts to content |
+| GridSpec where `auto_layout` can't fit boxes | `simple_layout(fig, gs=gs)` | L-BFGS-B optimizer; respects hspace/wspace |
+| Need exact margin control | `simple_layout(fig, margins=(...))` | Precise inch-based margins |
+| Debugging layout issues | `auto_layout(fig, verbose=True)` | Shows iteration diagnostics |
 
 ### `simple_layout` vs `tight_layout`
 
@@ -210,17 +208,16 @@ For conceptual or qualitative plots (like "Risk vs Return"), drawing bidirection
 ## Typography
 
 ```python
-import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
 dm.style.use("scientific-kr")  # English/Korean fonts set together
 
-fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(6)), dpi=300)
+fig, ax = dm.subplots(width="9cm", aspect="standard")
 ax.plot([0, 1, 2], [0, 1, 0.4], color="oc.green6", lw=dm.lw(0.5))
 ax.set_title("Experiment result", fontsize=dm.fs(2), fontweight=dm.fw(1))
-ax.set_xlabel("Time", fontsize=dm.fs(0))
-ax.set_ylabel("Response", fontsize=dm.fs(0))
-dm.simple_layout(fig)
+ax.set_xlabel("Time")
+ax.set_ylabel("Response")
+dm.auto_layout(fig)
 
 # Preview bundled fonts
 dm.plot_fonts(ncols=4, font_size=12)

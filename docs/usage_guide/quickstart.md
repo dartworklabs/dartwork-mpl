@@ -14,8 +14,8 @@ to read off the resolved values without leaving the docs.
 
 | What used to hurt                   | dartwork-mpl                                    |
 | ----------------------------------- | ----------------------------------------------- |
-| Hand-tuning `figsize` and `dpi`     | `dm.style.use("scientific")` (or pass to `dm.subplots`) |
-| `tight_layout` clipping labels      | `dm.simple_layout(fig)` — real optimizer        |
+| Hand-tuning `figsize` and `dpi`     | `dm.subplots(width="13cm", aspect="standard")`  |
+| `tight_layout` clipping labels      | `dm.auto_layout(fig)` — real optimizer          |
 | Reaching for hex codes              | `color="oc.blue5"` (Open Color), `"tw.*"`, `"md.*"`, `"ad.*"`, `"cu.*"`, `"pr.*"` |
 | Saving in 3 formats                 | `dm.save_formats(fig, "out", formats=("png", "svg", "pdf"))` |
 | Catching margin / overflow problems | `dm.validate_with_fixes(fig)`                   |
@@ -27,22 +27,23 @@ Here's a typical matplotlib figure, then the same figure with dartwork-mpl:
 :::{tab-item} ✨ With dartwork-mpl
 
 ```python
-import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 import numpy as np
 
 dm.style.use("scientific")  # curated fonts, colors, line weights
-fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
+
+# width = physical figure width, aspect = height/width ratio
+fig, ax = dm.subplots(width="15cm", aspect="wide")
 
 x = np.linspace(0, 10, 200)
 ax.plot(x, np.sin(x), color="oc.blue5", label="signal", lw=dm.lw(1.5))
 ax.set_xticks(np.arange(0, 11, 2))
-ax.set_xlabel("Time [s]", fontsize=dm.fs(0))
-ax.set_ylabel("Amplitude", fontsize=dm.fs(0))
-ax.legend(fontsize=dm.fs(-1))
+ax.set_xlabel("Time [s]")
+ax.set_ylabel("Amplitude")
+ax.legend()
 
-dm.simple_layout(fig)           # auto-optimize margins
-dm.save_and_show(fig, size=720) # preview at 720px wide + save
+dm.auto_layout(fig)             # auto-optimize margins
+dm.save_and_show(fig, "first")  # save + inline preview
 ```
 
 :::
@@ -53,7 +54,7 @@ dm.save_and_show(fig, size=720) # preview at 720px wide + save
 import matplotlib.pyplot as plt
 import numpy as np
 
-fig, ax = plt.subplots(figsize=(2.95, 1.97), dpi=300)
+fig, ax = plt.subplots(figsize=(5.91, 3.94), dpi=300)
 
 x = np.linspace(0, 10, 200)
 ax.plot(x, np.sin(x), color="#1c7ed6", label="signal", lw=1.5)
@@ -75,7 +76,9 @@ plt.show()
 :alt: Scientific-style line chart created with dartwork-mpl
 :width: 100%
 
-The same chart rendered with `dm.style.use("scientific")` — professional typography, optimized margins, and named colors.
+The same chart rendered with `dm.style.use("scientific")` and
+`dm.subplots(width=…, aspect=…)` — professional typography,
+optimized margins, and named colors.
 :::
 
 **Drag the slider to compare — same data, different styling:**
@@ -84,61 +87,75 @@ The same chart rendered with `dm.style.use("scientific")` — professional typog
 :file: images/compare_slider.html
 ```
 
-Same data, same plotting logic — the difference is one `dm.style.use()` call, named colors, and `simple_layout`.
+Same data, same plotting logic — the difference is one `dm.style.use()`
+call, the `width` / `aspect` API on `dm.subplots`, named colors, and
+`auto_layout`.
 
 **What each dartwork-mpl call does:**
 
-| Call                              | Purpose                                                                            |
-| --------------------------------- | ---------------------------------------------------------------------------------- |
-| `dm.style.use("scientific")`      | Sets palette, fonts, line weights — see [Styles](styles.md)                        |
-| `dm.cm2in(9)`                     | Converts 9 cm to inches for `figsize`                                              |
-| `dm.fs(0)`                        | Returns the base font size of the active preset (`fs(2)` = base + 2 pt, and so on) |
-| `dm.simple_layout(fig)`           | Auto-optimizes margins (replaces `tight_layout`)                                   |
-| `dm.save_and_show(fig, size=720)` | Preview at 720 px wide in the notebook, then call `plt.show()`                     |
+| Call                                 | Purpose                                                                            |
+| ------------------------------------ | ---------------------------------------------------------------------------------- |
+| `dm.style.use("scientific")`         | Sets palette, fonts, line weights — see [Styles](styles.md)                        |
+| `dm.subplots(width=…, aspect=…)`     | Physical width plus an aspect token; height is derived. No `figsize`, no `dpi`.    |
+| `dm.fs(0)`                           | Returns the base font size of the active preset (`fs(2)` = base + 2 pt, and so on) |
+| `dm.auto_layout(fig)`                | Auto-optimizes margins (replaces `tight_layout`)                                   |
+| `dm.save_and_show(fig, "first")`     | Saves multi-format and previews inline in the notebook                             |
 
-## Creating Figures with Styles
+## Creating Figures with `width` / `aspect`
 
-dartwork-mpl provides `dm.subplots()` and `dm.figure()` wrappers that apply
-styles during figure creation:
+`dm.subplots()` and `dm.figure()` are the only sanctioned entry points
+for creating figures. They take a physical `width` plus an `aspect`
+token — height is derived from those two, so `figsize` never appears
+in your code.
 
 ```python
-# Apply style automatically when creating figure
-fig, ax = dm.subplots(style='scientific')
+# Physical width with an aspect token (default aspect="standard" = 3/4)
+fig, ax = dm.subplots(width="13cm")
+fig, ax = dm.subplots(width="15cm", aspect="wide")
+fig, ax = dm.subplots(width=dm.cm(11.3), aspect="square")
 
-# Stack multiple styles
-fig, axes = dm.subplots(2, 2, style=['font-libertine', 'theme-dark'])
+# Stack a style preset alongside the geometry
+fig, ax = dm.subplots(width="13cm", aspect="wide", style="scientific")
+fig, axes = dm.subplots(2, 2, width="17cm", aspect="standard",
+                        style=["font-report", "theme-dark"])
 
-# Override style defaults
-fig, ax = dm.subplots(style='report', figsize=(10, 6), dpi=150)
+# Academic-column shortcuts
+fig, ax = dm.subplots(width=dm.col1, aspect="golden")  # 9 cm
+fig, ax = dm.subplots(width=dm.col2, aspect="cinema")  # 17 cm
 ```
 
-These functions follow the Zero-Resize Policy: when you specify a style,
-figsize and dpi are determined by the style unless explicitly overridden.
+**Width** accepts:
 
-**Comparison with standard matplotlib:**
+- A unit-suffixed string: `"13cm"`, `"9.5cm"`, `"6.7in"`, `"170mm"`
+- A helper call: `dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`
+- A raw number: `13` (interpreted as cm)
+- The sugar constants `dm.col1` (9 cm) and `dm.col2` (17 cm)
+
+**Aspect** is one of `square` (1.0), `portrait` (5/4), `standard` (3/4),
+`golden` (1/1.618), `wide` (2/3), `cinema` (1/2), or any positive float.
+
+:::{note}
+`figsize=` and `dpi=` on `dm.subplots` / `dm.figure` are deprecated and
+emit a lint warning. The 0.3-era resize policy was replaced in 0.4 with
+free-form `width` (any of cm/in/mm) plus the lint consistency guard
+described in [`asset/prompt/01-policy.md`](https://github.com/dartworklabs/dartwork-mpl/blob/main/src/dartwork_mpl/asset/prompt/01-policy.md).
+:::
+
+**Multi-panel figures:**
 
 ```python
-# Standard matplotlib approach
-plt.style.use('seaborn')
-fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
-
-# dartwork-mpl approach - more concise
-fig, ax = dm.subplots(style='scientific', figsize=(8, 6), dpi=100)
-```
-
-**Multi-panel figures with automatic styling:**
-
-```python
-# Create 2x2 grid with custom ratios
-fig, axes = dm.subplots(2, 2,
-                       style='scientific',
-                       width_ratios=[2, 1],
-                       height_ratios=[1, 2])
+fig, axes = dm.subplots(
+    2, 2,
+    width="17cm",
+    aspect="standard",
+    width_ratios=[2, 1],
+    height_ratios=[1, 2],
+)
 
 for ax in axes.flat:
     ax.plot(np.random.randn(100))
 
-dm.simple_layout(fig)
+dm.auto_layout(fig)
 ```
 
 ## Adding color
@@ -170,14 +187,13 @@ to click-and-copy color names from your browser.
 ## Multi-panel layout
 
 ```python
-import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 import numpy as np
 
 dm.style.use("presentation")
 
 x = np.linspace(0, 10, 100)
-fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(8.5)), dpi=300)
+fig = dm.figure(width="15cm", aspect="wide")
 gs = fig.add_gridspec(1, 2, wspace=0.3)
 ax1 = fig.add_subplot(gs[0])
 ax2 = fig.add_subplot(gs[1])

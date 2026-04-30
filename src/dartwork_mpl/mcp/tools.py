@@ -227,44 +227,109 @@ def register_tools(mcp: FastMCP) -> None:
         """Get a summary of dartwork-mpl capabilities and available MCP features.
 
         Returns a structured overview of all available resources, tools,
-        and design system rules for quick reference.
+        and design system rules for quick reference. Aligned with the
+        0.4 SSOT in ``asset/prompt/`` (00-index, 01-policy,
+        02-anti-patterns, 03-recipes, 05-templates).
         """
+        # Resolve composite preset names dynamically from the bundled
+        # presets.json so this stays in sync with the actual style
+        # registry.
+        from pathlib import Path
+
+        presets_path = (
+            Path(__file__).parent.parent / "asset" / "mplstyle" / "presets.json"
+        )
+        try:
+            composite_presets = sorted(
+                json.loads(presets_path.read_text(encoding="utf-8")).keys()
+            )
+        except Exception:
+            composite_presets = [
+                "scientific",
+                "report",
+                "report-kr",
+                "presentation",
+                "poster",
+                "minimal",
+                "web",
+                "dark",
+            ]
+
+        # Try to enumerate registered MCP prompts/tools dynamically from
+        # the live server so this metadata stays accurate. Fall back to
+        # the static list if the introspection API is unavailable.
+        try:
+            from .server import mcp as _server_mcp
+
+            prompt_manager = getattr(_server_mcp, "_prompt_manager", None)
+            registered_prompts = (
+                sorted(prompt_manager._prompts.keys())
+                if prompt_manager is not None
+                and hasattr(prompt_manager, "_prompts")
+                else ["create_plot", "style_review"]
+            )
+        except Exception:
+            registered_prompts = ["create_plot", "style_review"]
+
         return json.dumps(
             {
                 "name": "dartwork-mpl",
+                "version_surface": "0.4",
                 "description": "Publication-quality matplotlib design system",
                 "design_rules": {
                     "width_aspect": (
-                        "Use dm.subplots(width='13cm', aspect='wide'). "
+                        "Use dm.subplots(width='13cm', aspect='standard'). "
                         "width accepts cm/in/mm strings, dm.cm/inch/mm "
                         "helpers, or a raw number (cm). aspect is one of "
                         "{square, portrait, standard, golden, wide, "
                         "cinema} or a positive float."
                     ),
                     "max_width": "17 cm",
+                    "layout": (
+                        "Call dm.auto_layout(fig) after plotting. "
+                        "dm.simple_layout(fig) is reserved for advanced "
+                        "GridSpec cases. tight_layout() is forbidden."
+                    ),
                     "default_dpi": "Controlled by the active style preset.",
                     "font": (
-                        "Roboto sans-serif family; sizes scaled via dm.fs(n)."
+                        "Sans-serif family; sizes scaled via dm.fs(n), "
+                        "weights via dm.fw(n), line widths via dm.lw(n)."
                     ),
                     "save_format": (
-                        "Use dm.save_formats(fig, 'name') for scripts or "
-                        "dm.save_and_show(fig, 'name.svg') for notebooks."
+                        "Use dm.save_formats(fig, 'name', formats=('png','pdf'), "
+                        "dpi=300) for scripts or dm.save_and_show(fig, 'name') "
+                        "for notebooks."
                     ),
                     "color": (
                         "Use named palettes (oc.*, tw.*, dc.*, md.*, "
                         "ad.*, cu.*, pr.*); raw hex is allowed but "
                         "discouraged."
                     ),
+                    "retired_policies": [
+                        "Zero-Resize Policy (retired in 0.4.0; replaced "
+                        "by free-form width input plus a lint consistency "
+                        "guard). Mentioning the phrase triggers the "
+                        "`zero-resize-mention` lint warning."
+                    ],
                 },
                 "resources": [
-                    "dartwork-mpl://guide/general-guide",
-                    "dartwork-mpl://guide/layout-guide",
+                    # 0.4 SSOT URIs
+                    "dartwork-mpl://guide/agent-entry",
+                    "dartwork-mpl://guide/policy",
+                    "dartwork-mpl://guide/anti-patterns",
+                    "dartwork-mpl://guide/recipes",
+                    "dartwork-mpl://api/index",
+                    "dartwork-mpl://api/{name}",
+                    # Palettes / styles / templates
                     "dartwork-mpl://palette/colors",
                     "dartwork-mpl://palette/fonts",
                     "dartwork-mpl://styles/list",
                     "dartwork-mpl://styles/{preset}",
                     "dartwork-mpl://templates/list",
                     "dartwork-mpl://templates/{plot_type}",
+                    # Legacy aliases (deprecated; retained for 0.3 clients)
+                    "dartwork-mpl://guide/general-guide (deprecated alias)",
+                    "dartwork-mpl://guide/layout-guide (deprecated alias)",
                 ],
                 "tools": [
                     "fetch_github_document",
@@ -275,23 +340,26 @@ def register_tools(mcp: FastMCP) -> None:
                     "validate_plot_data",
                     "dartwork_mpl_info",
                 ],
-                "prompts": ["create_plot", "style_review"],
-                "style_presets": [
-                    "base",
-                    "dmpl",
-                    "dmpl_light",
-                    "font-minimal",
-                    "font-poster",
-                    "font-presentation",
-                    "font-report",
-                    "font-scientific",
-                    "font-web",
-                    "lang-kr",
-                    "spine-no",
-                    "spine-yes",
-                    "theme-dark",
-                    "theme-minimal",
-                ],
+                "prompts": registered_prompts,
+                "style_presets": {
+                    "composite": composite_presets,
+                    "primitive_mplstyle": [
+                        "base",
+                        "dmpl",
+                        "dmpl_light",
+                        "font-minimal",
+                        "font-poster",
+                        "font-presentation",
+                        "font-report",
+                        "font-scientific",
+                        "font-web",
+                        "lang-kr",
+                        "spine-no",
+                        "spine-yes",
+                        "theme-dark",
+                        "theme-minimal",
+                    ],
+                },
                 "plot_templates": [
                     "tornado",
                     "scatter",

@@ -24,7 +24,9 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 
-fig = plt.figure(figsize=(dm.cm2in(20), dm.cm2in(15)))
+# 0.4 API: dm.figure(width=..., aspect=...). 20 cm × 0.75 ratio
+# (= 15 cm tall) keeps the previous 20 × 15 cm dashboard footprint.
+fig = dm.figure(width="20cm", aspect=0.75)
 gs = fig.add_gridspec(3, 3, hspace=0.3, wspace=0.3)
 
 axes = []

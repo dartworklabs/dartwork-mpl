@@ -26,9 +26,8 @@ layout/font helpers so you get **predictable results** fast.
 
 | Situation | Function | Notes |
 |-----------|----------|-------|
-| Most figures | `simple_layout(fig)` | Fast, consistent margins via L-BFGS-B optimizer |
-| Long labels or multi-line titles | `auto_layout(fig)` | Detects and fixes text overflow automatically |
-| Multi-panel with GridSpec | `simple_layout(fig, gs=gs)` | Respects your `hspace`/`wspace` settings |
+| Most figures (default) | `auto_layout(fig)` | Content-aware margin pass — call after data is plotted |
+| Multi-panel with GridSpec | `simple_layout(fig, gs=gs)` | Respects your `hspace`/`wspace` settings when `auto_layout` can't fit the bounding boxes |
 | Need exact margin control | `simple_layout(fig, margins=(...))` | Specify margins in inches |
 
 ### Which color palette?
@@ -64,9 +63,9 @@ plus perceptual OKLCH interpolation.
 :::
 
 :::{grid-item-card} **3. Layout & annotate**
-`dm.simple_layout(fig)` optimizes margins via L-BFGS-B — uniform spacing
-even with colorbars and long labels. `dm.label_axes()` adds panel labels
-automatically.
+`dm.auto_layout(fig)` is the default content-aware margin pass —
+`dm.simple_layout(fig, gs=gs)` is the L-BFGS-B optimizer for advanced
+GridSpec cases. `dm.label_axes()` adds panel labels automatically.
 
 → [Layout and Typography](layout.md)
 :::
@@ -104,8 +103,9 @@ Tutorials <tutorials>
 
 :::{tip}
 **Where do assets live?** Style files are in `asset/mplstyle/`, colors in
-`asset/color/`, fonts in `asset/font/`, and figure constants in
-[`dm.SW`, `dm.DW`](../api/constant.rst). See [Design Philosophy](../philosophy/index)
+`asset/color/`, and fonts in `asset/font/`. Physical-width helpers live
+in `dm.units` (`dm.cm`, `dm.inch`, `dm.mm`, plus the academic-column
+sugar `dm.col1` / `dm.col2`). See [Design Philosophy](../philosophy/index)
 for the architecture behind these choices.
 :::
 

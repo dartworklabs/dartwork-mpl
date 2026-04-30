@@ -9,8 +9,9 @@ Enhanced matplotlib styling, color management, and utility library engineered by
 ## Features
 
 - **Style Presets**: Apply curated themes (`scientific`, `report`, `presentation`) with one call.
+- **Width × Aspect Geometry**: `dm.subplots(width="13cm", aspect="standard")` — pick a physical width (cm/in/mm) and one of six aspect tokens (`square / portrait / standard / golden / wide / cinema`); height is derived. No more `figsize` math.
 - **Advanced Color System**: Named color palettes (`oc.*`, `tw.*`, `md.*`, `ad.*`, `cu.*`, `pr.*`) plus a `Color` class supporting OKLab / OKLCH / RGB / hex color spaces with perceptual interpolation via `cspace()`.
-- **Smart Layout**: `simple_layout()` optimizes margins via L-BFGS-B optimization — a drop-in replacement for `tight_layout()`.
+- **Smart Layout**: `auto_layout(fig)` is the default content-aware margin pass; `simple_layout(fig, gs=gs)` is the L-BFGS-B optimizer for advanced GridSpec cases. Both replace `tight_layout()`.
 - **Scaling Helpers**: Relative font size (`fs`), font weight (`fw`), and line width (`lw`) that respect the active style preset.
 - **Icon Fonts**: Built-in Material Design Icons (7,448+) and Font Awesome 6.
 - **Visual Validation**: Automatic detection of overflow, text overlap, legend overflow, tick crowding, and empty axes via `validate_figure()`.
@@ -46,18 +47,25 @@ pip install git+https://github.com/dartworklabs/dartwork-mpl
 ### Quick Start
 
 ```python
-import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
-# Create a styled figure (Zero-Resize Policy: no figsize or dpi)
-fig, ax = dm.subplots(style=['font-scientific'])
+dm.style.use('scientific')
+
+# Pick the physical width (cm/in/mm) and an aspect token. height
+# follows from aspect, so you never hand-tune figsize.
+fig, ax = dm.subplots(width='13cm', aspect='standard')
 ax.plot(x, y, color='oc.blue5', lw=dm.lw(0))
 ax.set_xlabel('Time [s]')
 
-# Optimize layout and save
-dm.simple_layout(fig)
+dm.auto_layout(fig)
 dm.save_formats(fig, 'output/figure', formats=('svg', 'png'))
 ```
+
+`width=` accepts unit-suffixed strings (`"13cm"`, `"6.7in"`, `"170mm"`),
+helper calls (`dm.cm(11.3)`, `dm.inch(4.6)`), or a raw number (cm).
+The academic-column shortcuts `dm.col1` (9 cm) and `dm.col2` (17 cm)
+are also available. `aspect=` is one of `square / portrait / standard /
+golden / wide / cinema`, or any positive float.
 
 <br/>
 
@@ -122,15 +130,22 @@ offset = dm.make_offset(4, -4, fig)    # point-based translation
 dm.fs(2)     # base font size + 2pt
 dm.fw(1)     # base font weight + 100
 dm.lw(-0.3)  # base line width - 0.3
-dm.cm2in(9)  # centimeters → inches
 ```
 
-### Figure Constants
+### Width Helpers
 
 ```python
-dm.SW  # single-column width (9 cm → inches)
-dm.DW  # double-column width (17 cm → inches)
+dm.cm(13)        # 13 cm (returned as Inches; safe to pass to width=)
+dm.inch(4.6)     # 4.6 in
+dm.mm(170)       # 170 mm
+dm.col1          # 9 cm  — academic single-column sugar
+dm.col2          # 17 cm — academic two-column sugar
 ```
+
+> **Migrating from 0.3?** `dm.SW / MW / TW / DW`, `FS_*`, `cm2in`,
+> `agent_utils`, and `xplot` are deprecated and emit a lint warning.
+> Replace `figsize=(dm.cm2in(13), dm.cm2in(9.75))` with
+> `dm.subplots(width="13cm", aspect="standard")`.
 
 ### Visual Validation
 
@@ -190,7 +205,7 @@ class Params(ParamModel):
     alpha: float = Field(default=0.5, ge=0, le=1)
 
 def my_plot(params: Params):
-    fig, ax = plt.subplots()
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
     ax.scatter(range(params.n), np.random.randn(params.n), alpha=params.alpha)
     return fig
 
@@ -279,7 +294,8 @@ src/dartwork_mpl/
 │   └── _loader.py      #   Lazy palette registration
 ├── layout.py           # simple_layout(), label_axes(), arrow_axis()
 ├── annotation.py       # set_decimal(), make_offset()
-├── scale.py            # fs(), fw(), lw(), cm2in()
+├── scale.py            # fs(), fw(), lw()
+├── units.py            # cm(), inch(), mm(), col1, col2, parse_width
 ├── io.py               # save_formats(), save_and_show()
 ├── prompt.py           # get_prompt(), copy_prompt(), list_prompts()
 ├── validate.py         # Visual validation checks

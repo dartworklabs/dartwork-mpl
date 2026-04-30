@@ -69,7 +69,7 @@ academic conventions.
 
 ```python
 dm.style.use("scientific")
-fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(6)))
+fig, ax = dm.subplots(width="9cm", aspect="standard")
 ```
 
 **Best for:** LaTeX papers, IEEE/Elsevier submissions, technical notes.
@@ -125,7 +125,7 @@ look. Designed to be readable from 1–2 meters away.
 
 ```python
 dm.style.use("poster")
-fig, ax = plt.subplots(figsize=(8, 6))  # poster-sized panel
+fig, ax = dm.subplots(width="20cm", aspect="standard")  # poster-sized panel
 ```
 
 **Best for:** A0/A1 conference posters, large wall displays, signage.
