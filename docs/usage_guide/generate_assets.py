@@ -41,7 +41,7 @@ def _save_quickstart_first_figure(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
+    fig, ax = plt.subplots(figsize=(dm.cm(15), dm.cm(10)), dpi=300)
     x = np.linspace(0, 10, 200)
     ax.plot(x, np.sin(x), color="oc.blue5", label="signal")
     ax.set_xlabel("Time [s]", fontsize=dm.fs(0))
@@ -61,7 +61,7 @@ def _save_quickstart_multi_panel(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     x = np.linspace(0, 10, 200)
-    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(8.5)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm(15), dm.cm(8.5)), dpi=300)
     gs = fig.add_gridspec(1, 2, wspace=0.3)
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
@@ -96,7 +96,7 @@ def _make_challenging_figure(use_simple_layout: bool = True) -> plt.Figure:
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(8.5)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm(15), dm.cm(8.5)), dpi=300)
     gs = fig.add_gridspec(1, 2, wspace=0.45)
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
@@ -151,7 +151,7 @@ def _save_layout_gridspec(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(12)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm(15), dm.cm(12)), dpi=300)
     gs = fig.add_gridspec(
         2,
         2,
@@ -183,7 +183,7 @@ def _save_layout_typography(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
+    fig, ax = plt.subplots(figsize=(dm.cm(15), dm.cm(10)), dpi=300)
     x = np.array([0, 1, 2])
     y = np.array([0, 1, 0.4])
     ax.plot(x, y, color="oc.green6", lw=dm.lw(0.5))
@@ -225,7 +225,7 @@ def _make_evolution_figure(step: int) -> plt.Figure:
     else:
         dm.style.use("scientific")
         fig, (ax1, ax2) = plt.subplots(
-            1, 2, figsize=(dm.cm2in(25), dm.cm2in(10)), dpi=300
+            1, 2, figsize=(dm.cm(25), dm.cm(10)), dpi=300
         )
         c_pos, c_env = "oc.indigo6", "oc.gray5"
 
@@ -344,7 +344,7 @@ def _make_label_axes_compare(use_dm: bool) -> plt.Figure:
     dm.style.use("presentation")
 
     fig, axes = plt.subplots(
-        3, 1, figsize=(dm.cm2in(10), dm.cm2in(12)), dpi=300
+        3, 1, figsize=(dm.cm(10), dm.cm(12)), dpi=300
     )
     ylabels = ["y", "Velocity [m/s]", "A very long descriptive label"]
 
@@ -398,7 +398,7 @@ def _make_set_decimal_compare(use_dm: bool) -> plt.Figure:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig, ax = plt.subplots(figsize=(dm.cm2in(12), dm.cm2in(6)), dpi=300)
+    fig, ax = plt.subplots(figsize=(dm.cm(12), dm.cm(6)), dpi=300)
     x = np.linspace(0, 10, 100)
     y = np.sin(x) * 0.5 + 1.0
 
@@ -437,7 +437,7 @@ def _save_arrow_axis_example(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig, ax = plt.subplots(figsize=(dm.cm2in(10), dm.cm2in(10)), dpi=300)
+    fig, ax = plt.subplots(figsize=(dm.cm(10), dm.cm(10)), dpi=300)
 
     x = np.random.rand(20)
     y = x + np.random.randn(20) * 0.2
@@ -474,7 +474,7 @@ def _save_colors_colormap(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig = plt.figure(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
+    fig = plt.figure(figsize=(dm.cm(15), dm.cm(10)), dpi=300)
     gs = fig.add_gridspec(1, 1)
     ax = fig.add_subplot(gs[0, 0])
 
@@ -502,7 +502,7 @@ def _save_validation_example(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     # Force a tight figsize
-    fig, ax = plt.subplots(figsize=(dm.cm2in(10), dm.cm2in(6)), dpi=300)
+    fig, ax = plt.subplots(figsize=(dm.cm(10), dm.cm(6)), dpi=300)
     ax.plot([1, 2, 3], [1, 4, 9], color="oc.red6")
     ax.set_ylabel(
         "A very very long y-axis label that overflows bounds", fontsize=dm.fs(1)
@@ -565,7 +565,7 @@ def _save_scientific_chart(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig, ax = plt.subplots(figsize=(dm.cm2in(15), dm.cm2in(10)), dpi=300)
+    fig, ax = plt.subplots(figsize=(dm.cm(15), dm.cm(10)), dpi=300)
     ax.plot(
         np.arange(50),
         np.cumsum(np.random.randn(50)) + 20,
@@ -595,7 +595,7 @@ def _save_diverging_bar(images_dir: Path) -> Path:
         neg_label="Decrease",
         pos_label="Increase",
         add_total=False,
-        figsize=(dm.cm2in(15), dm.cm2in(10)),
+        figsize=(dm.cm(15), dm.cm(10)),
     )
 
     path = images_dir / "save_diverging_bar.svg"

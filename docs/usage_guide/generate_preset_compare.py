@@ -142,7 +142,7 @@ def _render_preset_svg(preset: str) -> str:
     dm.style.use(preset)
 
     fig, ax = plt.subplots(
-        figsize=(dm.cm2in(FIG_WIDTH_CM), dm.cm2in(FIG_HEIGHT_CM)), dpi=150
+        figsize=(dm.cm(FIG_WIDTH_CM), dm.cm(FIG_HEIGHT_CM)), dpi=150
     )
 
     # Sample data: thermal conductivity vs temperature
