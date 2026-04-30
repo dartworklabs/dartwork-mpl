@@ -132,7 +132,7 @@ def pseudo_alpha(
 
 
 def cm2in(cm: float) -> float:
-    """Convert centimeters to inches (legacy helper).
+    """Convert centimeters to inches (legacy helper, deprecated in 0.4).
 
     Returns a plain ``float``. For 0.4+ code prefer
     :func:`dartwork_mpl.cm` (alias of :func:`dartwork_mpl.units.cm`),
@@ -140,8 +140,9 @@ def cm2in(cm: float) -> float:
     that ``dm.subplots(width=...)`` and :func:`parse_width` recognise
     without re-interpreting it as centimeters again.
 
-    This function is kept for back-compat with 0.3 callers; new
-    figure-sizing code paths should use ``dm.cm``.
+    .. deprecated:: 0.4.0
+        Use :func:`dartwork_mpl.cm` instead. Will be removed in 0.5.0.
+        Emits a :class:`DeprecationWarning` on every call.
 
     Parameters
     ----------
@@ -153,6 +154,15 @@ def cm2in(cm: float) -> float:
     float
         Equivalent value in inches.
     """
+    import warnings as _warnings
+
+    _warnings.warn(
+        "dm.cm2in is deprecated and will be removed in 0.5.0. "
+        "Use dm.cm(value) (returns an Inches-tagged float that "
+        "dm.subplots(width=...) recognises directly).",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     return cm / 2.54
 
 

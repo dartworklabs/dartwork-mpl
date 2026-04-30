@@ -92,16 +92,19 @@ class TestLw:
 
 
 class TestCm2in:
-    """Tests for cm2in() conversion."""
+    """Tests for cm2in() conversion (deprecated in 0.4.0)."""
 
     def test_known_value(self) -> None:
-        assert cm2in(2.54) == pytest.approx(1.0, abs=1e-6)
+        with pytest.warns(DeprecationWarning, match="dm.cm2in is deprecated"):
+            assert cm2in(2.54) == pytest.approx(1.0, abs=1e-6)
 
     def test_zero(self) -> None:
-        assert cm2in(0) == pytest.approx(0.0, abs=1e-10)
+        with pytest.warns(DeprecationWarning):
+            assert cm2in(0) == pytest.approx(0.0, abs=1e-10)
 
     def test_ten_cm(self) -> None:
-        assert cm2in(10) == pytest.approx(10 / 2.54, abs=1e-6)
+        with pytest.warns(DeprecationWarning):
+            assert cm2in(10) == pytest.approx(10 / 2.54, abs=1e-6)
 
 
 # ============================================================================
