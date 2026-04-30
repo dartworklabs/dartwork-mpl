@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # Gallery Examples
 
 Sphinx-Gallery source for the dartwork-mpl docs site. Each `plot_*.py`
@@ -10,8 +14,9 @@ The gallery is mid-migration to the dartwork-mpl 0.4 API
 (`dm.subplots(width="13cm", aspect="standard")`,
 `dm.auto_layout(fig)`, `dm.col1` / `dm.col2`).
 
-**Authoritative recipes:** [`_LAYOUT_RECIPES.md`](_LAYOUT_RECIPES.md)
-is the canonical reference for new examples and rewrites.
+**Authoritative recipes:** `_LAYOUT_RECIPES.md` (lives next to this
+file in the repo) is the canonical reference for new examples and
+rewrites.
 
 **Already migrated** (use the 0.4 API as a reference):
 

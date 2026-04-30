@@ -1,5 +1,11 @@
 # dartwork-mpl
 
+[![PyPI version](https://img.shields.io/pypi/v/dartwork-mpl.svg)](https://pypi.org/project/dartwork-mpl/)
+[![Python versions](https://img.shields.io/pypi/pyversions/dartwork-mpl.svg)](https://pypi.org/project/dartwork-mpl/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/dartworklabs/dartwork-mpl/actions/workflows/ci.yml/badge.svg)](https://github.com/dartworklabs/dartwork-mpl/actions/workflows/ci.yml)
+[![Docs](https://github.com/dartworklabs/dartwork-mpl/actions/workflows/docs.yml/badge.svg)](https://dartworklabs.github.io/dartwork-mpl/)
+
 Enhanced matplotlib styling, color management, and utility library engineered by dartwork.
 
 `dartwork-mpl` is a utility collection designed to elevate matplotlib visuals to publication-level elegance. Instead of wrapping matplotlib with a new API layer, it provides **thin utilities** that enhance matplotlib's native capabilities while keeping you in full control.
