@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **`Axes.twinx` reentrance guard** — the monkey-patch in
+  `dartwork_mpl/__init__.py` now tags the wrapper with
+  `__dm_patched__` and skips re-patching when that marker is
+  present, so `importlib.reload(dartwork_mpl)` no longer self-wraps
+  into a `RecursionError` on the next `ax.twinx()` call.
+- **`auto_layout(fig)` / `simple_layout(fig)` no-op on empty figures**
+  — both functions used to `IndexError` on `fig.axes[0]` when given a
+  figure with no axes; they now return cleanly.
+- **`Inches` survives numpy ufunc dispatch** — the `Inches` `float`
+  subclass returned by `dm.cm` / `dm.inch` / `dm.mm` now sets
+  `__array_ufunc__ = None`, so `np.float64(2) * dm.cm(9)` falls back
+  to `Inches.__rmul__` and keeps the inches tag instead of silently
+  becoming a bare `np.float64` that `parse_width` would re-interpret
+  as cm.
+- **sdist whitelist** — `[tool.hatch.build.targets.sdist]` now
+  enumerates `src/dartwork_mpl`, `LICENSE`, `README.md`,
+  `CHANGELOG.md`, `pyproject.toml`. Previous default-everything
+  behaviour swept in worktree caches and `docs/_build`, pushing the
+  tarball over PyPI's 100 MB per-file ceiling. The 0.4.0 sdist now
+  builds at ~50 MB.
+- **`dpi-arg` lint regex now sees through `figsize=(...)`** — the
+  prior `[^)]*` pattern stopped at the first `)` and silently missed
+  `plt.figure(figsize=(8,6), dpi=200)`. Updated to allow one level
+  of nested parens. `savefig(dpi=...)` remains owned by
+  `savefig-direct`.
+- **`linewidth-literal` lint relaxed for sub-1 hairlines** — the
+  rule now only fires on literals whose integer part is `>= 1`.
+  Sub-1 widths (`0.3`, `0.5`, `0.8`) are common, intentional
+  decoration in the bundled templates, which now lint clean against
+  the rules they teach. `linewidth=0` (no-border idiom) and
+  `linewidth=2.5` (true bypass) keep their previous behaviour.
+- **`dartwork-mpl-mcp` console script** prints a friendly install
+  hint and exits `1` when the `[mcp]` extra is missing, instead of
+  raising `ModuleNotFoundError` from a top-of-module import.
+- **`dm.subplots(width=..., figsize=...)` and `dm.figure(...)`** now
+  emit an explicit `UserWarning` saying the new `width=` argument
+  was ignored and the legacy `figsize=` won, on top of the existing
+  `DeprecationWarning` on `figsize=`.
+
+### Changed
+
+- **`validate_plot_data` now covers all 12 advertised templates** —
+  added validators for `violin`, `boxplot`, `histogram`, `contour`,
+  and `twin_axis` to match the catalog returned by
+  `dartwork_mpl_info()`.
+- **`fastmcp` capped below 4** in the `[mcp]` extra
+  (`fastmcp>=2.13.3,<4`). 3.x is the latest tested major; 4.x has
+  not been vetted and may rename the introspection APIs we relied
+  on.
+- **`dartwork_mpl_info()` registered-prompt list is now static** —
+  previously poked at `mcp._prompt_manager._prompts`, a private
+  fastmcp attribute that shifted between 2.x and 3.x. The static
+  list is kept in sync with `register_prompts` in `prompts.py`.
+- **README** — updated MCP server line to "11 resources +
+  3 resource templates / 7 tools / 2 prompts", swapped the
+  layout-helper example to lead with `dm.auto_layout(fig)` (the 0.4
+  default) with `dm.simple_layout(fig, gs=gs)` shown as the advanced
+  fall-through, and changed the `dm.get_prompt(...)` example to
+  reference shipped 0.4 prompt names (`00-index`, `01-policy`).
+
 ## [0.4.0] - 2026-04-30
 
 Highlights:

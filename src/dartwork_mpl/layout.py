@@ -172,6 +172,11 @@ def simple_layout(
     OptimizeResult
         The scipy optimization result object.
     """
+    # No-op on figures with no axes — nothing to lay out, and indexing
+    # ``fig.axes[0]`` would IndexError.
+    if not fig.axes:
+        return None  # type: ignore[return-value]
+
     # Handle SubplotSpec by getting its parent GridSpec
     if gs is not None:
         if isinstance(gs, SubplotSpec):
@@ -364,6 +369,12 @@ def auto_layout(
     >>> ax.set_ylabel("Temperature (°C)")
     >>> dm.auto_layout(fig)
     """
+    # No-op on figures with no axes — nothing to measure or adjust, and
+    # downstream ``simple_layout`` / overflow probes assume at least one
+    # axes.
+    if not fig.axes:
+        return
+
     # Normalize padding to a 4-tuple
     if isinstance(padding, (int, float)):
         margins = [float(padding)] * 4

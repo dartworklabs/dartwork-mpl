@@ -112,6 +112,25 @@ class TestInchesArithmetic:
         v = cm(9) * 2
         assert math.isclose(parse_width(v), 18 / 2.54, rel_tol=1e-9)
 
+    def test_inches_resists_numpy_ufunc(self):
+        """Without ``__array_ufunc__ = None``, ``np.float64(2) * cm(9)``
+        would route through numpy's multiply ufunc, returning a bare
+        ``np.float64`` and silently losing the ``Inches`` tag — at
+        which point ``parse_width`` would re-interpret the inches value
+        as cm. Opting out of ufunc dispatch makes numpy fall back to
+        ``Inches.__rmul__`` so the tag is preserved.
+        """
+        import numpy as np
+
+        from dartwork_mpl.units import Inches
+
+        v = np.float64(2) * cm(9)
+        assert isinstance(v, Inches)
+        assert math.isclose(v, 18 / 2.54, rel_tol=1e-9)
+        # And the round-trip through parse_width still yields the same
+        # inches value (i.e. is *not* re-interpreted as cm).
+        assert math.isclose(parse_width(v), 18 / 2.54, rel_tol=1e-9)
+
 
 class TestParseAspect:
     @pytest.mark.parametrize(

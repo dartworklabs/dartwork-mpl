@@ -113,8 +113,18 @@ class TestFigsizeDeprecation:
         # figsize wins for backward compat during 0.4.x.
         assert math.isclose(w, 7, rel_tol=1e-6)
         assert math.isclose(h, 4, rel_tol=1e-6)
-        # And a warning is emitted.
+        # The legacy DeprecationWarning is still emitted.
         assert any(issubclass(c.category, DeprecationWarning) for c in caught)
+        # And a UserWarning explicitly tells the caller their `width=`
+        # was ignored — the original DeprecationWarning didn't say that.
+        user_msgs = [
+            str(c.message)
+            for c in caught
+            if issubclass(c.category, UserWarning)
+        ]
+        assert any("ignored" in m and "width=" in m for m in user_msgs), (
+            user_msgs
+        )
 
 
 class TestErrors:
@@ -180,3 +190,24 @@ class TestFigureWidthAspect:
             if issubclass(w.category, DeprecationWarning)
         ]
         assert any("dpi" in m for m in msgs)
+
+    def test_width_and_figsize_both_specified_emits_userwarning(self):
+        """When dm.figure() gets both, ``figsize=`` wins silently; the
+        UserWarning is the only signal that ``width=`` was ignored."""
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            fig = dm.figure(width="9cm", figsize=(7, 4))
+            try:
+                w, h = fig.get_size_inches()
+            finally:
+                _close(fig)
+        assert math.isclose(w, 7, rel_tol=1e-6)
+        assert math.isclose(h, 4, rel_tol=1e-6)
+        user_msgs = [
+            str(c.message)
+            for c in caught
+            if issubclass(c.category, UserWarning)
+        ]
+        assert any("ignored" in m and "width=" in m for m in user_msgs), (
+            user_msgs
+        )
