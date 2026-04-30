@@ -349,3 +349,19 @@ def __getattr__(name):
 
         return getattr(_constant, name)
     raise AttributeError(f"module 'dartwork_mpl' has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    """Expose deprecated 0.3 names so IDE autocomplete can find them.
+
+    Without this, ``dir(dartwork_mpl)`` would only list ``__all__`` and
+    miss ``SW``/``MW``/``TW``/``DW``/``FS_*``/``WIDTHS``/``agent_utils``/
+    ``xplot`` — making migration harder for users still on the 0.3 API.
+    Each access still emits a DeprecationWarning via ``__getattr__``.
+    """
+    return sorted(
+        set(__all__)
+        | set(_DEPRECATED_WIDTHS_CM)
+        | set(_DEPRECATED_TUPLE_NAMES)
+        | {"agent_utils", "xplot"}
+    )

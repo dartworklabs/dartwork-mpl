@@ -148,6 +148,12 @@ def _scan_one(code: str, rule: Rule) -> list[Issue]:
 def lint(code: str, *, rules: Iterable[Rule] | None = None) -> list[Issue]:
     """Apply anti-pattern rules to a Python source string.
 
+    .. note::
+
+        ``code`` must be **Python source**, not YAML/Markdown/JSON. The
+        rules are regex-based, so feeding non-Python content (e.g. the
+        anti-patterns YAML itself) will produce false positives.
+
     Parameters
     ----------
     code : str

@@ -75,7 +75,7 @@ def _check_overflow(fig: Figure, renderer) -> list[VisualWarning]:
                 continue
             try:
                 ext = txt.get_window_extent(renderer)
-            except Exception:
+            except (RuntimeError, ValueError, AttributeError):
                 continue
 
             dx_left = fig_bbox.x0 - ext.x0
@@ -129,7 +129,7 @@ def _check_overflow(fig: Figure, renderer) -> list[VisualWarning]:
                     continue
                 try:
                     ext = tick.get_window_extent(renderer)
-                except Exception:
+                except (RuntimeError, ValueError, AttributeError):
                     continue
                 # Tick label center on the axis-perpendicular dimension.
                 if is_x:
@@ -180,7 +180,7 @@ def _check_overlap(fig: Figure, renderer) -> list[VisualWarning]:
                 ext = txt.get_window_extent(renderer)
                 if ext.width > 0 and ext.height > 0:
                     texts.append((txt.get_text()[:30], ext))
-            except Exception:
+            except (RuntimeError, ValueError, AttributeError):
                 continue
 
         # Pairwise IoU
@@ -231,7 +231,7 @@ def _check_legend_overflow(fig: Figure, renderer) -> list[VisualWarning]:
         try:
             leg_ext = legend.get_window_extent(renderer)
             ax_ext = ax.get_window_extent(renderer)
-        except Exception:
+        except (RuntimeError, ValueError, AttributeError):
             continue
 
         ax_area = ax_ext.width * ax_ext.height
@@ -274,7 +274,7 @@ def _check_tick_crowding(fig: Figure, renderer) -> list[VisualWarning]:
     for i, ax in enumerate(fig.axes):
         try:
             ax_ext = ax.get_window_extent(renderer)
-        except Exception:
+        except (RuntimeError, ValueError, AttributeError):
             continue
 
         dpi = fig.get_dpi()
@@ -377,14 +377,14 @@ def _check_margin_asymmetry(fig: Figure, renderer) -> list[VisualWarning]:
             tb = ax.get_tightbbox(renderer)
             if tb is not None:
                 all_extents.append(tb)
-        except Exception:
+        except (RuntimeError, ValueError, AttributeError):
             continue
         # Include text objects outside axes (annotations, pie labels).
         for txt in ax.texts:
             if txt.get_visible() and txt.get_text().strip():
                 try:
                     all_extents.append(txt.get_window_extent(renderer))
-                except Exception:
+                except (RuntimeError, ValueError, AttributeError):
                     pass
 
     if not all_extents:
@@ -466,8 +466,9 @@ def _check_pie_label_offset(fig: Figure, renderer) -> list[VisualWarning]:
         if not wedges:
             continue
 
-        # Determine if donut (wedge width < 1.0).
-        wedge_widths = [getattr(w, "width", 1.0) for w in wedges]
+        # Determine if donut (wedge width < 1.0). matplotlib pie wedges
+        # have ``width=None`` for a regular (filled) pie, so coerce to 1.0.
+        wedge_widths = [(getattr(w, "width", None) or 1.0) for w in wedges]
         if all(w >= 0.99 for w in wedge_widths):
             continue  # regular pie, not a donut
 
@@ -556,7 +557,7 @@ def validate_figure(
     for check_fn in selected.values():
         try:
             warnings.extend(check_fn())
-        except Exception:
+        except (RuntimeError, ValueError, AttributeError):
             pass  # never crash the save pipeline
 
     # Structured stdout output for agent consumption.

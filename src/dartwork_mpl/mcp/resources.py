@@ -53,7 +53,9 @@ def register_resources(mcp: FastMCP) -> None:
         """0.4 policy: width, aspect, layout, color, font, save."""
         return get_prompt("01-policy")
 
-    @mcp.resource("dartwork-mpl://guide/anti-patterns")
+    @mcp.resource(
+        "dartwork-mpl://guide/anti-patterns", mime_type="application/yaml"
+    )
     def anti_patterns() -> str:
         """Machine-readable anti-pattern catalog (the lint engine source)."""
         path = _PROMPT_DIR / "02-anti-patterns.yaml"

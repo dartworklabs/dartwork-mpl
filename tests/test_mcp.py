@@ -208,7 +208,7 @@ class TestMcpTools:
 
         with patch("httpx.get", return_value=mock_resp):
             result = captured["fetch_github_document"](
-                "https://example.com/file.md"
+                "https://raw.githubusercontent.com/dartworklabs/dartwork-mpl/main/README.md"
             )
             assert result == "# Hello World"
 
@@ -222,7 +222,26 @@ class TestMcpTools:
 
         with patch("httpx.get", side_effect=Exception("timeout")):
             with pytest.raises(ValueError, match="Failed"):
-                captured["fetch_github_document"]("https://invalid.example.com")
+                captured["fetch_github_document"](
+                    "https://raw.githubusercontent.com/dartworklabs/foo.md"
+                )
+
+    def test_fetch_github_document_rejects_non_allowlist(self) -> None:
+        """fetch_github_document rejects non-raw.githubusercontent.com URLs."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        for bad in (
+            "http://raw.githubusercontent.com/foo",
+            "https://example.com/file.md",
+            "file:///etc/passwd",
+            "ftp://server/x",
+        ):
+            with pytest.raises(ValueError, match="raw.githubusercontent.com"):
+                captured["fetch_github_document"](bad)
 
     def test_get_color_value_known(self) -> None:
         """get_color_value returns hex for a known color."""
