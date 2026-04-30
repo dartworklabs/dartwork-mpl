@@ -14,7 +14,9 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 
-fig, axes = plt.subplots(2, 2, figsize=(dm.DW, dm.SW * 0.9))
+# 0.4 API: 2×2 uniform grid at the journal-friendly double-column
+# width (17 cm = dm.col2) with a standard h/w ratio per panel.
+fig, axes = dm.subplots(2, 2, width="17cm", aspect="standard")
 
 np.random.seed(0)
 for ax in axes.flat:
@@ -26,6 +28,6 @@ for ax in axes.flat:
 # Automatically add (a), (b), (c), (d) using label_axes
 dm.label_axes(axes.flat)
 
-# Use simple_layout for consistent margins
-dm.simple_layout(fig)
+# Uniform grid → auto_layout (measure→adjust→retry) is the 0.4 default.
+dm.auto_layout(fig)
 plt.show()

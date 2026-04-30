@@ -1,271 +1,452 @@
-# Gallery Examples Quality Standard
+# Gallery Layout Recipes (0.4)
 
-Comprehensive quality criteria for `dartwork-mpl` example gallery plots.
-Every example in `docs/examples_source/` **must** satisfy these standards.
-
----
-
-## 1. Layout Architecture
-
-### 1.1 GridSpec Mandate
-
-Multi-panel figures **must** use explicit `gridspec.GridSpec(figure=fig)`.
-Never use `plt.subplots()` for anything beyond a single panel.
-
-```python
-# ✅ Correct
-fig = plt.figure(figsize=(dm.DW, dm.DW * 0.85))
-gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.40)
-ax = fig.add_subplot(gs[0, 0])
-
-# ❌ Forbidden for multi-panel
-fig, axes = plt.subplots(2, 2, figsize=(...))
-```
-
-### 1.2 Figure Dimensions
-
-All dimensions derive from `dm.SW` (9 cm) and `dm.DW` (17 cm).
-Raw pixel/inch values are forbidden.
-
-| Layout         | figsize                       | Aspect  |
-| :------------- | :---------------------------- | :------ |
-| Single panel   | `(dm.SW, dm.SW * 0.7)`        | ~1.43:1 |
-| Single wide    | `(dm.SW * 1.4, dm.SW * 0.9)`  | ~1.56:1 |
-| 2×2 uniform    | `(dm.DW, dm.DW * 0.85)`       | ~1.18:1 |
-| 3×2 poster     | `(dm.DW * 1.1, dm.DW * 0.95)` | ~1.16:1 |
-| Polar / square | `(dm.SW * 1.4, dm.SW * 1.4)`  | 1:1     |
-
-### 1.3 Spacing Parameters
-
-Every `GridSpec` instance must set `hspace` and `wspace` explicitly.
-
-| Param    | Min  | Default | Max  | When to increase                     |
-| :------- | :--- | :------ | :--- | :----------------------------------- |
-| `hspace` | 0.30 | 0.40    | 0.50 | Panels have xlabel + title both      |
-| `wspace` | 0.25 | 0.35    | 0.45 | Panels have wide ylabel (e.g. units) |
-
-### 1.4 Layout Finalization
-
-| Condition                              | Finalizer               |
-| :------------------------------------- | :---------------------- |
-| No colorbar, no polar                  | `dm.simple_layout(fig)` |
-| Colorbar present (`fig.colorbar(...)`) | `fig.tight_layout()`    |
-| Polar subplot only (no colorbar)       | `dm.simple_layout(fig)` |
-
-`dm.simple_layout()` uses L-BFGS-B optimization and produces tighter,
-cleaner margins than `tight_layout`. Always prefer it when compatible.
-
-### 1.5 Asymmetric Layouts
-
-Use `height_ratios` or `width_ratios` for non-uniform grids:
-
-```python
-gs = gridspec.GridSpec(2, 2, figure=fig,
-                       height_ratios=[1.4, 1],
-                       hspace=0.35, wspace=0.30)
-ax_top = fig.add_subplot(gs[0, :])   # span full width
-```
+Authoritative recipes for gallery examples in `docs/examples_source/`.
+Every example **must** follow these patterns. Legacy 0.3 patterns
+(`dm.SW/MW/TW/DW`, `dm.cm2in`, `dm.FS_*`, `figsize=` tuples,
+`tight_layout`) are deprecated and emit warnings; the lint catalog
+will block them.
 
 ---
 
-## 2. Typography Consistency
-
-All text sizing **must** use `dm.fs()` relative scaling, never raw `fontsize=N`.
-All line weights **must** use `dm.lw()`, never raw `lw=N` or `linewidth=N`.
-
-### 2.1 Hierarchy
-
-| Element        | Size                      | Weight          | Example                         |
-| :------------- | :------------------------ | :-------------- | :------------------------------ |
-| suptitle       | `dm.fs(2)`                | `weight='bold'` | Dashboard-level heading         |
-| Panel title    | `dm.fs(0)`–`dm.fs(1)`     | `weight='bold'` | `ax.set_title(...)`             |
-| Axis label     | `dm.fs(0)`                | normal          | `ax.set_xlabel(...)`            |
-| Tick label     | `dm.fs(-0.5)`             | normal          | Set via style, or manually      |
-| Legend entries | `dm.fs(-1)`               | normal          | `ax.legend(fontsize=dm.fs(-1))` |
-| Annotations    | `dm.fs(-0.5)`–`dm.fs(-1)` | normal          | `ax.annotate(...)`, `ax.text()` |
-| Data labels    | `dm.fs(-1)`               | normal or bold  | Values on bars, points          |
-
-### 2.2 Forbidden Direct Values
+## 0. The Three Things You Always Need
 
 ```python
-# ❌ Hard-coded sizes
-ax.set_title("Title", fontsize=14)
-ax.plot(x, y, lw=2.5)
+import dartwork_mpl as dm
 
-# ✅ Relative scaling
-ax.set_title("Title", fontsize=dm.fs(1))
-ax.plot(x, y, lw=dm.lw(1))
+dm.style.use("scientific")                     # 1. pick a style
+fig, ax = dm.subplots(width="13cm", aspect="standard")  # 2. width + aspect
+ax.plot(...)
+dm.auto_layout(fig)                             # 3. finalize layout
+dm.save_formats(fig, "my_chart")                # (optional) save artifact
 ```
 
-### 2.3 Typographic Details
-
-- **En-dash** (`\u2013`) for ranges: `"2020\u20132025"`, `"10\u201315%"`.
-  Never a plain hyphen for numeric ranges.
-- **Subscripts**: Prefer Unicode subscripts (`\u2081`, `\u2082`) over
-  LaTeX `$X_1$` when in non-math context. Accept Roboto glyph warnings.
-- **Title padding**: `pad=12`–`20` for `ax.set_title()`, `y=1.02`–`1.05`
-  for `fig.suptitle()`.
+That's the entire surface for ~95% of plots. Everything below is just
+variations on those three lines.
 
 ---
 
-## 3. dartwork-mpl Feature Utilization
+## 1. The Width and Aspect Contract
 
-Each example **must** demonstrate at least 2 distinct `dm.*` features beyond
-basic `dm.style.use()` and `dm.simple_layout()`.
+`dm.subplots()` and `dm.figure()` take **physical width** + **named
+aspect ratio**, never raw figsize tuples.
 
-### 3.1 Required Feature Coverage
+### 1.1 Width
 
-The gallery as a whole must cover every public API at least once:
+| Form                 | Example                | Notes                              |
+| :------------------- | :--------------------- | :--------------------------------- |
+| String with unit     | `width="13cm"`         | Preferred. Units: `cm`, `in`, `mm` |
+| Bare number          | `width=13`             | Interpreted as **cm** (no unit = cm) |
+| `dm.cm()` helper     | `width=dm.cm(13)`      | Returns `Inches`, type-safe        |
+| `dm.col1` / `dm.col2`| `width=dm.col1`        | Academic single/double column      |
 
-| Feature              | API                            | Minimum examples  |
-| :------------------- | :----------------------------- | :---------------- |
-| Style presets        | `dm.style.use()`               | ≥2                |
-| Style stacking       | `dm.style.stack()`             | ≥1                |
-| Style context        | `dm.style.context()`           | ≥1                |
-| OKLCH color creation | `dm.oklch()`, `dm.Color`       | ≥1                |
-| Color interpolation  | `dm.cspace()`                  | ≥2                |
-| Named color convert  | `dm.named()`                   | ≥2                |
-| Pseudo-alpha         | `dm.pseudo_alpha()`            | ≥3                |
-| Color mixing         | `dm.mix_colors()`              | ≥1                |
-| Named palettes       | `oc.*`, `tw.*`, `dc.*` strings | ≥5                |
-| Custom colormaps     | `cmap='dc.deep_sea'` etc.      | ≥2                |
-| Font scaling         | `dm.fs()`                      | every example     |
-| Line weight scaling  | `dm.lw()`                      | every example     |
-| Layout optimizer     | `dm.simple_layout()`           | default           |
-| Panel labels         | `dm.label_axes()`              | every multi-panel |
-| Arrow axes           | `dm.arrow_axis()`              | ≥1                |
-| Decimal formatting   | `dm.set_decimal()`             | ≥3                |
-| Icon fonts           | `dm.icon_font()`               | ≥1                |
-| Diverging bars       | `dm.plot_diverging_bar()`      | ≥1                |
-| Width constants      | `dm.SW`, `dm.DW`               | every example     |
+`dm.col1 = cm(9)` (single-column figure) and `dm.col2 = cm(17)`
+(double-column figure) are sugar for the two widths that dominate
+academic publishing.
 
-### 3.2 Color Usage
+### 1.2 Aspect Tokens
 
-- **Never** use raw hex codes or matplotlib default colors (e.g. `'b'`,
-  `'#ff0000'`, `'C0'`).
-- **Always** use named palette strings (`oc.blue5`, `tw.emerald600`, `dc.3`)
-  or `dm.oklch()`/`dm.cspace()` constructed colors.
-- For fills/bands, prefer `dm.pseudo_alpha()` over raw `alpha=0.3`.
-  This keeps SVG/PDF exports vector-clean.
+`aspect=` is height/width ratio. Named tokens cover ~all useful
+shapes; raw floats are accepted when you need a non-standard ratio.
 
-```python
-# ❌ Raw alpha — rasterizes in vector export
-ax.fill_between(x, y1, y2, color='blue', alpha=0.2)
+| Token        | Ratio (h/w) | Use case                              |
+| :----------- | :---------- | :------------------------------------ |
+| `square`     | 1.000       | Polar, scatter with equal axes        |
+| `portrait`   | 1.250       | Tall plots, vertical bar charts       |
+| `standard`   | 0.750       | Default; most single panels           |
+| `golden`     | 0.618       | Time series, line plots               |
+| `wide`       | 0.667       | Side-by-side comparisons              |
+| `cinema`     | 0.500       | Slide banners, very wide trends       |
 
-# ✅ Pseudo-alpha — solid color, vector-safe
-fill = dm.pseudo_alpha('oc.blue5', 0.2, background='white')
-ax.fill_between(x, y1, y2, color=fill)
-```
-
-### 3.3 Style Selection
-
-| Context              | Preset         | Notes                        |
-| :------------------- | :------------- | :--------------------------- |
-| Default gallery      | `presentation` | 1pt larger than scientific   |
-| Academic demo        | `scientific`   | Smaller, denser labels       |
-| Dark mode demo       | `dark`         | Explicit showcase only       |
-| Conceptual / minimal | `minimal`      | Spine-free, data-ink focused |
-| Korean text demo     | `report-kr`    | Pretendard font              |
+Raw floats also work: `aspect=0.4` or `aspect=1.1`. Use them only when
+no named token fits; the tokens are the lingua franca and reviewers
+read them faster than decimals.
 
 ---
 
-## 4. Aesthetic Standards
+## 2. Single-Panel Recipes
 
-### 4.1 Data-Ink Ratio
+Pick a width based on where the figure will live, then choose an
+aspect that matches the data shape.
 
-Every visual element must earn its place.
+### 2.1 Small / column-width single panel (9 cm)
 
-- **Remove** top and right spines unless the data explicitly needs them
-  (the default styles already handle this).
-- **No** chartjunk: background images, 3D effects, gradient backgrounds.
-- **Annotations** only where they add insight (critical points, milestones,
-  threshold lines), not for decoration.
+```python
+import numpy as np
+import dartwork_mpl as dm
 
-### 4.2 Color Harmony
+dm.style.use("scientific")
+fig, ax = dm.subplots(width="9cm", aspect="standard")
 
-- Use **at most 5–6 distinct hues** per panel. More than that becomes noisy.
-- When using a sequential palette (e.g. OKLCH interpolation), ensure the
-  lightest shade has sufficient contrast against white background
-  (indices ≥2 for `dc.*` palettes are safe).
-- Pair a **saturated accent** with **desaturated fills**:
-  line in `oc.blue7`, fill in `dm.pseudo_alpha('oc.blue5', 0.15)`.
+x = np.linspace(0, 10, 100)
+ax.plot(x, np.sin(x), color="oc.blue7", lw=dm.lw(1))
+ax.set_xlabel("Time (s)")
+ax.set_ylabel("Amplitude")
 
-### 4.3 Legend Placement
+dm.auto_layout(fig)
+```
 
-| Entries | Layout                           | Position                      |
-| :------ | :------------------------------- | :---------------------------- |
-| 1–3     | Horizontal single row (`ncol=N`) | `loc='upper right'`           |
-| 4+      | Vertical stacked                 | `bbox_to_anchor` outside plot |
-| Polar   | Always external                  | `bbox_to_anchor=(1.3, 1.1)`   |
+**Why 9 cm:** academic single-column or sidebar figures. Use
+`width=dm.col1` if you prefer the named alias.
 
-- Always `frameon=False` or at minimum semi-transparent frame.
-- Expand `ylim` top margin by ~10–15% if legend overlaps data region.
+### 2.2 Medium single panel (13 cm)
 
-### 4.4 Whitespace and Breathing Room
+```python
+fig, ax = dm.subplots(width="13cm", aspect="standard")
+```
 
-- Bar charts: `xlim` padded by ±0.5 beyond data range, or `margins(x=0.05)`.
-- Scatter plots: `margins(0.08)` minimum so edge points aren't clipped.
-- Between suptitle and top panels: `y=1.02` minimum for `fig.suptitle()`.
-- Tick padding: `pad=3` to `pad=5` for clean separation from spines.
+**Why 13 cm:** most blog and slide use cases. Wide enough for a
+single rich axis without dominating the page.
 
-### 4.5 Consistency Across Gallery
+### 2.3 Large / double-column single panel (17 cm)
 
-- All examples in the same category should share similar visual weight —
-  a user scrolling through thumbnails should see a uniform, curated gallery,
-  not a random assortment.
-- Maintain a consistent data narrative tone: scientific but accessible.
-  Example titles should tell a story ("Damped Oscillation", "Phase Diagram"),
-  not describe the chart type ("Line Plot Example").
+```python
+fig, ax = dm.subplots(width="17cm", aspect="golden")
+```
+
+**Why 17 cm + golden:** flagship single panel for journal articles
+spanning the full page width, or hero charts in reports. The golden
+ratio is a safe default for time series and scatter plots that read
+left-to-right.
+
+### 2.4 Square panel (polar, equal-axis scatter)
+
+```python
+fig, ax = dm.subplots(
+    width="9cm",
+    aspect="square",
+    subplot_kw={"projection": "polar"},
+)
+```
+
+**Why square:** polar projections, correlation scatter with equal axis
+limits, quantile-quantile plots. Anything where x and y carry the
+same physical meaning.
+
+### 2.5 Wide-format slide hero (17 cm × cinema)
+
+```python
+fig, ax = dm.subplots(width="17cm", aspect="cinema")
+ax.plot(years, gdp, color="tw.emerald600", lw=dm.lw(1))
+```
+
+**Why cinema:** 2:1 banner shape for slide deck title charts and
+landing-page hero plots. More vertical compression than `wide`.
+
+### 2.6 Custom aspect (raw float)
+
+```python
+fig, ax = dm.subplots(width="13cm", aspect=0.4)
+```
+
+**When:** the plot has a constraint (e.g. matching a hand-drawn diagram
+beside it) that no named token captures. The float is `height /
+width`, so 0.4 = roughly 13 × 5.2 cm.
 
 ---
 
-## 5. GridSpec Recipe Reference
+## 3. Multi-Panel Recipes
 
-Validated configurations. Copy directly.
+`dm.subplots(nrows, ncols, ...)` handles any uniform grid. Reach for
+custom GridSpec only when row/column ratios diverge or you need
+nested layouts.
 
-### Single panel
+### 3.1 Side-by-side, 1×2 (17 cm × wide)
 
 ```python
-fig, ax = plt.subplots(figsize=(dm.SW, dm.SW * 0.7))
-dm.simple_layout(fig)
+fig, axes = dm.subplots(1, 2, width="17cm", aspect="wide")
+
+axes[0].plot(x, y1, color="oc.blue7", lw=dm.lw(1))
+axes[0].set_title("Before")
+axes[1].plot(x, y2, color="oc.red7", lw=dm.lw(1))
+axes[1].set_title("After")
+
+dm.label_axes(axes)
+dm.auto_layout(fig)
 ```
 
-### 2×2 uniform
+**Why 17 cm × wide:** two panels need horizontal room to breathe.
+`wide` (2:3) gives each panel a near-square aperture.
+
+### 3.2 Stacked rows, 2×1 (13 cm × portrait)
 
 ```python
-fig = plt.figure(figsize=(dm.DW, dm.DW * 0.85))
-gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.40)
-dm.label_axes(fig.axes)
-dm.simple_layout(fig)
+fig, axes = dm.subplots(2, 1, width="13cm", aspect="portrait", sharex=True)
+axes[0].plot(t, signal, color="oc.blue7", lw=dm.lw(1))
+axes[1].plot(t, residuals, color="oc.gray7", lw=dm.lw(1))
+axes[1].set_xlabel("Time (s)")
+
+dm.label_axes(axes)
+dm.auto_layout(fig)
 ```
 
-### 2×2 with colorbar
+**Why portrait:** stacking two panels needs extra vertical space.
+`portrait` (5:4) prevents the rows from feeling cramped.
+
+### 3.3 Uniform 2×2 grid (17 cm × standard)
 
 ```python
-fig = plt.figure(figsize=(dm.DW, dm.DW * 0.85))
-gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.35, wspace=0.35)
-fig.colorbar(cf, ax=ax, shrink=0.85, pad=0.02)
-dm.label_axes(fig.axes[:4])  # exclude colorbar axes
-fig.tight_layout()
+fig, axes = dm.subplots(2, 2, width="17cm", aspect="standard")
+
+for ax, data, title in zip(axes.flat, datasets, titles, strict=True):
+    ax.plot(data, color="oc.blue7", lw=dm.lw(1))
+    ax.set_title(title, fontsize=dm.fs(0))
+
+dm.label_axes(axes.flat)
+dm.auto_layout(fig)
 ```
 
-### 1 + 2 asymmetric
+**Why 17 cm × standard:** four equal panels in a journal-friendly
+shape. `aspect="standard"` keeps each panel close to landscape,
+matching the figures readers expect in scientific publications.
+
+### 3.4 Tall 3×2 dashboard (17 cm × portrait)
 
 ```python
-fig = plt.figure(figsize=(dm.DW, dm.DW * 0.85))
-gs = gridspec.GridSpec(2, 2, figure=fig,
-                       height_ratios=[1.4, 1], hspace=0.35, wspace=0.30)
+fig, axes = dm.subplots(3, 2, width="17cm", aspect="portrait")
+dm.label_axes(axes.flat)
+dm.auto_layout(fig)
+```
+
+**Why portrait:** six panels stacked 3×2 need the extra vertical room
+that `portrait` (5:4) provides.
+
+### 3.5 Asymmetric rows / columns (`width_ratios`, `height_ratios`)
+
+When rows or columns have different widths, pass ratios directly to
+`dm.subplots`:
+
+```python
+fig, axes = dm.subplots(
+    1, 3,
+    width="17cm",
+    aspect="wide",
+    width_ratios=[2, 1, 1],
+)
+```
+
+For non-rectangular layouts (a wide top panel above two narrow lower
+panels), drop down to a custom GridSpec — see §4.
+
+---
+
+## 4. Custom GridSpec (Advanced)
+
+Reach for `dm.figure()` + `gridspec.GridSpec` only when:
+
+- You span cells (top row spans all columns, etc.).
+- You nest GridSpec inside GridSpec.
+- You attach a colorbar with non-trivial placement.
+
+For these advanced layouts, `dm.simple_layout(fig)` is the right
+finalizer; the auto-layout retry loop assumes a uniform grid.
+
+### 4.1 Asymmetric: 1 wide row + 2 narrow row
+
+```python
+import matplotlib.gridspec as gridspec
+import dartwork_mpl as dm
+
+dm.style.use("scientific")
+fig = dm.figure(width="17cm", aspect="standard")
+gs = gridspec.GridSpec(
+    2, 2,
+    figure=fig,
+    height_ratios=[1.4, 1],
+    hspace=0.35,
+    wspace=0.30,
+)
+
 ax_top = fig.add_subplot(gs[0, :])
-ax_bl  = fig.add_subplot(gs[1, 0])
-ax_br  = fig.add_subplot(gs[1, 1])
-dm.simple_layout(fig)
-```
+ax_bl = fig.add_subplot(gs[1, 0])
+ax_br = fig.add_subplot(gs[1, 1])
 
-### 3×2 poster
+# ... plotting ...
 
-```python
-fig = plt.figure(figsize=(dm.DW * 1.1, dm.DW * 0.95))
-gs = gridspec.GridSpec(3, 2, figure=fig, hspace=0.40, wspace=0.35)
 dm.label_axes(fig.axes)
 dm.simple_layout(fig)
 ```
+
+**Why `simple_layout` here:** the top row spans columns, so per-cell
+overflow measurement isn't well-defined. `simple_layout` solves the
+GridSpec margins directly via L-BFGS-B and produces a deterministic
+result.
+
+### 4.2 Colorbar attached to a single panel
+
+```python
+fig, axes = dm.subplots(1, 2, width="17cm", aspect="wide")
+cf = axes[0].imshow(field, cmap="dc.deep_sea")
+axes[1].plot(profile, color="oc.gray7", lw=dm.lw(1))
+fig.colorbar(cf, ax=axes[0], shrink=0.85, pad=0.02)
+
+dm.label_axes(axes)
+dm.simple_layout(fig)   # auto_layout struggles with colorbar axes
+```
+
+---
+
+## 5. Twinx (Dual Y-Axis)
+
+dartwork-mpl 0.4 monkey-patches `Axes.twinx()` so the **right spine
+is automatically visible** with the correct linewidth from the active
+style. You no longer need to call `ax2.spines["right"].set_visible(True)`.
+
+```python
+fig, ax = dm.subplots(width="13cm", aspect="wide")
+ax.bar(x, temperature, color="oc.blue5", width=0.55)
+ax.set_ylabel("Temperature (°C)")
+
+ax2 = ax.twinx()             # right spine visible by design
+ax2.plot(x, change_pct, "o-", color="oc.orange6", lw=dm.lw(1))
+ax2.set_ylabel("Change (%)", color="oc.orange7")
+ax2.tick_params(axis="y", labelcolor="oc.orange7")
+
+dm.auto_layout(fig)
+```
+
+**Why wide:** dual-axis plots crowd labels on both edges, so a wider
+canvas keeps text legible.
+
+---
+
+## 6. Layout Finalizers — `auto_layout` vs `simple_layout`
+
+| Finalizer                | When to use                                          |
+| :----------------------- | :--------------------------------------------------- |
+| `dm.auto_layout(fig)`    | **Default.** Uniform grids from `dm.subplots()`.     |
+| `dm.simple_layout(fig)`  | Custom GridSpec (spans, nested, colorbar attached).  |
+| `dm.simple_layout(fig)`  | When you need deterministic margins for golden tests.|
+| ❌ `fig.tight_layout()`  | Forbidden — collides with dartwork-mpl spines/legends.|
+
+`auto_layout` runs `simple_layout` in a measure→adjust→retry loop,
+inflating margins only on sides where text overflows. It's the safer
+default. Drop down to `simple_layout(fig)` when (a) the layout is
+exotic enough that overflow measurement is ambiguous, or (b) you
+need the cheaper non-iterative call for many small figures.
+
+---
+
+## 7. Saving the Figure
+
+Always pair plots with `dm.save_formats(fig, "name")`. It writes both
+PNG and PDF (and SVG if requested) to the rcParams output directory
+and applies the active style's dpi.
+
+```python
+dm.save_formats(fig, "phase_diagram")
+# or with explicit formats:
+dm.save_formats(fig, "phase_diagram", formats=("png", "pdf", "svg"))
+```
+
+For interactive sessions, use `dm.save_and_show(fig, "name")` — it
+saves first and then displays the figure inline.
+
+---
+
+## 8. Legacy ↔ 0.4 Cheat Sheet
+
+A single line you can grep for when migrating old code.
+
+| Legacy 0.3 pattern                              | 0.4 replacement                                       |
+| :---------------------------------------------- | :---------------------------------------------------- |
+| `figsize=(dm.SW, dm.SW * 0.7)`                  | `width="9cm", aspect="standard"`                      |
+| `figsize=(dm.MW, dm.MW * 0.7)`                  | `width="12cm", aspect="standard"`                     |
+| `figsize=(dm.TW, dm.TW * 0.55)`                 | `width="14.5cm", aspect="wide"` (or `width="13cm"`)   |
+| `figsize=(dm.DW, dm.DW * 0.5)`                  | `width="17cm", aspect="cinema"`                       |
+| `figsize=(dm.DW, dm.DW * 0.85)`                 | `width="17cm", aspect="standard"`                     |
+| `figsize=(dm.SW * 1.4, dm.SW * 1.4)`            | `width="13cm", aspect="square"`                       |
+| `figsize=(dm.cm2in(20), dm.cm2in(15))`          | `width="20cm", aspect=0.75`                           |
+| `plt.subplots(figsize=(...))`                   | `dm.subplots(width="...", aspect="...")`              |
+| `plt.figure(figsize=(...))`                     | `dm.figure(width="...", aspect="...")`                |
+| `fig.tight_layout()`                            | `dm.auto_layout(fig)` (or `dm.simple_layout(fig)`)    |
+| `plt.style.use("scientific")`                   | `dm.style.use("scientific")`                          |
+| `dm.FS_SINGLE` / `dm.FS_DOUBLE`                 | `width="9cm"` / `width="17cm"` + explicit `aspect`    |
+
+---
+
+## 9. Style Selection
+
+| Context                | Preset           | Notes                              |
+| :--------------------- | :--------------- | :--------------------------------- |
+| Default gallery        | `presentation`   | Slightly larger than `scientific`  |
+| Academic / publication | `scientific`     | Smaller, denser labels             |
+| Reports / dashboards   | `report`         | Business-facing styling            |
+| Tufte / minimal        | `minimal`        | Spine-free, data-ink focused       |
+| Slide presentations    | `presentation`   | Bold typography, thick lines       |
+| Korean text            | `report-kr`      | Pretendard font, KR-aware          |
+| Dark mode showcase     | `dark`           | Use sparingly, demo only           |
+
+Stack styles when you need a layered tweak (e.g. add a Korean font on
+top of a base preset):
+
+```python
+dm.style.use(["scientific", "lang-kr"])
+# or pass directly to subplots:
+fig, ax = dm.subplots(width="13cm", aspect="standard",
+                       style=["scientific", "lang-kr"])
+```
+
+---
+
+## 10. Typography & Color (Quick Reference)
+
+These haven't changed in 0.4 but are recapped for completeness.
+
+### 10.1 Font Sizes
+
+Use `dm.fs(level)` for relative scaling. Never hard-code `fontsize=N`.
+
+| Element              | Size                         | Weight         |
+| :------------------- | :--------------------------- | :------------- |
+| `fig.suptitle`       | `dm.fs(2)`                   | `bold`         |
+| `ax.set_title`       | `dm.fs(0)` to `dm.fs(1)`     | `bold`         |
+| Axis label           | `dm.fs(0)`                   | normal         |
+| Tick label           | `dm.fs(-0.5)`                | (set by style) |
+| Legend               | `dm.fs(-1)`                  | normal         |
+| Annotation / data    | `dm.fs(-1)` to `dm.fs(-0.5)` | normal or bold |
+
+### 10.2 Line Weights
+
+Use `dm.lw(level)` for relative scaling. Never hard-code `lw=2.5`.
+
+```python
+ax.plot(x, y, lw=dm.lw(1))            # primary trend
+ax.axhline(0, lw=dm.lw(-1), color="oc.gray5")  # reference
+```
+
+### 10.3 Colors
+
+Use named palette strings (`oc.*`, `tw.*`, `dc.*`) or constructors
+(`dm.oklch(...)`, `dm.cspace(...)`). Never raw hex or matplotlib
+single-letter codes.
+
+For fills/bands, prefer `dm.pseudo_alpha(...)` so the color stays
+solid in vector exports:
+
+```python
+fill = dm.pseudo_alpha("oc.blue5", 0.15, background="white")
+ax.fill_between(x, y_lo, y_hi, color=fill)
+```
+
+---
+
+## 11. Lint Compliance
+
+Every example is checked against
+`dartwork_mpl.asset/prompt/02-anti-patterns.yaml`. The critical rules:
+
+- `figsize=(...)` → forbidden. Use `dm.subplots(width="...", aspect="...")`.
+- `tight_layout()` → forbidden. Use `dm.auto_layout(fig)`.
+- `plt.style.use(...)` → warning. Use `dm.style.use(...)`.
+- `plt.subplots(...)` → warning. Use `dm.subplots(...)`.
+- `dm.SW/MW/TW/DW/FS_*/WIDTHS` → warning. Use `width="..cm", aspect="..."`.
+- `dm.cm2in(...)` inside `figsize=` → warning. Migrate to `width="..cm"`.
+
+Run the lint locally before opening a PR:
+
+```python
+from dartwork_mpl.lint import lint, format_report
+print(format_report(lint(open("plot_my_example.py").read())))
+```
+
+A clean example reports `✅ No issues found.`

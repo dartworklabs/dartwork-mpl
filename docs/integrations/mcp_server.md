@@ -19,14 +19,20 @@ Read-only data that the AI assistant can retrieve on demand.
 
 | URI                                       | Description                                                                 |
 | ----------------------------------------- | --------------------------------------------------------------------------- |
-| `dartwork-mpl://guide/general-guide`      | Complete usage guide — styles, colors, layout, fonts, save/export, workflow |
-| `dartwork-mpl://guide/layout-guide`       | Deep-dive into `simple_layout`, GridSpec strategies, and layout solutions   |
+| `dartwork-mpl://guide/agent-entry`        | 0.4 entry point — decision tree + always-true facts (start here)            |
+| `dartwork-mpl://guide/policy`             | 0.4 policy: width, aspect, layout, color, font, save                        |
+| `dartwork-mpl://guide/anti-patterns`      | Machine-readable lint catalog (the lint engine source)                      |
+| `dartwork-mpl://guide/recipes`            | Intent → function-call cookbook (per plot type)                             |
+| `dartwork-mpl://api/index`                | List of public dartwork-mpl callables (from `__all__`)                      |
+| `dartwork-mpl://api/{name}`               | Signature + first paragraph of docstring for a given public name            |
 | `dartwork-mpl://palette/colors`           | Full list of registered colors with hex codes (`dc.*`, `tw.*`, `oc.*`, …)  |
 | `dartwork-mpl://palette/fonts`            | Sorted list of all fonts available to matplotlib                            |
 | `dartwork-mpl://styles/list`              | Available mplstyle preset names                                             |
 | `dartwork-mpl://styles/{preset}`          | Content of a specific mplstyle preset file                                  |
 | `dartwork-mpl://templates/list`           | Available plot template types                                               |
 | `dartwork-mpl://templates/{plot_type}`    | Boilerplate Python script for a specific plot type                          |
+| `dartwork-mpl://guide/general-guide`      | _Deprecated alias_ for `guide/agent-entry` (kept for 0.3 clients)           |
+| `dartwork-mpl://guide/layout-guide`       | _Deprecated alias_ for `guide/policy` (kept for 0.3 clients)                |
 
 ### Tools
 
