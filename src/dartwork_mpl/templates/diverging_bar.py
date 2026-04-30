@@ -13,6 +13,8 @@ from matplotlib.transforms import blended_transform_factory
 
 import dartwork_mpl as dm
 
+from ..units import cm
+
 
 def plot_diverging_bar(
     labels: list[str] | None = None,
@@ -196,9 +198,9 @@ def plot_diverging_bar(
     neg_vals = neg_vals[::-1]
     pos_vals = pos_vals[::-1]
 
-    # Set default figure size using cm2in for unit conversion
+    # Set default figure size: 12 cm × 12 cm.
     if figsize is None:
-        figsize = (dm.cm2in(12), dm.cm2in(12))
+        figsize = (cm(12), cm(12))
 
     # Set default colors
     if colors is None:
