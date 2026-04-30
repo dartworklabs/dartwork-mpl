@@ -12,6 +12,7 @@ fetch the specific guide you need.
 | Width / aspect / layout / color / save policy | `dartwork-mpl://guide/policy` |
 | "How do I do X with dartwork-mpl" cookbook | `dartwork-mpl://guide/recipes` |
 | Anti-patterns to avoid (machine-readable YAML) | `dartwork-mpl://guide/anti-patterns` |
+| Migrating 0.3 code (`SW`/`MW`/`TW`/`DW`, `cm2in`, `figsize=`) | `dartwork-mpl://guide/migration` |
 | List of every public dartwork-mpl name | `dartwork-mpl://api/index` |
 | A specific function signature + docstring | `dartwork-mpl://api/{name}` |
 | All available plot template types | `dartwork-mpl://templates/list` |

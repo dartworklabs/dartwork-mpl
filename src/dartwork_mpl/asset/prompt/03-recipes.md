@@ -37,7 +37,7 @@ dm.auto_layout(fig)
 ```python
 fig, ax = dm.subplots(width="11cm", aspect="square")
 im = ax.imshow(matrix, cmap="viridis", aspect="auto")
-plt.colorbar(im, ax=ax)
+fig.colorbar(im, ax=ax)
 dm.auto_layout(fig)
 ```
 

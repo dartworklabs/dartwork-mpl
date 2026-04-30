@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pytest
 
+from dartwork_mpl import cmap as cmap_module
 from dartwork_mpl.cmap import _parse_colormap, ensure_loaded
 
 # The 16 curated colormaps (no _r variants).
@@ -210,3 +212,66 @@ class TestParseColormap:
             f"Expected 56 .txt files, got {len(txt_files)}: "
             f"{sorted(f.name for f in txt_files)}"
         )
+
+
+class TestThreadSafety:
+    """Tests for thread-safe ensure_loaded()."""
+
+    def test_module_has_lock(self) -> None:
+        """cmap module should expose a threading.Lock as ``_lock``."""
+        import threading
+
+        assert hasattr(cmap_module, "_lock")
+        # ``threading.Lock()`` returns an internal class, but it implements
+        # the lock protocol — both ``acquire`` and ``release``.
+        assert hasattr(cmap_module._lock, "acquire")
+        assert hasattr(cmap_module._lock, "release")
+        # Sanity: matches the type returned by threading.Lock factory.
+        sample_lock = threading.Lock()
+        assert type(cmap_module._lock) is type(sample_lock)
+
+    def test_concurrent_ensure_loaded_no_error(self) -> None:
+        """Concurrent ensure_loaded() calls must be safe even when many
+        threads enter simultaneously. Once loaded, subsequent calls take
+        the fast path; this test verifies the fast path is also race-free.
+        """
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            futures = [ex.submit(ensure_loaded) for _ in range(32)]
+            # Re-raises any exception from worker threads.
+            for f in futures:
+                f.result()
+
+        assert cmap_module._loaded is True
+
+    def test_double_checked_locking_prevents_duplicate_registration(
+        self,
+    ) -> None:
+        """Simulate the unloaded state and verify only one thread runs
+        the loader. We monkey-patch ``_load_colormaps`` to count how
+        many times it executes when many threads race in.
+        """
+        original_loaded = cmap_module._loaded
+        original_loader = cmap_module._load_colormaps
+
+        call_count = {"n": 0}
+
+        def _counting_loader() -> None:
+            call_count["n"] += 1
+            # No actual matplotlib mutations — we just verify the lock
+            # gates execution to a single call.
+
+        cmap_module._loaded = False
+        cmap_module._load_colormaps = _counting_loader  # type: ignore[assignment]
+        try:
+            with ThreadPoolExecutor(max_workers=16) as ex:
+                futures = [ex.submit(ensure_loaded) for _ in range(64)]
+                for f in futures:
+                    f.result()
+            assert call_count["n"] == 1, (
+                f"Loader called {call_count['n']} times; "
+                "double-checked lock failed"
+            )
+            assert cmap_module._loaded is True
+        finally:
+            cmap_module._load_colormaps = original_loader  # type: ignore[assignment]
+            cmap_module._loaded = original_loaded

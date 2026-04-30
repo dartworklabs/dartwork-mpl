@@ -104,3 +104,112 @@ class TestGenerateValidationReport:
         assert "VALIDATION REPORT" in report
         assert "OVERALL SCORE" in report
         plt.close(fig)
+
+
+class TestGetFixSuggestionsBranches:
+    """Cover the remaining branches of get_fix_suggestions()."""
+
+    def test_overflow_right(self) -> None:
+        warning = VisualWarning(
+            check_id="OVERFLOW",
+            severity=Severity.WARNING,
+            message="right overflow 8px",
+            detail={"side": "right", "px": 8},
+        )
+        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        assert any("subplots_adjust(right=" in s for s in suggestions)
+
+    def test_overflow_bottom(self) -> None:
+        warning = VisualWarning(
+            check_id="OVERFLOW",
+            severity=Severity.WARNING,
+            message="bottom overflow 6px",
+            detail={"side": "bottom", "px": 6},
+        )
+        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        assert any(
+            "subplots_adjust(bottom=" in s or "rotation=45" in s
+            for s in suggestions
+        )
+
+    def test_overflow_top(self) -> None:
+        warning = VisualWarning(
+            check_id="OVERFLOW",
+            severity=Severity.WARNING,
+            message="top overflow 4px",
+            detail={"side": "top", "px": 4},
+        )
+        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        assert any("subplots_adjust(top=" in s for s in suggestions)
+
+    def test_overlap(self) -> None:
+        warning = VisualWarning(
+            check_id="OVERLAP",
+            severity=Severity.WARNING,
+            message="text overlap",
+            detail={},
+        )
+        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        assert any("auto_layout" in s for s in suggestions)
+
+    def test_legend_overflow(self) -> None:
+        warning = VisualWarning(
+            check_id="LEGEND_OVERFLOW",
+            severity=Severity.WARNING,
+            message="legend too wide",
+            detail={"ratio": 1.2},
+        )
+        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        assert any("bbox_to_anchor" in s for s in suggestions)
+
+    def test_tick_crowd_x(self) -> None:
+        warning = VisualWarning(
+            check_id="TICK_CROWD",
+            severity=Severity.WARNING,
+            message="too many x ticks",
+            detail={"axis": "x", "count": 30},
+        )
+        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        assert any("xaxis.set_major_locator" in s for s in suggestions)
+
+    def test_tick_crowd_y(self) -> None:
+        warning = VisualWarning(
+            check_id="TICK_CROWD",
+            severity=Severity.WARNING,
+            message="too many y ticks",
+            detail={"axis": "y", "count": 24},
+        )
+        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        assert any("yaxis.set_major_locator" in s for s in suggestions)
+
+    def test_empty_axes(self) -> None:
+        warning = VisualWarning(
+            check_id="EMPTY_AXES",
+            severity=Severity.WARNING,
+            message="empty axes",
+            detail={},
+        )
+        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        assert any(
+            "ax.remove" in s or "set_visible(False)" in s for s in suggestions
+        )
+
+    def test_margin_asymmetry(self) -> None:
+        warning = VisualWarning(
+            check_id="MARGIN_ASYMMETRY",
+            severity=Severity.WARNING,
+            message="left vs right asymmetric",
+            detail={"side": "left"},
+        )
+        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        assert any("auto_layout" in s for s in suggestions)
+
+    def test_pie_label_offset(self) -> None:
+        warning = VisualWarning(
+            check_id="PIE_LABEL_OFFSET",
+            severity=Severity.WARNING,
+            message="label offset wrong",
+            detail={"ideal_r": 0.65},
+        )
+        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        assert any("pctdistance=0.65" in s for s in suggestions)

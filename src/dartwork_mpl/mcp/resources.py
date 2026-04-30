@@ -74,6 +74,23 @@ def register_resources(mcp: FastMCP) -> None:
         """DEPRECATED alias for guide/policy (kept for 0.3 clients)."""
         return get_prompt("01-policy")
 
+    @mcp.resource("dartwork-mpl://guide/migration")
+    def migration_guide() -> str:
+        """0.3 → 0.4 migration guide (width/aspect, cm2in, SW/MW/TW/DW).
+
+        Sourced from ``asset/prompt/_legacy/migration-from-0.3.md`` so
+        that 0.3 callers landing on the deprecated guides have a clear
+        next step. The full version also lives in ``docs/migration.md``
+        for the rendered Sphinx site.
+        """
+        path = _PROMPT_DIR / "_legacy" / "migration-from-0.3.md"
+        if not path.exists():
+            return (
+                "Migration guide not bundled. See "
+                "https://dartworklabs.github.io/dartwork-mpl/migration.html"
+            )
+        return path.read_text(encoding="utf-8")
+
     # ── API Reference ────────────────────────────────────────────────
 
     @mcp.resource("dartwork-mpl://api/index")
