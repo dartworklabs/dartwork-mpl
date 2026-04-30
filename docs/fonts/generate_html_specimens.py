@@ -53,10 +53,6 @@ FONT_META = {
         "description": "Semi-condensed variant balancing readability and compactness",
         "sample": "The dartwork designs beautiful data artworks since 2021.",
     },
-    "NotoSans_ExtraCondensed": {
-        "description": "Extra condensed for maximum space efficiency",
-        "sample": "The dartwork designs beautiful data artworks since 2021.",
-    },
     "Paperlogy": {
         "description": "Clean, professional font designed for documents · Korean (한글) support",
         "sample": "김도균 & 이주임 님이 만든 아름다운 페이퍼로지 폰트.",
@@ -257,7 +253,6 @@ def generate_condensed_comparison_html(families: dict[str, list[str]]) -> str:
         ("NotoSans", "Regular"),
         ("NotoSans_SemiCondensed", "Semi Condensed"),
         ("NotoSans_Condensed", "Condensed"),
-        ("NotoSans_ExtraCondensed", "Extra Condensed"),
     ]
 
     sample = "The dartwork designs beautiful data artworks since 2021."

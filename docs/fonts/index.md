@@ -74,15 +74,14 @@ and auto-registered. No system font installation needed.
 
 | Family                       | Variants | Primary Use Case                   |
 | ---------------------------- | -------- | ---------------------------------- |
-| **Roboto**                   | 15       | Default body text, general purpose |
+| **Roboto**                   | 4        | Default body text, general purpose |
 | **Inter**                    | 20       | UI text, presentations             |
 | **InterDisplay**             | 20       | Headings, titles                   |
 | **Noto Sans**                | 15       | Multi-language documents           |
 | **Noto Sans Condensed**      | 20       | Tables, dense layouts              |
 | **Noto Sans SemiCondensed**  | 20       | Labels, legends                    |
-| **Noto Sans ExtraCondensed** | 20       | Axis labels, tight spaces          |
 | **Noto Sans Math**           | 1        | Mathematical expressions           |
-| **Paperlogy**                | 9        | Korean (한글) text                 |
+| **Paperlogy**                | 4        | Korean (한글) text                 |
 
 ## Bundled Icon Fonts
 

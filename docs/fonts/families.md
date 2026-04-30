@@ -222,21 +222,6 @@ horizontal space you need to save:
 
 :::
 
-#### Noto Sans ExtraCondensed
-
-```{raw} html
-:file: _generated/notosans_extracondensed_showcase.html
-```
-
-:::{admonition} All weights
-:class: dropdown
-
-```{raw} html
-:file: _generated/notosans_extracondensed.html
-```
-
-:::
-
 ---
 
 ### Noto Sans Math
