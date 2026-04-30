@@ -67,3 +67,22 @@ def test_warning_only_once_with_default_filter():
         first = dm.SW
         second = dm.SW
     assert first == second
+
+
+def test_dir_lists_deprecated_names_for_ide_autocomplete():
+    """`dir(dartwork_mpl)` should expose deprecated 0.3 names so IDEs can
+    suggest them during migration. Each access still emits a warning."""
+    listed = set(dir(dm))
+    assert "SW" in listed
+    assert "MW" in listed
+    assert "TW" in listed
+    assert "DW" in listed
+    assert "FS_SINGLE" in listed
+    assert "FS_DOUBLE" in listed
+    assert "WIDTHS" in listed
+    assert "agent_utils" in listed
+    assert "xplot" in listed
+    # And the public 0.4 surface is still listed.
+    assert "subplots" in listed
+    assert "cm" in listed
+    assert "col1" in listed

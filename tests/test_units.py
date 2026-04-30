@@ -161,6 +161,22 @@ class TestParseAspect:
         with pytest.raises(ValueError, match="positive"):
             parse_aspect(0)
 
+    def test_rejects_bool_with_clear_message(self):
+        """`bool` is an int subclass; the message must say so explicitly
+        rather than silently accepting True/False as 1.0/0.0."""
+        with pytest.raises(ValueError, match="bool is not accepted"):
+            parse_aspect(True)
+        with pytest.raises(ValueError, match="bool is not accepted"):
+            parse_aspect(False)
+
+
+class TestParseWidthBoolRejection:
+    def test_rejects_bool_with_clear_message(self):
+        with pytest.raises(ValueError, match="bool is not accepted"):
+            parse_width(True)
+        with pytest.raises(ValueError, match="bool is not accepted"):
+            parse_width(False)
+
 
 class TestPublicSurface:
     def test_cm_inch_mm_exposed_at_top_level(self):

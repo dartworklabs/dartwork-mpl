@@ -205,6 +205,20 @@ class TestExtendedRules:
         ids = {i.rule_id for i in lint(code)}
         assert "oversize-width" not in ids
 
+    def test_oversize_width_fractional_above_17(self):
+        """17.x fractional widths above 17.0 are also flagged."""
+        for w in ("17.5cm", "17.1cm", "17.99cm"):
+            code = f'dm.subplots(width="{w}")\n'
+            ids = {i.rule_id for i in lint(code)}
+            assert "oversize-width" in ids, f"{w} should fire oversize-width"
+
+    def test_oversize_width_skips_17_0(self):
+        """Exactly 17 cm (= col2 max) is allowed."""
+        for w in ("17.0cm", "17cm"):
+            code = f'dm.subplots(width="{w}")\n'
+            ids = {i.rule_id for i in lint(code)}
+            assert "oversize-width" not in ids, f"{w} should not fire"
+
     def test_dpi_arg_fires_simple(self):
         code = "plt.figure(dpi=200)\n"
         ids = {i.rule_id for i in lint(code)}

@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added (post-release minor cleanup)
+
+- **`__dir__` exposes deprecated 0.3 names** — `dir(dartwork_mpl)`
+  now lists `SW`/`MW`/`TW`/`DW`, `FS_*`, `WIDTHS`, `agent_utils`, and
+  `xplot` so IDE autocomplete can find them during migration. Each
+  access still emits a DeprecationWarning via `__getattr__`.
+- **`oversize-width` lint rule covers fractional widths** — the rule
+  now flags `width="17.5cm"`, `"17.1cm"`, etc. Previously only
+  integer widths above 17 cm were caught.
+
+### Changed (post-release minor cleanup)
+
+- **Clearer `parse_aspect(True)` / `parse_width(True)` errors** — both
+  parsers now reject `bool` upfront with a message that explicitly
+  says "bool is not accepted", rather than silently treating
+  `True`/`False` as 1.0/0.0 (or producing an indirect "got bool"
+  message).
+- **MCP prompt input cap** — `create_plot` and `style_review` now
+  truncate `description`, `data_sample`, and `code` to 8192 characters
+  with a clear `... [truncated; ... exceeded ... chars]` marker, so
+  pathologically large inputs cannot blow the model's context budget.
+- **Narrowed `except Exception` blocks in `layout.py` and
+  `validate.py`** — the silent skip blocks around
+  `get_window_extent` now catch `(RuntimeError, ValueError,
+  AttributeError)` only, so unexpected matplotlib regressions surface
+  instead of being swallowed.
+- **`anti-patterns.yaml` resource ships `application/yaml` mime type**
+  — clients that key off mime can now auto-detect the format.
+
+### Fixed (post-release minor cleanup)
+
+- **`_check_pie_label_offset` no longer crashes on regular pies** —
+  matplotlib pie wedges have `width=None` for non-donut pies, which
+  caused a `TypeError` once the broad `except Exception` was
+  narrowed. Coerced to `1.0` at the source.
+- **`fetch_github_document` URL allowlist** — only
+  `https://raw.githubusercontent.com/` URLs are accepted; other
+  schemes (`file://`, `http://`, `ftp://`) and other hosts are
+  rejected with a clear `ValueError`. Error messages now show only
+  the exception type, not the underlying traceback.
+- **`lint(code)` docstring clarifies "Python source only"** — the
+  rules are regex-based, so feeding YAML/Markdown produces false
+  positives. The docstring now flags this explicitly.
+
 ### Removed (font asset slimming, no API impact)
 
 - **`NotoSans_ExtraCondensed` family (18 files, ~10 MB)** — the family

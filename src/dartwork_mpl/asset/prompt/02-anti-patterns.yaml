@@ -188,7 +188,7 @@ rules:
     severity: warning
     detector:
       kind: regex
-      pattern: 'width\s*=\s*["''](?:1[89]|[2-9]\d|\d{3,})(?:\.\d+)?cm["'']'
+      pattern: 'width\s*=\s*["''](?:1[89]|[2-9]\d|\d{3,}|17\.\d*[1-9]\d*)(?:\.\d+)?cm["'']'
     message: |
       `width` exceeds 17 cm (`dm.col2`). Most page layouts break
       above this threshold and produce ragged multi-figure reports.

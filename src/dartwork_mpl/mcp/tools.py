@@ -29,28 +29,35 @@ def register_tools(mcp: FastMCP) -> None:
     def fetch_github_document(url: str) -> str:
         """Fetch document content from a GitHub Raw URL.
 
-        This tool retrieves the content of a document from GitHub's
-        raw content URL. The URL should point to a raw file on GitHub,
-        typically in the format:
-        https://raw.githubusercontent.com/owner/repo/branch/path/to/file
+        Only ``https://raw.githubusercontent.com/`` URLs are accepted —
+        other schemes (``file://``, ``http://``, ``ftp://``) and other
+        hosts are rejected. This is a defence-in-depth check; the tool
+        is intended for fetching dartwork-mpl docs from the canonical
+        GitHub Raw host.
 
         Parameters
         ----------
         url : str
-            GitHub Raw URL to fetch the document from.
-            Example: https://raw.githubusercontent.com/dartworklabs/
-            dartwork-mpl/main/README.md
+            GitHub Raw URL. Example:
+            ``https://raw.githubusercontent.com/dartworklabs/dartwork-mpl/main/README.md``
 
         Returns
-        ----------
+        -------
         str
             The content of the document as a string.
 
         Raises
-        ----------
+        ------
         ValueError
-            If the URL is invalid or the request fails.
+            If the URL is not on ``raw.githubusercontent.com`` or the
+            request fails.
         """
+        allowed_prefix = "https://raw.githubusercontent.com/"
+        if not url.startswith(allowed_prefix):
+            raise ValueError(
+                f"fetch_github_document only accepts URLs starting with "
+                f"{allowed_prefix!r}; got {url!r}"
+            )
         try:
             import httpx
 
@@ -58,16 +65,19 @@ def register_tools(mcp: FastMCP) -> None:
             response.raise_for_status()
             return response.text
         except ImportError:
-            # Fallback to urllib if httpx is not available
             from urllib.request import urlopen
 
             try:
-                with urlopen(url, timeout=10) as response:
+                with urlopen(url, timeout=10) as response:  # noqa: S310 — allowlist enforced above
                     return str(response.read().decode("utf-8"))
-            except Exception as e:
-                raise ValueError(f"Failed to fetch document: {e}") from e
-        except Exception as e:
-            raise ValueError(f"Failed to fetch document: {e}") from e
+            except Exception as exc:
+                raise ValueError(
+                    f"Failed to fetch {url}: {type(exc).__name__}"
+                ) from exc
+        except Exception as exc:
+            raise ValueError(
+                f"Failed to fetch {url}: {type(exc).__name__}"
+            ) from exc
 
     # ── Color Tools ──────────────────────────────────────────────────
 

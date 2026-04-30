@@ -292,7 +292,7 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
                 continue
             try:
                 ext = txt.get_window_extent(renderer)
-            except Exception:
+            except (RuntimeError, ValueError, AttributeError):
                 continue
 
             overflow["left"] = max(overflow["left"], fig_bbox.x0 - ext.x0)
@@ -311,7 +311,7 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
                 try:
                     ext = tick.get_window_extent(renderer)
                     pos = tick.get_position()
-                except Exception:
+                except (RuntimeError, ValueError, AttributeError):
                     continue
 
                 # Ignore ticks that are outside the view limits

@@ -157,7 +157,12 @@ def parse_width(value: str | int | float) -> float:
             raise ValueError(f"width must be positive and finite (got {v})")
         return v
 
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
+    if isinstance(value, bool):
+        raise ValueError(
+            "width must be a positive number or string; bool is not accepted"
+        )
+
+    if isinstance(value, (int, float)):
         v = float(value)
         if not math.isfinite(v) or v <= 0:
             raise ValueError(
@@ -208,7 +213,14 @@ def parse_aspect(value: str | int | float) -> float:
     float
         The height/width ratio. Always strictly positive.
     """
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
+    if isinstance(value, bool):
+        # bool is a subclass of int — reject before the int/float branch.
+        raise ValueError(
+            "aspect must be a positive number; bool is not accepted "
+            "(use a token like 'standard' or a float like 0.5)"
+        )
+
+    if isinstance(value, (int, float)):
         ratio = float(value)
         if not math.isfinite(ratio) or ratio <= 0:
             raise ValueError(

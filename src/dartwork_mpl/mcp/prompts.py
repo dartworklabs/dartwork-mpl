@@ -15,6 +15,23 @@ from fastmcp import FastMCP
 
 __all__ = ["register_prompts"]
 
+_MAX_INPUT_CHARS = 8192
+
+
+def _truncate(value: str, label: str) -> str:
+    """Cap a prompt input at :data:`_MAX_INPUT_CHARS` characters.
+
+    Long inputs (e.g. a 100k-char paste) bloat the rendered prompt and
+    waste the model's context budget. We append a clear marker so the
+    model sees that truncation happened.
+    """
+    if len(value) <= _MAX_INPUT_CHARS:
+        return value
+    return (
+        value[:_MAX_INPUT_CHARS]
+        + f"\n\n... [truncated; {label} exceeded {_MAX_INPUT_CHARS} chars]"
+    )
+
 
 def register_prompts(mcp: FastMCP) -> None:
     """
@@ -38,6 +55,8 @@ def register_prompts(mcp: FastMCP) -> None:
         data_sample : str
             Optional sample data in JSON or CSV format.
         """
+        description = _truncate(description, "description")
+        data_sample = _truncate(data_sample, "data_sample")
         data_section = ""
         if data_sample:
             data_section = f"""
@@ -112,6 +131,7 @@ Generate clean, well-commented code that follows these rules strictly. Run the r
         code : str
             Python source code to review.
         """
+        code = _truncate(code, "code")
         return f"""You are a strict code reviewer for **dartwork-mpl 0.4**, a publication-quality matplotlib design system.
 
 ## Code to Review
