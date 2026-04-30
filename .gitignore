@@ -29,6 +29,9 @@ htmlcov/
 *.log
 .env
 
+# Claude Code agent harness — worktrees, transcripts, caches
+.claude/
+
 # Jupyter notebooks — use examples/ .py scripts instead
 *.ipynb
 .ipynb_checkpoints/
