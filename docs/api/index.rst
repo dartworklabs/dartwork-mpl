@@ -16,12 +16,14 @@ The essential modules you'll use in every project.
 
    Style Management <style>
    Figure Creation <figure>
+   Units (cm/inch/mm) <units>
    Layout Utilities <layout>
    Color Utilities <color>
    Formatting Utilities <formatting>
    Spine and Grid Utilities <spines>
    Save & Export <io>
    Visual Validation <validate>
+   Lint <lint>
 
 Extensions
 ----------
@@ -34,9 +36,12 @@ Additional tools for specialized use cases.
 
    Font Utilities <font>
    Icon Font System <icon>
-   Extended Plots (templates) <xplot>
+   Colormap Registry <cmap>
+   Plot Templates <templates>
    Agent Helper Utilities <helpers>
    Interactive Viewer <ui>
-   Visualization Tools <visualization>
+   Asset Diagnostics (visualization) <visualization>
+   Diagnostics (module) <diagnostics>
    Prompt Utilities <prompt>
-   Figure Constants <constant>
+   LLM Install Helpers <install>
+   Figure Constants (deprecated) <constant>

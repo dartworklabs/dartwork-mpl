@@ -26,7 +26,7 @@ fig, ax = plot_diverging_bar(
 
 The `templates` module is intentionally narrow — it grows only when a
 chart pattern repeats across enough projects to deserve a curated
-default. See [API › Extended Plots](../api/xplot.rst) for the full
+default. See [API › Extended Plots](../api/templates.rst) for the full
 parameter list.
 
 ## Diagnostics & previews (`diagnostics`)
@@ -82,5 +82,5 @@ parameter reference of the four diagnostic helpers.
 
 - **Next →** [Interactive UI](interactive.md) — launch a local web app to tweak
   parameters with sliders, export plots, and generate reproducible scripts
-- [API › Extended Plots](../api/xplot.rst) for all `templates` function signatures
+- [API › Extended Plots](../api/templates.rst) for all `templates` function signatures
 - [API › Visualization Tools](../api/visualization.rst) for diagnostic plot functions
