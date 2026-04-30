@@ -4,7 +4,7 @@ This package provides enhanced styling, color management, and various
 utility functions for Matplotlib visualizations.
 """
 
-__version__ = "0.4.0.dev0"
+__version__ = "0.4.0"
 
 # ruff: noqa: E402
 
@@ -19,6 +19,7 @@ from . import (
     font,  # noqa: F401
     helpers,  # noqa: F401
     icon,  # noqa: F401
+    lint,  # noqa: F401
     templates,  # noqa: F401
 )
 

@@ -2,35 +2,49 @@ Figure Creation
 ===============
 
 Enhanced figure and subplot creation functions that integrate with
-dartwork-mpl's style system and Zero-Resize Policy.
+dartwork-mpl's style system and the 0.4 width / aspect API.
 
 Overview
 --------
 
-The figure creation functions in dartwork-mpl provide drop-in replacements for
-matplotlib's ``plt.figure()`` and ``plt.subplots()`` with additional features:
+The figure creation functions in dartwork-mpl provide drop-in
+replacements for matplotlib's ``plt.figure()`` and ``plt.subplots()``
+with additional features:
 
-- **Style Integration**: Apply styles directly during figure creation
-- **Zero-Resize Policy**: Figure size and DPI are determined by the active style
-- **GridSpec Support**: Built-in support for complex layouts with ratio control
-- **Consistent Defaults**: Sensible defaults for publication-quality figures
+- **Free-form width**: ``width="13cm"`` / ``width=dm.cm(11.3)`` /
+  ``width=dm.col1`` instead of fixed tokens.
+- **Aspect tokens**: six named ratios (``square`` / ``portrait`` /
+  ``standard`` / ``golden`` / ``wide`` / ``cinema``) plus arbitrary
+  positive floats.
+- **Style integration**: apply styles directly during figure creation.
+- **GridSpec support**: built-in support for complex layouts with
+  ratio control.
+- **Consistent defaults**: sensible defaults for publication-quality
+  figures.
 
-Zero-Resize Policy
-------------------
+Width and aspect (0.4)
+----------------------
 
-When using dartwork-mpl's figure creation functions with a style parameter,
-the figure size and DPI are determined by the style unless explicitly overridden.
-This ensures consistency across all figures using the same style.
+Pass ``width`` (any unit-suffixed string, ``Inches`` helper, or bare
+number interpreted as cm) and ``aspect`` (named token or
+height/width float) to control figure size:
 
 .. code-block:: python
 
    import dartwork_mpl as dm
 
-   # Size determined by 'scientific' style
-   fig, ax = dm.subplots(style='scientific')
+   # Single-column report figure with the default 3:4 aspect
+   fig, ax = dm.subplots(width="9cm", aspect="standard")
 
-   # Override style's figsize while keeping other style settings
-   fig, ax = dm.subplots(style='scientific', figsize=(10, 6))
+   # Double-column figure, custom aspect
+   fig, ax = dm.subplots(width=dm.col2, aspect=0.4)
+
+   # With a style
+   fig, ax = dm.subplots(width="13cm", style='scientific')
+
+The legacy ``figsize=`` and ``dpi=`` arguments still work but emit
+``DeprecationWarning`` and are slated for removal in 0.5.0. See
+:doc:`../migration` for the full mapping from 0.3 width tokens.
 
 API Reference
 -------------
@@ -109,21 +123,19 @@ Stacking Multiple Styles
 Style-Specific Figure Sizes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Different styles define different default figure sizes:
+Each style preset ships with a sensible default width, but the
+0.4 API lets you set width / aspect explicitly per call:
 
 .. code-block:: python
 
-   # Scientific papers (typically 3.5" single column)
-   fig, ax = dm.subplots(style='scientific')  # ~3.5" wide
+   # Scientific papers — single column
+   fig, ax = dm.subplots(width=dm.col1, style='scientific')
 
-   # Reports (typically 6" wide)
-   fig, ax = dm.subplots(style='report')  # ~6" wide
+   # Reports
+   fig, ax = dm.subplots(width="13cm", style='report')
 
-   # Web graphics (typically 8" wide)
-   fig, ax = dm.subplots(style='web')  # ~8" wide
-
-   # Presentations (typically 10" wide)
-   fig, ax = dm.subplots(style='presentation')  # ~10" wide
+   # Presentations — wider aspect
+   fig, ax = dm.subplots(width=dm.col2, aspect="wide", style='presentation')
 
 Integration with Layout Functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -192,15 +204,16 @@ Best Practices
       dm.style.use('scientific')
       fig, ax = plt.subplots()
 
-2. **Let styles control figure size** unless you have specific requirements:
+2. **Pick width and aspect explicitly** so the figure size is
+   reproducible across machines and CI runs:
 
    .. code-block:: python
 
-      # Good: use style's default size
+      # Default: style's width with the standard 3:4 aspect
       fig, ax = dm.subplots(style='report')
 
-      # Only override when necessary
-      fig, ax = dm.subplots(style='report', figsize=(8, 4))  # Custom aspect ratio
+      # Or set both
+      fig, ax = dm.subplots(width="13cm", aspect=0.5, style='report')
 
 3. **Use width/height ratios** instead of manual GridSpec for simple cases:
 
@@ -218,10 +231,11 @@ Differences from Matplotlib
 
 The main differences from matplotlib's figure creation functions:
 
-1. **Style parameter**: Apply styles directly during creation
-2. **Zero-Resize Policy**: Style determines size unless overridden
-3. **Enhanced defaults**: Better default spacing and margins
-4. **Automatic imports**: No need to import matplotlib.pyplot
+1. **Style parameter**: apply styles directly during creation.
+2. **Width / aspect API**: free-form ``width=`` plus ``aspect=``
+   token / float instead of a raw ``figsize`` tuple.
+3. **Enhanced defaults**: better default spacing and margins.
+4. **Automatic imports**: no need to import ``matplotlib.pyplot``.
 
 Migration from Matplotlib
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -239,7 +253,7 @@ Migrating from matplotlib is straightforward:
    # dartwork-mpl approach
    import dartwork_mpl as dm
 
-   fig, ax = dm.subplots(style='scientific', figsize=(8, 6), dpi=100)
+   fig, ax = dm.subplots(width="20cm", aspect=6/8, style='scientific')
 
 See Also
 --------

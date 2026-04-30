@@ -12,11 +12,10 @@ Example
 
 .. code-block:: python
 
-   import matplotlib.pyplot as plt
    import numpy as np
    import dartwork_mpl as dm
 
-   fig, axes = plt.subplots(1, 3, figsize=(dm.DW, dm.DW * 0.35))
+   fig, axes = dm.subplots(1, 3, width=dm.col2, aspect=0.35)
    for ax in axes:
        ax.plot(np.linspace(0, 1, 40), np.random.rand(40), color='oc.blue6')
 
