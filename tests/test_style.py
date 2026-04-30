@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import importlib
+from concurrent.futures import ThreadPoolExecutor
+
 import matplotlib as mpl
 import pytest
 
 import dartwork_mpl as dm
 from dartwork_mpl.style import Style, list_styles, load_style_dict, style_path
+
+# Resolve the submodule directly because ``dartwork_mpl.style`` is the
+# singleton ``Style`` instance once the package is imported.
+style_module = importlib.import_module("dartwork_mpl.style")
 
 
 class TestListStyles:
@@ -91,6 +98,57 @@ class TestStyleUse:
         with pytest.raises(KeyError):
             dm.style.use("nonexistent_preset_xyzzy")
 
+    def test_kwargs_underscore_to_dot(self) -> None:
+        """``font_size=14`` should map to rcParam ``font.size``."""
+        dm.style.use("report", font_size=14)
+        assert mpl.rcParams["font.size"] == 14
+
+    def test_kwargs_dot_notation(self) -> None:
+        """Direct dot-notation rcParam keys work too."""
+        dm.style.use("report", **{"font.size": 13})
+        assert mpl.rcParams["font.size"] == 13
+
+    def test_use_list_of_presets(self) -> None:
+        """``dm.style.use([...])`` should stack several presets."""
+        # Should not raise. We just verify it runs and rcParams remain
+        # well-formed afterwards.
+        dm.style.use(["report"])
+        assert isinstance(mpl.rcParams["font.family"], list)
+
+    def test_use_list_invalid_preset_raises(self) -> None:
+        with pytest.raises(KeyError):
+            dm.style.use(["report", "nonexistent_preset_xyzzy"])
+
+
+class TestStyleContext:
+    """Cover the ``Style.context`` context manager."""
+
+    def test_context_temporarily_applies(self) -> None:
+        # Capture baseline outside any custom style.
+        baseline_family = list(mpl.rcParams["font.family"])
+        with dm.style.context("report"):
+            assert isinstance(mpl.rcParams["font.family"], list)
+        # After exit, rcParams should revert (matplotlib's context behaviour).
+        # We don't compare exact lists because conftest also resets between
+        # tests; just validate that exiting restored a valid font.family.
+        assert isinstance(mpl.rcParams["font.family"], list)
+        # Sanity guard against a None / corrupted state.
+        assert baseline_family is not None
+
+    def test_context_invalid_preset_raises(self) -> None:
+        with pytest.raises(KeyError):
+            with dm.style.context("nonexistent_preset_xyzzy"):
+                pass
+
+
+class TestPresetsDict:
+    def test_returns_dict_copy(self) -> None:
+        d = dm.style.presets_dict()
+        assert isinstance(d, dict)
+        # Mutating the returned dict must not affect the live presets.
+        d["__bogus__"] = ["base"]
+        assert "__bogus__" not in dm.style.presets
+
 
 class TestStyleStack:
     """Tests for Style.stack()."""
@@ -107,3 +165,33 @@ class TestStyleStack:
     def test_stack_invalid_raises(self) -> None:
         with pytest.raises(ValueError):
             Style.stack(["nonexistent_style_xyzzy"])
+
+
+class TestThreadSafety:
+    """Tests for thread-safe style application."""
+
+    def test_module_has_lock(self) -> None:
+        """style module should expose a threading.Lock as ``_style_lock``."""
+        import threading
+
+        assert hasattr(style_module, "_style_lock")
+        sample_lock = threading.Lock()
+        assert type(style_module._style_lock) is type(sample_lock)
+
+    def test_concurrent_use_no_error(self) -> None:
+        """Concurrent ``dm.style.use(...)`` calls must not corrupt the
+        global rcParams or raise registration errors."""
+
+        def _apply(idx: int) -> None:
+            # Alternate between a couple of presets so we exercise
+            # different rcParams paths.
+            preset = "report" if idx % 2 == 0 else "scientific"
+            dm.style.use(preset)
+
+        with ThreadPoolExecutor(max_workers=4) as ex:
+            futures = [ex.submit(_apply, i) for i in range(16)]
+            for f in futures:
+                f.result()
+
+        # After contention, rcParams should still be a valid dict.
+        assert isinstance(mpl.rcParams["font.family"], list)

@@ -6,12 +6,20 @@ matplotlib styles from the package's built-in style library.
 
 import contextlib
 import json
+import threading
 from collections.abc import Iterator
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 
 __all__ = ["Style", "style", "style_path", "list_styles", "load_style_dict"]
+
+
+# Module-level lock guarding global matplotlib state mutations
+# (rcParams, style.use). Without this, concurrent ``dm.style.use(...)``
+# calls from multiple threads can interleave rcParams updates and
+# corrupt the active style.
+_style_lock: threading.Lock = threading.Lock()
 
 
 def style_path(name: str) -> Path:
@@ -165,8 +173,12 @@ class Style:
         ensure_fonts_loaded()
         ensure_cmaps_loaded()
 
-        plt.rcParams.update(plt.rcParamsDefault)
-        plt.style.use([style_path(style_name) for style_name in style_names])
+        # Serialize global rcParams + style application across threads.
+        with _style_lock:
+            plt.rcParams.update(plt.rcParamsDefault)
+            plt.style.use(
+                [style_path(style_name) for style_name in style_names]
+            )
 
     def use(self, preset_name: str | list[str], **kwargs: float | str) -> None:
         """
@@ -233,7 +245,8 @@ class Style:
                     overrides[k_dot] = v
                 else:
                     overrides[k] = v
-            plt.rcParams.update(overrides)
+            with _style_lock:
+                plt.rcParams.update(overrides)
 
     @contextlib.contextmanager
     def context(

@@ -84,3 +84,44 @@ class TestCopyPrompt:
     def test_nonexistent_prompt_raises(self, tmp_path: Path) -> None:
         with pytest.raises(ValueError):
             copy_prompt("nonexistent_xyzzy", tmp_path)
+
+
+class TestDeprecatedGuideStubs:
+    """The 0.3 prompt files (``coding-rules``, ``general-guide``,
+    ``layout-guide``) were retired in 0.4. They MUST now be short
+    redirect stubs that point readers at the 0.4 SSOT, not stale
+    0.3 content (which would mislead an agent)."""
+
+    @pytest.mark.parametrize(
+        "name", ["coding-rules", "general-guide", "layout-guide"]
+    )
+    def test_stub_is_short(self, name: str) -> None:
+        body = get_prompt(name)
+        # Stale 0.3 files were 460 - 1180 lines. The redirect stubs are
+        # well under 100 lines; pick a generous ceiling.
+        assert body.count("\n") < 100, (
+            f"{name}.md is too long to be a redirect stub "
+            f"({body.count(chr(10))} lines); legacy 0.3 content may have "
+            "leaked back in."
+        )
+
+    @pytest.mark.parametrize(
+        "name", ["coding-rules", "general-guide", "layout-guide"]
+    )
+    def test_stub_points_at_new_ssot(self, name: str) -> None:
+        body = get_prompt(name)
+        # Each stub must mention the 0.4 SSOT files so callers can
+        # follow the redirect manually.
+        assert "00-index.md" in body, (
+            f"{name}.md should redirect to 00-index.md"
+        )
+        assert "01-policy.md" in body, f"{name}.md should mention 01-policy.md"
+
+    @pytest.mark.parametrize(
+        "name", ["coding-rules", "general-guide", "layout-guide"]
+    )
+    def test_stub_marks_as_deprecated(self, name: str) -> None:
+        body = get_prompt(name)
+        assert "DEPRECATED" in body or "Deprecated" in body, (
+            f"{name}.md must keep its deprecation notice"
+        )

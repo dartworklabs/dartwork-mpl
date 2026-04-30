@@ -41,13 +41,25 @@ class Rule:
 
 @dataclass(frozen=True)
 class Issue:
-    """A detected violation."""
+    """A detected violation.
+
+    ``column`` is the absolute byte offset of the match in the source
+    string (0-indexed). It is included to disambiguate multiple
+    violations on the same line — ``(rule_id, line)`` alone collapses
+    them and hides the second occurrence from auto-fixers.
+
+    ``fix_suggestion`` mirrors the YAML field of the same name and is
+    surfaced inline by :func:`format_report` so AI agents can apply a
+    fix without a second round-trip.
+    """
 
     rule_id: str
     severity: str
     message: str
     line: int | None = None
     snippet: str | None = None
+    column: int | None = None
+    fix_suggestion: str | None = None
 
 
 def load_rules(path: Path | None = None) -> list[Rule]:
@@ -108,6 +120,8 @@ def _scan_one(code: str, rule: Rule) -> list[Issue]:
                     message=rule.message,
                     line=line,
                     snippet=snippet,
+                    column=m.start(),
+                    fix_suggestion=rule.fix_suggestion,
                 )
             )
     elif rule.detector_kind == "substring":
@@ -123,6 +137,8 @@ def _scan_one(code: str, rule: Rule) -> list[Issue]:
                     severity=rule.severity,
                     message=rule.message,
                     line=line,
+                    column=found,
+                    fix_suggestion=rule.fix_suggestion,
                 )
             )
             idx = found + len(rule.detector_value)
@@ -143,14 +159,21 @@ def lint(code: str, *, rules: Iterable[Rule] | None = None) -> list[Issue]:
     Returns
     -------
     list[Issue]
-        Issues in declaration order, deduplicated by (rule_id, line).
+        Issues in declaration order, deduplicated by
+        ``(rule_id, column)`` so multiple violations on the same line
+        are reported separately.
     """
     rule_list = list(rules) if rules is not None else load_rules()
     issues: list[Issue] = []
+    # Dedupe by (rule_id, absolute match offset). ``column`` is the
+    # absolute character offset of the match, which is unique per
+    # occurrence even when several violations share a line. Using
+    # ``(rule_id, line)`` (the previous key) collapsed them and hid
+    # the second match from agents trying to auto-fix.
     seen: set[tuple[str, int | None]] = set()
     for rule in rule_list:
         for issue in _scan_one(code, rule):
-            key = (issue.rule_id, issue.line)
+            key = (issue.rule_id, issue.column)
             if key in seen:
                 continue
             seen.add(key)
@@ -159,11 +182,16 @@ def lint(code: str, *, rules: Iterable[Rule] | None = None) -> list[Issue]:
 
 
 def format_report(issues: list[Issue]) -> str:
-    """Render issues as a multi-line `[SEV] rule-id: message` report.
+    """Render issues as a multi-line ``[SEV] rule-id: message`` report.
 
     The full message is preserved (including any subsequent lines from
     a YAML ``|`` block scalar) and indented under the header line so
     reports stay readable in plain-text MCP/CLI output.
+
+    If a rule provides a ``fix_suggestion``, it is emitted on its own
+    line directly after the message as ``→ fix: <suggestion>`` so AI
+    agents can lift the replacement directly without a second
+    round-trip.
     """
     if not issues:
         return "✅ No issues found."
@@ -182,4 +210,6 @@ def format_report(issues: list[Issue]) -> str:
         )
         for tail in msg_lines[1:]:
             lines.append(f"    {tail}" if tail else "")
+        if issue.fix_suggestion:
+            lines.append(f"  → fix: {issue.fix_suggestion}")
     return "\n".join(lines)

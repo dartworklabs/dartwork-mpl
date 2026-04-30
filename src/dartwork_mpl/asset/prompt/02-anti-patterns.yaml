@@ -99,7 +99,7 @@ rules:
       or `dm.col1`/`dm.col2` for academic columns.
 
   - id: dpi-arg
-    severity: warning
+    severity: critical
     detector:
       kind: regex
       # Allow one level of nested parens (e.g. ``figsize=(8, 6)``)
@@ -113,6 +113,10 @@ rules:
       `dpi=` should not be set per-figure. The active dartwork-mpl
       style controls dpi (display vs savefig). Direct
       ``savefig(dpi=...)`` is flagged separately by ``savefig-direct``.
+      Severity raised to ``critical`` in 0.4.x because ``dpi=`` on
+      ``plt.figure``/``dm.figure``/``dm.subplots`` produces inconsistent
+      output across machines and is just as forbidden as ``figsize=``
+      (see ``00-index.md``).
 
   - id: raw-hex-color
     severity: info

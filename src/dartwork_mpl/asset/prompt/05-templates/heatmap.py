@@ -1,6 +1,5 @@
 """8x8 random heatmap with colorbar."""
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 import dartwork_mpl as dm
@@ -10,7 +9,7 @@ data = rng.random(size=(8, 8))
 
 fig, ax = dm.subplots(width="11cm", aspect="square")
 im = ax.imshow(data, cmap="viridis", aspect="auto")
-plt.colorbar(im, ax=ax)
+fig.colorbar(im, ax=ax)
 ax.set_xlabel("Column")
 ax.set_ylabel("Row")
 dm.auto_layout(fig)

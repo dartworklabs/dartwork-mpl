@@ -4,6 +4,7 @@ Registers custom fonts from the package's asset/font directory with
 matplotlib's internal font manager.
 """
 
+import threading
 from pathlib import Path
 
 from matplotlib import font_manager
@@ -28,11 +29,23 @@ def _add_fonts() -> None:
 
 
 _loaded: bool = False
+_lock: threading.Lock = threading.Lock()
 
 
 def ensure_loaded() -> None:
-    """Ensure custom fonts are loaded and registered."""
+    """Ensure custom fonts are loaded and registered.
+
+    Thread-safe: uses double-checked locking to avoid duplicate
+    font registration when called concurrently from multiple threads.
+    """
     global _loaded
-    if not _loaded:
+
+    # Fast path: skip lock once already loaded.
+    if _loaded:
+        return
+
+    with _lock:
+        if _loaded:
+            return
         _add_fonts()
         _loaded = True

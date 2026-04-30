@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **`dartwork-mpl://guide/migration` MCP resource** — the 0.3 → 0.4
+  migration guide is now exposed at a stable URI (sourced from
+  `asset/prompt/_legacy/migration-from-0.3.md`) so 0.3 clients
+  landing on the deprecated guides have a clear next step. Listed in
+  `dartwork_mpl_info()` and the `00-index.md` decision tree.
+- **Lint output now surfaces fix suggestions** —
+  `format_report(...)` emits `→ fix: <suggestion>` directly under
+  each issue when the rule's YAML entry includes a `fix_suggestion`.
+  Lets MCP/CLI consumers (and AI agents) apply replacements without
+  a second round-trip.
+- **`Issue.column` and `Issue.fix_suggestion` fields** — the lint
+  `Issue` dataclass now carries the absolute match offset and the
+  rule's fix suggestion. The dedupe key inside `lint(...)` switched
+  from `(rule_id, line)` to `(rule_id, column)` so multiple
+  violations on the same line are reported separately.
+- **Thread-safe `ensure_loaded` for fonts and colormaps** —
+  `dartwork_mpl.cmap.ensure_loaded()` and
+  `dartwork_mpl.font.ensure_loaded()` now use a module-level
+  `threading.Lock` with double-checked locking, eliminating a
+  `ValueError` race when two threads first import the package
+  concurrently. `dartwork_mpl.style.Style.stack(...)` is likewise
+  guarded so concurrent `dm.style.use(...)` calls cannot interleave
+  `rcParams` mutations.
+- **Test isolation conftest** — `tests/conftest.py` now ships an
+  autouse fixture that closes every figure and restores rcParams
+  defaults between tests, preventing style/figure leak across the
+  834-test suite.
+- **Smoke tests for `dartwork_mpl.helpers.*`** — `test_helpers_*.py`
+  files cover `quality`, `formatting` (deprecated alias),
+  `colors`, `labels`, and `data`, raising the previously
+  near-zero coverage on those modules.
+- **Branch coverage for `validate_enhanced.get_fix_suggestions`** —
+  added cases for OVERFLOW (right/bottom/top), OVERLAP,
+  LEGEND_OVERFLOW, TICK_CROWD (x/y), EMPTY_AXES, MARGIN_ASYMMETRY,
+  and PIE_LABEL_OFFSET so every public branch of the suggestion
+  table is exercised.
+- **Branch coverage for `style.Style`** — kwargs override
+  (`font_size=14` and dot-notation), list-of-presets `use(...)`,
+  `presets_dict()` mutation isolation, and the `context(...)`
+  context manager.
+
+### Changed
+
+- **`dpi-arg` lint severity raised to `critical`** — `dpi=` on
+  `plt.figure` / `dm.figure` / `dm.subplots` now matches
+  `figsize-direct` in severity, aligning the rule with the
+  always-true facts in `00-index.md`. `savefig(dpi=...)` remains
+  owned by `savefig-direct` (warning).
+- **Deprecated 0.3 prompt files reduced to redirect stubs** —
+  `coding-rules.md`, `general-guide.md`, and `layout-guide.md` no
+  longer carry stale 0.3 content (which contradicted the 0.4
+  width/aspect API). They now point at `00-index.md`,
+  `01-policy.md`, `03-recipes.md`, and the migration guide. MCP
+  URIs are unchanged.
+- **`03-recipes.md` heatmap and bundled `heatmap.py` / `contour.py`
+  templates** — switched from `plt.colorbar(...)` to
+  `fig.colorbar(...)` so the figure-first idiom is consistent and
+  copy-pasted recipes don't depend on an unimported `plt`.
+
 ### Fixed
 
 - **`Axes.twinx` reentrance guard** — the monkey-patch in

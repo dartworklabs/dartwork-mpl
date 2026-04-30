@@ -103,6 +103,24 @@ class TestMcpResources:
         assert isinstance(guide, str)
         assert len(guide) > 0
 
+    def test_migration_guide_returns_string(self) -> None:
+        """Migration guide resource (added in 0.4.x) is registered and
+        sources from ``asset/prompt/_legacy/migration-from-0.3.md``."""
+        from dartwork_mpl.mcp.resources import register_resources
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "resource")
+        register_resources(mock_mcp)
+
+        assert "dartwork-mpl://guide/migration" in captured, (
+            "guide/migration MCP URI must be registered"
+        )
+        body = captured["dartwork-mpl://guide/migration"]()
+        assert isinstance(body, str)
+        assert len(body) > 0
+        # The bundled stub points at the docs site or the underlying md.
+        assert "0.3" in body or "migration" in body.lower()
+
     def test_palette_colors_returns_json(self) -> None:
         """palette/colors resource returns valid JSON with color entries."""
         from dartwork_mpl.mcp.resources import register_resources
@@ -423,6 +441,19 @@ class TestMcpTools:
         assert "resources" in info
         assert "tools" in info
         assert "prompts" in info
+
+    def test_dartwork_mpl_info_advertises_migration(self) -> None:
+        """The 0.4.x patch added a `guide/migration` resource — it MUST
+        appear in the resources list returned by ``dartwork_mpl_info``."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        result = captured["dartwork_mpl_info"]()
+        info = json.loads(result)
+        assert "dartwork-mpl://guide/migration" in info["resources"]
 
 
 # ── Prompt Tests ─────────────────────────────────────────────────────

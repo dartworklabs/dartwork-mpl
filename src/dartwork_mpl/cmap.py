@@ -4,6 +4,7 @@ Loads custom colormaps from text files in the package's asset/cmap
 directory and registers them with matplotlib.
 """
 
+import threading
 from pathlib import Path
 
 import matplotlib as mpl
@@ -74,11 +75,25 @@ def _load_colormaps() -> None:
 
 
 _loaded: bool = False
+_lock: threading.Lock = threading.Lock()
 
 
 def ensure_loaded() -> None:
-    """Ensure all custom colormaps are loaded and registered."""
+    """Ensure all custom colormaps are loaded and registered.
+
+    Thread-safe: uses double-checked locking to avoid re-registering
+    colormaps with matplotlib's registry, which would raise ValueError.
+    """
     global _loaded
-    if not _loaded:
+
+    # Fast path: avoid lock acquisition once loaded.
+    if _loaded:
+        return
+
+    with _lock:
+        # Re-check inside the lock in case another thread loaded while
+        # we were waiting.
+        if _loaded:
+            return
         _load_colormaps()
         _loaded = True

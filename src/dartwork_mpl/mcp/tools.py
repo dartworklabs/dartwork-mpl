@@ -319,6 +319,7 @@ def register_tools(mcp: FastMCP) -> None:
                     "dartwork-mpl://guide/policy",
                     "dartwork-mpl://guide/anti-patterns",
                     "dartwork-mpl://guide/recipes",
+                    "dartwork-mpl://guide/migration",
                     "dartwork-mpl://api/index",
                     "dartwork-mpl://api/{name}",
                     # Palettes / styles / templates

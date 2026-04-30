@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dartwork_mpl.lint import Issue, Rule, lint, load_rules
+from dartwork_mpl.lint import Issue, Rule, format_report, lint, load_rules
 
 GOOD_CODE = """
 import matplotlib.pyplot as plt
@@ -210,6 +210,14 @@ class TestExtendedRules:
         ids = {i.rule_id for i in lint(code)}
         assert "dpi-arg" in ids
 
+    def test_dpi_arg_is_critical(self):
+        """Severity was raised from ``warning`` to ``critical`` in
+        0.4.x to align with ``00-index.md`` and ``figsize-direct``."""
+        code = "plt.figure(dpi=200)\n"
+        issues = [i for i in lint(code) if i.rule_id == "dpi-arg"]
+        assert issues, "dpi-arg rule did not fire"
+        assert issues[0].severity == "critical"
+
     def test_dpi_arg_fires_with_inner_parens(self):
         # Regression: the prior ``[^)]*`` regex stopped at the first
         # ``)``, missing this common spelling.
@@ -230,6 +238,79 @@ class TestExtendedRules:
         code = 'fig.savefig("out.png", dpi=300)\n'
         ids = {i.rule_id for i in lint(code)}
         assert "dpi-arg" not in ids
+
+
+class TestDedupeKey:
+    """Issues on the same line at different columns must NOT collapse.
+
+    Regression for the prior ``(rule_id, line)`` dedupe key, which hid
+    the second violation from auto-fixers.
+    """
+
+    def test_two_figsize_calls_same_line(self) -> None:
+        # Two ``plt.subplots(figsize=...)`` invocations chained on a
+        # single line. Both should be reported.
+        code = (
+            "fig1, ax1 = plt.subplots(figsize=(5,3)); "
+            "fig2, ax2 = plt.subplots(figsize=(7,4))\n"
+        )
+        issues = [i for i in lint(code) if i.rule_id == "figsize-direct"]
+        assert len(issues) == 2, (
+            f"expected 2 figsize-direct issues on the same line, "
+            f"got {len(issues)}: {issues}"
+        )
+        # Distinct columns, both populated.
+        cols = {i.column for i in issues}
+        assert None not in cols
+        assert len(cols) == 2
+
+    def test_two_figsize_calls_different_lines(self) -> None:
+        # Sanity: cross-line dedup still doesn't collapse legitimate
+        # separate occurrences.
+        code = (
+            "fig1, ax1 = plt.subplots(figsize=(5,3))\n"
+            "fig2, ax2 = plt.subplots(figsize=(7,4))\n"
+        )
+        issues = [i for i in lint(code) if i.rule_id == "figsize-direct"]
+        assert len(issues) == 2
+
+    def test_issue_carries_column(self) -> None:
+        code = "plt.subplots(figsize=(5,3))\n"
+        issues = [i for i in lint(code) if i.rule_id == "figsize-direct"]
+        assert issues
+        assert issues[0].column is not None and issues[0].column >= 0
+
+
+class TestFormatReportFixSuggestion:
+    """``format_report`` must emit ``→ fix:`` lines for rules whose
+    YAML entry includes a ``fix_suggestion``."""
+
+    def test_fix_suggestion_emitted(self) -> None:
+        code = "plt.subplots(figsize=(5, 3))\n"
+        report = format_report(lint(code))
+        assert "→ fix:" in report, (
+            f"format_report should include a fix line; got:\n{report}"
+        )
+        # The bundled fix_suggestion for figsize-direct uses ``dm.subplots``.
+        assert "dm.subplots" in report
+
+    def test_no_fix_line_when_clean(self) -> None:
+        report = format_report([])
+        assert "→ fix:" not in report
+
+    def test_issue_default_fix_suggestion_none(self) -> None:
+        # Hand-built Issue without fix_suggestion still renders without
+        # the ``→ fix:`` line.
+        issues = [
+            Issue(
+                rule_id="figsize-direct",
+                severity="critical",
+                message="msg",
+                line=5,
+            )
+        ]
+        report = format_report(issues)
+        assert "→ fix:" not in report
 
 
 class TestBundledTemplatesLintClean:
