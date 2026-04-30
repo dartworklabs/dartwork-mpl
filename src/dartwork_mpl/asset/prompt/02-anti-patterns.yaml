@@ -106,3 +106,78 @@ rules:
     message: |
       `dpi=` should not be set per-figure. The active dartwork-mpl
       style controls dpi (display vs savefig).
+
+  - id: raw-hex-color
+    severity: info
+    detector:
+      kind: regex
+      pattern: '\b(?:color|c)\s*=\s*["'']#[0-9a-fA-F]{3,8}["'']'
+    message: |
+      Raw hex colors bypass dartwork-mpl's color system. Prefer named
+      tokens such as `dm.oc.blue6` (Open Color), `dm.tw.sky500`
+      (Tailwind), or `dm.dc.blue500` (dartwork core).
+    why: |
+      Named palettes give consistent perception across reports and
+      let style presets remap colors centrally.
+    fix_suggestion: 'color=dm.oc.blue6'
+
+  - id: fontsize-literal
+    severity: warning
+    detector:
+      kind: regex
+      pattern: '\bfontsize\s*=\s*\d+(?:\.\d+)?'
+    message: |
+      `fontsize=<n>` hardcodes a pt size and bypasses the active
+      style preset. Use `dm.fs(n)` for an offset from the style's
+      base size, or rely on the style defaults.
+    fix_suggestion: 'fontsize=dm.fs(0)'
+
+  - id: linewidth-literal
+    severity: warning
+    detector:
+      kind: regex
+      pattern: '\b(?:linewidth|lw)\s*=\s*(?!0(?![\.\d]))\d+(?:\.\d+)?'
+    message: |
+      `linewidth=<n>` hardcodes a line width. Use `dm.lw(n)` for a
+      relative offset from the active style. (`linewidth=0`, used
+      to disable a border, is allowed.)
+    fix_suggestion: 'linewidth=dm.lw(0)'
+
+  - id: savefig-direct
+    severity: warning
+    detector:
+      kind: regex
+      pattern: '\b(?:fig|plt)\.savefig\s*\('
+    message: |
+      Direct `savefig(...)` bypasses the dartwork-mpl save preset
+      (multi-format, dpi, metadata). Use
+      `dm.save_formats(fig, "name")` for scripts or
+      `dm.save_and_show(fig, "name")` for notebooks.
+    fix_suggestion: 'dm.save_formats(fig, "name")'
+
+  - id: jet-cmap
+    severity: warning
+    detector:
+      kind: regex
+      pattern: 'cmap\s*=\s*["''](?:jet|hsv|gist_rainbow|gist_ncar|nipy_spectral|rainbow)["'']'
+    message: |
+      Rainbow colormaps (`jet`, `hsv`, `gist_rainbow`, `gist_ncar`,
+      `nipy_spectral`, `rainbow`) misrepresent ordinal data. Use a
+      perceptually uniform colormap (`viridis`, `cividis`, `inferno`,
+      `magma`, `plasma`) or one of the dartwork-registered colormaps
+      (`dm.list_colormaps()`).
+    fix_suggestion: 'cmap="viridis"'
+
+  - id: oversize-width
+    severity: warning
+    detector:
+      kind: regex
+      pattern: 'width\s*=\s*["''](?:1[89]|[2-9]\d|\d{3,})(?:\.\d+)?cm["'']'
+    message: |
+      `width` exceeds 17 cm (`dm.col2`). Most page layouts break
+      above this threshold and produce ragged multi-figure reports.
+      Reduce to 17 cm or split into a multi-row layout.
+    why: |
+      Snap widths to the 0.5 cm grid and keep ≤ 5 distinct widths
+      per project for cross-figure consistency.
+    fix_suggestion: 'width="17cm"'

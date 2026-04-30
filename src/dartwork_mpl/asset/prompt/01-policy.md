@@ -23,8 +23,8 @@ Rules in this document are split into two tiers:
   - a raw number: `13` (interpreted as cm)
   - the academic sugar constants `dm.col1` (= 9 cm) or `dm.col2`
     (= 17 cm).
-- **Recommended.** Keep widths at or below 17 cm — most page layouts
-  break beyond that.
+- **Enforced.** Keep widths at or below 17 cm — most page layouts
+  break beyond that (lint warning: `oversize-width`).
 - **Recommended.** Snap widths to the 0.5 cm grid (9.0, 9.5, 10.0…)
   for cross-figure consistency.
 - **Recommended.** Within one project, keep the number of distinct
@@ -56,17 +56,25 @@ Rules in this document are split into two tiers:
 - Use named palettes: `oc.*` (Open Color), `tw.*` (Tailwind),
   `dc.*` (dartwork core), `md.*` (Material), `ad.*` (Ant),
   `cu.*` (Chakra), `pr.*` (Primer).
-- Raw hex strings work but trigger a lint info (prefer named).
-- For colormaps: `viridis`, `magma`, `cividis`, `plasma`, etc. —
-  perceptually uniform recommended. Avoid `jet` and other rainbow
-  colormaps. dartwork-mpl also registers domain-specific palettes
-  via `dm.cmap` — see `dm.list_colormaps()` for the current set.
+- **Enforced.** Raw hex strings (`color="#abcdef"`) work but trigger
+  a lint info — prefer named tokens (`raw-hex-color`).
+- **Enforced.** For colormaps, avoid `jet` and other rainbow
+  colormaps (`hsv`, `gist_rainbow`, `gist_ncar`, `nipy_spectral`,
+  `rainbow`); they misrepresent ordinal data (lint warning:
+  `jet-cmap`). Use perceptually uniform options: `viridis`, `magma`,
+  `cividis`, `plasma`, `inferno`. dartwork-mpl also registers
+  domain-specific palettes via `dm.cmap` — see
+  `dm.list_colormaps()` for the current set.
 
 ## Font and weight
 
-- Do **not** pass `fontsize=` literals. Use `dm.fs(n)` for an offset
-  from the active style's base size. Same for `dm.fw(n)` (weight)
-  and `dm.lw(n)` (line width).
+- **Enforced.** Do **not** pass `fontsize=<literal>` (lint warning:
+  `fontsize-literal`). Use `dm.fs(n)` for an offset from the active
+  style's base size, or rely on style defaults.
+- **Enforced.** Do **not** pass `linewidth=<literal>` / `lw=<literal>`
+  (lint warning: `linewidth-literal`). Use `dm.lw(n)` instead.
+  `linewidth=0` is allowed as the canonical "no border" idiom.
+- Same recommendation for `dm.fw(n)` (weight).
 
 ## Save and display
 
@@ -74,6 +82,8 @@ Rules in this document are split into two tiers:
   inline preview).
 - Prefer `dm.save_formats(fig, "name", formats=("png","svg"))` for
   scripts (multi-format, no preview).
+- **Enforced.** Direct `fig.savefig(...)` / `plt.savefig(...)`
+  bypasses the dartwork save preset (lint warning: `savefig-direct`).
 - Never end a figure with just `plt.show()` — the rendered artifact
   must be persisted.
 

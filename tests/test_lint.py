@@ -53,6 +53,18 @@ class TestLoadRules:
         }:
             assert required in ids
 
+    def test_includes_extended_rule_ids(self):
+        ids = {r.id for r in load_rules()}
+        for required in {
+            "raw-hex-color",
+            "fontsize-literal",
+            "linewidth-literal",
+            "savefig-direct",
+            "jet-cmap",
+            "oversize-width",
+        }:
+            assert required in ids
+
 
 class TestLint:
     def test_good_code_has_no_critical_issues(self):
@@ -107,3 +119,68 @@ class TestIssue:
             pass
         else:
             raise AssertionError("Issue should be frozen")
+
+
+class TestExtendedRules:
+    """Coverage for the 0.4 lint expansion (raw-hex, fontsize, linewidth, savefig, jet-cmap, oversize-width)."""
+
+    def test_raw_hex_color_fires(self):
+        code = 'ax.bar(x, y, color="#ff0000")\n'
+        ids = {i.rule_id for i in lint(code)}
+        assert "raw-hex-color" in ids
+
+    def test_raw_hex_color_skips_named_token(self):
+        code = "ax.bar(x, y, color=dm.oc.red6)\n"
+        ids = {i.rule_id for i in lint(code)}
+        assert "raw-hex-color" not in ids
+
+    def test_fontsize_literal_fires(self):
+        code = 'ax.text(0, 0, "hi", fontsize=12)\n'
+        ids = {i.rule_id for i in lint(code)}
+        assert "fontsize-literal" in ids
+
+    def test_fontsize_literal_skips_helper(self):
+        code = 'ax.text(0, 0, "hi", fontsize=dm.fs(0))\n'
+        ids = {i.rule_id for i in lint(code)}
+        assert "fontsize-literal" not in ids
+
+    def test_linewidth_literal_fires(self):
+        code = "ax.plot(x, y, linewidth=2)\n"
+        ids = {i.rule_id for i in lint(code)}
+        assert "linewidth-literal" in ids
+
+    def test_linewidth_literal_allows_zero(self):
+        # linewidth=0 is the canonical no-border idiom; must not fire.
+        code = "ax.bar(x, y, linewidth=0)\n"
+        ids = {i.rule_id for i in lint(code)}
+        assert "linewidth-literal" not in ids
+
+    def test_savefig_direct_fires(self):
+        code = 'fig.savefig("out.png")\n'
+        ids = {i.rule_id for i in lint(code)}
+        assert "savefig-direct" in ids
+
+    def test_savefig_direct_skips_dm_helper(self):
+        code = 'dm.save_formats(fig, "out")\n'
+        ids = {i.rule_id for i in lint(code)}
+        assert "savefig-direct" not in ids
+
+    def test_jet_cmap_fires(self):
+        code = 'plt.imshow(z, cmap="jet")\n'
+        ids = {i.rule_id for i in lint(code)}
+        assert "jet-cmap" in ids
+
+    def test_jet_cmap_skips_perceptual(self):
+        code = 'plt.imshow(z, cmap="viridis")\n'
+        ids = {i.rule_id for i in lint(code)}
+        assert "jet-cmap" not in ids
+
+    def test_oversize_width_fires(self):
+        code = 'dm.subplots(width="20cm")\n'
+        ids = {i.rule_id for i in lint(code)}
+        assert "oversize-width" in ids
+
+    def test_oversize_width_skips_within_limit(self):
+        code = 'dm.subplots(width="17cm")\n'
+        ids = {i.rule_id for i in lint(code)}
+        assert "oversize-width" not in ids
