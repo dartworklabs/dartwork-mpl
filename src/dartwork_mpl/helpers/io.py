@@ -13,6 +13,8 @@ from matplotlib.figure import Figure
 
 import dartwork_mpl as dm
 
+from ..units import cm
+
 
 def save_figure(
     fig: Figure,
@@ -68,7 +70,8 @@ def create_figure_with_style(
     style : str
         Style preset name
     figsize : tuple[float, float] | None
-        Figure size (defaults to DW x DW*0.6)
+        Figure size (defaults to 17 cm wide × ~10.2 cm tall, the
+        former ``DW`` two-column figure preset).
     dpi : int
         Figure DPI
 
@@ -84,9 +87,10 @@ def create_figure_with_style(
     # Apply style
     dm.style.use(style)
 
-    # Default size
+    # Default size: previously ``DW = 17 cm``, height = width * 0.6.
     if figsize is None:
-        figsize = (dm.DW, dm.DW * 0.6)
+        width = cm(17)
+        figsize = (width, width * 0.6)
 
     # Create figure
     fig = plt.figure(figsize=figsize, dpi=dpi)
