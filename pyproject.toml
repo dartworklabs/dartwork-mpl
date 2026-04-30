@@ -32,7 +32,9 @@ ui = "dartwork_mpl.ui.__main__:main"
 
 [project.optional-dependencies]
 mcp = [
-    "fastmcp>=2.13.3",
+    # Cap below 4 — 3.x is the latest tested major; 4.x has not been
+    # vetted and may rename/remove the introspection APIs we use.
+    "fastmcp>=2.13.3,<4",
     "httpx>=0.27.0",
 ]
 ui = [
@@ -45,6 +47,24 @@ ui = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+# Explicit sdist whitelist. Without this, hatch defaults to "everything
+# not in .gitignore", which sweeps in worktree caches, docs/_build, .venv
+# leftovers, etc. — easily pushing the tarball past PyPI's 100 MB
+# per-file ceiling. We ship just the package + license + top-level
+# metadata; the bundled fonts (~87 MB) live under src/dartwork_mpl/asset
+# and are picked up by the package include.
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/dartwork_mpl",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+    "pyproject.toml",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dartwork_mpl"]
 
 [dependency-groups]
 dev = [

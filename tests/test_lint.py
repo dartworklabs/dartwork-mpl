@@ -149,11 +149,31 @@ class TestExtendedRules:
         ids = {i.rule_id for i in lint(code)}
         assert "linewidth-literal" in ids
 
+    def test_linewidth_literal_fires_on_decimal_ge_one(self):
+        # 1.5 still bypasses the style → warn.
+        code = "ax.plot(x, y, linewidth=2.5)\n"
+        ids = {i.rule_id for i in lint(code)}
+        assert "linewidth-literal" in ids
+
     def test_linewidth_literal_allows_zero(self):
         # linewidth=0 is the canonical no-border idiom; must not fire.
         code = "ax.bar(x, y, linewidth=0)\n"
         ids = {i.rule_id for i in lint(code)}
         assert "linewidth-literal" not in ids
+
+    def test_linewidth_literal_allows_sub_one_hairline(self):
+        # Sub-1 hairline widths (e.g. 0.3, 0.5, 0.8) are common,
+        # intentional decoration in bundled templates and don't
+        # conflict with the active style. Must not fire.
+        for code in (
+            "ax.bar(x, y, edgecolor='white', linewidth=0.3)\n",
+            "ax.axvline(0, color='black', linewidth=0.5)\n",
+            "ax.plot(x, y, linewidth=0.8)\n",
+        ):
+            ids = {i.rule_id for i in lint(code)}
+            assert "linewidth-literal" not in ids, (
+                f"sub-1 linewidth should not fire: {code!r}"
+            )
 
     def test_savefig_direct_fires(self):
         code = 'fig.savefig("out.png")\n'
@@ -184,3 +204,65 @@ class TestExtendedRules:
         code = 'dm.subplots(width="17cm")\n'
         ids = {i.rule_id for i in lint(code)}
         assert "oversize-width" not in ids
+
+    def test_dpi_arg_fires_simple(self):
+        code = "plt.figure(dpi=200)\n"
+        ids = {i.rule_id for i in lint(code)}
+        assert "dpi-arg" in ids
+
+    def test_dpi_arg_fires_with_inner_parens(self):
+        # Regression: the prior ``[^)]*`` regex stopped at the first
+        # ``)``, missing this common spelling.
+        for code in (
+            "plt.figure(figsize=(8, 6), dpi=200)\n",
+            'dm.subplots(width="9cm", figsize=(7, 4), dpi=300)\n',
+            "plt.subplots(nrows=2, ncols=3, figsize=(8, 4), dpi=150)\n",
+        ):
+            ids = {i.rule_id for i in lint(code)}
+            assert "dpi-arg" in ids, (
+                f"dpi= inside subplots/figure with inner parens "
+                f"should still fire: {code!r}"
+            )
+
+    def test_dpi_arg_skips_savefig(self):
+        # ``savefig(dpi=...)`` is owned by the ``savefig-direct`` rule,
+        # not ``dpi-arg``.
+        code = 'fig.savefig("out.png", dpi=300)\n'
+        ids = {i.rule_id for i in lint(code)}
+        assert "dpi-arg" not in ids
+
+
+class TestBundledTemplatesLintClean:
+    """The 12 prompt-asset templates ship as the canonical examples
+    agents copy from. They must lint clean against the very rules
+    they teach — otherwise the linter contradicts the templates.
+    """
+
+    def test_all_prompt_templates_lint_clean(self) -> None:
+        from pathlib import Path
+
+        from dartwork_mpl.lint import lint
+
+        templates_dir = (
+            Path(__file__).resolve().parent.parent
+            / "src"
+            / "dartwork_mpl"
+            / "asset"
+            / "prompt"
+            / "05-templates"
+        )
+        assert templates_dir.is_dir(), (
+            f"templates directory missing: {templates_dir}"
+        )
+        violations: dict[str, list[str]] = {}
+        for tpl in sorted(templates_dir.glob("*.py")):
+            issues = lint(tpl.read_text(encoding="utf-8"))
+            if issues:
+                violations[tpl.name] = [
+                    f"[{i.severity}] {i.rule_id} (line {i.line}): "
+                    f"{i.message.strip().splitlines()[0]}"
+                    for i in issues
+                ]
+        assert not violations, (
+            f"Bundled prompt templates have lint violations: {violations}"
+        )

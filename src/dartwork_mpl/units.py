@@ -63,9 +63,16 @@ class Inches(float):
     ``float`` that ``parse_width`` would re-interpret as cm. This
     closes a unit-corruption hole where doubled widths silently lost
     the cm→inches conversion.
+
+    Setting ``__array_ufunc__ = None`` opts this class out of numpy
+    universal-function dispatch. Without it, ``np.float64(2) * cm(9)``
+    would route through numpy's multiply ufunc and return a bare
+    ``np.float64``, dropping the ``Inches`` tag and re-opening the
+    cm/inches corruption hole at array boundaries.
     """
 
     __slots__ = ()
+    __array_ufunc__ = None
 
     def _wrap(self, value: float) -> Inches:
         if isinstance(value, Inches):

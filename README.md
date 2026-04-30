@@ -19,7 +19,7 @@ Enhanced matplotlib styling, color management, and utility library engineered by
 - **Interactive Viewer**: FastAPI-powered web UI (`dartwork_mpl.ui`) for real-time parameter tuning.
 - **Multi-format Export**: Save figures in SVG, PNG, PDF, and EPS simultaneously.
 - **Prompt System**: Bundled prompt guides for AI coding assistants, with `get_prompt()` and `copy_prompt()`.
-- **MCP Server**: AI coding assistant integration via Model Context Protocol.
+- **MCP Server**: AI coding assistant integration via Model Context Protocol (11 resources + 3 resource templates / 7 tools / 2 prompts).
 - **LLM Integration**: Install usage guides to `.claude/` and `.cursor/` with `install_llm_txt()`.
 
 <br/>
@@ -117,7 +117,8 @@ palette = dm.cspace('#FF0000', '#0000FF', n=5, space='oklch')
 ### Layout & Annotation
 
 ```python
-dm.simple_layout(fig)                   # L-BFGS-B margin optimization
+dm.auto_layout(fig)                     # default content-aware margin pass (0.4+)
+dm.simple_layout(fig, gs=gs)            # L-BFGS-B optimizer for advanced GridSpec cases
 dm.label_axes(axes)                     # add (a), (b), (c) panel labels
 dm.arrow_axis(ax, 'x', 'Cost')         # Low ◄── Cost ──► High
 dm.set_decimal(ax, xn=2, yn=1)         # format tick decimals
@@ -174,8 +175,8 @@ dm.save_and_show(fig, size=720)        # save + inline preview
 
 # Prompt guides for AI assistants
 dm.list_prompts()                      # available guides
-dm.get_prompt('layout-guide')          # read guide content
-dm.copy_prompt('layout-guide', '.cursor/rules/')
+dm.get_prompt('00-index')              # read the entry-point index (0.4 SSOT)
+dm.copy_prompt('01-policy', '.cursor/rules/')
 ```
 
 ### Extended Plots (templates)
@@ -315,7 +316,7 @@ src/dartwork_mpl/
 ├── ui/                 # Interactive FastAPI viewer
 ├── mcp/                # MCP server for AI assistants
 │   ├── server.py       #   FastMCP instance + wiring
-│   ├── resources.py    #   8 resources (guides, palettes, styles, templates)
+│   ├── resources.py    #   11 resources + 3 resource templates (guides, palettes, styles, templates)
 │   ├── tools.py        #   7 tools (color, linting, validation, info)
 │   └── prompts.py      #   2 prompts (create_plot, style_review)
 └── asset/              # Bundled styles, colors, fonts, icons, prompts

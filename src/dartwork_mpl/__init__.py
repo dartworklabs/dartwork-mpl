@@ -242,17 +242,23 @@ __all__ = [
 import matplotlib as mpl
 import matplotlib.axes
 
-_original_twinx = matplotlib.axes.Axes.twinx
+# Reentrance guard: ``importlib.reload(dartwork_mpl)`` would otherwise
+# capture the already-patched function as ``_original_twinx`` and recurse
+# infinitely on the next ``ax.twinx()`` call. We tag the wrapper with
+# ``__dm_patched__`` and skip re-patching when that marker is present.
+if not getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False):
+    _original_twinx = matplotlib.axes.Axes.twinx
 
+    def _patched_twinx(self, *args, **kwargs):
+        ax2 = _original_twinx(self, *args, **kwargs)
+        ax2.spines["right"].set_visible(True)
+        ax2.spines["right"].set_linewidth(
+            mpl.rcParams.get("axes.linewidth", 0.3)
+        )
+        return ax2
 
-def _patched_twinx(self, *args, **kwargs):
-    ax2 = _original_twinx(self, *args, **kwargs)
-    ax2.spines["right"].set_visible(True)
-    ax2.spines["right"].set_linewidth(mpl.rcParams.get("axes.linewidth", 0.3))
-    return ax2
-
-
-matplotlib.axes.Axes.twinx = _patched_twinx  # type: ignore[method-assign]
+    _patched_twinx.__dm_patched__ = True  # type: ignore[attr-defined]
+    matplotlib.axes.Axes.twinx = _patched_twinx  # type: ignore[method-assign]
 
 
 # Deprecated 0.3.x width tokens. Mapping: name -> width in cm.

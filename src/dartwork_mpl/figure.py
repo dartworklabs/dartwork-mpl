@@ -120,6 +120,19 @@ def subplots(
             DeprecationWarning,
             stacklevel=2,
         )
+        # When both `width=` and `figsize=` are given, legacy
+        # `figsize=` silently wins for back-compat. That's surprising —
+        # callers expect their new API call to take effect — so emit a
+        # UserWarning that explicitly says the new arg was ignored.
+        if width is not None:
+            _warnings.warn(
+                "Both `width=` and `figsize=` were given to dm.subplots; "
+                "your `width=` argument was ignored and `figsize=` was "
+                "used (legacy 0.3 path). Drop `figsize=` to switch to "
+                "the new width/aspect API.",
+                UserWarning,
+                stacklevel=2,
+            )
     if dpi is not None:
         import warnings as _warnings
 
@@ -266,6 +279,18 @@ def figure(
             DeprecationWarning,
             stacklevel=2,
         )
+        # See dm.subplots — when both are given, figsize wins silently;
+        # surface that explicitly so callers don't think their new API
+        # call took effect.
+        if width is not None:
+            _warnings.warn(
+                "Both `width=` and `figsize=` were given to dm.figure; "
+                "your `width=` argument was ignored and `figsize=` was "
+                "used (legacy 0.3 path). Drop `figsize=` to switch to "
+                "the new width/aspect API.",
+                UserWarning,
+                stacklevel=2,
+            )
     if dpi is not None:
         import warnings as _warnings
 

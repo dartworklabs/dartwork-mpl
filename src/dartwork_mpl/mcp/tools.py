@@ -188,8 +188,11 @@ def register_tools(mcp: FastMCP) -> None:
         Parameters
         ----------
         plot_type : str
-            Target plot type (e.g. 'tornado', 'scatter', 'bar', 'heatmap',
-            'stacked_bar', 'violin', 'boxplot', 'pie', 'line').
+            Target plot type. Supports the full 12-template catalog
+            advertised by ``dartwork_mpl_info()``: ``'tornado'``,
+            ``'scatter'``, ``'bar'``, ``'heatmap'``, ``'stacked_bar'``,
+            ``'pie'``, ``'line'``, ``'violin'``, ``'boxplot'``,
+            ``'histogram'``, ``'contour'``, ``'twin_axis'``.
         data_json : str
             JSON string representing the data to validate. The expected
             structure varies by plot type.
@@ -212,6 +215,11 @@ def register_tools(mcp: FastMCP) -> None:
             "stacked_bar": _validate_stacked_bar,
             "pie": _validate_pie,
             "line": _validate_line,
+            "violin": _validate_violin,
+            "boxplot": _validate_boxplot,
+            "histogram": _validate_histogram,
+            "contour": _validate_contour,
+            "twin_axis": _validate_twin_axis,
         }
 
         validator = validators.get(plot_type.lower())
@@ -255,21 +263,14 @@ def register_tools(mcp: FastMCP) -> None:
                 "dark",
             ]
 
-        # Try to enumerate registered MCP prompts/tools dynamically from
-        # the live server so this metadata stays accurate. Fall back to
-        # the static list if the introspection API is unavailable.
-        try:
-            from .server import mcp as _server_mcp
-
-            prompt_manager = getattr(_server_mcp, "_prompt_manager", None)
-            registered_prompts = (
-                sorted(prompt_manager._prompts.keys())
-                if prompt_manager is not None
-                and hasattr(prompt_manager, "_prompts")
-                else ["create_plot", "style_review"]
-            )
-        except Exception:
-            registered_prompts = ["create_plot", "style_review"]
+        # Static list of registered prompts. We previously poked at
+        # ``mcp._prompt_manager._prompts`` to enumerate dynamically, but
+        # that private attribute is not part of fastmcp's public API
+        # and shifted between 2.x and 3.x. The set of prompts we ship
+        # is small and changes alongside this file, so the static list
+        # is both simpler and forward-compatible. Keep this in sync
+        # with ``register_prompts`` in ``prompts.py``.
+        registered_prompts = ["create_plot", "style_review"]
 
         return json.dumps(
             {
@@ -498,6 +499,172 @@ def _validate_line(data: dict) -> str:
         )
     return (
         "✅ Data structure valid for line plot."
+        if not issues
+        else "\n".join(issues)
+    )
+
+
+def _validate_violin(data: dict) -> str:
+    """Validate data for a violin plot.
+
+    Accepts either a list-of-lists (each inner list = one violin's
+    samples) or a dict mapping group label → samples list.
+    """
+    issues = []
+    if "groups" not in data and "data" not in data:
+        issues.append(
+            "Need 'data' (list of arrays, one per violin) or 'groups' "
+            "(dict of label -> samples)."
+        )
+    payload = data.get("groups", data.get("data"))
+    if isinstance(payload, dict):
+        for name, vals in payload.items():
+            if not isinstance(vals, list) or not all(
+                isinstance(v, (int, float)) for v in vals
+            ):
+                issues.append(
+                    f"Group '{name}' must be a list of numeric samples."
+                )
+    elif isinstance(payload, list):
+        for i, vals in enumerate(payload):
+            if not isinstance(vals, list) or not all(
+                isinstance(v, (int, float)) for v in vals
+            ):
+                issues.append(f"Violin {i} must be a list of numeric samples.")
+    elif payload is not None:
+        issues.append(
+            "'data'/'groups' must be a list of lists or a dict of named lists."
+        )
+    return (
+        "✅ Data structure valid for violin plot."
+        if not issues
+        else "\n".join(issues)
+    )
+
+
+def _validate_boxplot(data: dict) -> str:
+    """Validate data for a boxplot.
+
+    Same shape as a violin plot — list-of-lists or dict of named
+    lists, one box per group.
+    """
+    issues = []
+    if "groups" not in data and "data" not in data:
+        issues.append(
+            "Need 'data' (list of arrays, one per box) or 'groups' "
+            "(dict of label -> samples)."
+        )
+    payload = data.get("groups", data.get("data"))
+    if isinstance(payload, dict):
+        for name, vals in payload.items():
+            if not isinstance(vals, list) or not all(
+                isinstance(v, (int, float)) for v in vals
+            ):
+                issues.append(
+                    f"Group '{name}' must be a list of numeric samples."
+                )
+    elif isinstance(payload, list):
+        for i, vals in enumerate(payload):
+            if not isinstance(vals, list) or not all(
+                isinstance(v, (int, float)) for v in vals
+            ):
+                issues.append(f"Box {i} must be a list of numeric samples.")
+    elif payload is not None:
+        issues.append(
+            "'data'/'groups' must be a list of lists or a dict of named lists."
+        )
+    return (
+        "✅ Data structure valid for boxplot."
+        if not issues
+        else "\n".join(issues)
+    )
+
+
+def _validate_histogram(data: dict) -> str:
+    """Validate data for a histogram. Expects a 1-D numeric array."""
+    issues = []
+    if "values" not in data and "data" not in data:
+        issues.append(
+            "Missing 'values' (or 'data') key — a 1-D list of numeric samples."
+        )
+    samples = data.get("values", data.get("data"))
+    if samples is not None:
+        if not isinstance(samples, list):
+            issues.append("'values' must be a 1-D list of numbers.")
+        elif not all(isinstance(v, (int, float)) for v in samples):
+            issues.append(
+                "'values' must contain only numeric samples (int/float)."
+            )
+    return (
+        "✅ Data structure valid for histogram."
+        if not issues
+        else "\n".join(issues)
+    )
+
+
+def _validate_contour(data: dict) -> str:
+    """Validate data for a contour plot.
+
+    Required: ``Z`` (2-D array). Optional: ``X``, ``Y`` (meshgrid). If
+    ``X``/``Y`` are present they must share ``Z``'s shape.
+    """
+    issues = []
+    if "Z" not in data and "z" not in data:
+        issues.append("Missing 'Z' key — a 2-D array of values to contour.")
+    Z = data.get("Z", data.get("z"))
+    if Z is not None:
+        if not isinstance(Z, list) or not all(
+            isinstance(row, list) for row in Z
+        ):
+            issues.append("'Z' must be a 2-D array (list of lists).")
+        elif Z and any(len(row) != len(Z[0]) for row in Z):
+            issues.append("'Z' rows must all have equal length.")
+    for key in ("X", "Y"):
+        grid = data.get(key, data.get(key.lower()))
+        if grid is None:
+            continue
+        if not isinstance(grid, list) or not all(
+            isinstance(row, list) for row in grid
+        ):
+            issues.append(f"'{key}' must be a 2-D array (list of lists).")
+        elif Z is not None and isinstance(Z, list) and Z:
+            if len(grid) != len(Z) or any(len(r) != len(Z[0]) for r in grid):
+                issues.append(
+                    f"'{key}' shape must match 'Z' shape "
+                    f"({len(Z)}x{len(Z[0]) if Z else 0})."
+                )
+    return (
+        "✅ Data structure valid for contour plot."
+        if not issues
+        else "\n".join(issues)
+    )
+
+
+def _validate_twin_axis(data: dict) -> str:
+    """Validate data for a twin-axis chart.
+
+    Expected: shared ``x`` plus ``left`` and ``right`` series (each
+    same length as ``x``).
+    """
+    issues = []
+    if "x" not in data:
+        issues.append("Missing 'x' key (shared x values).")
+    if "left" not in data:
+        issues.append("Missing 'left' key (primary-axis y values).")
+    if "right" not in data:
+        issues.append("Missing 'right' key (secondary-axis y values).")
+    if all(k in data for k in ("x", "left", "right")):
+        n = len(data["x"])
+        if len(data["left"]) != n:
+            issues.append(
+                f"'left' length ({len(data['left'])}) != 'x' length ({n})."
+            )
+        if len(data["right"]) != n:
+            issues.append(
+                f"'right' length ({len(data['right'])}) != 'x' length ({n})."
+            )
+    return (
+        "✅ Data structure valid for twin-axis plot."
         if not issues
         else "\n".join(issues)
     )

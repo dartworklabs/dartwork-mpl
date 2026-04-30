@@ -174,6 +174,18 @@ class TestAutoLayoutEdgeCases:
         auto_layout(fig)
         plt.close(fig)
 
+    def test_empty_figure_no_axes(self) -> None:
+        """auto_layout on a figure with *no axes at all* must no-op
+        rather than IndexError on ``fig.axes[0]``."""
+        fig = plt.figure(figsize=(6, 4))
+        try:
+            assert fig.axes == []
+            # Should return cleanly with no exception.
+            auto_layout(fig)
+            simple_layout(fig)
+        finally:
+            plt.close(fig)
+
     def test_colorbar_gridspec(self) -> None:
         """``fig.colorbar(im, ax=ax)`` wraps the axis in a
         ``GridSpecFromSubplotSpec`` which has no ``.update()``. The

@@ -312,6 +312,103 @@ class TestMcpTools:
         result = captured["validate_plot_data"]("bar", data)
         assert "values" in result.lower()
 
+    def test_validate_plot_data_supports_all_advertised_types(self) -> None:
+        """``dartwork_mpl_info()`` advertises 12 plot templates;
+        ``validate_plot_data`` must have a validator for every one."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        info = json.loads(captured["dartwork_mpl_info"]())
+        advertised = set(info["plot_templates"])
+        # Probe each advertised type with a deliberately empty payload
+        # — any non-error response (✅ or a missing-key complaint)
+        # proves a validator was wired up. Only the "no validator"
+        # branch indicates a parity gap.
+        for plot_type in advertised:
+            result = captured["validate_plot_data"](plot_type, "{}")
+            assert "no validator" not in result.lower(), (
+                f"validate_plot_data missing handler for "
+                f"advertised type {plot_type!r}"
+            )
+
+    def test_validate_plot_data_violin_happy_and_sad(self) -> None:
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        good = json.dumps({"groups": {"A": [1.0, 2.0, 3.0], "B": [4.0, 5.0]}})
+        assert "valid" in captured["validate_plot_data"]("violin", good).lower()
+        bad = json.dumps({"foo": "bar"})
+        assert "data" in captured["validate_plot_data"]("violin", bad).lower()
+
+    def test_validate_plot_data_boxplot_happy_and_sad(self) -> None:
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        good = json.dumps({"data": [[1, 2, 3], [4, 5, 6]]})
+        assert (
+            "valid" in captured["validate_plot_data"]("boxplot", good).lower()
+        )
+        bad = json.dumps({"data": "not a list"})
+        result = captured["validate_plot_data"]("boxplot", bad)
+        assert "list" in result.lower()
+
+    def test_validate_plot_data_histogram_happy_and_sad(self) -> None:
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        good = json.dumps({"values": [1, 2, 3, 4, 5]})
+        assert (
+            "valid" in captured["validate_plot_data"]("histogram", good).lower()
+        )
+        bad = json.dumps({})
+        result = captured["validate_plot_data"]("histogram", bad)
+        assert "values" in result.lower()
+
+    def test_validate_plot_data_contour_happy_and_sad(self) -> None:
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        good = json.dumps({"Z": [[1, 2, 3], [4, 5, 6]]})
+        assert (
+            "valid" in captured["validate_plot_data"]("contour", good).lower()
+        )
+        # X shape mismatch
+        bad = json.dumps({"Z": [[1, 2], [3, 4]], "X": [[1, 2, 3], [4, 5, 6]]})
+        result = captured["validate_plot_data"]("contour", bad)
+        assert "shape" in result.lower()
+
+    def test_validate_plot_data_twin_axis_happy_and_sad(self) -> None:
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        good = json.dumps(
+            {"x": [1, 2, 3], "left": [10, 20, 30], "right": [0.1, 0.2, 0.3]}
+        )
+        assert (
+            "valid" in captured["validate_plot_data"]("twin_axis", good).lower()
+        )
+        bad = json.dumps({"x": [1, 2, 3], "left": [10, 20]})
+        result = captured["validate_plot_data"]("twin_axis", bad)
+        assert "right" in result.lower() or "length" in result.lower()
+
     def test_dartwork_mpl_info(self) -> None:
         """dartwork_mpl_info returns valid JSON summary."""
         from dartwork_mpl.mcp.tools import register_tools

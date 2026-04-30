@@ -677,7 +677,7 @@ wheels = [
 
 [[package]]
 name = "dartwork-mpl"
-version = "0.3.0"
+version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "colorspacious" },
@@ -686,6 +686,7 @@ dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "palettable" },
+    { name = "pyyaml" },
     { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.16.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
@@ -726,7 +727,7 @@ dev = [
 requires-dist = [
     { name = "colorspacious", specifier = ">=1.1.2" },
     { name = "fastapi", marker = "extra == 'ui'", specifier = ">=0.110.0" },
-    { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=2.13.3" },
+    { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=2.13.3,<4" },
     { name = "httpx", marker = "extra == 'mcp'", specifier = ">=0.27.0" },
     { name = "inquirerpy", marker = "extra == 'ui'", specifier = ">=0.3.4" },
     { name = "ipython", specifier = ">=8.32.0" },
@@ -734,6 +735,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.26" },
     { name = "palettable", specifier = ">=3.3.3" },
     { name = "pydantic", marker = "extra == 'ui'", specifier = ">=2.0.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
     { name = "scipy", specifier = ">=1.15.2" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'ui'", specifier = ">=0.27.0" },
 ]

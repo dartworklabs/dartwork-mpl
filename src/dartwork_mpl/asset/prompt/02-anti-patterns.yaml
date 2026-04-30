@@ -102,10 +102,17 @@ rules:
     severity: warning
     detector:
       kind: regex
-      pattern: '\b(?:plt|dm)\.(?:subplots|figure)\s*\([^)]*\bdpi\s*='
+      # Allow one level of nested parens (e.g. ``figsize=(8, 6)``)
+      # before the ``dpi=`` token so that
+      # ``plt.figure(figsize=(8,6), dpi=200)`` is caught. The previous
+      # ``[^)]*`` form bailed at the first ``)`` and silently missed
+      # this very common spelling. ``savefig(dpi=...)`` is intentionally
+      # outside this rule's scope — see ``savefig-direct``.
+      pattern: '\b(?:plt|dm)\.(?:subplots|figure)\s*\((?:[^()]|\([^()]*\))*\bdpi\s*='
     message: |
       `dpi=` should not be set per-figure. The active dartwork-mpl
-      style controls dpi (display vs savefig).
+      style controls dpi (display vs savefig). Direct
+      ``savefig(dpi=...)`` is flagged separately by ``savefig-direct``.
 
   - id: raw-hex-color
     severity: info
@@ -136,11 +143,16 @@ rules:
     severity: warning
     detector:
       kind: regex
-      pattern: '\b(?:linewidth|lw)\s*=\s*(?!0(?![\.\d]))\d+(?:\.\d+)?'
+      # Match only literals whose integer part is >= 1. Sub-1 values
+      # (e.g. ``linewidth=0.3`` for hairline edges) and the no-border
+      # idiom ``linewidth=0`` are common, intentional decoration and
+      # don't fight the active style — bundled templates rely on them.
+      pattern: '\b(?:linewidth|lw)\s*=\s*[1-9]\d*(?:\.\d+)?'
     message: |
-      `linewidth=<n>` hardcodes a line width. Use `dm.lw(n)` for a
-      relative offset from the active style. (`linewidth=0`, used
-      to disable a border, is allowed.)
+      `linewidth=<n>` (>= 1) hardcodes a line width. Use `dm.lw(n)`
+      for a relative offset from the active style. (`linewidth=0`,
+      used to disable a border, and sub-1 hairline widths like
+      `linewidth=0.3` are allowed.)
     fix_suggestion: 'linewidth=dm.lw(0)'
 
   - id: savefig-direct
