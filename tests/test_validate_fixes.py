@@ -1,4 +1,4 @@
-"""Tests for dartwork_mpl.validate_enhanced — auto-fix validation helpers."""
+"""Tests for dartwork_mpl.validate_fixes — auto-fix validation helpers."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ class TestGetFixSuggestions:
             message="left overflow 12px",
             detail={"side": "left", "px": 12},
         )
-        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
         assert isinstance(suggestions, list)
         assert all(isinstance(s, str) for s in suggestions)
         # The left-overflow branch offers at least one concrete fix
@@ -55,7 +55,7 @@ class TestGetFixSuggestions:
             message="",
             detail={},
         )
-        assert dm.validate_enhanced.get_fix_suggestions(warning) == []
+        assert dm.validate_fixes.get_fix_suggestions(warning) == []
 
 
 class TestValidateWithFixes:
@@ -78,16 +78,14 @@ class TestValidateWithFixes:
 
     def test_top_level_alias_matches_submodule(self) -> None:
         """``dm.validate_with_fixes`` is the same callable as
-        ``dm.validate_enhanced.validate_with_fixes``."""
-        assert (
-            dm.validate_with_fixes is dm.validate_enhanced.validate_with_fixes
-        )
+        ``dm.validate_fixes.validate_with_fixes``."""
+        assert dm.validate_with_fixes is dm.validate_fixes.validate_with_fixes
 
 
 class TestCheckAgentRequirements:
     def test_returns_dict_of_bools(self) -> None:
         fig, _ax = _figure_clean()
-        result = dm.validate_enhanced.check_agent_requirements(fig)
+        result = dm.validate_fixes.check_agent_requirements(fig)
         assert isinstance(result, dict)
         assert all(isinstance(v, bool) for v in result.values())
         # Stable keys we actually document
@@ -99,7 +97,7 @@ class TestCheckAgentRequirements:
 class TestGenerateValidationReport:
     def test_returns_report_string(self) -> None:
         fig, _ax = _figure_clean()
-        report = dm.validate_enhanced.generate_validation_report(fig)
+        report = dm.validate_fixes.generate_validation_report(fig)
         assert isinstance(report, str)
         assert "VALIDATION REPORT" in report
         assert "OVERALL SCORE" in report
@@ -116,7 +114,7 @@ class TestGetFixSuggestionsBranches:
             message="right overflow 8px",
             detail={"side": "right", "px": 8},
         )
-        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
         assert any("subplots_adjust(right=" in s for s in suggestions)
 
     def test_overflow_bottom(self) -> None:
@@ -126,7 +124,7 @@ class TestGetFixSuggestionsBranches:
             message="bottom overflow 6px",
             detail={"side": "bottom", "px": 6},
         )
-        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
         assert any(
             "subplots_adjust(bottom=" in s or "rotation=45" in s
             for s in suggestions
@@ -139,7 +137,7 @@ class TestGetFixSuggestionsBranches:
             message="top overflow 4px",
             detail={"side": "top", "px": 4},
         )
-        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
         assert any("subplots_adjust(top=" in s for s in suggestions)
 
     def test_overlap(self) -> None:
@@ -149,7 +147,7 @@ class TestGetFixSuggestionsBranches:
             message="text overlap",
             detail={},
         )
-        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
         assert any("auto_layout" in s for s in suggestions)
 
     def test_legend_overflow(self) -> None:
@@ -159,7 +157,7 @@ class TestGetFixSuggestionsBranches:
             message="legend too wide",
             detail={"ratio": 1.2},
         )
-        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
         assert any("bbox_to_anchor" in s for s in suggestions)
 
     def test_tick_crowd_x(self) -> None:
@@ -169,7 +167,7 @@ class TestGetFixSuggestionsBranches:
             message="too many x ticks",
             detail={"axis": "x", "count": 30},
         )
-        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
         assert any("xaxis.set_major_locator" in s for s in suggestions)
 
     def test_tick_crowd_y(self) -> None:
@@ -179,7 +177,7 @@ class TestGetFixSuggestionsBranches:
             message="too many y ticks",
             detail={"axis": "y", "count": 24},
         )
-        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
         assert any("yaxis.set_major_locator" in s for s in suggestions)
 
     def test_empty_axes(self) -> None:
@@ -189,7 +187,7 @@ class TestGetFixSuggestionsBranches:
             message="empty axes",
             detail={},
         )
-        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
         assert any(
             "ax.remove" in s or "set_visible(False)" in s for s in suggestions
         )
@@ -201,7 +199,7 @@ class TestGetFixSuggestionsBranches:
             message="left vs right asymmetric",
             detail={"side": "left"},
         )
-        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
         assert any("auto_layout" in s for s in suggestions)
 
     def test_pie_label_offset(self) -> None:
@@ -211,5 +209,5 @@ class TestGetFixSuggestionsBranches:
             message="label offset wrong",
             detail={"ideal_r": 0.65},
         )
-        suggestions = dm.validate_enhanced.get_fix_suggestions(warning)
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
         assert any("pctdistance=0.65" in s for s in suggestions)
