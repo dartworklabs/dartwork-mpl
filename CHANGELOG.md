@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **`dartwork_mpl.validate_enhanced` renamed to
+  `dartwork_mpl.validate_fixes`.** The module split between
+  `validate.py` (visual checks) and the auto-fix companion was clear in
+  intent but the "enhanced" name was vague — `validate_fixes` makes it
+  obvious that this submodule is the auto-fix layer (`get_fix_suggestions`,
+  `validate_with_fixes`, `check_agent_requirements`,
+  `generate_validation_report`). The public function
+  `dm.validate_with_fixes` is unchanged. Direct submodule access
+  (`dm.validate_enhanced` / `from dartwork_mpl.validate_enhanced
+  import ...`) now raises `AttributeError` /
+  `ModuleNotFoundError` — use `dm.validate_fixes` instead. No
+  backward-compat alias is provided, in line with the 0.4.x deprecated-
+  surface purge.
+
 ### Changed (font asset slimming)
 
 - **`NotoSansCJK-Regular.ttc` (19 MB) → `NotoSansCJK-Regular.otf`

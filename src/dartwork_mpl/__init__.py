@@ -9,7 +9,7 @@ __version__ = "0.4.0"
 # ruff: noqa: E402
 
 # Import submodules so they are accessible under ``dm.<submodule>``
-# (validate_enhanced is the auto-fix companion to validate). The F401
+# (validate_fixes is the auto-fix companion to validate). The F401
 # noqa is required because ruff's "unused-import" check can't see
 # attribute-style access at the package level.
 from . import (  # noqa: F401
@@ -19,7 +19,7 @@ from . import (  # noqa: F401
     icon,
     lint,
     templates,
-    validate_enhanced,
+    validate_fixes,
 )
 
 # Axes annotation
@@ -118,7 +118,7 @@ col2: float = cm(17)
 
 # Validation entry points
 from .validate import validate_figure
-from .validate_enhanced import validate_with_fixes
+from .validate_fixes import validate_with_fixes
 
 # Define __all__ for explicit exports
 
@@ -208,7 +208,7 @@ __all__ = [
     # Validation
     "validate_figure",
     "validate_with_fixes",
-    "validate_enhanced",
+    "validate_fixes",
     # Extended plots
     "plot_diverging_bar",
     # Asset diagnostics (from diagnostics)

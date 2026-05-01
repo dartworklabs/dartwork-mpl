@@ -308,7 +308,7 @@ src/dartwork_mpl/
 ├── io.py                   # save_formats(), save_and_show()
 ├── prompt.py               # get_prompt(), copy_prompt(), list_prompts()
 ├── validate.py             # validate_figure() — visual checks
-├── validate_enhanced.py    # validate_with_fixes() — auto-fix helpers
+├── validate_fixes.py       # validate_with_fixes() — auto-fix helpers
 ├── lint.py                 # lint() against the anti-pattern catalog
 ├── diagnostics.py          # plot_colormaps/plot_colors/plot_fonts
 ├── explore.py              # list_palettes/list_colormaps/show_palette
