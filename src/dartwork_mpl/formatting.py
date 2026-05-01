@@ -213,8 +213,7 @@ def format_axis_currency(
         formatted = f"{x:,.{decimals}f}"
         if position == "prefix":
             return f"{symbol}{formatted}"
-        else:
-            return f"{formatted}{symbol}"
+        return f"{formatted}{symbol}"
 
     formatter = ticker.FuncFormatter(currency_formatter)
 
@@ -266,14 +265,13 @@ def format_axis_si(
 
         if abs_x >= 1e12:
             return f"{sign}{abs_x / 1e12:.{decimals}f}T"
-        elif abs_x >= 1e9:
+        if abs_x >= 1e9:
             return f"{sign}{abs_x / 1e9:.{decimals}f}G"
-        elif abs_x >= 1e6:
+        if abs_x >= 1e6:
             return f"{sign}{abs_x / 1e6:.{decimals}f}M"
-        elif abs_x >= 1e3:
+        if abs_x >= 1e3:
             return f"{sign}{abs_x / 1e3:.{decimals}f}k"
-        else:
-            return f"{x:.{decimals}f}"
+        return f"{x:.{decimals}f}"
 
     formatter = ticker.FuncFormatter(si_formatter)
 

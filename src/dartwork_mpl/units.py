@@ -11,14 +11,14 @@ golden/wide/cinema) into a height/width ratio.
 from __future__ import annotations
 
 __all__ = [
-    "cm",
-    "inch",
-    "mm",
-    "parse_width",
-    "parse_aspect",
     "ASPECT_TOKENS",
     "DEFAULT_ASPECT",
     "Inches",
+    "cm",
+    "inch",
+    "mm",
+    "parse_aspect",
+    "parse_width",
 ]
 
 import math

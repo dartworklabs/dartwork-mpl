@@ -13,8 +13,8 @@ import matplotlib
 
 matplotlib.use("Agg")
 
-import matplotlib.axes  # noqa: E402
-import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.axes
+import matplotlib.pyplot as plt
 
 
 class TestTwinxPatchReentranceGuard:
@@ -25,7 +25,7 @@ class TestTwinxPatchReentranceGuard:
     """
 
     def test_patched_twinx_is_marked(self) -> None:
-        import dartwork_mpl  # noqa: F401  (ensures patch applied)
+        import dartwork_mpl  # noqa: F401  # side-effect: applies the patch
 
         assert (
             getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False) is True

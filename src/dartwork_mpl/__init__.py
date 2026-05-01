@@ -8,15 +8,17 @@ __version__ = "0.4.0"
 
 # ruff: noqa: E402
 
-# Import submodules for explicit access under ``dm.<submodule>``.
-# Validation helpers — submodule for extended auto-fix utilities.
-from . import (
-    cmap,  # noqa: F401
-    font,  # noqa: F401
-    helpers,  # noqa: F401
-    icon,  # noqa: F401
-    lint,  # noqa: F401
-    templates,  # noqa: F401
+# Import submodules so they are accessible under ``dm.<submodule>``
+# (validate_enhanced is the auto-fix companion to validate). The F401
+# noqa is required because ruff's "unused-import" check can't see
+# attribute-style access at the package level.
+from . import (  # noqa: F401
+    cmap,
+    font,
+    helpers,
+    icon,
+    lint,
+    templates,
     validate_enhanced,
 )
 

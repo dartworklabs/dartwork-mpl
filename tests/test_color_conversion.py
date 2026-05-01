@@ -57,14 +57,14 @@ class TestOklabLinearSrgb:
     def test_black(self) -> None:
         """Black (0,0,0) in linear sRGB → L≈0 in OKLab."""
         L, a, b = _linear_srgb_to_oklab(0.0, 0.0, 0.0)
-        assert L == pytest.approx(0.0, abs=1e-8)
+        assert pytest.approx(0.0, abs=1e-8) == L
         assert a == pytest.approx(0.0, abs=1e-8)
         assert b == pytest.approx(0.0, abs=1e-8)
 
     def test_white(self) -> None:
         """White (1,1,1) in linear sRGB → L≈1 in OKLab."""
         L, a, b = _linear_srgb_to_oklab(1.0, 1.0, 1.0)
-        assert L == pytest.approx(1.0, abs=1e-6)
+        assert pytest.approx(1.0, abs=1e-6) == L
         assert a == pytest.approx(0.0, abs=1e-6)
         assert b == pytest.approx(0.0, abs=1e-6)
 
@@ -95,7 +95,7 @@ class TestOklabOklch:
     def test_achromatic(self) -> None:
         """Achromatic color (a=0, b=0) → C=0."""
         L, C, h = _oklab_to_oklch(0.5, 0.0, 0.0)
-        assert C == pytest.approx(0.0, abs=1e-10)
+        assert pytest.approx(0.0, abs=1e-10) == C
 
     def test_roundtrip(self) -> None:
         """oklab → oklch → oklab should be identity."""
@@ -103,7 +103,7 @@ class TestOklabOklch:
         for L, a, b in test_values:
             L2, C, h = _oklab_to_oklch(L, a, b)
             L3, a3, b3 = _oklch_to_oklab(L2, C, h)
-            assert L3 == pytest.approx(L, abs=1e-10)
+            assert pytest.approx(L, abs=1e-10) == L3
             assert a3 == pytest.approx(a, abs=1e-10)
             assert b3 == pytest.approx(b, abs=1e-10)
 
@@ -183,8 +183,8 @@ class TestColorRoundtrip:
         """Color.from_oklch → to_oklch should preserve."""
         color = Color.from_oklch(0.7, 0.2, 120.0)
         L, C, h = color.to_oklch()
-        assert L == pytest.approx(0.7, abs=1e-8)
-        assert C == pytest.approx(0.2, abs=1e-8)
+        assert pytest.approx(0.7, abs=1e-8) == L
+        assert pytest.approx(0.2, abs=1e-8) == C
         assert h == pytest.approx(120.0, abs=1e-6)
 
     def test_hex_roundtrip(self) -> None:

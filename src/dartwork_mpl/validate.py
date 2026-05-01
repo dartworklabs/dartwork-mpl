@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 # ───────────────────────────────────────────────────────
-__all__ = ["validate_figure", "VisualWarning", "Severity"]
+__all__ = ["Severity", "VisualWarning", "validate_figure"]
 
 # Data structures
 # ───────────────────────────────────────────────────────
@@ -151,7 +151,7 @@ def _check_overflow(fig: Figure, renderer) -> list[VisualWarning]:
                         VisualWarning(
                             severity=Severity.WARNING,
                             check_id="OVERFLOW",
-                            message=f"Tick label {repr(tick.get_text()[:20])} overflows figure by {overflow:.1f}px",
+                            message=f"Tick label {tick.get_text()[:20]!r} overflows figure by {overflow:.1f}px",
                             detail={
                                 "text": tick.get_text(),
                                 "px": round(overflow, 1),
@@ -207,7 +207,7 @@ def _check_overlap(fig: Figure, renderer) -> list[VisualWarning]:
                         VisualWarning(
                             severity=Severity.WARNING,
                             check_id="OVERLAP",
-                            message=f"Labels {repr(name_a)} and {repr(name_b)} overlap (IoU={iou:.2f})",
+                            message=f"Labels {name_a!r} and {name_b!r} overlap (IoU={iou:.2f})",
                             detail={
                                 "label_a": name_a,
                                 "label_b": name_b,

@@ -237,8 +237,7 @@ def classify_colormap(cmap: Colormap) -> str:
 
             if hue_range < 0.01:
                 return "Single-Hue"
-            else:
-                return "Multi-Hue"
+            return "Multi-Hue"
 
     hue_min = np.min(hues)
     hue_max = np.max(hues)
@@ -253,13 +252,11 @@ def classify_colormap(cmap: Colormap) -> str:
 
     if hue_range < 0.01 and is_monotonic:
         return "Single-Hue"
-    elif hue_range > 0.01:
+    if hue_range > 0.01:
         return "Multi-Hue"
-    else:
-        if np.std(hue_diffs) < 0.02:
-            return "Single-Hue"
-        else:
-            return "Multi-Hue"
+    if np.std(hue_diffs) < 0.02:
+        return "Single-Hue"
+    return "Multi-Hue"
 
 
 def plot_colormaps(
@@ -725,13 +722,12 @@ def _plot_single_library(
         color_groups: list[dict[str, Any]] = []
         for base_color, color_items in sorted_base_colors:
 
-            def sort_key(x):  # noqa: E301
+            def sort_key(x):
                 color_name, hsv = x
                 number = _extract_number_from_color_name(color_name)
                 if number is not None:
                     return (0, number)
-                else:
-                    return (1, -hsv[2])
+                return (1, -hsv[2])
 
             color_items.sort(key=sort_key)
             sorted_names = [name for name, _ in color_items]

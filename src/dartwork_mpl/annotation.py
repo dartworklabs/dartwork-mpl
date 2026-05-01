@@ -6,7 +6,7 @@ panels, and ``arrow_axis`` for drawing bidirectional Low–High arrow axes.
 
 from __future__ import annotations
 
-__all__ = ["label_axes", "arrow_axis"]
+__all__ = ["arrow_axis", "label_axes"]
 
 import string
 from typing import Any

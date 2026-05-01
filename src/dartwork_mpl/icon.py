@@ -25,7 +25,7 @@ _REGISTRY: dict[str, str] = {
     "fa-brands": "Font Awesome 6 Brands-Regular-400.otf",
 }
 
-__all__ = ["icon_font", "icon_font_path", "list_icon_fonts", "ensure_loaded"]
+__all__ = ["ensure_loaded", "icon_font", "icon_font_path", "list_icon_fonts"]
 
 
 def icon_font_path(name: str = "mdi") -> Path:
