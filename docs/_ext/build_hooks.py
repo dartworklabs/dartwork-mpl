@@ -25,6 +25,7 @@ _GALLERY_CATEGORIES = [
     "06_chart_recipes",
     "07_real_world_dashboards",
     "08_creative_visualizations",
+    "09_ai_templates",
 ]
 
 

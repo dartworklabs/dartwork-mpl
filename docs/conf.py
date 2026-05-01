@@ -141,6 +141,7 @@ sphinx_gallery_conf = {
         "examples_source/06_chart_recipes",
         "examples_source/07_real_world_dashboards",
         "examples_source/08_creative_visualizations",
+        "examples_source/09_ai_templates",
     ],
     "gallery_dirs": [
         "examples_gallery/01_styling_and_themes",
@@ -151,6 +152,7 @@ sphinx_gallery_conf = {
         "examples_gallery/06_chart_recipes",
         "examples_gallery/07_real_world_dashboards",
         "examples_gallery/08_creative_visualizations",
+        "examples_gallery/09_ai_templates",
     ],
     "filename_pattern": "/plot_",
     "nested_sections": False,
