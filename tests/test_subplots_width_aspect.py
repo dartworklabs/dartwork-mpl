@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-import warnings
 
 import matplotlib
 
@@ -71,60 +70,25 @@ class TestWidthAspect:
             _close(fig)
 
 
-class TestFigsizeDeprecation:
-    def test_figsize_emits_deprecation(self):
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            fig, _ = dm.subplots(figsize=(5, 3))
-            try:
-                pass
-            finally:
-                _close(fig)
-        msgs = [
-            str(w.message)
-            for w in caught
-            if issubclass(w.category, DeprecationWarning)
-        ]
-        assert any("figsize" in m for m in msgs), msgs
+class TestFigsizeRemoval:
+    """``figsize=``/``dpi=`` were deprecated in 0.4.0 and removed in 0.4.x.
 
-    def test_dpi_emits_deprecation(self):
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            fig, _ = dm.subplots(dpi=150)
-            try:
-                pass
-            finally:
-                _close(fig)
-        msgs = [
-            str(w.message)
-            for w in caught
-            if issubclass(w.category, DeprecationWarning)
-        ]
-        assert any("dpi" in m for m in msgs)
+    Passing them now raises ``TypeError`` so callers get a clear signal
+    instead of a silent legacy code path.
+    """
 
-    def test_width_and_figsize_both_specified_warns_and_figsize_wins(self):
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            fig, _ = dm.subplots(width="9cm", figsize=(7, 4))
-            try:
-                w, h = fig.get_size_inches()
-            finally:
-                _close(fig)
-        # figsize wins for backward compat during 0.4.x.
-        assert math.isclose(w, 7, rel_tol=1e-6)
-        assert math.isclose(h, 4, rel_tol=1e-6)
-        # The legacy DeprecationWarning is still emitted.
-        assert any(issubclass(c.category, DeprecationWarning) for c in caught)
-        # And a UserWarning explicitly tells the caller their `width=`
-        # was ignored — the original DeprecationWarning didn't say that.
-        user_msgs = [
-            str(c.message)
-            for c in caught
-            if issubclass(c.category, UserWarning)
-        ]
-        assert any("ignored" in m and "width=" in m for m in user_msgs), (
-            user_msgs
-        )
+    def test_figsize_raises_type_error(self):
+        with pytest.raises(TypeError, match="figsize="):
+            dm.subplots(figsize=(5, 3))
+
+    def test_dpi_raises_type_error(self):
+        with pytest.raises(TypeError, match="dpi="):
+            dm.subplots(dpi=150)
+
+    def test_width_and_figsize_both_raises(self):
+        """Even if ``width=`` is given, supplying ``figsize=`` still raises."""
+        with pytest.raises(TypeError, match="figsize="):
+            dm.subplots(width="9cm", figsize=(7, 4))
 
 
 class TestErrors:
@@ -161,53 +125,14 @@ class TestFigureWidthAspect:
         finally:
             _close(fig)
 
-    def test_figsize_emits_deprecation(self):
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            fig = dm.figure(figsize=(5, 3))
-            try:
-                pass
-            finally:
-                _close(fig)
-        msgs = [
-            str(w.message)
-            for w in caught
-            if issubclass(w.category, DeprecationWarning)
-        ]
-        assert any("figsize" in m for m in msgs), msgs
+    def test_figsize_raises_type_error(self):
+        with pytest.raises(TypeError, match="figsize="):
+            dm.figure(figsize=(5, 3))
 
-    def test_dpi_emits_deprecation(self):
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            fig = dm.figure(dpi=150)
-            try:
-                pass
-            finally:
-                _close(fig)
-        msgs = [
-            str(w.message)
-            for w in caught
-            if issubclass(w.category, DeprecationWarning)
-        ]
-        assert any("dpi" in m for m in msgs)
+    def test_dpi_raises_type_error(self):
+        with pytest.raises(TypeError, match="dpi="):
+            dm.figure(dpi=150)
 
-    def test_width_and_figsize_both_specified_emits_userwarning(self):
-        """When dm.figure() gets both, ``figsize=`` wins silently; the
-        UserWarning is the only signal that ``width=`` was ignored."""
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
-            fig = dm.figure(width="9cm", figsize=(7, 4))
-            try:
-                w, h = fig.get_size_inches()
-            finally:
-                _close(fig)
-        assert math.isclose(w, 7, rel_tol=1e-6)
-        assert math.isclose(h, 4, rel_tol=1e-6)
-        user_msgs = [
-            str(c.message)
-            for c in caught
-            if issubclass(c.category, UserWarning)
-        ]
-        assert any("ignored" in m and "width=" in m for m in user_msgs), (
-            user_msgs
-        )
+    def test_width_and_figsize_both_raises(self):
+        with pytest.raises(TypeError, match="figsize="):
+            dm.figure(width="9cm", figsize=(7, 4))

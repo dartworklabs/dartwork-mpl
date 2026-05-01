@@ -1,12 +1,11 @@
-"""Tests for dartwork_mpl.templates (formerly dartwork_mpl.xplot)."""
+"""Tests for dartwork_mpl.templates (formerly dartwork_mpl.xplot, removed in 0.4.x)."""
 
 from __future__ import annotations
-
-import warnings
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import pytest
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
@@ -46,36 +45,17 @@ class TestPlotDivergingBar:
         plt.close(fig)
 
 
-class TestXplotDeprecationAlias:
-    """The legacy ``dartwork_mpl.xplot`` path must keep working.
+class TestXplotRemoval:
+    """``dartwork_mpl.xplot`` was deprecated in 0.4.0 and removed in 0.4.x."""
 
-    Until a future major release removes the backward-compatibility
-    shim, ``dartwork_mpl.xplot.plot_diverging_bar`` must still resolve
-    to the same callable as ``dartwork_mpl.templates.plot_diverging_bar``,
-    and attribute access (``dm.xplot``) must emit a
-    ``DeprecationWarning``.
-    """
+    def test_legacy_submodule_import_raises(self) -> None:
+        """``from dartwork_mpl.xplot import …`` must now raise ModuleNotFoundError."""
+        with pytest.raises(ModuleNotFoundError):
+            import dartwork_mpl.xplot  # noqa: F401
 
-    def test_legacy_submodule_import_still_works(self) -> None:
-        """``from dartwork_mpl.xplot import plot_diverging_bar`` resolves."""
-        from dartwork_mpl.templates import plot_diverging_bar as canonical
-        from dartwork_mpl.xplot import plot_diverging_bar as legacy
-
-        assert legacy is canonical
-
-    def test_attribute_access_emits_deprecation_warning(self) -> None:
-        """``dm.xplot`` attribute access must emit ``DeprecationWarning``."""
+    def test_attribute_access_raises(self) -> None:
+        """``dm.xplot`` attribute access must now raise AttributeError."""
         import dartwork_mpl as dm
 
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter("always")
+        with pytest.raises(AttributeError, match="xplot"):
             _ = dm.xplot
-        messages = [
-            str(w.message)
-            for w in caught
-            if issubclass(w.category, DeprecationWarning)
-        ]
-        assert any("xplot is deprecated" in m for m in messages), (
-            f"Expected a DeprecationWarning mentioning 'xplot is deprecated'. "
-            f"Got: {messages}"
-        )

@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import pytest
 
 from dartwork_mpl.util import (
-    cm2in,
     fs,
     fw,
     lw,
@@ -84,27 +83,6 @@ class TestLw:
         assert lw(0) == base
         assert lw(1) == base + 1
         assert lw(-0.5) == base - 0.5
-
-
-# ============================================================================
-# Unit conversion
-# ============================================================================
-
-
-class TestCm2in:
-    """Tests for cm2in() conversion (deprecated in 0.4.0)."""
-
-    def test_known_value(self) -> None:
-        with pytest.warns(DeprecationWarning, match="dm.cm2in is deprecated"):
-            assert cm2in(2.54) == pytest.approx(1.0, abs=1e-6)
-
-    def test_zero(self) -> None:
-        with pytest.warns(DeprecationWarning):
-            assert cm2in(0) == pytest.approx(0.0, abs=1e-10)
-
-    def test_ten_cm(self) -> None:
-        with pytest.warns(DeprecationWarning):
-            assert cm2in(10) == pytest.approx(10 / 2.54, abs=1e-6)
 
 
 # ============================================================================

@@ -8,12 +8,8 @@ __version__ = "0.4.0"
 
 # ruff: noqa: E402
 
-import sys
-import warnings
-
 # Import submodules for explicit access under ``dm.<submodule>``.
-# ``templates`` is the renamed ``xplot`` (see ``sys.modules`` shim and
-# the ``__getattr__`` below).
+# Validation helpers — submodule for extended auto-fix utilities.
 from . import (
     cmap,  # noqa: F401
     font,  # noqa: F401
@@ -21,19 +17,8 @@ from . import (
     icon,  # noqa: F401
     lint,  # noqa: F401
     templates,  # noqa: F401
+    validate_enhanced,
 )
-
-# Set up legacy submodule aliases for ``import dartwork_mpl.agent_utils``
-# and ``import dartwork_mpl.xplot``. ``__getattr__`` below handles the
-# attribute-access path (``dm.agent_utils`` / ``dm.xplot``); do NOT bind
-# these aliases as module attributes here, because module attributes
-# would shadow ``__getattr__`` and silently swallow the deprecation
-# warning.
-sys.modules["dartwork_mpl.agent_utils"] = helpers
-sys.modules["dartwork_mpl.xplot"] = templates
-
-# Validation helpers — submodule for extended auto-fix utilities.
-from . import validate_enhanced
 
 # Axes annotation
 from .annotation import arrow_axis, label_axes
@@ -51,9 +36,6 @@ from .color import (
     rgb,
 )
 
-# Note: legacy constants (SW/MW/TW/DW/WIDTHS/FS_*) are no longer
-# eagerly imported. They resolve via the module-level __getattr__
-# below, which emits DeprecationWarning on access.
 # Import asset-diagnostic visualization helpers.
 from .diagnostics import (
     classify_colormap,
@@ -126,7 +108,7 @@ from .templates import plot_diverging_bar
 from .units import Inches, cm, inch, mm
 
 # Color utilities
-from .util import cm2in, make_offset, mix_colors, pseudo_alpha, set_decimal
+from .util import make_offset, mix_colors, pseudo_alpha, set_decimal
 
 # Academic column-width sugar (0.4+).
 col1: float = cm(9)
@@ -153,9 +135,6 @@ __all__ = [
     "icon_font",
     "icon_font_path",
     "list_icon_fonts",
-    # NB: SW/MW/TW/DW/WIDTHS/FS_* removed from __all__ in 0.4 — they
-    # remain accessible via module-level __getattr__ with a
-    # DeprecationWarning (slated for removal in 0.5.0).
     # Style module
     "Style",
     "list_styles",
@@ -186,7 +165,6 @@ __all__ = [
     "col2",
     "Inches",
     # Units (legacy helpers, kept for compatibility)
-    "cm2in",
     "make_offset",
     # Formatting
     "set_decimal",
@@ -261,107 +239,7 @@ if not getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False):
     matplotlib.axes.Axes.twinx = _patched_twinx  # type: ignore[method-assign]
 
 
-# Deprecated 0.3.x width tokens. Mapping: name -> width in cm.
-# These return inches at access time and emit DeprecationWarning.
-_DEPRECATED_WIDTHS_CM: dict[str, float] = {
-    "SW": 9.0,
-    "MW": 12.0,
-    "TW": 14.5,
-    "DW": 17.0,
-}
-
-# Deprecated 0.3.x figure-size tuples and aggregate. Names map to
-# attributes on the constant module which we still resolve via lazy
-# import (without re-exporting in __all__).
-_DEPRECATED_TUPLE_NAMES: frozenset[str] = frozenset(
-    {
-        "FS_SINGLE",
-        "FS_DOUBLE",
-        "FS_SQUARE",
-        "FS_WIDE",
-        "FS_TALL",
-        "FS_GOLDEN",
-        "FS_SLIDE",
-        "FS_A4",
-        "WIDTHS",
-    }
-)
-
-
-def __getattr__(name):
-    """Provide deprecated attribute access with warnings.
-
-    A ``DeprecationWarning`` is emitted on **every** access (not just
-    the first), so a busy script can produce many lines of output.
-    Suppress the duplicates with the standard library's ``warnings``
-    module:
-
-        import warnings
-        warnings.simplefilter("once", DeprecationWarning)
-
-    or filter just dartwork-mpl warnings:
-
-        warnings.filterwarnings(
-            "once", category=DeprecationWarning, module="dartwork_mpl"
-        )
-
-    The deprecated names — ``SW``, ``MW``, ``TW``, ``DW``, ``WIDTHS``,
-    and ``FS_*`` — are scheduled for removal in 0.5.0; migrate to
-    ``dm.subplots(width="...cm", aspect="...")`` or to ``dm.col1`` /
-    ``dm.col2`` for academic-column sugar.
-    """
-    if name == "agent_utils":
-        warnings.warn(
-            "agent_utils is deprecated, use helpers instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return helpers
-    if name == "xplot":
-        warnings.warn(
-            "xplot is deprecated, use templates instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return templates
-    if name in _DEPRECATED_WIDTHS_CM:
-        cm_value = _DEPRECATED_WIDTHS_CM[name]
-        warnings.warn(
-            f"dm.{name} is deprecated and will be removed in 0.5.0. "
-            f'Use width="{cm_value:g}cm" with dm.subplots(...), or '
-            f"dm.cm({cm_value:g}) for a raw inches value. "
-            f"For academic columns prefer dm.col1 / dm.col2.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        from .units import cm as _cm
-
-        return _cm(cm_value)
-    if name in _DEPRECATED_TUPLE_NAMES:
-        warnings.warn(
-            f"dm.{name} is deprecated and will be removed in 0.5.0. "
-            f"Use dm.subplots(width=..., aspect=...) instead of "
-            f"figsize tuples.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        from . import constant as _constant
-
-        return getattr(_constant, name)
-    raise AttributeError(f"module 'dartwork_mpl' has no attribute {name!r}")
-
-
-def __dir__() -> list[str]:
-    """Expose deprecated 0.3 names so IDE autocomplete can find them.
-
-    Without this, ``dir(dartwork_mpl)`` would only list ``__all__`` and
-    miss ``SW``/``MW``/``TW``/``DW``/``FS_*``/``WIDTHS``/``agent_utils``/
-    ``xplot`` — making migration harder for users still on the 0.3 API.
-    Each access still emits a DeprecationWarning via ``__getattr__``.
-    """
-    return sorted(
-        set(__all__)
-        | set(_DEPRECATED_WIDTHS_CM)
-        | set(_DEPRECATED_TUPLE_NAMES)
-        | {"agent_utils", "xplot"}
-    )
+# 0.3 width tokens (SW/MW/TW/DW/WIDTHS), figure-size tuples (FS_*),
+# the cm2in helper, and the agent_utils/xplot module aliases were all
+# deprecated in 0.4.0 and removed in 0.4.x. Accessing them now raises
+# AttributeError. Migration paths: see docs/migration.md.
