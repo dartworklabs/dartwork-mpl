@@ -515,37 +515,106 @@ def _validate_line(data: dict) -> str:
     )
 
 
+def _validate_grouped_samples(data: dict, plot_label: str) -> list[str]:
+    """Shared strict validator for violin/boxplot grouped samples.
+
+    Accepts one of two shapes:
+
+    1. ``groups`` (list of string labels) **and** ``values``
+       (list of numeric lists, one inner list per group).
+       ``len(groups) == len(values)`` and each inner list must be
+       non-empty and numeric.
+    2. ``series`` (mapping of label → list of numeric samples).
+       Each value list must be non-empty and numeric.
+    """
+    issues: list[str] = []
+    if not isinstance(data, dict):
+        issues.append(f"'{plot_label}' data must be a JSON object (dict).")
+        return issues
+
+    has_pair = "groups" in data and "values" in data
+    has_series = "series" in data
+
+    if not has_pair and not has_series:
+        issues.append(
+            "Need either 'groups' (list of labels) + 'values' "
+            "(list of numeric lists), or 'series' (dict of label -> "
+            "numeric list)."
+        )
+        return issues
+
+    if has_pair:
+        groups = data["groups"]
+        values = data["values"]
+        if not isinstance(groups, list) or not all(
+            isinstance(g, str) for g in groups
+        ):
+            issues.append("'groups' must be a list of string labels.")
+        if not isinstance(values, list) or not all(
+            isinstance(v, list) for v in values
+        ):
+            issues.append("'values' must be a list of lists of numbers.")
+        elif isinstance(groups, list) and len(groups) != len(values):
+            issues.append(
+                f"Length mismatch: 'groups' ({len(groups)}) != "
+                f"'values' ({len(values)})."
+            )
+        if isinstance(values, list):
+            for i, inner in enumerate(values):
+                if not isinstance(inner, list):
+                    continue
+                if len(inner) < 1:
+                    issues.append(
+                        f"'values[{i}]' must contain at least one sample."
+                    )
+                if not all(
+                    isinstance(v, (int, float)) and not isinstance(v, bool)
+                    for v in inner
+                ):
+                    issues.append(
+                        f"'values[{i}]' must contain only numeric samples "
+                        f"(int/float)."
+                    )
+
+    if has_series:
+        series = data["series"]
+        if not isinstance(series, dict):
+            issues.append(
+                "'series' must be a dict mapping label -> numeric list."
+            )
+        else:
+            for name, inner in series.items():
+                if not isinstance(name, str):
+                    issues.append(
+                        f"'series' key {name!r} must be a string label."
+                    )
+                if not isinstance(inner, list):
+                    issues.append(
+                        f"'series[{name!r}]' must be a list of numbers."
+                    )
+                    continue
+                if len(inner) < 1:
+                    issues.append(
+                        f"'series[{name!r}]' must contain at least one sample."
+                    )
+                if not all(
+                    isinstance(v, (int, float)) and not isinstance(v, bool)
+                    for v in inner
+                ):
+                    issues.append(
+                        f"'series[{name!r}]' must contain only numeric "
+                        f"samples (int/float)."
+                    )
+
+    return issues
+
+
 def _validate_violin(data: dict) -> str:
     """Validate data for a violin plot.
 
-    Accepts either a list-of-lists (each inner list = one violin's
-    samples) or a dict mapping group label → samples list.
+    See :func:`_validate_grouped_samples` for the accepted shapes.
     """
-    issues = []
-    if "groups" not in data and "data" not in data:
-        issues.append(
-            "Need 'data' (list of arrays, one per violin) or 'groups' "
-            "(dict of label -> samples)."
-        )
-    payload = data.get("groups", data.get("data"))
-    if isinstance(payload, dict):
-        for name, vals in payload.items():
-            if not isinstance(vals, list) or not all(
-                isinstance(v, (int, float)) for v in vals
-            ):
-                issues.append(
-                    f"Group '{name}' must be a list of numeric samples."
-                )
-    elif isinstance(payload, list):
-        for i, vals in enumerate(payload):
-            if not isinstance(vals, list) or not all(
-                isinstance(v, (int, float)) for v in vals
-            ):
-                issues.append(f"Violin {i} must be a list of numeric samples.")
-    elif payload is not None:
-        issues.append(
-            "'data'/'groups' must be a list of lists or a dict of named lists."
-        )
+    issues = _validate_grouped_samples(data, "violin")
     return (
         "✅ Data structure valid for violin plot."
         if not issues
@@ -556,34 +625,9 @@ def _validate_violin(data: dict) -> str:
 def _validate_boxplot(data: dict) -> str:
     """Validate data for a boxplot.
 
-    Same shape as a violin plot — list-of-lists or dict of named
-    lists, one box per group.
+    See :func:`_validate_grouped_samples` for the accepted shapes.
     """
-    issues = []
-    if "groups" not in data and "data" not in data:
-        issues.append(
-            "Need 'data' (list of arrays, one per box) or 'groups' "
-            "(dict of label -> samples)."
-        )
-    payload = data.get("groups", data.get("data"))
-    if isinstance(payload, dict):
-        for name, vals in payload.items():
-            if not isinstance(vals, list) or not all(
-                isinstance(v, (int, float)) for v in vals
-            ):
-                issues.append(
-                    f"Group '{name}' must be a list of numeric samples."
-                )
-    elif isinstance(payload, list):
-        for i, vals in enumerate(payload):
-            if not isinstance(vals, list) or not all(
-                isinstance(v, (int, float)) for v in vals
-            ):
-                issues.append(f"Box {i} must be a list of numeric samples.")
-    elif payload is not None:
-        issues.append(
-            "'data'/'groups' must be a list of lists or a dict of named lists."
-        )
+    issues = _validate_grouped_samples(data, "boxplot")
     return (
         "✅ Data structure valid for boxplot."
         if not issues
@@ -592,20 +636,50 @@ def _validate_boxplot(data: dict) -> str:
 
 
 def _validate_histogram(data: dict) -> str:
-    """Validate data for a histogram. Expects a 1-D numeric array."""
-    issues = []
-    if "values" not in data and "data" not in data:
-        issues.append(
-            "Missing 'values' (or 'data') key — a 1-D list of numeric samples."
-        )
-    samples = data.get("values", data.get("data"))
-    if samples is not None:
+    """Validate data for a histogram.
+
+    Required: ``values`` — a 1-D list of numbers.
+    Optional: ``bins`` — either a positive integer or a 1-D list of
+    numeric bin edges.
+    """
+    issues: list[str] = []
+    if not isinstance(data, dict):
+        return "histogram data must be a JSON object (dict)."
+
+    if "values" not in data:
+        issues.append("Missing 'values' key — a 1-D list of numeric samples.")
+    else:
+        samples = data["values"]
         if not isinstance(samples, list):
             issues.append("'values' must be a 1-D list of numbers.")
-        elif not all(isinstance(v, (int, float)) for v in samples):
+        elif not all(
+            isinstance(v, (int, float)) and not isinstance(v, bool)
+            for v in samples
+        ):
             issues.append(
                 "'values' must contain only numeric samples (int/float)."
             )
+
+    if "bins" in data:
+        bins = data["bins"]
+        if isinstance(bins, bool):
+            issues.append("'bins' must be a positive int or list of edges.")
+        elif isinstance(bins, int):
+            if bins < 1:
+                issues.append("'bins' (int) must be >= 1.")
+        elif isinstance(bins, list):
+            if not all(
+                isinstance(v, (int, float)) and not isinstance(v, bool)
+                for v in bins
+            ):
+                issues.append("'bins' list must contain only numeric edges.")
+            elif len(bins) < 2:
+                issues.append("'bins' list must contain at least two edges.")
+        else:
+            issues.append(
+                "'bins' must be a positive int or a list of numeric edges."
+            )
+
     return (
         "✅ Data structure valid for histogram."
         if not issues
@@ -616,34 +690,68 @@ def _validate_histogram(data: dict) -> str:
 def _validate_contour(data: dict) -> str:
     """Validate data for a contour plot.
 
-    Required: ``Z`` (2-D array). Optional: ``X``, ``Y`` (meshgrid). If
-    ``X``/``Y`` are present they must share ``Z``'s shape.
+    Required: ``Z`` — a 2-D array (list of lists) with rows of equal
+    length and at least one row/column.
+    Optional: ``X``, ``Y`` — meshgrid 2-D arrays with the same shape
+    as ``Z``.
     """
-    issues = []
-    if "Z" not in data and "z" not in data:
+    issues: list[str] = []
+    if not isinstance(data, dict):
+        return "contour data must be a JSON object (dict)."
+
+    if "Z" not in data:
         issues.append("Missing 'Z' key — a 2-D array of values to contour.")
-    Z = data.get("Z", data.get("z"))
-    if Z is not None:
+        Z = None
+    else:
+        Z = data["Z"]
         if not isinstance(Z, list) or not all(
             isinstance(row, list) for row in Z
         ):
             issues.append("'Z' must be a 2-D array (list of lists).")
-        elif Z and any(len(row) != len(Z[0]) for row in Z):
+            Z = None
+        elif len(Z) < 1 or len(Z[0]) < 1:
+            issues.append("'Z' must have at least one row and one column.")
+            Z = None
+        elif any(len(row) != len(Z[0]) for row in Z):
             issues.append("'Z' rows must all have equal length.")
+            Z = None
+        elif not all(
+            all(
+                isinstance(v, (int, float)) and not isinstance(v, bool)
+                for v in row
+            )
+            for row in Z
+        ):
+            issues.append("'Z' must contain only numeric values (int/float).")
+
     for key in ("X", "Y"):
-        grid = data.get(key, data.get(key.lower()))
-        if grid is None:
+        if key not in data:
             continue
+        grid = data[key]
         if not isinstance(grid, list) or not all(
             isinstance(row, list) for row in grid
         ):
             issues.append(f"'{key}' must be a 2-D array (list of lists).")
-        elif Z is not None and isinstance(Z, list) and Z:
-            if len(grid) != len(Z) or any(len(r) != len(Z[0]) for r in grid):
+            continue
+        if Z is not None:
+            z_rows = len(Z)
+            z_cols = len(Z[0])
+            if len(grid) != z_rows or any(len(r) != z_cols for r in grid):
                 issues.append(
-                    f"'{key}' shape must match 'Z' shape "
-                    f"({len(Z)}x{len(Z[0]) if Z else 0})."
+                    f"'{key}' shape must match 'Z' shape ({z_rows}x{z_cols})."
                 )
+                continue
+        if not all(
+            all(
+                isinstance(v, (int, float)) and not isinstance(v, bool)
+                for v in row
+            )
+            for row in grid
+        ):
+            issues.append(
+                f"'{key}' must contain only numeric values (int/float)."
+            )
+
     return (
         "✅ Data structure valid for contour plot."
         if not issues
@@ -654,26 +762,64 @@ def _validate_contour(data: dict) -> str:
 def _validate_twin_axis(data: dict) -> str:
     """Validate data for a twin-axis chart.
 
-    Expected: shared ``x`` plus ``left`` and ``right`` series (each
-    same length as ``x``).
+    Required:
+
+    * ``x`` — a list of numeric values.
+    * ``left`` — a dict with keys ``y`` (numeric list, same length
+      as ``x``) and ``label`` (string).
+    * ``right`` — same shape as ``left``.
     """
-    issues = []
+    issues: list[str] = []
+    if not isinstance(data, dict):
+        return "twin_axis data must be a JSON object (dict)."
+
+    x = data.get("x")
     if "x" not in data:
-        issues.append("Missing 'x' key (shared x values).")
-    if "left" not in data:
-        issues.append("Missing 'left' key (primary-axis y values).")
-    if "right" not in data:
-        issues.append("Missing 'right' key (secondary-axis y values).")
-    if all(k in data for k in ("x", "left", "right")):
-        n = len(data["x"])
-        if len(data["left"]) != n:
+        issues.append("Missing 'x' key (list of shared x values).")
+    elif not isinstance(x, list):
+        issues.append("'x' must be a list of numbers.")
+    elif not all(
+        isinstance(v, (int, float)) and not isinstance(v, bool) for v in x
+    ):
+        issues.append("'x' must contain only numeric values (int/float).")
+
+    n = len(x) if isinstance(x, list) else None
+
+    for side in ("left", "right"):
+        if side not in data:
+            issues.append(f"Missing '{side}' key (dict with 'y' and 'label').")
+            continue
+        spec = data[side]
+        if not isinstance(spec, dict):
             issues.append(
-                f"'left' length ({len(data['left'])}) != 'x' length ({n})."
+                f"'{side}' must be a dict with 'y' (numeric list) and "
+                f"'label' (string)."
             )
-        if len(data["right"]) != n:
-            issues.append(
-                f"'right' length ({len(data['right'])}) != 'x' length ({n})."
-            )
+            continue
+        if "y" not in spec:
+            issues.append(f"'{side}' is missing required 'y' key.")
+        else:
+            y = spec["y"]
+            if not isinstance(y, list):
+                issues.append(f"'{side}.y' must be a list of numbers.")
+            else:
+                if not all(
+                    isinstance(v, (int, float)) and not isinstance(v, bool)
+                    for v in y
+                ):
+                    issues.append(
+                        f"'{side}.y' must contain only numeric values "
+                        f"(int/float)."
+                    )
+                if n is not None and len(y) != n:
+                    issues.append(
+                        f"'{side}.y' length ({len(y)}) != 'x' length ({n})."
+                    )
+        if "label" not in spec:
+            issues.append(f"'{side}' is missing required 'label' key.")
+        elif not isinstance(spec["label"], str):
+            issues.append(f"'{side}.label' must be a string.")
+
     return (
         "✅ Data structure valid for twin-axis plot."
         if not issues
