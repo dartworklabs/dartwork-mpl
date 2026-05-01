@@ -16,12 +16,14 @@ Usage
 
 from __future__ import annotations
 
+import contextlib
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 if TYPE_CHECKING:
+    from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
 
 
@@ -44,10 +46,13 @@ class VisualWarning:
     severity: Severity
     check_id: str
     message: str
-    detail: dict = field(default_factory=dict)
+    detail: dict[str, Any] = field(default_factory=dict)
 
     # Icons per severity for structured log output.
-    _ICONS = {Severity.WARNING: "⚠️ ", Severity.INFO: "💡"}
+    _ICONS: ClassVar[dict[Severity, str]] = {
+        Severity.WARNING: "⚠️ ",
+        Severity.INFO: "💡",
+    }
 
     def __str__(self) -> str:
         icon = self._ICONS.get(self.severity, "")
@@ -59,14 +64,16 @@ class VisualWarning:
 # ───────────────────────────────────────────────────────
 
 
-def _check_overflow(fig: Figure, renderer) -> list[VisualWarning]:
+def _check_overflow(
+    fig: Figure, renderer: RendererBase
+) -> list[VisualWarning]:
     """Detect elements whose bounding boxes extend beyond the figure canvas."""
     warnings: list[VisualWarning] = []
     fig_bbox = fig.bbox  # pixel coords
 
     for ax in fig.axes:
         # --- text objects (titles, labels, annotations) ---
-        for txt in ax.texts + [ax.title, ax.xaxis.label, ax.yaxis.label]:
+        for txt in [*ax.texts, ax.title, ax.xaxis.label, ax.yaxis.label]:
             if (
                 txt is None
                 or not txt.get_visible()
@@ -111,8 +118,8 @@ def _check_overflow(fig: Figure, renderer) -> list[VisualWarning]:
         # --- tick labels ---
         #
         # matplotlib's default tick locators emit ticks at "nice" round
-        # values (e.g. y = 0, 10, …, 90 for an axis whose data range is
-        # 0 – 82). The extra ticks past the axis limits are still
+        # values (e.g. y = 0, 10, ..., 90 for an axis whose data range is
+        # 0 - 82). The extra ticks past the axis limits are still
         # registered on the artist tree even though they are clipped
         # away from the rendered axes — calling `get_window_extent` on
         # them therefore returns coordinates outside the axes patch
@@ -163,13 +170,15 @@ def _check_overflow(fig: Figure, renderer) -> list[VisualWarning]:
     return warnings
 
 
-def _check_overlap(fig: Figure, renderer) -> list[VisualWarning]:
+def _check_overlap(
+    fig: Figure, renderer: RendererBase
+) -> list[VisualWarning]:
     """Detect overlapping text labels within each Axes."""
     warnings: list[VisualWarning] = []
 
     for ax in fig.axes:
-        texts = []
-        for txt in ax.texts + [ax.title, ax.xaxis.label, ax.yaxis.label]:
+        texts: list[tuple[str, Any]] = []
+        for txt in [*ax.texts, ax.title, ax.xaxis.label, ax.yaxis.label]:
             if (
                 txt is None
                 or not txt.get_visible()
@@ -219,7 +228,9 @@ def _check_overlap(fig: Figure, renderer) -> list[VisualWarning]:
     return warnings
 
 
-def _check_legend_overflow(fig: Figure, renderer) -> list[VisualWarning]:
+def _check_legend_overflow(
+    fig: Figure, renderer: RendererBase
+) -> list[VisualWarning]:
     """Detect legends consuming too large a fraction of the Axes area."""
     warnings: list[VisualWarning] = []
     THRESHOLD = 0.30  # 30% of axes area
@@ -266,7 +277,9 @@ def _check_legend_overflow(fig: Figure, renderer) -> list[VisualWarning]:
     return warnings
 
 
-def _check_tick_crowding(fig: Figure, renderer) -> list[VisualWarning]:
+def _check_tick_crowding(
+    fig: Figure, renderer: RendererBase
+) -> list[VisualWarning]:
     """Detect overcrowded tick labels on axes."""
     warnings: list[VisualWarning] = []
     MAX_DENSITY = 4.0  # ticks per inch
@@ -365,7 +378,9 @@ def _check_empty_axes(fig: Figure) -> list[VisualWarning]:
     return warnings
 
 
-def _check_margin_asymmetry(fig: Figure, renderer) -> list[VisualWarning]:
+def _check_margin_asymmetry(
+    fig: Figure, renderer: RendererBase
+) -> list[VisualWarning]:
     """Detect asymmetric whitespace — one side much emptier than its opposite."""
     warnings: list[VisualWarning] = []
     fig_bbox = fig.bbox
@@ -382,10 +397,10 @@ def _check_margin_asymmetry(fig: Figure, renderer) -> list[VisualWarning]:
         # Include text objects outside axes (annotations, pie labels).
         for txt in ax.texts:
             if txt.get_visible() and txt.get_text().strip():
-                try:
+                with contextlib.suppress(
+                    RuntimeError, ValueError, AttributeError
+                ):
                     all_extents.append(txt.get_window_extent(renderer))
-                except (RuntimeError, ValueError, AttributeError):
-                    pass
 
     if not all_extents:
         return warnings
@@ -452,7 +467,9 @@ def _check_margin_asymmetry(fig: Figure, renderer) -> list[VisualWarning]:
     return warnings
 
 
-def _check_pie_label_offset(fig: Figure, renderer) -> list[VisualWarning]:
+def _check_pie_label_offset(
+    fig: Figure, renderer: RendererBase
+) -> list[VisualWarning]:
     """Detect donut chart labels that aren't centered in the wedge width."""
     warnings: list[VisualWarning] = []
 
@@ -538,7 +555,7 @@ def validate_figure(
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
 
-    all_checks = {
+    all_checks: dict[str, Any] = {
         "OVERFLOW": lambda: _check_overflow(fig, renderer),
         "OVERLAP": lambda: _check_overlap(fig, renderer),
         "LEGEND_OVERFLOW": lambda: _check_legend_overflow(fig, renderer),
@@ -548,17 +565,17 @@ def validate_figure(
         "PIE_LABEL_OFFSET": lambda: _check_pie_label_offset(fig, renderer),
     }
 
-    if checks is not None:
-        selected = {k: v for k, v in all_checks.items() if k in checks}
-    else:
-        selected = all_checks
+    selected = (
+        {k: v for k, v in all_checks.items() if k in checks}
+        if checks is not None
+        else all_checks
+    )
 
     warnings: list[VisualWarning] = []
     for check_fn in selected.values():
-        try:
+        # Never crash the save pipeline
+        with contextlib.suppress(RuntimeError, ValueError, AttributeError):
             warnings.extend(check_fn())
-        except (RuntimeError, ValueError, AttributeError):
-            pass  # never crash the save pipeline
 
     # Structured stdout output for agent consumption.
     if not quiet:

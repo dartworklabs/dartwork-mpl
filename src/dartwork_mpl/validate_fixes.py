@@ -146,18 +146,21 @@ def validate_with_fixes(
                 )
 
         # Auto-apply simple fixes
-        if auto_apply and warning.severity == Severity.WARNING:
-            if warning.check_id in ["OVERFLOW", "MARGIN_ASYMMETRY"]:
-                try:
-                    dm.auto_layout(fig)
-                    applied_fixes.append(
-                        f"Applied dm.auto_layout() for {warning.check_id}"
-                    )
-                    if verbose:
-                        print("  ✓ Auto-applied: dm.auto_layout()")
-                except Exception as e:
-                    if verbose:
-                        print(f"  ✗ Failed to auto-fix: {e}")
+        if (
+            auto_apply
+            and warning.severity == Severity.WARNING
+            and warning.check_id in ["OVERFLOW", "MARGIN_ASYMMETRY"]
+        ):
+            try:
+                dm.auto_layout(fig)
+                applied_fixes.append(
+                    f"Applied dm.auto_layout() for {warning.check_id}"
+                )
+                if verbose:
+                    print("  ✓ Auto-applied: dm.auto_layout()")
+            except (RuntimeError, ValueError, AttributeError) as e:
+                if verbose:
+                    print(f"  ✗ Failed to auto-fix: {e}")
 
     # Re-validate after fixes
     if applied_fixes and auto_apply:
@@ -261,13 +264,15 @@ def generate_validation_report(fig: Figure) -> str:
 
         if severe:
             report.append(f"  ⚠️  {len(severe)} warnings")
-            for w in severe[:3]:  # Show first 3
-                report.append(f"    - {w.check_id}: {w.message}")
+            report.extend(
+                f"    - {w.check_id}: {w.message}" for w in severe[:3]
+            )
 
         if info:
             report.append(f"  💡 {len(info)} info messages")
-            for w in info[:2]:  # Show first 2
-                report.append(f"    - {w.check_id}: {w.message}")
+            report.extend(
+                f"    - {w.check_id}: {w.message}" for w in info[:2]
+            )
 
     # Overall score
     n_passed = sum(requirements.values())
