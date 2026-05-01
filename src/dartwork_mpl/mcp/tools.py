@@ -68,7 +68,7 @@ def register_tools(mcp: FastMCP) -> None:
             from urllib.request import urlopen
 
             try:
-                with urlopen(url, timeout=10) as response:  # noqa: S310 — allowlist enforced above
+                with urlopen(url, timeout=10) as response:
                     return str(response.read().decode("utf-8"))
             except Exception as exc:
                 raise ValueError(

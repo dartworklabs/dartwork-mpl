@@ -40,37 +40,31 @@ def suggest_chart_type(
         # Single variable
         if x_type == "continuous":
             return "histogram"
-        elif x_type == "categorical":
+        if x_type == "categorical":
             return "count_bar"
-        else:
-            return "line"
+        return "line"
 
     # Two variables
     if x_type == "categorical":
         if n_series == 1:
             return "bar"
-        else:
-            return "grouped_bar"
+        return "grouped_bar"
 
-    elif x_type == "temporal":
+    if x_type == "temporal":
         if n_series == 1:
             if n_points < 20:
                 return "bar_line"  # Bar with line overlay
-            else:
-                return "line"
-        else:
-            return "multi_line"
+            return "line"
+        return "multi_line"
 
-    elif x_type == "continuous":
+    if x_type == "continuous":
         if y_type == "continuous":
             if n_points < 50:
                 return "scatter"
-            elif n_points < 500:
+            if n_points < 500:
                 return "scatter_density"
-            else:
-                return "hexbin"
-        else:
-            return "line"
+            return "hexbin"
+        return "line"
 
     return "scatter"  # Default
 

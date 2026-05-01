@@ -6,7 +6,7 @@ the prompt guide Markdown files bundled with the dartwork package.
 
 from __future__ import annotations
 
-__all__ = ["prompt_path", "get_prompt", "list_prompts", "copy_prompt"]
+__all__ = ["copy_prompt", "get_prompt", "list_prompts", "prompt_path"]
 
 from pathlib import Path
 from shutil import copy2

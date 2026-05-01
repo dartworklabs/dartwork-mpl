@@ -12,7 +12,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-__all__ = ["Style", "style", "style_path", "list_styles", "load_style_dict"]
+__all__ = ["Style", "list_styles", "load_style_dict", "style", "style_path"]
 
 
 # Module-level lock guarding global matplotlib state mutations

@@ -12,7 +12,7 @@ verbatim.
 
 from __future__ import annotations
 
-__all__ = ["Rule", "Issue", "load_rules", "lint", "format_report"]
+__all__ = ["Issue", "Rule", "format_report", "lint", "load_rules"]
 
 import re
 from collections.abc import Iterable

@@ -91,7 +91,7 @@ class _BaseColorView(ABC):
 class _ColorViewIterator:
     """Shared iterator for all colour-space views."""
 
-    __slots__ = ("_view", "_index")
+    __slots__ = ("_index", "_view")
 
     def __init__(self, view: _BaseColorView) -> None:
         self._view = view

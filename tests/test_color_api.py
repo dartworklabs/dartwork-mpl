@@ -22,7 +22,7 @@ class TestOklab:
         L, a, b = 0.7, 0.05, -0.03
         c = oklab(L, a, b)
         L2, a2, b2 = c.to_oklab()
-        assert L2 == pytest.approx(L, abs=1e-6)
+        assert pytest.approx(L, abs=1e-6) == L2
         assert a2 == pytest.approx(a, abs=1e-6)
         assert b2 == pytest.approx(b, abs=1e-6)
 
@@ -38,8 +38,8 @@ class TestOklch:
         L, C, h = 0.6, 0.12, 200.0
         c = oklch(L, C, h)
         L2, C2, h2 = c.to_oklch()
-        assert L2 == pytest.approx(L, abs=1e-4)
-        assert C2 == pytest.approx(C, abs=1e-4)
+        assert pytest.approx(L, abs=1e-4) == L2
+        assert pytest.approx(C, abs=1e-4) == C2
         assert h2 == pytest.approx(h, abs=1.0)
 
 

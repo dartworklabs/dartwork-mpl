@@ -8,10 +8,10 @@ from __future__ import annotations
 
 __all__ = [
     "auto_layout",
-    "simple_layout",
     "get_bounding_box",
     "set_xmargin",
     "set_ymargin",
+    "simple_layout",
 ]
 
 from typing import TYPE_CHECKING

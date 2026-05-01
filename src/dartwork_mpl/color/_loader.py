@@ -144,7 +144,7 @@ _loaded: bool = False
 
 def ensure_loaded() -> None:
     """Ensure colour definitions have been loaded (idempotent)."""
-    global _loaded  # noqa: PLW0603
+    global _loaded
     if _loaded:
         return
     _load_colors()

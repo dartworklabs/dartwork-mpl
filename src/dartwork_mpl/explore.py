@@ -26,13 +26,13 @@ from .diagnostics import (
 )
 
 __all__ = [
-    "list_palettes",
-    "list_colormaps",
-    "show_palette",
     "classify_colormap",
+    "list_colormaps",
+    "list_palettes",
     "plot_colormaps",
     "plot_colors",
     "plot_fonts",
+    "show_palette",
 ]
 
 

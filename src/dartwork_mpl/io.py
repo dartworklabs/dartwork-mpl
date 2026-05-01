@@ -6,7 +6,7 @@ rendering them as SVG or other image formats in Jupyter environments.
 
 from __future__ import annotations
 
-__all__ = ["save_formats", "save_and_show", "show"]
+__all__ = ["save_and_show", "save_formats", "show"]
 
 from pathlib import Path
 from tempfile import NamedTemporaryFile
