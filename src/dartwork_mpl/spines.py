@@ -5,7 +5,7 @@ This module provides utilities for customizing plot spines and grids.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from matplotlib.axes import Axes
 
@@ -118,7 +118,7 @@ def add_grid(
     color: str = "oc.gray3",
     linestyle: str = "-",
     linewidth: float = 0.5,
-    **kwargs,
+    **kwargs: Any,
 ) -> None:
     """Add a customized grid to the axes.
 

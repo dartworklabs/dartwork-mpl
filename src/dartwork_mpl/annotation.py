@@ -1,7 +1,7 @@
 """Axes-based annotation helper module.
 
 Provides ``label_axes`` for adding standard alphabetic sub-labels to figure
-panels, and ``arrow_axis`` for drawing bidirectional Low–High arrow axes.
+panels, and ``arrow_axis`` for drawing bidirectional Low-High arrow axes.
 """
 
 from __future__ import annotations
@@ -13,19 +13,20 @@ from typing import Any
 
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.text import Text
 
 from .scale import fs
 
 
 def label_axes(
-    axes: list[Axes] | np.ndarray,
+    axes: list[Axes] | np.ndarray[Any, Any],
     labels: list[str] | None = None,
     fontsize: float = 10,
     fontweight: str = "bold",
     x: float | str = "auto",
     y: float = 1.05,
-    **kwargs,
-) -> list:
+    **kwargs: Any,
+) -> list[Text]:
     """Add standardized identification labels (a, b, c, ...) to subplot panels.
 
     Commonly used in academic papers and reports to annotate multiple panels
@@ -43,7 +44,7 @@ def label_axes(
     fontweight : str, optional
         Font weight for the labels. Default is "bold".
     x : float | str, optional
-        Horizontal position in Axes-relative coordinates (may exceed 0.0–1.0).
+        Horizontal position in Axes-relative coordinates (may exceed 0.0-1.0).
         If "auto", the optimal x position is determined based on whether
         a y-axis label is present (-0.18 or -0.02).
     y : float, optional
@@ -62,13 +63,13 @@ def label_axes(
     if labels is None:
         labels = list(string.ascii_lowercase[: len(axes)])
 
-    texts = []
+    texts: list[Text] = []
     for ax, label in zip(axes, labels, strict=False):
         if x == "auto":
             has_ylabel = ax.get_ylabel().strip() != ""
             x_pos = -0.18 if has_ylabel else -0.02
         else:
-            x_pos = float(x)  # type: ignore[arg-type]
+            x_pos = float(x)
 
         t = ax.text(
             x_pos,
@@ -99,9 +100,9 @@ def arrow_axis(
     pad: float = -0.005,
     weight: str = "normal",
     color: str = "black",
-    arrow_kw: dict | None = None,
+    arrow_kw: dict[str, Any] | None = None,
 ) -> None:
-    """Draw a bidirectional Low–High arrow axis along the edge of a plot.
+    """Draw a bidirectional Low-High arrow axis along the edge of a plot.
 
     Produces a visual like ``Low ◄── label ──► High`` near the spine exterior.
 
@@ -204,7 +205,7 @@ def arrow_axis(
     # ── measure extents in axes fraction ─────────────────────
     fig.canvas.draw()
 
-    def _edges(t):
+    def _edges(t: Text) -> np.ndarray[Any, Any]:
         bb = t.get_window_extent(renderer)
         return inv.transform([[bb.x0, bb.y0], [bb.x1, bb.y1]])
 
@@ -215,7 +216,7 @@ def arrow_axis(
     lb_hi = _edges(t_lb)[1][i]
 
     # ── draw arrows ──────────────────────────────────────────
-    def _arrow(tip, tail):
+    def _arrow(tip: float, tail: float) -> None:
         if direction == "x":
             ax.annotate(
                 "",
