@@ -10,6 +10,9 @@ Enhanced matplotlib styling, color management, and utility library engineered by
 
 `dartwork-mpl` is a utility collection designed to elevate matplotlib visuals to publication-level elegance. Instead of wrapping matplotlib with a new API layer, it provides **thin utilities** that enhance matplotlib's native capabilities while keeping you in full control.
 
+> [!IMPORTANT]
+> **Migrating from 0.3.x?** dartwork-mpl 0.4.1+ has **removed** the deprecated 0.3 names (`dm.SW`/`MW`/`TW`/`DW`, `dm.FS_*`, `dm.WIDTHS`, `dm.cm2in`, `dm.agent_utils`, `dm.xplot`, and the `figsize=`/`dpi=` arguments on `dm.subplots`/`dm.figure`). Each access path now raises `AttributeError` / `ModuleNotFoundError` / `TypeError` with a message naming the new API. See [`docs/migration.md`](docs/migration.md) and the [CHANGELOG](CHANGELOG.md) for the full mapping (most calls become `dm.subplots(width="...cm", aspect="...")` or `dm.col1` / `dm.col2`).
+
 <br/>
 
 ## Features
