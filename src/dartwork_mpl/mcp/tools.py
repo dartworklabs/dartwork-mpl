@@ -921,8 +921,7 @@ def _validate_bar_horizontal(data: dict[str, Any]) -> str:
         and len(data["categories"]) != len(data["values"])
     ):
         issues.append(
-            "Length mismatch: 'categories' and 'values' must "
-            "have equal length."
+            "Length mismatch: 'categories' and 'values' must have equal length."
         )
     return (
         "✅ Data structure valid for horizontal bar plot."
@@ -981,9 +980,7 @@ def _validate_waterfall(data: dict[str, Any]) -> str:
         and "deltas" in data
         and len(data["is_total"]) != len(data["deltas"])
     ):
-        issues.append(
-            "Length mismatch: 'is_total' must align with 'deltas'."
-        )
+        issues.append("Length mismatch: 'is_total' must align with 'deltas'.")
     return (
         "✅ Data structure valid for waterfall plot."
         if not issues
@@ -1062,7 +1059,9 @@ def _validate_plot_3d(data: dict[str, Any]) -> str:
     Expected: ``x``, ``y``, ``z`` arrays of equal length (scatter)
     or 2D ``z`` matrix matching ``x`` x ``y`` (surface).
     """
-    issues = [f"Missing '{key}' key." for key in ("x", "y", "z") if key not in data]
+    issues = [
+        f"Missing '{key}' key." for key in ("x", "y", "z") if key not in data
+    ]
     if all(k in data for k in ("x", "y", "z")):
         z = data["z"]
         if isinstance(z, list) and z and isinstance(z[0], list):
