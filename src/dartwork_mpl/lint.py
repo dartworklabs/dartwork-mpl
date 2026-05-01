@@ -214,8 +214,7 @@ def format_report(issues: list[Issue]) -> str:
             f"[{issue.severity.upper()}] {issue.rule_id}"
             f"{line_part}: {msg_lines[0]}"
         )
-        for tail in msg_lines[1:]:
-            lines.append(f"    {tail}" if tail else "")
+        lines.extend(f"    {tail}" if tail else "" for tail in msg_lines[1:])
         if issue.fix_suggestion:
             lines.append(f"  → fix: {issue.fix_suggestion}")
     return "\n".join(lines)
