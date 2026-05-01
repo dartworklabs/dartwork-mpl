@@ -371,65 +371,10 @@ class TestMcpTools:
                 f"advertised type {plot_type!r}"
             )
 
-    def test_validate_plot_data_violin_happy_and_sad(self) -> None:
-        from dartwork_mpl.mcp.tools import register_tools
+    # ── Strict validators: violin ──────────────────────────────────
 
-        mock_mcp = MagicMock()
-        captured = _capture_decorators(mock_mcp, "tool")
-        register_tools(mock_mcp)
-
-        good = json.dumps({"groups": {"A": [1.0, 2.0, 3.0], "B": [4.0, 5.0]}})
-        assert "valid" in captured["validate_plot_data"]("violin", good).lower()
-        bad = json.dumps({"foo": "bar"})
-        assert "data" in captured["validate_plot_data"]("violin", bad).lower()
-
-    def test_validate_plot_data_boxplot_happy_and_sad(self) -> None:
-        from dartwork_mpl.mcp.tools import register_tools
-
-        mock_mcp = MagicMock()
-        captured = _capture_decorators(mock_mcp, "tool")
-        register_tools(mock_mcp)
-
-        good = json.dumps({"data": [[1, 2, 3], [4, 5, 6]]})
-        assert (
-            "valid" in captured["validate_plot_data"]("boxplot", good).lower()
-        )
-        bad = json.dumps({"data": "not a list"})
-        result = captured["validate_plot_data"]("boxplot", bad)
-        assert "list" in result.lower()
-
-    def test_validate_plot_data_histogram_happy_and_sad(self) -> None:
-        from dartwork_mpl.mcp.tools import register_tools
-
-        mock_mcp = MagicMock()
-        captured = _capture_decorators(mock_mcp, "tool")
-        register_tools(mock_mcp)
-
-        good = json.dumps({"values": [1, 2, 3, 4, 5]})
-        assert (
-            "valid" in captured["validate_plot_data"]("histogram", good).lower()
-        )
-        bad = json.dumps({})
-        result = captured["validate_plot_data"]("histogram", bad)
-        assert "values" in result.lower()
-
-    def test_validate_plot_data_contour_happy_and_sad(self) -> None:
-        from dartwork_mpl.mcp.tools import register_tools
-
-        mock_mcp = MagicMock()
-        captured = _capture_decorators(mock_mcp, "tool")
-        register_tools(mock_mcp)
-
-        good = json.dumps({"Z": [[1, 2, 3], [4, 5, 6]]})
-        assert (
-            "valid" in captured["validate_plot_data"]("contour", good).lower()
-        )
-        # X shape mismatch
-        bad = json.dumps({"Z": [[1, 2], [3, 4]], "X": [[1, 2, 3], [4, 5, 6]]})
-        result = captured["validate_plot_data"]("contour", bad)
-        assert "shape" in result.lower()
-
-    def test_validate_plot_data_twin_axis_happy_and_sad(self) -> None:
+    def test_validate_plot_data_violin_happy(self) -> None:
+        """``groups`` + ``values`` (matching shapes) is accepted."""
         from dartwork_mpl.mcp.tools import register_tools
 
         mock_mcp = MagicMock()
@@ -437,14 +382,292 @@ class TestMcpTools:
         register_tools(mock_mcp)
 
         good = json.dumps(
-            {"x": [1, 2, 3], "left": [10, 20, 30], "right": [0.1, 0.2, 0.3]}
+            {"groups": ["A", "B"], "values": [[1.0, 2.0, 3.0], [4, 5]]}
+        )
+        result = captured["validate_plot_data"]("violin", good)
+        assert "valid" in result.lower()
+
+        good_series = json.dumps(
+            {"series": {"A": [1.0, 2.0, 3.0], "B": [4, 5]}}
+        )
+        assert (
+            "valid"
+            in captured["validate_plot_data"]("violin", good_series).lower()
+        )
+
+    def test_validate_plot_data_violin_empty_data(self) -> None:
+        """An empty payload is rejected with a missing-key complaint."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        result = captured["validate_plot_data"]("violin", "{}")
+        assert "valid" not in result.lower() or "must" in result.lower()
+        assert "groups" in result.lower() or "series" in result.lower()
+
+    def test_validate_plot_data_violin_missing_values(self) -> None:
+        """Providing only ``groups`` (without ``values`` or ``series``) fails."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        bad = json.dumps({"groups": ["A", "B"]})
+        result = captured["validate_plot_data"]("violin", bad)
+        assert "values" in result.lower() or "series" in result.lower()
+
+    def test_validate_plot_data_violin_length_mismatch(self) -> None:
+        """``groups`` and ``values`` must have equal length."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        bad = json.dumps(
+            {"groups": ["A", "B", "C"], "values": [[1, 2], [3, 4]]}
+        )
+        result = captured["validate_plot_data"]("violin", bad)
+        assert "length" in result.lower() or "mismatch" in result.lower()
+
+    # ── Strict validators: boxplot ─────────────────────────────────
+
+    def test_validate_plot_data_boxplot_happy(self) -> None:
+        """Both ``groups+values`` and ``series`` payloads succeed."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        good = json.dumps(
+            {"groups": ["A", "B"], "values": [[1, 2, 3], [4, 5, 6]]}
+        )
+        assert (
+            "valid" in captured["validate_plot_data"]("boxplot", good).lower()
+        )
+
+    def test_validate_plot_data_boxplot_empty_data(self) -> None:
+        """An empty payload fails with a missing-key complaint."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        result = captured["validate_plot_data"]("boxplot", "{}")
+        assert "groups" in result.lower() or "series" in result.lower()
+
+    def test_validate_plot_data_boxplot_non_numeric(self) -> None:
+        """Non-numeric inner samples are rejected."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        bad = json.dumps(
+            {"groups": ["A", "B"], "values": [[1, 2, 3], ["x", "y"]]}
+        )
+        result = captured["validate_plot_data"]("boxplot", bad)
+        assert "numeric" in result.lower()
+
+    def test_validate_plot_data_boxplot_series_wrong_shape(self) -> None:
+        """``series`` must be a dict, not a string or list."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        bad = json.dumps({"series": "not a dict"})
+        result = captured["validate_plot_data"]("boxplot", bad)
+        assert "dict" in result.lower() or "mapping" in result.lower()
+
+    # ── Strict validators: histogram ───────────────────────────────
+
+    def test_validate_plot_data_histogram_happy(self) -> None:
+        """1-D numeric ``values`` (with optional ``bins``) is accepted."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        good = json.dumps({"values": [1, 2, 3, 4, 5], "bins": 10})
+        assert (
+            "valid" in captured["validate_plot_data"]("histogram", good).lower()
+        )
+
+        good_edges = json.dumps(
+            {"values": [1, 2, 3, 4, 5], "bins": [0.0, 1.0, 2.0]}
+        )
+        assert (
+            "valid"
+            in captured["validate_plot_data"]("histogram", good_edges).lower()
+        )
+
+    def test_validate_plot_data_histogram_empty_data(self) -> None:
+        """An empty payload fails with a missing-``values`` complaint."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        result = captured["validate_plot_data"]("histogram", "{}")
+        assert "values" in result.lower()
+
+    def test_validate_plot_data_histogram_non_numeric_values(self) -> None:
+        """Non-numeric samples are rejected."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        bad = json.dumps({"values": [1, "two", 3]})
+        result = captured["validate_plot_data"]("histogram", bad)
+        assert "numeric" in result.lower()
+
+    def test_validate_plot_data_histogram_invalid_bins(self) -> None:
+        """``bins`` must be a positive int or a numeric edge list."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        bad = json.dumps({"values": [1, 2, 3], "bins": 0})
+        result = captured["validate_plot_data"]("histogram", bad)
+        assert "bins" in result.lower()
+
+    # ── Strict validators: contour ─────────────────────────────────
+
+    def test_validate_plot_data_contour_happy(self) -> None:
+        """A rectangular ``Z`` (with matching meshgrid) is accepted."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        good = json.dumps(
+            {
+                "Z": [[1, 2, 3], [4, 5, 6]],
+                "X": [[0, 1, 2], [0, 1, 2]],
+                "Y": [[0, 0, 0], [1, 1, 1]],
+            }
+        )
+        assert (
+            "valid" in captured["validate_plot_data"]("contour", good).lower()
+        )
+
+    def test_validate_plot_data_contour_empty_data(self) -> None:
+        """An empty payload fails with a missing-``Z`` complaint."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        result = captured["validate_plot_data"]("contour", "{}")
+        assert "z" in result.lower()
+
+    def test_validate_plot_data_contour_z_not_2d(self) -> None:
+        """A flat 1-D ``Z`` is rejected."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        bad = json.dumps({"Z": [1, 2, 3, 4]})
+        result = captured["validate_plot_data"]("contour", bad)
+        assert "2-d" in result.lower() or "2d" in result.lower()
+
+    def test_validate_plot_data_contour_meshgrid_shape_mismatch(self) -> None:
+        """``X`` shape must match ``Z`` shape."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        bad = json.dumps({"Z": [[1, 2], [3, 4]], "X": [[1, 2, 3], [4, 5, 6]]})
+        result = captured["validate_plot_data"]("contour", bad)
+        assert "shape" in result.lower()
+
+    # ── Strict validators: twin_axis ───────────────────────────────
+
+    def test_validate_plot_data_twin_axis_happy(self) -> None:
+        """Full nested ``left``/``right`` specs with matching ``y`` length."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        good = json.dumps(
+            {
+                "x": [1, 2, 3],
+                "left": {"y": [10, 20, 30], "label": "Revenue"},
+                "right": {"y": [0.1, 0.2, 0.3], "label": "Margin"},
+            }
         )
         assert (
             "valid" in captured["validate_plot_data"]("twin_axis", good).lower()
         )
-        bad = json.dumps({"x": [1, 2, 3], "left": [10, 20]})
+
+    def test_validate_plot_data_twin_axis_empty_data(self) -> None:
+        """An empty payload fails with missing-key complaints."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        result = captured["validate_plot_data"]("twin_axis", "{}").lower()
+        assert "x" in result and "left" in result and "right" in result
+
+    def test_validate_plot_data_twin_axis_missing_label(self) -> None:
+        """``left`` and ``right`` must include both ``y`` and ``label``."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        bad = json.dumps(
+            {
+                "x": [1, 2, 3],
+                "left": {"y": [10, 20, 30]},
+                "right": {"y": [0.1, 0.2, 0.3], "label": "Margin"},
+            }
+        )
         result = captured["validate_plot_data"]("twin_axis", bad)
-        assert "right" in result.lower() or "length" in result.lower()
+        assert "label" in result.lower()
+
+    def test_validate_plot_data_twin_axis_length_mismatch(self) -> None:
+        """``left.y`` length must match ``x`` length."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        bad = json.dumps(
+            {
+                "x": [1, 2, 3],
+                "left": {"y": [10, 20], "label": "Revenue"},
+                "right": {"y": [0.1, 0.2, 0.3], "label": "Margin"},
+            }
+        )
+        result = captured["validate_plot_data"]("twin_axis", bad)
+        assert "length" in result.lower()
 
     def test_dartwork_mpl_info(self) -> None:
         """dartwork_mpl_info returns valid JSON summary."""
