@@ -8,9 +8,11 @@ __version__ = "0.4.0"
 
 # ruff: noqa: E402
 
+from typing import Any
+
 # Import submodules so they are accessible under ``dm.<submodule>``
-# (validate_fixes is the auto-fix companion to validate). The F401
-# noqa is required because ruff's "unused-import" check can't see
+# (validate_fixes is the auto-fix companion to validate). F401 is
+# silenced because ruff's "unused-import" check can't see
 # attribute-style access at the package level.
 from . import (  # noqa: F401
     cmap,
@@ -120,9 +122,12 @@ col2: float = cm(17)
 from .validate import validate_figure
 from .validate_fixes import validate_with_fixes
 
-# Define __all__ for explicit exports
+# Define __all__ for explicit exports. The order is intentionally
+# grouped by module/concern (Color → Icon → Style → …), not
+# alphabetical, so that readers scanning the public surface see
+# related names together. RUF022 is silenced for that reason.
 
-__all__ = [
+__all__ = [  # noqa: RUF022
     # Color module
     "Color",
     "cspace",
@@ -229,7 +234,9 @@ import matplotlib.axes
 if not getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False):
     _original_twinx = matplotlib.axes.Axes.twinx
 
-    def _patched_twinx(self, *args, **kwargs):
+    def _patched_twinx(
+        self: matplotlib.axes.Axes, *args: Any, **kwargs: Any
+    ) -> matplotlib.axes.Axes:
         ax2 = _original_twinx(self, *args, **kwargs)
         ax2.spines["right"].set_visible(True)
         ax2.spines["right"].set_linewidth(
@@ -238,7 +245,7 @@ if not getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False):
         return ax2
 
     _patched_twinx.__dm_patched__ = True  # type: ignore[attr-defined]
-    matplotlib.axes.Axes.twinx = _patched_twinx  # type: ignore[method-assign]
+    matplotlib.axes.Axes.twinx = _patched_twinx  # type: ignore[method-assign,assignment]
 
 
 # 0.3 width tokens (SW/MW/TW/DW/WIDTHS), figure-size tuples (FS_*),
