@@ -1,23 +1,22 @@
-"""Verify SW/MW/TW/DW/WIDTHS/FS_* emit DeprecationWarning in 0.4."""
+"""Verify 0.3 deprecated tokens raise AttributeError in 0.4.x.
+
+The width tokens (``SW``/``MW``/``TW``/``DW``/``WIDTHS``), figure-size
+tuples (``FS_*``), the ``cm2in`` helper, and the ``agent_utils``/``xplot``
+submodule aliases were all deprecated in 0.4.0 and removed in 0.4.x.
+"""
 
 from __future__ import annotations
-
-import math
-import warnings
 
 import pytest
 
 import dartwork_mpl as dm
 
-DEPRECATED_WIDTH_TOKENS: dict[str, float] = {
-    # token -> expected width in cm
-    "SW": 9.0,
-    "MW": 12.0,
-    "TW": 14.5,
-    "DW": 17.0,
-}
-
-DEPRECATED_FS_TOKENS: tuple[str, ...] = (
+REMOVED_NAMES: tuple[str, ...] = (
+    "SW",
+    "MW",
+    "TW",
+    "DW",
+    "WIDTHS",
     "FS_SINGLE",
     "FS_DOUBLE",
     "FS_SQUARE",
@@ -26,33 +25,18 @@ DEPRECATED_FS_TOKENS: tuple[str, ...] = (
     "FS_GOLDEN",
     "FS_SLIDE",
     "FS_A4",
-    "WIDTHS",
+    "cm2in",
+    "agent_utils",
+    "xplot",
 )
 
 
-@pytest.mark.parametrize("name,cm_value", list(DEPRECATED_WIDTH_TOKENS.items()))
-def test_width_tokens_warn_and_resolve(name, cm_value):
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        value = getattr(dm, name)
-    deprecation = [
-        w for w in caught if issubclass(w.category, DeprecationWarning)
-    ]
-    assert deprecation, f"{name} should emit DeprecationWarning"
-    assert name in str(deprecation[0].message)
-    # Value must equal cm_value cm in inches.
-    assert math.isclose(value, cm_value / 2.54, rel_tol=1e-9)
-
-
-@pytest.mark.parametrize("name", DEPRECATED_FS_TOKENS)
-def test_fs_and_widths_tokens_warn(name):
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        value = getattr(dm, name)
-    assert any(issubclass(w.category, DeprecationWarning) for w in caught), (
-        f"{name} should emit DeprecationWarning"
-    )
-    assert value is not None
+@pytest.mark.parametrize("name", REMOVED_NAMES)
+def test_removed_names_raise_attribute_error(name):
+    """Each removed name must raise ``AttributeError`` (not silently
+    resolve, not emit a DeprecationWarning) in 0.4.x."""
+    with pytest.raises(AttributeError, match=name):
+        getattr(dm, name)
 
 
 def test_unknown_attribute_still_raises():
@@ -60,29 +44,11 @@ def test_unknown_attribute_still_raises():
         _ = dm.completely_made_up
 
 
-def test_warning_only_once_with_default_filter():
-    """Default warnings filter dedupes; verify dm.SW still resolves twice."""
-    with warnings.catch_warnings(record=True):
-        warnings.simplefilter("always")
-        first = dm.SW
-        second = dm.SW
-    assert first == second
+def test_agent_utils_submodule_import_raises():
+    with pytest.raises(ModuleNotFoundError):
+        import dartwork_mpl.agent_utils  # noqa: F401
 
 
-def test_dir_lists_deprecated_names_for_ide_autocomplete():
-    """`dir(dartwork_mpl)` should expose deprecated 0.3 names so IDEs can
-    suggest them during migration. Each access still emits a warning."""
-    listed = set(dir(dm))
-    assert "SW" in listed
-    assert "MW" in listed
-    assert "TW" in listed
-    assert "DW" in listed
-    assert "FS_SINGLE" in listed
-    assert "FS_DOUBLE" in listed
-    assert "WIDTHS" in listed
-    assert "agent_utils" in listed
-    assert "xplot" in listed
-    # And the public 0.4 surface is still listed.
-    assert "subplots" in listed
-    assert "cm" in listed
-    assert "col1" in listed
+def test_xplot_submodule_import_raises():
+    with pytest.raises(ModuleNotFoundError):
+        import dartwork_mpl.xplot  # noqa: F401

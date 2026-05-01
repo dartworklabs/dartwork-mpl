@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Removed (BREAKING — 0.5.0 candidates pulled forward into 0.4.x)
+
+- **0.3 width tokens** (`dm.SW`, `dm.MW`, `dm.TW`, `dm.DW`, `dm.WIDTHS`)
+  removed. Use `dm.subplots(width="9cm" | "12cm" | "14.5cm" | "17cm",
+  aspect=...)` or `dm.col1` / `dm.col2`.
+- **0.3 figure-size tuples** (`dm.FS_SINGLE`, `FS_DOUBLE`, `FS_SQUARE`,
+  `FS_WIDE`, `FS_TALL`, `FS_GOLDEN`, `FS_SLIDE`, `FS_A4`) removed. Use
+  `dm.subplots(width=..., aspect=...)` with one of the six aspect
+  tokens or a positive float.
+- **`dm.cm2in()` removed.** Use `dm.cm(value)` (returns an
+  `Inches`-tagged float that `dm.subplots(width=...)` recognises
+  directly).
+- **`dartwork_mpl.constant` module deleted.** It only held the
+  removed width tokens and figure-size tuples.
+- **`dartwork_mpl.agent_utils` and `dartwork_mpl.xplot` submodule
+  aliases removed.** Use `dartwork_mpl.helpers` and
+  `dartwork_mpl.templates` directly. `import dartwork_mpl.agent_utils`
+  / `import dartwork_mpl.xplot` now raise `ModuleNotFoundError`.
+- **`figsize=` and `dpi=` arguments to `dm.subplots()` /
+  `dm.figure()` removed.** Passing them now raises `TypeError` with a
+  message naming the new `width=` / `aspect=` API.
+
+All of the above were deprecated in 0.4.0 (see the 0.4.0 release
+notes below) and emitted `DeprecationWarning` until this release.
+Migration paths are documented in `docs/migration.md`.
+
 ## [0.4.0] - 2026-04-30
 
 Highlights:

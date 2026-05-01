@@ -36,11 +36,12 @@ class TestSubplots:
         assert isinstance(fig, Figure)
         plt.close(fig)
 
-    def test_figsize_and_dpi_forwarded(self) -> None:
-        fig, _ax = dm.subplots(figsize=(6.4, 4.8), dpi=150)
-        assert fig.get_size_inches().tolist() == [6.4, 4.8]
-        assert fig.dpi == 150
-        plt.close(fig)
+    def test_legacy_figsize_dpi_raise(self) -> None:
+        """``figsize=``/``dpi=`` were removed in 0.4.x."""
+        with pytest.raises(TypeError, match="figsize="):
+            dm.subplots(figsize=(6.4, 4.8))
+        with pytest.raises(TypeError, match="dpi="):
+            dm.subplots(dpi=150)
 
     def test_squeeze_false_always_returns_array(self) -> None:
         fig, axes = dm.subplots(squeeze=False)
@@ -67,8 +68,9 @@ class TestFigure:
         assert isinstance(fig, Figure)
         plt.close(fig)
 
-    def test_figsize_override(self) -> None:
-        fig = dm.figure(figsize=(3.0, 2.0), dpi=100)
-        assert fig.get_size_inches().tolist() == [3.0, 2.0]
-        assert fig.dpi == 100
-        plt.close(fig)
+    def test_legacy_figsize_dpi_raise(self) -> None:
+        """``figsize=``/``dpi=`` were removed in 0.4.x."""
+        with pytest.raises(TypeError, match="figsize="):
+            dm.figure(figsize=(3.0, 2.0))
+        with pytest.raises(TypeError, match="dpi="):
+            dm.figure(dpi=100)
