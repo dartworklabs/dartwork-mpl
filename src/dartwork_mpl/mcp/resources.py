@@ -202,8 +202,10 @@ def register_resources(mcp: FastMCP) -> None:
     def plot_templates(plot_type: str) -> str:
         """Get the bundled Python template for a specific plot type.
 
-        Available types: tornado, scatter, bar, heatmap, line, violin,
-        stacked_bar, boxplot, pie, histogram, contour, twin_axis.
+        Available types: bar, bar_grouped, bar_horizontal, boxplot,
+        contour, heatmap, histogram, line, pie, plot_3d, polar,
+        scatter, small_multiples, stacked_bar, tornado, twin_axis,
+        violin, waterfall.
         """
         path = _TEMPLATE_DIR / f"{plot_type.lower()}.py"
         if not path.exists():

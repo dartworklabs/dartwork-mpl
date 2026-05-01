@@ -14,6 +14,42 @@ ax.set_ylabel("Value")
 dm.auto_layout(fig)
 ```
 
+## "Horizontal bar comparison"
+
+```python
+fig, ax = dm.subplots(width="13cm", aspect="standard")
+ax.barh(categories, values, color="oc.blue5", edgecolor="white",
+        linewidth=0.3)
+ax.set_xlabel("Value")
+ax.invert_yaxis()
+dm.auto_layout(fig)
+```
+
+## "Grouped/dodged bar (multiple categories per group)"
+
+```python
+import numpy as np
+x = np.arange(len(categories))
+w = 0.27
+fig, ax = dm.subplots(width="15cm", aspect="standard")
+ax.bar(x - w, series_a, w, color="oc.blue5", label="A")
+ax.bar(x, series_b, w, color="oc.green5", label="B")
+ax.bar(x + w, series_c, w, color="oc.orange5", label="C")
+ax.set_xticks(x); ax.set_xticklabels(categories)
+ax.legend()
+dm.auto_layout(fig)
+```
+
+## "Waterfall (incremental change)"
+
+```python
+fig, ax = dm.subplots(width="15cm", aspect="standard")
+ax.bar(labels, heights, bottom=baselines, color=colors,
+       edgecolor="white", linewidth=0.3)
+ax.axhline(0, color="oc.gray7", linewidth=0.5)
+dm.auto_layout(fig)
+```
+
 ## "Line chart, time series"
 
 ```python
@@ -70,6 +106,39 @@ dm.style.use("report-kr")
 fig, ax = dm.subplots(width="13cm", aspect="standard")
 ax.set_xlabel("월")
 ax.set_ylabel("값")
+dm.auto_layout(fig)
+```
+
+## "Small multiples / faceted panels"
+
+```python
+fig, axes = dm.subplots(2, 2, width="17cm", aspect="standard",
+                        sharex=True, sharey=True)
+for ax, (label, y) in zip(axes.flat, panels, strict=False):
+    ax.plot(x, y, color="oc.blue6", linewidth=0.8)
+    ax.set_ylabel(label)
+dm.auto_layout(fig)
+```
+
+## "Polar / radar / wind rose"
+
+```python
+fig, ax = dm.subplots(width="11cm", aspect="square",
+                      subplot_kw={"projection": "polar"})
+ax.plot(theta_closed, values_closed, color="oc.blue6", linewidth=0.8)
+ax.fill(theta_closed, values_closed, color="oc.blue3", alpha=0.3)
+ax.set_xticks(theta); ax.set_xticklabels(categories)
+dm.auto_layout(fig)
+```
+
+## "3D scatter / surface"
+
+```python
+fig, ax = dm.subplots(width="13cm", aspect="square",
+                      subplot_kw={"projection": "3d"})
+ax.scatter(xs, ys, zs, color="oc.blue5", edgecolor="white",
+           linewidth=0.3, s=20)
+ax.set_xlabel("X"); ax.set_ylabel("Y"); ax.set_zlabel("Z")
 dm.auto_layout(fig)
 ```
 

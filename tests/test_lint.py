@@ -328,7 +328,7 @@ class TestFormatReportFixSuggestion:
 
 
 class TestBundledTemplatesLintClean:
-    """The 12 prompt-asset templates ship as the canonical examples
+    """The 18 prompt-asset templates ship as the canonical examples
     agents copy from. They must lint clean against the very rules
     they teach — otherwise the linter contradicts the templates.
     """
