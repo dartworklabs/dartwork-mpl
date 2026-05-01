@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed (CI strictness)
+
+- **`mypy --strict` is now the default mypy mode** in `pyproject.toml`
+  (replaces the looser `warn_return_any` / `check_untyped_defs` config).
+  Every module under `src/dartwork_mpl/` passes strict type checking,
+  including matplotlib-facing code where `np.ndarray[Any, Any]` /
+  `cast(...)` / minimal `# type: ignore[…]` are used at the few
+  unavoidable boundaries.
+- **Ruff `select` extended** with `BLE`/`RET`/`SIM`/`PERF`/`RUF` rule
+  sets (was: `E,W,F,I,B,C4,UP`). All findings in `src/` are fixed; a
+  small per-file ignore list shields tests from low-value noise (unused
+  unpacked tuples, nested context managers, blind-except in cleanup
+  paths, etc.).
+
 ### Changed
 
 - **`dartwork_mpl.validate_enhanced` renamed to
