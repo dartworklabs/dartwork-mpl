@@ -9,6 +9,278 @@
 
 ---
 
+## Quick setup
+
+A typical install-and-wire-up takes under a minute. The flow is:
+
+1. Install `dartwork-mpl` with the `[mcp]` extra.
+2. Drop a small JSON config into your AI client.
+3. Restart the client (or start a fresh chat).
+
+### 1. Install the package with MCP extras
+
+The `[mcp]` extra pulls in `fastmcp` (>=2.13.3,<4) and `httpx`. After install, the
+console script `dartwork-mpl-mcp` is on your `PATH`.
+
+```bash
+# pip
+pip install "dartwork-mpl[mcp]"
+
+# uv (project-scoped)
+uv add "dartwork-mpl[mcp]"
+
+# uv pip (env-scoped)
+uv pip install "dartwork-mpl[mcp]"
+```
+
+Confirm the entry point is wired up:
+
+```bash
+which dartwork-mpl-mcp
+# → /…/site-packages/bin/dartwork-mpl-mcp  (or similar)
+```
+
+### 2. Configure your AI client
+
+::::{tab-set}
+
+:::{tab-item} Claude Code
+:sync: claude
+
+Add to `~/.claude.json` (global) **or** `<project>/.claude/mcp_servers.json`
+(per-project; takes precedence for that workspace):
+
+```json
+{
+  "mcpServers": {
+    "dartwork-mpl": {
+      "command": "dartwork-mpl-mcp"
+    }
+  }
+}
+```
+
+That's the entire config when `dartwork-mpl-mcp` is on `PATH`. If you want
+to pin to a specific virtualenv, use the absolute path to the script:
+
+```json
+{
+  "mcpServers": {
+    "dartwork-mpl": {
+      "command": "/abs/path/to/.venv/bin/dartwork-mpl-mcp"
+    }
+  }
+}
+```
+
+:::
+
+:::{tab-item} Cursor
+:sync: cursor
+
+Add to `~/.cursor/mcp.json` (global) **or** `<project>/.cursor/mcp.json`
+(per-project):
+
+```json
+{
+  "mcpServers": {
+    "dartwork-mpl": {
+      "command": "dartwork-mpl-mcp"
+    }
+  }
+}
+```
+
+:::
+
+:::{tab-item} Windsurf
+:sync: windsurf
+
+Windsurf uses the same JSON shape as Cursor. Add to
+`~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "dartwork-mpl": {
+      "command": "dartwork-mpl-mcp"
+    }
+  }
+}
+```
+
+:::
+
+:::{tab-item} Antigravity (Gemini)
+:sync: antigravity
+
+Add to `~/.gemini/antigravity/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "dartwork-mpl": {
+      "command": "dartwork-mpl-mcp",
+      "env": {}
+    }
+  }
+}
+```
+
+:::
+
+:::{tab-item} Local clone (no PyPI)
+:sync: clone
+
+If you are hacking on `dartwork-mpl` from a checkout instead of installing
+from PyPI, run the entry point through `uv run --directory`:
+
+```json
+{
+  "mcpServers": {
+    "dartwork-mpl": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/absolute/path/to/dartwork-mpl",
+        "dartwork-mpl-mcp"
+      ]
+    }
+  }
+}
+```
+
+This works for every client above — only the file location of the JSON
+changes.
+
+:::
+
+:::{tab-item} Generic stdio
+:sync: generic
+
+Any client that speaks the MCP stdio transport can launch the server
+directly:
+
+```bash
+dartwork-mpl-mcp
+# or, when working from a checkout:
+uv run --directory /path/to/dartwork-mpl dartwork-mpl-mcp
+# or via the module:
+python -m dartwork_mpl.mcp.server
+```
+
+:::
+
+::::
+
+### 3. Restart the client
+
+Most clients only re-read MCP config on startup. Quit and relaunch (or start a fresh chat) before running the verification steps below.
+
+---
+
+## Verify the setup
+
+Once configured, you should be able to confirm the server from inside your client **and** from the terminal.
+
+### Inside the client
+
+Ask the assistant something only the server can answer, for example:
+
+- _"List the MCP resources you can read from `dartwork-mpl`."_ → it should mention `dartwork-mpl://guide/agent-entry`, `…/policy`, palette/style URIs, etc.
+- _"Use the `dartwork-mpl` MCP server to give me the hex code for `oc.blue5`."_ → triggers `get_color_value`.
+
+If the assistant says it has no MCP server named `dartwork-mpl`, see [Troubleshooting](#troubleshooting).
+
+#### Claude Code specifics
+
+Claude Code exposes connected MCP servers in its UI and in chat metadata. After a successful connection you should see `dartwork-mpl` listed as an available MCP server in the session header.
+
+#### Cursor specifics
+
+Cursor surfaces MCP servers under **Settings → Cursor Settings → MCP**. The entry should show a green "connected" indicator.
+
+### From the terminal (smoke test)
+
+You can hand-roll an `initialize` JSON-RPC request to the server over stdio:
+
+```bash
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"0.1"}}}' \
+  | dartwork-mpl-mcp
+```
+
+Expected response (key fields):
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {
+      "resources": { "subscribe": false, "listChanged": false },
+      "tools": { "listChanged": true },
+      "prompts": { "listChanged": false }
+    },
+    "serverInfo": { "name": "dartwork-mpl", "version": "..." }
+  }
+}
+```
+
+### From Python
+
+```python
+from dartwork_mpl.mcp.server import mcp
+
+print(mcp.name)   # → "dartwork-mpl"
+print(mcp)        # FastMCP instance info
+```
+
+---
+
+## First use
+
+Now that the server is reachable, here are the highest-value calls to try first. Each one is a tiny smoke test that also doubles as a useful real-world action.
+
+1. **Pull the agent entry point.** Ask the assistant to fetch the `dartwork-mpl://guide/agent-entry` resource. This is the 0.4 SSOT decision tree — once it is in context, the assistant will write 0.4-compliant code (width/aspect, no `figsize`, etc.) by default.
+
+2. **Lint a code snippet.** Paste a small matplotlib script and ask:
+
+   > _"Use the `lint_dartwork_mpl_code` MCP tool on this snippet."_
+
+   You should get back a structured list of antipatterns (`figsize=`, `tight_layout()`, raw hex colors, …) with suggested fixes.
+
+3. **Resolve a color.** Ask:
+
+   > _"What's the hex for `tw.emerald500`? Use the `get_color_value` MCP tool."_
+
+   The tool round-trips through the live palette registry — no guessing or hallucinated hex codes.
+
+4. **Generate a plot from a description.** Try the `create_plot` prompt:
+
+   > _"Use the `create_plot` MCP prompt: a tornado chart comparing energy savings across five buildings, Korean labels."_
+
+   The prompt steers the assistant to read the relevant template, palette, and policy resources before emitting code.
+
+If all four work, the integration is fully operational.
+
+---
+
+## Troubleshooting
+
+| Symptom                                                | Likely cause                                                                                  | Fix                                                                                                                                       |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `command not found: dartwork-mpl-mcp`                  | The `[mcp]` extra wasn't installed, or the venv that has it isn't on `PATH`.                  | Reinstall with the extra (`pip install "dartwork-mpl[mcp]"`) and/or use the absolute venv path in the JSON config.                        |
+| `ModuleNotFoundError: fastmcp`                         | `dartwork-mpl` was installed, but without the `[mcp]` extra.                                  | `pip install "dartwork-mpl[mcp]"` (or `uv pip install -e ".[mcp]"` for an editable checkout).                                             |
+| Server starts but client shows no resources / tools    | Client picked up an older config, or `--directory` points at the wrong checkout.              | Restart the client. Double-check the absolute path. Inspect the client's MCP log for connection errors.                                   |
+| `uv run mcp …` launches the wrong CLI                  | The unrelated `mcp` PyPI package ships its own `mcp` console script that takes precedence.    | Always invoke `dartwork-mpl-mcp` (not `mcp`) in your config.                                                                               |
+| `ValueError: Prompt guide not found`                   | The bundled `asset/prompt/` tree is missing (e.g., a partial install or stripped package).    | Reinstall the package; verify `dartwork_mpl/asset/prompt/` exists in your `site-packages`.                                                |
+| `fastmcp` import errors after upgrading                | A breaking `fastmcp` major release. dartwork-mpl is pinned to `>=2.13.3,<4`.                  | Pin `fastmcp<4` in your environment (or reinstall the `[mcp]` extra so the constraint is re-applied).                                     |
+| Works in terminal but not in the client                | The client launches the command in a different shell / `PATH` than your interactive terminal. | Use the absolute path to `dartwork-mpl-mcp` (e.g., `/Users/you/.venv/bin/dartwork-mpl-mcp`) in the JSON, or wire it via `uv run` instead. |
+
+---
+
 ## What can MCP do?
 
 When the `dartwork-mpl` MCP server is connected, your AI assistant gains access to **resources**, **tools**, and **prompts** without you having to copy-paste documentation.
@@ -63,11 +335,11 @@ Here are specific examples of how an AI assistant behaves differently when the `
 
 1. **Zero-shot accurate coding**
    - **You ask:** _"I need a bar chart for a Korean research paper."_
-   - **MCP in action:** The assistant reads the `general-guide` resource and immediately outputs correct code using `dm.subplots(style=['lang-kr'])`.
+   - **MCP in action:** The assistant reads the `agent-entry` resource and immediately outputs correct code using `dm.subplots(style=['lang-kr'])`.
 
 2. **Automated layout debugging**
    - **You ask:** _"I used simple_layout but my legend is overlapping the plot."_
-   - **MCP in action:** The assistant reads the `layout-guide` resource, understands the library's specific constraints, and provides the exact code to fix the issue.
+   - **MCP in action:** The assistant reads the `policy` resource, understands the library's specific constraints, and provides the exact code to fix the issue.
 
 3. **Live color lookup**
    - **You ask:** _"What's the hex code for dc.blue500?"_
@@ -84,173 +356,3 @@ Here are specific examples of how an AI assistant behaves differently when the `
 6. **Data validation before plotting**
    - **You ask:** _"Plot this data as a heatmap."_
    - **MCP in action:** The assistant calls `validate_plot_data("heatmap", ...)` to verify the data structure is correct before generating the plot code.
-
----
-
-## Installation
-
-### Prerequisites
-
-- Python ≥ 3.10
-- `dartwork-mpl` installed (see {doc}`/installation/index`)
-- The `[mcp]` optional dependencies:
-
-  ```bash
-  # uv (recommended)
-  uv pip install -e ".[mcp]"
-
-  # pip
-  pip install "dartwork-mpl[mcp]"
-  ```
-
-  This pulls in `fastmcp ≥ 2.13` and `httpx ≥ 0.27`.
-
-### Client configuration
-
-Every MCP-capable client has its own config format. Below are copy-paste-ready snippets for the most popular ones.
-
-::::{tab-set}
-
-:::{tab-item} Claude Code
-:sync: claude
-
-Add to `~/.claude.json` (global) or `<project>/.claude/mcp_servers.json`:
-
-```json
-{
-  "mcpServers": {
-    "dartwork-mpl": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "/absolute/path/to/dartwork-mpl",
-        "dartwork-mpl-mcp"
-      ]
-    }
-  }
-}
-```
-
-:::
-
-:::{tab-item} Cursor / Windsurf
-:sync: cursor
-
-Add to `~/.cursor/mcp.json` (or the Windsurf equivalent):
-
-```json
-{
-  "mcpServers": {
-    "dartwork-mpl": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "/absolute/path/to/dartwork-mpl",
-        "dartwork-mpl-mcp"
-      ]
-    }
-  }
-}
-```
-
-:::
-
-:::{tab-item} Antigravity (Gemini)
-:sync: antigravity
-
-Add to `~/.gemini/antigravity/mcp_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "dartwork-mpl": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "/absolute/path/to/dartwork-mpl",
-        "dartwork-mpl-mcp"
-      ],
-      "env": {}
-    }
-  }
-}
-```
-
-After saving the config, **restart Antigravity** (or start a new conversation) for the server to be picked up. You can verify the connection by asking the assistant to list its available MCP resources.
-:::
-
-:::{tab-item} Generic stdio
-:sync: generic
-
-Any client that supports the MCP stdio transport can launch the server directly:
-
-```bash
-uv run --directory /path/to/dartwork-mpl dartwork-mpl-mcp
-```
-
-Or via the Python module:
-
-```bash
-uv run python -m dartwork_mpl.mcp.server
-```
-
-:::
-
-::::
-
-> **Important:** Replace `/absolute/path/to/dartwork-mpl` with the actual path where the package source lives on your machine. If you installed `dartwork-mpl` from PyPI (once published), the `--directory` flag can be dropped and the `command` can simply be `dartwork-mpl-mcp`.
-
----
-
-## Verification
-
-After configuring your client, verify the server is reachable.
-
-### Quick smoke test (terminal)
-
-```bash
-# Send a JSON-RPC initialize request via stdin
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"0.1"}}}' \
-  | uv run dartwork-mpl-mcp
-```
-
-Expected output (key fields):
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "protocolVersion": "2024-11-05",
-    "capabilities": {
-      "resources": { "subscribe": false, "listChanged": false },
-      "tools": { "listChanged": true },
-      "prompts": { "listChanged": false }
-    },
-    "serverInfo": { "name": "dartwork-mpl", "version": "..." }
-  }
-}
-```
-
-If you see this response, the server is working correctly. ✅
-
-### Python import test
-
-```python
-from dartwork_mpl.mcp.server import mcp
-
-print(mcp.name)   # → "dartwork-mpl"
-print(mcp)        # FastMCP instance info
-```
-
-## Troubleshooting
-
-| Symptom                                     | Fix                                                                                                          |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `ModuleNotFoundError: fastmcp`              | Install the MCP extras: `uv pip install -e ".[mcp]"`                                                         |
-| `uv run mcp` launches the wrong CLI         | The `mcp` Python package ships its own `mcp` script. Use `dartwork-mpl-mcp` instead.                         |
-| Server starts but client shows no resources | Verify the `--directory` flag points to the package root. Check your client's MCP log for connection errors. |
-| `ValueError: Prompt guide not found`        | The `asset/prompt/` directory is missing. Reinstall the package or check the source tree.                    |
