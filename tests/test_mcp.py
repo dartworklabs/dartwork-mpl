@@ -188,12 +188,12 @@ class TestMcpTools:
         register_tools(mock_mcp)
 
     def test_register_tools_count(self) -> None:
-        """register_tools() should register at least 7 tools."""
+        """register_tools() should register at least 8 tools."""
         from dartwork_mpl.mcp.tools import register_tools
 
         mock_mcp = MagicMock()
         register_tools(mock_mcp)
-        assert mock_mcp.tool.call_count >= 7
+        assert mock_mcp.tool.call_count >= 8
 
     def test_fetch_github_document_success(self) -> None:
         """fetch_github_document returns content on success."""
@@ -322,6 +322,79 @@ class TestMcpTools:
         result = captured["lint_dartwork_mpl_code"](bad_code)
         assert "CRITICAL" in result
         assert "figsize" in result
+
+    def test_lint_json_returns_list_of_dicts(self) -> None:
+        """lint_dartwork_mpl_code_json returns a list of dicts with the
+        documented schema for each issue."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        bad_code = (
+            "import dartwork_mpl as dm\n"
+            "fig, ax = dm.subplots(figsize=(10, 6))\n"
+            'dm.save_and_show(fig, "out")\n'
+        )
+        result = captured["lint_dartwork_mpl_code_json"](bad_code)
+
+        assert isinstance(result, list)
+        assert len(result) >= 1
+        # Every issue must be JSON-friendly with the documented keys.
+        expected_keys = {
+            "rule_id",
+            "severity",
+            "line",
+            "column",
+            "message",
+            "fix_suggestion",
+        }
+        for issue in result:
+            assert isinstance(issue, dict)
+            assert expected_keys.issubset(issue.keys())
+            assert isinstance(issue["rule_id"], str)
+            assert issue["severity"] in {"critical", "warning", "info"}
+            assert issue["line"] is None or isinstance(issue["line"], int)
+            assert issue["column"] is None or isinstance(issue["column"], int)
+            assert isinstance(issue["message"], str)
+            assert issue["fix_suggestion"] is None or isinstance(
+                issue["fix_suggestion"], str
+            )
+
+        # The figsize=(...) call should be flagged at least once.
+        assert any("figsize" in issue["rule_id"] for issue in result)
+
+    def test_lint_json_clean_code_returns_empty_list(self) -> None:
+        """A clean snippet should produce no issues (empty list)."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        clean_code = (
+            "import dartwork_mpl as dm\n"
+            'fig, ax = dm.subplots(width="13cm", aspect="standard")\n'
+            'ax.plot([1, 2, 3], color="dc.blue500")\n'
+            "dm.auto_layout(fig)\n"
+            'dm.save_and_show(fig, "out")\n'
+        )
+        result = captured["lint_dartwork_mpl_code_json"](clean_code)
+        assert result == []
+
+    def test_dartwork_mpl_info_advertises_lint_json_tool(self) -> None:
+        """``dartwork_mpl_info`` must list the new JSON sibling tool so
+        agents can discover it."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        result = captured["dartwork_mpl_info"]()
+        info = json.loads(result)
+        assert "lint_dartwork_mpl_code_json" in info["tools"]
 
     def test_validate_plot_data_bar_valid(self) -> None:
         """validate_plot_data accepts valid bar chart data."""

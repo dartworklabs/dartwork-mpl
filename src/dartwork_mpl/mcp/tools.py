@@ -189,6 +189,48 @@ def register_tools(mcp: FastMCP) -> None:
 
         return format_report(_lint(code))
 
+    @mcp.tool()
+    def lint_dartwork_mpl_code_json(code: str) -> list[dict]:
+        """Lint Python source against the dartwork-mpl anti-pattern
+        catalog and return a structured JSON-friendly list of issues.
+
+        Each issue is a dict with keys:
+
+        - ``rule_id``: str (e.g. ``"figsize-direct"``)
+        - ``severity``: ``"critical" | "warning" | "info"``
+        - ``line``: int (1-based) or ``None``
+        - ``column``: int (0-based, byte offset within source) or ``None``
+        - ``message``: str
+        - ``fix_suggestion``: str | ``None``
+
+        Companion to :func:`lint_dartwork_mpl_code` which returns a
+        formatted text report for human reading. This tool is preferred
+        when an agent wants to programmatically pick fixes.
+
+        Parameters
+        ----------
+        code : str
+            Python source to analyze.
+
+        Returns
+        -------
+        list[dict]
+            Structured issues; an empty list means no issues found.
+        """
+        from dartwork_mpl.lint import lint as _lint
+
+        return [
+            {
+                "rule_id": i.rule_id,
+                "severity": i.severity,
+                "line": i.line,
+                "column": i.column,
+                "message": i.message,
+                "fix_suggestion": i.fix_suggestion,
+            }
+            for i in _lint(code)
+        ]
+
     # ── Data Validation Tool ─────────────────────────────────────────
 
     @mcp.tool()
@@ -349,6 +391,7 @@ def register_tools(mcp: FastMCP) -> None:
                     "mix_colors",
                     "list_color_families",
                     "lint_dartwork_mpl_code",
+                    "lint_dartwork_mpl_code_json",
                     "validate_plot_data",
                     "dartwork_mpl_info",
                 ],
