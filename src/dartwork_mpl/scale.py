@@ -46,7 +46,7 @@ def fs(n: int | float) -> float:
 
 
 def fw(n: int) -> int:
-    """Return the base font weight plus 100 × *n*.
+    """Return the base font weight plus 100 * *n*.
 
     String weight names (e.g., ``'normal'``, ``'bold'``) are automatically
     converted to their numeric equivalents (e.g., 400, 700) before computation.

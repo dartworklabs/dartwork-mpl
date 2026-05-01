@@ -17,7 +17,7 @@ Quick start::
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ._param import ParamModel
 
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 __all__ = ["ParamModel", "run"]
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     """Lazy-load heavy submodules that require optional deps."""
     if name == "run":
         from .ui import run

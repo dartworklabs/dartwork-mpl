@@ -8,6 +8,8 @@ houses the ``format_axis_*`` tick formatters).
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 from matplotlib.axes import Axes
 
@@ -81,7 +83,7 @@ def optimize_legend(
     >>> optimize_legend(ax, preferred_loc="upper right")
     >>> optimize_legend(ax, outside=True)
     """
-    handles, labels = ax.get_legend_handles_labels()
+    handles, _labels = ax.get_legend_handles_labels()
     if not handles:
         return
 
@@ -116,8 +118,8 @@ def optimize_legend(
 
 def add_value_labels(
     ax: Axes,
-    x: np.ndarray,
-    y: np.ndarray,
+    x: np.ndarray[Any, Any],
+    y: np.ndarray[Any, Any],
     format_str: str = ".1f",
     offset_y: float = 0.02,
     color: str | None = None,

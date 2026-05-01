@@ -89,7 +89,7 @@ def format_axis_millions(
     >>> format_axis_millions(ax)  # Show as 1.5M instead of 1500000
     """
 
-    def millions_formatter(x, pos):
+    def millions_formatter(x: float, pos: int) -> str:
         """Internal formatter function for millions scale.
 
         Parameters
@@ -140,7 +140,7 @@ def format_axis_billions(
     >>> format_axis_billions(ax)  # Show as 1.5B instead of 1500000000
     """
 
-    def billions_formatter(x, pos):
+    def billions_formatter(x: float, pos: int) -> str:
         """Internal formatter function for billions scale.
 
         Parameters
@@ -195,7 +195,7 @@ def format_axis_currency(
     >>> format_axis_currency(ax, symbol="€", position="suffix")  # Format as 1,000€
     """
 
-    def currency_formatter(x, pos):
+    def currency_formatter(x: float, pos: int) -> str:
         """Internal formatter function for currency values.
 
         Parameters
@@ -242,7 +242,7 @@ def format_axis_si(
     >>> format_axis_si(ax)  # Show as 1.5k, 2.3M, etc.
     """
 
-    def si_formatter(x, pos):
+    def si_formatter(x: float, pos: int) -> str:
         """Internal formatter function for SI prefix notation.
 
         Parameters

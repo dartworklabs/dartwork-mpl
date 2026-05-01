@@ -7,7 +7,7 @@ for backward compatibility.
 
 from __future__ import annotations
 
-# Re-exports for backward compatibility – these were moved to
+# Re-exports for backward compatibility - these were moved to
 # dedicated modules but many consumers still import from util.
 from .annotation import arrow_axis, label_axes
 from .io import save_and_show, save_formats, show
@@ -16,28 +16,26 @@ from .prompt import copy_prompt, get_prompt, list_prompts, prompt_path
 from .scale import fs, fw, lw
 
 __all__ = [
-    # Re-exports (moved modules)
+    "arrow_axis",
+    "copy_prompt",
     "fs",
     "fw",
-    "lw",
-    "simple_layout",
     "get_bounding_box",
+    "get_prompt",
+    "label_axes",
+    "list_prompts",
+    "lw",
+    "make_offset",
+    "mix_colors",
+    "prompt_path",
+    "pseudo_alpha",
+    "save_and_show",
+    "save_formats",
+    "set_decimal",
     "set_xmargin",
     "set_ymargin",
-    "save_formats",
-    "save_and_show",
     "show",
-    "label_axes",
-    "arrow_axis",
-    "prompt_path",
-    "get_prompt",
-    "list_prompts",
-    "copy_prompt",
-    # Residual helpers (kept here)
-    "set_decimal",
-    "mix_colors",
-    "pseudo_alpha",
-    "make_offset",
+    "simple_layout",
 ]
 
 import matplotlib.colors as mcolors
@@ -148,5 +146,4 @@ def make_offset(x: float, y: float, fig: Figure) -> ScaledTranslation:
         A translation transform that can be added to other transforms.
     """
     dx, dy = x / 72, y / 72
-    offset = ScaledTranslation(dx, dy, fig.dpi_scale_trans)
-    return offset
+    return ScaledTranslation(dx, dy, fig.dpi_scale_trans)

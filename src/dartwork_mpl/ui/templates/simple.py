@@ -8,7 +8,7 @@ Run with:
     uv run --extra ui python app.py
 """
 
-from typing import Literal
+from typing import Any, Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -133,12 +133,12 @@ def my_figure(p: Params) -> Figure:
     """
     dm.style.use("scientific")
     rng = np.random.default_rng(p.random_seed)
-    t: np.ndarray = np.linspace(0, 2 * np.pi, p.n_points)
+    t: np.ndarray[Any, Any] = np.linspace(0, 2 * np.pi, p.n_points)
 
     # ── Generate waveform ─────────────────────────────────
-    raw: np.ndarray = p.frequency * t + p.phase
+    raw: np.ndarray[Any, Any] = p.frequency * t + p.phase
     if p.waveform == "cosine":
-        y: np.ndarray = p.amplitude * np.cos(raw)
+        y: np.ndarray[Any, Any] = p.amplitude * np.cos(raw)
     elif p.waveform == "square":
         y = p.amplitude * np.sign(np.sin(raw))
     elif p.waveform == "sawtooth":

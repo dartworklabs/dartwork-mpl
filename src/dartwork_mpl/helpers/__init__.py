@@ -17,18 +17,13 @@ from .labels import add_value_labels, format_axis_labels, optimize_legend
 from .quality import check_figure_quality, suggest_chart_type
 
 __all__ = [
-    # Data validation
-    "validate_data",
-    # Color utilities
+    "add_value_labels",
     "auto_select_colors",
-    # Formatting utilities
+    "check_figure_quality",
+    "create_figure_with_style",
     "format_axis_labels",
     "optimize_legend",
-    "add_value_labels",
-    # I/O utilities
     "save_figure",
-    "create_figure_with_style",
-    # Quality checks
     "suggest_chart_type",
-    "check_figure_quality",
+    "validate_data",
 ]

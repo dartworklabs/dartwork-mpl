@@ -152,9 +152,9 @@ def run(
     async def render(params: dict[str, Any]) -> dict[str, str] | JSONResponse:
         try:
             model = _build_model(params, param_model, descriptors)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             error_msg = _format_validation_error(exc)
-            return JSONResponse(status_code=422, content={"detail": error_msg})  # type: ignore[return-value]
+            return JSONResponse(status_code=422, content={"detail": error_msg})
         fig = figure_fn(model)
         buf = io.BytesIO()
         fig.savefig(buf, format="png")
@@ -233,7 +233,7 @@ def run(
         if not ok:
             return JSONResponse(
                 status_code=404, content={"detail": "Preset not found"}
-            )  # type: ignore[return-value]
+            )
         return {"status": "ok"}
 
     @app.get("/api/defaults")
@@ -339,7 +339,7 @@ def run(
             import time
 
             time.sleep(0.3)  # Let the response return first
-            os.execv(sys.executable, [sys.executable] + sys.argv)
+            os.execv(sys.executable, [sys.executable, *sys.argv])
 
         threading.Thread(target=_restart, daemon=True).start()
         return {"status": "reloading"}
@@ -399,7 +399,9 @@ def _format_validation_error(exc: Exception) -> str:
 
 
 def _build_model(
-    raw_params: dict[str, Any], model_cls: type[ParamModel], descriptors: list
+    raw_params: dict[str, Any],
+    model_cls: type[ParamModel],
+    descriptors: list[Any],
 ) -> ParamModel:
     """Coerce raw params from the frontend and build a model instance.
 
@@ -434,7 +436,7 @@ def _build_model(
     return model_cls(**coerced)
 
 
-def _extract_param_model(fn: Callable) -> type[ParamModel]:
+def _extract_param_model(fn: Callable[..., Any]) -> type[ParamModel]:
     """Extract the ParamModel subclass from a figure function's signature.
 
     Validates that ``fn`` has exactly one parameter whose annotation
@@ -449,7 +451,7 @@ def _extract_param_model(fn: Callable) -> type[ParamModel]:
 
     try:
         hints = typing.get_type_hints(fn)
-    except Exception:
+    except Exception:  # noqa: BLE001
         hints = dict(fn.__annotations__)
 
     ret = hints.pop("return", None)
@@ -490,7 +492,7 @@ def _extract_param_model(fn: Callable) -> type[ParamModel]:
     return param_type
 
 
-def _parse_list(value: Any, item_type: type) -> list:
+def _parse_list(value: Any, item_type: type) -> list[Any]:
     """Parse a comma-separated string or existing list into typed list."""
     if isinstance(value, list):
         return [item_type(x) for x in value]
@@ -508,7 +510,7 @@ def _timestamp_slug() -> str:
 def _generate_script(
     model: ParamModel,
     model_cls: type[ParamModel],
-    figure_fn: Callable,
+    figure_fn: Callable[..., Any],
     script_dir: Path,
 ) -> str:
     """Generate a standalone Python script that reproduces the figure.
@@ -548,10 +550,10 @@ def _generate_script(
                 stripped
                 and not stripped.startswith(("#", '"""', "'''", '"'))
                 and import_lines
+                and not stripped.startswith(("import ", "from "))
             ):
                 # Stop after the import block ends
-                if not stripped.startswith(("import ", "from ")):
-                    break
+                break
         imports_block = "\n".join(import_lines)
     except (OSError, TypeError):
         imports_block = (
@@ -569,7 +571,7 @@ def _generate_script(
 
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
-    script = f'''"""Auto-generated figure script.
+    return f'''"""Auto-generated figure script.
 
 Generated at: {ts}
 Parameters: {model_cls.__name__}
@@ -597,4 +599,3 @@ if __name__ == "__main__":
     print("Saved: {figure_fn.__name__}.[svg|png|pdf|eps]")
     plt.show()
 '''
-    return script
