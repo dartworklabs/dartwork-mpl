@@ -21,6 +21,21 @@ _SSOT_DIR_EXISTS = (
 ).exists()
 
 
+@pytest.fixture(autouse=True)
+def _isolate_cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pin the working directory to ``tmp_path`` for every test here.
+
+    All tests in this module pass ``project_dir=tmp_path`` explicitly,
+    so install/uninstall already write inside the pytest tmp tree.
+    This guard adds a second line of defence: if a future test ever
+    forgets the explicit argument, ``Path.cwd()`` (the install module's
+    fallback) will resolve into ``tmp_path`` instead of e.g. the
+    user's home directory, where running ``pytest`` from anywhere
+    could otherwise create real ``.claude/`` / ``.cursor/`` folders.
+    """
+    monkeypatch.chdir(tmp_path)
+
+
 @pytest.mark.skipif(
     not _SSOT_DIR_EXISTS,
     reason="asset/prompt SSOT not present in this checkout",
