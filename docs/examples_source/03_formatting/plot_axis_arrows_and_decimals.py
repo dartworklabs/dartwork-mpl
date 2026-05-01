@@ -13,7 +13,7 @@ import dartwork_mpl as dm
 
 dm.style.use("minimal")
 
-fig, ax = plt.subplots(figsize=(dm.SW, dm.SW * 0.6))
+fig, ax = dm.subplots(width="9cm", aspect="golden")
 
 x = np.linspace(-5, 5, 100)
 y = np.exp(-(x**2))

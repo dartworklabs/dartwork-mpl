@@ -57,7 +57,7 @@ def automated_visualization(
     # Step 3 — create styled figure.
     print("Step 3: Creating figure ...")
     style = "scientific" if chart_type in ("scatter", "line") else "web"
-    fig = dm.helpers.io.create_figure_with_style(style=style, figsize=(10, 6))
+    fig = dm.helpers.io.create_figure_with_style(style=style)
     ax = fig.add_subplot(111)
     print(f"    style: {style}")
 

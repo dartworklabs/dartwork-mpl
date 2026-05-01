@@ -61,7 +61,7 @@ for i, v in enumerate(values):
     else:
         colors.append("oc.teal5" if v >= 0 else "oc.red5")
 
-fig, ax = plt.subplots(figsize=(dm.DW, dm.DW * 0.55))
+fig, ax = dm.subplots(width="17cm", aspect=0.55)
 
 bars = ax.bar(
     categories,

@@ -23,6 +23,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   backward-compat alias is provided, in line with the 0.4.x deprecated-
   surface purge.
 
+### Changed (gallery migration)
+
+- **`docs/examples_source/` gallery (~60 scripts) migrated to the
+  0.4 width/aspect API.** PR #74 had only converted 7 signal-flare
+  scripts (preset showcases + a handful of layout examples); the
+  remaining ~60 still relied on `dm.SW/MW/TW/DW`, `dm.FS_*`,
+  `dm.cm2in`, and bare `figsize=`/`dpi=` kwargs and crashed under
+  PR #87's deprecation removals (`AttributeError`/`TypeError` at
+  import). Every gallery `plot_*.py` now calls
+  `dm.subplots(width="...cm", aspect="...")` (or `dm.figure(...)`),
+  finalises with `dm.auto_layout(fig)` / `dm.simple_layout(fig)`,
+  and reads `dm.cm(...)` instead of `dm.cm2in(...)`. Lint passes
+  cleanly for the entire gallery and all 60+ scripts execute
+  successfully end-to-end against current main.
+
 ### Changed (font asset slimming)
 
 - **`NotoSansCJK-Regular.ttc` (19 MB) → `NotoSansCJK-Regular.otf`

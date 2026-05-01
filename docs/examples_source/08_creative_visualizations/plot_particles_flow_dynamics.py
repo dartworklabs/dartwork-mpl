@@ -22,7 +22,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=(dm.cm2in(20), dm.cm2in(20)))
+fig, ax = dm.subplots(width="20cm", aspect="square")
 
 
 def flow_field(x, y, t=0):

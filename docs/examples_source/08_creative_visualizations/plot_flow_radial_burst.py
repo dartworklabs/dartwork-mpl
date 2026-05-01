@@ -23,9 +23,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(
-    figsize=(dm.cm2in(18), dm.cm2in(18)), subplot_kw={"projection": "polar"}
-)
+fig, ax = dm.subplots(width="18cm", aspect="square", subplot_kw={"projection": "polar"})
 
 theta = np.linspace(0, 2 * np.pi, 360)
 r_layers = 8

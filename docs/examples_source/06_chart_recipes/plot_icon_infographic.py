@@ -16,7 +16,7 @@ import dartwork_mpl as dm
 
 dm.style.use("report")
 
-fig = plt.figure(figsize=(dm.DW, dm.DW * 0.60))
+fig = dm.figure(width="17cm", aspect="golden")
 gs = gridspec.GridSpec(2, 2, hspace=0.60, wspace=0.40, figure=fig)
 
 mdi = dm.icon_font("mdi")

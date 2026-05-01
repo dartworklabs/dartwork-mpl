@@ -24,7 +24,7 @@ y2 = np.exp(-x / 5) * np.cos(2 * x)
 y3 = x + 0.5 * np.random.randn(100)
 
 dm.style.use("report")
-fig = plt.figure(figsize=(dm.cm2in(20), dm.cm2in(15)))
+fig = dm.figure(width="20cm", aspect="standard")
 gs = fig.add_gridspec(3, 3, hspace=0.4, wspace=0.4)
 
 # Main plot — 2×2 minimal axes with two overlaid series.

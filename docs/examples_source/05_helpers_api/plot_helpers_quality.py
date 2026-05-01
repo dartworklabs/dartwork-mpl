@@ -24,7 +24,7 @@ np.random.seed(42)
 # Intentionally low-quality plot: very thin line, tiny title, no axis
 # labels, microscopic scatter markers, overlapping huge annotations.
 dm.style.use("scientific")
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(dm.cm2in(16), dm.cm2in(8)))
+fig, (ax1, ax2) = dm.subplots(1, 2, width="16cm", aspect="cinema")
 
 x = np.linspace(0, 100, 10)  # Very sparse.
 y = np.sin(x) * 1000  # Very large values.

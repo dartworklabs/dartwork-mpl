@@ -18,7 +18,7 @@ x = np.linspace(0, 10, 100)
 y = np.sin(x) + 0.1 * np.random.randn(100)
 
 dm.style.use("scientific")
-fig, axes = plt.subplots(2, 3, figsize=(dm.cm2in(18), dm.cm2in(12)))
+fig, axes = dm.subplots(2, 3, width="18cm", aspect="wide")
 
 grid_configs = [
     {"title": "Default Grid", "kwargs": {}},
