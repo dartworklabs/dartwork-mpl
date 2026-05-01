@@ -79,36 +79,30 @@ class Inches(float):
             return value
         if isinstance(value, float):
             return Inches(value)
-        return value  # type: ignore[return-value]
+        # Defensive: ``float.__add__`` and friends return ``float``
+        # in practice, but the typeshed signature is broader.
+        return Inches(float(value))
 
-    def __add__(self, other):
-        return self._wrap(float.__add__(self, other))
+    def __add__(self, other: float) -> Inches:        return self._wrap(float.__add__(self, other))
 
-    def __radd__(self, other):
-        return self._wrap(float.__radd__(self, other))
+    def __radd__(self, other: float) -> Inches:        return self._wrap(float.__radd__(self, other))
 
-    def __sub__(self, other):
-        return self._wrap(float.__sub__(self, other))
+    def __sub__(self, other: float) -> Inches:        return self._wrap(float.__sub__(self, other))
 
-    def __rsub__(self, other):
-        return self._wrap(float.__rsub__(self, other))
+    def __rsub__(self, other: float) -> Inches:        return self._wrap(float.__rsub__(self, other))
 
-    def __mul__(self, other):
-        return self._wrap(float.__mul__(self, other))
+    def __mul__(self, other: float) -> Inches:        return self._wrap(float.__mul__(self, other))
 
-    def __rmul__(self, other):
-        return self._wrap(float.__rmul__(self, other))
+    def __rmul__(self, other: float) -> Inches:        return self._wrap(float.__rmul__(self, other))
 
-    def __truediv__(self, other):
-        return self._wrap(float.__truediv__(self, other))
+    def __truediv__(self, other: float) -> Inches:        return self._wrap(float.__truediv__(self, other))
 
-    def __rtruediv__(self, other):
-        return self._wrap(float.__rtruediv__(self, other))
+    def __rtruediv__(self, other: float) -> Inches:        return self._wrap(float.__rtruediv__(self, other))
 
-    def __neg__(self):
+    def __neg__(self) -> Inches:
         return Inches(float.__neg__(self))
 
-    def __abs__(self):
+    def __abs__(self) -> Inches:
         return Inches(float.__abs__(self))
 
 
