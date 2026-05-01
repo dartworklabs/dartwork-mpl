@@ -17,25 +17,21 @@ from ._views import (
 )
 
 __all__ = [
-    # Core
     "Color",
-    "cspace",
-    # Convenience constructors
-    "hex",
-    "named",
-    "oklab",
-    "oklch",
-    "rgb",
-    # View classes
+    "DartworkColor",
+    "DartworkColormap",
     "OklabView",
     "OklabViewIterator",
     "OklchView",
     "OklchViewIterator",
     "RgbView",
     "RgbViewIterator",
-    # Typing
-    "DartworkColor",
-    "DartworkColormap",
+    "cspace",
+    "hex",
+    "named",
+    "oklab",
+    "oklch",
+    "rgb",
 ]
 
 # Register bundled color palettes with matplotlib on first import.

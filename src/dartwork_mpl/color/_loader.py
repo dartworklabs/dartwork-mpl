@@ -134,7 +134,7 @@ def _load_colors() -> None:
     # Remove xkcd colors — they clutter color galleries and are not
     # used by this library.  CSS4 named colours (e.g. 'black') are
     # kept because matplotlib itself relies on them for rcParams.
-    mapping: dict = mcolors.get_named_colors_mapping()
+    mapping = mcolors.get_named_colors_mapping()
     for key in [k for k in mapping if k.startswith("xkcd:")]:
         del mapping[key]
 

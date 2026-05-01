@@ -175,7 +175,7 @@ class Style:
 
         # Serialize global rcParams + style application across threads.
         with _style_lock:
-            plt.rcParams.update(plt.rcParamsDefault)
+            plt.rcParams.update(plt.rcParamsDefault)  # type: ignore[attr-defined]
             plt.style.use(
                 [style_path(style_name) for style_name in style_names]
             )
