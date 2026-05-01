@@ -14,7 +14,7 @@ import dartwork_mpl as dm
 
 dm.style.use("dark")
 
-fig, ax = plt.subplots(figsize=(dm.SW, dm.SW * 0.7))
+fig, ax = dm.subplots(width="9cm", aspect="wide")
 
 np.random.seed(42)
 x = np.random.randn(300)

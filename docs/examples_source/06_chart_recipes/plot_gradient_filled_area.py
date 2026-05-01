@@ -15,7 +15,7 @@ import dartwork_mpl as dm
 
 dm.style.use("report")
 
-fig, ax = plt.subplots(figsize=(dm.SW * 1.4, dm.SW * 0.9))
+fig, ax = dm.subplots(width="12.6cm", aspect="golden")
 
 # Signal data
 x = np.linspace(0, 8, 500)

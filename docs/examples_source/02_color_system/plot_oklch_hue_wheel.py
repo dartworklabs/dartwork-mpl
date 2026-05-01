@@ -18,9 +18,7 @@ import dartwork_mpl as dm
 
 dm.style.use("presentation")
 
-fig, ax = plt.subplots(
-    figsize=(dm.SW * 1.5, dm.SW * 1.5), subplot_kw={"projection": "polar"}
-)
+fig, ax = dm.subplots(width="13.5cm", aspect="square", subplot_kw={"projection": "polar"})
 
 n_hues = 72  # 5° steps
 hues = np.linspace(0, 360, n_hues, endpoint=False)

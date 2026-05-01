@@ -24,7 +24,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=(dm.cm2in(18), dm.cm2in(18)))
+fig, ax = dm.subplots(width="18cm", aspect="square")
 
 dipoles = [
     {"pos": (-2, 0), "moment": (1, 0), "strength": 2},

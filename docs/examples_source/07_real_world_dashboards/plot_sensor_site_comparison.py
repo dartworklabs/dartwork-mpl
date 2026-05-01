@@ -27,7 +27,7 @@ measurements = np.array(
     ]
 )
 
-fig = plt.figure(figsize=(dm.TW, dm.TW * 0.55))
+fig = dm.figure(width="14.5cm", aspect=0.55)
 gs = fig.add_gridspec(1, 1, left=0.10, right=0.96, top=0.88, bottom=0.18)
 ax = fig.add_subplot(gs[0, 0])
 

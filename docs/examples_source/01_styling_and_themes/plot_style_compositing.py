@@ -34,7 +34,7 @@ stages = [
     ),
 ]
 
-fig = plt.figure(figsize=(dm.DW, dm.DW * 0.70))
+fig = dm.figure(width="17cm", aspect="wide")
 gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.55, wspace=0.40)
 
 for idx, (layers, title) in enumerate(stages):

@@ -17,7 +17,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 
 dm.style.use("scientific")
-fig, axes = plt.subplots(2, 2, figsize=(dm.cm2in(16), dm.cm2in(12)))
+fig, axes = dm.subplots(2, 2, width="16cm", aspect="standard")
 
 # Categorical palette, one item highlighted.
 ax1 = axes[0, 0]

@@ -20,7 +20,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=(dm.cm2in(12), dm.cm2in(20)))
+fig, ax = dm.subplots(width="12cm", aspect=1.667)
 
 t = np.linspace(0, 4 * np.pi, 500)
 x1 = np.sin(t)

@@ -22,9 +22,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, axes = plt.subplots(
-    3, 1, figsize=(dm.cm2in(20), dm.cm2in(15)), gridspec_kw={"hspace": 0.1}
-)
+fig, axes = dm.subplots(3, 1, width="20cm", aspect="standard", gridspec_kw={"hspace": 0.1})
 
 t = np.linspace(0, 4 * np.pi, 1000)
 

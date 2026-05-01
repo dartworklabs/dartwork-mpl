@@ -21,7 +21,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=(dm.cm2in(20), dm.cm2in(16)))
+fig, ax = dm.subplots(width="20cm", aspect=0.8)
 
 n_fireworks = 5
 explosion_data = []

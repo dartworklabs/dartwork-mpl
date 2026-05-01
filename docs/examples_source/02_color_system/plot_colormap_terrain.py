@@ -38,7 +38,7 @@ colormaps = [
     ("dc.neon_pulse", "dc.neon_pulse \u2014 perceptual multi-hue"),
 ]
 
-fig = plt.figure(figsize=(dm.DW, dm.DW * 0.90))
+fig = dm.figure(width="17cm", aspect=0.9)
 gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.45)
 
 for idx, (cmap_name, title) in enumerate(colormaps):
@@ -51,5 +51,5 @@ for idx, (cmap_name, title) in enumerate(colormaps):
     ax.set_ylabel("y")
     ax.set_aspect("equal")
 
-fig.tight_layout(pad=1.5, h_pad=2.0, w_pad=2.0)
+dm.auto_layout(fig)
 plt.show()

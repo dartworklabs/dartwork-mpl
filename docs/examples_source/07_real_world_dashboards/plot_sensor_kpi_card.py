@@ -23,7 +23,7 @@ metrics = [
     ("Uptime", "99.7 %"),
 ]
 
-fig = plt.figure(figsize=(dm.MW, dm.MW * 0.7))
+fig = dm.figure(width="12cm", aspect="wide")
 gs = fig.add_gridspec(1, 1, left=0.08, right=0.92, top=0.88, bottom=0.08)
 ax = fig.add_subplot(gs[0, 0])
 ax.set_axis_off()

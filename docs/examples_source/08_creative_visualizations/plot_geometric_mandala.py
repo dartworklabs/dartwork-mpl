@@ -22,9 +22,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(
-    figsize=(dm.cm2in(20), dm.cm2in(20)), subplot_kw={"projection": "polar"}
-)
+fig, ax = dm.subplots(width="20cm", aspect="square", subplot_kw={"projection": "polar"})
 
 n_rings = 8
 n_petals = [6, 12, 18, 24, 30, 36, 42, 48]

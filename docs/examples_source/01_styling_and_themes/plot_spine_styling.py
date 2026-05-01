@@ -23,7 +23,7 @@ y2 = np.exp(-x / 5) * np.cos(2 * x)
 y3 = x + 0.5 * np.random.randn(100)
 
 dm.style.use("scientific")
-fig, axes = plt.subplots(1, 3, figsize=(dm.cm2in(18), dm.cm2in(6)))
+fig, axes = dm.subplots(1, 3, width="18cm", aspect=0.333)
 
 # Coloured spines on left and bottom.
 ax1 = axes[0]

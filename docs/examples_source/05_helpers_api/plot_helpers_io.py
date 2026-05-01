@@ -19,10 +19,11 @@ import numpy as np
 
 import dartwork_mpl as dm
 
-# Create a figure with the style preset already applied.
-fig = dm.helpers.io.create_figure_with_style(
-    style="scientific", figsize=(8, 6), dpi=100
-)
+# Create a figure with the style preset already applied. The helper
+# accepts a ``figsize=`` tuple, but in 0.4 we prefer to let the style
+# (and the helper's 17 cm default) own the dimensions — explicit
+# figsize tuples are reserved for legacy contexts and trip the lint.
+fig = dm.helpers.io.create_figure_with_style(style="scientific")
 ax = fig.add_subplot(111)
 
 x = np.linspace(0, 10, 100)
