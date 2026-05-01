@@ -14,18 +14,19 @@ __all__ = [
     "simple_layout",
 ]
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec, SubplotSpec
+from matplotlib.transforms import Bbox
 
 if TYPE_CHECKING:
     from scipy.optimize import OptimizeResult
 
 
-def get_bounding_box(boxes: list) -> tuple[float, float, float, float]:
+def get_bounding_box(boxes: list[Bbox]) -> tuple[float, float, float, float]:
     """
     Compute the minimum bounding box that encloses all given box regions.
 
@@ -131,7 +132,7 @@ def simple_layout(
     bound_margin: float = 0.2,
     use_all_axes: bool = True,
     importance_weights: tuple[float, float, float, float] = (1, 1, 1, 1),
-) -> OptimizeResult:
+) -> OptimizeResult | None:
     """Apply an optimized layout to a GridSpec for fine-tuned subplot positioning.
 
     Uses the L-BFGS-B optimization algorithm to compute GridSpec parameters
@@ -175,26 +176,27 @@ def simple_layout(
     # No-op on figures with no axes — nothing to lay out, and indexing
     # ``fig.axes[0]`` would IndexError.
     if not fig.axes:
-        return None  # type: ignore[return-value]
+        return None
 
     # Handle SubplotSpec by getting its parent GridSpec
+    actual_gs: Any
     if gs is not None:
-        if isinstance(gs, SubplotSpec):
-            actual_gs: GridSpec = gs.get_gridspec()  # type: ignore[assignment]
-        else:
-            actual_gs = gs
+        actual_gs = gs.get_gridspec() if isinstance(gs, SubplotSpec) else gs
     else:
-        actual_gs = fig.axes[0].get_gridspec()  # type: ignore[assignment]
+        gridspec = fig.axes[0].get_gridspec()
+        if gridspec is None:
+            return None
+        actual_gs = gridspec
 
     # GridSpecFromSubplotSpec (created by e.g. fig.colorbar) has no
     # .update() — walk up to the root GridSpec that does.
     while isinstance(actual_gs, GridSpecFromSubplotSpec):
-        actual_gs = actual_gs._subplot_spec.get_gridspec()  # type: ignore[attr-defined,assignment]
+        actual_gs = actual_gs._subplot_spec.get_gridspec()  # type: ignore[attr-defined]
 
     _import_weights = np.array(importance_weights)
     _margins = np.array(margins) * fig.get_dpi()
 
-    def fun(x: np.ndarray) -> float:
+    def fun(x: np.ndarray[Any, Any]) -> float:
         """Objective function for layout optimization.
 
         Parameters
@@ -210,12 +212,15 @@ def simple_layout(
         actual_gs.update(left=x[0], right=x[1], bottom=x[2], top=x[3])
 
         if use_all_axes:
-            ax_bboxes = [ax.get_tightbbox() for ax in fig.axes]
+            ax_bboxes = [
+                bb for ax in fig.axes if (bb := ax.get_tightbbox()) is not None
+            ]
         else:
             ax_bboxes = [
-                ax.get_tightbbox()
+                bb
                 for ax in fig.axes
                 if id(ax.get_gridspec()) == id(actual_gs)
+                and (bb := ax.get_tightbbox()) is not None
             ]
 
         all_bbox = get_bounding_box(ax_bboxes)
@@ -245,15 +250,13 @@ def simple_layout(
 
     from scipy.optimize import minimize
 
-    result = minimize(
+    return minimize(
         fun,
         x0=np.array(bounds).mean(axis=1),
         bounds=bounds,
         method="L-BFGS-B",
         options={"gtol": gtol},
     )
-
-    return result
 
 
 def _measure_overflow(fig: Figure) -> dict[str, float]:
@@ -283,7 +286,7 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
 
     for ax in fig.axes:
         # Text objects: titles, labels, annotations
-        for txt in ax.texts + [ax.title, ax.xaxis.label, ax.yaxis.label]:
+        for txt in [*ax.texts, ax.title, ax.xaxis.label, ax.yaxis.label]:
             if (
                 txt is None
                 or not txt.get_visible()
@@ -343,7 +346,7 @@ def auto_layout(
     Wraps ``simple_layout`` with a Validate → Measure → Adjust → Retry loop.
     Starts with minimal margins, measures actual per-side overflow using
     text and tick-label bounding boxes, and increases margins only on
-    overflowing sides. Converges in 1–3 iterations for typical charts;
+    overflowing sides. Converges in 1-3 iterations for typical charts;
     axes-relative annotations (which move with the subplot) may need more.
 
     Parameters

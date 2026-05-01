@@ -29,7 +29,7 @@ def subplots(
     subplot_kw: dict[str, Any] | None = None,
     gridspec_kw: dict[str, Any] | None = None,
     **fig_kw: Any,
-) -> tuple[Figure, Axes | np.ndarray]:
+) -> tuple[Figure, Axes | np.ndarray[Any, Any]]:
     """Create a figure and a set of subplots with optional style application.
 
     The 0.4 API takes ``width`` (free-form, e.g. ``"13cm"``,
