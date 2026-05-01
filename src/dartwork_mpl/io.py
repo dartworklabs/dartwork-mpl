@@ -74,7 +74,10 @@ def show(image_path: str, size: int = 600, unit: str = "pt") -> None:
     desired_width = size
 
     # Parse SVG dimensions with defensive handling.
-    dom = minidom.parseString(svg_obj.data)
+    # The SVG payload is produced by matplotlib's own SVG backend (via
+    # IPython.display.SVG) on dartwork-mpl figures, never user-supplied
+    # XML, so XXE/billion-laughs vectors do not apply here.
+    dom = minidom.parseString(svg_obj.data)  # noqa: S318  # trusted dartwork SVG only
     doc_el = dom.documentElement
     width_attr = doc_el.getAttribute("width") if doc_el else ""
     height_attr = doc_el.getAttribute("height") if doc_el else ""
