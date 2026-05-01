@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed (font asset slimming)
+
+- **`NotoSansCJK-Regular.ttc` (19 MB) → `NotoSansCJK-Regular.otf`
+  (1.5 MB Korean subset).** The bundled CJK font is now a Hangul
+  subset of the original Noto Sans CJK KR instance: 11,172 Hangul
+  syllables + Latin/symbols common in Korean reports. The font's
+  family name remains `Noto Sans CJK KR`, so `lang-kr.mplstyle`'s
+  fallback chain works unchanged. Users who need Japanese / Chinese
+  / Hong Kong glyphs must install Noto Sans CJK system-wide;
+  matplotlib's font fallback chain will discover them via system
+  paths. Wheel drops from ~41.5 MB to ~27 MB.
+
 ### Removed (BREAKING — 0.5.0 candidates pulled forward into 0.4.x)
 
 - **0.3 width tokens** (`dm.SW`, `dm.MW`, `dm.TW`, `dm.DW`, `dm.WIDTHS`)
