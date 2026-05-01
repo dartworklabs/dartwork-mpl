@@ -270,9 +270,7 @@ def generate_validation_report(fig: Figure) -> str:
 
         if info:
             report.append(f"  💡 {len(info)} info messages")
-            report.extend(
-                f"    - {w.check_id}: {w.message}" for w in info[:2]
-            )
+            report.extend(f"    - {w.check_id}: {w.message}" for w in info[:2])
 
     # Overall score
     n_passed = sum(requirements.values())

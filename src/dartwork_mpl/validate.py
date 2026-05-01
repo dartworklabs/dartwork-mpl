@@ -64,9 +64,7 @@ class VisualWarning:
 # ───────────────────────────────────────────────────────
 
 
-def _check_overflow(
-    fig: Figure, renderer: RendererBase
-) -> list[VisualWarning]:
+def _check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
     """Detect elements whose bounding boxes extend beyond the figure canvas."""
     warnings: list[VisualWarning] = []
     fig_bbox = fig.bbox  # pixel coords
@@ -170,9 +168,7 @@ def _check_overflow(
     return warnings
 
 
-def _check_overlap(
-    fig: Figure, renderer: RendererBase
-) -> list[VisualWarning]:
+def _check_overlap(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
     """Detect overlapping text labels within each Axes."""
     warnings: list[VisualWarning] = []
 
