@@ -2,7 +2,13 @@
 
 import dartwork_mpl as dm
 
-categories = ["Category A", "Category B", "Category C", "Category D", "Category E"]
+categories = [
+    "Category A",
+    "Category B",
+    "Category C",
+    "Category D",
+    "Category E",
+]
 values = [23, 45, 56, 78, 33]
 
 fig, ax = dm.subplots(width="13cm", aspect="standard")

@@ -729,9 +729,7 @@ def _validate_bar_grouped(data: dict) -> str:
     if "categories" not in data:
         issues.append("Missing 'categories' key.")
     if "series" not in data:
-        issues.append(
-            "Missing 'series' key (dict of series_name -> values)."
-        )
+        issues.append("Missing 'series' key (dict of series_name -> values).")
     elif isinstance(data["series"], dict):
         cat_len = len(data.get("categories", []))
         for name, vals in data["series"].items():
@@ -761,8 +759,7 @@ def _validate_waterfall(data: dict) -> str:
     if "labels" in data and "deltas" in data:
         if len(data["labels"]) != len(data["deltas"]):
             issues.append(
-                "Length mismatch: 'labels' and 'deltas' must "
-                "have equal length."
+                "Length mismatch: 'labels' and 'deltas' must have equal length."
             )
     if "is_total" in data and "deltas" in data:
         if len(data["is_total"]) != len(data["deltas"]):
@@ -798,9 +795,7 @@ def _validate_small_multiples(data: dict) -> str:
                 issues.append(f"Panel #{i} missing 'x' or 'y'.")
                 continue
             if len(panel["x"]) != len(panel["y"]):
-                issues.append(
-                    f"Panel #{i}: 'x' and 'y' length mismatch."
-                )
+                issues.append(f"Panel #{i}: 'x' and 'y' length mismatch.")
     return (
         "✅ Data structure valid for small multiples."
         if not issues
@@ -835,8 +830,7 @@ def _validate_polar(data: dict) -> str:
         elif isinstance(vals, list):
             if len(vals) != cat_len:
                 issues.append(
-                    "Length mismatch: 'values' must equal "
-                    "'categories' length."
+                    "Length mismatch: 'values' must equal 'categories' length."
                 )
     return (
         "✅ Data structure valid for polar plot."

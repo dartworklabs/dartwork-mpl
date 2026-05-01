@@ -29,8 +29,14 @@ colors = [
 ]
 
 fig, ax = dm.subplots(width="15cm", aspect="standard")
-ax.bar(labels, heights, bottom=baselines, color=colors,
-       edgecolor="white", linewidth=0.3)
+ax.bar(
+    labels,
+    heights,
+    bottom=baselines,
+    color=colors,
+    edgecolor="white",
+    linewidth=0.3,
+)
 ax.axhline(0, color="oc.gray7", linewidth=0.5)
 ax.set_ylabel("Value")
 dm.auto_layout(fig)

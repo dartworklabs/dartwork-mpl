@@ -13,8 +13,9 @@ panels = [
     ("Group D", np.sin(2 * x) * 0.5 + rng.normal(scale=0.1, size=x.size)),
 ]
 
-fig, axes = dm.subplots(2, 2, width="17cm", aspect="standard",
-                        sharex=True, sharey=True)
+fig, axes = dm.subplots(
+    2, 2, width="17cm", aspect="standard", sharex=True, sharey=True
+)
 for ax, (label, y) in zip(axes.flat, panels, strict=False):
     ax.plot(x, y, color="oc.blue6", linewidth=0.8)
     ax.set_xlabel("x")
