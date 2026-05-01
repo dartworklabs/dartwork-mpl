@@ -260,33 +260,55 @@ All presets have a `-kr` Korean variant (e.g., `scientific-kr`, `report-kr`).
 
 <br/>
 
-## AI-Assisted Development
+## AI-Assisted Development (MCP Server)
 
-dartwork-mpl provides an **MCP (Model Context Protocol) server** that enables AI coding assistants to automatically access documentation and guidelines.
+dartwork-mpl ships a built-in **Model Context Protocol (MCP) server** so that AI coding assistants — Claude Code, Cursor, Windsurf, Antigravity — can pull the latest policy guides, color palettes, lint catalog, and helper tools straight into the chat context. No copy-pasting docs.
 
-### MCP Setup
+### Install
+
+```shell
+# pip
+pip install "dartwork-mpl[mcp]"
+
+# uv
+uv add "dartwork-mpl[mcp]"
+```
+
+The `[mcp]` extra installs `fastmcp` (>=2.13.3,<4) and `httpx`. After install, the
+`dartwork-mpl-mcp` console script is on your `PATH`.
+
+### Claude Code
+
+Add to `~/.claude.json` (global) or `<project>/.claude/mcp_servers.json`:
 
 ```json
 {
   "mcpServers": {
     "dartwork-mpl": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "/path/to/dartwork-mpl",
-        "dartwork-mpl-mcp"
-      ]
+      "command": "dartwork-mpl-mcp"
     }
   }
 }
 ```
 
-> **Note:** Replace `/path/to/dartwork-mpl` with the actual path to your local clone.
-> Install MCP dependencies with `uv pip install -e ".[mcp]"`.
+### Cursor
 
-Supported clients: **Claude Code**, **Cursor**, **Windsurf**, **Antigravity (Gemini)**.
-For detailed setup per client, see the [MCP Server docs](https://dartworklabs.github.io/dartwork-mpl/integrations/mcp_server.html).
+Add to `~/.cursor/mcp.json` (global) or `<project>/.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "dartwork-mpl": {
+      "command": "dartwork-mpl-mcp"
+    }
+  }
+}
+```
+
+After saving, restart the client (or start a new conversation) and ask the assistant to list its MCP resources to confirm the server is reachable. For Windsurf, Antigravity (Gemini), generic stdio, troubleshooting, and the full resource/tool catalog, see [`docs/integrations/mcp_server.md`](docs/integrations/mcp_server.md) (or the [hosted version](https://dartworklabs.github.io/dartwork-mpl/integrations/mcp_server.html)).
+
+> **Working from a local clone instead of PyPI?** Use `command: "uv"` with
+> `args: ["run", "--directory", "/abs/path/to/dartwork-mpl", "dartwork-mpl-mcp"]`. The detailed docs cover this case.
 
 <br/>
 
