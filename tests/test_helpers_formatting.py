@@ -38,3 +38,35 @@ def test_aliases_match_labels_module() -> None:
     assert alias_mod.add_value_labels is labels_mod.add_value_labels
     assert alias_mod.format_axis_labels is labels_mod.format_axis_labels
     assert alias_mod.optimize_legend is labels_mod.optimize_legend
+
+
+def test_alias_function_actually_works() -> None:
+    """The deprecated alias should still produce a working call.
+
+    Importing through the legacy path and invoking ``format_axis_labels``
+    must mutate the axes the same way the canonical module does.
+    """
+    import matplotlib.pyplot as plt
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        from dartwork_mpl.helpers.formatting import format_axis_labels
+
+    _fig, ax = plt.subplots()
+    format_axis_labels(ax, x_label="time", y_label="value")
+    assert ax.get_xlabel() == "time"
+    assert ax.get_ylabel() == "value"
+
+
+def test_alias_module_has_dunder_all() -> None:
+    """The alias declares ``__all__`` for re-export discovery."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        from dartwork_mpl.helpers import formatting as alias_mod
+
+    assert hasattr(alias_mod, "__all__")
+    assert set(alias_mod.__all__) == {
+        "add_value_labels",
+        "format_axis_labels",
+        "optimize_legend",
+    }
