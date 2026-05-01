@@ -70,7 +70,7 @@ def create_figure_with_style(
     style : str
         Style preset name
     figsize : tuple[float, float] | None
-        Figure size (defaults to 17 cm wide × ~10.2 cm tall, the
+        Figure size (defaults to 17 cm wide x ~10.2 cm tall, the
         former ``DW`` two-column figure preset).
     dpi : int
         Figure DPI
@@ -93,6 +93,4 @@ def create_figure_with_style(
         figsize = (width, width * 0.6)
 
     # Create figure
-    fig = plt.figure(figsize=figsize, dpi=dpi)
-
-    return fig
+    return plt.figure(figsize=figsize, dpi=dpi)

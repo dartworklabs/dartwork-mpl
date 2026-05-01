@@ -5,6 +5,10 @@ positive and negative values extending in opposite directions from
 a central axis.
 """
 
+from __future__ import annotations
+
+from typing import Any
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
@@ -18,8 +22,8 @@ from ..units import cm
 
 def plot_diverging_bar(
     labels: list[str] | None = None,
-    neg_values: np.ndarray | None = None,
-    pos_values: np.ndarray | None = None,
+    neg_values: np.ndarray[Any, Any] | None = None,
+    pos_values: np.ndarray[Any, Any] | None = None,
     add_total: bool = True,
     figsize: tuple[float, float] | None = None,
     dpi: int = 300,
@@ -78,22 +82,22 @@ def plot_diverging_bar(
     hbar_spacing_factor : float, optional
         Bar spacing as a multiple of ``hbar_height``. Default is 1.6.
     left_margin : float, optional
-        Left margin of the Axes in figure coordinates (0–1). Default is 0.35.
+        Left margin of the Axes in figure coordinates (0-1). Default is 0.35.
     right_margin : float, optional
-        Right margin of the Axes in figure coordinates (0–1). Default is 0.95.
+        Right margin of the Axes in figure coordinates (0-1). Default is 0.95.
     figure_bottom : float, optional
-        Bottom margin of the Axes in figure coordinates (0–1). Default is 0.03.
+        Bottom margin of the Axes in figure coordinates (0-1). Default is 0.03.
     base_x : float, optional
         Common x-coordinate for title, legend, and labels in figure
-        coordinates (0–1). Default is 0.02.
+        coordinates (0-1). Default is 0.02.
     title_y : float, optional
-        Starting y-coordinate of the title in figure coordinates (0–1).
+        Starting y-coordinate of the title in figure coordinates (0-1).
         Default is 0.95.
     title_to_legend_gap : float, optional
-        Gap between title and legend in figure coordinates (0–1).
+        Gap between title and legend in figure coordinates (0-1).
         Default is 0.05.
     legend_to_figure_gap : float, optional
-        Gap between legend and figure area in figure coordinates (0–1).
+        Gap between legend and figure area in figure coordinates (0-1).
         Default is 0.06.
 
     Returns
@@ -109,7 +113,7 @@ def plot_diverging_bar(
     >>> import dartwork_mpl as dm
     >>> dm.style.use('scientific')
     >>>
-    >>> # Minimal setup — uses default sample data
+    >>> # Minimal setup - uses default sample data
     >>> fig, ax = plot_diverging_bar()
     >>> dm.save_and_show(fig)
     >>>
@@ -198,7 +202,7 @@ def plot_diverging_bar(
     neg_vals = neg_vals[::-1]
     pos_vals = pos_vals[::-1]
 
-    # Set default figure size: 12 cm × 12 cm.
+    # Set default figure size: 12 cm x 12 cm.
     if figsize is None:
         figsize = (cm(12), cm(12))
 

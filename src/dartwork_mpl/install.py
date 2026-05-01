@@ -142,7 +142,7 @@ def uninstall_llm_txt(project_dir: str | Path | None = None) -> None:
         for file_path in removed:
             print(f"🗑️  Removed: {file_path}")
     else:
-        print("ℹ️  No dartwork-mpl usage guides found to remove.")
+        print("ℹ️  No dartwork-mpl usage guides found to remove.")  # noqa: RUF001
 
 
 if __name__ == "__main__":

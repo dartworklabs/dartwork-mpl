@@ -14,6 +14,7 @@ from __future__ import annotations
 import re
 
 import matplotlib.colors as mcolors
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 
 # Re-export asset diagnostics so ``dm.explore.plot_colormaps`` etc.
@@ -123,11 +124,11 @@ def show_palette(palette_name: str) -> None:
     color_names: list[str] = [c[1] for c in palette_colors]
 
     n: int = len(color_names)
-    fig, ax = plt.subplots(figsize=(n * 0.8, 1.2))
+    _fig, ax = plt.subplots(figsize=(n * 0.8, 1.2))
 
     for i, cname in enumerate(color_names):
         ax.add_patch(
-            plt.Rectangle((i, 0), 1, 1, facecolor=cname, edgecolor="none")
+            mpatches.Rectangle((i, 0), 1, 1, facecolor=cname, edgecolor="none")
         )
 
         # Simple contrast heuristic: lighter text for darker shades (index >= 5 usually)

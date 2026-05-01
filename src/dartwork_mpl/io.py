@@ -10,6 +10,7 @@ __all__ = ["save_and_show", "save_formats", "show"]
 
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from typing import Any
 from xml.dom import minidom
 
 import matplotlib.pyplot as plt
@@ -24,7 +25,7 @@ def save_formats(
     formats: tuple[str, ...] = ("png", "pdf"),
     bbox_inches: str | None = None,
     validate: bool = True,
-    **kwargs,
+    **kwargs: Any,
 ) -> None:
     """Save a figure in multiple specified formats at once.
 
@@ -69,7 +70,7 @@ def show(image_path: str, size: int = 600, unit: str = "pt") -> None:
     """
     from IPython.display import HTML, SVG, display
 
-    svg_obj = SVG(data=image_path)
+    svg_obj = SVG(data=image_path)  # type: ignore[no-untyped-call]
 
     desired_width = size
 
@@ -77,7 +78,7 @@ def show(image_path: str, size: int = 600, unit: str = "pt") -> None:
     # The SVG payload is produced by matplotlib's own SVG backend (via
     # IPython.display.SVG) on dartwork-mpl figures, never user-supplied
     # XML, so XXE/billion-laughs vectors do not apply here.
-    dom = minidom.parseString(svg_obj.data)  # noqa: S318  # trusted dartwork SVG only
+    dom = minidom.parseString(svg_obj.data)  # trusted dartwork SVG only
     doc_el = dom.documentElement
     width_attr = doc_el.getAttribute("width") if doc_el else ""
     height_attr = doc_el.getAttribute("height") if doc_el else ""
@@ -86,11 +87,11 @@ def show(image_path: str, size: int = 600, unit: str = "pt") -> None:
         width = float(width_attr.replace(unit, ""))
         height = float(height_attr.replace(unit, ""))
     except ValueError:
-        display(HTML(svg_obj.data))
+        display(HTML(svg_obj.data))  # type: ignore[no-untyped-call]
         return
 
     if width <= 0:
-        display(HTML(svg_obj.data))
+        display(HTML(svg_obj.data))  # type: ignore[no-untyped-call]
         return
 
     aspect_ratio = height / width
@@ -114,7 +115,7 @@ def show(image_path: str, size: int = 600, unit: str = "pt") -> None:
             )
             break
 
-    display(HTML(svg_obj.data))
+    display(HTML(svg_obj.data))  # type: ignore[no-untyped-call]
 
 
 def save_and_show(
@@ -122,7 +123,7 @@ def save_and_show(
     image_path: str | None = None,
     size: int = 600,
     unit: str = "pt",
-    **kwargs,
+    **kwargs: Any,
 ) -> None:
     """Save a figure to disk, then display it in a Jupyter or web environment.
 
@@ -140,9 +141,8 @@ def save_and_show(
         Additional keyword arguments passed to ``savefig``.
     """
     if image_path is None:
-        tmp = NamedTemporaryFile(suffix=".svg", delete=False)
-        tmp_path = tmp.name
-        tmp.close()
+        with NamedTemporaryFile(suffix=".svg", delete=False) as tmp:
+            tmp_path = tmp.name
         try:
             fig.savefig(tmp_path, bbox_inches=None, **kwargs)
             plt.close(fig)

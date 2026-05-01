@@ -314,7 +314,7 @@ def plot_colormaps(
         "Categorical",
     ]
 
-    categories: dict[str, list] = {cat: [] for cat in category_order}
+    categories: dict[str, list[Any]] = {cat: [] for cat in category_order}
     for cmap in cmap_list:
         category = classify_colormap(cmap)
         categories[category].append(cmap)
@@ -342,7 +342,7 @@ def plot_colormaps(
 
 
 def _plot_category(
-    cmaps: list, category: str, gradient: np.ndarray, ncols: int
+    cmaps: list[Any], category: str, gradient: np.ndarray[Any, Any], ncols: int
 ) -> Figure:
     """Draw a single category figure with badge header."""
     nrows = (len(cmaps) + ncols - 1) // ncols
@@ -352,8 +352,8 @@ def _plot_category(
 
     fig = plt.figure(figsize=(figw, figh))
 
-    gs = plt.GridSpec(
-        nrows + 1, ncols, figure=fig, height_ratios=[0.35] + [1] * nrows
+    gs = mpl.gridspec.GridSpec(
+        nrows + 1, ncols, figure=fig, height_ratios=[0.35, *([1] * nrows)]
     )
 
     # --- Category title with badge ---
@@ -426,7 +426,9 @@ def _plot_category(
     return fig
 
 
-def _plot_flat(cmap_list: list, gradient: np.ndarray, ncols: int) -> Figure:
+def _plot_flat(
+    cmap_list: list[Any], gradient: np.ndarray[Any, Any], ncols: int
+) -> Figure:
     """Draw all colormaps in a single figure without grouping."""
     cmap_list.sort(key=lambda c: c.name.lower())
 
@@ -493,12 +495,11 @@ def _load_color_library_names() -> set[str]:
     opencolor_file = asset_dir / "oc.txt"
     if opencolor_file.exists():
         with open(opencolor_file) as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#"):
-                    if ":" in line:
-                        name = line.split(":")[0].strip()
-                        opencolor_names.add(name)
+            for raw_line in f:
+                line = raw_line.strip()
+                if line and not line.startswith("#") and ":" in line:
+                    name = line.split(":")[0].strip()
+                    opencolor_names.add(name)
 
     return opencolor_names
 
@@ -576,15 +577,22 @@ def _remove_duplicate_colors(
     seen_rgb: dict[tuple[float, ...], str] = {}
     result: dict[str, str | tuple[float, float, float]] = {}
 
-    for color_name, color_spec in colors.items():
+    def _try_rgb_key(
+        spec: str | tuple[float, float, float],
+    ) -> tuple[float, ...] | None:
         try:
-            rgb = mcolors.to_rgb(color_spec)
-            rgb_key = tuple(round(c, 6) for c in rgb)
-
-            if rgb_key not in seen_rgb:
-                seen_rgb[rgb_key] = color_name
-                result[color_name] = color_spec
+            rgb = mcolors.to_rgb(spec)
         except (ValueError, TypeError):
+            return None
+        return tuple(round(c, 6) for c in rgb)
+
+    for color_name, color_spec in colors.items():
+        rgb_key = _try_rgb_key(color_spec)
+        if rgb_key is None:
+            result[color_name] = color_spec
+            continue
+        if rgb_key not in seen_rgb:
+            seen_rgb[rgb_key] = color_name
             result[color_name] = color_spec
 
     return result
@@ -707,7 +715,7 @@ def _plot_single_library(
     # Group and sort
     # ------------------------------------------------------------------
     if sort_colors:
-        base_color_groups: dict[str, list] = defaultdict(list)
+        base_color_groups: dict[str, list[Any]] = defaultdict(list)
         for color_name in colors:
             base_color = _extract_base_color_name(color_name)
             try:
@@ -722,7 +730,7 @@ def _plot_single_library(
         color_groups: list[dict[str, Any]] = []
         for base_color, color_items in sorted_base_colors:
 
-            def sort_key(x):
+            def sort_key(x: tuple[str, Any]) -> tuple[int, float]:
                 color_name, hsv = x
                 number = _extract_number_from_color_name(color_name)
                 if number is not None:
@@ -772,13 +780,18 @@ def _plot_single_library(
 
         should_add_spacing = False
 
-        if prev_weight_range is not None and current_weight_range is not None:
-            if prev_weight_range != current_weight_range:
-                should_add_spacing = True
+        if (
+            prev_weight_range is not None
+            and current_weight_range is not None
+            and prev_weight_range != current_weight_range
+        ):
+            should_add_spacing = True
 
-        if prev_base_color_per_col[target_col] is not None:
-            if prev_base_color_per_col[target_col] != current_base_color:
-                column_heights[target_col] += 1
+        if (
+            prev_base_color_per_col[target_col] is not None
+            and prev_base_color_per_col[target_col] != current_base_color
+        ):
+            column_heights[target_col] += 1
 
         if should_add_spacing:
             for col in range(ncols):
@@ -1265,7 +1278,7 @@ def plot_fonts(
                         verticalalignment="center",
                         clip_on=True,
                     )
-                except Exception:
+                except Exception:  # noqa: BLE001
                     ax.text(
                         sample_x,
                         cursor + 0.5,

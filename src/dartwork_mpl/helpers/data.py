@@ -18,7 +18,7 @@ def validate_data(
     require_same_length: bool = True,
     allow_nan: bool = False,
     min_points: int = 2,
-) -> tuple[np.ndarray, np.ndarray | None]:
+) -> tuple[np.ndarray[Any, Any], np.ndarray[Any, Any] | None]:
     """Validate and clean input data for plotting.
 
     Parameters
@@ -61,11 +61,8 @@ def validate_data(
         )
 
     # Check length matching
-    if y is not None and require_same_length:
-        if len(x) != len(y):
-            raise ValueError(
-                f"Data length mismatch: x({len(x)}) != y({len(y)})"
-            )
+    if y is not None and require_same_length and len(x) != len(y):
+        raise ValueError(f"Data length mismatch: x({len(x)}) != y({len(y)})")
 
     # Handle NaN/Inf values
     if not allow_nan:
@@ -80,15 +77,14 @@ def validate_data(
                 stacklevel=2,
             )
 
-        if y is not None:
-            if np.any(np.isnan(y)) or np.any(np.isinf(y)):
-                mask = ~(np.isnan(y) | np.isinf(y))
-                x = x[mask]
-                y = y[mask]
-                warnings.warn(
-                    f"Removed {(~mask).sum()} NaN/Inf values from data",
-                    stacklevel=2,
-                )
+        if y is not None and (np.any(np.isnan(y)) or np.any(np.isinf(y))):
+            mask = ~(np.isnan(y) | np.isinf(y))
+            x = x[mask]
+            y = y[mask]
+            warnings.warn(
+                f"Removed {(~mask).sum()} NaN/Inf values from data",
+                stacklevel=2,
+            )
 
     # Final check
     if len(x) < min_points:
