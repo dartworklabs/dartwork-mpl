@@ -18,7 +18,7 @@ __all__ = [
 import math
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -332,9 +332,9 @@ class RgbView(_BaseColorView):
         g_c = max(0.0, min(1.0, g))
         b_c = max(0.0, min(1.0, b))
 
-        r_lin: float | np.ndarray = _srgb_to_linear(r_c)
-        g_lin: float | np.ndarray = _srgb_to_linear(g_c)
-        b_lin: float | np.ndarray = _srgb_to_linear(b_c)
+        r_lin: float | np.ndarray[Any, Any] = _srgb_to_linear(r_c)
+        g_lin: float | np.ndarray[Any, Any] = _srgb_to_linear(g_c)
+        b_lin: float | np.ndarray[Any, Any] = _srgb_to_linear(b_c)
 
         L, a, b_val = _linear_srgb_to_oklab(
             float(r_lin), float(g_lin), float(b_lin)

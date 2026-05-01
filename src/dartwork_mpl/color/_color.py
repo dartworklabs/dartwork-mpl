@@ -10,6 +10,7 @@ from __future__ import annotations
 __all__ = ["Color", "cspace", "hex", "named", "oklab", "oklch", "rgb"]
 
 import math
+from typing import Any
 
 import matplotlib.colors as mcolors
 import numpy as np
@@ -204,9 +205,9 @@ class Color:
             b_norm = b / 255.0
 
         # Convert sRGB to linear RGB
-        r_linear: float | np.ndarray = _srgb_to_linear(r_norm)
-        g_linear: float | np.ndarray = _srgb_to_linear(g_norm)
-        b_linear: float | np.ndarray = _srgb_to_linear(b_norm)
+        r_linear: float | np.ndarray[Any, Any] = _srgb_to_linear(r_norm)
+        g_linear: float | np.ndarray[Any, Any] = _srgb_to_linear(g_norm)
+        b_linear: float | np.ndarray[Any, Any] = _srgb_to_linear(b_norm)
 
         # Convert to OKLab
         L: float
@@ -328,9 +329,9 @@ class Color:
         b_linear_clamped: float = max(0.0, min(1.0, b_linear))
 
         # Convert linear RGB to sRGB
-        r: float | np.ndarray = _linear_to_srgb(r_linear_clamped)
-        g: float | np.ndarray = _linear_to_srgb(g_linear_clamped)
-        b: float | np.ndarray = _linear_to_srgb(b_linear_clamped)
+        r: float | np.ndarray[Any, Any] = _linear_to_srgb(r_linear_clamped)
+        g: float | np.ndarray[Any, Any] = _linear_to_srgb(g_linear_clamped)
+        b: float | np.ndarray[Any, Any] = _linear_to_srgb(b_linear_clamped)
 
         # Convert numpy scalars/arrays to Python floats
         r_float: float = float(np.asarray(r).item())
@@ -479,9 +480,9 @@ def cspace(
             end_h += 360
 
         # Interpolate
-        L_values: np.ndarray = np.linspace(start_L, end_L, n)
-        C_values: np.ndarray = np.linspace(start_C, end_C, n)
-        h_values: np.ndarray = np.linspace(start_h, end_h, n)
+        L_values: np.ndarray[Any, Any] = np.linspace(start_L, end_L, n)
+        C_values: np.ndarray[Any, Any] = np.linspace(start_C, end_C, n)
+        h_values: np.ndarray[Any, Any] = np.linspace(start_h, end_h, n)
 
         # Normalize hue values to [0, 360) before creating Color objects
         h_values = h_values % 360.0
@@ -498,8 +499,8 @@ def cspace(
 
         # Interpolate
         L_values = np.linspace(start_L, end_L, n)
-        a_values: np.ndarray = np.linspace(start_a, end_a, n)
-        b_values: np.ndarray = np.linspace(start_b, end_b, n)
+        a_values: np.ndarray[Any, Any] = np.linspace(start_a, end_a, n)
+        b_values: np.ndarray[Any, Any] = np.linspace(start_b, end_b, n)
 
         # Convert back to Color objects
         colors = [
@@ -518,8 +519,8 @@ def cspace(
         rgb_end_r, rgb_end_g, rgb_end_b = end_color_obj.to_rgb()
 
         # Interpolate
-        r_values: np.ndarray = np.linspace(rgb_start_r, rgb_end_r, n)
-        g_values: np.ndarray = np.linspace(rgb_start_g, rgb_end_g, n)
+        r_values: np.ndarray[Any, Any] = np.linspace(rgb_start_r, rgb_end_r, n)
+        g_values: np.ndarray[Any, Any] = np.linspace(rgb_start_g, rgb_end_g, n)
         b_values = np.linspace(rgb_start_b, rgb_end_b, n)
 
         # Convert back to Color objects

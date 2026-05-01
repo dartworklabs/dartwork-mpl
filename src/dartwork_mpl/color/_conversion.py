@@ -9,11 +9,14 @@ from __future__ import annotations
 __all__: list[str] = []  # All functions are private (_-prefixed)
 
 import math
+from typing import Any
 
 import numpy as np
 
 
-def _srgb_to_linear(c: float | np.ndarray) -> float | np.ndarray:
+def _srgb_to_linear(
+    c: float | np.ndarray[Any, Any],
+) -> float | np.ndarray[Any, Any]:
     """
     Convert sRGB to linear RGB (gamma decoding).
 
@@ -27,12 +30,14 @@ def _srgb_to_linear(c: float | np.ndarray) -> float | np.ndarray:
     float or array
         Linear RGB value(s) in range [0, 1].
     """
-    c_arr: np.ndarray = np.asarray(c)
-    mask: np.ndarray = c_arr <= 0.04045
+    c_arr: np.ndarray[Any, Any] = np.asarray(c)
+    mask: np.ndarray[Any, Any] = c_arr <= 0.04045
     return np.where(mask, c_arr / 12.92, ((c_arr + 0.055) / 1.055) ** 2.4)
 
 
-def _linear_to_srgb(c: float | np.ndarray) -> float | np.ndarray:
+def _linear_to_srgb(
+    c: float | np.ndarray[Any, Any],
+) -> float | np.ndarray[Any, Any]:
     """
     Convert linear RGB to sRGB (gamma encoding).
 
@@ -46,8 +51,8 @@ def _linear_to_srgb(c: float | np.ndarray) -> float | np.ndarray:
     float or array
         sRGB value(s) in range [0, 1].
     """
-    c_arr: np.ndarray = np.asarray(c)
-    mask: np.ndarray = c_arr <= 0.0031308
+    c_arr: np.ndarray[Any, Any] = np.asarray(c)
+    mask: np.ndarray[Any, Any] = c_arr <= 0.0031308
     return np.where(mask, 12.92 * c_arr, 1.055 * (c_arr ** (1.0 / 2.4)) - 0.055)
 
 
@@ -238,8 +243,8 @@ def _rgb_to_hex(r: float, g: float, b: float) -> str:
     b_clamped: float = max(0.0, min(1.0, b))
 
     # Convert to 0-255 and format as hex
-    r_int: int = int(round(r_clamped * 255))
-    g_int: int = int(round(g_clamped * 255))
-    b_int: int = int(round(b_clamped * 255))
+    r_int: int = round(r_clamped * 255)
+    g_int: int = round(g_clamped * 255)
+    b_int: int = round(b_clamped * 255)
 
     return f"#{r_int:02x}{g_int:02x}{b_int:02x}"
