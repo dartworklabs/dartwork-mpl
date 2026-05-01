@@ -423,7 +423,7 @@ class TestMcpTools:
         assert "values" in result.lower()
 
     def test_validate_plot_data_supports_all_advertised_types(self) -> None:
-        """``dartwork_mpl_info()`` advertises 12 plot templates;
+        """``dartwork_mpl_info()`` advertises 18 plot templates;
         ``validate_plot_data`` must have a validator for every one."""
         from dartwork_mpl.mcp.tools import register_tools
 

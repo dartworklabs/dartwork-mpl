@@ -240,11 +240,14 @@ def register_tools(mcp: FastMCP) -> None:
         Parameters
         ----------
         plot_type : str
-            Target plot type. Supports the full 12-template catalog
+            Target plot type. Supports the full 18-template catalog
             advertised by ``dartwork_mpl_info()``: ``'tornado'``,
-            ``'scatter'``, ``'bar'``, ``'heatmap'``, ``'stacked_bar'``,
+            ``'scatter'``, ``'bar'``, ``'bar_horizontal'``,
+            ``'bar_grouped'``, ``'heatmap'``, ``'stacked_bar'``,
             ``'pie'``, ``'line'``, ``'violin'``, ``'boxplot'``,
-            ``'histogram'``, ``'contour'``, ``'twin_axis'``.
+            ``'histogram'``, ``'contour'``, ``'twin_axis'``,
+            ``'waterfall'``, ``'small_multiples'``, ``'polar'``,
+            ``'plot_3d'``.
         data_json : str
             JSON string representing the data to validate. The expected
             structure varies by plot type.
@@ -263,6 +266,8 @@ def register_tools(mcp: FastMCP) -> None:
             "tornado": _validate_tornado,
             "scatter": _validate_scatter,
             "bar": _validate_bar,
+            "bar_horizontal": _validate_bar_horizontal,
+            "bar_grouped": _validate_bar_grouped,
             "heatmap": _validate_heatmap,
             "stacked_bar": _validate_stacked_bar,
             "pie": _validate_pie,
@@ -272,6 +277,10 @@ def register_tools(mcp: FastMCP) -> None:
             "histogram": _validate_histogram,
             "contour": _validate_contour,
             "twin_axis": _validate_twin_axis,
+            "waterfall": _validate_waterfall,
+            "small_multiples": _validate_small_multiples,
+            "polar": _validate_polar,
+            "plot_3d": _validate_plot_3d,
         }
 
         validator = validators.get(plot_type.lower())
@@ -419,6 +428,8 @@ def register_tools(mcp: FastMCP) -> None:
                     "tornado",
                     "scatter",
                     "bar",
+                    "bar_horizontal",
+                    "bar_grouped",
                     "heatmap",
                     "line",
                     "violin",
@@ -428,6 +439,10 @@ def register_tools(mcp: FastMCP) -> None:
                     "histogram",
                     "contour",
                     "twin_axis",
+                    "waterfall",
+                    "small_multiples",
+                    "polar",
+                    "plot_3d",
                 ],
             },
             indent=2,
@@ -865,6 +880,184 @@ def _validate_twin_axis(data: dict) -> str:
 
     return (
         "✅ Data structure valid for twin-axis plot."
+        if not issues
+        else "\n".join(issues)
+    )
+
+
+def _validate_bar_horizontal(data: dict) -> str:
+    """Validate data for a horizontal bar chart.
+
+    Same shape as a vertical bar: ``categories`` + ``values``.
+    """
+    issues = []
+    if "categories" not in data:
+        issues.append("Missing 'categories' key (list of category labels).")
+    if "values" not in data:
+        issues.append("Missing 'values' key (list of numeric values).")
+    if "categories" in data and "values" in data:
+        if len(data["categories"]) != len(data["values"]):
+            issues.append(
+                "Length mismatch: 'categories' and 'values' must "
+                "have equal length."
+            )
+    return (
+        "✅ Data structure valid for horizontal bar plot."
+        if not issues
+        else "\n".join(issues)
+    )
+
+
+def _validate_bar_grouped(data: dict) -> str:
+    """Validate data for a grouped (dodged) bar chart.
+
+    Expected: ``categories`` + ``series`` (dict of series_name -> values),
+    each series same length as ``categories``.
+    """
+    issues = []
+    if "categories" not in data:
+        issues.append("Missing 'categories' key.")
+    if "series" not in data:
+        issues.append("Missing 'series' key (dict of series_name -> values).")
+    elif isinstance(data["series"], dict):
+        cat_len = len(data.get("categories", []))
+        for name, vals in data["series"].items():
+            if len(vals) != cat_len:
+                issues.append(
+                    f"Series '{name}' length ({len(vals)}) != "
+                    f"categories length ({cat_len})."
+                )
+    return (
+        "✅ Data structure valid for grouped bar plot."
+        if not issues
+        else "\n".join(issues)
+    )
+
+
+def _validate_waterfall(data: dict) -> str:
+    """Validate data for a waterfall (bridge) chart.
+
+    Expected: ``labels`` + ``deltas`` (signed contributions). Optional
+    ``is_total`` flag list selects total/anchor bars.
+    """
+    issues = []
+    if "labels" not in data:
+        issues.append("Missing 'labels' key (list of step labels).")
+    if "deltas" not in data:
+        issues.append("Missing 'deltas' key (list of signed numeric values).")
+    if "labels" in data and "deltas" in data:
+        if len(data["labels"]) != len(data["deltas"]):
+            issues.append(
+                "Length mismatch: 'labels' and 'deltas' must have equal length."
+            )
+    if "is_total" in data and "deltas" in data:
+        if len(data["is_total"]) != len(data["deltas"]):
+            issues.append(
+                "Length mismatch: 'is_total' must align with 'deltas'."
+            )
+    return (
+        "✅ Data structure valid for waterfall plot."
+        if not issues
+        else "\n".join(issues)
+    )
+
+
+def _validate_small_multiples(data: dict) -> str:
+    """Validate data for small multiples / faceted panels.
+
+    Expected: ``panels`` (list of {label, x, y} dicts). Each panel's
+    ``x`` and ``y`` arrays must have equal length.
+    """
+    issues = []
+    if "panels" not in data:
+        issues.append(
+            "Missing 'panels' key (list of {label, x, y} panel dicts)."
+        )
+    elif not isinstance(data["panels"], list):
+        issues.append("'panels' must be a list.")
+    else:
+        for i, panel in enumerate(data["panels"]):
+            if not isinstance(panel, dict):
+                issues.append(f"Panel #{i} is not a dict.")
+                continue
+            if "x" not in panel or "y" not in panel:
+                issues.append(f"Panel #{i} missing 'x' or 'y'.")
+                continue
+            if len(panel["x"]) != len(panel["y"]):
+                issues.append(f"Panel #{i}: 'x' and 'y' length mismatch.")
+    return (
+        "✅ Data structure valid for small multiples."
+        if not issues
+        else "\n".join(issues)
+    )
+
+
+def _validate_polar(data: dict) -> str:
+    """Validate data for a polar / radar chart.
+
+    Expected: ``categories`` (axis labels) + ``values`` (one value per
+    category). For multi-series radar, ``values`` may be a dict of
+    series_name -> values.
+    """
+    issues = []
+    if "categories" not in data:
+        issues.append("Missing 'categories' key (list of axis labels).")
+    if "values" not in data:
+        issues.append(
+            "Missing 'values' key (list, or dict of series_name -> list)."
+        )
+    if "categories" in data and "values" in data:
+        cat_len = len(data["categories"])
+        vals = data["values"]
+        if isinstance(vals, dict):
+            for name, series in vals.items():
+                if len(series) != cat_len:
+                    issues.append(
+                        f"Series '{name}' length ({len(series)}) != "
+                        f"categories length ({cat_len})."
+                    )
+        elif isinstance(vals, list):
+            if len(vals) != cat_len:
+                issues.append(
+                    "Length mismatch: 'values' must equal 'categories' length."
+                )
+    return (
+        "✅ Data structure valid for polar plot."
+        if not issues
+        else "\n".join(issues)
+    )
+
+
+def _validate_plot_3d(data: dict) -> str:
+    """Validate data for a 3D scatter / surface plot.
+
+    Expected: ``x``, ``y``, ``z`` arrays of equal length (scatter)
+    or 2D ``z`` matrix matching ``x`` × ``y`` (surface).
+    """
+    issues = []
+    for key in ("x", "y", "z"):
+        if key not in data:
+            issues.append(f"Missing '{key}' key.")
+    if all(k in data for k in ("x", "y", "z")):
+        z = data["z"]
+        if isinstance(z, list) and z and isinstance(z[0], list):
+            # Surface: 2D z, x and y are 1D.
+            if len(z) != len(data["y"]):
+                issues.append(
+                    "Surface mode: rows of 'z' must match 'y' length."
+                )
+            if z and len(z[0]) != len(data["x"]):
+                issues.append(
+                    "Surface mode: cols of 'z' must match 'x' length."
+                )
+        else:
+            # Scatter: x, y, z all 1D and equal length.
+            if not (len(data["x"]) == len(data["y"]) == len(z)):
+                issues.append(
+                    "Scatter mode: 'x', 'y', and 'z' must have equal length."
+                )
+    return (
+        "✅ Data structure valid for 3D plot."
         if not issues
         else "\n".join(issues)
     )
