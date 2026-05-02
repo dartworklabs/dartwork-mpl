@@ -139,14 +139,20 @@ class TestRotateTickLabelsAlignment:
     def test_x_axis_rotation_emits_no_set_ticklabels_warning(
         self,
     ) -> None:
-        """The fix replaces set_xticklabels(get_xticklabels(), ...) with
-        per-label .set_rotation/.set_horizontalalignment so matplotlib's
-        FixedLocator warning no longer fires."""
+        """The pre-patch implementation called
+        ``set_xticklabels(get_xticklabels(), ...)`` which emits
+        matplotlib's FixedLocator deprecation UserWarning whenever the
+        axis uses a non-FixedLocator (e.g. a CategoricalLocator from
+        ax.bar with string labels). The fix iterates over the existing
+        Text artists, mutating them in place, which preserves the
+        locator and silences the warning.
+        """
         import warnings
 
         fig, ax = _axes()
-        ax.set_xticks(np.arange(5))
-        ax.set_xticklabels(["A", "B", "C", "D", "E"])
+        # ax.bar with string labels installs a CategoricalLocator, the
+        # exact path that triggered the warning pre-patch.
+        ax.bar(["A", "B", "C", "D", "E"], [1, 2, 3, 4, 5])
         with warnings.catch_warnings():
             warnings.simplefilter("error", UserWarning)
             dm.rotate_tick_labels(ax, axis="x", rotation=45)
