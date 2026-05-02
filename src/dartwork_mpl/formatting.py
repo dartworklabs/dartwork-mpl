@@ -314,7 +314,17 @@ def rotate_tick_labels(
         else:
             ha = "center"
 
+    # Apply rotation and alignment per-label rather than calling
+    # set_xticklabels(get_xticklabels(), ...) — that pattern emits
+    # matplotlib's "set_ticklabels() should only be used with a
+    # fixed number of ticks" warning since the locator may not be
+    # a FixedLocator. Iterating preserves the existing locator and
+    # mutates the existing Text artists in place.
     if axis in ("x", "both"):
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=rotation, ha=ha)
+        for label in ax.get_xticklabels():
+            label.set_rotation(rotation)
+            label.set_horizontalalignment(ha)
     if axis in ("y", "both"):
-        ax.set_yticklabels(ax.get_yticklabels(), rotation=rotation, ha=ha)
+        for label in ax.get_yticklabels():
+            label.set_rotation(rotation)
+            label.set_horizontalalignment(ha)
