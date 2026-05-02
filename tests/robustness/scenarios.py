@@ -506,6 +506,31 @@ def _build_colorbar_attached_heatmap() -> Figure:
     return fig
 
 
+def _build_subfigures_2x1() -> Figure:
+    """Two subfigures stacked vertically, each with its own axes,
+    title-text, and ylabel.
+
+    matplotlib's ``fig.subfigures()`` partitions a parent figure into
+    independent SubFigure children, each with its own GridSpec. This
+    scenario verifies that ``dm.validate_figure`` and
+    ``dm.auto_layout`` do not crash or report spurious warnings on
+    the SubFigure tree, which uses a different artist hierarchy from
+    plain ``plt.subplots``.
+    """
+    fig = dm.figure(width="14cm", aspect="standard")
+    sub_top, sub_bot = fig.subfigures(2, 1, hspace=0.05)
+
+    ax_top = sub_top.subplots()
+    ax_top.plot([1, 2, 3, 4], [1, 4, 9, 16])
+    ax_top.set_ylabel("Top axis (units)")
+
+    ax_bot = sub_bot.subplots()
+    ax_bot.bar(["A", "B", "C"], [3, 7, 5])
+    ax_bot.set_ylabel("Bottom axis (count)")
+
+    return fig
+
+
 # ───────────────────────────────────────────────────────
 # H. Style / font
 # ───────────────────────────────────────────────────────
@@ -840,6 +865,14 @@ SCENARIOS: list[RobustnessScenario] = [
         # Colorbar + heatmap causes content to reach the canvas edge
         # after auto_layout; the white-border invariant does not apply.
         pixel_checks=(),
+    ),
+    RobustnessScenario(
+        name="subfigures_2x1",
+        build=_build_subfigures_2x1,
+        # auto_layout uses fig.axes[0].get_gridspec(); SubFigures wrap
+        # each child in its own GridSpec, so we accept either zero or
+        # the existing INFO/WARN ids — but never any new OVERFLOW.
+        forbid_warnings=("OVERFLOW",),
     ),
     # H. Style / font
     RobustnessScenario(name="report_kr_style", build=_build_report_kr_style),
