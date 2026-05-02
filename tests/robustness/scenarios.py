@@ -375,8 +375,10 @@ SCENARIOS: list[RobustnessScenario] = [
         name="extreme_left_squeeze",
         build=_build_extreme_left_squeeze,
         # MARGIN_ASYMMETRY is the whole point — must be flagged before
-        # auto_layout. auto_layout's current symmetry pass already
-        # resolves the asymmetry, so no xfail needed.
+        # auto_layout. simple_layout's scipy optimizer targets all four
+        # margins simultaneously, so it incidentally rebalances the
+        # squeeze without a dedicated symmetry pass (that is Task 13).
+        # No xfail needed.
         expect_warnings=("MARGIN_ASYMMETRY",),
     ),
     RobustnessScenario(
@@ -427,8 +429,11 @@ SCENARIOS: list[RobustnessScenario] = [
         marks=pytest.mark.xfail(
             strict=True,
             reason=(
-                "auto_layout shifts colorbar figure into top edge — "
-                "fixed in Task 10 (auto_layout BUFFER scaling)"
+                "horizontal colorbar overshoots top edge after "
+                "auto_layout — fixed in Task 13 (auto_layout "
+                "symmetry pass) or Task 10 (BUFFER scaling) if "
+                "the overshoot turns out to be a per-side margin "
+                "amount problem"
             ),
         ),
     ),
