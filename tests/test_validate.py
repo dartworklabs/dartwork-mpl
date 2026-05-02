@@ -519,6 +519,7 @@ class TestCheckClippedText:
         """CLIPPED_TEXT is registered in the default check set."""
         fig, ax = plt.subplots(figsize=(3, 2))
         ax.bar([0, 1, 2], [1, 2, 3])
+        ax.set_xticks([0, 1, 2])
         ax.set_xticklabels(["A" * 30, "B" * 30, "C" * 30])
         warnings = validate_figure(fig, quiet=True)  # default checks
         ids = {w.check_id for w in warnings}

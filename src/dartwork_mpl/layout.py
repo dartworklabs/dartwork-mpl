@@ -413,6 +413,27 @@ def auto_layout(
         # Check if all sides are within tolerance
         max_overflow = max(overflow.values())
         if max_overflow <= tolerance:
+            # Final symmetry pass: average horizontal and vertical margin
+            # pairs so asymmetrically-squeezed figures (e.g. user called
+            # subplots_adjust before auto_layout) are centred without
+            # expanding the canvas. Runs only on convergence so we don't
+            # mask a genuine layout failure.
+            avg_h = (margins[0] + margins[1]) / 2
+            avg_v = (margins[2] + margins[3]) / 2
+            if (
+                abs(margins[0] - avg_h) > 1e-6
+                or abs(margins[2] - avg_v) > 1e-6
+            ):
+                margins[0] = avg_h
+                margins[1] = avg_h
+                margins[2] = avg_v
+                margins[3] = avg_v
+                simple_layout(fig, margins=tuple(margins))  # type: ignore[arg-type]
+                if verbose:
+                    print(
+                        f"[auto_layout] symmetry pass applied: "
+                        f"avg_h={avg_h:.3f}, avg_v={avg_v:.3f}"
+                    )
             if verbose:
                 print(
                     f"[auto_layout] Converged in {iteration + 1} iteration(s)."
@@ -438,22 +459,6 @@ def auto_layout(
                 margins[idx] += increment
             else:
                 consec[side] = 0
-
-    # Final symmetry pass: if no overflow is left but the layout has
-    # asymmetric whitespace (e.g. user passed subplots_adjust before
-    # calling us), normalize horizontal and vertical margins by
-    # averaging the two sides on each axis. This leaves the figure
-    # centred without expanding the canvas.
-    fig.canvas.draw()
-    overflow = _measure_overflow(fig)
-    if max(overflow.values()) <= tolerance:
-        avg_h = (margins[0] + margins[1]) / 2
-        avg_v = (margins[2] + margins[3]) / 2
-        margins[0] = avg_h
-        margins[1] = avg_h
-        margins[2] = avg_v
-        margins[3] = avg_v
-        simple_layout(fig, margins=tuple(margins))  # type: ignore[arg-type]
 
     if verbose:
         print(

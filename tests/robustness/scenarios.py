@@ -82,12 +82,6 @@ KNOWN_LIMITATIONS: tuple[tuple[str, str, str], ...] = (
         "follow-up issue (TBD)",
     ),
     (
-        "scientific_notation_yticks",
-        "log-scale y-axis exponent labels (1e-9 ... 1e9) produce a tall "
-        "footprint that auto_layout doesn't fully accommodate.",
-        "follow-up issue (TBD)",
-    ),
-    (
         "outside_axes_annotation",
         "Axes-fraction xytext at (-0.4, 0.5) escapes the canvas; "
         "auto_layout's iterative margin expansion can't reach the "
@@ -655,7 +649,8 @@ SCENARIOS: list[RobustnessScenario] = [
         marks=pytest.mark.xfail(
             strict=True,
             reason=(
-                "rotated-tick layout bug — fixed in Task 11"
+                "OVERFLOW persists after auto_layout for 25-char "
+                "rotated x-tick labels (KNOWN_LIMITATIONS)"
             ),
         ),
     ),
@@ -667,7 +662,7 @@ SCENARIOS: list[RobustnessScenario] = [
         marks=pytest.mark.xfail(
             strict=True,
             reason=(
-                "rotated-tick layout bug — fixed in Task 11"
+                "OVERFLOW persists at 90-degree rotation (KNOWN_LIMITATIONS)"
             ),
         ),
     ),
@@ -679,7 +674,8 @@ SCENARIOS: list[RobustnessScenario] = [
         marks=pytest.mark.xfail(
             strict=True,
             reason=(
-                "long-tick layout bug — fixed in Task 10/11"
+                "long ytick labels on horizontal bar overflow canvas "
+                "(KNOWN_LIMITATIONS)"
             ),
         ),
     ),
@@ -699,19 +695,9 @@ SCENARIOS: list[RobustnessScenario] = [
         name="mixed_kr_en_xticks",
         build=_build_mixed_kr_en_xticks,
     ),
-    pytest.param(
-        RobustnessScenario(
-            name="scientific_notation_yticks",
-            build=_build_scientific_notation_yticks,
-        ),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason=(
-                "log-scale y-axis exponent labels overflow "
-                "auto_layout — fixed in Task 10 (BUFFER scaling) "
-                "or Task 11 if exponent footprint requires alignment fix"
-            ),
-        ),
+    RobustnessScenario(
+        name="scientific_notation_yticks",
+        build=_build_scientific_notation_yticks,
     ),
     # B. Multiple-axis (twinx / twiny)
     RobustnessScenario(
@@ -771,8 +757,9 @@ SCENARIOS: list[RobustnessScenario] = [
         marks=pytest.mark.xfail(
             strict=True,
             reason=(
-                "axes-fraction annotations escape canvas — "
-                "fixed in Task 10 (auto_layout BUFFER scaling)"
+                "axes-fraction xytext at (-0.4, 0.5) escapes canvas; "
+                "auto_layout cannot reach necessary padding within "
+                "max_iter (KNOWN_LIMITATIONS)"
             ),
         ),
     ),
@@ -785,8 +772,8 @@ SCENARIOS: list[RobustnessScenario] = [
         marks=pytest.mark.xfail(
             strict=True,
             reason=(
-                "axes-fraction text below zero overflows canvas — "
-                "fixed in Task 10 (auto_layout BUFFER scaling)"
+                "ax.text at y=-0.25 axes-fraction overflows the bottom "
+                "edge (KNOWN_LIMITATIONS)"
             ),
         ),
     ),
@@ -799,10 +786,7 @@ SCENARIOS: list[RobustnessScenario] = [
             strict=True,
             reason=(
                 "horizontal colorbar overshoots top edge after "
-                "auto_layout — fixed in Task 13 (auto_layout "
-                "symmetry pass) or Task 10 (BUFFER scaling) if "
-                "the overshoot turns out to be a per-side margin "
-                "amount problem"
+                "auto_layout (KNOWN_LIMITATIONS)"
             ),
         ),
     ),
@@ -918,7 +902,10 @@ SCENARIOS: list[RobustnessScenario] = [
         ),
         marks=pytest.mark.xfail(
             strict=True,
-            reason="legend outside-axes overflow — fixed in Task 10 (auto_layout BUFFER scaling)",
+            reason=(
+                "bbox_to_anchor=(1.02, 1) places legend outside axes; "
+                "auto_layout doesn't expand right margin (KNOWN_LIMITATIONS)"
+            ),
         ),
     ),
     RobustnessScenario(
