@@ -210,10 +210,18 @@ def format_axis_currency(
         str
             Formatted string with currency symbol
         """
-        formatted = f"{x:,.{decimals}f}"
+        # Format the magnitude (always positive) so the minus sign can
+        # be placed outside the currency symbol — convention is
+        # ``-$1,000``, not ``$-1,000``.
+        abs_formatted = f"{abs(x):,.{decimals}f}"
+        # Suppress the sign when the magnitude rounds to exactly zero
+        # at the requested decimals (e.g. ``x=-0.0`` or ``x=-0.4``
+        # with ``decimals=0`` would otherwise render as ``"-$0"``).
+        zero_form = f"{0:,.{decimals}f}"
+        sign = "-" if (x < 0 and abs_formatted != zero_form) else ""
         if position == "prefix":
-            return f"{symbol}{formatted}"
-        return f"{formatted}{symbol}"
+            return f"{sign}{symbol}{abs_formatted}"
+        return f"{sign}{abs_formatted}{symbol}"
 
     formatter = ticker.FuncFormatter(currency_formatter)
 

@@ -306,3 +306,55 @@ class TestFormatAxisBillionsZeroDecimals:
         formatter = ax.yaxis.get_major_formatter()
         assert formatter(0, 0) == "0.00"
         plt.close(fig)
+
+
+class TestFormatAxisCurrencyNegativeSign:
+    """Negative-value sign placement for ``format_axis_currency``.
+
+    Convention: the minus sign sits OUTSIDE the currency symbol
+    (``-$1,000``, ``-€1,000``), not INSIDE (``$-1,000``). The pre-fix
+    implementation did ``f"{symbol}{formatted}"`` which placed the
+    minus sign between the symbol and the magnitude when
+    ``position="prefix"``.
+    """
+
+    @pytest.mark.parametrize(
+        "value,position,symbol,expected",
+        [
+            (-1000, "prefix", "$", "-$1,000"),
+            (-1500, "prefix", "₩", "-₩1,500"),
+            (-1000, "suffix", "€", "-1,000€"),
+            (1000, "prefix", "$", "$1,000"),
+            (0, "prefix", "$", "$0"),
+        ],
+    )
+    def test_sign_outside_symbol(
+        self,
+        value: float,
+        position: str,
+        symbol: str,
+        expected: str,
+    ) -> None:
+        fig, ax = _axes()
+        dm.format_axis_currency(
+            ax, axis="y", symbol=symbol, position=position
+        )
+        formatter = ax.yaxis.get_major_formatter()
+        assert formatter(value, 0) == expected
+        plt.close(fig)
+
+    def test_negative_zero_decimals_does_not_show_minus(self) -> None:
+        """``x=0`` must format as ``"$0.00"``, not ``"-$0.00"``. Python's
+        formatter treats ``-0.0`` as negative; the implementation must
+        suppress the sign when the magnitude rounds to zero so that the
+        zero tick label looks identical to a positive zero."""
+        fig, ax = _axes()
+        dm.format_axis_currency(
+            ax, axis="y", symbol="$", position="prefix", decimals=2
+        )
+        formatter = ax.yaxis.get_major_formatter()
+        # exact zero
+        assert formatter(0.0, 0) == "$0.00"
+        # negative zero (e.g. from floating-point arithmetic)
+        assert formatter(-0.0, 0) == "$0.00"
+        plt.close(fig)
