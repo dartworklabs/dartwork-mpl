@@ -162,7 +162,7 @@ def _build_twinx_unit_clash() -> Figure:
     dm.style.use("report-kr")
     fig, ax1 = dm.subplots(width="13cm", aspect="standard")
     ax1.plot([1, 2, 3], [-10, 0, 25])
-    ax1.set_ylabel("온도 (℃)")
+    ax1.set_ylabel("온도 (°C)")
     ax2 = ax1.twinx()
     ax2.plot([1, 2, 3], [1.2e12, 1.5e12, 1.8e12], color="red")
     ax2.set_ylabel("Revenue (₩, 조원)")
@@ -180,10 +180,16 @@ def _build_twiny_dual_xaxis() -> Figure:
 
 
 def _build_triple_axis_parasite() -> Figure:
-    # mpl_toolkits.axes_grid1 is part of matplotlib core, available
-    # in 3.10+. The parasite-axes test exercises a three-y-axis layout.
+    # Imported inside the builder to keep the only mpl_toolkits usage
+    # in the suite scoped to the one scenario that needs it.
+    # mpl_toolkits.axes_grid1 is part of matplotlib core (always
+    # available); the placement is stylistic, not a dependency guard.
     from mpl_toolkits.axes_grid1 import host_subplot
 
+    # host_subplot requires a raw plt.figure(); dm.subplots cannot be
+    # used here because host_subplot manages its own axes layout.
+    # Width 13/2.54 in x 0.75 matches the 13 cm / "standard" aspect
+    # used by other builders in this file.
     fig = plt.figure(figsize=(13 / 2.54, 13 / 2.54 * 0.75))
     host = host_subplot(111)
     par1 = host.twinx()
