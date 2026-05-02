@@ -67,7 +67,11 @@ def test_robustness_scenario(
         )
 
     # Stage 2: layout convergence.
-    dm.auto_layout(fig, max_iter=scenario.auto_layout_max_iter)
+    dm.auto_layout(
+        fig,
+        padding=scenario.auto_layout_padding,
+        max_iter=scenario.auto_layout_max_iter,
+    )
 
     # Stage 3: save round-trip — must not crash, and the file must be
     # non-empty (matplotlib silently writes 0-byte files on certain

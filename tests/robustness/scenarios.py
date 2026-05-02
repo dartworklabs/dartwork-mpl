@@ -45,6 +45,12 @@ class RobustnessScenario:
     auto_layout_max_iter
         Iteration cap for auto_layout. Most scenarios accept the
         default (5); pathological annotations may need more.
+    auto_layout_padding
+        Initial padding (inches) passed to ``dm.auto_layout``. Most
+        scenarios accept the default 0.08. Scenarios with
+        axes-fraction-positioned spines or other content that fills
+        the canvas tightly may need a larger value (e.g. 0.25) so the
+        iteration converges with a 4 px white-border invariant.
     """
 
     name: str
@@ -53,6 +59,7 @@ class RobustnessScenario:
     forbid_warnings: tuple[str, ...] = ("OVERFLOW",)
     pixel_checks: tuple[str, ...] = ("assert_minimum_white_border",)
     auto_layout_max_iter: int = 5
+    auto_layout_padding: float | tuple[float, float, float, float] = 0.08
 
 
 # Scenarios still wrapped with pytest.mark.xfail(strict=True) because
