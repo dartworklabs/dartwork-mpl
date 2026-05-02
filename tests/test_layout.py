@@ -204,6 +204,10 @@ class TestAutoLayoutEdgeCases:
         """When ``constrained_layout`` is off (the dartwork default), a
         plain ``auto_layout`` call must run to convergence on a chart
         with reasonable labels."""
+        # Vanilla matplotlib `figsize=` is used here (not `dm.subplots`)
+        # to probe the constrained_layout coexistence contract directly
+        # — the goal is to verify auto_layout's behaviour on a figure
+        # built without dartwork's width/aspect API.
         fig, ax = plt.subplots(figsize=(6, 4), constrained_layout=False)
         ax.plot([1, 2, 3])
         ax.set_ylabel("Value")

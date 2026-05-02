@@ -61,13 +61,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   literal `"0"` regardless of `decimals`, which produced misaligned
   tick label widths next to non-zero values like `"1.50k"`).
 
-  Note: these source-level fixes are defensive hardening. The 7
-  scenarios still wrapped in `pytest.mark.xfail(strict=True)` represent
-  separate library limitations (mostly `auto_layout` failing to absorb
-  the footprint of long rotated tick labels, axes-fraction annotations
-  that escape the canvas, and colorbar overshoot) — see
-  `tests/robustness/scenarios.KNOWN_LIMITATIONS` for the per-scenario
-  tracking notes.
+  Note: these source-level fixes are defensive hardening. Scenarios
+  still wrapped in `pytest.mark.xfail(strict=True)` represent separate
+  library limitations (mostly `auto_layout` failing to absorb the
+  footprint of long rotated tick labels, axes-fraction annotations
+  that escape the canvas, axes-fraction-positioned right spines, and
+  colorbar overshoot) — see `tests/robustness/scenarios.KNOWN_LIMITATIONS`
+  for the per-scenario tracking notes.
 
 ### Changed (CI strictness)
 
