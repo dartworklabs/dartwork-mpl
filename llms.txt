@@ -1,0 +1,34 @@
+# dartwork-mpl
+
+> Publication-quality matplotlib utilities: free-form physical-width
+> API (`width="13cm"`), six aspect tokens, curated style presets, an
+> OKLCH color system, content-aware layout (`auto_layout`), visual
+> validation, and an MCP server for AI coding assistants.
+
+For agents: read `CLAUDE.md` (or `AGENTS.md`) at the repo root for
+the 30-second onboarding. For a single-file ingestion of the canonical
+docs, fetch `llms-full.txt`. The anti-pattern catalog
+(`02-anti-patterns.yaml`) and the prompt corpus are bundled in the
+wheel under `dartwork_mpl/asset/prompt/`.
+
+## Docs
+
+- [Quickstart](https://dartworklabs.github.io/dartwork-mpl/usage_guide/quickstart.html): 5-minute tour — install, first figure, save.
+- [Layout & geometry](https://dartworklabs.github.io/dartwork-mpl/usage_guide/layout.html): width / aspect tokens, `auto_layout` vs `simple_layout`, multi-panel.
+- [Color system](https://dartworklabs.github.io/dartwork-mpl/color_system/index.html): named palettes (`oc.*`, `tw.*`), OKLCH interpolation, opacity handling.
+- [Migration 0.3 → 0.4](https://dartworklabs.github.io/dartwork-mpl/migration.html): mapping table for removed 0.3 names.
+- [API reference](https://dartworklabs.github.io/dartwork-mpl/api/index.html): autosummary of every public function and class.
+
+## AI integration
+
+- [AI integration overview](https://dartworklabs.github.io/dartwork-mpl/integrations/index.html): three integration tiers (MCP, file-based prompts, plain Python).
+- [MCP server setup](https://dartworklabs.github.io/dartwork-mpl/integrations/mcp_server.html): step-by-step guide for Claude Code, Cursor, Continue.
+- [Anti-pattern catalog (raw YAML)](https://raw.githubusercontent.com/dartworklabs/dartwork-mpl/main/src/dartwork_mpl/asset/prompt/02-anti-patterns.yaml): SSOT used by `dm.lint` / MCP `lint_dartwork_mpl_code`.
+- [Plot templates index](https://dartworklabs.github.io/dartwork-mpl/examples_gallery/09_ai_templates/index.html): 18 ready-to-use scripts — bar, line, scatter, heatmap, etc.
+
+## Optional
+
+- [Repository (GitHub)](https://github.com/dartworklabs/dartwork-mpl): source, issues, releases.
+- [Changelog](https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md): release notes.
+- [0.4 design spec](https://dartworklabs.github.io/dartwork-mpl/superpowers/specs/2026-04-29-dartwork-mpl-ai-readiness-design.html): rationale for the 0.4 API surface.
+- [0.5+ roadmap spec](https://dartworklabs.github.io/dartwork-mpl/superpowers/specs/2026-05-01-ai-readiness-0.5-roadmap.html): plan for closing remaining AI affordance gaps.

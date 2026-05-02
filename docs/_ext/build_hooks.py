@@ -83,6 +83,64 @@ def generate_gallery_assets(_app):
     build_html_specimens()
 
 
+_LLMS_FULL_HEADER = """\
+# dartwork-mpl — full agent reference (llms-full.txt)
+
+This file is auto-generated at build time from the canonical sources
+listed below. Do **not** hand-edit; edit the upstream files and rebuild
+the docs (`uv run sphinx-build -b html docs docs/_build/html`).
+
+Companions:
+
+- `CLAUDE.md` / `AGENTS.md` — 30-second onboarding for agents.
+- `llms.txt` — link index following the llmstxt.org spec.
+"""
+
+# Canonical sources, in the order they appear in the concatenated dump.
+# (header, repo-relative path) pairs. ``path = None`` means the header
+# alone is appended (used for the top-level title block).
+_LLMS_FULL_SOURCES: list[tuple[str, str | None]] = [
+    ("\n\n---\n## Quickstart\n", "docs/usage_guide/quickstart.md"),
+    ("\n\n---\n## Migration (0.3 → 0.4)\n", "docs/migration.md"),
+    (
+        "\n\n---\n## Anti-pattern catalog (SSOT, YAML)\n",
+        "src/dartwork_mpl/asset/prompt/02-anti-patterns.yaml",
+    ),
+    (
+        "\n\n---\n## AI plot templates index\n",
+        "docs/examples_source/09_ai_templates/README.rst",
+    ),
+]
+
+
+def generate_llms_full_txt(app):
+    """Concatenate canonical agent docs into ``llms-full.txt`` at repo root.
+
+    Runs every Sphinx build so that downstream consumers (the Python wheel
+    bundle, the GitHub raw URL, agents that fetch a single file) always see
+    the latest content. If any source is missing, the build fails so that
+    drift is caught immediately rather than silently shipping a stale dump.
+    """
+    repo_root = Path(app.srcdir).parent
+
+    parts: list[str] = [_LLMS_FULL_HEADER]
+    for header, rel in _LLMS_FULL_SOURCES:
+        parts.append(header)
+        if rel is None:
+            continue
+        src = repo_root / rel
+        if not src.exists():
+            raise FileNotFoundError(
+                f"llms-full.txt source missing: {src} "
+                f"(update _LLMS_FULL_SOURCES in build_hooks.py)"
+            )
+        parts.append(src.read_text(encoding="utf-8"))
+
+    out = repo_root / "llms-full.txt"
+    out.write_text("".join(parts), encoding="utf-8")
+    print(f"Wrote concatenated agent reference: {out.relative_to(repo_root)}")
+
+
 def copy_fonts_to_static(app):
     """Copy bundled TTF fonts to _static/fonts/ for HTML specimens."""
     import shutil
