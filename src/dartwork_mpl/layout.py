@@ -15,6 +15,7 @@ __all__ = [
     "tight_crop",
 ]
 
+import contextlib
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -484,47 +485,59 @@ def tight_crop(
     >>> dm.tight_crop(fig, padding=0.04)
     """
     if not fig.axes:
-        return tuple(fig.get_size_inches())
+        w, h = fig.get_size_inches()
+        return float(w), float(h)
 
     # 1. Force a draw so all artists have measurable bboxes.
     fig.canvas.draw()
-    renderer = fig.canvas.get_renderer()
+    # ``get_renderer`` exists on every concrete backend canvas but not on
+    # the abstract base class; ignore the type-checker complaint.
+    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
 
     # 2. Collect tight bboxes of every visible artist.
     bboxes_disp: list[Bbox] = []
+    # Catch only the narrow set of errors that ``get_tightbbox`` /
+    # ``get_window_extent`` realistically raise on a partially-drawn or
+    # detached artist (renderer-less, no transform, etc). Anything else
+    # should propagate so layout bugs are visible.
+    bbox_errors = (RuntimeError, ValueError, AttributeError)
+
     for ax in fig.axes:
         try:
             bb = ax.get_tightbbox(renderer)
-            if bb is not None and bb.width > 0 and bb.height > 0:
-                bboxes_disp.append(bb)
-        except Exception:
-            pass
+        except bbox_errors:
+            bb = None
+        if bb is not None and bb.width > 0 and bb.height > 0:
+            bboxes_disp.append(bb)
         leg = ax.get_legend()
         if leg is not None and leg.get_visible():
             try:
                 bb = leg.get_window_extent(renderer)
-                if bb.width > 0 and bb.height > 0:
-                    bboxes_disp.append(bb)
-            except Exception:
-                pass
+            except bbox_errors:
+                continue
+            if bb.width > 0 and bb.height > 0:
+                bboxes_disp.append(bb)
 
     # Figure-level artists (suptitle, fig.texts, fig.legends).
-    if fig._suptitle is not None and fig._suptitle.get_visible():
-        try:
-            bboxes_disp.append(fig._suptitle.get_window_extent(renderer))
-        except Exception:
-            pass
+    # ``Figure._suptitle`` is a private attribute; mypy doesn't know about
+    # it but it has been stable across matplotlib 3.x.
+    suptitle = getattr(fig, "_suptitle", None)
+    if suptitle is not None and suptitle.get_visible():
+        with contextlib.suppress(*bbox_errors):
+            bboxes_disp.append(suptitle.get_window_extent(renderer))
     for txt in fig.texts:
-        if txt.get_visible():
-            try:
-                bb = txt.get_window_extent(renderer)
-                if bb.width > 0 and bb.height > 0:
-                    bboxes_disp.append(bb)
-            except Exception:
-                pass
+        if not txt.get_visible():
+            continue
+        try:
+            bb = txt.get_window_extent(renderer)
+        except bbox_errors:
+            continue
+        if bb.width > 0 and bb.height > 0:
+            bboxes_disp.append(bb)
 
     if not bboxes_disp:
-        return tuple(fig.get_size_inches())
+        w, h = fig.get_size_inches()
+        return float(w), float(h)
 
     union_disp = Bbox.union(bboxes_disp)
 
@@ -556,9 +569,9 @@ def tight_crop(
     old_content_y1 = union_disp.y1 / cur_h_px
 
     # Capture old axes positions (figure-relative).
-    old_positions = []
-    for ax in fig.axes:
-        old_positions.append((ax, ax.get_position(original=False).bounds))
+    old_positions = [
+        (ax, ax.get_position(original=False).bounds) for ax in fig.axes
+    ]
 
     # Resize figure.
     fig.set_size_inches(new_w_in, new_h_in)
@@ -577,7 +590,8 @@ def tight_crop(
     old_content_w = old_content_x1 - old_content_x0
     old_content_h = old_content_y1 - old_content_y0
     if old_content_w <= 0 or old_content_h <= 0:
-        return tuple(fig.get_size_inches())
+        w, h = fig.get_size_inches()
+        return float(w), float(h)
 
     sx = new_content_w / old_content_w
     sy = new_content_h / old_content_h
@@ -587,7 +601,7 @@ def tight_crop(
         new_y = new_content_y0 + (y - old_content_y0) * sy
         new_w = w * sx
         new_h = h * sy
-        ax.set_position([new_x, new_y, new_w, new_h])
+        ax.set_position((new_x, new_y, new_w, new_h))
 
     if verbose:
         print(
