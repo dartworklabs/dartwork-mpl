@@ -236,6 +236,42 @@ def register_tools(mcp: FastMCP) -> None:
             for i in _lint(code)
         ]
 
+    @mcp.tool()
+    def migrate_legacy_code(code: str) -> str:
+        """Rewrite 0.3-era dartwork-mpl source toward the 0.4 idioms.
+
+        Two passes are applied:
+
+        1. **Safe substitutions**: ``dm.cm2in`` → ``dm.cm``,
+           ``plt.style.use`` → ``dm.style.use``,
+           ``plt.subplots`` → ``dm.subplots``.
+        2. **Hint comments** are inserted above lines using the
+           context-dependent patterns the agent must rewrite by hand —
+           the deprecated width tokens (``dm.SW``/``MW``/``TW``/``DW``,
+           ``dm.FS_*``, ``dm.WIDTHS[...]``), bare ``figsize=`` literals,
+           ``tight_layout()`` calls, and the removed
+           ``dm.agent_utils`` / ``dm.xplot`` namespaces.
+
+        The output is always returned (never raises). Run
+        :func:`lint_dartwork_mpl_code_json` on the result to confirm no
+        critical issues remain after the agent applies the manual hints.
+
+        Parameters
+        ----------
+        code : str
+            0.3-era Python source.
+
+        Returns
+        -------
+        str
+            Rewritten source with ``# TODO(dm-migrate): …`` comments
+            above the lines that need agent attention. Inputs without
+            matching patterns are returned unchanged.
+        """
+        from dartwork_mpl.lint import migrate_legacy_code as _migrate
+
+        return _migrate(code)
+
     # ── Data Validation Tool ─────────────────────────────────────────
 
     @mcp.tool()
@@ -410,6 +446,7 @@ def register_tools(mcp: FastMCP) -> None:
                     "list_color_families",
                     "lint_dartwork_mpl_code",
                     "lint_dartwork_mpl_code_json",
+                    "migrate_legacy_code",
                     "validate_plot_data",
                     "dartwork_mpl_info",
                 ],

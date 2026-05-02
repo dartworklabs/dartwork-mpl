@@ -119,7 +119,7 @@ from .util import make_offset, mix_colors, pseudo_alpha, set_decimal
 col1: float = cm(9)
 col2: float = cm(17)
 
-# High-level composition helpers (T2 in 0.5+ AI-readiness roadmap).
+# High-level composition helpers (T2 in the AI-readiness roadmap).
 # These wrap the lower-level primitives above so that AI agents and
 # humans alike can reach the most useful workflow utilities through a
 # single ``dm.<name>`` access path. The submodule namespace
@@ -134,6 +134,15 @@ from .helpers import (
     suggest_chart_type,
     validate_data,
 )
+
+# Native lint + migration entry points (T4). The ``dm.lint`` name is
+# the module itself (so ``dm.lint.lint(...)`` and
+# ``dm.lint.migrate_legacy_code(...)`` already work). These aliases
+# expose the two most common functions at the top level under
+# unambiguous names so an offline agent can call ``dm.lint_code(...)``
+# without spinning up the MCP server.
+from .lint import lint as lint_code
+from .lint import migrate_legacy_code
 
 # Validation entry points
 from .validate import validate_figure
@@ -241,6 +250,9 @@ __all__ = [  # noqa: RUF022
     "check_figure_quality",
     "save_figure",
     "create_figure_with_style",
+    # Native lint + migration (T4)
+    "lint_code",
+    "migrate_legacy_code",
     # Extended plots
     "plot_diverging_bar",
     # Asset diagnostics (from diagnostics)

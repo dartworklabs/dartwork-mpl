@@ -12,7 +12,14 @@ verbatim.
 
 from __future__ import annotations
 
-__all__ = ["Issue", "Rule", "format_report", "lint", "load_rules"]
+__all__ = [
+    "Issue",
+    "Rule",
+    "format_report",
+    "lint",
+    "load_rules",
+    "migrate_legacy_code",
+]
 
 import re
 from collections.abc import Iterable
@@ -218,3 +225,118 @@ def format_report(issues: list[Issue]) -> str:
         if issue.fix_suggestion:
             lines.append(f"  → fix: {issue.fix_suggestion}")
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# 0.3 → 0.4 source rewriter (T4 in 0.5+ AI-readiness roadmap).
+#
+# Splits its job into two passes:
+#   1. Safe textual substitutions that the agent can rely on
+#      mechanically (``dm.cm2in`` → ``dm.cm``, ``plt.style.use`` →
+#      ``dm.style.use``, ``plt.subplots`` → ``dm.subplots``).
+#   2. Patterns whose 0.4 replacement depends on context — the
+#      width tokens, ``figsize=`` tuples, ``tight_layout()`` calls,
+#      and the removed ``dm.agent_utils`` / ``dm.xplot`` namespaces.
+#      Those get a one-line ``# TODO(dm-migrate): …`` comment
+#      inserted directly above the offending line.
+#
+# The function is intentionally regex-only. AST-based migration is in
+# the spec's "Out of Scope" list.
+# ---------------------------------------------------------------------------
+
+_MIGRATE_SAFE_REWRITES: tuple[tuple[re.Pattern[str], str], ...] = (
+    (re.compile(r"\bdm\.cm2in\b"), "dm.cm"),
+    (re.compile(r"\bplt\.style\.use\b"), "dm.style.use"),
+    (re.compile(r"\bplt\.subplots\b"), "dm.subplots"),
+)
+
+_MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (
+        re.compile(r"\bdm\.(?:SW|MW|TW|DW)\b"),
+        "dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, "
+        "or dm.cm(<num>).",
+    ),
+    (
+        re.compile(r"\bdm\.FS_[A-Z_]+\b"),
+        "dm.FS_* tuples removed; use dm.subplots(width=..., aspect=...).",
+    ),
+    (
+        re.compile(r"\bdm\.WIDTHS\["),
+        "dm.WIDTHS removed; pick a width string (e.g. \"9cm\") instead.",
+    ),
+    (
+        re.compile(r"\bfigsize\s*=\s*\("),
+        "figsize= forbidden; use dm.subplots(width=..., aspect=...).",
+    ),
+    (
+        re.compile(r"\btight_layout\s*\("),
+        "tight_layout() collides with dm spines; use dm.auto_layout(fig).",
+    ),
+    (
+        re.compile(r"\bdm\.agent_utils\b"),
+        "dm.agent_utils removed; surfaces moved to dm.lint, "
+        "dm.validate_figure, dm.helpers, etc.",
+    ),
+    (
+        re.compile(r"\bdm\.xplot\b"),
+        "dm.xplot removed; templates now live in dm.templates / "
+        "dm.helpers (see docs/migration.md).",
+    ),
+)
+
+
+def migrate_legacy_code(code: str) -> str:
+    """Best-effort regex rewrite from 0.3-era to 0.4 dartwork-mpl idioms.
+
+    Two passes:
+
+    1. **Safe substitutions** are applied in place
+       (``dm.cm2in`` → ``dm.cm``, ``plt.style.use`` → ``dm.style.use``,
+       ``plt.subplots`` → ``dm.subplots``).
+    2. **Context-dependent patterns** (the deprecated width tokens,
+       ``figsize=`` literals, ``tight_layout()`` calls, and the removed
+       ``dm.agent_utils`` / ``dm.xplot`` namespaces) get a
+       ``# TODO(dm-migrate): …`` comment inserted above the offending
+       line so the agent can see what to change without losing the
+       original code.
+
+    Parameters
+    ----------
+    code : str
+        0.3-era Python source.
+
+    Returns
+    -------
+    str
+        Rewritten source. Always returned (never raises). Use
+        :func:`lint` on the result to confirm no critical issues
+        remain after the agent applies the manual hints.
+
+    Notes
+    -----
+    AST-based migration is intentionally out of scope (see
+    ``docs/superpowers/specs/2026-05-01-ai-readiness-0.5-roadmap.md``,
+    "Out of Scope"). Inputs that don't match any pattern are returned
+    unchanged.
+    """
+    # Pass 1: safe in-place substitutions.
+    for pattern, replacement in _MIGRATE_SAFE_REWRITES:
+        code = pattern.sub(replacement, code)
+
+    # Pass 2: emit hint comments above any line containing a context-
+    # dependent pattern. Multiple matches on one line produce multiple
+    # hints (one per pattern, in declaration order). Indentation is
+    # copied from the matched line so the comments align.
+    output_lines: list[str] = []
+    for line in code.splitlines(keepends=True):
+        body = line.rstrip("\r\n")
+        line_terminator = line[len(body) :]
+        leading_ws_match = re.match(r"\s*", body)
+        indent = leading_ws_match.group(0) if leading_ws_match else ""
+        for pattern, hint in _MIGRATE_HINTS:
+            if pattern.search(body):
+                output_lines.append(
+                    f"{indent}# TODO(dm-migrate): {hint}{line_terminator}"
+                )
+        output_lines.append(line)
+    return "".join(output_lines)

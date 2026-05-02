@@ -317,6 +317,8 @@ Callable functions the AI assistant can invoke during a conversation.
 | `mix_colors(color1, color2, ratio)`         | Blend two colors and return the resulting hex code                              |
 | `list_color_families()`                     | List color families (`dc.*`, `tw.*`, `oc.*`, …) with counts and samples        |
 | `lint_dartwork_mpl_code(code)`              | Analyze Python code for dartwork-mpl best practices and antipatterns            |
+| `lint_dartwork_mpl_code_json(code)`         | Same as above, returning structured JSON for programmatic consumption           |
+| `migrate_legacy_code(code)`                 | Rewrite 0.3-era source toward 0.4 idioms (safe substitutions + TODO hints)      |
 | `validate_plot_data(plot_type, data_json)`  | Validate whether a data structure matches a plot type's requirements            |
 | `dartwork_mpl_info()`                       | Get a structured summary of all capabilities, presets, and templates            |
 
