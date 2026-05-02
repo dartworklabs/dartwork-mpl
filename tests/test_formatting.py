@@ -111,14 +111,10 @@ class TestRotateTickLabelsAlignment:
     causes labels to drift left of their tick and overflow the figure."""
 
     @pytest.mark.parametrize("rotation", [30, 45, 60, 90])
-    def test_x_axis_rotation_sets_right_alignment(
-        self, rotation: int
-    ) -> None:
+    def test_x_axis_rotation_sets_right_alignment(self, rotation: int) -> None:
         fig, ax = _axes()
         ax.set_xticks(np.arange(5))
-        ax.set_xticklabels(
-            ["A_long", "B_long", "C_long", "D_long", "E_long"]
-        )
+        ax.set_xticklabels(["A_long", "B_long", "C_long", "D_long", "E_long"])
         dm.rotate_tick_labels(ax, axis="x", rotation=rotation)
         for label in ax.get_xticklabels():
             assert label.get_horizontalalignment() == "right", (
@@ -136,9 +132,7 @@ class TestRotateTickLabelsAlignment:
             assert label.get_horizontalalignment() == "center"
         plt.close(fig)
 
-    def test_x_axis_rotation_emits_no_set_ticklabels_warning(
-        self,
-    ) -> None:
+    def test_x_axis_rotation_emits_no_set_ticklabels_warning(self) -> None:
         """The pre-patch implementation called
         ``set_xticklabels(get_xticklabels(), ...)`` which emits
         matplotlib's FixedLocator deprecation UserWarning whenever the

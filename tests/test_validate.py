@@ -492,9 +492,7 @@ class TestCheckClippedText:
         ax.bar([0, 1, 2], [1, 2, 3])
         ax.set_xticks([0, 1, 2])
         ax.set_xticklabels(["LongLabel" * 4, "B" * 30, "C" * 30])
-        warnings = validate_figure(
-            fig, checks=("CLIPPED_TEXT",), quiet=True
-        )
+        warnings = validate_figure(fig, checks=("CLIPPED_TEXT",), quiet=True)
         clipped = [w for w in warnings if w.check_id == "CLIPPED_TEXT"]
         assert len(clipped) > 0
         plt.close(fig)
@@ -505,12 +503,8 @@ class TestCheckClippedText:
         ax.plot([1, 2, 3])
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
-        fig.subplots_adjust(
-            left=0.20, right=0.95, bottom=0.18, top=0.92
-        )
-        warnings = validate_figure(
-            fig, checks=("CLIPPED_TEXT",), quiet=True
-        )
+        fig.subplots_adjust(left=0.20, right=0.95, bottom=0.18, top=0.92)
+        warnings = validate_figure(fig, checks=("CLIPPED_TEXT",), quiet=True)
         clipped = [w for w in warnings if w.check_id == "CLIPPED_TEXT"]
         assert len(clipped) == 0
         plt.close(fig)

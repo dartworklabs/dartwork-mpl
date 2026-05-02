@@ -203,9 +203,7 @@ def _build_twinx_long_right_label() -> Figure:
     ax1.set_ylabel("Left axis")
     ax2 = ax1.twinx()
     ax2.plot([1, 2, 3], [1e6, 2e6, 3e6], color="red")
-    ax2.set_ylabel(
-        "Right axis with very long label (units in USD millions)"
-    )
+    ax2.set_ylabel("Right axis with very long label (units in USD millions)")
     return fig
 
 
@@ -581,11 +579,7 @@ def _build_crowded_legend_outside() -> Figure:
 def _build_arrow_annotations_diagonal() -> Figure:
     fig, ax = dm.subplots(width="13cm", aspect="standard")
     ax.plot([1, 2, 3, 4, 5], [10, 30, 20, 50, 40])
-    for x_to, x_from, label in [
-        (2, 1, "first"),
-        (4, 2, "mid"),
-        (5, 4, "end"),
-    ]:
+    for x_to, x_from, label in [(2, 1, "first"), (4, 2, "mid"), (5, 4, "end")]:
         ax.annotate(
             label,
             xy=(x_to, 30),
@@ -688,12 +682,10 @@ SCENARIOS: list[RobustnessScenario] = [
         expect_warnings=("TICK_CROWD",),
     ),
     RobustnessScenario(
-        name="unicode_korean_xticks",
-        build=_build_unicode_korean_xticks,
+        name="unicode_korean_xticks", build=_build_unicode_korean_xticks
     ),
     RobustnessScenario(
-        name="mixed_kr_en_xticks",
-        build=_build_mixed_kr_en_xticks,
+        name="mixed_kr_en_xticks", build=_build_mixed_kr_en_xticks
     ),
     RobustnessScenario(
         name="scientific_notation_yticks",
@@ -701,21 +693,13 @@ SCENARIOS: list[RobustnessScenario] = [
     ),
     # B. Multiple-axis (twinx / twiny)
     RobustnessScenario(
-        name="twinx_basic_short_labels",
-        build=_build_twinx_basic_short_labels,
+        name="twinx_basic_short_labels", build=_build_twinx_basic_short_labels
     ),
     RobustnessScenario(
-        name="twinx_long_right_label",
-        build=_build_twinx_long_right_label,
+        name="twinx_long_right_label", build=_build_twinx_long_right_label
     ),
-    RobustnessScenario(
-        name="twinx_unit_clash",
-        build=_build_twinx_unit_clash,
-    ),
-    RobustnessScenario(
-        name="twiny_dual_xaxis",
-        build=_build_twiny_dual_xaxis,
-    ),
+    RobustnessScenario(name="twinx_unit_clash", build=_build_twinx_unit_clash),
+    RobustnessScenario(name="twiny_dual_xaxis", build=_build_twiny_dual_xaxis),
     RobustnessScenario(
         name="triple_axis_parasite",
         build=_build_triple_axis_parasite,
@@ -779,8 +763,7 @@ SCENARIOS: list[RobustnessScenario] = [
     ),
     pytest.param(
         RobustnessScenario(
-            name="colorbar_below_axes",
-            build=_build_colorbar_below_axes,
+            name="colorbar_below_axes", build=_build_colorbar_below_axes
         ),
         marks=pytest.mark.xfail(
             strict=True,
@@ -798,18 +781,11 @@ SCENARIOS: list[RobustnessScenario] = [
         # Must not crash anywhere in validate or auto_layout.
         forbid_warnings=("OVERFLOW",),
     ),
+    RobustnessScenario(name="inf_in_y", build=_build_inf_in_y),
     RobustnessScenario(
-        name="inf_in_y",
-        build=_build_inf_in_y,
+        name="single_point_data", build=_build_single_point_data
     ),
-    RobustnessScenario(
-        name="single_point_data",
-        build=_build_single_point_data,
-    ),
-    RobustnessScenario(
-        name="constant_y",
-        build=_build_constant_y,
-    ),
+    RobustnessScenario(name="constant_y", build=_build_constant_y),
     RobustnessScenario(
         name="negative_log_data",
         build=_build_negative_log_data,
@@ -820,20 +796,16 @@ SCENARIOS: list[RobustnessScenario] = [
     ),
     # E. Scale & axis types
     RobustnessScenario(
-        name="log_y_with_minor_ticks",
-        build=_build_log_y_with_minor_ticks,
+        name="log_y_with_minor_ticks", build=_build_log_y_with_minor_ticks
     ),
     RobustnessScenario(
-        name="symlog_y_centered_on_zero",
-        build=_build_symlog_y_centered_on_zero,
+        name="symlog_y_centered_on_zero", build=_build_symlog_y_centered_on_zero
     ),
     RobustnessScenario(
-        name="datetime_x_5_years_daily",
-        build=_build_datetime_x_5_years_daily,
+        name="datetime_x_5_years_daily", build=_build_datetime_x_5_years_daily
     ),
     RobustnessScenario(
-        name="datetime_x_minutes",
-        build=_build_datetime_x_minutes,
+        name="datetime_x_minutes", build=_build_datetime_x_minutes
     ),
     # F. Saved-output integrity
     RobustnessScenario(
@@ -845,10 +817,7 @@ SCENARIOS: list[RobustnessScenario] = [
         # Canvas too small to satisfy the 4-px white-border invariant.
         pixel_checks=(),
     ),
-    RobustnessScenario(
-        name="huge_figure_30cm",
-        build=_build_huge_figure_30cm,
-    ),
+    RobustnessScenario(name="huge_figure_30cm", build=_build_huge_figure_30cm),
     RobustnessScenario(
         name="square_aspect_with_long_legend",
         build=_build_square_aspect_with_long_legend,
@@ -856,16 +825,14 @@ SCENARIOS: list[RobustnessScenario] = [
     ),
     # G. Multi-axes layout
     RobustnessScenario(
-        name="gridspec_2x3_mixed",
-        build=_build_gridspec_2x3_mixed,
+        name="gridspec_2x3_mixed", build=_build_gridspec_2x3_mixed
     ),
     RobustnessScenario(
         name="inset_axes_overlapping_ticks",
         build=_build_inset_axes_overlapping_ticks,
     ),
     RobustnessScenario(
-        name="subplots_4_with_one_pie",
-        build=_build_subplots_4_with_one_pie,
+        name="subplots_4_with_one_pie", build=_build_subplots_4_with_one_pie
     ),
     RobustnessScenario(
         name="colorbar_attached_heatmap",
@@ -875,10 +842,7 @@ SCENARIOS: list[RobustnessScenario] = [
         pixel_checks=(),
     ),
     # H. Style / font
-    RobustnessScenario(
-        name="report_kr_style",
-        build=_build_report_kr_style,
-    ),
+    RobustnessScenario(name="report_kr_style", build=_build_report_kr_style),
     RobustnessScenario(
         name="dark_style",
         build=_build_dark_style,
@@ -886,19 +850,14 @@ SCENARIOS: list[RobustnessScenario] = [
         # designed for a white canvas, so swap the pixel check out.
         pixel_checks=(),
     ),
-    RobustnessScenario(
-        name="minimal_style",
-        build=_build_minimal_style,
-    ),
+    RobustnessScenario(name="minimal_style", build=_build_minimal_style),
     # I. Annotation density
     RobustnessScenario(
-        name="bar_chart_value_labels",
-        build=_build_bar_chart_value_labels,
+        name="bar_chart_value_labels", build=_build_bar_chart_value_labels
     ),
     pytest.param(
         RobustnessScenario(
-            name="crowded_legend_outside",
-            build=_build_crowded_legend_outside,
+            name="crowded_legend_outside", build=_build_crowded_legend_outside
         ),
         marks=pytest.mark.xfail(
             strict=True,
@@ -913,10 +872,7 @@ SCENARIOS: list[RobustnessScenario] = [
         build=_build_arrow_annotations_diagonal,
     ),
     # J. Pie / donut variants
-    RobustnessScenario(
-        name="pie_full_default",
-        build=_build_pie_full_default,
-    ),
+    RobustnessScenario(name="pie_full_default", build=_build_pie_full_default),
     RobustnessScenario(
         name="donut_thin_correct_pctdistance",
         build=_build_donut_thin_correct_pctdistance,

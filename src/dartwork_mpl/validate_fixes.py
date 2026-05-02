@@ -103,9 +103,7 @@ def get_fix_suggestions(warning: VisualWarning) -> list[str]:
         )
 
     elif warning.check_id == "CLIPPED_TEXT":
-        suggestions.append(
-            "# Run the auto-layout pass\ndm.auto_layout(fig)"
-        )
+        suggestions.append("# Run the auto-layout pass\ndm.auto_layout(fig)")
         suggestions.append(
             "# Or rotate the offending label\n"
             "dm.rotate_tick_labels(ax, axis='x', rotation=45)"

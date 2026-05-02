@@ -420,10 +420,7 @@ def auto_layout(
             # mask a genuine layout failure.
             avg_h = (margins[0] + margins[1]) / 2
             avg_v = (margins[2] + margins[3]) / 2
-            if (
-                abs(margins[0] - avg_h) > 1e-6
-                or abs(margins[2] - avg_v) > 1e-6
-            ):
+            if abs(margins[0] - avg_h) > 1e-6 or abs(margins[2] - avg_v) > 1e-6:
                 margins[0] = avg_h
                 margins[1] = avg_h
                 margins[2] = avg_v

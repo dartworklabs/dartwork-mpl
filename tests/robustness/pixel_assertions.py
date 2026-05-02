@@ -53,10 +53,7 @@ def _is_blank_strip(strip: np.ndarray, *, tol: int = 6) -> bool:
 
 
 def assert_no_edge_overflow(
-    fig: Figure,
-    *,
-    side: str,
-    min_white_px: int = 4,
+    fig: Figure, *, side: str, min_white_px: int = 4
 ) -> None:
     """Assert that the rendered RGBA buffer has a blank margin of at
     least `min_white_px` pixels on the named edge.
@@ -81,9 +78,7 @@ def assert_no_edge_overflow(
     elif side == "bottom":
         strip = arr[h - probe :, :, :]
     else:
-        raise ValueError(
-            f"side must be left/right/top/bottom, got {side!r}"
-        )
+        raise ValueError(f"side must be left/right/top/bottom, got {side!r}")
 
     if not _is_blank_strip(strip):
         raise PixelAssertionError(
@@ -98,9 +93,7 @@ def assert_minimum_white_border(fig: Figure, *, min_px: int = 4) -> None:
         assert_no_edge_overflow(fig, side=side, min_white_px=min_px)
 
 
-def _iter_visible_text_artists(
-    fig: Figure,
-) -> Iterator[tuple[Text, bool]]:
+def _iter_visible_text_artists(fig: Figure) -> Iterator[tuple[Text, bool]]:
     """Yield (Text, is_tick_label) pairs for all visible non-empty artists.
 
     Tick labels are yielded together with their parent Tick so callers
@@ -171,6 +164,5 @@ def assert_no_clipped_text(fig: Figure) -> None:
         )
         if overflow > 1.0:
             raise PixelAssertionError(
-                f"Text {txt.get_text()[:30]!r} clipped by "
-                f"{overflow:.1f}px"
+                f"Text {txt.get_text()[:30]!r} clipped by {overflow:.1f}px"
             )

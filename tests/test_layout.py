@@ -249,7 +249,5 @@ class TestAutoLayoutSymmetry:
             fig, checks=("MARGIN_ASYMMETRY",), quiet=True
         )
         asym = [w for w in warnings if w.check_id == "MARGIN_ASYMMETRY"]
-        assert len(asym) == 0, (
-            f"Asymmetry remains: {[w.message for w in asym]}"
-        )
+        assert len(asym) == 0, f"Asymmetry remains: {[w.message for w in asym]}"
         plt.close(fig)
