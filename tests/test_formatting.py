@@ -232,3 +232,49 @@ class TestFormatAxisCurrencyMultibyte:
         assert out_path.exists()
         assert out_path.stat().st_size > 1024
         plt.close(fig)
+
+
+class TestFormatAxisMillionsZeroDecimals:
+    """Boundary-value tests for ``format_axis_millions``.
+
+    The existing zero-tick short-circuit returns the literal ``"0"``
+    regardless of ``decimals``. The patch in this task makes it honour
+    ``decimals`` so the zero tick aligns visually with neighbouring
+    millions-scale ticks.
+    """
+
+    @pytest.mark.parametrize(
+        "value,decimals,suffix,expected",
+        [
+            (1_000_000, 1, "M", "1.0M"),
+            (1_500_000, 1, "M", "1.5M"),
+            (1_500_000, 0, "M", "2M"),
+            (-1_500_000, 1, "M", "-1.5M"),
+            (1_000_000, 2, " mn", "1.00 mn"),
+        ],
+    )
+    def test_magnitude_sign_and_suffix(
+        self,
+        value: float,
+        decimals: int,
+        suffix: str,
+        expected: str,
+    ) -> None:
+        fig, ax = _axes()
+        dm.format_axis_millions(
+            ax, axis="y", suffix=suffix, decimals=decimals
+        )
+        formatter = ax.yaxis.get_major_formatter()
+        assert formatter(value, 0) == expected
+        plt.close(fig)
+
+    def test_zero_respects_decimals(self) -> None:
+        """``format_axis_millions(ax, decimals=2)`` must format the
+        zero tick as ``"0.00"`` so it visually aligns with neighbouring
+        ticks like ``"1.50M"``. The pre-fix implementation returned
+        the literal string ``"0"``."""
+        fig, ax = _axes()
+        dm.format_axis_millions(ax, axis="y", decimals=2)
+        formatter = ax.yaxis.get_major_formatter()
+        assert formatter(0, 0) == "0.00"
+        plt.close(fig)
