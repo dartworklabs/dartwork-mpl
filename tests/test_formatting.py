@@ -211,17 +211,11 @@ class TestFormatAxisCurrencyMultibyte:
         ],
     )
     def test_symbol_renders_in_tick_label(
-        self,
-        symbol: str,
-        position: str,
-        expected_substring: str,
-        tmp_path,
+        self, symbol: str, position: str, expected_substring: str, tmp_path
     ) -> None:
         fig, ax = _axes()
         ax.plot([0, 1, 2], [500, 1000, 1500])
-        dm.format_axis_currency(
-            ax, axis="y", symbol=symbol, position=position
-        )
+        dm.format_axis_currency(ax, axis="y", symbol=symbol, position=position)
         formatter = ax.yaxis.get_major_formatter()
         assert formatter(1000, 0) == expected_substring
 
@@ -254,16 +248,10 @@ class TestFormatAxisMillionsZeroDecimals:
         ],
     )
     def test_magnitude_sign_and_suffix(
-        self,
-        value: float,
-        decimals: int,
-        suffix: str,
-        expected: str,
+        self, value: float, decimals: int, suffix: str, expected: str
     ) -> None:
         fig, ax = _axes()
-        dm.format_axis_millions(
-            ax, axis="y", suffix=suffix, decimals=decimals
-        )
+        dm.format_axis_millions(ax, axis="y", suffix=suffix, decimals=decimals)
         formatter = ax.yaxis.get_major_formatter()
         assert formatter(value, 0) == expected
         plt.close(fig)
@@ -300,16 +288,10 @@ class TestFormatAxisBillionsZeroDecimals:
         ],
     )
     def test_magnitude_sign_and_suffix(
-        self,
-        value: float,
-        decimals: int,
-        suffix: str,
-        expected: str,
+        self, value: float, decimals: int, suffix: str, expected: str
     ) -> None:
         fig, ax = _axes()
-        dm.format_axis_billions(
-            ax, axis="y", suffix=suffix, decimals=decimals
-        )
+        dm.format_axis_billions(ax, axis="y", suffix=suffix, decimals=decimals)
         formatter = ax.yaxis.get_major_formatter()
         assert formatter(value, 0) == expected
         plt.close(fig)
