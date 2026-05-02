@@ -366,6 +366,220 @@ def _build_datetime_x_minutes() -> Figure:
     return fig
 
 
+# ───────────────────────────────────────────────────────
+# F. Saved-output integrity
+# ───────────────────────────────────────────────────────
+
+
+def _build_tiny_figure_2_5cm() -> Figure:
+    fig, ax = dm.subplots(width="2.5cm", aspect="standard")
+    ax.plot([1, 2, 3])
+    ax.set_ylabel("Y")
+    return fig
+
+
+def _build_huge_figure_30cm() -> Figure:
+    fig, ax = dm.subplots(width="30cm", aspect="standard")
+    ax.plot(list(range(50)), list(range(50)))
+    ax.set_ylabel("Value")
+    return fig
+
+
+def _build_square_aspect_with_long_legend() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="square")
+    for i in range(12):
+        ax.plot([0, 1], [i, i + 1], label=f"Series {i:02d} long label")
+    ax.legend(loc="best")
+    ax.set_ylabel("Y")
+    return fig
+
+
+# ───────────────────────────────────────────────────────
+# G. Multi-axes layout
+# ───────────────────────────────────────────────────────
+
+
+def _build_gridspec_2x3_mixed() -> Figure:
+    import numpy as np
+
+    fig, axes = dm.subplots(2, 3, width="17cm", aspect="standard")
+    rng = np.random.default_rng(42)
+    axes[0, 0].plot([1, 2, 3])
+    axes[0, 1].bar(["a", "b", "c"], [3, 5, 7])
+    axes[0, 2].imshow(rng.random((10, 10)))
+    axes[1, 0].scatter(rng.standard_normal(20), rng.standard_normal(20))
+    axes[1, 1].hist(rng.standard_normal(100), bins=20)
+    axes[1, 2].plot([1, 2, 3], [3, 2, 1])
+    for ax in axes.flat:
+        ax.set_ylabel("Y")
+    return fig
+
+
+def _build_inset_axes_overlapping_ticks() -> Figure:
+    from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    ax.plot([1, 2, 3, 4, 5], [10, 30, 20, 50, 40])
+    ax.set_ylabel("Y")
+    inset = inset_axes(ax, width="40%", height="40%", loc="lower left")
+    inset.plot([1, 2, 3], [3, 2, 1])
+    return fig
+
+
+def _build_subplots_4_with_one_pie() -> Figure:
+    fig, axes = dm.subplots(2, 2, width="13cm", aspect="square")
+    axes[0, 0].plot([1, 2, 3])
+    axes[0, 0].set_ylabel("Y")
+    axes[0, 1].bar(["a", "b"], [3, 5])
+    axes[0, 1].set_ylabel("Y")
+    axes[1, 0].plot([3, 2, 1])
+    axes[1, 0].set_ylabel("Y")
+    width = 0.4
+    axes[1, 1].pie(
+        [40, 30, 20, 10],
+        labels=["A", "B", "C", "D"],
+        autopct="%.0f%%",
+        pctdistance=1.0 - width / 2.0,
+        wedgeprops={"width": width},
+    )
+    return fig
+
+
+def _build_colorbar_attached_heatmap() -> Figure:
+    import numpy as np
+
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    rng = np.random.default_rng(42)
+    im = ax.imshow(rng.random((10, 10)))
+    fig.colorbar(im, ax=ax, shrink=0.8)
+    return fig
+
+
+# ───────────────────────────────────────────────────────
+# H. Style / font
+# ───────────────────────────────────────────────────────
+
+
+def _build_report_kr_style() -> Figure:
+    # plan said "lang-kr" but that is a raw style layer, not a preset.
+    # report-kr is the smallest preset that activates lang-kr.
+    dm.style.use("report-kr")
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    ax.plot([1, 2, 3], [10, 20, 15])
+    ax.set_ylabel("매출 (억원)")
+    ax.set_xlabel("연도")
+    return fig
+
+
+def _build_theme_dark_style() -> Figure:
+    dm.style.use("theme-dark")
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    ax.plot([1, 2, 3], [10, 20, 15])
+    ax.set_ylabel("Y")
+    ax.set_xlabel("X")
+    return fig
+
+
+def _build_theme_minimal_style() -> Figure:
+    dm.style.use("theme-minimal")
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    ax.plot([1, 2, 3], [10, 20, 15])
+    ax.set_ylabel("Y")
+    ax.set_xlabel("X")
+    return fig
+
+
+def _build_font_minimal_style() -> Figure:
+    dm.style.use("font-minimal")
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    ax.plot([1, 2, 3], [10, 20, 15])
+    ax.set_ylabel("Y")
+    ax.set_xlabel("X")
+    return fig
+
+
+# ───────────────────────────────────────────────────────
+# I. Annotation density
+# ───────────────────────────────────────────────────────
+
+
+def _build_bar_chart_value_labels() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    values = [3, 5, 7, 4, 6]
+    bars = ax.bar(["a", "b", "c", "d", "e"], values)
+    for bar, v in zip(bars, values, strict=True):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height(),
+            f"{v}",
+            ha="center",
+            va="bottom",
+        )
+    ax.set_ylabel("Value")
+    return fig
+
+
+def _build_crowded_legend_outside() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    for i in range(20):
+        ax.plot([0, 1], [i, i + 1], label=f"Series {i:02d}")
+    ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", fontsize=8)
+    ax.set_ylabel("Y")
+    return fig
+
+
+def _build_arrow_annotations_diagonal() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    ax.plot([1, 2, 3, 4, 5], [10, 30, 20, 50, 40])
+    for x_to, x_from, label in [
+        (2, 1, "first"),
+        (4, 2, "mid"),
+        (5, 4, "end"),
+    ]:
+        ax.annotate(
+            label,
+            xy=(x_to, 30),
+            xytext=(x_from, 50),
+            arrowprops={"arrowstyle": "->"},
+        )
+    ax.set_ylabel("Y")
+    return fig
+
+
+# ───────────────────────────────────────────────────────
+# J. Pie / donut variants
+# ───────────────────────────────────────────────────────
+
+
+def _build_pie_full_default() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="square")
+    ax.pie([40, 30, 20, 7, 3], labels=["A", "B", "C", "D", "E"])
+    return fig
+
+
+def _build_donut_thin_correct_pctdistance() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="square")
+    width = 0.15
+    ax.pie(
+        [50, 30, 20],
+        autopct="%.0f%%",
+        pctdistance=1.0 - width / 2.0,
+        wedgeprops={"width": width},
+    )
+    return fig
+
+
+def _build_donut_wide_wrong_pctdistance() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="square")
+    ax.pie(
+        [50, 30, 20],
+        autopct="%.0f%%",
+        pctdistance=0.4,
+        wedgeprops={"width": 0.7},
+    )
+    return fig
+
+
 SCENARIOS: list[RobustnessScenario] = [
     # A. Tick label stress
     RobustnessScenario(
@@ -580,5 +794,115 @@ SCENARIOS: list[RobustnessScenario] = [
     RobustnessScenario(
         name="datetime_x_minutes",
         build=_build_datetime_x_minutes,
+    ),
+    # F. Saved-output integrity
+    RobustnessScenario(
+        name="tiny_figure_2_5cm",
+        build=_build_tiny_figure_2_5cm,
+        # 2.5 cm canvas can't fit ylabel + 4 ticks; expect TICK_CROWD
+        # but we still want save_formats to succeed.
+        forbid_warnings=(),  # Tolerate any post-layout warnings.
+        # Canvas too small to satisfy the 4-px white-border invariant.
+        pixel_checks=(),
+    ),
+    RobustnessScenario(
+        name="huge_figure_30cm",
+        build=_build_huge_figure_30cm,
+    ),
+    RobustnessScenario(
+        name="square_aspect_with_long_legend",
+        build=_build_square_aspect_with_long_legend,
+        expect_warnings=("LEGEND_OVERFLOW",),
+    ),
+    # G. Multi-axes layout
+    RobustnessScenario(
+        name="gridspec_2x3_mixed",
+        build=_build_gridspec_2x3_mixed,
+    ),
+    RobustnessScenario(
+        name="inset_axes_overlapping_ticks",
+        build=_build_inset_axes_overlapping_ticks,
+    ),
+    RobustnessScenario(
+        name="subplots_4_with_one_pie",
+        build=_build_subplots_4_with_one_pie,
+    ),
+    RobustnessScenario(
+        name="colorbar_attached_heatmap",
+        build=_build_colorbar_attached_heatmap,
+        # Colorbar + heatmap causes content to reach the canvas edge
+        # after auto_layout; the white-border invariant does not apply.
+        pixel_checks=(),
+    ),
+    # H. Style / font
+    RobustnessScenario(
+        name="report_kr_style",
+        build=_build_report_kr_style,
+    ),
+    pytest.param(
+        RobustnessScenario(
+            name="theme_dark_style",
+            build=_build_theme_dark_style,
+            # Dark theme paints the canvas dark; the white-border helper is
+            # designed for a white canvas, so swap the pixel check out.
+            pixel_checks=(),
+        ),
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason="Preset 'theme-dark' not found in current dartwork-mpl — to be added in Task 9",
+        ),
+    ),
+    pytest.param(
+        RobustnessScenario(
+            name="theme_minimal_style",
+            build=_build_theme_minimal_style,
+        ),
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason="Preset 'theme-minimal' not found in current dartwork-mpl — to be added in Task 9",
+        ),
+    ),
+    pytest.param(
+        RobustnessScenario(
+            name="font_minimal_style",
+            build=_build_font_minimal_style,
+        ),
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason="Preset 'font-minimal' not found in current dartwork-mpl — to be added in Task 9",
+        ),
+    ),
+    # I. Annotation density
+    RobustnessScenario(
+        name="bar_chart_value_labels",
+        build=_build_bar_chart_value_labels,
+    ),
+    pytest.param(
+        RobustnessScenario(
+            name="crowded_legend_outside",
+            build=_build_crowded_legend_outside,
+        ),
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason="legend outside-axes overflow — fixed in Task 10 (auto_layout BUFFER scaling)",
+        ),
+    ),
+    RobustnessScenario(
+        name="arrow_annotations_diagonal",
+        build=_build_arrow_annotations_diagonal,
+    ),
+    # J. Pie / donut variants
+    RobustnessScenario(
+        name="pie_full_default",
+        build=_build_pie_full_default,
+    ),
+    RobustnessScenario(
+        name="donut_thin_correct_pctdistance",
+        build=_build_donut_thin_correct_pctdistance,
+    ),
+    RobustnessScenario(
+        name="donut_wide_wrong_pctdistance",
+        build=_build_donut_wide_wrong_pctdistance,
+        expect_warnings=("PIE_LABEL_OFFSET",),
     ),
 ]
