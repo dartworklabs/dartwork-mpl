@@ -9,6 +9,31 @@
 
 ---
 
+## Agent intent → top-level call
+
+For AI agents that import `dartwork_mpl as dm` without going through the
+MCP server: every high-value composition helper is reachable as
+`dm.<name>` directly. The same names are also available under
+`dm.helpers.<name>`.
+
+| If the agent intends to… | Call |
+|---|---|
+| Verify input data shape before plotting | `dm.validate_data(...)` |
+| Pick a chart type from a data description | `dm.suggest_chart_type(...)` |
+| Pick a categorical palette automatically | `dm.auto_select_colors(...)` |
+| Add value labels on top of bars / points | `dm.add_value_labels(ax, ...)` |
+| Place the legend without overlapping data | `dm.optimize_legend(ax, ...)` |
+| Run heuristic quality checks on a figure | `dm.check_figure_quality(fig)` |
+| Create a styled figure in one call | `dm.create_figure_with_style(...)` |
+| Save with hi-res presets in multiple formats | `dm.save_figure(fig, "out")` |
+
+Lint and validation entry points keep their existing names:
+`dm.validate_figure(fig)`, `dm.validate_with_fixes(fig)`,
+`dm.lint_dartwork_mpl_code(code)` (MCP only for now; native
+`dm.lint(code)` lands in T4).
+
+---
+
 ## How It Works
 
 dartwork-mpl provides three layers of AI integration, each building on the last:

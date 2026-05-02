@@ -119,6 +119,22 @@ from .util import make_offset, mix_colors, pseudo_alpha, set_decimal
 col1: float = cm(9)
 col2: float = cm(17)
 
+# High-level composition helpers (T2 in 0.5+ AI-readiness roadmap).
+# These wrap the lower-level primitives above so that AI agents and
+# humans alike can reach the most useful workflow utilities through a
+# single ``dm.<name>`` access path. The submodule namespace
+# (``dm.helpers.<name>``) remains available as well.
+from .helpers import (
+    add_value_labels,
+    auto_select_colors,
+    check_figure_quality,
+    create_figure_with_style,
+    optimize_legend,
+    save_figure,
+    suggest_chart_type,
+    validate_data,
+)
+
 # Validation entry points
 from .validate import validate_figure
 from .validate_fixes import validate_with_fixes
@@ -216,6 +232,15 @@ __all__ = [  # noqa: RUF022
     "validate_figure",
     "validate_with_fixes",
     "validate_fixes",
+    # Helpers (high-level composition utilities)
+    "validate_data",
+    "auto_select_colors",
+    "add_value_labels",
+    "optimize_legend",
+    "suggest_chart_type",
+    "check_figure_quality",
+    "save_figure",
+    "create_figure_with_style",
     # Extended plots
     "plot_diverging_bar",
     # Asset diagnostics (from diagnostics)
