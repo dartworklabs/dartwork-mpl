@@ -283,3 +283,35 @@ class TestAutoLayoutSymmetry:
         asym = [w for w in warnings if w.check_id == "MARGIN_ASYMMETRY"]
         assert len(asym) == 0, f"Asymmetry remains: {[w.message for w in asym]}"
         plt.close(fig)
+
+    def test_symmetry_pass_does_not_degrade_overflow(self) -> None:
+        """A figure whose offset-spine ylabel structurally needs a large
+        right margin must not have that margin shrunk back by the
+        symmetry pass. Regression for the
+        ``triple_twinx_offset_spine`` xfail diagnosed in PR #116:
+        symmetry averaging (0.08, 0.158) → 0.119 re-introduced ~0.5 px
+        of right-edge overflow because the offset spine's label sits at
+        ``ax_left + 1.15 × ax_width + label_width``."""
+        fig, ax1 = plt.subplots(figsize=(5.5, 4.0))
+        ax1.plot([1, 2, 3, 4], [1, 4, 9, 16])
+        ax1.set_ylabel("Series A")
+        ax2 = ax1.twinx()
+        ax2.plot([1, 2, 3, 4], [10, 20, 30, 40])
+        ax2.set_ylabel("Series B")
+        ax3 = ax1.twinx()
+        ax3.spines["right"].set_position(("axes", 1.15))
+        ax3.plot([1, 2, 3, 4], [100, 200, 150, 250])
+        ax3.set_ylabel("Series C")
+
+        auto_layout(fig)
+
+        post = _measure_overflow(fig)
+        # Pre-fix value at this geometry was ~1.9 px (symmetry pulled
+        # the right margin back from the converged 0.158 to 0.119).
+        # Post-fix the symmetry pass must revert when it would degrade
+        # any side, so the right overflow stays at the pre-symmetry
+        # ~1.4 px.
+        assert post["right"] <= 1.6, (
+            f"symmetry pass degraded right overflow: {post}"
+        )
+        plt.close(fig)
