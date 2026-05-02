@@ -16,7 +16,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 import matplotlib.pyplot as plt  # noqa: F401  used in Task 4+ builders
-import pytest  # noqa: F401  used in xfail markers added in Task 4+
+import pytest
 from matplotlib.figure import Figure
 
 import dartwork_mpl as dm
@@ -69,12 +69,135 @@ def _build_long_xtick_labels_no_rotation() -> Figure:
     return fig
 
 
+def _build_long_xtick_labels_45_rotation() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    labels = [f"category_label_45_{i:02d}" for i in range(8)]
+    ax.bar(labels, [3, 5, 7, 4, 6, 2, 8, 5])
+    ax.set_ylabel("Value")
+    dm.rotate_tick_labels(ax, axis="x", rotation=45)
+    return fig
+
+
+def _build_long_xtick_labels_90_rotation() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    labels = [f"category_label_90_{i:02d}" for i in range(8)]
+    ax.bar(labels, [3, 5, 7, 4, 6, 2, 8, 5])
+    ax.set_ylabel("Value")
+    dm.rotate_tick_labels(ax, axis="x", rotation=90)
+    return fig
+
+
+def _build_long_ytick_labels_horizontal_bar() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="wide")
+    labels = [f"horizontal_bar_label_{i:02d}" for i in range(6)]
+    ax.barh(labels, [3, 5, 7, 4, 6, 2])
+    ax.set_xlabel("Value")
+    return fig
+
+
+def _build_dense_xticks_50_categories() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    labels = [f"c{i:02d}" for i in range(50)]
+    ax.bar(labels, list(range(50)))
+    ax.set_ylabel("Value")
+    return fig
+
+
+def _build_unicode_korean_xticks() -> Figure:
+    dm.style.use("report-kr")
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    labels = ["삼성전자", "한국전력", "포스코", "현대차", "엘지화학"]
+    ax.bar(labels, [3, 5, 7, 4, 6])
+    ax.set_ylabel("매출 (억원)")
+    return fig
+
+
+def _build_mixed_kr_en_xticks() -> Figure:
+    dm.style.use("report-kr")
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    labels = ["Samsung", "한국전력", "Apple", "현대차", "NVIDIA"]
+    ax.bar(labels, [3, 5, 7, 4, 6])
+    ax.set_ylabel("Value")
+    return fig
+
+
+def _build_scientific_notation_yticks() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    ax.plot([0, 1, 2], [1e-9, 1e0, 1e9])
+    ax.set_yscale("log")
+    ax.set_ylabel("Value")
+    return fig
+
+
 SCENARIOS: list[RobustnessScenario] = [
+    # A. Tick label stress
     RobustnessScenario(
         name="long_xtick_labels_no_rotation",
         build=_build_long_xtick_labels_no_rotation,
-        expect_warnings=(),  # auto_layout should handle it without warning
-        forbid_warnings=("OVERFLOW",),
-        pixel_checks=("assert_minimum_white_border",),
+    ),
+    pytest.param(
+        RobustnessScenario(
+            name="long_xtick_labels_45_rotation",
+            build=_build_long_xtick_labels_45_rotation,
+        ),
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason=(
+                "rotated-tick layout bug — fixed in Task 11"
+            ),
+        ),
+    ),
+    pytest.param(
+        RobustnessScenario(
+            name="long_xtick_labels_90_rotation",
+            build=_build_long_xtick_labels_90_rotation,
+        ),
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason=(
+                "rotated-tick layout bug — fixed in Task 11"
+            ),
+        ),
+    ),
+    pytest.param(
+        RobustnessScenario(
+            name="long_ytick_labels_horizontal_bar",
+            build=_build_long_ytick_labels_horizontal_bar,
+        ),
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason=(
+                "long-tick layout bug — fixed in Task 10/11"
+            ),
+        ),
+    ),
+    RobustnessScenario(
+        name="dense_xticks_50_categories",
+        build=_build_dense_xticks_50_categories,
+        # 50 ticks in 13 cm guarantees a TICK_CROWD info. After
+        # auto_layout we still have 50 ticks; the info is informational
+        # and OVERFLOW must remain absent.
+        expect_warnings=("TICK_CROWD",),
+    ),
+    RobustnessScenario(
+        name="unicode_korean_xticks",
+        build=_build_unicode_korean_xticks,
+    ),
+    RobustnessScenario(
+        name="mixed_kr_en_xticks",
+        build=_build_mixed_kr_en_xticks,
+    ),
+    pytest.param(
+        RobustnessScenario(
+            name="scientific_notation_yticks",
+            build=_build_scientific_notation_yticks,
+        ),
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason=(
+                "datetime/tall-tick auto_layout convergence"
+                " — fixed in Task 10"
+            ),
+        ),
     ),
 ]
