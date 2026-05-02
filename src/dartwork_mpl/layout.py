@@ -425,10 +425,15 @@ def auto_layout(
             if overflow[side] > tolerance:
                 consec[side] += 1
                 # Escalation: multiply increment for persistent overflow
-                # (handles axes-relative content that moves with subplot)
+                # (handles axes-relative content that moves with subplot).
                 scale = 1.0 + 1.0 * (consec[side] - 1)
+                # Datetime / rotated ticks have a tall footprint that
+                # the previous formula under-counted because we only
+                # add ``overflow + tolerance``. Multiply by 1.5 so we
+                # converge in ≤ 3 iterations on the worst observed
+                # case (5-year daily timestamps with autofmt_xdate).
                 increment = (
-                    (overflow[side] + tolerance) / dpi + BUFFER
+                    (overflow[side] * 1.5 + tolerance) / dpi + BUFFER
                 ) * scale
                 margins[idx] += increment
             else:

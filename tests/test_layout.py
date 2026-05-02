@@ -199,3 +199,30 @@ class TestAutoLayoutEdgeCases:
         fig.colorbar(im, ax=ax, shrink=0.8)
         auto_layout(fig)
         plt.close(fig)
+
+
+class TestAutoLayoutDatetime:
+    """Regressions for datetime-tick figures."""
+
+    def test_datetime_xaxis_converges_under_max_iter(self) -> None:
+        """A 5-year daily-resolution datetime x-axis must converge in
+        ≤ 5 iterations to ≤ 2 px overflow on every side."""
+        import numpy as np
+        import pandas as pd
+
+        import dartwork_mpl as dm
+
+        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        dates = pd.date_range("2021-01-01", "2025-12-31", freq="D")
+        rng = np.random.default_rng(42)
+        ax.plot(dates, np.cumsum(rng.standard_normal(len(dates))))
+        ax.set_ylabel("Value")
+        fig.autofmt_xdate()
+
+        auto_layout(fig, max_iter=5)
+
+        overflow = _measure_overflow(fig)
+        assert max(overflow.values()) <= 2.0, (
+            f"datetime auto_layout did not converge: {overflow}"
+        )
+        plt.close(fig)
