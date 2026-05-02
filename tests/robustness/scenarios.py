@@ -256,6 +256,40 @@ def _build_triple_axis_parasite() -> Figure:
     return fig
 
 
+def _build_triple_twinx_offset_spine() -> Figure:
+    """Three y-axes via two consecutive ``ax.twinx()`` calls plus
+    spine offset at axes-fraction 1.15 for the third axis. Verifies
+    that the dartwork ``twinx`` monkey-patch (which forces the right
+    spine visible) still works on the *third* axis when its right
+    spine is repositioned via ``set_position``.
+
+    This guards against a regression where the patch only kicked in
+    for the second axis (the immediate twin) and left the third
+    axis's right spine invisible after the position change."""
+    fig, ax1 = dm.subplots(width="14cm", aspect="standard")
+    ax1.plot([1, 2, 3, 4], [1, 4, 9, 16], color="#1f77b4")
+    ax1.set_ylabel("Series A")
+
+    ax2 = ax1.twinx()
+    ax2.plot([1, 2, 3, 4], [10, 20, 30, 40], color="#ff7f0e")
+    ax2.set_ylabel("Series B")
+
+    ax3 = ax1.twinx()
+    ax3.spines["right"].set_position(("axes", 1.15))
+    ax3.plot([1, 2, 3, 4], [100, 200, 150, 250], color="#2ca02c")
+    ax3.set_ylabel("Series C")
+
+    # All three right spines must end up visible (the monkey-patch
+    # in dartwork_mpl/__init__.py runs on every twinx() call).
+    assert ax2.spines["right"].get_visible(), (
+        "ax2 right spine should be visible after twinx() monkey-patch"
+    )
+    assert ax3.spines["right"].get_visible(), (
+        "ax3 right spine should be visible after twinx() monkey-patch"
+    )
+    return fig
+
+
 # ───────────────────────────────────────────────────────
 # C. Margin / layout corner cases
 # ───────────────────────────────────────────────────────
@@ -748,6 +782,27 @@ SCENARIOS: list[RobustnessScenario] = [
         # so we tolerate residual OVERFLOW and skip pixel border checks.
         forbid_warnings=(),
         pixel_checks=(),
+    ),
+    pytest.param(
+        RobustnessScenario(
+            name="triple_twinx_offset_spine",
+            build=_build_triple_twinx_offset_spine,
+            # The offset spine pushes ax3's ylabel ~15% past the axes
+            # right edge — auto_layout must absorb it without leaving
+            # OVERFLOW behind.
+            auto_layout_max_iter=8,
+        ),
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason=(
+                "axes-fraction 1.15 right spine ylabel ('Series C') "
+                "cannot be absorbed by auto_layout — even at max_iter=50 "
+                "the rightmost rendered pixel sits ~2px from the canvas "
+                "edge (CLIPPED_TEXT margin: -1.5px). auto_layout BUFFER "
+                "scaling for axes-fraction-positioned spines needs a "
+                "follow-up tweak (KNOWN_LIMITATIONS)."
+            ),
+        ),
     ),
     # C. Margin / layout corner cases
     RobustnessScenario(
