@@ -105,6 +105,16 @@ KNOWN_LIMITATIONS: tuple[tuple[str, str, str], ...] = (
         "auto_layout doesn't expand the right margin to accommodate it.",
         "follow-up issue (TBD)",
     ),
+    (
+        "triple_twinx_offset_spine",
+        "Third axis at axes-fraction 1.15 with an 8-char ylabel "
+        "('Series C') sits ~2 px from the canvas right edge after "
+        "auto_layout. The fixed point is independent of max_iter "
+        "(verified up to 50). Future fix: BUFFER scaling for "
+        "axes-fraction-positioned spines proportional to "
+        "(fraction - 1.0) plus the offset axis ylabel/tick footprint.",
+        "follow-up issue (TBD)",
+    ),
 )
 
 
