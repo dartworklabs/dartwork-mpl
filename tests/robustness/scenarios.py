@@ -471,8 +471,11 @@ def _build_report_kr_style() -> Figure:
     return fig
 
 
-def _build_theme_dark_style() -> Figure:
-    dm.style.use("theme-dark")
+def _build_dark_style() -> Figure:
+    # plan said "theme-dark" but that is a raw style layer.
+    # "dark" is the smallest preset that activates theme-dark
+    # (= base + font-web + theme-dark).
+    dm.style.use("dark")
     fig, ax = dm.subplots(width="13cm", aspect="standard")
     ax.plot([1, 2, 3], [10, 20, 15])
     ax.set_ylabel("Y")
@@ -480,17 +483,11 @@ def _build_theme_dark_style() -> Figure:
     return fig
 
 
-def _build_theme_minimal_style() -> Figure:
-    dm.style.use("theme-minimal")
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
-    ax.plot([1, 2, 3], [10, 20, 15])
-    ax.set_ylabel("Y")
-    ax.set_xlabel("X")
-    return fig
-
-
-def _build_font_minimal_style() -> Figure:
-    dm.style.use("font-minimal")
+def _build_minimal_style() -> Figure:
+    # plan said "theme-minimal" / "font-minimal" but those are raw
+    # style layers. "minimal" is the preset that wraps both
+    # (= base + font-minimal + theme-minimal).
+    dm.style.use("minimal")
     fig, ax = dm.subplots(width="13cm", aspect="standard")
     ax.plot([1, 2, 3], [10, 20, 15])
     ax.set_ylabel("Y")
@@ -839,38 +836,16 @@ SCENARIOS: list[RobustnessScenario] = [
         name="report_kr_style",
         build=_build_report_kr_style,
     ),
-    pytest.param(
-        RobustnessScenario(
-            name="theme_dark_style",
-            build=_build_theme_dark_style,
-            # Dark theme paints the canvas dark; the white-border helper is
-            # designed for a white canvas, so swap the pixel check out.
-            pixel_checks=(),
-        ),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason="Preset 'theme-dark' not found in current dartwork-mpl — to be added in Task 9",
-        ),
+    RobustnessScenario(
+        name="dark_style",
+        build=_build_dark_style,
+        # Dark theme paints the canvas dark; the white-border helper is
+        # designed for a white canvas, so swap the pixel check out.
+        pixel_checks=(),
     ),
-    pytest.param(
-        RobustnessScenario(
-            name="theme_minimal_style",
-            build=_build_theme_minimal_style,
-        ),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason="Preset 'theme-minimal' not found in current dartwork-mpl — to be added in Task 9",
-        ),
-    ),
-    pytest.param(
-        RobustnessScenario(
-            name="font_minimal_style",
-            build=_build_font_minimal_style,
-        ),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason="Preset 'font-minimal' not found in current dartwork-mpl — to be added in Task 9",
-        ),
+    RobustnessScenario(
+        name="minimal_style",
+        build=_build_minimal_style,
     ),
     # I. Annotation density
     RobustnessScenario(
