@@ -480,3 +480,47 @@ class TestCheckOverflowDegenerateData:
         warnings = validate_figure(fig, checks=("OVERFLOW",), quiet=True)
         assert all(w.check_id != "OVERFLOW" for w in warnings)
         plt.close(fig)
+
+
+class TestCheckClippedText:
+    """CLIPPED_TEXT fires when a Text artist's drawn pixels overlap the
+    edge strip of the figure canvas (≤ 1 px from any side)."""
+
+    def test_clipped_xtick_label(self) -> None:
+        """Long x-tick labels with a tight figure should be flagged."""
+        fig, ax = plt.subplots(figsize=(3, 2))
+        ax.bar([0, 1, 2], [1, 2, 3])
+        ax.set_xticks([0, 1, 2])
+        ax.set_xticklabels(["LongLabel" * 4, "B" * 30, "C" * 30])
+        warnings = validate_figure(
+            fig, checks=("CLIPPED_TEXT",), quiet=True
+        )
+        clipped = [w for w in warnings if w.check_id == "CLIPPED_TEXT"]
+        assert len(clipped) > 0
+        plt.close(fig)
+
+    def test_clean_figure_no_clipped(self) -> None:
+        """A normally-laid-out figure should not flag CLIPPED_TEXT."""
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.plot([1, 2, 3])
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        fig.subplots_adjust(
+            left=0.20, right=0.95, bottom=0.18, top=0.92
+        )
+        warnings = validate_figure(
+            fig, checks=("CLIPPED_TEXT",), quiet=True
+        )
+        clipped = [w for w in warnings if w.check_id == "CLIPPED_TEXT"]
+        assert len(clipped) == 0
+        plt.close(fig)
+
+    def test_clipped_text_in_default_check_set(self) -> None:
+        """CLIPPED_TEXT is registered in the default check set."""
+        fig, ax = plt.subplots(figsize=(3, 2))
+        ax.bar([0, 1, 2], [1, 2, 3])
+        ax.set_xticklabels(["A" * 30, "B" * 30, "C" * 30])
+        warnings = validate_figure(fig, quiet=True)  # default checks
+        ids = {w.check_id for w in warnings}
+        assert "CLIPPED_TEXT" in ids
+        plt.close(fig)
