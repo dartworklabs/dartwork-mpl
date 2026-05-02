@@ -21,11 +21,30 @@ __all__ = [
     "parse_width",
 ]
 
+import difflib
 import math
 import re
 
 CM_PER_INCH: float = 2.54
 MM_PER_INCH: float = 25.4
+
+_KNOWN_WIDTH_UNITS: tuple[str, ...] = ("cm", "in", "mm")
+
+# Common spellings AI agents emit when they meant the canonical short
+# form. Looked up before the difflib fallback so that obvious synonyms
+# resolve regardless of edit distance.
+_WIDTH_UNIT_SYNONYMS: dict[str, str] = {
+    "centi": "cm",
+    "centimeter": "cm",
+    "centimeters": "cm",
+    "cms": "cm",
+    "inch": "in",
+    "inches": "in",
+    "milli": "mm",
+    "millimeter": "mm",
+    "millimeters": "mm",
+    "mms": "mm",
+}
 
 # Named aspect tokens: ratio = height / width.
 ASPECT_TOKENS: dict[str, float] = {
@@ -129,6 +148,32 @@ def mm(value: float) -> Inches:
     return Inches(float(value) / MM_PER_INCH)
 
 
+def _suggest_width_correction(text: str) -> str:
+    """Build a one-sentence "did you mean" suffix for a malformed width.
+
+    The goal is that an AI agent reading the ``ValueError.message`` can
+    infer the corrected call without a second probing call. Returns
+    either a leading-space-prefixed suggestion or an empty string.
+    """
+    letters = re.search(r"[A-Za-z]+", text)
+    if letters is not None:
+        unit_word = letters.group(0).lower()
+        canonical = _WIDTH_UNIT_SYNONYMS.get(unit_word)
+        if canonical is None:
+            close = difflib.get_close_matches(
+                unit_word, _KNOWN_WIDTH_UNITS, n=1, cutoff=0.4
+            )
+            canonical = close[0] if close else None
+        if canonical is not None:
+            number = re.sub(r"[A-Za-z]", "", text).strip() or "<number>"
+            return f" Did you mean {canonical!r}-style, e.g. '{number}{canonical}'?"
+        return (
+            f" Supported units are {list(_KNOWN_WIDTH_UNITS)} "
+            f"(got unit-like fragment {unit_word!r})."
+        )
+    return f" Use '<number>{_KNOWN_WIDTH_UNITS[0]}', '<number>in', or '<number>mm'."
+
+
 def parse_width(value: str | int | float) -> float:
     """Parse a width specification into inches.
 
@@ -183,7 +228,8 @@ def parse_width(value: str | int | float) -> float:
     if match is None:
         raise ValueError(
             f"could not parse width {value!r}; expected '<number>' "
-            f"with optional unit suffix (cm, in, mm)"
+            f"with optional unit suffix (cm, in, mm)."
+            f"{_suggest_width_correction(text)}"
         )
 
     number = float(match.group("value"))
@@ -195,9 +241,31 @@ def parse_width(value: str | int | float) -> float:
         return cm(number)
     if unit == "in":
         return inch(number)
-    if unit == "mm":
-        return mm(number)
-    raise ValueError(f"unknown width unit: {unit!r}")
+    return mm(number)
+
+
+def _suggest_aspect_correction(value: str) -> str:
+    """Build a one-sentence "did you mean" suffix for an unknown aspect.
+
+    Recognises three failure shapes: numeric literals quoted as strings
+    (``"0.75"``), close-but-misspelt token names (``"sqaure"``), and
+    everything else (no suggestion appended). Returns either a leading-
+    space-prefixed suggestion or an empty string.
+    """
+    try:
+        as_number = float(value)
+    except ValueError:
+        as_number = math.nan
+    if math.isfinite(as_number) and as_number > 0:
+        return (
+            f" To pass a numeric ratio, drop the quotes: aspect={as_number}."
+        )
+    close = difflib.get_close_matches(
+        value.strip().lower(), list(ASPECT_TOKENS), n=1, cutoff=0.5
+    )
+    if close:
+        return f" Did you mean {close[0]!r}?"
+    return ""
 
 
 def parse_aspect(value: str | int | float) -> float:
@@ -238,6 +306,7 @@ def parse_aspect(value: str | int | float) -> float:
     key = value.strip().lower()
     if key not in ASPECT_TOKENS:
         raise ValueError(
-            f"unknown aspect token {value!r}; known: {sorted(ASPECT_TOKENS)}"
+            f"unknown aspect token {value!r}; known: "
+            f"{sorted(ASPECT_TOKENS)}.{_suggest_aspect_correction(value)}"
         )
     return ASPECT_TOKENS[key]

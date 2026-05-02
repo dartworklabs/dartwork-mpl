@@ -68,6 +68,69 @@ class TestParseWidth:
         assert math.isclose(parse_width("5e0in"), 5.0, rel_tol=1e-9)
 
 
+class TestParseWidthSelfCorrection:
+    """T3: error messages should let an LLM retry on the next call."""
+
+    def test_typo_centi_suggests_cm(self):
+        with pytest.raises(ValueError) as exc:
+            parse_width("20centi")
+        message = str(exc.value)
+        assert "20" in message
+        assert "'cm'" in message
+        assert "20cm" in message
+
+    def test_unit_word_misspelt_in_suggests_in(self):
+        with pytest.raises(ValueError) as exc:
+            parse_width("6inh")
+        message = str(exc.value)
+        # 'inh' is a 1-edit typo of 'in' — difflib should recover.
+        assert "'in'" in message and "6in" in message
+
+    def test_alien_unit_falls_back_to_supported_list(self):
+        # 'foot' shares no letters with cm/in/mm above the cutoff, so
+        # the suggestion falls back to the supported-units sentence.
+        with pytest.raises(ValueError) as exc:
+            parse_width("3foot")
+        message = str(exc.value)
+        assert "Supported units" in message
+        assert "'foot'" in message
+
+    def test_pure_letters_get_format_hint(self):
+        # No digit-letter mix → fall through to the format reminder.
+        with pytest.raises(ValueError) as exc:
+            parse_width("abc")
+        message = str(exc.value)
+        assert "Supported units" in message or "<number>cm" in message
+
+
+class TestParseAspectSelfCorrection:
+    """T3: misspelt or numerically-quoted aspects should self-explain."""
+
+    def test_misspelt_widee_suggests_wide(self):
+        with pytest.raises(ValueError) as exc:
+            parse_aspect("widee")
+        assert "'wide'" in str(exc.value)
+
+    def test_misspelt_sqaure_suggests_square(self):
+        with pytest.raises(ValueError) as exc:
+            parse_aspect("sqaure")
+        assert "'square'" in str(exc.value)
+
+    def test_quoted_numeric_suggests_dropping_quotes(self):
+        with pytest.raises(ValueError) as exc:
+            parse_aspect("0.75")
+        message = str(exc.value)
+        assert "drop the quotes" in message
+        assert "0.75" in message
+
+    def test_random_string_has_no_misleading_suggestion(self):
+        # ``"abc"`` is far from every aspect token; no "did you mean".
+        with pytest.raises(ValueError) as exc:
+            parse_aspect("abc")
+        message = str(exc.value)
+        assert "Did you mean" not in message
+
+
 class TestInchesArithmetic:
     """0.4 contract: arithmetic preserves the Inches tag so a doubled
     or summed Inches value is not silently re-interpreted as cm by
