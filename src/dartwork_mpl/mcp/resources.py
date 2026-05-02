@@ -78,20 +78,21 @@ def register_resources(mcp: FastMCP) -> None:
 
     @mcp.resource("dartwork-mpl://guide/migration")
     def migration_guide() -> str:
-        """0.3 → 0.4 migration guide (width/aspect, cm2in, SW/MW/TW/DW).
+        """0.3 → 0.4 migration pointer.
 
-        Sourced from ``asset/prompt/_legacy/migration-from-0.3.md`` so
-        that 0.3 callers landing on the deprecated guides have a clear
-        next step. The full version also lives in ``docs/migration.md``
-        for the rendered Sphinx site.
+        The full migration guide lives at ``docs/migration.md`` and is
+        rendered at the GitHub Pages URL below. The bundled stub that
+        used to back this resource was removed in T5 of the AI-readiness
+        roadmap (see ``docs/superpowers/specs/2026-05-01-ai-readiness-0.5-roadmap.md``)
+        so that the prompt corpus has a single source of truth in the
+        rendered docs rather than a stub-and-fallback split.
         """
-        path = _PROMPT_DIR / "_legacy" / "migration-from-0.3.md"
-        if not path.exists():
-            return (
-                "Migration guide not bundled. See "
-                "https://dartworklabs.github.io/dartwork-mpl/migration.html"
-            )
-        return path.read_text(encoding="utf-8")
+        return (
+            "0.3 → 0.4 migration guide: "
+            "https://dartworklabs.github.io/dartwork-mpl/migration.html\n\n"
+            "For an automated rewrite, call the migrate_legacy_code MCP "
+            "tool (or dm.migrate_legacy_code in Python)."
+        )
 
     # ── API Reference ────────────────────────────────────────────────
 

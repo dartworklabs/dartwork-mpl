@@ -8,10 +8,24 @@ from __future__ import annotations
 
 __all__ = ["copy_prompt", "get_prompt", "list_prompts", "prompt_path"]
 
+import warnings
 from pathlib import Path
 from shutil import copy2
 
 from ._helpers import create_parent_path
+
+_PROMPT_DIR: Path = Path(__file__).parent / "asset/prompt"
+
+# Canonical Markdown prompt corpus (T5). ``list_prompts`` warns when a
+# ``.md`` file outside this set appears next to it. The YAML
+# anti-pattern catalog (``02-anti-patterns.yaml``) and the
+# ``05-templates/`` subdirectory are separate surfaces with their own
+# loaders and are intentionally not listed here.
+_CANONICAL_PROMPTS: frozenset[str] = frozenset({
+    "00-index",
+    "01-policy",
+    "03-recipes",
+})
 
 
 def prompt_path(name: str) -> Path:
@@ -21,7 +35,7 @@ def prompt_path(name: str) -> Path:
     ----------
     name : str
         Name of the prompt guide to retrieve
-        (e.g., ``'layout-guide'``, ``'general-guide'``).
+        (e.g., ``'00-index'``, ``'01-policy'``, ``'03-recipes'``).
 
     Returns
     -------
@@ -33,7 +47,7 @@ def prompt_path(name: str) -> Path:
     ValueError
         If the specified guide cannot be found in the library.
     """
-    path: Path = Path(__file__).parent / f"asset/prompt/{name}.md"
+    path: Path = _PROMPT_DIR / f"{name}.md"
     if not path.exists():
         raise ValueError(f"Prompt guide not found: {name}")
     return path
@@ -57,17 +71,35 @@ def get_prompt(name: str) -> str:
 
 
 def list_prompts() -> list[str]:
-    """List all available prompt guide files.
+    """List the bundled prompt guide files.
+
+    The canonical corpus is exactly four entries — ``00-index``,
+    ``01-policy``, ``02-anti-patterns`` (YAML, not surfaced here),
+    ``03-recipes`` — plus the ``05-templates/`` subdirectory listed
+    separately. If extra ``*.md`` files appear (stale leftovers, an
+    in-progress addition, etc.), this function still returns them but
+    emits a :class:`UserWarning` so drift surfaces immediately.
 
     Returns
     -------
     list[str]
         Sorted list of available prompt guide names.
     """
-    path: Path = Path(__file__).parent / "asset/prompt"
-    if not path.exists():
+    if not _PROMPT_DIR.exists():
         return []
-    return sorted([p.stem for p in path.glob("*.md")])
+    found = sorted([p.stem for p in _PROMPT_DIR.glob("*.md")])
+    unexpected = [name for name in found if name not in _CANONICAL_PROMPTS]
+    if unexpected:
+        warnings.warn(
+            "Unexpected prompt guide(s) found alongside the canonical "
+            f"corpus: {unexpected}. The canonical set is "
+            f"{sorted(_CANONICAL_PROMPTS)}. Either fold the content into "
+            "an existing canonical file or extend _CANONICAL_PROMPTS in "
+            "dartwork_mpl/prompt.py.",
+            UserWarning,
+            stacklevel=2,
+        )
+    return found
 
 
 def copy_prompt(name: str, destination: str | Path) -> Path:
