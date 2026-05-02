@@ -200,7 +200,9 @@ class TestAutoLayoutEdgeCases:
         auto_layout(fig)
         plt.close(fig)
 
-    def test_constrained_layout_off_then_auto_layout_runs_normally(self) -> None:
+    def test_constrained_layout_off_then_auto_layout_runs_normally(
+        self,
+    ) -> None:
         """When ``constrained_layout`` is off (the dartwork default), a
         plain ``auto_layout`` call must run to convergence on a chart
         with reasonable labels."""
