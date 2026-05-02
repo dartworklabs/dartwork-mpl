@@ -51,6 +51,14 @@ class RobustnessScenario:
         axes-fraction-positioned spines or other content that fills
         the canvas tightly may need a larger value (e.g. 0.25) so the
         iteration converges with a 4 px white-border invariant.
+    category
+        SSOT classification (T7 in the AI-readiness roadmap). The
+        scenario covers either a runtime/visual issue invisible to a
+        regex-based linter (``"visual-only"``, the default) or a
+        statically-detectable anti-pattern from
+        ``02-anti-patterns.yaml`` (``"rule:<rule-id>"``). The
+        ``test_catalog_alignment.py`` meta-test checks that every
+        scenario classification stays in sync with the catalog.
     """
 
     name: str
@@ -60,6 +68,7 @@ class RobustnessScenario:
     pixel_checks: tuple[str, ...] = ("assert_minimum_white_border",)
     auto_layout_max_iter: int = 5
     auto_layout_padding: float | tuple[float, float, float, float] = 0.08
+    category: str = "visual-only"
 
 
 # Scenarios still wrapped with pytest.mark.xfail(strict=True) because
@@ -710,7 +719,14 @@ def _build_donut_wide_wrong_pctdistance() -> Figure:
     return fig
 
 
-SCENARIOS: list[RobustnessScenario] = [
+# A few entries are wrapped in ``pytest.param(..., marks=xfail)`` so
+# the suite can carry KNOWN_LIMITATIONS without losing the rest. The
+# wrapper makes the list shape mixed; ``test_catalog_alignment.py``
+# and ``test_robustness_suite.py`` unwrap as needed. The type hint is
+# left at ``list`` (no element type) because ``pytest.ParameterSet``
+# isn't part of pytest's public API and the file isn't in the
+# ``mypy --strict`` CI scope (CI only checks ``src/dartwork_mpl/``).
+SCENARIOS: list = [
     # A. Tick label stress
     RobustnessScenario(
         name="long_xtick_labels_no_rotation",
@@ -915,7 +931,11 @@ SCENARIOS: list[RobustnessScenario] = [
         # Canvas too small to satisfy the 4-px white-border invariant.
         pixel_checks=(),
     ),
-    RobustnessScenario(name="huge_figure_30cm", build=_build_huge_figure_30cm),
+    RobustnessScenario(
+        name="huge_figure_30cm",
+        build=_build_huge_figure_30cm,
+        category="rule:oversize-width",
+    ),
     RobustnessScenario(
         name="square_aspect_with_long_legend",
         build=_build_square_aspect_with_long_legend,
