@@ -267,6 +267,107 @@ def _build_colorbar_below_axes() -> Figure:
     return fig
 
 
+# ───────────────────────────────────────────────────────
+# D. Data degeneracies
+# ───────────────────────────────────────────────────────
+
+
+def _build_nan_only_y() -> Figure:
+    import numpy as np
+
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    ax.plot([1, 2, 3], [np.nan, np.nan, np.nan])
+    ax.set_ylabel("Value")
+    return fig
+
+
+def _build_inf_in_y() -> Figure:
+    import numpy as np
+
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    ax.plot([1, 2, 3, 4, 5], [1.0, 2.0, np.inf, -np.inf, 5.0])
+    ax.set_ylabel("Value")
+    return fig
+
+
+def _build_single_point_data() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    ax.plot([5], [5], "o")
+    ax.set_ylabel("Value")
+    return fig
+
+
+def _build_constant_y() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    ax.plot([1, 2, 3, 4, 5], [7, 7, 7, 7, 7])
+    ax.set_ylabel("Value")
+    return fig
+
+
+def _build_negative_log_data() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    ax.plot([1, 2, 3, 4, 5], [-2, 1, 10, 100, -50])
+    ax.set_yscale("log")
+    ax.set_ylabel("Value")
+    return fig
+
+
+# ───────────────────────────────────────────────────────
+# E. Scale & axis types
+# ───────────────────────────────────────────────────────
+
+
+def _build_log_y_with_minor_ticks() -> Figure:
+    import numpy as np
+
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    x = np.linspace(1, 5, 100)
+    ax.plot(x, 10**x)
+    ax.set_yscale("log")
+    ax.minorticks_on()
+    ax.set_ylabel("Value")
+    return fig
+
+
+def _build_symlog_y_centered_on_zero() -> Figure:
+    import numpy as np
+
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    x = np.linspace(-10, 10, 200)
+    ax.plot(x, x**3)
+    ax.set_yscale("symlog", linthresh=10)
+    ax.set_ylabel("Value")
+    return fig
+
+
+def _build_datetime_x_5_years_daily() -> Figure:
+    import numpy as np
+    import pandas as pd
+
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    dates = pd.date_range("2021-01-01", "2025-12-31", freq="D")
+    rng = np.random.default_rng(42)
+    ax.plot(dates, np.cumsum(rng.standard_normal(len(dates))))
+    ax.set_ylabel("Value")
+    fig.autofmt_xdate()
+    return fig
+
+
+def _build_datetime_x_minutes() -> Figure:
+    import numpy as np
+    import pandas as pd
+
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    times = pd.date_range(
+        "2026-05-02 09:00", "2026-05-02 13:00", freq="1min"
+    )
+    rng = np.random.default_rng(42)
+    ax.plot(times, np.cumsum(rng.standard_normal(len(times))))
+    ax.set_ylabel("Value")
+    fig.autofmt_xdate()
+    return fig
+
+
 SCENARIOS: list[RobustnessScenario] = [
     # A. Tick label stress
     RobustnessScenario(
@@ -436,5 +537,49 @@ SCENARIOS: list[RobustnessScenario] = [
                 "amount problem"
             ),
         ),
+    ),
+    # D. Data degeneracies
+    RobustnessScenario(
+        name="nan_only_y",
+        build=_build_nan_only_y,
+        # No data to plot but axes still has a Line2D artist → not empty.
+        # Must not crash anywhere in validate or auto_layout.
+        forbid_warnings=("OVERFLOW",),
+    ),
+    RobustnessScenario(
+        name="inf_in_y",
+        build=_build_inf_in_y,
+    ),
+    RobustnessScenario(
+        name="single_point_data",
+        build=_build_single_point_data,
+    ),
+    RobustnessScenario(
+        name="constant_y",
+        build=_build_constant_y,
+    ),
+    RobustnessScenario(
+        name="negative_log_data",
+        build=_build_negative_log_data,
+        # Negative-on-log is a real warning in matplotlib; the figure
+        # still renders (negative samples are dropped). Test only that
+        # we don't crash and the saved PNG isn't empty.
+    ),
+    # E. Scale & axis types
+    RobustnessScenario(
+        name="log_y_with_minor_ticks",
+        build=_build_log_y_with_minor_ticks,
+    ),
+    RobustnessScenario(
+        name="symlog_y_centered_on_zero",
+        build=_build_symlog_y_centered_on_zero,
+    ),
+    RobustnessScenario(
+        name="datetime_x_5_years_daily",
+        build=_build_datetime_x_5_years_daily,
+    ),
+    RobustnessScenario(
+        name="datetime_x_minutes",
+        build=_build_datetime_x_minutes,
     ),
 ]
