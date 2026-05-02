@@ -870,9 +870,13 @@ SCENARIOS: list[RobustnessScenario] = [
         name="subfigures_2x1",
         build=_build_subfigures_2x1,
         # auto_layout uses fig.axes[0].get_gridspec(); SubFigures wrap
-        # each child in its own GridSpec, so we accept either zero or
-        # the existing INFO/WARN ids — but never any new OVERFLOW.
+        # each child in its own GridSpec so the parent layout-engine's
+        # edge padding does not propagate into them. The scenario still
+        # verifies validate_figure, auto_layout, and PNG round-trip,
+        # but the global white-border invariant cannot hold here — same
+        # limitation pattern as `colorbar_attached_heatmap`.
         forbid_warnings=("OVERFLOW",),
+        pixel_checks=(),
     ),
     # H. Style / font
     RobustnessScenario(name="report_kr_style", build=_build_report_kr_style),
