@@ -2,7 +2,13 @@
 orphan: true
 ---
 
-# dartwork-mpl AI-Readiness 0.5+ Roadmap
+# dartwork-mpl AI-Readiness Phase 2 Roadmap
+
+> The 0.4 cycle ([0.4 design spec](2026-04-29-dartwork-mpl-ai-readiness-design.md))
+> shipped the AI-readiness baseline. This document plans the next round
+> of work but does **not** assign release versions to the tracks —
+> the maintainer chooses the version (minor / patch / RC) for each PR
+> at merge time.
 
 ## Context
 
@@ -97,18 +103,24 @@ minor releases (0.5 and 0.6).
 
 ## Phase Plan
 
-| Phase | Theme | Tracks | Target |
-|---|---|---|---|
-| **0.5.0** | Discoverability + self-correction | T1, T2, T3 | 0.5 minor cut |
-| **0.5.x patch** | Native parity + asset hygiene | T4, T5 | follow-on patches |
-| **0.6.0** | Metadata + drift convergence | T6, T7, T8 | next minor |
+| Phase | Theme | Tracks |
+|---|---|---|
+| **Phase 1** | Discoverability + self-correction | T1, T2, T3 |
+| **Phase 2** | Native parity + asset hygiene | T4, T5 |
+| **Phase 3** | Metadata + drift convergence | T6, T7, T8 |
 
 Each track is 1 PR, sized to 200–800 LoC. PRs are independent; tracks
 inside a phase can land in any order.
 
+The phases are dependency groupings, not release plans. The actual
+release version (minor / patch / RC) for each PR is a decision the
+maintainer makes at merge time based on SemVer impact, the deprecation
+window, and the rest of the release queue. This document does not
+pre-commit to a version number.
+
 ---
 
-## Phase 0.5.0 — Discoverability & Self-Correction
+## Phase 1 — Discoverability & Self-Correction
 
 ### Track T1 — Zero-config entry-point files (closes G2, N1's docs side)
 
@@ -214,7 +226,7 @@ the closest valid form.
 
 ---
 
-## Phase 0.5.x patches — Native parity & asset hygiene
+## Phase 2 — Native parity & asset hygiene
 
 ### Track T4 — Native lint + migrate_legacy_code (closes G7, N1)
 
@@ -287,7 +299,7 @@ with the new pointer.
 
 ---
 
-## Phase 0.6.0 — Metadata & drift convergence
+## Phase 3 — Metadata & drift convergence
 
 ### Track T6 — Template metadata frontmatter (closes G6)
 
@@ -501,27 +513,19 @@ CI gates (added by this plan):
 
 ---
 
-## Migration Plan
+## Sequencing
 
-1. **PR 1 (T1)** — Entry-point files. Smallest, highest visibility,
-   no API change. Land first.
-2. **PR 2 (T2)** — Top-level helper exposure. API additive only;
-   safe within 0.5.0 minor.
-3. **PR 3 (T3)** — Self-correcting errors. API additive
-   (better messages); safe.
-4. **Cut 0.5.0** after PR 1–3.
-5. **PR 4 (T4)** — Native lint + `migrate_legacy_code`. Includes
-   YAML schema additions; release as 0.5.1 patch.
-6. **PR 5 (T5)** — Asset cleanup. Bundled file removals; release as
-   0.5.2 patch (semver-safe because the deleted files were never
-   API).
-7. **PR 6 (T6)** — Template metadata + `find_template` MCP tool.
-   Touches 24 example files; large diff but mechanical. Release as
-   0.6.0.
-8. **PR 7 (T7)** — Robustness ↔ catalog convergence. Test-only PR
-   plus rule additions; release with 0.6.0 or as 0.6.1.
-9. **PR 8 (T8)** — Static docs fallback. Docs-only; can ship any
-   time, suggested with 0.6.0.
+Land order (each is one PR; the maintainer chooses the release version
+for each at merge time):
+
+1. **PR 1 (T1)** — Entry-point files. Smallest, highest visibility, no API change. Land first.
+2. **PR 2 (T2)** — Top-level helper exposure. API additive only.
+3. **PR 3 (T3)** — Self-correcting errors. API additive (better messages).
+4. **PR 4 (T4)** — Native lint + `migrate_legacy_code`. Adds a public function and an MCP tool; includes a non-breaking YAML schema extension (new optional `auto_fix` field).
+5. **PR 5 (T5)** — Asset cleanup. Bundled file removals. The deleted files are not part of the public API surface.
+6. **PR 6 (T6)** — Template metadata + `find_template` MCP tool. Touches ~24 example files; large diff but mechanical.
+7. **PR 7 (T7)** — Robustness ↔ catalog convergence. Test-only PR plus anti-pattern catalog rule additions.
+8. **PR 8 (T8)** — Static docs fallback. Docs-only; can ship any time.
 
 ---
 
