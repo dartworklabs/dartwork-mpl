@@ -358,9 +358,7 @@ def _build_datetime_x_minutes() -> Figure:
     import pandas as pd
 
     fig, ax = dm.subplots(width="13cm", aspect="standard")
-    times = pd.date_range(
-        "2026-05-02 09:00", "2026-05-02 13:00", freq="1min"
-    )
+    times = pd.date_range("2026-05-02 09:00", "2026-05-02 13:00", freq="1min")
     rng = np.random.default_rng(42)
     ax.plot(times, np.cumsum(rng.standard_normal(len(times))))
     ax.set_ylabel("Value")
@@ -562,8 +560,9 @@ SCENARIOS: list[RobustnessScenario] = [
         name="negative_log_data",
         build=_build_negative_log_data,
         # Negative-on-log is a real warning in matplotlib; the figure
-        # still renders (negative samples are dropped). Test only that
-        # we don't crash and the saved PNG isn't empty.
+        # still renders (negative values are clipped to the axis floor
+        # via nonpositive='clip', not dropped). Test only that we don't
+        # crash and the saved PNG isn't empty.
     ),
     # E. Scale & axis types
     RobustnessScenario(
