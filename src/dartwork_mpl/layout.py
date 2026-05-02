@@ -442,10 +442,7 @@ def auto_layout(
 
 
 def tight_crop(
-    fig: Figure,
-    *,
-    padding: float = 0.05,
-    verbose: bool = False,
+    fig: Figure, *, padding: float = 0.05, verbose: bool = False
 ) -> tuple[float, float]:
     """Shrink figure to its content bounding box, eliminating outer whitespace.
 
@@ -607,8 +604,8 @@ def tight_crop(
         print(
             f"[tight_crop] {cur_w_in:.2f}x{cur_h_in:.2f}in "
             f"→ {new_w_in:.2f}x{new_h_in:.2f}in  "
-            f"(L:{pad_left_px/dpi:.2f} R:{pad_right_px/dpi:.2f} "
-            f"B:{pad_bottom_px/dpi:.2f} T:{pad_top_px/dpi:.2f}in trimmed)"
+            f"(L:{pad_left_px / dpi:.2f} R:{pad_right_px / dpi:.2f} "
+            f"B:{pad_bottom_px / dpi:.2f} T:{pad_top_px / dpi:.2f}in trimmed)"
         )
 
     return (new_w_in, new_h_in)
