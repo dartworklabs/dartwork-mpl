@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `tests/test_layout.py::TestAutoLayoutEdgeCases` confirming
   `auto_layout` does not crash when called on a figure built with
   `constrained_layout=True`.
+- `RobustnessScenario.auto_layout_padding` field (default 0.08
+  inches) lets per-scenario builders request extra initial padding
+  for figures whose right-edge content (e.g. axes-fraction-
+  positioned spines) tightly fills the `auto_layout` tolerance band.
 
 ### Fixed
 - `_check_overflow` no longer produces spurious warnings when a
@@ -66,6 +70,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `"0.00"` instead of the literal `"0"`, restoring tick label width
   parity for charts that include both zero and non-zero values like
   `"1.50M"` / `"1.50B"`.
+- `auto_layout` post-convergence symmetry pass now reverts itself
+  when re-measurement detects that the averaging would re-introduce
+  overflow on any side. Figures with structurally-needed asymmetric
+  margins (e.g. axes-fraction-positioned right spines via
+  `ax.spines["right"].set_position(("axes", 1.15))`) keep their
+  iteration-converged margins; balanced figures (e.g. user called
+  `subplots_adjust(left=0.05, right=0.30)`) still get re-centred.
+- The `triple_twinx_offset_spine` robustness scenario is no longer
+  `xfail` — combined with the symmetry-pass guard above and the new
+  `auto_layout_padding` field on `RobustnessScenario`, the scenario
+  now converges with a 4 px white-border invariant on the offset
+  ylabel and is removed from `KNOWN_LIMITATIONS`.
 
   Note: these source-level fixes are defensive hardening. Scenarios
   still wrapped in `pytest.mark.xfail(strict=True)` represent separate
