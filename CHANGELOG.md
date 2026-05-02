@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   the matplotlib `set_ticklabels()` UserWarning that previously fired
   on non-FixedLocator axes (e.g. CategoricalLocator from `ax.bar`).
 
-  Note: these source-level fixes are defensive hardening. The 8
+  Note: these source-level fixes are defensive hardening. The 7
   scenarios still wrapped in `pytest.mark.xfail(strict=True)` represent
   separate library limitations (mostly `auto_layout` failing to absorb
   the footprint of long rotated tick labels, axes-fraction annotations
