@@ -156,7 +156,7 @@ def format_axis_billions(
             Formatted string with billions suffix
         """
         if x == 0:
-            return "0"
+            return f"{0:.{decimals}f}"
         return f"{x / 1e9:.{decimals}f}{suffix}"
 
     formatter = ticker.FuncFormatter(billions_formatter)
