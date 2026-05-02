@@ -7,12 +7,9 @@ trusting matplotlib's artist-tree bookkeeping.
 
 from __future__ import annotations
 
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-
-matplotlib.use("Agg")
 
 from tests.robustness.pixel_assertions import (
     PixelAssertionError,

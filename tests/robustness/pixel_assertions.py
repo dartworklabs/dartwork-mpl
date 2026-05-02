@@ -7,15 +7,19 @@ label sits at x=-3 px). The robustness suite therefore inspects the
 rendered RGBA buffer directly so we can prove the saved PNG actually
 shows the labels.
 
-All assertions are pure functions of a (Figure, parameters) pair and
+Each assertion is a one-shot check on a (Figure, parameters) pair.
+Functions force ``fig.canvas.draw()`` so callers don't have to, and
 raise PixelAssertionError on failure with a message identifying the
 side and the deficient pixel count.
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 import numpy as np
 from matplotlib.figure import Figure
+from matplotlib.text import Text
 
 # How many outermost pixels we actually inspect.
 # min_white_px (the public parameter) is the *minimum required margin*;
@@ -34,16 +38,16 @@ def figure_to_rgba(fig: Figure) -> np.ndarray:
     Always forces a draw first so the buffer is up-to-date.
     """
     fig.canvas.draw()
-    buf = np.asarray(fig.canvas.buffer_rgba())
-    return buf
+    return np.asarray(fig.canvas.buffer_rgba())
 
 
 def _is_blank_strip(strip: np.ndarray, *, tol: int = 6) -> bool:
     """Return True if `strip` is uniformly close to white.
 
     `strip` must be HxWx4 uint8. We treat a pixel as "blank" when its
-    RGB channels are all >= 255 - tol *and* the alpha is the strip's
-    maximum (so faint anti-aliased edges still count as blank)."""
+    RGB channels are all >= 255 - tol. The alpha channel is ignored —
+    the Agg backend renders with full alpha on a white canvas, so RGB
+    is sufficient for the blank-margin invariant the suite enforces."""
     rgb = strip[..., :3]
     return bool(np.all(rgb >= (255 - tol)))
 
@@ -94,7 +98,9 @@ def assert_minimum_white_border(fig: Figure, *, min_px: int = 4) -> None:
         assert_no_edge_overflow(fig, side=side, min_white_px=min_px)
 
 
-def _iter_visible_text_artists(fig: Figure):
+def _iter_visible_text_artists(
+    fig: Figure,
+) -> Iterator[tuple[Text, bool]]:
     """Yield (Text, is_tick_label) pairs for all visible non-empty artists.
 
     Tick labels are yielded together with their parent Tick so callers
@@ -112,24 +118,26 @@ def _iter_visible_text_artists(fig: Figure):
             yield txt, False
 
         # X-axis tick labels — skip if tick position is outside xlim.
+        # Use min/max so inverted axes (xlim[0] > xlim[1]) work correctly.
         xlim = ax.get_xlim()
         for tick in ax.xaxis.get_major_ticks():
             lbl = tick.label1
             if not lbl.get_visible() or not lbl.get_text().strip():
                 continue
             pos = tick.get_loc()
-            if pos < xlim[0] or pos > xlim[1]:
+            if not (min(xlim) <= pos <= max(xlim)):
                 continue  # auto-range phantom tick
             yield lbl, True
 
         # Y-axis tick labels — skip if tick position is outside ylim.
+        # Use min/max so inverted axes (ylim[0] > ylim[1]) work correctly.
         ylim = ax.get_ylim()
         for tick in ax.yaxis.get_major_ticks():
             lbl = tick.label1
             if not lbl.get_visible() or not lbl.get_text().strip():
                 continue
             pos = tick.get_loc()
-            if pos < ylim[0] or pos > ylim[1]:
+            if not (min(ylim) <= pos <= max(ylim)):
                 continue  # auto-range phantom tick
             yield lbl, True
 
