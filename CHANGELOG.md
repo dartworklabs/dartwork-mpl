@@ -82,6 +82,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `auto_layout_padding` field on `RobustnessScenario`, the scenario
   now converges with a 4 px white-border invariant on the offset
   ylabel and is removed from `KNOWN_LIMITATIONS`.
+- `format_axis_currency(position="prefix")` now places the minus sign
+  OUTSIDE the currency symbol for negative values (`-$1,000` instead
+  of `$-1,000`), matching standard financial-report convention. The
+  formatter additionally suppresses the sign when the magnitude
+  rounds to exactly zero at the requested decimals (so `x=-0.0` and
+  `x=-0.4` with `decimals=0` both render as `"$0"`, not `"$-0"`).
 
   Note: these source-level fixes are defensive hardening. Scenarios
   still wrapped in `pytest.mark.xfail(strict=True)` represent separate
