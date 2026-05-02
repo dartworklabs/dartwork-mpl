@@ -79,25 +79,9 @@ class RobustnessScenario:
 # scenario now passes naturally.
 KNOWN_LIMITATIONS: tuple[tuple[str, str, str], ...] = (
     (
-        "long_xtick_labels_45_rotation",
-        "OVERFLOW persists after auto_layout for 25-char rotated x-tick "
-        "labels; the rotation increases tick footprint beyond what the "
-        "BUFFER scaling (Task 10) can absorb. Future fix: a layout pass "
-        "that detects rotated tick labels and pre-allocates the rotated "
-        "footprint instead of iterating overflow.",
-        "https://github.com/dartworklabs/dartwork-mpl/issues/109",
-    ),
-    (
         "long_xtick_labels_90_rotation",
         "Same root cause as 45_rotation but more severe at 90 degrees.",
         "https://github.com/dartworklabs/dartwork-mpl/issues/109",
-    ),
-    (
-        "long_ytick_labels_horizontal_bar",
-        "Long left-side ytick labels on horizontal bar chart overflow "
-        "the canvas; auto_layout's per-iteration BUFFER doesn't grow "
-        "fast enough for 25-char labels.",
-        "https://github.com/dartworklabs/dartwork-mpl/issues/110",
     ),
     (
         "outside_axes_annotation",
@@ -107,21 +91,10 @@ KNOWN_LIMITATIONS: tuple[tuple[str, str, str], ...] = (
         "https://github.com/dartworklabs/dartwork-mpl/issues/111",
     ),
     (
-        "axes_fraction_text_below_zero",
-        "ax.text at y=-0.25 axes-fraction overflows the bottom edge.",
-        "https://github.com/dartworklabs/dartwork-mpl/issues/111",
-    ),
-    (
         "colorbar_below_axes",
         "Horizontal colorbar shifts the figure into the top edge after "
         "auto_layout. Likely needs a colorbar-aware layout pass.",
         "https://github.com/dartworklabs/dartwork-mpl/issues/113",
-    ),
-    (
-        "crowded_legend_outside",
-        "bbox_to_anchor=(1.02, 1) places the legend outside the axes; "
-        "auto_layout doesn't expand the right margin to accommodate it.",
-        "https://github.com/dartworklabs/dartwork-mpl/issues/114",
     ),
 )
 # Architectural meta-issue tracking the simple_layout / auto_layout
@@ -737,18 +710,9 @@ SCENARIOS: list = [
         forbid_warnings=("OVERFLOW",),
         pixel_checks=("assert_minimum_white_border",),
     ),
-    pytest.param(
-        RobustnessScenario(
-            name="long_xtick_labels_45_rotation",
-            build=_build_long_xtick_labels_45_rotation,
-        ),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason=(
-                "OVERFLOW persists after auto_layout for 25-char "
-                "rotated x-tick labels (KNOWN_LIMITATIONS)"
-            ),
-        ),
+    RobustnessScenario(
+        name="long_xtick_labels_45_rotation",
+        build=_build_long_xtick_labels_45_rotation,
     ),
     pytest.param(
         RobustnessScenario(
@@ -762,18 +726,9 @@ SCENARIOS: list = [
             ),
         ),
     ),
-    pytest.param(
-        RobustnessScenario(
-            name="long_ytick_labels_horizontal_bar",
-            build=_build_long_ytick_labels_horizontal_bar,
-        ),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason=(
-                "long ytick labels on horizontal bar overflow canvas "
-                "(KNOWN_LIMITATIONS)"
-            ),
-        ),
+    RobustnessScenario(
+        name="long_ytick_labels_horizontal_bar",
+        build=_build_long_ytick_labels_horizontal_bar,
     ),
     RobustnessScenario(
         name="dense_xticks_50_categories",
@@ -861,19 +816,10 @@ SCENARIOS: list = [
             ),
         ),
     ),
-    pytest.param(
-        RobustnessScenario(
-            name="axes_fraction_text_below_zero",
-            build=_build_axes_fraction_text_below_zero,
-            auto_layout_max_iter=15,
-        ),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason=(
-                "ax.text at y=-0.25 axes-fraction overflows the bottom "
-                "edge (KNOWN_LIMITATIONS)"
-            ),
-        ),
+    RobustnessScenario(
+        name="axes_fraction_text_below_zero",
+        build=_build_axes_fraction_text_below_zero,
+        auto_layout_max_iter=15,
     ),
     pytest.param(
         RobustnessScenario(
@@ -997,17 +943,8 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="bar_chart_value_labels", build=_build_bar_chart_value_labels
     ),
-    pytest.param(
-        RobustnessScenario(
-            name="crowded_legend_outside", build=_build_crowded_legend_outside
-        ),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason=(
-                "bbox_to_anchor=(1.02, 1) places legend outside axes; "
-                "auto_layout doesn't expand right margin (KNOWN_LIMITATIONS)"
-            ),
-        ),
+    RobustnessScenario(
+        name="crowded_legend_outside", build=_build_crowded_legend_outside
     ),
     RobustnessScenario(
         name="arrow_annotations_diagonal",

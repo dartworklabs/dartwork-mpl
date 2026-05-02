@@ -317,3 +317,45 @@ class TestAutoLayoutSymmetry:
             f"symmetry pass degraded right overflow: {post}"
         )
         plt.close(fig)
+
+
+class TestMeasureOverflowLegend:
+    """Regression: _measure_overflow must include legend bbox so
+    auto_layout can pad for legends positioned outside axes via
+    bbox_to_anchor."""
+
+    def test_legend_outside_axes_detected(self) -> None:
+        import dartwork_mpl as dm
+
+        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        for i in range(20):
+            ax.plot([0, 1], [i, i + 1], label=f"S{i:02d}")
+        ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", fontsize=8)
+        ax.set_ylabel("Y")
+        overflow = _measure_overflow(fig)
+        assert overflow["right"] > 5.0, (
+            f"legend outside axes should contribute right overflow; "
+            f"got {overflow}"
+        )
+        plt.close(fig)
+
+    def test_no_legend_no_extra_overflow(self) -> None:
+        import dartwork_mpl as dm
+
+        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        ax.plot([1, 2, 3])
+        ax.set_ylabel("Y")
+        overflow = _measure_overflow(fig)
+        assert all(v == 0.0 for v in overflow.values()), overflow
+        plt.close(fig)
+
+    def test_legend_inside_axes_no_overflow(self) -> None:
+        import dartwork_mpl as dm
+
+        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        ax.plot([1, 2, 3], label="A")
+        ax.legend(loc="best")
+        ax.set_ylabel("Y")
+        overflow = _measure_overflow(fig)
+        assert all(v == 0.0 for v in overflow.values()), overflow
+        plt.close(fig)
