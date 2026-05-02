@@ -45,6 +45,12 @@ class RobustnessScenario:
     auto_layout_max_iter
         Iteration cap for auto_layout. Most scenarios accept the
         default (5); pathological annotations may need more.
+    auto_layout_padding
+        Initial padding (inches) passed to ``dm.auto_layout``. Most
+        scenarios accept the default 0.08. Scenarios with
+        axes-fraction-positioned spines or other content that fills
+        the canvas tightly may need a larger value (e.g. 0.25) so the
+        iteration converges with a 4 px white-border invariant.
     """
 
     name: str
@@ -53,6 +59,7 @@ class RobustnessScenario:
     forbid_warnings: tuple[str, ...] = ("OVERFLOW",)
     pixel_checks: tuple[str, ...] = ("assert_minimum_white_border",)
     auto_layout_max_iter: int = 5
+    auto_layout_padding: float | tuple[float, float, float, float] = 0.08
 
 
 # Scenarios still wrapped with pytest.mark.xfail(strict=True) because
@@ -103,16 +110,6 @@ KNOWN_LIMITATIONS: tuple[tuple[str, str, str], ...] = (
         "crowded_legend_outside",
         "bbox_to_anchor=(1.02, 1) places the legend outside the axes; "
         "auto_layout doesn't expand the right margin to accommodate it.",
-        "follow-up issue (TBD)",
-    ),
-    (
-        "triple_twinx_offset_spine",
-        "Third axis at axes-fraction 1.15 with an 8-char ylabel "
-        "('Series C') sits ~2 px from the canvas right edge after "
-        "auto_layout. The fixed point is independent of max_iter "
-        "(verified up to 50). Future fix: BUFFER scaling for "
-        "axes-fraction-positioned spines proportional to "
-        "(fraction - 1.0) plus the offset axis ylabel/tick footprint.",
         "follow-up issue (TBD)",
     ),
 )
@@ -793,26 +790,17 @@ SCENARIOS: list[RobustnessScenario] = [
         forbid_warnings=(),
         pixel_checks=(),
     ),
-    pytest.param(
-        RobustnessScenario(
-            name="triple_twinx_offset_spine",
-            build=_build_triple_twinx_offset_spine,
-            # The offset spine pushes ax3's ylabel ~15% past the axes
-            # right edge — auto_layout must absorb it without leaving
-            # OVERFLOW behind.
-            auto_layout_max_iter=8,
-        ),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason=(
-                "axes-fraction 1.15 right spine ylabel ('Series C') "
-                "cannot be absorbed by auto_layout — even at max_iter=50 "
-                "the rightmost rendered pixel sits ~2px from the canvas "
-                "edge (CLIPPED_TEXT margin: -1.5px). auto_layout BUFFER "
-                "scaling for axes-fraction-positioned spines needs a "
-                "follow-up tweak (KNOWN_LIMITATIONS)."
-            ),
-        ),
+    RobustnessScenario(
+        name="triple_twinx_offset_spine",
+        build=_build_triple_twinx_offset_spine,
+        # The offset spine pushes ax3's ylabel ~15% past the axes
+        # right edge. We start auto_layout with extra horizontal
+        # padding so simple_layout's first iteration already gives
+        # the offset ylabel room — convergence then satisfies the
+        # 4 px white-border invariant without relying on the per-
+        # iteration BUFFER scaling reaching the necessary depth.
+        auto_layout_padding=0.25,
+        auto_layout_max_iter=8,
     ),
     # C. Margin / layout corner cases
     RobustnessScenario(

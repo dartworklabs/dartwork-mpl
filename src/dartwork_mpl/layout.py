@@ -418,15 +418,46 @@ def auto_layout(
             # subplots_adjust before auto_layout) are centred without
             # expanding the canvas. Runs only on convergence so we don't
             # mask a genuine layout failure.
+            #
+            # Conditional revert: figures whose content structurally
+            # needs an asymmetric margin (e.g. an offset spine via
+            # ``ax.spines["right"].set_position(("axes", 1.15))``) would
+            # have their structurally-needed right margin shrunk back to
+            # the average and re-introduce overflow. Re-measure post-
+            # symmetry; if any side now exceeds tolerance, restore the
+            # pre-symmetry margins so the convergence isn't degraded.
             avg_h = (margins[0] + margins[1]) / 2
             avg_v = (margins[2] + margins[3]) / 2
             if abs(margins[0] - avg_h) > 1e-6 or abs(margins[2] - avg_v) > 1e-6:
+                pre_margins = list(margins)
+                pre_overflow = dict(overflow)
                 margins[0] = avg_h
                 margins[1] = avg_h
                 margins[2] = avg_v
                 margins[3] = avg_v
                 simple_layout(fig, margins=tuple(margins))  # type: ignore[arg-type]
-                if verbose:
+                post_overflow = _measure_overflow(fig)
+                # Revert if symmetry pass either pushed any side over
+                # tolerance OR degraded any side relative to the pre-
+                # symmetry overflow. The latter catches structurally
+                # asymmetric figures (e.g. offset spines) whose
+                # converged margins are within tolerance but cannot be
+                # symmetrised without re-introducing overflow.
+                degraded = any(
+                    post_overflow[side] > pre_overflow[side] + 1e-6
+                    for side in post_overflow
+                )
+                if max(post_overflow.values()) > tolerance or degraded:
+                    # Symmetry pass degraded overflow — revert.
+                    margins = pre_margins
+                    simple_layout(fig, margins=tuple(margins))  # type: ignore[arg-type]
+                    if verbose:
+                        print(
+                            f"[auto_layout] symmetry pass reverted "
+                            f"(pre={pre_overflow}, post={post_overflow}, "
+                            f"tolerance={tolerance})"
+                        )
+                elif verbose:
                     print(
                         f"[auto_layout] symmetry pass applied: "
                         f"avg_h={avg_h:.3f}, avg_v={avg_v:.3f}"
