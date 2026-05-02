@@ -55,6 +55,65 @@ class RobustnessScenario:
     auto_layout_max_iter: int = 5
 
 
+# Scenarios still wrapped with pytest.mark.xfail(strict=True) because
+# the underlying library limitation hasn't been resolved yet. Each
+# entry is a (scenario_name, reason, tracking_owner) tuple. Lift the
+# xfail when the reason is fixed and verify the scenario now passes.
+KNOWN_LIMITATIONS: tuple[tuple[str, str, str], ...] = (
+    (
+        "long_xtick_labels_45_rotation",
+        "OVERFLOW persists after auto_layout for 25-char rotated x-tick "
+        "labels; the rotation increases tick footprint beyond what the "
+        "BUFFER scaling (Task 10) can absorb. Future fix: a layout pass "
+        "that detects rotated tick labels and pre-allocates the rotated "
+        "footprint instead of iterating overflow.",
+        "follow-up issue (TBD)",
+    ),
+    (
+        "long_xtick_labels_90_rotation",
+        "Same root cause as 45_rotation but more severe at 90 degrees.",
+        "follow-up issue (TBD)",
+    ),
+    (
+        "long_ytick_labels_horizontal_bar",
+        "Long left-side ytick labels on horizontal bar chart overflow "
+        "the canvas; auto_layout's per-iteration BUFFER doesn't grow "
+        "fast enough for 25-char labels.",
+        "follow-up issue (TBD)",
+    ),
+    (
+        "scientific_notation_yticks",
+        "log-scale y-axis exponent labels (1e-9 ... 1e9) produce a tall "
+        "footprint that auto_layout doesn't fully accommodate.",
+        "follow-up issue (TBD)",
+    ),
+    (
+        "outside_axes_annotation",
+        "Axes-fraction xytext at (-0.4, 0.5) escapes the canvas; "
+        "auto_layout's iterative margin expansion can't reach the "
+        "necessary padding within max_iter.",
+        "follow-up issue (TBD)",
+    ),
+    (
+        "axes_fraction_text_below_zero",
+        "ax.text at y=-0.25 axes-fraction overflows the bottom edge.",
+        "follow-up issue (TBD)",
+    ),
+    (
+        "colorbar_below_axes",
+        "Horizontal colorbar shifts the figure into the top edge after "
+        "auto_layout. Likely needs a colorbar-aware layout pass.",
+        "follow-up issue (TBD)",
+    ),
+    (
+        "crowded_legend_outside",
+        "bbox_to_anchor=(1.02, 1) places the legend outside the axes; "
+        "auto_layout doesn't expand the right margin to accommodate it.",
+        "follow-up issue (TBD)",
+    ),
+)
+
+
 # ───────────────────────────────────────────────────────
 # A. Tick label stress
 # ───────────────────────────────────────────────────────
