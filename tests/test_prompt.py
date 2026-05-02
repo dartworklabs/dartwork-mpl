@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
 import pytest
 
 from dartwork_mpl.prompt import (
+    _CANONICAL_PROMPTS,
     copy_prompt,
     get_prompt,
     list_prompts,
@@ -18,12 +20,16 @@ class TestPromptPath:
     """Tests for prompt_path()."""
 
     def test_existing_prompt(self) -> None:
-        p = prompt_path("general-guide")
+        p = prompt_path("00-index")
         assert p.exists()
         assert p.suffix == ".md"
 
-    def test_layout_guide_exists(self) -> None:
-        p = prompt_path("layout-guide")
+    def test_policy_exists(self) -> None:
+        p = prompt_path("01-policy")
+        assert p.exists()
+
+    def test_recipes_exists(self) -> None:
+        p = prompt_path("03-recipes")
         assert p.exists()
 
     def test_nonexistent_raises(self) -> None:
@@ -35,7 +41,7 @@ class TestGetPrompt:
     """Tests for get_prompt()."""
 
     def test_returns_string(self) -> None:
-        content = get_prompt("general-guide")
+        content = get_prompt("00-index")
         assert isinstance(content, str)
         assert len(content) > 0
 
@@ -51,77 +57,89 @@ class TestListPrompts:
         result = list_prompts()
         assert isinstance(result, list)
 
-    def test_contains_known_prompts(self) -> None:
+    def test_contains_canonical_prompts(self) -> None:
         result = list_prompts()
-        assert "general-guide" in result
-        assert "layout-guide" in result
+        for name in _CANONICAL_PROMPTS:
+            assert name in result, (
+                f"canonical prompt {name!r} missing from list_prompts()"
+            )
 
     def test_sorted(self) -> None:
         result = list_prompts()
         assert result == sorted(result)
+
+    def test_canonical_only_after_t5_cleanup(self) -> None:
+        """Post-T5 the prompt corpus is exactly the canonical set —
+        no ``coding-rules`` / ``general-guide`` / ``layout-guide``
+        stubs and no ``_legacy/`` directory."""
+        result = list_prompts()
+        assert set(result) == _CANONICAL_PROMPTS, (
+            f"unexpected prompt files: {set(result) - _CANONICAL_PROMPTS}"
+        )
+
+    def test_legacy_stubs_removed(self) -> None:
+        """The redirect stubs deleted in T5 must stay deleted."""
+        for name in ("coding-rules", "general-guide", "layout-guide"):
+            with pytest.raises(ValueError, match="not found"):
+                prompt_path(name)
+
+
+class TestDriftGuard:
+    """T5 contract: ``list_prompts`` warns when the corpus drifts from
+    the declared canonical set."""
+
+    def test_no_warning_on_clean_corpus(self) -> None:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")  # any warning becomes a failure
+            list_prompts()
+
+    def test_warning_when_unexpected_file_appears(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        """Stage a fake corpus directory containing the canonical set
+        plus one rogue file; confirm ``list_prompts`` emits a
+        ``UserWarning`` that names the unexpected entry."""
+        fake_corpus = tmp_path / "asset" / "prompt"
+        fake_corpus.mkdir(parents=True)
+        for name in _CANONICAL_PROMPTS:
+            (fake_corpus / f"{name}.md").write_text("stub")
+        (fake_corpus / "leaked-old-doc.md").write_text("stale")
+
+        from dartwork_mpl import prompt as prompt_mod
+
+        monkeypatch.setattr(prompt_mod, "_PROMPT_DIR", fake_corpus)
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            list_prompts()
+
+        messages = [str(w.message) for w in caught if w.category is UserWarning]
+        assert any("Unexpected" in m for m in messages), (
+            f"expected drift warning, got: {messages}"
+        )
+        assert any("leaked-old-doc" in m for m in messages)
 
 
 class TestCopyPrompt:
     """Tests for copy_prompt()."""
 
     def test_copy_to_directory(self, tmp_path: Path) -> None:
-        result = copy_prompt("general-guide", tmp_path)
+        result = copy_prompt("00-index", tmp_path)
         assert result.exists()
-        assert result.name == "general-guide.md"
-        assert result.read_text(encoding="utf-8") == get_prompt("general-guide")
+        assert result.name == "00-index.md"
+        assert result.read_text(encoding="utf-8") == get_prompt("00-index")
 
     def test_copy_to_file_path(self, tmp_path: Path) -> None:
         dest = tmp_path / "my_prompt.md"
-        result = copy_prompt("general-guide", dest)
+        result = copy_prompt("00-index", dest)
         assert result == dest
         assert result.exists()
 
     def test_creates_parent_directories(self, tmp_path: Path) -> None:
         dest = tmp_path / "nested" / "dir" / "prompt.md"
-        result = copy_prompt("general-guide", dest)
+        result = copy_prompt("00-index", dest)
         assert result.exists()
 
     def test_nonexistent_prompt_raises(self, tmp_path: Path) -> None:
         with pytest.raises(ValueError):
             copy_prompt("nonexistent_xyzzy", tmp_path)
-
-
-class TestDeprecatedGuideStubs:
-    """The 0.3 prompt files (``coding-rules``, ``general-guide``,
-    ``layout-guide``) were retired in 0.4. They MUST now be short
-    redirect stubs that point readers at the 0.4 SSOT, not stale
-    0.3 content (which would mislead an agent)."""
-
-    @pytest.mark.parametrize(
-        "name", ["coding-rules", "general-guide", "layout-guide"]
-    )
-    def test_stub_is_short(self, name: str) -> None:
-        body = get_prompt(name)
-        # Stale 0.3 files were 460 - 1180 lines. The redirect stubs are
-        # well under 100 lines; pick a generous ceiling.
-        assert body.count("\n") < 100, (
-            f"{name}.md is too long to be a redirect stub "
-            f"({body.count(chr(10))} lines); legacy 0.3 content may have "
-            "leaked back in."
-        )
-
-    @pytest.mark.parametrize(
-        "name", ["coding-rules", "general-guide", "layout-guide"]
-    )
-    def test_stub_points_at_new_ssot(self, name: str) -> None:
-        body = get_prompt(name)
-        # Each stub must mention the 0.4 SSOT files so callers can
-        # follow the redirect manually.
-        assert "00-index.md" in body, (
-            f"{name}.md should redirect to 00-index.md"
-        )
-        assert "01-policy.md" in body, f"{name}.md should mention 01-policy.md"
-
-    @pytest.mark.parametrize(
-        "name", ["coding-rules", "general-guide", "layout-guide"]
-    )
-    def test_stub_marks_as_deprecated(self, name: str) -> None:
-        body = get_prompt(name)
-        assert "DEPRECATED" in body or "Deprecated" in body, (
-            f"{name}.md must keep its deprecation notice"
-        )
