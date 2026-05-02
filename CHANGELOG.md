@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Robustness test suite** under `tests/robustness/` exercising 44
+  scenarios (long tick labels, twinx/twiny, NaN/Inf data, datetime
+  axes, log/symlog scales, GridSpec colorbars, pie/donut labels, 한글
+  fonts, etc.). Each scenario asserts (a) `validate_figure` outcome,
+  (b) `auto_layout` convergence, (c) saved-PNG pixel-level invariants
+  via a new `tests/robustness/pixel_assertions.py` helper module.
+- **`CLIPPED_TEXT` validation check** that fires when any visible Text
+  artist sits within 1 px of the figure canvas edge. Complements
+  `OVERFLOW`'s 2 px artist-tree check with a tighter pixel-coverage
+  rule, plus fix suggestions in `validate_fixes.get_fix_suggestions`.
+
+### Fixed
+- `_check_overflow` no longer produces spurious warnings when a
+  `Line2D` is backed by NaN-only data or a `Text` artist has a
+  zero-area window extent (e.g. `fontsize=0` label).
+- `auto_layout`'s per-iteration margin increment is now scaled by 1.5x
+  on the overflowing side, accelerating convergence for tall rotated
+  and datetime tick footprints.
+- `auto_layout` runs a final symmetry pass that averages horizontal
+  and vertical margin pairs so asymmetrically-squeezed figures
+  (e.g. user called `subplots_adjust` before `auto_layout`) are
+  centred without expanding the canvas.
+- `rotate_tick_labels` now mutates existing Text artists in place via
+  per-label `.set_rotation` / `.set_horizontalalignment`, eliminating
+  the matplotlib `set_ticklabels()` UserWarning that previously fired
+  on non-FixedLocator axes (e.g. CategoricalLocator from `ax.bar`).
+
 ### Changed (CI strictness)
 
 - **`mypy --strict` is now the default mypy mode** in `pyproject.toml`
