@@ -151,3 +151,84 @@ class TestRotateTickLabelsAlignment:
             warnings.simplefilter("error", UserWarning)
             dm.rotate_tick_labels(ax, axis="x", rotation=45)
         plt.close(fig)
+
+
+class TestFormatAxisSiBoundaries:
+    """Boundary-value tests for ``format_axis_si``.
+
+    The formatter is expected to:
+    - Switch SI prefix at exactly 1e3, 1e6, 1e9, 1e12.
+    - Honour ``decimals`` for both magnitude and the zero-tick label.
+    - Carry the sign for negative values.
+    """
+
+    @pytest.mark.parametrize(
+        "value,decimals,expected",
+        [
+            (999, 1, "999.0"),
+            (1000, 1, "1.0k"),
+            (999_999, 1, "1000.0k"),
+            (1_000_000, 1, "1.0M"),
+            (1_000_000_000, 1, "1.0G"),
+            (1_000_000_000_000, 1, "1.0T"),
+            (-1_500_000_000, 1, "-1.5G"),
+            (-1500, 0, "-2k"),
+        ],
+    )
+    def test_magnitude_and_sign(
+        self, value: float, decimals: int, expected: str
+    ) -> None:
+        fig, ax = _axes()
+        dm.format_axis_si(ax, axis="y", decimals=decimals)
+        formatter = ax.yaxis.get_major_formatter()
+        # FuncFormatter's call signature is (value, pos).
+        assert formatter(value, 0) == expected
+        plt.close(fig)
+
+    def test_zero_respects_decimals(self) -> None:
+        """``format_axis_si(ax, decimals=2)`` must format the zero
+        tick as ``"0.00"`` so it visually aligns with neighbouring
+        ticks like ``"1.50k"``. The pre-fix implementation returned
+        the literal string ``"0"``."""
+        fig, ax = _axes()
+        dm.format_axis_si(ax, axis="y", decimals=2)
+        formatter = ax.yaxis.get_major_formatter()
+        assert formatter(0, 0) == "0.00"
+        plt.close(fig)
+
+
+class TestFormatAxisCurrencyMultibyte:
+    """``format_axis_currency`` must accept multibyte Unicode currency
+    symbols (₩, €, ¥) without UnicodeEncodeError on PNG save and the
+    rendered tick label must literally contain the symbol."""
+
+    @pytest.mark.parametrize(
+        "symbol,position,expected_substring",
+        [
+            ("₩", "prefix", "₩1,000"),
+            ("€", "suffix", "1,000€"),
+            ("¥", "prefix", "¥1,000"),
+        ],
+    )
+    def test_symbol_renders_in_tick_label(
+        self,
+        symbol: str,
+        position: str,
+        expected_substring: str,
+        tmp_path,
+    ) -> None:
+        fig, ax = _axes()
+        ax.plot([0, 1, 2], [500, 1000, 1500])
+        dm.format_axis_currency(
+            ax, axis="y", symbol=symbol, position=position
+        )
+        formatter = ax.yaxis.get_major_formatter()
+        assert formatter(1000, 0) == expected_substring
+
+        # PNG round-trip must not raise UnicodeEncodeError on the
+        # backend's text rendering path.
+        out_path = tmp_path / f"currency_{ord(symbol):x}.png"
+        fig.savefig(out_path)
+        assert out_path.exists()
+        assert out_path.stat().st_size > 1024
+        plt.close(fig)

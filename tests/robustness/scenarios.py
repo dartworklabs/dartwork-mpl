@@ -105,6 +105,16 @@ KNOWN_LIMITATIONS: tuple[tuple[str, str, str], ...] = (
         "auto_layout doesn't expand the right margin to accommodate it.",
         "follow-up issue (TBD)",
     ),
+    (
+        "triple_twinx_offset_spine",
+        "Third axis at axes-fraction 1.15 with an 8-char ylabel "
+        "('Series C') sits ~2 px from the canvas right edge after "
+        "auto_layout. The fixed point is independent of max_iter "
+        "(verified up to 50). Future fix: BUFFER scaling for "
+        "axes-fraction-positioned spines proportional to "
+        "(fraction - 1.0) plus the offset axis ylabel/tick footprint.",
+        "follow-up issue (TBD)",
+    ),
 )
 
 
@@ -253,6 +263,40 @@ def _build_triple_axis_parasite() -> Figure:
     host.set_ylabel("A")
     par1.set_ylabel("B")
     par2.set_ylabel("C (millions)")
+    return fig
+
+
+def _build_triple_twinx_offset_spine() -> Figure:
+    """Three y-axes via two consecutive ``ax.twinx()`` calls plus
+    spine offset at axes-fraction 1.15 for the third axis. Verifies
+    that the dartwork ``twinx`` monkey-patch (which forces the right
+    spine visible) still works on the *third* axis when its right
+    spine is repositioned via ``set_position``.
+
+    This guards against a regression where the patch only kicked in
+    for the second axis (the immediate twin) and left the third
+    axis's right spine invisible after the position change."""
+    fig, ax1 = dm.subplots(width="14cm", aspect="standard")
+    ax1.plot([1, 2, 3, 4], [1, 4, 9, 16], color="#1f77b4")
+    ax1.set_ylabel("Series A")
+
+    ax2 = ax1.twinx()
+    ax2.plot([1, 2, 3, 4], [10, 20, 30, 40], color="#ff7f0e")
+    ax2.set_ylabel("Series B")
+
+    ax3 = ax1.twinx()
+    ax3.spines["right"].set_position(("axes", 1.15))
+    ax3.plot([1, 2, 3, 4], [100, 200, 150, 250], color="#2ca02c")
+    ax3.set_ylabel("Series C")
+
+    # All three right spines must end up visible (the monkey-patch
+    # in dartwork_mpl/__init__.py runs on every twinx() call).
+    assert ax2.spines["right"].get_visible(), (
+        "ax2 right spine should be visible after twinx() monkey-patch"
+    )
+    assert ax3.spines["right"].get_visible(), (
+        "ax3 right spine should be visible after twinx() monkey-patch"
+    )
     return fig
 
 
@@ -506,6 +550,46 @@ def _build_colorbar_attached_heatmap() -> Figure:
     return fig
 
 
+def _build_subfigures_2x1() -> Figure:
+    """Two subfigures stacked vertically, each with its own axes,
+    title-text, and ylabel.
+
+    matplotlib's ``fig.subfigures()`` partitions a parent figure into
+    independent SubFigure children, each with its own GridSpec. This
+    scenario verifies that ``dm.validate_figure`` and
+    ``dm.auto_layout`` do not crash or report spurious warnings on
+    the SubFigure tree, which uses a different artist hierarchy from
+    plain ``plt.subplots``.
+    """
+    fig = dm.figure(width="14cm", aspect="standard")
+    sub_top, sub_bot = fig.subfigures(2, 1, hspace=0.05)
+
+    ax_top = sub_top.subplots()
+    ax_top.plot([1, 2, 3, 4], [1, 4, 9, 16])
+    ax_top.set_ylabel("Top axis (units)")
+
+    ax_bot = sub_bot.subplots()
+    ax_bot.bar(["A", "B", "C"], [3, 7, 5])
+    ax_bot.set_ylabel("Bottom axis (count)")
+
+    return fig
+
+
+def _build_constrained_layout_then_auto_layout() -> Figure:
+    """A figure constructed with ``constrained_layout=True`` that the
+    suite then re-flows via ``auto_layout``. The expectation is that
+    auto_layout is a no-op (constrained-layout already balanced the
+    margins) and the figure saves cleanly. Verifies dartwork-mpl
+    plays nicely with matplotlib's other layout engine."""
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(5.5, 3.5), constrained_layout=True)
+    ax.plot([1, 2, 3, 4], [4, 1, 5, 2])
+    ax.set_ylabel("Value (units)")
+    ax.set_xlabel("Index")
+    return fig
+
+
 # ───────────────────────────────────────────────────────
 # H. Style / font
 # ───────────────────────────────────────────────────────
@@ -709,6 +793,27 @@ SCENARIOS: list[RobustnessScenario] = [
         forbid_warnings=(),
         pixel_checks=(),
     ),
+    pytest.param(
+        RobustnessScenario(
+            name="triple_twinx_offset_spine",
+            build=_build_triple_twinx_offset_spine,
+            # The offset spine pushes ax3's ylabel ~15% past the axes
+            # right edge — auto_layout must absorb it without leaving
+            # OVERFLOW behind.
+            auto_layout_max_iter=8,
+        ),
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason=(
+                "axes-fraction 1.15 right spine ylabel ('Series C') "
+                "cannot be absorbed by auto_layout — even at max_iter=50 "
+                "the rightmost rendered pixel sits ~2px from the canvas "
+                "edge (CLIPPED_TEXT margin: -1.5px). auto_layout BUFFER "
+                "scaling for axes-fraction-positioned spines needs a "
+                "follow-up tweak (KNOWN_LIMITATIONS)."
+            ),
+        ),
+    ),
     # C. Margin / layout corner cases
     RobustnessScenario(
         name="extreme_left_squeeze",
@@ -839,6 +944,30 @@ SCENARIOS: list[RobustnessScenario] = [
         build=_build_colorbar_attached_heatmap,
         # Colorbar + heatmap causes content to reach the canvas edge
         # after auto_layout; the white-border invariant does not apply.
+        pixel_checks=(),
+    ),
+    RobustnessScenario(
+        name="subfigures_2x1",
+        build=_build_subfigures_2x1,
+        # auto_layout uses fig.axes[0].get_gridspec(); SubFigures wrap
+        # each child in its own GridSpec so the parent layout-engine's
+        # edge padding does not propagate into them. The scenario still
+        # verifies validate_figure, auto_layout, and PNG round-trip,
+        # but the global white-border invariant cannot hold here — same
+        # limitation pattern as `colorbar_attached_heatmap`.
+        forbid_warnings=("OVERFLOW",),
+        pixel_checks=(),
+    ),
+    RobustnessScenario(
+        name="constrained_layout_then_auto_layout",
+        build=_build_constrained_layout_then_auto_layout,
+        # constrained_layout owns the margins and packs content tighter
+        # to the figure edge than auto_layout's BUFFER would. The
+        # global white-border invariant doesn't hold when an alternate
+        # layout engine drove the original margins — same precedent as
+        # `colorbar_attached_heatmap` and `subfigures_2x1`. The
+        # scenario still verifies validate_figure, auto_layout
+        # idempotency, and the PNG round-trip.
         pixel_checks=(),
     ),
     # H. Style / font

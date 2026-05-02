@@ -94,3 +94,30 @@ class TestSaveAndShow:
         except Exception:
             # IPython display may not be available in CI
             pass
+
+
+class TestSaveFormatsNonAscii:
+    """Saving with a non-ASCII (Korean) filename stem must succeed on
+    macOS / Linux filesystems with UTF-8 path encoding (the default
+    on every CI runner this project supports)."""
+
+    def test_korean_filename_round_trip(self, tmp_path) -> None:
+        import dartwork_mpl as dm
+
+        fig, ax = dm.subplots(width="9cm", aspect="standard")
+        ax.plot([1, 2, 3], [1, 4, 9])
+        ax.set_ylabel("값")
+        ax.set_xlabel("순번")
+
+        # The stem contains hangul + a wonsign → both bytes are >= 0x80
+        # and exercise the same UTF-8 paths matplotlib uses for save.
+        stem = str(tmp_path / "한글_차트_₩")
+        dm.save_formats(fig, stem, formats=("png", "pdf"), validate=False)
+
+        png_path = Path(f"{stem}.png")
+        pdf_path = Path(f"{stem}.pdf")
+        assert png_path.exists(), "PNG not written for non-ASCII stem"
+        assert pdf_path.exists(), "PDF not written for non-ASCII stem"
+        assert png_path.stat().st_size > 1024
+        assert pdf_path.stat().st_size > 1024
+        plt.close(fig)

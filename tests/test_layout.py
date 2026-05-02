@@ -200,6 +200,38 @@ class TestAutoLayoutEdgeCases:
         auto_layout(fig)
         plt.close(fig)
 
+    def test_constrained_layout_off_then_auto_layout_runs_normally(self) -> None:
+        """When ``constrained_layout`` is off (the dartwork default), a
+        plain ``auto_layout`` call must run to convergence on a chart
+        with reasonable labels."""
+        # Vanilla matplotlib `figsize=` is used here (not `dm.subplots`)
+        # to probe the constrained_layout coexistence contract directly
+        # — the goal is to verify auto_layout's behaviour on a figure
+        # built without dartwork's width/aspect API.
+        fig, ax = plt.subplots(figsize=(6, 4), constrained_layout=False)
+        ax.plot([1, 2, 3])
+        ax.set_ylabel("Value")
+        ax.set_xlabel("Index")
+        auto_layout(fig)
+        overflow = _measure_overflow(fig)
+        assert max(overflow.values()) <= 2.0
+
+    def test_constrained_layout_on_then_auto_layout_no_crash(self) -> None:
+        """``constrained_layout=True`` and ``auto_layout`` are normally
+        mutually exclusive (constrained-layout owns the margins). The
+        dartwork contract is: ``auto_layout`` may not crash when both
+        are active, even if it has nothing to optimize. It must return
+        cleanly and leave the figure in a renderable state."""
+        fig, ax = plt.subplots(figsize=(6, 4), constrained_layout=True)
+        ax.plot([1, 2, 3])
+        ax.set_ylabel("Value")
+        ax.set_xlabel("Index")
+        # Must not raise.
+        auto_layout(fig)
+        # The figure must still render without error.
+        fig.canvas.draw()
+        plt.close(fig)
+
 
 class TestAutoLayoutDatetime:
     """Regressions for datetime-tick figures."""

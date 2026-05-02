@@ -258,7 +258,7 @@ def format_axis_si(
             Formatted string with SI prefix (k, M, G, T)
         """
         if x == 0:
-            return "0"
+            return f"{0:.{decimals}f}"
 
         abs_x = abs(x)
         sign = "-" if x < 0 else ""

@@ -18,6 +18,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   artist sits within 1 px of the figure canvas edge. Complements
   `OVERFLOW`'s 2 px artist-tree check with a tighter pixel-coverage
   rule, plus fix suggestions in `validate_fixes.get_fix_suggestions`.
+- **Robustness extras** — three new scenarios in
+  `tests/robustness/scenarios.py`: `subfigures_2x1` (matplotlib
+  SubFigure container), `constrained_layout_then_auto_layout`
+  (constrained-layout × auto-layout coexistence), and
+  `triple_twinx_offset_spine` (third y-axis at axes-fraction 1.15
+  with offset spine, currently `xfail(strict=True)` and tracked in
+  `KNOWN_LIMITATIONS` until the BUFFER scaling for axes-fraction
+  spines is improved).
+- **14-preset round-trip matrix** — new `tests/test_preset_matrix.py`
+  applies every preset registered in `presets.json`, builds a clean
+  chart, saves PNG+PDF, and asserts validate-clean output for each.
+- **`format_axis_si` boundary regression tests** — magnitude / sign
+  / decimals coverage for the SI-prefix ladder (1e3, 1e6, 1e9, 1e12)
+  in `tests/test_formatting.py`.
+- **Multibyte currency symbol tests** — ₩ / € / ¥ exercised
+  end-to-end through `format_axis_currency` and PNG save.
+- **Non-ASCII filename test** — `dm.save_formats(fig, "한글_차트_₩")`
+  round-trip in `tests/test_io.py`.
+- **Constrained-layout coexistence tests** — two new methods on
+  `tests/test_layout.py::TestAutoLayoutEdgeCases` confirming
+  `auto_layout` does not crash when called on a figure built with
+  `constrained_layout=True`.
 
 ### Fixed
 - `_check_overflow` no longer produces spurious warnings when a
@@ -34,14 +56,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   per-label `.set_rotation` / `.set_horizontalalignment`, eliminating
   the matplotlib `set_ticklabels()` UserWarning that previously fired
   on non-FixedLocator axes (e.g. CategoricalLocator from `ax.bar`).
+- `format_axis_si` now honours `decimals` for the zero tick: with
+  `decimals=2` the zero tick formats as `"0.00"` (previously the
+  literal `"0"` regardless of `decimals`, which produced misaligned
+  tick label widths next to non-zero values like `"1.50k"`).
 
-  Note: these source-level fixes are defensive hardening. The 7
-  scenarios still wrapped in `pytest.mark.xfail(strict=True)` represent
-  separate library limitations (mostly `auto_layout` failing to absorb
-  the footprint of long rotated tick labels, axes-fraction annotations
-  that escape the canvas, and colorbar overshoot) — see
-  `tests/robustness/scenarios.KNOWN_LIMITATIONS` for the per-scenario
-  tracking notes.
+  Note: these source-level fixes are defensive hardening. Scenarios
+  still wrapped in `pytest.mark.xfail(strict=True)` represent separate
+  library limitations (mostly `auto_layout` failing to absorb the
+  footprint of long rotated tick labels, axes-fraction annotations
+  that escape the canvas, axes-fraction-positioned right spines, and
+  colorbar overshoot) — see `tests/robustness/scenarios.KNOWN_LIMITATIONS`
+  for the per-scenario tracking notes.
 
 ### Changed (CI strictness)
 
