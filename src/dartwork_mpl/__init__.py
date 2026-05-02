@@ -85,7 +85,13 @@ from .layout import (
 )
 
 # Prompt utilities
-from .prompt import copy_prompt, get_prompt, list_prompts, prompt_path
+from .prompt import (
+    copy_prompt,
+    find_template,
+    get_prompt,
+    list_prompts,
+    prompt_path,
+)
 
 # --- Explicit imports from split modules (formerly in util.py) ---
 # Scaling helpers
@@ -237,6 +243,7 @@ __all__ = [  # noqa: RUF022
     "get_prompt",
     "list_prompts",
     "copy_prompt",
+    "find_template",
     # Validation
     "validate_figure",
     "validate_with_fixes",

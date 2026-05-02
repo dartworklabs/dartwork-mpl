@@ -8,6 +8,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/line.py`` ·
 ``dm.get_prompt("05-templates/line")`` · MCP ``dartwork-mpl://templates/line``.
 """
 
+# ai-template-meta-start
+# use_case: Show a continuous trend over an ordered x axis
+# difficulty: beginner
+# data_shape: x: list[float], y: list[float]
+# tags: line, trend, time-series, continuous
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm

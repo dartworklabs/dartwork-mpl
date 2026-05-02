@@ -9,6 +9,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/scatter.py`` ·
 ``dartwork-mpl://templates/scatter``.
 """
 
+# ai-template-meta-start
+# use_case: Show the relationship between two numeric variables
+# difficulty: beginner
+# data_shape: x: list[float], y: list[float]
+# tags: scatter, correlation, 2d, relationship
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm

@@ -8,6 +8,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/pie.py`` ·
 ``dm.get_prompt("05-templates/pie")`` · MCP ``dartwork-mpl://templates/pie``.
 """
 
+# ai-template-meta-start
+# use_case: Show shares of a small whole
+# difficulty: beginner
+# data_shape: labels: list[str], sizes: list[float]
+# tags: pie, share, composition, proportion
+# ai-template-meta-end
+
 import dartwork_mpl as dm
 
 labels = ["A", "B", "C", "D"]

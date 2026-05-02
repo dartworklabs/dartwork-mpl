@@ -9,6 +9,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/bar_grouped.py`` ·
 ``dartwork-mpl://templates/bar_grouped``.
 """
 
+# ai-template-meta-start
+# use_case: Compare multiple series across the same categories
+# difficulty: intermediate
+# data_shape: categories: list[str], series: dict[str, list[float]]
+# tags: bar, grouped, multi-series, comparison
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm

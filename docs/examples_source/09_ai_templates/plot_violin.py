@@ -9,6 +9,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/violin.py`` ·
 ``dartwork-mpl://templates/violin``.
 """
 
+# ai-template-meta-start
+# use_case: Show the density of multiple numeric groups
+# difficulty: intermediate
+# data_shape: groups: dict[str, list[float]]
+# tags: distribution, density, violin
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm

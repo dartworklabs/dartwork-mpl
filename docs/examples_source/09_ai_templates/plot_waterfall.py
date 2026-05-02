@@ -9,6 +9,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/waterfall.py`` ·
 ``dartwork-mpl://templates/waterfall``.
 """
 
+# ai-template-meta-start
+# use_case: Show successive additive contributions to a total
+# difficulty: advanced
+# data_shape: labels: list[str], deltas: list[float]
+# tags: waterfall, bridge, finance, additive
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm

@@ -1,0 +1,215 @@
+{
+  "3d": {
+    "data_shape": "x, y, z arrays (2D for surface, 1D for scatter)",
+    "difficulty": "advanced",
+    "source_path": "docs/examples_source/09_ai_templates/plot_3d.py",
+    "tags": [
+      "3d",
+      "surface",
+      "scatter",
+      "depth"
+    ],
+    "use_case": "Show a 3D surface or scatter to communicate depth"
+  },
+  "bar": {
+    "data_shape": "categories: list[str], values: list[float]",
+    "difficulty": "beginner",
+    "source_path": "docs/examples_source/09_ai_templates/plot_bar.py",
+    "tags": [
+      "bar",
+      "categorical",
+      "comparison"
+    ],
+    "use_case": "Compare a small set of categorical values"
+  },
+  "bar_grouped": {
+    "data_shape": "categories: list[str], series: dict[str, list[float]]",
+    "difficulty": "intermediate",
+    "source_path": "docs/examples_source/09_ai_templates/plot_bar_grouped.py",
+    "tags": [
+      "bar",
+      "grouped",
+      "multi-series",
+      "comparison"
+    ],
+    "use_case": "Compare multiple series across the same categories"
+  },
+  "bar_horizontal": {
+    "data_shape": "categories: list[str], values: list[float]",
+    "difficulty": "beginner",
+    "source_path": "docs/examples_source/09_ai_templates/plot_bar_horizontal.py",
+    "tags": [
+      "bar",
+      "horizontal",
+      "ranking"
+    ],
+    "use_case": "Compare categories when labels are long or ranked"
+  },
+  "boxplot": {
+    "data_shape": "groups: dict[str, list[float]]",
+    "difficulty": "intermediate",
+    "source_path": "docs/examples_source/09_ai_templates/plot_boxplot.py",
+    "tags": [
+      "distribution",
+      "boxplot",
+      "statistics",
+      "summary"
+    ],
+    "use_case": "Summarise the distribution of a few numeric groups"
+  },
+  "contour": {
+    "data_shape": "x: 1D array, y: 1D array, z: 2D array",
+    "difficulty": "advanced",
+    "source_path": "docs/examples_source/09_ai_templates/plot_contour.py",
+    "tags": [
+      "contour",
+      "2d-scalar",
+      "gridded",
+      "isolines"
+    ],
+    "use_case": "Show a 2D scalar field as level curves"
+  },
+  "heatmap": {
+    "data_shape": "matrix: 2D array",
+    "difficulty": "beginner",
+    "source_path": "docs/examples_source/09_ai_templates/plot_heatmap.py",
+    "tags": [
+      "heatmap",
+      "matrix",
+      "correlation",
+      "image"
+    ],
+    "use_case": "Show a 2D matrix with color-coded magnitude"
+  },
+  "histogram": {
+    "data_shape": "values: list[float]",
+    "difficulty": "beginner",
+    "source_path": "docs/examples_source/09_ai_templates/plot_histogram.py",
+    "tags": [
+      "distribution",
+      "histogram",
+      "frequency"
+    ],
+    "use_case": "Show the distribution of a single numeric sample"
+  },
+  "line": {
+    "data_shape": "x: list[float], y: list[float]",
+    "difficulty": "beginner",
+    "source_path": "docs/examples_source/09_ai_templates/plot_line.py",
+    "tags": [
+      "line",
+      "trend",
+      "time-series",
+      "continuous"
+    ],
+    "use_case": "Show a continuous trend over an ordered x axis"
+  },
+  "pie": {
+    "data_shape": "labels: list[str], sizes: list[float]",
+    "difficulty": "beginner",
+    "source_path": "docs/examples_source/09_ai_templates/plot_pie.py",
+    "tags": [
+      "pie",
+      "share",
+      "composition",
+      "proportion"
+    ],
+    "use_case": "Show shares of a small whole"
+  },
+  "polar": {
+    "data_shape": "theta: list[float], r: list[float]",
+    "difficulty": "intermediate",
+    "source_path": "docs/examples_source/09_ai_templates/plot_polar.py",
+    "tags": [
+      "polar",
+      "radial",
+      "angular",
+      "compass"
+    ],
+    "use_case": "Show angular or radial data on a polar plot"
+  },
+  "scatter": {
+    "data_shape": "x: list[float], y: list[float]",
+    "difficulty": "beginner",
+    "source_path": "docs/examples_source/09_ai_templates/plot_scatter.py",
+    "tags": [
+      "scatter",
+      "correlation",
+      "2d",
+      "relationship"
+    ],
+    "use_case": "Show the relationship between two numeric variables"
+  },
+  "small_multiples": {
+    "data_shape": "panels: list[dict] (one entry per panel)",
+    "difficulty": "intermediate",
+    "source_path": "docs/examples_source/09_ai_templates/plot_small_multiples.py",
+    "tags": [
+      "grid",
+      "panels",
+      "facet",
+      "comparison",
+      "small-multiples"
+    ],
+    "use_case": "Repeat the same chart across a grid for comparison"
+  },
+  "stacked_bar": {
+    "data_shape": "categories: list[str], series: dict[str, list[float]]",
+    "difficulty": "intermediate",
+    "source_path": "docs/examples_source/09_ai_templates/plot_stacked_bar.py",
+    "tags": [
+      "bar",
+      "stacked",
+      "composition",
+      "share"
+    ],
+    "use_case": "Show parts-of-whole composition across categories"
+  },
+  "tornado": {
+    "data_shape": "labels: list[str], lows: list[float], highs: list[float]",
+    "difficulty": "intermediate",
+    "source_path": "docs/examples_source/09_ai_templates/plot_tornado.py",
+    "tags": [
+      "tornado",
+      "sensitivity",
+      "deviation",
+      "horizontal"
+    ],
+    "use_case": "Show signed deviations from a baseline (sensitivity)"
+  },
+  "twin_axis": {
+    "data_shape": "x: list[float], y_left: list[float], y_right: list[float]",
+    "difficulty": "intermediate",
+    "source_path": "docs/examples_source/09_ai_templates/plot_twin_axis.py",
+    "tags": [
+      "dual-axis",
+      "twin-axis",
+      "twinx",
+      "multi-unit"
+    ],
+    "use_case": "Show two series with different units on a shared x"
+  },
+  "violin": {
+    "data_shape": "groups: dict[str, list[float]]",
+    "difficulty": "intermediate",
+    "source_path": "docs/examples_source/09_ai_templates/plot_violin.py",
+    "tags": [
+      "distribution",
+      "density",
+      "violin"
+    ],
+    "use_case": "Show the density of multiple numeric groups"
+  },
+  "waterfall": {
+    "data_shape": "labels: list[str], deltas: list[float]",
+    "difficulty": "advanced",
+    "source_path": "docs/examples_source/09_ai_templates/plot_waterfall.py",
+    "tags": [
+      "waterfall",
+      "bridge",
+      "finance",
+      "additive"
+    ],
+    "use_case": "Show successive additive contributions to a total"
+  }
+}

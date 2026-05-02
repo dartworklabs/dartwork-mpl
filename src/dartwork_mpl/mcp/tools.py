@@ -237,6 +237,34 @@ def register_tools(mcp: FastMCP) -> None:
         ]
 
     @mcp.tool()
+    def find_template(intent: str, top_k: int = 5) -> list[dict[str, Any]]:
+        """Rank the bundled AI plot templates against a free-text intent.
+
+        Thin MCP wrapper over :func:`dartwork_mpl.prompt.find_template`.
+        Each template ships with a metadata block (use_case, difficulty,
+        data_shape, tags) generated into
+        ``asset/prompt/05-templates/_index.json`` at build time. The
+        function tokenises ``intent`` and counts how many tokens appear
+        in each template's metadata text.
+
+        Parameters
+        ----------
+        intent : str
+            Free-text plot goal, e.g. ``"horizontal bar comparison"``.
+        top_k : int, optional
+            Maximum number of matches to return, by default 5.
+
+        Returns
+        -------
+        list[dict]
+            ``{"template_id", "score", **metadata}`` per match. Empty
+            list when ``intent`` is blank or no template overlaps.
+        """
+        from dartwork_mpl.prompt import find_template as _find_template
+
+        return _find_template(intent, top_k=top_k)
+
+    @mcp.tool()
     def migrate_legacy_code(code: str) -> str:
         """Rewrite 0.3-era dartwork-mpl source toward the 0.4 idioms.
 
@@ -447,6 +475,7 @@ def register_tools(mcp: FastMCP) -> None:
                     "lint_dartwork_mpl_code",
                     "lint_dartwork_mpl_code_json",
                     "migrate_legacy_code",
+                    "find_template",
                     "validate_plot_data",
                     "dartwork_mpl_info",
                 ],

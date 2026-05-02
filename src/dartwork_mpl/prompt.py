@@ -6,8 +6,15 @@ the prompt guide Markdown files bundled with the dartwork package.
 
 from __future__ import annotations
 
-__all__ = ["copy_prompt", "get_prompt", "list_prompts", "prompt_path"]
+__all__ = [
+    "copy_prompt",
+    "find_template",
+    "get_prompt",
+    "list_prompts",
+    "prompt_path",
+]
 
+import json
 import warnings
 from pathlib import Path
 from shutil import copy2
@@ -100,6 +107,63 @@ def list_prompts() -> list[str]:
             stacklevel=2,
         )
     return found
+
+
+_TEMPLATE_INDEX_PATH: Path = (
+    _PROMPT_DIR / "05-templates" / "_index.json"
+)
+
+
+def find_template(
+    intent: str, top_k: int = 5
+) -> list[dict[str, object]]:
+    """Rank the bundled AI plot templates against a free-text intent.
+
+    Mirrors the MCP ``find_template`` tool so the same ranking is
+    reachable natively from Python without the MCP server. Each
+    template's metadata text (``use_case`` + ``data_shape`` +
+    ``difficulty`` + ``tags``) is scanned for occurrences of every
+    whitespace-separated lowercase token in ``intent``; the count of
+    matched tokens is the score.
+
+    Parameters
+    ----------
+    intent : str
+        Free-text description, e.g. ``"horizontal bar comparison"``.
+    top_k : int, optional
+        Maximum number of matches to return, by default 5.
+
+    Returns
+    -------
+    list[dict]
+        Each match is ``{"template_id", "score", **metadata}``.
+        Empty list when ``intent`` is blank or no template overlaps.
+    """
+    if not _TEMPLATE_INDEX_PATH.exists():
+        return []
+    index = json.loads(_TEMPLATE_INDEX_PATH.read_text(encoding="utf-8"))
+
+    tokens = [t for t in intent.lower().split() if t]
+    if not tokens:
+        return []
+
+    scored: list[tuple[int, str, dict[str, object]]] = []
+    for template_id, meta in index.items():
+        haystack = " ".join([
+            str(meta.get("use_case", "")),
+            str(meta.get("data_shape", "")),
+            str(meta.get("difficulty", "")),
+            " ".join(meta.get("tags", [])),
+        ]).lower()
+        score = sum(1 for t in tokens if t in haystack)
+        if score > 0:
+            scored.append((score, template_id, meta))
+
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    return [
+        {"template_id": template_id, "score": score, **meta}
+        for score, template_id, meta in scored[:top_k]
+    ]
 
 
 def copy_prompt(name: str, destination: str | Path) -> Path:
