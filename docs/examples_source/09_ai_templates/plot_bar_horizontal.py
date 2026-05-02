@@ -9,6 +9,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/bar_horizontal.py`` ·
 ``dartwork-mpl://templates/bar_horizontal``.
 """
 
+# ai-template-meta-start
+# use_case: Compare categories when labels are long or ranked
+# difficulty: beginner
+# data_shape: categories: list[str], values: list[float]
+# tags: bar, horizontal, ranking
+# ai-template-meta-end
+
 import dartwork_mpl as dm
 
 categories = [

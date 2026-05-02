@@ -4,8 +4,11 @@ Extracted from conf.py for maintainability. Handles:
 - Gallery index generation (manual indices after sphinx-gallery)
 - Color system asset generation
 - Font file copying for HTML specimens
+- AI plot-template metadata index (T6 in the AI-readiness roadmap)
 """
 
+import json
+import re
 from pathlib import Path
 
 _GALLERY_HEADER = """Examples Gallery
@@ -139,6 +142,138 @@ def generate_llms_full_txt(app):
     out = repo_root / "llms-full.txt"
     out.write_text("".join(parts), encoding="utf-8")
     print(f"Wrote concatenated agent reference: {out.relative_to(repo_root)}")
+
+
+# ---------------------------------------------------------------------------
+# AI plot-template metadata index (T6 in the AI-readiness roadmap).
+#
+# Each ``docs/examples_source/09_ai_templates/plot_*.py`` carries a
+# fenced metadata block:
+#
+#     # ai-template-meta-start
+#     # use_case: <one-sentence purpose>
+#     # difficulty: beginner | intermediate | advanced
+#     # data_shape: <inputs the agent needs>
+#     # tags: comma, separated, keywords
+#     # ai-template-meta-end
+#
+# This hook concatenates every block into a single
+# ``05-templates/_index.json`` so MCP and docs-fetching agents can rank
+# templates by intent. A missing or incomplete block fails the build,
+# which keeps the metadata catalog from drifting silently.
+# ---------------------------------------------------------------------------
+
+_TEMPLATE_META_RE: re.Pattern[str] = re.compile(
+    r"# ai-template-meta-start\s*\n((?:#[^\n]*\n)+?)# ai-template-meta-end",
+    re.MULTILINE,
+)
+_TEMPLATE_META_REQUIRED: frozenset[str] = frozenset({
+    "use_case",
+    "difficulty",
+    "data_shape",
+    "tags",
+})
+_TEMPLATE_DIFFICULTY_VALUES: frozenset[str] = frozenset({
+    "beginner",
+    "intermediate",
+    "advanced",
+})
+
+
+def _parse_template_meta(block_body: str, source: str) -> dict[str, object]:
+    """Parse an ``ai-template-meta`` comment block into a dict.
+
+    Each line inside the fence has the shape ``# key: value``. The
+    ``tags`` value is split on commas; everything else stays a string.
+    """
+    fields: dict[str, object] = {}
+    for line in block_body.splitlines():
+        body = line.lstrip("#").rstrip()
+        if not body.strip():
+            continue
+        # Allow ``data_shape`` to legitimately contain colons (e.g.
+        # ``data_shape: x: list[float], y: list[float]``), so split on
+        # the *first* colon only.
+        if ":" not in body:
+            continue
+        key_part, _, value_part = body.partition(":")
+        key = key_part.strip()
+        value = value_part.strip()
+        if key == "tags":
+            fields[key] = [t.strip() for t in value.split(",") if t.strip()]
+        else:
+            fields[key] = value
+
+    missing = _TEMPLATE_META_REQUIRED - fields.keys()
+    if missing:
+        raise ValueError(
+            f"{source}: ai-template-meta missing required keys: "
+            f"{sorted(missing)}"
+        )
+    diff = fields["difficulty"]
+    if diff not in _TEMPLATE_DIFFICULTY_VALUES:
+        raise ValueError(
+            f"{source}: difficulty {diff!r} not in "
+            f"{sorted(_TEMPLATE_DIFFICULTY_VALUES)}"
+        )
+    return fields
+
+
+def generate_template_index(app):
+    """Build ``05-templates/_index.json`` from the gallery metadata blocks.
+
+    Runs every Sphinx build. Fails the build if any
+    ``09_ai_templates/plot_*.py`` lacks a complete metadata block, so
+    drift is caught immediately rather than silently shipping a stale
+    or partial index.
+    """
+    repo_root = Path(app.srcdir).parent
+    template_dir = (
+        repo_root / "docs" / "examples_source" / "09_ai_templates"
+    )
+    if not template_dir.exists():
+        return
+
+    index: dict[str, dict[str, object]] = {}
+    missing: list[str] = []
+    for path in sorted(template_dir.glob("plot_*.py")):
+        text = path.read_text(encoding="utf-8")
+        match = _TEMPLATE_META_RE.search(text)
+        if not match:
+            missing.append(path.name)
+            continue
+        meta = _parse_template_meta(
+            match.group(1), source=str(path.relative_to(repo_root))
+        )
+        template_id = path.stem.removeprefix("plot_")
+        meta["source_path"] = str(path.relative_to(repo_root))
+        index[template_id] = meta
+
+    if missing:
+        raise FileNotFoundError(
+            "ai-template-meta block missing in: "
+            f"{missing}. Add the fenced block immediately after the "
+            "module docstring."
+        )
+
+    out = (
+        repo_root
+        / "src"
+        / "dartwork_mpl"
+        / "asset"
+        / "prompt"
+        / "05-templates"
+        / "_index.json"
+    )
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(
+        json.dumps(index, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    print(
+        f"Wrote AI template index ({len(index)} entries): "
+        f"{out.relative_to(repo_root)}"
+    )
 
 
 def copy_fonts_to_static(app):

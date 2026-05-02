@@ -9,6 +9,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/boxplot.py`` ·
 ``dartwork-mpl://templates/boxplot``.
 """
 
+# ai-template-meta-start
+# use_case: Summarise the distribution of a few numeric groups
+# difficulty: intermediate
+# data_shape: groups: dict[str, list[float]]
+# tags: distribution, boxplot, statistics, summary
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm

@@ -9,6 +9,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/heatmap.py`` ·
 ``dartwork-mpl://templates/heatmap``.
 """
 
+# ai-template-meta-start
+# use_case: Show a 2D matrix with color-coded magnitude
+# difficulty: beginner
+# data_shape: matrix: 2D array
+# tags: heatmap, matrix, correlation, image
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm

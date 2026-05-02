@@ -9,6 +9,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/contour.py`` ·
 ``dartwork-mpl://templates/contour``.
 """
 
+# ai-template-meta-start
+# use_case: Show a 2D scalar field as level curves
+# difficulty: advanced
+# data_shape: x: 1D array, y: 1D array, z: 2D array
+# tags: contour, 2d-scalar, gridded, isolines
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm

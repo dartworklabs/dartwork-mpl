@@ -9,6 +9,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/tornado.py`` ·
 ``dartwork-mpl://templates/tornado``.
 """
 
+# ai-template-meta-start
+# use_case: Show signed deviations from a baseline (sensitivity)
+# difficulty: intermediate
+# data_shape: labels: list[str], lows: list[float], highs: list[float]
+# tags: tornado, sensitivity, deviation, horizontal
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm

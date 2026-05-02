@@ -319,6 +319,7 @@ Callable functions the AI assistant can invoke during a conversation.
 | `lint_dartwork_mpl_code(code)`              | Analyze Python code for dartwork-mpl best practices and antipatterns            |
 | `lint_dartwork_mpl_code_json(code)`         | Same as above, returning structured JSON for programmatic consumption           |
 | `migrate_legacy_code(code)`                 | Rewrite 0.3-era source toward 0.4 idioms (safe substitutions + TODO hints)      |
+| `find_template(intent, top_k)`              | Rank the 18 bundled AI plot templates against a free-text intent                |
 | `validate_plot_data(plot_type, data_json)`  | Validate whether a data structure matches a plot type's requirements            |
 | `dartwork_mpl_info()`                       | Get a structured summary of all capabilities, presets, and templates            |
 

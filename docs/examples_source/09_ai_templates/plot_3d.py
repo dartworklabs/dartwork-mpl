@@ -9,6 +9,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/plot_3d.py`` ·
 ``dartwork-mpl://templates/plot_3d``.
 """
 
+# ai-template-meta-start
+# use_case: Show a 3D surface or scatter to communicate depth
+# difficulty: advanced
+# data_shape: x, y, z arrays (2D for surface, 1D for scatter)
+# tags: 3d, surface, scatter, depth
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm

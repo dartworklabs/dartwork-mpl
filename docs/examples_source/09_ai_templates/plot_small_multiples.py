@@ -9,6 +9,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/small_multiples.py`` ·
 ``dartwork-mpl://templates/small_multiples``.
 """
 
+# ai-template-meta-start
+# use_case: Repeat the same chart across a grid for comparison
+# difficulty: intermediate
+# data_shape: panels: list[dict] (one entry per panel)
+# tags: grid, panels, facet, comparison, small-multiples
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm

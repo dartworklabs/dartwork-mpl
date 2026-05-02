@@ -9,6 +9,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/twin_axis.py`` ·
 ``dartwork-mpl://templates/twin_axis``.
 """
 
+# ai-template-meta-start
+# use_case: Show two series with different units on a shared x
+# difficulty: intermediate
+# data_shape: x: list[float], y_left: list[float], y_right: list[float]
+# tags: dual-axis, twin-axis, twinx, multi-unit
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm

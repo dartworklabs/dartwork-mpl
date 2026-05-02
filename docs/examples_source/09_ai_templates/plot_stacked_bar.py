@@ -9,6 +9,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/stacked_bar.py`` ·
 ``dartwork-mpl://templates/stacked_bar``.
 """
 
+# ai-template-meta-start
+# use_case: Show parts-of-whole composition across categories
+# difficulty: intermediate
+# data_shape: categories: list[str], series: dict[str, list[float]]
+# tags: bar, stacked, composition, share
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm

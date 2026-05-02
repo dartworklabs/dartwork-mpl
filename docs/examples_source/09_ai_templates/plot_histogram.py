@@ -9,6 +9,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/histogram.py`` ·
 ``dartwork-mpl://templates/histogram``.
 """
 
+# ai-template-meta-start
+# use_case: Show the distribution of a single numeric sample
+# difficulty: beginner
+# data_shape: values: list[float]
+# tags: distribution, histogram, frequency
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm

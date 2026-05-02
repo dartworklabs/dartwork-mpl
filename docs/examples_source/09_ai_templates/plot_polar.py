@@ -8,6 +8,13 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/polar.py`` ·
 ``dm.get_prompt("05-templates/polar")`` · MCP ``dartwork-mpl://templates/polar``.
 """
 
+# ai-template-meta-start
+# use_case: Show angular or radial data on a polar plot
+# difficulty: intermediate
+# data_shape: theta: list[float], r: list[float]
+# tags: polar, radial, angular, compass
+# ai-template-meta-end
+
 import numpy as np
 
 import dartwork_mpl as dm
