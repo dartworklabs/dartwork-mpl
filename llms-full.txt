@@ -1,0 +1,1026 @@
+# dartwork-mpl — full agent reference (llms-full.txt)
+
+This file is auto-generated at build time from the canonical sources
+listed below. Do **not** hand-edit; edit the upstream files and rebuild
+the docs (`uv run sphinx-build -b html docs docs/_build/html`).
+
+Companions:
+
+- `CLAUDE.md` / `AGENTS.md` — 30-second onboarding for agents.
+- `llms.txt` — link index following the llmstxt.org spec.
+
+
+---
+## Quickstart
+# Quick Start
+
+A minimal end-to-end workflow: apply a style, create a figure, and
+export it. Skim this in five minutes — you'll already know enough to
+ship a publication-grade plot.
+
+:::{tip}
+A **live ruler** below this section maps `dm.fs(n)` / `dm.fw(n)` / `dm.lw(n)`
+to actual point sizes and stroke widths under each preset — drag the sliders
+to read off the resolved values without leaving the docs.
+:::
+
+## At-a-glance ROI
+
+| What used to hurt                   | dartwork-mpl                                    |
+| ----------------------------------- | ----------------------------------------------- |
+| Hand-tuning `figsize` and `dpi`     | `dm.subplots(width="13cm", aspect="standard")`  |
+| `tight_layout` clipping labels      | `dm.auto_layout(fig)` — real optimizer          |
+| Reaching for hex codes              | `color="oc.blue5"` (Open Color), `"tw.*"`, `"md.*"`, `"ad.*"`, `"cu.*"`, `"pr.*"` |
+| Saving in 3 formats                 | `dm.save_formats(fig, "out", formats=("png", "svg", "pdf"))` |
+| Catching margin / overflow problems | `dm.validate_with_fixes(fig)`                   |
+
+Here's a typical matplotlib figure, then the same figure with dartwork-mpl:
+
+::::{tab-set}
+
+:::{tab-item} ✨ With dartwork-mpl
+
+```python
+import dartwork_mpl as dm
+import numpy as np
+
+dm.style.use("scientific")  # curated fonts, colors, line weights
+
+# width = physical figure width, aspect = height/width ratio
+fig, ax = dm.subplots(width="15cm", aspect="wide")
+
+x = np.linspace(0, 10, 200)
+ax.plot(x, np.sin(x), color="oc.blue5", label="signal", lw=dm.lw(1.5))
+ax.set_xticks(np.arange(0, 11, 2))
+ax.set_xlabel("Time [s]")
+ax.set_ylabel("Amplitude")
+ax.legend()
+
+dm.auto_layout(fig)             # auto-optimize margins
+dm.save_and_show(fig, "first")  # save + inline preview
+```
+
+:::
+
+:::{tab-item} 🔧 Vanilla matplotlib
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+
+fig, ax = plt.subplots(figsize=(5.91, 3.94), dpi=300)
+
+x = np.linspace(0, 10, 200)
+ax.plot(x, np.sin(x), color="#1c7ed6", label="signal", lw=1.5)
+ax.set_xticks(np.arange(0, 11, 2))
+ax.set_xlabel("Time [s]", fontsize=7.5)
+ax.set_ylabel("Amplitude", fontsize=7.5)
+ax.legend(fontsize=6.5)
+
+fig.tight_layout()
+fig.savefig("output.png", dpi=300, bbox_inches="tight")
+plt.show()
+```
+
+:::
+
+::::
+
+:::{figure} images/quickstart_first_figure.svg
+:alt: Scientific-style line chart created with dartwork-mpl
+:width: 100%
+
+The same chart rendered with `dm.style.use("scientific")` and
+`dm.subplots(width=…, aspect=…)` — professional typography,
+optimized margins, and named colors.
+:::
+
+**Drag the slider to compare — same data, different styling:**
+
+```{raw} html
+:file: images/compare_slider.html
+```
+
+Same data, same plotting logic — the difference is one `dm.style.use()`
+call, the `width` / `aspect` API on `dm.subplots`, named colors, and
+`auto_layout`.
+
+**What each dartwork-mpl call does:**
+
+| Call                                 | Purpose                                                                            |
+| ------------------------------------ | ---------------------------------------------------------------------------------- |
+| `dm.style.use("scientific")`         | Sets palette, fonts, line weights — see [Styles](styles.md)                        |
+| `dm.subplots(width=…, aspect=…)`     | Physical width plus an aspect token; height is derived. No `figsize`, no `dpi`.    |
+| `dm.fs(0)`                           | Returns the base font size of the active preset (`fs(2)` = base + 2 pt, and so on) |
+| `dm.auto_layout(fig)`                | Auto-optimizes margins (replaces `tight_layout`)                                   |
+| `dm.save_and_show(fig, "first")`     | Saves multi-format and previews inline in the notebook                             |
+
+## Creating Figures with `width` / `aspect`
+
+`dm.subplots()` and `dm.figure()` are the only sanctioned entry points
+for creating figures. They take a physical `width` plus an `aspect`
+token — height is derived from those two, so `figsize` never appears
+in your code.
+
+```python
+# Physical width with an aspect token (default aspect="standard" = 3/4)
+fig, ax = dm.subplots(width="13cm")
+fig, ax = dm.subplots(width="15cm", aspect="wide")
+fig, ax = dm.subplots(width=dm.cm(11.3), aspect="square")
+
+# Stack a style preset alongside the geometry
+fig, ax = dm.subplots(width="13cm", aspect="wide", style="scientific")
+fig, axes = dm.subplots(2, 2, width="17cm", aspect="standard",
+                        style=["font-report", "theme-dark"])
+
+# Academic-column shortcuts
+fig, ax = dm.subplots(width=dm.col1, aspect="golden")  # 9 cm
+fig, ax = dm.subplots(width=dm.col2, aspect="cinema")  # 17 cm
+```
+
+**Width** accepts:
+
+- A unit-suffixed string: `"13cm"`, `"9.5cm"`, `"6.7in"`, `"170mm"`
+- A helper call: `dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`
+- A raw number: `13` (interpreted as cm)
+- The sugar constants `dm.col1` (9 cm) and `dm.col2` (17 cm)
+
+**Aspect** is one of `square` (1.0), `portrait` (5/4), `standard` (3/4),
+`golden` (1/1.618), `wide` (2/3), `cinema` (1/2), or any positive float.
+
+:::{note}
+`figsize=` and `dpi=` on `dm.subplots` / `dm.figure` are deprecated and
+emit a lint warning. The 0.3-era resize policy was replaced in 0.4 with
+free-form `width` (any of cm/in/mm) plus the lint consistency guard
+described in [`asset/prompt/01-policy.md`](https://github.com/dartworklabs/dartwork-mpl/blob/main/src/dartwork_mpl/asset/prompt/01-policy.md).
+:::
+
+**Multi-panel figures:**
+
+```python
+fig, axes = dm.subplots(
+    2, 2,
+    width="17cm",
+    aspect="standard",
+    width_ratios=[2, 1],
+    height_ratios=[1, 2],
+)
+
+for ax in axes.flat:
+    ax.plot(np.random.randn(100))
+
+dm.auto_layout(fig)
+```
+
+## Adding color
+
+dartwork-mpl registers named colors from several design systems. Use them
+anywhere matplotlib accepts a color string:
+
+```python
+# Named color prefixes
+ax.plot(x, y, color="oc.blue5")                    # OpenColor
+ax.fill_between(x, y1, y2, color="tw.emerald200")  # Tailwind
+ax.bar(categories, values, color="md.red500")      # Material Design
+```
+
+**Discover what's available without leaving Python:**
+
+```python
+import dartwork_mpl as dm
+
+dm.list_palettes()[:5]   # → ['ad.blue', 'ad.cyan', 'ad.geekblue', ...]
+dm.show_palette("oc.blue")  # renders the 9-shade swatch row in Jupyter
+dm.plot_colors(ncols=4)     # full library overview, one figure per system
+```
+
+See [Colors and Colormaps](colors.md) for the full palette reference,
+or open the [interactive palette explorer](../color_system/colors.md)
+to click-and-copy color names from your browser.
+
+## Multi-panel layout
+
+```python
+import dartwork_mpl as dm
+import numpy as np
+
+dm.style.use("presentation")
+
+x = np.linspace(0, 10, 100)
+fig = dm.figure(width="15cm", aspect="wide")
+gs = fig.add_gridspec(1, 2, wspace=0.3)
+ax1 = fig.add_subplot(gs[0])
+ax2 = fig.add_subplot(gs[1])
+
+ax1.plot(x, np.sin(x), color="oc.red5")
+ax2.plot(x, np.cos(x), color="oc.blue5")
+
+dm.label_axes([ax1, ax2])  # adds (a), (b) panel labels
+dm.simple_layout(fig, gs=gs)
+```
+
+:::{figure} images/quickstart_multi_panel.svg
+:alt: Two-panel layout with label_axes showing sin and cos
+:width: 100%
+:::
+
+## Saving in multiple formats
+
+```python
+dm.save_formats(
+    fig,
+    "output/my_figure",
+    formats=("png", "svg", "pdf"),
+    dpi=300,
+    validate=True,  # auto-check for overflow, overlap, etc.
+)
+```
+
+## Catch problems before you export
+
+`validate=True` above runs the same checks as the standalone
+`validate_with_fixes` helper, which can also patch the easy issues
+in-place:
+
+```python
+result = dm.validate_with_fixes(fig)
+print(result.report())     # human-readable summary of warnings
+# margin_asymmetry → auto-fixed via dm.auto_layout()
+# pie_label_offset → auto-adjusted pctdistance
+```
+
+Use it in CI to fail a build when a figure breaks; use it locally to
+get a one-line health check before you `save_formats`.
+
+## Try the interactive UI
+
+If you'd rather see the effect of every parameter before committing
+it to code, dartwork-mpl ships a local web app that wires sliders to
+your render function and exports the resulting Python script:
+
+```bash
+# 1. scaffold a starter viewer (first time only)
+pip install "dartwork-mpl[ui]"
+dartwork-ui init ./my-viewer --example simple
+
+# 2. run it — opens http://127.0.0.1:8501
+cd my-viewer && python viewer.py
+```
+
+→ [Interactive UI guide](interactive.md)
+
+## Next steps
+
+::::{grid} 1 1 2 3
+:gutter: 2
+
+:::{grid-item-card} 🎨 Styles and Presets
+Choose the right preset for your use case — papers, reports, slides, posters.
+
+→ [Browse presets](styles.md)
+:::
+
+:::{grid-item-card} 🌈 Colors and Colormaps
+Explore 900+ named palettes and perceptual OKLCH interpolation.
+
+→ [See palettes](colors.md)
+:::
+
+:::{grid-item-card} 📐 Layout and Typography
+Panel labels, arrows, font scaling, and margin optimization.
+
+→ [Learn layout](layout.md)
+:::
+
+:::{grid-item-card} 💾 Save and Validation
+Multi-format export + automatic visual quality checks.
+
+→ [Export guide](save_export.md)
+:::
+
+:::{grid-item-card} 🛠️ Interactive UI
+Tune fonts, line weights, margins with sliders. Export the exact
+script that reproduces what you see.
+
+→ [Interactive UI](interactive.md)
+:::
+
+:::{grid-item-card} 🔬 Diagnostics & Templates
+`dm.plot_colors()` / `plot_colormaps()` / `plot_fonts()` for asset
+audit, plus ready-to-use plot templates like `plot_diverging_bar`.
+
+→ [Extras guide](extras.md)
+:::
+
+::::
+
+
+---
+## Migration (0.3 → 0.4)
+# Migration Guide
+
+This guide covers the rename / deprecation events that have shipped
+since v0.1, ordered newest first. Every legacy import path still
+works today but emits a `DeprecationWarning`. The 0.3 width tokens
+and `FS_*` figsize tuples are slated for removal in **0.5.0**; the
+older `agent_utils` / `xplot` / `helpers.formatting` /
+`asset_viz` shims will be removed in **v1.0**.
+
+## At a glance
+
+| Old surface                           | New surface                                | Deprecated since | Remove in |
+| ------------------------------------- | ------------------------------------------ | ---------------- | --------- |
+| `dm.SW`, `dm.MW`, `dm.TW`, `dm.DW`    | `width="9cm"` / `dm.col1` / `dm.col2`      | v0.4.0           | v0.5.0    |
+| `dm.WIDTHS`                           | iterate explicit widths                    | v0.4.0           | v0.5.0    |
+| `dm.FS_SINGLE` / `FS_DOUBLE` / etc.   | `dm.subplots(width=..., aspect=...)`       | v0.4.0           | v0.5.0    |
+| `dm.cm2in(...)`                       | `dm.cm(...)` (returns `Inches`)            | v0.4.0           | v0.5.0    |
+| `figsize=` argument                   | `width=` + `aspect=`                       | v0.4.0 (lint)    | v0.5.0    |
+| `plt.tight_layout()`                  | `dm.auto_layout(fig)`                      | v0.4.0 (lint)    | —         |
+| `dartwork_mpl.agent_utils`            | `dartwork_mpl.helpers`                     | v0.2.0           | v1.0.0    |
+| `dartwork_mpl.xplot`                  | `dartwork_mpl.templates`                   | v0.2.0           | v1.0.0    |
+| `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`              | v0.3.x           | v1.0.0    |
+| `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`                 | v0.3.x           | v1.0.0    |
+
+## v0.3.x → v0.4.0
+
+0.4 reshapes the figure-creation surface around two ideas:
+
+1. **Width is free-form.** Pass any unit-suffixed string
+   (`"13cm"`, `"6.7in"`, `"170mm"`), a helper call (`dm.cm(13)`,
+   `dm.inch(6.7)`, `dm.mm(170)`), or the academic-column sugar
+   `dm.col1` / `dm.col2`. The fixed 4-tier `SW`/`MW`/`TW`/`DW`
+   constants are deprecated.
+2. **Aspect is a height/width ratio**, separated from width. Six
+   named tokens cover the common cases; pass a positive float for
+   anything else.
+
+A new `dm.lint` module checks code against a 15-rule anti-pattern
+catalog so editor tooling, MCP clients, and CI all share the same
+ground truth.
+
+### Width tokens → `width="..."`
+
+```python
+# DEPRECATED — fires `width-token` lint warning
+fig, ax = plt.subplots(figsize=(dm.SW, dm.SW * 0.75))
+
+# 0.4 — width string, aspect token
+fig, ax = dm.subplots(width="9cm", aspect="standard")
+
+# 0.4 — academic column sugar
+fig, ax = dm.subplots(width=dm.col1, aspect="standard")
+```
+
+Same idea for the rest of the 4-tier ladder:
+
+| 0.3                       | 0.4 (preferred)                 |
+| ------------------------- | ------------------------------- |
+| `dm.SW` (≈ 9 cm)          | `width="9cm"` or `dm.col1`      |
+| `dm.MW` (≈ 12 cm)         | `width="12cm"`                  |
+| `dm.TW` (≈ 14.5 cm)       | `width="14.5cm"` (or `"15cm"`)  |
+| `dm.DW` (≈ 17 cm)         | `width="17cm"` or `dm.col2`     |
+| `dm.WIDTHS` (tuple)       | iterate explicit widths inline  |
+
+### `figsize=` → `width=` + `aspect=`
+
+`figsize=` is the most common 0.3 idiom and is the single biggest
+source of mismatched figures across a multi-figure report. The
+`figsize-direct` lint rule flags any remaining usage:
+
+```python
+# DEPRECATED — fires `figsize-direct` lint critical
+fig, ax = plt.subplots(figsize=(dm.cm2in(13), dm.cm2in(10)))
+
+# 0.4
+fig, ax = dm.subplots(width="13cm", aspect=10 / 13)
+```
+
+`FS_*` tuples follow the same path:
+
+```python
+# DEPRECATED — fires `width-token` lint warning
+fig, ax = plt.subplots(figsize=dm.FS_SINGLE)
+
+# 0.4
+fig, ax = dm.subplots(width="9cm", aspect="standard")
+```
+
+### Aspect tokens
+
+Aspect is **height ÷ width**. Six named tokens are recognised:
+
+| Token        | Ratio (h/w) | Typical use                     |
+| ------------ | ----------- | ------------------------------- |
+| `"square"`   | `1.0`       | scatter, correlation matrices   |
+| `"portrait"` | `5 / 4`     | tall multi-row dashboards       |
+| `"standard"` | `3 / 4`     | default: time series, bar/line  |
+| `"golden"`   | `1 / 1.618` | classic publication figures     |
+| `"wide"`     | `2 / 3`     | landscape charts, talks         |
+| `"cinema"`   | `1 / 2`     | very wide trend strips          |
+
+Or pass a positive float directly:
+
+```python
+fig, ax = dm.subplots(width="13cm", aspect=0.6)
+```
+
+`validate_figure` warns on extreme aspects (< 0.3 or > 4.0).
+
+### `plt.subplots` → `dm.subplots`
+
+```python
+# DEPRECATED — fires `plt-subplots-figsize` lint critical when
+# combined with a figsize= argument
+fig, axes = plt.subplots(2, 2, figsize=(dm.DW, dm.DW * 0.5))
+
+# 0.4
+fig, axes = dm.subplots(2, 2, width="17cm", aspect=0.5)
+```
+
+`dm.subplots` forwards everything else (`sharex`, `sharey`,
+`width_ratios`, `height_ratios`, `gridspec_kw`, `subplot_kw`,
+`squeeze`) straight through to matplotlib. The `style=` argument
+also still works, e.g. `dm.subplots(width="13cm", style="report-kr")`.
+
+### `tight_layout` → `auto_layout`
+
+```python
+# DEPRECATED — fires `tight-layout` lint critical
+plt.tight_layout()
+fig.tight_layout()
+
+# 0.4
+dm.auto_layout(fig)
+```
+
+`auto_layout` iteratively shrinks the axes box until no text
+overflows the canvas, so it survives long labels, multi-line
+titles, and twinx() right-spine cases that `tight_layout` mangles.
+`dm.simple_layout(fig)` still exists but is reserved for advanced
+GridSpec arrangements where `auto_layout` cannot solve the bbox.
+
+### `dm.cm2in` → `dm.cm`
+
+`cm2in(x)` converted cm to a plain `float`. `dm.cm(x)` returns an
+`Inches` value (a `float` subclass) that arithmetic preserves, so
+`dm.cm(9) * 2` stays in inches and round-trips through
+`parse_width` cleanly. `dm.inch(x)` and `dm.mm(x)` are the
+analogous helpers for the other two units.
+
+```python
+# DEPRECATED — emits DeprecationWarning
+inches = dm.cm2in(9)
+
+# 0.4
+inches = dm.cm(9)               # Inches(3.5433...)
+inches = dm.inch(3.5)           # Inches(3.5)
+inches = dm.mm(170)             # Inches(6.6929...)
+```
+
+### Module renames carried forward
+
+The earlier rename pairs (`agent_utils → helpers`,
+`xplot → templates`, `helpers.formatting → helpers.labels`,
+`asset_viz → diagnostics`) are still deprecated and continue to
+work in 0.4 with a `DeprecationWarning`. See the v0.1.x → v0.2.0
+and v0.3.x sections below for the canonical replacements.
+
+### "Zero-Resize Policy" wording is retired
+
+Pre-0.4 docs framed figure sizing as a "Zero-Resize Policy"
+enforced by the style preset. 0.4 replaces that with **free width
+input plus a lint consistency guard** (the `oversize-width` and
+`width-token` rules). Any project rule that still cites the
+"Zero-Resize Policy" should be rewritten in terms of `dm.subplots`
++ `dm.lint`.
+
+### New: `dm.lint`
+
+`dm.lint.lint(code)` runs the 15-rule anti-pattern catalog over a
+Python source string. It is the same engine the MCP
+`lint_dartwork_mpl_code` tool and `dartwork-mpl lint` CLI use, so
+your editor, your CI, and your AI assistant all see the same
+violations.
+
+```python
+import dartwork_mpl as dm
+
+source = """
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots(figsize=(6.7, 4.0))
+plt.tight_layout()
+"""
+
+issues = dm.lint.lint(source)
+for issue in issues:
+    print(issue.rule_id, issue.severity, issue.message)
+print(dm.lint.format_report(issues))
+```
+
+The full rule list (`figsize-direct`, `tight-layout`,
+`width-token`, `oversize-width`, `fontsize-literal`,
+`linewidth-literal`, `raw-hex-color`, `jet-cmap`, …) lives in
+`asset/prompt/02-anti-patterns.yaml` and is also reachable as the
+MCP resource `dartwork-mpl://guide/anti-patterns`.
+
+## v0.1.x → v0.2.0
+
+### `agent_utils` → `helpers`
+
+Renamed to make clear these are general-purpose utilities, not
+AI-agent-specific.
+
+```python
+# Old (deprecated — emits DeprecationWarning)
+from dartwork_mpl import agent_utils
+from dartwork_mpl.agent_utils.colors import auto_select_colors
+
+# New (recommended)
+from dartwork_mpl import helpers
+from dartwork_mpl.helpers.colors import auto_select_colors
+```
+
+### `xplot` → `templates`
+
+Renamed to better describe its purpose: a small, curated set of
+ready-to-use plot templates.
+
+```python
+# Old (deprecated)
+from dartwork_mpl.xplot import plot_diverging_bar
+import dartwork_mpl.xplot as xp
+
+# New
+from dartwork_mpl.templates import plot_diverging_bar
+import dartwork_mpl.templates as tpl
+
+# Or — preferred — top-level
+import dartwork_mpl as dm
+dm.plot_diverging_bar(...)
+```
+
+## v0.3.x
+
+### `helpers.formatting` → `helpers.labels`
+
+The `formatting` submodule of `helpers` was renamed to `labels` to
+remove a long-standing name clash with the top-level
+`dartwork_mpl.formatting` module (which houses the `format_axis_*`
+tick formatters). The contents (`format_axis_labels`, `optimize_legend`,
+`add_value_labels`) are unchanged.
+
+```python
+# Old (deprecated)
+from dartwork_mpl.helpers.formatting import format_axis_labels
+
+# New
+from dartwork_mpl.helpers.labels import format_axis_labels
+# Or via the namespace:
+import dartwork_mpl as dm
+dm.helpers.labels.format_axis_labels(...)
+```
+
+### `asset_viz` → `diagnostics`
+
+The four asset-inspection helpers (`classify_colormap`,
+`plot_colormaps`, `plot_colors`, `plot_fonts`) moved to a single
+top-level `dartwork_mpl.diagnostics` module. The old `asset_viz`
+subpackage is now a thin shim that re-exports the same four names.
+Behaviour is unchanged.
+
+```python
+# Old (deprecated)
+from dartwork_mpl.asset_viz import plot_colors, plot_fonts
+
+# New (canonical)
+from dartwork_mpl.diagnostics import plot_colors, plot_fonts
+
+# Best — top-level (was already supported, also unchanged)
+import dartwork_mpl as dm
+dm.plot_colors()
+dm.plot_fonts()
+```
+
+## Worth adopting
+
+These additions don't *require* migration but pay off if you bump
+into them:
+
+### `dm.subplots()` / `dm.figure()`
+
+Apply a style during figure creation, in one call:
+
+```python
+# Before
+dm.style.use("scientific")
+fig, ax = plt.subplots()
+
+# After
+fig, ax = dm.subplots(width="13cm", style="scientific")
+```
+
+Stack styles or override defaults inline:
+
+```python
+fig, axes = dm.subplots(
+    2, 2, width="17cm", aspect=0.5,
+    style=["font-libertine", "theme-dark"],
+)
+```
+
+### `dm.auto_layout(fig)`
+
+When `simple_layout` doesn't quite handle long labels or multi-line
+titles, call `auto_layout` instead — it iteratively shrinks the axes
+until no text overflows the canvas:
+
+```python
+dm.auto_layout(fig)              # automatic margin negotiation
+dm.simple_layout(fig)            # fast, fine for advanced GridSpec
+```
+
+### `dm.set_xmargin(ax)` / `dm.set_ymargin(ax)`
+
+Set data-side margins as a fraction of the visible range:
+
+```python
+dm.set_xmargin(ax, margin=0.1)   # 10 % padding on each side
+dm.set_ymargin(ax, margin=0.05)
+```
+
+### `dm.validate_with_fixes(fig)`
+
+A lightweight quality check that returns *and* fixes common figure
+issues (margin asymmetry, pie label cutoff, etc.):
+
+```python
+result = dm.validate_with_fixes(fig)
+print(result.report())
+```
+
+## Silencing legacy warnings
+
+If you can't migrate everything immediately:
+
+```python
+import warnings
+warnings.filterwarnings(
+    "ignore",
+    category=DeprecationWarning,
+    module="dartwork_mpl",
+)
+```
+
+For test runs, instead surface them so you don't lose track:
+
+```bash
+python -W default::DeprecationWarning -m pytest
+```
+
+## One-shot migration script
+
+For larger codebases, run this once to rewrite every deprecated
+import in-place. It covers the v0.2.0 / v0.3.x renames; the 0.3→0.4
+width token migration is intentionally left for a manual review
+because the right replacement (`dm.col1` vs `width="9cm"` vs an
+explicit `dm.subplots` rewrite) depends on the surrounding code:
+
+```python
+import re
+from pathlib import Path
+
+REPLACEMENTS = [
+    # Module-level renames
+    (r"\bdartwork_mpl\.agent_utils\b", "dartwork_mpl.helpers"),
+    (r"\bdartwork_mpl\.xplot\b", "dartwork_mpl.templates"),
+    (r"\bdartwork_mpl\.asset_viz\b", "dartwork_mpl.diagnostics"),
+    # Submodule rename
+    (
+        r"\bdartwork_mpl\.helpers\.formatting\b",
+        "dartwork_mpl.helpers.labels",
+    ),
+]
+
+
+def migrate(directory: str) -> None:
+    """Rewrite deprecated imports under *directory* in-place."""
+    for py in Path(directory).rglob("*.py"):
+        original = py.read_text()
+        updated = original
+        for pattern, replacement in REPLACEMENTS:
+            updated = re.sub(pattern, replacement, updated)
+        if updated != original:
+            py.write_text(updated)
+            print(f"updated: {py}")
+
+
+if __name__ == "__main__":
+    import sys
+
+    migrate(sys.argv[1] if len(sys.argv) > 1 else ".")
+```
+
+Save as `migrate_dartwork.py` and run `python migrate_dartwork.py` in
+your project root. Diff the result with version control, run your
+test suite, and commit.
+
+For the 0.4 width / aspect rewrite, run `dm.lint.lint(source)` on
+each file and walk the issues — every flagged line points at the
+specific replacement.
+
+## Sanity-check before upgrading to v0.5 / v1.0
+
+Once 0.5 lands, the 0.3 width tokens (`SW`, `MW`, `TW`, `DW`,
+`WIDTHS`, `FS_*`, `cm2in`) will be removed. v1.0 drops the older
+`agent_utils` / `xplot` / `helpers.formatting` / `asset_viz`
+shims as well. You can audit your project for them with:
+
+```bash
+grep -rE "(dartwork_mpl\.agent_utils|dartwork_mpl\.xplot|dartwork_mpl\.helpers\.formatting|dartwork_mpl\.asset_viz)" \
+     --include='*.py' .
+
+grep -rE "\bdm\.(SW|MW|TW|DW|WIDTHS|FS_[A-Z]+|cm2in)\b" \
+     --include='*.py' .
+```
+
+Anything that comes back is something the next breaking release
+will remove.
+
+## Best practices going forward
+
+1. **Use top-level imports when available.** `dm.simple_layout(fig)`
+   is shorter and survives any internal reorganization that keeps the
+   public API stable:
+
+   ```python
+   import dartwork_mpl as dm
+   dm.simple_layout(fig)
+   ```
+
+2. **Pin a range, not an exact version.** Patch and minor releases
+   shouldn't break you; majors will:
+
+   ```toml
+   # pyproject.toml
+   dependencies = ["dartwork-mpl>=0.4,<1.0"]
+   ```
+
+3. **Surface deprecation warnings in CI** — add
+   `-W default::DeprecationWarning` to the pytest invocation in your
+   CI workflow so you find legacy usage before the next breaking
+   release forces you to.
+
+4. **Run `dm.lint` in pre-commit.** A 15-rule scan catches the
+   common 0.3-isms (figsize, tight_layout, hex colors, jet cmap)
+   before they hit review.
+
+## Getting help
+
+- Detailed version notes:
+  [CHANGELOG](https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md)
+- Current API reference: [API documentation](api/index.rst)
+- Open an issue: [GitHub Issues](https://github.com/dartworklabs/dartwork-mpl/issues)
+
+
+---
+## Anti-pattern catalog (SSOT, YAML)
+# dartwork-mpl anti-pattern catalog (SSOT for lint engine).
+#
+# Each rule has:
+#   id          unique kebab-case identifier
+#   severity    critical | warning | info
+#   detector
+#     kind      regex | substring
+#     pattern   regex pattern (Python re, MULTILINE) for kind=regex
+#     literal   literal substring (case-sensitive) for kind=substring
+#   message     short user-facing text shown in the lint report
+#   why         (optional) longer rationale; shown only on demand
+#   fix_suggestion  (optional) one-line replacement or pointer
+#
+# Rule IDs are part of the public API: tools, docs, and tests refer
+# to them. Do not rename without bumping the dartwork-mpl version.
+
+version: 1
+rules:
+  - id: figsize-direct
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\bfigsize\s*=\s*\('
+    message: |
+      `figsize=` is forbidden. Use `dm.subplots(width="13cm", aspect="wide")`
+      with width as cm/in/mm string or `dm.cm(...)`.
+    why: |
+      Width and aspect are decided separately so chart-wide width
+      consistency can be enforced and so the height follows from the
+      content's aspect intent.
+    fix_suggestion: 'dm.subplots(width="13cm", aspect="standard")'
+
+  - id: tight-layout
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\btight_layout\s*\('
+    message: |
+      `tight_layout()` collides with dartwork-mpl's spine and legend
+      handling. Use `dm.auto_layout(fig)` (or `dm.simple_layout` for
+      advanced GridSpec cases).
+    fix_suggestion: 'dm.auto_layout(fig)'
+
+  - id: zero-resize-mention
+    severity: warning
+    detector:
+      kind: substring
+      literal: 'Zero-Resize'
+    message: |
+      "Zero-Resize Policy" was retired in 0.4.0. dartwork-mpl now uses
+      free-form width input plus a lint consistency guard.
+
+  - id: plt-style-use
+    severity: warning
+    detector:
+      kind: regex
+      pattern: '\bplt\.style\.use\s*\('
+    message: |
+      Use `dm.style.use(...)` (or stack styles via dm.subplots(style=...))
+      instead of `plt.style.use(...)`.
+    fix_suggestion: 'dm.style.use("scientific")'
+
+  - id: plt-show-only
+    severity: info
+    detector:
+      kind: regex
+      pattern: '\bplt\.show\s*\(\)'
+    message: |
+      Prefer `dm.save_and_show(fig, "name")` or `dm.save_formats(fig,
+      "name")` so the figure ships with its rendered artifact.
+
+  - id: plt-subplots
+    severity: warning
+    detector:
+      kind: regex
+      pattern: '\bplt\.subplots\s*\('
+    message: |
+      Use `dm.subplots(...)` so dartwork-mpl can apply style, width,
+      and aspect handling.
+
+  - id: cm2in-figsize
+    severity: warning
+    detector:
+      kind: regex
+      pattern: 'figsize\s*=\s*\([^)]*cm2in'
+    message: |
+      `figsize=(dm.cm2in(...), dm.cm2in(...))` is the legacy 0.3
+      pattern. Use `width="<n>cm"` plus an aspect token instead.
+    fix_suggestion: 'dm.subplots(width="9cm", aspect="standard")'
+
+  - id: deprecated-width-token
+    severity: warning
+    detector:
+      kind: regex
+      pattern: '\bdm\.(SW|MW|TW|DW|FS_[A-Z_]+|WIDTHS)\b'
+    message: |
+      `dm.SW/MW/TW/DW/FS_*/WIDTHS` are deprecated and slated for
+      removal in 0.5.0. Use `dm.subplots(width="...cm", aspect="...")`,
+      or `dm.col1`/`dm.col2` for academic columns.
+
+  - id: dpi-arg
+    severity: critical
+    detector:
+      kind: regex
+      # Allow one level of nested parens (e.g. ``figsize=(8, 6)``)
+      # before the ``dpi=`` token so that
+      # ``plt.figure(figsize=(8,6), dpi=200)`` is caught. The previous
+      # ``[^)]*`` form bailed at the first ``)`` and silently missed
+      # this very common spelling. ``savefig(dpi=...)`` is intentionally
+      # outside this rule's scope — see ``savefig-direct``.
+      pattern: '\b(?:plt|dm)\.(?:subplots|figure)\s*\((?:[^()]|\([^()]*\))*\bdpi\s*='
+    message: |
+      `dpi=` should not be set per-figure. The active dartwork-mpl
+      style controls dpi (display vs savefig). Direct
+      ``savefig(dpi=...)`` is flagged separately by ``savefig-direct``.
+      Severity raised to ``critical`` in 0.4.x because ``dpi=`` on
+      ``plt.figure``/``dm.figure``/``dm.subplots`` produces inconsistent
+      output across machines and is just as forbidden as ``figsize=``
+      (see ``00-index.md``).
+
+  - id: raw-hex-color
+    severity: info
+    detector:
+      kind: regex
+      pattern: '\b(?:color|c)\s*=\s*["'']#[0-9a-fA-F]{3,8}["'']'
+    message: |
+      Raw hex colors bypass dartwork-mpl's color system. Prefer named
+      tokens such as `dm.oc.blue6` (Open Color), `dm.tw.sky500`
+      (Tailwind), or `dm.dc.blue500` (dartwork core).
+    why: |
+      Named palettes give consistent perception across reports and
+      let style presets remap colors centrally.
+    fix_suggestion: 'color=dm.oc.blue6'
+
+  - id: fontsize-literal
+    severity: warning
+    detector:
+      kind: regex
+      pattern: '\bfontsize\s*=\s*\d+(?:\.\d+)?'
+    message: |
+      `fontsize=<n>` hardcodes a pt size and bypasses the active
+      style preset. Use `dm.fs(n)` for an offset from the style's
+      base size, or rely on the style defaults.
+    fix_suggestion: 'fontsize=dm.fs(0)'
+
+  - id: linewidth-literal
+    severity: warning
+    detector:
+      kind: regex
+      # Match only literals whose integer part is >= 1. Sub-1 values
+      # (e.g. ``linewidth=0.3`` for hairline edges) and the no-border
+      # idiom ``linewidth=0`` are common, intentional decoration and
+      # don't fight the active style — bundled templates rely on them.
+      pattern: '\b(?:linewidth|lw)\s*=\s*[1-9]\d*(?:\.\d+)?'
+    message: |
+      `linewidth=<n>` (>= 1) hardcodes a line width. Use `dm.lw(n)`
+      for a relative offset from the active style. (`linewidth=0`,
+      used to disable a border, and sub-1 hairline widths like
+      `linewidth=0.3` are allowed.)
+    fix_suggestion: 'linewidth=dm.lw(0)'
+
+  - id: savefig-direct
+    severity: warning
+    detector:
+      kind: regex
+      pattern: '\b(?:fig|plt)\.savefig\s*\('
+    message: |
+      Direct `savefig(...)` bypasses the dartwork-mpl save preset
+      (multi-format, dpi, metadata). Use
+      `dm.save_formats(fig, "name")` for scripts or
+      `dm.save_and_show(fig, "name")` for notebooks.
+    fix_suggestion: 'dm.save_formats(fig, "name")'
+
+  - id: jet-cmap
+    severity: warning
+    detector:
+      kind: regex
+      pattern: 'cmap\s*=\s*["''](?:jet|hsv|gist_rainbow|gist_ncar|nipy_spectral|rainbow)["'']'
+    message: |
+      Rainbow colormaps (`jet`, `hsv`, `gist_rainbow`, `gist_ncar`,
+      `nipy_spectral`, `rainbow`) misrepresent ordinal data. Use a
+      perceptually uniform colormap (`viridis`, `cividis`, `inferno`,
+      `magma`, `plasma`) or one of the dartwork-registered colormaps
+      (`dm.list_colormaps()`).
+    fix_suggestion: 'cmap="viridis"'
+
+  - id: oversize-width
+    severity: warning
+    detector:
+      kind: regex
+      pattern: 'width\s*=\s*["''](?:1[89]|[2-9]\d|\d{3,}|17\.\d*[1-9]\d*)(?:\.\d+)?cm["'']'
+    message: |
+      `width` exceeds 17 cm (`dm.col2`). Most page layouts break
+      above this threshold and produce ragged multi-figure reports.
+      Reduce to 17 cm or split into a multi-row layout.
+    why: |
+      Snap widths to the 0.5 cm grid and keep ≤ 5 distinct widths
+      per project for cross-figure consistency.
+    fix_suggestion: 'width="17cm"'
+
+
+---
+## AI plot templates index
+AI Plot Templates
+-----------------
+
+Eighteen ready-to-use plot templates curated for AI coding assistants. Each
+template is a small, self-contained script written with the 0.4
+``width=...``/``aspect=...`` API and Open Color palette. They are bundled in
+the wheel under ``dartwork_mpl/asset/prompt/05-templates/`` and exposed
+through both the prompt utilities and the
+:doc:`MCP server </integrations/mcp_server>`.
+
+How to access these templates
+=============================
+
+.. code-block:: python
+
+   import dartwork_mpl as dm
+
+   # Read a template script as text
+   bar_src = dm.get_prompt("05-templates/bar")
+
+   # Or list everything available under prompts/
+   print(dm.list_prompts())
+
+Or via MCP from Claude / Cursor / Continue:
+
+.. code-block:: text
+
+   dartwork-mpl://templates/{plot_type}
+
+where ``{plot_type}`` is one of ``bar``, ``bar_horizontal``,
+``bar_grouped``, ``boxplot``, ``contour``, ``heatmap``, ``histogram``,
+``line``, ``pie``, ``plot_3d``, ``polar``, ``scatter``, ``small_multiples``,
+``stacked_bar``, ``tornado``, ``twin_axis``, ``violin``, or ``waterfall``.
+
+The gallery entries below render each template so you can pick the right
+shape at a glance, then copy the source from the page (or fetch it via
+``dm.get_prompt``) into your project.

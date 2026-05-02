@@ -178,6 +178,7 @@ from build_hooks import (  # noqa: E402
     copy_fonts_to_static,
     create_placeholder_index,
     generate_gallery_assets,
+    generate_llms_full_txt,
     write_manual_indices,
 )
 
@@ -189,5 +190,6 @@ def setup(app):
     app.connect("builder-inited", create_placeholder_index)
     app.connect("builder-inited", generate_gallery_assets)
     app.connect("builder-inited", copy_fonts_to_static)
+    app.connect("builder-inited", generate_llms_full_txt)
     app.connect("env-before-read-docs", write_manual_indices)
     return {"parallel_read_safe": True}
