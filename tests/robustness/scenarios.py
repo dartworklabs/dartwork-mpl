@@ -134,6 +134,11 @@ SCENARIOS: list[RobustnessScenario] = [
     RobustnessScenario(
         name="long_xtick_labels_no_rotation",
         build=_build_long_xtick_labels_no_rotation,
+        # 25-char labels, no rotation — auto_layout should resolve
+        # any overflow without xfail. Baseline "happy path" for section A.
+        expect_warnings=(),
+        forbid_warnings=("OVERFLOW",),
+        pixel_checks=("assert_minimum_white_border",),
     ),
     pytest.param(
         RobustnessScenario(
@@ -195,8 +200,9 @@ SCENARIOS: list[RobustnessScenario] = [
         marks=pytest.mark.xfail(
             strict=True,
             reason=(
-                "datetime/tall-tick auto_layout convergence"
-                " — fixed in Task 10"
+                "log-scale y-axis exponent labels overflow "
+                "auto_layout — fixed in Task 10 (BUFFER scaling) "
+                "or Task 11 if exponent footprint requires alignment fix"
             ),
         ),
     ),
