@@ -60,6 +60,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `decimals=2` the zero tick formats as `"0.00"` (previously the
   literal `"0"` regardless of `decimals`, which produced misaligned
   tick label widths next to non-zero values like `"1.50k"`).
+- `format_axis_millions` and `format_axis_billions` now honour
+  `decimals` for the zero tick (mirroring the `format_axis_si` parity
+  fix from PR #116). With `decimals=2` the zero tick formats as
+  `"0.00"` instead of the literal `"0"`, restoring tick label width
+  parity for charts that include both zero and non-zero values like
+  `"1.50M"` / `"1.50B"`.
 
   Note: these source-level fixes are defensive hardening. Scenarios
   still wrapped in `pytest.mark.xfail(strict=True)` represent separate
