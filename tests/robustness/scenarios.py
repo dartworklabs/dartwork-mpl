@@ -531,6 +531,21 @@ def _build_subfigures_2x1() -> Figure:
     return fig
 
 
+def _build_constrained_layout_then_auto_layout() -> Figure:
+    """A figure constructed with ``constrained_layout=True`` that the
+    suite then re-flows via ``auto_layout``. The expectation is that
+    auto_layout is a no-op (constrained-layout already balanced the
+    margins) and the figure saves cleanly. Verifies dartwork-mpl
+    plays nicely with matplotlib's other layout engine."""
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(5.5, 3.5), constrained_layout=True)
+    ax.plot([1, 2, 3, 4], [4, 1, 5, 2])
+    ax.set_ylabel("Value (units)")
+    ax.set_xlabel("Index")
+    return fig
+
+
 # ───────────────────────────────────────────────────────
 # H. Style / font
 # ───────────────────────────────────────────────────────
@@ -876,6 +891,18 @@ SCENARIOS: list[RobustnessScenario] = [
         # but the global white-border invariant cannot hold here — same
         # limitation pattern as `colorbar_attached_heatmap`.
         forbid_warnings=("OVERFLOW",),
+        pixel_checks=(),
+    ),
+    RobustnessScenario(
+        name="constrained_layout_then_auto_layout",
+        build=_build_constrained_layout_then_auto_layout,
+        # constrained_layout owns the margins and packs content tighter
+        # to the figure edge than auto_layout's BUFFER would. The
+        # global white-border invariant doesn't hold when an alternate
+        # layout engine drove the original margins — same precedent as
+        # `colorbar_attached_heatmap` and `subfigures_2x1`. The
+        # scenario still verifies validate_figure, auto_layout
+        # idempotency, and the PNG round-trip.
         pixel_checks=(),
     ),
     # H. Style / font
