@@ -226,3 +226,30 @@ class TestAutoLayoutDatetime:
             f"datetime auto_layout did not converge: {overflow}"
         )
         plt.close(fig)
+
+
+class TestAutoLayoutSymmetry:
+    """auto_layout should leave both horizontal and vertical margins
+    balanced (within MARGIN_ASYMMETRY's 3x ratio threshold)."""
+
+    def test_extreme_left_squeeze_recovers(self) -> None:
+        """A figure squeezed into the left 25% of the canvas should be
+        re-centred by auto_layout."""
+        from dartwork_mpl.validate import validate_figure
+
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.barh([0, 1, 2], [1, 2, 3])
+        ax.set_ylabel("Y")
+        ax.set_xlabel("X")
+        fig.subplots_adjust(left=0.05, right=0.30)
+
+        auto_layout(fig)
+
+        warnings = validate_figure(
+            fig, checks=("MARGIN_ASYMMETRY",), quiet=True
+        )
+        asym = [w for w in warnings if w.check_id == "MARGIN_ASYMMETRY"]
+        assert len(asym) == 0, (
+            f"Asymmetry remains: {[w.message for w in asym]}"
+        )
+        plt.close(fig)

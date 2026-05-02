@@ -439,6 +439,22 @@ def auto_layout(
             else:
                 consec[side] = 0
 
+    # Final symmetry pass: if no overflow is left but the layout has
+    # asymmetric whitespace (e.g. user passed subplots_adjust before
+    # calling us), normalize horizontal and vertical margins by
+    # averaging the two sides on each axis. This leaves the figure
+    # centred without expanding the canvas.
+    fig.canvas.draw()
+    overflow = _measure_overflow(fig)
+    if max(overflow.values()) <= tolerance:
+        avg_h = (margins[0] + margins[1]) / 2
+        avg_v = (margins[2] + margins[3]) / 2
+        margins[0] = avg_h
+        margins[1] = avg_h
+        margins[2] = avg_v
+        margins[3] = avg_v
+        simple_layout(fig, margins=tuple(margins))  # type: ignore[arg-type]
+
     if verbose:
         print(
             f"[auto_layout] Reached max_iter={max_iter}. "
