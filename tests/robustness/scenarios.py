@@ -205,6 +205,68 @@ def _build_triple_axis_parasite() -> Figure:
     return fig
 
 
+# ───────────────────────────────────────────────────────
+# C. Margin / layout corner cases
+# ───────────────────────────────────────────────────────
+
+
+def _build_extreme_left_squeeze() -> Figure:
+    # left=0.05 would push content to the canvas edge so left_margin
+    # falls below the 30 px MIN_MARGIN_PX threshold in _check_margin_asymmetry
+    # and the check skips the comparison. left=0.10 gives ~113 px left
+    # margin, well above the threshold, while right margin stays ~1300 px
+    # (ratio ~11x), reliably triggering MARGIN_ASYMMETRY.
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.barh([0, 1, 2], [1, 2, 3])
+    fig.subplots_adjust(left=0.10, right=0.35)
+    return fig
+
+
+def _build_extreme_right_squeeze() -> Figure:
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.barh([0, 1, 2], [1, 2, 3])
+    fig.subplots_adjust(left=0.70, right=0.95)
+    return fig
+
+
+def _build_extreme_bottom_squeeze() -> Figure:
+    fig, ax = plt.subplots(figsize=(6, 8))
+    ax.bar([0, 1, 2], [1, 2, 3])
+    fig.subplots_adjust(bottom=0.60, top=0.95)
+    return fig
+
+
+def _build_outside_axes_annotation() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    ax.plot([1, 2, 3])
+    ax.annotate(
+        "Far left annotation",
+        xy=(1, 1),
+        xytext=(-0.4, 0.5),
+        textcoords="axes fraction",
+        fontsize=12,
+    )
+    return fig
+
+
+def _build_axes_fraction_text_below_zero() -> Figure:
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    ax.plot([1, 2, 3])
+    ax.text(0.5, -0.25, "below the axis", transform=ax.transAxes)
+    return fig
+
+
+def _build_colorbar_below_axes() -> Figure:
+    import numpy as np
+
+    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    # Seeded RNG for reproducible test artefacts (per plan §Execution Notes).
+    rng = np.random.default_rng(42)
+    im = ax.imshow(rng.random((10, 10)))
+    fig.colorbar(im, ax=ax, orientation="horizontal", shrink=0.8)
+    return fig
+
+
 SCENARIOS: list[RobustnessScenario] = [
     # A. Tick label stress
     RobustnessScenario(
@@ -307,5 +369,67 @@ SCENARIOS: list[RobustnessScenario] = [
         # so we tolerate residual OVERFLOW and skip pixel border checks.
         forbid_warnings=(),
         pixel_checks=(),
+    ),
+    # C. Margin / layout corner cases
+    RobustnessScenario(
+        name="extreme_left_squeeze",
+        build=_build_extreme_left_squeeze,
+        # MARGIN_ASYMMETRY is the whole point — must be flagged before
+        # auto_layout. auto_layout's current symmetry pass already
+        # resolves the asymmetry, so no xfail needed.
+        expect_warnings=("MARGIN_ASYMMETRY",),
+    ),
+    RobustnessScenario(
+        name="extreme_right_squeeze",
+        build=_build_extreme_right_squeeze,
+        expect_warnings=("MARGIN_ASYMMETRY",),
+    ),
+    RobustnessScenario(
+        name="extreme_bottom_squeeze",
+        build=_build_extreme_bottom_squeeze,
+        expect_warnings=("MARGIN_ASYMMETRY",),
+    ),
+    pytest.param(
+        RobustnessScenario(
+            name="outside_axes_annotation",
+            build=_build_outside_axes_annotation,
+            # Axes-fraction annotations move *with* the subplot; auto_layout
+            # may need extra iterations.
+            auto_layout_max_iter=15,
+        ),
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason=(
+                "axes-fraction annotations escape canvas — "
+                "fixed in Task 10 (auto_layout BUFFER scaling)"
+            ),
+        ),
+    ),
+    pytest.param(
+        RobustnessScenario(
+            name="axes_fraction_text_below_zero",
+            build=_build_axes_fraction_text_below_zero,
+            auto_layout_max_iter=15,
+        ),
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason=(
+                "axes-fraction text below zero overflows canvas — "
+                "fixed in Task 10 (auto_layout BUFFER scaling)"
+            ),
+        ),
+    ),
+    pytest.param(
+        RobustnessScenario(
+            name="colorbar_below_axes",
+            build=_build_colorbar_below_axes,
+        ),
+        marks=pytest.mark.xfail(
+            strict=True,
+            reason=(
+                "auto_layout shifts colorbar figure into top edge — "
+                "fixed in Task 10 (auto_layout BUFFER scaling)"
+            ),
+        ),
     ),
 ]
