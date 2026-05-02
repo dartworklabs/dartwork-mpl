@@ -64,8 +64,10 @@ class RobustnessScenario:
 
 # Scenarios still wrapped with pytest.mark.xfail(strict=True) because
 # the underlying library limitation hasn't been resolved yet. Each
-# entry is a (scenario_name, reason, tracking_owner) tuple. Lift the
-# xfail when the reason is fixed and verify the scenario now passes.
+# entry is a (scenario_name, reason, tracking_url) tuple — the
+# tracking URL points to a GitHub issue that scopes the fix. Lift
+# the xfail and remove the entry when the issue is closed and the
+# scenario now passes naturally.
 KNOWN_LIMITATIONS: tuple[tuple[str, str, str], ...] = (
     (
         "long_xtick_labels_45_rotation",
@@ -74,45 +76,48 @@ KNOWN_LIMITATIONS: tuple[tuple[str, str, str], ...] = (
         "BUFFER scaling (Task 10) can absorb. Future fix: a layout pass "
         "that detects rotated tick labels and pre-allocates the rotated "
         "footprint instead of iterating overflow.",
-        "follow-up issue (TBD)",
+        "https://github.com/dartworklabs/dartwork-mpl/issues/109",
     ),
     (
         "long_xtick_labels_90_rotation",
         "Same root cause as 45_rotation but more severe at 90 degrees.",
-        "follow-up issue (TBD)",
+        "https://github.com/dartworklabs/dartwork-mpl/issues/109",
     ),
     (
         "long_ytick_labels_horizontal_bar",
         "Long left-side ytick labels on horizontal bar chart overflow "
         "the canvas; auto_layout's per-iteration BUFFER doesn't grow "
         "fast enough for 25-char labels.",
-        "follow-up issue (TBD)",
+        "https://github.com/dartworklabs/dartwork-mpl/issues/110",
     ),
     (
         "outside_axes_annotation",
         "Axes-fraction xytext at (-0.4, 0.5) escapes the canvas; "
         "auto_layout's iterative margin expansion can't reach the "
         "necessary padding within max_iter.",
-        "follow-up issue (TBD)",
+        "https://github.com/dartworklabs/dartwork-mpl/issues/111",
     ),
     (
         "axes_fraction_text_below_zero",
         "ax.text at y=-0.25 axes-fraction overflows the bottom edge.",
-        "follow-up issue (TBD)",
+        "https://github.com/dartworklabs/dartwork-mpl/issues/111",
     ),
     (
         "colorbar_below_axes",
         "Horizontal colorbar shifts the figure into the top edge after "
         "auto_layout. Likely needs a colorbar-aware layout pass.",
-        "follow-up issue (TBD)",
+        "https://github.com/dartworklabs/dartwork-mpl/issues/113",
     ),
     (
         "crowded_legend_outside",
         "bbox_to_anchor=(1.02, 1) places the legend outside the axes; "
         "auto_layout doesn't expand the right margin to accommodate it.",
-        "follow-up issue (TBD)",
+        "https://github.com/dartworklabs/dartwork-mpl/issues/114",
     ),
 )
+# Architectural meta-issue tracking the simple_layout / auto_layout
+# redesign that would unblock most KNOWN_LIMITATIONS at once:
+# https://github.com/dartworklabs/dartwork-mpl/issues/115
 
 
 # ───────────────────────────────────────────────────────
