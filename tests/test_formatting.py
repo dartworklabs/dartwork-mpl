@@ -151,3 +151,47 @@ class TestRotateTickLabelsAlignment:
             warnings.simplefilter("error", UserWarning)
             dm.rotate_tick_labels(ax, axis="x", rotation=45)
         plt.close(fig)
+
+
+class TestFormatAxisSiBoundaries:
+    """Boundary-value tests for ``format_axis_si``.
+
+    The formatter is expected to:
+    - Switch SI prefix at exactly 1e3, 1e6, 1e9, 1e12.
+    - Honour ``decimals`` for both magnitude and the zero-tick label.
+    - Carry the sign for negative values.
+    """
+
+    @pytest.mark.parametrize(
+        "value,decimals,expected",
+        [
+            (999, 1, "999.0"),
+            (1000, 1, "1.0k"),
+            (999_999, 1, "1000.0k"),
+            (1_000_000, 1, "1.0M"),
+            (1_000_000_000, 1, "1.0G"),
+            (1_000_000_000_000, 1, "1.0T"),
+            (-1_500_000_000, 1, "-1.5G"),
+            (-1500, 0, "-2k"),
+        ],
+    )
+    def test_magnitude_and_sign(
+        self, value: float, decimals: int, expected: str
+    ) -> None:
+        fig, ax = _axes()
+        dm.format_axis_si(ax, axis="y", decimals=decimals)
+        formatter = ax.yaxis.get_major_formatter()
+        # FuncFormatter's call signature is (value, pos).
+        assert formatter(value, 0) == expected
+        plt.close(fig)
+
+    def test_zero_respects_decimals(self) -> None:
+        """``format_axis_si(ax, decimals=2)`` must format the zero
+        tick as ``"0.00"`` so it visually aligns with neighbouring
+        ticks like ``"1.50k"``. The pre-fix implementation returned
+        the literal string ``"0"``."""
+        fig, ax = _axes()
+        dm.format_axis_si(ax, axis="y", decimals=2)
+        formatter = ax.yaxis.get_major_formatter()
+        assert formatter(0, 0) == "0.00"
+        plt.close(fig)
