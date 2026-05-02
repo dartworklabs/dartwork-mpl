@@ -82,6 +82,13 @@ def _check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
                 ext = txt.get_window_extent(renderer)
             except (RuntimeError, ValueError, AttributeError):
                 continue
+            # Skip zero-area extents — they appear when matplotlib
+            # builds a Text for an artist with NaN/Inf-only data or a
+            # fontsize=0 label. Such extents are uninformative and the
+            # subsequent overflow comparison would compare against
+            # garbage coordinates.
+            if ext.width <= 0 or ext.height <= 0:
+                continue
 
             dx_left = fig_bbox.x0 - ext.x0
             dx_right = ext.x1 - fig_bbox.x1
@@ -135,6 +142,8 @@ def _check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
                 try:
                     ext = tick.get_window_extent(renderer)
                 except (RuntimeError, ValueError, AttributeError):
+                    continue
+                if ext.width <= 0 or ext.height <= 0:
                     continue
                 # Tick label center on the axis-perpendicular dimension.
                 if is_x:

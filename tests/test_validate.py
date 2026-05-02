@@ -442,3 +442,41 @@ class TestMarginAsymmetryEdgeCases:
         asym = [w for w in warnings if w.check_id == "MARGIN_ASYMMETRY"]
         assert len(asym) == 0
         plt.close(fig)
+
+
+class TestCheckOverflowDegenerateData:
+    """Regressions for degenerate input that used to crash _check_overflow."""
+
+    def test_nan_only_y_does_not_crash(self) -> None:
+        """A line whose y-values are all NaN must not crash validate.
+
+        matplotlib still creates a Line2D artist, but its bbox is
+        degenerate. _check_overflow must skip such artists silently."""
+        import numpy as np
+
+        import dartwork_mpl as dm
+
+        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        ax.plot([1, 2, 3], [np.nan, np.nan, np.nan])
+        ax.set_ylabel("Value")
+        # Must return without raising even when the artist tree contains
+        # NaN-backed lines whose tightbbox is undefined.
+        warnings = validate_figure(fig, checks=("OVERFLOW",), quiet=True)
+        # We don't care which warnings fired, only that we didn't crash.
+        assert isinstance(warnings, list)
+        plt.close(fig)
+
+    def test_empty_extent_text_skipped(self) -> None:
+        """A Text artist whose get_window_extent returns a zero-area
+        bbox (e.g. text="" but visible) must not produce a spurious
+        overflow."""
+        import dartwork_mpl as dm
+
+        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        ax.plot([1, 2, 3])
+        # ax.text with whitespace-only string is filtered already; this
+        # test pins behaviour for a degenerate fontsize=0 label.
+        ax.set_xlabel("", fontsize=0)
+        warnings = validate_figure(fig, checks=("OVERFLOW",), quiet=True)
+        assert all(w.check_id != "OVERFLOW" for w in warnings)
+        plt.close(fig)
