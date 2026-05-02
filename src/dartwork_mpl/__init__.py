@@ -81,6 +81,7 @@ from .layout import (
     set_xmargin,
     set_ymargin,
     simple_layout,
+    tight_crop,
 )
 
 # Prompt utilities
@@ -158,6 +159,7 @@ __all__ = [  # noqa: RUF022
     # Layout
     "auto_layout",
     "simple_layout",
+    "tight_crop",
     "get_bounding_box",
     "set_xmargin",
     "set_ymargin",
