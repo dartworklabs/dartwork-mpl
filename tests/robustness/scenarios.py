@@ -15,7 +15,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-import matplotlib.pyplot as plt  # noqa: F401  used in Task 4+ builders
+import matplotlib.pyplot as plt
 import pytest
 from matplotlib.figure import Figure
 
@@ -129,6 +129,76 @@ def _build_scientific_notation_yticks() -> Figure:
     return fig
 
 
+# ───────────────────────────────────────────────────────
+# B. Multiple-axis (twinx / twiny)
+# ───────────────────────────────────────────────────────
+
+
+def _build_twinx_basic_short_labels() -> Figure:
+    fig, ax1 = dm.subplots(width="13cm", aspect="standard")
+    ax1.plot([1, 2, 3], [1, 2, 3], label="L")
+    ax1.set_ylabel("L")
+    ax2 = ax1.twinx()
+    ax2.plot([1, 2, 3], [10, 20, 30], color="red", label="R")
+    ax2.set_ylabel("R")
+    return fig
+
+
+def _build_twinx_long_right_label() -> Figure:
+    fig, ax1 = dm.subplots(width="13cm", aspect="standard")
+    ax1.plot([1, 2, 3], [1, 2, 3])
+    ax1.set_ylabel("Left axis")
+    ax2 = ax1.twinx()
+    ax2.plot([1, 2, 3], [1e6, 2e6, 3e6], color="red")
+    ax2.set_ylabel(
+        "Right axis with very long label (units in USD millions)"
+    )
+    return fig
+
+
+def _build_twinx_unit_clash() -> Figure:
+    # plan said "lang-kr" but that is a raw style layer, not a preset.
+    # report-kr is the smallest preset that activates lang-kr.
+    dm.style.use("report-kr")
+    fig, ax1 = dm.subplots(width="13cm", aspect="standard")
+    ax1.plot([1, 2, 3], [-10, 0, 25])
+    ax1.set_ylabel("온도 (℃)")
+    ax2 = ax1.twinx()
+    ax2.plot([1, 2, 3], [1.2e12, 1.5e12, 1.8e12], color="red")
+    ax2.set_ylabel("Revenue (₩, 조원)")
+    return fig
+
+
+def _build_twiny_dual_xaxis() -> Figure:
+    fig, ax1 = dm.subplots(width="13cm", aspect="standard")
+    ax1.plot([1, 2, 3], [1, 2, 3])
+    ax1.set_xlabel("Bottom axis: index")
+    ax2 = ax1.twiny()
+    ax2.set_xlim(2020, 2025)
+    ax2.set_xlabel("Top axis: year")
+    return fig
+
+
+def _build_triple_axis_parasite() -> Figure:
+    # mpl_toolkits.axes_grid1 is part of matplotlib core, available
+    # in 3.10+. The parasite-axes test exercises a three-y-axis layout.
+    from mpl_toolkits.axes_grid1 import host_subplot
+
+    fig = plt.figure(figsize=(13 / 2.54, 13 / 2.54 * 0.75))
+    host = host_subplot(111)
+    par1 = host.twinx()
+    par2 = host.twinx()
+    # Offset the third axis 60 px to the right.
+    par2.spines["right"].set_position(("outward", 60))
+    host.plot([1, 2, 3], [1, 2, 3], label="A")
+    par1.plot([1, 2, 3], [10, 20, 30], color="red", label="B")
+    par2.plot([1, 2, 3], [1e6, 2e6, 3e6], color="green", label="C")
+    host.set_ylabel("A")
+    par1.set_ylabel("B")
+    par2.set_ylabel("C (millions)")
+    return fig
+
+
 SCENARIOS: list[RobustnessScenario] = [
     # A. Tick label stress
     RobustnessScenario(
@@ -205,5 +275,31 @@ SCENARIOS: list[RobustnessScenario] = [
                 "or Task 11 if exponent footprint requires alignment fix"
             ),
         ),
+    ),
+    # B. Multiple-axis (twinx / twiny)
+    RobustnessScenario(
+        name="twinx_basic_short_labels",
+        build=_build_twinx_basic_short_labels,
+    ),
+    RobustnessScenario(
+        name="twinx_long_right_label",
+        build=_build_twinx_long_right_label,
+    ),
+    RobustnessScenario(
+        name="twinx_unit_clash",
+        build=_build_twinx_unit_clash,
+    ),
+    RobustnessScenario(
+        name="twiny_dual_xaxis",
+        build=_build_twiny_dual_xaxis,
+    ),
+    RobustnessScenario(
+        name="triple_axis_parasite",
+        build=_build_triple_axis_parasite,
+        # Parasite axes use absolute pixel offsets that auto_layout
+        # can't negotiate; the test only verifies "no crash + saveable",
+        # so we tolerate residual OVERFLOW and skip pixel border checks.
+        forbid_warnings=(),
+        pixel_checks=(),
     ),
 ]
