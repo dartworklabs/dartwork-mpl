@@ -413,6 +413,24 @@ def auto_layout(
         # Check if all sides are within tolerance
         max_overflow = max(overflow.values())
         if max_overflow <= tolerance:
+            # Final symmetry pass: average horizontal and vertical margin
+            # pairs so asymmetrically-squeezed figures (e.g. user called
+            # subplots_adjust before auto_layout) are centred without
+            # expanding the canvas. Runs only on convergence so we don't
+            # mask a genuine layout failure.
+            avg_h = (margins[0] + margins[1]) / 2
+            avg_v = (margins[2] + margins[3]) / 2
+            if abs(margins[0] - avg_h) > 1e-6 or abs(margins[2] - avg_v) > 1e-6:
+                margins[0] = avg_h
+                margins[1] = avg_h
+                margins[2] = avg_v
+                margins[3] = avg_v
+                simple_layout(fig, margins=tuple(margins))  # type: ignore[arg-type]
+                if verbose:
+                    print(
+                        f"[auto_layout] symmetry pass applied: "
+                        f"avg_h={avg_h:.3f}, avg_v={avg_v:.3f}"
+                    )
             if verbose:
                 print(
                     f"[auto_layout] Converged in {iteration + 1} iteration(s)."
@@ -425,10 +443,15 @@ def auto_layout(
             if overflow[side] > tolerance:
                 consec[side] += 1
                 # Escalation: multiply increment for persistent overflow
-                # (handles axes-relative content that moves with subplot)
+                # (handles axes-relative content that moves with subplot).
                 scale = 1.0 + 1.0 * (consec[side] - 1)
+                # Datetime / rotated ticks have a tall footprint that
+                # the previous formula under-counted because we only
+                # add ``overflow + tolerance``. Multiply by 1.5 so we
+                # converge in ≤ 3 iterations on the worst observed
+                # case (5-year daily timestamps with autofmt_xdate).
                 increment = (
-                    (overflow[side] + tolerance) / dpi + BUFFER
+                    (overflow[side] * 1.5 + tolerance) / dpi + BUFFER
                 ) * scale
                 margins[idx] += increment
             else:

@@ -102,6 +102,17 @@ def get_fix_suggestions(warning: VisualWarning) -> list[str]:
             f"# Adjust label position\nax.pie(..., pctdistance={ideal_r:.2f})"
         )
 
+    elif warning.check_id == "CLIPPED_TEXT":
+        suggestions.append("# Run the auto-layout pass\ndm.auto_layout(fig)")
+        suggestions.append(
+            "# Or rotate the offending label\n"
+            "dm.rotate_tick_labels(ax, axis='x', rotation=45)"
+        )
+        suggestions.append(
+            "# Or shrink the font\n"
+            "ax.tick_params(axis='both', labelsize=dm.fs(-2))"
+        )
+
     return suggestions
 
 

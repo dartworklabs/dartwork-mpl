@@ -103,3 +103,51 @@ class TestRotateTickLabels:
         for label in ax.get_xticklabels():
             assert label.get_rotation() == rotation
         plt.close(fig)
+
+
+class TestRotateTickLabelsAlignment:
+    """rotate_tick_labels must set ha='right' for non-trivial rotations
+    on the x-axis so labels anchor at their tick — leaving ha='center'
+    causes labels to drift left of their tick and overflow the figure."""
+
+    @pytest.mark.parametrize("rotation", [30, 45, 60, 90])
+    def test_x_axis_rotation_sets_right_alignment(self, rotation: int) -> None:
+        fig, ax = _axes()
+        ax.set_xticks(np.arange(5))
+        ax.set_xticklabels(["A_long", "B_long", "C_long", "D_long", "E_long"])
+        dm.rotate_tick_labels(ax, axis="x", rotation=rotation)
+        for label in ax.get_xticklabels():
+            assert label.get_horizontalalignment() == "right", (
+                f"rotation={rotation} should anchor at right, "
+                f"got {label.get_horizontalalignment()!r}"
+            )
+        plt.close(fig)
+
+    def test_x_axis_zero_rotation_leaves_alignment_center(self) -> None:
+        fig, ax = _axes()
+        ax.set_xticks(np.arange(3))
+        ax.set_xticklabels(["a", "b", "c"])
+        dm.rotate_tick_labels(ax, axis="x", rotation=0)
+        for label in ax.get_xticklabels():
+            assert label.get_horizontalalignment() == "center"
+        plt.close(fig)
+
+    def test_x_axis_rotation_emits_no_set_ticklabels_warning(self) -> None:
+        """The pre-patch implementation called
+        ``set_xticklabels(get_xticklabels(), ...)`` which emits
+        matplotlib's FixedLocator deprecation UserWarning whenever the
+        axis uses a non-FixedLocator (e.g. a CategoricalLocator from
+        ax.bar with string labels). The fix iterates over the existing
+        Text artists, mutating them in place, which preserves the
+        locator and silences the warning.
+        """
+        import warnings
+
+        fig, ax = _axes()
+        # ax.bar with string labels installs a CategoricalLocator, the
+        # exact path that triggered the warning pre-patch.
+        ax.bar(["A", "B", "C", "D", "E"], [1, 2, 3, 4, 5])
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
+            dm.rotate_tick_labels(ax, axis="x", rotation=45)
+        plt.close(fig)

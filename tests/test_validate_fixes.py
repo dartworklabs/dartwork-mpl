@@ -211,3 +211,17 @@ class TestGetFixSuggestionsBranches:
         )
         suggestions = dm.validate_fixes.get_fix_suggestions(warning)
         assert any("pctdistance=0.65" in s for s in suggestions)
+
+    def test_clipped_text(self) -> None:
+        """CLIPPED_TEXT branch returns 3 suggestions including auto_layout."""
+        warning = VisualWarning(
+            severity=Severity.WARNING,
+            check_id="CLIPPED_TEXT",
+            message="Text 'abc' sits within 1px of the canvas edge",
+            detail={"text": "abc", "margin_px": 0.5},
+        )
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
+        assert len(suggestions) == 3
+        assert any("auto_layout" in s for s in suggestions)
+        assert any("rotate_tick_labels" in s for s in suggestions)
+        assert any("labelsize" in s for s in suggestions)

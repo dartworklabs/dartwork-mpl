@@ -199,3 +199,55 @@ class TestAutoLayoutEdgeCases:
         fig.colorbar(im, ax=ax, shrink=0.8)
         auto_layout(fig)
         plt.close(fig)
+
+
+class TestAutoLayoutDatetime:
+    """Regressions for datetime-tick figures."""
+
+    def test_datetime_xaxis_converges_under_max_iter(self) -> None:
+        """A 5-year daily-resolution datetime x-axis must converge in
+        ≤ 5 iterations to ≤ 2 px overflow on every side."""
+        import numpy as np
+        import pandas as pd
+
+        import dartwork_mpl as dm
+
+        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        dates = pd.date_range("2021-01-01", "2025-12-31", freq="D")
+        rng = np.random.default_rng(42)
+        ax.plot(dates, np.cumsum(rng.standard_normal(len(dates))))
+        ax.set_ylabel("Value")
+        fig.autofmt_xdate()
+
+        auto_layout(fig, max_iter=5)
+
+        overflow = _measure_overflow(fig)
+        assert max(overflow.values()) <= 2.0, (
+            f"datetime auto_layout did not converge: {overflow}"
+        )
+        plt.close(fig)
+
+
+class TestAutoLayoutSymmetry:
+    """auto_layout should leave both horizontal and vertical margins
+    balanced (within MARGIN_ASYMMETRY's 3x ratio threshold)."""
+
+    def test_extreme_left_squeeze_recovers(self) -> None:
+        """A figure squeezed into the left 25% of the canvas should be
+        re-centred by auto_layout."""
+        from dartwork_mpl.validate import validate_figure
+
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.barh([0, 1, 2], [1, 2, 3])
+        ax.set_ylabel("Y")
+        ax.set_xlabel("X")
+        fig.subplots_adjust(left=0.05, right=0.30)
+
+        auto_layout(fig)
+
+        warnings = validate_figure(
+            fig, checks=("MARGIN_ASYMMETRY",), quiet=True
+        )
+        asym = [w for w in warnings if w.check_id == "MARGIN_ASYMMETRY"]
+        assert len(asym) == 0, f"Asymmetry remains: {[w.message for w in asym]}"
+        plt.close(fig)

@@ -285,7 +285,7 @@ def rotate_tick_labels(
     ax: Axes,
     axis: Literal["x", "y", "both"] = "x",
     rotation: float = 45,
-    ha: str | None = None,
+    ha: Literal["left", "center", "right"] | None = None,
 ) -> None:
     """Rotate tick labels for better readability.
 
@@ -297,7 +297,7 @@ def rotate_tick_labels(
         Which axis to rotate
     rotation : float
         Rotation angle in degrees
-    ha : str | None
+    ha : Literal["left", "center", "right"] | None
         Horizontal alignment. If None, automatically set based on rotation
 
     Examples
@@ -305,16 +305,29 @@ def rotate_tick_labels(
     >>> rotate_tick_labels(ax)  # Rotate x-axis labels 45 degrees
     >>> rotate_tick_labels(ax, rotation=90, axis="both")
     """
+    resolved_ha: Literal["left", "center", "right"]
     if ha is None:
         # Auto-determine alignment based on rotation
         if rotation > 0:
-            ha = "right"
+            resolved_ha = "right"
         elif rotation < 0:
-            ha = "left"
+            resolved_ha = "left"
         else:
-            ha = "center"
+            resolved_ha = "center"
+    else:
+        resolved_ha = ha
 
+    # Apply rotation and alignment per-label rather than calling
+    # set_xticklabels(get_xticklabels(), ...) — that pattern emits
+    # matplotlib's "set_ticklabels() should only be used with a
+    # fixed number of ticks" warning since the locator may not be
+    # a FixedLocator. Iterating preserves the existing locator and
+    # mutates the existing Text artists in place.
     if axis in ("x", "both"):
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=rotation, ha=ha)
+        for label in ax.get_xticklabels():
+            label.set_rotation(rotation)
+            label.set_horizontalalignment(resolved_ha)
     if axis in ("y", "both"):
-        ax.set_yticklabels(ax.get_yticklabels(), rotation=rotation, ha=ha)
+        for label in ax.get_yticklabels():
+            label.set_rotation(rotation)
+            label.set_horizontalalignment(resolved_ha)
