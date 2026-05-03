@@ -58,6 +58,27 @@ pip install git+https://github.com/dartworklabs/dartwork-mpl@main
 
 ::::
 
+## Plain text install matrix
+
+Static fallback for the live install picker — useful when JavaScript is
+disabled (AI agents, terminal browsers, search-engine indexing). The
+GitHub URL is the same on every OS; the differences are limited to
+which package manager you have and whether you want to add the package
+to a project file (`uv add`, `poetry add`) or install into the current
+environment (`uv pip`, `pip install`).
+
+| Manager | Command |
+|---|---|
+| `uv` (project) | `uv add git+https://github.com/dartworklabs/dartwork-mpl` |
+| `uv` (env) | `uv pip install git+https://github.com/dartworklabs/dartwork-mpl` |
+| `pip` | `pip install git+https://github.com/dartworklabs/dartwork-mpl` |
+| `Poetry` | `poetry add git+https://github.com/dartworklabs/dartwork-mpl` |
+| `conda + pip` | activate the env, then `pip install git+https://github.com/dartworklabs/dartwork-mpl` |
+
+On all three platforms (macOS / Linux / Windows) the commands are
+identical apart from the shell quoting; Windows users in `cmd.exe` may
+need to drop the wrapping quotes.
+
 ## Basic Import
 
 Once installed, import **dartwork-mpl** alongside matplotlib:

@@ -71,6 +71,26 @@ tick crowding, and empty axes. Example output:
 ⚠ TICK_CROWDING: X-axis has 24 ticks in 3.5 inches (>6 per inch)
 ```
 
+### Static reference: every warning `validate_figure()` can emit
+
+Plain-text fallback for the live lint simulator — useful when
+JavaScript is disabled (AI agents, terminal browsers, search-engine
+indexing). Each row is one `check_id` from `dartwork_mpl/validate.py`;
+the **Severity** column is the default classification, and the **Fix**
+column is the suggestion delivered by
+`dm.validate_with_fixes(fig)` / `dm.validate_fixes.get_fix_suggestions`.
+
+| `check_id`           | Severity | What it detects                                    | Suggested fix                                                       |
+| -------------------- | -------- | -------------------------------------------------- | ------------------------------------------------------------------- |
+| `OVERFLOW`           | warning  | Text or axes content extends past the figure edge  | Increase `dm.auto_layout` padding or reduce label length            |
+| `OVERLAP`            | warning  | Two text labels visually overlap                   | Rotate, abbreviate, or split into multiple panels                   |
+| `LEGEND_OVERFLOW`    | warning  | Legend extends past axes / figure edge             | Move legend outside via `bbox_to_anchor` or shrink with `ncols`     |
+| `TICK_CROWD`         | warning  | Tick labels overlap each other (>6 per inch)       | Reduce tick density (`MaxNLocator`) or rotate labels                |
+| `EMPTY_AXES`         | info     | Axes carry no plotted artist                       | Plot data or remove the empty axes via `fig.delaxes(ax)`            |
+| `MARGIN_ASYMMETRY`   | info     | Left / right or top / bottom margins differ a lot  | Re-run `dm.auto_layout(fig)`                                        |
+| `PIE_LABEL_OFFSET`   | warning  | Pie wedge label sits outside its wedge             | Set `pctdistance = 1.0 - wedge_width / 2`                           |
+| `CLIPPED_TEXT`       | warning  | A text artist is clipped at its axes boundary      | Disable clipping (`text.set_clip_on(False)`) or move into figure    |
+
 :::{figure} images/validation_example.svg
 :alt: Visual validation error example showing a bounding box overflow overlay
 :width: 100%
