@@ -101,6 +101,27 @@ call, the `width` / `aspect` API on `dm.subplots`, named colors, and
 | `dm.auto_layout(fig)`                | Auto-optimizes margins (replaces `tight_layout`)                                   |
 | `dm.save_and_show(fig, "first")`     | Saves multi-format and previews inline in the notebook                             |
 
+### Static reference: `dm.fs(n)` resolved per preset
+
+Plain-text fallback for the live ruler — useful when JavaScript is
+disabled (AI agents, terminal browsers) or when copying numbers into a
+spreadsheet. Each row is the **base font size** that ships with the
+preset's `font-*.mplstyle`; `dm.fs(n)` returns ``base + n`` (in
+points), `dm.fw(n)` and `dm.lw(n)` apply analogous offsets to font
+weight and stroke width.
+
+| Preset         | Base `font.size` (pt) | Typical `dm.fs(2)` (pt) |
+| -------------- | --------------------: | ----------------------: |
+| `scientific`   | 7.5                   | 9.5                     |
+| `report`       | 8.0                   | 10.0                    |
+| `web`          | 11.0                  | 13.0                    |
+| `presentation` | 10.5                  | 12.5                    |
+| `poster`       | 12.0                  | 14.0                    |
+| `minimal`      | 7.5                   | 9.5                     |
+
+Source of truth: `src/dartwork_mpl/asset/mplstyle/font-*.mplstyle`. If
+those values change, regenerate this table.
+
 ## Creating Figures with `width` / `aspect`
 
 `dm.subplots()` and `dm.figure()` are the only sanctioned entry points

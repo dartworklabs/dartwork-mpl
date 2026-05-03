@@ -8,6 +8,28 @@ Use the **filter bar** below the title to search by keyword (`font`, `svg`,
 sticky as you scroll. Press <kbd>?</kbd> for site-wide shortcuts.
 :::
 
+### Category index (static fallback)
+
+Plain-text replacement for the dynamic filter / jump pills — useful
+when JavaScript is disabled (AI agents, terminal browsers,
+search-engine indexing). Every entry below is also reachable via the
+sidebar TOC.
+
+| Category | Jump |
+| -------- | ---- |
+| Installation | [#installation](#installation) |
+| Fonts | [#fonts](#fonts) |
+| Layout | [#layout](#layout) |
+| Colors | [#colors](#colors) |
+| Saving & Export | [#saving-export](#saving-export) |
+| Jupyter Notebooks | [#jupyter-notebooks](#jupyter-notebooks) |
+| Interactive UI | [#interactive-ui](#interactive-ui) |
+| Still stuck? | [#still-stuck](#still-stuck) |
+
+The full FAQ list below is the canonical content; nothing in the
+filter widget is unique to JS — it's purely a discovery aid over the
+same headings.
+
 ## Installation
 
 ### `ModuleNotFoundError: No module named 'dartwork_mpl'`
