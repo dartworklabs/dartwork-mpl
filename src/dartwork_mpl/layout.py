@@ -16,7 +16,7 @@ __all__ = [
 ]
 
 import contextlib
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -274,10 +274,33 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
     dict[str, float]
         Maximum overflow in pixels for each side: left, right, bottom, top.
         Positive values mean the content extends beyond the figure edge.
+
+    Notes
+    -----
+    The boundary used for overflow detection is the *integer pixel* canvas
+    size returned by ``fig.canvas.get_width_height()``, not the floating-
+    point ``fig.bbox``.  The two can differ by a sub-pixel amount (e.g.
+    ``fig.bbox.x1 = 526.04`` while the canvas is 526 px wide).  Using the
+    float boundary causes content that renders in the last integer pixel
+    column to be silently missed (measured overflow = -0.8 px), which then
+    fails the 4-pixel blank-edge assertion in the pixel-check suite.
     """
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
-    fig_bbox = fig.bbox
+
+    # Use integer canvas dimensions as the authoritative boundary so that
+    # content landing in the outermost pixel column/row is detected even
+    # when it falls within fig.bbox's floating-point extent.
+    canvas_w, canvas_h = fig.canvas.get_width_height()
+    # Build a boundary rect in display (pixel) coordinates:
+    #   x: [0, canvas_w],  y: [0, canvas_h]
+    # fig.bbox.x0 is always 0.0 for a standard figure, so the left/bottom
+    # edges stay anchored at 0; only the right/top boundaries use integer
+    # canvas dimensions.
+    bx0: float = 0.0
+    by0: float = 0.0
+    bx1: float = float(canvas_w)
+    by1: float = float(canvas_h)
 
     overflow: dict[str, float] = {
         "left": 0.0,
@@ -300,10 +323,10 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
             except (RuntimeError, ValueError, AttributeError):
                 continue
 
-            overflow["left"] = max(overflow["left"], fig_bbox.x0 - ext.x0)
-            overflow["right"] = max(overflow["right"], ext.x1 - fig_bbox.x1)
-            overflow["bottom"] = max(overflow["bottom"], fig_bbox.y0 - ext.y0)
-            overflow["top"] = max(overflow["top"], ext.y1 - fig_bbox.y1)
+            overflow["left"] = max(overflow["left"], bx0 - ext.x0)
+            overflow["right"] = max(overflow["right"], ext.x1 - bx1)
+            overflow["bottom"] = max(overflow["bottom"], by0 - ext.y0)
+            overflow["top"] = max(overflow["top"], ext.y1 - by1)
 
         # Tick labels
         for axis in (ax.xaxis, ax.yaxis):
@@ -325,14 +348,156 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
                 if val < vmin - tol or val > vmax + tol:
                     continue
 
-                overflow["left"] = max(overflow["left"], fig_bbox.x0 - ext.x0)
-                overflow["right"] = max(overflow["right"], ext.x1 - fig_bbox.x1)
-                overflow["bottom"] = max(
-                    overflow["bottom"], fig_bbox.y0 - ext.y0
+                overflow["left"] = max(overflow["left"], bx0 - ext.x0)
+                overflow["right"] = max(overflow["right"], ext.x1 - bx1)
+                overflow["bottom"] = max(overflow["bottom"], by0 - ext.y0)
+                overflow["top"] = max(overflow["top"], ext.y1 - by1)
+
+        # Legend (separate from ax.texts; misses bbox_to_anchor outside axes
+        # without this guard).
+        legend = ax.get_legend()
+        if legend is not None and legend.get_visible():
+            leg_ext: Bbox | None = None
+            with contextlib.suppress(RuntimeError, ValueError, AttributeError):
+                leg_ext = legend.get_window_extent(renderer)
+            if leg_ext is not None and leg_ext.width > 0 and leg_ext.height > 0:
+                # FancyBboxPatch anti-aliasing bleed: the rendered legend
+                # frame extends ~2 px beyond the bbox reported by
+                # get_window_extent().  We add a small pad so that
+                # _measure_overflow correctly detects this bleed as
+                # overflow rather than treating it as already-clear.
+                _LEGEND_FRAME_PAD = 2.0
+                overflow["left"] = max(
+                    overflow["left"], bx0 - (leg_ext.x0 - _LEGEND_FRAME_PAD)
                 )
-                overflow["top"] = max(overflow["top"], ext.y1 - fig_bbox.y1)
+                overflow["right"] = max(
+                    overflow["right"], (leg_ext.x1 + _LEGEND_FRAME_PAD) - bx1
+                )
+                overflow["bottom"] = max(
+                    overflow["bottom"], by0 - (leg_ext.y0 - _LEGEND_FRAME_PAD)
+                )
+                overflow["top"] = max(
+                    overflow["top"], (leg_ext.y1 + _LEGEND_FRAME_PAD) - by1
+                )
 
     return overflow
+
+
+def _measure_clearance(fig: Figure) -> dict[str, float]:
+    """Measure per-side clearance of all visual elements from figure bounds.
+
+    Unlike ``_measure_overflow`` which clamps to 0.0 for content inside the
+    canvas, this function returns the *minimum* signed distance from any
+    content edge to each canvas boundary.  A **positive** value means the
+    content edge is that many pixels *inside* the canvas (i.e. there is
+    clearance).  A **negative** value means the content extends that many
+    pixels *beyond* the canvas (i.e. there is overflow).
+
+    This complement view is needed for the canvas-expansion passes in
+    ``auto_layout``: after ``simple_layout`` converges, a legend positioned
+    via ``bbox_to_anchor`` may land very close to (but technically inside)
+    the canvas edge, yielding ``_measure_overflow`` = 0.0 even though the
+    pixel-probe strip would detect non-blank pixels.
+
+    Parameters
+    ----------
+    fig : Figure
+        The figure to inspect (must already be drawn).
+
+    Returns
+    -------
+    dict[str, float]
+        Minimum clearance in pixels for each side: left, right, bottom, top.
+        Large positive values mean ample blank margin; values near 0 or
+        negative mean content is at or beyond the canvas boundary.
+    """
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+
+    canvas_w, canvas_h = fig.canvas.get_width_height()
+    bx0: float = 0.0
+    by0: float = 0.0
+    bx1: float = float(canvas_w)
+    by1: float = float(canvas_h)
+
+    # Initialise to "infinite clearance" — only content bboxes will reduce it.
+    _INF = float("inf")
+    clearance: dict[str, float] = {
+        "left": _INF,
+        "right": _INF,
+        "bottom": _INF,
+        "top": _INF,
+    }
+
+    def _update(ext: Bbox) -> None:
+        clearance["left"] = min(clearance["left"], ext.x0 - bx0)
+        clearance["right"] = min(clearance["right"], bx1 - ext.x1)
+        clearance["bottom"] = min(clearance["bottom"], ext.y0 - by0)
+        clearance["top"] = min(clearance["top"], by1 - ext.y1)
+
+    for ax in fig.axes:
+        for txt in [*ax.texts, ax.title, ax.xaxis.label, ax.yaxis.label]:
+            if (
+                txt is None
+                or not txt.get_visible()
+                or not txt.get_text().strip()
+            ):
+                continue
+            try:
+                ext = txt.get_window_extent(renderer)
+            except (RuntimeError, ValueError, AttributeError):
+                continue
+            _update(ext)
+
+        for axis in (ax.xaxis, ax.yaxis):
+            vmin, vmax = axis.get_view_interval()
+            tol = (vmax - vmin) * 1e-5
+            for tick in axis.get_ticklabels():
+                if not tick.get_visible() or not tick.get_text().strip():
+                    continue
+                try:
+                    ext = tick.get_window_extent(renderer)
+                    pos = tick.get_position()
+                except (RuntimeError, ValueError, AttributeError):
+                    continue
+                val = pos[0] if axis == ax.xaxis else pos[1]
+                if val < vmin - tol or val > vmax + tol:
+                    continue
+                _update(ext)
+
+        legend = ax.get_legend()
+        if legend is not None and legend.get_visible():
+            leg_ext: Bbox | None = None
+            with contextlib.suppress(RuntimeError, ValueError, AttributeError):
+                leg_ext = legend.get_window_extent(renderer)
+            if leg_ext is not None and leg_ext.width > 0 and leg_ext.height > 0:
+                # FancyBboxPatch anti-aliasing bleed: expand by ~2 px to
+                # match the actual rendered extent (same pad as
+                # _measure_overflow).
+                _LEGEND_FRAME_PAD = 2.0
+                padded = Bbox(
+                    [
+                        [
+                            leg_ext.x0 - _LEGEND_FRAME_PAD,
+                            leg_ext.y0 - _LEGEND_FRAME_PAD,
+                        ],
+                        [
+                            leg_ext.x1 + _LEGEND_FRAME_PAD,
+                            leg_ext.y1 + _LEGEND_FRAME_PAD,
+                        ],
+                    ]
+                )
+                _update(padded)
+
+    # If no content bboxes were found, return large clearance values so the
+    # expansion loops do not fire on empty figures.
+    for side in clearance:
+        if clearance[side] == _INF:
+            clearance[side] = float(
+                canvas_w if side in ("left", "right") else canvas_h
+            )
+
+    return clearance
 
 
 def auto_layout(
@@ -462,6 +627,135 @@ def auto_layout(
                         f"[auto_layout] symmetry pass applied: "
                         f"avg_h={avg_h:.3f}, avg_v={avg_v:.3f}"
                     )
+
+            # Micro-adjustment: even sub-tolerance overflow leaves content
+            # within the pixel-probe border used by robustness tests
+            # (``_PROBE_PX = 4``). A single final pass after symmetry
+            # converts any residual positive overflow to zero so the canvas
+            # edge stays clean.
+            dpi = fig.get_dpi()
+            overflow_post = _measure_overflow(fig)
+            nudged = False
+            for side, idx in SIDE_MAP.items():
+                if overflow_post[side] > 0:
+                    margins[idx] += overflow_post[side] / dpi + BUFFER
+                    nudged = True
+            if nudged:
+                simple_layout(fig, margins=tuple(margins))  # type: ignore[arg-type]
+                if verbose:
+                    print(
+                        f"[auto_layout] micro-adjust applied; "
+                        f"overflow after={_measure_overflow(fig)}"
+                    )
+
+            # Canvas expansion: for content positioned in axes-relative
+            # coordinates (e.g. ``bbox_to_anchor`` legends), increasing
+            # subplot margins alone cannot eliminate overflow because the
+            # anchor shifts proportionally with the axes. Detect residual
+            # overflow after micro-adjust and expand the canvas itself.
+            #
+            # IMPORTANT: after expansion we must NOT call simple_layout
+            # again because doing so recomputes axes geometry and shifts
+            # the anchor proportionally, re-introducing the same overflow.
+            # Instead we freeze the current subplot parameters and only
+            # Axes-relative content (e.g. a legend placed via
+            # ``bbox_to_anchor``) can overflow the canvas even after the main
+            # loop converges, because increasing subplot margins moves the
+            # axes *and* the anchored legend together: the legend's position
+            # in display coordinates shifts by the same amount as the axes
+            # edge, so the clearance never improves.
+            #
+            # Two-stage strategy:
+            #   1. Margin-squeeze first — calls simple_layout with increased
+            #      margins so the axes move *inward*.  The anchored legend
+            #      follows the axes, but its absolute position (axes_right_px
+            #      + anchor_offset_px) now sits further from the canvas right
+            #      edge because the axes themselves moved left.
+            #   2. Canvas expansion — grows the canvas on any side that still
+            #      lacks the required 4 px clearance.  After the squeeze the
+            #      axes (and legend) are stationary at their new pixel coords;
+            #      growing the canvas to the right adds the needed blank
+            #      pixels between the legend and the canvas boundary.
+            #
+            # Running expansion *before* the squeeze (the previous approach)
+            # does not help: the squeeze then immediately re-anchors the
+            # legend at the canvas edge again.
+            _min_margin_px = 4.0
+
+            # --- Stage 1: margin-squeeze ---
+            clearance_pre = _measure_clearance(fig)
+            squeeze_margins = list(margins)
+            needs_squeeze = False
+            for s, idx in SIDE_MAP.items():
+                shortage_s = max(0.0, _min_margin_px - clearance_pre[s])
+                if shortage_s > 0.0:
+                    squeeze_margins[idx] += shortage_s / dpi + BUFFER
+                    needs_squeeze = True
+            if needs_squeeze:
+                simple_layout(
+                    fig,
+                    margins=cast(
+                        "tuple[float, float, float, float]",
+                        tuple(squeeze_margins),
+                    ),
+                )
+                if verbose:
+                    print(
+                        f"[auto_layout] margin-squeeze applied; "
+                        f"clearance after={_measure_clearance(fig)}"
+                    )
+
+            # --- Stage 2: canvas expansion ---
+            # After the squeeze the axes (and any anchored legend) sit at a
+            # new, inward pixel position.  Growing the canvas now adds blank
+            # pixels between the legend edge and the canvas boundary without
+            # moving the axes.
+            #
+            # Legends anchored via bbox_to_anchor track the axes at a rate of
+            # approximately 0.81x — i.e. each pixel of canvas expansion yields
+            # only ~0.19 px of clearance gain.  Convergence is geometric with
+            # ratio ≈ 0.81, so ~20 passes are required to reliably drive the
+            # clearance deficit below 0.5 px starting from a typical initial
+            # shortage of ~5 px.
+            for _expand_iter in range(20):
+                clearance_final = _measure_clearance(fig)
+                expand_needed: dict[str, float] = {}
+                for s in ("left", "right", "bottom", "top"):
+                    shortage = max(0.0, _min_margin_px - clearance_final[s])
+                    if shortage > 0.0:
+                        expand_needed[s] = shortage
+                if not expand_needed:
+                    break
+
+                sp = fig.subplotpars
+                w, h = fig.get_size_inches()
+                delta_w = (
+                    expand_needed.get("left", 0.0)
+                    + expand_needed.get("right", 0.0)
+                ) / dpi
+                delta_h = (
+                    expand_needed.get("bottom", 0.0)
+                    + expand_needed.get("top", 0.0)
+                ) / dpi
+                new_w = w + delta_w
+                new_h = h + delta_h
+                fig.set_size_inches(new_w, new_h)
+
+                scale_w = w / new_w
+                scale_h = h / new_h
+                fig.subplots_adjust(
+                    left=sp.left * scale_w,
+                    right=sp.right * scale_w,
+                    bottom=sp.bottom * scale_h,
+                    top=sp.top * scale_h,
+                )
+                if verbose:
+                    print(
+                        f"[auto_layout] canvas expand pass {_expand_iter + 1}: "
+                        f"Δw={delta_w:.4f}in Δh={delta_h:.4f}in; "
+                        f"overflow after={_measure_overflow(fig)}"
+                    )
+
             if verbose:
                 print(
                     f"[auto_layout] Converged in {iteration + 1} iteration(s)."
@@ -493,6 +787,83 @@ def auto_layout(
             f"[auto_layout] Reached max_iter={max_iter}. "
             f"Residual overflow: {overflow}"
         )
+
+    # Post-max_iter two-stage fallback: squeeze then expand.
+    #
+    # Axes-relative content (``bbox_to_anchor`` legends) tracks the axes
+    # proportionally, so pure canvas expansion or pure margin adjustment
+    # alone cannot build clearance for it.  The same two-stage strategy
+    # used in the convergence branch is applied here:
+    #   1. Squeeze: move axes inward via simple_layout → anchored artist
+    #      moves to a new, inward absolute pixel position.
+    #   2. Expand: grow the canvas so blank pixels separate the artist from
+    #      the canvas boundary.  The axes (and legend) are now stationary
+    #      at their post-squeeze pixel coords; canvas growth adds clearance.
+    dpi = fig.get_dpi()
+    _min_margin_px = 4.0
+
+    # --- Stage 1 (post-max_iter): margin-squeeze ---
+    clearance_pre = _measure_clearance(fig)
+    squeeze_margins = list(margins)
+    needs_squeeze = False
+    for s, idx in SIDE_MAP.items():
+        shortage_s = max(0.0, _min_margin_px - clearance_pre[s])
+        if shortage_s > 0.0:
+            squeeze_margins[idx] += shortage_s / dpi + BUFFER
+            needs_squeeze = True
+    if needs_squeeze:
+        simple_layout(
+            fig,
+            margins=cast(
+                "tuple[float, float, float, float]", tuple(squeeze_margins)
+            ),
+        )
+        if verbose:
+            print(
+                f"[auto_layout] post-max_iter margin-squeeze applied; "
+                f"clearance after={_measure_clearance(fig)}"
+            )
+
+    # --- Stage 2 (post-max_iter): canvas expansion ---
+    # Same geometric-convergence reasoning as the in-loop expansion above;
+    # 20 passes are sufficient even for bbox_to_anchor legends.
+    for _expand_iter in range(20):
+        clearance_final = _measure_clearance(fig)
+        expand_needed = {}
+        for s in ("left", "right", "bottom", "top"):
+            shortage = max(0.0, _min_margin_px - clearance_final[s])
+            if shortage > 0.0:
+                expand_needed[s] = shortage
+        if not expand_needed:
+            break
+
+        sp = fig.subplotpars
+        w, h = fig.get_size_inches()
+        delta_w = (
+            expand_needed.get("left", 0.0) + expand_needed.get("right", 0.0)
+        ) / dpi
+        delta_h = (
+            expand_needed.get("bottom", 0.0) + expand_needed.get("top", 0.0)
+        ) / dpi
+        new_w = w + delta_w
+        new_h = h + delta_h
+        fig.set_size_inches(new_w, new_h)
+
+        scale_w = w / new_w
+        scale_h = h / new_h
+        fig.subplots_adjust(
+            left=sp.left * scale_w,
+            right=sp.right * scale_w,
+            bottom=sp.bottom * scale_h,
+            top=sp.top * scale_h,
+        )
+        if verbose:
+            print(
+                f"[auto_layout] post-max_iter canvas expand pass "
+                f"{_expand_iter + 1}: "
+                f"Δw={delta_w:.4f}in Δh={delta_h:.4f}in; "
+                f"overflow after={_measure_overflow(fig)}"
+            )
 
 
 def tight_crop(
