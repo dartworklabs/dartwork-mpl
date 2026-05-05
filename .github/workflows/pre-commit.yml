@@ -20,6 +20,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      # The local mypy hook shells out to ``uv run mypy`` so the runner
+      # needs ``uv`` on PATH before pre-commit fires.
+      - uses: astral-sh/setup-uv@v3
       # pre-commit/action caches the per-hook environments under
       # ~/.cache/pre-commit, keyed off the .pre-commit-config.yaml hash,
       # so subsequent runs only pay the network cost when a hook is bumped.
