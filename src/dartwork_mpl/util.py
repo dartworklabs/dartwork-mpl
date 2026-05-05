@@ -41,6 +41,8 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.transforms import ScaledTranslation
 
+from .color import Color
+
 
 def set_decimal(ax: Axes, xn: int | None = None, yn: int | None = None) -> None:
     """Fix the number of decimal places displayed on tick labels.
@@ -72,30 +74,44 @@ def mix_colors(
     color2: str | tuple[float, float, float],
     alpha: float = 0.5,
 ) -> tuple[float, float, float]:
-    """Blend two colors according to a given weight (alpha).
+    """Blend two colors in OKLab space (perceptually uniform blend).
+
+    Blends in OKLab rather than gamma-encoded sRGB, so midpoints avoid the
+    "muddy" saturation dip that naive RGB mixing produces for saturated hues
+    (e.g. red + blue → purple, not a dark desaturated grey).
 
     Parameters
     ----------
     color1 : str | tuple[float, float, float]
         First color to blend. Any format recognized by matplotlib.
     color2 : str | tuple[float, float, float]
-        Second color to blend.
+        Second color to blend. Any format recognized by matplotlib.
     alpha : float, optional
-        Weight of the first color (between 0 and 1). Default is 0.5.
+        Weight of *color1* (0 → color2, 1 → color1). Default is 0.5.
 
     Returns
     -------
     tuple[float, float, float]
-        RGB tuple of the blended result.
-    """
-    color1 = mcolors.to_rgb(color1)
-    color2 = mcolors.to_rgb(color2)
+        sRGB tuple of the blended result, compatible with any matplotlib
+        ``color=`` argument.
 
-    r, g, b = (
-        alpha * c1 + (1 - alpha) * c2
-        for c1, c2 in zip(color1[:3], color2[:3], strict=False)
-    )
-    return r, g, b
+    Notes
+    -----
+    The result will differ subtly from previous versions for non-grayscale
+    blends — gradients now look smoother and less desaturated through
+    saturated midpoints.  ``dm.pseudo_alpha`` (which delegates to this
+    function) inherits the same improvement.
+    """
+    r1, g1, b1 = mcolors.to_rgb(color1)
+    r2, g2, b2 = mcolors.to_rgb(color2)
+    c1 = Color.from_rgb(r1, g1, b1)
+    c2 = Color.from_rgb(r2, g2, b2)
+    L1, a1, b1_ok = c1.to_oklab()
+    L2, a2, b2_ok = c2.to_oklab()
+    L = alpha * L1 + (1.0 - alpha) * L2
+    a = alpha * a1 + (1.0 - alpha) * a2
+    b_blend = alpha * b1_ok + (1.0 - alpha) * b2_ok
+    return Color.from_oklab(L, a, b_blend).to_rgb()
 
 
 def pseudo_alpha(
