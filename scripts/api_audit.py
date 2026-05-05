@@ -34,7 +34,7 @@ SRC = ROOT / "src" / "dartwork_mpl"
 
 # Out of scope per spec §7.
 EXCLUDED_PARTS = {"_helpers.py", "cli.py", "mcp", "ui", "asset", "asset_viz"}
-SEARCH_DIRS = ["docs", "tests"]
+SEARCH_DIRS = ["docs", "tests", "examples"]
 
 
 def iter_python_files(root: pathlib.Path):
@@ -84,6 +84,8 @@ def grep_callsites(name: str, cwd: pathlib.Path) -> int:
         "py",
         "--type",
         "md",
+        "--glob",
+        "!docs/development/api_audit.md",
         "--",
         rf"\b{name}\b",
         *SEARCH_DIRS,
