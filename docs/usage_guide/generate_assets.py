@@ -343,9 +343,7 @@ def _make_label_axes_compare(use_dm: bool) -> plt.Figure:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig, axes = plt.subplots(
-        3, 1, figsize=(dm.cm(10), dm.cm(12)), dpi=300
-    )
+    fig, axes = plt.subplots(3, 1, figsize=(dm.cm(10), dm.cm(12)), dpi=300)
     ylabels = ["y", "Velocity [m/s]", "A very long descriptive label"]
 
     for i, ax in enumerate(axes):

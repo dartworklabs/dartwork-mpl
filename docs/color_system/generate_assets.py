@@ -308,7 +308,7 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
 
     paths: list[Path] = []
 
-    import textwrap  # noqa: E402
+    import textwrap
 
     _CE_TEMPLATE = textwrap.dedent("""\
     <div class="dm-pe-widget" style="border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px;">

@@ -26,13 +26,7 @@ dm.style.use("scientific")
 
 fig, ax = dm.subplots(width="20cm", aspect="square")
 
-wells = [
-    (0, 0, 1.5),
-    (3, 2, 1.0),
-    (-2, 3, 0.8),
-    (1, -3, 1.2),
-    (-3, -1, 0.9),
-]
+wells = [(0, 0, 1.5), (3, 2, 1.0), (-2, 3, 0.8), (1, -3, 1.2), (-3, -1, 0.9)]
 
 n_particles = 200
 particles_x = np.random.randn(n_particles) * 4
@@ -93,7 +87,9 @@ for i in range(n_particles):
 
 for wx, wy, strength in wells:
     for r, alpha in [(2, 0.1), (1.5, 0.2), (1, 0.3)]:
-        ax.add_patch(Circle((wx, wy), r * strength, color="white", alpha=alpha, zorder=5))
+        ax.add_patch(
+            Circle((wx, wy), r * strength, color="white", alpha=alpha, zorder=5)
+        )
     ax.add_patch(
         Circle(
             (wx, wy),

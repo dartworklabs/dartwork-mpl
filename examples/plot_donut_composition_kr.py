@@ -24,8 +24,12 @@ labels = ["범주 A", "범주 B", "범주 C", "범주 D", "기타"]
 colors = ["oc.blue6", "oc.red6", "oc.teal5", "oc.orange5", "oc.grape6"]
 
 wedges, _texts, autotexts = ax.pie(
-    sizes, labels=labels, colors=colors,
-    autopct="%1.1f%%", startangle=90, pctdistance=0.85,
+    sizes,
+    labels=labels,
+    colors=colors,
+    autopct="%1.1f%%",
+    startangle=90,
+    pctdistance=0.85,
 )
 
 # 도넛 홀.
@@ -33,8 +37,7 @@ circle = plt.Circle((0, 0), 0.70, fc="white")
 ax.add_artist(circle)
 
 ax.text(
-    0, 0, "구성 비율",
-    ha="center", va="center", fontsize=14, fontweight="bold",
+    0, 0, "구성 비율", ha="center", va="center", fontsize=14, fontweight="bold"
 )
 
 for autotext in autotexts:

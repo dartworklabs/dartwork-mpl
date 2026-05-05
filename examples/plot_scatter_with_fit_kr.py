@@ -30,7 +30,10 @@ z = np.polyfit(x, y, 1)
 p = np.poly1d(z)
 x_line = np.linspace(x.min(), x.max(), 100)
 ax.plot(
-    x_line, p(x_line), "r--", alpha=0.8,
+    x_line,
+    p(x_line),
+    "r--",
+    alpha=0.8,
     label=f"회귀선: y = {z[0]:.1f}x + {z[1]:.1f}",
 )
 
@@ -41,6 +44,8 @@ ax.set_title("상관관계 분석")
 ax.legend()
 
 dm.auto_layout(fig)
-dm.save_formats(fig, OUTPUT_DIR / "scatter_with_fit_kr", formats=("png",), dpi=300)
+dm.save_formats(
+    fig, OUTPUT_DIR / "scatter_with_fit_kr", formats=("png",), dpi=300
+)
 plt.close(fig)
 print(f"저장: {OUTPUT_DIR / 'scatter_with_fit_kr.png'}")

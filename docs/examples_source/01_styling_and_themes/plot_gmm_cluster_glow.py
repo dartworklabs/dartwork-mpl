@@ -74,7 +74,10 @@ with plt.style.context("dark_background"):
             weight="bold",
             color="white",
             bbox={
-                "boxstyle": "round,pad=0.2", "fc": "black", "ec": "none", "alpha": 0.6
+                "boxstyle": "round,pad=0.2",
+                "fc": "black",
+                "ec": "none",
+                "alpha": 0.6,
             },
         )
 

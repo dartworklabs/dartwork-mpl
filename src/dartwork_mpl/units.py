@@ -257,9 +257,7 @@ def _suggest_aspect_correction(value: str) -> str:
     except ValueError:
         as_number = math.nan
     if math.isfinite(as_number) and as_number > 0:
-        return (
-            f" To pass a numeric ratio, drop the quotes: aspect={as_number}."
-        )
+        return f" To pass a numeric ratio, drop the quotes: aspect={as_number}."
     close = difflib.get_close_matches(
         value.strip().lower(), list(ASPECT_TOKENS), n=1, cutoff=0.5
     )

@@ -33,20 +33,16 @@ rng = np.random.default_rng(42)
 data = rng.normal(100, 15, 1000)
 
 ax.hist(
-    data, bins=30, density=True,
-    alpha=0.7, edgecolor="black", linewidth=0.5,
+    data, bins=30, density=True, alpha=0.7, edgecolor="black", linewidth=0.5
 )
 
 # Analytic Normal PDF overlay.
 mu, std = data.mean(), data.std()
 xmin, xmax = ax.get_xlim()
 xx = np.linspace(xmin, xmax, 100)
-pdf = (1.0 / (std * np.sqrt(2 * np.pi))) * np.exp(
-    -0.5 * ((xx - mu) / std) ** 2
-)
+pdf = (1.0 / (std * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((xx - mu) / std) ** 2)
 ax.plot(
-    xx, pdf, "r-", linewidth=2,
-    label=f"Normal fit\nμ={mu:.1f}, σ={std:.1f}",
+    xx, pdf, "r-", linewidth=2, label=f"Normal fit\nμ={mu:.1f}, σ={std:.1f}"
 )
 
 dm.format_axis_percent(ax, axis="y")
@@ -56,6 +52,8 @@ ax.set_title("Distribution Analysis")
 ax.legend()
 
 dm.auto_layout(fig)
-dm.save_formats(fig, OUTPUT_DIR / "histogram_normal_fit", formats=("pdf",), dpi=300)
+dm.save_formats(
+    fig, OUTPUT_DIR / "histogram_normal_fit", formats=("pdf",), dpi=300
+)
 plt.close(fig)
 print(f"Saved: {OUTPUT_DIR / 'histogram_normal_fit.pdf'}")

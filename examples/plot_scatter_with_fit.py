@@ -34,8 +34,7 @@ z = np.polyfit(x, y, 1)
 p = np.poly1d(z)
 x_line = np.linspace(x.min(), x.max(), 100)
 ax.plot(
-    x_line, p(x_line), "r--", alpha=0.8,
-    label=f"y = {z[0]:.2f}x + {z[1]:.2f}",
+    x_line, p(x_line), "r--", alpha=0.8, label=f"y = {z[0]:.2f}x + {z[1]:.2f}"
 )
 
 dm.add_grid(ax, alpha=0.15)
