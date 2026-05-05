@@ -1,21 +1,25 @@
 # Migration Guide
 
 This guide covers the rename / deprecation events that have shipped
-since v0.1, ordered newest first. Every legacy import path still
-works today but emits a `DeprecationWarning`. The 0.3 width tokens
-and `FS_*` figsize tuples are slated for removal in **0.5.0**; the
-older `agent_utils` / `xplot` / `helpers.formatting` /
-`asset_viz` shims will be removed in **v1.0**.
+since v0.1, ordered newest first. The 0.3 width tokens, `FS_*`
+figsize tuples, `cm2in`, the `dartwork_mpl.constant` module, and the
+`figsize=` / `dpi=` arguments to `dm.subplots` / `dm.figure` were
+**removed in v0.4.0** — accessing them now raises `AttributeError` /
+`ModuleNotFoundError` / `TypeError`. The older `agent_utils` /
+`xplot` / `helpers.formatting` / `asset_viz` shims still emit a
+`DeprecationWarning` and are scheduled for removal in **v1.0**.
 
 ## At a glance
 
 | Old surface                           | New surface                                | Deprecated since | Remove in |
 | ------------------------------------- | ------------------------------------------ | ---------------- | --------- |
-| `dm.SW`, `dm.MW`, `dm.TW`, `dm.DW`    | `width="9cm"` / `dm.col1` / `dm.col2`      | v0.4.0           | v0.5.0    |
-| `dm.WIDTHS`                           | iterate explicit widths                    | v0.4.0           | v0.5.0    |
-| `dm.FS_SINGLE` / `FS_DOUBLE` / etc.   | `dm.subplots(width=..., aspect=...)`       | v0.4.0           | v0.5.0    |
-| `dm.cm2in(...)`                       | `dm.cm(...)` (returns `Inches`)            | v0.4.0           | v0.5.0    |
-| `figsize=` argument                   | `width=` + `aspect=`                       | v0.4.0 (lint)    | v0.5.0    |
+| `dm.SW`, `dm.MW`, `dm.TW`, `dm.DW`    | `width="9cm"` / `dm.col1` / `dm.col2`      | v0.4.0           | v0.4.0 (already removed) |
+| `dm.WIDTHS`                           | iterate explicit widths                    | v0.4.0           | v0.4.0 (already removed) |
+| `dm.FS_SINGLE` / `FS_DOUBLE` / etc.   | `dm.subplots(width=..., aspect=...)`       | v0.4.0           | v0.4.0 (already removed) |
+| `dm.cm2in(...)`                       | `dm.cm(...)` (returns `Inches`)            | v0.4.0           | v0.4.0 (already removed) |
+| `figsize=` argument                   | `width=` + `aspect=`                       | v0.4.0 (lint)    | v0.4.0 (already removed) |
+| `dpi=` argument                       | active style preset                        | v0.4.0 (lint)    | v0.4.0 (already removed) |
+| `dartwork_mpl.constant` module        | `dartwork_mpl.units` + width / aspect API  | v0.4.0           | v0.4.0 (already removed) |
 | `plt.tight_layout()`                  | `dm.auto_layout(fig)`                      | v0.4.0 (lint)    | —         |
 | `dartwork_mpl.agent_utils`            | `dartwork_mpl.helpers`                     | v0.2.0           | v1.0.0    |
 | `dartwork_mpl.xplot`                  | `dartwork_mpl.templates`                   | v0.2.0           | v1.0.0    |
@@ -34,6 +38,11 @@ older `agent_utils` / `xplot` / `helpers.formatting` /
 2. **Aspect is a height/width ratio**, separated from width. Six
    named tokens cover the common cases; pass a positive float for
    anything else.
+3. **The 0.3 surface is gone, not deprecated.** The 0.4.0 cut
+   pulled the planned 0.5.0 removals forward, so the table above
+   marks every 0.3 width / FS / `cm2in` / `figsize=` / `dpi=` entry
+   as already removed. There is no `DeprecationWarning` grace period
+   — old call sites raise immediately. Migrate them all in one pass.
 
 A new `dm.lint` module checks code against a 15-rule anti-pattern
 catalog so editor tooling, MCP clients, and CI all share the same

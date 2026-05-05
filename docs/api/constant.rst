@@ -26,7 +26,9 @@ Example (legacy 0.3 idiom)
    import matplotlib.pyplot as plt
    import dartwork_mpl as dm
 
-   # DEPRECATED — fires `width-token` lint warning, removal in 0.5.0
+   # REMOVED in 0.4.0 — `dm.SW` raises `AttributeError`,
+   # `figsize=` raises `TypeError` on dm.subplots / dm.figure.
+   # The block below is shown only to document the migration shape.
    fig, ax = plt.subplots(figsize=(dm.SW, dm.SW * 0.75))
 
    # 0.4 replacement
