@@ -82,12 +82,12 @@
 | `save_and_show` | `dartwork_mpl.io` | func | 14 |  | 34 |  |  |  | pending |
 | `save_formats` | `dartwork_mpl.io` | func | 8 |  | 77 |  |  |  | pending |
 | `show` | `dartwork_mpl.io` | func | 48 |  | 238 |  |  |  | pending |
-| `auto_layout` | `dartwork_mpl.layout` | func | 322 |  | 293 |  |  |  | pending |
-| `get_bounding_box` | `dartwork_mpl.layout` | func | 15 |  | 6 |  |  |  | pending |
-| `set_xmargin` | `dartwork_mpl.layout` | func | 7 |  | 8 |  |  |  | pending |
-| `set_ymargin` | `dartwork_mpl.layout` | func | 7 |  | 7 |  |  |  | pending |
-| `simple_layout` | `dartwork_mpl.layout` | func | 82 |  | 275 |  |  |  | pending |
-| `tight_crop` | `dartwork_mpl.layout` | func | 128 |  | 3 |  |  |  | pending |
+| `auto_layout` | `dartwork_mpl.layout` | func | 322 | N | 293 | 3 | keep | dartwork-mpl 고유 content-aware 측정 | audited |
+| `get_bounding_box` | `dartwork_mpl.layout` | func | 15 | N | 6 | 2 | keep | 측정 helper | audited |
+| `set_xmargin` | `dartwork_mpl.layout` | func | 7 | N | 8 | 2 | borderline | x-margin + xlim 동시 조정 | audited |
+| `set_ymargin` | `dartwork_mpl.layout` | func | 7 | N | 7 | 2 | borderline | y-margin + ylim 동시 조정 | audited |
+| `simple_layout` | `dartwork_mpl.layout` | func | 82 | N | 275 | 2 | keep | tight_layout/constrained_layout 모호성 해소 | audited |
+| `tight_crop` | `dartwork_mpl.layout` | func | 128 | N | 3 | 2 | keep | 고유 alpha-cropping | audited |
 | `Issue` | `dartwork_mpl.lint` | class | 0 |  | 19 |  |  |  | pending |
 | `Rule` | `dartwork_mpl.lint` | class | 0 |  | 17 |  |  |  | pending |
 | `format_report` | `dartwork_mpl.lint` | func | 19 |  | 17 |  |  |  | pending |
@@ -102,14 +102,14 @@
 | `fs` | `dartwork_mpl.scale` | func | 1 |  | 1256 |  |  |  | pending |
 | `fw` | `dartwork_mpl.scale` | func | 4 |  | 83 |  |  |  | pending |
 | `lw` | `dartwork_mpl.scale` | func | 1 |  | 417 |  |  |  | pending |
-| `add_frame` | `dartwork_mpl.spines` | func | 4 |  | 10 |  |  |  | pending |
-| `add_grid` | `dartwork_mpl.spines` | func | 11 |  | 15 |  |  |  | pending |
-| `hide_all_spines` | `dartwork_mpl.spines` | func | 2 |  | 28 |  |  |  | pending |
-| `hide_spines` | `dartwork_mpl.spines` | func | 6 |  | 10 |  |  |  | pending |
-| `minimal_axes` | `dartwork_mpl.spines` | func | 7 |  | 27 |  |  |  | pending |
-| `remove_grid` | `dartwork_mpl.spines` | func | 1 |  | 3 |  |  |  | pending |
-| `show_only_spines` | `dartwork_mpl.spines` | func | 4 |  | 4 |  |  |  | pending |
-| `style_spines` | `dartwork_mpl.spines` | func | 14 |  | 9 |  |  |  | pending |
+| `add_frame` | `dartwork_mpl.spines` | func | 4 | N | 10 | 2 | borderline | composition — 토론 | audited |
+| `add_grid` | `dartwork_mpl.spines` | func | 11 | N | 15 | 2 | borderline | dm.* default kwargs(color, alpha 등) 가치 — 토론 | audited |
+| `hide_all_spines` | `dartwork_mpl.spines` | func | 2 | Y | 28 | 1 | remove | `for s in ax.spines.values(): s.set_visible(False)` | audited |
+| `hide_spines` | `dartwork_mpl.spines` | func | 6 | Y | 10 | 1 | remove | `for s in ['top','right']: ax.spines[s].set_visible(False)` | audited |
+| `minimal_axes` | `dartwork_mpl.spines` | func | 7 | N | 27 | 3 | borderline | 4 함수 묶음 composition — 토론 | audited |
+| `remove_grid` | `dartwork_mpl.spines` | func | 1 | Y | 3 | 1 | remove | `ax.grid(False)` | audited |
+| `show_only_spines` | `dartwork_mpl.spines` | func | 4 | Y | 4 | 2 | remove | spec §2.1 — 4-element loop | audited |
+| `style_spines` | `dartwork_mpl.spines` | func | 14 | N | 9 | 2 | borderline | composition (color+linewidth+visible filter) — 토론 | audited |
 | `Style` | `dartwork_mpl.style` | class | 0 |  | 61 |  |  |  | pending |
 | `list_styles` | `dartwork_mpl.style` | func | 2 |  | 11 |  |  |  | pending |
 | `load_style_dict` | `dartwork_mpl.style` | func | 26 |  | 10 |  |  |  | pending |
