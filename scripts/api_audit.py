@@ -27,7 +27,7 @@ SRC = ROOT / "src" / "dartwork_mpl"
 
 # Out of scope per spec §7.
 EXCLUDED_PARTS = {"_helpers.py", "cli.py", "mcp", "ui", "asset", "asset_viz"}
-SEARCH_DIRS = ["docs", "examples_gallery", "examples_source", "tests"]
+SEARCH_DIRS = ["docs", "tests"]
 
 
 def iter_python_files(root: pathlib.Path):
@@ -36,8 +36,6 @@ def iter_python_files(root: pathlib.Path):
             continue
         rel = path.relative_to(root)
         if any(part in EXCLUDED_PARTS for part in rel.parts):
-            continue
-        if rel.name.startswith("_") and rel.name != "__init__.py":
             continue
         yield path
 
