@@ -35,7 +35,7 @@
 |---|---|---|---|---|---|---|---|---|---|
 | `arrow_axis` | `dartwork_mpl.annotation` | func | 103 | N | 28 | 3 | keep | renderer-aware bidirectional Low-High arrow axis; text extent measurement + annotate calls — annotation 본질 | audited |
 | `label_axes` | `dartwork_mpl.annotation` | func | 28 | N | 58 | 3 | keep | auto x-position (ylabel 존재 여부 분기) + 다중 axes 순회 — 58 callsites; 다중 axes 자동 라벨링 | audited |
-| `ensure_loaded` | `dartwork_mpl.cmap` | func | 13 |  | 47 |  |  |  | pending |
+| `ensure_loaded` | `dartwork_mpl.cmap` | func | 13 | N | 47 | 1 | keep | thread-safe double-checked locking + _load_colormaps() 등록 — colormap 시스템 bootstrap; 47 내부 callsites | audited |
 | `Color` | `dartwork_mpl.color._color` | class | 0 | N | 174 | 3 | keep | OKLCH-native color object; stores internally in OKLab, exposes oklab/oklch/rgb views — dartwork-mpl 색 시스템 핵심 | audited |
 | `cspace` | `dartwork_mpl.color._color` | func | 105 | N | 92 | 3 | keep | OKLCH 인터폴레이션 + 최단 hue 경로 처리; oklch/oklab/rgb 3-space 지원 — no matplotlib equivalent | audited |
 | `hex` | `dartwork_mpl.color._color` | func | 1 | N | 67 | 2 | keep | hex 문자열 → Color 진입점; 1-line body지만 OKLCH 타입 시스템 시맨틱 entry-point | audited |
@@ -43,10 +43,10 @@
 | `oklab` | `dartwork_mpl.color._color` | func | 1 | N | 76 | 2 | keep | OKLab → Color 진입점; 1-line body지만 OKLCH 타입 시스템 시맨틱 entry-point | audited |
 | `oklch` | `dartwork_mpl.color._color` | func | 1 | N | 113 | 2 | keep | OKLCH → Color 진입점; 1-line body지만 OKLCH 타입 시스템 시맨틱 entry-point | audited |
 | `rgb` | `dartwork_mpl.color._color` | func | 1 | N | 62 | 2 | keep | RGB → Color 진입점; auto 0-1/0-255 range detection — OKLCH 타입 시스템 시맨틱 entry-point | audited |
-| `ensure_loaded` | `dartwork_mpl.color._loader` | func | 5 |  | 47 |  |  |  | pending |
-| `OklabView` | `dartwork_mpl.color._views` | class | 0 |  | 4 |  |  |  | pending |
-| `OklchView` | `dartwork_mpl.color._views` | class | 0 |  | 4 |  |  |  | pending |
-| `RgbView` | `dartwork_mpl.color._views` | class | 0 |  | 4 |  |  |  | pending |
+| `ensure_loaded` | `dartwork_mpl.color._loader` | func | 5 | N | 47 | 1 | keep | 색 정의 idempotent 로딩 — _loaded 플래그 guard; 47 내부 callsites | audited |
+| `OklabView` | `dartwork_mpl.color._views` | class | 0 | N | 4 | 2 | keep | OKLab 좌표 뷰 — sequence 프로토콜 + __iter__/__len__/__repr__; OKLCH 색 시스템 구성 요소 | audited |
+| `OklchView` | `dartwork_mpl.color._views` | class | 0 | N | 4 | 2 | keep | OKLCH 좌표 뷰 — 동상; OKLCH 색 시스템 구성 요소 | audited |
+| `RgbView` | `dartwork_mpl.color._views` | class | 0 | N | 4 | 2 | keep | RGB 좌표 뷰 — 동상; OKLCH 색 시스템 구성 요소 | audited |
 | `classify_colormap` | `dartwork_mpl.diagnostics` | func | 120 | N | 21 | 3 | keep | HSV 분석 기반 다분기 분류 (Categorical/Single-Hue/Multi-Hue/Diverging/Cyclical) — non-trivial classifier | audited |
 | `plot_colormaps` | `dartwork_mpl.diagnostics` | func | 48 | N | 26 | 3 | keep | colormap 시각화 + classify_colormap 기반 그룹화 — diagnostic asset visualizer | audited |
 | `plot_colors` | `dartwork_mpl.diagnostics` | func | 32 | N | 35 | 3 | keep | 팔레트 색상 배열 시각화 — diagnostic asset visualizer | audited |
@@ -88,17 +88,17 @@
 | `set_ymargin` | `dartwork_mpl.layout` | func | 7 | N | 7 | 2 | borderline | y-margin + ylim 동시 조정 — 토론 | audited |
 | `simple_layout` | `dartwork_mpl.layout` | func | 82 | N | 275 | 2 | keep | tight_layout/constrained_layout 모호성 해소 | audited |
 | `tight_crop` | `dartwork_mpl.layout` | func | 128 | N | 3 | 2 | keep | artist-bbox 측정 후 fig 리사이즈 | audited |
-| `Issue` | `dartwork_mpl.lint` | class | 0 |  | 19 |  |  |  | pending |
-| `Rule` | `dartwork_mpl.lint` | class | 0 |  | 17 |  |  |  | pending |
-| `format_report` | `dartwork_mpl.lint` | func | 19 |  | 17 |  |  |  | pending |
-| `lint` | `dartwork_mpl.lint` | func | 16 |  | 191 |  |  |  | pending |
-| `load_rules` | `dartwork_mpl.lint` | func | 28 |  | 20 |  |  |  | pending |
-| `migrate_legacy_code` | `dartwork_mpl.lint` | func | 20 |  | 34 |  |  |  | pending |
-| `copy_prompt` | `dartwork_mpl.prompt` | func | 10 |  | 9 |  |  |  | pending |
-| `find_template` | `dartwork_mpl.prompt` | func | 27 |  | 22 |  |  |  | pending |
-| `get_prompt` | `dartwork_mpl.prompt` | func | 2 |  | 32 |  |  |  | pending |
-| `list_prompts` | `dartwork_mpl.prompt` | func | 15 |  | 16 |  |  |  | pending |
-| `prompt_path` | `dartwork_mpl.prompt` | func | 4 |  | 9 |  |  |  | pending |
+| `Issue` | `dartwork_mpl.lint` | class | 0 | N | 19 | 3 | keep | frozen dataclass — rule_id·severity·line·snippet·column·fix_suggestion; lint engine 핵심 결과 타입 | audited |
+| `Rule` | `dartwork_mpl.lint` | class | 0 | N | 17 | 3 | keep | frozen dataclass — id·severity·detector_kind/value·message·why·fix_suggestion; YAML 카탈로그 단위 | audited |
+| `format_report` | `dartwork_mpl.lint` | func | 19 | N | 17 | 3 | keep | 19 LOC — severity 그룹화 + fix_suggestion 인라인 출력; MCP 도구 + CLI 공유 포맷터 | audited |
+| `lint` | `dartwork_mpl.lint` | func | 16 | N | 191 | 3 | keep | 191 callsites — regex/substring 검출 루프; MCP lint_dartwork_mpl_code + CLI 진입점 | audited |
+| `load_rules` | `dartwork_mpl.lint` | func | 28 | N | 20 | 3 | keep | 28 LOC YAML 카탈로그 파서 — detector kind 분기 + Rule 객체 생성; SSOT 로더 | audited |
+| `migrate_legacy_code` | `dartwork_mpl.lint` | func | 20 | N | 34 | 3 | keep | 0.3→0.4 마이그레이션 도구 — load_rules 기반 auto-fix 치환; 34 callsites | audited |
+| `copy_prompt` | `dartwork_mpl.prompt` | func | 10 | N | 9 | 2 | keep | 번들 prompt → 지정 경로 복사; dir/file 분기 + create_parent_path; 프롬프트 추출 CLI | audited |
+| `find_template` | `dartwork_mpl.prompt` | func | 27 | N | 22 | 3 | keep | 27 LOC 토큰 매칭 scorer — _index.json 기반 template 랭킹; MCP find_template Python 동등체 | audited |
+| `get_prompt` | `dartwork_mpl.prompt` | func | 2 | N | 32 | 2 | keep | prompt_path + read_text 2줄; 의미 있는 진입점 — 32 callsites | audited |
+| `list_prompts` | `dartwork_mpl.prompt` | func | 15 | N | 16 | 2 | keep | glob + canonical set 비교 + drift warning; 번들 knowledge-base 디스커버리 | audited |
+| `prompt_path` | `dartwork_mpl.prompt` | func | 4 | N | 9 | 2 | keep | 번들 경로 해석 + ValueError; path helper with validation | audited |
 | `fs` | `dartwork_mpl.scale` | func | 1 | N | 1256 | 1 | keep | relative font-size token (`rcParams['font.size'] + n`) — no matplotlib equivalent | audited |
 | `fw` | `dartwork_mpl.scale` | func | 4 | N | 83 | 2 | keep | string weight name → numeric conversion via `_WEIGHT_MAP` + offset — no matplotlib equivalent | audited |
 | `lw` | `dartwork_mpl.scale` | func | 1 | N | 417 | 1 | keep | relative linewidth token (`rcParams['lines.linewidth'] + n`) — no matplotlib equivalent | audited |
@@ -114,8 +114,8 @@
 | `list_styles` | `dartwork_mpl.style` | func | 2 | N | 11 | 2 | keep | asset/mplstyle glob → stem 목록 — style discovery | audited |
 | `load_style_dict` | `dartwork_mpl.style` | func | 26 | N | 10 | 2 | keep | mplstyle 커스텀 파서 (inline comment 제거 + colon-split + float 변환) — no matplotlib equivalent | audited |
 | `style_path` | `dartwork_mpl.style` | func | 5 | N | 7 | 1 | keep | asset 경로 해석 + ValueError — style 파일 path helper | audited |
-| `get_source_code` | `dartwork_mpl.templates.diverging_bar` | func | 13 |  | 0 |  |  |  | pending |
-| `plot_diverging_bar` | `dartwork_mpl.templates.diverging_bar` | func | 206 |  | 28 |  |  |  | pending |
+| `get_source_code` | `dartwork_mpl.templates.diverging_bar` | func | 13 | N | 0 | 2 | borderline | importlib+inspect 경유 모듈 소스 반환 — 외부 callsite 0; AI agent용 코드 노출 의도이나 단순 inspect wrapper — 토론 | audited |
+| `plot_diverging_bar` | `dartwork_mpl.templates.diverging_bar` | func | 206 | N | 28 | 3 | keep | 206 LOC 완전한 chart template — blended transform + cascading layout + 값 라벨 배치; 28 callsites | audited |
 | `Inches` | `dartwork_mpl.units` | class | 0 | N | 27 | 2 | keep | 단위 태그 클래스 — `__array_ufunc__=None` + 산술 연산자 오버라이드로 numpy 경계에서 단위 손실 방지 | audited |
 | `cm` | `dartwork_mpl.units` | func | 1 | N | 200 | 1 | keep | 물리 단위 토큰 — cm → Inches 변환; parse_width 진입점 | audited |
 | `inch` | `dartwork_mpl.units` | func | 1 | N | 35 | 1 | keep | 물리 단위 토큰 — Inches 태그 부여 identity | audited |
@@ -126,10 +126,10 @@
 | `mix_colors` | `dartwork_mpl.util` | func | 8 | N | 28 | 2 | borderline | 단순 RGB linspace (mcolors.to_rgb 경유) — OKLCH 인터폴레이션 없음; 토론 | audited |
 | `pseudo_alpha` | `dartwork_mpl.util` | func | 1 | N | 34 | 2 | borderline | mix_colors 1-line delegate; 백색 블렌딩 의미 있으나 구현이 RGB — 토론 | audited |
 | `set_decimal` | `dartwork_mpl.util` | func | 9 | N | 40 | 2 | borderline | get_ticks + set_ticks + set_ticklabels 3-step pattern per axis; no rcParams/locale logic — 토론 | audited |
-| `Severity` | `dartwork_mpl.validate` | class | 0 |  | 26 |  |  |  | pending |
-| `VisualWarning` | `dartwork_mpl.validate` | class | 0 |  | 24 |  |  |  | pending |
+| `Severity` | `dartwork_mpl.validate` | class | 0 | N | 26 | 2 | keep | WARNING/INFO Enum; 26 callsites — validate 시스템 severity 타입 | audited |
+| `VisualWarning` | `dartwork_mpl.validate` | class | 0 | N | 24 | 2 | keep | dataclass — severity·check_id·message·detail + _ICONS + __str__; 24 callsites — visual 검증 결과 타입 | audited |
 | `validate_figure` | `dartwork_mpl.validate` | func | 39 | N | 103 | 3 | keep | 8개 check lambda 등록·선택 실행 + canvas.draw() 렌더 → VisualWarning 수집 — 종합 visual 검증 엔진 | audited |
-| `check_agent_requirements` | `dartwork_mpl.validate_fixes` | func | 41 |  | 1 |  |  |  | pending |
-| `generate_validation_report` | `dartwork_mpl.validate_fixes` | func | 47 |  | 1 |  |  |  | pending |
-| `get_fix_suggestions` | `dartwork_mpl.validate_fixes` | func | 90 |  | 20 |  |  |  | pending |
-| `validate_with_fixes` | `dartwork_mpl.validate_fixes` | func | 48 |  | 16 |  |  |  | pending |
+| `check_agent_requirements` | `dartwork_mpl.validate_fixes` | func | 41 | N | 1 | 3 | keep | 41 LOC — DPI·style·axis labels·data·color 다중 검사 dict 반환; agent-oriented 요구사항 점검 | audited |
+| `generate_validation_report` | `dartwork_mpl.validate_fixes` | func | 47 | N | 1 | 3 | keep | 47 LOC — requirements + visual warnings + score + status 종합 리포트; agent 출력용 구조화 텍스트 | audited |
+| `get_fix_suggestions` | `dartwork_mpl.validate_fixes` | func | 90 | N | 20 | 3 | keep | 90 LOC — check_id별 5분기 코드 스니펫 생성; 20 callsites; auto-fix agent 핵심 | audited |
+| `validate_with_fixes` | `dartwork_mpl.validate_fixes` | func | 48 | N | 16 | 3 | keep | validate_figure + get_fix_suggestions 결합 — 검증·수정 제안 원스톱 API; 16 callsites | audited |
