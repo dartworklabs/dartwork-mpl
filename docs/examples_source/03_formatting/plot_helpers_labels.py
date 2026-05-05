@@ -1,14 +1,13 @@
 """
-helpers.labels — Labels, Legend, and Value Annotations
-=======================================================
+helpers.labels — Legend and Value Annotations
+==============================================
 
-``dm.helpers.labels`` bundles a few common labelling chores into
-single calls: assembling axis labels from name + unit, picking a
-reasonable legend location, adding numeric labels above data points,
-and combining those with a trend-line annotation.
+``dm.helpers.labels`` provides ``optimize_legend`` for smart legend
+placement and ``add_value_labels`` (now inlined) for per-point
+numeric annotations. Axis labels are set directly via
+``ax.set_xlabel`` / ``ax.set_ylabel``.
 
-The 2×2 grid below shows each of the four utilities on synthetic
-data.
+The 2×2 grid below shows each pattern on synthetic data.
 """
 
 import matplotlib.pyplot as plt
@@ -28,9 +27,8 @@ y2 = np.cos(x) * np.exp(-x / 10)
 # Format axis labels from name + unit.
 ax1 = axes[0, 0]
 ax1.plot(x, y1, color="oc.blue5", lw=dm.lw(1))
-dm.helpers.labels.format_axis_labels(
-    ax1, x_label="Time", y_label="Amplitude", x_unit="seconds", y_unit="mV"
-)
+ax1.set_xlabel("Time (seconds)", fontsize=dm.fs(0))
+ax1.set_ylabel("Amplitude (mV)", fontsize=dm.fs(0))
 ax1.set_title("Auto-Formatted Labels", fontsize=dm.fs(1))
 dm.minimal_axes(ax1)
 
@@ -50,9 +48,18 @@ ax3 = axes[1, 0]
 x_points = np.array([1, 2, 3, 4, 5])
 y_points = np.array([23.5, 45.2, 38.9, 52.1, 41.3])
 ax3.bar(x_points, y_points, color="oc.purple5")
-dm.helpers.labels.add_value_labels(
-    ax3, x_points, y_points, format_str=".1f", offset_y=0.02, fontsize=dm.fs(-1)
-)
+y_min, y_max = ax3.get_ylim()
+_offset = (y_max - y_min) * 0.02
+for xi, yi in zip(x_points, y_points, strict=False):
+    ax3.text(
+        xi,
+        yi + _offset,
+        f"{yi:.1f}",
+        ha="center",
+        va="bottom",
+        fontsize=dm.fs(-1),
+        color="oc.gray7",
+    )
 ax3.set_title("Value Labels on Bars", fontsize=dm.fs(1))
 ax3.set_xlabel("Category", fontsize=dm.fs(0))
 ax3.set_ylabel("Value", fontsize=dm.fs(0))
@@ -63,9 +70,8 @@ ax4 = axes[1, 1]
 x_scatter = np.random.randn(20)
 y_scatter = 2 * x_scatter + np.random.randn(20) * 0.5
 ax4.scatter(x_scatter, y_scatter, c=y_scatter, cmap="dc.deep_sea", s=50)
-dm.helpers.labels.format_axis_labels(
-    ax4, x_label="Independent Variable", y_label="Dependent Variable"
-)
+ax4.set_xlabel("Independent Variable", fontsize=dm.fs(0))
+ax4.set_ylabel("Dependent Variable", fontsize=dm.fs(0))
 z = np.polyfit(x_scatter, y_scatter, 1)
 p = np.poly1d(z)
 x_trend = np.linspace(x_scatter.min(), x_scatter.max(), 100)

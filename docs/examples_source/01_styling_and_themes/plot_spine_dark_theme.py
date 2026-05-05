@@ -41,7 +41,10 @@ ax1.set_facecolor("#1a1a1a")
 
 # Framed with coloured orange border.
 ax2.plot(x, y2, color="oc.orange4", lw=dm.lw(1))
-dm.add_frame(ax2, color="oc.orange6", linewidth=2)
+for s in ax2.spines.values():
+    s.set_visible(True)
+    s.set_color("oc.orange6")
+    s.set_linewidth(2)
 dm.add_grid(ax2, alpha=0.15, color="white", linestyle="-", linewidth=0.5)
 ax2.set_title("Dark Theme — Framed", fontsize=dm.fs(1), color="white")
 ax2.set_xlabel("X", fontsize=dm.fs(0), color="white")

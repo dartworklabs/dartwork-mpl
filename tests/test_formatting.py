@@ -17,37 +17,6 @@ def _axes():
     return fig, ax
 
 
-class TestFormatAxisPercent:
-    def test_smoke(self) -> None:
-        fig, ax = _axes()
-        ax.plot([0, 1], [0.1, 0.5])
-        dm.format_axis_percent(ax, axis="y")
-        # Formatter applied — tick formatter type check
-        fmt = ax.yaxis.get_major_formatter()
-        assert fmt is not None
-        plt.close(fig)
-
-    @pytest.mark.parametrize("decimals", [0, 1, 2])
-    def test_decimals(self, decimals: int) -> None:
-        fig, ax = _axes()
-        dm.format_axis_percent(ax, axis="y", decimals=decimals)
-        plt.close(fig)
-
-    def test_unknown_axis_is_silent_noop(self) -> None:
-        """Unknown ``axis`` values fall through — the implementation
-        checks ``axis in ('x', 'y', 'both')`` and does nothing otherwise.
-
-        This pins the current behaviour so a future change that starts
-        raising on unknown input is a deliberate, reviewed decision.
-        """
-        fig, ax = _axes()
-        default_formatter = ax.yaxis.get_major_formatter()
-        dm.format_axis_percent(ax, axis="z")  # type: ignore[arg-type]
-        # The default formatter on ``ax.yaxis`` is unchanged.
-        assert ax.yaxis.get_major_formatter() is default_formatter
-        plt.close(fig)
-
-
 class TestFormatAxisMillions:
     def test_smoke(self) -> None:
         fig, ax = _axes()

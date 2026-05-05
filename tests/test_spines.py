@@ -36,18 +36,6 @@ class TestAddGrid:
         plt.close(fig)
 
 
-class TestAddFrame:
-    def test_frame_turns_all_spines_on(self) -> None:
-        fig, ax = _axes()
-        # hide all spines manually before testing add_frame
-        for s in ax.spines.values():
-            s.set_visible(False)
-        dm.add_frame(ax, color="black", linewidth=1.0)
-        for side in ("left", "right", "top", "bottom"):
-            assert ax.spines[side].get_visible() is True
-        plt.close(fig)
-
-
 class TestMinimalAxes:
     def test_top_and_right_hidden(self) -> None:
         """``minimal_axes`` should leave only left + bottom visible."""

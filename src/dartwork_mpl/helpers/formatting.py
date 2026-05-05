@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import warnings
 
-from .labels import add_value_labels, format_axis_labels, optimize_legend
+from .labels import optimize_legend
 
 warnings.warn(
     "dartwork_mpl.helpers.formatting is deprecated; "
@@ -19,4 +19,4 @@ warnings.warn(
     stacklevel=2,
 )
 
-__all__ = ["add_value_labels", "format_axis_labels", "optimize_legend"]
+__all__ = ["optimize_legend"]

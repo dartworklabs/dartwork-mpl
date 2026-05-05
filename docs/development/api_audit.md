@@ -60,7 +60,7 @@
 | `format_axis_billions` | `dartwork_mpl.formatting` | func | 25 | N | 18 | 3 | keep | zero-tick special case + `x/1e9` scaling in formatter body | audited |
 | `format_axis_currency` | `dartwork_mpl.formatting` | func | 34 | N | 11 | 3 | keep | sign-outside-symbol placement, zero-rounding sign suppression, prefix/suffix position logic | audited |
 | `format_axis_millions` | `dartwork_mpl.formatting` | func | 25 | N | 23 | 3 | keep | zero-tick special case + `x/1e6` scaling in formatter body | audited |
-| `format_axis_percent` | `dartwork_mpl.formatting` | func | 6 | N | 7 | 2 | borderline | wraps `ticker.PercentFormatter` directly — no custom formatter logic; x/y/both dispatch adds minor value — 토론 | audited |
+| `format_axis_percent` | `dartwork_mpl.formatting` | func | 6 | N | 7 | 2 | borderline | wraps `ticker.PercentFormatter` directly — no custom formatter logic; x/y/both dispatch adds minor value — 토론 | removed |
 | `format_axis_si` | `dartwork_mpl.formatting` | func | 37 | N | 29 | 3 | keep | multi-level prefix selection (k/M/G/T), negative sign handling, zero-tick special case | audited |
 | `format_axis_thousands` | `dartwork_mpl.formatting` | func | 6 | N | 2 | 2 | borderline | single FuncFormatter lambda with configurable sep — minimal transformation, no scaling logic — 토론 | removed |
 | `rotate_tick_labels` | `dartwork_mpl.formatting` | func | 26 | N | 25 | 2 | borderline | auto-ha inference (rotation sign → left/center/right) + FixedLocator-safe iteration — more than a 1-line setp call — 토론 | audited |
@@ -68,8 +68,8 @@
 | `validate_data` | `dartwork_mpl.helpers.data` | func | 43 | N | 26 | 2 | keep | NaN 제거·길이 검증·min_points 체크 — 데이터 shape 검증 | audited |
 | `create_figure_with_style` | `dartwork_mpl.helpers.io` | func | 9 | N | 22 | 2 | borderline | `dm.style.use(style)` + `plt.figure(figsize=..., dpi=...)` 2줄 shortcut; `figsize=` 안티패턴 직접 호출 — strong remove candidate | removed |
 | `save_figure` | `dartwork_mpl.helpers.io` | func | 11 | N | 24 | 2 | borderline | 내부적으로 `dm.save_formats` 1-line passthrough + mkdir + verbose print — double-wrapper, strong remove candidate | removed |
-| `add_value_labels` | `dartwork_mpl.helpers.labels` | func | 18 | N | 17 | 3 | borderline | 데이터 순회 + y-range 기반 offset 계산 + ax.text 배치 — bar/line value annotation | audited |
-| `format_axis_labels` | `dartwork_mpl.helpers.labels` | func | 12 | N | 22 | 2 | borderline | unit 접미사 붙이기 + fs() fontsize 적용 — composition (set_xlabel/ylabel/title 3줄 묶음) — 토론 | audited |
+| `add_value_labels` | `dartwork_mpl.helpers.labels` | func | 18 | N | 17 | 3 | borderline | 데이터 순회 + y-range 기반 offset 계산 + ax.text 배치 — bar/line value annotation | removed |
+| `format_axis_labels` | `dartwork_mpl.helpers.labels` | func | 12 | N | 22 | 2 | borderline | unit 접미사 붙이기 + fs() fontsize 적용 — composition (set_xlabel/ylabel/title 3줄 묶음) — 토론 | removed |
 | `optimize_legend` | `dartwork_mpl.helpers.labels` | func | 31 | N | 15 | 3 | borderline | ncol 휴리스틱 (n_items 기반) + inside/outside 배치 분기 — legend 자동 위치 composition | audited |
 | `check_figure_quality` | `dartwork_mpl.helpers.quality` | func | 39 | N | 18 | 3 | keep | DPI·style·축라벨·틱·여백 다중 검사 루프 — publication-quality 검증 | audited |
 | `suggest_chart_type` | `dartwork_mpl.helpers.quality` | func | 31 | N | 24 | 3 | keep | x_type/y_type/n_points/n_series 기반 다분기 결정 트리 — 자연어 인터페이스 | audited |
@@ -84,8 +84,8 @@
 | `show` | `dartwork_mpl.io` | func | 48 | N | 238 | 3 | keep | SVG DOM 파싱 + aspect-ratio 보존 width/height 치환 + IPython display — plt.show() 아님 | audited |
 | `auto_layout` | `dartwork_mpl.layout` | func | 322 | N | 304 | 3 | keep | dartwork-mpl 고유 content-aware 측정 | audited |
 | `get_bounding_box` | `dartwork_mpl.layout` | func | 15 | N | 6 | 2 | keep | 측정 helper | audited |
-| `set_xmargin` | `dartwork_mpl.layout` | func | 7 | N | 8 | 2 | borderline | x-margin + xlim 동시 조정 — 토론 | audited |
-| `set_ymargin` | `dartwork_mpl.layout` | func | 7 | N | 7 | 2 | borderline | y-margin + ylim 동시 조정 — 토론 | audited |
+| `set_xmargin` | `dartwork_mpl.layout` | func | 7 | N | 8 | 2 | borderline | x-margin + xlim 동시 조정 — 토론 | removed |
+| `set_ymargin` | `dartwork_mpl.layout` | func | 7 | N | 7 | 2 | borderline | y-margin + ylim 동시 조정 — 토론 | removed |
 | `simple_layout` | `dartwork_mpl.layout` | func | 82 | N | 275 | 2 | keep | tight_layout/constrained_layout 모호성 해소 | audited |
 | `tight_crop` | `dartwork_mpl.layout` | func | 128 | N | 3 | 2 | keep | artist-bbox 측정 후 fig 리사이즈 | audited |
 | `Issue` | `dartwork_mpl.lint` | class | 0 | N | 19 | 3 | keep | frozen dataclass — rule_id·severity·line·snippet·column·fix_suggestion; lint engine 핵심 결과 타입 | audited |
@@ -102,7 +102,7 @@
 | `fs` | `dartwork_mpl.scale` | func | 1 | N | 1256 | 1 | keep | relative font-size token (`rcParams['font.size'] + n`) — no matplotlib equivalent | audited |
 | `fw` | `dartwork_mpl.scale` | func | 4 | N | 83 | 2 | keep | string weight name → numeric conversion via `_WEIGHT_MAP` + offset — no matplotlib equivalent | audited |
 | `lw` | `dartwork_mpl.scale` | func | 1 | N | 417 | 1 | keep | relative linewidth token (`rcParams['lines.linewidth'] + n`) — no matplotlib equivalent | audited |
-| `add_frame` | `dartwork_mpl.spines` | func | 4 | N | 10 | 2 | borderline | composition (visible+color+linewidth on all spines) — 토론 | audited |
+| `add_frame` | `dartwork_mpl.spines` | func | 4 | N | 10 | 2 | borderline | composition (visible+color+linewidth on all spines) — 토론 | removed |
 | `add_grid` | `dartwork_mpl.spines` | func | 11 | N | 21 | 2 | borderline | dm.* default kwargs(color, alpha 등) 가치 — 토론 | audited |
 | `hide_all_spines` | `dartwork_mpl.spines` | func | 2 | Y | 28 | 1 | remove | `for s in ax.spines.values(): s.set_visible(False)` | removed |
 | `hide_spines` | `dartwork_mpl.spines` | func | 6 | Y | 13 | 1 | remove | `for s in ['top','right']: ax.spines[s].set_visible(False)` | removed |
@@ -142,17 +142,17 @@ keep / remove로 재분류한다. `잠정 권고`는 본 spec §3 기준의 중�
 
 | name | module | loc | callsites | 핵심 사유 (notes 요약) | 잠정 권고 |
 |---|---|---|---|---|---|
-| `format_axis_percent` | `dartwork_mpl.formatting` | 6 | 4 | PercentFormatter 래핑 + x/y/both 분기 dispatch 제공 | keep |
+| `format_axis_percent` | `dartwork_mpl.formatting` | 6 | 4 | PercentFormatter 래핑 + x/y/both 분기 dispatch 제공 | **removed** (#141 round 3) |
 | `format_axis_thousands` | `dartwork_mpl.formatting` | 6 | 2 | 단순 FuncFormatter 람다, sep 파라미터만 추가 | remove |
 | `rotate_tick_labels` | `dartwork_mpl.formatting` | 26 | 25 | auto-ha 추론 + FixedLocator-safe 순회 — 실질 로직 | keep |
 | `create_figure_with_style` | `dartwork_mpl.helpers.io` | 9 | 22 | figsize= 안티패턴 직접 사용하는 2줄 shortcut | remove |
 | `save_figure` | `dartwork_mpl.helpers.io` | 11 | 24 | save_formats 1-line passthrough + mkdir + print — double-wrapper | remove |
-| `add_value_labels` | `dartwork_mpl.helpers.labels` | 18 | 17 | 데이터 순회·offset 계산·ax.text 배치 — bar/line annotation | keep |
-| `format_axis_labels` | `dartwork_mpl.helpers.labels` | 12 | 22 | xlabel/ylabel/title + fontsize 3-call composition | keep |
+| `add_value_labels` | `dartwork_mpl.helpers.labels` | 18 | 17 | 데이터 순회·offset 계산·ax.text 배치 — bar/line annotation | **removed** (#141 round 3) |
+| `format_axis_labels` | `dartwork_mpl.helpers.labels` | 12 | 22 | xlabel/ylabel/title + fontsize 3-call composition | **removed** (#141 round 3) |
 | `optimize_legend` | `dartwork_mpl.helpers.labels` | 31 | 15 | ncol 휴리스틱 + inside/outside 배치 분기 composition | keep |
-| `set_xmargin` | `dartwork_mpl.layout` | 7 | 8 | margin + 선택적 edge pinning composition (4-step) | keep |
-| `set_ymargin` | `dartwork_mpl.layout` | 7 | 7 | margin + 선택적 edge pinning composition (4-step) | keep |
-| `add_frame` | `dartwork_mpl.spines` | 4 | 10 | 전체 spine에 visible·color·linewidth 적용 composition | keep |
+| `set_xmargin` | `dartwork_mpl.layout` | 7 | 8 | margin + 선택적 edge pinning composition (4-step) | **removed** (#141 round 3) |
+| `set_ymargin` | `dartwork_mpl.layout` | 7 | 7 | margin + 선택적 edge pinning composition (4-step) | **removed** (#141 round 3) |
+| `add_frame` | `dartwork_mpl.spines` | 4 | 10 | 전체 spine에 visible·color·linewidth 적용 composition | **removed** (#141 round 3) |
 | `add_grid` | `dartwork_mpl.spines` | 11 | 15 | dm.* 기본값(color, alpha 등) 적용 grid 헬퍼 | keep |
 | `minimal_axes` | `dartwork_mpl.spines` | 7 | 27 | 4개 함수 묶음 composition, 27 callsites | keep |
 | `style_spines` | `dartwork_mpl.spines` | 14 | 9 | color·linewidth·visible 필터 composition | keep |

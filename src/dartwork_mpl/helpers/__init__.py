@@ -12,14 +12,12 @@ dartwork-mpl primitives. This module is organised into submodules:
 
 from .colors import auto_select_colors
 from .data import validate_data
-from .labels import add_value_labels, format_axis_labels, optimize_legend
+from .labels import optimize_legend
 from .quality import check_figure_quality, suggest_chart_type
 
 __all__ = [
-    "add_value_labels",
     "auto_select_colors",
     "check_figure_quality",
-    "format_axis_labels",
     "optimize_legend",
     "suggest_chart_type",
     "validate_data",

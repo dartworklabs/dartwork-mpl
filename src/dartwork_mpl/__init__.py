@@ -59,7 +59,6 @@ from .formatting import (
     format_axis_billions,
     format_axis_currency,
     format_axis_millions,
-    format_axis_percent,
     format_axis_si,
     rotate_tick_labels,
 )
@@ -74,14 +73,7 @@ from .install import install_llm_txt, uninstall_llm_txt
 from .io import save_and_show, save_formats, show
 
 # Layout
-from .layout import (
-    auto_layout,
-    get_bounding_box,
-    set_xmargin,
-    set_ymargin,
-    simple_layout,
-    tight_crop,
-)
+from .layout import auto_layout, get_bounding_box, simple_layout, tight_crop
 
 # Prompt utilities
 from .prompt import (
@@ -97,7 +89,7 @@ from .prompt import (
 from .scale import fs, fw, lw
 
 # Spine and grid utilities
-from .spines import add_frame, add_grid, minimal_axes, style_spines
+from .spines import add_grid, minimal_axes, style_spines
 
 # Import style module exports
 from .style import Style, list_styles, load_style_dict, style, style_path
@@ -121,7 +113,6 @@ col2: float = cm(17)
 # single ``dm.<name>`` access path. The submodule namespace
 # (``dm.helpers.<name>``) remains available as well.
 from .helpers import (
-    add_value_labels,
     auto_select_colors,
     check_figure_quality,
     optimize_legend,
@@ -180,8 +171,6 @@ __all__ = [  # noqa: RUF022
     "simple_layout",
     "tight_crop",
     "get_bounding_box",
-    "set_xmargin",
-    "set_ymargin",
     # Color utilities
     "mix_colors",
     "pseudo_alpha",
@@ -196,7 +185,6 @@ __all__ = [  # noqa: RUF022
     "make_offset",
     # Formatting
     "set_decimal",
-    "format_axis_percent",
     "format_axis_millions",
     "format_axis_billions",
     "format_axis_currency",
@@ -216,7 +204,6 @@ __all__ = [  # noqa: RUF022
     # Spine and grid utilities
     "style_spines",
     "add_grid",
-    "add_frame",
     "minimal_axes",
     # Axes annotation
     "label_axes",
@@ -234,7 +221,6 @@ __all__ = [  # noqa: RUF022
     # Helpers (high-level composition utilities)
     "validate_data",
     "auto_select_colors",
-    "add_value_labels",
     "optimize_legend",
     "suggest_chart_type",
     "check_figure_quality",

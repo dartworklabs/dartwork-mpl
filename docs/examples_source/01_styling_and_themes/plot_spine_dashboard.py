@@ -56,7 +56,10 @@ for i, spine_style in enumerate(["minimal", "frame", "floating"]):
     if spine_style == "minimal":
         dm.minimal_axes(ax)
     elif spine_style == "frame":
-        dm.add_frame(ax, color="black", linewidth=0.8)
+        for s in ax.spines.values():
+            s.set_visible(True)
+            s.set_color("black")
+            s.set_linewidth(0.8)
     else:  # floating
         for s in ax.spines.values():
             s.set_visible(False)

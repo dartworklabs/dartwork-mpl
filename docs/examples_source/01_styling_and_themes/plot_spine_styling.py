@@ -36,7 +36,10 @@ ax1.set_title("Coloured Spines", fontsize=dm.fs(1))
 # Thick coloured frame.
 ax2 = axes[1]
 ax2.plot(x, y2, color="oc.red5", lw=dm.lw(1))
-dm.add_frame(ax2, color="oc.red8", linewidth=3)
+for s in ax2.spines.values():
+    s.set_visible(True)
+    s.set_color("oc.red8")
+    s.set_linewidth(3)
 ax2.set_title("Coloured Frame", fontsize=dm.fs(1))
 
 # Mixed weighting: top/right faint grey, left/bottom bold black.

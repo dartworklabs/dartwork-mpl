@@ -12,33 +12,6 @@ import matplotlib.ticker as ticker
 from matplotlib.axes import Axes
 
 
-def format_axis_percent(
-    ax: Axes, axis: Literal["x", "y", "both"] = "y", decimals: int = 0
-) -> None:
-    """Format axis tick labels as percentages.
-
-    Parameters
-    ----------
-    ax : Axes
-        Matplotlib axes
-    axis : Literal["x", "y", "both"]
-        Which axis to format
-    decimals : int
-        Number of decimal places
-
-    Examples
-    --------
-    >>> format_axis_percent(ax)  # Format y-axis as percentages
-    >>> format_axis_percent(ax, axis="both", decimals=1)
-    """
-    formatter = ticker.PercentFormatter(1.0, decimals=decimals)
-
-    if axis in ("y", "both"):
-        ax.yaxis.set_major_formatter(formatter)
-    if axis in ("x", "both"):
-        ax.xaxis.set_major_formatter(formatter)
-
-
 def format_axis_millions(
     ax: Axes,
     axis: Literal["x", "y", "both"] = "y",
