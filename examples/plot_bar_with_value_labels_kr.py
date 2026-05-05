@@ -37,7 +37,8 @@ for bar, value in zip(bars, values, strict=True):
         va="bottom",
     )
 
-dm.hide_spines(ax, ["top", "right"])
+for s in ["top", "right"]:
+    ax.spines[s].set_visible(False)
 ax.set_ylabel("측정값")
 ax.set_title("그룹별 측정값 비교")
 

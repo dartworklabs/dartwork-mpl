@@ -80,7 +80,8 @@ ax.add_patch(plt.Circle((0, 0), 30, color="white", alpha=0.05))
 ax.add_patch(plt.Circle((0, 0), 20, color="oc.yellow3", alpha=0.1))
 ax.add_patch(plt.Circle((0, 0), 10, color="oc.yellow5", alpha=0.3))
 
-dm.hide_all_spines(ax)
+for s in ax.spines.values():
+    s.set_visible(False)
 ax.set_xlim(-150, 150)
 ax.set_ylim(-150, 150)
 ax.set_aspect("equal")

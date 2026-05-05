@@ -127,7 +127,8 @@ for j in range(0, n_beats, 4):
 ax.set_xlim(-2, n_beats)
 ax.set_ylim(-1, len(instruments))
 ax.set_aspect("equal")
-dm.hide_all_spines(ax)
+for s in ax.spines.values():
+    s.set_visible(False)
 ax.set_facecolor("black")
 
 ax.text(

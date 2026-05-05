@@ -10,66 +10,6 @@ from typing import Any, Literal
 from matplotlib.axes import Axes
 
 
-def hide_spines(ax: Axes, which: list[str] | None = None) -> None:
-    """Hide specified spines from the axes.
-
-    Parameters
-    ----------
-    ax : Axes
-        Matplotlib axes
-    which : list[str] | None
-        List of spines to hide: ["top", "right", "bottom", "left"]
-        If None, defaults to ["top", "right"]
-
-    Examples
-    --------
-    >>> hide_spines(ax)  # Hide top and right spines (default)
-    >>> hide_spines(ax, ["top", "right", "bottom"])  # Keep only left spine
-    """
-    if which is None:
-        which = ["top", "right"]
-
-    for spine in which:
-        if spine in ax.spines:
-            ax.spines[spine].set_visible(False)
-
-
-def hide_all_spines(ax: Axes) -> None:
-    """Hide all spines from the axes.
-
-    Parameters
-    ----------
-    ax : Axes
-        Matplotlib axes
-
-    Examples
-    --------
-    >>> hide_all_spines(ax)  # Remove all borders
-    """
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-
-
-def show_only_spines(ax: Axes, which: list[str]) -> None:
-    """Show only specified spines, hide others.
-
-    Parameters
-    ----------
-    ax : Axes
-        Matplotlib axes
-    which : list[str]
-        List of spines to show: ["top", "right", "bottom", "left"]
-
-    Examples
-    --------
-    >>> show_only_spines(ax, ["bottom", "left"])  # Classic axes style
-    """
-    all_spines = ["top", "right", "bottom", "left"]
-    for spine_name in all_spines:
-        if spine_name in ax.spines:
-            ax.spines[spine_name].set_visible(spine_name in which)
-
-
 def style_spines(
     ax: Axes,
     color: str | None = None,
@@ -160,21 +100,6 @@ def add_grid(
     ax.set_axisbelow(True)  # Ensure grid is behind plot elements
 
 
-def remove_grid(ax: Axes) -> None:
-    """Remove grid from the axes.
-
-    Parameters
-    ----------
-    ax : Axes
-        Matplotlib axes
-
-    Examples
-    --------
-    >>> remove_grid(ax)
-    """
-    ax.grid(False)
-
-
 def add_frame(
     ax: Axes, color: str = "oc.gray5", linewidth: float = 1.0
 ) -> None:
@@ -213,7 +138,8 @@ def minimal_axes(ax: Axes) -> None:
     >>> minimal_axes(ax)
     """
     # Keep only bottom and left spines
-    show_only_spines(ax, ["bottom", "left"])
+    for s in ["top", "right", "bottom", "left"]:
+        ax.spines[s].set_visible(s in ["bottom", "left"])
 
     # Add light grid
     add_grid(ax, axis="y", alpha=0.2, linestyle="--")

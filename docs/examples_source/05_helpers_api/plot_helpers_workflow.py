@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import dartwork_mpl as dm
+from dartwork_mpl.units import cm
 
 
 def automated_visualization(
@@ -57,7 +58,8 @@ def automated_visualization(
     # Step 3 — create styled figure.
     print("Step 3: Creating figure ...")
     style = "scientific" if chart_type in ("scatter", "line") else "web"
-    fig = dm.helpers.io.create_figure_with_style(style=style)
+    dm.style.use(style)
+    fig = plt.figure(figsize=(cm(17), cm(17) * 0.6), dpi=200)
     ax = fig.add_subplot(111)
     print(f"    style: {style}")
 

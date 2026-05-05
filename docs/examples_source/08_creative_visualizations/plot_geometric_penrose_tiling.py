@@ -7,8 +7,8 @@ A simplified Penrose-inspired aperiodic tiling. Two triangle types
 colour through two complementary OKLCH gradients.
 
 The pattern leans on ``dm.cspace`` to keep the colour transitions
-perceptually smooth, and on ``dm.hide_all_spines`` to clear away the
-default matplotlib chrome.
+perceptually smooth, and hides all spines to clear away the default
+matplotlib chrome.
 """
 
 import matplotlib.pyplot as plt
@@ -78,7 +78,8 @@ for r in np.linspace(0.5, 5, 10):
 ax.set_xlim(-6, 6)
 ax.set_ylim(-6, 6)
 ax.set_aspect("equal")
-dm.hide_all_spines(ax)
+for s in ax.spines.values():
+    s.set_visible(False)
 ax.set_facecolor("oc.gray9")
 
 ax.text(

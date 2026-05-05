@@ -66,7 +66,8 @@ for f in [10, 100, 1000, 10000]:
 
 ax.set_xlim(1, 4)
 ax.set_ylim(-0.5, n_time_steps * 0.15 + 1.5)
-dm.hide_all_spines(ax)
+for s in ax.spines.values():
+    s.set_visible(False)
 ax.set_facecolor("oc.gray9")
 
 ax.text(

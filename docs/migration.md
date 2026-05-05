@@ -26,6 +26,32 @@ figsize tuples, `cm2in`, the `dartwork_mpl.constant` module, and the
 | `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`              | v0.3.x           | v1.0.0    |
 | `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`                 | v0.3.x           | v1.0.0    |
 
+## v0.4.x → v0.5.0 — API audit round 2 (#141)
+
+8 thin-wrapper utility functions were removed. Each can be replaced by
+one or two plain matplotlib calls.
+
+| Removed | Replacement |
+|---|---|
+| `dm.hide_spines(ax, which)` | `for s in (which or ["top","right"]): ax.spines[s].set_visible(False)` |
+| `dm.hide_all_spines(ax)` | `for s in ax.spines.values(): s.set_visible(False)` |
+| `dm.show_only_spines(ax, which)` | `for s in ["top","right","bottom","left"]: ax.spines[s].set_visible(s in which)` |
+| `dm.remove_grid(ax)` | `ax.grid(False)` |
+| `dm.format_axis_thousands(ax)` | `ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"{x:,.0f}"))` |
+| `dm.save_figure(fig, path, ...)` | `Path(path).parent.mkdir(parents=True, exist_ok=True); dm.save_formats(fig, str(path), ...)` |
+| `dm.create_figure_with_style(style)` | `dm.style.use(style); fig = plt.figure(figsize=(cm(17), cm(17)*0.6), dpi=200)` |
+| `dm.templates.diverging_bar.get_source_code()` | `pathlib.Path(__file__).read_text()` |
+
+For `format_axis_thousands`, add the following at your callsite:
+
+```python
+from matplotlib import ticker
+formatter = ticker.FuncFormatter(lambda x, p: f"{x:,.0f}")   # sep=","
+# Non-comma separator:
+# formatter = ticker.FuncFormatter(lambda x, p: f"{x:,.0f}".replace(",", sep))
+ax.yaxis.set_major_formatter(formatter)   # or ax.xaxis for axis="x"
+```
+
 ## v0.3.x → v0.4.0
 
 0.4 reshapes the figure-creation surface around two ideas:

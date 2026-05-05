@@ -5,6 +5,15 @@ All notable changes to dartwork-mpl will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Removed
+- 8 thin-wrapper utility functions per round-2 of the public API audit (#141):
+  `hide_spines`, `hide_all_spines`, `show_only_spines`, `remove_grid`,
+  `format_axis_thousands`, `save_figure`, `create_figure_with_style`,
+  `templates.diverging_bar.get_source_code`.
+  Each can be inlined as a single matplotlib call — see `docs/migration.md`.
+
 ## [0.4.0] - 2026-05-05
 
 ### Added

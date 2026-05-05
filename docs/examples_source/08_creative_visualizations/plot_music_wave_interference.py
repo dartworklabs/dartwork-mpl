@@ -72,7 +72,8 @@ for ax, (name, n_sources) in zip(axes.flat, patterns, strict=False):
     ax.set_xlim(-5, 5)
     ax.set_ylim(-5, 5)
     ax.set_aspect("equal")
-    dm.hide_all_spines(ax)
+    for s in ax.spines.values():
+        s.set_visible(False)
     ax.set_title(name, fontsize=dm.fs(1), color="white", pad=10)
     ax.set_facecolor("black")
 

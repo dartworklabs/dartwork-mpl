@@ -48,14 +48,6 @@ class TestFormatAxisPercent:
         plt.close(fig)
 
 
-class TestFormatAxisThousands:
-    def test_smoke(self) -> None:
-        fig, ax = _axes()
-        ax.plot([0, 1], [1000, 2_000_000])
-        dm.format_axis_thousands(ax, axis="y")
-        plt.close(fig)
-
-
 class TestFormatAxisMillions:
     def test_smoke(self) -> None:
         fig, ax = _axes()

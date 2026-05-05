@@ -61,7 +61,6 @@ from .formatting import (
     format_axis_millions,
     format_axis_percent,
     format_axis_si,
-    format_axis_thousands,
     rotate_tick_labels,
 )
 
@@ -98,16 +97,7 @@ from .prompt import (
 from .scale import fs, fw, lw
 
 # Spine and grid utilities
-from .spines import (
-    add_frame,
-    add_grid,
-    hide_all_spines,
-    hide_spines,
-    minimal_axes,
-    remove_grid,
-    show_only_spines,
-    style_spines,
-)
+from .spines import add_frame, add_grid, minimal_axes, style_spines
 
 # Import style module exports
 from .style import Style, list_styles, load_style_dict, style, style_path
@@ -134,9 +124,7 @@ from .helpers import (
     add_value_labels,
     auto_select_colors,
     check_figure_quality,
-    create_figure_with_style,
     optimize_legend,
-    save_figure,
     suggest_chart_type,
     validate_data,
 )
@@ -209,7 +197,6 @@ __all__ = [  # noqa: RUF022
     # Formatting
     "set_decimal",
     "format_axis_percent",
-    "format_axis_thousands",
     "format_axis_millions",
     "format_axis_billions",
     "format_axis_currency",
@@ -227,12 +214,8 @@ __all__ = [  # noqa: RUF022
     "figure",
     "subplots",
     # Spine and grid utilities
-    "hide_spines",
-    "hide_all_spines",
-    "show_only_spines",
     "style_spines",
     "add_grid",
-    "remove_grid",
     "add_frame",
     "minimal_axes",
     # Axes annotation
@@ -255,8 +238,6 @@ __all__ = [  # noqa: RUF022
     "optimize_legend",
     "suggest_chart_type",
     "check_figure_quality",
-    "save_figure",
-    "create_figure_with_style",
     # Native lint + migration (T4)
     "lint_code",
     "migrate_legacy_code",

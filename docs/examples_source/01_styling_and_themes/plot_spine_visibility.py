@@ -29,19 +29,22 @@ fig, axes = dm.subplots(2, 2, width="16cm", aspect="standard")
 # Top-left: hide top and right (same as minimal_axes).
 ax1 = axes[0, 0]
 ax1.plot(x, y1, color="oc.green5", lw=dm.lw(1))
-dm.hide_spines(ax1, ["top", "right"])
+for s in ["top", "right"]:
+    ax1.spines[s].set_visible(False)
 ax1.set_title("Hide Top & Right", fontsize=dm.fs(1))
 
 # Top-right: show only the bottom spine.
 ax2 = axes[0, 1]
 ax2.plot(x, y2, color="oc.purple5", lw=dm.lw(1))
-dm.show_only_spines(ax2, ["bottom"])
+for s in ["top", "right", "bottom", "left"]:
+    ax2.spines[s].set_visible(s in ["bottom"])
 ax2.set_title("Bottom Spine Only", fontsize=dm.fs(1))
 
 # Bottom-left: hide all spines — rely on the grid.
 ax3 = axes[1, 0]
 ax3.plot(x, y3, color="oc.orange5", lw=dm.lw(1))
-dm.hide_all_spines(ax3)
+for s in ax3.spines.values():
+    s.set_visible(False)
 dm.add_grid(ax3, alpha=0.2)
 ax3.set_title("No Spines (Floating)", fontsize=dm.fs(1))
 
