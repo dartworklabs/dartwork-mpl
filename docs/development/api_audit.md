@@ -54,8 +54,8 @@
 | `list_colormaps` | `dartwork_mpl.explore` | func | 7 |  | 5 |  |  |  | pending |
 | `list_palettes` | `dartwork_mpl.explore` | func | 11 |  | 6 |  |  |  | pending |
 | `show_palette` | `dartwork_mpl.explore` | func | 52 |  | 6 |  |  |  | pending |
-| `figure` | `dartwork_mpl.figure` | func | 62 |  | 401 |  |  |  | pending |
-| `subplots` | `dartwork_mpl.figure` | func | 82 |  | 645 |  |  |  | pending |
+| `figure` | `dartwork_mpl.figure` | func | 62 | N | 401 | 3 | keep | 물리 단위 width API + aspect 토큰 + legacy figsize=/dpi= 명시 거부 — 핵심 abstraction | audited |
+| `subplots` | `dartwork_mpl.figure` | func | 82 | N | 645 | 3 | keep | 동상 — width/aspect → figsize 변환, gridspec/ratios 통합, legacy 인자 거부 | audited |
 | `ensure_loaded` | `dartwork_mpl.font` | func | 11 |  | 47 |  |  |  | pending |
 | `format_axis_billions` | `dartwork_mpl.formatting` | func | 25 | N | 18 | 3 | keep | zero-tick special case + `x/1e9` scaling in formatter body | audited |
 | `format_axis_currency` | `dartwork_mpl.formatting` | func | 34 | N | 11 | 3 | keep | sign-outside-symbol placement, zero-rounding sign suppression, prefix/suffix position logic | audited |
@@ -64,15 +64,15 @@
 | `format_axis_si` | `dartwork_mpl.formatting` | func | 37 | N | 26 | 3 | keep | multi-level prefix selection (k/M/G/T), negative sign handling, zero-tick special case | audited |
 | `format_axis_thousands` | `dartwork_mpl.formatting` | func | 6 | N | 2 | 2 | borderline | single FuncFormatter lambda with configurable sep — minimal transformation, no scaling logic — 토론 | audited |
 | `rotate_tick_labels` | `dartwork_mpl.formatting` | func | 26 | N | 25 | 2 | borderline | auto-ha inference (rotation sign → left/center/right) + FixedLocator-safe iteration — more than a 1-line setp call — 토론 | audited |
-| `auto_select_colors` | `dartwork_mpl.helpers.colors` | func | 63 |  | 33 |  |  |  | pending |
-| `validate_data` | `dartwork_mpl.helpers.data` | func | 43 |  | 26 |  |  |  | pending |
-| `create_figure_with_style` | `dartwork_mpl.helpers.io` | func | 9 |  | 22 |  |  |  | pending |
-| `save_figure` | `dartwork_mpl.helpers.io` | func | 11 |  | 24 |  |  |  | pending |
-| `add_value_labels` | `dartwork_mpl.helpers.labels` | func | 18 |  | 17 |  |  |  | pending |
-| `format_axis_labels` | `dartwork_mpl.helpers.labels` | func | 12 |  | 22 |  |  |  | pending |
-| `optimize_legend` | `dartwork_mpl.helpers.labels` | func | 31 |  | 15 |  |  |  | pending |
-| `check_figure_quality` | `dartwork_mpl.helpers.quality` | func | 39 |  | 18 |  |  |  | pending |
-| `suggest_chart_type` | `dartwork_mpl.helpers.quality` | func | 31 |  | 24 |  |  |  | pending |
+| `auto_select_colors` | `dartwork_mpl.helpers.colors` | func | 63 | N | 33 | 3 | keep | categorical/sequential/diverging 3-way 분기 + highlight 인덱스 처리 — 카테고리 → 팔레트 매핑 | audited |
+| `validate_data` | `dartwork_mpl.helpers.data` | func | 43 | N | 26 | 2 | keep | NaN 제거·길이 검증·min_points 체크 — 데이터 shape 검증 | audited |
+| `create_figure_with_style` | `dartwork_mpl.helpers.io` | func | 9 | N | 22 | 2 | borderline | `dm.style.use(style)` + `plt.figure(figsize=..., dpi=...)` 2줄 shortcut; `figsize=` 안티패턴 직접 호출 — strong remove candidate | audited |
+| `save_figure` | `dartwork_mpl.helpers.io` | func | 11 | N | 24 | 2 | borderline | 내부적으로 `dm.save_formats` 1-line passthrough + mkdir + verbose print — double-wrapper, strong remove candidate | audited |
+| `add_value_labels` | `dartwork_mpl.helpers.labels` | func | 18 | N | 17 | 3 | borderline | 데이터 순회 + y-range 기반 offset 계산 + ax.text 배치 — bar/line value annotation | audited |
+| `format_axis_labels` | `dartwork_mpl.helpers.labels` | func | 12 | N | 22 | 2 | borderline | unit 접미사 붙이기 + fs() fontsize 적용 — composition (set_xlabel/ylabel/title 3줄 묶음) — 토론 | audited |
+| `optimize_legend` | `dartwork_mpl.helpers.labels` | func | 31 | N | 15 | 3 | borderline | ncol 휴리스틱 (n_items 기반) + inside/outside 배치 분기 — legend 자동 위치 composition | audited |
+| `check_figure_quality` | `dartwork_mpl.helpers.quality` | func | 39 | N | 18 | 3 | keep | DPI·style·축라벨·틱·여백 다중 검사 루프 — publication-quality 검증 | audited |
+| `suggest_chart_type` | `dartwork_mpl.helpers.quality` | func | 31 | N | 24 | 3 | keep | x_type/y_type/n_points/n_series 기반 다분기 결정 트리 — 자연어 인터페이스 | audited |
 | `ensure_loaded` | `dartwork_mpl.icon` | func | 4 |  | 47 |  |  |  | pending |
 | `icon_font` | `dartwork_mpl.icon` | func | 2 |  | 13 |  |  |  | pending |
 | `icon_font_path` | `dartwork_mpl.icon` | func | 12 |  | 7 |  |  |  | pending |
@@ -128,7 +128,7 @@
 | `set_decimal` | `dartwork_mpl.util` | func | 9 | N | 40 | 2 | borderline | get_ticks + set_ticks + set_ticklabels 3-step pattern per axis; no rcParams/locale logic — 토론 | audited |
 | `Severity` | `dartwork_mpl.validate` | class | 0 |  | 26 |  |  |  | pending |
 | `VisualWarning` | `dartwork_mpl.validate` | class | 0 |  | 24 |  |  |  | pending |
-| `validate_figure` | `dartwork_mpl.validate` | func | 39 |  | 103 |  |  |  | pending |
+| `validate_figure` | `dartwork_mpl.validate` | func | 39 | N | 103 | 3 | keep | 8개 check lambda 등록·선택 실행 + canvas.draw() 렌더 → VisualWarning 수집 — 종합 visual 검증 엔진 | audited |
 | `check_agent_requirements` | `dartwork_mpl.validate_fixes` | func | 41 |  | 1 |  |  |  | pending |
 | `generate_validation_report` | `dartwork_mpl.validate_fixes` | func | 47 |  | 1 |  |  |  | pending |
 | `get_fix_suggestions` | `dartwork_mpl.validate_fixes` | func | 90 |  | 20 |  |  |  | pending |
