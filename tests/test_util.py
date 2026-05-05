@@ -121,6 +121,59 @@ class TestMixColors:
         assert g == pytest.approx(0.5, abs=0.15)
         assert b == pytest.approx(0.5, abs=0.15)
 
+    # ------------------------------------------------------------------
+    # OKLab-specific regression tests (added when mix_colors switched
+    # from naïve gamma-sRGB blend to perceptually-uniform OKLab blend)
+    # ------------------------------------------------------------------
+
+    def test_oklab_midpoint_is_not_naive_rgb(self) -> None:
+        """OKLab midpoint of red+blue must NOT equal naïve (0.5, 0, 0.5)."""
+        r, g, b = mix_colors("red", "blue", alpha=0.5)
+        naive_r, naive_g, naive_b = 0.5, 0.0, 0.5
+        # At least one channel must differ meaningfully from the naive blend.
+        differs = (
+            abs(r - naive_r) > 0.02
+            or abs(g - naive_g) > 0.02
+            or abs(b - naive_b) > 0.02
+        )
+        assert differs, (
+            f"mix_colors('red','blue',0.5) returned ({r:.4f},{g:.4f},{b:.4f}), "
+            "indistinguishable from the naïve RGB midpoint — OKLab blend expected"
+        )
+
+    def test_alpha_one_returns_color1_oklab(self) -> None:
+        """alpha=1.0 must round-trip back to color1 within OKLab float drift."""
+        r, g, b = mix_colors("red", "blue", alpha=1.0)
+        expected = matplotlib.colors.to_rgb("red")
+        assert r == pytest.approx(expected[0], abs=0.02)
+        assert g == pytest.approx(expected[1], abs=0.02)
+        assert b == pytest.approx(expected[2], abs=0.02)
+
+    def test_alpha_zero_returns_color2_oklab(self) -> None:
+        """alpha=0.0 must round-trip back to color2 within OKLab float drift."""
+        r, g, b = mix_colors("red", "blue", alpha=0.0)
+        expected = matplotlib.colors.to_rgb("blue")
+        assert r == pytest.approx(expected[0], abs=0.02)
+        assert g == pytest.approx(expected[1], abs=0.02)
+        assert b == pytest.approx(expected[2], abs=0.02)
+
+    def test_idempotent_same_color_oklab(self) -> None:
+        """mix_colors(c, c, 0.5) must return approximately c (idempotent)."""
+        for color_name in ("red", "blue", "green", "#3a7ebf"):
+            r, g, b = mix_colors(color_name, color_name, alpha=0.5)
+            expected = matplotlib.colors.to_rgb(color_name)
+            assert r == pytest.approx(expected[0], abs=0.02), color_name
+            assert g == pytest.approx(expected[1], abs=0.02), color_name
+            assert b == pytest.approx(expected[2], abs=0.02), color_name
+
+    def test_returns_rgb_tuple(self) -> None:
+        """Return value must be a 3-tuple of floats in [0, 1]."""
+        result = mix_colors("red", "blue", alpha=0.5)
+        assert len(result) == 3
+        r, g, b = result
+        for ch in (r, g, b):
+            assert 0.0 <= ch <= 1.0
+
 
 # ============================================================================
 # Pseudo alpha

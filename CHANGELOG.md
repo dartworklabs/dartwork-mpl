@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- `dm.mix_colors` now blends in OKLab space (perceptually uniform) instead of
+  naïve gamma-sRGB linear interpolation. Result colors will subtly differ for
+  non-grayscale blends — gradients now look smoother and less desaturated
+  through saturated midpoints (e.g. red + blue gives a vivid purple rather than
+  a muddy dark grey). `dm.pseudo_alpha` (which delegates to `mix_colors`)
+  inherits the change. (#141)
+
 ### Removed
 - 5 wrapper functions per round-3 of the public API audit (#141):
   `format_axis_percent`, `format_axis_labels`, `add_frame`,
