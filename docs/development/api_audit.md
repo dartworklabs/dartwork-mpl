@@ -36,21 +36,21 @@
 | `arrow_axis` | `dartwork_mpl.annotation` | func | 103 |  | 28 |  |  |  | pending |
 | `label_axes` | `dartwork_mpl.annotation` | func | 28 |  | 58 |  |  |  | pending |
 | `ensure_loaded` | `dartwork_mpl.cmap` | func | 13 |  | 47 |  |  |  | pending |
-| `Color` | `dartwork_mpl.color._color` | class | 0 |  | 174 |  |  |  | pending |
-| `cspace` | `dartwork_mpl.color._color` | func | 105 |  | 92 |  |  |  | pending |
-| `hex` | `dartwork_mpl.color._color` | func | 1 |  | 67 |  |  |  | pending |
-| `named` | `dartwork_mpl.color._color` | func | 10 |  | 72 |  |  |  | pending |
-| `oklab` | `dartwork_mpl.color._color` | func | 1 |  | 76 |  |  |  | pending |
-| `oklch` | `dartwork_mpl.color._color` | func | 1 |  | 113 |  |  |  | pending |
-| `rgb` | `dartwork_mpl.color._color` | func | 1 |  | 62 |  |  |  | pending |
+| `Color` | `dartwork_mpl.color._color` | class | 0 | N | 174 | 3 | keep | OKLCH-native color object; stores internally in OKLab, exposes oklab/oklch/rgb views — dartwork-mpl 색 시스템 핵심 | audited |
+| `cspace` | `dartwork_mpl.color._color` | func | 105 | N | 92 | 3 | keep | OKLCH 인터폴레이션 + 최단 hue 경로 처리; oklch/oklab/rgb 3-space 지원 — no matplotlib equivalent | audited |
+| `hex` | `dartwork_mpl.color._color` | func | 1 | N | 67 | 2 | keep | hex 문자열 → Color 진입점; 1-line body지만 OKLCH 타입 시스템 시맨틱 entry-point | audited |
+| `named` | `dartwork_mpl.color._color` | func | 10 | N | 72 | 2 | keep | named color → Color; dm. prefix deprecation 경고 포함 — 의미 있는 진입점 | audited |
+| `oklab` | `dartwork_mpl.color._color` | func | 1 | N | 76 | 2 | keep | OKLab → Color 진입점; 1-line body지만 OKLCH 타입 시스템 시맨틱 entry-point | audited |
+| `oklch` | `dartwork_mpl.color._color` | func | 1 | N | 113 | 2 | keep | OKLCH → Color 진입점; 1-line body지만 OKLCH 타입 시스템 시맨틱 entry-point | audited |
+| `rgb` | `dartwork_mpl.color._color` | func | 1 | N | 62 | 2 | keep | RGB → Color 진입점; auto 0-1/0-255 range detection — OKLCH 타입 시스템 시맨틱 entry-point | audited |
 | `ensure_loaded` | `dartwork_mpl.color._loader` | func | 5 |  | 47 |  |  |  | pending |
 | `OklabView` | `dartwork_mpl.color._views` | class | 0 |  | 4 |  |  |  | pending |
 | `OklchView` | `dartwork_mpl.color._views` | class | 0 |  | 4 |  |  |  | pending |
 | `RgbView` | `dartwork_mpl.color._views` | class | 0 |  | 4 |  |  |  | pending |
-| `classify_colormap` | `dartwork_mpl.diagnostics` | func | 120 |  | 21 |  |  |  | pending |
-| `plot_colormaps` | `dartwork_mpl.diagnostics` | func | 48 |  | 26 |  |  |  | pending |
-| `plot_colors` | `dartwork_mpl.diagnostics` | func | 32 |  | 35 |  |  |  | pending |
-| `plot_fonts` | `dartwork_mpl.diagnostics` | func | 203 |  | 29 |  |  |  | pending |
+| `classify_colormap` | `dartwork_mpl.diagnostics` | func | 120 | N | 21 | 3 | keep | HSV 분석 기반 다분기 분류 (Categorical/Single-Hue/Multi-Hue/Diverging/Cyclical) — non-trivial classifier | audited |
+| `plot_colormaps` | `dartwork_mpl.diagnostics` | func | 48 | N | 26 | 3 | keep | colormap 시각화 + classify_colormap 기반 그룹화 — diagnostic asset visualizer | audited |
+| `plot_colors` | `dartwork_mpl.diagnostics` | func | 32 | N | 35 | 3 | keep | 팔레트 색상 배열 시각화 — diagnostic asset visualizer | audited |
+| `plot_fonts` | `dartwork_mpl.diagnostics` | func | 203 | N | 29 | 3 | keep | 폰트 specimen 패널 생성 (203 LOC) — diagnostic asset visualizer | audited |
 | `list_colormaps` | `dartwork_mpl.explore` | func | 7 |  | 5 |  |  |  | pending |
 | `list_palettes` | `dartwork_mpl.explore` | func | 11 |  | 6 |  |  |  | pending |
 | `show_palette` | `dartwork_mpl.explore` | func | 52 |  | 6 |  |  |  | pending |
@@ -122,9 +122,9 @@
 | `mm` | `dartwork_mpl.units` | func | 1 |  | 43 |  |  |  | pending |
 | `parse_aspect` | `dartwork_mpl.units` | func | 27 |  | 28 |  |  |  | pending |
 | `parse_width` | `dartwork_mpl.units` | func | 44 |  | 37 |  |  |  | pending |
-| `make_offset` | `dartwork_mpl.util` | func | 2 |  | 21 |  |  |  | pending |
-| `mix_colors` | `dartwork_mpl.util` | func | 8 |  | 28 |  |  |  | pending |
-| `pseudo_alpha` | `dartwork_mpl.util` | func | 1 |  | 34 |  |  |  | pending |
+| `make_offset` | `dartwork_mpl.util` | func | 2 | N | 21 | 2 | borderline | ScaledTranslation 2-line wrapper (x/72, y/72 + fig.dpi_scale_trans) — Task 11에서 keep/remove 결정 | audited |
+| `mix_colors` | `dartwork_mpl.util` | func | 8 | N | 28 | 2 | borderline | 단순 RGB linspace (mcolors.to_rgb 경유) — OKLCH 인터폴레이션 없음; 토론 | audited |
+| `pseudo_alpha` | `dartwork_mpl.util` | func | 1 | N | 34 | 2 | borderline | mix_colors 1-line delegate; 백색 블렌딩 의미 있으나 구현이 RGB — 토론 | audited |
 | `set_decimal` | `dartwork_mpl.util` | func | 9 | N | 40 | 2 | borderline | get_ticks + set_ticks + set_ticklabels 3-step pattern per axis; no rcParams/locale logic — 토론 | audited |
 | `Severity` | `dartwork_mpl.validate` | class | 0 |  | 26 |  |  |  | pending |
 | `VisualWarning` | `dartwork_mpl.validate` | class | 0 |  | 24 |  |  |  | pending |
