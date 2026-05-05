@@ -5,7 +5,7 @@ All notable changes to dartwork-mpl will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.4.0] - 2026-05-05
 
 ### Added
 - **Robustness test suite** under `tests/robustness/` exercising 44
@@ -154,7 +154,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   matplotlib's font fallback chain will discover them via system
   paths. Wheel drops from ~41.5 MB to ~27 MB.
 
-### Removed (BREAKING — 0.5.0 candidates pulled forward into 0.4.x)
+### Removed (BREAKING — 0.5.0 candidates pulled forward into 0.4.0)
 
 - **0.3 width tokens** (`dm.SW`, `dm.MW`, `dm.TW`, `dm.DW`, `dm.WIDTHS`)
   removed. Use `dm.subplots(width="9cm" | "12cm" | "14.5cm" | "17cm",
@@ -176,11 +176,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `dm.figure()` removed.** Passing them now raises `TypeError` with a
   message naming the new `width=` / `aspect=` API.
 
-All of the above were deprecated in 0.4.0 (see the 0.4.0 release
-notes below) and emitted `DeprecationWarning` until this release.
-Migration paths are documented in `docs/migration.md`.
+All of the above were deprecated in the initial `0.4.0-rc1` cut (see
+the release notes below) and emitted `DeprecationWarning` until this
+final 0.4.0 release. Migration paths are documented in
+`docs/migration.md`.
 
-## [0.4.0] - 2026-04-30
+## [0.4.0-rc1] - 2026-04-30
+
+> Initial 0.4.0 cut. Folded into the final `0.4.0` release on 2026-05-05
+> (entries above), which additionally pulled the deprecated 0.3 width
+> tokens / `FS_*` / `cm2in` / `figsize=`/`dpi=` arguments forward into
+> a hard removal so 0.4.x ships a single, consistent surface.
 
 Highlights:
 
