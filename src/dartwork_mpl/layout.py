@@ -6,20 +6,12 @@ to automatically arrange subplot areas for optimal placement.
 
 from __future__ import annotations
 
-__all__ = [
-    "auto_layout",
-    "get_bounding_box",
-    "set_xmargin",
-    "set_ymargin",
-    "simple_layout",
-    "tight_crop",
-]
+__all__ = ["auto_layout", "get_bounding_box", "simple_layout", "tight_crop"]
 
 import contextlib
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
-from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec, SubplotSpec
 from matplotlib.transforms import Bbox
@@ -58,70 +50,6 @@ def get_bounding_box(boxes: list[Bbox]) -> tuple[float, float, float, float]:
     bbox_height = max_y - min_y
 
     return (min_x, min_y, bbox_width, bbox_height)
-
-
-def set_xmargin(
-    ax: Axes,
-    margin: float = 0.05,
-    *,
-    left: float | None = None,
-    right: float | None = None,
-) -> None:
-    """Set responsive margins or fixed bounds on the x-axis limits.
-
-    Wraps ``set_xlim`` to allow specifying a global margin ratio while
-    optionally pinning one or both edges to fixed values.
-
-    Parameters
-    ----------
-    ax : Axes
-        The matplotlib Axes to modify.
-    margin : float, optional
-        Fractional margin applied to both sides. Default is 0.05.
-    left : float | None, optional
-        Fixed left bound for the x-axis. Overrides the margin on that side.
-    right : float | None, optional
-        Fixed right bound for the x-axis. Overrides the margin on that side.
-    """
-    ax.margins(x=margin)
-    xlim = list(ax.get_xlim())
-    if left is not None:
-        xlim[0] = left
-    if right is not None:
-        xlim[1] = right
-    ax.set_xlim((float(xlim[0]), float(xlim[1])))
-
-
-def set_ymargin(
-    ax: Axes,
-    margin: float = 0.05,
-    *,
-    bottom: float | None = None,
-    top: float | None = None,
-) -> None:
-    """Set responsive margins or fixed bounds on the y-axis limits.
-
-    Wraps ``set_ylim`` to allow specifying a global margin ratio while
-    optionally pinning one or both edges to fixed values.
-
-    Parameters
-    ----------
-    ax : Axes
-        The matplotlib Axes to modify.
-    margin : float, optional
-        Fractional margin applied to both sides. Default is 0.05.
-    bottom : float | None, optional
-        Fixed bottom bound for the y-axis. Overrides the margin on that side.
-    top : float | None, optional
-        Fixed top bound for the y-axis. Overrides the margin on that side.
-    """
-    ax.margins(y=margin)
-    ylim = list(ax.get_ylim())
-    if bottom is not None:
-        ylim[0] = bottom
-    if top is not None:
-        ylim[1] = top
-    ax.set_ylim((float(ylim[0]), float(ylim[1])))
 
 
 def simple_layout(

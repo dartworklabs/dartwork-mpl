@@ -100,31 +100,6 @@ def add_grid(
     ax.set_axisbelow(True)  # Ensure grid is behind plot elements
 
 
-def add_frame(
-    ax: Axes, color: str = "oc.gray5", linewidth: float = 1.0
-) -> None:
-    """Add a frame (all spines) with consistent styling.
-
-    Parameters
-    ----------
-    ax : Axes
-        Matplotlib axes
-    color : str
-        Frame color
-    linewidth : float
-        Frame line width
-
-    Examples
-    --------
-    >>> add_frame(ax)  # Add default frame
-    >>> add_frame(ax, color="oc.blue5", linewidth=2)
-    """
-    for spine in ax.spines.values():
-        spine.set_visible(True)
-        spine.set_color(color)
-        spine.set_linewidth(linewidth)
-
-
 def minimal_axes(ax: Axes) -> None:
     """Apply minimal axes style (only bottom and left spines, light grid).
 

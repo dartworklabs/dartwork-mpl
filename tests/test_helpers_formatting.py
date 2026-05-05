@@ -1,8 +1,8 @@
 """Smoke tests for the deprecated ``dartwork_mpl.helpers.formatting`` alias.
 
 The module re-exports from :mod:`dartwork_mpl.helpers.labels` and emits a
-``DeprecationWarning`` at import time. We only validate the alias still
-delivers the expected names.
+``DeprecationWarning`` at import time. We validate the alias still
+delivers the remaining names after round-3 API pruning.
 """
 
 from __future__ import annotations
@@ -26,36 +26,15 @@ def test_import_emits_deprecation_warning() -> None:
         for w in caught
     ), "DeprecationWarning was not emitted on import"
 
-    # The aliases must still be present.
-    for name in ("add_value_labels", "format_axis_labels", "optimize_legend"):
-        assert hasattr(mod, name), f"Expected re-export {name} on alias"
+    # The remaining alias must still be present.
+    assert hasattr(mod, "optimize_legend"), "Expected re-export optimize_legend"
 
 
 def test_aliases_match_labels_module() -> None:
     from dartwork_mpl.helpers import formatting as alias_mod
     from dartwork_mpl.helpers import labels as labels_mod
 
-    assert alias_mod.add_value_labels is labels_mod.add_value_labels
-    assert alias_mod.format_axis_labels is labels_mod.format_axis_labels
     assert alias_mod.optimize_legend is labels_mod.optimize_legend
-
-
-def test_alias_function_actually_works() -> None:
-    """The deprecated alias should still produce a working call.
-
-    Importing through the legacy path and invoking ``format_axis_labels``
-    must mutate the axes the same way the canonical module does.
-    """
-    import matplotlib.pyplot as plt
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        from dartwork_mpl.helpers.formatting import format_axis_labels
-
-    _fig, ax = plt.subplots()
-    format_axis_labels(ax, x_label="time", y_label="value")
-    assert ax.get_xlabel() == "time"
-    assert ax.get_ylabel() == "value"
 
 
 def test_alias_module_has_dunder_all() -> None:
@@ -65,8 +44,15 @@ def test_alias_module_has_dunder_all() -> None:
         from dartwork_mpl.helpers import formatting as alias_mod
 
     assert hasattr(alias_mod, "__all__")
-    assert set(alias_mod.__all__) == {
-        "add_value_labels",
-        "format_axis_labels",
-        "optimize_legend",
-    }
+    assert set(alias_mod.__all__) == {"optimize_legend"}
+
+
+def test_removed_names_no_longer_in_alias() -> None:
+    """``format_axis_labels`` and ``add_value_labels`` were removed in
+    round-3 of the API audit and must not be present on the alias."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        from dartwork_mpl.helpers import formatting as alias_mod
+
+    assert not hasattr(alias_mod, "format_axis_labels")
+    assert not hasattr(alias_mod, "add_value_labels")

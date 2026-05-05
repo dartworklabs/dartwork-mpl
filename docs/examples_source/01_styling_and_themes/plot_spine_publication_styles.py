@@ -40,7 +40,10 @@ ax1.set_ylabel("Variable Y", fontsize=dm.fs(0))
 # IEEE: thin full frame + dotted major grid.
 ax2 = axes[0, 1]
 ax2.plot(x, y2, color="oc.blue6", lw=dm.lw(1))
-dm.add_frame(ax2, color="black", linewidth=0.5)
+for s in ax2.spines.values():
+    s.set_visible(True)
+    s.set_color("black")
+    s.set_linewidth(0.5)
 dm.add_grid(ax2, which="major", alpha=0.3, linestyle=":")
 ax2.set_title("IEEE Style", fontsize=dm.fs(1))
 ax2.set_xlabel("Time (s)", fontsize=dm.fs(0))
@@ -49,7 +52,10 @@ ax2.set_ylabel("Signal", fontsize=dm.fs(0))
 # Economics journals: thicker black frame, no grid.
 ax3 = axes[1, 0]
 ax3.plot(x, y3, color="oc.gray7", lw=dm.lw(1.5))
-dm.add_frame(ax3, color="black", linewidth=1)
+for s in ax3.spines.values():
+    s.set_visible(True)
+    s.set_color("black")
+    s.set_linewidth(1)
 ax3.set_title("Economics Style", fontsize=dm.fs(1))
 ax3.set_xlabel("Period", fontsize=dm.fs(0))
 ax3.set_ylabel("Value", fontsize=dm.fs(0))

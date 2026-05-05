@@ -51,7 +51,10 @@ ax3.set_title("No Spines (Floating)", fontsize=dm.fs(1))
 # Bottom-right: full rectangular frame.
 ax4 = axes[1, 1]
 ax4.plot(x, y1, color="oc.cyan5", lw=dm.lw(1))
-dm.add_frame(ax4, color="black", linewidth=1.5)
+for s in ax4.spines.values():
+    s.set_visible(True)
+    s.set_color("black")
+    s.set_linewidth(1.5)
 ax4.set_title("Full Frame", fontsize=dm.fs(1))
 
 dm.label_axes(axes.flat)

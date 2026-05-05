@@ -26,6 +26,20 @@ figsize tuples, `cm2in`, the `dartwork_mpl.constant` module, and the
 | `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`              | v0.3.x           | v1.0.0    |
 | `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`                 | v0.3.x           | v1.0.0    |
 
+## v0.4.x → v0.5.0 — API audit round 3 (#141)
+
+5 wrapper functions removed using the *knowledge-encapsulation* criterion:
+AI agents can reproduce these in one shot without spec.
+
+| Removed | Replacement |
+|---|---|
+| `dm.format_axis_percent(ax, axis, decimals)` | `ax.yaxis.set_major_formatter(ticker.PercentFormatter(1.0, decimals=decimals))` |
+| `dm.format_axis_labels(ax, x_label, x_unit, ...)` | `ax.set_xlabel(f"{x_label} ({x_unit})")` (compose inline) |
+| `dm.add_frame(ax, color, linewidth)` | `for s in ax.spines.values(): s.set_visible(True); s.set_color(color); s.set_linewidth(linewidth)` |
+| `dm.add_value_labels(ax, x, y, ...)` | inline text loop: `for xi, yi in zip(x, y): ax.text(xi, yi+offset, f"{yi:.1f}", ...)` |
+| `dm.set_xmargin(ax, margin, left, right)` | `ax.margins(x=margin)` plus optional `ax.set_xlim((left, right))` |
+| `dm.set_ymargin(ax, margin, bottom, top)` | same shape, y axis: `ax.margins(y=margin)` |
+
 ## v0.4.x → v0.5.0 — API audit round 2 (#141)
 
 8 thin-wrapper utility functions were removed. Each can be replaced by
@@ -353,15 +367,6 @@ until no text overflows the canvas:
 ```python
 dm.auto_layout(fig)              # automatic margin negotiation
 dm.simple_layout(fig)            # fast, fine for advanced GridSpec
-```
-
-### `dm.set_xmargin(ax)` / `dm.set_ymargin(ax)`
-
-Set data-side margins as a fraction of the visible range:
-
-```python
-dm.set_xmargin(ax, margin=0.1)   # 10 % padding on each side
-dm.set_ymargin(ax, margin=0.05)
 ```
 
 ### `dm.validate_with_fixes(fig)`

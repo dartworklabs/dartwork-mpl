@@ -1,62 +1,19 @@
-"""Label, legend, and value-annotation helpers.
+"""Label and legend helpers.
 
-Higher-level composition helpers for axis labels, legend placement, and
-value annotations. Renamed from ``helpers.formatting`` to avoid the
-name clash with the top-level ``dartwork_mpl.formatting`` module (which
-houses the ``format_axis_*`` tick formatters).
+Higher-level composition helpers for legend placement. Renamed from
+``helpers.formatting`` to avoid the name clash with the top-level
+``dartwork_mpl.formatting`` module (which houses the ``format_axis_*``
+tick formatters).
+
+For axis labels, use ``ax.set_xlabel`` / ``ax.set_ylabel`` directly.
+For per-point value annotations, use an ``ax.text`` loop inline.
 """
 
 from __future__ import annotations
 
-from typing import Any
-
-import numpy as np
 from matplotlib.axes import Axes
 
 from ..scale import fs
-
-
-def format_axis_labels(
-    ax: Axes,
-    x_label: str | None = None,
-    y_label: str | None = None,
-    x_unit: str | None = None,
-    y_unit: str | None = None,
-    title: str | None = None,
-) -> None:
-    """Apply consistent formatting to axis labels.
-
-    Parameters
-    ----------
-    ax : Axes
-        Matplotlib axes
-    x_label : str | None
-        X-axis label
-    y_label : str | None
-        Y-axis label
-    x_unit : str | None
-        Unit for x-axis (will be appended in parentheses)
-    y_unit : str | None
-        Unit for y-axis (will be appended in parentheses)
-    title : str | None
-        Axes title
-
-    Examples
-    --------
-    >>> format_axis_labels(ax, "Time", "Temperature", x_unit="s", y_unit="°C")
-    """
-    if x_label:
-        if x_unit:
-            x_label = f"{x_label} ({x_unit})"
-        ax.set_xlabel(x_label, fontsize=fs(0))
-
-    if y_label:
-        if y_unit:
-            y_label = f"{y_label} ({y_unit})"
-        ax.set_ylabel(y_label, fontsize=fs(0))
-
-    if title:
-        ax.set_title(title, fontsize=fs(1), pad=10)
 
 
 def optimize_legend(
@@ -114,55 +71,3 @@ def optimize_legend(
         legend_params["loc"] = preferred_loc
 
     ax.legend(**legend_params)
-
-
-def add_value_labels(
-    ax: Axes,
-    x: np.ndarray[Any, Any],
-    y: np.ndarray[Any, Any],
-    format_str: str = ".1f",
-    offset_y: float = 0.02,
-    color: str | None = None,
-    fontsize: float | None = None,
-) -> None:
-    """Add value labels to data points.
-
-    Parameters
-    ----------
-    ax : Axes
-        Matplotlib axes
-    x : np.ndarray
-        X coordinates
-    y : np.ndarray
-        Y values to label
-    format_str : str
-        Format string for values
-    offset_y : float
-        Vertical offset as fraction of y-range
-    color : str | None
-        Text color (defaults to "oc.gray7")
-    fontsize : int | None
-        Font size (defaults to fs(-1))
-
-    Examples
-    --------
-    >>> add_value_labels(ax, x_positions, y_values, format_str=".0f")
-    """
-    if color is None:
-        color = "oc.gray7"
-    if fontsize is None:
-        fontsize = fs(-1)
-
-    y_range = ax.get_ylim()[1] - ax.get_ylim()[0]
-    offset = y_range * offset_y
-
-    for xi, yi in zip(x, y, strict=False):
-        ax.text(
-            xi,
-            yi + offset,
-            f"{yi:{format_str}}",
-            ha="center",
-            va="bottom",
-            fontsize=fontsize,
-            color=color,
-        )

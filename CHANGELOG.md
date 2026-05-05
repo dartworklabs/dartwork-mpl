@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Removed
+- 5 wrapper functions per round-3 of the public API audit (#141):
+  `format_axis_percent`, `format_axis_labels`, `add_frame`,
+  `add_value_labels`, `set_xmargin`/`set_ymargin`.
+  See `docs/migration.md` for inline replacements.
 - 8 thin-wrapper utility functions per round-2 of the public API audit (#141):
   `hide_spines`, `hide_all_spines`, `show_only_spines`, `remove_grid`,
   `format_axis_thousands`, `save_figure`, `create_figure_with_style`,

@@ -5,10 +5,10 @@ drawn on top. Demonstrates:
 
 - ``dm.style.use("report")``
 - Matplotlib's density=True histogram mode
-- ``dm.format_axis_percent`` on the y-axis (a density histogram shown as %
+- ``ticker.PercentFormatter`` on the y-axis (a density histogram shown as %
   per bin width only makes sense for normalized data; see note below)
 
-Note: ``format_axis_percent`` multiplies by 100 for display. For a true
+Note: ``PercentFormatter(1.0)`` multiplies by 100 for display. For a true
 density with arbitrary y-axis units, remove that call.
 
 Run with:
@@ -18,6 +18,7 @@ Run with:
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 
 import dartwork_mpl as dm
@@ -45,7 +46,7 @@ ax.plot(
     xx, pdf, "r-", linewidth=2, label=f"Normal fit\nμ={mu:.1f}, σ={std:.1f}"
 )
 
-dm.format_axis_percent(ax, axis="y")
+ax.yaxis.set_major_formatter(ticker.PercentFormatter(1.0, decimals=0))
 ax.set_xlabel("Value")
 ax.set_ylabel("Density")
 ax.set_title("Distribution Analysis")
