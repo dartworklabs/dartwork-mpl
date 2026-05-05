@@ -33,8 +33,8 @@
 
 | name | module | kind | loc | mpl_canonical_1to1 | repo_callsites | inline_difficulty | classification | notes | status |
 |---|---|---|---|---|---|---|---|---|---|
-| `arrow_axis` | `dartwork_mpl.annotation` | func | 103 |  | 28 |  |  |  | pending |
-| `label_axes` | `dartwork_mpl.annotation` | func | 28 |  | 58 |  |  |  | pending |
+| `arrow_axis` | `dartwork_mpl.annotation` | func | 103 | N | 28 | 3 | keep | renderer-aware bidirectional Low-High arrow axis; text extent measurement + annotate calls — annotation 본질 | audited |
+| `label_axes` | `dartwork_mpl.annotation` | func | 28 | N | 58 | 3 | keep | auto x-position (ylabel 존재 여부 분기) + 다중 axes 순회 — 58 callsites; 다중 axes 자동 라벨링 | audited |
 | `ensure_loaded` | `dartwork_mpl.cmap` | func | 13 |  | 47 |  |  |  | pending |
 | `Color` | `dartwork_mpl.color._color` | class | 0 | N | 174 | 3 | keep | OKLCH-native color object; stores internally in OKLab, exposes oklab/oklch/rgb views — dartwork-mpl 색 시스템 핵심 | audited |
 | `cspace` | `dartwork_mpl.color._color` | func | 105 | N | 92 | 3 | keep | OKLCH 인터폴레이션 + 최단 hue 경로 처리; oklch/oklab/rgb 3-space 지원 — no matplotlib equivalent | audited |
@@ -51,12 +51,12 @@
 | `plot_colormaps` | `dartwork_mpl.diagnostics` | func | 48 | N | 26 | 3 | keep | colormap 시각화 + classify_colormap 기반 그룹화 — diagnostic asset visualizer | audited |
 | `plot_colors` | `dartwork_mpl.diagnostics` | func | 32 | N | 35 | 3 | keep | 팔레트 색상 배열 시각화 — diagnostic asset visualizer | audited |
 | `plot_fonts` | `dartwork_mpl.diagnostics` | func | 203 | N | 29 | 3 | keep | 폰트 specimen 패널 생성 (203 LOC) — diagnostic asset visualizer | audited |
-| `list_colormaps` | `dartwork_mpl.explore` | func | 7 |  | 5 |  |  |  | pending |
-| `list_palettes` | `dartwork_mpl.explore` | func | 11 |  | 6 |  |  |  | pending |
-| `show_palette` | `dartwork_mpl.explore` | func | 52 |  | 6 |  |  |  | pending |
+| `list_colormaps` | `dartwork_mpl.explore` | func | 7 | N | 5 | 2 | keep | ensure_loaded + dc.* prefix filter + _r 제거 — resource discovery; no matplotlib equivalent | audited |
+| `list_palettes` | `dartwork_mpl.explore` | func | 11 | N | 6 | 2 | keep | regex 기반 named-color map 순회 → prefix.name 집합 추출 — resource discovery | audited |
+| `show_palette` | `dartwork_mpl.explore` | func | 52 | N | 6 | 3 | keep | 색상 swatch 렌더러 (52 LOC) + contrast 휴리스틱 + 라벨 배치 — palette visualizer | audited |
 | `figure` | `dartwork_mpl.figure` | func | 62 | N | 401 | 3 | keep | 물리 단위 width API + aspect 토큰 + legacy figsize=/dpi= 명시 거부 — 핵심 abstraction | audited |
 | `subplots` | `dartwork_mpl.figure` | func | 82 | N | 645 | 3 | keep | 동상 — width/aspect → figsize 변환, gridspec/ratios 통합, legacy 인자 거부 | audited |
-| `ensure_loaded` | `dartwork_mpl.font` | func | 11 |  | 47 |  |  |  | pending |
+| `ensure_loaded` | `dartwork_mpl.font` | func | 11 | N | 47 | 1 | keep | thread-safe double-checked locking + _add_fonts() 등록 — 폰트 시스템 bootstrap; 47 내부 callsites | audited |
 | `format_axis_billions` | `dartwork_mpl.formatting` | func | 25 | N | 18 | 3 | keep | zero-tick special case + `x/1e9` scaling in formatter body | audited |
 | `format_axis_currency` | `dartwork_mpl.formatting` | func | 34 | N | 11 | 3 | keep | sign-outside-symbol placement, zero-rounding sign suppression, prefix/suffix position logic | audited |
 | `format_axis_millions` | `dartwork_mpl.formatting` | func | 25 | N | 20 | 3 | keep | zero-tick special case + `x/1e6` scaling in formatter body | audited |
@@ -73,10 +73,10 @@
 | `optimize_legend` | `dartwork_mpl.helpers.labels` | func | 31 | N | 15 | 3 | borderline | ncol 휴리스틱 (n_items 기반) + inside/outside 배치 분기 — legend 자동 위치 composition | audited |
 | `check_figure_quality` | `dartwork_mpl.helpers.quality` | func | 39 | N | 18 | 3 | keep | DPI·style·축라벨·틱·여백 다중 검사 루프 — publication-quality 검증 | audited |
 | `suggest_chart_type` | `dartwork_mpl.helpers.quality` | func | 31 | N | 24 | 3 | keep | x_type/y_type/n_points/n_series 기반 다분기 결정 트리 — 자연어 인터페이스 | audited |
-| `ensure_loaded` | `dartwork_mpl.icon` | func | 4 |  | 47 |  |  |  | pending |
-| `icon_font` | `dartwork_mpl.icon` | func | 2 |  | 13 |  |  |  | pending |
-| `icon_font_path` | `dartwork_mpl.icon` | func | 12 |  | 7 |  |  |  | pending |
-| `list_icon_fonts` | `dartwork_mpl.icon` | func | 1 |  | 9 |  |  |  | pending |
+| `ensure_loaded` | `dartwork_mpl.icon` | func | 4 | N | 47 | 1 | keep | icon font 등록 bootstrap — font 시스템과 대칭; 47 내부 callsites | audited |
+| `icon_font` | `dartwork_mpl.icon` | func | 2 | N | 13 | 2 | keep | icon_font_path → FontProperties(fname=) 변환; icon font 시스템 핵심 진입점 | audited |
+| `icon_font_path` | `dartwork_mpl.icon` | func | 12 | N | 7 | 2 | keep | registry 룩업 + FileNotFoundError — path helper with validation | audited |
+| `list_icon_fonts` | `dartwork_mpl.icon` | func | 1 | N | 9 | 1 | keep | sorted(_REGISTRY.keys()) — 1줄이지만 icon font discovery API | audited |
 | `install_llm_txt` | `dartwork_mpl.install` | func | 42 | N | 24 | 3 | keep | CLI 도구 — SSOT bundle 합성 + .claude/commands/.cursor 양방향 설치 로직 | audited |
 | `uninstall_llm_txt` | `dartwork_mpl.install` | func | 19 | N | 7 | 3 | keep | CLI 도구 — 파일 제거 + 오류 처리 | audited |
 | `save_and_show` | `dartwork_mpl.io` | func | 14 | N | 34 | 3 | keep | tmp 파일 생성·정리 + 경로 분기 + custom show() 호출 — 2줄 이상 실질 로직 | audited |
@@ -110,10 +110,10 @@
 | `remove_grid` | `dartwork_mpl.spines` | func | 1 | Y | 3 | 1 | remove | `ax.grid(False)` | audited |
 | `show_only_spines` | `dartwork_mpl.spines` | func | 4 | Y | 4 | 2 | remove | `for s in ['top','right','bottom','left']: ax.spines[s].set_visible(s in which)` | audited |
 | `style_spines` | `dartwork_mpl.spines` | func | 14 | N | 9 | 2 | borderline | composition (color+linewidth+visible filter) — 토론 | audited |
-| `Style` | `dartwork_mpl.style` | class | 0 |  | 61 |  |  |  | pending |
-| `list_styles` | `dartwork_mpl.style` | func | 2 |  | 11 |  |  |  | pending |
-| `load_style_dict` | `dartwork_mpl.style` | func | 26 |  | 10 |  |  |  | pending |
-| `style_path` | `dartwork_mpl.style` | func | 5 |  | 7 |  |  |  | pending |
+| `Style` | `dartwork_mpl.style` | class | 0 | N | 61 | 3 | keep | presets 로딩 + thread-safe rcParams 갱신 + use/stack/context/context_manager — 'One Right Way' 스타일 시스템 핵심 | audited |
+| `list_styles` | `dartwork_mpl.style` | func | 2 | N | 11 | 2 | keep | asset/mplstyle glob → stem 목록 — style discovery | audited |
+| `load_style_dict` | `dartwork_mpl.style` | func | 26 | N | 10 | 2 | keep | mplstyle 커스텀 파서 (inline comment 제거 + colon-split + float 변환) — no matplotlib equivalent | audited |
+| `style_path` | `dartwork_mpl.style` | func | 5 | N | 7 | 1 | keep | asset 경로 해석 + ValueError — style 파일 path helper | audited |
 | `get_source_code` | `dartwork_mpl.templates.diverging_bar` | func | 13 |  | 0 |  |  |  | pending |
 | `plot_diverging_bar` | `dartwork_mpl.templates.diverging_bar` | func | 206 |  | 28 |  |  |  | pending |
 | `Inches` | `dartwork_mpl.units` | class | 0 | N | 27 | 2 | keep | 단위 태그 클래스 — `__array_ufunc__=None` + 산술 연산자 오버라이드로 numpy 경계에서 단위 손실 방지 | audited |
