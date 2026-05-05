@@ -35,16 +35,15 @@ grid_size = 15
 x_grid = np.linspace(-3, 3, grid_size)
 y_grid = np.linspace(-3, 3, grid_size)
 
-particles = []
-for x in x_grid:
-    for y in y_grid:
-        particles.append(
-            {
-                "x": x + np.random.randn() * 0.1,
-                "y": y + np.random.randn() * 0.1,
-                "trail": [],
-            }
-        )
+particles = [
+    {
+        "x": x + np.random.randn() * 0.1,
+        "y": y + np.random.randn() * 0.1,
+        "trail": [],
+    }
+    for x in x_grid
+    for y in y_grid
+]
 
 n_steps = 50
 dt = 0.05

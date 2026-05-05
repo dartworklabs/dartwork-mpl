@@ -118,8 +118,7 @@ def _oklch_lightness(hex_str: str) -> float:
     m_cr = m_ ** (1 / 3) if m_ >= 0 else 0.0
     s_cr = s_ ** (1 / 3) if s_ >= 0 else 0.0
 
-    L = 0.2104542553 * l_cr + 0.7936177850 * m_cr - 0.0040720468 * s_cr
-    return L
+    return 0.2104542553 * l_cr + 0.7936177850 * m_cr - 0.0040720468 * s_cr
 
 
 def _relative_luminance_rgb(r: float, g: float, b: float) -> float:
@@ -956,13 +955,12 @@ cmap = mpl.colors.ListedColormap(
 
 def _save_color_space_examples(images_dir: Path) -> list[Path]:
     """Generate all Color Space example images."""
-    paths = [
+    return [
         _save_color_space_creation(images_dir),
         _save_color_space_conversion(images_dir),
         _save_color_space_interpolation(images_dir),
         _save_color_space_colormap(images_dir),
     ]
-    return paths
 
 
 def build_gallery_assets(base_dir: Path | None = None) -> dict[str, list[Path]]:

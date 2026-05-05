@@ -586,7 +586,7 @@ def _save_diverging_bar(images_dir: Path) -> Path:
     dm.style.use("presentation")
     from dartwork_mpl.templates import plot_diverging_bar
 
-    fig, ax = plot_diverging_bar(
+    fig, _ax = plot_diverging_bar(
         labels=["Accuracy", "Precision", "Recall", "F1-Score", "AUC"],
         neg_values=np.array([-30, -55, -10, -20, -15]),
         pos_values=np.array([60, 20, 45, 50, 35]),
