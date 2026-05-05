@@ -150,8 +150,8 @@ keep / remove로 재분류한다. `잠정 권고`는 본 spec §3 기준의 중�
 | `add_value_labels` | `dartwork_mpl.helpers.labels` | 18 | 17 | 데이터 순회·offset 계산·ax.text 배치 — bar/line annotation | keep |
 | `format_axis_labels` | `dartwork_mpl.helpers.labels` | 12 | 22 | xlabel/ylabel/title + fontsize 3-call composition | keep |
 | `optimize_legend` | `dartwork_mpl.helpers.labels` | 31 | 15 | ncol 휴리스틱 + inside/outside 배치 분기 composition | keep |
-| `set_xmargin` | `dartwork_mpl.layout` | 7 | 8 | x-margin + xlim 동시 조정 — 단순 2-step 패턴 | ? |
-| `set_ymargin` | `dartwork_mpl.layout` | 7 | 7 | y-margin + ylim 동시 조정 — 단순 2-step 패턴 | ? |
+| `set_xmargin` | `dartwork_mpl.layout` | 7 | 8 | margin + 선택적 edge pinning composition (4-step) | keep |
+| `set_ymargin` | `dartwork_mpl.layout` | 7 | 7 | margin + 선택적 edge pinning composition (4-step) | keep |
 | `add_frame` | `dartwork_mpl.spines` | 4 | 10 | 전체 spine에 visible·color·linewidth 적용 composition | keep |
 | `add_grid` | `dartwork_mpl.spines` | 11 | 15 | dm.* 기본값(color, alpha 등) 적용 grid 헬퍼 | keep |
 | `minimal_axes` | `dartwork_mpl.spines` | 7 | 27 | 4개 함수 묶음 composition, 27 callsites | keep |
@@ -159,5 +159,5 @@ keep / remove로 재분류한다. `잠정 권고`는 본 spec §3 기준의 중�
 | `get_source_code` | `dartwork_mpl.templates.diverging_bar` | 13 | 0 | importlib+inspect 경유 소스 반환 — 외부 callsite 0 | remove |
 | `make_offset` | `dartwork_mpl.util` | 2 | 21 | ScaledTranslation 2-line wrapper — LOC≤3 단순 래핑 | remove |
 | `mix_colors` | `dartwork_mpl.util` | 8 | 28 | RGB linspace 블렌딩 — OKLCH 미지원, 28 callsites | ? |
-| `pseudo_alpha` | `dartwork_mpl.util` | 1 | 34 | mix_colors 1-line delegate, 백색 블렌딩 의미 있음 | remove |
+| `pseudo_alpha` | `dartwork_mpl.util` | 1 | 34 | mix_colors 1-line delegate (LOC=1) — 의미는 있으나 인라인 trivial | remove |
 | `set_decimal` | `dartwork_mpl.util` | 9 | 40 | get/set ticks + ticklabels 3-step per axis, 40 callsites | keep |
