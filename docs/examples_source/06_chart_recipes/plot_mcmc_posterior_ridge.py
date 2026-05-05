@@ -11,7 +11,6 @@ Here, we overlay a global ``cspace`` gradient across the parameters, shading the
 bulk of the distributions to give depth and immediate visual separation.
 """
 
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import gaussian_kde
 
@@ -35,7 +34,9 @@ c1 = dm.named("oc.indigo9").to_hex()
 c2 = dm.named("oc.teal6").to_hex()
 ridge_colors = dm.cspace(c1, c2, n=n_params, space="oklch")
 
-fig, axes = dm.subplots(n_params, 1, width="10.8cm", aspect="portrait", sharex=True)
+fig, axes = dm.subplots(
+    n_params, 1, width="10.8cm", aspect="portrait", sharex=True
+)
 fig.subplots_adjust(
     hspace=-0.25
 )  # Negative hspace for the overlapping ridgeline effect

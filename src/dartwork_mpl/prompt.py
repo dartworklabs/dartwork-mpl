@@ -28,11 +28,9 @@ _PROMPT_DIR: Path = Path(__file__).parent / "asset/prompt"
 # anti-pattern catalog (``02-anti-patterns.yaml``) and the
 # ``05-templates/`` subdirectory are separate surfaces with their own
 # loaders and are intentionally not listed here.
-_CANONICAL_PROMPTS: frozenset[str] = frozenset({
-    "00-index",
-    "01-policy",
-    "03-recipes",
-})
+_CANONICAL_PROMPTS: frozenset[str] = frozenset(
+    {"00-index", "01-policy", "03-recipes"}
+)
 
 
 def prompt_path(name: str) -> Path:
@@ -109,14 +107,10 @@ def list_prompts() -> list[str]:
     return found
 
 
-_TEMPLATE_INDEX_PATH: Path = (
-    _PROMPT_DIR / "05-templates" / "_index.json"
-)
+_TEMPLATE_INDEX_PATH: Path = _PROMPT_DIR / "05-templates" / "_index.json"
 
 
-def find_template(
-    intent: str, top_k: int = 5
-) -> list[dict[str, object]]:
+def find_template(intent: str, top_k: int = 5) -> list[dict[str, object]]:
     """Rank the bundled AI plot templates against a free-text intent.
 
     Mirrors the MCP ``find_template`` tool so the same ranking is
@@ -149,12 +143,14 @@ def find_template(
 
     scored: list[tuple[int, str, dict[str, object]]] = []
     for template_id, meta in index.items():
-        haystack = " ".join([
-            str(meta.get("use_case", "")),
-            str(meta.get("data_shape", "")),
-            str(meta.get("difficulty", "")),
-            " ".join(meta.get("tags", [])),
-        ]).lower()
+        haystack = " ".join(
+            [
+                str(meta.get("use_case", "")),
+                str(meta.get("data_shape", "")),
+                str(meta.get("difficulty", "")),
+                " ".join(meta.get("tags", [])),
+            ]
+        ).lower()
         score = sum(1 for t in tokens if t in haystack)
         if score > 0:
             scored.append((score, template_id, meta))

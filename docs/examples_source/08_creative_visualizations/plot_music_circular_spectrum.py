@@ -23,7 +23,9 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = dm.subplots(width="18cm", aspect="square", subplot_kw={"projection": "polar"})
+fig, ax = dm.subplots(
+    width="18cm", aspect="square", subplot_kw={"projection": "polar"}
+)
 
 n_frequencies = 180
 frequencies = np.random.exponential(2, n_frequencies) * (

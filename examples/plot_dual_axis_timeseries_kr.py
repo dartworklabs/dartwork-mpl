@@ -34,8 +34,12 @@ ax.tick_params(axis="y", labelcolor="oc.blue7")
 
 ax2 = ax.twinx()
 ax2.plot(
-    dates, secondary, color="oc.teal6", marker="o",
-    linewidth=2, label="보조 계열",
+    dates,
+    secondary,
+    color="oc.teal6",
+    marker="o",
+    linewidth=2,
+    label="보조 계열",
 )
 ax2.set_ylabel("보조 계열 (단위)", color="oc.teal7")
 ax2.tick_params(axis="y", labelcolor="oc.teal7")

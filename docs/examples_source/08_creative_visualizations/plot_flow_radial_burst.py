@@ -23,21 +23,30 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = dm.subplots(width="18cm", aspect="square", subplot_kw={"projection": "polar"})
+fig, ax = dm.subplots(
+    width="18cm", aspect="square", subplot_kw={"projection": "polar"}
+)
 
 theta = np.linspace(0, 2 * np.pi, 360)
 r_layers = 8
 
-ring_palette = ["blue", "teal", "green", "yellow", "orange", "red", "pink", "violet"]
+ring_palette = [
+    "blue",
+    "teal",
+    "green",
+    "yellow",
+    "orange",
+    "red",
+    "pink",
+    "violet",
+]
 
 for layer in range(r_layers):
     r_base = 0.5 + layer * 0.5
     r = r_base + 0.3 * np.sin(6 * theta + layer * np.pi / 4)
 
     layer_colors = dm.cspace(
-        f"oc.{ring_palette[layer]}5",
-        f"oc.{ring_palette[layer]}8",
-        n=len(theta),
+        f"oc.{ring_palette[layer]}5", f"oc.{ring_palette[layer]}8", n=len(theta)
     )
 
     for i in range(len(theta) - 1):

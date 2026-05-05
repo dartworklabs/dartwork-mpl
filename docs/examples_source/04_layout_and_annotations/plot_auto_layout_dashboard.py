@@ -60,12 +60,7 @@ for i in range(3):
 
 dm.label_axes(axes)
 
-dm.auto_layout(
-    fig,
-    padding=0.08,
-    max_iter=10,
-    verbose=False,
-)
+dm.auto_layout(fig, padding=0.08, max_iter=10, verbose=False)
 
 plt.suptitle("Dashboard with Auto Layout", fontsize=dm.fs(3), y=1.02)
 

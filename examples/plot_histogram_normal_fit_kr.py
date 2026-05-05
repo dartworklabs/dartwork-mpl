@@ -24,8 +24,13 @@ rng = np.random.default_rng(42)
 data = rng.normal(100, 15, 1000)
 
 ax.hist(
-    data, bins=30, density=True,
-    alpha=0.7, edgecolor="black", linewidth=0.5, label="관측 데이터",
+    data,
+    bins=30,
+    density=True,
+    alpha=0.7,
+    edgecolor="black",
+    linewidth=0.5,
+    label="관측 데이터",
 )
 
 mu, std = data.mean(), data.std()
@@ -33,7 +38,10 @@ xmin, xmax = ax.get_xlim()
 xx = np.linspace(xmin, xmax, 100)
 pdf = (1.0 / (std * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((xx - mu) / std) ** 2)
 ax.plot(
-    xx, pdf, "r-", linewidth=2,
+    xx,
+    pdf,
+    "r-",
+    linewidth=2,
     label=f"정규분포\n평균={mu:.1f}, 표준편차={std:.1f}",
 )
 

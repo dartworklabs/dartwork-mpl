@@ -329,16 +329,10 @@ class TestFormatAxisCurrencyNegativeSign:
         ],
     )
     def test_sign_outside_symbol(
-        self,
-        value: float,
-        position: str,
-        symbol: str,
-        expected: str,
+        self, value: float, position: str, symbol: str, expected: str
     ) -> None:
         fig, ax = _axes()
-        dm.format_axis_currency(
-            ax, axis="y", symbol=symbol, position=position
-        )
+        dm.format_axis_currency(ax, axis="y", symbol=symbol, position=position)
         formatter = ax.yaxis.get_major_formatter()
         assert formatter(value, 0) == expected
         plt.close(fig)

@@ -25,20 +25,16 @@ def index() -> dict[str, dict[str, object]]:
 class TestIndexShape:
     """The bundled metadata index follows the documented schema."""
 
-    REQUIRED_KEYS: frozenset[str] = frozenset({
-        "use_case",
-        "difficulty",
-        "data_shape",
-        "tags",
-        "source_path",
-    })
-    DIFFICULTIES: frozenset[str] = frozenset({
-        "beginner",
-        "intermediate",
-        "advanced",
-    })
+    REQUIRED_KEYS: frozenset[str] = frozenset(
+        {"use_case", "difficulty", "data_shape", "tags", "source_path"}
+    )
+    DIFFICULTIES: frozenset[str] = frozenset(
+        {"beginner", "intermediate", "advanced"}
+    )
 
-    def test_eighteen_entries(self, index: dict[str, dict[str, object]]) -> None:
+    def test_eighteen_entries(
+        self, index: dict[str, dict[str, object]]
+    ) -> None:
         assert len(index) == 18
 
     def test_required_keys_present(
@@ -46,9 +42,7 @@ class TestIndexShape:
     ) -> None:
         for template_id, meta in index.items():
             missing = self.REQUIRED_KEYS - meta.keys()
-            assert not missing, (
-                f"{template_id}: missing keys {sorted(missing)}"
-            )
+            assert not missing, f"{template_id}: missing keys {sorted(missing)}"
 
     def test_difficulty_in_enum(
         self, index: dict[str, dict[str, object]]
