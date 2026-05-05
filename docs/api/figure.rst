@@ -42,9 +42,10 @@ height/width float) to control figure size:
    # With a style
    fig, ax = dm.subplots(width="13cm", style='scientific')
 
-The legacy ``figsize=`` and ``dpi=`` arguments still work but emit
-``DeprecationWarning`` and are slated for removal in 0.5.0. See
-:doc:`../migration` for the full mapping from 0.3 width tokens.
+The legacy ``figsize=`` and ``dpi=`` arguments were **removed in
+0.4.0** — passing either to :func:`dartwork_mpl.subplots` or
+:func:`dartwork_mpl.figure` now raises :class:`TypeError`. See
+:doc:`../migration` for the full mapping from the 0.3 width tokens.
 
 API Reference
 -------------

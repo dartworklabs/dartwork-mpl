@@ -79,24 +79,28 @@ rules:
       and aspect handling.
 
   - id: cm2in-figsize
-    severity: warning
+    severity: critical
     detector:
       kind: regex
       pattern: 'figsize\s*=\s*\([^)]*cm2in'
     message: |
       `figsize=(dm.cm2in(...), dm.cm2in(...))` is the legacy 0.3
-      pattern. Use `width="<n>cm"` plus an aspect token instead.
+      pattern and is REMOVED in 0.4.0: `dm.cm2in` itself raises
+      `AttributeError`, and `figsize=` on `dm.subplots`/`dm.figure`
+      raises `TypeError`. Use `width="<n>cm"` plus an aspect token
+      instead.
     fix_suggestion: 'dm.subplots(width="9cm", aspect="standard")'
 
   - id: deprecated-width-token
-    severity: warning
+    severity: critical
     detector:
       kind: regex
       pattern: '\bdm\.(SW|MW|TW|DW|FS_[A-Z_]+|WIDTHS)\b'
     message: |
-      `dm.SW/MW/TW/DW/FS_*/WIDTHS` are deprecated and slated for
-      removal in 0.5.0. Use `dm.subplots(width="...cm", aspect="...")`,
-      or `dm.col1`/`dm.col2` for academic columns.
+      `dm.SW/MW/TW/DW/FS_*/WIDTHS` were REMOVED in 0.4.0 — accessing
+      them now raises `AttributeError`. Use
+      `dm.subplots(width="...cm", aspect="...")`, or
+      `dm.col1`/`dm.col2` for academic columns.
 
   - id: dpi-arg
     severity: critical

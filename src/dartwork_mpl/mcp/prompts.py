@@ -83,7 +83,7 @@ Generate a complete Python script that creates the following plot:
 6. **Colors**: prefer named palettes — `oc.*` (Open Color), `tw.*` (Tailwind), `dc.*` (dartwork core), `md.*`, `ad.*`, `cu.*`, `pr.*`. Raw hex works but triggers a lint info.
 7. **Fonts / weights / line widths**: do NOT pass literal `fontsize=` numbers. Use `dm.fs(n)` / `dm.fw(n)` / `dm.lw(n)` offsets from the active style.
 8. **Save**: end the script with `dm.save_formats(fig, "name", formats=("png", "pdf"), dpi=300)` (scripts) or `dm.save_and_show(fig, "name")` (notebooks). Do not stop at `plt.show` — the rendered artifact must be persisted (lint id `plt-show-only`).
-9. **Width tokens**: the legacy width aliases under `dm` (the SW / MW / TW / DW / FS_* / WIDTHS family) are deprecated and slated for removal in 0.5.0 (lint id `deprecated-width-token`). Use `width="<n>cm"` plus an aspect token, or `dm.col1` / `dm.col2` for academic columns.
+9. **Width tokens**: the legacy width aliases under `dm` (the SW / MW / TW / DW / FS_* / WIDTHS family) were REMOVED in 0.4.0 — accessing them now raises `AttributeError` (lint id `deprecated-width-token`). Use `width="<n>cm"` plus an aspect token, or `dm.col1` / `dm.col2` for academic columns.
 
 ## Style presets (composite, recommended)
 Apply via `dm.style.use("scientific")` or pass a stack to `dm.subplots(style=[...])`.
