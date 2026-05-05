@@ -74,12 +74,14 @@ for ax, (font_name, font_file) in zip(axes.flat, fonts, strict=True):
     ax.set_title(font_name)
 
     # Apply font to every text element in this subplot.
-    for text in (
-        [ax.title, ax.yaxis.label, ax2.yaxis.label]
-        + ax.get_xticklabels()
-        + ax.get_yticklabels()
-        + ax2.get_yticklabels()
-    ):
+    for text in [
+        ax.title,
+        ax.yaxis.label,
+        ax2.yaxis.label,
+        *ax.get_xticklabels(),
+        *ax.get_yticklabels(),
+        *ax2.get_yticklabels(),
+    ]:
         text.set_fontproperties(fp)
 
 dm.auto_layout(fig)

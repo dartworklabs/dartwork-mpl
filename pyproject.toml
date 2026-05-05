@@ -166,10 +166,24 @@ known-first-party = ["dartwork_mpl"]
 split-on-trailing-comma = false
 
 [tool.ruff.lint.per-file-ignores]
-# E402: Module level import not at top of file
-# These files intentionally modify sys.path before importing
-"docs/color_system/generate_assets.py" = ["E402"]
+# RUF001/002/003 (ambiguous unicode in strings/docstrings/comments):
+# documentation and examples intentionally use mathematical and Greek
+# characters (×, σ, α, γ, ∪, ℝ, −, ∨, –) as content. They are not
+# confusable identifiers, and the rule adds noise without value here.
+"docs/**/*.py" = ["RUF001", "RUF002", "RUF003"]
+"examples/**/*.py" = ["RUF001", "RUF002", "RUF003"]
+# E402: these scripts intentionally modify sys.path before importing.
+# W293: docs/color_system/generate_assets.py embeds a JavaScript
+# template string whose blank lines carry whitespace as part of the
+# rendered HTML output, not Python source style.
+"docs/color_system/generate_assets.py" = ["E402", "W293"]
 "docs/fonts/generate_assets.py" = ["E402"]
+# BLE001 + PERF203: these asset generators run a best-effort batch loop
+# that must continue past any individual failure (one broken example
+# shouldn't abort the whole build). The blind-except + try/except-in-
+# loop pattern is intentional.
+"docs/api/generate_assets.py" = ["BLE001", "PERF203"]
+"docs/usage_guide/generate_assets.py" = ["BLE001", "PERF203"]
 # Tests legitimately use unused unpacked variables (e.g. fig, ax tuples
 # where only one is asserted), nested context managers, manual list
 # comprehensions, blind excepts in cleanup code, ambiguous unicode in

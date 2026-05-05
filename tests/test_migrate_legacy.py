@@ -91,10 +91,10 @@ class TestPassThrough:
 
     def test_modern_code_is_unchanged(self) -> None:
         modern = (
-            'import dartwork_mpl as dm\n'
+            "import dartwork_mpl as dm\n"
             'dm.style.use("scientific")\n'
             'fig, ax = dm.subplots(width="9cm", aspect="standard")\n'
-            'dm.auto_layout(fig)\n'
+            "dm.auto_layout(fig)\n"
         )
         assert migrate_legacy_code(modern) == modern
 

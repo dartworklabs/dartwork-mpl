@@ -191,8 +191,7 @@ def _normalize_svg_viewbox(svg: str, target_vb: str) -> str:
     the exact same pixel footprint."""
     svg = re.sub(r'viewBox="[^"]*"', f'viewBox="{target_vb}"', svg, count=1)
     svg = re.sub(r'width="[^"]*"', 'width="100%"', svg, count=1)
-    svg = re.sub(r'height="[^"]*"', 'height="100%"', svg, count=1)
-    return svg
+    return re.sub(r'height="[^"]*"', 'height="100%"', svg, count=1)
 
 
 def _strip_xml_declaration(svg: str) -> str:
@@ -425,12 +424,10 @@ def build_preset_compare_html(output_path: Path | None = None) -> Path:
         svgs[preset] = _normalize_svg_viewbox(svgs[preset], target_vb)
 
     # ── Build tabs HTML ──
-    tabs_lines = []
-    for preset in PRESETS:
-        tabs_lines.append(
-            f'    <button class="dm-pc-tab" data-preset="{preset}">'
-            f"{preset}</button>"
-        )
+    tabs_lines = [
+        f'    <button class="dm-pc-tab" data-preset="{preset}">{preset}</button>'
+        for preset in PRESETS
+    ]
     tabs_html = "\n".join(tabs_lines)
 
     # ── Build panels HTML ──

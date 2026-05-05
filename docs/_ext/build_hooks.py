@@ -7,6 +7,7 @@ Extracted from conf.py for maintainability. Handles:
 - AI plot-template metadata index (T6 in the AI-readiness roadmap)
 """
 
+import contextlib
 import json
 import re
 from pathlib import Path
@@ -57,10 +58,8 @@ def cleanup_sg_execution_times(app):
     """
     src = Path(app.srcdir)
     for stale in src.glob("**/sg_execution_times.rst"):
-        try:
+        with contextlib.suppress(OSError):
             stale.unlink()
-        except OSError:
-            pass
 
 
 def generate_gallery_assets(_app):
@@ -167,17 +166,12 @@ _TEMPLATE_META_RE: re.Pattern[str] = re.compile(
     r"# ai-template-meta-start\s*\n((?:#[^\n]*\n)+?)# ai-template-meta-end",
     re.MULTILINE,
 )
-_TEMPLATE_META_REQUIRED: frozenset[str] = frozenset({
-    "use_case",
-    "difficulty",
-    "data_shape",
-    "tags",
-})
-_TEMPLATE_DIFFICULTY_VALUES: frozenset[str] = frozenset({
-    "beginner",
-    "intermediate",
-    "advanced",
-})
+_TEMPLATE_META_REQUIRED: frozenset[str] = frozenset(
+    {"use_case", "difficulty", "data_shape", "tags"}
+)
+_TEMPLATE_DIFFICULTY_VALUES: frozenset[str] = frozenset(
+    {"beginner", "intermediate", "advanced"}
+)
 
 
 def _parse_template_meta(block_body: str, source: str) -> dict[str, object]:
@@ -228,9 +222,7 @@ def generate_template_index(app):
     or partial index.
     """
     repo_root = Path(app.srcdir).parent
-    template_dir = (
-        repo_root / "docs" / "examples_source" / "09_ai_templates"
-    )
+    template_dir = repo_root / "docs" / "examples_source" / "09_ai_templates"
     if not template_dir.exists():
         return
 
@@ -267,8 +259,7 @@ def generate_template_index(app):
     )
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(
-        json.dumps(index, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+        json.dumps(index, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     print(
         f"Wrote AI template index ({len(index)} entries): "

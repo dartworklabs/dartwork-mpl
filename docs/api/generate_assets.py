@@ -252,7 +252,7 @@ def _save_xplot_example(images_dir: Path) -> Path:
     dm.style.use("presentation")
     from dartwork_mpl.templates import plot_diverging_bar
 
-    fig, ax = plot_diverging_bar(
+    fig, _ax = plot_diverging_bar(
         labels=["Category A", "Category B", "Category C"],
         neg_values=np.array([-30, -15, -25]),
         pos_values=np.array([40, 55, 35]),

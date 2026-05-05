@@ -253,8 +253,7 @@ _MIGRATE_SAFE_REWRITES: tuple[tuple[re.Pattern[str], str], ...] = (
 _MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
     (
         re.compile(r"\bdm\.(?:SW|MW|TW|DW)\b"),
-        "dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, "
-        "or dm.cm(<num>).",
+        "dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).",
     ),
     (
         re.compile(r"\bdm\.FS_[A-Z_]+\b"),
@@ -262,7 +261,7 @@ _MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
     ),
     (
         re.compile(r"\bdm\.WIDTHS\["),
-        "dm.WIDTHS removed; pick a width string (e.g. \"9cm\") instead.",
+        'dm.WIDTHS removed; pick a width string (e.g. "9cm") instead.',
     ),
     (
         re.compile(r"\bfigsize\s*=\s*\("),

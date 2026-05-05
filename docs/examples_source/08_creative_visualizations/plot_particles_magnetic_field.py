@@ -104,17 +104,43 @@ for dipole in dipoles:
     )
 
     ax.add_patch(
-        Circle(n_pos, 0.3, color="oc.red5", edgecolor="white", linewidth=2, zorder=20)
+        Circle(
+            n_pos,
+            0.3,
+            color="oc.red5",
+            edgecolor="white",
+            linewidth=2,
+            zorder=20,
+        )
     )
     ax.text(
-        *n_pos, "N", ha="center", va="center", fontsize=dm.fs(0), color="white", weight="bold"
+        *n_pos,
+        "N",
+        ha="center",
+        va="center",
+        fontsize=dm.fs(0),
+        color="white",
+        weight="bold",
     )
 
     ax.add_patch(
-        Circle(s_pos, 0.3, color="oc.blue5", edgecolor="white", linewidth=2, zorder=20)
+        Circle(
+            s_pos,
+            0.3,
+            color="oc.blue5",
+            edgecolor="white",
+            linewidth=2,
+            zorder=20,
+        )
     )
     ax.text(
-        *s_pos, "S", ha="center", va="center", fontsize=dm.fs(0), color="white", weight="bold"
+        *s_pos,
+        "S",
+        ha="center",
+        va="center",
+        fontsize=dm.fs(0),
+        color="white",
+        weight="bold",
     )
 
 ax.set_xlim(-5, 5)

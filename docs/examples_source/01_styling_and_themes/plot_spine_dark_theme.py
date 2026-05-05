@@ -24,7 +24,9 @@ y2 = np.exp(-x / 5) * np.cos(2 * x)
 
 dm.style.use("dark")
 dm.style.use("scientific")
-fig, (ax1, ax2) = dm.subplots(1, 2, width="16cm", aspect="cinema", facecolor="#1a1a1a")
+fig, (ax1, ax2) = dm.subplots(
+    1, 2, width="16cm", aspect="cinema", facecolor="#1a1a1a"
+)
 
 # Minimal axes with light grey spines.
 ax1.plot(x, y1, color="oc.blue4", lw=dm.lw(1))
