@@ -50,11 +50,12 @@ def create_islamic_star(center, size, n_points=8):
 
 
 grid_size = 4
-centers = []
-for i in range(-grid_size, grid_size + 1):
-    for j in range(-grid_size, grid_size + 1):
-        if (i + j) % 2 == 0:
-            centers.append((i * 2, j * 2))
+centers = [
+    (i * 2, j * 2)
+    for i in range(-grid_size, grid_size + 1)
+    for j in range(-grid_size, grid_size + 1)
+    if (i + j) % 2 == 0
+]
 
 max_dist = np.sqrt(2 * grid_size**2) * 2
 colors_islamic = dm.cspace("oc.indigo9", "oc.yellow5", n=100, space="oklch")

@@ -7,6 +7,7 @@ Extracted from conf.py for maintainability. Handles:
 - AI plot-template metadata index (T6 in the AI-readiness roadmap)
 """
 
+import contextlib
 import json
 import re
 from pathlib import Path
@@ -57,10 +58,8 @@ def cleanup_sg_execution_times(app):
     """
     src = Path(app.srcdir)
     for stale in src.glob("**/sg_execution_times.rst"):
-        try:
+        with contextlib.suppress(OSError):
             stale.unlink()
-        except OSError:
-            pass
 
 
 def generate_gallery_assets(_app):

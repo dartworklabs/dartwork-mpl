@@ -98,10 +98,7 @@ for i, (b, v, _bar) in enumerate(zip(baselines, values, bars, strict=False)):
         y_pos = b - offset
         va = "top"
 
-    if is_total[i]:
-        val_str = str(v)
-    else:
-        val_str = f"+{v}" if v > 0 else str(v)
+    val_str = str(v) if is_total[i] else (f"+{v}" if v > 0 else str(v))
 
     ax.text(
         i,
