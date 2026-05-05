@@ -133,3 +133,31 @@
 | `generate_validation_report` | `dartwork_mpl.validate_fixes` | func | 47 | N | 1 | 3 | keep | 47 LOC — requirements + visual warnings + score + status 종합 리포트; agent 출력용 구조화 텍스트 | audited |
 | `get_fix_suggestions` | `dartwork_mpl.validate_fixes` | func | 90 | N | 20 | 3 | keep | 90 LOC — check_id별 5분기 코드 스니펫 생성; 20 callsites; auto-fix agent 핵심 | audited |
 | `validate_with_fixes` | `dartwork_mpl.validate_fixes` | func | 48 | N | 16 | 3 | keep | validate_figure + get_fix_suggestions 결합 — 검증·수정 제안 원스톱 API; 16 callsites | audited |
+
+## Borderline cases (토론 대상)
+
+분류가 `borderline`인 항목을 별도 정리. 각 항목은 PR 리뷰 또는 후속 코멘트에서
+keep / remove로 재분류한다. `잠정 권고`는 본 spec §3 기준의 중간 판단이며, 메인테이너
+합의로 확정한다.
+
+| name | module | loc | callsites | 핵심 사유 (notes 요약) | 잠정 권고 |
+|---|---|---|---|---|---|
+| `format_axis_percent` | `dartwork_mpl.formatting` | 6 | 4 | PercentFormatter 래핑 + x/y/both 분기 dispatch 제공 | keep |
+| `format_axis_thousands` | `dartwork_mpl.formatting` | 6 | 2 | 단순 FuncFormatter 람다, sep 파라미터만 추가 | remove |
+| `rotate_tick_labels` | `dartwork_mpl.formatting` | 26 | 25 | auto-ha 추론 + FixedLocator-safe 순회 — 실질 로직 | keep |
+| `create_figure_with_style` | `dartwork_mpl.helpers.io` | 9 | 22 | figsize= 안티패턴 직접 사용하는 2줄 shortcut | remove |
+| `save_figure` | `dartwork_mpl.helpers.io` | 11 | 24 | save_formats 1-line passthrough + mkdir + print — double-wrapper | remove |
+| `add_value_labels` | `dartwork_mpl.helpers.labels` | 18 | 17 | 데이터 순회·offset 계산·ax.text 배치 — bar/line annotation | keep |
+| `format_axis_labels` | `dartwork_mpl.helpers.labels` | 12 | 22 | xlabel/ylabel/title + fontsize 3-call composition | keep |
+| `optimize_legend` | `dartwork_mpl.helpers.labels` | 31 | 15 | ncol 휴리스틱 + inside/outside 배치 분기 composition | keep |
+| `set_xmargin` | `dartwork_mpl.layout` | 7 | 8 | x-margin + xlim 동시 조정 — 단순 2-step 패턴 | ? |
+| `set_ymargin` | `dartwork_mpl.layout` | 7 | 7 | y-margin + ylim 동시 조정 — 단순 2-step 패턴 | ? |
+| `add_frame` | `dartwork_mpl.spines` | 4 | 10 | 전체 spine에 visible·color·linewidth 적용 composition | keep |
+| `add_grid` | `dartwork_mpl.spines` | 11 | 15 | dm.* 기본값(color, alpha 등) 적용 grid 헬퍼 | keep |
+| `minimal_axes` | `dartwork_mpl.spines` | 7 | 27 | 4개 함수 묶음 composition, 27 callsites | keep |
+| `style_spines` | `dartwork_mpl.spines` | 14 | 9 | color·linewidth·visible 필터 composition | keep |
+| `get_source_code` | `dartwork_mpl.templates.diverging_bar` | 13 | 0 | importlib+inspect 경유 소스 반환 — 외부 callsite 0 | remove |
+| `make_offset` | `dartwork_mpl.util` | 2 | 21 | ScaledTranslation 2-line wrapper — LOC≤3 단순 래핑 | remove |
+| `mix_colors` | `dartwork_mpl.util` | 8 | 28 | RGB linspace 블렌딩 — OKLCH 미지원, 28 callsites | ? |
+| `pseudo_alpha` | `dartwork_mpl.util` | 1 | 34 | mix_colors 1-line delegate, 백색 블렌딩 의미 있음 | remove |
+| `set_decimal` | `dartwork_mpl.util` | 9 | 40 | get/set ticks + ticklabels 3-step per axis, 40 callsites | keep |
