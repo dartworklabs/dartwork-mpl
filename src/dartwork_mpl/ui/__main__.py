@@ -29,11 +29,11 @@ def _interactive_init() -> None:
     print("  \033[1;36m◆ Dartwork UI — New Project\033[0m")
     print()
 
-    target = inquirer.text(  # type: ignore[attr-defined]
+    target = inquirer.text(
         message="Target directory:", default="./my-viewer"
     ).execute()
 
-    example = inquirer.select(  # type: ignore[attr-defined]
+    example = inquirer.select(
         message="Example template:",
         choices=[
             {
