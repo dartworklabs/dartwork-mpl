@@ -13,9 +13,9 @@
 | `module` | `src/dartwork_mpl/<module>` |
 | `kind` | `func` / `class` |
 | `loc` | 함수 본문 LOC (def·docstring·빈 줄 제외) |
-| `mpl_canonical_1to1` | matplotlib에 1:1 매핑되는 canonical 호출이 존재 (Y/N) |
+| `mpl_canonical_1to1` | matplotlib에 1:1 매핑되는 canonical 호출이 존재 (`Y` / `N`). 빈 셀 = 미평가 |
 | `repo_callsites` | 리포 내 `docs/`·`tests/`의 `.py`·`.md`에서 발견된 호출처 수 (제거 시 함께 인라인할 사이트). 상한값으로 해석. |
-| `inline_difficulty` | AI 에이전트 인라인 난이도 1~3 |
+| `inline_difficulty` | AI 에이전트 인라인 난이도 (`1` = matplotlib 1줄 / `2` = 2~3줄 + default kwargs / `3` = 데이터 변환·복잡 분기). 빈 셀 = 미평가 |
 | `classification` | spec §3 3-bucket: `keep` / `borderline` / `remove` |
 | `notes` | borderline 사유, 마이그레이션 한 줄, 관련 이슈 |
 | `status` | `pending` (분류 전) / `audited` (분류 완료) / `removed` (실제 제거 완료) |
@@ -29,7 +29,7 @@
 
 ## Audit table
 
-<!-- 모듈 단위로 그룹핑되어 있다. 자동 컬럼은 scripts/api_audit.py 출력. -->
+<!-- 모듈·이름 사전순 정렬. 자동 컬럼은 scripts/api_audit.py 출력. 빈 행으로 그룹 구분 금지(재생성 시 깨짐). -->
 
 | name | module | kind | loc | mpl_canonical_1to1 | repo_callsites | inline_difficulty | classification | notes | status |
 |---|---|---|---|---|---|---|---|---|---|
