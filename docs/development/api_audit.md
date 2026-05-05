@@ -57,13 +57,13 @@
 | `figure` | `dartwork_mpl.figure` | func | 62 |  | 401 |  |  |  | pending |
 | `subplots` | `dartwork_mpl.figure` | func | 82 |  | 645 |  |  |  | pending |
 | `ensure_loaded` | `dartwork_mpl.font` | func | 11 |  | 47 |  |  |  | pending |
-| `format_axis_billions` | `dartwork_mpl.formatting` | func | 25 |  | 18 |  |  |  | pending |
-| `format_axis_currency` | `dartwork_mpl.formatting` | func | 34 |  | 11 |  |  |  | pending |
-| `format_axis_millions` | `dartwork_mpl.formatting` | func | 25 |  | 20 |  |  |  | pending |
-| `format_axis_percent` | `dartwork_mpl.formatting` | func | 6 |  | 4 |  |  |  | pending |
-| `format_axis_si` | `dartwork_mpl.formatting` | func | 37 |  | 26 |  |  |  | pending |
-| `format_axis_thousands` | `dartwork_mpl.formatting` | func | 6 |  | 2 |  |  |  | pending |
-| `rotate_tick_labels` | `dartwork_mpl.formatting` | func | 26 |  | 25 |  |  |  | pending |
+| `format_axis_billions` | `dartwork_mpl.formatting` | func | 25 | N | 18 | 3 | keep | zero-tick special case + `x/1e9` scaling in formatter body | audited |
+| `format_axis_currency` | `dartwork_mpl.formatting` | func | 34 | N | 11 | 3 | keep | sign-outside-symbol placement, zero-rounding sign suppression, prefix/suffix position logic | audited |
+| `format_axis_millions` | `dartwork_mpl.formatting` | func | 25 | N | 20 | 3 | keep | zero-tick special case + `x/1e6` scaling in formatter body | audited |
+| `format_axis_percent` | `dartwork_mpl.formatting` | func | 6 | N | 4 | 2 | borderline | wraps `ticker.PercentFormatter` directly — no custom formatter logic; x/y/both dispatch adds minor value — 토론 | audited |
+| `format_axis_si` | `dartwork_mpl.formatting` | func | 37 | N | 26 | 3 | keep | multi-level prefix selection (k/M/G/T), negative sign handling, zero-tick special case | audited |
+| `format_axis_thousands` | `dartwork_mpl.formatting` | func | 6 | N | 2 | 2 | borderline | single FuncFormatter lambda with configurable sep — minimal transformation, no scaling logic — 토론 | audited |
+| `rotate_tick_labels` | `dartwork_mpl.formatting` | func | 26 | N | 25 | 2 | borderline | auto-ha inference (rotation sign → left/center/right) + FixedLocator-safe iteration — more than a 1-line setp call — 토론 | audited |
 | `auto_select_colors` | `dartwork_mpl.helpers.colors` | func | 63 |  | 33 |  |  |  | pending |
 | `validate_data` | `dartwork_mpl.helpers.data` | func | 43 |  | 26 |  |  |  | pending |
 | `create_figure_with_style` | `dartwork_mpl.helpers.io` | func | 9 |  | 22 |  |  |  | pending |
@@ -99,9 +99,9 @@
 | `get_prompt` | `dartwork_mpl.prompt` | func | 2 |  | 32 |  |  |  | pending |
 | `list_prompts` | `dartwork_mpl.prompt` | func | 15 |  | 16 |  |  |  | pending |
 | `prompt_path` | `dartwork_mpl.prompt` | func | 4 |  | 9 |  |  |  | pending |
-| `fs` | `dartwork_mpl.scale` | func | 1 |  | 1256 |  |  |  | pending |
-| `fw` | `dartwork_mpl.scale` | func | 4 |  | 83 |  |  |  | pending |
-| `lw` | `dartwork_mpl.scale` | func | 1 |  | 417 |  |  |  | pending |
+| `fs` | `dartwork_mpl.scale` | func | 1 | N | 1256 | 1 | keep | relative font-size token (`rcParams['font.size'] + n`) — no matplotlib equivalent | audited |
+| `fw` | `dartwork_mpl.scale` | func | 4 | N | 83 | 2 | keep | string weight name → numeric conversion via `_WEIGHT_MAP` + offset — no matplotlib equivalent | audited |
+| `lw` | `dartwork_mpl.scale` | func | 1 | N | 417 | 1 | keep | relative linewidth token (`rcParams['lines.linewidth'] + n`) — no matplotlib equivalent | audited |
 | `add_frame` | `dartwork_mpl.spines` | func | 4 | N | 10 | 2 | borderline | composition (visible+color+linewidth on all spines) — 토론 | audited |
 | `add_grid` | `dartwork_mpl.spines` | func | 11 | N | 15 | 2 | borderline | dm.* default kwargs(color, alpha 등) 가치 — 토론 | audited |
 | `hide_all_spines` | `dartwork_mpl.spines` | func | 2 | Y | 28 | 1 | remove | `for s in ax.spines.values(): s.set_visible(False)` | audited |
@@ -125,7 +125,7 @@
 | `make_offset` | `dartwork_mpl.util` | func | 2 |  | 21 |  |  |  | pending |
 | `mix_colors` | `dartwork_mpl.util` | func | 8 |  | 28 |  |  |  | pending |
 | `pseudo_alpha` | `dartwork_mpl.util` | func | 1 |  | 34 |  |  |  | pending |
-| `set_decimal` | `dartwork_mpl.util` | func | 9 |  | 40 |  |  |  | pending |
+| `set_decimal` | `dartwork_mpl.util` | func | 9 | N | 40 | 2 | borderline | get_ticks + set_ticks + set_ticklabels 3-step pattern per axis; no rcParams/locale logic — 토론 | audited |
 | `Severity` | `dartwork_mpl.validate` | class | 0 |  | 26 |  |  |  | pending |
 | `VisualWarning` | `dartwork_mpl.validate` | class | 0 |  | 24 |  |  |  | pending |
 | `validate_figure` | `dartwork_mpl.validate` | func | 39 |  | 103 |  |  |  | pending |
