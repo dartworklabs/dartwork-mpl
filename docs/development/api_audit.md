@@ -77,11 +77,11 @@
 | `icon_font` | `dartwork_mpl.icon` | func | 2 |  | 13 |  |  |  | pending |
 | `icon_font_path` | `dartwork_mpl.icon` | func | 12 |  | 7 |  |  |  | pending |
 | `list_icon_fonts` | `dartwork_mpl.icon` | func | 1 |  | 9 |  |  |  | pending |
-| `install_llm_txt` | `dartwork_mpl.install` | func | 42 |  | 24 |  |  |  | pending |
-| `uninstall_llm_txt` | `dartwork_mpl.install` | func | 19 |  | 7 |  |  |  | pending |
-| `save_and_show` | `dartwork_mpl.io` | func | 14 |  | 34 |  |  |  | pending |
-| `save_formats` | `dartwork_mpl.io` | func | 8 |  | 77 |  |  |  | pending |
-| `show` | `dartwork_mpl.io` | func | 48 |  | 238 |  |  |  | pending |
+| `install_llm_txt` | `dartwork_mpl.install` | func | 42 | N | 24 | 3 | keep | CLI 도구 — SSOT bundle 합성 + .claude/commands/.cursor 양방향 설치 로직 | audited |
+| `uninstall_llm_txt` | `dartwork_mpl.install` | func | 19 | N | 7 | 3 | keep | CLI 도구 — 파일 제거 + 오류 처리 | audited |
+| `save_and_show` | `dartwork_mpl.io` | func | 14 | N | 34 | 3 | keep | tmp 파일 생성·정리 + 경로 분기 + custom show() 호출 — 2줄 이상 실질 로직 | audited |
+| `save_formats` | `dartwork_mpl.io` | func | 8 | N | 77 | 2 | keep | `savefig` 다중 포맷 확장 + bbox/validate kwargs 모호성 해소 | audited |
+| `show` | `dartwork_mpl.io` | func | 48 | N | 238 | 3 | keep | SVG DOM 파싱 + aspect-ratio 보존 width/height 치환 + IPython display — plt.show() 아님 | audited |
 | `auto_layout` | `dartwork_mpl.layout` | func | 322 | N | 293 | 3 | keep | dartwork-mpl 고유 content-aware 측정 | audited |
 | `get_bounding_box` | `dartwork_mpl.layout` | func | 15 | N | 6 | 2 | keep | 측정 helper | audited |
 | `set_xmargin` | `dartwork_mpl.layout` | func | 7 | N | 8 | 2 | borderline | x-margin + xlim 동시 조정 — 토론 | audited |
@@ -116,12 +116,12 @@
 | `style_path` | `dartwork_mpl.style` | func | 5 |  | 7 |  |  |  | pending |
 | `get_source_code` | `dartwork_mpl.templates.diverging_bar` | func | 13 |  | 0 |  |  |  | pending |
 | `plot_diverging_bar` | `dartwork_mpl.templates.diverging_bar` | func | 206 |  | 28 |  |  |  | pending |
-| `Inches` | `dartwork_mpl.units` | class | 0 |  | 27 |  |  |  | pending |
-| `cm` | `dartwork_mpl.units` | func | 1 |  | 200 |  |  |  | pending |
-| `inch` | `dartwork_mpl.units` | func | 1 |  | 35 |  |  |  | pending |
-| `mm` | `dartwork_mpl.units` | func | 1 |  | 43 |  |  |  | pending |
-| `parse_aspect` | `dartwork_mpl.units` | func | 27 |  | 28 |  |  |  | pending |
-| `parse_width` | `dartwork_mpl.units` | func | 44 |  | 37 |  |  |  | pending |
+| `Inches` | `dartwork_mpl.units` | class | 0 | N | 27 | 2 | keep | 단위 태그 클래스 — `__array_ufunc__=None` + 산술 연산자 오버라이드로 numpy 경계에서 단위 손실 방지 | audited |
+| `cm` | `dartwork_mpl.units` | func | 1 | N | 200 | 1 | keep | 물리 단위 토큰 — cm → Inches 변환; parse_width 진입점 | audited |
+| `inch` | `dartwork_mpl.units` | func | 1 | N | 35 | 1 | keep | 물리 단위 토큰 — Inches 태그 부여 identity | audited |
+| `mm` | `dartwork_mpl.units` | func | 1 | N | 43 | 1 | keep | 물리 단위 토큰 — mm → Inches 변환 | audited |
+| `parse_aspect` | `dartwork_mpl.units` | func | 27 | N | 28 | 2 | keep | 토큰 룩업 + bool 거부 + 수치 검증 + 오타 제안 — 핵심 내부 파서 | audited |
+| `parse_width` | `dartwork_mpl.units` | func | 44 | N | 37 | 2 | keep | Inches pass-through + bool 거부 + 단위 파싱 + 검증 + 오타 제안 — 핵심 내부 파서 | audited |
 | `make_offset` | `dartwork_mpl.util` | func | 2 | N | 21 | 2 | borderline | ScaledTranslation 2-line wrapper (x/72, y/72 + fig.dpi_scale_trans) — Task 11에서 keep/remove 결정 | audited |
 | `mix_colors` | `dartwork_mpl.util` | func | 8 | N | 28 | 2 | borderline | 단순 RGB linspace (mcolors.to_rgb 경유) — OKLCH 인터폴레이션 없음; 토론 | audited |
 | `pseudo_alpha` | `dartwork_mpl.util` | func | 1 | N | 34 | 2 | borderline | mix_colors 1-line delegate; 백색 블렌딩 의미 있으나 구현이 RGB — 토론 | audited |
