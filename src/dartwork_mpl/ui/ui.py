@@ -29,7 +29,7 @@ import textwrap
 from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar, cast
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -79,9 +79,11 @@ class ServerSaveRequest(BaseModel):
 # Public API
 # ============================================================================
 
+_P = TypeVar("_P", bound=ParamModel)
+
 
 def run(
-    figure_fn: Callable[[ParamModel], Figure],
+    figure_fn: Callable[[_P], Figure],
     param_model: type[ParamModel] | None = None,
     *,
     title: str = "Dartwork Viewer",
@@ -155,7 +157,7 @@ def run(
         except Exception as exc:  # noqa: BLE001
             error_msg = _format_validation_error(exc)
             return JSONResponse(status_code=422, content={"detail": error_msg})
-        fig = figure_fn(model)
+        fig = figure_fn(cast(_P, model))
         buf = io.BytesIO()
         fig.savefig(buf, format="png")
         plt.close(fig)
@@ -181,7 +183,7 @@ def run(
     @app.post("/api/export/{fmt}")
     async def export(fmt: str, params: dict[str, Any]) -> Response:
         model = _build_model(params, param_model, descriptors)
-        fig = figure_fn(model)
+        fig = figure_fn(cast(_P, model))
         buf = io.BytesIO()
         fig.savefig(buf, format=fmt)
         plt.close(fig)
@@ -264,7 +266,7 @@ def run(
     ) -> dict[str, Any]:
         """Save figure image to the script directory."""
         model = _build_model(req.params, param_model, descriptors)
-        fig = figure_fn(model)
+        fig = figure_fn(cast(_P, model))
 
         if req.filename:
             # User may provide full name with extension

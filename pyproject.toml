@@ -225,6 +225,16 @@ module = ["dartwork_mpl.mcp.*", "dartwork_mpl.ui.*"]
 disallow_untyped_decorators = false
 disallow_subclassing_any = false
 
+# InquirerPy's `inquirer` submodule exposes `text` and `select` via
+# dynamic attribute access; they are not listed in `__all__`, so mypy
+# strict raises attr-defined on every access.  Skipping follow_imports
+# for the whole InquirerPy namespace suppresses those false positives
+# without touching the call sites.
+[[tool.mypy.overrides]]
+module = ["InquirerPy.*"]
+ignore_missing_imports = true
+follow_imports = "skip"
+
 [tool.coverage.run]
 source = ["src/dartwork_mpl"]
 omit = ["*/ui/*", "*/mcp/*"]
