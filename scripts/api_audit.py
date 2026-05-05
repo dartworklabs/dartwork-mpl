@@ -11,6 +11,13 @@ Usage::
 
     python scripts/api_audit.py > /tmp/audit_raw.md
 
+.. caution::
+    ``repo_callsites`` is approximate. Searches ``.py`` and ``.md`` only
+    and counts whole-word matches without context. Common names (e.g.
+    ``figure``, ``hex``) include matches against unrelated identifiers —
+    matplotlib's ``plt.figure``, hex codes in prose. Treat counts as
+    upper bounds when classifying.
+
 See ``docs/superpowers/specs/2026-05-05-prune-low-value-utils-design.md``
 for column definitions.
 """
@@ -70,7 +77,17 @@ def function_loc(node: ast.AST) -> int:
 
 
 def grep_callsites(name: str, cwd: pathlib.Path) -> int:
-    cmd = ["rg", "-c", "--", rf"\b{name}\b", *SEARCH_DIRS]
+    cmd = [
+        "rg",
+        "-c",
+        "--type",
+        "py",
+        "--type",
+        "md",
+        "--",
+        rf"\b{name}\b",
+        *SEARCH_DIRS,
+    ]
     result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd)
     if result.returncode not in (0, 1):
         return -1
