@@ -197,6 +197,20 @@ exclude = [
     'asset/prompt/05-templates/.*\.py$',
 ]
 
+# FastMCP and FastAPI route/tool/resource decorators are dynamically
+# typed at the framework level; under `ignore_missing_imports = true`
+# they resolve to `Any`, which trips mypy's strict
+# `disallow_untyped_decorators` on every handler. The handlers are
+# correctly typed in the source — the decorator is the only `Any`.
+# Same story for Pydantic `BaseModel` subclasses in the UI layer:
+# the base class resolves to `Any`, which trips
+# `disallow_subclassing_any`. Relax these two checks for the affected
+# subpackages only; the rest of the package keeps full strict mode.
+[[tool.mypy.overrides]]
+module = ["dartwork_mpl.mcp.*", "dartwork_mpl.ui.*"]
+disallow_untyped_decorators = false
+disallow_subclassing_any = false
+
 [tool.coverage.run]
 source = ["src/dartwork_mpl"]
 omit = ["*/ui/*", "*/mcp/*"]
