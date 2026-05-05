@@ -7,11 +7,16 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.14.1
+  # Use the project's uv-managed venv so mypy sees the same matplotlib,
+  # numpy, IPython, fastmcp, fastapi, and pydantic versions as CI does.
+  # `mirrors-mypy` runs in an isolated env where missing optional deps
+  # silently change strict-mode results (unused-ignore, type-var,
+  # no-any-return divergence between local and CI).
+  - repo: local
     hooks:
       - id: mypy
-        additional_dependencies: [matplotlib, numpy]
-        args: [--config-file=pyproject.toml]
+        name: mypy
+        entry: uv run mypy src/dartwork_mpl/
+        language: system
+        types: [python]
         pass_filenames: false
-        entry: mypy src/dartwork_mpl/
