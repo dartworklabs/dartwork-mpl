@@ -4,7 +4,7 @@ Shows four generic categories with numeric values, demonstrating:
 
 - ``dm.style.use("report")`` for a business-report preset
 - ``dm.format_axis_millions`` for million-scaled tick labels
-- ``dm.hide_spines`` to remove top/right spines for a cleaner look
+- Hiding top/right spines for a cleaner look
 - Manual ``ax.text`` above each bar for explicit value annotation
 
 Run with:
@@ -42,7 +42,8 @@ for bar, value in zip(bars, values, strict=True):
         va="bottom",
     )
 
-dm.hide_spines(ax, ["top", "right"])
+for s in ["top", "right"]:
+    ax.spines[s].set_visible(False)
 ax.set_ylabel("Count")
 ax.set_title("Grouped Count Comparison")
 

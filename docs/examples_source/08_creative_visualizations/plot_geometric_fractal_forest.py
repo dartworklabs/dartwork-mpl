@@ -10,7 +10,7 @@ keep no two trees identical.
 Key dartwork helpers used here:
 
 - ``dm.cspace`` for the trunk-to-leaf and leaf colour ramps.
-- ``dm.hide_all_spines`` for the immersive, full-bleed canvas.
+- Hiding all spines for the immersive, full-bleed canvas.
 - ``dm.fs`` for proportional title sizing.
 """
 
@@ -122,7 +122,8 @@ for _ in range(50):
 ax.set_xlim(-6, 6)
 ax.set_ylim(-6, 6)
 ax.set_aspect("equal")
-dm.hide_all_spines(ax)
+for s in ax.spines.values():
+    s.set_visible(False)
 ax.set_facecolor("oc.gray1")
 
 ax.text(

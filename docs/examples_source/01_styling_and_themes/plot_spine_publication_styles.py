@@ -30,7 +30,8 @@ fig, axes = dm.subplots(2, 2, width="16cm", aspect="standard")
 # Nature / Science: minimal axes + faint y-grid.
 ax1 = axes[0, 0]
 ax1.plot(x, y1, "o-", color="black", markersize=3, lw=dm.lw(0.8))
-dm.hide_spines(ax1, ["top", "right"])
+for s in ["top", "right"]:
+    ax1.spines[s].set_visible(False)
 dm.add_grid(ax1, alpha=0.2, axis="y", linestyle="-")
 ax1.set_title("Nature/Science Style", fontsize=dm.fs(1))
 ax1.set_xlabel("Variable X", fontsize=dm.fs(0))

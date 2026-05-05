@@ -71,7 +71,8 @@ for x_p, y_p, color in zip(px, py, particle_colors, strict=False):
         linewidths=0.5,
     )
 
-dm.hide_all_spines(ax)
+for s in ax.spines.values():
+    s.set_visible(False)
 ax.set_xlim(-2, 2)
 ax.set_ylim(-2, 2)
 ax.set_aspect("equal")

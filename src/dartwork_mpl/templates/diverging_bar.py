@@ -376,34 +376,3 @@ def plot_diverging_bar(
     )
 
     return fig, ax
-
-
-def get_source_code() -> str:
-    """Return the source code of this module as a string.
-
-    Intended for providing source code as input to coding agents (AI)
-    for further development or modification.
-
-    Returns
-    -------
-    str
-        The complete source code of this module.
-
-    Examples
-    --------
-    >>> source = get_source_code()
-    >>> print(source)
-    """
-    import importlib
-    import inspect
-
-    # Get the current module
-    module_name = __name__
-    module = importlib.import_module(module_name)
-
-    # Get the source file path
-    source_file = inspect.getfile(module)
-
-    # Read and return the source code
-    with open(source_file, encoding="utf-8") as f:
-        return f.read()

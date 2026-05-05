@@ -102,7 +102,8 @@ for i in range(7):
 ax.set_xlim(-3, 3)
 ax.set_ylim(-3, 3)
 ax.set_aspect("equal")
-dm.hide_all_spines(ax)
+for s in ax.spines.values():
+    s.set_visible(False)
 ax.set_facecolor("black")
 
 ax.text(

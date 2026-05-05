@@ -65,7 +65,8 @@ for angle in np.linspace(0, 2 * np.pi, 12, endpoint=False):
 ax.set_ylim(0, 4)
 ax.set_theta_zero_location("N")
 ax.set_theta_direction(-1)
-dm.hide_all_spines(ax)
+for s in ax.spines.values():
+    s.set_visible(False)
 ax.set_xticks([])
 ax.set_yticks([])
 ax.set_facecolor("oc.gray9")

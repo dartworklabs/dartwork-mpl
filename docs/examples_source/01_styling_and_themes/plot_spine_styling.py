@@ -29,7 +29,8 @@ fig, axes = dm.subplots(1, 3, width="18cm", aspect=0.333)
 ax1 = axes[0]
 ax1.plot(x, y1, color="oc.blue5", lw=dm.lw(1))
 dm.style_spines(ax1, color="oc.blue8", linewidth=2, which=["left", "bottom"])
-dm.hide_spines(ax1, ["top", "right"])
+for s in ["top", "right"]:
+    ax1.spines[s].set_visible(False)
 ax1.set_title("Coloured Spines", fontsize=dm.fs(1))
 
 # Thick coloured frame.

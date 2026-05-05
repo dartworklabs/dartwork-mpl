@@ -39,32 +39,6 @@ def format_axis_percent(
         ax.xaxis.set_major_formatter(formatter)
 
 
-def format_axis_thousands(
-    ax: Axes, axis: Literal["x", "y", "both"] = "y", sep: str = ","
-) -> None:
-    """Format axis tick labels with thousands separator.
-
-    Parameters
-    ----------
-    ax : Axes
-        Matplotlib axes
-    axis : Literal["x", "y", "both"]
-        Which axis to format
-    sep : str
-        Thousands separator (default: comma)
-
-    Examples
-    --------
-    >>> format_axis_thousands(ax)  # Format y-axis with commas
-    """
-    formatter = ticker.FuncFormatter(lambda x, p: f"{x:,.0f}".replace(",", sep))
-
-    if axis in ("y", "both"):
-        ax.yaxis.set_major_formatter(formatter)
-    if axis in ("x", "both"):
-        ax.xaxis.set_major_formatter(formatter)
-
-
 def format_axis_millions(
     ax: Axes,
     axis: Literal["x", "y", "both"] = "y",

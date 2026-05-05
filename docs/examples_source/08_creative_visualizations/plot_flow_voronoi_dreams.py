@@ -88,7 +88,8 @@ for point in points[: n_clusters * n_points_per_cluster]:
 ax.set_xlim(-10, 10)
 ax.set_ylim(-10, 10)
 ax.set_aspect("equal")
-dm.hide_all_spines(ax)
+for s in ax.spines.values():
+    s.set_visible(False)
 ax.set_facecolor("oc.gray1")
 
 ax.text(

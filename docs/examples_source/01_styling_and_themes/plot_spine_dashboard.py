@@ -39,7 +39,8 @@ ax_main.legend(fontsize=dm.fs(-1))
 # Top-right — a spineless bar chart.
 ax_tr = fig.add_subplot(gs[0, 2])
 ax_tr.bar(range(5), np.random.rand(5), color="oc.green5")
-dm.hide_all_spines(ax_tr)
+for s in ax_tr.spines.values():
+    s.set_visible(False)
 ax_tr.set_title("Metrics", fontsize=dm.fs(1))
 
 # Middle-right — pie chart needs no spine styling.
@@ -57,7 +58,8 @@ for i, spine_style in enumerate(["minimal", "frame", "floating"]):
     elif spine_style == "frame":
         dm.add_frame(ax, color="black", linewidth=0.8)
     else:  # floating
-        dm.hide_all_spines(ax)
+        for s in ax.spines.values():
+            s.set_visible(False)
         dm.add_grid(ax, alpha=0.15)
 
     ax.set_title(f"{spine_style.capitalize()} Style", fontsize=dm.fs(0))

@@ -106,7 +106,8 @@ ax.add_patch(
 ax.set_xlim(-9, 9)
 ax.set_ylim(-9, 9)
 ax.set_aspect("equal")
-dm.hide_all_spines(ax)
+for s in ax.spines.values():
+    s.set_visible(False)
 ax.set_facecolor("oc.indigo9")
 
 ax.text(

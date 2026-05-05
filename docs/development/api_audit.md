@@ -62,12 +62,12 @@
 | `format_axis_millions` | `dartwork_mpl.formatting` | func | 25 | N | 23 | 3 | keep | zero-tick special case + `x/1e6` scaling in formatter body | audited |
 | `format_axis_percent` | `dartwork_mpl.formatting` | func | 6 | N | 7 | 2 | borderline | wraps `ticker.PercentFormatter` directly — no custom formatter logic; x/y/both dispatch adds minor value — 토론 | audited |
 | `format_axis_si` | `dartwork_mpl.formatting` | func | 37 | N | 29 | 3 | keep | multi-level prefix selection (k/M/G/T), negative sign handling, zero-tick special case | audited |
-| `format_axis_thousands` | `dartwork_mpl.formatting` | func | 6 | N | 2 | 2 | borderline | single FuncFormatter lambda with configurable sep — minimal transformation, no scaling logic — 토론 | audited |
+| `format_axis_thousands` | `dartwork_mpl.formatting` | func | 6 | N | 2 | 2 | borderline | single FuncFormatter lambda with configurable sep — minimal transformation, no scaling logic — 토론 | removed |
 | `rotate_tick_labels` | `dartwork_mpl.formatting` | func | 26 | N | 25 | 2 | borderline | auto-ha inference (rotation sign → left/center/right) + FixedLocator-safe iteration — more than a 1-line setp call — 토론 | audited |
 | `auto_select_colors` | `dartwork_mpl.helpers.colors` | func | 63 | N | 33 | 3 | keep | categorical/sequential/diverging 3-way 분기 + highlight 인덱스 처리 — 카테고리 → 팔레트 매핑 | audited |
 | `validate_data` | `dartwork_mpl.helpers.data` | func | 43 | N | 26 | 2 | keep | NaN 제거·길이 검증·min_points 체크 — 데이터 shape 검증 | audited |
-| `create_figure_with_style` | `dartwork_mpl.helpers.io` | func | 9 | N | 22 | 2 | borderline | `dm.style.use(style)` + `plt.figure(figsize=..., dpi=...)` 2줄 shortcut; `figsize=` 안티패턴 직접 호출 — strong remove candidate | audited |
-| `save_figure` | `dartwork_mpl.helpers.io` | func | 11 | N | 24 | 2 | borderline | 내부적으로 `dm.save_formats` 1-line passthrough + mkdir + verbose print — double-wrapper, strong remove candidate | audited |
+| `create_figure_with_style` | `dartwork_mpl.helpers.io` | func | 9 | N | 22 | 2 | borderline | `dm.style.use(style)` + `plt.figure(figsize=..., dpi=...)` 2줄 shortcut; `figsize=` 안티패턴 직접 호출 — strong remove candidate | removed |
+| `save_figure` | `dartwork_mpl.helpers.io` | func | 11 | N | 24 | 2 | borderline | 내부적으로 `dm.save_formats` 1-line passthrough + mkdir + verbose print — double-wrapper, strong remove candidate | removed |
 | `add_value_labels` | `dartwork_mpl.helpers.labels` | func | 18 | N | 17 | 3 | borderline | 데이터 순회 + y-range 기반 offset 계산 + ax.text 배치 — bar/line value annotation | audited |
 | `format_axis_labels` | `dartwork_mpl.helpers.labels` | func | 12 | N | 22 | 2 | borderline | unit 접미사 붙이기 + fs() fontsize 적용 — composition (set_xlabel/ylabel/title 3줄 묶음) — 토론 | audited |
 | `optimize_legend` | `dartwork_mpl.helpers.labels` | func | 31 | N | 15 | 3 | borderline | ncol 휴리스틱 (n_items 기반) + inside/outside 배치 분기 — legend 자동 위치 composition | audited |
@@ -104,17 +104,17 @@
 | `lw` | `dartwork_mpl.scale` | func | 1 | N | 417 | 1 | keep | relative linewidth token (`rcParams['lines.linewidth'] + n`) — no matplotlib equivalent | audited |
 | `add_frame` | `dartwork_mpl.spines` | func | 4 | N | 10 | 2 | borderline | composition (visible+color+linewidth on all spines) — 토론 | audited |
 | `add_grid` | `dartwork_mpl.spines` | func | 11 | N | 21 | 2 | borderline | dm.* default kwargs(color, alpha 등) 가치 — 토론 | audited |
-| `hide_all_spines` | `dartwork_mpl.spines` | func | 2 | Y | 28 | 1 | remove | `for s in ax.spines.values(): s.set_visible(False)` | audited |
-| `hide_spines` | `dartwork_mpl.spines` | func | 6 | Y | 13 | 1 | remove | `for s in ['top','right']: ax.spines[s].set_visible(False)` | audited |
+| `hide_all_spines` | `dartwork_mpl.spines` | func | 2 | Y | 28 | 1 | remove | `for s in ax.spines.values(): s.set_visible(False)` | removed |
+| `hide_spines` | `dartwork_mpl.spines` | func | 6 | Y | 13 | 1 | remove | `for s in ['top','right']: ax.spines[s].set_visible(False)` | removed |
 | `minimal_axes` | `dartwork_mpl.spines` | func | 7 | N | 30 | 3 | borderline | 4 함수 묶음 composition — 토론 | audited |
-| `remove_grid` | `dartwork_mpl.spines` | func | 1 | Y | 3 | 1 | remove | `ax.grid(False)` | audited |
-| `show_only_spines` | `dartwork_mpl.spines` | func | 4 | Y | 4 | 2 | remove | `for s in ['top','right','bottom','left']: ax.spines[s].set_visible(s in which)` | audited |
+| `remove_grid` | `dartwork_mpl.spines` | func | 1 | Y | 3 | 1 | remove | `ax.grid(False)` | removed |
+| `show_only_spines` | `dartwork_mpl.spines` | func | 4 | Y | 4 | 2 | remove | `for s in ['top','right','bottom','left']: ax.spines[s].set_visible(s in which)` | removed |
 | `style_spines` | `dartwork_mpl.spines` | func | 14 | N | 9 | 2 | borderline | composition (color+linewidth+visible filter) — 토론 | audited |
 | `Style` | `dartwork_mpl.style` | class | 0 | N | 61 | 3 | keep | presets 로딩 + thread-safe rcParams 갱신 + use/stack/context/context_manager — 'One Right Way' 스타일 시스템 핵심 | audited |
 | `list_styles` | `dartwork_mpl.style` | func | 2 | N | 11 | 2 | keep | asset/mplstyle glob → stem 목록 — style discovery | audited |
 | `load_style_dict` | `dartwork_mpl.style` | func | 26 | N | 10 | 2 | keep | mplstyle 커스텀 파서 (inline comment 제거 + colon-split + float 변환) — no matplotlib equivalent | audited |
 | `style_path` | `dartwork_mpl.style` | func | 5 | N | 7 | 1 | keep | asset 경로 해석 + ValueError — style 파일 path helper | audited |
-| `get_source_code` | `dartwork_mpl.templates.diverging_bar` | func | 13 | N | 0 | 2 | borderline | importlib+inspect 경유 모듈 소스 반환 — 외부 callsite 0; AI agent용 코드 노출 의도이나 단순 inspect wrapper — 토론 | audited |
+| `get_source_code` | `dartwork_mpl.templates.diverging_bar` | func | 13 | N | 0 | 2 | borderline | importlib+inspect 경유 모듈 소스 반환 — 외부 callsite 0; AI agent용 코드 노출 의도이나 단순 inspect wrapper — 토론 | removed |
 | `plot_diverging_bar` | `dartwork_mpl.templates.diverging_bar` | func | 206 | N | 28 | 3 | keep | 206 LOC 완전한 chart template — blended transform + cascading layout + 값 라벨 배치; 28 callsites | audited |
 | `Inches` | `dartwork_mpl.units` | class | 0 | N | 27 | 2 | keep | 단위 태그 클래스 — `__array_ufunc__=None` + 산술 연산자 오버라이드로 numpy 경계에서 단위 손실 방지 | audited |
 | `cm` | `dartwork_mpl.units` | func | 1 | N | 200 | 1 | keep | 물리 단위 토큰 — cm → Inches 변환; parse_width 진입점 | audited |

@@ -67,7 +67,8 @@ for ax, (name, wave), colors in zip(axes, waves, color_schemes, strict=False):
 
     ax.set_xlim(0, 4 * np.pi)
     ax.set_ylim(-1.5, 1.5)
-    dm.hide_all_spines(ax)
+    for s in ax.spines.values():
+        s.set_visible(False)
     ax.set_facecolor("black")
     ax.set_xticks([])
     ax.set_yticks([])

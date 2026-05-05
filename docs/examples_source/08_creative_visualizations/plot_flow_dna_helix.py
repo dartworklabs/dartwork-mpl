@@ -83,7 +83,8 @@ for i in range(0, len(t), 40):
             zorder=5,
         )
 
-dm.hide_all_spines(ax)
+for s in ax.spines.values():
+    s.set_visible(False)
 ax.set_xlim(-2, 2)
 ax.set_ylim(-0.5, 4 * np.pi + 0.5)
 ax.set_aspect("equal")

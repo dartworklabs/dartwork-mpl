@@ -146,7 +146,8 @@ for dipole in dipoles:
 ax.set_xlim(-5, 5)
 ax.set_ylim(-5, 5)
 ax.set_aspect("equal")
-dm.hide_all_spines(ax)
+for s in ax.spines.values():
+    s.set_visible(False)
 ax.set_facecolor("oc.gray1")
 
 ax.text(

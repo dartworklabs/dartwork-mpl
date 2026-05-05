@@ -104,7 +104,8 @@ for wx, wy, strength in wells:
 ax.set_xlim(-6, 6)
 ax.set_ylim(-6, 6)
 ax.set_aspect("equal")
-dm.hide_all_spines(ax)
+for s in ax.spines.values():
+    s.set_visible(False)
 ax.set_facecolor("black")
 
 title = ax.text(
