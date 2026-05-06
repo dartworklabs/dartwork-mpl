@@ -88,20 +88,11 @@ def subplots(
     """
     from .units import DEFAULT_ASPECT, parse_aspect, parse_width
 
-    # Apply style first so its rcParams are visible to the rest.
-    original_rcParams = None
-    if style is not None:
-        original_rcParams = plt.rcParams.copy()
-        from . import style as style_module
-
-        if isinstance(style, str):
-            style_module.use(style)
-        elif isinstance(style, list):
-            style_module.stack(style)
-        else:
-            raise ValueError(f"style must be str or list, got {type(style)}")
-
-    # Reject legacy 0.3 args explicitly so the error message names them.
+    # Reject legacy 0.3 args BEFORE applying any style. Style application
+    # mutates global plt.rcParams; if we apply style first and raise
+    # afterward, the failed call leaves rcParams permanently changed for
+    # every subsequent figure in the same process. Validate forbidden
+    # kwargs first so failed dm.subplots calls are side-effect free.
     if "figsize" in fig_kw:
         raise TypeError(
             "figsize= is no longer accepted by dm.subplots; use "
@@ -113,6 +104,20 @@ def subplots(
             "dpi= is no longer accepted by dm.subplots; the active "
             "dartwork-mpl style controls dpi. See docs/migration.md."
         )
+
+    # Apply style after the kwarg-validation gate so its rcParams are
+    # visible to the rest of the function.
+    original_rcParams = None
+    if style is not None:
+        original_rcParams = plt.rcParams.copy()
+        from . import style as style_module
+
+        if isinstance(style, str):
+            style_module.use(style)
+        elif isinstance(style, list):
+            style_module.stack(style)
+        else:
+            raise ValueError(f"style must be str or list, got {type(style)}")
 
     # Resolve width/aspect → final figsize.
     resolved_figsize: tuple[float, float] | None = None
@@ -214,20 +219,9 @@ def figure(
     """
     from .units import DEFAULT_ASPECT, parse_aspect, parse_width
 
-    # Apply style first.
-    original_rcParams = None
-    if style is not None:
-        original_rcParams = plt.rcParams.copy()
-        from . import style as style_module
-
-        if isinstance(style, str):
-            style_module.use(style)
-        elif isinstance(style, list):
-            style_module.stack(style)
-        else:
-            raise ValueError(f"style must be str or list, got {type(style)}")
-
-    # Reject legacy 0.3 args explicitly so the error message names them.
+    # Same ordering invariant as dm.subplots: validate forbidden kwargs
+    # BEFORE style application, so a failed call doesn't leave global
+    # plt.rcParams permanently mutated.
     if "figsize" in kwargs:
         raise TypeError(
             "figsize= is no longer accepted by dm.figure; use "
@@ -239,6 +233,19 @@ def figure(
             "dpi= is no longer accepted by dm.figure; the active "
             "dartwork-mpl style controls dpi. See docs/migration.md."
         )
+
+    # Apply style after the kwarg-validation gate.
+    original_rcParams = None
+    if style is not None:
+        original_rcParams = plt.rcParams.copy()
+        from . import style as style_module
+
+        if isinstance(style, str):
+            style_module.use(style)
+        elif isinstance(style, list):
+            style_module.stack(style)
+        else:
+            raise ValueError(f"style must be str or list, got {type(style)}")
 
     # Resolve final figsize.
     resolved_figsize: tuple[float, float] | None = None

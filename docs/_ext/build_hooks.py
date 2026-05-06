@@ -237,7 +237,14 @@ def generate_template_index(app):
         meta = _parse_template_meta(
             match.group(1), source=str(path.relative_to(repo_root))
         )
-        template_id = path.stem.removeprefix("plot_")
+        # Strip the `plot_` prefix from filenames so the JSON ID matches
+        # the user-facing template name — except for `plot_3d.py`, which
+        # is canonical as `plot_3d` everywhere else (MCP template
+        # resources, `validate_plot_data` keys in
+        # `src/dartwork_mpl/mcp/tools.py`). Stripping it to "3d" creates
+        # an ID that no consumer can pass back into those APIs.
+        stem = path.stem
+        template_id = stem if stem == "plot_3d" else stem.removeprefix("plot_")
         meta["source_path"] = str(path.relative_to(repo_root))
         index[template_id] = meta
 

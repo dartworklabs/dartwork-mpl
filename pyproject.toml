@@ -93,11 +93,19 @@ packages = ["src/dartwork_mpl"]
 # ``dartwork_mpl/asset/agent/`` so installations from PyPI can read
 # them via ``importlib.resources``. The repo-root copies remain the
 # canonical source for GitHub-raw fetches.
+#
+# Note: `force-include` maps to the wheel's layout exactly — Hatch
+# does NOT strip `src/` here the way it does for the regular
+# `packages = ["src/dartwork_mpl"]` entries. So the destination must
+# be the package-relative path (`dartwork_mpl/...`), not
+# `src/dartwork_mpl/...`, otherwise these files end up outside the
+# importable package tree at install time and `importlib.resources`
+# can't find them under `dartwork_mpl.asset.agent`.
 [tool.hatch.build.targets.wheel.force-include]
-"CLAUDE.md" = "src/dartwork_mpl/asset/agent/CLAUDE.md"
-"AGENTS.md" = "src/dartwork_mpl/asset/agent/AGENTS.md"
-"llms.txt" = "src/dartwork_mpl/asset/agent/llms.txt"
-"llms-full.txt" = "src/dartwork_mpl/asset/agent/llms-full.txt"
+"CLAUDE.md" = "dartwork_mpl/asset/agent/CLAUDE.md"
+"AGENTS.md" = "dartwork_mpl/asset/agent/AGENTS.md"
+"llms.txt" = "dartwork_mpl/asset/agent/llms.txt"
+"llms-full.txt" = "dartwork_mpl/asset/agent/llms-full.txt"
 
 [dependency-groups]
 dev = [

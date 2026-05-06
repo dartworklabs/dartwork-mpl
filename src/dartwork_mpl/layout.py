@@ -884,6 +884,18 @@ def tight_crop(
             continue
         if bb.width > 0 and bb.height > 0:
             bboxes_disp.append(bb)
+    # Figure-level legends (`fig.legend(...)`). Without these in the
+    # union the canvas can clip a shared legend that sits outside the
+    # axes area, breaking the documented bbox-tight-equivalent behavior.
+    for leg in getattr(fig, "legends", []):
+        if not leg.get_visible():
+            continue
+        try:
+            bb = leg.get_window_extent(renderer)
+        except bbox_errors:
+            continue
+        if bb.width > 0 and bb.height > 0:
+            bboxes_disp.append(bb)
 
     if not bboxes_disp:
         w, h = fig.get_size_inches()

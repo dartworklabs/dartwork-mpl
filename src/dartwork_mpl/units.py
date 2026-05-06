@@ -102,29 +102,59 @@ class Inches(float):
         # in practice, but the typeshed signature is broader.
         return Inches(float(value))
 
+    # `float.__add__` and friends return `NotImplemented` (not a number)
+    # for types they don't recognize (complex, custom objects with
+    # `__radd__`, etc.). Detect that sentinel here and return it from
+    # the dunder so Python's numeric protocol can still try the
+    # reflected method on `other` instead of us crashing in
+    # `float(NotImplemented)` inside `_wrap`.
     def __add__(self, other: float) -> Inches:
-        return self._wrap(float.__add__(self, other))
+        result = float.__add__(self, other)
+        if result is NotImplemented:
+            return NotImplemented
+        return self._wrap(result)
 
     def __radd__(self, other: float) -> Inches:
-        return self._wrap(float.__radd__(self, other))
+        result = float.__radd__(self, other)
+        if result is NotImplemented:
+            return NotImplemented
+        return self._wrap(result)
 
     def __sub__(self, other: float) -> Inches:
-        return self._wrap(float.__sub__(self, other))
+        result = float.__sub__(self, other)
+        if result is NotImplemented:
+            return NotImplemented
+        return self._wrap(result)
 
     def __rsub__(self, other: float) -> Inches:
-        return self._wrap(float.__rsub__(self, other))
+        result = float.__rsub__(self, other)
+        if result is NotImplemented:
+            return NotImplemented
+        return self._wrap(result)
 
     def __mul__(self, other: float) -> Inches:
-        return self._wrap(float.__mul__(self, other))
+        result = float.__mul__(self, other)
+        if result is NotImplemented:
+            return NotImplemented
+        return self._wrap(result)
 
     def __rmul__(self, other: float) -> Inches:
-        return self._wrap(float.__rmul__(self, other))
+        result = float.__rmul__(self, other)
+        if result is NotImplemented:
+            return NotImplemented
+        return self._wrap(result)
 
     def __truediv__(self, other: float) -> Inches:
-        return self._wrap(float.__truediv__(self, other))
+        result = float.__truediv__(self, other)
+        if result is NotImplemented:
+            return NotImplemented
+        return self._wrap(result)
 
     def __rtruediv__(self, other: float) -> Inches:
-        return self._wrap(float.__rtruediv__(self, other))
+        result = float.__rtruediv__(self, other)
+        if result is NotImplemented:
+            return NotImplemented
+        return self._wrap(result)
 
     def __neg__(self) -> Inches:
         return Inches(float.__neg__(self))

@@ -67,6 +67,12 @@ jobs:
     name: Publish to PyPI
     needs: build
     runs-on: ubuntu-latest
+    # Only publish to production PyPI on actual tag pushes. The header
+    # comment says workflow_dispatch is for dry runs (build only); guard
+    # against an accidental "Run workflow" click uploading an untagged
+    # build to the real PyPI project. Manual dispatch still runs the
+    # `build` job so the sanity-check stays available as a dry run.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     # Use a GitHub Environment so the OIDC token has the right scope
     # and PyPI's Trusted Publisher rule can match it.
     environment:

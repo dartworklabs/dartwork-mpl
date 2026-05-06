@@ -169,7 +169,12 @@ def validate_with_fixes(
                 )
                 if verbose:
                     print("  ✓ Auto-applied: dm.auto_layout()")
-            except (RuntimeError, ValueError, AttributeError) as e:
+            except Exception as e:  # noqa: BLE001
+                # Auto-apply is opportunistic — any layout failure
+                # (including simple_layout/SciPy regressions and
+                # backend-level errors) must report a failed fix and
+                # continue, not abort the whole validate_with_fixes
+                # run. Narrowing the catch regresses that contract.
                 if verbose:
                     print(f"  ✗ Failed to auto-fix: {e}")
 
