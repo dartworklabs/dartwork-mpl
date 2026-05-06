@@ -78,7 +78,7 @@ Generate a complete Python script that creates the following plot:
 1. **Import**: `import matplotlib.pyplot as plt` and `import dartwork_mpl as dm`.
 2. **Figure creation**: Use native matplotlib paired with `dm.figsize`:
    `fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))`.
-   `dm.figsize(width, aspect)` accepts `width` as a unit string (`"13cm"`, `"5in"`, `"170mm"`, `"24pt"`) or a `Length` value (`dm.cm(13)`, `dm.col1`, `dm.col2`). Bare `int` / `float` are rejected (lint id `raw-width-number`). `aspect` is a token in `square / portrait / standard / golden / wide / cinema` or a positive float.
+   `dm.figsize(width, aspect)` accepts `width` as a unit string (`"13cm"`, `"5in"`, `"170mm"`, `"24pt"`) or a `Length` value (`dm.cm(13)`, `dm.col1`, `dm.col2`). Bare `int` / `float` are rejected (lint id `raw-width-number`). The second argument picks the height in one of four equivalent forms — an aspect token in `square / portrait / standard / golden / wide / cinema`, a positive float ratio (`0.6`), a unit-string height (`"12cm"`), or a `Length` height (`dm.cm(12)`).
 3. **No raw `figsize=(w, h)` tuple** and no `dpi=` argument on `plt.subplots` / `plt.figure` (lint ids `figsize-direct`, `dpi-arg`). Always go through `dm.figsize`; dpi is governed by the active style preset.
 4. **Layout**: Call `dm.auto_layout(fig)` after data is plotted. `dm.simple_layout(fig)` is reserved for advanced GridSpec cases that `auto_layout` cannot fit. Do NOT call `tight_layout` (lint id `tight-layout`).
 5. **Style**: apply via `dm.style.use("scientific")` (or `dm.style.stack([...])` for a stack). No `plt.style.use` anywhere (lint id `plt-style-use`).

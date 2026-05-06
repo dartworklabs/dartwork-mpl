@@ -27,7 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   figure constructors. Width must be a unit string (`"13cm"`, `"5in"`,
   `"170mm"`, `"24pt"`) or a `Length` value (`dm.cm(13)`, `dm.col1`,
   `dm.col2`); bare `int`/`float` are rejected (`raw-width-number`
-  lint rule). (#147, #152)
+  lint rule). The second argument accepts four equivalent forms —
+  aspect token (`"wide"`), numeric ratio (`0.6`), unit-string height
+  (`"12cm"`), or `Length` height (`dm.cm(12)`) — so callers can write
+  `dm.figsize("15cm", "12cm")` directly instead of hand-computing
+  `12 / 15`. (#147, #152)
 
 ### Changed
 - `dm.mix_colors` now blends in OKLab space (perceptually uniform) instead of

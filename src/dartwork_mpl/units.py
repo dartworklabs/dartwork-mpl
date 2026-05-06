@@ -455,14 +455,16 @@ def parse_width(value: str | Length) -> float:
 
 
 def figsize(
-    width: str | Length, aspect: str | float = DEFAULT_ASPECT
+    width: str | Length, aspect: str | int | float | Length = DEFAULT_ASPECT
 ) -> tuple[float, float]:
-    """Return a matplotlib ``figsize`` tuple from a physical width and aspect.
+    """Return a matplotlib ``figsize`` tuple from a physical width and an
+    aspect-or-height specifier.
 
     Drop-in replacement for inline ``figsize=(w, h)`` literals. Pairs
     cleanly with ``plt.subplots`` and ``plt.figure``::
 
         fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
+        fig = plt.figure(figsize=dm.figsize("15cm", "9cm"))     # explicit height
         fig = plt.figure(figsize=dm.figsize(dm.col1, "standard"))
 
     Parameters
@@ -471,21 +473,90 @@ def figsize(
         Physical width — either a unit string (``"13cm"``, ``"5in"``,
         ``"170mm"``, ``"24pt"``) or a :class:`Length` value
         (``dm.cm(13)``, ``dm.col1``, ``dm.col2``). Bare
-        ``int``/``float`` are rejected.
-    aspect : str | float, optional
-        Height / width ratio. Either a named token in
-        ``{"square", "portrait", "standard", "golden", "wide",
-        "cinema"}`` or a positive float. Default ``"standard"``
-        (3 : 4).
+        ``int``/``float`` are rejected — the unit must always be
+        explicit.
+    aspect : str | int | float | Length, optional
+        Specifies the figure's *height* in one of four forms; the
+        first matching form wins:
+
+        1. **Aspect token** — one of
+           ``{"square", "portrait", "standard", "golden", "wide",
+           "cinema"}``. Sets ``height = width * ratio`` where the
+           ratio is taken from :data:`ASPECT_TOKENS`. Default
+           ``"standard"`` (3 : 4).
+        2. **Numeric ratio** (positive ``int`` / ``float``,
+           non-``bool``) — interpreted as ``height / width``.
+        3. **Unit-suffix string** — ``"12cm"``, ``"5in"``, ``"170mm"``,
+           ``"24pt"``. Interpreted as a literal height. The unit
+           need not match the width's unit.
+        4. **Length value** — ``dm.cm(12)``, ``dm.col1``, etc.
+           Interpreted as a literal height.
+
+        Bare numeric strings (``"0.5"``) and unknown aspect tokens
+        raise :class:`ValueError` with a "did-you-mean" hint.
 
     Returns
     -------
     tuple[float, float]
-        ``(width_in_inches, height_in_inches)``.
+        ``(width_in_inches, height_in_inches)`` — plain floats ready
+        to hand to matplotlib's ``figsize=`` argument.
+
+    Examples
+    --------
+    All four forms produce the same 13 cm by 8 cm figure (within
+    floating-point tolerance), letting callers pick whichever
+    notation reads most naturally for the call site:
+
+    >>> import dartwork_mpl as dm
+    >>> dm.figsize("13cm", 8 / 13)                       # ratio
+    (5.118..., 3.149...)
+    >>> dm.figsize("13cm", "8cm")                        # height (str)
+    (5.118..., 3.149...)
+    >>> dm.figsize("13cm", dm.cm(8))                     # height (Length)
+    (5.118..., 3.149...)
+    >>> dm.figsize("13cm", "wide")                       # token (≈ 8.67 cm)
+    (5.118..., 3.412...)
+
+    Common idioms:
+
+    >>> dm.figsize("17cm", 0.6)                          # journal two-column
+    >>> dm.figsize(dm.col1, "golden")                    # academic, golden ratio
+    >>> dm.figsize("15cm", "12cm")                       # explicit dimensions
+    >>> dm.figsize("100mm", "75mm")                      # all-mm
     """
     w_in = parse_width(width)
-    ratio = parse_aspect(aspect)
-    return (w_in, w_in * ratio)
+    h_in = _resolve_height(w_in, aspect)
+    return (w_in, h_in)
+
+
+def _resolve_height(w_in: float, aspect: str | int | float | Length) -> float:
+    """Resolve the second :func:`figsize` argument to inches.
+
+    Discrimination order:
+    1. ``Length`` instance → literal height.
+    2. ``str`` with a recognised aspect token → ``w_in * ratio``.
+    3. ``str`` with a unit suffix (cm/in/mm/pt) → literal height.
+    4. ``int`` / ``float`` → ``w_in * ratio`` via :func:`parse_aspect`.
+    5. Anything else → :func:`parse_aspect` for the standard error.
+    """
+    if isinstance(aspect, Length):
+        return aspect._inch
+
+    if isinstance(aspect, str):
+        # Strip whitespace + matched quotes once and reuse — same
+        # canonicalisation _parse_unit_string applies internally.
+        text = aspect.strip().strip('"').strip("'")
+        if text.lower() in ASPECT_TOKENS:
+            return w_in * ASPECT_TOKENS[text.lower()]
+        # Unit-suffix string → height. Detect by checking the regex
+        # for a non-None unit group; otherwise fall through to
+        # parse_aspect so the caller gets the existing self-correction
+        # hint for quoted numerics ("0.5") and typos ("widee").
+        match = _WIDTH_RE.match(text)
+        if match is not None and match.group("unit"):
+            return _parse_unit_string(aspect)
+
+    return w_in * parse_aspect(aspect)
 
 
 def _suggest_aspect_correction(value: str) -> str:

@@ -357,6 +357,88 @@ class TestFigsize:
         assert math.isclose(w, 9 / 2.54, rel_tol=1e-9)
 
 
+class TestFigsizeHeightForm:
+    """``dm.figsize(width, aspect)`` accepts a literal height as the
+    second argument too — either a unit-suffix string or a
+    :class:`Length`. The width and height units do **not** have to
+    match; both are converted to inches independently.
+    """
+
+    def test_unit_string_height(self):
+        # 15 cm by 12 cm — explicit dimensions, no manual ratio math.
+        w, h = figsize("15cm", "12cm")
+        assert math.isclose(w, 15 / 2.54, rel_tol=1e-9)
+        assert math.isclose(h, 12 / 2.54, rel_tol=1e-9)
+
+    def test_length_height(self):
+        w, h = figsize("15cm", cm(12))
+        assert math.isclose(w, 15 / 2.54, rel_tol=1e-9)
+        assert math.isclose(h, 12 / 2.54, rel_tol=1e-9)
+
+    def test_height_unit_can_differ_from_width(self):
+        # Width in cm, height in inches.
+        w, h = figsize("13cm", "5in")
+        assert math.isclose(w, 13 / 2.54, rel_tol=1e-9)
+        assert math.isclose(h, 5.0, rel_tol=1e-9)
+
+    def test_height_in_pt(self):
+        # 200pt = 200/72 in. Useful for callers thinking in typographic units.
+        w, h = figsize("10cm", "200pt")
+        assert math.isclose(h, 200 / 72, rel_tol=1e-9)
+
+    def test_height_in_mm(self):
+        w, h = figsize("100mm", "75mm")
+        assert math.isclose(w, 100 / 25.4, rel_tol=1e-9)
+        assert math.isclose(h, 75 / 25.4, rel_tol=1e-9)
+
+    def test_height_with_col1_col2(self):
+        import dartwork_mpl as dm
+
+        # Mix Length and unit-string forms.
+        w, h = figsize(dm.col2, dm.col1)
+        assert math.isclose(w, 17 / 2.54, rel_tol=1e-9)
+        assert math.isclose(h, 9 / 2.54, rel_tol=1e-9)
+
+    def test_aspect_token_still_wins_when_string_matches(self):
+        # ``"square"`` is a token, not a unit string — must not be
+        # mis-parsed as a height (it would fail _WIDTH_RE anyway).
+        w, h = figsize("13cm", "square")
+        assert math.isclose(h, w, rel_tol=1e-9)
+
+    def test_token_resolution_is_case_insensitive(self):
+        w, h = figsize("13cm", "WIDE")
+        assert math.isclose(h / w, 2 / 3, rel_tol=1e-9)
+
+    def test_height_string_strips_whitespace(self):
+        w, h = figsize("13cm", "  8cm  ")
+        assert math.isclose(h, 8 / 2.54, rel_tol=1e-9)
+
+    def test_bare_numeric_string_still_rejected_with_quote_hint(self):
+        # ``"0.5"`` has no unit and isn't an aspect token — falls
+        # through to parse_aspect for the existing "drop the quotes"
+        # self-correction hint, so the API stays unambiguous.
+        with pytest.raises(ValueError, match="drop the quotes"):
+            figsize("13cm", "0.5")
+
+    def test_unknown_aspect_token_falls_through_to_parse_aspect(self):
+        # Misspelled token gets parse_aspect's "did you mean" hint.
+        with pytest.raises(ValueError, match="'wide'"):
+            figsize("13cm", "widee")
+
+    def test_height_must_be_positive(self):
+        # ``_parse_unit_string`` rejects negative widths; the same
+        # guard applies when we route a unit-string to the height path.
+        with pytest.raises(ValueError, match="positive"):
+            figsize("13cm", "-5cm")
+
+    def test_returns_plain_float_tuple(self):
+        # Even with a Length-shaped second arg, the returned tuple
+        # components are plain floats — matplotlib's contract.
+        w, h = figsize("15cm", cm(12))
+        assert isinstance(w, float) and not isinstance(w, Length)
+        assert isinstance(h, float) and not isinstance(h, Length)
+
+
 class TestPublicSurface:
     def test_unit_constructors_exposed_at_top_level(self):
         import dartwork_mpl as dm

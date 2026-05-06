@@ -158,8 +158,19 @@ fig, ax = plt.subplots(figsize=dm.figsize(dm.col2, "cinema"))  # 17 cm
 
 Bare `int` / `float` are rejected — the unit must always be explicit.
 
-**Aspect** is one of `square` (1.0), `portrait` (5/4), `standard` (3/4),
-`golden` (1/1.618), `wide` (2/3), `cinema` (1/2), or any positive float.
+**The second argument** picks the figure's height in one of four
+equivalent forms; use whichever reads naturally for the call site:
+
+| Form                      | Example                              | Notes                                            |
+| :------------------------ | :----------------------------------- | :----------------------------------------------- |
+| Aspect token              | `dm.figsize("13cm", "wide")`         | One of `square / portrait / standard / golden / wide / cinema`. |
+| Numeric ratio             | `dm.figsize("13cm", 0.6)`            | Positive `int` / `float` interpreted as `height / width`. |
+| Unit-suffix string height | `dm.figsize("13cm", "8cm")`          | Width and height units may differ.               |
+| `Length` value            | `dm.figsize("13cm", dm.cm(8))`       | Useful for `dm.col1` / `dm.col2` heights.        |
+
+Bare numeric strings (`"0.5"`) and unknown aspect tokens raise
+`ValueError` with a "did-you-mean" hint, so ambiguous inputs fail
+loudly.
 
 :::{note}
 The 0.4-era constructors `dm.subplots` and `dm.figure` (and their

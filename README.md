@@ -81,8 +81,23 @@ dm.save_formats(fig, 'output/figure', formats=('svg', 'png'))
 calls (`dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`, `dm.pt(24)`);
 the academic-column shortcuts `dm.col1` (9 cm) and `dm.col2` (17 cm)
 work too. Bare `int` / `float` are rejected so the unit is always
-explicit. `aspect` is one of `square / portrait / standard / golden
-/ wide / cinema`, or any positive float.
+explicit.
+
+The second argument is polymorphic — pick whichever form reads
+naturally for the call site (the four forms are equivalent for
+fixed dimensions; the first matching form wins):
+
+```python
+dm.figsize("13cm", "wide")        # aspect token  → 13 × 8.67 cm
+dm.figsize("13cm", 0.6)           # numeric ratio → 13 ×  7.8 cm
+dm.figsize("13cm", "8cm")         # unit-string height
+dm.figsize("13cm", dm.cm(8))      # Length height
+dm.figsize("13cm", "5in")         # mixed units (height in inches)
+```
+
+Aspect tokens are `square / portrait / standard / golden / wide /
+cinema`. Bare numeric strings (`"0.5"`) are rejected with a
+"drop the quotes" hint to keep the API unambiguous.
 
 <br/>
 

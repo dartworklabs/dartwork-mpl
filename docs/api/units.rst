@@ -39,6 +39,14 @@ ad-hoc.
    parse_width(dm.cm(13))  # 5.118... (Length pass-through)
    parse_aspect("standard")  # 0.75
 
+   # dm.figsize's second argument is polymorphic — pick whichever
+   # form reads naturally for the call site:
+   dm.figsize("13cm", "wide")        # aspect token
+   dm.figsize("13cm", 0.6)           # numeric ratio (height/width)
+   dm.figsize("13cm", "8cm")         # unit-string height
+   dm.figsize("13cm", dm.cm(8))      # Length height
+   dm.figsize("13cm", "5in")         # mixed units (height in inches)
+
 API
 ---
 

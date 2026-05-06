@@ -27,9 +27,11 @@ fetch the specific guide you need.
 - Create figures with `plt.subplots(figsize=dm.figsize("<n>cm",
   "<aspect>"))`. `width` accepts unit strings (`"13cm"`, `"5in"`,
   `"170mm"`, `"24pt"`) or `Length` values (`dm.cm(13)`, `dm.col1`,
-  `dm.col2`). Bare `int` / `float` are rejected. `aspect` is one of
-  `square`, `portrait`, `standard`, `golden`, `wide`, `cinema`, or a
-  positive float.
+  `dm.col2`). Bare `int` / `float` are rejected. The second
+  argument is polymorphic: an aspect token (`"square"`,
+  `"portrait"`, `"standard"`, `"golden"`, `"wide"`, `"cinema"`), a
+  positive float ratio, a unit-string height (`"12cm"`), or a
+  `Length` height (`dm.cm(12)`).
 - Use named colors: `oc.*`, `tw.*`, `dc.*`, `md.*`, `ad.*`, `cu.*`,
   `pr.*`. Raw hex is allowed but discouraged.
 - After creating a figure, call `dm.auto_layout(fig)` and save with

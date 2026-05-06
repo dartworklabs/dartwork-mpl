@@ -37,7 +37,23 @@ Rules in this document are split into two tiers:
   widths ≤ 5; many small variations make multi-figure reports look
   ragged.
 
-## Aspect (height / width)
+## Aspect or height (the second `dm.figsize` argument)
+
+The second argument picks the figure's height in one of four
+equivalent forms; the first matching form wins:
+
+1. **Aspect token** (str, default `"standard"`): height = width × ratio.
+   Tokens listed below.
+2. **Numeric ratio** (positive `int`/`float`, non-`bool`): treated as
+   height / width.
+3. **Unit-suffix string** (`"12cm"`, `"5in"`, `"170mm"`, `"24pt"`):
+   literal height. Width and height units may differ.
+4. **`Length` value** (`dm.cm(12)`, `dm.col1`, …): literal height.
+
+Bare numeric strings (`"0.5"`) raise `ValueError` with a
+"drop the quotes" hint so quoted ratios fail loudly.
+
+### Aspect tokens
 
 - Default: `"standard"` (= 3 / 4).
 - Tokens:

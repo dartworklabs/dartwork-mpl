@@ -150,7 +150,7 @@ def my_figure(p: Params) -> Figure:
     y += rng.normal(0, p.noise_level, size=len(t))
 
     # ── Figure creation (guide pattern) ───────────────────
-    fig: Figure = plt.figure(figsize=dm.figsize("17cm", 9 / 17), dpi=200)
+    fig: Figure = plt.figure(figsize=dm.figsize("17cm", "9cm"), dpi=200)
 
     # GridSpec: title row + plot row
     gs = fig.add_gridspec(
