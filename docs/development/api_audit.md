@@ -163,3 +163,43 @@ keep / remove로 재분류한다. `잠정 권고`는 본 spec §3 기준의 중�
 | `mix_colors` | `dartwork_mpl.util` | 8 | 28 | RGB linspace 블렌딩 — OKLCH 미지원, 28 callsites | ? |
 | `pseudo_alpha` | `dartwork_mpl.util` | 1 | 34 | mix_colors 1-line delegate (LOC=1) — 의미는 있으나 인라인 trivial | remove |
 | `set_decimal` | `dartwork_mpl.util` | 9 | 40 | get/set ticks + ticklabels 3-step per axis, 40 callsites | keep |
+
+## Round 4: keep-survivor remove (#156)
+
+[#156](https://github.com/dartworklabs/dartwork-mpl/issues/156) reviewed
+the four `keep`-audited borderline survivors below (kept on callsite
+count + composition value). An earlier draft proposed segregating them
+under a new `dm.defaults` submodule; the proposal was rejected on
+naming-as-signal grounds (no candidate name read cleanly — `defaults`,
+`preset`, `recipes` all carried defects). See
+[`docs/superpowers/specs/2026-05-07-keep-survivor-remove-design.md`](../superpowers/specs/2026-05-07-keep-survivor-remove-design.md)
+§2 / §7 for the full reasoning.
+
+Three items are reclassified `keep` → `remove`. The fourth
+(`auto_select_colors`) stays `keep` because its body is a curated
+palette **lookup**, not a kwarg recipe — but is renamed to
+`make_palette` in Round 5 for vocabulary alignment with `make_offset`
+/ `list_palettes` / `show_palette`. The audit framework stays
+3-bucket; no new value. Round 5 implements.
+
+| name | module | LOC | from | to | preservation vehicle |
+|---|---|---|---|---|---|
+| `style_spines` | `dartwork_mpl.spines` | 14 | keep | **remove** | docs recipe (thin gray spines snippet) |
+| `add_grid` | `dartwork_mpl.spines` | 11 | keep | **remove** | docs recipe (publication grid snippet) + optional lint rule for `set_axisbelow` (§4.2 of spec) |
+| `minimal_axes` | `dartwork_mpl.spines` | 7 | keep | **remove** | docs recipe (minimal axes snippet) |
+
+`auto_select_colors` (`dartwork_mpl.helpers.colors`, LOC 63, 33
+callsites) stays **keep**, renamed to `make_palette` in Round 5.
+Argument cleanup at rename: `n_series → n`, `color_type → kind`,
+`highlight_index → highlight`. Final signature:
+`dm.make_palette(n, kind="categorical", highlight=None)`. See spec §3.1.
+
+Items audited as `keep` that **stay** at top-level under the existing
+3-bucket framework: `rotate_tick_labels`, `optimize_legend`,
+`set_decimal`, all `format_axis_*`. Each carries non-default control
+flow (FixedLocator-safe iteration, ncol heuristic, multi-step
+tick-rewrite pattern, sign-outside-symbol formatting, SI tier
+selection). See spec §3 for per-item reasoning.
+
+`make_offset` / `mix_colors` / `pseudo_alpha` are out of scope of this
+round and remain on the existing prune track.
