@@ -190,6 +190,88 @@ class Length:
         """Length expressed in PostScript points (1 pt = 1/72 in)."""
         return self._inch * PT_PER_INCH
 
+    # ------------------------------------------------------------------ #
+    # Arithmetic — preserve the Length tag so doubled/summed values      #
+    # still pass parse_width's gate (raw floats are rejected).           #
+    # ------------------------------------------------------------------ #
+
+    def __add__(self, other: Length) -> Length:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return Length._from_inch(self._inch + other._inch)
+
+    def __radd__(self, other: Length) -> Length:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return Length._from_inch(other._inch + self._inch)
+
+    def __sub__(self, other: Length) -> Length:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return Length._from_inch(self._inch - other._inch)
+
+    def __rsub__(self, other: Length) -> Length:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return Length._from_inch(other._inch - self._inch)
+
+    def __mul__(self, other: float) -> Length:
+        # ``Length * Length`` (area) has no representation here.
+        # ``bool`` is an ``int`` subclass — reject before the numeric
+        # branch so ``cm(9) * True`` doesn't silently scale by 1.
+        if isinstance(other, bool) or not isinstance(other, (int, float)):
+            return NotImplemented
+        return Length._from_inch(self._inch * float(other))
+
+    def __rmul__(self, other: float) -> Length:
+        return self.__mul__(other)
+
+    def __truediv__(self, other: float | Length) -> Length | float:
+        if isinstance(other, Length):
+            # Ratio of two lengths — dimensionless float.
+            return self._inch / other._inch
+        if isinstance(other, bool) or not isinstance(other, (int, float)):
+            return NotImplemented
+        return Length._from_inch(self._inch / float(other))
+
+    def __neg__(self) -> Length:
+        return Length._from_inch(-self._inch)
+
+    def __abs__(self) -> Length:
+        return Length._from_inch(abs(self._inch))
+
+    # ------------------------------------------------------------------ #
+    # Comparison & hashing                                                #
+    # ------------------------------------------------------------------ #
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Length):
+            return self._inch == other._inch
+        return NotImplemented
+
+    def __lt__(self, other: Length) -> bool:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return self._inch < other._inch
+
+    def __le__(self, other: Length) -> bool:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return self._inch <= other._inch
+
+    def __gt__(self, other: Length) -> bool:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return self._inch > other._inch
+
+    def __ge__(self, other: Length) -> bool:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return self._inch >= other._inch
+
+    def __hash__(self) -> int:
+        return hash((Length, self._inch))
+
     def __repr__(self) -> str:
         # Show cm at sub-decimeter scales, otherwise prefer inches —
         # matches how users typically thought about the value at input.

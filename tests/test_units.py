@@ -397,3 +397,99 @@ class TestPublicSurface:
         # the precedent set by ``dm.subplots`` / ``dm.figure`` (#147).
         with pytest.raises(AttributeError):
             dm.Inches  # noqa: B018
+
+
+class TestLengthArithmetic:
+    """Arithmetic preserves the Length tag so doubled/summed values
+    still pass parse_width's gate (raw floats are rejected)."""
+
+    def test_mul_scalar_preserves_length(self):
+        v = cm(9) * 2
+        assert isinstance(v, Length)
+        assert math.isclose(v.cm, 18.0, rel_tol=1e-9)
+
+    def test_rmul_scalar_preserves_length(self):
+        v = 2 * cm(9)
+        assert isinstance(v, Length)
+        assert math.isclose(v.cm, 18.0, rel_tol=1e-9)
+
+    def test_mul_two_lengths_rejected(self):
+        # ``Length * Length`` (area) has no representation at this layer.
+        with pytest.raises(TypeError):
+            cm(3) * cm(4)  # type: ignore[operator]
+
+    def test_add_two_lengths(self):
+        v = cm(3) + cm(4)
+        assert isinstance(v, Length)
+        assert math.isclose(v.cm, 7.0, rel_tol=1e-9)
+
+    def test_add_length_and_scalar_rejected(self):
+        # Adding a unit-less number would re-open the cm/inch hole.
+        with pytest.raises(TypeError):
+            cm(3) + 1  # type: ignore[operator]
+        with pytest.raises(TypeError):
+            1 + cm(3)  # type: ignore[operator]
+
+    def test_sub_two_lengths(self):
+        v = cm(9) - cm(2)
+        assert isinstance(v, Length)
+        assert math.isclose(v.cm, 7.0, rel_tol=1e-9)
+
+    def test_sub_length_and_scalar_rejected(self):
+        with pytest.raises(TypeError):
+            cm(3) - 1  # type: ignore[operator]
+        with pytest.raises(TypeError):
+            1 - cm(3)  # type: ignore[operator]
+
+    def test_div_by_scalar_preserves_length(self):
+        v = cm(9) / 2
+        assert isinstance(v, Length)
+        assert math.isclose(v.cm, 4.5, rel_tol=1e-9)
+
+    def test_div_by_length_returns_dimensionless_ratio(self):
+        ratio = cm(9) / cm(3)
+        assert isinstance(ratio, float)
+        assert not isinstance(ratio, Length)
+        assert math.isclose(ratio, 3.0, rel_tol=1e-9)
+
+    def test_neg_preserves_length(self):
+        assert isinstance(-cm(9), Length)
+
+    def test_abs_preserves_length(self):
+        assert isinstance(abs(-cm(9)), Length)
+
+    def test_parse_width_passes_through_arithmetic(self):
+        # The whole point: dm.cm(9) * 2 → 18 cm-equivalent in inches,
+        # NOT re-interpreted as 7.087 cm.
+        v = cm(9) * 2
+        assert math.isclose(parse_width(v), 18 / 2.54, rel_tol=1e-9)
+
+
+class TestLengthComparison:
+    def test_equality_across_units(self):
+        # 1 inch == 2.54 cm
+        assert cm(2.54) == inch(1)
+
+    def test_inequality(self):
+        assert cm(1) != cm(2)
+
+    def test_ordering(self):
+        assert cm(1) < cm(2)
+        assert cm(2) > cm(1)
+        assert cm(1) <= cm(1)
+        assert cm(1) >= cm(1)
+
+    def test_hashable_consistent_with_equality(self):
+        # Hash must agree with __eq__: equal lengths → equal hashes.
+        assert hash(cm(2.54)) == hash(inch(1))
+
+    def test_usable_as_dict_key(self):
+        d = {cm(1): "one", cm(2): "two"}
+        assert d[cm(1)] == "one"
+        assert d[cm(2)] == "two"
+
+    def test_compare_with_non_length_returns_notimplemented(self):
+        # ``Length < 1`` should raise TypeError, not silently coerce —
+        # comparison without a unit is unsafe.
+        with pytest.raises(TypeError):
+            _ = cm(1) < 1  # type: ignore[operator]
