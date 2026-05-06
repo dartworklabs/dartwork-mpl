@@ -144,12 +144,18 @@ from PyPI, run the entry point through `uv run --directory`:
         "run",
         "--directory",
         "/absolute/path/to/dartwork-mpl",
+        "--extra",
+        "mcp",
         "dartwork-mpl-mcp"
       ]
     }
   }
 }
 ```
+
+> `--extra mcp` pulls in `fastmcp`/`httpx` from the optional `[mcp]`
+> dependency set. Without it, `dartwork-mpl-mcp` exits early with a
+> `ModuleNotFoundError: fastmcp` even though the directory is correct.
 
 This works for every client above — only the file location of the JSON
 changes.

@@ -337,12 +337,18 @@ def migrate_legacy_code(code: str) -> str:
     for line in code.splitlines(keepends=True):
         body = line.rstrip("\r\n")
         line_terminator = line[len(body) :]
+        # A source's final line may have no trailing newline. The
+        # injected ``# TODO(dm-migrate): ...`` comment then concatenates
+        # with the original code on join, turning that statement into
+        # part of the comment text. Force ``\n`` for the comment line
+        # whenever the original had no terminator.
+        comment_terminator = line_terminator or "\n"
         leading_ws_match = re.match(r"\s*", body)
         indent = leading_ws_match.group(0) if leading_ws_match else ""
         for pattern, hint in _MIGRATE_HINTS:
             if pattern.search(body):
                 output_lines.append(
-                    f"{indent}# TODO(dm-migrate): {hint}{line_terminator}"
+                    f"{indent}# TODO(dm-migrate): {hint}{comment_terminator}"
                 )
         output_lines.append(line)
     return "".join(output_lines)
