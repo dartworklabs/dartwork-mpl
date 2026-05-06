@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **`dm.figsize(width, aspect)`** — single sizing helper that returns
+  the inch tuple matplotlib's `figsize=` expects. Pairs natively with
+  `plt.subplots` / `plt.figure` so dartwork-mpl no longer wraps the
+  figure constructors. Width must be a unit string (`"13cm"`, `"5in"`,
+  `"170mm"`) or an `Inches` value (`dm.cm(13)`, `dm.col1`, `dm.col2`);
+  bare `int`/`float` are rejected (`raw-width-number` lint rule). (#147)
+
 ### Changed
 - `dm.mix_colors` now blends in OKLab space (perceptually uniform) instead of
   naïve gamma-sRGB linear interpolation. Result colors will subtly differ for
@@ -14,8 +22,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   through saturated midpoints (e.g. red + blue gives a vivid purple rather than
   a muddy dark grey). `dm.pseudo_alpha` (which delegates to `mix_colors`)
   inherits the change. (#141)
+- `parse_width` now rejects bare `int`/`float`/`bool` with `TypeError`.
+  Earlier dartwork-mpl silently treated raw numbers as cm — that
+  silently bridged matplotlib's inches contract and caused
+  hard-to-spot 2.54× sizing bugs. (#147)
 
 ### Removed
+- **`dm.subplots`, `dm.figure`** — both raise `AttributeError` now. The
+  package no longer wraps the matplotlib figure constructors. Use
+  `plt.subplots(figsize=dm.figsize("<n>cm", "<aspect>"))` and call
+  `dm.style.use(...)` separately. The `style=` kwarg is gone with
+  them. The `migrate_legacy_code` codemod inserts a
+  `# TODO(dm-migrate):` comment above each call site so an agent can
+  rewrite them in one sweep. (#147)
 - 5 wrapper functions per round-3 of the public API audit (#141):
   `format_axis_percent`, `format_axis_labels`, `add_frame`,
   `add_value_labels`, `set_xmargin`/`set_ymargin`.

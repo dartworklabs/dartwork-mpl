@@ -20,9 +20,9 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 
-# 0.4 API: dm.subplots(width=..., aspect=...). 9 cm × standard is the
+# 0.4 API: plt.subplots(figsize=dm.figsize(...)). 9 cm × standard is the
 # academic single-column default (also available as dm.col1).
-fig, ax = dm.subplots(width="9cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
 
 x = np.linspace(0, 10, 100)
 ax.plot(x, np.sin(x) * 10000, color="tw.blue500", lw=dm.lw(1))

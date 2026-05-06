@@ -13,7 +13,7 @@ import dartwork_mpl as dm
 
 dm.style.use("report")
 
-fig, ax = dm.subplots(width="9cm", aspect="golden")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "golden"))
 
 # Load the Material Design Icons font
 mdi = dm.icon_font("mdi")

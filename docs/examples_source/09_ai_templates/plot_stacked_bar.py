@@ -16,6 +16,7 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/stacked_bar.py`` ·
 # tags: bar, stacked, composition, share
 # ai-template-meta-end
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import dartwork_mpl as dm
@@ -25,7 +26,7 @@ a = [20, 35, 30, 35]
 b = [25, 32, 34, 20]
 c = [15, 18, 22, 28]
 
-fig, ax = dm.subplots(width="13cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 x = np.arange(len(categories))
 ax.bar(x, a, label="A", color="oc.blue5")
 ax.bar(x, b, bottom=a, label="B", color="oc.green5")

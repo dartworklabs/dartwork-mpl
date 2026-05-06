@@ -25,7 +25,7 @@ x_clean, y_clean = dm.helpers.data.validate_data(
 )
 
 dm.style.use("scientific")
-fig, (ax1, ax2) = dm.subplots(1, 2, width="16cm", aspect="cinema")
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=dm.figsize("16cm", "cinema"))
 
 # Raw input, including the bad values.
 ax1.scatter(

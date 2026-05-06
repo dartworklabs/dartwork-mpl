@@ -206,7 +206,7 @@ class TestAutoLayoutEdgeCases:
         """When ``constrained_layout`` is off (the dartwork default), a
         plain ``auto_layout`` call must run to convergence on a chart
         with reasonable labels."""
-        # Vanilla matplotlib `figsize=` is used here (not `dm.subplots`)
+        # Vanilla matplotlib `figsize=` is used here (not `dm.figsize`)
         # to probe the constrained_layout coexistence contract directly
         # — the goal is to verify auto_layout's behaviour on a figure
         # built without dartwork's width/aspect API.
@@ -246,7 +246,7 @@ class TestAutoLayoutDatetime:
 
         import dartwork_mpl as dm
 
-        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
         dates = pd.date_range("2021-01-01", "2025-12-31", freq="D")
         rng = np.random.default_rng(42)
         ax.plot(dates, np.cumsum(rng.standard_normal(len(dates))))
@@ -327,7 +327,7 @@ class TestMeasureOverflowLegend:
     def test_legend_outside_axes_detected(self) -> None:
         import dartwork_mpl as dm
 
-        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
         for i in range(20):
             ax.plot([0, 1], [i, i + 1], label=f"S{i:02d}")
         ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", fontsize=8)
@@ -342,7 +342,7 @@ class TestMeasureOverflowLegend:
     def test_no_legend_no_extra_overflow(self) -> None:
         import dartwork_mpl as dm
 
-        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
         ax.plot([1, 2, 3])
         ax.set_ylabel("Y")
         overflow = _measure_overflow(fig)
@@ -352,7 +352,7 @@ class TestMeasureOverflowLegend:
     def test_legend_inside_axes_no_overflow(self) -> None:
         import dartwork_mpl as dm
 
-        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
         ax.plot([1, 2, 3], label="A")
         ax.legend(loc="best")
         ax.set_ylabel("Y")

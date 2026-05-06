@@ -22,8 +22,8 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = dm.subplots(
-    width="20cm", aspect="square", subplot_kw={"projection": "polar"}
+fig, ax = plt.subplots(
+    figsize=dm.figsize("20cm", "square"), subplot_kw={"projection": "polar"}
 )
 
 n_rings = 8

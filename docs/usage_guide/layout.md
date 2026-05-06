@@ -11,7 +11,7 @@ import numpy as np
 
 dm.style.use("scientific")
 
-fig, ax = dm.subplots(width="15cm", aspect="wide")
+fig, ax = plt.subplots(figsize=dm.figsize("15cm", "wide"))
 ax.plot(np.linspace(0, 10, 100), np.sin(np.linspace(0, 10, 100)), color="oc.blue6")
 ax.set_xlabel("Time [s]")
 ax.set_ylabel("Response")
@@ -30,7 +30,7 @@ dm.auto_layout(fig)  # default optimizer — replaces fig.tight_layout
 For multi-panel layouts, use GridSpec and pass it to `simple_layout`:
 
 ```python
-fig = dm.figure(width="15cm", aspect="portrait")
+fig = plt.figure(figsize=dm.figsize("15cm", "portrait"))
 gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.25)
 axes = [fig.add_subplot(gs[i, j]) for i in range(2) for j in range(2)]
 
@@ -63,7 +63,7 @@ an intelligent alternative that automatically detects and fixes overflow:
 import dartwork_mpl as dm
 import numpy as np
 
-fig, ax = dm.subplots(width="9cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
 ax.plot(np.linspace(0, 10, 100), np.sin(np.linspace(0, 10, 100)))
 ax.set_ylabel("Very Long Label That Might\nOverflow the Figure Bounds")
 ax.set_title("Complex Multi-Line Title\nWith Potential Overflow", fontsize=dm.fs(2))
@@ -212,7 +212,7 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific-kr")  # English/Korean fonts set together
 
-fig, ax = dm.subplots(width="9cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
 ax.plot([0, 1, 2], [0, 1, 0.4], color="oc.green6", lw=dm.lw(0.5))
 ax.set_title("Experiment result", fontsize=dm.fs(2), fontweight=dm.fw(1))
 ax.set_xlabel("Time")

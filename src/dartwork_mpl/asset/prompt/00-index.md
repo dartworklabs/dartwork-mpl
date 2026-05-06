@@ -21,17 +21,21 @@ fetch the specific guide you need.
 
 ## Always-true facts
 
-- `import dartwork_mpl as dm` is the only import path you need.
-- Use `dm.subplots(width=..., aspect=...)` to create figures.
-  `width` is free-form: `"13cm"`, `"6.7in"`, `dm.cm(11.3)`, or a raw
-  number (interpreted as cm). `aspect` is one of `square`, `portrait`,
-  `standard`, `golden`, `wide`, `cinema`, or a positive float.
+- `import matplotlib.pyplot as plt` and `import dartwork_mpl as dm`.
+- Apply a style first: `dm.style.use("scientific")` (or
+  `dm.style.stack([...])` for a stack).
+- Create figures with `plt.subplots(figsize=dm.figsize("<n>cm",
+  "<aspect>"))`. `width` accepts unit strings (`"13cm"`, `"5in"`,
+  `"170mm"`) or `Inches` values (`dm.cm(13)`, `dm.col1`, `dm.col2`).
+  Bare `int` / `float` are rejected. `aspect` is one of `square`,
+  `portrait`, `standard`, `golden`, `wide`, `cinema`, or a positive
+  float.
 - Use named colors: `oc.*`, `tw.*`, `dc.*`, `md.*`, `ad.*`, `cu.*`,
   `pr.*`. Raw hex is allowed but discouraged.
 - After creating a figure, call `dm.auto_layout(fig)` and save with
   `dm.save_formats(fig, "name")` or `dm.save_and_show(fig, "name")`.
-- Never call `tight_layout()`, `plt.style.use()`, or set `figsize=`
-  / `dpi=` directly — those are lint criticals.
+- Never call `tight_layout()`, `plt.style.use()`, raw `figsize=(w, h)`
+  tuples, or `dm.subplots` / `dm.figure` — those are lint criticals.
 
 ## Standard agent loop
 

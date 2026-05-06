@@ -23,7 +23,7 @@ dm.style.use("presentation")
 palette = ["dc.0", "dc.1", "dc.2", "dc.3", "dc.4", "dc.5"]
 n = len(palette)
 
-fig, ax = dm.subplots(width="11.7cm", aspect="square")
+fig, ax = plt.subplots(figsize=dm.figsize("11.7cm", "square"))
 
 for i in range(n):
     for j in range(n):

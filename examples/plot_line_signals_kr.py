@@ -19,7 +19,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 dm.style.use("report-kr")
 
-fig, ax = dm.subplots(width="9cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
 
 x = np.linspace(0, 10, 100)
 y1 = np.sin(x) * 1.5e6

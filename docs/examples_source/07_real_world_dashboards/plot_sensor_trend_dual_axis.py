@@ -27,9 +27,9 @@ change_pct = np.concatenate(
     [[0.0], np.diff(temperature) / temperature[:-1] * 100]
 )
 
-# 0.4 API: dm.subplots(width=..., aspect=...). Wide aspect (2:3) gives
+# 0.4 API: plt.subplots(figsize=dm.figsize(...)). Wide aspect (2:3) gives
 # both y-axes room without crowding tick labels.
-fig, ax = dm.subplots(width="14.5cm", aspect="wide")
+fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "wide"))
 
 x = np.arange(len(periods))
 ax.bar(x, temperature, color="oc.blue5", alpha=0.85, width=0.55)

@@ -11,7 +11,7 @@ docs build.
 ## 0.4 Migration Complete
 
 The entire gallery now uses the dartwork-mpl 0.4 API:
-`dm.subplots(width="13cm", aspect="standard")`,
+`plt.subplots(figsize=dm.figsize("13cm", "standard"))`,
 `dm.auto_layout(fig)`, `dm.col1` / `dm.col2`. None of the legacy
 0.3 tokens (`dm.SW/MW/TW/DW`, `dm.FS_*`, `dm.cm2in`,
 `figsize=`/`dpi=` on `dm.subplots`) remain — they were purged from

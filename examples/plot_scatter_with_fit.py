@@ -22,7 +22,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 dm.style.use("scientific")
 
-fig, ax = dm.subplots(width="9cm", aspect="square")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "square"))
 
 rng = np.random.default_rng(42)
 x = rng.standard_normal(50)

@@ -1,5 +1,6 @@
 """Polar / radar chart - closed loop on angular axis."""
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import dartwork_mpl as dm
@@ -14,8 +15,8 @@ theta_closed = np.concatenate([theta, theta[:1]])
 a_closed = values_a + values_a[:1]
 b_closed = values_b + values_b[:1]
 
-fig, ax = dm.subplots(
-    width="11cm", aspect="square", subplot_kw={"projection": "polar"}
+fig, ax = plt.subplots(
+    figsize=dm.figsize("11cm", "square"), subplot_kw={"projection": "polar"}
 )
 ax.plot(theta_closed, a_closed, color="oc.blue6", linewidth=0.8, label="Plan A")
 ax.fill(theta_closed, a_closed, color="oc.blue3", alpha=0.3)

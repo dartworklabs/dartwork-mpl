@@ -76,7 +76,7 @@ class TestCheckOverflow:
         should trigger OVERFLOW even after the in-axes filter."""
         import dartwork_mpl as dm
 
-        fig, ax = dm.subplots(width="9cm", aspect="standard")
+        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
         ax.bar([1, 2, 3], [1, 2, 3])
         ax.set_yticks([1, 2, 3])
         # 60-char tick labels — far wider than a 9 cm canvas.
@@ -94,7 +94,7 @@ class TestCheckOverflow:
         spurious warnings before this fix.)"""
         import dartwork_mpl as dm
 
-        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
         # Data tops out at 78 → matplotlib auto-locator extends ticks
         # to 90 (a "nice" round number outside the axis ylim of ~82).
         ax.bar(["A", "B", "C", "D", "E"], [23, 45, 56, 78, 33])
@@ -456,7 +456,7 @@ class TestCheckOverflowDegenerateData:
 
         import dartwork_mpl as dm
 
-        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
         ax.plot([1, 2, 3], [np.nan, np.nan, np.nan])
         ax.set_ylabel("Value")
         # Must return without raising even when the artist tree contains
@@ -472,7 +472,7 @@ class TestCheckOverflowDegenerateData:
         overflow."""
         import dartwork_mpl as dm
 
-        fig, ax = dm.subplots(width="13cm", aspect="standard")
+        fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
         ax.plot([1, 2, 3])
         # ax.text with whitespace-only string is filtered already; this
         # test pins behaviour for a degenerate fontsize=0 label.

@@ -18,7 +18,7 @@ import dartwork_mpl as dm
 
 dm.style.use("minimal")
 
-fig, ax = dm.subplots(width="9cm", aspect=0.85)
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", 0.85))
 
 # Synthetic phase boundaries
 x = np.linspace(0, 10, 200)

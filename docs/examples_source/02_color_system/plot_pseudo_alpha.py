@@ -15,7 +15,7 @@ import dartwork_mpl as dm
 
 dm.style.use("report")
 
-fig, ax = dm.subplots(width="9cm", aspect="wide")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "wide"))
 
 x = np.linspace(0, 10, 100)
 base_color = "oc.red7"

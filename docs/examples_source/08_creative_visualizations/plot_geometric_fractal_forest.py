@@ -22,7 +22,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = dm.subplots(width="18cm", aspect=1.111)
+fig, ax = plt.subplots(figsize=dm.figsize("18cm", 1.111))
 
 
 def draw_fractal_tree(ax, x, y, angle, length, depth, max_depth, colors):

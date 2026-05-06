@@ -67,7 +67,7 @@ class ScatterParams(ParamModel):
 
 def plot_scatter(params: ScatterParams):
     dm.style.use("scientific")
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 
     x = np.random.randn(params.n)
     y = np.random.randn(params.n)
@@ -137,7 +137,7 @@ class PresetParams(ParamModel):
 
 def plot_preset(params: PresetParams):
     dm.style.use(params.preset)
-    fig, ax = dm.subplots(width="15cm", aspect="wide")
+    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "wide"))
     ...
     return fig
 ```

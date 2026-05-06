@@ -21,7 +21,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, axes = dm.subplots(2, 2, width="18cm", aspect="square")
+fig, axes = plt.subplots(2, 2, figsize=dm.figsize("18cm", "square"))
 
 x = np.linspace(-5, 5, 500)
 y = np.linspace(-5, 5, 500)

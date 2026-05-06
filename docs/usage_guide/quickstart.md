@@ -14,7 +14,7 @@ to read off the resolved values without leaving the docs.
 
 | What used to hurt                   | dartwork-mpl                                    |
 | ----------------------------------- | ----------------------------------------------- |
-| Hand-tuning `figsize` and `dpi`     | `dm.subplots(width="13cm", aspect="standard")`  |
+| Hand-tuning `figsize` and `dpi`     | `plt.subplots(figsize=dm.figsize("13cm", "standard"))`  |
 | `tight_layout` clipping labels      | `dm.auto_layout(fig)` — real optimizer          |
 | Reaching for hex codes              | `color="oc.blue5"` (Open Color), `"tw.*"`, `"md.*"`, `"ad.*"`, `"cu.*"`, `"pr.*"` |
 | Saving in 3 formats                 | `dm.save_formats(fig, "out", formats=("png", "svg", "pdf"))` |
@@ -33,7 +33,7 @@ import numpy as np
 dm.style.use("scientific")  # curated fonts, colors, line weights
 
 # width = physical figure width, aspect = height/width ratio
-fig, ax = dm.subplots(width="15cm", aspect="wide")
+fig, ax = plt.subplots(figsize=dm.figsize("15cm", "wide"))
 
 x = np.linspace(0, 10, 200)
 ax.plot(x, np.sin(x), color="oc.blue5", label="signal", lw=dm.lw(1.5))
@@ -77,7 +77,7 @@ plt.show()
 :width: 100%
 
 The same chart rendered with `dm.style.use("scientific")` and
-`dm.subplots(width=…, aspect=…)` — professional typography,
+`plt.subplots(figsize=dm.figsize(…, …))` — professional typography,
 optimized margins, and named colors.
 :::
 
@@ -88,18 +88,18 @@ optimized margins, and named colors.
 ```
 
 Same data, same plotting logic — the difference is one `dm.style.use()`
-call, the `width` / `aspect` API on `dm.subplots`, named colors, and
-`auto_layout`.
+call, the `width` / `aspect` arguments on `dm.figsize`, named colors,
+and `auto_layout`.
 
 **What each dartwork-mpl call does:**
 
-| Call                                 | Purpose                                                                            |
-| ------------------------------------ | ---------------------------------------------------------------------------------- |
-| `dm.style.use("scientific")`         | Sets palette, fonts, line weights — see [Styles](styles.md)                        |
-| `dm.subplots(width=…, aspect=…)`     | Physical width plus an aspect token; height is derived. No `figsize`, no `dpi`.    |
-| `dm.fs(0)`                           | Returns the base font size of the active preset (`fs(2)` = base + 2 pt, and so on) |
-| `dm.auto_layout(fig)`                | Auto-optimizes margins (replaces `tight_layout`)                                   |
-| `dm.save_and_show(fig, "first")`     | Saves multi-format and previews inline in the notebook                             |
+| Call                                          | Purpose                                                                            |
+| --------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `dm.style.use("scientific")`                  | Sets palette, fonts, line weights — see [Styles](styles.md)                        |
+| `dm.figsize("13cm", "standard")`              | Physical width plus an aspect token, returned as the inches tuple `figsize=` expects. |
+| `dm.fs(0)`                                    | Returns the base font size of the active preset (`fs(2)` = base + 2 pt, and so on) |
+| `dm.auto_layout(fig)`                         | Auto-optimizes margins (replaces `tight_layout`)                                   |
+| `dm.save_and_show(fig, "first")`              | Saves multi-format and previews inline in the notebook                             |
 
 ### Static reference: `dm.fs(n)` resolved per preset
 
@@ -122,53 +122,58 @@ weight and stroke width.
 Source of truth: `src/dartwork_mpl/asset/mplstyle/font-*.mplstyle`. If
 those values change, regenerate this table.
 
-## Creating Figures with `width` / `aspect`
+## Creating Figures with `dm.figsize`
 
-`dm.subplots()` and `dm.figure()` are the only sanctioned entry points
-for creating figures. They take a physical `width` plus an `aspect`
-token — height is derived from those two, so `figsize` never appears
-in your code.
+`dm.figsize(width, aspect)` is the sanctioned way to size a figure. It
+returns the inch tuple matplotlib's `figsize=` argument expects, so you
+keep the native `plt.subplots` / `plt.figure` constructors and never
+hand-roll inches yourself.
 
 ```python
-# Physical width with an aspect token (default aspect="standard" = 3/4)
-fig, ax = dm.subplots(width="13cm")
-fig, ax = dm.subplots(width="15cm", aspect="wide")
-fig, ax = dm.subplots(width=dm.cm(11.3), aspect="square")
+# Physical width plus an aspect token (default aspect="standard" = 3/4)
+fig, ax = plt.subplots(figsize=dm.figsize("13cm"))
+fig, ax = plt.subplots(figsize=dm.figsize("15cm", "wide"))
+fig, ax = plt.subplots(figsize=dm.figsize(dm.cm(11.3), "square"))
 
-# Stack a style preset alongside the geometry
-fig, ax = dm.subplots(width="13cm", aspect="wide", style="scientific")
-fig, axes = dm.subplots(2, 2, width="17cm", aspect="standard",
-                        style=["font-report", "theme-dark"])
+# Apply a style preset separately
+dm.style.use("scientific")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
+
+# Stacked styles
+dm.style.stack(["font-report", "theme-dark"])
+fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"))
 
 # Academic-column shortcuts
-fig, ax = dm.subplots(width=dm.col1, aspect="golden")  # 9 cm
-fig, ax = dm.subplots(width=dm.col2, aspect="cinema")  # 17 cm
+fig, ax = plt.subplots(figsize=dm.figsize(dm.col1, "golden"))  # 9 cm
+fig, ax = plt.subplots(figsize=dm.figsize(dm.col2, "cinema"))  # 17 cm
 ```
 
 **Width** accepts:
 
 - A unit-suffixed string: `"13cm"`, `"9.5cm"`, `"6.7in"`, `"170mm"`
-- A helper call: `dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`
-- A raw number: `13` (interpreted as cm)
+- An `Inches` value: `dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`
 - The sugar constants `dm.col1` (9 cm) and `dm.col2` (17 cm)
+
+Bare `int` / `float` are rejected — the unit must always be explicit.
 
 **Aspect** is one of `square` (1.0), `portrait` (5/4), `standard` (3/4),
 `golden` (1/1.618), `wide` (2/3), `cinema` (1/2), or any positive float.
 
 :::{note}
-`figsize=` and `dpi=` on `dm.subplots` / `dm.figure` are deprecated and
-emit a lint warning. The 0.3-era resize policy was replaced in 0.4 with
-free-form `width` (any of cm/in/mm) plus the lint consistency guard
-described in [`asset/prompt/01-policy.md`](https://github.com/dartworklabs/dartwork-mpl/blob/main/src/dartwork_mpl/asset/prompt/01-policy.md).
+The 0.4-era constructors `dm.subplots` and `dm.figure` (and their
+`figsize=` / `dpi=` arguments) were removed. Calls now raise
+`AttributeError` / `TypeError` with a message naming the modern
+`plt.subplots(figsize=dm.figsize(...))` form. See
+[`asset/prompt/01-policy.md`](https://github.com/dartworklabs/dartwork-mpl/blob/main/src/dartwork_mpl/asset/prompt/01-policy.md)
+for the full lint catalog.
 :::
 
 **Multi-panel figures:**
 
 ```python
-fig, axes = dm.subplots(
+fig, axes = plt.subplots(
     2, 2,
-    width="17cm",
-    aspect="standard",
+    figsize=dm.figsize("17cm", "standard"),
     width_ratios=[2, 1],
     height_ratios=[1, 2],
 )
@@ -214,7 +219,7 @@ import numpy as np
 dm.style.use("presentation")
 
 x = np.linspace(0, 10, 100)
-fig = dm.figure(width="15cm", aspect="wide")
+fig = plt.figure(figsize=dm.figsize("15cm", "wide"))
 gs = fig.add_gridspec(1, 2, wspace=0.3)
 ax1 = fig.add_subplot(gs[0])
 ax2 = fig.add_subplot(gs[1])

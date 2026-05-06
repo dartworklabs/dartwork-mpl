@@ -113,9 +113,12 @@ dm.install_llm_txt()
 Even without any configuration, dartwork-mpl's consistent API makes AI-generated code more reliable. Just install the package and tell your AI assistant to use it:
 
 ```python
+import matplotlib.pyplot as plt
+
 import dartwork_mpl as dm
 
-fig, ax = dm.subplots(style=['font-scientific'])
+dm.style.use('font-scientific')
+fig, ax = plt.subplots(figsize=dm.figsize('13cm', 'standard'))
 ax.plot(x, y, color='oc.blue5')
 dm.simple_layout(fig)
 dm.save_and_show(fig)

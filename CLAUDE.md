@@ -20,22 +20,26 @@ with a new API — `Figure` / `Axes` stay native.
 ## First-call rules (always do these)
 
 ```python
+import matplotlib.pyplot as plt
+
 import dartwork_mpl as dm
 
 dm.style.use("scientific")                       # 1. pick a preset
-fig, ax = dm.subplots(width="13cm", aspect="standard")  # 2. physical width + aspect token
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))  # 2. physical width + aspect token via dm.figsize
 # ... draw on ax ...
 dm.auto_layout(fig)                              # 3. content-aware margins (replaces tight_layout)
 dm.save_formats(fig, "out", formats=("png", "pdf"))     # 4. multi-format save
 ```
 
-- **Width unit**: must be a string with `cm` / `mm` / `in` (`"13cm"`,
-  `"5in"`). Bare numbers / floats are rejected.
+- **`dm.figsize(width, aspect)`**: returns the inch tuple matplotlib's
+  `figsize=` expects. `width` must be a unit string (`"13cm"`,
+  `"5in"`, `"170mm"`) or an `Inches` value (`dm.cm(13)`, `dm.col1`,
+  `dm.col2`). Bare `int` / `float` are rejected.
 - **Aspect tokens**: one of `square / portrait / standard / golden /
   wide / cinema`. Numeric ratios (e.g. `0.66`) are also accepted.
-- **Never call**: `plt.figure(figsize=...)`, `plt.tight_layout()`,
-  `plt.subplots()` directly. Use `dm.subplots(...)` and
-  `dm.auto_layout(...)`.
+- **Never call**: `plt.tight_layout()`, raw `figsize=(w, h)` tuples on
+  `plt.subplots` / `plt.figure`. Always wrap with `dm.figsize(...)`
+  and call `dm.auto_layout(fig)` after plotting.
 
 ## Anti-patterns (top 3)
 
@@ -44,11 +48,11 @@ The full SSOT lives in
 Run the lint engine via the MCP tool `lint_dartwork_mpl_code` (see
 below) for the complete list. The most common ones AI agents trip on:
 
-1. **`figsize=(...)` literal** — use `width=...` + `aspect=...` instead.
+1. **`figsize=(w, h)` literal** — wrap with `dm.figsize("<n>cm", "<aspect>")`.
 2. **`plt.tight_layout()`** — use `dm.auto_layout(fig)` instead.
-3. **0.3-era width tokens** (`dm.SW`, `dm.MW`, `dm.TW`, `dm.DW`,
-   `dm.FS_*`, `dm.WIDTHS`) — removed in 0.4.1+; use `dm.col1` /
-   `dm.col2` or `dm.subplots(width="9cm", ...)`.
+3. **`dm.subplots` / `dm.figure`** — REMOVED. Use
+   `plt.subplots(figsize=dm.figsize(...))` and call `dm.style.use(...)`
+   separately.
 
 ## MCP server
 
@@ -66,13 +70,15 @@ When MCP is unavailable, the same anti-pattern catalog is reachable
 through `dm.list_prompts()` + `dm.get_prompt("02-anti-patterns")`
 inside Python.
 
-## Migrating from 0.3.x
+## Migrating from earlier dartwork-mpl
 
-dartwork-mpl 0.4.1+ removed the deprecated 0.3 names (`dm.SW`,
-`dm.FS_*`, `dm.cm2in`, `dm.agent_utils`, `dm.xplot`, the `figsize=`/
-`dpi=` arguments on `dm.subplots`/`dm.figure`). Each old access path
-now raises `AttributeError` / `ModuleNotFoundError` / `TypeError`
-with a message naming the new API. Full mapping table:
+The deprecated 0.3 names (`dm.SW`, `dm.FS_*`, `dm.cm2in`,
+`dm.agent_utils`, `dm.xplot`) and the 0.4-era figure constructors
+(`dm.subplots`, `dm.figure`) have all been removed. Each old access
+path now raises `AttributeError` / `ModuleNotFoundError` /
+`TypeError` with a message naming the new API. The canonical pattern
+is `plt.subplots(figsize=dm.figsize("<n>cm", "<aspect>"))` paired
+with a separate `dm.style.use(...)`. Full mapping table:
 [`docs/migration.md`](docs/migration.md).
 
 ## Where to read more

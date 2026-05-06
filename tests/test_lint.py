@@ -8,7 +8,7 @@ GOOD_CODE = """
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
-fig, ax = dm.subplots(width="13cm", aspect="wide")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 ax.bar(["A", "B"], [1, 2], color="dc.blue500")
 dm.auto_layout(fig)
 dm.save_and_show(fig, "out")
@@ -196,26 +196,26 @@ class TestExtendedRules:
         assert "jet-cmap" not in ids
 
     def test_oversize_width_fires(self):
-        code = 'dm.subplots(width="20cm")\n'
+        code = 'plt.subplots(figsize=dm.figsize("20cm"))\n'
         ids = {i.rule_id for i in lint(code)}
         assert "oversize-width" in ids
 
     def test_oversize_width_skips_within_limit(self):
-        code = 'dm.subplots(width="17cm")\n'
+        code = 'plt.subplots(figsize=dm.figsize("17cm"))\n'
         ids = {i.rule_id for i in lint(code)}
         assert "oversize-width" not in ids
 
     def test_oversize_width_fractional_above_17(self):
         """17.x fractional widths above 17.0 are also flagged."""
         for w in ("17.5cm", "17.1cm", "17.99cm"):
-            code = f'dm.subplots(width="{w}")\n'
+            code = f'plt.subplots(figsize=dm.figsize("{w}"))\n'
             ids = {i.rule_id for i in lint(code)}
             assert "oversize-width" in ids, f"{w} should fire oversize-width"
 
     def test_oversize_width_skips_17_0(self):
         """Exactly 17 cm (= col2 max) is allowed."""
         for w in ("17.0cm", "17cm"):
-            code = f'dm.subplots(width="{w}")\n'
+            code = f'plt.subplots(figsize=dm.figsize("{w}"))\n'
             ids = {i.rule_id for i in lint(code)}
             assert "oversize-width" not in ids, f"{w} should not fire"
 
@@ -237,7 +237,7 @@ class TestExtendedRules:
         # ``)``, missing this common spelling.
         for code in (
             "plt.figure(figsize=(8, 6), dpi=200)\n",
-            'dm.subplots(width="9cm", figsize=(7, 4), dpi=300)\n',
+            'plt.subplots(figsize=dm.figsize("9cm"), dpi=300)\n',
             "plt.subplots(nrows=2, ncols=3, figsize=(8, 4), dpi=150)\n",
         ):
             ids = {i.rule_id for i in lint(code)}
@@ -305,8 +305,9 @@ class TestFormatReportFixSuggestion:
         assert "→ fix:" in report, (
             f"format_report should include a fix line; got:\n{report}"
         )
-        # The bundled fix_suggestion for figsize-direct uses ``dm.subplots``.
-        assert "dm.subplots" in report
+        # The bundled fix_suggestion for figsize-direct points to
+        # ``figsize=dm.figsize(...)``.
+        assert "dm.figsize" in report
 
     def test_no_fix_line_when_clean(self) -> None:
         report = format_report([])

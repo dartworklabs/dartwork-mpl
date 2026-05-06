@@ -298,7 +298,7 @@ class TestMcpTools:
 
         clean_code = (
             "import dartwork_mpl as dm\n"
-            'fig, ax = dm.subplots(width="13cm", aspect="standard")\n'
+            'fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))\n'
             'ax.plot([1, 2, 3], color="dc.blue500")\n'
             "dm.auto_layout(fig)\n"
             'dm.save_and_show(fig, "out")\n'
@@ -316,7 +316,7 @@ class TestMcpTools:
 
         bad_code = (
             "import dartwork_mpl as dm\n"
-            "fig, ax = dm.subplots(figsize=(10, 6))\n"
+            "fig, ax = plt.subplots(figsize=(10, 6))\n"
             'dm.save_and_show(fig, "out")\n'
         )
         result = captured["lint_dartwork_mpl_code"](bad_code)
@@ -334,7 +334,7 @@ class TestMcpTools:
 
         bad_code = (
             "import dartwork_mpl as dm\n"
-            "fig, ax = dm.subplots(figsize=(10, 6))\n"
+            "fig, ax = plt.subplots(figsize=(10, 6))\n"
             'dm.save_and_show(fig, "out")\n'
         )
         result = captured["lint_dartwork_mpl_code_json"](bad_code)
@@ -375,7 +375,7 @@ class TestMcpTools:
 
         clean_code = (
             "import dartwork_mpl as dm\n"
-            'fig, ax = dm.subplots(width="13cm", aspect="standard")\n'
+            'fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))\n'
             'ax.plot([1, 2, 3], color="dc.blue500")\n'
             "dm.auto_layout(fig)\n"
             'dm.save_and_show(fig, "out")\n'
@@ -803,7 +803,7 @@ class TestMcpPrompts:
         result = captured["create_plot"]("bar chart of temperature over time")
         assert isinstance(result, str)
         assert "dartwork-mpl" in result
-        assert "dm.subplots" in result
+        assert "dm.figsize" in result
 
     def test_style_review_prompt(self) -> None:
         """style_review prompt returns a non-empty review template."""

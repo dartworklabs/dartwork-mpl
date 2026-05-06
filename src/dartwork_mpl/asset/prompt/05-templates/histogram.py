@@ -1,5 +1,6 @@
 """Histogram of standard normal samples."""
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import dartwork_mpl as dm
@@ -7,7 +8,7 @@ import dartwork_mpl as dm
 rng = np.random.default_rng(42)
 data = rng.standard_normal(1000)
 
-fig, ax = dm.subplots(width="13cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 ax.hist(data, bins=30, color="oc.blue5", edgecolor="white", linewidth=0.3)
 ax.set_xlabel("Value")
 ax.set_ylabel("Frequency")

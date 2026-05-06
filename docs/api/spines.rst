@@ -144,7 +144,8 @@ Complete Example: Scientific Plot
    import numpy as np
 
    # Create figure with scientific style
-   fig, (ax1, ax2) = dm.subplots(1, 2, style='scientific', figsize=(8, 4))
+   dm.style.use('scientific')
+   fig, (ax1, ax2) = plt.subplots(1, 2, figsize=dm.figsize('17cm', 0.5))
 
    # Generate data
    x = np.linspace(0, 4*np.pi, 100)
@@ -225,7 +226,7 @@ Spine utilities work well with dark themes:
 .. code-block:: python
 
    dm.style.use('theme-dark')
-   fig, ax = dm.subplots()
+   fig, ax = plt.subplots(figsize=dm.figsize('13cm', 'standard'))
 
    # Plot data
    ax.plot(np.random.randn(100).cumsum())
@@ -282,7 +283,7 @@ Spine utilities respect and complement dartwork-mpl themes:
 
    # Apply theme first
    dm.style.use('scientific')
-   fig, ax = dm.subplots()
+   fig, ax = plt.subplots(figsize=dm.figsize('13cm', 'standard'))
 
    # Then customize spines as needed
    dm.minimal_axes(ax)  # Works with any theme

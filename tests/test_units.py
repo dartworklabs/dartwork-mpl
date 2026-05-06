@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from dartwork_mpl.units import cm, inch, mm, parse_aspect, parse_width
+from dartwork_mpl.units import cm, figsize, inch, mm, parse_aspect, parse_width
 
 
 class TestUnitConverters:
@@ -30,20 +30,18 @@ class TestParseWidth:
             ("6.7in", 6.7),
             ('"6.7in"', 6.7),  # stripped quotes
             ("170mm", 170 / 25.4),
-            (13, 13 / 2.54),  # raw int → cm
-            (9.0, 9.0 / 2.54),  # raw float → cm
         ],
     )
-    def test_accepts_string_and_numeric(self, value, expected_in):
+    def test_accepts_unit_strings(self, value, expected_in):
         assert math.isclose(parse_width(value), expected_in, rel_tol=1e-9)
 
     def test_rejects_negative(self):
         with pytest.raises(ValueError, match="positive"):
             parse_width("-5cm")
 
-    def test_rejects_zero(self):
+    def test_rejects_zero_string(self):
         with pytest.raises(ValueError, match="positive"):
-            parse_width(0)
+            parse_width("0cm")
 
     def test_rejects_unknown_unit(self):
         with pytest.raises(ValueError, match="unit"):
@@ -53,19 +51,44 @@ class TestParseWidth:
         with pytest.raises(ValueError):
             parse_width("abc")
 
-    def test_rejects_nan(self):
-        with pytest.raises(ValueError, match="finite"):
-            parse_width(float("nan"))
-
-    def test_rejects_inf(self):
-        with pytest.raises(ValueError, match="finite"):
-            parse_width(float("inf"))
+    def test_rejects_nan_string(self):
+        # NaN/inf should never reach the finite check via a unit string,
+        # but if a caller constructs ``"nancm"`` we still want a clean
+        # error rather than a silent pass.
+        with pytest.raises(ValueError):
+            parse_width("nan")
 
     def test_accepts_scientific_notation(self):
         # 1e-1 cm = 0.1 cm = 0.1/2.54 inches
         assert math.isclose(parse_width("1e-1cm"), 0.1 / 2.54, rel_tol=1e-9)
         # 5e0 in = 5 inches
         assert math.isclose(parse_width("5e0in"), 5.0, rel_tol=1e-9)
+
+
+class TestParseWidthRawNumberRejection:
+    """Bare ``int``/``float`` carry no unit. Reject with TypeError so a
+    raw ``dm.figsize(13)`` call cannot survive (earlier dartwork-mpl
+    silently re-interpreted such widths as cm)."""
+
+    @pytest.mark.parametrize(
+        "value", [13, 9.0, 1, 0, -3, float("nan"), float("inf")]
+    )
+    def test_rejects_int_and_float(self, value):
+        with pytest.raises(TypeError, match="bare numbers carry no unit"):
+            parse_width(value)
+
+    def test_error_message_names_both_escape_hatches(self):
+        with pytest.raises(TypeError) as exc:
+            parse_width(13)
+        message = str(exc.value)
+        assert "'13cm'" in message
+        assert "dm.cm(13)" in message
+
+    def test_rejects_bool(self):
+        with pytest.raises(TypeError, match="bare numbers carry no unit"):
+            parse_width(True)
+        with pytest.raises(TypeError, match="bare numbers carry no unit"):
+            parse_width(False)
 
 
 class TestParseWidthSelfCorrection:
@@ -132,9 +155,9 @@ class TestParseAspectSelfCorrection:
 
 
 class TestInchesArithmetic:
-    """0.4 contract: arithmetic preserves the Inches tag so a doubled
-    or summed Inches value is not silently re-interpreted as cm by
-    parse_width."""
+    """Inches arithmetic must preserve the Inches tag so that doubled
+    or summed widths still pass the ``isinstance(value, Inches)`` gate
+    in ``parse_width`` (raw floats are now rejected)."""
 
     def test_mul_preserves_inches(self):
         from dartwork_mpl.units import Inches
@@ -178,10 +201,11 @@ class TestInchesArithmetic:
     def test_inches_resists_numpy_ufunc(self):
         """Without ``__array_ufunc__ = None``, ``np.float64(2) * cm(9)``
         would route through numpy's multiply ufunc, returning a bare
-        ``np.float64`` and silently losing the ``Inches`` tag — at
-        which point ``parse_width`` would re-interpret the inches value
-        as cm. Opting out of ufunc dispatch makes numpy fall back to
-        ``Inches.__rmul__`` so the tag is preserved.
+        ``np.float64`` and silently losing the ``Inches`` tag — which
+        ``parse_width`` would then reject outright as a unit-less raw
+        number. Opting out of ufunc dispatch makes numpy fall back to
+        ``Inches.__rmul__`` so the tag is preserved and the round-trip
+        stays valid.
         """
         import numpy as np
 
@@ -190,8 +214,7 @@ class TestInchesArithmetic:
         v = np.float64(2) * cm(9)
         assert isinstance(v, Inches)
         assert math.isclose(v, 18 / 2.54, rel_tol=1e-9)
-        # And the round-trip through parse_width still yields the same
-        # inches value (i.e. is *not* re-interpreted as cm).
+        # Round-trip still parses (would TypeError if the tag were lost).
         assert math.isclose(parse_width(v), 18 / 2.54, rel_tol=1e-9)
 
 
@@ -233,12 +256,44 @@ class TestParseAspect:
             parse_aspect(False)
 
 
-class TestParseWidthBoolRejection:
-    def test_rejects_bool_with_clear_message(self):
-        with pytest.raises(ValueError, match="bool is not accepted"):
-            parse_width(True)
-        with pytest.raises(ValueError, match="bool is not accepted"):
-            parse_width(False)
+class TestFigsize:
+    """``dm.figsize(width, aspect)`` returns ``(w_in, h_in)`` for direct
+    use in ``plt.subplots(figsize=...)``."""
+
+    def test_returns_inch_tuple_for_unit_string(self):
+        w, h = figsize("13cm", "wide")
+        # 13 cm = 5.118 in, wide = 2/3
+        assert math.isclose(w, 13 / 2.54, rel_tol=1e-9)
+        assert math.isclose(h, w * (2 / 3), rel_tol=1e-9)
+
+    def test_accepts_inches_value(self):
+        from dartwork_mpl.units import Inches
+
+        w, h = figsize(cm(9), "square")
+        assert math.isclose(w, 9 / 2.54, rel_tol=1e-9)
+        assert math.isclose(h, w, rel_tol=1e-9)
+        assert isinstance(w, float)
+        # Inches arithmetic stays Inches, but the tuple components are
+        # plain floats (matplotlib's contract).
+        assert not isinstance(figsize(Inches(5.0))[0], Inches)
+
+    def test_default_aspect_is_standard(self):
+        w, h = figsize("10cm")
+        assert math.isclose(h / w, 3 / 4, rel_tol=1e-6)
+
+    def test_accepts_float_aspect(self):
+        w, h = figsize("10cm", 0.5)
+        assert math.isclose(h / w, 0.5, rel_tol=1e-9)
+
+    def test_rejects_raw_number_width(self):
+        with pytest.raises(TypeError, match="bare numbers carry no unit"):
+            figsize(13, "wide")
+
+    def test_pairs_with_col1(self):
+        import dartwork_mpl as dm
+
+        w, h = figsize(dm.col1, "standard")
+        assert math.isclose(w, 9 / 2.54, rel_tol=1e-9)
 
 
 class TestPublicSurface:
@@ -256,3 +311,10 @@ class TestPublicSurface:
         # 9 cm and 17 cm in inches.
         assert math.isclose(dm.col1, 9 / 2.54, rel_tol=1e-9)
         assert math.isclose(dm.col2, 17 / 2.54, rel_tol=1e-9)
+
+    def test_figsize_exposed_at_top_level(self):
+        import dartwork_mpl as dm
+
+        assert callable(dm.figsize)
+        w, h = dm.figsize("13cm", "wide")
+        assert math.isclose(w, 13 / 2.54, rel_tol=1e-9)

@@ -15,6 +15,7 @@ __all__ = [
     "DEFAULT_ASPECT",
     "Inches",
     "cm",
+    "figsize",
     "inch",
     "mm",
     "parse_aspect",
@@ -75,13 +76,13 @@ class Inches(float):
 
     Returned by :func:`cm`, :func:`inch`, and :func:`mm` so that
     :func:`parse_width` can distinguish "user already converted"
-    values from raw numbers (which are interpreted as cm).
+    values from bare numbers (which carry no unit and are rejected).
 
     Arithmetic with another scalar preserves the ``Inches`` tag —
     ``dm.cm(9) * 2`` returns ``Inches(7.087)``, not a plain
-    ``float`` that ``parse_width`` would re-interpret as cm. This
-    closes a unit-corruption hole where doubled widths silently lost
-    the cm→inches conversion.
+    ``float`` that downstream callers would have to re-interpret.
+    This closes a unit-corruption hole where doubled widths silently
+    decayed into ambiguous floats.
 
     Setting ``__array_ufunc__ = None`` opts this class out of numpy
     universal-function dispatch. Without it, ``np.float64(2) * cm(9)``
@@ -174,17 +175,20 @@ def _suggest_width_correction(text: str) -> str:
     return f" Use '<number>{_KNOWN_WIDTH_UNITS[0]}', '<number>in', or '<number>mm'."
 
 
-def parse_width(value: str | int | float) -> float:
+def parse_width(value: str | Inches) -> float:
     """Parse a width specification into inches.
 
     Parameters
     ----------
-    value : str | int | float
-        A width like ``"9cm"``, ``"6.7in"``, ``"170mm"``, an
+    value : str | Inches
+        A unit string like ``"9cm"``, ``"6.7in"``, ``"170mm"`` or an
         :class:`Inches` value (returned by :func:`cm`/:func:`inch`/
-        :func:`mm`), or a bare number (interpreted as cm).
-        Surrounding whitespace and matched quote characters are
-        stripped.
+        :func:`mm`). Surrounding whitespace and matched quote
+        characters are stripped from string inputs.
+
+        Bare ``int``/``float`` are rejected: matplotlib's ``figsize``
+        is in inches but dartwork-mpl widths are typically given in
+        cm, so an unannotated number has no safe interpretation.
 
     Returns
     -------
@@ -193,6 +197,8 @@ def parse_width(value: str | int | float) -> float:
 
     Raises
     ------
+    TypeError
+        If ``value`` is a bare ``int``/``float``/``bool`` (no unit).
     ValueError
         If the input cannot be parsed, has an unknown unit, or is
         non-positive.
@@ -204,23 +210,21 @@ def parse_width(value: str | int | float) -> float:
             raise ValueError(f"width must be positive and finite (got {v})")
         return v
 
-    if isinstance(value, bool):
-        raise ValueError(
-            "width must be a positive number or string; bool is not accepted"
+    # bool is a subclass of int; trap it before the int/float branch so
+    # the message is the same as for any other unit-less number.
+    if isinstance(value, (bool, int, float)):
+        raise TypeError(
+            f"width must be a unit string like '13cm' / '5in' / '170mm' "
+            f"or an Inches value (dm.cm(13), dm.col1). Got "
+            f"{type(value).__name__} {value!r} — bare numbers carry no "
+            f"unit. For 13 cm write '13cm' or dm.cm(13); for 13 inches "
+            f"write '13in' or dm.inch(13)."
         )
 
-    if isinstance(value, (int, float)):
-        v = float(value)
-        if not math.isfinite(v) or v <= 0:
-            raise ValueError(
-                f"width must be positive and finite (got {value}); raw "
-                f"numbers are interpreted as cm"
-            )
-        return float(cm(v))
-
     if not isinstance(value, str):
-        raise ValueError(
-            f"width must be str, int, or float (got {type(value).__name__})"
+        raise TypeError(
+            f"width must be a unit string or an Inches value "
+            f"(got {type(value).__name__})"
         )
 
     text = value.strip().strip('"').strip("'")
@@ -242,6 +246,39 @@ def parse_width(value: str | int | float) -> float:
     if unit == "in":
         return inch(number)
     return mm(number)
+
+
+def figsize(
+    width: str | Inches, aspect: str | float = DEFAULT_ASPECT
+) -> tuple[float, float]:
+    """Return a matplotlib ``figsize`` tuple from a physical width and aspect.
+
+    Drop-in replacement for inline ``figsize=(w, h)`` literals. Pairs
+    cleanly with ``plt.subplots`` and ``plt.figure``::
+
+        fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
+        fig = plt.figure(figsize=dm.figsize(dm.col1, "standard"))
+
+    Parameters
+    ----------
+    width : str | Inches
+        Physical width — either a unit string (``"13cm"``, ``"5in"``,
+        ``"170mm"``) or an :class:`Inches` value (``dm.cm(13)``,
+        ``dm.col1``, ``dm.col2``). Bare ``int``/``float`` are rejected.
+    aspect : str | float, optional
+        Height / width ratio. Either a named token in
+        ``{"square", "portrait", "standard", "golden", "wide",
+        "cinema"}`` or a positive float. Default ``"standard"``
+        (3 : 4).
+
+    Returns
+    -------
+    tuple[float, float]
+        ``(width_in_inches, height_in_inches)``.
+    """
+    w_in = parse_width(width)
+    ratio = parse_aspect(aspect)
+    return (w_in, w_in * ratio)
 
 
 def _suggest_aspect_correction(value: str) -> str:

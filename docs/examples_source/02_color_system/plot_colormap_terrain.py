@@ -38,7 +38,7 @@ colormaps = [
     ("dc.neon_pulse", "dc.neon_pulse \u2014 perceptual multi-hue"),
 ]
 
-fig = dm.figure(width="17cm", aspect=0.9)
+fig = plt.figure(figsize=dm.figsize("17cm", 0.9))
 gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.45, wspace=0.45)
 
 for idx, (cmap_name, title) in enumerate(colormaps):

@@ -17,7 +17,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 dm.style.use("report-kr")
 
-fig, ax = dm.subplots(width="13cm", aspect="wide")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 
 # 일반적인 범주형 데이터 — 임의의 네 그룹.
 categories = ["그룹 A", "그룹 B", "그룹 C", "그룹 D"]

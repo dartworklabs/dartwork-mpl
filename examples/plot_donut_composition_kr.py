@@ -17,7 +17,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 dm.style.use("report-kr")
 
-fig, ax = dm.subplots(width="9cm", aspect="square")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "square"))
 
 sizes = [35, 30, 20, 10, 5]
 labels = ["범주 A", "범주 B", "범주 C", "범주 D", "기타"]
