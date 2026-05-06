@@ -32,7 +32,7 @@ x_test = np.linspace(-3, 3, 200)
 mean_pred = true_fn(x_test)
 std_pred = 0.1 + 0.4 * np.abs(np.sin(x_test * 1.5))
 
-fig, ax = dm.subplots(width="14.4cm", aspect="golden")
+fig, ax = plt.subplots(figsize=dm.figsize("14.4cm", "golden"))
 
 # 1. Plot the uncertainty bands (1σ, 2σ, 3σ)
 base_color = dm.named("oc.indigo5")

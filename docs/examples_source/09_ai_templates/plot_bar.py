@@ -15,12 +15,14 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/bar.py`` ·
 # tags: bar, categorical, comparison
 # ai-template-meta-end
 
+import matplotlib.pyplot as plt
+
 import dartwork_mpl as dm
 
 categories = ["A", "B", "C", "D", "E"]
 values = [23, 45, 56, 78, 33]
 
-fig, ax = dm.subplots(width="13cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 ax.bar(categories, values, color="oc.blue5", edgecolor="white", linewidth=0.3)
 ax.set_ylabel("Value")
 dm.auto_layout(fig)

@@ -233,12 +233,13 @@ def format_report(issues: list[Issue]) -> str:
 # Splits its job into two passes:
 #   1. Safe textual substitutions that the agent can rely on
 #      mechanically (``dm.cm2in`` → ``dm.cm``, ``plt.style.use`` →
-#      ``dm.style.use``, ``plt.subplots`` → ``dm.subplots``).
-#   2. Patterns whose 0.4 replacement depends on context — the
-#      width tokens, ``figsize=`` tuples, ``tight_layout()`` calls,
-#      and the removed ``dm.agent_utils`` / ``dm.xplot`` namespaces.
-#      Those get a one-line ``# TODO(dm-migrate): …`` comment
-#      inserted directly above the offending line.
+#      ``dm.style.use``).
+#   2. Patterns whose replacement depends on context — the deprecated
+#      width tokens, the removed ``dm.subplots`` / ``dm.figure``,
+#      ``figsize=(w, h)`` raw tuples, ``tight_layout()`` calls, and
+#      the removed ``dm.agent_utils`` / ``dm.xplot`` namespaces. Those
+#      get a one-line ``# TODO(dm-migrate): …`` comment inserted
+#      directly above the offending line.
 #
 # The function is intentionally regex-only. AST-based migration is in
 # the spec's "Out of Scope" list.
@@ -247,7 +248,6 @@ def format_report(issues: list[Issue]) -> str:
 _MIGRATE_SAFE_REWRITES: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\bdm\.cm2in\b"), "dm.cm"),
     (re.compile(r"\bplt\.style\.use\b"), "dm.style.use"),
-    (re.compile(r"\bplt\.subplots\b"), "dm.subplots"),
 )
 
 _MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
@@ -257,15 +257,22 @@ _MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
     ),
     (
         re.compile(r"\bdm\.FS_[A-Z_]+\b"),
-        "dm.FS_* tuples removed; use dm.subplots(width=..., aspect=...).",
+        "dm.FS_* tuples removed; use figsize=dm.figsize(<width>, <aspect>).",
     ),
     (
         re.compile(r"\bdm\.WIDTHS\["),
         'dm.WIDTHS removed; pick a width string (e.g. "9cm") instead.',
     ),
     (
+        re.compile(r"\bdm\.(?:subplots|figure)\s*\("),
+        "dm.subplots / dm.figure removed; use "
+        "plt.subplots(figsize=dm.figsize(<width>, <aspect>)) "
+        "(call dm.style.use(...) separately for styling).",
+    ),
+    (
         re.compile(r"\bfigsize\s*=\s*\("),
-        "figsize= forbidden; use dm.subplots(width=..., aspect=...).",
+        "raw figsize=(w, h) tuple bypasses physical-width contract; "
+        "use figsize=dm.figsize(<width>, <aspect>).",
     ),
     (
         re.compile(r"\btight_layout\s*\("),
@@ -290,10 +297,10 @@ def migrate_legacy_code(code: str) -> str:
     Two passes:
 
     1. **Safe substitutions** are applied in place
-       (``dm.cm2in`` → ``dm.cm``, ``plt.style.use`` → ``dm.style.use``,
-       ``plt.subplots`` → ``dm.subplots``).
-    2. **Context-dependent patterns** (the deprecated width tokens,
-       ``figsize=`` literals, ``tight_layout()`` calls, and the removed
+       (``dm.cm2in`` → ``dm.cm``, ``plt.style.use`` → ``dm.style.use``).
+    2. **Context-dependent patterns** (deprecated width tokens, the
+       removed ``dm.subplots`` / ``dm.figure``, raw ``figsize=(w,h)``
+       tuples, ``tight_layout()`` calls, and the removed
        ``dm.agent_utils`` / ``dm.xplot`` namespaces) get a
        ``# TODO(dm-migrate): …`` comment inserted above the offending
        line so the agent can see what to change without losing the

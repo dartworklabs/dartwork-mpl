@@ -23,7 +23,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = dm.subplots(width="20cm", aspect="wide")
+fig, ax = plt.subplots(figsize=dm.figsize("20cm", "wide"))
 
 n_time_steps = 50
 n_frequencies = 200

@@ -1,5 +1,6 @@
 """Small multiples / faceted panels - 2x2 grid of line charts."""
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import dartwork_mpl as dm
@@ -13,8 +14,8 @@ panels = [
     ("Group D", np.sin(2 * x) * 0.5 + rng.normal(scale=0.1, size=x.size)),
 ]
 
-fig, axes = dm.subplots(
-    2, 2, width="17cm", aspect="standard", sharex=True, sharey=True
+fig, axes = plt.subplots(
+    2, 2, figsize=dm.figsize("17cm", "standard"), sharex=True, sharey=True
 )
 for ax, (label, y) in zip(axes.flat, panels, strict=False):
     ax.plot(x, y, color="oc.blue6", linewidth=0.8)

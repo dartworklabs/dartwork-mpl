@@ -109,7 +109,7 @@ KNOWN_LIMITATIONS: tuple[tuple[str, str, str], ...] = (
 
 def _build_long_xtick_labels_no_rotation() -> Figure:
     """8 categorical bars, each with a 25-character label, no rotation."""
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     labels = [f"category_label_no_{i:02d}" for i in range(8)]
     ax.bar(labels, [3, 5, 7, 4, 6, 2, 8, 5])
     ax.set_ylabel("Value")
@@ -117,7 +117,7 @@ def _build_long_xtick_labels_no_rotation() -> Figure:
 
 
 def _build_long_xtick_labels_45_rotation() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     labels = [f"category_label_45_{i:02d}" for i in range(8)]
     ax.bar(labels, [3, 5, 7, 4, 6, 2, 8, 5])
     ax.set_ylabel("Value")
@@ -126,7 +126,7 @@ def _build_long_xtick_labels_45_rotation() -> Figure:
 
 
 def _build_long_xtick_labels_90_rotation() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     labels = [f"category_label_90_{i:02d}" for i in range(8)]
     ax.bar(labels, [3, 5, 7, 4, 6, 2, 8, 5])
     ax.set_ylabel("Value")
@@ -135,7 +135,7 @@ def _build_long_xtick_labels_90_rotation() -> Figure:
 
 
 def _build_long_ytick_labels_horizontal_bar() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="wide")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
     labels = [f"horizontal_bar_label_{i:02d}" for i in range(6)]
     ax.barh(labels, [3, 5, 7, 4, 6, 2])
     ax.set_xlabel("Value")
@@ -143,7 +143,7 @@ def _build_long_ytick_labels_horizontal_bar() -> Figure:
 
 
 def _build_dense_xticks_50_categories() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     labels = [f"c{i:02d}" for i in range(50)]
     ax.bar(labels, list(range(50)))
     ax.set_ylabel("Value")
@@ -152,7 +152,7 @@ def _build_dense_xticks_50_categories() -> Figure:
 
 def _build_unicode_korean_xticks() -> Figure:
     dm.style.use("report-kr")
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     labels = ["삼성전자", "한국전력", "포스코", "현대차", "엘지화학"]
     ax.bar(labels, [3, 5, 7, 4, 6])
     ax.set_ylabel("매출 (억원)")
@@ -161,7 +161,7 @@ def _build_unicode_korean_xticks() -> Figure:
 
 def _build_mixed_kr_en_xticks() -> Figure:
     dm.style.use("report-kr")
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     labels = ["Samsung", "한국전력", "Apple", "현대차", "NVIDIA"]
     ax.bar(labels, [3, 5, 7, 4, 6])
     ax.set_ylabel("Value")
@@ -169,7 +169,7 @@ def _build_mixed_kr_en_xticks() -> Figure:
 
 
 def _build_scientific_notation_yticks() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.plot([0, 1, 2], [1e-9, 1e0, 1e9])
     ax.set_yscale("log")
     ax.set_ylabel("Value")
@@ -182,7 +182,7 @@ def _build_scientific_notation_yticks() -> Figure:
 
 
 def _build_twinx_basic_short_labels() -> Figure:
-    fig, ax1 = dm.subplots(width="13cm", aspect="standard")
+    fig, ax1 = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax1.plot([1, 2, 3], [1, 2, 3], label="L")
     ax1.set_ylabel("L")
     ax2 = ax1.twinx()
@@ -192,7 +192,7 @@ def _build_twinx_basic_short_labels() -> Figure:
 
 
 def _build_twinx_long_right_label() -> Figure:
-    fig, ax1 = dm.subplots(width="13cm", aspect="standard")
+    fig, ax1 = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax1.plot([1, 2, 3], [1, 2, 3])
     ax1.set_ylabel("Left axis")
     ax2 = ax1.twinx()
@@ -205,7 +205,7 @@ def _build_twinx_unit_clash() -> Figure:
     # plan said "lang-kr" but that is a raw style layer, not a preset.
     # report-kr is the smallest preset that activates lang-kr.
     dm.style.use("report-kr")
-    fig, ax1 = dm.subplots(width="13cm", aspect="standard")
+    fig, ax1 = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax1.plot([1, 2, 3], [-10, 0, 25])
     ax1.set_ylabel("온도 (°C)")
     ax2 = ax1.twinx()
@@ -215,7 +215,7 @@ def _build_twinx_unit_clash() -> Figure:
 
 
 def _build_twiny_dual_xaxis() -> Figure:
-    fig, ax1 = dm.subplots(width="13cm", aspect="standard")
+    fig, ax1 = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax1.plot([1, 2, 3], [1, 2, 3])
     ax1.set_xlabel("Bottom axis: index")
     ax2 = ax1.twiny()
@@ -231,10 +231,10 @@ def _build_triple_axis_parasite() -> Figure:
     # available); the placement is stylistic, not a dependency guard.
     from mpl_toolkits.axes_grid1 import host_subplot
 
-    # host_subplot requires a raw plt.figure(); dm.subplots cannot be
-    # used here because host_subplot manages its own axes layout.
-    # Width 13/2.54 in x 0.75 matches the 13 cm / "standard" aspect
-    # used by other builders in this file.
+    # host_subplot requires a raw plt.figure() with axes_grid1's own
+    # axes layout, so we bypass the dm.figsize sugar and pass the
+    # equivalent inches tuple directly. Width 13/2.54 in x 0.75 matches
+    # the 13 cm / "standard" aspect used by other builders in this file.
     fig = plt.figure(figsize=(13 / 2.54, 13 / 2.54 * 0.75))
     host = host_subplot(111)
     par1 = host.twinx()
@@ -260,7 +260,7 @@ def _build_triple_twinx_offset_spine() -> Figure:
     This guards against a regression where the patch only kicked in
     for the second axis (the immediate twin) and left the third
     axis's right spine invisible after the position change."""
-    fig, ax1 = dm.subplots(width="14cm", aspect="standard")
+    fig, ax1 = plt.subplots(figsize=dm.figsize("14cm", "standard"))
     ax1.plot([1, 2, 3, 4], [1, 4, 9, 16], color="#1f77b4")
     ax1.set_ylabel("Series A")
 
@@ -316,7 +316,7 @@ def _build_extreme_bottom_squeeze() -> Figure:
 
 
 def _build_outside_axes_annotation() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.plot([1, 2, 3])
     ax.annotate(
         "Far left annotation",
@@ -329,7 +329,7 @@ def _build_outside_axes_annotation() -> Figure:
 
 
 def _build_axes_fraction_text_below_zero() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.plot([1, 2, 3])
     ax.text(0.5, -0.25, "below the axis", transform=ax.transAxes)
     return fig
@@ -338,7 +338,7 @@ def _build_axes_fraction_text_below_zero() -> Figure:
 def _build_colorbar_below_axes() -> Figure:
     import numpy as np
 
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     # Seeded RNG for reproducible test artefacts (per plan §Execution Notes).
     rng = np.random.default_rng(42)
     im = ax.imshow(rng.random((10, 10)))
@@ -354,7 +354,7 @@ def _build_colorbar_below_axes() -> Figure:
 def _build_nan_only_y() -> Figure:
     import numpy as np
 
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.plot([1, 2, 3], [np.nan, np.nan, np.nan])
     ax.set_ylabel("Value")
     return fig
@@ -363,28 +363,28 @@ def _build_nan_only_y() -> Figure:
 def _build_inf_in_y() -> Figure:
     import numpy as np
 
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.plot([1, 2, 3, 4, 5], [1.0, 2.0, np.inf, -np.inf, 5.0])
     ax.set_ylabel("Value")
     return fig
 
 
 def _build_single_point_data() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.plot([5], [5], "o")
     ax.set_ylabel("Value")
     return fig
 
 
 def _build_constant_y() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.plot([1, 2, 3, 4, 5], [7, 7, 7, 7, 7])
     ax.set_ylabel("Value")
     return fig
 
 
 def _build_negative_log_data() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.plot([1, 2, 3, 4, 5], [-2, 1, 10, 100, -50])
     ax.set_yscale("log")
     ax.set_ylabel("Value")
@@ -399,7 +399,7 @@ def _build_negative_log_data() -> Figure:
 def _build_log_y_with_minor_ticks() -> Figure:
     import numpy as np
 
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     x = np.linspace(1, 5, 100)
     ax.plot(x, 10**x)
     ax.set_yscale("log")
@@ -411,7 +411,7 @@ def _build_log_y_with_minor_ticks() -> Figure:
 def _build_symlog_y_centered_on_zero() -> Figure:
     import numpy as np
 
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     x = np.linspace(-10, 10, 200)
     ax.plot(x, x**3)
     ax.set_yscale("symlog", linthresh=10)
@@ -423,7 +423,7 @@ def _build_datetime_x_5_years_daily() -> Figure:
     import numpy as np
     import pandas as pd
 
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     dates = pd.date_range("2021-01-01", "2025-12-31", freq="D")
     rng = np.random.default_rng(42)
     ax.plot(dates, np.cumsum(rng.standard_normal(len(dates))))
@@ -436,7 +436,7 @@ def _build_datetime_x_minutes() -> Figure:
     import numpy as np
     import pandas as pd
 
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     times = pd.date_range("2026-05-02 09:00", "2026-05-02 13:00", freq="1min")
     rng = np.random.default_rng(42)
     ax.plot(times, np.cumsum(rng.standard_normal(len(times))))
@@ -451,21 +451,21 @@ def _build_datetime_x_minutes() -> Figure:
 
 
 def _build_tiny_figure_2_5cm() -> Figure:
-    fig, ax = dm.subplots(width="2.5cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("2.5cm", "standard"))
     ax.plot([1, 2, 3])
     ax.set_ylabel("Y")
     return fig
 
 
 def _build_huge_figure_30cm() -> Figure:
-    fig, ax = dm.subplots(width="30cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("30cm", "standard"))
     ax.plot(list(range(50)), list(range(50)))
     ax.set_ylabel("Value")
     return fig
 
 
 def _build_square_aspect_with_long_legend() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="square")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "square"))
     for i in range(12):
         ax.plot([0, 1], [i, i + 1], label=f"Series {i:02d} long label")
     ax.legend(loc="best")
@@ -481,7 +481,7 @@ def _build_square_aspect_with_long_legend() -> Figure:
 def _build_gridspec_2x3_mixed() -> Figure:
     import numpy as np
 
-    fig, axes = dm.subplots(2, 3, width="17cm", aspect="standard")
+    fig, axes = plt.subplots(2, 3, figsize=dm.figsize("17cm", "standard"))
     rng = np.random.default_rng(42)
     axes[0, 0].plot([1, 2, 3])
     axes[0, 1].bar(["a", "b", "c"], [3, 5, 7])
@@ -497,7 +497,7 @@ def _build_gridspec_2x3_mixed() -> Figure:
 def _build_inset_axes_overlapping_ticks() -> Figure:
     from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.plot([1, 2, 3, 4, 5], [10, 30, 20, 50, 40])
     ax.set_ylabel("Y")
     inset = inset_axes(ax, width="40%", height="40%", loc="lower left")
@@ -506,7 +506,7 @@ def _build_inset_axes_overlapping_ticks() -> Figure:
 
 
 def _build_subplots_4_with_one_pie() -> Figure:
-    fig, axes = dm.subplots(2, 2, width="13cm", aspect="square")
+    fig, axes = plt.subplots(2, 2, figsize=dm.figsize("13cm", "square"))
     axes[0, 0].plot([1, 2, 3])
     axes[0, 0].set_ylabel("Y")
     axes[0, 1].bar(["a", "b"], [3, 5])
@@ -527,7 +527,7 @@ def _build_subplots_4_with_one_pie() -> Figure:
 def _build_colorbar_attached_heatmap() -> Figure:
     import numpy as np
 
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     rng = np.random.default_rng(42)
     im = ax.imshow(rng.random((10, 10)))
     fig.colorbar(im, ax=ax, shrink=0.8)
@@ -545,7 +545,7 @@ def _build_subfigures_2x1() -> Figure:
     the SubFigure tree, which uses a different artist hierarchy from
     plain ``plt.subplots``.
     """
-    fig = dm.figure(width="14cm", aspect="standard")
+    fig = plt.figure(figsize=dm.figsize("14cm", "standard"))
     sub_top, sub_bot = fig.subfigures(2, 1, hspace=0.05)
 
     ax_top = sub_top.subplots()
@@ -583,7 +583,7 @@ def _build_report_kr_style() -> Figure:
     # plan said "lang-kr" but that is a raw style layer, not a preset.
     # report-kr is the smallest preset that activates lang-kr.
     dm.style.use("report-kr")
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.plot([1, 2, 3], [10, 20, 15])
     ax.set_ylabel("매출 (억원)")
     ax.set_xlabel("연도")
@@ -595,7 +595,7 @@ def _build_dark_style() -> Figure:
     # "dark" is the smallest preset that activates theme-dark
     # (= base + font-web + theme-dark).
     dm.style.use("dark")
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.plot([1, 2, 3], [10, 20, 15])
     ax.set_ylabel("Y")
     ax.set_xlabel("X")
@@ -607,7 +607,7 @@ def _build_minimal_style() -> Figure:
     # style layers. "minimal" is the preset that wraps both
     # (= base + font-minimal + theme-minimal).
     dm.style.use("minimal")
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.plot([1, 2, 3], [10, 20, 15])
     ax.set_ylabel("Y")
     ax.set_xlabel("X")
@@ -620,7 +620,7 @@ def _build_minimal_style() -> Figure:
 
 
 def _build_bar_chart_value_labels() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     values = [3, 5, 7, 4, 6]
     bars = ax.bar(["a", "b", "c", "d", "e"], values)
     for bar, v in zip(bars, values, strict=True):
@@ -636,7 +636,7 @@ def _build_bar_chart_value_labels() -> Figure:
 
 
 def _build_crowded_legend_outside() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     for i in range(20):
         ax.plot([0, 1], [i, i + 1], label=f"Series {i:02d}")
     ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", fontsize=8)
@@ -645,7 +645,7 @@ def _build_crowded_legend_outside() -> Figure:
 
 
 def _build_arrow_annotations_diagonal() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.plot([1, 2, 3, 4, 5], [10, 30, 20, 50, 40])
     for x_to, x_from, label in [(2, 1, "first"), (4, 2, "mid"), (5, 4, "end")]:
         ax.annotate(
@@ -664,13 +664,13 @@ def _build_arrow_annotations_diagonal() -> Figure:
 
 
 def _build_pie_full_default() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="square")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "square"))
     ax.pie([40, 30, 20, 7, 3], labels=["A", "B", "C", "D", "E"])
     return fig
 
 
 def _build_donut_thin_correct_pctdistance() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="square")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "square"))
     width = 0.15
     ax.pie(
         [50, 30, 20],
@@ -682,7 +682,7 @@ def _build_donut_thin_correct_pctdistance() -> Figure:
 
 
 def _build_donut_wide_wrong_pctdistance() -> Figure:
-    fig, ax = dm.subplots(width="13cm", aspect="square")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "square"))
     ax.pie(
         [50, 30, 20],
         autopct="%.0f%%",

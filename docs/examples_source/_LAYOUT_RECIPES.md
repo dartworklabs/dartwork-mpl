@@ -14,7 +14,7 @@ will block them.
 import dartwork_mpl as dm
 
 dm.style.use("scientific")                     # 1. pick a style
-fig, ax = dm.subplots(width="13cm", aspect="standard")  # 2. width + aspect
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))  # 2. width + aspect
 ax.plot(...)
 dm.auto_layout(fig)                             # 3. finalize layout
 dm.save_formats(fig, "my_chart")                # (optional) save artifact
@@ -27,7 +27,7 @@ variations on those three lines.
 
 ## 1. The Width and Aspect Contract
 
-`dm.subplots()` and `dm.figure()` take **physical width** + **named
+`plt.subplots(figsize=dm.figsize(...))` and `plt.figure(figsize=dm.figsize(...))` take **physical width** + **named
 aspect ratio**, never raw figsize tuples.
 
 ### 1.1 Width
@@ -75,7 +75,7 @@ import numpy as np
 import dartwork_mpl as dm
 
 dm.style.use("scientific")
-fig, ax = dm.subplots(width="9cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
 
 x = np.linspace(0, 10, 100)
 ax.plot(x, np.sin(x), color="oc.blue7", lw=dm.lw(1))
@@ -91,7 +91,7 @@ dm.auto_layout(fig)
 ### 2.2 Medium single panel (13 cm)
 
 ```python
-fig, ax = dm.subplots(width="13cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 ```
 
 **Why 13 cm:** most blog and slide use cases. Wide enough for a
@@ -100,7 +100,7 @@ single rich axis without dominating the page.
 ### 2.3 Large / double-column single panel (17 cm)
 
 ```python
-fig, ax = dm.subplots(width="17cm", aspect="golden")
+fig, ax = plt.subplots(figsize=dm.figsize("17cm", "golden"))
 ```
 
 **Why 17 cm + golden:** flagship single panel for journal articles
@@ -111,9 +111,8 @@ left-to-right.
 ### 2.4 Square panel (polar, equal-axis scatter)
 
 ```python
-fig, ax = dm.subplots(
-    width="9cm",
-    aspect="square",
+fig, ax = plt.subplots(
+    figsize=dm.figsize("9cm", "square"),
     subplot_kw={"projection": "polar"},
 )
 ```
@@ -125,7 +124,7 @@ same physical meaning.
 ### 2.5 Wide-format slide hero (17 cm × cinema)
 
 ```python
-fig, ax = dm.subplots(width="17cm", aspect="cinema")
+fig, ax = plt.subplots(figsize=dm.figsize("17cm", "cinema"))
 ax.plot(years, gdp, color="tw.emerald600", lw=dm.lw(1))
 ```
 
@@ -135,7 +134,7 @@ landing-page hero plots. More vertical compression than `wide`.
 ### 2.6 Custom aspect (raw float)
 
 ```python
-fig, ax = dm.subplots(width="13cm", aspect=0.4)
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", 0.4))
 ```
 
 **When:** the plot has a constraint (e.g. matching a hand-drawn diagram
@@ -146,14 +145,14 @@ width`, so 0.4 = roughly 13 × 5.2 cm.
 
 ## 3. Multi-Panel Recipes
 
-`dm.subplots(nrows, ncols, ...)` handles any uniform grid. Reach for
+`plt.subplots(nrows, ncols, figsize=dm.figsize(...))` handles any uniform grid. Reach for
 custom GridSpec only when row/column ratios diverge or you need
 nested layouts.
 
 ### 3.1 Side-by-side, 1×2 (17 cm × wide)
 
 ```python
-fig, axes = dm.subplots(1, 2, width="17cm", aspect="wide")
+fig, axes = plt.subplots(1, 2, figsize=dm.figsize("17cm", "wide"))
 
 axes[0].plot(x, y1, color="oc.blue7", lw=dm.lw(1))
 axes[0].set_title("Before")
@@ -170,7 +169,7 @@ dm.auto_layout(fig)
 ### 3.2 Stacked rows, 2×1 (13 cm × portrait)
 
 ```python
-fig, axes = dm.subplots(2, 1, width="13cm", aspect="portrait", sharex=True)
+fig, axes = plt.subplots(2, 1, figsize=dm.figsize("13cm", "portrait"), sharex=True)
 axes[0].plot(t, signal, color="oc.blue7", lw=dm.lw(1))
 axes[1].plot(t, residuals, color="oc.gray7", lw=dm.lw(1))
 axes[1].set_xlabel("Time (s)")
@@ -185,7 +184,7 @@ dm.auto_layout(fig)
 ### 3.3 Uniform 2×2 grid (17 cm × standard)
 
 ```python
-fig, axes = dm.subplots(2, 2, width="17cm", aspect="standard")
+fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"))
 
 for ax, data, title in zip(axes.flat, datasets, titles, strict=True):
     ax.plot(data, color="oc.blue7", lw=dm.lw(1))
@@ -202,7 +201,7 @@ matching the figures readers expect in scientific publications.
 ### 3.4 Tall 3×2 dashboard (17 cm × portrait)
 
 ```python
-fig, axes = dm.subplots(3, 2, width="17cm", aspect="portrait")
+fig, axes = plt.subplots(3, 2, figsize=dm.figsize("17cm", "portrait"))
 dm.label_axes(axes.flat)
 dm.auto_layout(fig)
 ```
@@ -213,13 +212,12 @@ that `portrait` (5:4) provides.
 ### 3.5 Asymmetric rows / columns (`width_ratios`, `height_ratios`)
 
 When rows or columns have different widths, pass ratios directly to
-`dm.subplots`:
+`plt.subplots`:
 
 ```python
-fig, axes = dm.subplots(
+fig, axes = plt.subplots(
     1, 3,
-    width="17cm",
-    aspect="wide",
+    figsize=dm.figsize("17cm", "wide"),
     width_ratios=[2, 1, 1],
 )
 ```
@@ -231,7 +229,7 @@ panels), drop down to a custom GridSpec — see §4.
 
 ## 4. Custom GridSpec (Advanced)
 
-Reach for `dm.figure()` + `gridspec.GridSpec` only when:
+Reach for `plt.figure(figsize=dm.figsize(...))` + `gridspec.GridSpec` only when:
 
 - You span cells (top row spans all columns, etc.).
 - You nest GridSpec inside GridSpec.
@@ -247,7 +245,7 @@ import matplotlib.gridspec as gridspec
 import dartwork_mpl as dm
 
 dm.style.use("scientific")
-fig = dm.figure(width="17cm", aspect="standard")
+fig = plt.figure(figsize=dm.figsize("17cm", "standard"))
 gs = gridspec.GridSpec(
     2, 2,
     figure=fig,
@@ -274,7 +272,7 @@ result.
 ### 4.2 Colorbar attached to a single panel
 
 ```python
-fig, axes = dm.subplots(1, 2, width="17cm", aspect="wide")
+fig, axes = plt.subplots(1, 2, figsize=dm.figsize("17cm", "wide"))
 cf = axes[0].imshow(field, cmap="dc.deep_sea")
 axes[1].plot(profile, color="oc.gray7", lw=dm.lw(1))
 fig.colorbar(cf, ax=axes[0], shrink=0.85, pad=0.02)
@@ -292,7 +290,7 @@ is automatically visible** with the correct linewidth from the active
 style. You no longer need to call `ax2.spines["right"].set_visible(True)`.
 
 ```python
-fig, ax = dm.subplots(width="13cm", aspect="wide")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 ax.bar(x, temperature, color="oc.blue5", width=0.55)
 ax.set_ylabel("Temperature (°C)")
 
@@ -313,7 +311,7 @@ canvas keeps text legible.
 
 | Finalizer                | When to use                                          |
 | :----------------------- | :--------------------------------------------------- |
-| `dm.auto_layout(fig)`    | **Default.** Uniform grids from `dm.subplots()`.     |
+| `dm.auto_layout(fig)`    | **Default.** Uniform grids from `plt.subplots(figsize=dm.figsize(...))`. |
 | `dm.simple_layout(fig)`  | Custom GridSpec (spans, nested, colorbar attached).  |
 | `dm.simple_layout(fig)`  | When you need deterministic margins for golden tests.|
 | ❌ `fig.tight_layout()`  | Forbidden — collides with dartwork-mpl spines/legends.|
@@ -356,8 +354,8 @@ A single line you can grep for when migrating old code.
 | `figsize=(dm.DW, dm.DW * 0.85)`                 | `width="17cm", aspect="standard"`                     |
 | `figsize=(dm.SW * 1.4, dm.SW * 1.4)`            | `width="13cm", aspect="square"`                       |
 | `figsize=(dm.cm2in(20), dm.cm2in(15))`          | `width="20cm", aspect=0.75`                           |
-| `plt.subplots(figsize=(...))`                   | `dm.subplots(width="...", aspect="...")`              |
-| `plt.figure(figsize=(...))`                     | `dm.figure(width="...", aspect="...")`                |
+| `plt.subplots(figsize=(...))`                   | `plt.subplots(figsize=dm.figsize("...", "..."))`              |
+| `plt.figure(figsize=(...))`                     | `plt.figure(figsize=dm.figsize("...", "..."))`                |
 | `fig.tight_layout()`                            | `dm.auto_layout(fig)` (or `dm.simple_layout(fig)`)    |
 | `plt.style.use("scientific")`                   | `dm.style.use("scientific")`                          |
 | `dm.FS_SINGLE` / `dm.FS_DOUBLE`                 | `width="9cm"` / `width="17cm"` + explicit `aspect`    |
@@ -381,9 +379,7 @@ top of a base preset):
 
 ```python
 dm.style.use(["scientific", "lang-kr"])
-# or pass directly to subplots:
-fig, ax = dm.subplots(width="13cm", aspect="standard",
-                       style=["scientific", "lang-kr"])
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 ```
 
 ---
@@ -435,10 +431,10 @@ ax.fill_between(x, y_lo, y_hi, color=fill)
 Every example is checked against
 `dartwork_mpl.asset/prompt/02-anti-patterns.yaml`. The critical rules:
 
-- `figsize=(...)` → forbidden. Use `dm.subplots(width="...", aspect="...")`.
+- `figsize=(...)` → forbidden. Use `plt.subplots(figsize=dm.figsize("...", "..."))`.
 - `tight_layout()` → forbidden. Use `dm.auto_layout(fig)`.
 - `plt.style.use(...)` → warning. Use `dm.style.use(...)`.
-- `plt.subplots(...)` → warning. Use `dm.subplots(...)`.
+- `dm.subplots(...)` / `dm.figure(...)` → REMOVED. Use `plt.subplots(figsize=dm.figsize(...))`.
 - `dm.SW/MW/TW/DW/FS_*/WIDTHS` → warning. Use `width="..cm", aspect="..."`.
 - `dm.cm2in(...)` inside `figsize=` → warning. Migrate to `width="..cm"`.
 

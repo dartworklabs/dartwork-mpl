@@ -20,7 +20,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = dm.subplots(width="20cm", aspect="square")
+fig, ax = plt.subplots(figsize=dm.figsize("20cm", "square"))
 
 
 def create_islamic_star(center, size, n_points=8):

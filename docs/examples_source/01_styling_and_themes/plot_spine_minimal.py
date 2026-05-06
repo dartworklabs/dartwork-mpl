@@ -21,7 +21,7 @@ x = np.linspace(0, 10, 100)
 y = np.sin(x) + 0.1 * np.random.randn(100)
 
 dm.style.use("scientific")
-fig, ax = dm.subplots(width="12cm", aspect="wide")
+fig, ax = plt.subplots(figsize=dm.figsize("12cm", "wide"))
 
 ax.plot(x, y, color="oc.blue5", lw=dm.lw(1), label="Signal")
 ax.scatter(x[::10], y[::10], color="oc.red5", s=30, zorder=5, label="Samples")

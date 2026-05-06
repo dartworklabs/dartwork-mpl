@@ -45,7 +45,7 @@ import numpy as np
 dm.style.use("scientific")
 
 # 2. Two-column figure at 17 cm with a cinema (1/2) aspect ratio
-fig = dm.figure(width=dm.col2, aspect="cinema")
+fig = plt.figure(figsize=dm.figsize(dm.col2, "cinema"))
 gs = fig.add_gridspec(1, 2, wspace=0.35)
 ax1 = fig.add_subplot(gs[0])
 ax2 = fig.add_subplot(gs[1])
@@ -99,7 +99,7 @@ import dartwork_mpl as dm
 dm.style.use("report-kr")
 
 # 2. Create figure
-fig, ax = dm.subplots(width="15cm", aspect="wide")
+fig, ax = plt.subplots(figsize=dm.figsize("15cm", "wide"))
 
 # 3. Weekly data (synthetic)
 weeks = ["1주차", "2주차", "3주차", "4주차", "5주차"]
@@ -154,7 +154,7 @@ dm.style.use("dark")
 
 ```python
 # Cell 2: Create and preview
-fig, ax = dm.subplots(width="14cm", aspect="wide")
+fig, ax = plt.subplots(figsize=dm.figsize("14cm", "wide"))
 
 x = np.linspace(0, 4 * np.pi, 300)
 for i, (amp, phase) in enumerate([(1.0, 0), (0.7, 0.5), (0.4, 1.0)]):
@@ -173,7 +173,7 @@ dm.save_and_show(fig, "waves_dark")  # save + inline preview
 ```python
 # Cell 3: Export light version for paper
 dm.style.use("scientific")  # Switch to light style
-fig2, ax2 = dm.subplots(width="9cm", aspect="standard")
+fig2, ax2 = plt.subplots(figsize=dm.figsize("9cm", "standard"))
 
 # Replot with same data but paper-appropriate styling
 for i, (amp, phase) in enumerate([(1.0, 0), (0.7, 0.5), (0.4, 1.0)]):

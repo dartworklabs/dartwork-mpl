@@ -42,7 +42,7 @@ fonts = [
 ]
 
 # Single figure, 2x3 grid — one subplot per typeface.
-fig, axes = dm.subplots(2, 3, width="17cm", aspect=0.55, sharey=False)
+fig, axes = plt.subplots(2, 3, figsize=dm.figsize("17cm", 0.55), sharey=False)
 x = np.arange(len(periods))
 
 for ax, (font_name, font_file) in zip(axes.flat, fonts, strict=True):

@@ -22,13 +22,14 @@ rules:
       kind: regex
       pattern: '\bfigsize\s*=\s*\('
     message: |
-      `figsize=` is forbidden. Use `dm.subplots(width="13cm", aspect="wide")`
-      with width as cm/in/mm string or `dm.cm(...)`.
+      Raw `figsize=(w, h)` tuples bypass dartwork-mpl's physical-width
+      contract. Use `figsize=dm.figsize("13cm", "wide")` so the width
+      stays in cm/in/mm and the aspect intent is named.
     why: |
       Width and aspect are decided separately so chart-wide width
       consistency can be enforced and so the height follows from the
       content's aspect intent.
-    fix_suggestion: 'dm.subplots(width="13cm", aspect="standard")'
+    fix_suggestion: 'figsize=dm.figsize("13cm", "standard")'
 
   - id: tight-layout
     severity: critical
@@ -56,7 +57,7 @@ rules:
       kind: regex
       pattern: '\bplt\.style\.use\s*\('
     message: |
-      Use `dm.style.use(...)` (or stack styles via dm.subplots(style=...))
+      Use `dm.style.use(...)` (or `dm.style.stack([...])` for a stack)
       instead of `plt.style.use(...)`.
     fix_suggestion: 'dm.style.use("scientific")'
 
@@ -69,14 +70,22 @@ rules:
       Prefer `dm.save_and_show(fig, "name")` or `dm.save_formats(fig,
       "name")` so the figure ships with its rendered artifact.
 
-  - id: plt-subplots
-    severity: warning
+  - id: dm-subplots-removed
+    severity: critical
     detector:
       kind: regex
-      pattern: '\bplt\.subplots\s*\('
+      pattern: '\bdm\.(?:subplots|figure)\s*\('
     message: |
-      Use `dm.subplots(...)` so dartwork-mpl can apply style, width,
-      and aspect handling.
+      `dm.subplots` and `dm.figure` were REMOVED — accessing them now
+      raises `AttributeError`. Use `plt.subplots(figsize=dm.figsize(...))`
+      (or `plt.figure(figsize=dm.figsize(...))` for custom GridSpec).
+      Apply style separately via `dm.style.use(...)`.
+    why: |
+      Both functions were thin wrappers around `plt.subplots` / `plt.figure`
+      that bundled style mutation, polymorphic `width=`, and a deny-list
+      of legacy kwargs. Removing them keeps the matplotlib API native and
+      reduces dartwork-mpl's surface to a single sizing helper.
+    fix_suggestion: 'plt.subplots(figsize=dm.figsize("13cm", "standard"))'
 
   - id: cm2in-figsize
     severity: critical
@@ -85,11 +94,9 @@ rules:
       pattern: 'figsize\s*=\s*\([^)]*cm2in'
     message: |
       `figsize=(dm.cm2in(...), dm.cm2in(...))` is the legacy 0.3
-      pattern and is REMOVED in 0.4.0: `dm.cm2in` itself raises
-      `AttributeError`, and `figsize=` on `dm.subplots`/`dm.figure`
-      raises `TypeError`. Use `width="<n>cm"` plus an aspect token
-      instead.
-    fix_suggestion: 'dm.subplots(width="9cm", aspect="standard")'
+      pattern: `dm.cm2in` itself raises `AttributeError`. Use
+      `figsize=dm.figsize("<n>cm", "<aspect>")` instead.
+    fix_suggestion: 'figsize=dm.figsize("9cm", "standard")'
 
   - id: deprecated-width-token
     severity: critical
@@ -99,8 +106,22 @@ rules:
     message: |
       `dm.SW/MW/TW/DW/FS_*/WIDTHS` were REMOVED in 0.4.0 — accessing
       them now raises `AttributeError`. Use
-      `dm.subplots(width="...cm", aspect="...")`, or
-      `dm.col1`/`dm.col2` for academic columns.
+      `figsize=dm.figsize("<n>cm", "<aspect>")`, or `dm.col1`/`dm.col2`
+      for academic columns.
+
+  - id: raw-width-number
+    severity: critical
+    detector:
+      kind: regex
+      # `dm.figsize(13, ...)` or `dm.figsize(13.5)` — bare numbers carry
+      # no unit and dartwork-mpl rejects them at runtime. Catch the
+      # call site with a clearer message than the raised TypeError.
+      pattern: '\bdm\.figsize\s*\(\s*-?\d+(?:\.\d+)?\s*[,)]'
+    message: |
+      `dm.figsize(<bare number>, ...)` is rejected — bare numbers carry
+      no unit. Pass a unit string (`"13cm"`, `"5in"`, `"170mm"`) or an
+      Inches value (`dm.cm(13)`, `dm.col1`, `dm.col2`).
+    fix_suggestion: 'dm.figsize("13cm", "standard")'
 
   - id: dpi-arg
     severity: critical
@@ -112,15 +133,11 @@ rules:
       # ``[^)]*`` form bailed at the first ``)`` and silently missed
       # this very common spelling. ``savefig(dpi=...)`` is intentionally
       # outside this rule's scope — see ``savefig-direct``.
-      pattern: '\b(?:plt|dm)\.(?:subplots|figure)\s*\((?:[^()]|\([^()]*\))*\bdpi\s*='
+      pattern: '\bplt\.(?:subplots|figure)\s*\((?:[^()]|\([^()]*\))*\bdpi\s*='
     message: |
       `dpi=` should not be set per-figure. The active dartwork-mpl
       style controls dpi (display vs savefig). Direct
       ``savefig(dpi=...)`` is flagged separately by ``savefig-direct``.
-      Severity raised to ``critical`` in 0.4.x because ``dpi=`` on
-      ``plt.figure``/``dm.figure``/``dm.subplots`` produces inconsistent
-      output across machines and is just as forbidden as ``figsize=``
-      (see ``00-index.md``).
 
   - id: raw-hex-color
     severity: info
@@ -192,12 +209,17 @@ rules:
     severity: warning
     detector:
       kind: regex
-      pattern: 'width\s*=\s*["''](?:1[89]|[2-9]\d|\d{3,}|17\.\d*[1-9]\d*)(?:\.\d+)?cm["'']'
+      # Match a > 17 cm literal in either of the two canonical width
+      # contexts: a `width=` kwarg (legacy / non-figsize callers) or
+      # the first positional of `dm.figsize("...cm", ...)`. The aspect
+      # argument (second positional) is filtered out because it sits
+      # behind a `,` rather than directly after `(`.
+      pattern: '(?:width\s*=\s*|\bdm\.figsize\s*\(\s*)["''](?:1[89]|[2-9]\d|\d{3,}|17\.\d*[1-9]\d*)(?:\.\d+)?cm["'']'
     message: |
-      `width` exceeds 17 cm (`dm.col2`). Most page layouts break
-      above this threshold and produce ragged multi-figure reports.
-      Reduce to 17 cm or split into a multi-row layout.
+      Width exceeds 17 cm (`dm.col2`). Most page layouts break above
+      this threshold and produce ragged multi-figure reports. Reduce
+      to 17 cm or split into a multi-row layout.
     why: |
       Snap widths to the 0.5 cm grid and keep ≤ 5 distinct widths
       per project for cross-figure consistency.
-    fix_suggestion: 'width="17cm"'
+    fix_suggestion: 'dm.figsize("17cm", "standard")'

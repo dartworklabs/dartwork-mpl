@@ -1,5 +1,6 @@
 """Tornado chart - symmetric horizontal bars."""
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import dartwork_mpl as dm
@@ -8,7 +9,7 @@ categories = ["Cat A", "Cat B", "Cat C", "Cat D"]
 positive = [10, 25, 15, 30]
 negative = [-8, -20, -12, -28]
 
-fig, ax = dm.subplots(width="13cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 y_pos = np.arange(len(categories))
 ax.barh(y_pos, positive, color="oc.blue5", label="Positive")
 ax.barh(y_pos, negative, color="oc.red5", label="Negative")

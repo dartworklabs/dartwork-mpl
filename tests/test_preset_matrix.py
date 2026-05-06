@@ -43,7 +43,7 @@ def test_preset_round_trip(preset: str, tmp_path: Path) -> None:
     """Apply ``preset``, build a trivial chart, save PNG+PDF, validate."""
     dm.style.use(preset)
 
-    fig, ax = dm.subplots(width="9cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
     ax.plot([1, 2, 3, 4], [1, 4, 9, 16])
     ax.set_ylabel("Value")
     ax.set_xlabel("Index")

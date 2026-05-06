@@ -8,7 +8,7 @@ import numpy as np
 
 dm.style.use("scientific")
 
-fig, ax = dm.subplots(width="9cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
 ax.plot(np.arange(50), np.cumsum(np.random.randn(50)) + 20, color="oc.blue6")
 dm.auto_layout(fig)
 

@@ -3,7 +3,7 @@
 Two sinusoidal signals plotted on a shared axis, demonstrating:
 
 - ``dm.style.use("scientific")`` for a compact scientific preset
-- ``dm.subplots`` for figure construction integrated with the preset
+- ``plt.subplots(figsize=dm.figsize(...))`` for the dartwork sizing API
 - ``dm.format_axis_si`` for automatic SI-prefix tick labels (k, M, G…)
 - ``dm.minimal_axes`` and ``dm.add_grid`` for a clean academic look
 
@@ -23,7 +23,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 dm.style.use("scientific")
 
-fig, ax = dm.subplots(width="9cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
 
 x = np.linspace(0, 10, 100)
 y1 = np.sin(x) * 1e6

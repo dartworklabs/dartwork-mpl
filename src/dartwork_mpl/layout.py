@@ -829,7 +829,7 @@ def tight_crop(
     Examples
     --------
     >>> import dartwork_mpl as dm
-    >>> fig, ax = dm.subplots(width="14cm", aspect="cinema")
+    >>> fig, ax = plt.subplots(figsize=dm.figsize("14cm", "cinema"))
     >>> ax.plot([1, 2, 3])
     >>> ax.set_ylabel("Value")
     >>> dm.tight_crop(fig, padding=0.04)

@@ -1,30 +1,74 @@
 # Migration Guide
 
 This guide covers the rename / deprecation events that have shipped
-since v0.1, ordered newest first. The 0.3 width tokens, `FS_*`
-figsize tuples, `cm2in`, the `dartwork_mpl.constant` module, and the
-`figsize=` / `dpi=` arguments to `dm.subplots` / `dm.figure` were
-**removed in v0.4.0** — accessing them now raises `AttributeError` /
-`ModuleNotFoundError` / `TypeError`. The older `agent_utils` /
-`xplot` / `helpers.formatting` / `asset_viz` shims still emit a
-`DeprecationWarning` and are scheduled for removal in **v1.0**.
+since v0.1, ordered newest first. The 0.4-era figure constructors
+(`dm.subplots`, `dm.figure`) have been **removed** in addition to
+the earlier 0.3 width tokens, `FS_*` figsize tuples, `cm2in`, the
+`dartwork_mpl.constant` module, and the `figsize=` / `dpi=` arguments
+they used to accept. Accessing any of them now raises
+`AttributeError` / `ModuleNotFoundError` / `TypeError`. The older
+`agent_utils` / `xplot` / `helpers.formatting` / `asset_viz` shims
+still emit a `DeprecationWarning` and are scheduled for removal in
+**v1.0**.
 
 ## At a glance
 
-| Old surface                           | New surface                                | Deprecated since | Remove in |
-| ------------------------------------- | ------------------------------------------ | ---------------- | --------- |
-| `dm.SW`, `dm.MW`, `dm.TW`, `dm.DW`    | `width="9cm"` / `dm.col1` / `dm.col2`      | v0.4.0           | v0.4.0 (already removed) |
-| `dm.WIDTHS`                           | iterate explicit widths                    | v0.4.0           | v0.4.0 (already removed) |
-| `dm.FS_SINGLE` / `FS_DOUBLE` / etc.   | `dm.subplots(width=..., aspect=...)`       | v0.4.0           | v0.4.0 (already removed) |
-| `dm.cm2in(...)`                       | `dm.cm(...)` (returns `Inches`)            | v0.4.0           | v0.4.0 (already removed) |
-| `figsize=` argument                   | `width=` + `aspect=`                       | v0.4.0 (lint)    | v0.4.0 (already removed) |
-| `dpi=` argument                       | active style preset                        | v0.4.0 (lint)    | v0.4.0 (already removed) |
-| `dartwork_mpl.constant` module        | `dartwork_mpl.units` + width / aspect API  | v0.4.0           | v0.4.0 (already removed) |
-| `plt.tight_layout()`                  | `dm.auto_layout(fig)`                      | v0.4.0 (lint)    | —         |
-| `dartwork_mpl.agent_utils`            | `dartwork_mpl.helpers`                     | v0.2.0           | v1.0.0    |
-| `dartwork_mpl.xplot`                  | `dartwork_mpl.templates`                   | v0.2.0           | v1.0.0    |
-| `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`              | v0.3.x           | v1.0.0    |
-| `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`                 | v0.3.x           | v1.0.0    |
+| Old surface                           | New surface                                          |
+| ------------------------------------- | ---------------------------------------------------- |
+| `dm.subplots(width=..., aspect=...)`  | `plt.subplots(figsize=dm.figsize(...))`              |
+| `dm.figure(width=..., aspect=...)`    | `plt.figure(figsize=dm.figsize(...))`                |
+| `dm.subplots(..., style=...)`         | call `dm.style.use(...)` first, then `plt.subplots`  |
+| raw `figsize=(w, h)` tuple            | `figsize=dm.figsize("<n>cm", "<aspect>")`            |
+| bare-number width (e.g. `width=13`)   | unit string (`"13cm"`) or `dm.cm(13)` / `dm.col1`    |
+| `dm.SW`, `dm.MW`, `dm.TW`, `dm.DW`    | `dm.col1` / `dm.col2` / `dm.cm(...)`                 |
+| `dm.WIDTHS`                           | iterate explicit widths inline                       |
+| `dm.FS_SINGLE` / `FS_DOUBLE` / etc.   | `figsize=dm.figsize("<n>cm", "<aspect>")`            |
+| `dm.cm2in(...)`                       | `dm.cm(...)` (returns `Inches`)                      |
+| `dpi=` argument                       | active style preset                                  |
+| `dartwork_mpl.constant` module        | `dartwork_mpl.units` + width / aspect API            |
+| `plt.tight_layout()`                  | `dm.auto_layout(fig)`                                |
+| `dartwork_mpl.agent_utils`            | `dartwork_mpl.helpers`                               |
+| `dartwork_mpl.xplot`                  | `dartwork_mpl.templates`                             |
+| `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`                        |
+| `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`                           |
+
+## `dm.subplots` / `dm.figure` removal
+
+Both `dm.subplots` and `dm.figure` were removed. The package no
+longer wraps `plt.subplots` / `plt.figure`; instead it ships a
+single sizing helper that can be passed directly to matplotlib's
+own `figsize=` argument:
+
+```python
+# Before
+import dartwork_mpl as dm
+
+fig, ax = dm.subplots(width="13cm", aspect="standard", style="scientific")
+
+# Now
+import matplotlib.pyplot as plt
+
+import dartwork_mpl as dm
+
+dm.style.use("scientific")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+```
+
+Other `dm.subplots` keyword arguments (`sharex`, `sharey`,
+`width_ratios`, `height_ratios`, `gridspec_kw`, `subplot_kw`,
+`squeeze`, `nrows`, `ncols`) move to `plt.subplots` unchanged. The
+`style=` kwarg is gone — call `dm.style.use(...)` (or
+`dm.style.stack([...])`) before constructing the figure.
+
+`dm.figsize(width, aspect)` rejects bare `int` / `float` widths
+explicitly — pass a unit string (`"13cm"`, `"5in"`, `"170mm"`) or an
+`Inches` value (`dm.cm(13)`, `dm.col1`, `dm.col2`) so the unit is
+always visible at the call site. The `raw-width-number` lint rule
+catches stragglers.
+
+The two-pass migrator at `dm.lint.migrate_legacy_code` inserts a
+`# TODO(dm-migrate):` hint above each `dm.subplots` / `dm.figure`
+call so an agent can rewrite them in one sweep.
 
 ## v0.4.x → v0.5.0 — API audit round 3 (#141)
 
@@ -67,6 +111,12 @@ ax.yaxis.set_major_formatter(formatter)   # or ax.xaxis for axis="x"
 ```
 
 ## v0.3.x → v0.4.0
+
+> [!NOTE]
+> dartwork-mpl has since evolved further: `dm.subplots` and
+> `dm.figure` themselves were removed. The snippets below describe
+> the *0.4-era* idiom; for the modern call form, see the top section
+> of this guide.
 
 0.4 reshapes the figure-creation surface around two ideas:
 
@@ -156,22 +206,6 @@ fig, ax = dm.subplots(width="13cm", aspect=0.6)
 
 `validate_figure` warns on extreme aspects (< 0.3 or > 4.0).
 
-### `plt.subplots` → `dm.subplots`
-
-```python
-# DEPRECATED — fires `plt-subplots-figsize` lint critical when
-# combined with a figsize= argument
-fig, axes = plt.subplots(2, 2, figsize=(dm.DW, dm.DW * 0.5))
-
-# 0.4
-fig, axes = dm.subplots(2, 2, width="17cm", aspect=0.5)
-```
-
-`dm.subplots` forwards everything else (`sharex`, `sharey`,
-`width_ratios`, `height_ratios`, `gridspec_kw`, `subplot_kw`,
-`squeeze`) straight through to matplotlib. The `style=` argument
-also still works, e.g. `dm.subplots(width="13cm", style="report-kr")`.
-
 ### `tight_layout` → `auto_layout`
 
 ```python
@@ -218,11 +252,11 @@ and v0.3.x sections below for the canonical replacements.
 ### "Zero-Resize Policy" wording is retired
 
 Pre-0.4 docs framed figure sizing as a "Zero-Resize Policy"
-enforced by the style preset. 0.4 replaces that with **free width
+enforced by the style preset. dartwork-mpl now uses **free width
 input plus a lint consistency guard** (the `oversize-width` and
-`width-token` rules). Any project rule that still cites the
-"Zero-Resize Policy" should be rewritten in terms of `dm.subplots`
-+ `dm.lint`.
+`raw-width-number` rules). Any project rule that still cites the
+"Zero-Resize Policy" should be rewritten in terms of
+`plt.subplots(figsize=dm.figsize(...))` + `dm.lint`.
 
 ### New: `dm.lint`
 
@@ -335,28 +369,6 @@ dm.plot_fonts()
 
 These additions don't *require* migration but pay off if you bump
 into them:
-
-### `dm.subplots()` / `dm.figure()`
-
-Apply a style during figure creation, in one call:
-
-```python
-# Before
-dm.style.use("scientific")
-fig, ax = plt.subplots()
-
-# After
-fig, ax = dm.subplots(width="13cm", style="scientific")
-```
-
-Stack styles or override defaults inline:
-
-```python
-fig, axes = dm.subplots(
-    2, 2, width="17cm", aspect=0.5,
-    style=["font-libertine", "theme-dark"],
-)
-```
 
 ### `dm.auto_layout(fig)`
 

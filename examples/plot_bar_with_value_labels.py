@@ -22,7 +22,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 dm.style.use("report")
 
-fig, ax = dm.subplots(width="13cm", aspect="wide")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 
 # Generic categorical data — four arbitrary groups.
 categories = ["Group A", "Group B", "Group C", "Group D"]

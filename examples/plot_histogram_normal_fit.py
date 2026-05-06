@@ -28,7 +28,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 dm.style.use("report")
 
-fig, ax = dm.subplots(width="9cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
 
 rng = np.random.default_rng(42)
 data = rng.normal(100, 15, 1000)

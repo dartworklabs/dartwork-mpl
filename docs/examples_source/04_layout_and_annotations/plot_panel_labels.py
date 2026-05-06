@@ -16,7 +16,7 @@ dm.style.use("scientific")
 
 # 0.4 API: 2×2 uniform grid at the journal-friendly double-column
 # width (17 cm = dm.col2) with a standard h/w ratio per panel.
-fig, axes = dm.subplots(2, 2, width="17cm", aspect="standard")
+fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"))
 
 np.random.seed(0)
 for ax in axes.flat:

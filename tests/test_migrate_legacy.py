@@ -19,10 +19,10 @@ class TestSafeSubstitutions:
         assert 'dm.style.use("scientific")' in out
         assert "plt.style.use" not in out
 
-    def test_plt_subplots_becomes_dm_subplots(self) -> None:
+    def test_plt_subplots_unchanged(self) -> None:
+        # ``plt.subplots`` is the new canonical entry point — no rewrite.
         out = migrate_legacy_code("fig, ax = plt.subplots()")
-        assert "dm.subplots()" in out
-        assert "plt.subplots(" not in out
+        assert out == "fig, ax = plt.subplots()"
 
     def test_safe_pass_does_not_add_hint_comments(self) -> None:
         out = migrate_legacy_code("x = dm.cm2in(9)\n")
@@ -42,7 +42,7 @@ class TestHintComments:
         out = migrate_legacy_code("size = dm.FS_SINGLE")
         assert "TODO(dm-migrate)" in out
         assert "dm.FS_*" in out
-        assert "dm.subplots" in out
+        assert "dm.figsize" in out
 
     def test_widths_dict_gets_hint(self) -> None:
         out = migrate_legacy_code('w = dm.WIDTHS["SW"]')
@@ -51,11 +51,11 @@ class TestHintComments:
 
     def test_figsize_literal_gets_hint(self) -> None:
         out = migrate_legacy_code("fig, ax = plt.subplots(figsize=(8, 6))")
-        # plt.subplots → dm.subplots was applied (safe), but the
-        # ``figsize=`` literal still needs a hint.
-        assert "dm.subplots" in out
+        # ``plt.subplots`` itself is fine — it's the raw ``figsize=(w,h)``
+        # tuple that needs a hint pointing at ``dm.figsize(...)``.
+        assert "dm.figsize" in out
         assert "TODO(dm-migrate)" in out
-        assert "figsize=" in out  # original kept
+        assert "figsize=(8, 6)" in out  # original kept
 
     def test_tight_layout_gets_hint(self) -> None:
         out = migrate_legacy_code("plt.tight_layout()")
@@ -72,6 +72,15 @@ class TestHintComments:
         out = migrate_legacy_code("dm.xplot.bar(ax, x, y)")
         assert "TODO(dm-migrate)" in out
         assert "dm.xplot" in out
+
+    def test_dm_subplots_gets_hint(self) -> None:
+        # ``dm.subplots`` and ``dm.figure`` were removed; the migrator
+        # leaves the call in place but flags it for the agent to rewrite
+        # to ``plt.subplots(figsize=dm.figsize(...))``.
+        out = migrate_legacy_code('fig, ax = dm.subplots(width="13cm")')
+        assert "TODO(dm-migrate)" in out
+        assert "plt.subplots(figsize=dm.figsize" in out
+        assert 'dm.subplots(width="13cm")' in out  # original kept
 
     def test_indent_is_preserved_in_hint(self) -> None:
         out = migrate_legacy_code("    w = dm.SW\n")
@@ -93,7 +102,7 @@ class TestPassThrough:
         modern = (
             "import dartwork_mpl as dm\n"
             'dm.style.use("scientific")\n'
-            'fig, ax = dm.subplots(width="9cm", aspect="standard")\n'
+            'fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))\n'
             "dm.auto_layout(fig)\n"
         )
         assert migrate_legacy_code(modern) == modern

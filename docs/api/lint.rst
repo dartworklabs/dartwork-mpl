@@ -39,8 +39,12 @@ file edit; the lint engine reloads it on call.
 Catalog highlights
 ------------------
 
-- ``figsize-direct`` — `figsize=` is forbidden; use
-  ``dm.subplots(width=..., aspect=...)``.
+- ``figsize-direct`` — raw ``figsize=(w, h)`` tuples are forbidden;
+  use ``figsize=dm.figsize("<n>cm", "<aspect>")``.
+- ``dm-subplots-removed`` — ``dm.subplots`` / ``dm.figure`` were
+  removed; use ``plt.subplots(figsize=dm.figsize(...))``.
+- ``raw-width-number`` — bare numbers passed to ``dm.figsize`` are
+  rejected because they carry no unit.
 - ``tight-layout`` — ``plt.tight_layout()`` is forbidden; use
   ``dm.auto_layout(fig)``.
 - ``width-token`` — deprecated 0.3 width tokens

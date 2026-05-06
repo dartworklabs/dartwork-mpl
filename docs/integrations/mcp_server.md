@@ -338,7 +338,7 @@ Here are specific examples of how an AI assistant behaves differently when the `
 
 1. **Zero-shot accurate coding**
    - **You ask:** _"I need a bar chart for a Korean research paper."_
-   - **MCP in action:** The assistant reads the `agent-entry` resource and immediately outputs correct code using `dm.subplots(style=['lang-kr'])`.
+   - **MCP in action:** The assistant reads the `agent-entry` resource and immediately outputs correct code calling `dm.style.use('lang-kr')` followed by `plt.subplots(figsize=dm.figsize(...))`.
 
 2. **Automated layout debugging**
    - **You ask:** _"I used simple_layout but my legend is overlapping the plot."_

@@ -1,4 +1,4 @@
-# dartwork-mpl 0.4 Policy
+# dartwork-mpl Policy
 
 Rules in this document are split into two tiers:
 
@@ -11,18 +11,20 @@ Rules in this document are split into two tiers:
 
 ## Width
 
-- **Enforced.** `dm.subplots(width=...)` is the only legal way to set
-  a figure width.
-- **Enforced.** `figsize=` is forbidden (lint critical; will be
-  removed in 0.5.0).
-- `width=` accepts:
+- **Enforced.** `plt.subplots(figsize=dm.figsize(width, aspect))` is
+  the only legal way to size a figure. `dm.subplots` and `dm.figure`
+  were removed (lint critical: `dm-subplots-removed`).
+- **Enforced.** Raw `figsize=(w, h)` tuples are forbidden — always
+  go through `dm.figsize` (lint critical: `figsize-direct`).
+- `width` accepts:
   - a unit-suffixed string: `"13cm"`, `"9.5cm"`, `"6.7in"`, `"170mm"`
-  - a helper call: `dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`
+  - an `Inches` value: `dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`
     (these return `Inches`, a `float` subclass that `parse_width`
     treats as already-converted, so `dm.cm(9) * 2` stays in inches)
-  - a raw number: `13` (interpreted as cm)
   - the academic sugar constants `dm.col1` (= 9 cm) or `dm.col2`
     (= 17 cm).
+- **Enforced.** Bare `int` / `float` widths are rejected (lint
+  critical: `raw-width-number`) — the unit must always be explicit.
 - **Enforced.** Keep widths at or below 17 cm — most page layouts
   break beyond that (lint warning: `oversize-width`).
 - **Recommended.** Snap widths to the 0.5 cm grid (9.0, 9.5, 10.0…)
@@ -89,8 +91,8 @@ Rules in this document are split into two tiers:
 
 ## Style presets
 
-- Apply via `dm.style.use("scientific")` or pass a stack to
-  `dm.subplots(style=[...])`.
+- Apply via `dm.style.use("scientific")` (or
+  `dm.style.stack([...])` for a stack).
 - Korean text → `*-kr` variants (`scientific-kr`, `report-kr`,
   `presentation-kr`).
 - Never call `plt.style.use(...)`.

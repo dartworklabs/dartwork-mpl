@@ -15,7 +15,7 @@ Example
    import numpy as np
    import dartwork_mpl as dm
 
-   fig, axes = dm.subplots(1, 3, width=dm.col2, aspect=0.35)
+   fig, axes = plt.subplots(1, 3, figsize=dm.figsize(dm.col2, 0.35))
    for ax in axes:
        ax.plot(np.linspace(0, 1, 40), np.random.rand(40), color='oc.blue6')
 

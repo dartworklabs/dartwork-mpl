@@ -23,7 +23,7 @@ import dartwork_mpl as dm
 
 dm.style.use("presentation")
 
-fig, ax = dm.subplots(width="8cm", aspect="wide")
+fig, ax = plt.subplots(figsize=dm.figsize("8cm", "wide"))
 ax.plot([0, 1, 2], [1, 2, 1.5], marker="o", color="oc.green5", label="oc.*")
 ax.plot([0, 1, 2], [1.2, 1.6, 2.1], marker="s", color="tw.blue500", label="Tailwind")
 highlight = dm.mix_colors("md.orange600", "white", alpha=0.45)

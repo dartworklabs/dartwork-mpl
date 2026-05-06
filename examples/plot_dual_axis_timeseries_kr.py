@@ -19,7 +19,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 dm.style.use("report-kr")
 
-fig, ax = dm.subplots(width="13cm", aspect="wide")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
 
 # 월별 합성 데이터 (임의 단위).
 dates = np.arange("2024-01", "2025-01", dtype="datetime64[M]")

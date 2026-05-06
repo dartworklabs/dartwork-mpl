@@ -51,9 +51,6 @@ from .diagnostics import (
 # Explore
 from .explore import list_colormaps, list_palettes, show_palette
 
-# Figure creation
-from .figure import figure, subplots
-
 # Formatting utilities
 from .formatting import (
     format_axis_billions,
@@ -98,7 +95,7 @@ from .style import Style, list_styles, load_style_dict, style, style_path
 from .templates import plot_diverging_bar
 
 # Unit helpers (0.4+: free-form width input)
-from .units import Inches, cm, inch, mm
+from .units import Inches, cm, figsize, inch, mm
 
 # Color utilities
 from .util import make_offset, mix_colors, pseudo_alpha, set_decimal
@@ -181,6 +178,7 @@ __all__ = [  # noqa: RUF022
     "col1",
     "col2",
     "Inches",
+    "figsize",
     # Units (legacy helpers, kept for compatibility)
     "make_offset",
     # Formatting
@@ -198,9 +196,6 @@ __all__ = [  # noqa: RUF022
     "list_palettes",
     "list_colormaps",
     "show_palette",
-    # Figure creation
-    "figure",
-    "subplots",
     # Spine and grid utilities
     "style_spines",
     "add_grid",

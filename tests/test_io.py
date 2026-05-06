@@ -104,7 +104,7 @@ class TestSaveFormatsNonAscii:
     def test_korean_filename_round_trip(self, tmp_path) -> None:
         import dartwork_mpl as dm
 
-        fig, ax = dm.subplots(width="9cm", aspect="standard")
+        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
         ax.plot([1, 2, 3], [1, 4, 9])
         ax.set_ylabel("값")
         ax.set_xlabel("순번")

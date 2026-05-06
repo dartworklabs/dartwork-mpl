@@ -1,5 +1,6 @@
 """Filled contour plot of sin(x) cos(y)."""
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import dartwork_mpl as dm
@@ -9,7 +10,7 @@ y = np.linspace(-3, 3, 100)
 X, Y = np.meshgrid(x, y)
 Z = np.sin(X) * np.cos(Y)
 
-fig, ax = dm.subplots(width="11cm", aspect="square")
+fig, ax = plt.subplots(figsize=dm.figsize("11cm", "square"))
 cs = ax.contourf(X, Y, Z, levels=20, cmap="viridis")
 fig.colorbar(cs, ax=ax)
 ax.set_xlabel("x")

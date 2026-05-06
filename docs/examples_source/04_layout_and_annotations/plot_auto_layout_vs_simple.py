@@ -23,7 +23,7 @@ dm.style.use("scientific")
 x = np.linspace(0, 10, 100)
 y1 = np.sin(x) + 0.1 * np.random.randn(100)
 
-fig, (ax3, ax4) = dm.subplots(1, 2, width="16cm", aspect="cinema")
+fig, (ax3, ax4) = plt.subplots(1, 2, figsize=dm.figsize("16cm", "cinema"))
 
 for ax in [ax3, ax4]:
     ax.plot(x, y1, color="oc.green5", lw=dm.lw(1))

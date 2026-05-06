@@ -271,14 +271,14 @@ def register_tools(mcp: FastMCP) -> None:
         Two passes are applied:
 
         1. **Safe substitutions**: ``dm.cm2in`` → ``dm.cm``,
-           ``plt.style.use`` → ``dm.style.use``,
-           ``plt.subplots`` → ``dm.subplots``.
+           ``plt.style.use`` → ``dm.style.use``.
         2. **Hint comments** are inserted above lines using the
            context-dependent patterns the agent must rewrite by hand —
            the deprecated width tokens (``dm.SW``/``MW``/``TW``/``DW``,
-           ``dm.FS_*``, ``dm.WIDTHS[...]``), bare ``figsize=`` literals,
-           ``tight_layout()`` calls, and the removed
-           ``dm.agent_utils`` / ``dm.xplot`` namespaces.
+           ``dm.FS_*``, ``dm.WIDTHS[...]``), the removed
+           ``dm.subplots`` / ``dm.figure`` calls, bare
+           ``figsize=(w, h)`` tuples, ``tight_layout()`` calls, and the
+           removed ``dm.agent_utils`` / ``dm.xplot`` namespaces.
 
         The output is always returned (never raises). Run
         :func:`lint_dartwork_mpl_code_json` on the result to confirm no
@@ -413,9 +413,10 @@ def register_tools(mcp: FastMCP) -> None:
                 "description": "Publication-quality matplotlib design system",
                 "design_rules": {
                     "width_aspect": (
-                        "Use dm.subplots(width='13cm', aspect='standard'). "
-                        "width accepts cm/in/mm strings, dm.cm/inch/mm "
-                        "helpers, or a raw number (cm). aspect is one of "
+                        "Use plt.subplots(figsize=dm.figsize('13cm', 'standard')). "
+                        "width accepts unit strings (cm/in/mm) or Inches "
+                        "values (dm.cm/inch/mm, dm.col1, dm.col2); bare "
+                        "int/float are rejected. aspect is one of "
                         "{square, portrait, standard, golden, wide, "
                         "cinema} or a positive float."
                     ),

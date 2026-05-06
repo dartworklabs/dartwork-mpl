@@ -13,7 +13,7 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 
-fig, ax = dm.subplots(width="9cm", aspect="golden")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "golden"))
 
 categories = ["Group A", "Group B", "Group C", "Group D", "Group E"]
 values = [4.2, 7.1, 3.8, 5.5, 8.9]

@@ -1,5 +1,6 @@
 """Grouped (dodged) bar chart with three series per category."""
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import dartwork_mpl as dm
@@ -9,7 +10,7 @@ series_a = [20, 35, 30, 35]
 series_b = [25, 32, 34, 20]
 series_c = [15, 18, 22, 28]
 
-fig, ax = dm.subplots(width="15cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("15cm", "standard"))
 x = np.arange(len(categories))
 bar_width = 0.27
 ax.bar(x - bar_width, series_a, bar_width, label="Series A", color="oc.blue5")

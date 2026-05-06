@@ -25,7 +25,7 @@ y2 = np.exp(-x / 5) * np.cos(2 * x)
 y3 = x + 0.5 * np.random.randn(100)
 
 dm.style.use("scientific")
-fig, axes = dm.subplots(2, 2, width="16cm", aspect="standard")
+fig, axes = plt.subplots(2, 2, figsize=dm.figsize("16cm", "standard"))
 
 # Nature / Science: minimal axes + faint y-grid.
 ax1 = axes[0, 0]

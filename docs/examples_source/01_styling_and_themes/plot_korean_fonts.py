@@ -13,7 +13,7 @@ import dartwork_mpl as dm
 
 dm.style.use("report-kr")
 
-fig, ax = dm.subplots(width="9cm", aspect="golden")
+fig, ax = plt.subplots(figsize=dm.figsize("9cm", "golden"))
 
 categories = ["서울", "부산", "인천", "대구", "광주"]
 values = [9.4, 3.3, 2.9, 2.3, 1.4]

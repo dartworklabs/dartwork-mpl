@@ -14,14 +14,14 @@ Enhanced matplotlib styling, color management, and utility library engineered by
 > **AI coding assistants**: read [`CLAUDE.md`](CLAUDE.md) (or [`AGENTS.md`](AGENTS.md)) at the repo root for the 30-second onboarding. The link index follows the [llmstxt.org](https://llmstxt.org) spec at [`llms.txt`](llms.txt); a single-file concatenated dump is at [`llms-full.txt`](llms-full.txt).
 
 > [!IMPORTANT]
-> **Migrating from 0.3.x?** dartwork-mpl 0.4.1+ has **removed** the deprecated 0.3 names (`dm.SW`/`MW`/`TW`/`DW`, `dm.FS_*`, `dm.WIDTHS`, `dm.cm2in`, `dm.agent_utils`, `dm.xplot`, and the `figsize=`/`dpi=` arguments on `dm.subplots`/`dm.figure`). Each access path now raises `AttributeError` / `ModuleNotFoundError` / `TypeError` with a message naming the new API. See [`docs/migration.md`](docs/migration.md) and the [CHANGELOG](CHANGELOG.md) for the full mapping (most calls become `dm.subplots(width="...cm", aspect="...")` or `dm.col1` / `dm.col2`).
+> **Migrating from earlier dartwork-mpl?** Both the 0.3 names (`dm.SW`/`MW`/`TW`/`DW`, `dm.FS_*`, `dm.WIDTHS`, `dm.cm2in`, `dm.agent_utils`, `dm.xplot`) and the 0.4-era figure constructors (`dm.subplots`, `dm.figure`) have been **removed**. Each old access path now raises `AttributeError` / `ModuleNotFoundError` / `TypeError` with a message naming the new API. The canonical pattern is `plt.subplots(figsize=dm.figsize("<n>cm", "<aspect>"))` paired with a separate `dm.style.use(...)`. See [`docs/migration.md`](docs/migration.md) and the [CHANGELOG](CHANGELOG.md) for the full mapping.
 
 <br/>
 
 ## Features
 
 - **Style Presets**: Apply curated themes (`scientific`, `report`, `presentation`) with one call.
-- **Width × Aspect Geometry**: `dm.subplots(width="13cm", aspect="standard")` — pick a physical width (cm/in/mm) and one of six aspect tokens (`square / portrait / standard / golden / wide / cinema`); height is derived. No more `figsize` math.
+- **Width × Aspect Geometry**: `plt.subplots(figsize=dm.figsize("13cm", "standard"))` — pick a physical width (cm/in/mm) and one of six aspect tokens (`square / portrait / standard / golden / wide / cinema`); height is derived. No more raw `figsize=(w, h)` math.
 - **Advanced Color System**: Named color palettes (`oc.*`, `tw.*`, `md.*`, `ad.*`, `cu.*`, `pr.*`) plus a `Color` class supporting OKLab / OKLCH / RGB / hex color spaces with perceptual interpolation via `cspace()`.
 - **Smart Layout**: `auto_layout(fig)` is the default content-aware margin pass; `simple_layout(fig, gs=gs)` is the L-BFGS-B optimizer for advanced GridSpec cases. Both replace `tight_layout()`.
 - **Scaling Helpers**: Relative font size (`fs`), font weight (`fw`), and line width (`lw`) that respect the active style preset.
@@ -59,13 +59,15 @@ pip install git+https://github.com/dartworklabs/dartwork-mpl
 ### Quick Start
 
 ```python
+import matplotlib.pyplot as plt
+
 import dartwork_mpl as dm
 
 dm.style.use('scientific')
 
-# Pick the physical width (cm/in/mm) and an aspect token. height
+# Pick the physical width (cm/in/mm) and an aspect token. Height
 # follows from aspect, so you never hand-tune figsize.
-fig, ax = dm.subplots(width='13cm', aspect='standard')
+fig, ax = plt.subplots(figsize=dm.figsize('13cm', 'standard'))
 ax.plot(x, y, color='oc.blue5', lw=dm.lw(0))
 ax.set_xlabel('Time [s]')
 
@@ -73,11 +75,14 @@ dm.auto_layout(fig)
 dm.save_formats(fig, 'output/figure', formats=('svg', 'png'))
 ```
 
-`width=` accepts unit-suffixed strings (`"13cm"`, `"6.7in"`, `"170mm"`),
-helper calls (`dm.cm(11.3)`, `dm.inch(4.6)`), or a raw number (cm).
-The academic-column shortcuts `dm.col1` (9 cm) and `dm.col2` (17 cm)
-are also available. `aspect=` is one of `square / portrait / standard /
-golden / wide / cinema`, or any positive float.
+`dm.figsize(width, aspect)` returns the inch tuple matplotlib's
+`figsize=` expects. `width` accepts unit-suffixed strings (`"13cm"`,
+`"6.7in"`, `"170mm"`) or `Inches` values from the helper calls
+(`dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`); the academic-column
+shortcuts `dm.col1` (9 cm) and `dm.col2` (17 cm) work too. Bare
+`int` / `float` are rejected so the unit is always explicit.
+`aspect` is one of `square / portrait / standard / golden / wide /
+cinema`, or any positive float.
 
 <br/>
 
@@ -155,10 +160,11 @@ dm.col1          # 9 cm  — academic single-column sugar
 dm.col2          # 17 cm — academic two-column sugar
 ```
 
-> **Migrating from 0.3?** `dm.SW / MW / TW / DW`, `FS_*`, `cm2in`,
-> `agent_utils`, and `xplot` are deprecated and emit a lint warning.
-> Replace `figsize=(dm.cm2in(13), dm.cm2in(9.75))` with
-> `dm.subplots(width="13cm", aspect="standard")`.
+> **Migrating?** Replace `figsize=(dm.cm2in(13), dm.cm2in(9.75))` and
+> `dm.subplots(width="13cm", aspect="standard")` with
+> `plt.subplots(figsize=dm.figsize("13cm", "standard"))`. The legacy
+> aliases (`SW / MW / TW / DW`, `FS_*`, `cm2in`, `agent_utils`,
+> `xplot`, `dm.subplots`, `dm.figure`) all raise at access time now.
 
 ### Visual Validation
 
@@ -218,7 +224,7 @@ class Params(ParamModel):
     alpha: float = Field(default=0.5, ge=0, le=1)
 
 def my_plot(params: Params):
-    fig, ax = dm.subplots(width="13cm", aspect="standard")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.scatter(range(params.n), np.random.randn(params.n), alpha=params.alpha)
     return fig
 
@@ -321,8 +327,7 @@ After saving, restart the client (or start a new conversation) and ask the assis
 src/dartwork_mpl/
 ├── __init__.py             # Public API exports + lazy 0.3 alias shim
 ├── py.typed                # PEP 561 type marker
-├── figure.py               # subplots(), figure() with width/aspect API
-├── units.py                # cm/inch/mm, col1/col2, parse_width/parse_aspect
+├── units.py                # cm/inch/mm, col1/col2, figsize, parse_width/parse_aspect
 ├── style.py                # Style class + preset management
 ├── color/                  # Color class (OKLab/OKLCH/RGB/hex) + palettes
 ├── layout.py               # auto_layout(), simple_layout(), label_axes()

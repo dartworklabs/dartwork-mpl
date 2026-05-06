@@ -24,7 +24,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = dm.subplots(width="18cm", aspect="square")
+fig, ax = plt.subplots(figsize=dm.figsize("18cm", "square"))
 
 
 def fibonacci_spiral(n_points=1000):

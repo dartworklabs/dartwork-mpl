@@ -74,19 +74,21 @@ Generate a complete Python script that creates the following plot:
 
 **Description**: {description}
 {data_section}
-## Mandatory Rules (0.4 surface)
-1. **Import**: `import dartwork_mpl as dm` (and `import matplotlib.pyplot as plt` only if you actually need a `plt.colorbar` etc.).
-2. **Figure creation**: Use `dm.subplots(width="13cm", aspect="standard")` or `dm.figure(width=..., aspect=...)`. Do NOT use `plt.subplots` / `plt.figure` (lint id `plt-subplots`). `width` accepts `"<n>cm"`, `"<n>in"`, `"<n>mm"`, `dm.cm(n)` / `dm.inch(n)` / `dm.mm(n)`, or a raw number (cm). `aspect` is one of `square / portrait / standard / golden / wide / cinema`, or a positive float.
-3. **No `figsize` and no `dpi` argument** on figure/subplots calls (lint ids `figsize-direct`, `dpi-arg`). Width and aspect are decided separately so report-wide width consistency can be enforced; dpi is governed by the active style preset.
+## Mandatory Rules
+1. **Import**: `import matplotlib.pyplot as plt` and `import dartwork_mpl as dm`.
+2. **Figure creation**: Use native matplotlib paired with `dm.figsize`:
+   `fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))`.
+   `dm.figsize(width, aspect)` accepts `width` as a unit string (`"13cm"`, `"5in"`, `"170mm"`) or an `Inches` value (`dm.cm(13)`, `dm.col1`, `dm.col2`). Bare `int` / `float` are rejected (lint id `raw-width-number`). `aspect` is a token in `square / portrait / standard / golden / wide / cinema` or a positive float.
+3. **No raw `figsize=(w, h)` tuple** and no `dpi=` argument on `plt.subplots` / `plt.figure` (lint ids `figsize-direct`, `dpi-arg`). Always go through `dm.figsize`; dpi is governed by the active style preset.
 4. **Layout**: Call `dm.auto_layout(fig)` after data is plotted. `dm.simple_layout(fig)` is reserved for advanced GridSpec cases that `auto_layout` cannot fit. Do NOT call `tight_layout` (lint id `tight-layout`).
-5. **No `plt.style.use`** anywhere — use `dm.style.use(...)` or pass `style=[...]` to `dm.subplots` (lint id `plt-style-use`).
+5. **Style**: apply via `dm.style.use("scientific")` (or `dm.style.stack([...])` for a stack). No `plt.style.use` anywhere (lint id `plt-style-use`).
 6. **Colors**: prefer named palettes — `oc.*` (Open Color), `tw.*` (Tailwind), `dc.*` (dartwork core), `md.*`, `ad.*`, `cu.*`, `pr.*`. Raw hex works but triggers a lint info.
 7. **Fonts / weights / line widths**: do NOT pass literal `fontsize=` numbers. Use `dm.fs(n)` / `dm.fw(n)` / `dm.lw(n)` offsets from the active style.
 8. **Save**: end the script with `dm.save_formats(fig, "name", formats=("png", "pdf"), dpi=300)` (scripts) or `dm.save_and_show(fig, "name")` (notebooks). Do not stop at `plt.show` — the rendered artifact must be persisted (lint id `plt-show-only`).
-9. **Width tokens**: the legacy width aliases under `dm` (the SW / MW / TW / DW / FS_* / WIDTHS family) were REMOVED in 0.4.0 — accessing them now raises `AttributeError` (lint id `deprecated-width-token`). Use `width="<n>cm"` plus an aspect token, or `dm.col1` / `dm.col2` for academic columns.
+9. **Removed names**: `dm.subplots`, `dm.figure`, and the legacy width aliases (`dm.SW / MW / TW / DW / FS_* / WIDTHS`) raise `AttributeError` (lint ids `dm-subplots-removed`, `deprecated-width-token`). Use `plt.subplots(figsize=dm.figsize(...))` and `dm.col1` / `dm.col2` for academic columns.
 
 ## Style presets (composite, recommended)
-Apply via `dm.style.use("scientific")` or pass a stack to `dm.subplots(style=[...])`.
+Apply via `dm.style.use("scientific")` (or `dm.style.stack([...])` for a stack).
 
 - `scientific` — journal paper defaults
 - `report` — technical reports
@@ -108,9 +110,12 @@ Apply via `dm.style.use("scientific")` or pass a stack to `dm.subplots(style=[..
 
 ## Skeleton
 ```python
+import matplotlib.pyplot as plt
+
 import dartwork_mpl as dm
 
-fig, ax = dm.subplots(width="13cm", aspect="standard")
+dm.style.use("scientific")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 # ... plot data on `ax` using named colors ...
 ax.set_xlabel("...")
 ax.set_ylabel("...")
@@ -143,16 +148,17 @@ Generate clean, well-commented code that follows these rules strictly. Run the r
 Check the code against ALL of these rules and provide fixes. Each rule maps to a lint id you can confirm by calling `lint_dartwork_mpl_code(code)`.
 
 ### Critical (Must Fix)
-- [ ] Uses `dm.subplots(width=..., aspect=...)` (or `dm.figure(width=..., aspect=...)`) instead of `plt.subplots` / `plt.figure` (`plt-subplots`).
-- [ ] No literal `figsize` argument anywhere — width and aspect must be set via `dm.subplots` / `dm.figure` (`figsize-direct`).
+- [ ] Figure construction uses `plt.subplots(figsize=dm.figsize("<n>cm", "<aspect>"))` (or `plt.figure(figsize=dm.figsize(...))`). The legacy `dm.subplots` / `dm.figure` were REMOVED (`dm-subplots-removed`).
+- [ ] No raw `figsize=(w, h)` tuple — wrap with `dm.figsize(...)` (`figsize-direct`).
+- [ ] No bare `int`/`float` width passed to `dm.figsize` — use a unit string or an `Inches` value (`raw-width-number`).
 - [ ] No `tight_layout` call — use `dm.auto_layout(fig)` (or `dm.simple_layout(fig)` for advanced GridSpec cases) (`tight-layout`).
 
 ### Warning (Should Fix)
-- [ ] No `dpi=` argument on `plt.figure` / `plt.subplots` / `dm.subplots` / `dm.figure`. The active style controls dpi (`dpi-arg`).
-- [ ] No `plt.style.use` — call `dm.style.use(...)` or pass `style=[...]` to `dm.subplots` (`plt-style-use`).
-- [ ] No legacy width tokens (the SW / MW / TW / DW / FS_* / WIDTHS family on `dm`) — use `width="<n>cm"` plus an aspect token, or `dm.col1` / `dm.col2` for academic columns (`deprecated-width-token`).
-- [ ] No `cm2in`-based figsize idiom (legacy 0.3 pattern: `figsize` constructed from `dm.cm2in` calls). Use `width="<n>cm"` plus an aspect token instead (`cm2in-figsize`).
-- [ ] No mention of the retired sizing-policy slogan from 0.3 (lint id `zero-resize-mention`). 0.4 uses free-form width input plus a lint consistency guard.
+- [ ] No `dpi=` argument on `plt.figure` / `plt.subplots`. The active style controls dpi (`dpi-arg`).
+- [ ] No `plt.style.use` — call `dm.style.use(...)` or `dm.style.stack([...])` (`plt-style-use`).
+- [ ] No legacy width tokens (the SW / MW / TW / DW / FS_* / WIDTHS family on `dm`) — use `dm.figsize("<n>cm", "<aspect>")`, or `dm.col1` / `dm.col2` for academic columns (`deprecated-width-token`).
+- [ ] No `cm2in`-based figsize idiom (legacy 0.3 pattern: `figsize` constructed from `dm.cm2in` calls). Use `dm.figsize("<n>cm", "<aspect>")` instead (`cm2in-figsize`).
+- [ ] No mention of the retired sizing-policy slogan from 0.3 (lint id `zero-resize-mention`). dartwork-mpl uses free-form width input plus a lint consistency guard.
 
 ### Info (Recommend)
 - [ ] Script ends with `dm.save_formats(fig, "name", formats=("png", "pdf"), dpi=300)` or `dm.save_and_show(fig, "name")`, not a bare `plt.show` call (`plt-show-only`).

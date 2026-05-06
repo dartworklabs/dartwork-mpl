@@ -8,10 +8,11 @@ preset and is annotated with ``dm.label_axes()`` for automatic *(a)–(d)*
 panel indexing. Typography is unified via ``dm.fs()`` and ``dm.lw()``
 scaling helpers.
 
-The 0.4 API path is ``dm.figure(width=..., aspect=...)`` paired with a
-custom GridSpec when the inter-panel spacing needs hand-tuning. For a
-plain 2×2 with default spacing, ``dm.subplots(2, 2, width="17cm",
-aspect="standard")`` is the one-liner equivalent.
+The 0.4 API path is ``plt.figure(figsize=dm.figsize(...))`` paired with
+a custom GridSpec when the inter-panel spacing needs hand-tuning. For a
+plain 2×2 with default spacing,
+``plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"))`` is the
+one-liner equivalent.
 """
 
 import matplotlib.gridspec as gridspec
@@ -22,10 +23,10 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 
-# 0.4 API: dm.figure(width=..., aspect=...) for custom GridSpec layouts.
+# 0.4 API: plt.figure(figsize=dm.figsize(...)) for custom GridSpec layouts.
 # 17 cm × standard ≈ 6.69 × 5.01 in, the journal-page 2×2 footprint.
 np.random.seed(42)
-fig = dm.figure(width="17cm", aspect="standard")
+fig = plt.figure(figsize=dm.figsize("17cm", "standard"))
 gs = gridspec.GridSpec(2, 2, figure=fig, hspace=0.55, wspace=0.45)
 
 # ── (a) Line plot with error band ──

@@ -24,7 +24,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = dm.subplots(width="20cm", aspect="square")
+fig, ax = plt.subplots(figsize=dm.figsize("20cm", "square"))
 
 wells = [(0, 0, 1.5), (3, 2, 1.0), (-2, 3, 0.8), (1, -3, 1.2), (-3, -1, 0.9)]
 

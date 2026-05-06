@@ -1,5 +1,6 @@
 """Twin-axis chart: bars (precip) + line (temp)."""
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import dartwork_mpl as dm
@@ -8,7 +9,7 @@ x = np.arange(1, 13)
 temp = [5, 7, 12, 18, 23, 27, 30, 29, 24, 18, 11, 6]
 precip = [50, 40, 45, 55, 70, 80, 90, 85, 65, 60, 55, 50]
 
-fig, ax1 = dm.subplots(width="15cm", aspect="wide")
+fig, ax1 = plt.subplots(figsize=dm.figsize("15cm", "wide"))
 ax2 = ax1.twinx()
 ax1.bar(x, precip, color="oc.blue3", alpha=0.7, label="Precipitation")
 ax2.plot(

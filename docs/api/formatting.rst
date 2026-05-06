@@ -337,7 +337,7 @@ Formatting utilities work seamlessly with dartwork-mpl themes:
 
    # Apply theme first
    dm.style.use('scientific')
-   fig, ax = dm.subplots()
+   fig, ax = plt.subplots(figsize=dm.figsize('13cm', 'standard'))
 
    # Plot data
    ax.plot(data)

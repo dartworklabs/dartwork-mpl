@@ -18,7 +18,7 @@ periods = [f"T+{i}h" for i in range(8)]
 humidity = np.array([48, 55, 62, 70, 74, 71, 63, 57])
 target = 60.0
 
-fig = dm.figure(width="14.5cm", aspect=0.55)
+fig = plt.figure(figsize=dm.figsize("14.5cm", 0.55))
 gs = fig.add_gridspec(1, 1, left=0.12, right=0.96, top=0.88, bottom=0.2)
 ax = fig.add_subplot(gs[0, 0])
 

@@ -16,6 +16,7 @@ Source: ``dartwork_mpl/asset/prompt/05-templates/waterfall.py`` ·
 # tags: waterfall, bridge, finance, additive
 # ai-template-meta-end
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 import dartwork_mpl as dm
@@ -44,7 +45,7 @@ colors = [
     for d, total in zip(deltas, is_total, strict=False)
 ]
 
-fig, ax = dm.subplots(width="15cm", aspect="standard")
+fig, ax = plt.subplots(figsize=dm.figsize("15cm", "standard"))
 ax.bar(
     labels,
     heights,
