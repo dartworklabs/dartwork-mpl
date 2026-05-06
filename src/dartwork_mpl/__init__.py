@@ -95,14 +95,14 @@ from .style import Style, list_styles, load_style_dict, style, style_path
 from .templates import plot_diverging_bar
 
 # Unit helpers (0.4+: free-form width input)
-from .units import Inches, cm, figsize, inch, mm
+from .units import Length, cm, figsize, inch, length, mm, pt
 
 # Color utilities
 from .util import make_offset, mix_colors, pseudo_alpha, set_decimal
 
 # Academic column-width sugar (0.4+).
-col1: float = cm(9)
-col2: float = cm(17)
+col1: Length = cm(9)
+col2: Length = cm(17)
 
 # High-level composition helpers (T2 in the AI-readiness roadmap).
 # These wrap the lower-level primitives above so that AI agents and
@@ -175,9 +175,11 @@ __all__ = [  # noqa: RUF022
     "cm",
     "inch",
     "mm",
+    "pt",
+    "length",
     "col1",
     "col2",
-    "Inches",
+    "Length",
     "figsize",
     # Units (legacy helpers, kept for compatibility)
     "make_offset",

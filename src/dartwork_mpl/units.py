@@ -1,8 +1,9 @@
-"""Free-form width and aspect parsing helpers.
+"""Free-form length and aspect parsing helpers.
 
 dartwork-mpl 0.4+ accepts user-supplied widths in physical units
-(cm/in/mm) rather than fixed tokens. This module is the parser
-that converts those inputs to inches for matplotlib.
+(cm/in/mm/pt) rather than fixed tokens. This module is the parser
+that converts those inputs into a :class:`Length` value matplotlib's
+``figsize=`` (and friends) can ultimately consume.
 
 It also resolves named aspect tokens (square/portrait/standard/
 golden/wide/cinema) into a height/width ratio.
@@ -13,13 +14,15 @@ from __future__ import annotations
 __all__ = [
     "ASPECT_TOKENS",
     "DEFAULT_ASPECT",
-    "Inches",
+    "Length",
     "cm",
     "figsize",
     "inch",
+    "length",
     "mm",
     "parse_aspect",
     "parse_width",
+    "pt",
 ]
 
 import difflib
@@ -28,8 +31,9 @@ import re
 
 CM_PER_INCH: float = 2.54
 MM_PER_INCH: float = 25.4
+PT_PER_INCH: float = 72.0  # PostScript point — matplotlib font/linewidth unit.
 
-_KNOWN_WIDTH_UNITS: tuple[str, ...] = ("cm", "in", "mm")
+_KNOWN_WIDTH_UNITS: tuple[str, ...] = ("cm", "in", "mm", "pt")
 
 # Common spellings AI agents emit when they meant the canonical short
 # form. Looked up before the difflib fallback so that obvious synonyms
@@ -45,6 +49,9 @@ _WIDTH_UNIT_SYNONYMS: dict[str, str] = {
     "millimeter": "mm",
     "millimeters": "mm",
     "mms": "mm",
+    "point": "pt",
+    "points": "pt",
+    "pts": "pt",
 }
 
 # Named aspect tokens: ratio = height / width.
@@ -64,89 +71,212 @@ _WIDTH_RE = re.compile(
     ^\s*
     (?P<value>[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)
     \s*
-    (?P<unit>cm|in|mm)?
+    (?P<unit>cm|in|mm|pt)?
     \s*$
     """,
     re.IGNORECASE | re.VERBOSE,
 )
 
 
-class Inches(float):
-    """A ``float`` carrying the contract "I am already inches.".
+class Length:
+    """Physical length with multi-unit views.
 
-    Returned by :func:`cm`, :func:`inch`, and :func:`mm` so that
-    :func:`parse_width` can distinguish "user already converted"
-    values from bare numbers (which carry no unit and are rejected).
+    Mirrors the :class:`~dartwork_mpl.color.Color` design: a single
+    opaque value internally stored in a canonical representation
+    (inches, the unit matplotlib's figsize already speaks), with
+    property views per unit (``length.cm``, ``length.mm``,
+    ``length.inch``, ``length.pt``).
 
-    Arithmetic with another scalar preserves the ``Inches`` tag —
-    ``dm.cm(9) * 2`` returns ``Inches(7.087)``, not a plain
-    ``float`` that downstream callers would have to re-interpret.
-    This closes a unit-corruption hole where doubled widths silently
-    decayed into ambiguous floats.
+    DPI-dependent units (``px``) are deliberately not exposed —
+    a caller that needs pixels can write ``length.inch * fig.dpi``
+    and keep the dependency explicit at the call site.
 
-    Setting ``__array_ufunc__ = None`` opts this class out of numpy
-    universal-function dispatch. Without it, ``np.float64(2) * cm(9)``
-    would route through numpy's multiply ufunc and return a bare
-    ``np.float64``, dropping the ``Inches`` tag and re-opening the
-    cm/inches corruption hole at array boundaries.
+    Parameters
+    ----------
+    value : str | Length
+        Either a parseable unit string (``"13cm"``, ``"5in"``,
+        ``"170mm"``, ``"24pt"``) or another :class:`Length`. Bare
+        ``int``/``float`` are rejected — they carry no unit and the
+        cm/inch ambiguity is exactly the bug this class exists to
+        prevent. Use :meth:`from_cm` / :meth:`from_inch` /
+        :meth:`from_mm` / :meth:`from_pt` (or the top-level wrappers
+        :func:`cm` / :func:`inch` / :func:`mm` / :func:`pt`) for
+        already-typed numeric input.
+
+    Examples
+    --------
+    >>> import dartwork_mpl as dm
+    >>> w = dm.Length("13cm")
+    >>> w.cm, w.mm, w.inch, w.pt
+    (13.0, 130.0, 5.118110236220472, 368.5039370078739)
     """
 
-    __slots__ = ()
-    __array_ufunc__ = None
+    __slots__ = ("_inch",)
 
-    def _wrap(self, value: float) -> Inches:
-        if isinstance(value, Inches):
-            return value
-        if isinstance(value, float):
-            return Inches(value)
-        # Defensive: ``float.__add__`` and friends return ``float``
-        # in practice, but the typeshed signature is broader.
-        return Inches(float(value))
+    def __init__(self, value: str | Length) -> None:
+        if isinstance(value, Length):
+            self._inch: float = value._inch
+            return
+        if isinstance(value, (bool, int, float)):
+            # ``bool`` is an ``int`` subclass; trap before the numeric
+            # branch so ``Length(True)`` and ``Length(1)`` produce the
+            # same TypeError.
+            raise TypeError(
+                f"Length(value) requires a unit string like '13cm' / "
+                f"'5in' / '170mm' / '24pt' or another Length. Got "
+                f"{type(value).__name__} {value!r} — bare numbers carry "
+                f"no unit. For 13 cm write Length('13cm') or dm.cm(13); "
+                f"for 13 inches write Length('13in') or dm.inch(13)."
+            )
+        if not isinstance(value, str):
+            raise TypeError(
+                f"Length(value) accepts str or Length (got "
+                f"{type(value).__name__})"
+            )
+        self._inch = _parse_unit_string(value)
 
-    def __add__(self, other: float) -> Inches:
-        return self._wrap(float.__add__(self, other))
+    # ------------------------------------------------------------------ #
+    # Constructors                                                        #
+    # ------------------------------------------------------------------ #
 
-    def __radd__(self, other: float) -> Inches:
-        return self._wrap(float.__radd__(self, other))
+    @classmethod
+    def from_cm(cls, value: float) -> Length:
+        """Construct from centimeters."""
+        return cls._from_inch(_validate_positive(value) / CM_PER_INCH)
 
-    def __sub__(self, other: float) -> Inches:
-        return self._wrap(float.__sub__(self, other))
+    @classmethod
+    def from_mm(cls, value: float) -> Length:
+        """Construct from millimeters."""
+        return cls._from_inch(_validate_positive(value) / MM_PER_INCH)
 
-    def __rsub__(self, other: float) -> Inches:
-        return self._wrap(float.__rsub__(self, other))
+    @classmethod
+    def from_inch(cls, value: float) -> Length:
+        """Construct from inches."""
+        return cls._from_inch(_validate_positive(value))
 
-    def __mul__(self, other: float) -> Inches:
-        return self._wrap(float.__mul__(self, other))
+    @classmethod
+    def from_pt(cls, value: float) -> Length:
+        """Construct from PostScript points (1 pt = 1/72 in)."""
+        return cls._from_inch(_validate_positive(value) / PT_PER_INCH)
 
-    def __rmul__(self, other: float) -> Inches:
-        return self._wrap(float.__rmul__(self, other))
+    @classmethod
+    def _from_inch(cls, inch_value: float) -> Length:
+        # Internal fast-path that skips str-parsing in __init__.
+        obj = cls.__new__(cls)
+        obj._inch = float(inch_value)
+        return obj
 
-    def __truediv__(self, other: float) -> Inches:
-        return self._wrap(float.__truediv__(self, other))
+    # ------------------------------------------------------------------ #
+    # Unit views                                                          #
+    # ------------------------------------------------------------------ #
 
-    def __rtruediv__(self, other: float) -> Inches:
-        return self._wrap(float.__rtruediv__(self, other))
+    @property
+    def cm(self) -> float:
+        """Length expressed in centimeters."""
+        return self._inch * CM_PER_INCH
 
-    def __neg__(self) -> Inches:
-        return Inches(float.__neg__(self))
+    @property
+    def mm(self) -> float:
+        """Length expressed in millimeters."""
+        return self._inch * MM_PER_INCH
 
-    def __abs__(self) -> Inches:
-        return Inches(float.__abs__(self))
+    @property
+    def inch(self) -> float:
+        """Length expressed in inches (the canonical internal unit)."""
+        return self._inch
+
+    @property
+    def pt(self) -> float:
+        """Length expressed in PostScript points (1 pt = 1/72 in)."""
+        return self._inch * PT_PER_INCH
+
+    def __repr__(self) -> str:
+        # Show cm at sub-decimeter scales, otherwise prefer inches —
+        # matches how users typically thought about the value at input.
+        if self._inch < 1.0:
+            return f"Length({self.cm:.4f}cm)"
+        return f"Length({self._inch:.4f}in)"
 
 
-def cm(value: float) -> Inches:
-    """Convert centimeters to inches."""
-    return Inches(float(value) / CM_PER_INCH)
+# ---------------------------------------------------------------------- #
+# Internal helpers                                                        #
+# ---------------------------------------------------------------------- #
 
 
-def inch(value: float) -> Inches:
-    """Identity helper — tags the value as already-in-inches."""
-    return Inches(float(value))
+def _validate_positive(value: float) -> float:
+    """Reject non-finite or non-positive numeric input with a clear message."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(
+            f"length value must be int or float (got {type(value).__name__})"
+        )
+    v = float(value)
+    if not math.isfinite(v) or v <= 0:
+        raise ValueError(f"length must be positive and finite (got {v})")
+    return v
 
 
-def mm(value: float) -> Inches:
-    """Convert millimeters to inches."""
-    return Inches(float(value) / MM_PER_INCH)
+def _parse_unit_string(value: str) -> float:
+    """Parse a unit string like ``"13cm"`` into inches."""
+    text = value.strip().strip('"').strip("'")
+    match = _WIDTH_RE.match(text)
+    if match is None:
+        raise ValueError(
+            f"could not parse length {value!r}; expected '<number>' "
+            f"with optional unit suffix (cm, in, mm, pt)."
+            f"{_suggest_width_correction(text)}"
+        )
+
+    number = float(match.group("value"))
+    unit = (match.group("unit") or "cm").lower()
+    if not math.isfinite(number) or number <= 0:
+        raise ValueError(f"length must be positive and finite (got {number})")
+
+    if unit == "cm":
+        return number / CM_PER_INCH
+    if unit == "in":
+        return number
+    if unit == "mm":
+        return number / MM_PER_INCH
+    return number / PT_PER_INCH  # pt
+
+
+# ---------------------------------------------------------------------- #
+# Top-level wrappers (mirror the Color module's oklab/oklch/rgb/hex)     #
+# ---------------------------------------------------------------------- #
+
+
+def cm(value: float) -> Length:
+    """Construct a :class:`Length` from centimeters."""
+    return Length.from_cm(value)
+
+
+def inch(value: float) -> Length:
+    """Construct a :class:`Length` from inches."""
+    return Length.from_inch(value)
+
+
+def mm(value: float) -> Length:
+    """Construct a :class:`Length` from millimeters."""
+    return Length.from_mm(value)
+
+
+def pt(value: float) -> Length:
+    """Construct a :class:`Length` from PostScript points."""
+    return Length.from_pt(value)
+
+
+def length(value: str | Length) -> Length:
+    """Parse a unit string (or pass through a Length) into :class:`Length`.
+
+    The string-parser counterpart to :func:`cm` / :func:`inch` /
+    :func:`mm` / :func:`pt`. Mirrors :func:`dartwork_mpl.color.hex`.
+    """
+    return Length(value)
+
+
+# ---------------------------------------------------------------------- #
+# Width / aspect / figsize parsers                                        #
+# ---------------------------------------------------------------------- #
 
 
 def _suggest_width_correction(text: str) -> str:
@@ -175,16 +305,15 @@ def _suggest_width_correction(text: str) -> str:
     return f" Use '<number>{_KNOWN_WIDTH_UNITS[0]}', '<number>in', or '<number>mm'."
 
 
-def parse_width(value: str | Inches) -> float:
+def parse_width(value: str | Length) -> float:
     """Parse a width specification into inches.
 
     Parameters
     ----------
-    value : str | Inches
-        A unit string like ``"9cm"``, ``"6.7in"``, ``"170mm"`` or an
-        :class:`Inches` value (returned by :func:`cm`/:func:`inch`/
-        :func:`mm`). Surrounding whitespace and matched quote
-        characters are stripped from string inputs.
+    value : str | Length
+        A unit string like ``"9cm"``, ``"6.7in"``, ``"170mm"``,
+        ``"24pt"`` or a :class:`Length` value. Surrounding whitespace
+        and matched quote characters are stripped from string inputs.
 
         Bare ``int``/``float`` are rejected: matplotlib's ``figsize``
         is in inches but dartwork-mpl widths are typically given in
@@ -203,9 +332,8 @@ def parse_width(value: str | Inches) -> float:
         If the input cannot be parsed, has an unknown unit, or is
         non-positive.
     """
-    # An Inches instance is "already in inches" — pass through.
-    if isinstance(value, Inches):
-        v = float(value)
+    if isinstance(value, Length):
+        v = value._inch
         if not math.isfinite(v) or v <= 0:
             raise ValueError(f"width must be positive and finite (got {v})")
         return v
@@ -215,7 +343,7 @@ def parse_width(value: str | Inches) -> float:
     if isinstance(value, (bool, int, float)):
         raise TypeError(
             f"width must be a unit string like '13cm' / '5in' / '170mm' "
-            f"or an Inches value (dm.cm(13), dm.col1). Got "
+            f"or a Length value (dm.cm(13), dm.col1). Got "
             f"{type(value).__name__} {value!r} — bare numbers carry no "
             f"unit. For 13 cm write '13cm' or dm.cm(13); for 13 inches "
             f"write '13in' or dm.inch(13)."
@@ -223,33 +351,15 @@ def parse_width(value: str | Inches) -> float:
 
     if not isinstance(value, str):
         raise TypeError(
-            f"width must be a unit string or an Inches value "
+            f"width must be a unit string or a Length value "
             f"(got {type(value).__name__})"
         )
 
-    text = value.strip().strip('"').strip("'")
-    match = _WIDTH_RE.match(text)
-    if match is None:
-        raise ValueError(
-            f"could not parse width {value!r}; expected '<number>' "
-            f"with optional unit suffix (cm, in, mm)."
-            f"{_suggest_width_correction(text)}"
-        )
-
-    number = float(match.group("value"))
-    unit = (match.group("unit") or "cm").lower()
-    if not math.isfinite(number) or number <= 0:
-        raise ValueError(f"width must be positive and finite (got {number})")
-
-    if unit == "cm":
-        return cm(number)
-    if unit == "in":
-        return inch(number)
-    return mm(number)
+    return _parse_unit_string(value)
 
 
 def figsize(
-    width: str | Inches, aspect: str | float = DEFAULT_ASPECT
+    width: str | Length, aspect: str | float = DEFAULT_ASPECT
 ) -> tuple[float, float]:
     """Return a matplotlib ``figsize`` tuple from a physical width and aspect.
 
@@ -261,10 +371,11 @@ def figsize(
 
     Parameters
     ----------
-    width : str | Inches
+    width : str | Length
         Physical width — either a unit string (``"13cm"``, ``"5in"``,
-        ``"170mm"``) or an :class:`Inches` value (``dm.cm(13)``,
-        ``dm.col1``, ``dm.col2``). Bare ``int``/``float`` are rejected.
+        ``"170mm"``, ``"24pt"``) or a :class:`Length` value
+        (``dm.cm(13)``, ``dm.col1``, ``dm.col2``). Bare
+        ``int``/``float`` are rejected.
     aspect : str | float, optional
         Height / width ratio. Either a named token in
         ``{"square", "portrait", "standard", "golden", "wide",

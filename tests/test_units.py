@@ -1,4 +1,4 @@
-"""Tests for dartwork_mpl.units (free-form width parsing)."""
+"""Tests for dartwork_mpl.units (Length class + parsers)."""
 
 from __future__ import annotations
 
@@ -6,18 +6,126 @@ import math
 
 import pytest
 
-from dartwork_mpl.units import cm, figsize, inch, mm, parse_aspect, parse_width
+from dartwork_mpl.units import (
+    Length,
+    cm,
+    figsize,
+    inch,
+    length,
+    mm,
+    parse_aspect,
+    parse_width,
+    pt,
+)
 
 
-class TestUnitConverters:
-    def test_cm_returns_inches(self):
-        assert math.isclose(cm(2.54), 1.0, rel_tol=1e-6)
+class TestUnitConstructors:
+    """Top-level wrappers ``cm``/``inch``/``mm``/``pt`` return ``Length``;
+    ``Length.from_<unit>`` classmethods produce identical values."""
+
+    def test_cm_returns_length(self):
+        v = cm(2.54)
+        assert isinstance(v, Length)
+        assert math.isclose(v.inch, 1.0, rel_tol=1e-6)
 
     def test_inch_is_identity(self):
-        assert math.isclose(inch(3.5), 3.5, rel_tol=1e-12)
+        v = inch(3.5)
+        assert isinstance(v, Length)
+        assert math.isclose(v.inch, 3.5, rel_tol=1e-12)
 
-    def test_mm_returns_inches(self):
-        assert math.isclose(mm(25.4), 1.0, rel_tol=1e-6)
+    def test_mm_returns_length(self):
+        v = mm(25.4)
+        assert isinstance(v, Length)
+        assert math.isclose(v.inch, 1.0, rel_tol=1e-6)
+
+    def test_pt_returns_length(self):
+        v = pt(72)
+        assert isinstance(v, Length)
+        assert math.isclose(v.inch, 1.0, rel_tol=1e-12)
+
+    def test_classmethods_match_wrappers(self):
+        assert Length.from_cm(13).inch == cm(13).inch
+        assert Length.from_mm(170).inch == mm(170).inch
+        assert Length.from_inch(5).inch == inch(5).inch
+        assert Length.from_pt(72).inch == pt(72).inch
+
+
+class TestLengthInit:
+    """``Length(value)`` accepts unit strings and other ``Length`` values
+    only — bare numbers are rejected to preserve the cm/inch guard."""
+
+    def test_str_init_parses_cm(self):
+        assert math.isclose(Length("13cm").inch, 13 / 2.54, rel_tol=1e-9)
+
+    def test_str_init_parses_inch(self):
+        assert math.isclose(Length("5in").inch, 5.0, rel_tol=1e-12)
+
+    def test_str_init_parses_mm(self):
+        assert math.isclose(Length("170mm").inch, 170 / 25.4, rel_tol=1e-9)
+
+    def test_str_init_parses_pt(self):
+        assert math.isclose(Length("72pt").inch, 1.0, rel_tol=1e-12)
+
+    def test_str_init_default_unit_is_cm(self):
+        # Bare numeric strings are interpreted as cm, matching parse_width.
+        assert math.isclose(Length("13").inch, 13 / 2.54, rel_tol=1e-9)
+
+    def test_length_init_passes_through(self):
+        original = cm(9)
+        copy = Length(original)
+        assert copy.inch == original.inch
+        assert copy is not original  # new instance
+
+    def test_top_level_length_wrapper_parses(self):
+        assert math.isclose(length("13cm").inch, 13 / 2.54, rel_tol=1e-9)
+
+    @pytest.mark.parametrize("value", [13, 9.0, 0, -3, True, False])
+    def test_rejects_bare_numbers(self, value):
+        with pytest.raises(TypeError, match="bare numbers carry no unit"):
+            Length(value)
+
+    def test_rejects_non_string_non_length(self):
+        with pytest.raises(TypeError):
+            Length([13])  # type: ignore[arg-type]
+
+    def test_rejects_negative_string(self):
+        with pytest.raises(ValueError, match="positive"):
+            Length("-5cm")
+
+    def test_rejects_zero_string(self):
+        with pytest.raises(ValueError, match="positive"):
+            Length("0cm")
+
+
+class TestLengthViews:
+    """``length.cm`` / ``.mm`` / ``.inch`` / ``.pt`` properties."""
+
+    def test_cm_view(self):
+        assert math.isclose(cm(13).cm, 13.0, rel_tol=1e-9)
+
+    def test_mm_view(self):
+        assert math.isclose(cm(13).mm, 130.0, rel_tol=1e-9)
+
+    def test_inch_view(self):
+        assert math.isclose(cm(2.54).inch, 1.0, rel_tol=1e-9)
+
+    def test_pt_view(self):
+        # 1 inch = 72 pt
+        assert math.isclose(inch(1).pt, 72.0, rel_tol=1e-12)
+
+    def test_round_trip_through_views(self):
+        v = cm(13)
+        assert math.isclose(Length.from_mm(v.mm).inch, v.inch, rel_tol=1e-12)
+        assert math.isclose(Length.from_pt(v.pt).inch, v.inch, rel_tol=1e-12)
+
+
+class TestLengthRepr:
+    def test_repr_uses_inches_for_large(self):
+        assert "in" in repr(inch(5))
+
+    def test_repr_uses_cm_for_small(self):
+        # 5 mm < 1 in → repr in cm
+        assert "cm" in repr(mm(5))
 
 
 class TestParseWidth:
@@ -30,10 +138,14 @@ class TestParseWidth:
             ("6.7in", 6.7),
             ('"6.7in"', 6.7),  # stripped quotes
             ("170mm", 170 / 25.4),
+            ("72pt", 1.0),
         ],
     )
     def test_accepts_unit_strings(self, value, expected_in):
         assert math.isclose(parse_width(value), expected_in, rel_tol=1e-9)
+
+    def test_accepts_length(self):
+        assert math.isclose(parse_width(cm(9)), 9 / 2.54, rel_tol=1e-9)
 
     def test_rejects_negative(self):
         with pytest.raises(ValueError, match="positive"):
@@ -84,6 +196,15 @@ class TestParseWidthRawNumberRejection:
         assert "'13cm'" in message
         assert "dm.cm(13)" in message
 
+    def test_error_message_says_length_not_inches(self):
+        # ``parse_width`` 메시지가 "Length value"를 안내해야 한다 —
+        # ``Inches`` 언급은 0.4 in-flight 이름이라 사라져야 한다.
+        with pytest.raises(TypeError) as exc:
+            parse_width(13)
+        message = str(exc.value)
+        assert "Length value" in message
+        assert "Inches" not in message
+
     def test_rejects_bool(self):
         with pytest.raises(TypeError, match="bare numbers carry no unit"):
             parse_width(True)
@@ -108,6 +229,13 @@ class TestParseWidthSelfCorrection:
         message = str(exc.value)
         # 'inh' is a 1-edit typo of 'in' — difflib should recover.
         assert "'in'" in message and "6in" in message
+
+    def test_typo_points_suggests_pt(self):
+        # 새 pt 단위에도 동일한 self-correction이 동작해야 한다.
+        with pytest.raises(ValueError) as exc:
+            parse_width("24points")
+        message = str(exc.value)
+        assert "'pt'" in message and "24pt" in message
 
     def test_alien_unit_falls_back_to_supported_list(self):
         # 'foot' shares no letters with cm/in/mm above the cutoff, so
@@ -152,70 +280,6 @@ class TestParseAspectSelfCorrection:
             parse_aspect("abc")
         message = str(exc.value)
         assert "Did you mean" not in message
-
-
-class TestInchesArithmetic:
-    """Inches arithmetic must preserve the Inches tag so that doubled
-    or summed widths still pass the ``isinstance(value, Inches)`` gate
-    in ``parse_width`` (raw floats are now rejected)."""
-
-    def test_mul_preserves_inches(self):
-        from dartwork_mpl.units import Inches
-
-        v = cm(9) * 2
-        assert isinstance(v, Inches)
-        assert math.isclose(v, 18 / 2.54, rel_tol=1e-9)
-
-    def test_rmul_preserves_inches(self):
-        from dartwork_mpl.units import Inches
-
-        v = 2 * cm(9)
-        assert isinstance(v, Inches)
-
-    def test_add_preserves_inches(self):
-        from dartwork_mpl.units import Inches
-
-        assert isinstance(cm(3) + cm(4), Inches)
-
-    def test_sub_preserves_inches(self):
-        from dartwork_mpl.units import Inches
-
-        assert isinstance(cm(9) - cm(2), Inches)
-
-    def test_div_preserves_inches(self):
-        from dartwork_mpl.units import Inches
-
-        assert isinstance(cm(9) / 2, Inches)
-
-    def test_neg_preserves_inches(self):
-        from dartwork_mpl.units import Inches
-
-        assert isinstance(-cm(9), Inches)
-
-    def test_parse_width_passes_through_inches_arithmetic(self):
-        # The whole point: dm.cm(9) * 2 → 18 cm-equivalent in inches,
-        # NOT re-interpreted as 7.087 cm.
-        v = cm(9) * 2
-        assert math.isclose(parse_width(v), 18 / 2.54, rel_tol=1e-9)
-
-    def test_inches_resists_numpy_ufunc(self):
-        """Without ``__array_ufunc__ = None``, ``np.float64(2) * cm(9)``
-        would route through numpy's multiply ufunc, returning a bare
-        ``np.float64`` and silently losing the ``Inches`` tag — which
-        ``parse_width`` would then reject outright as a unit-less raw
-        number. Opting out of ufunc dispatch makes numpy fall back to
-        ``Inches.__rmul__`` so the tag is preserved and the round-trip
-        stays valid.
-        """
-        import numpy as np
-
-        from dartwork_mpl.units import Inches
-
-        v = np.float64(2) * cm(9)
-        assert isinstance(v, Inches)
-        assert math.isclose(v, 18 / 2.54, rel_tol=1e-9)
-        # Round-trip still parses (would TypeError if the tag were lost).
-        assert math.isclose(parse_width(v), 18 / 2.54, rel_tol=1e-9)
 
 
 class TestParseAspect:
@@ -266,16 +330,13 @@ class TestFigsize:
         assert math.isclose(w, 13 / 2.54, rel_tol=1e-9)
         assert math.isclose(h, w * (2 / 3), rel_tol=1e-9)
 
-    def test_accepts_inches_value(self):
-        from dartwork_mpl.units import Inches
-
+    def test_accepts_length_value(self):
         w, h = figsize(cm(9), "square")
         assert math.isclose(w, 9 / 2.54, rel_tol=1e-9)
         assert math.isclose(h, w, rel_tol=1e-9)
+        # Tuple components are plain floats (matplotlib's contract).
         assert isinstance(w, float)
-        # Inches arithmetic stays Inches, but the tuple components are
-        # plain floats (matplotlib's contract).
-        assert not isinstance(figsize(Inches(5.0))[0], Inches)
+        assert not isinstance(w, Length)
 
     def test_default_aspect_is_standard(self):
         w, h = figsize("10cm")
@@ -297,20 +358,24 @@ class TestFigsize:
 
 
 class TestPublicSurface:
-    def test_cm_inch_mm_exposed_at_top_level(self):
+    def test_unit_constructors_exposed_at_top_level(self):
         import dartwork_mpl as dm
 
         assert callable(dm.cm)
         assert callable(dm.inch)
         assert callable(dm.mm)
-        assert math.isclose(dm.cm(2.54), 1.0, rel_tol=1e-6)
+        assert callable(dm.pt)
+        assert callable(dm.length)
+        assert math.isclose(dm.cm(2.54).inch, 1.0, rel_tol=1e-6)
 
-    def test_col1_and_col2_are_constants(self):
+    def test_col1_and_col2_are_length_instances(self):
         import dartwork_mpl as dm
 
-        # 9 cm and 17 cm in inches.
-        assert math.isclose(dm.col1, 9 / 2.54, rel_tol=1e-9)
-        assert math.isclose(dm.col2, 17 / 2.54, rel_tol=1e-9)
+        assert isinstance(dm.col1, Length)
+        assert isinstance(dm.col2, Length)
+        # 9 cm and 17 cm via the cm view.
+        assert math.isclose(dm.col1.cm, 9.0, rel_tol=1e-9)
+        assert math.isclose(dm.col2.cm, 17.0, rel_tol=1e-9)
 
     def test_figsize_exposed_at_top_level(self):
         import dartwork_mpl as dm
@@ -318,3 +383,17 @@ class TestPublicSurface:
         assert callable(dm.figsize)
         w, h = dm.figsize("13cm", "wide")
         assert math.isclose(w, 13 / 2.54, rel_tol=1e-9)
+
+    def test_length_class_exposed_at_top_level(self):
+        import dartwork_mpl as dm
+
+        assert dm.Length is Length
+
+    def test_inches_no_longer_importable(self):
+        import dartwork_mpl as dm
+
+        # ``Inches`` was the in-flight 0.4 name. Hard-removed alongside
+        # the rename — accessing it now raises AttributeError, matching
+        # the precedent set by ``dm.subplots`` / ``dm.figure`` (#147).
+        with pytest.raises(AttributeError):
+            dm.Inches  # noqa: B018
