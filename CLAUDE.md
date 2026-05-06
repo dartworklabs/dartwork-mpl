@@ -33,10 +33,12 @@ dm.save_formats(fig, "out", formats=("png", "pdf"))     # 4. multi-format save
 
 - **`dm.figsize(width, aspect)`**: returns the inch tuple matplotlib's
   `figsize=` expects. `width` must be a unit string (`"13cm"`,
-  `"5in"`, `"170mm"`) or an `Inches` value (`dm.cm(13)`, `dm.col1`,
-  `dm.col2`). Bare `int` / `float` are rejected.
-- **Aspect tokens**: one of `square / portrait / standard / golden /
-  wide / cinema`. Numeric ratios (e.g. `0.66`) are also accepted.
+  `"5in"`, `"170mm"`, `"24pt"`) or a `Length` value (`dm.cm(13)`,
+  `dm.col1`, `dm.col2`). Bare `int` / `float` are rejected.
+- **Second arg accepts four forms** — pick whichever reads naturally:
+  aspect token (`"wide"`), numeric ratio (`0.6`), unit-string height
+  (`"12cm"`), or `Length` height (`dm.cm(12)`). Width and height
+  units don't have to match — `dm.figsize("13cm", "5in")` is fine.
 - **Never call**: `plt.tight_layout()`, raw `figsize=(w, h)` tuples on
   `plt.subplots` / `plt.figure`. Always wrap with `dm.figsize(...)`
   and call `dm.auto_layout(fig)` after plotting.

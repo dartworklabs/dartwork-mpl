@@ -8,12 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **`dm.Length`** — opaque Color-pattern length wrapper that
+  replaces the in-flight `Inches(float)` marker introduced earlier
+  in this release. Multi-unit views as properties (`length.cm`,
+  `length.mm`, `length.inch`, `length.pt`).
+  `dm.length("13cm")` parses unit strings (mirrors
+  `dm.hex("#abc")`); `dm.pt(24)` joins the existing `dm.cm` /
+  `dm.inch` / `dm.mm` constructor family. Deliberately **not** a
+  `float` subclass — passing a `Length` to a matplotlib API that
+  expects a non-inch unit (`fontsize=` / `linewidth=` are pt;
+  transform offsets are px) would silently misinterpret the value;
+  forcing every boundary to pick a unit explicitly via the property
+  views keeps each one type-safe. `dm.Inches` is no longer
+  importable. (#152)
 - **`dm.figsize(width, aspect)`** — single sizing helper that returns
   the inch tuple matplotlib's `figsize=` expects. Pairs natively with
   `plt.subplots` / `plt.figure` so dartwork-mpl no longer wraps the
   figure constructors. Width must be a unit string (`"13cm"`, `"5in"`,
-  `"170mm"`) or an `Inches` value (`dm.cm(13)`, `dm.col1`, `dm.col2`);
-  bare `int`/`float` are rejected (`raw-width-number` lint rule). (#147)
+  `"170mm"`, `"24pt"`) or a `Length` value (`dm.cm(13)`, `dm.col1`,
+  `dm.col2`); bare `int`/`float` are rejected (`raw-width-number`
+  lint rule). The second argument accepts four equivalent forms —
+  aspect token (`"wide"`), numeric ratio (`0.6`), unit-string height
+  (`"12cm"`), or `Length` height (`dm.cm(12)`) — so callers can write
+  `dm.figsize("15cm", "12cm")` directly instead of hand-computing
+  `12 / 15`. (#147, #152)
 
 ### Changed
 - `dm.mix_colors` now blends in OKLab space (perceptually uniform) instead of

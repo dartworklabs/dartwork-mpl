@@ -414,8 +414,8 @@ def register_tools(mcp: FastMCP) -> None:
                 "design_rules": {
                     "width_aspect": (
                         "Use plt.subplots(figsize=dm.figsize('13cm', 'standard')). "
-                        "width accepts unit strings (cm/in/mm) or Inches "
-                        "values (dm.cm/inch/mm, dm.col1, dm.col2); bare "
+                        "width accepts unit strings (cm/in/mm/pt) or Length "
+                        "values (dm.cm/inch/mm/pt, dm.col1, dm.col2); bare "
                         "int/float are rejected. aspect is one of "
                         "{square, portrait, standard, golden, wide, "
                         "cinema} or a positive float."

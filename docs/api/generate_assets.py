@@ -41,7 +41,7 @@ def _save_layout_example(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig = plt.figure(figsize=(dm.cm(15), dm.cm(12)), dpi=300)
+    fig = plt.figure(figsize=dm.figsize("15cm", "12cm"), dpi=300)
     gs = fig.add_gridspec(2, 2, hspace=0.45, wspace=0.35)
     ax1 = fig.add_subplot(gs[0, 0])
     ax2 = fig.add_subplot(gs[0, 1])
@@ -76,7 +76,7 @@ def _save_color_example(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig = plt.figure(figsize=(dm.cm(15), dm.cm(12)), dpi=300)
+    fig = plt.figure(figsize=dm.figsize("15cm", "12cm"), dpi=300)
     gs = fig.add_gridspec(
         2, 1, hspace=0.4, left=0.08, right=0.98, top=0.92, bottom=0.08
     )
@@ -138,7 +138,7 @@ def _save_icon_example(images_dir: Path) -> Path:
         ("\U000f0597", "Weather-snowy"),
     ]
 
-    fig, ax = plt.subplots(figsize=(dm.cm(15), dm.cm(6)), dpi=300)
+    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "6cm"), dpi=300)
     colors = [
         "tw.teal500",
         "tw.amber500",
@@ -194,7 +194,7 @@ def _save_font_example(images_dir: Path) -> Path:
     """API font: fs(), fw(), lw() scaling demo."""
     dm.style.use("presentation")
 
-    fig, ax = plt.subplots(figsize=(dm.cm(15), dm.cm(9)), dpi=300)
+    fig, ax = plt.subplots(figsize=dm.figsize("15cm", "9cm"), dpi=300)
 
     # Show hierarchy levels
     levels = [
@@ -259,7 +259,7 @@ def _save_xplot_example(images_dir: Path) -> Path:
         neg_label="Decrease",
         pos_label="Increase",
         add_total=False,
-        figsize=(dm.cm(15), dm.cm(10)),
+        figsize=dm.figsize("15cm", "10cm"),
     )
 
     path = images_dir / "xplot_example.svg"
