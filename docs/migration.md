@@ -23,7 +23,7 @@ still emit a `DeprecationWarning` and are scheduled for removal in
 | `dm.SW`, `dm.MW`, `dm.TW`, `dm.DW`    | `dm.col1` / `dm.col2` / `dm.cm(...)`                 |
 | `dm.WIDTHS`                           | iterate explicit widths inline                       |
 | `dm.FS_SINGLE` / `FS_DOUBLE` / etc.   | `figsize=dm.figsize("<n>cm", "<aspect>")`            |
-| `dm.cm2in(...)`                       | `dm.cm(...)` (returns `Inches`)                      |
+| `dm.cm2in(...)`                       | `dm.cm(...)` (returns `Length`)                      |
 | `dpi=` argument                       | active style preset                                  |
 | `dartwork_mpl.constant` module        | `dartwork_mpl.units` + width / aspect API            |
 | `plt.tight_layout()`                  | `dm.auto_layout(fig)`                                |
@@ -61,10 +61,10 @@ Other `dm.subplots` keyword arguments (`sharex`, `sharey`,
 `dm.style.stack([...])`) before constructing the figure.
 
 `dm.figsize(width, aspect)` rejects bare `int` / `float` widths
-explicitly — pass a unit string (`"13cm"`, `"5in"`, `"170mm"`) or an
-`Inches` value (`dm.cm(13)`, `dm.col1`, `dm.col2`) so the unit is
-always visible at the call site. The `raw-width-number` lint rule
-catches stragglers.
+explicitly — pass a unit string (`"13cm"`, `"5in"`, `"170mm"`,
+`"24pt"`) or a `Length` value (`dm.cm(13)`, `dm.col1`, `dm.col2`)
+so the unit is always visible at the call site. The
+`raw-width-number` lint rule catches stragglers.
 
 The two-pass migrator at `dm.lint.migrate_legacy_code` inserts a
 `# TODO(dm-migrate):` hint above each `dm.subplots` / `dm.figure`
@@ -225,21 +225,37 @@ GridSpec arrangements where `auto_layout` cannot solve the bbox.
 
 ### `dm.cm2in` → `dm.cm`
 
-`cm2in(x)` converted cm to a plain `float`. `dm.cm(x)` returns an
-`Inches` value (a `float` subclass) that arithmetic preserves, so
-`dm.cm(9) * 2` stays in inches and round-trips through
-`parse_width` cleanly. `dm.inch(x)` and `dm.mm(x)` are the
-analogous helpers for the other two units.
+`cm2in(x)` converted cm to a plain `float`. `dm.cm(x)` returns a
+:class:`~dartwork_mpl.units.Length` value — a Color-pattern wrapper
+with multi-unit views (`.cm` / `.mm` / `.inch` / `.pt`) and
+arithmetic that preserves the tag, so `dm.cm(9) * 2` stays a
+`Length` and round-trips through `parse_width` cleanly.
+`dm.inch(x)`, `dm.mm(x)`, `dm.pt(x)` are the analogous helpers for
+the other units; `dm.length("13cm")` parses a unit string.
 
 ```python
 # DEPRECATED — emits DeprecationWarning
-inches = dm.cm2in(9)
+value = dm.cm2in(9)
 
-# 0.4
-inches = dm.cm(9)               # Inches(3.5433...)
-inches = dm.inch(3.5)           # Inches(3.5)
-inches = dm.mm(170)             # Inches(6.6929...)
+# 0.4+
+length = dm.cm(9)               # Length(9.0000cm)
+length = dm.inch(3.5)           # Length(3.5000in)
+length = dm.mm(170)             # Length(17.0000cm)
+length = dm.pt(24)              # Length(0.8467cm)
+
+# Multi-unit views (Color-style):
+length.cm     # 9.0
+length.inch   # 3.5433...
+length.pt     # 255.118...
 ```
+
+> **0.4 in-flight rename.** An earlier 0.4 draft used
+> `Inches(float)` as a phantom-type marker. It was renamed to
+> :class:`Length` (a wrapper, no longer a `float` subclass) before
+> any 0.4 release shipped, to align with the `Color` class and to
+> expose per-unit views. Top-level constructors `dm.cm` / `dm.inch`
+> / `dm.mm` keep the same signatures; they just return `Length`
+> now. `dm.Inches` is no longer importable.
 
 ### Module renames carried forward
 

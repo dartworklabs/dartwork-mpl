@@ -1,36 +1,42 @@
-Units (``dm.cm`` / ``dm.inch`` / ``dm.mm``)
-===========================================
+Units (``dm.Length`` / ``dm.cm`` / ``dm.inch`` / ``dm.mm`` / ``dm.pt``)
+======================================================================
 
 Free-form width/aspect input helpers (0.4+).
 
 The 0.4 figure-creation API takes a free-form ``width=`` value plus
 a separate ``aspect=`` (height / width). This module is the parser
-that turns user inputs — unit-suffixed strings, helper calls, raw
-numbers — into a single inch-valued ``float`` that matplotlib's
-``figsize`` argument expects, and resolves named aspect tokens
-(``square`` / ``portrait`` / ``standard`` / ``golden`` / ``wide`` /
-``cinema``) into a height/width ratio.
+that turns user inputs — unit-suffixed strings or
+:class:`~dartwork_mpl.units.Length` instances — into a single
+inch-valued ``float`` that matplotlib's ``figsize`` argument
+expects, and resolves named aspect tokens (``square`` /
+``portrait`` / ``standard`` / ``golden`` / ``wide`` / ``cinema``)
+into a height/width ratio.
 
 Most callers never touch this module directly: they hand a string
-or a helper call to :func:`dartwork_mpl.subplots`, and the parser
+or a helper call to :func:`dartwork_mpl.figsize`, and the parser
 runs underneath. The names below are the underlying primitives in
-case you need to share a width across several figures or convert
+case you need to share a length across several figures or convert
 ad-hoc.
 
 .. code-block:: python
 
    import dartwork_mpl as dm
 
-   # Helper calls — return Inches (a float subclass)
-   dm.cm(13)            # Inches(5.118...)
-   dm.inch(6.7)         # Inches(6.7)
-   dm.mm(170)           # Inches(6.692...)
+   # Helper calls — return Length (Color-pattern wrapper)
+   dm.cm(13)            # Length(13.0000cm)
+   dm.inch(6.7)         # Length(6.7000in)
+   dm.mm(170)           # Length(17.0000cm)
+   dm.pt(24)            # Length(0.8467cm)
 
-   # parse_width accepts strings, Inches, or raw numbers (cm)
+   # Multi-unit views as properties
+   dm.cm(13).inch       # 5.118...
+   dm.cm(13).pt         # 368.5...
+
+   # parse_width accepts unit strings or Length instances
    from dartwork_mpl.units import parse_width, parse_aspect
    parse_width("13cm")     # 5.118...
    parse_width("6.7in")    # 6.7
-   parse_width(13)         # 5.118... (bare number → cm)
+   parse_width(dm.cm(13))  # 5.118... (Length pass-through)
    parse_aspect("standard")  # 0.75
 
 API

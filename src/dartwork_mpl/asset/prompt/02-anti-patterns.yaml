@@ -119,8 +119,8 @@ rules:
       pattern: '\bdm\.figsize\s*\(\s*-?\d+(?:\.\d+)?\s*[,)]'
     message: |
       `dm.figsize(<bare number>, ...)` is rejected — bare numbers carry
-      no unit. Pass a unit string (`"13cm"`, `"5in"`, `"170mm"`) or an
-      Inches value (`dm.cm(13)`, `dm.col1`, `dm.col2`).
+      no unit. Pass a unit string (`"13cm"`, `"5in"`, `"170mm"`,
+      `"24pt"`) or a Length value (`dm.cm(13)`, `dm.col1`, `dm.col2`).
     fix_suggestion: 'dm.figsize("13cm", "standard")'
 
   - id: dpi-arg

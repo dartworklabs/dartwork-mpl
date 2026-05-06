@@ -37,13 +37,27 @@ section of `CHANGELOG.md`, so external usage is effectively zero).
 
 ## 2. Decision
 
-Replace `Inches(float)` with `Length`, an opaque wrapper class that
-mirrors the `Color` design.
+Replace `Inches(float)` with `Length`, a class whose **interface**
+mirrors the `Color` design (multi-unit views, classmethod
+constructors, str init parsing) while **structurally** remaining a
+`float` subclass so matplotlib accepts tuples of `Length` directly
+in `figsize=` (and similar APIs that internally call
+`np.isfinite(...)` / `np.array(...) < 0` on the input). An earlier
+draft of this spec proposed an opaque, non-`float` wrapper; that was
+walked back during implementation when the cost of migrating ~30
+existing `figsize=(dm.cm(W), dm.cm(H))` call sites in
+`docs/`, `docs/examples_*/`, and the Sphinx gallery generators
+turned out to dwarf the safety win. The cm/inch guard the original
+`Inches` design exists to close lives at the **parser boundary**
+(`Length(...)` and `parse_width`), not on every arithmetic op
+against an already-typed value, so a `float`-shaped Length is
+indistinguishable from an opaque one for the failure modes that
+actually matter.
 
 ### 2.1 Canonical storage and unit views
 
-- **Internal store**: inches (matches matplotlib's `figsize=`
-  contract — no conversion at the boundary that matters most).
+- **Internal store**: inches — `Length` *is* the inch value via
+  `float.__new__`. No separate `_inch` slot.
 - **Unit views as properties**, not methods, because all four are
   pure dimensional facts independent of any rendering context:
 
@@ -121,18 +135,37 @@ constructed via `dm.cm(...)` which now returns `Length`.
 | Operation              | Result                  | Rationale                            |
 |---                     |---                      |---                                   |
 | `Length + Length`      | `Length`                | Sum of two physical lengths.         |
+| `Length + scalar`      | `Length`                | Inherited from `float`; tag preserved via `__add__`. Strict "TypeError on scalar" was considered and rejected — see *Why scalar arithmetic is lax* below. |
 | `Length - Length`      | `Length`                | Difference of two physical lengths.  |
+| `Length - scalar`      | `Length`                | Same rationale as `+`.               |
 | `Length * scalar`      | `Length`                | Scaling a length is still a length.  |
 | `scalar * Length`      | `Length`                | Symmetric.                           |
 | `Length / scalar`      | `Length`                | Division by dimensionless scalar.    |
 | `Length / Length`      | `float`                 | Ratio is dimensionless.              |
 | `-Length` / `abs(...)` | `Length`                | Sign manipulation preserves type.    |
-| `Length + scalar`      | `TypeError`             | No unit on the scalar — would re-open the cm/inch hole the marker exists to close. |
 | `Length * Length`      | `TypeError`             | `area = length × length` has no representation at this layer. |
 
-Equality and ordering compare on the canonical inch value. `__hash__`
-is consistent with `__eq__` (`hash(cm(2.54)) == hash(inch(1))`),
-matching `Color`'s opaque-value semantics.
+Equality, ordering, and hashing inherit from `float` — equal
+canonical inch values compare equal regardless of which constructor
+produced them. This matches `Inches(float)`'s previous behaviour.
+
+`__array_ufunc__ = None` opts `Length` out of numpy's universal-
+function dispatch so that `np.float64(2) * cm(9)` falls back to
+`Length.__rmul__` and the tag survives the round-trip. Without it,
+arithmetic at numpy boundaries silently decays to a bare
+`np.float64` and re-opens the cm/inch corruption hole at array
+boundaries.
+
+**Why scalar arithmetic is lax.** The earlier draft of this spec
+made `Length + scalar` raise `TypeError` to "preserve unit safety".
+Implementation surfaced two costs: (1) matplotlib internals do
+`0 + width` to compute bbox extents, so strict rejection breaks
+`plt.figure(figsize=(dm.cm(15), dm.cm(9)))` even with a `float`
+subclass; (2) the `Inches(float)` predecessor was lax in this same
+way, so the strictness would be a *new* burden, not a continuation.
+The cm/inch guard sits at the parser boundary (`Length(...)` /
+`parse_width`); arithmetic on already-typed values is safe by
+construction.
 
 ### 2.6 `parse_width` contract change
 

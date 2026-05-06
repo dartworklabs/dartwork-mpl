@@ -77,12 +77,12 @@ dm.save_formats(fig, 'output/figure', formats=('svg', 'png'))
 
 `dm.figsize(width, aspect)` returns the inch tuple matplotlib's
 `figsize=` expects. `width` accepts unit-suffixed strings (`"13cm"`,
-`"6.7in"`, `"170mm"`) or `Inches` values from the helper calls
-(`dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`); the academic-column
-shortcuts `dm.col1` (9 cm) and `dm.col2` (17 cm) work too. Bare
-`int` / `float` are rejected so the unit is always explicit.
-`aspect` is one of `square / portrait / standard / golden / wide /
-cinema`, or any positive float.
+`"6.7in"`, `"170mm"`, `"24pt"`) or `Length` values from the helper
+calls (`dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`, `dm.pt(24)`);
+the academic-column shortcuts `dm.col1` (9 cm) and `dm.col2` (17 cm)
+work too. Bare `int` / `float` are rejected so the unit is always
+explicit. `aspect` is one of `square / portrait / standard / golden
+/ wide / cinema`, or any positive float.
 
 <br/>
 
@@ -150,14 +150,21 @@ dm.fw(1)     # base font weight + 100
 dm.lw(-0.3)  # base line width - 0.3
 ```
 
-### Width Helpers
+### Length Helpers
 
 ```python
-dm.cm(13)        # 13 cm (returned as Inches; safe to pass to width=)
-dm.inch(4.6)     # 4.6 in
-dm.mm(170)       # 170 mm
+dm.cm(13)        # 13 cm  → Length
+dm.inch(4.6)     # 4.6 in → Length
+dm.mm(170)       # 170 mm → Length
+dm.pt(24)        # 24 pt  → Length (1 pt = 1/72 in)
+dm.length('13cm')  # parse a unit string → Length
 dm.col1          # 9 cm  — academic single-column sugar
 dm.col2          # 17 cm — academic two-column sugar
+
+# Multi-unit views (Color-style):
+dm.cm(13).inch   # 5.118
+dm.cm(13).mm     # 130.0
+dm.cm(13).pt     # 368.5
 ```
 
 > **Migrating?** Replace `figsize=(dm.cm2in(13), dm.cm2in(9.75))` and

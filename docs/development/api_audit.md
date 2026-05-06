@@ -116,12 +116,14 @@
 | `style_path` | `dartwork_mpl.style` | func | 5 | N | 7 | 1 | keep | asset 경로 해석 + ValueError — style 파일 path helper | audited |
 | `get_source_code` | `dartwork_mpl.templates.diverging_bar` | func | 13 | N | 0 | 2 | borderline | importlib+inspect 경유 모듈 소스 반환 — 외부 callsite 0; AI agent용 코드 노출 의도이나 단순 inspect wrapper — 토론 | removed |
 | `plot_diverging_bar` | `dartwork_mpl.templates.diverging_bar` | func | 206 | N | 28 | 3 | keep | 206 LOC 완전한 chart template — blended transform + cascading layout + 값 라벨 배치; 28 callsites | audited |
-| `Inches` | `dartwork_mpl.units` | class | 0 | N | 27 | 2 | keep | 단위 태그 클래스 — `__array_ufunc__=None` + 산술 연산자 오버라이드로 numpy 경계에서 단위 손실 방지 | audited |
-| `cm` | `dartwork_mpl.units` | func | 1 | N | 200 | 1 | keep | 물리 단위 토큰 — cm → Inches 변환; parse_width 진입점 | audited |
-| `inch` | `dartwork_mpl.units` | func | 1 | N | 35 | 1 | keep | 물리 단위 토큰 — Inches 태그 부여 identity | audited |
-| `mm` | `dartwork_mpl.units` | func | 1 | N | 43 | 1 | keep | 물리 단위 토큰 — mm → Inches 변환 | audited |
+| `Length` | `dartwork_mpl.units` | class | 0 | N | 27 | 2 | keep | 물리 길이 wrapper (Color 패턴) — 멀티 유닛 view (.cm/.mm/.inch/.pt), str init 파싱, 산술 보존; 0.4 in-flight `Inches(float)` 마커를 #152에서 리네임 | audited |
+| `cm` | `dartwork_mpl.units` | func | 1 | N | 200 | 1 | keep | 물리 단위 토큰 — cm → Length 변환; parse_width 진입점 | audited |
+| `inch` | `dartwork_mpl.units` | func | 1 | N | 35 | 1 | keep | 물리 단위 토큰 — Length 태그 부여 identity | audited |
+| `mm` | `dartwork_mpl.units` | func | 1 | N | 43 | 1 | keep | 물리 단위 토큰 — mm → Length 변환 | audited |
+| `pt` | `dartwork_mpl.units` | func | 1 | N | 0 | 1 | keep | 물리 단위 토큰 — pt → Length 변환 (1 pt = 1/72 in); #152에서 추가 | audited |
+| `length` | `dartwork_mpl.units` | func | 1 | N | 0 | 1 | keep | 단위 문자열 파서 — `dm.length("13cm")`; `dm.hex(...)`의 길이 버전 | audited |
 | `parse_aspect` | `dartwork_mpl.units` | func | 27 | N | 28 | 2 | keep | 토큰 룩업 + bool 거부 + 수치 검증 + 오타 제안 — 핵심 내부 파서 | audited |
-| `parse_width` | `dartwork_mpl.units` | func | 44 | N | 37 | 2 | keep | Inches pass-through + bool 거부 + 단위 파싱 + 검증 + 오타 제안 — 핵심 내부 파서 | audited |
+| `parse_width` | `dartwork_mpl.units` | func | 44 | N | 37 | 2 | keep | Length pass-through + bool 거부 + 단위 파싱 + 검증 + 오타 제안 — 핵심 내부 파서 | audited |
 | `make_offset` | `dartwork_mpl.util` | func | 2 | N | 21 | 2 | borderline | ScaledTranslation 2-line wrapper (x/72, y/72 + fig.dpi_scale_trans) — Task 11에서 keep/remove 결정 | audited |
 | `mix_colors` | `dartwork_mpl.util` | func | 8 | N | 28 | 2 | borderline | 단순 RGB linspace (mcolors.to_rgb 경유) — OKLCH 인터폴레이션 없음; 토론 | audited |
 | `pseudo_alpha` | `dartwork_mpl.util` | func | 1 | N | 34 | 2 | borderline | mix_colors 1-line delegate; 백색 블렌딩 의미 있으나 구현이 RGB — 토론 | audited |

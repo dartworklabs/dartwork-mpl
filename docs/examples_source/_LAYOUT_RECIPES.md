@@ -34,9 +34,9 @@ aspect ratio**, never raw figsize tuples.
 
 | Form                 | Example                | Notes                              |
 | :------------------- | :--------------------- | :--------------------------------- |
-| String with unit     | `width="13cm"`         | Preferred. Units: `cm`, `in`, `mm` |
-| Bare number          | `width=13`             | Interpreted as **cm** (no unit = cm) |
-| `dm.cm()` helper     | `width=dm.cm(13)`      | Returns `Inches`, type-safe        |
+| String with unit     | `width="13cm"`         | Preferred. Units: `cm`, `in`, `mm`, `pt` |
+| Bare number          | `width=13`             | Rejected (`raw-width-number`); use a unit |
+| `dm.cm()` helper     | `width=dm.cm(13)`      | Returns `Length`, type-safe        |
 | `dm.col1` / `dm.col2`| `width=dm.col1`        | Academic single/double column      |
 
 `dm.col1 = cm(9)` (single-column figure) and `dm.col2 = cm(17)`

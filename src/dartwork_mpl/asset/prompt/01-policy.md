@@ -17,10 +17,14 @@ Rules in this document are split into two tiers:
 - **Enforced.** Raw `figsize=(w, h)` tuples are forbidden — always
   go through `dm.figsize` (lint critical: `figsize-direct`).
 - `width` accepts:
-  - a unit-suffixed string: `"13cm"`, `"9.5cm"`, `"6.7in"`, `"170mm"`
-  - an `Inches` value: `dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`
-    (these return `Inches`, a `float` subclass that `parse_width`
-    treats as already-converted, so `dm.cm(9) * 2` stays in inches)
+  - a unit-suffixed string: `"13cm"`, `"9.5cm"`, `"6.7in"`, `"170mm"`,
+    `"24pt"`
+  - a `Length` value: `dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`,
+    `dm.pt(24)` (these return a `Length` instance with multi-unit
+    views; `dm.cm(9) * 2` preserves the `Length` tag and round-trips
+    through `parse_width`)
+  - a parsed unit string via `dm.length("13cm")` (mirrors
+    `dm.hex("#abc")` for colors)
   - the academic sugar constants `dm.col1` (= 9 cm) or `dm.col2`
     (= 17 cm).
 - **Enforced.** Bare `int` / `float` widths are rejected (lint
