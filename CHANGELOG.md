@@ -8,16 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- **`dm.Length`** — Color-pattern length wrapper that replaces the
-  in-flight `Inches(float)` marker introduced earlier in this
-  release. Multi-unit views as properties (`length.cm`,
+- **`dm.Length`** — opaque Color-pattern length wrapper that
+  replaces the in-flight `Inches(float)` marker introduced earlier
+  in this release. Multi-unit views as properties (`length.cm`,
   `length.mm`, `length.inch`, `length.pt`).
   `dm.length("13cm")` parses unit strings (mirrors
   `dm.hex("#abc")`); `dm.pt(24)` joins the existing `dm.cm` /
-  `dm.inch` / `dm.mm` constructor family. Structurally a `float`
-  subclass so existing `figsize=(dm.cm(15), dm.cm(9))` call sites
-  keep working; `__array_ufunc__ = None` preserves the tag at numpy
-  boundaries. `dm.Inches` is no longer importable. (#152)
+  `dm.inch` / `dm.mm` constructor family. Deliberately **not** a
+  `float` subclass — passing a `Length` to a matplotlib API that
+  expects a non-inch unit (`fontsize=` / `linewidth=` are pt;
+  transform offsets are px) would silently misinterpret the value;
+  forcing every boundary to pick a unit explicitly via the property
+  views keeps each one type-safe. `dm.Inches` is no longer
+  importable. (#152)
 - **`dm.figsize(width, aspect)`** — single sizing helper that returns
   the inch tuple matplotlib's `figsize=` expects. Pairs natively with
   `plt.subplots` / `plt.figure` so dartwork-mpl no longer wraps the

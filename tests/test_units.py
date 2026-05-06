@@ -423,29 +423,25 @@ class TestLengthArithmetic:
         assert isinstance(v, Length)
         assert math.isclose(v.cm, 7.0, rel_tol=1e-9)
 
-    def test_add_length_and_scalar_preserves_tag(self):
-        # ``+`` / ``-`` are lax — they accept any numeric operand and
-        # preserve the Length tag. The cm/inch guard lives at the
-        # parser boundary (``parse_width`` / ``Length(...)``), not on
-        # every arithmetic op against an already-typed Length. This
-        # also lets matplotlib internals do ``0 + width`` to compute
-        # bbox extents without a doc-wide migration.
-        v = cm(3) + 1  # 1 inch
-        assert isinstance(v, Length)
-        assert math.isclose(v.inch, 3 / 2.54 + 1, rel_tol=1e-9)
-
-        v2 = 1 + cm(3)
-        assert isinstance(v2, Length)
+    def test_add_length_and_scalar_rejected(self):
+        # Adding a unit-less number would re-open the cm/inch hole at
+        # an arithmetic boundary. The cm/inch guard the class exists
+        # for sits at *every* boundary, including arithmetic.
+        with pytest.raises(TypeError):
+            cm(3) + 1  # type: ignore[operator]
+        with pytest.raises(TypeError):
+            1 + cm(3)  # type: ignore[operator]
 
     def test_sub_two_lengths(self):
         v = cm(9) - cm(2)
         assert isinstance(v, Length)
         assert math.isclose(v.cm, 7.0, rel_tol=1e-9)
 
-    def test_sub_length_and_scalar_preserves_tag(self):
-        v = inch(3) - 1
-        assert isinstance(v, Length)
-        assert math.isclose(v.inch, 2.0, rel_tol=1e-9)
+    def test_sub_length_and_scalar_rejected(self):
+        with pytest.raises(TypeError):
+            cm(3) - 1  # type: ignore[operator]
+        with pytest.raises(TypeError):
+            1 - cm(3)  # type: ignore[operator]
 
     def test_div_by_scalar_preserves_length(self):
         v = cm(9) / 2
@@ -472,10 +468,10 @@ class TestLengthArithmetic:
 
 
 class TestLengthComparison:
-    """Comparison and hashing inherit from ``float`` — equal canonical
-    inch values compare equal regardless of which constructor produced
-    them. This matches the previous ``Inches(float)`` behaviour and
-    is consistent with ``Length`` being a ``float`` subclass."""
+    """Comparison compares on the canonical inch value; ``__hash__`` is
+    consistent with ``__eq__``. Non-Length operands return
+    ``NotImplemented`` so Python raises ``TypeError`` rather than
+    silently coercing — comparison without a unit is unsafe."""
 
     def test_equality_across_units(self):
         # 1 inch == 2.54 cm
@@ -491,8 +487,7 @@ class TestLengthComparison:
         assert cm(1) >= cm(1)
 
     def test_hashable_consistent_with_equality(self):
-        # Hash agrees with ``__eq__`` (inherited from float): equal
-        # canonical inch values → equal hashes.
+        # Hash must agree with __eq__: equal lengths → equal hashes.
         assert hash(cm(2.54)) == hash(inch(1))
 
     def test_usable_as_dict_key(self):
@@ -500,52 +495,54 @@ class TestLengthComparison:
         assert d[cm(1)] == "one"
         assert d[cm(2)] == "two"
 
+    def test_compare_with_non_length_rejected(self):
+        # ``Length < 1`` should raise TypeError, not silently compare
+        # a unit-less number against the canonical inch value.
+        with pytest.raises(TypeError):
+            _ = cm(1) < 1  # type: ignore[operator]
 
-class TestLengthFloatInterop:
-    """``Length`` is a ``float`` subclass so matplotlib accepts
-    ``Length`` tuples in ``figsize=`` natively. The Color-style
-    multi-unit views and str init layered on top do **not** make the
-    class opaque — ``isinstance(length, float)`` is True so numpy
-    coercion paths (``np.isfinite(figsize)``, ``np.array(figsize) <
-    0`` inside ``Figure.__init__``) work without further interop.
+
+class TestLengthOpacity:
+    """``Length`` is **not** a ``float`` subclass — passing one to a
+    matplotlib API that expects a different unit (``fontsize=`` /
+    ``linewidth=`` are pt; transform offsets are px) would silently
+    misinterpret the value. Forcing callers to pick a unit explicitly
+    via ``length.inch`` / ``length.pt`` keeps every boundary safe,
+    not just inches.
+
+    For figsize specifically, callers should use
+    :func:`dartwork_mpl.figsize` (the recommended idiom) which goes
+    through ``parse_width`` and returns plain ``float`` tuples.
     """
 
-    def test_float_yields_inch_value(self):
-        assert float(cm(2.54)) == pytest.approx(1.0)
-        assert float(inch(5)) == pytest.approx(5.0)
+    def test_length_is_not_float_subclass(self):
+        assert not isinstance(cm(1), float)
+        assert not isinstance(cm(1), int)
 
-    def test_length_is_float_subclass(self):
-        # Pragmatic interop choice: Length is a float subclass so
-        # matplotlib's bare ``np.isfinite(figsize)`` path works on
-        # tuples of Length. The "Color-pattern" requirement is met
-        # at the *interface* layer (multi-unit views + str init),
-        # not by structural opacity.
-        assert isinstance(cm(1), float)
-
-    def test_figsize_tuple_through_matplotlib(self):
+    def test_matplotlib_figsize_with_raw_length_tuple_rejected(self):
+        # The whole point of opacity: matplotlib must not silently
+        # accept (Length, Length) as a figsize. Users have to go
+        # through dm.figsize(...) or extract .inch explicitly.
         from matplotlib.figure import Figure
 
-        # The win that justifies the float-subclass choice: existing
-        # ``figsize=(dm.cm(15), dm.cm(9))`` call sites in docs and
-        # gallery code keep working without a sweeping migration.
-        # Use ``Figure`` directly rather than ``plt.figure`` so the
-        # interactive backend doesn't quantize the size for display.
-        fig = Figure(figsize=(cm(15), cm(9)))
+        with pytest.raises(TypeError):
+            Figure(figsize=(cm(15), cm(9)))  # type: ignore[arg-type]
+
+    def test_dm_figsize_returns_plain_float_tuple(self):
+        # The supported path: dm.figsize returns plain floats so
+        # matplotlib's numeric paths (np.isfinite, etc.) work.
+        from matplotlib.figure import Figure
+
+        fig = Figure(figsize=figsize("15cm", 9 / 15))
         w, h = fig.get_size_inches()
         assert math.isclose(float(w), 15 / 2.54, rel_tol=1e-9)
         assert math.isclose(float(h), 9 / 2.54, rel_tol=1e-9)
 
-    def test_numpy_ufunc_preserves_length_tag(self):
-        """``np.float64(2) * cm(9)`` would normally route through
-        numpy's multiply ufunc and return a bare ``np.float64``,
-        dropping the Length tag and re-opening the cm/inch hole at
-        array boundaries. ``__array_ufunc__ = None`` on Length forces
-        numpy to fall back to ``Length.__rmul__`` so the tag is
-        preserved."""
-        import numpy as np
+    def test_explicit_inch_view_works_in_tuple(self):
+        # The escape hatch: explicit .inch on each component is also
+        # acceptable for the rare case where dm.figsize doesn't fit.
+        from matplotlib.figure import Figure
 
-        v = np.float64(2) * cm(9)
-        assert isinstance(v, Length)
-        assert math.isclose(v.cm, 18.0, rel_tol=1e-9)
-        # Round-trip still parses (would TypeError if the tag were lost).
-        assert math.isclose(parse_width(v), 18 / 2.54, rel_tol=1e-9)
+        fig = Figure(figsize=(cm(15).inch, cm(9).inch))
+        w, h = fig.get_size_inches()
+        assert math.isclose(float(w), 15 / 2.54, rel_tol=1e-9)

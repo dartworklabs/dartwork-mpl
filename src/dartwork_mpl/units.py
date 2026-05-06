@@ -28,7 +28,6 @@ __all__ = [
 import difflib
 import math
 import re
-from typing import Any
 
 CM_PER_INCH: float = 2.54
 MM_PER_INCH: float = 25.4
@@ -79,22 +78,24 @@ _WIDTH_RE = re.compile(
 )
 
 
-class Length(float):
+class Length:
     """Physical length with multi-unit views.
 
-    Mirrors the :class:`~dartwork_mpl.color.Color` design at the
-    *interface* layer — multi-unit views (``.cm``, ``.mm``,
-    ``.inch``, ``.pt``) as properties, classmethod constructors per
-    unit, and unit-string parsing in ``__init__`` — while remaining
-    a ``float`` subclass under the hood so that
-    ``plt.figure(figsize=(dm.cm(15), dm.cm(9)))`` and other
-    matplotlib APIs accept tuples of :class:`Length` directly via
-    numpy's array coercion. The canonical stored value is **inches**,
-    matching matplotlib's ``figsize`` contract.
+    Mirrors the :class:`~dartwork_mpl.color.Color` design: an opaque
+    wrapper with a single canonical store (inches) and per-unit
+    property views (``length.cm``, ``length.mm``, ``length.inch``,
+    ``length.pt``). Deliberately **not** a ``float`` subclass —
+    passing a :class:`Length` directly to a matplotlib API would
+    silently mis-interpret the unit at non-inch boundaries
+    (``fontsize=`` / ``linewidth=`` are pt; transform offsets are
+    px), so callers must always pick a unit explicitly when crossing
+    out of dartwork-mpl. For figsize specifically, use
+    :func:`dartwork_mpl.figsize` (the recommended idiom) or the
+    explicit ``length.inch`` view.
 
-    DPI-dependent units (``px``) are deliberately not exposed — a
-    caller that needs pixels can write ``length.inch * fig.dpi`` and
-    keep the dependency explicit at the call site.
+    DPI-dependent units (``px``) are not exposed on the class itself
+    — a caller that needs pixels can write ``length.inch * fig.dpi``
+    and keep the dependency explicit at the call site.
 
     Parameters
     ----------
@@ -114,19 +115,18 @@ class Length(float):
     >>> w = dm.Length("13cm")
     >>> w.cm, w.mm, w.inch, w.pt
     (13.0, 130.0, 5.118110236220472, 368.5039370078739)
+    >>> # Crossing into matplotlib — pick the unit explicitly:
+    >>> import matplotlib.pyplot as plt
+    >>> fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
+    >>> ax.set_xlabel("x", fontsize=dm.pt(10).pt)
     """
 
-    __slots__ = ()
-    # Opt out of numpy's universal-function dispatch so that
-    # ``np.float64(2) * cm(9)`` falls back to ``Length.__rmul__`` and
-    # the ``Length`` tag survives the ufunc round-trip. Without this,
-    # arithmetic at numpy boundaries would silently decay to a bare
-    # ``np.float64`` and re-open the cm/inch corruption hole.
-    __array_ufunc__ = None
+    __slots__ = ("_inch",)
 
-    def __new__(cls, value: str | Length) -> Length:
+    def __init__(self, value: str | Length) -> None:
         if isinstance(value, Length):
-            return float.__new__(cls, float(value))
+            self._inch: float = value._inch
+            return
         if isinstance(value, (bool, int, float)):
             # ``bool`` is an ``int`` subclass; trap before the numeric
             # branch so ``Length(True)`` and ``Length(1)`` produce the
@@ -143,7 +143,7 @@ class Length(float):
                 f"Length(value) accepts str or Length (got "
                 f"{type(value).__name__})"
             )
-        return float.__new__(cls, _parse_unit_string(value))
+        self._inch = _parse_unit_string(value)
 
     # ------------------------------------------------------------------ #
     # Constructors                                                        #
@@ -152,22 +152,29 @@ class Length(float):
     @classmethod
     def from_cm(cls, value: float) -> Length:
         """Construct from centimeters."""
-        return float.__new__(cls, _validate_positive(value) / CM_PER_INCH)
+        return cls._from_inch(_validate_positive(value) / CM_PER_INCH)
 
     @classmethod
     def from_mm(cls, value: float) -> Length:
         """Construct from millimeters."""
-        return float.__new__(cls, _validate_positive(value) / MM_PER_INCH)
+        return cls._from_inch(_validate_positive(value) / MM_PER_INCH)
 
     @classmethod
     def from_inch(cls, value: float) -> Length:
         """Construct from inches."""
-        return float.__new__(cls, _validate_positive(value))
+        return cls._from_inch(_validate_positive(value))
 
     @classmethod
     def from_pt(cls, value: float) -> Length:
         """Construct from PostScript points (1 pt = 1/72 in)."""
-        return float.__new__(cls, _validate_positive(value) / PT_PER_INCH)
+        return cls._from_inch(_validate_positive(value) / PT_PER_INCH)
+
+    @classmethod
+    def _from_inch(cls, inch_value: float) -> Length:
+        # Internal fast-path that skips str-parsing in __init__.
+        obj = cls.__new__(cls)
+        obj._inch = float(inch_value)
+        return obj
 
     # ------------------------------------------------------------------ #
     # Unit views                                                          #
@@ -176,92 +183,115 @@ class Length(float):
     @property
     def cm(self) -> float:
         """Length expressed in centimeters."""
-        return float(self) * CM_PER_INCH
+        return self._inch * CM_PER_INCH
 
     @property
     def mm(self) -> float:
         """Length expressed in millimeters."""
-        return float(self) * MM_PER_INCH
+        return self._inch * MM_PER_INCH
 
     @property
     def inch(self) -> float:
         """Length expressed in inches (the canonical internal unit)."""
-        return float(self)
+        return self._inch
 
     @property
     def pt(self) -> float:
         """Length expressed in PostScript points (1 pt = 1/72 in)."""
-        return float(self) * PT_PER_INCH
+        return self._inch * PT_PER_INCH
 
     # ------------------------------------------------------------------ #
-    # Arithmetic — preserve the Length tag so doubled/summed values      #
-    # still pass parse_width's gate (raw floats are rejected) and so    #
-    # ``cm(9) * 2`` keeps its multi-unit view surface.                  #
+    # Arithmetic — preserve the Length tag for Length operands; reject   #
+    # bare scalars at every binary op so callers must always pick a     #
+    # unit explicitly when leaving dartwork-mpl. The cm/inch guard      #
+    # the class exists for sits at every boundary, not just the parser. #
     # ------------------------------------------------------------------ #
 
-    def _wrap(self, value: float) -> Length:
-        if isinstance(value, Length):
-            return value
-        return float.__new__(Length, float(value))
+    def __add__(self, other: Length) -> Length:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return Length._from_inch(self._inch + other._inch)
 
-    # ``+`` / ``-`` accept any numeric operand and preserve the
-    # Length tag. Strict "Length + scalar = TypeError" is rejected
-    # because (a) ``Inches`` was lax in this same way, (b) matplotlib
-    # internals do ``0 + width`` to compute bbox extents — refusing
-    # would force a doc-wide migration for no real safety win. The
-    # cm/inch guard sits at the parser boundary (``parse_width`` /
-    # ``Length(...)``) where unit ambiguity actually matters, not on
-    # every arithmetic op against an already-typed Length.
+    def __radd__(self, other: Length) -> Length:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return Length._from_inch(other._inch + self._inch)
 
-    def __add__(self, other: float) -> Length:
-        return self._wrap(float.__add__(self, other))
+    def __sub__(self, other: Length) -> Length:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return Length._from_inch(self._inch - other._inch)
 
-    def __radd__(self, other: float) -> Length:
-        return self._wrap(float.__radd__(self, other))
-
-    def __sub__(self, other: float) -> Length:
-        return self._wrap(float.__sub__(self, other))
-
-    def __rsub__(self, other: float) -> Length:
-        return self._wrap(float.__rsub__(self, other))
+    def __rsub__(self, other: Length) -> Length:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return Length._from_inch(other._inch - self._inch)
 
     def __mul__(self, other: float) -> Length:
-        # ``Length * Length`` (area) has no representation at this
-        # layer — return NotImplemented so Python raises TypeError
-        # instead of silently producing an inch² value.
+        # ``Length * Length`` (area) has no representation here.
+        # ``bool`` is an ``int`` subclass — reject before the numeric
+        # branch so ``cm(9) * True`` doesn't silently scale by 1.
         if isinstance(other, Length):
             return NotImplemented
-        return self._wrap(float.__mul__(self, other))
+        if isinstance(other, bool) or not isinstance(other, (int, float)):
+            return NotImplemented
+        return Length._from_inch(self._inch * float(other))
 
     def __rmul__(self, other: float) -> Length:
+        return self.__mul__(other)
+
+    def __truediv__(self, other: float | Length) -> Length | float:
         if isinstance(other, Length):
+            # Ratio of two lengths — dimensionless float.
+            return self._inch / other._inch
+        if isinstance(other, bool) or not isinstance(other, (int, float)):
             return NotImplemented
-        return self._wrap(float.__rmul__(self, other))
-
-    def __truediv__(self, other: Any) -> Length | float:
-        if isinstance(other, Length):
-            # Ratio of two lengths — dimensionless plain float.
-            return float.__truediv__(self, float(other))
-        return self._wrap(float.__truediv__(self, other))
-
-    def __rtruediv__(self, other: Any) -> Length | float:
-        if isinstance(other, Length):
-            return float.__truediv__(float(other), float(self))
-        return self._wrap(float.__rtruediv__(self, other))
+        return Length._from_inch(self._inch / float(other))
 
     def __neg__(self) -> Length:
-        return self._wrap(float.__neg__(self))
+        return Length._from_inch(-self._inch)
 
     def __abs__(self) -> Length:
-        return self._wrap(float.__abs__(self))
+        return Length._from_inch(abs(self._inch))
+
+    # ------------------------------------------------------------------ #
+    # Comparison & hashing                                                #
+    # ------------------------------------------------------------------ #
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Length):
+            return self._inch == other._inch
+        return NotImplemented
+
+    def __lt__(self, other: Length) -> bool:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return self._inch < other._inch
+
+    def __le__(self, other: Length) -> bool:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return self._inch <= other._inch
+
+    def __gt__(self, other: Length) -> bool:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return self._inch > other._inch
+
+    def __ge__(self, other: Length) -> bool:
+        if not isinstance(other, Length):
+            return NotImplemented
+        return self._inch >= other._inch
+
+    def __hash__(self) -> int:
+        return hash((Length, self._inch))
 
     def __repr__(self) -> str:
         # Show cm at sub-decimeter scales, otherwise prefer inches —
         # matches how users typically thought about the value at input.
-        v = float(self)
-        if v < 1.0:
+        if self._inch < 1.0:
             return f"Length({self.cm:.4f}cm)"
-        return f"Length({v:.4f}in)"
+        return f"Length({self._inch:.4f}in)"
 
 
 # ---------------------------------------------------------------------- #
@@ -398,16 +428,14 @@ def parse_width(value: str | Length) -> float:
         If the input cannot be parsed, has an unknown unit, or is
         non-positive.
     """
-    # Order matters: ``Length`` is a ``float`` subclass, so its check
-    # must come before the int/float reject below. ``isinstance(bool)``
-    # is also caught here since bool ⊂ int — but bool can never be a
-    # Length, so the Length branch never fires for bool/int/float.
     if isinstance(value, Length):
-        v = float(value)
+        v = value._inch
         if not math.isfinite(v) or v <= 0:
             raise ValueError(f"width must be positive and finite (got {v})")
         return v
 
+    # bool is a subclass of int; trap it before the int/float branch so
+    # the message is the same as for any other unit-less number.
     if isinstance(value, (bool, int, float)):
         raise TypeError(
             f"width must be a unit string like '13cm' / '5in' / '170mm' "
