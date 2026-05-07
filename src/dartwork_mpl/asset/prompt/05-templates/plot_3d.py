@@ -21,5 +21,5 @@ for (cx, cy, cz), color in zip(centers, colors, strict=False):
 ax.set_xlabel("X axis")
 ax.set_ylabel("Y axis")
 ax.set_zlabel("Z axis")
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(fig, "plot_3d")

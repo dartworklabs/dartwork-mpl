@@ -21,5 +21,5 @@ for ax, (label, y) in zip(axes.flat, panels, strict=False):
     ax.plot(x, y, color="oc.blue6", linewidth=0.8)
     ax.set_xlabel("x")
     ax.set_ylabel(label)
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(fig, "small_multiples")

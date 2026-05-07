@@ -16,7 +16,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 import matplotlib.pyplot as plt
-import pytest
 from matplotlib.figure import Figure
 
 import dartwork_mpl as dm
@@ -714,17 +713,9 @@ SCENARIOS: list = [
         name="long_xtick_labels_45_rotation",
         build=_build_long_xtick_labels_45_rotation,
     ),
-    pytest.param(
-        RobustnessScenario(
-            name="long_xtick_labels_90_rotation",
-            build=_build_long_xtick_labels_90_rotation,
-        ),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason=(
-                "OVERFLOW persists at 90-degree rotation (KNOWN_LIMITATIONS)"
-            ),
-        ),
+    RobustnessScenario(
+        name="long_xtick_labels_90_rotation",
+        build=_build_long_xtick_labels_90_rotation,
     ),
     RobustnessScenario(
         name="long_ytick_labels_horizontal_bar",
@@ -799,39 +790,21 @@ SCENARIOS: list = [
         build=_build_extreme_bottom_squeeze,
         expect_warnings=("MARGIN_ASYMMETRY",),
     ),
-    pytest.param(
-        RobustnessScenario(
-            name="outside_axes_annotation",
-            build=_build_outside_axes_annotation,
-            # Axes-fraction annotations move *with* the subplot; auto_layout
-            # may need extra iterations.
-            auto_layout_max_iter=15,
-        ),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason=(
-                "axes-fraction xytext at (-0.4, 0.5) escapes canvas; "
-                "auto_layout cannot reach necessary padding within "
-                "max_iter (KNOWN_LIMITATIONS)"
-            ),
-        ),
+    RobustnessScenario(
+        name="outside_axes_annotation",
+        build=_build_outside_axes_annotation,
+        # Axes-fraction annotations move *with* the subplot; the
+        # direct-calc loop converges within ``_MAX_ITER`` (8 in
+        # practice), so no scenario-specific override is needed.
+        auto_layout_max_iter=15,
     ),
     RobustnessScenario(
         name="axes_fraction_text_below_zero",
         build=_build_axes_fraction_text_below_zero,
         auto_layout_max_iter=15,
     ),
-    pytest.param(
-        RobustnessScenario(
-            name="colorbar_below_axes", build=_build_colorbar_below_axes
-        ),
-        marks=pytest.mark.xfail(
-            strict=True,
-            reason=(
-                "horizontal colorbar overshoots top edge after "
-                "auto_layout (KNOWN_LIMITATIONS)"
-            ),
-        ),
+    RobustnessScenario(
+        name="colorbar_below_axes", build=_build_colorbar_below_axes
     ),
     # D. Data degeneracies
     RobustnessScenario(

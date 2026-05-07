@@ -15,5 +15,5 @@ for patch, color in zip(bp["boxes"], colors, strict=False):
     patch.set_facecolor(color)
 ax.set_xticklabels(["std=1", "std=2", "std=3", "std=4"])
 ax.set_ylabel("Value")
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(fig, "boxplot")

@@ -28,7 +28,7 @@ def _figure_clean():
     ax.plot([0, 1, 2], [0, 1, 2])
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
-    dm.auto_layout(fig)
+    dm.simple_layout(fig)
     return fig, ax
 
 
@@ -45,7 +45,7 @@ class TestGetFixSuggestions:
         assert all(isinstance(s, str) for s in suggestions)
         # The left-overflow branch offers at least one concrete fix
         assert any(
-            "auto_layout" in s or "subplots_adjust" in s for s in suggestions
+            "simple_layout" in s or "subplots_adjust" in s for s in suggestions
         )
 
     def test_unknown_check_id_returns_empty(self) -> None:
@@ -148,7 +148,7 @@ class TestGetFixSuggestionsBranches:
             detail={},
         )
         suggestions = dm.validate_fixes.get_fix_suggestions(warning)
-        assert any("auto_layout" in s for s in suggestions)
+        assert any("simple_layout" in s for s in suggestions)
 
     def test_legend_overflow(self) -> None:
         warning = VisualWarning(
@@ -200,7 +200,7 @@ class TestGetFixSuggestionsBranches:
             detail={"side": "left"},
         )
         suggestions = dm.validate_fixes.get_fix_suggestions(warning)
-        assert any("auto_layout" in s for s in suggestions)
+        assert any("simple_layout" in s for s in suggestions)
 
     def test_pie_label_offset(self) -> None:
         warning = VisualWarning(
@@ -213,7 +213,7 @@ class TestGetFixSuggestionsBranches:
         assert any("pctdistance=0.65" in s for s in suggestions)
 
     def test_clipped_text(self) -> None:
-        """CLIPPED_TEXT branch returns 3 suggestions including auto_layout."""
+        """CLIPPED_TEXT branch returns 3 suggestions including simple_layout."""
         warning = VisualWarning(
             severity=Severity.WARNING,
             check_id="CLIPPED_TEXT",
@@ -222,6 +222,6 @@ class TestGetFixSuggestionsBranches:
         )
         suggestions = dm.validate_fixes.get_fix_suggestions(warning)
         assert len(suggestions) == 3
-        assert any("auto_layout" in s for s in suggestions)
+        assert any("simple_layout" in s for s in suggestions)
         assert any("rotate_tick_labels" in s for s in suggestions)
         assert any("labelsize" in s for s in suggestions)

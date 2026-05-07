@@ -34,12 +34,12 @@ def get_fix_suggestions(warning: VisualWarning) -> list[str]:
             suggestions.append(
                 f"# Increase left margin\nfig.subplots_adjust(left={0.15 + px / 100:.2f})"
             )
-            suggestions.append("# Or use auto_layout\ndm.auto_layout(fig)")
+            suggestions.append("# Or use simple_layout\ndm.simple_layout(fig)")
         elif side == "right":
             suggestions.append(
                 f"# Increase right margin\nfig.subplots_adjust(right={0.95 - px / 100:.2f})"
             )
-            suggestions.append("# Or use auto_layout\ndm.auto_layout(fig)")
+            suggestions.append("# Or use simple_layout\ndm.simple_layout(fig)")
         elif side == "bottom":
             suggestions.append(
                 f"# Increase bottom margin\nfig.subplots_adjust(bottom={0.15 + px / 100:.2f})"
@@ -56,7 +56,7 @@ def get_fix_suggestions(warning: VisualWarning) -> list[str]:
         suggestions.append(
             "# Adjust text positions\nax.text(..., ha='left')  # Change alignment"
         )
-        suggestions.append("# Use auto_layout\ndm.auto_layout(fig)")
+        suggestions.append("# Use simple_layout\ndm.simple_layout(fig)")
         suggestions.append("# Reduce font size\nax.legend(fontsize=dm.fs(-1))")
 
     elif warning.check_id == "LEGEND_OVERFLOW":
@@ -92,9 +92,9 @@ def get_fix_suggestions(warning: VisualWarning) -> list[str]:
     elif warning.check_id == "MARGIN_ASYMMETRY":
         side = warning.detail.get("side", "")
         if side in ["left", "right"]:
-            suggestions.append("# Center horizontally\ndm.auto_layout(fig)")
+            suggestions.append("# Center horizontally\ndm.simple_layout(fig)")
         else:
-            suggestions.append("# Center vertically\ndm.auto_layout(fig)")
+            suggestions.append("# Center vertically\ndm.simple_layout(fig)")
 
     elif warning.check_id == "PIE_LABEL_OFFSET":
         ideal_r = warning.detail.get("ideal_r", 0.7)
@@ -103,7 +103,9 @@ def get_fix_suggestions(warning: VisualWarning) -> list[str]:
         )
 
     elif warning.check_id == "CLIPPED_TEXT":
-        suggestions.append("# Run the auto-layout pass\ndm.auto_layout(fig)")
+        suggestions.append(
+            "# Run the simple_layout pass\ndm.simple_layout(fig)"
+        )
         suggestions.append(
             "# Or rotate the offending label\n"
             "dm.rotate_tick_labels(ax, axis='x', rotation=45)"
@@ -163,15 +165,15 @@ def validate_with_fixes(
             and warning.check_id in ["OVERFLOW", "MARGIN_ASYMMETRY"]
         ):
             try:
-                dm.auto_layout(fig)
+                dm.simple_layout(fig)
                 applied_fixes.append(
-                    f"Applied dm.auto_layout() for {warning.check_id}"
+                    f"Applied dm.simple_layout() for {warning.check_id}"
                 )
                 if verbose:
-                    print("  ✓ Auto-applied: dm.auto_layout()")
+                    print("  ✓ Auto-applied: dm.simple_layout()")
             except Exception as e:  # noqa: BLE001
                 # Auto-apply is opportunistic — any layout failure
-                # (simple_layout/SciPy regressions, backend errors,
+                # (simple_layout regressions, backend errors,
                 # custom artist exceptions) must report a failed fix
                 # and continue, not abort the whole validate_with_fixes
                 # run. Narrowing the catch silently regressed that.

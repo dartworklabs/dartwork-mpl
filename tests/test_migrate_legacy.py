@@ -61,7 +61,7 @@ class TestHintComments:
         out = migrate_legacy_code("plt.tight_layout()")
         assert "TODO(dm-migrate)" in out
         assert "tight_layout()" in out
-        assert "auto_layout" in out  # hint mentions replacement
+        assert "simple_layout" in out  # hint mentions replacement
 
     def test_agent_utils_gets_hint(self) -> None:
         out = migrate_legacy_code("from dm.agent_utils import lint_code")

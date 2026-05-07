@@ -66,12 +66,17 @@ def test_robustness_scenario(
             f"{must_have!r} in {pre_ids!r}"
         )
 
-    # Stage 2: layout convergence.
-    dm.auto_layout(
-        fig,
-        padding=scenario.auto_layout_padding,
-        max_iter=scenario.auto_layout_max_iter,
+    # Stage 2: layout convergence. The ``auto_layout_padding`` field
+    # is in inches (legacy ``auto_layout`` semantics); convert to a
+    # :class:`~dartwork_mpl.Length` so the new ``simple_layout`` keeps
+    # the same physical margin. ``auto_layout_max_iter`` no longer
+    # has an effect — direct-calc converges deterministically.
+    margin = (
+        dm.Length.from_inch(scenario.auto_layout_padding)
+        if scenario.auto_layout_padding
+        else 0
     )
+    dm.simple_layout(fig, margin=margin)
 
     # Stage 3: save round-trip — must not crash, and the file must be
     # non-empty (matplotlib silently writes 0-byte files on certain

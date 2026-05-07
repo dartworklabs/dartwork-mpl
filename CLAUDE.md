@@ -27,7 +27,7 @@ import dartwork_mpl as dm
 dm.style.use("scientific")                       # 1. pick a preset
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))  # 2. physical width + aspect token via dm.figsize
 # ... draw on ax ...
-dm.auto_layout(fig)                              # 3. content-aware margins (replaces tight_layout)
+dm.simple_layout(fig)                            # 3. deterministic content-aware margins (replaces tight_layout)
 dm.save_formats(fig, "out", formats=("png", "pdf"))     # 4. multi-format save
 ```
 
@@ -41,7 +41,7 @@ dm.save_formats(fig, "out", formats=("png", "pdf"))     # 4. multi-format save
   units don't have to match — `dm.figsize("13cm", "5in")` is fine.
 - **Never call**: `plt.tight_layout()`, raw `figsize=(w, h)` tuples on
   `plt.subplots` / `plt.figure`. Always wrap with `dm.figsize(...)`
-  and call `dm.auto_layout(fig)` after plotting.
+  and call `dm.simple_layout(fig)` after plotting.
 
 ## Anti-patterns (top 3)
 
@@ -51,7 +51,7 @@ Run the lint engine via the MCP tool `lint_dartwork_mpl_code` (see
 below) for the complete list. The most common ones AI agents trip on:
 
 1. **`figsize=(w, h)` literal** — wrap with `dm.figsize("<n>cm", "<aspect>")`.
-2. **`plt.tight_layout()`** — use `dm.auto_layout(fig)` instead.
+2. **`plt.tight_layout()`** — use `dm.simple_layout(fig)` instead.
 3. **`dm.subplots` / `dm.figure`** — REMOVED. Use
    `plt.subplots(figsize=dm.figsize(...))` and call `dm.style.use(...)`
    separately.
