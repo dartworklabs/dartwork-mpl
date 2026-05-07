@@ -4,7 +4,7 @@ Perceptual Color Interpolation (OKLCH)
 
 ``dm.cspace()`` interpolates between two colors in the perceptually uniform OKLCH
 color space, preventing sequential gradients from becoming muddy or inconsistent
-in lightness. Use ``dm.named()`` to convert named palette colors to ``Color`` objects before interpolation.
+in lightness. Use ``dm.color()`` to convert named palette colors to ``Color`` objects before interpolation.
 """
 
 import matplotlib.pyplot as plt
@@ -20,9 +20,9 @@ n_colors = 8
 x = np.linspace(0, 10, 100)
 
 # ── Panel 1: Sequential scale (light blue → dark blue) ──
-# dm.named() converts palette strings to Color objects for cspace
+# dm.color() converts palette strings to Color objects for cspace
 colors_seq = dm.cspace(
-    dm.named("oc.blue1"), dm.named("oc.blue9"), n=n_colors, space="oklch"
+    dm.color("oc.blue1"), dm.color("oc.blue9"), n=n_colors, space="oklch"
 )
 axs[0].set_title("Sequential Scale via OKLCH")
 
@@ -32,7 +32,7 @@ for i, c in enumerate(colors_seq):
 
 # ── Panel 2: Warm sequential scale (yellow → deep red) ──
 colors_warm = dm.cspace(
-    dm.named("oc.yellow3"), dm.named("oc.red9"), n=n_colors, space="oklch"
+    dm.color("oc.yellow3"), dm.color("oc.red9"), n=n_colors, space="oklch"
 )
 axs[1].set_title("Warm Sequential Scale via OKLCH")
 

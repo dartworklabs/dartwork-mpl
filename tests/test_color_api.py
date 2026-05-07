@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.colors import Color, cspace, hex, named, oklab, oklch, rgb
+from dartwork_mpl.colors import Color, cspace, hex, oklab, oklch, rgb
 
 # ============================================================================
 # Convenience constructors
@@ -72,24 +72,6 @@ class TestHex:
         assert r == pytest.approx(1.0, abs=0.01)
         assert g == pytest.approx(0.0, abs=0.01)
         assert b == pytest.approx(0.0, abs=0.01)
-
-
-class TestNamed:
-    """Tests for named() convenience constructor."""
-
-    def test_creates_color(self) -> None:
-        c = named("red")
-        assert isinstance(c, Color)
-
-    def test_known_red(self) -> None:
-        c = named("red")
-        r, g, b = c.to_rgb()
-        assert r == pytest.approx(1.0, abs=0.01)
-
-    def test_prefixed_color(self) -> None:
-        """Named colors with oc./tw. prefixes should work."""
-        c = named("oc.blue5")
-        assert isinstance(c, Color)
 
 
 # ============================================================================

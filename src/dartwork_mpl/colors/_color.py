@@ -7,7 +7,7 @@ interpolation function, and convenient constructor functions.
 
 from __future__ import annotations
 
-__all__ = ["Color", "color", "cspace", "hex", "named", "oklab", "oklch", "rgb"]
+__all__ = ["Color", "color", "cspace", "hex", "oklab", "oklch", "rgb"]
 
 import math
 import re
@@ -681,33 +681,6 @@ def hex(hex_str: str) -> Color:
         A new Color instance.
     """
     return Color.from_hex(hex_str)
-
-
-def named(color_name: str) -> Color:
-    """
-    Create a Color from a Matplotlib named color.
-
-    Parameters
-    ----------
-    color_name : str
-        A color name recognized by Matplotlib
-        (e.g., 'red', 'oc.blue5', 'tw.blue500').
-
-    Returns
-    -------
-    Color
-        A new Color instance.
-    """
-    import warnings
-
-    if color_name.startswith("dm."):
-        warnings.warn(
-            f"The 'dm.' color prefix is deprecated and will be removed in a future version. "
-            f"Please use 'dc.{color_name[3:]}' instead of '{color_name}'.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-    return Color.from_name(color_name)
 
 
 def color(value: Color | str) -> Color:
