@@ -25,6 +25,9 @@ ax.plot(x, y, color="tw.rose500", lw=dm.lw(2))
 dm.arrow_axis(ax, "x", "Standard Deviation")
 dm.arrow_axis(ax, "y", "Probability Density")
 
-# Use simple_layout with sufficient margins for arrow axes
-dm.simple_layout(fig, margins=(0.12, 0.08, 0.12, 0.08))
+# Arrow axes extend past the standard plot area — give the bottom and
+# left edges extra inset so the arrowheads don't kiss the canvas.
+dm.simple_layout(
+    fig, ml=dm.inch(0.12), mr=dm.inch(0.08), mb=dm.inch(0.12), mt=dm.inch(0.08)
+)
 plt.show()
