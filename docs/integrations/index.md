@@ -20,7 +20,7 @@ MCP server: every high-value composition helper is reachable as
 |---|---|
 | Verify input data shape before plotting | `dm.validate_data(...)` |
 | Pick a chart type from a data description | `dm.suggest_chart_type(...)` |
-| Pick a categorical palette automatically | `dm.auto_select_colors(...)` |
+| Get a curated palette for N data series | `dm.make_palette(n, kind=...)` |
 | Add value labels on top of bars / points | `dm.add_value_labels(ax, ...)` |
 | Place the legend without overlapping data | `dm.optimize_legend(ax, ...)` |
 | Run heuristic quality checks on a figure | `dm.check_figure_quality(fig)` |

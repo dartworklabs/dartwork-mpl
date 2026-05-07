@@ -95,6 +95,7 @@ Quick Start <quickstart>
 Styles and Presets <styles>
 Colors and Colormaps <colors>
 Layout and Typography <layout>
+Recipes <recipes>
 Save and Validation <save_export>
 Extended Plots & Diagnostics <extras>
 Interactive UI <interactive>

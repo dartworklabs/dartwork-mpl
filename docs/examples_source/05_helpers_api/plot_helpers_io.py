@@ -28,7 +28,13 @@ ax.set_xlabel("x", fontsize=dm.fs(0))
 ax.set_ylabel("y", fontsize=dm.fs(0))
 ax.set_title("Styled Figure", fontsize=dm.fs(2))
 ax.legend(fontsize=dm.fs(-1))
-dm.minimal_axes(ax)
+# Inline minimal-axes recipe (top/right hidden + light dashed y-grid).
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+ax.grid(
+    True, axis="y", alpha=0.2, color="oc.gray3", linestyle="--", linewidth=0.5
+)
+ax.set_axisbelow(True)
 dm.simple_layout(fig)
 
 # To save to disk, use dm.save_formats:

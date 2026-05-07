@@ -1,7 +1,17 @@
-"""Color selection and management utilities for dartwork-mpl agents.
+"""Curated palette lookup for dartwork-mpl.
 
-This module provides functions for automatic color selection and
-color scheme management.
+`make_palette` returns a list of dartwork color names sized to the
+requested series count and palette kind. The four built-in lists
+(categorical, sequential blue at two cardinalities, diverging
+red-blue at two cardinalities) are the dartwork-mpl recommended
+series colors; they live inside this function so the project's
+palette curation stays centralised.
+
+Renamed from `auto_select_colors` in 0.5 (`#156` Round 5):
+- ``auto_`` prefix collided with ``auto_layout`` (measure-and-adjust).
+- ``select_colors`` was a strong verb for what is structurally a list slice.
+- ``palette`` is the existing domain term used by ``list_palettes``
+  and ``show_palette``.
 """
 
 from __future__ import annotations
@@ -9,35 +19,40 @@ from __future__ import annotations
 from typing import Literal
 
 
-def auto_select_colors(
-    n_series: int,
-    color_type: Literal[
-        "categorical", "sequential", "diverging"
-    ] = "categorical",
-    highlight_index: int | None = None,
+def make_palette(
+    n: int,
+    kind: Literal["categorical", "sequential", "diverging"] = "categorical",
+    highlight: int | None = None,
 ) -> list[str]:
-    """Automatically select appropriate colors for data series.
+    """Return ``n`` curated dartwork color names for ``kind`` series.
 
     Parameters
     ----------
-    n_series : int
-        Number of data series
-    color_type : str
-        Type of color scheme to use
-    highlight_index : int | None
-        Index of series to highlight
+    n : int
+        Number of series the palette must cover. Colors repeat if
+        ``n`` exceeds the built-in list for ``kind``.
+    kind : {"categorical", "sequential", "diverging"}
+        Palette family. ``categorical`` returns distinct hues;
+        ``sequential`` returns light→dark blues; ``diverging``
+        returns red↔blue through gray.
+    highlight : int | None
+        If set, the series at this index becomes darker (``oc.*7``)
+        and the rest become lighter (``oc.*3``) to emphasise it.
+        Only effective for the categorical and (loosely) diverging
+        palettes whose names contain a ``"5"`` middle shade.
 
     Returns
     -------
     list[str]
-        List of dartwork color names
+        Length-``n`` list of dartwork color names.
 
     Examples
     --------
-    >>> colors = auto_select_colors(5, "categorical")
-    >>> colors = auto_select_colors(3, highlight_index=0)
+    >>> make_palette(5)                           # 5 categorical series
+    >>> make_palette(3, kind="sequential")        # 3 sequential blues
+    >>> make_palette(4, highlight=0)              # emphasise series 0
     """
-    if color_type == "categorical":
+    if kind == "categorical":
         # Distinct colors for categorical data
         base_colors = [
             "oc.blue5",
@@ -49,15 +64,15 @@ def auto_select_colors(
             "oc.pink5",
             "oc.yellow5",
         ]
-    elif color_type == "sequential":
+    elif kind == "sequential":
         # Gradient from light to dark
-        if n_series <= 5:
+        if n <= 5:
             base_colors = [f"oc.blue{i}" for i in range(3, 8)]
         else:
             base_colors = [f"oc.blue{i}" for i in range(1, 10)]
-    elif color_type == "diverging":
+    elif kind == "diverging":
         # Red to blue through gray
-        if n_series <= 5:
+        if n <= 5:
             base_colors = [
                 "oc.red6",
                 "oc.red4",
@@ -76,22 +91,22 @@ def auto_select_colors(
                 "oc.blue7",
             ]
     else:
-        raise ValueError(f"Unknown color_type: {color_type}")
+        raise ValueError(f"Unknown kind: {kind!r}")
 
     # Select colors
-    if n_series <= len(base_colors):
-        colors = base_colors[:n_series]
+    if n <= len(base_colors):
+        colors = base_colors[:n]
     else:
         # Repeat colors if needed
-        colors = base_colors * (n_series // len(base_colors) + 1)
-        colors = colors[:n_series]
+        colors = base_colors * (n // len(base_colors) + 1)
+        colors = colors[:n]
 
     # Apply highlighting
-    if highlight_index is not None and 0 <= highlight_index < n_series:
+    if highlight is not None and 0 <= highlight < n:
         # Make highlighted series darker, others lighter
         new_colors = []
         for i, color in enumerate(colors):
-            if i == highlight_index:
+            if i == highlight:
                 # Keep original or make darker
                 new_colors.append(color.replace("5", "7"))
             else:

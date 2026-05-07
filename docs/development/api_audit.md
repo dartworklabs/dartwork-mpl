@@ -64,7 +64,7 @@
 | `format_axis_si` | `dartwork_mpl.formatting` | func | 37 | N | 29 | 3 | keep | multi-level prefix selection (k/M/G/T), negative sign handling, zero-tick special case | audited |
 | `format_axis_thousands` | `dartwork_mpl.formatting` | func | 6 | N | 2 | 2 | borderline | single FuncFormatter lambda with configurable sep — minimal transformation, no scaling logic — 토론 | removed |
 | `rotate_tick_labels` | `dartwork_mpl.formatting` | func | 26 | N | 25 | 2 | borderline | auto-ha inference (rotation sign → left/center/right) + FixedLocator-safe iteration — more than a 1-line setp call — 토론 | audited |
-| `auto_select_colors` | `dartwork_mpl.helpers.colors` | func | 63 | N | 33 | 3 | keep | categorical/sequential/diverging 3-way 분기 + highlight 인덱스 처리 — 카테고리 → 팔레트 매핑 | audited |
+| `auto_select_colors` | `dartwork_mpl.helpers.colors` | func | 63 | N | 33 | 3 | keep | categorical/sequential/diverging 3-way 분기 + highlight 인덱스 처리 — 카테고리 → 팔레트 매핑; renamed to `make_palette` in Round 5 (#156) with arg cleanup (n_series→n, color_type→kind, highlight_index→highlight) | renamed |
 | `validate_data` | `dartwork_mpl.helpers.data` | func | 43 | N | 26 | 2 | keep | NaN 제거·길이 검증·min_points 체크 — 데이터 shape 검증 | audited |
 | `create_figure_with_style` | `dartwork_mpl.helpers.io` | func | 9 | N | 22 | 2 | borderline | `dm.style.use(style)` + `plt.figure(figsize=..., dpi=...)` 2줄 shortcut; `figsize=` 안티패턴 직접 호출 — strong remove candidate | removed |
 | `save_figure` | `dartwork_mpl.helpers.io` | func | 11 | N | 24 | 2 | borderline | 내부적으로 `dm.save_formats` 1-line passthrough + mkdir + verbose print — double-wrapper, strong remove candidate | removed |
@@ -103,13 +103,13 @@
 | `fw` | `dartwork_mpl.scale` | func | 4 | N | 83 | 2 | keep | string weight name → numeric conversion via `_WEIGHT_MAP` + offset — no matplotlib equivalent | audited |
 | `lw` | `dartwork_mpl.scale` | func | 1 | N | 417 | 1 | keep | relative linewidth token (`rcParams['lines.linewidth'] + n`) — no matplotlib equivalent | audited |
 | `add_frame` | `dartwork_mpl.spines` | func | 4 | N | 10 | 2 | borderline | composition (visible+color+linewidth on all spines) — 토론 | removed |
-| `add_grid` | `dartwork_mpl.spines` | func | 11 | N | 21 | 2 | borderline | dm.* default kwargs(color, alpha 등) 가치 — 토론 | audited |
+| `add_grid` | `dartwork_mpl.spines` | func | 11 | N | 21 | 2 | remove | dm.* default kwargs(color, alpha 등) 가치 — round 4 of #141 / #156: removed; recipe at docs/usage_guide/recipes.md#publication-grid | removed |
 | `hide_all_spines` | `dartwork_mpl.spines` | func | 2 | Y | 28 | 1 | remove | `for s in ax.spines.values(): s.set_visible(False)` | removed |
 | `hide_spines` | `dartwork_mpl.spines` | func | 6 | Y | 13 | 1 | remove | `for s in ['top','right']: ax.spines[s].set_visible(False)` | removed |
-| `minimal_axes` | `dartwork_mpl.spines` | func | 7 | N | 30 | 3 | borderline | 4 함수 묶음 composition — 토론 | audited |
+| `minimal_axes` | `dartwork_mpl.spines` | func | 7 | N | 30 | 3 | remove | 4 함수 묶음 composition — round 4 of #141 / #156: removed; recipe at docs/usage_guide/recipes.md#minimal-axes-tufte-style | removed |
 | `remove_grid` | `dartwork_mpl.spines` | func | 1 | Y | 3 | 1 | remove | `ax.grid(False)` | removed |
 | `show_only_spines` | `dartwork_mpl.spines` | func | 4 | Y | 4 | 2 | remove | `for s in ['top','right','bottom','left']: ax.spines[s].set_visible(s in which)` | removed |
-| `style_spines` | `dartwork_mpl.spines` | func | 14 | N | 9 | 2 | borderline | composition (color+linewidth+visible filter) — 토론 | audited |
+| `style_spines` | `dartwork_mpl.spines` | func | 14 | N | 9 | 2 | remove | composition (color+linewidth+visible filter) — round 4 of #141 / #156: removed; recipe at docs/usage_guide/recipes.md#thin-gray-spines | removed |
 | `Style` | `dartwork_mpl.style` | class | 0 | N | 61 | 3 | keep | presets 로딩 + thread-safe rcParams 갱신 + use/stack/context/context_manager — 'One Right Way' 스타일 시스템 핵심 | audited |
 | `list_styles` | `dartwork_mpl.style` | func | 2 | N | 11 | 2 | keep | asset/mplstyle glob → stem 목록 — style discovery | audited |
 | `load_style_dict` | `dartwork_mpl.style` | func | 26 | N | 10 | 2 | keep | mplstyle 커스텀 파서 (inline comment 제거 + colon-split + float 변환) — no matplotlib equivalent | audited |
@@ -155,9 +155,9 @@ keep / remove로 재분류한다. `잠정 권고`는 본 spec §3 기준의 중�
 | `set_xmargin` | `dartwork_mpl.layout` | 7 | 8 | margin + 선택적 edge pinning composition (4-step) | **removed** (#141 round 3) |
 | `set_ymargin` | `dartwork_mpl.layout` | 7 | 7 | margin + 선택적 edge pinning composition (4-step) | **removed** (#141 round 3) |
 | `add_frame` | `dartwork_mpl.spines` | 4 | 10 | 전체 spine에 visible·color·linewidth 적용 composition | **removed** (#141 round 3) |
-| `add_grid` | `dartwork_mpl.spines` | 11 | 15 | dm.* 기본값(color, alpha 등) 적용 grid 헬퍼 | keep |
-| `minimal_axes` | `dartwork_mpl.spines` | 7 | 27 | 4개 함수 묶음 composition, 27 callsites | keep |
-| `style_spines` | `dartwork_mpl.spines` | 14 | 9 | color·linewidth·visible 필터 composition | keep |
+| `add_grid` | `dartwork_mpl.spines` | 11 | 15 | dm.* 기본값(color, alpha 등) 적용 grid 헬퍼 | **removed** (#156 round 4) |
+| `minimal_axes` | `dartwork_mpl.spines` | 7 | 27 | 4개 함수 묶음 composition, 27 callsites | **removed** (#156 round 4) |
+| `style_spines` | `dartwork_mpl.spines` | 14 | 9 | color·linewidth·visible 필터 composition | **removed** (#156 round 4) |
 | `get_source_code` | `dartwork_mpl.templates.diverging_bar` | 13 | 0 | importlib+inspect 경유 소스 반환 — 외부 callsite 0 | remove |
 | `make_offset` | `dartwork_mpl.util` | 2 | 21 | ScaledTranslation 2-line wrapper — LOC≤3 단순 래핑 | remove |
 | `mix_colors` | `dartwork_mpl.util` | 8 | 28 | RGB linspace 블렌딩 — OKLCH 미지원, 28 callsites | ? |

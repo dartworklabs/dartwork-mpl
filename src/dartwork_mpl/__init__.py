@@ -85,9 +85,6 @@ from .prompt import (
 # Scaling helpers
 from .scale import fs, fw, lw
 
-# Spine and grid utilities
-from .spines import add_grid, minimal_axes, style_spines
-
 # Import style module exports
 from .style import Style, list_styles, load_style_dict, style, style_path
 
@@ -110,8 +107,8 @@ col2: Length = cm(17)
 # single ``dm.<name>`` access path. The submodule namespace
 # (``dm.helpers.<name>``) remains available as well.
 from .helpers import (
-    auto_select_colors,
     check_figure_quality,
+    make_palette,
     optimize_legend,
     suggest_chart_type,
     validate_data,
@@ -198,10 +195,6 @@ __all__ = [  # noqa: RUF022
     "list_palettes",
     "list_colormaps",
     "show_palette",
-    # Spine and grid utilities
-    "style_spines",
-    "add_grid",
-    "minimal_axes",
     # Axes annotation
     "label_axes",
     "arrow_axis",
@@ -217,7 +210,7 @@ __all__ = [  # noqa: RUF022
     "validate_fixes",
     # Helpers (high-level composition utilities)
     "validate_data",
-    "auto_select_colors",
+    "make_palette",
     "optimize_legend",
     "suggest_chart_type",
     "check_figure_quality",
