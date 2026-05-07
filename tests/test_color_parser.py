@@ -123,3 +123,42 @@ def test_parse_unknown_function_falls_through_and_raises():
 def test_parse_rgb_non_numeric_args_raises():
     with pytest.raises(ValueError):
         Color.parse("rgb(red, 0, 0)")
+
+
+# --------------------------------------------------------------------------- #
+# Module-level color() — thin wrapper over Color.parse                        #
+# --------------------------------------------------------------------------- #
+
+
+from dartwork_mpl.colors import color  # noqa: E402  (intentional late import)
+
+
+def test_color_passthrough_returns_same_object():
+    c = Color.from_hex("#ff0000")
+    assert color(c) is c
+
+
+def test_color_string_delegates_to_parse():
+    expected = Color.parse("oc.red5")
+    assert color("oc.red5").to_hex() == expected.to_hex()
+
+
+def test_color_hex_via_module_function():
+    assert color("#00ff00").to_hex() == "#00ff00"
+
+
+def test_color_rejects_non_str_non_color():
+    with pytest.raises(TypeError):
+        color(123)  # type: ignore[arg-type]
+
+
+def test_color_rejects_none():
+    with pytest.raises(TypeError):
+        color(None)  # type: ignore[arg-type]
+
+
+def test_color_is_exported_at_top_level():
+    import dartwork_mpl as dm
+
+    assert dm.color is color
+    assert dm.color("#ff0000").to_hex() == "#ff0000"

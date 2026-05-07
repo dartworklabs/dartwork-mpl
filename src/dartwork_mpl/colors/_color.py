@@ -7,7 +7,7 @@ interpolation function, and convenient constructor functions.
 
 from __future__ import annotations
 
-__all__ = ["Color", "cspace", "hex", "named", "oklab", "oklch", "rgb"]
+__all__ = ["Color", "color", "cspace", "hex", "named", "oklab", "oklch", "rgb"]
 
 import math
 import re
@@ -708,3 +708,35 @@ def named(color_name: str) -> Color:
             stacklevel=2,
         )
     return Color.from_name(color_name)
+
+
+def color(value: Color | str) -> Color:
+    """Parse a string or pass through a :class:`Color` instance.
+
+    String-parser counterpart to :func:`hex`, :func:`rgb`,
+    :func:`oklch`, :func:`oklab`, and palette-name lookup. Mirrors
+    :func:`dartwork_mpl.length` for unit strings.
+
+    Examples
+    --------
+    >>> import dartwork_mpl as dm
+    >>> dm.color("#ff0000")            # hex
+    >>> dm.color("rgb(1, 0, 0)")       # functional
+    >>> dm.color("oklch(0.7, 0.15, 30)")
+    >>> dm.color("oc.red5")            # palette name
+
+    Parameters
+    ----------
+    value : Color or str
+        A :class:`Color` instance is returned unchanged. A string is
+        dispatched through :meth:`Color.parse`.
+
+    Returns
+    -------
+    Color
+    """
+    if isinstance(value, Color):
+        return value
+    if isinstance(value, str):
+        return Color.parse(value)
+    raise TypeError(f"color() expects str or Color, got {type(value).__name__}")

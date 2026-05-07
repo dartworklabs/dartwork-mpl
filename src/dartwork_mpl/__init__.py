@@ -32,6 +32,7 @@ from .colors import (
     Color,
     DartworkColor,
     DartworkColormap,
+    color,
     cspace,
     hex,
     named,
@@ -135,6 +136,7 @@ from .validate_fixes import validate_with_fixes
 __all__ = [  # noqa: RUF022
     # Color module
     "Color",
+    "color",
     "cspace",
     "hex",
     "named",
