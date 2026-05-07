@@ -28,7 +28,7 @@ from . import (  # noqa: F401
 from .annotation import arrow_axis, label_axes
 
 # Import color module exports
-from .color import (
+from .colors import (
     Color,
     DartworkColor,
     DartworkColormap,

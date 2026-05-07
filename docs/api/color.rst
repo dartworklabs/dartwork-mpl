@@ -40,7 +40,7 @@ API
 Color Manipulation
 ^^^^^^^^^^^^^^^^^^
 
-.. automodule:: dartwork_mpl.color
+.. automodule:: dartwork_mpl.colors
    :members:
    :undoc-members:
    :show-inheritance:

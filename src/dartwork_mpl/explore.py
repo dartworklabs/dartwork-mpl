@@ -38,7 +38,7 @@ __all__ = [
 
 
 def _get_all_colors() -> list[str]:
-    from .color._loader import ensure_loaded
+    from .colors._loader import ensure_loaded
 
     ensure_loaded()
     return list(mcolors.get_named_colors_mapping().keys())

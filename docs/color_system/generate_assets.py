@@ -140,7 +140,7 @@ def _text_color_for_bg(hex_str: str) -> str:
 
 def _save_color_sheets_html(images_dir: Path) -> list[Path]:
     """Generate HTML fragment files for each color library."""
-    from dartwork_mpl.color._loader import ensure_loaded
+    from dartwork_mpl.colors._loader import ensure_loaded
 
     ensure_loaded()
     mapping = mpl.colors.get_named_colors_mapping()
