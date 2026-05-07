@@ -66,10 +66,10 @@ Example:
        min_points=3
    )
 
-Color Selection
----------------
+Palette Lookup
+--------------
 
-Automatic color palette selection based on data characteristics.
+Curated dartwork palette sized to the data series count and kind.
 
 .. automodule:: dartwork_mpl.helpers.colors
    :members:
@@ -82,14 +82,10 @@ Example:
 
    import dartwork_mpl as dm
 
-   # Auto-select colors for 5 data series
-   colors = dm.helpers.colors.auto_select_colors(
-       n_series=5,
-       color_type='qualitative',
-       highlight_index=0  # Highlight first series
-   )
+   # Curated palette for 5 categorical series, item 0 highlighted.
+   colors = dm.make_palette(5, kind="categorical", highlight=0)
 
-   # Plot with auto-selected colors
+   # Plot with the palette
    for i, color in enumerate(colors):
        ax.plot(x, data[i], color=color, label=f"Series {i+1}")
 
@@ -231,10 +227,10 @@ without hand-tuning every call.
            style="scientific" if chart_type == "scatter" else "web",
        )
 
-       # 4. Auto-select colors
-       colors = dm.helpers.colors.auto_select_colors(
-           n_series=1,
-           color_type="sequential" if chart_type == "line" else "qualitative",
+       # 4. Pick a curated palette
+       colors = dm.make_palette(
+           1,
+           kind="sequential" if chart_type == "line" else "categorical",
        )
 
        # 5. Render

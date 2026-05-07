@@ -31,6 +31,10 @@ still emit a `DeprecationWarning` and are scheduled for removal in
 | `dartwork_mpl.xplot`                  | `dartwork_mpl.templates`                             |
 | `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`                        |
 | `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`                           |
+| `dm.style_spines(ax, color=c, linewidth=w, which=ws)` | `for s in ws: ax.spines[s].set_color(c); ax.spines[s].set_linewidth(w)` |
+| `dm.add_grid(ax)`                     | `ax.grid(True, color="oc.gray3", alpha=0.3, linewidth=0.5); ax.set_axisbelow(True)` |
+| `dm.minimal_axes(ax)`                 | see [Minimal axes recipe](usage_guide/recipes.md#minimal-axes-tufte-style) |
+| `dm.auto_select_colors(n_series=N, color_type=K, highlight_index=I)` | `dm.make_palette(N, kind=K, highlight=I)` |
 
 ## `dm.subplots` / `dm.figure` removal
 

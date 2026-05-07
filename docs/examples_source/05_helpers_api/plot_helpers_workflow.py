@@ -64,11 +64,9 @@ def automated_visualization(
 
     # Step 4 — pick colours.
     print("Step 4: Selecting colours ...")
-    color_type = "sequential" if chart_type == "line" else "categorical"
-    colors = dm.helpers.colors.auto_select_colors(
-        n_series=1, color_type=color_type
-    )
-    print(f"    palette: {color_type}")
+    palette_kind = "sequential" if chart_type == "line" else "categorical"
+    colors = dm.make_palette(1, kind=palette_kind)
+    print(f"    palette: {palette_kind}")
 
     # Step 5 — render.
     print("Step 5: Rendering ...")
@@ -86,7 +84,18 @@ def automated_visualization(
     ax.set_xlabel("X Variable", fontsize=dm.fs(0))
     ax.set_ylabel("Y Variable", fontsize=dm.fs(0))
     ax.set_title("Automated Visualisation", fontsize=dm.fs(2))
-    dm.minimal_axes(ax)
+    # Inline minimal-axes recipe (top/right hidden + light dashed y-grid).
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.grid(
+        True,
+        axis="y",
+        alpha=0.2,
+        color="oc.gray3",
+        linestyle="--",
+        linewidth=0.5,
+    )
+    ax.set_axisbelow(True)
     dm.simple_layout(fig)
 
     # Step 7 — quality check.

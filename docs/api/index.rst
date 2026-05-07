@@ -20,7 +20,6 @@ The essential modules you'll use in every project.
    Layout Utilities <layout>
    Color Utilities <color>
    Formatting Utilities <formatting>
-   Spine and Grid Utilities <spines>
    Save & Export <io>
    Visual Validation <validate>
    Lint <lint>

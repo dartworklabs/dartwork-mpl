@@ -13,6 +13,22 @@ import numpy as np
 
 import dartwork_mpl as dm
 
+
+def _minimal(ax: plt.Axes) -> None:
+    """Inline minimal-axes recipe (top/right hidden + light dashed y-grid)."""
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.grid(
+        True,
+        axis="y",
+        alpha=0.2,
+        color="oc.gray3",
+        linestyle="--",
+        linewidth=0.5,
+    )
+    ax.set_axisbelow(True)
+
+
 np.random.seed(42)
 
 # Raw data with NaN / Inf contamination.
@@ -35,7 +51,7 @@ ax1.set_title("Raw Data", fontsize=dm.fs(1))
 ax1.set_xlabel("X", fontsize=dm.fs(0))
 ax1.set_ylabel("Y", fontsize=dm.fs(0))
 ax1.legend(fontsize=dm.fs(-1))
-dm.minimal_axes(ax1)
+_minimal(ax1)
 
 # Cleaned input.
 ax2.scatter(
@@ -46,7 +62,7 @@ ax2.set_title("Validated Data", fontsize=dm.fs(1))
 ax2.set_xlabel("X", fontsize=dm.fs(0))
 ax2.set_ylabel("Y", fontsize=dm.fs(0))
 ax2.legend(fontsize=dm.fs(-1))
-dm.minimal_axes(ax2)
+_minimal(ax2)
 
 dm.simple_layout(fig)
 plt.show()

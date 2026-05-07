@@ -44,8 +44,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   Earlier dartwork-mpl silently treated raw numbers as cm — that
   silently bridged matplotlib's inches contract and caused
   hard-to-spot 2.54× sizing bugs. (#147)
+- **`dm.auto_select_colors` → `dm.make_palette`** with argument
+  cleanup: `n_series` → `n`, `color_type` → `kind`,
+  `highlight_index` → `highlight`. The function body is unchanged
+  (same four curated palette lists, same highlight-index swap); the
+  rename aligns the name with `make_offset` (prefix) and
+  `list_palettes` / `show_palette` (vocabulary). The
+  `dm-auto-select-colors-renamed` lint rule flags the old name. (#156)
 
 ### Removed
+- **`dm.style_spines`, `dm.add_grid`, `dm.minimal_axes`** — round 4 of
+  the public API audit (#141 / #156). All three were 1–3 line
+  matplotlib calls with curated default kwargs; the curation was the
+  only contribution and now lives in `docs/usage_guide/recipes.md`
+  (publication grid, minimal axes, thin gray spines snippets). The
+  `dm-spines-removed` lint rule flags the old call sites and points
+  at the recipes page. The `src/dartwork_mpl/spines.py` module,
+  `tests/test_spines.py`, and the `docs/api/spines.rst` page were
+  deleted along with the functions; seven `examples_source` files
+  that demonstrated the wrappers (`plot_spine_*.py`,
+  `plot_grid_customization.py`) were removed because their
+  pedagogical purpose was specifically the now-removed functions.
+  (#156)
 - **`dm.subplots`, `dm.figure`** — both raise `AttributeError` now. The
   package no longer wraps the matplotlib figure constructors. Use
   `plt.subplots(figsize=dm.figsize("<n>cm", "<aspect>"))` and call

@@ -236,10 +236,12 @@ template.
    ax4.set_ylabel('Joules')
    dm.rotate_tick_labels(ax4, axis='x', rotation=45)
 
-   # Style all axes
+   # Style all axes — inline minimal-axes + light y-grid recipe
    for ax in [ax1, ax2, ax3, ax4]:
-       dm.minimal_axes(ax)
-       dm.add_grid(ax, axis='y', alpha=0.2)
+       ax.spines["top"].set_visible(False)
+       ax.spines["right"].set_visible(False)
+       ax.grid(True, axis='y', alpha=0.2, color='oc.gray3', linewidth=0.5)
+       ax.set_axisbelow(True)
 
    dm.simple_layout(fig)
    plt.show()

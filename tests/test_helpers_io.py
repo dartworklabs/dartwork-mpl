@@ -21,8 +21,8 @@ from dartwork_mpl import helpers
 class TestRemainingHelpersExported:
     """The remaining helpers must still be importable from ``dm.helpers``."""
 
-    def test_auto_select_colors_accessible(self) -> None:
-        assert hasattr(helpers, "auto_select_colors")
+    def test_make_palette_accessible(self) -> None:
+        assert hasattr(helpers, "make_palette")
 
     def test_check_figure_quality_accessible(self) -> None:
         assert hasattr(helpers, "check_figure_quality")
@@ -63,8 +63,8 @@ class TestDunderAllComplete:
 
     def test_remaining_names_in_all(self) -> None:
         for name in (
-            "auto_select_colors",
             "check_figure_quality",
+            "make_palette",
             "optimize_legend",
             "suggest_chart_type",
             "validate_data",
@@ -72,8 +72,12 @@ class TestDunderAllComplete:
             assert name in helpers.__all__, f"{name} missing from __all__"
 
     def test_removed_names_not_in_all(self) -> None:
-        """Round-3 removed names must not appear in helpers.__all__."""
-        for name in ("add_value_labels", "format_axis_labels"):
+        """Round-3 / Round-5 removed names must not appear in helpers.__all__."""
+        for name in (
+            "add_value_labels",
+            "format_axis_labels",
+            "auto_select_colors",
+        ):
             assert name not in helpers.__all__, (
                 f"{name} should have been removed"
             )

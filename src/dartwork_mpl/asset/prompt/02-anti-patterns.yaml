@@ -98,6 +98,33 @@ rules:
       `figsize=dm.figsize("<n>cm", "<aspect>")` instead.
     fix_suggestion: 'figsize=dm.figsize("9cm", "standard")'
 
+  - id: dm-spines-removed
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\bdm\.(?:style_spines|add_grid|minimal_axes)\s*\('
+    message: |
+      `dm.style_spines`, `dm.add_grid`, and `dm.minimal_axes` were
+      REMOVED in 0.5.0 (#156). They were thin matplotlib wrappers
+      whose only contribution was curated default kwargs. Inline the
+      raw matplotlib calls instead, or copy a snippet from
+      `docs/usage_guide/recipes.md` (publication grid, minimal axes,
+      thin gray spines).
+    fix_suggestion: 'see docs/usage_guide/recipes.md'
+
+  - id: dm-auto-select-colors-renamed
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\bdm\.(?:helpers\.colors\.)?auto_select_colors\s*\('
+    message: |
+      `auto_select_colors` was renamed to `make_palette` in 0.5.0
+      (#156) for vocabulary alignment with `make_offset` /
+      `list_palettes`. Argument cleanup at the same time:
+      `n_series` → `n`, `color_type` → `kind`,
+      `highlight_index` → `highlight`.
+    fix_suggestion: 'dm.make_palette(n, kind="categorical")'
+
   - id: deprecated-width-token
     severity: critical
     detector:

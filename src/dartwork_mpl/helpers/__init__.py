@@ -10,14 +10,14 @@ dartwork-mpl primitives. This module is organised into submodules:
 - ``io``: styled figure creation and optimised save.
 """
 
-from .colors import auto_select_colors
+from .colors import make_palette
 from .data import validate_data
 from .labels import optimize_legend
 from .quality import check_figure_quality, suggest_chart_type
 
 __all__ = [
-    "auto_select_colors",
     "check_figure_quality",
+    "make_palette",
     "optimize_legend",
     "suggest_chart_type",
     "validate_data",
