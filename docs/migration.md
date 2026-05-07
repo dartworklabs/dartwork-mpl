@@ -37,6 +37,45 @@ still emit a `DeprecationWarning` and are scheduled for removal in
 | `dm.add_grid(ax)`                     | `ax.grid(True, color="oc.gray3", alpha=0.3, linewidth=0.5); ax.set_axisbelow(True)` |
 | `dm.minimal_axes(ax)`                 | see [Minimal axes recipe](usage_guide/recipes.md#minimal-axes-tufte-style) |
 | `dm.auto_select_colors(n_series=N, color_type=K, highlight_index=I)` | `dm.make_palette(N, kind=K, highlight=I)` |
+| `dm.named("oc.red5")`                 | `dm.color("oc.red5")` (also accepts hex / `rgb(...)` / `oklch(...)` / `oklab(...)`) |
+| `from dartwork_mpl.color import ...`  | `from dartwork_mpl.colors import ...` (submodule renamed) |
+
+## `dm.named` removal & `color` → `colors` submodule rename
+
+`dm.named` is gone. The replacement is `dm.color`, a single
+string-parser entry point that mirrors `dm.length`:
+
+```python
+# Before
+dm.named("oc.red5")
+
+# Now
+dm.color("oc.red5")              # palette name
+dm.color("#ff0000")              # hex
+dm.color("rgb(1, 0, 0)")         # functional rgb
+dm.color("oklch(0.7, 0.15, 30)") # functional oklch
+dm.color("oklab(0.5, 0.05, 0.05)")
+dm.color(some_color_instance)    # pass-through
+```
+
+The specialized constructors `dm.hex`, `dm.rgb`, `dm.oklch`,
+`dm.oklab` are unchanged — use them when you already have the
+components, just as `dm.cm(13)` coexists with `dm.length("13cm")`.
+
+The `dartwork_mpl.color` submodule was renamed to
+`dartwork_mpl.colors` so the `color` name is free for the new
+function. There is no compatibility shim — update direct imports:
+
+```python
+# Before
+from dartwork_mpl.color import Color
+
+# Now
+from dartwork_mpl.colors import Color
+```
+
+Most users never touch the submodule directly (`dm.Color`,
+`dm.color`, etc. all continue to work via the top-level package).
 
 ## `dm.subplots` / `dm.figure` removal
 
