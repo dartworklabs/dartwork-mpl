@@ -1,20 +1,18 @@
 """
-Auto Layout: Mixed-Complexity Dashboard
-=======================================
+Simple Layout: Mixed-Complexity Dashboard
+=========================================
 
 Real dashboards rarely have homogeneous labels. Here a 3×3 grid mixes
-short, medium, and very long titles. ``dm.auto_layout`` inspects each
-panel and grows margins independently so the longest labels never
-clip — without wasting whitespace around the simpler panels.
+short, medium, and very long titles. ``dm.simple_layout`` inspects
+every visible artist on every axes — texts, titles, axis labels,
+view-limited tick labels, axis offset text, and legends — and places
+the GridSpec so the union extent sits at the requested ``margin``
+from each figure edge. Long labels expand the margins automatically
+without wasting whitespace on the simpler panels.
 
-The two important parameters:
-
-- ``padding``: minimum padding around text (in inches).
-- ``max_iter``: cap on the convergence loop to keep things bounded.
-
-For predictable labels, ``simple_layout`` is faster. Reach for
-``auto_layout`` whenever overflow is unacceptable (publications) or
-labels are variable length (generated dashboards).
+``margin`` accepts a :class:`~dartwork_mpl.units.Length`
+(``dm.inch(0.08)`` here), a unit string (``"5mm"``), a percentage
+string (``"2%"``), or a bare figure-fraction.
 """
 
 import matplotlib.pyplot as plt
@@ -60,7 +58,7 @@ for i in range(3):
 
 dm.label_axes(axes)
 
-dm.auto_layout(fig, padding=0.08, max_iter=10, verbose=False)
+dm.simple_layout(fig, margin=dm.inch(0.08))
 
 plt.suptitle("Dashboard with Auto Layout", fontsize=dm.fs(3), y=1.02)
 

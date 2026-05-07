@@ -51,5 +51,5 @@ for idx, (cmap_name, title) in enumerate(colormaps):
     ax.set_ylabel("y")
     ax.set_aspect("equal")
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 plt.show()

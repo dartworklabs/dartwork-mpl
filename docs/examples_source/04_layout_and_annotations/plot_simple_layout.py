@@ -6,7 +6,7 @@ Smart Layout Solver (L-BFGS-B)
 margins to keep multi-line titles and wide y-labels from clipping —
 without bleeding excessive whitespace.
 
-In 0.4 the everyday entry point for layout is ``dm.auto_layout(fig)``,
+In 0.4 the everyday entry point for layout is ``dm.simple_layout(fig)``,
 which wraps ``simple_layout`` in a measure→adjust→retry loop. Reach
 for ``simple_layout`` directly when (a) you have a custom GridSpec
 (spans, nested grids, attached colorbars) or (b) you want the cheaper
@@ -34,6 +34,6 @@ ax.set_xlabel("Time Axis Label (with unit)")
 ax.set_ylabel("Extremely Large Amplitude (units)")
 
 # simple_layout handles multi-line titles and wide labels; for uniform
-# grids, prefer dm.auto_layout(fig) which iterates simple_layout.
+# grids, prefer dm.simple_layout(fig) which iterates simple_layout.
 dm.simple_layout(fig)
 plt.show()

@@ -16,7 +16,7 @@ import dartwork_mpl as dm
 dm.style.use("scientific")                     # 1. pick a style
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))  # 2. width + aspect
 ax.plot(...)
-dm.auto_layout(fig)                             # 3. finalize layout
+dm.simple_layout(fig)                             # 3. finalize layout
 dm.save_formats(fig, "my_chart")                # (optional) save artifact
 ```
 
@@ -82,7 +82,7 @@ ax.plot(x, np.sin(x), color="oc.blue7", lw=dm.lw(1))
 ax.set_xlabel("Time (s)")
 ax.set_ylabel("Amplitude")
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 ```
 
 **Why 9 cm:** academic single-column or sidebar figures. Use
@@ -160,7 +160,7 @@ axes[1].plot(x, y2, color="oc.red7", lw=dm.lw(1))
 axes[1].set_title("After")
 
 dm.label_axes(axes)
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 ```
 
 **Why 17 cm × wide:** two panels need horizontal room to breathe.
@@ -175,7 +175,7 @@ axes[1].plot(t, residuals, color="oc.gray7", lw=dm.lw(1))
 axes[1].set_xlabel("Time (s)")
 
 dm.label_axes(axes)
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 ```
 
 **Why portrait:** stacking two panels needs extra vertical space.
@@ -191,7 +191,7 @@ for ax, data, title in zip(axes.flat, datasets, titles, strict=True):
     ax.set_title(title, fontsize=dm.fs(0))
 
 dm.label_axes(axes.flat)
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 ```
 
 **Why 17 cm × standard:** four equal panels in a journal-friendly
@@ -203,7 +203,7 @@ matching the figures readers expect in scientific publications.
 ```python
 fig, axes = plt.subplots(3, 2, figsize=dm.figsize("17cm", "portrait"))
 dm.label_axes(axes.flat)
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 ```
 
 **Why portrait:** six panels stacked 3×2 need the extra vertical room
@@ -278,7 +278,7 @@ axes[1].plot(profile, color="oc.gray7", lw=dm.lw(1))
 fig.colorbar(cf, ax=axes[0], shrink=0.85, pad=0.02)
 
 dm.label_axes(axes)
-dm.simple_layout(fig)   # auto_layout struggles with colorbar axes
+dm.simple_layout(fig)   # walks the colorbar's own axes too
 ```
 
 ---
@@ -299,7 +299,7 @@ ax2.plot(x, change_pct, "o-", color="oc.orange6", lw=dm.lw(1))
 ax2.set_ylabel("Change (%)", color="oc.orange7")
 ax2.tick_params(axis="y", labelcolor="oc.orange7")
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 ```
 
 **Why wide:** dual-axis plots crowd labels on both edges, so a wider
@@ -307,20 +307,22 @@ canvas keeps text legible.
 
 ---
 
-## 6. Layout Finalizers — `auto_layout` vs `simple_layout`
+## 6. Layout Finalizer — `simple_layout`
 
-| Finalizer                | When to use                                          |
-| :----------------------- | :--------------------------------------------------- |
-| `dm.auto_layout(fig)`    | **Default.** Uniform grids from `plt.subplots(figsize=dm.figsize(...))`. |
-| `dm.simple_layout(fig)`  | Custom GridSpec (spans, nested, colorbar attached).  |
-| `dm.simple_layout(fig)`  | When you need deterministic margins for golden tests.|
-| ❌ `fig.tight_layout()`  | Forbidden — collides with dartwork-mpl spines/legends.|
+| Call                                          | When to use                                          |
+| :-------------------------------------------- | :--------------------------------------------------- |
+| `dm.simple_layout(fig)`                       | **Default.** Snaps content flush to figure edges.    |
+| `dm.simple_layout(fig, margin="2%")`          | Uniform inset buffer (also `dm.mm(2)`, `dm.cm(0.5)`, `"5mm"`). |
+| `dm.simple_layout(fig, ml=..., mt=..., ...)`  | Per-side asymmetric margins.                         |
+| `dm.simple_layout(fig, gs=gs)`                | Target a specific GridSpec (multi-panel).            |
+| ❌ `fig.tight_layout()`                       | Forbidden — collides with dartwork-mpl spines/legends. |
+| ❌ `dm.auto_layout(fig)`                      | Deprecated alias of `simple_layout`; emits `DeprecationWarning`. |
 
-`auto_layout` runs `simple_layout` in a measure→adjust→retry loop,
-inflating margins only on sides where text overflows. It's the safer
-default. Drop down to `simple_layout(fig)` when (a) the layout is
-exotic enough that overflow measurement is ambiguous, or (b) you
-need the cheaper non-iterative call for many small figures.
+`simple_layout` measures every visible artist on every axes
+(texts, title, axis labels, view-limited tick labels, axis offset
+text, legend) and arithmetically places the GridSpec so the
+content union sits at the requested distance from each figure
+edge. The result is deterministic — no scipy, no optimizer.
 
 ---
 
@@ -356,7 +358,7 @@ A single line you can grep for when migrating old code.
 | `figsize=(dm.cm2in(20), dm.cm2in(15))`          | `width="20cm", aspect=0.75`                           |
 | `plt.subplots(figsize=(...))`                   | `plt.subplots(figsize=dm.figsize("...", "..."))`              |
 | `plt.figure(figsize=(...))`                     | `plt.figure(figsize=dm.figsize("...", "..."))`                |
-| `fig.tight_layout()`                            | `dm.auto_layout(fig)` (or `dm.simple_layout(fig)`)    |
+| `fig.tight_layout()`                            | `dm.simple_layout(fig)` (or `dm.simple_layout(fig)`)    |
 | `plt.style.use("scientific")`                   | `dm.style.use("scientific")`                          |
 | `dm.FS_SINGLE` / `dm.FS_DOUBLE`                 | `width="9cm"` / `width="17cm"` + explicit `aspect`    |
 
@@ -432,7 +434,7 @@ Every example is checked against
 `dartwork_mpl.asset/prompt/02-anti-patterns.yaml`. The critical rules:
 
 - `figsize=(...)` → forbidden. Use `plt.subplots(figsize=dm.figsize("...", "..."))`.
-- `tight_layout()` → forbidden. Use `dm.auto_layout(fig)`.
+- `tight_layout()` → forbidden. Use `dm.simple_layout(fig)`.
 - `plt.style.use(...)` → warning. Use `dm.style.use(...)`.
 - `dm.subplots(...)` / `dm.figure(...)` → REMOVED. Use `plt.subplots(figsize=dm.figsize(...))`.
 - `dm.SW/MW/TW/DW/FS_*/WIDTHS` → warning. Use `width="..cm", aspect="..."`.

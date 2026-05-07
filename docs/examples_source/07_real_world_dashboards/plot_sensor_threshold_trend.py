@@ -45,5 +45,5 @@ ax.set_ylim(40, 80)
 ax.grid(axis="y", alpha=0.2)
 ax.legend(fontsize=dm.fs(-1), loc="upper left")
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 plt.show()

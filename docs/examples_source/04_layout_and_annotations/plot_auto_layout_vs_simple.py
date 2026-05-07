@@ -1,16 +1,18 @@
 """
-Auto Layout vs Simple Layout
-============================
+Simple Layout: Default vs Margin Buffer
+=======================================
 
-Both panels in this figure host *identical* axes content. The only
-difference is the layout helper used to position them. Because we run
-``dm.auto_layout`` on the whole figure, both panels end up with enough
-breathing room for the multi-line titles — but the labels above each
-axes make the comparison explicit.
+Both panels host *identical* axes content. The only difference is the
+``margin`` argument passed to ``dm.simple_layout``: the left panel
+uses the default (axes content snaps flush against figure edges)
+while the right panel adds a uniform 2 % buffer.
 
-Use ``simple_layout`` when labels are short and predictable; reach for
-``auto_layout`` whenever label length is variable or unknown ahead of
-time (e.g., AI-generated captions).
+``simple_layout`` measures every visible artist on every axes and
+arithmetically places the GridSpec so the content union sits at the
+requested distance from each figure edge — see
+:doc:`/usage_guide/layout` for the full margin API
+(:class:`~dartwork_mpl.units.Length`, percentage strings, per-side
+``ml`` / ``mr`` / ``mt`` / ``mb``).
 """
 
 import matplotlib.pyplot as plt
@@ -23,9 +25,11 @@ dm.style.use("scientific")
 x = np.linspace(0, 10, 100)
 y1 = np.sin(x) + 0.1 * np.random.randn(100)
 
-fig, (ax3, ax4) = plt.subplots(1, 2, figsize=dm.figsize("16cm", "cinema"))
+fig, (ax_flush, ax_buffered) = plt.subplots(
+    1, 2, figsize=dm.figsize("16cm", "cinema")
+)
 
-for ax in [ax3, ax4]:
+for ax in [ax_flush, ax_buffered]:
     ax.plot(x, y1, color="oc.green5", lw=dm.lw(1))
     ax.set_title(
         "Complex Title with\nMultiple Lines\nThat Might Overflow",
@@ -36,25 +40,25 @@ for ax in [ax3, ax4]:
     )
     ax.set_xlabel("X-Axis Label", fontsize=dm.fs(0))
 
-ax3.text(
+ax_flush.text(
     0.5,
     1.15,
-    "simple_layout()",
-    transform=ax3.transAxes,
+    "margin=0 (default)",
+    transform=ax_flush.transAxes,
     ha="center",
     fontsize=dm.fs(2),
     weight="bold",
 )
-ax4.text(
+ax_buffered.text(
     0.5,
     1.15,
-    "auto_layout()",
-    transform=ax4.transAxes,
+    'margin="2%"',
+    transform=ax_buffered.transAxes,
     ha="center",
     fontsize=dm.fs(2),
     weight="bold",
 )
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 
 plt.show()

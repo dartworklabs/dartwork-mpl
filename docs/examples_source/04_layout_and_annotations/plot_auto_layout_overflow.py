@@ -1,19 +1,22 @@
 """
-Auto Layout: Preventing Text Overflow
-=====================================
+Simple Layout: Preventing Text Overflow
+=======================================
 
-``dm.auto_layout()`` measures the actual bounding boxes of every text
-element and iteratively grows the figure margins only on the sides
-where overflow is detected. This example exaggerates the problem with
-multi-line titles and verbose y-axis labels so the corrective behaviour
-is visible at a glance.
+``dm.simple_layout()`` measures the actual bounding boxes of every text
+element on every axes and arithmetically places the GridSpec so the
+content union sits at the requested distance from each figure edge.
+This example exaggerates the problem with multi-line titles and verbose
+y-axis labels so the corrective behaviour is visible at a glance.
 
 The function works by:
 
-1. **Initial Layout**: Applies minimal margins as a starting point.
-2. **Overflow Detection**: Measures bounding boxes of all text.
-3. **Margin Adjustment**: Increases margins only where overflow exists.
-4. **Iteration**: Repeats until no overflow remains or ``max_iter`` is hit.
+1. **Draw**: Forces ``fig.canvas.draw()`` to populate text metrics.
+2. **Measure**: Walks every visible artist on each axes (texts, title,
+   axis labels, view-limited tick labels, axis offset text, legend).
+3. **Place**: Sets GridSpec edges arithmetically so the content
+   union sits at the requested ``margin`` from each figure edge.
+4. **Re-measure**: Repeats until consecutive iterations agree to
+   within 0.5 px (typically 2 iterations).
 """
 
 import matplotlib.pyplot as plt
@@ -47,7 +50,7 @@ ax2.set_xlabel("Time [seconds]", fontsize=dm.fs(0))
 
 dm.label_axes([ax1, ax2])
 
-print("Applying auto_layout to prevent text overflow...")
-dm.auto_layout(fig, padding=0.05, max_iter=5, verbose=True)
+print("Applying simple_layout to prevent text overflow...")
+dm.simple_layout(fig, margin=dm.inch(0.05), verbose=True)
 
 plt.show()

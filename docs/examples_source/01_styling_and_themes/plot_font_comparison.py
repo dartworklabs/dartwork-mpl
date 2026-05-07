@@ -84,5 +84,5 @@ for ax, (font_name, font_file) in zip(axes.flat, fonts, strict=True):
     ]:
         text.set_fontproperties(fp)
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 plt.show()
