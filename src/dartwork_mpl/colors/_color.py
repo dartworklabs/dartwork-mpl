@@ -10,6 +10,7 @@ from __future__ import annotations
 __all__ = ["Color", "cspace", "hex", "named", "oklab", "oklch", "rgb"]
 
 import math
+import re
 from typing import Any
 
 import matplotlib.colors as mcolors
@@ -275,6 +276,76 @@ class Color:
             return cls.from_rgb(r, g, b)
         except ValueError as e:
             raise ValueError(f"Invalid color name: {name}. {e!s}") from e
+
+    _FUNCTIONAL_RE = re.compile(
+        r"^(?P<func>rgb|oklch|oklab)\s*\(\s*(?P<args>.+?)\s*\)$", re.IGNORECASE
+    )
+
+    @classmethod
+    def parse(cls, value: str) -> Color:
+        """Parse a string in any supported form into a :class:`Color`.
+
+        Routes by the leading character / token of ``value``:
+
+        * ``"#rgb"`` / ``"#rrggbb"`` → :meth:`from_hex`.
+        * ``"rgb(r, g, b)"`` (auto 0-1 / 0-255 detection),
+          ``"oklch(L, C, h)"`` (h in degrees), ``"oklab(L, a, b)"``
+          → corresponding factory. Function name is case-insensitive;
+          arguments are comma-separated and tolerant of internal
+          whitespace.
+        * Anything else falls through to :meth:`from_name` (matplotlib
+          named colors, ``oc.``, ``tw.``, ``md.``, ``ad.``, ``cu.``,
+          ``pr.``, ``dc.``).
+
+        Parameters
+        ----------
+        value : str
+            The color string to parse. Surrounding whitespace is
+            stripped.
+
+        Returns
+        -------
+        Color
+
+        Raises
+        ------
+        TypeError
+            If ``value`` is not a :class:`str`.
+        ValueError
+            If a functional form has the wrong number of arguments,
+            non-numeric arguments, or the underlying factory rejects
+            the value.
+        """
+        if not isinstance(value, str):
+            raise TypeError(
+                f"Color.parse expects a str, got {type(value).__name__}"
+            )
+        text = value.strip()
+        if text.startswith("#"):
+            return cls.from_hex(text)
+        match = cls._FUNCTIONAL_RE.match(text)
+        if match is not None:
+            func = match.group("func").lower()
+            raw_args = match.group("args")
+            try:
+                nums = [float(part.strip()) for part in raw_args.split(",")]
+            except ValueError as exc:
+                raise ValueError(
+                    f"{func}(...) arguments must be numeric: {raw_args!r}"
+                ) from exc
+            if len(nums) != 3:
+                raise ValueError(
+                    f"{func}(...) expects 3 arguments, got {len(nums)}: "
+                    f"{raw_args!r}"
+                )
+            if func == "rgb":
+                return cls.from_rgb(*nums)
+            if func == "oklch":
+                return cls.from_oklch(*nums)
+            if func == "oklab":
+                return cls.from_oklab(*nums)
+            raise ValueError(f"unsupported color function: {func!r}")
+        return cls.from_name(text)
 
     def to_oklab(self) -> tuple[float, float, float]:
         """
