@@ -28,6 +28,7 @@ for ax in axes.flat:
 # Automatically add (a), (b), (c), (d) using label_axes
 dm.label_axes(axes.flat)
 
-# Uniform grid → auto_layout (measure→adjust→retry) is the 0.4 default.
-dm.auto_layout(fig)
+# Direct-calc layout — measures every visible artist and places the
+# GridSpec arithmetically.
+dm.simple_layout(fig)
 plt.show()

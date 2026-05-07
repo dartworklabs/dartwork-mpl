@@ -33,5 +33,5 @@ ax.set_xlabel("Time (s)")
 ax.set_ylabel("Amplitude")
 ax.legend(loc="upper right")
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 plt.show()

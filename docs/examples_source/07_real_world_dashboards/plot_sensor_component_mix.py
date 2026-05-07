@@ -60,5 +60,5 @@ ax.set_title("Energy mix over time", fontsize=dm.fs(1), weight="bold")
 ax.grid(axis="y", alpha=0.2)
 ax.legend(loc="upper left", fontsize=dm.fs(-1), ncol=2)
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 plt.show()

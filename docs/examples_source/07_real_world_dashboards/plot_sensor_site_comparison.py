@@ -57,5 +57,5 @@ ax.set_title(
 ax.grid(axis="y", alpha=0.2)
 ax.legend(fontsize=dm.fs(-1))
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 plt.show()

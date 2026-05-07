@@ -44,5 +44,5 @@ ax.set_title(
     "Site A — latest snapshot", fontsize=dm.fs(1), weight="bold", pad=8
 )
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 plt.show()

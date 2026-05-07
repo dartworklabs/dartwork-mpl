@@ -43,7 +43,7 @@ All dashboards follow dartwork-mpl conventions:
    preset change rescales the whole figure uniformly.
 3. **Named colors**: charts pull from the ``oc.*`` and ``tw.*`` palettes
    instead of raw hex strings.
-4. **Auto-layout**: ``dm.auto_layout(fig)`` is called before ``plt.show``
+4. **Auto-layout**: ``dm.simple_layout(fig)`` is called before ``plt.show``
    so that margins adapt to actual content rather than static values.
 5. **Single chart per file**: each example renders exactly one figure.
    To assemble a multi-panel dashboard, compose the individual snippets

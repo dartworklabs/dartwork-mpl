@@ -51,5 +51,5 @@ ax.set_title(
     "Hourly temperature and rate of change", fontsize=dm.fs(1), weight="bold"
 )
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 plt.show()

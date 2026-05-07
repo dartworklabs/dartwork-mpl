@@ -12,7 +12,7 @@ docs build.
 
 The entire gallery now uses the dartwork-mpl 0.4 API:
 `plt.subplots(figsize=dm.figsize("13cm", "standard"))`,
-`dm.auto_layout(fig)`, `dm.col1` / `dm.col2`. None of the legacy
+`dm.simple_layout(fig)`, `dm.col1` / `dm.col2`. None of the legacy
 0.3 tokens (`dm.SW/MW/TW/DW`, `dm.FS_*`, `dm.cm2in`,
 `figsize=`/`dpi=` on `dm.subplots`) remain — they were purged from
 the public API in PR #87 and would crash at import otherwise.
