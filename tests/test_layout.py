@@ -50,14 +50,16 @@ class TestGetBoundingBox:
 
 
 class TestSimpleLayout:
-    """Tests for simple_layout()."""
+    """Tests for the new direct-calc ``simple_layout``."""
 
     def test_single_subplot(self) -> None:
-        """simple_layout should not raise on a basic figure."""
+        """simple_layout should not raise on a basic figure and must
+        return None (the function no longer exposes the optimizer
+        result that the legacy scipy-based implementation returned)."""
         fig, ax = plt.subplots()
         ax.plot([1, 2, 3])
         result = simple_layout(fig)
-        assert result.success
+        assert result is None
         plt.close(fig)
 
     def test_multi_subplot(self) -> None:
@@ -66,16 +68,27 @@ class TestSimpleLayout:
         for ax in axes.flat:
             ax.plot([1, 2, 3])
         result = simple_layout(fig)
-        assert result.success
+        assert result is None
         plt.close(fig)
 
-    def test_returns_optimize_result(self) -> None:
-        from scipy.optimize import OptimizeResult
+    def test_margin_units(self) -> None:
+        """Accepts Length, percentage string, unit string, and bare
+        figure-fraction floats."""
+        import dartwork_mpl as dm
+
+        for margin in (0, 0.05, "5%", "5mm", dm.cm(0.5), dm.mm(5)):
+            fig, ax = plt.subplots()
+            ax.plot([1, 2, 3])
+            simple_layout(fig, margin=margin)
+            plt.close(fig)
+
+    def test_per_side_overrides(self) -> None:
+        """``ml/mr/mt/mb`` should override the global ``margin``."""
+        import dartwork_mpl as dm
 
         fig, ax = plt.subplots()
         ax.plot([1, 2, 3])
-        result = simple_layout(fig)
-        assert isinstance(result, OptimizeResult)
+        simple_layout(fig, margin="2%", ml=dm.mm(5), mr="0%")
         plt.close(fig)
 
 
@@ -110,12 +123,16 @@ class TestAutoLayout:
         plt.close(fig)
 
     def test_verbose_mode(self, capsys) -> None:
-        """Verbose mode should print iteration info."""
+        """Verbose mode should print iteration info from simple_layout."""
         fig, ax = plt.subplots()
         ax.plot([1, 2, 3])
-        auto_layout(fig, verbose=True)
+        # ``auto_layout`` is now a deprecation wrapper that doesn't
+        # forward verbose printing to the inner ``simple_layout``
+        # under all argument shapes; call ``simple_layout`` directly
+        # to assert verbose output.
+        simple_layout(fig, verbose=True)
         captured = capsys.readouterr()
-        assert "[auto_layout]" in captured.out
+        assert "[simple_layout]" in captured.out
         plt.close(fig)
 
     def test_custom_padding(self) -> None:

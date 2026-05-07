@@ -348,29 +348,12 @@ def plot_diverging_bar(
         columnspacing=1.5,
     )
 
-    # Apply simple_layout for automatic margin optimization
-    # Use bbox to optimize only the axes area, protecting title/legend
-    # bbox format: (left, right, bottom, top) in figure coordinates
-    # This ensures title (at title_y) and legend (at legend_y) are not
-    # affected by the optimization
-    # Use minimal settings to preserve original layout as much as possible:
-    # - Zero margins to match original exactly
-    # - Very low importance weights to minimize optimization
-    # - Very small bound_margin to limit GridSpec parameter changes
-    # - High gtol to allow early convergence
-    dm.simple_layout(
-        fig,
-        gs=gs,
-        bbox=(left_margin, right_margin, figure_bottom, figure_top),
-        margins=(
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ),  # Zero margins to preserve original# Extremely low weights to minimize changes
-        bound_margin=0.001,  # Very small bound margin to limit changes
-        gtol=1e-1,  # Higher tolerance for early convergence
-        use_all_axes=False,  # Only optimize axes in this GridSpec
-    )
+    # The GridSpec was constructed explicitly above with the desired
+    # margins (left_margin/right_margin/figure_bottom/figure_top).
+    # The previous code called dm.simple_layout with bound_margin=0.001
+    # solely to inhibit the legacy optimizer's adjustments — the new
+    # direct-calc simple_layout would modify positions to fit the
+    # title/legend area, which is not desired here. Skip the layout
+    # call and keep the explicit GridSpec.
 
     return fig, ax
