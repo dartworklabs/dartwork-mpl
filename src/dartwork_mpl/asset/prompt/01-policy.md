@@ -68,9 +68,13 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
 
 ## Layout
 
-- `dm.auto_layout(fig)` is the default. Call it after data is plotted.
-- `dm.simple_layout(fig)` is reserved for advanced GridSpec cases
-  where `auto_layout` cannot fit the bounding boxes.
+- `dm.simple_layout(fig)` is the default. Call it after data is plotted.
+- The default `margin=0` snaps axes content (labels, ticks, title)
+  flush against the figure edges. For a uniform buffer pass
+  `margin="2%"`, `dm.mm(2)`, `dm.cm(0.5)`, etc. For per-side overrides
+  use `ml`, `mr`, `mt`, `mb` — each accepts the same forms as `margin`.
+- `dm.auto_layout(fig)` is a deprecated alias of `simple_layout`; new
+  code should call `simple_layout` directly.
 - `tight_layout()` is **forbidden** (lint critical).
 
 ## Color

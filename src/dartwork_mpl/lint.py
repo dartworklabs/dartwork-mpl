@@ -276,7 +276,7 @@ _MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
     ),
     (
         re.compile(r"\btight_layout\s*\("),
-        "tight_layout() collides with dm spines; use dm.auto_layout(fig).",
+        "tight_layout() collides with dm spines; use dm.simple_layout(fig).",
     ),
     (
         re.compile(r"\bdm\.agent_utils\b"),

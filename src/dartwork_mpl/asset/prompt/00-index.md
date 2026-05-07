@@ -34,7 +34,7 @@ fetch the specific guide you need.
   `Length` height (`dm.cm(12)`).
 - Use named colors: `oc.*`, `tw.*`, `dc.*`, `md.*`, `ad.*`, `cu.*`,
   `pr.*`. Raw hex is allowed but discouraged.
-- After creating a figure, call `dm.auto_layout(fig)` and save with
+- After creating a figure, call `dm.simple_layout(fig)` and save with
   `dm.save_formats(fig, "name")` or `dm.save_and_show(fig, "name")`.
 - Never call `tight_layout()`, `plt.style.use()`, raw `figsize=(w, h)`
   tuples, or `dm.subplots` / `dm.figure` — those are lint criticals.

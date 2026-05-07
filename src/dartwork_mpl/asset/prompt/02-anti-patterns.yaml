@@ -38,9 +38,8 @@ rules:
       pattern: '\btight_layout\s*\('
     message: |
       `tight_layout()` collides with dartwork-mpl's spine and legend
-      handling. Use `dm.auto_layout(fig)` (or `dm.simple_layout` for
-      advanced GridSpec cases).
-    fix_suggestion: 'dm.auto_layout(fig)'
+      handling. Use `dm.simple_layout(fig)` instead.
+    fix_suggestion: 'dm.simple_layout(fig)'
 
   - id: zero-resize-mention
     severity: warning

@@ -80,7 +80,7 @@ Generate a complete Python script that creates the following plot:
    `fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))`.
    `dm.figsize(width, aspect)` accepts `width` as a unit string (`"13cm"`, `"5in"`, `"170mm"`, `"24pt"`) or a `Length` value (`dm.cm(13)`, `dm.col1`, `dm.col2`). Bare `int` / `float` are rejected (lint id `raw-width-number`). The second argument picks the height in one of four equivalent forms — an aspect token in `square / portrait / standard / golden / wide / cinema`, a positive float ratio (`0.6`), a unit-string height (`"12cm"`), or a `Length` height (`dm.cm(12)`).
 3. **No raw `figsize=(w, h)` tuple** and no `dpi=` argument on `plt.subplots` / `plt.figure` (lint ids `figsize-direct`, `dpi-arg`). Always go through `dm.figsize`; dpi is governed by the active style preset.
-4. **Layout**: Call `dm.auto_layout(fig)` after data is plotted. `dm.simple_layout(fig)` is reserved for advanced GridSpec cases that `auto_layout` cannot fit. Do NOT call `tight_layout` (lint id `tight-layout`).
+4. **Layout**: Call `dm.simple_layout(fig)` after data is plotted. The default snaps axes content flush against figure edges; pass `margin="2%"` (or `dm.mm(2)`, `dm.cm(0.5)`) for a uniform buffer, or `ml/mr/mt/mb` for per-side overrides. Do NOT call `tight_layout` (lint id `tight-layout`). The historical `dm.auto_layout` is a deprecated alias.
 5. **Style**: apply via `dm.style.use("scientific")` (or `dm.style.stack([...])` for a stack). No `plt.style.use` anywhere (lint id `plt-style-use`).
 6. **Colors**: prefer named palettes — `oc.*` (Open Color), `tw.*` (Tailwind), `dc.*` (dartwork core), `md.*`, `ad.*`, `cu.*`, `pr.*`. Raw hex works but triggers a lint info.
 7. **Fonts / weights / line widths**: do NOT pass literal `fontsize=` numbers. Use `dm.fs(n)` / `dm.fw(n)` / `dm.lw(n)` offsets from the active style.
@@ -120,7 +120,7 @@ fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 ax.set_xlabel("...")
 ax.set_ylabel("...")
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(fig, "output", formats=("png", "pdf"), dpi=300)
 ```
 
@@ -151,7 +151,7 @@ Check the code against ALL of these rules and provide fixes. Each rule maps to a
 - [ ] Figure construction uses `plt.subplots(figsize=dm.figsize("<n>cm", "<aspect>"))` (or `plt.figure(figsize=dm.figsize(...))`). The legacy `dm.subplots` / `dm.figure` were REMOVED (`dm-subplots-removed`).
 - [ ] No raw `figsize=(w, h)` tuple — wrap with `dm.figsize(...)` (`figsize-direct`).
 - [ ] No bare `int`/`float` width passed to `dm.figsize` — use a unit string or a `Length` value (`raw-width-number`).
-- [ ] No `tight_layout` call — use `dm.auto_layout(fig)` (or `dm.simple_layout(fig)` for advanced GridSpec cases) (`tight-layout`).
+- [ ] No `tight_layout` call — use `dm.simple_layout(fig)` (`tight-layout`).
 
 ### Warning (Should Fix)
 - [ ] No `dpi=` argument on `plt.figure` / `plt.subplots`. The active style controls dpi (`dpi-arg`).

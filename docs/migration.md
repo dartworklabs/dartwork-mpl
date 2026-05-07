@@ -26,7 +26,9 @@ still emit a `DeprecationWarning` and are scheduled for removal in
 | `dm.cm2in(...)`                       | `dm.cm(...)` (returns `Length`)                      |
 | `dpi=` argument                       | active style preset                                  |
 | `dartwork_mpl.constant` module        | `dartwork_mpl.units` + width / aspect API            |
-| `plt.tight_layout()`                  | `dm.auto_layout(fig)`                                |
+| `plt.tight_layout()`                  | `dm.simple_layout(fig)`                              |
+| `dm.auto_layout(fig)`                 | `dm.simple_layout(fig)` (auto_layout is a deprecation alias) |
+| `dm.simple_layout(fig, margins=(...), bbox=..., bound_margin=..., gtol=..., importance_weights=...)` | `dm.simple_layout(fig, margin="2%", ml=..., mr=..., mt=..., mb=...)` (new keyword API) |
 | `dartwork_mpl.agent_utils`            | `dartwork_mpl.helpers`                               |
 | `dartwork_mpl.xplot`                  | `dartwork_mpl.templates`                             |
 | `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`                        |
@@ -210,22 +212,38 @@ fig, ax = dm.subplots(width="13cm", aspect=0.6)
 
 `validate_figure` warns on extreme aspects (< 0.3 or > 4.0).
 
-### `tight_layout` → `auto_layout`
+### `tight_layout` → `simple_layout`
 
 ```python
 # DEPRECATED — fires `tight-layout` lint critical
 plt.tight_layout()
 fig.tight_layout()
 
-# 0.4
-dm.auto_layout(fig)
+# 0.5+
+dm.simple_layout(fig)                        # snap content flush to figure edges
+dm.simple_layout(fig, margin="2%")           # uniform 2% buffer
+dm.simple_layout(fig, margin=dm.mm(2))       # uniform 2 mm buffer
+dm.simple_layout(fig, ml=dm.cm(1), mr="3%")  # per-side, mixed units
 ```
 
-`auto_layout` iteratively shrinks the axes box until no text
-overflows the canvas, so it survives long labels, multi-line
-titles, and twinx() right-spine cases that `tight_layout` mangles.
-`dm.simple_layout(fig)` still exists but is reserved for advanced
-GridSpec arrangements where `auto_layout` cannot solve the bbox.
+`simple_layout` measures every visible artist on every axes
+(texts, title, axis labels, view-limited tick labels, axis offset
+text, legend) and arithmetically places the GridSpec so the
+content union sits at the requested distance from each figure
+edge. The result is deterministic — same figure produces the same
+GridSpec, no scipy involved. It survives long labels, multi-line
+titles, twinx() right-spine cases, and log-scale fixed-points
+that `tight_layout` mangles.
+
+The historical `dm.auto_layout(fig)` still works as a
+:class:`DeprecationWarning`-emitting alias; new code should call
+`simple_layout` directly.
+
+The previous `simple_layout` keyword arguments (`margins=(...)`,
+`bbox=...`, `bound_margin=...`, `gtol=...`, `importance_weights=...`)
+have been removed in favour of the unified `margin` /
+`ml`/`mr`/`mt`/`mb` API. See the at-a-glance table at the top of
+this guide.
 
 ### `dm.cm2in` → `dm.cm`
 
@@ -390,15 +408,15 @@ dm.plot_fonts()
 These additions don't *require* migration but pay off if you bump
 into them:
 
-### `dm.auto_layout(fig)`
+### `dm.simple_layout(fig, margin=...)`
 
-When `simple_layout` doesn't quite handle long labels or multi-line
-titles, call `auto_layout` instead — it iteratively shrinks the axes
-until no text overflows the canvas:
+`simple_layout` accepts a `margin` keyword (and per-side
+`ml`/`mr`/`mt`/`mb` overrides) so you can declare the inset
+buffer in the same call:
 
 ```python
-dm.auto_layout(fig)              # automatic margin negotiation
-dm.simple_layout(fig)            # fast, fine for advanced GridSpec
+dm.simple_layout(fig)                        # flush to figure edges
+dm.simple_layout(fig, margin="2%")           # uniform 2% buffer
 ```
 
 ### `dm.validate_with_fixes(fig)`

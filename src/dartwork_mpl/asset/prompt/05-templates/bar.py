@@ -10,5 +10,5 @@ values = [23, 45, 56, 78, 33]
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 ax.bar(categories, values, color="oc.blue5", edgecolor="white", linewidth=0.3)
 ax.set_ylabel("Value")
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(fig, "bar")

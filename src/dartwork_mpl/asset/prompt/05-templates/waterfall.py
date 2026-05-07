@@ -40,5 +40,5 @@ ax.bar(
 )
 ax.axhline(0, color="oc.gray7", linewidth=0.5)
 ax.set_ylabel("Value")
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(fig, "waterfall")

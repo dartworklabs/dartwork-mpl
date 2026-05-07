@@ -23,7 +23,7 @@ Enhanced matplotlib styling, color management, and utility library engineered by
 - **Style Presets**: Apply curated themes (`scientific`, `report`, `presentation`) with one call.
 - **Width × Aspect Geometry**: `plt.subplots(figsize=dm.figsize("13cm", "standard"))` — pick a physical width (cm/in/mm) and one of six aspect tokens (`square / portrait / standard / golden / wide / cinema`); height is derived. No more raw `figsize=(w, h)` math.
 - **Advanced Color System**: Named color palettes (`oc.*`, `tw.*`, `md.*`, `ad.*`, `cu.*`, `pr.*`) plus a `Color` class supporting OKLab / OKLCH / RGB / hex color spaces with perceptual interpolation via `cspace()`.
-- **Smart Layout**: `auto_layout(fig)` is the default content-aware margin pass; `simple_layout(fig, gs=gs)` is the L-BFGS-B optimizer for advanced GridSpec cases. Both replace `tight_layout()`.
+- **Smart Layout**: `simple_layout(fig)` is a deterministic, content-aware margin pass that measures every visible artist and places the GridSpec arithmetically. Default `margin=0` snaps content flush to figure edges; `margin="2%"` / `dm.mm(2)` adds a buffer. Replaces `tight_layout()`.
 - **Scaling Helpers**: Relative font size (`fs`), font weight (`fw`), and line width (`lw`) that respect the active style preset.
 - **Icon Fonts**: Built-in Material Design Icons (7,448+) and Font Awesome 6.
 - **Visual Validation**: Automatic detection of overflow, text overlap, legend overflow, tick crowding, and empty axes via `validate_figure()`.
@@ -71,7 +71,7 @@ fig, ax = plt.subplots(figsize=dm.figsize('13cm', 'standard'))
 ax.plot(x, y, color='oc.blue5', lw=dm.lw(0))
 ax.set_xlabel('Time [s]')
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(fig, 'output/figure', formats=('svg', 'png'))
 ```
 
@@ -149,8 +149,9 @@ palette = dm.cspace('#FF0000', '#0000FF', n=5, space='oklch')
 ### Layout & Annotation
 
 ```python
-dm.auto_layout(fig)                     # default content-aware margin pass (0.4+)
-dm.simple_layout(fig, gs=gs)            # L-BFGS-B optimizer for advanced GridSpec cases
+dm.simple_layout(fig)                   # deterministic content-aware margin pass
+dm.simple_layout(fig, margin="2%")      # uniform 2% buffer; also dm.mm(2), dm.cm(0.5), "5mm"
+dm.simple_layout(fig, gs=gs)            # multi-panel: target a specific GridSpec
 dm.label_axes(axes)                     # add (a), (b), (c) panel labels
 dm.arrow_axis(ax, 'x', 'Cost')         # Low ◄── Cost ──► High
 dm.set_decimal(ax, xn=2, yn=1)         # format tick decimals
@@ -352,7 +353,7 @@ src/dartwork_mpl/
 ├── units.py                # cm/inch/mm, col1/col2, figsize, parse_width/parse_aspect
 ├── style.py                # Style class + preset management
 ├── color/                  # Color class (OKLab/OKLCH/RGB/hex) + palettes
-├── layout.py               # auto_layout(), simple_layout(), label_axes()
+├── layout.py               # simple_layout(), label_axes()
 ├── annotation.py           # arrow_axis(), label_axes()
 ├── scale.py                # fs(), fw(), lw()
 ├── spines.py               # hide_spines(), add_grid(), minimal_axes()

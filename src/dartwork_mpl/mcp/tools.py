@@ -422,9 +422,11 @@ def register_tools(mcp: FastMCP) -> None:
                     ),
                     "max_width": "17 cm",
                     "layout": (
-                        "Call dm.auto_layout(fig) after plotting. "
-                        "dm.simple_layout(fig) is reserved for advanced "
-                        "GridSpec cases. tight_layout() is forbidden."
+                        "Call dm.simple_layout(fig) after plotting. "
+                        "Default margin=0 snaps content flush to the "
+                        "figure edge; pass margin='2%' or dm.mm(2) for "
+                        "a buffer. dm.auto_layout is a deprecated alias. "
+                        "tight_layout() is forbidden."
                     ),
                     "default_dpi": "Controlled by the active style preset.",
                     "font": (

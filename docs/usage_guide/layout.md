@@ -16,7 +16,7 @@ ax.plot(np.linspace(0, 10, 100), np.sin(np.linspace(0, 10, 100)), color="oc.blue
 ax.set_xlabel("Time [s]")
 ax.set_ylabel("Response")
 
-dm.auto_layout(fig)  # default optimizer — replaces fig.tight_layout
+dm.simple_layout(fig)  # replaces fig.tight_layout — flush to figure edges
 ```
 
 **Try it — drag the sliders to see how figure dimensions map onto an A4 page:**
@@ -54,35 +54,46 @@ dm.simple_layout(fig, gs=gs)
 > automatically. Only add manual margins when you need fine positional control
 > (e.g., making room for a colorbar or external legend).
 
-### Content-Aware Layout with `auto_layout`
+### Adding a buffer with `margin`
 
-For figures with complex text elements that might overflow, `auto_layout()` provides
-an intelligent alternative that automatically detects and fixes overflow:
+The default `simple_layout(fig)` snaps axes content (labels, ticks,
+title, legend) flush against the figure edges. For a uniform inset
+buffer, pass a `margin`:
 
 ```python
-import dartwork_mpl as dm
-import numpy as np
-
 fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
 ax.plot(np.linspace(0, 10, 100), np.sin(np.linspace(0, 10, 100)))
 ax.set_ylabel("Very Long Label That Might\nOverflow the Figure Bounds")
-ax.set_title("Complex Multi-Line Title\nWith Potential Overflow", fontsize=dm.fs(2))
+ax.set_title("Complex Multi-Line Title", fontsize=dm.fs(2))
 
-# Auto-adjusts margins to prevent any overflow
-dm.auto_layout(fig, padding=0.08, max_iter=5, verbose=True)
+dm.simple_layout(fig, margin="2%")        # uniform 2% buffer
+dm.simple_layout(fig, margin=dm.mm(2))    # uniform 2 mm buffer
+dm.simple_layout(fig, ml=dm.cm(1), mr="3%")  # per-side, mixed units
 ```
 
-**How it works:**
-1. Applies initial layout with minimal margins
-2. Measures actual text overflow on all four sides
-3. Increases margins only where needed
-4. Repeats until convergence (typically 1-3 iterations)
+`margin` (and the per-side `ml`/`mr`/`mt`/`mb` overrides) accept any
+of:
 
-This is especially useful for:
-- Axes with very long y-axis labels
-- Multi-line titles that extend beyond figure bounds
-- Figures with many annotations
-- Automatically generated charts where label length is unknown
+- :class:`Length` (`dm.cm(0.5)`, `dm.mm(5)`, `dm.inch(0.1)`,
+  `dm.pt(12)`)
+- unit string (`"5mm"`, `"0.5cm"`, `"0.1in"`, `"24pt"`)
+- percentage string (`"5%"` = 5 % of the figure dimension)
+- bare number (figure-fraction, so `0.05` = 5 %)
+
+**How it works:**
+
+1. Draws the figure once to populate text metrics.
+2. Walks every visible artist on each axes (texts, title, axis labels,
+   tick labels in view, axis offset text, legend) and computes the
+   content-extent overhang relative to each axes' plot area.
+3. Sets GridSpec edges arithmetically so the union of all axes
+   content sits at exactly the requested distance from each figure
+   edge.
+4. Re-measures and re-applies until consecutive iterations agree to
+   within 0.5 px (typically 2 iterations; up to 8 on AutoLocator
+   fixed-points like long log-scale ranges).
+
+No optimizer is involved — the result is fully deterministic.
 
 ### Responsive Margins with `set_xmargin` and `set_ymargin`
 
@@ -101,16 +112,19 @@ dm.set_ymargin(ax, margin=0.05)
 # - Ensuring markers aren't clipped at boundaries
 ```
 
-### Which Layout Function to Use?
+### Which call to use?
 
-| Scenario | Recommended Function | Why |
-|----------|---------------------|-----|
-| Default — most figures | `auto_layout(fig)` | Content-aware margin pass; the 0.4 default |
-| Complex multi-line titles/labels | `auto_layout(fig)` | Automatic overflow detection |
-| Unknown label lengths (AI-generated) | `auto_layout(fig)` | Adapts to content |
-| GridSpec where `auto_layout` can't fit boxes | `simple_layout(fig, gs=gs)` | L-BFGS-B optimizer; respects hspace/wspace |
-| Need exact margin control | `simple_layout(fig, margins=(...))` | Precise inch-based margins |
-| Debugging layout issues | `auto_layout(fig, verbose=True)` | Shows iteration diagnostics |
+| Scenario | Call |
+|---|---|
+| Default — most figures | `dm.simple_layout(fig)` |
+| Need a buffer between content and edge | `dm.simple_layout(fig, margin="2%")` or `margin=dm.mm(2)` |
+| Per-side asymmetric margins | `dm.simple_layout(fig, ml=dm.cm(1), mr="3%", ...)` |
+| Multi-panel via GridSpec | `dm.simple_layout(fig, gs=gs)` |
+| Debugging layout convergence | `dm.simple_layout(fig, verbose=True)` |
+
+The historical `dm.auto_layout(fig)` is now a deprecated alias that
+forwards to `simple_layout`; new code should call `simple_layout`
+directly.
 
 ### `simple_layout` vs `tight_layout`
 
@@ -150,22 +164,25 @@ panels have **different label lengths** (e.g., a multi-line ylabel vs. a
 short one), or when a **colorbar** shifts the effective axes width, the
 heuristic can produce lopsided spacing or wasted whitespace.
 
-`simple_layout()` uses **scipy's L-BFGS-B optimizer** to minimize the gap
-between the actual tight bounding boxes and target margins you specify in
-inches. This means:
+`simple_layout()` measures every visible artist on every axes and
+arithmetically places the GridSpec so the content union lands at the
+requested margin from each figure edge. This means:
 
-- **Uniform margins** — every figure edge gets exactly the space you request
-- **Colorbar-aware** — the optimizer sees the full bounding box, including
-  colorbars and legends, not just the axes
-- **GridSpec-native** — pass `gs=gs` and it respects your `hspace`/`wspace`
-  while only adjusting outer margins
+- **Deterministic** — the same figure produces the same GridSpec
+  (no optimizer, no scipy)
+- **Content-complete** — sees titles, axis labels, view-limited tick
+  labels, ScalarFormatter offset text, legends — everything that
+  appears on the canvas
+- **GridSpec-native** — pass `gs=gs` and it respects your
+  `hspace`/`wspace` while only adjusting outer margins
+- **Unit-flexible** — `margin` accepts `Length`, unit strings (`"5mm"`),
+  percentages (`"5%"`), or figure-fractions
 
 **Key layout functions:**
 
 | Function                      | What it solves                                                |
 | ----------------------------- | ------------------------------------------------------------- |
-| `simple_layout(fig, gs=gs)`   | Optimizes outer margins via scipy — replaces `tight_layout()` |
-| `auto_layout(fig)`            | Content-aware layout that prevents text overflow              |
+| `simple_layout(fig, gs=gs)`   | Places content at requested margin — replaces `tight_layout()` |
 | `set_xmargin(ax, margin)`     | Sets responsive x-axis margins based on data range            |
 | `set_ymargin(ax, margin)`     | Sets responsive y-axis margins based on data range            |
 | `label_axes(axes)`            | Adds (a), (b), (c) labels with auto-positioning for ylabels   |
@@ -217,7 +234,7 @@ ax.plot([0, 1, 2], [0, 1, 0.4], color="oc.green6", lw=dm.lw(0.5))
 ax.set_title("Experiment result", fontsize=dm.fs(2), fontweight=dm.fw(1))
 ax.set_xlabel("Time")
 ax.set_ylabel("Response")
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 
 # Preview bundled fonts
 dm.plot_fonts(ncols=4, font_size=12)
