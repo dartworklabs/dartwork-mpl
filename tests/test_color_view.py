@@ -2,7 +2,7 @@
 
 import pytest
 
-from dartwork_mpl.color import Color
+from dartwork_mpl.colors import Color
 
 
 class TestOklabView:

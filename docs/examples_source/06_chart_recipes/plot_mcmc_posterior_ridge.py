@@ -31,8 +31,8 @@ for i in range(n_params):
     traces.append(np.random.normal(mean, std, 3000))
 
 # Colors extracted from an OKLCH perceptual space
-c1 = dm.named("oc.indigo9").to_hex()
-c2 = dm.named("oc.teal6").to_hex()
+c1 = dm.color("oc.indigo9").to_hex()
+c2 = dm.color("oc.teal6").to_hex()
 ridge_colors = dm.cspace(c1, c2, n=n_params, space="oklch")
 
 fig, axes = plt.subplots(

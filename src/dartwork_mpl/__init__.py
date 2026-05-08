@@ -28,13 +28,13 @@ from . import (  # noqa: F401
 from .annotation import arrow_axis, label_axes
 
 # Import color module exports
-from .color import (
+from .colors import (
     Color,
     DartworkColor,
     DartworkColormap,
+    color,
     cspace,
     hex,
-    named,
     oklab,
     oklch,
     rgb,
@@ -135,9 +135,9 @@ from .validate_fixes import validate_with_fixes
 __all__ = [  # noqa: RUF022
     # Color module
     "Color",
+    "color",
     "cspace",
     "hex",
-    "named",
     "oklab",
     "oklch",
     "rgb",

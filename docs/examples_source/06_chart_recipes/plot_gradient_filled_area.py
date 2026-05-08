@@ -24,7 +24,7 @@ y = 3.5 * np.sin(x * 0.8) * np.exp(-0.08 * x) + 4
 # Generate OKLCH gradient (teal-light → teal-dark, 50 steps)
 n_bands = 50
 gradient_colors = dm.cspace(
-    dm.named("oc.teal1"), dm.named("oc.teal8"), n=n_bands, space="oklch"
+    dm.color("oc.teal1"), dm.color("oc.teal8"), n=n_bands, space="oklch"
 )
 
 # Draw horizontal bands as stacked fill_between slices

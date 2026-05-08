@@ -57,7 +57,7 @@ contour = ax_joint.contourf(
 ax_joint.contour(X, Y, Z, levels=12, colors="white", linewidths=0.5, zorder=3)
 
 # 2. Plot the marginal distributions
-cm_color = dm.named("oc.teal6")
+cm_color = dm.color("oc.teal6")
 
 # Marginal X
 x_eval = np.linspace(xmin, xmax, 200)

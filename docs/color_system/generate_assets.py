@@ -140,7 +140,7 @@ def _text_color_for_bg(hex_str: str) -> str:
 
 def _save_color_sheets_html(images_dir: Path) -> list[Path]:
     """Generate HTML fragment files for each color library."""
-    from dartwork_mpl.color._loader import ensure_loaded
+    from dartwork_mpl.colors._loader import ensure_loaded
 
     ensure_loaded()
     mapping = mpl.colors.get_named_colors_mapping()
@@ -524,7 +524,7 @@ def _save_color_space_creation(images_dir: Path) -> Path:
         ("OKLCH", dm.oklch(0.7, 0.2, 120), "dm.oklch(0.7, 0.2, 120)"),
         ("RGB", dm.rgb(0.8, 0.2, 0.3), "dm.rgb(0.8, 0.2, 0.3)"),
         ("Hex", dm.hex("#ff5733"), "dm.hex('#ff5733')"),
-        ("Named", dm.named("oc.blue5"), "dm.named('oc.blue5')"),
+        ("Color", dm.color("oc.blue5"), "dm.color('oc.blue5')"),
         ("RGB 255", dm.rgb(200, 50, 75), "dm.rgb(200, 50, 75)"),
     ]
 
@@ -612,7 +612,7 @@ def _save_color_space_conversion(images_dir: Path) -> Path:
         transform=ax_title.transAxes,
     )
 
-    color = dm.named("tw.blue600")
+    color = dm.color("tw.blue600")
     L, a, b = color.to_oklab()
     L_ch, C, h = color.to_oklch()
     r, g, b_rgb = color.to_rgb()

@@ -4,7 +4,7 @@ Provides facilities for loading, registering, and converting colors
 across OKLab, OKLCH, RGB, and Hex color spaces.
 """
 
-from ._color import Color, cspace, hex, named, oklab, oklch, rgb
+from ._color import Color, color, cspace, hex, oklab, oklch, rgb
 from ._loader import ensure_loaded as _ensure_colors_loaded
 from ._typing import DartworkColor, DartworkColormap
 from ._views import (
@@ -26,9 +26,9 @@ __all__ = [
     "OklchViewIterator",
     "RgbView",
     "RgbViewIterator",
+    "color",
     "cspace",
     "hex",
-    "named",
     "oklab",
     "oklch",
     "rgb",

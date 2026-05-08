@@ -50,7 +50,7 @@ with plt.style.context("dark_background"):
         points = np.random.multivariate_normal(center, cov, n_samples)
         x, y = points[:, 0], points[:, 1]
 
-        core_hex = dm.named(color_name).to_hex()
+        core_hex = dm.color(color_name).to_hex()
 
         for s, alpha in glow_layers:
             ax.scatter(

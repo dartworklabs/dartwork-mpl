@@ -13,7 +13,7 @@ from pathlib import Path
 
 import matplotlib.colors as mcolors
 
-from dartwork_mpl.color._loader import _load_colors
+from dartwork_mpl.colors._loader import _load_colors
 
 # Add src to sys.path if needed
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
@@ -337,7 +337,7 @@ def generate_continuous(
         seg_steps = base_steps + (remainder if i == num_segments - 1 else 0)
 
         # Determine stops explicitly keeping them in OKLCH
-        from dartwork_mpl.color._color import cspace
+        from dartwork_mpl.colors._color import cspace
 
         segment = cspace(anchors[i], anchors[i + 1], n=seg_steps, space="oklch")
         if i < num_segments - 1:
@@ -445,7 +445,7 @@ def generate_preset_categorical(name: str, keys: list[str]) -> None:
     """Generate categorical colormaps from preset colors, sorted by OKLCH lightness."""
     out_path = CMAP_DIR / f"{name}.txt"
     mapping = mcolors.get_named_colors_mapping()
-    import dartwork_mpl.color as dc
+    import dartwork_mpl.colors as dc
 
     color_objects = []
     for k in keys:
