@@ -34,26 +34,76 @@ from ._views import OklabView, OklchView, RgbView
 
 
 class Color:
+    """Color in OKLab/OKLCH/RGB/Hex color spaces.
+
+    Mirrors :class:`~dartwork_mpl.units.Length`: an opaque wrapper with
+    a single canonical store (OKLab coordinates) and per-space property
+    views (``color.oklab`` / ``color.oklch`` / ``color.rgb``). The
+    constructor takes a *string* (or pass-through :class:`Color`) — bare
+    numerics are rejected because three floats give no way to tell
+    OKLab apart from OKLCH or RGB. For already-typed numeric input,
+    use :meth:`from_oklab` / :meth:`from_oklch` / :meth:`from_rgb` /
+    :meth:`from_hex` / :meth:`from_name` (or the top-level wrappers
+    :func:`oklab` / :func:`oklch` / :func:`rgb` / :func:`hex`).
+
+    Parameters
+    ----------
+    value : Color or str
+        Either another :class:`Color` (returned as a fresh copy with
+        the same OKLab coordinates) or a string parseable by
+        :meth:`Color.parse` — hex (``"#ff0000"``), functional
+        (``"rgb(1, 0, 0)"`` / ``"oklch(0.7, 0.15, 30)"`` /
+        ``"oklab(...)"``), or a palette/matplotlib color name
+        (``"oc.red5"``, ``"red"``).
+
+    Examples
+    --------
+    >>> import dartwork_mpl as dm
+    >>> dm.Color("#ff0000")
+    >>> dm.Color("oklch(0.7, 0.15, 30)")
+    >>> dm.Color("oc.red5")
+    >>> dm.Color(dm.oklab(0.7, 0.1, 0.2))   # pass-through copy
     """
-    Color class supporting OKLab, OKLCH, RGB, and Hex color spaces.
 
-    Internally stores colors in OKLab coordinates for fast conversion.
-    Use the class methods ``from_oklab()``, ``from_oklch()``,
-    ``from_rgb()``, ``from_hex()`` to create instances.
-    """
+    def __init__(self, value: Color | str) -> None:
+        if isinstance(value, Color):
+            self._L: float = value._L
+            self._a: float = value._a
+            self._b: float = value._b
+            return
+        if isinstance(value, (bool, int, float)):
+            # ``bool`` is an ``int`` subclass; trap before the str
+            # branch so ``Color(True)`` and ``Color(1)`` produce the
+            # same TypeError as ``Color(0.5)``.
+            raise TypeError(
+                f"Color(value) requires a color string like '#ff0000' / "
+                f"'rgb(1, 0, 0)' / 'oklch(0.7, 0.15, 30)' / 'oc.red5', "
+                f"or another Color. Got {type(value).__name__} "
+                f"{value!r} — bare numbers carry no color space. For "
+                f"OKLab coordinates use Color.from_oklab(L, a, b) or "
+                f"dm.oklab(L, a, b); for OKLCH use Color.from_oklch / "
+                f"dm.oklch; for RGB use Color.from_rgb / dm.rgb."
+            )
+        if not isinstance(value, str):
+            raise TypeError(
+                f"Color(value) accepts str or Color (got "
+                f"{type(value).__name__})"
+            )
+        parsed = Color.parse(value)
+        self._L = parsed._L
+        self._a = parsed._a
+        self._b = parsed._b
 
-    def __init__(self, L: float, a: float, b: float) -> None:
-        """
-        Private constructor. Use classmethods to create Color instances.
-
-        Parameters
-        ----------
-        L, a, b : float
-            OKLab coordinates.
-        """
-        self._L: float = float(L)
-        self._a: float = float(a)
-        self._b: float = float(b)
+    @classmethod
+    def _from_oklab(cls, L: float, a: float, b: float) -> Color:
+        # Internal fast-path that skips str-parsing in __init__ — used
+        # by every from_* factory and by copy(). Mirrors
+        # ``Length._from_inch``.
+        obj = cls.__new__(cls)
+        obj._L = float(L)
+        obj._a = float(a)
+        obj._b = float(b)
+        return obj
 
     @property
     def oklab(self) -> OklabView:
@@ -152,7 +202,7 @@ class Color:
         Color
             Color instance.
         """
-        return cls(L, a, b)
+        return cls._from_oklab(L, a, b)
 
     @classmethod
     def from_oklch(cls, L: float, C: float, h: float) -> Color:
@@ -174,7 +224,7 @@ class Color:
         # Convert degrees to radians for internal calculation
         h_rad: float = math.radians(h)
         _, a, b = _oklch_to_oklab(L, C, h_rad)
-        return cls(L, a, b)
+        return cls._from_oklab(L, a, b)
 
     @classmethod
     def from_rgb(cls, r: float, g: float, b: float) -> Color:
@@ -218,7 +268,7 @@ class Color:
             float(r_linear), float(g_linear), float(b_linear)
         )
 
-        return cls(L, a, b_val)
+        return cls._from_oklab(L, a, b_val)
 
     @classmethod
     def from_hex(cls, hex_str: str) -> Color:
@@ -446,7 +496,7 @@ class Color:
         >>> print(color.oklab.L)      # 0.7 (unchanged)
         >>> print(new_color.oklab.L)  # 0.8 (modified)
         """
-        return Color(self._L, self._a, self._b)
+        return Color._from_oklab(self._L, self._a, self._b)
 
     def __repr__(self) -> str:
         """
@@ -684,7 +734,7 @@ def hex(hex_str: str) -> Color:
 
 
 def color(value: Color | str) -> Color:
-    """Parse a string or pass through a :class:`Color` instance.
+    """Parse a string (or pass through a :class:`Color`) into a :class:`Color`.
 
     String-parser counterpart to :func:`hex`, :func:`rgb`,
     :func:`oklch`, :func:`oklab`, and palette-name lookup. Mirrors
@@ -701,15 +751,12 @@ def color(value: Color | str) -> Color:
     Parameters
     ----------
     value : Color or str
-        A :class:`Color` instance is returned unchanged. A string is
-        dispatched through :meth:`Color.parse`.
+        A :class:`Color` instance is returned as a fresh copy with the
+        same OKLab coordinates. A string is dispatched through
+        :meth:`Color.parse`.
 
     Returns
     -------
     Color
     """
-    if isinstance(value, Color):
-        return value
-    if isinstance(value, str):
-        return Color.parse(value)
-    raise TypeError(f"color() expects str or Color, got {type(value).__name__}")
+    return Color(value)
