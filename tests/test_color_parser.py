@@ -133,9 +133,14 @@ def test_parse_rgb_non_numeric_args_raises():
 from dartwork_mpl.colors import color  # noqa: E402  (intentional late import)
 
 
-def test_color_passthrough_returns_same_object():
+def test_color_passthrough_copies_instance():
+    # Mirrors ``Length(other_length)``: a fresh instance with the same
+    # canonical store, not identity passthrough.
     c = Color.from_hex("#ff0000")
-    assert color(c) is c
+    copied = color(c)
+    assert copied is not c
+    assert copied.to_hex() == c.to_hex()
+    assert copied.to_oklab() == c.to_oklab()
 
 
 def test_color_string_delegates_to_parse():
@@ -162,3 +167,65 @@ def test_color_is_exported_at_top_level():
 
     assert dm.color is color
     assert dm.color("#ff0000").to_hex() == "#ff0000"
+
+
+# --------------------------------------------------------------------------- #
+# Color(value) — string-parser constructor (mirrors Length(value))
+# --------------------------------------------------------------------------- #
+
+
+def test_color_init_accepts_hex_string():
+    assert Color("#ff0000").to_hex() == "#ff0000"
+
+
+def test_color_init_accepts_functional_rgb():
+    assert Color("rgb(1, 0, 0)").to_hex() == "#ff0000"
+
+
+def test_color_init_accepts_functional_oklch():
+    expected = Color.from_oklch(0.7, 0.15, 30)
+    assert Color("oklch(0.7, 0.15, 30)").to_hex() == expected.to_hex()
+
+
+def test_color_init_accepts_palette_name():
+    assert Color("oc.red5").to_hex() == Color.from_name("oc.red5").to_hex()
+
+
+def test_color_init_accepts_color_instance_as_copy():
+    src = Color.from_oklab(0.7, 0.1, 0.2)
+    dup = Color(src)
+    assert dup is not src
+    assert dup.to_oklab() == src.to_oklab()
+
+
+def test_color_init_rejects_bare_float():
+    with pytest.raises(TypeError, match="from_oklab"):
+        Color(0.5)  # type: ignore[arg-type]
+
+
+def test_color_init_rejects_bare_int():
+    with pytest.raises(TypeError, match="from_oklab"):
+        Color(1)  # type: ignore[arg-type]
+
+
+def test_color_init_rejects_bool():
+    # ``bool`` is an ``int`` subclass — make sure it's trapped too.
+    with pytest.raises(TypeError, match="from_oklab"):
+        Color(True)  # type: ignore[arg-type]
+
+
+def test_color_init_rejects_three_floats():
+    # The historical OKLab-coordinate constructor is gone — three-arg
+    # callers must migrate to Color.from_oklab.
+    with pytest.raises(TypeError):
+        Color(0.5, 0.1, 0.2)  # type: ignore[call-arg]
+
+
+def test_color_init_rejects_none():
+    with pytest.raises(TypeError):
+        Color(None)  # type: ignore[arg-type]
+
+
+def test_color_init_rejects_tuple():
+    with pytest.raises(TypeError):
+        Color((0.5, 0.1, 0.2))  # type: ignore[arg-type]
