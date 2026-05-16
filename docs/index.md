@@ -10,8 +10,8 @@
 
   <div class="dm-landing-cta">
     <div class="dm-landing-install">
-      <code>pip install git+https://github.com/dartworklabs/dartwork-mpl</code>
-      <button class="dm-landing-copy-btn" onclick="navigator.clipboard.writeText('pip install git+https://github.com/dartworklabs/dartwork-mpl').then(()=>{this.textContent='✓';setTimeout(()=>{this.textContent='⎘'},1500)})">⎘</button>
+      <code>uv add git+https://github.com/dartworklabs/dartwork-mpl</code>
+      <button class="dm-landing-copy-btn" onclick="navigator.clipboard.writeText('uv add git+https://github.com/dartworklabs/dartwork-mpl').then(()=>{this.textContent='✓';setTimeout(()=>{this.textContent='⎘'},1500)})">⎘</button>
     </div>
     <a href="usage_guide/quickstart.html" class="dm-landing-btn dm-landing-btn-secondary">Get Started →</a>
     <a href="ai/index.html" class="dm-landing-btn dm-landing-btn-secondary">AI / Agents →</a>
@@ -91,136 +91,63 @@ dm.save_formats(fig, "output")          # Export SVG + PNG
 :width: 80%
 :::
 
-## Why dartwork-mpl?
-
-::::{grid} 1 1 2 2
-:gutter: 2
-
-:::{grid-item-card} 🎯 **Zero learning curve**
-You already know matplotlib. dartwork-mpl just makes the defaults
-beautiful and gives you a few one-liners (`simple_layout`,
-`save_formats`, named colors) for the parts that always hurt.
-:::
-
-:::{grid-item-card} 🎨 **Curated, not invented**
-900+ named colors from real design systems (Open Color, Tailwind,
-Material, Ant, Chakra, Primer) and 30+ perceptually-uniform
-colormaps. Use them as drop-in color strings everywhere matplotlib
-accepts a color.
-:::
-
-:::{grid-item-card} 📐 **Layouts that just work**
-`dm.simple_layout(fig)` solves the "labels overflow, margins look
-weird" problem deterministically — including with twinx, colorbars,
-and long Korean labels.
-:::
-
-:::{grid-item-card} 🧪 **Lint your figures**
-`dm.validate_figure(fig)` flags overflow, asymmetric margins, and
-pie-label cutoffs *before* you save. `validate_with_fixes` applies
-the obvious fixes for you.
-:::
-
-:::{grid-item-card} 🛠️ **Interactive UI**
-Tweak font sizes, line weights, colors, and margins in a local web
-app, then [download the exact Python script that reproduces your
-plot](usage_guide/interactive.md).
-:::
-
-::::
-
-## Try it without installing — interactive widgets
-
-Drag, click, and hover the live previews below. Everything you see
-runs entirely in your browser.
-
-:::{tip}
-Press <kbd>?</kbd> anywhere on this site to open the keyboard shortcuts
-overlay (`/` focuses search, `g h` jumps home, `g q` to Quick Start, `g c`
-to Color System, …). The teal `?` button in the bottom-right corner opens
-the same overlay.
-:::
-
-::::{grid} 1 1 2 2
-:gutter: 2
-
-:::{grid-item-card} 🎚️ **Pick a preset**
-Toggle through `scientific` / `report` / `presentation` / `poster`
-on a real chart and watch the typography and spines respond.
-
-→ [Compare presets live](usage_guide/styles.md#interactive-comparison)
-:::
-
-:::{grid-item-card} 🌈 **Browse 900+ colors**
-Click any swatch to copy its name, filter by library, or scrub
-through OKLCH lightness ramps to see how shades evolve.
-
-→ [Open palette explorer](color_system/colors.md)
-:::
-
-:::{grid-item-card} 🗺️ **Inspect colormaps**
-Filter by category (Single-Hue, Multi-Hue, Diverging, Cyclical,
-Categorical) and preview gradients side-by-side.
-
-→ [Open colormap explorer](color_system/colormaps.md)
-:::
-
-:::{grid-item-card} 📏 **See `dm.fs()` in action**
-A live ruler maps `dm.fs(-2)` … `dm.fs(+3)` to actual point sizes
-under each preset, so you can pick the right offset by eye.
-
-→ [Try the size ruler](usage_guide/styles.md)
-:::
-
-::::
-
-## Key Features
+## What's in the box
 
 ::::{grid} 1 1 2 3
 :gutter: 2
 
-:::{grid-item-card} **Style Presets**
+:::{grid-item-card} **Style presets**
 :link: usage_guide/styles
 :link-type: doc
-Professional themes for every context: `scientific`, `report`, `presentation`, `poster`, `web`, `dark`, `minimal` — each one tunes fonts, line weights, spines, and tick styling in a single call.
+Seven curated themes — `scientific`, `report`, `presentation`,
+`poster`, `web`, `dark`, `minimal` — each one tunes fonts, line
+weights, spines, and ticks in a single `dm.style.use(...)` call.
 :::
 
-:::{grid-item-card} **Smart Layout**
+:::{grid-item-card} **Deterministic layout**
 :link: usage_guide/layout
 :link-type: doc
-`dm.simple_layout(fig)` measures every visible artist and snaps the axes to deterministic margins — even with colorbars, twinx, and long labels. No more `bbox_inches="tight"` guesswork.
+`dm.simple_layout(fig)` measures every visible artist and snaps the
+axes to consistent margins — twinx, colorbars, rotated ticks, and
+long Korean labels included. No `bbox_inches="tight"` guessing.
 :::
 
-:::{grid-item-card} **900+ Colors**
+:::{grid-item-card} **900+ named colors**
 :link: color_system/index
 :link-type: doc
-Named colors from Open Color, Tailwind, Material Design, Ant Design, Chakra UI, and Primer. Use them as plain color strings: `color="oc.blue5"`.
+Open Color, Tailwind, Material, Ant Design, Chakra, and Primer
+shipped as plain color strings — `color="oc.blue5"` works anywhere
+matplotlib accepts a color. Plus 30+ perceptually-uniform colormaps.
 :::
 
-:::{grid-item-card} **Interactive UI**
-:link: usage_guide/interactive
+:::{grid-item-card} **Validation before you ship**
+:link: usage_guide/save_export
 :link-type: doc
-Web-based parameter tuning with real-time preview and one-click code export. Adjust until it looks right, then take the script home.
+`dm.validate_figure(fig)` flags overflow, asymmetric margins, and
+pie-label cutoffs *before* you save. `validate_with_fixes` patches
+the obvious ones for you.
 :::
 
-:::{grid-item-card} **Zero API Changes**
+:::{grid-item-card} **Zero API changes**
 :link: philosophy/index
 :link-type: doc
-Works with your existing matplotlib code. dartwork-mpl never wraps `Figure` or `Axes`; it just sets up the environment and stays out of your way.
+dartwork-mpl never wraps `Figure` or `Axes`. It sets up the
+environment and stays out of your way, so every matplotlib trick
+you already know still works.
 :::
 
-:::{grid-item-card} **Export Formats**
+:::{grid-item-card} **One-line export**
 :link: api/io
 :link-type: doc
-One-line export to SVG, PNG, and PDF with sensible DPI defaults — and an optional `validate=True` pass to catch problems before they ship.
+`dm.save_formats(fig, "out", formats=("png", "svg", "pdf"))` writes
+all three at the right DPI in a single call — with an optional
+`validate=True` to catch problems before they ship.
 :::
 
 ::::
 
-## Documentation
-
 ```{toctree}
-:maxdepth: 1
+:hidden:
 :caption: Getting Started
 
 installation/index
@@ -229,7 +156,7 @@ usage_guide/index
 ```
 
 ```{toctree}
-:maxdepth: 1
+:hidden:
 :caption: Reference
 
 design_system/index
@@ -246,7 +173,7 @@ fonts/index
 ```
 
 ```{toctree}
-:maxdepth: 1
+:hidden:
 :caption: More
 
 philosophy/index
