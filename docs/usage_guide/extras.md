@@ -53,9 +53,12 @@ import matplotlib as mpl
 print(dm.classify_colormap(mpl.colormaps["coolwarm"]))  # → "Diverging"
 ```
 
-:::{figure} images/save_diagnostics.svg
-:alt: OpenColor palette preview from plot_colors diagnostic tool
-:width: 100%
+:::{note}
+**Looking for the full palette?** The interactive, copy-on-click swatch
+grid (140+ OpenColor / Tailwind / Material colors with search) lives on
+the dedicated [Color System → Palette Catalog](../color_system/colors.md)
+page. The diagnostic helpers above are aimed at *programmatic* sanity
+checks; the catalog page is the place to browse.
 :::
 
 :::{tip}

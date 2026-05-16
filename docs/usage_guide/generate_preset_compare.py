@@ -138,44 +138,77 @@ def _collect_preset_params(preset: str) -> dict[str, str]:
 
 
 def _render_preset_svg(preset: str) -> str:
-    """Render a sample plot with *preset* and return SVG as string."""
+    """Render a sample plot with *preset* and return SVG as string.
+
+    The example is intentionally richer than a plain line chart: it
+    combines a measured trajectory, a forecast band (``fill_between``),
+    an annotated threshold marker, and a three-element legend so that
+    the differences between presets \u2014 font weight, spine treatment,
+    tick style, palette \u2014 are obvious at a glance.
+    """
     dm.style.use(preset)
 
     fig, ax = plt.subplots(
         figsize=dm.figsize(f"{FIG_WIDTH_CM}cm", f"{FIG_HEIGHT_CM}cm"), dpi=150
     )
 
-    # Sample data: thermal conductivity vs temperature
-    temp = np.array([200, 400, 600, 800, 1000, 1200])
-    sample_a = np.array([13, 42, 31, 71, 61, 90])
-    sample_b = np.array([5, 21, 27, 43, 44, 68])
+    # Sample data: battery capacity retention over charge/discharge
+    # cycles. This example exercises annotations + uncertainty band +
+    # dual series, all of which surface preset-level styling
+    # differences much more clearly than a plain line chart.
+    cycles = np.arange(0, 1001, 50)
+    rng = np.random.default_rng(7)
+    measured = 100 * np.exp(-cycles / 2400.0) + rng.normal(0, 0.4, cycles.size)
+    forecast = 100 * np.exp(-cycles / 2200.0)
+    lower = forecast - 1.5
+    upper = forecast + 1.5
 
-    ax.plot(
-        temp,
-        sample_a,
-        marker="o",
-        label="Sample A",
-        color="oc.teal7",
-        lw=dm.lw(1),
+    ax.fill_between(
+        cycles,
+        lower,
+        upper,
+        color="oc.gray4",
+        alpha=0.35,
+        label="Forecast 95% CI",
     )
     ax.plot(
-        temp,
-        sample_b,
-        marker="s",
+        cycles,
+        forecast,
+        color="oc.gray7",
         linestyle="--",
-        label="Sample B",
-        color="oc.orange7",
         lw=dm.lw(1),
+        label="Forecast",
+    )
+    ax.plot(
+        cycles,
+        measured,
+        marker="o",
+        markersize=3.5,
+        color="oc.teal7",
+        lw=dm.lw(1),
+        label="Measured",
+    )
+
+    # Annotate the 80% end-of-life threshold \u2014 a common battery KPI.
+    ax.axhline(80, color="oc.red6", lw=dm.lw(0.5), linestyle=":")
+    ax.annotate(
+        "80% EoL\nthreshold",
+        xy=(940, 80),
+        xytext=(720, 86),
+        fontsize=dm.fs(-1),
+        color="oc.red8",
+        arrowprops={"arrowstyle": "->", "color": "oc.red6", "lw": 0.6},
     )
 
     ax.set_title(
-        "Thermal Conductivity vs. Temperature",
+        "Battery capacity retention vs. cycles",
         fontsize=dm.fs(2),
         fontweight=dm.fw(1),
     )
-    ax.set_xlabel("Temperature (K)", fontsize=dm.fs(0))
-    ax.set_ylabel("Thermal Conductivity (W/m\u00b7K)", fontsize=dm.fs(0))
-    ax.legend(fontsize=dm.fs(-1), frameon=False, loc="upper left")
+    ax.set_xlabel("Charge / discharge cycles", fontsize=dm.fs(0))
+    ax.set_ylabel("Capacity retention (%)", fontsize=dm.fs(0))
+    ax.set_ylim(74, 102)
+    ax.legend(fontsize=dm.fs(-1), frameon=False, loc="lower left")
 
     dm.simple_layout(fig)
 
@@ -213,32 +246,38 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     max-width: 100%;
     margin: 0 auto;
   }}
-  .dm-pc-tabs {{
+  /* ── Top status bar (preset name + index, replaces the old 7-button row) ── */
+  .dm-pc-statusbar {{
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-bottom: 12px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 16px;
   }}
-  .dm-pc-tab {{
-    padding: 5px 12px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: #f8f8f8;
-    cursor: pointer;
+  .dm-pc-current {{
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    min-width: 0;
+  }}
+  .dm-pc-name {{
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+    letter-spacing: -0.01em;
+  }}
+  .dm-pc-desc {{
+    font-size: 13px;
+    color: #777;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }}
+  .dm-pc-counter {{
     font-size: 12px;
-    font-weight: 500;
-    color: #555;
-    transition: all 0.15s ease;
-    user-select: none;
-  }}
-  .dm-pc-tab:hover {{
-    background: #e8e8e8;
-    border-color: #999;
-  }}
-  .dm-pc-tab.active {{
-    background: #333;
-    color: #fff;
-    border-color: #333;
+    color: #999;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
   }}
   /* ── Main layout: chart top, params bottom ── */
   .dm-pc-body {{
@@ -246,7 +285,10 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     flex-direction: column;
     gap: 16px;
   }}
-  /* ── Chart stage (fixed size) ── */
+  /* ── Chart stage (fixed size + nav arrows) ── */
+  .dm-pc-stage-wrap {{
+    position: relative;
+  }}
   .dm-pc-stage {{
     position: relative;
     background: #fafafa;
@@ -254,7 +296,6 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     border-radius: 6px;
     overflow: hidden;
     width: 100%;
-    /* Fixed aspect ratio via padding-bottom */
     aspect-ratio: {aspect_ratio};
   }}
   .dm-pc-panel {{
@@ -262,7 +303,7 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     top: 0; left: 0;
     width: 100%; height: 100%;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.45s ease;
     pointer-events: none;
   }}
   .dm-pc-panel.active {{
@@ -273,6 +314,76 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     display: block;
     width: 100%;
     height: 100%;
+  }}
+  /* Prev/Next arrows */
+  .dm-pc-arrow {{
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid #d0d0d0;
+    background: rgba(255, 255, 255, 0.92);
+    color: #333;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    transition: all 0.15s ease;
+    user-select: none;
+    z-index: 2;
+  }}
+  .dm-pc-arrow:hover {{
+    background: #fff;
+    border-color: #888;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }}
+  .dm-pc-arrow-prev {{ left: 8px; }}
+  .dm-pc-arrow-next {{ right: 8px; }}
+  /* Dot indicators */
+  .dm-pc-dots {{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }}
+  .dm-pc-dot {{
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }}
+  .dm-pc-dot:hover {{
+    background: #999;
+    transform: scale(1.15);
+  }}
+  .dm-pc-dot.active {{
+    background: #333;
+    width: 22px;
+    border-radius: 4px;
+  }}
+  /* Autoplay progress bar */
+  .dm-pc-progress {{
+    height: 2px;
+    background: #eee;
+    margin-top: 8px;
+    border-radius: 1px;
+    overflow: hidden;
+  }}
+  .dm-pc-progress-bar {{
+    height: 100%;
+    background: #333;
+    width: 0%;
+    transition: width 0.1s linear;
   }}
   /* ── Parameter info panel (multi-column grid) ── */
   .dm-pc-params {{
@@ -285,7 +396,7 @@ _HTML_TEMPLATE = textwrap.dedent("""\
   .dm-pc-params-grid {{
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px 48px; /* wider gap between columns */
+    gap: 10px 48px;
   }}
   .dm-pc-param-item {{
     display: flex;
@@ -295,7 +406,7 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     padding-bottom: 6px;
   }}
   .dm-pc-param-key {{
-    flex: 0 0 130px; /* fixed width for alignment */
+    flex: 0 0 130px;
     font-family: "SF Mono", "Fira Code", "Consolas", monospace;
     color: #555;
     white-space: nowrap;
@@ -306,7 +417,7 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     white-space: nowrap;
   }}
   .dm-pc-param-special {{
-    grid-column: 1 / -1; /* Make 'best for' span full width if needed, or just let it flow */
+    grid-column: 1 / -1;
     border-bottom: none;
     padding-top: 4px;
     align-items: center;
@@ -314,16 +425,29 @@ _HTML_TEMPLATE = textwrap.dedent("""\
   .dm-pc-param-special .dm-pc-param-key {{
     flex: 0 0 auto;
     margin-right: 12px;
+  }}
 </style>
 
-<div class="dm-pc-widget">
-  <div class="dm-pc-tabs" id="dm-pc-tabs">
-{tabs_html}
+<div class="dm-pc-widget" id="dm-pc-widget" role="region" aria-label="Preset comparison carousel">
+  <div class="dm-pc-statusbar">
+    <div class="dm-pc-current">
+      <span class="dm-pc-name" id="dm-pc-name"></span>
+      <span class="dm-pc-desc" id="dm-pc-desc"></span>
+    </div>
+    <span class="dm-pc-counter" id="dm-pc-counter"></span>
   </div>
   <div class="dm-pc-body">
-    <div class="dm-pc-stage" id="dm-pc-stage">
+    <div class="dm-pc-stage-wrap">
+      <button class="dm-pc-arrow dm-pc-arrow-prev" id="dm-pc-prev" aria-label="Previous preset">&#10094;</button>
+      <div class="dm-pc-stage" id="dm-pc-stage">
 {panels_html}
+      </div>
+      <button class="dm-pc-arrow dm-pc-arrow-next" id="dm-pc-next" aria-label="Next preset">&#10095;</button>
     </div>
+    <div class="dm-pc-dots" id="dm-pc-dots">
+{dots_html}
+    </div>
+    <div class="dm-pc-progress" aria-hidden="true"><div class="dm-pc-progress-bar" id="dm-pc-progress-bar"></div></div>
     <div class="dm-pc-params" id="dm-pc-params">
       <div class="dm-pc-params-grid" id="dm-pc-params-grid"></div>
     </div>
@@ -332,48 +456,112 @@ _HTML_TEMPLATE = textwrap.dedent("""\
 
 <script>
 (function() {{
+  var presets = {presets_json};
   var meta = {meta_json};
   var params = {params_json};
-  document.addEventListener("DOMContentLoaded", function() {{
-    var tabs = document.querySelectorAll(".dm-pc-tab");
-    var panels = document.querySelectorAll(".dm-pc-panel");
-    var pgrid = document.getElementById("dm-pc-params-grid");
+  var AUTOPLAY_MS = 5000;     // 5s per slide
+  var PROGRESS_TICK_MS = 50;
 
-    function activate(preset) {{
-      tabs.forEach(function(t) {{
-        t.classList.toggle("active", t.dataset.preset === preset);
+  document.addEventListener("DOMContentLoaded", function() {{
+    var widget   = document.getElementById("dm-pc-widget");
+    var panels   = document.querySelectorAll(".dm-pc-panel");
+    var dots     = document.querySelectorAll(".dm-pc-dot");
+    var prevBtn  = document.getElementById("dm-pc-prev");
+    var nextBtn  = document.getElementById("dm-pc-next");
+    var nameEl   = document.getElementById("dm-pc-name");
+    var descEl   = document.getElementById("dm-pc-desc");
+    var ctrEl    = document.getElementById("dm-pc-counter");
+    var progress = document.getElementById("dm-pc-progress-bar");
+    var pgrid    = document.getElementById("dm-pc-params-grid");
+
+    var idx = 0;
+    var autoplayTimer = null;
+    var progressTimer = null;
+    var paused = false;
+
+    function activate(newIdx) {{
+      idx = (newIdx + presets.length) % presets.length;
+      var preset = presets[idx];
+
+      panels.forEach(function(p, i) {{
+        p.classList.toggle("active", i === idx);
       }});
-      panels.forEach(function(p) {{
-        p.classList.toggle("active", p.dataset.preset === preset);
+      dots.forEach(function(d, i) {{
+        d.classList.toggle("active", i === idx);
       }});
-      // Update params grid
+
+      nameEl.textContent = preset;
+      descEl.textContent = meta[preset] ? "— " + meta[preset].desc : "";
+      ctrEl.textContent = (idx + 1) + " / " + presets.length;
+
       if (params[preset]) {{
         var html = "";
         var p = params[preset];
-        var keys = Object.keys(p);
-        for (var i = 0; i < keys.length; i++) {{
-          var k = keys[i];
-          if (k === "spines" || k === "best_for") continue;
-          html += "<div class='dm-pc-param-item'><span class='dm-pc-param-key'>" + k + "</span><span class='dm-pc-param-val'>" + p[k] + "</span></div>";
-        }}
+        Object.keys(p).forEach(function(k) {{
+          if (k === "spines" || k === "best_for") return;
+          html += "<div class='dm-pc-param-item'><span class='dm-pc-param-key'>"
+                  + k + "</span><span class='dm-pc-param-val'>" + p[k] + "</span></div>";
+        }});
         if (p["spines"]) {{
-          html += "<div class='dm-pc-param-item'><span class='dm-pc-param-key'>spines</span><span class='dm-pc-param-val'>" + p["spines"] + "</span></div>";
+          html += "<div class='dm-pc-param-item'><span class='dm-pc-param-key'>spines</span><span class='dm-pc-param-val'>"
+                  + p["spines"] + "</span></div>";
         }}
         if (meta[preset]) {{
-          html += "<div class='dm-pc-param-item dm-pc-param-special'><span class='dm-pc-param-key'>best for</span><span class='dm-pc-param-val'>" + meta[preset].use + "</span></div>";
+          html += "<div class='dm-pc-param-item dm-pc-param-special'><span class='dm-pc-param-key'>best for</span><span class='dm-pc-param-val'>"
+                  + meta[preset].use + "</span></div>";
         }}
         pgrid.innerHTML = html;
       }}
     }}
 
-    tabs.forEach(function(t) {{
-      t.addEventListener("click", function() {{
-        activate(t.dataset.preset);
-      }});
+    function next() {{ activate(idx + 1); }}
+    function prev() {{ activate(idx - 1); }}
+
+    function startAutoplay() {{
+      stopAutoplay();
+      var elapsed = 0;
+      progress.style.width = "0%";
+      progressTimer = setInterval(function() {{
+        if (paused) return;
+        elapsed += PROGRESS_TICK_MS;
+        progress.style.width = Math.min(100, (elapsed / AUTOPLAY_MS) * 100) + "%";
+        if (elapsed >= AUTOPLAY_MS) {{
+          elapsed = 0;
+          next();
+          progress.style.width = "0%";
+        }}
+      }}, PROGRESS_TICK_MS);
+    }}
+    function stopAutoplay() {{
+      if (progressTimer) {{ clearInterval(progressTimer); progressTimer = null; }}
+      progress.style.width = "0%";
+    }}
+
+    prevBtn.addEventListener("click", function() {{ prev(); startAutoplay(); }});
+    nextBtn.addEventListener("click", function() {{ next(); startAutoplay(); }});
+    dots.forEach(function(d, i) {{
+      d.addEventListener("click", function() {{ activate(i); startAutoplay(); }});
     }});
 
-    // Default: activate first preset
-    activate("{default_preset}");
+    // Pause on hover or keyboard focus — accessibility-friendly
+    widget.addEventListener("mouseenter", function() {{ paused = true;  }});
+    widget.addEventListener("mouseleave", function() {{ paused = false; }});
+    widget.addEventListener("focusin",    function() {{ paused = true;  }});
+    widget.addEventListener("focusout",   function() {{ paused = false; }});
+
+    // Keyboard navigation
+    widget.tabIndex = 0;
+    widget.addEventListener("keydown", function(e) {{
+      if (e.key === "ArrowLeft")  {{ prev(); startAutoplay(); }}
+      if (e.key === "ArrowRight") {{ next(); startAutoplay(); }}
+    }});
+
+    // Respect reduced-motion users — no autoplay, manual only
+    var reduceMotion = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    activate(0);
+    if (!reduceMotion) startAutoplay();
   }});
 }})();
 </script>
@@ -423,34 +611,36 @@ def build_preset_compare_html(output_path: Path | None = None) -> Path:
     for preset in PRESETS:
         svgs[preset] = _normalize_svg_viewbox(svgs[preset], target_vb)
 
-    # ── Build tabs HTML ──
-    tabs_lines = [
-        f'    <button class="dm-pc-tab" data-preset="{preset}">{preset}</button>'
+    # ── Build dot-indicator HTML ──
+    dots_lines = [
+        f'      <button class="dm-pc-dot" data-preset="{preset}" '
+        f'aria-label="Show {preset} preset"></button>'
         for preset in PRESETS
     ]
-    tabs_html = "\n".join(tabs_lines)
+    dots_html = "\n".join(dots_lines)
 
     # ── Build panels HTML ──
     panels_lines = []
     for preset in PRESETS:
         panels_lines.append(
-            f'      <div class="dm-pc-panel" data-preset="{preset}">'
+            f'        <div class="dm-pc-panel" data-preset="{preset}">'
         )
-        panels_lines.append(f"        {svgs[preset]}")
-        panels_lines.append("      </div>")
+        panels_lines.append(f"          {svgs[preset]}")
+        panels_lines.append("        </div>")
     panels_html = "\n".join(panels_lines)
 
     # ── JSON data ──
+    presets_json = json.dumps(PRESETS, ensure_ascii=False)
     meta_json = json.dumps(PRESET_META, ensure_ascii=False)
     params_json = json.dumps(all_params, ensure_ascii=False)
 
     # ── Assemble ──
     html = _HTML_TEMPLATE.format(
-        tabs_html=tabs_html,
+        dots_html=dots_html,
         panels_html=panels_html,
+        presets_json=presets_json,
         meta_json=meta_json,
         params_json=params_json,
-        default_preset=PRESETS[0],
         aspect_ratio=aspect_ratio,
     )
 

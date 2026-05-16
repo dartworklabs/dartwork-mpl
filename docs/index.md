@@ -23,10 +23,13 @@
 :file: _static/compare_slider.html
 ```
 
-The chart on the left is what `plt.savefig()` gives you out of the
-box. The chart on the right is the same script with three
-dartwork-mpl lines added: pick a style, lay it out, save. No new
-plotting API to learn.
+Drag the divider to inspect the seam. The left half is what
+`plt.savefig()` writes with default rcParams; the right half is the
+**same script** plus two dartwork-mpl calls — `dm.style.use("scientific")`
+to swap the rcParams listed below the slider, and `dm.simple_layout(fig)`
+to handle margins. No new plotting API, no axes wrappers, no opinions
+about your data. Just the typography and layout knobs you would have set
+yourself if you had the budget.
 
 ## Quick Example
 
@@ -193,10 +196,16 @@ usage_guide/index
 :maxdepth: 1
 :caption: Reference
 
-color_system/index
-fonts/index
+design_system/index
 examples_gallery/index
 api/index
+```
+
+```{toctree}
+:hidden:
+
+color_system/index
+fonts/index
 ```
 
 ```{toctree}
@@ -204,7 +213,12 @@ api/index
 :caption: More
 
 philosophy/index
-integrations/index
 troubleshooting
 migration
+```
+
+```{toctree}
+:hidden:
+
+integrations/index
 ```

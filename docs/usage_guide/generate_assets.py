@@ -602,21 +602,17 @@ def _save_diverging_bar(images_dir: Path) -> Path:
     return path
 
 
-def _save_diagnostics_preview(images_dir: Path) -> Path:
-    """Save & Export: plot_colors excerpt (SVG)."""
-    dm.style.use("presentation")
-
-    # Generate an OpenColor sheet — keep natural figure size
-    figs = dm.plot_colors(ncols=4, sort_colors=True, show_hex=False)
-    if len(figs) >= 2:
-        fig = figs[1]  # OpenColor (library order: dm, opencolor, ...)
-
-        path = images_dir / "save_diagnostics.svg"
-        fig.savefig(path, format="svg", bbox_inches="tight")
-        for f in figs:
-            plt.close(f)
-        return path
-    return images_dir / "save_diagnostics.svg"
+# NOTE: The full-OpenColor `save_diagnostics.svg` preview was removed in
+# the docs UX overhaul (issue #171). The interactive copy-on-click swatch
+# grid on the Color System page is the canonical browser for palettes;
+# `extras.md` now links to it instead of inlining a 180-KB single-column
+# SVG. The generator stub is kept commented below in case a much smaller
+# representative sample is ever desired in the diagnostics section.
+#
+# def _save_diagnostics_preview(images_dir: Path) -> Path:
+#     dm.style.use("presentation")
+#     figs = dm.plot_colors(ncols=4, sort_colors=True, show_hex=False)
+#     ...
 
 
 # ── Entrypoint ─────────────────────────────────────────────────────────
@@ -655,7 +651,7 @@ def build_usage_guide_assets(base_dir: Path | None = None) -> list[Path]:
         ("colors_colormap", _save_colors_colormap),
         ("save_scientific", _save_scientific_chart),
         ("save_diverging_bar", _save_diverging_bar),
-        ("save_diagnostics", _save_diagnostics_preview),
+        # ("save_diagnostics", _save_diagnostics_preview),  # removed in #171 docs UX overhaul
         ("evolution_step1", _save_evolution_step1),
         ("evolution_step2", _save_evolution_step2),
         ("evolution_step3", _save_evolution_step3),

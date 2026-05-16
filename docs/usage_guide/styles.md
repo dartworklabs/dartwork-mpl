@@ -21,8 +21,12 @@ dm.style.use("scientific-kr")  # any preset + Korean fonts
 
 ## Interactive comparison
 
-Toggle between presets below to see how font sizes, spines, line weights,
-tick marks, and colors change on the same chart:
+A live carousel renders the **same** plot — measured battery-capacity
+retention plus a forecast band and an annotated end-of-life threshold —
+under each preset. The slide advances every five seconds (paused on
+hover, focus, or with `prefers-reduced-motion`). Use the arrows, dots,
+or ← / → arrow keys for manual control. Watch the title weight, axis
+spines, tick density, and palette shift between presets:
 
 ```{raw} html
 :file: images/preset_compare.html
