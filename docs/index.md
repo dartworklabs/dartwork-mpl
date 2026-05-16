@@ -110,9 +110,9 @@ accepts a color.
 :::
 
 :::{grid-item-card} 📐 **Layouts that just work**
-`simple_layout` and `auto_layout` solve the "labels overflow,
-margins look weird" problem properly — including with twinx,
-colorbars, and long Korean labels.
+`dm.simple_layout(fig)` solves the "labels overflow, margins look
+weird" problem deterministically — including with twinx, colorbars,
+and long Korean labels.
 :::
 
 :::{grid-item-card} 🧪 **Lint your figures**
@@ -188,7 +188,7 @@ Professional themes for every context: `scientific`, `report`, `presentation`, `
 :::{grid-item-card} **Smart Layout**
 :link: usage_guide/layout
 :link-type: doc
-`simple_layout` and `auto_layout` use real numerical optimizers to give you uniform margins, even with colorbars and long labels. No more `bbox_inches="tight"` guesswork.
+`dm.simple_layout(fig)` measures every visible artist and snaps the axes to deterministic margins — even with colorbars, twinx, and long labels. No more `bbox_inches="tight"` guesswork.
 :::
 
 :::{grid-item-card} **900+ Colors**
