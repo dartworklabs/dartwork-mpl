@@ -167,37 +167,30 @@ Example:
 I/O Utilities
 -------------
 
-Functions for creating and saving figures with proper settings.
+.. note::
 
-.. automodule:: dartwork_mpl.helpers.io
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   The ``dartwork_mpl.helpers.io`` submodule was retired in 0.4. The
+   single remaining entry point for multi-format saves is
+   ``dm.save_formats`` (canonical) — pick the file types you want and
+   the function handles the rest.
+
+``dm.save_formats`` is the canonical multi-format save helper (see
+:doc:`io` for its signature).
 
 Example:
 
 .. code-block:: python
 
+   import matplotlib.pyplot as plt
    import dartwork_mpl as dm
 
-   # Create figure with style applied
-   fig, ax = dm.helpers.io.create_figure_with_style(
-       style='scientific',
-       figsize=(8, 6),
-       dpi=100
-   )
-
-   # Plot your data
+   dm.style.use("scientific")
+   fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
    ax.plot(x, y)
+   dm.simple_layout(fig)
 
-   # Save with optimal settings
-   dm.helpers.io.save_figure(
-       fig,
-       filename='output.png',
-       dpi=300,
-       transparent=False,
-       optimize=True
-   )
+   # Save in multiple formats at once
+   dm.save_formats(fig, "output", formats=("png", "pdf", "svg"))
 
 End-to-end Example: Automated Visualization
 -------------------------------------------

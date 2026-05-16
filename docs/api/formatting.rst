@@ -27,9 +27,12 @@ API Reference
 Numeric Formatting
 ^^^^^^^^^^^^^^^^^^
 
-.. autofunction:: dartwork_mpl.format_axis_percent
+.. note::
 
-.. autofunction:: dartwork_mpl.format_axis_thousands
+   ``format_axis_percent`` and ``format_axis_thousands`` were removed in
+   the 0.4 release. Use matplotlib's ``ticker.PercentFormatter`` and
+   ``ticker.FuncFormatter`` directly — see the migration table in
+   :doc:`../migration` for the per-call replacement.
 
 .. autofunction:: dartwork_mpl.format_axis_millions
 
