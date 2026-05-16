@@ -34,6 +34,8 @@ Example (legacy 0.3 idiom)
    fig, ax = plt.subplots(figsize=dm.figsize(dm.col1, "standard"))
    fig, axes = plt.subplots(1, 2, figsize=dm.figsize(dm.col2, 0.4))
 
-.. automodule:: dartwork_mpl.constant
-   :members:
-   :undoc-members:
+.. note::
+
+   The ``dartwork_mpl.constant`` module itself has been removed; the
+   names above are listed here only as a migration aid. Any access
+   raises ``AttributeError`` at runtime.

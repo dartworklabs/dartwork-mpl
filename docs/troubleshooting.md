@@ -8,7 +8,7 @@ Use the **filter bar** below the title to search by keyword (`font`, `svg`,
 sticky as you scroll. Press <kbd>?</kbd> for site-wide shortcuts.
 :::
 
-### Category index (static fallback)
+## Category index (static fallback)
 
 Plain-text replacement for the dynamic filter / jump pills — useful
 when JavaScript is disabled (AI agents, terminal browsers,
@@ -178,6 +178,7 @@ dm.save_formats(fig, "output", formats=("pdf", "svg"))
 
 ---
 
+(saving-export)=
 ## Saving & Export
 
 ### SVG file is empty or very small

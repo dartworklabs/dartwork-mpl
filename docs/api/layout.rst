@@ -42,11 +42,15 @@ API
 Layout Functions
 ^^^^^^^^^^^^^^^^
 
-.. autofunction:: dartwork_mpl.cm2in
+.. note::
+
+   ``cm2in`` / ``set_xmargin`` / ``set_ymargin`` were removed in the 0.4
+   release. Use ``dm.cm(...)`` (which returns a ``Length``) and
+   matplotlib's ``ax.margins(...)`` instead — see the migration table in
+   :doc:`../migration`.
+
 .. autofunction:: dartwork_mpl.simple_layout
 .. autofunction:: dartwork_mpl.auto_layout
-.. autofunction:: dartwork_mpl.set_xmargin
-.. autofunction:: dartwork_mpl.set_ymargin
 
 Annotation Functions
 ^^^^^^^^^^^^^^^^^^^^
