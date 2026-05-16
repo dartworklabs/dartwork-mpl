@@ -62,6 +62,52 @@ def cleanup_sg_execution_times(app):
             stale.unlink()
 
 
+_STALE_GALLERY_SUFFIXES = (
+    ".rst",
+    ".py",
+    ".py.md5",
+    ".ipynb",
+    ".zip",
+    ".codeobj.json",
+)
+
+
+def purge_stale_gallery_artifacts(app):
+    """Drop ``examples_gallery/<group>/plot_<stem>.*`` whose source ``.py`` is gone.
+
+    ``examples_gallery/`` is gitignored and regenerated each build by
+    sphinx-gallery, but sphinx-gallery only *adds* files — when a source
+    example is removed from ``examples_source/`` the previously-generated
+    artifacts linger in a developer's local checkout. Sphinx then flags
+    the now-orphaned ``plot_*.rst`` with ``toc.not_included`` warnings.
+
+    Scan every gallery group; for each plot stem with no matching source
+    file in ``examples_source/<group>/plot_<stem>.py``, remove the
+    well-known artifact suffixes. Safe by construction because we only
+    touch files inside the gitignored ``examples_gallery/`` tree.
+    """
+    src = Path(app.srcdir)
+    gallery_root = src / "examples_gallery"
+    source_root = src / "examples_source"
+    if not gallery_root.is_dir() or not source_root.is_dir():
+        return
+
+    for group_dir in sorted(gallery_root.iterdir()):
+        if not group_dir.is_dir():
+            continue
+        source_group = source_root / group_dir.name
+        if not source_group.is_dir():
+            continue
+        for rst in group_dir.glob("plot_*.rst"):
+            stem = rst.stem  # e.g. "plot_grid_customization"
+            if (source_group / f"{stem}.py").exists():
+                continue
+            for suffix in _STALE_GALLERY_SUFFIXES:
+                artifact = group_dir / f"{stem}{suffix}"
+                with contextlib.suppress(OSError):
+                    artifact.unlink()
+
+
 def generate_gallery_assets(_app):
     """Bake high-res color system, usage guide, and API images during the build."""
     from color_system.generate_assets import build_gallery_assets

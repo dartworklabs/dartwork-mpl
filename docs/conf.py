@@ -187,6 +187,7 @@ from build_hooks import (  # noqa: E402
     generate_gallery_assets,
     generate_llms_full_txt,
     generate_template_index,
+    purge_stale_gallery_artifacts,
     write_manual_indices,
 )
 
@@ -195,6 +196,7 @@ def setup(app):
     # Cleanup runs first so sphinx-gallery starts from a clean slate
     # (priority < 500 = default; lower number runs earlier).
     app.connect("builder-inited", cleanup_sg_execution_times, priority=100)
+    app.connect("builder-inited", purge_stale_gallery_artifacts, priority=110)
     app.connect("builder-inited", create_placeholder_index)
     app.connect("builder-inited", generate_gallery_assets)
     app.connect("builder-inited", copy_fonts_to_static)
