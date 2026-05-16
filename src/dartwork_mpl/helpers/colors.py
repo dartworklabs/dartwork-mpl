@@ -7,11 +7,11 @@ red-blue at two cardinalities) are the dartwork-mpl recommended
 series colors; they live inside this function so the project's
 palette curation stays centralised.
 
-Renamed from `auto_select_colors` in 0.5 (`#156` Round 5):
+Renamed from ``auto_select_colors`` in 0.5 (``#156`` Round 5):
+
 - ``auto_`` prefix collided with ``auto_layout`` (measure-and-adjust).
 - ``select_colors`` was a strong verb for what is structurally a list slice.
-- ``palette`` is the existing domain term used by ``list_palettes``
-  and ``show_palette``.
+- ``palette`` is the existing domain term used by ``list_palettes`` and ``show_palette``.
 """
 
 from __future__ import annotations
