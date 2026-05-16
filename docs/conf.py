@@ -114,12 +114,19 @@ html_title = f"{project} documentation"
 html_theme_options = {
     "github_url": "https://github.com/dartworklabs/dartwork-mpl",
     "accent_color": "teal",
-    "globaltoc_expand_depth": 1,  # Allow expanding sidebar items
+    # 0 = only the active branch auto-expands; every other top-level
+    # section starts collapsed. Stops the 9-row "Examples Gallery"
+    # sub-tree from filling the sidebar on unrelated pages (#177).
+    "globaltoc_expand_depth": 0,
     "dark_code": False,  # Use light code blocks (default Shibuya style)
-    # Top-nav is intentionally limited to ≤ 7 entries so the bar never
-    # overflows at 1400 px. Two consolidations:
+    # Top-nav is intentionally limited to ≤ 6 entries so the bar never
+    # overflows at 1400 px (#177). Three consolidations from prior PRs:
     #   - "Color System" + "Fonts"  → "Design System"  (token catalogs)
     #   - "AI Integration"          → folded under "Design Philosophy"
+    #   - "Changelog"               → moved out of the bar (GitHub icon
+    #                                 at the far right already lands the
+    #                                 visitor on the repo, where the
+    #                                 changelog lives)
     "nav_links": [
         {"title": "Getting Started", "url": "usage_guide/quickstart"},
         {"title": "Usage Guide", "url": "usage_guide/index"},
@@ -127,10 +134,6 @@ html_theme_options = {
         {"title": "Examples Gallery", "url": "examples_gallery/index"},
         {"title": "API Reference", "url": "api/index"},
         {"title": "Design Philosophy", "url": "philosophy/index"},
-        {
-            "title": "Changelog",
-            "url": "https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md",
-        },
     ],
 }
 
