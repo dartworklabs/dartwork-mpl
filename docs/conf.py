@@ -119,19 +119,21 @@ html_theme_options = {
     # sub-tree from filling the sidebar on unrelated pages (#177).
     "globaltoc_expand_depth": 0,
     "dark_code": False,  # Use light code blocks (default Shibuya style)
-    # Top-nav is intentionally limited to ≤ 6 entries so the bar never
-    # overflows at 1400 px (#177). Three consolidations from prior PRs:
-    #   - "Color System" + "Fonts"  → "Design System"  (token catalogs)
-    #   - "AI Integration"          → folded under "Design Philosophy"
-    #   - "Changelog"               → moved out of the bar (GitHub icon
-    #                                 at the far right already lands the
-    #                                 visitor on the repo, where the
-    #                                 changelog lives)
+    # Top-nav holds 7 entries — the bar fits at 1400 px because the
+    # newest entry is the two-letter "AI" (#179). Prior consolidations:
+    #   - "Color System" + "Fonts"  → "Design System"  (#172)
+    #   - "Changelog"               → moved out of the bar (#177; the
+    #                                 GitHub icon at the far right lands
+    #                                 the visitor on the repo)
+    #   - "AI" re-promoted from a Philosophy sub-page → first-class
+    #     entry (#179) because agent-assisted plotting is the headline
+    #     workflow, not a footnote
     "nav_links": [
         {"title": "Getting Started", "url": "usage_guide/quickstart"},
         {"title": "Usage Guide", "url": "usage_guide/index"},
         {"title": "Design System", "url": "design_system/index"},
         {"title": "Examples Gallery", "url": "examples_gallery/index"},
+        {"title": "AI", "url": "ai/index"},
         {"title": "API Reference", "url": "api/index"},
         {"title": "Design Philosophy", "url": "philosophy/index"},
     ],

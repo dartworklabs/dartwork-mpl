@@ -15,15 +15,10 @@ Designed for AI Agents <ai_native>
 Ownable & Transparent Code <ownable_code>
 ```
 
-## AI integration in practice
+## See also
 
-The philosophy above translates into concrete integration paths — an MCP
-server, prompt-corpus resources, lint and validation helpers, and pre-built
-plot templates. See the dedicated section:
-
-```{toctree}
-:maxdepth: 1
-:titlesonly:
-
-AI Integration <../integrations/index>
-```
+The philosophy above translates into concrete integration paths —
+an MCP server, prompt-corpus resources, lint and validation helpers,
+IDE compatibility matrix, and 18 pre-built plot templates. Those
+live on the dedicated **[AI & Agent-Assisted Plotting](../ai/index.md)**
+hub, which is the first-class entry point in the top navigation.
