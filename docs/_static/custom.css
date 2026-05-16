@@ -4367,3 +4367,140 @@ body[data-theme="dark"] .dm-landing-diff-caption {
   animation: dmFadeOutUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   ⎯⎯ Radix-aligned design refresh (#181) ⎯⎯
+   ═══════════════════════════════════════════════════════════════════════
+
+   Calibrated against radix-ui.com/themes/docs/theme/typography on
+   2026-05-17. Goals (see #181 for the deltas):
+
+   - Restore the H1 → H2 → H3 → body hierarchy that the Shibuya
+     defaults flatten (Shibuya makes H3 *smaller than body text*).
+   - Calm the body text with a muted color and Radix-style paragraph
+     spacing, easier on long reads.
+   - Quiet the sidebar so it stops competing with the content.
+   - Brand-align inline code with the teal accent.
+   - Keep dark code blocks (deliberate contrast with the light chrome).
+
+   Everything below is additive — it sits on top of Shibuya so a single
+   delete restores the previous look.
+   ─────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Heading tokens */
+  --dm-h1-weight: 700;
+  --dm-h1-tracking: -0.012em;
+  --dm-h1-mb: 0.5rem;          /* tight gap to subtitle, like Radix */
+  --dm-h2-mt: 3rem;            /* 48 px breathing room between sections */
+  --dm-h2-mb: 0.75rem;         /* 12 px to first paragraph */
+  /* H3 left alone — Shibuya's body H3 is already 20 px / weight 600,
+     which is fine. The earlier 12.8 px / weight 500 we saw on Quick
+     Start turned out to be the sidebar TOC caption, not body H3. */
+
+  /* Body tokens */
+  --dm-body-color: rgba(0, 7, 20, 0.78);   /* softer than pure #202020 */
+  --dm-body-color-dark: rgba(245, 247, 250, 0.84);
+  --dm-body-mb: 1.5rem;        /* 24 px between paragraphs */
+
+  /* Sidebar tokens */
+  --dm-sidebar-link-size: 0.875rem;   /* 14 px */
+  --dm-sidebar-link-color: rgba(0, 7, 20, 0.66);
+  --dm-sidebar-link-color-dark: rgba(245, 247, 250, 0.72);
+
+  /* Inline code tokens (teal accent matching `shibuya` theme) */
+  --dm-code-bg: rgba(0, 133, 115, 0.08);
+  --dm-code-color: rgb(0, 113, 98);
+  --dm-code-bg-dark: rgba(45, 212, 191, 0.14);
+  --dm-code-color-dark: rgb(94, 234, 212);
+}
+
+/* ── Headings ─────────────────────────────────────────────────────── */
+article h1,
+main h1 {
+  font-weight: var(--dm-h1-weight);
+  letter-spacing: var(--dm-h1-tracking);
+  margin-bottom: var(--dm-h1-mb);
+}
+
+article h2,
+main h2 {
+  margin-top: var(--dm-h2-mt);
+  margin-bottom: var(--dm-h2-mb);
+}
+
+/* ── Body paragraphs ─────────────────────────────────────────────── */
+article p,
+main p {
+  color: var(--dm-body-color);
+  margin-bottom: var(--dm-body-mb);
+}
+
+html.dark article p,
+html.dark main p,
+body[data-theme="dark"] article p,
+body[data-theme="dark"] main p {
+  color: var(--dm-body-color-dark);
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────── */
+.bd-sidebar a,
+aside.bd-sidebar-primary a {
+  font-size: var(--dm-sidebar-link-size);
+  color: var(--dm-sidebar-link-color);
+}
+
+html.dark .bd-sidebar a,
+html.dark aside.bd-sidebar-primary a,
+body[data-theme="dark"] .bd-sidebar a,
+body[data-theme="dark"] aside.bd-sidebar-primary a {
+  color: var(--dm-sidebar-link-color-dark);
+}
+
+/* Sidebar active link keeps Shibuya's accent color — don't override. */
+
+/* ── Inline code ─────────────────────────────────────────────────── */
+article p code,
+article li code,
+article td code,
+main p code,
+main li code,
+main td code {
+  background-color: var(--dm-code-bg);
+  color: var(--dm-code-color);
+  padding: 0.1em 0.32em;
+  border-radius: 4px;
+  font-size: 0.92em;
+}
+
+html.dark article p code,
+html.dark article li code,
+html.dark article td code,
+html.dark main p code,
+html.dark main li code,
+html.dark main td code,
+body[data-theme="dark"] article p code,
+body[data-theme="dark"] article li code,
+body[data-theme="dark"] article td code,
+body[data-theme="dark"] main p code,
+body[data-theme="dark"] main li code,
+body[data-theme="dark"] main td code {
+  background-color: var(--dm-code-bg-dark);
+  color: var(--dm-code-color-dark);
+}
+
+/* Heading and link inline code retain inherited size/weight — opt out. */
+article h1 code,
+article h2 code,
+article h3 code,
+main h1 code,
+main h2 code,
+main h3 code,
+article a code,
+main a code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+
