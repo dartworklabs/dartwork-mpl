@@ -1,3 +1,9 @@
+---
+# Cap the right-rail "On this page" panel at H2 — every H3 question
+# would otherwise crowd the rail and squeeze the body width (#177).
+tocdepth: 2
+---
+
 # Troubleshooting & FAQ
 
 Common issues and their solutions when working with dartwork-mpl.
