@@ -4,7 +4,8 @@
 <div class="dm-landing-hero">
   <p class="dm-landing-tagline">matplotlib, but beautiful.</p>
   <p class="dm-landing-subtitle">
-    Publication-quality plots with zero learning curve.
+    Publication-quality plots with zero learning curve —
+    <strong>built for AI coding agents</strong>.
   </p>
 
   <div class="dm-landing-cta">
@@ -13,9 +14,50 @@
       <button class="dm-landing-copy-btn" onclick="navigator.clipboard.writeText('pip install git+https://github.com/dartworklabs/dartwork-mpl').then(()=>{this.textContent='✓';setTimeout(()=>{this.textContent='⎘'},1500)})">⎘</button>
     </div>
     <a href="usage_guide/quickstart.html" class="dm-landing-btn dm-landing-btn-secondary">Get Started →</a>
+    <a href="ai/index.html" class="dm-landing-btn dm-landing-btn-secondary">AI / Agents →</a>
   </div>
 </div>
 ```
+
+## Built for AI-assisted plotting
+
+Most matplotlib code in 2026 is written through an agent — Cursor,
+Claude Code, Continue, Windsurf, Zed Agent panel, Aider — not by
+typing into a blank notebook. dartwork-mpl is the first design layer
+on top of matplotlib that is **built for that workflow**: every API
+is unambiguous, every color and width has a name (not a hex or a
+float), the bundled MCP server lets agents read the docs live, and a
+lint engine catches the patterns LLMs typically get wrong.
+
+::::{grid} 1 1 2 2
+:gutter: 2
+
+:::{grid-item-card} 🔌 **MCP-native**
+:link: ai/index
+:link-type: doc
+
+One JSON snippet wires `dartwork-mpl-mcp` into Claude Code, Cursor,
+Windsurf, Continue, or Zed. The agent gets live docs, anti-pattern
+lint, color lookup, and plot templates — *inside the chat context*.
+
+```bash
+pip install "dartwork-mpl[mcp]"
+```
+:::
+
+:::{grid-item-card} 📄 **Works with every other agent too**
+:link: ai/index
+:link-type: doc
+
+No MCP? `llms.txt` (2.5 KB index) and `llms-full.txt` (45 KB full
+reference) drop straight into Aider, Copilot Chat, ChatGPT, or
+Claude.ai. Or run `dm.install_llm_txt()` and the corpus lands in
+your IDE's AI-context folder.
+
+→ **[See the IDE compatibility matrix](ai/index.md)**
+:::
+
+::::
 
 ## Drag the slider — same data, two worlds
 
@@ -77,12 +119,6 @@ colorbars, and long Korean labels.
 `dm.validate_figure(fig)` flags overflow, asymmetric margins, and
 pie-label cutoffs *before* you save. `validate_with_fixes` applies
 the obvious fixes for you.
-:::
-
-:::{grid-item-card} 🤖 **AI-ready**
-A built-in [MCP server](integrations/mcp_server.md) lets Claude /
-Cursor query palettes, lint chart code, and ask for style review —
-without leaving the editor.
 :::
 
 :::{grid-item-card} 🛠️ **Interactive UI**
@@ -198,6 +234,7 @@ usage_guide/index
 
 design_system/index
 examples_gallery/index
+ai/index
 api/index
 ```
 
