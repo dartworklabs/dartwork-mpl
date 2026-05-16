@@ -131,15 +131,21 @@ dm.simple_layout(fig, gs=gs)  # pass gs for correct margin calculation
 
 ### Labels or titles are clipped at figure edges
 
-Switch from `simple_layout` to `auto_layout`, which detects and fixes overflow:
+Pass a positive `margin` so `simple_layout` leaves room around the
+content union instead of snapping flush against the figure edge:
 
 ```python
-# Instead of:
+# Snug, may clip rotated labels or annotations
 dm.simple_layout(fig)
 
-# Use:
-dm.auto_layout(fig, verbose=True)  # verbose shows what it fixed
+# A few millimetres of breathing room, plus a verbose trace
+dm.simple_layout(fig, margin="3mm", verbose=True)
 ```
+
+`margin` accepts a `Length` (`dm.cm(0.3)`), a unit string
+(`"3mm"`, `"0.1in"`), a percent (`"5%"`), or a bare figure-fraction
+(`0.05`). For asymmetric overflow, set `ml` / `mr` / `mt` / `mb`
+individually.
 
 ### `tight_layout()` warning when using `simple_layout`
 
@@ -206,10 +212,11 @@ dm.save_and_show(fig)  # Handles ordering correctly
 
 ### Saved image has extra whitespace
 
-Use `simple_layout` or `auto_layout` before saving:
+Run `simple_layout` before saving so the axes are snapped to the
+content union before SVG/PDF cropping:
 
 ```python
-dm.simple_layout(fig)  # Optimize margins
+dm.simple_layout(fig)  # Snap to the axes content union
 dm.save_formats(fig, "output", formats=("png", "svg"), dpi=300)
 ```
 

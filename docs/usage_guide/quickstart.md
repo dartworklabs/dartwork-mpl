@@ -15,7 +15,7 @@ to read off the resolved values without leaving the docs.
 | What used to hurt                   | dartwork-mpl                                    |
 | ----------------------------------- | ----------------------------------------------- |
 | Hand-tuning `figsize` and `dpi`     | `plt.subplots(figsize=dm.figsize("13cm", "standard"))`  |
-| `tight_layout` clipping labels      | `dm.auto_layout(fig)` — real optimizer          |
+| `tight_layout` clipping labels      | `dm.simple_layout(fig)` — deterministic, content-aware |
 | Reaching for hex codes              | `color="oc.blue5"` (Open Color), `"tw.*"`, `"md.*"`, `"ad.*"`, `"cu.*"`, `"pr.*"` |
 | Saving in 3 formats                 | `dm.save_formats(fig, "out", formats=("png", "svg", "pdf"))` |
 | Catching margin / overflow problems | `dm.validate_with_fixes(fig)`                   |
@@ -42,7 +42,7 @@ ax.set_xlabel("Time [s]")
 ax.set_ylabel("Amplitude")
 ax.legend()
 
-dm.auto_layout(fig)             # auto-optimize margins
+dm.simple_layout(fig)           # content-aware margins
 dm.save_and_show(fig, "first")  # save + inline preview
 ```
 
@@ -89,7 +89,7 @@ optimized margins, and named colors.
 
 Same data, same plotting logic — the difference is one `dm.style.use()`
 call, the `width` / `aspect` arguments on `dm.figsize`, named colors,
-and `auto_layout`.
+and `simple_layout`.
 
 **What each dartwork-mpl call does:**
 
@@ -98,7 +98,7 @@ and `auto_layout`.
 | `dm.style.use("scientific")`                  | Sets palette, fonts, line weights — see [Styles](styles.md)                        |
 | `dm.figsize("13cm", "standard")`              | Physical width plus an aspect token, returned as the inches tuple `figsize=` expects. |
 | `dm.fs(0)`                                    | Returns the base font size of the active preset (`fs(2)` = base + 2 pt, and so on) |
-| `dm.auto_layout(fig)`                         | Auto-optimizes margins (replaces `tight_layout`)                                   |
+| `dm.simple_layout(fig)`                       | Deterministic content-aware margins (replaces `tight_layout`)                      |
 | `dm.save_and_show(fig, "first")`              | Saves multi-format and previews inline in the notebook                             |
 
 ### Static reference: `dm.fs(n)` resolved per preset
@@ -194,7 +194,7 @@ fig, axes = plt.subplots(
 for ax in axes.flat:
     ax.plot(np.random.randn(100))
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 ```
 
 ## Adding color
@@ -270,7 +270,7 @@ in-place:
 ```python
 result = dm.validate_with_fixes(fig)
 print(result.report())     # human-readable summary of warnings
-# margin_asymmetry → auto-fixed via dm.auto_layout()
+# margin_asymmetry → auto-fixed via dm.simple_layout()
 # pie_label_offset → auto-adjusted pctdistance
 ```
 
