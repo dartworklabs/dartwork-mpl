@@ -2,11 +2,6 @@
 
 **dartwork-mpl** is built for the age of AI-assisted coding. Every API, every default, and every bundled asset is designed so that AI coding assistants produce **correct, publication-quality plots on the first try**.
 
-```{contents} On this page
-:local:
-:depth: 2
-```
-
 ---
 
 ## Agent intent → top-level call
