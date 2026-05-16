@@ -28,10 +28,13 @@ def generate_before_after() -> None:
     import dartwork_mpl as dm
 
     # ── LEFT: Default matplotlib (reset to defaults) ──
+    # No in-chart title — the slider UI already labels each side via the
+    # "DEFAULT rcParams" / 'dm.style.use("scientific")' badges. A second
+    # title inside the chart only shows up half-rendered when the slider
+    # is dragged, since the before/after titles sit at different x-offsets.
     plt.rcdefaults()
     fig_before, ax = plt.subplots(figsize=(5.5, 4))
     ax.bar(QUARTERS, OUTPUT, color="#1f77b4", alpha=0.7)
-    ax.set_title("Default matplotlib", fontsize=14)
     ax.set_ylabel("Output (units/s)")
     ax.set_xlabel("Phase")
     ax2 = ax.twinx()
@@ -56,7 +59,7 @@ def generate_before_after() -> None:
         edgecolor="white",
         linewidth=0.5,
     )
-    ax.set_title("dartwork-mpl", fontsize=dm.fs(1), fontweight="bold", pad=12)
+    # No in-chart title — see the LEFT block above.
     ax.set_ylabel("Output (units/s)", fontsize=dm.fs(0))
     ax.set_xlabel("Phase", fontsize=dm.fs(0))
     ax2 = ax.twinx()
