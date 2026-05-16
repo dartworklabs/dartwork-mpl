@@ -111,15 +111,17 @@ html_theme_options = {
     "accent_color": "teal",
     "globaltoc_expand_depth": 1,  # Allow expanding sidebar items
     "dark_code": False,  # Use light code blocks (default Shibuya style)
+    # Top-nav is intentionally limited to ≤ 7 entries so the bar never
+    # overflows at 1400 px. Two consolidations:
+    #   - "Color System" + "Fonts"  → "Design System"  (token catalogs)
+    #   - "AI Integration"          → folded under "Design Philosophy"
     "nav_links": [
         {"title": "Getting Started", "url": "usage_guide/quickstart"},
         {"title": "Usage Guide", "url": "usage_guide/index"},
-        {"title": "Color System", "url": "color_system/index"},
-        {"title": "Fonts", "url": "fonts/index"},
+        {"title": "Design System", "url": "design_system/index"},
         {"title": "Examples Gallery", "url": "examples_gallery/index"},
         {"title": "API Reference", "url": "api/index"},
         {"title": "Design Philosophy", "url": "philosophy/index"},
-        {"title": "AI Integration", "url": "integrations/index"},
         {
             "title": "Changelog",
             "url": "https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md",
