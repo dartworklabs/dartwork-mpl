@@ -6,6 +6,20 @@ and — most importantly — exporting the **exact Python script** that
 reproduces what you see. It's the fastest way to figure out the
 parameters you actually want before locking them into code.
 
+## See it in action
+
+The slider below is the **real viewer**, captured at two moments:
+on the left, the default state right after `python viewer.py` boots;
+on the right, the same UI after a handful of slider/dropdown/color-picker
+tweaks. Drag the handle to wipe between them and watch the chart
+respond — every control on the left panel is auto-generated from a
+Pydantic `ParamModel` and re-renders the matplotlib figure on the
+right in ≈80 ms.
+
+```{raw} html
+:file: ../_static/interactive_slider.html
+```
+
 ```{admonition} What the UI gives you
 :class: tip
 

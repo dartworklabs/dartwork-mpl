@@ -2,19 +2,19 @@
 
 Renders **one demo PoC** in every cataloged palette so the
 `usage_guide/colors.md` page can swap between them with a single click.
-We pick L2 (grouped bar with value labels) as the demo because:
+The demo is a 1x2 panel that exercises every palette color:
 
-- it shows *two* series side by side → palette's first two colors are
-  directly comparable;
-- the values labels stay legible regardless of palette;
-- bars don't have a dominant accent color the way scatter+line does,
-  so the palette difference is the whole story.
+- **Left** — six staggered sine series so the eye can compare adjacent
+  hues for line-chart legibility.
+- **Right** — six categorical bars so the same six colors are visible
+  in solid-fill form (the use case where a palette breaks down first).
 
 Palette catalog is grouped by namespace so the picker UI can show
 section headers (dc, oc, tw, md, ad, cu, pr).
 
-Each render reuses the `_draw_l2` helper from build_landing_pocs.py
-to guarantee byte-identical chart content across palettes.
+Each render reuses the `_draw_palette_demo` helper below so chart
+content is byte-identical across palettes — only the `axes.prop_cycle`
+override changes between renders.
 """
 
 from __future__ import annotations
@@ -37,7 +37,6 @@ sys.path.insert(0, str(ROOT / "scripts"))
 # Reuse the canonical helpers/data from the main PoC builder.
 from build_landing_pocs import (  # noqa: E402  (sys.path injection)
     LANDING_W_DM,
-    _draw_l2,
     save,
 )
 
@@ -345,11 +344,60 @@ def _apply_palette(colors: list[str]) -> None:
     matplotlib.rcParams["axes.prop_cycle"] = cycler(color=colors)
 
 
+def _draw_palette_demo(axes) -> None:
+    """Two-panel demo that exercises *all six* palette colors.
+
+    Left panel: six staggered sine curves (one per color) so the
+    full prop_cycle is visible as a series of legend-ready lines.
+    Right panel: six categorical bars (one per color) for a flat
+    side-by-side comparison of saturation and value. Same six
+    colors drive both panels via the active prop_cycle, so every
+    palette renders the same chart structure.
+    """
+    import numpy as np
+
+    ax_line, ax_bar = axes
+
+    # Left — six sine series, deterministic data
+    x = np.linspace(0, 8, 80)
+    rng = np.random.default_rng(13)
+    for k in range(6):
+        y = np.sin(x + k * 0.55) + 0.04 * rng.normal(size=x.size)
+        ax_line.plot(x, y + k * 0.5, label=f"s{k + 1}")
+    ax_line.set_title("6 series")
+    ax_line.set_xlabel("Time")
+    ax_line.set_ylabel("Value")
+    ax_line.set_xlim(0, 8)
+    ax_line.set_ylim(-1.5, 4.5)
+    ax_line.set_xticks([0, 2, 4, 6, 8])
+    ax_line.set_yticks([-1, 0, 1, 2, 3, 4])
+    ax_line.legend(loc="upper left", ncol=2, fontsize=dm.fs(-2))
+
+    # Right — six categorical bars, each picking the next prop_cycle color
+    labels = ["A", "B", "C", "D", "E", "F"]
+    values = [42, 67, 55, 78, 49, 62]
+    # bar() doesn't auto-cycle colors per bar, so iterate explicitly
+    # against the active cycle.
+    cycle = matplotlib.rcParams["axes.prop_cycle"].by_key()["color"]
+    for i, (lab, v) in enumerate(zip(labels, values, strict=True)):
+        ax_bar.bar(lab, v, color=cycle[i % len(cycle)])
+    ax_bar.set_title("6 categories")
+    ax_bar.set_xlabel("Group")
+    ax_bar.set_ylabel("Count")
+    ax_bar.set_ylim(0, 90)
+    ax_bar.set_yticks([0, 30, 60, 90])
+
+
 def render_one(palette: dict) -> None:
     dm.style.use("report")
     _apply_palette(palette["colors"])
-    fig, ax = plt.subplots(figsize=dm.figsize(LANDING_W_DM, 0.55))
-    _draw_l2(ax)
+    fig, axes = plt.subplots(
+        1,
+        2,
+        figsize=dm.figsize(LANDING_W_DM, 0.55),
+        gridspec_kw={"wspace": 0.35},
+    )
+    _draw_palette_demo(axes)
     dm.simple_layout(fig, margin="2mm")
     save(fig, f"demo_bar_{palette['id'].replace('.', '_')}")
 
