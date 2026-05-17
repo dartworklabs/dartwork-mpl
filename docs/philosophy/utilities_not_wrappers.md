@@ -54,8 +54,9 @@ import numpy as np
 # Apply style (sets rcParams, nothing more)
 dm.style.use('scientific')
 
-# Standard matplotlib figure creation
-fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(7)), dpi=200)
+# Standard matplotlib figure creation — dm.figsize returns the
+# inches tuple plt.figure already expects
+fig = plt.figure(figsize=dm.figsize("9cm", "7cm"))
 ax = fig.add_subplot(111)
 
 # Standard matplotlib plotting
