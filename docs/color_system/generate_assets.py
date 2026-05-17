@@ -795,162 +795,106 @@ def _save_color_space_interpolation(images_dir: Path) -> Path:
     return path
 
 
-def _save_color_space_colormap(images_dir: Path) -> Path:
-    """Generate example showing custom colormap creation."""
+def _make_smooth_gradient_2d(size: int = 240) -> np.ndarray:
+    """Return a single-peak 2D gaussian that reads naturally under both
+    sequential (low-to-high) and diverging (center-pivot) colormaps.
+
+    Random noise hides the ramp entirely — under a sequential map it
+    looks like static; under a diverging map you cannot tell the pivot
+    from the tails. A smooth peak shows both ramps doing their job in
+    one frame.
+    """
+    grid = np.linspace(-3.0, 3.0, size)
+    xx, yy = np.meshgrid(grid, grid)
+    return (
+        np.exp(-(xx**2 + yy**2) / 2.0) * 2.0 - 1.0
+    )  # values in roughly [-1, +1]
+
+
+def _save_cspace_swatch(
+    images_dir: Path,
+    *,
+    kind: str,
+    cmap: mpl.colors.Colormap,
+    data: np.ndarray,
+    vmin: float,
+    vmax: float,
+) -> Path:
+    """One small SVG per kind ("sequential" / "diverging"). Each panel
+    shows the cmap applied to the same smooth 2D Gaussian so the reader
+    can compare both ramps at a glance. Native Markdown wraps two of
+    these in a 2-column grid, which is more responsive than baking
+    everything into one wide figure.
+    """
     dm.style.use("scientific")
 
-    # Create figure
-    fig = plt.figure(figsize=dm.figsize("15cm", "10cm"), dpi=300)
-    fig.patch.set_facecolor("#fbfaf7")
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"), dpi=200)
+    fig.patch.set_alpha(0.0)
+    ax.set_facecolor("#ffffff")
 
-    # GridSpec layout: title row + 2x2 (image row + code row)
-    # height_ratios: title 10%, image 45%, code 45%
-    gs = fig.add_gridspec(
-        nrows=3,
-        ncols=2,
-        left=0.08,
-        right=0.92,
-        top=0.95,
-        bottom=0.08,
-        hspace=0.35,
-        wspace=0.30,
-        height_ratios=[0.10, 0.45, 0.45],
-    )
+    im = ax.imshow(data, cmap=cmap, aspect="equal", vmin=vmin, vmax=vmax)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for side in ("top", "bottom", "left", "right"):
+        ax.spines[side].set_visible(False)
 
-    # Title axes (spans entire first row)
-    ax_title = fig.add_subplot(gs[0, :])
-    ax_title.axis("off")
-    ax_title.text(
-        0.5,
-        0.5,
-        "Custom Colormaps with cspace()",
-        fontsize=16,
-        fontweight="bold",
-        ha="center",
-        va="center",
-        transform=ax_title.transAxes,
-    )
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="4%", pad=0.08)
+    cbar = fig.colorbar(im, cax=cax)
+    cbar.outline.set_visible(False)
+    cbar.ax.tick_params(labelsize=dm.fs(-2))
 
-    # Sequential colormap
-    colors_seq = dm.cspace("#1a237e", "#ff6f00", n=256, space="oklch")
-    cmap_seq = mpl.colors.ListedColormap([c.to_rgb() for c in colors_seq])
-
-    # Diverging colormap
-    colors1 = dm.cspace("#1a237e", "#ffffff", n=128, space="oklch")
-    colors2 = dm.cspace("#ffffff", "#c62828", n=128, space="oklch")
-    colors_div = colors1[:-1] + colors2
-    cmap_div = mpl.colors.ListedColormap([c.to_rgb() for c in colors_div])
-
-    # Generate sample data
-    data = np.random.randn(100, 100)
-
-    # Sequential example
-    ax1 = fig.add_subplot(gs[1, 0])
-    ax1.set_facecolor("#ffffff")
-    im1 = ax1.imshow(data, cmap=cmap_seq, aspect="auto")
-    ax1.set_title("Sequential Colormap", fontsize=12, fontweight="bold", pad=10)
-    ax1.set_xticks([])
-    ax1.set_yticks([])
-
-    # Colorbar using axes_divider (positioned relative to axes)
-    divider1 = make_axes_locatable(ax1)
-    cax1 = divider1.append_axes("right", size="5%", pad=0.08)
-    cbar1 = fig.colorbar(im1, cax=cax1)
-    cbar1.set_label("Value", fontsize=9)
-    cbar1.ax.tick_params(labelsize=8)
-
-    # Diverging example
-    ax2 = fig.add_subplot(gs[1, 1])
-    ax2.set_facecolor("#ffffff")
-    im2 = ax2.imshow(data, cmap=cmap_div, aspect="auto", vmin=-3, vmax=3)
-    ax2.set_title("Diverging Colormap", fontsize=12, fontweight="bold", pad=10)
-    ax2.set_xticks([])
-    ax2.set_yticks([])
-
-    # Colorbar using axes_divider (positioned relative to axes)
-    divider2 = make_axes_locatable(ax2)
-    cax2 = divider2.append_axes("right", size="5%", pad=0.08)
-    cbar2 = fig.colorbar(im2, cax=cax2)
-    cbar2.set_label("Value", fontsize=9)
-    cbar2.ax.tick_params(labelsize=8)
-
-    # Code examples
-    code1 = """# Sequential
-colors = dm.cspace(
-    "#1a237e", "#ff6f00",
-    n=256, space="oklch"
-)
-cmap = mpl.colors.ListedColormap(
-    [c.to_rgb() for c in colors]
-)"""
-
-    code2 = """# Diverging
-colors1 = dm.cspace(
-    "#1a237e", "#ffffff",
-    n=128, space="oklch"
-)
-colors2 = dm.cspace(
-    "#ffffff", "#c62828",
-    n=128, space="oklch"
-)
-colors = colors1[:-1] + colors2
-cmap = mpl.colors.ListedColormap(
-    [c.to_rgb() for c in colors]
-)"""
-
-    ax3 = fig.add_subplot(gs[2, 0])
-    ax3.set_facecolor("#ffffff")
-    ax3.text(
-        0.05,
-        0.95,
-        code1,
-        transform=ax3.transAxes,
-        fontsize=8,
-        family="monospace",
-        va="top",
-        ha="left",
-        bbox={
-            "boxstyle": "round",
-            "facecolor": "#f8f8f8",
-            "edgecolor": "#e4e2dd",
-        },
-    )
-    ax3.set_xlim(0, 1)
-    ax3.set_ylim(0, 1)
-    ax3.set_xticks([])
-    ax3.set_yticks([])
-    ax3.set_frame_on(False)
-
-    ax4 = fig.add_subplot(gs[2, 1])
-    ax4.set_facecolor("#ffffff")
-    ax4.text(
-        0.05,
-        0.95,
-        code2,
-        transform=ax4.transAxes,
-        fontsize=8,
-        family="monospace",
-        va="top",
-        ha="left",
-        bbox={
-            "boxstyle": "round",
-            "facecolor": "#f8f8f8",
-            "edgecolor": "#e4e2dd",
-        },
-    )
-    ax4.set_xlim(0, 1)
-    ax4.set_ylim(0, 1)
-    ax4.set_xticks([])
-    ax4.set_yticks([])
-    ax4.set_frame_on(False)
-
-    # Optimize layout (GridSpec-specific)
-    dm.simple_layout(fig, gs=gs)
-
-    path = images_dir / "color_space_colormap.svg"
+    dm.simple_layout(fig)
+    path = images_dir / f"color_space_colormap_{kind}.svg"
     fig.savefig(path, format="svg", bbox_inches="tight")
     plt.close(fig)
     return path
+
+
+def _save_color_space_colormap(images_dir: Path) -> Path:
+    """Generate two small swatches — sequential and diverging — that the
+    colormaps page composes side-by-side via a native ``{grid}`` block.
+
+    The previous incarnation baked both swatches, both colorbars, *and*
+    pseudo "code blocks" rendered as ``ax.text`` into one 15 cm SVG.
+    That picture didn't fill the body width on a 1440 viewport, the
+    code wasn't selectable / copyable / themed, and the underlying data
+    was ``np.random.randn`` noise — so neither colormap had anything
+    interesting to show. We now emit two real swatches and let
+    Markdown handle the code blocks and the responsive grid.
+
+    Returns the *sequential* swatch path for backward-compat with the
+    aggregating ``_save_color_space_examples`` (which returns ``list``).
+    """
+    data = _make_smooth_gradient_2d()
+
+    # Sequential — single-hue ramp on OKLCH
+    seq_colors = dm.cspace("#1a237e", "#ff6f00", n=256, space="oklch")
+    seq_cmap = mpl.colors.ListedColormap([c.to_rgb() for c in seq_colors])
+    seq_path = _save_cspace_swatch(
+        images_dir,
+        kind="sequential",
+        cmap=seq_cmap,
+        data=data,
+        vmin=float(data.min()),
+        vmax=float(data.max()),
+    )
+
+    # Diverging — symmetric pivot at zero
+    half1 = dm.cspace("#1a237e", "#ffffff", n=128, space="oklch")
+    half2 = dm.cspace("#ffffff", "#c62828", n=128, space="oklch")
+    div_colors = half1[:-1] + half2
+    div_cmap = mpl.colors.ListedColormap([c.to_rgb() for c in div_colors])
+    _save_cspace_swatch(
+        images_dir,
+        kind="diverging",
+        cmap=div_cmap,
+        data=data,
+        vmin=-1.0,
+        vmax=1.0,
+    )
+
+    return seq_path
 
 
 def _save_color_space_examples(images_dir: Path) -> list[Path]:
