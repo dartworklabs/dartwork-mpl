@@ -14,7 +14,9 @@ import dartwork_mpl as dm
 
 dm.style.use("report")
 
-fig, axs = plt.subplots(2, 1, figsize=dm.figsize("9cm", 1.2))
+fig, axs = plt.subplots(
+    2, 1, figsize=dm.figsize("9cm", 1.2), gridspec_kw={"hspace": 0.65}
+)
 
 n_colors = 8
 x = np.linspace(0, 10, 100)

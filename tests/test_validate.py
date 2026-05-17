@@ -124,6 +124,53 @@ class TestCheckOverlap:
         plt.close(fig)
 
 
+class TestCheckCrossAxesOverlap:
+    """Tests for CROSS_AXES_OVERLAP detection (inter-Axes label collisions)."""
+
+    def test_tight_hspace_triggers_overlap(self) -> None:
+        """Stacked subplots with default hspace overlap title↔xlabel."""
+        # Default plt.subplots hspace (0.2) is too small once each
+        # subplot has both a title and an xlabel.
+        fig, axs = plt.subplots(2, 1, figsize=(4, 3))
+        for ax, title in zip(axs, ("Upper", "Lower"), strict=True):
+            ax.plot([1, 2, 3])
+            ax.set_title(title, fontsize=14)
+            ax.set_xlabel("Time", fontsize=12)
+            ax.set_ylabel("y")
+        warnings = validate_figure(
+            fig, checks=("CROSS_AXES_OVERLAP",), quiet=True
+        )
+        assert len(warnings) > 0, "Expected at least one cross-axes overlap"
+        plt.close(fig)
+
+    def test_generous_hspace_no_overlap(self) -> None:
+        """Same layout with generous hspace + simple_layout should pass."""
+        import dartwork_mpl as dm
+
+        fig, axs = plt.subplots(
+            2, 1, figsize=(6, 5), gridspec_kw={"hspace": 0.8}
+        )
+        for ax, title in zip(axs, ("Upper", "Lower"), strict=True):
+            ax.plot([1, 2, 3])
+            ax.set_title(title, fontsize=14)
+            ax.set_xlabel("Time", fontsize=12)
+            ax.set_ylabel("y")
+        dm.simple_layout(fig)
+        warnings = validate_figure(
+            fig, checks=("CROSS_AXES_OVERLAP",), quiet=True
+        )
+        title_xlabel = [
+            w
+            for w in warnings
+            if {w.detail["role_a"], w.detail["role_b"]} == {"title", "xlabel"}
+        ]
+        assert len(title_xlabel) == 0, (
+            f"Did not expect title↔xlabel overlap, got: "
+            f"{[w.message for w in title_xlabel]}"
+        )
+        plt.close(fig)
+
+
 class TestCheckEmptyAxes:
     """Tests for EMPTY_AXES detection."""
 
