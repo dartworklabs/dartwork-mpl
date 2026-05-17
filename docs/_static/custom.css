@@ -4504,3 +4504,26 @@ main a code {
   font-size: inherit;
 }
 
+
+/* ───────────────────────── Custom colormap cards (cspace) ─────────────
+   Two side-by-side cards on the Colormaps page. The default sphinx-design
+   grid-item-card leaves a tight inner padding that crops the swatch SVG
+   and stacks the code block awkwardly. These rules:
+     - let the swatch fill the full card width (max-width: 100%)
+     - center the swatch above the code block
+     - shrink the gap between swatch and code so the two visually group
+   ─────────────────────────────────────────────────────────────────────── */
+.dm-cspace-card .sd-card-body > p:has(.dm-cspace-img),
+.dm-cspace-card .sd-card-body > .dm-cspace-img-wrap {
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+.dm-cspace-img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto 0.75rem;
+}
+.dm-cspace-card .sd-card-body pre {
+  margin-top: 0;
+}

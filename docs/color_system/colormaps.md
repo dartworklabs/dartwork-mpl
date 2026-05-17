@@ -67,11 +67,50 @@ Explore all 16 built-in colormaps dynamically using the catalog below. Use the t
 
 ## Creating custom colormaps
 
-If the built-in maps don't fit your specific need, you can create perfectly smooth, perceptually uniform custom ramps using the `dm.cspace()` function.
+If the built-ins don't fit your data, build a colormap by interpolating
+in **OKLCH space** with `dm.cspace()`. The lightness ramp stays
+strictly monotonic, so you skip the muddy midtones that appear when
+RGB hex codes are blended directly. Both panels below use the same
+2D Gaussian so you can read the ramps doing their job side-by-side.
 
-By interpolating in **OKLCH space**, you ensure the lightness transition remains strictly monotonic and vivid, completely avoiding the "muddy" or desaturated midtones that appear when interpolating standard RGB hex codes.
+::::{grid} 1 1 2 2
+:gutter: 3
 
-![Custom Colormaps Preview](images/color_space_colormap.svg)
+:::{grid-item-card} **Sequential**
+:class-item: dm-cspace-card
+
+```{image} images/color_space_colormap_sequential.svg
+:alt: Sequential cspace colormap, indigo to amber, on a smooth 2D Gaussian
+:class: dm-cspace-img
+```
+
+```python
+import dartwork_mpl as dm
+import matplotlib as mpl
+
+colors = dm.cspace("#1a237e", "#ff6f00", n=256, space="oklch")
+cmap = mpl.colors.ListedColormap([c.to_rgb() for c in colors])
+```
+:::
+
+:::{grid-item-card} **Diverging**
+:class-item: dm-cspace-card
+
+```{image} images/color_space_colormap_diverging.svg
+:alt: Diverging cspace colormap, indigo to white to crimson, on the same Gaussian
+:class: dm-cspace-img
+```
+
+```python
+left = dm.cspace("#1a237e", "#ffffff", n=128, space="oklch")
+right = dm.cspace("#ffffff", "#c62828", n=128, space="oklch")
+cmap = mpl.colors.ListedColormap(
+    [c.to_rgb() for c in (left[:-1] + right)]
+)
+```
+:::
+
+::::
 
 ---
 
