@@ -167,13 +167,6 @@ api/index
 
 ```{toctree}
 :hidden:
-
-color_system/index
-fonts/index
-```
-
-```{toctree}
-:hidden:
 :caption: More
 
 philosophy/index
@@ -181,8 +174,13 @@ troubleshooting
 migration
 ```
 
-```{toctree}
-:hidden:
+% color_system/index and fonts/index are reachable via design_system/index
+% (the merged Design System landing). Including them at the root toctree
+% appends them under the previous caption in Shibuya's sidebar, which
+% looks like a duplicate entry. Make them orphans of the root toctree —
+% Sphinx is still happy because design_system/index links to them.
 
-integrations/index
-```
+% integrations/index is a thin "this page moved" redirect to /ai/. It is
+% no longer part of the visible navigation; the deep pages
+% (mcp_server.md, ai_assisted.md, why_ai_ready.md) remain reachable from
+% ai/index.md.
