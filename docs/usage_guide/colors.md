@@ -51,6 +51,31 @@ dm.simple_layout(fig)
 :file: ../color_system/images/palette_explorer.html
 ```
 
+### Interactive palette picker — try one click before committing
+
+Pick a palette below and the demo chart re-renders with that
+`prop_cycle`. Swatch chips show the actual hex values you'd get; the
+tabs group palettes by namespace (`dc.*` first, then the third-party
+design systems). The bar plot's data and labels are byte-identical
+across every render — only `axes.prop_cycle` changes.
+
+```{raw} html
+:file: ../_static/palette_picker.html
+```
+
+Once you've picked one, apply it in your own script:
+
+```python
+import matplotlib as mpl
+from cycler import cycler
+
+dm.style.use("report")  # base preset (font, line widths, spines, ...)
+mpl.rcParams["axes.prop_cycle"] = cycler(color=[
+    "dc.ocean3", "dc.ocean1", "dc.ocean5",
+    "dc.ocean0", "dc.ocean2", "dc.ocean4",
+])
+```
+
 ### Picking a `dc.*` swatch
 
 The eight families are tuned to evoke different moods, so the family

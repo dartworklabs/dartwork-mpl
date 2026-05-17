@@ -94,7 +94,9 @@ def generate_chart_context() -> None:
     throughput = [450, 480, 520, 560, 610, 670, 720]
     overhead = [320, 340, 350, 370, 390, 410, 430]
 
-    fig, ax = plt.subplots(figsize=(10, 5.5))
+    # 7.5 × 4.1 in = ~540 × 295 pt, lands inside the 720 px body
+    # column without browser downscaling.
+    fig, ax = plt.subplots(figsize=(7.5, 4.1))
 
     x = np.arange(len(phases))
     w = 0.35

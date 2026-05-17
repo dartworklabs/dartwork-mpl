@@ -73,7 +73,7 @@ strictly monotonic, so you skip the muddy midtones that appear when
 RGB hex codes are blended directly. Both panels below use the same
 2D Gaussian so you can read the ramps doing their job side-by-side.
 
-::::{grid} 1 1 2 2
+::::{grid} 1
 :gutter: 3
 
 :::{grid-item-card} **Sequential**

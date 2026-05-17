@@ -85,6 +85,24 @@ ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
 ```
 
+## Before / after — grouped bars
+
+Drag the divider to see the exact same plotting code rendered with
+vanilla matplotlib defaults vs `dm.style.use("report")` +
+`dm.simple_layout(fig, margin="2mm")`. The bar values, labels, legend
+entries, and tick positions are byte-identical — only the rcParams,
+typography, and prop_cycle differ.
+
+```{raw} html
+:file: ../_static/wipe_l2_bar.html
+```
+
+## Before / after — stacked area
+
+```{raw} html
+:file: ../_static/wipe_l6_stacked.html
+```
+
 ## Why these are recipes, not functions
 
 dartwork-mpl follows the

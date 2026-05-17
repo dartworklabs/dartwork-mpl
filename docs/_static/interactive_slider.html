@@ -1,0 +1,333 @@
+<style>
+  /* Scoped overrides for the interactive viewer slider — the global
+     .dm-compare-* CSS (in custom.css) sizes the slider for the
+     square-ish hero SVGs. The viewer screenshots are 1280×796
+     (≈1.6:1) so we need a wider canvas to stay legible. */
+  .dm-iv-slider-wrap {
+    max-width: 920px;
+    margin: 1.4em auto 0.5em;
+  }
+  .dm-iv-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 0.85em;
+    letter-spacing: 0.02em;
+    margin: 0 0 0.5em;
+  }
+  .dm-iv-heading > span {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .dm-iv-heading-default {
+    background: rgba(180, 65, 65, 0.12);
+    color: #b94c4c;
+  }
+  .dm-iv-heading-modified {
+    background: rgba(13, 148, 136, 0.14);
+    color: #0d9488;
+  }
+  html.dark .dm-iv-heading-default,
+  body[data-theme="dark"] .dm-iv-heading-default {
+    background: rgba(180, 65, 65, 0.2);
+    color: #e89393;
+  }
+  html.dark .dm-iv-heading-modified,
+  body[data-theme="dark"] .dm-iv-heading-modified {
+    background: rgba(13, 148, 136, 0.22);
+    color: #5eead4;
+  }
+
+  /* The slider itself. We deliberately override the global
+     .dm-compare-slider max-width so the JPG screenshots don't get
+     squeezed into the 720 px hero container. */
+  .dm-iv-slider {
+    position: relative;
+    width: 100%;
+    user-select: none;
+    cursor: ew-resize;
+    border: 1px solid #ebe9e2;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fbfaf7;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  }
+  html.dark .dm-iv-slider,
+  body[data-theme="dark"] .dm-iv-slider {
+    background: rgba(255, 255, 255, 0.02);
+    border-color: #2a2a3e;
+  }
+  .dm-iv-slider img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .dm-iv-after {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    clip-path: inset(0 0 0 50%);
+    pointer-events: none;
+  }
+  .dm-iv-after img {
+    width: 100%;
+    height: auto;
+  }
+  .dm-iv-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 3px;
+    background: #0d9488;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 3;
+  }
+  .dm-iv-handle::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 36px;
+    height: 36px;
+    transform: translate(-50%, -50%);
+    background: #0d9488;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  }
+  .dm-iv-handle::before {
+    content: "‹›";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 0.85em;
+    font-weight: 700;
+    letter-spacing: -1px;
+    z-index: 4;
+  }
+
+  .dm-iv-explain {
+    max-width: 920px;
+    margin: -0.4em auto 2em;
+    padding: 14px 18px;
+    background: #fbfaf7;
+    border: 1px solid #ebe9e2;
+    border-radius: 10px;
+    font-size: 0.86em;
+    line-height: 1.55;
+    color: #2c2c2c;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  html.dark .dm-iv-explain,
+  body[data-theme="dark"] .dm-iv-explain {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: #2a2a3e;
+    color: #d4d4d4;
+  }
+  .dm-iv-explain-title {
+    font-weight: 600;
+    margin: 0 0 10px;
+    font-size: 0.95em;
+    color: #1a1a1a;
+  }
+  html.dark .dm-iv-explain-title,
+  body[data-theme="dark"] .dm-iv-explain-title {
+    color: #f0f0f0;
+  }
+  .dm-iv-explain-row {
+    display: grid;
+    grid-template-columns: 170px 1fr;
+    column-gap: 12px;
+    align-items: baseline;
+    padding: 5px 0;
+    border-bottom: 1px dashed rgba(0,0,0,0.06);
+  }
+  .dm-iv-explain-row:last-child {
+    border-bottom: none;
+  }
+  html.dark .dm-iv-explain-row,
+  body[data-theme="dark"] .dm-iv-explain-row {
+    border-bottom-color: rgba(255,255,255,0.08);
+  }
+  .dm-iv-explain-key {
+    color: #888;
+    font-size: 0.88em;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  }
+  .dm-iv-explain-val {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .dm-iv-explain-val .b {
+    color: #b94c4c;
+    text-decoration: line-through;
+    text-decoration-color: rgba(185, 76, 76, 0.45);
+  }
+  .dm-iv-explain-val .a {
+    color: #0d9488;
+    font-weight: 600;
+  }
+  .dm-iv-explain-footer {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    font-size: 0.82em;
+    color: #777;
+  }
+  html.dark .dm-iv-explain-footer,
+  body[data-theme="dark"] .dm-iv-explain-footer {
+    border-top-color: rgba(255,255,255,0.08);
+    color: #999;
+  }
+  .dm-iv-explain-code {
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    background: rgba(13, 148, 136, 0.1);
+    color: #0d9488;
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+
+  .dm-iv-hint {
+    text-align: center;
+    margin: 0.4em auto 1.2em;
+    font-size: 0.78em;
+    color: #888;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  html.dark .dm-iv-hint,
+  body[data-theme="dark"] .dm-iv-hint {
+    color: #aaa;
+  }
+</style>
+
+<div class="dm-iv-slider-wrap">
+  <div class="dm-iv-heading">
+    <span class="dm-iv-heading-default">Default ParamModel · sine · 2.0 Hz · blue</span>
+    <span class="dm-iv-heading-modified">After dragging the sliders · sawtooth · 6.5 Hz · teal + fill</span>
+  </div>
+
+  <div class="dm-iv-slider" id="dm-iv-slider">
+    <img src="../_static/interactive_viewer_default.jpeg"
+         alt="Interactive viewer default state — sine waveform at 2 Hz with default blue line color and noise level 0.10" />
+    <div class="dm-iv-after" id="dm-iv-after">
+      <img src="../_static/interactive_viewer_modified.jpeg"
+           alt="Interactive viewer after parameter changes — sawtooth waveform at 6.5 Hz, teal line color, fill area under curve enabled" />
+    </div>
+    <div class="dm-iv-handle" id="dm-iv-handle"></div>
+  </div>
+
+  <p class="dm-iv-hint">↔ Drag the handle to wipe between the two states.</p>
+</div>
+
+<div class="dm-iv-explain" aria-label="What changed between the two states">
+  <p class="dm-iv-explain-title">What changed — eight slider drags, zero code edits:</p>
+  <div class="dm-iv-explain-row">
+    <span class="dm-iv-explain-key">waveform</span>
+    <span class="dm-iv-explain-val"><span class="b">sine</span><span class="a">sawtooth (dropdown)</span></span>
+  </div>
+  <div class="dm-iv-explain-row">
+    <span class="dm-iv-explain-key">frequency</span>
+    <span class="dm-iv-explain-val"><span class="b">2.0 Hz</span><span class="a">6.5 Hz (slider)</span></span>
+  </div>
+  <div class="dm-iv-explain-row">
+    <span class="dm-iv-explain-key">amplitude</span>
+    <span class="dm-iv-explain-val"><span class="b">1.0</span><span class="a">1.4 (slider)</span></span>
+  </div>
+  <div class="dm-iv-explain-row">
+    <span class="dm-iv-explain-key">noise_level</span>
+    <span class="dm-iv-explain-val"><span class="b">0.10</span><span class="a">0.00 (slider)</span></span>
+  </div>
+  <div class="dm-iv-explain-row">
+    <span class="dm-iv-explain-key">line_width</span>
+    <span class="dm-iv-explain-val"><span class="b">1.5 pt</span><span class="a">2.5 pt (slider)</span></span>
+  </div>
+  <div class="dm-iv-explain-row">
+    <span class="dm-iv-explain-key">n_points</span>
+    <span class="dm-iv-explain-val"><span class="b">500</span><span class="a">800 (slider)</span></span>
+  </div>
+  <div class="dm-iv-explain-row">
+    <span class="dm-iv-explain-key">line_color</span>
+    <span class="dm-iv-explain-val"><span class="b">#1f77b4 (default blue)</span><span class="a">#0d9488 (teal · color picker)</span></span>
+  </div>
+  <div class="dm-iv-explain-row">
+    <span class="dm-iv-explain-key">fill_under</span>
+    <span class="dm-iv-explain-val"><span class="b">false</span><span class="a">true (checkbox)</span></span>
+  </div>
+  <div class="dm-iv-explain-row">
+    <span class="dm-iv-explain-key">title</span>
+    <span class="dm-iv-explain-val"><span class="b">"My Waveform"</span><span class="a">"Live preview — drag any slider…" (text)</span></span>
+  </div>
+  <div class="dm-iv-explain-footer">
+    Each change re-runs the render function and pushes a new PNG into the
+    right pane in ≈80 ms. Click <span class="dm-iv-explain-code">Script</span>
+    in the top toolbar to export the exact
+    <span class="dm-iv-explain-code">.py</span> file that reproduces the
+    state on the right — no UI dependency, no "I forgot which parameters
+    made this plot" later.
+  </div>
+</div>
+
+<script>
+  (function () {
+    document.addEventListener("DOMContentLoaded", function () {
+      var slider = document.getElementById("dm-iv-slider");
+      var afterEl = document.getElementById("dm-iv-after");
+      var handle = document.getElementById("dm-iv-handle");
+      if (!slider || !afterEl || !handle) return;
+
+      var dragging = false;
+
+      function setPosition(x) {
+        var rect = slider.getBoundingClientRect();
+        var pct = Math.max(0, Math.min(1, (x - rect.left) / rect.width));
+        afterEl.style.clipPath = "inset(0 0 0 " + pct * 100 + "%)";
+        handle.style.left = pct * 100 + "%";
+      }
+
+      // Initial position at 50% once images settle.
+      setTimeout(function () {
+        afterEl.style.clipPath = "inset(0 0 0 50%)";
+        handle.style.left = "50%";
+      }, 100);
+
+      slider.addEventListener("mousedown", function (e) {
+        dragging = true;
+        setPosition(e.clientX);
+        e.preventDefault();
+      });
+
+      document.addEventListener("mousemove", function (e) {
+        if (dragging) setPosition(e.clientX);
+      });
+
+      document.addEventListener("mouseup", function () {
+        dragging = false;
+      });
+
+      // Touch support — same drag-to-wipe behaviour on mobile.
+      slider.addEventListener("touchstart", function (e) {
+        dragging = true;
+        if (e.touches.length > 0) setPosition(e.touches[0].clientX);
+      }, { passive: true });
+
+      document.addEventListener("touchmove", function (e) {
+        if (dragging && e.touches.length > 0) {
+          setPosition(e.touches[0].clientX);
+        }
+      }, { passive: true });
+
+      document.addEventListener("touchend", function () {
+        dragging = false;
+      });
+    });
+  })();
+</script>

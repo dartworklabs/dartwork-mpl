@@ -1,0 +1,321 @@
+{
+  "groups": [
+    {
+      "namespace": "dc",
+      "entries": [
+        {
+          "id": "dc.vivid",
+          "label": "dc.vivid",
+          "namespace": "dc",
+          "swatch": [
+            "#06b6d4",
+            "#dc2626",
+            "#f59e0b",
+            "#2563eb",
+            "#16a34a",
+            "#9333ea"
+          ],
+          "file": "demo_bar_dc_vivid.svg"
+        },
+        {
+          "id": "dc.ocean",
+          "label": "dc.ocean",
+          "namespace": "dc",
+          "swatch": [
+            "#4a6fa5",
+            "#1b98e0",
+            "#2e4057",
+            "#62b6cb",
+            "#00838f",
+            "#0b3d91"
+          ],
+          "file": "demo_bar_dc_ocean.svg"
+        },
+        {
+          "id": "dc.forest",
+          "label": "dc.forest",
+          "namespace": "dc",
+          "swatch": [
+            "#b5838d",
+            "#74c69d",
+            "#1b4332",
+            "#95d5b2",
+            "#52b788",
+            "#2d6a4f"
+          ],
+          "file": "demo_bar_dc_forest.svg"
+        },
+        {
+          "id": "dc.sunset",
+          "label": "dc.sunset",
+          "namespace": "dc",
+          "swatch": [
+            "#e63946",
+            "#6b4d57",
+            "#ffc857",
+            "#264653",
+            "#f28c28",
+            "#457b9d"
+          ],
+          "file": "demo_bar_dc_sunset.svg"
+        },
+        {
+          "id": "dc.autumn",
+          "label": "dc.autumn",
+          "namespace": "dc",
+          "swatch": [
+            "#bc4749",
+            "#da7b5c",
+            "#6a4c3c",
+            "#eec643",
+            "#a77b5c",
+            "#386641"
+          ],
+          "file": "demo_bar_dc_autumn.svg"
+        },
+        {
+          "id": "dc.cyber",
+          "label": "dc.cyber",
+          "namespace": "dc",
+          "swatch": [
+            "#4361ee",
+            "#00b4d8",
+            "#3a0ca3",
+            "#4cc9f0",
+            "#f72585",
+            "#7209b7"
+          ],
+          "file": "demo_bar_dc_cyber.svg"
+        },
+        {
+          "id": "dc.pop",
+          "label": "dc.pop",
+          "namespace": "dc",
+          "swatch": [
+            "#ff595e",
+            "#8ac926",
+            "#6a4c93",
+            "#ffca3a",
+            "#ff924c",
+            "#1982c4"
+          ],
+          "file": "demo_bar_dc_pop.svg"
+        },
+        {
+          "id": "dc.nordic",
+          "label": "dc.nordic",
+          "namespace": "dc",
+          "swatch": [
+            "#d63031",
+            "#00b894",
+            "#2d3436",
+            "#b2bec3",
+            "#0984e3",
+            "#636e72"
+          ],
+          "file": "demo_bar_dc_nordic.svg"
+        }
+      ]
+    },
+    {
+      "namespace": "oc",
+      "entries": [
+        {
+          "id": "oc.classic",
+          "label": "oc.classic",
+          "namespace": "oc",
+          "swatch": [
+            "#228be6",
+            "#fa5252",
+            "#40c057",
+            "#fd7e14",
+            "#7950f2",
+            "#12b886"
+          ],
+          "file": "demo_bar_oc_classic.svg"
+        },
+        {
+          "id": "oc.cool",
+          "label": "oc.cool",
+          "namespace": "oc",
+          "swatch": [
+            "#228be6",
+            "#15aabf",
+            "#12b886",
+            "#40c057",
+            "#4c6ef5",
+            "#7950f2"
+          ],
+          "file": "demo_bar_oc_cool.svg"
+        },
+        {
+          "id": "oc.warm",
+          "label": "oc.warm",
+          "namespace": "oc",
+          "swatch": [
+            "#fa5252",
+            "#fd7e14",
+            "#fab005",
+            "#e64980",
+            "#be4bdb",
+            "#82c91e"
+          ],
+          "file": "demo_bar_oc_warm.svg"
+        },
+        {
+          "id": "oc.muted",
+          "label": "oc.muted",
+          "namespace": "oc",
+          "swatch": [
+            "#4dabf7",
+            "#ff8787",
+            "#69db7c",
+            "#ffa94d",
+            "#9775fa",
+            "#38d9a9"
+          ],
+          "file": "demo_bar_oc_muted.svg"
+        }
+      ]
+    },
+    {
+      "namespace": "tw",
+      "entries": [
+        {
+          "id": "tw.modern",
+          "label": "tw.modern",
+          "namespace": "tw",
+          "swatch": [
+            "#6366f1",
+            "#f43f5e",
+            "#10b981",
+            "#f59e0b",
+            "#8b5cf6",
+            "#06b6d4"
+          ],
+          "file": "demo_bar_tw_modern.svg"
+        },
+        {
+          "id": "tw.muted",
+          "label": "tw.muted",
+          "namespace": "tw",
+          "swatch": [
+            "#64748b",
+            "#71717a",
+            "#78716c",
+            "#737373",
+            "#94a3b8",
+            "#a1a1aa"
+          ],
+          "file": "demo_bar_tw_muted.svg"
+        },
+        {
+          "id": "tw.bold",
+          "label": "tw.bold",
+          "namespace": "tw",
+          "swatch": [
+            "#2563eb",
+            "#dc2626",
+            "#16a34a",
+            "#9333ea",
+            "#ea580c",
+            "#db2777"
+          ],
+          "file": "demo_bar_tw_bold.svg"
+        }
+      ]
+    },
+    {
+      "namespace": "md",
+      "entries": [
+        {
+          "id": "md.material",
+          "label": "md.material",
+          "namespace": "md",
+          "swatch": [
+            "#2196f3",
+            "#f44336",
+            "#4caf50",
+            "#ff9800",
+            "#9c27b0",
+            "#009688"
+          ],
+          "file": "demo_bar_md_material.svg"
+        },
+        {
+          "id": "md.bright",
+          "label": "md.bright",
+          "namespace": "md",
+          "swatch": [
+            "#29b6f6",
+            "#ec407a",
+            "#9ccc65",
+            "#ffca28",
+            "#7e57c2",
+            "#26c6da"
+          ],
+          "file": "demo_bar_md_bright.svg"
+        }
+      ]
+    },
+    {
+      "namespace": "ad",
+      "entries": [
+        {
+          "id": "ad.classic",
+          "label": "ad.classic",
+          "namespace": "ad",
+          "swatch": [
+            "#1890ff",
+            "#f5222d",
+            "#52c41a",
+            "#fa8c16",
+            "#722ed1",
+            "#13c2c2"
+          ],
+          "file": "demo_bar_ad_classic.svg"
+        }
+      ]
+    },
+    {
+      "namespace": "cu",
+      "entries": [
+        {
+          "id": "cu.brand",
+          "label": "cu.brand",
+          "namespace": "cu",
+          "swatch": [
+            "#3182ce",
+            "#c53030",
+            "#38a169",
+            "#ff6600",
+            "#805ad5",
+            "#319795"
+          ],
+          "file": "demo_bar_cu_brand.svg"
+        }
+      ]
+    },
+    {
+      "namespace": "pr",
+      "entries": [
+        {
+          "id": "pr.brand",
+          "label": "pr.brand",
+          "namespace": "pr",
+          "swatch": [
+            "#1f6feb",
+            "#da3633",
+            "#1a7f37",
+            "#bd561d",
+            "#8957e5",
+            "#99286e"
+          ],
+          "file": "demo_bar_pr_brand.svg"
+        }
+      ]
+    }
+  ],
+  "demo": "demo_bar",
+  "demo_caption": "Same grouped-bar chart, same data \u2014 only the prop_cycle changes."
+}

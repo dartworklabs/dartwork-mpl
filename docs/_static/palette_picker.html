@@ -1,0 +1,272 @@
+<style>
+  /* Reusable palette picker — embed via `:file: _static/palette_picker.html`.
+     Reads /docs/_static/palette_demo/manifest.json at runtime to populate
+     itself, so adding/removing palettes never requires changing this file. */
+
+  .dm-pp {
+    max-width: 720px;
+    margin: 1.6em auto 2em;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  /* Demo image — picker swaps its src */
+  .dm-pp-stage {
+    position: relative;
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid #e7e4dd;
+    background: #fbfaf7;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  html.dark .dm-pp-stage,
+  body[data-theme="dark"] .dm-pp-stage {
+    background: #14141d;
+    border-color: #2a2a36;
+  }
+  .dm-pp-stage img {
+    display: block;
+    width: 100%;
+    height: auto;
+    transition: opacity 0.15s ease;
+  }
+  .dm-pp-stage img.is-loading { opacity: 0.55; }
+
+  .dm-pp-caption {
+    font-size: 0.85em;
+    color: #777;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  html.dark .dm-pp-caption,
+  body[data-theme="dark"] .dm-pp-caption {
+    color: #aaa;
+  }
+  .dm-pp-caption code {
+    background: rgba(13, 148, 136, 0.1);
+    color: #0d9488;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.9em;
+  }
+
+  /* Tabs (one per namespace: dc / oc / tw / md / ad / cu / pr) */
+  .dm-pp-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    border-bottom: 1px solid #e7e4dd;
+    margin-bottom: 10px;
+  }
+  html.dark .dm-pp-tabs,
+  body[data-theme="dark"] .dm-pp-tabs {
+    border-bottom-color: #2c2c38;
+  }
+  .dm-pp-tab {
+    border: none;
+    background: transparent;
+    padding: 6px 14px;
+    font-size: 0.88em;
+    color: #777;
+    cursor: pointer;
+    border-radius: 4px 4px 0 0;
+    border-bottom: 2px solid transparent;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  }
+  html.dark .dm-pp-tab,
+  body[data-theme="dark"] .dm-pp-tab {
+    color: #aaa;
+  }
+  .dm-pp-tab:hover { color: #0d9488; }
+  .dm-pp-tab.active {
+    color: #0d9488;
+    border-bottom-color: #0d9488;
+    font-weight: 600;
+  }
+
+  /* Palette buttons — borderless, low-profile pills so the picker
+     reads as a control row rather than a stack of cards. Only the
+     swatch carries weight; hover/active states use a subtle text
+     color shift instead of a full background fill. */
+  .dm-pp-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin: 8px 0 12px;
+  }
+  .dm-pp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 0.78em;
+    color: #666;
+    transition: color 0.12s ease;
+  }
+  html.dark .dm-pp-btn,
+  body[data-theme="dark"] .dm-pp-btn {
+    color: #aaa;
+  }
+  .dm-pp-btn:hover {
+    color: #0d9488;
+  }
+  .dm-pp-btn.active {
+    color: #0d9488;
+    font-weight: 600;
+  }
+  .dm-pp-btn.active .dm-pp-swatch {
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.55);
+  }
+  .dm-pp-swatch {
+    display: inline-flex;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    flex-shrink: 0;
+  }
+  .dm-pp-swatch span {
+    width: 8px;
+    height: 14px;
+    display: block;
+  }
+
+  .dm-pp-active-info {
+    font-size: 0.78em;
+    color: #888;
+    margin-top: 8px;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  }
+  html.dark .dm-pp-active-info,
+  body[data-theme="dark"] .dm-pp-active-info {
+    color: #999;
+  }
+  .dm-pp-active-info code {
+    background: rgba(13, 148, 136, 0.08);
+    color: #0d9488;
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+</style>
+
+<div class="dm-pp">
+  <div class="dm-pp-tabs" id="dm-pp-tabs"></div>
+  <div class="dm-pp-buttons" id="dm-pp-buttons"></div>
+
+  <div class="dm-pp-stage">
+    <img id="dm-pp-img" src="" alt="palette demo" />
+  </div>
+  <p class="dm-pp-caption" id="dm-pp-caption">Loading palette demos…</p>
+  <p class="dm-pp-active-info" id="dm-pp-info"></p>
+</div>
+
+<script>
+  (function () {
+    // Path resolution. Three deploy contexts to support:
+    //   1. Direct open under _static/ → "palette_demo/"
+    //   2. Sphinx page at site root (e.g. /landing_pocs.html) → "_static/palette_demo/"
+    //   3. Sphinx sub-page (e.g. /usage_guide/colors.html) → must walk
+    //      up to the asset root, so use a path absolute to the doc root.
+    // For (3) we cannot hard-code a single prefix because GitHub
+    // Pages may serve under a subpath. The safest portable rule is:
+    // compute how many directories deep the current page is and
+    // prepend that many "../" before "_static/".
+    var here = window.location.pathname;
+    var base;
+    if (here.indexOf("/_static/") !== -1) {
+      base = "palette_demo/";
+    } else {
+      // strip leading "/" and the filename, count remaining dir segments
+      var dirs = here.replace(/^\/+|\/+[^\/]*$/g, "").split("/").filter(Boolean);
+      var up = dirs.length > 0 ? "../".repeat(dirs.length) : "";
+      base = up + "_static/palette_demo/";
+    }
+
+    var img      = document.getElementById("dm-pp-img");
+    var caption  = document.getElementById("dm-pp-caption");
+    var tabsHost = document.getElementById("dm-pp-tabs");
+    var btnsHost = document.getElementById("dm-pp-buttons");
+    var infoHost = document.getElementById("dm-pp-info");
+
+    fetch(base + "manifest.json", { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (manifest) {
+        render(manifest);
+      })
+      .catch(function (err) {
+        caption.textContent = "Failed to load palette manifest: " + err;
+      });
+
+    function render(manifest) {
+      caption.innerHTML = manifest.demo_caption
+        || "Same chart, same data — only the prop_cycle changes.";
+
+      var groups = manifest.groups;
+      if (!groups || !groups.length) {
+        caption.textContent = "No palettes registered.";
+        return;
+      }
+
+      var activeNs = groups[0].namespace;
+      var activePalette = groups[0].entries[0].id;
+
+      // Build namespace tabs.
+      groups.forEach(function (g) {
+        var tab = document.createElement("button");
+        tab.className = "dm-pp-tab" + (g.namespace === activeNs ? " active" : "");
+        tab.dataset.ns = g.namespace;
+        tab.textContent = g.namespace + ".*";
+        tab.addEventListener("click", function () { showNamespace(g.namespace); });
+        tabsHost.appendChild(tab);
+      });
+
+      function showNamespace(ns) {
+        activeNs = ns;
+        tabsHost.querySelectorAll(".dm-pp-tab").forEach(function (t) {
+          t.classList.toggle("active", t.dataset.ns === ns);
+        });
+        var group = groups.find(function (g) { return g.namespace === ns; });
+        btnsHost.innerHTML = "";
+        group.entries.forEach(function (e, idx) {
+          var btn = document.createElement("button");
+          btn.className = "dm-pp-btn";
+          btn.dataset.id = e.id;
+          var swatchHtml = '<span class="dm-pp-swatch">'
+            + e.swatch.map(function (c) {
+                return '<span style="background:' + c + ';"></span>';
+              }).join("")
+            + '</span>';
+          btn.innerHTML = swatchHtml + " " + e.label;
+          btn.addEventListener("click", function () { setPalette(e); });
+          btnsHost.appendChild(btn);
+          if (idx === 0 || e.id === activePalette) setPalette(e);
+        });
+      }
+
+      function setPalette(entry) {
+        activePalette = entry.id;
+        img.classList.add("is-loading");
+        var nextSrc = base + entry.file;
+        var temp = new Image();
+        temp.onload = function () {
+          img.src = nextSrc;
+          img.classList.remove("is-loading");
+        };
+        temp.src = nextSrc;
+        btnsHost.querySelectorAll(".dm-pp-btn").forEach(function (b) {
+          b.classList.toggle("active", b.dataset.id === entry.id);
+        });
+        infoHost.innerHTML = "Active palette: <code>" + entry.id
+          + "</code> · " + entry.swatch.length + " colors · pass to "
+          + "<code>plt.rcParams['axes.prop_cycle']</code> via "
+          + "<code>cycler(color=[...])</code>.";
+      }
+
+      showNamespace(activeNs);
+    }
+  })();
+</script>

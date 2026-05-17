@@ -43,7 +43,7 @@ layout/font helpers so you get **predictable results** fast.
 
 ## Typical workflow
 
-::::{grid} 1 1 2 2
+::::{grid} 1
 :gutter: 3
 
 :::{grid-item-card} **1. Pick a style**

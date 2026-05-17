@@ -5,7 +5,7 @@ typography — that are pre-wired into every style preset. Browse the full
 inventories below, or jump straight to a how-to in the
 [Usage Guide](../usage_guide/index.md).
 
-::::{grid} 1 2 2 2
+::::{grid} 1
 :gutter: 3
 :margin: 4 4 0 0
 
