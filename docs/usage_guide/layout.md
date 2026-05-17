@@ -95,22 +95,24 @@ of:
 
 No optimizer is involved — the result is fully deterministic.
 
-### Responsive Margins with `set_xmargin` and `set_ymargin`
+### Data-range margins on individual axes
 
-Control axis data margins responsively based on data range:
+`dm.simple_layout` controls margins between the **axes content** and
+the **figure edge**. For breathing room between the **plotted data**
+and the **axes spines**, use matplotlib's built-in
+`ax.margins(...)` — dartwork-mpl doesn't wrap it, since it's already a
+one-liner:
 
 ```python
-# Add 10% margin to x-axis data range
-dm.set_xmargin(ax, margin=0.1)
-
-# Add different margins for y-axis
-dm.set_ymargin(ax, margin=0.05)
-
-# Useful for:
-# - Preventing data from touching axis edges
-# - Creating visual breathing room
-# - Ensuring markers aren't clipped at boundaries
+ax.margins(x=0.1, y=0.05)   # 10 % x-padding, 5 % y-padding
+ax.margins(0.05)            # same value on both axes
 ```
+
+Useful for:
+
+- Preventing data from touching axis spines
+- Creating visual breathing room around markers
+- Ensuring scatter points and bar tops aren't clipped at boundaries
 
 ### Which call to use?
 
@@ -138,20 +140,26 @@ titles all competing for space.
 :file: images/layout_debugger.html
 ```
 
-Below is the **same figure** — a two-panel layout with a multi-line y-label and
-a colorbar — rendered with each approach:
+Below is the **same figure** — a two-panel layout with a multi-line
+y-label and a colorbar — rendered with each approach. The figure
+background is tinted and edged so you can see how each method
+negotiates the gap between the axes content and the figure rectangle
+itself. **Click the tabs to toggle** the full-width rendering — that's
+the only way to spot the lopsided whitespace and the shifted colorbar
+without overlaying the two side-by-side.
 
-::::{grid} 1 1 2 2
-:gutter: 2
+::::{tab-set}
 
-:::{grid-item-card} `tight_layout()`
-:class-card: sd-border-secondary
-![tight_layout result](images/layout_tight.svg)
+:::{tab-item} `simple_layout()` (dartwork-mpl)
+:sync: dm
+
+![simple_layout result — uniform margins, content snapped to the requested distance from each figure edge](images/layout_simple.svg)
 :::
 
-:::{grid-item-card} `simple_layout()`
-:class-card: sd-border-primary
-![simple_layout result](images/layout_simple.svg)
+:::{tab-item} `tight_layout()` (matplotlib)
+:sync: mpl
+
+![tight_layout result — heuristic margins that drift with label length and shift when the colorbar steals horizontal space](images/layout_tight.svg)
 :::
 
 ::::
@@ -183,8 +191,6 @@ requested margin from each figure edge. This means:
 | Function                      | What it solves                                                |
 | ----------------------------- | ------------------------------------------------------------- |
 | `simple_layout(fig, gs=gs)`   | Places content at requested margin — replaces `tight_layout()` |
-| `set_xmargin(ax, margin)`     | Sets responsive x-axis margins based on data range            |
-| `set_ymargin(ax, margin)`     | Sets responsive y-axis margins based on data range            |
 | `label_axes(axes)`            | Adds (a), (b), (c) labels with auto-positioning for ylabels   |
 | `arrow_axis(ax, 'x', 'Cost')` | Creates `Low ◄── Cost ──► High` bidirectional annotations     |
 | `set_decimal(ax, xn, yn)`     | Fixes tick decimal places for publication-ready labels        |

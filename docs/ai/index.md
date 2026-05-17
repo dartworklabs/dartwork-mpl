@@ -195,11 +195,11 @@ composition helper is reachable as `dm.<name>`.
 | Verify input data shape before plotting | `dm.validate_data(...)` |
 | Pick a chart type from a data description | `dm.suggest_chart_type(...)` |
 | Get a curated palette for N data series | `dm.make_palette(n, kind=...)` |
-| Add value labels on top of bars / points | `dm.add_value_labels(ax, ...)` |
+| Label bar tops with their values | `ax.bar_label(bars, ...)` (matplotlib 3.4+) |
 | Place the legend without overlapping data | `dm.optimize_legend(ax, ...)` |
 | Run heuristic quality checks on a figure | `dm.check_figure_quality(fig)` |
 | Save with hi-res presets in multiple formats | `dm.save_formats(fig, "out")` |
-| Lint generated code before returning it | `dm.lint_dartwork_mpl_code(code)` (MCP tool) |
+| Lint generated code before returning it | `lint_dartwork_mpl_code(code)` (MCP tool) |
 
 ---
 

@@ -92,11 +92,20 @@ def _make_challenging_figure(use_simple_layout: bool = True) -> plt.Figure:
     Left panel: line chart with long Y-axis label + title.
     Right panel: heatmap with colorbar.
     Both share an x-label to stress margin negotiation.
+
+    A faint figure background + visible figure-edge border are added so
+    the **margin negotiation** between the figure rectangle and the axes
+    is obvious when both rendered SVGs are stacked on a white docs page —
+    otherwise the white figure patch blends straight into the page and
+    the layout difference is invisible.
     """
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig = plt.figure(figsize=dm.figsize("15cm", "8.5cm"), dpi=300)
+    fig = plt.figure(figsize=dm.figsize("17cm", "9cm"), dpi=300)
+    fig.patch.set_facecolor("#f6f5f1")
+    fig.patch.set_edgecolor("#c8c6c0")
+    fig.patch.set_linewidth(1.0)
     gs = fig.add_gridspec(1, 2, wspace=0.45)
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
@@ -170,7 +179,7 @@ def _save_layout_gridspec(images_dir: Path) -> Path:
 
     dm.label_axes(axes)
     dm.set_decimal(axes[0], xn=2, yn=1)
-    dm.simple_layout(fig, gs=gs, margins=(0.05, 0.08, 0.06, 0.08))
+    dm.simple_layout(fig, gs=gs, ml=0.05, mr=0.08, mt=0.06, mb=0.08)
 
     path = images_dir / "layout_gridspec.svg"
     fig.savefig(path, format="svg", bbox_inches="tight")
