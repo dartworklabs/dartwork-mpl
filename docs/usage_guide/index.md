@@ -26,9 +26,9 @@ layout/font helpers so you get **predictable results** fast.
 
 | Situation | Function | Notes |
 |-----------|----------|-------|
-| Most figures (default) | `auto_layout(fig)` | Content-aware margin pass — call after data is plotted |
-| Multi-panel with GridSpec | `simple_layout(fig, gs=gs)` | Respects your `hspace`/`wspace` settings when `auto_layout` can't fit the bounding boxes |
-| Need exact margin control | `simple_layout(fig, margins=(...))` | Specify margins in inches |
+| Most figures (default) | `simple_layout(fig)` | Content-aware margin pass — call after data is plotted |
+| Multi-panel with GridSpec | `simple_layout(fig, gs=gs)` | Pass the parent `GridSpec` so margins are computed against it |
+| Need exact margin control | `simple_layout(fig, margin="5mm")` | Or per-side `ml="3mm", mr="3mm", mt="2mm", mb="6mm"` |
 
 ### Which color palette?
 
@@ -63,9 +63,10 @@ plus perceptual OKLCH interpolation.
 :::
 
 :::{grid-item-card} **3. Layout & annotate**
-`dm.auto_layout(fig)` is the default content-aware margin pass —
-`dm.simple_layout(fig, gs=gs)` is the L-BFGS-B optimizer for advanced
-GridSpec cases. `dm.label_axes()` adds panel labels automatically.
+`dm.simple_layout(fig)` walks every visible artist on every axes,
+finds the union extent, and snaps the GridSpec edges so the content
+sits at the requested margin from the figure edge. Pass `gs=gs` for
+multi-panel layouts. `dm.label_axes()` adds panel labels automatically.
 
 → [Layout and Typography](layout.md)
 :::

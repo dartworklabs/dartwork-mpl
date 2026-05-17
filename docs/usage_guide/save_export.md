@@ -10,7 +10,7 @@ dm.style.use("scientific")
 
 fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
 ax.plot(np.arange(50), np.cumsum(np.random.randn(50)) + 20, color="oc.blue6")
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 
 dm.save_formats(
     fig,
@@ -82,12 +82,12 @@ column is the suggestion delivered by
 
 | `check_id`           | Severity | What it detects                                    | Suggested fix                                                       |
 | -------------------- | -------- | -------------------------------------------------- | ------------------------------------------------------------------- |
-| `OVERFLOW`           | warning  | Text or axes content extends past the figure edge  | Increase `dm.auto_layout` padding or reduce label length            |
+| `OVERFLOW`           | warning  | Text or axes content extends past the figure edge  | Re-run `dm.simple_layout(fig, margin="3mm")` or shorten the label   |
 | `OVERLAP`            | warning  | Two text labels visually overlap                   | Rotate, abbreviate, or split into multiple panels                   |
 | `LEGEND_OVERFLOW`    | warning  | Legend extends past axes / figure edge             | Move legend outside via `bbox_to_anchor` or shrink with `ncols`     |
 | `TICK_CROWD`         | warning  | Tick labels overlap each other (>6 per inch)       | Reduce tick density (`MaxNLocator`) or rotate labels                |
 | `EMPTY_AXES`         | info     | Axes carry no plotted artist                       | Plot data or remove the empty axes via `fig.delaxes(ax)`            |
-| `MARGIN_ASYMMETRY`   | info     | Left / right or top / bottom margins differ a lot  | Re-run `dm.auto_layout(fig)`                                        |
+| `MARGIN_ASYMMETRY`   | info     | Left / right or top / bottom margins differ a lot  | Re-run `dm.simple_layout(fig)` (or call it for the first time)      |
 | `PIE_LABEL_OFFSET`   | warning  | Pie wedge label sits outside its wedge             | Set `pctdistance = 1.0 - wedge_width / 2`                           |
 | `CLIPPED_TEXT`       | warning  | A text artist is clipped at its axes boundary      | Disable clipping (`text.set_clip_on(False)`) or move into figure    |
 

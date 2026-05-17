@@ -125,7 +125,7 @@ for bar, val in zip(bars, throughput):
             f"{val:,}", ha="center", va="bottom", fontsize=dm.fs(-1.5))
 
 # 7. Layout and save
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(fig, "korean_report", formats=("png", "pdf"))
 ```
 
@@ -133,7 +133,7 @@ dm.save_formats(fig, "korean_report", formats=("png", "pdf"))
 - `report-kr` preset loads Paperlogy/Pretendard for Korean text
 - `ax2.spines["right"].set_visible(True)` -- show right spine for dual-axis charts
 - `PercentFormatter(decimals=1)` -- clean percentage display
-- `auto_layout` handles the dual y-axis label overflow automatically
+- `simple_layout` measures the right-hand spine label and snaps the figure to the union extent so the second y-axis isn't clipped
 
 ---
 
@@ -166,7 +166,7 @@ ax.set_xlabel("Phase [rad]")
 ax.set_ylabel("Amplitude")
 ax.legend()
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_and_show(fig, "waves_dark")  # save + inline preview
 ```
 
@@ -185,7 +185,7 @@ ax2.set_xlabel("Phase [rad]")
 ax2.set_ylabel("Amplitude")
 ax2.legend()
 
-dm.auto_layout(fig2)
+dm.simple_layout(fig2)
 dm.save_formats(fig2, "waves", formats=("svg", "pdf"))
 ```
 

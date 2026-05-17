@@ -73,7 +73,7 @@ def plot_scatter(params: ScatterParams):
     y = np.random.randn(params.n)
     ax.scatter(x, y, alpha=params.alpha, color=params.color)
 
-    dm.auto_layout(fig)
+    dm.simple_layout(fig)
     return fig
 
 

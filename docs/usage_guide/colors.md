@@ -31,7 +31,7 @@ ax.fill_between([0, 1, 2], 0.9, 1.3, color=highlight, label="Mixed shade")
 muted_line = dm.pseudo_alpha("pr.blue5", alpha=0.65, background="white")
 ax.plot([0, 1, 2], [0.8, 1.1, 1.4], color=muted_line, label="Pseudo alpha")
 ax.legend()
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 ```
 
 ```{raw} html
