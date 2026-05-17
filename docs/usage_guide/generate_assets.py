@@ -102,7 +102,12 @@ def _make_challenging_figure(use_simple_layout: bool = True) -> plt.Figure:
     np.random.seed(42)
     dm.style.use("scientific")
 
-    fig = plt.figure(figsize=dm.figsize("17cm", "9cm"), dpi=300)
+    # 17cm × 11cm so the SVG's natural width (~643 px at 96 dpi) lands
+    # right inside the Shibuya body column. Browsers no longer scale
+    # it up, which removes the font/line stretch the user reported.
+    # 1.55:1 aspect is more square than the original 1.89:1 — leaves
+    # more vertical room for the long ylabel and the colorbar.
+    fig = plt.figure(figsize=dm.figsize("17cm", "11cm"), dpi=300)
     fig.patch.set_facecolor("#f6f5f1")
     fig.patch.set_edgecolor("#c8c6c0")
     fig.patch.set_linewidth(1.0)

@@ -1,4 +1,42 @@
 <style>
+  /* Header labels above the slider — replaces the in-figure overlay
+     badges that used to obscure the top-left / top-right corners of
+     the rendered SVGs. */
+  .dm-compare-heading {
+    max-width: 720px;
+    margin: 1em auto 0.5em;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 0.85em;
+    letter-spacing: 0.02em;
+  }
+  .dm-compare-heading > span {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .dm-compare-heading-before {
+    background: rgba(180, 65, 65, 0.12);
+    color: #b94c4c;
+  }
+  .dm-compare-heading-after {
+    background: rgba(13, 148, 136, 0.14);
+    color: #0d9488;
+  }
+  html.dark .dm-compare-heading-before,
+  body[data-theme="dark"] .dm-compare-heading-before {
+    background: rgba(180, 65, 65, 0.2);
+    color: #e89393;
+  }
+  html.dark .dm-compare-heading-after,
+  body[data-theme="dark"] .dm-compare-heading-after {
+    background: rgba(13, 148, 136, 0.22);
+    color: #5eead4;
+  }
+
   /* Scoped to .dm-compare-explain so it cannot collide with the global
      `.dm-compare-*` rules in custom.css that style the slider itself. */
   .dm-compare-explain {
@@ -29,21 +67,22 @@
   body[data-theme="dark"] .dm-compare-explain-title {
     color: #f0f0f0;
   }
+  /* Single-column rows so long values (prop_cycle, layout) never
+     wrap awkwardly into the next column. */
   .dm-compare-explain-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px 28px;
-  }
-  @media (max-width: 640px) {
-    .dm-compare-explain-grid { grid-template-columns: 1fr; }
+    display: flex;
+    flex-direction: column;
   }
   .dm-compare-explain-row {
     display: grid;
-    grid-template-columns: 110px 1fr;
-    column-gap: 10px;
+    grid-template-columns: 140px 1fr;
+    column-gap: 12px;
     align-items: baseline;
-    padding: 4px 0;
+    padding: 5px 0;
     border-bottom: 1px dashed rgba(0,0,0,0.06);
+  }
+  .dm-compare-explain-row:last-child {
+    border-bottom: none;
   }
   html.dark .dm-compare-explain-row,
   body[data-theme="dark"] .dm-compare-explain-row {
@@ -54,11 +93,16 @@
     font-size: 0.88em;
     font-family: "SF Mono", "Fira Code", "Consolas", monospace;
   }
+  .dm-compare-explain-val {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+  }
   .dm-compare-explain-val .b {
     color: #b94c4c;
     text-decoration: line-through;
     text-decoration-color: rgba(185, 76, 76, 0.45);
-    margin-right: 6px;
   }
   .dm-compare-explain-val .a {
     color: #0d9488;
@@ -84,20 +128,28 @@
     border-radius: 3px;
     font-size: 0.92em;
   }
+  /* Suppress the legacy in-figure badge labels (still rendered by
+     custom.css globals) so they don't reappear on top of the SVGs. */
+  .dm-compare-slider .dm-compare-label {
+    display: none !important;
+  }
 </style>
 
+<div class="dm-compare-heading">
+  <span class="dm-compare-heading-before">default mpl</span>
+  <span class="dm-compare-heading-after">dartwork-mpl</span>
+</div>
+
 <div class="dm-compare-slider" id="dm-compare-slider">
-  <img src="_static/landing_hero_before.svg" alt="Vanilla matplotlib" />
+  <img src="_static/landing_hero_before.svg" alt="default matplotlib" />
   <div class="dm-compare-after" id="dm-compare-after">
     <img src="_static/landing_hero_after.svg" alt="dartwork-mpl styled" />
   </div>
   <div class="dm-compare-handle" id="dm-compare-handle"></div>
-  <div class="dm-compare-label dm-compare-label-before">DEFAULT rcParams</div>
-  <div class="dm-compare-label dm-compare-label-after">+ dm.style.use("scientific")</div>
 </div>
 
 <div class="dm-compare-explain" aria-label="What dartwork-mpl changed">
-  <p class="dm-compare-explain-title">Exactly five rcParam shifts make the difference:</p>
+  <p class="dm-compare-explain-title">Six rcParam shifts make the difference:</p>
   <div class="dm-compare-explain-grid">
     <div class="dm-compare-explain-row">
       <span class="dm-compare-explain-key">font.family</span>
@@ -109,27 +161,27 @@
     </div>
     <div class="dm-compare-explain-row">
       <span class="dm-compare-explain-key">axes.spines</span>
-      <span class="dm-compare-explain-val"><span class="b">box (4 sides)</span><span class="a">all visible, thinner</span></span>
+      <span class="dm-compare-explain-val"><span class="b">box (4 sides)</span><span class="a">top &amp; right hidden, thinner</span></span>
     </div>
     <div class="dm-compare-explain-row">
       <span class="dm-compare-explain-key">lines.linewidth</span>
-      <span class="dm-compare-explain-val"><span class="b">1.5 pt</span><span class="a">0.5 pt</span></span>
+      <span class="dm-compare-explain-val"><span class="b">1.5 pt</span><span class="a">1.0 pt</span></span>
     </div>
     <div class="dm-compare-explain-row">
       <span class="dm-compare-explain-key">layout</span>
-      <span class="dm-compare-explain-val"><span class="b">tight_layout()</span><span class="a">dm.simple_layout(fig)</span></span>
+      <span class="dm-compare-explain-val"><span class="b">tight_layout()</span><span class="a">dm.simple_layout(fig, margin="2mm")</span></span>
     </div>
     <div class="dm-compare-explain-row">
       <span class="dm-compare-explain-key">prop_cycle</span>
-      <span class="dm-compare-explain-val"><span class="b">C0..C9 (saturated)</span><span class="a">oc.teal7 / orange7</span></span>
+      <span class="dm-compare-explain-val"><span class="b">C0..C9 (saturated)</span><span class="a">dc.0..dc.9 (curated mood)</span></span>
     </div>
   </div>
   <div class="dm-compare-explain-footer">
     Same data, same matplotlib calls. The diff above is the
     <em>entire</em> delta — applied by
-    <span class="dm-compare-explain-code">dm.style.use("scientific")</span>
+    <span class="dm-compare-explain-code">dm.style.use("report")</span>
     plus
-    <span class="dm-compare-explain-code">dm.simple_layout(fig)</span>.
+    <span class="dm-compare-explain-code">dm.simple_layout(fig, margin="2mm")</span>.
     No new plotting API to learn.
   </div>
 </div>

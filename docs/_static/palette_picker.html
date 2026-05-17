@@ -84,42 +84,43 @@
     font-weight: 600;
   }
 
-  /* Palette buttons */
+  /* Palette buttons — borderless, low-profile pills so the picker
+     reads as a control row rather than a stack of cards. Only the
+     swatch carries weight; hover/active states use a subtle text
+     color shift instead of a full background fill. */
   .dm-pp-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin: 10px 0 4px;
+    gap: 4px 14px;
+    margin: 8px 0 12px;
   }
   .dm-pp-btn {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    padding: 5px 10px 5px 6px;
-    border-radius: 999px;
-    border: 1px solid #e0ddd6;
-    background: #fff;
+    padding: 3px 6px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
     cursor: pointer;
     font-family: "SF Mono", "Fira Code", "Consolas", monospace;
     font-size: 0.78em;
-    color: #444;
-    transition: all 0.15s ease;
+    color: #666;
+    transition: color 0.12s ease;
   }
   html.dark .dm-pp-btn,
   body[data-theme="dark"] .dm-pp-btn {
-    background: #1a1a23;
-    border-color: #2c2c38;
-    color: #ccc;
+    color: #aaa;
   }
   .dm-pp-btn:hover {
-    border-color: #0d9488;
     color: #0d9488;
   }
   .dm-pp-btn.active {
-    background: #0d9488;
-    border-color: #0d9488;
-    color: #fff;
-    box-shadow: 0 1px 4px rgba(13, 148, 136, 0.3);
+    color: #0d9488;
+    font-weight: 600;
+  }
+  .dm-pp-btn.active .dm-pp-swatch {
+    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.55);
   }
   .dm-pp-swatch {
     display: inline-flex;
@@ -153,13 +154,13 @@
 </style>
 
 <div class="dm-pp">
+  <div class="dm-pp-tabs" id="dm-pp-tabs"></div>
+  <div class="dm-pp-buttons" id="dm-pp-buttons"></div>
+
   <div class="dm-pp-stage">
     <img id="dm-pp-img" src="" alt="palette demo" />
   </div>
   <p class="dm-pp-caption" id="dm-pp-caption">Loading palette demos…</p>
-
-  <div class="dm-pp-tabs" id="dm-pp-tabs"></div>
-  <div class="dm-pp-buttons" id="dm-pp-buttons"></div>
   <p class="dm-pp-active-info" id="dm-pp-info"></p>
 </div>
 

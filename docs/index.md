@@ -29,7 +29,7 @@ is unambiguous, every color and width has a name (not a hex or a
 float), the bundled MCP server lets agents read the docs live, and a
 lint engine catches the patterns LLMs typically get wrong.
 
-::::{grid} 1 1 2 2
+::::{grid} 1
 :gutter: 2
 
 :::{grid-item-card} 🔌 **MCP-native**
