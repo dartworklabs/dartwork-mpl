@@ -46,7 +46,7 @@ Catalog highlights
 - ``raw-width-number`` — bare numbers passed to ``dm.figsize`` are
   rejected because they carry no unit.
 - ``tight-layout`` — ``plt.tight_layout()`` is forbidden; use
-  ``dm.auto_layout(fig)``.
+  ``dm.simple_layout(fig)``.
 - ``width-token`` — deprecated 0.3 width tokens
   (``dm.SW`` / ``MW`` / ``TW`` / ``DW``).
 - ``oversize-width`` — widths beyond 17 cm break most page layouts.

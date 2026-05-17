@@ -193,7 +193,7 @@ requested margin from each figure edge. This means:
 
 ## Annotation & Formatting
 
-Dartwork-mpl includes several helpers that automate tedious formatting tasks.
+dartwork-mpl includes several helpers that automate tedious formatting tasks.
 
 ### Auto-aligned panel labels (`label_axes`)
 

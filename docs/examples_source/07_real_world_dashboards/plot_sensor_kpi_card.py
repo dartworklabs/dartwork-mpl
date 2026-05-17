@@ -6,7 +6,7 @@ A label-and-value summary tile rendered with ``axis("off")`` and
 ``ax.text``. Useful as a building block for dashboards where a compact
 numeric snapshot sits alongside charts.
 
-Dartwork-mpl's relative typography (``dm.fs(n)``) is used so that the
+dartwork-mpl's relative typography (``dm.fs(n)``) is used so that the
 tile rescales cleanly with the surrounding preset.
 """
 

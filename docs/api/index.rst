@@ -1,7 +1,7 @@
 API Reference
 =============
 
-Dartwork-mpl ships one import (``import dartwork_mpl as dm``) but several
+dartwork-mpl ships one import (``import dartwork_mpl as dm``) but several
 small domains. Each page explains arguments in plain language plus defaults
 that work in most cases.
 
