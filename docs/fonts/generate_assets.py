@@ -128,7 +128,16 @@ def _sort_fonts(fonts: list[str]) -> list[str]:
 
 
 def _save_all_fonts_preview(images_dir: Path) -> Path:
-    """Generate a comprehensive preview of all font families."""
+    """Generate a comprehensive preview of all font families.
+
+    The output is embedded in ``fonts/utilities.md`` at body width
+    (~760 px on a 1440 viewport). Earlier versions used a 16 in × 20 in
+    canvas, which produced a 1210 × 1706 SVG that the browser had to
+    shrink to 63 %; every glyph then rendered at 63 % of the matplotlib
+    point size and looked blurry. We now target a 10 in × ~12 in canvas
+    so the natural width matches the body and no browser scaling kicks
+    in.
+    """
     font_families = _collect_fonts()
     font_dir = _get_font_dir()
 
@@ -138,19 +147,19 @@ def _save_all_fonts_preview(images_dir: Path) -> Path:
     families_per_column = math.ceil(total_families / ncols)
     max_fonts_in_family = max(len(fonts) for fonts in font_families.values())
 
-    family_spacing = 3
+    family_spacing = 2
     total_height = families_per_column * (max_fonts_in_family + family_spacing)
 
-    fig, ax = plt.subplots(figsize=(16, total_height * 0.32))
+    fig, ax = plt.subplots(figsize=(10, total_height * 0.22))
     fig.patch.set_facecolor("#fbfaf7")
     ax.set_facecolor("#ffffff")
 
-    ax.set_xlim(0, ncols * 7)
+    ax.set_xlim(0, ncols * 4.5)
     ax.set_ylim(0, total_height)
     ax.axis("off")
 
     fig.suptitle(
-        "All Available Font Families", fontsize=20, fontweight="bold", y=0.98
+        "All Available Font Families", fontsize=14, fontweight="bold", y=0.985
     )
 
     sorted_families = list(font_families.items())
@@ -159,19 +168,19 @@ def _save_all_fonts_preview(images_dir: Path) -> Path:
         column = family_idx // families_per_column
         family_row = family_idx % families_per_column
 
-        x_pos = column * 7
+        x_pos = column * 4.5
         base_y_pos = family_row * (max_fonts_in_family + family_spacing)
 
-        title_y = base_y_pos + max_fonts_in_family + 0.5
+        title_y = base_y_pos + max_fonts_in_family + 0.4
         ax.text(
-            x_pos, title_y, f"{family}", size=13, weight="bold", color="#333"
+            x_pos, title_y, f"{family}", size=9.5, weight="bold", color="#333"
         )
         ax.plot(
-            [x_pos, x_pos + 5.5],
-            [title_y - 0.3, title_y - 0.3],
+            [x_pos, x_pos + 3.6],
+            [title_y - 0.25, title_y - 0.25],
             color="#e4e2dd",
             linestyle="-",
-            linewidth=1,
+            linewidth=0.8,
         )
 
         sorted_fonts = _sort_fonts(fonts)
@@ -189,7 +198,7 @@ def _save_all_fonts_preview(images_dir: Path) -> Path:
                 y_pos,
                 f"{variant}",
                 fontproperties=font_prop,
-                size=11,
+                size=8.5,
                 color="#444",
             )
 
