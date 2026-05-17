@@ -19,15 +19,19 @@ dartwork-mpl includes **130 professional fonts** from **9 font families**, all
 optimized for data visualization and publication-quality figures. When you
 import the library, these fonts become immediately available to matplotlib.
 
-**Default Font: Roboto.** Nine curated font families are bundled and auto-registered.
-Roboto is the default for all presets. Click through for the full catalog with
-all weights and variants.
+**All nine families, one click apart.** dartwork-mpl bundles 130 font
+variants across 9 families and registers every one with matplotlib on
+import. The picker below cycles through them live — each tab swaps the
+specimen below to that family's actual rendered samples, with the
+correct weights, so what you see is exactly what `dm.style.use(...)`
+will produce in a chart.
 
 ```{raw} html
-:file: _generated/roboto.html
+:file: ../_static/fonts_picker.html
 ```
 
-[Explore all font families →](families.md)
+Need the long-form catalog with every weight and variant on a single
+sheet? See [all font families →](families.md).
 
 **Font Utilities.** Helper functions `fs()` and `fw()` for relative font sizing
 and weighting, plus an interactive playground to test them out.
