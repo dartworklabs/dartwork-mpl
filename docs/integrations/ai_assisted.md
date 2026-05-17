@@ -54,7 +54,6 @@ def plot_signal(
     color: str = 'oc.blue5',
     linewidth: float = 0.7,
     figsize: tuple[float, float] | None = None,
-    dpi: int = 200
 ) -> tuple[plt.Figure, plt.Axes]:
     """
     Plot a signal with configurable styling.
@@ -68,16 +67,14 @@ def plot_signal(
     linewidth : float, optional
         Line width. Default is 0.7.
     figsize : tuple[float, float] | None, optional
-        Figure size in inches. If None, uses (9cm, 7cm).
-    dpi : int, optional
-        Figure resolution. Default is 200.
+        Figure size in inches. If None, uses dm.figsize("9cm", "7cm").
     """
     dm.style.use('scientific')
 
     if figsize is None:
-        figsize = (dm.cm2in(9), dm.cm2in(7))
+        figsize = dm.figsize("9cm", "7cm")
 
-    fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+    fig, ax = plt.subplots(figsize=figsize)
 
     x = np.arange(len(data))
     ax.plot(x, data, color=color, linewidth=linewidth)
@@ -110,12 +107,12 @@ dm.save_and_show(fig)
 
 When asking AI to modify your plots, refer to specific parameters:
 
-| ✅ Specific (better results)    | ❌ Vague (slower, error-prone) |
-| ------------------------------- | ------------------------------ |
-| "Change color to `oc.red5`"     | "Make it a bit redder"         |
-| "Set linewidth to 1.2"          | "Make the line thicker"        |
-| "Use figsize `(12, 8)`"         | "Make the chart bigger"        |
-| "Add title `'Signal Response'`" | "Make it look better"          |
+| ✅ Specific (better results)               | ❌ Vague (slower, error-prone) |
+| ------------------------------------------ | ------------------------------ |
+| "Change color to `oc.red5`"                | "Make it a bit redder"         |
+| "Set linewidth to 1.2"                     | "Make the line thicker"        |
+| "Resize to `dm.figsize(\"17cm\", \"wide\")`" | "Make the chart bigger"        |
+| "Add title `'Signal Response'`"            | "Make it look better"          |
 
 ## 3. Rapid Iteration with Autoreload
 
@@ -142,7 +139,7 @@ def plot_comparison(
 ) -> tuple[plt.Figure, plt.Axes]:
     """Plot two signals for comparison."""
     dm.style.use('scientific')
-    fig, ax = plt.subplots(figsize=(dm.cm2in(9), dm.cm2in(7)), dpi=200)
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "7cm"))
     ax.plot(data1, color=color1, linewidth=linewidth, label='Signal A')
     ax.plot(data2, color=color2, linewidth=linewidth, label='Signal B')
     if title:
