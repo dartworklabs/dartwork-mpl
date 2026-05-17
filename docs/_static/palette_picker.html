@@ -165,13 +165,25 @@
 
 <script>
   (function () {
-    // Path resolution: same rule as the landing PoC preview — works
-    // both when this fragment is loaded inside _static/ directly and
-    // when Sphinx embeds it into a page rendered at site root.
+    // Path resolution. Three deploy contexts to support:
+    //   1. Direct open under _static/ → "palette_demo/"
+    //   2. Sphinx page at site root (e.g. /landing_pocs.html) → "_static/palette_demo/"
+    //   3. Sphinx sub-page (e.g. /usage_guide/colors.html) → must walk
+    //      up to the asset root, so use a path absolute to the doc root.
+    // For (3) we cannot hard-code a single prefix because GitHub
+    // Pages may serve under a subpath. The safest portable rule is:
+    // compute how many directories deep the current page is and
+    // prepend that many "../" before "_static/".
     var here = window.location.pathname;
-    var base = here.indexOf("/_static/") !== -1
-      ? "palette_demo/"
-      : "_static/palette_demo/";
+    var base;
+    if (here.indexOf("/_static/") !== -1) {
+      base = "palette_demo/";
+    } else {
+      // strip leading "/" and the filename, count remaining dir segments
+      var dirs = here.replace(/^\/+|\/+[^\/]*$/g, "").split("/").filter(Boolean);
+      var up = dirs.length > 0 ? "../".repeat(dirs.length) : "";
+      base = up + "_static/palette_demo/";
+    }
 
     var img      = document.getElementById("dm-pp-img");
     var caption  = document.getElementById("dm-pp-caption");

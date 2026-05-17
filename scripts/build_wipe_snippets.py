@@ -143,9 +143,14 @@ TEMPLATE = """<style>
 <script>
   (function () {{
     var here = window.location.pathname;
-    var base = here.indexOf("/_static/") !== -1
-      ? "landing_pocs/"
-      : "_static/landing_pocs/";
+    var base;
+    if (here.indexOf("/_static/") !== -1) {{
+      base = "landing_pocs/";
+    }} else {{
+      var dirs = here.replace(/^\\/+|\\/+[^\\/]*$/g, "").split("/").filter(Boolean);
+      var up = dirs.length > 0 ? "../".repeat(dirs.length) : "";
+      base = up + "_static/landing_pocs/";
+    }}
     var slug = "{poc_slug}";
     document.getElementById("{wid}-base").src    = base + "poc_" + slug + "_after.svg";
     document.getElementById("{wid}-overimg").src = base + "poc_" + slug + "_before.svg";
