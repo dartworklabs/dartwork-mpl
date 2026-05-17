@@ -34,11 +34,16 @@ ax = fig.add_subplot(gs[0, 0])
 x = np.linspace(0, 4 * np.pi, 150)
 y_true = np.sin(x) * np.exp(-0.15 * x)
 y_noise = y_true + np.random.normal(0, 0.08, len(x))
-ax.plot(x, y_true, color="oc.blue7", lw=dm.lw(1), label="Model")
-band = dm.pseudo_alpha("oc.blue5", 0.15, background="white")
+ax.plot(x, y_true, color="dc.ocean3", lw=dm.lw(1), label="Model")
+band = dm.pseudo_alpha("dc.ocean2", 0.15, background="white")
 ax.fill_between(x, y_true - 0.15, y_true + 0.15, color=band, label="95% CI")
 ax.scatter(
-    x[::8], y_noise[::8], s=8, color="oc.gray6", zorder=3, label="Observations"
+    x[::8],
+    y_noise[::8],
+    s=8,
+    color="dc.nordic3",
+    zorder=3,
+    label="Observations",
 )
 ax.set_title("Damped Oscillation", fontsize=dm.fs(0), weight="bold", pad=12)
 ax.set_xlabel("Time (s)")
@@ -51,13 +56,13 @@ ax = fig.add_subplot(gs[0, 1])
 n_pts = 80
 x_s = np.random.uniform(0, 10, n_pts)
 y_s = 1.8 * x_s + 3 + np.random.normal(0, 3, n_pts)
-ax.scatter(x_s, y_s, s=18, color="oc.grape5", alpha=0.7, edgecolors="none")
+ax.scatter(x_s, y_s, s=18, color="dc.cyber2", alpha=0.7, edgecolors="none")
 m, b = np.polyfit(x_s, y_s, 1)
 x_fit = np.linspace(0, 10, 50)
 ax.plot(
     x_fit,
     m * x_fit + b,
-    color="oc.red7",
+    color="dc.vivid3",
     lw=dm.lw(1),
     label=f"y = {m:.1f}x + {b:.1f}",
 )
@@ -102,12 +107,12 @@ bp = ax.boxplot(
     groups,
     patch_artist=True,
     widths=0.6,
-    medianprops={"color": "oc.red7", "lw": dm.lw(0)},
+    medianprops={"color": "dc.vivid3", "lw": dm.lw(0)},
 )
-box_colors = ["oc.blue3", "oc.grape3", "oc.teal3", "oc.orange3", "oc.pink3"]
+box_colors = ["dc.ocean1", "dc.cyber1", "dc.forest1", "dc.sunset1", "dc.vivid1"]
 for patch, color in zip(bp["boxes"], box_colors, strict=False):
     patch.set_facecolor(color)
-    patch.set_edgecolor("oc.gray6")
+    patch.set_edgecolor("dc.nordic3")
 ax.set_xticklabels(["A", "B", "C", "D", "E"])
 ax.set_title("Group Comparison", fontsize=dm.fs(0), weight="bold", pad=12)
 ax.set_xlabel("Group")

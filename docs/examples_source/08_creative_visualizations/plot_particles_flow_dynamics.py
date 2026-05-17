@@ -63,7 +63,7 @@ X_bg, Y_bg = np.meshgrid(x_bg, y_bg)
 U_bg, V_bg = flow_field(X_bg, Y_bg)
 speed = np.sqrt(U_bg**2 + V_bg**2)
 
-colors_flow = dm.cspace("oc.indigo2", "oc.teal6", n=256)
+colors_flow = dm.cspace("dc.ocean1", "dc.forest3", n=256)
 flow_cmap = LinearSegmentedColormap.from_list(
     "flow", [c.to_hex() for c in colors_flow]
 )
@@ -114,7 +114,7 @@ for vx, vy in vortices:
             0.2,
             color="white",
             alpha=0.3,
-            edgecolor="oc.blue5",
+            edgecolor="dc.ocean2",
             linewidth=1,
         )
     )
@@ -124,7 +124,7 @@ ax.set_ylim(-4, 4)
 ax.set_aspect("equal")
 for s in ax.spines.values():
     s.set_visible(False)
-ax.set_facecolor("oc.gray1")
+ax.set_facecolor("dc.nordic0")
 
 ax.text(
     0,

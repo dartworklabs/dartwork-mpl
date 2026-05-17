@@ -38,7 +38,7 @@ for t in time:
     response += 0.1 * np.random.randn(n_frequencies)
     responses.append(response)
 
-waterfall_colors = dm.cspace("oc.purple8", "oc.green4", n=n_time_steps)
+waterfall_colors = dm.cspace("oc.purple8", "dc.forest2", n=n_time_steps)
 
 for i, response in enumerate(responses):
     color = waterfall_colors[i]
@@ -61,14 +61,14 @@ for f in [10, 100, 1000, 10000]:
         f"{f}Hz",
         ha="center",
         fontsize=dm.fs(-1),
-        color="oc.gray5",
+        color="dc.nordic2",
     )
 
 ax.set_xlim(1, 4)
 ax.set_ylim(-0.5, n_time_steps * 0.15 + 1.5)
 for s in ax.spines.values():
     s.set_visible(False)
-ax.set_facecolor("oc.gray9")
+ax.set_facecolor("dc.nordic5")
 
 ax.text(
     2.5,
@@ -84,7 +84,7 @@ ax.text(
     n_time_steps * 0.15 + 1,
     "Time →",
     fontsize=dm.fs(0),
-    color="oc.gray5",
+    color="dc.nordic2",
     style="italic",
 )
 

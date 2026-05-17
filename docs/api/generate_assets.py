@@ -49,7 +49,7 @@ def _save_layout_example(images_dir: Path) -> Path:
 
     for ax in [ax1, ax2, ax3]:
         ax.plot(
-            np.linspace(0, 1, 40), np.random.rand(40), color="oc.blue6", lw=0.8
+            np.linspace(0, 1, 40), np.random.rand(40), color="dc.ocean3", lw=0.8
         )
 
     # Hide the 4th subplot (bottom-right)
@@ -84,10 +84,10 @@ def _save_color_example(images_dir: Path) -> Path:
     # Top: named + mix + pseudo_alpha
     ax1 = fig.add_subplot(gs[0])
     x = np.linspace(0, 2 * np.pi, 100)
-    ax1.plot(x, np.sin(x), color="oc.blue5", lw=1.5, label="oc.blue5")
-    lighter = dm.mix_colors("oc.blue5", "white", alpha=0.35)
+    ax1.plot(x, np.sin(x), color="dc.ocean2", lw=1.5, label="dc.ocean2")
+    lighter = dm.mix_colors("dc.ocean2", "white", alpha=0.35)
     ax1.fill_between(x, np.sin(x), alpha=0.9, color=lighter, label="mix_colors")
-    muted = dm.pseudo_alpha("oc.blue7", alpha=0.6)
+    muted = dm.pseudo_alpha("dc.ocean3", alpha=0.6)
     ax1.plot(x, np.cos(x), color=muted, lw=1.5, label="pseudo_alpha")
     ax1.legend(fontsize=dm.fs(-1), ncol=3, frameon=False)
     ax1.set_title("Color Utilities", fontsize=dm.fs(1))

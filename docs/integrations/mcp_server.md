@@ -195,7 +195,7 @@ Once configured, you should be able to confirm the server from inside your clien
 Ask the assistant something only the server can answer, for example:
 
 - _"List the MCP resources you can read from `dartwork-mpl`."_ → it should mention `dartwork-mpl://guide/agent-entry`, `…/policy`, palette/style URIs, etc.
-- _"Use the `dartwork-mpl` MCP server to give me the hex code for `oc.blue5`."_ → triggers `get_color_value`.
+- _"Use the `dartwork-mpl` MCP server to give me the hex code for `dc.ocean2`."_ → triggers `get_color_value`.
 
 If the assistant says it has no MCP server named `dartwork-mpl`, see [Troubleshooting](#troubleshooting).
 

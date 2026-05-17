@@ -22,8 +22,15 @@ Color Space & Manipulation <space>
 
 ## Named palette catalog
 
-All named palettes rendered as full-width sheets — use `library.colorweight`
-anywhere matplotlib accepts a color string (e.g. `tw.blue500`, `oc.gray6`).
+All named palettes rendered as full-width sheets. The library's own
+**`dc.*` ("dartwork color")** palette — 8 mood-tuned families (ocean,
+forest, sunset, vivid, cyber, autumn, nordic, pop) × 6 shades each — is
+the recommended starting point for publication figures. Six third-party
+design systems (`oc.*`, `tw.*`, `md.*`, `ad.*`, `cu.*`, `pr.*`) are
+also registered for cross-team consistency.
+
+Use `library.colorweight` anywhere matplotlib accepts a color string
+(e.g. `dc.ocean3`, `dc.sunset1`, `tw.blue500`).
 
 ```{raw} html
 :file: images/colors_opencolor.html

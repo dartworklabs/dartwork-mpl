@@ -69,7 +69,7 @@ for s in ax.spines.values():
     s.set_visible(False)
 ax.set_xticks([])
 ax.set_yticks([])
-ax.set_facecolor("oc.gray9")
+ax.set_facecolor("dc.nordic5")
 
 center = plt.Circle(
     (0, 0), 0.3, transform=ax.transData._b, color="white", zorder=10
@@ -83,7 +83,7 @@ ax.text(
     fontsize=dm.fs(6),
     ha="center",
     va="center",
-    color="oc.gray9",
+    color="dc.nordic5",
     weight="bold",
     zorder=11,
 )

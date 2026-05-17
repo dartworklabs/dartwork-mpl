@@ -24,7 +24,7 @@ import dartwork_mpl as dm
 rng = np.random.default_rng(42)
 n_per_cluster = 60
 centers = [(0, 0, 0), (3, 3, 2), (4, 1, 4)]
-colors = ["oc.blue5", "oc.green5", "oc.orange5"]
+colors = ["dc.ocean2", "dc.forest2", "dc.sunset2"]
 
 fig, ax = plt.subplots(
     figsize=dm.figsize("13cm", "square"), subplot_kw={"projection": "3d"}

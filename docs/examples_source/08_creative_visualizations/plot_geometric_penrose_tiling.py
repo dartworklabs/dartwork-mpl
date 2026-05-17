@@ -41,8 +41,8 @@ def create_penrose_triangles():
 
 triangles = create_penrose_triangles()
 
-colors_type_a = dm.cspace("oc.blue9", "oc.teal3", n=len(triangles) // 2)
-colors_type_b = dm.cspace("oc.orange9", "oc.pink3", n=len(triangles) // 2)
+colors_type_a = dm.cspace("dc.ocean5", "dc.forest1", n=len(triangles) // 2)
+colors_type_b = dm.cspace("dc.sunset5", "dc.vivid1", n=len(triangles) // 2)
 
 a_count, b_count = 0, 0
 for tri_type, points in triangles:
@@ -53,7 +53,7 @@ for tri_type, points in triangles:
     else:
         color = colors_type_b[b_count % len(colors_type_b)]
         b_count += 1
-        edge_color = "oc.gray7"
+        edge_color = "dc.nordic3"
 
     triangle = Polygon(
         points,
@@ -80,7 +80,7 @@ ax.set_ylim(-6, 6)
 ax.set_aspect("equal")
 for s in ax.spines.values():
     s.set_visible(False)
-ax.set_facecolor("oc.gray9")
+ax.set_facecolor("dc.nordic5")
 
 ax.text(
     0,
@@ -97,7 +97,7 @@ ax.text(
     "Aperiodic Pattern",
     ha="center",
     fontsize=dm.fs(0),
-    color="oc.gray5",
+    color="dc.nordic2",
     style="italic",
 )
 

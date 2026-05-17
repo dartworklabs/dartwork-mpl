@@ -33,7 +33,7 @@ shares = np.array(
 )
 components = shares * total[:, None]
 labels = ["HVAC", "Lighting", "Compute", "Other"]
-palette = ["oc.blue4", "oc.teal5", "oc.cyan6", "oc.gray5"]
+palette = ["dc.ocean2", "dc.forest2", "dc.ocean3", "dc.nordic2"]
 
 fig = plt.figure(figsize=dm.figsize("14.5cm", 0.55))
 gs = fig.add_gridspec(1, 1, left=0.12, right=0.96, top=0.88, bottom=0.18)

@@ -90,7 +90,7 @@ of `llms.txt` (≈ 2.5 KB index) into a system prompt or pinned message.
 
 Even without MCP or file installation, dartwork-mpl's
 **one-right-way API** makes any agent's matplotlib output more
-reliable. Names like `dm.style.use("scientific")`, `oc.blue5`,
+reliable. Names like `dm.style.use("scientific")`, `dc.ocean2`,
 `dm.figsize("13cm", "standard")`, and `dm.simple_layout(fig)` are
 unambiguous enough that LLMs reproduce them deterministically across
 conversations.
@@ -101,7 +101,7 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
-ax.plot(x, y, color="oc.blue5")
+ax.plot(x, y, color="dc.ocean2")
 dm.simple_layout(fig)
 dm.save_formats(fig, "out", formats=("png", "pdf"))
 ```
@@ -154,7 +154,7 @@ reproducible.
 
 :::{grid-item-card} 🎨 **Semantic names**
 
-Colors are `oc.blue5` and `tw.indigo600`, not `#3b82f6`. Figure
+Colors are `dc.ocean2` and `tw.indigo600`, not `#3b82f6`. Figure
 widths are `"13cm"`, not `5.118`. Agents reliably reproduce the
 names; they hallucinate the numbers.
 :::

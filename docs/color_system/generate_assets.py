@@ -524,7 +524,7 @@ def _save_color_space_creation(images_dir: Path) -> Path:
         ("OKLCH", dm.oklch(0.7, 0.2, 120), "dm.oklch(0.7, 0.2, 120)"),
         ("RGB", dm.rgb(0.8, 0.2, 0.3), "dm.rgb(0.8, 0.2, 0.3)"),
         ("Hex", dm.hex("#ff5733"), "dm.hex('#ff5733')"),
-        ("Color", dm.color("oc.blue5"), "dm.color('oc.blue5')"),
+        ("Color", dm.color("dc.ocean2"), "dm.color('dc.ocean2')"),
         ("RGB 255", dm.rgb(200, 50, 75), "dm.rgb(200, 50, 75)"),
     ]
 

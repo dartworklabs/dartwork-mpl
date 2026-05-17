@@ -6,21 +6,26 @@ colormap, see the [Color System](../color_system/index.md) reference.
 
 ## Named colors
 
-dartwork-mpl registers named palettes from six external design systems
-plus its own curated `dc.*` (with a `dm.*` alias for backwards
-compatibility). Use them anywhere matplotlib accepts a color.
+dartwork-mpl ships its own curated palette — `dc.*` ("dartwork color")
+— and registers six third-party design systems alongside it for
+cross-team consistency. Use any of them anywhere matplotlib accepts a
+color.
 
 | Prefix  | Library                          | Example         |
 | ------- | -------------------------------- | --------------- |
+| `dc.*`  | **dartwork Color (recommended)** — 8 mood palettes (`vivid`, `autumn`, `cyber`, `forest`, `nordic`, `ocean`, `pop`, `sunset`) × 6 shades each | `dc.ocean3`     |
+| `dm.*`  | Alias of `dc.*` (legacy)         | `dm.ocean3`     |
 | `oc.*`  | OpenColor                        | `oc.blue5`      |
 | `tw.*`  | Tailwind CSS                     | `tw.blue500`    |
 | `md.*`  | Material Design                  | `md.red500`     |
 | `ad.*`  | Ant Design                       | `ad.blue6`      |
 | `cu.*`  | Chakra UI                        | `cu.teal500`    |
 | `pr.*`  | Primer (GitHub)                  | `pr.blue5`      |
-| `dc.*`  | **dartwork Color** — 54 curated swatches grouped by mood (`vivid`, `autumn`, `cyber`, `forest`, …) | `dc.vivid0`     |
-| `dm.*`  | Alias of `dc.*` (legacy)         | `dm.vivid0`     |
 
+> Start with `dc.*` for new figures — the palettes are tuned for
+> publication-ready output. Reach for the third-party prefixes when
+> you need to match an external brand or design system.
+>
 > The `dc.*` namespace also holds 100+ curated **colormaps** — see the
 > [Colormap catalog](../color_system/colormaps.md). Colormap names like
 > `dc.deep_sea` only work as `cmap=` arguments, not as `color=` strings;
@@ -32,11 +37,11 @@ import dartwork_mpl as dm
 dm.style.use("presentation")
 
 fig, ax = plt.subplots(figsize=dm.figsize("8cm", "wide"))
-ax.plot([0, 1, 2], [1, 2, 1.5], marker="o", color="oc.green5", label="oc.*")
-ax.plot([0, 1, 2], [1.2, 1.6, 2.1], marker="s", color="tw.blue500", label="Tailwind")
-highlight = dm.mix_colors("md.orange600", "white", alpha=0.45)
+ax.plot([0, 1, 2], [1, 2, 1.5], marker="o", color="dc.forest2", label="dc.forest2")
+ax.plot([0, 1, 2], [1.2, 1.6, 2.1], marker="s", color="dc.ocean3", label="dc.ocean3")
+highlight = dm.mix_colors("dc.sunset1", "white", alpha=0.45)
 ax.fill_between([0, 1, 2], 0.9, 1.3, color=highlight, label="Mixed shade")
-muted_line = dm.pseudo_alpha("pr.blue5", alpha=0.65, background="white")
+muted_line = dm.pseudo_alpha("dc.cyber3", alpha=0.65, background="white")
 ax.plot([0, 1, 2], [0.8, 1.1, 1.4], color=muted_line, label="Pseudo alpha")
 ax.legend()
 dm.simple_layout(fig)
@@ -46,9 +51,37 @@ dm.simple_layout(fig)
 :file: ../color_system/images/palette_explorer.html
 ```
 
+### Picking a `dc.*` swatch
+
+The eight families are tuned to evoke different moods, so the family
+name is usually a good first filter. Inside each family the index is a
+**lightness ramp from 0 (light) → 5 (dark)**:
+
+| Family       | Use it for                                                         |
+| ------------ | ------------------------------------------------------------------ |
+| `dc.ocean`   | Cool blue primaries — line charts, sequential data, default brand color |
+| `dc.forest`  | Cool greens — comparison series, "good"/positive states            |
+| `dc.sunset`  | Warm accents — call-outs, highlights, alerts that aren't alarming  |
+| `dc.vivid`   | Saturated brand colors — high-contrast primary lines, headlines    |
+| `dc.cyber`   | Magenta / purple — secondary brand color, contrast against ocean    |
+| `dc.autumn`  | Warm earth tones — segmentations with low-key palette intent       |
+| `dc.nordic`  | Neutrals / muted — grid lines, baselines, secondary text, fills    |
+| `dc.pop`     | Saturated playful set — categorical data with 4–6 distinct groups  |
+
+**Coming from `oc.*`?** A rough drop-in mapping:
+
+| If you were reaching for…                       | Try…                                |
+| ----------------------------------------------- | ----------------------------------- |
+| `oc.blue6` / `oc.indigo6` / `oc.cyan6`          | `dc.ocean3`                         |
+| `oc.red6` / `oc.pink6`                          | `dc.vivid1` or `dc.sunset3`         |
+| `oc.orange5` / `oc.yellow5`                     | `dc.sunset1` / `dc.sunset0`         |
+| `oc.green6` / `oc.teal6` / `oc.lime6`           | `dc.forest2` or `dc.pop0`           |
+| `oc.violet6` / `oc.grape6`                      | `dc.cyber3`                         |
+| `oc.gray3..7` (light → dark)                    | `dc.nordic1..3`                     |
+
 ## Color class
 
-For most plots, named color strings like `"oc.blue5"` are all you need. When
+For most plots, named color strings like `"dc.ocean3"` are all you need. When
 you need to programmatically adjust hue, saturation, or lightness — or
 interpolate between colors in a perceptually uniform space — use the `Color`
 class:
@@ -104,7 +137,7 @@ for i, c in enumerate(palette):
     ax.bar(i, 1, color=c.to_hex())
 
 # Also supports 'oklab' and 'rgb' spaces
-gradient = dm.cspace(dm.named('oc.red5'), dm.named('oc.blue5'), n=10)
+gradient = dm.cspace(dm.named('dc.vivid1'), dm.named('dc.ocean3'), n=10)
 ```
 
 ```{raw} html

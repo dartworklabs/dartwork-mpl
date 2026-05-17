@@ -41,7 +41,7 @@ for i, (delta, total) in enumerate(zip(deltas, is_total, strict=False)):
         running += delta
 
 colors = [
-    "oc.gray6" if total else ("oc.teal5" if d >= 0 else "oc.red5")
+    "dc.nordic3" if total else ("dc.forest2" if d >= 0 else "dc.vivid2")
     for d, total in zip(deltas, is_total, strict=False)
 ]
 
@@ -54,6 +54,6 @@ ax.bar(
     edgecolor="white",
     linewidth=0.3,
 )
-ax.axhline(0, color="oc.gray7", linewidth=0.5)
+ax.axhline(0, color="dc.nordic3", linewidth=0.5)
 ax.set_ylabel("Value")
 dm.simple_layout(fig)

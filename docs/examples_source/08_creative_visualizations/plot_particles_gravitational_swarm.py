@@ -95,7 +95,7 @@ for wx, wy, strength in wells:
             (wx, wy),
             0.3,
             color="white",
-            edgecolor="oc.blue5",
+            edgecolor="dc.ocean2",
             linewidth=2,
             zorder=15,
         )
@@ -118,7 +118,7 @@ title = ax.text(
     weight="bold",
 )
 title.set_path_effects(
-    [path_effects.withStroke(linewidth=3, foreground="oc.blue9")]
+    [path_effects.withStroke(linewidth=3, foreground="dc.ocean5")]
 )
 
 dm.simple_layout(fig)

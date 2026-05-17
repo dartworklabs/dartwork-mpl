@@ -51,7 +51,7 @@ for ax, (name, n_sources) in zip(axes.flat, patterns, strict=False):
 
     Z = (Z - Z.min()) / (Z.max() - Z.min())
 
-    colors_wave = dm.cspace("oc.indigo9", "oc.cyan3", n=256, space="oklch")
+    colors_wave = dm.cspace("dc.ocean5", "dc.ocean1", n=256, space="oklch")
     wave_cmap = LinearSegmentedColormap.from_list(
         "wave", [c.to_hex() for c in colors_wave]
     )
@@ -64,7 +64,7 @@ for ax, (name, n_sources) in zip(axes.flat, patterns, strict=False):
             sy,
             s=50,
             c="white",
-            edgecolors="oc.red5",
+            edgecolors="dc.vivid2",
             linewidths=2,
             zorder=10,
         )

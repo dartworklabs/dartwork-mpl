@@ -23,15 +23,17 @@ gs = fig.add_gridspec(1, 1, left=0.12, right=0.96, top=0.88, bottom=0.2)
 ax = fig.add_subplot(gs[0, 0])
 
 x = np.arange(len(periods))
-ax.plot(x, humidity, "o-", color="oc.teal6", linewidth=dm.lw(1.5), markersize=6)
-ax.fill_between(x, 0, humidity, color="oc.teal5", alpha=0.15)
+ax.plot(
+    x, humidity, "o-", color="dc.forest3", linewidth=dm.lw(1.5), markersize=6
+)
+ax.fill_between(x, 0, humidity, color="dc.forest2", alpha=0.15)
 ax.axhline(
-    target, color="oc.red5", linestyle="--", alpha=0.7, label="Target (60%)"
+    target, color="dc.vivid2", linestyle="--", alpha=0.7, label="Target (60%)"
 )
 ax.axhspan(
     68,
     ax.get_ylim()[1] if ax.get_ylim()[1] > 68 else 80,
-    color="oc.red5",
+    color="dc.vivid2",
     alpha=0.08,
     label="Out of spec",
 )

@@ -62,7 +62,7 @@ from pydantic import Field
 class ScatterParams(ParamModel):
     n: int = Field(default=100, ge=10, le=1000, description="Number of points")
     alpha: float = Field(default=0.5, ge=0.0, le=1.0, description="Transparency")
-    color: str = Field(default="oc.blue5", description="Point color")
+    color: str = Field(default="dc.ocean2", description="Point color")
 
 
 def plot_scatter(params: ScatterParams):
@@ -172,7 +172,7 @@ self-contained `.py` file capturing:
 from scatter_viewer import ScatterParams, plot_scatter
 import dartwork_mpl as dm
 
-params = ScatterParams(n=250, alpha=0.35, color="oc.teal5")
+params = ScatterParams(n=250, alpha=0.35, color="dc.forest2")
 fig = plot_scatter(params)
 dm.save_formats(fig, "scatter_final", formats=("png", "svg"), dpi=300)
 ```

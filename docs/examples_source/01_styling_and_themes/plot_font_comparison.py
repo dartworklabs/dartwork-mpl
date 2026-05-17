@@ -65,7 +65,7 @@ for ax, (font_name, font_file) in zip(axes.flat, fonts, strict=True):
     ax2.plot(
         x,
         secondary,
-        color="oc.red6",
+        color="dc.vivid3",
         marker="o",
         markersize=4,
         lw=dm.lw(1),

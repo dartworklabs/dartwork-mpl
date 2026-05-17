@@ -33,7 +33,7 @@ ax = fig.add_subplot(gs[0, 0])
 
 x = np.arange(len(sites))
 width = 0.26
-colors = ["oc.gray5", "oc.blue4", "oc.blue7"]
+colors = ["dc.nordic2", "dc.ocean2", "dc.ocean3"]
 for i, period in enumerate(periods):
     offset = (i - 1) * width
     ax.bar(

@@ -116,7 +116,7 @@ long Korean labels included. No `bbox_inches="tight"` guessing.
 :link: color_system/index
 :link-type: doc
 Open Color, Tailwind, Material, Ant Design, Chakra, and Primer
-shipped as plain color strings — `color="oc.blue5"` works anywhere
+shipped as plain color strings — `color="dc.ocean2"` works anywhere
 matplotlib accepts a color. Plus 30+ perceptually-uniform colormaps.
 :::
 

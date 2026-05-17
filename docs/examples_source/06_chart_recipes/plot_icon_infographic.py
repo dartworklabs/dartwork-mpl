@@ -29,7 +29,7 @@ kpis = [
         "Energy Output",
         "847",
         "GWh",
-        "oc.blue6",
+        "dc.ocean3",
         np.cumsum(np.random.randn(30)) + 50,
     ),
     (
@@ -37,7 +37,7 @@ kpis = [
         "Water Saved",
         "12.4",
         "ML",
-        "oc.teal6",
+        "dc.forest3",
         np.cumsum(np.random.randn(30) + 0.3) + 20,
     ),
     (
@@ -45,7 +45,7 @@ kpis = [
         "CO\u2082 Reduced",
         "3.2",
         "Mt",
-        "oc.grape6",
+        "dc.cyber3",
         np.cumsum(np.random.randn(30) - 0.1) + 40,
     ),
     (
@@ -80,7 +80,7 @@ for idx, (icon, label, value, unit, color, trend) in enumerate(kpis):
         f"{value}",
         fontsize=dm.fs(6),
         weight="bold",
-        color="oc.gray8",
+        color="dc.nordic4",
         transform=ax.transAxes,
         ha="right",
         va="top",
@@ -90,7 +90,7 @@ for idx, (icon, label, value, unit, color, trend) in enumerate(kpis):
         0.55,
         unit,
         fontsize=dm.fs(0),
-        color="oc.gray5",
+        color="dc.nordic2",
         transform=ax.transAxes,
         ha="right",
         va="top",
@@ -103,7 +103,7 @@ for idx, (icon, label, value, unit, color, trend) in enumerate(kpis):
         label,
         fontsize=dm.fs(-0.5),
         weight="bold",
-        color="oc.gray7",
+        color="dc.nordic3",
         transform=ax.transAxes,
         va="top",
     )

@@ -34,7 +34,7 @@ frequencies = np.random.exponential(2, n_frequencies) * (
 frequencies = np.clip(frequencies, 0.5, 8)
 
 theta = np.linspace(0, 2 * np.pi, n_frequencies, endpoint=False)
-colors = dm.cspace("oc.purple9", "oc.cyan3", n=n_frequencies, space="oklch")
+colors = dm.cspace("oc.purple9", "dc.ocean1", n=n_frequencies, space="oklch")
 
 bar_width = 2 * np.pi / n_frequencies * 0.9
 for angle, freq, color in zip(theta, frequencies, colors, strict=False):

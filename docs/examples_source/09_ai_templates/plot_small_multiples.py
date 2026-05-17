@@ -34,7 +34,7 @@ fig, axes = plt.subplots(
     2, 2, figsize=dm.figsize("17cm", "standard"), sharex=True, sharey=True
 )
 for ax, (label, y) in zip(axes.flat, panels, strict=False):
-    ax.plot(x, y, color="oc.blue6", linewidth=0.8)
+    ax.plot(x, y, color="dc.ocean3", linewidth=0.8)
     ax.set_xlabel("x")
     ax.set_ylabel(label)
 dm.simple_layout(fig)

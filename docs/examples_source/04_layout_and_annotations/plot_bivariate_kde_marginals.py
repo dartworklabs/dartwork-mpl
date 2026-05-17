@@ -50,26 +50,28 @@ kernel = gaussian_kde(values)
 Z = np.reshape(kernel(positions).T, X.shape)
 
 # Base scatter for context, contour for density
-ax_joint.scatter(x, y, s=dm.fs(-5) ** 2, color="oc.gray5", alpha=0.1, zorder=1)
+ax_joint.scatter(
+    x, y, s=dm.fs(-5) ** 2, color="dc.nordic2", alpha=0.1, zorder=1
+)
 contour = ax_joint.contourf(
     X, Y, Z, levels=12, cmap="dc.deep_sea", alpha=0.85, zorder=2
 )
 ax_joint.contour(X, Y, Z, levels=12, colors="white", linewidths=0.5, zorder=3)
 
 # 2. Plot the marginal distributions
-cm_color = dm.color("oc.teal6")
+cm_color = dm.color("dc.forest3")
 
 # Marginal X
 x_eval = np.linspace(xmin, xmax, 200)
 kde_x = gaussian_kde(x)(x_eval)
 ax_marg_x.fill_between(x_eval, 0, kde_x, color=cm_color.to_hex(), alpha=0.6)
-ax_marg_x.plot(x_eval, kde_x, color="oc.teal8", lw=dm.lw(2.5))
+ax_marg_x.plot(x_eval, kde_x, color="dc.forest4", lw=dm.lw(2.5))
 
 # Marginal Y
 y_eval = np.linspace(ymin, ymax, 200)
 kde_y = gaussian_kde(y)(y_eval)
 ax_marg_y.fill_betweenx(y_eval, 0, kde_y, color=cm_color.to_hex(), alpha=0.6)
-ax_marg_y.plot(kde_y, y_eval, color="oc.teal8", lw=dm.lw(2.5))
+ax_marg_y.plot(kde_y, y_eval, color="dc.forest4", lw=dm.lw(2.5))
 
 # 3. Cleanup axes and layout
 for spine in ["top", "right", "left"]:
