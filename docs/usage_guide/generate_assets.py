@@ -435,7 +435,7 @@ def _save_arrow_axis_example(images_dir: Path) -> Path:
     np.random.seed(42)
     dm.style.use("presentation")
 
-    fig, ax = plt.subplots(figsize=dm.figsize("10cm", "square"), dpi=300)
+    fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "square"), dpi=300)
 
     x = np.random.rand(20)
     y = x + np.random.randn(20) * 0.2
@@ -496,11 +496,18 @@ def _save_colors_colormap(images_dir: Path) -> Path:
 
 
 def _save_validation_example(images_dir: Path) -> Path:
-    """Create a 'bad' figure and draw validation overlay."""
+    """Create a 'bad' figure and draw validation overlay.
+
+    Sized at the standard 17 cm body width — earlier 10 × 6 cm rendered
+    at ~378 CSS px on a 760 px body, leaving the overlay floating in
+    half-empty whitespace. The y-axis label still overflows the
+    figure bounds because the title font is scaled up via dm.fs(1)
+    and bbox_inches is left at its default (not "tight"), so the
+    intended OVERFLOW demonstration is preserved.
+    """
     dm.style.use("presentation")
 
-    # Force a tight figsize
-    fig, ax = plt.subplots(figsize=dm.figsize("10cm", "6cm"), dpi=300)
+    fig, ax = plt.subplots(figsize=dm.figsize("17cm", "10cm"), dpi=300)
     ax.plot([1, 2, 3], [1, 4, 9], color="oc.red6")
     ax.set_ylabel(
         "A very very long y-axis label that overflows bounds", fontsize=dm.fs(1)
