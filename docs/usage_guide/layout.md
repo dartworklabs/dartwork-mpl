@@ -262,7 +262,7 @@ dm.plot_fonts(ncols=4, font_size=12)
 See [Font Families](../fonts/families.md) for the full font catalog and
 [Font Utilities](../fonts/utilities.md) for detailed usage.
 
-## Before / after — twinx revenue / margin dashboard
+## Before / after — twinx bar + line dashboard
 
 A `twinx` chart is where margin discipline matters most: the left bar
 axis, the right line axis, both ylabels, and the legend all compete
