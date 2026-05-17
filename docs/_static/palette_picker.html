@@ -1,0 +1,259 @@
+<style>
+  /* Reusable palette picker — embed via `:file: _static/palette_picker.html`.
+     Reads /docs/_static/palette_demo/manifest.json at runtime to populate
+     itself, so adding/removing palettes never requires changing this file. */
+
+  .dm-pp {
+    max-width: 720px;
+    margin: 1.6em auto 2em;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  /* Demo image — picker swaps its src */
+  .dm-pp-stage {
+    position: relative;
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid #e7e4dd;
+    background: #fbfaf7;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  html.dark .dm-pp-stage,
+  body[data-theme="dark"] .dm-pp-stage {
+    background: #14141d;
+    border-color: #2a2a36;
+  }
+  .dm-pp-stage img {
+    display: block;
+    width: 100%;
+    height: auto;
+    transition: opacity 0.15s ease;
+  }
+  .dm-pp-stage img.is-loading { opacity: 0.55; }
+
+  .dm-pp-caption {
+    font-size: 0.85em;
+    color: #777;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  html.dark .dm-pp-caption,
+  body[data-theme="dark"] .dm-pp-caption {
+    color: #aaa;
+  }
+  .dm-pp-caption code {
+    background: rgba(13, 148, 136, 0.1);
+    color: #0d9488;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.9em;
+  }
+
+  /* Tabs (one per namespace: dc / oc / tw / md / ad / cu / pr) */
+  .dm-pp-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    border-bottom: 1px solid #e7e4dd;
+    margin-bottom: 10px;
+  }
+  html.dark .dm-pp-tabs,
+  body[data-theme="dark"] .dm-pp-tabs {
+    border-bottom-color: #2c2c38;
+  }
+  .dm-pp-tab {
+    border: none;
+    background: transparent;
+    padding: 6px 14px;
+    font-size: 0.88em;
+    color: #777;
+    cursor: pointer;
+    border-radius: 4px 4px 0 0;
+    border-bottom: 2px solid transparent;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  }
+  html.dark .dm-pp-tab,
+  body[data-theme="dark"] .dm-pp-tab {
+    color: #aaa;
+  }
+  .dm-pp-tab:hover { color: #0d9488; }
+  .dm-pp-tab.active {
+    color: #0d9488;
+    border-bottom-color: #0d9488;
+    font-weight: 600;
+  }
+
+  /* Palette buttons */
+  .dm-pp-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 10px 0 4px;
+  }
+  .dm-pp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 10px 5px 6px;
+    border-radius: 999px;
+    border: 1px solid #e0ddd6;
+    background: #fff;
+    cursor: pointer;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 0.78em;
+    color: #444;
+    transition: all 0.15s ease;
+  }
+  html.dark .dm-pp-btn,
+  body[data-theme="dark"] .dm-pp-btn {
+    background: #1a1a23;
+    border-color: #2c2c38;
+    color: #ccc;
+  }
+  .dm-pp-btn:hover {
+    border-color: #0d9488;
+    color: #0d9488;
+  }
+  .dm-pp-btn.active {
+    background: #0d9488;
+    border-color: #0d9488;
+    color: #fff;
+    box-shadow: 0 1px 4px rgba(13, 148, 136, 0.3);
+  }
+  .dm-pp-swatch {
+    display: inline-flex;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    flex-shrink: 0;
+  }
+  .dm-pp-swatch span {
+    width: 8px;
+    height: 14px;
+    display: block;
+  }
+
+  .dm-pp-active-info {
+    font-size: 0.78em;
+    color: #888;
+    margin-top: 8px;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  }
+  html.dark .dm-pp-active-info,
+  body[data-theme="dark"] .dm-pp-active-info {
+    color: #999;
+  }
+  .dm-pp-active-info code {
+    background: rgba(13, 148, 136, 0.08);
+    color: #0d9488;
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+</style>
+
+<div class="dm-pp">
+  <div class="dm-pp-stage">
+    <img id="dm-pp-img" src="" alt="palette demo" />
+  </div>
+  <p class="dm-pp-caption" id="dm-pp-caption">Loading palette demos…</p>
+
+  <div class="dm-pp-tabs" id="dm-pp-tabs"></div>
+  <div class="dm-pp-buttons" id="dm-pp-buttons"></div>
+  <p class="dm-pp-active-info" id="dm-pp-info"></p>
+</div>
+
+<script>
+  (function () {
+    // Path resolution: same rule as the landing PoC preview — works
+    // both when this fragment is loaded inside _static/ directly and
+    // when Sphinx embeds it into a page rendered at site root.
+    var here = window.location.pathname;
+    var base = here.indexOf("/_static/") !== -1
+      ? "palette_demo/"
+      : "_static/palette_demo/";
+
+    var img      = document.getElementById("dm-pp-img");
+    var caption  = document.getElementById("dm-pp-caption");
+    var tabsHost = document.getElementById("dm-pp-tabs");
+    var btnsHost = document.getElementById("dm-pp-buttons");
+    var infoHost = document.getElementById("dm-pp-info");
+
+    fetch(base + "manifest.json", { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (manifest) {
+        render(manifest);
+      })
+      .catch(function (err) {
+        caption.textContent = "Failed to load palette manifest: " + err;
+      });
+
+    function render(manifest) {
+      caption.innerHTML = manifest.demo_caption
+        || "Same chart, same data — only the prop_cycle changes.";
+
+      var groups = manifest.groups;
+      if (!groups || !groups.length) {
+        caption.textContent = "No palettes registered.";
+        return;
+      }
+
+      var activeNs = groups[0].namespace;
+      var activePalette = groups[0].entries[0].id;
+
+      // Build namespace tabs.
+      groups.forEach(function (g) {
+        var tab = document.createElement("button");
+        tab.className = "dm-pp-tab" + (g.namespace === activeNs ? " active" : "");
+        tab.dataset.ns = g.namespace;
+        tab.textContent = g.namespace + ".*";
+        tab.addEventListener("click", function () { showNamespace(g.namespace); });
+        tabsHost.appendChild(tab);
+      });
+
+      function showNamespace(ns) {
+        activeNs = ns;
+        tabsHost.querySelectorAll(".dm-pp-tab").forEach(function (t) {
+          t.classList.toggle("active", t.dataset.ns === ns);
+        });
+        var group = groups.find(function (g) { return g.namespace === ns; });
+        btnsHost.innerHTML = "";
+        group.entries.forEach(function (e, idx) {
+          var btn = document.createElement("button");
+          btn.className = "dm-pp-btn";
+          btn.dataset.id = e.id;
+          var swatchHtml = '<span class="dm-pp-swatch">'
+            + e.swatch.map(function (c) {
+                return '<span style="background:' + c + ';"></span>';
+              }).join("")
+            + '</span>';
+          btn.innerHTML = swatchHtml + " " + e.label;
+          btn.addEventListener("click", function () { setPalette(e); });
+          btnsHost.appendChild(btn);
+          if (idx === 0 || e.id === activePalette) setPalette(e);
+        });
+      }
+
+      function setPalette(entry) {
+        activePalette = entry.id;
+        img.classList.add("is-loading");
+        var nextSrc = base + entry.file;
+        var temp = new Image();
+        temp.onload = function () {
+          img.src = nextSrc;
+          img.classList.remove("is-loading");
+        };
+        temp.src = nextSrc;
+        btnsHost.querySelectorAll(".dm-pp-btn").forEach(function (b) {
+          b.classList.toggle("active", b.dataset.id === entry.id);
+        });
+        infoHost.innerHTML = "Active palette: <code>" + entry.id
+          + "</code> · " + entry.swatch.length + " colors · pass to "
+          + "<code>plt.rcParams['axes.prop_cycle']</code> via "
+          + "<code>cycler(color=[...])</code>.";
+      }
+
+      showNamespace(activeNs);
+    }
+  })();
+</script>

@@ -197,6 +197,18 @@ dm.save_formats(fig2, "waves", formats=("svg", "pdf"))
 
 ---
 
+## Before / after — bivariate regression
+
+```{raw} html
+:file: ../_static/wipe_l3_scatter.html
+```
+
+## Before / after — distribution comparison
+
+```{raw} html
+:file: ../_static/wipe_l8_violin.html
+```
+
 ## See also
 
 - [Quick Start](quickstart.md) -- minimal 5-minute introduction

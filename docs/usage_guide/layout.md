@@ -262,6 +262,18 @@ dm.plot_fonts(ncols=4, font_size=12)
 See [Font Families](../fonts/families.md) for the full font catalog and
 [Font Utilities](../fonts/utilities.md) for detailed usage.
 
+## Before / after — twinx revenue / margin dashboard
+
+A `twinx` chart is where margin discipline matters most: the left bar
+axis, the right line axis, both ylabels, and the legend all compete
+for breathing room. Drag the divider to compare vanilla
+`tight_layout()` against `dm.simple_layout(fig, margin="2mm")` on the
+exact same code.
+
+```{raw} html
+:file: ../_static/wipe_l4_dual.html
+```
+
 ## See also
 
 - **Next →** [Save and Validation](save_export.md) — multi-format export and automatic visual quality checks
