@@ -34,7 +34,12 @@ def _minimal(ax: plt.Axes) -> None:
 np.random.seed(42)
 
 dm.style.use("scientific")
-fig, axes = plt.subplots(2, 2, figsize=dm.figsize("16cm", "standard"))
+fig, axes = plt.subplots(
+    2,
+    2,
+    figsize=dm.figsize("16cm", "standard"),
+    gridspec_kw={"hspace": 0.55, "wspace": 0.3},
+)
 
 x = np.linspace(0, 10, 100)
 y1 = np.sin(x) * np.exp(-x / 10)

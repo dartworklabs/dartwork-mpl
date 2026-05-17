@@ -254,6 +254,40 @@ class TestExtendedRules:
         assert "dpi-arg" not in ids
 
 
+class TestMultirowSubplotsNoGridspecKw:
+    """Coverage for the info-level subplot-overlap prevention rule."""
+
+    def test_fires_on_default_hspace(self):
+        code = 'fig, axs = plt.subplots(2, 1, figsize=dm.figsize("9cm", 1.2))\n'
+        ids = {i.rule_id for i in lint(code)}
+        assert "multirow-subplots-no-gridspec-kw" in ids
+
+    def test_fires_on_2x2(self):
+        code = "fig, axs = plt.subplots(2, 2, figsize=dm.figsize('16cm'))\n"
+        ids = {i.rule_id for i in lint(code)}
+        assert "multirow-subplots-no-gridspec-kw" in ids
+
+    def test_skipped_when_gridspec_kw_present(self):
+        code = (
+            "fig, axs = plt.subplots(2, 1, figsize=dm.figsize('9cm'), "
+            'gridspec_kw={"hspace": 0.55})\n'
+        )
+        ids = {i.rule_id for i in lint(code)}
+        assert "multirow-subplots-no-gridspec-kw" not in ids
+
+    def test_skipped_when_sharex(self):
+        # sharex=True hides the upper xtick + xlabel, eliminating the
+        # collision risk with the lower title.
+        code = "fig, axs = plt.subplots(2, 1, sharex=True)\n"
+        ids = {i.rule_id for i in lint(code)}
+        assert "multirow-subplots-no-gridspec-kw" not in ids
+
+    def test_skipped_when_single_row(self):
+        code = "fig, axs = plt.subplots(1, 3, figsize=dm.figsize('17cm'))\n"
+        ids = {i.rule_id for i in lint(code)}
+        assert "multirow-subplots-no-gridspec-kw" not in ids
+
+
 class TestDedupeKey:
     """Issues on the same line at different columns must NOT collapse.
 
