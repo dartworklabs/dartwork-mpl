@@ -167,14 +167,14 @@ def _render_preset_svg(preset: str) -> str:
         cycles,
         lower,
         upper,
-        color="oc.gray4",
+        color="dc.nordic2",
         alpha=0.35,
         label="Forecast 95% CI",
     )
     ax.plot(
         cycles,
         forecast,
-        color="oc.gray7",
+        color="dc.nordic3",
         linestyle="--",
         lw=dm.lw(1),
         label="Forecast",
@@ -184,20 +184,20 @@ def _render_preset_svg(preset: str) -> str:
         measured,
         marker="o",
         markersize=3.5,
-        color="oc.teal7",
+        color="dc.forest3",
         lw=dm.lw(1),
         label="Measured",
     )
 
     # Annotate the 80% end-of-life threshold \u2014 a common battery KPI.
-    ax.axhline(80, color="oc.red6", lw=dm.lw(0.5), linestyle=":")
+    ax.axhline(80, color="dc.vivid3", lw=dm.lw(0.5), linestyle=":")
     ax.annotate(
         "80% EoL\nthreshold",
         xy=(940, 80),
         xytext=(720, 86),
         fontsize=dm.fs(-1),
-        color="oc.red8",
-        arrowprops={"arrowstyle": "->", "color": "oc.red6", "lw": 0.6},
+        color="dc.vivid4",
+        arrowprops={"arrowstyle": "->", "color": "dc.vivid3", "lw": 0.6},
     )
 
     ax.set_title(

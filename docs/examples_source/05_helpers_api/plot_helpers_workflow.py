@@ -91,7 +91,7 @@ def automated_visualization(
         True,
         axis="y",
         alpha=0.2,
-        color="oc.gray3",
+        color="dc.nordic1",
         linestyle="--",
         linewidth=0.5,
     )

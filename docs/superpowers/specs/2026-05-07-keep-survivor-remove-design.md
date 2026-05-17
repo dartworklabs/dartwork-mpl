@@ -36,7 +36,7 @@ value `defaults` to keep these functions but segregate them under
    `recipes`, `curated`) carried the semantics cleanly. When an
    abstraction refuses a name, the abstraction is wrong.
 2. **The curated kwargs already live elsewhere.** Color names like
-   `oc.gray3` are exposed by the color system; design recipes already
+   `dc.nordic1` are exposed by the color system; design recipes already
    appear in `docs/usage_guide/` and AI templates. The function form
    was redundant packaging, not the canonical home.
 3. **#141 philosophy.** `utilities_not_wrappers.md` says don't wrap
@@ -109,7 +109,7 @@ These survive as **copy-pasteable snippets**, not Python:
 - `docs/usage_guide/recipes.md` (new — Round 5) collects the curated
   kwarg combinations under named recipes. Initial entries:
   - **Publication grid** —
-    `ax.grid(True, which="major", color="oc.gray3", alpha=0.3, linewidth=0.5); ax.set_axisbelow(True)`
+    `ax.grid(True, which="major", color="dc.nordic1", alpha=0.3, linewidth=0.5); ax.set_axisbelow(True)`
   - **Minimal axes** — top/right hidden + light dashed y-grid +
     thin gray spines (5–6 line snippet)
   - **Thin gray spines** — 2–3 line snippet

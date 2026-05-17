@@ -35,9 +35,9 @@ waves = [
 ]
 
 color_schemes = [
-    dm.cspace("oc.violet9", "oc.pink3", n=len(t)),
-    dm.cspace("oc.cyan9", "oc.teal3", n=len(t)),
-    dm.cspace("oc.orange9", "oc.yellow3", n=len(t)),
+    dm.cspace("dc.cyber5", "dc.vivid1", n=len(t)),
+    dm.cspace("dc.ocean5", "dc.forest1", n=len(t)),
+    dm.cspace("dc.sunset5", "dc.sunset1", n=len(t)),
 ]
 
 for ax, (name, wave), colors in zip(axes, waves, color_schemes, strict=False):
@@ -74,7 +74,7 @@ for ax, (name, wave), colors in zip(axes, waves, color_schemes, strict=False):
     ax.set_yticks([])
 
     for y in np.linspace(-1.5, 1.5, 7):
-        ax.axhline(y, color="oc.gray8", lw=0.3, alpha=0.3)
+        ax.axhline(y, color="dc.nordic4", lw=0.3, alpha=0.3)
 
 fig.suptitle(
     "Synthesizer Waveform Display",

@@ -37,9 +37,9 @@ def fibonacci_spiral(n_points=1000):
 x, y, theta = fibonacci_spiral(1500)
 
 arm_palettes = [
-    ("oc.indigo9", "oc.cyan3"),
-    ("oc.violet9", "oc.teal3"),
-    ("oc.blue9", "oc.green3"),
+    ("dc.ocean5", "dc.ocean1"),
+    ("dc.cyber5", "dc.forest1"),
+    ("dc.ocean5", "dc.forest1"),
 ]
 
 for arm in range(3):
@@ -77,8 +77,8 @@ ax.scatter(
 )
 
 ax.add_patch(plt.Circle((0, 0), 30, color="white", alpha=0.05))
-ax.add_patch(plt.Circle((0, 0), 20, color="oc.yellow3", alpha=0.1))
-ax.add_patch(plt.Circle((0, 0), 10, color="oc.yellow5", alpha=0.3))
+ax.add_patch(plt.Circle((0, 0), 20, color="dc.sunset1", alpha=0.1))
+ax.add_patch(plt.Circle((0, 0), 10, color="dc.sunset2", alpha=0.3))
 
 for s in ax.spines.values():
     s.set_visible(False)
@@ -97,7 +97,7 @@ title_text = ax.text(
     alpha=0.8,
 )
 title_text.set_path_effects(
-    [path_effects.withStroke(linewidth=2, foreground="oc.blue9")]
+    [path_effects.withStroke(linewidth=2, foreground="dc.ocean5")]
 )
 
 dm.simple_layout(fig)

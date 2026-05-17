@@ -37,13 +37,13 @@ def _prepare_images_dir(base_dir: Path | None = None) -> Path:
 
 
 def _save_quickstart_first_figure(images_dir: Path) -> Path:
-    """Quickstart 'First figure': sine wave with oc.blue5."""
+    """Quickstart 'First figure': sine wave with dc.ocean2."""
     np.random.seed(42)
     dm.style.use("presentation")
 
     fig, ax = plt.subplots(figsize=dm.figsize("15cm", "10cm"), dpi=300)
     x = np.linspace(0, 10, 200)
-    ax.plot(x, np.sin(x), color="oc.blue5", label="signal")
+    ax.plot(x, np.sin(x), color="dc.ocean2", label="signal")
     ax.set_xlabel("Time [s]", fontsize=dm.fs(0))
     ax.set_ylabel("Amplitude", fontsize=dm.fs(0))
     ax.legend(fontsize=dm.fs(-1))
@@ -66,9 +66,9 @@ def _save_quickstart_multi_panel(images_dir: Path) -> Path:
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
 
-    ax1.plot(x, np.sin(x), color="oc.red5")
+    ax1.plot(x, np.sin(x), color="dc.vivid2")
     ax1.set_ylabel("Amplitude", fontsize=dm.fs(0))
-    ax2.plot(x, np.cos(x), color="oc.blue5")
+    ax2.plot(x, np.cos(x), color="dc.ocean2")
     ax2.set_ylabel("Amplitude", fontsize=dm.fs(0))
 
     for ax in [ax1, ax2]:
@@ -112,7 +112,7 @@ def _make_challenging_figure(use_simple_layout: bool = True) -> plt.Figure:
 
     # Left: line chart with long labels
     x = np.linspace(0, 10, 200)
-    ax1.plot(x, np.sin(x) * np.exp(-0.1 * x), color="oc.blue6", lw=0.8)
+    ax1.plot(x, np.sin(x) * np.exp(-0.1 * x), color="dc.ocean3", lw=0.8)
     ax1.set_ylabel("Thermal conductivity\n[W/(m·K)]", fontsize=dm.fs(0))
     ax1.set_xlabel("Time [s]", fontsize=dm.fs(0))
     ax1.set_title("Transient response", fontsize=dm.fs(1))
@@ -174,7 +174,7 @@ def _save_layout_gridspec(images_dir: Path) -> Path:
     axes = [fig.add_subplot(gs[i, j]) for i in range(2) for j in range(2)]
     for ax in axes:
         ax.plot(
-            np.linspace(0, 1, 40), np.random.rand(40), color="oc.blue6", lw=0.8
+            np.linspace(0, 1, 40), np.random.rand(40), color="dc.ocean3", lw=0.8
         )
 
     dm.label_axes(axes)
@@ -195,7 +195,7 @@ def _save_layout_typography(images_dir: Path) -> Path:
     fig, ax = plt.subplots(figsize=dm.figsize("15cm", "10cm"), dpi=300)
     x = np.array([0, 1, 2])
     y = np.array([0, 1, 0.4])
-    ax.plot(x, y, color="oc.green6", lw=dm.lw(0.5))
+    ax.plot(x, y, color="dc.forest3", lw=dm.lw(0.5))
     ax.set_title("Experiment result", fontsize=dm.fs(2), fontweight=dm.fw(1))
     ax.set_xlabel("Time", fontsize=dm.fs(0))
     ax.set_ylabel("Response", fontsize=dm.fs(0))
@@ -236,7 +236,7 @@ def _make_evolution_figure(step: int) -> plt.Figure:
         fig, (ax1, ax2) = plt.subplots(
             1, 2, figsize=dm.figsize("25cm", "10cm"), dpi=300
         )
-        c_pos, c_env = "oc.indigo6", "oc.gray5"
+        c_pos, c_env = "dc.ocean3", "dc.nordic2"
 
     # Panel 1: Time Domain
     ax1.plot(
@@ -409,7 +409,7 @@ def _make_set_decimal_compare(use_dm: bool) -> plt.Figure:
     x = np.linspace(0, 10, 100)
     y = np.sin(x) * 0.5 + 1.0
 
-    ax.plot(x, y, color="oc.teal6")
+    ax.plot(x, y, color="dc.forest3")
 
     # Force some uneven ticks for vanilla
     ax.set_yticks([0.5, 0.75, 1, 1.25, 1.5])
@@ -448,7 +448,7 @@ def _save_arrow_axis_example(images_dir: Path) -> Path:
 
     x = np.random.rand(20)
     y = x + np.random.randn(20) * 0.2
-    ax.scatter(x, y, color="oc.indigo5", alpha=0.7, edgecolors="white", s=60)
+    ax.scatter(x, y, color="dc.ocean2", alpha=0.7, edgecolors="white", s=60)
 
     # Hide default spines and ticks
     ax.spines["top"].set_visible(False)
@@ -517,11 +517,11 @@ def _save_validation_example(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     fig, ax = plt.subplots(figsize=dm.figsize("17cm", "10cm"), dpi=300)
-    ax.plot([1, 2, 3], [1, 4, 9], color="oc.red6")
+    ax.plot([1, 2, 3], [1, 4, 9], color="dc.vivid3")
     ax.set_ylabel(
         "A very very long y-axis label that overflows bounds", fontsize=dm.fs(1)
     )
-    ax.set_title("Validation Error", color="oc.red7")
+    ax.set_title("Validation Error", color="dc.vivid3")
 
     # Attempt to force cutoff
     fig.subplots_adjust(left=0.1)
@@ -583,7 +583,7 @@ def _save_scientific_chart(images_dir: Path) -> Path:
     ax.plot(
         np.arange(50),
         np.cumsum(np.random.randn(50)) + 20,
-        color="oc.blue6",
+        color="dc.ocean3",
         lw=1.2,
     )
     ax.set_xlabel("Sample Index", fontsize=dm.fs(0))

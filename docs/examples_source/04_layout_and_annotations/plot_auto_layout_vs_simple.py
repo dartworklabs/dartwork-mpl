@@ -30,7 +30,7 @@ fig, (ax_flush, ax_buffered) = plt.subplots(
 )
 
 for ax in [ax_flush, ax_buffered]:
-    ax.plot(x, y1, color="oc.green5", lw=dm.lw(1))
+    ax.plot(x, y1, color="dc.forest2", lw=dm.lw(1))
     ax.set_title(
         "Complex Title with\nMultiple Lines\nThat Might Overflow",
         fontsize=dm.fs(1),

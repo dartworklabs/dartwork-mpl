@@ -82,7 +82,12 @@ for i, region in enumerate(vor.regions):
 
 for point in points[: n_clusters * n_points_per_cluster]:
     ax.scatter(
-        *point, s=20, c="white", edgecolors="oc.gray7", linewidths=1, zorder=10
+        *point,
+        s=20,
+        c="white",
+        edgecolors="dc.nordic3",
+        linewidths=1,
+        zorder=10,
     )
 
 ax.set_xlim(-10, 10)
@@ -90,7 +95,7 @@ ax.set_ylim(-10, 10)
 ax.set_aspect("equal")
 for s in ax.spines.values():
     s.set_visible(False)
-ax.set_facecolor("oc.gray1")
+ax.set_facecolor("dc.nordic0")
 
 ax.text(
     0,

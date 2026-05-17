@@ -78,7 +78,7 @@ dm.style.use("scientific")
 fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
 
 x = np.linspace(0, 10, 100)
-ax.plot(x, np.sin(x), color="oc.blue7", lw=dm.lw(1))
+ax.plot(x, np.sin(x), color="dc.ocean3", lw=dm.lw(1))
 ax.set_xlabel("Time (s)")
 ax.set_ylabel("Amplitude")
 
@@ -154,9 +154,9 @@ nested layouts.
 ```python
 fig, axes = plt.subplots(1, 2, figsize=dm.figsize("17cm", "wide"))
 
-axes[0].plot(x, y1, color="oc.blue7", lw=dm.lw(1))
+axes[0].plot(x, y1, color="dc.ocean3", lw=dm.lw(1))
 axes[0].set_title("Before")
-axes[1].plot(x, y2, color="oc.red7", lw=dm.lw(1))
+axes[1].plot(x, y2, color="dc.vivid3", lw=dm.lw(1))
 axes[1].set_title("After")
 
 dm.label_axes(axes)
@@ -170,8 +170,8 @@ dm.simple_layout(fig)
 
 ```python
 fig, axes = plt.subplots(2, 1, figsize=dm.figsize("13cm", "portrait"), sharex=True)
-axes[0].plot(t, signal, color="oc.blue7", lw=dm.lw(1))
-axes[1].plot(t, residuals, color="oc.gray7", lw=dm.lw(1))
+axes[0].plot(t, signal, color="dc.ocean3", lw=dm.lw(1))
+axes[1].plot(t, residuals, color="dc.nordic3", lw=dm.lw(1))
 axes[1].set_xlabel("Time (s)")
 
 dm.label_axes(axes)
@@ -187,7 +187,7 @@ dm.simple_layout(fig)
 fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"))
 
 for ax, data, title in zip(axes.flat, datasets, titles, strict=True):
-    ax.plot(data, color="oc.blue7", lw=dm.lw(1))
+    ax.plot(data, color="dc.ocean3", lw=dm.lw(1))
     ax.set_title(title, fontsize=dm.fs(0))
 
 dm.label_axes(axes.flat)
@@ -274,7 +274,7 @@ result.
 ```python
 fig, axes = plt.subplots(1, 2, figsize=dm.figsize("17cm", "wide"))
 cf = axes[0].imshow(field, cmap="dc.deep_sea")
-axes[1].plot(profile, color="oc.gray7", lw=dm.lw(1))
+axes[1].plot(profile, color="dc.nordic3", lw=dm.lw(1))
 fig.colorbar(cf, ax=axes[0], shrink=0.85, pad=0.02)
 
 dm.label_axes(axes)
@@ -291,13 +291,13 @@ style. You no longer need to call `ax2.spines["right"].set_visible(True)`.
 
 ```python
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
-ax.bar(x, temperature, color="oc.blue5", width=0.55)
+ax.bar(x, temperature, color="dc.ocean2", width=0.55)
 ax.set_ylabel("Temperature (°C)")
 
 ax2 = ax.twinx()             # right spine visible by design
-ax2.plot(x, change_pct, "o-", color="oc.orange6", lw=dm.lw(1))
-ax2.set_ylabel("Change (%)", color="oc.orange7")
-ax2.tick_params(axis="y", labelcolor="oc.orange7")
+ax2.plot(x, change_pct, "o-", color="dc.sunset3", lw=dm.lw(1))
+ax2.set_ylabel("Change (%)", color="dc.sunset3")
+ax2.tick_params(axis="y", labelcolor="dc.sunset3")
 
 dm.simple_layout(fig)
 ```
@@ -409,7 +409,7 @@ Use `dm.lw(level)` for relative scaling. Never hard-code `lw=2.5`.
 
 ```python
 ax.plot(x, y, lw=dm.lw(1))            # primary trend
-ax.axhline(0, lw=dm.lw(-1), color="oc.gray5")  # reference
+ax.axhline(0, lw=dm.lw(-1), color="dc.nordic2")  # reference
 ```
 
 ### 10.3 Colors
@@ -422,7 +422,7 @@ For fills/bands, prefer `dm.pseudo_alpha(...)` so the color stays
 solid in vector exports:
 
 ```python
-fill = dm.pseudo_alpha("oc.blue5", 0.15, background="white")
+fill = dm.pseudo_alpha("dc.ocean2", 0.15, background="white")
 ax.fill_between(x, y_lo, y_hi, color=fill)
 ```
 

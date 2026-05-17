@@ -620,8 +620,8 @@ def test_parse_oklab_matches_factory():
 
 
 def test_parse_palette_name_oc():
-    expected = Color.from_name("oc.red5")
-    assert Color.parse("oc.red5").to_hex() == expected.to_hex()
+    expected = Color.from_name("dc.vivid2")
+    assert Color.parse("dc.vivid2").to_hex() == expected.to_hex()
 
 
 def test_parse_palette_name_tw():
@@ -781,8 +781,8 @@ def test_color_passthrough_returns_same_object():
 
 
 def test_color_string_delegates_to_parse():
-    expected = Color.parse("oc.red5")
-    assert color("oc.red5").to_hex() == expected.to_hex()
+    expected = Color.parse("dc.vivid2")
+    assert color("dc.vivid2").to_hex() == expected.to_hex()
 
 
 def test_color_hex_via_module_function():
@@ -821,7 +821,7 @@ def color(value: "Color | str") -> "Color":
     >>> color("#ff0000")           # hex
     >>> color("rgb(1, 0, 0)")      # functional
     >>> color("oklch(0.7, 0.15, 30)")
-    >>> color("oc.red5")           # palette name
+    >>> color("dc.vivid2")           # palette name
 
     Parameters
     ----------
@@ -990,7 +990,7 @@ class TestNamedDeprecation:
 
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            named("oc.red5")
+            named("dc.vivid2")
             msgs = [
                 str(w.message)
                 for w in caught
@@ -1007,8 +1007,8 @@ class TestNamedDeprecation:
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
-            got = named("oc.red5")
-            expected = Color.from_name("oc.red5")
+            got = named("dc.vivid2")
+            expected = Color.from_name("dc.vivid2")
         assert got.to_hex() == expected.to_hex()
 ```
 
@@ -1077,7 +1077,7 @@ from dartwork_mpl.lint import lint as lint_code
 
 
 def test_named_call_is_flagged():
-    code = 'import dartwork_mpl as dm\nc = dm.named("oc.red5")\n'
+    code = 'import dartwork_mpl as dm\nc = dm.named("dc.vivid2")\n'
     diagnostics = lint_code(code)
     rule_ids = {d.rule_id for d in diagnostics}
     assert "named-deprecated" in rule_ids, (
@@ -1086,7 +1086,7 @@ def test_named_call_is_flagged():
 
 
 def test_color_call_is_not_flagged():
-    code = 'import dartwork_mpl as dm\nc = dm.color("oc.red5")\n'
+    code = 'import dartwork_mpl as dm\nc = dm.color("dc.vivid2")\n'
     diagnostics = lint_code(code)
     rule_ids = {d.rule_id for d in diagnostics}
     assert "named-deprecated" not in rule_ids
@@ -1112,12 +1112,12 @@ In `src/dartwork_mpl/asset/prompt/02-anti-patterns.yaml`, append a new entry und
     message: dm.named() is deprecated; use dm.color() instead.
     why: |
       dm.color() is the canonical string-parser entry point — it accepts
-      palette names ("oc.red5"), hex ("#ff0000"), and functional strings
+      palette names ("dc.vivid2"), hex ("#ff0000"), and functional strings
       ("rgb(...)", "oklch(...)", "oklab(...)"). dm.named() is retained
       only for backward compatibility and emits a DeprecationWarning at
       runtime.
     fix_suggestion: |
-      Replace dm.named("oc.red5") with dm.color("oc.red5"). The new
+      Replace dm.named("dc.vivid2") with dm.color("dc.vivid2"). The new
       dm.color() handles every input form previously split across
       dm.named, dm.hex, etc. — though dm.hex/dm.rgb/dm.oklch/dm.oklab
       remain available as specialized constructors.
@@ -1156,10 +1156,10 @@ from dartwork_mpl.lint import migrate_legacy_code
 
 
 def test_migrate_named_call_to_color():
-    src = 'import dartwork_mpl as dm\nc = dm.named("oc.red5")\n'
+    src = 'import dartwork_mpl as dm\nc = dm.named("dc.vivid2")\n'
     out = migrate_legacy_code(src)
     assert "dm.named(" not in out
-    assert 'dm.color("oc.red5")' in out
+    assert 'dm.color("dc.vivid2")' in out
 
 
 def test_migrate_named_with_kwarg_or_var():
@@ -1328,7 +1328,7 @@ the new single string-parser entry point, mirroring `dm.length`.
 
 | Old | New |
 |---|---|
-| `dm.named("oc.red5")` | `dm.color("oc.red5")` |
+| `dm.named("dc.vivid2")` | `dm.color("dc.vivid2")` |
 | `dm.named("red")` | `dm.color("red")` |
 
 In addition to palette names, `dm.color` accepts:

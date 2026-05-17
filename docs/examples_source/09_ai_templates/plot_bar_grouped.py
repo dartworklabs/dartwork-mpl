@@ -29,9 +29,9 @@ series_c = [15, 18, 22, 28]
 fig, ax = plt.subplots(figsize=dm.figsize("15cm", "standard"))
 x = np.arange(len(categories))
 bar_width = 0.27
-ax.bar(x - bar_width, series_a, bar_width, label="Series A", color="oc.blue5")
-ax.bar(x, series_b, bar_width, label="Series B", color="oc.green5")
-ax.bar(x + bar_width, series_c, bar_width, label="Series C", color="oc.orange5")
+ax.bar(x - bar_width, series_a, bar_width, label="Series A", color="dc.ocean2")
+ax.bar(x, series_b, bar_width, label="Series B", color="dc.forest2")
+ax.bar(x + bar_width, series_c, bar_width, label="Series C", color="dc.sunset2")
 ax.set_xticks(x)
 ax.set_xticklabels(categories)
 ax.set_ylabel("Value")

@@ -28,10 +28,10 @@ c = [15, 18, 22, 28]
 
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 x = np.arange(len(categories))
-ax.bar(x, a, label="A", color="oc.blue5")
-ax.bar(x, b, bottom=a, label="B", color="oc.green5")
+ax.bar(x, a, label="A", color="dc.ocean2")
+ax.bar(x, b, bottom=a, label="B", color="dc.forest2")
 bottom_c = [ai + bi for ai, bi in zip(a, b, strict=False)]
-ax.bar(x, c, bottom=bottom_c, label="C", color="oc.orange5")
+ax.bar(x, c, bottom=bottom_c, label="C", color="dc.sunset2")
 ax.set_xticks(x)
 ax.set_xticklabels(categories)
 ax.set_ylabel("Value")

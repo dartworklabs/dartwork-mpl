@@ -33,10 +33,14 @@ b_closed = values_b + values_b[:1]
 fig, ax = plt.subplots(
     figsize=dm.figsize("11cm", "square"), subplot_kw={"projection": "polar"}
 )
-ax.plot(theta_closed, a_closed, color="oc.blue6", linewidth=0.8, label="Plan A")
-ax.fill(theta_closed, a_closed, color="oc.blue3", alpha=0.3)
-ax.plot(theta_closed, b_closed, color="oc.red6", linewidth=0.8, label="Plan B")
-ax.fill(theta_closed, b_closed, color="oc.red3", alpha=0.3)
+ax.plot(
+    theta_closed, a_closed, color="dc.ocean3", linewidth=0.8, label="Plan A"
+)
+ax.fill(theta_closed, a_closed, color="dc.ocean1", alpha=0.3)
+ax.plot(
+    theta_closed, b_closed, color="dc.vivid3", linewidth=0.8, label="Plan B"
+)
+ax.fill(theta_closed, b_closed, color="dc.vivid1", alpha=0.3)
 ax.set_xticks(theta)
 ax.set_xticklabels(categories)
 ax.set_ylim(0, 5)

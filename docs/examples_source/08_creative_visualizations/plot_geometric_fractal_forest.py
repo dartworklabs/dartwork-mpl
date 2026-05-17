@@ -44,7 +44,7 @@ def draw_fractal_tree(ax, x, y, angle, length, depth, max_depth, colors):
     )
 
     if depth >= max_depth - 1:
-        leaf_colors = dm.cspace("oc.green5", "oc.yellow5", n=10)
+        leaf_colors = dm.cspace("dc.forest2", "dc.sunset2", n=10)
         leaf_color = leaf_colors[np.random.randint(0, 10)]
         ax.scatter(
             x_end,
@@ -93,7 +93,7 @@ def draw_fractal_tree(ax, x, y, angle, length, depth, max_depth, colors):
         )
 
 
-branch_colors = dm.cspace("oc.orange8", "oc.green6", n=10)
+branch_colors = dm.cspace("dc.sunset4", "dc.forest3", n=10)
 tree_positions = [(-3, -5), (0, -5), (3, -5), (-1.5, -5), (1.5, -5)]
 
 for x_pos, y_pos in tree_positions:
@@ -112,7 +112,7 @@ for x_pos, y_pos in tree_positions:
     )
 
 # Ground and stars
-ax.fill_between([-6, 6], -5, -6, color="oc.orange9", alpha=0.8)
+ax.fill_between([-6, 6], -5, -6, color="dc.sunset5", alpha=0.8)
 for _ in range(50):
     x = np.random.uniform(-6, 6)
     y = np.random.uniform(-5, 5)
@@ -124,7 +124,7 @@ ax.set_ylim(-6, 6)
 ax.set_aspect("equal")
 for s in ax.spines.values():
     s.set_visible(False)
-ax.set_facecolor("oc.gray1")
+ax.set_facecolor("dc.nordic0")
 
 ax.text(
     0,

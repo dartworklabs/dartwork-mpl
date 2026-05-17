@@ -17,7 +17,7 @@ Example
 
    fig, axes = plt.subplots(1, 3, figsize=dm.figsize(dm.col2, 0.35))
    for ax in axes:
-       ax.plot(np.linspace(0, 1, 40), np.random.rand(40), color='oc.blue6')
+       ax.plot(np.linspace(0, 1, 40), np.random.rand(40), color='dc.ocean3')
 
    # Panel labels
    dm.label_axes(axes)  # adds a, b, c

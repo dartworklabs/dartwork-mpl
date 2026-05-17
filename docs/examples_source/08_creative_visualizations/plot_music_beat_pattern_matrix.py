@@ -93,8 +93,8 @@ for i, color in enumerate(instrument_colors):
                     (j, i),
                     0.9,
                     0.9,
-                    facecolor="oc.gray9",
-                    edgecolor="oc.gray7",
+                    facecolor="dc.nordic5",
+                    edgecolor="dc.nordic3",
                     linewidth=0.3,
                     alpha=0.5,
                 )
@@ -120,7 +120,7 @@ for j in range(0, n_beats, 4):
         ha="center",
         va="center",
         fontsize=dm.fs(-1),
-        color="oc.gray5",
+        color="dc.nordic2",
     )
     ax.axvline(j, color="white", lw=0.5, alpha=0.3)
 

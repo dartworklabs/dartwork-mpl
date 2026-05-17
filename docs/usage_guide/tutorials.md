@@ -54,16 +54,16 @@ ax2 = fig.add_subplot(gs[1])
 t = np.linspace(0, 5, 200)
 signal = np.exp(-0.3 * t) * np.sin(2 * np.pi * t)
 noise = 0.1 * np.random.randn(200)
-ax1.plot(t, signal, color="oc.blue6", lw=dm.lw(1))
+ax1.plot(t, signal, color="dc.ocean3", lw=dm.lw(1))
 ax1.fill_between(t, signal - 0.15, signal + 0.15,
-                 color="oc.blue2", alpha=0.4)
+                 color="dc.ocean1", alpha=0.4)
 ax1.set_xlabel("Time [s]")
 ax1.set_ylabel("Amplitude [V]")
 
 # 4. Panel (b): Frequency spectrum
 freq = np.fft.rfftfreq(200, d=0.025)
 spectrum = np.abs(np.fft.rfft(signal + noise))
-ax2.semilogy(freq[:50], spectrum[:50], color="oc.red5", lw=dm.lw(1))
+ax2.semilogy(freq[:50], spectrum[:50], color="dc.vivid2", lw=dm.lw(1))
 ax2.set_xlabel("Frequency [Hz]")
 ax2.set_ylabel("Magnitude")
 
@@ -107,13 +107,13 @@ throughput = [1234, 1456, 1389, 1567, 1650]   # primary: 처리량 (건)
 utilization = [82.5, 84.2, 83.1, 85.8, 86.3]  # secondary: 가동률 (%)
 
 # 4. Bar chart for the primary series
-bars = ax.bar(weeks, throughput, color="oc.blue4", width=0.6, zorder=2)
+bars = ax.bar(weeks, throughput, color="dc.ocean2", width=0.6, zorder=2)
 ax.set_ylabel("처리량 (건)")
 ax.yaxis.set_major_formatter(mticker.StrMethodFormatter("{x:,.0f}"))
 
 # 5. Line chart for the secondary series on a twin axis
 ax2 = ax.twinx()
-ax2.plot(weeks, utilization, color="oc.red5", marker="o",
+ax2.plot(weeks, utilization, color="dc.vivid2", marker="o",
          markersize=4, lw=dm.lw(1.5), zorder=3)
 ax2.set_ylabel("가동률 (%)")
 ax2.yaxis.set_major_formatter(mticker.PercentFormatter(decimals=1))

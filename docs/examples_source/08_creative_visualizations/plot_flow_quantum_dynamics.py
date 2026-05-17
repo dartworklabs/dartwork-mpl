@@ -36,7 +36,7 @@ U = np.sin(np.pi * X) * np.cos(np.pi * Y) + 0.3 * np.sin(t * X)
 V = -np.cos(np.pi * X) * np.sin(np.pi * Y) + 0.3 * np.cos(t * Y)
 M = np.sqrt(U**2 + V**2)
 
-colors_flow = dm.cspace("oc.violet9", "oc.cyan3", n=256, space="oklch")
+colors_flow = dm.cspace("dc.cyber5", "dc.ocean1", n=256, space="oklch")
 flow_cmap = LinearSegmentedColormap.from_list(
     "flow", [c.to_hex() for c in colors_flow]
 )
@@ -57,7 +57,7 @@ ax.streamplot(
 n_particles = 50
 px = np.random.uniform(-2, 2, n_particles)
 py = np.random.uniform(-2, 2, n_particles)
-particle_colors = dm.cspace("oc.pink5", "oc.orange5", n=n_particles)
+particle_colors = dm.cspace("dc.vivid2", "dc.sunset2", n=n_particles)
 
 for x_p, y_p, color in zip(px, py, particle_colors, strict=False):
     size = np.random.uniform(20, 100)
@@ -76,7 +76,7 @@ for s in ax.spines.values():
 ax.set_xlim(-2, 2)
 ax.set_ylim(-2, 2)
 ax.set_aspect("equal")
-ax.set_facecolor("oc.gray0")
+ax.set_facecolor("dc.nordic0")
 
 title = ax.text(
     0,
@@ -89,7 +89,7 @@ title = ax.text(
     color="white",
 )
 title.set_path_effects(
-    [path_effects.withStroke(linewidth=3, foreground="oc.violet5")]
+    [path_effects.withStroke(linewidth=3, foreground="dc.cyber2")]
 )
 
 dm.simple_layout(fig)

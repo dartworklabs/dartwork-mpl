@@ -164,7 +164,7 @@ dm.simple_layout(fig)
 
 ## Colors
 
-### Named color not recognized: `'oc.blue5' is not a valid color`
+### Named color not recognized: `'dc.ocean2' is not a valid color`
 
 Named colors are registered when dartwork-mpl is imported. Make sure you import before using colors:
 
@@ -173,7 +173,7 @@ import dartwork_mpl as dm  # This registers all named colors
 import matplotlib.pyplot as plt
 
 # Now named colors work
-ax.plot(x, y, color="oc.blue5")
+ax.plot(x, y, color="dc.ocean2")
 ```
 
 ### Colors look different in saved files vs notebook

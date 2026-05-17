@@ -35,7 +35,7 @@ std_pred = 0.1 + 0.4 * np.abs(np.sin(x_test * 1.5))
 fig, ax = plt.subplots(figsize=dm.figsize("14.4cm", "golden"))
 
 # 1. Plot the uncertainty bands (1σ, 2σ, 3σ)
-base_color = dm.color("oc.indigo5")
+base_color = dm.color("dc.ocean2")
 
 for sigma, alpha in [(3, 0.1), (2, 0.2), (1, 0.35)]:
     ax.fill_between(
@@ -63,14 +63,14 @@ for _i in range(4):
 
 # 3. Plot predictive mean
 ax.plot(
-    x_test, mean_pred, color="oc.indigo7", lw=dm.lw(1.5), label="Posterior Mean"
+    x_test, mean_pred, color="dc.ocean3", lw=dm.lw(1.5), label="Posterior Mean"
 )
 
 # 4. Plot training observations
 ax.scatter(
     x_train,
     y_train,
-    color="oc.red7",
+    color="dc.vivid3",
     s=40,
     zorder=5,
     edgecolors="white",

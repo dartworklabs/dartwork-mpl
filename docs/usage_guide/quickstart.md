@@ -16,7 +16,7 @@ to read off the resolved values without leaving the docs.
 | ----------------------------------- | ----------------------------------------------- |
 | Hand-tuning `figsize` and `dpi`     | `plt.subplots(figsize=dm.figsize("13cm", "standard"))`  |
 | `tight_layout` clipping labels      | `dm.simple_layout(fig)` — deterministic, content-aware |
-| Reaching for hex codes              | `color="oc.blue5"` (Open Color), `"tw.*"`, `"md.*"`, `"ad.*"`, `"cu.*"`, `"pr.*"` |
+| Reaching for hex codes              | `color="dc.ocean3"` (curated 8-mood palette), plus `"oc.*"`, `"tw.*"`, `"md.*"`, `"ad.*"`, `"cu.*"`, `"pr.*"` for third-party systems |
 | Saving in 3 formats                 | `dm.save_formats(fig, "out", formats=("png", "svg", "pdf"))` |
 | Catching margin / overflow problems | `dm.validate_with_fixes(fig)`                   |
 
@@ -36,7 +36,7 @@ dm.style.use("scientific")  # curated fonts, colors, line weights
 fig, ax = plt.subplots(figsize=dm.figsize("15cm", "wide"))
 
 x = np.linspace(0, 10, 200)
-ax.plot(x, np.sin(x), color="oc.blue5", label="signal", lw=dm.lw(1.5))
+ax.plot(x, np.sin(x), color="dc.ocean3", label="signal", lw=dm.lw(1.5))
 ax.set_xticks(np.arange(0, 11, 2))
 ax.set_xlabel("Time [s]")
 ax.set_ylabel("Amplitude")
@@ -199,14 +199,20 @@ dm.simple_layout(fig)
 
 ## Adding color
 
-dartwork-mpl registers named colors from several design systems. Use them
-anywhere matplotlib accepts a color string:
+dartwork-mpl ships its own curated palette — `dc.*` ("dartwork color"),
+8 mood families × 6 shades each — and registers six third-party design
+systems alongside it. Use any of them anywhere matplotlib accepts a
+color string:
 
 ```python
-# Named color prefixes
-ax.plot(x, y, color="oc.blue5")                    # OpenColor
-ax.fill_between(x, y1, y2, color="tw.emerald200")  # Tailwind
-ax.bar(categories, values, color="md.red500")      # Material Design
+# Curated dartwork palette (recommended starting point)
+ax.plot(x, y, color="dc.ocean3")                   # cool blue
+ax.fill_between(x, y1, y2, color="dc.sunset1")     # warm accent
+ax.bar(categories, values, color="dc.vivid1")      # bold call-out
+
+# Third-party systems also available for cross-team consistency
+ax.plot(x, y2, color="dc.ocean2")                   # OpenColor
+ax.plot(x, y3, color="tw.emerald500")              # Tailwind
 ```
 
 **Discover what's available without leaving Python:**
@@ -214,8 +220,8 @@ ax.bar(categories, values, color="md.red500")      # Material Design
 ```python
 import dartwork_mpl as dm
 
-dm.list_palettes()[:5]   # → ['ad.blue', 'ad.cyan', 'ad.geekblue', ...]
-dm.show_palette("oc.blue")  # renders the 9-shade swatch row in Jupyter
+dm.list_palettes()[:5]      # → ['dc.autumn', 'dc.cyber', 'dc.forest', ...]
+dm.show_palette("dc.ocean") # renders the 6-shade swatch row in Jupyter
 dm.plot_colors(ncols=4)     # full library overview, one figure per system
 ```
 
@@ -237,8 +243,8 @@ gs = fig.add_gridspec(1, 2, wspace=0.3)
 ax1 = fig.add_subplot(gs[0])
 ax2 = fig.add_subplot(gs[1])
 
-ax1.plot(x, np.sin(x), color="oc.red5")
-ax2.plot(x, np.cos(x), color="oc.blue5")
+ax1.plot(x, np.sin(x), color="dc.vivid1")
+ax2.plot(x, np.cos(x), color="dc.ocean3")
 
 dm.label_axes([ax1, ax2])  # adds (a), (b) panel labels
 dm.simple_layout(fig, gs=gs)

@@ -28,7 +28,9 @@ gs = fig.add_gridspec(1, 1, left=0.08, right=0.92, top=0.88, bottom=0.08)
 ax = fig.add_subplot(gs[0, 0])
 ax.set_axis_off()
 ax.add_patch(
-    plt.Rectangle((0, 0), 1, 1, fill=False, edgecolor="oc.gray5", linewidth=0.6)
+    plt.Rectangle(
+        (0, 0), 1, 1, fill=False, edgecolor="dc.nordic2", linewidth=0.6
+    )
 )
 
 y = 0.85
