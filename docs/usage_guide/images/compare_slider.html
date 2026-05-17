@@ -98,7 +98,9 @@
 
 <div class="dm-ba-widget" id="dm-ba-quickstart">
   <!-- After (base layer, always fully visible) -->
-  <img src="images/compare_after.svg" alt="After — dartwork-mpl" />
+  <!-- Paths are root-relative so the snippet works whether it is embedded
+       in /usage_guide/quickstart.html (page depth 2) or anywhere else. -->
+  <img src="../_static/compare_after.svg" alt="After — dartwork-mpl" />
 
   <!-- Before (overlay, clipped by slider) -->
   <div
@@ -106,7 +108,7 @@
     id="dm-ba-qs-overlay"
     style="clip-path: inset(0 50% 0 0)"
   >
-    <img src="images/compare_before.svg" alt="Before — matplotlib defaults" />
+    <img src="../_static/compare_before.svg" alt="Before — matplotlib defaults" />
   </div>
 
   <!-- Divider line + handle -->

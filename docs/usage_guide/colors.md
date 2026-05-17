@@ -6,17 +6,25 @@ colormap, see the [Color System](../color_system/index.md) reference.
 
 ## Named colors
 
-dartwork-mpl registers named palettes from OpenColor, Tailwind, Material,
-Ant Design, Chakra, and Primer. Use them anywhere matplotlib accepts a color.
+dartwork-mpl registers named palettes from six external design systems
+plus its own curated `dc.*` (with a `dm.*` alias for backwards
+compatibility). Use them anywhere matplotlib accepts a color.
 
-| Prefix | Library         | Example      |
-| ------ | --------------- | ------------ |
-| `oc.*` | OpenColor       | `oc.blue5`   |
-| `tw.*` | Tailwind CSS    | `tw.blue500` |
-| `md.*` | Material Design | `md.red500`  |
-| `an.*` | Ant Design      | `an.blue6`   |
-| `ch.*` | Chakra UI       | `ch.teal500` |
-| `pr.*` | Primer          | `pr.blue5`   |
+| Prefix  | Library                          | Example         |
+| ------- | -------------------------------- | --------------- |
+| `oc.*`  | OpenColor                        | `oc.blue5`      |
+| `tw.*`  | Tailwind CSS                     | `tw.blue500`    |
+| `md.*`  | Material Design                  | `md.red500`     |
+| `ad.*`  | Ant Design                       | `ad.blue6`      |
+| `cu.*`  | Chakra UI                        | `cu.teal500`    |
+| `pr.*`  | Primer (GitHub)                  | `pr.blue5`      |
+| `dc.*`  | **dartwork Color** — 54 curated swatches grouped by mood (`vivid`, `autumn`, `cyber`, `forest`, …) | `dc.vivid0`     |
+| `dm.*`  | Alias of `dc.*` (legacy)         | `dm.vivid0`     |
+
+> The `dc.*` namespace also holds 100+ curated **colormaps** — see the
+> [Colormap catalog](../color_system/colormaps.md). Colormap names like
+> `dc.deep_sea` only work as `cmap=` arguments, not as `color=` strings;
+> the named-colors above are the ones you pass to `color=`.
 
 ```python
 import dartwork_mpl as dm
