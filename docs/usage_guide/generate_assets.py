@@ -231,15 +231,20 @@ def _make_evolution_figure(step: int) -> plt.Figure:
         -gamma * t
     ) * np.sin(omega * t)
 
-    # Apply Style (Step 1 vs Step 2+)
+    # Apply Style (Step 1 vs Step 2+).
+    #
+    # Both branches now use the same physical canvas (~19cm × 7.5cm)
+    # so the SVG natural width lands inside the Shibuya body column
+    # without browser downscaling and the four steps compare on the
+    # exact same pixel footprint.
     if step == 1:
         plt.style.use("default")
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4.5), dpi=300)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.5, 2.95), dpi=300)
         c_pos, c_env = "tab:blue", "tab:gray"
     else:
         dm.style.use("scientific")
         fig, (ax1, ax2) = plt.subplots(
-            1, 2, figsize=dm.figsize("25cm", "10cm"), dpi=300
+            1, 2, figsize=dm.figsize("19cm", "7.5cm"), dpi=300
         )
         c_pos, c_env = "dc.ocean3", "dc.nordic2"
 
