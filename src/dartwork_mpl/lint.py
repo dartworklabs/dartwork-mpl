@@ -15,6 +15,7 @@ from __future__ import annotations
 __all__ = [
     "Issue",
     "Rule",
+    "apply_lint_fixes",
     "format_report",
     "lint",
     "load_rules",
@@ -352,3 +353,74 @@ def migrate_legacy_code(code: str) -> str:
                 )
         output_lines.append(line)
     return "".join(output_lines)
+
+
+# ---------------------------------------------------------------------------
+# Auto-fix
+# ---------------------------------------------------------------------------
+#
+# ``apply_lint_fixes`` performs mechanical, identifier-level rewrites
+# for a curated subset of lint rules. Lint detector patterns only catch
+# the *start* of a violation (``\bplt\.tight_layout\s*\(``), so they
+# can't be used as substitution patterns directly — we'd lose the
+# trailing ``)``. Instead each entry below pairs a *bounded* search
+# pattern with its replacement.
+#
+# Anything more invasive (figsize tuple → ``dm.figsize`` choice of
+# width and aspect, dpi removal that needs argument-list rebalancing)
+# is intentionally left to the caller, who can pair this helper with
+# ``migrate_legacy_code`` or the MCP ``apply_lint_fixes`` flow.
+
+_AUTO_FIX_TABLE: tuple[tuple[str, re.Pattern[str], str], ...] = (
+    # rule_id, search regex, replacement
+    ("plt-style-use", re.compile(r"\bplt\.style\.use\b"), "dm.style.use"),
+    ("cm2in-call", re.compile(r"\bdm\.cm2in\b"), "dm.cm"),
+    # plt.tight_layout() / fig.tight_layout() → dm.simple_layout(fig).
+    # The replacement assumes the figure is bound to a name we cannot
+    # know, so we conservatively use ``fig`` (the canonical name in
+    # every dartwork-mpl template + recipe). Callers passing a
+    # differently-named figure can fix that manually after the rewrite.
+    (
+        "tight-layout",
+        re.compile(r"\b(?:plt|[A-Za-z_][A-Za-z0-9_]*)\.tight_layout\s*\(\s*\)"),
+        "dm.simple_layout(fig)",
+    ),
+)
+
+
+def apply_lint_fixes(code: str) -> tuple[str, list[Issue], list[Issue]]:
+    """Apply safe mechanical fixes for a curated subset of lint rules.
+
+    Performs identifier- and call-level rewrites for rules whose
+    replacement does not depend on caller-supplied parameters
+    (currently ``plt-style-use``, ``cm2in-call``, and the no-arg form
+    of ``tight-layout``). Each rule is applied as a whole-source
+    regex substitution, after which the linter re-runs to compute the
+    diff between ``before`` and ``after`` issue sets.
+
+    Parameters
+    ----------
+    code : str
+        Python source.
+
+    Returns
+    -------
+    tuple[str, list[Issue], list[Issue]]
+        ``(fixed_code, applied_issues, unfixed_issues)`` —
+        ``applied`` mirrors issues that disappear after the rewrite;
+        ``unfixed`` is what still trips the linter (typically
+        context-dependent rules like ``figsize-direct``).
+    """
+    before = lint(code)
+
+    for _rule_id, pattern, replacement in _AUTO_FIX_TABLE:
+        code = pattern.sub(replacement, code)
+
+    after = lint(code)
+    after_signatures = {(i.rule_id, i.line, i.column) for i in after}
+    applied = [
+        i
+        for i in before
+        if (i.rule_id, i.line, i.column) not in after_signatures
+    ]
+    return code, applied, after

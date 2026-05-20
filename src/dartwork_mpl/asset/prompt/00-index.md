@@ -34,6 +34,14 @@ fetch the specific guide you need.
   `Length` height (`dm.cm(12)`).
 - Use named colors: `oc.*`, `tw.*`, `dc.*`, `md.*`, `ad.*`, `cu.*`,
   `pr.*`. Raw hex is allowed but discouraged.
+- **Always size fonts, line widths, and weights relative to the active
+  style.** Pass `fontsize=dm.fs(n)`, `linewidth=dm.lw(n)`,
+  `fontweight=dm.fw(n)` — never a literal `fontsize=12` or
+  `linewidth=1.5`. `n` is an offset from the preset's base value
+  (`0` keeps the base, `+1`/`-1` step up/down). `linewidth=0` is
+  allowed only as the "no border" idiom. Sub-1 hairlines such as
+  `linewidth=0.3` for edges should also be expressed as
+  `linewidth=dm.lw(-1)` so they track the preset.
 - After creating a figure, call `dm.simple_layout(fig)` and save with
   `dm.save_formats(fig, "name")` or `dm.save_and_show(fig, "name")`.
 - Never call `tight_layout()`, `plt.style.use()`, raw `figsize=(w, h)`
@@ -44,8 +52,13 @@ fetch the specific guide you need.
 1. Read this file.
 2. Pick width and aspect from the user's intent.
 3. Read the relevant template (`05-templates/{plot}.py`) and start
-   from it.
-4. Customize the template (data, colors, labels).
+   from it. Each bundled template already calls
+   `dm.style.use(...)` and routes fonts/line widths through
+   `dm.fs` / `dm.lw` / `dm.fw` — preserve that scaffolding when you
+   customize.
+4. Customize the template (data, colors, labels). Keep every
+   `fontsize=` / `linewidth=` / `fontweight=` expressed as
+   `dm.fs(n)` / `dm.lw(n)` / `dm.fw(n)`.
 5. Pass the final code through `lint_dartwork_mpl_code` and fix any
    `[CRITICAL]` issue before rendering.
 6. Render, then call `dm.validate_figure(fig)`.

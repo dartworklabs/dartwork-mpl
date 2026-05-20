@@ -770,6 +770,75 @@ class TestMcpTools:
         info = json.loads(result)
         assert "dartwork-mpl://guide/migration" in info["resources"]
 
+    def test_validate_generated_plot_lint_blocks_critical(self) -> None:
+        """Critical lint issues short-circuit before subprocess exec."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        bad = (
+            "import matplotlib.pyplot as plt\n"
+            "fig, ax = plt.subplots(figsize=(6.7, 4.0))\n"
+            "plt.tight_layout()\n"
+        )
+        result = captured["validate_generated_plot"](bad)
+        assert result["status"] == "lint_blocked"
+        ids = {i["rule_id"] for i in result["lint"]}
+        assert "figsize-direct" in ids
+        assert "tight-layout" in ids
+
+    def test_validate_generated_plot_ok_path(self) -> None:
+        """Clean dartwork-mpl 0.4 code runs to completion and returns
+        ``status == "ok"`` with a (possibly empty) visual-warnings list.
+        """
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        clean = (
+            "import matplotlib.pyplot as plt\n"
+            "import dartwork_mpl as dm\n"
+            "dm.style.use('scientific')\n"
+            "fig, ax = plt.subplots("
+            "figsize=dm.figsize('13cm', 'standard'))\n"
+            "ax.plot([1, 2, 3], [4, 5, 6])\n"
+            "ax.set_xlabel('x'); ax.set_ylabel('y')\n"
+            "dm.simple_layout(fig)\n"
+        )
+        result = captured["validate_generated_plot"](clean)
+        assert result["status"] == "ok"
+        assert isinstance(result["visual_warnings"], list)
+
+    def test_validate_generated_plot_no_figure(self) -> None:
+        """If the snippet doesn't create a figure, status is no_figure."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        result = captured["validate_generated_plot"]("x = 1 + 1\n")
+        assert result["status"] == "no_figure"
+
+    def test_validate_generated_plot_exec_error(self) -> None:
+        """Runtime errors surface as ``status == "exec_error"`` with
+        the exception class + message."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        result = captured["validate_generated_plot"](
+            "raise ValueError('boom')\n"
+        )
+        assert result["status"] == "exec_error"
+        assert result["exc_msg"] == "boom"
+
 
 # ── Prompt Tests ─────────────────────────────────────────────────────
 

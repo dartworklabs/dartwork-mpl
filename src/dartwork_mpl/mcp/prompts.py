@@ -109,6 +109,13 @@ Apply via `dm.style.use("scientific")` (or `dm.style.stack([...])` for a stack).
 - `dartwork-mpl://templates/{{plot_type}}` — bundled starter scripts
 
 ## Skeleton
+
+The skeleton intentionally wires every font size, line width, and font
+weight through ``dm.fs(n)`` / ``dm.lw(n)`` / ``dm.fw(n)`` so that
+swapping ``dm.style.use(...)`` to a different preset (``report``,
+``presentation``, ``minimal``, ``*-kr``) rescales the figure correctly
+without any other edits.
+
 ```python
 import matplotlib.pyplot as plt
 
@@ -116,15 +123,31 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
-# ... plot data on `ax` using named colors ...
+
+# Named colors + preset-relative line width.
+ax.plot(x, y, color="dc.ocean2", linewidth=dm.lw(0), label="Series A")
+# `dm.lw(-1)` is the canonical hairline edge for filled markers/bars.
+ax.scatter(x, y, color="dc.ocean5", edgecolor="white",
+           linewidth=dm.lw(-1), s=20)
+
+# Tick / legend / annotation text — one step below the body size.
+ax.tick_params(labelsize=dm.fs(-1))
+ax.legend(fontsize=dm.fs(-1))
+
 ax.set_xlabel("...")
 ax.set_ylabel("...")
+# Title — one step above body, with the bolder weight step.
+ax.set_title("...", fontsize=dm.fs(1), fontweight=dm.fw(1))
 
 dm.simple_layout(fig)
 dm.save_formats(fig, "output", formats=("png", "pdf"), dpi=300)
 ```
 
-Generate clean, well-commented code that follows these rules strictly. Run the result through `lint_dartwork_mpl_code(code)` and fix any `[CRITICAL]` finding before returning it.
+Generate clean, well-commented code that follows these rules strictly.
+Run the result through ``lint_dartwork_mpl_code(code)`` to surface any
+``[CRITICAL]`` issue, then through ``validate_generated_plot(code)``
+to catch overflow / clipped text / asymmetric margins before returning
+the snippet.
 """
 
     @mcp.prompt()

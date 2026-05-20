@@ -57,3 +57,60 @@ jobs:
         env:
           MPLBACKEND: Agg
         run: uv run pytest tests/ -v --cov --cov-report=term-missing
+
+      # Explicit guardrail: the integration / MCP / CLI / drift tests
+      # all import ``fastmcp`` via ``pytest.importorskip``. With
+      # ``--all-extras`` they should never skip, but the silent-skip
+      # mode of importorskip means a regression in the extras
+      # mapping would hide them from the main pytest pass. This
+      # step parses the run output and fails if **any** of those
+      # files contributed zero collected items.
+      - name: Assert MCP / integration tests actually ran
+        env:
+          MPLBACKEND: Agg
+        run: |
+          uv run pytest \
+            tests/test_mcp.py \
+            tests/test_integration.py \
+            tests/test_cli.py \
+            tests/test_drift.py \
+            tests/test_install.py \
+            -v --no-cov \
+          | tee /tmp/integration-output.log
+          # Fail if any of the files collected 0 items (silent skip
+          # of an entire file would otherwise pass CI). The summary
+          # line looks like ``=== 27 passed in 1.5s ===``.
+          if grep -E "no tests ran|0 passed" /tmp/integration-output.log; then
+            echo "::error::Integration tests collected 0 items"
+            exit 1
+          fi
+
+  # Sanity check: the *base* install (no [mcp] extra) must still
+  # import and pass the non-MCP tests. Catches regressions where a
+  # core module accidentally requires fastmcp at import time.
+  test-no-extras:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install with NO extras
+        run: uv sync --no-dev
+      - name: Import smoke (must not require fastmcp)
+        run: |
+          uv run python -c "
+          import dartwork_mpl as dm
+          # Public surface must import without [mcp].
+          assert callable(dm.figsize)
+          assert callable(dm.simple_layout)
+          assert callable(dm.install_llm_txt)
+          assert callable(dm.get_agent_doc)
+          assert dm.INSTALL_TARGETS
+          assert dm.AGENT_DOCS
+          print('OK: base install imports cleanly')
+          "

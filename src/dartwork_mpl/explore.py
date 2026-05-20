@@ -124,7 +124,13 @@ def show_palette(palette_name: str) -> None:
     color_names: list[str] = [c[1] for c in palette_colors]
 
     n: int = len(color_names)
-    _fig, ax = plt.subplots(figsize=(n * 0.8, 1.2))
+    # The swatch grows horizontally with the palette size, so width is
+    # computed at runtime; ``dm.figsize`` accepts a unit-string width +
+    # explicit height to keep the dartwork-mpl physical-width contract
+    # without forcing a single fixed value.
+    from .units import figsize, inch  # local import to avoid cycle
+
+    _fig, ax = plt.subplots(figsize=figsize(inch(n * 0.8), inch(1.2)))
 
     for i, cname in enumerate(color_names):
         ax.add_patch(
@@ -155,5 +161,7 @@ def show_palette(palette_name: str) -> None:
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-    plt.tight_layout()
+    from .layout import simple_layout  # local import to avoid cycle
+
+    simple_layout(_fig)
     plt.show()

@@ -6,7 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from dartwork_mpl.install import install_llm_txt, uninstall_llm_txt
+from dartwork_mpl.install import (
+    INSTALL_TARGETS,
+    install_llm_txt,
+    uninstall_llm_txt,
+)
 
 # SSOT prompt directory must exist for install_llm_txt to compose its
 # bundle. In well-formed checkouts it always does; the skip is only a
@@ -109,3 +113,81 @@ class TestUninstallWhenEmpty:
     def test_no_error_when_nothing_installed(self, tmp_path: Path) -> None:
         """Should not crash when no files exist."""
         uninstall_llm_txt(project_dir=tmp_path)
+
+
+@pytest.mark.skipif(
+    not _SSOT_DIR_EXISTS,
+    reason="asset/prompt SSOT not present in this checkout",
+)
+class TestMultiTargetInstall:
+    """Multi-target install support (Copilot, Codex, Gemini, Continue,
+    Aider, Windsurf, Cursor MDC). Back-compat: ``targets=None``
+    installs only the legacy claude + cursor pair.
+    """
+
+    def test_default_targets_match_legacy_pair(self, tmp_path: Path) -> None:
+        written = install_llm_txt(project_dir=tmp_path)
+        assert set(written.keys()) == {"claude", "cursor"}
+
+    def test_targets_all_writes_every_known_target(
+        self, tmp_path: Path
+    ) -> None:
+        written = install_llm_txt(project_dir=tmp_path, targets="all")
+        assert set(written.keys()) == set(INSTALL_TARGETS)
+        # Spot-check each canonical destination exists.
+        assert (tmp_path / "AGENTS.md").exists()
+        assert (tmp_path / "GEMINI.md").exists()
+        assert (tmp_path / "CONVENTIONS.md").exists()
+        assert (tmp_path / ".github" / "copilot-instructions.md").exists()
+        assert (tmp_path / ".continue" / "rules" / "dartwork-mpl.md").exists()
+        assert (tmp_path / ".windsurf" / "rules" / "dartwork-mpl.md").exists()
+        assert (tmp_path / ".cursor" / "rules" / "dartwork-mpl.mdc").exists()
+
+    def test_targets_list_selects_specific_targets(
+        self, tmp_path: Path
+    ) -> None:
+        written = install_llm_txt(
+            project_dir=tmp_path, targets=["copilot", "aider"]
+        )
+        assert set(written.keys()) == {"copilot", "aider"}
+        assert (tmp_path / ".github" / "copilot-instructions.md").exists()
+        assert (tmp_path / "CONVENTIONS.md").exists()
+        assert not (tmp_path / ".claude").exists()
+        assert not (tmp_path / ".cursor").exists()
+
+    def test_unknown_target_raises(self, tmp_path: Path) -> None:
+        with pytest.raises(KeyError, match="Unknown install target"):
+            install_llm_txt(project_dir=tmp_path, targets=["not-a-target"])
+
+    def test_cursor_mdc_has_frontmatter(self, tmp_path: Path) -> None:
+        install_llm_txt(project_dir=tmp_path, targets=["cursor-rules"])
+        mdc = (tmp_path / ".cursor" / "rules" / "dartwork-mpl.mdc").read_text(
+            encoding="utf-8"
+        )
+        # MDC files start with YAML front-matter.
+        assert mdc.startswith("---\n")
+        assert "description:" in mdc
+        assert "globs:" in mdc
+
+    def test_bundle_includes_templates_quick_reference(
+        self, tmp_path: Path
+    ) -> None:
+        install_llm_txt(project_dir=tmp_path)
+        body = (
+            tmp_path / ".claude" / "commands" / "dartwork-mpl-usage.md"
+        ).read_text(encoding="utf-8")
+        # Quick-reference header + at least one canonical template row.
+        assert "AI Plot Templates" in body
+        assert "| `bar` |" in body
+        assert "| `line` |" in body
+
+    def test_uninstall_all_targets_cleans_up_everything(
+        self, tmp_path: Path
+    ) -> None:
+        install_llm_txt(project_dir=tmp_path, targets="all")
+        removed = uninstall_llm_txt(project_dir=tmp_path)
+        # Every file listed in INSTALL_TARGETS should be gone.
+        assert len(removed) >= len(INSTALL_TARGETS)
+        assert not (tmp_path / "AGENTS.md").exists()
+        assert not (tmp_path / "GEMINI.md").exists()
+        assert not (tmp_path / "CONVENTIONS.md").exists()
