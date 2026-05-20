@@ -98,9 +98,8 @@
 
 <div class="dm-ba-widget" id="dm-ba-quickstart">
   <!-- After (base layer, always fully visible) -->
-  <!-- Paths are root-relative so the snippet works whether it is embedded
-       in /usage_guide/quickstart.html (page depth 2) or anywhere else. -->
-  <img src="../_static/compare_after.svg" alt="After — dartwork-mpl" />
+  <!-- src resolved at runtime so the snippet works regardless of page depth. -->
+  <img id="dm-ba-qs-after-img" alt="After — dartwork-mpl" />
 
   <!-- Before (overlay, clipped by slider) -->
   <div
@@ -108,7 +107,7 @@
     id="dm-ba-qs-overlay"
     style="clip-path: inset(0 50% 0 0)"
   >
-    <img src="../_static/compare_before.svg" alt="Before — matplotlib defaults" />
+    <img id="dm-ba-qs-before-img" alt="Before — matplotlib defaults" />
   </div>
 
   <!-- Divider line + handle -->
@@ -125,6 +124,26 @@
 
 <script>
   (function () {
+    // Resolve _static/ regardless of page depth. Same pattern as
+    // palette_picker.html / wipe_l*.html so the snippet keeps working
+    // whether embedded in /usage_guide/quickstart.html (depth 2) or
+    // opened directly.
+    (function setImgSrcs() {
+      var here = window.location.pathname;
+      var base;
+      if (here.indexOf("/_static/") !== -1) {
+        base = "";
+      } else {
+        var dirs = here.replace(/^\/+|\/+[^\/]*$/g, "").split("/").filter(Boolean);
+        var up = dirs.length > 0 ? "../".repeat(dirs.length) : "";
+        base = up + "_static/";
+      }
+      var after = document.getElementById("dm-ba-qs-after-img");
+      var before = document.getElementById("dm-ba-qs-before-img");
+      if (after) after.src = base + "compare_after.svg";
+      if (before) before.src = base + "compare_before.svg";
+    })();
+
     function initSlider(widgetId, overlayId, dividerId, handleId) {
       var widget = document.getElementById(widgetId);
       var overlay = document.getElementById(overlayId);

@@ -4,11 +4,30 @@
     <p style="margin-bottom: 1.5rem; color: var(--pst-color-text-muted); font-size: 0.9em;">Drag the slider to experience the dartwork-mpl pipeline step-by-step.</p>
   </div>
   <div class="evolution-images">
-    <img id="evo-img-0" src="../_images/evolution_step1.svg" class="evo-img active">
-    <img id="evo-img-1" src="../_images/evolution_step2.svg" class="evo-img">
-    <img id="evo-img-2" src="../_images/evolution_step3.svg" class="evo-img">
-    <img id="evo-img-3" src="../_images/evolution_step4.svg" class="evo-img">
+    <img id="evo-img-0" class="evo-img active">
+    <img id="evo-img-1" class="evo-img">
+    <img id="evo-img-2" class="evo-img">
+    <img id="evo-img-3" class="evo-img">
   </div>
+
+  <script>
+    // Resolve _images/ regardless of where this widget is embedded.
+    // sphinx-gallery's "step" SVGs land in _images/, not _static/.
+    (function () {
+      var here = window.location.pathname;
+      var base;
+      if (here.indexOf("/_static/") !== -1) {
+        base = "../_images/";
+      } else {
+        var dirs = here.replace(/^\/+|\/+[^\/]*$/g, "").split("/").filter(Boolean);
+        var up = dirs.length > 0 ? "../".repeat(dirs.length) : "";
+        base = up + "_images/";
+      }
+      for (var i = 0; i < 4; i++) {
+        document.getElementById("evo-img-" + i).src = base + "evolution_step" + (i + 1) + ".svg";
+      }
+    })();
+  </script>
   <div class="evolution-controls">
     <input type="range" id="evo-slider" min="0" max="3" step="0.02" value="0">
     <div class="evo-labels">

@@ -141,12 +141,33 @@
 </div>
 
 <div class="dm-compare-slider" id="dm-compare-slider">
-  <img src="_static/landing_hero_before.svg" alt="default matplotlib" />
+  <img id="dm-compare-img-before" alt="default matplotlib" />
   <div class="dm-compare-after" id="dm-compare-after">
-    <img src="_static/landing_hero_after.svg" alt="dartwork-mpl styled" />
+    <img id="dm-compare-img-after" alt="dartwork-mpl styled" />
   </div>
   <div class="dm-compare-handle" id="dm-compare-handle"></div>
 </div>
+
+<script>
+  // Resolve `_static/` regardless of where this widget is embedded.
+  // Same pattern as palette_picker.html. Works for:
+  //   - inline embed at site root (e.g. /index.html)
+  //   - inline embed in a sub-page (e.g. /usage_guide/foo.html)
+  //   - direct open (/_static/compare_slider.html)
+  (function () {
+    var here = window.location.pathname;
+    var base;
+    if (here.indexOf("/_static/") !== -1) {
+      base = "";
+    } else {
+      var dirs = here.replace(/^\/+|\/+[^\/]*$/g, "").split("/").filter(Boolean);
+      var up = dirs.length > 0 ? "../".repeat(dirs.length) : "";
+      base = up + "_static/";
+    }
+    document.getElementById("dm-compare-img-before").src = base + "landing_hero_before.svg";
+    document.getElementById("dm-compare-img-after").src = base + "landing_hero_after.svg";
+  })();
+</script>
 
 <div class="dm-compare-explain" aria-label="What dartwork-mpl changed">
   <p class="dm-compare-explain-title">Six rcParam shifts make the difference:</p>
