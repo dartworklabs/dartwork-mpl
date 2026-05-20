@@ -257,36 +257,13 @@ body {
  * but using :where() here too keeps the cascade story consistent. */
 
 /* ---------------------------------------------------------------------------
- * 3. Inline code — Radix's signature "pink chip" treatment
+ * 3. Inline code — intentionally NOT overridden.
+ *
+ * We tried Radix's signature pink chip (pink-3 bg + pink-11 fg) but
+ * reverted: the Shibuya default (subtle neutral background) reads better
+ * against this site's heavy use of inline code in prose. Leaving this
+ * section empty means Shibuya's own `code.literal` styling wins.
  * --------------------------------------------------------------------------- */
-
-/* Target inline code in two scopes:
- *   (a) MyST / prose pages where the `.yue` wrapper exists
- *   (b) Sphinx-autodoc API pages where code lives in TOC <ul>/<li>
- *       outside `.yue` — those use ``code.docutils.literal``.
- * Excluding pre > code on both sides keeps code-block lines untouched. */
-.yue :not(pre) > code,
-.sy-main code.docutils.literal,
-.sy-main code.docutils.literal.notranslate {
-  background-color: var(--rx-pink-3);
-  color: var(--rx-pink-11);
-  border: none;
-  border-radius: var(--rx-radius-2);
-  padding: 1px 6px 2px;
-  font-size: 0.875em;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
-
-/* Don't tint code inside links — it competes with the link color */
-.yue a > code,
-.yue a :not(pre) > code,
-.sy-main a > code.docutils.literal {
-  background-color: transparent;
-  color: inherit;
-  padding: 0;
-  border-radius: 0;
-}
 
 /* ---------------------------------------------------------------------------
  * 4. Code blocks — flatter, Radix-style with subtle ring instead of border
