@@ -22,9 +22,9 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 
-# 0.4 API: plt.figure(figsize=dm.figsize(...)). 20 cm × 0.75 ratio
-# (= 15 cm tall) keeps the previous 20 × 15 cm dashboard footprint.
-fig = plt.figure(figsize=dm.figsize("20cm", 0.75))
+# 0.4 API: plt.figure(figsize=dm.figsize(...)). 17 cm × 0.75 ratio
+# (= 12.75 cm tall) stays at the documented "oversize-width" ceiling.
+fig = plt.figure(figsize=dm.figsize("17cm", 0.75))
 gs = fig.add_gridspec(3, 3, hspace=0.3, wspace=0.3)
 
 axes = []

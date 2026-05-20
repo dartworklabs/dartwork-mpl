@@ -20,13 +20,17 @@ import numpy as np
 
 import dartwork_mpl as dm
 
+dm.style.use("scientific")
+
 x = np.linspace(0, 10, 100)
 y1, y2 = np.sin(x), np.cos(x)
 
 fig, ax = plt.subplots(figsize=dm.figsize("15cm", "wide"))
-ax.plot(x, y1, color="dc.ocean3", linewidth=0.8, label="sin(x)")
-ax.plot(x, y2, color="dc.vivid3", linewidth=0.8, label="cos(x)")
+ax.plot(x, y1, color="dc.ocean3", linewidth=dm.lw(0), label="sin(x)")
+ax.plot(x, y2, color="dc.vivid3", linewidth=dm.lw(0), label="cos(x)")
 ax.set_xlabel("x")
 ax.set_ylabel("y")
 ax.legend()
+ax.set_title("Two-series line", fontsize=dm.fs(1), fontweight=dm.fw(1))
+
 dm.simple_layout(fig)

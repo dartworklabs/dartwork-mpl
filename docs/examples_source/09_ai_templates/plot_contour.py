@@ -21,6 +21,8 @@ import numpy as np
 
 import dartwork_mpl as dm
 
+dm.style.use("scientific")
+
 x = np.linspace(-3, 3, 100)
 y = np.linspace(-3, 3, 100)
 X, Y = np.meshgrid(x, y)
@@ -31,4 +33,6 @@ cs = ax.contourf(X, Y, Z, levels=20, cmap="viridis")
 fig.colorbar(cs, ax=ax)
 ax.set_xlabel("x")
 ax.set_ylabel("y")
+ax.set_title("sin(x)·cos(y)", fontsize=dm.fs(1), fontweight=dm.fw(1))
+
 dm.simple_layout(fig)

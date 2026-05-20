@@ -21,6 +21,8 @@ import numpy as np
 
 import dartwork_mpl as dm
 
+dm.style.use("scientific")
+
 rng = np.random.default_rng(42)
 data = rng.random(size=(8, 8))
 
@@ -29,4 +31,6 @@ im = ax.imshow(data, cmap="viridis", aspect="auto")
 fig.colorbar(im, ax=ax)
 ax.set_xlabel("Column")
 ax.set_ylabel("Row")
+ax.set_title("Heatmap", fontsize=dm.fs(1), fontweight=dm.fw(1))
+
 dm.simple_layout(fig)

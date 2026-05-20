@@ -21,7 +21,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=dm.figsize("20cm", "square"))
+fig, ax = plt.subplots(figsize=dm.figsize("14cm", "square"))
 
 
 def draw_flower_of_life(ax, center, radius, levels, colors):
@@ -54,7 +54,7 @@ def draw_flower_of_life(ax, center, radius, levels, colors):
                 r,
                 fill=False,
                 edgecolor=color.to_hex(),
-                linewidth=1.5,
+                linewidth=dm.lw(0),
                 alpha=0.8,
             )
         )
@@ -69,7 +69,7 @@ def draw_flower_of_life(ax, center, radius, levels, colors):
                     r / 3,
                     fill=False,
                     edgecolor=color.to_hex(),
-                    linewidth=0.5,
+                    linewidth=dm.lw(-1),
                     alpha=0.4,
                 )
             )
@@ -93,9 +93,9 @@ for i in range(7):
             0.33,
             fill=True,
             facecolor=colors_sacred[i].to_hex(),
-            alpha=0.2,
-            edgecolor="white",
-            linewidth=0.5,
+            alpha=0.18,
+            edgecolor="dc.ocean1",
+            linewidth=dm.lw(-1),
         )
     )
 
@@ -104,7 +104,6 @@ ax.set_ylim(-3, 3)
 ax.set_aspect("equal")
 for s in ax.spines.values():
     s.set_visible(False)
-ax.set_facecolor("black")
 
 ax.text(
     0,
@@ -112,7 +111,7 @@ ax.text(
     "Flower of Life",
     ha="center",
     fontsize=dm.fs(3),
-    color="white",
+    color="dc.ocean5",
     weight="bold",
 )
 ax.text(
@@ -121,7 +120,7 @@ ax.text(
     "Sacred Geometry",
     ha="center",
     fontsize=dm.fs(0),
-    color="dc.nordic2",
+    color="dc.nordic5",
     style="italic",
 )
 

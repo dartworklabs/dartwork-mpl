@@ -3,15 +3,15 @@ Synthesizer Waveform Display
 ============================
 
 Three classic synthesizer waveforms — sine, square, and sawtooth —
-stacked in a single retro-futuristic dashboard. Each pane gets:
+stacked in a single dashboard. Each pane gets:
 
 - A gradient fill underneath the wave (``dm.cspace`` per channel).
-- A faux-glow drawn by stacking three semi-transparent line copies of
-  increasing width before the crisp white line on top.
-- Subtle horizontal gridlines for a CRT-style read-out.
+- A soft halo drawn by stacking three semi-transparent line copies of
+  increasing width before the crisp top line.
+- Subtle horizontal gridlines for a read-out feel.
 
-Set ``fig.patch.set_facecolor("black")`` to keep the surrounding canvas
-matched to the panel backgrounds.
+The light background keeps the figure consistent with the rest of the
+gallery while the OKLCH ramps still carry the synth vibe.
 """
 
 import matplotlib.pyplot as plt
@@ -23,7 +23,7 @@ np.random.seed(42)
 dm.style.use("scientific")
 
 fig, axes = plt.subplots(
-    3, 1, figsize=dm.figsize("20cm", "standard"), gridspec_kw={"hspace": 0.1}
+    3, 1, figsize=dm.figsize("14cm", "standard"), gridspec_kw={"hspace": 0.1}
 )
 
 t = np.linspace(0, 4 * np.pi, 1000)
@@ -39,20 +39,24 @@ color_schemes = [
     dm.cspace("dc.ocean5", "dc.forest1", n=len(t)),
     dm.cspace("dc.sunset5", "dc.sunset1", n=len(t)),
 ]
+halo_colors = ["dc.cyber5", "dc.ocean5", "dc.sunset5"]
+line_colors = ["dc.cyber5", "dc.ocean5", "dc.sunset5"]
 
-for ax, (name, wave), colors in zip(axes, waves, color_schemes, strict=False):
+for ax, (name, wave), colors, halo, line in zip(
+    axes, waves, color_schemes, halo_colors, line_colors, strict=False
+):
     for i in range(len(t) - 1):
         ax.fill_between(
             [t[i], t[i + 1]],
             0,
             [wave[i], wave[i + 1]],
             color=colors[i].to_hex(),
-            alpha=0.7,
+            alpha=0.45,
         )
 
-    for offset, alpha in [(3, 0.1), (2, 0.2), (1, 0.3)]:
-        ax.plot(t, wave, color="white", lw=dm.lw(0.5) + offset, alpha=alpha)
-    ax.plot(t, wave, color="white", lw=dm.lw(1))
+    for offset, alpha in [(3, 0.08), (2, 0.16), (1, 0.28)]:
+        ax.plot(t, wave, color=halo, lw=dm.lw(0.5) + offset, alpha=alpha)
+    ax.plot(t, wave, color=line, lw=dm.lw(1))
 
     ax.text(
         0.02,
@@ -60,30 +64,23 @@ for ax, (name, wave), colors in zip(axes, waves, color_schemes, strict=False):
         name,
         transform=ax.transAxes,
         fontsize=dm.fs(1),
-        color="white",
+        color=line,
         weight="bold",
-        bbox={"boxstyle": "round,pad=0.3", "facecolor": "black", "alpha": 0.5},
     )
 
     ax.set_xlim(0, 4 * np.pi)
     ax.set_ylim(-1.5, 1.5)
     for s in ax.spines.values():
         s.set_visible(False)
-    ax.set_facecolor("black")
     ax.set_xticks([])
     ax.set_yticks([])
 
     for y in np.linspace(-1.5, 1.5, 7):
-        ax.axhline(y, color="dc.nordic4", lw=0.3, alpha=0.3)
+        ax.axhline(y, color="dc.nordic2", lw=dm.lw(-1), alpha=0.5)
 
 fig.suptitle(
-    "Synthesizer Waveform Display",
-    fontsize=dm.fs(4),
-    color="white",
-    weight="bold",
-    y=0.98,
+    "Synthesizer Waveform Display", fontsize=dm.fs(4), weight="bold", y=0.98
 )
-fig.patch.set_facecolor("black")
 
 dm.simple_layout(fig)
 plt.show()

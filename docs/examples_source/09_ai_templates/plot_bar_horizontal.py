@@ -20,6 +20,8 @@ import matplotlib.pyplot as plt
 
 import dartwork_mpl as dm
 
+dm.style.use("scientific")
+
 categories = [
     "Category A",
     "Category B",
@@ -33,4 +35,6 @@ fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 ax.barh(categories, values, color="dc.ocean2", edgecolor="white", linewidth=0.3)
 ax.set_xlabel("Value")
 ax.invert_yaxis()
+ax.set_title("Horizontal bars", fontsize=dm.fs(1), fontweight=dm.fw(1))
+
 dm.simple_layout(fig)

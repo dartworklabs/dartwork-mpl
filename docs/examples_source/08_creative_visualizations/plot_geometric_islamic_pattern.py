@@ -20,7 +20,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=dm.figsize("20cm", "square"))
+fig, ax = plt.subplots(figsize=dm.figsize("14cm", "square"))
 
 
 def create_islamic_star(center, size, n_points=8):
@@ -71,7 +71,7 @@ for center in centers:
             star_points,
             facecolor=color.to_hex(),
             edgecolor="white",
-            linewidth=1,
+            linewidth=dm.lw(-1),
             alpha=0.8,
         )
     )
@@ -82,7 +82,7 @@ for center in centers:
             inner_star_points,
             facecolor="white",
             edgecolor=color.to_hex(),
-            linewidth=0.5,
+            linewidth=dm.lw(-1),
             alpha=0.3,
         )
     )
@@ -93,14 +93,23 @@ for center in centers:
         y1 = center[1] + 0.8 * np.sin(angle)
         x2 = center[0] + 1.2 * np.cos(angle)
         y2 = center[1] + 1.2 * np.sin(angle)
-        ax.plot([x1, x2], [y1, y2], color="white", lw=0.5, alpha=0.3)
+        ax.plot([x1, x2], [y1, y2], color="white", lw=dm.lw(-1), alpha=0.3)
 
 # Frames
 ax.add_patch(
-    Rectangle((-8.5, -8.5), 17, 17, fill=False, edgecolor="white", linewidth=2)
+    Rectangle(
+        (-8.5, -8.5), 17, 17, fill=False, edgecolor="white", linewidth=dm.lw(0)
+    )
 )
 ax.add_patch(
-    Rectangle((-8, -8), 16, 16, fill=False, edgecolor="dc.sunset2", linewidth=1)
+    Rectangle(
+        (-8, -8),
+        16,
+        16,
+        fill=False,
+        edgecolor="dc.sunset2",
+        linewidth=dm.lw(-1),
+    )
 )
 
 ax.set_xlim(-9, 9)

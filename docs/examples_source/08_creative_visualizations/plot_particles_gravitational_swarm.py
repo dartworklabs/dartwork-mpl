@@ -24,7 +24,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=dm.figsize("20cm", "square"))
+fig, ax = plt.subplots(figsize=dm.figsize("14cm", "square"))
 
 wells = [(0, 0, 1.5), (3, 2, 1.0), (-2, 3, 0.8), (1, -3, 1.2), (-3, -1, 0.9)]
 
@@ -71,7 +71,7 @@ for i in range(n_particles):
             [trails_y[i, j], trails_y[i, j + 1]],
             color=color.to_hex(),
             alpha=alpha,
-            lw=0.5,
+            lw=dm.lw(-1),
         )
 
     ax.scatter(
@@ -79,24 +79,26 @@ for i in range(n_particles):
         particles_y[i],
         s=20,
         c=[color.to_hex()],
-        edgecolors="white",
-        linewidths=0.5,
-        alpha=0.9,
+        edgecolors="dc.nordic1",
+        linewidths=0.4,
+        alpha=0.95,
         zorder=10,
     )
 
 for wx, wy, strength in wells:
-    for r, alpha in [(2, 0.1), (1.5, 0.2), (1, 0.3)]:
+    for r, alpha in [(2, 0.08), (1.5, 0.14), (1, 0.22)]:
         ax.add_patch(
-            Circle((wx, wy), r * strength, color="white", alpha=alpha, zorder=5)
+            Circle(
+                (wx, wy), r * strength, color="dc.ocean5", alpha=alpha, zorder=5
+            )
         )
     ax.add_patch(
         Circle(
             (wx, wy),
             0.3,
-            color="white",
-            edgecolor="dc.ocean2",
-            linewidth=2,
+            facecolor="dc.nordic1",
+            edgecolor="dc.ocean5",
+            linewidth=dm.lw(0),
             zorder=15,
         )
     )
@@ -106,7 +108,6 @@ ax.set_ylim(-6, 6)
 ax.set_aspect("equal")
 for s in ax.spines.values():
     s.set_visible(False)
-ax.set_facecolor("black")
 
 title = ax.text(
     0,
@@ -114,11 +115,11 @@ title = ax.text(
     "Gravitational Particle Dynamics",
     ha="center",
     fontsize=dm.fs(3),
-    color="white",
+    color="dc.ocean5",
     weight="bold",
 )
 title.set_path_effects(
-    [path_effects.withStroke(linewidth=3, foreground="dc.ocean5")]
+    [path_effects.withStroke(linewidth=dm.lw(0), foreground="dc.nordic1")]
 )
 
 dm.simple_layout(fig)

@@ -21,6 +21,8 @@ import numpy as np
 
 import dartwork_mpl as dm
 
+dm.style.use("scientific")
+
 rng = np.random.default_rng(42)
 n_per_cluster = 60
 centers = [(0, 0, 0), (3, 3, 2), (4, 1, 4)]
@@ -37,4 +39,6 @@ for (cx, cy, cz), color in zip(centers, colors, strict=False):
 ax.set_xlabel("X axis")
 ax.set_ylabel("Y axis")
 ax.set_zlabel("Z axis")
+ax.set_title("3D clusters", fontsize=dm.fs(1), fontweight=dm.fw(1))
+
 dm.simple_layout(fig)

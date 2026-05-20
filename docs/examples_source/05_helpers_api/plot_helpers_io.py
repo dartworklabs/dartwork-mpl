@@ -18,7 +18,7 @@ import dartwork_mpl as dm
 # Apply the style preset, then create the figure.
 # Width defaults to 17 cm (two-column figure), height ≈ 60% of width.
 dm.style.use("scientific")
-fig = plt.figure(figsize=dm.figsize("17cm", 0.6), dpi=200)
+fig = plt.figure(figsize=dm.figsize("17cm", 0.6))
 ax = fig.add_subplot(111)
 
 x = np.linspace(0, 10, 100)

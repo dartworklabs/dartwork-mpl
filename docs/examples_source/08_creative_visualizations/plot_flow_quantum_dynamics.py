@@ -24,7 +24,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=dm.figsize("20cm", "square"))
+fig, ax = plt.subplots(figsize=dm.figsize("14cm", "square"))
 
 n_points = 25
 x = np.linspace(-2, 2, n_points)
@@ -48,7 +48,7 @@ ax.streamplot(
     V,
     color=M,
     cmap=flow_cmap,
-    linewidth=2 * M / M.max(),
+    linewidth=dm.lw(0) * M / M.max(),
     density=2,
     arrowsize=0.8,
     arrowstyle="->",
@@ -89,7 +89,7 @@ title = ax.text(
     color="white",
 )
 title.set_path_effects(
-    [path_effects.withStroke(linewidth=3, foreground="dc.cyber2")]
+    [path_effects.withStroke(linewidth=dm.lw(1), foreground="dc.cyber2")]
 )
 
 dm.simple_layout(fig)
