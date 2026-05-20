@@ -1,16 +1,4 @@
 {
-  "3d": {
-    "data_shape": "x, y, z arrays (2D for surface, 1D for scatter)",
-    "difficulty": "advanced",
-    "source_path": "docs/examples_source/09_ai_templates/plot_3d.py",
-    "tags": [
-      "3d",
-      "surface",
-      "scatter",
-      "depth"
-    ],
-    "use_case": "Show a 3D surface or scatter to communicate depth"
-  },
   "bar": {
     "data_shape": "categories: list[str], values: list[float]",
     "difficulty": "beginner",
@@ -115,6 +103,18 @@
       "proportion"
     ],
     "use_case": "Show shares of a small whole"
+  },
+  "plot_3d": {
+    "data_shape": "x, y, z arrays (2D for surface, 1D for scatter)",
+    "difficulty": "advanced",
+    "source_path": "docs/examples_source/09_ai_templates/plot_3d.py",
+    "tags": [
+      "3d",
+      "surface",
+      "scatter",
+      "depth"
+    ],
+    "use_case": "Show a 3D surface or scatter to communicate depth"
   },
   "polar": {
     "data_shape": "theta: list[float], r: list[float]",

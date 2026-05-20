@@ -76,8 +76,13 @@ For agents that can read a local file but don't auto-detect a folder:
 
 ```bash
 # Aider — read the corpus as one big system prompt
-aider --read $(python -c "import dartwork_mpl, pathlib; print(pathlib.Path(dartwork_mpl.__file__).parent / 'asset' / 'prompt' / 'llms-full.txt')")
+aider --read $(python -c "import dartwork_mpl; print(dartwork_mpl.agent_doc_path('llms-full'))")
 ```
+
+`dm.agent_doc_path("llms-full")` (and the companion `dm.get_agent_doc("llms-full")`)
+also accept ``"llms"``, ``"AGENTS"``, and ``"CLAUDE"`` so you can pipe
+any of the four onboarding files into any tool that takes a file path
+or a system-prompt string.
 
 For chat-only surfaces (web ChatGPT, Claude.ai), paste the contents
 of `llms.txt` (≈ 2.5 KB index) into a system prompt or pinned message.
@@ -116,22 +121,32 @@ dm.save_formats(fig, "out", formats=("png", "pdf"))
 (ide-agent-compatibility-2026-q2)=
 ## IDE & agent compatibility (2026-Q2)
 
-| Tool / Agent | MCP support | Recommended path | Notes |
+| Tool / Agent | MCP support | Recommended path | Auto-installable rules file |
 |---|---|---|---|
-| **Claude Code** (Anthropic CLI / VS Code / JetBrains) | ✅ first-class | `claude mcp add dartwork-mpl dartwork-mpl-mcp` | Native — slash commands and tool use both work. |
-| **Cursor** | ✅ Settings → Composer → MCP | Drop JSON, restart | Auto-detects local servers on the next chat. |
-| **Windsurf** (Cascade) | ✅ JSON config | `~/.codeium/windsurf/mcp_config.json` | |
-| **Continue** (VS Code / JetBrains) | ✅ `config.yaml` | `mcpServers:` block | Free + open-source. |
-| **Zed** (Agent panel) | ✅ Settings → Agent → Tools | JSON snippet | MCP support shipped 2025-Q3. |
-| **Anthropic API / SDK** (custom agents) | ✅ via `tools=` | Wire `dartwork-mpl-mcp` as a sub-process | For people building their own agents. |
-| **GitHub Copilot Chat** | ❌ (as of 2026-Q2) | Paste `AGENTS.md` as a workspace instruction | File-based fallback. |
-| **Aider** | ❌ | `aider --read llms-full.txt` | File-based fallback. |
-| **ChatGPT** (web / desktop) | ❌ | Paste `llms.txt` (≈ 2.5 KB) into system prompt | Chat-only surfaces. |
-| **Claude.ai** (web) | ❌ on free tier; ✅ on Teams/Enterprise via Custom MCP | Same JSON as Claude Code | |
-| **Other LLMs** | varies | `llms-full.txt` paste-in works for all | Universal fallback. |
+| **Claude Code** (Anthropic CLI / VS Code / JetBrains) | ✅ first-class | `claude mcp add dartwork-mpl dartwork-mpl-mcp` | `dm.install_llm_txt(targets="claude")` → `.claude/commands/` |
+| **Cursor** (legacy single-file rules) | ✅ Settings → Composer → MCP | Drop JSON in `~/.cursor/mcp.json`, restart | `dm.install_llm_txt(targets="cursor")` → `.cursor/dartwork-mpl-usage.md` |
+| **Cursor** (2026 `rules/*.mdc` format) | ✅ | — | `dm.install_llm_txt(targets="cursor-rules")` → `.cursor/rules/dartwork-mpl.mdc` |
+| **Windsurf** (Cascade) | ✅ JSON config | `~/.codeium/windsurf/mcp_config.json` | `dm.install_llm_txt(targets="windsurf")` → `.windsurf/rules/dartwork-mpl.md` |
+| **Continue** (VS Code / JetBrains) | ✅ `config.yaml` | `mcpServers:` block | `dm.install_llm_txt(targets="continue")` → `.continue/rules/dartwork-mpl.md` |
+| **Zed** (Agent panel) | ✅ Settings → Agent → Tools | JSON snippet (`~/.config/zed/settings.json` → `context_servers`) | — |
+| **GitHub Copilot Chat** | ✅ since 2025-Q4 (MCP preview) | VS Code → Copilot → MCP settings | `dm.install_llm_txt(targets="copilot")` → `.github/copilot-instructions.md` |
+| **Antigravity** (Google Gemini CLI) | ✅ JSON config | `~/.gemini/antigravity/mcp_config.json` | `dm.install_llm_txt(targets="gemini")` → `GEMINI.md` |
+| **OpenAI Codex CLI** | ❌ (file-based) | Reads `AGENTS.md` automatically | `dm.install_llm_txt(targets="codex")` → `AGENTS.md` |
+| **JetBrains AI Assistant** | 🟡 partial (MCP in 2026.2 preview) | Settings → Tools → AI → MCP | — |
+| **Anthropic API / SDK** (custom agents) | ✅ via `tools=` | Wire `dartwork-mpl-mcp` as a sub-process | — |
+| **Aider** | ❌ | `aider --read $(python -c "import dartwork_mpl; print(dartwork_mpl.agent_doc_path('llms-full'))")` | `dm.install_llm_txt(targets="aider")` → `CONVENTIONS.md` |
+| **ChatGPT** (web / desktop) | ❌ | Paste `llms.txt` (≈ 2.5 KB) into system prompt | — |
+| **Claude.ai** (web) | ❌ on free tier; ✅ on Teams/Enterprise via Custom MCP | Same JSON as Claude Code | — |
+| **Other LLMs** | varies | `dm.get_agent_doc("llms-full")` paste-in works for all | — |
 
 > Updated 2026-05-17. Open a PR on this table if your tool's MCP
 > support changed — it moves fast.
+>
+> One command installs every file-based fallback at once:
+> ```python
+> import dartwork_mpl as dm
+> dm.install_llm_txt(targets="all")   # writes 9 files across .claude/, .cursor/, .github/, AGENTS.md, GEMINI.md, CONVENTIONS.md, .continue/, .windsurf/
+> ```
 
 ---
 
@@ -141,7 +156,7 @@ dartwork-mpl is **not an AI wrapper around matplotlib** — it is
 matplotlib with the ambiguity removed. The library follows three
 rules that compound into reliable AI output:
 
-::::{grid} 1 1 3 3
+::::{grid} 1 2 2 4
 :gutter: 2
 
 :::{grid-item-card} 🎯 **One canonical call**
@@ -159,11 +174,22 @@ widths are `"13cm"`, not `5.118`. Agents reliably reproduce the
 names; they hallucinate the numbers.
 :::
 
+:::{grid-item-card} 🔁 **Preset-relative scaling**
+
+Font sizes, line widths, and weights go through `dm.fs(n)`,
+`dm.lw(n)`, `dm.fw(n)` — relative offsets from the active style.
+Swap `dm.style.use("scientific")` to `"presentation"` and every
+size, weight, and stroke re-targets the new preset without an
+edit.
+:::
+
 :::{grid-item-card} 🧪 **Inline validation**
 
 `dm.validate_figure(fig)` catches overflow, asymmetric margins, and
-pie-label cutoffs before the agent hands back a broken plot — and
-`validate_with_fixes` applies the obvious repairs automatically.
+pie-label cutoffs before the agent hands back a broken plot. The
+MCP tool `validate_generated_plot(code)` runs the same check on
+agent-generated snippets in an isolated subprocess and returns
+structured JSON.
 :::
 
 ::::

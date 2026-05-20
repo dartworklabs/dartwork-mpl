@@ -24,6 +24,9 @@ from . import (  # noqa: F401
     validate_fixes,
 )
 
+# Import bundled agent-onboarding helpers
+from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc
+
 # Axes annotation
 from .annotation import arrow_axis, label_axes
 
@@ -64,7 +67,7 @@ from .formatting import (
 from .icon import icon_font, icon_font_path, list_icon_fonts
 
 # Import install module exports
-from .install import install_llm_txt, uninstall_llm_txt
+from .install import INSTALL_TARGETS, install_llm_txt, uninstall_llm_txt
 
 # I/O
 from .io import save_and_show, save_formats, show
@@ -154,8 +157,13 @@ __all__ = [  # noqa: RUF022
     "style",
     "style_path",
     # Install module
+    "INSTALL_TARGETS",
     "install_llm_txt",
     "uninstall_llm_txt",
+    # Bundled agent-onboarding helpers
+    "AGENT_DOCS",
+    "agent_doc_path",
+    "get_agent_doc",
     # Scaling helpers
     "fs",
     "fw",

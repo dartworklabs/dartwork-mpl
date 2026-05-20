@@ -24,7 +24,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=dm.figsize("18cm", "square"))
+fig, ax = plt.subplots(figsize=dm.figsize("14cm", "square"))
 
 dipoles = [
     {"pos": (-2, 0), "moment": (1, 0), "strength": 2},
@@ -77,7 +77,7 @@ for i in range(n_filings):
             [filings_x[i] - bx * length / 2, filings_x[i] + bx * length / 2],
             [filings_y[i] - by * length / 2, filings_y[i] + by * length / 2],
             color=color,
-            lw=0.5,
+            lw=dm.lw(-1),
             alpha=0.4 + 0.4 * color_intensity,
         )
 
@@ -88,7 +88,7 @@ ax.streamplot(
     By,
     color=B_mag,
     cmap="dc.ice_fire",
-    linewidth=1,
+    linewidth=dm.lw(-1),
     density=0.8,
     arrowsize=1,
 )
@@ -109,7 +109,7 @@ for dipole in dipoles:
             0.3,
             color="dc.vivid2",
             edgecolor="white",
-            linewidth=2,
+            linewidth=dm.lw(0),
             zorder=20,
         )
     )
@@ -129,7 +129,7 @@ for dipole in dipoles:
             0.3,
             color="dc.ocean2",
             edgecolor="white",
-            linewidth=2,
+            linewidth=dm.lw(0),
             zorder=20,
         )
     )

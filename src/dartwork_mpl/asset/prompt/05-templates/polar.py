@@ -1,9 +1,18 @@
 """Polar / radar chart - closed loop on angular axis."""
 
+# ai-template-meta-start
+# use_case: Show angular or radial data on a polar plot
+# difficulty: intermediate
+# data_shape: theta: list[float], r: list[float]
+# tags: polar, radial, angular, compass
+# ai-template-meta-end
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 import dartwork_mpl as dm
+
+dm.style.use("scientific")
 
 categories = ["Speed", "Cost", "Quality", "Reach", "Trust", "Service"]
 values_a = [4.0, 3.2, 4.5, 2.8, 4.1, 3.5]
@@ -18,13 +27,18 @@ b_closed = values_b + values_b[:1]
 fig, ax = plt.subplots(
     figsize=dm.figsize("11cm", "square"), subplot_kw={"projection": "polar"}
 )
-ax.plot(theta_closed, a_closed, color="oc.blue6", linewidth=0.8, label="Plan A")
+ax.plot(
+    theta_closed, a_closed, color="oc.blue6", linewidth=dm.lw(0), label="Plan A"
+)
 ax.fill(theta_closed, a_closed, color="oc.blue3", alpha=0.3)
-ax.plot(theta_closed, b_closed, color="oc.red6", linewidth=0.8, label="Plan B")
+ax.plot(
+    theta_closed, b_closed, color="oc.red6", linewidth=dm.lw(0), label="Plan B"
+)
 ax.fill(theta_closed, b_closed, color="oc.red3", alpha=0.3)
 ax.set_xticks(theta)
-ax.set_xticklabels(categories)
+ax.set_xticklabels(categories, fontsize=dm.fs(-1))
 ax.set_ylim(0, 5)
-ax.legend(loc="upper right", bbox_to_anchor=(1.25, 1.1))
+ax.set_title("Radar comparison", fontsize=dm.fs(1), fontweight=dm.fw(1), pad=12)
+ax.legend(loc="upper right", bbox_to_anchor=(1.25, 1.1), fontsize=dm.fs(-1))
 dm.simple_layout(fig)
 dm.save_formats(fig, "polar")

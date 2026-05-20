@@ -58,7 +58,7 @@ for _i, (ax, trace, color, label) in enumerate(
     hi = np.percentile(trace, 97)
 
     # White outline
-    ax.plot(x_eval, density_scaled, color="white", lw=1.5, zorder=5)
+    ax.plot(x_eval, density_scaled, color="white", lw=dm.lw(0), zorder=5)
 
     # Fill the entire distribution lightly
     ax.fill_between(
@@ -93,7 +93,7 @@ for _i, (ax, trace, color, label) in enumerate(
     )
     ax.patch.set_alpha(0)  # Transparent background
 
-    ax.axhline(0, color="dc.nordic1", lw=1, zorder=3)
+    ax.axhline(0, color="dc.nordic1", lw=dm.lw(-1), zorder=3)
 
 # Shared x-axis on the bottom
 axes[-1].spines["bottom"].set_visible(True)

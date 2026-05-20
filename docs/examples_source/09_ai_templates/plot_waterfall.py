@@ -21,6 +21,8 @@ import numpy as np
 
 import dartwork_mpl as dm
 
+dm.style.use("scientific")
+
 labels = ["Start", "Gain A", "Loss B", "Gain C", "Loss D", "End"]
 deltas = [100, 30, -15, 25, -20, 0]
 is_total = [True, False, False, False, False, True]
@@ -54,6 +56,8 @@ ax.bar(
     edgecolor="white",
     linewidth=0.3,
 )
-ax.axhline(0, color="dc.nordic3", linewidth=0.5)
+ax.axhline(0, color="dc.nordic3", linewidth=0.3)
 ax.set_ylabel("Value")
+ax.set_title("Bridge / waterfall", fontsize=dm.fs(1), fontweight=dm.fw(1))
+
 dm.simple_layout(fig)

@@ -62,3 +62,72 @@ class TestCliMainGracefulFallback:
             cli.main()
 
         mock_mcp.run.assert_called_once()
+
+
+class TestStdioEndToEnd:
+    """End-to-end stdio handshake. Launches the real
+    ``dartwork-mpl-mcp`` subprocess and verifies the JSON-RPC
+    ``initialize`` response is well-formed. Catches packaging
+    regressions (missing entry point, broken ``__init__``, FastMCP
+    incompatibility) that unit tests miss.
+    """
+
+    def test_initialize_handshake(self) -> None:
+        pytest.importorskip("fastmcp")
+        import json
+        import shutil
+        import subprocess
+        import sys
+
+        # The console-script lives on the venv's PATH when installed
+        # in editable mode. Fall back to ``python -m`` if missing.
+        cli_path = shutil.which("dartwork-mpl-mcp")
+        cmd = (
+            [cli_path]
+            if cli_path
+            else [sys.executable, "-m", "dartwork_mpl.cli"]
+        )
+
+        request = (
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {
+                        "protocolVersion": "2024-11-05",
+                        "capabilities": {},
+                        "clientInfo": {
+                            "name": "dartwork-mpl-pytest",
+                            "version": "0.1",
+                        },
+                    },
+                }
+            )
+            + "\n"
+        )
+
+        # FastMCP prints a banner to stderr and the JSON-RPC response
+        # to stdout. Capture both, parse only stdout.
+        proc = subprocess.run(
+            cmd, input=request, capture_output=True, text=True, timeout=30.0
+        )
+
+        # The server returns one JSON-RPC envelope on stdout. It may
+        # be followed by a newline; ``json.loads`` on the first line
+        # is what we want.
+        first_line = next(
+            (ln for ln in proc.stdout.splitlines() if ln.strip()), ""
+        )
+        assert first_line, f"empty stdout; stderr was:\n{proc.stderr[:1000]}"
+
+        envelope = json.loads(first_line)
+        assert envelope["jsonrpc"] == "2.0"
+        assert envelope["id"] == 1
+        result = envelope["result"]
+        assert result["serverInfo"]["name"] == "dartwork-mpl"
+        # The MCP server must advertise tools, resources, and prompts.
+        caps = result["capabilities"]
+        assert "tools" in caps
+        assert "resources" in caps
+        assert "prompts" in caps

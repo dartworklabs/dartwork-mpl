@@ -24,7 +24,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=dm.figsize("18cm", "square"))
+fig, ax = plt.subplots(figsize=dm.figsize("14cm", "square"))
 
 
 def fibonacci_spiral(n_points=1000):
@@ -97,7 +97,7 @@ title_text = ax.text(
     alpha=0.8,
 )
 title_text.set_path_effects(
-    [path_effects.withStroke(linewidth=2, foreground="dc.ocean5")]
+    [path_effects.withStroke(linewidth=dm.lw(0), foreground="dc.ocean5")]
 )
 
 dm.simple_layout(fig)

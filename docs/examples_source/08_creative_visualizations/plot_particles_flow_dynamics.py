@@ -22,7 +22,7 @@ import dartwork_mpl as dm
 np.random.seed(42)
 dm.style.use("scientific")
 
-fig, ax = plt.subplots(figsize=dm.figsize("20cm", "square"))
+fig, ax = plt.subplots(figsize=dm.figsize("14cm", "square"))
 
 
 def flow_field(x, y, t=0):
@@ -75,7 +75,7 @@ ax.streamplot(
     V_bg,
     color=speed,
     cmap=flow_cmap,
-    linewidth=0.5,
+    linewidth=dm.lw(-1),
     density=1,
 )
 
@@ -92,7 +92,7 @@ for particle in particles:
                 [particle["trail"][i][1], particle["trail"][i + 1][1]],
                 color=color.to_hex(),
                 alpha=alpha,
-                lw=1,
+                lw=dm.lw(-1),
             )
 
     ax.scatter(
@@ -115,7 +115,7 @@ for vx, vy in vortices:
             color="white",
             alpha=0.3,
             edgecolor="dc.ocean2",
-            linewidth=1,
+            linewidth=dm.lw(-1),
         )
     )
 

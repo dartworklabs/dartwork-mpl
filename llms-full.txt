@@ -29,8 +29,8 @@ to read off the resolved values without leaving the docs.
 | What used to hurt                   | dartwork-mpl                                    |
 | ----------------------------------- | ----------------------------------------------- |
 | Hand-tuning `figsize` and `dpi`     | `plt.subplots(figsize=dm.figsize("13cm", "standard"))`  |
-| `tight_layout` clipping labels      | `dm.auto_layout(fig)` — real optimizer          |
-| Reaching for hex codes              | `color="oc.blue5"` (Open Color), `"tw.*"`, `"md.*"`, `"ad.*"`, `"cu.*"`, `"pr.*"` |
+| `tight_layout` clipping labels      | `dm.simple_layout(fig)` — deterministic, content-aware |
+| Reaching for hex codes              | `color="dc.ocean3"` (curated 8-mood palette), plus `"oc.*"`, `"tw.*"`, `"md.*"`, `"ad.*"`, `"cu.*"`, `"pr.*"` for third-party systems |
 | Saving in 3 formats                 | `dm.save_formats(fig, "out", formats=("png", "svg", "pdf"))` |
 | Catching margin / overflow problems | `dm.validate_with_fixes(fig)`                   |
 
@@ -50,13 +50,13 @@ dm.style.use("scientific")  # curated fonts, colors, line weights
 fig, ax = plt.subplots(figsize=dm.figsize("15cm", "wide"))
 
 x = np.linspace(0, 10, 200)
-ax.plot(x, np.sin(x), color="oc.blue5", label="signal", lw=dm.lw(1.5))
+ax.plot(x, np.sin(x), color="dc.ocean3", label="signal", lw=dm.lw(1.5))
 ax.set_xticks(np.arange(0, 11, 2))
 ax.set_xlabel("Time [s]")
 ax.set_ylabel("Amplitude")
 ax.legend()
 
-dm.auto_layout(fig)             # auto-optimize margins
+dm.simple_layout(fig)           # content-aware margins
 dm.save_and_show(fig, "first")  # save + inline preview
 ```
 
@@ -103,7 +103,7 @@ optimized margins, and named colors.
 
 Same data, same plotting logic — the difference is one `dm.style.use()`
 call, the `width` / `aspect` arguments on `dm.figsize`, named colors,
-and `auto_layout`.
+and `simple_layout`.
 
 **What each dartwork-mpl call does:**
 
@@ -112,7 +112,7 @@ and `auto_layout`.
 | `dm.style.use("scientific")`                  | Sets palette, fonts, line weights — see [Styles](styles.md)                        |
 | `dm.figsize("13cm", "standard")`              | Physical width plus an aspect token, returned as the inches tuple `figsize=` expects. |
 | `dm.fs(0)`                                    | Returns the base font size of the active preset (`fs(2)` = base + 2 pt, and so on) |
-| `dm.auto_layout(fig)`                         | Auto-optimizes margins (replaces `tight_layout`)                                   |
+| `dm.simple_layout(fig)`                       | Deterministic content-aware margins (replaces `tight_layout`)                      |
 | `dm.save_and_show(fig, "first")`              | Saves multi-format and previews inline in the notebook                             |
 
 ### Static reference: `dm.fs(n)` resolved per preset
@@ -208,19 +208,25 @@ fig, axes = plt.subplots(
 for ax in axes.flat:
     ax.plot(np.random.randn(100))
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 ```
 
 ## Adding color
 
-dartwork-mpl registers named colors from several design systems. Use them
-anywhere matplotlib accepts a color string:
+dartwork-mpl ships its own curated palette — `dc.*` ("dartwork color"),
+8 mood families × 6 shades each — and registers six third-party design
+systems alongside it. Use any of them anywhere matplotlib accepts a
+color string:
 
 ```python
-# Named color prefixes
-ax.plot(x, y, color="oc.blue5")                    # OpenColor
-ax.fill_between(x, y1, y2, color="tw.emerald200")  # Tailwind
-ax.bar(categories, values, color="md.red500")      # Material Design
+# Curated dartwork palette (recommended starting point)
+ax.plot(x, y, color="dc.ocean3")                   # cool blue
+ax.fill_between(x, y1, y2, color="dc.sunset1")     # warm accent
+ax.bar(categories, values, color="dc.vivid1")      # bold call-out
+
+# Third-party systems also available for cross-team consistency
+ax.plot(x, y2, color="dc.ocean2")                   # OpenColor
+ax.plot(x, y3, color="tw.emerald500")              # Tailwind
 ```
 
 **Discover what's available without leaving Python:**
@@ -228,8 +234,8 @@ ax.bar(categories, values, color="md.red500")      # Material Design
 ```python
 import dartwork_mpl as dm
 
-dm.list_palettes()[:5]   # → ['ad.blue', 'ad.cyan', 'ad.geekblue', ...]
-dm.show_palette("oc.blue")  # renders the 9-shade swatch row in Jupyter
+dm.list_palettes()[:5]      # → ['dc.autumn', 'dc.cyber', 'dc.forest', ...]
+dm.show_palette("dc.ocean") # renders the 6-shade swatch row in Jupyter
 dm.plot_colors(ncols=4)     # full library overview, one figure per system
 ```
 
@@ -251,8 +257,8 @@ gs = fig.add_gridspec(1, 2, wspace=0.3)
 ax1 = fig.add_subplot(gs[0])
 ax2 = fig.add_subplot(gs[1])
 
-ax1.plot(x, np.sin(x), color="oc.red5")
-ax2.plot(x, np.cos(x), color="oc.blue5")
+ax1.plot(x, np.sin(x), color="dc.vivid1")
+ax2.plot(x, np.cos(x), color="dc.ocean3")
 
 dm.label_axes([ax1, ax2])  # adds (a), (b) panel labels
 dm.simple_layout(fig, gs=gs)
@@ -284,7 +290,7 @@ in-place:
 ```python
 result = dm.validate_with_fixes(fig)
 print(result.report())     # human-readable summary of warnings
-# margin_asymmetry → auto-fixed via dm.auto_layout()
+# margin_asymmetry → auto-fixed via dm.simple_layout()
 # pie_label_offset → auto-adjusted pctdistance
 ```
 
@@ -384,11 +390,56 @@ still emit a `DeprecationWarning` and are scheduled for removal in
 | `dm.cm2in(...)`                       | `dm.cm(...)` (returns `Length`)                      |
 | `dpi=` argument                       | active style preset                                  |
 | `dartwork_mpl.constant` module        | `dartwork_mpl.units` + width / aspect API            |
-| `plt.tight_layout()`                  | `dm.auto_layout(fig)`                                |
+| `plt.tight_layout()`                  | `dm.simple_layout(fig)`                              |
+| `dm.auto_layout(fig)`                 | `dm.simple_layout(fig)` (auto_layout is a deprecation alias) |
+| `dm.simple_layout(fig, margins=(...), bbox=..., bound_margin=..., gtol=..., importance_weights=...)` | `dm.simple_layout(fig, margin="2%", ml=..., mr=..., mt=..., mb=...)` (new keyword API) |
 | `dartwork_mpl.agent_utils`            | `dartwork_mpl.helpers`                               |
 | `dartwork_mpl.xplot`                  | `dartwork_mpl.templates`                             |
 | `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`                        |
 | `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`                           |
+| `dm.style_spines(ax, color=c, linewidth=w, which=ws)` | `for s in ws: ax.spines[s].set_color(c); ax.spines[s].set_linewidth(w)` |
+| `dm.add_grid(ax)`                     | `ax.grid(True, color="oc.gray3", alpha=0.3, linewidth=0.5); ax.set_axisbelow(True)` |
+| `dm.minimal_axes(ax)`                 | see [Minimal axes recipe](usage_guide/recipes.md#minimal-axes-tufte-style) |
+| `dm.auto_select_colors(n_series=N, color_type=K, highlight_index=I)` | `dm.make_palette(N, kind=K, highlight=I)` |
+| `dm.named("oc.red5")`                 | `dm.color("oc.red5")` (also accepts hex / `rgb(...)` / `oklch(...)` / `oklab(...)`) |
+| `from dartwork_mpl.color import ...`  | `from dartwork_mpl.colors import ...` (submodule renamed) |
+
+## `dm.named` removal & `color` → `colors` submodule rename
+
+`dm.named` is gone. The replacement is `dm.color`, a single
+string-parser entry point that mirrors `dm.length`:
+
+```python
+# Before
+dm.named("oc.red5")
+
+# Now
+dm.color("oc.red5")              # palette name
+dm.color("#ff0000")              # hex
+dm.color("rgb(1, 0, 0)")         # functional rgb
+dm.color("oklch(0.7, 0.15, 30)") # functional oklch
+dm.color("oklab(0.5, 0.05, 0.05)")
+dm.color(some_color_instance)    # pass-through
+```
+
+The specialized constructors `dm.hex`, `dm.rgb`, `dm.oklch`,
+`dm.oklab` are unchanged — use them when you already have the
+components, just as `dm.cm(13)` coexists with `dm.length("13cm")`.
+
+The `dartwork_mpl.color` submodule was renamed to
+`dartwork_mpl.colors` so the `color` name is free for the new
+function. There is no compatibility shim — update direct imports:
+
+```python
+# Before
+from dartwork_mpl.color import Color
+
+# Now
+from dartwork_mpl.colors import Color
+```
+
+Most users never touch the submodule directly (`dm.Color`,
+`dm.color`, etc. all continue to work via the top-level package).
 
 ## `dm.subplots` / `dm.figure` removal
 
@@ -564,22 +615,38 @@ fig, ax = dm.subplots(width="13cm", aspect=0.6)
 
 `validate_figure` warns on extreme aspects (< 0.3 or > 4.0).
 
-### `tight_layout` → `auto_layout`
+### `tight_layout` → `simple_layout`
 
 ```python
 # DEPRECATED — fires `tight-layout` lint critical
 plt.tight_layout()
 fig.tight_layout()
 
-# 0.4
-dm.auto_layout(fig)
+# 0.5+
+dm.simple_layout(fig)                        # snap content flush to figure edges
+dm.simple_layout(fig, margin="2%")           # uniform 2% buffer
+dm.simple_layout(fig, margin=dm.mm(2))       # uniform 2 mm buffer
+dm.simple_layout(fig, ml=dm.cm(1), mr="3%")  # per-side, mixed units
 ```
 
-`auto_layout` iteratively shrinks the axes box until no text
-overflows the canvas, so it survives long labels, multi-line
-titles, and twinx() right-spine cases that `tight_layout` mangles.
-`dm.simple_layout(fig)` still exists but is reserved for advanced
-GridSpec arrangements where `auto_layout` cannot solve the bbox.
+`simple_layout` measures every visible artist on every axes
+(texts, title, axis labels, view-limited tick labels, axis offset
+text, legend) and arithmetically places the GridSpec so the
+content union sits at the requested distance from each figure
+edge. The result is deterministic — same figure produces the same
+GridSpec, no scipy involved. It survives long labels, multi-line
+titles, twinx() right-spine cases, and log-scale fixed-points
+that `tight_layout` mangles.
+
+The historical `dm.auto_layout(fig)` still works as a
+:class:`DeprecationWarning`-emitting alias; new code should call
+`simple_layout` directly.
+
+The previous `simple_layout` keyword arguments (`margins=(...)`,
+`bbox=...`, `bound_margin=...`, `gtol=...`, `importance_weights=...`)
+have been removed in favour of the unified `margin` /
+`ml`/`mr`/`mt`/`mb` API. See the at-a-glance table at the top of
+this guide.
 
 ### `dm.cm2in` → `dm.cm`
 
@@ -744,15 +811,15 @@ dm.plot_fonts()
 These additions don't *require* migration but pay off if you bump
 into them:
 
-### `dm.auto_layout(fig)`
+### `dm.simple_layout(fig, margin=...)`
 
-When `simple_layout` doesn't quite handle long labels or multi-line
-titles, call `auto_layout` instead — it iteratively shrinks the axes
-until no text overflows the canvas:
+`simple_layout` accepts a `margin` keyword (and per-side
+`ml`/`mr`/`mt`/`mb` overrides) so you can declare the inset
+buffer in the same call:
 
 ```python
-dm.auto_layout(fig)              # automatic margin negotiation
-dm.simple_layout(fig)            # fast, fine for advanced GridSpec
+dm.simple_layout(fig)                        # flush to figure edges
+dm.simple_layout(fig, margin="2%")           # uniform 2% buffer
 ```
 
 ### `dm.validate_with_fixes(fig)`
@@ -931,9 +998,31 @@ rules:
       pattern: '\btight_layout\s*\('
     message: |
       `tight_layout()` collides with dartwork-mpl's spine and legend
-      handling. Use `dm.auto_layout(fig)` (or `dm.simple_layout` for
-      advanced GridSpec cases).
-    fix_suggestion: 'dm.auto_layout(fig)'
+      handling. Use `dm.simple_layout(fig)` instead.
+    fix_suggestion: 'dm.simple_layout(fig)'
+
+  - id: multirow-subplots-no-gridspec-kw
+    severity: info
+    detector:
+      kind: regex
+      pattern: '^(?![^\n]*gridspec_kw)(?![^\n]*sharex)(?![^\n]*sharey)[^\n]*\bplt\.subplots\([ \t]*[2-9]\b[^\n]*$'
+    message: |
+      Vertically stacked `plt.subplots(>=2, ...)` was created without
+      `gridspec_kw={"hspace": ..., "wspace": ...}`. The matplotlib
+      default `hspace` (0.2) frequently causes the upper subplot's
+      xlabel / xtick labels to overlap the lower subplot's title once
+      `dm.simple_layout(fig)` snaps the outer margins flush. Pass an
+      explicit `gridspec_kw` (e.g. `hspace=0.55`, `wspace=0.3`) when
+      every subplot has both a title and an xlabel, then verify with
+      `dm.validate_figure(fig)` — the `CROSS_AXES_OVERLAP` check will
+      flag any residual collisions.
+    why: |
+      `dm.simple_layout` only adjusts the figure's outer margins; it
+      intentionally preserves the GridSpec's `hspace` / `wspace` so
+      authors can keep their own intent. That makes the default
+      `hspace=0.2` the hidden source of title↔xlabel collisions in
+      multi-panel gallery and report figures.
+    fix_suggestion: 'gridspec_kw={"hspace": 0.55, "wspace": 0.3}'
 
   - id: zero-resize-mention
     severity: warning
@@ -990,6 +1079,33 @@ rules:
       pattern: `dm.cm2in` itself raises `AttributeError`. Use
       `figsize=dm.figsize("<n>cm", "<aspect>")` instead.
     fix_suggestion: 'figsize=dm.figsize("9cm", "standard")'
+
+  - id: dm-spines-removed
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\bdm\.(?:style_spines|add_grid|minimal_axes)\s*\('
+    message: |
+      `dm.style_spines`, `dm.add_grid`, and `dm.minimal_axes` were
+      REMOVED in 0.5.0 (#156). They were thin matplotlib wrappers
+      whose only contribution was curated default kwargs. Inline the
+      raw matplotlib calls instead, or copy a snippet from
+      `docs/usage_guide/recipes.md` (publication grid, minimal axes,
+      thin gray spines).
+    fix_suggestion: 'see docs/usage_guide/recipes.md'
+
+  - id: dm-auto-select-colors-renamed
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\bdm\.(?:helpers\.colors\.)?auto_select_colors\s*\('
+    message: |
+      `auto_select_colors` was renamed to `make_palette` in 0.5.0
+      (#156) for vocabulary alignment with `make_offset` /
+      `list_palettes`. Argument cleanup at the same time:
+      `n_series` → `n`, `color_type` → `kind`,
+      `highlight_index` → `highlight`.
+    fix_suggestion: 'dm.make_palette(n, kind="categorical")'
 
   - id: deprecated-width-token
     severity: critical

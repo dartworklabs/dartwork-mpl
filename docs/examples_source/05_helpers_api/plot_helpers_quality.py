@@ -29,6 +29,13 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=dm.figsize("16cm", "cinema"))
 x = np.linspace(0, 100, 10)  # Very sparse.
 y = np.sin(x) * 1000  # Very large values.
 
+# NOTE: The font-size and line-width literals below are *intentional
+# anti-patterns* — this example exists to demonstrate what
+# ``dm.helpers.quality.check_figure_quality`` catches. ``dm.fs/lw``
+# would smooth them into preset-relative sizes and the example would
+# silently stop reporting issues. Treat the ``fontsize=`` literals as
+# pedagogical, not as recommended style.
+
 ax1.plot(x, y, lw=0.1)  # Hairline.
 ax1.set_title("plot with issues", fontsize=6)  # Tiny title.
 # (Deliberately missing axis labels.)

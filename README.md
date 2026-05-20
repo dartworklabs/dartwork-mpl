@@ -31,8 +31,8 @@ Enhanced matplotlib styling, color management, and utility library engineered by
 - **Interactive Viewer**: FastAPI-powered web UI (`dartwork_mpl.ui`) for real-time parameter tuning.
 - **Multi-format Export**: Save figures in SVG, PNG, PDF, and EPS simultaneously.
 - **Prompt System**: Bundled prompt guides for AI coding assistants, with `get_prompt()` and `copy_prompt()`.
-- **MCP Server**: AI coding assistant integration via Model Context Protocol (12 resources + 3 resource templates / 7 tools / 2 prompts).
-- **LLM Integration**: Install usage guides to `.claude/` and `.cursor/` with `install_llm_txt()`.
+- **MCP Server**: AI coding assistant integration via Model Context Protocol (12 resources + 3 resource templates / 13 tools / 2 prompts).
+- **LLM Integration**: Install usage guides for **9 AI tools** (Claude Code, Cursor + MDC rules, GitHub Copilot, Codex CLI / `AGENTS.md`, Gemini CLI / Antigravity, Continue, Aider, Windsurf) with `install_llm_txt(targets="all")`.
 
 <br/>
 
@@ -378,7 +378,7 @@ src/dartwork_mpl/
 ├── mcp/                    # MCP server for AI assistants
 │   ├── server.py           #   FastMCP instance + wiring
 │   ├── resources.py        #   12 resources + 3 templates
-│   ├── tools.py            #   7 tools (color, linting, validation, info)
+│   ├── tools.py            #   13 tools (color, lint+autofix, validate+render, migrate, info)
 │   └── prompts.py          #   2 prompts (create_plot, style_review)
 └── asset/                  # Bundled styles, colors, fonts, icons, prompts
 ```

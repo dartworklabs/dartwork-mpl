@@ -58,7 +58,7 @@ def automated_visualization(
     print("Step 3: Creating figure ...")
     style = "scientific" if chart_type in ("scatter", "line") else "web"
     dm.style.use(style)
-    fig = plt.figure(figsize=dm.figsize("17cm", 0.6), dpi=200)
+    fig = plt.figure(figsize=dm.figsize("17cm", 0.6))
     ax = fig.add_subplot(111)
     print(f"    style: {style}")
 

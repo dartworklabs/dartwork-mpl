@@ -40,7 +40,7 @@ for i in range(n):
             boxstyle="round,pad=0.05",
             facecolor=color,
             edgecolor="white",
-            linewidth=1.5,
+            linewidth=dm.lw(0),
         )
         ax.add_patch(rect)
 

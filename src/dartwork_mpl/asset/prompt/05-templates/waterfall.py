@@ -1,9 +1,18 @@
 """Waterfall (bridge) chart - start, deltas, end."""
 
+# ai-template-meta-start
+# use_case: Show successive additive contributions to a total
+# difficulty: advanced
+# data_shape: labels: list[str], deltas: list[float]
+# tags: waterfall, bridge, finance, additive
+# ai-template-meta-end
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 import dartwork_mpl as dm
+
+dm.style.use("scientific")
 
 labels = ["Start", "Gain A", "Loss B", "Gain C", "Loss D", "End"]
 deltas = [100, 30, -15, 25, -20, 0]
@@ -38,7 +47,8 @@ ax.bar(
     edgecolor="white",
     linewidth=0.3,
 )
-ax.axhline(0, color="oc.gray7", linewidth=0.5)
+ax.axhline(0, color="oc.gray7", linewidth=0.3)
 ax.set_ylabel("Value")
+ax.set_title("Bridge / waterfall", fontsize=dm.fs(1), fontweight=dm.fw(1))
 dm.simple_layout(fig)
 dm.save_formats(fig, "waterfall")

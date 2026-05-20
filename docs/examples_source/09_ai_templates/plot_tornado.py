@@ -21,6 +21,8 @@ import numpy as np
 
 import dartwork_mpl as dm
 
+dm.style.use("scientific")
+
 categories = ["Cat A", "Cat B", "Cat C", "Cat D"]
 positive = [10, 25, 15, 30]
 negative = [-8, -20, -12, -28]
@@ -31,7 +33,9 @@ ax.barh(y_pos, positive, color="dc.ocean2", label="Positive")
 ax.barh(y_pos, negative, color="dc.vivid2", label="Negative")
 ax.set_yticks(y_pos)
 ax.set_yticklabels(categories)
-ax.axvline(0, color="black", linewidth=0.5)
+ax.axvline(0, color="black", linewidth=0.3)
 ax.set_xlabel("Value")
 ax.legend()
+ax.set_title("Tornado", fontsize=dm.fs(1), fontweight=dm.fw(1))
+
 dm.simple_layout(fig)

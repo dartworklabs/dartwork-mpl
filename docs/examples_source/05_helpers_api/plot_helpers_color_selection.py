@@ -52,7 +52,7 @@ for i, color in enumerate(colors_qual):
         color=color,
         alpha=0.8 if i != 2 else 1.0,
         edgecolor="black" if i == 2 else "none",
-        linewidth=2 if i == 2 else 0,
+        linewidth=dm.lw(0) if i == 2 else 0,
     )
 ax1.set_title("Categorical (Item 3 Highlighted)", fontsize=dm.fs(1))
 ax1.set_xlabel("Category", fontsize=dm.fs(0))

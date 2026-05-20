@@ -24,7 +24,7 @@ np.random.seed(42)
 dm.style.use("scientific")
 
 fig, ax = plt.subplots(
-    figsize=dm.figsize("18cm", "square"), subplot_kw={"projection": "polar"}
+    figsize=dm.figsize("13cm", "square"), subplot_kw={"projection": "polar"}
 )
 
 n_frequencies = 180
@@ -44,7 +44,7 @@ for angle, freq, color in zip(theta, frequencies, colors, strict=False):
         width=bar_width,
         bottom=2,
         color=color.to_hex(),
-        alpha=0.8,
+        alpha=0.85,
         edgecolor="none",
     )
     ax.bar(
@@ -57,14 +57,14 @@ for angle, freq, color in zip(theta, frequencies, colors, strict=False):
         edgecolor="none",
     )
 
-# Center circle
+# Center disk
 center = plt.Circle(
     (0, 0),
     2,
     transform=ax.transData._b,
-    facecolor="black",
-    edgecolor="white",
-    linewidth=2,
+    facecolor="dc.nordic1",
+    edgecolor="oc.purple9",
+    linewidth=dm.lw(0),
 )
 ax.add_patch(center)
 
@@ -81,7 +81,7 @@ for angle, label in [
         ha="center",
         va="center",
         fontsize=dm.fs(-1),
-        color="white",
+        color="oc.purple9",
         weight="bold",
     )
 
@@ -92,9 +92,9 @@ for r in [3, 5, 7, 9]:
             r,
             transform=ax.transData._b,
             fill=False,
-            edgecolor="white",
+            edgecolor="dc.nordic4",
             linewidth=0.3,
-            alpha=0.3,
+            alpha=0.6,
         )
     )
 
@@ -105,7 +105,6 @@ for s in ax.spines.values():
     s.set_visible(False)
 ax.set_xticks([])
 ax.set_yticks([])
-ax.set_facecolor("black")
 
 ax.text(
     0,
@@ -114,7 +113,7 @@ ax.text(
     fontsize=dm.fs(6),
     ha="center",
     va="center",
-    color="white",
+    color="oc.purple9",
     weight="bold",
 )
 

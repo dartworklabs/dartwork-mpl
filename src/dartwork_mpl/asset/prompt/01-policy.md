@@ -96,11 +96,34 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
 
 - **Enforced.** Do **not** pass `fontsize=<literal>` (lint warning:
   `fontsize-literal`). Use `dm.fs(n)` for an offset from the active
-  style's base size, or rely on style defaults.
+  style's base size, or rely on style defaults. Typical offsets:
+  `dm.fs(-1)` for tick / legend / annotation text, `dm.fs(0)` for
+  body, `dm.fs(1)` for emphasized labels, `dm.fs(2..4)` for titles
+  and section headings.
 - **Enforced.** Do **not** pass `linewidth=<literal>` / `lw=<literal>`
-  (lint warning: `linewidth-literal`). Use `dm.lw(n)` instead.
-  `linewidth=0` is allowed as the canonical "no border" idiom.
-- Same recommendation for `dm.fw(n)` (weight).
+  with an integer-part ≥ 1 (lint warning: `linewidth-literal`). Use
+  `dm.lw(n)` instead — typical offsets: `dm.lw(0)` for the body line,
+  `dm.lw(1)` for emphasized strokes, `dm.lw(2..)` for poster work.
+- Sub-1 **hairline literals** (`linewidth=0.3` for separator edges,
+  `linewidth=0.5` for dashed reference lines) are explicitly allowed
+  by the lint engine *and recommended* for elements that must keep a
+  small positive width regardless of preset. ``dm.lw(-1)`` is *not*
+  a drop-in replacement for these — most presets set
+  ``rcParams['lines.linewidth'] = 1.0``, which makes ``dm.lw(-1)``
+  resolve to ``0.0`` and collapses the edge into the "no border"
+  idiom (often invisibly).
+- `linewidth=0` is always fine — the canonical "no border" idiom.
+- Same recommendation for `dm.fw(n)` (weight). Each step is +100; use
+  `dm.fw(1)` for "bold" relative to the preset, `dm.fw(-1)` for a
+  lighter accent.
+- **Bundled templates always call `dm.style.use(...)` first and pipe
+  fonts/weights/data-line widths through `dm.fs` / `dm.fw` /
+  `dm.lw`.** Edge hairlines stay as literal `0.3` so they remain
+  visible across presets. Treat this split as the recommended idiom
+  for new agent-authored scripts — a literal font size or line width
+  pinned to a single preset will look wrong as soon as the user
+  switches to `presentation` or `*-kr`, but hairline separators
+  *should* stay at a fixed pixel width.
 
 ## Save and display
 
@@ -115,8 +138,16 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
 
 ## Style presets
 
-- Apply via `dm.style.use("scientific")` (or
-  `dm.style.stack([...])` for a stack).
+- **Always call `dm.style.use(...)` (or `dm.style.stack([...])`) before
+  building the figure.** A figure that relies on whatever style was
+  active by accident will look inconsistent across notebooks. Every
+  bundled template in `05-templates/` opens with
+  `dm.style.use("scientific")` for exactly this reason.
+- Available presets: `scientific`, `report`, `presentation`,
+  `minimal`, plus their `-kr` Korean variants.
 - Korean text → `*-kr` variants (`scientific-kr`, `report-kr`,
   `presentation-kr`).
+- Use `dm.style.context("preset")` when a single block needs a
+  different look — it restores the previous style on exit so the
+  preset does not leak into later figures.
 - Never call `plt.style.use(...)`.

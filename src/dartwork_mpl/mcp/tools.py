@@ -265,6 +265,180 @@ def register_tools(mcp: FastMCP) -> None:
         return _find_template(intent, top_k=top_k)
 
     @mcp.tool()
+    def apply_lint_fixes(code: str) -> dict[str, Any]:
+        """Apply safe identifier-level rewrites for a curated subset
+        of lint rules, then return the fixed source plus the diff
+        between before/after lint runs.
+
+        Wraps :func:`dartwork_mpl.lint.apply_lint_fixes`. Currently
+        rewrites ``plt.style.use → dm.style.use``,
+        ``dm.cm2in(N) → dm.cm(N)``, and the no-arg
+        ``plt.tight_layout() / fig.tight_layout()`` calls →
+        ``dm.simple_layout(fig)``. Context-dependent rules (e.g.
+        ``figsize-direct`` — which needs the agent to choose a width
+        and aspect token) are left untouched and surfaced in
+        ``unfixed`` so the agent knows what's still pending.
+
+        Parameters
+        ----------
+        code : str
+            Python source.
+
+        Returns
+        -------
+        dict
+            ``{"fixed_code": str, "applied": list[Issue],
+            "unfixed": list[Issue]}``. Each Issue is a dict shaped
+            like :func:`lint_dartwork_mpl_code_json` entries.
+        """
+        from dartwork_mpl.lint import apply_lint_fixes as _apply
+
+        fixed_code, applied, unfixed = _apply(code)
+
+        def _serialise(issue: Any) -> dict[str, Any]:
+            return {
+                "rule_id": issue.rule_id,
+                "severity": issue.severity,
+                "line": issue.line,
+                "column": issue.column,
+                "message": issue.message,
+                "fix_suggestion": issue.fix_suggestion,
+            }
+
+        return {
+            "fixed_code": fixed_code,
+            "applied": [_serialise(i) for i in applied],
+            "unfixed": [_serialise(i) for i in unfixed],
+        }
+
+    @mcp.tool()
+    def render_template(
+        plot_type: str,
+        return_format: str = "base64",
+        timeout_seconds: float = 30.0,
+    ) -> dict[str, Any]:
+        """Execute a bundled plot template and return the rendered PNG.
+
+        Useful for MCP UIs that can display inline images (Claude
+        Desktop, Cursor MCP UI extensions): the agent can offer a
+        thumbnail of "here's what `tornado` looks like before I
+        adapt it to your data" without round-tripping through a
+        filesystem.
+
+        Parameters
+        ----------
+        plot_type : str
+            Template id (e.g. ``"bar"``, ``"line"``, ``"plot_3d"``).
+        return_format : str, optional
+            ``"base64"`` (default) returns a base64-encoded PNG string
+            under the ``png_base64`` key. ``"path"`` returns the
+            temp-file path under ``"png_path"`` instead. Use the path
+            variant only when the MCP client can read local files.
+        timeout_seconds : float, optional
+            Hard timeout for the subprocess. Default 30 s.
+
+        Returns
+        -------
+        dict
+            ``{"status": "ok"|"unknown_template"|"render_error"|
+            "timeout", "plot_type": str, "png_base64": str|None,
+            "png_path": str|None, "stderr": str}``.
+        """
+        import base64
+        import subprocess
+        import sys
+        import tempfile
+        import textwrap
+        from pathlib import Path as _Path
+
+        from .. import prompt as _prompt_mod
+
+        template_dir = _prompt_mod._PROMPT_DIR / "05-templates"
+        path = template_dir / f"{plot_type.lower()}.py"
+        if not path.exists():
+            available = sorted(p.stem for p in template_dir.glob("*.py"))
+            return {
+                "status": "unknown_template",
+                "plot_type": plot_type,
+                "png_base64": None,
+                "png_path": None,
+                "stderr": (
+                    f"No template named {plot_type!r}. Available: {available}"
+                ),
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_base = _Path(tmp) / "out"
+            # The template ends with ``dm.save_formats(fig, "<name>")``
+            # which writes to ``<cwd>/<name>.png``. We just need to
+            # run it in our tmp dir and read whatever PNG appears.
+            runner = textwrap.dedent(
+                """\
+                import os, sys
+                os.chdir({tmp!r})
+                import matplotlib
+                matplotlib.use("Agg")
+                sys.path.insert(0, {tmpdir!r})
+                exec(compile(open({path!r}).read(), {path!r}, "exec"),
+                     {{"__name__": "__render__"}})
+                """
+            ).format(
+                tmp=str(out_base.parent),
+                tmpdir=str(out_base.parent),
+                path=str(path),
+            )
+
+            try:
+                proc = subprocess.run(
+                    [sys.executable, "-c", runner],
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout_seconds,
+                )
+            except subprocess.TimeoutExpired as exc:
+                return {
+                    "status": "timeout",
+                    "plot_type": plot_type,
+                    "png_base64": None,
+                    "png_path": None,
+                    "stderr": (f"Render exceeded {exc.timeout}s timeout."),
+                }
+
+            pngs = sorted(out_base.parent.glob("*.png"))
+            if proc.returncode != 0 or not pngs:
+                return {
+                    "status": "render_error",
+                    "plot_type": plot_type,
+                    "png_base64": None,
+                    "png_path": None,
+                    "stderr": (proc.stderr or proc.stdout)[:2000],
+                }
+
+            png_bytes = pngs[0].read_bytes()
+            if return_format == "path":
+                # Copy out of the TemporaryDirectory before it
+                # cleans up, but stash in a stable location the
+                # caller can read.
+                persistent = _Path(tempfile.gettempdir()) / (
+                    f"dartwork-mpl-render-{plot_type}.png"
+                )
+                persistent.write_bytes(png_bytes)
+                return {
+                    "status": "ok",
+                    "plot_type": plot_type,
+                    "png_base64": None,
+                    "png_path": str(persistent),
+                    "stderr": proc.stderr.strip(),
+                }
+            return {
+                "status": "ok",
+                "plot_type": plot_type,
+                "png_base64": base64.b64encode(png_bytes).decode("ascii"),
+                "png_path": None,
+                "stderr": proc.stderr.strip(),
+            }
+
+    @mcp.tool()
     def migrate_legacy_code(code: str) -> str:
         """Rewrite 0.3-era dartwork-mpl source toward the 0.4 idioms.
 
@@ -299,6 +473,173 @@ def register_tools(mcp: FastMCP) -> None:
         from dartwork_mpl.lint import migrate_legacy_code as _migrate
 
         return _migrate(code)
+
+    # ── Figure Validation Tool (execute + validate) ──────────────────
+
+    @mcp.tool()
+    def validate_generated_plot(
+        code: str, figure_var: str = "fig", timeout_seconds: float = 20.0
+    ) -> dict[str, Any]:
+        """Execute a dartwork-mpl script in an isolated subprocess and
+        return the structured ``dm.validate_figure`` report.
+
+        This closes the loop between *"agent generated some plot code"*
+        and *"is the rendered figure actually free of overflow, clipping,
+        and asymmetric margins?"* — issues that the lint pass can't see.
+        The code runs in a fresh ``python`` subprocess with the ``Agg``
+        backend forced on, so it never blocks on a GUI window and can
+        be timed out cleanly.
+
+        Parameters
+        ----------
+        code : str
+            Python source. Should construct a ``matplotlib`` figure and
+            bind it to the variable name ``figure_var`` (default
+            ``"fig"``). The lint pass runs first; critical lint issues
+            short-circuit before any code is executed.
+        figure_var : str, optional
+            Name of the variable holding the figure. Default ``"fig"``.
+        timeout_seconds : float, optional
+            Hard timeout for the subprocess. Default 20 s.
+
+        Returns
+        -------
+        dict
+            ``{"status": "ok"|"lint_blocked"|"exec_error"|"no_figure"
+            |"timeout", "lint": list[...], "visual_warnings":
+            list[...], "stderr": str}``. ``visual_warnings`` items are
+            ``{"severity", "check_id", "message", "detail"}`` dicts.
+
+        Notes
+        -----
+        - The subprocess inherits the parent Python; it relies on
+          ``dartwork_mpl`` being importable in the current
+          environment.
+        - This tool **executes the provided code**. It is intended
+          for trusted agent-generated snippets, not arbitrary user
+          input from the web. The subprocess is sandboxed only in
+          the sense that it cannot affect the caller's matplotlib
+          state.
+        """
+        import json
+        import subprocess
+        import sys
+        import textwrap
+
+        from dartwork_mpl.lint import lint as _lint
+
+        lint_issues = [
+            {
+                "rule_id": i.rule_id,
+                "severity": i.severity,
+                "line": i.line,
+                "message": i.message,
+                "fix_suggestion": i.fix_suggestion,
+            }
+            for i in _lint(code)
+        ]
+        critical = [i for i in lint_issues if i["severity"] == "critical"]
+        if critical:
+            return {
+                "status": "lint_blocked",
+                "lint": lint_issues,
+                "visual_warnings": [],
+                "stderr": (
+                    "Critical lint issues must be fixed before execution: "
+                    + ", ".join(str(i["rule_id"]) for i in critical)
+                ),
+            }
+
+        runner = textwrap.dedent(
+            """\
+            import json
+            import sys
+            import matplotlib
+            matplotlib.use("Agg")
+            import matplotlib.pyplot as plt
+
+            ns: dict = {{"__name__": "__sandbox__"}}
+            user_code = sys.stdin.read()
+            try:
+                exec(compile(user_code, "<agent-snippet>", "exec"), ns)
+            except Exception as exc:
+                json.dump(
+                    {{
+                        "status": "exec_error",
+                        "exc_type": type(exc).__name__,
+                        "exc_msg": str(exc),
+                    }},
+                    sys.stdout,
+                )
+                sys.exit(0)
+
+            fig = ns.get({figure_var!r})
+            if fig is None:
+                # Fall back to whatever Pyplot tracked.
+                figs = plt.get_fignums()
+                if figs:
+                    fig = plt.figure(figs[-1])
+            if fig is None:
+                json.dump(
+                    {{"status": "no_figure"}},
+                    sys.stdout,
+                )
+                sys.exit(0)
+
+            from dartwork_mpl import validate_figure
+
+            warnings = validate_figure(fig, quiet=True)
+            json.dump(
+                {{
+                    "status": "ok",
+                    "visual_warnings": [
+                        {{
+                            "severity": w.severity.name
+                            if hasattr(w.severity, "name")
+                            else str(w.severity),
+                            "check_id": w.check_id,
+                            "message": w.message,
+                            "detail": w.detail,
+                        }}
+                        for w in warnings
+                    ],
+                }},
+                sys.stdout,
+            )
+            """
+        ).format(figure_var=figure_var)
+
+        try:
+            proc = subprocess.run(
+                [sys.executable, "-c", runner],
+                input=code,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired as exc:
+            return {
+                "status": "timeout",
+                "lint": lint_issues,
+                "visual_warnings": [],
+                "stderr": f"Subprocess exceeded {exc.timeout}s timeout.",
+            }
+
+        stderr = proc.stderr.strip()
+        try:
+            payload: dict[str, Any] = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            return {
+                "status": "exec_error",
+                "lint": lint_issues,
+                "visual_warnings": [],
+                "stderr": stderr or proc.stdout[:1000],
+            }
+
+        payload["lint"] = lint_issues
+        payload.setdefault("visual_warnings", [])
+        payload["stderr"] = stderr
+        return payload
 
     # ── Data Validation Tool ─────────────────────────────────────────
 
@@ -397,14 +738,27 @@ def register_tools(mcp: FastMCP) -> None:
                 "dark",
             ]
 
-        # Static list of registered prompts. We previously poked at
-        # ``mcp._prompt_manager._prompts`` to enumerate dynamically, but
-        # that private attribute is not part of fastmcp's public API
-        # and shifted between 2.x and 3.x. The set of prompts we ship
-        # is small and changes alongside this file, so the static list
-        # is both simpler and forward-compatible. Keep this in sync
-        # with ``register_prompts`` in ``prompts.py``.
-        registered_prompts = ["create_plot", "style_review"]
+        # Derive the prompt list from ``prompts.py`` source rather than
+        # poking at FastMCP private state (``mcp._prompt_manager._prompts``
+        # shifted between 2.x and 3.x). Scanning the source for
+        # ``@mcp.prompt(...)\n[…]def <name>`` is version-independent and
+        # auto-tracks ``register_prompts`` so the catalog never drifts.
+        registered_prompts: list[str] = []
+        try:
+            import re as _re
+
+            prompts_src = (Path(__file__).parent / "prompts.py").read_text(
+                encoding="utf-8"
+            )
+            prompt_re = _re.compile(
+                r"@mcp\.prompt\([^)]*\)\s*\n\s*def\s+(\w+)\s*\(", _re.MULTILINE
+            )
+            registered_prompts = prompt_re.findall(prompts_src)
+        except OSError:
+            # Source file unreadable (very unlikely). Keep the
+            # response well-formed by emitting an empty list rather
+            # than crashing the tool.
+            registered_prompts = []
 
         return json.dumps(
             {
@@ -477,9 +831,12 @@ def register_tools(mcp: FastMCP) -> None:
                     "list_color_families",
                     "lint_dartwork_mpl_code",
                     "lint_dartwork_mpl_code_json",
+                    "apply_lint_fixes",
                     "migrate_legacy_code",
                     "find_template",
+                    "render_template",
                     "validate_plot_data",
+                    "validate_generated_plot",
                     "dartwork_mpl_info",
                 ],
                 "prompts": registered_prompts,
