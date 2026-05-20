@@ -216,14 +216,31 @@
   </div>
 
   <div class="dm-iv-slider" id="dm-iv-slider">
-    <img src="../_static/interactive_viewer_default.jpeg"
+    <img id="dm-iv-img-default"
          alt="Interactive viewer default state — sine waveform at 2 Hz with default blue line color and noise level 0.10" />
     <div class="dm-iv-after" id="dm-iv-after">
-      <img src="../_static/interactive_viewer_modified.jpeg"
+      <img id="dm-iv-img-modified"
            alt="Interactive viewer after parameter changes — sawtooth waveform at 6.5 Hz, teal line color, fill area under curve enabled" />
     </div>
     <div class="dm-iv-handle" id="dm-iv-handle"></div>
   </div>
+
+  <script>
+    // Resolve _static/ regardless of host page depth or direct open.
+    (function () {
+      var here = window.location.pathname;
+      var base;
+      if (here.indexOf("/_static/") !== -1) {
+        base = "";
+      } else {
+        var dirs = here.replace(/^\/+|\/+[^\/]*$/g, "").split("/").filter(Boolean);
+        var up = dirs.length > 0 ? "../".repeat(dirs.length) : "";
+        base = up + "_static/";
+      }
+      document.getElementById("dm-iv-img-default").src = base + "interactive_viewer_default.jpeg";
+      document.getElementById("dm-iv-img-modified").src = base + "interactive_viewer_modified.jpeg";
+    })();
+  </script>
 
   <p class="dm-iv-hint">↔ Drag the handle to wipe between the two states.</p>
 </div>
