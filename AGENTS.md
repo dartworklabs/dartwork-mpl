@@ -42,6 +42,19 @@ dm.save_formats(fig, "out", formats=("png", "pdf"))     # 4. multi-format save
 - **Never call**: `plt.tight_layout()`, raw `figsize=(w, h)` tuples on
   `plt.subplots` / `plt.figure`. Always wrap with `dm.figsize(...)`
   and call `dm.simple_layout(fig)` after plotting.
+- **Always size fonts, data-line widths, and weights relative to the
+  active preset**: `fontsize=dm.fs(n)`, `linewidth=dm.lw(n)`,
+  `fontweight=dm.fw(n)`. Each is an integer offset from the preset's
+  base value (`0` = base, `+1` / `-1` = step up/down). Literals like
+  `fontsize=12` or `linewidth=1.5` are lint-warning anti-patterns —
+  they look wrong as soon as the user swaps to `presentation` or a
+  `*-kr` preset.
+- **Sub-1 hairline literals stay as literals**: `linewidth=0.3` for
+  separator edges, `linewidth=0.5` for dashed reference / grid lines.
+  ``dm.lw(-1)`` is *not* a drop-in — it resolves to `0.0` with most
+  presets and collapses the edge into the "no border" idiom (often
+  invisibly). `linewidth=0` itself is fine as the explicit
+  "no border" form.
 
 ## Anti-patterns (top 3)
 
@@ -60,7 +73,7 @@ below) for the complete list. The most common ones AI agents trip on:
 
 For Claude Code / Cursor / any MCP client, see the step-by-step setup
 in [`docs/integrations/mcp_server.md`](docs/integrations/mcp_server.md).
-The server exposes 7 tools (lint, validate, color lookup, info) and
+The server exposes 13 tools (lint + auto-fix + figure validation + render + color lookup + info) and
 12 resources (the prompt corpus + 18 plot templates). The tools you'll
 use most:
 

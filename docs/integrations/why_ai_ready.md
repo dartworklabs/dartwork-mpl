@@ -37,11 +37,16 @@ gate.
 The **Model Context Protocol (MCP)** gives AI assistants **live access** to
 dartwork-mpl's documentation, colors, styles, and validation tools:
 
-| Category       | Count | Examples                                                           |
-| -------------- | ----- | ------------------------------------------------------------------ |
-| **Resources**  | 8     | Usage guides, color palettes, font lists, style presets, plot templates |
-| **Tools**      | 7     | Color lookup, code linting, data validation, GitHub file fetch     |
-| **Prompts**    | 2     | Guided plot creation, style compliance review                      |
+| Category       | Count | Examples                                                                                 |
+| -------------- | ----- | ---------------------------------------------------------------------------------------- |
+| **Resources**  | 12 + 3 templated | Agent entry, policy, anti-patterns, recipes, palette/colors, palette/fonts, styles/list, templates/list, `api/{name}`, `styles/{preset}`, `templates/{plot_type}` |
+| **Tools**      | 10    | Color lookup + mix + family list, code lint (text & JSON), find template, migrate 0.3 code, data validation, GitHub fetch, package info |
+| **Prompts**    | 2     | `create_plot` (guided generation), `style_review` (compliance review)                    |
+
+> Source-of-truth counts derived from `dartwork-mpl-mcp`'s
+> ``list_resources`` / ``list_tools`` / ``list_prompts`` handshake.
+> The exact catalog ships in
+> [`src/dartwork_mpl/mcp/`](https://github.com/dartworklabs/dartwork-mpl/tree/main/src/dartwork_mpl/mcp).
 
 The AI assistant always has **the latest, most accurate documentation** —
 no copy-paste, no stale caches, no hallucinated APIs. Tools like
