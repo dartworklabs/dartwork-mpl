@@ -73,6 +73,26 @@ EXPECTED_MCP_PROMPTS: frozenset[str] = frozenset(
 )
 
 
+def _mcp_method(obj: object, name: str):
+    """Resolve a FastMCP introspection method across major versions.
+
+    FastMCP 2.x exposes ``_list_tools`` / ``_call_tool`` (single
+    underscore — internal-but-stable). FastMCP 3.x lifted the same
+    names to the public surface as ``list_tools`` / ``call_tool``.
+    Our ``pyproject.toml`` pin is ``fastmcp>=2.13.3,<4`` so both
+    forms must work; prefer the public one when it exists.
+    """
+    method = getattr(obj, name, None)
+    if method is None:
+        method = getattr(obj, f"_{name}", None)
+    if method is None:
+        raise AttributeError(
+            f"FastMCP {type(obj).__name__!r} has neither {name!r} nor "
+            f"_{name!r} — version pin in pyproject.toml may be wrong."
+        )
+    return method
+
+
 class TestMcpSurfaceContract:
     """Locks the MCP tool/resource/prompt catalog."""
 
@@ -85,7 +105,7 @@ class TestMcpSurfaceContract:
         return asyncio.run(coro)
 
     def test_tool_set_matches_contract(self) -> None:
-        tools = self._run(self.mcp.list_tools())
+        tools = self._run(_mcp_method(self.mcp, "list_tools")())
         got = {t.name for t in tools}
         assert got == EXPECTED_MCP_TOOLS, (
             f"MCP tool surface drift.\n"
@@ -94,7 +114,7 @@ class TestMcpSurfaceContract:
         )
 
     def test_resource_set_matches_contract(self) -> None:
-        resources = self._run(self.mcp.list_resources())
+        resources = self._run(_mcp_method(self.mcp, "list_resources")())
         got = {str(r.uri) for r in resources}
         assert got == EXPECTED_MCP_RESOURCE_URIS, (
             f"MCP resource surface drift.\n"
@@ -103,15 +123,17 @@ class TestMcpSurfaceContract:
         )
 
     def test_prompt_set_matches_contract(self) -> None:
-        prompts = self._run(self.mcp.list_prompts())
+        prompts = self._run(_mcp_method(self.mcp, "list_prompts")())
         got = {p.name for p in prompts}
         assert got == EXPECTED_MCP_PROMPTS
 
     def test_every_resource_responds(self) -> None:
         """Each advertised resource must return a non-empty body."""
-        resources = self._run(self.mcp.list_resources())
+        list_resources = _mcp_method(self.mcp, "list_resources")
+        read_resource = _mcp_method(self.mcp, "read_resource")
+        resources = self._run(list_resources())
         for r in resources:
-            payload = self._run(self.mcp.read_resource(str(r.uri)))
+            payload = self._run(read_resource(str(r.uri)))
             body = payload.contents[0].content
             assert body and len(body) > 5, (
                 f"resource {r.uri} returned an empty body"
@@ -119,20 +141,20 @@ class TestMcpSurfaceContract:
 
     def test_three_template_uris_respond(self) -> None:
         """Templated resources (``api/{name}`` etc.) work too."""
+        read_resource = _mcp_method(self.mcp, "read_resource")
         for uri in (
             "dartwork-mpl://api/figsize",
             "dartwork-mpl://styles/dmpl",
             "dartwork-mpl://templates/bar",
         ):
-            payload = self._run(self.mcp.read_resource(uri))
+            payload = self._run(read_resource(uri))
             body = payload.contents[0].content
             assert body and len(body) > 5
 
     def test_render_template_returns_png(self) -> None:
         """``render_template`` must produce a non-trivial PNG."""
-        result = self._run(
-            self.mcp.call_tool("render_template", {"plot_type": "bar"})
-        )
+        call_tool = _mcp_method(self.mcp, "call_tool")
+        result = self._run(call_tool("render_template", {"plot_type": "bar"}))
         payload = json.loads(result.content[0].text)
         assert payload["status"] == "ok"
         assert payload["png_base64"] is not None
@@ -143,14 +165,13 @@ class TestMcpSurfaceContract:
     def test_validate_generated_plot_lint_blocks_critical(self) -> None:
         """``validate_generated_plot`` must short-circuit on critical
         lint before attempting to exec the snippet."""
+        call_tool = _mcp_method(self.mcp, "call_tool")
         bad = (
             "import matplotlib.pyplot as plt\n"
             "fig, ax = plt.subplots(figsize=(6.7, 4.0))\n"
             "plt.tight_layout()\n"
         )
-        result = self._run(
-            self.mcp.call_tool("validate_generated_plot", {"code": bad})
-        )
+        result = self._run(call_tool("validate_generated_plot", {"code": bad}))
         payload = json.loads(result.content[0].text)
         assert payload["status"] == "lint_blocked"
         rule_ids = {i["rule_id"] for i in payload["lint"]}
@@ -158,14 +179,13 @@ class TestMcpSurfaceContract:
         assert "tight-layout" in rule_ids
 
     def test_apply_lint_fixes_round_trip(self) -> None:
+        call_tool = _mcp_method(self.mcp, "call_tool")
         bad = (
             "import matplotlib.pyplot as plt\n"
             "plt.style.use('ggplot')\n"
             "plt.tight_layout()\n"
         )
-        result = self._run(
-            self.mcp.call_tool("apply_lint_fixes", {"code": bad})
-        )
+        result = self._run(call_tool("apply_lint_fixes", {"code": bad}))
         payload = json.loads(result.content[0].text)
         assert "dm.style.use" in payload["fixed_code"]
         assert "dm.simple_layout" in payload["fixed_code"]
