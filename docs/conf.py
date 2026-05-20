@@ -101,6 +101,10 @@ html_css_files = [
     "font-specimens.css",
     "font-face.css",
     "dynamic_ux.css",
+    # Radix-design overlay — last so it wins the cascade. Token aliases
+    # and component-level rules layered on top of Shibuya defaults.
+    # See _static/radix-design.css for the full token catalog.
+    "radix-design.css",
 ]
 html_js_files = ["custom.js", "dynamic_ux.js"]
 

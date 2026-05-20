@@ -1,0 +1,594 @@
+/* ============================================================================
+ * radix-design.css — design-token overhaul layered on top of Shibuya.
+ *
+ * Strategy
+ * --------
+ * • Don't replace Shibuya. Override the points that matter (typography,
+ *   color, spacing, code styling) so the entire docs read consistently.
+ * • Tokens come from Radix UI Colors (12-step gray + teal + alpha
+ *   overlays). Everything else maps to those tokens — no raw hex codes
+ *   in component rules.
+ * • Conventions: --rx-* names (Radix tokens), --dm-* names (dartwork-
+ *   specific aliases on top). The existing --sy-* names from Shibuya
+ *   stay untouched.
+ *
+ * Loaded after custom.css and dynamic_ux.css (see conf.py order).
+ * ============================================================================ */
+
+/* ---------------------------------------------------------------------------
+ * 1. Tokens — Radix gray (slate) + accent (teal) scale
+ * --------------------------------------------------------------------------- */
+
+:root {
+  /* Gray scale — Radix Slate (the canonical neutral) */
+  --rx-gray-1: #fcfcfd;
+  --rx-gray-2: #f9f9fb;
+  --rx-gray-3: #f0f0f3;
+  --rx-gray-4: #e8e8ec;
+  --rx-gray-5: #e0e1e6;
+  --rx-gray-6: #d9d9e0;
+  --rx-gray-7: #cdced6;
+  --rx-gray-8: #b9bbc6;
+  --rx-gray-9: #8b8d98;
+  --rx-gray-10: #80828d;
+  --rx-gray-11: #60646c;
+  --rx-gray-12: #1c2024;
+
+  /* Alpha overlays — for tinted backgrounds and hover states */
+  --rx-gray-a1: rgba(0, 0, 85, 0.012);
+  --rx-gray-a2: rgba(0, 0, 51, 0.024);
+  --rx-gray-a3: rgba(0, 8, 60, 0.059);
+  --rx-gray-a4: rgba(0, 0, 39, 0.090);
+  --rx-gray-a5: rgba(0, 0, 30, 0.122);
+  --rx-gray-a6: rgba(0, 0, 32, 0.149);
+  --rx-gray-a7: rgba(2, 8, 38, 0.196);
+  --rx-gray-a8: rgba(0, 4, 47, 0.275);
+  --rx-gray-a9: rgba(0, 5, 24, 0.455);
+  --rx-gray-a10: rgba(0, 4, 21, 0.498);
+  --rx-gray-a11: rgba(0, 3, 13, 0.624);
+  --rx-gray-a12: rgba(0, 2, 7, 0.890);
+
+  /* Accent — Teal (matches Shibuya's accent_color="teal" choice) */
+  --rx-accent-1: #fafefd;
+  --rx-accent-2: #f3fbf9;
+  --rx-accent-3: #e0f8f3;
+  --rx-accent-4: #ccf3ea;
+  --rx-accent-5: #b8eae0;
+  --rx-accent-6: #a1ddd1;
+  --rx-accent-7: #83cdbf;
+  --rx-accent-8: #53b9ab;
+  --rx-accent-9: #12a594;
+  --rx-accent-10: #0d9b8a;
+  --rx-accent-11: #008573;
+  --rx-accent-12: #0d3d38;
+
+  /* Magenta for inline code (Radix's signature) */
+  --rx-pink-3: #fceef5;
+  --rx-pink-11: #cd1d8d;
+
+  /* Space scale (px-based; --scaling=1 baseline) */
+  --rx-space-1: 4px;
+  --rx-space-2: 8px;
+  --rx-space-3: 12px;
+  --rx-space-4: 16px;
+  --rx-space-5: 24px;
+  --rx-space-6: 32px;
+  --rx-space-7: 40px;
+  --rx-space-8: 48px;
+  --rx-space-9: 64px;
+
+  /* Font-size scale */
+  --rx-fs-1: 12px;
+  --rx-fs-2: 14px;
+  --rx-fs-3: 16px;
+  --rx-fs-4: 18px;
+  --rx-fs-5: 20px;
+  --rx-fs-6: 24px;
+  --rx-fs-7: 28px;
+  --rx-fs-8: 35px;
+  --rx-fs-9: 60px;
+
+  /* Radius — keep modest; large radii undermine the precision feel */
+  --rx-radius-1: 3px;
+  --rx-radius-2: 4px;
+  --rx-radius-3: 6px;
+  --rx-radius-4: 8px;
+  --rx-radius-5: 12px;
+  --rx-radius-6: 16px;
+  --rx-radius-full: 9999px;
+
+  /* Shadow ladder — Radix's stacked-inset+blur composition */
+  --rx-shadow-1:
+    inset 0 -1px 1px 0 var(--rx-gray-a3),
+    inset 0 0 0 1px var(--rx-gray-a4);
+  --rx-shadow-2:
+    0 0 0 1px var(--rx-gray-a4),
+    0 1px 2px 0 var(--rx-gray-a5);
+  --rx-shadow-3:
+    0 0 0 1px var(--rx-gray-a5),
+    0 2px 3px -1px var(--rx-gray-a3),
+    0 3px 8px -2px var(--rx-gray-a6);
+  --rx-shadow-4:
+    0 0 0 1px var(--rx-gray-a6),
+    0 8px 40px var(--rx-gray-a3),
+    0 12px 32px -16px var(--rx-gray-a5);
+
+  /* dartwork aliases — what component rules below actually reference */
+  --dm-text-strong: var(--rx-gray-12);
+  --dm-text-default: var(--rx-gray-12);
+  --dm-text-muted: var(--rx-gray-11);
+  --dm-text-faint: var(--rx-gray-10);
+  --dm-link: var(--rx-accent-11);
+  --dm-link-hover: var(--rx-accent-9);
+  --dm-bg-page: #ffffff;
+  --dm-bg-subtle: var(--rx-gray-2);
+  --dm-bg-panel: var(--rx-gray-1);
+  --dm-bg-hover: var(--rx-gray-a3);
+  --dm-bg-active: var(--rx-gray-a4);
+  --dm-border-faint: var(--rx-gray-a4);
+  --dm-border: var(--rx-gray-a6);
+  --dm-border-strong: var(--rx-gray-a8);
+}
+
+/* Dark mode counterparts — Radix slateDark + tealDark */
+html.dark,
+body[data-theme="dark"] {
+  --rx-gray-1: #111113;
+  --rx-gray-2: #18191b;
+  --rx-gray-3: #212225;
+  --rx-gray-4: #272a2d;
+  --rx-gray-5: #2e3135;
+  --rx-gray-6: #363a3f;
+  --rx-gray-7: #43484e;
+  --rx-gray-8: #5a6169;
+  --rx-gray-9: #696e77;
+  --rx-gray-10: #777b84;
+  --rx-gray-11: #b0b4ba;
+  --rx-gray-12: #edeef0;
+
+  --rx-gray-a1: rgba(0, 0, 0, 0);
+  --rx-gray-a2: rgba(216, 248, 248, 0.027);
+  --rx-gray-a3: rgba(244, 246, 248, 0.075);
+  --rx-gray-a4: rgba(229, 247, 251, 0.106);
+  --rx-gray-a5: rgba(238, 249, 251, 0.137);
+  --rx-gray-a6: rgba(238, 247, 254, 0.180);
+  --rx-gray-a7: rgba(231, 247, 254, 0.247);
+  --rx-gray-a8: rgba(235, 248, 255, 0.349);
+  --rx-gray-a9: rgba(236, 245, 255, 0.420);
+  --rx-gray-a10: rgba(238, 246, 255, 0.483);
+  --rx-gray-a11: rgba(243, 249, 255, 0.702);
+  --rx-gray-a12: rgba(253, 254, 255, 0.937);
+
+  --rx-accent-3: #112725;
+  --rx-accent-9: #12a594;
+  --rx-accent-10: #25c2ad;
+  --rx-accent-11: #76dac3;
+  --rx-pink-3: #310f1f;
+  --rx-pink-11: #e93d82;
+
+  --dm-bg-page: #0c0c0e;
+  --dm-bg-subtle: var(--rx-gray-2);
+  --dm-bg-panel: var(--rx-gray-2);
+}
+
+/* ---------------------------------------------------------------------------
+ * 2. Typography — heading scale + body rhythm
+ *
+ * Match Radix Themes' h1/h2 scale (35/24 with negative letter-spacing).
+ * Shibuya gives h1=36/800 by default; Radix runs 35/700. We adopt 700
+ * weight + the tighter letter-spacing because 800 reads cramped on the
+ * Inter cuts we ship.
+ * --------------------------------------------------------------------------- */
+
+body {
+  color: var(--dm-text-default);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+:where(.yue) h1,
+:where(.yue) h2,
+:where(.yue) h3,
+:where(.yue) h4 {
+  color: var(--dm-text-strong);
+  font-feature-settings: "ss01" on, "cv11" on; /* Inter stylistic alts */
+}
+
+:where(.yue) h1 {
+  font-size: 35px;
+  font-weight: 700;
+  line-height: 40px;
+  letter-spacing: -0.7px;
+  margin-top: 0;
+  margin-bottom: var(--rx-space-2);
+}
+
+:where(.yue) h2 {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 30px;
+  letter-spacing: -0.3px;
+  margin-top: var(--rx-space-8);
+  margin-bottom: var(--rx-space-3);
+}
+
+:where(.yue) h3 {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  letter-spacing: -0.2px;
+  margin-top: var(--rx-space-6);
+  margin-bottom: var(--rx-space-2);
+}
+
+:where(.yue) h4 {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 24px;
+  letter-spacing: -0.1px;
+  margin-top: var(--rx-space-5);
+  margin-bottom: var(--rx-space-2);
+}
+
+/* Wrap our body-prose selectors in :where() so they contribute zero
+ * specificity. Any widget rule defined with a real class selector
+ * (e.g. .dm-landing-tagline { font-size: 3.2em }) wins automatically
+ * — no need to enumerate widget exemptions one by one. */
+:where(.yue) p,
+:where(.yue) li {
+  font-size: 16px;
+  line-height: 1.625;
+  color: var(--dm-text-default);
+}
+
+:where(.yue) p {
+  margin-top: 0;
+  margin-bottom: var(--rx-space-4);
+}
+
+:where(.yue) p + p,
+:where(.yue) li + li {
+  margin-top: 0;
+}
+
+/* Heading rules already win without :where() because every default
+ * heading style on the page also relies on single-class specificity;
+ * but using :where() here too keeps the cascade story consistent. */
+
+/* ---------------------------------------------------------------------------
+ * 3. Inline code — Radix's signature "pink chip" treatment
+ * --------------------------------------------------------------------------- */
+
+/* Target inline code in two scopes:
+ *   (a) MyST / prose pages where the `.yue` wrapper exists
+ *   (b) Sphinx-autodoc API pages where code lives in TOC <ul>/<li>
+ *       outside `.yue` — those use ``code.docutils.literal``.
+ * Excluding pre > code on both sides keeps code-block lines untouched. */
+.yue :not(pre) > code,
+.sy-main code.docutils.literal,
+.sy-main code.docutils.literal.notranslate {
+  background-color: var(--rx-pink-3);
+  color: var(--rx-pink-11);
+  border: none;
+  border-radius: var(--rx-radius-2);
+  padding: 1px 6px 2px;
+  font-size: 0.875em;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* Don't tint code inside links — it competes with the link color */
+.yue a > code,
+.yue a :not(pre) > code,
+.sy-main a > code.docutils.literal {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * 4. Code blocks — flatter, Radix-style with subtle ring instead of border
+ * --------------------------------------------------------------------------- */
+
+.yue div.highlight {
+  background-color: var(--dm-bg-subtle) !important;
+  border: 1px solid var(--dm-border-faint) !important;
+  border-radius: var(--rx-radius-3);
+  box-shadow: none;
+  margin: var(--rx-space-4) 0;
+}
+
+.yue div.highlight pre {
+  background-color: transparent !important;
+  padding: 14px 18px;
+  font-size: 13.5px;
+  line-height: 22px;
+}
+
+/* Copy button — make it discreet until hover */
+.yue button.copybtn {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  border-radius: var(--rx-radius-2);
+}
+
+.yue div.highlight:hover button.copybtn {
+  opacity: 0.6;
+}
+
+.yue div.highlight button.copybtn:hover {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+ * 5. Links — Radix-style underline + accent
+ * --------------------------------------------------------------------------- */
+
+.yue a {
+  color: var(--dm-link);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--rx-accent-7);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.12s ease, color 0.12s ease;
+}
+
+.yue a:hover {
+  color: var(--dm-link-hover);
+  text-decoration-color: currentColor;
+}
+
+/* ---------------------------------------------------------------------------
+ * 6. Sidebar — tighten padding, add hover, mark current page
+ * --------------------------------------------------------------------------- */
+
+.shibuya-sidebar a,
+.sy-sidebar a {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--dm-text-muted);
+  padding: 5px 10px;
+  border-radius: var(--rx-radius-2);
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.shibuya-sidebar a:hover,
+.sy-sidebar a:hover {
+  background-color: var(--dm-bg-hover);
+  color: var(--dm-text-strong);
+  text-decoration: none;
+}
+
+.shibuya-sidebar .current > a,
+.shibuya-sidebar a.current,
+.sy-sidebar .current > a,
+.sy-sidebar a.current {
+  background-color: var(--rx-accent-3);
+  color: var(--rx-accent-11);
+  font-weight: 600;
+}
+
+.shibuya-sidebar .caption,
+.sy-sidebar .caption {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dm-text-faint);
+  margin-top: var(--rx-space-5);
+  margin-bottom: var(--rx-space-2);
+}
+
+/* ---------------------------------------------------------------------------
+ * 7. Header / top nav
+ * --------------------------------------------------------------------------- */
+
+.shibuya-header,
+.sy-header {
+  box-shadow: none;
+  border-bottom: 1px solid var(--dm-border-faint);
+  backdrop-filter: saturate(180%) blur(8px);
+  -webkit-backdrop-filter: saturate(180%) blur(8px);
+  background-color: color-mix(in srgb, var(--dm-bg-page) 80%, transparent);
+}
+
+.sy-head-nav a {
+  color: var(--dm-text-muted);
+  font-weight: 500;
+  font-size: 14px;
+  transition: color 0.12s ease;
+}
+
+.sy-head-nav a:hover,
+.sy-head-nav a.active {
+  color: var(--dm-text-strong);
+}
+
+/* ---------------------------------------------------------------------------
+ * 8. Admonitions / callouts — flatten the colored stripe, use a softer ring
+ * --------------------------------------------------------------------------- */
+
+.yue .admonition,
+.yue div.admonition {
+  background-color: var(--dm-bg-subtle);
+  border: 1px solid var(--dm-border);
+  border-left-width: 1px;
+  border-radius: var(--rx-radius-3);
+  box-shadow: none;
+  padding: var(--rx-space-4);
+  margin: var(--rx-space-5) 0;
+}
+
+.yue .admonition > .admonition-title,
+.yue div.admonition > p.admonition-title {
+  background-color: transparent;
+  color: var(--dm-text-strong);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--rx-space-2);
+  padding: 0;
+}
+
+.yue .admonition.note,
+.yue .admonition.tip {
+  background-color: var(--rx-accent-2);
+  border-color: var(--rx-accent-6);
+}
+.yue .admonition.note > .admonition-title,
+.yue .admonition.tip > .admonition-title {
+  color: var(--rx-accent-11);
+}
+
+.yue .admonition.warning,
+.yue .admonition.caution,
+.yue .admonition.important {
+  background-color: #fef6e4;       /* soft amber tint */
+  border-color: #f4d35e;
+}
+.yue .admonition.warning > .admonition-title,
+.yue .admonition.caution > .admonition-title,
+.yue .admonition.important > .admonition-title {
+  color: #92531a;
+}
+
+/* ---------------------------------------------------------------------------
+ * 9. Tables — Radix's quiet horizontal-rule style
+ * --------------------------------------------------------------------------- */
+
+.yue table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+  margin: var(--rx-space-4) 0;
+  font-size: 14px;
+}
+
+.yue table th,
+.yue table td {
+  border-top: 1px solid var(--dm-border-faint);
+  border-bottom: 1px solid var(--dm-border-faint);
+  padding: var(--rx-space-2) var(--rx-space-3);
+  text-align: left;
+  vertical-align: top;
+}
+
+.yue table th {
+  font-weight: 600;
+  color: var(--dm-text-strong);
+  background-color: var(--dm-bg-subtle);
+}
+
+.yue table tr + tr td {
+  border-top: none;
+}
+
+.yue table tr:hover td {
+  background-color: var(--dm-bg-hover);
+}
+
+/* ---------------------------------------------------------------------------
+ * 10. Buttons / pills / chips that show up via sphinx-design + custom HTML
+ * --------------------------------------------------------------------------- */
+
+.yue .sd-btn,
+.yue .sd-button {
+  border-radius: var(--rx-radius-3);
+  font-weight: 500;
+  font-size: 14px;
+  padding: 6px 14px;
+  transition: background-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: var(--rx-shadow-2);
+}
+
+.yue .sd-btn-primary,
+.yue .sd-btn-info {
+  background-color: var(--rx-accent-9) !important;
+  color: #ffffff !important;
+  border-color: var(--rx-accent-9) !important;
+}
+
+.yue .sd-btn-primary:hover,
+.yue .sd-btn-info:hover {
+  background-color: var(--rx-accent-10) !important;
+  color: #ffffff !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * 11. "On this page" right-rail TOC — refine type scale and spacing
+ * --------------------------------------------------------------------------- */
+
+.shibuya-toc,
+.sy-toc,
+.sy-right-toc {
+  font-size: 13px;
+}
+
+.shibuya-toc .caption-text,
+.sy-toc .caption-text,
+.sy-right-toc .caption-text {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dm-text-faint);
+}
+
+.shibuya-toc a,
+.sy-toc a,
+.sy-right-toc a {
+  color: var(--dm-text-muted);
+  padding: 4px 0;
+  text-decoration: none;
+}
+
+.shibuya-toc a:hover,
+.sy-toc a:hover,
+.sy-right-toc a:hover {
+  color: var(--dm-text-strong);
+}
+
+.shibuya-toc .active > a,
+.sy-toc .active > a,
+.sy-right-toc .active > a {
+  color: var(--rx-accent-11);
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------------
+ * 12. Page-level surfaces — body bg + section dividers
+ * --------------------------------------------------------------------------- */
+
+body {
+  background-color: var(--dm-bg-page);
+}
+
+.yue hr {
+  border: none;
+  border-top: 1px solid var(--dm-border-faint);
+  margin: var(--rx-space-7) 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * 13. Focus ring — accessibility (Radix's signature 2px accent ring)
+ * --------------------------------------------------------------------------- */
+
+.yue a:focus-visible,
+.yue button:focus-visible,
+.shibuya-sidebar a:focus-visible,
+.sy-sidebar a:focus-visible {
+  outline: 2px solid var(--rx-accent-9);
+  outline-offset: 2px;
+  border-radius: var(--rx-radius-2);
+}
+
+/* ---------------------------------------------------------------------------
+ * 14. Selection — accent-tinted instead of OS default
+ * --------------------------------------------------------------------------- */
+
+::selection {
+  background-color: var(--rx-accent-5);
+  color: var(--rx-accent-12);
+}
