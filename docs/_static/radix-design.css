@@ -77,7 +77,7 @@
   --rx-space-8: 48px;
   --rx-space-9: 64px;
 
-  /* Font-size scale */
+  /* Font-size scale (Radix Themes Text 1..9) */
   --rx-fs-1: 12px;
   --rx-fs-2: 14px;
   --rx-fs-3: 16px;
@@ -87,6 +87,48 @@
   --rx-fs-7: 28px;
   --rx-fs-8: 35px;
   --rx-fs-9: 60px;
+
+  /* Line-height scale — paired 1:1 with font-size so callers only
+   * need to pick a size step. Values straight from Radix Themes. */
+  --rx-lh-1: 16px;
+  --rx-lh-2: 20px;
+  --rx-lh-3: 24px;
+  --rx-lh-4: 26px;
+  --rx-lh-5: 28px;
+  --rx-lh-6: 30px;
+  --rx-lh-7: 36px;
+  --rx-lh-8: 40px;
+  --rx-lh-9: 60px;
+
+  /* Letter-spacing scale — Radix tightens larger sizes for optical
+   * balance; tiny positive ls on size 1 (12px) keeps small caps legible. */
+  --rx-ls-1: 0.0025em;
+  --rx-ls-2: 0em;
+  --rx-ls-3: 0em;
+  --rx-ls-4: -0.0025em;
+  --rx-ls-5: -0.005em;
+  --rx-ls-6: -0.00625em;
+  --rx-ls-7: -0.0075em;
+  --rx-ls-8: -0.01em;
+  --rx-ls-9: -0.025em;
+
+  /* Font weights — Radix Themes ships a four-step ladder
+   * (light/regular/medium/bold). We add one extra `semibold` step
+   * because Shibuya's sidebar chrome rides at medium and h3/h4
+   * disappear into it unless lifted one notch. Inter ships
+   * SemiBold (600) as a real cut so the alias is faithful. */
+  --rx-weight-light: 300;
+  --rx-weight-regular: 400;
+  --rx-weight-medium: 500;
+  --rx-weight-semibold: 600;
+  --rx-weight-bold: 700;
+
+  /* Default font-feature settings.
+   *   ss01: alternate single-storey 'a' (cleaner at body sizes)
+   *   cv11: open-counter '4' (avoids the confusable closed 4)
+   *   calt: contextual alternates (default on but make it explicit)
+   * Headings inherit these via the body rule. */
+  --rx-font-features: "ss01" on, "cv11" on, "calt" on;
 
   /* Radius — keep modest; large radii undermine the precision feel */
   --rx-radius-1: 3px;
@@ -182,64 +224,105 @@ body[data-theme="dark"] {
 
 body {
   color: var(--dm-text-default);
+  font-feature-settings: var(--rx-font-features);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
-:where(.yue) h1,
-:where(.yue) h2,
-:where(.yue) h3,
-:where(.yue) h4 {
+/* Headings — pin each to a Radix Text step.
+ *   h1 → size-8  (35/40, -0.01em, bold)
+ *   h2 → size-6  (24/30, -0.00625em, bold)
+ *   h3 → size-5  (20/28, -0.005em, semibold·600 lift for hierarchy)
+ *   h4 → size-4  (18/26, -0.0025em, semibold·600)
+ * Radix's spec uses medium (500) for h3/h4; we lift to 600 because
+ * Shibuya's sidebar and TOC ride at medium too — without the lift,
+ * h3 disappears into the chrome.
+ *
+ * No `:where()` here — Shibuya defines `.yue h1` { font-size: 36px; ... }
+ * with class-level specificity, so the override needs the same
+ * specificity to win. (Body-prose rules below stay in `:where()`
+ * to let widget classes win without per-widget exemptions.) */
+.yue h1,
+.yue h2,
+.yue h3,
+.yue h4 {
   color: var(--dm-text-strong);
-  font-feature-settings: "ss01" on, "cv11" on; /* Inter stylistic alts */
 }
 
-:where(.yue) h1 {
-  font-size: 35px;
-  font-weight: 700;
-  line-height: 40px;
-  letter-spacing: -0.7px;
+.yue h1 {
+  font-size: var(--rx-fs-8);
+  font-weight: var(--rx-weight-bold);
+  line-height: var(--rx-lh-8);
+  letter-spacing: var(--rx-ls-8);
   margin-top: 0;
   margin-bottom: var(--rx-space-2);
 }
 
-:where(.yue) h2 {
-  font-size: 24px;
-  font-weight: 700;
-  line-height: 30px;
-  letter-spacing: -0.3px;
+.yue h2 {
+  font-size: var(--rx-fs-6);
+  font-weight: var(--rx-weight-bold);
+  line-height: var(--rx-lh-6);
+  letter-spacing: var(--rx-ls-6);
   margin-top: var(--rx-space-8);
   margin-bottom: var(--rx-space-3);
 }
 
-:where(.yue) h3 {
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 28px;
-  letter-spacing: -0.2px;
+.yue h3 {
+  font-size: var(--rx-fs-5);
+  font-weight: var(--rx-weight-semibold);
+  line-height: var(--rx-lh-5);
+  letter-spacing: var(--rx-ls-5);
   margin-top: var(--rx-space-6);
   margin-bottom: var(--rx-space-2);
 }
 
-:where(.yue) h4 {
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 24px;
-  letter-spacing: -0.1px;
+.yue h4 {
+  font-size: var(--rx-fs-4);
+  font-weight: var(--rx-weight-semibold);
+  line-height: var(--rx-lh-4);
+  letter-spacing: var(--rx-ls-4);
   margin-top: var(--rx-space-5);
   margin-bottom: var(--rx-space-2);
 }
 
-/* Wrap our body-prose selectors in :where() so they contribute zero
- * specificity. Any widget rule defined with a real class selector
+/* Body prose — Radix Text size-3 (16/24).
+ *
+ * Wrap selectors in :where() so they contribute zero specificity.
+ * Any widget rule defined with a real class selector
  * (e.g. .dm-landing-tagline { font-size: 3.2em }) wins automatically
  * — no need to enumerate widget exemptions one by one. */
 :where(.yue) p,
 :where(.yue) li {
-  font-size: 16px;
-  line-height: 1.625;
+  font-size: var(--rx-fs-3);
+  font-weight: var(--rx-weight-regular);
+  line-height: var(--rx-lh-3);
+  letter-spacing: var(--rx-ls-3);
   color: var(--dm-text-default);
+}
+
+/* Inline emphasis — Radix maps <strong> to the bold weight token
+ * and leaves <em> at the regular weight (italic only). No `:where()`
+ * here: Shibuya sets `.yue strong { font-weight: 600 }` so we need
+ * matching specificity to push to 700. */
+.yue strong,
+.yue b {
+  font-weight: var(--rx-weight-bold);
+  color: var(--dm-text-strong);
+}
+
+.yue em,
+.yue i {
+  font-weight: var(--rx-weight-regular);
+  font-style: italic;
+}
+
+/* Small / footnote text — Radix Text size-2 (14/20). */
+.yue small,
+.yue .rx-text-2 {
+  font-size: var(--rx-fs-2);
+  line-height: var(--rx-lh-2);
+  letter-spacing: var(--rx-ls-2);
 }
 
 :where(.yue) p {
@@ -344,13 +427,13 @@ body {
 .sy-sidebar a.current {
   background-color: var(--rx-accent-3);
   color: var(--rx-accent-11);
-  font-weight: 600;
+  font-weight: var(--rx-weight-semibold);
 }
 
 .shibuya-sidebar .caption,
 .sy-sidebar .caption {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--rx-weight-semibold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--dm-text-faint);
@@ -373,7 +456,7 @@ body {
 
 .sy-head-nav a {
   color: var(--dm-text-muted);
-  font-weight: 500;
+  font-weight: var(--rx-weight-medium);
   font-size: 14px;
   transition: color 0.12s ease;
 }
@@ -402,7 +485,7 @@ body {
 .yue div.admonition > p.admonition-title {
   background-color: transparent;
   color: var(--dm-text-strong);
-  font-weight: 600;
+  font-weight: var(--rx-weight-semibold);
   font-size: 14px;
   letter-spacing: -0.01em;
   margin: 0 0 var(--rx-space-2);
@@ -453,7 +536,7 @@ body {
 }
 
 .yue table th {
-  font-weight: 600;
+  font-weight: var(--rx-weight-semibold);
   color: var(--dm-text-strong);
   background-color: var(--dm-bg-subtle);
 }
@@ -473,7 +556,7 @@ body {
 .yue .sd-btn,
 .yue .sd-button {
   border-radius: var(--rx-radius-3);
-  font-weight: 500;
+  font-weight: var(--rx-weight-medium);
   font-size: 14px;
   padding: 6px 14px;
   transition: background-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
@@ -507,7 +590,7 @@ body {
 .sy-toc .caption-text,
 .sy-right-toc .caption-text {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--rx-weight-semibold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--dm-text-faint);
@@ -531,7 +614,7 @@ body {
 .sy-toc .active > a,
 .sy-right-toc .active > a {
   color: var(--rx-accent-11);
-  font-weight: 600;
+  font-weight: var(--rx-weight-semibold);
 }
 
 /* ---------------------------------------------------------------------------
