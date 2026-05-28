@@ -8,6 +8,7 @@ from __future__ import annotations
 
 __all__ = ["save_and_show", "save_formats", "show"]
 
+import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
@@ -17,6 +18,43 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
 from ._helpers import create_parent_path
+
+# Image extensions matplotlib's savefig knows how to write — if a caller
+# passes a path that already ends with one of these, we strip it so the
+# requested ``formats`` are appended cleanly instead of producing
+# ``name.png.png`` / ``name.png.svg``.
+_KNOWN_IMAGE_SUFFIXES = frozenset({
+    ".png", ".pdf", ".svg", ".svgz", ".eps", ".ps",
+    ".jpg", ".jpeg", ".tif", ".tiff", ".webp", ".raw", ".rgba",
+})
+
+
+def _normalize_image_stem(image_stem: str) -> str:
+    """Strip a trailing image suffix from ``image_stem`` if present.
+
+    Callers occasionally pass ``"out/chart.png"`` instead of the
+    documented ``"out/chart"`` (often by reusing a path variable
+    that already carries an extension). Without normalization
+    ``save_formats(..., formats=("png", "svg"))`` would emit
+    ``chart.png.png`` and ``chart.png.svg`` — silent file-naming
+    bugs that pollute output directories. Normalize once at the
+    boundary and emit a :class:`UserWarning` so call sites can be
+    cleaned up over time.
+    """
+    suffix = Path(image_stem).suffix.lower()
+    if suffix in _KNOWN_IMAGE_SUFFIXES:
+        normalized = image_stem[: -len(suffix)]
+        warnings.warn(
+            (
+                f"save_formats: image_stem {image_stem!r} ends with image "
+                f"suffix {suffix!r}; stripping to {normalized!r}. "
+                "Pass the path *without* an extension to silence this."
+            ),
+            UserWarning,
+            stacklevel=3,
+        )
+        return normalized
+    return image_stem
 
 
 def save_formats(
@@ -34,7 +72,11 @@ def save_formats(
     fig : matplotlib.figure.Figure
         The Matplotlib figure to save.
     image_stem : str
-        Base path and filename without extension.
+        Base path and filename without extension. If the value
+        accidentally ends with a known image suffix (``.png``,
+        ``.pdf``, ``.svg``, …) it is stripped automatically and a
+        :class:`UserWarning` is emitted — prevents double-extension
+        output like ``chart.png.png``.
     formats : tuple[str, ...], optional
         Tuple of format extensions to save. Default is ("png", "pdf").
     bbox_inches : str | None, optional
@@ -51,6 +93,7 @@ def save_formats(
 
         validate_figure(fig)
 
+    image_stem = _normalize_image_stem(image_stem)
     create_parent_path(image_stem)
     for fmt in formats:
         fig.savefig(f"{image_stem}.{fmt}", bbox_inches=bbox_inches, **kwargs)
