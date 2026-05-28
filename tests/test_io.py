@@ -63,6 +63,120 @@ class TestSaveFormats:
         plt.close(fig)
 
 
+class TestSaveFormatsStripsExtension:
+    """Regression: callers occasionally pass a path that already ends
+    with an image suffix (`.png`, `.pdf`, …). Previously this produced
+    `name.png.png` / `name.png.svg` silently; the normalizer must strip
+    the duplicate and warn."""
+
+    def test_strips_png_suffix(self, tmp_path: Path) -> None:
+        import warnings
+
+        from dartwork_mpl.io import save_formats
+
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3])
+
+        # Caller mistakenly passes a stem that already has .png
+        stem_with_ext = str(tmp_path / "chart.png")
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            save_formats(
+                fig, stem_with_ext, formats=("png", "svg"),
+                dpi=72, validate=False,
+            )
+
+        # Files exist with clean single extension
+        assert (tmp_path / "chart.png").exists()
+        assert (tmp_path / "chart.svg").exists()
+        # Bug-causing double-extension files must NOT exist
+        assert not (tmp_path / "chart.png.png").exists()
+        assert not (tmp_path / "chart.png.svg").exists()
+
+        # A UserWarning was emitted
+        assert any(
+            issubclass(w.category, UserWarning) and "chart.png" in str(w.message)
+            for w in caught
+        )
+        plt.close(fig)
+
+    def test_strips_uppercase_png_suffix(self, tmp_path: Path) -> None:
+        from dartwork_mpl.io import save_formats
+
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3])
+
+        stem_with_ext = str(tmp_path / "chart.PNG")
+        save_formats(
+            fig, stem_with_ext, formats=("png",),
+            dpi=72, validate=False,
+        )
+
+        assert (tmp_path / "chart.png").exists()
+        assert not (tmp_path / "chart.PNG.png").exists()
+        plt.close(fig)
+
+    def test_strips_pdf_suffix(self, tmp_path: Path) -> None:
+        from dartwork_mpl.io import save_formats
+
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3])
+
+        stem_with_ext = str(tmp_path / "report.pdf")
+        save_formats(
+            fig, stem_with_ext, formats=("png", "pdf"),
+            dpi=72, validate=False,
+        )
+
+        assert (tmp_path / "report.png").exists()
+        assert (tmp_path / "report.pdf").exists()
+        assert not (tmp_path / "report.pdf.png").exists()
+        assert not (tmp_path / "report.pdf.pdf").exists()
+        plt.close(fig)
+
+    def test_does_not_strip_non_image_suffix(self, tmp_path: Path) -> None:
+        """A stem like ``my.report_v2`` should be preserved — only
+        known image suffixes are stripped."""
+        from dartwork_mpl.io import save_formats
+
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3])
+
+        stem = str(tmp_path / "my.report_v2")
+        save_formats(
+            fig, stem, formats=("png",),
+            dpi=72, validate=False,
+        )
+
+        # Suffix ".report_v2" is not in the known image set → preserved
+        assert (tmp_path / "my.report_v2.png").exists()
+        plt.close(fig)
+
+    def test_does_not_warn_for_clean_stem(self, tmp_path: Path) -> None:
+        import warnings
+
+        from dartwork_mpl.io import save_formats
+
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3])
+
+        stem = str(tmp_path / "clean_stem")
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            save_formats(
+                fig, stem, formats=("png", "svg"),
+                dpi=72, validate=False,
+            )
+
+        # No UserWarning about extension stripping
+        assert not any(
+            issubclass(w.category, UserWarning)
+            and "image_stem" in str(w.message)
+            for w in caught
+        )
+        plt.close(fig)
+
+
 class TestSaveAndShow:
     """Tests for save_and_show()."""
 
