@@ -37,10 +37,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/dartworklabs/dartwork-mpl"
-Documentation = "https://dartworklabs.github.io/dartwork-mpl/"
+Homepage = "https://dartworklabs.github.io/dartwork-mpl/"
 Repository = "https://github.com/dartworklabs/dartwork-mpl"
 Issues = "https://github.com/dartworklabs/dartwork-mpl/issues"
+Changelog = "https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md"
 
 [project.scripts]
 dartwork-mpl-mcp = "dartwork_mpl.cli:main"
