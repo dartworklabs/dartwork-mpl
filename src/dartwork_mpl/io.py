@@ -23,10 +23,23 @@ from ._helpers import create_parent_path
 # passes a path that already ends with one of these, we strip it so the
 # requested ``formats`` are appended cleanly instead of producing
 # ``name.png.png`` / ``name.png.svg``.
-_KNOWN_IMAGE_SUFFIXES = frozenset({
-    ".png", ".pdf", ".svg", ".svgz", ".eps", ".ps",
-    ".jpg", ".jpeg", ".tif", ".tiff", ".webp", ".raw", ".rgba",
-})
+_KNOWN_IMAGE_SUFFIXES = frozenset(
+    {
+        ".png",
+        ".pdf",
+        ".svg",
+        ".svgz",
+        ".eps",
+        ".ps",
+        ".jpg",
+        ".jpeg",
+        ".tif",
+        ".tiff",
+        ".webp",
+        ".raw",
+        ".rgba",
+    }
+)
 
 
 def _normalize_image_stem(image_stem: str) -> str:
