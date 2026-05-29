@@ -61,7 +61,10 @@ ui = [
 ]
 
 [build-system]
-requires = ["hatchling"]
+# Pin below the next major so a future hatchling 2.x can't silently
+# change sdist/wheel file-selection (force-include, only-include)
+# behaviour mid-release. 1.27+ is what the package is tested against.
+requires = ["hatchling>=1.27,<2"]
 build-backend = "hatchling.build"
 
 # Explicit sdist whitelist. Without this, hatch defaults to "everything
