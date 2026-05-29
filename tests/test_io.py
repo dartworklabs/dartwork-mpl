@@ -82,8 +82,11 @@ class TestSaveFormatsStripsExtension:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
             save_formats(
-                fig, stem_with_ext, formats=("png", "svg"),
-                dpi=72, validate=False,
+                fig,
+                stem_with_ext,
+                formats=("png", "svg"),
+                dpi=72,
+                validate=False,
             )
 
         # Files exist with clean single extension
@@ -95,7 +98,8 @@ class TestSaveFormatsStripsExtension:
 
         # A UserWarning was emitted
         assert any(
-            issubclass(w.category, UserWarning) and "chart.png" in str(w.message)
+            issubclass(w.category, UserWarning)
+            and "chart.png" in str(w.message)
             for w in caught
         )
         plt.close(fig)
@@ -108,8 +112,7 @@ class TestSaveFormatsStripsExtension:
 
         stem_with_ext = str(tmp_path / "chart.PNG")
         save_formats(
-            fig, stem_with_ext, formats=("png",),
-            dpi=72, validate=False,
+            fig, stem_with_ext, formats=("png",), dpi=72, validate=False
         )
 
         assert (tmp_path / "chart.png").exists()
@@ -124,8 +127,7 @@ class TestSaveFormatsStripsExtension:
 
         stem_with_ext = str(tmp_path / "report.pdf")
         save_formats(
-            fig, stem_with_ext, formats=("png", "pdf"),
-            dpi=72, validate=False,
+            fig, stem_with_ext, formats=("png", "pdf"), dpi=72, validate=False
         )
 
         assert (tmp_path / "report.png").exists()
@@ -143,10 +145,7 @@ class TestSaveFormatsStripsExtension:
         ax.plot([1, 2, 3])
 
         stem = str(tmp_path / "my.report_v2")
-        save_formats(
-            fig, stem, formats=("png",),
-            dpi=72, validate=False,
-        )
+        save_formats(fig, stem, formats=("png",), dpi=72, validate=False)
 
         # Suffix ".report_v2" is not in the known image set → preserved
         assert (tmp_path / "my.report_v2.png").exists()
@@ -164,8 +163,7 @@ class TestSaveFormatsStripsExtension:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
             save_formats(
-                fig, stem, formats=("png", "svg"),
-                dpi=72, validate=False,
+                fig, stem, formats=("png", "svg"), dpi=72, validate=False
             )
 
         # No UserWarning about extension stripping
