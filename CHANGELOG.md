@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-05-30
+
 ### Added
 - **`dm.Length`** — opaque Color-pattern length wrapper that
   replaces the in-flight `Inches(float)` marker introduced earlier
