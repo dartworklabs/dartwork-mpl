@@ -155,6 +155,35 @@ class TestHexParsing:
         assert g2 == pytest.approx(g, abs=2.0 / 255)
         assert b2 == pytest.approx(b, abs=2.0 / 255)
 
+    def test_negative_hex_rejected(self) -> None:
+        """A minus sign must not slip through to int(..., 16) (#229)."""
+        with pytest.raises(ValueError):
+            _parse_hex("#-10000")
+
+    def test_double_hash_rejected(self) -> None:
+        """``lstrip('#')`` used to swallow extra hashes silently (#229)."""
+        with pytest.raises(ValueError):
+            _parse_hex("##ff0000")
+        with pytest.raises(ValueError):
+            _parse_hex("###f00")
+
+    def test_non_hex_digit_rejected(self) -> None:
+        """Out-of-alphabet characters must raise, not produce a color."""
+        with pytest.raises(ValueError):
+            _parse_hex("#gggggg")
+
+    def test_rgb_to_hex_rejects_nan(self) -> None:
+        """NaN must raise, not silently clamp to white/black (#229)."""
+        with pytest.raises(ValueError):
+            _rgb_to_hex(float("nan"), 0.0, 0.0)
+
+    def test_rgb_to_hex_rejects_inf(self) -> None:
+        """inf must raise rather than silently clamp (#229)."""
+        with pytest.raises(ValueError):
+            _rgb_to_hex(float("inf"), 0.0, 0.0)
+        with pytest.raises(ValueError):
+            _rgb_to_hex(0.0, float("-inf"), 0.0)
+
 
 # ============================================================================
 # Full Color roundtrips (via Color class)
