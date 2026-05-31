@@ -39,9 +39,11 @@ fetch the specific guide you need.
   `fontweight=dm.fw(n)` — never a literal `fontsize=12` or
   `linewidth=1.5`. `n` is an offset from the preset's base value
   (`0` keeps the base, `+1`/`-1` step up/down). `linewidth=0` is
-  allowed only as the "no border" idiom. Sub-1 hairlines such as
-  `linewidth=0.3` for edges should also be expressed as
-  `linewidth=dm.lw(-1)` so they track the preset.
+  allowed only as the "no border" idiom. Reserve literal
+  `linewidth=0.3` / `0.5` for true hairlines (separator edges, dashed
+  reference lines) — `dm.lw(-1)` collapses to `0.0` on most presets and
+  silently disables the edge. See `dartwork-mpl://guide/policy` for the
+  authoritative rule.
 - After creating a figure, call `dm.simple_layout(fig)` and save with
   `dm.save_formats(fig, "name")` or `dm.save_and_show(fig, "name")`.
 - Never call `tight_layout()`, `plt.style.use()`, raw `figsize=(w, h)`
