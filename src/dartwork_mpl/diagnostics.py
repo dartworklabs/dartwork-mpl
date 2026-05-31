@@ -749,6 +749,7 @@ def _plot_single_library(
                     "weight_range": weight_range,
                 }
             )
+    else:
         color_groups = [
             {
                 "base_color": "all",
