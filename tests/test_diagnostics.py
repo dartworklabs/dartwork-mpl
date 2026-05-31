@@ -63,6 +63,45 @@ class TestPlotColors:
         figs = plot_colors({})
         assert figs == []
 
+    def test_sort_colors_false_does_not_crash(self) -> None:
+        """plot_colors(sort_colors=False) must not raise (regression: #225)."""
+        from dartwork_mpl.diagnostics import plot_colors
+
+        figs = plot_colors(
+            {"oc.red0": "#fff5f5", "oc.red5": "#ff6b6b"}, sort_colors=False
+        )
+        assert len(figs) > 0
+        for fig in figs:
+            plt.close(fig)
+
+    def test_sort_colors_true_orders_swatches_by_weight(self) -> None:
+        """sort_colors=True actually sorts swatches (regression: #225 dead code).
+
+        Input is given out of weight order; the rendered name labels,
+        read top-to-bottom, must come back sorted by weight.
+        """
+        from dartwork_mpl.diagnostics import _plot_single_library
+
+        colors = {
+            "oc.red9": "#c92a2a",
+            "oc.red0": "#fff5f5",
+            "oc.red5": "#ff6b6b",
+        }
+        fig = _plot_single_library(
+            colors, "oc", ncols=1, sort_colors=True, show_hex=False
+        )
+        assert fig is not None
+        # Keep only the swatch name labels (drop the title and count text),
+        # then read them top-to-bottom. Axis is inverted, so ascending y is
+        # top-to-bottom on screen.
+        swatches = [t for t in fig.axes[0].texts if t.get_text() in colors]
+        names = [
+            t.get_text()
+            for t in sorted(swatches, key=lambda t: t.get_position()[1])
+        ]
+        assert names == ["oc.red0", "oc.red5", "oc.red9"]
+        plt.close(fig)
+
 
 class TestPlotFonts:
     """Tests for plot_fonts()."""
