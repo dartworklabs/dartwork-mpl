@@ -21,7 +21,7 @@ from .scale import fs
 def label_axes(
     axes: list[Axes] | np.ndarray[Any, Any],
     labels: list[str] | None = None,
-    fontsize: float = 10,
+    fontsize: float | None = None,
     fontweight: str = "bold",
     x: float | str = "auto",
     y: float = 1.05,
@@ -39,8 +39,10 @@ def label_axes(
     labels : list[str] | None, optional
         Custom text labels. If None, lowercase letters (a, b, c, ...)
         are assigned automatically.
-    fontsize : float, optional
-        Font size for the labels. Default is 10 points.
+    fontsize : float | None, optional
+        Font size for the labels. If ``None`` (default), resolves to
+        ``fs(1)`` so panel labels track the active preset's base font
+        size instead of a fixed point value.
     fontweight : str, optional
         Font weight for the labels. Default is "bold".
     x : float | str, optional
@@ -57,6 +59,9 @@ def label_axes(
     list
         List of created Text objects.
     """
+    if fontsize is None:
+        fontsize = fs(1)
+
     if isinstance(axes, np.ndarray):
         axes = axes.flatten().tolist()
 
