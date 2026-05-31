@@ -195,12 +195,14 @@ rules:
       pattern: '\b(?:color|c)\s*=\s*["'']#[0-9a-fA-F]{3,8}["'']'
     message: |
       Raw hex colors bypass dartwork-mpl's color system. Prefer named
-      tokens such as `dm.oc.blue6` (Open Color), `dm.tw.sky500`
-      (Tailwind), or `dm.dc.blue500` (dartwork core).
+      tokens passed as strings, e.g. `color="oc.blue6"` (Open Color),
+      `color="tw.sky500"` (Tailwind), or `color="dc.0"` (dartwork core
+      categorical). These register as matplotlib named colors; wrap in
+      `dm.color("oc.blue6")` when you need a Color object.
     why: |
       Named palettes give consistent perception across reports and
       let style presets remap colors centrally.
-    fix_suggestion: 'color=dm.oc.blue6'
+    fix_suggestion: 'color="oc.blue6"'
 
   - id: fontsize-literal
     severity: warning
