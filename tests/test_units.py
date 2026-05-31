@@ -66,9 +66,11 @@ class TestLengthInit:
     def test_str_init_parses_pt(self):
         assert math.isclose(Length("72pt").inch, 1.0, rel_tol=1e-12)
 
-    def test_str_init_default_unit_is_cm(self):
-        # Bare numeric strings are interpreted as cm, matching parse_width.
-        assert math.isclose(Length("13").inch, 13 / 2.54, rel_tol=1e-9)
+    def test_str_init_rejects_unitless_numeric_string(self):
+        # A bare numeric string carries no unit, exactly like a bare
+        # int/float — it must be rejected, not silently read as cm (#226).
+        with pytest.raises(ValueError, match="unit"):
+            Length("13")
 
     def test_length_init_passes_through(self):
         original = cm(9)
@@ -162,6 +164,12 @@ class TestParseWidth:
     def test_rejects_non_numeric(self):
         with pytest.raises(ValueError):
             parse_width("abc")
+
+    def test_rejects_unitless_numeric_string(self):
+        # ``parse_width("13")`` used to be silently read as 13cm — the
+        # same cm/inch ambiguity bare ints are rejected for (#226).
+        with pytest.raises(ValueError, match="unit"):
+            parse_width("13")
 
     def test_rejects_nan_string(self):
         # NaN/inf should never reach the finite check via a unit string,
