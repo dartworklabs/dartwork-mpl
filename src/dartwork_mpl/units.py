@@ -323,7 +323,18 @@ def _parse_unit_string(value: str) -> float:
         )
 
     number = float(match.group("value"))
-    unit = (match.group("unit") or "cm").lower()
+    raw_unit = match.group("unit")
+    if raw_unit is None:
+        # A unitless numeric string (e.g. "13") carries no unit, exactly
+        # like a bare int/float — interpreting it as cm reintroduces the
+        # cm/inch ambiguity the Length type exists to prevent (#226).
+        raise ValueError(
+            f"length {value!r} has no unit; add a unit suffix "
+            f"(e.g. '{match.group('value')}cm', '{match.group('value')}in', "
+            f"'{match.group('value')}mm', '{match.group('value')}pt') "
+            f"or use dm.cm(...) / dm.inch(...)."
+        )
+    unit = raw_unit.lower()
     if not math.isfinite(number) or number <= 0:
         raise ValueError(f"length must be positive and finite (got {number})")
 
