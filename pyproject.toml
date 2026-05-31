@@ -247,11 +247,22 @@ follow_imports = "skip"
 
 [tool.coverage.run]
 source = ["src/dartwork_mpl"]
-omit = ["*/ui/*", "*/mcp/*"]
+# mcp/ is the agentic core and is exercised by tests/test_mcp.py +
+# tests/test_integration.py, so it stays in the report (omitting it
+# hid the agentic surface behind an inflated headline number). ui/ is
+# the optional `dartwork-mpl-ui` viewer (FastAPI app + a 1.5k-line HTML
+# template) whose web layer is not unit-tested; it is omitted so the
+# core fail-under threshold reflects covered code, not the viewer.
+omit = ["*/ui/*"]
 
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
+# Regression gate: the suite currently sits at ~86% with mcp/ included.
+# 80 leaves a little headroom for incidental churn while still failing
+# the build if a substantial chunk of new code ships untested (the prior
+# state had no gate at all, so coverage could silently regress to zero).
+fail_under = 80
 exclude_lines = [
     "pragma: no cover",
     "if __name__ == .__main__.",
