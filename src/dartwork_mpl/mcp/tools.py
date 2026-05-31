@@ -697,7 +697,20 @@ def register_tools(mcp: FastMCP) -> None:
         if validator is None:
             return f"No validator for '{plot_type}'. Available: {list(validators.keys())}"
 
-        return validator(data)
+        # Defensive guard: several legacy validators index/``len()`` fields
+        # without a type check, so a present-but-wrong-type field (e.g. a
+        # scalar where a list is expected) or a non-dict top-level payload
+        # would leak a raw ``TypeError``/``KeyError`` to the MCP client.
+        # Convert those into an actionable structured-error message.
+        try:
+            return validator(data)
+        except (TypeError, KeyError, ValueError, AttributeError) as exc:
+            return (
+                f"Invalid data structure for '{plot_type}': "
+                f"{type(exc).__name__}: {exc}. Check that each field has "
+                f"the expected type (e.g. lists where lists are expected) "
+                f"and that the top-level payload is a JSON object."
+            )
 
     # ── Utility Info Tool ────────────────────────────────────────────
 

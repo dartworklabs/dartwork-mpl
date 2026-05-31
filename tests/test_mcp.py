@@ -422,6 +422,39 @@ class TestMcpTools:
         result = captured["validate_plot_data"]("bar", data)
         assert "values" in result.lower()
 
+    def test_validate_plot_data_non_list_field_does_not_crash(self) -> None:
+        """A non-list field where a list is expected must not crash (#224).
+
+        Legacy validators called ``len()`` without a type guard, leaking a
+        raw ``TypeError`` to the MCP client instead of an actionable string.
+        """
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        validate = captured["validate_plot_data"]
+        # categories is an int, not a list — used to raise
+        # "object of type 'int' has no len()".
+        result = validate("bar", '{"categories": 5, "values": [1, 2]}')
+        assert isinstance(result, str)
+        assert "invalid data structure" in result.lower()
+
+    def test_validate_plot_data_non_dict_toplevel_does_not_crash(self) -> None:
+        """A non-dict top-level payload must not crash (#224)."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        validate = captured["validate_plot_data"]
+        # top-level JSON null — used to raise a raw TypeError/AttributeError.
+        result = validate("scatter", "null")
+        assert isinstance(result, str)
+        assert "invalid data structure" in result.lower()
+
     def test_validate_plot_data_supports_all_advertised_types(self) -> None:
         """``dartwork_mpl_info()`` advertises 18 plot templates;
         ``validate_plot_data`` must have a validator for every one."""
