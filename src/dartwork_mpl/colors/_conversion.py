@@ -9,6 +9,7 @@ from __future__ import annotations
 __all__: list[str] = []  # All functions are private (_-prefixed)
 
 import math
+import re
 from typing import Any
 
 import numpy as np
@@ -205,20 +206,26 @@ def _parse_hex(hex_str: str) -> tuple[float, float, float]:
     ValueError
         If the hex string format is invalid.
     """
-    hex_clean: str = hex_str.strip().lstrip("#")
+    # Strip a single leading '#'. Using ``lstrip('#')`` here would
+    # silently accept ``##ff0000`` / ``###f00``; require exactly one.
+    stripped: str = hex_str.strip()
+    hex_clean: str = stripped[1:] if stripped.startswith("#") else stripped
+
+    # Whitelist the alphabet so a stray sign (``#-10000``) or any
+    # non-hex digit cannot slip through to ``int(..., 16)``.
+    if not re.fullmatch(r"[0-9a-fA-F]{3}|[0-9a-fA-F]{6}", hex_clean):
+        raise ValueError(f"Invalid hex color format: {hex_str}")
 
     if len(hex_clean) == 3:
         # #RGB format
         r: float = int(hex_clean[0] * 2, 16) / 255.0
         g: float = int(hex_clean[1] * 2, 16) / 255.0
         b: float = int(hex_clean[2] * 2, 16) / 255.0
-    elif len(hex_clean) == 6:
+    else:
         # #RRGGBB format
         r = int(hex_clean[0:2], 16) / 255.0
         g = int(hex_clean[2:4], 16) / 255.0
         b = int(hex_clean[4:6], 16) / 255.0
-    else:
-        raise ValueError(f"Invalid hex color format: {hex_str}")
 
     return (r, g, b)
 
@@ -237,6 +244,14 @@ def _rgb_to_hex(r: float, g: float, b: float) -> str:
     str
         Hex color string (#RRGGBB).
     """
+    # Reject non-finite channels before clamping. ``max(0, min(1, nan))``
+    # collapses NaN to 1.0 and would otherwise emit a bogus color
+    # silently instead of surfacing the upstream computation error.
+    if not (math.isfinite(r) and math.isfinite(g) and math.isfinite(b)):
+        raise ValueError(
+            f"RGB channels must be finite, got (r={r}, g={g}, b={b})"
+        )
+
     # Clamp to [0, 1]
     r_clamped: float = max(0.0, min(1.0, r))
     g_clamped: float = max(0.0, min(1.0, g))
