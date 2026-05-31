@@ -4,11 +4,19 @@ This package provides enhanced styling, color management, and various
 utility functions for Matplotlib visualizations.
 """
 
-__version__ = "0.4.0"
-
 # ruff: noqa: E402
 
+from importlib.metadata import PackageNotFoundError, version
 from typing import Any
+
+# Derive the version from the installed distribution metadata so it
+# never drifts from ``pyproject.toml`` (a release bumps that file; this
+# value follows automatically). The fallback covers running from a
+# source tree with no installed metadata.
+try:
+    __version__ = version("dartwork-mpl")
+except PackageNotFoundError:  # pragma: no cover - source-tree fallback
+    __version__ = "0.0.0+unknown"
 
 # Import submodules so they are accessible under ``dm.<submodule>``
 # (validate_fixes is the auto-fix companion to validate). F401 is
@@ -262,4 +270,38 @@ if not getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False):
 # 0.3 width tokens (SW/MW/TW/DW/WIDTHS), figure-size tuples (FS_*),
 # the cm2in helper, and the agent_utils/xplot module aliases were all
 # deprecated in 0.4.0 and removed in 0.4.x. Accessing them now raises
-# AttributeError. Migration paths: see docs/migration.md.
+# AttributeError. The ``__getattr__`` hook below turns those bare
+# misses into an actionable message naming the replacement API, instead
+# of Python's default "module has no attribute" string. Migration
+# paths: see docs/migration.md.
+
+# Removed 0.3/0.4 names → the new API to reach for. Keyed by exact
+# attribute name; ``_REMOVED_PREFIXES`` covers the FS_* family.
+_REMOVED_NAMES: dict[str, str] = {
+    "SW": "dm.col1 / dm.col2 / dm.cm(...) (e.g. width='9cm')",
+    "MW": "dm.cm(...) (e.g. width='12cm')",
+    "TW": "dm.cm(...) (e.g. width='14.5cm')",
+    "DW": "dm.col2 / dm.cm(...) (e.g. width='17cm')",
+    "WIDTHS": "iterate explicit widths inline",
+    "cm2in": "dm.cm(...) (returns a Length; e.g. dm.figsize('13cm', ...))",
+}
+
+
+def __getattr__(name: str) -> Any:
+    """Surface a migration hint for removed 0.3/0.4 names.
+
+    Without this, ``dm.SW`` / ``dm.cm2in`` / ``dm.FS_SINGLE`` would
+    raise Python's default ``AttributeError`` with no pointer to the
+    replacement. See docs/migration.md for the full mapping.
+    """
+    if name in _REMOVED_NAMES:
+        raise AttributeError(
+            f"dm.{name} was removed in 0.4. Use {_REMOVED_NAMES[name]}. "
+            f"See docs/migration.md."
+        )
+    if name.startswith("FS_"):
+        raise AttributeError(
+            f"dm.{name} (0.3 figure-size tuple) was removed in 0.4. Use "
+            f"figsize=dm.figsize('<n>cm', '<aspect>'). See docs/migration.md."
+        )
+    raise AttributeError(f"module 'dartwork_mpl' has no attribute '{name}'")

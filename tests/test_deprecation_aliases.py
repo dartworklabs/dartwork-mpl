@@ -44,6 +44,30 @@ def test_unknown_attribute_still_raises():
         _ = dm.completely_made_up
 
 
+def test_removed_width_token_message_names_new_api():
+    """Accessing a removed width token names the replacement API (#231)."""
+    with pytest.raises(AttributeError) as excinfo:
+        _ = dm.SW
+    msg = str(excinfo.value)
+    assert "figsize" in msg or "col1" in msg
+    assert "migration" in msg.lower()
+
+
+def test_removed_cm2in_message_names_new_api():
+    """``dm.cm2in`` points at ``dm.cm`` / ``dm.figsize`` (#231)."""
+    with pytest.raises(AttributeError) as excinfo:
+        _ = dm.cm2in
+    msg = str(excinfo.value)
+    assert "dm.cm" in msg or "figsize" in msg
+
+
+def test_removed_fs_token_message_names_new_api():
+    """A removed ``FS_*`` figure-size tuple points at ``dm.figsize`` (#231)."""
+    with pytest.raises(AttributeError) as excinfo:
+        _ = dm.FS_WIDE
+    assert "figsize" in str(excinfo.value)
+
+
 def test_agent_utils_submodule_import_raises():
     with pytest.raises(ModuleNotFoundError):
         import dartwork_mpl.agent_utils  # noqa: F401
