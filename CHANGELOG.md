@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-06-03
+
+### Added
+- **`dm.adopt_axis_label_font(fig)`** — when an axis carries tick labels
+  but no axis label, its tick labels (major and minor) and scientific
+  offset text adopt that axis's label font (size, weight, family,
+  style; color is preserved). The x and y axes are judged
+  independently, so an axes with a y-label but no x-label restyles only
+  the x tick labels. Reads the font from the (possibly empty) axis-label
+  Text object, so repeated application is idempotent.
+
+### Changed
+- **`simple_layout` (and therefore the deprecated `auto_layout`) now
+  applies `adopt_axis_label_font` by default** via the new
+  `adopt_orphan_tick_font=True` parameter. Tick labels on an axis with
+  no label render in the (heavier) axis-label style for correct visual
+  hierarchy. The adoption runs before each iteration's margin
+  measurement so the layout still fits the restyled ticks. Pass
+  `adopt_orphan_tick_font=False` to opt out.
+
 ## [0.4.1] - 2026-05-30
 
 ### Added
