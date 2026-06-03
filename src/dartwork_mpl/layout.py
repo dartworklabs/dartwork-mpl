@@ -319,10 +319,10 @@ def adopt_axis_label_font(fig: Figure) -> None:
     --------
     >>> import matplotlib.pyplot as plt
     >>> import dartwork_mpl as dm
-    >>> dm.style.use("report-kr")
+    >>> dm.style.use("scientific")
     >>> fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
-    >>> ax.bar(["1월", "2월"], [3, 5])
-    >>> ax.set_ylabel("매출")          # x has no label
+    >>> ax.bar(["A", "B", "C"], [3, 5, 4])
+    >>> ax.set_ylabel("Count")         # x has no label
     >>> dm.adopt_axis_label_font(fig)  # x tick labels now use the label font
     """
     if not fig.axes:
