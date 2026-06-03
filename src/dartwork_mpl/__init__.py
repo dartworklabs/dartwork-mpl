@@ -81,7 +81,13 @@ from .install import INSTALL_TARGETS, install_llm_txt, uninstall_llm_txt
 from .io import save_and_show, save_formats, show
 
 # Layout
-from .layout import auto_layout, get_bounding_box, simple_layout, tight_crop
+from .layout import (
+    adopt_axis_label_font,
+    auto_layout,
+    get_bounding_box,
+    simple_layout,
+    tight_crop,
+)
 
 # Prompt utilities
 from .prompt import (
@@ -177,6 +183,7 @@ __all__ = [  # noqa: RUF022
     "fw",
     "lw",
     # Layout
+    "adopt_axis_label_font",
     "auto_layout",
     "simple_layout",
     "tight_crop",

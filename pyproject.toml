@@ -1,6 +1,6 @@
 [project]
 name = "dartwork-mpl"
-version = "0.4.1"
+version = "0.4.2"
 description = "Enhanced matplotlib styling, color management, and utility library for publication-quality figures"
 readme = "README.md"
 license = { text = "MIT" }

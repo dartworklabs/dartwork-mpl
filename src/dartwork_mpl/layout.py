@@ -13,7 +13,13 @@ for backwards compatibility.
 
 from __future__ import annotations
 
-__all__ = ["auto_layout", "get_bounding_box", "simple_layout", "tight_crop"]
+__all__ = [
+    "adopt_axis_label_font",
+    "auto_layout",
+    "get_bounding_box",
+    "simple_layout",
+    "tight_crop",
+]
 
 import contextlib
 import warnings
@@ -235,6 +241,97 @@ def _resolve_gridspec(
 
 
 # ─────────────────────────────────────────────────────────────────────
+# orphan tick-label font adoption
+# ─────────────────────────────────────────────────────────────────────
+
+# When an axis carries tick labels but no axis label, the tick labels
+# become that axis's most prominent textual descriptor. Under every
+# preset they are styled lighter/smaller than the axis label, so a
+# self-describing axis renders its descriptor in the subordinate tick
+# style. These helpers copy the axis-label font onto such "orphan" tick
+# labels. Color is intentionally excluded so user-set tick colors stay.
+
+
+def _copy_label_font(src: Any, dst: Any) -> None:
+    """Copy fontsize/weight/family/style from ``src`` Text onto ``dst``."""
+    dst.set_fontsize(src.get_fontsize())
+    dst.set_fontweight(src.get_fontweight())
+    dst.set_fontfamily(src.get_fontfamily())
+    dst.set_fontstyle(src.get_fontstyle())
+
+
+def _adopt_axis_label_font_core(fig: Figure) -> None:
+    """Make unlabeled axes' tick labels adopt that axis's label font.
+
+    For each axes and each axis direction (x, y) **independently**: if the
+    axis has no axis label, copy the axis-label font (size, weight,
+    family, style — *not* color) onto that axis's visible, non-empty tick
+    labels (major and minor) and its offset text. Axes that *do* carry a
+    label are left untouched, preserving any user tick-font customization.
+
+    Assumes the figure has already been drawn so the tick label Text
+    objects exist. The change persists across later redraws and locator
+    regeneration because matplotlib copies the prototype tick's font onto
+    any ticks it creates afterwards.
+    """
+    for ax in fig.axes:
+        for axis, get_label in (
+            (getattr(ax, "xaxis", None), getattr(ax, "get_xlabel", None)),
+            (getattr(ax, "yaxis", None), getattr(ax, "get_ylabel", None)),
+        ):
+            if axis is None or get_label is None:
+                continue
+            try:
+                if get_label().strip():
+                    continue  # labeled axis — leave ticks as-is
+                label = axis.label
+                targets: list[Any] = []
+                for minor in (False, True):
+                    targets.extend(
+                        tick
+                        for tick in axis.get_ticklabels(minor=minor)
+                        if tick.get_visible() and tick.get_text().strip()
+                    )
+                offset = axis.get_offset_text()
+                if offset.get_visible() and offset.get_text().strip():
+                    targets.append(offset)
+                for tick in targets:
+                    _copy_label_font(label, tick)
+            except (AttributeError, ValueError):
+                # Non-standard axes (polar/3D) — skip defensively.
+                continue
+
+
+def adopt_axis_label_font(fig: Figure) -> None:
+    """Draw ``fig`` then apply :func:`_adopt_axis_label_font_core`.
+
+    Use this when you are not calling :func:`simple_layout` (which already
+    applies the same adoption by default via ``adopt_orphan_tick_font``)
+    but still want unlabeled axes' tick labels to take the axis-label
+    font. A no-op on figures without axes.
+
+    Note that the adoption reflects the figure state at call time: if you
+    later add an axis label to a previously unlabeled axis, the ticks that
+    already adopted the label font keep it. In the normal flow axis labels
+    are set before layout, so this does not arise.
+
+    Examples
+    --------
+    >>> import matplotlib.pyplot as plt
+    >>> import dartwork_mpl as dm
+    >>> dm.style.use("scientific")
+    >>> fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+    >>> ax.bar(["A", "B", "C"], [3, 5, 4])
+    >>> ax.set_ylabel("Count")         # x has no label
+    >>> dm.adopt_axis_label_font(fig)  # x tick labels now use the label font
+    """
+    if not fig.axes:
+        return
+    fig.canvas.draw()
+    _adopt_axis_label_font_core(fig)
+
+
+# ─────────────────────────────────────────────────────────────────────
 # main entry point
 # ─────────────────────────────────────────────────────────────────────
 
@@ -249,6 +346,7 @@ def simple_layout(
     mt: Length | str | float | None = None,
     mb: Length | str | float | None = None,
     use_all_axes: bool = True,
+    adopt_orphan_tick_font: bool = True,
     verbose: bool = False,
 ) -> None:
     """Place axes content at the requested distance from each figure edge.
@@ -285,6 +383,13 @@ def simple_layout(
         If ``True`` (default), every axes in the figure contributes
         to the measurement. If ``False``, only axes belonging to
         ``gs`` are considered.
+    adopt_orphan_tick_font : bool, optional
+        If ``True`` (default), tick labels (and offset text) on any axis
+        that has no axis label adopt that axis's label font (size,
+        weight, family, style; not color), via
+        :func:`adopt_axis_label_font`. Applied each iteration *before*
+        measurement so the computed margins fit the restyled ticks.
+        Set to ``False`` to leave tick fonts untouched.
     verbose : bool, optional
         If ``True``, prints per-iteration GridSpec edges and the
         change since the previous iteration.
@@ -338,6 +443,11 @@ def simple_layout(
 
     for it in range(_MAX_ITER):
         fig.canvas.draw()
+        # Restyle orphan tick labels before measuring so the margins fit
+        # the (possibly larger) adopted font. Re-applied each iteration to
+        # survive locator-driven tick regeneration mid-loop.
+        if adopt_orphan_tick_font:
+            _adopt_axis_label_font_core(fig)
         renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
         fbox = fig.bbox
         fw_px, fh_px = fbox.width, fbox.height
