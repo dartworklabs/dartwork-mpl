@@ -179,3 +179,35 @@ class TestSimpleLayoutIntegration:
 def test_exported_at_package_root() -> None:
     assert hasattr(dm, "adopt_axis_label_font")
     assert "adopt_axis_label_font" in dm.__all__
+
+
+class TestSaveFormatsIntegration:
+    """save_formats applies the adoption so the saved output always
+    reflects it, even when simple_layout was never called."""
+
+    def test_save_formats_applies_by_default(self, tmp_path) -> None:
+        dm.style.use("scientific")
+        fig, ax = plt.subplots()
+        ax.plot(range(10), range(10))
+        ax.set_ylabel("y label")  # x unlabeled; NOTE: no simple_layout call
+        dm.save_formats(
+            fig, str(tmp_path / "out"), formats=("png",), validate=False
+        )
+        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
+        plt.close(fig)
+
+    def test_save_formats_toggle_off(self, tmp_path) -> None:
+        dm.style.use("scientific")
+        fig, ax = plt.subplots()
+        ax.plot(range(10), range(10))
+        fig.canvas.draw()
+        default_weight = _x_tick(ax).get_fontweight()
+        dm.save_formats(
+            fig,
+            str(tmp_path / "out"),
+            formats=("png",),
+            validate=False,
+            adopt_orphan_tick_font=False,
+        )
+        assert _x_tick(ax).get_fontweight() == default_weight
+        plt.close(fig)

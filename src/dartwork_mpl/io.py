@@ -76,6 +76,7 @@ def save_formats(
     formats: tuple[str, ...] = ("png", "pdf"),
     bbox_inches: str | None = None,
     validate: bool = True,
+    adopt_orphan_tick_font: bool = True,
     **kwargs: Any,
 ) -> None:
     """Save a figure in multiple specified formats at once.
@@ -98,9 +99,24 @@ def save_formats(
     validate : bool, optional
         If True, performs visual validation before saving and prints
         ``[VISUAL]`` warnings to stdout on issues. Default is True.
+    adopt_orphan_tick_font : bool, optional
+        If ``True`` (default), tick labels (and offset text) on any axis
+        that has no axis label adopt that axis's label font before
+        saving, via :func:`~dartwork_mpl.layout.adopt_axis_label_font`.
+        This guarantees the saved output reflects the adoption even when
+        :func:`~dartwork_mpl.layout.simple_layout` was not called (it
+        already applies the same step by default). Set to ``False`` to
+        leave tick fonts untouched. Note: this restyles tick fonts but
+        does not re-fit margins, so call ``simple_layout`` for layouts
+        that must accommodate enlarged orphan ticks.
     **kwargs
         Additional keyword arguments passed to ``savefig``.
     """
+    if adopt_orphan_tick_font:
+        from .layout import adopt_axis_label_font
+
+        adopt_axis_label_font(fig)
+
     if validate:
         from .validate import validate_figure
 
