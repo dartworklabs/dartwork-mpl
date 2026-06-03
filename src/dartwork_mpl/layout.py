@@ -346,6 +346,7 @@ def simple_layout(
     mt: Length | str | float | None = None,
     mb: Length | str | float | None = None,
     use_all_axes: bool = True,
+    adopt_orphan_tick_font: bool = True,
     verbose: bool = False,
 ) -> None:
     """Place axes content at the requested distance from each figure edge.
@@ -382,6 +383,13 @@ def simple_layout(
         If ``True`` (default), every axes in the figure contributes
         to the measurement. If ``False``, only axes belonging to
         ``gs`` are considered.
+    adopt_orphan_tick_font : bool, optional
+        If ``True`` (default), tick labels (and offset text) on any axis
+        that has no axis label adopt that axis's label font (size,
+        weight, family, style; not color), via
+        :func:`adopt_axis_label_font`. Applied each iteration *before*
+        measurement so the computed margins fit the restyled ticks.
+        Set to ``False`` to leave tick fonts untouched.
     verbose : bool, optional
         If ``True``, prints per-iteration GridSpec edges and the
         change since the previous iteration.
@@ -435,6 +443,11 @@ def simple_layout(
 
     for it in range(_MAX_ITER):
         fig.canvas.draw()
+        # Restyle orphan tick labels before measuring so the margins fit
+        # the (possibly larger) adopted font. Re-applied each iteration to
+        # survive locator-driven tick regeneration mid-loop.
+        if adopt_orphan_tick_font:
+            _adopt_axis_label_font_core(fig)
         renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
         fbox = fig.bbox
         fw_px, fh_px = fbox.width, fbox.height

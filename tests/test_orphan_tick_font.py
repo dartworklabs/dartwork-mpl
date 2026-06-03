@@ -11,6 +11,7 @@ import dartwork_mpl as dm
 from dartwork_mpl.layout import (
     _adopt_axis_label_font_core,
     adopt_axis_label_font,
+    simple_layout,
 )
 
 
@@ -128,3 +129,48 @@ class TestAdoptPublic:
         fig = plt.figure()
         adopt_axis_label_font(fig)  # no axes -> no-op
         plt.close(fig)
+
+
+class TestSimpleLayoutIntegration:
+    def test_simple_layout_applies_by_default(self) -> None:
+        dm.style.use("scientific")
+        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+        ax.plot(range(10), range(10))
+        ax.set_ylabel("y label")  # x unlabeled
+        simple_layout(fig)
+        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
+        plt.close(fig)
+
+    def test_simple_layout_toggle_off(self) -> None:
+        dm.style.use("scientific")
+        fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+        ax.plot(range(10), range(10))
+        default_weight = _x_tick(ax).get_fontweight()
+        simple_layout(fig, adopt_orphan_tick_font=False)
+        assert _x_tick(ax).get_fontweight() == default_weight
+        plt.close(fig)
+
+    def test_margin_reflects_enlarged_orphan_ticks(self) -> None:
+        """A larger axis-label font on an unlabeled axis grows the bottom
+        margin because simple_layout measures the restyled ticks."""
+        dm.style.use("scientific")
+
+        def build():
+            fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
+            ax.plot(range(10), range(10))
+            ax.xaxis.label.set_fontsize(24)  # empty label, large font
+            return fig, ax
+
+        fig_on, ax_on = build()
+        simple_layout(fig_on, adopt_orphan_tick_font=True)
+        bottom_on = ax_on.get_gridspec().bottom
+
+        fig_off, ax_off = build()
+        simple_layout(fig_off, adopt_orphan_tick_font=False)
+        bottom_off = ax_off.get_gridspec().bottom
+
+        assert _x_tick(ax_on).get_fontsize() == 24
+        # bigger ticks push the axes up -> larger bottom edge fraction
+        assert bottom_on > bottom_off + 0.01
+        plt.close(fig_on)
+        plt.close(fig_off)
