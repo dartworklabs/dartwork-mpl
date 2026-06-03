@@ -26,13 +26,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   hierarchy. The adoption runs before each iteration's margin
   measurement so the layout still fits the restyled ticks. Pass
   `adopt_orphan_tick_font=False` to opt out.
-- **`save_formats` also applies `adopt_axis_label_font` by default**
-  (same `adopt_orphan_tick_font=True` parameter) so the saved output
-  always reflects the adoption even when `simple_layout` was never
-  called. Together with `simple_layout`, this makes orphan-tick
-  adoption automatic across every dartwork finalization path — no
-  explicit `adopt_axis_label_font` call is required. `save_formats`
-  restyles fonts but does not re-fit margins.
+- **`save_formats` and `save_and_show` also apply `adopt_axis_label_font`
+  by default** (same `adopt_orphan_tick_font=True` parameter, keyword-only)
+  so the saved/displayed output always reflects the adoption even when
+  `simple_layout` was never called. Together with `simple_layout`, this
+  makes orphan-tick adoption automatic across every dartwork finalization
+  path — no explicit `adopt_axis_label_font` call is required. Note that
+  with the default on, these save helpers now **mutate the figure's tick
+  fonts** (idempotent; they do not re-fit margins — call `simple_layout`
+  for that). Pass `adopt_orphan_tick_font=False` to opt out.
 
 ## [0.4.1] - 2026-05-30
 
