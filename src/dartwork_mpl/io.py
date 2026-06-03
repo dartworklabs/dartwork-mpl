@@ -76,6 +76,8 @@ def save_formats(
     formats: tuple[str, ...] = ("png", "pdf"),
     bbox_inches: str | None = None,
     validate: bool = True,
+    *,
+    adopt_orphan_tick_font: bool = True,
     **kwargs: Any,
 ) -> None:
     """Save a figure in multiple specified formats at once.
@@ -98,9 +100,35 @@ def save_formats(
     validate : bool, optional
         If True, performs visual validation before saving and prints
         ``[VISUAL]`` warnings to stdout on issues. Default is True.
+    adopt_orphan_tick_font : bool, optional
+        If ``True`` (default), tick labels (and offset text) on any axis
+        that has no axis label adopt that axis's label font before
+        saving, via :func:`~dartwork_mpl.layout.adopt_axis_label_font`.
+        This guarantees the saved output reflects the adoption even when
+        :func:`~dartwork_mpl.layout.simple_layout` was not called (it
+        already applies the same step by default). Set to ``False`` to
+        leave tick fonts untouched.
     **kwargs
         Additional keyword arguments passed to ``savefig``.
+
+    Notes
+    -----
+    With ``adopt_orphan_tick_font=True`` (the default) this call
+    **mutates the figure**: it restyles the tick-label fonts of any
+    unlabeled axis, and the change persists after the call. This is the
+    one mutation ``save_formats`` performs (it otherwise only reads and
+    writes). It is idempotent and matches what ``simple_layout`` already
+    applies. It does **not** re-fit margins — call ``simple_layout`` for
+    layouts that must grow to fit enlarged orphan ticks. On figures using
+    matplotlib ``constrained_layout``, the font change can trigger a
+    re-layout on the next draw (expected matplotlib behavior). Pass
+    ``adopt_orphan_tick_font=False`` to keep the figure untouched.
     """
+    if adopt_orphan_tick_font:
+        from .layout import adopt_axis_label_font
+
+        adopt_axis_label_font(fig)
+
     if validate:
         from .validate import validate_figure
 
@@ -179,6 +207,8 @@ def save_and_show(
     image_path: str | None = None,
     size: int = 600,
     unit: str = "pt",
+    *,
+    adopt_orphan_tick_font: bool = True,
     **kwargs: Any,
 ) -> None:
     """Save a figure to disk, then display it in a Jupyter or web environment.
@@ -193,9 +223,20 @@ def save_and_show(
         Display width. Default is 600.
     unit : str, optional
         Unit for the size ('pt', 'px', etc.). Default is 'pt'.
+    adopt_orphan_tick_font : bool, optional
+        If ``True`` (default), apply
+        :func:`~dartwork_mpl.layout.adopt_axis_label_font` before saving
+        so unlabeled axes' tick labels take the axis-label font, matching
+        :func:`save_formats`. Mutates the figure (see that function's
+        Notes). Set to ``False`` to leave tick fonts untouched.
     **kwargs
         Additional keyword arguments passed to ``savefig``.
     """
+    if adopt_orphan_tick_font:
+        from .layout import adopt_axis_label_font
+
+        adopt_axis_label_font(fig)
+
     if image_path is None:
         with NamedTemporaryFile(suffix=".svg", delete=False) as tmp:
             tmp_path = tmp.name
