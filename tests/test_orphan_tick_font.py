@@ -174,3 +174,8 @@ class TestSimpleLayoutIntegration:
         assert bottom_on > bottom_off + 0.01
         plt.close(fig_on)
         plt.close(fig_off)
+
+
+def test_exported_at_package_root() -> None:
+    assert hasattr(dm, "adopt_axis_label_font")
+    assert "adopt_axis_label_font" in dm.__all__
