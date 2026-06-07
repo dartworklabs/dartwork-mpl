@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-06-08
+
 ### Fixed
 - **`Color.from_rgb` rejects a 0-1 value mixed into 0-255 channels.** When
   any channel is `> 1.0` the call is read as 0-255; a fractional channel
