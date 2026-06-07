@@ -1,199 +1,151 @@
 <style>
-  .dm-ba-widget {
-    position: relative;
-    margin: 2rem 0;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e4e2dd;
+  /* before/after toggle — Quickstart figure — dartwork vs vanilla (id-scoped to #dm-cmp-quickstart) */
+  #dm-cmp-quickstart {
+    max-width: 720px;
+    margin: 1.6em auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  #dm-cmp-quickstart .dmc-radio {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  #dm-cmp-quickstart .dmc-tabs {
+    display: inline-flex;
+    gap: 3px;
+    padding: 3px;
+    border-radius: 999px;
+    background: #ece9e3;
+    margin: 0 0 0.7em;
+  }
+  html.dark #dm-cmp-quickstart .dmc-tabs,
+  body[data-theme="dark"] #dm-cmp-quickstart .dmc-tabs {
+    background: #23232e;
+  }
+  #dm-cmp-quickstart .dmc-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 5px 15px;
+    border-radius: 999px;
+    font-size: 0.8em;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #6b6862;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
     user-select: none;
     -webkit-user-select: none;
-    touch-action: none;
-    max-width: 720px;
-    cursor: col-resize;
   }
-  .dm-ba-widget img {
+  html.dark #dm-cmp-quickstart .dmc-tab,
+  body[data-theme="dark"] #dm-cmp-quickstart .dmc-tab {
+    color: #9a97a3;
+  }
+  #dm-cmp-quickstart .dmc-tab::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+  }
+  #dm-cmp-quickstart .dmc-tab-after::before {
+    background: #0d9488;
+  }
+  #dm-cmp-quickstart .dmc-tab-before::before {
+    background: #b94c4c;
+  }
+  #dm-cmp-quickstart .dmc-stage {
+    position: relative;
+    border-radius: 8px;
+    border: 1px solid #e4e2dd;
+    background: #fbfaf7;
+    overflow: hidden;
+  }
+  html.dark #dm-cmp-quickstart .dmc-stage,
+  body[data-theme="dark"] #dm-cmp-quickstart .dmc-stage {
+    background: #14141d;
+    border-color: #2a2a36;
+  }
+  /* Graceful default: the "after" pane shows even if :checked is unsupported. */
+  #dm-cmp-quickstart .dmc-pane {
+    margin: 0;
+  }
+  #dm-cmp-quickstart .dmc-pane-after {
+    display: block;
+  }
+  #dm-cmp-quickstart .dmc-pane-before {
+    display: none;
+  }
+  #dm-cmp-quickstart .dmc-pane img {
     display: block;
     width: 100%;
     height: auto;
-    pointer-events: none;
   }
-  .dm-ba-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow: hidden;
+  #dm-cmp-quickstart-b:checked ~ .dmc-stage .dmc-pane-after {
+    display: none;
   }
-  .dm-ba-layer img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    min-width: 100%;
-    min-height: 100%;
-    object-fit: contain;
+  #dm-cmp-quickstart-b:checked ~ .dmc-stage .dmc-pane-before {
+    display: block;
+    animation: dmcIn 0.16s ease;
   }
-  .dm-ba-divider {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 3px;
+  #dm-cmp-quickstart-a:checked ~ .dmc-stage .dmc-pane-after {
+    display: block;
+    animation: dmcIn 0.16s ease;
+  }
+  #dm-cmp-quickstart .dmc-tab-after {
     background: #fff;
-    box-shadow: 0 0 6px rgba(0, 0, 0, 0.35);
-    z-index: 10;
-    pointer-events: none;
+    color: #1a1a1a;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
   }
-  .dm-ba-handle {
-    position: absolute;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    z-index: 11;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-  }
-  .dm-ba-handle svg {
-    width: 20px;
-    height: 20px;
-    fill: #555;
-  }
-  .dm-ba-label {
-    position: absolute;
-    bottom: 10px;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    font-family:
-      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    z-index: 5;
-    pointer-events: none;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  .dm-ba-label.before {
-    left: 10px;
-    background: rgba(220, 53, 69, 0.85);
+  html.dark #dm-cmp-quickstart .dmc-tab-after,
+  body[data-theme="dark"] #dm-cmp-quickstart .dmc-tab-after {
+    background: #3a3a48;
     color: #fff;
   }
-  .dm-ba-label.after {
-    right: 10px;
-    background: rgba(25, 135, 84, 0.85);
+  #dm-cmp-quickstart-b:checked ~ .dmc-tabs .dmc-tab-after {
+    background: transparent;
+    color: #6b6862;
+    box-shadow: none;
+  }
+  #dm-cmp-quickstart-b:checked ~ .dmc-tabs .dmc-tab-before {
+    background: #fff;
+    color: #1a1a1a;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  }
+  html.dark #dm-cmp-quickstart-b:checked ~ .dmc-tabs .dmc-tab-after,
+  body[data-theme="dark"] #dm-cmp-quickstart-b:checked ~ .dmc-tabs .dmc-tab-after {
+    color: #9a97a3;
+  }
+  html.dark #dm-cmp-quickstart-b:checked ~ .dmc-tabs .dmc-tab-before,
+  body[data-theme="dark"] #dm-cmp-quickstart-b:checked ~ .dmc-tabs .dmc-tab-before {
+    background: #3a3a48;
     color: #fff;
   }
-  /* Dark mode */
-  html.dark .dm-ba-widget,
-  body[data-theme="dark"] .dm-ba-widget {
-    border-color: #444;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  @keyframes dmcIn {
+    from {
+      opacity: 0.4;
+    }
+    to {
+      opacity: 1;
+    }
   }
 </style>
 
-<div class="dm-ba-widget" id="dm-ba-quickstart">
-  <!-- After (base layer, always fully visible) -->
-  <!-- src resolved at runtime so the snippet works regardless of page depth. -->
-  <img id="dm-ba-qs-after-img" alt="After — dartwork-mpl" />
-
-  <!-- Before (overlay, clipped by slider) -->
-  <div
-    class="dm-ba-layer"
-    id="dm-ba-qs-overlay"
-    style="clip-path: inset(0 50% 0 0)"
-  >
-    <img id="dm-ba-qs-before-img" alt="Before — matplotlib defaults" />
+<div id="dm-cmp-quickstart">
+  <input class="dmc-radio" type="radio" name="dm-cmp-quickstart" id="dm-cmp-quickstart-a" checked>
+  <input class="dmc-radio" type="radio" name="dm-cmp-quickstart" id="dm-cmp-quickstart-b">
+  <div class="dmc-tabs" role="tablist" aria-label="Quickstart figure — dartwork vs vanilla — compare">
+    <label class="dmc-tab dmc-tab-after" for="dm-cmp-quickstart-a">Dartwork</label>
+    <label class="dmc-tab dmc-tab-before" for="dm-cmp-quickstart-b">Vanilla</label>
   </div>
-
-  <!-- Divider line + handle -->
-  <div class="dm-ba-divider" id="dm-ba-qs-divider" style="left: 50%"></div>
-  <div class="dm-ba-handle" id="dm-ba-qs-handle" style="left: 50%">
-    <svg viewBox="0 0 24 24">
-      <path d="M8.5 5l-5 7 5 7V5zm7 0v14l5-7-5-7z" />
-    </svg>
+  <div class="dmc-stage">
+    <figure class="dmc-pane dmc-pane-after">
+      <img src="../_static/compare_after.svg" alt="Quickstart figure — dartwork vs vanilla — Dartwork" loading="lazy">
+    </figure>
+    <figure class="dmc-pane dmc-pane-before">
+      <img src="../_static/compare_before.svg" alt="Quickstart figure — dartwork vs vanilla — Vanilla" loading="lazy">
+    </figure>
   </div>
-
-  <span class="dm-ba-label before">Before</span>
-  <span class="dm-ba-label after">After</span>
 </div>
-
-<script>
-  (function () {
-    // Resolve _static/ regardless of page depth. Same pattern as
-    // palette_picker.html / wipe_l*.html so the snippet keeps working
-    // whether embedded in /usage_guide/quickstart.html (depth 2) or
-    // opened directly.
-    (function setImgSrcs() {
-      var here = window.location.pathname;
-      var base;
-      if (here.indexOf("/_static/") !== -1) {
-        base = "";
-      } else {
-        var dirs = here.replace(/^\/+|\/+[^\/]*$/g, "").split("/").filter(Boolean);
-        var up = dirs.length > 0 ? "../".repeat(dirs.length) : "";
-        base = up + "_static/";
-      }
-      var after = document.getElementById("dm-ba-qs-after-img");
-      var before = document.getElementById("dm-ba-qs-before-img");
-      if (after) after.src = base + "compare_after.svg";
-      if (before) before.src = base + "compare_before.svg";
-    })();
-
-    function initSlider(widgetId, overlayId, dividerId, handleId) {
-      var widget = document.getElementById(widgetId);
-      var overlay = document.getElementById(overlayId);
-      var divider = document.getElementById(dividerId);
-      var handle = document.getElementById(handleId);
-      if (!widget || !overlay) return;
-
-      var dragging = false;
-
-      function setPosition(x) {
-        var rect = widget.getBoundingClientRect();
-        var pct = Math.max(0, Math.min(1, (x - rect.left) / rect.width));
-        var rightPct = ((1 - pct) * 100).toFixed(2) + "%";
-        overlay.style.clipPath = "inset(0 " + rightPct + " 0 0)";
-        divider.style.left = (pct * 100).toFixed(2) + "%";
-        handle.style.left = (pct * 100).toFixed(2) + "%";
-      }
-
-      widget.addEventListener("pointerdown", function (e) {
-        dragging = true;
-        widget.setPointerCapture(e.pointerId);
-        setPosition(e.clientX);
-      });
-      widget.addEventListener("pointermove", function (e) {
-        if (dragging) setPosition(e.clientX);
-      });
-      widget.addEventListener("pointerup", function () {
-        dragging = false;
-      });
-      widget.addEventListener("pointercancel", function () {
-        dragging = false;
-      });
-    }
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", function () {
-        initSlider(
-          "dm-ba-quickstart",
-          "dm-ba-qs-overlay",
-          "dm-ba-qs-divider",
-          "dm-ba-qs-handle",
-        );
-      });
-    } else {
-      initSlider(
-        "dm-ba-quickstart",
-        "dm-ba-qs-overlay",
-        "dm-ba-qs-divider",
-        "dm-ba-qs-handle",
-      );
-    }
-  })();
-</script>

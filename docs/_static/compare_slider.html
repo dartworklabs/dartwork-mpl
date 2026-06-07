@@ -1,270 +1,151 @@
 <style>
-  /* Header labels above the slider — replaces the in-figure overlay
-     badges that used to obscure the top-left / top-right corners of
-     the rendered SVGs. */
-  .dm-compare-heading {
+  /* before/after toggle — dartwork-mpl vs vanilla matplotlib (id-scoped to #dm-cmp-hero) */
+  #dm-cmp-hero {
     max-width: 720px;
-    margin: 1em auto 0.5em;
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 12px;
+    margin: 1.6em auto;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 0.85em;
-    letter-spacing: 0.02em;
   }
-  .dm-compare-heading > span {
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-weight: 600;
+  #dm-cmp-hero .dmc-radio {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
   }
-  .dm-compare-heading-before {
-    background: rgba(180, 65, 65, 0.12);
-    color: #b94c4c;
-  }
-  .dm-compare-heading-after {
-    background: rgba(13, 148, 136, 0.14);
-    color: #0d9488;
-  }
-  html.dark .dm-compare-heading-before,
-  body[data-theme="dark"] .dm-compare-heading-before {
-    background: rgba(180, 65, 65, 0.2);
-    color: #e89393;
-  }
-  html.dark .dm-compare-heading-after,
-  body[data-theme="dark"] .dm-compare-heading-after {
-    background: rgba(13, 148, 136, 0.22);
-    color: #5eead4;
-  }
-
-  /* Scoped to .dm-compare-explain so it cannot collide with the global
-     `.dm-compare-*` rules in custom.css that style the slider itself. */
-  .dm-compare-explain {
-    max-width: 720px;
-    margin: -1.4em auto 2em;
-    padding: 14px 18px;
-    background: #fbfaf7;
-    border: 1px solid #ebe9e2;
-    border-radius: 10px;
-    font-size: 0.86em;
-    line-height: 1.55;
-    color: #2c2c2c;
-  }
-  html.dark .dm-compare-explain,
-  body[data-theme="dark"] .dm-compare-explain {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: #2a2a3e;
-    color: #d4d4d4;
-  }
-  .dm-compare-explain-title {
-    font-weight: 600;
-    margin: 0 0 10px;
-    font-size: 0.95em;
-    letter-spacing: 0.01em;
-    color: #1a1a1a;
-  }
-  html.dark .dm-compare-explain-title,
-  body[data-theme="dark"] .dm-compare-explain-title {
-    color: #f0f0f0;
-  }
-  /* Single-column rows so long values (prop_cycle, layout) never
-     wrap awkwardly into the next column. */
-  .dm-compare-explain-grid {
-    display: flex;
-    flex-direction: column;
-  }
-  .dm-compare-explain-row {
-    display: grid;
-    grid-template-columns: 140px 1fr;
-    column-gap: 12px;
-    align-items: baseline;
-    padding: 5px 0;
-    border-bottom: 1px dashed rgba(0,0,0,0.06);
-  }
-  .dm-compare-explain-row:last-child {
-    border-bottom: none;
-  }
-  html.dark .dm-compare-explain-row,
-  body[data-theme="dark"] .dm-compare-explain-row {
-    border-bottom-color: rgba(255,255,255,0.08);
-  }
-  .dm-compare-explain-key {
-    color: #888;
-    font-size: 0.88em;
-    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
-  }
-  .dm-compare-explain-val {
+  #dm-cmp-hero .dmc-tabs {
     display: inline-flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 8px;
+    gap: 3px;
+    padding: 3px;
+    border-radius: 999px;
+    background: #ece9e3;
+    margin: 0 0 0.7em;
   }
-  .dm-compare-explain-val .b {
-    color: #b94c4c;
-    text-decoration: line-through;
-    text-decoration-color: rgba(185, 76, 76, 0.45);
+  html.dark #dm-cmp-hero .dmc-tabs,
+  body[data-theme="dark"] #dm-cmp-hero .dmc-tabs {
+    background: #23232e;
   }
-  .dm-compare-explain-val .a {
-    color: #0d9488;
+  #dm-cmp-hero .dmc-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 5px 15px;
+    border-radius: 999px;
+    font-size: 0.8em;
     font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #6b6862;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    user-select: none;
+    -webkit-user-select: none;
   }
-  .dm-compare-explain-footer {
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(0,0,0,0.05);
-    font-size: 0.82em;
-    color: #777;
+  html.dark #dm-cmp-hero .dmc-tab,
+  body[data-theme="dark"] #dm-cmp-hero .dmc-tab {
+    color: #9a97a3;
   }
-  html.dark .dm-compare-explain-footer,
-  body[data-theme="dark"] .dm-compare-explain-footer {
-    border-top-color: rgba(255,255,255,0.08);
-    color: #aaa;
+  #dm-cmp-hero .dmc-tab::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: 0 0 auto;
   }
-  .dm-compare-explain-code {
-    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
-    background: rgba(13, 148, 136, 0.1);
-    color: #0d9488;
-    padding: 1px 6px;
-    border-radius: 3px;
-    font-size: 0.92em;
+  #dm-cmp-hero .dmc-tab-after::before {
+    background: #0d9488;
   }
-  /* Suppress the legacy in-figure badge labels (still rendered by
-     custom.css globals) so they don't reappear on top of the SVGs. */
-  .dm-compare-slider .dm-compare-label {
-    display: none !important;
+  #dm-cmp-hero .dmc-tab-before::before {
+    background: #b94c4c;
+  }
+  #dm-cmp-hero .dmc-stage {
+    position: relative;
+    border-radius: 8px;
+    border: 1px solid #e4e2dd;
+    background: #fbfaf7;
+    overflow: hidden;
+  }
+  html.dark #dm-cmp-hero .dmc-stage,
+  body[data-theme="dark"] #dm-cmp-hero .dmc-stage {
+    background: #14141d;
+    border-color: #2a2a36;
+  }
+  /* Graceful default: the "after" pane shows even if :checked is unsupported. */
+  #dm-cmp-hero .dmc-pane {
+    margin: 0;
+  }
+  #dm-cmp-hero .dmc-pane-after {
+    display: block;
+  }
+  #dm-cmp-hero .dmc-pane-before {
+    display: none;
+  }
+  #dm-cmp-hero .dmc-pane img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  #dm-cmp-hero-b:checked ~ .dmc-stage .dmc-pane-after {
+    display: none;
+  }
+  #dm-cmp-hero-b:checked ~ .dmc-stage .dmc-pane-before {
+    display: block;
+    animation: dmcIn 0.16s ease;
+  }
+  #dm-cmp-hero-a:checked ~ .dmc-stage .dmc-pane-after {
+    display: block;
+    animation: dmcIn 0.16s ease;
+  }
+  #dm-cmp-hero .dmc-tab-after {
+    background: #fff;
+    color: #1a1a1a;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  }
+  html.dark #dm-cmp-hero .dmc-tab-after,
+  body[data-theme="dark"] #dm-cmp-hero .dmc-tab-after {
+    background: #3a3a48;
+    color: #fff;
+  }
+  #dm-cmp-hero-b:checked ~ .dmc-tabs .dmc-tab-after {
+    background: transparent;
+    color: #6b6862;
+    box-shadow: none;
+  }
+  #dm-cmp-hero-b:checked ~ .dmc-tabs .dmc-tab-before {
+    background: #fff;
+    color: #1a1a1a;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  }
+  html.dark #dm-cmp-hero-b:checked ~ .dmc-tabs .dmc-tab-after,
+  body[data-theme="dark"] #dm-cmp-hero-b:checked ~ .dmc-tabs .dmc-tab-after {
+    color: #9a97a3;
+  }
+  html.dark #dm-cmp-hero-b:checked ~ .dmc-tabs .dmc-tab-before,
+  body[data-theme="dark"] #dm-cmp-hero-b:checked ~ .dmc-tabs .dmc-tab-before {
+    background: #3a3a48;
+    color: #fff;
+  }
+  @keyframes dmcIn {
+    from {
+      opacity: 0.4;
+    }
+    to {
+      opacity: 1;
+    }
   }
 </style>
 
-<div class="dm-compare-heading">
-  <span class="dm-compare-heading-before">default mpl</span>
-  <span class="dm-compare-heading-after">dartwork-mpl</span>
-</div>
-
-<div class="dm-compare-slider" id="dm-compare-slider">
-  <img id="dm-compare-img-before" alt="default matplotlib" />
-  <div class="dm-compare-after" id="dm-compare-after">
-    <img id="dm-compare-img-after" alt="dartwork-mpl styled" />
+<div id="dm-cmp-hero">
+  <input class="dmc-radio" type="radio" name="dm-cmp-hero" id="dm-cmp-hero-a" checked>
+  <input class="dmc-radio" type="radio" name="dm-cmp-hero" id="dm-cmp-hero-b">
+  <div class="dmc-tabs" role="tablist" aria-label="dartwork-mpl vs vanilla matplotlib — compare">
+    <label class="dmc-tab dmc-tab-after" for="dm-cmp-hero-a">Dartwork</label>
+    <label class="dmc-tab dmc-tab-before" for="dm-cmp-hero-b">Vanilla</label>
   </div>
-  <div class="dm-compare-handle" id="dm-compare-handle"></div>
-</div>
-
-<script>
-  // Resolve `_static/` regardless of where this widget is embedded.
-  // Same pattern as palette_picker.html. Works for:
-  //   - inline embed at site root (e.g. /index.html)
-  //   - inline embed in a sub-page (e.g. /usage_guide/foo.html)
-  //   - direct open (/_static/compare_slider.html)
-  (function () {
-    var here = window.location.pathname;
-    var base;
-    if (here.indexOf("/_static/") !== -1) {
-      base = "";
-    } else {
-      var dirs = here.replace(/^\/+|\/+[^\/]*$/g, "").split("/").filter(Boolean);
-      var up = dirs.length > 0 ? "../".repeat(dirs.length) : "";
-      base = up + "_static/";
-    }
-    document.getElementById("dm-compare-img-before").src = base + "landing_hero_before.svg";
-    document.getElementById("dm-compare-img-after").src = base + "landing_hero_after.svg";
-  })();
-</script>
-
-<div class="dm-compare-explain" aria-label="What dartwork-mpl changed">
-  <p class="dm-compare-explain-title">Six rcParam shifts make the difference:</p>
-  <div class="dm-compare-explain-grid">
-    <div class="dm-compare-explain-row">
-      <span class="dm-compare-explain-key">font.family</span>
-      <span class="dm-compare-explain-val"><span class="b">DejaVu Sans</span><span class="a">Roboto</span></span>
-    </div>
-    <div class="dm-compare-explain-row">
-      <span class="dm-compare-explain-key">font.weight</span>
-      <span class="dm-compare-explain-val"><span class="b">normal (400)</span><span class="a">light (300)</span></span>
-    </div>
-    <div class="dm-compare-explain-row">
-      <span class="dm-compare-explain-key">axes.spines</span>
-      <span class="dm-compare-explain-val"><span class="b">box (4 sides)</span><span class="a">top &amp; right hidden, thinner</span></span>
-    </div>
-    <div class="dm-compare-explain-row">
-      <span class="dm-compare-explain-key">lines.linewidth</span>
-      <span class="dm-compare-explain-val"><span class="b">1.5 pt</span><span class="a">1.0 pt</span></span>
-    </div>
-    <div class="dm-compare-explain-row">
-      <span class="dm-compare-explain-key">layout</span>
-      <span class="dm-compare-explain-val"><span class="b">tight_layout()</span><span class="a">dm.simple_layout(fig, margin="2mm")</span></span>
-    </div>
-    <div class="dm-compare-explain-row">
-      <span class="dm-compare-explain-key">prop_cycle</span>
-      <span class="dm-compare-explain-val"><span class="b">C0..C9 (saturated)</span><span class="a">dc.0..dc.9 (curated mood)</span></span>
-    </div>
-  </div>
-  <div class="dm-compare-explain-footer">
-    Same data, same matplotlib calls. The diff above is the
-    <em>entire</em> delta — applied by
-    <span class="dm-compare-explain-code">dm.style.use("report")</span>
-    plus
-    <span class="dm-compare-explain-code">dm.simple_layout(fig, margin="2mm")</span>.
-    No new plotting API to learn.
+  <div class="dmc-stage">
+    <figure class="dmc-pane dmc-pane-after">
+      <img src="_static/landing_hero_after.svg" alt="dartwork-mpl vs vanilla matplotlib — Dartwork" loading="lazy">
+    </figure>
+    <figure class="dmc-pane dmc-pane-before">
+      <img src="_static/landing_hero_before.svg" alt="dartwork-mpl vs vanilla matplotlib — Vanilla" loading="lazy">
+    </figure>
   </div>
 </div>
-
-<script>
-  (function () {
-    document.addEventListener("DOMContentLoaded", function () {
-      var slider = document.getElementById("dm-compare-slider");
-      var afterEl = document.getElementById("dm-compare-after");
-      var handle = document.getElementById("dm-compare-handle");
-      if (!slider || !afterEl || !handle) return;
-
-      var dragging = false;
-
-      function setPosition(x) {
-        var rect = slider.getBoundingClientRect();
-        var pct = Math.max(0, Math.min(1, (x - rect.left) / rect.width));
-        afterEl.style.clipPath = "inset(0 0 0 " + pct * 100 + "%)";
-        handle.style.left = pct * 100 + "%";
-      }
-
-      // Set initial position at 50%
-      setTimeout(function () {
-        afterEl.style.clipPath = "inset(0 0 0 50%)";
-        handle.style.left = "50%";
-      }, 100);
-
-      slider.addEventListener("mousedown", function (e) {
-        dragging = true;
-        setPosition(e.clientX);
-        e.preventDefault();
-      });
-
-      document.addEventListener("mousemove", function (e) {
-        if (dragging) setPosition(e.clientX);
-      });
-
-      document.addEventListener("mouseup", function () {
-        dragging = false;
-      });
-
-      // Touch support
-      slider.addEventListener(
-        "touchstart",
-        function (e) {
-          dragging = true;
-          setPosition(e.touches[0].clientX);
-        },
-        { passive: true },
-      );
-
-      document.addEventListener(
-        "touchmove",
-        function (e) {
-          if (dragging) setPosition(e.touches[0].clientX);
-        },
-        { passive: true },
-      );
-
-      document.addEventListener("touchend", function () {
-        dragging = false;
-      });
-    });
-  })();
-</script>
