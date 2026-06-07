@@ -1390,7 +1390,7 @@ document.addEventListener("DOMContentLoaded", function () {
       g255 = parseInt(match[2], 16);
       b255 = parseInt(match[3], 16);
     }
-    
+
     codeHex.textContent = "dm.hex('" + hex + "')";
     codeRgb255.textContent = "dm.rgb(" + r255 + ", " + g255 + ", " + b255 + ")";
     codeRgb.textContent = "dm.rgb(" + formatF(r255/255, 3) + ", " + formatF(g255/255, 3) + ", " + formatF(b255/255, 3) + ")";
@@ -1398,7 +1398,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var lrgb = hexToLinearRgb(hex);
     var lab = linearRgbToOklab(lrgb[0], lrgb[1], lrgb[2]);
     var lch = oklabToOklch(lab[0], lab[1], lab[2]);
-    
+
     codeOklab.textContent = "dm.oklab(" + formatF(lab[0], 3) + ", " + formatF(lab[1], 3) + ", " + formatF(lab[2], 3) + ")";
     codeOklch.textContent = "dm.oklch(" + formatF(lch[0], 3) + ", " + formatF(lch[1], 3) + ", " + formatF(lch[2], 1) + ")";
   }

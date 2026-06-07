@@ -39,7 +39,7 @@ dm.style.use('scientific')  # 논문용 기본 스타일
 ```python
 # 모든 개별 스타일 목록 보기
 dm.list_styles()
-# ['base', 'dmpl', 'dmpl_light', 'font-investment', 'font-presentation', 
+# ['base', 'dmpl', 'dmpl_light', 'font-investment', 'font-presentation',
 #  'font-scientific', 'lang-kr', 'spine-no', 'spine-yes']
 
 # 사용 가능한 프리셋 확인
@@ -120,9 +120,9 @@ fig = plt.figure(
 
 # GridSpec으로 레이아웃 설정
 gs = fig.add_gridspec(
-    nrows=1, ncols=1, 
-    left=0.17, right=0.95, 
-    top=0.95, bottom=0.17, 
+    nrows=1, ncols=1,
+    left=0.17, right=0.95,
+    top=0.95, bottom=0.17,
     hspace=0.3, wspace=0
 )
 ax = fig.add_subplot(gs[0, 0])
@@ -149,7 +149,7 @@ dm.simple_layout(fig, bbox=(0, 1, 0, 1))
 # figure의 왼쪽 절반에만 최적화
 dm.simple_layout(fig, bbox=(0, 0.5, 0, 1))
 
-# figure의 오른쪽 절반에만 최적화  
+# figure의 오른쪽 절반에만 최적화
 dm.simple_layout(fig, bbox=(0.5, 1, 0, 1))
 
 # figure의 상단 절반에만 최적화
@@ -189,7 +189,7 @@ ax.legend(fontsize=dm.fs(-2))
 ```python
 # 여러 형식으로 동시 저장
 dm.save_formats(
-    fig, 
+    fig,
     'output/figure',  # 확장자 없이
     formats=('svg', 'png', 'pdf', 'eps'),
     bbox_inches='tight',
@@ -218,7 +218,7 @@ for ax, label in zip(axs, 'ab'):
     # 텍스트 오프셋 설정 시 반드시 make_offset 함수 사용
     offset = dm.make_offset(4, -4, fig)  # x=4pt, y=-4pt
     ax.text(
-        0, 1, label, 
+        0, 1, label,
         transform=ax.transAxes + offset,
         weight='bold',
         verticalalignment='top'

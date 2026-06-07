@@ -130,7 +130,7 @@ def plot_example(
 ) -> tuple[Figure, Axes]:
     """
     Plot example visualization.
-    
+
     Parameters
     ----------
     data : dict[str, np.ndarray]
@@ -143,36 +143,36 @@ def plot_example(
         Color specification. Default is 'oc.red5'.
     dpi : int, optional
         Figure resolution. Default is 200.
-    
+
     Returns
     -------
     fig : matplotlib.figure.Figure
         The created figure object.
     ax : matplotlib.axes.Axes
         The axes containing the plot.
-    
+
     Examples
     --------
     >>> import numpy as np
     >>> import dartwork_mpl as dm
     >>> dm.style.use_preset('scientific')
-    >>> 
+    >>>
     >>> # Sample data
     >>> x = np.linspace(0, 10, 100)
     >>> y = np.sin(x)
     >>> data = {'x': x, 'y': y}
-    >>> 
+    >>>
     >>> # Create plot
     >>> fig, ax = plot_example(data)
     >>> dm.save_and_show(fig)
     """
     if figsize is None:
         figsize = (9, 7)
-    
+
     fig = plt.figure(figsize=figsize, dpi=dpi)
     ax = fig.add_subplot(111)
     ax.plot(data['x'], data['y'], color=color, linewidth=linewidth)
-    
+
     return fig, ax
 ```
 
@@ -189,45 +189,45 @@ def plot_function(
 ) -> tuple[Figure, Axes]:
     """
     Short one-line description.
-    
+
     Longer description explaining what the function does, when to use it,
     and any important context.
-    
+
     Parameters
     ----------
     param1 : type1
         Description of param1. Include units, constraints, or examples.
     param2 : type2 | None, optional
         Description of param2. Default is None.
-    
+
     Returns
     -------
     fig : matplotlib.figure.Figure
         The created figure object.
     ax : matplotlib.axes.Axes
         The axes containing the plot.
-    
+
     Examples
     --------
     >>> import numpy as np
     >>> import dartwork_mpl as dm
     >>> dm.style.use_preset('scientific')
-    >>> 
+    >>>
     >>> # Minimal usage - uses default sample data
     >>> fig, ax = plot_function()
     >>> dm.save_and_show(fig)
-    >>> 
+    >>>
     >>> # Custom data usage
     >>> data = np.array([1, 2, 3, 4, 5])
     >>> labels = ['A', 'B', 'C', 'D', 'E']
     >>> fig, ax = plot_function(data, labels)
     >>> dm.save_and_show(fig)
-    
+
     Notes
     -----
     Additional notes about the function, implementation details, or
     usage tips.
-    
+
     See Also
     --------
     Related functions or modules.
@@ -261,7 +261,7 @@ def plot_function(data: np.ndarray) -> tuple[Figure, Axes]:
         figsize=(dm.cm2in(9), dm.cm2in(7)),  # Single column figure
         dpi=200  # High resolution for publication
     )
-    
+
     # Set up GridSpec for precise layout control
     # left/right/top/bottom margins in figure coordinates
     gs = fig.add_gridspec(
@@ -272,17 +272,17 @@ def plot_function(data: np.ndarray) -> tuple[Figure, Axes]:
         bottom=0.17 # Bottom margin: 17% of figure height
     )
     ax = fig.add_subplot(gs[0, 0])
-    
+
     # Plot data with dartwork-mpl color system
     # Using oc.red5 for consistent color palette
     ax.plot(data, color='oc.red5', linewidth=0.7)
-    
+
     # Apply simple_layout for automatic margin optimization
     # This replaces tight_layout() with more predictable results
     # If you have hardcoded elements (title, legend) in figure coordinates,
     # use bbox to optimize only the axes area
     dm.simple_layout(fig)
-    
+
     return fig, ax
 ```
 
@@ -301,7 +301,7 @@ def plot_with_hardcoded_elements(
     Plot with hardcoded title and legend.
     """
     fig = plt.figure(figsize=(dm.cm2in(12), dm.cm2in(12)), dpi=200)
-    
+
     # Cascading layout calculation
     title_y = 0.98
     legend_y = 0.93
@@ -309,7 +309,7 @@ def plot_with_hardcoded_elements(
     figure_bottom = 0.1
     left_margin = 0.35
     right_margin = 0.95
-    
+
     # Set up GridSpec for axes
     gs = fig.add_gridspec(
         nrows=1, ncols=1,
@@ -319,16 +319,16 @@ def plot_with_hardcoded_elements(
         bottom=figure_bottom
     )
     ax = fig.add_subplot(gs[0, 0])
-    
+
     # Plot data
     ax.plot(data, color='oc.red5', linewidth=0.7)
-    
+
     # Add hardcoded title (figure coordinates)
     fig.text(0.02, title_y, title, fontsize=dm.fs(2), fontweight=dm.fw(1))
-    
+
     # Add hardcoded legend (figure coordinates)
     fig.legend(bbox_to_anchor=(0.02, legend_y), ...)
-    
+
     # Apply simple_layout with bbox to protect title/legend
     # bbox format: (left, right, bottom, top) in figure coordinates
     # This optimizes only the axes area, leaving title/legend untouched
@@ -338,7 +338,7 @@ def plot_with_hardcoded_elements(
         bbox=(left_margin, right_margin, figure_bottom, figure_top),
         use_all_axes=False,  # Only optimize axes in this GridSpec
     )
-    
+
     return fig, ax
 ```
 
@@ -360,17 +360,17 @@ def plot_example(
 ) -> tuple[Figure, Axes]:
     """
     Plot example.
-    
+
     Examples
     --------
     >>> import numpy as np
     >>> import dartwork_mpl as dm
     >>> dm.style.use_preset('scientific')
-    >>> 
+    >>>
     >>> # Minimal usage - uses default sample data
     >>> fig, ax = plot_example()
     >>> dm.save_and_show(fig)
-    >>> 
+    >>>
     >>> # Custom data usage
     >>> data = np.array([64, 58, 57, 54, 51, 49, 45, 43, 42])
     >>> labels = [
@@ -390,7 +390,7 @@ def plot_example(
             "Category D", "Category E", "Category F",
             "Category G", "Category H", "Category I"
         ]
-    
+
     # ... rest of implementation
 ```
 
@@ -409,23 +409,23 @@ def plot_example(
 ) -> tuple[Figure, Axes]:
     """
     Plot example with all parameters having sensible defaults.
-    
+
     Examples
     --------
     >>> import numpy as np
     >>> import dartwork_mpl as dm
     >>> dm.style.use_preset('scientific')
-    >>> 
+    >>>
     >>> # Minimal usage - all defaults (no arguments needed)
     >>> fig, ax = plot_example()
     >>> dm.save_and_show(fig)
-    >>> 
+    >>>
     >>> # Custom data usage
     >>> data = np.array([1, 2, 3, 4, 5])
     >>> labels = ['A', 'B', 'C', 'D', 'E']
     >>> fig, ax = plot_example(data, labels)
     >>> dm.save_and_show(fig)
-    >>> 
+    >>>
     >>> # Customized usage with styling
     >>> fig, ax = plot_example(
     ...     data,
@@ -441,7 +441,7 @@ def plot_example(
         data = np.array([1, 2, 3, 4, 5])
     if labels is None:
         labels = ['A', 'B', 'C', 'D', 'E']
-    
+
     # ... rest of implementation
 ```
 
@@ -455,15 +455,15 @@ def plot_example(
 def get_source_code() -> str:
     """
     Return the source code of this module as a string.
-    
+
     This function is used to provide the source code to coding agents
     as input for further development or modification.
-    
+
     Returns
     -------
     str
         The complete source code of this module.
-    
+
     Examples
     --------
     >>> source = get_source_code()
@@ -471,14 +471,14 @@ def get_source_code() -> str:
     """
     import inspect
     import importlib
-    
+
     # Get the current module
     module_name = __name__
     module = importlib.import_module(module_name)
-    
+
     # Get the source file path
     source_file = inspect.getfile(module)
-    
+
     # Read and return the source code
     with open(source_file, 'r', encoding='utf-8') as f:
         return f.read()
@@ -595,11 +595,11 @@ def plot_comparison_dotplot(
 ) -> tuple[Figure, Axes]:
     """
     Create a dot plot comparing success rates across categories.
-    
+
     This function visualizes success rates as dots with optional baseline
     comparison tracks. The visualization is optimized for publication use
     with dartwork-mpl styling.
-    
+
     Parameters
     ----------
     categories : list[str] | None, optional
@@ -621,24 +621,24 @@ def plot_comparison_dotplot(
     colors : dict[str, str] | None, optional
         Color dictionary with keys 'success' and 'other'. If None, uses
         default dartwork-mpl colors. Default is None.
-    
+
     Returns
     -------
     fig : matplotlib.figure.Figure
         The created figure object.
     ax : matplotlib.axes.Axes
         The axes containing the plot.
-    
+
     Examples
     --------
     >>> import numpy as np
     >>> import dartwork_mpl as dm
     >>> dm.style.use_preset('scientific')
-    >>> 
+    >>>
     >>> # Minimal usage - uses default sample data
     >>> fig, ax = plot_comparison_dotplot()
     >>> dm.save_and_show(fig)
-    >>> 
+    >>>
     >>> # Custom data usage
     >>> categories = [
     ...     "Automated Customer Support",
@@ -655,7 +655,7 @@ def plot_comparison_dotplot(
     ...     other_values
     ... )
     >>> dm.save_and_show(fig)
-    >>> 
+    >>>
     >>> # Customized plot
     >>> fig, ax = plot_comparison_dotplot(
     ...     categories,
@@ -665,13 +665,13 @@ def plot_comparison_dotplot(
     ...     colors={'success': 'oc.green3', 'other': 'oc.gray4'}
     ... )
     >>> dm.save_and_show(fig)
-    
+
     Notes
     -----
     - The function uses dartwork-mpl styling for consistent appearance
     - GridSpec is used for precise layout control
     - Colors follow dartwork-mpl color system (dm.* or tw.*)
-    
+
     See Also
     --------
     dartwork_mpl.style.use_preset : Apply dartwork-mpl style presets
@@ -688,21 +688,21 @@ def plot_comparison_dotplot(
         ]
     if success_values is None:
         success_values = np.array([64, 58, 57, 54, 51], dtype=float)
-    
+
     # Set default figure size using cm2in for unit conversion
     if figsize is None:
         figsize = (dm.cm2in(13), dm.cm2in(9))
-    
+
     # Set default colors using dartwork-mpl color system
     if colors is None:
         colors = {
             'success': 'oc.green3',
             'other': 'oc.gray4'
         }
-    
+
     # Create figure with publication-ready settings
     fig = plt.figure(figsize=figsize, dpi=dpi)
-    
+
     # Set up GridSpec for precise layout control
     # Margins: left=30%, right=95%, top=95%, bottom=10%
     gs = fig.add_gridspec(
@@ -713,10 +713,10 @@ def plot_comparison_dotplot(
         bottom=0.1  # Bottom margin
     )
     ax = fig.add_subplot(gs[0, 0])
-    
+
     # Calculate y positions for categories
     y_pos = np.arange(len(categories))
-    
+
     # Plot baseline tracks if provided
     if other_values is not None:
         # Draw horizontal tracks for baseline values
@@ -727,7 +727,7 @@ def plot_comparison_dotplot(
                 linewidth=dm.lw(10),  # Use dartwork-mpl linewidth
                 zorder=1
             )
-    
+
     # Plot success values as dots
     ax.scatter(
         success_values,
@@ -736,36 +736,36 @@ def plot_comparison_dotplot(
         s=100,  # Marker size
         zorder=2
     )
-    
+
     # Set y-axis labels
     ax.set_yticks(y_pos)
     ax.set_yticklabels(categories)
-    
+
     # Set x-axis label
     ax.set_xlabel('Success Rate [%]')
-    
+
     # Add title if provided
     if title:
         ax.set_title(title, fontsize=dm.fs(1), fontweight=dm.fw(1))
-    
+
     # Apply simple_layout for automatic margin optimization
     dm.simple_layout(fig)
-    
+
     return fig, ax
 
 
 def get_source_code() -> str:
     """
     Return the source code of this module as a string.
-    
+
     This function is used to provide the source code to coding agents
     as input for further development or modification.
-    
+
     Returns
     -------
     str
         The complete source code of this module.
-    
+
     Examples
     --------
     >>> source = get_source_code()
@@ -773,14 +773,14 @@ def get_source_code() -> str:
     """
     import inspect
     import importlib
-    
+
     # Get the current module
     module_name = __name__
     module = importlib.import_module(module_name)
-    
+
     # Get the source file path
     source_file = inspect.getfile(module)
-    
+
     # Read and return the source code
     with open(source_file, 'r', encoding='utf-8') as f:
         return f.read()

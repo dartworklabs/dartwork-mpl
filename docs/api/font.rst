@@ -48,4 +48,3 @@ Example
 .. autofunction:: dartwork_mpl.fs
 .. autofunction:: dartwork_mpl.fw
 .. autofunction:: dartwork_mpl.lw
-

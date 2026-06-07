@@ -35,7 +35,10 @@ jobs:
       - name: Build documentation
         env:
           MPLBACKEND: Agg
-        run: uv run sphinx-build -b html docs docs/_build/html -w docs/build.log
+        # -W --keep-going: collect every warning, then fail the build (and
+        # therefore block the Pages deploy) if any remain. Mirrors the PR-time
+        # gate in ci.yml so main can't deploy docs that CI would have rejected.
+        run: uv run sphinx-build -b html -W --keep-going docs docs/_build/html -w docs/build.log
 
       - name: Upload build log
         if: always()

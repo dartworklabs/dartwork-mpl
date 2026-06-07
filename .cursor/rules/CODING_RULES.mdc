@@ -116,7 +116,7 @@ def calculate_statistics(
     """
     if not data:
         raise ValueError("Data cannot be empty")
-    
+
     # Implementation here...
     pass
 ```
@@ -283,16 +283,16 @@ class DataProcessor:
         self.config: dict[str, str] = config
         self.cache: dict[str, list[float]] = {}
         self.is_initialized: bool = False
-    
+
     def process(self, data: list[float]) -> dict[str, float]:
         if not self.is_initialized:
             self._initialize()
-        
+
         result: dict[str, float] = {}
         for key, value in self.cache.items():
             result[key] = sum(value) / len(value)
         return result
-    
+
     def _initialize(self) -> None:
         self.is_initialized = True
 ```
@@ -579,4 +579,3 @@ dartwork-mpl/
 **마지막 업데이트**: 2025년
 
 **참고**: 이 규칙들은 프로젝트의 일관성과 품질을 유지하기 위해 설정되었습니다. 특별한 경우 예외가 필요하다면 팀과 논의 후 결정하세요.
-

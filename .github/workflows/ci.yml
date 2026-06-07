@@ -114,3 +114,42 @@ jobs:
           assert dm.AGENT_DOCS
           print('OK: base install imports cleanly')
           "
+
+  # Build the docs on every PR (the deploy workflow only runs on main, so
+  # without this a doc-breaking change isn't caught until after merge).
+  # Two gates: (1) -W turns Sphinx warnings into build failures; (2) the
+  # ``builder-inited`` hook regenerates llms-full.txt, so a stale committed
+  # copy (upstream edited but llms-full.txt not rebuilt) fails the drift check.
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Build documentation (warnings = errors)
+        env:
+          MPLBACKEND: Agg
+        run: uv run sphinx-build -b html -W --keep-going docs docs/_build/html
+
+      # The Sphinx build rewrites llms-full.txt in place. If it differs from
+      # the committed copy, an upstream agent-doc source was edited without
+      # rebuilding. (Generated SVG/HTML assets are non-deterministic, so the
+      # guard is scoped to llms-full.txt only — never the asset tree.)
+      - name: Assert llms-full.txt is in sync
+        run: |
+          if ! git diff --quiet -- llms-full.txt; then
+            echo "::error::llms-full.txt is stale — rebuild docs (uv run sphinx-build -b html docs docs/_build/html) and commit the regenerated file."
+            git --no-pager diff -- llms-full.txt | head -60
+            exit 1
+          fi
