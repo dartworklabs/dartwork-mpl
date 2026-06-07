@@ -30,11 +30,12 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, TypeVar, cast
+from urllib.parse import urlsplit
 
 import matplotlib
 import matplotlib.pyplot as plt
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from matplotlib.figure import Figure
 from pydantic import BaseModel
@@ -73,6 +74,52 @@ class ServerSaveRequest(BaseModel):
 
     params: dict[str, Any]
     filename: str | None = None
+
+
+def _safe_output_path(base: Path, filename: str) -> Path:
+    """Resolve *filename* strictly under *base*.
+
+    Rejects empty names and any value that escapes *base* via ``..``
+    components or an absolute path, so a client-supplied ``filename``
+    cannot write outside the script directory (path traversal). Raises
+    ``HTTPException(400)`` for the FastAPI handler to surface as a clean
+    client error.
+    """
+    cleaned = filename.strip()
+    if not cleaned:
+        raise HTTPException(
+            status_code=400, detail="filename must not be empty"
+        )
+    base_resolved = base.resolve()
+    candidate = (base_resolved / cleaned).resolve()
+    if not candidate.is_relative_to(base_resolved):
+        raise HTTPException(
+            status_code=400,
+            detail="filename must stay within the output directory",
+        )
+    return candidate
+
+
+_MUTATING_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+
+
+def _is_cross_origin(
+    method: str, origin: str | None, referer: str | None, host: str | None
+) -> bool:
+    """Whether a state-changing request looks cross-origin (CSRF).
+
+    Returns ``True`` only for a mutating method whose ``Origin`` (or, if
+    absent, ``Referer``) names a different ``host:port`` than the request
+    ``Host``. Read methods, and requests carrying neither ``Origin`` nor
+    ``Referer`` (non-browser clients such as curl — not a CSRF vector),
+    return ``False``.
+    """
+    if method.upper() not in _MUTATING_METHODS:
+        return False
+    source = origin or referer
+    if source is None or host is None:
+        return False
+    return urlsplit(source).netloc != host
 
 
 # ============================================================================
@@ -141,6 +188,27 @@ def run(
 
     # ── FastAPI app ──────────────────────────────────────────────────
     app = FastAPI(title=title)
+
+    @app.middleware("http")
+    async def _same_origin_guard(request: Request, call_next: Any) -> Any:
+        # CSRF defense: state-changing requests must originate from the
+        # same origin as the page. Browsers always attach Origin (and
+        # usually Referer) to cross-site fetch/XHR, so a foreign page
+        # cannot drive side-effecting endpoints (``/api/reload`` →
+        # ``os.execv``, ``/api/save-server/*`` file writes, preset/config
+        # writes). Same-origin UI calls send Origin == Host and pass;
+        # non-browser clients (curl) send neither and are allowed — they
+        # are not a CSRF vector.
+        if _is_cross_origin(
+            request.method,
+            request.headers.get("origin"),
+            request.headers.get("referer"),
+            request.headers.get("host"),
+        ):
+            return JSONResponse(
+                {"detail": "cross-origin request rejected"}, status_code=403
+            )
+        return await call_next(request)
 
     @app.get("/", response_class=HTMLResponse)
     async def index() -> str:
@@ -282,7 +350,8 @@ def run(
         else:
             ts = _timestamp_slug()
             stem = f"{figure_fn.__name__}_{ts}"
-        image_stem = str(script_path / stem)
+        safe_target = _safe_output_path(script_path, f"{stem}.{fmt}")
+        image_stem = str(safe_target.with_suffix(""))
 
         save_formats(fig, image_stem, formats=(fmt,), bbox_inches=None)
         plt.close(fig)
@@ -325,7 +394,7 @@ def run(
         else:
             ts = _timestamp_slug()
             filename = f"{figure_fn.__name__}_{ts}.py"
-        out_path = script_path / filename
+        out_path = _safe_output_path(script_path, filename)
         out_path.write_text(code, encoding="utf-8")
 
         return {"status": "ok", "path": str(out_path), "filename": filename}

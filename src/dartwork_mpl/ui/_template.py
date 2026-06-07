@@ -3,6 +3,8 @@
 Light corporate theme with Lucide icons. No gradients, no emojis.
 """
 
+import html
+
 
 def get_html(title: str = "Dartwork Viewer") -> str:
     """Return the complete HTML page as a string.
@@ -17,6 +19,10 @@ def get_html(title: str = "Dartwork Viewer") -> str:
     str
         Full HTML document string.
     """
+    # Escape the caller-supplied title before interpolating it into the
+    # <title> / topbar markup (reflected-XSS guard — title is a public
+    # ``run(title=...)`` argument).
+    title = html.escape(title, quote=True)
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -873,6 +879,14 @@ input[type="range"]::-webkit-slider-thumb:hover {{ transform: scale(1.15); }}
 
 <script>
 let descriptors = [];
+// HTML-escape dynamic text before innerHTML interpolation (XSS guard
+// for param labels, choices, group names, preset names, free-text
+// values — some of which come from on-disk preset JSON).
+function esc(s) {{
+  return String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({{
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }})[ch]);
+}}
 let tabs = [{{ id: 1, name: "Tab 1", params: {{}} }}];
 let activeTabId = 1;
 let nextTabId = 2;
@@ -1059,34 +1073,34 @@ function buildControlWidget(d, val) {{
   g.className = "param-group";
 
   if (d.choices) {{
-    g.innerHTML = `<label class="param-label">${{d.label}}</label>
+    g.innerHTML = `<label class="param-label">${{esc(d.label)}}</label>
       <select class="param-input param-select" data-name="${{d.name}}">
-        ${{d.choices.map(c => `<option value="${{c}}" ${{c==val?"selected":""}}>${{c}}</option>`).join("")}}
+        ${{d.choices.map(c => `<option value="${{esc(c)}}" ${{c==val?"selected":""}}>${{esc(c)}}</option>`).join("")}}
       </select>`;
   }} else if (d.widget_hint === "color") {{
-    g.innerHTML = `<label class="param-label">${{d.label}}</label>
+    g.innerHTML = `<label class="param-label">${{esc(d.label)}}</label>
       <input type="color" class="param-color" data-name="${{d.name}}" value="${{val||"#000000"}}">`;
   }} else if (d.type_name === "bool") {{
     g.innerHTML = `<label class="param-checkbox">
         <input type="checkbox" data-name="${{d.name}}" ${{val?"checked":""}}>
-        <span>${{d.label}}</span></label>`;
+        <span>${{esc(d.label)}}</span></label>`;
   }} else if ((d.type_name==="int"||d.type_name==="float") && d.min_value!==null && d.max_value!==null) {{
     const step = d.step || (d.type_name==="int" ? 1 : 0.01);
     const disp = d.type_name==="float" ? Number(val).toFixed(2) : val;
-    g.innerHTML = `<label class="param-label">${{d.label}}</label>
+    g.innerHTML = `<label class="param-label">${{esc(d.label)}}</label>
       <div class="range-row">
         <input type="range" data-name="${{d.name}}" data-type="${{d.type_name}}"
                min="${{d.min_value}}" max="${{d.max_value}}" step="${{step}}" value="${{val}}">
         <span class="range-value" id="rv-${{d.name}}">${{disp}}</span></div>`;
   }} else if (d.type_name==="int"||d.type_name==="float") {{
-    g.innerHTML = `<label class="param-label">${{d.label}}</label>
+    g.innerHTML = `<label class="param-label">${{esc(d.label)}}</label>
       <input type="number" class="param-input" data-name="${{d.name}}" data-type="${{d.type_name}}"
              value="${{val||0}}" step="${{d.step||(d.type_name==="int"?1:0.01)}}"
              ${{d.min_value!==null?`min="${{d.min_value}}"`:""}}
              ${{d.max_value!==null?`max="${{d.max_value}}"`:""}}>` ;
   }} else {{
-    g.innerHTML = `<label class="param-label">${{d.label}}</label>
-      <input type="text" class="param-input" data-name="${{d.name}}" value="${{val||""}}">` ;
+    g.innerHTML = `<label class="param-label">${{esc(d.label)}}</label>
+      <input type="text" class="param-input" data-name="${{d.name}}" value="${{esc(val||"")}}">` ;
   }}
   return g;
 }}
@@ -1117,7 +1131,7 @@ function buildControls(overrides) {{
   for (const [groupName, items] of groups) {{
     const header = document.createElement("div");
     header.className = "param-section-header";
-    header.innerHTML = `<svg class="chevron" width="10" height="10" viewBox="0 0 10 10"><path d="M3 2L7 5L3 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>${{groupName}}`;
+    header.innerHTML = `<svg class="chevron" width="10" height="10" viewBox="0 0 10 10"><path d="M3 2L7 5L3 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>${{esc(groupName)}}`;
 
     const body = document.createElement("div");
     body.className = "param-section-body";
@@ -1378,7 +1392,7 @@ async function showLoadModal() {{
   list.innerHTML = presets.map((p, i) => `
     <div class="preset-item">
       <span onclick="loadPreset(${{i}})" style="flex:1;cursor:pointer">
-        <strong>${{p.label}}</strong>
+        <strong>${{esc(p.label)}}</strong>
         <span style="color:var(--text-muted);font-size:11px;margin-left:6px">${{p.timestamp?.slice(0,19)||""}}</span>
       </span>
       <button class="preset-delete" onclick="deletePreset(${{i}}, event)" title="Delete">&times;</button>
