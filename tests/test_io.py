@@ -208,6 +208,29 @@ class TestSaveAndShow:
             pass
 
 
+class TestShowOptionalIPython:
+    """``dm.show()`` needs IPython, an optional ``[notebook]`` extra."""
+
+    def test_show_raises_actionable_error_without_ipython(self) -> None:
+        """When IPython is absent, show() raises an ImportError that names
+        the ``[notebook]`` extra instead of a bare ModuleNotFoundError."""
+        import sys
+        from unittest.mock import patch
+
+        import pytest
+
+        from dartwork_mpl.io import show
+
+        # Setting the modules to None in sys.modules makes ``import
+        # IPython.display`` raise ImportError — simulating a core-only
+        # install without the [notebook] extra.
+        with patch.dict(
+            sys.modules, {"IPython": None, "IPython.display": None}
+        ):
+            with pytest.raises(ImportError, match=r"notebook"):
+                show("<svg/>")
+
+
 class TestSaveFormatsNonAscii:
     """Saving with a non-ASCII (Korean) filename stem must succeed on
     macOS / Linux filesystems with UTF-8 path encoding (the default
