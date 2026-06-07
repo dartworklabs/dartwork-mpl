@@ -2,7 +2,7 @@
 
 > Publication-quality matplotlib utilities: free-form physical-width
 > API (`width="13cm"`), six aspect tokens, curated style presets, an
-> OKLCH color system, content-aware layout (`auto_layout`), visual
+> OKLCH color system, content-aware layout (`simple_layout`), visual
 > validation, and an MCP server for AI coding assistants.
 
 For agents: read `CLAUDE.md` (or `AGENTS.md`) at the repo root for
@@ -14,9 +14,9 @@ wheel under `dartwork_mpl/asset/prompt/`.
 ## Docs
 
 - [Quickstart](https://dartworklabs.github.io/dartwork-mpl/usage_guide/quickstart.html): 5-minute tour — install, first figure, save.
-- [Layout & geometry](https://dartworklabs.github.io/dartwork-mpl/usage_guide/layout.html): width / aspect tokens, `auto_layout` vs `simple_layout`, multi-panel.
+- [Layout & geometry](https://dartworklabs.github.io/dartwork-mpl/usage_guide/layout.html): width / aspect tokens, content-aware `simple_layout`, multi-panel.
 - [Color system](https://dartworklabs.github.io/dartwork-mpl/color_system/index.html): named palettes (`oc.*`, `tw.*`), OKLCH interpolation, opacity handling.
-- [Migration 0.3 → 0.4](https://dartworklabs.github.io/dartwork-mpl/migration.html): mapping table for removed 0.3 names.
+- [Migration guide](https://dartworklabs.github.io/dartwork-mpl/migration.html): old → new mapping for removed names (0.3 → 0.5).
 - [API reference](https://dartworklabs.github.io/dartwork-mpl/api/index.html): autosummary of every public function and class.
 
 ## AI integration

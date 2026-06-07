@@ -5,7 +5,7 @@ grid styling patterns. Each recipe is the canonical dartwork-mpl
 look written as raw matplotlib — drop into any axes after plotting.
 
 The wrappers `dm.style_spines`, `dm.add_grid`, and `dm.minimal_axes`
-were removed in 0.5.0 ([#156](https://github.com/dartworklabs/dartwork-mpl/issues/156));
+were removed in 0.4.1 ([#156](https://github.com/dartworklabs/dartwork-mpl/issues/156));
 the curated kwargs that they encoded live here instead.
 
 ## Publication grid

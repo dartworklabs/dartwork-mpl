@@ -364,36 +364,35 @@ After saving, restart the client (or start a new conversation) and ask the assis
 
 ```
 src/dartwork_mpl/
-├── __init__.py             # Public API exports + lazy 0.3 alias shim
+├── __init__.py             # Public API exports + removed-name migration shim
 ├── py.typed                # PEP 561 type marker
-├── units.py                # cm/inch/mm, col1/col2, figsize, parse_width/parse_aspect
+├── units.py                # cm/inch/mm, col1/col2, figsize, length
 ├── style.py                # Style class + preset management
-├── color/                  # Color class (OKLab/OKLCH/RGB/hex) + palettes
-├── layout.py               # simple_layout(), label_axes()
+├── colors/                 # Color class (OKLab/OKLCH/RGB/hex) + palettes
+├── layout.py               # simple_layout(), get_bounding_box(), tight_crop()
 ├── annotation.py           # arrow_axis(), label_axes()
 ├── scale.py                # fs(), fw(), lw()
-├── spines.py               # hide_spines(), add_grid(), minimal_axes()
 ├── formatting.py           # format_axis_*(), rotate_tick_labels()
-├── io.py                   # save_formats(), save_and_show()
-├── prompt.py               # get_prompt(), copy_prompt(), list_prompts()
+├── io.py                   # save_formats(), save_and_show(), show()
+├── prompt.py               # get_prompt(), copy_prompt(), list_prompts(), find_template()
 ├── validate.py             # validate_figure() — visual checks
 ├── validate_fixes.py       # validate_with_fixes() — auto-fix helpers
-├── lint.py                 # lint() against the anti-pattern catalog
-├── diagnostics.py          # plot_colormaps/plot_colors/plot_fonts
+├── lint.py                 # lint() + migrate_legacy_code()
+├── diagnostics/            # plot_colormaps/plot_colors/plot_fonts (package)
 ├── explore.py              # list_palettes/list_colormaps/show_palette
 ├── icon.py                 # Icon font system (MDI, Font Awesome)
 ├── font.py                 # Font registration (lazy, locked)
 ├── cmap.py                 # Custom colormap registration (lazy, locked)
 ├── helpers/                # Stable helper utilities (data, labels, …)
 ├── templates/              # Extended plot templates (plot_diverging_bar)
-├── install.py              # LLM integration installer
+├── agent.py                # Bundled agent-onboarding docs (agent_doc_path, get_agent_doc)
+├── util.py                 # Color utilities (mix_colors, make_offset, set_decimal)
 ├── cli.py                  # console-script entry (dartwork-mpl-mcp)
-├── util.py                 # Legacy re-exports (deprecated cm2in, etc.)
-├── constant.py             # Deprecated 0.3 width constants (SW/MW/TW/DW)
+├── asset_viz/              # Deprecated alias for diagnostics (v1.0 removal)
 ├── ui/                     # Interactive FastAPI viewer
 ├── mcp/                    # MCP server for AI assistants
 │   ├── server.py           #   FastMCP instance + wiring
-│   ├── resources.py        #   12 resources + 3 templates
+│   ├── resources.py        #   12 resources + 3 resource templates
 │   ├── tools.py            #   13 tools (color, lint+autofix, validate+render, migrate, info)
 │   └── prompts.py          #   2 prompts (create_plot, style_review)
 └── asset/                  # Bundled styles, colors, fonts, icons, prompts

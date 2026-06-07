@@ -1,7 +1,7 @@
 """Tests for ``dartwork_mpl.helpers`` package.
 
 The ``save_figure`` and ``create_figure_with_style`` helpers were removed in
-0.5.0 (round 2 of the API audit, #141). This file verifies that:
+0.4.1 (round 2 of the API audit, #141). This file verifies that:
 
 1. The ``helpers`` package-level imports that *remain* are still accessible.
 2. The deleted names are no longer present in ``helpers.__all__`` or as

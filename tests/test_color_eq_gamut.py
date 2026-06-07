@@ -1,6 +1,6 @@
 """Value equality / hashing (#233) and gamut introspection (#240).
 
-Covers the 0.4.3 minimal fixes:
+Covers the 0.5.0 minimal fixes:
 
 - ``Color.__eq__`` / ``Color.__hash__`` by OKLab coordinates so equal
   colors compare and hash equal (previously identity-based: equal colors
