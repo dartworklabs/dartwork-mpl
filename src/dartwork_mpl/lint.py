@@ -372,9 +372,20 @@ def migrate_legacy_code(code: str) -> str:
 # ``migrate_legacy_code`` or the MCP ``apply_lint_fixes`` flow.
 
 _AUTO_FIX_TABLE: tuple[tuple[str, re.Pattern[str], str], ...] = (
-    # rule_id, search regex, replacement
+    # rule_id, search regex, replacement.
+    #
+    # Each rule_id MUST be a real id in the anti-pattern SSOT
+    # (02-anti-patterns.yaml) — the ``apply_lint_fixes`` diff keys on it,
+    # and a label with no matching rule is silently dead. A test
+    # (``test_auto_fix_rule_ids_exist_in_ssot``) enforces this.
+    #
+    # ``dm.cm2in`` is deliberately NOT auto-fixed: the only SSOT rule for
+    # it is ``cm2in-figsize`` (the ``figsize=(dm.cm2in(...), ...)`` form),
+    # whose correct rewrite is ``figsize=dm.figsize("<n>cm", "<aspect>")``
+    # — context-dependent, not a token swap. A bare ``dm.cm2in → dm.cm``
+    # substitution would be *wrong* (``cm2in`` returns inches, ``cm``
+    # returns a Length), so we leave it to ``migrate_legacy_code``.
     ("plt-style-use", re.compile(r"\bplt\.style\.use\b"), "dm.style.use"),
-    ("cm2in-call", re.compile(r"\bdm\.cm2in\b"), "dm.cm"),
     # plt.tight_layout() / fig.tight_layout() → dm.simple_layout(fig).
     # The replacement assumes the figure is bound to a name we cannot
     # know, so we conservatively use ``fig`` (the canonical name in
@@ -393,8 +404,8 @@ def apply_lint_fixes(code: str) -> tuple[str, list[Issue], list[Issue]]:
 
     Performs identifier- and call-level rewrites for rules whose
     replacement does not depend on caller-supplied parameters
-    (currently ``plt-style-use``, ``cm2in-call``, and the no-arg form
-    of ``tight-layout``). Each rule is applied as a whole-source
+    (currently ``plt-style-use`` and the no-arg form of
+    ``tight-layout``). Each rule is applied as a whole-source
     regex substitution, after which the linter re-runs to compute the
     diff between ``before`` and ``after`` issue sets.
 

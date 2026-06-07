@@ -27,6 +27,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (or install `ipython` directly). (#248)
 
 ### Changed
+- **Agent-facing validation heuristics hardened (`check_agent_requirements`,
+  `TICK_CROWD`).** `style_applied` is now figure-local — it inspects the
+  figure's own text artists instead of the process-global `plt.rcParams`
+  (which any later `style.use` / `rcdefaults` mutates independently of the
+  figure under test). `proper_colors` now flags full color names
+  (`"red"`, `"green"`, …) and patch (bar/area) facecolors, not just
+  single-letter codes on lines. The `TICK_CROWD` visual check measures
+  each label's real rendered extent — so it scales with font size, weight,
+  rotation, and text length — instead of a fixed 4 ticks/inch density that
+  ignored font size (it falls back to the density only when extents are
+  unmeasurable). (#236)
 - **Docs build caches the sphinx-gallery output in CI.** The generated
   gallery tree (`docs/examples_gallery/`, including each example's
   `.py.md5` stamp) is now cached and restored, so a build whose example
@@ -48,6 +59,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   previously hardcoded `resources` list and is now advertised. (#236)
 
 ### Fixed
+- **Lint anti-pattern catalog + auto-fix table corrected (`lint.py`,
+  `02-anti-patterns.yaml`).** Removed a dead, semantically wrong
+  `apply_lint_fixes` entry that referenced the non-existent rule_id
+  `cm2in-call` and rewrote `dm.cm2in` → `dm.cm` (the two are not
+  interchangeable — `cm2in` returns inches, `cm` a `Length`); the legacy
+  token is now left for `migrate_legacy_code`. A new test asserts every
+  auto-fix rule_id exists in the SSOT catalog. The
+  `multirow-subplots-no-gridspec-kw` detector now catches line-wrapped
+  `plt.subplots(` calls (a bounded look-ahead for `gridspec_kw` /
+  `sharex` / `sharey`) instead of only single-line ones. Corrected two
+  catalog messages that said `style_spines` / `auto_select_colors` were
+  removed/renamed "in 0.5.0" — they shipped in 0.4.1 (#156). (#236)
+- **`validate_with_fixes(auto_apply=True)` applies `simple_layout` once.**
+  It previously called the whole-figure layout solver once *per*
+  OVERFLOW / MARGIN_ASYMMETRY warning, re-running it redundantly and
+  listing N identical "Applied simple_layout" entries for a single
+  mutation. (#236)
 - **Out-of-gamut OKLCH colors are now gamut-mapped preserving L and h**
   (behavior change for out-of-gamut colors). `Color.to_rgb` previously
   clamped each linear-sRGB channel independently, which shifted the

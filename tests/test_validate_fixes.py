@@ -94,6 +94,77 @@ class TestCheckAgentRequirements:
         plt.close(fig)
 
 
+class TestStyleAppliedIsFigureLocal:
+    """``style_applied`` inspects the figure's own text artists, not the
+    process-global ``plt.rcParams`` (which is mutated independently)."""
+
+    def test_custom_font_size_detected(self) -> None:
+        from dartwork_mpl.validate_fixes import _style_applied
+
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3])
+        ax.set_xlabel("x", fontsize=14)  # off matplotlib's 10.0 default
+        assert _style_applied(fig) is True
+        plt.close(fig)
+
+    def test_default_font_size_not_detected(self) -> None:
+        # All text artists left at matplotlib's 10.0 default ⇒ no
+        # figure-local evidence of a preset. (rcParams reset to defaults
+        # so dartwork's import-time style does not leak in.)
+        import matplotlib as mpl
+
+        from dartwork_mpl.validate_fixes import _style_applied
+
+        with mpl.rc_context(mpl.rcParamsDefault):
+            fig, ax = plt.subplots()
+            ax.plot([1, 2, 3])
+            assert _style_applied(fig) is False
+            plt.close(fig)
+
+
+class TestProperColorsHeuristic:
+    """``proper_colors`` flags explicit matplotlib basic colors on data
+    marks — single-letter codes, full names, and patch facecolors."""
+
+    def test_full_name_line_flagged(self) -> None:
+        from dartwork_mpl.validate_fixes import check_agent_requirements
+
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3], color="red")
+        assert check_agent_requirements(fig)["proper_colors"] is False
+        plt.close(fig)
+
+    def test_single_letter_bar_flagged(self) -> None:
+        from dartwork_mpl.validate_fixes import check_agent_requirements
+
+        fig, ax = plt.subplots()
+        ax.bar(["a", "b"], [1, 2], color="g")
+        assert check_agent_requirements(fig)["proper_colors"] is False
+        plt.close(fig)
+
+    def test_hex_color_not_flagged(self) -> None:
+        from dartwork_mpl.validate_fixes import check_agent_requirements
+
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3], color="#1a73e8")
+        assert check_agent_requirements(fig)["proper_colors"] is True
+        plt.close(fig)
+
+
+class TestAutoApplyAppliesLayoutOnce:
+    """OVERFLOW / MARGIN_ASYMMETRY share one whole-figure fix; auto-apply
+    must call simple_layout at most once, not once per warning."""
+
+    def test_single_layout_fix_entry(self) -> None:
+        fig, _ax = _figure_with_overflow()
+        _warnings, applied = dm.validate_with_fixes(
+            fig, auto_apply=True, verbose=False
+        )
+        layout_entries = [a for a in applied if "simple_layout" in a]
+        assert len(layout_entries) <= 1
+        plt.close(fig)
+
+
 class TestGenerateValidationReport:
     def test_returns_report_string(self) -> None:
         fig, _ax = _figure_clean()
