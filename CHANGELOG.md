@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- **`style.use` now preserves a caller-set `svg.hashsalt`** across its
+  internal `rcParams`-default reset. Previously every preset switch restored
+  matplotlib's default (`None` → uuid4 element ids), so any SVG saved after a
+  `style.use` call had non-deterministic element ids even when the salt was
+  pinned for reproducible output. Setting `svg.hashsalt` now yields
+  byte-identical SVGs across rebuilds. (The docs build pins the salt +
+  `SOURCE_DATE_EPOCH` so its generated SVG assets stop dirtying the tree.)
+
 ## [0.4.2] - 2026-06-03
 
 ### Added

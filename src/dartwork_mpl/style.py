@@ -175,10 +175,18 @@ class Style:
 
         # Serialize global rcParams + style application across threads.
         with _style_lock:
+            # Preserve svg.hashsalt across the default-rcParams reset. It pins
+            # SVG element ids for byte-identical output and is orthogonal to the
+            # visual preset; matplotlib's default (None) restores
+            # nondeterministic uuid4 ids, so a caller/CI that set it for
+            # reproducible builds expects it to survive a preset switch.
+            _hashsalt = plt.rcParams["svg.hashsalt"]
             plt.rcParams.update(plt.rcParamsDefault)  # type: ignore[attr-defined]
             plt.style.use(
                 [style_path(style_name) for style_name in style_names]
             )
+            if _hashsalt is not None:
+                plt.rcParams["svg.hashsalt"] = _hashsalt
 
     def use(self, preset_name: str | list[str], **kwargs: float | str) -> None:
         """
