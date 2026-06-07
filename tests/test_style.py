@@ -195,3 +195,24 @@ class TestThreadSafety:
 
         # After contention, rcParams should still be a valid dict.
         assert isinstance(mpl.rcParams["font.family"], list)
+
+
+class TestSvgHashsaltPreservation:
+    """style.use must preserve a caller-set svg.hashsalt across its internal
+    rcParams-default reset, so reproducible SVG ids survive a preset switch."""
+
+    def test_preserves_set_hashsalt(self) -> None:
+        mpl.rcParams["svg.hashsalt"] = "fixed-salt"
+        try:
+            dm.style.use("scientific")
+            assert mpl.rcParams["svg.hashsalt"] == "fixed-salt"
+            # A second preset switch must keep it too.
+            dm.style.use("report")
+            assert mpl.rcParams["svg.hashsalt"] == "fixed-salt"
+        finally:
+            mpl.rcParams["svg.hashsalt"] = None
+
+    def test_keeps_none_when_unset(self) -> None:
+        mpl.rcParams["svg.hashsalt"] = None
+        dm.style.use("scientific")
+        assert mpl.rcParams["svg.hashsalt"] is None
