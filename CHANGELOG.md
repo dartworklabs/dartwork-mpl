@@ -85,6 +85,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   can't leak between examples (stricter isolation than the serial path);
   the generated gallery is gitignored, so worker-order differences never
   dirty the repo. Falls back to serial if joblib is unavailable. (#249)
+- **UI viewer template split out of the 1.5k-line god-file.** The CSS and
+  client-side JS that `_template.get_html` inlined now live in sibling
+  `_styles.py` (`CSS_BLOCK`) and `_scripts.py` (`JS_BLOCK`) modules as
+  *plain* strings — real CSS `{ }` and JS `${...}` template literals
+  instead of the f-string's doubled `{{ }}` / `${{ }}` "escape hell".
+  `_template.py` drops from 1548 to 214 lines and just assembles the two
+  blocks, interpolating only the (HTML-escaped) `title`. Purely internal:
+  `get_html(...)` output is byte-for-byte identical (verified across
+  default / XSS / plain titles) and no public API changes. (#236)
 - **`dartwork_mpl_info` now derives its advertised MCP catalog
   dynamically** instead of from hand-maintained literals. The `tools`
   and `resources` (and `prompts`) lists are scanned from the
