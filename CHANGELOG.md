@@ -35,6 +35,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   with the default on, these save helpers now **mutate the figure's tick
   fonts** (idempotent; they do not re-fit margins — call `simple_layout`
   for that). Pass `adopt_orphan_tick_font=False` to opt out.
+- **Coverage now includes the `mcp/` package and enforces a
+  `fail_under=80` gate.** The agentic core (`mcp/tools.py`,
+  `resources.py`) was previously omitted, inflating the reported figure
+  (~89% → honest ~86% with `mcp/` counted). The gate fails the build when
+  a large chunk of new code ships untested instead of letting coverage
+  silently regress. `ui/` stays omitted (optional viewer, not
+  unit-tested). (#234, #242)
+
+### Fixed
+- **`plot_colors(sort_colors=False)` no longer raises `UnboundLocalError`.**
+  `color_groups` was bound only inside the `sort_colors` branch — whose
+  final reassignment also clobbered the sorted result, leaving the sort
+  path dead. The single-group fallback now lives in an `else` branch, so
+  sorting actually applies and the unsorted path is defined. (#225, #237)
+- **MCP `validate_plot_data` returns a structured error instead of leaking
+  a raw `TypeError`.** Several legacy validators indexed or called `len()`
+  on a field without a type check, so a present-but-wrong-type field (a
+  scalar where a list was expected) or a non-dict payload surfaced an
+  uninformative `TypeError` to the client. The dispatch is now guarded and
+  returns an actionable message. (#224, #237)
+- **Color hex conversion no longer corrupts silently.** `_rgb_to_hex`
+  clamped channels with `max(0, min(1, x))`, which collapsed `NaN` to
+  `1.0` and emitted a bogus `#ffffff` (e.g. `from_oklab(nan).to_hex()`)
+  instead of surfacing the upstream error; it now raises `ValueError` on
+  non-finite channels. `_parse_hex` used `lstrip('#')` and fed the result
+  straight to `int(.., 16)`, so `##ff0000` parsed as a color and
+  `#-10000` produced negative RGB; it now strips exactly one `#` and
+  whitelists the hex alphabet before parsing. (#229, #239)
+- **`label_axes` font size is now preset-relative.** It defaulted to a
+  hardcoded `fontsize=10` that did not scale across presets — the exact
+  `fontsize-literal` anti-pattern the library's own lint flags. The
+  default is now `None`, resolved to `fs(1)` so panel labels track the
+  active preset's base size. `fontweight='bold'` is kept deliberately (a
+  semantic weight, not a numeric scaling literal). (#232, #243)
+- **Unitless numeric width strings are rejected instead of assumed to be
+  cm.** `figsize("13", ...)` / `parse_width("13")` / `Length("13")`
+  silently meant `13cm` — the same cm/inch ambiguity for which bare
+  `int`/`float` widths are already rejected. A missing unit now raises
+  `ValueError` naming the unit suffixes and the `dm.cm()` / `dm.inch()`
+  escape hatches. (#226, #244)
+- **`__version__` is derived from package metadata.** It was a
+  hand-maintained literal that drifted (`0.4.0` while the shipped package
+  was `0.4.1`) whenever a release bumped `pyproject.toml` but not the
+  literal; it now reads from `importlib.metadata` for a single source of
+  truth. Removed 0.3/0.4 names (`dm.SW`, `dm.cm2in`, `dm.FS_*`, …) now
+  raise an `AttributeError` that names the replacement API and links
+  `docs/migration.md` via a package-level `__getattr__`, instead of
+  Python's bare "no attribute" message. (#230, #231, #241)
+- **Prompt corpus self-contradiction fixed.** `00-index.md` told agents to
+  express sub-1 hairlines as `dm.lw(-1)`, which `01-policy.md` and the lint
+  engine both warn collapses to `0.0` and hides the edge; literal
+  `0.3`/`0.5` hairlines are restored to match the authoritative policy. The
+  raw-hex anti-pattern message recommended non-existent `dm.oc.blue6` /
+  `dm.dc.blue500` attribute access (an `AttributeError`); it now points to
+  the real string-token form (`color="oc.blue6"`). `llms-full.txt`
+  regenerated to match. (#227, #238)
 
 ## [0.4.1] - 2026-05-30
 
