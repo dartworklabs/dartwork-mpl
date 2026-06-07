@@ -38,6 +38,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   rotation, and text length — instead of a fixed 4 ticks/inch density that
   ignored font size (it falls back to the density only when extents are
   unmeasurable). (#236)
+- **`diagnostics` is now a package** (`_colormaps` / `_colors` / `_fonts`
+  submodules) instead of a single 1309-line module (#235). Purely
+  internal — the public API (`classify_colormap`, `plot_colormaps`,
+  `plot_colors`, `plot_fonts`) and every existing import path
+  (`dartwork_mpl.diagnostics.*`, the top-level namespace, the deprecated
+  `asset_viz` alias) are unchanged.
 - **Docs build caches the sphinx-gallery output in CI.** The generated
   gallery tree (`docs/examples_gallery/`, including each example's
   `.py.md5` stamp) is now cached and restored, so a build whose example
@@ -76,6 +82,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   OVERFLOW / MARGIN_ASYMMETRY warning, re-running it redundantly and
   listing N identical "Applied simple_layout" entries for a single
   mutation. (#236)
+- **Docs `viz_example` asset now renders** (long-standing intermittent
+  docs-build failure). `_save_viz_example` passed `dm.cm(15)` / `dm.cm(10)`
+  — `Length` objects, not float subclasses since 0.4.x — straight to
+  `fig.set_size_inches`, so matplotlib built an object-dtype size array
+  and raised `ufunc 'isfinite' not supported`; the SVG was never written
+  and the `-W` build aborted on the missing figure. It now sizes via
+  `dm.figsize("15cm", "10cm")` (inch floats). As defense-in-depth, the
+  API asset builder retries each generator once and drops a visible
+  placeholder SVG on final failure so a single bad asset can never abort
+  the whole docs build. (#235)
 - **Out-of-gamut OKLCH colors are now gamut-mapped preserving L and h**
   (behavior change for out-of-gamut colors). `Color.to_rgb` previously
   clamped each linear-sRGB channel independently, which shifted the
