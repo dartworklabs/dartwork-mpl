@@ -933,3 +933,126 @@ class TestMcpPackage:
         from dartwork_mpl.mcp import mcp
 
         assert mcp is not None
+
+
+# ── Agentic Reliability: info drift guards + input validation ─────────
+
+
+class TestMcpAgenticReliability:
+    """Regression guards for the MCP agentic surface.
+
+    ``dartwork_mpl_info`` must derive its tool / resource / template /
+    primitive-style catalogs from the live registry rather than a
+    hand-maintained literal, so adding a tool or template can never
+    silently drift the advertised catalog out of sync.
+    """
+
+    def test_info_tools_match_registered(self) -> None:
+        """info['tools'] equals the set of actually-registered tools."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        info = json.loads(captured["dartwork_mpl_info"]())
+        assert set(info["tools"]) == set(captured.keys())
+
+    def test_info_resources_match_registered(self) -> None:
+        """info['resources'] equals the set of registered resource URIs."""
+        from dartwork_mpl.mcp.resources import register_resources
+        from dartwork_mpl.mcp.tools import register_tools
+
+        tool_mcp = MagicMock()
+        tools = _capture_decorators(tool_mcp, "tool")
+        register_tools(tool_mcp)
+
+        res_mcp = MagicMock()
+        resources = _capture_decorators(res_mcp, "resource")
+        register_resources(res_mcp)
+
+        info = json.loads(tools["dartwork_mpl_info"]())
+        assert set(info["resources"]) == set(resources.keys())
+
+    def test_info_plot_templates_match_bundle(self) -> None:
+        """info['plot_templates'] equals the bundled 05-templates/*.py set."""
+        from dartwork_mpl.mcp import resources as _res
+        from dartwork_mpl.mcp.tools import register_tools
+
+        expected = sorted(p.stem for p in _res._TEMPLATE_DIR.glob("*.py"))
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        info = json.loads(captured["dartwork_mpl_info"]())
+        assert sorted(info["plot_templates"]) == expected
+
+    def test_info_primitive_mplstyle_match_bundle(self) -> None:
+        """info primitive_mplstyle equals the bundled *.mplstyle set."""
+        from dartwork_mpl.mcp import resources as _res
+        from dartwork_mpl.mcp.tools import register_tools
+
+        expected = sorted(p.stem for p in _res._MPLSTYLE_DIR.glob("*.mplstyle"))
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        info = json.loads(captured["dartwork_mpl_info"]())
+        primitive = info["style_presets"]["primitive_mplstyle"]
+        assert sorted(primitive) == expected
+
+    def test_fetch_github_document_error_includes_detail(self) -> None:
+        """The failure message surfaces the underlying error detail so an
+        agent can distinguish a 404 from a timeout and self-correct."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        with patch("httpx.get", side_effect=Exception("connect timed out")):
+            with pytest.raises(ValueError, match="connect timed out"):
+                captured["fetch_github_document"](
+                    "https://raw.githubusercontent.com/dartworklabs/foo.md"
+                )
+
+    def test_mix_colors_rejects_out_of_range_ratio(self) -> None:
+        """A ratio outside [0, 1] is rejected with an actionable message
+        instead of producing a malformed hex from an extrapolated blend."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        for bad in (1.5, -0.1, 2.0):
+            result = captured["mix_colors"]("red", "blue", bad)
+            assert "ratio" in result.lower()
+            assert not result.startswith("#")
+
+    def test_mix_colors_rejects_non_finite_ratio(self) -> None:
+        """NaN / inf ratios are rejected rather than silently propagated."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        for bad in (float("nan"), float("inf"), float("-inf")):
+            result = captured["mix_colors"]("red", "blue", bad)
+            assert "ratio" in result.lower()
+            assert not result.startswith("#")
+
+    def test_mix_colors_accepts_boundary_ratios(self) -> None:
+        """The closed-interval boundaries 0.0 and 1.0 remain valid."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        for good in (0.0, 1.0):
+            result = captured["mix_colors"]("red", "blue", good)
+            assert result.startswith("#")

@@ -6,12 +6,80 @@ code linting, and data validation.
 """
 
 import json
+import math
+import re
+from pathlib import Path
 from typing import Any
 
 import matplotlib.colors as mcolors
 from fastmcp import FastMCP
 
 __all__ = ["register_tools"]
+
+# ── Agentic-catalog discovery ────────────────────────────────────────
+#
+# ``dartwork_mpl_info`` advertises the live MCP surface (tools,
+# resources, plot templates, primitive styles). Deriving these from the
+# registry — the decorator source for tools/resources/prompts, the
+# bundled asset dirs for templates/styles — rather than a hand-maintained
+# literal means adding a tool or template can never silently drift the
+# advertised catalog out of sync. (We scan the source instead of FastMCP
+# private state, which moved between fastmcp 2.x and 3.x.)
+
+_ASSET_DIR = Path(__file__).parent.parent / "asset"
+_TEMPLATE_DIR = _ASSET_DIR / "prompt" / "05-templates"
+_MPLSTYLE_DIR = _ASSET_DIR / "mplstyle"
+
+# ``@mcp.tool()\n    def <name>(`` — empty- and keyword-arg forms.
+_TOOL_DEF_RE = re.compile(
+    r"@mcp\.tool\([^)]*\)\s*\n\s*def\s+(\w+)\s*\(", re.MULTILINE
+)
+# ``@mcp.resource("<uri>"...)`` — first string arg is the URI; ``\s*``
+# spans the newline used by the multi-line (mime_type) form.
+_RESOURCE_URI_RE = re.compile(r"""@mcp\.resource\(\s*["']([^"']+)["']""")
+# ``@mcp.prompt(...)\n    def <name>(`` in prompts.py.
+_PROMPT_DEF_RE = re.compile(
+    r"@mcp\.prompt\([^)]*\)\s*\n\s*def\s+(\w+)\s*\(", re.MULTILINE
+)
+
+
+def _scan_source(filename: str, pattern: re.Pattern[str]) -> list[str]:
+    """Return ``pattern`` captures from a sibling module's source.
+
+    Returns ``[]`` when the file is unreadable rather than falling back
+    to a stale literal — an empty catalog is honest; a drifting hardcoded
+    one is not.
+    """
+    try:
+        src = (Path(__file__).parent / filename).read_text(encoding="utf-8")
+    except OSError:
+        return []
+    return pattern.findall(src)
+
+
+def _discover_tool_names() -> list[str]:
+    """Names of every ``@mcp.tool()`` in this module, in source order."""
+    return _scan_source("tools.py", _TOOL_DEF_RE)
+
+
+def _discover_resource_uris() -> list[str]:
+    """URIs of every ``@mcp.resource(...)`` in resources.py."""
+    return _scan_source("resources.py", _RESOURCE_URI_RE)
+
+
+def _discover_prompt_names() -> list[str]:
+    """Names of every ``@mcp.prompt()`` in prompts.py."""
+    return _scan_source("prompts.py", _PROMPT_DEF_RE)
+
+
+def _discover_plot_templates() -> list[str]:
+    """Stems of the bundled ``05-templates/*.py`` plot templates."""
+    return sorted(p.stem for p in _TEMPLATE_DIR.glob("*.py"))
+
+
+def _discover_primitive_mplstyles() -> list[str]:
+    """Stems of the bundled primitive ``*.mplstyle`` files."""
+    return sorted(p.stem for p in _MPLSTYLE_DIR.glob("*.mplstyle"))
 
 
 def register_tools(mcp: FastMCP) -> None:
@@ -73,11 +141,11 @@ def register_tools(mcp: FastMCP) -> None:
                     return str(response.read().decode("utf-8"))
             except Exception as exc:
                 raise ValueError(
-                    f"Failed to fetch {url}: {type(exc).__name__}"
+                    f"Failed to fetch {url}: {type(exc).__name__}: {exc}"
                 ) from exc
         except Exception as exc:
             raise ValueError(
-                f"Failed to fetch {url}: {type(exc).__name__}"
+                f"Failed to fetch {url}: {type(exc).__name__}: {exc}"
             ) from exc
 
     # ── Color Tools ──────────────────────────────────────────────────
@@ -127,6 +195,21 @@ def register_tools(mcp: FastMCP) -> None:
         str
             Hex code of the blended color.
         """
+        # Validate ``ratio`` up front: an out-of-[0, 1] or non-finite
+        # weight extrapolates beyond the two endpoints, yielding RGB
+        # outside [0, 1] and a malformed hex. Reject it with an
+        # actionable message instead of leaking matplotlib's downstream
+        # "RGBA values should be within 0-1 range" / NaN errors.
+        if not math.isfinite(ratio):
+            return (
+                "Error: ratio must be a finite number between 0.0 and 1.0 "
+                f"(weight of color1), got {ratio!r}."
+            )
+        if not 0.0 <= ratio <= 1.0:
+            return (
+                "Error: ratio must be between 0.0 and 1.0 "
+                f"(weight of color1), got {ratio!r}."
+            )
         try:
             c1 = mcolors.to_rgb(color1)
             c2 = mcolors.to_rgb(color2)
@@ -726,8 +809,6 @@ def register_tools(mcp: FastMCP) -> None:
         # Resolve composite preset names dynamically from the bundled
         # presets.json so this stays in sync with the actual style
         # registry.
-        from pathlib import Path
-
         presets_path = (
             Path(__file__).parent.parent / "asset" / "mplstyle" / "presets.json"
         )
@@ -750,28 +831,6 @@ def register_tools(mcp: FastMCP) -> None:
                 "web",
                 "dark",
             ]
-
-        # Derive the prompt list from ``prompts.py`` source rather than
-        # poking at FastMCP private state (``mcp._prompt_manager._prompts``
-        # shifted between 2.x and 3.x). Scanning the source for
-        # ``@mcp.prompt(...)\n[…]def <name>`` is version-independent and
-        # auto-tracks ``register_prompts`` so the catalog never drifts.
-        registered_prompts: list[str] = []
-        try:
-            import re as _re
-
-            prompts_src = (Path(__file__).parent / "prompts.py").read_text(
-                encoding="utf-8"
-            )
-            prompt_re = _re.compile(
-                r"@mcp\.prompt\([^)]*\)\s*\n\s*def\s+(\w+)\s*\(", _re.MULTILINE
-            )
-            registered_prompts = prompt_re.findall(prompts_src)
-        except OSError:
-            # Source file unreadable (very unlikely). Keep the
-            # response well-formed by emitting an empty list rather
-            # than crashing the tool.
-            registered_prompts = []
 
         return json.dumps(
             {
@@ -817,81 +876,14 @@ def register_tools(mcp: FastMCP) -> None:
                         "`zero-resize-mention` lint warning."
                     ],
                 },
-                "resources": [
-                    # 0.4 SSOT URIs
-                    "dartwork-mpl://guide/agent-entry",
-                    "dartwork-mpl://guide/policy",
-                    "dartwork-mpl://guide/anti-patterns",
-                    "dartwork-mpl://guide/recipes",
-                    "dartwork-mpl://guide/migration",
-                    "dartwork-mpl://api/index",
-                    "dartwork-mpl://api/{name}",
-                    # Palettes / styles / templates
-                    "dartwork-mpl://palette/colors",
-                    "dartwork-mpl://palette/fonts",
-                    "dartwork-mpl://styles/list",
-                    "dartwork-mpl://styles/{preset}",
-                    "dartwork-mpl://templates/list",
-                    "dartwork-mpl://templates/{plot_type}",
-                    # Legacy aliases (deprecated; retained for 0.3 clients)
-                    "dartwork-mpl://guide/general-guide (deprecated alias)",
-                    "dartwork-mpl://guide/layout-guide (deprecated alias)",
-                ],
-                "tools": [
-                    "fetch_github_document",
-                    "get_color_value",
-                    "mix_colors",
-                    "list_color_families",
-                    "lint_dartwork_mpl_code",
-                    "lint_dartwork_mpl_code_json",
-                    "apply_lint_fixes",
-                    "migrate_legacy_code",
-                    "find_template",
-                    "render_template",
-                    "validate_plot_data",
-                    "validate_generated_plot",
-                    "dartwork_mpl_info",
-                ],
-                "prompts": registered_prompts,
+                "resources": _discover_resource_uris(),
+                "tools": _discover_tool_names(),
+                "prompts": _discover_prompt_names(),
                 "style_presets": {
                     "composite": composite_presets,
-                    "primitive_mplstyle": [
-                        "base",
-                        "dmpl",
-                        "dmpl_light",
-                        "font-minimal",
-                        "font-poster",
-                        "font-presentation",
-                        "font-report",
-                        "font-scientific",
-                        "font-web",
-                        "lang-kr",
-                        "spine-no",
-                        "spine-yes",
-                        "theme-dark",
-                        "theme-minimal",
-                    ],
+                    "primitive_mplstyle": _discover_primitive_mplstyles(),
                 },
-                "plot_templates": [
-                    "tornado",
-                    "scatter",
-                    "bar",
-                    "bar_horizontal",
-                    "bar_grouped",
-                    "heatmap",
-                    "line",
-                    "violin",
-                    "stacked_bar",
-                    "boxplot",
-                    "pie",
-                    "histogram",
-                    "contour",
-                    "twin_axis",
-                    "waterfall",
-                    "small_multiples",
-                    "polar",
-                    "plot_3d",
-                ],
+                "plot_templates": _discover_plot_templates(),
             },
             indent=2,
         )

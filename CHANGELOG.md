@@ -7,7 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- **`dartwork_mpl_info` now derives its advertised MCP catalog
+  dynamically** instead of from hand-maintained literals. The `tools`
+  and `resources` (and `prompts`) lists are scanned from the
+  decorator source of `tools.py` / `resources.py` / `prompts.py`, and
+  the `plot_templates` / primitive `style_presets` lists are globbed
+  from the bundled `asset/` directories. Adding a tool, resource, or
+  template can no longer silently drift the `dartwork_mpl_info`
+  catalog out of sync with the live registry. This also fixes a latent
+  omission — `dartwork-mpl://guide/anti-patterns` was missing from the
+  previously hardcoded `resources` list and is now advertised. (#236)
+
 ### Fixed
+- **`fetch_github_document` now surfaces the underlying error detail**
+  (`<ExcType>: <message>`) instead of only the exception type name, so
+  an agent can tell a `404` apart from a timeout or DNS failure and
+  self-correct rather than retrying blind. (#236)
+- **`mix_colors` validates `ratio` before blending.** A non-finite
+  (`NaN`/`inf`) or out-of-`[0, 1]` ratio extrapolated past the two
+  endpoints, producing RGB outside `[0, 1]` and a malformed hex (or a
+  leaked matplotlib "RGBA values should be within 0-1 range" error).
+  The ratio is now rejected up front with an actionable message. (#236)
 - **`style.use` now preserves a caller-set `svg.hashsalt`** across its
   internal `rcParams`-default reset. Previously every preset switch restored
   matplotlib's default (`None` → uuid4 element ids), so any SVG saved after a
