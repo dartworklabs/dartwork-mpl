@@ -155,3 +155,60 @@ class TestColorRepr:
         r = repr(c)
         assert r.startswith("Color(oklab=(")
         assert ")" in r
+
+
+# ============================================================================
+# from_rgb input validation (#236, domain E)
+# ============================================================================
+
+
+class TestFromRgbValidation:
+    """from_rgb rejects malformed input instead of silently producing an
+    out-of-gamut color (the old range heuristic divided by 255 blindly)."""
+
+    @pytest.mark.parametrize(
+        "rgb",
+        [
+            (float("nan"), 0.5, 0.5),
+            (float("inf"), 0.5, 0.5),
+            (0.5, float("nan"), 0.5),
+        ],
+    )
+    def test_non_finite_rejected(self, rgb) -> None:
+        with pytest.raises(ValueError, match="finite"):
+            Color.from_rgb(*rgb)
+
+    def test_negative_rejected(self) -> None:
+        with pytest.raises(ValueError, match="non-negative"):
+            Color.from_rgb(-1.0, 0.5, 0.5)
+
+    def test_above_255_in_byte_mode_rejected(self) -> None:
+        # One channel > 1.0 triggers 0-255 mode; a 300 then can't be a
+        # valid byte value and must error, not normalize to > 1.0.
+        with pytest.raises(ValueError, match="255"):
+            Color.from_rgb(300.0, 0.5, 0.5)
+
+    def test_valid_byte_and_unit_agree(self) -> None:
+        assert (
+            Color.from_rgb(255, 107, 107).to_hex()
+            == Color.from_rgb(1.0, 107 / 255, 107 / 255).to_hex()
+        )
+
+
+# ============================================================================
+# cspace accepts the same string forms as dm.color (#236, domain E)
+# ============================================================================
+
+
+class TestCspaceFunctionalStrings:
+    """cspace routes string inputs through the unified Color parser, so
+    rgb(...) / oklch(...) work — not just hex and palette names."""
+
+    def test_oklch_string_endpoint(self) -> None:
+        colors = cspace("oklch(0.7, 0.15, 30)", "#4ECDC4", n=5)
+        assert len(colors) == 5
+        assert all(isinstance(c, Color) for c in colors)
+
+    def test_rgb_string_endpoint(self) -> None:
+        colors = cspace("rgb(1, 0, 0)", "oklch(0.7, 0.15, 200)", n=4)
+        assert len(colors) == 4

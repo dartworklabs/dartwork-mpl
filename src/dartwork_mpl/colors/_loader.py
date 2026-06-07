@@ -12,20 +12,27 @@ from __future__ import annotations
 __all__ = ["ensure_loaded"]
 
 import json
-from pathlib import Path
+from importlib.resources import files
+from typing import TYPE_CHECKING
 
 import matplotlib.colors as mcolors
 
+if TYPE_CHECKING:
+    # ``Traversable`` moved from ``importlib.abc`` (3.10) to
+    # ``importlib.resources.abc`` (3.11+); only needed for typing.
+    from importlib.resources.abc import Traversable
 
-def _parse_color_data(path: str | Path) -> dict[str, str]:
+
+def _parse_color_data(text: str) -> dict[str, str]:
     """
-    Parse color data from a text file.
+    Parse color data from a color-definition text blob.
 
     Parameters
     ----------
-    path : str or Path
-        Path to the color data file. Each line should contain a
-        color name and value separated by a colon.
+    text : str
+        Contents of a color data file. Each line should contain a
+        color name and value separated by a colon; ``#`` comment and
+        blank lines are ignored.
 
     Returns
     -------
@@ -33,10 +40,7 @@ def _parse_color_data(path: str | Path) -> dict[str, str]:
         Dictionary mapping color names to color values.
     """
     color_dict: dict[str, str] = {}
-    with open(path) as f:
-        lines: list[str] = f.readlines()
-
-    for line in lines:
+    for line in text.splitlines():
         # Neglect comment line.
         if line.startswith("#"):
             continue
@@ -54,14 +58,14 @@ def _parse_color_data(path: str | Path) -> dict[str, str]:
 
 
 def _load_json_palette(
-    root_dir: Path, filename: str, prefix: str
+    root_dir: Traversable, filename: str, prefix: str
 ) -> dict[str, str]:
     """Load a JSON color palette and return prefixed color entries.
 
     Parameters
     ----------
-    root_dir : Path
-        Directory containing the JSON file.
+    root_dir : Traversable
+        Resource directory containing the JSON file.
     filename : str
         Name of the JSON file (e.g. ``"tailwind_colors.json"``).
     prefix : str
@@ -72,8 +76,9 @@ def _load_json_palette(
     dict[str, str]
         Mapping of ``"{prefix}.{name}{weight}"`` to hex color strings.
     """
-    with open(root_dir / filename) as f:
-        data: dict[str, list[tuple[int, str]]] = json.load(f)
+    data: dict[str, list[tuple[int, str]]] = json.loads(
+        (root_dir / filename).read_text(encoding="utf-8")
+    )
 
     result: dict[str, str] = {}
     for name, shades in data.items():
@@ -109,13 +114,18 @@ def _load_colors() -> None:
     """
     color_dict: dict[str, str] = {}
 
-    root_dir: Path = Path(__file__).parent.parent / "asset/color"
+    # Access bundled assets through importlib.resources so loading works
+    # even when the package is imported from a zip / non-extracted wheel,
+    # instead of assuming a filesystem layout via __file__.
+    root_dir: Traversable = files("dartwork_mpl") / "asset" / "color"
 
     # Open Color (.txt files → "oc." prefix).
-    for path in root_dir.glob("*.txt"):
-        color_dict.update(
-            {f"oc.{k}": v for k, v in _parse_color_data(path).items()}
-        )
+    for entry in root_dir.iterdir():
+        if entry.name.endswith(".txt"):
+            text = entry.read_text(encoding="utf-8")
+            color_dict.update(
+                {f"oc.{k}": v for k, v in _parse_color_data(text).items()}
+            )
 
     # JSON-based palettes.
     for prefix, filename in _JSON_PALETTES:

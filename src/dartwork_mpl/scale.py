@@ -45,7 +45,7 @@ def fs(n: int | float) -> float:
     return float(plt.rcParams["font.size"]) + float(n)
 
 
-def fw(n: int) -> int:
+def fw(n: int | float) -> int:
     """Return the base font weight plus 100 * *n*.
 
     String weight names (e.g., ``'normal'``, ``'bold'``) are automatically
@@ -53,19 +53,22 @@ def fw(n: int) -> int:
 
     Parameters
     ----------
-    n : int
+    n : int | float
         Number of weight steps to add (each step = 100).
         For example, n=1 selects one step bolder than the base weight.
+        Fractional steps are allowed but the result is rounded to an int,
+        since matplotlib font weights are integers (0-1000).
 
     Returns
     -------
     int
-        Computed numeric font weight.
+        Computed numeric font weight (always an ``int`` — a fractional
+        ``n`` is rounded, so the ``-> int`` contract holds).
     """
     base = plt.rcParams["font.weight"]
     if isinstance(base, str):
         base = _WEIGHT_MAP.get(base.lower(), 400)
-    return int(base) + 100 * n
+    return round(int(base) + 100 * n)
 
 
 def lw(n: int | float) -> float:
