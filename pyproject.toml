@@ -3,7 +3,8 @@ name = "dartwork-mpl"
 version = "0.4.2"
 description = "Enhanced matplotlib styling, color management, and utility library for publication-quality figures"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 keywords = ["matplotlib", "visualization", "color", "styling", "publication"]
 authors = [
     { name = "Sangwon Lee", email = "lsw91.main@gmail.com" },
@@ -14,7 +15,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
