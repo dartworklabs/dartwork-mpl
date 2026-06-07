@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-08
+
 ### Removed (breaking)
 - **`install_llm_txt` / `uninstall_llm_txt` (and `INSTALL_TARGETS`) are
   removed.** They copied the bundled prompt corpus into IDE-specific
@@ -182,6 +184,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   pinned for reproducible output. Setting `svg.hashsalt` now yields
   byte-identical SVGs across rebuilds. (The docs build pins the salt +
   `SOURCE_DATE_EPOCH` so its generated SVG assets stop dirtying the tree.)
+- **Removed names raise a migration hint, not a bare `AttributeError`.**
+  `dm.subplots`, `dm.figure`, `dm.agent_utils`, `dm.xplot` (removed in
+  0.4) and `dm.install_llm_txt` / `dm.uninstall_llm_txt` /
+  `dm.INSTALL_TARGETS` (removed in 0.5) fell through `__getattr__` to
+  Python's generic "module has no attribute" string. Each now raises an
+  `AttributeError` naming the version it was removed in and the
+  replacement API — the contract `CLAUDE.md` / `AGENTS.md` advertise,
+  previously honoured only by the 0.3 width / `FS_*` / `cm2in` tokens. (#236)
 
 ## [0.4.2] - 2026-06-03
 
