@@ -195,6 +195,15 @@ sphinx_gallery_conf = {
     "image_scrapers": ("matplotlib",),
     "image_srcset": ["2x"],
     "capture_repr": (),
+    # Execute examples in parallel (joblib/loky) on a cache miss. The
+    # output cache (each example's .py.md5 stamp) already skips unchanged
+    # examples, so this speeds up the *changed*-example builds that the
+    # cache can't help. Each example runs in its own worker process, so
+    # the global rcParams a `dm.style.use(...)` mutates can't leak between
+    # examples (stricter isolation than the serial path). Falls back to
+    # serial automatically if joblib is unavailable. The generated gallery
+    # tree is gitignored, so worker-order differences never dirty the repo.
+    "parallel": True,
 }
 
 # Local fast-preview escape hatch: ``PLOT_GALLERY=0 sphinx-build ...``

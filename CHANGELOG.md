@@ -77,6 +77,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   hooks, and the lockfile, so any change forces a fresh, full rebuild —
   no stale images. A new `PLOT_GALLERY=0` env var skips gallery
   execution entirely for fast local prose/layout previews. (#249)
+- **Docs gallery executes examples in parallel** (sphinx-gallery
+  `parallel=True`, backed by a new `joblib` dev dependency). This speeds
+  up the *cache-miss* builds the output cache can't help — a full cold
+  build dropped from ~9 min to ~3.5 min locally. Each example runs in its
+  own worker process, so the global rcParams a `dm.style.use(...)` mutates
+  can't leak between examples (stricter isolation than the serial path);
+  the generated gallery is gitignored, so worker-order differences never
+  dirty the repo. Falls back to serial if joblib is unavailable. (#249)
 - **`dartwork_mpl_info` now derives its advertised MCP catalog
   dynamically** instead of from hand-maintained literals. The `tools`
   and `resources` (and `prompts`) lists are scanned from the
