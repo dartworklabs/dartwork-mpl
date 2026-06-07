@@ -31,7 +31,8 @@ def get_html(title: str = "Dartwork Viewer") -> str:
 <title>{title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
+<!-- Pinned (not @latest) for reproducible builds + supply-chain safety. -->
+<script src="https://unpkg.com/lucide@1.17.0/dist/umd/lucide.min.js"></script>
 <style>
 *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
 
