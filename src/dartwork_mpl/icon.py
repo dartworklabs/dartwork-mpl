@@ -12,6 +12,7 @@ Examples
 ...         fontproperties=mdi, fontsize=20)
 """
 
+import threading
 from pathlib import Path
 
 from matplotlib import font_manager as fm
@@ -125,11 +126,25 @@ def _register_icon_fonts() -> None:
 
 
 _loaded: bool = False
+_lock: threading.Lock = threading.Lock()
 
 
 def ensure_loaded() -> None:
-    """Ensure icon fonts are loaded and registered if not already done."""
+    """Ensure icon fonts are loaded and registered if not already done.
+
+    Thread-safe: uses double-checked locking to avoid duplicate icon-font
+    registration when called concurrently from multiple threads (matching
+    :func:`dartwork_mpl.font.ensure_loaded` /
+    :func:`dartwork_mpl.cmap.ensure_loaded`).
+    """
     global _loaded
-    if not _loaded:
+
+    # Fast path: skip the lock once already loaded.
+    if _loaded:
+        return
+
+    with _lock:
+        if _loaded:
+            return
         _register_icon_fonts()
         _loaded = True

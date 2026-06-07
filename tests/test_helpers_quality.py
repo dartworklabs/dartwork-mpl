@@ -100,13 +100,43 @@ class TestCheckFigureQuality:
         assert not any("Axes 1: Missing y-axis label" in i for i in issues)
 
     def test_dpi_at_threshold_not_flagged(self) -> None:
-        """DPI >= 150 should not trigger the low-DPI warning."""
-        fig, ax = plt.subplots(dpi=150)
+        """DPI >= the recommended threshold must not flag.
+
+        The threshold and the advice text now share one constant
+        (_MIN_RECOMMENDED_DPI = 200); previously the check used 150 while
+        the message said 200.
+        """
+        from dartwork_mpl.helpers.quality import _MIN_RECOMMENDED_DPI
+
+        fig, ax = plt.subplots(dpi=_MIN_RECOMMENDED_DPI)
         ax.plot([1, 2], [3, 4])
         ax.set_xlabel("x")
         ax.set_ylabel("y")
         issues = check_figure_quality(fig)
         assert not any("Low DPI" in i for i in issues)
+
+    def test_dpi_below_threshold_message_matches_threshold(self) -> None:
+        """The flagged message advises exactly the threshold value, so the
+        two can never drift apart again.
+
+        Uses ``Figure`` directly rather than ``plt.subplots`` so the
+        figure dpi is exactly what we set — an interactive backend
+        (e.g. macOS Retina) otherwise scales canvas dpi by the device
+        pixel ratio and would push 199 over the threshold.
+        """
+        from matplotlib.figure import Figure
+
+        from dartwork_mpl.helpers.quality import _MIN_RECOMMENDED_DPI
+
+        fig = Figure(dpi=_MIN_RECOMMENDED_DPI - 1)
+        ax = fig.subplots()
+        ax.plot([1, 2], [3, 4])
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        issues = check_figure_quality(fig)
+        low = [i for i in issues if "Low DPI" in i]
+        assert low
+        assert f"at least {_MIN_RECOMMENDED_DPI}" in low[0]
 
     def test_too_many_ticks_flagged(self) -> None:
         """>20 fixed ticks on either axis should be flagged."""

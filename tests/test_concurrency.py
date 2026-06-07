@@ -40,8 +40,10 @@ import pytest
 
 from dartwork_mpl import cmap as cmap_module
 from dartwork_mpl import font as font_module
+from dartwork_mpl import icon as icon_module
 from dartwork_mpl.cmap import ensure_loaded as ensure_cmaps_loaded
 from dartwork_mpl.font import ensure_loaded as ensure_fonts_loaded
+from dartwork_mpl.icon import ensure_loaded as ensure_icons_loaded
 
 # Resolve the style submodule directly because ``dartwork_mpl.style`` is
 # the singleton ``Style`` instance once the package is imported.
@@ -81,6 +83,23 @@ def _reset_cmap_loaded() -> Iterator[None]:
         # by an earlier real-loader call (or by this test's stub did
         # not touch it), so the flag is the only thing to restore.
         cmap_module._loaded = True if original_loaded else cmap_module._loaded
+
+
+@pytest.fixture
+def _reset_icon_loaded() -> Iterator[None]:
+    """Force the icon module back to its unloaded state for one test.
+
+    Same stub-friendly pattern as the cmap/font resets; leaves
+    ``_loaded = True`` on teardown so downstream tests take the fast path.
+    """
+    original_loaded = icon_module._loaded
+    original_loader = icon_module._register_icon_fonts
+    icon_module._loaded = False
+    try:
+        yield
+    finally:
+        icon_module._register_icon_fonts = original_loader  # type: ignore[assignment]
+        icon_module._loaded = True if original_loaded else icon_module._loaded
 
 
 @pytest.fixture
@@ -156,6 +175,39 @@ class TestCmapEnsureLoadedConcurrency:
         _race(ensure_cmaps_loaded)
         # Flag must remain True; a torn write would flip it back.
         assert cmap_module._loaded is True
+
+
+class TestIconEnsureLoadedConcurrency:
+    """Stress tests for :func:`dartwork_mpl.icon.ensure_loaded`.
+
+    icon.ensure_loaded gained the same double-checked lock as cmap/font
+    (domain D, #236); without it concurrent first-use would register the
+    icon fonts multiple times.
+    """
+
+    def test_concurrent_unloaded_runs_loader_exactly_once(
+        self, _reset_icon_loaded: None
+    ) -> None:
+        call_count = {"n": 0}
+
+        def _counting_loader() -> None:
+            call_count["n"] += 1
+
+        icon_module._register_icon_fonts = _counting_loader  # type: ignore[assignment]
+
+        _race(ensure_icons_loaded)
+
+        assert call_count["n"] == 1, (
+            f"_register_icon_fonts ran {call_count['n']} times; "
+            "the lock failed to serialize threads."
+        )
+        assert icon_module._loaded is True
+
+    def test_fast_path_after_loaded_is_race_free(self) -> None:
+        ensure_icons_loaded()
+        assert icon_module._loaded is True
+        _race(ensure_icons_loaded)
+        assert icon_module._loaded is True
 
 
 class TestFontEnsureLoadedConcurrency:

@@ -57,6 +57,18 @@ class TestFw:
         finally:
             plt.rcParams["font.weight"] = original
 
+    def test_float_step_returns_int(self) -> None:
+        # A fractional step must still return an int (the -> int contract);
+        # previously `100 * 0.5` made the result a float.
+        original = plt.rcParams["font.weight"]
+        try:
+            plt.rcParams["font.weight"] = 400
+            result = fw(0.5)
+            assert isinstance(result, int)
+            assert result == 450
+        finally:
+            plt.rcParams["font.weight"] = original
+
 
 class TestLw:
     """Tests for lw() line width scaling."""

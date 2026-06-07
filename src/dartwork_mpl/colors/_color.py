@@ -271,12 +271,34 @@ class Color:
         Color
             Color instance.
         """
+        # Validate before the range heuristic so malformed input fails
+        # loudly instead of silently producing an out-of-gamut color.
+        for _name, _val in (("r", r), ("g", g), ("b", b)):
+            if not math.isfinite(_val):
+                raise ValueError(
+                    f"from_rgb: {_name}={_val!r} must be a finite number"
+                )
+            if _val < 0.0:
+                raise ValueError(
+                    f"from_rgb: {_name}={_val!r} must be non-negative"
+                )
+
         # Auto-detect range
         r_norm: float = r
         g_norm: float = g
         b_norm: float = b
         if r > 1.0 or g > 1.0 or b > 1.0:
-            # Assume 0-255 range
+            # At least one channel > 1.0 → interpret all as 0-255. Guard
+            # the upper bound so a stray > 255 value (or a mixed-range
+            # call) can't normalize to > 1.0 and silently distort the
+            # color instead of erroring.
+            for _name, _val in (("r", r), ("g", g), ("b", b)):
+                if _val > 255.0:
+                    raise ValueError(
+                        f"from_rgb: {_name}={_val!r} exceeds 255 — channels "
+                        f"are read as 0-255 because at least one is > 1.0; "
+                        f"pass every channel in 0-1 or 0-255, not a mix"
+                    )
             r_norm = r / 255.0
             g_norm = g / 255.0
             b_norm = b / 255.0
@@ -660,24 +682,17 @@ def cspace(
     ValueError
         If an unsupported color space is specified.
     """
-    # Convert input colors to Color objects if needed
-    start_color_obj: Color
-    if isinstance(start_color, str):
-        if start_color.startswith("#"):
-            start_color_obj = Color.from_hex(start_color)
-        else:
-            start_color_obj = Color.from_name(start_color)
-    else:
-        start_color_obj = start_color
-
-    end_color_obj: Color
-    if isinstance(end_color, str):
-        if end_color.startswith("#"):
-            end_color_obj = Color.from_hex(end_color)
-        else:
-            end_color_obj = Color.from_name(end_color)
-    else:
-        end_color_obj = end_color
+    # Convert string inputs through the unified Color parser so cspace
+    # accepts everything dm.color does — hex, palette names, and the
+    # functional rgb(...) / oklch(...) / oklab(...) forms — not just hex
+    # and palette names (the old branch rejected oklch(...) strings,
+    # inconsistent with dm.color / Color(...)).
+    start_color_obj: Color = (
+        Color(start_color) if isinstance(start_color, str) else start_color
+    )
+    end_color_obj: Color = (
+        Color(end_color) if isinstance(end_color, str) else end_color
+    )
 
     if not isinstance(start_color_obj, Color):
         raise TypeError(
@@ -839,6 +854,13 @@ def hex(hex_str: str) -> Color:
     -------
     Color
         A new Color instance.
+
+    Notes
+    -----
+    This is the public ``dm.hex`` constructor and intentionally shares the
+    name of the builtin ``hex``. The shadow is scoped to this module / the
+    ``dartwork_mpl`` namespace; use ``builtins.hex`` if you need the
+    integer-to-hex builtin alongside it.
     """
     return Color.from_hex(hex_str)
 

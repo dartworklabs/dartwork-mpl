@@ -27,6 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (or install `ipython` directly). (#248)
 
 ### Changed
+- **Color assets load via `importlib.resources`** instead of an
+  `__file__`-relative filesystem path, so palette loading works even when
+  the package is imported from a zip / non-extracted wheel. No change to
+  the colors registered. (#236)
+- **`cspace` accepts every string form `dm.color` does.** String
+  endpoints now route through the unified `Color(...)` parser, so
+  `cspace("oklch(0.7, 0.15, 30)", ...)` and `rgb(...)` work — previously
+  only hex and palette names were accepted (oklch/rgb strings raised). (#236)
 - **Agent-facing validation heuristics hardened (`check_agent_requirements`,
   `TICK_CROWD`).** `style_applied` is now figure-local — it inspects the
   figure's own text artists instead of the process-global `plt.rcParams`
@@ -65,6 +73,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   previously hardcoded `resources` list and is now advertised. (#236)
 
 ### Fixed
+- **`Color.from_rgb` validates its input** instead of silently producing
+  an out-of-gamut color. Non-finite (`NaN`/`inf`) and negative channels
+  are rejected, and once the auto-detect heuristic reads values as 0-255
+  (any channel > 1.0) a channel > 255 now errors rather than normalizing
+  to > 1.0. (#236)
+- **`dm.fw(n)` honours its `-> int` contract for fractional `n`.** A float
+  step (e.g. `fw(0.5)`) used to return a float; the result is now rounded
+  to an int (matplotlib font weights are integers). (#236)
+- **`icon.ensure_loaded` is thread-safe** — it gained the same
+  double-checked `threading.Lock` as `font.ensure_loaded` /
+  `cmap.ensure_loaded`, so concurrent first use can't register the icon
+  fonts twice. (#236)
+- **`check_figure_quality` DPI threshold matches its advice.** The check
+  flagged DPI `< 150` while the message said "at least 200"; both now use
+  a single `_MIN_RECOMMENDED_DPI = 200` constant (aligned with
+  `check_agent_requirements`' `high_dpi` bar). (#236)
 - **Lint anti-pattern catalog + auto-fix table corrected (`lint.py`,
   `02-anti-patterns.yaml`).** Removed a dead, semantically wrong
   `apply_lint_fixes` entry that referenced the non-existent rule_id
