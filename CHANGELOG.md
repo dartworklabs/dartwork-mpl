@@ -55,6 +55,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **UI viewer pins the Lucide icon CDN** to `lucide@1.17.0` (explicit
   UMD path) instead of `@latest`, for reproducible builds and
   supply-chain safety. (#236)
+- **Examples gallery curated.** Trimmed three redundant/weak creative
+  pieces (`flow_radial_burst`, `geometric_penrose_tiling` — which wasn't
+  actually a Penrose tiling — and `particles_flow_dynamics`, a near-dup of
+  `flow_quantum_dynamics`); renamed the three `plot_auto_layout_*` layout
+  examples to `plot_simple_layout_*` (their code already used the current
+  `simple_layout`, not the deprecated `auto_layout`); and fixed several
+  example issues — the `plot_simple_layout` docstring claimed a
+  non-existent "L-BFGS-B optimizer" (it is a direct measure→place calc),
+  the margin-buffer example now renders two figures so it actually shows
+  default-vs-`margin="2%"`, oversize (>17 cm) creative figures were
+  brought to ≤17 cm, an invisible `dm.lw(-1)` baseline became a `0.5`
+  hairline, and `plot_named_palettes` now uses the `oc.*` token its prose
+  advertises. (#236)
 - **Docs build caches the sphinx-gallery output in CI.** The generated
   gallery tree (`docs/examples_gallery/`, including each example's
   `.py.md5` stamp) is now cached and restored, so a build whose example

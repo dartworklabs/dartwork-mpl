@@ -14,7 +14,12 @@ import numpy as np
 
 import dartwork_mpl as dm
 
-# Use dark_background + dartwork-mpl's precise presentation sizing
+# Layer matplotlib's dark_background under dartwork-mpl's presentation
+# sizing. Order matters: the context sets the dark palette first, then
+# dm.style.use("presentation") overlays the typography/sizing (its lighter
+# facecolor defaults are explicitly re-darkened below with set_facecolor).
+# dm.style.use mutates the global rcParams, not the context — that is why
+# the whole figure is built inside this block while both are active.
 with plt.style.context("dark_background"):
     dm.style.use("presentation")
 
