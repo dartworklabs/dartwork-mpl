@@ -162,7 +162,7 @@ for i, c in enumerate(palette):
     ax.bar(i, 1, color=c.to_hex())
 
 # Also supports 'oklab' and 'rgb' spaces
-gradient = dm.cspace(dm.named('dc.vivid1'), dm.named('dc.ocean3'), n=10)
+gradient = dm.cspace(dm.color('dc.vivid1'), dm.color('dc.ocean3'), n=10)
 ```
 
 ```{raw} html

@@ -150,7 +150,7 @@ The `Color` class provides perceptually uniform color manipulation across OKLab,
 color = dm.oklch(0.7, 0.15, 150)      # L, C, h (degrees)
 color = dm.rgb(66, 133, 244)          # auto-detects 0-255 range
 color = dm.hex('#4285F4')
-color = dm.named('oc.blue5')
+color = dm.color('oc.blue5')          # palette name (also hex / rgb() / oklch())
 
 # Read/write via views (mutable references)
 color.oklch.C *= 1.2                  # boost chroma
