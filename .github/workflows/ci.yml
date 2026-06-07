@@ -137,9 +137,8 @@ jobs:
 
       # Caches the incremental-build state: Sphinx doctrees (skip re-parsing
       # unchanged pages) and the matplotlib font cache (skip the cold-start
-      # font scan). The generated SVG/gallery assets are regenerated each run
-      # — caching those is tracked separately. Key invalidates when any docs
-      # or package Python source changes.
+      # font scan). Key invalidates when any docs or package Python source
+      # changes.
       - name: Cache Sphinx doctrees + matplotlib font cache
         uses: actions/cache@v4
         with:
@@ -149,6 +148,24 @@ jobs:
           key: docs-${{ runner.os }}-${{ hashFiles('docs/**/*.py', 'src/dartwork_mpl/**/*.py', 'uv.lock') }}
           restore-keys: |
             docs-${{ runner.os }}-
+
+      # Cache the generated sphinx-gallery tree (rst + images + the
+      # per-example ``.py.md5`` stamps). sphinx-gallery re-executes an
+      # example only when its source ``.py`` md5 changes, and the
+      # purge_stale_gallery_artifacts hook drops only orphaned outputs —
+      # so restoring this tree lets an unchanged-example build skip the
+      # 70+ example executions that dominate the docs build (~9 min → ~1).
+      # The key folds in the example sources, the package source (examples
+      # import dartwork_mpl, so a library change must regenerate images),
+      # conf, the build hooks, and the lockfile; any change forces a fresh
+      # full rebuild. No restore-keys on purpose: a partial (prefix)
+      # restore could serve stale images for an unchanged example whose
+      # library-side output actually changed.
+      - name: Cache sphinx-gallery output
+        uses: actions/cache@v4
+        with:
+          path: docs/examples_gallery
+          key: gallery-${{ runner.os }}-${{ hashFiles('docs/examples_source/**', 'src/dartwork_mpl/**/*.py', 'docs/conf.py', 'docs/_ext/build_hooks.py', 'uv.lock') }}
 
       - name: Build documentation (warnings = errors)
         env:

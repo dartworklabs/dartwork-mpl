@@ -32,6 +32,18 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --dev
 
+      # Cache the generated sphinx-gallery tree so an unchanged-example
+      # deploy skips the 70+ example executions (the build's dominant
+      # cost). sphinx-gallery's md5 stamps re-run only changed examples;
+      # the key folds in example sources + package source + conf + hooks
+      # + lockfile, so any change forces a fresh full rebuild (no
+      # restore-keys — a partial restore could ship stale images).
+      - name: Cache sphinx-gallery output
+        uses: actions/cache@v4
+        with:
+          path: docs/examples_gallery
+          key: gallery-${{ runner.os }}-${{ hashFiles('docs/examples_source/**', 'src/dartwork_mpl/**/*.py', 'docs/conf.py', 'docs/_ext/build_hooks.py', 'uv.lock') }}
+
       - name: Build documentation
         env:
           MPLBACKEND: Agg

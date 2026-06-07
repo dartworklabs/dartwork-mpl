@@ -27,6 +27,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (or install `ipython` directly). (#248)
 
 ### Changed
+- **Docs build caches the sphinx-gallery output in CI.** The generated
+  gallery tree (`docs/examples_gallery/`, including each example's
+  `.py.md5` stamp) is now cached and restored, so a build whose example
+  sources and library code are unchanged skips the 70+ example
+  executions that dominated the build (~9 min → ~1 min). The cache key
+  folds in the example sources, package source, `conf.py`, the build
+  hooks, and the lockfile, so any change forces a fresh, full rebuild —
+  no stale images. A new `PLOT_GALLERY=0` env var skips gallery
+  execution entirely for fast local prose/layout previews. (#249)
 - **`dartwork_mpl_info` now derives its advertised MCP catalog
   dynamically** instead of from hand-maintained literals. The `tools`
   and `resources` (and `prompts`) lists are scanned from the
