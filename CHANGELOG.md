@@ -39,6 +39,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   previously hardcoded `resources` list and is now advertised. (#236)
 
 ### Fixed
+- **Out-of-gamut OKLCH colors are now gamut-mapped preserving L and h**
+  (behavior change for out-of-gamut colors). `Color.to_rgb` previously
+  clamped each linear-sRGB channel independently, which shifted the
+  requested lightness *and* hue — e.g. `from_oklch(0.7, 0.4, 30).to_hex()`
+  returned `#ff0000` (OKLCH ≈ 0.628 / 29.2). It now reduces chroma while
+  holding L and h fixed (binary search to the sRGB gamut boundary, CSS
+  Color 4 style): the same color maps to `#ff6551` (OKLCH 0.700 / 30.0,
+  chroma 0.40 → 0.19). In-gamut colors are unchanged; only colors for
+  which `in_gamut()` is `False` render differently. (#240)
 - **`fetch_github_document` now surfaces the underlying error detail**
   (`<ExcType>: <message>`) instead of only the exception type name, so
   an agent can tell a `404` apart from a timeout or DNS failure and

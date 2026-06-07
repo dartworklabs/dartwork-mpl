@@ -28,6 +28,19 @@ from ._conversion import (
 )
 from ._views import OklabView, OklchView, RgbView
 
+# Iterations for the binary chroma-reduction gamut search. ~C / 2**24
+# precision — far below 8-bit (1/255) quantization, so the boundary is
+# resolved exactly at hex precision while staying deterministic.
+_GAMUT_SEARCH_ITERS = 24
+
+
+def _linear_in_gamut(r: Any, g: Any, b: Any, tol: float = 1e-6) -> bool:
+    """Whether linear-sRGB channels all fall within ``[0, 1]`` (± ``tol``)."""
+    return all(
+        -tol <= float(np.asarray(ch).item()) <= 1.0 + tol for ch in (r, g, b)
+    )
+
+
 # ============================================================================
 # Color Class
 # ============================================================================
@@ -451,14 +464,16 @@ class Color:
 
         Notes
         -----
-        Out-of-gamut colors are clamped **per channel** in linear sRGB
-        (each of r/g/b independently to ``[0, 1]``). This is *not* a
-        perceptual gamut mapping: it does not preserve the requested
-        OKLCH lightness or hue, so a color outside the sRGB gamut can
-        come back with a shifted L/h. Use :meth:`in_gamut` to test
-        whether a color is representable in sRGB before relying on its
-        rendered value. (A perceptual chroma-reduction mapping that
-        preserves L/h is tracked in issue #240.)
+        Colors inside the sRGB gamut convert exactly. Out-of-gamut
+        colors are gamut-mapped by **reducing chroma while holding
+        lightness (L) and hue (h) fixed** — a binary search to the sRGB
+        gamut boundary along the requested OKLCH hue line (CSS Color 4
+        style) — so the rendered color keeps the requested L and h
+        instead of the per-channel clamp's L/h drift. A final
+        per-channel clamp absorbs sub-tolerance boundary residual and
+        clips an achromatic L outside ``[0, 1]`` (which chroma reduction
+        alone cannot represent). Use :meth:`in_gamut` to detect whether
+        a color required mapping.
         """
         # Convert OKLab to linear RGB
         r_linear: float
@@ -468,7 +483,24 @@ class Color:
             self._L, self._a, self._b
         )
 
-        # Clamp to valid range
+        if not _linear_in_gamut(r_linear, g_linear, b_linear):
+            # Out of sRGB: reduce chroma holding L and h, binary-searching
+            # the largest in-gamut chroma along the requested hue line so
+            # the rendered color preserves lightness and hue.
+            L, chroma, h_rad = _oklab_to_oklch(self._L, self._a, self._b)
+            lo, hi = 0.0, chroma
+            for _ in range(_GAMUT_SEARCH_ITERS):
+                mid = (lo + hi) / 2.0
+                _, a_mid, b_mid = _oklch_to_oklab(L, mid, h_rad)
+                if _linear_in_gamut(*_oklab_to_linear_srgb(L, a_mid, b_mid)):
+                    lo = mid
+                else:
+                    hi = mid
+            _, a_g, b_g = _oklch_to_oklab(L, lo, h_rad)
+            r_linear, g_linear, b_linear = _oklab_to_linear_srgb(L, a_g, b_g)
+
+        # Final clamp absorbs sub-tolerance boundary residual (and clips
+        # an achromatic L outside [0, 1] that chroma reduction can't fix).
         r_linear_clamped: float = max(0.0, min(1.0, r_linear))
         g_linear_clamped: float = max(0.0, min(1.0, g_linear))
         b_linear_clamped: float = max(0.0, min(1.0, b_linear))
@@ -491,10 +523,9 @@ class Color:
 
         Returns ``True`` when every linear-sRGB channel falls within
         ``[0, 1]`` (within ``tol``), i.e. :meth:`to_rgb` returns the
-        color *without* the per-channel clamp distorting it. Returns
-        ``False`` for out-of-gamut colors, whose rendered RGB no longer
-        preserves the requested OKLCH lightness/hue (see :meth:`to_rgb`
-        and issue #240).
+        color directly. Returns ``False`` for out-of-gamut colors, which
+        :meth:`to_rgb` gamut-maps by reducing chroma while holding
+        lightness and hue (so the rendered color stays close in L/h).
 
         Parameters
         ----------
@@ -517,10 +548,7 @@ class Color:
         r_linear, g_linear, b_linear = _oklab_to_linear_srgb(
             self._L, self._a, self._b
         )
-        return all(
-            -tol <= float(np.asarray(ch).item()) <= 1.0 + tol
-            for ch in (r_linear, g_linear, b_linear)
-        )
+        return _linear_in_gamut(r_linear, g_linear, b_linear, tol)
 
     def to_hex(self) -> str:
         """
