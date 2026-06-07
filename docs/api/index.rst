@@ -42,5 +42,4 @@ Additional tools for specialized use cases.
    Asset Diagnostics (visualization) <visualization>
    Diagnostics (module) <diagnostics>
    Prompt Utilities <prompt>
-   LLM Install Helpers <install>
    Figure Constants (deprecated) <constant>

@@ -51,8 +51,8 @@ pip install "dartwork-mpl[mcp]"
 
 No MCP? `llms.txt` (2.5 KB index) and `llms-full.txt` (45 KB full
 reference) drop straight into Aider, Copilot Chat, ChatGPT, or
-Claude.ai. Or run `dm.install_llm_txt()` and the corpus lands in
-your IDE's AI-context folder.
+Claude.ai. Resolve them from Python with
+`dm.agent_doc_path("llms-full")` / `dm.get_agent_doc("llms-full")`.
 
 → **[See the IDE compatibility matrix](ai/index.md)**
 :::

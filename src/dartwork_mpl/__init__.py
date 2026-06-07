@@ -74,9 +74,6 @@ from .formatting import (
 # Import icon module exports
 from .icon import icon_font, icon_font_path, list_icon_fonts
 
-# Import install module exports
-from .install import INSTALL_TARGETS, install_llm_txt, uninstall_llm_txt
-
 # I/O
 from .io import save_and_show, save_formats, show
 
@@ -170,10 +167,6 @@ __all__ = [  # noqa: RUF022
     "load_style_dict",
     "style",
     "style_path",
-    # Install module
-    "INSTALL_TARGETS",
-    "install_llm_txt",
-    "uninstall_llm_txt",
     # Bundled agent-onboarding helpers
     "AGENT_DOCS",
     "agent_doc_path",

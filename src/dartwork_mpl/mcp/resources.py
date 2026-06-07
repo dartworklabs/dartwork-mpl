@@ -190,8 +190,8 @@ def register_resources(mcp: FastMCP) -> None:
     # ── Plot Template Resources ──────────────────────────────────────
     #
     # Templates live in asset/prompt/05-templates/{plot_type}.py and
-    # are the single source of truth — the same files lint, drift CI,
-    # and install_llm_txt all read.
+    # are the single source of truth — the lint engine and drift CI
+    # read the same files.
 
     @mcp.resource("dartwork-mpl://templates/list")
     def templates_list() -> str:

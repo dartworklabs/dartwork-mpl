@@ -67,10 +67,13 @@ plot templates concatenated into one paste-able file.
 ```python
 import dartwork_mpl as dm
 
-# Drop the entire corpus into your IDE's AI-context folder
-dm.install_llm_txt()
-# ✅ Installed for Claude Code, Cursor, Continue, …
+# Resolve the bundled corpus (also accepts "AGENTS", "CLAUDE", "llms")
+path = dm.agent_doc_path("llms-full")   # -> Path to the corpus file
+text = dm.get_agent_doc("llms-full")    # -> its contents as a string
 ```
+
+Copy that file into your IDE's AI-context location (or paste its
+contents into a system prompt).
 
 For agents that can read a local file but don't auto-detect a folder:
 
@@ -121,32 +124,32 @@ dm.save_formats(fig, "out", formats=("png", "pdf"))
 (ide-agent-compatibility-2026-q2)=
 ## IDE & agent compatibility (2026-Q2)
 
-| Tool / Agent | MCP support | Recommended path | Auto-installable rules file |
+| Tool / Agent | MCP support | Recommended path | File-based fallback |
 |---|---|---|---|
-| **Claude Code** (Anthropic CLI / VS Code / JetBrains) | ✅ first-class | `claude mcp add dartwork-mpl dartwork-mpl-mcp` | `dm.install_llm_txt(targets="claude")` → `.claude/commands/` |
-| **Cursor** (legacy single-file rules) | ✅ Settings → Composer → MCP | Drop JSON in `~/.cursor/mcp.json`, restart | `dm.install_llm_txt(targets="cursor")` → `.cursor/dartwork-mpl-usage.md` |
-| **Cursor** (2026 `rules/*.mdc` format) | ✅ | — | `dm.install_llm_txt(targets="cursor-rules")` → `.cursor/rules/dartwork-mpl.mdc` |
-| **Windsurf** (Cascade) | ✅ JSON config | `~/.codeium/windsurf/mcp_config.json` | `dm.install_llm_txt(targets="windsurf")` → `.windsurf/rules/dartwork-mpl.md` |
-| **Continue** (VS Code / JetBrains) | ✅ `config.yaml` | `mcpServers:` block | `dm.install_llm_txt(targets="continue")` → `.continue/rules/dartwork-mpl.md` |
+| **Claude Code** (Anthropic CLI / VS Code / JetBrains) | ✅ first-class | `claude mcp add dartwork-mpl dartwork-mpl-mcp` | repo-root `CLAUDE.md`, or copy `llms-full.txt` into `.claude/commands/` |
+| **Cursor** (legacy single-file rules) | ✅ Settings → Composer → MCP | Drop JSON in `~/.cursor/mcp.json`, restart | copy `llms-full.txt` into `.cursor/` |
+| **Cursor** (2026 `rules/*.mdc` format) | ✅ | — | copy `llms-full.txt` into `.cursor/rules/` |
+| **Windsurf** (Cascade) | ✅ JSON config | `~/.codeium/windsurf/mcp_config.json` | copy `llms-full.txt` into `.windsurf/rules/` |
+| **Continue** (VS Code / JetBrains) | ✅ `config.yaml` | `mcpServers:` block | copy `llms-full.txt` into `.continue/rules/` |
 | **Zed** (Agent panel) | ✅ Settings → Agent → Tools | JSON snippet (`~/.config/zed/settings.json` → `context_servers`) | — |
-| **GitHub Copilot Chat** | ✅ since 2025-Q4 (MCP preview) | VS Code → Copilot → MCP settings | `dm.install_llm_txt(targets="copilot")` → `.github/copilot-instructions.md` |
-| **Antigravity** (Google Gemini CLI) | ✅ JSON config | `~/.gemini/antigravity/mcp_config.json` | `dm.install_llm_txt(targets="gemini")` → `GEMINI.md` |
-| **OpenAI Codex CLI** | ❌ (file-based) | Reads `AGENTS.md` automatically | `dm.install_llm_txt(targets="codex")` → `AGENTS.md` |
+| **GitHub Copilot Chat** | ✅ since 2025-Q4 (MCP preview) | VS Code → Copilot → MCP settings | copy `llms-full.txt` into `.github/copilot-instructions.md` |
+| **Antigravity** (Google Gemini CLI) | ✅ JSON config | `~/.gemini/antigravity/mcp_config.json` | repo-root `GEMINI.md` |
+| **OpenAI Codex CLI** | ❌ (file-based) | Reads `AGENTS.md` automatically | repo-root `AGENTS.md` (auto-read) |
 | **JetBrains AI Assistant** | 🟡 partial (MCP in 2026.2 preview) | Settings → Tools → AI → MCP | — |
 | **Anthropic API / SDK** (custom agents) | ✅ via `tools=` | Wire `dartwork-mpl-mcp` as a sub-process | — |
-| **Aider** | ❌ | `aider --read $(python -c "import dartwork_mpl; print(dartwork_mpl.agent_doc_path('llms-full'))")` | `dm.install_llm_txt(targets="aider")` → `CONVENTIONS.md` |
+| **Aider** | ❌ | `aider --read $(python -c "import dartwork_mpl; print(dartwork_mpl.agent_doc_path('llms-full'))")` | repo-root `CONVENTIONS.md`, or `--read` the corpus |
 | **ChatGPT** (web / desktop) | ❌ | Paste `llms.txt` (≈ 2.5 KB) into system prompt | — |
 | **Claude.ai** (web) | ❌ on free tier; ✅ on Teams/Enterprise via Custom MCP | Same JSON as Claude Code | — |
 | **Other LLMs** | varies | `dm.get_agent_doc("llms-full")` paste-in works for all | — |
 
-> Updated 2026-05-17. Open a PR on this table if your tool's MCP
+> Updated 2026-06-07. Open a PR on this table if your tool's MCP
 > support changed — it moves fast.
 >
-> One command installs every file-based fallback at once:
-> ```python
-> import dartwork_mpl as dm
-> dm.install_llm_txt(targets="all")   # writes 9 files across .claude/, .cursor/, .github/, AGENTS.md, GEMINI.md, CONVENTIONS.md, .continue/, .windsurf/
-> ```
+> The file-based corpus lives at the repo root (`AGENTS.md`, `CLAUDE.md`,
+> `GEMINI.md`, `llms.txt`, `llms-full.txt`) and is resolvable from Python
+> with `dm.agent_doc_path(name)` / `dm.get_agent_doc(name)` (each accepts
+> `"AGENTS"`, `"CLAUDE"`, `"llms"`, `"llms-full"`). Copy whichever file
+> your tool reads into its context location.
 
 ---
 
