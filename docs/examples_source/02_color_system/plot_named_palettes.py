@@ -18,8 +18,8 @@ fig, ax = plt.subplots(figsize=dm.figsize("9cm", "golden"))
 categories = ["Group A", "Group B", "Group C", "Group D", "Group E"]
 values = [4.2, 7.1, 3.8, 5.5, 8.9]
 
-# Mixing Tailwind (tw.*) and Open Color (oc.*) palettes seamlessly
-colors = ["tw.emerald500", "tw.amber500", "dc.cyber3", "dc.ocean3", "dc.vivid3"]
+# Mixing Tailwind (tw.*), Open Color (oc.*), and dartwork core (dc.*)
+colors = ["tw.emerald500", "tw.amber500", "oc.grape5", "dc.ocean3", "dc.vivid3"]
 
 bars = ax.bar(categories, values, color=colors, edgecolor="none", width=0.6)
 

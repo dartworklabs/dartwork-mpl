@@ -1,16 +1,18 @@
 """
-Smart Layout Solver (L-BFGS-B)
-==============================
+Simple Layout: multi-line titles & wide labels
+==============================================
 
-``dm.simple_layout(fig)`` runs an L-BFGS-B optimizer on the GridSpec
-margins to keep multi-line titles and wide y-labels from clipping —
-without bleeding excessive whitespace.
+``dm.simple_layout(fig)`` measures every visible artist on every axes
+and arithmetically places the GridSpec so the content union sits flush
+against the figure edges (or a requested margin). No optimizer and no
+``tight_layout`` guesswork is involved — it is a direct measure→place
+calculation, so multi-line titles and wide y-labels stop clipping
+without bleeding excess whitespace.
 
-In 0.4 the everyday entry point for layout is ``dm.simple_layout(fig)``,
-which wraps ``simple_layout`` in a measure→adjust→retry loop. Reach
-for ``simple_layout`` directly when (a) you have a custom GridSpec
-(spans, nested grids, attached colorbars) or (b) you want the cheaper
-non-iterative call for many small figures.
+Pass ``gs=`` for a custom GridSpec (spans, nested grids, attached
+colorbars); pass ``margin=`` (a :class:`~dartwork_mpl.units.Length`, a
+percentage string, or per-side ``ml`` / ``mr`` / ``mt`` / ``mb``) to add
+a uniform buffer instead of a flush fit.
 """
 
 import matplotlib.pyplot as plt
@@ -20,8 +22,8 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 
-# 0.4 API: plt.subplots(figsize=dm.figsize(...)). 9 cm × standard is the
-# academic single-column default (also available as dm.col1).
+# 9 cm × standard is the academic single-column default
+# (also available as dm.col1).
 fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
 
 x = np.linspace(0, 10, 100)

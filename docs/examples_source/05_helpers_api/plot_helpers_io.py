@@ -1,13 +1,16 @@
 """
-Styled Figure Creation
-========================
+Styled Figure + Multi-format Save
+=================================
 
-Apply a dartwork style preset and create a figure in two steps:
-``dm.style.use("…")`` then ``plt.figure(...)``.  Pass any preset name
+Apply a dartwork style preset and create a figure in two steps —
+``dm.style.use("…")`` then ``plt.figure(...)`` — then finish with the
+``dm.save_formats(fig, name, formats=(...), dpi=...)`` multi-format save
+recipe (shown commented at the bottom). Pass any preset name
 (``"scientific"``, ``"report"``, ``"web"``, …) to ``dm.style.use``.
 
-This example creates a single figure with the ``scientific`` preset
-and plots two reference signals.
+The figure also inlines the minimal-axes recipe (hidden top/right spines
++ a light dashed y-grid), the idiom that replaced the removed spine
+helpers.
 """
 
 import matplotlib.pyplot as plt

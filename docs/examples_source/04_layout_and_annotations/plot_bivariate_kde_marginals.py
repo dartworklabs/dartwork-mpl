@@ -95,7 +95,9 @@ fig.suptitle(
     y=0.98,
 )
 
-# Because we manually tight-packed the gridspec, we don't automatically call tight_layout
-# or if we do, we need to respect the GridSpec layout.
-# simple_layout can disrupt finely tuned GridSpecs.
+# This marginal grid is hand-packed with a custom GridSpec (the joint plot
+# tightly coupled to its top/right marginals). We intentionally skip
+# dm.simple_layout here: re-deriving the outer margins would loosen that
+# coupling. Hand-tuned composite grids are the documented exception to the
+# otherwise-always dm.simple_layout(fig) rule.
 plt.show()
