@@ -32,6 +32,7 @@ color.
 > the named-colors above are the ones you pass to `color=`.
 
 ```python
+import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
 dm.style.use("presentation")

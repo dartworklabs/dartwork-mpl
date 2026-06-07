@@ -249,7 +249,7 @@ print(mcp)        # FastMCP instance info
 
 Now that the server is reachable, here are the highest-value calls to try first. Each one is a tiny smoke test that also doubles as a useful real-world action.
 
-1. **Pull the agent entry point.** Ask the assistant to fetch the `dartwork-mpl://guide/agent-entry` resource. This is the 0.4 SSOT decision tree — once it is in context, the assistant will write 0.4-compliant code (width/aspect, no `figsize`, etc.) by default.
+1. **Pull the agent entry point.** Ask the assistant to fetch the `dartwork-mpl://guide/agent-entry` resource. This is the SSOT decision tree — once it is in context, the assistant will write standards-compliant code (`dm.figsize(width, aspect)`, `simple_layout`, named colors, etc.) by default.
 
 2. **Lint a code snippet.** Paste a small matplotlib script and ask:
 
@@ -278,7 +278,7 @@ If all four work, the integration is fully operational.
 | Symptom                                                | Likely cause                                                                                  | Fix                                                                                                                                       |
 | ------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `command not found: dartwork-mpl-mcp`                  | The `[mcp]` extra wasn't installed, or the venv that has it isn't on `PATH`.                  | Reinstall with the extra (`pip install "dartwork-mpl[mcp]"`) and/or use the absolute venv path in the JSON config.                        |
-| `ModuleNotFoundError: fastmcp`                         | `dartwork-mpl` was installed, but without the `[mcp]` extra.                                  | `pip install "dartwork-mpl[mcp]"` (or `uv pip install -e ".[mcp]"` for an editable checkout).                                             |
+| `ModuleNotFoundError: fastmcp`                         | `dartwork-mpl` was installed, but without the `[mcp]` extra.                                  | `pip install "dartwork-mpl[mcp]"` (or `uv add "dartwork-mpl[mcp]"`). From a local checkout: `uv pip install -e ".[mcp]"`.                  |
 | Server starts but client shows no resources / tools    | Client picked up an older config, or `--directory` points at the wrong checkout.              | Restart the client. Double-check the absolute path. Inspect the client's MCP log for connection errors.                                   |
 | `uv run mcp …` launches the wrong CLI                  | The unrelated `mcp` PyPI package ships its own `mcp` console script that takes precedence.    | Always invoke `dartwork-mpl-mcp` (not `mcp`) in your config.                                                                               |
 | `ValueError: Prompt guide not found`                   | The bundled `asset/prompt/` tree is missing (e.g., a partial install or stripped package).    | Reinstall the package; verify `dartwork_mpl/asset/prompt/` exists in your `site-packages`.                                                |
@@ -297,10 +297,11 @@ Read-only data that the AI assistant can retrieve on demand.
 
 | URI                                       | Description                                                                 |
 | ----------------------------------------- | --------------------------------------------------------------------------- |
-| `dartwork-mpl://guide/agent-entry`        | 0.4 entry point — decision tree + always-true facts (start here)            |
-| `dartwork-mpl://guide/policy`             | 0.4 policy: width, aspect, layout, color, font, save                        |
+| `dartwork-mpl://guide/agent-entry`        | Agent entry point — decision tree + always-true facts (start here)          |
+| `dartwork-mpl://guide/policy`             | Policy: width, aspect, layout, color, font, save                            |
 | `dartwork-mpl://guide/anti-patterns`      | Machine-readable lint catalog (the lint engine source)                      |
 | `dartwork-mpl://guide/recipes`            | Intent → function-call cookbook (per plot type)                             |
+| `dartwork-mpl://guide/migration`          | Migration map — removed/renamed names and their replacements                |
 | `dartwork-mpl://api/index`                | List of public dartwork-mpl callables (from `__all__`)                      |
 | `dartwork-mpl://api/{name}`               | Signature + first paragraph of docstring for a given public name            |
 | `dartwork-mpl://palette/colors`           | Full list of registered colors with hex codes (`dc.*`, `tw.*`, `oc.*`, …)  |

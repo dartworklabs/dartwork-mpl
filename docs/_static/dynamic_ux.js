@@ -391,27 +391,25 @@
       {
         id: "uv",
         label: "uv",
-        cmd: "uv add git+https://github.com/dartworklabs/dartwork-mpl",
+        cmd: "uv add dartwork-mpl",
         note: "Fast Rust-based resolver — recommended.",
       },
       {
         id: "pip",
         label: "pip",
-        cmd: "pip install git+https://github.com/dartworklabs/dartwork-mpl",
+        cmd: "pip install dartwork-mpl",
         note: "The standard Python installer.",
       },
       {
         id: "poetry",
         label: "Poetry",
-        cmd:
-          "poetry add git+https://github.com/dartworklabs/dartwork-mpl.git",
+        cmd: "poetry add dartwork-mpl",
         note: "Adds to <code>pyproject.toml</code> automatically.",
       },
       {
         id: "conda",
         label: "conda",
-        cmd:
-          "pip install git+https://github.com/dartworklabs/dartwork-mpl   # inside an active conda env",
+        cmd: "pip install dartwork-mpl   # inside an active conda env",
         note: "Use <code>pip</code> inside the conda environment.",
       },
     ];

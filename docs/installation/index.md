@@ -11,7 +11,10 @@ terminal.
 
 ## Quick Install
 
-Install **dartwork-mpl** directly from GitHub. The package includes matplotlib style presets, curated color palettes, and layout utilities.
+**dartwork-mpl** is on [PyPI](https://pypi.org/project/dartwork-mpl/), so a
+standard install needs **no Git**. Requires Python 3.10+. The package
+includes matplotlib style presets, curated color palettes, and layout
+utilities.
 
 ::::{tab-set}
 
@@ -21,15 +24,11 @@ Install **dartwork-mpl** directly from GitHub. The package includes matplotlib s
 [uv](https://github.com/astral-sh/uv) is a blazingly fast Python package manager written in Rust. It's recommended for modern Python projects.
 
 ```bash
-# Add to your project dependencies (Recommended)
-# This automatically updates your pyproject.toml
-uv add git+https://github.com/dartworklabs/dartwork-mpl
+# Add to your project dependencies (recommended — updates pyproject.toml)
+uv add dartwork-mpl
 
-# Or install directly into the current environment
-uv pip install git+https://github.com/dartworklabs/dartwork-mpl
-
-# Install a specific branch or tag
-uv add git+https://github.com/dartworklabs/dartwork-mpl@main
+# Or install into the current environment
+uv pip install dartwork-mpl
 ```
 
 > **Why uv?** It's 10-100x faster than pip, handles dependency resolution better, and integrates seamlessly with modern Python workflows.
@@ -42,42 +41,61 @@ uv add git+https://github.com/dartworklabs/dartwork-mpl@main
 Use the standard Python package installer. This works with any Python environment.
 
 ```bash
-# Install from GitHub
-pip install git+https://github.com/dartworklabs/dartwork-mpl
+# Install from PyPI
+pip install dartwork-mpl
 
-# Upgrade to the latest version
-pip install --upgrade git+https://github.com/dartworklabs/dartwork-mpl
-
-# Install a specific branch
-pip install git+https://github.com/dartworklabs/dartwork-mpl@main
+# Upgrade to the latest release
+pip install --upgrade dartwork-mpl
 ```
-
-> **Note:** Make sure you have Git installed on your system, as pip needs it to clone the repository.
 
 :::
 
 ::::
 
+### Optional extras
+
+The core install is intentionally lean — add an extra only when you need it:
+
+| Extra | Enables | Example |
+|---|---|---|
+| `[notebook]` | `dm.show()` inline SVG display in Jupyter | `pip install "dartwork-mpl[notebook]"` |
+| `[mcp]` | the MCP server for AI assistants | `uv add "dartwork-mpl[mcp]"` |
+| `[ui]` | the interactive parameter viewer | `pip install "dartwork-mpl[ui]"` |
+
 ## Plain text install matrix
 
 Static fallback for the live install picker — useful when JavaScript is
 disabled (AI agents, terminal browsers, search-engine indexing). The
-GitHub URL is the same on every OS; the differences are limited to
-which package manager you have and whether you want to add the package
-to a project file (`uv add`, `poetry add`) or install into the current
-environment (`uv pip`, `pip install`).
+command is the same on every OS; the only differences are which package
+manager you have and whether you want to add the package to a project
+file (`uv add`, `poetry add`) or install into the current environment
+(`uv pip`, `pip install`).
 
 | Manager | Command |
 |---|---|
-| `uv` (project) | `uv add git+https://github.com/dartworklabs/dartwork-mpl` |
-| `uv` (env) | `uv pip install git+https://github.com/dartworklabs/dartwork-mpl` |
-| `pip` | `pip install git+https://github.com/dartworklabs/dartwork-mpl` |
-| `Poetry` | `poetry add git+https://github.com/dartworklabs/dartwork-mpl` |
-| `conda + pip` | activate the env, then `pip install git+https://github.com/dartworklabs/dartwork-mpl` |
+| `uv` (project) | `uv add dartwork-mpl` |
+| `uv` (env) | `uv pip install dartwork-mpl` |
+| `pip` | `pip install dartwork-mpl` |
+| `Poetry` | `poetry add dartwork-mpl` |
+| `conda + pip` | activate the env, then `pip install dartwork-mpl` |
 
 On all three platforms (macOS / Linux / Windows) the commands are
-identical apart from the shell quoting; Windows users in `cmd.exe` may
-need to drop the wrapping quotes.
+identical apart from shell quoting; Windows users in `cmd.exe` may need
+to drop the quotes around extras (e.g. `pip install dartwork-mpl[mcp]`).
+
+## Latest development version
+
+To track the unreleased `main` branch instead of the PyPI release (this
+path **does** need Git):
+
+```bash
+uv add "git+https://github.com/dartworklabs/dartwork-mpl@main"
+# or
+pip install "git+https://github.com/dartworklabs/dartwork-mpl@main"
+```
+
+Contributors working from a local clone use an editable install
+(`uv pip install -e ".[dev]"`) — see the repository README.
 
 ## Basic Import
 
