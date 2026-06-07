@@ -342,10 +342,10 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
           t.addEventListener("click", function() {{ activate(t.dataset.preset); }});
         }});
         if (tabs.length > 0) {{ activate(tabs[0].dataset.preset); }}
-        
+
         var isMono = false;
         var segs = document.querySelectorAll(".dm-mono-seg");
-        
+
         function setMonoState(mono) {{
             isMono = mono;
             document.querySelectorAll(".dm-mono-seg").forEach(function(seg) {{
@@ -375,7 +375,7 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
         segs.forEach(function(seg) {{
             var btnColor = seg.querySelector(".dm-seg-color");
             var btnMono = seg.querySelector(".dm-seg-mono");
-            
+
             btnColor.addEventListener("click", function(e) {{
                 e.preventDefault();
                 if (!isMono) return;
