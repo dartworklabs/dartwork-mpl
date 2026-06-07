@@ -197,6 +197,24 @@ sphinx_gallery_conf = {
     "capture_repr": (),
 }
 
+# Local fast-preview escape hatch: ``PLOT_GALLERY=0 sphinx-build ...``
+# skips executing the 70+ examples (renders placeholders) so prose /
+# layout changes preview in seconds. CI leaves it unset (full build).
+# Must be a top-level config value, not a sphinx_gallery_conf key —
+# sphinx-gallery reads ``config.plot_gallery`` and overwrites the dict
+# entry at builder-inited, so the dict key alone has no effect. Keep it a
+# *string* ("True"/"False") to match the config value's registered type
+# (a bool trips Sphinx's "config value has type 'bool', defaults to
+# 'str'" warning, which `-W` turns into a build error). Normalize the env
+# input to a clean "True"/"False" so sphinx-gallery's `_bool_eval`
+# ``eval()`` never sees a bare "true"/"" that would crash.
+plot_gallery = (
+    "False"
+    if os.environ.get("PLOT_GALLERY", "1").strip().lower()
+    in ("0", "false", "no", "off", "")
+    else "True"
+)
+
 # -- MyST Parser configuration -----------------------------------------------
 myst_enable_extensions = ["colon_fence", "deflist"]
 myst_heading_anchors = 3
