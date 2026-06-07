@@ -27,6 +27,7 @@ Here's a typical matplotlib figure, then the same figure with dartwork-mpl:
 :::{tab-item} ✨ With dartwork-mpl
 
 ```python
+import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 import numpy as np
 
@@ -292,7 +293,7 @@ your render function and exports the resulting Python script:
 ```bash
 # 1. scaffold a starter viewer (first time only)
 pip install "dartwork-mpl[ui]"
-dartwork-ui init ./my-viewer --example simple
+dartwork-mpl-ui init ./my-viewer --example simple
 
 # 2. run it — opens http://127.0.0.1:8501
 cd my-viewer && python viewer.py

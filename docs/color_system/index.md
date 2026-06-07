@@ -29,8 +29,8 @@ the recommended starting point for publication figures. Six third-party
 design systems (`oc.*`, `tw.*`, `md.*`, `ad.*`, `cu.*`, `pr.*`) are
 also registered for cross-team consistency.
 
-Use `library.colorweight` anywhere matplotlib accepts a color string
-(e.g. `dc.ocean3`, `dc.sunset1`, `tw.blue500`).
+Use a `<library>.<color><shade>` name — e.g. `dc.ocean3`, `dc.sunset1`,
+`tw.blue500` — anywhere matplotlib accepts a color string.
 
 ```{raw} html
 :file: images/colors_opencolor.html

@@ -6,6 +6,7 @@ For most figures, `simple_layout(fig)` is all you need — it automatically
 optimizes margins so labels and titles don't clip or overlap:
 
 ```python
+import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 import numpy as np
 

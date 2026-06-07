@@ -47,7 +47,7 @@ The interactive UI is gated behind the `ui` extra:
 
 ```bash
 # 1. scaffold a starter viewer
-dartwork-ui init ./my-viewer --example simple
+dartwork-mpl-ui init ./my-viewer --example simple
 
 # 2. run it
 cd my-viewer
