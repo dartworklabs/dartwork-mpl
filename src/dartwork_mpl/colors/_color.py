@@ -36,15 +36,28 @@ from ._views import OklabView, OklchView, RgbView
 class Color:
     """Color in OKLab/OKLCH/RGB/Hex color spaces.
 
-    Mirrors :class:`~dartwork_mpl.units.Length`: an opaque wrapper with
-    a single canonical store (OKLab coordinates) and per-space property
-    views (``color.oklab`` / ``color.oklch`` / ``color.rgb``). The
-    constructor takes a *string* (or pass-through :class:`Color`) — bare
-    numerics are rejected because three floats give no way to tell
-    OKLab apart from OKLCH or RGB. For already-typed numeric input,
-    use :meth:`from_oklab` / :meth:`from_oklch` / :meth:`from_rgb` /
-    :meth:`from_hex` / :meth:`from_name` (or the top-level wrappers
-    :func:`oklab` / :func:`oklch` / :func:`rgb` / :func:`hex`).
+    A wrapper over a single canonical store (OKLab coordinates) with
+    per-space property views (``color.oklab`` / ``color.oklch`` /
+    ``color.rgb``). The constructor takes a *string* (or pass-through
+    :class:`Color`) — bare numerics are rejected because three floats
+    give no way to tell OKLab apart from OKLCH or RGB. For
+    already-typed numeric input, use :meth:`from_oklab` /
+    :meth:`from_oklch` / :meth:`from_rgb` / :meth:`from_hex` /
+    :meth:`from_name` (or the top-level wrappers :func:`oklab` /
+    :func:`oklch` / :func:`rgb` / :func:`hex`).
+
+    Equality and hashing are **by value** — two colors with the same
+    OKLab coordinates compare equal (:meth:`__eq__`) and hash equal
+    (:meth:`__hash__`).
+
+    .. note::
+       Unlike :class:`~dartwork_mpl.units.Length`, ``Color`` is
+       currently **mutable**: the ``oklab`` / ``oklch`` / ``rgb`` views
+       write back to the underlying store in place (hence :meth:`copy`).
+       Because it is both mutable and value-hashable, do **not** mutate
+       a ``Color`` after using it as a ``dict`` / ``set`` key. A future
+       release will make ``Color`` immutable (view setters returning a
+       new instance); see issue #233.
 
     Parameters
     ----------
@@ -434,7 +447,18 @@ class Color:
         Returns
         -------
         tuple[float, float, float]
-            (r, g, b) RGB values in range [0, 1].
+            (r, g, b) sRGB values in range [0, 1].
+
+        Notes
+        -----
+        Out-of-gamut colors are clamped **per channel** in linear sRGB
+        (each of r/g/b independently to ``[0, 1]``). This is *not* a
+        perceptual gamut mapping: it does not preserve the requested
+        OKLCH lightness or hue, so a color outside the sRGB gamut can
+        come back with a shifted L/h. Use :meth:`in_gamut` to test
+        whether a color is representable in sRGB before relying on its
+        rendered value. (A perceptual chroma-reduction mapping that
+        preserves L/h is tracked in issue #240.)
         """
         # Convert OKLab to linear RGB
         r_linear: float
@@ -460,6 +484,43 @@ class Color:
         b_float: float = float(np.asarray(b).item())
 
         return (r_float, g_float, b_float)
+
+    def in_gamut(self, tol: float = 1e-6) -> bool:
+        """
+        Whether this color is representable inside the sRGB gamut.
+
+        Returns ``True`` when every linear-sRGB channel falls within
+        ``[0, 1]`` (within ``tol``), i.e. :meth:`to_rgb` returns the
+        color *without* the per-channel clamp distorting it. Returns
+        ``False`` for out-of-gamut colors, whose rendered RGB no longer
+        preserves the requested OKLCH lightness/hue (see :meth:`to_rgb`
+        and issue #240).
+
+        Parameters
+        ----------
+        tol : float, optional
+            Numerical tolerance on the ``[0, 1]`` bounds, to absorb
+            floating-point error at the gamut boundary. Default ``1e-6``.
+
+        Returns
+        -------
+        bool
+
+        Examples
+        --------
+        >>> import dartwork_mpl as dm
+        >>> dm.Color.from_oklch(0.7, 0.05, 30).in_gamut()
+        True
+        >>> dm.Color.from_oklch(0.7, 0.40, 30).in_gamut()
+        False
+        """
+        r_linear, g_linear, b_linear = _oklab_to_linear_srgb(
+            self._L, self._a, self._b
+        )
+        return all(
+            -tol <= float(np.asarray(ch).item()) <= 1.0 + tol
+            for ch in (r_linear, g_linear, b_linear)
+        )
 
     def to_hex(self) -> str:
         """
@@ -508,6 +569,27 @@ class Color:
             String representation showing OKLab coordinates.
         """
         return f"Color(oklab=({self._L:.4f}, {self._a:.4f}, {self._b:.4f}))"
+
+    def __eq__(self, other: object) -> bool:
+        """Value equality by OKLab coordinates.
+
+        Two colors are equal when their canonical OKLab coordinates
+        match exactly. Comparison against a non-:class:`Color` returns
+        ``NotImplemented`` so Python falls back to identity (``==``
+        ultimately yields ``False`` against unrelated types).
+        """
+        if not isinstance(other, Color):
+            return NotImplemented
+        return (self._L, self._a, self._b) == (other._L, other._a, other._b)
+
+    def __hash__(self) -> int:
+        """Hash by OKLab coordinates (consistent with :meth:`__eq__`).
+
+        ``Color`` is currently mutable, so treat a hashed color as
+        effectively frozen: do not mutate an instance used as a
+        ``dict`` / ``set`` key. See issue #233.
+        """
+        return hash((self._L, self._a, self._b))
 
 
 # ============================================================================
