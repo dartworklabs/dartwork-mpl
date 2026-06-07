@@ -287,6 +287,29 @@ class TestMultirowSubplotsNoGridspecKw:
         ids = {i.rule_id for i in lint(code)}
         assert "multirow-subplots-no-gridspec-kw" not in ids
 
+    def test_fires_on_line_wrapped_call(self):
+        # The opening `plt.subplots(` and the nrows arg sit on separate
+        # lines — the old single-line `^...$` detector missed this.
+        code = (
+            "fig, axs = plt.subplots(\n"
+            '    2, 1, figsize=dm.figsize("9cm", 1.2)\n'
+            ")\n"
+        )
+        ids = {i.rule_id for i in lint(code)}
+        assert "multirow-subplots-no-gridspec-kw" in ids
+
+    def test_skipped_when_gridspec_kw_on_later_line(self):
+        # gridspec_kw lives on a continuation line of a wrapped call; the
+        # bounded look-ahead must still find it and suppress the hint.
+        code = (
+            "fig, axs = plt.subplots(\n"
+            "    2, 1,\n"
+            '    gridspec_kw={"hspace": 0.55},\n'
+            ")\n"
+        )
+        ids = {i.rule_id for i in lint(code)}
+        assert "multirow-subplots-no-gridspec-kw" not in ids
+
 
 class TestDedupeKey:
     """Issues on the same line at different columns must NOT collapse.
@@ -396,3 +419,32 @@ class TestBundledTemplatesLintClean:
         assert not violations, (
             f"Bundled prompt templates have lint violations: {violations}"
         )
+
+
+class TestAutoFixTableContract:
+    """``_AUTO_FIX_TABLE`` must stay aligned with the SSOT catalog.
+
+    Each rewrite is labelled with a rule_id; ``apply_lint_fixes`` keys
+    its applied/unfixed diff on it. A label with no matching SSOT rule
+    is silently dead code (the diff can never attribute to it).
+    """
+
+    def test_auto_fix_rule_ids_exist_in_ssot(self) -> None:
+        from dartwork_mpl.lint import _AUTO_FIX_TABLE
+
+        ssot_ids = {r.id for r in load_rules()}
+        table_ids = {rule_id for rule_id, _, _ in _AUTO_FIX_TABLE}
+        orphans = table_ids - ssot_ids
+        assert not orphans, (
+            f"_AUTO_FIX_TABLE references rule_ids absent from the "
+            f"anti-pattern SSOT: {orphans}"
+        )
+
+    def test_cm2in_is_not_auto_substituted(self) -> None:
+        # ``dm.cm2in`` (inches) must NOT be rewritten to ``dm.cm`` (a
+        # Length) — the two are not interchangeable. The legacy form is
+        # left untouched for ``migrate_legacy_code`` to handle in context.
+        from dartwork_mpl.lint import apply_lint_fixes
+
+        fixed, _applied, _unfixed = apply_lint_fixes("x = dm.cm2in(13)\n")
+        assert "dm.cm2in(13)" in fixed

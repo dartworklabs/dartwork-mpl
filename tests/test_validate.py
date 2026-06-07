@@ -206,6 +206,25 @@ class TestCheckTickCrowding:
         assert len(crowd_warnings) > 0
         plt.close(fig)
 
+    def test_crowding_is_font_aware(self) -> None:
+        """Same tick count + axis size: a large font crowds where a small
+        font does not. The detector measures real label extents, so the
+        threshold scales with font size instead of a fixed ticks/inch."""
+
+        def crowd_count(fontsize: int) -> int:
+            fig, ax = plt.subplots(figsize=(3, 3))
+            ax.plot(range(20))
+            ax.set_xticks(range(0, 20))
+            for t in ax.get_xticklabels():
+                t.set_fontsize(fontsize)
+            fig.canvas.draw()
+            warnings = validate_figure(fig, checks=("TICK_CROWD",), quiet=True)
+            n = len([w for w in warnings if w.check_id == "TICK_CROWD"])
+            plt.close(fig)
+            return n
+
+        assert crowd_count(20) > crowd_count(4)
+
 
 class TestCheckLegendOverflow:
     """Tests for LEGEND_OVERFLOW detection."""

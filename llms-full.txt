@@ -1005,7 +1005,7 @@ rules:
     severity: info
     detector:
       kind: regex
-      pattern: '^(?![^\n]*gridspec_kw)(?![^\n]*sharex)(?![^\n]*sharey)[^\n]*\bplt\.subplots\([ \t]*[2-9]\b[^\n]*$'
+      pattern: '\bplt\.subplots\(\s*[2-9]\b(?![\s\S]{0,200}?(?:gridspec_kw|sharex|sharey))'
     message: |
       Vertically stacked `plt.subplots(>=2, ...)` was created without
       `gridspec_kw={"hspace": ..., "wspace": ...}`. The matplotlib
@@ -1021,7 +1021,12 @@ rules:
       intentionally preserves the GridSpec's `hspace` / `wspace` so
       authors can keep their own intent. That makes the default
       `hspace=0.2` the hidden source of title↔xlabel collisions in
-      multi-panel gallery and report figures.
+      multi-panel gallery and report figures. The detector scans the
+      200 characters following `plt.subplots(<n>` for `gridspec_kw` /
+      `sharex` / `sharey` so it catches line-wrapped calls (where the
+      kwargs sit on a later line), not just single-line ones. This is
+      a best-effort static hint — the authoritative collision check is
+      the runtime `CROSS_AXES_OVERLAP` validator.
     fix_suggestion: 'gridspec_kw={"hspace": 0.55, "wspace": 0.3}'
 
   - id: zero-resize-mention
@@ -1087,7 +1092,7 @@ rules:
       pattern: '\bdm\.(?:style_spines|add_grid|minimal_axes)\s*\('
     message: |
       `dm.style_spines`, `dm.add_grid`, and `dm.minimal_axes` were
-      REMOVED in 0.5.0 (#156). They were thin matplotlib wrappers
+      REMOVED in 0.4.1 (#156). They were thin matplotlib wrappers
       whose only contribution was curated default kwargs. Inline the
       raw matplotlib calls instead, or copy a snippet from
       `docs/usage_guide/recipes.md` (publication grid, minimal axes,
@@ -1100,7 +1105,7 @@ rules:
       kind: regex
       pattern: '\bdm\.(?:helpers\.colors\.)?auto_select_colors\s*\('
     message: |
-      `auto_select_colors` was renamed to `make_palette` in 0.5.0
+      `auto_select_colors` was renamed to `make_palette` in 0.4.1
       (#156) for vocabulary alignment with `make_offset` /
       `list_palettes`. Argument cleanup at the same time:
       `n_series` → `n`, `color_type` → `kind`,

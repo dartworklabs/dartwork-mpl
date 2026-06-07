@@ -5,10 +5,44 @@ Extends the base validation with actionable fixes that agents can apply.
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 from matplotlib.figure import Figure
 
 from .validate import Severity, VisualWarning, validate_figure
+
+# matplotlib's hard default base font size (pt). dartwork style presets
+# all move font.size off this value, so a figure whose text artists carry
+# a different size is figure-local evidence that a preset was active when
+# they were created (see ``_style_applied``).
+_MPL_DEFAULT_FONT_SIZE = 10.0
+
+# matplotlib's eight single-letter color codes and their full-name
+# aliases. Using any of these for *data* marks is the "default palette"
+# smell ``proper_colors`` flags. White is excluded — it is a legitimate
+# background / negative-space choice, not a data color.
+_MPL_BASIC_COLOR_NAMES = frozenset(
+    {
+        "b",
+        "g",
+        "r",
+        "c",
+        "m",
+        "y",
+        "k",
+        "blue",
+        "green",
+        "red",
+        "cyan",
+        "magenta",
+        "yellow",
+        "black",
+    }
+)
+# Resolved RGBA of the basic colors, for matching patch facecolors (which
+# matplotlib stores as resolved RGBA tuples, not the original string).
+_MPL_BASIC_COLOR_RGBA = frozenset(
+    mcolors.to_rgba(name) for name in ("b", "g", "r", "c", "m", "y", "k")
+)
 
 
 def get_fix_suggestions(warning: VisualWarning) -> list[str]:
@@ -148,6 +182,14 @@ def validate_with_fixes(
     if verbose:
         print("\n=== FIX SUGGESTIONS ===")
 
+    # ``dm.simple_layout(fig)`` is a whole-figure operation: one call
+    # resolves every OVERFLOW / MARGIN_ASYMMETRY warning at once. The old
+    # code called it once *per* such warning inside the loop, which re-ran
+    # the layout solver redundantly and listed N identical "Applied
+    # simple_layout" entries for a single mutation. Collect the trigger
+    # here, apply exactly once below.
+    layout_fix_check_ids: list[str] = []
+
     for warning in warnings:
         suggestions = get_fix_suggestions(warning)
 
@@ -158,27 +200,31 @@ def validate_with_fixes(
                     f"  Option {i}:\n    {suggestion.replace(chr(10), chr(10) + '    ')}"
                 )
 
-        # Auto-apply simple fixes
         if (
             auto_apply
             and warning.severity == Severity.WARNING
-            and warning.check_id in ["OVERFLOW", "MARGIN_ASYMMETRY"]
+            and warning.check_id in ("OVERFLOW", "MARGIN_ASYMMETRY")
         ):
-            try:
-                dm.simple_layout(fig)
-                applied_fixes.append(
-                    f"Applied dm.simple_layout() for {warning.check_id}"
-                )
-                if verbose:
-                    print("  ✓ Auto-applied: dm.simple_layout()")
-            except Exception as e:  # noqa: BLE001
-                # Auto-apply is opportunistic — any layout failure
-                # (simple_layout regressions, backend errors,
-                # custom artist exceptions) must report a failed fix
-                # and continue, not abort the whole validate_with_fixes
-                # run. Narrowing the catch silently regressed that.
-                if verbose:
-                    print(f"  ✗ Failed to auto-fix: {e}")
+            layout_fix_check_ids.append(warning.check_id)
+
+    if auto_apply and layout_fix_check_ids:
+        triggers = ", ".join(sorted(set(layout_fix_check_ids)))
+        try:
+            dm.simple_layout(fig)
+            applied_fixes.append(
+                f"Applied dm.simple_layout() once for {triggers} "
+                f"({len(layout_fix_check_ids)} warning(s))"
+            )
+            if verbose:
+                print(f"  ✓ Auto-applied once: dm.simple_layout() [{triggers}]")
+        except Exception as e:  # noqa: BLE001
+            # Auto-apply is opportunistic — any layout failure
+            # (simple_layout regressions, backend errors, custom artist
+            # exceptions) must report a failed fix and continue, not
+            # abort the whole validate_with_fixes run. Narrowing the
+            # catch silently regressed that.
+            if verbose:
+                print(f"  ✗ Failed to auto-fix: {e}")
 
     # Re-validate after fixes
     if applied_fixes and auto_apply:
@@ -210,8 +256,10 @@ def check_agent_requirements(fig: Figure) -> dict[str, bool]:
     # Check DPI
     requirements["high_dpi"] = fig.dpi >= 200
 
-    # Check if style was applied (font.size != default)
-    requirements["style_applied"] = plt.rcParams["font.size"] != 10.0
+    # Check if a (dartwork) style preset was applied — figure-local, not
+    # the process-global rcParams (which any later style.use / rcdefaults
+    # call mutates independently of *this* figure).
+    requirements["style_applied"] = _style_applied(fig)
 
     # Check for axis labels
     has_labels = True
@@ -236,16 +284,69 @@ def check_agent_requirements(fig: Figure) -> dict[str, bool]:
             break
     requirements["has_data"] = has_data
 
-    # Check color usage (no matplotlib defaults)
-    uses_good_colors = True
-    for ax in fig.axes:
-        for line in ax.lines:
-            color = line.get_color()
-            if color in ["b", "g", "r", "c", "m", "y", "k"]:
-                uses_good_colors = False
-    requirements["proper_colors"] = uses_good_colors
+    # Check color usage (no matplotlib basic-palette defaults). Heuristic:
+    # flag explicit basic colors on data marks — single-letter codes *and*
+    # their full-name aliases on lines (which preserve the original string),
+    # plus basic-color RGBA on patches (bars/areas store resolved RGBA).
+    requirements["proper_colors"] = not _uses_basic_default_colors(fig)
 
     return requirements
+
+
+def _style_applied(fig: Figure) -> bool:
+    """Heuristic: did the author apply a non-default (dartwork) style?
+
+    Inspects the figure's own text artists instead of the process-global
+    ``plt.rcParams`` (which any later ``style.use`` / ``rcdefaults`` call
+    mutates independently of *this* figure). matplotlib resolves the active
+    ``font.size`` into each Text artist at creation, so a base-font-sized
+    title / label / tick label that differs from matplotlib's hard default
+    (10.0 pt) is figure-local evidence a preset was active.
+
+    Returns ``False`` when nothing distinguishes the figure from a vanilla
+    matplotlib build — a conservative default for an advisory score.
+    """
+    texts = list(fig.texts)
+    for ax in fig.axes:
+        texts.append(ax.xaxis.label)
+        texts.append(ax.yaxis.label)
+        texts.extend(ax.get_xticklabels())
+        texts.extend(ax.get_yticklabels())
+        legend = ax.get_legend()
+        if legend is not None:
+            texts.extend(legend.get_texts())
+    for text in texts:
+        try:
+            size = float(text.get_fontsize())
+        except (TypeError, ValueError):
+            continue
+        if abs(size - _MPL_DEFAULT_FONT_SIZE) > 1e-6:
+            return True
+    return False
+
+
+def _is_default_color_string(color: object) -> bool:
+    """True if ``color`` is a matplotlib basic-palette name/code string."""
+    return (
+        isinstance(color, str)
+        and color.strip().lower() in _MPL_BASIC_COLOR_NAMES
+    )
+
+
+def _uses_basic_default_colors(fig: Figure) -> bool:
+    """Detect explicit matplotlib basic colors on data marks."""
+    for ax in fig.axes:
+        for line in ax.lines:
+            if _is_default_color_string(line.get_color()):
+                return True
+        for patch in ax.patches:
+            try:
+                rgba = mcolors.to_rgba(patch.get_facecolor())
+            except (ValueError, TypeError):
+                continue
+            if rgba in _MPL_BASIC_COLOR_RGBA:
+                return True
+    return False
 
 
 def generate_validation_report(fig: Figure) -> str:
