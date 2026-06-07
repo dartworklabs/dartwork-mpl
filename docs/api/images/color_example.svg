@@ -1743,13 +1743,13 @@ z
       </g>
      </g>
      <g id="text_19">
-      <!-- #e79200 -->
+      <!-- #e59300 -->
       <g transform="translate(137.340131 344.47373) scale(0.105 -0.105)">
        <use xlink:href="#Roboto-Regular-23"/>
        <use xlink:href="#Roboto-Regular-65" transform="translate(61.572266 0)"/>
-       <use xlink:href="#Roboto-Regular-37" transform="translate(114.550781 0)"/>
+       <use xlink:href="#Roboto-Regular-35" transform="translate(114.550781 0)"/>
        <use xlink:href="#Roboto-Regular-39" transform="translate(170.703125 0)"/>
-       <use xlink:href="#Roboto-Regular-32" transform="translate(226.855469 0)"/>
+       <use xlink:href="#Roboto-Regular-33" transform="translate(226.855469 0)"/>
        <use xlink:href="#Roboto-Regular-30" transform="translate(283.007812 0)"/>
        <use xlink:href="#Roboto-Regular-30" transform="translate(339.160156 0)"/>
       </g>
@@ -1935,7 +1935,7 @@ L 177.686744 332.59873
 L 177.686744 209.275821 
 L 138.504612 209.275821 
 z
-" clip-path="url(#pa2d9eccc51)" style="fill: #e79200; stroke: #ffffff; stroke-width: 0.5; stroke-linejoin: miter"/>
+" clip-path="url(#pa2d9eccc51)" style="fill: #e59300; stroke: #ffffff; stroke-width: 0.5; stroke-linejoin: miter"/>
    </g>
    <g id="patch_10">
     <path d="M 187.482277 332.59873 
