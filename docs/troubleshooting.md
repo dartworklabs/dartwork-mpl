@@ -47,14 +47,17 @@ Make sure dartwork-mpl is installed in your **active** Python environment:
 which python
 
 # Install in the correct environment
-pip install git+https://github.com/dartworklabs/dartwork-mpl
+pip install dartwork-mpl
 ```
 
 If using virtual environments or conda, activate the environment first.
 
-### `git` not found during installation
+### `git` not found (only when installing from source)
 
-dartwork-mpl is installed from GitHub, so Git must be available:
+A normal install (`pip install dartwork-mpl` / `uv add dartwork-mpl`) is from
+PyPI and needs **no Git**. Git is only required if you install the unreleased
+`main` branch (`pip install "git+https://github.com/dartworklabs/dartwork-mpl@main"`)
+or work from a local checkout. In that case make sure Git is available:
 
 ```bash
 # macOS
