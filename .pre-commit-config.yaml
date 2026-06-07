@@ -15,8 +15,10 @@ repos:
       - id: check-yaml
         args: [--allow-multiple-documents]
 
+  # Pinned to the ruff version in uv.lock / CI (`uv run ruff`) so the
+  # pre-commit hook and CI never disagree on lint/format results.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.12
+    rev: v0.15.6
     hooks:
       - id: ruff
         args: [--fix]
