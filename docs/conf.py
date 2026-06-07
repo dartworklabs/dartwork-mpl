@@ -4,8 +4,24 @@ import os
 import sys
 from pathlib import Path
 
+# --- Deterministic SVG assets (byte-identical across rebuilds) ---
+# matplotlib stamps a wall-clock <dc:date> and uuid4-based element ids into
+# every SVG, so each docs rebuild rewrote all generated assets and dirtied
+# the working tree (a constant source of noisy ``git status`` diffs).
+# SOURCE_DATE_EPOCH (read by matplotlib at savefig time) pins the <dc:date>;
+# svg.hashsalt pins the element ids. dmpl.mplstyle leaves svg.hashsalt
+# unset, so style.use() does not clobber this value.
+os.environ.setdefault("SOURCE_DATE_EPOCH", "1735689600")  # 2025-01-01 UTC
+import matplotlib
+
+# Set the salt on both the live params and the *defaults*: vanilla
+# before/after comparison figures reset via rcdefaults() / style.use("default"),
+# which would otherwise restore the None salt and re-introduce uuid4 ids.
+matplotlib.rcParams["svg.hashsalt"] = "dartwork-mpl-docs"
+matplotlib.rcParamsDefault["svg.hashsalt"] = "dartwork-mpl-docs"
+
 # Fix for PIL truncated image errors during sphinx-gallery generation
-from PIL import Image, ImageFile
+from PIL import Image, ImageFile  # noqa: E402
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 # Sphinx-Gallery composites can exceed PIL's default decompression bomb limit

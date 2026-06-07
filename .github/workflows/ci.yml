@@ -137,10 +137,25 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --dev
 
+      # Caches the incremental-build state: Sphinx doctrees (skip re-parsing
+      # unchanged pages) and the matplotlib font cache (skip the cold-start
+      # font scan). The generated SVG/gallery assets are regenerated each run
+      # — caching those is tracked separately. Key invalidates when any docs
+      # or package Python source changes.
+      - name: Cache Sphinx doctrees + matplotlib font cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            docs/_build/doctrees
+            ~/.cache/matplotlib
+          key: docs-${{ runner.os }}-${{ hashFiles('docs/**/*.py', 'src/dartwork_mpl/**/*.py', 'uv.lock') }}
+          restore-keys: |
+            docs-${{ runner.os }}-
+
       - name: Build documentation (warnings = errors)
         env:
           MPLBACKEND: Agg
-        run: uv run sphinx-build -b html -W --keep-going docs docs/_build/html
+        run: uv run sphinx-build -b html -W --keep-going -d docs/_build/doctrees docs docs/_build/html
 
       # The Sphinx build rewrites llms-full.txt in place. If it differs from
       # the committed copy, an upstream agent-doc source was edited without
