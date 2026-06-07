@@ -12,10 +12,37 @@ Files created (in CWD):
         Legacy append-only log (kept for backward compat).
 """
 
+import contextlib
 import json
+import os
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+
+def _atomic_write_text(path: Path, text: str) -> None:
+    """Write *text* to *path* atomically (temp file + ``os.replace``).
+
+    A plain ``path.write_text`` truncates then writes, so a second writer
+    (or a reader) racing the call can observe a half-written / empty file.
+    Writing to a sibling temp file and atomically renaming it means a
+    reader always sees either the old or the new complete content.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(
+        dir=str(path.parent), prefix=f".{path.name}.", suffix=".tmp"
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        os.replace(tmp_name, path)
+    except BaseException:
+        # Best-effort cleanup of the temp file on any failure.
+        with contextlib.suppress(OSError):
+            os.unlink(tmp_name)
+        raise
+
 
 # Default file names
 CONFIG_FILENAME = ".dartwork_ui_config.json"
@@ -120,8 +147,8 @@ def save_config(
         data["tabs"] = tabs
     if fig_width is not None:
         data["figWidth"] = fig_width
-    _config_path().write_text(
-        json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    _atomic_write_text(
+        _config_path(), json.dumps(data, indent=2, ensure_ascii=False) + "\n"
     )
 
 
@@ -233,9 +260,8 @@ def _write_preset_file(presets: list[dict[str, Any]]) -> None:
     presets : list[dict[str, Any]]
         Full preset list to write.
     """
-    _preset_path().write_text(
-        json.dumps(presets, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
+    _atomic_write_text(
+        _preset_path(), json.dumps(presets, indent=2, ensure_ascii=False) + "\n"
     )
 
 

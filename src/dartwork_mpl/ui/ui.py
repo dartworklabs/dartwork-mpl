@@ -37,6 +37,7 @@ import matplotlib.pyplot as plt
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
+from matplotlib.backend_bases import FigureCanvasBase
 from matplotlib.figure import Figure
 from pydantic import BaseModel
 
@@ -55,6 +56,14 @@ from ._widget import descriptors_from_model
 
 # Use non-interactive backend for server usage
 matplotlib.use("Agg")
+
+# Image formats the export endpoints accept — matplotlib's own supported
+# savefig filetypes. Validating against this set turns an unknown ``fmt``
+# (e.g. a typo or a probe) into a clean 400 instead of an internal 500
+# from ``savefig(format=<bogus>)``.
+_SUPPORTED_EXPORT_FORMATS: frozenset[str] = frozenset(
+    FigureCanvasBase.get_supported_filetypes()
+)
 
 
 # ============================================================================
@@ -250,7 +259,8 @@ def run(
 
     @app.post("/api/export/{fmt}")
     async def export(fmt: str, params: dict[str, Any]) -> Response:
-        model = _build_model(params, param_model, descriptors)
+        _validate_export_format(fmt)
+        model = _build_model_checked(params, param_model, descriptors)
         fig = figure_fn(cast(_P, model))
         buf = io.BytesIO()
         fig.savefig(buf, format=fmt)
@@ -316,7 +326,7 @@ def run(
     @app.post("/api/script")
     async def generate_script(params: dict[str, Any]) -> Response:
         """Generate a standalone Python script and return as download."""
-        model = _build_model(params, param_model, descriptors)
+        model = _build_model_checked(params, param_model, descriptors)
         code = _generate_script(model, param_model, figure_fn, script_path)
         return Response(
             content=code.encode("utf-8"),
@@ -333,7 +343,8 @@ def run(
         fmt: str, req: ServerSaveRequest
     ) -> dict[str, Any]:
         """Save figure image to the script directory."""
-        model = _build_model(req.params, param_model, descriptors)
+        _validate_export_format(fmt)
+        model = _build_model_checked(req.params, param_model, descriptors)
         fig = figure_fn(cast(_P, model))
 
         if req.filename:
@@ -382,7 +393,7 @@ def run(
     @app.post("/api/save-server/script")
     async def save_script_server(req: ServerSaveRequest) -> dict[str, str]:
         """Save standalone Python script to the script dir."""
-        model = _build_model(req.params, param_model, descriptors)
+        model = _build_model_checked(req.params, param_model, descriptors)
         code = _generate_script(model, param_model, figure_fn, script_path)
 
         if req.filename:
@@ -467,6 +478,43 @@ def _format_validation_error(exc: Exception) -> str:
     except ImportError:
         pass
     return str(exc)
+
+
+def _validate_export_format(fmt: str) -> None:
+    """Reject an unsupported export format with a 400 (not a 500).
+
+    Without this, ``savefig(format=<bogus>)`` raises deep in matplotlib
+    and FastAPI returns an opaque 500.
+    """
+    if fmt.lower() not in _SUPPORTED_EXPORT_FORMATS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported export format {fmt!r}. Supported: "
+                f"{', '.join(sorted(_SUPPORTED_EXPORT_FORMATS))}."
+            ),
+        )
+
+
+def _build_model_checked(
+    raw_params: dict[str, Any],
+    model_cls: type[ParamModel],
+    descriptors: list[Any],
+) -> ParamModel:
+    """``_build_model`` that maps a validation failure to a 422.
+
+    The render endpoint already returns 422 for bad params; the export /
+    script / save-server endpoints used the raw builder and surfaced the
+    same failures as a generic 500. This makes their contract consistent.
+    """
+    try:
+        return _build_model(raw_params, model_cls, descriptors)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422, detail=_format_validation_error(exc)
+        ) from exc
 
 
 def _build_model(

@@ -52,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `plot_colors`, `plot_fonts`) and every existing import path
   (`dartwork_mpl.diagnostics.*`, the top-level namespace, the deprecated
   `asset_viz` alias) are unchanged.
+- **UI viewer pins the Lucide icon CDN** to `lucide@1.17.0` (explicit
+  UMD path) instead of `@latest`, for reproducible builds and
+  supply-chain safety. (#236)
 - **Docs build caches the sphinx-gallery output in CI.** The generated
   gallery tree (`docs/examples_gallery/`, including each example's
   `.py.md5` stamp) is now cached and restored, so a build whose example
@@ -116,6 +119,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   API asset builder retries each generator once and drops a visible
   placeholder SVG on final failure so a single bad asset can never abort
   the whole docs build. (#235)
+- **UI export endpoints fail cleanly on bad input.** `/api/export/{fmt}`
+  and `/api/save-server/image/{fmt}` validate `fmt` against matplotlib's
+  supported filetypes and return **400** for an unknown format instead of
+  a 500 from `savefig`. The export / script / save-server endpoints build
+  the param model through a checked helper that returns **422** for
+  invalid params (parity with `/api/render`, which already did). UI
+  presets and config are written atomically (temp file + `os.replace`) so
+  a racing reader/writer can't observe a half-written JSON file. (#236)
 - **Out-of-gamut OKLCH colors are now gamut-mapped preserving L and h**
   (behavior change for out-of-gamut colors). `Color.to_rgb` previously
   clamped each linear-sRGB channel independently, which shifted the
