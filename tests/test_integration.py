@@ -5,9 +5,6 @@ Catches regressions that unit tests miss:
 - :class:`TestMcpSurfaceContract`: every advertised MCP tool and
   resource must list **and** respond. Adding/removing a tool requires
   updating the expected set here, so silent API drift is loud.
-- :class:`TestInstallTargetContract`: every target in
-  :data:`dartwork_mpl.INSTALL_TARGETS` must write a usable bundle to
-  its canonical destination.
 - :class:`TestAgentDocAccess`: every name in
   :data:`dartwork_mpl.AGENT_DOCS` must resolve to a non-empty file in
   either the wheel-bundled location or the repo-root fallback.
@@ -20,8 +17,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-from pathlib import Path
-from typing import ClassVar
 
 import pytest
 
@@ -218,56 +213,6 @@ class TestMcpSurfaceContract:
         assert "dm.simple_layout" in payload["fixed_code"]
         applied_ids = {i["rule_id"] for i in payload["applied"]}
         assert {"plt-style-use", "tight-layout"} <= applied_ids
-
-
-class TestInstallTargetContract:
-    """Every target in :data:`dartwork_mpl.INSTALL_TARGETS` must write
-    a usable bundle. The expected destinations are listed here so a
-    change to ``install.py``'s ``_TARGETS`` mapping triggers a diff
-    here too.
-    """
-
-    EXPECTED_PATHS: ClassVar[dict[str, str]] = {
-        "claude": ".claude/commands/dartwork-mpl-usage.md",
-        "cursor": ".cursor/dartwork-mpl-usage.md",
-        "cursor-rules": ".cursor/rules/dartwork-mpl.mdc",
-        "copilot": ".github/copilot-instructions.md",
-        "codex": "AGENTS.md",
-        "gemini": "GEMINI.md",
-        "continue": ".continue/rules/dartwork-mpl.md",
-        "aider": "CONVENTIONS.md",
-        "windsurf": ".windsurf/rules/dartwork-mpl.md",
-    }
-
-    def test_expected_paths_cover_install_targets(self) -> None:
-        assert set(self.EXPECTED_PATHS) == set(dm.INSTALL_TARGETS)
-
-    @pytest.mark.parametrize("target", sorted(dm.INSTALL_TARGETS))
-    def test_target_writes_usable_bundle(
-        self, target: str, tmp_path: Path
-    ) -> None:
-        dm.install_llm_txt(project_dir=str(tmp_path), targets=[target])
-        out = tmp_path / self.EXPECTED_PATHS[target]
-        assert out.exists(), f"{target}: {out} missing"
-        body = out.read_text(encoding="utf-8")
-        assert len(body) > 1000, (
-            f"{target}: body suspiciously small ({len(body)} bytes)"
-        )
-        # Brand + SSOT slices must be present.
-        assert "dartwork-mpl" in body.lower()
-        assert "00-index.md" in body
-        assert "03-recipes.md" in body
-        assert "AI Plot Templates" in body
-        # Per-target format invariants.
-        if target == "cursor-rules":
-            assert body.startswith("---\n"), (
-                "MDC files must open with YAML front-matter"
-            )
-            assert "alwaysApply:" in body
-        if target == "continue":
-            assert body.startswith("---\n"), (
-                "Continue rules expect front-matter"
-            )
 
 
 class TestAgentDocAccess:

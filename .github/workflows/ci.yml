@@ -74,7 +74,6 @@ jobs:
             tests/test_integration.py \
             tests/test_cli.py \
             tests/test_drift.py \
-            tests/test_install.py \
             -v --no-cov \
           | tee /tmp/integration-output.log
           # Fail if any of the files collected 0 items (silent skip
@@ -108,9 +107,8 @@ jobs:
           # Public surface must import without [mcp].
           assert callable(dm.figsize)
           assert callable(dm.simple_layout)
-          assert callable(dm.install_llm_txt)
           assert callable(dm.get_agent_doc)
-          assert dm.INSTALL_TARGETS
+          assert callable(dm.agent_doc_path)
           assert dm.AGENT_DOCS
           print('OK: base install imports cleanly')
           "

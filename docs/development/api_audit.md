@@ -77,8 +77,8 @@
 | `icon_font` | `dartwork_mpl.icon` | func | 2 | N | 13 | 2 | keep | icon_font_path → FontProperties(fname=) 변환; icon font 시스템 핵심 진입점 | audited |
 | `icon_font_path` | `dartwork_mpl.icon` | func | 12 | N | 7 | 2 | keep | registry 룩업 + FileNotFoundError — path helper with validation | audited |
 | `list_icon_fonts` | `dartwork_mpl.icon` | func | 1 | N | 9 | 1 | keep | sorted(_REGISTRY.keys()) — 1줄이지만 icon font discovery API | audited |
-| `install_llm_txt` | `dartwork_mpl.install` | func | 42 | N | 24 | 3 | keep | CLI 도구 — SSOT bundle 합성 + .claude/commands/.cursor 양방향 설치 로직 | audited |
-| `uninstall_llm_txt` | `dartwork_mpl.install` | func | 19 | N | 7 | 3 | keep | CLI 도구 — 파일 제거 + 오류 처리 | audited |
+| `install_llm_txt` | `dartwork_mpl.install` | func | 42 | N | 24 | 3 | remove | removed in #170 — superseded by MCP + repo-root AGENTS.md / llms-full.txt (use `dm.agent_doc_path`) | removed |
+| `uninstall_llm_txt` | `dartwork_mpl.install` | func | 19 | N | 7 | 3 | remove | removed in #170 — superseded by MCP + repo-root AGENTS.md / llms-full.txt | removed |
 | `save_and_show` | `dartwork_mpl.io` | func | 14 | N | 34 | 3 | keep | tmp 파일 생성·정리 + 경로 분기 + custom show() 호출 — 2줄 이상 실질 로직 | audited |
 | `save_formats` | `dartwork_mpl.io` | func | 8 | N | 88 | 2 | keep | `savefig` 다중 포맷 확장 + bbox/validate kwargs 모호성 해소 | audited |
 | `show` | `dartwork_mpl.io` | func | 48 | N | 238 | 3 | keep | SVG DOM 파싱 + aspect-ratio 보존 width/height 치환 + IPython display — plt.show() 아님 | audited |

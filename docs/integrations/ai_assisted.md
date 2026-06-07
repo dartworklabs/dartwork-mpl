@@ -20,22 +20,25 @@ For detailed setup instructions, client configuration, verification steps, and t
 
 ### Alternative: File-Based LLM Integration
 
-If your AI assistant doesn't support MCP, you can install static guide files directly into IDE integration folders:
+If your AI assistant doesn't support MCP, point it at dartwork-mpl's bundled, LLM-readable corpus. The repository root ships ready-to-use onboarding files — `AGENTS.md`, `CLAUDE.md`, `llms.txt` (a ~2.5 KB index), and `llms-full.txt` (the full concatenated reference). The same files are reachable from Python:
 
 ```python
 import dartwork_mpl as dm
 
-# Install usage guides for AI assistants
-dm.install_llm_txt()
-# ✅ dartwork-mpl usage guide installed successfully!
-# 📁 Claude Code: .claude/commands/dartwork-mpl-usage.md
-# 📁 Cursor IDE: .cursor/dartwork-mpl-usage.md
-
-# Remove when no longer needed
-dm.uninstall_llm_txt()
+# Accepts "AGENTS", "CLAUDE", "llms", "llms-full"
+path = dm.agent_doc_path("llms-full")   # -> Path to the bundled corpus
+text = dm.get_agent_doc("llms-full")    # -> its contents as a string
 ```
 
-> **Note:** MCP is preferred over file-based integration because it provides always-up-to-date documentation and richer tool access. Use `install_llm_txt()` only when MCP is not available.
+Drop the file into your IDE's AI-context location (e.g. `.github/copilot-instructions.md`, or `CONVENTIONS.md` for Aider) or pass it straight to a tool:
+
+```bash
+aider --read "$(python -c 'import dartwork_mpl; print(dartwork_mpl.agent_doc_path("llms-full"))')"
+```
+
+For chat-only surfaces (web ChatGPT, Claude.ai), paste the contents of `llms.txt` into a system prompt or pinned message.
+
+> **Note:** MCP is preferred over file-based integration — it serves always-up-to-date docs and richer tool access. The file-based corpus is the fallback for agents that can't speak MCP.
 
 ## 2. Create Plot Functions with Arguments
 

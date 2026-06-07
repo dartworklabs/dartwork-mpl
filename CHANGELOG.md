@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Removed (breaking)
+- **`install_llm_txt` / `uninstall_llm_txt` (and `INSTALL_TARGETS`) are
+  removed.** They copied the bundled prompt corpus into IDE-specific
+  folders — a job now better served by the MCP server (runtime
+  `dartwork-mpl://guide/*` resources) and the repo-root onboarding files
+  (`AGENTS.md`, `CLAUDE.md`, `llms.txt`, `llms-full.txt`). **Migration:**
+  non-MCP users resolve the corpus with `dm.agent_doc_path(name)` /
+  `dm.get_agent_doc(name)` (accepts `"AGENTS"`, `"CLAUDE"`, `"llms"`,
+  `"llms-full"`) and copy it into their tool's context location. (#170)
 - **`ipython` is no longer a core dependency.** Only `dm.show()` (inline
   SVG display in Jupyter) needs it, so it moved to a `notebook` optional
   extra — `pip install "dartwork-mpl[notebook]"`. This drops ~30 MB of

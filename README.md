@@ -32,7 +32,7 @@ Enhanced matplotlib styling, color management, and utility library engineered by
 - **Multi-format Export**: Save figures in SVG, PNG, PDF, and EPS simultaneously.
 - **Prompt System**: Bundled prompt guides for AI coding assistants, with `get_prompt()` and `copy_prompt()`.
 - **MCP Server**: AI coding assistant integration via Model Context Protocol (12 resources + 3 resource templates / 13 tools / 2 prompts).
-- **LLM Integration**: Install usage guides for **9 AI tools** (Claude Code, Cursor + MDC rules, GitHub Copilot, Codex CLI / `AGENTS.md`, Gemini CLI / Antigravity, Continue, Aider, Windsurf) with `install_llm_txt(targets="all")`.
+- **LLM Integration**: For agents without MCP, a bundled LLM-readable corpus (`AGENTS.md`, `CLAUDE.md`, `llms.txt`, `llms-full.txt`) reachable via `agent_doc_path()` / `get_agent_doc()`.
 
 <br/>
 
@@ -271,8 +271,10 @@ run(my_plot)  # opens browser at localhost:8501
 ### LLM Integration
 
 ```python
-dm.install_llm_txt()      # install usage guides to .claude/ and .cursor/
-dm.uninstall_llm_txt()    # remove installed guides
+# For agents without MCP: resolve the bundled corpus (also accepts
+# "AGENTS", "CLAUDE", "llms"), then copy/paste it into your tool.
+dm.agent_doc_path("llms-full")   # -> Path to the corpus file
+dm.get_agent_doc("llms-full")    # -> its contents as a string
 ```
 
 <br/>

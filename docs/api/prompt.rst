@@ -33,12 +33,3 @@ API
 .. autofunction:: dartwork_mpl.get_prompt
 .. autofunction:: dartwork_mpl.list_prompts
 .. autofunction:: dartwork_mpl.copy_prompt
-
-LLM Integration
----------------
-
-Install or remove static guide files for IDE-based AI assistants that
-do not support MCP.
-
-.. autofunction:: dartwork_mpl.install_llm_txt
-.. autofunction:: dartwork_mpl.uninstall_llm_txt
