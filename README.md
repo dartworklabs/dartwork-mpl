@@ -6,282 +6,129 @@
 [![CI](https://github.com/dartworklabs/dartwork-mpl/actions/workflows/ci.yml/badge.svg)](https://github.com/dartworklabs/dartwork-mpl/actions/workflows/ci.yml)
 [![Docs](https://github.com/dartworklabs/dartwork-mpl/actions/workflows/docs.yml/badge.svg)](https://dartworklabs.github.io/dartwork-mpl/)
 
-Enhanced matplotlib styling, color management, and utility library engineered by dartwork.
+**Publication-quality matplotlib — a thin utility layer, not a wrapper.**
 
-`dartwork-mpl` is a utility collection designed to elevate matplotlib visuals to publication-level elegance. Instead of wrapping matplotlib with a new API layer, it provides **thin utilities** that enhance matplotlib's native capabilities while keeping you in full control.
+`dartwork-mpl` keeps `Figure` / `Axes` 100% native and adds the parts matplotlib
+makes tedious: a physical-width geometry API, curated style presets, an OKLCH-aware
+color system, deterministic content-aware layout, visual validation, and a
+first-class integration for AI coding assistants (an MCP server + a bundled prompt
+corpus). You never learn a new plotting API — you keep writing matplotlib, just
+without the friction.
 
-> [!TIP]
-> **AI coding assistants**: read [`CLAUDE.md`](CLAUDE.md) (or [`AGENTS.md`](AGENTS.md)) at the repo root for the 30-second onboarding. The link index follows the [llmstxt.org](https://llmstxt.org) spec at [`llms.txt`](llms.txt); a single-file concatenated dump is at [`llms-full.txt`](llms-full.txt).
+```python
+import matplotlib.pyplot as plt
+import dartwork_mpl as dm
 
-> [!IMPORTANT]
-> **Migrating from earlier dartwork-mpl?** Both the 0.3 names (`dm.SW`/`MW`/`TW`/`DW`, `dm.FS_*`, `dm.WIDTHS`, `dm.cm2in`, `dm.agent_utils`, `dm.xplot`) and the 0.4-era figure constructors (`dm.subplots`, `dm.figure`) have been **removed**. Each old access path now raises `AttributeError` / `ModuleNotFoundError` / `TypeError` with a message naming the new API. The canonical pattern is `plt.subplots(figsize=dm.figsize("<n>cm", "<aspect>"))` paired with a separate `dm.style.use(...)`. See [`docs/migration.md`](docs/migration.md) and the [CHANGELOG](CHANGELOG.md) for the full mapping.
+dm.style.use("scientific")                                       # 1. curated preset
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))   # 2. physical width × aspect
+ax.plot(x, y, color="oc.blue5", lw=dm.lw(0))
+ax.set_xlabel("Time [s]")
+dm.simple_layout(fig)                                            # 3. content-aware margins
+dm.save_formats(fig, "figure", formats=("svg", "png", "pdf"))    # 4. multi-format save
+```
+
+That four-step pattern — **preset → `figsize(width, aspect)` → `simple_layout` →
+`save_formats`** — is the whole workflow. No `tight_layout()`, no hand-tuned
+`figsize=(w, h)` arithmetic, no `dpi=` guesswork.
 
 <br/>
 
-## Features
-
-- **Style Presets**: Apply curated themes (`scientific`, `report`, `presentation`) with one call.
-- **Width × Aspect Geometry**: `plt.subplots(figsize=dm.figsize("13cm", "standard"))` — pick a physical width (cm/in/mm) and one of six aspect tokens (`square / portrait / standard / golden / wide / cinema`); height is derived. No more raw `figsize=(w, h)` math.
-- **Advanced Color System**: Named color palettes (`oc.*`, `tw.*`, `md.*`, `ad.*`, `cu.*`, `pr.*`) plus a `Color` class supporting OKLab / OKLCH / RGB / hex color spaces with perceptual interpolation via `cspace()`.
-- **Smart Layout**: `simple_layout(fig)` is a deterministic, content-aware margin pass that measures every visible artist and places the GridSpec arithmetically. Default `margin=0` snaps content flush to figure edges; `margin="2%"` / `dm.mm(2)` adds a buffer. Replaces `tight_layout()`.
-- **Scaling Helpers**: Relative font size (`fs`), font weight (`fw`), and line width (`lw`) that respect the active style preset.
-- **Icon Fonts**: Built-in Material Design Icons (7,448+) and Font Awesome 6.
-- **Visual Validation**: Automatic detection of overflow, text overlap, legend overflow, tick crowding, and empty axes via `validate_figure()`.
-- **Extended Plots**: Ready-to-use plot templates like `plot_diverging_bar()`.
-- **Interactive Viewer**: FastAPI-powered web UI (`dartwork_mpl.ui`) for real-time parameter tuning.
-- **Multi-format Export**: Save figures in SVG, PNG, PDF, and EPS simultaneously.
-- **Prompt System**: Bundled prompt guides for AI coding assistants, with `get_prompt()` and `copy_prompt()`.
-- **MCP Server**: AI coding assistant integration via Model Context Protocol (12 resources + 3 resource templates / 13 tools / 2 prompts).
-- **LLM Integration**: For agents without MCP, a bundled LLM-readable corpus (`AGENTS.md`, `CLAUDE.md`, `llms.txt`, `llms-full.txt`) reachable via `agent_doc_path()` / `get_agent_doc()`.
-
-<br/>
-
-## Getting Started
-
-### Installation
-
-#### Using uv (Recommended)
+## Installation
 
 ```shell
-# Add to your project
-uv add git+https://github.com/dartworklabs/dartwork-mpl
-
-# Or install directly
-uv pip install git+https://github.com/dartworklabs/dartwork-mpl
+pip install dartwork-mpl        # or:  uv add dartwork-mpl
 ```
 
-#### Using pip
+Requires Python 3.10+. The core install is intentionally lean; add an extra only
+when you need it:
 
-```shell
-pip install git+https://github.com/dartworklabs/dartwork-mpl
-```
-
-#### Optional extras
-
-The core install is kept lean. Add an extra only if you need it:
-
-| Extra | Enables | Pulls in |
-|---|---|---|
-| `[notebook]` | `dm.show()` inline SVG display in Jupyter | `ipython` |
-| `[mcp]` | the MCP server for AI assistants | `fastmcp`, `httpx` |
-| `[ui]` | the interactive style viewer | `fastapi`, `uvicorn`, … |
+| Extra        | Enables                                   | Pulls in              |
+| ------------ | ----------------------------------------- | --------------------- |
+| `[notebook]` | `dm.show()` inline SVG display in Jupyter | `ipython`             |
+| `[mcp]`      | the MCP server for AI assistants          | `fastmcp`, `httpx`    |
+| `[ui]`       | the interactive parameter viewer          | `fastapi`, `uvicorn`  |
 
 ```shell
 pip install "dartwork-mpl[notebook]"   # or [mcp], [ui]
 ```
 
-### Quick Start
+<br/>
+
+## Highlights
+
+- **Geometry, decoupled from inches.** `dm.figsize("13cm", "standard")` takes a
+  physical width (cm / in / mm / pt, or `dm.col1` = 9 cm / `dm.col2` = 17 cm) and
+  one of six aspect tokens (`square / portrait / standard / golden / wide /
+  cinema`); the height follows. Bare numbers are rejected so the unit is always
+  explicit.
+- **Deterministic layout.** `simple_layout(fig)` measures every visible artist and
+  places the GridSpec arithmetically — reproducible across machines, unlike
+  `tight_layout()`'s heuristics. `margin="2%"` (or `dm.mm(2)`) adds a buffer.
+- **OKLCH-aware color.** Named palettes (`oc.*` Open Color, `tw.*` Tailwind,
+  `md.*`, `ad.*`, `cu.*`, `pr.*`) plus a `Color` class spanning OKLab / OKLCH /
+  RGB / hex with perceptual interpolation (`cspace`) and gamut-correct mapping.
+- **Curated styling.** Seven presets (`scientific`, `report`, `presentation`, …),
+  each with a Korean `-kr` variant, and preset-relative scaling helpers `fs` /
+  `fw` / `lw` so literals never drift when you switch themes.
+- **Validation & export.** `validate_figure(fig)` flags overflow, text/legend
+  overlap, tick crowding, and empty axes — invisible failures in headless agent
+  pipelines. `save_formats(fig, ...)` writes SVG / PNG / PDF / EPS at once.
+- **AI-native.** A bundled [MCP](https://modelcontextprotocol.io) server exposes
+  lint + auto-fix, figure validation, color lookup, and the live policy corpus to
+  Claude Code / Cursor / Windsurf. No-MCP agents read the same corpus from disk.
+- **Batteries included.** Material Design Icons + Font Awesome 6 fonts, ready-made
+  plot templates (`plot_diverging_bar`, …), and a FastAPI viewer for live tuning.
+
+<br/>
+
+## Core API at a glance
 
 ```python
-import matplotlib.pyplot as plt
-
 import dartwork_mpl as dm
 
-dm.style.use('scientific')
+# ── Geometry ──────────────────────────────────────────────────────────
+dm.figsize("13cm", "wide")          # width × aspect token  → inch tuple
+dm.figsize("13cm", 0.6)             # ...or a numeric ratio / "8cm" / dm.cm(8)
+dm.cm(13); dm.mm(170); dm.inch(4.6); dm.pt(24)   # Length values
+dm.col1; dm.col2                    # 9 cm / 17 cm academic-column sugar
 
-# Pick the physical width (cm/in/mm) and an aspect token. Height
-# follows from aspect, so you never hand-tune figsize.
-fig, ax = plt.subplots(figsize=dm.figsize('13cm', 'standard'))
-ax.plot(x, y, color='oc.blue5', lw=dm.lw(0))
-ax.set_xlabel('Time [s]')
+# ── Styling & scaling ─────────────────────────────────────────────────
+dm.style.use("scientific")          # apply a preset
+dm.style.stack(["base", "font-scientific", "lang-kr"])   # compose
+dm.fs(2); dm.fw(1); dm.lw(-0.3)     # preset-relative font size / weight / line width
 
-dm.simple_layout(fig)
-dm.save_formats(fig, 'output/figure', formats=('svg', 'png'))
-```
+# ── Color ─────────────────────────────────────────────────────────────
+ax.plot(x, y, color="oc.blue5")     # named palettes register with matplotlib
+dm.color("oc.blue5")                # parse name / "#4285F4" / "rgb(...)" / "oklch(...)"
+dm.oklch(0.7, 0.15, 150); dm.rgb(66, 133, 244); dm.hex("#4285F4")
+dm.cspace("#FF0000", "#0000FF", n=5, space="oklch")      # perceptual interpolation
+dm.mix_colors("oc.blue5", "white", alpha=0.35)
 
-`dm.figsize(width, aspect)` returns the inch tuple matplotlib's
-`figsize=` expects. `width` accepts unit-suffixed strings (`"13cm"`,
-`"6.7in"`, `"170mm"`, `"24pt"`) or `Length` values from the helper
-calls (`dm.cm(11.3)`, `dm.inch(4.6)`, `dm.mm(170)`, `dm.pt(24)`);
-the academic-column shortcuts `dm.col1` (9 cm) and `dm.col2` (17 cm)
-work too. Bare `int` / `float` are rejected so the unit is always
-explicit.
+# ── Layout & annotation ───────────────────────────────────────────────
+dm.simple_layout(fig)               # deterministic content-aware margins
+dm.simple_layout(fig, margin="2%", gs=gs)   # buffer + target a GridSpec
+dm.label_axes(axes)                 # (a) (b) (c) panel labels
+dm.arrow_axis(ax, "x", "Cost")      # Low ◄── Cost ──► High
 
-The second argument is polymorphic — pick whichever form reads
-naturally for the call site (the four forms are equivalent for
-fixed dimensions; the first matching form wins):
+# ── Validate, export, icons ───────────────────────────────────────────
+dm.validate_figure(fig)             # overflow / overlap / tick-crowding / empty
+dm.save_formats(fig, "fig", formats=("png", "svg", "pdf"), dpi=300)
+mdi = dm.icon_font("mdi")           # also "fa-solid" / "fa-regular" / "fa-brands"
 
-```python
-dm.figsize("13cm", "wide")        # aspect token  → 13 × 8.67 cm
-dm.figsize("13cm", 0.6)           # numeric ratio → 13 ×  7.8 cm
-dm.figsize("13cm", "8cm")         # unit-string height
-dm.figsize("13cm", dm.cm(8))      # Length height
-dm.figsize("13cm", "5in")         # mixed units (height in inches)
-```
-
-Aspect tokens are `square / portrait / standard / golden / wide /
-cinema`. Bare numeric strings (`"0.5"`) are rejected with a
-"drop the quotes" hint to keep the API unambiguous.
-
-<br/>
-
-## Core Modules
-
-### Style Management
-
-Ready-to-use presets with `style.use()`, or stack individual styles for fine-grained control with `style.stack()`.
-
-```python
-dm.style.use('scientific')                     # apply preset
-dm.style.stack(['base', 'font-scientific', 'lang-kr'])  # stack custom
-dm.list_styles()                               # list available .mplstyle files
-dm.load_style_dict('font-presentation')        # inspect style params
-```
-
-### Color System
-
-#### Named Colors
-
-Importing `dartwork_mpl` registers palettes with `oc.*`, `tw.*`, `md.*`, `ad.*`, `cu.*`, `pr.*` prefixes:
-
-```python
-ax.plot(x, y, color='oc.blue5')       # Open Color
-ax.bar(x, y, color='tw.emerald500')   # Tailwind CSS
-lighter = dm.mix_colors('oc.blue5', 'white', alpha=0.35)
-muted = dm.pseudo_alpha('oc.blue7', alpha=0.6)
-```
-
-#### Color Class
-
-The `Color` class provides perceptually uniform color manipulation across OKLab, OKLCH, RGB, and hex:
-
-```python
-# Create from any color space
-color = dm.oklch(0.7, 0.15, 150)      # L, C, h (degrees)
-color = dm.rgb(66, 133, 244)          # auto-detects 0-255 range
-color = dm.hex('#4285F4')
-color = dm.color('oc.blue5')          # palette name (also hex / rgb() / oklch())
-
-# Read/write via views (mutable references)
-color.oklch.C *= 1.2                  # boost chroma
-r, g, b = color.rgb                   # unpack RGB
-
-# Perceptual interpolation
-palette = dm.cspace('#FF0000', '#0000FF', n=5, space='oklch')
-```
-
-### Layout & Annotation
-
-```python
-dm.simple_layout(fig)                   # deterministic content-aware margin pass
-dm.simple_layout(fig, margin="2%")      # uniform 2% buffer; also dm.mm(2), dm.cm(0.5), "5mm"
-dm.simple_layout(fig, gs=gs)            # multi-panel: target a specific GridSpec
-dm.label_axes(axes)                     # add (a), (b), (c) panel labels
-dm.arrow_axis(ax, 'x', 'Cost')         # Low ◄── Cost ──► High
-dm.set_decimal(ax, xn=2, yn=1)         # format tick decimals
-offset = dm.make_offset(4, -4, fig)    # point-based translation
-```
-
-### Scaling Helpers
-
-```python
-dm.fs(2)     # base font size + 2pt
-dm.fw(1)     # base font weight + 100
-dm.lw(-0.3)  # base line width - 0.3
-```
-
-### Length Helpers
-
-```python
-dm.cm(13)        # 13 cm  → Length
-dm.inch(4.6)     # 4.6 in → Length
-dm.mm(170)       # 170 mm → Length
-dm.pt(24)        # 24 pt  → Length (1 pt = 1/72 in)
-dm.length('13cm')  # parse a unit string → Length
-dm.col1          # 9 cm  — academic single-column sugar
-dm.col2          # 17 cm — academic two-column sugar
-
-# Multi-unit views (Color-style):
-dm.cm(13).inch   # 5.118
-dm.cm(13).mm     # 130.0
-dm.cm(13).pt     # 368.5
-```
-
-> **Migrating?** Replace `figsize=(dm.cm2in(13), dm.cm2in(9.75))` and
-> `dm.subplots(width="13cm", aspect="standard")` with
-> `plt.subplots(figsize=dm.figsize("13cm", "standard"))`. The legacy
-> aliases (`SW / MW / TW / DW`, `FS_*`, `cm2in`, `agent_utils`,
-> `xplot`, `dm.subplots`, `dm.figure`) all raise at access time now.
-
-### Visual Validation
-
-Automatic detection of rendering issues invisible in stdout-only environments (e.g., AI agent pipelines):
-
-```python
-warnings = dm.validate_figure(fig)
-# Checks: overflow, overlap, legend_overflow, tick_crowding, empty_axes
-# Integrated into save_formats() by default
-```
-
-### Icon Font System
-
-```python
-mdi = dm.icon_font('mdi')              # Material Design Icons
-fa  = dm.icon_font('fa-solid')         # Font Awesome 6 Solid
-ax.text(0.5, 0.5, "\U000F050F", fontproperties=mdi, fontsize=20)
-dm.list_icon_fonts()                   # ['fa-brands', 'fa-regular', 'fa-solid', 'mdi']
-```
-
-### File I/O & Prompts
-
-```python
-dm.save_formats(fig, 'output/fig', formats=('png', 'svg', 'pdf'), dpi=300)
-dm.save_and_show(fig, size=720)        # save + inline preview
-
-# Prompt guides for AI assistants
-dm.list_prompts()                      # available guides
-dm.get_prompt('00-index')              # read the entry-point index (0.4 SSOT)
-dm.copy_prompt('01-policy', '.cursor/rules/')
-```
-
-### Extended Plots (templates)
-
-Ready-to-use specialized visualization templates:
-
-```python
+# ── Plot templates ────────────────────────────────────────────────────
 from dartwork_mpl.templates import plot_diverging_bar
-
-fig, ax = plot_diverging_bar(
-    categories=['A', 'B', 'C'],
-    negatives=[-30, -15, -25],
-    positives=[40, 55, 35],
-)
+fig, ax = plot_diverging_bar(labels=["A", "B"], neg_values=[-30, -15], pos_values=[40, 55])
 ```
 
-### Interactive Viewer (UI)
-
-FastAPI-powered web UI for real-time parameter tuning:
-
-```python
-from dartwork_mpl.ui import ParamModel, run
-from pydantic import Field
-
-class Params(ParamModel):
-    n: int = Field(default=100, ge=10, le=1000)
-    alpha: float = Field(default=0.5, ge=0, le=1)
-
-def my_plot(params: Params):
-    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
-    ax.scatter(range(params.n), np.random.randn(params.n), alpha=params.alpha)
-    return fig
-
-run(my_plot)  # opens browser at localhost:8501
-```
-
-### LLM Integration
-
-```python
-# For agents without MCP: resolve the bundled corpus (also accepts
-# "AGENTS", "CLAUDE", "llms"), then copy/paste it into your tool.
-dm.agent_doc_path("llms-full")   # -> Path to the corpus file
-dm.get_agent_doc("llms-full")    # -> its contents as a string
-```
+See the [usage guide](https://dartworklabs.github.io/dartwork-mpl/usage_guide/index.html)
+and [API reference](https://dartworklabs.github.io/dartwork-mpl/api/index.html) for
+the full surface.
 
 <br/>
 
-## Available Presets
+## Style presets
 
-| Preset         | Description                                       |
+| Preset         | Use case                                          |
 | -------------- | ------------------------------------------------- |
 | `scientific`   | Compact fonts for academic papers and journals    |
 | `report`       | Reports and dashboards, cleaner spines            |
@@ -291,115 +138,95 @@ dm.get_agent_doc("llms-full")    # -> its contents as a string
 | `web`          | On-screen readability for docs and notebooks      |
 | `dark`         | Dark backgrounds for Jupyter and dark-mode slides |
 
-All presets have a `-kr` Korean variant (e.g., `scientific-kr`, `report-kr`).
+Each has a Korean `-kr` variant (`scientific-kr`, `report-kr`, …) with Korean-aware
+fonts. List them with `dm.list_styles()`.
+
+<br/>
+
+## AI-assisted development (MCP)
+
+dartwork-mpl ships a built-in **Model Context Protocol** server so AI coding
+assistants pull the current policy guides, color palettes, lint catalog, and
+helper tools straight into the chat — no copy-pasting docs. It exposes **13 tools**
+(lint + auto-fix, figure validation, render, color lookup, info), **12 resources +
+3 resource templates** (the prompt corpus + 18 plot templates), and **2 prompts**.
+
+```shell
+pip install "dartwork-mpl[mcp]"     # installs fastmcp + httpx; adds the dartwork-mpl-mcp script
+```
+
+Point your client at the `dartwork-mpl-mcp` console script — e.g. Claude Code
+(`~/.claude.json`) or Cursor (`~/.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "dartwork-mpl": { "command": "dartwork-mpl-mcp" }
+  }
+}
+```
+
+Restart the client and ask it to list its MCP resources to confirm. Windsurf,
+Antigravity, generic stdio setups, the full tool/resource catalog, and the
+local-clone variant are covered in
+[`docs/integrations/mcp_server.md`](docs/integrations/mcp_server.md).
+
+> **No MCP?** The same corpus is bundled in the wheel and reachable from Python —
+> `dm.get_agent_doc("llms-full")` (also `"AGENTS"`, `"CLAUDE"`, `"llms"`) returns
+> the text, `dm.agent_doc_path(name)` its path. The repo-root
+> [`CLAUDE.md`](CLAUDE.md) / [`AGENTS.md`](AGENTS.md) / [`llms.txt`](llms.txt)
+> (per the [llmstxt.org](https://llmstxt.org) spec) are the 30-second onboarding.
 
 <br/>
 
 ## Documentation
 
-📚 **[Full Documentation](https://dartworklabs.github.io/dartwork-mpl/)** — Sphinx docs with:
+📚 **[Full documentation](https://dartworklabs.github.io/dartwork-mpl/)**
 
-- **[Installation](https://dartworklabs.github.io/dartwork-mpl/installation/index.html)** — Setup guide
-- **[Design Philosophy](https://dartworklabs.github.io/dartwork-mpl/philosophy/index.html)** — Why thin utilities, not wrappers
-- **[Usage Guide](https://dartworklabs.github.io/dartwork-mpl/usage_guide/index.html)** — Workflows and patterns
-- **[Color System](https://dartworklabs.github.io/dartwork-mpl/color_system/index.html)** — Colors and colormaps reference
-- **[API Reference](https://dartworklabs.github.io/dartwork-mpl/api/index.html)** — Function-level docs
-- **[Example Gallery](https://dartworklabs.github.io/dartwork-mpl/examples_gallery/index.html)** — Interactive examples
-
-<br/>
-
-## AI-Assisted Development (MCP Server)
-
-dartwork-mpl ships a built-in **Model Context Protocol (MCP) server** so that AI coding assistants — Claude Code, Cursor, Windsurf, Antigravity — can pull the latest policy guides, color palettes, lint catalog, and helper tools straight into the chat context. No copy-pasting docs.
-
-### Install
-
-```shell
-# pip
-pip install "dartwork-mpl[mcp]"
-
-# uv
-uv add "dartwork-mpl[mcp]"
-```
-
-The `[mcp]` extra installs `fastmcp` (>=2.13.3,<4) and `httpx`. After install, the
-`dartwork-mpl-mcp` console script is on your `PATH`.
-
-### Claude Code
-
-Add to `~/.claude.json` (global) or `<project>/.claude/mcp_servers.json`:
-
-```json
-{
-  "mcpServers": {
-    "dartwork-mpl": {
-      "command": "dartwork-mpl-mcp"
-    }
-  }
-}
-```
-
-### Cursor
-
-Add to `~/.cursor/mcp.json` (global) or `<project>/.cursor/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "dartwork-mpl": {
-      "command": "dartwork-mpl-mcp"
-    }
-  }
-}
-```
-
-After saving, restart the client (or start a new conversation) and ask the assistant to list its MCP resources to confirm the server is reachable. For Windsurf, Antigravity (Gemini), generic stdio, troubleshooting, and the full resource/tool catalog, see [`docs/integrations/mcp_server.md`](docs/integrations/mcp_server.md) (or the [hosted version](https://dartworklabs.github.io/dartwork-mpl/integrations/mcp_server.html)).
-
-> **Working from a local clone instead of PyPI?** Use `command: "uv"` with
-> `args: ["run", "--directory", "/abs/path/to/dartwork-mpl", "dartwork-mpl-mcp"]`. The detailed docs cover this case.
+- [Quickstart](https://dartworklabs.github.io/dartwork-mpl/usage_guide/quickstart.html) — install, first figure, save
+- [Usage guide](https://dartworklabs.github.io/dartwork-mpl/usage_guide/index.html) — width/aspect, layout, color, patterns
+- [Color system](https://dartworklabs.github.io/dartwork-mpl/color_system/index.html) — palettes, OKLCH, colormaps
+- [Example gallery](https://dartworklabs.github.io/dartwork-mpl/examples_gallery/index.html) — rendered, copy-pasteable
+- [API reference](https://dartworklabs.github.io/dartwork-mpl/api/index.html) — every public function and class
+- [Design philosophy](https://dartworklabs.github.io/dartwork-mpl/philosophy/index.html) — why thin utilities, not a wrapper
 
 <br/>
 
-## Project Structure
+## Migrating from earlier versions
+
+The 0.3 names (`dm.SW` / `MW` / `TW` / `DW`, `dm.FS_*`, `dm.WIDTHS`, `dm.cm2in`,
+`dm.agent_utils`, `dm.xplot`), the 0.4-era figure constructors (`dm.subplots`,
+`dm.figure`), and the 0.5 prompt-corpus installer (`dm.install_llm_txt` and
+friends) have all been **removed**. Every old access path raises `AttributeError`
+/ `ModuleNotFoundError` naming its replacement — the canonical pattern is
+`plt.subplots(figsize=dm.figsize("13cm", "standard"))` with a separate
+`dm.style.use(...)`. Full mapping: [`docs/migration.md`](docs/migration.md) ·
+[CHANGELOG](CHANGELOG.md).
+
+<br/>
+
+## Project layout
 
 ```
 src/dartwork_mpl/
-├── __init__.py             # Public API exports + removed-name migration shim
-├── py.typed                # PEP 561 type marker
-├── units.py                # cm/inch/mm, col1/col2, figsize, length
-├── style.py                # Style class + preset management
-├── colors/                 # Color class (OKLab/OKLCH/RGB/hex) + palettes
-├── layout.py               # simple_layout(), get_bounding_box(), tight_crop()
-├── annotation.py           # arrow_axis(), label_axes()
-├── scale.py                # fs(), fw(), lw()
-├── formatting.py           # format_axis_*(), rotate_tick_labels()
-├── io.py                   # save_formats(), save_and_show(), show()
-├── prompt.py               # get_prompt(), copy_prompt(), list_prompts(), find_template()
-├── validate.py             # validate_figure() — visual checks
-├── validate_fixes.py       # validate_with_fixes() — auto-fix helpers
-├── lint.py                 # lint() + migrate_legacy_code()
-├── diagnostics/            # plot_colormaps/plot_colors/plot_fonts (package)
-├── explore.py              # list_palettes/list_colormaps/show_palette
-├── icon.py                 # Icon font system (MDI, Font Awesome)
-├── font.py                 # Font registration (lazy, locked)
-├── cmap.py                 # Custom colormap registration (lazy, locked)
-├── helpers/                # Stable helper utilities (data, labels, …)
-├── templates/              # Extended plot templates (plot_diverging_bar)
-├── agent.py                # Bundled agent-onboarding docs (agent_doc_path, get_agent_doc)
-├── util.py                 # Color utilities (mix_colors, make_offset, set_decimal)
-├── cli.py                  # console-script entry (dartwork-mpl-mcp)
-├── asset_viz/              # Deprecated alias for diagnostics (v1.0 removal)
-├── ui/                     # Interactive FastAPI viewer
-├── mcp/                    # MCP server for AI assistants
-│   ├── server.py           #   FastMCP instance + wiring
-│   ├── resources.py        #   12 resources + 3 resource templates
-│   ├── tools.py            #   13 tools (color, lint+autofix, validate+render, migrate, info)
-│   └── prompts.py          #   2 prompts (create_plot, style_review)
-└── asset/                  # Bundled styles, colors, fonts, icons, prompts
+├── units.py / scale.py        # figsize, cm/mm/inch/pt, col1/col2 · fs/fw/lw
+├── style.py                   # Style class + preset management
+├── colors/                    # Color (OKLab/OKLCH/RGB/hex) + named palettes
+├── layout.py / annotation.py  # simple_layout, label_axes, arrow_axis
+├── validate.py / lint.py      # validate_figure · lint + migrate_legacy_code
+├── io.py / formatting.py      # save_formats, show · format_axis_*
+├── icon.py / font.py / cmap.py / diagnostics/   # fonts, colormaps, viz helpers
+├── templates/ / helpers/      # plot templates · high-level composition helpers
+├── agent.py / prompt.py       # bundled LLM corpus · prompt guides
+├── mcp/                       # MCP server (server / resources / tools / prompts)
+├── ui/                        # interactive FastAPI viewer
+└── asset/                     # bundled styles, colors, fonts, icons, prompts
 ```
 
 <br/>
 
-## Reporting Issues
+## Contributing & issues
 
-Encountered a bug or have a feature request? Please open an issue through our [GitHub issue tracker](https://github.com/dartworklabs/dartwork-mpl/issues).
+Bug reports and feature requests go to the
+[GitHub issue tracker](https://github.com/dartworklabs/dartwork-mpl/issues).
+Released under the [MIT License](LICENSE).
