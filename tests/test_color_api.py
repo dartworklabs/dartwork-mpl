@@ -188,6 +188,19 @@ class TestFromRgbValidation:
         with pytest.raises(ValueError, match="255"):
             Color.from_rgb(300.0, 0.5, 0.5)
 
+    def test_fractional_mixed_into_byte_mode_rejected(self) -> None:
+        # 255 triggers 0-255 mode, but 0.5 / 0.1 look like 0-1 unit values.
+        # The ambiguous mix must error instead of silently dividing the
+        # fractional channels by 255 (→ a near-black, distorted color).
+        with pytest.raises(ValueError, match="not a mix"):
+            Color.from_rgb(255, 0.5, 0.1)
+
+    def test_byte_mode_accepts_zero_and_one(self) -> None:
+        # 0 and 1 are valid byte values (not fractional 0-1 unit), so a
+        # byte-mode call using them must still succeed, not get rejected by
+        # the mixed-range guard.
+        Color.from_rgb(255, 0, 1)
+
     def test_valid_byte_and_unit_agree(self) -> None:
         assert (
             Color.from_rgb(255, 107, 107).to_hex()

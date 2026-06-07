@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- **`Color.from_rgb` rejects a 0-1 value mixed into 0-255 channels.** When
+  any channel is `> 1.0` the call is read as 0-255; a fractional channel
+  (`0 < v < 1`) passed alongside it — e.g. `from_rgb(255, 0.5, 0.1)` — now
+  raises `ValueError` instead of silently dividing the fractional channels
+  by 255 into a near-black, distorted color. Completes the existing
+  "don't mix ranges" guard, which previously only caught values `> 255`. (#236)
+
 ## [0.5.0] - 2026-06-08
 
 ### Removed (breaking)

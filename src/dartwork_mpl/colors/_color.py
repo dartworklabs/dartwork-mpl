@@ -299,6 +299,12 @@ class Color:
                         f"are read as 0-255 because at least one is > 1.0; "
                         f"pass every channel in 0-1 or 0-255, not a mix"
                     )
+                if 0.0 < _val < 1.0:
+                    raise ValueError(
+                        f"from_rgb: {_name}={_val!r} looks like a 0-1 value "
+                        f"but channels are read as 0-255 because at least one "
+                        f"is > 1.0; pass every channel in 0-1 or 0-255, not a mix"
+                    )
             r_norm = r / 255.0
             g_norm = g / 255.0
             b_norm = b / 255.0
