@@ -1,20 +1,23 @@
 # Migration Guide
 
 This guide covers the rename / deprecation events that have shipped
-since v0.1, ordered newest first. The 0.4-era figure constructors
-(`dm.subplots`, `dm.figure`) have been **removed** in addition to
-the earlier 0.3 width tokens, `FS_*` figsize tuples, `cm2in`, the
-`dartwork_mpl.constant` module, and the `figsize=` / `dpi=` arguments
-they used to accept. Accessing any of them now raises
-`AttributeError` / `ModuleNotFoundError` / `TypeError`. The older
-`agent_utils` / `xplot` / `helpers.formatting` / `asset_viz` shims
-still emit a `DeprecationWarning` and are scheduled for removal in
-**v1.0**.
+since v0.1, ordered newest first. The `install_llm_txt` /
+`uninstall_llm_txt` installer was **removed in 0.5**; the 0.4-era
+figure constructors (`dm.subplots`, `dm.figure`), the `agent_utils`
+and `xplot` module aliases, the 0.3 width tokens, `FS_*` figsize
+tuples, `cm2in`, the `dartwork_mpl.constant` module, and the
+`figsize=` / `dpi=` arguments they used to accept were all **removed**
+across 0.4.x. Accessing any of them now raises `AttributeError` /
+`ModuleNotFoundError` / `TypeError` with a message naming the
+replacement. The `dartwork_mpl.asset_viz` and
+`dartwork_mpl.helpers.formatting` submodule aliases still import with a
+`DeprecationWarning` and are scheduled for removal in **v1.0**.
 
 ## At a glance
 
 | Old surface                           | New surface                                          |
 | ------------------------------------- | ---------------------------------------------------- |
+| `dm.install_llm_txt()` / `uninstall_llm_txt()` | `dm.get_agent_doc(name)` / `dm.agent_doc_path(name)` (or MCP `dartwork-mpl://guide/*`) |
 | `dm.subplots(width=..., aspect=...)`  | `plt.subplots(figsize=dm.figsize(...))`              |
 | `dm.figure(width=..., aspect=...)`    | `plt.figure(figsize=dm.figsize(...))`                |
 | `dm.subplots(..., style=...)`         | call `dm.style.use(...)` first, then `plt.subplots`  |
@@ -115,7 +118,29 @@ The two-pass migrator at `dm.lint.migrate_legacy_code` inserts a
 `# TODO(dm-migrate):` hint above each `dm.subplots` / `dm.figure`
 call so an agent can rewrite them in one sweep.
 
-## v0.4.x → v0.5.0 — API audit round 3 (#141)
+## v0.4.x → v0.5.0
+
+**The `install_llm_txt` installer was removed (#170).** It copied the
+bundled prompt corpus into IDE-specific folders; the corpus is now read
+at runtime instead, so there is nothing to install. `dm.install_llm_txt`
+/ `dm.uninstall_llm_txt` / `dm.INSTALL_TARGETS` raise `AttributeError`.
+
+| Removed | Replacement |
+|---|---|
+| `dm.install_llm_txt(...)` | `dm.get_agent_doc(name)` / `dm.agent_doc_path(name)` — `name` ∈ `AGENTS`, `CLAUDE`, `llms`, `llms-full` — or the MCP `dartwork-mpl://guide/*` resources |
+| `dm.uninstall_llm_txt(...)` | nothing — the corpus is read at runtime, so there is no install to undo |
+| `dm.INSTALL_TARGETS` | nothing — install targets no longer exist |
+
+**`ipython` is no longer a core dependency (#248).** Only `dm.show()`
+(inline SVG display in Jupyter) needs it, so it moved to the `notebook`
+optional extra. `dm.show()` raises a clear `ImportError` naming the
+extra when IPython is absent; every other entry point is unaffected.
+
+| Old install | New install |
+|---|---|
+| `pip install dartwork-mpl` (pulled in ~30 MB of IPython deps) | `pip install "dartwork-mpl[notebook]"` if you use `dm.show()` |
+
+## v0.4.0 → v0.4.1 — API audit round 3 (#141)
 
 5 wrapper functions removed using the *knowledge-encapsulation* criterion:
 AI agents can reproduce these in one shot without spec.
@@ -129,7 +154,7 @@ AI agents can reproduce these in one shot without spec.
 | `dm.set_xmargin(ax, margin, left, right)` | `ax.margins(x=margin)` plus optional `ax.set_xlim((left, right))` |
 | `dm.set_ymargin(ax, margin, bottom, top)` | same shape, y axis: `ax.margins(y=margin)` |
 
-## v0.4.x → v0.5.0 — API audit round 2 (#141)
+## v0.4.0 → v0.4.1 — API audit round 2 (#141)
 
 8 thin-wrapper utility functions were removed. Each can be replaced by
 one or two plain matplotlib calls.

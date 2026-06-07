@@ -1,8 +1,12 @@
-"""Verify 0.3 deprecated tokens raise AttributeError in 0.4.x.
+"""Verify removed tokens raise AttributeError with a migration hint.
 
 The width tokens (``SW``/``MW``/``TW``/``DW``/``WIDTHS``), figure-size
-tuples (``FS_*``), the ``cm2in`` helper, and the ``agent_utils``/``xplot``
-submodule aliases were all deprecated in 0.4.0 and removed in 0.4.x.
+tuples (``FS_*``), the ``cm2in`` helper, the figure constructors
+(``subplots``/``figure``), and the ``agent_utils``/``xplot`` aliases
+were removed across 0.4.x; the ``install_llm_txt`` installer
+(``install_llm_txt``/``uninstall_llm_txt``/``INSTALL_TARGETS``) was
+removed in 0.5. Each must raise ``AttributeError`` whose message names
+the replacement API (the contract CLAUDE.md / AGENTS.md advertise).
 """
 
 from __future__ import annotations
@@ -28,7 +32,24 @@ REMOVED_NAMES: tuple[str, ...] = (
     "cm2in",
     "agent_utils",
     "xplot",
+    "subplots",
+    "figure",
+    "install_llm_txt",
+    "uninstall_llm_txt",
+    "INSTALL_TARGETS",
 )
+
+# Removed name → a substring its migration message must contain so the
+# error actually points the caller at the replacement API.
+REMOVED_NAME_HINTS: dict[str, str] = {
+    "subplots": "plt.subplots",
+    "figure": "plt.figure",
+    "agent_utils": "dm.helpers",
+    "xplot": "dm.templates",
+    "install_llm_txt": "get_agent_doc",
+    "uninstall_llm_txt": "get_agent_doc",
+    "INSTALL_TARGETS": "get_agent_doc",
+}
 
 
 @pytest.mark.parametrize("name", REMOVED_NAMES)
@@ -66,6 +87,21 @@ def test_removed_fs_token_message_names_new_api():
     with pytest.raises(AttributeError) as excinfo:
         _ = dm.FS_WIDE
     assert "figsize" in str(excinfo.value)
+
+
+@pytest.mark.parametrize("name", sorted(REMOVED_NAME_HINTS))
+def test_removed_name_message_names_replacement(name):
+    """Each removed name's error must name its replacement API + migration.
+
+    Guards the CLAUDE.md / AGENTS.md contract: accessing a removed name
+    raises an error "naming the new API", not Python's bare
+    "module has no attribute" string.
+    """
+    with pytest.raises(AttributeError) as excinfo:
+        getattr(dm, name)
+    msg = str(excinfo.value)
+    assert REMOVED_NAME_HINTS[name] in msg
+    assert "migration" in msg.lower()
 
 
 def test_agent_utils_submodule_import_raises():

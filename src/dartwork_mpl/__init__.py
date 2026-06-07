@@ -267,36 +267,73 @@ if not getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False):
     matplotlib.axes.Axes.twinx = _patched_twinx  # type: ignore[method-assign,assignment]
 
 
-# 0.3 width tokens (SW/MW/TW/DW/WIDTHS), figure-size tuples (FS_*),
-# the cm2in helper, and the agent_utils/xplot module aliases were all
-# deprecated in 0.4.0 and removed in 0.4.x. Accessing them now raises
-# AttributeError. The ``__getattr__`` hook below turns those bare
-# misses into an actionable message naming the replacement API, instead
-# of Python's default "module has no attribute" string. Migration
-# paths: see docs/migration.md.
+# 0.3 width tokens (SW/MW/TW/DW/WIDTHS), figure-size tuples (FS_*), the
+# cm2in helper, the figure constructors (subplots/figure), and the
+# agent_utils/xplot module aliases were removed across 0.4.x; the
+# install_llm_txt installer (install_llm_txt/uninstall_llm_txt/
+# INSTALL_TARGETS) was removed in 0.5. Accessing any of them now raises
+# AttributeError. The ``__getattr__`` hook below turns those bare misses
+# into an actionable message naming the version and the replacement API,
+# instead of Python's default "module has no attribute" string.
+# Migration paths: see docs/migration.md.
 
-# Removed 0.3/0.4 names → the new API to reach for. Keyed by exact
-# attribute name; ``_REMOVED_PREFIXES`` covers the FS_* family.
-_REMOVED_NAMES: dict[str, str] = {
-    "SW": "dm.col1 / dm.col2 / dm.cm(...) (e.g. width='9cm')",
-    "MW": "dm.cm(...) (e.g. width='12cm')",
-    "TW": "dm.cm(...) (e.g. width='14.5cm')",
-    "DW": "dm.col2 / dm.cm(...) (e.g. width='17cm')",
-    "WIDTHS": "iterate explicit widths inline",
-    "cm2in": "dm.cm(...) (returns a Length; e.g. dm.figsize('13cm', ...))",
+# Removed names → ``(version-removed, replacement-hint)``. Keyed by exact
+# attribute name; the ``FS_*`` family is handled by the prefix branch.
+_REMOVED_NAMES: dict[str, tuple[str, str]] = {
+    "SW": ("0.4", "dm.col1 / dm.col2 / dm.cm(...) (e.g. width='9cm')"),
+    "MW": ("0.4", "dm.cm(...) (e.g. width='12cm')"),
+    "TW": ("0.4", "dm.cm(...) (e.g. width='14.5cm')"),
+    "DW": ("0.4", "dm.col2 / dm.cm(...) (e.g. width='17cm')"),
+    "WIDTHS": ("0.4", "iterate explicit widths inline"),
+    "cm2in": (
+        "0.4",
+        "dm.cm(...) (returns a Length; e.g. dm.figsize('13cm', ...))",
+    ),
+    "subplots": (
+        "0.4",
+        "plt.subplots(figsize=dm.figsize('<n>cm', '<aspect>')) with a "
+        "separate dm.style.use(...)",
+    ),
+    "figure": (
+        "0.4",
+        "plt.figure(figsize=dm.figsize('<n>cm', '<aspect>')) with a "
+        "separate dm.style.use(...)",
+    ),
+    "agent_utils": (
+        "0.4",
+        "dm.helpers (the agent_utils module was renamed to helpers)",
+    ),
+    "xplot": ("0.4", "dm.templates (e.g. dm.templates.plot_diverging_bar)"),
+    "install_llm_txt": (
+        "0.5",
+        "dm.agent_doc_path(name) / dm.get_agent_doc(name), or the MCP "
+        "dartwork-mpl://guide/* resources",
+    ),
+    "uninstall_llm_txt": (
+        "0.5",
+        "dm.get_agent_doc(name) / the MCP resources (the corpus is read "
+        "at runtime — there is no install to undo)",
+    ),
+    "INSTALL_TARGETS": (
+        "0.5",
+        "dm.get_agent_doc(name) / the MCP resources (install targets no "
+        "longer exist)",
+    ),
 }
 
 
 def __getattr__(name: str) -> Any:
-    """Surface a migration hint for removed 0.3/0.4 names.
+    """Surface a migration hint for removed 0.3/0.4/0.5 names.
 
-    Without this, ``dm.SW`` / ``dm.cm2in`` / ``dm.FS_SINGLE`` would
-    raise Python's default ``AttributeError`` with no pointer to the
-    replacement. See docs/migration.md for the full mapping.
+    Without this, ``dm.SW`` / ``dm.cm2in`` / ``dm.subplots`` /
+    ``dm.install_llm_txt`` / ``dm.FS_SINGLE`` would raise Python's
+    default ``AttributeError`` with no pointer to the replacement. See
+    docs/migration.md for the full mapping.
     """
     if name in _REMOVED_NAMES:
+        version, hint = _REMOVED_NAMES[name]
         raise AttributeError(
-            f"dm.{name} was removed in 0.4. Use {_REMOVED_NAMES[name]}. "
+            f"dm.{name} was removed in {version}. Use {hint}. "
             f"See docs/migration.md."
         )
     if name.startswith("FS_"):

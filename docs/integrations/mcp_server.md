@@ -354,8 +354,8 @@ Here are specific examples of how an AI assistant behaves differently when the `
    - **MCP in action:** The assistant reads the `policy` resource, understands the library's specific constraints, and provides the exact code to fix the issue.
 
 3. **Live color lookup**
-   - **You ask:** _"What's the hex code for dc.blue500?"_
-   - **MCP in action:** The assistant calls `get_color_value("dc.blue500")` and returns the exact hex code — no guessing.
+   - **You ask:** _"What's the hex code for dc.ocean2?"_
+   - **MCP in action:** The assistant calls `get_color_value("dc.ocean2")` and returns the exact hex code — no guessing.
 
 4. **Code quality check**
    - **You ask:** _"Review my plotting script for dartwork-mpl best practices."_

@@ -73,8 +73,8 @@ below) for the complete list. The most common ones AI agents trip on:
 
 For Claude Code / Cursor / any MCP client, see the step-by-step setup
 in [`docs/integrations/mcp_server.md`](docs/integrations/mcp_server.md).
-The server exposes 13 tools (lint + auto-fix + figure validation + render + color lookup + info) and
-12 resources (the prompt corpus + 18 plot templates). The tools you'll
+The server exposes 13 tools (lint + auto-fix + figure validation + render + color lookup + info),
+12 resources + 3 resource templates (the prompt corpus + 18 plot templates), and 2 prompts. The tools you'll
 use most:
 
 - `lint_dartwork_mpl_code(code)` — anti-pattern detection.
