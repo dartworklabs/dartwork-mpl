@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Removed (breaking)
+- **`ipython` is no longer a core dependency.** Only `dm.show()` (inline
+  SVG display in Jupyter) needs it, so it moved to a `notebook` optional
+  extra — `pip install "dartwork-mpl[notebook]"`. This drops ~30 MB of
+  IPython transitive dependencies (`prompt_toolkit`, `jedi`, `traitlets`,
+  `stack_data`, …) from every non-notebook install of this matplotlib
+  styling library. `dm.show()` now raises a clear `ImportError` naming
+  the extra when IPython is absent; every other entry point is
+  unaffected. **Migration:** notebook users add the `[notebook]` extra
+  (or install `ipython` directly). (#248)
+
 ### Changed
 - **`dartwork_mpl_info` now derives its advertised MCP catalog
   dynamically** instead of from hand-maintained literals. The `tools`

@@ -151,8 +151,23 @@ def show(image_path: str, size: int = 600, unit: str = "pt") -> None:
         Desired output width. Default is 600.
     unit : str, optional
         Unit for the width ('pt', 'px', etc.). Default is 'pt'.
+
+    Raises
+    ------
+    ImportError
+        If IPython is not installed. ``show`` renders inline in Jupyter
+        via IPython, which is an optional extra — install it with
+        ``pip install "dartwork-mpl[notebook]"``.
     """
-    from IPython.display import HTML, SVG, display
+    try:
+        from IPython.display import HTML, SVG, display
+    except ImportError as exc:  # pragma: no cover - exercised via mock
+        raise ImportError(
+            "dm.show() needs IPython for inline Jupyter display, which is "
+            "an optional extra. Install it with "
+            "'pip install \"dartwork-mpl[notebook]\"' "
+            "(or 'uv add \"dartwork-mpl[notebook]\"')."
+        ) from exc
 
     svg_obj = SVG(data=image_path)  # type: ignore[no-untyped-call]
 

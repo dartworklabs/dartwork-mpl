@@ -28,7 +28,6 @@ classifiers = [
 ]
 dependencies = [
     "colorspacious>=1.1.2",
-    "ipython>=8.32.0",
     "matplotlib>=3.10.1",
     "numpy>=1.26",
     "palettable>=3.3.3",
@@ -47,6 +46,13 @@ dartwork-mpl-mcp = "dartwork_mpl.cli:main"
 dartwork-mpl-ui = "dartwork_mpl.ui.__main__:main"
 
 [project.optional-dependencies]
+notebook = [
+    # Only ``dm.show()`` (inline SVG display in Jupyter) needs IPython.
+    # It is an optional extra rather than a core dependency so the ~30 MB
+    # of IPython transitive deps (prompt_toolkit, jedi, traitlets, …) are
+    # not forced on every consumer of this matplotlib styling library.
+    "ipython>=8.32.0",
+]
 mcp = [
     # Cap below 4 — 3.x is the latest tested major; 4.x has not been
     # vetted and may rename/remove the introspection APIs we use.

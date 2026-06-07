@@ -56,6 +56,20 @@ uv pip install git+https://github.com/dartworklabs/dartwork-mpl
 pip install git+https://github.com/dartworklabs/dartwork-mpl
 ```
 
+#### Optional extras
+
+The core install is kept lean. Add an extra only if you need it:
+
+| Extra | Enables | Pulls in |
+|---|---|---|
+| `[notebook]` | `dm.show()` inline SVG display in Jupyter | `ipython` |
+| `[mcp]` | the MCP server for AI assistants | `fastmcp`, `httpx` |
+| `[ui]` | the interactive style viewer | `fastapi`, `uvicorn`, … |
+
+```shell
+pip install "dartwork-mpl[notebook]"   # or [mcp], [ui]
+```
+
 ### Quick Start
 
 ```python
