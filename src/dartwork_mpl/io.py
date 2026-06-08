@@ -77,7 +77,7 @@ def save_formats(
     bbox_inches: str | None = None,
     validate: bool = True,
     *,
-    adopt_orphan_tick_font: bool = True,
+    adopt_orphan_tick_font: bool | None = None,
     **kwargs: Any,
 ) -> None:
     """Save a figure in multiple specified formats at once.
@@ -100,30 +100,40 @@ def save_formats(
     validate : bool, optional
         If True, performs visual validation before saving and prints
         ``[VISUAL]`` warnings to stdout on issues. Default is True.
-    adopt_orphan_tick_font : bool, optional
-        If ``True`` (default), tick labels (and offset text) on any axis
-        that has no axis label adopt that axis's label font before
-        saving, via :func:`~dartwork_mpl.layout.adopt_axis_label_font`.
-        This guarantees the saved output reflects the adoption even when
+    adopt_orphan_tick_font : bool | None, optional
+        If ``True``, tick labels (and offset text) on any axis that has
+        no axis label adopt that axis's label font before saving, via
+        :func:`~dartwork_mpl.layout.adopt_axis_label_font`. This guarantees
+        the saved output reflects the adoption even when
         :func:`~dartwork_mpl.layout.simple_layout` was not called (it
-        already applies the same step by default). Set to ``False`` to
-        leave tick fonts untouched.
+        already applies the same step by default). Default is ``None`` —
+        the value is read from
+        :data:`dartwork_mpl.config.adopt_orphan_tick_font` (itself
+        defaulting to ``True``), so set ``dm.config.adopt_orphan_tick_font
+        = False`` once to flip every call site at once. Pass ``True`` /
+        ``False`` explicitly to override per call.
     **kwargs
         Additional keyword arguments passed to ``savefig``.
 
     Notes
     -----
-    With ``adopt_orphan_tick_font=True`` (the default) this call
-    **mutates the figure**: it restyles the tick-label fonts of any
-    unlabeled axis, and the change persists after the call. This is the
-    one mutation ``save_formats`` performs (it otherwise only reads and
-    writes). It is idempotent and matches what ``simple_layout`` already
-    applies. It does **not** re-fit margins — call ``simple_layout`` for
-    layouts that must grow to fit enlarged orphan ticks. On figures using
+    When the adoption is on (whether via this keyword or the
+    :data:`dartwork_mpl.config` default), this call **mutates the
+    figure**: it restyles the tick-label fonts of any unlabeled axis,
+    and the change persists after the call. This is the one mutation
+    ``save_formats`` performs (it otherwise only reads and writes). It
+    is idempotent and matches what ``simple_layout`` already applies.
+    It does **not** re-fit margins — call ``simple_layout`` for layouts
+    that must grow to fit enlarged orphan ticks. On figures using
     matplotlib ``constrained_layout``, the font change can trigger a
     re-layout on the next draw (expected matplotlib behavior). Pass
     ``adopt_orphan_tick_font=False`` to keep the figure untouched.
     """
+    if adopt_orphan_tick_font is None:
+        from .config import config
+
+        adopt_orphan_tick_font = config.adopt_orphan_tick_font
+
     if adopt_orphan_tick_font:
         from .layout import adopt_axis_label_font
 
@@ -223,7 +233,7 @@ def save_and_show(
     size: int = 600,
     unit: str = "pt",
     *,
-    adopt_orphan_tick_font: bool = True,
+    adopt_orphan_tick_font: bool | None = None,
     **kwargs: Any,
 ) -> None:
     """Save a figure to disk, then display it in a Jupyter or web environment.
@@ -238,15 +248,22 @@ def save_and_show(
         Display width. Default is 600.
     unit : str, optional
         Unit for the size ('pt', 'px', etc.). Default is 'pt'.
-    adopt_orphan_tick_font : bool, optional
-        If ``True`` (default), apply
-        :func:`~dartwork_mpl.layout.adopt_axis_label_font` before saving
-        so unlabeled axes' tick labels take the axis-label font, matching
-        :func:`save_formats`. Mutates the figure (see that function's
-        Notes). Set to ``False`` to leave tick fonts untouched.
+    adopt_orphan_tick_font : bool | None, optional
+        If ``True``, apply :func:`~dartwork_mpl.layout.adopt_axis_label_font`
+        before saving so unlabeled axes' tick labels take the axis-label
+        font, matching :func:`save_formats`. Mutates the figure (see that
+        function's Notes). Default is ``None`` — the value is read from
+        :data:`dartwork_mpl.config.adopt_orphan_tick_font` (itself
+        defaulting to ``True``). Pass ``True`` / ``False`` explicitly to
+        override per call.
     **kwargs
         Additional keyword arguments passed to ``savefig``.
     """
+    if adopt_orphan_tick_font is None:
+        from .config import config
+
+        adopt_orphan_tick_font = config.adopt_orphan_tick_font
+
     if adopt_orphan_tick_font:
         from .layout import adopt_axis_label_font
 

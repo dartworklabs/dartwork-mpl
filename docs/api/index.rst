@@ -23,6 +23,7 @@ The essential modules you'll use in every project.
    Save & Export <io>
    Visual Validation <validate>
    Lint <lint>
+   Configuration <config>
 
 Extensions
 ----------

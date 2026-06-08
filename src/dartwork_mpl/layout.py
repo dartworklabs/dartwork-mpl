@@ -346,7 +346,7 @@ def simple_layout(
     mt: Length | str | float | None = None,
     mb: Length | str | float | None = None,
     use_all_axes: bool = True,
-    adopt_orphan_tick_font: bool = True,
+    adopt_orphan_tick_font: bool | None = None,
     verbose: bool = False,
 ) -> None:
     """Place axes content at the requested distance from each figure edge.
@@ -383,13 +383,16 @@ def simple_layout(
         If ``True`` (default), every axes in the figure contributes
         to the measurement. If ``False``, only axes belonging to
         ``gs`` are considered.
-    adopt_orphan_tick_font : bool, optional
-        If ``True`` (default), tick labels (and offset text) on any axis
-        that has no axis label adopt that axis's label font (size,
-        weight, family, style; not color), via
-        :func:`adopt_axis_label_font`. Applied each iteration *before*
-        measurement so the computed margins fit the restyled ticks.
-        Set to ``False`` to leave tick fonts untouched.
+    adopt_orphan_tick_font : bool | None, optional
+        If ``True``, tick labels (and offset text) on any axis that has
+        no axis label adopt that axis's label font (size, weight, family,
+        style; not color), via :func:`adopt_axis_label_font`. Applied
+        each iteration *before* measurement so the computed margins fit
+        the restyled ticks. Default is ``None`` — the value is read from
+        :data:`dartwork_mpl.config.adopt_orphan_tick_font` (itself
+        defaulting to ``True``), so set ``dm.config.adopt_orphan_tick_font
+        = False`` once to flip every call site at once. Pass ``True`` /
+        ``False`` explicitly to override per call.
     verbose : bool, optional
         If ``True``, prints per-iteration GridSpec edges and the
         change since the previous iteration.
@@ -415,6 +418,11 @@ def simple_layout(
     """
     if not fig.axes:
         return
+
+    if adopt_orphan_tick_font is None:
+        from .config import config
+
+        adopt_orphan_tick_font = config.adopt_orphan_tick_font
 
     actual_gs = _resolve_gridspec(fig, gs)
     if actual_gs is None:
