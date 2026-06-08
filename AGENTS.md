@@ -65,9 +65,8 @@ below) for the complete list. The most common ones AI agents trip on:
 
 1. **`figsize=(w, h)` literal** — wrap with `dm.figsize("<n>cm", "<aspect>")`.
 2. **`plt.tight_layout()`** — use `dm.simple_layout(fig)` instead.
-3. **`dm.subplots` / `dm.figure`** — REMOVED. Use
-   `plt.subplots(figsize=dm.figsize(...))` and call `dm.style.use(...)`
-   separately.
+3. **Raw `fontsize=` / `linewidth=` literals** — use `dm.fs(n)` / `dm.lw(n)` so
+   they track the active preset.
 
 ## MCP server
 
@@ -84,17 +83,6 @@ use most:
 When MCP is unavailable, the same anti-pattern catalog is reachable
 through `dm.list_prompts()` + `dm.get_prompt("02-anti-patterns")`
 inside Python.
-
-## Migrating from earlier dartwork-mpl
-
-The deprecated 0.3 names (`dm.SW`, `dm.FS_*`, `dm.cm2in`,
-`dm.agent_utils`, `dm.xplot`) and the 0.4-era figure constructors
-(`dm.subplots`, `dm.figure`) have all been removed. Each old access
-path now raises `AttributeError` / `ModuleNotFoundError` /
-`TypeError` with a message naming the new API. The canonical pattern
-is `plt.subplots(figsize=dm.figsize("<n>cm", "<aspect>"))` paired
-with a separate `dm.style.use(...)`. Full mapping table:
-[`docs/migration.md`](docs/migration.md).
 
 ## Where to read more
 

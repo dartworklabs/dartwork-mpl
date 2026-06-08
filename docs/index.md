@@ -171,7 +171,6 @@ api/index
 
 philosophy/index
 troubleshooting
-migration
 ```
 
 % color_system/index and fonts/index are reachable via design_system/index

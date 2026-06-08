@@ -192,19 +192,6 @@ local-clone variant are covered in
 
 <br/>
 
-## Migrating from earlier versions
-
-The 0.3 names (`dm.SW` / `MW` / `TW` / `DW`, `dm.FS_*`, `dm.WIDTHS`, `dm.cm2in`,
-`dm.agent_utils`, `dm.xplot`), the 0.4-era figure constructors (`dm.subplots`,
-`dm.figure`), and the 0.5 prompt-corpus installer (`dm.install_llm_txt` and
-friends) have all been **removed**. Every old access path raises `AttributeError`
-/ `ModuleNotFoundError` naming its replacement — the canonical pattern is
-`plt.subplots(figsize=dm.figsize("13cm", "standard"))` with a separate
-`dm.style.use(...)`. Full mapping: [`docs/migration.md`](docs/migration.md) ·
-[CHANGELOG](CHANGELOG.md).
-
-<br/>
-
 ## Project layout
 
 ```
