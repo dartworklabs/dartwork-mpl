@@ -51,6 +51,9 @@ from .colors import (
     rgb,
 )
 
+# Config (process-wide behaviour-toggle defaults)
+from .config import Config, config
+
 # Import asset-diagnostic visualization helpers.
 from .diagnostics import (
     classify_colormap,
@@ -147,6 +150,9 @@ from .validate_fixes import validate_with_fixes
 # related names together. RUF022 is silenced for that reason.
 
 __all__ = [  # noqa: RUF022
+    # Config
+    "Config",
+    "config",
     # Color module
     "Color",
     "color",

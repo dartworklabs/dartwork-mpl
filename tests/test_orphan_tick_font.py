@@ -302,3 +302,124 @@ class TestSaveAndShowIntegration:
             fig, str(tmp_path / "out.svg"), adopt_orphan_tick_font=False
         )
         assert _x_tick(ax).get_fontweight() == default_weight
+
+
+class TestConfigGlobalDefault:
+    """`dm.config.adopt_orphan_tick_font` flips the default on every
+    entry point that accepts the matching keyword. Explicit per-call
+    kwargs still win over the global default."""
+
+    def _build(self):
+        """Return (fig, ax) with one orphan x-axis and an enlarged label
+        font, mirroring TestSimpleLayoutIntegration."""
+        dm.style.use("scientific")
+        fig, ax = plt.subplots()
+        ax.plot(range(10), range(10))
+        ax.set_ylabel("y label")  # x is the orphan
+        return fig, ax
+
+    def test_config_off_skips_simple_layout_adoption(self) -> None:
+        fig, ax = self._build()
+        fig.canvas.draw()
+        default_weight = _x_tick(ax).get_fontweight()
+        try:
+            dm.config.adopt_orphan_tick_font = False
+            simple_layout(fig)
+        finally:
+            dm.config.adopt_orphan_tick_font = True
+        assert _x_tick(ax).get_fontweight() == default_weight
+        plt.close(fig)
+
+    def test_per_call_true_overrides_global_off(self) -> None:
+        fig, ax = self._build()
+        try:
+            dm.config.adopt_orphan_tick_font = False
+            simple_layout(fig, adopt_orphan_tick_font=True)
+        finally:
+            dm.config.adopt_orphan_tick_font = True
+        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
+        plt.close(fig)
+
+    def test_per_call_false_overrides_global_on(self) -> None:
+        fig, ax = self._build()
+        fig.canvas.draw()
+        default_weight = _x_tick(ax).get_fontweight()
+        # global default is True; pass False explicitly
+        simple_layout(fig, adopt_orphan_tick_font=False)
+        assert _x_tick(ax).get_fontweight() == default_weight
+        plt.close(fig)
+
+    def test_config_off_skips_save_formats_adoption(self, tmp_path) -> None:
+        fig, ax = self._build()
+        fig.canvas.draw()
+        default_weight = _x_tick(ax).get_fontweight()
+        try:
+            dm.config.adopt_orphan_tick_font = False
+            dm.save_formats(
+                fig, str(tmp_path / "out"), formats=("png",), validate=False
+            )
+        finally:
+            dm.config.adopt_orphan_tick_font = True
+        assert _x_tick(ax).get_fontweight() == default_weight
+        plt.close(fig)
+
+    def test_config_off_skips_save_and_show_adoption(
+        self, tmp_path, monkeypatch
+    ) -> None:
+        monkeypatch.setattr("dartwork_mpl.io.show", lambda *a, **k: None)
+        fig, ax = self._build()
+        fig.canvas.draw()
+        default_weight = _x_tick(ax).get_fontweight()
+        try:
+            dm.config.adopt_orphan_tick_font = False
+            dm.save_and_show(fig, str(tmp_path / "out.svg"))
+        finally:
+            dm.config.adopt_orphan_tick_font = True
+        assert _x_tick(ax).get_fontweight() == default_weight
+
+
+class TestConfigOverrideContextManager:
+    """`with dm.config.override(...)` scopes a temporary change and
+    always restores the prior state, including on exception."""
+
+    def test_override_restores_after_block(self) -> None:
+        assert dm.config.adopt_orphan_tick_font
+        with dm.config.override(adopt_orphan_tick_font=False):
+            assert not dm.config.adopt_orphan_tick_font
+        assert dm.config.adopt_orphan_tick_font
+
+    def test_override_restores_after_exception(self) -> None:
+        assert dm.config.adopt_orphan_tick_font
+        try:
+            with dm.config.override(adopt_orphan_tick_font=False):
+                raise RuntimeError("boom")
+        except RuntimeError:
+            pass
+        assert dm.config.adopt_orphan_tick_font
+
+    def test_override_unknown_field_raises(self) -> None:
+        import pytest
+
+        with pytest.raises(AttributeError, match="no attribute"):
+            with dm.config.override(nonexistent=True):
+                pass
+
+    def test_override_affects_simple_layout_inside_block(self) -> None:
+        dm.style.use("scientific")
+        fig, ax = plt.subplots()
+        ax.plot(range(10), range(10))
+        ax.set_ylabel("y label")
+        fig.canvas.draw()
+        default_weight = _x_tick(ax).get_fontweight()
+        with dm.config.override(adopt_orphan_tick_font=False):
+            simple_layout(fig)
+        assert _x_tick(ax).get_fontweight() == default_weight
+        plt.close(fig)
+
+
+def test_config_exported_at_package_root() -> None:
+    assert hasattr(dm, "config")
+    assert hasattr(dm, "Config")
+    assert "config" in dm.__all__
+    assert "Config" in dm.__all__
+    assert dm.config.adopt_orphan_tick_font  # ships as on

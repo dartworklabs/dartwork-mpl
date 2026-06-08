@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **`dm.config` — process-wide defaults for dartwork-mpl behaviour
+  toggles.** A singleton (`dataclass`-backed) whose attributes are
+  read by every public-API call site that exposes a matching keyword.
+  Today it carries one attribute, `adopt_orphan_tick_font` (default
+  `True`, matching prior behaviour). Set `dm.config.adopt_orphan_tick_font
+  = False` once near the top of your program to flip the default of the
+  matching keyword on `dm.simple_layout`, `dm.save_formats`, and
+  `dm.save_and_show` everywhere — no need to thread the keyword through
+  each call site. Per-call overrides still win (pass the keyword
+  explicitly). A `with dm.config.override(...)` context manager scopes a
+  change to a block and always restores prior state, including on
+  exception. Unknown field names raise `AttributeError` so a typo can't
+  silently shadow the singleton.
+
+### Changed
+- **Default of `adopt_orphan_tick_font` on `dm.simple_layout`,
+  `dm.save_formats`, `dm.save_and_show` is now `None` (sentinel)** —
+  when `None`, the value is read from `dm.config.adopt_orphan_tick_font`
+  (default `True`, same as before). Passing `True` / `False` explicitly
+  behaves exactly as before, so every existing call site is unaffected.
+
 ## [0.5.1] - 2026-06-08
 
 ### Fixed

@@ -163,6 +163,26 @@ dm.simple_layout(fig)
 dm.simple_layout(fig)
 ```
 
+### Tick labels look different after `simple_layout` / `save_formats`
+
+By default, `simple_layout`, `save_formats`, and `save_and_show` restyle the
+tick labels on any axis that has no axis label — they adopt that axis's
+label font for visual hierarchy. If you'd rather they leave tick fonts
+alone, flip the global default once:
+
+```python
+# Turn it off everywhere for the rest of this run
+dm.config.adopt_orphan_tick_font = False
+
+dm.simple_layout(fig)      # tick fonts untouched
+dm.save_formats(fig, "out") # also untouched
+```
+
+Per-call overrides (`adopt_orphan_tick_font=True` / `False`) still win,
+and `with dm.config.override(adopt_orphan_tick_font=False): ...` scopes
+the change to a block. See the [Configuration page](api/config.rst) for
+the full surface.
+
 ---
 
 ## Colors
