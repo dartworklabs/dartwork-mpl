@@ -23,7 +23,7 @@ right in ≈80 ms.
 ```{admonition} What the UI gives you
 :class: tip
 
-A split-pane web app at `http://127.0.0.1:8501`:
+A split-pane web app served on a local port (default `8501`):
 
 - **Left panel** — auto-generated controls (sliders, text inputs,
   toggles, dropdowns) derived from your `ParamModel` fields.
@@ -52,7 +52,7 @@ dartwork-mpl-ui init ./my-viewer --example simple
 # 2. run it
 cd my-viewer
 python viewer.py
-# → opens http://127.0.0.1:8501 in your browser
+# → opens the viewer in your default browser (local server, default port 8501)
 ```
 
 Adjust the sliders. When the figure looks right, click
@@ -92,7 +92,7 @@ def plot_scatter(params: ScatterParams):
 
 
 if __name__ == "__main__":
-    # Starts a local web server at http://127.0.0.1:8501
+    # Starts a local web server (default port 8501) and opens it
     run(plot_scatter)
 ```
 

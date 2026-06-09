@@ -322,7 +322,7 @@ your render function and exports the resulting Python script:
 pip install "dartwork-mpl[ui]"
 dartwork-mpl-ui init ./my-viewer --example simple
 
-# 2. run it — opens http://127.0.0.1:8501
+# 2. run it — opens the viewer in your default browser
 cd my-viewer && python viewer.py
 ```
 

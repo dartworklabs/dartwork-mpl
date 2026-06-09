@@ -883,3 +883,85 @@ body[data-theme="dark"] .dm-landing-tagline {
   box-shadow: none !important;
   transform: none !important;
 }
+
+
+/* ===========================================================================
+ * TIER 4 — compare-widget tab toggles + asset-content user-perspective edits
+ *
+ * The 7 inline compare widgets (.dmc-tabs / .dmc-tab) each ship the same
+ * pattern: white-pill background, colored dot indicator, drop shadow on
+ * active. They pull attention away from the actual figures the user is
+ * comparing. Replaced with a flat underline-tab pattern (Linear /
+ * Stripe / Vercel docs convention).
+ *
+ * Each widget's inline <style> block carries an ID prefix (#dm-cmp-l2-bar
+ * etc.) so a generic .dmc-tab rule loaded after the widget's own style
+ * wins as long as it uses !important. Loading order is enforced by
+ * conf.py's html_css_files (radix-design.css is the last entry).
+ * =========================================================================== */
+
+/* Tab strip — drop the pill background entirely. The two labels become
+ * a left-aligned row with a bottom hairline underline; active tab gets
+ * a 2px accent stripe right under it. */
+.dmc-tabs {
+  display: inline-flex !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border-bottom: 1px solid var(--dm-border-faint) !important;
+  margin: 0 0 0.7em !important;
+}
+
+.dmc-tab {
+  padding: 6px 14px !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--dm-text-muted) !important;
+  font-size: 0.85em !important;
+  font-weight: var(--rx-weight-medium) !important;
+  letter-spacing: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  margin-bottom: -1px !important;
+  transition: color 0.12s, border-color 0.12s !important;
+}
+
+.dmc-tab:hover {
+  color: var(--dm-text-strong) !important;
+}
+
+/* Drop the colored dot. The label itself carries the semantic. */
+.dmc-tab::before {
+  display: none !important;
+}
+
+/* Active tab — accent text + 2px accent underline. The CSS selectors
+ * inside each widget's inline style cover both "a checked" and
+ * "b checked" branches; we re-target both via the same .dmc-tab-* class
+ * so the styles below win in either state. */
+.dmc-tab-before,
+.dmc-tab-after {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* When a tab is "the active one" (its label is the immediate parent of
+ * a checked radio, signaled by the existing widget code switching the
+ * .dmc-tab-* styles), we override with the underline accent. The
+ * widget code already toggles a temporary fill — we mask it. */
+input.dmc-radio:checked + input.dmc-radio + .dmc-tabs .dmc-tab-after,
+input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
+  color: var(--dm-text-strong) !important;
+  border-bottom-color: var(--rx-accent-9) !important;
+}
+
+/* Stage frame — the inline styles wrap the comparison images in a
+ * rounded card with its own border + fill. Already subtle in light
+ * mode; keep but make sure the widget's accent (the tab underline)
+ * stays the focal point. */
+.dmc-stage {
+  border-color: var(--dm-border-faint) !important;
+  background: var(--dm-bg-page) !important;
+  border-radius: var(--rx-radius-3) !important;
+}
