@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — internal audit notes (issues #310 / #311 / #313)
+- **`docs/development/config-roadmap.md`** — `dm.config` expansion
+  roadmap: walked every `dm.__all__` bool / `Literal` kwarg, classified
+  into "Add to config now" (6 fields surfaced for issue #304), "Add
+  later" (5), "Per-call only" (8 patterns), and "Should be a preset
+  attribute" (0). Output of issue #311 (B19), input to issue #304
+  (M1). Excluded from the public docs build via
+  `conf.py:exclude_patterns`.
+- **`docs/development/naming-audit.md`** — naming convention audit of
+  all 78 `dm.__all__` entries grouped by prefix family (`list_`,
+  `plot_`, `validate_`, `format_axis_`, etc.), sibling-set
+  completeness checks, verb consistency for action helpers,
+  abbreviation collision review. Conclusion: no renames in 0.x → 1.0
+  transition; track `arrow_axis` rename alongside the eventual
+  `dm.add_grid` (#302). Output of issue #310 (C9).
+- **`docs/development/path-handling-audit.md`** — investigation of the
+  suspected sub-path-deployment issue with sphinx-gallery thumbnail
+  paths (issue #313, D23). Verified `.. image:: /...` directives are
+  *srcdir-absolute*, not URL-absolute; sphinx emits HTML-relative
+  URLs (`../_images/sphx_glr_*.png`) that resolve correctly under
+  every base URL. False alarm; no code change required. Documents
+  the watch-points that would re-open the question.
+
 ### Changed
 - **Preset `savefig.dpi` default lowered from `500` → `300`.** Print-grade
   300 DPI is a sensible export resolution for nearly every use case and

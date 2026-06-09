@@ -105,6 +105,9 @@ exclude_patterns = [
     # were emitting toctree / xref warnings on every build.
     "superpowers/**",
     "development/api_audit.md",
+    "development/config-roadmap.md",
+    "development/naming-audit.md",
+    "development/path-handling-audit.md",
 ]
 
 # -- Options for HTML output -------------------------------------------------
