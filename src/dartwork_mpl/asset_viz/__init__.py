@@ -20,8 +20,8 @@ from ..diagnostics import (
 )
 
 warnings.warn(
-    "dartwork_mpl.asset_viz is deprecated; import from "
-    "dartwork_mpl.diagnostics (or the top-level dartwork_mpl "
+    "dartwork_mpl.asset_viz is deprecated and will be removed in v0.6.0; "
+    "import from dartwork_mpl.diagnostics (or the top-level dartwork_mpl "
     "namespace) instead.",
     DeprecationWarning,
     stacklevel=2,

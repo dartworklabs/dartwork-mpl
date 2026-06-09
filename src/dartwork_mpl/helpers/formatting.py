@@ -13,8 +13,8 @@ import warnings
 from .labels import optimize_legend
 
 warnings.warn(
-    "dartwork_mpl.helpers.formatting is deprecated; "
-    "use dartwork_mpl.helpers.labels instead.",
+    "dartwork_mpl.helpers.formatting is deprecated and will be removed in "
+    "v0.6.0; use dartwork_mpl.helpers.labels instead.",
     DeprecationWarning,
     stacklevel=2,
 )
