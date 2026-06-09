@@ -46,6 +46,16 @@ class TestStylePath:
         with pytest.raises(ValueError):
             style_path("nonexistent_style_xyzzy")
 
+    def test_nonexistent_style_lists_available(self) -> None:
+        """The ValueError should enumerate available styles."""
+        with pytest.raises(ValueError, match="Available styles: \\["):
+            style_path("nonexistent_style_xyzzy")
+
+    def test_nonexistent_style_did_you_mean(self) -> None:
+        """A near-miss style name should get a ``Did you mean`` hint."""
+        with pytest.raises(ValueError, match="Did you mean"):
+            style_path("bse")  # typo of "base"
+
 
 class TestLoadStyleDict:
     """Tests for load_style_dict()."""
@@ -97,6 +107,17 @@ class TestStyleUse:
     def test_invalid_preset_raises(self) -> None:
         with pytest.raises(KeyError):
             dm.style.use("nonexistent_preset_xyzzy")
+
+    def test_invalid_preset_lists_available(self) -> None:
+        """The KeyError must enumerate available presets so the caller
+        doesn't need to call ``list_styles()`` separately."""
+        with pytest.raises(KeyError, match="Available presets: \\["):
+            dm.style.use("nonexistent_preset_xyzzy")
+
+    def test_invalid_preset_did_you_mean(self) -> None:
+        """A near-miss preset name should get a ``Did you mean`` hint."""
+        with pytest.raises(KeyError, match="Did you mean"):
+            dm.style.use("sceintific")  # typo of "scientific"
 
     def test_kwargs_underscore_to_dot(self) -> None:
         """``font_size=14`` should map to rcParam ``font.size``."""

@@ -61,8 +61,15 @@ def icon_font_path(name: str = "mdi") -> Path:
     ensure_loaded()
 
     if name not in _REGISTRY:
-        available = ", ".join(sorted(_REGISTRY))
-        raise ValueError(f"Unknown icon font '{name}'. Available: {available}")
+        from .style import _did_you_mean
+
+        available = sorted(_REGISTRY)
+        hint = _did_you_mean(name, available)
+        raise ValueError(
+            f"Icon font {name!r} not found. "
+            f"Available icon fonts: {available}."
+            + (f" Did you mean {hint!r}?" if hint else "")
+        )
 
     path = _ICON_DIR / _REGISTRY[name]
     if not path.exists():

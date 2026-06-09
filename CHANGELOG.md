@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **Actionable error messages for missing styles, presets, and icon
+  fonts.** Previously `style_path("scien")` raised
+  ``ValueError: Not found style: scien``, `dm.style.use("reort")`
+  raised ``KeyError: "Preset 'reort' not found"``, and `icon_font_path
+  ("fasolid")` raised ``ValueError: Unknown icon font 'fasolid'.
+  Available: fa-brands, fa-regular, fa-solid, mdi`` — none enumerated
+  the styles list and no site offered a "did you mean" hint. All
+  three now (a) list the available names and (b) when the input is
+  close to an existing entry, append ``Did you mean 'X'?``. Format
+  matches across the three sites for consistency. (audit-Q6)
 - **`dm.style.use` / `dm.style.stack` now preserve user-set rcParams**
   that the chosen preset does not itself touch. Prior to this, every
   preset switch ran `rcParams.update(rcParamsDefault)` which silently

@@ -47,8 +47,20 @@ class TestIconFontPath:
         assert p.exists()
 
     def test_unknown_name_raises(self) -> None:
-        with pytest.raises(ValueError, match="Unknown icon font"):
+        with pytest.raises(ValueError, match="not found"):
             icon_font_path("nonexistent_font")
+
+    def test_unknown_name_lists_available(self) -> None:
+        """The error must enumerate available icon fonts so the
+        caller doesn't need to guess or grep."""
+        with pytest.raises(ValueError, match="Available icon fonts: \\["):
+            icon_font_path("nonexistent_font")
+
+    def test_unknown_name_did_you_mean(self) -> None:
+        """A near-miss (typo of an existing font) should get a
+        ``Did you mean`` hint."""
+        with pytest.raises(ValueError, match="Did you mean"):
+            icon_font_path("fasolid")  # typo of "fa-solid"
 
     def test_default_is_mdi(self) -> None:
         p = icon_font_path()
