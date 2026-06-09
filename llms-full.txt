@@ -34,6 +34,13 @@ to read off the resolved values without leaving the docs.
 | Saving in 3 formats                 | `dm.save_formats(fig, "out", formats=("png", "svg", "pdf"))` |
 | Catching margin / overflow problems | `dm.validate_with_fixes(fig)`                   |
 
+:::{note}
+**Upgrading from a previous PyPI release?** The
+[Migration Guide](../migration.md) lists every renamed / removed name
+since v0.4.0 with a side-by-side `Before → After` table — most call
+sites are one-liners.
+:::
+
 Here's a typical matplotlib figure, then the same figure with dartwork-mpl:
 
 ::::{tab-set}
