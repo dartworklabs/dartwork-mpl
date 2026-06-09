@@ -451,78 +451,134 @@ def simple_layout(
     gs_id = id(actual_gs)
 
     for it in range(_MAX_ITER):
-        fig.canvas.draw()
-        # Restyle orphan tick labels before measuring so the margins fit
-        # the (possibly larger) adopted font. Re-applied each iteration to
-        # survive locator-driven tick regeneration mid-loop.
-        if adopt_orphan_tick_font:
-            _adopt_axis_label_font_core(fig)
-        renderer = get_renderer(fig)
-        fbox = fig.bbox
-        fw_px, fh_px = fbox.width, fbox.height
-
-        if use_all_axes:
-            target_axes: Iterable[Axes] = fig.axes
-        else:
-            target_axes = [
-                ax
-                for ax in fig.axes
-                if ax.get_gridspec() is not None
-                and id(ax.get_gridspec()) == gs_id
-            ]
-
-        oh_l: list[float] = []
-        oh_r: list[float] = []
-        oh_b: list[float] = []
-        oh_t: list[float] = []
-        for ax in target_axes:
-            ext = _axes_content_extent_px(ax, renderer, fig)
-            if ext is None:
-                continue
-            x0, x1, y0, y1 = ext
-            pos = ax.get_position()
-            oh_l.append(pos.x0 - x0 / fw_px)
-            oh_r.append(x1 / fw_px - pos.x1)
-            oh_b.append(pos.y0 - y0 / fh_px)
-            oh_t.append(y1 / fh_px - pos.y1)
-
-        if not oh_l:  # no measurable axes
+        result = _solve_layout_step(
+            fig,
+            ml_f=ml_f,
+            mr_f=mr_f,
+            mt_f=mt_f,
+            mb_f=mb_f,
+            use_all_axes=use_all_axes,
+            gs_id=gs_id,
+            last_edges=last,
+            adopt_orphan_tick_font=adopt_orphan_tick_font,
+        )
+        if result is None:
             return
-
-        new_l = ml_f + max(oh_l)
-        new_r = 1.0 - mr_f - max(oh_r)
-        new_b = mb_f + max(oh_b)
-        new_t = 1.0 - mt_f - max(oh_t)
-
-        # Sanity clamp: keep edges in [0, 1] and ensure at least
-        # ``_EDGE_EPSILON`` slack between left/right and bottom/top.
-        new_l = max(0.0, min(new_l, 1.0 - _EDGE_EPSILON))
-        new_r = min(1.0, max(new_r, new_l + _EDGE_EPSILON))
-        new_b = max(0.0, min(new_b, 1.0 - _EDGE_EPSILON))
-        new_t = min(1.0, max(new_t, new_b + _EDGE_EPSILON))
-
-        if last is not None:
-            delta_px = max(
-                abs(new_l - last[0]) * fw_px,
-                abs(new_r - last[1]) * fw_px,
-                abs(new_b - last[2]) * fh_px,
-                abs(new_t - last[3]) * fh_px,
-            )
-        else:
-            delta_px = float("inf")
+        new_edges, delta_px = result
 
         if verbose:
             print(
                 f"[simple_layout] iter {it + 1}: "
-                f"L={new_l:.3f} R={new_r:.3f} B={new_b:.3f} T={new_t:.3f}  "
+                f"L={new_edges[0]:.3f} R={new_edges[1]:.3f} "
+                f"B={new_edges[2]:.3f} T={new_edges[3]:.3f}  "
                 f"Δ={delta_px:.2f}px"
             )
 
-        actual_gs.update(left=new_l, right=new_r, bottom=new_b, top=new_t)
-        last = (new_l, new_r, new_b, new_t)
+        actual_gs.update(
+            left=new_edges[0],
+            right=new_edges[1],
+            bottom=new_edges[2],
+            top=new_edges[3],
+        )
+        last = new_edges
 
         if delta_px < _CONVERGE_TOL_PX:
             return
+
+
+def _solve_layout_step(
+    fig: Figure,
+    *,
+    ml_f: float,
+    mr_f: float,
+    mt_f: float,
+    mb_f: float,
+    use_all_axes: bool,
+    gs_id: int,
+    last_edges: tuple[float, float, float, float] | None,
+    adopt_orphan_tick_font: bool,
+) -> tuple[tuple[float, float, float, float], float] | None:
+    """Run one iteration of the ``simple_layout`` direct-calc solver.
+
+    Returns a ``(new_edges, delta_px)`` pair, or ``None`` if the figure
+    has no measurable axes (in which case the caller should bail out).
+
+    Each step:
+
+    1. Draws the canvas so artist bboxes are populated.
+    2. Optionally adopts the axis-label font on orphan-label axes
+       (so the measurement reflects the post-restyle ticks).
+    3. Measures the content extent of every target axes.
+    4. Computes new GridSpec edges that place the union extent at the
+       requested per-side margin from the figure edge.
+    5. Clamps the edges into ``[0, 1]`` with ``_EDGE_EPSILON`` slack.
+    6. Computes the per-edge px delta from ``last_edges`` (or ``inf``
+       on the first iteration so the caller doesn't converge early).
+
+    The caller writes the returned edges into the GridSpec and decides
+    whether to stop iterating based on ``delta_px``.
+    """
+    fig.canvas.draw()
+    # Restyle orphan tick labels before measuring so the margins fit
+    # the (possibly larger) adopted font. Re-applied each iteration to
+    # survive locator-driven tick regeneration mid-loop.
+    if adopt_orphan_tick_font:
+        _adopt_axis_label_font_core(fig)
+    renderer = get_renderer(fig)
+    fbox = fig.bbox
+    fw_px, fh_px = fbox.width, fbox.height
+
+    target_axes: Iterable[Axes]
+    if use_all_axes:
+        target_axes = fig.axes
+    else:
+        target_axes = [
+            ax
+            for ax in fig.axes
+            if ax.get_gridspec() is not None and id(ax.get_gridspec()) == gs_id
+        ]
+
+    oh_l: list[float] = []
+    oh_r: list[float] = []
+    oh_b: list[float] = []
+    oh_t: list[float] = []
+    for ax in target_axes:
+        ext = _axes_content_extent_px(ax, renderer, fig)
+        if ext is None:
+            continue
+        x0, x1, y0, y1 = ext
+        pos = ax.get_position()
+        oh_l.append(pos.x0 - x0 / fw_px)
+        oh_r.append(x1 / fw_px - pos.x1)
+        oh_b.append(pos.y0 - y0 / fh_px)
+        oh_t.append(y1 / fh_px - pos.y1)
+
+    if not oh_l:  # no measurable axes
+        return None
+
+    new_l = ml_f + max(oh_l)
+    new_r = 1.0 - mr_f - max(oh_r)
+    new_b = mb_f + max(oh_b)
+    new_t = 1.0 - mt_f - max(oh_t)
+
+    # Sanity clamp: keep edges in [0, 1] and ensure at least
+    # ``_EDGE_EPSILON`` slack between left/right and bottom/top.
+    new_l = max(0.0, min(new_l, 1.0 - _EDGE_EPSILON))
+    new_r = min(1.0, max(new_r, new_l + _EDGE_EPSILON))
+    new_b = max(0.0, min(new_b, 1.0 - _EDGE_EPSILON))
+    new_t = min(1.0, max(new_t, new_b + _EDGE_EPSILON))
+
+    if last_edges is not None:
+        delta_px = max(
+            abs(new_l - last_edges[0]) * fw_px,
+            abs(new_r - last_edges[1]) * fw_px,
+            abs(new_b - last_edges[2]) * fh_px,
+            abs(new_t - last_edges[3]) * fh_px,
+        )
+    else:
+        delta_px = float("inf")
+
+    return (new_l, new_r, new_b, new_t), delta_px
 
 
 def auto_layout(
