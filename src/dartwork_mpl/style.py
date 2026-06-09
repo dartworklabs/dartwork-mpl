@@ -5,6 +5,7 @@ matplotlib styles from the package's built-in style library.
 """
 
 import contextlib
+import difflib
 import json
 import threading
 from collections.abc import Iterator
@@ -20,6 +21,29 @@ __all__ = ["Style", "list_styles", "load_style_dict", "style", "style_path"]
 # calls from multiple threads can interleave rcParams updates and
 # corrupt the active style.
 _style_lock: threading.Lock = threading.Lock()
+
+
+def _did_you_mean(value: str, candidates: list[str]) -> str | None:
+    """Return the single closest match to ``value`` from ``candidates``
+    or ``None`` if no entry is close enough.
+
+    Wraps :func:`difflib.get_close_matches` with the cutoff dartwork-mpl
+    uses everywhere a "did you mean" hint is shown (0.5 — close enough
+    to catch typos like ``"sceintific"`` / ``"reort"`` but far enough
+    to avoid suggesting unrelated keys for completely wrong input).
+    """
+    matches = difflib.get_close_matches(
+        value.strip().lower(), [c.lower() for c in candidates], n=1, cutoff=0.5
+    )
+    if not matches:
+        return None
+    # Return the original-case spelling so the user sees the canonical
+    # form rather than the lowercased lookup key.
+    lowered = matches[0]
+    for c in candidates:
+        if c.lower() == lowered:
+            return c
+    return lowered
 
 
 def _rcparam_differs(value: object, default: object) -> bool:
@@ -100,7 +124,13 @@ def style_path(name: str) -> Path:
     """
     path: Path = Path(__file__).parent / f"asset/mplstyle/{name}.mplstyle"
     if not path.exists():
-        raise ValueError(f"Not found style: {name}")
+        available = list_styles()
+        hint = _did_you_mean(name, available)
+        raise ValueError(
+            f"Style {name!r} not found. "
+            f"Available styles: {available}."
+            + (f" Did you mean {hint!r}?" if hint else "")
+        )
 
     return path
 
@@ -204,6 +234,22 @@ class Style:
         with open(self.presets_path()) as f:
             self.presets = json.load(f)
 
+    def _unknown_preset_message(self, name: str) -> str:
+        """Build the actionable message used by every "preset not found"
+        error site in this class.
+
+        Lists every preset the caller could have used and, when the input
+        is a near-miss for one of them, appends a single ``did you mean``
+        hint. Matches the format used by :func:`style_path` and
+        :func:`dartwork_mpl.icon.icon_font_path` so the three "missing
+        style/preset/icon" errors all read the same way.
+        """
+        available = sorted(self.presets)
+        hint = _did_you_mean(name, available)
+        return f"Preset {name!r} not found. Available presets: {available}." + (
+            f" Did you mean {hint!r}?" if hint else ""
+        )
+
     @staticmethod
     def stack(style_names: list[str]) -> None:
         """
@@ -302,13 +348,13 @@ class Style:
             style_list = []
             for name in preset_name:
                 if name not in self.presets:
-                    raise KeyError(f"Preset '{name}' not found")
+                    raise KeyError(self._unknown_preset_message(name))
                 style_list.extend(self.presets[name])
             self.stack(style_list)
         else:
             # Single preset
             if preset_name not in self.presets:
-                raise KeyError(f"Preset '{preset_name}' not found")
+                raise KeyError(self._unknown_preset_message(preset_name))
             self.stack(self.presets[preset_name])
 
         if kwargs:
@@ -342,7 +388,7 @@ class Style:
         ...     plt.plot([1, 2, 3])
         """
         if preset_name not in self.presets:
-            raise KeyError(f"Preset '{preset_name}' not found")
+            raise KeyError(self._unknown_preset_message(preset_name))
 
         style_list: list[Path | dict[str, float | str]] = [
             style_path(style_name) for style_name in self.presets[preset_name]
