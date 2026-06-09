@@ -97,11 +97,11 @@ _DPI_STEP: float = 50.0
 def dpi(n: int | float = 0) -> float:
     """Return the base save DPI plus ``n`` ladder steps.
 
-    The base value is whatever ``rcParams['savefig.dpi']`` resolves to
-    (matplotlib's preset-controlled output resolution — ``100`` for
-    ``scientific``/``report``, ``300`` for ``poster``, etc.). Each step
-    of ``n`` adds 50 DPI, matching the natural gap between the screen
-    and print rungs of matplotlib's defaults.
+    The base value is whatever ``rcParams['savefig.dpi']`` resolves to.
+    The dartwork-mpl presets ship a ``300`` default — print-grade and a
+    sensible export resolution for nearly every use case. Each step of
+    ``n`` adds 50 DPI, matching the natural gap between the screen and
+    print rungs of matplotlib's defaults.
 
     Use it the same way you use :func:`fs` / :func:`fw` / :func:`lw`:
     pass an integer offset that tracks the active preset instead of
@@ -125,13 +125,13 @@ def dpi(n: int | float = 0) -> float:
     Examples
     --------
     >>> import dartwork_mpl as dm
-    >>> dm.style.use("scientific")     # savefig.dpi == 100
-    >>> dm.dpi()                        # one rung at the base
-    100.0
+    >>> dm.style.use("scientific")     # savefig.dpi == 300
+    >>> dm.dpi()                        # the preset base, verbatim
+    300.0
     >>> dm.dpi(1)                       # one rung up
-    150.0
+    350.0
     >>> dm.dpi(-1)                      # one rung down
-    50.0
+    250.0
 
     Pair with :func:`dartwork_mpl.save_formats`:
 

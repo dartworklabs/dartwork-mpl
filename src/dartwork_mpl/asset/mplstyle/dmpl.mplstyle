@@ -683,7 +683,7 @@ image.aspect:          equal        # {equal, auto} or a number
 ## The default savefig parameters can be different from the display parameters
 ## e.g., you may want a higher resolution, or to make the figure
 ## background white
-savefig.dpi:       500      # figure dots per inch or 'figure'
+savefig.dpi:       300      # figure dots per inch or 'figure'
 savefig.facecolor: white        # figure face color when saving
 #savefig.edgecolor: auto        # figure edge color when saving
 #savefig.format:    png         # {png, ps, pdf, svg}

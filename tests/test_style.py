@@ -252,7 +252,7 @@ class TestUserRcParamsPreservation:
         a style.use because no shipped preset pins it.
 
         We use ``pdf.compression`` instead of ``savefig.dpi`` because
-        the shipped ``scientific`` preset pins ``savefig.dpi=500``,
+        the shipped ``scientific`` preset pins ``savefig.dpi=300``,
         which is the exact-right behaviour for "preset touched it,
         preset wins" — but makes that key a poor regression sentinel
         for the "preserve user value" path.

@@ -98,6 +98,7 @@ Colors and Colormaps <colors>
 Layout and Typography <layout>
 Recipes <recipes>
 Save and Validation <save_export>
+Global Defaults (dm.config) <config>
 Extended Plots & Diagnostics <extras>
 Interactive UI <interactive>
 Tutorials <tutorials>

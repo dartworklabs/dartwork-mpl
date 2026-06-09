@@ -100,7 +100,7 @@ figure.figsize:     3.5, 3.0  # figure size in inches
 figure.dpi:         300       # figure dots per inch
 figure.facecolor:   white     # figure face color
 
-savefig.dpi:       500      # figure dots per inch or 'figure'
+savefig.dpi:       300      # figure dots per inch or 'figure'
 savefig.facecolor: white        # figure face color when saving
 savefig.bbox:      standard    # {tight, standard}
 ps.fonttype:       42       # Output Type 3 (Type3) or Type 42 (TrueType)
