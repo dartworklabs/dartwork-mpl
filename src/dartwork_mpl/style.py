@@ -22,6 +22,63 @@ __all__ = ["Style", "list_styles", "load_style_dict", "style", "style_path"]
 _style_lock: threading.Lock = threading.Lock()
 
 
+def _rcparam_differs(value: object, default: object) -> bool:
+    """Return ``True`` when ``value != default``, treating mutable
+    matplotlib rcParam types (Cyclers, lists, Paths, …) as equal when
+    their ``repr`` matches.
+
+    Matplotlib stores a handful of rcParams as mutable / wrapped
+    objects (``axes.prop_cycle`` is a ``Cycler``; ``image.lut`` is an
+    int — fine; ``axes.formatter.use_locale`` is a bool — fine; the
+    bullets are the cycler and a couple of unhashable lists). Plain
+    ``!=`` on those raises ``TypeError`` rather than returning a bool,
+    so we fall through to a ``repr`` comparison for the awkward cases
+    only.
+    """
+    try:
+        result: bool = value != default
+        return result
+    except (TypeError, ValueError):
+        return repr(value) != repr(default)
+
+
+def _snapshot_user_rcparams() -> dict[str, object]:
+    """Capture every rcParam whose value differs from matplotlib's
+    compiled-in default. Used by :meth:`Style.stack` to preserve
+    caller configuration across the ``rcParams.update(rcParamsDefault)``
+    reset that style switching performs.
+    """
+    defaults = plt.rcParamsDefault  # type: ignore[attr-defined]
+    overrides: dict[str, object] = {}
+    for key in list(plt.rcParams):
+        if key not in defaults:
+            continue
+        current = plt.rcParams[key]
+        if _rcparam_differs(current, defaults[key]):
+            overrides[key] = current
+    return overrides
+
+
+def _restore_untouched_user_rcparams(user_overrides: dict[str, object]) -> None:
+    """Restore user rcParams that the freshly-applied preset did not
+    set itself.
+
+    Run *after* ``plt.style.use(...)``. For each ``(key, user_value)``
+    in ``user_overrides``, compare the current rcParam against the
+    default — if equal the preset is silent on that key and the user
+    value is reinstated; if not, the preset overrode it intentionally
+    and we leave the preset's choice alone.
+    """
+    defaults = plt.rcParamsDefault  # type: ignore[attr-defined]
+    for key, user_value in user_overrides.items():
+        if key not in plt.rcParams:
+            continue
+        post_style = plt.rcParams[key]
+        preset_touched = _rcparam_differs(post_style, defaults[key])
+        if not preset_touched:
+            plt.rcParams[key] = user_value
+
+
 def style_path(name: str) -> Path:
     """
     Get the path to a style file.
@@ -175,18 +232,27 @@ class Style:
 
         # Serialize global rcParams + style application across threads.
         with _style_lock:
-            # Preserve svg.hashsalt across the default-rcParams reset. It pins
-            # SVG element ids for byte-identical output and is orthogonal to the
-            # visual preset; matplotlib's default (None) restores
-            # nondeterministic uuid4 ids, so a caller/CI that set it for
-            # reproducible builds expects it to survive a preset switch.
-            _hashsalt = plt.rcParams["svg.hashsalt"]
+            # Snapshot every rcParam the caller has set away from
+            # matplotlib's compiled-in default *before* the
+            # default-restoring reset below. We don't know which of
+            # those the user actually cares about (svg.hashsalt for
+            # reproducible builds, savefig.dpi for export quality,
+            # axes.unicode_minus for CJK, …) so we preserve them all
+            # and let the preset win wherever it overlaps. Without this
+            # snapshot every dm.style.use() silently dropped caller
+            # configuration.
+            user_overrides = _snapshot_user_rcparams()
             plt.rcParams.update(plt.rcParamsDefault)  # type: ignore[attr-defined]
             plt.style.use(
                 [style_path(style_name) for style_name in style_names]
             )
-            if _hashsalt is not None:
-                plt.rcParams["svg.hashsalt"] = _hashsalt
+            # Restore each user override that the preset itself did
+            # not touch. "Did the preset touch this key?" is decided
+            # by comparing the post-style rcParam against the default
+            # — equal means the preset is silent on this key and the
+            # user value should survive; not-equal means the preset
+            # set it intentionally and wins.
+            _restore_untouched_user_rcparams(user_overrides)
 
     def use(self, preset_name: str | list[str], **kwargs: float | str) -> None:
         """

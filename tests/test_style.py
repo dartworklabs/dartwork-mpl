@@ -216,3 +216,86 @@ class TestSvgHashsaltPreservation:
         mpl.rcParams["svg.hashsalt"] = None
         dm.style.use("scientific")
         assert mpl.rcParams["svg.hashsalt"] is None
+
+
+class TestUserRcParamsPreservation:
+    """style.use must preserve every rcParam the caller set away from
+    matplotlib's compiled-in default — not just svg.hashsalt — except
+    where the preset itself takes a stance on that key. This generalises
+    the hashsalt guarantee to the rest of rcParams so reproducible-build
+    and export-quality settings survive preset switches.
+    """
+
+    def test_preserves_user_pdf_compression(self) -> None:
+        """A caller-set pdf.compression (export choice) must survive
+        a style.use because no shipped preset pins it.
+
+        We use ``pdf.compression`` instead of ``savefig.dpi`` because
+        the shipped ``scientific`` preset pins ``savefig.dpi=500``,
+        which is the exact-right behaviour for "preset touched it,
+        preset wins" — but makes that key a poor regression sentinel
+        for the "preserve user value" path.
+        """
+        default_compression = mpl.rcParamsDefault["pdf.compression"]
+        new_value = 0 if default_compression != 0 else 9
+        mpl.rcParams["pdf.compression"] = new_value
+        try:
+            dm.style.use("scientific")
+            assert mpl.rcParams["pdf.compression"] == new_value, (
+                "User-set pdf.compression must survive a style.use when "
+                "the preset does not pin its own value"
+            )
+        finally:
+            mpl.rcParams["pdf.compression"] = default_compression
+
+    def test_preset_overrides_user_value(self) -> None:
+        """Where the preset *does* take a stance, the preset wins —
+        the user override is not stickier than the explicit preset
+        choice. font.size is the canonical case: every preset pins
+        it, so a user value here must yield to the preset."""
+        # Pick something a preset definitely sets.
+        mpl.rcParams["font.size"] = 99.0  # absurd, surely overridden
+        try:
+            dm.style.use("scientific")
+            assert mpl.rcParams["font.size"] != 99.0, (
+                "Preset must win over user-set font.size (scientific "
+                "pins font.size)"
+            )
+        finally:
+            # Best effort: matplotlib's autouse fixture resets after.
+            pass
+
+    def test_preserves_multiple_unrelated_overrides(self) -> None:
+        """A user setting two different rcParams the preset is silent
+        on — both should survive."""
+        default_axes_unicode = mpl.rcParamsDefault["axes.unicode_minus"]
+        default_pdf_compression = mpl.rcParamsDefault["pdf.compression"]
+        # Both pretty surely not preset-touched by ``scientific``.
+        mpl.rcParams["axes.unicode_minus"] = not default_axes_unicode
+        # pdf.compression default is usually 6; pick another valid
+        # integer level so we can tell.
+        new_pdf = 0 if default_pdf_compression != 0 else 9
+        mpl.rcParams["pdf.compression"] = new_pdf
+        try:
+            dm.style.use("scientific")
+            assert mpl.rcParams["axes.unicode_minus"] != default_axes_unicode
+            assert mpl.rcParams["pdf.compression"] == new_pdf
+        finally:
+            mpl.rcParams["axes.unicode_minus"] = default_axes_unicode
+            mpl.rcParams["pdf.compression"] = default_pdf_compression
+
+    def test_user_value_resets_across_preset_changes(self) -> None:
+        """Surviving across one style.use is necessary; surviving
+        across a chain of style.use calls is what users actually need
+        for reproducible builds.
+        """
+        default_compression = mpl.rcParamsDefault["pdf.compression"]
+        new_value = 0 if default_compression != 0 else 9
+        mpl.rcParams["pdf.compression"] = new_value
+        try:
+            dm.style.use("scientific")
+            dm.style.use("report")
+            dm.style.use("scientific")
+            assert mpl.rcParams["pdf.compression"] == new_value
+        finally:
+            mpl.rcParams["pdf.compression"] = default_compression
