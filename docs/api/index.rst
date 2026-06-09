@@ -44,3 +44,11 @@ Additional tools for specialized use cases.
    Diagnostics (module) <diagnostics>
    Prompt Utilities <prompt>
    Figure Constants (deprecated) <constant>
+
+Upgrading
+---------
+
+Already using a previous PyPI release? The
+:doc:`Migration Guide </migration>` tracks every renamed / removed
+name since v0.4.0 with a side-by-side ``Before → After`` table —
+each entry's replacement is a one-line edit.
