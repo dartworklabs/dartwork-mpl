@@ -109,7 +109,7 @@ from .style import Style, list_styles, load_style_dict, style, style_path
 from .templates import plot_diverging_bar
 
 # Unit helpers (0.4+: free-form width input)
-from .units import Length, cm, figsize, inch, length, mm, pt
+from .units import Length, cm, figsize, inch, length, list_aspect_tokens, mm, pt
 
 # Color utilities
 from .util import make_offset, mix_colors, pseudo_alpha, set_decimal
@@ -200,6 +200,7 @@ __all__ = [  # noqa: RUF022
     "col2",
     "Length",
     "figsize",
+    "list_aspect_tokens",
     # Units (legacy helpers, kept for compatibility)
     "make_offset",
     # Formatting
