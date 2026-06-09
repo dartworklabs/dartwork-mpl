@@ -1,8 +1,9 @@
-# Colors
+# Palettes
 
-Wide, single-column sheets for every named palette in dartwork-mpl. Each preview
-below is full-width so the swatch labels stay readable on both desktop and
-mobile.
+Every named palette in dartwork-mpl, rendered as full-width sheets.
+The `dc.*` ("dartwork color") family is the recommended starting point
+for publication figures; six third-party design systems are bundled
+for cross-team consistency.
 
 ## How to read the labels
 

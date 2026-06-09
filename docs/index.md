@@ -113,7 +113,7 @@ long Korean labels included. No `bbox_inches="tight"` guessing.
 :::
 
 :::{grid-item-card} **900+ named colors**
-:link: color_system/index
+:link: color_system/colors
 :link-type: doc
 Open Color, Tailwind, Material, Ant Design, Chakra, and Primer
 shipped as plain color strings — `color="dc.ocean2"` works anywhere
@@ -173,11 +173,12 @@ philosophy/index
 troubleshooting
 ```
 
-% color_system/index and fonts/index are reachable via design_system/index
-% (the merged Design System landing). Including them at the root toctree
-% appends them under the previous caption in Shibuya's sidebar, which
-% looks like a duplicate entry. Make them orphans of the root toctree —
-% Sphinx is still happy because design_system/index links to them.
+% color_system/colors|colormaps|space and fonts/index are reachable via
+% design_system/index (4-sibling Design System landing). Including them at
+% the root toctree appends them under the previous caption in Shibuya's
+% sidebar, which looks like a duplicate entry. Make them orphans of the
+% root toctree — Sphinx is still happy because design_system/index links
+% to them via its own hidden toctree.
 
 % integrations/index is a thin "this page moved" redirect to /ai/. It is
 % no longer part of the visible navigation; the deep pages
