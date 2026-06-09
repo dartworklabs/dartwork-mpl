@@ -250,9 +250,17 @@ body {
   color: var(--dm-text-strong);
 }
 
+/* Tier 1 design diet — headings and strong drop one weight step.
+ *   h1/h2: bold (700) -> semibold (600)   [Vercel/Stripe/Linear pattern]
+ *   h3/h4: semibold (600) -> medium (500) [Radix Themes canonical]
+ *   <strong>: bold (700) -> semibold (600)
+ *
+ * Net effect: page no longer accumulates near-black bold across
+ * heading + strong + body-default. Hierarchy stays intact because
+ * size deltas (35 / 24 / 20 / 18) carry the structure on their own. */
 .yue h1 {
   font-size: var(--rx-fs-8);
-  font-weight: var(--rx-weight-bold);
+  font-weight: var(--rx-weight-semibold);
   line-height: var(--rx-lh-8);
   letter-spacing: var(--rx-ls-8);
   margin-top: 0;
@@ -261,7 +269,7 @@ body {
 
 .yue h2 {
   font-size: var(--rx-fs-6);
-  font-weight: var(--rx-weight-bold);
+  font-weight: var(--rx-weight-semibold);
   line-height: var(--rx-lh-6);
   letter-spacing: var(--rx-ls-6);
   margin-top: var(--rx-space-8);
@@ -270,7 +278,7 @@ body {
 
 .yue h3 {
   font-size: var(--rx-fs-5);
-  font-weight: var(--rx-weight-semibold);
+  font-weight: var(--rx-weight-medium);
   line-height: var(--rx-lh-5);
   letter-spacing: var(--rx-ls-5);
   margin-top: var(--rx-space-6);
@@ -279,7 +287,7 @@ body {
 
 .yue h4 {
   font-size: var(--rx-fs-4);
-  font-weight: var(--rx-weight-semibold);
+  font-weight: var(--rx-weight-medium);
   line-height: var(--rx-lh-4);
   letter-spacing: var(--rx-ls-4);
   margin-top: var(--rx-space-5);
@@ -307,7 +315,7 @@ body {
  * matching specificity to push to 700. */
 .yue strong,
 .yue b {
-  font-weight: var(--rx-weight-bold);
+  font-weight: var(--rx-weight-semibold);
   color: var(--dm-text-strong);
 }
 
@@ -470,14 +478,18 @@ body {
  * 8. Admonitions / callouts — flatten the colored stripe, use a softer ring
  * --------------------------------------------------------------------------- */
 
+/* Tier 1 — admonitions go from filled card to a quiet left-stripe.
+ * Removes the colored fill that made every note/tip/warning land like
+ * a full-bleed card in the page. The 3px accent stripe + transparent
+ * background keeps the semantic cue without competing with prose. */
 .yue .admonition,
 .yue div.admonition {
-  background-color: var(--dm-bg-subtle);
-  border: 1px solid var(--dm-border);
-  border-left-width: 1px;
-  border-radius: var(--rx-radius-3);
+  background-color: transparent;
+  border: none;
+  border-left: 3px solid var(--dm-border-strong);
+  border-radius: 0;
   box-shadow: none;
-  padding: var(--rx-space-4);
+  padding: var(--rx-space-1) 0 var(--rx-space-1) var(--rx-space-4);
   margin: var(--rx-space-5) 0;
 }
 
@@ -492,10 +504,11 @@ body {
   padding: 0;
 }
 
+/* Tier 1 — stripe color carries the semantic, fill stays transparent. */
 .yue .admonition.note,
 .yue .admonition.tip {
-  background-color: var(--rx-accent-2);
-  border-color: var(--rx-accent-6);
+  background-color: transparent;
+  border-left-color: var(--rx-accent-9);
 }
 .yue .admonition.note > .admonition-title,
 .yue .admonition.tip > .admonition-title {
@@ -505,8 +518,8 @@ body {
 .yue .admonition.warning,
 .yue .admonition.caution,
 .yue .admonition.important {
-  background-color: #fef6e4;       /* soft amber tint */
-  border-color: #f4d35e;
+  background-color: transparent;
+  border-left-color: #d4a017;       /* soft amber stripe only, no fill */
 }
 .yue .admonition.warning > .admonition-title,
 .yue .admonition.caution > .admonition-title,
@@ -535,10 +548,12 @@ body {
   vertical-align: top;
 }
 
+/* Tier 1 — no fill on header row; rely on weight + thicker bottom border. */
 .yue table th {
-  font-weight: var(--rx-weight-semibold);
+  font-weight: var(--rx-weight-medium);
   color: var(--dm-text-strong);
-  background-color: var(--dm-bg-subtle);
+  background-color: transparent;
+  border-bottom: 2px solid var(--dm-border);
 }
 
 .yue table tr + tr td {
@@ -547,6 +562,32 @@ body {
 
 .yue table tr:hover td {
   background-color: var(--dm-bg-hover);
+}
+
+/* ---------------------------------------------------------------------------
+ * 9b. sphinx-design cards — drop the fill, keep the structure.
+ *
+ * Tier 1 design diet: the landing "What's in the box" grid was a row
+ * of solid-filled cards. Replaced with transparent + faint border so
+ * the cards recede and the prose inside them does the work.
+ * --------------------------------------------------------------------------- */
+
+.yue .sd-card,
+.yue div.sd-card {
+  background-color: transparent;
+  border: 1px solid var(--dm-border-faint);
+  border-radius: var(--rx-radius-3);
+  box-shadow: none;
+}
+
+.yue .sd-card-body {
+  background-color: transparent;
+}
+
+.yue .sd-card-header,
+.yue .sd-card-footer {
+  background-color: transparent;
+  border-color: var(--dm-border-faint);
 }
 
 /* ---------------------------------------------------------------------------
