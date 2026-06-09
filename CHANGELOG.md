@@ -21,6 +21,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   change to a block and always restores prior state, including on
   exception. Unknown field names raise `AttributeError` so a typo can't
   silently shadow the singleton.
+- **`save_and_show(close_figure=True)` opt-out keyword.** The function
+  unconditionally called `plt.close(fig)` before — surprising notebook
+  users who wanted to keep editing the figure. Pass `close_figure=False`
+  to keep the figure registered in `plt.get_fignums()`. Default
+  unchanged. (audit-Q1)
+- **`save_formats(validate_quiet=False)` opt-out keyword.** When
+  `validate=True`, the visual check still runs but `[VISUAL]` stdout
+  output is suppressed. Threads through to `validate_figure(quiet=...)`.
+  Default unchanged. (audit-Q2)
+- **README "Common pitfalls" section** mirrors the anti-pattern top 3
+  from CLAUDE.md / quickstart (raw `figsize=(w, h)` tuple,
+  `plt.tight_layout()`, raw `fontsize=` / `linewidth=` literals).
+  (audit-Q5)
+- **"Next →" navigation on `styles.md` and `colors.md`** matching the
+  existing pattern on `layout.md` and `save_export.md`. Threads the
+  prose reading sequence quickstart → styles → colors → layout →
+  save_export → extras. (audit-Q8)
 
 ### Changed
 - **Default of `adopt_orphan_tick_font` on `dm.simple_layout`,
@@ -28,6 +45,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   when `None`, the value is read from `dm.config.adopt_orphan_tick_font`
   (default `True`, same as before). Passing `True` / `False` explicitly
   behaves exactly as before, so every existing call site is unaffected.
+- **`dm.auto_layout`, `dartwork_mpl.asset_viz`, and
+  `dartwork_mpl.helpers.formatting`** name **v0.6.0** as the removal
+  target in their `DeprecationWarning` messages instead of "a future
+  release". No code is removed in this release; the alias layer still
+  works. (audit-Q7)
+
+### Refactor
+- **`_helpers.get_renderer(fig)`** centralises five repeated
+  `fig.canvas.get_renderer()  # type: ignore[attr-defined]` sites across
+  `annotation.py`, `layout.py` (×3), and `validate.py`. Future
+  matplotlib stub / mypy changes touch one place instead of five.
+  Behaviour unchanged. (audit-Q3)
+
+### Fixed
+- **`validate_fixes.py` LEGEND_OVERFLOW branch** removed a dead
+  `warning.detail.get("ratio", 0)` lookup that discarded the result.
+  Behaviour unchanged. (audit-Q4)
 
 ## [0.5.1] - 2026-06-08
 
