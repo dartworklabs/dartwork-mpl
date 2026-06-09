@@ -22,6 +22,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from ._helpers import get_renderer
+
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
@@ -827,7 +829,7 @@ def validate_figure(
     """
     # Render once so all bounding boxes are computed.
     fig.canvas.draw()
-    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+    renderer = get_renderer(fig)
 
     all_checks: dict[str, Any] = {
         "OVERFLOW": lambda: _check_overflow(fig, renderer),

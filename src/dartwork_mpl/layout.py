@@ -29,6 +29,7 @@ from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec, SubplotSpec
 from matplotlib.transforms import Bbox
 
+from ._helpers import get_renderer
 from .units import Length
 
 if TYPE_CHECKING:
@@ -456,7 +457,7 @@ def simple_layout(
         # survive locator-driven tick regeneration mid-loop.
         if adopt_orphan_tick_font:
             _adopt_axis_label_font_core(fig)
-        renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+        renderer = get_renderer(fig)
         fbox = fig.bbox
         fw_px, fh_px = fbox.width, fbox.height
 
@@ -580,7 +581,7 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
     not called by :func:`simple_layout` itself.
     """
     fig.canvas.draw()
-    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+    renderer = get_renderer(fig)
 
     canvas_w, canvas_h = fig.canvas.get_width_height()
     bx0, by0 = 0.0, 0.0
@@ -688,7 +689,7 @@ def tight_crop(
         return float(w), float(h)
 
     fig.canvas.draw()
-    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+    renderer = get_renderer(fig)
 
     bboxes_disp: list[Bbox] = []
     for ax in fig.axes:
