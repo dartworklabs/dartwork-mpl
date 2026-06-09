@@ -6,7 +6,7 @@ subtract fixed offsets from the current matplotlib style defaults.
 
 from __future__ import annotations
 
-__all__ = ["fs", "fw", "lw"]
+__all__ = ["dpi", "fs", "fw", "lw"]
 
 import matplotlib.pyplot as plt
 
@@ -86,3 +86,66 @@ def lw(n: int | float) -> float:
         Scaled line width.
     """
     return float(plt.rcParams["lines.linewidth"]) + float(n)
+
+
+# Default DPI ladder step. The 50-DPI step matches the gap between
+# matplotlib's screen (~100) and print (~300) defaults closely enough
+# to feel natural while still distinguishing the rungs.
+_DPI_STEP: float = 50.0
+
+
+def dpi(n: int | float = 0) -> float:
+    """Return the base save DPI plus ``n`` ladder steps.
+
+    The base value is whatever ``rcParams['savefig.dpi']`` resolves to
+    (matplotlib's preset-controlled output resolution — ``100`` for
+    ``scientific``/``report``, ``300`` for ``poster``, etc.). Each step
+    of ``n`` adds 50 DPI, matching the natural gap between the screen
+    and print rungs of matplotlib's defaults.
+
+    Use it the same way you use :func:`fs` / :func:`fw` / :func:`lw`:
+    pass an integer offset that tracks the active preset instead of
+    hardcoding a fixed number that drifts the moment the preset
+    changes.
+
+    Parameters
+    ----------
+    n : int | float, optional
+        Offset in steps of 50 DPI. ``0`` (the default) returns the
+        active preset's DPI verbatim; ``+1`` is one rung up, ``-1`` one
+        rung down. Fractional values are allowed.
+
+    Returns
+    -------
+    float
+        Scaled DPI. Always positive; the lower clamp is 1 DPI so a
+        very negative ``n`` cannot produce an invalid value for
+        ``savefig.dpi``.
+
+    Examples
+    --------
+    >>> import dartwork_mpl as dm
+    >>> dm.style.use("scientific")     # savefig.dpi == 100
+    >>> dm.dpi()                        # one rung at the base
+    100.0
+    >>> dm.dpi(1)                       # one rung up
+    150.0
+    >>> dm.dpi(-1)                      # one rung down
+    50.0
+
+    Pair with :func:`dartwork_mpl.save_formats`:
+
+    >>> dm.save_formats(fig, "out", dpi=dm.dpi(1))
+    """
+    raw = plt.rcParams.get("savefig.dpi", 100)
+    if isinstance(raw, str):
+        # matplotlib accepts the literal "figure" sentinel — fall back
+        # to figure.dpi in that case so the ladder still tracks the
+        # preset.
+        if raw == "figure":
+            base = float(plt.rcParams.get("figure.dpi", 100))
+        else:
+            base = float(raw)
+    else:
+        base = float(raw)
+    return max(1.0, base + _DPI_STEP * float(n))

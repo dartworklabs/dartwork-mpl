@@ -100,7 +100,7 @@ from .prompt import (
 
 # --- Explicit imports from split modules (formerly in util.py) ---
 # Scaling helpers
-from .scale import fs, fw, lw
+from .scale import dpi, fs, fw, lw
 
 # Import style module exports
 from .style import Style, list_styles, load_style_dict, style, style_path
@@ -178,6 +178,7 @@ __all__ = [  # noqa: RUF022
     "agent_doc_path",
     "get_agent_doc",
     # Scaling helpers
+    "dpi",
     "fs",
     "fw",
     "lw",
