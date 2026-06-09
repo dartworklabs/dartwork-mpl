@@ -77,6 +77,7 @@ def save_formats(
     bbox_inches: str | None = None,
     validate: bool = True,
     *,
+    validate_quiet: bool = False,
     adopt_orphan_tick_font: bool | None = None,
     **kwargs: Any,
 ) -> None:
@@ -100,6 +101,15 @@ def save_formats(
     validate : bool, optional
         If True, performs visual validation before saving and prints
         ``[VISUAL]`` warnings to stdout on issues. Default is True.
+        Pair with ``validate_quiet=True`` to keep the check but
+        suppress the stdout output.
+    validate_quiet : bool, optional
+        If ``True`` and ``validate=True``, runs the visual checks but
+        does not print ``[VISUAL]`` warnings to stdout. The returned
+        warning list inside :func:`~dartwork_mpl.validate.validate_figure`
+        is unchanged; this only silences the print side-effect for
+        automated pipelines that don't want noise but still want the
+        check to run. Default is ``False`` (print as before).
     adopt_orphan_tick_font : bool | None, optional
         If ``True``, tick labels (and offset text) on any axis that has
         no axis label adopt that axis's label font before saving, via
@@ -142,7 +152,7 @@ def save_formats(
     if validate:
         from .validate import validate_figure
 
-        validate_figure(fig)
+        validate_figure(fig, quiet=validate_quiet)
 
     image_stem = _normalize_image_stem(image_stem)
     create_parent_path(image_stem)
@@ -234,6 +244,7 @@ def save_and_show(
     unit: str = "pt",
     *,
     adopt_orphan_tick_font: bool | None = None,
+    close_figure: bool = True,
     **kwargs: Any,
 ) -> None:
     """Save a figure to disk, then display it in a Jupyter or web environment.
@@ -256,6 +267,13 @@ def save_and_show(
         :data:`dartwork_mpl.config.adopt_orphan_tick_font` (itself
         defaulting to ``True``). Pass ``True`` / ``False`` explicitly to
         override per call.
+    close_figure : bool, optional
+        If ``True`` (default), the figure is closed via :func:`plt.close`
+        after saving — matching the historical behaviour, where the function
+        was intended for one-shot "render-then-display" use in notebooks.
+        Pass ``False`` to keep the figure open so you can keep editing it
+        (e.g. add an annotation and resave with :func:`save_formats`).
+        ``save_formats`` itself never closes; this keyword brings parity.
     **kwargs
         Additional keyword arguments passed to ``savefig``.
     """
@@ -274,12 +292,14 @@ def save_and_show(
             tmp_path = tmp.name
         try:
             fig.savefig(tmp_path, bbox_inches=None, **kwargs)
-            plt.close(fig)
+            if close_figure:
+                plt.close(fig)
             show(tmp_path, size=size, unit=unit)
         finally:
             Path(tmp_path).unlink(missing_ok=True)
     else:
         create_parent_path(image_path)
         fig.savefig(image_path, bbox_inches=None, **kwargs)
-        plt.close(fig)
+        if close_figure:
+            plt.close(fig)
         show(image_path, size=size, unit=unit)
