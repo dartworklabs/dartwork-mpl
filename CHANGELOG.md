@@ -33,6 +33,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   function. `simple_layout`'s body reads as the high-level "iterate
   until converged" pattern and the step can be exercised in isolation
   from the convergence loop. Byte-identical behaviour. (audit-H5)
+- **`validate_fixes`: per-check fix-handler registry.** The 8-branch
+  `if/elif` in `get_fix_suggestions` (one branch per `check_id` string)
+  is now a `dict[check_id, handler]` populated by a `@register_fix(...)`
+  decorator. Adding a new check needs one decorator instead of editing
+  the dispatcher. Duplicate registrations raise so the table stays
+  deterministic. Pattern mirrors `lint.py`'s `Rule` objects.
+  (audit-M5)
+- **`validate_fixes.auto_apply`: narrow the catch around `dm.simple_layout`.**
+  Replaced `except Exception` (with a `BLE001` noqa) with
+  `(RuntimeError, ValueError, AttributeError, TypeError)` — the actual
+  failure modes documented in `simple_layout`. `KeyboardInterrupt`,
+  `MemoryError`, and silent regressions in `simple_layout` now escape
+  the helper instead of being swallowed as "fix failed, carry on."
+  (audit-C14)
+- **`layout.py`: type the `Any` escape hatches.** `_resolve_gridspec`
+  walker is now typed `GridSpecBase | SubplotSpec | None` (matplotlib's
+  stubs widen `SubplotSpec.get_gridspec()` to the base class) with a
+  final `isinstance(GridSpec)` narrowing at the return. `_copy_label_font`
+  now declares both arguments as `matplotlib.text.Text`. The `Text`
+  import lives in the `TYPE_CHECKING` block alongside the existing
+  `Axes` / `RendererBase` lazy imports. (audit-M6)
 
 ### Fixed
 
