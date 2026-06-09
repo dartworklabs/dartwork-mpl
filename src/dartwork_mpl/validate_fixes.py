@@ -94,7 +94,6 @@ def get_fix_suggestions(warning: VisualWarning) -> list[str]:
         suggestions.append("# Reduce font size\nax.legend(fontsize=dm.fs(-1))")
 
     elif warning.check_id == "LEGEND_OVERFLOW":
-        warning.detail.get("ratio", 0)
         suggestions.append(
             "# Move legend outside\nax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')"
         )
