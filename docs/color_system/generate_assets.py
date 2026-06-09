@@ -309,87 +309,162 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
 
     import textwrap
 
+    # Hybrid explorer: Option A's underline tabs (one category at a time)
+    # + Option B's sticky top bar holding the Color / Mono toggle once.
+    # No outer card, no fills, no shadows — Linear / Stripe / Vercel
+    # docs visual language.
     _CE_TEMPLATE = textwrap.dedent("""\
-    <div class="dm-pe-widget" style="border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px;">
-      <div style="border-bottom: 1px solid #e2e8f0; background: #f8fafc; border-top-left-radius: 8px; border-top-right-radius: 8px;">
-          <div class="dm-pc-tabs" id="dm-ce-tabs" style="border-bottom: none; background: transparent; border-radius: 0;">
-        {tabs_html}
-          </div>
+    <div class="dm-ce">
+    <style>
+      .dm-ce {{
+        font-family: var(--sy-f-sys, system-ui), sans-serif;
+        color: var(--rx-gray-12, #1c2024);
+        margin: 1rem 0 1.5rem;
+      }}
+      .dm-ce-bar {{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 0;
+        border-bottom: 1px solid var(--dm-border-faint, #e8e8ec);
+        margin-bottom: 1.4rem;
+        position: sticky;
+        top: 56px;
+        background: var(--dm-bg-page, #ffffff);
+        z-index: 5;
+        flex-wrap: wrap;
+      }}
+      .dm-ce-tabs {{
+        display: inline-flex;
+        gap: 0;
+        flex-wrap: wrap;
+      }}
+      .dm-ce-tab {{
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--rx-gray-11, #60646c);
+        padding: 8px 14px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: color 0.12s, border-color 0.12s;
+        margin-bottom: -1px;
+        font-family: inherit;
+        letter-spacing: 0;
+      }}
+      .dm-ce-tab:hover {{ color: var(--rx-gray-12, #1c2024); }}
+      .dm-ce-tab.active {{
+        color: var(--rx-gray-12, #1c2024);
+        border-bottom-color: var(--rx-accent-9, #12a594);
+      }}
+      .dm-ce-tone {{
+        display: inline-flex;
+        gap: 2px;
+        padding-right: 2px;
+      }}
+      .dm-ce-tone-btn {{
+        background: transparent;
+        border: none;
+        color: var(--rx-gray-11, #60646c);
+        padding: 5px 12px;
+        font-size: 12.5px;
+        font-weight: 500;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: color 0.12s, background 0.12s;
+        font-family: inherit;
+      }}
+      .dm-ce-tone-btn:hover {{
+        color: var(--rx-gray-12, #1c2024);
+        background: var(--rx-gray-a3, rgba(0,8,60,0.059));
+      }}
+      .dm-ce-tone-btn.active {{
+        color: var(--rx-gray-12, #1c2024);
+        background: var(--rx-gray-a4, rgba(0,0,39,0.09));
+      }}
+      .dm-ce-panel {{ display: none; }}
+      .dm-ce-panel.active {{ display: block; }}
+      .dm-ce-panel-title {{
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--rx-gray-12, #1c2024);
+        letter-spacing: -0.005em;
+        margin: 0 0 4px;
+      }}
+      .dm-ce-panel-desc {{
+        color: var(--rx-gray-11, #60646c);
+        font-size: 13.5px;
+        line-height: 1.5;
+        margin: 0 0 18px;
+        max-width: 60ch;
+      }}
+      .dm-cmap-grid {{
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 14px 32px;
+      }}
+      .dm-cmap-item {{
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }}
+      .dm-cmap-name {{
+        font-family: var(--sy-f-mono, monospace);
+        font-size: 12.5px;
+        color: var(--rx-gray-12, #1c2024);
+        font-weight: 500;
+      }}
+      .dm-cmap-bar {{
+        width: 100%;
+        height: 18px;
+        border-radius: 2px;
+        transition: filter 0.2s;
+      }}
+      .dm-ce.mono .dm-cmap-bar {{ filter: grayscale(100%); }}
+    </style>
+
+    <div class="dm-ce-bar">
+      <div class="dm-ce-tabs">
+    {tabs_html}
       </div>
-      <div class="dm-pe-body" id="dm-ce-stage" style="border: none;">
-    {panels_html}
+      <div class="dm-ce-tone" role="group" aria-label="Tone toggle">
+        <button class="dm-ce-tone-btn active" data-tone="color">Color</button>
+        <button class="dm-ce-tone-btn" data-tone="mono">Mono</button>
       </div>
     </div>
+
+    <div class="dm-ce-stage">
+    {panels_html}
+    </div>
+
     <script>
     (function() {{
-      document.addEventListener("DOMContentLoaded", function() {{
-        var tabs = document.querySelectorAll(".dm-ce-tab");
-        var panels = document.querySelectorAll(".dm-ce-panel");
-        function activate(preset) {{
-          tabs.forEach(function(t) {{
-            t.classList.toggle("active", t.dataset.preset === preset);
-          }});
-          panels.forEach(function(p) {{
-            p.classList.toggle("active", p.dataset.preset === preset);
-            if (p.dataset.preset === preset) {{
-              p.style.display = "block";
-            }} else {{
-              p.style.display = "none";
-            }}
-          }});
-        }}
-        tabs.forEach(function(t) {{
-          t.addEventListener("click", function() {{ activate(t.dataset.preset); }});
-        }});
-        if (tabs.length > 0) {{ activate(tabs[0].dataset.preset); }}
+      var root = document.currentScript.parentNode;
+      var tabs = root.querySelectorAll(".dm-ce-tab");
+      var panels = root.querySelectorAll(".dm-ce-panel");
+      function activate(preset) {{
+        tabs.forEach(function(t) {{ t.classList.toggle("active", t.dataset.preset === preset); }});
+        panels.forEach(function(p) {{ p.classList.toggle("active", p.dataset.preset === preset); }});
+      }}
+      tabs.forEach(function(t) {{
+        t.addEventListener("click", function() {{ activate(t.dataset.preset); }});
+      }});
+      if (tabs.length > 0) {{ activate(tabs[0].dataset.preset); }}
 
-        var isMono = false;
-        var segs = document.querySelectorAll(".dm-mono-seg");
-
-        function setMonoState(mono) {{
-            isMono = mono;
-            document.querySelectorAll(".dm-mono-seg").forEach(function(seg) {{
-                var btnColor = seg.querySelector(".dm-seg-color");
-                var btnMono = seg.querySelector(".dm-seg-mono");
-                if (mono) {{
-                    btnColor.style.background = "transparent";
-                    btnColor.style.color = "#64748b";
-                    btnColor.style.boxShadow = "none";
-                    btnMono.style.background = "#fff";
-                    btnMono.style.color = "#0f172a";
-                    btnMono.style.boxShadow = "0 1px 2px rgba(0,0,0,0.1)";
-                }} else {{
-                    btnMono.style.background = "transparent";
-                    btnMono.style.color = "#64748b";
-                    btnMono.style.boxShadow = "none";
-                    btnColor.style.background = "#fff";
-                    btnColor.style.color = "#0f172a";
-                    btnColor.style.boxShadow = "0 1px 2px rgba(0,0,0,0.1)";
-                }}
-            }});
-            document.querySelectorAll(".dm-cmap-bar").forEach(function(b) {{
-                b.style.filter = isMono ? "grayscale(100%)" : "none";
-            }});
-        }}
-
-        segs.forEach(function(seg) {{
-            var btnColor = seg.querySelector(".dm-seg-color");
-            var btnMono = seg.querySelector(".dm-seg-mono");
-
-            btnColor.addEventListener("click", function(e) {{
-                e.preventDefault();
-                if (!isMono) return;
-                setMonoState(false);
-            }});
-            btnMono.addEventListener("click", function(e) {{
-                e.preventDefault();
-                if (isMono) return;
-                setMonoState(true);
-            }});
+      var toneBtns = root.querySelectorAll(".dm-ce-tone-btn");
+      toneBtns.forEach(function(btn) {{
+        btn.addEventListener("click", function() {{
+          toneBtns.forEach(function(b) {{ b.classList.remove("active"); }});
+          btn.classList.add("active");
+          if (btn.dataset.tone === "mono") {{ root.classList.add("mono"); }}
+          else {{ root.classList.remove("mono"); }}
         }});
       }});
     }})();
     </script>
+    </div>
     """)
 
     tabs_html = []
@@ -398,38 +473,25 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
     # We include Categorical now because we have dc.bold, dc.muted, dc.pastel
     display_categories = CATEGORY_ORDER
 
-    display_categories = CATEGORY_ORDER
-
-    for i, category in enumerate(display_categories):
+    for category in display_categories:
         cmaps = categories.get(category)
         if not cmaps:
             continue
 
+        slug = category.lower().replace(" ", "_").replace("-", "_")
         blurb = CATEGORY_BLURBS.get(category, "")
-        html_parts = ['<div class="dm-cmap-panel">']
 
-        switch_html = (
-            '<div style="display: flex; background: #e2e8f0; border-radius: 4px; padding: 2px; user-select: none;" class="dm-mono-seg">'
-            '<div style="border-radius: 3px; padding: 2px 10px; font-size: 0.75em; font-weight: 600; cursor: pointer; background: #fff; color: #0f172a; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.2s;" class="dm-seg-color">Color</div>'
-            '<div style="border-radius: 3px; padding: 2px 10px; font-size: 0.75em; font-weight: 600; cursor: pointer; background: transparent; color: #64748b; transition: all 0.2s;" class="dm-seg-mono">Mono</div>'
-            "</div>"
-        )
-
-        html_parts.append(
-            '<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px;">'
-            f'<div class="dm-cmap-panel-title" style="margin: 0;">{category}</div>'
-            f"{switch_html}"
-            "</div>"
-        )
+        # Per-category fragment (also written as a standalone file so
+        # markdown pages can embed a single category directly).
+        frag_parts = ['<div class="dm-ce-panel-title">' + category + "</div>"]
         if blurb:
-            html_parts.append(f'<div class="dm-cmap-panel-desc">{blurb}</div>')
-        html_parts.append('<div class="dm-cmap-grid">')
+            frag_parts.append(f'<div class="dm-ce-panel-desc">{blurb}</div>')
+        frag_parts.append('<div class="dm-cmap-grid">')
 
         for cmap in cmaps:
             is_categorical = hasattr(cmap, "colors") and len(cmap.colors) < 15
 
             if is_categorical:
-                # render sharp discrete blocks
                 stops = []
                 num_colors = len(cmap.colors)
                 step = 100.0 / num_colors
@@ -441,7 +503,6 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
                     stops.append(f"{hex_c} {end}%")
                 gradient = f"linear-gradient(to right, {', '.join(stops)})"
             else:
-                # render smooth continuous stops
                 stops = []
                 for j in range(n_samples):
                     t = j / (n_samples - 1)
@@ -451,31 +512,27 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
                     stops.append(f"{hex_c} {pct}%")
                 gradient = f"linear-gradient(to right, {', '.join(stops)})"
 
-            html_parts.append(
+            frag_parts.append(
                 f'<div class="dm-cmap-item">'
-                f'<div><span class="dm-cmap-name">{cmap.name}</span>'
+                f'<span class="dm-cmap-name">{cmap.name}</span>'
+                f'<div class="dm-cmap-bar" style="background:{gradient}"></div>'
                 f"</div>"
-                f'<div class="dm-cmap-bar" style="background:{gradient}">'
-                f"</div></div>"
             )
 
-        html_parts.append("</div></div>")
+        frag_parts.append("</div>")
+        frag_html = "\n".join(frag_parts)
 
-        slug = category.lower().replace(" ", "_").replace("-", "_")
         path = images_dir / f"colormaps_{slug}.html"
-        path.write_text("\n".join(html_parts), encoding="utf-8")
+        path.write_text(frag_html, encoding="utf-8")
         paths.append(path)
 
-        # Add to tabbed explorer
+        # Tab + panel for the unified explorer
         tabs_html.append(
-            f'    <button class="dm-pc-tab dm-ce-tab" data-preset="{slug}">{category}</button>'
+            f'    <button class="dm-ce-tab" data-preset="{slug}">{category}</button>'
         )
-        display_style = "block" if i == 0 else "none"
         panels_html.append(
-            f'    <div class="dm-ce-panel dm-pe-panel" data-preset="{slug}" style="display: {display_style};">'
+            f'    <div class="dm-ce-panel" data-preset="{slug}">{frag_html}</div>'
         )
-        panels_html.append("\n".join(html_parts))
-        panels_html.append("    </div>")
 
     ce_html = _CE_TEMPLATE.format(
         tabs_html="\n".join(tabs_html), panels_html="\n".join(panels_html)

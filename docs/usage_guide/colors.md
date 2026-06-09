@@ -1,8 +1,9 @@
 # Colors and Colormaps
 
 This page covers practical usage: picking colors, mixing them, interpolating
-gradients, and using colormaps. For full visual catalogs of every palette and
-colormap, see the [Color System](../color_system/index.md) reference.
+gradients, and using colormaps. For full visual catalogs, jump to the
+[Palette](../color_system/colors.md) or [Colormap](../color_system/colormaps.md)
+catalogs under **Design System**.
 
 ## Named colors
 
@@ -251,6 +252,6 @@ colormaps on the [Colormaps](../color_system/colormaps.md) page.
 ## See also
 
 - **Next →** [Layout and Typography](layout.md) — physical-width geometry, aspect tokens, and `simple_layout`
-- [Color System](../color_system/index) — palette and colormap previews
+- [Design System → Palettes / Colormaps / Color Space](../design_system/index) — the visual catalogs
 - [API › Color Utilities](../api/color) and [Visualization Tools](../api/visualization)
 - Color sources: `asset/color/*.txt` + Tailwind/Material/Ant/Chakra/Primer/opencolor JSON

@@ -1,32 +1,55 @@
 # Design System
 
-dartwork-mpl ships with two reference catalogs of design tokens — colors and
-typography — that are pre-wired into every style preset. Browse the full
-inventories below, or jump straight to a how-to in the
-[Usage Guide](../usage_guide/index.md).
+dartwork-mpl ships with four reference catalogs of design tokens —
+palettes, colormaps, the OKLCH-aware `Color` class, and typography —
+pre-wired into every style preset. Pick the one you need:
 
-::::{grid} 1
+::::{grid} 2
 :gutter: 3
 :margin: 4 4 0 0
 
-:::{grid-item-card} **Colors**
-:link: ../color_system/index
+:::{grid-item-card} **Palettes**
+:link: ../color_system/colors
 :link-type: doc
 
-Named palette sheets (OpenColor, Tailwind, Material), curated colormaps, and
-the perceptually uniform `Color` class for programmatic manipulation.
+Named palette sheets for the curated `dc.*` family plus six third-party
+design systems (OpenColor, Tailwind, Material, Ant, Chakra, Primer).
 
-- Palette catalog (140+ swatches, copy-on-click)
-- Colormap catalog (sequential, diverging, cyclic)
-- `Color` API — OKLCH-aware mixing, lighten / darken / desaturate
+- 140+ swatches, copy-on-click
+- Full sheets, no hub click-through
+- Drop names anywhere matplotlib accepts a color
+:::
+
+:::{grid-item-card} **Colormaps**
+:link: ../color_system/colormaps
+:link-type: doc
+
+16 OKLCH-designed colormaps across single-hue, multi-hue, diverging,
+cyclical, and categorical families.
+
+- Live explorer — tab to category, toggle Color / Mono
+- Guaranteed monotonic lightness (greyscale-safe)
+- Sequential, diverging, cyclic, categorical
+:::
+
+:::{grid-item-card} **Color Space**
+:link: ../color_system/space
+:link-type: doc
+
+The `Color` class for perceptually uniform manipulation in OKLab /
+OKLCH space — adjust hue, saturation, and lightness predictably.
+
+- Lighten / darken / desaturate
+- Smooth custom gradients in OKLCH
+- Cross-color-space conversion utilities
 :::
 
 :::{grid-item-card} **Fonts**
 :link: ../fonts/index
 :link-type: doc
 
-130 publication-grade fonts from 9 families, auto-registered with matplotlib
-on import. Drop in by name — no manual `font_manager` plumbing.
+130 publication-grade fonts from 9 families, auto-registered with
+matplotlib on import. Drop in by name — no `font_manager` plumbing.
 
 - Family catalog with live specimens
 - Weight + variant matrix
@@ -35,18 +58,21 @@ on import. Drop in by name — no manual `font_manager` plumbing.
 
 ::::
 
-## Why two catalogs, one nav entry?
+## Why one nav entry for four catalogs?
 
-Colors and fonts are the two leaf-level token systems every other dartwork-mpl
-feature depends on — presets pick from them, examples reference them, the
-linter enforces them. Grouping them under a single **Design System** entry
-keeps the top navigation under seven items while still surfacing both
-catalogs prominently.
+Palettes, colormaps, the color space, and fonts are the four leaf-level
+token systems every other dartwork-mpl feature depends on — presets
+pick from them, examples reference them, the linter enforces them.
+Grouping them under a single **Design System** entry keeps the top
+navigation under seven items while still surfacing each catalog as a
+direct sidebar link.
 
 ```{toctree}
 :hidden:
 :maxdepth: 1
 
-Colors <../color_system/index>
+Palettes <../color_system/colors>
+Colormaps <../color_system/colormaps>
+Color Space <../color_system/space>
 Fonts <../fonts/index>
 ```
