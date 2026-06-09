@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Refactor
+- **`dartwork_mpl.validate` is now a package, not an 870-line god-file.**
+  The nine visual checks (`OVERFLOW`, `OVERLAP`, `LEGEND_OVERFLOW`,
+  `TICK_CROWD`, `EMPTY_AXES`, `MARGIN_ASYMMETRY`, `PIE_LABEL_OFFSET`,
+  `CLIPPED_TEXT`, `CROSS_AXES_OVERLAP`) each live in their own file
+  under `validate/_checks/`; shared types (`Severity`, `VisualWarning`,
+  `BBOX_ERRORS`) live in `validate/_types.py`; the orchestrator lives
+  in `validate/_orchestrator.py`. Public API is unchanged — every name
+  re-exported by the old module is re-exported by the new
+  package's `__init__.py`. Each module is now ≤200 lines instead of
+  one ≥870-line wall. (audit-H4)
+- **`simple_layout` extracted `_solve_layout_step()`.** The per-iteration
+  solver logic (canvas draw → orphan-tick adoption → axes-content
+  measurement → edge arithmetic → clamp → delta-px) is now a single
+  function. `simple_layout`'s body reads as the high-level "iterate
+  until converged" pattern and the step can be exercised in isolation
+  from the convergence loop. Byte-identical behaviour. (audit-H5)
+
 ### Fixed
 
 - **Actionable error messages for missing styles, presets, and icon
