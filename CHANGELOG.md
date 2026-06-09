@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **`dm.style.use` / `dm.style.stack` now preserve user-set rcParams**
+  that the chosen preset does not itself touch. Prior to this, every
+  preset switch ran `rcParams.update(rcParamsDefault)` which silently
+  dropped any caller configuration except `svg.hashsalt` (the one
+  key that had a hand-crafted preserve path). User settings like
+  `pdf.compression`, `axes.unicode_minus`, `webagg.port`, …
+  disappeared. The new logic snapshots every rcParam whose value
+  differs from the matplotlib default, applies the preset, and then
+  restores each snapshot entry that the preset is silent on. Where
+  the preset and the user disagree (e.g. `font.size`), the preset
+  still wins. (audit-B1)
+
 ### Added
 
 - **Four new aspect tokens** — `tall` (2:3 portrait), `a4` (1:√2 ISO
