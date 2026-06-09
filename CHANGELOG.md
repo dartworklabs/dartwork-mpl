@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **`dm.dpi(n=0)`** — preset-relative save-resolution helper, completing
+  the `fs` / `fw` / `lw` quartet. Reads `rcParams['savefig.dpi']` and
+  applies a 50-DPI ladder step per `n` so writing
+  `dm.save_formats(fig, "out", dpi=dm.dpi(1))` upgrades cleanly when the
+  preset changes. Handles matplotlib's `"figure"` sentinel and quoted-
+  string DPI values transparently; clamps to 1 DPI on large negative
+  steps. (audit-F7)
+
 ### Refactor
 - **`dartwork_mpl.validate` is now a package, not an 870-line god-file.**
   The nine visual checks (`OVERFLOW`, `OVERLAP`, `LEGEND_OVERFLOW`,
