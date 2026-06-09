@@ -10,9 +10,8 @@ pipeline.
 
 The four helpers are also re-exported at the top level
 (``dm.classify_colormap``, ``dm.plot_colormaps``, ``dm.plot_colors``,
-``dm.plot_fonts``) and from :mod:`dartwork_mpl.explore`. They were
-previously housed in :mod:`dartwork_mpl.asset_viz`, which still
-works but emits a ``DeprecationWarning`` (see :doc:`../migration`).
+``dm.plot_fonts``) and from :mod:`dartwork_mpl.explore`. Upgrading
+from an older alias path? See the :doc:`Migration Guide <../migration>`.
 
 Quick examples
 --------------

@@ -11,13 +11,9 @@ also work as a standalone toolkit on top of plain matplotlib.
 
 .. note::
 
-   **Module renames you may still run into.** The ``helpers`` module
-   was previously called ``agent_utils`` (renamed in v0.2.0), and its
-   ``formatting`` submodule was renamed to :mod:`dartwork_mpl.helpers.labels`
-   in the v0.3.x series to avoid clashing with the top-level
-   :mod:`dartwork_mpl.formatting` (axis tick formatters). Both old
-   paths still work but emit a ``DeprecationWarning`` — see the
-   :doc:`../migration` for one-shot migration scripts.
+   Upgrading from an older alias? See the :doc:`Migration Guide
+   <../migration>` for the full list of renamed paths and one-shot
+   migration scripts.
 
 Overview
 --------

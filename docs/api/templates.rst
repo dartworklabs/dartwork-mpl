@@ -13,10 +13,9 @@ Currently available:
 
 .. note::
 
-   The module was previously named ``xplot`` (renamed to
-   ``templates`` in v0.2.0). Imports from ``dartwork_mpl.xplot``
-   still work but emit a ``DeprecationWarning`` and will be removed
-   in v1.0. See :doc:`../migration` for one-shot migration scripts.
+   Upgrading from an older alias? See the :doc:`Migration Guide
+   <../migration>` for the full list of renamed paths and one-shot
+   migration scripts.
 
 Example
 -------
