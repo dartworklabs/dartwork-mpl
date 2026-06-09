@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-06-09
+
 ### Added — internal audit notes (issues #310 / #311 / #313)
 - **`docs/development/config-roadmap.md`** — `dm.config` expansion
   roadmap: walked every `dm.__all__` bool / `Literal` kwarg, classified
