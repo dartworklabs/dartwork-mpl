@@ -297,6 +297,9 @@ def _adopt_axis_label_font_core(fig: Figure) -> None:
     regeneration because matplotlib copies the prototype tick's font onto
     any ticks it creates afterwards.
     """
+    mutated_axes = (
+        0  # debug-warning counter — see dm.config.warn_on_orphan_tick_adoption
+    )
     for ax in fig.axes:
         for axis, get_label in (
             (getattr(ax, "xaxis", None), getattr(ax, "get_xlabel", None)),
@@ -320,9 +323,27 @@ def _adopt_axis_label_font_core(fig: Figure) -> None:
                     targets.append(offset)
                 for tick in targets:
                     _copy_label_font(label, tick)
+                if targets:
+                    mutated_axes += 1
             except (AttributeError, ValueError):
                 # Non-standard axes (polar/3D) — skip defensively.
                 continue
+
+    if mutated_axes:
+        from .config import config
+
+        if config.warn_on_orphan_tick_adoption:
+            warnings.warn(
+                f"Orphan tick-label font adoption applied to {mutated_axes} "
+                f"axis(es) on this figure. Disable with "
+                f"`adopt_orphan_tick_font=False` on the calling function "
+                f"(simple_layout / save_formats / save_and_show) or set "
+                f"`dm.config.adopt_orphan_tick_font = False` globally. "
+                f"Silence this warning with "
+                f"`dm.config.warn_on_orphan_tick_adoption = False`.",
+                UserWarning,
+                stacklevel=3,
+            )
 
 
 def adopt_axis_label_font(fig: Figure) -> None:

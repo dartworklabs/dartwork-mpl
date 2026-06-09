@@ -1,5 +1,8 @@
 # AI-Assisted Development
 
+> Part of [AI & Agent-Assisted Plotting](../ai/index.md) — the hub covering the
+> 30-second setup, IDE compatibility matrix, prompt corpus, and plot templates.
+
 dartwork-mpl is designed to work seamlessly with AI coding assistants like Cursor, GitHub Copilot, and Claude Code. This guide explains best practices for efficiently creating publication-quality graphs with AI assistance.
 
 > **New here?** Read **[Why AI-Ready?](why_ai_ready.md)** first to understand the design decisions that make dartwork-mpl uniquely suited for AI-assisted workflows.
