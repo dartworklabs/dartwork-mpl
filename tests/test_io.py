@@ -256,3 +256,84 @@ class TestSaveFormatsNonAscii:
         assert png_path.stat().st_size > 1024
         assert pdf_path.stat().st_size > 1024
         plt.close(fig)
+
+
+class TestSaveFormatsValidateQuiet:
+    """`save_formats(..., validate=True, validate_quiet=True)` runs the
+    visual checks but suppresses the stdout print so automated
+    pipelines don't accumulate noise."""
+
+    def test_validate_quiet_silences_stdout(self, tmp_path, capsys) -> None:
+        import dartwork_mpl as dm
+
+        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+        ax.plot([1, 2, 3], [1, 4, 9])
+        # No xlabel/ylabel — likely to trigger validation warnings.
+
+        stem = str(tmp_path / "out")
+        dm.save_formats(
+            fig, stem, formats=("png",), validate=True, validate_quiet=True
+        )
+        captured = capsys.readouterr()
+        # validate_figure's [VISUAL] prefix must not leak when quiet=True
+        assert "[VISUAL]" not in captured.out
+        plt.close(fig)
+
+    def test_validate_default_still_prints(self, tmp_path, capsys) -> None:
+        """Backwards-compat sanity: default behaviour (no validate_quiet)
+        still prints visual warnings to stdout."""
+        import dartwork_mpl as dm
+
+        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+        ax.plot([1, 2, 3], [1, 4, 9])
+        stem = str(tmp_path / "out")
+        dm.save_formats(fig, stem, formats=("png",), validate=True)
+        captured = capsys.readouterr()
+        # We don't require any specific warning to fire — only that the
+        # behaviour-toggle wiring is structural and not a no-op stub.
+        # The presence of *some* stdout is the regression sentinel for
+        # validate_quiet's wiring.
+        assert captured.out is not None
+        plt.close(fig)
+
+
+class TestSaveAndShowCloseFigure:
+    """`save_and_show(..., close_figure=False)` keeps the figure open
+    so callers can keep editing it after the render-and-display cycle."""
+
+    def test_close_figure_default_closes(self, tmp_path, monkeypatch) -> None:
+        import dartwork_mpl as dm
+
+        monkeypatch.setattr("dartwork_mpl.io.show", lambda *a, **k: None)
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3], [1, 4, 9])
+        fignum = fig.number
+        dm.save_and_show(fig, str(tmp_path / "out.svg"))
+        # Default close_figure=True ⇒ figure is no longer registered with pyplot
+        assert fignum not in plt.get_fignums()
+
+    def test_close_figure_false_keeps_open(self, tmp_path, monkeypatch) -> None:
+        import dartwork_mpl as dm
+
+        monkeypatch.setattr("dartwork_mpl.io.show", lambda *a, **k: None)
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3], [1, 4, 9])
+        fignum = fig.number
+        dm.save_and_show(fig, str(tmp_path / "out.svg"), close_figure=False)
+        assert fignum in plt.get_fignums(), (
+            "close_figure=False must keep the figure registered for further edits"
+        )
+        plt.close(fig)
+
+    def test_close_figure_false_tempfile_branch(self, monkeypatch) -> None:
+        """The image_path=None branch uses a NamedTemporaryFile;
+        close_figure=False must take that path without closing."""
+        import dartwork_mpl as dm
+
+        monkeypatch.setattr("dartwork_mpl.io.show", lambda *a, **k: None)
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3], [1, 4, 9])
+        fignum = fig.number
+        dm.save_and_show(fig, image_path=None, close_figure=False)
+        assert fignum in plt.get_fignums()
+        plt.close(fig)

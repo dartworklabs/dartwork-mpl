@@ -244,5 +244,6 @@ Individual layers for use with `style.stack`:
 
 ## See also
 
+- **Next →** [Colors and Colormaps](colors.md) — named-color tokens, palettes, and the bundled `dc.*` colormaps
 - [API › Style Management](../api/style) for all helper functions and arguments
 - [Fonts](../fonts/index) for the complete list of bundled typefaces

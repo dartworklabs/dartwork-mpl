@@ -15,6 +15,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.text import Text
 
+from ._helpers import get_renderer
 from .scale import fs
 
 
@@ -154,7 +155,7 @@ def arrow_axis(
     fig = ax.get_figure()
     if fig is None or fig.canvas is None:
         raise ValueError("Axes must be part of a Figure with a canvas")
-    renderer = fig.canvas.get_renderer()  # type: ignore[attr-defined]
+    renderer = get_renderer(fig)
     inv = ax.transAxes.inverted()
     rot_kw: dict[str, Any] = (
         {"rotation": 90, "rotation_mode": "anchor"} if direction == "y" else {}
