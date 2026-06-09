@@ -248,8 +248,9 @@ print(dm.classify_colormap(cmap))      # 'sequential' (tells you the type)
 Add `_r` to reverse any colormap (e.g., `dc.sunset_r`). Browse all available
 colormaps on the [Colormaps](../color_system/colormaps.md) page.
 
-## Where things live
+## See also
 
+- **Next →** [Layout and Typography](layout.md) — physical-width geometry, aspect tokens, and `simple_layout`
+- [Color System](../color_system/index) — palette and colormap previews
+- [API › Color Utilities](../api/color) and [Visualization Tools](../api/visualization)
 - Color sources: `asset/color/*.txt` + Tailwind/Material/Ant/Chakra/Primer/opencolor JSON
-- Palette/colormap previews: [Color System](../color_system/index)
-- API functions: [Color Utilities](../api/color) and [Visualization Tools](../api/visualization)
