@@ -1,5 +1,8 @@
 # Why AI-Ready?
 
+> Part of [AI & Agent-Assisted Plotting](../ai/index.md) — the hub covering the
+> 30-second setup, IDE compatibility matrix, prompt corpus, and plot templates.
+
 dartwork-mpl is designed from the ground up to work **with** AI coding
 assistants. This page shows the concrete features that make AI-generated
 plots reliable.

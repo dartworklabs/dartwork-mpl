@@ -1,5 +1,8 @@
 # MCP Server
 
+> Part of [AI & Agent-Assisted Plotting](../ai/index.md) — the hub covering the
+> 30-second setup, IDE compatibility matrix, prompt corpus, and plot templates.
+
 **dartwork-mpl** includes a built-in [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that lets AI coding assistants — such as Claude Code, Cursor, Windsurf, and any MCP-compatible client — access library documentation, style guides, and helper tools **inside the chat context**.
 
 ```{contents} On this page

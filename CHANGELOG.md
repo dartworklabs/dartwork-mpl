@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   preset changes. Handles matplotlib's `"figure"` sentinel and quoted-
   string DPI values transparently; clamps to 1 DPI on large negative
   steps. (audit-F7)
+- **`dm.config.warn_on_orphan_tick_adoption`** — `False` by default.
+  Set to `True` to emit a `UserWarning` whenever orphan-tick font
+  adoption actually mutates a figure during `simple_layout` /
+  `save_formats` / `save_and_show`. Useful when debugging unexpected
+  tick changes after a save, or running under
+  `constrained_layout` where the font change can trigger a re-layout
+  on the next draw. (audit-M7)
 
 ### Refactor
 - **`dartwork_mpl.validate` is now a package, not an 870-line god-file.**
