@@ -7,11 +7,13 @@ import math
 import pytest
 
 from dartwork_mpl.units import (
+    ASPECT_TOKENS,
     Length,
     cm,
     figsize,
     inch,
     length,
+    list_aspect_tokens,
     mm,
     parse_aspect,
     parse_width,
@@ -296,10 +298,14 @@ class TestParseAspect:
         [
             ("square", 1.0),
             ("portrait", 5 / 4),  # h/w
+            ("tall", 3 / 2),  # 2:3 portrait
             ("standard", 3 / 4),
             ("golden", 1 / 1.618),
             ("wide", 2 / 3),
+            ("a4", 1 / 1.4142),  # ISO 216
+            ("slide", 9 / 16),  # 16:9 widescreen
             ("cinema", 1 / 2),
+            ("panoramic", 1 / 3),  # 3:1 long banner
         ],
     )
     def test_known_tokens(self, name, ratio):
@@ -636,3 +642,47 @@ class TestLengthOpacity:
         fig = Figure(figsize=(cm(15).inch, cm(9).inch))
         w, h = fig.get_size_inches()
         assert math.isclose(float(w), 15 / 2.54, rel_tol=1e-9)
+
+
+class TestListAspectTokens:
+    """``list_aspect_tokens()`` is the discovery view used in notebooks
+    and by agents that want to enumerate valid aspect strings."""
+
+    def test_returns_full_registry(self):
+        view = list_aspect_tokens()
+        # Same keys as the SSOT, no additions / removals.
+        assert set(view) == set(ASPECT_TOKENS)
+        # Values are equal under float comparison (sort doesn't alter
+        # the numbers).
+        for name, ratio in ASPECT_TOKENS.items():
+            assert math.isclose(view[name], ratio, rel_tol=1e-12)
+
+    def test_returns_a_copy(self):
+        # Mutating the returned view must not leak into the singleton.
+        view = list_aspect_tokens()
+        view["square"] = 999.0
+        assert ASPECT_TOKENS["square"] == 1.0
+
+    def test_sorted_tall_to_panoramic(self):
+        # The visual ladder: tallest (largest h/w) first, widest last.
+        ratios = list(list_aspect_tokens().values())
+        assert ratios == sorted(ratios, reverse=True)
+
+    def test_includes_new_v0_6_tokens(self):
+        # Sentinel: the four ratios introduced in this release stay
+        # discoverable.
+        names = set(list_aspect_tokens())
+        assert {"tall", "a4", "slide", "panoramic"}.issubset(names)
+
+    def test_each_token_parseable(self):
+        # Every advertised token survives parse_aspect — no silent
+        # entries that only the dict knows about.
+        for name in list_aspect_tokens():
+            parse_aspect(name)  # would raise on miss
+
+    def test_exposed_at_package_root(self):
+        import dartwork_mpl as dm
+
+        assert hasattr(dm, "list_aspect_tokens")
+        assert "list_aspect_tokens" in dm.__all__
+        assert dm.list_aspect_tokens() == list_aspect_tokens()

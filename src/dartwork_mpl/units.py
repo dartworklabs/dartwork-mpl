@@ -19,6 +19,7 @@ __all__ = [
     "figsize",
     "inch",
     "length",
+    "list_aspect_tokens",
     "mm",
     "parse_aspect",
     "parse_width",
@@ -55,16 +56,59 @@ _WIDTH_UNIT_SYNONYMS: dict[str, str] = {
 }
 
 # Named aspect tokens: ratio = height / width.
+#
+# Adding a token: keep the ratio meaningfully distinct from existing
+# entries (≥ 5% apart) and document the use case in a trailing
+# comment. The lint catalog treats every key here as a valid value
+# for the `width-token-aspect` rule.
 ASPECT_TOKENS: dict[str, float] = {
-    "square": 1.0,
-    "portrait": 5.0 / 4.0,
-    "standard": 3.0 / 4.0,
-    "golden": 1.0 / 1.618,
-    "wide": 2.0 / 3.0,
-    "cinema": 1.0 / 2.0,
+    "square": 1.0,  # 1:1 — Instagram square, symmetric scatter
+    "portrait": 5.0 / 4.0,  # 4:5 portrait — Instagram tall
+    "tall": 3.0 / 2.0,  # 2:3 portrait — Pinterest, mobile reading
+    "standard": 3.0 / 4.0,  # 4:3 landscape — paper figures
+    "golden": 1.0 / 1.618,  # 1:φ landscape — golden ratio
+    "wide": 2.0 / 3.0,  # 3:2 landscape — DSLR sensor
+    "a4": 1.0 / 1.4142,  # 1:√2 landscape — ISO 216 (A4, A5, …)
+    "slide": 9.0 / 16.0,  # 16:9 landscape — Google Slides / Keynote
+    "cinema": 1.0 / 2.0,  # 2:1 landscape — wide hero figures
+    "panoramic": 1.0 / 3.0,  # 3:1 landscape — long banners / sparklines
 }
 
 DEFAULT_ASPECT: str = "standard"
+
+
+def list_aspect_tokens() -> dict[str, float]:
+    """Return a copy of the named aspect-token registry.
+
+    The returned dict maps each token name to its ``height / width``
+    ratio (so ``square → 1.0``, ``standard → 0.75``, ``slide → 0.5625``,
+    …). It is the same data :func:`figsize` consults when its second
+    argument is a string. Mutating the returned copy does not affect
+    dartwork-mpl's internal state.
+
+    Use this for discovery in notebooks and for AI agents that want to
+    enumerate valid aspect strings without scraping the source.
+
+    Returns
+    -------
+    dict[str, float]
+        ``{token_name: height_over_width}``, sorted by ratio so the
+        result reads as a visual ladder from "tall" to "panoramic".
+
+    Examples
+    --------
+    >>> import dartwork_mpl as dm
+    >>> sorted(dm.list_aspect_tokens())  # just the names
+    ['a4', 'cinema', 'golden', 'panoramic', 'portrait', 'slide',
+     'square', 'standard', 'tall', 'wide']
+    >>> dm.list_aspect_tokens()["slide"]
+    0.5625
+    """
+    # Sort by ratio (tall → wide) so the visual ladder reads naturally
+    # when the dict is rendered. Python dicts preserve insertion order
+    # so callers get the same view every time.
+    return dict(sorted(ASPECT_TOKENS.items(), key=lambda kv: -kv[1]))
+
 
 _WIDTH_RE = re.compile(
     r"""

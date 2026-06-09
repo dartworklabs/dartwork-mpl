@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+
+- **Four new aspect tokens** — `tall` (2:3 portrait), `a4` (1:√2 ISO
+  216), `slide` (16:9 widescreen), and `panoramic` (3:1 long banner) —
+  join the existing six, so `dm.figsize(width, aspect)` reaches
+  presentation slides, ISO paper, mobile-first portrait, and banner
+  sparklines without forcing the user to hand-pick a numeric ratio.
+- **`dm.list_aspect_tokens()`** — discovery view returning a copy of
+  the registry sorted from tallest (`tall`) to widest (`panoramic`).
+  Mutating the returned dict does not leak into the singleton. Useful
+  for notebooks and AI agents that want to enumerate valid aspect
+  strings without scraping source. (audit-Q9)
+
 - **`dm.config` — process-wide defaults for dartwork-mpl behaviour
   toggles.** A singleton (`dataclass`-backed) whose attributes are
   read by every public-API call site that exposes a matching keyword.
