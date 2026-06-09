@@ -58,7 +58,27 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_design",
     "sphinx_tabs.tabs",
+    "sphinxcontrib.mermaid",
 ]
+
+# Mermaid theming — keep the diagram visually aligned with the radix-design
+# overlay (light fills, hairline borders, accent-9 highlights).
+mermaid_init_js = """mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    fontFamily: 'Inter, system-ui, sans-serif',
+    fontSize: '14px',
+    primaryColor: '#ffffff',
+    primaryTextColor: '#1c2024',
+    primaryBorderColor: '#cdced6',
+    lineColor: '#60646c',
+    secondaryColor: '#f0f0f3',
+    tertiaryColor: '#fcfcfd',
+    edgeLabelBackground: '#ffffff'
+  },
+  flowchart: { curve: 'basis', padding: 18 }
+});"""
 autodoc_mock_imports = ["pydantic", "fastapi"]
 
 nitpick_ignore_regex = [

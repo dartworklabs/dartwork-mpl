@@ -788,7 +788,7 @@
       '<div class="dm-rw-sub">Pick a preset, slide each helper, and read off the resolved size.</div>' +
       "</div>" +
       '<div class="dm-rw-controls">' +
-      '<label class="dm-rw-ctrl">' +
+      '<label class="dm-rw-ctrl dm-rw-ctrl-preset">' +
       '<span>Preset</span>' +
       '<select class="dm-rw-preset">' +
       Object.keys(presets)
@@ -798,6 +798,7 @@
         .join("") +
       "</select>" +
       "</label>" +
+      '<div class="dm-rw-ctrl-helpers">' +
       '<label class="dm-rw-ctrl">' +
       '<span><code>fs</code> offset <em class="dm-rw-fs-val">+0</em></span>' +
       '<input type="range" class="dm-rw-fs" min="-3" max="6" step="1" value="0">' +
@@ -810,6 +811,7 @@
       '<span><code>lw</code> factor <em class="dm-rw-lw-val">×1.0</em></span>' +
       '<input type="range" class="dm-rw-lw" min="0" max="6" step="1" value="0">' +
       "</label>" +
+      "</div>" +
       "</div>" +
       '<div class="dm-rw-stage">' +
       '<svg class="dm-rw-svg" viewBox="0 0 320 80" preserveAspectRatio="xMidYMid meet">' +
@@ -947,6 +949,29 @@
       '<label><span>Y-label length (chars)</span><input type="range" class="dm-ls-yl" min="0" max="60" step="1" value="14"><em class="dm-ls-yl-val">14</em></label>' +
       '<label><span>Title lines</span><input type="range" class="dm-ls-tl" min="1" max="4" step="1" value="1"><em class="dm-ls-tl-val">1</em></label>' +
       '<label><span>Legend entries</span><input type="range" class="dm-ls-le" min="0" max="20" step="1" value="3"><em class="dm-ls-le-val">3</em></label>' +
+      "</div>" +
+      '<div class="dm-ls-figpreview">' +
+      '<div class="dm-ls-figpreview-label">Live figure preview — sliders re-render this</div>' +
+      '<svg class="dm-ls-figsvg" viewBox="0 0 480 320" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">' +
+      // Page background hint
+      '<rect class="dm-ls-page" x="0" y="0" width="480" height="320" fill="transparent"/>' +
+      // Figure rectangle (the boundary that matplotlib uses)
+      '<rect class="dm-ls-figrect" x="0" y="0" width="480" height="320" fill="#ffffff" stroke="#cdced6" stroke-width="1.2"/>' +
+      // Title band (top)
+      '<g class="dm-ls-title-group"></g>' +
+      // Y-label (left)
+      '<g class="dm-ls-ylabel-group"></g>' +
+      // Axes / chart area
+      '<rect class="dm-ls-axes" x="60" y="40" width="380" height="240" fill="#fcfcfd" stroke="#cdced6" stroke-width="0.8"/>' +
+      // Mini sine line inside axes — purely decorative, gives the preview some life
+      '<path class="dm-ls-spark" d="M 70 200 Q 130 70 200 160 T 330 140 T 430 110" fill="none" stroke="#12a594" stroke-width="2" stroke-linecap="round"/>' +
+      // Ticks (bottom)
+      '<g class="dm-ls-ticks-group"></g>' +
+      // Legend (top-right inside axes)
+      '<g class="dm-ls-legend-group"></g>' +
+      // Overflow shade — drawn when a heuristic flags overflow
+      '<rect class="dm-ls-overflow-hint" x="0" y="0" width="480" height="320" fill="rgba(217, 119, 6, 0)" pointer-events="none"/>' +
+      "</svg>" +
       "</div>" +
       '<div class="dm-ls-output">' +
       '<div class="dm-ls-results"></div>' +
@@ -1098,6 +1123,234 @@
         "# … plotting …\n" +
         "warnings = dm.validate_figure(fig)\n" +
         "for w in warnings:\n    print(w)";
+
+      // --- Live figure preview --------------------------------------
+      // Compute pixel layout for the SVG preview based on the slider
+      // inputs. This is a *mock* — it shows how matplotlib would lay
+      // out the same combination of width / height / labels, not the
+      // actual plot.
+      var SVG_W = 480;
+      var SVG_H = 320;
+
+      // Map inch-aspect onto the SVG canvas, keeping a max bound.
+      var aspect = width / height;            // figure aspect ratio
+      var pad = 16;                            // outer padding inside svg viewBox
+      var maxW = SVG_W - pad * 2;
+      var maxH = SVG_H - pad * 2;
+      var figW, figH;
+      if (maxW / aspect <= maxH) {
+        figW = maxW;
+        figH = maxW / aspect;
+      } else {
+        figH = maxH;
+        figW = maxH * aspect;
+      }
+      var figX = (SVG_W - figW) / 2;
+      var figY = (SVG_H - figH) / 2;
+
+      // Spacing inside the figure rectangle
+      var titleH = Math.min(titleLines * Math.max(figH * 0.04, 6), figH * 0.32);
+      var yLabelW = Math.min(yLen * (figW * 0.013) + (yLen > 0 ? 8 : 0), figW * 0.42);
+      var axesPad = 6;
+      var axesX = figX + yLabelW + axesPad;
+      var axesY = figY + titleH + axesPad;
+      var axesW = Math.max(figW - yLabelW - 2 * axesPad, 30);
+      var axesH = Math.max(figH - titleH - 2 * axesPad - 14, 30); // 14 for x-tick row
+
+      // Apply to the SVG nodes
+      var figRect = $(".dm-ls-figrect", w);
+      figRect.setAttribute("x", figX);
+      figRect.setAttribute("y", figY);
+      figRect.setAttribute("width", figW);
+      figRect.setAttribute("height", figH);
+
+      var axesRect = $(".dm-ls-axes", w);
+      axesRect.setAttribute("x", axesX);
+      axesRect.setAttribute("y", axesY);
+      axesRect.setAttribute("width", axesW);
+      axesRect.setAttribute("height", axesH);
+
+      // Sine-wave spark redrawn to fit axes
+      function sparkPath(x, y, ww, hh) {
+        var steps = 40;
+        var d = "";
+        for (var i = 0; i <= steps; i++) {
+          var t = i / steps;
+          var px = x + t * ww;
+          var py = y + hh / 2 - Math.sin(t * Math.PI * 2.4) * hh * 0.35 * Math.exp(-t * 0.6);
+          d += (i === 0 ? "M " : " L ") + px.toFixed(1) + " " + py.toFixed(1);
+        }
+        return d;
+      }
+      $(".dm-ls-spark", w).setAttribute(
+        "d",
+        sparkPath(axesX + 4, axesY + 4, axesW - 8, axesH - 8)
+      );
+
+      // Title band — `titleLines` thin grey bars
+      var titleGroup = $(".dm-ls-title-group", w);
+      titleGroup.innerHTML = "";
+      var titleLineH = titleH / Math.max(titleLines, 1);
+      for (var i = 0; i < titleLines; i++) {
+        var bar = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "rect"
+        );
+        var barH = Math.max(titleLineH * 0.45, 3);
+        bar.setAttribute("x", axesX + axesW * 0.08);
+        bar.setAttribute("y", figY + i * titleLineH + (titleLineH - barH) / 2);
+        bar.setAttribute("width", axesW * 0.6 - i * axesW * 0.05);
+        bar.setAttribute("height", barH);
+        bar.setAttribute("fill", "#1c2024");
+        bar.setAttribute("rx", "1");
+        titleGroup.appendChild(bar);
+      }
+
+      // Y-label — `yLen` little dashes stacked vertically
+      var ylabelGroup = $(".dm-ls-ylabel-group", w);
+      ylabelGroup.innerHTML = "";
+      if (yLen > 0) {
+        var ylabelText = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "rect"
+        );
+        var ylabelW = Math.max(yLabelW * 0.6, 4);
+        ylabelText.setAttribute("x", figX + 6);
+        ylabelText.setAttribute("y", axesY + axesH / 2 - ylabelW / 2);
+        ylabelText.setAttribute("width", 8);
+        ylabelText.setAttribute("height", ylabelW);
+        ylabelText.setAttribute("fill", "#60646c");
+        ylabelText.setAttribute("rx", "1");
+        ylabelText.setAttribute(
+          "transform",
+          "rotate(-90 " +
+            (figX + 6 + 4) +
+            " " +
+            (axesY + axesH / 2) +
+            ")"
+        );
+        ylabelGroup.appendChild(ylabelText);
+
+        // Subtle horizontal tick marks on the y-axis
+        for (var yi = 0; yi < 5; yi++) {
+          var ytick = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "line"
+          );
+          var yty = axesY + (axesH * (yi + 0.5)) / 5;
+          ytick.setAttribute("x1", axesX - 4);
+          ytick.setAttribute("y1", yty);
+          ytick.setAttribute("x2", axesX);
+          ytick.setAttribute("y2", yty);
+          ytick.setAttribute("stroke", "#60646c");
+          ytick.setAttribute("stroke-width", "1");
+          ylabelGroup.appendChild(ytick);
+        }
+      }
+
+      // X-ticks — `ticks` evenly spaced tick marks below the axes
+      var ticksGroup = $(".dm-ls-ticks-group", w);
+      ticksGroup.innerHTML = "";
+      for (var ti = 0; ti < ticks; ti++) {
+        var tx = axesX + (axesW * (ti + 0.5)) / ticks;
+        var tline = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "line"
+        );
+        tline.setAttribute("x1", tx);
+        tline.setAttribute("y1", axesY + axesH);
+        tline.setAttribute("x2", tx);
+        tline.setAttribute("y2", axesY + axesH + 4);
+        tline.setAttribute("stroke", "#60646c");
+        tline.setAttribute("stroke-width", "1");
+        ticksGroup.appendChild(tline);
+      }
+
+      // Legend — small box in top-right of axes with `legend` rows
+      var legendGroup = $(".dm-ls-legend-group", w);
+      legendGroup.innerHTML = "";
+      if (legend > 0) {
+        var legendRows = Math.min(legend, 8);
+        var legendW = Math.min(axesW * 0.38, 110);
+        var legendRowH = 9;
+        var legendH = Math.min(legendRows * legendRowH + 8, axesH * 0.9);
+        var legendX = axesX + axesW - legendW - 4;
+        var legendY = axesY + 4;
+
+        var legendBox = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "rect"
+        );
+        legendBox.setAttribute("x", legendX);
+        legendBox.setAttribute("y", legendY);
+        legendBox.setAttribute("width", legendW);
+        legendBox.setAttribute("height", legendH);
+        legendBox.setAttribute("fill", "#ffffff");
+        legendBox.setAttribute("stroke", "#cdced6");
+        legendBox.setAttribute("stroke-width", "0.6");
+        legendBox.setAttribute("rx", "2");
+        legendGroup.appendChild(legendBox);
+
+        for (var li = 0; li < legendRows; li++) {
+          var swatch = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "rect"
+          );
+          var rowY = legendY + 4 + li * legendRowH;
+          swatch.setAttribute("x", legendX + 5);
+          swatch.setAttribute("y", rowY);
+          swatch.setAttribute("width", 8);
+          swatch.setAttribute("height", 4);
+          var palette = [
+            "#12a594",
+            "#5e4fa2",
+            "#3288bd",
+            "#f46d43",
+            "#9e0142",
+            "#1c2024",
+            "#0d9b8a",
+            "#60646c",
+          ];
+          swatch.setAttribute("fill", palette[li % palette.length]);
+          swatch.setAttribute("rx", "1");
+          legendGroup.appendChild(swatch);
+
+          var lline = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "rect"
+          );
+          lline.setAttribute("x", legendX + 16);
+          lline.setAttribute("y", rowY + 1);
+          lline.setAttribute("width", Math.max(legendW - 22, 10));
+          lline.setAttribute("height", 2);
+          lline.setAttribute("fill", "#cdced6");
+          lline.setAttribute("rx", "1");
+          legendGroup.appendChild(lline);
+        }
+
+        if (legend > legendRows) {
+          // Truncated indicator
+          var moreDots = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "text"
+          );
+          moreDots.setAttribute("x", legendX + legendW / 2);
+          moreDots.setAttribute("y", legendY + legendH + 10);
+          moreDots.setAttribute("text-anchor", "middle");
+          moreDots.setAttribute("font-size", "9");
+          moreDots.setAttribute("fill", "#60646c");
+          moreDots.textContent = "+" + (legend - legendRows) + " more";
+          legendGroup.appendChild(moreDots);
+        }
+      }
+
+      // Overflow hint: tint the canvas amber when any warning fires.
+      var hasWarn = msgs.some(function (m) { return m.level === "warn"; });
+      var overflowHint = $(".dm-ls-overflow-hint", w);
+      overflowHint.setAttribute(
+        "fill",
+        hasWarn ? "rgba(212, 160, 23, 0.06)" : "rgba(0,0,0,0)"
+      );
     }
 
     [ws, hs, xt, yl, tl, le].forEach(function (n) {

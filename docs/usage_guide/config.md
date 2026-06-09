@@ -119,25 +119,18 @@ the field name — if it fails, the field's gone or never existed.
 
 ## Mental model
 
-```
-┌─────────────────────────────────────────┐
-│            per-call keyword             │   ← always wins
-│        (simple_layout(fig, ...))         │
-└─────────────────────────────────────────┘
-                    │
-                    │ None? fall through
-                    ▼
-┌─────────────────────────────────────────┐
-│              dm.config field             │   ← project default
-│ (dm.config.adopt_orphan_tick_font = False)│
-└─────────────────────────────────────────┘
-                    │
-                    │ no field? fall through
-                    ▼
-┌─────────────────────────────────────────┐
-│        hard-coded Config default         │   ← library default
-│             (True / False)               │
-└─────────────────────────────────────────┘
+```{mermaid}
+flowchart TD
+    A["<b>per-call keyword</b><br/><code>simple_layout(fig, ...)</code><br/><i>always wins</i>"]
+    B["<b>dm.config field</b><br/><code>dm.config.adopt_orphan_tick_font = False</code><br/><i>project default</i>"]
+    C["<b>hard-coded Config default</b><br/>(True / False)<br/><i>library default</i>"]
+    A -->|"None? fall through"| B
+    B -->|"no field? fall through"| C
+
+    classDef node fill:#fcfcfd,stroke:#cdced6,stroke-width:1px,color:#1c2024,rx:6,ry:6;
+    class A,B,C node;
+    linkStyle 0 stroke:#60646c,stroke-width:1px;
+    linkStyle 1 stroke:#60646c,stroke-width:1px;
 ```
 
 The chain is **deterministic and read-only at the lower levels** —
