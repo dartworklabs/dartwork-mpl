@@ -7,7 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- **Preset `savefig.dpi` default lowered from `500` → `300`.** Print-grade
+  300 DPI is a sensible export resolution for nearly every use case and
+  matches the existing `figure.dpi: 300` so screen and saved output now
+  agree. Applies to `base`, `dmpl`, and `dmpl_light` mplstyle (all
+  preset stacks inherit from one of these). The 500-DPI default was
+  inherited from an early hardcopy-print bias and produced gratuitously
+  large PNG files for everyday work. Callers who genuinely want 500 DPI
+  pass it explicitly (`dm.save_formats(fig, "out", dpi=500)`) or use
+  `dm.dpi(4)` (300 + 4 × 50). The `dm.dpi(n=0)` ladder docstring is
+  refreshed accordingly.
+
 ### Added
+- **`docs/usage_guide/config.md`** — a hands-on cookbook for the
+  `dm.config` singleton: when to set a project-wide default, when to
+  scope with `dm.config.override(...)`, when to override per-call, how
+  the resolution chain works (per-call kwarg → `dm.config` → library
+  default), and the typo-fails-loud `AttributeError` guarantee. Wired
+  into the `usage_guide` toctree between Save and Validation and
+  Extended Plots & Diagnostics.
 - **`dm.dpi(n=0)`** — preset-relative save-resolution helper, completing
   the `fs` / `fw` / `lw` quartet. Reads `rcParams['savefig.dpi']` and
   applies a 50-DPI ladder step per `n` so writing
