@@ -56,9 +56,20 @@ class Config:
         ``None`` is read here. Set this to ``False`` to leave orphan-axis
         tick fonts alone everywhere by default. Per-call overrides
         (passing ``True`` / ``False`` explicitly) still win.
+    warn_on_orphan_tick_adoption : bool, default ``False``
+        When ``True``, emit a one-time :class:`UserWarning` every time
+        orphan-tick font adoption mutates a figure (via
+        :func:`dartwork_mpl.layout.adopt_axis_label_font` or its drivers
+        :func:`~dartwork_mpl.simple_layout`, :func:`~dartwork_mpl.save_formats`,
+        :func:`~dartwork_mpl.save_and_show`). Useful when debugging a
+        figure whose ticks change unexpectedly after a save — or when
+        running under matplotlib's ``constrained_layout``, where the
+        font change can trigger a re-layout on the next draw. Default is
+        off so the common path stays quiet.
     """
 
     adopt_orphan_tick_font: bool = True
+    warn_on_orphan_tick_adoption: bool = False
 
     @contextmanager
     def override(self, **overrides: object) -> Iterator[None]:

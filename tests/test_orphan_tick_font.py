@@ -423,3 +423,102 @@ def test_config_exported_at_package_root() -> None:
     assert "config" in dm.__all__
     assert "Config" in dm.__all__
     assert dm.config.adopt_orphan_tick_font  # ships as on
+
+
+class TestWarnOnOrphanTickAdoption:
+    """`dm.config.warn_on_orphan_tick_adoption` controls whether the
+    adoption emits a UserWarning. Off by default so the common path
+    stays quiet; on when a user wants to debug a figure whose ticks
+    change unexpectedly after a save."""
+
+    def test_default_ships_off(self) -> None:
+        assert not dm.config.warn_on_orphan_tick_adoption
+
+    def test_warn_when_enabled_and_adoption_mutates(self) -> None:
+        import warnings
+
+        dm.style.use("scientific")
+        fig, ax = plt.subplots()
+        ax.plot(range(10), range(10))
+        ax.set_ylabel("y label")  # x orphan -> mutation expected
+
+        try:
+            dm.config.warn_on_orphan_tick_adoption = True
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                simple_layout(fig)
+        finally:
+            dm.config.warn_on_orphan_tick_adoption = False
+
+        adoption_warnings = [
+            w
+            for w in caught
+            if issubclass(w.category, UserWarning)
+            and "Orphan tick-label font adoption" in str(w.message)
+        ]
+        assert adoption_warnings, (
+            "Expected a UserWarning naming the orphan-tick adoption"
+        )
+        plt.close(fig)
+
+    def test_no_warn_when_disabled(self) -> None:
+        import warnings
+
+        dm.style.use("scientific")
+        fig, ax = plt.subplots()
+        ax.plot(range(10), range(10))
+        ax.set_ylabel("y label")
+
+        assert not dm.config.warn_on_orphan_tick_adoption
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            simple_layout(fig)
+
+        adoption_warnings = [
+            w
+            for w in caught
+            if issubclass(w.category, UserWarning)
+            and "Orphan tick-label font adoption" in str(w.message)
+        ]
+        assert not adoption_warnings, (
+            "Should be silent unless dm.config.warn_on_orphan_tick_adoption=True"
+        )
+        plt.close(fig)
+
+    def test_no_warn_when_no_mutation(self) -> None:
+        """Both axes labeled → no mutation → no warning even when
+        the toggle is on."""
+        import warnings
+
+        dm.style.use("scientific")
+        fig, ax = plt.subplots()
+        ax.plot(range(10), range(10))
+        ax.set_xlabel("x label")
+        ax.set_ylabel("y label")  # both labeled — nothing to adopt
+
+        try:
+            dm.config.warn_on_orphan_tick_adoption = True
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                simple_layout(fig)
+        finally:
+            dm.config.warn_on_orphan_tick_adoption = False
+
+        adoption_warnings = [
+            w
+            for w in caught
+            if issubclass(w.category, UserWarning)
+            and "Orphan tick-label font adoption" in str(w.message)
+        ]
+        assert not adoption_warnings, (
+            "No axes had orphan ticks; the warning should not fire"
+        )
+        plt.close(fig)
+
+    def test_override_context_manager_scopes_warn_toggle(self) -> None:
+        """`dm.config.override(warn_on_orphan_tick_adoption=True)` should
+        scope the change to a `with` block and restore it on exit."""
+        assert not dm.config.warn_on_orphan_tick_adoption
+        with dm.config.override(warn_on_orphan_tick_adoption=True):
+            assert dm.config.warn_on_orphan_tick_adoption
+        assert not dm.config.warn_on_orphan_tick_adoption
