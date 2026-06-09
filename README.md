@@ -126,6 +126,24 @@ the full surface.
 
 <br/>
 
+## Common pitfalls
+
+Three patterns trip up new users (and AI assistants) more than any others. The
+built-in lint engine flags all three; `dm.migrate_legacy_code` rewrites them in
+place.
+
+| Pitfall | Why it's wrong | Use instead |
+|---|---|---|
+| `plt.subplots(figsize=(8, 5))` (raw inch tuple) | dartwork-mpl's geometry is physical (cm/mm) and aspect-driven; raw tuples bypass the preset's typography pairing | `plt.subplots(figsize=dm.figsize("13cm", "standard"))` |
+| `plt.tight_layout()` / `fig.tight_layout()` | Non-deterministic outer-margin solver; fights with simple_layout's GridSpec arithmetic | `dm.simple_layout(fig)` |
+| `ax.set_title("…", fontsize=14)` (raw font literal) | Becomes wrong the moment you switch from `scientific` to `presentation` or a `*-kr` preset | `ax.set_title("…", fontsize=dm.fs(0))` (same for `dm.lw(n)`, `dm.fw(n)`) |
+
+Full catalog: [`02-anti-patterns.yaml`](src/dartwork_mpl/asset/prompt/02-anti-patterns.yaml).
+Reachable at runtime via `dm.get_prompt("02-anti-patterns")` or
+`lint_dartwork_mpl_code(code)` over MCP.
+
+<br/>
+
 ## Style presets
 
 | Preset         | Use case                                          |
