@@ -189,6 +189,10 @@ def show(image_path: str, size: int = 600, unit: str = "pt") -> None:
             "(or 'uv add \"dartwork-mpl[notebook]\"')."
         ) from exc
 
+    def _display_svg_html(svg_data: str) -> None:
+        """Wrap the IPython HTML-display call to centralise typing."""
+        display(HTML(svg_data))  # type: ignore[no-untyped-call]
+
     svg_obj = SVG(data=image_path)  # type: ignore[no-untyped-call]
 
     desired_width = size
@@ -206,11 +210,11 @@ def show(image_path: str, size: int = 600, unit: str = "pt") -> None:
         width = float(width_attr.replace(unit, ""))
         height = float(height_attr.replace(unit, ""))
     except ValueError:
-        display(HTML(svg_obj.data))  # type: ignore[no-untyped-call]
+        _display_svg_html(svg_obj.data)
         return
 
     if width <= 0:
-        display(HTML(svg_obj.data))  # type: ignore[no-untyped-call]
+        _display_svg_html(svg_obj.data)
         return
 
     aspect_ratio = height / width
@@ -234,7 +238,7 @@ def show(image_path: str, size: int = 600, unit: str = "pt") -> None:
             )
             break
 
-    display(HTML(svg_obj.data))  # type: ignore[no-untyped-call]
+    _display_svg_html(svg_obj.data)
 
 
 def save_and_show(

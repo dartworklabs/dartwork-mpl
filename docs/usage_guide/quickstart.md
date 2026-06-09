@@ -8,6 +8,10 @@ ship a publication-grade plot.
 A **live ruler** below this section maps `dm.fs(n)` / `dm.fw(n)` / `dm.lw(n)`
 to actual point sizes and stroke widths under each preset — drag the sliders
 to read off the resolved values without leaving the docs.
+
+If the slider doesn't load (JavaScript disabled, terminal browsers,
+or offline LLM contexts), the [static reference table](#fs-fallback-table)
+further down lists the same base values per preset.
 :::
 
 ## At-a-glance ROI
@@ -109,9 +113,11 @@ and `simple_layout`.
 | `dm.simple_layout(fig)`                       | Deterministic content-aware margins (replaces `tight_layout`)                      |
 | `dm.save_and_show(fig, "first")`              | Saves multi-format and previews inline in the notebook                             |
 
+(fs-fallback-table)=
 ### Static reference: `dm.fs(n)` resolved per preset
 
-Plain-text fallback for the live ruler — useful when JavaScript is
+This is the **JS-free equivalent of the live ruler at the top of the
+page** — same numbers, same purpose. Useful when JavaScript is
 disabled (AI agents, terminal browsers) or when copying numbers into a
 spreadsheet. Each row is the **base font size** that ships with the
 preset's `font-*.mplstyle`; `dm.fs(n)` returns ``base + n`` (in

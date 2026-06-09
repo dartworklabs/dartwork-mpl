@@ -5,7 +5,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import pytest
 
-from dartwork_mpl.scale import fs, fw, lw
+from dartwork_mpl.scale import dpi, fs, fw, lw
 
 
 class TestFs:
@@ -84,3 +84,84 @@ class TestLw:
     def test_negative_float_offset(self) -> None:
         base = plt.rcParams["lines.linewidth"]
         assert lw(-0.3) == pytest.approx(base - 0.3)
+
+
+class TestDpi:
+    """Tests for dpi() DPI ladder scaling."""
+
+    def test_base_returns_savefig_dpi(self) -> None:
+        original = plt.rcParams["savefig.dpi"]
+        try:
+            plt.rcParams["savefig.dpi"] = 100
+            assert dpi() == 100.0
+            assert dpi(0) == 100.0
+        finally:
+            plt.rcParams["savefig.dpi"] = original
+
+    def test_positive_step_adds_fifty(self) -> None:
+        original = plt.rcParams["savefig.dpi"]
+        try:
+            plt.rcParams["savefig.dpi"] = 100
+            assert dpi(1) == 150.0
+            assert dpi(2) == 200.0
+        finally:
+            plt.rcParams["savefig.dpi"] = original
+
+    def test_negative_step_subtracts_fifty(self) -> None:
+        original = plt.rcParams["savefig.dpi"]
+        try:
+            plt.rcParams["savefig.dpi"] = 100
+            assert dpi(-1) == 50.0
+        finally:
+            plt.rcParams["savefig.dpi"] = original
+
+    def test_negative_step_clamped_to_one(self) -> None:
+        """A very large negative step can't drive DPI to zero or below —
+        savefig refuses values < 1, so the helper clamps."""
+        original = plt.rcParams["savefig.dpi"]
+        try:
+            plt.rcParams["savefig.dpi"] = 100
+            assert dpi(-100) == 1.0
+        finally:
+            plt.rcParams["savefig.dpi"] = original
+
+    def test_fractional_step(self) -> None:
+        original = plt.rcParams["savefig.dpi"]
+        try:
+            plt.rcParams["savefig.dpi"] = 100
+            assert dpi(0.5) == 125.0
+        finally:
+            plt.rcParams["savefig.dpi"] = original
+
+    def test_string_figure_sentinel_falls_back_to_figure_dpi(self) -> None:
+        """matplotlib accepts ``savefig.dpi="figure"`` to mean "use
+        figure.dpi"; the helper resolves that to a real number so the
+        ladder still works."""
+        original_save = plt.rcParams["savefig.dpi"]
+        original_fig = plt.rcParams["figure.dpi"]
+        try:
+            plt.rcParams["savefig.dpi"] = "figure"
+            plt.rcParams["figure.dpi"] = 120
+            assert dpi(0) == 120.0
+            assert dpi(1) == 170.0
+        finally:
+            plt.rcParams["savefig.dpi"] = original_save
+            plt.rcParams["figure.dpi"] = original_fig
+
+    def test_string_numeric_savefig_dpi_resolves(self) -> None:
+        """Some preset files set ``savefig.dpi`` as a quoted string;
+        the helper must parse them just like the float path."""
+        original = plt.rcParams["savefig.dpi"]
+        try:
+            plt.rcParams["savefig.dpi"] = "200"
+            assert dpi() == 200.0
+            assert dpi(1) == 250.0
+        finally:
+            plt.rcParams["savefig.dpi"] = original
+
+    def test_exposed_at_package_root(self) -> None:
+        import dartwork_mpl as dm
+
+        assert hasattr(dm, "dpi")
+        assert "dpi" in dm.__all__
+        assert dm.dpi(0) == dpi(0)
