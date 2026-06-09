@@ -26,7 +26,12 @@ import warnings
 from typing import TYPE_CHECKING, Any
 
 from matplotlib.figure import Figure
-from matplotlib.gridspec import GridSpec, GridSpecFromSubplotSpec, SubplotSpec
+from matplotlib.gridspec import (
+    GridSpec,
+    GridSpecBase,
+    GridSpecFromSubplotSpec,
+    SubplotSpec,
+)
 from matplotlib.transforms import Bbox
 
 from ._helpers import get_renderer
@@ -37,6 +42,7 @@ if TYPE_CHECKING:
 
     from matplotlib.axes import Axes
     from matplotlib.backend_bases import RendererBase
+    from matplotlib.text import Text
 
 
 # Tolerance for the per-iteration GridSpec edge change (display px). A
@@ -228,8 +234,14 @@ def _resolve_gridspec(
 ) -> GridSpec | None:
     """Pick the GridSpec to update. Walks past ``GridSpecFromSubplotSpec``
     to its root so ``.update`` is callable.
+
+    The walker variable widens to ``GridSpecBase | SubplotSpec | None``
+    because ``SubplotSpec.get_gridspec()`` returns the base class —
+    matplotlib's stub doesn't narrow back to ``GridSpec``. We narrow
+    again with an ``isinstance`` check before handing the result back,
+    so callers see the precise ``GridSpec | None`` they expect.
     """
-    actual: Any
+    actual: GridSpecBase | SubplotSpec | None
     if gs is not None:
         actual = gs.get_gridspec() if isinstance(gs, SubplotSpec) else gs
     else:
@@ -238,7 +250,11 @@ def _resolve_gridspec(
         return None
     while isinstance(actual, GridSpecFromSubplotSpec):
         actual = actual._subplot_spec.get_gridspec()  # type: ignore[attr-defined]
-    return actual  # type: ignore[no-any-return]
+    if not isinstance(actual, GridSpec):
+        # GridSpecBase has subclasses we don't recognise — bail rather
+        # than handing back something whose ``.update`` may not exist.
+        return None
+    return actual
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -253,8 +269,14 @@ def _resolve_gridspec(
 # labels. Color is intentionally excluded so user-set tick colors stay.
 
 
-def _copy_label_font(src: Any, dst: Any) -> None:
-    """Copy fontsize/weight/family/style from ``src`` Text onto ``dst``."""
+def _copy_label_font(src: Text, dst: Text) -> None:
+    """Copy fontsize/weight/family/style from ``src`` Text onto ``dst``.
+
+    Both arguments are matplotlib :class:`~matplotlib.text.Text` artists
+    (axis labels and tick labels alike). Typed as ``Text`` rather than
+    ``Any`` so static analysis catches accidental calls with a
+    non-Text artist.
+    """
     dst.set_fontsize(src.get_fontsize())
     dst.set_fontweight(src.get_fontweight())
     dst.set_fontfamily(src.get_fontfamily())
