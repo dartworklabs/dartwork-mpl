@@ -965,3 +965,344 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
   background: var(--dm-bg-page) !important;
   border-radius: var(--rx-radius-3) !important;
 }
+
+
+/* ===========================================================================
+ * TIER 5 — universal widget unification
+ *
+ * One visual language for every interactive widget in the docs:
+ *   - underline tabs (no pills, no dots, no fills)
+ *   - hairline section dividers (no carded outer containers)
+ *   - generous breathing room between tab strip and panel content
+ *   - flat colormap-grid / palette-grid panels
+ *
+ * Targets sphinx-design tab-sets, the legacy palette catalog (.dm-pc-*),
+ * the preset compare widget (.dm-preset-compare), the ROI ruler
+ * (.dm-ruler-widget), the validation simulator (.dm-lint-sim), and a
+ * couple of dynamic_ux widgets that still ship as raised cards.
+ *
+ * Loaded after radix-design's earlier sections so it wins; uses
+ * !important to beat each widget's per-id inline styles or its own
+ * stylesheet.
+ * =========================================================================== */
+
+/* ---- sphinx-design tab-set (e.g. integrations/mcp_server, layout, …) ---- */
+
+.yue .sd-tab-set {
+  margin: 1.6em 0 2em !important;
+}
+
+.yue .sd-tab-set > input + label,
+.yue .sd-tab-set > input + label.sd-tab-label {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: var(--dm-text-muted) !important;
+  font-weight: var(--rx-weight-medium) !important;
+  font-size: 14.5px !important;
+  letter-spacing: 0 !important;
+  padding: 8px 16px !important;
+  margin: 0 !important;
+  transition: color 0.12s, border-color 0.12s !important;
+}
+
+.yue .sd-tab-set > input + label:hover {
+  color: var(--dm-text-strong) !important;
+  background: transparent !important;
+}
+
+.yue .sd-tab-set > input:checked + label,
+.yue .sd-tab-set > input:checked + label.sd-tab-label {
+  color: var(--dm-text-strong) !important;
+  border-bottom-color: var(--rx-accent-9) !important;
+  background: transparent !important;
+}
+
+/* The strip itself — bottom hairline carries the tabs */
+.yue .sd-tab-set > input + label {
+  margin-bottom: -1px !important;
+}
+
+.yue .sd-tab-set {
+  border-bottom: 1px solid var(--dm-border-faint);
+  padding-bottom: 0;
+}
+
+.yue .sd-tab-set::after {
+  /* Cancel sphinx-design's default underline strip — our label hairline
+   * already carries the separator. */
+  display: none !important;
+}
+
+/* Panel content: paragraph-of-breathing-room below the active label */
+.yue .sd-tab-content {
+  padding: 1.4em 0 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ---- Legacy palette-catalog tab strip (.dm-pc-tabs / .dm-pc-tab) ---- */
+
+.dm-pc-tabs {
+  display: flex !important;
+  gap: 0 !important;
+  margin-bottom: 1.4em !important;
+  border-bottom: 1px solid var(--dm-border-faint) !important;
+  flex-wrap: wrap !important;
+}
+
+.dm-pc-tab {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  color: var(--dm-text-muted) !important;
+  font-family: inherit !important;
+  font-weight: var(--rx-weight-medium) !important;
+  font-size: 14px !important;
+  letter-spacing: 0 !important;
+  padding: 8px 14px !important;
+  margin-bottom: -1px !important;
+  transition: color 0.12s, border-color 0.12s !important;
+}
+
+.dm-pc-tab:hover {
+  color: var(--dm-text-strong) !important;
+  border-color: transparent !important;
+}
+
+.dm-pc-tab-active,
+.dm-pc-tab.active {
+  color: var(--dm-text-strong) !important;
+  border-bottom-color: var(--rx-accent-9) !important;
+  background: transparent !important;
+}
+
+/* ---- Color-sheet wrapper (.dm-color-sheet) — strip the outer card ---- */
+
+.dm-color-sheet {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 0 2em !important;
+}
+
+.dm-sheet-title {
+  margin: 0.4em 0 1em !important;
+  padding: 0 !important;
+  border: none !important;
+  font-size: 18px !important;
+  font-weight: var(--rx-weight-semibold) !important;
+  color: var(--dm-text-strong) !important;
+  letter-spacing: -0.005em !important;
+}
+
+.dm-section-divider {
+  border-top: 1px solid var(--dm-border-faint) !important;
+  margin: 0 0 1.2em !important;
+}
+
+/* ---- Preset compare widget — drop the outer card + control overflow --- */
+
+.dm-preset-compare {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 1.6em 0 2em !important;
+}
+
+/* The rcparam read-out grid was 3-column with no min-width; it overflowed
+ * the card on narrower viewports. Loosen the minmax so cells re-flow to
+ * 2 then 1 column as space tightens. */
+.dm-pc-info,
+.dm-pc-rcparams,
+.dm-pc-params {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+  gap: 14px 24px !important;
+}
+
+/* ---- ROI ruler widget (.dm-ruler-widget) — flat + relayout ---- */
+
+.dm-ruler-widget {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 1.6em 0 !important;
+  overflow: visible !important;
+}
+
+.dm-rw-head {
+  padding: 0 0 4px !important;
+  border-bottom: 1px solid var(--dm-border-faint);
+}
+
+.dm-rw-title {
+  font-size: 16px !important;
+  font-weight: var(--rx-weight-semibold) !important;
+  letter-spacing: -0.005em !important;
+}
+
+.dm-rw-title code {
+  background: var(--dm-bg-subtle) !important;
+  border: 1px solid var(--dm-border-faint) !important;
+  padding: 1px 6px !important;
+  font-size: 0.85em !important;
+}
+
+.dm-rw-sub {
+  font-size: 13.5px !important;
+  color: var(--dm-text-muted) !important;
+  margin: 6px 0 0 !important;
+}
+
+/* Relayout: preset selector on its own row at full width,
+ * fs/fw/lw helpers on the row below in a 3-column grid. The original
+ * auto-fit grid was mixing all four controls together, so 'Preset' sat
+ * awkwardly next to 'fs' on wide viewports. */
+.dm-rw-controls {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 14px !important;
+  padding: 14px 0 16px !important;
+  border-bottom: 1px solid var(--dm-border-faint) !important;
+}
+
+.dm-rw-ctrl-preset {
+  /* The preset control gets its own row (single-column wide); the JS
+   * builder marks it with this class. Falls back gracefully if absent. */
+  grid-column: 1 / -1;
+}
+
+.dm-rw-ctrl-helpers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.dm-rw-ctrl > span {
+  font-size: 12.5px !important;
+  font-weight: var(--rx-weight-medium) !important;
+  color: var(--dm-text-muted) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.dm-rw-ctrl > span em {
+  color: var(--rx-accent-11) !important;
+  font-weight: var(--rx-weight-medium) !important;
+}
+
+.dm-rw-ctrl select {
+  font-size: 13.5px !important;
+  border: 1px solid var(--dm-border) !important;
+  border-radius: var(--rx-radius-2) !important;
+  background: var(--dm-bg-page) !important;
+  color: var(--dm-text-strong) !important;
+  padding: 6px 10px !important;
+}
+
+.dm-rw-stage {
+  background: transparent !important;
+  padding: 14px 0 !important;
+  border-bottom: 1px solid var(--dm-border-faint);
+}
+
+.dm-rw-readouts {
+  background: transparent !important;
+  border-color: var(--dm-border-faint) !important;
+  border-left: none !important;
+  border-right: none !important;
+  padding: 10px 0 !important;
+}
+
+.dm-rw-readouts > div {
+  font-size: 13px !important;
+}
+
+.dm-rw-code {
+  border-radius: var(--rx-radius-3) !important;
+  margin-top: 12px !important;
+  font-size: 12.5px !important;
+}
+
+/* ---- Validation simulator panel — tighten font scale (inherits the
+ *      Tier-2 flatten from earlier) ---- */
+
+.dm-ls-title {
+  font-size: 16px !important;
+  font-weight: var(--rx-weight-semibold) !important;
+  letter-spacing: -0.005em !important;
+}
+
+.dm-ls-sub {
+  font-size: 13.5px !important;
+  color: var(--dm-text-muted) !important;
+}
+
+.dm-ls-grid label > span {
+  font-size: 12.5px !important;
+  font-weight: var(--rx-weight-medium) !important;
+  color: var(--dm-text-muted) !important;
+}
+
+/* Validator widget — live figure preview area. The JS draws an SVG mock
+ * that updates with every slider. */
+.dm-ls-figpreview {
+  margin: 14px 0 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--dm-border-faint);
+  border-bottom: 1px solid var(--dm-border-faint);
+}
+
+.dm-ls-figpreview-label {
+  font-size: 12px;
+  font-weight: var(--rx-weight-medium);
+  color: var(--dm-text-muted);
+  margin-bottom: 8px;
+  letter-spacing: 0;
+}
+
+.dm-ls-figsvg {
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+
+/* ===========================================================================
+ * TIER 6 — widen the docs body
+ *
+ * User: "docs 전체 폭을 사용하지도 않아 — 전체 폭을 사용하게 해줘."
+ *
+ * Shibuya's default content max-width is around 48–52rem in its
+ * publication CSS, which leaves a wide gutter on 1440px+ displays and
+ * crops figures (notably the simple_layout vs tight_layout side-by-side).
+ * Bump the article width up; the TOC right rail still gets its column.
+ * =========================================================================== */
+
+:root {
+  --sy-c-content-width: 64rem;
+}
+
+.yue {
+  max-width: none;
+}
+
+.bd-article-container,
+.bd-content,
+.bd-main,
+.yue.bd-article,
+.bd-article {
+  max-width: 64rem;
+}
