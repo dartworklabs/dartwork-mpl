@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Excalidraw-style hand-drawn rendering of the dartwork-mpl "config
+  precedence" mental model. Authored directly in SVG (no live Excalidraw
+  asset import) so the file commits cleanly without any sketch.json
+  baggage; the wobbly aesthetic comes from a feTurbulence + feDisplacementMap
+  perturbation filter applied to every primitive.
+
+  Same content as the Mermaid version in docs/usage_guide/config.md, but
+  rendered with hand-drawn lines + Caveat / Comic Neue style font.
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 780 540"
+     preserveAspectRatio="xMidYMid meet"
+     role="img"
+     aria-label="dartwork-mpl config resolution chain — hand-drawn">
+
+  <defs>
+    <!-- Wobble filter: small turbulence + low-amplitude displacement
+         gives lines a "drawn by hand" perturbation without making them
+         illegible. scale 1.2 is the same magnitude Excalidraw uses for
+         its 'cartoonist' style. -->
+    <filter id="wobble" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018"
+                    numOctaves="2" seed="7" result="turb"/>
+      <feDisplacementMap in="SourceGraphic" in2="turb"
+                         scale="1.4" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+
+    <!-- Arrowhead — also wobbled so it matches the strokes. -->
+    <marker id="arrow-hand" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M0,0 L10,5 L0,10 L2,5 z"
+            fill="#1c2024" filter="url(#wobble)"/>
+    </marker>
+  </defs>
+
+  <style>
+    .ex-font {
+      font-family: 'Caveat', 'Comic Neue', 'Comic Sans MS', cursive;
+      fill: #1c2024;
+    }
+    .ex-card {
+      fill: #fffef9;
+      stroke: #1c2024;
+      stroke-width: 1.5;
+      stroke-linejoin: round;
+    }
+    .ex-card-accent { fill: #fef3c7; }   /* warm yellow */
+    .ex-card-cool   { fill: #ecfeff; }   /* cool blue   */
+    .ex-card-cool2  { fill: #f3e8ff; }   /* lilac       */
+    .ex-line {
+      stroke: #1c2024;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      fill: none;
+    }
+    .ex-label-fill { fill: #ffffff; }
+    .ex-label-stroke {
+      stroke: #1c2024; stroke-width: 1.1; fill: #ffffff;
+    }
+  </style>
+
+  <!-- Title (sits outside the wobble for crisp text) -->
+  <text x="390" y="38" text-anchor="middle"
+        class="ex-font" font-size="28" font-weight="700">
+    config resolution — the override ladder
+  </text>
+  <text x="390" y="62" text-anchor="middle"
+        class="ex-font" font-size="16" fill="#60646c">
+    every option falls through here in this order
+  </text>
+
+  <!-- ============================================================ -->
+  <!-- All shapes inside this <g> get the hand-drawn wobble.        -->
+  <g filter="url(#wobble)">
+
+    <!-- ===== Level 1: per-call keyword (top — wins) ===== -->
+    <rect x="180" y="100" width="420" height="98" rx="14"
+          class="ex-card ex-card-accent"/>
+    <text x="390" y="138" text-anchor="middle"
+          class="ex-font" font-size="22" font-weight="700">
+      per-call keyword
+    </text>
+    <text x="390" y="166" text-anchor="middle"
+          class="ex-font" font-size="18">
+      simple_layout(fig, adopt_orphan_tick_font=False)
+    </text>
+    <text x="390" y="187" text-anchor="middle"
+          class="ex-font" font-size="14" fill="#9a6a00"
+          font-style="italic">
+      ★ always wins
+    </text>
+
+    <!-- arrow 1 -> 2 -->
+    <path class="ex-line"
+          d="M390 200 L390 246"
+          marker-end="url(#arrow-hand)"/>
+
+    <!-- ===== Level 2: dm.config field ===== -->
+    <rect x="180" y="260" width="420" height="98" rx="14"
+          class="ex-card ex-card-cool"/>
+    <text x="390" y="298" text-anchor="middle"
+          class="ex-font" font-size="22" font-weight="700">
+      dm.config field
+    </text>
+    <text x="390" y="326" text-anchor="middle"
+          class="ex-font" font-size="18">
+      dm.config.adopt_orphan_tick_font = False
+    </text>
+    <text x="390" y="347" text-anchor="middle"
+          class="ex-font" font-size="14" fill="#1d6ea8"
+          font-style="italic">
+      project default
+    </text>
+
+    <!-- arrow 2 -> 3 -->
+    <path class="ex-line"
+          d="M390 360 L390 406"
+          marker-end="url(#arrow-hand)"/>
+
+    <!-- ===== Level 3: hard-coded Config default ===== -->
+    <rect x="180" y="420" width="420" height="90" rx="14"
+          class="ex-card ex-card-cool2"/>
+    <text x="390" y="456" text-anchor="middle"
+          class="ex-font" font-size="22" font-weight="700">
+      hard-coded Config default
+    </text>
+    <text x="390" y="482" text-anchor="middle"
+          class="ex-font" font-size="18">
+      (True / False)
+    </text>
+    <text x="390" y="503" text-anchor="middle"
+          class="ex-font" font-size="14" fill="#6c2bd9"
+          font-style="italic">
+      library default
+    </text>
+
+    <!-- edge labels on small white pillows so they don't collide with
+         the arrows the filter is jittering. -->
+    <rect x="420" y="216" width="120" height="22" rx="6"
+          class="ex-label-stroke"/>
+    <text x="480" y="232" text-anchor="middle"
+          class="ex-font" font-size="14">
+      None? fall through
+    </text>
+
+    <rect x="420" y="376" width="130" height="22" rx="6"
+          class="ex-label-stroke"/>
+    <text x="485" y="392" text-anchor="middle"
+          class="ex-font" font-size="14">
+      no field? fall through
+    </text>
+  </g>
+
+  <!-- footnote (outside wobble) -->
+  <text x="390" y="535" text-anchor="middle"
+        class="ex-font" font-size="13" fill="#60646c">
+    same chain as Mermaid version — different aesthetic for a different audience.
+  </text>
+</svg>
