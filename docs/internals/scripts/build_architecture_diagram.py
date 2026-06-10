@@ -50,27 +50,32 @@ def main() -> int:
     cwd_before = Path.cwd()
     os.chdir(OUT_DIR)
 
+    # Compact layout: fewer nodes, larger fonts. The earlier 13-node
+    # version exported at ~1636px and shrank its labels below readability
+    # once capped to the body width. Grouping the three token stores into
+    # one node and the four AI nodes into two keeps the diagram a clean
+    # left-to-right pipeline that stays legible at 100% body width.
     graph_attr = {
         "bgcolor": "transparent",
-        "pad": "0.3",
-        "nodesep": "0.45",
-        "ranksep": "0.65",
+        "pad": "0.25",
+        "nodesep": "0.55",
+        "ranksep": "0.85",
         "splines": "spline",
         "fontname": "Inter, system-ui, sans-serif",
-        "fontsize": "11",
+        "fontsize": "13",
         "fontcolor": "#60646c",
     }
     node_attr = {
         "fontname": "Inter, system-ui, sans-serif",
-        "fontsize": "11",
+        "fontsize": "12.5",
         "fontcolor": "#1c2024",
     }
     edge_attr = {
         "color": "#9498a3",
-        "penwidth": "0.9",
-        "arrowsize": "0.7",
+        "penwidth": "1.0",
+        "arrowsize": "0.8",
         "fontname": "Inter, system-ui, sans-serif",
-        "fontsize": "9.5",
+        "fontsize": "11",
         "fontcolor": "#60646c",
     }
 
@@ -87,57 +92,37 @@ def main() -> int:
         ):
             analyst = User("Analyst / agent")
 
-            with Cluster("Authoring surface"):
-                script = Python("Analysis script\n(plt + dm.figsize + dm.fs)")
+            with Cluster("dartwork-mpl runtime (one-way pipeline)"):
+                style_engine = Python("dm.style.use(preset)")
+                layout = Python("dm.simple_layout(fig)")
+                save = Python("dm.save_formats(fig)")
+                style_engine >> Edge(label="figsize · fs · lw") >> layout
+                layout >> Edge(label="content-aware margins") >> save
 
-            with Cluster("dartwork-mpl runtime"):
-                style_engine = Python("style.use(preset)")
-                with Cluster("Design tokens (read-only)"):
-                    colors = Storage("colors / cmap")
-                    fonts = Storage("font / asset")
-                    presets = Storage("dmpl.mplstyle\npresets")
-                layout = Python("simple_layout()")
-                save = Python("save_formats()")
+            tokens = Storage("Design tokens\ncolors · cmap · font · asset")
 
-            with Cluster("Validation & AI"):
-                lint = Python("lint engine\n(anti-pattern catalog)")
-                validate = Python("validate_figure()")
-                mcp = Fastapi("MCP server\n(13 tools)")
-                agent = Python("agent helpers")
+            with Cluster("AI / validation layer (read-only observers)"):
+                checks = Python("lint engine +\nvalidate_figure()")
+                mcp = Fastapi("MCP server\n(13 tools · 12 resources)")
 
-            artifact = Storage("PNG / PDF / SVG\n+ provenance")
+            artifact = Storage("PNG · PDF · SVG\n+ provenance")
 
-            # Authoring flow ------------------------------------------------
-            analyst >> Edge(label="write code") >> script
-            script >> Edge(label="dm.style.use") >> style_engine
-            style_engine >> Edge(style="dashed") >> presets
-            style_engine >> Edge(style="dashed") >> colors
-            style_engine >> Edge(style="dashed") >> fonts
-            script >> Edge(label="plt.subplots\n(figsize=dm.figsize)") >> layout
-            layout >> Edge(label="save_formats") >> save
-            save >> Edge(label="emit") >> artifact
+            # Authoring pipeline (solid = data flow) -----------------------
+            analyst >> Edge(label="writes plot code") >> style_engine
+            save >> Edge(label="emits") >> artifact
 
-            # AI-side observers --------------------------------------------
-            (
-                script
-                >> Edge(style="dotted", label="lint_dartwork_mpl_code")
-                >> lint
-            )
-            save >> Edge(style="dotted", label="validate_plot_data") >> validate
-            mcp >> Edge(style="dashed") >> lint
-            mcp >> Edge(style="dashed") >> validate
+            # Token reads (dashed = read-only) -----------------------------
+            style_engine >> Edge(style="dashed", label="reads") >> tokens
+
+            # AI observers (dotted = inspect, never mutate) ----------------
+            style_engine >> Edge(style="dotted", label="lint") >> checks
+            save >> Edge(style="dotted", label="validate") >> checks
             (
                 analyst
                 >> Edge(style="dotted", color="#0d8ee8", label="MCP tools")
                 >> mcp
             )
-            (
-                agent
-                << Edge(
-                    style="dotted", color="#9750c1", label="docs / templates"
-                )
-                << mcp
-            )
+            mcp >> Edge(style="dashed", color="#9750c1") >> checks
     finally:
         os.chdir(cwd_before)
 

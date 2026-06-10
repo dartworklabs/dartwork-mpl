@@ -91,13 +91,38 @@ mermaid_init_js = """mermaid.initialize({
     tertiaryColor: '#fcfcfd',
     edgeLabelBackground: '#ffffff'
   },
+  // themeCSS is injected BEFORE Mermaid measures node geometry, so the
+  // nowrap here widens each node to fit its longest <code> line instead of
+  // wrapping it at a narrow default. The viewBox then grows naturally to
+  // the real content width — earlier we stretched a too-narrow SVG with
+  // `width: 100%`, which only blurred it (the user's "강제 확대만 한 느낌").
+  themeCSS: [
+    '.nodeLabel, .nodeLabel * { white-space: nowrap !important; }',
+    '.nodeLabel code { font-size: 0.92em; padding: 1px 4px;',
+    '  background: #f0f0f3; border-radius: 4px; }',
+    '.edgeLabel { font-size: 12px; }',
+    '.messageText, .actor, .labelText, .loopText, .noteText',
+    '  { font-size: 13px; }'
+  ].join(' '),
+  // useMaxWidth: true keeps the SVG <= its container; the CSS in
+  // radix-design.css Tier 7 then lets it use the *natural* content width
+  // (up to 100%) instead of force-scaling. nodeSpacing/rankSpacing kept
+  // moderate so the nowrap'd nodes don't collide.
   flowchart: {
     curve: 'basis',
-    padding: 24,
-    nodeSpacing: 70,
-    rankSpacing: 80,
-    useMaxWidth: false,
+    padding: 22,
+    nodeSpacing: 60,
+    rankSpacing: 62,
+    useMaxWidth: true,
     htmlLabels: true
+  },
+  sequence: {
+    useMaxWidth: true,
+    boxMargin: 12,
+    mirrorActors: false,
+    actorMargin: 60,
+    messageMargin: 40,
+    wrap: false
   }
 });"""
 autodoc_mock_imports = ["pydantic", "fastapi"]
@@ -166,7 +191,7 @@ html_css_files = [
     # See _static/radix-design.css for the full token catalog.
     "radix-design.css",
 ]
-html_js_files = ["custom.js", "dynamic_ux.js"]
+html_js_files = ["custom.js", "dynamic_ux.js", "mermaid_fit.js"]
 
 # Prevent sections from gallery/index from appearing in the global toctree
 # toctree_object_entries = False  # Removed as it might interfere with sidebar
