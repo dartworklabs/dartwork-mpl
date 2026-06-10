@@ -93,13 +93,36 @@
     var tooltip = d3.select(host).append("div")
                     .attr("class", "dm-d3-tooltip");
 
+    // Degree = number of edges touching a node. Drives radius so hub
+    // modules (config, asset, lint) read as bigger at a glance — the same
+    // "importance by connectivity" signal the static Graphviz weights
+    // edges by, but here it's encoded in node size.
+    var degree = {};
+    nodes.forEach(function (n) { degree[n.id] = 0; });
+    links.forEach(function (l) {
+      degree[l.source] = (degree[l.source] || 0) + 1;
+      degree[l.target] = (degree[l.target] || 0) + 1;
+    });
+    var maxDeg = Math.max.apply(null, nodes.map(function (n) {
+      return degree[n.id];
+    }));
+    function radius(d) { return 9 + 9 * Math.sqrt(degree[d.id] / maxDeg); }
+
+    var groupLabel = {
+      api:     "Plotting API",
+      data:    "Design tokens",
+      support: "Tooling / agent",
+    };
+
     // Force simulation — gentle so it settles within ~3s.
     var simulation = d3.forceSimulation(nodes)
       .force("link",   d3.forceLink(links).id(function (d) { return d.id; })
-                                         .distance(85).strength(0.55))
-      .force("charge", d3.forceManyBody().strength(-220))
+                                         .distance(90).strength(0.5))
+      .force("charge", d3.forceManyBody().strength(-260))
       .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collide", d3.forceCollide(28));
+      .force("collide", d3.forceCollide(function (d) {
+        return radius(d) + 16;
+      }));
 
     var link = svg.append("g")
       .attr("class", "dm-d3-links")
@@ -121,7 +144,7 @@
               .on("end",   dragended));
 
     node.append("circle")
-      .attr("r", 14)
+      .attr("r", radius)
       .attr("fill", function (d) { return clusters[d.group] || "#1c2024"; })
       .attr("fill-opacity", 0.18)
       .attr("stroke", function (d) { return clusters[d.group] || "#1c2024"; })
@@ -129,7 +152,10 @@
       .on("mouseover", function (event, d) {
         var rect = host.getBoundingClientRect();
         tooltip.classed("is-visible", true)
-               .text(d.id + " — group: " + d.group)
+               .html(
+                 "<b>" + d.id + "</b><br>" +
+                 (groupLabel[d.group] || d.group) +
+                 " · " + degree[d.id] + " edges")
                .style("left",
                       (event.clientX - rect.left + 12) + "px")
                .style("top",
@@ -148,8 +174,27 @@
 
     node.append("text")
       .attr("dy", 4)
-      .attr("x", 18)
+      .attr("x", function (d) { return radius(d) + 5; })
       .text(function (d) { return d.id; });
+
+    // Cluster legend (top-left) — three color chips so the hover tooltip
+    // isn't the only way to learn what a color means.
+    var legend = svg.append("g")
+      .attr("class", "dm-d3-legend")
+      .attr("transform", "translate(14, 16)");
+    var legendKeys = Object.keys(groupLabel);
+    legendKeys.forEach(function (g, i) {
+      var row = legend.append("g")
+        .attr("transform", "translate(0," + (i * 20) + ")");
+      row.append("circle")
+        .attr("r", 6).attr("cx", 6).attr("cy", 0)
+        .attr("fill", clusters[g]).attr("fill-opacity", 0.22)
+        .attr("stroke", clusters[g]).attr("stroke-width", 1.4);
+      row.append("text")
+        .attr("x", 18).attr("dy", 4)
+        .attr("font-size", "11.5px").attr("fill", "#60646c")
+        .text(groupLabel[g]);
+    });
 
     simulation.on("tick", function () {
       link

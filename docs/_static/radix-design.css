@@ -1311,30 +1311,51 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 /* ===========================================================================
  * TIER 7 — diagram widget polish
  *
- * Mermaid SVGs default to their natural content width, which leaves a
- * giant gutter on 64rem body and forces long labels to wrap. Stretch
- * the SVG to fill the container; let height scale proportionally.
+ * Mermaid measures node geometry with the conf.py `themeCSS` nowrap rule,
+ * so the SVG's intrinsic viewBox already matches the real label widths.
+ * We therefore DO NOT force `width: 100%` here — that only blew up a
+ * too-narrow viewBox and blurred the text (the "강제 확대만 한 느낌").
+ * Instead: cap at the container (max-width 100%), keep the natural width,
+ * and center. Big diagrams fill the body; small ones stay crisp.
  *
  * Same treatment for sphinx.ext.graphviz output (.graphviz wrapper).
  *
- * The diagrams PoC page (docs/internals/diagrams_poc.md) renders five
- * libraries side-by-side in a grid; the .dm-diag-* classes below give
- * each tile a consistent card frame so visual comparison is fair.
+ * The diagrams PoC page (docs/internals/diagrams_poc.md) renders each
+ * library's best-fit showcase; the .dm-diag-* classes give every tile a
+ * consistent card frame.
  * =========================================================================== */
 
 /* --- Mermaid --- */
 .mermaid {
   width: 100%;
   text-align: center;
-  margin: 1.5em 0;
+  margin: 1.6em 0;
+  overflow-x: auto;          /* a very wide sequence diagram scrolls,
+                                it never gets crushed/scaled down */
 }
 
 .mermaid > svg {
-  width: 100% !important;
-  max-width: 100% !important;
+  /* Do NOT set width/max-width here. Mermaid (useMaxWidth: true) already
+   * stamps `style="max-width: <viewBox width>px"` on the <svg>, and the
+   * theme's `width: 100%` then resolves to min(100%, viewBox) — i.e. the
+   * diagram renders at its NATURAL size and only shrinks if it would
+   * overflow the container. An earlier `max-width: 100% !important` here
+   * clobbered that inline cap and let a small viewBox scale UP to the full
+   * container, blurring the foreignObject labels ("강제 확대만 한 느낌").
+   * Leaving width/max-width alone is the fix; we only center + tidy. */
   height: auto !important;
   display: block;
   margin: 0 auto;
+}
+
+/* Runtime backstop for the conf.py themeCSS nowrap — keeps node labels
+ * (and the <code> chips inside them) on one line even if a Mermaid
+ * version ignores themeCSS during measurement. */
+.mermaid .nodeLabel,
+.mermaid .nodeLabel *,
+.mermaid .messageText,
+.mermaid .actor {
+  white-space: nowrap;
 }
 
 /* --- Graphviz (sphinx.ext.graphviz) --- */
@@ -1343,17 +1364,32 @@ p.graphviz,
 figure.graphviz {
   width: 100%;
   text-align: center;
-  margin: 1.5em 0;
+  margin: 1.6em 0;
+  overflow-x: auto;
 }
 
 div.graphviz > svg,
+div.graphviz > object,
 p.graphviz > svg,
-figure.graphviz > svg {
-  width: 100% !important;
+p.graphviz > object,
+figure.graphviz > svg,
+figure.graphviz > object {
   max-width: 100% !important;
   height: auto !important;
   display: block;
   margin: 0 auto;
+}
+
+/* Mingrammer Diagrams / architecture SVGs embedded via {image}. They are
+ * exported large (≈1600px); cap so a near-square diagram doesn't blow the
+ * vertical rhythm, but let it stay crisp. */
+.dm-diag-architecture img,
+img[src*="architecture_overview"] {
+  max-width: 100%;
+  max-height: 560px;
+  height: auto;
+  display: block;
+  margin: 0.4em auto;
 }
 
 /* --- Diagrams PoC — shared library tile frame --- */

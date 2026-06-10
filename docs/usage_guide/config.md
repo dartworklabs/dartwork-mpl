@@ -121,16 +121,15 @@ the field name — if it fails, the field's gone or never existed.
 
 ```{mermaid}
 flowchart TD
-    A["<b>per-call keyword</b><br/><code>simple_layout(fig, ...)</code><br/><i>always wins</i>"]
-    B["<b>dm.config field</b><br/><code>dm.config.adopt_orphan_tick_font = False</code><br/><i>project default</i>"]
-    C["<b>hard-coded Config default</b><br/>(True / False)<br/><i>library default</i>"]
-    A -->|"None? fall through"| B
-    B -->|"no field? fall through"| C
+    A["<b>① per-call keyword</b><br/><code>simple_layout(fig, adopt_orphan_tick_font=False)</code><br/><i>highest priority — always wins</i>"]
+    B["<b>② dm.config field</b><br/><code>dm.config.adopt_orphan_tick_font = False</code><br/><i>project-wide default</i>"]
+    C["<b>③ hard-coded Config default</b><br/><code>True</code><br/><i>library fallback</i>"]
+    A -->|"keyword is None → fall through"| B
+    B -->|"field unset → fall through"| C
 
-    classDef node fill:#fcfcfd,stroke:#cdced6,stroke-width:1px,color:#1c2024,rx:6,ry:6;
-    class A,B,C node;
-    linkStyle 0 stroke:#60646c,stroke-width:1px;
-    linkStyle 1 stroke:#60646c,stroke-width:1px;
+    style A fill:#fef3c7,stroke:#f0c000,stroke-width:1.5px,color:#1c2024
+    style B fill:#ecfeff,stroke:#7cd4e0,stroke-width:1px,color:#1c2024
+    style C fill:#f3e8ff,stroke:#c4a0e8,stroke-width:1px,color:#1c2024
 ```
 
 The chain is **deterministic and read-only at the lower levels** —
