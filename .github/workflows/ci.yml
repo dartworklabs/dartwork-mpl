@@ -167,6 +167,13 @@ jobs:
           path: docs/examples_gallery
           key: gallery-${{ runner.os }}-${{ hashFiles('docs/examples_source/**', 'src/dartwork_mpl/**/*.py', 'docs/conf.py', 'docs/_ext/build_hooks.py', 'uv.lock') }}
 
+      # The diagrams PoC page (docs/internals/diagrams_poc.md) uses
+      # sphinx.ext.graphviz to render the auto-extracted module dependency
+      # graph (and its Diagrams-Python architecture script also shells out
+      # to the same `dot` binary). Ubuntu runners ship without it.
+      - name: Install Graphviz (dot binary for sphinx.ext.graphviz)
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
       - name: Build documentation (warnings = errors)
         env:
           MPLBACKEND: Agg

@@ -136,6 +136,14 @@ dev = [
     "sphinx-markdown-builder>=0.6.8",
     "sphinx-tabs>=3.4.7",
     "sphinxcontrib-mermaid>=1.0.0",
+    # Mingrammer Diagrams — system architecture as code. Used by
+    # docs/internals/scripts/build_architecture_diagram.py to emit
+    # docs/_static/diagrams/architecture_overview.svg before sphinx-build.
+    # Like sphinx.ext.graphviz, this shells out to the `dot` binary
+    # (apt/brew install graphviz). CI installs it explicitly; locally
+    # the build skips the regen step if dot is absent (committed SVG
+    # remains the displayed asset).
+    "diagrams>=0.24.4",
 ]
 
 # Test configuration and commands

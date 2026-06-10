@@ -53,12 +53,26 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "sphinx.ext.todo",
+    "sphinx.ext.graphviz",
     "myst_parser",
     "sphinx_gallery.gen_gallery",
     "sphinx_copybutton",
     "sphinx_design",
     "sphinx_tabs.tabs",
     "sphinxcontrib.mermaid",
+]
+
+# --- Graphviz (sphinx.ext.graphviz) ---
+# Emit SVG (vector, crisp at any zoom) and let it shrink/grow naturally.
+# Note: requires the `dot` binary on $PATH (sudo apt install graphviz / brew
+# install graphviz). The diagrams PoC page uses the dot directive to render
+# the module dependency graph extracted automatically from src/dartwork_mpl/.
+graphviz_output_format = "svg"
+graphviz_dot_args = [
+    "-Gfontname=Inter, system-ui, sans-serif",
+    "-Nfontname=Inter, system-ui, sans-serif",
+    "-Efontname=Inter, system-ui, sans-serif",
+    "-Gbgcolor=transparent",
 ]
 
 # Mermaid theming — keep the diagram visually aligned with the radix-design
@@ -77,7 +91,14 @@ mermaid_init_js = """mermaid.initialize({
     tertiaryColor: '#fcfcfd',
     edgeLabelBackground: '#ffffff'
   },
-  flowchart: { curve: 'basis', padding: 18 }
+  flowchart: {
+    curve: 'basis',
+    padding: 24,
+    nodeSpacing: 70,
+    rankSpacing: 80,
+    useMaxWidth: false,
+    htmlLabels: true
+  }
 });"""
 autodoc_mock_imports = ["pydantic", "fastapi"]
 
