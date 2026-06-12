@@ -2,7 +2,7 @@
  * dm-interactive.css — Interactive primitive SSOT for the docs UI overhaul.
  *
  * One reusable primitive per interaction pattern, built entirely on the Radix
- * tokens defined in dartwork-design.css (--rx-* / --dm-*). Loaded AFTER
+ * tokens defined in dartwork-design.css (--dm-* / --dm-*). Loaded AFTER
  * dartwork-design.css (see conf.py html_css_files) so it can consume those tokens
  * and win the cascade where it must.
  *
@@ -10,7 +10,7 @@
  *   • Active state never lives only on a background that fights a transparent
  *     !important base — it lives on a separate surface (thumb), a different
  *     property (border-bottom), or a soft wash with its own text token.
- *   • Active text on a soft/teal wash is ALWAYS --rx-accent-11 (AA in both
+ *   • Active text on a soft/teal wash is ALWAYS --dm-accent-11 (AA in both
  *     themes). Never white-on-accent-9 (~2.5:1, fails AA).
  *   • :focus-visible is a distinct ring, never confused with the active cue.
  *   • Every control is a real <button>/<a>/<input> with aria state.
@@ -28,28 +28,28 @@
  * which alias the raw Radix scale, so a future retune happens in one place.
  * --------------------------------------------------------------------------- */
 :root {
-  --dm-i-radius:        var(--rx-radius-4);     /* 8px — control corner       */
-  --dm-i-radius-sm:     var(--rx-radius-3);     /* 6px — inner thumb / chip   */
-  --dm-i-track:         var(--rx-gray-a3);      /* segmented / slider track   */
+  --dm-i-radius:        var(--dm-radius-4);     /* 8px — control corner       */
+  --dm-i-radius-sm:     var(--dm-radius-3);     /* 6px — inner thumb / chip   */
+  --dm-i-track:         var(--dm-gray-a3);      /* segmented / slider track   */
   --dm-i-thumb:         var(--dm-bg-panel);     /* segmented active surface   */
-  --dm-i-active-soft:   var(--rx-accent-3);     /* soft active wash           */
-  --dm-i-active-text:   var(--rx-accent-11);    /* text on soft/active (AA)   */
-  --dm-i-active-line:   var(--rx-accent-9);     /* underline / ring / handle  */
-  --dm-i-hover:         var(--rx-gray-a3);      /* neutral hover wash         */
+  --dm-i-active-soft:   var(--dm-accent-3);     /* soft active wash           */
+  --dm-i-active-text:   var(--dm-accent-11);    /* text on soft/active (AA)   */
+  --dm-i-active-line:   var(--dm-accent-9);     /* underline / ring / handle  */
+  --dm-i-hover:         var(--dm-gray-a3);      /* neutral hover wash         */
   --dm-i-muted:         var(--dm-text-muted);
   --dm-i-strong:        var(--dm-text-strong);
   --dm-i-border:        var(--dm-border-faint);
   --dm-i-border-strong: var(--dm-border);
-  --dm-i-soft-border:   var(--rx-accent-7);     /* hairline on soft chip      */
-  --dm-i-code-surface:  var(--rx-gray-2);       /* light code slab (LIGHT)    */
-  --dm-i-code-prompt:   var(--rx-accent-11);
-  --dm-i-focus:         var(--rx-accent-9);
-  --dm-i-shadow:        var(--rx-shadow-2);
+  --dm-i-soft-border:   var(--dm-accent-7);     /* hairline on soft chip      */
+  --dm-i-code-surface:  var(--dm-gray-2);       /* light code slab (LIGHT)    */
+  --dm-i-code-prompt:   var(--dm-accent-11);
+  --dm-i-focus:         var(--dm-accent-9);
+  --dm-i-shadow:        var(--dm-shadow-2);
   --dm-i-ease:          cubic-bezier(0.4, 0, 0.2, 1);
 }
 html.dark,
 body[data-theme="dark"] {
-  --dm-i-code-surface:  var(--rx-gray-3);       /* deeper slab in DARK        */
+  --dm-i-code-surface:  var(--dm-gray-3);       /* deeper slab in DARK        */
 }
 
 /* Shared focus ring — one ring for every primitive, distinct from any active
@@ -100,7 +100,7 @@ body[data-theme="dark"] {
   color: var(--dm-i-muted);
   font: inherit;
   font-size: 13.5px;
-  font-weight: var(--rx-weight-medium);
+  font-weight: var(--dm-weight-medium);
   line-height: 1.4;
   padding: 6px 14px;
   white-space: nowrap;
@@ -139,7 +139,7 @@ body[data-theme="dark"] {
   color: var(--dm-i-muted);
   font: inherit;
   font-size: 14px;
-  font-weight: var(--rx-weight-medium);
+  font-weight: var(--dm-weight-medium);
   padding: 8px 14px;
   margin-bottom: -1px;
   cursor: pointer;
@@ -168,7 +168,7 @@ body[data-theme="dark"] {
   padding: 5px 12px;
   font: inherit;
   font-size: 13px;
-  font-weight: var(--rx-weight-medium);
+  font-weight: var(--dm-weight-medium);
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
@@ -178,7 +178,7 @@ body[data-theme="dark"] {
   background: var(--dm-i-active-soft);
   color: var(--dm-i-active-text);
   border-color: var(--dm-i-soft-border);
-  font-weight: var(--rx-weight-semibold);
+  font-weight: var(--dm-weight-semibold);
 }
 .dm-chip__x {
   display: inline-flex;
@@ -192,7 +192,7 @@ body[data-theme="dark"] {
   opacity: 0.6;
   cursor: pointer;
 }
-.dm-chip__x:hover { opacity: 1; background: var(--rx-gray-a4); }
+.dm-chip__x:hover { opacity: 1; background: var(--dm-gray-a4); }
 
 /* ---------------------------------------------------------------------------
  * 4. Swatch tile — color / palette / colormap pickers. Selected = teal ring
@@ -202,8 +202,8 @@ body[data-theme="dark"] {
   position: relative;
   width: 56px;
   height: 56px;
-  border-radius: var(--rx-radius-4);
-  border: 1px solid var(--rx-gray-a6);
+  border-radius: var(--dm-radius-4);
+  border: 1px solid var(--dm-gray-a6);
   cursor: pointer;
   transition: transform 0.12s, box-shadow 0.12s;
 }
@@ -223,8 +223,8 @@ body[data-theme="dark"] {
   height: 6px;
   appearance: none;
   -webkit-appearance: none;
-  border-radius: var(--rx-radius-full);
-  background: var(--rx-gray-a4);
+  border-radius: var(--dm-radius-full);
+  background: var(--dm-gray-a4);
   outline: none;
   cursor: pointer;
 }
@@ -284,9 +284,9 @@ body[data-theme="dark"] {
   position: relative;
   background: var(--dm-i-code-surface);
   border: 1px solid var(--dm-i-border);
-  border-radius: var(--rx-radius-4);
+  border-radius: var(--dm-radius-4);
   padding: 13px 50px 13px 16px;
-  font-family: var(--rx-f-mono, ui-monospace, "SFMono-Regular", Menlo, monospace);
+  font-family: var(--dm-f-mono, ui-monospace, "SFMono-Regular", Menlo, monospace);
   font-size: 0.9rem;
   line-height: 1.5;
   color: var(--dm-i-strong);
@@ -305,7 +305,7 @@ body[data-theme="dark"] {
   gap: 7px;
   font: inherit;
   font-size: 14px;
-  font-weight: var(--rx-weight-semibold);
+  font-weight: var(--dm-weight-semibold);
   padding: 9px 18px;
   border-radius: var(--dm-i-radius);
   border: 1px solid transparent;
@@ -319,7 +319,7 @@ body[data-theme="dark"] {
   border-color: var(--dm-i-active-line);
   box-shadow: var(--dm-i-shadow);
 }
-.dm-cta--primary:hover { background: var(--rx-accent-10); border-color: var(--rx-accent-10); }
+.dm-cta--primary:hover { background: var(--dm-accent-10); border-color: var(--dm-accent-10); }
 .dm-cta--secondary {
   background: transparent;
   color: var(--dm-i-active-text);
@@ -339,8 +339,8 @@ body[data-theme="dark"] {
  * --------------------------------------------------------------------------- */
 .dm-callout {
   border-left: 3px solid var(--dm-i-active-line);
-  background: var(--rx-accent-2);
-  border-radius: 0 var(--rx-radius-4) var(--rx-radius-4) 0;
+  background: var(--dm-accent-2);
+  border-radius: 0 var(--dm-radius-4) var(--dm-radius-4) 0;
   padding: 12px 16px;
   font-size: 13.5px;
   color: var(--dm-i-strong);

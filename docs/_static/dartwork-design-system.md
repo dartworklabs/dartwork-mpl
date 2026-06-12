@@ -32,7 +32,7 @@ dartwork_mpl as dm` and the `.dm-*` classes). Not `dw` (a second abbreviation
 
 - **Scale tokens** → `--dm-gray-*`, `--dm-accent-*`, `--dm-radius-*`,
   `--dm-space-*`, `--dm-fs/lh/ls-*`, `--dm-weight-*`, `--dm-shadow-*`
-  (currently `--rx-*`; renamed in P3).
+  (renamed from `--rx-*` — done, P3a).
 - **Semantic tokens** → `--dm-text-*`, `--dm-bg-*`, `--dm-border-*`,
   `--dm-link*`, `--dm-i-*`. No collision (second segment differs).
 - **Upstream, untouched** → `--sy-*` (Shibuya), `--pst-*` (PyData).
@@ -81,7 +81,8 @@ dartwork_mpl as dm` and the `.dm-*` classes). Not `dw` (a second abbreviation
 |---|---|---|---|
 | **P1** | complete dark accent scale (the leak bug) | S / Low | ✅ done |
 | **P2** | define `--dm-f-mono`/`--dm-f-sys` | S / Low | ✅ done |
-| **P3** | kill legacy `--accent-9` + purple; rename `--rx-*`→`--dm-*`; migrate landing CTA/install picker → `.dm-cta`/`.dm-seg`/`.dm-code` | M / Med | ⬜ |
+| **P3a** | rename `--rx-*`→`--dm-*` (one namespace) | S / Low | ✅ |
+| **P3b** | kill legacy `--accent-9` + purple; migrate landing CTA/install picker → `.dm-cta`/`.dm-seg`/`.dm-code` | M / Med | ⬜ |
 | **P4** | tokenize radii/shadows/borders/grays in custom.css | L / Med | ⬜ |
 | **P5** | tokenize typography + collapse letter-spacing | L / Med | ⬜ |
 | **P6** | refold bespoke widgets onto primitives (compare dedupe, pickers, dynamic_ux skin) | L / Med-High | ⬜ |

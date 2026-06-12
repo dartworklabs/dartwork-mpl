@@ -16,37 +16,37 @@
   <title>Interactive UI overhaul — unified language</title>
   <style>
     :root {
-      --rx-gray-1:#fcfcfd; --rx-gray-2:#f9f9fb; --rx-gray-3:#f0f0f3;
-      --rx-gray-4:#e8e8ec; --rx-gray-5:#e0e1e6; --rx-gray-6:#d9d9e0;
-      --rx-gray-8:#b9bbc6; --rx-gray-11:#60646c; --rx-gray-12:#1c2024;
-      --rx-gray-a3:rgba(0,8,60,.059); --rx-gray-a4:rgba(0,0,39,.09);
-      --rx-gray-a6:rgba(0,0,32,.149);
-      --rx-accent-2:#f3fbf9; --rx-accent-3:#e0f8f3; --rx-accent-5:#b8eae0;
-      --rx-accent-7:#83cdbf; --rx-accent-8:#53b9ab; --rx-accent-9:#12a594;
-      --rx-accent-10:#0d9b8a; --rx-accent-11:#008573; --rx-accent-12:#0d3d38;
+      --dm-gray-1:#fcfcfd; --dm-gray-2:#f9f9fb; --dm-gray-3:#f0f0f3;
+      --dm-gray-4:#e8e8ec; --dm-gray-5:#e0e1e6; --dm-gray-6:#d9d9e0;
+      --dm-gray-8:#b9bbc6; --dm-gray-11:#60646c; --dm-gray-12:#1c2024;
+      --dm-gray-a3:rgba(0,8,60,.059); --dm-gray-a4:rgba(0,0,39,.09);
+      --dm-gray-a6:rgba(0,0,32,.149);
+      --dm-accent-2:#f3fbf9; --dm-accent-3:#e0f8f3; --dm-accent-5:#b8eae0;
+      --dm-accent-7:#83cdbf; --dm-accent-8:#53b9ab; --dm-accent-9:#12a594;
+      --dm-accent-10:#0d9b8a; --dm-accent-11:#008573; --dm-accent-12:#0d3d38;
 
-      --dm-text-strong:var(--rx-gray-12); --dm-text-muted:var(--rx-gray-11);
-      --dm-border-faint:var(--rx-gray-a4); --dm-border:var(--rx-gray-a6);
-      --dm-bg-panel:var(--rx-gray-1);
+      --dm-text-strong:var(--dm-gray-12); --dm-text-muted:var(--dm-gray-11);
+      --dm-border-faint:var(--dm-gray-a4); --dm-border:var(--dm-gray-a6);
+      --dm-bg-panel:var(--dm-gray-1);
       --page-bg:#ffffff;
-      --code-surface:var(--rx-gray-2); --code-prompt:var(--rx-accent-11);
+      --code-surface:var(--dm-gray-2); --code-prompt:var(--dm-accent-11);
 
-      --rx-shadow-2:0 0 0 1px var(--rx-gray-a4),0 1px 2px var(--rx-gray-a3),0 2px 4px -1px var(--rx-gray-a3);
+      --dm-shadow-2:0 0 0 1px var(--dm-gray-a4),0 1px 2px var(--dm-gray-a3),0 2px 4px -1px var(--dm-gray-a3);
       --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
       --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono",Consolas,Menlo,monospace;
       --radius:10px;
       --legacy-teal:#0d9488; --legacy-purple:#8b5cf6;
     }
     html.dark {
-      --rx-gray-1:#111113; --rx-gray-2:#18191b; --rx-gray-3:#212225;
-      --rx-gray-4:#272a2d; --rx-gray-5:#2e3135; --rx-gray-6:#363a3f;
-      --rx-gray-8:#5a6169; --rx-gray-11:#b0b4ba; --rx-gray-12:#edeef0;
-      --rx-gray-a3:rgba(244,246,248,.075); --rx-gray-a4:rgba(229,247,251,.106);
-      --rx-gray-a6:rgba(238,247,254,.18);
-      --rx-accent-2:#0e1916; --rx-accent-3:#112725; --rx-accent-5:#1a3833;
-      --rx-accent-7:#236e64; --rx-accent-8:#2c8577; --rx-accent-9:#12a594;
-      --rx-accent-10:#25c2ad; --rx-accent-11:#76dac3; --rx-accent-12:#adf0dd;
-      --dm-bg-panel:var(--rx-gray-2); --page-bg:#0c0c0e; --code-surface:var(--rx-gray-3);
+      --dm-gray-1:#111113; --dm-gray-2:#18191b; --dm-gray-3:#212225;
+      --dm-gray-4:#272a2d; --dm-gray-5:#2e3135; --dm-gray-6:#363a3f;
+      --dm-gray-8:#5a6169; --dm-gray-11:#b0b4ba; --dm-gray-12:#edeef0;
+      --dm-gray-a3:rgba(244,246,248,.075); --dm-gray-a4:rgba(229,247,251,.106);
+      --dm-gray-a6:rgba(238,247,254,.18);
+      --dm-accent-2:#0e1916; --dm-accent-3:#112725; --dm-accent-5:#1a3833;
+      --dm-accent-7:#236e64; --dm-accent-8:#2c8577; --dm-accent-9:#12a594;
+      --dm-accent-10:#25c2ad; --dm-accent-11:#76dac3; --dm-accent-12:#adf0dd;
+      --dm-bg-panel:var(--dm-gray-2); --page-bg:#0c0c0e; --code-surface:var(--dm-gray-3);
     }
 
     * { box-sizing:border-box; }
@@ -59,16 +59,16 @@
     .theme-toggle { display:inline-flex; align-items:center; gap:8px; background:var(--dm-bg-panel);
       color:var(--dm-text-strong); border:1px solid var(--dm-border); border-radius:999px;
       padding:7px 14px; font:inherit; font-size:13px; font-weight:500; cursor:pointer; transition:border-color .15s; }
-    .theme-toggle:hover { border-color:var(--rx-accent-9); }
+    .theme-toggle:hover { border-color:var(--dm-accent-9); }
 
     /* section scaffold */
     .sec { margin-top:46px; }
     .sec-head { display:flex; align-items:baseline; gap:10px; padding-bottom:10px; margin-bottom:18px;
       border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; }
-    .sec-num { font-family:var(--mono); font-size:12px; font-weight:600; color:var(--rx-accent-11); }
+    .sec-num { font-family:var(--mono); font-size:12px; font-weight:600; color:var(--dm-accent-11); }
     .sec-title { font-size:18px; font-weight:600; letter-spacing:-.01em; margin:0; }
     .sec-prim { font-family:var(--mono); font-size:11px; color:var(--dm-text-muted);
-      background:var(--rx-gray-a3); border-radius:5px; padding:2px 7px; }
+      background:var(--dm-gray-a3); border-radius:5px; padding:2px 7px; }
     .sec-note { width:100%; margin:2px 0 0; color:var(--dm-text-muted); font-size:13px; line-height:1.5; }
     .panel { background:var(--dm-bg-panel); border:1px solid var(--dm-border-faint);
       border-radius:var(--radius); padding:18px 20px; }
@@ -77,9 +77,9 @@
     .lead { display:flex; align-items:center; gap:14px; margin:14px 0; flex-wrap:wrap; }
 
     /* ── PRIMITIVE: segmented control ──────────────────────────────────── */
-    .seg { position:relative; display:inline-flex; background:var(--rx-gray-a3); border-radius:8px; padding:3px; }
+    .seg { position:relative; display:inline-flex; background:var(--dm-gray-a3); border-radius:8px; padding:3px; }
     .seg-thumb { position:absolute; top:3px; left:3px; height:calc(100% - 6px); background:var(--dm-bg-panel);
-      border-radius:6px; box-shadow:var(--rx-shadow-2); transition:transform .26s cubic-bezier(.4,0,.2,1), width .26s cubic-bezier(.4,0,.2,1); z-index:0; }
+      border-radius:6px; box-shadow:var(--dm-shadow-2); transition:transform .26s cubic-bezier(.4,0,.2,1), width .26s cubic-bezier(.4,0,.2,1); z-index:0; }
     .seg .opt { position:relative; z-index:1; background:none; border:none; color:var(--dm-text-muted);
       font:inherit; font-size:13.5px; font-weight:500; padding:6px 14px; cursor:pointer; transition:color .2s; white-space:nowrap; }
     .seg .opt.active { color:var(--dm-text-strong); }
@@ -90,46 +90,46 @@
       font:inherit; font-size:14px; font-weight:500; padding:8px 12px; margin-bottom:-1px; cursor:pointer;
       transition:color .12s, border-color .12s; }
     .utabs .opt:hover { color:var(--dm-text-strong); }
-    .utabs .opt.active { color:var(--dm-text-strong); border-bottom-color:var(--rx-accent-9); }
+    .utabs .opt.active { color:var(--dm-text-strong); border-bottom-color:var(--dm-accent-9); }
 
     /* ── PRIMITIVE: soft chips (filter / favorites) ────────────────────── */
     .chips { display:inline-flex; gap:7px; flex-wrap:wrap; }
     .chip { display:inline-flex; align-items:center; gap:6px; background:transparent; color:var(--dm-text-muted);
       border:1px solid var(--dm-border-faint); border-radius:7px; padding:5px 12px; font:inherit; font-size:13px;
       font-weight:500; cursor:pointer; transition:all .15s ease; }
-    .chip:hover { background:var(--rx-gray-a3); color:var(--dm-text-strong); }
-    .chip.active { background:var(--rx-accent-3); color:var(--rx-accent-11); border-color:var(--rx-accent-7); font-weight:600; }
+    .chip:hover { background:var(--dm-gray-a3); color:var(--dm-text-strong); }
+    .chip.active { background:var(--dm-accent-3); color:var(--dm-accent-11); border-color:var(--dm-accent-7); font-weight:600; }
     .chip .x { display:inline-flex; width:14px; height:14px; align-items:center; justify-content:center;
       border-radius:50%; font-size:13px; line-height:1; opacity:.6; }
-    .chip .x:hover { opacity:1; background:var(--rx-gray-a4); }
+    .chip .x:hover { opacity:1; background:var(--dm-gray-a4); }
 
     /* ── PRIMITIVE: swatch tiles (palette / colormap picker) ───────────── */
     .swatches { display:flex; gap:10px; flex-wrap:wrap; }
     .swatch { width:56px; height:56px; border-radius:9px; cursor:pointer; position:relative;
-      border:1px solid var(--rx-gray-a6); transition:transform .12s, box-shadow .12s; }
+      border:1px solid var(--dm-gray-a6); transition:transform .12s, box-shadow .12s; }
     .swatch:hover { transform:translateY(-2px); }
-    .swatch.active { box-shadow:0 0 0 2px var(--page-bg), 0 0 0 4px var(--rx-accent-9); }
+    .swatch.active { box-shadow:0 0 0 2px var(--page-bg), 0 0 0 4px var(--dm-accent-9); }
     .swatch .nm { position:absolute; left:0; right:0; bottom:-19px; text-align:center; font-size:10.5px;
       color:var(--dm-text-muted); font-weight:500; }
 
     /* ── PRIMITIVE: range slider (accent handle + fill) ────────────────── */
     .slider { width:100%; height:6px; -webkit-appearance:none; appearance:none; border-radius:999px;
-      background:var(--rx-gray-a4); outline:none; }
+      background:var(--dm-gray-a4); outline:none; }
     .slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:18px; height:18px;
-      border-radius:50%; background:var(--rx-accent-9); border:2px solid var(--dm-bg-panel);
-      box-shadow:var(--rx-shadow-2); cursor:pointer; transition:transform .1s; }
+      border-radius:50%; background:var(--dm-accent-9); border:2px solid var(--dm-bg-panel);
+      box-shadow:var(--dm-shadow-2); cursor:pointer; transition:transform .1s; }
     .slider::-webkit-slider-thumb:hover { transform:scale(1.12); }
-    .slider::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:var(--rx-accent-9);
-      border:2px solid var(--dm-bg-panel); box-shadow:var(--rx-shadow-2); cursor:pointer; }
+    .slider::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:var(--dm-accent-9);
+      border:2px solid var(--dm-bg-panel); box-shadow:var(--dm-shadow-2); cursor:pointer; }
     .slider-steps { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
 
     /* ── PRIMITIVE: CTA buttons (kill the purple) ──────────────────────── */
     .btn { display:inline-flex; align-items:center; gap:7px; font:inherit; font-size:14px; font-weight:600;
       padding:9px 18px; border-radius:8px; cursor:pointer; transition:all .15s ease; text-decoration:none; border:1px solid transparent; }
-    .btn-primary { background:var(--rx-accent-9); color:#fff; border-color:var(--rx-accent-9); box-shadow:var(--rx-shadow-2); }
-    .btn-primary:hover { background:var(--rx-accent-10); border-color:var(--rx-accent-10); }
-    .btn-secondary { background:transparent; color:var(--rx-accent-11); border-color:var(--rx-accent-7); }
-    .btn-secondary:hover { background:var(--rx-accent-3); }
+    .btn-primary { background:var(--dm-accent-9); color:#fff; border-color:var(--dm-accent-9); box-shadow:var(--dm-shadow-2); }
+    .btn-primary:hover { background:var(--dm-accent-10); border-color:var(--dm-accent-10); }
+    .btn-secondary { background:transparent; color:var(--dm-accent-11); border-color:var(--dm-accent-7); }
+    .btn-secondary:hover { background:var(--dm-accent-3); }
     .btn-ghost { background:transparent; color:var(--dm-text-muted); border-color:var(--dm-border-faint); }
     .btn-ghost:hover { color:var(--dm-text-strong); border-color:var(--dm-border); }
 
@@ -138,7 +138,7 @@
       border-radius:7px; border:1px solid transparent; background:transparent; color:var(--dm-text-muted); cursor:pointer;
       transition:all .15s; }
     .iconbtn svg { width:16px; height:16px; }
-    .iconbtn:hover { background:var(--rx-accent-3); color:var(--rx-accent-11); border-color:var(--rx-accent-7); }
+    .iconbtn:hover { background:var(--dm-accent-3); color:var(--dm-accent-11); border-color:var(--dm-accent-7); }
 
     /* ── PRIMITIVE: light code surface + ghost copy ────────────────────── */
     .codesurf { position:relative; background:var(--code-surface); border:1px solid var(--dm-border-faint);
@@ -147,15 +147,15 @@
     .codesurf .iconbtn { position:absolute; top:8px; right:8px; }
 
     /* ── PRIMITIVE: callout (left teal stripe) ─────────────────────────── */
-    .callout { border-left:3px solid var(--rx-accent-9); background:var(--rx-accent-2); border-radius:0 8px 8px 0;
+    .callout { border-left:3px solid var(--dm-accent-9); background:var(--dm-accent-2); border-radius:0 8px 8px 0;
       padding:12px 16px; font-size:13.5px; color:var(--dm-text-strong); }
-    .callout strong { color:var(--rx-accent-11); }
+    .callout strong { color:var(--dm-accent-11); }
 
     /* color-language reconcile swatches */
     .colorbar { display:flex; gap:0; border-radius:8px; overflow:hidden; border:1px solid var(--dm-border-faint); }
     .colorcell { flex:1; padding:14px 12px; font-size:11.5px; font-weight:600; color:#fff; text-align:center; font-family:var(--mono); }
     .x-tag { display:inline-block; font-size:11px; font-weight:700; color:#c2410c; }
-    .ok-tag { display:inline-block; font-size:11px; font-weight:700; color:var(--rx-accent-11); }
+    .ok-tag { display:inline-block; font-size:11px; font-weight:700; color:var(--dm-accent-11); }
   </style>
 </head>
 <body class="yue">
@@ -175,7 +175,7 @@
       <div class="sec-head">
         <span class="sec-num">00</span>
         <h2 class="sec-title">Collapse the three color languages</h2>
-        <span class="sec-prim">token: --rx-accent-9</span>
+        <span class="sec-prim">token: --dm-accent-9</span>
         <p class="sec-note">Today the docs run three accents at once. The overhaul routes everything through one teal token.</p>
       </div>
       <div class="panel">
@@ -187,9 +187,9 @@
         </div>
         <div class="lead"><span class="ok-tag">OVERHAUL — one accent, both themes</span></div>
         <div class="colorbar">
-          <div class="colorcell" style="background:var(--rx-accent-9)">--rx-accent-9 (solid)</div>
-          <div class="colorcell" style="background:var(--rx-accent-3); color:var(--rx-accent-11)">--rx-accent-3 (soft)</div>
-          <div class="colorcell" style="background:var(--rx-accent-11)">--rx-accent-11 (text)</div>
+          <div class="colorcell" style="background:var(--dm-accent-9)">--dm-accent-9 (solid)</div>
+          <div class="colorcell" style="background:var(--dm-accent-3); color:var(--dm-accent-11)">--dm-accent-3 (soft)</div>
+          <div class="colorcell" style="background:var(--dm-accent-11)">--dm-accent-11 (text)</div>
         </div>
       </div>
     </section>
@@ -336,7 +336,7 @@
 
     // slider fill + step sync
     function paintSlider(sl){ const pct=(sl.value-sl.min)/(sl.max-sl.min)*100;
-      sl.style.background="linear-gradient(90deg, var(--rx-accent-9) "+pct+"%, var(--rx-gray-a4) "+pct+"%)";
+      sl.style.background="linear-gradient(90deg, var(--dm-accent-9) "+pct+"%, var(--dm-gray-a4) "+pct+"%)";
       const steps=sl.closest(".panel").querySelectorAll(".slider-steps .chip");
       steps.forEach((c,i)=>c.classList.toggle("active",i==sl.value)); }
     document.querySelectorAll("[data-slider]").forEach(sl=>{ paintSlider(sl); sl.addEventListener("input",()=>paintSlider(sl)); });

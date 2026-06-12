@@ -11,7 +11,7 @@ The docs grew three competing visual languages for interactive UI:
 
 | Language | Where | Problem |
 |---|---|---|
-| Radix teal `#12a594` (`--rx-accent-9`) | dartwork-design.css Tier 1–6 (modern overlay) | the intended system |
+| Radix teal `#12a594` (`--dm-accent-9`) | dartwork-design.css Tier 1–6 (modern overlay) | the intended system |
 | Legacy teal `#0d9488` / `--accent-9` | older custom.css widgets, pickers | competes, off-hue |
 | Landing **purple** `#8b5cf6` | landing CTA buttons (light mode only) | a third accent |
 
@@ -26,22 +26,22 @@ interaction pattern**.
 
 ## Token SSOT
 
-Raw scale lives in `dartwork-design.css :root` (`--rx-*` Radix Slate + Teal,
-`--rx-radius-*`, `--rx-space-*`, `--rx-weight-*`) with dark-mode counterparts
+Raw scale lives in `dartwork-design.css :root` (`--dm-*` Radix Slate + Teal,
+`--dm-radius-*`, `--dm-space-*`, `--dm-weight-*`) with dark-mode counterparts
 under `html.dark`. **Do not introduce new hex.** Interactive components never
 reference the raw scale directly — they go through the *semantic interaction
 tokens* defined at the top of `dm-interactive.css`:
 
 | Semantic token | Aliases | Use |
 |---|---|---|
-| `--dm-i-track` | `--rx-gray-a3` | segmented / slider track |
+| `--dm-i-track` | `--dm-gray-a3` | segmented / slider track |
 | `--dm-i-thumb` | `--dm-bg-panel` | segmented active surface |
-| `--dm-i-active-soft` | `--rx-accent-3` | soft active wash (chips, icon-hover) |
-| `--dm-i-active-text` | `--rx-accent-11` | **text on any active/soft fill (AA both themes)** |
-| `--dm-i-active-line` | `--rx-accent-9` | underline / handle / ring / primary fill |
-| `--dm-i-code-surface` | `--rx-gray-2` light / `--rx-gray-3` dark | command surface |
+| `--dm-i-active-soft` | `--dm-accent-3` | soft active wash (chips, icon-hover) |
+| `--dm-i-active-text` | `--dm-accent-11` | **text on any active/soft fill (AA both themes)** |
+| `--dm-i-active-line` | `--dm-accent-9` | underline / handle / ring / primary fill |
+| `--dm-i-code-surface` | `--dm-gray-2` light / `--dm-gray-3` dark | command surface |
 | `--dm-i-border` | `--dm-border-faint` | hairline |
-| `--dm-i-focus` | `--rx-accent-9` | `:focus-visible` ring |
+| `--dm-i-focus` | `--dm-accent-9` | `:focus-visible` ring |
 
 Retuning the interaction look = edit these aliases in one place.
 
@@ -52,8 +52,8 @@ Retuning the interaction look = edit these aliases in one place.
    *soft wash with its own text token* — never a bare `background` that has to
    out-fight a `transparent !important` base. (This is exactly what broke the
    install picker.)
-2. **Never white-on-accent-9.** `#fff` on `--rx-accent-9` ≈ 2.5:1 → fails AA.
-   Active text on soft/teal is always `--dm-i-active-text` (`--rx-accent-11`).
+2. **Never white-on-accent-9.** `#fff` on `--dm-accent-9` ≈ 2.5:1 → fails AA.
+   Active text on soft/teal is always `--dm-i-active-text` (`--dm-accent-11`).
    Solid teal fill is reserved for *large UI* (the primary CTA), where ~3:1 is
    acceptable for UI text.
 3. **`:focus-visible` is a distinct ring** (`outline: 2px var(--dm-i-focus);

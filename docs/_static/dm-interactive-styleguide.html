@@ -15,29 +15,29 @@
   <link rel="stylesheet" href="dm-interactive.css" />
   <style>
     /* page scaffold ONLY — primitives come from dm-interactive.css */
-    body { margin:0; background:var(--dm-bg-page); color:var(--rx-gray-12);
+    body { margin:0; background:var(--dm-bg-page); color:var(--dm-gray-12);
       font-family:"Inter",system-ui,sans-serif; letter-spacing:-.003em; -webkit-font-smoothing:antialiased; }
     .wrap { max-width:780px; margin:0 auto; padding:40px 24px 110px; }
     .topbar { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
     .topbar h1 { font-size:27px; font-weight:700; letter-spacing:-.022em; margin:0; }
-    .topbar p { margin:7px 0 0; color:var(--rx-gray-11); font-size:14px; max-width:56ch; line-height:1.55; }
-    .src { font-family:ui-monospace,monospace; font-size:12px; color:var(--rx-gray-11);
-      background:var(--rx-gray-a3); border-radius:6px; padding:3px 8px; }
+    .topbar p { margin:7px 0 0; color:var(--dm-gray-11); font-size:14px; max-width:56ch; line-height:1.55; }
+    .src { font-family:ui-monospace,monospace; font-size:12px; color:var(--dm-gray-11);
+      background:var(--dm-gray-a3); border-radius:6px; padding:3px 8px; }
     .sec { margin-top:44px; }
     .sec-head { display:flex; align-items:baseline; gap:10px; padding-bottom:10px; margin-bottom:18px;
       border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; }
-    .sec-num { font-family:ui-monospace,monospace; font-size:12px; font-weight:600; color:var(--rx-accent-11); }
+    .sec-num { font-family:ui-monospace,monospace; font-size:12px; font-weight:600; color:var(--dm-accent-11); }
     .sec-title { font-size:18px; font-weight:600; letter-spacing:-.01em; margin:0; }
-    .sec-cls { font-family:ui-monospace,monospace; font-size:11px; color:var(--rx-gray-11);
-      background:var(--rx-gray-a3); border-radius:5px; padding:2px 7px; }
-    .panel { background:var(--rx-gray-1); border:1px solid var(--dm-border-faint); border-radius:10px; padding:18px 20px; }
-    html.dark .panel { background:var(--rx-gray-2); }
+    .sec-cls { font-family:ui-monospace,monospace; font-size:11px; color:var(--dm-gray-11);
+      background:var(--dm-gray-a3); border-radius:5px; padding:2px 7px; }
+    .panel { background:var(--dm-gray-1); border:1px solid var(--dm-border-faint); border-radius:10px; padding:18px 20px; }
+    html.dark .panel { background:var(--dm-gray-2); }
     .lead { display:flex; align-items:center; gap:14px; margin:10px 0; flex-wrap:wrap; }
-    .rl { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--rx-gray-11); min-width:54px; }
-    .theme-toggle { display:inline-flex; align-items:center; gap:8px; background:var(--rx-gray-1);
-      color:var(--rx-gray-12); border:1px solid var(--dm-border); border-radius:999px; padding:7px 14px;
+    .rl { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--dm-gray-11); min-width:54px; }
+    .theme-toggle { display:inline-flex; align-items:center; gap:8px; background:var(--dm-gray-1);
+      color:var(--dm-gray-12); border:1px solid var(--dm-border); border-radius:999px; padding:7px 14px;
       font:inherit; font-size:13px; font-weight:500; cursor:pointer; }
-    html.dark .theme-toggle { background:var(--rx-gray-2); }
+    html.dark .theme-toggle { background:var(--dm-gray-2); }
     .swatches { display:flex; gap:14px; flex-wrap:wrap; padding-bottom:6px; }
     .steps { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
   </style>
@@ -130,7 +130,7 @@
           <a class="dm-cta dm-cta--ghost" href="#">Docs</a></div>
         <div class="lead"><span class="rl">Copy</span>
           <button class="dm-icon-btn copy-demo" type="button" aria-label="Copy"></button>
-          <span style="font-size:12.5px;color:var(--rx-gray-11)">ghost icon — faint default, teal-soft on hover (no dark button)</span></div>
+          <span style="font-size:12.5px;color:var(--dm-gray-11)">ghost icon — faint default, teal-soft on hover (no dark button)</span></div>
       </div></section>
 
     <!-- code surface -->
@@ -165,7 +165,7 @@
       g.querySelectorAll(".dm-swatch").forEach(x=>{ const on=x===s; x.classList.toggle("is-active",on); x.setAttribute("aria-pressed",on); }); }));
 
     function paint(sl){ const p=(sl.value-sl.min)/(sl.max-sl.min)*100;
-      sl.style.background="linear-gradient(90deg,var(--rx-accent-9) "+p+"%,var(--rx-gray-a4) "+p+"%)";
+      sl.style.background="linear-gradient(90deg,var(--dm-accent-9) "+p+"%,var(--dm-gray-a4) "+p+"%)";
       const steps=document.querySelector("[data-steps]").querySelectorAll(".dm-chip");
       steps.forEach((c,i)=>c.classList.toggle("is-active",i==sl.value)); }
     document.querySelectorAll("[data-slider]").forEach(sl=>{ paint(sl); sl.addEventListener("input",()=>paint(sl)); });
