@@ -9,11 +9,7 @@
   </p>
 
   <div class="dm-landing-cta">
-    <div class="dm-landing-install">
-      <code>uv add dartwork-mpl</code>
-      <button class="dm-landing-copy-btn" onclick="navigator.clipboard.writeText('uv add dartwork-mpl').then(()=>{this.textContent='✓';setTimeout(()=>{this.textContent='⎘'},1500)})">⎘</button>
-    </div>
-    <a href="usage_guide/quickstart.html" class="dm-landing-btn dm-landing-btn-secondary">Get Started →</a>
+    <a href="usage_guide/quickstart.html" class="dm-landing-btn dm-landing-btn-primary">Get Started →</a>
     <a href="ai/index.html" class="dm-landing-btn dm-landing-btn-secondary">AI / Agents →</a>
   </div>
 </div>
