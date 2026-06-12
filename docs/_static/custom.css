@@ -20,7 +20,7 @@
 /* Make the "Edit on GitHub" button more prominent */
 .edit-this-page {
   font-weight: 600;
-  color: var(--accent-9);
+  color: var(--dm-accent-9);
 }
 
 /* Ensure code blocks have a nice border radius */
@@ -609,7 +609,7 @@ body[data-theme="dark"] .dm-type-tester {
 }
 
 .dm-type-tester-input:focus {
-  border-color: var(--accent-9, #0d9488);
+  border-color: var(--dm-accent-9);
 }
 
 html.dark .dm-type-tester-input,
@@ -629,7 +629,7 @@ body[data-theme="dark"] .dm-type-tester-input {
 .dm-type-tester-slider {
   width: 80px;
   cursor: pointer;
-  accent-color: var(--accent-9, #0d9488);
+  accent-color: var(--dm-accent-9);
 }
 
 .dm-type-tester-size-label {
@@ -850,7 +850,7 @@ body[data-theme="dark"] .dm-gp-hex {
 .dm-gp-slider {
   width: 80px;
   cursor: pointer;
-  accent-color: var(--accent-9, #0d9488);
+  accent-color: var(--dm-accent-9);
 }
 
 .dm-gp-steps-label {
@@ -995,14 +995,14 @@ body[data-theme="dark"] .dm-preset-compare {
 }
 
 .dm-pc-tab:hover {
-  border-color: var(--accent-9, #0d9488);
-  color: var(--accent-9, #0d9488);
+  border-color: var(--dm-accent-9);
+  color: var(--dm-accent-9);
 }
 
 .dm-pc-tab-active {
-  background: var(--accent-9, #0d9488);
+  background: var(--dm-accent-9);
   color: #fff;
-  border-color: var(--accent-9, #0d9488);
+  border-color: var(--dm-accent-9);
 }
 
 html.dark .dm-pc-tab,
@@ -1014,9 +1014,9 @@ body[data-theme="dark"] .dm-pc-tab {
 
 html.dark .dm-pc-tab-active,
 body[data-theme="dark"] .dm-pc-tab-active {
-  background: var(--accent-9, #0d9488);
+  background: var(--dm-accent-9);
   color: #fff;
-  border-color: var(--accent-9, #0d9488);
+  border-color: var(--dm-accent-9);
 }
 
 .dm-pc-preview {
@@ -1161,7 +1161,7 @@ body[data-theme="dark"] .dm-color-toolbar {
 }
 
 .dm-color-search:focus {
-  border-color: var(--accent-9, #0d9488);
+  border-color: var(--dm-accent-9);
   box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
 }
 
@@ -1216,9 +1216,9 @@ body[data-theme="dark"] .dm-color-search {
 }
 
 .dm-cvd-btn.active {
-  background: var(--accent-9, #0d9488);
+  background: var(--dm-accent-9);
   color: #fff;
-  border-color: var(--accent-9, #0d9488);
+  border-color: var(--dm-accent-9);
 }
 
 html.dark .dm-cvd-btn,
@@ -1235,7 +1235,7 @@ body[data-theme="dark"] .dm-cvd-btn:hover {
 
 html.dark .dm-cvd-btn.active,
 body[data-theme="dark"] .dm-cvd-btn.active {
-  background: var(--accent-9, #0d9488);
+  background: var(--dm-accent-9);
   color: #fff;
 }
 
@@ -1405,7 +1405,7 @@ body[data-theme="dark"] .dm-ruler-controls label {
 
 .dm-ruler-controls input[type="range"] {
   flex: 1;
-  accent-color: var(--accent-9, #0d9488);
+  accent-color: var(--dm-accent-9);
 }
 
 .dm-ruler-value {
@@ -1447,7 +1447,7 @@ body[data-theme="dark"] .dm-ruler-preview {
   top: 5%;
   left: 5%;
   background: rgba(13, 148, 136, 0.15);
-  border: 2px dashed var(--accent-9, #0d9488);
+  border: 2px dashed var(--dm-accent-9);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -1458,7 +1458,7 @@ body[data-theme="dark"] .dm-ruler-preview {
 .dm-ruler-fig-label {
   font-family: "SFMono-Regular", Consolas, monospace;
   font-size: 0.7em;
-  color: var(--accent-9, #0d9488);
+  color: var(--dm-accent-9);
   font-weight: 600;
 }
 
@@ -1510,13 +1510,13 @@ body[data-theme="dark"] .dm-hierarchy-slider-group label {
 
 .dm-hierarchy-slider-group input[type="range"] {
   flex: 1;
-  accent-color: var(--accent-9, #0d9488);
+  accent-color: var(--dm-accent-9);
 }
 
 .dm-hierarchy-slider-group .dm-hierarchy-val {
   font-family: "SFMono-Regular", Consolas, monospace;
   font-size: 0.8em;
-  color: var(--accent-9, #0d9488);
+  color: var(--dm-accent-9);
   font-weight: 600;
   min-width: 5em;
   text-align: right;
@@ -2047,7 +2047,7 @@ body[data-theme="dark"] .dm-cs-interp-hex {
 .dm-cs-interp-slider {
   width: 80px;
   cursor: pointer;
-  accent-color: var(--accent-9, #0d9488);
+  accent-color: var(--dm-accent-9);
 }
 
 .dm-cs-interp-steps-label {
@@ -2213,7 +2213,7 @@ body[data-theme="dark"] .dm-cs-interp-code {
   background: #f0f7f5;
   border: 1px solid #c8e6dd;
   border-radius: 6px;
-  border-left: 3px solid #0d9488;
+  border-left: 3px solid var(--dm-accent-9);
 }
 
 html.dark .dm-cs-interp-insight,
@@ -2461,7 +2461,7 @@ body[data-theme="dark"] .dm-gallery-toolbar {
 }
 
 .dm-gallery-search:focus {
-  border-color: var(--accent-9, #0d9488);
+  border-color: var(--dm-accent-9);
   box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
 }
 
@@ -2501,14 +2501,14 @@ body[data-theme="dark"] .dm-gallery-search {
 }
 
 .dm-gallery-pill:hover {
-  border-color: var(--accent-9, #0d9488);
-  color: var(--accent-9, #0d9488);
+  border-color: var(--dm-accent-9);
+  color: var(--dm-accent-9);
 }
 
 .dm-gallery-pill.active {
-  background: var(--accent-9, #0d9488);
+  background: var(--dm-accent-9);
   color: #fff;
-  border-color: var(--accent-9, #0d9488);
+  border-color: var(--dm-accent-9);
 }
 
 html.dark .dm-gallery-pill,
@@ -2519,15 +2519,15 @@ body[data-theme="dark"] .dm-gallery-pill {
 
 html.dark .dm-gallery-pill:hover,
 body[data-theme="dark"] .dm-gallery-pill:hover {
-  border-color: var(--accent-9, #0d9488);
-  color: var(--accent-9, #0d9488);
+  border-color: var(--dm-accent-9);
+  color: var(--dm-accent-9);
 }
 
 html.dark .dm-gallery-pill.active,
 body[data-theme="dark"] .dm-gallery-pill.active {
-  background: var(--accent-9, #0d9488);
+  background: var(--dm-accent-9);
   color: #fff;
-  border-color: var(--accent-9, #0d9488);
+  border-color: var(--dm-accent-9);
 }
 
 /* Card transition for filter */
@@ -2575,7 +2575,7 @@ body[data-theme="dark"] .dm-example-controls {
 }
 
 .dm-example-mode-btn.active {
-  background: var(--accent-9, #0d9488);
+  background: var(--dm-accent-9);
   color: #fff;
   box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
 }
@@ -2593,7 +2593,7 @@ body[data-theme="dark"] .dm-example-mode-btn:hover {
 
 html.dark .dm-example-mode-btn.active,
 body[data-theme="dark"] .dm-example-mode-btn.active {
-  background: var(--accent-9, #0d9488);
+  background: var(--dm-accent-9);
   color: #fff;
 }
 
@@ -3001,7 +3001,7 @@ body[data-theme="dark"] .dm-cb-tab:not(:last-child) {
 }
 
 .dm-cb-tab.active {
-  background: var(--accent-9, #0d9488);
+  background: var(--dm-accent-9);
   color: #fff;
 }
 
@@ -3220,7 +3220,7 @@ body[data-theme="dark"] .dm-ft-textarea {
 
 .dm-ft-textarea:focus {
   outline: none;
-  border-color: #0d9488;
+  border-color: var(--dm-accent-9);
   box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
 }
 
@@ -3478,7 +3478,7 @@ body[data-theme="dark"] .dm-interp-hex {
 .dm-interp-slider {
   width: 100px;
   cursor: pointer;
-  accent-color: var(--accent-9, #0d9488);
+  accent-color: var(--dm-accent-9);
 }
 
 .dm-interp-steps-label {
@@ -3685,7 +3685,7 @@ body[data-theme="dark"] .dm-compare-toggle-btn:not(:last-child) {
 }
 
 .dm-compare-toggle-btn.active {
-  background: var(--accent-9, #0d9488);
+  background: var(--dm-accent-9);
   color: #fff;
 }
 
@@ -3708,7 +3708,7 @@ body[data-theme="dark"] .dm-compare-toggle-btn:hover:not(.active) {
 .dm-compare-range-slider {
   width: 100px;
   cursor: pointer;
-  accent-color: var(--accent-9, #0d9488);
+  accent-color: var(--dm-accent-9);
 }
 
 .dm-compare-steps-label {
@@ -3881,7 +3881,7 @@ body[data-theme="dark"] .dm-compare-verdict {
 }
 
 .dm-compare-verdict strong {
-  color: var(--accent-9, #0d9488);
+  color: var(--dm-accent-9);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -3904,19 +3904,14 @@ section:has(> .dm-landing-hero) > h1:first-child {
   font-weight: 900;
   line-height: 1.1;
   letter-spacing: -0.035em;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* One teal language — accent-9 -> accent-10 stays vivid in BOTH themes
+   * (light #12a594->#0d9b8a, dark #12a594->#25c2ad). Both stops are
+   * theme-adaptive tokens, so the old dark override is gone. */
+  background: linear-gradient(135deg, var(--dm-accent-9) 0%, var(--dm-accent-10) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 0 0 0.3em;
-}
-
-html.dark .dm-landing-tagline,
-body[data-theme="dark"] .dm-landing-tagline {
-  background: linear-gradient(135deg, #a78bfa 0%, #ec4899 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .dm-landing-subtitle {
@@ -3950,8 +3945,8 @@ body[data-theme="dark"] .dm-landing-subtitle {
 }
 
 .dm-landing-install:hover {
-  border-color: #8b5cf6;
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.15);
+  border-color: var(--dm-accent-9);
+  box-shadow: var(--dm-shadow-3);
   transform: translateY(-1px);
 }
 
@@ -3986,7 +3981,7 @@ body[data-theme="dark"] .dm-landing-install {
 
 .dm-landing-copy-btn:hover {
   background: rgba(13, 148, 136, 0.1);
-  color: var(--accent-9, #0d9488);
+  color: var(--dm-accent-9);
 }
 
 /* CTA buttons */
@@ -4010,40 +4005,32 @@ body[data-theme="dark"] .dm-landing-install {
   cursor: pointer;
 }
 
+/* One teal language — solid-teal primary, teal-outline secondary. Both stops
+ * use theme-adaptive tokens, so the former dark overrides are gone. */
 .dm-landing-btn-primary {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: var(--dm-accent-9);
   color: #fff !important;
-  border: 1px solid transparent;
-  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.25);
+  border: 1px solid var(--dm-accent-9);
+  box-shadow: var(--dm-shadow-2);
 }
 
 .dm-landing-btn-primary:hover {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.35);
+  background: var(--dm-accent-10);
+  border-color: var(--dm-accent-10);
+  box-shadow: var(--dm-shadow-3);
   transform: translateY(-2px);
 }
 
 .dm-landing-btn-secondary {
   background: transparent;
-  color: #8b5cf6 !important;
-  border: 1.5px solid #8b5cf6;
+  color: var(--dm-accent-11) !important;
+  border: 1.5px solid var(--dm-accent-7);
 }
 
 .dm-landing-btn-secondary:hover {
-  background: rgba(139, 92, 246, 0.08);
-  border-color: #7c3aed;
+  background: var(--dm-accent-3);
+  border-color: var(--dm-accent-9);
   transform: translateY(-1px);
-}
-
-html.dark .dm-landing-btn-secondary,
-body[data-theme="dark"] .dm-landing-btn-secondary {
-  color: var(--accent-9, #5eead4) !important;
-  border-color: var(--accent-9, #5eead4);
-}
-
-html.dark .dm-landing-btn-secondary:hover,
-body[data-theme="dark"] .dm-landing-btn-secondary:hover {
-  background: rgba(94, 234, 212, 0.1);
 }
 
 /* ── Proof label ── */
@@ -4131,39 +4118,24 @@ body[data-theme="dark"] .dm-landing-diff code {
 }
 
 /* Syntax highlighting tokens for diff block */
-.dm-landing-diff .kn {
-  color: #7c3aed;
+/* Syntax tokens — keyword = teal accent-9, namespace = teal accent-11 (both
+ * theme-adaptive, so no dark overrides). No purple, no legacy teal. */
+.dm-landing-diff .kn,
+.dm-landing-diff .k {
+  color: var(--dm-accent-9);
 }
 .dm-landing-diff .nn {
-  color: #0d9488;
-}
-.dm-landing-diff .k {
-  color: #7c3aed;
+  color: var(--dm-accent-11);
 }
 .dm-landing-diff .n {
   color: #1a1a2e;
 }
-.dm-landing-diff .o {
-  color: #888;
-}
+.dm-landing-diff .o,
 .dm-landing-diff .p {
   color: #888;
 }
 .dm-landing-diff .s {
   color: #059669;
-}
-
-html.dark .dm-landing-diff .kn,
-body[data-theme="dark"] .dm-landing-diff .kn {
-  color: #a78bfa;
-}
-html.dark .dm-landing-diff .nn,
-body[data-theme="dark"] .dm-landing-diff .nn {
-  color: #5eead4;
-}
-html.dark .dm-landing-diff .k,
-body[data-theme="dark"] .dm-landing-diff .k {
-  color: #a78bfa;
 }
 html.dark .dm-landing-diff .n,
 body[data-theme="dark"] .dm-landing-diff .n {
