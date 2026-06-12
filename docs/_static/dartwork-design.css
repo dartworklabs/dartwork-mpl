@@ -1,5 +1,5 @@
 /* ============================================================================
- * radix-design.css — design-token overhaul layered on top of Shibuya.
+ * dartwork-design.css — design-token overhaul layered on top of Shibuya.
  *
  * Strategy
  * --------
@@ -130,6 +130,11 @@
    * Headings inherit these via the body rule. */
   --rx-font-features: "ss01" on, "cv11" on, "calt" on;
 
+  /* Font families — canonical stacks every component references (replaces the
+   * scattered --sy-f-* Shibuya refs and ad-hoc literal stacks). */
+  --rx-f-sys: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --rx-f-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+
   /* Radius — keep modest; large radii undermine the precision feel */
   --rx-radius-1: 3px;
   --rx-radius-2: 4px;
@@ -201,10 +206,21 @@ body[data-theme="dark"] {
   --rx-gray-a11: rgba(243, 249, 255, 0.702);
   --rx-gray-a12: rgba(253, 254, 255, 0.937);
 
+  /* Full tealDark ramp — completes the scale so NO accent step leaks its
+   * light value into dark mode. Steps 3/9/10/11 are the existing tuned
+   * anchors; 1,2,4,5,6,7,8,12 fill the ramp between them. */
+  --rx-accent-1: #0c1413;
+  --rx-accent-2: #0f1b18;
   --rx-accent-3: #112725;
+  --rx-accent-4: #14302d;
+  --rx-accent-5: #173a35;
+  --rx-accent-6: #1d473f;
+  --rx-accent-7: #245a50;
+  --rx-accent-8: #2d7163;
   --rx-accent-9: #12a594;
   --rx-accent-10: #25c2ad;
   --rx-accent-11: #76dac3;
+  --rx-accent-12: #adf0dd;
   --rx-pink-3: #310f1f;
   --rx-pink-11: #e93d82;
 
@@ -897,7 +913,7 @@ body[data-theme="dark"] .dm-landing-tagline {
  * Each widget's inline <style> block carries an ID prefix (#dm-cmp-l2-bar
  * etc.) so a generic .dmc-tab rule loaded after the widget's own style
  * wins as long as it uses !important. Loading order is enforced by
- * conf.py's html_css_files (radix-design.css is the last entry).
+ * conf.py's html_css_files (dartwork-design.css is the last entry).
  * =========================================================================== */
 
 /* Tab strip — drop the pill background entirely. The two labels become
@@ -981,7 +997,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
  * (.dm-ruler-widget), the validation simulator (.dm-lint-sim), and a
  * couple of dynamic_ux widgets that still ship as raised cards.
  *
- * Loaded after radix-design's earlier sections so it wins; uses
+ * Loaded after dartwork-design's earlier sections so it wins; uses
  * !important to beat each widget's per-id inline styles or its own
  * stylesheet.
  * =========================================================================== */

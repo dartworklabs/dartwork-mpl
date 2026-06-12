@@ -1,0 +1,348 @@
+/* ============================================================================
+ * dm-interactive.css — Interactive primitive SSOT for the docs UI overhaul.
+ *
+ * One reusable primitive per interaction pattern, built entirely on the Radix
+ * tokens defined in dartwork-design.css (--rx-* / --dm-*). Loaded AFTER
+ * dartwork-design.css (see conf.py html_css_files) so it can consume those tokens
+ * and win the cascade where it must.
+ *
+ * Design rules baked in (from the 4-lens critique, 2026-06-12):
+ *   • Active state never lives only on a background that fights a transparent
+ *     !important base — it lives on a separate surface (thumb), a different
+ *     property (border-bottom), or a soft wash with its own text token.
+ *   • Active text on a soft/teal wash is ALWAYS --rx-accent-11 (AA in both
+ *     themes). Never white-on-accent-9 (~2.5:1, fails AA).
+ *   • :focus-visible is a distinct ring, never confused with the active cue.
+ *   • Every control is a real <button>/<a>/<input> with aria state.
+ *   • Theme-adaptive throughout — no hardcoded navy/slate/hex.
+ *
+ * Primitives:  .dm-seg  .dm-tabs/.dm-tab  .dm-chip  .dm-swatch  .dm-slider
+ *              .dm-icon-btn  .dm-code  .dm-cta  .dm-callout
+ *
+ * Consumers migrate onto these in later tiers (install picker → .dm-seg, FAQ
+ * filter → .dm-chip, pickers → .dm-tabs, compare → .dm-seg, etc.).
+ * ============================================================================ */
+
+/* ---------------------------------------------------------------------------
+ * Semantic interaction tokens — the SSOT layer. Components reference THESE,
+ * which alias the raw Radix scale, so a future retune happens in one place.
+ * --------------------------------------------------------------------------- */
+:root {
+  --dm-i-radius:        var(--rx-radius-4);     /* 8px — control corner       */
+  --dm-i-radius-sm:     var(--rx-radius-3);     /* 6px — inner thumb / chip   */
+  --dm-i-track:         var(--rx-gray-a3);      /* segmented / slider track   */
+  --dm-i-thumb:         var(--dm-bg-panel);     /* segmented active surface   */
+  --dm-i-active-soft:   var(--rx-accent-3);     /* soft active wash           */
+  --dm-i-active-text:   var(--rx-accent-11);    /* text on soft/active (AA)   */
+  --dm-i-active-line:   var(--rx-accent-9);     /* underline / ring / handle  */
+  --dm-i-hover:         var(--rx-gray-a3);      /* neutral hover wash         */
+  --dm-i-muted:         var(--dm-text-muted);
+  --dm-i-strong:        var(--dm-text-strong);
+  --dm-i-border:        var(--dm-border-faint);
+  --dm-i-border-strong: var(--dm-border);
+  --dm-i-soft-border:   var(--rx-accent-7);     /* hairline on soft chip      */
+  --dm-i-code-surface:  var(--rx-gray-2);       /* light code slab (LIGHT)    */
+  --dm-i-code-prompt:   var(--rx-accent-11);
+  --dm-i-focus:         var(--rx-accent-9);
+  --dm-i-shadow:        var(--rx-shadow-2);
+  --dm-i-ease:          cubic-bezier(0.4, 0, 0.2, 1);
+}
+html.dark,
+body[data-theme="dark"] {
+  --dm-i-code-surface:  var(--rx-gray-3);       /* deeper slab in DARK        */
+}
+
+/* Shared focus ring — one ring for every primitive, distinct from any active
+ * cue so "focused" and "selected" never read as the same thing. */
+.dm-seg .dm-opt:focus-visible,
+.dm-tab:focus-visible,
+.dm-chip:focus-visible,
+.dm-swatch:focus-visible,
+.dm-icon-btn:focus-visible,
+.dm-cta:focus-visible,
+.dm-slider:focus-visible {
+  outline: 2px solid var(--dm-i-focus);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+ * 1. Segmented control — install picker Tool/OS, compare toggles, tone toggle.
+ *    Active = a real surface (the thumb), so it can never go invisible.
+ *    Slide via transform (compositor-friendly + SR-stable).
+ * --------------------------------------------------------------------------- */
+.dm-seg {
+  position: relative;
+  display: inline-flex;
+  background: var(--dm-i-track);
+  border-radius: var(--dm-i-radius);
+  padding: 3px;
+  isolation: isolate;
+}
+.dm-seg__thumb {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  height: calc(100% - 6px);
+  border-radius: var(--dm-i-radius-sm);
+  background: var(--dm-i-thumb);
+  box-shadow: var(--dm-i-shadow);
+  transform: translateX(3px);
+  transition: transform 0.26s var(--dm-i-ease), width 0.26s var(--dm-i-ease);
+  z-index: 0;
+  pointer-events: none;
+}
+.dm-seg .dm-opt {
+  position: relative;
+  z-index: 1;
+  appearance: none;
+  background: none;
+  border: 0;
+  color: var(--dm-i-muted);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: var(--rx-weight-medium);
+  line-height: 1.4;
+  padding: 6px 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  border-radius: var(--dm-i-radius-sm);
+  transition: color 0.2s var(--dm-i-ease);
+}
+.dm-seg .dm-opt:hover { color: var(--dm-i-strong); }
+.dm-seg .dm-opt[aria-pressed="true"],
+.dm-seg .dm-opt.is-active { color: var(--dm-i-strong); }
+/* No-JS / reduced-motion fallback: a clear soft fill on the active option so
+ * selection survives even if the thumb never positions. */
+@media (prefers-reduced-motion: reduce) {
+  .dm-seg__thumb { transition: none; }
+}
+.dm-seg.no-thumb .dm-opt[aria-pressed="true"],
+.dm-seg.no-thumb .dm-opt.is-active {
+  background: var(--dm-i-thumb);
+  box-shadow: var(--dm-i-shadow);
+}
+
+/* ---------------------------------------------------------------------------
+ * 2. Underline tabs — picker tabs, doc tab-sets (canonical; mirrors .dmc-tab
+ *    and .sd-tab-set so every tab in the docs is the same object).
+ * --------------------------------------------------------------------------- */
+.dm-tabs {
+  display: inline-flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--dm-i-border);
+}
+.dm-tab {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--dm-i-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: var(--rx-weight-medium);
+  padding: 8px 14px;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.dm-tab:hover { color: var(--dm-i-strong); }
+.dm-tab[aria-selected="true"],
+.dm-tab.is-active {
+  color: var(--dm-i-strong);
+  border-bottom-color: var(--dm-i-active-line);
+}
+
+/* ---------------------------------------------------------------------------
+ * 3. Soft chip — FAQ filter, favorites. Active = accent-3 wash + accent-11
+ *    text (AA in both themes) + accent-7 hairline. Optional removable ×.
+ * --------------------------------------------------------------------------- */
+.dm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  appearance: none;
+  background: transparent;
+  color: var(--dm-i-muted);
+  border: 1px solid var(--dm-i-border);
+  border-radius: 7px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--rx-weight-medium);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.dm-chip:hover { background: var(--dm-i-hover); color: var(--dm-i-strong); }
+.dm-chip[aria-pressed="true"],
+.dm-chip.is-active {
+  background: var(--dm-i-active-soft);
+  color: var(--dm-i-active-text);
+  border-color: var(--dm-i-soft-border);
+  font-weight: var(--rx-weight-semibold);
+}
+.dm-chip__x {
+  display: inline-flex;
+  width: 15px;
+  height: 15px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0.6;
+  cursor: pointer;
+}
+.dm-chip__x:hover { opacity: 1; background: var(--rx-gray-a4); }
+
+/* ---------------------------------------------------------------------------
+ * 4. Swatch tile — color / palette / colormap pickers. Selected = teal ring
+ *    (double box-shadow so the ring reads on any swatch color, any theme).
+ * --------------------------------------------------------------------------- */
+.dm-swatch {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--rx-radius-4);
+  border: 1px solid var(--rx-gray-a6);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.dm-swatch:hover { transform: translateY(-2px); }
+.dm-swatch[aria-pressed="true"],
+.dm-swatch.is-active {
+  box-shadow: 0 0 0 2px var(--dm-bg-page), 0 0 0 4px var(--dm-i-active-line);
+}
+
+/* ---------------------------------------------------------------------------
+ * 5. Range slider — evolution / interactive widgets. Teal handle + filled
+ *    track. Keep native <input type=range> for keyboard a11y. JS paints the
+ *    fill via a linear-gradient background on the element.
+ * --------------------------------------------------------------------------- */
+.dm-slider {
+  width: 100%;
+  height: 6px;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: var(--rx-radius-full);
+  background: var(--rx-gray-a4);
+  outline: none;
+  cursor: pointer;
+}
+.dm-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--dm-i-active-line);
+  border: 2px solid var(--dm-bg-panel);
+  box-shadow: var(--dm-i-shadow);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.dm-slider::-webkit-slider-thumb:hover { transform: scale(1.12); }
+.dm-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--dm-i-active-line);
+  border: 2px solid var(--dm-bg-panel);
+  box-shadow: var(--dm-i-shadow);
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------------------
+ * 6. Ghost icon button — copy, toggle. Faint by default, teal-soft on hover.
+ *    NOT a dark filled button. Always wraps a real <button aria-label>.
+ * --------------------------------------------------------------------------- */
+.dm-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--dm-i-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.dm-icon-btn svg { width: 16px; height: 16px; }
+.dm-icon-btn:hover {
+  background: var(--dm-i-active-soft);
+  color: var(--dm-i-active-text);
+  border-color: var(--dm-i-soft-border);
+}
+.dm-icon-btn.is-copied { color: var(--dm-i-active-text); }
+
+/* ---------------------------------------------------------------------------
+ * 7. Light code surface — install command + any inline command. Follows the
+ *    theme (gray-2 light / gray-3 dark), NEVER a forced navy slab. Teal prompt.
+ * --------------------------------------------------------------------------- */
+.dm-code {
+  position: relative;
+  background: var(--dm-i-code-surface);
+  border: 1px solid var(--dm-i-border);
+  border-radius: var(--rx-radius-4);
+  padding: 13px 50px 13px 16px;
+  font-family: var(--rx-f-mono, ui-monospace, "SFMono-Regular", Menlo, monospace);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--dm-i-strong);
+  overflow-x: auto;
+}
+.dm-code__prompt { color: var(--dm-i-code-prompt); user-select: none; }
+.dm-code > .dm-icon-btn { position: absolute; top: 8px; right: 8px; }
+
+/* ---------------------------------------------------------------------------
+ * 8. CTA buttons — landing. Solid-teal primary, teal-outline secondary, ghost.
+ *    Replaces the light-mode PURPLE fill. Both themes via one teal token.
+ * --------------------------------------------------------------------------- */
+.dm-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: var(--rx-weight-semibold);
+  padding: 9px 18px;
+  border-radius: var(--dm-i-radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.dm-cta--primary {
+  background: var(--dm-i-active-line);
+  color: #fff;                       /* large UI button → ~3:1 OK for UI text */
+  border-color: var(--dm-i-active-line);
+  box-shadow: var(--dm-i-shadow);
+}
+.dm-cta--primary:hover { background: var(--rx-accent-10); border-color: var(--rx-accent-10); }
+.dm-cta--secondary {
+  background: transparent;
+  color: var(--dm-i-active-text);
+  border-color: var(--dm-i-soft-border);
+}
+.dm-cta--secondary:hover { background: var(--dm-i-active-soft); }
+.dm-cta--ghost {
+  background: transparent;
+  color: var(--dm-i-muted);
+  border-color: var(--dm-i-border);
+}
+.dm-cta--ghost:hover { color: var(--dm-i-strong); border-color: var(--dm-i-border-strong); }
+
+/* ---------------------------------------------------------------------------
+ * 9. Callout stripe — evolution description etc. Left teal stripe + soft wash;
+ *    echoes the radix admonition idiom already in the docs.
+ * --------------------------------------------------------------------------- */
+.dm-callout {
+  border-left: 3px solid var(--dm-i-active-line);
+  background: var(--rx-accent-2);
+  border-radius: 0 var(--rx-radius-4) var(--rx-radius-4) 0;
+  padding: 12px 16px;
+  font-size: 13.5px;
+  color: var(--dm-i-strong);
+}
+.dm-callout strong { color: var(--dm-i-active-text); }

@@ -1,0 +1,351 @@
+<!doctype html>
+<!--
+  interactive_overhaul_pocs.html — the UNIFIED interaction language, applied to
+  every interactive control in the docs. This is the overhaul target state:
+  one token set (Radix teal + slate), one primitive per interaction pattern,
+  theme-adaptive everywhere. Kills the 3 competing color languages
+  (radix-teal #12a594 / legacy-teal #0d9488 / landing-purple #8b5cf6).
+
+  Standalone preview (inlines the radix token subset). Toggle theme to verify
+  both modes. Mirrors _static/landing_pocs_preview.html convention.
+-->
+<html lang="en" class="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interactive UI overhaul — unified language</title>
+  <style>
+    :root {
+      --rx-gray-1:#fcfcfd; --rx-gray-2:#f9f9fb; --rx-gray-3:#f0f0f3;
+      --rx-gray-4:#e8e8ec; --rx-gray-5:#e0e1e6; --rx-gray-6:#d9d9e0;
+      --rx-gray-8:#b9bbc6; --rx-gray-11:#60646c; --rx-gray-12:#1c2024;
+      --rx-gray-a3:rgba(0,8,60,.059); --rx-gray-a4:rgba(0,0,39,.09);
+      --rx-gray-a6:rgba(0,0,32,.149);
+      --rx-accent-2:#f3fbf9; --rx-accent-3:#e0f8f3; --rx-accent-5:#b8eae0;
+      --rx-accent-7:#83cdbf; --rx-accent-8:#53b9ab; --rx-accent-9:#12a594;
+      --rx-accent-10:#0d9b8a; --rx-accent-11:#008573; --rx-accent-12:#0d3d38;
+
+      --dm-text-strong:var(--rx-gray-12); --dm-text-muted:var(--rx-gray-11);
+      --dm-border-faint:var(--rx-gray-a4); --dm-border:var(--rx-gray-a6);
+      --dm-bg-panel:var(--rx-gray-1);
+      --page-bg:#ffffff;
+      --code-surface:var(--rx-gray-2); --code-prompt:var(--rx-accent-11);
+
+      --rx-shadow-2:0 0 0 1px var(--rx-gray-a4),0 1px 2px var(--rx-gray-a3),0 2px 4px -1px var(--rx-gray-a3);
+      --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+      --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono",Consolas,Menlo,monospace;
+      --radius:10px;
+      --legacy-teal:#0d9488; --legacy-purple:#8b5cf6;
+    }
+    html.dark {
+      --rx-gray-1:#111113; --rx-gray-2:#18191b; --rx-gray-3:#212225;
+      --rx-gray-4:#272a2d; --rx-gray-5:#2e3135; --rx-gray-6:#363a3f;
+      --rx-gray-8:#5a6169; --rx-gray-11:#b0b4ba; --rx-gray-12:#edeef0;
+      --rx-gray-a3:rgba(244,246,248,.075); --rx-gray-a4:rgba(229,247,251,.106);
+      --rx-gray-a6:rgba(238,247,254,.18);
+      --rx-accent-2:#0e1916; --rx-accent-3:#112725; --rx-accent-5:#1a3833;
+      --rx-accent-7:#236e64; --rx-accent-8:#2c8577; --rx-accent-9:#12a594;
+      --rx-accent-10:#25c2ad; --rx-accent-11:#76dac3; --rx-accent-12:#adf0dd;
+      --dm-bg-panel:var(--rx-gray-2); --page-bg:#0c0c0e; --code-surface:var(--rx-gray-3);
+    }
+
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--page-bg); color:var(--dm-text-strong);
+      font-family:var(--sans); letter-spacing:-.003em; -webkit-font-smoothing:antialiased; }
+    .wrap { max-width:780px; margin:0 auto; padding:40px 24px 110px; }
+    .topbar { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+    .topbar h1 { font-size:27px; font-weight:700; letter-spacing:-.022em; margin:0; }
+    .topbar p { margin:7px 0 0; color:var(--dm-text-muted); font-size:14px; max-width:54ch; line-height:1.55; }
+    .theme-toggle { display:inline-flex; align-items:center; gap:8px; background:var(--dm-bg-panel);
+      color:var(--dm-text-strong); border:1px solid var(--dm-border); border-radius:999px;
+      padding:7px 14px; font:inherit; font-size:13px; font-weight:500; cursor:pointer; transition:border-color .15s; }
+    .theme-toggle:hover { border-color:var(--rx-accent-9); }
+
+    /* section scaffold */
+    .sec { margin-top:46px; }
+    .sec-head { display:flex; align-items:baseline; gap:10px; padding-bottom:10px; margin-bottom:18px;
+      border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; }
+    .sec-num { font-family:var(--mono); font-size:12px; font-weight:600; color:var(--rx-accent-11); }
+    .sec-title { font-size:18px; font-weight:600; letter-spacing:-.01em; margin:0; }
+    .sec-prim { font-family:var(--mono); font-size:11px; color:var(--dm-text-muted);
+      background:var(--rx-gray-a3); border-radius:5px; padding:2px 7px; }
+    .sec-note { width:100%; margin:2px 0 0; color:var(--dm-text-muted); font-size:13px; line-height:1.5; }
+    .panel { background:var(--dm-bg-panel); border:1px solid var(--dm-border-faint);
+      border-radius:var(--radius); padding:18px 20px; }
+    .row-label { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+      color:var(--dm-text-muted); min-width:54px; }
+    .lead { display:flex; align-items:center; gap:14px; margin:14px 0; flex-wrap:wrap; }
+
+    /* ── PRIMITIVE: segmented control ──────────────────────────────────── */
+    .seg { position:relative; display:inline-flex; background:var(--rx-gray-a3); border-radius:8px; padding:3px; }
+    .seg-thumb { position:absolute; top:3px; left:3px; height:calc(100% - 6px); background:var(--dm-bg-panel);
+      border-radius:6px; box-shadow:var(--rx-shadow-2); transition:transform .26s cubic-bezier(.4,0,.2,1), width .26s cubic-bezier(.4,0,.2,1); z-index:0; }
+    .seg .opt { position:relative; z-index:1; background:none; border:none; color:var(--dm-text-muted);
+      font:inherit; font-size:13.5px; font-weight:500; padding:6px 14px; cursor:pointer; transition:color .2s; white-space:nowrap; }
+    .seg .opt.active { color:var(--dm-text-strong); }
+
+    /* ── PRIMITIVE: underline tabs ─────────────────────────────────────── */
+    .utabs { display:inline-flex; gap:4px; border-bottom:1px solid var(--dm-border-faint); }
+    .utabs .opt { background:none; border:none; border-bottom:2px solid transparent; color:var(--dm-text-muted);
+      font:inherit; font-size:14px; font-weight:500; padding:8px 12px; margin-bottom:-1px; cursor:pointer;
+      transition:color .12s, border-color .12s; }
+    .utabs .opt:hover { color:var(--dm-text-strong); }
+    .utabs .opt.active { color:var(--dm-text-strong); border-bottom-color:var(--rx-accent-9); }
+
+    /* ── PRIMITIVE: soft chips (filter / favorites) ────────────────────── */
+    .chips { display:inline-flex; gap:7px; flex-wrap:wrap; }
+    .chip { display:inline-flex; align-items:center; gap:6px; background:transparent; color:var(--dm-text-muted);
+      border:1px solid var(--dm-border-faint); border-radius:7px; padding:5px 12px; font:inherit; font-size:13px;
+      font-weight:500; cursor:pointer; transition:all .15s ease; }
+    .chip:hover { background:var(--rx-gray-a3); color:var(--dm-text-strong); }
+    .chip.active { background:var(--rx-accent-3); color:var(--rx-accent-11); border-color:var(--rx-accent-7); font-weight:600; }
+    .chip .x { display:inline-flex; width:14px; height:14px; align-items:center; justify-content:center;
+      border-radius:50%; font-size:13px; line-height:1; opacity:.6; }
+    .chip .x:hover { opacity:1; background:var(--rx-gray-a4); }
+
+    /* ── PRIMITIVE: swatch tiles (palette / colormap picker) ───────────── */
+    .swatches { display:flex; gap:10px; flex-wrap:wrap; }
+    .swatch { width:56px; height:56px; border-radius:9px; cursor:pointer; position:relative;
+      border:1px solid var(--rx-gray-a6); transition:transform .12s, box-shadow .12s; }
+    .swatch:hover { transform:translateY(-2px); }
+    .swatch.active { box-shadow:0 0 0 2px var(--page-bg), 0 0 0 4px var(--rx-accent-9); }
+    .swatch .nm { position:absolute; left:0; right:0; bottom:-19px; text-align:center; font-size:10.5px;
+      color:var(--dm-text-muted); font-weight:500; }
+
+    /* ── PRIMITIVE: range slider (accent handle + fill) ────────────────── */
+    .slider { width:100%; height:6px; -webkit-appearance:none; appearance:none; border-radius:999px;
+      background:var(--rx-gray-a4); outline:none; }
+    .slider::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:18px; height:18px;
+      border-radius:50%; background:var(--rx-accent-9); border:2px solid var(--dm-bg-panel);
+      box-shadow:var(--rx-shadow-2); cursor:pointer; transition:transform .1s; }
+    .slider::-webkit-slider-thumb:hover { transform:scale(1.12); }
+    .slider::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:var(--rx-accent-9);
+      border:2px solid var(--dm-bg-panel); box-shadow:var(--rx-shadow-2); cursor:pointer; }
+    .slider-steps { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+
+    /* ── PRIMITIVE: CTA buttons (kill the purple) ──────────────────────── */
+    .btn { display:inline-flex; align-items:center; gap:7px; font:inherit; font-size:14px; font-weight:600;
+      padding:9px 18px; border-radius:8px; cursor:pointer; transition:all .15s ease; text-decoration:none; border:1px solid transparent; }
+    .btn-primary { background:var(--rx-accent-9); color:#fff; border-color:var(--rx-accent-9); box-shadow:var(--rx-shadow-2); }
+    .btn-primary:hover { background:var(--rx-accent-10); border-color:var(--rx-accent-10); }
+    .btn-secondary { background:transparent; color:var(--rx-accent-11); border-color:var(--rx-accent-7); }
+    .btn-secondary:hover { background:var(--rx-accent-3); }
+    .btn-ghost { background:transparent; color:var(--dm-text-muted); border-color:var(--dm-border-faint); }
+    .btn-ghost:hover { color:var(--dm-text-strong); border-color:var(--dm-border); }
+
+    /* ── PRIMITIVE: ghost icon button (copy / toggle) ──────────────────── */
+    .iconbtn { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px;
+      border-radius:7px; border:1px solid transparent; background:transparent; color:var(--dm-text-muted); cursor:pointer;
+      transition:all .15s; }
+    .iconbtn svg { width:16px; height:16px; }
+    .iconbtn:hover { background:var(--rx-accent-3); color:var(--rx-accent-11); border-color:var(--rx-accent-7); }
+
+    /* ── PRIMITIVE: light code surface + ghost copy ────────────────────── */
+    .codesurf { position:relative; background:var(--code-surface); border:1px solid var(--dm-border-faint);
+      border-radius:8px; padding:13px 50px 13px 16px; font-family:var(--mono); font-size:.9rem; color:var(--dm-text-strong); }
+    .codesurf .prompt { color:var(--code-prompt); user-select:none; }
+    .codesurf .iconbtn { position:absolute; top:8px; right:8px; }
+
+    /* ── PRIMITIVE: callout (left teal stripe) ─────────────────────────── */
+    .callout { border-left:3px solid var(--rx-accent-9); background:var(--rx-accent-2); border-radius:0 8px 8px 0;
+      padding:12px 16px; font-size:13.5px; color:var(--dm-text-strong); }
+    .callout strong { color:var(--rx-accent-11); }
+
+    /* color-language reconcile swatches */
+    .colorbar { display:flex; gap:0; border-radius:8px; overflow:hidden; border:1px solid var(--dm-border-faint); }
+    .colorcell { flex:1; padding:14px 12px; font-size:11.5px; font-weight:600; color:#fff; text-align:center; font-family:var(--mono); }
+    .x-tag { display:inline-block; font-size:11px; font-weight:700; color:#c2410c; }
+    .ok-tag { display:inline-block; font-size:11px; font-weight:700; color:var(--rx-accent-11); }
+  </style>
+</head>
+<body class="yue">
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>Interactive UI overhaul — one language</h1>
+        <p>Every interactive control mapped to a single primitive set on the Radix
+           teal + slate tokens. Theme-adaptive throughout. This is the target
+           state; flip the theme to verify both modes.</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button">◐ Toggle theme</button>
+    </div>
+
+    <!-- 0 · color reconcile -->
+    <section class="sec">
+      <div class="sec-head">
+        <span class="sec-num">00</span>
+        <h2 class="sec-title">Collapse the three color languages</h2>
+        <span class="sec-prim">token: --rx-accent-9</span>
+        <p class="sec-note">Today the docs run three accents at once. The overhaul routes everything through one teal token.</p>
+      </div>
+      <div class="panel">
+        <div class="lead"><span class="x-tag">TODAY — 3 conflicting accents</span></div>
+        <div class="colorbar" style="margin-bottom:18px">
+          <div class="colorcell" style="background:#12a594">radix #12a594</div>
+          <div class="colorcell" style="background:#0d9488">legacy #0d9488</div>
+          <div class="colorcell" style="background:#8b5cf6">landing-purple #8b5cf6</div>
+        </div>
+        <div class="lead"><span class="ok-tag">OVERHAUL — one accent, both themes</span></div>
+        <div class="colorbar">
+          <div class="colorcell" style="background:var(--rx-accent-9)">--rx-accent-9 (solid)</div>
+          <div class="colorcell" style="background:var(--rx-accent-3); color:var(--rx-accent-11)">--rx-accent-3 (soft)</div>
+          <div class="colorcell" style="background:var(--rx-accent-11)">--rx-accent-11 (text)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1 · segmented -->
+    <section class="sec">
+      <div class="sec-head"><span class="sec-num">01</span><h2 class="sec-title">Install picker · Tool/OS, compare toggle, tone toggle</h2>
+        <span class="sec-prim">primitive: segmented-control</span>
+        <p class="sec-note">Sliding thumb. Replaces the broken install pills AND the 3× copy-pasted compare/wipe toggles.</p></div>
+      <div class="panel">
+        <div class="lead"><span class="row-label">Tool</span>
+          <div class="seg" data-seg><span class="seg-thumb"></span>
+            <button class="opt active" type="button">uv</button><button class="opt" type="button">pip</button>
+            <button class="opt" type="button">Poetry</button><button class="opt" type="button">conda</button></div></div>
+        <div class="lead"><span class="row-label">OS</span>
+          <div class="seg" data-seg><span class="seg-thumb"></span>
+            <button class="opt active" type="button">macOS</button><button class="opt" type="button">Linux</button>
+            <button class="opt" type="button">Windows</button></div></div>
+        <div class="lead"><span class="row-label">Before/After</span>
+          <div class="seg" data-seg><span class="seg-thumb"></span>
+            <button class="opt active" type="button">Default</button><button class="opt" type="button">dartwork</button></div></div>
+      </div>
+    </section>
+
+    <!-- 2 · underline tabs -->
+    <section class="sec">
+      <div class="sec-head"><span class="sec-num">02</span><h2 class="sec-title">Palette / fonts / colormap picker tabs, doc tab-sets</h2>
+        <span class="sec-prim">primitive: underline-tab</span>
+        <p class="sec-note">Already the gold standard (sd-tab-set). The pickers reinvent this with hardcoded hex — fold them onto it.</p></div>
+      <div class="panel">
+        <div class="utabs" data-tabs>
+          <button class="opt active" type="button">Sequential</button><button class="opt" type="button">Diverging</button>
+          <button class="opt" type="button">Cyclic</button><button class="opt" type="button">Categorical</button></div>
+      </div>
+    </section>
+
+    <!-- 3 · soft chips -->
+    <section class="sec">
+      <div class="sec-head"><span class="sec-num">03</span><h2 class="sec-title">FAQ filter, favorites tray</h2>
+        <span class="sec-prim">primitive: soft-chip</span>
+        <p class="sec-note">Filter pills toggle; favorites carry a remove ×. Flat track, accent-3 active — same chip everywhere.</p></div>
+      <div class="panel">
+        <div class="lead"><span class="row-label">Filter</span>
+          <div class="chips" data-chips>
+            <button class="chip active" type="button">All</button><button class="chip" type="button">Install</button>
+            <button class="chip" type="button">Color</button><button class="chip" type="button">Layout</button>
+            <button class="chip" type="button">MCP</button></div></div>
+        <div class="lead"><span class="row-label">Saved</span>
+          <div class="chips">
+            <span class="chip active">quickstart <span class="x" data-x>×</span></span>
+            <span class="chip active">figsize <span class="x" data-x>×</span></span>
+            <span class="chip active">save_formats <span class="x" data-x>×</span></span></div></div>
+      </div>
+    </section>
+
+    <!-- 4 · swatch tiles -->
+    <section class="sec">
+      <div class="sec-head"><span class="sec-num">04</span><h2 class="sec-title">Color & palette picker</h2>
+        <span class="sec-prim">primitive: swatch-tile</span>
+        <p class="sec-note">Click a tile; the selected one gets a teal focus ring. One swatch grid for palettes and colormaps.</p></div>
+      <div class="panel">
+        <div class="swatches" data-swatches style="padding-bottom:8px">
+          <div class="swatch active" style="background:linear-gradient(135deg,#12a594,#0d3d38)"><span class="nm">teal</span></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#3b82f6,#1e3a8a)"><span class="nm">ocean</span></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#f59e0b,#7c2d12)"><span class="nm">sunset</span></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#22c55e,#14532d)"><span class="nm">forest</span></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#ec4899,#831843)"><span class="nm">pop</span></div>
+          <div class="swatch" style="background:linear-gradient(135deg,#64748b,#1e293b)"><span class="nm">slate</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 · slider -->
+    <section class="sec">
+      <div class="sec-head"><span class="sec-num">05</span><h2 class="sec-title">Evolution / interactive slider</h2>
+        <span class="sec-prim">primitive: accent-handle slider</span>
+        <p class="sec-note">Native range input (keyboard-accessible) with a teal handle + filled track. Step labels below.</p></div>
+      <div class="panel">
+        <input class="slider" type="range" min="0" max="3" value="1" step="1" data-slider />
+        <div class="slider-steps">
+          <button class="chip" type="button">Base</button><button class="chip active" type="button">+ Style</button>
+          <button class="chip" type="button">+ Labels</button><button class="chip" type="button">+ Layout</button></div>
+        <div class="callout" style="margin-top:16px"><strong>+ Style</strong> — swap rcParams via <code>dm.style.use("scientific")</code>.</div>
+      </div>
+    </section>
+
+    <!-- 6 · CTA -->
+    <section class="sec">
+      <div class="sec-head"><span class="sec-num">06</span><h2 class="sec-title">Landing CTA + copy buttons</h2>
+        <span class="sec-prim">primitive: button / icon-button</span>
+        <p class="sec-note">The landing CTAs are <em>purple</em> in light mode today. Overhaul: solid-teal primary, teal-outline secondary, ghost icon for copy.</p></div>
+      <div class="panel">
+        <div class="lead">
+          <a class="btn btn-primary" href="#">Get Started →</a>
+          <a class="btn btn-secondary" href="#">AI / Agents →</a>
+          <a class="btn btn-ghost" href="#">Docs</a>
+        </div>
+        <div class="lead">
+          <span class="row-label">Copy</span>
+          <button class="iconbtn copy-demo" type="button" aria-label="Copy"></button>
+          <span style="font-size:12.5px;color:var(--dm-text-muted)">ghost icon — faint by default, teal on hover (not a dark button)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 · code surface -->
+    <section class="sec">
+      <div class="sec-head"><span class="sec-num">07</span><h2 class="sec-title">Install command surface</h2>
+        <span class="sec-prim">primitive: light-code-surface</span>
+        <p class="sec-note">Follows the theme (no forced navy). Mono command, teal prompt, ghost copy. Same surface as every code block.</p></div>
+      <div class="panel">
+        <div class="codesurf"><span class="prompt">$ </span>uv add dartwork-mpl<button class="iconbtn copy-demo" type="button" aria-label="Copy"></button></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+    document.querySelectorAll(".copy-demo").forEach(b=>{ b.innerHTML=ICON;
+      b.addEventListener("click",()=>{ b.innerHTML=CHECK; setTimeout(()=>b.innerHTML=ICON,1300); }); });
+
+    // segmented thumb
+    function moveThumb(seg){ const t=seg.querySelector(".seg-thumb"), a=seg.querySelector(".opt.active");
+      if(t&&a){ t.style.width=a.offsetWidth+"px"; t.style.transform="translateX("+(a.offsetLeft-3)+"px)"; } }
+    document.querySelectorAll("[data-seg]").forEach(seg=>{
+      seg.addEventListener("click",e=>{ const o=e.target.closest(".opt"); if(!o)return;
+        seg.querySelectorAll(".opt").forEach(x=>x.classList.toggle("active",x===o)); moveThumb(seg); });
+      requestAnimationFrame(()=>moveThumb(seg)); });
+
+    // underline tabs
+    document.querySelectorAll("[data-tabs]").forEach(tabs=>tabs.addEventListener("click",e=>{
+      const o=e.target.closest(".opt"); if(!o)return; tabs.querySelectorAll(".opt").forEach(x=>x.classList.toggle("active",x===o)); }));
+
+    // filter chips
+    document.querySelectorAll("[data-chips]").forEach(c=>c.addEventListener("click",e=>{
+      const ch=e.target.closest(".chip"); if(!ch)return; c.querySelectorAll(".chip").forEach(x=>x.classList.toggle("active",x===ch)); }));
+    // remove favorites
+    document.querySelectorAll("[data-x]").forEach(x=>x.addEventListener("click",e=>{ e.stopPropagation(); x.closest(".chip").remove(); }));
+
+    // swatch select
+    document.querySelectorAll("[data-swatches]").forEach(g=>g.addEventListener("click",e=>{
+      const s=e.target.closest(".swatch"); if(!s)return; g.querySelectorAll(".swatch").forEach(x=>x.classList.toggle("active",x===s)); }));
+
+    // slider fill + step sync
+    function paintSlider(sl){ const pct=(sl.value-sl.min)/(sl.max-sl.min)*100;
+      sl.style.background="linear-gradient(90deg, var(--rx-accent-9) "+pct+"%, var(--rx-gray-a4) "+pct+"%)";
+      const steps=sl.closest(".panel").querySelectorAll(".slider-steps .chip");
+      steps.forEach((c,i)=>c.classList.toggle("active",i==sl.value)); }
+    document.querySelectorAll("[data-slider]").forEach(sl=>{ paintSlider(sl); sl.addEventListener("input",()=>paintSlider(sl)); });
+
+    document.getElementById("themeToggle").addEventListener("click",()=>{
+      const r=document.documentElement; r.classList.toggle("dark"); r.classList.toggle("light");
+      document.body.setAttribute("data-theme", r.classList.contains("dark")?"dark":"light");
+      requestAnimationFrame(()=>document.querySelectorAll("[data-seg]").forEach(moveThumb));
+      document.querySelectorAll("[data-slider]").forEach(paintSlider); });
+  </script>
+</body>
+</html>

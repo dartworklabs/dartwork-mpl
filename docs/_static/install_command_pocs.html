@@ -1,0 +1,267 @@
+<!doctype html>
+<!--
+  install_command_pocs.html — POC gallery for the COMMAND SURFACE + COPY affordance.
+
+  Addresses: "the dark slab being the default is weird — show the code simply,
+  and the Copy button shouldn't be a default-dark button." Six directions for
+  how the install command renders, plus three copy-affordance treatments.
+  Standalone (inlines the radix token subset); flip the theme toggle.
+  Mirrors _static/landing_pocs_preview.html convention.
+-->
+<html lang="en" class="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Install command surface — UX directions</title>
+  <style>
+    :root {
+      --rx-gray-1:#fcfcfd; --rx-gray-2:#f9f9fb; --rx-gray-3:#f0f0f3;
+      --rx-gray-4:#e8e8ec; --rx-gray-5:#e0e1e6; --rx-gray-6:#d9d9e0;
+      --rx-gray-11:#60646c; --rx-gray-12:#1c2024;
+      --rx-gray-a3:rgba(0,8,60,.059); --rx-gray-a4:rgba(0,0,39,.09);
+      --rx-gray-a6:rgba(0,0,32,.149);
+
+      --rx-accent-2:#f3fbf9; --rx-accent-3:#e0f8f3; --rx-accent-5:#b8eae0;
+      --rx-accent-7:#83cdbf; --rx-accent-9:#12a594; --rx-accent-10:#0d9b8a;
+      --rx-accent-11:#008573; --rx-accent-12:#0d3d38;
+
+      --dm-text-strong:var(--rx-gray-12);
+      --dm-text-muted:var(--rx-gray-11);
+      --dm-border-faint:var(--rx-gray-a4);
+      --dm-border:var(--rx-gray-a6);
+      --dm-bg-panel:var(--rx-gray-1);
+
+      --page-bg:#ffffff;
+      /* theme-adaptive code surface (the whole point of this gallery) */
+      --code-surface:var(--rx-gray-2);       /* light slab in light mode  */
+      --code-fg:var(--rx-gray-12);
+      --code-prompt:var(--rx-accent-11);
+      --code-comment:var(--rx-gray-11);
+      /* soft "terminal" alt (CS4) — slate, not navy */
+      --term-bg:#f1f5f9; --term-fg:#334155; --term-dot:#cbd5e1;
+
+      --rx-shadow-2:0 0 0 1px var(--rx-gray-a4),0 1px 2px var(--rx-gray-a3),0 2px 4px -1px var(--rx-gray-a3);
+      --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+      --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono",Consolas,Menlo,monospace;
+      --radius:10px;
+    }
+    html.dark {
+      --rx-gray-1:#111113; --rx-gray-2:#18191b; --rx-gray-3:#212225;
+      --rx-gray-4:#272a2d; --rx-gray-5:#2e3135; --rx-gray-6:#363a3f;
+      --rx-gray-11:#b0b4ba; --rx-gray-12:#edeef0;
+      --rx-gray-a3:rgba(244,246,248,.075); --rx-gray-a4:rgba(229,247,251,.106);
+      --rx-gray-a6:rgba(238,247,254,.18);
+      --rx-accent-2:#0e1916; --rx-accent-3:#112725; --rx-accent-5:#1a3833;
+      --rx-accent-7:#236e64; --rx-accent-9:#12a594; --rx-accent-10:#25c2ad;
+      --rx-accent-11:#76dac3; --rx-accent-12:#adf0dd;
+      --dm-bg-panel:var(--rx-gray-2);
+      --page-bg:#0c0c0e;
+      --code-surface:var(--rx-gray-3);
+      --term-bg:#11161f; --term-fg:#cbd5e1; --term-dot:#334155;
+    }
+
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--page-bg); color:var(--dm-text-strong);
+      font-family:var(--sans); letter-spacing:-.003em; -webkit-font-smoothing:antialiased; }
+    .wrap { max-width:760px; margin:0 auto; padding:40px 24px 96px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:8px; flex-wrap:wrap; }
+    .topbar h1 { font-size:26px; font-weight:700; letter-spacing:-.022em; margin:0; }
+    .topbar p { margin:6px 0 0; color:var(--dm-text-muted); font-size:14px; max-width:48ch; }
+    .theme-toggle { display:inline-flex; align-items:center; gap:8px; background:var(--dm-bg-panel);
+      color:var(--dm-text-strong); border:1px solid var(--dm-border); border-radius:999px;
+      padding:7px 14px; font:inherit; font-size:13px; font-weight:500; cursor:pointer; transition:border-color .15s; }
+    .theme-toggle:hover { border-color:var(--rx-accent-9); }
+
+    .gallery { display:grid; gap:40px; margin-top:40px; }
+    .poc-head { display:flex; align-items:baseline; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+    .poc-badge { font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.06em;
+      color:#fff; background:var(--rx-accent-9); border-radius:6px; padding:3px 8px; }
+    .poc-name { font-size:17px; font-weight:600; letter-spacing:-.01em; margin:0; }
+    .poc-desc { width:100%; margin:2px 0 0; color:var(--dm-text-muted); font-size:13.5px; line-height:1.5; }
+
+    /* shared command bits */
+    .cmd-mono { font-family:var(--mono); font-size:.9rem; line-height:1.5; }
+    .prompt { color:var(--code-prompt); user-select:none; }
+    .comment { color:var(--code-comment); }
+    .copy-icon {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:28px; height:28px; border-radius:6px; border:1px solid transparent;
+      background:transparent; color:var(--dm-text-muted); cursor:pointer;
+      transition:background .15s, color .15s, border-color .15s; flex:none;
+    }
+    .copy-icon svg { width:15px; height:15px; }
+    .copy-icon:hover { background:var(--rx-accent-3); color:var(--rx-accent-11); border-color:var(--rx-accent-7); }
+    .copy-icon.copied { color:var(--rx-accent-11); }
+
+    /* ── CS1 — Docs-native light code card (matches .highlight pre) ─────── */
+    .cs1 { position:relative; background:var(--code-surface); border:1px solid var(--dm-border-faint);
+      border-radius:8px; padding:13px 52px 13px 16px; }
+    .cs1 .copy-icon { position:absolute; top:9px; right:9px; }
+
+    /* ── CS2 — Inline pill (landing .dm-landing-install idiom) ──────────── */
+    .cs2 { display:inline-flex; align-items:center; gap:10px; background:var(--dm-bg-panel);
+      border:1px solid var(--dm-border); border-radius:999px; padding:8px 10px 8px 18px;
+      box-shadow:var(--rx-shadow-2); max-width:100%; }
+    .cs2 .cmd-mono { color:var(--dm-text-strong); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* ── CS3 — Bare line + copy link (no box) ──────────────────────────── */
+    .cs3 { display:flex; align-items:center; gap:16px; padding:10px 2px;
+      border-bottom:1px solid var(--dm-border-faint); }
+    .cs3 .cmd-mono { color:var(--dm-text-strong); flex:1; }
+    .cs3 .copy-link { background:none; border:none; font:inherit; font-size:12.5px; font-weight:600;
+      color:var(--dm-text-muted); cursor:pointer; padding:2px 4px; transition:color .15s; flex:none; }
+    .cs3 .copy-link:hover { color:var(--rx-accent-11); }
+    .cs3 .copy-link.copied { color:var(--rx-accent-11); }
+
+    /* ── CS4 — Theme-adaptive soft terminal (slate, not navy) ──────────── */
+    .cs4 { background:var(--term-bg); border:1px solid var(--dm-border-faint); border-radius:9px; overflow:hidden; }
+    .cs4 .term-bar { display:flex; align-items:center; gap:6px; padding:8px 12px;
+      border-bottom:1px solid var(--dm-border-faint); }
+    .cs4 .dot { width:9px; height:9px; border-radius:50%; background:var(--term-dot); }
+    .cs4 .term-title { margin-left:8px; font-size:11px; font-weight:600; letter-spacing:.04em;
+      text-transform:uppercase; color:var(--dm-text-muted); }
+    .cs4 .term-body { position:relative; padding:13px 52px 13px 16px; color:var(--term-fg); }
+    .cs4 .copy-icon { position:absolute; top:9px; right:9px; }
+
+    /* ── CS5 — Accent-edge card ────────────────────────────────────────── */
+    .cs5 { position:relative; background:var(--code-surface); border:1px solid var(--dm-border-faint);
+      border-left:3px solid var(--rx-accent-9); border-radius:0 8px 8px 0; padding:13px 52px 13px 16px; }
+    .cs5 .copy-icon { position:absolute; top:9px; right:9px; }
+
+    /* ── CS6 — Click-anywhere-to-copy row (whole surface is the button) ── */
+    .cs6 { display:flex; align-items:center; justify-content:space-between; gap:14px;
+      background:var(--code-surface); border:1px solid var(--dm-border-faint); border-radius:8px;
+      padding:13px 16px; cursor:pointer; transition:border-color .15s, background .15s; }
+    .cs6:hover { border-color:var(--rx-accent-7); }
+    .cs6 .cmd-mono { color:var(--dm-text-strong); }
+    .cs6 .hint { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600;
+      color:var(--dm-text-muted); flex:none; transition:color .15s; }
+    .cs6:hover .hint { color:var(--rx-accent-11); }
+    .cs6.copied .hint { color:var(--rx-accent-11); }
+
+    /* copy-affordance demo row */
+    .aff { display:grid; gap:18px; }
+    .aff-row { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+    .aff-label { font-size:12px; font-weight:600; color:var(--dm-text-muted); min-width:128px; }
+    /* hover-reveal copy (X2) */
+    .hovwrap { position:relative; background:var(--code-surface); border:1px solid var(--dm-border-faint);
+      border-radius:8px; padding:11px 52px 11px 16px; min-width:280px; }
+    .hovwrap .copy-icon { position:absolute; top:7px; right:9px; opacity:0; transform:translateY(-1px); transition:opacity .15s; }
+    .hovwrap:hover .copy-icon { opacity:1; }
+  </style>
+</head>
+<body class="yue">
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>Install command surface — UX directions</h1>
+        <p>Six ways to render the command (no forced dark slab), plus three copy
+           affordances. The surface now follows the theme. Toggle to compare.</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button">◐ Toggle theme</button>
+    </div>
+
+    <div class="gallery" id="gallery"></div>
+  </div>
+
+  <script>
+    const CMD = "uv add dartwork-mpl";
+    const PROMPT = "$ ";
+    const ICON =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    const CHECK =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+    function mono(withComment) {
+      return '<span class="cmd-mono"><span class="prompt">' + PROMPT + '</span>' + CMD + '</span>';
+    }
+    function copyIcon() {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "copy-icon"; b.setAttribute("aria-label", "Copy command");
+      b.innerHTML = ICON;
+      b.addEventListener("click", e => { e.stopPropagation(); fireCopy(b); });
+      return b;
+    }
+    function fireCopy(btn, isLink) {
+      navigator.clipboard && navigator.clipboard.writeText(CMD);
+      btn.classList.add("copied");
+      const prev = btn.innerHTML;
+      if (isLink) { btn.textContent = "Copied"; } else { btn.innerHTML = CHECK; }
+      setTimeout(() => { btn.classList.remove("copied"); btn.innerHTML = isLink ? "Copy" : prev; if(isLink) btn.textContent="Copied"; }, 1400);
+      if (isLink) setTimeout(() => { btn.textContent = "Copy"; }, 1400);
+    }
+
+    const VARIANTS = [
+      { key:"CS1", name:"Light code card (docs-native)", rec:true,
+        desc:"Exactly the docs' own code-block surface — gray-2 wash, hairline border, mono text, teal $ prompt. Ghost copy icon top-right (faint, accent on hover). Reads as a normal docs code block. Recommended.",
+        build(){ const d=document.createElement("div"); d.className="cs1"; d.innerHTML=mono(); d.appendChild(copyIcon()); return d; } },
+      { key:"CS2", name:"Inline pill", rec:false,
+        desc:"Matches the landing-hero install pill: rounded, panel surface, mono one-liner, trailing ghost copy icon. Compact and friendly; best when the command is a single short line.",
+        build(){ const d=document.createElement("div"); d.className="cs2"; d.innerHTML=mono(); d.appendChild(copyIcon()); return d; } },
+      { key:"CS3", name:"Bare line + copy link", rec:true,
+        desc:"No box at all. Just the command in mono on the page, a hairline underline, and a small text Copy link that turns teal. The most minimal — 'just show the code'.",
+        build(){ const d=document.createElement("div"); d.className="cs3"; d.innerHTML=mono();
+          const l=document.createElement("button"); l.type="button"; l.className="copy-link"; l.textContent="Copy";
+          l.addEventListener("click",()=>fireCopy(l,true)); d.appendChild(l); return d; } },
+      { key:"CS4", name:"Theme-adaptive terminal (slate, not navy)", rec:false,
+        desc:"Keeps a terminal affordance but the slab follows the theme — soft slate in light, deep in dark. Faux titlebar dots. Fixes 'black by default is weird' while keeping the terminal cue.",
+        build(){ const d=document.createElement("div"); d.className="cs4";
+          d.innerHTML='<div class="term-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="term-title">terminal</span></div>'+
+            '<div class="term-body">'+mono()+'</div>';
+          d.querySelector(".term-body").appendChild(copyIcon()); return d; } },
+      { key:"CS5", name:"Accent-edge card", rec:false,
+        desc:"Light code card with a teal left edge — a touch of brand without a heavy slab. Echoes the radix admonition/quote left-stripe idiom already used across the docs.",
+        build(){ const d=document.createElement("div"); d.className="cs5"; d.innerHTML=mono(); d.appendChild(copyIcon()); return d; } },
+      { key:"CS6", name:"Click-anywhere-to-copy", rec:false,
+        desc:"The whole row is the copy target. Light surface, mono command, a 'Copy' hint that activates on hover. One-gesture; no separate button to style.",
+        build(){ const d=document.createElement("div"); d.className="cs6"; d.innerHTML=mono()+
+            '<span class="hint">'+ICON+'<span class="ht">Copy</span></span>';
+          d.addEventListener("click",()=>{ navigator.clipboard&&navigator.clipboard.writeText(CMD);
+            d.classList.add("copied"); d.querySelector(".ht").textContent="Copied";
+            setTimeout(()=>{ d.classList.remove("copied"); d.querySelector(".ht").textContent="Copy"; },1400); }); return d; } },
+    ];
+
+    const gallery = document.getElementById("gallery");
+    VARIANTS.forEach(v => {
+      const card = document.createElement("section");
+      card.innerHTML = '<div class="poc-head"><span class="poc-badge">'+v.key+(v.rec?' ★':'')+
+        '</span><h2 class="poc-name">'+v.name+'</h2><p class="poc-desc">'+v.desc+'</p></div>';
+      card.appendChild(v.build());
+      gallery.appendChild(card);
+    });
+
+    // copy-affordance comparison block
+    const affCard = document.createElement("section");
+    affCard.innerHTML = '<div class="poc-head"><span class="poc-badge">COPY</span>'+
+      '<h2 class="poc-name">Copy affordance — three treatments</h2>'+
+      '<p class="poc-desc">The copy control should not be a default-dark button. Three lighter options, on the CS1 light surface.</p></div>';
+    const aff = document.createElement("div"); aff.className="aff";
+    // X1 always-faint ghost icon
+    const r1=document.createElement("div"); r1.className="aff-row";
+    r1.innerHTML='<span class="aff-label">A · Ghost icon (always faint)</span>';
+    const s1=document.createElement("div"); s1.className="cs1"; s1.style.minWidth="280px"; s1.innerHTML=mono(); s1.appendChild(copyIcon());
+    r1.appendChild(s1); aff.appendChild(r1);
+    // X2 hover-reveal
+    const r2=document.createElement("div"); r2.className="aff-row";
+    r2.innerHTML='<span class="aff-label">B · Hover-reveal icon</span>';
+    const s2=document.createElement("div"); s2.className="hovwrap"; s2.innerHTML=mono(); s2.appendChild(copyIcon());
+    r2.appendChild(s2); aff.appendChild(r2);
+    // X3 text link
+    const r3=document.createElement("div"); r3.className="aff-row";
+    r3.innerHTML='<span class="aff-label">C · Text link</span>';
+    const s3=document.createElement("div"); s3.className="cs3"; s3.style.minWidth="280px"; s3.innerHTML=mono();
+    const l3=document.createElement("button"); l3.type="button"; l3.className="copy-link"; l3.textContent="Copy";
+    l3.addEventListener("click",()=>fireCopy(l3,true)); s3.appendChild(l3);
+    r3.appendChild(s3); aff.appendChild(r3);
+    affCard.appendChild(aff);
+    gallery.appendChild(affCard);
+
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      const root = document.documentElement;
+      root.classList.toggle("dark"); root.classList.toggle("light");
+      document.body.setAttribute("data-theme", root.classList.contains("dark") ? "dark" : "light");
+    });
+  </script>
+</body>
+</html>
