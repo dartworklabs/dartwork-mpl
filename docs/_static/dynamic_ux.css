@@ -243,143 +243,10 @@ body.dm-kbd-pending-g::after {
 }
 
 /* ───────────────────────── 4. Install picker ────────────────────────── */
-.dm-install-picker {
-  margin: 1.5rem 0 2rem;
-  border: 1px solid var(--dm-ux-border);
-  border-radius: var(--dm-ux-radius);
-  overflow: hidden;
-  background: var(--dm-ux-bg);
-  box-shadow: var(--dm-ux-elev);
-  font-family: var(--sy-f-sys, system-ui);
-}
-.dm-ip-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 18px;
-  background: linear-gradient(
-    180deg,
-    var(--dm-ux-accent-soft),
-    transparent
-  );
-  border-bottom: 1px solid var(--dm-ux-border);
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.dm-ip-eyebrow {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--dm-ux-accent);
-}
-.dm-ip-detected {
-  font-size: 0.82rem;
-  color: var(--dm-ux-text-weak);
-}
-.dm-ip-detected strong {
-  color: var(--dm-ux-text);
-}
-.dm-ip-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 18px;
-  border-bottom: 1px solid var(--dm-ux-border);
-  flex-wrap: wrap;
-}
-.dm-ip-row-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--dm-ux-text-weak);
-  min-width: 48px;
-}
-.dm-ip-tabs {
-  display: inline-flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.dm-ip-tab {
-  background: var(--dm-ux-bg-mute);
-  color: var(--dm-ux-text);
-  border: 1px solid var(--dm-ux-border);
-  padding: 6px 12px;
-  border-radius: 999px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: all 0.15s ease;
-}
-.dm-ip-tab:hover {
-  border-color: var(--dm-ux-accent);
-  color: var(--dm-ux-accent);
-}
-.dm-ip-tab.active {
-  background: var(--dm-ux-accent);
-  border-color: var(--dm-ux-accent);
-  color: #fff;
-}
-.dm-ip-cmd {
-  position: relative;
-  margin: 14px 18px;
-}
-.dm-ip-cmd pre {
-  margin: 0;
-  padding: 14px 16px;
-  background: var(--sy-c-bg-weak, #0f172a);
-  color: #e2e8f0;
-  border-radius: 8px;
-  font-family: var(--sy-f-mono, ui-monospace, monospace);
-  font-size: 0.92rem;
-  line-height: 1.5;
-  overflow-x: auto;
-}
-.dm-ip-cmd pre code {
-  background: transparent !important;
-  border: 0 !important;
-  padding: 0 !important;
-  color: inherit !important;
-}
-html.light .dm-ip-cmd pre,
-body[data-theme="light"] .dm-ip-cmd pre {
-  background: #0f172a;
-  color: #e2e8f0;
-}
-.dm-ip-copy {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 0.78rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.dm-ip-copy:hover {
-  background: var(--dm-ux-accent);
-  border-color: var(--dm-ux-accent);
-}
-.dm-ip-copy.copied {
-  background: var(--dm-ux-accent);
-  border-color: var(--dm-ux-accent);
-}
-.dm-ip-note {
-  padding: 10px 18px 14px;
-  font-size: 0.83rem;
-  color: var(--dm-ux-text-weak);
-}
-.dm-ip-note code {
-  background: var(--dm-ux-bg-mute);
-  border: 1px solid var(--dm-ux-border);
-  border-radius: 4px;
-  padding: 1px 5px;
-}
+/* Migrated (P3b) to the interactive primitive SSOT: the picker now composes
+ * .dm-seg (Tool/OS) + .dm-code (command) + .dm-icon-btn (copy), and its layout
+ * shell lives in dm-interactive.css §10. The old bespoke .dm-ip-tab pill /
+ * dark-slab rules (which shipped the invisible-active bug) are deleted. */
 
 /* ───────────────────────── 5. FAQ filter ────────────────────────────── */
 .dm-faq-toolbar {
@@ -918,8 +785,6 @@ body[data-theme="light"] .dm-ip-cmd pre {
 }
 
 /* ───────────────────────── Dark mode polish ─────────────────────────── */
-html.dark .dm-ip-cmd pre,
-body[data-theme="dark"] .dm-ip-cmd pre,
 html.dark .dm-rw-code,
 body[data-theme="dark"] .dm-rw-code,
 html.dark .dm-ls-code,

@@ -449,40 +449,52 @@
       }),
     ]);
 
+    // Segmented control (.dm-seg) — active is a real sliding surface, so the
+    // selected option can never render invisible (the old .dm-ip-tab bug).
+    function buildSeg(items, attr, savedId) {
+      var seg = el("div", { class: "dm-seg" });
+      seg.appendChild(el("span", { class: "dm-seg__thumb" }));
+      items.forEach(function (it) {
+        var on = it.id === savedId;
+        var btn = el("button", {
+          class: "dm-opt" + (on ? " is-active" : ""),
+          type: "button",
+          "aria-pressed": on ? "true" : "false",
+          text: it.label,
+        });
+        btn.setAttribute(attr, it.id);
+        seg.appendChild(btn);
+      });
+      return seg;
+    }
+
     var rowMgr = el("div", { class: "dm-ip-row" });
     rowMgr.appendChild(el("span", { class: "dm-ip-row-label", text: "Tool" }));
-    var mgrTabs = el("div", { class: "dm-ip-tabs" });
-    managers.forEach(function (m) {
-      var btn = el("button", {
-        class: "dm-ip-tab" + (m.id === savedMgr ? " active" : ""),
-        "data-mgr": m.id,
-        text: m.label,
-      });
-      mgrTabs.appendChild(btn);
-    });
-    rowMgr.appendChild(mgrTabs);
+    var mgrSeg = buildSeg(managers, "data-mgr", savedMgr);
+    rowMgr.appendChild(mgrSeg);
 
     var rowOs = el("div", { class: "dm-ip-row" });
     rowOs.appendChild(el("span", { class: "dm-ip-row-label", text: "OS" }));
-    var osTabs = el("div", { class: "dm-ip-tabs" });
-    oses.forEach(function (o) {
-      var btn = el("button", {
-        class: "dm-ip-tab" + (o.id === savedOs ? " active" : ""),
-        "data-os": o.id,
-        text: o.label,
-      });
-      osTabs.appendChild(btn);
-    });
-    rowOs.appendChild(osTabs);
+    var osSeg = buildSeg(oses, "data-os", savedOs);
+    rowOs.appendChild(osSeg);
 
-    var cmdBox = el("div", { class: "dm-ip-cmd" });
-    var cmdPre = el("pre", {}, [el("code", { class: "dm-ip-code" })]);
+    // Light code surface (.dm-code) — follows the theme, no forced dark slab —
+    // with a ghost-icon copy button (.dm-icon-btn), not a default-dark button.
+    var COPY_SVG =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    var CHECK_SVG =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+    var cmdBox = el("div", { class: "dm-code" });
+    var promptEl = el("span", { class: "dm-code__prompt" });
+    var bodyEl = el("span", { class: "dm-code__body" });
     var copyBtn = el("button", {
-      class: "dm-ip-copy",
+      class: "dm-icon-btn",
+      type: "button",
       "aria-label": "Copy command",
-      text: "Copy",
     });
-    cmdBox.appendChild(cmdPre);
+    copyBtn.innerHTML = COPY_SVG;
+    cmdBox.appendChild(promptEl);
+    cmdBox.appendChild(bodyEl);
     cmdBox.appendChild(copyBtn);
 
     var note = el("div", { class: "dm-ip-note" });
@@ -500,6 +512,14 @@
       marker.insertBefore(widget, marker.firstChild);
     }
 
+    function moveThumb(seg) {
+      var thumb = seg.querySelector(".dm-seg__thumb");
+      var active = seg.querySelector(".dm-opt.is-active");
+      if (!thumb || !active) return;
+      thumb.style.width = active.offsetWidth + "px";
+      thumb.style.transform = "translateX(" + active.offsetLeft + "px)";
+    }
+
     function render() {
       var mgr = managers.filter(function (m) {
         return m.id === currentMgr;
@@ -507,11 +527,8 @@
       var os = oses.filter(function (o) {
         return o.id === currentOs;
       })[0];
-      var prefix = "";
-      if (os.id === "macos") prefix = "$ ";
-      else if (os.id === "linux") prefix = "$ ";
-      else prefix = "PS> ";
-      cmdPre.querySelector("code").textContent = prefix + mgr.cmd;
+      promptEl.textContent = os.id === "windows" ? "PS> " : "$ ";
+      bodyEl.textContent = mgr.cmd;
       var notes = [];
       if (os.prereq) notes.push(os.prereq);
       notes.push(mgr.note);
@@ -521,45 +538,52 @@
     var currentMgr = savedMgr;
     var currentOs = savedOs;
 
-    mgrTabs.addEventListener("click", function (e) {
-      var b = e.target.closest("[data-mgr]");
-      if (!b) return;
-      currentMgr = b.getAttribute("data-mgr");
-      safeStorage.set("dmInstallMgr", currentMgr);
-      $$(".dm-ip-tab", mgrTabs).forEach(function (x) {
-        x.classList.toggle(
-          "active",
-          x.getAttribute("data-mgr") === currentMgr,
-        );
+    function wireSeg(seg, attr, onPick) {
+      seg.addEventListener("click", function (e) {
+        var b = e.target.closest("[" + attr + "]");
+        if (!b) return;
+        var id = b.getAttribute(attr);
+        onPick(id);
+        $$(".dm-opt", seg).forEach(function (x) {
+          var on = x.getAttribute(attr) === id;
+          x.classList.toggle("is-active", on);
+          x.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+        moveThumb(seg);
+        render();
       });
-      render();
+    }
+    wireSeg(mgrSeg, "data-mgr", function (id) {
+      currentMgr = id;
+      safeStorage.set("dmInstallMgr", id);
     });
-    osTabs.addEventListener("click", function (e) {
-      var b = e.target.closest("[data-os]");
-      if (!b) return;
-      currentOs = b.getAttribute("data-os");
-      safeStorage.set("dmInstallOs", currentOs);
-      $$(".dm-ip-tab", osTabs).forEach(function (x) {
-        x.classList.toggle("active", x.getAttribute("data-os") === currentOs);
-      });
-      render();
+    wireSeg(osSeg, "data-os", function (id) {
+      currentOs = id;
+      safeStorage.set("dmInstallOs", id);
     });
+
     copyBtn.addEventListener("click", function () {
-      // Strip a leading shell prompt — either "$ " (POSIX) or "PS> " (PowerShell).
-      var text = cmdPre
-        .querySelector("code")
-        .textContent.replace(/^(?:\$|PS>)\s+/, "");
-      copyText(text, function () {
-        copyBtn.textContent = "Copied!";
-        copyBtn.classList.add("copied");
+      // .dm-code__body holds the bare command (no prompt) — copy as-is.
+      copyText(bodyEl.textContent, function () {
+        copyBtn.innerHTML = CHECK_SVG;
+        copyBtn.classList.add("is-copied");
         setTimeout(function () {
-          copyBtn.textContent = "Copy";
-          copyBtn.classList.remove("copied");
-        }, 1500);
+          copyBtn.innerHTML = COPY_SVG;
+          copyBtn.classList.remove("is-copied");
+        }, 1400);
       });
     });
 
     render();
+    // Seat the thumbs once layout settles, and keep them aligned on resize.
+    requestAnimationFrame(function () {
+      moveThumb(mgrSeg);
+      moveThumb(osSeg);
+    });
+    window.addEventListener("resize", function () {
+      moveThumb(mgrSeg);
+      moveThumb(osSeg);
+    });
   }
 
   /* ═══════════════════════════════════════════════════════════════════

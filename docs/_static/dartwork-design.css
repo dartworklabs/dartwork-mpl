@@ -773,40 +773,11 @@ body {
   padding-left: 12px;
 }
 
-/* Install picker (.dm-install-picker) — same hairline shell + flat
- * header/rows. ip-tab pills lose their default fill; only active fills. */
-.dm-install-picker {
-  border: none !important;
-  border-top: 1px solid var(--dm-border-faint) !important;
-  border-bottom: 1px solid var(--dm-border-faint) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-.dm-ip-head {
-  background: transparent !important;
-  background-image: none !important;
-  border-bottom: 1px solid var(--dm-border-faint) !important;
-}
-
-.dm-ip-row {
-  border-bottom: 1px solid var(--dm-border-faint) !important;
-}
-
-.dm-ip-row:last-child {
-  border-bottom: none !important;
-}
-
-.dm-ip-tab {
-  background: transparent !important;
-  border-color: var(--dm-border-faint) !important;
-}
-
-.dm-ip-tab:hover {
-  background: var(--dm-gray-a3) !important;
-  border-color: var(--dm-border) !important;
-}
+/* Install picker — migrated to the interactive primitive SSOT (P3b). The
+ * picker now composes .dm-seg + .dm-code + .dm-icon-btn; its layout shell
+ * lives in dm-interactive.css §10. The old flatten-override here — including
+ * the .dm-ip-tab { background: transparent !important } that clobbered the
+ * active fill and caused the invisible-active bug — is removed. */
 
 /* --- Group B — designer chrome --- */
 

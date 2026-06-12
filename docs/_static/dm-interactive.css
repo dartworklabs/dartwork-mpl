@@ -346,3 +346,67 @@ body[data-theme="dark"] {
   color: var(--dm-i-strong);
 }
 .dm-callout strong { color: var(--dm-i-active-text); }
+
+/* ---------------------------------------------------------------------------
+ * 10. Install picker — composes .dm-seg (Tool/OS) + .dm-code (command) +
+ *     .dm-icon-btn (copy). This block is ONLY the picker's layout shell; the
+ *     controls come from the primitives above. Built by dynamic_ux.js on the
+ *     Installation page. Replaces the old bespoke .dm-ip-tab pills.
+ * --------------------------------------------------------------------------- */
+.dm-install-picker {
+  margin: 1.5rem 0 2rem;
+  border: 1px solid var(--dm-i-border);
+  border-radius: var(--dm-radius-5);
+  background: var(--dm-bg-panel);
+  box-shadow: var(--dm-shadow-2);
+  overflow: hidden;
+  font-family: var(--dm-f-sys);
+}
+.dm-ip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--dm-i-border);
+}
+.dm-ip-eyebrow {
+  font-size: 0.72rem;
+  font-weight: var(--dm-weight-bold);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--dm-i-active-text);
+}
+.dm-ip-detected { font-size: 0.8rem; color: var(--dm-i-muted); }
+.dm-ip-detected strong { color: var(--dm-i-strong); }
+.dm-ip-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 12px 18px 4px;
+}
+.dm-ip-row-label {
+  min-width: 40px;
+  font-size: 0.7rem;
+  font-weight: var(--dm-weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dm-i-muted);
+  user-select: none;
+}
+.dm-install-picker .dm-code { margin: 14px 18px; }
+.dm-ip-note {
+  padding: 0 18px 16px;
+  font-size: 0.8rem;
+  color: var(--dm-i-muted);
+}
+.dm-ip-note code {
+  font-family: var(--dm-f-mono);
+  font-size: 0.92em;
+  background: var(--dm-gray-a3);
+  border: 1px solid var(--dm-i-border);
+  border-radius: var(--dm-radius-2);
+  padding: 1px 5px;
+}
