@@ -69,6 +69,13 @@
   --dm-pink-3: #fceef5;
   --dm-pink-11: #cd1d8d;
 
+  /* Semantic status scales (Radix amber / blue / green) — for callouts,
+   * lint tags, admonitions. Steps: 3 = soft bg, 6 = border, 9 = solid/stripe,
+   * 11 = text-on-soft. Replaces the raw Tailwind callout hexes. */
+  --dm-warning-3: #fff7c2; --dm-warning-6: #f3d673; --dm-warning-9: #ffc53d; --dm-warning-11: #ab6400;
+  --dm-info-3: #e6f4fe;    --dm-info-6: #acd8fc;    --dm-info-9: #0090ff;    --dm-info-11: #0d74ce;
+  --dm-success-3: #e6f6eb; --dm-success-6: #adddc0; --dm-success-9: #30a46c; --dm-success-11: #218358;
+
   /* Space scale (px-based; --scaling=1 baseline) */
   --dm-space-1: 4px;
   --dm-space-2: 8px;
@@ -226,6 +233,11 @@ body[data-theme="dark"] {
   --dm-accent-12: #adf0dd;
   --dm-pink-3: #310f1f;
   --dm-pink-11: #e93d82;
+
+  /* Semantic status scales — dark steps (Radix amber / blue / green dark). */
+  --dm-warning-3: #302008; --dm-warning-6: #5c3d05; --dm-warning-9: #ffc53d; --dm-warning-11: #ffca16;
+  --dm-info-3: #0d2847;    --dm-info-6: #104d87;    --dm-info-9: #0090ff;    --dm-info-11: #70b8ff;
+  --dm-success-3: #132d21; --dm-success-6: #20573e; --dm-success-9: #30a46c; --dm-success-11: #3dd68c;
 
   --dm-bg-page: #0c0c0e;
   --dm-bg-subtle: var(--dm-gray-2);
@@ -538,7 +550,7 @@ body {
 .yue .admonition.caution,
 .yue .admonition.important {
   background-color: transparent;
-  border-left-color: #d4a017;       /* soft amber stripe only, no fill */
+  border-left-color: var(--dm-warning-9);   /* soft amber stripe only, no fill */
 }
 .yue .admonition.warning > .admonition-title,
 .yue .admonition.caution > .admonition-title,
