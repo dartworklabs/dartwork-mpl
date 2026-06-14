@@ -2,10 +2,9 @@
 
 ```{raw} html
 <div class="dm-landing-hero">
-  <p class="dm-landing-tagline">matplotlib, but beautiful.</p>
+  <p class="dm-landing-tagline">matplotlib, but <span class="dm-tl-key">beautiful</span> — built for <span class="dm-tl-key">AI agents</span>.</p>
   <p class="dm-landing-subtitle">
-    Publication-quality plots with zero learning curve —
-    <strong>built for AI coding agents</strong>.
+    Publication-quality plots with zero learning curve.
   </p>
 
   <div class="dm-landing-cta">

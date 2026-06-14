@@ -1,0 +1,126 @@
+<!doctype html>
+<!--
+  container_surface_pocs.html — how should bespoke widget containers (.dm-color-sheet,
+  .dm-*-widget cards, code panels) sit on the docs canvas? The current panel bg
+  (--dm-bg-panel = gray-1 #fcfcfd) is ~1 shade off the white page → "ambiguous
+  shade morph". Four treatments below, same widget rendered each way, light+dark.
+  Links the REAL dartwork-design.css + dm-interactive.css. Toggle theme.
+  Serve from docs/_static: python3 -m http.server 8137
+-->
+<html lang="en" class="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Container surface — treatments</title>
+  <link rel="stylesheet" href="dartwork-design.css" />
+  <link rel="stylesheet" href="dm-interactive.css" />
+  <style>
+    body { margin:0; background:var(--dm-bg-page); color:var(--dm-gray-12);
+      font-family:var(--dm-f-sys,"Inter",system-ui,sans-serif); letter-spacing:-.003em; }
+    .wrap { max-width:880px; margin:0 auto; padding:36px 24px 120px; }
+    .bar { position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between;
+      gap:12px; padding:12px 16px; margin:-36px -24px 16px; background:var(--dm-bg-panel);
+      border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; }
+    .bar .t { font-size:15px; font-weight:700; }
+    .bar p { margin:0; font-size:12.5px; color:var(--dm-text-muted); flex-basis:100%; line-height:1.5; }
+    .tt { background:var(--dm-bg-panel); color:var(--dm-gray-12); border:1px solid var(--dm-border);
+      border-radius:999px; padding:6px 13px; font:inherit; font-size:13px; cursor:pointer; }
+    .poc { margin-top:34px; }
+    .poc-h { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+    .poc-id { font-family:var(--dm-f-mono,monospace); font-size:11px; font-weight:600; color:#fff;
+      background:var(--dm-accent-9); border-radius:6px; padding:3px 8px; }
+    .poc-id.rec { background:var(--dm-accent-11); }
+    .poc-n { font-size:16px; font-weight:600; margin:0; }
+    .poc-d { width:100%; margin:0; font-size:12.5px; color:var(--dm-text-muted); line-height:1.55; }
+    .map { font-family:var(--dm-f-mono,monospace); font-size:.92em; }
+
+    /* the page "canvas" each treatment sits on (T2 darkens it to show card lift) */
+    .canvas { padding:22px; border-radius:var(--dm-radius-5); }
+    .canvas.page { background:var(--dm-bg-page); }
+    .canvas.subtle { background:var(--dm-bg-subtle); }
+    .canvas-tag { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.06em;
+      color:var(--dm-text-muted); margin:0 0 10px; }
+
+    /* representative widget content */
+    .w-title { font-size:14px; font-weight:700; margin:0 0 12px; padding-bottom:8px; }
+    .sw-row { display:flex; gap:0; margin:0 0 14px; }
+    .sw { width:42px; height:38px; }
+    .sw:first-child { border-radius:var(--dm-radius-3) 0 0 var(--dm-radius-3); }
+    .sw:last-child { border-radius:0 var(--dm-radius-3) var(--dm-radius-3) 0; }
+    .code { font-family:var(--dm-f-mono,monospace); font-size:12.5px; padding:11px 14px;
+      border-radius:var(--dm-radius-4); }
+    .code .p { color:var(--dm-accent-11); }
+
+    /* ===== T1 — FLUSH (bg = page, hairline only) ===== */
+    .t1 { background:var(--dm-bg-page); border:1px solid var(--dm-border-faint); border-radius:var(--dm-radius-5); padding:18px; }
+    .t1 .w-title { border-bottom:1px solid var(--dm-border-faint); }
+    .t1 .code { background:var(--dm-bg-subtle); }
+
+    /* ===== T2 — CANVAS + CARD (page subtle gray, card = panel + shadow) ===== */
+    .t2 { background:var(--dm-bg-panel); border:1px solid var(--dm-border-faint); border-radius:var(--dm-radius-5);
+      padding:18px; box-shadow:var(--dm-shadow-2); }
+    .t2 .w-title { border-bottom:1px solid var(--dm-border-faint); }
+    .t2 .code { background:var(--dm-bg-subtle); }
+
+    /* ===== T3 — INSET (container darker than page = recessed well) ===== */
+    .t3 { background:var(--dm-bg-subtle); border:1px solid var(--dm-border-faint); border-radius:var(--dm-radius-5); padding:18px; }
+    .t3 .w-title { border-bottom:1px solid var(--dm-border); }
+    .t3 .code { background:var(--dm-bg-page); border:1px solid var(--dm-border-faint); }
+
+    /* ===== T4 — TINTED (subtle accent panel + accent hairline) ===== */
+    .t4 { background:var(--dm-accent-2); border:1px solid var(--dm-accent-6); border-radius:var(--dm-radius-5); padding:18px; }
+    .t4 .w-title { border-bottom:1px solid var(--dm-accent-6); color:var(--dm-accent-12); }
+    .t4 .code { background:var(--dm-bg-panel); }
+  </style>
+</head>
+<body class="yue">
+  <div class="wrap">
+    <div class="bar">
+      <span class="t">Container surface — treatments</span>
+      <button class="tt" id="tt" type="button">◐ theme</button>
+      <p>Current panels sit on <span class="map">--dm-bg-panel</span> ≈ 1 shade off the page → muddy near-match. Four ways to make the container vs canvas relationship deliberate. Same widget each way; toggle light/dark.</p>
+    </div>
+    <div id="g"></div>
+  </div>
+
+  <script>
+    var WIDGET =
+      '<p class="w-title">Open Color · blue</p>' +
+      '<div class="sw-row">' +
+        '<div class="sw" style="background:#e7f5ff"></div>' +
+        '<div class="sw" style="background:#a5d8ff"></div>' +
+        '<div class="sw" style="background:#4dabf7"></div>' +
+        '<div class="sw" style="background:#1c7ed6"></div>' +
+        '<div class="sw" style="background:#1864ab"></div>' +
+      '</div>' +
+      '<div class="code"><span class="p">$ </span>color="oc.blue6"</div>';
+
+    var POCS = [
+      { id:"T1", rec:true, cls:"t1", canvas:"page", name:"Flush — bg = page + hairline",
+        desc:"Container background IS the page color; only a faint hairline border defines the edge. No shade morph at all — the panel reads as a bordered region of the canvas, not a tinted box. Matches what you suggested (\"match docs bg completely\")." },
+      { id:"T2", cls:"t2", canvas:"subtle", name:"Canvas + card (page tinted, card lifts)",
+        desc:"Flip the relationship: the PAGE gets a subtle gray (--dm-bg-subtle), the card stays panel-white + a soft shadow → a clear floating card. Strong hierarchy, but needs the docs page bg to change globally." },
+      { id:"T3", cls:"t3", canvas:"page", name:"Inset — recessed well",
+        desc:"Container sits one step DARKER than the page (--dm-bg-subtle) = a sunken well, with the code block popping back to page-white. Deliberate contrast, no ambiguity, no global page change." },
+      { id:"T4", cls:"t4", canvas:"page", name:"Tinted — soft accent panel",
+        desc:"Very subtle teal-tinted panel (--dm-accent-2) + accent hairline. Brands the widget areas, clearly distinct from the page. Risk: too much teal if used everywhere." },
+    ];
+
+    var g = document.getElementById("g");
+    POCS.forEach(function(p){
+      var sec = document.createElement("section"); sec.className = "poc";
+      sec.innerHTML =
+        '<div class="poc-h"><span class="poc-id'+(p.rec?' rec':'')+'">'+p.id+(p.rec?' · rec':'')+'</span>'+
+        '<h2 class="poc-n">'+p.name+'</h2><p class="poc-d">'+p.desc+'</p></div>'+
+        '<div class="canvas '+p.canvas+'"><p class="canvas-tag">'+(p.canvas==="subtle"?"page = --dm-bg-subtle":"page = --dm-bg-page")+'</p>'+
+        '<div class="'+p.cls+'">'+WIDGET+'</div></div>';
+      g.appendChild(sec);
+    });
+
+    document.getElementById("tt").addEventListener("click",function(){
+      var r=document.documentElement; r.classList.toggle("dark"); r.classList.toggle("light");
+      document.body.setAttribute("data-theme", r.classList.contains("dark")?"dark":"light");
+    });
+  </script>
+</body>
+</html>
