@@ -113,13 +113,23 @@ body[data-theme="dark"] {
 .dm-seg .dm-opt.is-active { color: var(--dm-i-strong); }
 /* No-JS / reduced-motion fallback: a clear soft fill on the active option so
  * selection survives even if the thumb never positions. */
-@media (prefers-reduced-motion: reduce) {
-  .dm-seg__thumb { transition: none; }
-}
 .dm-seg.no-thumb .dm-opt[aria-pressed="true"],
 .dm-seg.no-thumb .dm-opt.is-active {
   background: var(--dm-i-thumb);
   box-shadow: var(--dm-i-shadow);
+}
+/* Reduced motion: retire the sliding thumb entirely and back the active option
+ * with the same static fill, so the selected cue never depends on the animated
+ * thumb seating. Also stop the option/icon colour transitions. */
+@media (prefers-reduced-motion: reduce) {
+  .dm-seg__thumb { display: none; }
+  .dm-seg .dm-opt,
+  .dm-icon-btn { transition: none; }
+  .dm-seg .dm-opt[aria-pressed="true"],
+  .dm-seg .dm-opt.is-active {
+    background: var(--dm-i-thumb);
+    box-shadow: var(--dm-i-shadow);
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -348,10 +358,13 @@ body[data-theme="dark"] {
 .dm-callout strong { color: var(--dm-i-active-text); }
 
 /* ---------------------------------------------------------------------------
- * 10. Install picker — composes .dm-seg (Tool/OS) + .dm-code (command) +
- *     .dm-icon-btn (copy). This block is ONLY the picker's layout shell; the
- *     controls come from the primitives above. Built by dynamic_ux.js on the
- *     Installation page. Replaces the old bespoke .dm-ip-tab pills.
+ * 10. Install picker — layout C5: ONE surface, no nested boxes. Both segmented
+ *     controls (.dm-seg) fold into the surface's own top bar (.dm-ip-head); the
+ *     command line (.dm-code) sits seamlessly below it (its primitive border /
+ *     radius / margin are dropped here); the contextual note closes it out.
+ *     This block is ONLY the picker's layout shell; the controls + command
+ *     surface come from the primitives above. Built by dynamic_ux.js on the
+ *     Installation page. Replaces the old bespoke .dm-ip-tab pills + label rows.
  * --------------------------------------------------------------------------- */
 .dm-install-picker {
   margin: 1.5rem 0 2rem;
@@ -362,51 +375,39 @@ body[data-theme="dark"] {
   overflow: hidden;
   font-family: var(--dm-f-sys);
 }
+/* Control bar: both segmented controls fused into the surface's top bar.
+ * Left inset (14px) is shared with .dm-code and .dm-ip-note below so the seg
+ * track, the command prompt, and the note text all start on one vertical edge. */
 .dm-ip-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
   flex-wrap: wrap;
-  padding: 12px 18px;
+  padding: 9px 14px;
   border-bottom: 1px solid var(--dm-i-border);
 }
-.dm-ip-eyebrow {
-  font-size: 0.72rem;
-  font-weight: var(--dm-weight-bold);
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--dm-i-active-text);
+/* Command line sits seamlessly under the bar — drop the primitive's own
+ * border / radius / margin so it reads as part of the one surface, not a
+ * nested card. The code-surface tint is kept; left padding matches the bar. */
+.dm-install-picker .dm-code {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 13px 50px 13px 14px;
 }
-.dm-ip-detected { font-size: 0.8rem; color: var(--dm-i-muted); }
-.dm-ip-detected strong { color: var(--dm-i-strong); }
-.dm-ip-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 12px 18px 4px;
-}
-.dm-ip-row-label {
-  min-width: 40px;
-  font-size: 0.7rem;
-  font-weight: var(--dm-weight-bold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--dm-i-muted);
-  user-select: none;
-}
-.dm-install-picker .dm-code { margin: 14px 18px; }
 .dm-ip-note {
-  padding: 0 18px 16px;
+  padding: 10px 14px 14px;
   font-size: 0.8rem;
+  line-height: 1.5;
   color: var(--dm-i-muted);
 }
+/* Inline code = soft fill only (no border) — the borderless inline-code idiom,
+ * so the picker has no inner bordered rectangle left. */
 .dm-ip-note code {
   font-family: var(--dm-f-mono);
   font-size: 0.92em;
   background: var(--dm-gray-a3);
-  border: 1px solid var(--dm-i-border);
   border-radius: var(--dm-radius-2);
   padding: 1px 5px;
 }

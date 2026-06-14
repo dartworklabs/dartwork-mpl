@@ -409,19 +409,18 @@
       {
         id: "conda",
         label: "conda",
-        cmd: "pip install dartwork-mpl   # inside an active conda env",
-        note: "Use <code>pip</code> inside the conda environment.",
+        // Bare command only — the conda context lives in `note`, so Copy never
+        // pastes a shell comment into the terminal.
+        cmd: "pip install dartwork-mpl",
+        note: "Use <code>pip</code> inside an active conda environment.",
       },
     ];
 
     var oses = [
       { id: "macos", label: "macOS", prereq: null },
       { id: "linux", label: "Linux", prereq: null },
-      {
-        id: "windows",
-        label: "Windows",
-        prereq: "Make sure Git is installed: <code>winget install Git.Git</code>",
-      },
+      // No Git prereq: installing from PyPI needs no Git toolchain.
+      { id: "windows", label: "Windows", prereq: null },
     ];
 
     // Detect platform
@@ -433,26 +432,18 @@
     var savedMgr = safeStorage.get("dmInstallMgr") || "uv";
     var savedOs = safeStorage.get("dmInstallOs") || defaultOs;
 
+    // Layout C5 — ONE surface, no nested boxes: both segmented controls fold
+    // into the code surface's own top bar (.dm-ip-head), the command line sits
+    // seamlessly below it (.dm-code, borderless inside the surface), and the
+    // contextual note closes it out. Auto-detected OS pre-selects its segment;
+    // the visual "Detected" badge is dropped to keep the bar uncluttered.
     var widget = el("div", { class: "dm-install-picker" });
-    var head = el("div", { class: "dm-ip-head" }, [
-      el("span", { class: "dm-ip-eyebrow", text: "Live install command" }),
-      el("span", {
-        class: "dm-ip-detected",
-        html:
-          'Detected: <strong>' +
-          (defaultOs === "macos"
-            ? "macOS"
-            : defaultOs === "windows"
-              ? "Windows"
-              : "Linux") +
-          "</strong>",
-      }),
-    ]);
 
     // Segmented control (.dm-seg) — active is a real sliding surface, so the
     // selected option can never render invisible (the old .dm-ip-tab bug).
-    function buildSeg(items, attr, savedId) {
-      var seg = el("div", { class: "dm-seg" });
+    function buildSeg(items, attr, savedId, ariaLabel) {
+      var seg = el("div", { class: "dm-seg", role: "group" });
+      if (ariaLabel) seg.setAttribute("aria-label", ariaLabel);
       seg.appendChild(el("span", { class: "dm-seg__thumb" }));
       items.forEach(function (it) {
         var on = it.id === savedId;
@@ -460,6 +451,9 @@
           class: "dm-opt" + (on ? " is-active" : ""),
           type: "button",
           "aria-pressed": on ? "true" : "false",
+          // Roving tabindex: only the active option is in the tab order, so the
+          // whole segment is a single tab stop (arrow keys move within it).
+          tabindex: on ? "0" : "-1",
           text: it.label,
         });
         btn.setAttribute(attr, it.id);
@@ -468,15 +462,9 @@
       return seg;
     }
 
-    var rowMgr = el("div", { class: "dm-ip-row" });
-    rowMgr.appendChild(el("span", { class: "dm-ip-row-label", text: "Tool" }));
-    var mgrSeg = buildSeg(managers, "data-mgr", savedMgr);
-    rowMgr.appendChild(mgrSeg);
-
-    var rowOs = el("div", { class: "dm-ip-row" });
-    rowOs.appendChild(el("span", { class: "dm-ip-row-label", text: "OS" }));
-    var osSeg = buildSeg(oses, "data-os", savedOs);
-    rowOs.appendChild(osSeg);
+    var mgrSeg = buildSeg(managers, "data-mgr", savedMgr, "Package manager");
+    var osSeg = buildSeg(oses, "data-os", savedOs, "Operating system");
+    var head = el("div", { class: "dm-ip-head" }, [mgrSeg, osSeg]);
 
     // Light code surface (.dm-code) — follows the theme, no forced dark slab —
     // with a ghost-icon copy button (.dm-icon-btn), not a default-dark button.
@@ -484,7 +472,9 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
     var CHECK_SVG =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
-    var cmdBox = el("div", { class: "dm-code" });
+    // aria-live: announce the rewritten command when Tool/OS changes. The copy
+    // button carries no text, so its glyph swap is not announced.
+    var cmdBox = el("div", { class: "dm-code", "aria-live": "polite" });
     var promptEl = el("span", { class: "dm-code__prompt" });
     var bodyEl = el("span", { class: "dm-code__body" });
     var copyBtn = el("button", {
@@ -500,8 +490,6 @@
     var note = el("div", { class: "dm-ip-note" });
 
     widget.appendChild(head);
-    widget.appendChild(rowMgr);
-    widget.appendChild(rowOs);
     widget.appendChild(cmdBox);
     widget.appendChild(note);
 
@@ -521,12 +509,16 @@
     }
 
     function render() {
-      var mgr = managers.filter(function (m) {
-        return m.id === currentMgr;
-      })[0];
-      var os = oses.filter(function (o) {
-        return o.id === currentOs;
-      })[0];
+      // `|| [0]` guards against a stale localStorage id (e.g. from a prior
+      // layout) that no longer matches any option — never deref undefined.
+      var mgr =
+        managers.filter(function (m) {
+          return m.id === currentMgr;
+        })[0] || managers[0];
+      var os =
+        oses.filter(function (o) {
+          return o.id === currentOs;
+        })[0] || oses[0];
       promptEl.textContent = os.id === "windows" ? "PS> " : "$ ";
       bodyEl.textContent = mgr.cmd;
       var notes = [];
@@ -538,19 +530,65 @@
     var currentMgr = savedMgr;
     var currentOs = savedOs;
 
+    // Apply a selection to a segment: sync is-active + aria-pressed + roving
+    // tabindex on every option, slide the thumb, and re-render the command.
+    function selectOpt(seg, attr, id, onPick, moveFocus) {
+      onPick(id);
+      $$(".dm-opt", seg).forEach(function (x) {
+        var on = x.getAttribute(attr) === id;
+        x.classList.toggle("is-active", on);
+        x.setAttribute("aria-pressed", on ? "true" : "false");
+        x.tabIndex = on ? 0 : -1;
+      });
+      moveThumb(seg);
+      render();
+      if (moveFocus) {
+        var active = seg.querySelector(".dm-opt.is-active");
+        if (active) active.focus();
+      }
+    }
+
     function wireSeg(seg, attr, onPick) {
       seg.addEventListener("click", function (e) {
         var b = e.target.closest("[" + attr + "]");
         if (!b) return;
-        var id = b.getAttribute(attr);
-        onPick(id);
-        $$(".dm-opt", seg).forEach(function (x) {
-          var on = x.getAttribute(attr) === id;
-          x.classList.toggle("is-active", on);
-          x.setAttribute("aria-pressed", on ? "true" : "false");
-        });
-        moveThumb(seg);
-        render();
+        selectOpt(seg, attr, b.getAttribute(attr), onPick, false);
+      });
+      // Roving-tabindex keyboard nav (APG segmented-control affordance):
+      // Arrow keys move selection within the group, Home/End jump to ends.
+      seg.addEventListener("keydown", function (e) {
+        var k = e.key;
+        if (
+          k !== "ArrowRight" &&
+          k !== "ArrowLeft" &&
+          k !== "ArrowUp" &&
+          k !== "ArrowDown" &&
+          k !== "Home" &&
+          k !== "End"
+        ) {
+          return;
+        }
+        var opts = $$(".dm-opt", seg);
+        if (!opts.length) return;
+        var cur = 0;
+        for (var i = 0; i < opts.length; i++) {
+          if (opts[i].classList.contains("is-active")) {
+            cur = i;
+            break;
+          }
+        }
+        var next = cur;
+        if (k === "ArrowRight" || k === "ArrowDown") {
+          next = (cur + 1) % opts.length;
+        } else if (k === "ArrowLeft" || k === "ArrowUp") {
+          next = (cur - 1 + opts.length) % opts.length;
+        } else if (k === "Home") {
+          next = 0;
+        } else if (k === "End") {
+          next = opts.length - 1;
+        }
+        e.preventDefault();
+        selectOpt(seg, attr, opts[next].getAttribute(attr), onPick, true);
       });
     }
     wireSeg(mgrSeg, "data-mgr", function (id) {
@@ -567,9 +605,11 @@
       copyText(bodyEl.textContent, function () {
         copyBtn.innerHTML = CHECK_SVG;
         copyBtn.classList.add("is-copied");
+        copyBtn.setAttribute("aria-label", "Copied");
         setTimeout(function () {
           copyBtn.innerHTML = COPY_SVG;
           copyBtn.classList.remove("is-copied");
+          copyBtn.setAttribute("aria-label", "Copy command");
         }, 1400);
       });
     });
