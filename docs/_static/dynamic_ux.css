@@ -156,7 +156,7 @@
   line-height: 1;
   cursor: pointer;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--dm-radius-3);
 }
 .dm-kbd-close:hover {
   background: var(--dm-ux-bg-mute);
@@ -188,7 +188,7 @@
   background: var(--dm-ux-bg-mute);
   border: 1px solid var(--dm-ux-border);
   border-bottom-width: 2px;
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
   padding: 2px 7px;
   font-size: 0.78rem;
   color: var(--dm-ux-text);
@@ -217,7 +217,7 @@
   background: var(--dm-ux-bg);
   border: 1px solid var(--dm-ux-border);
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
 }
 body.dm-kbd-pending-g::after {
   content: "g…";
@@ -228,7 +228,7 @@ body.dm-kbd-pending-g::after {
   color: var(--dm-ux-bg);
   font-family: var(--sy-f-mono, monospace);
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: var(--dm-radius-3);
   font-size: 0.8rem;
   z-index: 9991;
   animation: dmKbdPending 1.2s ease forwards;
@@ -278,7 +278,7 @@ body.dm-kbd-pending-g::after {
   border: 1px solid var(--dm-ux-border);
   background: var(--dm-ux-bg-mute);
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: var(--dm-radius-4);
 }
 .dm-faq-search-icon {
   color: var(--dm-ux-text-weak);
@@ -343,7 +343,7 @@ body.dm-kbd-pending-g::after {
 .dm-rw-title code {
   background: var(--dm-ux-bg-mute);
   border: 1px solid var(--dm-ux-border);
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
   padding: 1px 5px;
   font-size: 0.85em;
 }
@@ -385,7 +385,7 @@ body.dm-kbd-pending-g::after {
 }
 .dm-rw-ctrl select {
   padding: 5px 8px;
-  border-radius: 6px;
+  border-radius: var(--dm-radius-3);
   border: 1px solid var(--dm-ux-border);
   background: var(--dm-ux-bg);
   color: var(--dm-ux-text);
@@ -417,7 +417,7 @@ body.dm-kbd-pending-g::after {
   text-align: center;
   background: var(--dm-ux-bg);
   border: 1px dashed var(--dm-ux-border);
-  border-radius: 8px;
+  border-radius: var(--dm-radius-4);
   padding: 14px 12px;
   transition: font-size 0.18s ease, font-weight 0.18s ease;
 }
@@ -522,7 +522,7 @@ body.dm-kbd-pending-g::after {
 }
 .dm-ls-results {
   border: 1px solid var(--dm-ux-border);
-  border-radius: 8px;
+  border-radius: var(--dm-radius-4);
   background: var(--dm-ux-bg-mute);
   padding: 8px;
   display: flex;
@@ -534,7 +534,7 @@ body.dm-kbd-pending-g::after {
   display: flex;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: var(--dm-radius-3);
   background: var(--dm-ux-bg);
   border-left: 3px solid transparent;
   font-size: 0.85rem;
@@ -546,7 +546,7 @@ body.dm-kbd-pending-g::after {
   font-family: var(--sy-f-mono, monospace);
   font-size: 0.72rem;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
   background: var(--dm-ux-bg-mute);
   color: var(--dm-ux-text-weak);
   border: 1px solid var(--dm-ux-border);
@@ -555,7 +555,7 @@ body.dm-kbd-pending-g::after {
 .dm-ls-text code {
   background: var(--dm-ux-bg-mute);
   border: 1px solid var(--dm-ux-border);
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
   padding: 0 4px;
   font-size: 0.85em;
 }
@@ -587,7 +587,7 @@ body.dm-kbd-pending-g::after {
   margin: 0;
   background: var(--sy-c-bg-weak, #0f172a);
   color: #e2e8f0;
-  border-radius: 8px;
+  border-radius: var(--dm-radius-4);
   padding: 12px 14px;
   font-family: var(--sy-f-mono, monospace);
   font-size: 0.83rem;
@@ -641,7 +641,7 @@ body.dm-kbd-pending-g::after {
   cursor: pointer;
   font-size: 0.78rem;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
 }
 .dm-fav-clear:hover {
   color: #ef4444;
@@ -668,7 +668,7 @@ body.dm-kbd-pending-g::after {
 .dm-fav-chip {
   position: relative;
   border: 1px solid var(--dm-ux-border);
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
   cursor: pointer;
   width: 56px;
   height: 36px;
@@ -709,7 +709,7 @@ body.dm-kbd-pending-g::after {
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
   font-size: 0.7rem;
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: var(--dm-radius-2);
   opacity: 0;
   transition: opacity 0.15s ease;
 }
@@ -772,7 +772,7 @@ body.dm-kbd-pending-g::after {
   border: 1px solid rgba(255, 255, 255, 0.18);
   font-size: 0.72rem;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
   font-family: var(--sy-f-mono, monospace);
   cursor: pointer;
   z-index: 3;
