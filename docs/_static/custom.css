@@ -3902,14 +3902,14 @@ section:has(> .dm-landing-hero) > h1:first-child {
 .dm-landing-tagline {
   /* Solid colour — ALWAYS visible (the old whole-line gradient-clip with
    * -webkit-text-fill-color:transparent rendered invisible when the clip
-   * failed). Keyword accents carry the teal. One line (clamp shrinks to fit). */
-  font-size: clamp(16px, 4.6vw, 44px);
+   * failed). Keyword accents carry the teal. Two lines (an explicit <br> splits
+   * after "beautiful —"); bigger now that it no longer squeezes onto one line. */
+  font-size: clamp(30px, 6vw, 54px);
   font-weight: 800;
   line-height: 1.12;
   letter-spacing: -0.028em;
-  white-space: nowrap;
   color: var(--dm-gray-12);
-  margin: 0 0 0.4em;
+  margin: 0 0 0.45em;
 }
 
 .dm-landing-tagline .dm-tl-key {
@@ -3951,28 +3951,20 @@ body[data-theme="dark"] .dm-landing-subtitle {
   text-decoration: none !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-}/* Soft, no underline, two distinct colours (K3): teal-soft primary +
- * neutral-gray soft secondary, so the two actions don't read as two teals.
- * Theme-adaptive tokens, flat (no shadow). */
-
-
-.dm-landing-btn-primary {
-  background: var(--dm-accent-3);
-  color: var(--dm-accent-11) !important;
-  border: 1px solid transparent;
 }
 
-.dm-landing-btn-primary:hover {
-  background: var(--dm-accent-4);
-  transform: translateY(-1px);
-}
+/* Unified CTA buttons — both identical: soft neutral fill + teal text, no
+ * border, no underline. Shibuya gives every `.yue a` a teal border-bottom
+ * (the stray "emphasis line"); kill it with a more specific selector. */
+.yue a.dm-landing-btn { border: 0; }
 
+.dm-landing-btn-primary,
 .dm-landing-btn-secondary {
   background: var(--dm-gray-3);
-  color: var(--dm-gray-12) !important;
-  border: 1px solid transparent;
+  color: var(--dm-accent-11) !important;
 }
 
+.dm-landing-btn-primary:hover,
 .dm-landing-btn-secondary:hover {
   background: var(--dm-gray-4);
   transform: translateY(-1px);
@@ -4451,6 +4443,7 @@ main a code {
 .dm-font-tester, .dm-util-playground, .dm-interp-widget, .dm-compare-widget,
 .dm-constructor-widget, .dm-type-tester {
   background: var(--dm-bg-page);
+  border: 0;
   box-shadow: none;
 }
 html.dark :is(.dm-color-sheet, .dm-cmap-panel, .dm-gradient-picker,
@@ -4464,5 +4457,6 @@ body[data-theme="dark"] :is(.dm-color-sheet, .dm-cmap-panel, .dm-gradient-picker
 .dm-cmap-builder, .dm-font-tester, .dm-util-playground, .dm-interp-widget,
 .dm-compare-widget, .dm-constructor-widget, .dm-type-tester) {
   background: var(--dm-bg-page);
+  border: 0;
   box-shadow: none;
 }
