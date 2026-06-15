@@ -58,8 +58,10 @@ body[data-theme="dark"] {
 }
 
 .yue :not(pre) > code {
+  /* Soft fill only, no border — the modern inline-code idiom (the outline
+   * read as fussy). */
   background-color: var(--dm-code-bg);
-  border: 1px solid var(--dm-code-border);
+  border: 0;
   border-radius: var(--dm-radius-2);
   padding: 0.1em 0.35em;
 }/* Flatten the Sphinx-Gallery download buttons to match Shibuya theme */
