@@ -314,20 +314,15 @@ body[data-theme="dark"] .dm-group-label {
   align-items: center;
   justify-content: center;
   padding: 4px 2px;
+  /* Uniform radius for every swatch (was: first/last had larger outer corners),
+   * and no outline — the color tile speaks for itself. */
   border-radius: var(--dm-radius-2);
+  border: 0;
   cursor: pointer;
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;
   position: relative;
-}
-
-.dm-swatch:first-child {
-  border-radius: var(--dm-radius-3) var(--dm-radius-2) var(--dm-radius-2) var(--dm-radius-3);
-}
-
-.dm-swatch:last-child {
-  border-radius: var(--dm-radius-2) var(--dm-radius-3) var(--dm-radius-3) var(--dm-radius-2);
 }
 
 .dm-swatch:hover {
