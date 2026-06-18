@@ -8,6 +8,8 @@ code linting, and data validation.
 import json
 import math
 import re
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +17,23 @@ import matplotlib.colors as mcolors
 from fastmcp import FastMCP
 
 __all__ = ["register_tools"]
+
+
+def _version_surface() -> str:
+    """Major.minor of the installed dartwork-mpl (e.g. ``"0.5"``).
+
+    Derived from the distribution metadata so the advertised surface
+    tracks the actual release instead of a hand-maintained literal that
+    silently drifts — the same registry-derivation principle used for
+    the tool/template catalog below.
+    """
+    try:
+        ver = _pkg_version("dartwork-mpl")
+    except PackageNotFoundError:
+        return "unknown"
+    parts = ver.split(".")
+    return ".".join(parts[:2]) if len(parts) >= 2 else ver
+
 
 # ── Agentic-catalog discovery ────────────────────────────────────────
 #
@@ -803,7 +822,7 @@ def register_tools(mcp: FastMCP) -> None:
 
         Returns a structured overview of all available resources, tools,
         and design system rules for quick reference. Aligned with the
-        0.4 SSOT in ``asset/prompt/`` (00-index, 01-policy,
+        design-language SSOT in ``asset/prompt/`` (00-index, 01-policy,
         02-anti-patterns, 03-recipes, 05-templates).
         """
         # Resolve composite preset names dynamically from the bundled
@@ -835,7 +854,7 @@ def register_tools(mcp: FastMCP) -> None:
         return json.dumps(
             {
                 "name": "dartwork-mpl",
-                "version_surface": "0.4",
+                "version_surface": _version_surface(),
                 "description": "Publication-quality matplotlib design system",
                 "design_rules": {
                     "width_aspect": (
