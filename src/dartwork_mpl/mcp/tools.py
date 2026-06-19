@@ -339,12 +339,14 @@ def register_tools(mcp: FastMCP) -> None:
         ]
 
     @mcp.tool()
-    def find_template(intent: str, top_k: int = 5) -> list[dict[str, Any]]:
+    def find_template(
+        intent: str, top_k: int = 5, tier: str | None = None
+    ) -> list[dict[str, Any]]:
         """Rank the bundled AI plot templates against a free-text intent.
 
         Thin MCP wrapper over :func:`dartwork_mpl.prompt.find_template`.
         Each template ships with a metadata block (use_case, difficulty,
-        data_shape, tags) generated into
+        data_shape, tags, narrative) generated into
         ``asset/prompt/05-templates/_index.json`` at build time. The
         function tokenises ``intent`` and counts how many tokens appear
         in each template's metadata text.
@@ -355,16 +357,26 @@ def register_tools(mcp: FastMCP) -> None:
             Free-text plot goal, e.g. ``"horizontal bar comparison"``.
         top_k : int, optional
             Maximum number of matches to return, by default 5.
+        tier : str | None, optional
+            ``"basic"`` searches the 18 tier-1 minimal templates;
+            ``"advanced"`` searches the 18 tier-2 narrative templates
+            (real-feeling data, reference lines, annotation overlays);
+            ``"all"`` searches both. ``None`` (default) keeps the
+            original behaviour: basic tier only, no ``tier`` field on
+            each result. When ``tier`` is non-``None`` each result
+            carries ``"tier"`` so callers using ``"all"`` can
+            distinguish hits.
 
         Returns
         -------
         list[dict]
-            ``{"template_id", "score", **metadata}`` per match. Empty
-            list when ``intent`` is blank or no template overlaps.
+            ``{"template_id", "score", **metadata}`` per match (plus
+            ``"tier"`` when ``tier`` is non-``None``). Empty list when
+            ``intent`` is blank or no template overlaps.
         """
         from dartwork_mpl.prompt import find_template as _find_template
 
-        return _find_template(intent, top_k=top_k)
+        return _find_template(intent, top_k=top_k, tier=tier)
 
     @mcp.tool()
     def apply_lint_fixes(code: str) -> dict[str, Any]:

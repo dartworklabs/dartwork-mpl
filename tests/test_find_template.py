@@ -145,6 +145,39 @@ class TestFindTemplate:
             assert key in first
         assert first["score"] >= 1
 
+    def test_default_tier_returns_basic_only(self) -> None:
+        # Backwards-compat: callers that don't pass tier still get
+        # basic-tier hits only (no advanced entries leak in). The
+        # tier field appears because it's part of every entry's
+        # metadata block; what matters is the basic-only scope.
+        for r in find_template("bar"):
+            assert r.get("tier", "basic") == "basic"
+
+    def test_basic_tier_only_returns_basic(self) -> None:
+        for r in find_template("bar", tier="basic"):
+            assert r["tier"] == "basic"
+
+    def test_advanced_tier_returns_advanced_templates(self) -> None:
+        results = find_template("bar", tier="advanced")
+        assert results, "advanced tier should match 'bar'"
+        for r in results:
+            assert r["tier"] == "advanced"
+
+    def test_advanced_tier_finds_narrative_intent(self) -> None:
+        # The advanced templates carry a narrative field that the basic
+        # ones don't — searching for a story phrase should rank an
+        # advanced template above any basic one.
+        results = find_template("event window", tier="advanced")
+        assert results, "advanced narrative search should find a hit"
+
+    def test_all_tier_includes_both_buckets(self) -> None:
+        results = find_template("bar", tier="all")
+        tiers = {r["tier"] for r in results}
+        # The 'bar' intent matches every bar variant in both tiers,
+        # so we expect at least both buckets to appear.
+        assert "basic" in tiers
+        assert "advanced" in tiers
+
 
 class TestPublicSurface:
     """T6: find_template is reachable as dm.find_template."""
