@@ -339,12 +339,14 @@ def register_tools(mcp: FastMCP) -> None:
         ]
 
     @mcp.tool()
-    def find_template(intent: str, top_k: int = 5) -> list[dict[str, Any]]:
+    def find_template(
+        intent: str, top_k: int = 5, tier: str | None = None
+    ) -> list[dict[str, Any]]:
         """Rank the bundled AI plot templates against a free-text intent.
 
         Thin MCP wrapper over :func:`dartwork_mpl.prompt.find_template`.
         Each template ships with a metadata block (use_case, difficulty,
-        data_shape, tags) generated into
+        data_shape, tags, narrative) generated into
         ``asset/prompt/05-templates/_index.json`` at build time. The
         function tokenises ``intent`` and counts how many tokens appear
         in each template's metadata text.
@@ -355,16 +357,26 @@ def register_tools(mcp: FastMCP) -> None:
             Free-text plot goal, e.g. ``"horizontal bar comparison"``.
         top_k : int, optional
             Maximum number of matches to return, by default 5.
+        tier : str | None, optional
+            ``"basic"`` searches the 18 tier-1 minimal templates;
+            ``"advanced"`` searches the 18 tier-2 narrative templates
+            (real-feeling data, reference lines, annotation overlays);
+            ``"all"`` searches both. ``None`` (default) keeps the
+            original behaviour: basic tier only, no ``tier`` field on
+            each result. When ``tier`` is non-``None`` each result
+            carries ``"tier"`` so callers using ``"all"`` can
+            distinguish hits.
 
         Returns
         -------
         list[dict]
-            ``{"template_id", "score", **metadata}`` per match. Empty
-            list when ``intent`` is blank or no template overlaps.
+            ``{"template_id", "score", **metadata}`` per match (plus
+            ``"tier"`` when ``tier`` is non-``None``). Empty list when
+            ``intent`` is blank or no template overlaps.
         """
         from dartwork_mpl.prompt import find_template as _find_template
 
-        return _find_template(intent, top_k=top_k)
+        return _find_template(intent, top_k=top_k, tier=tier)
 
     @mcp.tool()
     def apply_lint_fixes(code: str) -> dict[str, Any]:
@@ -580,10 +592,14 @@ def register_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     def validate_generated_plot(
-        code: str, figure_var: str = "fig", timeout_seconds: float = 20.0
+        code: str,
+        figure_var: str = "fig",
+        timeout_seconds: float = 20.0,
+        chart_type_hint: str | None = None,
     ) -> dict[str, Any]:
         """Execute a dartwork-mpl script in an isolated subprocess and
-        return the structured ``dm.validate_figure`` report.
+        return the structured ``dm.validate_figure`` report, plus
+        optional semantic checks against an expected chart type.
 
         This closes the loop between *"agent generated some plot code"*
         and *"is the rendered figure actually free of overflow, clipping,
@@ -591,6 +607,13 @@ def register_tools(mcp: FastMCP) -> None:
         The code runs in a fresh ``python`` subprocess with the ``Agg``
         backend forced on, so it never blocks on a GUI window and can
         be timed out cleanly.
+
+        When ``chart_type_hint`` is supplied, the tool also runs a
+        small set of *semantic* checks against the rendered axes —
+        pie charts with too many slices, scatters with too few points,
+        bars with no annotations, etc. These supplement the visual
+        check by catching plot choices that *render fine* but read
+        poorly.
 
         Parameters
         ----------
@@ -603,14 +626,22 @@ def register_tools(mcp: FastMCP) -> None:
             Name of the variable holding the figure. Default ``"fig"``.
         timeout_seconds : float, optional
             Hard timeout for the subprocess. Default 20 s.
+        chart_type_hint : str | None, optional
+            Plot-type id (``"pie"``, ``"scatter"``, ``"bar"``,
+            ``"line"``, etc.) the code is meant to produce. When set,
+            the tool runs additional semantic checks and reports them
+            under ``"semantic_warnings"``. Default ``None`` (skip).
 
         Returns
         -------
         dict
             ``{"status": "ok"|"lint_blocked"|"exec_error"|"no_figure"
             |"timeout", "lint": list[...], "visual_warnings":
-            list[...], "stderr": str}``. ``visual_warnings`` items are
-            ``{"severity", "check_id", "message", "detail"}`` dicts.
+            list[...], "semantic_warnings": list[...], "stderr":
+            str}``. ``visual_warnings`` items are ``{"severity",
+            "check_id", "message", "detail"}`` dicts. ``semantic_warnings``
+            items are ``{"check_id", "message"}`` dicts — only present
+            (and possibly empty) when ``chart_type_hint`` was supplied.
 
         Notes
         -----
@@ -691,6 +722,96 @@ def register_tools(mcp: FastMCP) -> None:
             from dartwork_mpl import validate_figure
 
             warnings = validate_figure(fig, quiet=True)
+
+            # ── Semantic checks (only when a chart-type hint is given) ──
+            # Catch plot choices that render fine but read poorly:
+            # too many pie slices, too few scatter points, bars with
+            # no value labels, etc.
+            chart_hint = {chart_type_hint!r}
+            semantic = []
+            if chart_hint:
+                hint = chart_hint.lower()
+                ax_list = list(fig.axes)
+
+                def _ax_has_text(ax):
+                    # Annotation density proxy: number of Text artists
+                    # the user explicitly added (excludes tick labels,
+                    # title, axis labels which exist by default).
+                    return any(
+                        bool(getattr(t, "get_text", lambda: "")())
+                        for t in getattr(ax, "texts", [])
+                    )
+
+                for i, ax in enumerate(ax_list):
+                    label = f"axes[{{i}}]"
+                    if hint == "pie":
+                        wedges = [
+                            p for p in ax.patches
+                            if type(p).__name__ == "Wedge"
+                        ]
+                        if len(wedges) > 7:
+                            semantic.append({{
+                                "check_id": "pie_too_many_slices",
+                                "message": (
+                                    f"{{label}} has {{len(wedges)}} pie "
+                                    "slices; >7 is hard to read. "
+                                    "Consider bar_horizontal sorted "
+                                    "by share."
+                                ),
+                            }})
+                    elif hint == "scatter":
+                        n_points = sum(
+                            len(coll.get_offsets())
+                            for coll in ax.collections
+                            if hasattr(coll, "get_offsets")
+                        )
+                        if 0 < n_points < 5:
+                            semantic.append({{
+                                "check_id": "scatter_too_few_points",
+                                "message": (
+                                    f"{{label}} has only "
+                                    f"{{n_points}} points; weak signal."
+                                ),
+                            }})
+                    elif hint in ("bar", "bar_grouped",
+                                  "bar_horizontal", "stacked_bar"):
+                        bars = [
+                            p for p in ax.patches
+                            if type(p).__name__ == "Rectangle"
+                        ]
+                        if bars and not _ax_has_text(ax):
+                            semantic.append({{
+                                "check_id": "bar_missing_value_labels",
+                                "message": (
+                                    f"{{label}} has {{len(bars)}} bars "
+                                    "but no value labels — readers will "
+                                    "have to eyeball the y-axis."
+                                ),
+                            }})
+                    elif hint == "line":
+                        if not ax.lines:
+                            semantic.append({{
+                                "check_id": "line_no_lines",
+                                "message": (
+                                    f"{{label}} declared as a line chart "
+                                    "but has no Line2D artists."
+                                ),
+                            }})
+                    elif hint == "histogram":
+                        bars = [
+                            p for p in ax.patches
+                            if type(p).__name__ == "Rectangle"
+                        ]
+                        if bars and len(bars) < 10:
+                            semantic.append({{
+                                "check_id": "histogram_too_few_bins",
+                                "message": (
+                                    f"{{label}} has only {{len(bars)}} "
+                                    "bins; consider more for a smoother "
+                                    "shape (10 to 50 is typical)."
+                                ),
+                            }})
+
             json.dump(
                 {{
                     "status": "ok",
@@ -705,11 +826,12 @@ def register_tools(mcp: FastMCP) -> None:
                         }}
                         for w in warnings
                     ],
+                    "semantic_warnings": semantic,
                 }},
                 sys.stdout,
             )
             """
-        ).format(figure_var=figure_var)
+        ).format(figure_var=figure_var, chart_type_hint=chart_type_hint)
 
         try:
             proc = subprocess.run(
@@ -740,6 +862,13 @@ def register_tools(mcp: FastMCP) -> None:
 
         payload["lint"] = lint_issues
         payload.setdefault("visual_warnings", [])
+        # Only surface ``semantic_warnings`` when a hint was supplied —
+        # otherwise the key is dropped so the response shape stays
+        # backwards-compatible for callers that don't pass the hint.
+        if chart_type_hint is None:
+            payload.pop("semantic_warnings", None)
+        else:
+            payload.setdefault("semantic_warnings", [])
         payload["stderr"] = stderr
         return payload
 
@@ -813,6 +942,332 @@ def register_tools(mcp: FastMCP) -> None:
                 f"the expected type (e.g. lists where lists are expected) "
                 f"and that the top-level payload is a JSON object."
             )
+
+    # ── Chart Recommendation & Composition ───────────────────────────
+
+    @mcp.tool()
+    def suggest_chart_type(
+        x_type: str,
+        y_type: str | None = None,
+        n_points: int = 50,
+        n_series: int = 1,
+    ) -> dict[str, Any]:
+        """Recommend a chart type from data characteristics.
+
+        Thin MCP wrapper over :func:`dartwork_mpl.suggest_chart_type`
+        that also returns pointers to the matching template (both basic
+        and advanced tiers) so the agent can pull the canonical example
+        directly.
+
+        Parameters
+        ----------
+        x_type : str
+            ``"continuous"``, ``"categorical"``, or ``"temporal"``.
+        y_type : str | None, optional
+            ``"continuous"``, ``"categorical"``, ``"count"``, or
+            ``None`` (e.g. for a histogram of a single variable).
+        n_points : int, optional
+            Total number of data points. Influences density-aware picks
+            (scatter vs. heatmap). Default 50.
+        n_series : int, optional
+            Number of series being compared. Default 1.
+
+        Returns
+        -------
+        dict
+            ``{"recommended": str, "basic_template_uri": str,
+            "advanced_template_uri": str | None, "rationale": str}``.
+            ``advanced_template_uri`` is ``None`` when no tier-2 version
+            exists yet for the recommended plot type.
+        """
+        from .. import prompt as _prompt_mod
+        from .. import suggest_chart_type as _suggest
+
+        recommended = _suggest(
+            x_type=x_type, y_type=y_type, n_points=n_points, n_series=n_series
+        )
+
+        # Map suggest output to a template id where possible.
+        template_dir = _prompt_mod._PROMPT_DIR / "05-templates"
+        basic_path = template_dir / f"{recommended}.py"
+        advanced_path = template_dir / "advanced" / f"{recommended}.py"
+        basic_uri = (
+            f"dartwork-mpl://template/{recommended}"
+            if basic_path.exists()
+            else "dartwork-mpl://template/bar"
+        )
+        advanced_uri = (
+            f"dartwork-mpl://template/advanced/{recommended}"
+            if advanced_path.exists()
+            else None
+        )
+
+        rationale = (
+            f"x={x_type}, y={y_type}, n_points={n_points}, "
+            f"n_series={n_series} → recommended: {recommended!r}. "
+            "Tier-1 templates show the minimal API call; tier-2 (advanced) "
+            "templates add reference lines, value labels, narrative title, "
+            "and source footnote — copy the advanced version when you "
+            "want the agent's generated plot to read like a finished "
+            "report figure."
+        )
+        return {
+            "recommended": recommended,
+            "basic_template_uri": basic_uri,
+            "advanced_template_uri": advanced_uri,
+            "rationale": rationale,
+        }
+
+    @mcp.tool()
+    def compose_layered_plot(
+        plot_type: str, layers: list[str] | None = None, tier: str = "advanced"
+    ) -> dict[str, Any]:
+        """Return a starting template with the requested annotation
+        layers explicitly identified.
+
+        This is a *guidance* tool, not a code rewriter — it returns the
+        relevant template source (basic or advanced) and a checklist of
+        which annotation/composition layers to apply. The agent then
+        edits the returned code to fit its data.
+
+        Supported layer keywords
+        ------------------------
+        ``"reference_line"`` (axhline / axvline at a target)
+        | ``"event_window"`` (axvspan to mark a period)
+        | ``"value_labels"`` (per-bar / per-point text)
+        | ``"trendline"`` (np.polyfit + ax.plot for scatters)
+        | ``"highlight"`` (one accent-colored bar / point)
+        | ``"callout"`` (ax.annotate with arrow)
+        | ``"gradient_palette"`` (dm.cspace across series)
+        | ``"source_footnote"`` (fig.text bottom-left).
+
+        Parameters
+        ----------
+        plot_type : str
+            Plot type id (e.g. ``"bar"``, ``"scatter"``).
+        layers : list[str] | None, optional
+            Layer keywords to highlight. ``None`` = return the canonical
+            advanced template (which already shows the full layered
+            pattern).
+        tier : str, optional
+            ``"basic"`` returns the minimal template; ``"advanced"``
+            (default) returns the tier-2 narrative version.
+
+        Returns
+        -------
+        dict
+            ``{"status": str, "tier": str, "code": str, "layers": list,
+            "applied": list, "missing": list}``. ``"applied"`` lists
+            layers detected in the returned code; ``"missing"`` lists
+            requested layers that are NOT yet in the canonical
+            template and would need to be added by hand.
+        """
+        from .. import prompt as _prompt_mod
+
+        layers = list(layers or [])
+        template_dir = _prompt_mod._PROMPT_DIR / "05-templates"
+        if tier == "advanced":
+            path = template_dir / "advanced" / f"{plot_type.lower()}.py"
+            if not path.exists():
+                # Fall back to basic if advanced doesn't exist yet.
+                path = template_dir / f"{plot_type.lower()}.py"
+                tier = "basic"
+        elif tier == "basic":
+            path = template_dir / f"{plot_type.lower()}.py"
+        else:
+            return {
+                "status": "invalid_tier",
+                "tier": tier,
+                "code": "",
+                "layers": layers,
+                "applied": [],
+                "missing": [],
+            }
+
+        if not path.exists():
+            available = sorted(p.stem for p in template_dir.glob("*.py"))
+            return {
+                "status": "unknown_template",
+                "tier": tier,
+                "code": (
+                    f"No template named {plot_type!r}. Available: {available}"
+                ),
+                "layers": layers,
+                "applied": [],
+                "missing": layers,
+            }
+
+        code = path.read_text(encoding="utf-8")
+
+        # Heuristic detection — purely lexical so it stays cheap and
+        # lets the agent see "yes, the advanced template already does
+        # this, no need to add it again."
+        detect_patterns = {
+            "reference_line": ("axhline(", "axvline("),
+            "event_window": ("axvspan(", "axhspan("),
+            "value_labels": ("ax.text(", "ax.bar_label("),
+            "trendline": ("np.polyfit", "polyfit"),
+            "highlight": ("dc.sunset5", "accent", 'marker="D"'),
+            "callout": ("ax.annotate(", "arrowprops="),
+            "gradient_palette": ("dm.cspace(", ".cspace("),
+            "source_footnote": ("fig.text(", "Source:"),
+        }
+        applied: list[str] = []
+        for layer, patterns in detect_patterns.items():
+            if any(p in code for p in patterns):
+                applied.append(layer)
+        missing = [layer for layer in layers if layer not in applied]
+
+        return {
+            "status": "ok",
+            "tier": tier,
+            "code": code,
+            "layers": layers,
+            "applied": applied,
+            "missing": missing,
+        }
+
+    @mcp.tool()
+    def render_template_advanced(
+        plot_type: str,
+        return_format: str = "base64",
+        timeout_seconds: float = 30.0,
+    ) -> dict[str, Any]:
+        """Render the tier-2 (advanced) version of a bundled template.
+
+        Companion to :func:`render_template` for the basic tier. The
+        advanced templates include real-feeling synthetic data,
+        reference lines, value labels, a narrative title with takeaway
+        subtitle, and a source footnote — they read like finished
+        report figures.
+
+        Falls back to the basic tier and returns ``status:"fell_back"``
+        if no advanced version exists for the requested plot type yet.
+
+        Parameters
+        ----------
+        plot_type : str
+            Template id (e.g. ``"bar"``, ``"scatter"``).
+        return_format : str, optional
+            ``"base64"`` (default) or ``"path"`` — same as
+            :func:`render_template`.
+        timeout_seconds : float, optional
+            Hard subprocess timeout. Default 30 s.
+
+        Returns
+        -------
+        dict
+            ``{"status": "ok"|"fell_back"|"unknown_template"|
+            "render_error"|"timeout", "plot_type": str, "tier": str,
+            "png_base64": str|None, "png_path": str|None,
+            "stderr": str}``.
+        """
+        import base64
+        import subprocess
+        import sys
+        import tempfile
+        import textwrap
+        from pathlib import Path as _Path
+
+        from .. import prompt as _prompt_mod
+
+        template_dir = _prompt_mod._PROMPT_DIR / "05-templates"
+        advanced_path = template_dir / "advanced" / f"{plot_type.lower()}.py"
+        basic_path = template_dir / f"{plot_type.lower()}.py"
+
+        if advanced_path.exists():
+            path = advanced_path
+            tier = "advanced"
+            fell_back = False
+        elif basic_path.exists():
+            path = basic_path
+            tier = "basic"
+            fell_back = True
+        else:
+            available = sorted(p.stem for p in template_dir.glob("*.py"))
+            return {
+                "status": "unknown_template",
+                "plot_type": plot_type,
+                "tier": "none",
+                "png_base64": None,
+                "png_path": None,
+                "stderr": (
+                    f"No template named {plot_type!r}. "
+                    f"Available basic: {available}. "
+                    f"Available advanced: "
+                    f"{sorted(p.stem for p in (template_dir / 'advanced').glob('*.py'))}."
+                ),
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_base = _Path(tmp) / "out"
+            runner = textwrap.dedent(
+                """\
+                import os, sys
+                os.chdir({tmp!r})
+                import matplotlib
+                matplotlib.use("Agg")
+                sys.path.insert(0, {tmpdir!r})
+                exec(compile(open({path!r}).read(), {path!r}, "exec"),
+                     {{"__name__": "__render__"}})
+                """
+            ).format(
+                tmp=str(out_base.parent),
+                tmpdir=str(out_base.parent),
+                path=str(path),
+            )
+
+            try:
+                proc = subprocess.run(
+                    [sys.executable, "-c", runner],
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout_seconds,
+                )
+            except subprocess.TimeoutExpired as exc:
+                return {
+                    "status": "timeout",
+                    "plot_type": plot_type,
+                    "tier": tier,
+                    "png_base64": None,
+                    "png_path": None,
+                    "stderr": f"Render exceeded {exc.timeout}s timeout.",
+                }
+
+            pngs = sorted(out_base.parent.glob("*.png"))
+            if proc.returncode != 0 or not pngs:
+                return {
+                    "status": "render_error",
+                    "plot_type": plot_type,
+                    "tier": tier,
+                    "png_base64": None,
+                    "png_path": None,
+                    "stderr": (proc.stderr or proc.stdout)[:2000],
+                }
+
+            png_bytes = pngs[0].read_bytes()
+            status = "fell_back" if fell_back else "ok"
+            if return_format == "path":
+                persistent = _Path(tempfile.gettempdir()) / (
+                    f"dartwork-mpl-render-advanced-{plot_type}.png"
+                )
+                persistent.write_bytes(png_bytes)
+                return {
+                    "status": status,
+                    "plot_type": plot_type,
+                    "tier": tier,
+                    "png_base64": None,
+                    "png_path": str(persistent),
+                    "stderr": proc.stderr.strip(),
+                }
+            return {
+                "status": status,
+                "plot_type": plot_type,
+                "tier": tier,
+                "png_base64": base64.b64encode(png_bytes).decode("ascii"),
+                "png_path": None,
+                "stderr": proc.stderr.strip(),
+            }
 
     # ── Utility Info Tool ────────────────────────────────────────────
 

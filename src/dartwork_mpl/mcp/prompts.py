@@ -106,15 +106,68 @@ Apply via `dm.style.use("scientific")` (or `dm.style.stack([...])` for a stack).
 - `dartwork-mpl://guide/policy` — width / aspect / layout / color / save policy
 - `dartwork-mpl://guide/recipes` — intent → function-call cookbook
 - `dartwork-mpl://guide/anti-patterns` — machine-readable lint catalog
-- `dartwork-mpl://templates/{{plot_type}}` — bundled starter scripts
+- `dartwork-mpl://templates/{{plot_type}}` — bundled tier-1 (minimal) starter scripts
+- `dartwork-mpl://template/advanced/{{plot_type}}` — tier-2 narrative templates with reference lines, value labels, source footnote
 
-## Skeleton
+## Pre-flight tool calls (recommended)
 
-The skeleton intentionally wires every font size, line width, and font
-weight through ``dm.fs(n)`` / ``dm.lw(n)`` / ``dm.fw(n)`` so that
-swapping ``dm.style.use(...)`` to a different preset (``report``,
-``presentation``, ``minimal``, ``*-kr``) rescales the figure correctly
-without any other edits.
+Before writing code, call these in order:
+
+1. **`suggest_chart_type(x_type, y_type, n_points, n_series)`** — when the
+   plot type isn't already obvious from the description. Returns both
+   basic and advanced template URIs for the recommended type.
+2. **`render_template_advanced(plot_type)`** — preview the gold-standard
+   tier-2 figure for the chosen plot type. Use it as a structural
+   reference; copy its narrative-title / reference-line / value-label
+   / footnote scaffolding into your code.
+3. **`find_template(intent, tier="advanced")`** — if the description
+   sounds story-led (e.g. "show how X breaks below threshold Y"),
+   search the tier-2 templates directly for a closer match than the
+   basic gallery.
+
+## Advanced APIs (use freely for report-grade figures)
+
+`dm.fs / dm.lw / dm.fw` are the bare minimum. For figures that need
+to read as finished, lean on these too:
+
+- **`dm.cspace(start, end, n)`** — OKLCH gradient of `n` perceptually
+  uniform colors between two endpoints. Use when bar / scatter / pie
+  series need to encode magnitude in color.
+- **`dm.format_axis_si / format_axis_millions / format_axis_billions
+  / format_axis_currency`** — domain-aware tick formatters. Pick one
+  to match the data unit (`SI` for raw counts, `currency` for prices,
+  `millions` / `billions` for large-magnitude counts).
+- **`dm.label_axes(axes_list, fontsize=dm.fs(-1))`** — adds
+  `(a), (b), (c) …` panel IDs to a small-multiples grid.
+- **`dm.simple_layout(fig, margin=dm.inch(0.08))`** — the default
+  margin is 0 (flush). A small inch margin gives subtitles, source
+  footnotes, and rotated tick labels room to breathe; bump to
+  `dm.inch(0.20-0.45)` when y-tick labels run long.
+- **`dm.validate_with_fixes(fig)`** — automatic OVERFLOW / CLIPPED
+  fix pass. Run it right after `simple_layout`.
+- **`dm.check_figure_quality(fig)`** — returns a list of structural
+  warnings (missing labels, no data plotted, etc.). Filter known
+  false positives for pie / 3D / heatmap geometries.
+- **`ax.axhline / ax.axvline / ax.axvspan / ax.annotate`** — reference
+  lines, event windows, callouts. A figure with two annotation layers
+  beats one without; with three it starts to look like a published
+  chart.
+
+## Hairline policy (important)
+
+Sub-1 hairlines stay as **literals**, not `dm.lw(...)` offsets:
+
+- `linewidth=0.3` for separator edges on bars / scatter / wedges.
+- `linewidth=0.5` for dashed reference / grid lines.
+- `linewidth=0` is the explicit "no border" form.
+
+`dm.lw(-1)` resolves to **0.0** under the `scientific / report /
+presentation / minimal / web / dark` presets and collapses the edge
+into the no-border idiom (often invisibly) — do NOT use it for
+hairline edges. Use `dm.lw(0)` (=preset base) only for *data lines*
+that should track the preset.
+
+## Skeleton — tier 1 (minimal, copy when speed matters)
 
 ```python
 import matplotlib.pyplot as plt
@@ -126,9 +179,8 @@ fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 
 # Named colors + preset-relative line width.
 ax.plot(x, y, color="dc.ocean2", linewidth=dm.lw(0), label="Series A")
-# `dm.lw(-1)` is the canonical hairline edge for filled markers/bars.
 ax.scatter(x, y, color="dc.ocean5", edgecolor="white",
-           linewidth=dm.lw(-1), s=20)
+           linewidth=0.3, s=20)
 
 # Tick / legend / annotation text — one step below the body size.
 ax.tick_params(labelsize=dm.fs(-1))
@@ -143,11 +195,76 @@ dm.simple_layout(fig)
 dm.save_formats(fig, "output", formats=("png", "pdf"), dpi=300)
 ```
 
-Generate clean, well-commented code that follows these rules strictly.
-Run the result through ``lint_dartwork_mpl_code(code)`` to surface any
-``[CRITICAL]`` issue, then through ``validate_generated_plot(code)``
-to catch overflow / clipped text / asymmetric margins before returning
-the snippet.
+## Skeleton — tier 2 (advanced, copy when the chart needs to read like a report figure)
+
+```python
+import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+
+dm.style.use("scientific")
+
+# Real-feeling data with a story (even when synthetic).
+# ... your data here ...
+
+# Magnitude-encoding gradient.
+gradient = dm.cspace("dc.ocean5", "dc.ocean1", n=len(values))
+colors = [c.to_hex() for c in gradient]
+
+fig, ax = plt.subplots(figsize=dm.figsize(dm.col1, "standard"))
+
+# Plot + per-element value labels.
+bars = ax.bar(categories, values, color=colors,
+              edgecolor="white", linewidth=0.3)
+for bar_, v in zip(bars, values):
+    ax.text(bar_.get_x() + bar_.get_width() / 2, v + offset, f"{{v:.1f}}",
+            ha="center", va="bottom",
+            fontsize=dm.fs(-1), fontweight=dm.fw(1))
+
+# Reference threshold.
+ax.axhline(threshold, linestyle="--", linewidth=0.5, color="dc.sunset4")
+
+# Domain-aware tick formatter (pick one).
+# dm.format_axis_currency(ax, axis="y", symbol="$")
+# dm.format_axis_si(ax, axis="y")
+
+# Narrative title + takeaway subtitle.
+ax.set_title("Story-led headline", fontsize=dm.fs(1),
+             fontweight=dm.fw(1), loc="left", pad=18)
+ax.text(0.0, 1.02,
+        "One-line takeaway under the title.",
+        transform=ax.transAxes, ha="left", va="bottom",
+        fontsize=dm.fs(-1), color="oc.gray6")
+
+# Source footnote — non-negotiable for any data-driven figure.
+fig.text(0.01, 0.005, "Source: ...",
+         fontsize=dm.fs(-2), color="oc.gray5",
+         ha="left", va="bottom")
+
+# Layout + self-check.
+dm.simple_layout(fig, margin=dm.inch(0.08))
+dm.validate_with_fixes(fig)
+issues = dm.check_figure_quality(fig)
+if issues:
+    print(f"quality issues: {{issues}}")
+
+dm.save_formats(fig, "output", formats=("png", "pdf"), dpi=300)
+```
+
+## Validation chain (post-write)
+
+Generate clean, well-commented code that follows these rules strictly,
+then validate in this order:
+
+1. ``lint_dartwork_mpl_code(code)`` — surfaces any ``[CRITICAL]``
+   anti-pattern.
+2. ``validate_generated_plot(code, chart_type_hint="<plot_type>")`` —
+   catches overflow / clipped text / asymmetric margins **and**
+   chart-type-specific semantic issues (pie with >7 slices, scatter
+   with <5 points, bar without value labels, line with no Line2D,
+   histogram with <10 bins).
+3. ``apply_lint_fixes(code)`` — auto-rewrites the safe-to-fix
+   anti-patterns (e.g. `tight_layout` → `simple_layout`) when the
+   lint pass flagged them.
 """
 
     @mcp.prompt()
