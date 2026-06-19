@@ -42,6 +42,9 @@ EXPECTED_MCP_TOOLS: frozenset[str] = frozenset(
         "render_template",
         "validate_plot_data",
         "validate_generated_plot",
+        "suggest_chart_type",
+        "compose_layered_plot",
+        "render_template_advanced",
         "dartwork_mpl_info",
     }
 )

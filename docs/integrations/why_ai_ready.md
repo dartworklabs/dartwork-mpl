@@ -43,7 +43,7 @@ dartwork-mpl's documentation, colors, styles, and validation tools:
 | Category       | Count | Examples                                                                                 |
 | -------------- | ----- | ---------------------------------------------------------------------------------------- |
 | **Resources**  | 12 + 3 templated | Agent entry, policy, anti-patterns, recipes, palette/colors, palette/fonts, styles/list, templates/list, `api/{name}`, `styles/{preset}`, `templates/{plot_type}` |
-| **Tools**      | 10    | Color lookup + mix + family list, code lint (text & JSON), find template, migrate 0.3 code, data validation, GitHub fetch, package info |
+| **Tools**      | 16    | Color lookup + mix + family list, code lint (text & JSON) + auto-fix, find template, render template (basic + advanced tiers), validate generated plot, suggest chart type from data, compose layered plot, migrate 0.3 code, data validation, GitHub fetch, package info |
 | **Prompts**    | 2     | `create_plot` (guided generation), `style_review` (compliance review)                    |
 
 > Source-of-truth counts derived from `dartwork-mpl-mcp`'s

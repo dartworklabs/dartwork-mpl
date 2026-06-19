@@ -92,7 +92,8 @@ def test_llms_full_txt_in_sync() -> None:
 
 def test_template_index_in_sync() -> None:
     """``05-templates/_index.json`` must mirror the metadata blocks in
-    ``docs/examples_source/09_ai_templates/plot_*.py``.
+    ``docs/examples_source/09_ai_templates/plot_*.py`` (basic tier) and
+    ``docs/examples_source/09_ai_templates_advanced/plot_*.py`` (tier 2).
     """
     out = (
         REPO_ROOT
@@ -107,23 +108,38 @@ def test_template_index_in_sync() -> None:
         pytest.skip("_index.json not yet generated in this checkout")
 
     build_hooks = _load_build_hooks()
-    template_dir = REPO_ROOT / "docs" / "examples_source" / "09_ai_templates"
-    if not template_dir.exists():
-        pytest.skip("09_ai_templates source dir missing")
 
-    expected: dict[str, dict[str, object]] = {}
-    for path in sorted(template_dir.glob("plot_*.py")):
-        text = path.read_text(encoding="utf-8")
-        match = build_hooks._TEMPLATE_META_RE.search(text)
-        if not match:
-            pytest.fail(f"meta block missing in {path.name}")
-        meta = build_hooks._parse_template_meta(
-            match.group(1), source=str(path.relative_to(REPO_ROOT))
+    def _scan_tier(scan_dir: Path, tier: str) -> dict[str, dict[str, object]]:
+        section: dict[str, dict[str, object]] = {}
+        for path in sorted(scan_dir.glob("plot_*.py")):
+            text = path.read_text(encoding="utf-8")
+            match = build_hooks._TEMPLATE_META_RE.search(text)
+            if not match:
+                pytest.fail(f"meta block missing in {path.name}")
+            meta = build_hooks._parse_template_meta(
+                match.group(1), source=str(path.relative_to(REPO_ROOT))
+            )
+            stem = path.stem
+            template_id = (
+                stem if stem == "plot_3d" else stem.removeprefix("plot_")
+            )
+            meta["source_path"] = str(path.relative_to(REPO_ROOT))
+            meta.setdefault("tier", tier)
+            section[template_id] = meta
+        return section
+
+    basic_dir = REPO_ROOT / "docs" / "examples_source" / "09_ai_templates"
+    if not basic_dir.exists():
+        pytest.skip("09_ai_templates source dir missing")
+    expected: dict[str, dict[str, object]] = _scan_tier(basic_dir, "basic")
+
+    advanced_dir = (
+        REPO_ROOT / "docs" / "examples_source" / "09_ai_templates_advanced"
+    )
+    if advanced_dir.exists():
+        expected["advanced"] = _scan_tier(  # type: ignore[assignment]
+            advanced_dir, "advanced"
         )
-        stem = path.stem
-        template_id = stem if stem == "plot_3d" else stem.removeprefix("plot_")
-        meta["source_path"] = str(path.relative_to(REPO_ROOT))
-        expected[template_id] = meta
 
     actual = json.loads(out.read_text(encoding="utf-8"))
     if expected != actual:

@@ -22,8 +22,28 @@ def index() -> dict[str, dict[str, object]]:
     return json.loads(_INDEX_PATH.read_text(encoding="utf-8"))
 
 
+@pytest.fixture(scope="module")
+def basic_index(
+    index: dict[str, dict[str, object]],
+) -> dict[str, dict[str, object]]:
+    """The 18 tier-1 (basic) entries, stripping the nested 'advanced' key."""
+    return {k: v for k, v in index.items() if k != "advanced"}
+
+
+@pytest.fixture(scope="module")
+def advanced_index(
+    index: dict[str, dict[str, object]],
+) -> dict[str, dict[str, object]]:
+    """The 18 tier-2 (advanced) entries."""
+    return index.get("advanced", {})  # type: ignore[return-value]
+
+
 class TestIndexShape:
-    """The bundled metadata index follows the documented schema."""
+    """The bundled metadata index follows the documented schema.
+
+    Each test runs once against the basic index and once against the
+    advanced index (parametrised via the ``tier_index`` fixture).
+    """
 
     REQUIRED_KEYS: frozenset[str] = frozenset(
         {"use_case", "difficulty", "data_shape", "tags", "source_path"}
@@ -32,30 +52,39 @@ class TestIndexShape:
         {"beginner", "intermediate", "advanced"}
     )
 
+    @pytest.fixture(params=["basic", "advanced"])
+    def tier_index(
+        self,
+        request: pytest.FixtureRequest,
+        basic_index: dict[str, dict[str, object]],
+        advanced_index: dict[str, dict[str, object]],
+    ) -> dict[str, dict[str, object]]:
+        return basic_index if request.param == "basic" else advanced_index
+
     def test_eighteen_entries(
-        self, index: dict[str, dict[str, object]]
+        self, tier_index: dict[str, dict[str, object]]
     ) -> None:
-        assert len(index) == 18
+        assert len(tier_index) == 18
 
     def test_required_keys_present(
-        self, index: dict[str, dict[str, object]]
+        self, tier_index: dict[str, dict[str, object]]
     ) -> None:
-        for template_id, meta in index.items():
+        for template_id, meta in tier_index.items():
             missing = self.REQUIRED_KEYS - meta.keys()
             assert not missing, f"{template_id}: missing keys {sorted(missing)}"
 
     def test_difficulty_in_enum(
-        self, index: dict[str, dict[str, object]]
+        self, tier_index: dict[str, dict[str, object]]
     ) -> None:
-        for template_id, meta in index.items():
+        for template_id, meta in tier_index.items():
             assert meta["difficulty"] in self.DIFFICULTIES, (
                 f"{template_id}: bad difficulty {meta['difficulty']!r}"
             )
 
     def test_tags_are_nonempty_strings(
-        self, index: dict[str, dict[str, object]]
+        self, tier_index: dict[str, dict[str, object]]
     ) -> None:
-        for template_id, meta in index.items():
+        for template_id, meta in tier_index.items():
             tags = meta["tags"]
             assert isinstance(tags, list) and tags, (
                 f"{template_id}: tags must be a non-empty list"
@@ -64,10 +93,10 @@ class TestIndexShape:
                 assert isinstance(tag, str) and tag.strip()
 
     def test_source_path_resolves(
-        self, index: dict[str, dict[str, object]]
+        self, tier_index: dict[str, dict[str, object]]
     ) -> None:
         repo_root = _INDEX_PATH.parents[5]  # walk up to repo root
-        for template_id, meta in index.items():
+        for template_id, meta in tier_index.items():
             src = repo_root / meta["source_path"]  # type: ignore[arg-type]
             assert src.exists(), (
                 f"{template_id}: source_path {src} does not exist"
