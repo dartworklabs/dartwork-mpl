@@ -266,33 +266,53 @@ def generate_template_index(app):
     ``09_ai_templates/plot_*.py`` lacks a complete metadata block, so
     drift is caught immediately rather than silently shipping a stale
     or partial index.
+
+    Tier-2 (advanced) templates live in
+    ``09_ai_templates/advanced/plot_*.py`` and get registered under the
+    ``"advanced"`` key in the JSON. Each entry carries an explicit
+    ``"tier"`` field (``"basic"`` / ``"advanced"``) so MCP / docs
+    consumers can filter without re-parsing source paths.
     """
     repo_root = Path(app.srcdir).parent
     template_dir = repo_root / "docs" / "examples_source" / "09_ai_templates"
     if not template_dir.exists():
         return
 
-    index: dict[str, dict[str, object]] = {}
-    missing: list[str] = []
-    for path in sorted(template_dir.glob("plot_*.py")):
-        text = path.read_text(encoding="utf-8")
-        match = _TEMPLATE_META_RE.search(text)
-        if not match:
-            missing.append(path.name)
-            continue
-        meta = _parse_template_meta(
-            match.group(1), source=str(path.relative_to(repo_root))
-        )
-        # Strip ``plot_`` so the JSON ID matches the user-facing template
-        # name — except for ``plot_3d.py``, which is canonical as
-        # ``plot_3d`` everywhere else (MCP template resources, the
-        # ``_PLOT_VALIDATORS`` keys in ``src/dartwork_mpl/mcp/tools.py``).
-        # Without this exception the ID becomes ``"3d"`` and no consumer
-        # can pass it back into ``validate_plot_data``.
-        stem = path.stem
-        template_id = stem if stem == "plot_3d" else stem.removeprefix("plot_")
-        meta["source_path"] = str(path.relative_to(repo_root))
-        index[template_id] = meta
+    def _scan_tier(
+        scan_dir: Path, tier: str
+    ) -> tuple[dict[str, dict[str, object]], list[str]]:
+        """Scan one tier directory and return (index, missing-files)."""
+        tier_index: dict[str, dict[str, object]] = {}
+        tier_missing: list[str] = []
+        for path in sorted(scan_dir.glob("plot_*.py")):
+            text = path.read_text(encoding="utf-8")
+            match = _TEMPLATE_META_RE.search(text)
+            if not match:
+                tier_missing.append(path.name)
+                continue
+            meta = _parse_template_meta(
+                match.group(1), source=str(path.relative_to(repo_root))
+            )
+            stem = path.stem
+            template_id = (
+                stem if stem == "plot_3d" else stem.removeprefix("plot_")
+            )
+            meta["source_path"] = str(path.relative_to(repo_root))
+            meta.setdefault("tier", tier)
+            tier_index[template_id] = meta
+        return tier_index, tier_missing
+
+    index, missing = _scan_tier(template_dir, "basic")
+
+    advanced_dir = (
+        repo_root / "docs" / "examples_source" / "09_ai_templates_advanced"
+    )
+    if advanced_dir.exists():
+        advanced_index, advanced_missing = _scan_tier(advanced_dir, "advanced")
+        # Top-level "advanced" key holds the full tier-2 sub-index so
+        # the JSON keeps a single round-trip with two clear sections.
+        index["advanced"] = advanced_index  # type: ignore[assignment]
+        missing.extend(advanced_missing)
 
     if missing:
         raise FileNotFoundError(

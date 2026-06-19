@@ -1,4 +1,313 @@
 {
+  "advanced": {
+    "bar": {
+      "advanced_apis": "dm.cspace, dm.format_axis_si (for non-percent), PercentFormatter, axhline, ax.text per bar, dm.check_figure_quality",
+      "basic_counterpart": "bar",
+      "data_shape": "categories: list[str], values: list[float], threshold: float",
+      "difficulty": "intermediate",
+      "narrative": "2024 BEV market share, top-5 leaders vs. EU 2030 mandate (60%)",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_bar.py",
+      "tags": [
+        "bar",
+        "ranking",
+        "reference-line",
+        "annotated",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Rank a small categorical set with a reference threshold and per-bar value labels"
+    },
+    "bar_grouped": {
+      "advanced_apis": "per-bar value labels, total annotation above each group, format_axis_si, legend frameon=False",
+      "basic_counterpart": "bar_grouped",
+      "data_shape": "categories: list[str], series: dict[str, list[float]]",
+      "difficulty": "intermediate",
+      "narrative": "Throughput by zone across four periods (Plant / Lab / Field) \u2014 totals annotated",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_bar_grouped.py",
+      "tags": [
+        "bar",
+        "grouped",
+        "multi-series",
+        "annotated",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Multi-series quarterly comparison with per-bar value labels and per-category totals"
+    },
+    "bar_horizontal": {
+      "advanced_apis": "per-bar value labels at end of bar, axvline at median, top-1 accent color, sorted descending, format_axis_si",
+      "basic_counterpart": "bar_horizontal",
+      "data_shape": "categories: list[str], values: list[float]",
+      "difficulty": "intermediate",
+      "narrative": "Top-8 metro housing-price indices; SF leads, axvline at median",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_bar_horizontal.py",
+      "tags": [
+        "bar",
+        "horizontal",
+        "ranking",
+        "reference-line",
+        "highlight",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Ranked categories with #1 highlighted in accent color and a median reference axvline"
+    },
+    "boxplot": {
+      "advanced_apis": "patch_artist boxplot with dm.cspace gradient, jittered scatter overlay (alpha 0.4), axhline baseline, median annotations",
+      "basic_counterpart": "boxplot",
+      "data_shape": "groups: dict[str, list[float]]",
+      "difficulty": "intermediate",
+      "narrative": "A/B/C/D portfolio variant weekly returns; market baseline drawn as axhline",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_boxplot.py",
+      "tags": [
+        "distribution",
+        "boxplot",
+        "jitter",
+        "baseline",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Group return distributions with raw points overlaid and a baseline reference"
+    },
+    "contour": {
+      "advanced_apis": "contourf + contour overlay with clabel, ax.scatter on peak coords with annotate, colorbar",
+      "basic_counterpart": "contour",
+      "data_shape": "x: 1D array, y: 1D array, z: 2D array",
+      "difficulty": "advanced",
+      "narrative": "gaussian-mixture landscape with two peaks; both annotated",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_contour.py",
+      "tags": [
+        "contour",
+        "2d-scalar",
+        "peaks",
+        "annotated",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "2D scalar field with filled contour + line overlay + peak annotations"
+    },
+    "heatmap": {
+      "advanced_apis": "imshow with RdBu_r diverging cmap (vmin=-1, vmax=1), per-cell ax.text, colorbar with formatter, masked diagonal",
+      "basic_counterpart": "heatmap",
+      "data_shape": "matrix: 2D array (square, symmetric, values in [-1, 1])",
+      "difficulty": "intermediate",
+      "narrative": "Pairwise correlation of six asset classes; diagonal masked, off-diagonal labeled",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_heatmap.py",
+      "tags": [
+        "heatmap",
+        "correlation",
+        "matrix",
+        "annotated",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "6x6 asset-class correlation matrix with in-cell value labels and a diverging colormap"
+    },
+    "histogram": {
+      "advanced_apis": "axvline (mean, median, SLA), axvspan (IQR band), np.percentile, legend",
+      "basic_counterpart": "histogram",
+      "data_shape": "values: list[float]",
+      "difficulty": "intermediate",
+      "narrative": "API response-time distribution; SLA at p95 = 250ms; show how the tail breaches it",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_histogram.py",
+      "tags": [
+        "distribution",
+        "histogram",
+        "threshold",
+        "annotated",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Response-time distribution with mean, median, IQR band, and SLA threshold reference"
+    },
+    "line": {
+      "advanced_apis": "dm.cspace, axvspan, ax.annotate with arrow, format_axis_si, dm.validate_with_fixes, dm.check_figure_quality",
+      "basic_counterpart": "line",
+      "data_shape": "x: list[float], y_primary: list[float], y_compare: list[float]",
+      "difficulty": "intermediate",
+      "narrative": "Monthly active users vs. industry baseline; product launch window highlighted, peak annotated",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_line.py",
+      "tags": [
+        "line",
+        "trend",
+        "time-series",
+        "event",
+        "annotated",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Two-series trend over an ordered x-axis with an event window and peak callout"
+    },
+    "pie": {
+      "advanced_apis": "dm.cspace gradient, wedge explode, donut hole (wedgeprops width), ax.annotate leader callout",
+      "basic_counterpart": "pie",
+      "data_shape": "labels: list[str], sizes: list[float]",
+      "difficulty": "intermediate",
+      "narrative": "GPU vendor market share; leader exploded and called out",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_pie.py",
+      "tags": [
+        "pie",
+        "donut",
+        "composition",
+        "callout",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Composition share with leader explode + callout + OKLCH gradient + donut hole"
+    },
+    "plot_3d": {
+      "advanced_apis": "projection=3d, plot_surface with viridis cmap, view_init(elev=25, azim=-60), colorbar with formatter",
+      "basic_counterpart": "plot_3d",
+      "data_shape": "X: 2D array, Y: 2D array, Z: 2D array",
+      "difficulty": "advanced",
+      "narrative": "Energy landscape with two minima; viewing angle chosen to show both",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_3d.py",
+      "tags": [
+        "3d",
+        "surface",
+        "gaussian",
+        "colorbar",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "3D surface of a gaussian-mixture landscape with colorbar and clean viewing angle"
+    },
+    "polar": {
+      "advanced_apis": "subplot_kw projection=polar, 3 dm.cspace series, cardinal theta labels, legend below",
+      "basic_counterpart": "polar",
+      "data_shape": "theta: 1D array, r: list of 1D arrays",
+      "difficulty": "advanced",
+      "narrative": "Three time-of-day load profiles on a polar axis",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_polar.py",
+      "tags": [
+        "polar",
+        "radial",
+        "multi-series",
+        "gradient",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Multi-series radial chart with OKLCH-gradient colors and cardinal-direction labels"
+    },
+    "scatter": {
+      "advanced_apis": "np.polyfit, np.corrcoef, ax.annotate, axhline, dm.format_axis_currency, dm.validate_with_fixes",
+      "basic_counterpart": "scatter",
+      "data_shape": "x: list[float], y: list[float]",
+      "difficulty": "intermediate",
+      "narrative": "Price vs. demand fit across 60 SKUs; one outlier flagged",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_scatter.py",
+      "tags": [
+        "scatter",
+        "correlation",
+        "regression",
+        "outlier",
+        "annotated",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Two-variable relationship with regression fit, R-squared annotation, and outlier callout"
+    },
+    "small_multiples": {
+      "advanced_apis": "plt.subplots(2, 3, sharey=True), dm.label_axes for (a)-(f), per-panel sub-title, fig.supxlabel/supylabel",
+      "basic_counterpart": "small_multiples",
+      "data_shape": "groups: dict[str, list[float]], x: list[float]",
+      "difficulty": "advanced",
+      "narrative": "24-month KPI trend across 6 product lines; sharey reveals the relative wins",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_small_multiples.py",
+      "tags": [
+        "small-multiples",
+        "panel-ids",
+        "shared-axes",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Same KPI trend across 6 product lines with panel IDs (a)-(f) and a shared y-axis"
+    },
+    "stacked_bar": {
+      "advanced_apis": "cumulative bottom calc, per-segment label only if >= 8%, total label above each stack, dm.cspace",
+      "basic_counterpart": "stacked_bar",
+      "data_shape": "categories: list[str], components: dict[str, list[float]]",
+      "difficulty": "intermediate",
+      "narrative": "Energy mix by period (Solar / Wind / Gas); totals annotated",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_stacked_bar.py",
+      "tags": [
+        "stacked-bar",
+        "composition",
+        "components",
+        "annotated",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Composition over 4 periods x 3 components with segment + total labels"
+    },
+    "tornado": {
+      "advanced_apis": "horizontal bars at axvline x=0, color by sign of effect, signed value labels",
+      "basic_counterpart": "tornado",
+      "data_shape": "variables: list[str], low_impact: list[float], high_impact: list[float]",
+      "difficulty": "intermediate",
+      "narrative": "Six model parameters ranked by absolute impact on output; output drops red, output rises green",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_tornado.py",
+      "tags": [
+        "tornado",
+        "sensitivity",
+        "two-sided",
+        "ranking",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Parameter sensitivity ranking with two-sided bars colored by direction of output impact"
+    },
+    "twin_axis": {
+      "advanced_apis": "ax.twinx, color-coded axis labels and tick colors, axhline target, no chart-junk",
+      "basic_counterpart": "twin_axis",
+      "data_shape": "x: list[float], y_price: list[float], y_volume: list[float]",
+      "difficulty": "advanced",
+      "narrative": "Daily price + volume; price target axhline on the left axis",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_twin_axis.py",
+      "tags": [
+        "twin-axis",
+        "price-volume",
+        "color-coded",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Two-y-scale chart (price + volume) with each axis color-coded to its data"
+    },
+    "violin": {
+      "advanced_apis": "violinplot with custom face colors via dm.cspace, median + p25/p75 dots, ax.set_xticklabels with rotation",
+      "basic_counterpart": "violin",
+      "data_shape": "groups: dict[str, list[float]]",
+      "difficulty": "intermediate",
+      "narrative": "Customer satisfaction score by region; widest spread in APAC",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_violin.py",
+      "tags": [
+        "violin",
+        "distribution",
+        "quartiles",
+        "gradient",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Distribution shape across 5 groups with median + IQR markers and gradient bodies"
+    },
+    "waterfall": {
+      "advanced_apis": "cumulative bottom calc, sign-color, dashed connector lines between bar tops, value labels, format_axis_si",
+      "basic_counterpart": "waterfall",
+      "data_shape": "labels: list[str], values: list[float], is_total: list[bool]",
+      "difficulty": "advanced",
+      "narrative": "Energy bridge from generation to net delivery; positives green, negatives red, totals gray",
+      "source_path": "docs/examples_source/09_ai_templates_advanced/plot_waterfall.py",
+      "tags": [
+        "waterfall",
+        "bridge",
+        "cumulative",
+        "annotated",
+        "narrative"
+      ],
+      "tier": "advanced",
+      "use_case": "Cumulative bridge from one total to another via signed components, with connector lines"
+    }
+  },
   "bar": {
     "data_shape": "categories: list[str], values: list[float]",
     "difficulty": "beginner",
@@ -8,6 +317,7 @@
       "categorical",
       "comparison"
     ],
+    "tier": "basic",
     "use_case": "Compare a small set of categorical values"
   },
   "bar_grouped": {
@@ -20,6 +330,7 @@
       "multi-series",
       "comparison"
     ],
+    "tier": "basic",
     "use_case": "Compare multiple series across the same categories"
   },
   "bar_horizontal": {
@@ -31,6 +342,7 @@
       "horizontal",
       "ranking"
     ],
+    "tier": "basic",
     "use_case": "Compare categories when labels are long or ranked"
   },
   "boxplot": {
@@ -43,6 +355,7 @@
       "statistics",
       "summary"
     ],
+    "tier": "basic",
     "use_case": "Summarise the distribution of a few numeric groups"
   },
   "contour": {
@@ -55,6 +368,7 @@
       "gridded",
       "isolines"
     ],
+    "tier": "basic",
     "use_case": "Show a 2D scalar field as level curves"
   },
   "heatmap": {
@@ -67,6 +381,7 @@
       "correlation",
       "image"
     ],
+    "tier": "basic",
     "use_case": "Show a 2D matrix with color-coded magnitude"
   },
   "histogram": {
@@ -78,6 +393,7 @@
       "histogram",
       "frequency"
     ],
+    "tier": "basic",
     "use_case": "Show the distribution of a single numeric sample"
   },
   "line": {
@@ -90,6 +406,7 @@
       "time-series",
       "continuous"
     ],
+    "tier": "basic",
     "use_case": "Show a continuous trend over an ordered x axis"
   },
   "pie": {
@@ -102,6 +419,7 @@
       "composition",
       "proportion"
     ],
+    "tier": "basic",
     "use_case": "Show shares of a small whole"
   },
   "plot_3d": {
@@ -114,6 +432,7 @@
       "scatter",
       "depth"
     ],
+    "tier": "basic",
     "use_case": "Show a 3D surface or scatter to communicate depth"
   },
   "polar": {
@@ -126,6 +445,7 @@
       "angular",
       "compass"
     ],
+    "tier": "basic",
     "use_case": "Show angular or radial data on a polar plot"
   },
   "scatter": {
@@ -138,6 +458,7 @@
       "2d",
       "relationship"
     ],
+    "tier": "basic",
     "use_case": "Show the relationship between two numeric variables"
   },
   "small_multiples": {
@@ -151,6 +472,7 @@
       "comparison",
       "small-multiples"
     ],
+    "tier": "basic",
     "use_case": "Repeat the same chart across a grid for comparison"
   },
   "stacked_bar": {
@@ -163,6 +485,7 @@
       "composition",
       "share"
     ],
+    "tier": "basic",
     "use_case": "Show parts-of-whole composition across categories"
   },
   "tornado": {
@@ -175,6 +498,7 @@
       "deviation",
       "horizontal"
     ],
+    "tier": "basic",
     "use_case": "Show signed deviations from a baseline (sensitivity)"
   },
   "twin_axis": {
@@ -187,6 +511,7 @@
       "twinx",
       "multi-unit"
     ],
+    "tier": "basic",
     "use_case": "Show two series with different units on a shared x"
   },
   "violin": {
@@ -198,6 +523,7 @@
       "density",
       "violin"
     ],
+    "tier": "basic",
     "use_case": "Show the density of multiple numeric groups"
   },
   "waterfall": {
@@ -210,6 +536,7 @@
       "finance",
       "additive"
     ],
+    "tier": "basic",
     "use_case": "Show successive additive contributions to a total"
   }
 }
