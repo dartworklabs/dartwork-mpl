@@ -7,6 +7,85 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-06-20
+
+### Added
+- **18 tier-2 advanced plot templates** under
+  `asset/prompt/05-templates/advanced/` — one per existing basic template
+  (bar, line, scatter, histogram, heatmap, …). Each ships with synthetic
+  but realistic data, an OKLCH gradient (`dm.cspace`) sequence, value
+  labels, reference lines / annotation overlays, a narrative title with
+  takeaway subtitle, a source footnote, and an end-of-script
+  `dm.validate_with_fixes` + `dm.check_figure_quality` chain. The tier-1
+  basic templates remain the minimal "what does the API look like"
+  examples; tier-2 demonstrate the full publication-ready layered
+  composition pattern. Rendered into the Sphinx gallery as a new
+  section. (PR #349)
+- **3 new MCP tools** on the `dartwork-mpl-mcp` server:
+  - `suggest_chart_type(x_type, y_type, n_points, n_series)` — returns a
+    `{recommended, basic_template_uri, advanced_template_uri, rationale}`
+    record so an agent can pick a chart type from data shape before
+    writing any code.
+  - `compose_layered_plot(plot_type, layers, tier)` — returns the chosen
+    template plus an `{applied, missing}` checklist of layered
+    composition elements (gradient sequence, value labels, reference
+    lines, narrative title, …), nudging agents toward the full pattern
+    rather than the minimal basic.
+  - `render_template_advanced(plot_type, return_format, timeout)` —
+    tier-2 sibling of `render_template`, with automatic basic-tier
+    fallback when an advanced template is missing
+    (`status: "ok" | "fell_back" | …`).
+- **`chart_type_hint` argument on `validate_generated_plot`** —
+  surfaces semantic warnings (pie with >7 slices, scatter with <5
+  points, bar without value labels, line that produced no `Line2D`,
+  histogram with <10 bins) in addition to the existing lint + execution
+  + visual-validation chain. (PR #349)
+- **`tier` argument on `find_template`** (Python API + MCP wrapper) —
+  `"basic"` / `"advanced"` / `"all"` scope the metadata index search to
+  the tier-1, tier-2, or both buckets. Default is unchanged
+  (basic-only, no `tier` field on results) so existing callers see no
+  difference. (PR #349)
+
+### Changed
+- **`create_plot` MCP prompt overhauled.** Now opens with a
+  pre-flight tool-call sequence (`suggest_chart_type` →
+  `render_template_advanced` → `find_template(tier="advanced")`),
+  documents the advanced-tier APIs an agent should reach for
+  (`dm.cspace`, `format_axis_si` / `_millions` / `_currency`,
+  `label_axes`, `simple_layout` margin guidance,
+  `validate_with_fixes`, `check_figure_quality`,
+  `axhline` / `axvline` / `axvspan` / `annotate`), an explicit hairline
+  policy (`dm.lw(-1)` collapses to 0.0 — use 0.3 / 0.5 literals when a
+  hairline is intentional), and ships a tier-2 skeleton that follows
+  the full layered pattern. The skeleton still passes the existing
+  validation chain — `chart_type_hint` is wired through. (PR #349)
+
+### Fixed
+- **`dartwork_mpl_info()` no longer hardcodes `"version_surface": "0.4"`.**
+  Reads the installed package version via `importlib.metadata.version`
+  and reports the `major.minor` (e.g. `"0.5"`). Same registry-derivation
+  principle used elsewhere — the advertised surface tracks the actual
+  release instead of a hand-maintained literal that silently drifts.
+  (PR #344)
+
+### Docs / Design
+- **`docs/` design system overhaul (Tiers 1 → 6).** Eight design
+  refresh PRs (#332–#339) landed without touching any runtime Python:
+  - Tier 1: heading + strong weight ladder one step lighter
+    (bold → semibold → medium), neutral fills removed from inline
+    code / kbd / cards / quotes.
+  - Tier 2 + 3: widget chrome flattened, designer chrome separated
+    from content, hero made solid.
+  - Tier 4: flat underline tabs, before/after order reversed, less
+    personal phrasing across narrative blocks.
+  - Tier 5 + 6: universal widget unification, body column widen,
+    mermaid renderer rebuilt, validator harness overhauled.
+  - **Diagram PoC** (#338 → #339): five-library shootout, system
+    architecture diagram, auto-extracted module graph; mermaid
+    upscaling fixed, Excalidraw dropped, PoC examples made real.
+  - **Colormap explorer redesign** (#335 → #336): hybrid explorer,
+    Design System page flattened to four siblings.
+
 ## [0.5.2] - 2026-06-09
 
 ### Added — internal audit notes (issues #310 / #311 / #313)
