@@ -1,0 +1,304 @@
+<!doctype html>
+<!--
+  palette_explorer.html — the polished, docs-integrated dartwork palette explorer.
+  Single active palette at a time: segmented family picker · color-count slider
+  (2–8, live subset) · B&W + canvas (white/dark) toggles · several chart shapes
+  SIDE BY SIDE (3 or 4 panels); click any panel to cycle its chart type
+  (line/scatter/area/bar/heatmap), so one palette can be compared across whichever
+  shapes you choose · per-swatch hover (hex) · copy (hex list + Python snippet
+  using dm.*). High-resolution curve sampling. Built on the dm-interactive primitives.
+  Palette data is GENERATED (scripts/gen_palettes.py, CIELAB, B&W+CVD verified)
+  and injected into PALETTES below. Theme toggle. Serve from docs/_static.
+-->
+<html lang="en" class="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>dartwork — palette explorer</title>
+  <link rel="stylesheet" href="dartwork-design.css" />
+  <link rel="stylesheet" href="dm-interactive.css" />
+  <style>
+    body { margin:0; background:var(--dm-bg-page); color:var(--dm-gray-12);
+      font-family:var(--dm-f-sys,"Inter",system-ui,sans-serif); letter-spacing:-.003em; }
+    .wrap { max-width:920px; margin:0 auto; padding:32px 24px 110px; }
+    .bar { position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between;
+      gap:12px; padding:12px 16px; margin:-32px -24px 18px; background:var(--dm-bg-panel);
+      border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; }
+    .bar .t { font-size:15px; font-weight:700; }
+    .bar p { margin:0; font-size:12px; color:var(--dm-text-muted); flex-basis:100%; line-height:1.5; }
+    .tt { background:var(--dm-bg-panel); color:var(--dm-gray-12); border:1px solid var(--dm-border);
+      border-radius:999px; padding:6px 13px; font:inherit; font-size:13px; cursor:pointer; }
+
+    /* system-logic intro */
+    .logic { border:1px solid var(--dm-border-faint); border-radius:var(--dm-radius-5);
+      padding:0 18px; margin-bottom:18px; background:var(--dm-bg-subtle); }
+    .logic > summary { cursor:pointer; font-size:13px; font-weight:700; padding:14px 0;
+      color:var(--dm-accent-11); list-style:none; }
+    .logic > summary::before { content:"▸ "; } .logic[open] > summary::before { content:"▾ "; }
+    .logic-body { font-size:12.5px; color:var(--dm-text-muted); line-height:1.6; padding-bottom:14px; }
+    .logic-body p { margin:0 0 8px; } .logic-body b { color:var(--dm-gray-12); font-weight:600; }
+    .logic-body ul { margin:0 0 10px; padding-left:18px; } .logic-body li { margin:2px 0; }
+    .logic-body code { font-family:var(--dm-f-mono,monospace); font-size:.92em; background:var(--dm-gray-a3); border-radius:4px; padding:1px 5px; }
+
+    /* family picker — grouped segmented control */
+    .families { display:flex; flex-direction:column; gap:8px; margin-bottom:18px; }
+    .fam-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .fam-lbl { font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+      color:var(--dm-text-muted); min-width:96px; }
+    .pchip { appearance:none; background:transparent; border:1px solid var(--dm-border-faint);
+      border-radius:7px; padding:5px 11px; font:inherit; font-size:12.5px; font-weight:500; cursor:pointer;
+      color:var(--dm-text-muted); display:inline-flex; align-items:center; gap:7px; transition:all .14s; }
+    .pchip:hover { background:var(--dm-gray-a3); color:var(--dm-gray-12); }
+    .pchip.on { background:var(--dm-accent-3); color:var(--dm-accent-11); border-color:var(--dm-accent-7); font-weight:600; }
+    .pchip .dots { display:inline-flex; gap:1.5px; }
+    .pchip .dots i { width:7px; height:7px; border-radius:2px; display:inline-block; }
+
+    /* stage */
+    .stage { border:1px solid var(--dm-border-faint); border-radius:var(--dm-radius-5); padding:20px; }
+    .stage.dark-canvas { background:#15171a; border-color:#2a2d31; }
+    .stage.dark-canvas .s-name, .stage.dark-canvas .hx { color:#e8eaed; }
+    .s-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+    .s-name { font-size:17px; font-weight:700; margin:0; }
+    .s-band { font-size:11.5px; color:var(--dm-text-muted); font-family:var(--dm-f-mono,monospace); }
+    .s-ctrls { margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .ctrl { background:var(--dm-gray-3); color:var(--dm-gray-12); border:0; border-radius:var(--dm-radius-3);
+      padding:4px 10px; font:inherit; font-size:11.5px; cursor:pointer; }
+    .ctrl.on { background:var(--dm-accent-3); color:var(--dm-accent-11); font-weight:600; }
+    .countwrap { display:inline-flex; align-items:center; gap:7px; font-size:11.5px; color:var(--dm-text-muted); }
+    .countwrap input[type=range]{ width:104px; accent-color:var(--dm-accent-9); }
+
+    .strip { display:flex; gap:6px; margin:16px 0 4px; }
+    .sw { flex:1; min-width:0; position:relative; }
+    .sw .chip { height:40px; border-radius:var(--dm-radius-2); cursor:pointer; }
+    .sw .hx { font-family:var(--dm-f-mono,monospace); font-size:9px; color:var(--dm-text-muted); text-align:center; margin-top:3px; overflow:hidden; }
+    .sw .tip { position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%);
+      background:var(--dm-gray-12); color:var(--dm-bg-page); font-size:10.5px; font-family:var(--dm-f-mono,monospace);
+      padding:3px 7px; border-radius:5px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .12s; z-index:5; }
+    .sw:hover .tip { opacity:1; }
+
+    /* plots — several shapes side by side; click a panel to cycle its chart type */
+    .plots-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(228px,1fr)); gap:14px; margin-top:16px; }
+    .pcell { border:1px solid var(--dm-border-faint); border-radius:var(--dm-radius-5);
+      padding:12px 14px; background:var(--dm-bg-page); }
+    .stage.dark-canvas .pcell { background:#1b1e22; border-color:#2a2d31; }
+    .pcell .pl { display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:600;
+      text-transform:uppercase; letter-spacing:.06em; color:var(--dm-text-muted); margin-bottom:10px;
+      cursor:pointer; user-select:none; border:0; background:transparent; padding:0; font-family:inherit; }
+    .pcell .pl:hover { color:var(--dm-accent-11); }
+    .pcell .pl .cyc { font-size:11px; opacity:.42; transition:opacity .12s; }
+    .pcell .pl:hover .cyc { opacity:1; }
+    .stage.dark-canvas .pcell .pl { color:#9aa0a8; }
+    .ctrl.mini { padding:4px 9px; }
+    .plots-grid.gs svg, .strip.gs svg, .strip.gs .chip { filter:grayscale(1); }
+    svg { display:block; width:100%; height:auto; }
+
+    .meta { margin-top:14px; font-size:12px; color:var(--dm-text-muted); line-height:1.6; display:grid; gap:4px; }
+    .meta b { color:var(--dm-gray-12); font-weight:600; }
+    .stage.dark-canvas .meta, .stage.dark-canvas .meta b { color:#c8ccd2; }
+    .code { margin-top:14px; position:relative; background:var(--dm-i-code-surface); border-radius:var(--dm-radius-4);
+      padding:12px 44px 12px 14px; font-family:var(--dm-f-mono,monospace); font-size:12px; color:var(--dm-gray-12); white-space:pre; overflow-x:auto; }
+    .copybtn { position:absolute; top:8px; right:8px; background:transparent; border:1px solid var(--dm-border-faint);
+      border-radius:6px; padding:3px 9px; font:inherit; font-size:11px; color:var(--dm-text-muted); cursor:pointer; }
+    .copybtn:hover { background:var(--dm-accent-3); color:var(--dm-accent-11); border-color:var(--dm-accent-7); }
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--dm-gray-12);
+      color:var(--dm-bg-page); padding:8px 16px; border-radius:999px; font-size:12.5px; opacity:0; transition:opacity .2s; pointer-events:none; }
+    .toast.show { opacity:1; }
+  </style>
+</head>
+<body class="yue">
+  <div class="wrap">
+    <div class="bar">
+      <span class="t">dartwork — palette explorer</span>
+      <button class="tt" id="tt" type="button">◐ theme</button>
+      <p>Pick a palette · drag color-count (subset) · toggle B&amp;W / dark-canvas · set 3–4 panels and <b>click a panel to change its chart shape</b> · hover a swatch for hex · copy as Python. All 8-color, CIELAB-generated, B&amp;W + CVD verified.</p>
+    </div>
+    <details class="logic" id="logic" open>
+      <summary>The system — our own logic</summary>
+      <div class="logic-body">
+        <p>dartwork's discrete palettes are <b>one family on a single axis: spectral width</b> (how much of the hue wheel a palette spans), from <b>narrow</b> (harmony) to <b>wide</b> (distinctness). Pick by the <i>shape of your data</i>, not by taste:</p>
+        <ul>
+          <li><b>Ordered?</b> → Sequential (single-hue lightness ramp).</li>
+          <li><b>A few related series?</b> → Analogous (one-mood arc).</li>
+          <li><b>Two groups?</b> → Duo (warm vs cool).</li>
+          <li><b>Everyday 4–8 categories?</b> → Trustworthy Default.</li>
+          <li><b>Many unrelated categories?</b> → Spectrum (full wheel).</li>
+        </ul>
+        <p>Every palette obeys the same engineering rules, so they are interchangeable and dependable:</p>
+        <ul>
+          <li><b>Always 8 colors</b> — need fewer? take a subset (first-N or every-other), built into the ordering.</li>
+          <li><b>Even CIELAB L* ladder</b> — 8 distinct lightnesses ⇒ all 8 survive <b>black-&amp;-white / print</b> (and most colour-blindness, since CVD preserves luminance).</li>
+          <li><b>CVD-verified</b> — deuteranopia / protanopia / tritanopia simulated (colorspacious), not eyeballed.</li>
+          <li><b>Teal <code>#12a594</code> is the house anchor</b>, present across the family.</li>
+          <li><b>Generated, not hand-picked</b> — colours come from <code>gen_palettes.py</code> in CIELAB, so they're reproducible and tunable.</li>
+        </ul>
+      </div>
+    </details>
+    <div class="families" id="fams"></div>
+    <div class="stage" id="stage"></div>
+  </div>
+  <div class="toast" id="toast">Copied</div>
+
+  <script>
+  // ── GENERATED palette data (scripts/gen_palettes.py). cols = cycle order. ──
+  const PALETTES = {
+    // ── SEQUENTIAL — single-hue lightness ramps (very narrow) ──
+    teal_seq:    { name:"Teal Sequential", fam:"Sequential", band:"very-narrow · single hue",
+      cols:["#2a524c","#166c61","#008577","#129e8e","#21b8a5","#5dcebd","#94e3d5","#caf7ee"],
+      intent:"Categories with a natural ORDER (quality tiers, time periods, confidence buckets) — rank reads straight off the lightness.",
+      design:"One hue (house teal, CIELAB h≈182) held constant; 8 steps on a monotonic L* ramp 32→94, chroma peaking mid. Being a pure lightness ramp makes it the most B&W-perfect palette.",
+      application:"Stacked area (weight top→bottom), ordered bars, confidence ribbons. Avoid for UNordered categories.",
+      bw:"min ΔL* 8.6", cvd:"d8.6 / p7.2 / t9.0" },
+    indigo_seq:  { name:"Indigo Sequential", fam:"Sequential", band:"very-narrow · single hue",
+      cols:["#414b64","#4d6089","#5b76ae","#6d8ccd","#86a4e6","#a3bcf8","#c5d4ff","#e8edff"],
+      intent:"Ordered categories in a cooler, more corporate register than teal — tiers, periods, magnitude buckets.",
+      design:"Single indigo hue (CIELAB h≈280) on a monotonic L* ramp 32→94. A pure lightness ramp ⇒ flawless B&W; pairs as the cool member of the sequential set.",
+      application:"Heatmap rows, ordered bars, area, ribbons. Reads as rank.",
+      bw:"min ΔL* 8.6", cvd:"d8.9 / p8.6 / t8.9" },
+    coral_seq:   { name:"Coral Sequential", fam:"Sequential", band:"very-narrow · single hue",
+      cols:["#6c4a45","#93564e","#b86259","#d87368","#f1897d","#fea69a","#ffc6be","#ffe5e1"],
+      intent:"Ordered categories in a warm, human register — intensity, recency, heat / severity scales.",
+      design:"Single coral hue (CIELAB h≈32) on a monotonic L* ramp 35→93. Warm counterpart to teal/indigo sequential.",
+      application:"Heat/intensity encodings, ordered bars, area. The warm sequential.",
+      bw:"min ΔL* 8.1", cvd:"d7.7 / p7.3 / t8.3" },
+    // ── ANALOGOUS — one-mood hue arcs (narrow) ──
+    teal_indigo: { name:"Teal→Indigo Analogous", fam:"Analogous", band:"narrow · cool arc",
+      cols:["#056463","#4cb3c3","#2b88aa","#a1d3ff","#486d9d","#aeb6ed","#958bbf","#f3daff"],
+      intent:"A few related series that should feel like ONE mood, not a rainbow — cohesion over maximum distinctness.",
+      design:"A ~120° cool arc (teal→blue→indigo) on a staggered even L* ladder 38→90, so adjacent series contrast by lightness while sharing a family. Anchored on house teal.",
+      application:"Multi-series LINE ensembles (3–6 thin lines), area fills, refined scatter. Editorial / institutional tone.",
+      bw:"min ΔL* 7.4", cvd:"d6.3 / p5.5 / t9.6" },
+    forest:      { name:"Forest Analogous", fam:"Analogous", band:"narrow · green arc",
+      cols:["#475b26","#8cac74","#5b8554","#a4daa8","#37734d","#80c6a0","#619b70","#c7eeb4"],
+      intent:"A few related series in a natural / organic register — ESG, agriculture, environment, growth themes.",
+      design:"A ~40° green arc (yellow-green→teal-green) on a staggered even L* ladder 36→90 — one hue family, lightness-separated.",
+      application:"Multi-series line / area for environmental or organic topics. Calm, cohesive.",
+      bw:"min ΔL* 7.7", cvd:"d7.8 / p6.8 / t8.7" },
+    ocean:       { name:"Ocean Analogous", fam:"Analogous", band:"narrow · blue arc",
+      cols:["#026275","#50b4d6","#2589b0","#a5d9ff","#2f71a1","#96c0f8","#7b93cb","#e5e6ff"],
+      intent:"A few related series in a cool blue register — finance, water, tech, depth themes.",
+      design:"A ~65° blue arc (cyan→blue→soft indigo) on a staggered even L* ladder 38→92. One cool mood, lightness-separated.",
+      application:"Refined multi-series line / area, scatter. Institutional, trustworthy tone.",
+      bw:"min ΔL* 7.5", cvd:"d7.1 / p6.9 / t7.2" },
+    // ── DUO — warm vs cool split (medium) ──
+    warm_cool:   { name:"Warm / Cool Duo", fam:"Duo", band:"medium · 180° split",
+      cols:["#91422f","#b36d44","#ed8987","#ffc18d","#06768f","#389ad1","#32cae0","#d3e4ff"],
+      intent:"TWO opposed groups — assign the warm family to one side, cool to the other (A/B, before/after, sentiment).",
+      design:"4 warm + 4 cool hues (≈180° apart), each an internal L* ramp; even ladder 38→90. Hue split groups, lightness separates within.",
+      application:"Grouped bars, two-cluster scatter, paired lines. Excellent CVD — the temperature split is the most colorblind-robust structure.",
+      bw:"min ΔL* 7.3", cvd:"d14.4 / p11.4 / t14.3" },
+    blue_orange: { name:"Blue / Orange Duo", fam:"Duo", band:"medium · 180° split",
+      cols:["#036085","#2485c2","#17b2e3","#b1cfff","#a9532c","#cb8043","#fea18a","#ffddba"],
+      intent:"Two opposed groups using the single most colorblind-robust opposition (blue vs orange) — A/B, gain/loss, before/after.",
+      design:"4 blue + 4 orange hues (~180° apart), each an internal L* ramp; even ladder 38→90.",
+      application:"Grouped bars, two-cluster scatter, paired lines. Best-in-class CVD across all three types.",
+      bw:"min ΔL* 7.3", cvd:"d12.6 / p12.2 / t14.8" },
+    teal_coral:  { name:"Teal / Coral Duo", fam:"Duo", band:"medium · 180° split",
+      cols:["#01655c","#0d8d8a","#2ab9a1","#3ae3e7","#ae5029","#d07d3e","#ffa183","#ffdcbe"],
+      intent:"Two opposed groups in the house-teal brand voice (teal vs warm coral) — A/B, before/after, sentiment.",
+      design:"4 teal + 4 coral hues; even ladder 38→90. The warm side is pushed toward ORANGE (h≈44–68, not pure red) so the teal↔warm split lands on the blue-yellow axis and survives protanopia.",
+      application:"Brand-forward duos, grouped bars, paired lines. CVD-safe after the orange re-tune (still the softest of the three duos; for maximum accessibility, Blue/Orange or Warm/Cool lead).",
+      bw:"min ΔL* 7.2", cvd:"d13.3 / p8.4 / t14.6" },
+    // ── BALANCED — everyday default (medium-wide) ──
+    trustworthy: { name:"Trustworthy Default", fam:"Balanced", band:"medium-wide · teal + neutrals",
+      cols:["#06655a","#72a6db","#8076a9","#ffb8a5","#467647","#ef9dc2","#83919c","#d0dfeb"],
+      intent:"The everyday DEFAULT — reach for this first for 4–8 unrelated categories. Muted-but-distinct, report-grade.",
+      design:"6 evenly-spaced hues anchored on house teal + 2 neutrals, muted chroma (no neon), staggered even L* ladder 38→88. Built to never tangle or shout.",
+      application:"Everything — line, bar, scatter; works on white pages and in tables. The general-purpose cycle.",
+      bw:"min ΔL* 7.1", cvd:"d11.7 / p9.9 / t6.8" },
+    // ── MUTED — soft editorial (medium-wide, low chroma) ──
+    muted:       { name:"Muted Pastel", fam:"Muted", band:"medium-wide · low chroma",
+      cols:["#56857c","#96bad4","#9b94b4","#f6c9c0","#799075","#e4b9c7","#bba387","#b6ecf3"],
+      intent:"Soft, editorial categorical set for dense dashboards or backgrounds where vivid color would shout. 4–8 categories.",
+      design:"Same 8-hue spread as the default but low chroma (~18) and a higher L* band 52→90. Calm, magazine-like. (B&W is softer by design.)",
+      application:"Dashboards, small multiples, annotation-heavy figures. Pair with one vivid accent for emphasis.",
+      bw:"min ΔL* 5.3 (soft by design)", cvd:"d8.9 / p7.9 / t5.3" },
+    // ── SPECTRUM — full hue wheel (widest) ──
+    spectrum:    { name:"Spectrum Vivid", fam:"Spectrum", band:"widest · full wheel",
+      cols:["#026a5f","#01b3d5","#0784d9","#e9b8ff","#c6376e","#ff9e7a","#aa911a","#9ff18c"],
+      intent:"MANY unrelated categories (up to 8) where color alone must separate everything — maximum distinctness.",
+      design:"8 hues evenly spaced 45° around the full wheel (teal-anchored), high chroma, staggered even L* ladder 40→88 so it still survives B&W.",
+      application:"8-category scatter, side-by-side bars, editorial infographics. Vivid, confident tone.",
+      bw:"min ΔL* 6.6", cvd:"d9.1 / p9.7 / t13.8" },
+    // ── ACCESSIBLE — fixed Okabe-Ito CUD (CVD gold standard) ──
+    accessible:  { name:"Accessible (Okabe-Ito)", fam:"Accessible", band:"widest · CVD gold standard",
+      cols:["#000000","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7"],
+      intent:"When colorblind-safety is mandatory (journals, public-sector, clinical). The proven CUD 8-color set, shipped verbatim.",
+      design:"Fixed Okabe & Ito (2008) palette — NOT regenerated. Tuned for deuter/protan/tritan separation (the strongest in the family).",
+      application:"Any figure where CVD accessibility is a hard requirement. Not built for B&W (near-equal lightness) — don't lean on grayscale for this one.",
+      bw:"n/a (CVD-optimised, not B&W)", cvd:"d14.8 / p14.0 / t11.0" },
+  };
+  const ORDER = ["teal_seq","indigo_seq","coral_seq","teal_indigo","forest","ocean","warm_cool","blue_orange","teal_coral","trustworthy","muted","spectrum","accessible"];
+
+  const state = { pal:"trustworthy", n:8, gs:false, dark:false, panels:["line","scatter","area"] };
+
+  // ── plot renderers (SVG); take a color list ──
+  const VB='0 0 100 56';
+  const P = {
+    line(c){ const n=c.length; let s=`<svg viewBox="${VB}" preserveAspectRatio="none">`;
+      for(let i=0;i<n;i++){ const yc=n>1?9+i*(38/(n-1)):28; let d='';
+        for(let x=0;x<=100;x+=1.25){ const t=x/100; const y=yc+Math.sin(t*4.6+i*0.9)*3.5-(t-0.5)*(i-n/2)*1.8; d+=(x===0?'M':'L')+x.toFixed(2)+' '+y.toFixed(2)+' '; }
+        s+=`<path d="${d}" fill="none" stroke="${c[i]}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`; }
+      return s+'</svg>'; },
+    scatter(c){ const n=c.length; let s=`<svg viewBox="${VB}">`;
+      for(let i=0;i<n;i++){ const cx=12+(i/(n-1||1))*76, cy=15+((i*37)%28);
+        for(let k=0;k<11;k++){ const a=i*2.3+k*1.7; s+=`<circle cx="${(cx+Math.cos(a)*9+Math.sin(k*3.1)*2.6).toFixed(1)}" cy="${(cy+Math.sin(a)*9+Math.cos(k*2.2)*2.6).toFixed(1)}" r="2" fill="${c[i]}" opacity="0.82"/>`; } }
+      return s+'</svg>'; },
+    area(c){ const n=c.length, S=48, acc=new Array(S+1).fill(54); let s=`<svg viewBox="${VB}" preserveAspectRatio="none">`;
+      for(let i=0;i<n;i++){ let top='',bot='';
+        for(let xi=0;xi<=S;xi++){ const x=xi*(100/S), v=(46/n)*(0.85+0.34*Math.sin(xi*0.22+i*0.95)), y0=acc[xi], y1=acc[xi]-v; acc[xi]=y1; top+=(xi===0?'M':'L')+x.toFixed(2)+' '+y1.toFixed(2)+' '; bot=x.toFixed(2)+' '+y0.toFixed(2)+' '+bot; }
+        s+=`<path d="${top}L${bot}Z" fill="${c[i]}" opacity="0.96"/>`; }
+      return s+'</svg>'; },
+    bar(c){ const n=c.length, g=2.2, bw=100/n, h=[40,28,48,34,44,30,38,46]; let s=`<svg viewBox="${VB}" preserveAspectRatio="none">`;
+      for(let i=0;i<n;i++){ const x=i*bw+g/2, bh=h[i%8]; s+=`<rect x="${x.toFixed(1)}" y="${(52-bh).toFixed(1)}" width="${(bw-g).toFixed(1)}" height="${bh}" rx="0.8" fill="${c[i]}"/>`; }
+      return s+'</svg>'; },
+    heatmap(c){ const n=c.length, cw=100/n, rows=5, rh=56/rows; let s=`<svg viewBox="${VB}">`;
+      for(let i=0;i<n;i++){ for(let r=0;r<rows;r++){ s+=`<rect x="${(i*cw).toFixed(1)}" y="${(r*rh).toFixed(1)}" width="${cw.toFixed(1)}" height="${rh.toFixed(1)}" fill="${c[i]}" opacity="${(0.4+r*0.14).toFixed(2)}"/>`; } } return s+'</svg>'; },
+  };
+  const PLOTS=["line","scatter","area","bar","heatmap"];
+  const PLABEL={line:"line",scatter:"scatter",area:"stacked area",bar:"bar",heatmap:"heatmap"};
+
+  function active(){ const p=PALETTES[state.pal]; return p.cols.slice(0,state.n); }
+
+  function renderFamilies(){
+    const fams={}; ORDER.forEach(k=>{ const f=PALETTES[k].fam; (fams[f]=fams[f]||[]).push(k); });
+    document.getElementById("fams").innerHTML=Object.keys(fams).map(f=>
+      '<div class="fam-row"><span class="fam-lbl">'+f+'</span>'+fams[f].map(k=>{
+        const dots=PALETTES[k].cols.filter((_,i)=>i%2===0).map(c=>'<i style="background:'+c+'"></i>').join('');
+        return '<button class="pchip'+(k===state.pal?' on':'')+'" data-pal="'+k+'"><span class="dots">'+dots+'</span>'+PALETTES[k].name+'</button>';
+      }).join('')+'</div>').join('');
+    document.querySelectorAll('[data-pal]').forEach(b=>b.addEventListener('click',()=>{ state.pal=b.dataset.pal; state.n=8; renderAll(); }));
+  }
+  function pySnippet(){ const p=PALETTES[state.pal], cs=active();
+    return "import dartwork_mpl as dm\n# "+p.name+"  ("+state.n+" colors)\ndm.set_cycle(dm.get_palette('"+state.pal+"', n="+state.n+"))\n# or explicit:\n# cols = "+JSON.stringify(cs); }
+  function renderStage(){
+    const p=PALETTES[state.pal], cs=active();
+    const strip=cs.map(c=>'<div class="sw"><div class="tip">'+c+'</div><div class="chip" style="background:'+c+'"></div><div class="hx">'+c+'</div></div>').join('');
+    const grid=state.panels.map((pt,idx)=>'<div class="pcell"><button class="pl" data-idx="'+idx+'">'+PLABEL[pt]+' <span class="cyc">↻</span></button>'+P[pt](cs)+'</div>').join('');
+    const st=document.getElementById("stage"); st.className="stage"+(state.dark?" dark-canvas":"");
+    st.innerHTML=
+      '<div class="s-head"><h2 class="s-name">'+p.name+'</h2><span class="s-band">'+p.band+'</span>'+
+      '<div class="s-ctrls">'+
+      '<span class="countwrap">panels <button class="ctrl mini'+(state.panels.length===3?' on':'')+'" data-pc="3">3</button><button class="ctrl mini'+(state.panels.length===4?' on':'')+'" data-pc="4">4</button></span>'+
+      '<span class="countwrap">colors <input type="range" min="2" max="8" value="'+state.n+'" id="cnt"><b id="cntv">'+state.n+'</b></span>'+
+      '<button class="ctrl'+(state.gs?' on':'')+'" id="bw">B&amp;W</button>'+
+      '<button class="ctrl'+(state.dark?' on':'')+'" id="dk">dark canvas</button></div></div>'+
+      '<div class="strip'+(state.gs?' gs':'')+'" id="strip">'+strip+'</div>'+
+      '<div class="plots-grid'+(state.gs?' gs':'')+'" id="plots">'+grid+'</div>'+
+      '<div class="meta"><div><b>Intent:</b> '+p.intent+'</div><div><b>Design:</b> '+p.design+'</div>'+
+      '<div><b>Application:</b> '+p.application+'</div>'+
+      '<div><b>B&amp;W:</b> '+p.bw+' · <b>CVD:</b> '+p.cvd+'</div></div>'+
+      '<div class="code" id="code">'+pySnippet().replace(/</g,"&lt;")+'<button class="copybtn" id="cpy">copy</button></div>';
+    st.querySelector('#cnt').addEventListener('input',e=>{ state.n=+e.target.value; renderStage(); });
+    st.querySelector('#bw').addEventListener('click',()=>{ state.gs=!state.gs; renderStage(); });
+    st.querySelector('#dk').addEventListener('click',()=>{ state.dark=!state.dark; renderStage(); });
+    st.querySelectorAll('[data-pc]').forEach(b=>b.addEventListener('click',()=>{ const k=+b.dataset.pc, def=["line","scatter","area","bar"]; if(k>state.panels.length){ while(state.panels.length<k) state.panels.push(def[state.panels.length]); } else state.panels=state.panels.slice(0,k); renderStage(); }));
+    st.querySelectorAll('.pl[data-idx]').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.idx, cur=PLOTS.indexOf(state.panels[i]); state.panels[i]=PLOTS[(cur+1)%PLOTS.length]; renderStage(); }));
+    st.querySelector('#cpy').addEventListener('click',()=>{ navigator.clipboard&&navigator.clipboard.writeText(pySnippet()); toast(); });
+  }
+  function renderAll(){ renderFamilies(); renderStage(); }
+  let tT; function toast(){ const t=document.getElementById("toast"); t.classList.add("show"); clearTimeout(tT); tT=setTimeout(()=>t.classList.remove("show"),1200); }
+  renderAll();
+  document.getElementById("tt").addEventListener("click",function(){ var r=document.documentElement; r.classList.toggle("dark"); r.classList.toggle("light"); document.body.setAttribute("data-theme", r.classList.contains("dark")?"dark":"light"); });
+  </script>
+</body>
+</html>

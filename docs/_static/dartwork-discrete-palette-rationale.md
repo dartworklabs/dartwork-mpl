@@ -54,6 +54,41 @@ Design* (ch. 6).
 
 ---
 
+## 1b. How many colors — the count decision
+
+**Container = 8 (hard ceiling). Recommended working count = 5–6.** The number is
+not a style choice; **three independent constraints all top out at ~8**, so 8 is
+the largest count the system can still *guarantee*:
+
+| Constraint | Caps at | Why |
+|---|---|---|
+| **Cognitive** (Miller 7±2) | ~7–8 | Beyond ~8 unordered color categories, viewers can't match legend↔mark without effort. |
+| **CVD safety** | 8 | The gold-standard accessible set (Okabe-Ito) deliberately stops at **8**; keeping every pair CVD-separable gets exponentially harder past it. |
+| **B&W (even L\* ladder)** | ~8 | An even lightness ladder needs N distinct L\* rungs. 8 → ~7–8 ΔL\*/step (good); 10 → ~6 (marginal); 12 → ~5 (mud in grayscale). |
+
+All three converge near 8 — so "every palette ships 8" is the *maximum the
+engineering can back*, not arbitrary uniformity. (Our family proves it: 12 of 13
+clear min ΔL\* ≥ 6.6 **and** CVD at 8 colors; at 9–10 those guarantees break.)
+
+Why **5–6 is the recommended working count**: industry consensus (Few, Ware,
+Brewer) puts *reliable* discrimination at ≤6–7, and most real report/scientific
+figures carry **3–6 series**. 5–6 is the legibility + harmony + CVD-headroom
+sweet spot.
+
+**The mechanism (so 8 and 5–6 coexist):**
+1. Ship every palette at **8** — the guaranteed container.
+2. Order each palette so **first-N is the best-separated subset** → dropping the
+   count slider to 6/5/4 auto-yields the optimal subset (no manual re-picking).
+3. Docs **default the recommendation to 5–6**; 8 is the ceiling for when it's
+   genuinely needed.
+4. **Past 8 categories, don't add colors — change the encoding**: grouping,
+   faceting / small multiples, direct labels, or (if ordered) switch to a
+   sequential ramp.
+
+> One-liner: **container 8, everyday 5–6, beyond 8 solve it with structure not color.**
+
+---
+
 ## 2. The three contexts (where criterion #8 is decided)
 
 The same eight criteria, weighted differently:
