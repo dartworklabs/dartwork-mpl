@@ -104,3 +104,53 @@ jobs:
           # is re-triggered. Lets tag-driven OIDC publishing and local
           # publishes coexist safely.
           skip-existing: true
+
+  github_release:
+    name: Create / update GitHub Release
+    needs: publish
+    runs-on: ubuntu-latest
+    # Tag pushes only — workflow_dispatch is a dry run and never publishes.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      # CHANGELOG.md hard-wraps paragraphs at ~72 chars (Keep a Changelog
+      # convention). GitHub Releases render single newlines as soft
+      # breaks, so pasting the raw section makes the release page use
+      # only half the column width. ``scripts/extract_release_notes.py``
+      # cuts the section for this tag's version and reflows each list
+      # item onto a single line so the page flows full-width.
+      - name: Extract + reflow release notes from CHANGELOG.md
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          python3 scripts/extract_release_notes.py CHANGELOG.md "$VERSION" \
+            > release-notes.md
+          echo "::group::release-notes.md preview"
+          head -40 release-notes.md
+          echo "::endgroup::"
+
+      # ``--clobber`` overwrites the body if a release already exists
+      # (manual ``gh release create`` beat the tag run, or the tag is
+      # re-triggered after CHANGELOG edits) — same idempotency story as
+      # PyPI's ``skip-existing``.
+      - name: Create / update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          TITLE="$TAG"
+          if gh release view "$TAG" --json tagName >/dev/null 2>&1; then
+            gh release edit "$TAG" \
+              --notes-file release-notes.md \
+              --title "$TITLE"
+          else
+            gh release create "$TAG" \
+              --title "$TITLE" \
+              --notes-file release-notes.md \
+              --verify-tag
+          fi
