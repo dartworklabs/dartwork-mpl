@@ -16,7 +16,10 @@ Renamed from ``auto_select_colors`` in 0.5 (``#156`` Round 5):
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 
 def make_palette(
@@ -115,3 +118,128 @@ def make_palette(
         colors = new_colors
 
     return colors
+
+
+def _palette_color_names(name: str) -> list[str]:
+    """Return every colour name in palette ``name``, sorted by weight.
+
+    ``name`` may be a fully-qualified base (``"dc.trustworthy"``,
+    ``"oc.blue"``) or a bare dartwork name (``"trustworthy"`` resolves to
+    ``"dc.trustworthy"``).
+    """
+    import re
+
+    import matplotlib.colors as mcolors
+
+    from ..colors._loader import ensure_loaded
+
+    ensure_loaded()
+    base = name if "." in name else f"dc.{name}"
+    pattern = re.compile(rf"^{re.escape(base)}(\d+)$")
+    found: list[tuple[int, str]] = []
+    for cname in mcolors.get_named_colors_mapping():
+        match = pattern.match(cname)
+        if match:
+            found.append((int(match.group(1)), cname))
+    if not found:
+        raise ValueError(
+            f"Palette {base!r} not found or has no numbered shades. "
+            f"See dm.list_palettes()."
+        )
+    found.sort(key=lambda t: t[0])
+    return [cname for _, cname in found]
+
+
+def get_palette(
+    name: str,
+    n: int | None = None,
+    subset: Literal["first", "even", "last"] = "first",
+) -> list[str]:
+    """Return colour names from a discrete palette.
+
+    Parameters
+    ----------
+    name : str
+        Palette base name — ``"trustworthy"`` / ``"dc.trustworthy"`` /
+        ``"oc.blue"``. Bare names resolve under the ``dc.`` namespace.
+    n : int | None
+        Number of colours. ``None`` returns the whole palette (8 for the
+        dartwork categorical set). If ``n`` exceeds the palette size the
+        colours repeat (matching :func:`make_palette`).
+    subset : {"first", "even", "last"}
+        How to pick ``n`` of the palette's colours. ``"first"`` (default)
+        takes the leading ``n`` — the dartwork palettes are ordered so the
+        first ``n`` are the best-separated subset. ``"even"`` spreads the
+        picks across the whole palette; ``"last"`` takes the trailing ``n``.
+
+    Returns
+    -------
+    list[str]
+        Length-``n`` (or full) list of dartwork colour names, usable
+        directly as matplotlib colours or via :func:`set_cycle`.
+
+    Examples
+    --------
+    >>> get_palette("trustworthy")            # all 8
+    >>> get_palette("trustworthy", n=5)       # first 5 (best-separated)
+    >>> get_palette("coolwarm", n=7, subset="even")
+    """
+    base = _palette_color_names(name)
+    if n is None:
+        return base
+    if n <= 0:
+        return []
+    if subset == "first":
+        sel = base[:n]
+    elif subset == "last":
+        sel = base[-n:]
+    elif subset == "even":
+        if n >= len(base):
+            sel = list(base)
+        elif n == 1:
+            sel = [base[0]]
+        else:
+            step = (len(base) - 1) / (n - 1)
+            sel = [base[round(i * step)] for i in range(n)]
+    else:
+        raise ValueError(f"Unknown subset: {subset!r}")
+    if len(sel) < n:  # repeat to fill when n exceeds palette size
+        sel = (sel * (n // len(sel) + 1))[:n]
+    return sel
+
+
+def set_cycle(
+    palette: str | list[str], ax: Axes | None = None, n: int | None = None
+) -> None:
+    """Set the matplotlib colour cycle from a palette name or colour list.
+
+    Parameters
+    ----------
+    palette : str | list[str]
+        A palette base name (``"trustworthy"``, ``"dc.spectrum"``) or an
+        explicit list of colours / colour names.
+    ax : matplotlib.axes.Axes | None
+        If given, set the cycle on that Axes only (``ax.set_prop_cycle``).
+        If ``None`` (default), update the global
+        ``rcParams["axes.prop_cycle"]`` so every subsequent Axes uses it.
+    n : int | None
+        When ``palette`` is a name, how many colours to use (see
+        :func:`get_palette`). Ignored for an explicit list.
+
+    Examples
+    --------
+    >>> set_cycle("spectrum")                 # global, all 8
+    >>> set_cycle("trustworthy", n=5)         # global, first 5
+    >>> set_cycle("focus", ax=ax)             # this Axes only
+    """
+    import matplotlib.pyplot as plt
+    from cycler import cycler
+
+    colors = (
+        get_palette(palette, n=n) if isinstance(palette, str) else list(palette)
+    )
+    cyc = cycler(color=colors)
+    if ax is None:
+        plt.rcParams["axes.prop_cycle"] = cyc
+    else:
+        ax.set_prop_cycle(cyc)

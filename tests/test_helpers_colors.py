@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+import matplotlib
+
+matplotlib.use("Agg")
+
+import matplotlib as mpl
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import pytest
 
-from dartwork_mpl.helpers.colors import make_palette
+from dartwork_mpl.helpers.colors import get_palette, make_palette, set_cycle
 
 
 class TestMakePalette:
@@ -105,3 +112,85 @@ class TestMakePaletteEdgeCases:
         """A zero-series request returns an empty list (no exception)."""
         colors = make_palette(0)
         assert colors == []
+
+
+class TestGetPalette:
+    """``get_palette`` resolves dartwork discrete palettes by name."""
+
+    def test_full_palette_is_eight(self) -> None:
+        cols = get_palette("trustworthy")
+        assert len(cols) == 8
+        assert cols[0] == "dc.trustworthy0"
+        # Every returned name must resolve to a real colour.
+        for c in cols:
+            mcolors.to_rgb(c)
+
+    def test_bare_name_resolves_under_dc(self) -> None:
+        assert get_palette("spectrum") == get_palette("dc.spectrum")
+
+    def test_first_subset(self) -> None:
+        cols = get_palette("trustworthy", n=5)
+        assert cols == [f"dc.trustworthy{i}" for i in range(5)]
+
+    def test_last_subset(self) -> None:
+        cols = get_palette("trustworthy", n=3, subset="last")
+        assert cols == [f"dc.trustworthy{i}" for i in (5, 6, 7)]
+
+    def test_even_subset_spreads_across_palette(self) -> None:
+        cols = get_palette("coolwarm", n=4, subset="even")
+        assert len(cols) == 4
+        # Endpoints are always included; picks are spread, not just the head.
+        assert cols[0] == "dc.coolwarm0"
+        assert cols[-1] == "dc.coolwarm7"
+
+    def test_oversubscribe_repeats(self) -> None:
+        cols = get_palette("muted", n=10)
+        assert len(cols) == 10
+        assert cols[8] == cols[0]
+
+    def test_zero_returns_empty(self) -> None:
+        assert get_palette("muted", n=0) == []
+
+    def test_unknown_palette_raises(self) -> None:
+        with pytest.raises(ValueError):
+            get_palette("definitely_not_a_palette")
+
+    def test_other_namespace(self) -> None:
+        """Works for non-dc namespaces too (e.g. Open Color)."""
+        cols = get_palette("oc.blue", n=3)
+        assert len(cols) == 3
+        assert all(c.startswith("oc.blue") for c in cols)
+
+
+class TestSetCycle:
+    """``set_cycle`` updates the colour cycle globally or per-Axes."""
+
+    def test_global_from_name(self) -> None:
+        with mpl.rc_context():
+            set_cycle("spectrum")
+            cyc = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+            assert cyc[0] == "dc.spectrum0"
+            assert len(cyc) == 8
+
+    def test_global_with_n(self) -> None:
+        with mpl.rc_context():
+            set_cycle("trustworthy", n=5)
+            cyc = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+            assert len(cyc) == 5
+
+    def test_explicit_list(self) -> None:
+        with mpl.rc_context():
+            set_cycle(["dc.focus0", "oc.red5"])
+            cyc = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+            assert cyc == ["dc.focus0", "oc.red5"]
+
+    def test_per_axes_does_not_touch_global(self) -> None:
+        with mpl.rc_context():
+            before = plt.rcParams["axes.prop_cycle"]
+            fig, ax = plt.subplots()
+            try:
+                set_cycle("focus", ax=ax)
+                # Global cycle is unchanged; only the Axes was updated.
+                assert plt.rcParams["axes.prop_cycle"] == before
+            finally:
+                plt.close(fig)
