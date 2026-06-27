@@ -2,11 +2,11 @@
 <!--
   palette_explorer.html — the polished, docs-integrated dartwork palette explorer.
   Single active palette at a time: segmented family picker · color-count slider
-  (2–8, live subset) · B&W + canvas (white/dark) toggles · several chart shapes
-  SIDE BY SIDE (3 or 4 panels); click any panel to cycle its chart type
-  (line/scatter/area/bar/heatmap), so one palette can be compared across whichever
-  shapes you choose · per-swatch hover (hex) · copy (hex list + Python snippet
-  using dm.*). High-resolution curve sampling. Built on the dm-interactive primitives.
+  (2–8, live subset) · B&W + canvas (white/dark) toggles · an EXPLICIT chart-type
+  chip selector with 9 shapes (line/stacked-area/scatter/bubble/bar/lollipop/donut/
+  waffle/heatmap) — click chips to show/hide each, or quick-pick 3 / 6 / 9, so one
+  palette is compared across every chart shape at once · per-swatch hover (hex) ·
+  copy (hex list + Python snippet using dm.*). High-res curves. Built on dm-interactive.
   Palette data is GENERATED (scripts/gen_palettes.py, CIELAB, B&W+CVD verified)
   and injected into PALETTES below. Theme toggle. Serve from docs/_static.
 -->
@@ -50,8 +50,8 @@
       color:var(--dm-text-muted); display:inline-flex; align-items:center; gap:7px; transition:all .14s; }
     .pchip:hover { background:var(--dm-gray-a3); color:var(--dm-gray-12); }
     .pchip.on { background:var(--dm-accent-3); color:var(--dm-accent-11); border-color:var(--dm-accent-7); font-weight:600; }
-    .pchip .dots { display:inline-flex; gap:1.5px; }
-    .pchip .dots i { width:7px; height:7px; border-radius:2px; display:inline-block; }
+    .pchip .dots { display:inline-flex; gap:0; border-radius:3px; overflow:hidden; }
+    .pchip .dots i { width:4.5px; height:11px; display:inline-block; }
 
     /* stage */
     .stage { border:1px solid var(--dm-border-faint); border-radius:var(--dm-radius-5); padding:20px; }
@@ -76,19 +76,35 @@
       padding:3px 7px; border-radius:5px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .12s; z-index:5; }
     .sw:hover .tip { opacity:1; }
 
-    /* plots — several shapes side by side; click a panel to cycle its chart type */
-    .plots-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(228px,1fr)); gap:14px; margin-top:16px; }
+    /* chart-type chip selector (explicit multi-select) */
+    .chartbar { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:16px 0 2px; }
+    .chartbar .lbl { font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+      color:var(--dm-text-muted); margin-right:2px; }
+    .chartbar .qsep { font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+      color:var(--dm-text-muted); margin-left:8px; }
+    /* font-weight stays constant across states so toggling never changes a chip's width */
+    .cchip { appearance:none; background:var(--dm-gray-3); color:var(--dm-gray-12); border:1px solid transparent;
+      border-radius:999px; padding:4px 12px; font:inherit; font-size:11.5px; font-weight:500; cursor:pointer;
+      transition:background .12s,color .12s,border-color .12s; }
+    .cchip:hover { background:var(--dm-gray-a4); }
+    .cchip.on { background:var(--dm-accent-3); color:var(--dm-accent-11); border-color:var(--dm-accent-7); }
+    .cchip.quick { background:transparent; border:1px dashed var(--dm-border); color:var(--dm-text-muted); }
+    .cchip.quick:hover { background:var(--dm-gray-a3); color:var(--dm-gray-12); }
+    .cchip.quick.on { background:var(--dm-accent-3); color:var(--dm-accent-11); border-color:var(--dm-accent-7); border-style:solid; }
+    .qgroup { margin-left:auto; display:inline-flex; align-items:center; gap:6px; }
+    .stage.dark-canvas .cchip { background:rgba(255,255,255,.07); color:#cfd3d9; }
+    .stage.dark-canvas .cchip.on { background:var(--dm-accent-9); color:#fff; border-color:transparent; }
+    .stage.dark-canvas .cchip.quick { background:transparent; }
+    .stage.dark-canvas .cchip.quick.on { background:var(--dm-accent-9); color:#fff; border-color:transparent; }
+
+    /* plots — one panel per selected chart type */
+    .plots-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(228px,1fr)); gap:14px; margin-top:14px; }
     .pcell { border:1px solid var(--dm-border-faint); border-radius:var(--dm-radius-5);
       padding:12px 14px; background:var(--dm-bg-page); }
     .stage.dark-canvas .pcell { background:#1b1e22; border-color:#2a2d31; }
-    .pcell .pl { display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:600;
-      text-transform:uppercase; letter-spacing:.06em; color:var(--dm-text-muted); margin-bottom:10px;
-      cursor:pointer; user-select:none; border:0; background:transparent; padding:0; font-family:inherit; }
-    .pcell .pl:hover { color:var(--dm-accent-11); }
-    .pcell .pl .cyc { font-size:11px; opacity:.42; transition:opacity .12s; }
-    .pcell .pl:hover .cyc { opacity:1; }
+    .pcell .pl { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.06em;
+      color:var(--dm-text-muted); margin-bottom:10px; }
     .stage.dark-canvas .pcell .pl { color:#9aa0a8; }
-    .ctrl.mini { padding:4px 9px; }
     .plots-grid.gs svg, .strip.gs svg, .strip.gs .chip { filter:grayscale(1); }
     svg { display:block; width:100%; height:auto; }
 
@@ -110,23 +126,26 @@
     <div class="bar">
       <span class="t">dartwork — palette explorer</span>
       <button class="tt" id="tt" type="button">◐ theme</button>
-      <p>Pick a palette · drag color-count (subset) · toggle B&amp;W / dark-canvas · set 3–4 panels and <b>click a panel to change its chart shape</b> · hover a swatch for hex · copy as Python. All 8-color, CIELAB-generated, B&amp;W + CVD verified.</p>
+      <p>Pick a palette · drag color-count (subset) · toggle B&amp;W / dark-canvas · <b>9 chart types as chips — click to show/hide each</b>, or quick-pick <i>3 / 6 / 9</i> · hover a swatch for hex · copy as Python. All 8-color, CIELAB-generated, B&amp;W + CVD verified.</p>
     </div>
     <details class="logic" id="logic" open>
       <summary>The system — our own logic</summary>
       <div class="logic-body">
-        <p>dartwork's discrete palettes are <b>one family on a single axis: spectral width</b> (how much of the hue wheel a palette spans), from <b>narrow</b> (harmony) to <b>wide</b> (distinctness). Pick by the <i>shape of your data</i>, not by taste:</p>
+        <p>dartwork's palettes follow two organising ideas: a <b>categorical spine on one axis — spectral width</b> (narrow = harmony → wide = distinctness), plus a few <b>intent families</b> for specific jobs. Pick by the <i>shape and job of your data</i>, not by taste:</p>
         <ul>
-          <li><b>Ordered?</b> → Sequential (single-hue lightness ramp).</li>
+          <li><b>Ordered (rank / amount)?</b> → Sequential, or <b>Neutral</b> if hue carries no meaning.</li>
+          <li><b>Ordered around a midpoint (±, change, correlation)?</b> → <b>Diverging</b>.</li>
+          <li><b>Highlight one series, mute the rest?</b> → <b>Focus</b> (teal or warm accent).</li>
           <li><b>A few related series?</b> → Analogous (one-mood arc).</li>
           <li><b>Two groups?</b> → Duo (warm vs cool).</li>
           <li><b>Everyday 4–8 categories?</b> → Trustworthy Default.</li>
           <li><b>Many unrelated categories?</b> → Spectrum (full wheel).</li>
+          <li><b>A specific tone?</b> → Muted, Earth, or Jewel.</li>
         </ul>
         <p>Every palette obeys the same engineering rules, so they are interchangeable and dependable:</p>
         <ul>
           <li><b>Always 8 colors</b> — need fewer? take a subset (first-N or every-other), built into the ordering.</li>
-          <li><b>Even CIELAB L* ladder</b> — 8 distinct lightnesses ⇒ all 8 survive <b>black-&amp;-white / print</b> (and most colour-blindness, since CVD preserves luminance).</li>
+          <li><b>Even CIELAB L* ladder</b> — 8 distinct lightnesses ⇒ all 8 survive <b>black-&amp;-white / print</b> (and most colour-blindness, since CVD preserves luminance). <i>Diverging is the deliberate exception — its two ends share lightness, so it isn't B&amp;W-separable.</i></li>
           <li><b>CVD-verified</b> — deuteranopia / protanopia / tritanopia simulated (colorspacious), not eyeballed.</li>
           <li><b>Teal <code>#12a594</code> is the house anchor</b>, present across the family.</li>
           <li><b>Generated, not hand-picked</b> — colours come from <code>gen_palettes.py</code> in CIELAB, so they're reproducible and tunable.</li>
@@ -173,12 +192,6 @@
       design:"A ~40° green arc (yellow-green→teal-green) on a staggered even L* ladder 36→90 — one hue family, lightness-separated.",
       application:"Multi-series line / area for environmental or organic topics. Calm, cohesive.",
       bw:"min ΔL* 7.7", cvd:"d7.8 / p6.8 / t8.7" },
-    ocean:       { name:"Ocean Analogous", fam:"Analogous", band:"narrow · blue arc",
-      cols:["#026275","#50b4d6","#2589b0","#a5d9ff","#2f71a1","#96c0f8","#7b93cb","#e5e6ff"],
-      intent:"A few related series in a cool blue register — finance, water, tech, depth themes.",
-      design:"A ~65° blue arc (cyan→blue→soft indigo) on a staggered even L* ladder 38→92. One cool mood, lightness-separated.",
-      application:"Refined multi-series line / area, scatter. Institutional, trustworthy tone.",
-      bw:"min ΔL* 7.5", cvd:"d7.1 / p6.9 / t7.2" },
     // ── DUO — warm vs cool split (medium) ──
     warm_cool:   { name:"Warm / Cool Duo", fam:"Duo", band:"medium · 180° split",
       cols:["#91422f","#b36d44","#ed8987","#ffc18d","#06768f","#389ad1","#32cae0","#d3e4ff"],
@@ -226,10 +239,86 @@
       design:"Fixed Okabe & Ito (2008) palette — NOT regenerated. Tuned for deuter/protan/tritan separation (the strongest in the family).",
       application:"Any figure where CVD accessibility is a hard requirement. Not built for B&W (near-equal lightness) — don't lean on grayscale for this one.",
       bw:"n/a (CVD-optimised, not B&W)", cvd:"d14.8 / p14.0 / t11.0" },
+    // ── INTENT-based families (organised by purpose, not spectral width) ──
+    gray_seq:    { name:"Neutral Sequential", fam:"Neutral", band:"neutral · hue-free L* ramp",
+      cols:["#353535","#4b4b4b","#636363","#7c7c7c","#969696","#b0b0b0","#cccccc","#e8e8e8"],
+      intent:"Ordered AMOUNT with no hue meaning — magnitude, density, rank where colour shouldn't imply a category. The most print- and CVD-bulletproof ramp.",
+      design:"8-step TRUE neutral L* ramp 22→92, chroma 0 (R=G=B, no cast). Pure lightness ⇒ perfect B&W and CVD. The cast-free anchor beside Warm Gray and Cool Gray.",
+      application:"Heat tables, ordered bars/area where hue is noise, backgrounds. Pair with one accent for emphasis.",
+      bw:"min ΔL* 9.7", cvd:"d8.9 / p8.9 / t8.9" },
+    // DIVERGING — two-ended, pale centre (ordered ± data). B&W-exempt by design.
+    coolwarm:    { name:"Cool→Warm Diverging", fam:"Diverging", band:"two-ended · pale centre",
+      cols:["#055f8b","#3b8bba","#81b7db","#bcdcf1","#f5cec9","#dfa19c","#bb6f6e","#943d45"],
+      intent:"Ordered data with a meaningful MIDPOINT (0) — change/delta, correlation, z-scores, above/below average. Blue = negative, red = positive.",
+      design:"Symmetric L* tent (dark ends → pale centre), blue (h≈250) ↔ red (h≈25). Excellent CVD. NOT a categorical set — the order IS the meaning.",
+      application:"Correlation matrices, change heatmaps, anomaly/sentiment scales, Likert. ⚠ B&W not separable (ends share lightness — inherent to diverging).",
+      bw:"n/a (diverging — ends share L)", cvd:"d12.6 / p13.6 / t14.2" },
+    teal_amber_div: { name:"Teal→Amber Diverging", fam:"Diverging", band:"two-ended · pale centre",
+      cols:["#06655c","#209389","#74bdb6","#b4e0db","#ebd3bc","#d0a987","#aa7951","#844c21"],
+      intent:"The diverging intent in the house voice — teal (negative) ↔ amber (positive) through a pale centre.",
+      design:"Symmetric L* tent, teal (h≈186) ↔ amber (h≈66). The blue-yellow axis is CVD-robust.",
+      application:"Brand-forward change/delta heatmaps, ± scales. ⚠ B&W not separable by design.",
+      bw:"n/a (diverging)", cvd:"d13.1 / p8.8 / t13.9" },
+    // TONE — frequently-reached aesthetic families
+    earth:       { name:"Earth / Natural", fam:"Tone", band:"warm · earthy",
+      cols:["#80443a","#cb9375","#94744b","#d6c898","#666a3d","#e5a48e","#a0895f","#d1e3b7"],
+      intent:"Categorical series in a warm, organic register — ESG / sustainability, geography, agriculture, 'premium natural' brands.",
+      design:"Terracotta, ochre, olive, sand, sage, clay (h 35→125, muted chroma ~26-30), staggered even L* ladder 36→88.",
+      application:"Multi-series line/bar/area for environmental or earthy topics. Calm, grounded, magazine-like.",
+      bw:"min ΔL* 7.2", cvd:"d6.1 / p6.3 / t7.5" },
+    jewel:       { name:"Jewel / Premium", fam:"Tone", band:"deep · rich saturation",
+      cols:["#02504f","#25a88a","#0375a0","#b3bdfe","#963c3e","#caa65e","#a26eb0","#42ecfb"],
+      intent:"Rich, deep, saturated variety for premium / luxury editorial — distinct from Spectrum's brightness by going DARKER and deeper.",
+      design:"Emerald, sapphire, indigo, vermilion, topaz, amethyst, deep teal/cyan (high chroma 42), even L* ladder 30→86. Retuned to clear the protanopia collapse.",
+      application:"Up to 8 categories where you want depth + luxury. ⚠ Softest CVD of the set (protan ~4) — for strict accessibility use Accessible or a Duo.",
+      bw:"min ΔL* 7.8", cvd:"d7.6 / p4.2 (softest) / t16.3" },
+    // ── singleton families expanded to 2-3 siblings ──
+    corporate:   { name:"Corporate", fam:"Balanced", band:"cool · formal / professional",
+      cols:["#056058","#4caab5","#487da2","#fab1a7","#446f50","#a4aeda","#7e8c97","#cad9e5"],
+      intent:"The DEFAULT for formal, institutional material — finance, board decks, policy print. Cooler and more restrained than Trustworthy.",
+      design:"Opens on house teal, then steel-blue → slate → muted brick → sage + 2 neutrals, low-moderate chroma, staggered even L* ladder 36→86.",
+      application:"Everyday categorical for serious documents. Conservative, print-safe, never shouts.",
+      bw:"min ΔL* 6.8", cvd:"d8.1 / p9.3 / t10.6" },
+    dusty:       { name:"Dusty", fam:"Muted", band:"deep · vintage muted",
+      cols:["#3d665f","#7a99af","#7b7691","#d0a9a2","#5d715a","#bf9aa6","#98846c","#9ac9cf"],
+      intent:"A DEEPER, more vintage muted — lower lightness than the high-key Muted pastel. For moody editorial, dark-on-cream, retro.",
+      design:"Same 8-hue spread as Muted but a mid L* band 40→78 and low chroma ~16. Calm but with more body than pastel.",
+      application:"Dense editorial, atmospheric dashboards, retro / vintage themes. (B&W softer by design.)",
+      bw:"min ΔL* 5.3 (soft by design)", cvd:"d8.4 / p7.8 / t5.5" },
+    bold:        { name:"Bold", fam:"Spectrum", band:"punchy · curated high-contrast",
+      cols:["#035f5a","#e77a6f","#358645","#c3b5ff","#8f5915","#e290d8","#0892c4","#d8d678"],
+      intent:"MANY categories with maximum punch — a curated, high-contrast set (vs Spectrum's even rainbow). For presentations, posters, dashboards that must pop.",
+      design:"Opens on house teal, then 7 vivid deliberately UNeven hues (high chroma 48), staggered even L* ladder 36→84. Retuned so no two collapse under colour-blindness.",
+      application:"8-category bars / scatter on slides and posters. Confident, energetic, attention-grabbing.",
+      bw:"min ΔL* 6.7", cvd:"d8.1 / p7.7 / t13.3" },
+    warm_gray:   { name:"Warm Gray", fam:"Neutral", band:"neutral · warm taupe ramp",
+      cols:["#3a342e","#514a44","#69625b","#827b74","#9d958e","#b7afa8","#d3cbc3","#efe7df"],
+      intent:"Hue-free ordered ramp with a WARM (taupe / greige) cast — for cream paper, editorial warmth, or warm brand systems.",
+      design:"8-step L* ramp 22→92 at a warm hue (h≈70), chroma ≈ 5. Pure lightness ⇒ perfect B&W + CVD.",
+      application:"Warm-toned heat tables, ordered bars / area, backgrounds on cream stock.",
+      bw:"min ΔL* 9.7", cvd:"d8.9 / p9.0 / t8.9" },
+    cool_gray:   { name:"Cool Gray", fam:"Neutral", band:"neutral · cool slate ramp",
+      cols:["#2d363d","#434d54","#5b656c","#737d85","#8d97a0","#a7b2bb","#c2ced6","#deeaf3"],
+      intent:"Hue-free ordered ramp with a COOL (slate / blue) cast — for tech, clinical, or cool brand systems.",
+      design:"8-step L* ramp 22→92 at a cool hue (h≈250), chroma ≈ 6. Perfect B&W + CVD.",
+      application:"Cool-toned heat tables, ordered encodings, UI backgrounds.",
+      bw:"min ΔL* 9.7", cvd:"d9.0 / p8.9 / t9.0" },
+    focus:       { name:"Focus (teal accent)", fam:"Emphasis", band:"1 teal accent + 7 neutrals",
+      cols:["#065a51","#5c646b","#70787f","#848d93","#99a2a9","#aeb7be","#c4cdd5","#dae4eb"],
+      intent:"Highlight ONE series; everything else recedes to grey. The storytelling staple — 'colour the one thing'.",
+      design:"Slot 0 = house teal (salient), slots 1-7 = graded neutrals on an even L* ladder 34→90. Pair with Focus (warm accent) for the warm-highlight version, or combine the two accent colours to highlight a second series.",
+      application:"Single-series emphasis in line / bar charts, explanatory figures, slide builds.",
+      bw:"min ΔL* 7.8", cvd:"d7.3 / p7.3 / t7.3" },
+    focus_warm:  { name:"Focus (warm accent)", fam:"Emphasis", band:"1 warm accent + 7 neutrals",
+      cols:["#8d302b","#5c646b","#70787f","#848d93","#99a2a9","#aeb7be","#c4cdd5","#dae4eb"],
+      intent:"Highlight one series with a WARM accent (coral) instead of teal — for warmth, alerts, or when teal clashes with content.",
+      design:"Slot 0 = coral (h≈32, salient), slots 1-7 = graded neutrals, even L* ladder 34→90.",
+      application:"Single-series emphasis where a warm highlight reads better (e.g., risk / attention).",
+      bw:"min ΔL* 7.8", cvd:"d7.3 / p7.3 / t7.3" },
   };
-  const ORDER = ["teal_seq","indigo_seq","coral_seq","teal_indigo","forest","ocean","warm_cool","blue_orange","teal_coral","trustworthy","muted","spectrum","accessible"];
+  const ORDER = ["teal_seq","indigo_seq","coral_seq","teal_indigo","forest","warm_cool","blue_orange","teal_coral","trustworthy","corporate","muted","dusty","spectrum","bold","accessible","gray_seq","warm_gray","cool_gray","focus","focus_warm","coolwarm","teal_amber_div","earth","jewel"];
 
-  const state = { pal:"trustworthy", n:8, gs:false, dark:false, panels:["line","scatter","area"] };
+  const state = { pal:"trustworthy", n:8, gs:false, dark:false, charts:["line","scatter","area","bar","donut","stacked"] };
 
   // ── plot renderers (SVG); take a color list ──
   const VB='0 0 100 56';
@@ -253,9 +342,34 @@
       return s+'</svg>'; },
     heatmap(c){ const n=c.length, cw=100/n, rows=5, rh=56/rows; let s=`<svg viewBox="${VB}">`;
       for(let i=0;i<n;i++){ for(let r=0;r<rows;r++){ s+=`<rect x="${(i*cw).toFixed(1)}" y="${(r*rh).toFixed(1)}" width="${cw.toFixed(1)}" height="${rh.toFixed(1)}" fill="${c[i]}" opacity="${(0.4+r*0.14).toFixed(2)}"/>`; } } return s+'</svg>'; },
+    donut(c){ const n=c.length, cx=50, cy=28, R=23, r=11.5;
+      const w=[]; let tot=0; for(let i=0;i<n;i++){ const v=1+0.55*Math.sin(i*1.3+0.6)+0.18*((i*37)%5); w.push(v); tot+=v; }
+      const pt=(a,rad)=>[(cx+rad*Math.cos(a)).toFixed(2),(cy+rad*Math.sin(a)).toFixed(2)];
+      let s=`<svg viewBox="${VB}">`, a0=-Math.PI/2;
+      for(let i=0;i<n;i++){ const a1=a0+2*Math.PI*w[i]/tot, lg=(a1-a0)>Math.PI?1:0;
+        const o0=pt(a0,R), o1=pt(a1,R), i1=pt(a1,r), i0=pt(a0,r);
+        s+=`<path d="M${o0[0]} ${o0[1]} A${R} ${R} 0 ${lg} 1 ${o1[0]} ${o1[1]} L${i1[0]} ${i1[1]} A${r} ${r} 0 ${lg} 0 ${i0[0]} ${i0[1]} Z" fill="${c[i]}"/>`; a0=a1; }
+      return s+'</svg>'; },
+    bubble(c){ const n=c.length; let s=`<svg viewBox="${VB}">`;
+      for(let i=0;i<n;i++){ const cx=12+(i/(n-1||1))*76, cy=16+((i*29)%26);
+        for(let k=0;k<5;k++){ const a=i*1.7+k*2.2, rr=1.6+((i+k*3)%4)*1.4; s+=`<circle cx="${(cx+Math.cos(a)*8).toFixed(1)}" cy="${(cy+Math.sin(a)*8).toFixed(1)}" r="${rr.toFixed(1)}" fill="${c[i]}" opacity="0.68"/>`; } }
+      return s+'</svg>'; },
+    lollipop(c){ const n=c.length, g=100/(n+1); let s=`<svg viewBox="${VB}">`;
+      for(let i=0;i<n;i++){ const x=g*(i+1), y=52-(14+Math.abs(Math.sin(i*1.5+0.4))*32); s+=`<line x1="${x.toFixed(1)}" y1="52" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${c[i]}" stroke-width="1.4"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${c[i]}"/>`; }
+      return s+'</svg>'; },
+    waffle(c){ const n=c.length, cols=12, rows=5, cell=56/rows, cw=100/cols, total=cols*rows; const raw=[]; let t=0; for(let i=0;i<n;i++){ const v=0.6+Math.abs(Math.sin(i*1.7+0.2)); raw.push(v); t+=v; }
+      const cnt=raw.map(v=>Math.max(1,Math.round(total*v/t)));
+      let s=`<svg viewBox="${VB}">`, idx=0;
+      for(let ci=0;ci<n;ci++){ for(let k=0;k<cnt[ci]&&idx<total;k++,idx++){ const r=Math.floor(idx/cols), col=idx%cols; s+=`<rect x="${(col*cw+0.6).toFixed(2)}" y="${(r*cell+0.6).toFixed(2)}" width="${(cw-1.2).toFixed(2)}" height="${(cell-1.2).toFixed(2)}" rx="1" fill="${c[ci]}"/>`; } }
+      return s+'</svg>'; },
   };
-  const PLOTS=["line","scatter","area","bar","heatmap"];
-  const PLABEL={line:"line",scatter:"scatter",area:"stacked area",bar:"bar",heatmap:"heatmap"};
+  const ALLPLOTS=["line","area","scatter","bubble","bar","lollipop","donut","waffle","heatmap"];
+  const PLABEL={line:"line",area:"stacked area",scatter:"scatter",bubble:"bubble",bar:"bar",lollipop:"lollipop",donut:"donut",waffle:"waffle",heatmap:"heatmap"};
+  const SET3=["line","bar","scatter"];
+  const SET6=["line","area","scatter","bar","donut","heatmap"];
+  state.charts = ALLPLOTS.slice();  // all 9 by default
+  const sameSet=(a,b)=>a.length===b.length&&a.every(x=>b.includes(x));
+  const qon=set=>sameSet(state.charts,set)?' on':'';
 
   function active(){ const p=PALETTES[state.pal]; return p.cols.slice(0,state.n); }
 
@@ -263,7 +377,7 @@
     const fams={}; ORDER.forEach(k=>{ const f=PALETTES[k].fam; (fams[f]=fams[f]||[]).push(k); });
     document.getElementById("fams").innerHTML=Object.keys(fams).map(f=>
       '<div class="fam-row"><span class="fam-lbl">'+f+'</span>'+fams[f].map(k=>{
-        const dots=PALETTES[k].cols.filter((_,i)=>i%2===0).map(c=>'<i style="background:'+c+'"></i>').join('');
+        const dots=PALETTES[k].cols.map(c=>'<i style="background:'+c+'"></i>').join('');
         return '<button class="pchip'+(k===state.pal?' on':'')+'" data-pal="'+k+'"><span class="dots">'+dots+'</span>'+PALETTES[k].name+'</button>';
       }).join('')+'</div>').join('');
     document.querySelectorAll('[data-pal]').forEach(b=>b.addEventListener('click',()=>{ state.pal=b.dataset.pal; state.n=8; renderAll(); }));
@@ -273,16 +387,17 @@
   function renderStage(){
     const p=PALETTES[state.pal], cs=active();
     const strip=cs.map(c=>'<div class="sw"><div class="tip">'+c+'</div><div class="chip" style="background:'+c+'"></div><div class="hx">'+c+'</div></div>').join('');
-    const grid=state.panels.map((pt,idx)=>'<div class="pcell"><button class="pl" data-idx="'+idx+'">'+PLABEL[pt]+' <span class="cyc">↻</span></button>'+P[pt](cs)+'</div>').join('');
+    const grid=ALLPLOTS.filter(pt=>state.charts.includes(pt)).map(pt=>'<div class="pcell"><div class="pl">'+PLABEL[pt]+'</div>'+P[pt](cs)+'</div>').join('');
+    const chips=ALLPLOTS.map(pt=>'<button class="cchip'+(state.charts.includes(pt)?' on':'')+'" data-ct="'+pt+'">'+PLABEL[pt]+'</button>').join('');
     const st=document.getElementById("stage"); st.className="stage"+(state.dark?" dark-canvas":"");
     st.innerHTML=
       '<div class="s-head"><h2 class="s-name">'+p.name+'</h2><span class="s-band">'+p.band+'</span>'+
       '<div class="s-ctrls">'+
-      '<span class="countwrap">panels <button class="ctrl mini'+(state.panels.length===3?' on':'')+'" data-pc="3">3</button><button class="ctrl mini'+(state.panels.length===4?' on':'')+'" data-pc="4">4</button></span>'+
       '<span class="countwrap">colors <input type="range" min="2" max="8" value="'+state.n+'" id="cnt"><b id="cntv">'+state.n+'</b></span>'+
       '<button class="ctrl'+(state.gs?' on':'')+'" id="bw">B&amp;W</button>'+
       '<button class="ctrl'+(state.dark?' on':'')+'" id="dk">dark canvas</button></div></div>'+
       '<div class="strip'+(state.gs?' gs':'')+'" id="strip">'+strip+'</div>'+
+      '<div class="chartbar"><span class="lbl">charts</span>'+chips+'<span class="qgroup"><span class="qsep">show</span><button class="cchip quick'+qon(SET3)+'" data-q="3">3</button><button class="cchip quick'+qon(SET6)+'" data-q="6">6</button><button class="cchip quick'+qon(ALLPLOTS)+'" data-q="9">9</button></span></div>'+
       '<div class="plots-grid'+(state.gs?' gs':'')+'" id="plots">'+grid+'</div>'+
       '<div class="meta"><div><b>Intent:</b> '+p.intent+'</div><div><b>Design:</b> '+p.design+'</div>'+
       '<div><b>Application:</b> '+p.application+'</div>'+
@@ -291,8 +406,8 @@
     st.querySelector('#cnt').addEventListener('input',e=>{ state.n=+e.target.value; renderStage(); });
     st.querySelector('#bw').addEventListener('click',()=>{ state.gs=!state.gs; renderStage(); });
     st.querySelector('#dk').addEventListener('click',()=>{ state.dark=!state.dark; renderStage(); });
-    st.querySelectorAll('[data-pc]').forEach(b=>b.addEventListener('click',()=>{ const k=+b.dataset.pc, def=["line","scatter","area","bar"]; if(k>state.panels.length){ while(state.panels.length<k) state.panels.push(def[state.panels.length]); } else state.panels=state.panels.slice(0,k); renderStage(); }));
-    st.querySelectorAll('.pl[data-idx]').forEach(b=>b.addEventListener('click',()=>{ const i=+b.dataset.idx, cur=PLOTS.indexOf(state.panels[i]); state.panels[i]=PLOTS[(cur+1)%PLOTS.length]; renderStage(); }));
+    st.querySelectorAll('[data-ct]').forEach(b=>b.addEventListener('click',()=>{ const pt=b.dataset.ct, i=state.charts.indexOf(pt); if(i>=0){ if(state.charts.length>1) state.charts.splice(i,1); } else state.charts.push(pt); renderStage(); }));
+    st.querySelectorAll('[data-q]').forEach(b=>b.addEventListener('click',()=>{ const q=b.dataset.q; state.charts=(q==='3'?SET3.slice():q==='6'?SET6.slice():ALLPLOTS.slice()); renderStage(); }));
     st.querySelector('#cpy').addEventListener('click',()=>{ navigator.clipboard&&navigator.clipboard.writeText(pySnippet()); toast(); });
   }
   function renderAll(){ renderFamilies(); renderStage(); }

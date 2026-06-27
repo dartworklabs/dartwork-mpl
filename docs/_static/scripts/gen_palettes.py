@@ -105,12 +105,6 @@ PLANS = {
         "Cs": [33] * 8,
         "order": STAG,
     },
-    "ocean": {
-        "Ls": ladder(38, 92),
-        "Hs": [225, 234, 243, 252, 261, 270, 280, 290],
-        "Cs": [32] * 8,
-        "order": STAG,
-    },
     # MEDIUM duos (warm + cool)
     "warm_cool": {
         "Ls": ladder(38, 90),
@@ -165,6 +159,89 @@ PLANS = {
             "#D55E00",
             "#CC79A7",
         ]
+    },
+    # ── INTENT-based additions (organised by purpose, not spectral width) ──
+    # NEUTRAL sequential — hue-free ordered ramp (amount/order, print-bulletproof)
+    "gray_seq": {
+        "Ls": ladder(22, 92),
+        "Hs": [245] * 8,
+        "Cs": [0] * 8,
+        "order": SEQ,
+    },
+    # TONE — warm earth / natural (ESG, geography, organic premium)
+    "earth": {
+        "Ls": ladder(36, 88),
+        "Hs": [35, 55, 75, 95, 110, 45, 85, 125],
+        "Cs": [30, 30, 28, 26, 26, 30, 26, 24],
+        "order": STAG,
+    },
+    # TONE — deep jewel / premium editorial (rich + dark, vs spectrum's brightness)
+    "jewel": {
+        "Ls": ladder(30, 86),
+        "Hs": [195, 172, 250, 288, 26, 84, 320, 208],
+        "Cs": [42] * 8,
+        "order": STAG,
+    },
+    # DIVERGING — symmetric L* tent (ends dark, centre pale). B&W-exempt by design.
+    "coolwarm": {
+        "Ls": [38, 55, 72, 86, 86, 72, 55, 38],
+        "Hs": [258, 254, 250, 246, 32, 28, 24, 20],
+        "Cs": [40, 33, 25, 15, 15, 25, 33, 40],
+        "order": SEQ,
+    },
+    "teal_amber_div": {
+        "Ls": [38, 55, 72, 86, 86, 72, 55, 38],
+        "Hs": [184, 186, 188, 190, 72, 68, 64, 60],
+        "Cs": [40, 33, 25, 15, 15, 25, 33, 40],
+        "order": SEQ,
+    },
+    # ── singleton families expanded to 2-3 siblings (each a distinct job) ──
+    # NEUTRAL — warm + cool greys beside the pure neutral ramp
+    "warm_gray": {
+        "Ls": ladder(22, 92),
+        "Hs": [70] * 8,
+        "Cs": [5] * 8,
+        "order": SEQ,
+    },
+    "cool_gray": {
+        "Ls": ladder(22, 92),
+        "Hs": [250] * 8,
+        "Cs": [6] * 8,
+        "order": SEQ,
+    },
+    # EMPHASIS — single teal-accent + warm-accent (highlight one series, mute rest)
+    "focus": {
+        "Ls": ladder(34, 90),
+        "Hs": [TEAL_H, 250, 250, 250, 250, 250, 250, 250],
+        "Cs": [40, 5, 5, 5, 5, 5, 5, 5],
+        "order": SEQ,
+    },
+    "focus_warm": {
+        "Ls": ladder(34, 90),
+        "Hs": [32, 250, 250, 250, 250, 250, 250, 250],
+        "Cs": [46, 5, 5, 5, 5, 5, 5, 5],
+        "order": SEQ,
+    },
+    # BALANCED — corporate (cool/formal, teal-anchored) beside trustworthy
+    "corporate": {
+        "Ls": ladder(36, 86),
+        "Hs": [185, 210, 255, 32, 150, 285, None, None],
+        "Cs": [30, 28, 26, 30, 26, 24, 4, 4],
+        "order": STAG,
+    },
+    # MUTED — dusty (deeper, vintage) beside the high-key pastel
+    "dusty": {
+        "Ls": ladder(40, 78),
+        "Hs": [TEAL_H, 250, 300, 35, 140, 355, 75, 210],
+        "Cs": [16] * 8,
+        "order": STAG,
+    },
+    # SPECTRUM — bold (curated punchy, uneven hues) beside the full-wheel rainbow
+    "bold": {
+        "Ls": ladder(36, 84),
+        "Hs": [188, 32, 145, 300, 70, 330, 248, 105],
+        "Cs": [48] * 8,
+        "order": STAG,
     },
 }
 
