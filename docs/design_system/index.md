@@ -72,6 +72,7 @@ direct sidebar link.
 :maxdepth: 1
 
 Palettes <../color_system/colors>
+Categorical palettes <../color_system/categorical-palettes>
 Colormaps <../color_system/colormaps>
 Color Space <../color_system/space>
 Fonts <../fonts/index>
