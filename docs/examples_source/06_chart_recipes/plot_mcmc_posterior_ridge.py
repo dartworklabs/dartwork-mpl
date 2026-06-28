@@ -31,7 +31,7 @@ for i in range(n_params):
     traces.append(np.random.normal(mean, std, 3000))
 
 # Colors extracted from an OKLCH perceptual space
-c1 = dm.color("dc.ocean5").to_hex()
+c1 = dm.color("dc.corporate5").to_hex()
 c2 = dm.color("dc.forest3").to_hex()
 ridge_colors = dm.cspace(c1, c2, n=n_params, space="oklch")
 
@@ -89,15 +89,15 @@ for _i, (ax, trace, color, label) in enumerate(
         va="center",
         fontsize=dm.fs(0.5),
         weight="bold",
-        color="dc.nordic4",
+        color="dc.muted4",
     )
     ax.patch.set_alpha(0)  # Transparent background
 
-    ax.axhline(0, color="dc.nordic1", linewidth=0.5, zorder=3)
+    ax.axhline(0, color="dc.muted1", linewidth=0.5, zorder=3)
 
 # Shared x-axis on the bottom
 axes[-1].spines["bottom"].set_visible(True)
-axes[-1].spines["bottom"].set_color("dc.nordic2")
+axes[-1].spines["bottom"].set_color("dc.muted2")
 axes[-1].set_xlabel(
     "Effect Value (Standardized)", fontsize=dm.fs(0), labelpad=10
 )

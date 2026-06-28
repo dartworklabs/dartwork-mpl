@@ -30,7 +30,7 @@ totals = [
     for q in range(len(categories))
 ]
 
-gradient = dm.cspace("dc.ocean5", "dc.ocean2", n=len(component_names))
+gradient = dm.cspace("dc.corporate5", "dc.corporate2", n=len(component_names))
 colors = [c.to_hex() for c in gradient]
 
 fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))

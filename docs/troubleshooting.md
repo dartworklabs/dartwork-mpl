@@ -187,7 +187,7 @@ the full surface.
 
 ## Colors
 
-### Named color not recognized: `'dc.ocean2' is not a valid color`
+### Named color not recognized: `'dc.corporate2' is not a valid color`
 
 Named colors are registered when dartwork-mpl is imported. Make sure you import before using colors:
 
@@ -196,7 +196,7 @@ import dartwork_mpl as dm  # This registers all named colors
 import matplotlib.pyplot as plt
 
 # Now named colors work
-ax.plot(x, y, color="dc.ocean2")
+ax.plot(x, y, color="dc.corporate2")
 ```
 
 ### Colors look different in saved files vs notebook

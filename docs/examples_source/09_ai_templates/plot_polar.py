@@ -38,19 +38,19 @@ fig, ax = plt.subplots(
 ax.plot(
     theta_closed,
     a_closed,
-    color="dc.ocean3",
+    color="dc.corporate3",
     linewidth=dm.lw(0),
     label="Plan A",
 )
-ax.fill(theta_closed, a_closed, color="dc.ocean1", alpha=0.3)
+ax.fill(theta_closed, a_closed, color="dc.corporate1", alpha=0.3)
 ax.plot(
     theta_closed,
     b_closed,
-    color="dc.vivid3",
+    color="dc.spectrum3",
     linewidth=dm.lw(0),
     label="Plan B",
 )
-ax.fill(theta_closed, b_closed, color="dc.vivid1", alpha=0.3)
+ax.fill(theta_closed, b_closed, color="dc.spectrum1", alpha=0.3)
 ax.set_xticks(theta)
 ax.set_xticklabels(categories)
 ax.set_ylim(0, 5)

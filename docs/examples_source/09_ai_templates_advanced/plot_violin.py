@@ -40,7 +40,7 @@ medians = [float(np.median(g)) for g in data]
 p25s = [float(np.percentile(g, 25)) for g in data]
 p75s = [float(np.percentile(g, 75)) for g in data]
 
-gradient = dm.cspace("dc.ocean5", "dc.ocean1", n=len(labels))
+gradient = dm.cspace("dc.corporate5", "dc.corporate1", n=len(labels))
 colors = [c.to_hex() for c in gradient]
 
 fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))

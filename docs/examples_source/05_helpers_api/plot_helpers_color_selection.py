@@ -23,7 +23,7 @@ def _minimal(ax: plt.Axes) -> None:
         True,
         axis="y",
         alpha=0.2,
-        color="dc.nordic1",
+        color="dc.muted1",
         linestyle="--",
         linewidth=0.5,
     )
