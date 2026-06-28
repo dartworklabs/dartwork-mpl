@@ -20,3 +20,9 @@ def apply_svg_determinism() -> None:
     os.environ.setdefault("SOURCE_DATE_EPOCH", SOURCE_DATE_EPOCH)
     matplotlib.rcParams["svg.hashsalt"] = HASHSALT
     matplotlib.rcParamsDefault["svg.hashsalt"] = HASHSALT
+
+
+def reset_svg_render_state() -> None:
+    """Reset matplotlib style state without losing deterministic SVG IDs."""
+    matplotlib.rcdefaults()
+    apply_svg_determinism()

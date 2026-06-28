@@ -20,7 +20,7 @@ matplotlib.use("Agg")
 sys.path.insert(
     0, str(Path(__file__).resolve().parents[1] / "_static" / "scripts")
 )
-from _svg_determinism import apply_svg_determinism
+from _svg_determinism import apply_svg_determinism, reset_svg_render_state
 
 apply_svg_determinism()
 
@@ -32,6 +32,11 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 import dartwork_mpl as dm  # noqa: E402
+
+
+def _reset_asset_state() -> None:
+    plt.close("all")
+    reset_svg_render_state()
 
 
 def _prepare_images_dir(base_dir: Path | None = None) -> Path:
@@ -667,6 +672,7 @@ def build_usage_guide_assets(base_dir: Path | None = None) -> list[Path]:
 
     paths: list[Path] = []
     for name, func in generators:
+        _reset_asset_state()
         try:
             p = func(images_dir)
             paths.append(p)
@@ -676,6 +682,7 @@ def build_usage_guide_assets(base_dir: Path | None = None) -> list[Path]:
 
     # ── Preset comparison widget (separate generator) ──
     try:
+        _reset_asset_state()
         try:
             from usage_guide.generate_preset_compare import (
                 build_preset_compare_html,
@@ -688,6 +695,8 @@ def build_usage_guide_assets(base_dir: Path | None = None) -> list[Path]:
         print(f"  ✓ preset_compare → {p.name}")
     except Exception as e:
         print(f"  ✗ preset_compare FAILED: {e}")
+    finally:
+        _reset_asset_state()
 
     print(f"Done. {len(paths)}/{len(generators) + 1} assets generated.")
     return paths
