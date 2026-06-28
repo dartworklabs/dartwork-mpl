@@ -35,7 +35,7 @@ volume = (
 ).astype(int)
 target = 115.0
 
-price_color = dm.color("dc.ocean5").to_hex()
+price_color = dm.color("dc.corporate5").to_hex()
 vol_color = dm.color("oc.gray5").to_hex()
 
 fig, ax_price = plt.subplots(figsize=dm.figsize("15cm", "standard"))
@@ -65,7 +65,7 @@ ax_price.patch.set_visible(False)  # transparent so volume bars show
 
 # Target axhline.
 ax_price.axhline(
-    target, color="dc.sunset5", linewidth=0.5, linestyle="--", zorder=2
+    target, color="dc.earth5", linewidth=0.5, linestyle="--", zorder=2
 )
 ax_price.text(
     n - 1,
@@ -74,7 +74,7 @@ ax_price.text(
     ha="right",
     va="bottom",
     fontsize=dm.fs(-1),
-    color="dc.sunset5",
+    color="dc.earth5",
     fontstyle="italic",
 )
 

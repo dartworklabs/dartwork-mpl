@@ -67,7 +67,7 @@ for d, total in zip(deltas, is_total, strict=False):
             running += d
 
 pos_color = dm.color("dc.forest5").to_hex()
-neg_color = dm.color("dc.sunset5").to_hex()
+neg_color = dm.color("dc.earth5").to_hex()
 tot_color = dm.color("oc.gray6").to_hex()
 colors = []
 for d, total in zip(deltas, is_total, strict=False):

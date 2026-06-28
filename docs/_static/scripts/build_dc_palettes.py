@@ -83,21 +83,6 @@ ORDER = [
 ]
 
 
-# DEPRECATED legacy aliases — the old ad-hoc dc set, kept (original colours) so
-# existing code / docs examples that hardcode dc.vivid2, dc.ocean2, etc. keep
-# resolving. Superseded in role by the 24 curated palettes; not featured/default.
-# "Forest" is intentionally omitted — the new curated `forest` owns dc.forest.
-LEGACY = {
-    "Vivid": ["F59E0B", "06B6D4", "16A34A", "DC2626", "9333EA", "2563EB"],
-    "Sunset": ["FFC857", "F28C28", "E63946", "457B9D", "6B4D57", "264653"],
-    "Ocean": ["62B6CB", "1B98E0", "00838F", "4A6FA5", "0B3D91", "2E4057"],
-    "Pop": ["FFCA3A", "8AC926", "FF924C", "FF595E", "1982C4", "6A4C93"],
-    "Cyber": ["4CC9F0", "00B4D8", "F72585", "4361EE", "7209B7", "3A0CA3"],
-    "Autumn": ["EEC643", "DA7B5C", "A77B5C", "BC4749", "386641", "6A4C3C"],
-    "Nordic": ["B2BEC3", "00B894", "0984E3", "D63031", "636E72", "2D3436"],
-}
-
-
 def _rows(colors: list[str]) -> list[list[object]]:
     return [[i, colors[i].lstrip("#").upper()] for i in range(len(colors))]
 
@@ -113,18 +98,12 @@ def main() -> None:
     out[""] = _rows(gen["trustworthy"]["colors"])
     for key in ORDER:
         out[NAME[key]] = _rows(gen[key]["colors"])
-    # deprecated legacy aliases (back-compat only)
-    for name, hexes in LEGACY.items():
-        out[name] = [[i, h] for i, h in enumerate(hexes)]
 
     PKG_JSON.write_text(
         json.dumps(out, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
     print(f"wrote {PKG_JSON}")
-    print(
-        f"  palettes: {len(NAME)} curated + {len(LEGACY)} legacy"
-        f" + 1 default (dc.0-7 = trustworthy)"
-    )
+    print(f"  palettes: {len(NAME)} curated + 1 default (dc.0-7 = trustworthy)")
     print(f"  dc names: {', '.join(sorted(v.lower() for v in NAME.values()))}")
 
 

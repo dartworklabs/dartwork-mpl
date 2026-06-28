@@ -86,7 +86,7 @@ AI reads **dartwork-mpl guide** via MCP:
 
 - Knows to use `dm.style.use('scientific')`
 - Knows to use `dm.simple_layout()`, not `tight_layout`
-- Knows color syntax: `'dc.vivid2'`
+- Knows color syntax: `'dc.spectrum2'`
 - Knows to save with `dm.save_formats()`
   :::
 

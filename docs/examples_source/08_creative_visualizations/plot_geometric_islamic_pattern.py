@@ -4,7 +4,7 @@ Islamic Geometric Pattern
 
 A tessellation of 8-pointed stars on a half-offset grid, with each star
 coloured by its distance from the centre. The radial gradient comes
-from ``dm.cspace("dc.ocean5", "dc.sunset2", n=100, space="oklch")``,
+from ``dm.cspace("dc.corporate5", "dc.earth2", n=100, space="oklch")``,
 giving the pattern its dusk-to-dawn feel.
 
 White connectors link adjacent stars, and a yellow inner frame nods to
@@ -58,7 +58,7 @@ centers = [
 ]
 
 max_dist = np.sqrt(2 * grid_size**2) * 2
-colors_islamic = dm.cspace("dc.ocean5", "dc.sunset2", n=100, space="oklch")
+colors_islamic = dm.cspace("dc.corporate5", "dc.earth2", n=100, space="oklch")
 
 for center in centers:
     dist = np.sqrt(center[0] ** 2 + center[1] ** 2)
@@ -103,12 +103,7 @@ ax.add_patch(
 )
 ax.add_patch(
     Rectangle(
-        (-8, -8),
-        16,
-        16,
-        fill=False,
-        edgecolor="dc.sunset2",
-        linewidth=dm.lw(-1),
+        (-8, -8), 16, 16, fill=False, edgecolor="dc.earth2", linewidth=dm.lw(-1)
     )
 )
 
@@ -117,7 +112,7 @@ ax.set_ylim(-9, 9)
 ax.set_aspect("equal")
 for s in ax.spines.values():
     s.set_visible(False)
-ax.set_facecolor("dc.ocean5")
+ax.set_facecolor("dc.corporate5")
 
 ax.text(
     0,

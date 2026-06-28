@@ -32,7 +32,7 @@ for i, user in enumerate(users):
         fontproperties=mdi,
         fontsize=dm.fs(4),
         ha="center",
-        color="dc.ocean2",
+        color="dc.corporate2",
     )
 
 ax.set_title("Icon Embedded Vector Graphics")

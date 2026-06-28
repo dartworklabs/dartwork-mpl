@@ -43,7 +43,7 @@ low = np.array([r[1] for r in data])
 high = np.array([r[2] for r in data])
 
 pos_color = dm.color("dc.forest5").to_hex()
-neg_color = dm.color("dc.sunset5").to_hex()
+neg_color = dm.color("dc.earth5").to_hex()
 
 fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))
 ys = np.arange(len(variables))

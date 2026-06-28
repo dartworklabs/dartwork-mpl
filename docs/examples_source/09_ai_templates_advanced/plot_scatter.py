@@ -52,7 +52,7 @@ ax.scatter(
     price[mask],
     demand[mask],
     s=18,
-    color="dc.ocean3",
+    color="dc.corporate3",
     edgecolor="white",
     linewidth=0.3,
     alpha=0.85,
@@ -64,7 +64,7 @@ ax.scatter(
     price[outlier_idx],
     demand[outlier_idx],
     s=70,
-    color="dc.sunset5",
+    color="dc.earth5",
     edgecolor="white",
     linewidth=0.5,
     marker="D",
@@ -74,7 +74,11 @@ ax.scatter(
 
 # Regression line — drawn on top of the cloud, under the outlier.
 ax.plot(
-    np.sort(price), fit_line, color="dc.ocean5", linewidth=dm.lw(0), zorder=4
+    np.sort(price),
+    fit_line,
+    color="dc.corporate5",
+    linewidth=dm.lw(0),
+    zorder=4,
 )
 
 # R-squared annotation in the upper-left, inside the axes.
@@ -101,8 +105,8 @@ ax.annotate(
     xy=(price[outlier_idx], demand[outlier_idx]),
     xytext=(price[outlier_idx] + 5, demand[outlier_idx] + 25),
     fontsize=dm.fs(-1),
-    color="dc.sunset5",
-    arrowprops={"arrowstyle": "->", "color": "dc.sunset5", "lw": 0.5},
+    color="dc.earth5",
+    arrowprops={"arrowstyle": "->", "color": "dc.earth5", "lw": 0.5},
 )
 
 dm.format_axis_currency(ax, axis="x", symbol="$", decimals=0)
