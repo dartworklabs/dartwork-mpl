@@ -33,14 +33,16 @@ breach_rate = (samples > sla_threshold).mean() * 100
 
 fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))
 
-ax.hist(samples, bins=50, color="dc.ocean3", edgecolor="white", linewidth=0.3)
+ax.hist(
+    samples, bins=50, color="dc.corporate3", edgecolor="white", linewidth=0.3
+)
 
 # IQR band — the middle 50% as quiet context.
 ax.axvspan(
     p25,
     p75,
     alpha=0.10,
-    color="dc.ocean5",
+    color="dc.corporate5",
     zorder=0,
     label=f"IQR ({p25:.0f}-{p75:.0f} ms)",
 )
@@ -48,14 +50,14 @@ ax.axvspan(
 # Mean + median verticals — distinct line styles.
 ax.axvline(
     mean,
-    color="dc.ocean5",
+    color="dc.corporate5",
     linewidth=dm.lw(0),
     linestyle="-",
     label=f"Mean = {mean:.0f} ms",
 )
 ax.axvline(
     median,
-    color="dc.ocean5",
+    color="dc.corporate5",
     linewidth=dm.lw(0),
     linestyle=":",
     label=f"Median = {median:.0f} ms",
@@ -64,7 +66,7 @@ ax.axvline(
 # SLA threshold — the headline.
 ax.axvline(
     sla_threshold,
-    color="dc.sunset5",
+    color="dc.earth5",
     linewidth=0.5,
     linestyle="--",
     label=f"SLA = {sla_threshold:.0f} ms",
@@ -74,7 +76,7 @@ ax.text(
     ax.get_ylim()[1] * 0.9 if False else 320,
     f"{breach_rate:.1f}% breach SLA",
     fontsize=dm.fs(-1),
-    color="dc.sunset5",
+    color="dc.earth5",
     fontstyle="italic",
 )
 

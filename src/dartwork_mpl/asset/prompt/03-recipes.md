@@ -192,7 +192,7 @@ presets = ["scientific", "report", "presentation", "minimal"]
 fig, axes = plt.subplots(2, 2, figsize=dm.figsize("16cm", "standard"))
 for ax, preset in zip(axes.flat, presets):
     with dm.style.context(preset):       # scoped — does not leak
-        ax.plot(x, y, color="dc.ocean2", linewidth=dm.lw(0))
+        ax.plot(x, y, color="dc.corporate2", linewidth=dm.lw(0))
         ax.set_title(f"'{preset}'",
                      fontsize=dm.fs(1), fontweight=dm.fw(1))
 dm.simple_layout(fig)

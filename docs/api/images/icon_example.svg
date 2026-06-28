@@ -35,7 +35,7 @@ L 432.39685 177.202959
 L 432.39685 22.274219 
 L 7.2 22.274219 
 z
-" style="fill: #ffffff"/>
+" style="fill: #1e1e1e"/>
    </g>
    <g id="matplotlib.axis_1"/>
    <g id="matplotlib.axis_2"/>
@@ -809,7 +809,7 @@ z
    </g>
    <g id="text_11">
     <!-- Icon Font: Material Design Icons (MDI) -->
-    <g transform="translate(120.477956 16.274219) scale(0.115 -0.115)">
+    <g style="fill: #e0e0e0" transform="translate(120.477956 16.274219) scale(0.115 -0.115)">
      <defs>
       <path id="Roboto-Bold-49" d="M 1403 0 
 L 466 0 

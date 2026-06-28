@@ -19,7 +19,7 @@ directly.
 ax.grid(
     True,
     which="major",
-    color="dc.nordic1",
+    color="dc.muted1",
     alpha=0.3,
     linestyle="-",
     linewidth=0.5,
@@ -42,7 +42,7 @@ ax.spines["right"].set_visible(False)
 ax.grid(
     True,
     axis="y",
-    color="dc.nordic1",
+    color="dc.muted1",
     alpha=0.2,
     linestyle="--",
     linewidth=0.5,
@@ -51,7 +51,7 @@ ax.set_axisbelow(True)
 
 # Soft gray bottom + left spines
 for s in ("bottom", "left"):
-    ax.spines[s].set_color("dc.nordic3")
+    ax.spines[s].set_color("dc.muted3")
     ax.spines[s].set_linewidth(0.5)
 ```
 
@@ -63,7 +63,7 @@ recommended weight + color (typical for framed scientific figures).
 ```python
 for s in ax.spines.values():
     if s.get_visible():
-        s.set_color("dc.nordic3")
+        s.set_color("dc.muted3")
         s.set_linewidth(0.5)
 ```
 
@@ -72,7 +72,7 @@ iterate over a name list instead:
 
 ```python
 for s in ("bottom", "left"):
-    ax.spines[s].set_color("dc.ocean2")
+    ax.spines[s].set_color("dc.corporate2")
     ax.spines[s].set_linewidth(1.0)
 ```
 

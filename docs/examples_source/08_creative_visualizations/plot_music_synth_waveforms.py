@@ -35,12 +35,12 @@ waves = [
 ]
 
 color_schemes = [
-    dm.cspace("dc.cyber5", "dc.vivid1", n=len(t)),
-    dm.cspace("dc.ocean5", "dc.forest1", n=len(t)),
-    dm.cspace("dc.sunset5", "dc.sunset1", n=len(t)),
+    dm.cspace("dc.bold5", "dc.spectrum1", n=len(t)),
+    dm.cspace("dc.corporate5", "dc.forest1", n=len(t)),
+    dm.cspace("dc.earth5", "dc.earth1", n=len(t)),
 ]
-halo_colors = ["dc.cyber5", "dc.ocean5", "dc.sunset5"]
-line_colors = ["dc.cyber5", "dc.ocean5", "dc.sunset5"]
+halo_colors = ["dc.bold5", "dc.corporate5", "dc.earth5"]
+line_colors = ["dc.bold5", "dc.corporate5", "dc.earth5"]
 
 for ax, (name, wave), colors, halo, line in zip(
     axes, waves, color_schemes, halo_colors, line_colors, strict=False
@@ -76,7 +76,7 @@ for ax, (name, wave), colors, halo, line in zip(
     ax.set_yticks([])
 
     for y in np.linspace(-1.5, 1.5, 7):
-        ax.axhline(y, color="dc.nordic2", lw=dm.lw(-1), alpha=0.5)
+        ax.axhline(y, color="dc.muted2", lw=dm.lw(-1), alpha=0.5)
 
 fig.suptitle(
     "Synthesizer Waveform Display", fontsize=dm.fs(4), weight="bold", y=0.98

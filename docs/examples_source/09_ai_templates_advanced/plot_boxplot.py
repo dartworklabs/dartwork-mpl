@@ -39,7 +39,7 @@ medians = [float(np.median(g)) for g in data]
 market_baseline = 0.45  # synthetic weekly market return
 
 # Gradient: deepest for the rightmost (highest median) — sequential.
-gradient = dm.cspace("dc.ocean5", "dc.ocean1", n=len(labels))
+gradient = dm.cspace("dc.corporate5", "dc.corporate1", n=len(labels))
 colors = [c.to_hex() for c in gradient]
 
 fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))
@@ -73,14 +73,14 @@ for i, (color, vals) in enumerate(zip(colors, data, strict=False)):
 
 # Market baseline.
 ax.axhline(
-    market_baseline, color="dc.sunset4", linewidth=0.5, linestyle="--", zorder=2
+    market_baseline, color="dc.earth4", linewidth=0.5, linestyle="--", zorder=2
 )
 ax.text(
     len(labels) + 0.3,
     market_baseline,
     f"Market baseline = {market_baseline:.2f}%",
     fontsize=dm.fs(-1),
-    color="dc.sunset5",
+    color="dc.earth5",
     ha="right",
     va="bottom",
     fontstyle="italic",
