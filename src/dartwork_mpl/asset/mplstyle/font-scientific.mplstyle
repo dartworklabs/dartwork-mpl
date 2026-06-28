@@ -15,3 +15,6 @@ figure.titlesize:   8.5    # size of the figure title
 figure.titleweight: 400    # weight of the figure title
 figure.labelsize:   7.5     # size of the figure label
 figure.labelweight: 300    # weight of the figure label
+
+# categorical cycle — Okabe-Ito CVD gold standard (journal-grade colour-blind safety)
+axes.prop_cycle: cycler('color', ['dc.accessible0', 'dc.accessible1', 'dc.accessible2', 'dc.accessible3', 'dc.accessible4', 'dc.accessible5'])

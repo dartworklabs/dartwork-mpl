@@ -14,3 +14,6 @@ legend.fontsize:      5.5
 figure.titleweight: 400
 figure.labelsize:   7.5
 figure.labelweight: 300
+
+# categorical cycle — Muted (soft, restrained editorial for minimal/Tufte)
+axes.prop_cycle: cycler('color', ['dc.muted0', 'dc.muted1', 'dc.muted2', 'dc.muted3', 'dc.muted4', 'dc.muted5'])
