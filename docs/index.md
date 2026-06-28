@@ -2,18 +2,13 @@
 
 ```{raw} html
 <div class="dm-landing-hero">
-  <p class="dm-landing-tagline">matplotlib, but beautiful.</p>
+  <p class="dm-landing-tagline">matplotlib, but <span class="dm-tl-key">beautiful</span>.<br />Built for <span class="dm-tl-key">AI&nbsp;agents</span>.</p>
   <p class="dm-landing-subtitle">
-    Publication-quality plots with zero learning curve —
-    <strong>built for AI coding agents</strong>.
+    Publication-quality plots with zero learning curve.
   </p>
 
   <div class="dm-landing-cta">
-    <div class="dm-landing-install">
-      <code>uv add dartwork-mpl</code>
-      <button class="dm-landing-copy-btn" onclick="navigator.clipboard.writeText('uv add dartwork-mpl').then(()=>{this.textContent='✓';setTimeout(()=>{this.textContent='⎘'},1500)})">⎘</button>
-    </div>
-    <a href="usage_guide/quickstart.html" class="dm-landing-btn dm-landing-btn-secondary">Get Started →</a>
+    <a href="usage_guide/quickstart.html" class="dm-landing-btn dm-landing-btn-primary">Get Started →</a>
     <a href="ai/index.html" class="dm-landing-btn dm-landing-btn-secondary">AI / Agents →</a>
   </div>
 </div>

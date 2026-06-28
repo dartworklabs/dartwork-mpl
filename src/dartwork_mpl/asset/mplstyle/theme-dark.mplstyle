@@ -20,3 +20,8 @@ legend.facecolor:   "#1e1e1e"
 legend.labelcolor:  "#cccccc"
 
 savefig.facecolor:  "#1e1e1e"
+
+# categorical cycle — Spectrum bright-first (legible on dark background:
+# slot0 house-teal sits at L*~40 and sinks into #1e1e1e, so reorder by
+# descending L* — 7,3,5,1,6,2 — keeping spectrum's identity, brighter first)
+axes.prop_cycle: cycler('color', ['dc.spectrum7', 'dc.spectrum3', 'dc.spectrum5', 'dc.spectrum1', 'dc.spectrum6', 'dc.spectrum2'])

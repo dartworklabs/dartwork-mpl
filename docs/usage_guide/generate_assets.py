@@ -17,6 +17,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT / "src"
@@ -102,12 +103,11 @@ def _make_challenging_figure(use_simple_layout: bool = True) -> plt.Figure:
     np.random.seed(42)
     dm.style.use("scientific")
 
-    # 17cm × 11cm so the SVG's natural width (~643 px at 96 dpi) lands
-    # right inside the Shibuya body column. Browsers no longer scale
-    # it up, which removes the font/line stretch the user reported.
-    # 1.55:1 aspect is more square than the original 1.89:1 — leaves
-    # more vertical room for the long ylabel and the colorbar.
-    fig = plt.figure(figsize=dm.figsize("17cm", "11cm"), dpi=300)
+    # 17cm × 8.5cm: width fills the Shibuya body column; the shorter
+    # height keeps the *square* heatmap (aspect="equal") from floating in
+    # a tall panel — the right panel is now close to the heatmap's own
+    # square footprint, so the two panels read as a balanced pair.
+    fig = plt.figure(figsize=dm.figsize("17cm", "8.5cm"), dpi=300)
     fig.patch.set_facecolor("#f6f5f1")
     fig.patch.set_edgecolor("#c8c6c0")
     fig.patch.set_linewidth(1.0)
@@ -124,8 +124,11 @@ def _make_challenging_figure(use_simple_layout: bool = True) -> plt.Figure:
 
     # Right: heatmap with colorbar
     data = np.random.randn(8, 8).cumsum(axis=0)
-    im = ax2.imshow(data, cmap="dc.deep_sea", aspect="auto")
-    cb = plt.colorbar(im, ax=ax2, shrink=0.85, pad=0.03)
+    im = ax2.imshow(data, cmap="dc.deep_sea", aspect="equal")
+    # Pin the colorbar to the heatmap so its bar length matches the
+    # image's spine exactly (no taller/shorter floating bar).
+    cax = make_axes_locatable(ax2).append_axes("right", size="4%", pad=0.12)
+    cb = fig.colorbar(im, cax=cax)
     cb.set_label("Δ Temperature [K]", fontsize=dm.fs(0))
     cb.outline.set_visible(False)
     ax2.set_xlabel("Sensor index", fontsize=dm.fs(0))
@@ -486,34 +489,6 @@ def _save_arrow_axis_example(images_dir: Path) -> Path:
 # ── colors.md ──────────────────────────────────────────────────────────
 
 
-def _save_colors_colormap(images_dir: Path) -> Path:
-    """Colors 'Colormaps': dm.Crest imshow + colorbar."""
-    np.random.seed(42)
-    dm.style.use("presentation")
-
-    fig = plt.figure(figsize=dm.figsize("15cm", "10cm"), dpi=300)
-    gs = fig.add_gridspec(1, 1)
-    ax = fig.add_subplot(gs[0, 0])
-
-    data = np.random.randn(50, 50).cumsum(axis=0)
-    cmap = plt.colormaps["dc.deep_sea"]
-    im = ax.imshow(data, cmap=cmap, vmin=-8, vmax=8)
-    cb = plt.colorbar(im, ax=ax, extend="both", shrink=0.9, pad=0.02)
-    cb.set_label("normalized signal", fontsize=dm.fs(0))
-    cb.outline.set_visible(False)
-    ax.set_title(
-        f"{cmap.name}  ({dm.classify_colormap(cmap)})",
-        fontsize=dm.fs(1),
-        fontweight="bold",
-    )
-    dm.simple_layout(fig, gs=gs)
-
-    path = images_dir / "colors_colormap.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
-    plt.close(fig)
-    return path
-
-
 def _save_validation_example(images_dir: Path) -> Path:
     """Create a 'bad' figure and draw validation overlay.
 
@@ -674,7 +649,6 @@ def build_usage_guide_assets(base_dir: Path | None = None) -> list[Path]:
         ("set_decimal_dm", _save_set_decimal_dm),
         ("arrow_axis_example", _save_arrow_axis_example),
         ("validation_example", _save_validation_example),
-        ("colors_colormap", _save_colors_colormap),
         ("save_scientific", _save_scientific_chart),
         ("save_diverging_bar", _save_diverging_bar),
         # ("save_diagnostics", _save_diagnostics_preview),  # removed in #171 docs UX overhaul

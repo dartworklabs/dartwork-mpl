@@ -71,49 +71,6 @@ def _save_layout_example(images_dir: Path) -> Path:
 # ── color.rst ──────────────────────────────────────────────────────────
 
 
-def _save_color_example(images_dir: Path) -> Path:
-    """API color: mix_colors, pseudo_alpha, cspace, Color class."""
-    np.random.seed(42)
-    dm.style.use("presentation")
-
-    fig = plt.figure(figsize=dm.figsize("15cm", "12cm"), dpi=300)
-    gs = fig.add_gridspec(
-        2, 1, hspace=0.4, left=0.08, right=0.98, top=0.92, bottom=0.08
-    )
-
-    # Top: named + mix + pseudo_alpha
-    ax1 = fig.add_subplot(gs[0])
-    x = np.linspace(0, 2 * np.pi, 100)
-    ax1.plot(x, np.sin(x), color="dc.ocean2", lw=1.5, label="dc.ocean2")
-    lighter = dm.mix_colors("dc.ocean2", "white", alpha=0.35)
-    ax1.fill_between(x, np.sin(x), alpha=0.9, color=lighter, label="mix_colors")
-    muted = dm.pseudo_alpha("dc.ocean3", alpha=0.6)
-    ax1.plot(x, np.cos(x), color=muted, lw=1.5, label="pseudo_alpha")
-    ax1.legend(fontsize=dm.fs(-1), ncol=3, frameon=False)
-    ax1.set_title("Color Utilities", fontsize=dm.fs(1))
-
-    # Bottom: cspace interpolation bars
-    ax2 = fig.add_subplot(gs[1])
-    palette = dm.cspace("#FF6B6B", "#4ECDC4", n=8, space="oklch")
-    for i, c in enumerate(palette):
-        ax2.bar(i, 1, color=c.to_hex(), edgecolor="white", lw=0.5)
-    ax2.set_xlim(-0.6, 7.6)
-    ax2.set_ylim(0, 1.05)
-    ax2.set_yticks([])
-    ax2.set_xticks(range(8))
-    ax2.set_xticklabels([c.to_hex() for c in palette], fontsize=dm.fs(-2))
-    ax2.set_title("cspace() — OKLCH interpolation", fontsize=dm.fs(1))
-    for spine in ax2.spines.values():
-        spine.set_visible(False)
-
-    dm.simple_layout(fig, gs=gs)
-
-    path = images_dir / "color_example.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
-    plt.close(fig)
-    return path
-
-
 # ── icon.rst ───────────────────────────────────────────────────────────
 
 
@@ -271,31 +228,6 @@ def _save_xplot_example(images_dir: Path) -> Path:
 # ── visualization.rst ──────────────────────────────────────────────────
 
 
-def _save_viz_example(images_dir: Path) -> Path:
-    """API visualization: compact plot_colors preview (SVG)."""
-    dm.style.use("presentation")
-
-    path = images_dir / "viz_example.svg"
-    figs = dm.plot_colors(ncols=5, sort_colors=True)
-    if figs:
-        fig = figs[0]
-        # set_size_inches needs plain inch floats. dm.cm(...) returns a
-        # Length object (not a float subclass since 0.4.x), so passing it
-        # directly made matplotlib build an object-dtype size array and
-        # raise "ufunc 'isfinite' not supported" — the long-standing
-        # viz_example docs-build failure. dm.figsize(...) yields floats.
-        fig.set_size_inches(*dm.figsize("15cm", "10cm"))
-        fig.savefig(path, format="svg", bbox_inches="tight")
-        for f in figs:
-            plt.close(f)
-        return path
-    # plot_colors returned no figures: write a placeholder so the docs
-    # ``.. figure:: images/viz_example.svg`` reference still resolves
-    # under ``-W`` instead of failing the whole build on a missing asset.
-    _write_placeholder_svg(path, "viz_example")
-    return path
-
-
 # ── Entrypoint ─────────────────────────────────────────────────────────
 
 
@@ -338,11 +270,9 @@ def build_api_assets(base_dir: Path | None = None) -> list[Path]:
 
     generators = [
         ("layout_example", _save_layout_example),
-        ("color_example", _save_color_example),
         ("icon_example", _save_icon_example),
         ("font_example", _save_font_example),
         ("xplot_example", _save_xplot_example),
-        ("viz_example", _save_viz_example),
     ]
 
     paths: list[Path] = []

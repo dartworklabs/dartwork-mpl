@@ -125,8 +125,10 @@ col2: Length = cm(17)
 # (``dm.helpers.<name>``) remains available as well.
 from .helpers import (
     check_figure_quality,
+    get_palette,
     make_palette,
     optimize_legend,
+    set_cycle,
     suggest_chart_type,
     validate_data,
 )
@@ -235,6 +237,8 @@ __all__ = [  # noqa: RUF022
     # Helpers (high-level composition utilities)
     "validate_data",
     "make_palette",
+    "get_palette",
+    "set_cycle",
     "optimize_legend",
     "suggest_chart_type",
     "check_figure_quality",

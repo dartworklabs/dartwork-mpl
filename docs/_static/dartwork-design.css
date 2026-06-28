@@ -1,5 +1,5 @@
 /* ============================================================================
- * radix-design.css — design-token overhaul layered on top of Shibuya.
+ * dartwork-design.css — design-token overhaul layered on top of Shibuya.
  *
  * Strategy
  * --------
@@ -8,9 +8,12 @@
  * • Tokens come from Radix UI Colors (12-step gray + teal + alpha
  *   overlays). Everything else maps to those tokens — no raw hex codes
  *   in component rules.
- * • Conventions: --rx-* names (Radix tokens), --dm-* names (dartwork-
- *   specific aliases on top). The existing --sy-* names from Shibuya
- *   stay untouched.
+ * • Conventions: ONE --dm-* namespace. Scale tokens (--dm-gray-*,
+ *   --dm-accent-*, --dm-radius-*, --dm-space-*, --dm-fs/lh/ls-*,
+ *   --dm-weight-*, --dm-shadow-*) carry Radix Colors values; semantic
+ *   aliases (--dm-text-*, --dm-bg-*, --dm-border-*, --dm-link*) layer on
+ *   top (distinct second segment = no collision). The --sy-* names from
+ *   Shibuya stay untouched.
  *
  * Loaded after custom.css and dynamic_ux.css (see conf.py order).
  * ============================================================================ */
@@ -21,196 +24,224 @@
 
 :root {
   /* Gray scale — Radix Slate (the canonical neutral) */
-  --rx-gray-1: #fcfcfd;
-  --rx-gray-2: #f9f9fb;
-  --rx-gray-3: #f0f0f3;
-  --rx-gray-4: #e8e8ec;
-  --rx-gray-5: #e0e1e6;
-  --rx-gray-6: #d9d9e0;
-  --rx-gray-7: #cdced6;
-  --rx-gray-8: #b9bbc6;
-  --rx-gray-9: #8b8d98;
-  --rx-gray-10: #80828d;
-  --rx-gray-11: #60646c;
-  --rx-gray-12: #1c2024;
+  --dm-gray-1: #fcfcfd;
+  --dm-gray-2: #f9f9fb;
+  --dm-gray-3: #f0f0f3;
+  --dm-gray-4: #e8e8ec;
+  --dm-gray-5: #e0e1e6;
+  --dm-gray-6: #d9d9e0;
+  --dm-gray-7: #cdced6;
+  --dm-gray-8: #b9bbc6;
+  --dm-gray-9: #8b8d98;
+  --dm-gray-10: #80828d;
+  --dm-gray-11: #60646c;
+  --dm-gray-12: #1c2024;
 
   /* Alpha overlays — for tinted backgrounds and hover states */
-  --rx-gray-a1: rgba(0, 0, 85, 0.012);
-  --rx-gray-a2: rgba(0, 0, 51, 0.024);
-  --rx-gray-a3: rgba(0, 8, 60, 0.059);
-  --rx-gray-a4: rgba(0, 0, 39, 0.090);
-  --rx-gray-a5: rgba(0, 0, 30, 0.122);
-  --rx-gray-a6: rgba(0, 0, 32, 0.149);
-  --rx-gray-a7: rgba(2, 8, 38, 0.196);
-  --rx-gray-a8: rgba(0, 4, 47, 0.275);
-  --rx-gray-a9: rgba(0, 5, 24, 0.455);
-  --rx-gray-a10: rgba(0, 4, 21, 0.498);
-  --rx-gray-a11: rgba(0, 3, 13, 0.624);
-  --rx-gray-a12: rgba(0, 2, 7, 0.890);
+  --dm-gray-a1: rgba(0, 0, 85, 0.012);
+  --dm-gray-a2: rgba(0, 0, 51, 0.024);
+  --dm-gray-a3: rgba(0, 8, 60, 0.059);
+  --dm-gray-a4: rgba(0, 0, 39, 0.090);
+  --dm-gray-a5: rgba(0, 0, 30, 0.122);
+  --dm-gray-a6: rgba(0, 0, 32, 0.149);
+  --dm-gray-a7: rgba(2, 8, 38, 0.196);
+  --dm-gray-a8: rgba(0, 4, 47, 0.275);
+  --dm-gray-a9: rgba(0, 5, 24, 0.455);
+  --dm-gray-a10: rgba(0, 4, 21, 0.498);
+  --dm-gray-a11: rgba(0, 3, 13, 0.624);
+  --dm-gray-a12: rgba(0, 2, 7, 0.890);
 
   /* Accent — Teal (matches Shibuya's accent_color="teal" choice) */
-  --rx-accent-1: #fafefd;
-  --rx-accent-2: #f3fbf9;
-  --rx-accent-3: #e0f8f3;
-  --rx-accent-4: #ccf3ea;
-  --rx-accent-5: #b8eae0;
-  --rx-accent-6: #a1ddd1;
-  --rx-accent-7: #83cdbf;
-  --rx-accent-8: #53b9ab;
-  --rx-accent-9: #12a594;
-  --rx-accent-10: #0d9b8a;
-  --rx-accent-11: #008573;
-  --rx-accent-12: #0d3d38;
+  --dm-accent-1: #fafefd;
+  --dm-accent-2: #f3fbf9;
+  --dm-accent-3: #e0f8f3;
+  --dm-accent-4: #ccf3ea;
+  --dm-accent-5: #b8eae0;
+  --dm-accent-6: #a1ddd1;
+  --dm-accent-7: #83cdbf;
+  --dm-accent-8: #53b9ab;
+  --dm-accent-9: #12a594;
+  --dm-accent-10: #0d9b8a;
+  --dm-accent-11: #008573;
+  --dm-accent-12: #0d3d38;
 
   /* Magenta for inline code (Radix's signature) */
-  --rx-pink-3: #fceef5;
-  --rx-pink-11: #cd1d8d;
+  --dm-pink-3: #fceef5;
+  --dm-pink-11: #cd1d8d;
+
+  /* Semantic status scales (Radix amber / blue / green) — for callouts,
+   * lint tags, admonitions. Steps: 3 = soft bg, 6 = border, 9 = solid/stripe,
+   * 11 = text-on-soft. Replaces the raw Tailwind callout hexes. */
+  --dm-warning-3: #fff7c2; --dm-warning-6: #f3d673; --dm-warning-9: #ffc53d; --dm-warning-11: #ab6400;
+  --dm-info-3: #e6f4fe;    --dm-info-6: #acd8fc;    --dm-info-9: #0090ff;    --dm-info-11: #0d74ce;
+  --dm-success-3: #e6f6eb; --dm-success-6: #adddc0; --dm-success-9: #30a46c; --dm-success-11: #218358;
 
   /* Space scale (px-based; --scaling=1 baseline) */
-  --rx-space-1: 4px;
-  --rx-space-2: 8px;
-  --rx-space-3: 12px;
-  --rx-space-4: 16px;
-  --rx-space-5: 24px;
-  --rx-space-6: 32px;
-  --rx-space-7: 40px;
-  --rx-space-8: 48px;
-  --rx-space-9: 64px;
+  --dm-space-1: 4px;
+  --dm-space-2: 8px;
+  --dm-space-3: 12px;
+  --dm-space-4: 16px;
+  --dm-space-5: 24px;
+  --dm-space-6: 32px;
+  --dm-space-7: 40px;
+  --dm-space-8: 48px;
+  --dm-space-9: 64px;
 
   /* Font-size scale (Radix Themes Text 1..9) */
-  --rx-fs-1: 12px;
-  --rx-fs-2: 14px;
-  --rx-fs-3: 16px;
-  --rx-fs-4: 18px;
-  --rx-fs-5: 20px;
-  --rx-fs-6: 24px;
-  --rx-fs-7: 28px;
-  --rx-fs-8: 35px;
-  --rx-fs-9: 60px;
+  --dm-fs-1: 12px;
+  --dm-fs-2: 14px;
+  --dm-fs-3: 16px;
+  --dm-fs-4: 18px;
+  --dm-fs-5: 20px;
+  --dm-fs-6: 24px;
+  --dm-fs-7: 28px;
+  --dm-fs-8: 35px;
+  --dm-fs-9: 60px;
 
   /* Line-height scale — paired 1:1 with font-size so callers only
    * need to pick a size step. Values straight from Radix Themes. */
-  --rx-lh-1: 16px;
-  --rx-lh-2: 20px;
-  --rx-lh-3: 24px;
-  --rx-lh-4: 26px;
-  --rx-lh-5: 28px;
-  --rx-lh-6: 30px;
-  --rx-lh-7: 36px;
-  --rx-lh-8: 40px;
-  --rx-lh-9: 60px;
+  --dm-lh-1: 16px;
+  --dm-lh-2: 20px;
+  --dm-lh-3: 24px;
+  --dm-lh-4: 26px;
+  --dm-lh-5: 28px;
+  --dm-lh-6: 30px;
+  --dm-lh-7: 36px;
+  --dm-lh-8: 40px;
+  --dm-lh-9: 60px;
 
   /* Letter-spacing scale — Radix tightens larger sizes for optical
    * balance; tiny positive ls on size 1 (12px) keeps small caps legible. */
-  --rx-ls-1: 0.0025em;
-  --rx-ls-2: 0em;
-  --rx-ls-3: 0em;
-  --rx-ls-4: -0.0025em;
-  --rx-ls-5: -0.005em;
-  --rx-ls-6: -0.00625em;
-  --rx-ls-7: -0.0075em;
-  --rx-ls-8: -0.01em;
-  --rx-ls-9: -0.025em;
+  --dm-ls-1: 0.0025em;
+  --dm-ls-2: 0em;
+  --dm-ls-3: 0em;
+  --dm-ls-4: -0.0025em;
+  --dm-ls-5: -0.005em;
+  --dm-ls-6: -0.00625em;
+  --dm-ls-7: -0.0075em;
+  --dm-ls-8: -0.01em;
+  --dm-ls-9: -0.025em;
 
   /* Font weights — Radix Themes ships a four-step ladder
    * (light/regular/medium/bold). We add one extra `semibold` step
    * because Shibuya's sidebar chrome rides at medium and h3/h4
    * disappear into it unless lifted one notch. Inter ships
    * SemiBold (600) as a real cut so the alias is faithful. */
-  --rx-weight-light: 300;
-  --rx-weight-regular: 400;
-  --rx-weight-medium: 500;
-  --rx-weight-semibold: 600;
-  --rx-weight-bold: 700;
+  --dm-weight-light: 300;
+  --dm-weight-regular: 400;
+  --dm-weight-medium: 500;
+  --dm-weight-semibold: 600;
+  --dm-weight-bold: 700;
 
   /* Default font-feature settings.
    *   ss01: alternate single-storey 'a' (cleaner at body sizes)
    *   cv11: open-counter '4' (avoids the confusable closed 4)
    *   calt: contextual alternates (default on but make it explicit)
    * Headings inherit these via the body rule. */
-  --rx-font-features: "ss01" on, "cv11" on, "calt" on;
+  --dm-font-features: "ss01" on, "cv11" on, "calt" on;
+
+  /* Font families — canonical stacks every component references (replaces the
+   * scattered --sy-f-* Shibuya refs and ad-hoc literal stacks). */
+  --dm-f-sys: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --dm-f-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
 
   /* Radius — keep modest; large radii undermine the precision feel */
-  --rx-radius-1: 3px;
-  --rx-radius-2: 4px;
-  --rx-radius-3: 6px;
-  --rx-radius-4: 8px;
-  --rx-radius-5: 12px;
-  --rx-radius-6: 16px;
-  --rx-radius-full: 9999px;
+  --dm-radius-1: 3px;
+  --dm-radius-2: 4px;
+  --dm-radius-3: 6px;
+  --dm-radius-4: 8px;
+  --dm-radius-5: 12px;
+  --dm-radius-6: 16px;
+  --dm-radius-full: 9999px;
 
   /* Shadow ladder — Radix's stacked-inset+blur composition */
-  --rx-shadow-1:
-    inset 0 -1px 1px 0 var(--rx-gray-a3),
-    inset 0 0 0 1px var(--rx-gray-a4);
-  --rx-shadow-2:
-    0 0 0 1px var(--rx-gray-a4),
-    0 1px 2px 0 var(--rx-gray-a5);
-  --rx-shadow-3:
-    0 0 0 1px var(--rx-gray-a5),
-    0 2px 3px -1px var(--rx-gray-a3),
-    0 3px 8px -2px var(--rx-gray-a6);
-  --rx-shadow-4:
-    0 0 0 1px var(--rx-gray-a6),
-    0 8px 40px var(--rx-gray-a3),
-    0 12px 32px -16px var(--rx-gray-a5);
+  --dm-shadow-1:
+    inset 0 -1px 1px 0 var(--dm-gray-a3),
+    inset 0 0 0 1px var(--dm-gray-a4);
+  --dm-shadow-2:
+    0 0 0 1px var(--dm-gray-a4),
+    0 1px 2px 0 var(--dm-gray-a5);
+  --dm-shadow-3:
+    0 0 0 1px var(--dm-gray-a5),
+    0 2px 3px -1px var(--dm-gray-a3),
+    0 3px 8px -2px var(--dm-gray-a6);
+  --dm-shadow-4:
+    0 0 0 1px var(--dm-gray-a6),
+    0 8px 40px var(--dm-gray-a3),
+    0 12px 32px -16px var(--dm-gray-a5);
 
   /* dartwork aliases — what component rules below actually reference */
-  --dm-text-strong: var(--rx-gray-12);
-  --dm-text-default: var(--rx-gray-12);
-  --dm-text-muted: var(--rx-gray-11);
-  --dm-text-faint: var(--rx-gray-10);
-  --dm-link: var(--rx-accent-11);
-  --dm-link-hover: var(--rx-accent-9);
+  --dm-text-strong: var(--dm-gray-12);
+  --dm-text-default: var(--dm-gray-12);
+  --dm-text-muted: var(--dm-gray-11);
+  --dm-text-faint: var(--dm-gray-10);
+  --dm-link: var(--dm-accent-11);
+  --dm-link-hover: var(--dm-accent-9);
   --dm-bg-page: #ffffff;
-  --dm-bg-subtle: var(--rx-gray-2);
-  --dm-bg-panel: var(--rx-gray-1);
-  --dm-bg-hover: var(--rx-gray-a3);
-  --dm-bg-active: var(--rx-gray-a4);
-  --dm-border-faint: var(--rx-gray-a4);
-  --dm-border: var(--rx-gray-a6);
-  --dm-border-strong: var(--rx-gray-a8);
+  --dm-bg-subtle: var(--dm-gray-2);
+  --dm-bg-panel: var(--dm-gray-1);
+  --dm-bg-hover: var(--dm-gray-a3);
+  --dm-bg-active: var(--dm-gray-a4);
+  --dm-border-faint: var(--dm-gray-a4);
+  --dm-border: var(--dm-gray-a6);
+  --dm-border-strong: var(--dm-gray-a8);
 }
 
 /* Dark mode counterparts — Radix slateDark + tealDark */
 html.dark,
 body[data-theme="dark"] {
-  --rx-gray-1: #111113;
-  --rx-gray-2: #18191b;
-  --rx-gray-3: #212225;
-  --rx-gray-4: #272a2d;
-  --rx-gray-5: #2e3135;
-  --rx-gray-6: #363a3f;
-  --rx-gray-7: #43484e;
-  --rx-gray-8: #5a6169;
-  --rx-gray-9: #696e77;
-  --rx-gray-10: #777b84;
-  --rx-gray-11: #b0b4ba;
-  --rx-gray-12: #edeef0;
+  --dm-gray-1: #111113;
+  --dm-gray-2: #18191b;
+  --dm-gray-3: #212225;
+  --dm-gray-4: #272a2d;
+  --dm-gray-5: #2e3135;
+  --dm-gray-6: #363a3f;
+  --dm-gray-7: #43484e;
+  --dm-gray-8: #5a6169;
+  --dm-gray-9: #696e77;
+  --dm-gray-10: #777b84;
+  --dm-gray-11: #b0b4ba;
+  --dm-gray-12: #edeef0;
 
-  --rx-gray-a1: rgba(0, 0, 0, 0);
-  --rx-gray-a2: rgba(216, 248, 248, 0.027);
-  --rx-gray-a3: rgba(244, 246, 248, 0.075);
-  --rx-gray-a4: rgba(229, 247, 251, 0.106);
-  --rx-gray-a5: rgba(238, 249, 251, 0.137);
-  --rx-gray-a6: rgba(238, 247, 254, 0.180);
-  --rx-gray-a7: rgba(231, 247, 254, 0.247);
-  --rx-gray-a8: rgba(235, 248, 255, 0.349);
-  --rx-gray-a9: rgba(236, 245, 255, 0.420);
-  --rx-gray-a10: rgba(238, 246, 255, 0.483);
-  --rx-gray-a11: rgba(243, 249, 255, 0.702);
-  --rx-gray-a12: rgba(253, 254, 255, 0.937);
+  --dm-gray-a1: rgba(0, 0, 0, 0);
+  --dm-gray-a2: rgba(216, 248, 248, 0.027);
+  --dm-gray-a3: rgba(244, 246, 248, 0.075);
+  --dm-gray-a4: rgba(229, 247, 251, 0.106);
+  --dm-gray-a5: rgba(238, 249, 251, 0.137);
+  --dm-gray-a6: rgba(238, 247, 254, 0.180);
+  --dm-gray-a7: rgba(231, 247, 254, 0.247);
+  --dm-gray-a8: rgba(235, 248, 255, 0.349);
+  --dm-gray-a9: rgba(236, 245, 255, 0.420);
+  --dm-gray-a10: rgba(238, 246, 255, 0.483);
+  --dm-gray-a11: rgba(243, 249, 255, 0.702);
+  --dm-gray-a12: rgba(253, 254, 255, 0.937);
 
-  --rx-accent-3: #112725;
-  --rx-accent-9: #12a594;
-  --rx-accent-10: #25c2ad;
-  --rx-accent-11: #76dac3;
-  --rx-pink-3: #310f1f;
-  --rx-pink-11: #e93d82;
+  /* Full tealDark ramp — completes the scale so NO accent step leaks its
+   * light value into dark mode. Steps 3/9/10/11 are the existing tuned
+   * anchors; 1,2,4,5,6,7,8,12 fill the ramp between them. */
+  --dm-accent-1: #0c1413;
+  --dm-accent-2: #0f1b18;
+  --dm-accent-3: #112725;
+  --dm-accent-4: #14302d;
+  --dm-accent-5: #173a35;
+  --dm-accent-6: #1d473f;
+  --dm-accent-7: #245a50;
+  --dm-accent-8: #2d7163;
+  --dm-accent-9: #12a594;
+  --dm-accent-10: #25c2ad;
+  --dm-accent-11: #76dac3;
+  --dm-accent-12: #adf0dd;
+  --dm-pink-3: #310f1f;
+  --dm-pink-11: #e93d82;
+
+  /* Semantic status scales — dark steps (Radix amber / blue / green dark). */
+  --dm-warning-3: #302008; --dm-warning-6: #5c3d05; --dm-warning-9: #ffc53d; --dm-warning-11: #ffca16;
+  --dm-info-3: #0d2847;    --dm-info-6: #104d87;    --dm-info-9: #0090ff;    --dm-info-11: #70b8ff;
+  --dm-success-3: #132d21; --dm-success-6: #20573e; --dm-success-9: #30a46c; --dm-success-11: #3dd68c;
 
   --dm-bg-page: #0c0c0e;
-  --dm-bg-subtle: var(--rx-gray-2);
-  --dm-bg-panel: var(--rx-gray-2);
+  --dm-bg-subtle: var(--dm-gray-2);
+  --dm-bg-panel: var(--dm-gray-2);
 }
 
 /* ---------------------------------------------------------------------------
@@ -224,7 +255,7 @@ body[data-theme="dark"] {
 
 body {
   color: var(--dm-text-default);
-  font-feature-settings: var(--rx-font-features);
+  font-feature-settings: var(--dm-font-features);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -259,39 +290,39 @@ body {
  * heading + strong + body-default. Hierarchy stays intact because
  * size deltas (35 / 24 / 20 / 18) carry the structure on their own. */
 .yue h1 {
-  font-size: var(--rx-fs-8);
-  font-weight: var(--rx-weight-semibold);
-  line-height: var(--rx-lh-8);
-  letter-spacing: var(--rx-ls-8);
+  font-size: var(--dm-fs-8);
+  font-weight: var(--dm-weight-semibold);
+  line-height: var(--dm-lh-8);
+  letter-spacing: var(--dm-ls-8);
   margin-top: 0;
-  margin-bottom: var(--rx-space-2);
+  margin-bottom: var(--dm-space-2);
 }
 
 .yue h2 {
-  font-size: var(--rx-fs-6);
-  font-weight: var(--rx-weight-semibold);
-  line-height: var(--rx-lh-6);
-  letter-spacing: var(--rx-ls-6);
-  margin-top: var(--rx-space-8);
-  margin-bottom: var(--rx-space-3);
+  font-size: var(--dm-fs-6);
+  font-weight: var(--dm-weight-semibold);
+  line-height: var(--dm-lh-6);
+  letter-spacing: var(--dm-ls-6);
+  margin-top: var(--dm-space-8);
+  margin-bottom: var(--dm-space-3);
 }
 
 .yue h3 {
-  font-size: var(--rx-fs-5);
-  font-weight: var(--rx-weight-medium);
-  line-height: var(--rx-lh-5);
-  letter-spacing: var(--rx-ls-5);
-  margin-top: var(--rx-space-6);
-  margin-bottom: var(--rx-space-2);
+  font-size: var(--dm-fs-5);
+  font-weight: var(--dm-weight-medium);
+  line-height: var(--dm-lh-5);
+  letter-spacing: var(--dm-ls-5);
+  margin-top: var(--dm-space-6);
+  margin-bottom: var(--dm-space-2);
 }
 
 .yue h4 {
-  font-size: var(--rx-fs-4);
-  font-weight: var(--rx-weight-medium);
-  line-height: var(--rx-lh-4);
-  letter-spacing: var(--rx-ls-4);
-  margin-top: var(--rx-space-5);
-  margin-bottom: var(--rx-space-2);
+  font-size: var(--dm-fs-4);
+  font-weight: var(--dm-weight-medium);
+  line-height: var(--dm-lh-4);
+  letter-spacing: var(--dm-ls-4);
+  margin-top: var(--dm-space-5);
+  margin-bottom: var(--dm-space-2);
 }
 
 /* Body prose — Radix Text size-3 (16/24).
@@ -302,10 +333,10 @@ body {
  * — no need to enumerate widget exemptions one by one. */
 :where(.yue) p,
 :where(.yue) li {
-  font-size: var(--rx-fs-3);
-  font-weight: var(--rx-weight-regular);
-  line-height: var(--rx-lh-3);
-  letter-spacing: var(--rx-ls-3);
+  font-size: var(--dm-fs-3);
+  font-weight: var(--dm-weight-regular);
+  line-height: var(--dm-lh-3);
+  letter-spacing: var(--dm-ls-3);
   color: var(--dm-text-default);
 }
 
@@ -315,27 +346,27 @@ body {
  * matching specificity to push to 700. */
 .yue strong,
 .yue b {
-  font-weight: var(--rx-weight-semibold);
+  font-weight: var(--dm-weight-semibold);
   color: var(--dm-text-strong);
 }
 
 .yue em,
 .yue i {
-  font-weight: var(--rx-weight-regular);
+  font-weight: var(--dm-weight-regular);
   font-style: italic;
 }
 
 /* Small / footnote text — Radix Text size-2 (14/20). */
 .yue small,
 .yue .rx-text-2 {
-  font-size: var(--rx-fs-2);
-  line-height: var(--rx-lh-2);
-  letter-spacing: var(--rx-ls-2);
+  font-size: var(--dm-fs-2);
+  line-height: var(--dm-lh-2);
+  letter-spacing: var(--dm-ls-2);
 }
 
 :where(.yue) p {
   margin-top: 0;
-  margin-bottom: var(--rx-space-4);
+  margin-bottom: var(--dm-space-4);
 }
 
 :where(.yue) p + p,
@@ -363,9 +394,9 @@ body {
 .yue div.highlight {
   background-color: var(--dm-bg-subtle) !important;
   border: 1px solid var(--dm-border-faint) !important;
-  border-radius: var(--rx-radius-3);
+  border-radius: var(--dm-radius-3);
   box-shadow: none;
-  margin: var(--rx-space-4) 0;
+  margin: var(--dm-space-4) 0;
 }
 
 .yue div.highlight pre {
@@ -379,7 +410,7 @@ body {
 .yue button.copybtn {
   opacity: 0;
   transition: opacity 0.15s ease;
-  border-radius: var(--rx-radius-2);
+  border-radius: var(--dm-radius-2);
 }
 
 .yue div.highlight:hover button.copybtn {
@@ -398,7 +429,7 @@ body {
   color: var(--dm-link);
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
-  text-decoration-color: var(--rx-accent-7);
+  text-decoration-color: var(--dm-accent-7);
   text-underline-offset: 3px;
   transition: text-decoration-color 0.12s ease, color 0.12s ease;
 }
@@ -418,7 +449,7 @@ body {
   line-height: 20px;
   color: var(--dm-text-muted);
   padding: 5px 10px;
-  border-radius: var(--rx-radius-2);
+  border-radius: var(--dm-radius-2);
   transition: background-color 0.12s ease, color 0.12s ease;
 }
 
@@ -433,20 +464,20 @@ body {
 .shibuya-sidebar a.current,
 .sy-sidebar .current > a,
 .sy-sidebar a.current {
-  background-color: var(--rx-accent-3);
-  color: var(--rx-accent-11);
-  font-weight: var(--rx-weight-semibold);
+  background-color: var(--dm-accent-3);
+  color: var(--dm-accent-11);
+  font-weight: var(--dm-weight-semibold);
 }
 
 .shibuya-sidebar .caption,
 .sy-sidebar .caption {
   font-size: 11px;
-  font-weight: var(--rx-weight-semibold);
+  font-weight: var(--dm-weight-semibold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--dm-text-faint);
-  margin-top: var(--rx-space-5);
-  margin-bottom: var(--rx-space-2);
+  margin-top: var(--dm-space-5);
+  margin-bottom: var(--dm-space-2);
 }
 
 /* ---------------------------------------------------------------------------
@@ -464,7 +495,7 @@ body {
 
 .sy-head-nav a {
   color: var(--dm-text-muted);
-  font-weight: var(--rx-weight-medium);
+  font-weight: var(--dm-weight-medium);
   font-size: 14px;
   transition: color 0.12s ease;
 }
@@ -489,18 +520,18 @@ body {
   border-left: 3px solid var(--dm-border-strong);
   border-radius: 0;
   box-shadow: none;
-  padding: var(--rx-space-1) 0 var(--rx-space-1) var(--rx-space-4);
-  margin: var(--rx-space-5) 0;
+  padding: var(--dm-space-1) 0 var(--dm-space-1) var(--dm-space-4);
+  margin: var(--dm-space-5) 0;
 }
 
 .yue .admonition > .admonition-title,
 .yue div.admonition > p.admonition-title {
   background-color: transparent;
   color: var(--dm-text-strong);
-  font-weight: var(--rx-weight-semibold);
+  font-weight: var(--dm-weight-semibold);
   font-size: 14px;
   letter-spacing: -0.01em;
-  margin: 0 0 var(--rx-space-2);
+  margin: 0 0 var(--dm-space-2);
   padding: 0;
 }
 
@@ -508,18 +539,18 @@ body {
 .yue .admonition.note,
 .yue .admonition.tip {
   background-color: transparent;
-  border-left-color: var(--rx-accent-9);
+  border-left-color: var(--dm-accent-9);
 }
 .yue .admonition.note > .admonition-title,
 .yue .admonition.tip > .admonition-title {
-  color: var(--rx-accent-11);
+  color: var(--dm-accent-11);
 }
 
 .yue .admonition.warning,
 .yue .admonition.caution,
 .yue .admonition.important {
   background-color: transparent;
-  border-left-color: #d4a017;       /* soft amber stripe only, no fill */
+  border-left-color: var(--dm-warning-9);   /* soft amber stripe only, no fill */
 }
 .yue .admonition.warning > .admonition-title,
 .yue .admonition.caution > .admonition-title,
@@ -535,7 +566,7 @@ body {
   border-collapse: collapse;
   border-spacing: 0;
   width: 100%;
-  margin: var(--rx-space-4) 0;
+  margin: var(--dm-space-4) 0;
   font-size: 14px;
 }
 
@@ -543,14 +574,14 @@ body {
 .yue table td {
   border-top: 1px solid var(--dm-border-faint);
   border-bottom: 1px solid var(--dm-border-faint);
-  padding: var(--rx-space-2) var(--rx-space-3);
+  padding: var(--dm-space-2) var(--dm-space-3);
   text-align: left;
   vertical-align: top;
 }
 
 /* Tier 1 — no fill on header row; rely on weight + thicker bottom border. */
 .yue table th {
-  font-weight: var(--rx-weight-medium);
+  font-weight: var(--dm-weight-medium);
   color: var(--dm-text-strong);
   background-color: transparent;
   border-bottom: 2px solid var(--dm-border);
@@ -576,7 +607,7 @@ body {
 .yue div.sd-card {
   background-color: transparent;
   border: 1px solid var(--dm-border-faint);
-  border-radius: var(--rx-radius-3);
+  border-radius: var(--dm-radius-3);
   box-shadow: none;
 }
 
@@ -596,24 +627,24 @@ body {
 
 .yue .sd-btn,
 .yue .sd-button {
-  border-radius: var(--rx-radius-3);
-  font-weight: var(--rx-weight-medium);
+  border-radius: var(--dm-radius-3);
+  font-weight: var(--dm-weight-medium);
   font-size: 14px;
   padding: 6px 14px;
   transition: background-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
-  box-shadow: var(--rx-shadow-2);
+  box-shadow: var(--dm-shadow-2);
 }
 
 .yue .sd-btn-primary,
 .yue .sd-btn-info {
-  background-color: var(--rx-accent-9) !important;
+  background-color: var(--dm-accent-9) !important;
   color: #ffffff !important;
-  border-color: var(--rx-accent-9) !important;
+  border-color: var(--dm-accent-9) !important;
 }
 
 .yue .sd-btn-primary:hover,
 .yue .sd-btn-info:hover {
-  background-color: var(--rx-accent-10) !important;
+  background-color: var(--dm-accent-10) !important;
   color: #ffffff !important;
 }
 
@@ -631,7 +662,7 @@ body {
 .sy-toc .caption-text,
 .sy-right-toc .caption-text {
   font-size: 11px;
-  font-weight: var(--rx-weight-semibold);
+  font-weight: var(--dm-weight-semibold);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--dm-text-faint);
@@ -654,8 +685,8 @@ body {
 .shibuya-toc .active > a,
 .sy-toc .active > a,
 .sy-right-toc .active > a {
-  color: var(--rx-accent-11);
-  font-weight: var(--rx-weight-semibold);
+  color: var(--dm-accent-11);
+  font-weight: var(--dm-weight-semibold);
 }
 
 /* ---------------------------------------------------------------------------
@@ -669,7 +700,7 @@ body {
 .yue hr {
   border: none;
   border-top: 1px solid var(--dm-border-faint);
-  margin: var(--rx-space-7) 0;
+  margin: var(--dm-space-7) 0;
 }
 
 /* ---------------------------------------------------------------------------
@@ -680,9 +711,9 @@ body {
 .yue button:focus-visible,
 .shibuya-sidebar a:focus-visible,
 .sy-sidebar a:focus-visible {
-  outline: 2px solid var(--rx-accent-9);
+  outline: 2px solid var(--dm-accent-9);
   outline-offset: 2px;
-  border-radius: var(--rx-radius-2);
+  border-radius: var(--dm-radius-2);
 }
 
 /* ---------------------------------------------------------------------------
@@ -690,8 +721,8 @@ body {
  * --------------------------------------------------------------------------- */
 
 ::selection {
-  background-color: var(--rx-accent-5);
-  color: var(--rx-accent-12);
+  background-color: var(--dm-accent-5);
+  color: var(--dm-accent-12);
 }
 
 
@@ -737,7 +768,7 @@ body {
 }
 
 .dm-ls-title {
-  font-weight: var(--rx-weight-semibold) !important;
+  font-weight: var(--dm-weight-semibold) !important;
 }
 
 .dm-ls-results {
@@ -754,40 +785,11 @@ body {
   padding-left: 12px;
 }
 
-/* Install picker (.dm-install-picker) — same hairline shell + flat
- * header/rows. ip-tab pills lose their default fill; only active fills. */
-.dm-install-picker {
-  border: none !important;
-  border-top: 1px solid var(--dm-border-faint) !important;
-  border-bottom: 1px solid var(--dm-border-faint) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-.dm-ip-head {
-  background: transparent !important;
-  background-image: none !important;
-  border-bottom: 1px solid var(--dm-border-faint) !important;
-}
-
-.dm-ip-row {
-  border-bottom: 1px solid var(--dm-border-faint) !important;
-}
-
-.dm-ip-row:last-child {
-  border-bottom: none !important;
-}
-
-.dm-ip-tab {
-  background: transparent !important;
-  border-color: var(--dm-border-faint) !important;
-}
-
-.dm-ip-tab:hover {
-  background: var(--rx-gray-a3) !important;
-  border-color: var(--dm-border) !important;
-}
+/* Install picker — migrated to the interactive primitive SSOT (P3b). The
+ * picker now composes .dm-seg + .dm-code + .dm-icon-btn; its layout shell
+ * lives in dm-interactive.css §10. The old flatten-override here — including
+ * the .dm-ip-tab { background: transparent !important } that clobbered the
+ * active fill and caused the invisible-active bug — is removed. */
 
 /* --- Group B — designer chrome --- */
 
@@ -816,9 +818,9 @@ body,
 .sy-sidebar a.current {
   background-color: transparent !important;
   color: var(--dm-text-strong) !important;
-  font-weight: var(--rx-weight-medium) !important;
+  font-weight: var(--dm-weight-medium) !important;
   position: relative;
-  box-shadow: inset 2px 0 0 var(--rx-accent-9);
+  box-shadow: inset 2px 0 0 var(--dm-accent-9);
 }
 
 /* Buttons — flat, no shadow. Primary/info go from filled accent → outlined */
@@ -830,14 +832,14 @@ body,
 .yue .sd-btn-primary,
 .yue .sd-btn-info {
   background-color: transparent !important;
-  color: var(--rx-accent-11) !important;
-  border: 1px solid var(--rx-accent-9) !important;
+  color: var(--dm-accent-11) !important;
+  border: 1px solid var(--dm-accent-9) !important;
 }
 
 .yue .sd-btn-primary:hover,
 .yue .sd-btn-info:hover {
-  background-color: var(--rx-accent-2) !important;
-  color: var(--rx-accent-12) !important;
+  background-color: var(--dm-accent-2) !important;
+  color: var(--dm-accent-12) !important;
 }
 
 /* Code block — keep the subtle fill; drop the border + outline for flatness */
@@ -856,8 +858,8 @@ body,
   -webkit-background-clip: initial !important;
   -webkit-text-fill-color: initial !important;
   background-clip: initial !important;
-  color: var(--rx-gray-12) !important;
-  font-weight: var(--rx-weight-semibold) !important;
+  color: var(--dm-gray-12) !important;
+  font-weight: var(--dm-weight-semibold) !important;
   letter-spacing: -0.025em !important;
 }
 
@@ -867,14 +869,14 @@ body[data-theme="dark"] .dm-landing-tagline {
   -webkit-background-clip: initial !important;
   -webkit-text-fill-color: initial !important;
   background-clip: initial !important;
-  color: var(--rx-gray-12) !important;
+  color: var(--dm-gray-12) !important;
 }
 
 /* Install chip (uv add box) — heavy gradient + shadow → quiet hairline */
 .dm-landing-install {
   background: transparent !important;
   border: 1px solid var(--dm-border-faint) !important;
-  border-radius: var(--rx-radius-3) !important;
+  border-radius: var(--dm-radius-3) !important;
   box-shadow: none !important;
 }
 
@@ -897,7 +899,7 @@ body[data-theme="dark"] .dm-landing-tagline {
  * Each widget's inline <style> block carries an ID prefix (#dm-cmp-l2-bar
  * etc.) so a generic .dmc-tab rule loaded after the widget's own style
  * wins as long as it uses !important. Loading order is enforced by
- * conf.py's html_css_files (radix-design.css is the last entry).
+ * conf.py's html_css_files (dartwork-design.css is the last entry).
  * =========================================================================== */
 
 /* Tab strip — drop the pill background entirely. The two labels become
@@ -920,7 +922,7 @@ body[data-theme="dark"] .dm-landing-tagline {
   box-shadow: none !important;
   color: var(--dm-text-muted) !important;
   font-size: 0.85em !important;
-  font-weight: var(--rx-weight-medium) !important;
+  font-weight: var(--dm-weight-medium) !important;
   letter-spacing: 0 !important;
   border-bottom: 2px solid transparent !important;
   margin-bottom: -1px !important;
@@ -953,7 +955,7 @@ body[data-theme="dark"] .dm-landing-tagline {
 input.dmc-radio:checked + input.dmc-radio + .dmc-tabs .dmc-tab-after,
 input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
   color: var(--dm-text-strong) !important;
-  border-bottom-color: var(--rx-accent-9) !important;
+  border-bottom-color: var(--dm-accent-9) !important;
 }
 
 /* Stage frame — the inline styles wrap the comparison images in a
@@ -963,7 +965,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 .dmc-stage {
   border-color: var(--dm-border-faint) !important;
   background: var(--dm-bg-page) !important;
-  border-radius: var(--rx-radius-3) !important;
+  border-radius: var(--dm-radius-3) !important;
 }
 
 
@@ -981,7 +983,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
  * (.dm-ruler-widget), the validation simulator (.dm-lint-sim), and a
  * couple of dynamic_ux widgets that still ship as raised cards.
  *
- * Loaded after radix-design's earlier sections so it wins; uses
+ * Loaded after dartwork-design's earlier sections so it wins; uses
  * !important to beat each widget's per-id inline styles or its own
  * stylesheet.
  * =========================================================================== */
@@ -1000,7 +1002,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
   border-radius: 0 !important;
   box-shadow: none !important;
   color: var(--dm-text-muted) !important;
-  font-weight: var(--rx-weight-medium) !important;
+  font-weight: var(--dm-weight-medium) !important;
   font-size: 14.5px !important;
   letter-spacing: 0 !important;
   padding: 8px 16px !important;
@@ -1016,7 +1018,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 .yue .sd-tab-set > input:checked + label,
 .yue .sd-tab-set > input:checked + label.sd-tab-label {
   color: var(--dm-text-strong) !important;
-  border-bottom-color: var(--rx-accent-9) !important;
+  border-bottom-color: var(--dm-accent-9) !important;
   background: transparent !important;
 }
 
@@ -1062,7 +1064,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
   border-radius: 0 !important;
   color: var(--dm-text-muted) !important;
   font-family: inherit !important;
-  font-weight: var(--rx-weight-medium) !important;
+  font-weight: var(--dm-weight-medium) !important;
   font-size: 14px !important;
   letter-spacing: 0 !important;
   padding: 8px 14px !important;
@@ -1078,7 +1080,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 .dm-pc-tab-active,
 .dm-pc-tab.active {
   color: var(--dm-text-strong) !important;
-  border-bottom-color: var(--rx-accent-9) !important;
+  border-bottom-color: var(--dm-accent-9) !important;
   background: transparent !important;
 }
 
@@ -1098,7 +1100,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
   padding: 0 !important;
   border: none !important;
   font-size: 18px !important;
-  font-weight: var(--rx-weight-semibold) !important;
+  font-weight: var(--dm-weight-semibold) !important;
   color: var(--dm-text-strong) !important;
   letter-spacing: -0.005em !important;
 }
@@ -1147,7 +1149,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 
 .dm-rw-title {
   font-size: 16px !important;
-  font-weight: var(--rx-weight-semibold) !important;
+  font-weight: var(--dm-weight-semibold) !important;
   letter-spacing: -0.005em !important;
 }
 
@@ -1190,21 +1192,21 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 
 .dm-rw-ctrl > span {
   font-size: 12.5px !important;
-  font-weight: var(--rx-weight-medium) !important;
+  font-weight: var(--dm-weight-medium) !important;
   color: var(--dm-text-muted) !important;
   letter-spacing: 0 !important;
   text-transform: none !important;
 }
 
 .dm-rw-ctrl > span em {
-  color: var(--rx-accent-11) !important;
-  font-weight: var(--rx-weight-medium) !important;
+  color: var(--dm-accent-11) !important;
+  font-weight: var(--dm-weight-medium) !important;
 }
 
 .dm-rw-ctrl select {
   font-size: 13.5px !important;
   border: 1px solid var(--dm-border) !important;
-  border-radius: var(--rx-radius-2) !important;
+  border-radius: var(--dm-radius-2) !important;
   background: var(--dm-bg-page) !important;
   color: var(--dm-text-strong) !important;
   padding: 6px 10px !important;
@@ -1229,7 +1231,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 }
 
 .dm-rw-code {
-  border-radius: var(--rx-radius-3) !important;
+  border-radius: var(--dm-radius-3) !important;
   margin-top: 12px !important;
   font-size: 12.5px !important;
 }
@@ -1239,7 +1241,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 
 .dm-ls-title {
   font-size: 16px !important;
-  font-weight: var(--rx-weight-semibold) !important;
+  font-weight: var(--dm-weight-semibold) !important;
   letter-spacing: -0.005em !important;
 }
 
@@ -1250,7 +1252,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 
 .dm-ls-grid label > span {
   font-size: 12.5px !important;
-  font-weight: var(--rx-weight-medium) !important;
+  font-weight: var(--dm-weight-medium) !important;
   color: var(--dm-text-muted) !important;
 }
 
@@ -1265,7 +1267,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 
 .dm-ls-figpreview-label {
   font-size: 12px;
-  font-weight: var(--rx-weight-medium);
+  font-weight: var(--dm-weight-medium);
   color: var(--dm-text-muted);
   margin-bottom: 8px;
   letter-spacing: 0;
@@ -1427,7 +1429,7 @@ img[src*="architecture_overview"] {
 
 .dm-diag-card-title {
   font-size: 14.5px;
-  font-weight: var(--rx-weight-medium);
+  font-weight: var(--dm-weight-medium);
   color: var(--dm-text);
   letter-spacing: 0;
 }
@@ -1435,7 +1437,7 @@ img[src*="architecture_overview"] {
 .dm-diag-card-meta {
   font-size: 11.5px;
   color: var(--dm-text-muted);
-  font-family: var(--rx-font-mono);
+  font-family: var(--dm-font-mono);
 }
 
 .dm-diag-card-body {
@@ -1484,7 +1486,7 @@ img[src*="architecture_overview"] {
   border-radius: 6px;
   padding: 6px 9px;
   font-size: 12px;
-  font-family: var(--rx-font-mono);
+  font-family: var(--dm-font-mono);
   color: var(--dm-text);
   opacity: 0;
   transition: opacity 120ms;

@@ -71,24 +71,32 @@ class TestEnsureLoaded:
         """Dartwork Color palettes (dc.* prefix) are available."""
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
-        assert "dc.vivid0" in mapping
-        assert "dc.vivid5" in mapping
+        assert "dc.trustworthy0" in mapping
+        assert "dc.trustworthy7" in mapping
+        # The unnamed default palette (the shared prop_cycle).
         assert "dc.0" in mapping
         assert "dc.5" in mapping
 
     def test_dc_palette_count(self) -> None:
-        """All 9 dc palettes × 6 colors = 54 entries."""
+        """24 curated × 8 + 7 deprecated-legacy × 6 + 8 default = 242."""
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
         dc_keys = [k for k in mapping if k.startswith("dc.")]
-        assert len(dc_keys) == 54
+        assert len(dc_keys) == 242
+
+    def test_legacy_aliases_still_resolve(self) -> None:
+        """Old ad-hoc palette names are kept (deprecated) for back-compat."""
+        ensure_loaded()
+        mapping = mcolors.get_named_colors_mapping()
+        for name in ("dc.vivid2", "dc.ocean2", "dc.nordic0", "dc.cyber3"):
+            assert name in mapping
 
     def test_dc_color_values_are_hex(self) -> None:
         """dc.* colours are valid hex strings."""
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
-        assert mapping["dc.vivid0"].startswith("#")
-        assert mapping["dc.ocean2"].startswith("#")
+        assert mapping["dc.trustworthy0"].startswith("#")
+        assert mapping["dc.coolwarm2"].startswith("#")
 
 
 class TestLoadJsonPalette:

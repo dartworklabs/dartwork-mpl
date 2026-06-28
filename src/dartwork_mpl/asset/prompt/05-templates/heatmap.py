@@ -9,6 +9,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import dartwork_mpl as dm
 
@@ -18,8 +19,12 @@ rng = np.random.default_rng(42)
 data = rng.random(size=(8, 8))
 
 fig, ax = plt.subplots(figsize=dm.figsize("11cm", "square"))
-im = ax.imshow(data, cmap="viridis", aspect="auto")
-cbar = fig.colorbar(im, ax=ax)
+im = ax.imshow(data, cmap="viridis", aspect="equal")
+# Colorbar pinned to the heatmap via a divider so its bar length tracks
+# the image's spine exactly (no floating taller/shorter than the cells).
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="4%", pad=0.15)
+cbar = fig.colorbar(im, cax=cax)
 cbar.ax.tick_params(labelsize=dm.fs(-1))
 ax.set_xlabel("Column")
 ax.set_ylabel("Row")

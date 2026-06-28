@@ -22,6 +22,7 @@ MCP ``dartwork-mpl://template/advanced/heatmap``.
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import FuncFormatter
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import dartwork_mpl as dm
 
@@ -52,14 +53,14 @@ np.fill_diagonal(corr, 1.0)
 display = corr.copy()
 mask = np.eye(n, dtype=bool)
 
-fig, ax = plt.subplots(figsize=dm.figsize("15cm", "wide"))
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "square"))
 
 im = ax.imshow(
     np.ma.masked_array(display, mask=mask),
     cmap="RdBu_r",
     vmin=-1,
     vmax=1,
-    aspect="auto",
+    aspect="equal",
 )
 
 # In-cell value labels — only off-diagonal.
@@ -87,10 +88,11 @@ ax.set_xticklabels(assets, rotation=30, ha="right", fontsize=dm.fs(-1))
 ax.set_yticklabels(assets, fontsize=dm.fs(-1))
 ax.tick_params(axis="both", length=0)
 
-# Colorbar with explicit -1, 0, +1 ticks.
-cbar = fig.colorbar(
-    im, ax=ax, fraction=0.046, pad=0.04, ticks=[-1, -0.5, 0, 0.5, 1]
-)
+# Colorbar pinned to the matrix via a divider so its bar length matches
+# the heatmap's spine exactly. Explicit -1, 0, +1 ticks.
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="4%", pad=0.15)
+cbar = fig.colorbar(im, cax=cax, ticks=[-1, -0.5, 0, 0.5, 1])
 cbar.ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v:+.1f}"))
 cbar.ax.tick_params(labelsize=dm.fs(-1))
 cbar.outline.set_linewidth(0.3)

@@ -75,7 +75,7 @@ graphviz_dot_args = [
     "-Gbgcolor=transparent",
 ]
 
-# Mermaid theming — keep the diagram visually aligned with the radix-design
+# Mermaid theming — keep the diagram visually aligned with the dartwork-design
 # overlay (light fills, hairline borders, accent-9 highlights).
 mermaid_init_js = """mermaid.initialize({
   startOnLoad: true,
@@ -105,7 +105,7 @@ mermaid_init_js = """mermaid.initialize({
     '  { font-size: 13px; }'
   ].join(' '),
   // useMaxWidth: true keeps the SVG <= its container; the CSS in
-  // radix-design.css Tier 7 then lets it use the *natural* content width
+  // dartwork-design.css Tier 7 then lets it use the *natural* content width
   // (up to 100%) instead of force-scaling. nodeSpacing/rankSpacing kept
   // moderate so the nowrap'd nodes don't collide.
   flowchart: {
@@ -186,10 +186,12 @@ html_css_files = [
     "font-specimens.css",
     "font-face.css",
     "dynamic_ux.css",
-    # Radix-design overlay — last so it wins the cascade. Token aliases
-    # and component-level rules layered on top of Shibuya defaults.
-    # See _static/radix-design.css for the full token catalog.
-    "radix-design.css",
+    # Radix-design overlay — token aliases + component-level rules layered on
+    # top of Shibuya defaults. See _static/dartwork-design.css for the catalog.
+    "dartwork-design.css",
+    # Interactive primitive SSOT — loaded LAST so it wins the cascade and can
+    # consume the radix tokens above. See _static/dm-interactive-system.md.
+    "dm-interactive.css",
 ]
 html_js_files = ["custom.js", "dynamic_ux.js", "mermaid_fit.js"]
 

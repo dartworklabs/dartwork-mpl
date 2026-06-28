@@ -30,9 +30,24 @@ Example
    for i, c in enumerate(palette):
        ax.bar(i, 1, color=c.to_hex())
 
-.. figure:: images/color_example.svg
-   :alt: Color utilities: named colors, mix_colors, pseudo_alpha, cspace interpolation
-   :width: 100%
+``cspace('#FF6B6B', '#4ECDC4', n=8, space='oklch')`` interpolates perceptually
+through OKLCH — hover a step for its hex:
+
+.. raw:: html
+
+   <div style="display:flex;gap:4px;margin:8px 0 4px;flex-wrap:wrap;font-family:ui-monospace,Menlo,monospace">
+     <span title="#FF6B6B" style="width:40px;height:40px;border-radius:6px;background:#FF6B6B;box-shadow:inset 0 0 0 1px rgba(127,127,127,.22)"></span>
+     <span title="#F97D38" style="width:40px;height:40px;border-radius:6px;background:#F97D38;box-shadow:inset 0 0 0 1px rgba(127,127,127,.22)"></span>
+     <span title="#E59300" style="width:40px;height:40px;border-radius:6px;background:#E59300;box-shadow:inset 0 0 0 1px rgba(127,127,127,.22)"></span>
+     <span title="#CAA701" style="width:40px;height:40px;border-radius:6px;background:#CAA701;box-shadow:inset 0 0 0 1px rgba(127,127,127,.22)"></span>
+     <span title="#A7B945" style="width:40px;height:40px;border-radius:6px;background:#A7B945;box-shadow:inset 0 0 0 1px rgba(127,127,127,.22)"></span>
+     <span title="#7FC575" style="width:40px;height:40px;border-radius:6px;background:#7FC575;box-shadow:inset 0 0 0 1px rgba(127,127,127,.22)"></span>
+     <span title="#5CCCA0" style="width:40px;height:40px;border-radius:6px;background:#5CCCA0;box-shadow:inset 0 0 0 1px rgba(127,127,127,.22)"></span>
+     <span title="#4ECDC4" style="width:40px;height:40px;border-radius:6px;background:#4ECDC4;box-shadow:inset 0 0 0 1px rgba(127,127,127,.22)"></span>
+   </div>
+   <p style="font-size:12px;color:var(--dm-text-muted,#8a90a0);margin:2px 0 0">
+   Named colours, <code>mix_colors</code>, and <code>pseudo_alpha</code> compose
+   the same way — see the snippet above.</p>
 
 API
 ---

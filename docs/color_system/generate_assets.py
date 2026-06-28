@@ -138,6 +138,61 @@ def _text_color_for_bg(hex_str: str) -> str:
     return "#fff" if _relative_luminance_rgb(r, g, b) < 0.45 else "#333"
 
 
+#: Legacy palettes are deprecated back-compat aliases — kept working for old
+#: example scripts but omitted from the curated showcase sheet.
+_DC_LEGACY = {"vivid", "sunset", "ocean", "pop", "cyber", "autumn", "nordic"}
+
+
+def _write_dc_sheet(images_dir: Path, label: str, mapping: dict) -> Path:
+    """Build the dc categorical sheet: one row per curated palette, slots in
+    their **designed order** (not lightness-sorted), curated order from the
+    palette SSOT, legacy omitted. Swatches are interactive (hover → name+hex).
+    """
+    import json
+
+    import dartwork_mpl as _dm_pkg
+
+    pkg_path = (
+        Path(_dm_pkg.__file__).parent / "asset" / "color" / "dc_palettes.json"
+    )
+    pal = json.loads(pkg_path.read_text(encoding="utf-8"))
+    # default (dc.0-7) first, then curated palettes in SSOT order, legacy out.
+    order = [""] + [k for k in pal if k and k.lower() not in _DC_LEGACY]
+
+    html = [
+        '<div class="dm-color-sheet">',
+        f'<div class="dm-sheet-title">{label}</div>',
+    ]
+    for key in order:
+        if key not in pal:
+            continue
+        base = "" if key == "" else key.lower()
+        glabel = "dc" if base == "" else f"dc.{base}"
+        html.append('<div class="dm-color-group">')
+        html.append(f'<span class="dm-group-label">{glabel}</span>')
+        html.append('<div class="dm-swatch-row">')
+        for i in range(len(pal[key])):
+            cname = f"dc.{base}{i}"
+            spec = mapping.get(cname)
+            if spec is None:
+                continue
+            hex_val = spec if isinstance(spec, str) else mpl.colors.to_hex(spec)
+            tc = _text_color_for_bg(hex_val)
+            html.append(
+                f'<div class="dm-swatch" style="background:{hex_val}"'
+                f' title="{cname}">'
+                f'<span class="dm-swatch-name" style="color:{tc}">{i}</span>'
+                f'<span class="dm-swatch-hex" style="color:{tc}">'
+                f"{hex_val}</span></div>"
+            )
+        html.append("</div></div>")
+    html.append("</div>")
+
+    path = images_dir / "colors_dc.html"
+    path.write_text("\n".join(html), encoding="utf-8")
+    return path
+
+
 def _save_color_sheets_html(images_dir: Path) -> list[Path]:
     """Generate HTML fragment files for each color library."""
     from dartwork_mpl.colors._loader import ensure_loaded
@@ -160,6 +215,13 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
     for library_key in COLOR_LIBRARY_ORDER:
         prefix = prefix_map.get(library_key, "")
         label = COLOR_LIBRARY_LABELS.get(library_key, library_key)
+
+        # dc uses a dedicated palette-ordered, slot-preserving builder so the
+        # 24 curated palettes read as designed (generic base-grouping with
+        # OKLCH sort scrambles slot order and drops the dc.0-7 default).
+        if library_key == "dc":
+            paths.append(_write_dc_sheet(images_dir, label, mapping))
+            continue
 
         # Collect colors for this library, grouped by base name
         lib_colors: dict[str, list[tuple[str, str, str]]] = {}
@@ -193,19 +255,11 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
                 return (1, int(m2.group(2)), m2.group(1))
             return (2, 0, w)
 
-        # For dm palettes: sort by OKLCH lightness (light→dark)
-        def _oklch_sort_key(item: tuple[str, str, str]) -> float:
-            """Sort by OKLCH lightness descending (light first)."""
-            return -_oklch_lightness(item[2])
-
-        is_dc = library_key == "dc"
-
         html_parts = ['<div class="dm-color-sheet">']
         html_parts.append(f'<div class="dm-sheet-title">{label}</div>')
 
         for base in sorted(lib_colors.keys()):
-            sort_fn = _oklch_sort_key if is_dc else _weight_sort_key
-            colors_list = sorted(lib_colors[base], key=sort_fn)
+            colors_list = sorted(lib_colors[base], key=_weight_sort_key)
             # Group label shows prefix+base (e.g. "tw.amber", "dc.vivid")
             group_label = f"{prefix}{base}"
 

@@ -1,0 +1,498 @@
+<!doctype html>
+<!--
+  install_picker_pocs.html — POC gallery for the "Live install command" widget.
+
+  Standalone preview (no Sphinx build required). Inlines the curated subset of
+  dartwork-design.css tokens it needs so each POC renders pixel-identical to the
+  live docs. Six interactive directions; flip the theme toggle to inspect
+  light + dark. Every variant is fully wired (Tool/OS -> live command + Copy)
+  so the "dynamic" feel is real, not a mockup.
+
+  Convention mirrors _static/landing_pocs_preview.html.
+-->
+<html lang="en" class="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Install picker — UX directions</title>
+  <style>
+    /* ───────────────────────── tokens (subset of dartwork-design.css) ──────── */
+    :root {
+      --dm-gray-1:#fcfcfd; --dm-gray-2:#f9f9fb; --dm-gray-3:#f0f0f3;
+      --dm-gray-4:#e8e8ec; --dm-gray-6:#d9d9e0; --dm-gray-11:#60646c;
+      --dm-gray-12:#1c2024;
+      --dm-gray-a3:rgba(0,8,60,.059); --dm-gray-a4:rgba(0,0,39,.09);
+      --dm-gray-a6:rgba(0,0,32,.149); --dm-gray-a8:rgba(0,4,47,.275);
+
+      --dm-accent-2:#f3fbf9; --dm-accent-3:#e0f8f3; --dm-accent-5:#b8eae0;
+      --dm-accent-7:#83cdbf; --dm-accent-8:#53b9ab; --dm-accent-9:#12a594;
+      --dm-accent-10:#0d9b8a; --dm-accent-11:#008573; --dm-accent-12:#0d3d38;
+
+      --dm-text-strong:var(--dm-gray-12);
+      --dm-text-muted:var(--dm-gray-11);
+      --dm-border-faint:var(--dm-gray-a4);
+      --dm-border:var(--dm-gray-a6);
+      --dm-bg-panel:var(--dm-gray-1);
+
+      --page-bg:#ffffff;
+      --code-bg:#0f172a;            /* the dark command slab, both themes */
+      --code-fg:#e2e8f0;
+      --code-prompt:#5eead4;
+
+      --dm-shadow-2:0 0 0 1px var(--dm-gray-a4),0 1px 2px var(--dm-gray-a3),0 2px 4px -1px var(--dm-gray-a3);
+
+      --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+      --mono:"SFMono-Regular",ui-monospace,"JetBrains Mono",Consolas,Menlo,monospace;
+      --radius:10px;
+    }
+    html.dark {
+      --dm-gray-1:#111113; --dm-gray-2:#18191b; --dm-gray-3:#212225;
+      --dm-gray-4:#272a2d; --dm-gray-6:#363a3f; --dm-gray-11:#b0b4ba;
+      --dm-gray-12:#edeef0;
+      --dm-gray-a3:rgba(244,246,248,.075); --dm-gray-a4:rgba(229,247,251,.106);
+      --dm-gray-a6:rgba(238,247,254,.18); --dm-gray-a8:rgba(235,248,255,.349);
+
+      --dm-accent-2:#0e1916; --dm-accent-3:#112725; --dm-accent-5:#1a3833;
+      --dm-accent-7:#236e64; --dm-accent-8:#2c8577; --dm-accent-9:#12a594;
+      --dm-accent-10:#25c2ad; --dm-accent-11:#76dac3; --dm-accent-12:#adf0dd;
+
+      --dm-bg-panel:var(--dm-gray-2);
+      --page-bg:#0c0c0e;
+    }
+
+    /* ───────────────────────── page chrome ──────────────────────────────── */
+    * { box-sizing:border-box; }
+    body {
+      margin:0; background:var(--page-bg); color:var(--dm-text-strong);
+      font-family:var(--sans); letter-spacing:-.003em;
+      -webkit-font-smoothing:antialiased;
+    }
+    .wrap { max-width:760px; margin:0 auto; padding:40px 24px 96px; }
+
+    .topbar {
+      display:flex; align-items:center; justify-content:space-between;
+      gap:16px; margin-bottom:8px; flex-wrap:wrap;
+    }
+    .topbar h1 {
+      font-size:26px; font-weight:700; letter-spacing:-.022em; margin:0;
+    }
+    .topbar p { margin:6px 0 0; color:var(--dm-text-muted); font-size:14px; max-width:46ch; }
+
+    .theme-toggle {
+      display:inline-flex; align-items:center; gap:8px;
+      background:var(--dm-bg-panel); color:var(--dm-text-strong);
+      border:1px solid var(--dm-border); border-radius:999px;
+      padding:7px 14px; font:inherit; font-size:13px; font-weight:500;
+      cursor:pointer; transition:border-color .15s, background .15s;
+    }
+    .theme-toggle:hover { border-color:var(--dm-accent-9); }
+
+    /* cards */
+    .gallery { display:grid; gap:40px; margin-top:40px; }
+    .poc { }
+    .poc-head { display:flex; align-items:baseline; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+    .poc-badge {
+      font-family:var(--mono); font-size:11px; font-weight:600;
+      letter-spacing:.06em; color:#fff; background:var(--dm-accent-9);
+      border-radius:6px; padding:3px 8px;
+    }
+    .poc-name { font-size:17px; font-weight:600; letter-spacing:-.01em; margin:0; }
+    .poc-desc { width:100%; margin:2px 0 0; color:var(--dm-text-muted); font-size:13.5px; line-height:1.5; }
+
+    /* ─── shared widget structure (every POC reuses these) ─────────────── */
+    .ip { font-family:var(--sans); }
+    .ip-eyebrow {
+      font-size:.72rem; font-weight:700; letter-spacing:.09em;
+      text-transform:uppercase; color:var(--dm-accent-11);
+    }
+    .ip-detected { font-size:.8rem; color:var(--dm-text-muted); }
+    .ip-detected strong { color:var(--dm-text-strong); }
+    .ip-row-label {
+      font-size:.7rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:.06em; color:var(--dm-text-muted);
+      min-width:40px; user-select:none;
+    }
+    .ip-cmd { position:relative; }
+    .ip-cmd pre {
+      margin:0; padding:14px 60px 14px 16px; background:var(--code-bg);
+      color:var(--code-fg); border-radius:8px; font-family:var(--mono);
+      font-size:.9rem; line-height:1.5; overflow-x:auto;
+    }
+    .ip-cmd .prompt { color:var(--code-prompt); user-select:none; }
+    .ip-copy {
+      position:absolute; top:8px; right:8px;
+      background:rgba(255,255,255,.08); color:#fff;
+      border:1px solid rgba(255,255,255,.18); border-radius:6px;
+      padding:4px 11px; font:inherit; font-size:.76rem; font-weight:500;
+      cursor:pointer; transition:background .15s, border-color .15s;
+    }
+    .ip-copy:hover { background:var(--dm-accent-9); border-color:var(--dm-accent-9); }
+    .ip-copy.copied { background:var(--dm-accent-9); border-color:var(--dm-accent-9); }
+    .ip-note { font-size:.8rem; color:var(--dm-text-muted); }
+    .ip-note code {
+      font-family:var(--mono); font-size:.92em; background:var(--dm-gray-a3);
+      border:1px solid var(--dm-border-faint); border-radius:4px; padding:1px 5px;
+    }
+
+    /* ===================================================================== */
+    /* A — Underline tabs (docs-native: matches Quick Install + .dm-pc-tab)   */
+    /* ===================================================================== */
+    .ipA {
+      border-top:1px solid var(--dm-border-faint);
+      border-bottom:1px solid var(--dm-border-faint);
+      padding:2px 0 16px;
+    }
+    .ipA .ip-head { display:flex; justify-content:space-between; align-items:center;
+      padding:14px 2px; border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; gap:8px; }
+    .ipA .ip-row { display:flex; align-items:center; gap:18px; padding:6px 2px 0; }
+    .ipA .ip-tabs { display:inline-flex; gap:4px; border-bottom:1px solid var(--dm-border-faint); flex:1; }
+    .ipA .ip-tab {
+      background:transparent; border:none; border-bottom:2px solid transparent;
+      color:var(--dm-text-muted); font:inherit; font-size:14px; font-weight:500;
+      padding:8px 12px; margin-bottom:-1px; cursor:pointer;
+      transition:color .12s, border-color .12s;
+    }
+    .ipA .ip-tab:hover { color:var(--dm-text-strong); }
+    .ipA .ip-tab.active { color:var(--dm-text-strong); border-bottom-color:var(--dm-accent-9); }
+    .ipA .ip-cmd { margin:16px 2px 0; }
+    .ipA .ip-note { padding:12px 2px 0; }
+
+    /* ===================================================================== */
+    /* B — Segmented control (sliding thumb) — the "dynamic" one             */
+    /* ===================================================================== */
+    .ipB {
+      border:1px solid var(--dm-border-faint); border-radius:var(--radius);
+      background:var(--dm-bg-panel); box-shadow:var(--dm-shadow-2); overflow:hidden;
+    }
+    .ipB .ip-head { display:flex; justify-content:space-between; align-items:center;
+      padding:13px 18px; border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; gap:8px; }
+    .ipB .ip-row { display:flex; align-items:center; gap:14px; padding:12px 18px 4px; }
+    .ipB .seg {
+      position:relative; display:inline-flex; background:var(--dm-gray-a3);
+      border-radius:8px; padding:3px; gap:0;
+    }
+    .ipB .seg-thumb {
+      position:absolute; top:3px; left:3px; height:calc(100% - 6px);
+      background:var(--dm-bg-panel); border-radius:6px; box-shadow:var(--dm-shadow-2);
+      transition:transform .26s cubic-bezier(.4,0,.2,1), width .26s cubic-bezier(.4,0,.2,1);
+      z-index:0;
+    }
+    .ipB .ip-tab {
+      position:relative; z-index:1; background:transparent; border:none;
+      color:var(--dm-text-muted); font:inherit; font-size:13.5px; font-weight:500;
+      padding:6px 14px; cursor:pointer; transition:color .2s; white-space:nowrap;
+    }
+    .ipB .ip-tab.active { color:var(--dm-text-strong); }
+    .ipB .ip-cmd { margin:14px 18px; }
+    .ipB .ip-note { padding:0 18px 16px; }
+
+    /* ===================================================================== */
+    /* C — Solid accent chips (the current idiom, corrected + on-brand)      */
+    /* ===================================================================== */
+    .ipC {
+      border:1px solid var(--dm-border-faint); border-radius:var(--radius);
+      background:var(--dm-bg-panel); box-shadow:var(--dm-shadow-2); overflow:hidden;
+    }
+    .ipC .ip-head { display:flex; justify-content:space-between; align-items:center;
+      padding:13px 18px;
+      background:linear-gradient(180deg,var(--dm-accent-2),transparent);
+      border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; gap:8px; }
+    .ipC .ip-row { display:flex; align-items:center; gap:14px; padding:11px 18px; border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; }
+    .ipC .ip-tabs { display:inline-flex; gap:6px; flex-wrap:wrap; }
+    .ipC .ip-tab {
+      background:transparent; color:var(--dm-text-strong);
+      border:1px solid var(--dm-border); border-radius:999px;
+      padding:6px 14px; font:inherit; font-size:13.5px; font-weight:500;
+      cursor:pointer; transition:all .15s ease;
+    }
+    .ipC .ip-tab:hover { border-color:var(--dm-accent-9); color:var(--dm-accent-11); }
+    .ipC .ip-tab.active { background:var(--dm-accent-9); border-color:var(--dm-accent-9); color:#fff; }
+    .ipC .ip-tab.active:hover { background:var(--dm-accent-10); border-color:var(--dm-accent-10); color:#fff; }
+    .ipC .ip-cmd { margin:14px 18px; }
+    .ipC .ip-note { padding:0 18px 14px; }
+
+    /* ===================================================================== */
+    /* D — Soft-tint chips (Radix "soft" — gentle, great dual-theme contrast) */
+    /* ===================================================================== */
+    .ipD {
+      border-top:1px solid var(--dm-border-faint);
+      border-bottom:1px solid var(--dm-border-faint); padding:2px 0 16px;
+    }
+    .ipD .ip-head { display:flex; justify-content:space-between; align-items:center;
+      padding:14px 2px; border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; gap:8px; }
+    .ipD .ip-row { display:flex; align-items:center; gap:16px; padding:12px 2px 0; flex-wrap:wrap; }
+    .ipD .ip-tabs { display:inline-flex; gap:7px; flex-wrap:wrap; }
+    .ipD .ip-tab {
+      background:transparent; color:var(--dm-text-muted);
+      border:1px solid transparent; border-radius:7px;
+      padding:6px 13px; font:inherit; font-size:13.5px; font-weight:500;
+      cursor:pointer; transition:all .15s ease;
+    }
+    .ipD .ip-tab:hover { background:var(--dm-gray-a3); color:var(--dm-text-strong); }
+    .ipD .ip-tab.active {
+      background:var(--dm-accent-3); color:var(--dm-accent-11);
+      border-color:var(--dm-accent-7); font-weight:600;
+    }
+    .ipD .ip-cmd { margin:16px 2px 0; }
+    .ipD .ip-note { padding:12px 2px 0; }
+
+    /* ===================================================================== */
+    /* E — Outline active (minimal ink: ghost idle, accent outline active)   */
+    /* ===================================================================== */
+    .ipE {
+      border:1px solid var(--dm-border-faint); border-radius:var(--radius);
+      background:var(--dm-bg-panel); overflow:hidden;
+    }
+    .ipE .ip-head { display:flex; justify-content:space-between; align-items:center;
+      padding:13px 18px; border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; gap:8px; }
+    .ipE .ip-row { display:flex; align-items:center; gap:14px; padding:12px 18px 0; flex-wrap:wrap; }
+    .ipE .ip-tabs { display:inline-flex; gap:8px; flex-wrap:wrap; }
+    .ipE .ip-tab {
+      background:transparent; color:var(--dm-text-muted);
+      border:1.5px solid var(--dm-border-faint); border-radius:8px;
+      padding:5px 13px; font:inherit; font-size:13.5px; font-weight:500;
+      cursor:pointer; transition:all .15s ease;
+    }
+    .ipE .ip-tab:hover { color:var(--dm-text-strong); border-color:var(--dm-border); }
+    .ipE .ip-tab.active {
+      color:var(--dm-accent-11); border-color:var(--dm-accent-9);
+      box-shadow:inset 0 0 0 1px var(--dm-accent-9); font-weight:600;
+    }
+    .ipE .ip-cmd { margin:14px 18px; }
+    .ipE .ip-note { padding:12px 18px 16px; }
+
+    /* ===================================================================== */
+    /* F — Command bar (compact: code slab dominant, inline selectors)       */
+    /* ===================================================================== */
+    .ipF {
+      border:1px solid var(--dm-border-faint); border-radius:var(--radius);
+      background:var(--dm-bg-panel); box-shadow:var(--dm-shadow-2); overflow:hidden;
+    }
+    .ipF .ip-bar {
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      padding:10px 14px; border-bottom:1px solid var(--dm-border-faint);
+    }
+    .ipF .ip-eyebrow { margin-right:auto; }
+    .ipF .seg {
+      display:inline-flex; background:var(--dm-gray-a3); border-radius:7px; padding:2px;
+    }
+    .ipF .ip-tab {
+      background:transparent; border:none; border-radius:5px;
+      color:var(--dm-text-muted); font:inherit; font-size:12.5px; font-weight:500;
+      padding:4px 10px; cursor:pointer; transition:all .15s; white-space:nowrap;
+    }
+    .ipF .ip-tab:hover { color:var(--dm-text-strong); }
+    .ipF .ip-tab.active { background:var(--dm-bg-panel); color:var(--dm-accent-11);
+      box-shadow:var(--dm-shadow-2); font-weight:600; }
+    .ipF .ip-cmd { margin:0; }
+    .ipF .ip-cmd pre { border-radius:0; }
+    .ipF .ip-note { padding:10px 14px; }
+  </style>
+</head>
+<body class="yue">
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>Live install command — UX directions</h1>
+        <p>Six fully-interactive directions for the install picker. Click Tool / OS;
+           toggle the theme to check both modes. Tokens are the live Radix set.</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button">◐ Toggle theme</button>
+    </div>
+
+    <div class="gallery" id="gallery"></div>
+  </div>
+
+  <script>
+    /* ───────────────────────── shared data ──────────────────────────────── */
+    const TOOLS = [
+      { id:"uv",     label:"uv",     cmd:"uv add dartwork-mpl",                         note:"Fast Rust-based resolver — recommended." },
+      { id:"pip",    label:"pip",    cmd:"pip install dartwork-mpl",                    note:"The standard Python installer." },
+      { id:"poetry", label:"Poetry", cmd:"poetry add dartwork-mpl",                     note:"Adds to <code>pyproject.toml</code> automatically." },
+      { id:"conda",  label:"conda",  cmd:"pip install dartwork-mpl   # in a conda env", note:"Use <code>pip</code> inside the conda environment." },
+    ];
+    const OSES = [
+      { id:"macos",   label:"macOS",   prompt:"$ ",   prereq:null },
+      { id:"linux",   label:"Linux",   prompt:"$ ",   prereq:null },
+      { id:"windows", label:"Windows", prompt:"PS> ", prereq:"Make sure Git is installed: <code>winget install Git.Git</code>" },
+    ];
+
+    const VARIANTS = [
+      { key:"A", cls:"ipA", name:"Underline tabs", style:"layout-flush",
+        desc:"Docs-native. Identical idiom to the Quick Install tab-set right below it and the color-system tabs — flat hairline shell, active = teal underline. Zero new visual language; reads as part of the page, not a bolted-on card." },
+      { key:"B", cls:"ipB", name:"Segmented control · sliding thumb", style:"layout-card",
+        desc:"The dynamic one. A single tinted track with a panel-colored thumb that slides between options (260ms). iOS / Linear feel. Active state can never be invisible — the thumb is a solid surface, not a fill on the same color." },
+      { key:"C", cls:"ipC", name:"Solid accent chips (corrected)", style:"layout-card",
+        desc:"The current rounded-chip idiom, fixed: idle = ghost + faint border, active = solid accent-9 + white, hover = accent-10. Smallest diff from today; the literal fix for the reported bug." },
+      { key:"D", cls:"ipD", name:"Soft-tint chips (Radix soft)", style:"layout-flush",
+        desc:"Radix's signature soft button. Active = accent-3 wash + accent-11 text + accent-7 hairline. Gentler than a solid fill, and the accent-3/11 pair is engineered for AA contrast in BOTH themes." },
+      { key:"E", cls:"ipE", name:"Outline active (minimal ink)", style:"layout-card",
+        desc:"Lowest visual weight. Idle = faint outline, active = accent-9 ring + accent-11 text, no fill. Matches the 'active item carries less weight' philosophy the radix overlay already uses for the sidebar." },
+      { key:"F", cls:"ipF", name:"Command bar (compact)", style:"layout-card",
+        desc:"A layout rethink: selectors collapse into one toolbar, the dark command slab dominates edge-to-edge. Densest option — good if the picker should feel like a terminal affordance rather than a form." },
+    ];
+
+    /* ───────────────────────── builders ─────────────────────────────────── */
+    const detected = "macOS";
+
+    function tabBtn(group, item, active, cls) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "ip-tab" + (active ? " active" : "");
+      b.dataset.group = group;
+      b.dataset.id = item.id;
+      b.textContent = item.label;
+      return b;
+    }
+
+    function buildHead(v) {
+      const head = document.createElement("div");
+      head.className = "ip-head";
+      head.innerHTML =
+        '<span class="ip-eyebrow">Live install command</span>' +
+        '<span class="ip-detected">Detected: <strong>' + detected + "</strong></span>";
+      return head;
+    }
+
+    function buildRow(v, group, items, savedId, withSeg) {
+      const row = document.createElement("div");
+      row.className = "ip-row";
+      const label = document.createElement("span");
+      label.className = "ip-row-label";
+      label.textContent = group === "tool" ? "Tool" : "OS";
+      row.appendChild(label);
+
+      const tabs = document.createElement("div");
+      tabs.className = withSeg ? "seg" : "ip-tabs";
+      if (withSeg) {
+        const thumb = document.createElement("span");
+        thumb.className = "seg-thumb";
+        tabs.appendChild(thumb);
+      }
+      items.forEach(it => tabs.appendChild(tabBtn(group, it, it.id === savedId)));
+      row.appendChild(tabs);
+      return row;
+    }
+
+    function buildCmd() {
+      const box = document.createElement("div");
+      box.className = "ip-cmd";
+      box.innerHTML =
+        '<pre><code><span class="prompt"></span><span class="body"></span></code></pre>' +
+        '<button class="ip-copy" type="button" aria-label="Copy command">Copy</button>';
+      return box;
+    }
+
+    function buildWidget(v) {
+      const w = document.createElement("div");
+      w.className = "ip " + v.cls;
+      const seg = v.cls === "ipB";       // sliding thumb on Tool + OS
+      const state = { tool:"uv", os:"macos" };
+
+      if (v.cls === "ipF") {
+        // command bar: single toolbar row, then the slab
+        const bar = document.createElement("div");
+        bar.className = "ip-bar";
+        bar.innerHTML = '<span class="ip-eyebrow">Install</span>';
+        const segTool = document.createElement("div"); segTool.className = "seg";
+        TOOLS.forEach(t => segTool.appendChild(tabBtn("tool", t, t.id === state.tool)));
+        const segOs = document.createElement("div"); segOs.className = "seg";
+        OSES.forEach(o => segOs.appendChild(tabBtn("os", o, o.id === state.os)));
+        bar.appendChild(segTool); bar.appendChild(segOs);
+        w.appendChild(bar);
+      } else {
+        w.appendChild(buildHead(v));
+        w.appendChild(buildRow(v, "tool", TOOLS, state.tool, seg));
+        w.appendChild(buildRow(v, "os", OSES, state.os, seg));
+      }
+
+      const cmd = buildCmd();
+      const note = document.createElement("div");
+      note.className = "ip-note";
+      w.appendChild(cmd);
+      w.appendChild(note);
+
+      wire(w, state, cmd, note, seg);
+      return w;
+    }
+
+    /* ───────────────────────── interaction ──────────────────────────────── */
+    function render(w, state, cmd, note) {
+      const tool = TOOLS.find(t => t.id === state.tool);
+      const os   = OSES.find(o => o.id === state.os);
+      cmd.querySelector(".prompt").textContent = os.prompt;
+      cmd.querySelector(".body").textContent   = tool.cmd;
+      const parts = [];
+      if (os.prereq) parts.push(os.prereq);
+      parts.push(tool.note);
+      note.innerHTML = parts.join(" · ");
+    }
+
+    function moveThumb(tabs) {
+      const thumb = tabs.querySelector(".seg-thumb");
+      if (!thumb) return;
+      const active = tabs.querySelector(".ip-tab.active");
+      if (!active) return;
+      thumb.style.width = active.offsetWidth + "px";
+      thumb.style.transform = "translateX(" + (active.offsetLeft - 3) + "px)";
+    }
+
+    function wire(w, state, cmd, note, seg) {
+      w.addEventListener("click", e => {
+        const b = e.target.closest(".ip-tab");
+        if (b) {
+          const group = b.dataset.group;
+          state[group] = b.dataset.id;
+          const tabs = b.parentElement;
+          tabs.querySelectorAll(".ip-tab").forEach(x =>
+            x.classList.toggle("active", x === b));
+          if (seg) moveThumb(tabs);
+          render(w, state, cmd, note);
+          return;
+        }
+        const copy = e.target.closest(".ip-copy");
+        if (copy) {
+          const text = cmd.querySelector(".body").textContent;
+          navigator.clipboard && navigator.clipboard.writeText(text);
+          copy.textContent = "Copied!"; copy.classList.add("copied");
+          setTimeout(() => { copy.textContent = "Copy"; copy.classList.remove("copied"); }, 1400);
+        }
+      });
+      render(w, state, cmd, note);
+      if (seg) requestAnimationFrame(() =>
+        w.querySelectorAll(".seg").forEach(moveThumb));
+    }
+
+    /* ───────────────────────── mount ────────────────────────────────────── */
+    const gallery = document.getElementById("gallery");
+    VARIANTS.forEach(v => {
+      const card = document.createElement("section");
+      card.className = "poc";
+      card.innerHTML =
+        '<div class="poc-head">' +
+          '<span class="poc-badge">POC ' + v.key + "</span>" +
+          '<h2 class="poc-name">' + v.name + "</h2>" +
+          '<p class="poc-desc">' + v.desc + "</p>" +
+        "</div>";
+      card.appendChild(buildWidget(v));
+      gallery.appendChild(card);
+    });
+
+    // re-seat thumbs after fonts settle / on resize
+    window.addEventListener("load", () =>
+      document.querySelectorAll(".ipB .seg").forEach(moveThumb));
+    window.addEventListener("resize", () =>
+      document.querySelectorAll(".ipB .seg, .ipF .seg").forEach(moveThumb));
+
+    /* theme toggle */
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      const root = document.documentElement;
+      root.classList.toggle("dark"); root.classList.toggle("light");
+      document.body.setAttribute("data-theme",
+        root.classList.contains("dark") ? "dark" : "light");
+      requestAnimationFrame(() =>
+        document.querySelectorAll(".ipB .seg").forEach(moveThumb));
+    });
+  </script>
+</body>
+</html>

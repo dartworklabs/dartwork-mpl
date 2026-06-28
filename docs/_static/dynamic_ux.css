@@ -156,7 +156,7 @@
   line-height: 1;
   cursor: pointer;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--dm-radius-3);
 }
 .dm-kbd-close:hover {
   background: var(--dm-ux-bg-mute);
@@ -188,7 +188,7 @@
   background: var(--dm-ux-bg-mute);
   border: 1px solid var(--dm-ux-border);
   border-bottom-width: 2px;
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
   padding: 2px 7px;
   font-size: 0.78rem;
   color: var(--dm-ux-text);
@@ -217,7 +217,7 @@
   background: var(--dm-ux-bg);
   border: 1px solid var(--dm-ux-border);
   padding: 1px 5px;
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
 }
 body.dm-kbd-pending-g::after {
   content: "g…";
@@ -228,7 +228,7 @@ body.dm-kbd-pending-g::after {
   color: var(--dm-ux-bg);
   font-family: var(--sy-f-mono, monospace);
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: var(--dm-radius-3);
   font-size: 0.8rem;
   z-index: 9991;
   animation: dmKbdPending 1.2s ease forwards;
@@ -243,143 +243,10 @@ body.dm-kbd-pending-g::after {
 }
 
 /* ───────────────────────── 4. Install picker ────────────────────────── */
-.dm-install-picker {
-  margin: 1.5rem 0 2rem;
-  border: 1px solid var(--dm-ux-border);
-  border-radius: var(--dm-ux-radius);
-  overflow: hidden;
-  background: var(--dm-ux-bg);
-  box-shadow: var(--dm-ux-elev);
-  font-family: var(--sy-f-sys, system-ui);
-}
-.dm-ip-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 18px;
-  background: linear-gradient(
-    180deg,
-    var(--dm-ux-accent-soft),
-    transparent
-  );
-  border-bottom: 1px solid var(--dm-ux-border);
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.dm-ip-eyebrow {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--dm-ux-accent);
-}
-.dm-ip-detected {
-  font-size: 0.82rem;
-  color: var(--dm-ux-text-weak);
-}
-.dm-ip-detected strong {
-  color: var(--dm-ux-text);
-}
-.dm-ip-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 18px;
-  border-bottom: 1px solid var(--dm-ux-border);
-  flex-wrap: wrap;
-}
-.dm-ip-row-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--dm-ux-text-weak);
-  min-width: 48px;
-}
-.dm-ip-tabs {
-  display: inline-flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.dm-ip-tab {
-  background: var(--dm-ux-bg-mute);
-  color: var(--dm-ux-text);
-  border: 1px solid var(--dm-ux-border);
-  padding: 6px 12px;
-  border-radius: 999px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: all 0.15s ease;
-}
-.dm-ip-tab:hover {
-  border-color: var(--dm-ux-accent);
-  color: var(--dm-ux-accent);
-}
-.dm-ip-tab.active {
-  background: var(--dm-ux-accent);
-  border-color: var(--dm-ux-accent);
-  color: #fff;
-}
-.dm-ip-cmd {
-  position: relative;
-  margin: 14px 18px;
-}
-.dm-ip-cmd pre {
-  margin: 0;
-  padding: 14px 16px;
-  background: var(--sy-c-bg-weak, #0f172a);
-  color: #e2e8f0;
-  border-radius: 8px;
-  font-family: var(--sy-f-mono, ui-monospace, monospace);
-  font-size: 0.92rem;
-  line-height: 1.5;
-  overflow-x: auto;
-}
-.dm-ip-cmd pre code {
-  background: transparent !important;
-  border: 0 !important;
-  padding: 0 !important;
-  color: inherit !important;
-}
-html.light .dm-ip-cmd pre,
-body[data-theme="light"] .dm-ip-cmd pre {
-  background: #0f172a;
-  color: #e2e8f0;
-}
-.dm-ip-copy {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 0.78rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.dm-ip-copy:hover {
-  background: var(--dm-ux-accent);
-  border-color: var(--dm-ux-accent);
-}
-.dm-ip-copy.copied {
-  background: var(--dm-ux-accent);
-  border-color: var(--dm-ux-accent);
-}
-.dm-ip-note {
-  padding: 10px 18px 14px;
-  font-size: 0.83rem;
-  color: var(--dm-ux-text-weak);
-}
-.dm-ip-note code {
-  background: var(--dm-ux-bg-mute);
-  border: 1px solid var(--dm-ux-border);
-  border-radius: 4px;
-  padding: 1px 5px;
-}
+/* Migrated (P3b) to the interactive primitive SSOT: the picker now composes
+ * .dm-seg (Tool/OS) + .dm-code (command) + .dm-icon-btn (copy), and its layout
+ * shell lives in dm-interactive.css §10. The old bespoke .dm-ip-tab pill /
+ * dark-slab rules (which shipped the invisible-active bug) are deleted. */
 
 /* ───────────────────────── 5. FAQ filter ────────────────────────────── */
 .dm-faq-toolbar {
@@ -411,7 +278,7 @@ body[data-theme="light"] .dm-ip-cmd pre {
   border: 1px solid var(--dm-ux-border);
   background: var(--dm-ux-bg-mute);
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: var(--dm-radius-4);
 }
 .dm-faq-search-icon {
   color: var(--dm-ux-text-weak);
@@ -476,7 +343,7 @@ body[data-theme="light"] .dm-ip-cmd pre {
 .dm-rw-title code {
   background: var(--dm-ux-bg-mute);
   border: 1px solid var(--dm-ux-border);
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
   padding: 1px 5px;
   font-size: 0.85em;
 }
@@ -518,7 +385,7 @@ body[data-theme="light"] .dm-ip-cmd pre {
 }
 .dm-rw-ctrl select {
   padding: 5px 8px;
-  border-radius: 6px;
+  border-radius: var(--dm-radius-3);
   border: 1px solid var(--dm-ux-border);
   background: var(--dm-ux-bg);
   color: var(--dm-ux-text);
@@ -550,7 +417,7 @@ body[data-theme="light"] .dm-ip-cmd pre {
   text-align: center;
   background: var(--dm-ux-bg);
   border: 1px dashed var(--dm-ux-border);
-  border-radius: 8px;
+  border-radius: var(--dm-radius-4);
   padding: 14px 12px;
   transition: font-size 0.18s ease, font-weight 0.18s ease;
 }
@@ -655,7 +522,7 @@ body[data-theme="light"] .dm-ip-cmd pre {
 }
 .dm-ls-results {
   border: 1px solid var(--dm-ux-border);
-  border-radius: 8px;
+  border-radius: var(--dm-radius-4);
   background: var(--dm-ux-bg-mute);
   padding: 8px;
   display: flex;
@@ -667,7 +534,7 @@ body[data-theme="light"] .dm-ip-cmd pre {
   display: flex;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: var(--dm-radius-3);
   background: var(--dm-ux-bg);
   border-left: 3px solid transparent;
   font-size: 0.85rem;
@@ -679,7 +546,7 @@ body[data-theme="light"] .dm-ip-cmd pre {
   font-family: var(--sy-f-mono, monospace);
   font-size: 0.72rem;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
   background: var(--dm-ux-bg-mute);
   color: var(--dm-ux-text-weak);
   border: 1px solid var(--dm-ux-border);
@@ -688,39 +555,39 @@ body[data-theme="light"] .dm-ip-cmd pre {
 .dm-ls-text code {
   background: var(--dm-ux-bg-mute);
   border: 1px solid var(--dm-ux-border);
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
   padding: 0 4px;
   font-size: 0.85em;
 }
 .dm-ls-warn {
-  border-left-color: #f59e0b;
+  border-left-color: var(--dm-warning-9);
 }
 .dm-ls-warn .dm-ls-tag {
-  color: #b45309;
-  background: #fef3c7;
-  border-color: #fde68a;
+  color: var(--dm-warning-11);
+  background: var(--dm-warning-3);
+  border-color: var(--dm-warning-6);
 }
 .dm-ls-info {
-  border-left-color: #38bdf8;
+  border-left-color: var(--dm-info-9);
 }
 .dm-ls-info .dm-ls-tag {
-  color: #075985;
-  background: #e0f2fe;
-  border-color: #bae6fd;
+  color: var(--dm-info-11);
+  background: var(--dm-info-3);
+  border-color: var(--dm-info-6);
 }
 .dm-ls-ok {
-  border-left-color: #10b981;
+  border-left-color: var(--dm-success-9);
 }
 .dm-ls-ok .dm-ls-tag {
-  color: #065f46;
-  background: #d1fae5;
-  border-color: #a7f3d0;
+  color: var(--dm-success-11);
+  background: var(--dm-success-3);
+  border-color: var(--dm-success-6);
 }
 .dm-ls-code {
   margin: 0;
   background: var(--sy-c-bg-weak, #0f172a);
   color: #e2e8f0;
-  border-radius: 8px;
+  border-radius: var(--dm-radius-4);
   padding: 12px 14px;
   font-family: var(--sy-f-mono, monospace);
   font-size: 0.83rem;
@@ -774,7 +641,7 @@ body[data-theme="light"] .dm-ip-cmd pre {
   cursor: pointer;
   font-size: 0.78rem;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
 }
 .dm-fav-clear:hover {
   color: #ef4444;
@@ -801,7 +668,7 @@ body[data-theme="light"] .dm-ip-cmd pre {
 .dm-fav-chip {
   position: relative;
   border: 1px solid var(--dm-ux-border);
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
   cursor: pointer;
   width: 56px;
   height: 36px;
@@ -842,7 +709,7 @@ body[data-theme="light"] .dm-ip-cmd pre {
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
   font-size: 0.7rem;
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: var(--dm-radius-2);
   opacity: 0;
   transition: opacity 0.15s ease;
 }
@@ -905,7 +772,7 @@ body[data-theme="light"] .dm-ip-cmd pre {
   border: 1px solid rgba(255, 255, 255, 0.18);
   font-size: 0.72rem;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: var(--dm-radius-2);
   font-family: var(--sy-f-mono, monospace);
   cursor: pointer;
   z-index: 3;
@@ -918,8 +785,6 @@ body[data-theme="light"] .dm-ip-cmd pre {
 }
 
 /* ───────────────────────── Dark mode polish ─────────────────────────── */
-html.dark .dm-ip-cmd pre,
-body[data-theme="dark"] .dm-ip-cmd pre,
 html.dark .dm-rw-code,
 body[data-theme="dark"] .dm-rw-code,
 html.dark .dm-ls-code,

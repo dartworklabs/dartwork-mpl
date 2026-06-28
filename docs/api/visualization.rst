@@ -33,9 +33,14 @@ Quick examples
    # Classify an arbitrary colormap
    dm.classify_colormap(mpl.colormaps["coolwarm"])  # → "Diverging"
 
-.. figure:: images/viz_example.svg
-   :alt: Color palette preview from plot_colors diagnostic tool
-   :width: 100%
+``plot_colors`` previews the registered palettes; the ``dc`` system is best
+browsed live — hover a swatch for its hex and L*, filter by family:
+
+.. raw:: html
+
+   <iframe src="../_static/palette_showcase.html" title="dartwork palette specimen"
+           loading="lazy"
+           style="width:100%;height:760px;border:1px solid var(--dm-border-faint,#e6e6e6);border-radius:12px;"></iframe>
 
 For a click-and-copy palette browser without leaving the docs, see
 the :doc:`interactive palette explorer <../color_system/colors>`. For

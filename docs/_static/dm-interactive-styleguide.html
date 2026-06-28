@@ -1,0 +1,180 @@
+<!doctype html>
+<!--
+  dm-interactive-styleguide.html — LIVING styleguide for the interactive
+  primitive SSOT. Links the REAL dartwork-design.css (tokens) + dm-interactive.css
+  (primitives) — no inline component CSS — so what you see is exactly what the
+  docs ship. Only the page scaffold (section headers / panels) is local.
+  See dm-interactive-system.md.
+-->
+<html lang="en" class="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>dm-interactive — styleguide</title>
+  <link rel="stylesheet" href="dartwork-design.css" />
+  <link rel="stylesheet" href="dm-interactive.css" />
+  <style>
+    /* page scaffold ONLY — primitives come from dm-interactive.css */
+    body { margin:0; background:var(--dm-bg-page); color:var(--dm-gray-12);
+      font-family:"Inter",system-ui,sans-serif; letter-spacing:-.003em; -webkit-font-smoothing:antialiased; }
+    .wrap { max-width:780px; margin:0 auto; padding:40px 24px 110px; }
+    .topbar { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+    .topbar h1 { font-size:27px; font-weight:700; letter-spacing:-.022em; margin:0; }
+    .topbar p { margin:7px 0 0; color:var(--dm-gray-11); font-size:14px; max-width:56ch; line-height:1.55; }
+    .src { font-family:ui-monospace,monospace; font-size:12px; color:var(--dm-gray-11);
+      background:var(--dm-gray-a3); border-radius:6px; padding:3px 8px; }
+    .sec { margin-top:44px; }
+    .sec-head { display:flex; align-items:baseline; gap:10px; padding-bottom:10px; margin-bottom:18px;
+      border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; }
+    .sec-num { font-family:ui-monospace,monospace; font-size:12px; font-weight:600; color:var(--dm-accent-11); }
+    .sec-title { font-size:18px; font-weight:600; letter-spacing:-.01em; margin:0; }
+    .sec-cls { font-family:ui-monospace,monospace; font-size:11px; color:var(--dm-gray-11);
+      background:var(--dm-gray-a3); border-radius:5px; padding:2px 7px; }
+    .panel { background:var(--dm-gray-1); border:1px solid var(--dm-border-faint); border-radius:10px; padding:18px 20px; }
+    html.dark .panel { background:var(--dm-gray-2); }
+    .lead { display:flex; align-items:center; gap:14px; margin:10px 0; flex-wrap:wrap; }
+    .rl { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--dm-gray-11); min-width:54px; }
+    .theme-toggle { display:inline-flex; align-items:center; gap:8px; background:var(--dm-gray-1);
+      color:var(--dm-gray-12); border:1px solid var(--dm-border); border-radius:999px; padding:7px 14px;
+      font:inherit; font-size:13px; font-weight:500; cursor:pointer; }
+    html.dark .theme-toggle { background:var(--dm-gray-2); }
+    .swatches { display:flex; gap:14px; flex-wrap:wrap; padding-bottom:6px; }
+    .steps { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  </style>
+</head>
+<body class="yue">
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <h1>Interactive primitives — living styleguide</h1>
+        <p>Rendered from the real <span class="src">dartwork-design.css</span> +
+           <span class="src">dm-interactive.css</span>. No inline component CSS.
+           This is the docs' shipping interaction language.</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button">◐ Toggle theme</button>
+    </div>
+
+    <!-- segmented -->
+    <section class="sec"><div class="sec-head"><span class="sec-num">01</span>
+      <h2 class="sec-title">Segmented control</h2><span class="sec-cls">.dm-seg · install picker, compare toggles</span></div>
+      <div class="panel">
+        <div class="lead"><span class="rl">Tool</span>
+          <div class="dm-seg" data-seg><span class="dm-seg__thumb"></span>
+            <button class="dm-opt is-active" aria-pressed="true" type="button">uv</button>
+            <button class="dm-opt" aria-pressed="false" type="button">pip</button>
+            <button class="dm-opt" aria-pressed="false" type="button">Poetry</button>
+            <button class="dm-opt" aria-pressed="false" type="button">conda</button></div></div>
+        <div class="lead"><span class="rl">OS</span>
+          <div class="dm-seg" data-seg><span class="dm-seg__thumb"></span>
+            <button class="dm-opt is-active" aria-pressed="true" type="button">macOS</button>
+            <button class="dm-opt" aria-pressed="false" type="button">Linux</button>
+            <button class="dm-opt" aria-pressed="false" type="button">Windows</button></div></div>
+      </div></section>
+
+    <!-- underline tabs -->
+    <section class="sec"><div class="sec-head"><span class="sec-num">02</span>
+      <h2 class="sec-title">Underline tabs</h2><span class="sec-cls">.dm-tabs / .dm-tab · pickers, doc tab-sets</span></div>
+      <div class="panel">
+        <div class="dm-tabs" data-tabs>
+          <button class="dm-tab is-active" aria-selected="true" type="button">Sequential</button>
+          <button class="dm-tab" aria-selected="false" type="button">Diverging</button>
+          <button class="dm-tab" aria-selected="false" type="button">Cyclic</button>
+          <button class="dm-tab" aria-selected="false" type="button">Categorical</button></div>
+      </div></section>
+
+    <!-- chips -->
+    <section class="sec"><div class="sec-head"><span class="sec-num">03</span>
+      <h2 class="sec-title">Soft chips</h2><span class="sec-cls">.dm-chip · FAQ filter, favorites</span></div>
+      <div class="panel">
+        <div class="lead"><span class="rl">Filter</span>
+          <div data-chips style="display:inline-flex;gap:7px;flex-wrap:wrap">
+            <button class="dm-chip is-active" aria-pressed="true" type="button">All</button>
+            <button class="dm-chip" aria-pressed="false" type="button">Install</button>
+            <button class="dm-chip" aria-pressed="false" type="button">Color</button>
+            <button class="dm-chip" aria-pressed="false" type="button">Layout</button></div></div>
+        <div class="lead"><span class="rl">Saved</span>
+          <div style="display:inline-flex;gap:7px;flex-wrap:wrap">
+            <span class="dm-chip is-active">quickstart <span class="dm-chip__x" data-x>×</span></span>
+            <span class="dm-chip is-active">figsize <span class="dm-chip__x" data-x>×</span></span></div></div>
+      </div></section>
+
+    <!-- swatches -->
+    <section class="sec"><div class="sec-head"><span class="sec-num">04</span>
+      <h2 class="sec-title">Swatch tiles</h2><span class="sec-cls">.dm-swatch · color / palette picker</span></div>
+      <div class="panel"><div class="swatches" data-swatches>
+        <button class="dm-swatch is-active" aria-pressed="true" type="button" style="background:linear-gradient(135deg,#12a594,#0d3d38)"></button>
+        <button class="dm-swatch" aria-pressed="false" type="button" style="background:linear-gradient(135deg,#3b82f6,#1e3a8a)"></button>
+        <button class="dm-swatch" aria-pressed="false" type="button" style="background:linear-gradient(135deg,#f59e0b,#7c2d12)"></button>
+        <button class="dm-swatch" aria-pressed="false" type="button" style="background:linear-gradient(135deg,#22c55e,#14532d)"></button>
+        <button class="dm-swatch" aria-pressed="false" type="button" style="background:linear-gradient(135deg,#ec4899,#831843)"></button>
+      </div></div></section>
+
+    <!-- slider -->
+    <section class="sec"><div class="sec-head"><span class="sec-num">05</span>
+      <h2 class="sec-title">Range slider</h2><span class="sec-cls">.dm-slider · evolution / interactive</span></div>
+      <div class="panel">
+        <input class="dm-slider" type="range" min="0" max="3" value="1" step="1" data-slider aria-label="Evolution step" />
+        <div class="steps" data-steps>
+          <button class="dm-chip" type="button">Base</button><button class="dm-chip is-active" type="button">+ Style</button>
+          <button class="dm-chip" type="button">+ Labels</button><button class="dm-chip" type="button">+ Layout</button></div>
+        <div class="dm-callout" style="margin-top:16px"><strong>+ Style</strong> — swap rcParams via <code>dm.style.use("scientific")</code>.</div>
+      </div></section>
+
+    <!-- icon btn + cta -->
+    <section class="sec"><div class="sec-head"><span class="sec-num">06</span>
+      <h2 class="sec-title">CTA buttons + ghost copy</h2><span class="sec-cls">.dm-cta / .dm-icon-btn · landing</span></div>
+      <div class="panel">
+        <div class="lead">
+          <a class="dm-cta dm-cta--primary" href="#">Get Started →</a>
+          <a class="dm-cta dm-cta--secondary" href="#">AI / Agents →</a>
+          <a class="dm-cta dm-cta--ghost" href="#">Docs</a></div>
+        <div class="lead"><span class="rl">Copy</span>
+          <button class="dm-icon-btn copy-demo" type="button" aria-label="Copy"></button>
+          <span style="font-size:12.5px;color:var(--dm-gray-11)">ghost icon — faint default, teal-soft on hover (no dark button)</span></div>
+      </div></section>
+
+    <!-- code surface -->
+    <section class="sec"><div class="sec-head"><span class="sec-num">07</span>
+      <h2 class="sec-title">Light code surface</h2><span class="sec-cls">.dm-code · install command</span></div>
+      <div class="panel">
+        <div class="dm-code"><span class="dm-code__prompt">$ </span>uv add dartwork-mpl<button class="dm-icon-btn copy-demo" type="button" aria-label="Copy"></button></div>
+      </div></section>
+  </div>
+
+  <script>
+    const ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+    document.querySelectorAll(".copy-demo").forEach(b=>{ b.innerHTML=ICON;
+      b.addEventListener("click",()=>{ b.innerHTML=CHECK; b.classList.add("is-copied");
+        setTimeout(()=>{ b.innerHTML=ICON; b.classList.remove("is-copied"); },1300); }); });
+
+    function moveThumb(seg){ const t=seg.querySelector(".dm-seg__thumb"), a=seg.querySelector(".dm-opt.is-active");
+      if(t&&a){ t.style.width=a.offsetWidth+"px"; t.style.transform="translateX("+a.offsetLeft+"px)"; } }
+    document.querySelectorAll("[data-seg]").forEach(seg=>{
+      seg.addEventListener("click",e=>{ const o=e.target.closest(".dm-opt"); if(!o)return;
+        seg.querySelectorAll(".dm-opt").forEach(x=>{ const on=x===o; x.classList.toggle("is-active",on); x.setAttribute("aria-pressed",on); });
+        moveThumb(seg); });
+      requestAnimationFrame(()=>moveThumb(seg)); });
+
+    document.querySelectorAll("[data-tabs]").forEach(t=>t.addEventListener("click",e=>{ const o=e.target.closest(".dm-tab"); if(!o)return;
+      t.querySelectorAll(".dm-tab").forEach(x=>{ const on=x===o; x.classList.toggle("is-active",on); x.setAttribute("aria-selected",on); }); }));
+    document.querySelectorAll("[data-chips]").forEach(c=>c.addEventListener("click",e=>{ const ch=e.target.closest(".dm-chip"); if(!ch)return;
+      c.querySelectorAll(".dm-chip").forEach(x=>{ const on=x===ch; x.classList.toggle("is-active",on); x.setAttribute("aria-pressed",on); }); }));
+    document.querySelectorAll("[data-x]").forEach(x=>x.addEventListener("click",e=>{ e.stopPropagation(); x.closest(".dm-chip").remove(); }));
+    document.querySelectorAll("[data-swatches]").forEach(g=>g.addEventListener("click",e=>{ const s=e.target.closest(".dm-swatch"); if(!s)return;
+      g.querySelectorAll(".dm-swatch").forEach(x=>{ const on=x===s; x.classList.toggle("is-active",on); x.setAttribute("aria-pressed",on); }); }));
+
+    function paint(sl){ const p=(sl.value-sl.min)/(sl.max-sl.min)*100;
+      sl.style.background="linear-gradient(90deg,var(--dm-accent-9) "+p+"%,var(--dm-gray-a4) "+p+"%)";
+      const steps=document.querySelector("[data-steps]").querySelectorAll(".dm-chip");
+      steps.forEach((c,i)=>c.classList.toggle("is-active",i==sl.value)); }
+    document.querySelectorAll("[data-slider]").forEach(sl=>{ paint(sl); sl.addEventListener("input",()=>paint(sl)); });
+
+    document.getElementById("themeToggle").addEventListener("click",()=>{ const r=document.documentElement;
+      r.classList.toggle("dark"); r.classList.toggle("light");
+      document.body.setAttribute("data-theme", r.classList.contains("dark")?"dark":"light");
+      requestAnimationFrame(()=>document.querySelectorAll("[data-seg]").forEach(moveThumb));
+      document.querySelectorAll("[data-slider]").forEach(paint); });
+  </script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!doctype html>
+<!--
+  landing_hero_pocs.html — fix the landing hero. Problems seen: (1) the big
+  tagline "matplotlib, but beautiful." rendered INVISIBLE (gradient-clip text
+  with -webkit-text-fill-color:transparent failing → no fill), (2) a stale
+  install pill / address showing (removed from source; build was stale), (3)
+  buttons looked broken (stale markup). Below: a robust always-visible tagline
+  that folds the AI message onto ONE line (smaller is OK), no install pill,
+  clean CTA buttons. Pick a copy variant + a tagline style + a button style.
+  Links the REAL tokens. Toggle theme. Serve from docs/_static: http.server 8137
+-->
+<html lang="en" class="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Landing hero — fixes &amp; copy</title>
+  <link rel="stylesheet" href="dartwork-design.css" />
+  <link rel="stylesheet" href="dm-interactive.css" />
+  <style>
+    body { margin:0; background:var(--dm-bg-page); color:var(--dm-gray-12);
+      font-family:var(--dm-f-sys,"Inter",system-ui,sans-serif); letter-spacing:-.003em; }
+    .wrap { max-width:1000px; margin:0 auto; padding:36px 24px 120px; }
+    .bar { position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between;
+      gap:12px; padding:12px 16px; margin:-36px -24px 16px; background:var(--dm-bg-panel);
+      border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; }
+    .bar .t { font-size:15px; font-weight:700; }
+    .bar p { margin:0; font-size:12.5px; color:var(--dm-text-muted); flex-basis:100%; line-height:1.5; }
+    .tt { background:var(--dm-bg-panel); color:var(--dm-gray-12); border:1px solid var(--dm-border);
+      border-radius:999px; padding:6px 13px; font:inherit; font-size:13px; cursor:pointer; }
+    .grp { margin-top:40px; }
+    .grp > h2 { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.07em;
+      color:var(--dm-text-muted); padding-bottom:8px; border-bottom:1px solid var(--dm-border-faint); }
+    .poc { margin-top:18px; padding:26px 20px; border:1px solid var(--dm-border-faint);
+      border-radius:var(--dm-radius-5); }
+    .poc .lbl { display:inline-block; font-family:var(--dm-f-mono,monospace); font-size:11px; font-weight:600;
+      color:#fff; background:var(--dm-accent-9); border-radius:6px; padding:2px 8px; margin-bottom:14px; }
+    .poc .lbl.rec { background:var(--dm-accent-11); }
+    .hero { text-align:center; padding:8px 0 4px; }
+
+    /* ── tagline base — ALWAYS visible (solid color), folds onto ONE line ── */
+    .tl { font-weight:800; line-height:1.12; letter-spacing:-.028em; margin:0 0 .5em;
+      white-space:nowrap; }
+    .tl .ai, .tl .bf { color:var(--dm-accent-11); }
+    /* one-line responsive sizing: shrinks to fit, never wraps */
+    .tl.sz { font-size:clamp(20px, 4.4vw, 44px); }
+    .tl.szs { font-size:clamp(17px, 3.6vw, 36px); }
+    /* style S-solid: whole line gray-12 + teal keywords (robust default) */
+    .tl.solid { color:var(--dm-gray-12); }
+    /* style S-grad: gradient ONLY on keywords (safe — base stays solid) */
+    .tl.kgrad .bf, .tl.kgrad .ai {
+      background:linear-gradient(120deg,var(--dm-accent-9),var(--dm-accent-10));
+      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:var(--dm-accent-10); }
+
+    .sub { font-size:1.05rem; line-height:1.5; color:var(--dm-text-muted); max-width:520px;
+      margin:0 auto 1.6em; }
+    .cta { display:flex; justify-content:center; align-items:center; gap:14px; flex-wrap:wrap; }
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:11px 24px; font-size:.95rem; font-weight:600;
+      border-radius:var(--dm-radius-5); text-decoration:none; cursor:pointer; transition:all .2s; }
+    /* button style A — solid primary + outline secondary */
+    .btn-pri { background:var(--dm-accent-9); color:#fff; border:1px solid var(--dm-accent-9); box-shadow:var(--dm-shadow-2); }
+    .btn-pri:hover { background:var(--dm-accent-10); border-color:var(--dm-accent-10); }
+    .btn-sec { background:transparent; color:var(--dm-accent-11); border:1px solid var(--dm-accent-7); }
+    .btn-sec:hover { background:var(--dm-accent-3); border-color:var(--dm-accent-9); }
+    /* button style B — solid primary + soft secondary (no outline) */
+    .btn-soft { background:var(--dm-accent-3); color:var(--dm-accent-11); border:1px solid transparent; }
+    .btn-soft:hover { background:var(--dm-accent-4, var(--dm-accent-3)); }
+
+    .note { margin-top:12px; font-size:12px; color:var(--dm-text-muted); line-height:1.5; }
+    .copyx { font-size:12.5px; color:var(--dm-text-muted); margin:0 0 4px; }
+    .copyx b { color:var(--dm-gray-12); }
+  </style>
+</head>
+<body class="yue">
+  <div class="wrap">
+    <div class="bar">
+      <span class="t">Landing hero — fixes &amp; copy</span>
+      <button class="tt" id="tt" type="button">◐ theme</button>
+      <p>Robust always-visible tagline (no fragile gradient-clip on the whole line), AI folded onto ONE line, no install pill, clean buttons. Toggle light/dark.</p>
+    </div>
+
+    <!-- ===== A. TAGLINE COPY (one line, beautiful + AI) ===== -->
+    <div class="grp">
+      <h2>A · Tagline copy — one line, beautiful + AI</h2>
+
+      <div class="poc">
+        <span class="lbl rec">L1 · rec</span>
+        <div class="hero">
+          <p class="tl sz solid"><span>matplotlib, but </span><span class="bf">beautiful</span><span> — built for </span><span class="ai">AI agents</span><span>.</span></p>
+          <p class="sub">Publication-quality plots with zero learning curve.</p>
+          <div class="cta"><a class="btn btn-pri">Get Started →</a><a class="btn btn-sec">AI / Agents →</a></div>
+        </div>
+        <p class="note">Keeps the punchy "matplotlib, but beautiful", grafts the AI angle on the same line; the old subtitle's AI clause moves up, subtitle shortens.</p>
+      </div>
+
+      <div class="poc">
+        <span class="lbl">L2</span>
+        <div class="hero">
+          <p class="tl sz solid"><span>matplotlib, but </span><span class="bf">beautiful</span><span>. Made for </span><span class="ai">AI coding agents</span><span>.</span></p>
+          <p class="sub">Publication-quality plots with zero learning curve.</p>
+          <div class="cta"><a class="btn btn-pri">Get Started →</a><a class="btn btn-sec">AI / Agents →</a></div>
+        </div>
+        <p class="note">Two sentences on one line — slightly longer, so it sizes down a touch more.</p>
+      </div>
+
+      <div class="poc">
+        <span class="lbl">L3</span>
+        <div class="hero">
+          <p class="tl sz solid"><span class="bf">Beautiful</span><span> matplotlib, built for </span><span class="ai">AI coding agents</span><span>.</span></p>
+          <p class="sub">Publication-quality plots with zero learning curve.</p>
+          <div class="cta"><a class="btn btn-pri">Get Started →</a><a class="btn btn-sec">AI / Agents →</a></div>
+        </div>
+        <p class="note">Drops the "but" idiom for a tighter, more direct line — fits a larger font.</p>
+      </div>
+
+      <div class="poc">
+        <span class="lbl">L4</span>
+        <div class="hero">
+          <p class="tl szs solid"><span>matplotlib, but </span><span class="bf">beautiful</span><span> — for humans and </span><span class="ai">AI agents</span><span>.</span></p>
+          <p class="sub">Publication-quality plots with zero learning curve.</p>
+          <div class="cta"><a class="btn btn-pri">Get Started →</a><a class="btn btn-sec">AI / Agents →</a></div>
+        </div>
+        <p class="note">"for humans and AI agents" — longest, smallest font (szs). Inclusive framing.</p>
+      </div>
+    </div>
+
+    <!-- ===== B. TAGLINE STYLE (keyword accent) ===== -->
+    <div class="grp">
+      <h2>B · Tagline accent style (on L1 copy)</h2>
+      <div class="poc">
+        <span class="lbl rec">S1 · solid + teal keywords (rec)</span>
+        <div class="hero"><p class="tl sz solid"><span>matplotlib, but </span><span class="bf">beautiful</span><span> — built for </span><span class="ai">AI agents</span><span>.</span></p></div>
+        <p class="note">Base line in <span class="copyx"><b>--dm-gray-12</b></span>, "beautiful" + "AI agents" in <b>--dm-accent-11</b>. Always visible, theme-adaptive, no clip risk.</p>
+      </div>
+      <div class="poc">
+        <span class="lbl">S2 · gradient keywords only</span>
+        <div class="hero"><p class="tl sz solid kgrad"><span>matplotlib, but </span><span class="bf">beautiful</span><span> — built for </span><span class="ai">AI agents</span><span>.</span></p></div>
+        <p class="note">Gradient-clip applied ONLY to the two keywords (with a solid <b>color</b> fallback), so the line can never vanish like the old full-line gradient did.</p>
+      </div>
+    </div>
+
+    <!-- ===== C. BUTTON STYLE ===== -->
+    <div class="grp">
+      <h2>C · CTA button style</h2>
+      <div class="poc">
+        <span class="lbl rec">B-A · solid + outline (rec)</span>
+        <div class="hero"><div class="cta"><a class="btn btn-pri">Get Started →</a><a class="btn btn-sec">AI / Agents →</a></div></div>
+      </div>
+      <div class="poc">
+        <span class="lbl">B-B · solid + soft</span>
+        <div class="hero"><div class="cta"><a class="btn btn-pri">Get Started →</a><a class="btn btn-soft">AI / Agents →</a></div></div>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.getElementById("tt").addEventListener("click",function(){
+      var r=document.documentElement; r.classList.toggle("dark"); r.classList.toggle("light");
+      document.body.setAttribute("data-theme", r.classList.contains("dark")?"dark":"light");
+    });
+  </script>
+</body>
+</html>
