@@ -489,34 +489,6 @@ def _save_arrow_axis_example(images_dir: Path) -> Path:
 # ── colors.md ──────────────────────────────────────────────────────────
 
 
-def _save_colors_colormap(images_dir: Path) -> Path:
-    """Colors 'Colormaps': dm.Crest imshow + colorbar."""
-    np.random.seed(42)
-    dm.style.use("presentation")
-
-    fig = plt.figure(figsize=dm.figsize("15cm", "10cm"), dpi=300)
-    gs = fig.add_gridspec(1, 1)
-    ax = fig.add_subplot(gs[0, 0])
-
-    data = np.random.randn(50, 50).cumsum(axis=0)
-    cmap = plt.colormaps["dc.deep_sea"]
-    im = ax.imshow(data, cmap=cmap, vmin=-8, vmax=8)
-    cb = plt.colorbar(im, ax=ax, extend="both", shrink=0.9, pad=0.02)
-    cb.set_label("normalized signal", fontsize=dm.fs(0))
-    cb.outline.set_visible(False)
-    ax.set_title(
-        f"{cmap.name}  ({dm.classify_colormap(cmap)})",
-        fontsize=dm.fs(1),
-        fontweight="bold",
-    )
-    dm.simple_layout(fig, gs=gs)
-
-    path = images_dir / "colors_colormap.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
-    plt.close(fig)
-    return path
-
-
 def _save_validation_example(images_dir: Path) -> Path:
     """Create a 'bad' figure and draw validation overlay.
 
@@ -677,7 +649,6 @@ def build_usage_guide_assets(base_dir: Path | None = None) -> list[Path]:
         ("set_decimal_dm", _save_set_decimal_dm),
         ("arrow_axis_example", _save_arrow_axis_example),
         ("validation_example", _save_validation_example),
-        ("colors_colormap", _save_colors_colormap),
         ("save_scientific", _save_scientific_chart),
         ("save_diverging_bar", _save_diverging_bar),
         # ("save_diagnostics", _save_diagnostics_preview),  # removed in #171 docs UX overhaul

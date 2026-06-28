@@ -27,7 +27,20 @@ dm.set_cycle("focus", ax=ax)             # highlight one series on this Axes onl
 list) to the global cycle or a single Axes. Bare names resolve under `dc.`
 (`"trustworthy"` → `dc.trustworthy0…7`).
 
-## Explore
+## Browse
+
+Every palette as a specimen — grouped by family, with its grayscale-separability
+and colour-vision distances on show. Hover a swatch for its hex and L*; click to
+copy. Filter by family along the top.
+
+```{raw} html
+<iframe src="../_static/palette_showcase.html" title="dartwork palette specimen"
+        loading="lazy"
+        style="width:100%;height:880px;border:1px solid var(--dm-border-faint,#e6e6e6);border-radius:12px;">
+</iframe>
+```
+
+## Compare across charts
 
 Pick a palette, drag the colour count, toggle B&W / dark-canvas, and compare it
 across nine chart shapes at once.
