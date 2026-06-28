@@ -145,6 +145,33 @@
   --dm-f-sys: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --dm-f-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
 
+  /* Semantic typography roles - component/page scaffold rules consume these
+   * aliases instead of binding directly to raw size/line/weight steps. */
+  --dm-type-display-size: var(--dm-fs-8);
+  --dm-type-display-line: var(--dm-lh-8);
+  --dm-type-display-weight: var(--dm-weight-semibold);
+  --dm-type-display-spacing: var(--dm-ls-8);
+  --dm-type-heading-size: var(--dm-fs-5);
+  --dm-type-heading-line: var(--dm-lh-5);
+  --dm-type-heading-weight: var(--dm-weight-semibold);
+  --dm-type-heading-spacing: var(--dm-ls-5);
+  --dm-type-body-size: var(--dm-fs-3);
+  --dm-type-body-line: var(--dm-lh-3);
+  --dm-type-body-weight: var(--dm-weight-regular);
+  --dm-type-body-spacing: var(--dm-ls-3);
+  --dm-type-label-size: var(--dm-fs-2);
+  --dm-type-label-line: var(--dm-lh-2);
+  --dm-type-label-weight: var(--dm-weight-medium);
+  --dm-type-label-spacing: var(--dm-ls-2);
+  --dm-type-caption-size: var(--dm-fs-1);
+  --dm-type-caption-line: var(--dm-lh-1);
+  --dm-type-caption-weight: var(--dm-weight-medium);
+  --dm-type-caption-spacing: var(--dm-ls-1);
+  --dm-type-mono-size: var(--dm-fs-1);
+  --dm-type-mono-line: var(--dm-lh-1);
+  --dm-type-mono-weight: var(--dm-weight-medium);
+  --dm-type-mono-spacing: var(--dm-ls-1);
+
   /* Radius — keep modest; large radii undermine the precision feel */
   --dm-radius-1: 3px;
   --dm-radius-2: 4px;

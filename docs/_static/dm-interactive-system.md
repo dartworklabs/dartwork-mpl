@@ -45,6 +45,23 @@ tokens* defined at the top of `dm-interactive.css`:
 
 Retuning the interaction look = edit these aliases in one place.
 
+## Typography roles
+
+`dartwork-design.css` also defines semantic type aliases for docs scaffolds and
+interactive surfaces:
+
+| Role | Tokens | Use |
+|---|---|---|
+| Display | `--dm-type-display-*` | page/styleguide hero titles and specimen hero samples |
+| Heading | `--dm-type-heading-*` | panel titles, specimen card headings |
+| Body | `--dm-type-body-*` | readable descriptions and sample body text |
+| Label | `--dm-type-label-*` | control labels, row labels, compact buttons |
+| Caption | `--dm-type-caption-*` | metadata, badges, uppercase section labels |
+| Mono | `--dm-type-mono-*` | token names, weights, file names, numeric tags |
+
+Component CSS should depend on these roles, not raw `--dm-fs-*` values, unless
+the page is deliberately demonstrating a size scale.
+
 ## Hard rules (a11y + cascade)
 
 1. **Active ≠ background-only.** The active cue lives on a *separate surface*
@@ -95,6 +112,8 @@ Retuning the interaction look = edit these aliases in one place.
 | **P2** | Install picker → `.dm-seg` + `.dm-code` + ghost copy (this doc's reference implementation). | M |
 | **P3** | Fold FAQ filter, palette/fonts/colormap pickers, compare/wipe toggles, evolution slider onto the shared primitives (one component, provably). | L |
 | **P4** | Landing CTA purple → `.dm-cta` teal; final sweep so no raw hex / legacy var can win anywhere. | S |
+| **P5** | Promote typography roles into `dartwork-design.css`; migrate font specimens and review harnesses off private type/palette rules. | S |
+| **P6** | Rebase Dynamic UX CSS/SVG generation on `--dm-*` tokens; remove the last Shibuya-token and hardcoded validation skin reads. | M |
 
 ## Files
 

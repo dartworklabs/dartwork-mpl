@@ -96,6 +96,20 @@
     return node;
   }
 
+  function cssVar(root, name, fallback) {
+    var scope = root && root.nodeType === 1 ? root : document.documentElement;
+    var value = "";
+    try {
+      value = getComputedStyle(scope).getPropertyValue(name).trim();
+      if (!value && scope !== document.documentElement) {
+        value = getComputedStyle(document.documentElement)
+          .getPropertyValue(name)
+          .trim();
+      }
+    } catch (e) {}
+    return value || fallback || "currentColor";
+  }
+
   function flashToast(msg) {
     var t = el("div", { class: "dm-toast", text: msg });
     document.body.appendChild(t);
@@ -1020,21 +1034,21 @@
       // Page background hint
       '<rect class="dm-ls-page" x="0" y="0" width="480" height="320" fill="transparent"/>' +
       // Figure rectangle (the boundary that matplotlib uses)
-      '<rect class="dm-ls-figrect" x="0" y="0" width="480" height="320" fill="#ffffff" stroke="#cdced6" stroke-width="1.2"/>' +
+      '<rect class="dm-ls-figrect" x="0" y="0" width="480" height="320" fill="white" stroke="currentColor" stroke-width="1.2"/>' +
       // Title band (top)
       '<g class="dm-ls-title-group"></g>' +
       // Y-label (left)
       '<g class="dm-ls-ylabel-group"></g>' +
       // Axes / chart area
-      '<rect class="dm-ls-axes" x="60" y="40" width="380" height="240" fill="#fcfcfd" stroke="#cdced6" stroke-width="0.8"/>' +
+      '<rect class="dm-ls-axes" x="60" y="40" width="380" height="240" fill="white" stroke="currentColor" stroke-width="0.8"/>' +
       // Mini sine line inside axes — purely decorative, gives the preview some life
-      '<path class="dm-ls-spark" d="M 70 200 Q 130 70 200 160 T 330 140 T 430 110" fill="none" stroke="#12a594" stroke-width="2" stroke-linecap="round"/>' +
+      '<path class="dm-ls-spark" d="M 70 200 Q 130 70 200 160 T 330 140 T 430 110" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
       // Ticks (bottom)
       '<g class="dm-ls-ticks-group"></g>' +
       // Legend (top-right inside axes)
       '<g class="dm-ls-legend-group"></g>' +
       // Overflow shade — drawn when a heuristic flags overflow
-      '<rect class="dm-ls-overflow-hint" x="0" y="0" width="480" height="320" fill="rgba(217, 119, 6, 0)" pointer-events="none"/>' +
+      '<rect class="dm-ls-overflow-hint" x="0" y="0" width="480" height="320" fill="transparent" opacity="0" pointer-events="none"/>' +
       "</svg>" +
       "</div>" +
       '<div class="dm-ls-output">' +
@@ -1195,6 +1209,26 @@
       // actual plot.
       var SVG_W = 480;
       var SVG_H = 320;
+      var previewPage = cssVar(w, "--dm-bg-subtle", "white");
+      var previewFigure = cssVar(w, "--dm-bg-page", "white");
+      var previewAxes = cssVar(w, "--dm-bg-panel", previewFigure);
+      var previewBorder = cssVar(w, "--dm-border-strong", "currentColor");
+      var previewBorderSoft = cssVar(w, "--dm-border", previewBorder);
+      var previewText = cssVar(w, "--dm-text-strong", "currentColor");
+      var previewTextWeak = cssVar(w, "--dm-text-muted", previewText);
+      var previewAccent = cssVar(w, "--dm-accent-9", previewText);
+      var previewAccentDark = cssVar(w, "--dm-accent-11", previewAccent);
+      var previewWarning = cssVar(w, "--dm-warning-3", previewAxes);
+      var previewPalette = [
+        previewAccent,
+        previewAccentDark,
+        cssVar(w, "--dm-info-9", previewAccent),
+        cssVar(w, "--dm-warning-9", previewAccent),
+        cssVar(w, "--dm-success-9", previewAccent),
+        previewText,
+        cssVar(w, "--dm-accent-10", previewAccent),
+        previewTextWeak,
+      ];
 
       // Map inch-aspect onto the SVG canvas, keeping a max bound.
       var aspect = width / height;            // figure aspect ratio
@@ -1222,17 +1256,24 @@
       var axesH = Math.max(figH - titleH - 2 * axesPad - 14, 30); // 14 for x-tick row
 
       // Apply to the SVG nodes
+      var pageRect = $(".dm-ls-page", w);
+      pageRect.setAttribute("fill", previewPage);
+
       var figRect = $(".dm-ls-figrect", w);
       figRect.setAttribute("x", figX);
       figRect.setAttribute("y", figY);
       figRect.setAttribute("width", figW);
       figRect.setAttribute("height", figH);
+      figRect.setAttribute("fill", previewFigure);
+      figRect.setAttribute("stroke", previewBorderSoft);
 
       var axesRect = $(".dm-ls-axes", w);
       axesRect.setAttribute("x", axesX);
       axesRect.setAttribute("y", axesY);
       axesRect.setAttribute("width", axesW);
       axesRect.setAttribute("height", axesH);
+      axesRect.setAttribute("fill", previewAxes);
+      axesRect.setAttribute("stroke", previewBorderSoft);
 
       // Sine-wave spark redrawn to fit axes
       function sparkPath(x, y, ww, hh) {
@@ -1250,6 +1291,7 @@
         "d",
         sparkPath(axesX + 4, axesY + 4, axesW - 8, axesH - 8)
       );
+      $(".dm-ls-spark", w).setAttribute("stroke", previewAccent);
 
       // Title band — `titleLines` thin grey bars
       var titleGroup = $(".dm-ls-title-group", w);
@@ -1265,7 +1307,7 @@
         bar.setAttribute("y", figY + i * titleLineH + (titleLineH - barH) / 2);
         bar.setAttribute("width", axesW * 0.6 - i * axesW * 0.05);
         bar.setAttribute("height", barH);
-        bar.setAttribute("fill", "#1c2024");
+        bar.setAttribute("fill", previewText);
         bar.setAttribute("rx", "1");
         titleGroup.appendChild(bar);
       }
@@ -1283,7 +1325,7 @@
         ylabelText.setAttribute("y", axesY + axesH / 2 - ylabelW / 2);
         ylabelText.setAttribute("width", 8);
         ylabelText.setAttribute("height", ylabelW);
-        ylabelText.setAttribute("fill", "#60646c");
+        ylabelText.setAttribute("fill", previewTextWeak);
         ylabelText.setAttribute("rx", "1");
         ylabelText.setAttribute(
           "transform",
@@ -1306,7 +1348,7 @@
           ytick.setAttribute("y1", yty);
           ytick.setAttribute("x2", axesX);
           ytick.setAttribute("y2", yty);
-          ytick.setAttribute("stroke", "#60646c");
+          ytick.setAttribute("stroke", previewTextWeak);
           ytick.setAttribute("stroke-width", "1");
           ylabelGroup.appendChild(ytick);
         }
@@ -1325,7 +1367,7 @@
         tline.setAttribute("y1", axesY + axesH);
         tline.setAttribute("x2", tx);
         tline.setAttribute("y2", axesY + axesH + 4);
-        tline.setAttribute("stroke", "#60646c");
+        tline.setAttribute("stroke", previewTextWeak);
         tline.setAttribute("stroke-width", "1");
         ticksGroup.appendChild(tline);
       }
@@ -1349,8 +1391,8 @@
         legendBox.setAttribute("y", legendY);
         legendBox.setAttribute("width", legendW);
         legendBox.setAttribute("height", legendH);
-        legendBox.setAttribute("fill", "#ffffff");
-        legendBox.setAttribute("stroke", "#cdced6");
+        legendBox.setAttribute("fill", previewFigure);
+        legendBox.setAttribute("stroke", previewBorderSoft);
         legendBox.setAttribute("stroke-width", "0.6");
         legendBox.setAttribute("rx", "2");
         legendGroup.appendChild(legendBox);
@@ -1365,17 +1407,10 @@
           swatch.setAttribute("y", rowY);
           swatch.setAttribute("width", 8);
           swatch.setAttribute("height", 4);
-          var palette = [
-            "#12a594",
-            "#5e4fa2",
-            "#3288bd",
-            "#f46d43",
-            "#9e0142",
-            "#1c2024",
-            "#0d9b8a",
-            "#60646c",
-          ];
-          swatch.setAttribute("fill", palette[li % palette.length]);
+          swatch.setAttribute(
+            "fill",
+            previewPalette[li % previewPalette.length]
+          );
           swatch.setAttribute("rx", "1");
           legendGroup.appendChild(swatch);
 
@@ -1387,7 +1422,7 @@
           lline.setAttribute("y", rowY + 1);
           lline.setAttribute("width", Math.max(legendW - 22, 10));
           lline.setAttribute("height", 2);
-          lline.setAttribute("fill", "#cdced6");
+          lline.setAttribute("fill", previewBorderSoft);
           lline.setAttribute("rx", "1");
           legendGroup.appendChild(lline);
         }
@@ -1402,7 +1437,7 @@
           moreDots.setAttribute("y", legendY + legendH + 10);
           moreDots.setAttribute("text-anchor", "middle");
           moreDots.setAttribute("font-size", "9");
-          moreDots.setAttribute("fill", "#60646c");
+          moreDots.setAttribute("fill", previewTextWeak);
           moreDots.textContent = "+" + (legend - legendRows) + " more";
           legendGroup.appendChild(moreDots);
         }
@@ -1411,10 +1446,8 @@
       // Overflow hint: tint the canvas amber when any warning fires.
       var hasWarn = msgs.some(function (m) { return m.level === "warn"; });
       var overflowHint = $(".dm-ls-overflow-hint", w);
-      overflowHint.setAttribute(
-        "fill",
-        hasWarn ? "rgba(212, 160, 23, 0.06)" : "rgba(0,0,0,0)"
-      );
+      overflowHint.setAttribute("fill", previewWarning);
+      overflowHint.setAttribute("opacity", hasWarn ? "0.35" : "0");
     }
 
     [ws, hs, xt, yl, tl, le].forEach(function (n) {
