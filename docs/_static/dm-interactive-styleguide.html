@@ -15,31 +15,56 @@
   <link rel="stylesheet" href="dm-interactive.css" />
   <style>
     /* page scaffold ONLY — primitives come from dm-interactive.css */
-    body { margin:0; background:var(--dm-bg-page); color:var(--dm-gray-12);
-      font-family:"Inter",system-ui,sans-serif; letter-spacing:-.003em; -webkit-font-smoothing:antialiased; }
+    body { margin:0; background:var(--dm-bg-page); color:var(--dm-text-default);
+      font-family:var(--dm-f-sys); font-size:var(--dm-type-body-size);
+      line-height:var(--dm-type-body-line); letter-spacing:var(--dm-type-body-spacing);
+      -webkit-font-smoothing:antialiased; }
     .wrap { max-width:780px; margin:0 auto; padding:40px 24px 110px; }
     .topbar { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-    .topbar h1 { font-size:27px; font-weight:700; letter-spacing:-.022em; margin:0; }
-    .topbar p { margin:7px 0 0; color:var(--dm-gray-11); font-size:14px; max-width:56ch; line-height:1.55; }
-    .src { font-family:ui-monospace,monospace; font-size:12px; color:var(--dm-gray-11);
+    .topbar h1 { font-size:var(--dm-type-display-size); font-weight:var(--dm-type-display-weight);
+      letter-spacing:var(--dm-type-display-spacing); line-height:var(--dm-type-display-line); margin:0; }
+    .topbar p { margin:7px 0 0; color:var(--dm-text-muted); font-size:var(--dm-type-body-size);
+      line-height:var(--dm-type-body-line); max-width:56ch; }
+    .src { font-family:var(--dm-f-mono); font-size:var(--dm-type-mono-size);
+      line-height:var(--dm-type-mono-line); color:var(--dm-text-muted);
       background:var(--dm-gray-a3); border-radius:6px; padding:3px 8px; }
     .sec { margin-top:44px; }
     .sec-head { display:flex; align-items:baseline; gap:10px; padding-bottom:10px; margin-bottom:18px;
       border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; }
-    .sec-num { font-family:ui-monospace,monospace; font-size:12px; font-weight:600; color:var(--dm-accent-11); }
-    .sec-title { font-size:18px; font-weight:600; letter-spacing:-.01em; margin:0; }
-    .sec-cls { font-family:ui-monospace,monospace; font-size:11px; color:var(--dm-gray-11);
+    .sec-num { font-family:var(--dm-f-mono); font-size:var(--dm-type-mono-size);
+      font-weight:var(--dm-type-mono-weight); line-height:var(--dm-type-mono-line); color:var(--dm-accent-11); }
+    .sec-title { font-size:var(--dm-type-heading-size); font-weight:var(--dm-type-heading-weight);
+      letter-spacing:var(--dm-type-heading-spacing); line-height:var(--dm-type-heading-line); margin:0; }
+    .sec-cls { font-family:var(--dm-f-mono); font-size:var(--dm-type-mono-size);
+      line-height:var(--dm-type-mono-line); color:var(--dm-text-muted);
       background:var(--dm-gray-a3); border-radius:5px; padding:2px 7px; }
     .panel { background:var(--dm-gray-1); border:1px solid var(--dm-border-faint); border-radius:10px; padding:18px 20px; }
     html.dark .panel { background:var(--dm-gray-2); }
     .lead { display:flex; align-items:center; gap:14px; margin:10px 0; flex-wrap:wrap; }
-    .rl { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--dm-gray-11); min-width:54px; }
+    .rl { font-size:var(--dm-type-caption-size); font-weight:var(--dm-type-caption-weight);
+      line-height:var(--dm-type-caption-line); text-transform:uppercase; letter-spacing:.06em;
+      color:var(--dm-text-muted); min-width:54px; }
     .theme-toggle { display:inline-flex; align-items:center; gap:8px; background:var(--dm-gray-1);
       color:var(--dm-gray-12); border:1px solid var(--dm-border); border-radius:999px; padding:7px 14px;
-      font:inherit; font-size:13px; font-weight:500; cursor:pointer; }
+      font:inherit; font-size:var(--dm-type-label-size); font-weight:var(--dm-type-label-weight); cursor:pointer; }
     html.dark .theme-toggle { background:var(--dm-gray-2); }
     .swatches { display:flex; gap:14px; flex-wrap:wrap; padding-bottom:6px; }
     .steps { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+    .type-roles { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; }
+    .type-role { border:1px solid var(--dm-border-faint); border-radius:8px; padding:14px 16px; background:var(--dm-bg-panel); }
+    .type-role__name { color:var(--dm-accent-11); font-family:var(--dm-f-mono);
+      font-size:var(--dm-type-mono-size); line-height:var(--dm-type-mono-line); margin-bottom:8px; }
+    .type-role__sample--display { font-size:var(--dm-type-display-size); font-weight:var(--dm-type-display-weight);
+      letter-spacing:var(--dm-type-display-spacing); line-height:var(--dm-type-display-line); }
+    .type-role__sample--heading { font-size:var(--dm-type-heading-size); font-weight:var(--dm-type-heading-weight);
+      letter-spacing:var(--dm-type-heading-spacing); line-height:var(--dm-type-heading-line); }
+    .type-role__sample--body { font-size:var(--dm-type-body-size); line-height:var(--dm-type-body-line); }
+    .type-role__sample--label { font-size:var(--dm-type-label-size); font-weight:var(--dm-type-label-weight);
+      line-height:var(--dm-type-label-line); }
+    .type-role__sample--caption { color:var(--dm-text-muted); font-size:var(--dm-type-caption-size);
+      font-weight:var(--dm-type-caption-weight); line-height:var(--dm-type-caption-line); text-transform:uppercase; }
+    .type-role__sample--mono { font-family:var(--dm-f-mono); font-size:var(--dm-type-mono-size);
+      line-height:var(--dm-type-mono-line); }
   </style>
 </head>
 <body class="yue">
@@ -53,6 +78,18 @@
       </div>
       <button class="theme-toggle" id="themeToggle" type="button">◐ Toggle theme</button>
     </div>
+
+    <!-- typography roles -->
+    <section class="sec"><div class="sec-head"><span class="sec-num">00</span>
+      <h2 class="sec-title">Typography roles</h2><span class="sec-cls">--dm-type-* · display, heading, body, label, caption, mono</span></div>
+      <div class="panel type-roles">
+        <div class="type-role"><div class="type-role__name">display</div><div class="type-role__sample--display">Radix scale</div></div>
+        <div class="type-role"><div class="type-role__name">heading</div><div class="type-role__sample--heading">Section title</div></div>
+        <div class="type-role"><div class="type-role__name">body</div><div class="type-role__sample--body">Readable documentation text.</div></div>
+        <div class="type-role"><div class="type-role__name">label</div><div class="type-role__sample--label">Control Label</div></div>
+        <div class="type-role"><div class="type-role__name">caption</div><div class="type-role__sample--caption">Meta caption</div></div>
+        <div class="type-role"><div class="type-role__name">mono</div><div class="type-role__sample--mono">--dm-type-mono-size</div></div>
+      </div></section>
 
     <!-- segmented -->
     <section class="sec"><div class="sec-head"><span class="sec-num">01</span>
@@ -130,7 +167,7 @@
           <a class="dm-cta dm-cta--ghost" href="#">Docs</a></div>
         <div class="lead"><span class="rl">Copy</span>
           <button class="dm-icon-btn copy-demo" type="button" aria-label="Copy"></button>
-          <span style="font-size:12.5px;color:var(--dm-gray-11)">ghost icon — faint default, teal-soft on hover (no dark button)</span></div>
+          <span style="font-size:var(--dm-type-caption-size);line-height:var(--dm-type-caption-line);color:var(--dm-text-muted)">ghost icon — faint default, teal-soft on hover (no dark button)</span></div>
       </div></section>
 
     <!-- code surface -->
