@@ -1,20 +1,42 @@
 /* ═══════════════════════════════════════════════════════════════════════
    dartwork-mpl — Dynamic UX styling
-   Pairs with dynamic_ux.js. Uses Shibuya theme tokens (--sy-*) so dark mode
-   is inherited automatically.
+   Pairs with dynamic_ux.js. Uses dartwork-design.css tokens so dark mode
+   is inherited from one docs design-system source.
    ═══════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --dm-ux-radius: 10px;
-  --dm-ux-elev: 0 4px 18px rgba(0, 0, 0, 0.10);
-  --dm-ux-elev-strong: 0 12px 32px rgba(0, 0, 0, 0.18);
-  --dm-ux-accent: var(--sy-c-primary, #14b8a6);
-  --dm-ux-accent-soft: var(--sy-c-primary-soft, rgba(20, 184, 166, 0.12));
-  --dm-ux-border: var(--sy-c-divider, #e5e7eb);
-  --dm-ux-bg: var(--sy-c-bg, #ffffff);
-  --dm-ux-bg-mute: var(--sy-c-bg-mute, #f6f7f9);
-  --dm-ux-text: var(--sy-c-text, #1f2937);
-  --dm-ux-text-weak: var(--sy-c-text-weak, #64748b);
+  --dm-ux-radius: var(--dm-radius-5);
+  --dm-ux-elev: var(--dm-shadow-3);
+  --dm-ux-elev-strong: var(--dm-shadow-4);
+  --dm-ux-accent: var(--dm-accent-9);
+  --dm-ux-accent-soft: var(--dm-accent-3);
+  --dm-ux-border: var(--dm-border-faint);
+  --dm-ux-bg: var(--dm-bg-page);
+  --dm-ux-bg-mute: var(--dm-bg-subtle);
+  --dm-ux-text: var(--dm-text-strong);
+  --dm-ux-text-weak: var(--dm-text-muted);
+  --dm-ux-danger: var(--dm-warning-11);
+  --dm-ux-overlay: color-mix(in oklab, var(--dm-gray-12) 55%, transparent);
+  --dm-ux-code-bg: var(--dm-gray-12);
+  --dm-ux-code-text: var(--dm-gray-1);
+  --dm-ux-chip-label-bg: color-mix(in oklab, var(--dm-gray-1) 92%, transparent);
+  --dm-ux-chip-label-text: var(--dm-gray-12);
+  --dm-ux-chip-action-bg: color-mix(in oklab, var(--dm-gray-12) 55%, transparent);
+  --dm-ux-chip-action-text: var(--dm-gray-1);
+  --dm-ux-pin-bg: color-mix(in oklab, var(--dm-gray-1) 85%, transparent);
+  --dm-ux-pin-text: color-mix(in oklab, var(--dm-gray-12) 45%, transparent);
+  --dm-ux-pin-on-bg: color-mix(in oklab, var(--dm-gray-1) 95%, transparent);
+}
+
+html.dark,
+body[data-theme="dark"] {
+  --dm-ux-code-bg: var(--dm-gray-3);
+  --dm-ux-code-text: var(--dm-gray-12);
+  --dm-ux-chip-label-bg: color-mix(in oklab, var(--dm-gray-1) 85%, transparent);
+  --dm-ux-chip-label-text: var(--dm-gray-12);
+  --dm-ux-pin-bg: color-mix(in oklab, var(--dm-gray-1) 70%, transparent);
+  --dm-ux-pin-text: color-mix(in oklab, var(--dm-gray-12) 60%, transparent);
+  --dm-ux-overlay: color-mix(in oklab, var(--dm-gray-1) 70%, transparent);
 }
 
 /* ───────────────────────── 1. Toast ─────────────────────────────────── */
@@ -101,13 +123,13 @@
 .dm-kbd-launcher span {
   display: inline-block;
   transform: translateY(-1px);
-  font-family: var(--sy-f-mono, ui-monospace, monospace);
+  font-family: var(--dm-f-mono);
 }
 
 .dm-kbd-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.55);
+  background: var(--dm-ux-overlay);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   display: flex;
@@ -184,7 +206,7 @@
 }
 .dm-kbd-keys kbd,
 .dm-kbd-foot kbd {
-  font-family: var(--sy-f-mono, ui-monospace, monospace);
+  font-family: var(--dm-f-mono);
   background: var(--dm-ux-bg-mute);
   border: 1px solid var(--dm-ux-border);
   border-bottom-width: 2px;
@@ -226,7 +248,7 @@ body.dm-kbd-pending-g::after {
   right: 24px;
   background: var(--dm-ux-text);
   color: var(--dm-ux-bg);
-  font-family: var(--sy-f-mono, monospace);
+  font-family: var(--dm-f-mono);
   padding: 4px 10px;
   border-radius: var(--dm-radius-3);
   font-size: 0.8rem;
@@ -259,7 +281,7 @@ body.dm-kbd-pending-g::after {
   border-radius: var(--dm-ux-radius);
   padding: 10px 12px;
   margin: 1rem 0 1.5rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--dm-shadow-2);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -297,7 +319,7 @@ body.dm-kbd-pending-g::after {
   color: var(--dm-ux-text-weak);
 }
 .dm-faq-search-count.zero {
-  color: #e53935;
+  color: var(--dm-ux-danger);
 }
 .dm-faq-pills {
   display: flex;
@@ -319,9 +341,9 @@ body.dm-kbd-pending-g::after {
   color: var(--dm-ux-accent);
 }
 .dm-faq-pill.active {
-  background: var(--dm-ux-accent);
+  background: var(--dm-ux-accent-soft);
   border-color: var(--dm-ux-accent);
-  color: #fff;
+  color: var(--dm-accent-11);
 }
 
 /* ───────────────────────── 6. Helper ruler ──────────────────────────── */
@@ -376,7 +398,7 @@ body.dm-kbd-pending-g::after {
 .dm-rw-ctrl > span em {
   font-style: normal;
   color: var(--dm-ux-accent);
-  font-family: var(--sy-f-mono, monospace);
+  font-family: var(--dm-f-mono);
 }
 .dm-rw-ctrl select,
 .dm-rw-ctrl input[type="range"] {
@@ -410,7 +432,7 @@ body.dm-kbd-pending-g::after {
   color: var(--dm-ux-accent);
 }
 .dm-rw-sample {
-  font-family: var(--sy-f-sys, system-ui);
+  font-family: var(--dm-f-sys);
   color: var(--dm-ux-text);
   font-size: 24px;
   font-weight: 300;
@@ -438,18 +460,18 @@ body.dm-kbd-pending-g::after {
 }
 .dm-rw-readouts span {
   color: var(--dm-ux-text-weak);
-  font-family: var(--sy-f-mono, monospace);
+  font-family: var(--dm-f-mono);
 }
 .dm-rw-readouts strong {
   color: var(--dm-ux-text);
-  font-family: var(--sy-f-mono, monospace);
+  font-family: var(--dm-f-mono);
 }
 .dm-rw-code {
   margin: 0;
   padding: 12px 18px;
-  background: var(--sy-c-bg-weak, #0f172a);
-  color: #e2e8f0;
-  font-family: var(--sy-f-mono, monospace);
+  background: var(--dm-ux-code-bg);
+  color: var(--dm-ux-code-text);
+  font-family: var(--dm-f-mono);
   font-size: 0.85rem;
   overflow-x: auto;
   white-space: pre;
@@ -505,7 +527,7 @@ body.dm-kbd-pending-g::after {
 }
 .dm-ls-grid em {
   font-style: normal;
-  font-family: var(--sy-f-mono, monospace);
+  font-family: var(--dm-f-mono);
   color: var(--dm-ux-accent);
   font-weight: 600;
 }
@@ -543,7 +565,7 @@ body.dm-kbd-pending-g::after {
 }
 .dm-ls-tag {
   flex: 0 0 auto;
-  font-family: var(--sy-f-mono, monospace);
+  font-family: var(--dm-f-mono);
   font-size: 0.72rem;
   padding: 2px 6px;
   border-radius: var(--dm-radius-2);
@@ -585,11 +607,11 @@ body.dm-kbd-pending-g::after {
 }
 .dm-ls-code {
   margin: 0;
-  background: var(--sy-c-bg-weak, #0f172a);
-  color: #e2e8f0;
+  background: var(--dm-ux-code-bg);
+  color: var(--dm-ux-code-text);
   border-radius: var(--dm-radius-4);
   padding: 12px 14px;
-  font-family: var(--sy-f-mono, monospace);
+  font-family: var(--dm-f-mono);
   font-size: 0.83rem;
   line-height: 1.5;
   white-space: pre;
@@ -613,7 +635,7 @@ body.dm-kbd-pending-g::after {
   border-radius: var(--dm-ux-radius);
   box-shadow: var(--dm-ux-elev);
   z-index: 9985;
-  font-family: var(--sy-f-sys, system-ui);
+  font-family: var(--dm-f-sys);
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 .dm-fav-tray.collapsed {
@@ -644,12 +666,12 @@ body.dm-kbd-pending-g::after {
   border-radius: var(--dm-radius-2);
 }
 .dm-fav-clear:hover {
-  color: #ef4444;
+  color: var(--dm-ux-danger);
   background: var(--dm-ux-bg-mute);
 }
 .dm-fav-toggle {
   font-size: 0.8rem;
-  font-family: var(--sy-f-mono, monospace);
+  font-family: var(--dm-f-mono);
 }
 .dm-fav-toggle:hover {
   background: var(--dm-ux-bg-mute);
@@ -677,16 +699,16 @@ body.dm-kbd-pending-g::after {
   align-items: flex-end;
   justify-content: center;
   overflow: hidden;
-  font-family: var(--sy-f-mono, monospace);
+  font-family: var(--dm-f-mono);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .dm-fav-chip:hover {
   transform: translateY(-2px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--dm-shadow-2);
 }
 .dm-fav-chip-label {
-  background: rgba(255, 255, 255, 0.92);
-  color: #111;
+  background: var(--dm-ux-chip-label-bg);
+  color: var(--dm-ux-chip-label-text);
   font-size: 0.62rem;
   padding: 1px 4px;
   border-radius: 2px;
@@ -706,8 +728,8 @@ body.dm-kbd-pending-g::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
+  background: var(--dm-ux-chip-action-bg);
+  color: var(--dm-ux-chip-action-text);
   font-size: 0.7rem;
   border-bottom-left-radius: var(--dm-radius-2);
   opacity: 0;
@@ -728,9 +750,9 @@ body.dm-kbd-pending-g::after {
   position: absolute;
   top: 4px;
   right: 4px;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--dm-ux-pin-bg);
   border: 0;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--dm-ux-pin-text);
   width: 18px;
   height: 18px;
   border-radius: 50%;
@@ -748,13 +770,13 @@ body.dm-kbd-pending-g::after {
   opacity: 1;
 }
 .dm-fav-pin:hover {
-  color: #f59e0b;
+  color: var(--dm-warning-11);
   transform: scale(1.15);
 }
 .dm-fav-pin.on {
-  color: #f59e0b;
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 0 0 1px #f59e0b;
+  color: var(--dm-warning-11);
+  background: var(--dm-ux-pin-on-bg);
+  box-shadow: 0 0 0 1px var(--dm-warning-9);
 }
 @media (max-width: 720px) {
   .dm-fav-tray {
@@ -767,13 +789,13 @@ body.dm-kbd-pending-g::after {
   position: absolute;
   top: 6px;
   right: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #e2e8f0;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: color-mix(in oklab, var(--dm-ux-code-text) 6%, transparent);
+  color: var(--dm-ux-code-text);
+  border: 1px solid color-mix(in oklab, var(--dm-ux-code-text) 18%, transparent);
   font-size: 0.72rem;
   padding: 3px 8px;
   border-radius: var(--dm-radius-2);
-  font-family: var(--sy-f-mono, monospace);
+  font-family: var(--dm-f-mono);
   cursor: pointer;
   z-index: 3;
   transition: background 0.15s ease;
@@ -781,27 +803,5 @@ body.dm-kbd-pending-g::after {
 .dm-cb-toggle:hover {
   background: var(--dm-ux-accent);
   border-color: var(--dm-ux-accent);
-  color: #fff;
-}
-
-/* ───────────────────────── Dark mode polish ─────────────────────────── */
-html.dark .dm-rw-code,
-body[data-theme="dark"] .dm-rw-code,
-html.dark .dm-ls-code,
-body[data-theme="dark"] .dm-ls-code {
-  background: #0b1120;
-}
-html.dark .dm-fav-chip-label,
-body[data-theme="dark"] .dm-fav-chip-label {
-  background: rgba(15, 23, 42, 0.85);
-  color: #f8fafc;
-}
-html.dark .dm-fav-pin,
-body[data-theme="dark"] .dm-fav-pin {
-  background: rgba(15, 23, 42, 0.7);
-  color: rgba(255, 255, 255, 0.6);
-}
-html.dark .dm-kbd-overlay,
-body[data-theme="dark"] .dm-kbd-overlay {
-  background: rgba(2, 6, 23, 0.7);
+  color: var(--dm-bg-page);
 }
