@@ -17,6 +17,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT / "src"
@@ -102,12 +103,11 @@ def _make_challenging_figure(use_simple_layout: bool = True) -> plt.Figure:
     np.random.seed(42)
     dm.style.use("scientific")
 
-    # 17cm × 11cm so the SVG's natural width (~643 px at 96 dpi) lands
-    # right inside the Shibuya body column. Browsers no longer scale
-    # it up, which removes the font/line stretch the user reported.
-    # 1.55:1 aspect is more square than the original 1.89:1 — leaves
-    # more vertical room for the long ylabel and the colorbar.
-    fig = plt.figure(figsize=dm.figsize("17cm", "11cm"), dpi=300)
+    # 17cm × 8.5cm: width fills the Shibuya body column; the shorter
+    # height keeps the *square* heatmap (aspect="equal") from floating in
+    # a tall panel — the right panel is now close to the heatmap's own
+    # square footprint, so the two panels read as a balanced pair.
+    fig = plt.figure(figsize=dm.figsize("17cm", "8.5cm"), dpi=300)
     fig.patch.set_facecolor("#f6f5f1")
     fig.patch.set_edgecolor("#c8c6c0")
     fig.patch.set_linewidth(1.0)
@@ -124,8 +124,11 @@ def _make_challenging_figure(use_simple_layout: bool = True) -> plt.Figure:
 
     # Right: heatmap with colorbar
     data = np.random.randn(8, 8).cumsum(axis=0)
-    im = ax2.imshow(data, cmap="dc.deep_sea", aspect="auto")
-    cb = plt.colorbar(im, ax=ax2, shrink=0.85, pad=0.03)
+    im = ax2.imshow(data, cmap="dc.deep_sea", aspect="equal")
+    # Pin the colorbar to the heatmap so its bar length matches the
+    # image's spine exactly (no taller/shorter floating bar).
+    cax = make_axes_locatable(ax2).append_axes("right", size="4%", pad=0.12)
+    cb = fig.colorbar(im, cax=cax)
     cb.set_label("Δ Temperature [K]", fontsize=dm.fs(0))
     cb.outline.set_visible(False)
     ax2.set_xlabel("Sensor index", fontsize=dm.fs(0))
