@@ -35,7 +35,7 @@ L 432.39685 262.330141
 L 432.39685 23.063281 
 L 7.2 23.063281 
 z
-" style="fill: #ffffff"/>
+" style="fill: #1e1e1e"/>
    </g>
    <g id="matplotlib.axis_1"/>
    <g id="matplotlib.axis_2"/>
@@ -1468,7 +1468,7 @@ z
    </g>
    <g id="text_6">
     <!-- Typography Scaling: fs(), fw() -->
-    <g transform="translate(136.515222 17.063281) scale(0.125 -0.125)">
+    <g style="fill: #e0e0e0" transform="translate(136.515222 17.063281) scale(0.125 -0.125)">
      <defs>
       <path id="Roboto-Bold-79" d="M 1609 1278 
 L 2234 3381 

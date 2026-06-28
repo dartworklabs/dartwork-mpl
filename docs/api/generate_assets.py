@@ -13,10 +13,17 @@ import sys
 from pathlib import Path
 
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
+sys.path.insert(
+    0, str(Path(__file__).resolve().parents[1] / "_static" / "scripts")
+)
+from _svg_determinism import apply_svg_determinism
+
+apply_svg_determinism()
+
+import matplotlib.pyplot as plt  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT / "src"
