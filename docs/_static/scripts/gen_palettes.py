@@ -211,15 +211,15 @@ PLANS = {
     },
     # EMPHASIS — single teal-accent + warm-accent (highlight one series, mute rest)
     "focus": {
-        "Ls": ladder(34, 90),
+        "Ls": ladder(46, 91),
         "Hs": [TEAL_H, 250, 250, 250, 250, 250, 250, 250],
-        "Cs": [40, 5, 5, 5, 5, 5, 5, 5],
+        "Cs": [44, 5, 5, 5, 5, 5, 5, 5],
         "order": SEQ,
     },
     "focus_warm": {
-        "Ls": ladder(34, 90),
+        "Ls": ladder(46, 91),
         "Hs": [32, 250, 250, 250, 250, 250, 250, 250],
-        "Cs": [46, 5, 5, 5, 5, 5, 5, 5],
+        "Cs": [50, 5, 5, 5, 5, 5, 5, 5],
         "order": SEQ,
     },
     # BALANCED — corporate (cool/formal, teal-anchored) beside trustworthy
