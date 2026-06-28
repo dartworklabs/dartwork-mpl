@@ -35,7 +35,7 @@ L 402.633071 277.362402
 L 402.633071 47.756102 
 L 147.514961 47.756102 
 z
-" style="fill: #1e1e1e"/>
+" style="fill: #ffffff"/>
    </g>
    <g id="matplotlib.axis_1"/>
    <g id="matplotlib.axis_2"/>
@@ -94,7 +94,7 @@ L 240.967317 47.756102
    </g>
    <g id="text_1">
     <!-- Category C -->
-    <g style="fill: #e0e0e0" transform="translate(7.2 238.212953) scale(0.105 -0.105)">
+    <g transform="translate(7.2 238.212953) scale(0.105 -0.105)">
      <defs>
       <path id="Roboto-Light-43" d="M 3797 1419 
 Q 3719 700 3283 318 
@@ -312,7 +312,7 @@ z
    </g>
    <g id="text_2">
     <!-- Category B -->
-    <g style="fill: #e0e0e0" transform="translate(7.2 165.322064) scale(0.105 -0.105)">
+    <g transform="translate(7.2 165.322064) scale(0.105 -0.105)">
      <defs>
       <path id="Roboto-Light-42" d="M 575 0 
 L 575 4550 
@@ -361,7 +361,7 @@ z
    </g>
    <g id="text_3">
     <!-- Category A -->
-    <g style="fill: #e0e0e0" transform="translate(7.2 92.431176) scale(0.105 -0.105)">
+    <g transform="translate(7.2 92.431176) scale(0.105 -0.105)">
      <defs>
       <path id="Roboto-Light-41" d="M 3031 1275 
 L 966 1275 
@@ -394,7 +394,7 @@ z
    </g>
    <g id="text_4">
     <!-- -25 -->
-    <g style="fill: #e0e0e0" transform="translate(156.777335 238.047797) scale(0.095 -0.095)">
+    <g transform="translate(156.777335 238.047797) scale(0.095 -0.095)">
      <defs>
       <path id="Roboto-Light-2d" d="M 1650 1850 
 L 153 1850 
@@ -459,7 +459,7 @@ z
    </g>
    <g id="text_5">
     <!-- -15 -->
-    <g style="fill: #e0e0e0" transform="translate(184.062695 165.156908) scale(0.095 -0.095)">
+    <g transform="translate(184.062695 165.156908) scale(0.095 -0.095)">
      <defs>
       <path id="Roboto-Light-31" d="M 2169 0 
 L 1794 0 
@@ -479,7 +479,7 @@ z
    </g>
    <g id="text_6">
     <!-- -30 -->
-    <g style="fill: #e0e0e0" transform="translate(143.134656 92.26602) scale(0.095 -0.095)">
+    <g transform="translate(143.134656 92.26602) scale(0.095 -0.095)">
      <defs>
       <path id="Roboto-Light-33" d="M 1259 2478 
 L 1647 2478 
@@ -549,21 +549,21 @@ z
    </g>
    <g id="text_7">
     <!-- 35 -->
-    <g style="fill: #e0e0e0" transform="translate(339.19461 238.047797) scale(0.095 -0.095)">
+    <g transform="translate(339.19461 238.047797) scale(0.095 -0.095)">
      <use xlink:href="#Roboto-Light-33"/>
      <use xlink:href="#Roboto-Light-35" transform="translate(55.419922 0)"/>
     </g>
    </g>
    <g id="text_8">
     <!-- 55 -->
-    <g style="fill: #e0e0e0" transform="translate(393.765329 165.156908) scale(0.095 -0.095)">
+    <g transform="translate(393.765329 165.156908) scale(0.095 -0.095)">
      <use xlink:href="#Roboto-Light-35"/>
      <use xlink:href="#Roboto-Light-35" transform="translate(55.419922 0)"/>
     </g>
    </g>
    <g id="text_9">
     <!-- 40 -->
-    <g style="fill: #e0e0e0" transform="translate(352.83729 92.26602) scale(0.095 -0.095)">
+    <g transform="translate(352.83729 92.26602) scale(0.095 -0.095)">
      <defs>
       <path id="Roboto-Light-34" d="M 2725 1466 
 L 3434 1466 
@@ -593,7 +593,7 @@ z
   </g>
   <g id="text_10">
    <!-- Diverging bar chart -->
-   <g style="fill: #e0e0e0" transform="translate(7.2 16.575) scale(0.125 -0.125)">
+   <g transform="translate(7.2 16.575) scale(0.125 -0.125)">
     <defs>
      <path id="Roboto-Regular-44" d="M 528 0 
 L 528 4550 
@@ -887,7 +887,7 @@ z
    </g>
    <g id="text_11">
     <!-- Decrease -->
-    <g style="fill: #cccccc" transform="translate(32.4 39.673228) scale(0.105 -0.105)">
+    <g transform="translate(32.4 39.673228) scale(0.105 -0.105)">
      <defs>
       <path id="Roboto-Light-44" d="M 575 0 
 L 575 4550 
@@ -989,7 +989,7 @@ z
    </g>
    <g id="text_12">
     <!-- Increase -->
-    <g style="fill: #cccccc" transform="translate(115.330312 39.673228) scale(0.105 -0.105)">
+    <g transform="translate(115.330312 39.673228) scale(0.105 -0.105)">
      <defs>
       <path id="Roboto-Light-49" d="M 1044 0 
 L 659 0 
