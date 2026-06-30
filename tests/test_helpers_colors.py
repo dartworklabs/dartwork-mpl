@@ -162,6 +162,57 @@ class TestGetPalette:
         assert all(c.startswith("oc.blue") for c in cols)
 
 
+class TestGetPaletteOrdering:
+    """``order`` / ``reverse`` / ``seed`` re-arrange the picked colours."""
+
+    def test_default_order_unchanged(self) -> None:
+        assert get_palette("trustworthy", n=6, order="default") == get_palette(
+            "trustworthy", n=6
+        )
+
+    def test_reverse_reverses(self) -> None:
+        base = get_palette("trustworthy", n=6)
+        assert get_palette("trustworthy", n=6, reverse=True) == base[::-1]
+
+    def test_lightness_sorts_light_to_dark(self) -> None:
+        from dartwork_mpl.helpers.colors import _lstar
+
+        cols = get_palette("trustworthy", n=8, order="lightness")
+        ls = [_lstar(c) for c in cols]
+        assert ls == sorted(ls, reverse=True)
+        assert set(cols) == set(get_palette("trustworthy", n=8))  # same colours
+
+    def test_shuffle_is_a_permutation(self) -> None:
+        base = get_palette("spectrum", n=8)
+        out = get_palette("spectrum", n=8, order="shuffle", seed=7)
+        assert sorted(out) == sorted(base)
+
+    def test_shuffle_seed_is_deterministic(self) -> None:
+        a = get_palette("trustworthy", n=8, order="shuffle", seed=42)
+        b = get_palette("trustworthy", n=8, order="shuffle", seed=42)
+        assert a == b
+
+    def test_shuffle_seeds_differ(self) -> None:
+        a = get_palette("trustworthy", n=8, order="shuffle", seed=1)
+        b = get_palette("trustworthy", n=8, order="shuffle", seed=2)
+        assert a != b
+
+    def test_order_and_reverse_compose(self) -> None:
+        light = get_palette("trustworthy", n=6, order="lightness")
+        both = get_palette("trustworthy", n=6, order="lightness", reverse=True)
+        assert both == light[::-1]
+
+    def test_order_applies_to_full_palette(self) -> None:
+        assert (
+            get_palette("trustworthy", reverse=True)
+            == get_palette("trustworthy")[::-1]
+        )
+
+    def test_unknown_order_raises(self) -> None:
+        with pytest.raises(ValueError):
+            get_palette("trustworthy", order="bogus")  # type: ignore[arg-type]
+
+
 class TestSetCycle:
     """``set_cycle`` updates the colour cycle globally or per-Axes."""
 
