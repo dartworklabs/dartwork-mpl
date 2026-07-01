@@ -213,3 +213,21 @@ def register_resources(mcp: FastMCP) -> None:
             available = sorted(p.stem for p in _TEMPLATE_DIR.glob("*.py"))
             return f"No template for {plot_type!r}. Available: {available}"
         return path.read_text(encoding="utf-8")
+
+    @mcp.resource("dartwork-mpl://templates/advanced/{plot_type}")
+    def plot_templates_advanced(plot_type: str) -> str:
+        """Get the bundled tier-2 (advanced) template for a plot type.
+
+        The advanced tier adds synthetic data, reference lines, value
+        labels, a narrative title, and a source footnote. Falls back to
+        the basic template if no advanced version exists yet — so the
+        ``suggest_chart_type`` / ``create_plot`` URIs always resolve.
+        """
+        advanced = _TEMPLATE_DIR / "advanced" / f"{plot_type.lower()}.py"
+        if advanced.exists():
+            return advanced.read_text(encoding="utf-8")
+        basic = _TEMPLATE_DIR / f"{plot_type.lower()}.py"
+        if basic.exists():
+            return basic.read_text(encoding="utf-8")
+        available = sorted(p.stem for p in _TEMPLATE_DIR.glob("*.py"))
+        return f"No template for {plot_type!r}. Available: {available}"

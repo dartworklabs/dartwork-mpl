@@ -991,12 +991,12 @@ def register_tools(mcp: FastMCP) -> None:
         basic_path = template_dir / f"{recommended}.py"
         advanced_path = template_dir / "advanced" / f"{recommended}.py"
         basic_uri = (
-            f"dartwork-mpl://template/{recommended}"
+            f"dartwork-mpl://templates/{recommended}"
             if basic_path.exists()
-            else "dartwork-mpl://template/bar"
+            else "dartwork-mpl://templates/bar"
         )
         advanced_uri = (
-            f"dartwork-mpl://template/advanced/{recommended}"
+            f"dartwork-mpl://templates/advanced/{recommended}"
             if advanced_path.exists()
             else None
         )

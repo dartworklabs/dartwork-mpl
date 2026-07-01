@@ -107,7 +107,7 @@ Apply via `dm.style.use("scientific")` (or `dm.style.stack([...])` for a stack).
 - `dartwork-mpl://guide/recipes` — intent → function-call cookbook
 - `dartwork-mpl://guide/anti-patterns` — machine-readable lint catalog
 - `dartwork-mpl://templates/{{plot_type}}` — bundled tier-1 (minimal) starter scripts
-- `dartwork-mpl://template/advanced/{{plot_type}}` — tier-2 narrative templates with reference lines, value labels, source footnote
+- `dartwork-mpl://templates/advanced/{{plot_type}}` — tier-2 narrative templates with reference lines, value labels, source footnote
 
 ## Pre-flight tool calls (recommended)
 

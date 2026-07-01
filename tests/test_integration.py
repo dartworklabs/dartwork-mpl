@@ -203,6 +203,45 @@ class TestMcpSurfaceContract:
             )
             assert payload["png_base64"] and len(payload["png_base64"]) > 1000
 
+    def test_advanced_template_uri_resolves(self) -> None:
+        """The advanced-tier template URI — emitted by suggest_chart_type and
+        the create_plot prompt — was unregistered (only ``templates/{name}``
+        existed), so it resolved to nothing. It must resolve now."""
+        body = (
+            self._run(
+                self.mcp.read_resource("dartwork-mpl://templates/advanced/bar")
+            )
+            .contents[0]
+            .content
+        )
+        assert body and len(body) > 5 and "No template" not in body
+
+    def test_suggest_chart_type_uris_resolve(self) -> None:
+        """suggest_chart_type used to emit singular ``template/{name}`` URIs
+        that matched no registered resource; both emitted tiers must resolve."""
+        payload = json.loads(
+            self._run(
+                self.mcp.call_tool(
+                    "suggest_chart_type",
+                    {
+                        "x_type": "categorical",
+                        "y_type": "continuous",
+                        "n_points": 5,
+                    },
+                )
+            )
+            .content[0]
+            .text
+        )
+        for key in ("basic_template_uri", "advanced_template_uri"):
+            uri = payload.get(key)
+            if not uri:
+                continue
+            body = self._run(self.mcp.read_resource(uri)).contents[0].content
+            assert body and len(body) > 5 and "No template" not in body, (
+                f"{key}={uri} did not resolve"
+            )
+
     def test_validate_generated_plot_lint_blocks_critical(self) -> None:
         """``validate_generated_plot`` must short-circuit on critical
         lint before attempting to exec the snippet."""
