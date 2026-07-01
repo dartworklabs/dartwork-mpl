@@ -323,6 +323,11 @@ def set_cycle(
     )
     cyc = cycler(color=colors)
     if ax is None:
-        plt.rcParams["axes.prop_cycle"] = cyc
+        # Guard the global rcParams write with the same lock ``style.use``
+        # uses, so a concurrent style change can't interleave with it.
+        from ..style import _style_lock
+
+        with _style_lock:
+            plt.rcParams["axes.prop_cycle"] = cyc
     else:
         ax.set_prop_cycle(cyc)
