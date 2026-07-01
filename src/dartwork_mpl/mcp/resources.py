@@ -135,13 +135,13 @@ def register_resources(mcp: FastMCP) -> None:
         and values are hex codes. Only dartwork-mpl prefixed colors are included:
         dc.*, tw.*, md.*, ad.*, cu.*, pr.*, oc.*
         """
+        from ..colors._loader import COLOR_LIBRARIES
+
+        prefixes = [prefix for _key, prefix, _fn, _label in COLOR_LIBRARIES]
         colors = {
             k: mcolors.to_hex(v)
             for k, v in mcolors.get_named_colors_mapping().items()
-            if any(
-                k.startswith(prefix)
-                for prefix in ["dc.", "tw.", "md.", "ad.", "cu.", "pr.", "oc."]
-            )
+            if any(k.startswith(prefix) for prefix in prefixes)
         }
         return json.dumps(colors, indent=2)
 
