@@ -43,7 +43,7 @@ for i, (delta, total) in enumerate(zip(deltas, is_total, strict=False)):
         running += delta
 
 colors = [
-    "dc.teal_indigo3" if total else ("dc.forest2" if d >= 0 else "dc.bold2")
+    "dc.teal_indigo3" if total else ("dc.forest2" if d >= 0 else "dc.vivid2")
     for d, total in zip(deltas, is_total, strict=False)
 ]
 

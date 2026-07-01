@@ -252,10 +252,10 @@ def get_palette(
     --------
     >>> get_palette("trustworthy")            # all 8
     >>> get_palette("trustworthy", n=5)       # first 5 (best-separated)
-    >>> get_palette("coolwarm", n=7, subset="even")
+    >>> get_palette("cool_warm", n=7, subset="even")
     >>> get_palette("trustworthy", n=6, order="lightness")   # light→dark
     >>> get_palette("trustworthy", reverse=True)             # reversed cycle
-    >>> get_palette("spectrum", n=5, order="shuffle", seed=42)  # reproducible
+    >>> get_palette("vivid", n=5, order="shuffle", seed=42)  # reproducible
     """
     base = _palette_color_names(name)
     if n is None:
@@ -299,7 +299,7 @@ def set_cycle(
     Parameters
     ----------
     palette : str | list[str]
-        A palette base name (``"trustworthy"``, ``"dc.spectrum"``) or an
+        A palette base name (``"trustworthy"``, ``"dc.vivid"``) or an
         explicit list of colours / colour names.
     ax : matplotlib.axes.Axes | None
         If given, set the cycle on that Axes only (``ax.set_prop_cycle``).
@@ -311,7 +311,7 @@ def set_cycle(
 
     Examples
     --------
-    >>> set_cycle("spectrum")                 # global, all 8
+    >>> set_cycle("vivid")                 # global, all 8
     >>> set_cycle("trustworthy", n=5)         # global, first 5
     >>> set_cycle("teal_accent", ax=ax)             # this Axes only
     """

@@ -44,7 +44,7 @@ ax.fill_between(
     x,
     boundary2,
     14,
-    color=dm.pseudo_alpha("dc.bold3", 0.20, background="white"),
+    color=dm.pseudo_alpha("dc.vivid3", 0.20, background="white"),
     label="Phase III  (Gas)",
 )
 
@@ -54,7 +54,7 @@ ax.plot(x, boundary2, color="dc.jewel3", lw=dm.lw(1))
 
 # Critical point annotation
 cp_x, cp_y = 6.5, boundary2[130]
-ax.plot(cp_x, cp_y, "o", color="dc.bold3", markersize=8, zorder=5)
+ax.plot(cp_x, cp_y, "o", color="dc.vivid3", markersize=8, zorder=5)
 ax.annotate(
     "Critical\nPoint",
     xy=(cp_x, cp_y),

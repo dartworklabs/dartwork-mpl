@@ -21,4 +21,4 @@ axes.spines.top:    False
 axes.spines.right:  False
 
 # categorical cycle — Spectrum (vivid full-wheel for screen)
-axes.prop_cycle: cycler('color', ['dc.spectrum0', 'dc.spectrum1', 'dc.spectrum2', 'dc.spectrum3', 'dc.spectrum4', 'dc.spectrum5'])
+axes.prop_cycle: cycler('color', ['dc.vivid0', 'dc.vivid1', 'dc.vivid2', 'dc.vivid3', 'dc.vivid4', 'dc.vivid5'])

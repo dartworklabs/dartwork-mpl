@@ -142,7 +142,7 @@ SI prefixes
    # Frequency response — 1 kHz to 1 GHz
    freq = np.logspace(3, 9, 50)
    response = -20 * np.log10(freq / 1e6)
-   ax1.semilogx(freq, response, color="dc.bold2")
+   ax1.semilogx(freq, response, color="dc.vivid2")
    dm.format_axis_si(ax1, axis="x")  # 1k, 10k, 100k, 1M, …
    ax1.set_xlabel("Frequency (Hz)")
    ax1.set_ylabel("Response (dB)")

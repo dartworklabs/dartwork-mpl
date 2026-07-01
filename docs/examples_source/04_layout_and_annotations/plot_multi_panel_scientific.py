@@ -62,7 +62,7 @@ x_fit = np.linspace(0, 10, 50)
 ax.plot(
     x_fit,
     m * x_fit + b,
-    color="dc.bold3",
+    color="dc.vivid3",
     lw=dm.lw(1),
     label=f"y = {m:.1f}x + {b:.1f}",
 )
@@ -107,9 +107,9 @@ bp = ax.boxplot(
     groups,
     patch_artist=True,
     widths=0.6,
-    medianprops={"color": "dc.bold3", "lw": dm.lw(0)},
+    medianprops={"color": "dc.vivid3", "lw": dm.lw(0)},
 )
-box_colors = ["dc.teal1", "dc.jewel1", "dc.forest1", "dc.earth1", "dc.bold1"]
+box_colors = ["dc.teal1", "dc.jewel1", "dc.forest1", "dc.earth1", "dc.vivid1"]
 for patch, color in zip(bp["boxes"], box_colors, strict=False):
     patch.set_facecolor(color)
     patch.set_edgecolor("dc.teal_indigo3")

@@ -27,7 +27,7 @@ y1, y2 = np.sin(x), np.cos(x)
 
 fig, ax = plt.subplots(figsize=dm.figsize("15cm", "wide"))
 ax.plot(x, y1, color="dc.teal3", linewidth=dm.lw(0), label="sin(x)")
-ax.plot(x, y2, color="dc.bold3", linewidth=dm.lw(0), label="cos(x)")
+ax.plot(x, y2, color="dc.vivid3", linewidth=dm.lw(0), label="cos(x)")
 ax.set_xlabel("x")
 ax.set_ylabel("y")
 ax.legend()

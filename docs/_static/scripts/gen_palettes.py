@@ -105,13 +105,6 @@ PLANS = {
         "Cs": [33] * 8,
         "order": STAG,
     },
-    # MEDIUM duos (warm + cool)
-    "warm_cool": {
-        "Ls": ladder(38, 90),
-        "Hs": [40, 55, 25, 65, 230, 255, 215, 270],
-        "Cs": [42, 42, 42, 42, 38, 38, 38, 38],
-        "order": DUO,
-    },
     # warm side pushed to ORANGE (h≈42–64, not pure red) so teal↔warm becomes a
     # blue-yellow axis that survives protanopia (red side h<35 was the collapse).
     "teal_coral": {
@@ -133,18 +126,38 @@ PLANS = {
         "Cs": [34, 32, 30, 38, 34, 36, 4, 4],
         "order": STAG,
     },
-    # MUTED / pastel (soft editorial; low chroma, higher L*)
+    # MUTED high-key (public: pastel). Low chroma; the L* stagger is the
+    # separator. Shares its hue plan with dusty (low-key) -> intentional
+    # high/low-key pair, not a near-duplicate.
     "muted": {
-        "Ls": ladder(52, 90),
-        "Hs": [TEAL_H, 250, 300, 35, 140, 355, 75, 210],
+        "Ls": ladder(53, 92),
+        "Hs": [200, 280, 32, 150, 340, 95, 250, None],
         "Cs": [18] * 8,
         "order": STAG,
     },
-    # WIDE spectrum (full hue wheel, vivid)
-    "spectrum": {
-        "Ls": ladder(40, 88),
-        "Hs": [(TEAL_H + 45 * i) % 360 for i in range(8)],
-        "Cs": [60] * 8,
+    # VIVID (merges the old spectrum + bold): the intuitive "give me colourful
+    # distinct categories" default. Uneven hues chosen for CVD margin (blue205/
+    # orange32 anchor) rather than a forced even wheel.
+    "vivid": {
+        "Ls": ladder(40, 84),
+        "Hs": [205, 262, 32, 142, 320, 90, 300, 168],
+        "Cs": [52] * 8,
+        "order": STAG,
+    },
+    # NEON — max-chroma electric categorical (the loudest legal set). CVD-safe:
+    # confusable hues are thrown far apart on the L* ladder.
+    "neon": {
+        "Ls": ladder(36, 86),
+        "Hs": [195, 262, 318, 342, 110, 78, 288, 175],
+        "Cs": [66] * 8,
+        "order": STAG,
+    },
+    # EMBER — warm-vibrant categorical (brick/coral/orange/amber/gold/olive + one
+    # cool-neutral anchor). Fills the warm gap (earth was warm but muted).
+    "ember": {
+        "Ls": ladder(34, 88),
+        "Hs": [24, 46, 72, 96, 120, 6, 58, None],
+        "Cs": [50, 50, 46, 42, 40, 52, 46, 6],
         "order": STAG,
     },
     # FIXED accessible — Okabe-Ito CUD 8-color (gold standard; do NOT regenerate)
@@ -195,6 +208,14 @@ PLANS = {
         "Cs": [40, 33, 25, 15, 15, 25, 33, 40],
         "order": SEQ,
     },
+    # DIVERGING purple<->green (PRGn lineage): the tritan-robust axis that
+    # coolwarm / teal_amber lack (both drift warm under tritanopia).
+    "purple_green": {
+        "Ls": [32, 52, 72, 90, 90, 72, 52, 32],
+        "Hs": [305, 305, 308, 312, 150, 148, 144, 142],
+        "Cs": [46, 33, 19, 8, 8, 19, 33, 46],
+        "order": SEQ,
+    },
     # ── singleton families expanded to 2-3 siblings (each a distinct job) ──
     # NEUTRAL — warm + cool greys beside the pure neutral ramp
     "warm_gray": {
@@ -222,25 +243,11 @@ PLANS = {
         "Cs": [50, 5, 5, 5, 5, 5, 5, 5],
         "order": SEQ,
     },
-    # BALANCED — corporate (cool/formal, teal-anchored) beside trustworthy
-    "corporate": {
-        "Ls": ladder(36, 86),
-        "Hs": [185, 210, 255, 32, 150, 285, None, None],
-        "Cs": [30, 28, 26, 30, 26, 24, 4, 4],
-        "order": STAG,
-    },
-    # MUTED — dusty (deeper, vintage) beside the high-key pastel
+    # MUTED low-key (dusty): same hue plan as the high-key muted, darker band.
     "dusty": {
-        "Ls": ladder(40, 78),
-        "Hs": [TEAL_H, 250, 300, 35, 140, 355, 75, 210],
+        "Ls": ladder(38, 78),
+        "Hs": [200, 280, 32, 150, 340, 95, 250, None],
         "Cs": [16] * 8,
-        "order": STAG,
-    },
-    # SPECTRUM — bold (curated punchy, uneven hues) beside the full-wheel rainbow
-    "bold": {
-        "Ls": ladder(36, 84),
-        "Hs": [188, 32, 145, 300, 70, 330, 248, 105],
-        "Cs": [48] * 8,
         "order": STAG,
     },
 }

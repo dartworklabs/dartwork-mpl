@@ -75,12 +75,6 @@ META = {
         "green arc",
         "Related series in a natural register — ESG, agriculture, growth themes.",
     ),
-    "warm_cool": (
-        "Warm / Cool",
-        "Duo",
-        "180° split",
-        "TWO opposed groups — warm vs cool (A/B, before/after, sentiment).",
-    ),
     "blue_orange": (
         "Blue / Orange",
         "Duo",
@@ -99,12 +93,6 @@ META = {
         "teal + neutrals",
         "The everyday DEFAULT — 4–8 unrelated categories, muted-but-distinct.",
     ),
-    "corporate": (
-        "Corporate",
-        "Balanced",
-        "cool / formal",
-        "The default for formal, institutional material — finance, board decks.",
-    ),
     "muted": (
         "Muted Pastel",
         "Muted",
@@ -117,17 +105,23 @@ META = {
         "vintage muted",
         "A deeper, more vintage muted — moody editorial, dark-on-cream, retro.",
     ),
-    "spectrum": (
-        "Spectrum",
-        "Spectrum",
-        "full wheel",
-        "MANY unrelated categories where color alone must separate everything.",
+    "vivid": (
+        "Vivid",
+        "Vivid",
+        "colourful default",
+        "MANY unrelated categories — the intuitive colourful default (merges the old spectrum + bold).",
     ),
-    "bold": (
-        "Bold",
-        "Spectrum",
-        "high-contrast",
-        "Many categories with maximum punch — for slides, posters, dashboards.",
+    "neon": (
+        "Neon",
+        "Vivid",
+        "max chroma · electric",
+        "Maximum-chroma electric set for dark UI, hero charts, few bold categories.",
+    ),
+    "ember": (
+        "Ember",
+        "Tone",
+        "warm · vibrant",
+        "The saturated WARM categorical — golden-hour energy without earth's muteness.",
     ),
     "accessible": (
         "Accessible · Okabe-Ito",
@@ -177,6 +171,12 @@ META = {
         "pale centre",
         "The diverging intent in the house voice — teal ↔ amber through a pale centre.",
     ),
+    "purple_green": (
+        "Purple / Green",
+        "Diverging",
+        "tritan-robust",
+        "Diverging purple to green — the tritan-robust axis blue-orange & teal-amber lack.",
+    ),
     "earth": (
         "Earth / Natural",
         "Tone",
@@ -196,15 +196,14 @@ ORDER = [
     "coral_seq",
     "teal_indigo",
     "forest",
-    "warm_cool",
     "blue_orange",
     "teal_coral",
     "trustworthy",
-    "corporate",
     "muted",
     "dusty",
-    "spectrum",
-    "bold",
+    "vivid",
+    "neon",
+    "ember",
     "accessible",
     "gray_seq",
     "warm_gray",
@@ -213,12 +212,13 @@ ORDER = [
     "focus_warm",
     "coolwarm",
     "teal_amber_div",
+    "purple_green",
     "earth",
     "jewel",
 ]
 FAM_DESC = {
     "Balanced": "general-purpose categorical — reach for these first",
-    "Spectrum": "full hue wheel — many categories, separated by color alone",
+    "Vivid": "full-hue vibrant sets — many categories separated by color alone",
     "Sequential": "single-hue lightness ramps — encode a natural order",
     "Analogous": "one-mood hue arcs — cohesion over maximum distinctness",
     "Duo": "two opposed groups — the most colorblind-robust structure",
@@ -231,7 +231,7 @@ FAM_DESC = {
 }
 FAM_ORDER = [
     "Balanced",
-    "Spectrum",
+    "Vivid",
     "Sequential",
     "Analogous",
     "Duo",
@@ -406,7 +406,7 @@ html[data-theme="dark"] .fchip.on {{ color:#0b1110; }}
       <p class="hsub">{n} categorical palettes, each built on an even-L*
       lightness ramp and checked for grayscale separability and color-vision
       safety. Hover a swatch for its hex and L*. Use as
-      <code>dc.spectrum0…7</code> or <code>dm.set_cycle("spectrum")</code>.</p>
+      <code>dc.vivid0…7</code> or <code>dm.set_cycle("vivid")</code>.</p>
     </div>
     <button class="toggle" id="themeBtn" aria-label="Toggle theme">◐ theme</button>
   </header>

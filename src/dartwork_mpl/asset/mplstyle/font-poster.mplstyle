@@ -28,4 +28,4 @@ axes.spines.top:    False
 axes.spines.right:  False
 
 # categorical cycle — Bold (curated high-contrast punch for large-format)
-axes.prop_cycle: cycler('color', ['dc.bold0', 'dc.bold1', 'dc.bold2', 'dc.bold3', 'dc.bold4', 'dc.bold5'])
+axes.prop_cycle: cycler('color', ['dc.vivid0', 'dc.vivid1', 'dc.vivid2', 'dc.vivid3', 'dc.vivid4', 'dc.vivid5'])

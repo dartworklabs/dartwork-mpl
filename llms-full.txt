@@ -236,7 +236,7 @@ color string:
 # Curated dartwork palette (recommended starting point)
 ax.plot(x, y, color="dc.teal3")                   # cool blue
 ax.fill_between(x, y1, y2, color="dc.earth1")     # warm accent
-ax.bar(categories, values, color="dc.bold1")      # bold call-out
+ax.bar(categories, values, color="dc.vivid1")      # bold call-out
 
 # Third-party systems also available for cross-team consistency
 ax.plot(x, y2, color="dc.teal2")                   # OpenColor
@@ -271,7 +271,7 @@ gs = fig.add_gridspec(1, 2, wspace=0.3)
 ax1 = fig.add_subplot(gs[0])
 ax2 = fig.add_subplot(gs[1])
 
-ax1.plot(x, np.sin(x), color="dc.bold1")
+ax1.plot(x, np.sin(x), color="dc.vivid1")
 ax2.plot(x, np.cos(x), color="dc.teal3")
 
 dm.label_axes([ax1, ax2])  # adds (a), (b) panel labels

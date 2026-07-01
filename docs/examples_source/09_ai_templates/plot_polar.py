@@ -40,9 +40,13 @@ ax.plot(
 )
 ax.fill(theta_closed, a_closed, color="dc.teal1", alpha=0.3)
 ax.plot(
-    theta_closed, b_closed, color="dc.bold3", linewidth=dm.lw(0), label="Plan B"
+    theta_closed,
+    b_closed,
+    color="dc.vivid3",
+    linewidth=dm.lw(0),
+    label="Plan B",
 )
-ax.fill(theta_closed, b_closed, color="dc.bold1", alpha=0.3)
+ax.fill(theta_closed, b_closed, color="dc.vivid1", alpha=0.3)
 ax.set_xticks(theta)
 ax.set_xticklabels(categories)
 ax.set_ylim(0, 5)

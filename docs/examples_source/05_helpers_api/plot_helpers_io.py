@@ -26,7 +26,7 @@ ax = fig.add_subplot(111)
 
 x = np.linspace(0, 10, 100)
 ax.plot(x, np.sin(x), color="dc.teal2", lw=dm.lw(1.5), label="sin(x)")
-ax.plot(x, np.cos(x), color="dc.bold2", lw=dm.lw(1.5), label="cos(x)")
+ax.plot(x, np.cos(x), color="dc.vivid2", lw=dm.lw(1.5), label="cos(x)")
 ax.set_xlabel("x", fontsize=dm.fs(0))
 ax.set_ylabel("y", fontsize=dm.fs(0))
 ax.set_title("Styled Figure", fontsize=dm.fs(2))

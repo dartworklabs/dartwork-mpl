@@ -96,7 +96,7 @@ html[data-theme="dark"] .fchip.on { color:#0b1110; }
       <p class="hsub">24 categorical palettes, each built on an even-L*
       lightness ramp and checked for grayscale separability and color-vision
       safety. Hover a swatch for its hex and L*. Use as
-      <code>dc.spectrum0…7</code> or <code>dm.set_cycle("spectrum")</code>.</p>
+      <code>dc.vivid0…7</code> or <code>dm.set_cycle("vivid")</code>.</p>
     </div>
     <button class="toggle" id="themeBtn" aria-label="Toggle theme">◐ theme</button>
   </header>
@@ -104,7 +104,7 @@ html[data-theme="dark"] .fchip.on { color:#0b1110; }
   <section class="fam">
     <header class="fam-h">
       <span class="fam-eyebrow">Balanced</span>
-      <span class="fam-n">2</span>
+      <span class="fam-n">1</span>
       <p class="fam-desc">general-purpose categorical — reach for these first</p>
     </header>
     <article class="spec" data-fam="Balanced">
@@ -129,77 +129,55 @@ html[data-theme="dark"] .fchip.on { color:#0b1110; }
 <button class="sw" style="--c:#d0dfeb" data-hex="#D0DFEB" data-l="L* 88" aria-label="dc.trustworthy7 #D0DFEB L* 88"></button>
       </div>
     </article>
-    <article class="spec" data-fam="Balanced">
-      <div class="spec-id">
-        <code class="pid">dc.corporate</code>
-        <span class="pname">Corporate</span>
-        <span class="pband">cool / formal</span>
-        <p class="pintent">The default for formal, institutional material — finance, board decks.</p>
-        <div class="verify">
-          <span class="vchip">B&amp;W ΔL* 6.8</span>
-          <span class="vchip v-strong">CVD 8.1/9.3/10.6</span>
-        </div>
-      </div>
-      <div class="ladder">
-<button class="sw" style="--c:#056058" data-hex="#056058" data-l="L* 36" aria-label="dc.corporate0 #056058 L* 36"></button>
-<button class="sw" style="--c:#4caab5" data-hex="#4CAAB5" data-l="L* 65" aria-label="dc.corporate1 #4CAAB5 L* 65"></button>
-<button class="sw" style="--c:#487da2" data-hex="#487DA2" data-l="L* 50" aria-label="dc.corporate2 #487DA2 L* 50"></button>
-<button class="sw" style="--c:#fab1a7" data-hex="#FAB1A7" data-l="L* 79" aria-label="dc.corporate3 #FAB1A7 L* 79"></button>
-<button class="sw" style="--c:#446f50" data-hex="#446F50" data-l="L* 43" aria-label="dc.corporate4 #446F50 L* 43"></button>
-<button class="sw" style="--c:#a4aeda" data-hex="#A4AEDA" data-l="L* 72" aria-label="dc.corporate5 #A4AEDA L* 72"></button>
-<button class="sw" style="--c:#7e8c97" data-hex="#7E8C97" data-l="L* 58" aria-label="dc.corporate6 #7E8C97 L* 58"></button>
-<button class="sw" style="--c:#cad9e5" data-hex="#CAD9E5" data-l="L* 86" aria-label="dc.corporate7 #CAD9E5 L* 86"></button>
-      </div>
-    </article>
   </section>
   <section class="fam">
     <header class="fam-h">
-      <span class="fam-eyebrow">Spectrum</span>
+      <span class="fam-eyebrow">Vivid</span>
       <span class="fam-n">2</span>
-      <p class="fam-desc">full hue wheel — many categories, separated by color alone</p>
+      <p class="fam-desc">full-hue vibrant sets — many categories separated by color alone</p>
     </header>
-    <article class="spec" data-fam="Spectrum">
+    <article class="spec" data-fam="Vivid">
       <div class="spec-id">
-        <code class="pid">dc.spectrum</code>
-        <span class="pname">Spectrum</span>
-        <span class="pband">full wheel</span>
-        <p class="pintent">MANY unrelated categories where color alone must separate everything.</p>
+        <code class="pid">dc.vivid</code>
+        <span class="pname">Vivid</span>
+        <span class="pband">colourful default</span>
+        <p class="pintent">MANY unrelated categories — the intuitive colourful default (merges the old spectrum + bold).</p>
         <div class="verify">
-          <span class="vchip">B&amp;W ΔL* 6.6</span>
-          <span class="vchip v-strong">CVD 9.1/9.7/13.8</span>
+          <span class="vchip">B&amp;W ΔL* 6.1</span>
+          <span class="vchip v-soft">CVD 4.9/9.5/10.9</span>
         </div>
       </div>
       <div class="ladder">
-<button class="sw" style="--c:#026a5f" data-hex="#026A5F" data-l="L* 40" aria-label="dc.spectrum0 #026A5F L* 40"></button>
-<button class="sw" style="--c:#01b3d5" data-hex="#01B3D5" data-l="L* 67" aria-label="dc.spectrum1 #01B3D5 L* 67"></button>
-<button class="sw" style="--c:#0784d9" data-hex="#0784D9" data-l="L* 54" aria-label="dc.spectrum2 #0784D9 L* 54"></button>
-<button class="sw" style="--c:#e9b8ff" data-hex="#E9B8FF" data-l="L* 81" aria-label="dc.spectrum3 #E9B8FF L* 81"></button>
-<button class="sw" style="--c:#c6376e" data-hex="#C6376E" data-l="L* 47" aria-label="dc.spectrum4 #C6376E L* 47"></button>
-<button class="sw" style="--c:#ff9e7a" data-hex="#FF9E7A" data-l="L* 74" aria-label="dc.spectrum5 #FF9E7A L* 74"></button>
-<button class="sw" style="--c:#aa911a" data-hex="#AA911A" data-l="L* 61" aria-label="dc.spectrum6 #AA911A L* 61"></button>
-<button class="sw" style="--c:#9ff18c" data-hex="#9FF18C" data-l="L* 88" aria-label="dc.spectrum7 #9FF18C L* 88"></button>
+<button class="sw" style="--c:#04696f" data-hex="#04696F" data-l="L* 40" aria-label="dc.vivid0 #04696F L* 40"></button>
+<button class="sw" style="--c:#05a7f7" data-hex="#05A7F7" data-l="L* 65" aria-label="dc.vivid1 #05A7F7 L* 65"></button>
+<button class="sw" style="--c:#cb5a51" data-hex="#CB5A51" data-l="L* 52" aria-label="dc.vivid2 #CB5A51 L* 52"></button>
+<button class="sw" style="--c:#81d383" data-hex="#81D383" data-l="L* 78" aria-label="dc.vivid3 #81D383 L* 78"></button>
+<button class="sw" style="--c:#9455a6" data-hex="#9455A6" data-l="L* 46" aria-label="dc.vivid4 #9455A6 L* 46"></button>
+<button class="sw" style="--c:#cbac4d" data-hex="#CBAC4D" data-l="L* 71" aria-label="dc.vivid5 #CBAC4D L* 71"></button>
+<button class="sw" style="--c:#8f82dd" data-hex="#8F82DD" data-l="L* 59" aria-label="dc.vivid6 #8F82DD L* 59"></button>
+<button class="sw" style="--c:#51eabb" data-hex="#51EABB" data-l="L* 84" aria-label="dc.vivid7 #51EABB L* 84"></button>
       </div>
     </article>
-    <article class="spec" data-fam="Spectrum">
+    <article class="spec" data-fam="Vivid">
       <div class="spec-id">
-        <code class="pid">dc.bold</code>
-        <span class="pname">Bold</span>
-        <span class="pband">high-contrast</span>
-        <p class="pintent">Many categories with maximum punch — for slides, posters, dashboards.</p>
+        <code class="pid">dc.neon</code>
+        <span class="pname">Neon</span>
+        <span class="pband">max chroma · electric</span>
+        <p class="pintent">Maximum-chroma electric set for dark UI, hero charts, few bold categories.</p>
         <div class="verify">
-          <span class="vchip">B&amp;W ΔL* 6.7</span>
-          <span class="vchip v-ok">CVD 8.1/7.7/13.3</span>
+          <span class="vchip">B&amp;W ΔL* 7.0</span>
+          <span class="vchip v-strong">CVD 8.3/10.4/8.9</span>
         </div>
       </div>
       <div class="ladder">
-<button class="sw" style="--c:#035f5a" data-hex="#035F5A" data-l="L* 36" aria-label="dc.bold0 #035F5A L* 36"></button>
-<button class="sw" style="--c:#e77a6f" data-hex="#E77A6F" data-l="L* 63" aria-label="dc.bold1 #E77A6F L* 63"></button>
-<button class="sw" style="--c:#358645" data-hex="#358645" data-l="L* 50" aria-label="dc.bold2 #358645 L* 50"></button>
-<button class="sw" style="--c:#c3b5ff" data-hex="#C3B5FF" data-l="L* 77" aria-label="dc.bold3 #C3B5FF L* 77"></button>
-<button class="sw" style="--c:#8f5915" data-hex="#8F5915" data-l="L* 43" aria-label="dc.bold4 #8F5915 L* 43"></button>
-<button class="sw" style="--c:#e290d8" data-hex="#E290D8" data-l="L* 70" aria-label="dc.bold5 #E290D8 L* 70"></button>
-<button class="sw" style="--c:#0892c4" data-hex="#0892C4" data-l="L* 57" aria-label="dc.bold6 #0892C4 L* 57"></button>
-<button class="sw" style="--c:#d8d678" data-hex="#D8D678" data-l="L* 84" aria-label="dc.bold7 #D8D678 L* 84"></button>
+<button class="sw" style="--c:#045f5e" data-hex="#045F5E" data-l="L* 36" aria-label="dc.neon0 #045F5E L* 36"></button>
+<button class="sw" style="--c:#02a5f5" data-hex="#02A5F5" data-l="L* 65" aria-label="dc.neon1 #02A5F5 L* 65"></button>
+<button class="sw" style="--c:#a357c4" data-hex="#A357C4" data-l="L* 50" aria-label="dc.neon2 #A357C4 L* 50"></button>
+<button class="sw" style="--c:#ffa9db" data-hex="#FFA9DB" data-l="L* 79" aria-label="dc.neon3 #FFA9DB L* 79"></button>
+<button class="sw" style="--c:#5f6c02" data-hex="#5F6C02" data-l="L* 43" aria-label="dc.neon4 #5F6C02 L* 43"></button>
+<button class="sw" style="--c:#e4a431" data-hex="#E4A431" data-l="L* 72" aria-label="dc.neon5 #E4A431 L* 72"></button>
+<button class="sw" style="--c:#5584f8" data-hex="#5584F8" data-l="L* 57" aria-label="dc.neon6 #5584F8 L* 57"></button>
+<button class="sw" style="--c:#08f2cc" data-hex="#08F2CC" data-l="L* 86" aria-label="dc.neon7 #08F2CC L* 86"></button>
       </div>
     </article>
   </section>
@@ -330,31 +308,9 @@ html[data-theme="dark"] .fchip.on { color:#0b1110; }
   <section class="fam">
     <header class="fam-h">
       <span class="fam-eyebrow">Duo</span>
-      <span class="fam-n">3</span>
+      <span class="fam-n">2</span>
       <p class="fam-desc">two opposed groups — the most colorblind-robust structure</p>
     </header>
-    <article class="spec" data-fam="Duo">
-      <div class="spec-id">
-        <code class="pid">dc.warm_cool</code>
-        <span class="pname">Warm / Cool</span>
-        <span class="pband">180° split</span>
-        <p class="pintent">TWO opposed groups — warm vs cool (A/B, before/after, sentiment).</p>
-        <div class="verify">
-          <span class="vchip">B&amp;W ΔL* 7.3</span>
-          <span class="vchip v-strong">CVD 14.4/11.4/14.3</span>
-        </div>
-      </div>
-      <div class="ladder">
-<button class="sw" style="--c:#91422f" data-hex="#91422F" data-l="L* 38" aria-label="dc.warm_cool0 #91422F L* 38"></button>
-<button class="sw" style="--c:#b36d44" data-hex="#B36D44" data-l="L* 53" aria-label="dc.warm_cool1 #B36D44 L* 53"></button>
-<button class="sw" style="--c:#ed8987" data-hex="#ED8987" data-l="L* 68" aria-label="dc.warm_cool2 #ED8987 L* 68"></button>
-<button class="sw" style="--c:#ffc18d" data-hex="#FFC18D" data-l="L* 83" aria-label="dc.warm_cool3 #FFC18D L* 83"></button>
-<button class="sw" style="--c:#06768f" data-hex="#06768F" data-l="L* 46" aria-label="dc.warm_cool4 #06768F L* 46"></button>
-<button class="sw" style="--c:#389ad1" data-hex="#389AD1" data-l="L* 60" aria-label="dc.warm_cool5 #389AD1 L* 60"></button>
-<button class="sw" style="--c:#32cae0" data-hex="#32CAE0" data-l="L* 75" aria-label="dc.warm_cool6 #32CAE0 L* 75"></button>
-<button class="sw" style="--c:#d3e4ff" data-hex="#D3E4FF" data-l="L* 90" aria-label="dc.warm_cool7 #D3E4FF L* 90"></button>
-      </div>
-    </article>
     <article class="spec" data-fam="Duo">
       <div class="spec-id">
         <code class="pid">dc.blue_orange</code>
@@ -403,12 +359,12 @@ html[data-theme="dark"] .fchip.on { color:#0b1110; }
   <section class="fam">
     <header class="fam-h">
       <span class="fam-eyebrow">Diverging</span>
-      <span class="fam-n">2</span>
+      <span class="fam-n">3</span>
       <p class="fam-desc">two-ended, pale centre — ordered ± data</p>
     </header>
     <article class="spec" data-fam="Diverging">
       <div class="spec-id">
-        <code class="pid">dc.coolwarm</code>
+        <code class="pid">dc.cool_warm</code>
         <span class="pname">Cool → Warm</span>
         <span class="pband">pale centre</span>
         <p class="pintent">Ordered data with a meaningful MIDPOINT — change, correlation, z-scores.</p>
@@ -418,14 +374,14 @@ html[data-theme="dark"] .fchip.on { color:#0b1110; }
         </div>
       </div>
       <div class="ladder">
-<button class="sw" style="--c:#055f8b" data-hex="#055F8B" data-l="L* 38" aria-label="dc.coolwarm0 #055F8B L* 38"></button>
-<button class="sw" style="--c:#3b8bba" data-hex="#3B8BBA" data-l="L* 55" aria-label="dc.coolwarm1 #3B8BBA L* 55"></button>
-<button class="sw" style="--c:#81b7db" data-hex="#81B7DB" data-l="L* 72" aria-label="dc.coolwarm2 #81B7DB L* 72"></button>
-<button class="sw" style="--c:#bcdcf1" data-hex="#BCDCF1" data-l="L* 86" aria-label="dc.coolwarm3 #BCDCF1 L* 86"></button>
-<button class="sw" style="--c:#f5cec9" data-hex="#F5CEC9" data-l="L* 86" aria-label="dc.coolwarm4 #F5CEC9 L* 86"></button>
-<button class="sw" style="--c:#dfa19c" data-hex="#DFA19C" data-l="L* 72" aria-label="dc.coolwarm5 #DFA19C L* 72"></button>
-<button class="sw" style="--c:#bb6f6e" data-hex="#BB6F6E" data-l="L* 55" aria-label="dc.coolwarm6 #BB6F6E L* 55"></button>
-<button class="sw" style="--c:#943d45" data-hex="#943D45" data-l="L* 38" aria-label="dc.coolwarm7 #943D45 L* 38"></button>
+<button class="sw" style="--c:#055f8b" data-hex="#055F8B" data-l="L* 38" aria-label="dc.cool_warm0 #055F8B L* 38"></button>
+<button class="sw" style="--c:#3b8bba" data-hex="#3B8BBA" data-l="L* 55" aria-label="dc.cool_warm1 #3B8BBA L* 55"></button>
+<button class="sw" style="--c:#81b7db" data-hex="#81B7DB" data-l="L* 72" aria-label="dc.cool_warm2 #81B7DB L* 72"></button>
+<button class="sw" style="--c:#bcdcf1" data-hex="#BCDCF1" data-l="L* 86" aria-label="dc.cool_warm3 #BCDCF1 L* 86"></button>
+<button class="sw" style="--c:#f5cec9" data-hex="#F5CEC9" data-l="L* 86" aria-label="dc.cool_warm4 #F5CEC9 L* 86"></button>
+<button class="sw" style="--c:#dfa19c" data-hex="#DFA19C" data-l="L* 72" aria-label="dc.cool_warm5 #DFA19C L* 72"></button>
+<button class="sw" style="--c:#bb6f6e" data-hex="#BB6F6E" data-l="L* 55" aria-label="dc.cool_warm6 #BB6F6E L* 55"></button>
+<button class="sw" style="--c:#943d45" data-hex="#943D45" data-l="L* 38" aria-label="dc.cool_warm7 #943D45 L* 38"></button>
       </div>
     </article>
     <article class="spec" data-fam="Diverging">
@@ -448,6 +404,28 @@ html[data-theme="dark"] .fchip.on { color:#0b1110; }
 <button class="sw" style="--c:#d0a987" data-hex="#D0A987" data-l="L* 72" aria-label="dc.teal_amber5 #D0A987 L* 72"></button>
 <button class="sw" style="--c:#aa7951" data-hex="#AA7951" data-l="L* 55" aria-label="dc.teal_amber6 #AA7951 L* 55"></button>
 <button class="sw" style="--c:#844c21" data-hex="#844C21" data-l="L* 38" aria-label="dc.teal_amber7 #844C21 L* 38"></button>
+      </div>
+    </article>
+    <article class="spec" data-fam="Diverging">
+      <div class="spec-id">
+        <code class="pid">dc.purple_green</code>
+        <span class="pname">Purple / Green</span>
+        <span class="pband">tritan-robust</span>
+        <p class="pintent">Diverging purple to green — the tritan-robust axis blue-orange & teal-amber lack.</p>
+        <div class="verify">
+          <span class="vchip">B&amp;W exempt</span>
+          <span class="vchip v-strong">CVD 8.6/10.4/8.1</span>
+        </div>
+      </div>
+      <div class="ladder">
+<button class="sw" style="--c:#523f87" data-hex="#523F87" data-l="L* 32" aria-label="dc.purple_green0 #523F87 L* 32"></button>
+<button class="sw" style="--c:#8573aa" data-hex="#8573AA" data-l="L* 52" aria-label="dc.purple_green1 #8573AA L* 52"></button>
+<button class="sw" style="--c:#b9abcc" data-hex="#B9ABCC" data-l="L* 72" aria-label="dc.purple_green2 #B9ABCC L* 72"></button>
+<button class="sw" style="--c:#e8dfee" data-hex="#E8DFEE" data-l="L* 90" aria-label="dc.purple_green3 #E8DFEE L* 90"></button>
+<button class="sw" style="--c:#d8e6da" data-hex="#D8E6DA" data-l="L* 90" aria-label="dc.purple_green4 #D8E6DA L* 90"></button>
+<button class="sw" style="--c:#99b89e" data-hex="#99B89E" data-l="L* 72" aria-label="dc.purple_green5 #99B89E L* 72"></button>
+<button class="sw" style="--c:#56875a" data-hex="#56875A" data-l="L* 52" aria-label="dc.purple_green6 #56875A L* 52"></button>
+<button class="sw" style="--c:#09581b" data-hex="#09581B" data-l="L* 32" aria-label="dc.purple_green7 #09581B L* 32"></button>
       </div>
     </article>
   </section>
@@ -515,19 +493,19 @@ html[data-theme="dark"] .fchip.on { color:#0b1110; }
         <span class="pband">low chroma</span>
         <p class="pintent">Soft editorial set for dense dashboards where vivid color would shout.</p>
         <div class="verify">
-          <span class="vchip">B&amp;W ΔL* 5.3</span>
-          <span class="vchip v-soft">CVD 8.9/7.9/5.3</span>
+          <span class="vchip">B&amp;W ΔL* 5.4</span>
+          <span class="vchip v-soft">CVD 5.9/4.8/6.3</span>
         </div>
       </div>
       <div class="ladder">
-<button class="sw" style="--c:#56857c" data-hex="#56857C" data-l="L* 52" aria-label="dc.pastel0 #56857C L* 52"></button>
-<button class="sw" style="--c:#96bad4" data-hex="#96BAD4" data-l="L* 74" aria-label="dc.pastel1 #96BAD4 L* 74"></button>
-<button class="sw" style="--c:#9b94b4" data-hex="#9B94B4" data-l="L* 63" aria-label="dc.pastel2 #9B94B4 L* 63"></button>
-<button class="sw" style="--c:#f6c9c0" data-hex="#F6C9C0" data-l="L* 85" aria-label="dc.pastel3 #F6C9C0 L* 85"></button>
-<button class="sw" style="--c:#799075" data-hex="#799075" data-l="L* 57" aria-label="dc.pastel4 #799075 L* 57"></button>
-<button class="sw" style="--c:#e4b9c7" data-hex="#E4B9C7" data-l="L* 79" aria-label="dc.pastel5 #E4B9C7 L* 79"></button>
-<button class="sw" style="--c:#bba387" data-hex="#BBA387" data-l="L* 68" aria-label="dc.pastel6 #BBA387 L* 68"></button>
-<button class="sw" style="--c:#b6ecf3" data-hex="#B6ECF3" data-l="L* 90" aria-label="dc.pastel7 #B6ECF3 L* 90"></button>
+<button class="sw" style="--c:#538789" data-hex="#538789" data-l="L* 53" aria-label="dc.pastel0 #538789 L* 53"></button>
+<button class="sw" style="--c:#aeb9da" data-hex="#AEB9DA" data-l="L* 75" aria-label="dc.pastel1 #AEB9DA L* 75"></button>
+<button class="sw" style="--c:#bc918b" data-hex="#BC918B" data-l="L* 64" aria-label="dc.pastel2 #BC918B L* 64"></button>
+<button class="sw" style="--c:#c0e0c7" data-hex="#C0E0C7" data-l="L* 86" aria-label="dc.pastel3 #C0E0C7 L* 86"></button>
+<button class="sw" style="--c:#a68398" data-hex="#A68398" data-l="L* 59" aria-label="dc.pastel4 #A68398 L* 59"></button>
+<button class="sw" style="--c:#d3c8a7" data-hex="#D3C8A7" data-l="L* 81" aria-label="dc.pastel5 #D3C8A7 L* 81"></button>
+<button class="sw" style="--c:#8bafc8" data-hex="#8BAFC8" data-l="L* 70" aria-label="dc.pastel6 #8BAFC8 L* 70"></button>
+<button class="sw" style="--c:#dbeaf6" data-hex="#DBEAF6" data-l="L* 92" aria-label="dc.pastel7 #DBEAF6 L* 92"></button>
       </div>
     </article>
     <article class="spec" data-fam="Muted">
@@ -537,28 +515,50 @@ html[data-theme="dark"] .fchip.on { color:#0b1110; }
         <span class="pband">vintage muted</span>
         <p class="pintent">A deeper, more vintage muted — moody editorial, dark-on-cream, retro.</p>
         <div class="verify">
-          <span class="vchip">B&amp;W ΔL* 5.3</span>
-          <span class="vchip v-soft">CVD 8.4/7.8/5.5</span>
+          <span class="vchip">B&amp;W ΔL* 5.5</span>
+          <span class="vchip v-soft">CVD 6.2/5.1/6.5</span>
         </div>
       </div>
       <div class="ladder">
-<button class="sw" style="--c:#3d665f" data-hex="#3D665F" data-l="L* 40" aria-label="dc.dusty0 #3D665F L* 40"></button>
-<button class="sw" style="--c:#7a99af" data-hex="#7A99AF" data-l="L* 62" aria-label="dc.dusty1 #7A99AF L* 62"></button>
-<button class="sw" style="--c:#7b7691" data-hex="#7B7691" data-l="L* 51" aria-label="dc.dusty2 #7B7691 L* 51"></button>
-<button class="sw" style="--c:#d0a9a2" data-hex="#D0A9A2" data-l="L* 72" aria-label="dc.dusty3 #D0A9A2 L* 72"></button>
-<button class="sw" style="--c:#5d715a" data-hex="#5D715A" data-l="L* 46" aria-label="dc.dusty4 #5D715A L* 46"></button>
-<button class="sw" style="--c:#bf9aa6" data-hex="#BF9AA6" data-l="L* 67" aria-label="dc.dusty5 #BF9AA6 L* 67"></button>
-<button class="sw" style="--c:#98846c" data-hex="#98846C" data-l="L* 56" aria-label="dc.dusty6 #98846C L* 56"></button>
-<button class="sw" style="--c:#9ac9cf" data-hex="#9AC9CF" data-l="L* 78" aria-label="dc.dusty7 #9AC9CF L* 78"></button>
+<button class="sw" style="--c:#346162" data-hex="#346162" data-l="L* 38" aria-label="dc.dusty0 #346162 L* 38"></button>
+<button class="sw" style="--c:#8992ae" data-hex="#8992AE" data-l="L* 61" aria-label="dc.dusty1 #8992AE L* 61"></button>
+<button class="sw" style="--c:#916d68" data-hex="#916D68" data-l="L* 49" aria-label="dc.dusty2 #916D68 L* 49"></button>
+<button class="sw" style="--c:#9cb8a2" data-hex="#9CB8A2" data-l="L* 72" aria-label="dc.dusty3 #9CB8A2 L* 72"></button>
+<button class="sw" style="--c:#7c5f71" data-hex="#7C5F71" data-l="L* 44" aria-label="dc.dusty4 #7C5F71 L* 44"></button>
+<button class="sw" style="--c:#aba285" data-hex="#ABA285" data-l="L* 67" aria-label="dc.dusty5 #ABA285 L* 67"></button>
+<button class="sw" style="--c:#69889e" data-hex="#69889E" data-l="L* 55" aria-label="dc.dusty6 #69889E L* 55"></button>
+<button class="sw" style="--c:#b4c3cf" data-hex="#B4C3CF" data-l="L* 78" aria-label="dc.dusty7 #B4C3CF L* 78"></button>
       </div>
     </article>
   </section>
   <section class="fam">
     <header class="fam-h">
       <span class="fam-eyebrow">Tone</span>
-      <span class="fam-n">2</span>
+      <span class="fam-n">3</span>
       <p class="fam-desc">aesthetic registers reached for by mood</p>
     </header>
+    <article class="spec" data-fam="Tone">
+      <div class="spec-id">
+        <code class="pid">dc.ember</code>
+        <span class="pname">Ember</span>
+        <span class="pband">warm · vibrant</span>
+        <p class="pintent">The saturated WARM categorical — golden-hour energy without earth's muteness.</p>
+        <div class="verify">
+          <span class="vchip">B&amp;W ΔL* 7.6</span>
+          <span class="vchip v-soft">CVD 5.3/4.9/8.1</span>
+        </div>
+      </div>
+      <div class="ladder">
+<button class="sw" style="--c:#942732" data-hex="#942732" data-l="L* 34" aria-label="dc.ember0 #942732 L* 34"></button>
+<button class="sw" style="--c:#e6835f" data-hex="#E6835F" data-l="L* 65" aria-label="dc.ember1 #E6835F L* 65"></button>
+<button class="sw" style="--c:#9e6b29" data-hex="#9E6B29" data-l="L* 49" aria-label="dc.ember2 #9E6B29 L* 49"></button>
+<button class="sw" style="--c:#d9c778" data-hex="#D9C778" data-l="L* 80" aria-label="dc.ember3 #D9C778 L* 80"></button>
+<button class="sw" style="--c:#536a26" data-hex="#536A26" data-l="L* 42" aria-label="dc.ember4 #536A26 L* 42"></button>
+<button class="sw" style="--c:#ff91ab" data-hex="#FF91AB" data-l="L* 72" aria-label="dc.ember5 #FF91AB L* 72"></button>
+<button class="sw" style="--c:#c17746" data-hex="#C17746" data-l="L* 57" aria-label="dc.ember6 #C17746 L* 57"></button>
+<button class="sw" style="--c:#d0dfeb" data-hex="#D0DFEB" data-l="L* 88" aria-label="dc.ember7 #D0DFEB L* 88"></button>
+      </div>
+    </article>
     <article class="spec" data-fam="Tone">
       <div class="spec-id">
         <code class="pid">dc.earth</code>

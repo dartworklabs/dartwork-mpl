@@ -28,12 +28,12 @@ ax.plot(
 )
 ax.fill_between(x, 0, humidity, color="dc.forest2", alpha=0.15)
 ax.axhline(
-    target, color="dc.bold2", linestyle="--", alpha=0.7, label="Target (60%)"
+    target, color="dc.vivid2", linestyle="--", alpha=0.7, label="Target (60%)"
 )
 ax.axhspan(
     68,
     ax.get_ylim()[1] if ax.get_ylim()[1] > 68 else 80,
-    color="dc.bold2",
+    color="dc.vivid2",
     alpha=0.08,
     label="Out of spec",
 )

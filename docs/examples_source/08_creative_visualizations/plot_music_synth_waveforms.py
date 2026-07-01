@@ -35,7 +35,7 @@ waves = [
 ]
 
 color_schemes = [
-    dm.cspace("dc.jewel5", "dc.bold1", n=len(t)),
+    dm.cspace("dc.jewel5", "dc.vivid1", n=len(t)),
     dm.cspace("dc.teal5", "dc.forest1", n=len(t)),
     dm.cspace("dc.earth5", "dc.earth1", n=len(t)),
 ]
