@@ -811,7 +811,7 @@ L 409.291562 178.664241
 L 412.844937 188.169871 
 L 414.621624 192.72669 
 L 414.621624 192.72669 
-" clip-path="url(#p816852bf2b)" style="fill: none; stroke: #00838f; stroke-linecap: square"/>
+" clip-path="url(#p816852bf2b)" style="fill: none; stroke: #008577; stroke-linecap: square"/>
    </g>
    <g id="patch_3">
     <path d="M 43.382812 262.504567 
@@ -828,7 +828,7 @@ L 432.299663 262.504567
      <path d="M 381.054585 15.75 
 L 390.554585 15.75 
 L 400.054585 15.75 
-" style="fill: none; stroke: #00838f; stroke-linecap: square"/>
+" style="fill: none; stroke: #008577; stroke-linecap: square"/>
     </g>
     <g id="text_14">
      <!-- signal -->

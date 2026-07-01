@@ -13,10 +13,17 @@ import sys
 from pathlib import Path
 
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
+sys.path.insert(
+    0, str(Path(__file__).resolve().parents[1] / "_static" / "scripts")
+)
+from _svg_determinism import apply_svg_determinism, reset_svg_render_state
+
+apply_svg_determinism()
+
+import matplotlib.pyplot as plt  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC_DIR = ROOT / "src"
@@ -24,6 +31,11 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 import dartwork_mpl as dm  # noqa: E402
+
+
+def _reset_asset_state() -> None:
+    plt.close("all")
+    reset_svg_render_state()
 
 
 def _prepare_images_dir(base_dir: Path | None = None) -> Path:
@@ -284,6 +296,7 @@ def build_api_assets(base_dir: Path | None = None) -> list[Path]:
         # figure asset.
         last_err: Exception | None = None
         for attempt in range(1, 3):
+            _reset_asset_state()
             try:
                 p = func(images_dir)
                 paths.append(p)

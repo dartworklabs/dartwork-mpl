@@ -959,7 +959,7 @@ z
     <path d="M 65.712241 234.094488 
 L 240.944882 165.885827 
 L 416.177523 52.204724 
-" clip-path="url(#pc589bc6603)" style="fill: none; stroke: #dc2626; stroke-linecap: square"/>
+" clip-path="url(#pc589bc6603)" style="fill: none; stroke: #c3b5ff; stroke-linecap: square"/>
    </g>
    <g id="patch_3">
     <path d="M 48.188976 252.283465 
@@ -973,7 +973,7 @@ L 433.700787 252.283465
    </g>
    <g id="text_15">
     <!-- Validation Error -->
-    <g style="fill: #dc2626" transform="translate(201.463944 28.015748) scale(0.115 -0.115)">
+    <g style="fill: #c3b5ff" transform="translate(201.463944 28.015748) scale(0.115 -0.115)">
      <defs>
       <path id="Roboto-Regular-56" d="M 2034 797 
 L 3334 4550 

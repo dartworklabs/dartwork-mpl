@@ -53,10 +53,21 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --dev
 
+      # Keep the coverage gate on one representative interpreter. The
+      # remaining matrix jobs still run the full test suite for version
+      # compatibility, but skip coverage instrumentation and the duplicate
+      # integration smoke below.
       - name: Run tests with coverage
+        if: matrix.python-version == '3.12'
         env:
           MPLBACKEND: Agg
         run: uv run pytest tests/ -v --cov --cov-report=term-missing
+
+      - name: Run tests
+        if: matrix.python-version != '3.12'
+        env:
+          MPLBACKEND: Agg
+        run: uv run pytest tests/ -v --no-cov
 
       # Explicit guardrail: the integration / MCP / CLI / drift tests
       # all import ``fastmcp`` via ``pytest.importorskip``. With
@@ -66,6 +77,7 @@ jobs:
       # step parses the run output and fails if **any** of those
       # files contributed zero collected items.
       - name: Assert MCP / integration tests actually ran
+        if: matrix.python-version == '3.12'
         env:
           MPLBACKEND: Agg
         run: |
