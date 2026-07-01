@@ -20,34 +20,14 @@ def _minimal(ax: plt.Axes) -> None:
     """Inline minimal-axes recipe (top/right hidden + light dashed y-grid)."""
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    import matplotlib as _mpl
-    import matplotlib.colors as _mc
-
-    def _res(nm: str) -> str:
-        try:
-            _mc.to_rgba(nm)
-            return "OK"
-        except Exception as _e:  # noqa: BLE001
-            return f"FAIL:{type(_e).__name__}"
-
-    _cyc = _mpl.rcParams["axes.prop_cycle"].by_key().get("color") or ["?"]
-    _nn = sorted(c for c in _mc.get_named_colors_mapping() if c.startswith("dc.nordic"))
-    _diag = (
-        f"grid.color={_mpl.rcParams.get('grid.color')!r} cyc0={_cyc[0]!r} "
-        f"nordic1={_res('dc.nordic1')} muted1={_res('dc.muted1')} "
-        f"pastel1={_res('dc.pastel1')} nordic_keys={_nn}"
+    ax.grid(
+        True,
+        axis="y",
+        alpha=0.2,
+        color="dc.nordic1",
+        linestyle="--",
+        linewidth=0.5,
     )
-    try:
-        ax.grid(
-            True,
-            axis="y",
-            alpha=0.2,
-            color="dc.nordic1",
-            linestyle="--",
-            linewidth=0.5,
-        )
-    except Exception as _e:
-        raise RuntimeError(f"[DIAGF] {_diag} || {_e}") from _e
     ax.set_axisbelow(True)
 
 
