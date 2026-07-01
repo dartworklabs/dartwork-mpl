@@ -24,6 +24,7 @@ import dartwork_mpl as dm
 
 fastmcp = pytest.importorskip("fastmcp")
 
+from dartwork_mpl.mcp.tools import _discover_plot_templates  # noqa: E402
 
 # Tools we promise to keep on the MCP surface. Adding or removing one
 # is a deliberate decision — this test forces the choice into the
@@ -184,6 +185,23 @@ class TestMcpSurfaceContract:
         # PNGs that actually contain pixels are much larger than the
         # 100-byte header threshold below.
         assert len(payload["png_base64"]) > 1000
+
+    @pytest.mark.parametrize("plot_type", _discover_plot_templates())
+    def test_every_bundled_template_renders(self, plot_type: str) -> None:
+        """Every bundled ``05-templates/*.py`` (18 basic + the advanced tier)
+        ships in the wheel and is served over MCP, but only ``bar`` was
+        execution-tested — a template could regress at *runtime* while lint
+        and the separate docs-gallery copy stayed green. Render each tier."""
+        for tool in ("render_template", "render_template_advanced"):
+            result = self._run(
+                self.mcp.call_tool(tool, {"plot_type": plot_type})
+            )
+            payload = json.loads(result.content[0].text)
+            assert payload["status"] in ("ok", "fell_back"), (
+                f"{tool}({plot_type}) -> {payload['status']}: "
+                f"{payload.get('stderr', '')[:400]}"
+            )
+            assert payload["png_base64"] and len(payload["png_base64"]) > 1000
 
     def test_validate_generated_plot_lint_blocks_critical(self) -> None:
         """``validate_generated_plot`` must short-circuit on critical

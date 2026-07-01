@@ -26,8 +26,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Gate the release on a green test suite. Without this, `publish` only
+  # depends on `build` (version-check + `uv build` + sdist-scope guard),
+  # so a tag on a commit whose tests fail — or never ran — would still
+  # publish to PyPI. `build`/`publish` now transitively require `test`.
+  test:
+    name: Test before release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+      - name: Run test suite
+        run: uv run pytest tests/ -q
+
   build:
     name: Build sdist + wheel
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

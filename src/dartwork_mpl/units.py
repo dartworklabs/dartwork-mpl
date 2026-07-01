@@ -595,7 +595,10 @@ def _resolve_height(w_in: float, aspect: str | int | float | Length) -> float:
     5. Anything else → :func:`parse_aspect` for the standard error.
     """
     if isinstance(aspect, Length):
-        return aspect._inch
+        h = aspect._inch
+        if not math.isfinite(h) or h <= 0:
+            raise ValueError(f"height must be positive and finite (got {h})")
+        return h
 
     if isinstance(aspect, str):
         # Strip whitespace + matched quotes once and reuse — same
