@@ -154,22 +154,25 @@ legitimately don't carry teal.
 
 ## 4. How it lands in dartwork-mpl
 
-**Done (design layer):**
-1. `gen_palettes.py` generates all 24 in CIELAB; `dm_palettes_gen.json` is the
-   verified colour SSOT; the categorical-palettes page is the interactive doc.
+Both the design and package layers have shipped. The pipeline, end to end:
 
-**Pending (package layer — needs 2 calls):**
-2. Add the 24 to `src/dartwork_mpl/asset/color/dc_palettes.json` as
-   `dc.<name>0..7` (+ auto `dm.*` alias). **Decision A**: do the 24 *supersede*
-   the old ad-hoc dc set (Vivid/Sunset/Ocean/Forest/Pop/Cyber/Autumn/Nordic) or
-   *coexist* (only `forest` collides after pruning)?
-3. Expose `dm.get_palette(name, n=None, subset=...)` + `dm.set_cycle(...)`
-   (sister to `make_palette` in `helpers/colors.py`).
-4. **Decision B**: per-preset `axes.prop_cycle` — keep one shared default,
-   repoint the shared default, or differentiate per preset
-   (scientific→accessible, report→trustworthy, …). Today all 14 presets share
-   `dc.0–5`.
-5. Swatch sheets via `docs/color_system/generate_assets.py`; a new
-   `docs/color_system/categorical-palettes.md` page embedding the explorer.
+1. **Colour SSOT** — `gen_palettes.py` generates all 24 in CIELAB and writes
+   `dm_palettes_gen.json` (B&W + CVD verified).
+2. **Package registry** — `build_dc_palettes.py` maps that SSOT into
+   `src/dartwork_mpl/asset/color/dc_palettes.json` as `dc.<name>0..7`.
+   *Decision A: supersede* — the 24 curated palettes replace the old ad-hoc dc
+   set; Vivid/Sunset/Ocean/Pop/Cyber/Autumn/Nordic remain only as deprecated
+   back-compat aliases (`forest` is now owned by the curated palette). The
+   generator holds internal names (`teal_seq`, `focus`, `muted`, …) and maps
+   them to the public `dc.<name>` keys (`teal`, `teal_accent`, `pastel`, …);
+   regenerating reproduces the committed JSON byte-for-byte.
+3. **API** — `dm.get_palette(name, n=None, subset=..., *, order=, reverse=,
+   seed=)` and `dm.set_cycle(palette, ax=None, n=None)` in `helpers/colors.py`;
+   bare names resolve under `dc.`.
+4. **Default cycle** — *Decision B: repoint* the shared `axes.prop_cycle`
+   (`dc.0..7`) to `trustworthy`, the everyday default.
+5. **Docs** — swatch sheets via `docs/color_system/generate_assets.py`; the
+   `docs/color_system/categorical-palettes.md` page embeds the interactive
+   explorer (`build_categorical_explorer.py` + `categorical_explorer_data.js`).
 
 *This file is the rationale SSOT; update it when palettes change.*

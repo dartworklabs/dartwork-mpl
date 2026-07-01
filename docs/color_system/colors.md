@@ -32,8 +32,8 @@ families (sequential, analogous, duo, balanced, neutral, emphasis, muted,
 spectrum, diverging, tone, accessible). Every palette is 8 colours,
 CIELAB-generated and verified for black-&-white + colour-blindness, anchored on
 the house teal `#12a594`. Reach for `dc.trustworthy` as the everyday default,
-`dc.spectrum` / `dc.bold` for many categories, `dc.coolwarm` / `dc.tealamber`
-for ± diverging data, or `dc.focus` to highlight one series. The interactive
+`dc.spectrum` / `dc.bold` for many categories, `dc.coolwarm` / `dc.teal_amber`
+for ± diverging data, or `dc.teal_accent` to highlight one series. The interactive
 picker (intent, B&W, colour-blindness, 9 chart shapes) lives on the
 [Categorical palettes](categorical-palettes.md) page. The older ad-hoc names
 (`dc.vivid`, `dc.ocean`, …) remain as deprecated aliases for back-compat.

@@ -7,7 +7,9 @@ separability (ΔL*) and color-vision distance (deuter/protan/tritan).
 
 Colors, L*, and the verification stats are read from the generator SSOT
 (``dm_palettes_gen.json``); only the editorial copy (name / family / band /
-intent) lives here. Run after ``gen_palettes.py``:
+intent) lives here. The public ``dc.<name>`` swatch labels come from the rename
+SSOT (``build_dc_palettes.NAME``) so they can never drift from what the package
+actually registers. Run after ``gen_palettes.py``:
 
     python3 build_showcase.py
 """
@@ -20,6 +22,25 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 GEN_JSON = SCRIPT_DIR / "dm_palettes_gen.json"
 OUT = SCRIPT_DIR.parent / "palette_showcase.html"
+
+
+def _public_names() -> dict[str, str]:
+    """Generator key -> public ``dc.<name>``. The rename SSOT lives in
+    ``build_dc_palettes.NAME``; import it so the showcase's ``dc.`` labels can
+    never drift from what the package registers (``teal_seq`` -> ``dc.teal``,
+    ``focus`` -> ``dc.teal_accent``, ``muted`` -> ``dc.pastel``, …)."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_bdc_namemap", SCRIPT_DIR / "build_dc_palettes.py"
+    )
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.NAME
+
+
+PUBLIC = _public_names()
 
 # editorial copy only — colors / L* / verify come from the generator SSOT
 # (name, family, band, intent)
@@ -133,13 +154,13 @@ META = {
         "Hue-free ordered ramp with a cool cast — tech, clinical, cool brands.",
     ),
     "focus": (
-        "Focus · teal",
+        "Teal Accent",
         "Emphasis",
         "1 accent + 7 neutrals",
         "Highlight ONE series; everything else recedes to grey. 'Color the one thing.'",
     ),
     "focus_warm": (
-        "Focus · warm",
+        "Coral Accent",
         "Emphasis",
         "1 accent + 7 neutrals",
         "Highlight one series with a WARM accent instead of teal.",
@@ -242,7 +263,7 @@ def build() -> str:
         for i, (h, lv) in enumerate(zip(cols, ls, strict=False)):
             out.append(
                 f'<button class="sw" style="--c:{h}" data-hex="{h.upper()}"'
-                f' data-l="L* {lv:.0f}" aria-label="dc.{key}{i} {h.upper()}'
+                f' data-l="L* {lv:.0f}" aria-label="dc.{PUBLIC[key]}{i} {h.upper()}'
                 f' L* {lv:.0f}"></button>'
             )
         return "\n".join(out)
@@ -256,7 +277,7 @@ def build() -> str:
         cc = cvd_class(v)
         return f"""    <article class="spec" data-fam="{fam}">
       <div class="spec-id">
-        <code class="pid">dc.{key.replace("_", "")}</code>
+        <code class="pid">dc.{PUBLIC[key]}</code>
         <span class="pname">{name}</span>
         <span class="pband">{band}</span>
         <p class="pintent">{intent}</p>
