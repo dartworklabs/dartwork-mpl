@@ -176,7 +176,7 @@ def register_tools(mcp: FastMCP) -> None:
         Parameters
         ----------
         name : str
-            Color name (e.g. 'dc.blue500', 'tw.sky400', 'oc.gray6').
+            Color name (e.g. 'dc.trustworthy0', 'tw.sky400', 'oc.gray6').
 
         Returns
         -------

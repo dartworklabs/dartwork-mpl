@@ -131,7 +131,7 @@ def register_resources(mcp: FastMCP) -> None:
     def palette_colors() -> str:
         """Get the full list of dartwork-mpl registered colors with hex codes.
 
-        Returns a JSON object where keys are color names (e.g. 'dc.blue500')
+        Returns a JSON object where keys are color names (e.g. 'dc.trustworthy0')
         and values are hex codes. Only dartwork-mpl prefixed colors are included:
         dc.*, tw.*, md.*, ad.*, cu.*, pr.*, oc.*
         """
