@@ -77,6 +77,17 @@ _SOURCE7 = [
     "Bold",
     "Black",
 ]
+_JETBRAINS8 = [
+    "Thin",
+    "ExtraLight",
+    "Light",
+    "Regular",
+    "Medium",
+    "SemiBold",
+    "Bold",
+    "ExtraBold",
+]
+_ROBOTOMONO5 = ["Thin", "Light", "Regular", "Medium", "Bold"]
 
 WEIGHT_SPEC: dict[str, list[tuple[str, str]]] = {
     # Roboto ships 6 static weights upstream (no ExtraLight/SemiBold/ExtraBold).
@@ -105,6 +116,9 @@ WEIGHT_SPEC: dict[str, list[tuple[str, str]]] = {
     ],
     "noto_cjk": [("Regular", "NotoSansCJK-Regular")],
     "ibm_plex_mono": [(w, f"IBMPlexMono-{w}") for w in _PLEX7],
+    "jetbrains_mono": [(w, f"JetBrainsMono-{w}") for w in _JETBRAINS8],
+    "source_code_pro": [(w, f"SourceCodePro-{w}") for w in _SOURCE7],
+    "roboto_mono": [(w, f"RobotoMono-{w}") for w in _ROBOTOMONO5],
     "noto_math": [("Regular", "NotoSansMath-Regular")],
 }
 
@@ -203,7 +217,7 @@ META: dict[str, dict] = {
         "name": "Paperlogy",
         "mpl": "Paperlogy",
         "faceStem": "dm-Paperlogy",
-        "group": "Specialist",
+        "group": "Korean & CJK",
         "script": "한글 + Latin",
         "hero": "가나다 Ag 0123",
         "sample": "데이터 시각화를 위한 아름다운 한글 타이포그래피, 2021년부터.",
@@ -217,7 +231,7 @@ META: dict[str, dict] = {
         "name": "Noto Sans Math",
         "mpl": "Noto Sans Math",
         "faceStem": "dm-NotoSansMath",
-        "group": "Specialist",
+        "group": "Monospace & Symbols",
         "script": "Math symbols",
         "hero": "∑ ∫ √ π",
         "sample": "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∪ ∩ ∀ ∃",
@@ -297,6 +311,48 @@ META: dict[str, dict] = {
         "pairing": "Pairs with IBM Plex Sans for text next to data.",
         "personality": "Monospace · aligned",
     },
+    "jetbrains_mono": {
+        "name": "JetBrains Mono",
+        "mpl": "JetBrains Mono",
+        "faceStem": "dm-JetBrainsMono",
+        "group": "Monospace & Symbols",
+        "script": "Latin (monospace)",
+        "hero": "il1 O0 =>",
+        "sample": "def render(fig): return dm.save_formats(fig, 'out')",
+        "desc": "A developer monospace with a tall x-height.",
+        "intent": "Increased letter height and disambiguated shapes (il1, O0) keep code and dense numeric columns readable at small sizes.",
+        "application": "Code blocks, log output, and tightly packed data tables.",
+        "pairing": "Stands alone; sits well beside Inter for docs.",
+        "personality": "Monospace · developer",
+    },
+    "source_code_pro": {
+        "name": "Source Code Pro",
+        "mpl": "Source Code Pro",
+        "faceStem": "dm-SourceCodePro",
+        "group": "Monospace & Symbols",
+        "script": "Latin (monospace)",
+        "hero": "il1 O0 =>",
+        "sample": "sum([x for x in range(2021)])  # 2041210",
+        "desc": "Adobe's monospace companion to Source Sans 3.",
+        "intent": "Even color and clear punctuation make it a calm, neutral fixed-width face for code and figures alike.",
+        "application": "Code, fixed-width labels, and numeric tables.",
+        "pairing": "Pairs with Source Sans 3 for a full text+code system.",
+        "personality": "Monospace · neutral",
+    },
+    "roboto_mono": {
+        "name": "Roboto Mono",
+        "mpl": "Roboto Mono",
+        "faceStem": "dm-RobotoMono",
+        "group": "Monospace & Symbols",
+        "script": "Latin (monospace)",
+        "hero": "il1 O0 =>",
+        "sample": "2021-07-01  12:00:00  +02.5%  ▲",
+        "desc": "The monospace cut of Roboto.",
+        "intent": "Shares Roboto's mechanical skeleton, so mono labels sit seamlessly next to Roboto body text.",
+        "application": "Timestamps, fixed-width tick labels, and inline figures.",
+        "pairing": "Pairs with Roboto for a unified text+data look.",
+        "personality": "Monospace · neutral",
+    },
 }
 
 GROUPS = [
@@ -306,7 +362,16 @@ GROUPS = [
     ("Multilingual", ["noto_sans"]),
     ("Condensed", ["noto_semicondensed", "noto_condensed"]),
     ("Korean & CJK", ["pretendard", "paperlogy", "noto_cjk"]),
-    ("Monospace & Symbols", ["ibm_plex_mono", "noto_math"]),
+    (
+        "Monospace & Symbols",
+        [
+            "ibm_plex_mono",
+            "jetbrains_mono",
+            "source_code_pro",
+            "roboto_mono",
+            "noto_math",
+        ],
+    ),
 ]
 
 # Canonical rail order — derived from the grouped rail so the two never drift.

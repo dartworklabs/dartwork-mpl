@@ -15,8 +15,8 @@ Font Utilities <utilities>
 
 ## Overview
 
-dartwork-mpl bundles **164 text font files across 13 families** (sans-serif
-plus one monospace), all optimized for data visualization and
+dartwork-mpl bundles **204 text font files across 16 families** (sans-serif
+plus four monospace), all optimized for data visualization and
 publication-quality figures. They are registered with matplotlib's font
 manager on `import dartwork_mpl`, so `plt.rcParams["font.family"] = "Inter"`
 (or any bundled family) resolves immediately — no manual font installation
@@ -59,7 +59,7 @@ plt.show()
 ## Key Features
 
 **Auto-Registration**
-: All 164 font files are registered with matplotlib's font manager on
+: All 204 font files are registered with matplotlib's font manager on
 `import dartwork_mpl`. No manual font installation or configuration needed.
 
 **Relative Sizing**
@@ -77,7 +77,9 @@ Japanese/Chinese — all bundled and auto-registered. No system font
 installation needed.
 
 **Monospace**
-: IBM Plex Mono for tabular figures, code, and fixed-width labels.
+: Four fixed-width families for tabular figures, code, and aligned labels —
+IBM Plex Mono, JetBrains Mono, Source Code Pro, and Roboto Mono (each pairs
+with its sans sibling).
 
 ## Bundled Fonts Summary
 
@@ -99,6 +101,9 @@ texts are bundled under `asset/font/licenses/`.
 | **Paperlogy**                | 9     | Korean (한글) text                 |
 | **Noto Sans CJK KR**         | 1     | CJK (한·중·일) coverage            |
 | **IBM Plex Mono**            | 14    | Monospace, tabular figures         |
+| **JetBrains Mono**           | 16    | Monospace, code / dense tables     |
+| **Source Code Pro**          | 14    | Monospace, pairs with Source Sans  |
+| **Roboto Mono**              | 10    | Monospace, pairs with Roboto       |
 | **Noto Sans Math**           | 1     | Mathematical expressions           |
 
 ## Bundled Icon Fonts

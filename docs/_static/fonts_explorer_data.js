@@ -600,7 +600,7 @@ var DM_FONT_DATA = {
     "name": "Paperlogy",
     "mpl": "Paperlogy",
     "faceStem": "dm-Paperlogy",
-    "group": "Specialist",
+    "group": "Korean & CJK",
     "script": "한글 + Latin",
     "hero": "가나다 Ag 0123",
     "sample": "데이터 시각화를 위한 아름다운 한글 타이포그래피, 2021년부터.",
@@ -751,11 +751,184 @@ var DM_FONT_DATA = {
       "Bold"
     ]
   },
+  "jetbrains_mono": {
+    "name": "JetBrains Mono",
+    "mpl": "JetBrains Mono",
+    "faceStem": "dm-JetBrainsMono",
+    "group": "Monospace & Symbols",
+    "script": "Latin (monospace)",
+    "hero": "il1 O0 =>",
+    "sample": "def render(fig): return dm.save_formats(fig, 'out')",
+    "desc": "A developer monospace with a tall x-height.",
+    "intent": "Increased letter height and disambiguated shapes (il1, O0) keep code and dense numeric columns readable at small sizes.",
+    "application": "Code blocks, log output, and tightly packed data tables.",
+    "pairing": "Stands alone; sits well beside Inter for docs.",
+    "personality": "Monospace · developer",
+    "variants": 8,
+    "regular": "dm-JetBrainsMono-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-JetBrainsMono-Thin"
+      },
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-JetBrainsMono-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-JetBrainsMono-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-JetBrainsMono-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-JetBrainsMono-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-JetBrainsMono-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-JetBrainsMono-Bold"
+      },
+      {
+        "label": "ExtraBold",
+        "num": 800,
+        "face": "dm-JetBrainsMono-ExtraBold"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold"
+    ]
+  },
+  "source_code_pro": {
+    "name": "Source Code Pro",
+    "mpl": "Source Code Pro",
+    "faceStem": "dm-SourceCodePro",
+    "group": "Monospace & Symbols",
+    "script": "Latin (monospace)",
+    "hero": "il1 O0 =>",
+    "sample": "sum([x for x in range(2021)])  # 2041210",
+    "desc": "Adobe's monospace companion to Source Sans 3.",
+    "intent": "Even color and clear punctuation make it a calm, neutral fixed-width face for code and figures alike.",
+    "application": "Code, fixed-width labels, and numeric tables.",
+    "pairing": "Pairs with Source Sans 3 for a full text+code system.",
+    "personality": "Monospace · neutral",
+    "variants": 7,
+    "regular": "dm-SourceCodePro-Regular",
+    "weights": [
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-SourceCodePro-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-SourceCodePro-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-SourceCodePro-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-SourceCodePro-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-SourceCodePro-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-SourceCodePro-Bold"
+      },
+      {
+        "label": "Black",
+        "num": 900,
+        "face": "dm-SourceCodePro-Black"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold",
+      "Black"
+    ]
+  },
+  "roboto_mono": {
+    "name": "Roboto Mono",
+    "mpl": "Roboto Mono",
+    "faceStem": "dm-RobotoMono",
+    "group": "Monospace & Symbols",
+    "script": "Latin (monospace)",
+    "hero": "il1 O0 =>",
+    "sample": "2021-07-01  12:00:00  +02.5%  ▲",
+    "desc": "The monospace cut of Roboto.",
+    "intent": "Shares Roboto's mechanical skeleton, so mono labels sit seamlessly next to Roboto body text.",
+    "application": "Timestamps, fixed-width tick labels, and inline figures.",
+    "pairing": "Pairs with Roboto for a unified text+data look.",
+    "personality": "Monospace · neutral",
+    "variants": 5,
+    "regular": "dm-RobotoMono-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-RobotoMono-Thin"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-RobotoMono-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-RobotoMono-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-RobotoMono-Medium"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-RobotoMono-Bold"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold"
+    ]
+  },
   "noto_math": {
     "name": "Noto Sans Math",
     "mpl": "Noto Sans Math",
     "faceStem": "dm-NotoSansMath",
-    "group": "Specialist",
+    "group": "Monospace & Symbols",
     "script": "Math symbols",
     "hero": "∑ ∫ √ π",
     "sample": "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∪ ∩ ∀ ∃",
@@ -778,5 +951,5 @@ var DM_FONT_DATA = {
     ]
   }
 };
-var DM_FONT_ORDER = ["roboto", "inter", "source_sans", "inter_display", "ibm_plex_sans", "noto_sans", "noto_semicondensed", "noto_condensed", "pretendard", "paperlogy", "noto_cjk", "ibm_plex_mono", "noto_math"];
-var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "source_sans"]}, {"title": "Display", "items": ["inter_display"]}, {"title": "Technical", "items": ["ibm_plex_sans"]}, {"title": "Multilingual", "items": ["noto_sans"]}, {"title": "Condensed", "items": ["noto_semicondensed", "noto_condensed"]}, {"title": "Korean & CJK", "items": ["pretendard", "paperlogy", "noto_cjk"]}, {"title": "Monospace & Symbols", "items": ["ibm_plex_mono", "noto_math"]}];
+var DM_FONT_ORDER = ["roboto", "inter", "source_sans", "inter_display", "ibm_plex_sans", "noto_sans", "noto_semicondensed", "noto_condensed", "pretendard", "paperlogy", "noto_cjk", "ibm_plex_mono", "jetbrains_mono", "source_code_pro", "roboto_mono", "noto_math"];
+var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "source_sans"]}, {"title": "Display", "items": ["inter_display"]}, {"title": "Technical", "items": ["ibm_plex_sans"]}, {"title": "Multilingual", "items": ["noto_sans"]}, {"title": "Condensed", "items": ["noto_semicondensed", "noto_condensed"]}, {"title": "Korean & CJK", "items": ["pretendard", "paperlogy", "noto_cjk"]}, {"title": "Monospace & Symbols", "items": ["ibm_plex_mono", "jetbrains_mono", "source_code_pro", "roboto_mono", "noto_math"]}];
