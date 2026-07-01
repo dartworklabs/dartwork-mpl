@@ -120,6 +120,13 @@ jobs:
   # copy (upstream edited but llms-full.txt not rebuilt) fails the drift check.
   docs:
     runs-on: ubuntu-latest
+    # Pin the docs build to a single modern interpreter. Without this,
+    # `uv sync` floats the build venv to the requires-python floor (3.10),
+    # whose gallery execution hit an environment-specific color-resolution
+    # failure the 3.11+ build does not. The docs are interpreter-agnostic
+    # (build-only job), so pin to 3.12 for a deterministic, known-good build.
+    env:
+      UV_PYTHON: "3.12"
     steps:
       - uses: actions/checkout@v6
 
