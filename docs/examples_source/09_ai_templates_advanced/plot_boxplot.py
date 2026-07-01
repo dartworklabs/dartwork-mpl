@@ -39,7 +39,7 @@ medians = [float(np.median(g)) for g in data]
 market_baseline = 0.45  # synthetic weekly market return
 
 # Gradient: deepest for the rightmost (highest median) — sequential.
-gradient = dm.cspace("dc.corporate5", "dc.corporate1", n=len(labels))
+gradient = dm.cspace("dc.teal5", "dc.teal1", n=len(labels))
 colors = [c.to_hex() for c in gradient]
 
 fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))

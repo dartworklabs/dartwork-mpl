@@ -6,16 +6,12 @@ axes (texts, title, axis labels, view-limited tick labels, axis
 offset text, legend) and arithmetically computes GridSpec edges that
 place that union extent at the requested distance from each figure
 edge. No optimizer is involved.
-
-The historical ``auto_layout`` name is preserved as a thin wrapper
-for backwards compatibility.
 """
 
 from __future__ import annotations
 
 __all__ = [
     "adopt_axis_label_font",
-    "auto_layout",
     "get_bounding_box",
     "simple_layout",
     "tight_crop",
@@ -622,48 +618,6 @@ def _solve_layout_step(
         delta_px = float("inf")
 
     return (new_l, new_r, new_b, new_t), delta_px
-
-
-def auto_layout(
-    fig: Figure,
-    *,
-    padding: float | tuple[float, float, float, float] = 0.08,
-    max_iter: int = 5,
-    tolerance: float = 2.0,
-    verbose: bool = False,
-) -> None:
-    """Deprecated alias for :func:`simple_layout`.
-
-    The previous ``auto_layout`` ran an outer loop over ``simple_layout``
-    to compensate for an optimizer cap that no longer exists. Direct-calc
-    ``simple_layout`` already handles the same cases in a single call,
-    so ``auto_layout`` is now a thin wrapper that translates the legacy
-    ``padding`` (inches) argument into ``margin`` and forwards the call.
-
-    Will be removed in a future release; use :func:`simple_layout`
-    directly. ``max_iter`` and ``tolerance`` are accepted for
-    signature compatibility but no longer have an effect — convergence
-    is governed by the deterministic loop inside ``simple_layout``.
-    """
-    warnings.warn(
-        "dm.auto_layout is deprecated and will be removed in v0.6.0; "
-        "use dm.simple_layout(fig, ...) directly. The previous outer "
-        "iteration is no longer needed.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    if not fig.axes:
-        return
-    if isinstance(padding, (int, float)):
-        ml = mr = Length.from_inch(float(padding)) if padding else 0
-        mt = mb = Length.from_inch(float(padding)) if padding else 0
-    else:
-        pl, pr, pb, pt_ = padding
-        ml = Length.from_inch(float(pl)) if pl else 0
-        mr = Length.from_inch(float(pr)) if pr else 0
-        mb = Length.from_inch(float(pb)) if pb else 0
-        mt = Length.from_inch(float(pt_)) if pt_ else 0
-    simple_layout(fig, ml=ml, mr=mr, mt=mt, mb=mb, verbose=verbose)
 
 
 # ─────────────────────────────────────────────────────────────────────

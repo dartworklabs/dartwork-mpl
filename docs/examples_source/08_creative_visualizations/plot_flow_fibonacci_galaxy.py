@@ -37,9 +37,9 @@ def fibonacci_spiral(n_points=1000):
 x, y, theta = fibonacci_spiral(1500)
 
 arm_palettes = [
-    ("dc.corporate5", "dc.corporate1"),
-    ("dc.bold5", "dc.forest1"),
-    ("dc.corporate5", "dc.forest1"),
+    ("dc.teal5", "dc.teal1"),
+    ("dc.jewel5", "dc.forest1"),
+    ("dc.teal5", "dc.forest1"),
 ]
 
 for arm in range(3):
@@ -97,7 +97,7 @@ title_text = ax.text(
     alpha=0.8,
 )
 title_text.set_path_effects(
-    [path_effects.withStroke(linewidth=dm.lw(0), foreground="dc.corporate5")]
+    [path_effects.withStroke(linewidth=dm.lw(0), foreground="dc.teal5")]
 )
 
 dm.simple_layout(fig)

@@ -59,7 +59,7 @@ Percentages (matplotlib direct)
    # Data as fractions (0 to 1)
    x = np.arange(5)
    y = np.array([0.15, 0.32, 0.45, 0.28, 0.52])
-   ax.bar(x, y, color="dc.corporate2")
+   ax.bar(x, y, color="dc.teal2")
 
    # Display as integer percentages — multiply 0–1 input by 100
    ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
@@ -95,13 +95,13 @@ Millions and billions
 
    # Dataset size in millions of rows
    dataset_rows = np.array([1.2e6, 2.5e6, 4.8e6, 8.3e6])
-   ax1.bar(range(len(dataset_rows)), dataset_rows, color="dc.corporate2")
+   ax1.bar(range(len(dataset_rows)), dataset_rows, color="dc.teal2")
    dm.format_axis_millions(ax1, axis="y")  # 1.2M, 2.5M, …
    ax1.set_title("Dataset rows")
 
    # World population in billions
    population = np.array([1.8e9, 2.1e9, 2.4e9, 2.7e9])
-   ax2.plot(population, "o-", color="dc.bold2", lw=dm.lw(0))
+   ax2.plot(population, "o-", color="dc.jewel2", lw=dm.lw(0))
    dm.format_axis_billions(ax2, axis="y", suffix="B")  # 1.8B, 2.1B, …
    ax2.set_title("Population")
 
@@ -124,7 +124,7 @@ Currency
    ax1.set_title("Product prices (USD)")
 
    # Euros — suffix
-   ax2.bar(range(len(prices)), prices * 0.85, color="dc.corporate2")
+   ax2.bar(range(len(prices)), prices * 0.85, color="dc.teal2")
    dm.format_axis_currency(ax2, axis="y", symbol="€", position="suffix")
    ax2.set_title("Product prices (EUR)")
 
@@ -142,7 +142,7 @@ SI prefixes
    # Frequency response — 1 kHz to 1 GHz
    freq = np.logspace(3, 9, 50)
    response = -20 * np.log10(freq / 1e6)
-   ax1.semilogx(freq, response, color="dc.spectrum2")
+   ax1.semilogx(freq, response, color="dc.bold2")
    dm.format_axis_si(ax1, axis="x")  # 1k, 10k, 100k, 1M, …
    ax1.set_xlabel("Frequency (Hz)")
    ax1.set_ylabel("Response (dB)")
@@ -175,7 +175,7 @@ Rotating labels
    values = np.random.randn(len(categories))
 
    for ax, deg, ha in [(ax1, 45, "right"), (ax2, 90, "right"), (ax3, 30, "right")]:
-       ax.bar(range(len(categories)), values, color="dc.muted2")
+       ax.bar(range(len(categories)), values, color="dc.teal_indigo2")
        ax.set_xticks(range(len(categories)))
        ax.set_xticklabels(categories)
        dm.rotate_tick_labels(ax, axis="x", rotation=deg, ha=ha)
@@ -217,12 +217,12 @@ finance template.
    ax1.set_ylabel("Samples")
 
    ax2 = fig.add_subplot(gs[0, 1])
-   ax2.plot(periods, unit_price, "o-", color="dc.corporate2", lw=dm.lw(0))
+   ax2.plot(periods, unit_price, "o-", color="dc.teal2", lw=dm.lw(0))
    dm.format_axis_currency(ax2, axis="y", symbol="$")
    ax2.set_title("Unit price")
 
    ax3 = fig.add_subplot(gs[1, 0])
-   ax3.bar(periods, dataset_rows, color="dc.corporate2")
+   ax3.bar(periods, dataset_rows, color="dc.teal2")
    dm.format_axis_millions(ax3, axis="y")
    ax3.set_title("Dataset rows")
 
@@ -235,7 +235,7 @@ finance template.
    for ax in (ax1, ax2, ax3, ax4):
        ax.spines["top"].set_visible(False)
        ax.spines["right"].set_visible(False)
-       ax.grid(True, axis="y", alpha=0.2, color="dc.muted1", linewidth=dm.lw(0))
+       ax.grid(True, axis="y", alpha=0.2, color="dc.teal_indigo1", linewidth=dm.lw(0))
        ax.set_axisbelow(True)
        dm.rotate_tick_labels(ax, axis="x", rotation=45)
 

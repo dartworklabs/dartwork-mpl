@@ -30,7 +30,7 @@ labels = ["NVIDIA", "AMD", "Intel Arc", "Apple", "Others"]
 sizes = np.array([62.0, 17.0, 8.0, 7.0, 6.0])  # %
 
 # OKLCH gradient — deeper for the leader, lighter for trailing share.
-gradient = dm.cspace("dc.corporate5", "dc.corporate1", n=len(labels))
+gradient = dm.cspace("dc.teal5", "dc.teal1", n=len(labels))
 colors = [c.to_hex() for c in gradient]
 
 # Explode only the leader.

@@ -33,19 +33,19 @@ class RobustnessScenario:
         Callable returning a fully-built Figure.
     expect_warnings
         Substrings of validate_figure check_ids that **must** appear
-        before auto_layout runs (i.e. validate is supposed to catch
+        before simple_layout runs (i.e. validate is supposed to catch
         the issue this scenario plants).
     forbid_warnings
-        Substrings that **must not** appear after auto_layout. Empty
+        Substrings that **must not** appear after simple_layout. Empty
         by default (i.e. layout should clean up cleanly).
     pixel_checks
         Names of callables in pixel_assertions to invoke against the
         post-layout figure (e.g. ("assert_minimum_white_border",)).
-    auto_layout_max_iter
-        Iteration cap for auto_layout. Most scenarios accept the
+    simple_layout_max_iter
+        Iteration cap for simple_layout. Most scenarios accept the
         default (5); pathological annotations may need more.
-    auto_layout_padding
-        Initial padding (inches) passed to ``dm.auto_layout``. Most
+    layout_padding
+        Initial padding (inches) passed to ``dm.simple_layout``. Most
         scenarios accept the default 0.08. Scenarios with
         axes-fraction-positioned spines or other content that fills
         the canvas tightly may need a larger value (e.g. 0.25) so the
@@ -65,8 +65,7 @@ class RobustnessScenario:
     expect_warnings: tuple[str, ...] = ()
     forbid_warnings: tuple[str, ...] = ("OVERFLOW",)
     pixel_checks: tuple[str, ...] = ("assert_minimum_white_border",)
-    auto_layout_max_iter: int = 5
-    auto_layout_padding: float | tuple[float, float, float, float] = 0.08
+    layout_padding: float | tuple[float, float, float, float] = 0.08
     category: str = "visual-only"
 
 
@@ -85,18 +84,18 @@ KNOWN_LIMITATIONS: tuple[tuple[str, str, str], ...] = (
     (
         "outside_axes_annotation",
         "Axes-fraction xytext at (-0.4, 0.5) escapes the canvas; "
-        "auto_layout's iterative margin expansion can't reach the "
+        "simple_layout's iterative margin expansion can't reach the "
         "necessary padding within max_iter.",
         "https://github.com/dartworklabs/dartwork-mpl/issues/111",
     ),
     (
         "colorbar_below_axes",
         "Horizontal colorbar shifts the figure into the top edge after "
-        "auto_layout. Likely needs a colorbar-aware layout pass.",
+        "simple_layout. Likely needs a colorbar-aware layout pass.",
         "https://github.com/dartworklabs/dartwork-mpl/issues/113",
     ),
 )
-# Architectural meta-issue tracking the simple_layout / auto_layout
+# Architectural meta-issue tracking the simple_layout / simple_layout
 # redesign that would unblock most KNOWN_LIMITATIONS at once:
 # https://github.com/dartworklabs/dartwork-mpl/issues/115
 
@@ -540,7 +539,7 @@ def _build_subfigures_2x1() -> Figure:
     matplotlib's ``fig.subfigures()`` partitions a parent figure into
     independent SubFigure children, each with its own GridSpec. This
     scenario verifies that ``dm.validate_figure`` and
-    ``dm.auto_layout`` do not crash or report spurious warnings on
+    ``dm.simple_layout`` do not crash or report spurious warnings on
     the SubFigure tree, which uses a different artist hierarchy from
     plain ``plt.subplots``.
     """
@@ -558,10 +557,10 @@ def _build_subfigures_2x1() -> Figure:
     return fig
 
 
-def _build_constrained_layout_then_auto_layout() -> Figure:
+def _build_constrained_layout_then_simple_layout() -> Figure:
     """A figure constructed with ``constrained_layout=True`` that the
-    suite then re-flows via ``auto_layout``. The expectation is that
-    auto_layout is a no-op (constrained-layout already balanced the
+    suite then re-flows via ``simple_layout``. The expectation is that
+    simple_layout is a no-op (constrained-layout already balanced the
     margins) and the figure saves cleanly. Verifies dartwork-mpl
     plays nicely with matplotlib's other layout engine."""
     import matplotlib.pyplot as plt
@@ -703,7 +702,7 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="long_xtick_labels_no_rotation",
         build=_build_long_xtick_labels_no_rotation,
-        # 25-char labels, no rotation — auto_layout should resolve
+        # 25-char labels, no rotation — simple_layout should resolve
         # any overflow without xfail. Baseline "happy path" for section A.
         expect_warnings=(),
         forbid_warnings=("OVERFLOW",),
@@ -725,7 +724,7 @@ SCENARIOS: list = [
         name="dense_xticks_50_categories",
         build=_build_dense_xticks_50_categories,
         # 50 ticks in 13 cm guarantees a TICK_CROWD info. After
-        # auto_layout we still have 50 ticks; the info is informational
+        # simple_layout we still have 50 ticks; the info is informational
         # and OVERFLOW must remain absent.
         expect_warnings=("TICK_CROWD",),
     ),
@@ -751,7 +750,7 @@ SCENARIOS: list = [
     RobustnessScenario(
         name="triple_axis_parasite",
         build=_build_triple_axis_parasite,
-        # Parasite axes use absolute pixel offsets that auto_layout
+        # Parasite axes use absolute pixel offsets that simple_layout
         # can't negotiate; the test only verifies "no crash + saveable",
         # so we tolerate residual OVERFLOW and skip pixel border checks.
         forbid_warnings=(),
@@ -761,20 +760,19 @@ SCENARIOS: list = [
         name="triple_twinx_offset_spine",
         build=_build_triple_twinx_offset_spine,
         # The offset spine pushes ax3's ylabel ~15% past the axes
-        # right edge. We start auto_layout with extra horizontal
+        # right edge. We start simple_layout with extra horizontal
         # padding so simple_layout's first iteration already gives
         # the offset ylabel room — convergence then satisfies the
         # 4 px white-border invariant without relying on the per-
         # iteration BUFFER scaling reaching the necessary depth.
-        auto_layout_padding=0.25,
-        auto_layout_max_iter=8,
+        layout_padding=0.25,
     ),
     # C. Margin / layout corner cases
     RobustnessScenario(
         name="extreme_left_squeeze",
         build=_build_extreme_left_squeeze,
         # MARGIN_ASYMMETRY is the whole point — must be flagged before
-        # auto_layout. simple_layout's scipy optimizer targets all four
+        # simple_layout. simple_layout's scipy optimizer targets all four
         # margins simultaneously, so it incidentally rebalances the
         # squeeze without a dedicated symmetry pass (that is Task 13).
         # No xfail needed.
@@ -796,12 +794,10 @@ SCENARIOS: list = [
         # Axes-fraction annotations move *with* the subplot; the
         # direct-calc loop converges within ``_MAX_ITER`` (8 in
         # practice), so no scenario-specific override is needed.
-        auto_layout_max_iter=15,
     ),
     RobustnessScenario(
         name="axes_fraction_text_below_zero",
         build=_build_axes_fraction_text_below_zero,
-        auto_layout_max_iter=15,
     ),
     RobustnessScenario(
         name="colorbar_below_axes", build=_build_colorbar_below_axes
@@ -811,7 +807,7 @@ SCENARIOS: list = [
         name="nan_only_y",
         build=_build_nan_only_y,
         # No data to plot but axes still has a Line2D artist → not empty.
-        # Must not crash anywhere in validate or auto_layout.
+        # Must not crash anywhere in validate or simple_layout.
         forbid_warnings=("OVERFLOW",),
     ),
     RobustnessScenario(name="inf_in_y", build=_build_inf_in_y),
@@ -875,30 +871,30 @@ SCENARIOS: list = [
         name="colorbar_attached_heatmap",
         build=_build_colorbar_attached_heatmap,
         # Colorbar + heatmap causes content to reach the canvas edge
-        # after auto_layout; the white-border invariant does not apply.
+        # after simple_layout; the white-border invariant does not apply.
         pixel_checks=(),
     ),
     RobustnessScenario(
         name="subfigures_2x1",
         build=_build_subfigures_2x1,
-        # auto_layout uses fig.axes[0].get_gridspec(); SubFigures wrap
+        # simple_layout uses fig.axes[0].get_gridspec(); SubFigures wrap
         # each child in its own GridSpec so the parent layout-engine's
         # edge padding does not propagate into them. The scenario still
-        # verifies validate_figure, auto_layout, and PNG round-trip,
+        # verifies validate_figure, simple_layout, and PNG round-trip,
         # but the global white-border invariant cannot hold here — same
         # limitation pattern as `colorbar_attached_heatmap`.
         forbid_warnings=("OVERFLOW",),
         pixel_checks=(),
     ),
     RobustnessScenario(
-        name="constrained_layout_then_auto_layout",
-        build=_build_constrained_layout_then_auto_layout,
+        name="constrained_layout_then_simple_layout",
+        build=_build_constrained_layout_then_simple_layout,
         # constrained_layout owns the margins and packs content tighter
-        # to the figure edge than auto_layout's BUFFER would. The
+        # to the figure edge than simple_layout's BUFFER would. The
         # global white-border invariant doesn't hold when an alternate
         # layout engine drove the original margins — same precedent as
         # `colorbar_attached_heatmap` and `subfigures_2x1`. The
-        # scenario still verifies validate_figure, auto_layout
+        # scenario still verifies validate_figure, simple_layout
         # idempotency, and the PNG round-trip.
         pixel_checks=(),
     ),

@@ -55,7 +55,7 @@ web, and dark mode. No manual `rcParams` guessing.
 :::
 
 :::{grid-item-card} **2. Add color**
-Use named colors like `"dc.corporate2"` or `"tw.emerald500"` anywhere matplotlib
+Use named colors like `"dc.teal2"` or `"tw.emerald500"` anywhere matplotlib
 accepts a color string. 900+ curated swatches from 6 design systems,
 plus perceptual OKLCH interpolation.
 

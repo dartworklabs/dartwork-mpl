@@ -964,7 +964,7 @@ L 254.583969 99.649786
 L 256.223764 99.517916 
 L 257.043661 99.531231 
 L 257.043661 99.531231 
-" clip-path="url(#p4adbd042b0)" style="fill: none; stroke: #fab1a7; stroke-width: 2.2; stroke-linecap: square"/>
+" clip-path="url(#p4adbd042b0)" style="fill: none; stroke: #129e8e; stroke-width: 2.2; stroke-linecap: square"/>
    </g>
    <g id="line2d_17">
     <path d="M 52.479258 37.302822 
@@ -995,7 +995,7 @@ L 232.446739 98.114988
 L 248.02479 99.070163 
 L 257.043661 99.531231 
 L 257.043661 99.531231 
-" clip-path="url(#p4adbd042b0)" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #9b94b4; stroke-width: 1.8"/>
+" clip-path="url(#p4adbd042b0)" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #2b88aa; stroke-width: 1.8"/>
    </g>
    <g id="line2d_18">
     <path d="M 52.479258 168.280643 
@@ -1026,7 +1026,7 @@ L 232.446739 107.468477
 L 248.02479 106.513301 
 L 257.043661 106.052233 
 L 257.043661 106.052233 
-" clip-path="url(#p4adbd042b0)" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #9b94b4; stroke-width: 1.8"/>
+" clip-path="url(#p4adbd042b0)" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #2b88aa; stroke-width: 1.8"/>
    </g>
    <g id="patch_3">
     <path d="M 42.251038 181.378425 
@@ -1456,7 +1456,7 @@ z
      <path d="M 214.621881 30.055039 
 L 221.121881 30.055039 
 L 227.621881 30.055039 
-" style="fill: none; stroke: #fab1a7; stroke-width: 2.2; stroke-linecap: square"/>
+" style="fill: none; stroke: #129e8e; stroke-width: 2.2; stroke-linecap: square"/>
     </g>
     <g id="text_20">
      <!-- Position $x(t)$ -->
@@ -1685,7 +1685,7 @@ z
      <path d="M 214.621881 38.850352 
 L 221.121881 38.850352 
 L 227.621881 38.850352 
-" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #9b94b4; stroke-width: 1.8"/>
+" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #2b88aa; stroke-width: 1.8"/>
     </g>
     <g id="text_21">
      <!-- Envelope -->

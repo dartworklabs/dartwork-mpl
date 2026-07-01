@@ -30,7 +30,7 @@ c = [15, 18, 22, 28]
 
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 x = np.arange(len(categories))
-ax.bar(x, a, label="A", color="dc.corporate2")
+ax.bar(x, a, label="A", color="dc.teal2")
 ax.bar(x, b, bottom=a, label="B", color="dc.forest2")
 bottom_c = [ai + bi for ai, bi in zip(a, b, strict=False)]
 ax.bar(x, c, bottom=bottom_c, label="C", color="dc.earth2")

@@ -40,6 +40,14 @@ class TestListPalettes:
             # The family name must not carry a trailing shade number.
             assert not name[-1].isdigit()
 
+    def test_includes_multiword_dc_palettes(self) -> None:
+        """Multi-word snake_case dc palettes (teal_indigo, teal_accent, …)
+        must appear in discovery — the underscore-blind regex used to drop
+        them even though ``get_palette`` resolves them fine."""
+        palettes = list_palettes()
+        for name in ("dc.teal_indigo", "dc.teal_accent", "dc.warm_gray"):
+            assert name in palettes, f"{name} missing from list_palettes()"
+
 
 class TestListColormaps:
     def test_only_dartwork_colormaps(self) -> None:

@@ -145,7 +145,7 @@ import dartwork_mpl as dm
 
 # Works with any matplotlib color name
 color1 = dm.color("red")
-color2 = dm.color("dc.corporate2")      # OpenColor palette
+color2 = dm.color("dc.teal2")      # OpenColor palette
 color3 = dm.color("tw.blue500")    # Tailwind colors
 ```
 
@@ -319,7 +319,7 @@ The function accepts Color objects or hex strings:
 ```python
 import dartwork_mpl as dm
 
-start = dm.color("dc.corporate2")
+start = dm.color("dc.teal2")
 end = dm.hex("#ff5733")
 gradient = dm.cspace(start, end, n=20, space="oklch")
 ```
@@ -435,7 +435,7 @@ mpl.colormaps.register(cmap=cmap)
 | Create from OKLCH     | `dm.oklch(L, C, h)` — h in degrees             |
 | Create from RGB       | `dm.rgb(r, g, b)` — auto-detects 0–1 vs 0–255  |
 | Create from hex       | `dm.hex("#ff5733")`                            |
-| Create from name      | `dm.color("dc.corporate2")` — also accepts hex / rgb(...) / oklch(...) / oklab(...) |
+| Create from name      | `dm.color("dc.teal2")` — also accepts hex / rgb(...) / oklch(...) / oklab(...) |
 | Convert to tuple      | `color.to_oklab()`, `.to_oklch()`, `.to_rgb()` |
 | Convert to hex        | `color.to_hex()`                               |
 | Read/write components | `color.oklch.C *= 1.2`, `color.rgb.r = 0.9`    |

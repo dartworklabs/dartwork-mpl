@@ -40,6 +40,11 @@ def optimize_legend(
     >>> optimize_legend(ax, preferred_loc="upper right")
     >>> optimize_legend(ax, outside=True)
     """
+    # ``edgecolor="oc.gray3"`` below needs the dartwork colours registered;
+    # don't depend on an import side effect having already loaded them.
+    from ..colors._loader import ensure_loaded
+
+    ensure_loaded()
     handles, _labels = ax.get_legend_handles_labels()
     if not handles:
         return

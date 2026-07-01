@@ -966,7 +966,7 @@ L 243.87495 99.56548
 L 245.456603 99.420404 
 L 246.24743 99.435054 
 L 246.24743 99.435054 
-" clip-path="url(#pab883d3ad3)" style="fill: none; stroke: #fab1a7; stroke-width: 2.2; stroke-linecap: square"/>
+" clip-path="url(#pab883d3ad3)" style="fill: none; stroke: #129e8e; stroke-width: 2.2; stroke-linecap: square"/>
    </g>
    <g id="line2d_17">
     <path d="M 48.936119 30.975091 
@@ -998,7 +998,7 @@ L 225.290517 98.08902
 L 239.920815 99.07287 
 L 246.24743 99.435054 
 L 246.24743 99.435054 
-" clip-path="url(#pab883d3ad3)" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #9b94b4; stroke-width: 1.8"/>
+" clip-path="url(#pab883d3ad3)" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #2b88aa; stroke-width: 1.8"/>
    </g>
    <g id="line2d_18">
     <path d="M 48.936119 175.069031 
@@ -1030,7 +1030,7 @@ L 225.290517 107.955102
 L 239.920815 106.971252 
 L 246.24743 106.609068 
 L 246.24743 106.609068 
-" clip-path="url(#pab883d3ad3)" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #9b94b4; stroke-width: 1.8"/>
+" clip-path="url(#pab883d3ad3)" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #2b88aa; stroke-width: 1.8"/>
    </g>
    <g id="patch_3">
     <path d="M 39.070553 189.478425 
@@ -1460,7 +1460,7 @@ z
      <path d="M 203.462996 22.415697 
 L 209.962996 22.415697 
 L 216.462996 22.415697 
-" style="fill: none; stroke: #fab1a7; stroke-width: 2.2; stroke-linecap: square"/>
+" style="fill: none; stroke: #129e8e; stroke-width: 2.2; stroke-linecap: square"/>
     </g>
     <g id="text_20">
      <!-- Position $x(t)$ -->
@@ -1689,7 +1689,7 @@ z
      <path d="M 203.462996 31.211009 
 L 209.962996 31.211009 
 L 216.462996 31.211009 
-" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #9b94b4; stroke-width: 1.8"/>
+" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #2b88aa; stroke-width: 1.8"/>
     </g>
     <g id="text_21">
      <!-- Envelope -->

@@ -27,7 +27,7 @@ volume = (
 ).astype(int)
 target = 115.0
 
-price_color = dm.color("dc.corporate5").to_hex()
+price_color = dm.color("dc.teal5").to_hex()
 vol_color = dm.color("oc.gray5").to_hex()
 
 fig, ax_price = plt.subplots(figsize=dm.figsize("15cm", "standard"))

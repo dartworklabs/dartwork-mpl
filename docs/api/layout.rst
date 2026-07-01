@@ -17,7 +17,7 @@ Example
 
    fig, axes = plt.subplots(1, 3, figsize=dm.figsize(dm.col2, 0.35))
    for ax in axes:
-       ax.plot(np.linspace(0, 1, 40), np.random.rand(40), color='dc.corporate3')
+       ax.plot(np.linspace(0, 1, 40), np.random.rand(40), color='dc.teal3')
 
    # Panel labels
    dm.label_axes(axes)  # adds a, b, c
@@ -50,7 +50,6 @@ Layout Functions
    :doc:`../migration`.
 
 .. autofunction:: dartwork_mpl.simple_layout
-.. autofunction:: dartwork_mpl.auto_layout
 
 Annotation Functions
 ^^^^^^^^^^^^^^^^^^^^

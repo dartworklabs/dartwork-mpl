@@ -79,7 +79,7 @@ for i in range(n_particles):
         particles_y[i],
         s=20,
         c=[color.to_hex()],
-        edgecolors="dc.muted1",
+        edgecolors="dc.teal_indigo1",
         linewidths=0.4,
         alpha=0.95,
         zorder=10,
@@ -89,19 +89,15 @@ for wx, wy, strength in wells:
     for r, alpha in [(2, 0.08), (1.5, 0.14), (1, 0.22)]:
         ax.add_patch(
             Circle(
-                (wx, wy),
-                r * strength,
-                color="dc.corporate5",
-                alpha=alpha,
-                zorder=5,
+                (wx, wy), r * strength, color="dc.teal5", alpha=alpha, zorder=5
             )
         )
     ax.add_patch(
         Circle(
             (wx, wy),
             0.3,
-            facecolor="dc.muted1",
-            edgecolor="dc.corporate5",
+            facecolor="dc.teal_indigo1",
+            edgecolor="dc.teal5",
             linewidth=dm.lw(0),
             zorder=15,
         )
@@ -119,11 +115,11 @@ title = ax.text(
     "Gravitational Particle Dynamics",
     ha="center",
     fontsize=dm.fs(3),
-    color="dc.corporate5",
+    color="dc.teal5",
     weight="bold",
 )
 title.set_path_effects(
-    [path_effects.withStroke(linewidth=dm.lw(0), foreground="dc.muted1")]
+    [path_effects.withStroke(linewidth=dm.lw(0), foreground="dc.teal_indigo1")]
 )
 
 dm.simple_layout(fig)

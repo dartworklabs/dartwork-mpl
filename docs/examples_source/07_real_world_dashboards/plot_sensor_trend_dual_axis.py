@@ -32,7 +32,7 @@ change_pct = np.concatenate(
 fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "wide"))
 
 x = np.arange(len(periods))
-ax.bar(x, temperature, color="dc.corporate2", alpha=0.85, width=0.55)
+ax.bar(x, temperature, color="dc.teal2", alpha=0.85, width=0.55)
 ax.set_xticks(x)
 ax.set_xticklabels(periods)
 ax.set_xlabel("Time", fontsize=dm.fs(0))

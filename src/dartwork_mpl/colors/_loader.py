@@ -88,14 +88,30 @@ def _load_json_palette(
     return result
 
 
-# (prefix, filename) pairs for JSON-based palettes.
+# Single source of truth for every bundled colour library:
+#   (key, prefix, filename, label).
+# ``key`` is the stable id used for display order; ``prefix`` is the matplotlib
+# name prefix — note Ant / Chakra / Primer register under ``ad.`` / ``cu.`` /
+# ``pr.`` respectively; ``filename`` lives in ``asset/color/``. Consumers (this
+# loader, the docs asset generator, diagnostics, the MCP server) derive their
+# prefix / label / order lists from this list instead of re-hardcoding them.
+COLOR_LIBRARIES: list[tuple[str, str, str, str]] = [
+    ("dc", "dc.", "dc_palettes.json", "dartwork Color"),
+    ("opencolor", "oc.", "opencolor.txt", "OpenColor"),
+    ("tw", "tw.", "tailwind_colors.json", "Tailwind"),
+    ("md", "md.", "material_colors.json", "Material Design"),
+    ("ant", "ad.", "ant_colors.json", "Ant Design"),
+    ("chakra", "cu.", "chakra_colors.json", "Chakra UI"),
+    ("primer", "pr.", "primer_colors.json", "Primer"),
+]
+
+# (prefix, filename) for the JSON-based palettes — derived from the SSOT above
+# (Open Color is a ``.txt`` loaded separately). Prefixes are distinct, so the
+# registration order here is not significant.
 _JSON_PALETTES: list[tuple[str, str]] = [
-    ("tw", "tailwind_colors.json"),
-    ("md", "material_colors.json"),
-    ("ad", "ant_colors.json"),
-    ("cu", "chakra_colors.json"),
-    ("pr", "primer_colors.json"),
-    ("dc", "dc_palettes.json"),
+    (prefix.rstrip("."), filename)
+    for _key, prefix, filename, _label in COLOR_LIBRARIES
+    if filename.endswith(".json")
 ]
 
 

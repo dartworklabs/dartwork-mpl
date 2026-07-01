@@ -80,7 +80,7 @@ Generate a complete Python script that creates the following plot:
    `fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))`.
    `dm.figsize(width, aspect)` accepts `width` as a unit string (`"13cm"`, `"5in"`, `"170mm"`, `"24pt"`) or a `Length` value (`dm.cm(13)`, `dm.col1`, `dm.col2`). Bare `int` / `float` are rejected (lint id `raw-width-number`). The second argument picks the height in one of four equivalent forms — an aspect token in `square / portrait / standard / golden / wide / cinema`, a positive float ratio (`0.6`), a unit-string height (`"12cm"`), or a `Length` height (`dm.cm(12)`).
 3. **No raw `figsize=(w, h)` tuple** and no `dpi=` argument on `plt.subplots` / `plt.figure` (lint ids `figsize-direct`, `dpi-arg`). Always go through `dm.figsize`; dpi is governed by the active style preset.
-4. **Layout**: Call `dm.simple_layout(fig)` after data is plotted. The default snaps axes content flush against figure edges; pass `margin="2%"` (or `dm.mm(2)`, `dm.cm(0.5)`) for a uniform buffer, or `ml/mr/mt/mb` for per-side overrides. Do NOT call `tight_layout` (lint id `tight-layout`). The historical `dm.auto_layout` is a deprecated alias.
+4. **Layout**: Call `dm.simple_layout(fig)` after data is plotted. The default snaps axes content flush against figure edges; pass `margin="2%"` (or `dm.mm(2)`, `dm.cm(0.5)`) for a uniform buffer, or `ml/mr/mt/mb` for per-side overrides. Do NOT call `tight_layout` (lint id `tight-layout`). `dm.auto_layout` was removed in 0.5.4 — use `dm.simple_layout`.
 5. **Style**: apply via `dm.style.use("scientific")` (or `dm.style.stack([...])` for a stack). No `plt.style.use` anywhere (lint id `plt-style-use`).
 6. **Colors**: prefer named palettes — `oc.*` (Open Color), `tw.*` (Tailwind), `dc.*` (dartwork core), `md.*`, `ad.*`, `cu.*`, `pr.*`. Raw hex works but triggers a lint info.
 7. **Fonts / weights / line widths**: do NOT pass literal `fontsize=` numbers. Use `dm.fs(n)` / `dm.fw(n)` / `dm.lw(n)` offsets from the active style.
@@ -107,7 +107,7 @@ Apply via `dm.style.use("scientific")` (or `dm.style.stack([...])` for a stack).
 - `dartwork-mpl://guide/recipes` — intent → function-call cookbook
 - `dartwork-mpl://guide/anti-patterns` — machine-readable lint catalog
 - `dartwork-mpl://templates/{{plot_type}}` — bundled tier-1 (minimal) starter scripts
-- `dartwork-mpl://template/advanced/{{plot_type}}` — tier-2 narrative templates with reference lines, value labels, source footnote
+- `dartwork-mpl://templates/advanced/{{plot_type}}` — tier-2 narrative templates with reference lines, value labels, source footnote
 
 ## Pre-flight tool calls (recommended)
 
@@ -178,8 +178,8 @@ dm.style.use("scientific")
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 
 # Named colors + preset-relative line width.
-ax.plot(x, y, color="dc.corporate2", linewidth=dm.lw(0), label="Series A")
-ax.scatter(x, y, color="dc.corporate5", edgecolor="white",
+ax.plot(x, y, color="dc.teal2", linewidth=dm.lw(0), label="Series A")
+ax.scatter(x, y, color="dc.teal5", edgecolor="white",
            linewidth=0.3, s=20)
 
 # Tick / legend / annotation text — one step below the body size.
@@ -207,7 +207,7 @@ dm.style.use("scientific")
 # ... your data here ...
 
 # Magnitude-encoding gradient.
-gradient = dm.cspace("dc.corporate5", "dc.corporate1", n=len(values))
+gradient = dm.cspace("dc.teal5", "dc.teal1", n=len(values))
 colors = [c.to_hex() for c in gradient]
 
 fig, ax = plt.subplots(figsize=dm.figsize(dm.col1, "standard"))

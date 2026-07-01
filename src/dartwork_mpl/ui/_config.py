@@ -1,15 +1,13 @@
 """Configuration persistence for the Dartwork UI module.
 
-Handles saving/loading the current parameter state and maintaining
-an append-only history file in the working directory.
+Handles saving/loading the current parameter state and named presets
+in the working directory.
 
 Files created (in CWD):
     ``.dartwork_ui_config.json``
         Last-used parameter set — auto-loaded on startup.
     ``.dartwork_ui_presets.json``
         Named presets saved by the user (JSON array).
-    ``.dartwork_ui_history.jsonl``
-        Legacy append-only log (kept for backward compat).
 """
 
 import contextlib
@@ -47,14 +45,13 @@ def _atomic_write_text(path: Path, text: str) -> None:
 # Default file names
 CONFIG_FILENAME = ".dartwork_ui_config.json"
 PRESET_FILENAME = ".dartwork_ui_presets.json"
-HISTORY_FILENAME = ".dartwork_ui_history.jsonl"
 
 # Base directory — set to the script's parent directory by ui.run()
 _base_dir: Path | None = None
 
 
 def set_base_dir(path: Path) -> None:
-    """Set the base directory for config and history files.
+    """Set the base directory for config and preset files.
 
     Called by ``ui.run()`` with the script's parent directory so that
     files are stored next to the user script rather than in the CWD.
@@ -101,17 +98,6 @@ def _preset_path() -> Path:
         Path to ``.dartwork_ui_presets.json``.
     """
     return _get_base_dir() / PRESET_FILENAME
-
-
-def _history_path() -> Path:
-    """Return the full path to the history file.
-
-    Returns
-    ----------
-    Path
-        Path to ``.dartwork_ui_history.jsonl``.
-    """
-    return _get_base_dir() / HISTORY_FILENAME
 
 
 # ============================================================================
@@ -263,63 +249,6 @@ def _write_preset_file(presets: list[dict[str, Any]]) -> None:
     _atomic_write_text(
         _preset_path(), json.dumps(presets, indent=2, ensure_ascii=False) + "\n"
     )
-
-
-# ============================================================================
-# History — legacy (kept for backward compatibility)
-# ============================================================================
-
-
-def append_history(params: dict[str, Any], label: str | None = None) -> None:
-    """Append a parameter snapshot to ``.dartwork_ui_history.jsonl``.
-
-    .. deprecated::
-        Use :func:`save_preset` for named presets instead.
-
-    Parameters
-    ----------
-    params : dict
-        Parameter values.
-    label : str, optional
-        User-defined label for this snapshot (preset name).
-    """
-    record: dict[str, Any] = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "params": _serializable(params),
-    }
-    if label:
-        record["label"] = label
-
-    with open(_history_path(), "a", encoding="utf-8") as f:
-        f.write(json.dumps(record, ensure_ascii=False) + "\n")
-
-
-def load_history() -> list[dict[str, Any]]:
-    """Load all history records.
-
-    .. deprecated::
-        Use :func:`load_presets` instead.
-
-    Returns
-    -------
-    list[dict]
-        Each dict has ``timestamp``, ``params``,
-        and optionally ``label``.
-    """
-    path = _history_path()
-    if not path.exists():
-        return []
-
-    records: list[dict[str, Any]] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            records.append(json.loads(line))
-        except json.JSONDecodeError:
-            continue
-    return records
 
 
 # ============================================================================

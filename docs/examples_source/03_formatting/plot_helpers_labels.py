@@ -24,7 +24,7 @@ def _minimal(ax: plt.Axes) -> None:
         True,
         axis="y",
         alpha=0.2,
-        color="dc.muted1",
+        color="dc.teal_indigo1",
         linestyle="--",
         linewidth=0.5,
     )
@@ -47,7 +47,7 @@ y2 = np.cos(x) * np.exp(-x / 10)
 
 # Format axis labels from name + unit.
 ax1 = axes[0, 0]
-ax1.plot(x, y1, color="dc.corporate2", lw=dm.lw(1))
+ax1.plot(x, y1, color="dc.teal2", lw=dm.lw(1))
 ax1.set_xlabel("Time (seconds)", fontsize=dm.fs(0))
 ax1.set_ylabel("Amplitude (mV)", fontsize=dm.fs(0))
 ax1.set_title("Auto-Formatted Labels", fontsize=dm.fs(1))
@@ -55,7 +55,7 @@ _minimal(ax1)
 
 # Optimized legend placement.
 ax2 = axes[0, 1]
-ax2.plot(x, y1, color="dc.spectrum2", label="Signal A", lw=dm.lw(1))
+ax2.plot(x, y1, color="dc.bold2", label="Signal A", lw=dm.lw(1))
 ax2.plot(x, y2, color="dc.forest2", label="Signal B", lw=dm.lw(1))
 ax2.fill_between(x[40:60], -0.5, 0.5, alpha=0.3, color="gray", label="Region")
 dm.helpers.labels.optimize_legend(ax2, preferred_loc="best")
@@ -79,7 +79,7 @@ for xi, yi in zip(x_points, y_points, strict=False):
         ha="center",
         va="bottom",
         fontsize=dm.fs(-1),
-        color="dc.muted3",
+        color="dc.teal_indigo3",
     )
 ax3.set_title("Value Labels on Bars", fontsize=dm.fs(1))
 ax3.set_xlabel("Category", fontsize=dm.fs(0))

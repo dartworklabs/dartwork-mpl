@@ -33,7 +33,7 @@ series = {
     "Field": [54, 48, 52, 55],
 }
 series_names = list(series.keys())
-gradient = dm.cspace("dc.corporate5", "dc.corporate2", n=len(series_names))
+gradient = dm.cspace("dc.teal5", "dc.teal2", n=len(series_names))
 colors = [c.to_hex() for c in gradient]
 
 x = np.arange(len(categories))
@@ -77,7 +77,7 @@ for q, total in enumerate(totals):
         va="bottom",
         fontsize=dm.fs(-1),
         fontweight=dm.fw(1),
-        color="dc.corporate5",
+        color="dc.teal5",
     )
 
 ax.set_xticks(x)

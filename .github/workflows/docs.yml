@@ -17,6 +17,11 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Pin the docs build to a single modern interpreter (see ci.yml docs job):
+    # `uv sync` otherwise floats to the requires-python floor (3.10), whose
+    # gallery execution hit an environment-specific failure 3.11+ does not.
+    env:
+      UV_PYTHON: "3.12"
     steps:
       - uses: actions/checkout@v6
 

@@ -61,10 +61,7 @@ def _save_layout_example(images_dir: Path) -> Path:
 
     for ax in [ax1, ax2, ax3]:
         ax.plot(
-            np.linspace(0, 1, 40),
-            np.random.rand(40),
-            color="dc.corporate3",
-            lw=0.8,
+            np.linspace(0, 1, 40), np.random.rand(40), color="dc.teal3", lw=0.8
         )
 
     # Hide the 4th subplot (bottom-right)

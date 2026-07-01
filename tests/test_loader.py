@@ -78,11 +78,19 @@ class TestEnsureLoaded:
         assert "dc.5" in mapping
 
     def test_dc_palette_count(self) -> None:
-        """24 curated × 8 + 8 default = 200."""
+        """24 curated × 8 + 8 default = 200 (legacy palettes removed in 0.5)."""
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
         dc_keys = [k for k in mapping if k.startswith("dc.")]
         assert len(dc_keys) == 200
+
+    def test_legacy_aliases_removed(self) -> None:
+        """The old ad-hoc palette names were removed in 0.5 — they must not
+        resolve (docs/examples/templates migrated to curated palettes)."""
+        ensure_loaded()
+        mapping = mcolors.get_named_colors_mapping()
+        for name in ("dc.vivid2", "dc.ocean2", "dc.nordic0", "dc.cyber3"):
+            assert name not in mapping
 
     def test_dc_color_values_are_hex(self) -> None:
         """dc.* colours are valid hex strings."""

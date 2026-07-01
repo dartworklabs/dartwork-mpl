@@ -29,9 +29,9 @@ precip = [50, 40, 45, 55, 70, 80, 90, 85, 65, 60, 55, 50]
 
 fig, ax1 = plt.subplots(figsize=dm.figsize("15cm", "wide"))
 ax2 = ax1.twinx()
-ax1.bar(x, precip, color="dc.corporate1", alpha=0.7, label="Precipitation")
+ax1.bar(x, precip, color="dc.teal1", alpha=0.7, label="Precipitation")
 ax2.plot(
-    x, temp, color="dc.spectrum3", marker="o", markersize=3, label="Temperature"
+    x, temp, color="dc.bold3", marker="o", markersize=3, label="Temperature"
 )
 ax1.set_xlabel("Month")
 ax1.set_ylabel("Precipitation (mm)")

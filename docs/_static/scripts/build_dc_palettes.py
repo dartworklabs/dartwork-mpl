@@ -3,11 +3,19 @@
 
 Reads ``dm_palettes_gen.json`` (24 CIELAB-generated + B&W/CVD-verified palettes,
 the colour SSOT) and writes ``src/dartwork_mpl/asset/color/dc_palettes.json`` in
-the loader's schema ``{"<PascalName>": [[weight, "HEXNOHASH"], ...]}``.
+the loader's schema ``{"<snake_name>": [[weight, "HEXNOHASH"], ...]}``.
 
-Decision A (supersede): the 24 curated palettes REPLACE the old ad-hoc dc set
-(Vivid/Sunset/Ocean/Forest/Pop/Cyber/Autumn/Nordic).
-Decision B (repoint default): the unnamed "" palette (→ dc.0..7, the shared
+The generator names palettes by internal semantics (``teal_seq``, ``focus``,
+``muted``, …); the package exposes them under clean public ``dc.<name>`` keys
+(``teal``, ``teal_accent``, ``pastel``, …). ``NAME`` below is that translation
+boundary — the rename SSOT. Keep it in sync with ``dc_palettes.json`` and
+``categorical_explorer_data.js``; regenerating must reproduce the committed
+``dc_palettes.json`` byte-for-byte.
+
+The 24 curated palettes are the only public dc palettes. The old ad-hoc set
+(Vivid/Sunset/Ocean/Pop/Cyber/Autumn/Nordic) was removed in 0.5 — all docs
+examples and templates now use curated names.
+Default (repoint): the unnamed "" palette (→ dc.0..7, the shared
 ``axes.prop_cycle``) is set to ``trustworthy`` — the everyday default.
 
 Run after gen_palettes.py:  python3 build_dc_palettes.py
@@ -27,32 +35,33 @@ PKG_JSON = (
     ROOT / "src" / "dartwork_mpl" / "asset" / "color" / "dc_palettes.json"
 )
 
-# explorer key -> PascalCase JSON key (lowercases+despaces to a clean dc.<name>)
+# generator key -> public snake_case dc.<name> key (rename SSOT; identity where
+# the generator name already reads well, renamed where the public API differs)
 NAME = {
-    "teal_seq": "TealSeq",
-    "indigo_seq": "IndigoSeq",
-    "coral_seq": "CoralSeq",
-    "teal_indigo": "TealIndigo",
-    "forest": "Forest",
-    "warm_cool": "WarmCool",
-    "blue_orange": "BlueOrange",
-    "teal_coral": "TealCoral",
-    "trustworthy": "Trustworthy",
-    "corporate": "Corporate",
-    "gray_seq": "GraySeq",
-    "warm_gray": "WarmGray",
-    "cool_gray": "CoolGray",
-    "focus": "Focus",
-    "focus_warm": "FocusWarm",
-    "muted": "Muted",
-    "dusty": "Dusty",
-    "spectrum": "Spectrum",
-    "bold": "Bold",
-    "coolwarm": "Coolwarm",
-    "teal_amber_div": "TealAmber",
-    "earth": "Earth",
-    "jewel": "Jewel",
-    "accessible": "Accessible",
+    "teal_seq": "teal",
+    "indigo_seq": "indigo",
+    "coral_seq": "coral",
+    "teal_indigo": "teal_indigo",
+    "forest": "forest",
+    "warm_cool": "warm_cool",
+    "blue_orange": "blue_orange",
+    "teal_coral": "teal_coral",
+    "trustworthy": "trustworthy",
+    "corporate": "corporate",
+    "gray_seq": "gray",
+    "warm_gray": "warm_gray",
+    "cool_gray": "cool_gray",
+    "focus": "teal_accent",
+    "focus_warm": "coral_accent",
+    "muted": "pastel",
+    "dusty": "dusty",
+    "spectrum": "spectrum",
+    "bold": "bold",
+    "coolwarm": "coolwarm",
+    "teal_amber_div": "teal_amber",
+    "earth": "earth",
+    "jewel": "jewel",
+    "accessible": "accessible",
 }
 # emission order (spectral-width spine then intent families), for readability
 ORDER = [
@@ -94,7 +103,7 @@ def main() -> None:
         raise SystemExit(f"generator output missing palettes: {missing}")
 
     out: dict[str, list] = {}
-    # default cycle (dc.0..7) = trustworthy (Decision B)
+    # default cycle (dc.0..7) = trustworthy
     out[""] = _rows(gen["trustworthy"]["colors"])
     for key in ORDER:
         out[NAME[key]] = _rows(gen[key]["colors"])

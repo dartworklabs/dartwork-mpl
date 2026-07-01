@@ -6,7 +6,7 @@ Each entry in scenarios.SCENARIOS is run through the same pipeline:
     1. Build the figure via the scenario's builder function.
     2. Run dm.validate_figure pre-layout and check that
        scenario.expect_warnings substrings appear in the warning ids.
-    3. Apply dm.auto_layout to give the layout a chance to converge.
+    3. Apply dm.simple_layout to give the layout a chance to converge.
     4. Save to PNG via dm.save_formats(validate=False) so we know the
        saved bytes are well-formed.
     5. Re-run dm.validate_figure post-layout and check that
@@ -66,14 +66,14 @@ def test_robustness_scenario(
             f"{must_have!r} in {pre_ids!r}"
         )
 
-    # Stage 2: layout convergence. The ``auto_layout_padding`` field
-    # is in inches (legacy ``auto_layout`` semantics); convert to a
+    # Stage 2: layout convergence. The ``layout_padding`` field
+    # is in inches (legacy ``simple_layout`` semantics); convert to a
     # :class:`~dartwork_mpl.Length` so the new ``simple_layout`` keeps
-    # the same physical margin. ``auto_layout_max_iter`` no longer
+    # the same physical margin. ``simple_layout_max_iter`` no longer
     # has an effect — direct-calc converges deterministically.
     margin = (
-        dm.Length.from_inch(scenario.auto_layout_padding)
-        if scenario.auto_layout_padding
+        dm.Length.from_inch(scenario.layout_padding)
+        if scenario.layout_padding
         else 0
     )
     dm.simple_layout(fig, margin=margin)

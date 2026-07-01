@@ -38,10 +38,8 @@ def register_resources(mcp: FastMCP) -> None:
 
     # ── Guide Resources ──────────────────────────────────────────────
     #
-    # 0.4 SSOT layout (asset/prompt/00-index, 01-policy, 02-anti-patterns,
-    # 03-recipes, 05-templates, _legacy). The legacy general-guide /
-    # layout-guide URIs are retained for back-compat — they delegate to
-    # 00-index and to a layout-focused passage of 01-policy respectively.
+    # SSOT layout (asset/prompt/00-index, 01-policy, 02-anti-patterns,
+    # 03-recipes, 05-templates, _legacy).
 
     @mcp.resource("dartwork-mpl://guide/agent-entry")
     def agent_entry() -> str:
@@ -65,16 +63,6 @@ def register_resources(mcp: FastMCP) -> None:
     def recipes() -> str:
         """Intent → function-call cookbook."""
         return get_prompt("03-recipes")
-
-    @mcp.resource("dartwork-mpl://guide/general-guide")
-    def general_guide() -> str:
-        """DEPRECATED alias for guide/agent-entry."""
-        return get_prompt("00-index")
-
-    @mcp.resource("dartwork-mpl://guide/layout-guide")
-    def layout_guide() -> str:
-        """DEPRECATED alias for guide/policy (kept for 0.3 clients)."""
-        return get_prompt("01-policy")
 
     @mcp.resource("dartwork-mpl://guide/migration")
     def migration_guide() -> str:
@@ -131,17 +119,17 @@ def register_resources(mcp: FastMCP) -> None:
     def palette_colors() -> str:
         """Get the full list of dartwork-mpl registered colors with hex codes.
 
-        Returns a JSON object where keys are color names (e.g. 'dc.blue500')
+        Returns a JSON object where keys are color names (e.g. 'dc.trustworthy0')
         and values are hex codes. Only dartwork-mpl prefixed colors are included:
         dc.*, tw.*, md.*, ad.*, cu.*, pr.*, oc.*
         """
+        from ..colors._loader import COLOR_LIBRARIES
+
+        prefixes = [prefix for _key, prefix, _fn, _label in COLOR_LIBRARIES]
         colors = {
             k: mcolors.to_hex(v)
             for k, v in mcolors.get_named_colors_mapping().items()
-            if any(
-                k.startswith(prefix)
-                for prefix in ["dc.", "tw.", "md.", "ad.", "cu.", "pr.", "oc."]
-            )
+            if any(k.startswith(prefix) for prefix in prefixes)
         }
         return json.dumps(colors, indent=2)
 
@@ -213,3 +201,21 @@ def register_resources(mcp: FastMCP) -> None:
             available = sorted(p.stem for p in _TEMPLATE_DIR.glob("*.py"))
             return f"No template for {plot_type!r}. Available: {available}"
         return path.read_text(encoding="utf-8")
+
+    @mcp.resource("dartwork-mpl://templates/advanced/{plot_type}")
+    def plot_templates_advanced(plot_type: str) -> str:
+        """Get the bundled tier-2 (advanced) template for a plot type.
+
+        The advanced tier adds synthetic data, reference lines, value
+        labels, a narrative title, and a source footnote. Falls back to
+        the basic template if no advanced version exists yet — so the
+        ``suggest_chart_type`` / ``create_plot`` URIs always resolve.
+        """
+        advanced = _TEMPLATE_DIR / "advanced" / f"{plot_type.lower()}.py"
+        if advanced.exists():
+            return advanced.read_text(encoding="utf-8")
+        basic = _TEMPLATE_DIR / f"{plot_type.lower()}.py"
+        if basic.exists():
+            return basic.read_text(encoding="utf-8")
+        available = sorted(p.stem for p in _TEMPLATE_DIR.glob("*.py"))
+        return f"No template for {plot_type!r}. Available: {available}"

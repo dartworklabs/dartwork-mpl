@@ -108,7 +108,7 @@ def generate_chart_context() -> None:
         x + w / 2,
         overhead,
         w,
-        color="dc.muted2",
+        color="dc.teal_indigo2",
         label="Overhead",
         edgecolor="white",
         linewidth=0.5,

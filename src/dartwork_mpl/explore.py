@@ -55,9 +55,7 @@ def list_palettes() -> list[str]:
     colors: list[str] = _get_all_colors()
     palettes: set[str] = set()
     # match prefix.name + digits
-    pattern: re.Pattern[str] = re.compile(
-        r"^([a-z]+)\.([a-z]+(?:\-[a-z]+)?)\d+$"
-    )
+    pattern: re.Pattern[str] = re.compile(r"^([a-z]+)\.([a-z][a-z_]*)\d+$")
     for c in colors:
         match = pattern.match(c)
         if match:

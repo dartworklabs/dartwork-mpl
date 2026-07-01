@@ -8,7 +8,7 @@ circles, and a second ring of twelve circles whose centres lie on
 intersections of the first ring.
 
 This example pairs precise geometric primitives with
-``dm.cspace("dc.bold5", "dc.corporate1", n=19, space="oklch")`` so the
+``dm.cspace("dc.jewel5", "dc.teal1", n=19, space="oklch")`` so the
 colour ramp is perceptually uniform.
 """
 
@@ -75,7 +75,7 @@ def draw_flower_of_life(ax, center, radius, levels, colors):
             )
 
 
-colors_sacred = dm.cspace("dc.bold5", "dc.corporate1", n=19, space="oklch")
+colors_sacred = dm.cspace("dc.jewel5", "dc.teal1", n=19, space="oklch")
 
 draw_flower_of_life(ax, (0, 0), 1, 2, colors_sacred)
 
@@ -94,7 +94,7 @@ for i in range(7):
             fill=True,
             facecolor=colors_sacred[i].to_hex(),
             alpha=0.18,
-            edgecolor="dc.corporate1",
+            edgecolor="dc.teal1",
             linewidth=dm.lw(-1),
         )
     )
@@ -111,7 +111,7 @@ ax.text(
     "Flower of Life",
     ha="center",
     fontsize=dm.fs(3),
-    color="dc.corporate5",
+    color="dc.teal5",
     weight="bold",
 )
 ax.text(
@@ -120,7 +120,7 @@ ax.text(
     "Sacred Geometry",
     ha="center",
     fontsize=dm.fs(0),
-    color="dc.muted5",
+    color="dc.teal_indigo5",
     style="italic",
 )
 

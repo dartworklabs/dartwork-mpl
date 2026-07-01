@@ -83,7 +83,6 @@ from .io import save_and_show, save_formats, show
 # Layout
 from .layout import (
     adopt_axis_label_font,
-    auto_layout,
     get_bounding_box,
     simple_layout,
     tight_crop,
@@ -186,7 +185,6 @@ __all__ = [  # noqa: RUF022
     "lw",
     # Layout
     "adopt_axis_label_font",
-    "auto_layout",
     "simple_layout",
     "tight_crop",
     "get_bounding_box",
@@ -316,6 +314,12 @@ _REMOVED_NAMES: dict[str, tuple[str, str]] = {
         "dm.helpers (the agent_utils module was renamed to helpers)",
     ),
     "xplot": ("0.4", "dm.templates (e.g. dm.templates.plot_diverging_bar)"),
+    "auto_layout": (
+        "0.5.4",
+        "dm.simple_layout(fig, margin=...) (the legacy `padding` inches "
+        "argument maps to `margin`; `max_iter`/`tolerance` are obsolete — "
+        "simple_layout is direct-calc)",
+    ),
     "install_llm_txt": (
         "0.5",
         "dm.agent_doc_path(name) / dm.get_agent_doc(name), or the MCP "

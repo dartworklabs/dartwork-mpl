@@ -36,7 +36,7 @@ fig, axes = plt.subplots(
     2, 2, figsize=dm.figsize("17cm", "standard"), sharex=True, sharey=True
 )
 for ax, (label, y) in zip(axes.flat, panels, strict=False):
-    ax.plot(x, y, color="dc.corporate3", linewidth=dm.lw(0))
+    ax.plot(x, y, color="dc.teal3", linewidth=dm.lw(0))
     ax.set_xlabel("x")
     ax.set_ylabel(label)
     ax.text(

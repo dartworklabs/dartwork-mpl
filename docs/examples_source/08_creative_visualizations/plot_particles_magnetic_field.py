@@ -71,9 +71,7 @@ for i in range(n_filings):
     if b_mag > 0.1:
         bx, by = bx / b_mag, by / b_mag
         color_intensity = min(1, b_mag / 3)
-        color = dm.mix_colors(
-            "dc.corporate1", "dc.spectrum3", alpha=color_intensity
-        )
+        color = dm.mix_colors("dc.teal1", "dc.bold3", alpha=color_intensity)
         length = 0.1
         ax.plot(
             [filings_x[i] - bx * length / 2, filings_x[i] + bx * length / 2],
@@ -109,7 +107,7 @@ for dipole in dipoles:
         Circle(
             n_pos,
             0.3,
-            color="dc.spectrum2",
+            color="dc.bold2",
             edgecolor="white",
             linewidth=dm.lw(0),
             zorder=20,
@@ -129,7 +127,7 @@ for dipole in dipoles:
         Circle(
             s_pos,
             0.3,
-            color="dc.corporate2",
+            color="dc.teal2",
             edgecolor="white",
             linewidth=dm.lw(0),
             zorder=20,
@@ -150,7 +148,7 @@ ax.set_ylim(-5, 5)
 ax.set_aspect("equal")
 for s in ax.spines.values():
     s.set_visible(False)
-ax.set_facecolor("dc.muted0")
+ax.set_facecolor("dc.teal_indigo0")
 
 ax.text(
     0,

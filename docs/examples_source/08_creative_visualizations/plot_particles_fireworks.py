@@ -119,14 +119,14 @@ ax.scatter(
     marker="*",
 )
 
-ax.fill_between([-10, 10], -2, -2, color="dc.corporate5", alpha=0.3)
+ax.fill_between([-10, 10], -2, -2, color="dc.teal5", alpha=0.3)
 
 ax.set_xlim(-10, 10)
 ax.set_ylim(-2, 10)
 ax.set_aspect("equal")
 for s in ax.spines.values():
     s.set_visible(False)
-ax.set_facecolor("dc.muted5")
+ax.set_facecolor("dc.teal_indigo5")
 
 ax.text(
     0,

@@ -14,7 +14,7 @@ color.
 
 | Prefix  | Library                          | Example         |
 | ------- | -------------------------------- | --------------- |
-| `dc.*`  | **dartwork Color (recommended)** — 8 mood palettes (`vivid`, `autumn`, `cyber`, `forest`, `nordic`, `ocean`, `pop`, `sunset`) × 6 shades each | `dc.corporate3`     |
+| `dc.*`  | **dartwork Color (recommended)** — 8 mood palettes (`vivid`, `autumn`, `cyber`, `forest`, `nordic`, `ocean`, `pop`, `sunset`) × 6 shades each | `dc.teal3`     |
 | `dm.*`  | Alias of `dc.*` (legacy)         | `dm.ocean3`     |
 | `oc.*`  | OpenColor                        | `oc.blue5`      |
 | `tw.*`  | Tailwind CSS                     | `tw.blue500`    |
@@ -40,10 +40,10 @@ dm.style.use("presentation")
 
 fig, ax = plt.subplots(figsize=dm.figsize("8cm", "wide"))
 ax.plot([0, 1, 2], [1, 2, 1.5], marker="o", color="dc.forest2", label="dc.forest2")
-ax.plot([0, 1, 2], [1.2, 1.6, 2.1], marker="s", color="dc.corporate3", label="dc.corporate3")
+ax.plot([0, 1, 2], [1.2, 1.6, 2.1], marker="s", color="dc.teal3", label="dc.teal3")
 highlight = dm.mix_colors("dc.earth1", "white", alpha=0.45)
 ax.fill_between([0, 1, 2], 0.9, 1.3, color=highlight, label="Mixed shade")
-muted_line = dm.pseudo_alpha("dc.bold3", alpha=0.65, background="white")
+muted_line = dm.pseudo_alpha("dc.jewel3", alpha=0.65, background="white")
 ax.plot([0, 1, 2], [0.8, 1.1, 1.4], color=muted_line, label="Pseudo alpha")
 ax.legend()
 dm.simple_layout(fig)
@@ -73,8 +73,8 @@ from cycler import cycler
 
 dm.style.use("report")  # base preset (font, line widths, spines, ...)
 mpl.rcParams["axes.prop_cycle"] = cycler(color=[
-    "dc.corporate3", "dc.corporate1", "dc.corporate5",
-    "dc.corporate0", "dc.corporate2", "dc.corporate4",
+    "dc.teal3", "dc.teal1", "dc.teal5",
+    "dc.teal0", "dc.teal2", "dc.teal4",
 ])
 ```
 
@@ -99,16 +99,16 @@ name is usually a good first filter. Inside each family the index is a
 
 | If you were reaching for…                       | Try…                                |
 | ----------------------------------------------- | ----------------------------------- |
-| `oc.blue6` / `oc.indigo6` / `oc.cyan6`          | `dc.corporate3`                         |
-| `oc.red6` / `oc.pink6`                          | `dc.spectrum1` or `dc.earth3`         |
+| `oc.blue6` / `oc.indigo6` / `oc.cyan6`          | `dc.teal3`                         |
+| `oc.red6` / `oc.pink6`                          | `dc.bold1` or `dc.earth3`         |
 | `oc.orange5` / `oc.yellow5`                     | `dc.earth1` / `dc.earth0`         |
-| `oc.green6` / `oc.teal6` / `oc.lime6`           | `dc.forest2` or `dc.bold0`           |
-| `oc.violet6` / `oc.grape6`                      | `dc.bold3`                         |
-| `oc.gray3..7` (light → dark)                    | `dc.muted1..3`                     |
+| `oc.green6` / `oc.teal6` / `oc.lime6`           | `dc.forest2` or `dc.spectrum0`           |
+| `oc.violet6` / `oc.grape6`                      | `dc.jewel3`                         |
+| `oc.gray3..7` (light → dark)                    | `dc.teal_indigo1..3`                     |
 
 ## Color class
 
-For most plots, named color strings like `"dc.corporate3"` are all you need. When
+For most plots, named color strings like `"dc.teal3"` are all you need. When
 you need to programmatically adjust hue, saturation, or lightness — or
 interpolate between colors in a perceptually uniform space — use the `Color`
 class:
@@ -164,7 +164,7 @@ for i, c in enumerate(palette):
     ax.bar(i, 1, color=c.to_hex())
 
 # Also supports 'oklab' and 'rgb' spaces
-gradient = dm.cspace(dm.color('dc.spectrum1'), dm.color('dc.corporate3'), n=10)
+gradient = dm.cspace(dm.color('dc.bold1'), dm.color('dc.teal3'), n=10)
 ```
 
 ```{raw} html

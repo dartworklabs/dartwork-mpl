@@ -6,7 +6,6 @@ and config persistence — no server required.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Literal
 from unittest.mock import patch
@@ -15,12 +14,9 @@ from pydantic import Field
 
 from dartwork_mpl.ui._config import (
     CONFIG_FILENAME,
-    HISTORY_FILENAME,
     PRESET_FILENAME,
-    append_history,
     delete_preset,
     load_config,
-    load_history,
     load_presets,
     save_config,
     save_preset,
@@ -198,35 +194,6 @@ class TestConfigPersistence:
         ):
             assert load_config() is None
 
-    def test_append_and_load_history(self, tmp_path: Path) -> None:
-        history_file = tmp_path / HISTORY_FILENAME
-        with patch(
-            "dartwork_mpl.ui._config._history_path", return_value=history_file
-        ):
-            append_history({"n": 1})
-            append_history({"n": 2}, label="preset_a")
-            append_history({"n": 3})
-
-            records = load_history()
-            assert len(records) == 3
-            assert records[1]["label"] == "preset_a"
-            assert records[1]["params"]["n"] == 2
-
-    def test_history_jsonl_format(self, tmp_path: Path) -> None:
-        history_file = tmp_path / HISTORY_FILENAME
-        with patch(
-            "dartwork_mpl.ui._config._history_path", return_value=history_file
-        ):
-            append_history({"x": 10})
-            append_history({"x": 20})
-
-        lines = history_file.read_text().strip().split("\n")
-        assert len(lines) == 2
-        for line in lines:
-            data = json.loads(line)
-            assert "timestamp" in data
-            assert "params" in data
-
     def test_save_and_load_preset_json(self, tmp_path: Path) -> None:
         """Presets are saved to and loaded from JSON."""
         preset_file = tmp_path / PRESET_FILENAME
@@ -315,24 +282,6 @@ class TestConfigPersistence:
             "dartwork_mpl.ui._config._preset_path", return_value=preset_file
         ):
             assert load_presets() == []
-
-    def test_load_history_with_blank_and_corrupt_lines(
-        self, tmp_path: Path
-    ) -> None:
-        """Blank lines and corrupt JSON lines are silently skipped."""
-        history_file = tmp_path / HISTORY_FILENAME
-        history_file.write_text(
-            '{"timestamp":"t","params":{"x":1}}\n'
-            "\n"
-            "NOT JSON\n"
-            '{"timestamp":"t","params":{"x":2}}\n',
-            encoding="utf-8",
-        )
-        with patch(
-            "dartwork_mpl.ui._config._history_path", return_value=history_file
-        ):
-            records = load_history()
-            assert len(records) == 2
 
 
 # ============================================================================

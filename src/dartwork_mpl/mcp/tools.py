@@ -176,7 +176,7 @@ def register_tools(mcp: FastMCP) -> None:
         Parameters
         ----------
         name : str
-            Color name (e.g. 'dc.blue500', 'tw.sky400', 'oc.gray6').
+            Color name (e.g. 'dc.trustworthy0', 'tw.sky400', 'oc.gray6').
 
         Returns
         -------
@@ -253,8 +253,10 @@ def register_tools(mcp: FastMCP) -> None:
         Returns a JSON object grouping colors by prefix
         (dc.*, tw.*, oc.*, etc.) with counts and examples.
         """
+        from ..colors._loader import COLOR_LIBRARIES
+
         mapping = mcolors.get_named_colors_mapping()
-        prefixes = ["dc.", "tw.", "md.", "ad.", "cu.", "pr.", "oc."]
+        prefixes = [prefix for _key, prefix, _fn, _label in COLOR_LIBRARIES]
         families = {}
         for prefix in prefixes:
             colors = {
@@ -385,8 +387,7 @@ def register_tools(mcp: FastMCP) -> None:
         between before/after lint runs.
 
         Wraps :func:`dartwork_mpl.lint.apply_lint_fixes`. Currently
-        rewrites ``plt.style.use → dm.style.use``,
-        ``dm.cm2in(N) → dm.cm(N)``, and the no-arg
+        rewrites ``plt.style.use → dm.style.use`` and the no-arg
         ``plt.tight_layout() / fig.tight_layout()`` calls →
         ``dm.simple_layout(fig)``. Context-dependent rules (e.g.
         ``figsize-direct`` — which needs the agent to choose a width
@@ -992,12 +993,12 @@ def register_tools(mcp: FastMCP) -> None:
         basic_path = template_dir / f"{recommended}.py"
         advanced_path = template_dir / "advanced" / f"{recommended}.py"
         basic_uri = (
-            f"dartwork-mpl://template/{recommended}"
+            f"dartwork-mpl://templates/{recommended}"
             if basic_path.exists()
-            else "dartwork-mpl://template/bar"
+            else "dartwork-mpl://templates/bar"
         )
         advanced_uri = (
-            f"dartwork-mpl://template/advanced/{recommended}"
+            f"dartwork-mpl://templates/advanced/{recommended}"
             if advanced_path.exists()
             else None
         )
@@ -1325,7 +1326,7 @@ def register_tools(mcp: FastMCP) -> None:
                         "Call dm.simple_layout(fig) after plotting. "
                         "Default margin=0 snaps content flush to the "
                         "figure edge; pass margin='2%' or dm.mm(2) for "
-                        "a buffer. dm.auto_layout is a deprecated alias. "
+                        "a buffer. dm.auto_layout was removed in 0.5.4; use dm.simple_layout. "
                         "tight_layout() is forbidden."
                     ),
                     "default_dpi": "Controlled by the active style preset.",

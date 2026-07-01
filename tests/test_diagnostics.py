@@ -1,9 +1,8 @@
 """Tests for dartwork_mpl.diagnostics (color, font, colormap helpers).
 
-These four helpers used to live under ``dartwork_mpl.asset_viz``. That
-legacy path is covered by ``tests/test_asset_viz.py`` (deprecation
-regression); here we exercise the canonical :mod:`dartwork_mpl.diagnostics`
-import path.
+These four helpers used to live under ``dartwork_mpl.asset_viz``; that
+legacy import path was removed in 0.5.4. Here we exercise the canonical
+:mod:`dartwork_mpl.diagnostics` import path.
 """
 
 from __future__ import annotations

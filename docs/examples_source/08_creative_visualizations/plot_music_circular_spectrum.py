@@ -34,9 +34,7 @@ frequencies = np.random.exponential(2, n_frequencies) * (
 frequencies = np.clip(frequencies, 0.5, 8)
 
 theta = np.linspace(0, 2 * np.pi, n_frequencies, endpoint=False)
-colors = dm.cspace(
-    "oc.purple9", "dc.corporate1", n=n_frequencies, space="oklch"
-)
+colors = dm.cspace("oc.purple9", "dc.teal1", n=n_frequencies, space="oklch")
 
 bar_width = 2 * np.pi / n_frequencies * 0.9
 for angle, freq, color in zip(theta, frequencies, colors, strict=False):
@@ -64,7 +62,7 @@ center = plt.Circle(
     (0, 0),
     2,
     transform=ax.transData._b,
-    facecolor="dc.muted1",
+    facecolor="dc.teal_indigo1",
     edgecolor="oc.purple9",
     linewidth=dm.lw(0),
 )
@@ -94,7 +92,7 @@ for r in [3, 5, 7, 9]:
             r,
             transform=ax.transData._b,
             fill=False,
-            edgecolor="dc.muted4",
+            edgecolor="dc.teal_indigo4",
             linewidth=0.3,
             alpha=0.6,
         )

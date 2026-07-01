@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.patches import FancyBboxPatch
 
+from ..colors._loader import COLOR_LIBRARIES
+
 if TYPE_CHECKING:
     pass
 
@@ -30,7 +32,7 @@ def _load_color_library_names() -> set[str]:
     asset_dir = Path(__file__).resolve().parent.parent / "asset" / "color"
     opencolor_names: set[str] = set()
 
-    opencolor_file = asset_dir / "oc.txt"
+    opencolor_file = asset_dir / "opencolor.txt"
     if opencolor_file.exists():
         with open(opencolor_file) as f:
             for raw_line in f:
@@ -47,33 +49,22 @@ _OPENCOLOR_NAMES = _load_color_library_names()
 
 
 def _classify_color_library(color_name: str) -> str | None:
-    """Classify a color name into its library category."""
-    if color_name.startswith("dc."):
-        return "dc"
-    if color_name.startswith("tw."):
-        return "tw"
-    if color_name.startswith("md."):
-        return "md"
-    if color_name.startswith("ad."):
-        return "ant"
-    if color_name.startswith("cu."):
-        return "chakra"
-    if color_name.startswith("pr."):
-        return "primer"
-    if color_name.startswith("oc."):
-        return "opencolor"
+    """Classify a color name into its library category (from the SSOT)."""
+    for key, prefix, _fn, _label in COLOR_LIBRARIES:
+        if color_name.startswith(prefix):
+            return key
     return None
 
 
 def _extract_base_color_name(color_name: str) -> str:
     """Extract base color name from color name."""
     name = color_name
-    for prefix in ["dc.", "oc.", "tw.", "md.", "ad.", "cu.", "pr."]:
+    for _key, prefix, _fn, _label in COLOR_LIBRARIES:
         if name.startswith(prefix):
             name = name[len(prefix) :]
             break
 
-    match = re.search(r"^([a-z]+)\d+$", name)
+    match = re.search(r"^([a-z][a-z_]*)\d+$", name)
     if match:
         return match.group(1)
 
@@ -541,7 +532,7 @@ def plot_colors(
                 library_colors[library_name]
             )
 
-    library_order = ["dc", "opencolor", "tw", "md", "ant", "chakra", "primer"]
+    library_order = [key for key, _prefix, _fn, _label in COLOR_LIBRARIES]
 
     figures = []
     for library_name in library_order:

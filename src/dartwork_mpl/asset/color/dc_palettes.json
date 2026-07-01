@@ -33,7 +33,7 @@
       "D0DFEB"
     ]
   ],
-  "TealSeq": [
+  "teal": [
     [
       0,
       "2A524C"
@@ -67,7 +67,7 @@
       "CAF7EE"
     ]
   ],
-  "IndigoSeq": [
+  "indigo": [
     [
       0,
       "414B64"
@@ -101,7 +101,7 @@
       "E8EDFF"
     ]
   ],
-  "CoralSeq": [
+  "coral": [
     [
       0,
       "6C4A45"
@@ -135,7 +135,7 @@
       "FFE5E1"
     ]
   ],
-  "TealIndigo": [
+  "teal_indigo": [
     [
       0,
       "056463"
@@ -169,7 +169,7 @@
       "F3DAFF"
     ]
   ],
-  "Forest": [
+  "forest": [
     [
       0,
       "475B26"
@@ -203,7 +203,7 @@
       "C7EEB4"
     ]
   ],
-  "WarmCool": [
+  "warm_cool": [
     [
       0,
       "91422F"
@@ -237,7 +237,7 @@
       "D3E4FF"
     ]
   ],
-  "BlueOrange": [
+  "blue_orange": [
     [
       0,
       "036085"
@@ -271,7 +271,7 @@
       "FFDDBA"
     ]
   ],
-  "TealCoral": [
+  "teal_coral": [
     [
       0,
       "01655C"
@@ -305,7 +305,7 @@
       "FFDCBE"
     ]
   ],
-  "Trustworthy": [
+  "trustworthy": [
     [
       0,
       "06655A"
@@ -339,7 +339,7 @@
       "D0DFEB"
     ]
   ],
-  "Corporate": [
+  "corporate": [
     [
       0,
       "056058"
@@ -373,7 +373,7 @@
       "CAD9E5"
     ]
   ],
-  "GraySeq": [
+  "gray": [
     [
       0,
       "353535"
@@ -407,7 +407,7 @@
       "E8E8E8"
     ]
   ],
-  "WarmGray": [
+  "warm_gray": [
     [
       0,
       "3A342E"
@@ -441,7 +441,7 @@
       "EFE7DF"
     ]
   ],
-  "CoolGray": [
+  "cool_gray": [
     [
       0,
       "2D363D"
@@ -475,7 +475,7 @@
       "DEEAF3"
     ]
   ],
-  "Focus": [
+  "teal_accent": [
     [
       0,
       "0A7B6E"
@@ -509,7 +509,7 @@
       "DDE7EE"
     ]
   ],
-  "FocusWarm": [
+  "coral_accent": [
     [
       0,
       "B54B43"
@@ -543,7 +543,7 @@
       "DDE7EE"
     ]
   ],
-  "Muted": [
+  "pastel": [
     [
       0,
       "56857C"
@@ -577,7 +577,7 @@
       "B6ECF3"
     ]
   ],
-  "Dusty": [
+  "dusty": [
     [
       0,
       "3D665F"
@@ -611,7 +611,7 @@
       "9AC9CF"
     ]
   ],
-  "Spectrum": [
+  "spectrum": [
     [
       0,
       "026A5F"
@@ -645,7 +645,7 @@
       "9FF18C"
     ]
   ],
-  "Bold": [
+  "bold": [
     [
       0,
       "035F5A"
@@ -679,7 +679,7 @@
       "D8D678"
     ]
   ],
-  "Coolwarm": [
+  "coolwarm": [
     [
       0,
       "055F8B"
@@ -713,7 +713,7 @@
       "943D45"
     ]
   ],
-  "TealAmber": [
+  "teal_amber": [
     [
       0,
       "06655C"
@@ -747,7 +747,7 @@
       "844C21"
     ]
   ],
-  "Earth": [
+  "earth": [
     [
       0,
       "80443A"
@@ -781,7 +781,7 @@
       "D1E3B7"
     ]
   ],
-  "Jewel": [
+  "jewel": [
     [
       0,
       "02504F"
@@ -815,7 +815,7 @@
       "42ECFB"
     ]
   ],
-  "Accessible": [
+  "accessible": [
     [
       0,
       "000000"

@@ -92,14 +92,37 @@ class TestMakePaletteEdgeCases:
         assert same_neg == plain
 
     def test_highlight_darkens_target_lightens_others(self) -> None:
-        """Highlight rewrites ``5`` -> ``7`` for target, ``5`` -> ``3``
-        for everyone else."""
+        """Highlight steps the target's weight index up (darker) and every
+        other's down (lighter). For the categorical base (shade 5) that is
+        5 -> 7 for the target and 5 -> 3 for the rest."""
         result = make_palette(3, highlight=0)
         # First entry is the highlighted -> darker (7).
         assert result[0].endswith("7")
         # Remaining entries are dimmed (3).
         for c in result[1:]:
             assert c.endswith("3")
+
+    def test_highlight_sequential_emphasizes_chosen_series(self) -> None:
+        """Sequential palette names (``oc.blue3..7``) carry no fixed ``5``,
+        so the old string-replace highlighted the wrong series. Weight-index
+        stepping must darken exactly the chosen index and keep valid names."""
+        seq = make_palette(3, kind="sequential", highlight=1)
+        assert all(c.startswith("oc.blue") and c[-1].isdigit() for c in seq)
+        shades = [int(c[-1]) for c in seq]
+        assert shades[1] == max(shades)  # chosen index is darkest
+        assert shades[1] > shades[0] and shades[1] > shades[2]
+
+    def test_highlight_diverging_no_name_corruption(self) -> None:
+        """Diverging names include ``oc.gray5``; a blind ``5`` -> ``7``
+        replace would corrupt it. Only the highlighted index is darkened."""
+        div = make_palette(5, kind="diverging", highlight=0)
+        assert all(
+            any(c.startswith(f"oc.{fam}") for fam in ("red", "blue", "gray"))
+            and c[-1].isdigit()
+            for c in div
+        )
+        shades = [int(c[-1]) for c in div]
+        assert shades[0] == max(shades)  # highlighted index 0 is darkest
 
     def test_categorical_repeated_palette_consistent(self) -> None:
         """When repeating, the cycle starts from the beginning each loop."""
@@ -144,12 +167,12 @@ class TestGetPalette:
         assert cols[-1] == "dc.coolwarm7"
 
     def test_oversubscribe_repeats(self) -> None:
-        cols = get_palette("muted", n=10)
+        cols = get_palette("pastel", n=10)
         assert len(cols) == 10
         assert cols[8] == cols[0]
 
     def test_zero_returns_empty(self) -> None:
-        assert get_palette("muted", n=0) == []
+        assert get_palette("pastel", n=0) == []
 
     def test_unknown_palette_raises(self) -> None:
         with pytest.raises(ValueError):
@@ -160,6 +183,57 @@ class TestGetPalette:
         cols = get_palette("oc.blue", n=3)
         assert len(cols) == 3
         assert all(c.startswith("oc.blue") for c in cols)
+
+
+class TestGetPaletteOrdering:
+    """``order`` / ``reverse`` / ``seed`` re-arrange the picked colours."""
+
+    def test_default_order_unchanged(self) -> None:
+        assert get_palette("trustworthy", n=6, order="default") == get_palette(
+            "trustworthy", n=6
+        )
+
+    def test_reverse_reverses(self) -> None:
+        base = get_palette("trustworthy", n=6)
+        assert get_palette("trustworthy", n=6, reverse=True) == base[::-1]
+
+    def test_lightness_sorts_light_to_dark(self) -> None:
+        from dartwork_mpl.helpers.colors import _lstar
+
+        cols = get_palette("trustworthy", n=8, order="lightness")
+        ls = [_lstar(c) for c in cols]
+        assert ls == sorted(ls, reverse=True)
+        assert set(cols) == set(get_palette("trustworthy", n=8))  # same colours
+
+    def test_shuffle_is_a_permutation(self) -> None:
+        base = get_palette("spectrum", n=8)
+        out = get_palette("spectrum", n=8, order="shuffle", seed=7)
+        assert sorted(out) == sorted(base)
+
+    def test_shuffle_seed_is_deterministic(self) -> None:
+        a = get_palette("trustworthy", n=8, order="shuffle", seed=42)
+        b = get_palette("trustworthy", n=8, order="shuffle", seed=42)
+        assert a == b
+
+    def test_shuffle_seeds_differ(self) -> None:
+        a = get_palette("trustworthy", n=8, order="shuffle", seed=1)
+        b = get_palette("trustworthy", n=8, order="shuffle", seed=2)
+        assert a != b
+
+    def test_order_and_reverse_compose(self) -> None:
+        light = get_palette("trustworthy", n=6, order="lightness")
+        both = get_palette("trustworthy", n=6, order="lightness", reverse=True)
+        assert both == light[::-1]
+
+    def test_order_applies_to_full_palette(self) -> None:
+        assert (
+            get_palette("trustworthy", reverse=True)
+            == get_palette("trustworthy")[::-1]
+        )
+
+    def test_unknown_order_raises(self) -> None:
+        with pytest.raises(ValueError):
+            get_palette("trustworthy", order="bogus")  # type: ignore[arg-type]
 
 
 class TestSetCycle:
@@ -180,16 +254,16 @@ class TestSetCycle:
 
     def test_explicit_list(self) -> None:
         with mpl.rc_context():
-            set_cycle(["dc.focus0", "oc.red5"])
+            set_cycle(["dc.teal_accent0", "oc.red5"])
             cyc = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-            assert cyc == ["dc.focus0", "oc.red5"]
+            assert cyc == ["dc.teal_accent0", "oc.red5"]
 
     def test_per_axes_does_not_touch_global(self) -> None:
         with mpl.rc_context():
             before = plt.rcParams["axes.prop_cycle"]
             fig, ax = plt.subplots()
             try:
-                set_cycle("focus", ax=ax)
+                set_cycle("teal_accent", ax=ax)
                 # Global cycle is unchanged; only the Axes was updated.
                 assert plt.rcParams["axes.prop_cycle"] == before
             finally:

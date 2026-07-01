@@ -43,12 +43,12 @@ for idx, (layers, title) in enumerate(stages):
     ax.plot(
         t,
         signal + noise,
-        color="dc.corporate2",
+        color="dc.teal2",
         lw=dm.lw(0),
         alpha=0.4,
         label="Noisy",
     )
-    ax.plot(t, signal, color="dc.spectrum3", lw=dm.lw(1), label="Clean")
+    ax.plot(t, signal, color="dc.bold3", lw=dm.lw(1), label="Clean")
     ax.set_title(title, fontsize=dm.fs(0), weight="bold", pad=12)
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Amplitude")

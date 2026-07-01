@@ -34,11 +34,16 @@ ax = fig.add_subplot(gs[0, 0])
 x = np.linspace(0, 4 * np.pi, 150)
 y_true = np.sin(x) * np.exp(-0.15 * x)
 y_noise = y_true + np.random.normal(0, 0.08, len(x))
-ax.plot(x, y_true, color="dc.corporate3", lw=dm.lw(1), label="Model")
-band = dm.pseudo_alpha("dc.corporate2", 0.15, background="white")
+ax.plot(x, y_true, color="dc.teal3", lw=dm.lw(1), label="Model")
+band = dm.pseudo_alpha("dc.teal2", 0.15, background="white")
 ax.fill_between(x, y_true - 0.15, y_true + 0.15, color=band, label="95% CI")
 ax.scatter(
-    x[::8], y_noise[::8], s=8, color="dc.muted3", zorder=3, label="Observations"
+    x[::8],
+    y_noise[::8],
+    s=8,
+    color="dc.teal_indigo3",
+    zorder=3,
+    label="Observations",
 )
 ax.set_title("Damped Oscillation", fontsize=dm.fs(0), weight="bold", pad=12)
 ax.set_xlabel("Time (s)")
@@ -51,13 +56,13 @@ ax = fig.add_subplot(gs[0, 1])
 n_pts = 80
 x_s = np.random.uniform(0, 10, n_pts)
 y_s = 1.8 * x_s + 3 + np.random.normal(0, 3, n_pts)
-ax.scatter(x_s, y_s, s=18, color="dc.bold2", alpha=0.7, edgecolors="none")
+ax.scatter(x_s, y_s, s=18, color="dc.jewel2", alpha=0.7, edgecolors="none")
 m, b = np.polyfit(x_s, y_s, 1)
 x_fit = np.linspace(0, 10, 50)
 ax.plot(
     x_fit,
     m * x_fit + b,
-    color="dc.spectrum3",
+    color="dc.bold3",
     lw=dm.lw(1),
     label=f"y = {m:.1f}x + {b:.1f}",
 )
@@ -102,18 +107,12 @@ bp = ax.boxplot(
     groups,
     patch_artist=True,
     widths=0.6,
-    medianprops={"color": "dc.spectrum3", "lw": dm.lw(0)},
+    medianprops={"color": "dc.bold3", "lw": dm.lw(0)},
 )
-box_colors = [
-    "dc.corporate1",
-    "dc.bold1",
-    "dc.forest1",
-    "dc.earth1",
-    "dc.spectrum1",
-]
+box_colors = ["dc.teal1", "dc.jewel1", "dc.forest1", "dc.earth1", "dc.bold1"]
 for patch, color in zip(bp["boxes"], box_colors, strict=False):
     patch.set_facecolor(color)
-    patch.set_edgecolor("dc.muted3")
+    patch.set_edgecolor("dc.teal_indigo3")
 ax.set_xticklabels(["A", "B", "C", "D", "E"])
 ax.set_title("Group Comparison", fontsize=dm.fs(0), weight="bold", pad=12)
 ax.set_xlabel("Group")

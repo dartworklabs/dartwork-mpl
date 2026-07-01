@@ -933,7 +933,7 @@ L 255.597584 98.641655
 L 257.263605 98.508158 
 L 258.096615 98.521638 
 L 258.096615 98.521638 
-" clip-path="url(#p2315aa3728)" style="fill: none; stroke: #fab1a7; stroke-width: 2.2; stroke-linecap: square"/>
+" clip-path="url(#p2315aa3728)" style="fill: none; stroke: #129e8e; stroke-width: 2.2; stroke-linecap: square"/>
    </g>
    <g id="line2d_15">
     <path d="M 50.260553 35.525634 
@@ -964,7 +964,7 @@ L 230.190771 96.884428
 L 245.601461 97.869253 
 L 258.096615 98.521638 
 L 258.096615 98.521638 
-" clip-path="url(#p2315aa3728)" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #9b94b4; stroke-width: 1.8"/>
+" clip-path="url(#p2315aa3728)" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #2b88aa; stroke-width: 1.8"/>
    </g>
    <g id="line2d_16">
     <path d="M 50.260553 168.119081 
@@ -995,7 +995,7 @@ L 230.190771 106.760287
 L 245.601461 105.775462 
 L 258.096615 105.123077 
 L 258.096615 105.123077 
-" clip-path="url(#p2315aa3728)" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #9b94b4; stroke-width: 1.8"/>
+" clip-path="url(#p2315aa3728)" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #2b88aa; stroke-width: 1.8"/>
    </g>
    <g id="patch_3">
     <path d="M 39.86875 181.378425 
@@ -1461,7 +1461,7 @@ z
      <path d="M 215.838418 28.116289 
 L 222.338418 28.116289 
 L 228.838418 28.116289 
-" style="fill: none; stroke: #fab1a7; stroke-width: 2.2; stroke-linecap: square"/>
+" style="fill: none; stroke: #129e8e; stroke-width: 2.2; stroke-linecap: square"/>
     </g>
     <g id="text_18">
      <!-- Position $x(t)$ -->
@@ -1690,7 +1690,7 @@ z
      <path d="M 215.838418 36.911602 
 L 222.338418 36.911602 
 L 228.838418 36.911602 
-" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #9b94b4; stroke-width: 1.8"/>
+" style="fill: none; stroke-dasharray: 5.4,2.7; stroke-dashoffset: 0; stroke: #2b88aa; stroke-width: 1.8"/>
     </g>
     <g id="text_19">
      <!-- Envelope -->

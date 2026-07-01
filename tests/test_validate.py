@@ -99,7 +99,7 @@ class TestCheckOverflow:
         # to 90 (a "nice" round number outside the axis ylim of ~82).
         ax.bar(["A", "B", "C", "D", "E"], [23, 45, 56, 78, 33])
         ax.set_ylabel("Value")
-        dm.auto_layout(fig)
+        dm.simple_layout(fig)
         warnings = validate_figure(fig, checks=("OVERFLOW",), quiet=True)
         overflow = [w for w in warnings if w.check_id == "OVERFLOW"]
         assert overflow == [], (

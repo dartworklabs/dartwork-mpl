@@ -50,7 +50,9 @@ kernel = gaussian_kde(values)
 Z = np.reshape(kernel(positions).T, X.shape)
 
 # Base scatter for context, contour for density
-ax_joint.scatter(x, y, s=dm.fs(-5) ** 2, color="dc.muted2", alpha=0.1, zorder=1)
+ax_joint.scatter(
+    x, y, s=dm.fs(-5) ** 2, color="dc.teal_indigo2", alpha=0.1, zorder=1
+)
 contour = ax_joint.contourf(
     X, Y, Z, levels=12, cmap="dc.deep_sea", alpha=0.85, zorder=2
 )

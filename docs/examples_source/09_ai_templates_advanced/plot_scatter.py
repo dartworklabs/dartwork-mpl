@@ -52,7 +52,7 @@ ax.scatter(
     price[mask],
     demand[mask],
     s=18,
-    color="dc.corporate3",
+    color="dc.teal3",
     edgecolor="white",
     linewidth=0.3,
     alpha=0.85,
@@ -74,11 +74,7 @@ ax.scatter(
 
 # Regression line — drawn on top of the cloud, under the outlier.
 ax.plot(
-    np.sort(price),
-    fit_line,
-    color="dc.corporate5",
-    linewidth=dm.lw(0),
-    zorder=4,
+    np.sort(price), fit_line, color="dc.teal5", linewidth=dm.lw(0), zorder=4
 )
 
 # R-squared annotation in the upper-left, inside the axes.

@@ -16,9 +16,9 @@ Example
    import dartwork_mpl as dm
 
    # Named colors
-   plt.plot(x, y, color="dc.corporate2", label="Series A")
-   lighter = dm.mix_colors("dc.corporate2", "white", alpha=0.35)
-   muted_line = dm.pseudo_alpha("dc.corporate3", alpha=0.6)
+   plt.plot(x, y, color="dc.teal2", label="Series A")
+   lighter = dm.mix_colors("dc.teal2", "white", alpha=0.35)
+   muted_line = dm.pseudo_alpha("dc.teal3", alpha=0.6)
 
    # Color class — perceptual manipulation
    color = dm.oklch(0.7, 0.15, 150)

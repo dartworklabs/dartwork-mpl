@@ -104,18 +104,26 @@ def make_palette(
         colors = base_colors * (n // len(base_colors) + 1)
         colors = colors[:n]
 
-    # Apply highlighting
+    # Apply highlighting: emphasise the chosen series with a darker shade and
+    # recede the rest with a lighter one, by stepping each colour's *weight
+    # index* (higher = darker in Open Color). The previous ``.replace("5", …)``
+    # only worked for the categorical set (whose names all carry a "5"); it
+    # left sequential/diverging highlights on the wrong series and could
+    # corrupt any name containing a stray "5".
     if highlight is not None and 0 <= highlight < n:
-        # Make highlighted series darker, others lighter
-        new_colors = []
-        for i, color in enumerate(colors):
-            if i == highlight:
-                # Keep original or make darker
-                new_colors.append(color.replace("5", "7"))
-            else:
-                # Make lighter
-                new_colors.append(color.replace("5", "3"))
-        colors = new_colors
+        import re as _re
+
+        def _shift(color: str, delta: int) -> str:
+            m = _re.match(r"^(.*?)(\d+)$", color)
+            if m is None:
+                return color
+            base, shade = m.group(1), int(m.group(2))
+            return f"{base}{max(0, min(9, shade + delta))}"
+
+        colors = [
+            _shift(c, 2) if i == highlight else _shift(c, -2)
+            for i, c in enumerate(colors)
+        ]
 
     return colors
 
@@ -150,12 +158,65 @@ def _palette_color_names(name: str) -> list[str]:
     return [cname for _, cname in found]
 
 
+def _lstar(color: str) -> float:
+    """Perceptual lightness L* (CIE) of a matplotlib colour, 0 (black) to 100 (white)."""
+    import matplotlib.colors as mcolors
+
+    r, g, b = mcolors.to_rgb(color)
+
+    def _lin(v: float) -> float:
+        return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+
+    y = 0.2126 * _lin(r) + 0.7152 * _lin(g) + 0.0722 * _lin(b)
+    f = y ** (1 / 3) if y > 0.008856 else 7.787 * y + 16 / 116
+    return 116 * f - 16
+
+
+def _shuffle_seeded(seq: list[str], seed: int | None) -> list[str]:
+    """Deterministic Fisher-Yates shuffle (mulberry32 PRNG).
+
+    Mirrors the docs palette explorer exactly, so a given ``seed`` reproduces
+    the same ordering you see in the explorer. ``seed=None`` draws a fresh
+    random shuffle each call.
+    """
+    import random
+
+    if seed is None:
+        seed = random.randrange(2**32)
+    arr = list(seq)
+    s = (0x6D2B79F5 ^ (seed & 0xFFFFFFFF)) & 0xFFFFFFFF
+
+    def _imul(a: int, b: int) -> int:
+        return ((a & 0xFFFFFFFF) * (b & 0xFFFFFFFF)) & 0xFFFFFFFF
+
+    def _rnd() -> float:
+        nonlocal s
+        s = (s + 0x6D2B79F5) & 0xFFFFFFFF
+        t = _imul(s ^ (s >> 15), 1 | s)
+        t = ((t + _imul(t ^ (t >> 7), 61 | t)) & 0xFFFFFFFF) ^ t
+        t &= 0xFFFFFFFF
+        return ((t ^ (t >> 14)) & 0xFFFFFFFF) / 4294967296.0
+
+    for i in range(len(arr) - 1, 0, -1):
+        j = int(_rnd() * (i + 1))
+        arr[i], arr[j] = arr[j], arr[i]
+    return arr
+
+
 def get_palette(
     name: str,
     n: int | None = None,
     subset: Literal["first", "even", "last"] = "first",
+    *,
+    order: Literal["default", "lightness", "shuffle"] = "default",
+    reverse: bool = False,
+    seed: int | None = None,
 ) -> list[str]:
     """Return colour names from a discrete palette.
+
+    Pick how many colours (``n`` / ``subset``), then optionally re-arrange them
+    (``order`` / ``reverse``) — the same controls exposed by the docs palette
+    explorer, so its code snippets run verbatim.
 
     Parameters
     ----------
@@ -171,6 +232,15 @@ def get_palette(
         takes the leading ``n`` — the dartwork palettes are ordered so the
         first ``n`` are the best-separated subset. ``"even"`` spreads the
         picks across the whole palette; ``"last"`` takes the trailing ``n``.
+    order : {"default", "lightness", "shuffle"}, keyword-only
+        Re-arrange the picked colours. ``"default"`` keeps palette order;
+        ``"lightness"`` sorts light→dark by CIE L*; ``"shuffle"`` randomises
+        (deterministic when ``seed`` is given).
+    reverse : bool, keyword-only
+        Reverse the final colour order (applied after ``order``).
+    seed : int | None, keyword-only
+        Seed for ``order="shuffle"``. A fixed seed reproduces the exact
+        ordering shown in the docs explorer; ``None`` gives a fresh shuffle.
 
     Returns
     -------
@@ -183,28 +253,41 @@ def get_palette(
     >>> get_palette("trustworthy")            # all 8
     >>> get_palette("trustworthy", n=5)       # first 5 (best-separated)
     >>> get_palette("coolwarm", n=7, subset="even")
+    >>> get_palette("trustworthy", n=6, order="lightness")   # light→dark
+    >>> get_palette("trustworthy", reverse=True)             # reversed cycle
+    >>> get_palette("spectrum", n=5, order="shuffle", seed=42)  # reproducible
     """
     base = _palette_color_names(name)
     if n is None:
-        return base
-    if n <= 0:
+        sel = list(base)
+    elif n <= 0:
         return []
-    if subset == "first":
-        sel = base[:n]
-    elif subset == "last":
-        sel = base[-n:]
-    elif subset == "even":
-        if n >= len(base):
-            sel = list(base)
-        elif n == 1:
-            sel = [base[0]]
-        else:
-            step = (len(base) - 1) / (n - 1)
-            sel = [base[round(i * step)] for i in range(n)]
     else:
-        raise ValueError(f"Unknown subset: {subset!r}")
-    if len(sel) < n:  # repeat to fill when n exceeds palette size
-        sel = (sel * (n // len(sel) + 1))[:n]
+        if subset == "first":
+            sel = base[:n]
+        elif subset == "last":
+            sel = base[-n:]
+        elif subset == "even":
+            if n >= len(base):
+                sel = list(base)
+            elif n == 1:
+                sel = [base[0]]
+            else:
+                step = (len(base) - 1) / (n - 1)
+                sel = [base[round(i * step)] for i in range(n)]
+        else:
+            raise ValueError(f"Unknown subset: {subset!r}")
+        if len(sel) < n:  # repeat to fill when n exceeds palette size
+            sel = (sel * (n // len(sel) + 1))[:n]
+
+    if order == "lightness":
+        sel = sorted(sel, key=lambda c: round(_lstar(c)), reverse=True)
+    elif order == "shuffle":
+        sel = _shuffle_seeded(sel, seed)
+    elif order != "default":
+        raise ValueError(f"Unknown order: {order!r}")
+    if reverse:
+        sel = list(reversed(sel))
     return sel
 
 
@@ -230,7 +313,7 @@ def set_cycle(
     --------
     >>> set_cycle("spectrum")                 # global, all 8
     >>> set_cycle("trustworthy", n=5)         # global, first 5
-    >>> set_cycle("focus", ax=ax)             # this Axes only
+    >>> set_cycle("teal_accent", ax=ax)             # this Axes only
     """
     import matplotlib.pyplot as plt
     from cycler import cycler
@@ -240,6 +323,11 @@ def set_cycle(
     )
     cyc = cycler(color=colors)
     if ax is None:
-        plt.rcParams["axes.prop_cycle"] = cyc
+        # Guard the global rcParams write with the same lock ``style.use``
+        # uses, so a concurrent style change can't interleave with it.
+        from ..style import _style_lock
+
+        with _style_lock:
+            plt.rcParams["axes.prop_cycle"] = cyc
     else:
         ax.set_prop_cycle(cyc)

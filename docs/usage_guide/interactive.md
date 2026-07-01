@@ -76,7 +76,7 @@ from pydantic import Field
 class ScatterParams(ParamModel):
     n: int = Field(default=100, ge=10, le=1000, description="Number of points")
     alpha: float = Field(default=0.5, ge=0.0, le=1.0, description="Transparency")
-    color: str = Field(default="dc.corporate2", description="Point color")
+    color: str = Field(default="dc.teal2", description="Point color")
 
 
 def plot_scatter(params: ScatterParams):
