@@ -277,6 +277,16 @@ if not getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False):
     matplotlib.axes.Axes.twinx = _patched_twinx  # type: ignore[method-assign,assignment]
 
 
+# Eagerly register the bundled fonts on import so that
+# ``plt.rcParams["font.family"] = "Inter"`` (or any bundled family) resolves
+# immediately after ``import dartwork_mpl`` — matching the documented
+# contract. This is a one-time ~70 ms cost; the same font-manager work would
+# otherwise run on the first ``dm.style.use(...)`` anyway. Colours and
+# colormaps stay lazy (registered on first access) because, unlike fonts,
+# they are never addressed by a bare matplotlib rcParam string.
+font.ensure_loaded()
+
+
 # 0.3 width tokens (SW/MW/TW/DW/WIDTHS), figure-size tuples (FS_*), the
 # cm2in helper, the figure constructors (subplots/figure), and the
 # agent_utils/xplot module aliases were removed across 0.4.x; the

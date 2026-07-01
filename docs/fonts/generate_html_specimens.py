@@ -66,7 +66,9 @@ FONT_META = {
 
 def _collect_fonts() -> dict[str, list[str]]:
     """Collect and group font files by family."""
-    font_files = [f for f in os.listdir(FONT_DIR) if f.endswith(".ttf")]
+    font_files = [
+        f for f in os.listdir(FONT_DIR) if f.endswith((".ttf", ".otf"))
+    ]
     families: dict[str, list[str]] = defaultdict(list)
     for font in font_files:
         family = font.split("-")[0]
@@ -130,9 +132,10 @@ def generate_fontface_css() -> str:
         lines.append(f"/* ── {family} ── */")
         for font in sorted(fonts):
             css_name = _font_face_name(font)
+            fmt = "opentype" if font.lower().endswith(".otf") else "truetype"
             lines.append("@font-face {")
             lines.append(f"  font-family: '{css_name}';")
-            lines.append(f"  src: url('fonts/{font}') format('truetype');")
+            lines.append(f"  src: url('fonts/{font}') format('{fmt}');")
             lines.append("  font-display: swap;")
             lines.append("}")
             lines.append("")
@@ -388,8 +391,9 @@ def build_html_specimens() -> None:
 
     # 1. Copy fonts to _static/fonts/
     STATIC_FONTS.mkdir(parents=True, exist_ok=True)
-    for ttf in FONT_DIR.glob("*.ttf"):
-        shutil.copy2(ttf, STATIC_FONTS / ttf.name)
+    for pat in ("*.ttf", "*.otf"):
+        for fnt in FONT_DIR.glob(pat):
+            shutil.copy2(fnt, STATIC_FONTS / fnt.name)
     print(f"[html-specimens] copied fonts to {STATIC_FONTS}")
 
     # 2. Generate @font-face CSS

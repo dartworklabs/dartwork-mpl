@@ -15,16 +15,17 @@ Font Utilities <utilities>
 
 ## Overview
 
-dartwork-mpl includes **130 professional fonts** from **9 font families**, all
-optimized for data visualization and publication-quality figures. When you
-import the library, these fonts become immediately available to matplotlib.
+dartwork-mpl bundles **204 text font files across 16 families** (sans-serif
+plus four monospace), all optimized for data visualization and
+publication-quality figures. They are registered with matplotlib's font
+manager on `import dartwork_mpl`, so `plt.rcParams["font.family"] = "Inter"`
+(or any bundled family) resolves immediately — no manual font installation
+or configuration required.
 
-**All nine families, one click apart.** dartwork-mpl bundles 130 font
-variants across 9 families and registers every one with matplotlib on
-import. The picker below cycles through them live — each tab swaps the
-specimen below to that family's actual rendered samples, with the
-correct weights, so what you see is exactly what `dm.style.use(...)`
-will produce in a chart.
+**Every family, one click apart.** The picker below cycles through them
+live — each tab swaps the specimen below to that family's actual rendered
+samples, with the correct weights, so what you see is exactly what
+`plt.rcParams["font.family"] = "..."` will produce in a chart.
 
 ```{raw} html
 :file: ../_static/fonts_picker.html
@@ -58,8 +59,8 @@ plt.show()
 ## Key Features
 
 **Auto-Registration**
-: All 130 fonts are registered with matplotlib's font manager on import.
-No manual font installation or configuration needed.
+: All 204 font files are registered with matplotlib's font manager on
+`import dartwork_mpl`. No manual font installation or configuration needed.
 
 **Relative Sizing**
 : `fs(n)` adjusts font sizes relative to your base style. `fw(n)` adjusts
@@ -71,21 +72,39 @@ different output formats.
 scientific notation and equations.
 
 **Multi-Language**
-: Paperlogy for Korean (한글), Noto Sans CJK for Japanese/Chinese — all bundled
-and auto-registered. No system font installation needed.
+: Pretendard and Paperlogy for Korean (한글), Noto Sans CJK for
+Japanese/Chinese — all bundled and auto-registered. No system font
+installation needed.
+
+**Monospace**
+: Four fixed-width families for tabular figures, code, and aligned labels —
+IBM Plex Mono, JetBrains Mono, Source Code Pro, and Roboto Mono (each pairs
+with its sans sibling).
 
 ## Bundled Fonts Summary
 
-| Family                       | Variants | Primary Use Case                   |
-| ---------------------------- | -------- | ---------------------------------- |
-| **Roboto**                   | 4        | Default body text, general purpose |
-| **Inter**                    | 20       | UI text, presentations             |
-| **InterDisplay**             | 20       | Headings, titles                   |
-| **Noto Sans**                | 15       | Multi-language documents           |
-| **Noto Sans Condensed**      | 20       | Tables, dense layouts              |
-| **Noto Sans SemiCondensed**  | 20       | Labels, legends                    |
-| **Noto Sans Math**           | 1        | Mathematical expressions           |
-| **Paperlogy**                | 4        | Korean (한글) text                 |
+Every family ships a full weight range (plus italics where the upstream
+publishes them). All are SIL Open Font License or Apache-2.0; the license
+texts are bundled under `asset/font/licenses/`.
+
+| Family                       | Files | Primary use case                   |
+| ---------------------------- | ----- | ---------------------------------- |
+| **Roboto**                   | 12    | Default body text, general purpose |
+| **Inter**                    | 18    | UI text, presentations             |
+| **Inter Display**            | 18    | Headings, titles                   |
+| **Source Sans 3**            | 14    | Humanist body text                 |
+| **IBM Plex Sans**            | 14    | Technical / interface text         |
+| **Noto Sans**                | 18    | Multi-language documents           |
+| **Noto Sans SemiCondensed**  | 18    | Labels, legends                    |
+| **Noto Sans Condensed**      | 18    | Tables, dense layouts              |
+| **Pretendard**               | 9     | Korean (한글) + Latin              |
+| **Paperlogy**                | 9     | Korean (한글) text                 |
+| **Noto Sans CJK KR**         | 1     | CJK (한·중·일) coverage            |
+| **IBM Plex Mono**            | 14    | Monospace, tabular figures         |
+| **JetBrains Mono**           | 16    | Monospace, code / dense tables     |
+| **Source Code Pro**          | 14    | Monospace, pairs with Source Sans  |
+| **Roboto Mono**              | 10    | Monospace, pairs with Roboto       |
+| **Noto Sans Math**           | 1     | Mathematical expressions           |
 
 ## Bundled Icon Fonts
 
