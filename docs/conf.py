@@ -276,13 +276,7 @@ sphinx_gallery_conf = {
     # examples (stricter isolation than the serial path). Falls back to
     # serial automatically if joblib is unavailable. The generated gallery
     # tree is gitignored, so worker-order differences never dirty the repo.
-    # Disabled: under CI's low core count the loky workers — reused across
-    # multiple examples per process — produced a deterministic gallery-
-    # execution failure (an explicit ``dc.*`` colour arriving at matplotlib
-    # as a *stale* pre-rename name) that neither the serial build nor a
-    # high-core parallel build reproduces. The ~70 example executions are
-    # slower serially, but a correct, deterministic docs build wins.
-    "parallel": False,
+    "parallel": True,
 }
 
 # Local fast-preview escape hatch: ``PLOT_GALLERY=0 sphinx-build ...``
