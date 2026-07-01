@@ -20,6 +20,24 @@ def _minimal(ax: plt.Axes) -> None:
     """Inline minimal-axes recipe (top/right hidden + light dashed y-grid)."""
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
+    import sys as _sys
+
+    import matplotlib as _mpl
+    import matplotlib.colors as _mc
+
+    print(
+        f"[DIAG] grid.color={_mpl.rcParams.get('grid.color')!r} "
+        f"cycle={_mpl.rcParams['axes.prop_cycle'].by_key().get('color')}",
+        file=_sys.stderr,
+        flush=True,
+    )
+    for _name in ("dc.nordic1", "dc.muted1", "dc.pastel1", "dc.nordic0"):
+        try:
+            _mc.to_rgba(_name)
+            _ok = "OK"
+        except Exception as _exc:  # noqa: BLE001
+            _ok = f"FAIL:{type(_exc).__name__}"
+        print(f"[DIAG] resolve {_name}={_ok}", file=_sys.stderr, flush=True)
     ax.grid(
         True,
         axis="y",
