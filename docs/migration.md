@@ -8,8 +8,8 @@ This guide collects every rename / deprecation that has shipped on PyPI
 (v0.4.0 onwards), ordered newest first. Each removed symbol now raises
 `AttributeError` / `ModuleNotFoundError` / `TypeError` with a message
 naming its replacement. The `dartwork_mpl.asset_viz` and
-`dartwork_mpl.helpers.formatting` submodule aliases still import with a
-`DeprecationWarning` and are scheduled for removal in **v1.0**.
+`dartwork_mpl.helpers.formatting` submodule aliases were removed in
+**v0.5.4** — the old import paths now raise `ModuleNotFoundError`.
 
 > **New to dartwork-mpl?** You don't need this page. Head to the
 > [Quick Start](usage_guide/quickstart.md) — it uses the current API
@@ -24,7 +24,7 @@ naming its replacement. The `dartwork_mpl.asset_viz` and
 | `dm.figure(width=..., aspect=...)`    | `plt.figure(figsize=dm.figsize(...))`                |
 | `dm.subplots(..., style=...)`         | call `dm.style.use(...)` first, then `plt.subplots`  |
 | `plt.tight_layout()`                  | `dm.simple_layout(fig)`                              |
-| `dm.auto_layout(fig)`                 | `dm.simple_layout(fig)` (auto_layout is a deprecation alias) |
+| `dm.auto_layout(fig)`                 | `dm.simple_layout(fig)`                              |
 | `dm.simple_layout(fig, margins=(...), bbox=..., bound_margin=..., gtol=..., importance_weights=...)` | `dm.simple_layout(fig, margin="2%", ml=..., mr=..., mt=..., mb=...)` (new keyword API) |
 | `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`                        |
 | `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`                           |

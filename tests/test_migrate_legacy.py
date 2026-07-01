@@ -103,7 +103,7 @@ class TestPassThrough:
             "import dartwork_mpl as dm\n"
             'dm.style.use("scientific")\n'
             'fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))\n'
-            "dm.auto_layout(fig)\n"
+            "dm.simple_layout(fig)\n"
         )
         assert migrate_legacy_code(modern) == modern
 

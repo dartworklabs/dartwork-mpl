@@ -48,7 +48,7 @@ def test_preset_round_trip(preset: str, tmp_path: Path) -> None:
     ax.set_ylabel("Value")
     ax.set_xlabel("Index")
 
-    dm.auto_layout(fig)
+    dm.simple_layout(fig, margin=dm.inch(0.08))
 
     out_stem = str(tmp_path / f"preset_{preset}")
     dm.save_formats(fig, out_stem, formats=("png", "pdf"), validate=False)

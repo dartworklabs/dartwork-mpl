@@ -1326,7 +1326,7 @@ def register_tools(mcp: FastMCP) -> None:
                         "Call dm.simple_layout(fig) after plotting. "
                         "Default margin=0 snaps content flush to the "
                         "figure edge; pass margin='2%' or dm.mm(2) for "
-                        "a buffer. dm.auto_layout is a deprecated alias. "
+                        "a buffer. dm.auto_layout was removed in 0.5.4; use dm.simple_layout. "
                         "tight_layout() is forbidden."
                     ),
                     "default_dpi": "Controlled by the active style preset.",

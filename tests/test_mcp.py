@@ -79,30 +79,6 @@ class TestMcpResources:
         register_resources(mock_mcp)
         assert mock_mcp.resource.call_count >= 8
 
-    def test_general_guide_returns_string(self) -> None:
-        """General guide resource returns a non-empty string."""
-        from dartwork_mpl.mcp.resources import register_resources
-
-        mock_mcp = MagicMock()
-        captured = _capture_decorators(mock_mcp, "resource")
-        register_resources(mock_mcp)
-
-        guide = captured["dartwork-mpl://guide/general-guide"]()
-        assert isinstance(guide, str)
-        assert len(guide) > 0
-
-    def test_layout_guide_returns_string(self) -> None:
-        """Layout guide resource returns a non-empty string."""
-        from dartwork_mpl.mcp.resources import register_resources
-
-        mock_mcp = MagicMock()
-        captured = _capture_decorators(mock_mcp, "resource")
-        register_resources(mock_mcp)
-
-        guide = captured["dartwork-mpl://guide/layout-guide"]()
-        assert isinstance(guide, str)
-        assert len(guide) > 0
-
     def test_migration_guide_returns_string(self) -> None:
         """Migration guide resource (added in 0.4.x) is registered and
         sources from ``asset/prompt/_legacy/migration-from-0.3.md``."""
@@ -300,7 +276,7 @@ class TestMcpTools:
             "import dartwork_mpl as dm\n"
             'fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))\n'
             'ax.plot([1, 2, 3], color="dc.blue500")\n'
-            "dm.auto_layout(fig)\n"
+            "dm.simple_layout(fig)\n"
             'dm.save_and_show(fig, "out")\n'
         )
         result = captured["lint_dartwork_mpl_code"](clean_code)
@@ -377,7 +353,7 @@ class TestMcpTools:
             "import dartwork_mpl as dm\n"
             'fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))\n'
             'ax.plot([1, 2, 3], color="dc.blue500")\n'
-            "dm.auto_layout(fig)\n"
+            "dm.simple_layout(fig)\n"
             'dm.save_and_show(fig, "out")\n'
         )
         result = captured["lint_dartwork_mpl_code_json"](clean_code)

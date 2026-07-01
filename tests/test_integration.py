@@ -56,8 +56,6 @@ EXPECTED_MCP_RESOURCE_URIS: frozenset[str] = frozenset(
         "dartwork-mpl://guide/policy",
         "dartwork-mpl://guide/anti-patterns",
         "dartwork-mpl://guide/recipes",
-        "dartwork-mpl://guide/general-guide",
-        "dartwork-mpl://guide/layout-guide",
         "dartwork-mpl://guide/migration",
         "dartwork-mpl://api/index",
         "dartwork-mpl://palette/colors",

@@ -38,10 +38,8 @@ def register_resources(mcp: FastMCP) -> None:
 
     # ── Guide Resources ──────────────────────────────────────────────
     #
-    # 0.4 SSOT layout (asset/prompt/00-index, 01-policy, 02-anti-patterns,
-    # 03-recipes, 05-templates, _legacy). The legacy general-guide /
-    # layout-guide URIs are retained for back-compat — they delegate to
-    # 00-index and to a layout-focused passage of 01-policy respectively.
+    # SSOT layout (asset/prompt/00-index, 01-policy, 02-anti-patterns,
+    # 03-recipes, 05-templates, _legacy).
 
     @mcp.resource("dartwork-mpl://guide/agent-entry")
     def agent_entry() -> str:
@@ -65,16 +63,6 @@ def register_resources(mcp: FastMCP) -> None:
     def recipes() -> str:
         """Intent → function-call cookbook."""
         return get_prompt("03-recipes")
-
-    @mcp.resource("dartwork-mpl://guide/general-guide")
-    def general_guide() -> str:
-        """DEPRECATED alias for guide/agent-entry."""
-        return get_prompt("00-index")
-
-    @mcp.resource("dartwork-mpl://guide/layout-guide")
-    def layout_guide() -> str:
-        """DEPRECATED alias for guide/policy (kept for 0.3 clients)."""
-        return get_prompt("01-policy")
 
     @mcp.resource("dartwork-mpl://guide/migration")
     def migration_guide() -> str:

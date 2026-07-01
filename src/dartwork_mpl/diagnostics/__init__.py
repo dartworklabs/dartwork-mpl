@@ -14,9 +14,8 @@ The implementation is split across ``_colormaps`` / ``_colors`` /
 ``_fonts`` submodules (#235); import from this package (or the top-level
 :mod:`dartwork_mpl` namespace) rather than the submodules directly.
 
-These functions used to live in the :mod:`dartwork_mpl.asset_viz`
-subpackage. That import path still works but emits a
-:class:`DeprecationWarning`.
+These functions used to live in the ``dartwork_mpl.asset_viz``
+subpackage; that import path was removed in 0.5.4.
 """
 
 from __future__ import annotations

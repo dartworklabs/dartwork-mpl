@@ -50,7 +50,6 @@ Layout Functions
    :doc:`../migration`.
 
 .. autofunction:: dartwork_mpl.simple_layout
-.. autofunction:: dartwork_mpl.auto_layout
 
 Annotation Functions
 ^^^^^^^^^^^^^^^^^^^^

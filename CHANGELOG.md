@@ -19,6 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   preserved: `vivid→bold`, `sunset→earth`, `ocean→teal`, `pop→spectrum`,
   `cyber→jewel`, `autumn→dusty`, `nordic→teal_indigo`. `dc_palettes.json`
   drops from 32 to 25 keys (24 curated + the `dc.0-7` default). (#367)
+- **BREAKING — deprecated aliases removed (no debt carried forward).**
+  - `dm.auto_layout` → use `dm.simple_layout(fig, margin=...)` (the legacy
+    `padding` inches arg maps to `margin`; `max_iter`/`tolerance` were
+    obsolete). Now raises a migration-hint `AttributeError`.
+  - `dartwork_mpl.helpers.formatting` module → `dartwork_mpl.helpers.labels`.
+  - `dartwork_mpl.asset_viz` module → `dartwork_mpl.diagnostics`.
+    Both removed modules now raise `ModuleNotFoundError`.
+  - MCP resource aliases `dartwork-mpl://guide/general-guide` and
+    `…/guide/layout-guide` → use `…/guide/agent-entry` and `…/guide/policy`.
+  - `ui._config.append_history` / `load_history` → `save_preset` /
+    `load_presets`. (#368)
 
 ### Added
 
