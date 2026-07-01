@@ -18,7 +18,10 @@ from __future__ import annotations
 import importlib.util
 import json
 import re
+import runpy
 from pathlib import Path
+
+import pytest
 
 _REPO = Path(__file__).resolve().parents[1]
 _SCRIPTS = _REPO / "docs" / "_static" / "scripts"
@@ -130,3 +133,23 @@ def test_built_widgets_have_no_renamed_away_names() -> None:
         if hits:
             offenders[widget.name] = hits
     assert not offenders, f"stale palette names in built widgets: {offenders}"
+
+
+def test_gen_palettes_reproduces_committed_ssot() -> None:
+    """Running ``gen_palettes.py`` must reproduce the committed
+    ``dm_palettes_gen.json`` — the CIELAB colour SSOT that
+    ``build_dc_palettes.py`` consumes. Without this guard, editing a hue in
+    ``gen_palettes.py`` and forgetting to copy the ``/tmp`` output onto the
+    tracked file would silently leave the whole gen -> package -> widget chain
+    on stale colours while every other test still passed."""
+    pytest.importorskip("colorspacious")
+    committed = json.loads(
+        (_SCRIPTS / "dm_palettes_gen.json").read_text("utf-8")
+    )
+    # The generator computes its result into a module-level ``res`` dict (and
+    # writes it to /tmp as a side effect). Exec it and compare that dict.
+    ns = runpy.run_path(str(_SCRIPTS / "gen_palettes.py"))
+    regenerated = json.loads(json.dumps(ns["res"]))
+    assert regenerated == committed, (
+        "gen_palettes.py output drifted from the committed dm_palettes_gen.json"
+    )
