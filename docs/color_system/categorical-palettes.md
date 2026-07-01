@@ -1,15 +1,14 @@
 # Categorical palettes
 
-dartwork's discrete categorical palettes — a curated **24-palette system across
-11 families**. Every palette is **8 colors**, CIELAB-generated and verified for
-**black-&-white** and **color-blindness (CVD)**, with the house teal `#12a594`
-anchoring the general-purpose sets.
+dartwork's discrete categorical palettes — a curated 24-palette system across
+11 families. Every palette is 8 colors, verified for grayscale and
+color-blindness (CVD).
 
 Pick by the *shape and job* of your data:
 
-- **Ordered** (rank / amount) → Sequential, or **Neutral** if hue carries no meaning
-- **Ordered around a midpoint** (±, change, correlation) → **Diverging**
-- **Highlight one series**, mute the rest → **Focus**
+- **Ordered** (rank / amount) → Sequential, or Neutral if hue carries no meaning
+- **Ordered around a midpoint** (±, change, correlation) → Diverging
+- **Highlight one series**, mute the rest → Emphasis
 - **A few related series** → Analogous · **Two opposed groups** → Duo
 - **Everyday 4–8 categories** → Balanced · **Many unrelated** → Spectrum
 - **A specific tone** → Muted, Earth, or Jewel · **Mandatory CVD** → Accessible (Okabe-Ito)
@@ -17,9 +16,13 @@ Pick by the *shape and job* of your data:
 ```python
 import dartwork_mpl as dm
 
-dm.set_cycle("trustworthy")              # the everyday default cycle (global)
-cols = dm.get_palette("spectrum", n=6)   # first 6 — the best-separated subset
-dm.set_cycle("teal_accent", ax=ax)             # highlight one series on this Axes only
+dm.set_cycle("trustworthy")              # everyday default cycle (global)
+dm.set_cycle("teal_accent", ax=ax)       # highlight one series, this Axes only
+
+cols = dm.get_palette("spectrum", n=6)                # first 6 — best-separated subset
+cols = dm.get_palette("spectrum", n=4, subset="even")             # or: 4 spread across the range
+cols = dm.get_palette("spectrum", order="lightness", reverse=True)  # or: re-sorted dark → light
+dm.set_cycle(cols)                       # apply a palette result (or any color list)
 ```
 
 `dm.get_palette(name, n=None, subset="first"|"even"|"last", *,

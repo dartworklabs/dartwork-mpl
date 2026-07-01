@@ -130,8 +130,8 @@ wide = distinctness). Pick by the *shape* of your data:
 | Family | Members | Job |
 |---|---|---|
 | **Neutral** (3) | `gray` (true neutral) `warm_gray` `cool_gray` | hue-free ordered amount |
-| **Emphasis** (2) | `teal_accent` (teal accent) `coral_accent` (coral accent) | highlight one series, mute rest |
-| **Muted** (2) | `pastel` (pastel) `dusty` (deep/vintage) | soft editorial |
+| **Emphasis** (2) | `teal_accent` `coral_accent` | highlight one series, mute rest |
+| **Muted** (2) | `pastel` `dusty` (deep/vintage) | soft editorial |
 | **Diverging** (2) | `coolwarm` `teal_amber` | ordered ± data (change/correlation). **B&W-exempt** (ends share L by design) |
 | **Tone** (2) | `earth` (warm/organic) `jewel` (deep/premium) | aesthetic verticals |
 | **Accessible** (1) | `accessible` | mandatory CVD — **Okabe-Ito, fixed reference** (the one justified singleton) |
