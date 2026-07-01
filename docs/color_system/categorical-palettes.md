@@ -1,8 +1,8 @@
 # Categorical palettes
 
 dartwork's discrete categorical palettes — a curated **24-palette system across
-11 families**. Every palette is **8 colours**, CIELAB-generated and verified for
-**black-&-white** and **colour-blindness (CVD)**, with the house teal `#12a594`
+11 families**. Every palette is **8 colors**, CIELAB-generated and verified for
+**black-&-white** and **color-blindness (CVD)**, with the house teal `#12a594`
 anchoring the general-purpose sets.
 
 Pick by the *shape and job* of your data:
@@ -22,37 +22,26 @@ cols = dm.get_palette("spectrum", n=6)   # first 6 — the best-separated subset
 dm.set_cycle("focus", ax=ax)             # highlight one series on this Axes only
 ```
 
-`dm.get_palette(name, n=None, subset="first"|"even"|"last")` returns colour names;
-`dm.set_cycle(palette, ax=None, n=None)` applies a palette (or an explicit colour
-list) to the global cycle or a single Axes. Bare names resolve under `dc.`
-(`"trustworthy"` → `dc.trustworthy0…7`).
+`dm.get_palette(name, n=None, subset="first"|"even"|"last", *,
+order="default"|"lightness"|"shuffle", reverse=False, seed=None)` returns color
+names — choose how many (`n` / `subset`), then optionally re-arrange them: `order`
+sorts light→dark by lightness or shuffles; `reverse` flips the cycle; `seed` makes a
+shuffle reproducible. `dm.set_cycle(palette, ax=None, n=None)` applies a palette (or
+an explicit color list) to the global cycle or a single Axes. Bare names resolve
+under `dc.` (`"trustworthy"` → `dc.trustworthy0…7`).
 
-## Browse
+## Explore
 
-Every palette as a specimen — grouped by family, with its grayscale-separability
-and colour-vision distances on show. Hover a swatch for its hex and L*; click to
-copy. Filter by family along the top.
-
-```{raw} html
-<iframe src="../_static/palette_showcase.html" title="dartwork palette specimen"
-        loading="lazy"
-        style="width:100%;height:880px;border:1px solid var(--dm-border-faint,#e6e6e6);border-radius:12px;">
-</iframe>
-```
-
-## Compare across charts
-
-Pick a palette, drag the colour count, toggle B&W / dark-canvas, and compare it
-across nine chart shapes at once.
+Pick any palette and read it across nine chart shapes — with its grayscale and
+color-vision checks — in a single view. Drag the color counts, sort by lightness,
+shuffle or reverse the cycle, and toggle black & white; click a swatch to copy its
+hex, or copy the matching `dm.get_palette(...)` call.
 
 ```{raw} html
-<iframe src="../_static/palette_explorer.html" title="dartwork palette explorer"
-        loading="lazy"
-        style="width:100%;height:1500px;border:1px solid var(--dm-border-faint,#e6e6e6);border-radius:12px;">
-</iframe>
+:file: ../_static/categorical_explorer.html
 ```
 
-> The design rationale (the eight criteria, the colour-count decision, and the
-> spectral-width + intent-family organisation) lives in
-> `docs/_static/dartwork-discrete-palette-rationale.md`; the colours are
+> The design rationale (the eight criteria, the color-count decision, and the
+> spectral-width + intent-family organization) lives in
+> `docs/_static/dartwork-discrete-palette-rationale.md`; the colors are
 > generated and verified by `docs/_static/scripts/gen_palettes.py`.

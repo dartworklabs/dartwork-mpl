@@ -1,0 +1,518 @@
+<div id="dm-exp" class="yue">
+<style>
+#dm-exp * {box-sizing:border-box;}
+#dm-exp {margin:0;background:var(--dm-bg-page);color:var(--dm-gray-12);
+  font-family:var(--dm-f-sys,"Inter",system-ui,sans-serif);letter-spacing:-.003em;}
+#dm-exp .poc-wrap {max-width:1180px;margin:0 auto;padding:26px 24px 90px;}
+#dm-exp .poc-h {font-size:13px;color:var(--dm-text-muted);margin:0 0 18px;line-height:1.5;}
+#dm-exp .poc-h b {color:var(--dm-gray-12);font-weight:650;}
+#dm-exp .mini {display:inline-flex;height:13px;border-radius:3px;overflow:hidden;}
+#dm-exp .mini i {flex:1;min-width:3px;}
+#dm-exp .strip {display:flex;gap:6px;margin:0 0 4px;}
+#dm-exp .sw {appearance:none;background:transparent;border:0;padding:0;font:inherit;flex:1;min-width:0;
+  cursor:pointer;display:block;text-align:center;}
+#dm-exp .sw .chip {display:block;height:34px;border-radius:6px;transition:transform .1s,box-shadow .1s;}
+#dm-exp .sw:hover .chip {transform:translateY(-2px);box-shadow:0 2px 6px rgba(0,0,0,.12);}
+#dm-exp .sw .hx {font-family:var(--dm-f-mono,monospace);font-size:9px;color:var(--dm-text-muted);margin-top:4px;overflow:hidden;}
+#dm-exp .sw.copied .hx {color:var(--dm-accent-11);font-weight:700;}
+#dm-exp .sw.copied .hx::after {content:" ✓";}
+#dm-exp .plots {display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:12px;}
+#dm-exp .pcell {border:1px solid var(--dm-border-faint);border-radius:10px;padding:9px 11px;background:var(--dm-bg-page);}
+#dm-exp .pcell .pl {font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--dm-text-muted);margin-bottom:7px;}
+#dm-exp .plots.gs svg, #dm-exp .strip.gs .chip {filter:grayscale(1);}
+#dm-exp svg {display:block;width:100%;height:auto;}
+#dm-exp .meta {font-size:12px;color:var(--dm-text-muted);line-height:1.6;display:grid;gap:3px;margin-top:13px;}
+#dm-exp .meta b {color:var(--dm-gray-12);font-weight:600;}
+#dm-exp .code {margin-top:13px;background:var(--dm-i-code-surface);border-radius:8px;padding:11px 14px;
+  font-family:var(--dm-f-mono,monospace);font-size:11.5px;color:var(--dm-gray-12);white-space:pre;overflow-x:auto;}
+#dm-exp .cwrap {display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--dm-text-muted);}
+#dm-exp .cwrap input[type=range] {width:96px;accent-color:var(--dm-accent-9);}
+#dm-exp .seg {display:inline-flex;align-items:center;gap:1px;border:1px solid var(--dm-border-faint);
+  border-radius:8px;padding:2px;background:var(--dm-bg-page);}
+#dm-exp .seg .sl {font-size:9.5px;color:var(--dm-text-muted);text-transform:uppercase;letter-spacing:.05em;padding:0 6px 0 4px;}
+#dm-exp .segbtn {appearance:none;background:transparent;border:0;border-radius:6px;padding:4px 11px;font:inherit;
+  font-size:11.5px;font-weight:500;color:var(--dm-text-muted);cursor:pointer;transition:background .12s,color .12s;}
+#dm-exp .segbtn:hover {color:var(--dm-gray-12);}
+#dm-exp .segbtn.on {background:var(--dm-accent-3);color:var(--dm-accent-11);font-weight:600;}
+#dm-exp .dh {display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;}
+#dm-exp .dh h3 {margin:0;font-size:16px;font-weight:700;}
+#dm-exp .dh .band {font-size:11px;color:var(--dm-text-muted);font-family:var(--dm-f-mono,monospace);}
+#dm-exp .dctrl {margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+#dm-exp .dm-toast {position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--dm-gray-12);color:var(--dm-bg-page);padding:8px 16px;border-radius:999px;font-size:12.5px;opacity:0;transition:opacity .18s;pointer-events:none;z-index:99999;}
+#dm-exp .dm-toast.show {opacity:1;}
+#dm-exp .poc-switch {position:fixed;top:0;left:0;right:0;z-index:99;display:flex;gap:8px;justify-content:center;
+  background:#111;color:#fff;padding:7px;font:600 12px Inter,system-ui,sans-serif;}
+#dm-exp .poc-switch a {color:#fff;text-decoration:none;padding:4px 13px;border-radius:999px;border:1px solid #444;opacity:.72;}
+#dm-exp .poc-switch a.on {background:#12a594;border-color:#12a594;opacity:1;}
+#dm-exp .term {position:relative;display:inline-block;border-bottom:1px dotted var(--dm-gray-7);cursor:help;outline:none;}
+#dm-exp .term:focus {border-bottom-color:var(--dm-accent-9);}
+#dm-exp .term::after {content:attr(data-tip);position:absolute;left:0;top:calc(100% + 8px);width:max-content;max-width:250px;
+  background:var(--dm-gray-12);color:var(--dm-bg-page);padding:9px 12px;border-radius:9px;
+  font:400 11px/1.55 var(--dm-f-sys,"Inter",system-ui,sans-serif);letter-spacing:0;text-transform:none;
+  opacity:0;visibility:hidden;transform:translateY(-3px);transition:opacity .14s ease,transform .14s ease;
+  z-index:60;pointer-events:none;box-shadow:0 5px 16px rgba(0,0,0,.17);white-space:normal;}
+#dm-exp .term:hover::after, #dm-exp .term:focus::after {opacity:1;visibility:visible;transform:translateY(0);}
+#dm-exp .term.r::after {left:auto;right:0;}
+@media(prefers-reduced-motion:reduce) {
+#dm-exp .term::after {transition:none;}
+}
+#dm-exp .ro {display:flex;flex-direction:column;gap:8px;margin:15px 0 19px;}
+#dm-exp .ro-i {display:flex;align-items:baseline;gap:9px;font-size:14.5px;flex-wrap:wrap;}
+#dm-exp .ro-ic {font-size:13px;line-height:1.2;color:var(--dm-gray-7);font-weight:700;}
+#dm-exp .ro-ic.ok {color:var(--dm-accent-10);}
+#dm-exp .ro-tx {color:var(--dm-text-muted);}
+#dm-exp .ro-tx b {color:var(--dm-gray-12);font-weight:600;}
+#dm-exp .ro-n {font-family:var(--dm-f-mono,monospace);font-size:11.5px;color:var(--dm-gray-8);}
+#dm-exp .swcap {font-size:11px;color:var(--dm-gray-8);margin-bottom:9px;}
+#dm-exp .poc-h {font-size:14.5px;line-height:1.65;}
+#dm-exp .meta {font-size:14.5px;line-height:1.72;}
+#dm-exp .meta b {font-weight:650;}
+#dm-exp .code pre {margin:0;padding:0;background:transparent;font:inherit;color:inherit;white-space:pre;overflow-x:auto;}
+#dm-exp .field {display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;}
+#dm-exp .cl {font-size:13px;font-weight:500;color:var(--dm-gray-9);letter-spacing:normal;text-transform:none;white-space:nowrap;}
+#dm-exp .crng {accent-color:var(--dm-accent-9);width:70px;}
+#dm-exp .cval {font-size:14px;font-weight:700;color:var(--dm-accent-11);min-width:1ch;}
+#dm-exp .optset {display:inline-flex;align-items:center;gap:15px;}
+#dm-exp .topt {appearance:none;border:0;background:transparent;padding:1px 1px 5px;font:inherit;font-size:14px;color:var(--dm-text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:color .12s,border-color .12s;}
+#dm-exp .topt:hover {color:var(--dm-gray-12);}
+#dm-exp .topt.on {color:var(--dm-gray-12);font-weight:650;border-bottom-color:var(--dm-accent-9);}
+#dm-exp .cchips {display:inline-flex;gap:6px;}
+#dm-exp .copt {appearance:none;background:var(--dm-bg-page);border:1px solid var(--dm-border);border-radius:999px;padding:4px 13px;font:inherit;font-size:13.5px;color:var(--dm-gray-11);cursor:pointer;transition:all .12s;}
+#dm-exp .copt:hover {border-color:var(--dm-border-strong);}
+#dm-exp .copt.on {background:var(--dm-accent-9);border-color:var(--dm-accent-9);color:#fff;font-weight:600;}
+#dm-exp .cchk {display:inline-flex;align-items:center;gap:7px;font-size:14px;color:var(--dm-gray-12);cursor:pointer;}
+#dm-exp .cchk input {accent-color:var(--dm-accent-9);width:15px;height:15px;}
+#dm-exp .cgrp {display:inline-flex;align-items:center;gap:20px;flex-wrap:wrap;}
+#dm-exp .tgl {appearance:none;border:0;background:transparent;padding:0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font:inherit;flex:0 0 auto;white-space:nowrap;}
+#dm-exp .tgl .tgl-l {font-size:13px;font-weight:500;color:var(--dm-gray-9);transition:color .12s;}
+#dm-exp .tgl.on .tgl-l {color:var(--dm-gray-12);}
+#dm-exp .tgl-tr {width:32px;height:18px;border-radius:999px;background:var(--dm-gray-5);position:relative;transition:background .15s;flex:0 0 auto;}
+#dm-exp .tgl-kn {position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.28);transition:left .15s;}
+#dm-exp .tgl.on .tgl-tr {background:var(--dm-accent-9);}
+#dm-exp .tgl.on .tgl-kn {left:16px;}
+#dm-exp .step {display:inline-flex;align-items:center;gap:8px;}
+#dm-exp .stepb {appearance:none;border:1px solid var(--dm-border);background:var(--dm-bg-page);border-radius:7px;
+  width:24px;height:24px;font:inherit;font-size:15px;line-height:1;color:var(--dm-gray-11);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;}
+#dm-exp .stepb:hover {border-color:var(--dm-border-strong);color:var(--dm-gray-12);}
+#dm-exp .stepv {font-size:14px;font-weight:700;color:var(--dm-accent-11);min-width:1ch;text-align:center;}
+#dm-exp .md {display:grid;grid-template-columns:198px 1fr;gap:28px;align-items:start;}
+@media(max-width:760px) {
+#dm-exp .md {grid-template-columns:1fr;gap:18px;}
+#dm-exp .detail {position:static!important;}
+}
+#dm-exp .rail {display:flex;flex-direction:column;gap:1px;}
+#dm-exp .rail .fh {font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--dm-gray-10);margin:16px 0 5px;}
+#dm-exp .rail .fh:first-child {margin-top:0;}
+#dm-exp .ri {display:flex;align-items:center;gap:10px;padding:4px 9px;border-radius:9px;cursor:pointer;min-width:0;}
+#dm-exp .ri:hover {background:var(--dm-gray-a2);}
+#dm-exp .ri.on {background:var(--dm-accent-2);}
+#dm-exp .ri .mini {flex:0 0 36px;height:12px;border-radius:4px;}
+#dm-exp .ri .nm {font-size:12px;font-weight:400;color:var(--dm-gray-12);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+#dm-exp .ri.on .nm {color:var(--dm-accent-11);font-weight:500;}
+#dm-exp .detail {position:sticky;top:48px;background:var(--dm-bg-subtle);border-radius:18px;padding:24px 26px;}
+#dm-exp .d-ey {font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--dm-accent-11);margin-bottom:7px;}
+#dm-exp .d-title {display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;}
+#dm-exp .d-title h3 {margin:0;font-size:25px;font-weight:700;letter-spacing:-.02em;}
+#dm-exp .d-key {font-family:var(--dm-f-mono,monospace);font-size:13px;color:var(--dm-accent-11);background:var(--dm-accent-2);
+  padding:2px 9px;border-radius:6px;font-weight:500;cursor:pointer;transition:background .12s;align-self:center;}
+#dm-exp .d-key:hover {background:var(--dm-accent-3);}
+#dm-exp .d-key.copied {background:var(--dm-accent-9);color:#fff;}
+#dm-exp .d-key.copied::after {content:" ✓";}
+#dm-exp .d-use {font-size:15.5px;color:var(--dm-gray-11);line-height:1.62;margin:11px 0 8px;min-height:4.86em;}
+#dm-exp .d-bar {display:flex;align-items:center;gap:13px;flex-wrap:nowrap;margin-bottom:16px;}
+#dm-exp .swhost {display:flex;gap:7px;margin-bottom:18px;}
+#dm-exp .swhost .sw {flex:1;}
+#dm-exp .swhost .chip {height:46px;border-radius:11px;}
+#dm-exp .swhost .hx {font-size:9px;}
+#dm-exp .plots {gap:13px;}
+#dm-exp .pcell {border:0;background:var(--dm-bg-page);border-radius:13px;padding:10px 12px;}
+#dm-exp .meta {margin-top:8px;}
+#dm-exp{width:100%;font-family:inherit;letter-spacing:normal;}
+#dm-exp .rail{position:sticky;top:96px;max-height:calc(100vh - 120px);overflow-y:auto;padding-right:8px;}
+#dm-exp .detail{position:static;top:auto;}
+#dm-exp .rail{scrollbar-width:thin;}
+#dm-exp .rail::-webkit-scrollbar{width:9px;}
+#dm-exp .rail::-webkit-scrollbar-thumb{background:var(--dm-gray-a4);border-radius:9px;border:2px solid transparent;background-clip:content-box;}
+#rside,.sy-rside{display:none!important;}
+@media(min-width:1280px){.sy-main{width:calc(100% - 18rem)!important;max-width:none!important;}}
+.yue,.yue.bd-article,.bd-article,.bd-content,.bd-article-container,.bd-main{max-width:none!important;}
+</style>
+<div class="md"><div class="rail" id="rail"></div><div class="detail" id="detail"></div></div>
+<script>(function(){const PALETTES = {
+    // ── SEQUENTIAL — single-hue lightness ramps (very narrow) ──
+    teal_seq:    { name:"Teal", fam:"Sequential", band:"very-narrow · single hue",
+      cols:["#2a524c","#166c61","#008577","#129e8e","#21b8a5","#5dcebd","#94e3d5","#caf7ee"],
+      intent:"Categories with a natural ORDER — quality tiers, time periods, confidence buckets — where rank should read straight off the lightness. A single house-teal hue stepped light to dark, which also makes it the most black-and-white-perfect palette in the set.",
+      design:"One hue (house teal, CIELAB h≈182) held constant; 8 steps on a monotonic L* ramp 32→94, chroma peaking mid. Being a pure lightness ramp makes it the most B&W-perfect palette.",
+      application:"Stacked area (weight top→bottom), ordered bars, confidence ribbons. Avoid for UNordered categories.",
+      bw:"min ΔL* 8.6", cvd:"d8.6 / p7.2 / t9.0" },
+    indigo_seq:  { name:"Indigo", fam:"Sequential", band:"very-narrow · single hue",
+      cols:["#414b64","#4d6089","#5b76ae","#6d8ccd","#86a4e6","#a3bcf8","#c5d4ff","#e8edff"],
+      intent:"Ordered categories in a cooler, more corporate register than teal — magnitude buckets, tiers, time periods. One indigo hue on an even lightness ramp, so rank reads instantly and every step survives grayscale printing intact.",
+      design:"Single indigo hue (CIELAB h≈280) on a monotonic L* ramp 32→94. A pure lightness ramp ⇒ flawless B&W; pairs as the cool member of the sequential set.",
+      application:"Heatmap rows, ordered bars, area, ribbons. Reads as rank.",
+      bw:"min ΔL* 8.6", cvd:"d8.9 / p8.6 / t8.9" },
+    coral_seq:   { name:"Coral", fam:"Sequential", band:"very-narrow · single hue",
+      cols:["#6c4a45","#93564e","#b86259","#d87368","#f1897d","#fea69a","#ffc6be","#ffe5e1"],
+      intent:"Ordered categories in a warm, human register — intensity, recency, heat or severity scales. A single coral hue stepped light to dark; the warm counterpart to the teal and indigo sequential ramps, and still safe in black and white.",
+      design:"Single coral hue (CIELAB h≈32) on a monotonic L* ramp 35→93. Warm counterpart to teal/indigo sequential.",
+      application:"Heat/intensity encodings, ordered bars, area. The warm sequential.",
+      bw:"min ΔL* 8.1", cvd:"d7.7 / p7.3 / t8.3" },
+    // ── ANALOGOUS — one-mood hue arcs (narrow) ──
+    teal_indigo: { name:"Teal → Indigo", fam:"Analogous", band:"narrow · cool arc",
+      cols:["#056463","#4cb3c3","#2b88aa","#a1d3ff","#486d9d","#aeb6ed","#958bbf","#f3daff"],
+      intent:"A few related series that should feel like ONE cool mood rather than a rainbow — cohesion over maximum distinctness. A teal-to-indigo arc separated by lightness, best for thin multi-line ensembles with an editorial, institutional tone.",
+      design:"A ~120° cool arc (teal→blue→indigo) on a staggered even L* ladder 38→90, so adjacent series contrast by lightness while sharing a family. Anchored on house teal.",
+      application:"Multi-series LINE ensembles (3–6 thin lines), area fills, refined scatter. Editorial / institutional tone.",
+      bw:"min ΔL* 7.4", cvd:"d6.3 / p5.5 / t9.6" },
+    forest:      { name:"Forest", fam:"Analogous", band:"narrow · green arc",
+      cols:["#475b26","#8cac74","#5b8554","#a4daa8","#37734d","#80c6a0","#619b70","#c7eeb4"],
+      intent:"A few related series in a natural, organic register — ESG, agriculture, environment, growth themes. A green arc held to one hue family and separated by lightness, so the lines read as cohesive and calm rather than scattered or noisy.",
+      design:"A ~40° green arc (yellow-green→teal-green) on a staggered even L* ladder 36→90 — one hue family, lightness-separated.",
+      application:"Multi-series line / area for environmental or organic topics. Calm, cohesive.",
+      bw:"min ΔL* 7.7", cvd:"d7.8 / p6.8 / t8.7" },
+    // ── DUO — warm vs cool split (medium) ──
+    warm_cool:   { name:"Warm / Cool", fam:"Duo", band:"medium · 180° split",
+      cols:["#91422f","#b36d44","#ed8987","#ffc18d","#06768f","#389ad1","#32cae0","#d3e4ff"],
+      intent:"TWO opposed groups — put the warm family on one side and the cool on the other for A/B, before/after, or sentiment splits. The temperature contrast groups the sides while internal lightness steps keep the members within each side distinct.",
+      design:"4 warm + 4 cool hues (≈180° apart), each an internal L* ramp; even ladder 38→90. Hue split groups, lightness separates within.",
+      application:"Grouped bars, two-cluster scatter, paired lines. Excellent CVD — the temperature split is the most colorblind-robust structure.",
+      bw:"min ΔL* 7.3", cvd:"d14.4 / p11.4 / t14.3" },
+    blue_orange: { name:"Blue / Orange", fam:"Duo", band:"medium · 180° split",
+      cols:["#036085","#2485c2","#17b2e3","#b1cfff","#a9532c","#cb8043","#fea18a","#ffddba"],
+      intent:"Two opposed groups using the single most colorblind-robust opposition, blue versus orange — A/B, gain/loss, before/after. The widest temperature split available, so the two sides stay clearly distinct even in grayscale or for CVD viewers.",
+      design:"4 blue + 4 orange hues (~180° apart), each an internal L* ramp; even ladder 38→90.",
+      application:"Grouped bars, two-cluster scatter, paired lines. Best-in-class CVD across all three types.",
+      bw:"min ΔL* 7.3", cvd:"d12.6 / p12.2 / t14.8" },
+    teal_coral:  { name:"Teal / Coral", fam:"Duo", band:"medium · 180° split",
+      cols:["#01655c","#0d8d8a","#2ab9a1","#3ae3e7","#ae5029","#d07d3e","#ffa183","#ffdcbe"],
+      intent:"Two opposed groups in the house-teal brand voice — teal against warm coral for A/B, before/after, or sentiment splits. The on-brand alternative to blue/orange, pairing the same temperature contrast with the dartwork identity color.",
+      design:"4 teal + 4 coral hues; even ladder 38→90. The warm side is pushed toward ORANGE (h≈44–68, not pure red) so the teal↔warm split lands on the blue-yellow axis and survives protanopia.",
+      application:"Brand-forward duos, grouped bars, paired lines. CVD-safe after the orange re-tune (still the softest of the three duos; for maximum accessibility, Blue/Orange or Warm/Cool lead).",
+      bw:"min ΔL* 7.2", cvd:"d13.3 / p8.4 / t14.6" },
+    // ── BALANCED — everyday default (medium-wide) ──
+    trustworthy: { name:"Trustworthy", fam:"Balanced", band:"medium-wide · teal + neutrals",
+      cols:["#06655a","#72a6db","#8076a9","#ffb8a5","#467647","#ef9dc2","#83919c","#d0dfeb"],
+      intent:"The everyday DEFAULT — reach for this first for 4 to 8 unrelated categories. Six evenly-spaced hues anchored on house teal plus two neutrals, muted enough to stay report-grade yet distinct enough that the series never tangle or shout.",
+      design:"6 evenly-spaced hues anchored on house teal + 2 neutrals, muted chroma (no neon), staggered even L* ladder 38→88. Built to never tangle or shout.",
+      application:"Everything — line, bar, scatter; works on white pages and in tables. The general-purpose cycle.",
+      bw:"min ΔL* 7.1", cvd:"d11.7 / p9.9 / t6.8" },
+    // ── MUTED — soft editorial (medium-wide, low chroma) ──
+    muted:       { name:"Pastel", fam:"Muted", band:"medium-wide · low chroma",
+      cols:["#56857c","#96bad4","#9b94b4","#f6c9c0","#799075","#e4b9c7","#bba387","#b6ecf3"],
+      intent:"A soft, editorial categorical set for dense dashboards or backgrounds where vivid color would shout. High-key pastels carry 4 to 8 categories quietly, keeping the data readable without competing for attention on an already busy page.",
+      design:"Same 8-hue spread as the default but low chroma (~18) and a higher L* band 52→90. Calm, magazine-like. (B&W is softer by design.)",
+      application:"Dashboards, small multiples, annotation-heavy figures. Pair with one vivid accent for emphasis.",
+      bw:"min ΔL* 5.3 (soft by design)", cvd:"d8.9 / p7.9 / t5.3" },
+    // ── SPECTRUM — full hue wheel (widest) ──
+    spectrum:    { name:"Vivid", fam:"Spectrum", band:"widest · full wheel",
+      cols:["#026a5f","#01b3d5","#0784d9","#e9b8ff","#c6376e","#ff9e7a","#aa911a","#9ff18c"],
+      intent:"MANY unrelated categories — up to eight — where color alone must separate everything and maximum distinctness matters more than restraint. An even, vivid rainbow spread for legends, maps, and crowded categorical charts that need every series apart.",
+      design:"8 hues evenly spaced 45° around the full wheel (teal-anchored), high chroma, staggered even L* ladder 40→88 so it still survives B&W.",
+      application:"8-category scatter, side-by-side bars, editorial infographics. Vivid, confident tone.",
+      bw:"min ΔL* 6.6", cvd:"d9.1 / p9.7 / t13.8" },
+    // ── ACCESSIBLE — fixed Okabe-Ito CUD (CVD gold standard) ──
+    accessible:  { name:"Okabe-Ito", fam:"Accessible", band:"widest · CVD gold standard",
+      cols:["#000000","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7"],
+      intent:"When colorblind-safety is mandatory — journals, public-sector, clinical work. The proven Okabe-Ito CUD eight-color set shipped verbatim, so every pair stays distinguishable under all of the common forms of color-vision deficiency.",
+      design:"Fixed Okabe & Ito (2008) palette — NOT regenerated. Tuned for deuter/protan/tritan separation (the strongest in the family).",
+      application:"Any figure where CVD accessibility is a hard requirement. Not built for B&W (near-equal lightness) — don't lean on grayscale for this one.",
+      bw:"n/a (CVD-optimised, not B&W)", cvd:"d14.8 / p14.0 / t11.0" },
+    // ── INTENT-based families (organised by purpose, not spectral width) ──
+    gray_seq:    { name:"Neutral Gray", fam:"Neutral", band:"neutral · hue-free L* ramp",
+      cols:["#353535","#4b4b4b","#636363","#7c7c7c","#969696","#b0b0b0","#cccccc","#e8e8e8"],
+      intent:"Ordered AMOUNT with no hue meaning — magnitude, density, or rank where color should not imply a separate category. A pure neutral lightness ramp, the most print-safe and colorblind-bulletproof option for encoding pure quantity.",
+      design:"8-step TRUE neutral L* ramp 22→92, chroma 0 (R=G=B, no cast). Pure lightness ⇒ perfect B&W and CVD. The cast-free anchor beside Warm Gray and Cool Gray.",
+      application:"Heat tables, ordered bars/area where hue is noise, backgrounds. Pair with one accent for emphasis.",
+      bw:"min ΔL* 9.7", cvd:"d8.9 / p8.9 / t8.9" },
+    // DIVERGING — two-ended, pale center (ordered ± data). B&W-exempt by design.
+    coolwarm:    { name:"Cool ↔ Warm", fam:"Diverging", band:"two-ended · pale center",
+      cols:["#055f8b","#3b8bba","#81b7db","#bcdcf1","#f5cec9","#dfa19c","#bb6f6e","#943d45"],
+      intent:"Ordered data with a meaningful MIDPOINT at zero — change, delta, correlation, z-scores, above or below average. Blue marks negative and red positive through a pale center, so both direction and magnitude read at a single glance.",
+      design:"Symmetric L* tent (dark ends → pale center), blue (h≈250) ↔ red (h≈25). Excellent CVD. NOT a categorical set — the order IS the meaning.",
+      application:"Correlation matrices, change heatmaps, anomaly/sentiment scales, Likert. ⚠ B&W not separable (ends share lightness — inherent to diverging).",
+      bw:"n/a (diverging — ends share L)", cvd:"d12.6 / p13.6 / t14.2" },
+    teal_amber_div: { name:"Teal ↔ Amber", fam:"Diverging", band:"two-ended · pale center",
+      cols:["#06655c","#209389","#74bdb6","#b4e0db","#ebd3bc","#d0a987","#aa7951","#844c21"],
+      intent:"The diverging intent in the house voice — teal for negative and amber for positive through a pale neutral center. An on-brand alternative to blue-red for deltas, correlations, and above-or-below-average encodings on branded material.",
+      design:"Symmetric L* tent, teal (h≈186) ↔ amber (h≈66). The blue-yellow axis is CVD-robust.",
+      application:"Brand-forward change/delta heatmaps, ± scales. ⚠ B&W not separable by design.",
+      bw:"n/a (diverging)", cvd:"d13.1 / p8.8 / t13.9" },
+    // TONE — frequently-reached aesthetic families
+    earth:       { name:"Earth", fam:"Tone", band:"warm · earthy",
+      cols:["#80443a","#cb9375","#94744b","#d6c898","#666a3d","#e5a48e","#a0895f","#d1e3b7"],
+      intent:"Categorical series in a warm, organic register — ESG and sustainability, geography, agriculture, or premium-natural brands. Earthy, grounded hues that feel editorial and separate a handful of categories without ever looking corporate.",
+      design:"Terracotta, ochre, olive, sand, sage, clay (h 35→125, muted chroma ~26-30), staggered even L* ladder 36→88.",
+      application:"Multi-series line/bar/area for environmental or earthy topics. Calm, grounded, magazine-like.",
+      bw:"min ΔL* 7.2", cvd:"d6.1 / p6.3 / t7.5" },
+    jewel:       { name:"Jewel", fam:"Tone", band:"deep · rich saturation",
+      cols:["#02504f","#25a88a","#0375a0","#b3bdfe","#963c3e","#caa65e","#a26eb0","#42ecfb"],
+      intent:"Rich, deep, saturated variety for premium or luxury editorial. Distinct from Vivid by going darker and deeper rather than brighter, so many categories stay separable while the whole set keeps an upscale, high-contrast mood.",
+      design:"Emerald, sapphire, indigo, vermilion, topaz, amethyst, deep teal/cyan (high chroma 42), even L* ladder 30→86. Retuned to clear the protanopia collapse.",
+      application:"Up to 8 categories where you want depth + luxury. ⚠ Softest CVD of the set (protan ~4) — for strict accessibility use Accessible or a Duo.",
+      bw:"min ΔL* 7.8", cvd:"d7.6 / p4.2 (softest) / t16.3" },
+    // ── singleton families expanded to 2-3 siblings ──
+    corporate:   { name:"Corporate", fam:"Balanced", band:"cool · formal / professional",
+      cols:["#056058","#4caab5","#487da2","#fab1a7","#446f50","#a4aeda","#7e8c97","#cad9e5"],
+      intent:"The DEFAULT for formal, institutional material — finance, board decks, policy print. Cooler and more restrained than Trustworthy, with the same even-lightness construction so it stays legible in tables and holds up in grayscale.",
+      design:"Opens on house teal, then steel-blue → slate → muted brick → sage + 2 neutrals, low-moderate chroma, staggered even L* ladder 36→86.",
+      application:"Everyday categorical for serious documents. Conservative, print-safe, never shouts.",
+      bw:"min ΔL* 6.8", cvd:"d8.1 / p9.3 / t10.6" },
+    dusty:       { name:"Dusty", fam:"Muted", band:"deep · vintage muted",
+      cols:["#3d665f","#7a99af","#7b7691","#d0a9a2","#5d715a","#bf9aa6","#98846c","#9ac9cf"],
+      intent:"A deeper, more vintage muted set — lower lightness than the high-key Pastel. Built for moody editorial, dark-on-cream layouts, and retro themes where soft-but-saturated tones suit the page better than bright, high-key color.",
+      design:"Same 8-hue spread as Muted but a mid L* band 40→78 and low chroma ~16. Calm but with more body than pastel.",
+      application:"Dense editorial, atmospheric dashboards, retro / vintage themes. (B&W softer by design.)",
+      bw:"min ΔL* 5.3 (soft by design)", cvd:"d8.4 / p7.8 / t5.5" },
+    bold:        { name:"Bold", fam:"Spectrum", band:"punchy · curated high-contrast",
+      cols:["#035f5a","#e77a6f","#358645","#c3b5ff","#8f5915","#e290d8","#0892c4","#d8d678"],
+      intent:"MANY categories with maximum punch — a curated, high-contrast set rather than Vivid's even rainbow. For presentations, posters, and dashboards that must pop, where each category should grab attention from across the room.",
+      design:"Opens on house teal, then 7 vivid deliberately UNeven hues (high chroma 48), staggered even L* ladder 36→84. Retuned so no two collapse under color-blindness.",
+      application:"8-category bars / scatter on slides and posters. Confident, energetic, attention-grabbing.",
+      bw:"min ΔL* 6.7", cvd:"d8.1 / p7.7 / t13.3" },
+    warm_gray:   { name:"Warm Gray", fam:"Neutral", band:"neutral · warm taupe ramp",
+      cols:["#3a342e","#514a44","#69625b","#827b74","#9d958e","#b7afa8","#d3cbc3","#efe7df"],
+      intent:"A hue-free ordered ramp with a WARM taupe or greige cast — for cream paper, editorial warmth, or warm brand systems. Encodes magnitude or rank without implying any category, staying soft and print-friendly from light to dark.",
+      design:"8-step L* ramp 22→92 at a warm hue (h≈70), chroma ≈ 5. Pure lightness ⇒ perfect B&W + CVD.",
+      application:"Warm-toned heat tables, ordered bars / area, backgrounds on cream stock.",
+      bw:"min ΔL* 9.7", cvd:"d8.9 / p9.0 / t8.9" },
+    cool_gray:   { name:"Cool Gray", fam:"Neutral", band:"neutral · cool slate ramp",
+      cols:["#2d363d","#434d54","#5b656c","#737d85","#8d97a0","#a7b2bb","#c2ced6","#deeaf3"],
+      intent:"A hue-free ordered ramp with a COOL slate or blue cast — for tech, clinical, or cool brand systems. Encodes magnitude or rank without implying any category, holding a crisp, neutral tone the whole way from light to dark.",
+      design:"8-step L* ramp 22→92 at a cool hue (h≈250), chroma ≈ 6. Perfect B&W + CVD.",
+      application:"Cool-toned heat tables, ordered encodings, UI backgrounds.",
+      bw:"min ΔL* 9.7", cvd:"d9.0 / p8.9 / t9.0" },
+    focus:       { name:"Teal Accent", fam:"Emphasis", band:"1 teal accent + 7 neutrals",
+      cols:["#065a51","#5c646b","#70787f","#848d93","#99a2a9","#aeb7be","#c4cdd5","#dae4eb"],
+      intent:"Highlight ONE series while everything else recedes to gray — the storytelling staple, color the one thing. House teal marks the salient series and graded neutrals carry the rest, keeping attention exactly where you point it.",
+      design:"Slot 0 = house teal (salient), slots 1-7 = graded neutrals on an even L* ladder 34→90. Pair with Warm Accent for the warm-highlight version, or combine the two accent colors to highlight a second series.",
+      application:"Single-series emphasis in line / bar charts, explanatory figures, slide builds.",
+      bw:"min ΔL* 7.8", cvd:"d7.3 / p7.3 / t7.3" },
+    focus_warm:  { name:"Warm Accent", fam:"Emphasis", band:"1 warm accent + 7 neutrals",
+      cols:["#8d302b","#5c646b","#70787f","#848d93","#99a2a9","#aeb7be","#c4cdd5","#dae4eb"],
+      intent:"Highlight one series with a WARM coral accent instead of teal — for warmth, alerts, or when teal clashes with the content. Coral marks the salient line and graded neutrals mute everything else quietly into the background.",
+      design:"Slot 0 = coral (h≈32, salient), slots 1-7 = graded neutrals, even L* ladder 34→90.",
+      application:"Single-series emphasis where a warm highlight reads better (e.g., risk / attention).",
+      bw:"min ΔL* 7.8", cvd:"d7.3 / p7.3 / t7.3" },
+  };
+const ORDER = ["teal_seq","indigo_seq","coral_seq","teal_indigo","forest","warm_cool","blue_orange","teal_coral","trustworthy","corporate","muted","dusty","spectrum","bold","accessible","gray_seq","warm_gray","cool_gray","focus","focus_warm","coolwarm","teal_amber_div","earth","jewel"];
+const VB='0 0 100 56';
+  const P = {
+    line(c){ const n=c.length; let s=`<svg viewBox="${VB}" preserveAspectRatio="none">`;
+      for(let i=0;i<n;i++){ const yc=n>1?9+i*(38/(n-1)):28; let d='';
+        for(let x=0;x<=100;x+=1.25){ const t=x/100; const y=yc+Math.sin(t*4.6+i*0.9)*3.5-(t-0.5)*(i-n/2)*1.8; d+=(x===0?'M':'L')+x.toFixed(2)+' '+y.toFixed(2)+' '; }
+        s+=`<path d="${d}" fill="none" stroke="${c[i]}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`; }
+      return s+'</svg>'; },
+    scatter(c){ const n=c.length; let s=`<svg viewBox="${VB}">`;
+      for(let i=0;i<n;i++){ const cx=12+(i/(n-1||1))*76, cy=15+((i*37)%28);
+        for(let k=0;k<11;k++){ const a=i*2.3+k*1.7; s+=`<circle cx="${(cx+Math.cos(a)*9+Math.sin(k*3.1)*2.6).toFixed(1)}" cy="${(cy+Math.sin(a)*9+Math.cos(k*2.2)*2.6).toFixed(1)}" r="2" fill="${c[i]}" opacity="0.82"/>`; } }
+      return s+'</svg>'; },
+    area(c){ const n=c.length, S=48, acc=new Array(S+1).fill(54); let s=`<svg viewBox="${VB}" preserveAspectRatio="none">`;
+      for(let i=0;i<n;i++){ let top='',bot='';
+        for(let xi=0;xi<=S;xi++){ const x=xi*(100/S), v=(46/n)*(0.85+0.34*Math.sin(xi*0.22+i*0.95)), y0=acc[xi], y1=acc[xi]-v; acc[xi]=y1; top+=(xi===0?'M':'L')+x.toFixed(2)+' '+y1.toFixed(2)+' '; bot=x.toFixed(2)+' '+y0.toFixed(2)+' '+bot; }
+        s+=`<path d="${top}L${bot}Z" fill="${c[i]}" opacity="0.96"/>`; }
+      return s+'</svg>'; },
+    bar(c){ const n=c.length, g=2.2, bw=100/n, h=[40,28,48,34,44,30,38,46]; let s=`<svg viewBox="${VB}" preserveAspectRatio="none">`;
+      for(let i=0;i<n;i++){ const x=i*bw+g/2, bh=h[i%8]; s+=`<rect x="${x.toFixed(1)}" y="${(52-bh).toFixed(1)}" width="${(bw-g).toFixed(1)}" height="${bh}" rx="0.8" fill="${c[i]}"/>`; }
+      return s+'</svg>'; },
+    heatmap(c){ const n=c.length, cw=100/n, rows=5, rh=56/rows; let s=`<svg viewBox="${VB}">`;
+      for(let i=0;i<n;i++){ for(let r=0;r<rows;r++){ s+=`<rect x="${(i*cw).toFixed(1)}" y="${(r*rh).toFixed(1)}" width="${cw.toFixed(1)}" height="${rh.toFixed(1)}" fill="${c[i]}" opacity="${(0.4+r*0.14).toFixed(2)}"/>`; } } return s+'</svg>'; },
+    bubble(c){ const n=c.length; let s=`<svg viewBox="${VB}">`;
+      for(let i=0;i<n;i++){ const cx=12+(i/(n-1||1))*76, cy=16+((i*29)%26);
+        for(let k=0;k<5;k++){ const a=i*1.7+k*2.2, rr=1.6+((i+k*3)%4)*1.4; s+=`<circle cx="${(cx+Math.cos(a)*8).toFixed(1)}" cy="${(cy+Math.sin(a)*8).toFixed(1)}" r="${rr.toFixed(1)}" fill="${c[i]}" opacity="0.68"/>`; } }
+      return s+'</svg>'; },
+    lollipop(c){ const n=c.length, g=100/(n+1); let s=`<svg viewBox="${VB}">`;
+      for(let i=0;i<n;i++){ const x=g*(i+1), y=52-(14+Math.abs(Math.sin(i*1.5+0.4))*32); s+=`<line x1="${x.toFixed(1)}" y1="52" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${c[i]}" stroke-width="1.4"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${c[i]}"/>`; }
+      return s+'</svg>'; },
+    waffle(c){ const n=c.length, cols=12, rows=5, cell=56/rows, cw=100/cols, total=cols*rows; const raw=[]; let t=0; for(let i=0;i<n;i++){ const v=0.6+Math.abs(Math.sin(i*1.7+0.2)); raw.push(v); t+=v; }
+      const cnt=raw.map(v=>Math.max(1,Math.round(total*v/t)));
+      let s=`<svg viewBox="${VB}">`, idx=0;
+      for(let ci=0;ci<n;ci++){ for(let k=0;k<cnt[ci]&&idx<total;k++,idx++){ const r=Math.floor(idx/cols), col=idx%cols; s+=`<rect x="${(col*cw+0.6).toFixed(2)}" y="${(r*cell+0.6).toFixed(2)}" width="${(cw-1.2).toFixed(2)}" height="${(cell-1.2).toFixed(2)}" rx="1" fill="${c[ci]}"/>`; } }
+      return s+'</svg>'; },
+  };
+const PLABEL={line:"line",area:"stacked area",scatter:"scatter",bubble:"bubble",bar:"bar",lollipop:"lollipop",waffle:"waffle",heatmap:"heatmap"};
+const FAM_NOTE={Sequential:"ordered amount",Analogous:"one-mood arc",Duo:"two opposed groups",Balanced:"everyday default",Muted:"soft / editorial",Spectrum:"many categories",Accessible:"CVD-mandatory",Neutral:"hue-free ramp",Emphasis:"highlight one",Diverging:"around a midpoint",Tone:"a specific mood"};
+
+// ── 9th chart: squarified treemap (variable-size rects show all colors) ──
+P.treemap=function(c){
+  var W=100,H=56;
+  var vals=c.map(function(_,i){return 1+Math.abs(Math.sin(i*1.7+0.3))*1.7;});
+  var tot=vals.reduce(function(a,b){return a+b;},0);
+  var items=c.map(function(col,i){return {col:col,area:vals[i]/tot*(W*H)};});
+  var x=0,y=0,w=W,h=H,rects=[];
+  function worst(row,len){var s=0,mn=Infinity,mx=0;row.forEach(function(r){s+=r.area;if(r.area<mn)mn=r.area;if(r.area>mx)mx=r.area;});
+    return Math.max(len*len*mx/(s*s),s*s/(len*len*mn));}
+  function lay(row,horiz){var sum=0;row.forEach(function(r){sum+=r.area;});
+    if(horiz){var rh=sum/w,cx=x;row.forEach(function(r){var rw=r.area/rh;rects.push({x:cx,y:y,w:rw,h:rh,col:r.col});cx+=rw;});y+=rh;h-=rh;}
+    else{var rw=sum/h,cy=y;row.forEach(function(r){var rh=r.area/rw;rects.push({x:x,y:cy,w:rw,h:rh,col:r.col});cy+=rh;});x+=rw;w-=rw;}}
+  var q=items.slice(),row=[];
+  while(q.length){var horiz=(w<=h),len=horiz?w:h,nx=q[0];
+    if(row.length===0||worst(row,len)>=worst(row.concat([nx]),len)){row.push(q.shift());}
+    else{lay(row,horiz);row=[];}}
+  if(row.length)lay(row,(w<=h));
+  var s='<svg viewBox="'+VB+'">';
+  rects.forEach(function(r){s+='<rect x="'+r.x.toFixed(2)+'" y="'+r.y.toFixed(2)+'" width="'+Math.max(0,r.w-0.5).toFixed(2)+'" height="'+Math.max(0,r.h-0.5).toFixed(2)+'" rx="1" fill="'+r.col+'"/>';});
+  return s+'</svg>';};
+PLABEL.treemap="treemap";
+// ── waffle: cumulative assignment fills ALL cells (no blank at small n) ──
+P.waffle=function(c){var n=c.length,cols=12,rows=5,cell=56/rows,cw=100/cols,total=cols*rows;
+  var raw=c.map(function(_,i){return 0.6+Math.abs(Math.sin(i*1.7+0.2));});
+  var t=raw.reduce(function(a,b){return a+b;},0),cum=0;
+  var bounds=raw.map(function(v){cum+=v;return Math.round(cum/t*total);});
+  var s='<svg viewBox="'+VB+'">',idx=0;
+  for(var ci=0;ci<n;ci++){var end=(ci===n-1)?total:bounds[ci];
+    for(;idx<end;idx++){var r=Math.floor(idx/cols),col=idx%cols;
+      s+='<rect x="'+(col*cw+0.6).toFixed(2)+'" y="'+(r*cell+0.6).toFixed(2)+'" width="'+(cw-1.2).toFixed(2)+'" height="'+(cell-1.2).toFixed(2)+'" rx="1" fill="'+c[ci]+'"/>';}}
+  return s+'</svg>';};
+
+const SHOWORDER=["line","bar","scatter","area","lollipop","bubble","heatmap","waffle","treemap"];
+const state={pal:"trustworthy",n:8,gs:false,show:9};
+function active(){var p=PALETTES[state.pal];return p.cols.slice(0,state.n);}
+function pySnip(){var p=PALETTES[state.pal];return "import dartwork_mpl as dm\n# "+p.name+"  ("+state.n+" colors)\ndm.set_cycle(dm.get_palette('"+state.pal+"', n="+state.n+"))";}
+function dmToast(msg){var el=document.getElementById('dm-toast');if(!el){el=document.createElement('div');el.id='dm-toast';el.className='dm-toast';document.body.appendChild(el);}el.textContent=msg;el.classList.add('show');clearTimeout(window._dmtt);window._dmtt=setTimeout(function(){el.classList.remove('show');},1100);}
+function hexRgb(h){var m=h.replace('#','');return 'rgb('+parseInt(m.substr(0,2),16)+', '+parseInt(m.substr(2,2),16)+', '+parseInt(m.substr(4,2),16)+')';}
+function swStrip(cs){return cs.map(function(c){return '<button class="sw" data-hex="'+c+'" title="click: copy '+c+'   ·   shift-click: copy rgb"><span class="chip" style="background:'+c+'"></span><span class="hx">'+c+'</span></button>';}).join('');}
+function wireSwatches(root){root.querySelectorAll('.sw[data-hex]').forEach(function(b){b.onclick=function(e){var hex=b.dataset.hex,txt=e.shiftKey?hexRgb(hex):hex;if(navigator.clipboard)navigator.clipboard.writeText(txt);dmToast(txt+' copied');b.classList.add('copied');setTimeout(function(){b.classList.remove('copied');},800);};});}
+function plots(cs){return SHOWORDER.slice(0,state.show).map(function(pt){return '<div class="pcell"><div class="pl">'+PLABEL[pt]+'</div>'+P[pt](cs)+'</div>';}).join('');}
+function metaBlock(p){return '<div class="meta"><div><b>Intent:</b> '+p.intent+'</div><div><b>Design:</b> '+p.design+'</div><div><b>Application:</b> '+p.application+'</div><div><b>B&amp;W:</b> '+p.bw+' · <b>CVD:</b> '+p.cvd+'</div></div>';}
+function controlsHTML(){
+  return '<span class="cwrap">colors <input type="range" min="2" max="8" value="'+state.n+'" id="cnt"><b id="cv">'+state.n+'</b></span>'
+    +'<span class="seg"><span class="sl">show</span>'+[3,6,9].map(function(s){return '<button class="segbtn'+(state.show===s?' on':'')+'" data-show="'+s+'">'+s+'</button>';}).join('')+'</span>'
+    +'<span class="seg" title="preview in grayscale — checks black-&-white separability"><button class="segbtn'+(!state.gs?' on':'')+'" data-gs="0">Color</button><button class="segbtn'+(state.gs?' on':'')+'" data-gs="1">B&amp;W</button></span>';
+}
+function wireControls(root,paint){
+  var cnt=root.querySelector('#cnt');if(cnt)cnt.oninput=function(e){state.n=+e.target.value;var cv=root.querySelector('#cv');if(cv)cv.textContent=state.n;paint();};
+  root.querySelectorAll('[data-show]').forEach(function(b){b.onclick=function(){state.show=+b.dataset.show;root.querySelectorAll('[data-show]').forEach(function(x){x.classList.toggle('on',+x.dataset.show===state.show);});paint();};});
+  root.querySelectorAll('[data-gs]').forEach(function(b){b.onclick=function(){state.gs=(b.dataset.gs==='1');root.querySelectorAll('[data-gs]').forEach(function(x){x.classList.toggle('on',(x.dataset.gs==='1')===state.gs);});paint();};});
+}
+function famGroups(){var fams={};ORDER.forEach(function(k){var f=PALETTES[k].fam;(fams[f]=fams[f]||[]).push(k);});return fams;}
+function mini(k,w){return '<span class="mini" style="width:'+(w||'auto')+'">'+PALETTES[k].cols.map(function(c){return '<i style="background:'+c+'"></i>';}).join('')+'</span>';}
+
+
+var GLOSSARY={
+ dl:"ΔL* — the smallest lightness gap between any two colors (CIE L*, a 0–100 brightness scale). Bigger means they stay distinct in grayscale or black-and-white print.",
+ ls:"L* — CIE lightness, 0 (black) to 100 (white): how bright a color looks to the eye.",
+ cvd:"Color-vision check — the smallest difference between colors as seen with simulated color-blindness. Bigger is safer.",
+ d:"Deuteranopia — the most common red–green color-blindness (missing green cone), about 6% of men.",
+ p:"Protanopia — red–green color-blindness (missing red cone).",
+ t:"Tritanopia — blue–yellow color-blindness (rare)."
+};
+function term(txt,key,cls){return '<span class="term'+(cls?' '+cls:'')+'" tabindex="0" role="note" data-tip="'+GLOSSARY[key].replace(/"/g,'&quot;')+'">'+txt+'</span>';}
+function lstar(hex){var m=hex.replace('#','');function L(v){v/=255;return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);}
+  var Y=0.2126*L(parseInt(m.substr(0,2),16))+0.7152*L(parseInt(m.substr(2,2),16))+0.0722*L(parseInt(m.substr(4,2),16));
+  var f=Y>0.008856?Math.pow(Y,1/3):(7.787*Y+16/116);return Math.round(116*f-16);}
+function bwNum(p){var m=p.bw.match(/([\d.]+)/);return m?+m[1]:0;}
+function cvdNums(p){var m=p.cvd.match(/d([\d.]+).*?p([\d.]+).*?t([\d.]+)/);return m?{d:+m[1],p:+m[2],t:+m[3]}:{d:0,p:0,t:0};}
+function bwVerdict(p){var v=bwNum(p);return v>=6?'Stays clear in black & white':(v>=4?'Mostly clear in black & white':'Some colors merge in black & white');}
+function cvdVerdict(p){var c=cvdNums(p),m=Math.min(c.d,c.p,c.t);return m>=6?'Color-blind safe':(m>=4?'Mostly color-blind safe':'Take care for color-blind viewers');}
+function readoutHTML(p){var c=cvdNums(p),bwok=bwNum(p)>=6,cvok=Math.min(c.d,c.p,c.t)>=6;
+  return '<div class="ro">'
+   +'<div class="ro-i"><span class="ro-ic'+(bwok?' ok':'')+'">'+(bwok?'✓':'◑')+'</span>'
+     +'<span class="ro-tx">'+term('Black & white','dl')+' — <b>'+bwVerdict(p)+'</b></span>'
+     +'<span class="ro-n">ΔL* '+bwNum(p)+'</span></div>'
+   +'<div class="ro-i"><span class="ro-ic'+(cvok?' ok':'')+'">'+(cvok?'✓':'◔')+'</span>'
+     +'<span class="ro-tx">'+term('Color-vision','cvd')+' — <b>'+cvdVerdict(p)+'</b></span>'
+     +'<span class="ro-n">'+term('d','d')+' '+c.d+' · '+term('p','p')+' '+c.p+' · '+term('t','t','r')+' '+c.t+'</span></div>'
+   +'</div>';}
+function railHTML(){var fg=famGroups(),h='';Object.keys(fg).forEach(function(f){
+  h+='<div class="fh">'+f+'</div>';
+  fg[f].forEach(function(k){h+='<div class="ri'+(k===state.pal?' on':'')+'" data-k="'+k+'">'+mini(k,'44px')+'<span class="nm">'+PALETTES[k].name+'</span></div>';});});
+  return h;}
+// ── palette-manipulation options — drive the widget AND the code example ──
+// these candidates are proposed get_palette() params: order / start / reverse
+state.order='default';state.rev=false;state.shuffleSeed=1;
+function shuffleSeeded(arr,seed){var s=(0x6d2b79f5^seed)>>>0;function rnd(){s=s+0x6d2b79f5>>>0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}
+  for(var i=arr.length-1;i>0;i--){var j=Math.floor(rnd()*(i+1)),tmp=arr[i];arr[i]=arr[j];arr[j]=tmp;}return arr;}
+function active(){var sel=PALETTES[state.pal].cols.slice(0,state.n);
+  if(state.order==='lightness')sel=sel.slice().sort(function(a,b){return lstar(b)-lstar(a);});
+  else if(state.order==='shuffle')sel=shuffleSeeded(sel.slice(),state.shuffleSeed);
+  if(state.rev)sel=sel.slice().reverse();
+  return sel;}
+function pySnip(){var p=PALETTES[state.pal];
+  var parts=["'"+state.pal+"'","n="+state.n];
+  if(state.order==='lightness')parts.push("order='lightness'");
+  else if(state.order==='shuffle'){parts.push("order='shuffle'");parts.push('seed='+state.shuffleSeed);}
+  if(state.rev)parts.push("reverse=True");
+  var note=[state.n+' colors'];
+  if(state.order==='lightness')note.push('gradient');
+  else if(state.order==='shuffle')note.push('shuffled');
+  if(state.rev)note.push('reversed');
+  return "import dartwork_mpl as dm\n# "+p.name+"  ("+note.join(', ')+")\ndm.set_cycle(dm.get_palette("+parts.join(', ')+"))";}
+function wireRail(after){document.querySelectorAll('.ri').forEach(function(e){e.onclick=function(){state.pal=e.dataset.k;state.n=8;document.getElementById('rail').innerHTML=railHTML();wireRail(after);renderDetail();if(after)after();};});}
+function flash(){var d=document.getElementById('detail');d.classList.remove('flash');void d.offsetWidth;d.classList.add('flash');}
+// ── Python syntax highlight using the docs' own Pygments token classes ──
+var PYKW={'import':'kn','from':'kn','as':'k','def':'k','return':'k','for':'k','in':'k','if':'k','None':'kc','True':'kc','False':'kc'};
+function _esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function pyHighlight(code){return code.split('\n').map(function(line){
+  if(/^\s*#/.test(line))return '<span class="c1">'+_esc(line)+'</span>';
+  var imp=/^\s*(import|from)\b/.test(line),nameCls=imp?'nn':'n',out='';
+  var re=/(\s+)|('[^']*'|"[^"]*")|(\b\d+\b)|([A-Za-z_]\w*)|(.)/g,m;
+  while((m=re.exec(line))){
+    if(m[1])out+='<span class="w">'+m[1]+'</span>';
+    else if(m[2])out+='<span class="'+(m[2][0]==="'"?'s1':'s2')+'">'+_esc(m[2])+'</span>';
+    else if(m[3])out+='<span class="mi">'+m[3]+'</span>';
+    else if(m[4]){var w=m[4];out+='<span class="'+(PYKW[w]||nameCls)+'">'+w+'</span>';}
+    else{var ch=m[5],c=(ch==='('||ch===')'||ch===',')?'p':((ch==='.'||ch==='=')?'o':'');
+      out+=c?'<span class="'+c+'">'+_esc(ch)+'</span>':_esc(ch);}
+  }
+  return out;}).join('\n');}
+function paintInto(d,strip){var cs=active();
+  var sh=d.querySelector('.swhost');sh.className='swhost strip'+(state.gs?' gs':'');sh.innerHTML=strip(cs);
+  var pl=d.querySelector('.plots');pl.className='plots'+(state.gs?' gs':'');pl.innerHTML=plots(cs);
+  d.querySelector('.code').innerHTML='<pre>'+pyHighlight(pySnip())+'</pre>';wireSwatches(d);}
+// ── control styles (overrides the shared segmented controls) ──
+var CTRL='tabs';
+function _field(label,ctrl){return '<span class="field"><span class="cl">'+label+'</span>'+ctrl+'</span>';}
+function _tgl(key,label,on){return '<button class="tgl'+(on?' on':'')+'" data-tgl="'+key+'"><span class="tgl-l">'+label+'</span><span class="tgl-tr"><span class="tgl-kn"></span></span></button>';}
+function controlsHTML(){
+  var colors=_field('Colors','<input type="range" min="2" max="8" value="'+state.n+'" id="cnt" class="crng"><b id="cv" class="cval">'+state.n+'</b>');
+  if(CTRL==='slider'){
+    var idx={3:0,6:1,9:2}[state.show];
+    var charts=_field('Charts','<input type="range" min="0" max="2" value="'+idx+'" id="shrng" class="crng"><b id="shv" class="cval">'+state.show+'</b>');
+    return charts+colors+_tgl('light','Gradient',state.order==='lightness')+_tgl('rev','Reverse',state.rev)
+          +_tgl('shuffle','Shuffle',state.order==='shuffle')+_tgl('bw','B&amp;W',state.gs);
+  }
+  if(CTRL==='chips'){
+    return colors
+      +_field('Charts','<span class="cchips">'+[3,6,9].map(function(s){return '<button class="copt'+(state.show===s?' on':'')+'" data-show="'+s+'">'+s+'</button>';}).join('')+'</span>')
+      +_field('View','<span class="cchips"><button class="copt'+(!state.gs?' on':'')+'" data-gs="0">Color</button><button class="copt'+(state.gs?' on':'')+'" data-gs="1">B&amp;W</button></span>');
+  }
+  return colors
+    +_field('Charts','<span class="optset">'+[3,6,9].map(function(s){return '<button class="topt'+(state.show===s?' on':'')+'" data-show="'+s+'">'+s+'</button>';}).join('')+'</span>')
+    +_field('View','<span class="optset"><button class="topt'+(!state.gs?' on':'')+'" data-gs="0">Color</button><button class="topt'+(state.gs?' on':'')+'" data-gs="1">B&amp;W</button></span>');
+}
+function wireControls(root,paint){
+  var cnt=root.querySelector('#cnt');if(cnt)cnt.oninput=function(e){state.n=+e.target.value;var cv=root.querySelector('#cv');if(cv)cv.textContent=state.n;paint();};
+  root.querySelectorAll('[data-show]').forEach(function(b){b.onclick=function(){state.show=+b.dataset.show;root.querySelectorAll('[data-show]').forEach(function(x){x.classList.toggle('on',+x.dataset.show===state.show);});paint();};});
+  root.querySelectorAll('[data-gs]').forEach(function(b){b.onclick=function(){state.gs=(b.dataset.gs==='1');root.querySelectorAll('[data-gs]').forEach(function(x){x.classList.toggle('on',(x.dataset.gs==='1')===state.gs);});paint();};});
+  var sh=root.querySelector('#shrng');if(sh)sh.oninput=function(){state.show=[3,6,9][+sh.value];var v=root.querySelector('#shv');if(v)v.textContent=state.show;paint();};
+  root.querySelectorAll('.tgl[data-tgl]').forEach(function(b){b.onclick=function(){var k=b.dataset.tgl;
+    if(k==='bw')state.gs=!state.gs;
+    else if(k==='rev')state.rev=!state.rev;
+    else if(k==='light')state.order=(state.order==='lightness')?'default':'lightness';
+    else if(k==='shuffle'){state.order=(state.order==='shuffle')?'default':'shuffle';if(state.order==='shuffle')state.shuffleSeed=Math.floor(Math.random()*100000);}
+    root.querySelectorAll('.tgl[data-tgl]').forEach(function(x){var kk=x.dataset.tgl,on=false;
+      if(kk==='bw')on=state.gs;else if(kk==='rev')on=state.rev;
+      else if(kk==='light')on=(state.order==='lightness');else if(kk==='shuffle')on=(state.order==='shuffle');
+      x.classList.toggle('on',on);});
+    paint();};});
+}
+
+CTRL='slider';
+
+function renderDetail(){var p=PALETTES[state.pal],d=document.getElementById('detail');
+  d.innerHTML='<div class="d-ey">'+p.fam+' palette</div>'
+    +'<div class="d-title"><h3>'+p.name+'</h3><code class="d-key" title="copy the name to use in code">'+state.pal+'</code></div>'
+    +'<p class="d-use">'+p.intent+'</p>'
+    +readoutHTML(p)
+    +'<div class="d-bar">'+controlsHTML()+'</div>'
+    +'<div class="swhost"></div><div class="plots"></div>'
+    +'<div class="meta"><div><b>How it’s built</b> '+p.design+'</div><div><b>Good for</b> '+p.application+'</div></div>'
+    +'<div class="code highlight"></div>';
+  var dk=d.querySelector('.d-key');if(dk)dk.onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText(state.pal);dmToast(state.pal+' copied');dk.classList.add('copied');setTimeout(function(){dk.classList.remove('copied');},900);};
+  function paint(){paintInto(d,swStrip);}wireControls(d,paint);paint();}
+document.getElementById('rail').innerHTML=railHTML();wireRail();renderDetail();
+})();</script>
+</div>
