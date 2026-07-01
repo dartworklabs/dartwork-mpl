@@ -19,6 +19,9 @@ publishes static instances" decision:
   · IBM Plex Sans 7 uprights + 7 italics   (Text weight skipped)
   · IBM Plex Mono 7 uprights + 7 italics   (Text weight skipped)
   · Source Sans 3 7 uprights + 7 italics   (no Thin upstream)
+  · JetBrains Mono 8 uprights + 8 italics  (no Black upstream)
+  · Source Code Pro 7 uprights + 7 italics (no Thin upstream)
+  · Roboto Mono    5 uprights + 5 italics  (Thin Light Reg Med Bold)
 """
 
 from __future__ import annotations
@@ -217,6 +220,68 @@ def plan() -> list[dict]:
                 "LICENSE-Paperlogy.txt",
             ),
         },
+        {
+            "family": "JetBrains Mono",
+            "kind": "gh-dir",
+            "repo": "JetBrains/JetBrainsMono",
+            "path": "fonts/ttf",
+            "ext": "ttf",
+            "weights": [
+                "Thin",
+                "ExtraLight",
+                "Light",
+                "Regular",
+                "Medium",
+                "SemiBold",
+                "Bold",
+                "ExtraBold",
+            ],
+            "italics": True,
+            "stem": "JetBrainsMono",
+            "license": (
+                "JetBrains/JetBrainsMono",
+                "OFL.txt",
+                "LICENSE-JetBrainsMono.txt",
+            ),
+        },
+        {
+            "family": "Source Code Pro",
+            "kind": "release-zip",
+            "repo": "adobe-fonts/source-code-pro",
+            "asset_contains": "TTF-",
+            "ext": "ttf",
+            "weights": [
+                "ExtraLight",
+                "Light",
+                "Regular",
+                "Medium",
+                "SemiBold",
+                "Bold",
+                "Black",
+            ],
+            "italics": True,
+            "stem": "SourceCodePro",
+            "license": (
+                "adobe-fonts/source-code-pro",
+                "LICENSE.md",
+                "LICENSE-SourceCodePro.txt",
+            ),
+        },
+        {
+            "family": "Roboto Mono",
+            "kind": "gh-dir",
+            "repo": "googlefonts/RobotoMono",
+            "path": "fonts/ttf",
+            "ext": "ttf",
+            "weights": ["Thin", "Light", "Regular", "Medium", "Bold"],
+            "italics": True,
+            "stem": "RobotoMono",
+            "license": (
+                "googlefonts/RobotoMono",
+                "OFL.txt",
+                "LICENSE-RobotoMono.txt",
+            ),
+        },
     ]
 
 
@@ -317,14 +382,24 @@ def verify() -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--verify", action="store_true")
+    ap.add_argument(
+        "--only",
+        default="",
+        help="comma-separated family names to fetch (default: all)",
+    )
     args = ap.parse_args()
     if args.verify:
         verify()
         return
 
+    specs = plan()
+    if args.only:
+        names = {s.strip() for s in args.only.split(",")}
+        specs = [s for s in specs if s["family"] in names]
+
     FONT_DIR.mkdir(parents=True, exist_ok=True)
     added: list[str] = []
-    for spec in plan():
+    for spec in specs:
         print(f"== {spec['family']} ({spec['kind']}) ==")
         try:
             if spec["kind"] == "gh-dir":
