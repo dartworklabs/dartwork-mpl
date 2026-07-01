@@ -19,7 +19,7 @@ import dartwork_mpl as dm
 
 dm.set_cycle("trustworthy")              # the everyday default cycle (global)
 cols = dm.get_palette("spectrum", n=6)   # first 6 — the best-separated subset
-dm.set_cycle("focus", ax=ax)             # highlight one series on this Axes only
+dm.set_cycle("teal_accent", ax=ax)             # highlight one series on this Axes only
 ```
 
 `dm.get_palette(name, n=None, subset="first"|"even"|"last", *,

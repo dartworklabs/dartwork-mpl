@@ -119,7 +119,7 @@ wide = distinctness). Pick by the *shape* of your data:
 
 | Family | Members | Job |
 |---|---|---|
-| **Sequential** (3) | `teal_seq` `indigo_seq` `coral_seq` | ordered / rank — single-hue L* ramp |
+| **Sequential** (3) | `teal` `indigo` `coral` | ordered / rank — single-hue L* ramp |
 | **Analogous** (2) | `teal_indigo` `forest` | a few related series, one mood |
 | **Duo** (3) | `warm_cool` `blue_orange` `teal_coral` | two opposed groups (A/B) |
 | **Balanced** (2) | `trustworthy` `corporate` | everyday 4–8 categories |
@@ -129,10 +129,10 @@ wide = distinctness). Pick by the *shape* of your data:
 
 | Family | Members | Job |
 |---|---|---|
-| **Neutral** (3) | `gray_seq` (true neutral) `warm_gray` `cool_gray` | hue-free ordered amount |
-| **Emphasis** (2) | `focus` (teal accent) `focus_warm` (coral accent) | highlight one series, mute rest |
-| **Muted** (2) | `muted` (pastel) `dusty` (deep/vintage) | soft editorial |
-| **Diverging** (2) | `coolwarm` `teal_amber_div` | ordered ± data (change/correlation). **B&W-exempt** (ends share L by design) |
+| **Neutral** (3) | `gray` (true neutral) `warm_gray` `cool_gray` | hue-free ordered amount |
+| **Emphasis** (2) | `teal_accent` (teal accent) `coral_accent` (coral accent) | highlight one series, mute rest |
+| **Muted** (2) | `pastel` (pastel) `dusty` (deep/vintage) | soft editorial |
+| **Diverging** (2) | `coolwarm` `teal_amber` | ordered ± data (change/correlation). **B&W-exempt** (ends share L by design) |
 | **Tone** (2) | `earth` (warm/organic) `jewel` (deep/premium) | aesthetic verticals |
 | **Accessible** (1) | `accessible` | mandatory CVD — **Okabe-Ito, fixed reference** (the one justified singleton) |
 
@@ -140,8 +140,8 @@ wide = distinctness). Pick by the *shape* of your data:
 (⇒ B&W + most CVD survive; *Diverging is the sole exception*) · CVD-verified
 (colorspacious, not eyeballed) · subset-friendly (first-N ordering) ·
 **house teal `#12a594` anchors every general-purpose palette** (slot 0 of
-`teal_seq` `teal_indigo` `trustworthy` `corporate` `spectrum` `bold` `muted`
-`focus` `jewel`; `teal_coral` `teal_amber_div` carry it too). Single-hue,
+`teal` `teal_indigo` `trustworthy` `corporate` `spectrum` `bold` `pastel`
+`teal_accent` `jewel`; `teal_coral` `teal_amber` carry it too). Single-hue,
 externally-defined (`accessible`), neutral, and warm-only (`earth`) palettes
 legitimately don't carry teal.
 

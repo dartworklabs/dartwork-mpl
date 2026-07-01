@@ -16,4 +16,4 @@ figure.labelsize:   7.5
 figure.labelweight: 300
 
 # categorical cycle — Muted (soft, restrained editorial for minimal/Tufte)
-axes.prop_cycle: cycler('color', ['dc.muted0', 'dc.muted1', 'dc.muted2', 'dc.muted3', 'dc.muted4', 'dc.muted5'])
+axes.prop_cycle: cycler('color', ['dc.pastel0', 'dc.pastel1', 'dc.pastel2', 'dc.pastel3', 'dc.pastel4', 'dc.pastel5'])

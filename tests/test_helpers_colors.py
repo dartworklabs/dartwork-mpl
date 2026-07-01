@@ -144,12 +144,12 @@ class TestGetPalette:
         assert cols[-1] == "dc.coolwarm7"
 
     def test_oversubscribe_repeats(self) -> None:
-        cols = get_palette("muted", n=10)
+        cols = get_palette("pastel", n=10)
         assert len(cols) == 10
         assert cols[8] == cols[0]
 
     def test_zero_returns_empty(self) -> None:
-        assert get_palette("muted", n=0) == []
+        assert get_palette("pastel", n=0) == []
 
     def test_unknown_palette_raises(self) -> None:
         with pytest.raises(ValueError):
@@ -231,16 +231,16 @@ class TestSetCycle:
 
     def test_explicit_list(self) -> None:
         with mpl.rc_context():
-            set_cycle(["dc.focus0", "oc.red5"])
+            set_cycle(["dc.teal_accent0", "oc.red5"])
             cyc = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-            assert cyc == ["dc.focus0", "oc.red5"]
+            assert cyc == ["dc.teal_accent0", "oc.red5"]
 
     def test_per_axes_does_not_touch_global(self) -> None:
         with mpl.rc_context():
             before = plt.rcParams["axes.prop_cycle"]
             fig, ax = plt.subplots()
             try:
-                set_cycle("focus", ax=ax)
+                set_cycle("teal_accent", ax=ax)
                 # Global cycle is unchanged; only the Axes was updated.
                 assert plt.rcParams["axes.prop_cycle"] == before
             finally:

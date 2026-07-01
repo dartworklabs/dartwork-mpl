@@ -305,7 +305,7 @@ def set_cycle(
     --------
     >>> set_cycle("spectrum")                 # global, all 8
     >>> set_cycle("trustworthy", n=5)         # global, first 5
-    >>> set_cycle("focus", ax=ax)             # this Axes only
+    >>> set_cycle("teal_accent", ax=ax)             # this Axes only
     """
     import matplotlib.pyplot as plt
     from cycler import cycler
