@@ -57,7 +57,7 @@ ax.streamplot(
 n_particles = 50
 px = np.random.uniform(-2, 2, n_particles)
 py = np.random.uniform(-2, 2, n_particles)
-particle_colors = dm.cspace("dc.bold2", "dc.earth2", n=n_particles)
+particle_colors = dm.cspace("dc.vivid2", "dc.earth2", n=n_particles)
 
 for x_p, y_p, color in zip(px, py, particle_colors, strict=False):
     size = np.random.uniform(20, 100)

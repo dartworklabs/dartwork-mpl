@@ -111,12 +111,12 @@ PALETTES: dict[str, list[str] | None] = {
         "dc.jewel4",
     ],
     "pop": [
-        "dc.spectrum3",
-        "dc.spectrum1",
-        "dc.spectrum5",
-        "dc.spectrum0",
-        "dc.spectrum2",
-        "dc.spectrum4",
+        "dc.vivid3",
+        "dc.vivid1",
+        "dc.vivid5",
+        "dc.vivid0",
+        "dc.vivid2",
+        "dc.vivid4",
     ],
 }
 

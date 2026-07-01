@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-07-01
+
+### Changed
+
+- **BREAKING — categorical palette system overhaul.** A judge-panel redesign
+  (rigor / naming / editorial / accessibility lenses) reworked the 24 curated
+  palettes for a more coherent, intuitive, better-covered set. Every palette is
+  still CIELAB-generated on an even-L* ladder and CVD + B&W verified.
+  - **Renames**: `spectrum` → **`vivid`** (the palette you reach for by that
+    name), `coolwarm` → **`cool_warm`** (uniform diverging underscore).
+  - **Merges** (redundancy cut): `bold` folded into `vivid`; `corporate` folded
+    into `trustworthy`.
+  - **Removed**: `warm_cool` (weakest under CVD, redundant with the stronger
+    `blue_orange` / `teal_coral` duos).
+  - **Re-designed**: `pastel` / `dusty` are now an intentional high-key /
+    low-key pair (shared hue plan, different L* band) instead of near-duplicates.
+
+### Added
+
+- **`neon`** — max-chroma electric categorical (the loudest legal set); CVD-safe
+  because confusable hues are thrown far apart on the L* ladder.
+- **`ember`** — warm-vibrant categorical; fills the warm gap (`earth` was the
+  only warm palette but muted).
+- **`purple_green`** — tritan-robust diverging (the axis `cool_warm` /
+  `teal_amber` lack, both of which drift warm under tritanopia).
+
+Migration: `dc.spectrum*` → `dc.vivid*`, `dc.bold*` → `dc.vivid*`,
+`dc.coolwarm*` → `dc.cool_warm*`, `dc.corporate*` → `dc.trustworthy*`,
+`dc.warm_cool*` → `dc.blue_orange*`.
+
 ## [0.5.4] - 2026-07-01
 
 ### Removed

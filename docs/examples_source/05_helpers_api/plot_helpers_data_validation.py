@@ -45,7 +45,7 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=dm.figsize("16cm", "cinema"))
 
 # Raw input, including the bad values.
 ax1.scatter(
-    x_raw, y_raw, color="dc.bold2", s=50, alpha=0.6, label="Raw (NaN / Inf)"
+    x_raw, y_raw, color="dc.vivid2", s=50, alpha=0.6, label="Raw (NaN / Inf)"
 )
 ax1.set_title("Raw Data", fontsize=dm.fs(1))
 ax1.set_xlabel("X", fontsize=dm.fs(0))

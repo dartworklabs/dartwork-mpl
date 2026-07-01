@@ -23,7 +23,7 @@ dm.style.use("scientific")
 
 labels = ["A", "B", "C", "D"]
 sizes = [35, 25, 25, 15]
-colors = ["dc.teal2", "dc.forest2", "dc.earth2", "dc.bold2"]
+colors = ["dc.teal2", "dc.forest2", "dc.earth2", "dc.vivid2"]
 
 fig, ax = plt.subplots(figsize=dm.figsize("11cm", "square"))
 ax.pie(sizes, labels=labels, colors=colors, autopct="%1.1f%%", startangle=90)

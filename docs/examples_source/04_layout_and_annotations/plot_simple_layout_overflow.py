@@ -43,7 +43,7 @@ ax1.set_ylabel(
 )
 ax1.set_xlabel("Time [seconds]", fontsize=dm.fs(0))
 
-ax2.plot(x, y2, color="dc.bold2", lw=dm.lw(1))
+ax2.plot(x, y2, color="dc.vivid2", lw=dm.lw(1))
 ax2.set_title("Panel B: Normal Title", fontsize=dm.fs(1))
 ax2.set_ylabel("Value", fontsize=dm.fs(0))
 ax2.set_xlabel("Time [seconds]", fontsize=dm.fs(0))

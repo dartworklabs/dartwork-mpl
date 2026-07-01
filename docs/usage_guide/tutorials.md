@@ -63,7 +63,7 @@ ax1.set_ylabel("Amplitude [V]")
 # 4. Panel (b): Frequency spectrum
 freq = np.fft.rfftfreq(200, d=0.025)
 spectrum = np.abs(np.fft.rfft(signal + noise))
-ax2.semilogy(freq[:50], spectrum[:50], color="dc.bold2", lw=dm.lw(1))
+ax2.semilogy(freq[:50], spectrum[:50], color="dc.vivid2", lw=dm.lw(1))
 ax2.set_xlabel("Frequency [Hz]")
 ax2.set_ylabel("Magnitude")
 
@@ -113,7 +113,7 @@ ax.yaxis.set_major_formatter(mticker.StrMethodFormatter("{x:,.0f}"))
 
 # 5. Line chart for the secondary series on a twin axis
 ax2 = ax.twinx()
-ax2.plot(weeks, utilization, color="dc.bold2", marker="o",
+ax2.plot(weeks, utilization, color="dc.vivid2", marker="o",
          markersize=4, lw=dm.lw(1.5), zorder=3)
 ax2.set_ylabel("가동률 (%)")
 ax2.yaxis.set_major_formatter(mticker.PercentFormatter(decimals=1))

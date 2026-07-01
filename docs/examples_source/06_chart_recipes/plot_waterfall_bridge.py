@@ -13,7 +13,7 @@ budgets, and so on. The example below uses a synthetic energy-balance
 walk: primary input → end-use consumption.
 
 The chart demonstrates dartwork-mpl's color palette (``dc.forest2`` for
-positive contributions, ``dc.bold2`` for negative contributions), subtle
+positive contributions, ``dc.vivid2`` for negative contributions), subtle
 connector lines, and tick formatting via ``dm.set_decimal()``.
 """
 
@@ -59,7 +59,7 @@ for i, v in enumerate(values):
     if is_total[i]:
         colors.append("tw.slate700")  # Totals: neutral dark.
     else:
-        colors.append("dc.forest2" if v >= 0 else "dc.bold2")
+        colors.append("dc.forest2" if v >= 0 else "dc.vivid2")
 
 fig, ax = plt.subplots(figsize=dm.figsize("17cm", 0.55))
 

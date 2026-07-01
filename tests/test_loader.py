@@ -89,7 +89,7 @@ class TestEnsureLoaded:
         resolve (docs/examples/templates migrated to curated palettes)."""
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
-        for name in ("dc.vivid2", "dc.ocean2", "dc.nordic0", "dc.cyber3"):
+        for name in ("dc.sunset2", "dc.ocean2", "dc.nordic0", "dc.cyber3"):
             assert name not in mapping
 
     def test_dc_color_values_are_hex(self) -> None:
@@ -97,7 +97,7 @@ class TestEnsureLoaded:
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
         assert mapping["dc.trustworthy0"].startswith("#")
-        assert mapping["dc.coolwarm2"].startswith("#")
+        assert mapping["dc.cool_warm2"].startswith("#")
 
 
 class TestLoadJsonPalette:

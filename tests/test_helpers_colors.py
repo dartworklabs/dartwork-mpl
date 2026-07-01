@@ -149,7 +149,7 @@ class TestGetPalette:
             mcolors.to_rgb(c)
 
     def test_bare_name_resolves_under_dc(self) -> None:
-        assert get_palette("spectrum") == get_palette("dc.spectrum")
+        assert get_palette("vivid") == get_palette("dc.vivid")
 
     def test_first_subset(self) -> None:
         cols = get_palette("trustworthy", n=5)
@@ -160,11 +160,11 @@ class TestGetPalette:
         assert cols == [f"dc.trustworthy{i}" for i in (5, 6, 7)]
 
     def test_even_subset_spreads_across_palette(self) -> None:
-        cols = get_palette("coolwarm", n=4, subset="even")
+        cols = get_palette("cool_warm", n=4, subset="even")
         assert len(cols) == 4
         # Endpoints are always included; picks are spread, not just the head.
-        assert cols[0] == "dc.coolwarm0"
-        assert cols[-1] == "dc.coolwarm7"
+        assert cols[0] == "dc.cool_warm0"
+        assert cols[-1] == "dc.cool_warm7"
 
     def test_oversubscribe_repeats(self) -> None:
         cols = get_palette("pastel", n=10)
@@ -206,8 +206,8 @@ class TestGetPaletteOrdering:
         assert set(cols) == set(get_palette("trustworthy", n=8))  # same colours
 
     def test_shuffle_is_a_permutation(self) -> None:
-        base = get_palette("spectrum", n=8)
-        out = get_palette("spectrum", n=8, order="shuffle", seed=7)
+        base = get_palette("vivid", n=8)
+        out = get_palette("vivid", n=8, order="shuffle", seed=7)
         assert sorted(out) == sorted(base)
 
     def test_shuffle_seed_is_deterministic(self) -> None:
@@ -241,9 +241,9 @@ class TestSetCycle:
 
     def test_global_from_name(self) -> None:
         with mpl.rc_context():
-            set_cycle("spectrum")
+            set_cycle("vivid")
             cyc = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-            assert cyc[0] == "dc.spectrum0"
+            assert cyc[0] == "dc.vivid0"
             assert len(cyc) == 8
 
     def test_global_with_n(self) -> None:

@@ -156,7 +156,7 @@ fig, axes = plt.subplots(1, 2, figsize=dm.figsize("17cm", "wide"))
 
 axes[0].plot(x, y1, color="dc.teal3", lw=dm.lw(1))
 axes[0].set_title("Before")
-axes[1].plot(x, y2, color="dc.bold3", lw=dm.lw(1))
+axes[1].plot(x, y2, color="dc.vivid3", lw=dm.lw(1))
 axes[1].set_title("After")
 
 dm.label_axes(axes)

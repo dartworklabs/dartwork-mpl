@@ -505,7 +505,7 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
     tabs_html = []
     panels_html = []
 
-    # We include Categorical now because we have dc.bold, dc.dusty, dc.pastel
+    # We include Categorical now because we have dc.vivid, dc.neon, dc.dusty, dc.pastel
     display_categories = CATEGORY_ORDER
 
     for category in display_categories:

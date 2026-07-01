@@ -61,7 +61,7 @@ ax = fig.add_subplot(111)
 
 # Standard matplotlib plotting
 x = np.linspace(0, 10, 100)
-ax.plot(x, np.sin(x), color='dc.bold2', linewidth=0.7)  # only color is extended
+ax.plot(x, np.sin(x), color='dc.vivid2', linewidth=0.7)  # only color is extended
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Amplitude')
 ax.legend(fontsize=dm.fs(-1))  # utility for relative font size

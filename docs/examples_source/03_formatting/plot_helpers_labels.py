@@ -55,7 +55,7 @@ _minimal(ax1)
 
 # Optimized legend placement.
 ax2 = axes[0, 1]
-ax2.plot(x, y1, color="dc.bold2", label="Signal A", lw=dm.lw(1))
+ax2.plot(x, y1, color="dc.vivid2", label="Signal A", lw=dm.lw(1))
 ax2.plot(x, y2, color="dc.forest2", label="Signal B", lw=dm.lw(1))
 ax2.fill_between(x[40:60], -0.5, 0.5, alpha=0.3, color="gray", label="Region")
 dm.helpers.labels.optimize_legend(ax2, preferred_loc="best")

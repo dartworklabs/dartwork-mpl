@@ -79,7 +79,7 @@ def _save_quickstart_multi_panel(images_dir: Path) -> Path:
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
 
-    ax1.plot(x, np.sin(x), color="dc.bold2")
+    ax1.plot(x, np.sin(x), color="dc.vivid2")
     ax1.set_ylabel("Amplitude", fontsize=dm.fs(0))
     ax2.plot(x, np.cos(x), color="dc.teal2")
     ax2.set_ylabel("Amplitude", fontsize=dm.fs(0))
@@ -514,11 +514,11 @@ def _save_validation_example(images_dir: Path) -> Path:
     dm.style.use("presentation")
 
     fig, ax = plt.subplots(figsize=dm.figsize("17cm", "10cm"), dpi=300)
-    ax.plot([1, 2, 3], [1, 4, 9], color="dc.bold3")
+    ax.plot([1, 2, 3], [1, 4, 9], color="dc.vivid3")
     ax.set_ylabel(
         "A very very long y-axis label that overflows bounds", fontsize=dm.fs(1)
     )
-    ax.set_title("Validation Error", color="dc.bold3")
+    ax.set_title("Validation Error", color="dc.vivid3")
 
     # Attempt to force cutoff
     fig.subplots_adjust(left=0.1)

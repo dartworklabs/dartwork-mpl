@@ -66,7 +66,7 @@ for i in range(0, len(t), 40):
         ax.scatter(
             [x1[i], x2[i]],
             [y[i], y[i]],
-            c=["dc.bold2", "dc.teal2"],
+            c=["dc.vivid2", "dc.teal2"],
             s=100,
             edgecolors="white",
             linewidths=1,

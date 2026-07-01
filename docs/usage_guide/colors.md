@@ -100,9 +100,9 @@ name is usually a good first filter. Inside each family the index is a
 | If you were reaching for…                       | Try…                                |
 | ----------------------------------------------- | ----------------------------------- |
 | `oc.blue6` / `oc.indigo6` / `oc.cyan6`          | `dc.teal3`                         |
-| `oc.red6` / `oc.pink6`                          | `dc.bold1` or `dc.earth3`         |
+| `oc.red6` / `oc.pink6`                          | `dc.vivid1` or `dc.earth3`         |
 | `oc.orange5` / `oc.yellow5`                     | `dc.earth1` / `dc.earth0`         |
-| `oc.green6` / `oc.teal6` / `oc.lime6`           | `dc.forest2` or `dc.spectrum0`           |
+| `oc.green6` / `oc.teal6` / `oc.lime6`           | `dc.forest2` or `dc.vivid0`           |
 | `oc.violet6` / `oc.grape6`                      | `dc.jewel3`                         |
 | `oc.gray3..7` (light → dark)                    | `dc.teal_indigo1..3`                     |
 
@@ -164,7 +164,7 @@ for i, c in enumerate(palette):
     ax.bar(i, 1, color=c.to_hex())
 
 # Also supports 'oklab' and 'rgb' spaces
-gradient = dm.cspace(dm.color('dc.bold1'), dm.color('dc.teal3'), n=10)
+gradient = dm.cspace(dm.color('dc.vivid1'), dm.color('dc.teal3'), n=10)
 ```
 
 ```{raw} html

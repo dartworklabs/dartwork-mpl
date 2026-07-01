@@ -190,14 +190,14 @@ def _render_preset_svg(preset: str) -> str:
     )
 
     # Annotate the 80% end-of-life threshold \u2014 a common battery KPI.
-    ax.axhline(80, color="dc.bold3", lw=dm.lw(0.5), linestyle=":")
+    ax.axhline(80, color="dc.vivid3", lw=dm.lw(0.5), linestyle=":")
     ax.annotate(
         "80% EoL\nthreshold",
         xy=(940, 80),
         xytext=(720, 86),
         fontsize=dm.fs(-1),
-        color="dc.bold4",
-        arrowprops={"arrowstyle": "->", "color": "dc.bold3", "lw": 0.6},
+        color="dc.vivid4",
+        arrowprops={"arrowstyle": "->", "color": "dc.vivid3", "lw": 0.6},
     )
 
     ax.set_title(
