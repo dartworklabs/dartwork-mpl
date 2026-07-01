@@ -110,9 +110,9 @@ The same eight criteria, weighted differently:
 
 Every palette is **8 colours, CIELAB-generated** (`_static/scripts/gen_palettes.py`),
 **B&W + CVD verified** (`dm_palettes_gen.json`), and **interactively documented**
-in `_static/palette_explorer.html` (live swatches, B&W, dark-canvas, 9 chart
-types, per-palette intent/design/application). The system has **two organising
-ideas**:
+in the categorical-palettes explorer page (`color_system/categorical-palettes.md`;
+live swatches, grayscale, 9 chart types, per-palette intent/design/application).
+The system has **two organising ideas**:
 
 **(a) A categorical spine on one axis — spectral width** (narrow = harmony →
 wide = distinctness). Pick by the *shape* of your data:
@@ -156,7 +156,7 @@ legitimately don't carry teal.
 
 **Done (design layer):**
 1. `gen_palettes.py` generates all 24 in CIELAB; `dm_palettes_gen.json` is the
-   verified colour SSOT; `palette_explorer.html` is the interactive doc.
+   verified colour SSOT; the categorical-palettes page is the interactive doc.
 
 **Pending (package layer — needs 2 calls):**
 2. Add the 24 to `src/dartwork_mpl/asset/color/dc_palettes.json` as
