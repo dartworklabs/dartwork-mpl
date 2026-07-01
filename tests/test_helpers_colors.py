@@ -92,14 +92,37 @@ class TestMakePaletteEdgeCases:
         assert same_neg == plain
 
     def test_highlight_darkens_target_lightens_others(self) -> None:
-        """Highlight rewrites ``5`` -> ``7`` for target, ``5`` -> ``3``
-        for everyone else."""
+        """Highlight steps the target's weight index up (darker) and every
+        other's down (lighter). For the categorical base (shade 5) that is
+        5 -> 7 for the target and 5 -> 3 for the rest."""
         result = make_palette(3, highlight=0)
         # First entry is the highlighted -> darker (7).
         assert result[0].endswith("7")
         # Remaining entries are dimmed (3).
         for c in result[1:]:
             assert c.endswith("3")
+
+    def test_highlight_sequential_emphasizes_chosen_series(self) -> None:
+        """Sequential palette names (``oc.blue3..7``) carry no fixed ``5``,
+        so the old string-replace highlighted the wrong series. Weight-index
+        stepping must darken exactly the chosen index and keep valid names."""
+        seq = make_palette(3, kind="sequential", highlight=1)
+        assert all(c.startswith("oc.blue") and c[-1].isdigit() for c in seq)
+        shades = [int(c[-1]) for c in seq]
+        assert shades[1] == max(shades)  # chosen index is darkest
+        assert shades[1] > shades[0] and shades[1] > shades[2]
+
+    def test_highlight_diverging_no_name_corruption(self) -> None:
+        """Diverging names include ``oc.gray5``; a blind ``5`` -> ``7``
+        replace would corrupt it. Only the highlighted index is darkened."""
+        div = make_palette(5, kind="diverging", highlight=0)
+        assert all(
+            any(c.startswith(f"oc.{fam}") for fam in ("red", "blue", "gray"))
+            and c[-1].isdigit()
+            for c in div
+        )
+        shades = [int(c[-1]) for c in div]
+        assert shades[0] == max(shades)  # highlighted index 0 is darkest
 
     def test_categorical_repeated_palette_consistent(self) -> None:
         """When repeating, the cycle starts from the beginning each loop."""

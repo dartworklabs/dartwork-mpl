@@ -104,18 +104,26 @@ def make_palette(
         colors = base_colors * (n // len(base_colors) + 1)
         colors = colors[:n]
 
-    # Apply highlighting
+    # Apply highlighting: emphasise the chosen series with a darker shade and
+    # recede the rest with a lighter one, by stepping each colour's *weight
+    # index* (higher = darker in Open Color). The previous ``.replace("5", …)``
+    # only worked for the categorical set (whose names all carry a "5"); it
+    # left sequential/diverging highlights on the wrong series and could
+    # corrupt any name containing a stray "5".
     if highlight is not None and 0 <= highlight < n:
-        # Make highlighted series darker, others lighter
-        new_colors = []
-        for i, color in enumerate(colors):
-            if i == highlight:
-                # Keep original or make darker
-                new_colors.append(color.replace("5", "7"))
-            else:
-                # Make lighter
-                new_colors.append(color.replace("5", "3"))
-        colors = new_colors
+        import re as _re
+
+        def _shift(color: str, delta: int) -> str:
+            m = _re.match(r"^(.*?)(\d+)$", color)
+            if m is None:
+                return color
+            base, shade = m.group(1), int(m.group(2))
+            return f"{base}{max(0, min(9, shade + delta))}"
+
+        colors = [
+            _shift(c, 2) if i == highlight else _shift(c, -2)
+            for i, c in enumerate(colors)
+        ]
 
     return colors
 

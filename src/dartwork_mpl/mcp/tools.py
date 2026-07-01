@@ -385,8 +385,7 @@ def register_tools(mcp: FastMCP) -> None:
         between before/after lint runs.
 
         Wraps :func:`dartwork_mpl.lint.apply_lint_fixes`. Currently
-        rewrites ``plt.style.use → dm.style.use``,
-        ``dm.cm2in(N) → dm.cm(N)``, and the no-arg
+        rewrites ``plt.style.use → dm.style.use`` and the no-arg
         ``plt.tight_layout() / fig.tight_layout()`` calls →
         ``dm.simple_layout(fig)``. Context-dependent rules (e.g.
         ``figsize-direct`` — which needs the agent to choose a width

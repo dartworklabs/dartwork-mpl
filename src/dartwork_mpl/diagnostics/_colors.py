@@ -30,7 +30,7 @@ def _load_color_library_names() -> set[str]:
     asset_dir = Path(__file__).resolve().parent.parent / "asset" / "color"
     opencolor_names: set[str] = set()
 
-    opencolor_file = asset_dir / "oc.txt"
+    opencolor_file = asset_dir / "opencolor.txt"
     if opencolor_file.exists():
         with open(opencolor_file) as f:
             for raw_line in f:
@@ -73,7 +73,7 @@ def _extract_base_color_name(color_name: str) -> str:
             name = name[len(prefix) :]
             break
 
-    match = re.search(r"^([a-z]+)\d+$", name)
+    match = re.search(r"^([a-z][a-z_]*)\d+$", name)
     if match:
         return match.group(1)
 

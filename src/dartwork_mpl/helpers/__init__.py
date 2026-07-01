@@ -7,7 +7,6 @@ dartwork-mpl primitives. This module is organised into submodules:
 - ``colors``: palette selection.
 - ``labels``: axis-label / legend / value-annotation helpers.
 - ``quality``: figure quality checks and chart-type suggestion.
-- ``io``: styled figure creation and optimised save.
 """
 
 from .colors import get_palette, make_palette, set_cycle
