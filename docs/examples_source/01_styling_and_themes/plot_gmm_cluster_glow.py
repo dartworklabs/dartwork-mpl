@@ -34,7 +34,7 @@ with plt.style.context("dark_background"):
         [[1.2, 0.8], [0.8, 1.8]],
     ]
 
-    cluster_colors = ["dc.pop2", "dc.vivid2", "dc.ocean2"]
+    cluster_colors = ["dc.spectrum2", "dc.bold2", "dc.teal2"]
 
     fig, ax = plt.subplots(figsize=dm.figsize("13.5cm", "square"))
     fig.patch.set_facecolor("#111111")

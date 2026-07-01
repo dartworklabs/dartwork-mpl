@@ -24,7 +24,7 @@ x = np.linspace(0, 10, 100)
 # ── Panel 1: Sequential scale (light blue → dark blue) ──
 # dm.color() converts palette strings to Color objects for cspace
 colors_seq = dm.cspace(
-    dm.color("dc.ocean0"), dm.color("dc.ocean5"), n=n_colors, space="oklch"
+    dm.color("dc.teal0"), dm.color("dc.teal5"), n=n_colors, space="oklch"
 )
 axs[0].set_title("Sequential Scale via OKLCH")
 
@@ -34,7 +34,7 @@ for i, c in enumerate(colors_seq):
 
 # ── Panel 2: Warm sequential scale (yellow → deep red) ──
 colors_warm = dm.cspace(
-    dm.color("dc.sunset1"), dm.color("dc.vivid5"), n=n_colors, space="oklch"
+    dm.color("dc.earth1"), dm.color("dc.bold5"), n=n_colors, space="oklch"
 )
 axs[1].set_title("Warm Sequential Scale via OKLCH")
 

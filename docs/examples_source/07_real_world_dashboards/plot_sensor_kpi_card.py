@@ -29,7 +29,7 @@ ax = fig.add_subplot(gs[0, 0])
 ax.set_axis_off()
 ax.add_patch(
     plt.Rectangle(
-        (0, 0), 1, 1, fill=False, edgecolor="dc.nordic2", linewidth=0.6
+        (0, 0), 1, 1, fill=False, edgecolor="dc.teal_indigo2", linewidth=0.6
     )
 )
 

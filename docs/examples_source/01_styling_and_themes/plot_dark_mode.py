@@ -20,7 +20,7 @@ np.random.seed(42)
 x = np.random.randn(300)
 y = x + np.random.randn(300) * 0.6
 
-ax.scatter(x, y, color="dc.cyber3", alpha=0.7, edgecolor="none", s=15)
+ax.scatter(x, y, color="dc.jewel3", alpha=0.7, edgecolor="none", s=15)
 
 ax.set_title("Latent Space Distribution")
 ax.set_xlabel("Principal Component 1")

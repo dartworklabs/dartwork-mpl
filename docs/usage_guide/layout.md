@@ -13,7 +13,7 @@ import numpy as np
 dm.style.use("scientific")
 
 fig, ax = plt.subplots(figsize=dm.figsize("15cm", "wide"))
-ax.plot(np.linspace(0, 10, 100), np.sin(np.linspace(0, 10, 100)), color="dc.ocean3")
+ax.plot(np.linspace(0, 10, 100), np.sin(np.linspace(0, 10, 100)), color="dc.teal3")
 ax.set_xlabel("Time [s]")
 ax.set_ylabel("Response")
 
@@ -36,7 +36,7 @@ gs = fig.add_gridspec(2, 2, hspace=0.35, wspace=0.25)
 axes = [fig.add_subplot(gs[i, j]) for i in range(2) for j in range(2)]
 
 for ax in axes:
-    ax.plot(np.linspace(0, 1, 40), np.random.rand(40), color="dc.ocean3", lw=0.8)
+    ax.plot(np.linspace(0, 1, 40), np.random.rand(40), color="dc.teal3", lw=0.8)
 
 dm.label_axes(axes)                    # adds (a), (b), (c), (d) panel labels
 dm.set_decimal(axes[0], xn=2, yn=1)    # format tick labels to fixed decimals

@@ -35,7 +35,7 @@ eu_2030_target = 55.0  # EU CO2 fleet target implies ~55% BEV share by 2030
 # 3. OKLCH gradient — color encodes magnitude (perceptually uniform).
 #    dm.cspace(start, end, n) returns Color objects across OKLCH space.
 #    Higher value → deeper hue (sequential convention).
-gradient = dm.cspace("dc.ocean5", "dc.ocean1", n=len(countries))
+gradient = dm.cspace("dc.teal5", "dc.teal1", n=len(countries))
 bar_colors = [c.to_hex() for c in gradient]
 
 # 4. Figure — col1 width keeps the layout dense and reviewer-friendly.
@@ -58,7 +58,7 @@ for bar_, v in zip(bars, bev_share, strict=False):
 
 # 6. Reference threshold — EU 2030 mandate as a horizontal context line.
 ax.axhline(
-    eu_2030_target, linestyle="--", linewidth=0.5, color="dc.sunset4", zorder=1
+    eu_2030_target, linestyle="--", linewidth=0.5, color="dc.earth4", zorder=1
 )
 ax.text(
     len(countries) - 0.5,
@@ -67,7 +67,7 @@ ax.text(
     ha="right",
     va="bottom",
     fontsize=dm.fs(-1),
-    color="dc.sunset4",
+    color="dc.earth4",
     fontstyle="italic",
 )
 

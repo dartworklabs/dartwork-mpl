@@ -1108,7 +1108,7 @@ def register_tools(mcp: FastMCP) -> None:
             "event_window": ("axvspan(", "axhspan("),
             "value_labels": ("ax.text(", "ax.bar_label("),
             "trendline": ("np.polyfit", "polyfit"),
-            "highlight": ("dc.sunset5", "accent", 'marker="D"'),
+            "highlight": ("dc.earth5", "accent", 'marker="D"'),
             "callout": ("ax.annotate(", "arrowprops="),
             "gradient_palette": ("dm.cspace(", ".cspace("),
             "source_footnote": ("fig.text(", "Source:"),

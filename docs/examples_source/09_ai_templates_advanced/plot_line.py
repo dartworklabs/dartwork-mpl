@@ -36,13 +36,13 @@ y_primary = base + product_lift + rng.normal(0, 1.0, size=24)
 y_compare = base * 0.95 + rng.normal(0, 1.2, size=24)
 
 # Pick two perceptually distinct OKLCH endpoints for the two series.
-primary_color = dm.color("dc.ocean4").to_hex()
+primary_color = dm.color("dc.teal4").to_hex()
 compare_color = dm.color("oc.gray6").to_hex()
 
 fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))
 
 # Event window — the launch quarter as a context band.
-ax.axvspan(launch_idx, launch_idx + 2, alpha=0.12, color="dc.sunset4", zorder=0)
+ax.axvspan(launch_idx, launch_idx + 2, alpha=0.12, color="dc.earth4", zorder=0)
 ax.text(
     launch_idx + 1,
     ax.get_ylim()[1] if False else max(y_primary.max(), y_compare.max()),
@@ -50,7 +50,7 @@ ax.text(
     ha="center",
     va="top",
     fontsize=dm.fs(-1),
-    color="dc.sunset5",
+    color="dc.earth5",
     fontstyle="italic",
 )
 

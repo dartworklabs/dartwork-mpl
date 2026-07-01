@@ -43,7 +43,7 @@ for i, (delta, total) in enumerate(zip(deltas, is_total, strict=False)):
         running += delta
 
 colors = [
-    "dc.nordic3" if total else ("dc.forest2" if d >= 0 else "dc.vivid2")
+    "dc.teal_indigo3" if total else ("dc.forest2" if d >= 0 else "dc.bold2")
     for d, total in zip(deltas, is_total, strict=False)
 ]
 
@@ -56,7 +56,7 @@ ax.bar(
     edgecolor="white",
     linewidth=0.3,
 )
-ax.axhline(0, color="dc.nordic3", linewidth=0.3)
+ax.axhline(0, color="dc.teal_indigo3", linewidth=0.3)
 ax.set_ylabel("Value")
 ax.set_title("Bridge / waterfall", fontsize=dm.fs(1), fontweight=dm.fw(1))
 

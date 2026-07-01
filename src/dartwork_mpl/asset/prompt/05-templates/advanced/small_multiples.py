@@ -31,7 +31,7 @@ lines = {
     "Line F": 50 + 2.1 * months + rng.normal(0, 2.0, 24),  # rocket
 }
 
-gradient = dm.cspace("dc.ocean5", "dc.ocean1", n=len(lines))
+gradient = dm.cspace("dc.teal5", "dc.teal1", n=len(lines))
 colors = [c.to_hex() for c in gradient]
 
 fig, axes = plt.subplots(

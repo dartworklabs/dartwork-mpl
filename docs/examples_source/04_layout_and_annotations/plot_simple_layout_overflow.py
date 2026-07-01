@@ -32,7 +32,7 @@ x = np.linspace(0, 10, 100)
 y1 = np.sin(x) + 0.1 * np.random.randn(100)
 y2 = np.cos(x) + 0.1 * np.random.randn(100)
 
-ax1.plot(x, y1, color="dc.ocean2", lw=dm.lw(1))
+ax1.plot(x, y1, color="dc.teal2", lw=dm.lw(1))
 ax1.set_title(
     "Panel A: Demonstration of\nMulti-Line Title with Potential Overflow\nThird Line for Extra Challenge",
     fontsize=dm.fs(1),
@@ -43,7 +43,7 @@ ax1.set_ylabel(
 )
 ax1.set_xlabel("Time [seconds]", fontsize=dm.fs(0))
 
-ax2.plot(x, y2, color="dc.vivid2", lw=dm.lw(1))
+ax2.plot(x, y2, color="dc.bold2", lw=dm.lw(1))
 ax2.set_title("Panel B: Normal Title", fontsize=dm.fs(1))
 ax2.set_ylabel("Value", fontsize=dm.fs(0))
 ax2.set_xlabel("Time [seconds]", fontsize=dm.fs(0))

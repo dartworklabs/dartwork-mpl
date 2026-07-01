@@ -132,15 +132,10 @@ def _text_color_for_bg(hex_str: str) -> str:
     return "#fff" if _relative_luminance_rgb(r, g, b) < 0.45 else "#333"
 
 
-#: Legacy palettes are deprecated back-compat aliases — kept working for old
-#: example scripts but omitted from the curated showcase sheet.
-_DC_LEGACY = {"vivid", "sunset", "ocean", "pop", "cyber", "autumn", "nordic"}
-
-
 def _write_dc_sheet(images_dir: Path, label: str, mapping: dict) -> Path:
     """Build the dc categorical sheet: one row per curated palette, slots in
     their **designed order** (not lightness-sorted), curated order from the
-    palette SSOT, legacy omitted. Swatches are interactive (hover → name+hex).
+    palette SSOT. Swatches are interactive (hover → name+hex).
     """
     import json
 
@@ -150,8 +145,8 @@ def _write_dc_sheet(images_dir: Path, label: str, mapping: dict) -> Path:
         Path(_dm_pkg.__file__).parent / "asset" / "color" / "dc_palettes.json"
     )
     pal = json.loads(pkg_path.read_text(encoding="utf-8"))
-    # default (dc.0-7) first, then curated palettes in SSOT order, legacy out.
-    order = [""] + [k for k in pal if k and k.lower() not in _DC_LEGACY]
+    # default (dc.0-7) first, then the 24 curated palettes in SSOT order.
+    order = [""] + [k for k in pal if k]
 
     html = [
         '<div class="dm-color-sheet">',
@@ -621,7 +616,7 @@ def _save_color_space_creation(images_dir: Path) -> Path:
         ("OKLCH", dm.oklch(0.7, 0.2, 120), "dm.oklch(0.7, 0.2, 120)"),
         ("RGB", dm.rgb(0.8, 0.2, 0.3), "dm.rgb(0.8, 0.2, 0.3)"),
         ("Hex", dm.hex("#ff5733"), "dm.hex('#ff5733')"),
-        ("Color", dm.color("dc.ocean2"), "dm.color('dc.ocean2')"),
+        ("Color", dm.color("dc.teal2"), "dm.color('dc.teal2')"),
         ("RGB 255", dm.rgb(200, 50, 75), "dm.rgb(200, 50, 75)"),
     ]
 

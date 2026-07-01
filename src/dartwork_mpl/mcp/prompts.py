@@ -178,8 +178,8 @@ dm.style.use("scientific")
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 
 # Named colors + preset-relative line width.
-ax.plot(x, y, color="dc.ocean2", linewidth=dm.lw(0), label="Series A")
-ax.scatter(x, y, color="dc.ocean5", edgecolor="white",
+ax.plot(x, y, color="dc.teal2", linewidth=dm.lw(0), label="Series A")
+ax.scatter(x, y, color="dc.teal5", edgecolor="white",
            linewidth=0.3, s=20)
 
 # Tick / legend / annotation text — one step below the body size.
@@ -207,7 +207,7 @@ dm.style.use("scientific")
 # ... your data here ...
 
 # Magnitude-encoding gradient.
-gradient = dm.cspace("dc.ocean5", "dc.ocean1", n=len(values))
+gradient = dm.cspace("dc.teal5", "dc.teal1", n=len(values))
 colors = [c.to_hex() for c in gradient]
 
 fig, ax = plt.subplots(figsize=dm.figsize(dm.col1, "standard"))
@@ -221,7 +221,7 @@ for bar_, v in zip(bars, values):
             fontsize=dm.fs(-1), fontweight=dm.fw(1))
 
 # Reference threshold.
-ax.axhline(threshold, linestyle="--", linewidth=0.5, color="dc.sunset4")
+ax.axhline(threshold, linestyle="--", linewidth=0.5, color="dc.earth4")
 
 # Domain-aware tick formatter (pick one).
 # dm.format_axis_currency(ax, axis="y", symbol="$")

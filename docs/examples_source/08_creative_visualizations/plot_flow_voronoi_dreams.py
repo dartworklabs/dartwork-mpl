@@ -85,7 +85,7 @@ for point in points[: n_clusters * n_points_per_cluster]:
         *point,
         s=20,
         c="white",
-        edgecolors="dc.nordic3",
+        edgecolors="dc.teal_indigo3",
         linewidths=1,
         zorder=10,
     )
@@ -95,7 +95,7 @@ ax.set_ylim(-10, 10)
 ax.set_aspect("equal")
 for s in ax.spines.values():
     s.set_visible(False)
-ax.set_facecolor("dc.nordic0")
+ax.set_facecolor("dc.teal_indigo0")
 
 ax.text(
     0,

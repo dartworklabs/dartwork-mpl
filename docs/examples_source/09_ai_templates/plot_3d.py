@@ -26,7 +26,7 @@ dm.style.use("scientific")
 rng = np.random.default_rng(42)
 n_per_cluster = 60
 centers = [(0, 0, 0), (3, 3, 2), (4, 1, 4)]
-colors = ["dc.ocean2", "dc.forest2", "dc.sunset2"]
+colors = ["dc.teal2", "dc.forest2", "dc.earth2"]
 
 fig, ax = plt.subplots(
     figsize=dm.figsize("13cm", "square"), subplot_kw={"projection": "3d"}

@@ -27,8 +27,8 @@ x1 = np.sin(t)
 x2 = np.sin(t + np.pi)
 y = t
 
-colors_helix1 = dm.cspace("dc.ocean1", "oc.purple7", n=len(t))
-colors_helix2 = dm.cspace("dc.forest1", "dc.sunset3", n=len(t))
+colors_helix1 = dm.cspace("dc.teal1", "oc.purple7", n=len(t))
+colors_helix2 = dm.cspace("dc.forest1", "dc.earth3", n=len(t))
 
 for i in range(len(t) - 1):
     width1 = 2 + np.sin(t[i]) * 0.5
@@ -66,7 +66,7 @@ for i in range(0, len(t), 40):
         ax.scatter(
             [x1[i], x2[i]],
             [y[i], y[i]],
-            c=["dc.vivid2", "dc.ocean2"],
+            c=["dc.bold2", "dc.teal2"],
             s=100,
             edgecolors="white",
             linewidths=1,
@@ -76,7 +76,7 @@ for i in range(0, len(t), 40):
         ax.scatter(
             [x1[i], x2[i]],
             [y[i], y[i]],
-            c=["dc.forest2", "dc.sunset2"],
+            c=["dc.forest2", "dc.earth2"],
             s=100,
             edgecolors="white",
             linewidths=1,
@@ -88,7 +88,7 @@ for s in ax.spines.values():
 ax.set_xlim(-2, 2)
 ax.set_ylim(-0.5, 4 * np.pi + 0.5)
 ax.set_aspect("equal")
-ax.set_facecolor("dc.nordic0")
+ax.set_facecolor("dc.teal_indigo0")
 
 ax.text(
     0,
@@ -105,7 +105,7 @@ ax.text(
     "A-T  G-C Base Pairs",
     ha="center",
     fontsize=dm.fs(0),
-    color="dc.nordic2",
+    color="dc.teal_indigo2",
 )
 
 dm.simple_layout(fig)

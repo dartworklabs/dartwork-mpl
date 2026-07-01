@@ -32,7 +32,7 @@ profiles = {
 }
 
 # OKLCH gradient — three series, perceptually distinct.
-gradient = dm.cspace("dc.ocean5", "dc.sunset4", n=len(profiles))
+gradient = dm.cspace("dc.teal5", "dc.earth4", n=len(profiles))
 colors = [c.to_hex() for c in gradient]
 
 fig, ax = plt.subplots(

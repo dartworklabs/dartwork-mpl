@@ -32,7 +32,7 @@ change_pct = np.concatenate(
 fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "wide"))
 
 x = np.arange(len(periods))
-ax.bar(x, temperature, color="dc.ocean2", alpha=0.85, width=0.55)
+ax.bar(x, temperature, color="dc.teal2", alpha=0.85, width=0.55)
 ax.set_xticks(x)
 ax.set_xticklabels(periods)
 ax.set_xlabel("Time", fontsize=dm.fs(0))
@@ -42,10 +42,10 @@ ax.grid(axis="y", alpha=0.2)
 # twinx: 0.4 auto-shows the right spine via the dartwork-mpl monkey-patch.
 ax2 = ax.twinx()
 ax2.plot(
-    x, change_pct, "o-", color="dc.sunset3", linewidth=dm.lw(1), markersize=5
+    x, change_pct, "o-", color="dc.earth3", linewidth=dm.lw(1), markersize=5
 )
-ax2.set_ylabel("Change (%)", fontsize=dm.fs(0), color="dc.sunset3")
-ax2.tick_params(axis="y", labelcolor="dc.sunset3")
+ax2.set_ylabel("Change (%)", fontsize=dm.fs(0), color="dc.earth3")
+ax2.tick_params(axis="y", labelcolor="dc.earth3")
 
 ax.set_title(
     "Hourly temperature and rate of change", fontsize=dm.fs(1), weight="bold"
