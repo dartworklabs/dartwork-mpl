@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-07-01
+
+### Removed
+
+- **BREAKING — the 7 legacy `dc.*` palettes are gone.** `Vivid`, `Sunset`,
+  `Ocean`, `Pop`, `Cyber`, `Autumn`, and `Nordic` were deprecated back-compat
+  aliases; they no longer resolve (`dc.ocean2`, `dc.nordic1`, … now raise the
+  usual "not a valid color" error). All docs examples, prompt templates, and
+  build scripts were migrated to curated palettes with the shade index
+  preserved: `vivid→bold`, `sunset→earth`, `ocean→teal`, `pop→spectrum`,
+  `cyber→jewel`, `autumn→dusty`, `nordic→teal_indigo`. `dc_palettes.json`
+  drops from 32 to 25 keys (24 curated + the `dc.0-7` default). (#367)
+
+### Added
+
+- **`get_palette` gains `order` / `reverse` / `seed`.** Re-arrange a picked
+  palette by lightness or a reproducible shuffle, or reverse it — the same
+  controls the docs palette explorer exposes, so its snippets run verbatim.
+- **In-repo categorical palette explorer** — an inline, de-nested generator
+  builds the interactive explorer widget from the palette SSOT so it can
+  never drift from what the package registers.
+- **Integrity gates**: a release test-gate (tests must pass before build), a
+  richer no-extras smoke test that exercises the core render path, positive
+  validation of `dm.figsize` heights, and render coverage for every bundled
+  plot template. A regression test also guards that `gen_palettes.py`
+  reproduces the committed CIELAB SSOT byte-for-byte.
+
+### Changed
+
+- **The 24 categorical palettes now use consistent snake_case names**
+  (`teal_seq→teal`, `focus→teal_accent`, `focus_warm→coral_accent`,
+  `muted→pastel`, `teal_amber_div→teal_amber`, …).
+- **Single source of truth for the 7 colour libraries.** A `COLOR_LIBRARIES`
+  registry drives the prefix / label / order lists that the loader, the MCP
+  server, diagnostics, and the docs asset generator used to hard-code
+  separately.
+- Docs build pinned to Python 3.12; asset *data* now folded into the
+  gallery / doctree cache keys so a palette change busts stale renders.
+
+### Fixed
+
+- Six correctness/consistency bugs from a codebase audit: `list_palettes`
+  now shows multi-word palettes, `make_palette(highlight=…)` emphasises the
+  right series for sequential/diverging kinds, and several stale doc/asset
+  references were corrected.
+- `set_cycle(..., ax=None)` now writes the global colour cycle under the same
+  lock `style.use` uses; `optimize_legend` loads the dartwork colours itself
+  instead of relying on an import side effect.
+- MCP: the advanced-tier template resource is registered and the emitted
+  template URIs line up with what resolves.
+- CI docs build: a legacy alias (`dc.nordic1`) failed colour resolution on the
+  Linux runner during gallery execution — removing the deprecated palettes
+  eliminates the failing surface.
+
 ## [0.5.3] - 2026-06-20
 
 ### Added
