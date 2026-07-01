@@ -640,13 +640,13 @@ def auto_layout(
     so ``auto_layout`` is now a thin wrapper that translates the legacy
     ``padding`` (inches) argument into ``margin`` and forwards the call.
 
-    Will be removed in a future release; use :func:`simple_layout`
+    Will be removed in 0.5.5; use :func:`simple_layout`
     directly. ``max_iter`` and ``tolerance`` are accepted for
     signature compatibility but no longer have an effect — convergence
     is governed by the deterministic loop inside ``simple_layout``.
     """
     warnings.warn(
-        "dm.auto_layout is deprecated and will be removed in v0.6.0; "
+        "dm.auto_layout is deprecated and will be removed in 0.5.5; "
         "use dm.simple_layout(fig, ...) directly. The previous outer "
         "iteration is no longer needed.",
         DeprecationWarning,

@@ -14,7 +14,7 @@ from .labels import optimize_legend
 
 warnings.warn(
     "dartwork_mpl.helpers.formatting is deprecated and will be removed in "
-    "v0.6.0; use dartwork_mpl.helpers.labels instead.",
+    "0.5.5; use dartwork_mpl.helpers.labels instead.",
     DeprecationWarning,
     stacklevel=2,
 )

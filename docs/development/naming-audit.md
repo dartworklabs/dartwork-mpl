@@ -62,7 +62,7 @@ Functions that *mutate* a figure / axes should use a verb. Audit:
 | `arrow_axis` | (noun) | yes (axes) | **Watch** — reads like an attribute. Compare with `dm.add_grid` (proposed in #302). If `add_grid` lands, consider renaming this to `add_arrow_axis` at the same time for sibling-set consistency. Defer the breaking rename until the M2 wave |
 | `label_axes` | (noun-ish) | yes (axes) | ✓ — "label" reads as a verb (label-the-axes) |
 | `adopt_axis_label_font` | "adopt" | yes (axes) | ✓ |
-| `auto_layout` | (noun) | yes (figure) | **Already deprecated** — slated for v0.6.0 removal in favour of `simple_layout` |
+| `auto_layout` | (noun) | yes (figure) | **Already deprecated** — slated for 0.5.5 removal in favour of `simple_layout` |
 | `simple_layout` | (noun) | yes (figure) | **Keep** — name describes the *output* (simple, content-aware), not the *action*; consistent with matplotlib's `tight_layout` / `constrained_layout` precedent |
 | `tight_crop` | (noun) | yes (figure) | **Keep** — same convention as `simple_layout` / matplotlib |
 | `optimize_legend` | "optimize" | yes (axes) | ✓ |
