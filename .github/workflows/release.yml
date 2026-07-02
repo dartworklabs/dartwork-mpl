@@ -80,6 +80,28 @@ jobs:
       - name: Build distributions
         run: uv build
 
+      - name: Wheel ↔ git-tracked tree parity
+        # Positive packaging gate: the wheel's package payload must equal
+        # the git-tracked src/dartwork_mpl tree exactly (plus the four
+        # force-included agent docs, which have their own parity test).
+        # Catches the empirically-proven hatchling hazard where a
+        # .gitignore *pattern* (e.g. a global `*.csv`) silently drops a
+        # git-tracked package file from the wheel — the negative
+        # sdist-scope grep below only catches over-inclusion.
+        run: |
+          set -euo pipefail
+          wheel=$(ls dist/*.whl)
+          unzip -Z1 "$wheel" \
+            | grep '^dartwork_mpl/' \
+            | grep -v '\.dist-info/' \
+            | grep -v '^dartwork_mpl/asset/agent/' \
+            | sort > /tmp/wheel_files.txt
+          git ls-files 'src/dartwork_mpl' | sed 's|^src/||' | sort > /tmp/git_files.txt
+          if ! diff -u /tmp/git_files.txt /tmp/wheel_files.txt; then
+            echo "::error ::wheel payload != git-tracked package tree (see diff above)"
+            exit 1
+          fi
+
       - name: Sanity-check sdist scope
         # Fails the build if dev-only paths sneak into the tarball
         # (regression guard for the hatch ``include`` vs ``only-include``
