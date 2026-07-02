@@ -155,7 +155,10 @@ def classify_colormap(cmap: Colormap) -> str:
         "tab20",
         "tab20b",
         "tab20c",
-        "Spectral",
+        # NOTE: "Spectral" is intentionally NOT here — matplotlib
+        # documents it as a *diverging* map (red→yellow→green→blue), and
+        # the diverging heuristic below classifies it correctly. Listing
+        # it forced a wrong "Categorical" badge in the colormap gallery.
         "prism",
         "hsv",
         "gist_rainbow",

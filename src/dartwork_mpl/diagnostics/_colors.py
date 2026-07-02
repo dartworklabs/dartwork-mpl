@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import matplotlib.colors as mcolors
@@ -25,27 +24,6 @@ if TYPE_CHECKING:
 # =============================================================================
 # Color libraries
 # =============================================================================
-
-
-def _load_color_library_names() -> set[str]:
-    """Load color names from oc.txt file."""
-    asset_dir = Path(__file__).resolve().parent.parent / "asset" / "color"
-    opencolor_names: set[str] = set()
-
-    opencolor_file = asset_dir / "opencolor.txt"
-    if opencolor_file.exists():
-        with open(opencolor_file) as f:
-            for raw_line in f:
-                line = raw_line.strip()
-                if line and not line.startswith("#") and ":" in line:
-                    name = line.split(":")[0].strip()
-                    opencolor_names.add(name)
-
-    return opencolor_names
-
-
-# Cache the color library names
-_OPENCOLOR_NAMES = _load_color_library_names()
 
 
 def _classify_color_library(color_name: str) -> str | None:
@@ -372,13 +350,12 @@ def _plot_single_library(
     # ------------------------------------------------------------------
     # Title with divider
     # ------------------------------------------------------------------
+    # Derive display labels from the COLOR_LIBRARIES SSOT rather than a
+    # hardcoded dict, which had drifted (it omitted "dc", so the default
+    # dartwork palette figure was titled the raw key "dc" instead of
+    # "dartwork Color", and any new library inherited its raw key).
     library_labels = {
-        "opencolor": "Open Color",
-        "tw": "Tailwind CSS",
-        "md": "Material Design",
-        "ant": "Ant Design",
-        "chakra": "Chakra UI",
-        "primer": "Primer",
+        key: label for key, _prefix, _fn, label in COLOR_LIBRARIES
     }
     title_text = library_labels.get(library_name, library_name)
     count_text = f"  ({len(colors)} colors)"

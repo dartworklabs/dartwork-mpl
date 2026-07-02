@@ -236,3 +236,21 @@ class TestClassificationOverridesParity:
             f"missing: {sorted(stems - overrides)}; "
             f"stale: {sorted(overrides - stems)}"
         )
+
+
+class TestClassifyColormapAudit:
+    """2026-07 audit: Spectral is diverging, not categorical."""
+
+    def test_spectral_is_not_categorical(self) -> None:
+        import matplotlib
+
+        from dartwork_mpl.diagnostics import classify_colormap
+
+        assert (
+            classify_colormap(matplotlib.colormaps["Spectral"]) != "Categorical"
+        )
+
+    def test_dead_opencolor_names_removed(self) -> None:
+        import dartwork_mpl.diagnostics._colors as colors_mod
+
+        assert not hasattr(colors_mod, "_OPENCOLOR_NAMES")
