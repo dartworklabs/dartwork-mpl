@@ -202,33 +202,33 @@ function buildControlWidget(d, val) {
 
   if (d.choices) {
     g.innerHTML = `<label class="param-label">${esc(d.label)}</label>
-      <select class="param-input param-select" data-name="${d.name}">
+      <select class="param-input param-select" data-name="${esc(d.name)}">
         ${d.choices.map(c => `<option value="${esc(c)}" ${c==val?"selected":""}>${esc(c)}</option>`).join("")}
       </select>`;
   } else if (d.widget_hint === "color") {
     g.innerHTML = `<label class="param-label">${esc(d.label)}</label>
-      <input type="color" class="param-color" data-name="${d.name}" value="${val||"#000000"}">`;
+      <input type="color" class="param-color" data-name="${esc(d.name)}" value="${esc(val||"#000000")}">`;
   } else if (d.type_name === "bool") {
     g.innerHTML = `<label class="param-checkbox">
-        <input type="checkbox" data-name="${d.name}" ${val?"checked":""}>
+        <input type="checkbox" data-name="${esc(d.name)}" ${val?"checked":""}>
         <span>${esc(d.label)}</span></label>`;
   } else if ((d.type_name==="int"||d.type_name==="float") && d.min_value!==null && d.max_value!==null) {
     const step = d.step || (d.type_name==="int" ? 1 : 0.01);
     const disp = d.type_name==="float" ? Number(val).toFixed(2) : val;
     g.innerHTML = `<label class="param-label">${esc(d.label)}</label>
       <div class="range-row">
-        <input type="range" data-name="${d.name}" data-type="${d.type_name}"
-               min="${d.min_value}" max="${d.max_value}" step="${step}" value="${val}">
-        <span class="range-value" id="rv-${d.name}">${disp}</span></div>`;
+        <input type="range" data-name="${esc(d.name)}" data-type="${d.type_name}"
+               min="${d.min_value}" max="${d.max_value}" step="${step}" value="${esc(val)}">
+        <span class="range-value" id="rv-${esc(d.name)}">${esc(disp)}</span></div>`;
   } else if (d.type_name==="int"||d.type_name==="float") {
     g.innerHTML = `<label class="param-label">${esc(d.label)}</label>
-      <input type="number" class="param-input" data-name="${d.name}" data-type="${d.type_name}"
-             value="${val||0}" step="${d.step||(d.type_name==="int"?1:0.01)}"
+      <input type="number" class="param-input" data-name="${esc(d.name)}" data-type="${d.type_name}"
+             value="${esc(val||0)}" step="${d.step||(d.type_name==="int"?1:0.01)}"
              ${d.min_value!==null?`min="${d.min_value}"`:""}
              ${d.max_value!==null?`max="${d.max_value}"`:""}>` ;
   } else {
     g.innerHTML = `<label class="param-label">${esc(d.label)}</label>
-      <input type="text" class="param-input" data-name="${d.name}" value="${esc(val||"")}">` ;
+      <input type="text" class="param-input" data-name="${esc(d.name)}" value="${esc(val||"")}">` ;
   }
   return g;
 }

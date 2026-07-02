@@ -131,6 +131,58 @@ def _is_cross_origin(
     return urlsplit(source).netloc != host
 
 
+def _allowed_hostnames(host: str) -> set[str] | None:
+    """Hostnames a browser may legitimately send in the ``Host`` header.
+
+    Returns ``None`` when the server binds a public interface
+    (``0.0.0.0`` / ``::``), where the set of valid external hostnames
+    can't be pinned. Otherwise returns the loopback names plus the
+    configured bind host. Used to reject DNS-rebinding requests: an
+    attacker page on ``evil.com`` that rebinds DNS to ``127.0.0.1``
+    sends ``Origin == Host == evil.com`` (so the same-origin check
+    passes), but ``evil.com`` is not an allowed Host here.
+    """
+    if host in ("0.0.0.0", "::"):
+        return None
+    return {"127.0.0.1", "localhost", "::1", host.lower()}
+
+
+def _host_allowed(host_header: str | None, allowed: set[str] | None) -> bool:
+    """Whether the request ``Host`` header names an allowed hostname.
+
+    ``allowed=None`` (public bind) permits any host. A missing ``Host``
+    is permitted — non-browser clients (curl) aren't a DNS-rebinding
+    vector. The port is stripped before comparison (via ``urlsplit`` so
+    IPv6 ``[::1]:8501`` parses) so the check survives the port-retry
+    fallback.
+    """
+    if allowed is None or host_header is None:
+        return True
+    hostname = urlsplit(f"//{host_header}").hostname
+    if hostname is None:
+        return False
+    return hostname in allowed
+
+
+def _figure_to_bytes(
+    figure_fn: Callable[[Any], Figure], model: Any, fmt: str
+) -> bytes:
+    """Render ``figure_fn(model)`` to ``fmt`` bytes, always closing the figure.
+
+    The figure is closed in a ``finally`` so a ``savefig`` failure (bad
+    format, non-finite data, …) can't leak it. Render/export are hot
+    paths (fired on every param change), so an un-closed figure per
+    failure accumulates unboundedly in pyplot's global figure registry.
+    """
+    fig = figure_fn(model)
+    try:
+        buf = io.BytesIO()
+        fig.savefig(buf, format=fmt)
+        return buf.getvalue()
+    finally:
+        plt.close(fig)
+
+
 # ============================================================================
 # Public API
 # ============================================================================
@@ -195,6 +247,9 @@ def run(
     descriptors = descriptors_from_model(param_model)
     descriptor_dicts = [d.to_dict() for d in descriptors]
 
+    # Hostnames the CSRF guard will accept (DNS-rebinding defense).
+    allowed_hostnames = _allowed_hostnames(host)
+
     # ── FastAPI app ──────────────────────────────────────────────────
     app = FastAPI(title=title)
 
@@ -208,6 +263,12 @@ def run(
         # writes). Same-origin UI calls send Origin == Host and pass;
         # non-browser clients (curl) send neither and are allowed — they
         # are not a CSRF vector.
+        #
+        # The Host allowlist is the DNS-rebinding defense: without it a
+        # rebound ``evil.com -> 127.0.0.1`` page sends matching
+        # Origin/Host and slips past the same-origin check below.
+        if not _host_allowed(request.headers.get("host"), allowed_hostnames):
+            return JSONResponse({"detail": "host not allowed"}, status_code=403)
         if _is_cross_origin(
             request.method,
             request.headers.get("origin"),
@@ -234,12 +295,8 @@ def run(
         except Exception as exc:  # noqa: BLE001
             error_msg = _format_validation_error(exc)
             return JSONResponse(status_code=422, content={"detail": error_msg})
-        fig = figure_fn(cast(_P, model))
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png")
-        plt.close(fig)
-        buf.seek(0)
-        b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+        png = _figure_to_bytes(figure_fn, cast(_P, model), "png")
+        b64 = base64.b64encode(png).decode("ascii")
 
         return {"image": b64}
 
@@ -261,11 +318,7 @@ def run(
     async def export(fmt: str, params: dict[str, Any]) -> Response:
         _validate_export_format(fmt)
         model = _build_model_checked(params, param_model, descriptors)
-        fig = figure_fn(cast(_P, model))
-        buf = io.BytesIO()
-        fig.savefig(buf, format=fmt)
-        plt.close(fig)
-        buf.seek(0)
+        data = _figure_to_bytes(figure_fn, cast(_P, model), fmt)
 
         mime_map = {
             "png": "image/png",
@@ -273,7 +326,7 @@ def run(
             "pdf": "application/pdf",
         }
         return Response(
-            content=buf.getvalue(),
+            content=data,
             media_type=mime_map.get(fmt, "application/octet-stream"),
             headers={
                 "Content-Disposition": f'attachment; filename="figure.{fmt}"'
@@ -346,26 +399,29 @@ def run(
         _validate_export_format(fmt)
         model = _build_model_checked(req.params, param_model, descriptors)
         fig = figure_fn(cast(_P, model))
+        # Always close the figure — a failure while resolving the output
+        # path or in save_formats would otherwise leak it.
+        try:
+            if req.filename:
+                # User may provide full name with extension
+                name = req.filename
+                # Check if user specified a different image ext
+                known_exts = (".png", ".svg", ".pdf")
+                for ext in known_exts:
+                    if name.lower().endswith(ext):
+                        fmt = ext[1:]  # override format
+                        name = name[: -len(ext)]
+                        break
+                stem = name
+            else:
+                ts = _timestamp_slug()
+                stem = f"{figure_fn.__name__}_{ts}"
+            safe_target = _safe_output_path(script_path, f"{stem}.{fmt}")
+            image_stem = str(safe_target.with_suffix(""))
 
-        if req.filename:
-            # User may provide full name with extension
-            name = req.filename
-            # Check if user specified a different image ext
-            known_exts = (".png", ".svg", ".pdf")
-            for ext in known_exts:
-                if name.lower().endswith(ext):
-                    fmt = ext[1:]  # override format
-                    name = name[: -len(ext)]
-                    break
-            stem = name
-        else:
-            ts = _timestamp_slug()
-            stem = f"{figure_fn.__name__}_{ts}"
-        safe_target = _safe_output_path(script_path, f"{stem}.{fmt}")
-        image_stem = str(safe_target.with_suffix(""))
-
-        save_formats(fig, image_stem, formats=(fmt,), bbox_inches=None)
-        plt.close(fig)
+            save_formats(fig, image_stem, formats=(fmt,), bbox_inches=None)
+        finally:
+            plt.close(fig)
 
         filename = f"{stem}.{fmt}"
         saved_path = Path(image_stem + f".{fmt}")
