@@ -95,6 +95,23 @@ class TestAddFonts:
         assert bundle_warnings == []
 
 
+# The contract families: the primary chains of every preset (English
+# head, Korean head, and the mathtext face every preset points at).
+# Deleting any of these previously failed ZERO tests while silently
+# swapping the typeface of every preset's math / Korean text. Extending
+# this tuple is intended friction on deliberate font-set changes; the
+# mplstyle staleness meta-test in ``test_mplstyle_fonts.py`` keeps it
+# honest against the style files.
+CONTRACT_FAMILIES: tuple[str, ...] = (
+    "Inter",
+    "Pretendard",
+    "Roboto",
+    "Paperlogy",
+    "Noto Sans CJK KR",
+    "Noto Sans Math",
+)
+
+
 class TestEagerRegistrationContract:
     """``import dartwork_mpl`` must make the bundled families resolvable
     by bare rcParam name immediately — the documented contract behind
@@ -105,12 +122,24 @@ class TestEagerRegistrationContract:
         import subprocess
         import sys
 
+        families = ", ".join(repr(f) for f in CONTRACT_FAMILIES)
+        # ``findfont(fallback_to_default=False)`` + an asset-dir check:
+        # a system-installed copy of a family on a dev machine must not
+        # mask a bundle deletion.
         code = (
             "import dartwork_mpl\n"
+            "from pathlib import Path\n"
             "from matplotlib import font_manager\n"
-            "names = {f.name for f in font_manager.fontManager.ttflist}\n"
-            "for family in ('Inter', 'Pretendard', 'Roboto'):\n"
-            "    assert family in names, f'{family} not registered: eager'\n"
+            "from matplotlib.font_manager import FontProperties\n"
+            "asset = Path(dartwork_mpl.font._FONT_DIR).resolve()\n"
+            f"for family in ({families},):\n"
+            "    path = font_manager.findfont(\n"
+            "        FontProperties(family=family), fallback_to_default=False\n"
+            "    )\n"
+            "    resolved = Path(path).resolve()\n"
+            "    assert resolved.is_relative_to(asset), (\n"
+            "        f'{family} resolved outside the bundle: {resolved}'\n"
+            "    )\n"
         )
         result = subprocess.run(
             [sys.executable, "-c", code], capture_output=True, text=True
