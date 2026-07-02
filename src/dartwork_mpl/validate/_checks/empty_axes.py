@@ -5,15 +5,26 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .._types import Severity, VisualWarning
+from ._registry import register_check
 
 if TYPE_CHECKING:
+    from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
 
 __all__ = ["check_empty_axes"]
 
 
-def check_empty_axes(fig: Figure) -> list[VisualWarning]:
-    """Detect empty Axes that contain no visible data or content."""
+@register_check("EMPTY_AXES", order=60)
+def check_empty_axes(
+    fig: Figure, _renderer: RendererBase | None = None
+) -> list[VisualWarning]:
+    """Detect empty Axes that contain no visible data or content.
+
+    ``_renderer`` is accepted (unused) for signature parity with the
+    other checks so the orchestrator can invoke every handler as
+    ``fn(fig, renderer)`` — empty-axes detection reads the artist tree
+    directly, no bbox measurement needed. Mirrors ``check_pie_label_offset``.
+    """
     warnings: list[VisualWarning] = []
 
     for i, ax in enumerate(fig.axes):

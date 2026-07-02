@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .._types import Severity, VisualWarning
+from ._registry import register_check
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -15,6 +16,7 @@ __all__ = ["check_pie_label_offset"]
 _TOLERANCE_RATIO = 0.15  # 15% deviation
 
 
+@register_check("PIE_LABEL_OFFSET", order=80)
 def check_pie_label_offset(
     fig: Figure, _renderer: RendererBase
 ) -> list[VisualWarning]:

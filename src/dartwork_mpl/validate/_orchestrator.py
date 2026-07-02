@@ -1,22 +1,13 @@
-"""Orchestrator: runs every check and renders the stdout log."""
+"""Orchestrator: runs every registered check and renders the stdout log."""
 
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any
+from functools import partial
+from typing import TYPE_CHECKING
 
 from .._helpers import get_renderer
-from ._checks import (
-    check_clipped_text,
-    check_cross_axes_overlap,
-    check_empty_axes,
-    check_legend_overflow,
-    check_margin_asymmetry,
-    check_overflow,
-    check_overlap,
-    check_pie_label_offset,
-    check_tick_crowding,
-)
+from ._checks import registered_checks
 from ._types import BBOX_ERRORS, VisualWarning
 
 if TYPE_CHECKING:
@@ -70,46 +61,35 @@ def validate_figure(
     fig.canvas.draw()
     renderer = get_renderer(fig)
 
-    all_checks: dict[str, Any] = {
-        "OVERFLOW": lambda: check_overflow(fig, renderer),
-        "OVERLAP": lambda: check_overlap(fig, renderer),
-        "CROSS_AXES_OVERLAP": lambda: check_cross_axes_overlap(fig, renderer),
-        "LEGEND_OVERFLOW": lambda: check_legend_overflow(fig, renderer),
-        "TICK_CROWD": lambda: check_tick_crowding(fig, renderer),
-        "EMPTY_AXES": lambda: check_empty_axes(fig),
-        "MARGIN_ASYMMETRY": lambda: check_margin_asymmetry(fig, renderer),
-        "PIE_LABEL_OFFSET": lambda: check_pie_label_offset(
-            fig, _renderer=renderer
-        ),
-        "CLIPPED_TEXT": lambda: check_clipped_text(fig, renderer),
-    }
+    # Checks self-register via ``@register_check`` in their own modules;
+    # ``registered_checks()`` returns them in deterministic run order, so
+    # the orchestrator no longer hand-mirrors a check→callable dict that
+    # could silently drift out of sync with the check modules.
+    selected = registered_checks()
+    valid_ids = {check.check_id for check in selected}
 
     # Fail loud on unknown IDs: a typo (``"OVERFLW"``) or a renamed
     # check would otherwise silently run *zero* checks and report the
     # figure clean when it was never inspected.
     if checks is not None:
-        unknown = set(checks) - all_checks.keys()
+        unknown = set(checks) - valid_ids
         if unknown:
             raise ValueError(
                 f"Unknown check IDs: {sorted(unknown)}. "
-                f"Valid IDs: {sorted(all_checks)}"
+                f"Valid IDs: {sorted(valid_ids)}"
             )
-
-    selected = (
-        {k: v for k, v in all_checks.items() if k in checks}
-        if checks is not None
-        else all_checks
-    )
+        selected = [check for check in selected if check.check_id in checks]
 
     warnings: list[VisualWarning] = []
     errored: list[str] = []
-    for check_id, check_fn in selected.items():
+    for check in selected:
         # Never crash the save pipeline, but don't silently swallow a
         # failed check either — a check that raises must not let the
         # figure be reported "clean" as if it had run and found nothing.
-        result = _run_check_safely(check_fn)
+        # Every check is invoked uniformly as ``fn(fig, renderer)``.
+        result = _run_check_safely(partial(check.fn, fig, renderer))
         if result is None:
-            errored.append(check_id)
+            errored.append(check.check_id)
         else:
             warnings.extend(result)
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
+from ._registry import register_check
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -19,6 +20,7 @@ __all__ = ["check_clipped_text"]
 _CLIP_TOL_PX = 1.0
 
 
+@register_check("CLIPPED_TEXT", order=90)
 def check_clipped_text(
     fig: Figure, renderer: RendererBase
 ) -> list[VisualWarning]:
