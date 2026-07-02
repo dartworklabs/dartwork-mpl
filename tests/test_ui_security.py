@@ -98,3 +98,99 @@ class TestTemplateEscaping:
         assert "esc(p.label)" in doc
         assert "esc(groupName)" in doc
         assert "esc(c)" in doc
+
+
+class TestHostAllowlist:
+    """DNS-rebinding defense: state-changing requests must carry an
+    allowed Host, so a rebound ``evil.com -> 127.0.0.1`` page (which
+    passes the same-origin check with matching Origin/Host) is rejected.
+    """
+
+    def test_loopback_hosts_allowed(self) -> None:
+        from dartwork_mpl.ui.ui import _allowed_hostnames, _host_allowed
+
+        allowed = _allowed_hostnames("127.0.0.1")
+        assert _host_allowed("127.0.0.1:8501", allowed) is True
+        assert _host_allowed("localhost:8501", allowed) is True
+        assert _host_allowed("[::1]:8501", allowed) is True
+
+    def test_rebound_attacker_host_blocked(self) -> None:
+        from dartwork_mpl.ui.ui import _allowed_hostnames, _host_allowed
+
+        allowed = _allowed_hostnames("127.0.0.1")
+        assert _host_allowed("evil.com:8501", allowed) is False
+        assert _host_allowed("evil.com", allowed) is False
+
+    def test_missing_host_allowed(self) -> None:
+        # Non-browser clients (curl) omit Host and aren't a rebinding vector.
+        from dartwork_mpl.ui.ui import _allowed_hostnames, _host_allowed
+
+        assert _host_allowed(None, _allowed_hostnames("127.0.0.1")) is True
+
+    def test_public_bind_permits_any_host(self) -> None:
+        # 0.0.0.0/:: can't pin valid external hostnames -> no allowlist.
+        from dartwork_mpl.ui.ui import _allowed_hostnames, _host_allowed
+
+        assert _allowed_hostnames("0.0.0.0") is None
+        assert _host_allowed("anything.example", None) is True
+
+
+class TestFigureNotLeaked:
+    """render/export must not leak matplotlib figures when rendering fails."""
+
+    def test_figure_closed_on_savefig_error(self) -> None:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        from dartwork_mpl.ui.ui import _figure_to_bytes
+
+        before = set(plt.get_fignums())
+
+        def figure_fn(_model: object) -> plt.Figure:
+            return plt.figure()
+
+        # matplotlib raises ValueError for an unsupported savefig format.
+        with pytest.raises(ValueError):
+            _figure_to_bytes(figure_fn, None, "not-a-real-format")
+
+        assert set(plt.get_fignums()) == before
+
+    def test_figure_closed_on_success(self) -> None:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        from dartwork_mpl.ui.ui import _figure_to_bytes
+
+        before = set(plt.get_fignums())
+
+        def figure_fn(_model: object) -> plt.Figure:
+            fig = plt.figure()
+            fig.add_subplot().plot([0, 1], [0, 1])
+            return fig
+
+        data = _figure_to_bytes(figure_fn, None, "png")
+        assert data[:8] == b"\x89PNG\r\n\x1a\n"
+        assert set(plt.get_fignums()) == before
+
+
+class TestWidgetValueEscaping:
+    """Color/range/number widgets must escape the stored value (`val`),
+    which flows from user-saved config/preset JSON — otherwise a crafted
+    value is stored XSS via attribute breakout.
+    """
+
+    def test_widget_values_are_escaped(self) -> None:
+        from dartwork_mpl.ui import _scripts
+
+        src = Path(_scripts.__file__).read_text(encoding="utf-8")
+        assert 'value="${esc(val||"#000000")}"' in src  # color
+        assert 'value="${esc(val)}"' in src  # range
+        assert 'value="${esc(val||0)}"' in src  # number
+        # No raw unescaped val interpolations remain in widget attributes.
+        assert '"${val}"' not in src
+        assert '"${val||0}"' not in src
+        assert '"${val||"#000000"}"' not in src

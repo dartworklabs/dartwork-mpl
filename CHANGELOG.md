@@ -15,6 +15,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   bundled template directory (``"../../.../x"``), turning them into
   arbitrary ``.py`` exec / read primitives. ``plot_type`` is now
   validated to a bare stem inside the template dir.
+- **UI viewer: DNS-rebinding defense + stored-XSS fix.** The interactive
+  viewer (``dartwork-mpl[ui]``) now enforces a ``Host`` allowlist, so a
+  rebound ``evil.com -> 127.0.0.1`` page can no longer drive its
+  side-effecting endpoints (``/api/reload`` execs, file writes) by
+  matching Origin and Host. Color / range / number control widgets now
+  HTML-escape the stored parameter value, closing a stored-XSS vector
+  via crafted config / preset JSON.
+
+### Fixed
+
+- **UI viewer: matplotlib figures no longer leak on failed render /
+  export.** ``/api/render``, ``/api/export`` and ``/api/save-server/image``
+  close the figure in a ``finally`` so a ``savefig`` failure on these
+  hot paths can't accumulate figures in pyplot's global registry.
 
 ### Changed
 
