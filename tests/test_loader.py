@@ -124,3 +124,39 @@ class TestLoadJsonPalette:
 
         result = _load_json_palette(tmp_path, "test.json", "t")
         assert "t.deeppurple500" in result
+
+
+class TestPaletteRenameLifecycle:
+    """0.5.5 palette overhaul: removed/renamed dc tokens must be gone
+    and their replacements present (regression guard for the rename
+    map — spectrum/bold→vivid, coolwarm→cool_warm, corporate→
+    trustworthy, warm_cool removed)."""
+
+    def test_removed_tokens_do_not_resolve(self) -> None:
+        import matplotlib.colors as mcolors
+
+        ensure_loaded()
+        mapping = mcolors.get_named_colors_mapping()
+        for token in (
+            "dc.spectrum1",
+            "dc.bold1",
+            "dc.coolwarm1",
+            "dc.corporate1",
+            "dc.warm_cool1",
+        ):
+            assert token not in mapping, f"{token} should be removed"
+
+    def test_replacement_tokens_resolve(self) -> None:
+        import matplotlib.colors as mcolors
+
+        ensure_loaded()
+        mapping = mcolors.get_named_colors_mapping()
+        for token in (
+            "dc.vivid1",
+            "dc.cool_warm1",
+            "dc.trustworthy1",
+            "dc.neon1",
+            "dc.ember1",
+            "dc.purple_green1",
+        ):
+            assert token in mapping, f"{token} missing"

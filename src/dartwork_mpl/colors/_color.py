@@ -276,7 +276,11 @@ class Color:
 
         Automatically detects if values are in [0, 1] or [0, 255] range.
         If all values are <= 1.0, treats as [0, 1]. Otherwise, treats as
-        [0, 255].
+        [0, 255]. In 0-255 mode the exact values ``0`` and ``1`` are
+        read as *byte* values (``1`` → ``1/255``, nearly black), since
+        they are legitimate byte intensities — e.g.
+        ``from_rgb(255, 0, 1)``; fractional values between 0 and 1 mixed
+        into 0-255 mode are rejected as ambiguous instead.
 
         Parameters
         ----------

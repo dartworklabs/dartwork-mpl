@@ -1,8 +1,10 @@
 # Categorical palettes
 
 dartwork's discrete categorical palettes — a curated 24-palette system across
-11 families. Every palette is 8 colors, verified for grayscale and
-color-blindness (CVD).
+11 families. Every palette is 8 colors, generated on an even-L* CIELAB
+ladder and screened for grayscale and color-blindness (CVD) legibility;
+the loudest high-chroma sets deliberately trade some CVD margin for
+vibrancy (the generation pipeline reports both scores per palette).
 
 Pick by the *shape and job* of your data:
 

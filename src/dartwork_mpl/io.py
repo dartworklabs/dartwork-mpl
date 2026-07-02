@@ -157,6 +157,9 @@ def save_formats(
     image_stem = _normalize_image_stem(image_stem)
     create_parent_path(image_stem)
     for fmt in formats:
+        # Accept both ``"png"`` and ``".png"`` — without the lstrip a
+        # leading-dot format produced ``name..png``.
+        fmt = fmt.lstrip(".")
         fig.savefig(f"{image_stem}.{fmt}", bbox_inches=bbox_inches, **kwargs)
 
 
