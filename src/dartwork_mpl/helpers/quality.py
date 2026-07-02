@@ -127,12 +127,22 @@ def check_figure_quality(fig: Figure) -> list[str]:
         if n_yticks > 20:
             issues.append(f"Axes {idx}: Too many y-ticks ({n_yticks})")
 
-        # Check for missing data
-        has_data = False
-        for artist in ax.get_children():
-            if hasattr(artist, "get_data") or hasattr(artist, "get_offsets"):
-                has_data = True
-                break
+        # Check for missing data. Cover every artist family a plot can
+        # produce — not just Line2D (``get_data``) and scatter
+        # (``get_offsets``): bars/histograms are patches, pie wedges are
+        # patches, and imshow/heatmaps are images. Checking only the
+        # first two falsely flagged bar/hist/pie/imshow figures.
+        has_data = any(
+            artist.get_visible()
+            for group in (
+                ax.lines,
+                ax.patches,
+                ax.collections,
+                ax.images,
+                ax.tables,
+            )
+            for artist in group
+        )
         if not has_data:
             issues.append(f"Axes {idx}: No data plotted")
 

@@ -337,3 +337,30 @@ class TestSaveAndShowCloseFigure:
         dm.save_and_show(fig, image_path=None, close_figure=False)
         assert fignum in plt.get_fignums()
         plt.close(fig)
+
+
+class TestSaveAndShowNonSvgAudit:
+    """save_and_show / show handle non-SVG paths (2026-07 audit)."""
+
+    def test_resolve_saved_path_appends_default_format(self) -> None:
+        import matplotlib.pyplot as plt
+
+        from dartwork_mpl.io import _resolve_saved_path
+
+        fig = plt.figure()
+        # extensionless -> savefig appends rcParams["savefig.format"]
+        resolved = _resolve_saved_path("first", {}, fig)
+        assert resolved == f"first.{plt.rcParams['savefig.format']}"
+        # explicit known extension is kept
+        assert _resolve_saved_path("out.png", {}, fig) == "out.png"
+        plt.close(fig)
+
+    def test_show_non_svg_raises_clear_error(self, tmp_path) -> None:
+        import pytest
+
+        import dartwork_mpl as dm
+
+        png = tmp_path / "x.png"
+        png.write_bytes(b"\x89PNG\r\n\x1a\n not really")
+        with pytest.raises(ValueError, match="SVG"):
+            dm.show(str(png))

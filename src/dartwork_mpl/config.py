@@ -42,9 +42,13 @@ from dataclasses import dataclass, fields
 __all__ = ["Config", "config"]
 
 
-@dataclass
+@dataclass(slots=True)
 class Config:
     """Process-wide dartwork-mpl defaults.
+
+    Slotted so a typo'd direct assignment (``dm.config.adopt_orphan_tick_fonts
+    = False`` — note the plural) raises ``AttributeError`` instead of
+    silently creating a dead attribute that never affects behaviour.
 
     Attributes
     ----------

@@ -64,26 +64,39 @@ def validate_data(
     if y is not None and require_same_length and len(x) != len(y):
         raise ValueError(f"Data length mismatch: x({len(x)}) != y({len(y)})")
 
-    # Handle NaN/Inf values
+    # Handle NaN/Inf values. ``np.isnan``/``np.isinf`` only accept
+    # numeric dtypes — calling them on a categorical (string) array
+    # raises ``TypeError``, so skip non-numeric arrays (which can't hold
+    # NaN/Inf anyway). Masks are only cross-applied to the other array
+    # when the two are aligned (same length); when
+    # ``require_same_length=False`` and the lengths differ, applying x's
+    # mask to a different-length y would mis-index or silently corrupt it.
+    def _has_nan_or_inf(arr: np.ndarray[Any, Any]) -> bool:
+        if not np.issubdtype(arr.dtype, np.number):
+            return False
+        return bool(np.any(np.isnan(arr)) or np.any(np.isinf(arr)))
+
     if not allow_nan:
-        if np.any(np.isnan(x)) or np.any(np.isinf(x)):
-            # Remove NaN/Inf
+        aligned = y is not None and len(x) == len(y)
+        if _has_nan_or_inf(x):
             mask = ~(np.isnan(x) | np.isinf(x))
-            x = x[mask]
-            if y is not None:
+            removed = int((~mask).sum())
+            if y is not None and aligned:
                 y = y[mask]
+            x = x[mask]
+            aligned = y is not None and len(x) == len(y)
             warnings.warn(
-                f"Removed {(~mask).sum()} NaN/Inf values from data",
-                stacklevel=2,
+                f"Removed {removed} NaN/Inf values from data", stacklevel=2
             )
 
-        if y is not None and (np.any(np.isnan(y)) or np.any(np.isinf(y))):
+        if y is not None and _has_nan_or_inf(y):
             mask = ~(np.isnan(y) | np.isinf(y))
-            x = x[mask]
+            removed = int((~mask).sum())
+            if aligned:
+                x = x[mask]
             y = y[mask]
             warnings.warn(
-                f"Removed {(~mask).sum()} NaN/Inf values from data",
-                stacklevel=2,
+                f"Removed {removed} NaN/Inf values from data", stacklevel=2
             )
 
     # Final check

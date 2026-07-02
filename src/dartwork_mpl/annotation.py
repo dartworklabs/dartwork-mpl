@@ -19,6 +19,25 @@ from ._helpers import get_renderer
 from .scale import fs
 
 
+def _auto_panel_labels(n: int) -> list[str]:
+    """Spreadsheet-style panel labels: a, b, ..., z, aa, ab, ....
+
+    ``string.ascii_lowercase[:n]`` silently truncated at 26, dropping
+    labels for any grid larger than 26 panels; this extends past z.
+    """
+    labels: list[str] = []
+    for i in range(n):
+        chars = ""
+        k = i
+        while True:
+            chars = string.ascii_lowercase[k % 26] + chars
+            k = k // 26 - 1
+            if k < 0:
+                break
+        labels.append(chars)
+    return labels
+
+
 def label_axes(
     axes: list[Axes] | np.ndarray[Any, Any],
     labels: list[str] | None = None,
@@ -67,7 +86,7 @@ def label_axes(
         axes = axes.flatten().tolist()
 
     if labels is None:
-        labels = list(string.ascii_lowercase[: len(axes)])
+        labels = _auto_panel_labels(len(axes))
 
     texts: list[Text] = []
     for ax, label in zip(axes, labels, strict=False):
@@ -143,6 +162,11 @@ def arrow_axis(
     """
     if fontsize is None:
         fontsize = fs(-1)
+    if direction not in ("x", "y"):
+        raise ValueError(
+            f"direction must be 'x' or 'y', got {direction!r}. "
+            "(Any other value would silently draw a y-axis arrow.)"
+        )
     if fontsize_label is None:
         fontsize_label = fs(0)
     if arrow_kw is None:
