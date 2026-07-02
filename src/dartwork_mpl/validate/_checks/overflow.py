@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
+from ..._helpers import iter_figure_level_extents
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._registry import register_check
 
@@ -130,21 +131,8 @@ def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
     # These live on the Figure, not on any Axes, so the per-axes loop
     # above never sees them. A suptitle nudged off the top edge or a
     # footnote running past the bottom would otherwise validate clean.
-    fig_texts: list[Any] = [
-        getattr(fig, "_suptitle", None),
-        getattr(fig, "_supxlabel", None),
-        getattr(fig, "_supylabel", None),
-        *fig.texts,
-    ]
-    for txt in fig_texts:
-        if txt is None or not txt.get_visible() or txt.get_text().strip() == "":
-            continue
-        try:
-            ext = txt.get_window_extent(renderer)
-        except BBOX_ERRORS:
-            continue
-        if ext.width <= 0 or ext.height <= 0:
-            continue
+    # ``legends=False``: figure legends are the LEGEND_OVERFLOW check's job.
+    for txt, ext in iter_figure_level_extents(fig, renderer, legends=False):
         dx_left = fig_bbox.x0 - ext.x0
         dx_right = ext.x1 - fig_bbox.x1
         dy_bottom = fig_bbox.y0 - ext.y0
