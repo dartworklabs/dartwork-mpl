@@ -22,6 +22,12 @@ __all__ = ["Style", "list_styles", "load_style_dict", "style", "style_path"]
 # corrupt the active style.
 _style_lock: threading.Lock = threading.Lock()
 
+# Keys that any dartwork-mpl preset has declared during this process.
+# Used to tell *the user's own* rcParams apart from residue left by a
+# previously-applied dm preset, so switching presets performs a clean
+# swap instead of leaking the prior theme (a "franken-theme").
+_dm_managed_keys: set[str] = set()
+
 
 def _did_you_mean(value: str, candidates: list[str]) -> str | None:
     """Return the single closest match to ``value`` from ``candidates``
@@ -66,16 +72,20 @@ def _rcparam_differs(value: object, default: object) -> bool:
         return repr(value) != repr(default)
 
 
-def _snapshot_user_rcparams() -> dict[str, object]:
-    """Capture every rcParam whose value differs from matplotlib's
-    compiled-in default. Used by :meth:`Style.stack` to preserve
-    caller configuration across the ``rcParams.update(rcParamsDefault)``
-    reset that style switching performs.
+def _snapshot_user_rcparams(exclude: set[str]) -> dict[str, object]:
+    """Capture rcParams the *user* set away from matplotlib's default.
+
+    Used by :meth:`Style.stack` to preserve caller configuration across
+    the ``rcParams.update(rcParamsDefault)`` reset that style switching
+    performs. Keys in ``exclude`` (those any dm preset has managed) are
+    skipped: a value differing from the default there is residue from a
+    previously-applied preset, not user intent, and preserving it would
+    leak the prior theme into the next preset.
     """
     defaults = plt.rcParamsDefault  # type: ignore[attr-defined]
     overrides: dict[str, object] = {}
     for key in list(plt.rcParams):
-        if key not in defaults:
+        if key not in defaults or key in exclude:
             continue
         current = plt.rcParams[key]
         if _rcparam_differs(current, defaults[key]):
@@ -83,24 +93,54 @@ def _snapshot_user_rcparams() -> dict[str, object]:
     return overrides
 
 
-def _restore_untouched_user_rcparams(user_overrides: dict[str, object]) -> None:
-    """Restore user rcParams that the freshly-applied preset did not
-    set itself.
+def _restore_untouched_user_rcparams(
+    user_overrides: dict[str, object], preset_keys: set[str]
+) -> None:
+    """Restore user rcParams the freshly-applied preset does not own.
 
-    Run *after* ``plt.style.use(...)``. For each ``(key, user_value)``
-    in ``user_overrides``, compare the current rcParam against the
-    default — if equal the preset is silent on that key and the user
-    value is reinstated; if not, the preset overrode it intentionally
-    and we leave the preset's choice alone.
+    Run *after* ``plt.style.use(...)``. A key is "owned by the preset"
+    iff the preset *declared* it (``preset_keys``), regardless of the
+    value it set — so a preset that explicitly sets a key to matplotlib's
+    default value (e.g. ``axes.grid: False``) still wins over a
+    pre-existing user value. Only keys the preset is genuinely silent
+    about have the user value reinstated.
     """
-    defaults = plt.rcParamsDefault  # type: ignore[attr-defined]
     for key, user_value in user_overrides.items():
-        if key not in plt.rcParams:
+        if key in preset_keys or key not in plt.rcParams:
             continue
-        post_style = plt.rcParams[key]
-        preset_touched = _rcparam_differs(post_style, defaults[key])
-        if not preset_touched:
-            plt.rcParams[key] = user_value
+        plt.rcParams[key] = user_value
+
+
+def _style_declared_keys(style_names: list[str]) -> set[str]:
+    """Union of rcParam keys explicitly declared by the given style files."""
+    keys: set[str] = set()
+    for name in style_names:
+        keys.update(load_style_dict(name).keys())
+    return keys
+
+
+def _resolve_rcparam_key(k: str) -> str:
+    """Map a kwarg name to its canonical rcParam key.
+
+    Accepts dotted names as-is (``legend.title_fontsize``) and the
+    underscore shorthand. A naive ``k.replace("_", ".")`` breaks for
+    rcParams whose canonical name itself contains an underscore
+    (``legend.title_fontsize`` -> ``legend.title.fontsize``, invalid),
+    so after the dotted-name and full-replace attempts we fall back to
+    matching against the live rcParam whose dotted form, with dots
+    turned to underscores, equals ``k``. Returns ``k`` unchanged when
+    nothing matches, letting the downstream update raise matplotlib's
+    standard "not a valid rc parameter" error.
+    """
+    if k in plt.rcParams:
+        return k
+    dotted = k.replace("_", ".")
+    if dotted in plt.rcParams:
+        return dotted
+    for rc in plt.rcParams:
+        if rc.replace(".", "_") == k:
+            return rc
+    return k
 
 
 def style_path(name: str) -> Path:
@@ -148,6 +188,34 @@ def list_styles() -> list[str]:
     return sorted([p.stem for p in path.glob("*.mplstyle")])
 
 
+def _strip_mplstyle_value(raw: str) -> str:
+    """Extract an mplstyle value: drop the inline comment, unwrap quotes.
+
+    ``#`` starts a comment only outside quotes (so a quoted colour like
+    ``"#1e1e1e"`` is preserved), after which a matching pair of
+    surrounding quotes is removed — matching how matplotlib's own
+    ``_rc_params_in_file`` normalizes the value.
+    """
+    quote: str | None = None
+    chars: list[str] = []
+    for ch in raw.strip():
+        if quote is not None:
+            chars.append(ch)
+            if ch == quote:
+                quote = None
+        elif ch in "\"'":
+            quote = ch
+            chars.append(ch)
+        elif ch == "#":
+            break
+        else:
+            chars.append(ch)
+    value = "".join(chars).strip()
+    if len(value) >= 2 and value[0] in "\"'" and value[-1] == value[0]:
+        value = value[1:-1]
+    return value
+
+
 def load_style_dict(name: str) -> dict[str, float | str]:
     """
     Read key-value pairs from an mplstyle file.
@@ -178,8 +246,11 @@ def load_style_dict(name: str) -> dict[str, float | str]:
             key, raw_value = stripped.split(":", maxsplit=1)
             key = key.strip()
 
-            # Strip inline comments: find ' #' outside of quotes.
-            value_str = raw_value.split(" #")[0].strip()
+            # Strip an inline comment (``#`` outside quotes) and any
+            # surrounding quotes, so quoted values like ``"#1e1e1e"``
+            # round-trip to what matplotlib's own parser yields
+            # (``#1e1e1e``) rather than the raw ``'"#1e1e1e"'``.
+            value_str = _strip_mplstyle_value(raw_value)
             if not value_str:
                 continue
 
@@ -276,29 +347,30 @@ class Style:
         ensure_fonts_loaded()
         ensure_cmaps_loaded()
 
+        # Keys the incoming preset explicitly declares — parsed from the
+        # style files, so "does the preset own this key?" is answered by
+        # declaration, not by comparing values against the default.
+        incoming_keys = _style_declared_keys(style_names)
+
         # Serialize global rcParams + style application across threads.
         with _style_lock:
-            # Snapshot every rcParam the caller has set away from
-            # matplotlib's compiled-in default *before* the
-            # default-restoring reset below. We don't know which of
-            # those the user actually cares about (svg.hashsalt for
-            # reproducible builds, savefig.dpi for export quality,
-            # axes.unicode_minus for CJK, …) so we preserve them all
-            # and let the preset win wherever it overlaps. Without this
-            # snapshot every dm.style.use() silently dropped caller
-            # configuration.
-            user_overrides = _snapshot_user_rcparams()
+            # Snapshot rcParams the *user* set away from matplotlib's
+            # default *before* the reset below, so genuine caller config
+            # (svg.hashsalt for reproducible builds, savefig.dpi, …)
+            # survives the switch. Exclude keys any dm preset has managed
+            # — a differing value there is residue from the previously
+            # applied preset, and preserving it would leak the old theme.
+            user_overrides = _snapshot_user_rcparams(exclude=_dm_managed_keys)
             plt.rcParams.update(plt.rcParamsDefault)  # type: ignore[attr-defined]
             plt.style.use(
                 [style_path(style_name) for style_name in style_names]
             )
-            # Restore each user override that the preset itself did
-            # not touch. "Did the preset touch this key?" is decided
-            # by comparing the post-style rcParam against the default
-            # — equal means the preset is silent on this key and the
-            # user value should survive; not-equal means the preset
-            # set it intentionally and wins.
-            _restore_untouched_user_rcparams(user_overrides)
+            # Reinstate user overrides for keys the incoming preset does
+            # not declare; the preset wins on every key it declares.
+            _restore_untouched_user_rcparams(user_overrides, incoming_keys)
+            # Remember these keys so the next switch treats their values
+            # as preset residue rather than user intent.
+            _dm_managed_keys.update(incoming_keys)
 
     def use(self, preset_name: str | list[str], **kwargs: float | str) -> None:
         """
@@ -360,11 +432,7 @@ class Style:
         if kwargs:
             overrides = {}
             for k, v in kwargs.items():
-                k_dot = k.replace("_", ".")
-                if k_dot in plt.rcParams:
-                    overrides[k_dot] = v
-                else:
-                    overrides[k] = v
+                overrides[_resolve_rcparam_key(k)] = v
             with _style_lock:
                 plt.rcParams.update(overrides)
 
@@ -405,11 +473,7 @@ class Style:
         if kwargs:
             overrides: dict[str, float | str] = {}
             for k, v in kwargs.items():
-                k_dot = k.replace("_", ".")
-                if k_dot in plt.rcParams:
-                    overrides[k_dot] = v
-                else:
-                    overrides[k] = v
+                overrides[_resolve_rcparam_key(k)] = v
             style_list.append(overrides)
 
         with plt.style.context(style_list):

@@ -320,3 +320,48 @@ class TestUserRcParamsPreservation:
             assert mpl.rcParams["pdf.compression"] == new_value
         finally:
             mpl.rcParams["pdf.compression"] = default_compression
+
+
+class TestStyleAuditRegressions:
+    """Regressions for the 2026-07 quality audit (Batch C)."""
+
+    def test_preset_switch_does_not_leak_prior_theme(self) -> None:
+        import matplotlib.pyplot as plt
+
+        dm.style.use("dark")
+        dm.style.use("report")
+        # A light preset applied after dark must not keep dark's face /
+        # text colours (the previous "franken-theme" leak).
+        assert plt.rcParams["figure.facecolor"] not in ("#1e1e1e",)
+        assert plt.rcParams["axes.facecolor"] not in ("#1e1e1e",)
+        plt.rcParams.update(plt.rcParamsDefault)
+
+    def test_preset_declared_default_value_wins_over_user(self) -> None:
+        import matplotlib.pyplot as plt
+
+        plt.rcParams.update(plt.rcParamsDefault)
+        plt.rcParams["axes.grid"] = True
+        dm.style.use("report")
+        # base.mplstyle declares axes.grid: False (== mpl default); the
+        # preset must still win over the pre-existing user True.
+        assert plt.rcParams["axes.grid"] is False
+        plt.rcParams.update(plt.rcParamsDefault)
+
+    def test_underscore_kwarg_with_underscore_canonical_name(self) -> None:
+        import matplotlib.pyplot as plt
+
+        plt.rcParams.update(plt.rcParamsDefault)
+        # legend.title_fontsize's canonical name itself contains an
+        # underscore; the naive _->. replace used to raise KeyError.
+        dm.style.use("report", legend_title_fontsize=8)
+        assert plt.rcParams["legend.title_fontsize"] == 8.0
+        plt.rcParams.update(plt.rcParamsDefault)
+
+    def test_load_style_dict_unwraps_quoted_values(self) -> None:
+        import matplotlib.colors as mcolors
+
+        d = load_style_dict("theme-dark")
+        fc = d["figure.facecolor"]
+        assert isinstance(fc, str) and not fc.startswith('"')
+        # The unwrapped value must be a valid matplotlib colour.
+        mcolors.to_rgb(fc)
