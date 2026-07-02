@@ -74,7 +74,16 @@ def get_bounding_box(boxes: list[Bbox]) -> tuple[float, float, float, float]:
     -------
     tuple[float, float, float, float]
         Overall bounding box as ``(min_x, min_y, bbox_width, bbox_height)``.
+
+    Raises
+    ------
+    ValueError
+        If ``boxes`` is empty — returning the infinite sentinel tuple
+        would silently poison downstream position math with inf/NaN.
     """
+    if not boxes:
+        raise ValueError("get_bounding_box() requires at least one box")
+
     min_x = float("inf")
     min_y = float("inf")
     max_x = float("-inf")
@@ -192,7 +201,10 @@ def _axes_content_extent_px(
     # range (e.g. ``10^16`` on a log axis with data up to ``10^9``)
     # are ignored, mirroring ``_measure_overflow``.
     for axis in (ax.xaxis, ax.yaxis):
-        vmin, vmax = axis.get_view_interval()
+        # ``get_view_interval`` returns the pair *reversed* on an inverted
+        # axis (e.g. ``[1.05, -0.05]`` after ``invert_yaxis()``); sort so
+        # the in-view test below doesn't drop every tick on such axes.
+        vmin, vmax = sorted(axis.get_view_interval())
         tol = abs(vmax - vmin) * 1e-5
         for tick in axis.get_ticklabels():
             if not tick.get_visible() or not tick.get_text().strip():
@@ -478,6 +490,16 @@ def simple_layout(
 
     actual_gs = _resolve_gridspec(fig, gs)
     if actual_gs is None:
+        # Figures built with fig.add_axes([...]) (or whose first axes is a
+        # manually placed axes/colorbar) have no GridSpec to update, so
+        # content-aware margins can't be applied. Warn rather than
+        # silently no-op — otherwise clipped labels look like a layout bug.
+        warnings.warn(
+            "simple_layout: no GridSpec found (figure uses fig.add_axes or "
+            "manually placed axes); layout unchanged. Build axes via "
+            "plt.subplots / fig.add_gridspec to use content-aware margins.",
+            stacklevel=2,
+        )
         return
 
     fw_in, fh_in = fig.get_size_inches()
@@ -550,6 +572,69 @@ def simple_layout(
             return
 
 
+def _figure_artist_reservations(
+    fig: Figure, renderer: Any, fw_px: float, fh_px: float
+) -> tuple[float, float, float, float]:
+    """Space (in figure fraction) each edge must reserve for fig-level artists.
+
+    ``simple_layout`` sizes the GridSpec from per-*axes* content, so
+    figure-level artists — ``fig.suptitle``, ``fig.legend``, ``fig.text``
+    — are otherwise invisible to it and end up overlapping the axes once
+    the gridspec is pushed flush to the edge. Each such artist is assigned
+    to its nearest figure edge and that edge reserves the artist's extent
+    so the axes region is pulled in to clear it. Returns
+    ``(res_l, res_r, res_b, res_t)``; all zero when no figure-level
+    artists are present (so the layout math is unchanged in the common
+    case).
+    """
+    from matplotlib.text import Text as _Text
+
+    artists: list[Any] = []
+    suptitle = getattr(fig, "_suptitle", None)
+    if suptitle is not None:
+        artists.append(suptitle)
+    supxlabel = getattr(fig, "_supxlabel", None)
+    if supxlabel is not None:
+        artists.append(supxlabel)
+    supylabel = getattr(fig, "_supylabel", None)
+    if supylabel is not None:
+        artists.append(supylabel)
+    artists.extend(fig.texts)
+    artists.extend(fig.legends)
+
+    res_l = res_r = res_b = res_t = 0.0
+    for art in artists:
+        if not getattr(art, "get_visible", lambda: True)():
+            continue
+        if isinstance(art, _Text) and not art.get_text().strip():
+            continue
+        try:
+            ext = art.get_window_extent(renderer)
+        except _BBOX_ERRORS:
+            continue
+        if ext.width <= 0 or ext.height <= 0:
+            continue
+        x0f, x1f = ext.x0 / fw_px, ext.x1 / fw_px
+        y0f, y1f = ext.y0 / fh_px, ext.y1 / fh_px
+        # Assign to the nearest figure edge by perpendicular distance.
+        dists = {
+            "left": x0f,
+            "right": 1.0 - x1f,
+            "bottom": y0f,
+            "top": 1.0 - y1f,
+        }
+        edge = min(dists, key=lambda k: dists[k])
+        if edge == "left":
+            res_l = max(res_l, x1f)
+        elif edge == "right":
+            res_r = max(res_r, 1.0 - x0f)
+        elif edge == "bottom":
+            res_b = max(res_b, y1f)
+        else:  # top
+            res_t = max(res_t, 1.0 - y0f)
+    return res_l, res_r, res_b, res_t
+
+
 def _solve_layout_step(
     fig: Figure,
     *,
@@ -620,10 +705,16 @@ def _solve_layout_step(
     if not oh_l:  # no measurable axes
         return None
 
-    new_l = ml_f + max(oh_l)
-    new_r = 1.0 - mr_f - max(oh_r)
-    new_b = mb_f + max(oh_b)
-    new_t = 1.0 - mt_f - max(oh_t)
+    # Reserve room for figure-level artists (suptitle / fig.legend /
+    # fig.text) so the gridspec doesn't push axes content on top of them.
+    res_l, res_r, res_b, res_t = _figure_artist_reservations(
+        fig, renderer, fw_px, fh_px
+    )
+
+    new_l = res_l + ml_f + max(oh_l)
+    new_r = (1.0 - res_r) - mr_f - max(oh_r)
+    new_b = res_b + mb_f + max(oh_b)
+    new_t = (1.0 - res_t) - mt_f - max(oh_t)
 
     # Sanity clamp: keep edges in [0, 1] and ensure at least
     # ``_EDGE_EPSILON`` slack between left/right and bottom/top.
@@ -692,7 +783,9 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
             overflow["top"] = max(overflow["top"], ext.y1 - by1)
 
         for axis in (ax.xaxis, ax.yaxis):
-            vmin, vmax = axis.get_view_interval()
+            # Sort: inverted axes report the view interval reversed, which
+            # would make every in-view tick fail the range test below.
+            vmin, vmax = sorted(axis.get_view_interval())
             tol = abs(vmax - vmin) * 1e-5
             for tick in axis.get_ticklabels():
                 if not tick.get_visible() or not tick.get_text().strip():

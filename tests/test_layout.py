@@ -251,3 +251,56 @@ class TestTightCrop:
         tight_crop(fig)
         fig.canvas.draw()  # must not raise
         plt.close(fig)
+
+
+class TestSimpleLayoutAuditRegressions:
+    """Regressions for the 2026-07 quality audit (Batch B)."""
+
+    def test_get_bounding_box_empty_raises(self) -> None:
+        import pytest
+
+        with pytest.raises(ValueError):
+            get_bounding_box([])
+
+    def test_inverted_axis_ticks_stay_on_canvas(self) -> None:
+        from dartwork_mpl.layout import get_renderer
+
+        fig, ax = plt.subplots()
+        ax.plot([0, 1], [0, 1])
+        ax.invert_yaxis()
+        ax.set_ylabel("depth")
+        simple_layout(fig)
+        r = get_renderer(fig)
+        xs = [
+            t.get_window_extent(r).x0
+            for t in ax.yaxis.get_ticklabels()
+            if t.get_text().strip()
+        ]
+        # Before the fix the inverted-axis ticks were dropped from
+        # measurement and clipped ~65 px off the left edge.
+        assert min(xs) > -5.0
+        plt.close(fig)
+
+    def test_suptitle_not_overlapped_by_axes_content(self) -> None:
+        from dartwork_mpl.layout import get_renderer
+
+        fig, ax = plt.subplots()
+        ax.plot([0, 1], [0, 1])
+        ax.set_title("Axes Title")
+        st = fig.suptitle("Figure Suptitle")
+        simple_layout(fig)
+        r = get_renderer(fig)
+        title_top = ax.title.get_window_extent(r).y1
+        suptitle_bottom = st.get_window_extent(r).y0
+        assert title_top <= suptitle_bottom + 0.5
+        plt.close(fig)
+
+    def test_add_axes_figure_warns(self) -> None:
+        import pytest
+
+        fig = plt.figure()
+        ax = fig.add_axes([0.2, 0.2, 0.7, 0.7])
+        ax.plot([0, 1], [0, 1])
+        with pytest.warns(UserWarning, match="no GridSpec"):
+            simple_layout(fig)
+        plt.close(fig)
