@@ -486,8 +486,9 @@ def main() -> None:
         f"Total: {len(COLORMAPS)} continuous, {len(DISCRETE_SPECS)} discrete, {len(CATEGORICAL_PRESETS)} preset categorical"
     )
 
-    # Note: after expanding the list, `prune_cmaps.py`, `cmap.py` loaders
-    # or testing scripts might need updates to account for the new mapped names.
+    # Note: after expanding the list, `cmap.py` loaders or testing scripts
+    # might need updates to account for the new mapped names. This script is
+    # the sole writer of `asset/cmap/` — there is no separate prune step.
 
 
 if __name__ == "__main__":
