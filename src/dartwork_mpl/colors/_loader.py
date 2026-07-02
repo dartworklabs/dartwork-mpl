@@ -115,6 +115,16 @@ _JSON_PALETTES: list[tuple[str, str]] = [
     if filename.endswith(".json")
 ]
 
+# (prefix, filename) for the text-based palettes (Open Color) — same
+# SSOT derivation as ``_JSON_PALETTES``. Previously the ``oc.`` prefix
+# was re-hardcoded here and *any* stray ``.txt`` dropped into
+# ``asset/color`` would have been swept in under it.
+_TXT_PALETTES: list[tuple[str, str]] = [
+    (prefix.rstrip("."), filename)
+    for _key, prefix, filename, _label in COLOR_LIBRARIES
+    if filename.endswith(".txt")
+]
+
 
 def _load_colors() -> None:
     """Load all color definitions from asset files and register them.
@@ -127,7 +137,8 @@ def _load_colors() -> None:
 
     Notes
     -----
-    Called lazily via `ensure_loaded` on first colour access.
+    Called once via `ensure_loaded` at package import
+    (``colors/__init__.py``) — registration is eager, not lazy.
     """
     color_dict: dict[str, str] = {}
 
@@ -136,13 +147,13 @@ def _load_colors() -> None:
     # instead of assuming a filesystem layout via __file__.
     root_dir: Traversable = files("dartwork_mpl") / "asset" / "color"
 
-    # Open Color (.txt files → "oc." prefix).
-    for entry in root_dir.iterdir():
-        if entry.name.endswith(".txt"):
-            text = entry.read_text(encoding="utf-8")
-            color_dict.update(
-                {f"oc.{k}": v for k, v in _parse_color_data(text).items()}
-            )
+    # Text-based palettes (Open Color) — file list and prefix come from
+    # the ``COLOR_LIBRARIES`` SSOT, not a directory glob.
+    for prefix, filename in _TXT_PALETTES:
+        text = (root_dir / filename).read_text(encoding="utf-8")
+        color_dict.update(
+            {f"{prefix}.{k}": v for k, v in _parse_color_data(text).items()}
+        )
 
     # JSON-based palettes.
     for prefix, filename in _JSON_PALETTES:

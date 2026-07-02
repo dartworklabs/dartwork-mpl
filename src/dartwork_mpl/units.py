@@ -5,8 +5,10 @@ dartwork-mpl 0.4+ accepts user-supplied widths in physical units
 that converts those inputs into a :class:`Length` value matplotlib's
 ``figsize=`` (and friends) can ultimately consume.
 
-It also resolves named aspect tokens (square/portrait/standard/
-golden/wide/cinema) into a height/width ratio.
+It also resolves named aspect tokens (``square``, ``standard``,
+``wide``, ``slide``, … — the full registry is :data:`ASPECT_TOKENS`,
+introspectable via :func:`list_aspect_tokens`) into a height/width
+ratio.
 """
 
 from __future__ import annotations
@@ -534,11 +536,11 @@ def figsize(
         Specifies the figure's *height* in one of four forms; the
         first matching form wins:
 
-        1. **Aspect token** — one of
-           ``{"square", "portrait", "standard", "golden", "wide",
-           "cinema"}``. Sets ``height = width * ratio`` where the
-           ratio is taken from :data:`ASPECT_TOKENS`. Default
-           ``"standard"`` (3 : 4).
+        1. **Aspect token** — any key of :data:`ASPECT_TOKENS`
+           (``"square"``, ``"standard"``, ``"wide"``, ``"slide"``, … —
+           see :func:`list_aspect_tokens` for the full registry). Sets
+           ``height = width * ratio`` where the ratio is taken from
+           :data:`ASPECT_TOKENS`. Default ``"standard"`` (3 : 4).
         2. **Numeric ratio** (positive ``int`` / ``float``,
            non-``bool``) — interpreted as ``height / width``.
         3. **Unit-suffix string** — ``"12cm"``, ``"5in"``, ``"170mm"``,
@@ -645,9 +647,11 @@ def parse_aspect(value: str | int | float) -> float:
     Parameters
     ----------
     value : str | int | float
-        Either a known aspect token (``"square"``, ``"portrait"``,
-        ``"standard"``, ``"golden"``, ``"wide"``, ``"cinema"``) or a
-        positive number interpreted directly as ``height / width``.
+        Either a known aspect token (any key of
+        :data:`ASPECT_TOKENS` — ``"square"``, ``"standard"``,
+        ``"wide"``, ``"slide"``, …; see :func:`list_aspect_tokens`)
+        or a positive number interpreted directly as
+        ``height / width``.
 
     Returns
     -------

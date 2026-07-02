@@ -105,9 +105,11 @@ def plot_fonts(
         Figure object.
     """
     if font_dir is None:
-        font_dir = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "asset", "font"
-        )
+        # Single source: the same bundled directory the font loader
+        # registers from (previously rebuilt here with os.path idioms).
+        from ..font import _FONT_DIR
+
+        font_dir = str(_FONT_DIR)
 
     # Collect font files
     extensions = {".ttf", ".otf"}

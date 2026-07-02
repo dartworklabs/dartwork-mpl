@@ -19,6 +19,11 @@ from matplotlib import font_manager as fm
 
 _ICON_DIR: Path = Path(__file__).parent / "asset/icon"
 
+# NOTE: ``fa-solid`` and ``fa-regular`` share the family name
+# "Font Awesome 6 Free" (weights 900/400), so addressing them by bare
+# ``family=`` in matplotlib is ambiguous — the font manager picks one.
+# To target a specific variant, pass the file explicitly:
+# ``FontProperties(fname=icon_font_path("fa-solid"))``.
 _REGISTRY: dict[str, str] = {
     "mdi": "materialdesignicons-webfont.ttf",
     "fa-solid": "Font Awesome 6 Free-Solid-900.otf",

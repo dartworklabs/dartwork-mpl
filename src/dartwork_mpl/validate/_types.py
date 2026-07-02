@@ -11,13 +11,12 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, ClassVar
 
-__all__ = ["BBOX_ERRORS", "Severity", "VisualWarning"]
+# Re-exported from the shared internal helper so the layout engine and
+# the validation checks suppress the identical exception set (the two
+# used to carry private copies that could drift).
+from .._helpers import BBOX_ERRORS
 
-#: Exceptions matplotlib may raise from ``get_window_extent`` /
-#: ``get_tightbbox`` on artists in degenerate states (NaN-only data,
-#: zero-area fonts, renderers that refuse the call). The check
-#: functions suppress these and move on.
-BBOX_ERRORS = (RuntimeError, ValueError, AttributeError)
+__all__ = ["BBOX_ERRORS", "Severity", "VisualWarning"]
 
 
 class Severity(str, Enum):

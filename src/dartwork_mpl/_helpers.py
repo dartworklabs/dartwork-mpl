@@ -12,6 +12,17 @@ if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure, SubFigure
 
+#: Exceptions matplotlib may raise from ``get_window_extent`` /
+#: ``get_tightbbox`` on artists in degenerate states (NaN-only data,
+#: zero-area fonts, renderers that refuse the call). Single source for
+#: both the layout engine and the validation checks — the two used to
+#: carry identical private copies.
+BBOX_ERRORS: tuple[type[BaseException], ...] = (
+    RuntimeError,
+    ValueError,
+    AttributeError,
+)
+
 
 def create_parent_path(path: str | Path) -> None:
     """Create parent directory if it doesn't exist.

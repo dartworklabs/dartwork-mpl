@@ -162,12 +162,18 @@ def _lstar(color: str) -> float:
     """Perceptual lightness L* (CIE) of a matplotlib colour, 0 (black) to 100 (white)."""
     import matplotlib.colors as mcolors
 
+    # sRGB gamma decode comes from the colours-package SSOT (identical
+    # constants; previously re-inlined here). The Y → L* step below is
+    # intentionally CIELAB — this helper sorts by CIE lightness, not
+    # OKLab L.
+    from ..colors._conversion import _srgb_to_linear
+
     r, g, b = mcolors.to_rgb(color)
-
-    def _lin(v: float) -> float:
-        return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
-
-    y = 0.2126 * _lin(r) + 0.7152 * _lin(g) + 0.0722 * _lin(b)
+    y = float(
+        0.2126 * _srgb_to_linear(r)
+        + 0.7152 * _srgb_to_linear(g)
+        + 0.0722 * _srgb_to_linear(b)
+    )
     f = y ** (1 / 3) if y > 0.008856 else 7.787 * y + 16 / 116
     return 116 * f - 16
 
