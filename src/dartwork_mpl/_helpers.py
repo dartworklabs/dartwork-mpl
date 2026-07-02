@@ -21,9 +21,13 @@ def create_parent_path(path: str | Path) -> None:
     path : str or Path
         Path whose parent directory will be created.
     """
+    # ``exist_ok=True`` (and dropping the pre-existence check) makes this
+    # idempotent and free of the check-then-create TOCTOU race: two
+    # concurrent saves into the same new directory would otherwise let one
+    # win the ``exists()`` check and the other raise ``FileExistsError``
+    # from ``mkdir``.
     path = Path(path)
-    if not path.parent.exists():
-        path.parent.mkdir(parents=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
 
 
 def get_renderer(fig: Figure | SubFigure) -> RendererBase:
