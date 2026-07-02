@@ -1,8 +1,9 @@
 # Colormaps
 
-dartwork-mpl ships **16 curated colormaps** — all designed or refined in the
-perceptually uniform **OKLCH** color space. Each category offers **3 color-preference
-options** so you can match the tone of your visualization.
+dartwork-mpl ships **56 curated colormaps** — all designed or refined in the
+perceptually uniform **OKLCH** color space, spanning single-hue and multi-hue
+sequentials, diverging, cyclical, and discrete categorical maps (plus a
+vibrant tier for high-energy figures).
 
 ---
 
@@ -44,20 +45,20 @@ import numpy as np
 
 dm.style.use("scientific")
 data = np.random.randn(50, 50).cumsum(axis=0)
-im = plt.imshow(data, cmap="dc.sunset", vmin=-8, vmax=8)
+im = plt.imshow(data, cmap="dc.sunset_glow", vmin=-8, vmax=8)
 cb = plt.colorbar(im, extend="both", shrink=0.9, pad=0.02)
 cb.set_label("normalized signal")
 cb.outline.set_visible(False)
 plt.show()
 ```
 
-- Add `_r` to reverse any map: `dc.sunset_r`
+- Add `_r` to reverse any map: `dc.sunset_glow_r`
 
 ---
 
 ## Colormap catalog
 
-Explore all 16 built-in colormaps dynamically using the catalog below. Use the tabs to browse by data type.
+Explore all 56 built-in colormaps dynamically using the catalog below. Use the tabs to browse by data type.
 
 ```{raw} html
 :file: images/colormap_explorer.html
@@ -121,8 +122,8 @@ All `dc.*` maps are verified under three CVD simulations — **deuteranopia**,
 
 - Every sequential map has **strictly monotonic lightness**, preserving data
   ordering even when color perception is reduced.
-- Single-hue and achromatic maps (`monochrome`, `steel`) are **inherently
-  CVD-safe**.
+- Single-hue maps (`dc.obsidian`, `dc.graphite`, `dc.sapphire`, …) are
+  **inherently CVD-safe** — their contrast channel is lightness alone.
 
 > **Recommendation**: For highest accessibility, choose maps whose primary
 > contrast channel is **lightness** rather than hue.
@@ -132,7 +133,7 @@ All `dc.*` maps are verified under three CVD simulations — **deuteranopia**,
 ## Rendering tips
 
 - Set `vmin` / `vmax` yourself for stable colorbars across facets or animations.
-- Reverse any map with the `_r` suffix (`dc.flame_r`).
+- Reverse any map with the `_r` suffix (`dc.ice_fire_r`).
 - Hide colorbar outlines: `cb.outline.set_visible(False)`.
 - For diverging data, use symmetric limits and `extend="both"`.
 

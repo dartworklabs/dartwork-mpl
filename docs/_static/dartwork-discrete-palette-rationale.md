@@ -121,9 +121,9 @@ wide = distinctness). Pick by the *shape* of your data:
 |---|---|---|
 | **Sequential** (3) | `teal` `indigo` `coral` | ordered / rank — single-hue L* ramp |
 | **Analogous** (2) | `teal_indigo` `forest` | a few related series, one mood |
-| **Duo** (3) | `warm_cool` `blue_orange` `teal_coral` | two opposed groups (A/B) |
-| **Balanced** (2) | `trustworthy` `corporate` | everyday 4–8 categories |
-| **Spectrum** (2) | `spectrum` (even wheel) `bold` (curated punch) | many categories, max distinctness |
+| **Duo** (2) | `blue_orange` `teal_coral` | two opposed groups (A/B) |
+| **Balanced** (1) | `trustworthy` | everyday 4–8 categories |
+| **Spectrum** (2) | `vivid` (even wheel) `neon` (max-chroma electric) | many categories, max distinctness |
 
 **(b) Intent families for specific jobs** (organised by purpose, not width):
 
@@ -132,18 +132,19 @@ wide = distinctness). Pick by the *shape* of your data:
 | **Neutral** (3) | `gray` (true neutral) `warm_gray` `cool_gray` | hue-free ordered amount |
 | **Emphasis** (2) | `teal_accent` `coral_accent` | highlight one series, mute rest |
 | **Muted** (2) | `pastel` `dusty` (deep/vintage) | soft editorial |
-| **Diverging** (2) | `coolwarm` `teal_amber` | ordered ± data (change/correlation). **B&W-exempt** (ends share L by design) |
-| **Tone** (2) | `earth` (warm/organic) `jewel` (deep/premium) | aesthetic verticals |
+| **Diverging** (3) | `cool_warm` `teal_amber` `purple_green` | ordered ± data (change/correlation). **B&W-exempt** (ends share L by design) |
+| **Tone** (3) | `earth` (warm/organic) `jewel` (deep/premium) `ember` (warm-vibrant) | aesthetic verticals |
 | **Accessible** (1) | `accessible` | mandatory CVD — **Okabe-Ito, fixed reference** (the one justified singleton) |
 
 **Engineering invariants** (all families): 8 colours · even CIELAB L* ladder
 (⇒ B&W + most CVD survive; *Diverging is the sole exception*) · CVD-verified
 (colorspacious, not eyeballed) · subset-friendly (first-N ordering) ·
-**house teal `#12a594` anchors every general-purpose palette** (slot 0 of
-`teal` `teal_indigo` `trustworthy` `corporate` `spectrum` `bold` `pastel`
-`teal_accent` `jewel`; `teal_coral` `teal_amber` carry it too). Single-hue,
-externally-defined (`accessible`), neutral, and warm-only (`earth`) palettes
-legitimately don't carry teal.
+**a house-teal hue anchors slot 0 of the general-purpose palettes**
+(`teal` `teal_indigo` `trustworthy` `vivid` `neon` `pastel`
+`teal_accent` `jewel`). Single-hue, externally-defined (`accessible`),
+neutral, and warm-only (`earth`) palettes legitimately don't carry teal.
+(0.5.5 note: the renames `spectrum`→`vivid`, `coolwarm`→`cool_warm` and the
+`bold`/`corporate` merges below are reflected in the tables above.)
 
 > The set was pruned from 27 → 24 via an adversarial 3-lens redundancy audit
 > (perceptual / intent / ruthless-editor): dropped `ocean` (≈ `teal_indigo`),

@@ -31,12 +31,13 @@ plt.show()
 families (sequential, analogous, duo, balanced, neutral, emphasis, muted,
 vivid, diverging, tone, accessible). Every palette is 8 colours,
 CIELAB-generated and verified for black-&-white + colour-blindness, anchored on
-the house teal `#12a594`. Reach for `dc.trustworthy` as the everyday default,
+the house-teal hue family. Reach for `dc.trustworthy` as the everyday default,
 `dc.vivid` / `dc.neon` for many categories, `dc.cool_warm` / `dc.teal_amber`
 for ± diverging data, or `dc.teal_accent` to highlight one series. The interactive
 picker (intent, B&W, colour-blindness, 9 chart shapes) lives on the
-[Categorical palettes](categorical-palettes.md) page. The older ad-hoc names
-(`dc.vivid`, `dc.ocean`, …) remain as deprecated aliases for back-compat.
+[Categorical palettes](categorical-palettes.md) page. The pre-0.5 ad-hoc names
+(`dc.ocean`, `dc.sunset`, …) were **removed** — see the <!-- color-lint: ignore -->
+[migration guide](../migration.md) for the rename map.
 
 ```{raw} html
 :file: images/colors_dc.html

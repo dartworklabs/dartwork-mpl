@@ -37,6 +37,7 @@ Here's a typical matplotlib figure, then the same figure with dartwork-mpl:
 
 :::{tab-item} ✨ With dartwork-mpl
 
+<!-- snippet: no-run — save_and_show writes files + opens a preview -->
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
@@ -225,8 +226,8 @@ ax.fill_between(x, y1, y2, color="dc.earth1")     # warm accent
 ax.bar(categories, values, color="dc.vivid1")      # bold call-out
 
 # Third-party systems also available for cross-team consistency
-ax.plot(x, y2, color="dc.teal2")                   # OpenColor
-ax.plot(x, y3, color="tw.emerald500")              # Tailwind
+ax.plot(x, y2, color="oc.blue5")                   # OpenColor
+ax.plot(x, y1, color="tw.emerald500")              # Tailwind
 ```
 
 **Discover what's available without leaving Python:**
@@ -234,8 +235,8 @@ ax.plot(x, y3, color="tw.emerald500")              # Tailwind
 ```python
 import dartwork_mpl as dm
 
-dm.list_palettes()[:5]      # → ['dc.autumn', 'dc.cyber', 'dc.forest', ...]
-dm.show_palette("dc.ocean") # renders the 6-shade swatch row in Jupyter
+dm.list_palettes()[:5]      # → ['ad.blue', 'ad.cyan', 'ad.geekblue', ...]
+dm.show_palette("dc.teal")  # renders the 8-shade swatch row in Jupyter
 dm.plot_colors(ncols=4)     # full library overview, one figure per system
 ```
 
@@ -288,10 +289,10 @@ dm.save_formats(
 in-place:
 
 ```python
-result = dm.validate_with_fixes(fig)
-print(result.report())     # human-readable summary of warnings
-# margin_asymmetry → auto-fixed via dm.simple_layout()
-# pie_label_offset → auto-adjusted pctdistance
+warnings, fixes = dm.validate_with_fixes(fig)
+for w in warnings:         # each is a VisualWarning with fix suggestions
+    print(w)
+# e.g. MARGIN_ASYMMETRY → fix: dm.simple_layout(fig)
 ```
 
 Use it in CI to fail a build when a figure breaks; use it locally to
