@@ -137,7 +137,7 @@ const PALETTES = {
       application:"Single-series emphasis where a warm highlight reads better (e.g., risk / attention).",
       bw:"min ΔL* 6.2", cvd:"d5.8 / p5.7 / t5.8" },
 
-    neon: { name:"Neon", fam:"Vivid", band:"max chroma · electric",
+    neon: { name:"Neon", fam:"Spectrum", band:"max chroma · electric",
       cols:["#045F5E","#02A5F5","#A357C4","#FFA9DB","#5F6C02","#E4A431","#5584F8","#08F2CC"],
       intent:"MAXIMUM chroma — the loudest legal categorical, at the sRGB gamut edge. Up to 6 vivid categories on dark UI or hero moments.",
       design:"Electric hues at the per-rung gamut ceiling; CVD-confusable pairs thrown far apart in L* so loudness never costs separability.",

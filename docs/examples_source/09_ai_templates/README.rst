@@ -2,10 +2,10 @@ AI Plot Templates
 -----------------
 
 Eighteen ready-to-use plot templates curated for AI coding assistants. Each
-template is a small, self-contained script written with the 0.4
-``width=...``/``aspect=...`` API and Open Color palette. They are bundled in
-the wheel under ``dartwork_mpl/asset/prompt/05-templates/`` and exposed
-through both the prompt utilities and the
+template is a small, self-contained script written with the
+``figsize=dm.figsize(...)`` API and the curated ``dc.*`` palette. They are
+bundled in the wheel under ``dartwork_mpl/asset/prompt/05-templates/`` and
+exposed through both the prompt utilities and the
 :doc:`MCP server </integrations/mcp_server>`.
 
 How to access these templates

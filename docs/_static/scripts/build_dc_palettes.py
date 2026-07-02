@@ -37,6 +37,40 @@ PKG_JSON = (
 
 # generator key -> public snake_case dc.<name> key (rename SSOT; identity where
 # the generator name already reads well, renamed where the public API differs)
+# public name -> family (taxonomy SSOT — the explorer rail groups and the
+# docs "N families" claims derive from this). Editorial note: the two
+# full-hue-wheel loud sets (``vivid``, ``neon``) both live in the
+# *Spectrum* family — a palette named "vivid" sitting outside a family
+# named "Vivid" (as the explorer once had it) read as a bug, so the
+# one-palette "Vivid" family was folded into Spectrum (24 palettes,
+# 11 families).
+FAMILY = {
+    "teal": "Sequential",
+    "indigo": "Sequential",
+    "coral": "Sequential",
+    "teal_indigo": "Analogous",
+    "forest": "Analogous",
+    "blue_orange": "Duo",
+    "teal_coral": "Duo",
+    "trustworthy": "Balanced",
+    "pastel": "Muted",
+    "dusty": "Muted",
+    "vivid": "Spectrum",
+    "neon": "Spectrum",
+    "accessible": "Accessible",
+    "gray": "Neutral",
+    "warm_gray": "Neutral",
+    "cool_gray": "Neutral",
+    "cool_warm": "Diverging",
+    "teal_amber": "Diverging",
+    "purple_green": "Diverging",
+    "earth": "Tone",
+    "jewel": "Tone",
+    "ember": "Tone",
+    "teal_accent": "Emphasis",
+    "coral_accent": "Emphasis",
+}
+
 NAME = {
     "teal_seq": "teal",
     "indigo_seq": "indigo",

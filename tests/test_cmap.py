@@ -12,7 +12,9 @@ import pytest
 from dartwork_mpl import cmap as cmap_module
 from dartwork_mpl.cmap import _parse_colormap, ensure_loaded
 
-# The 16 curated colormaps (no _r variants).
+# The curated colormaps (no _r variants) — this set is pinned
+# bidirectionally against asset/cmap/*.txt below, so it must be
+# updated in the same PR as any colormap add/remove.
 EXPECTED_DC_NAMES = {
     # Sequential Single-Hue
     "obsidian",

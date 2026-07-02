@@ -58,7 +58,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 #   hues at a single shade level. Six hues each.
 
 PALETTES: list[dict] = [
-    # ---- dc.* moods (8) ----
+    # ---- dc.* curated (8 representative palettes) ----
     {
         "id": "dc.vivid",
         "label": "dc.vivid",
@@ -73,8 +73,8 @@ PALETTES: list[dict] = [
         ],
     },
     {
-        "id": "dc.ocean",
-        "label": "dc.ocean",
+        "id": "dc.teal",
+        "label": "dc.teal",
         "namespace": "dc",
         "colors": [
             "dc.teal3",
@@ -99,8 +99,8 @@ PALETTES: list[dict] = [
         ],
     },
     {
-        "id": "dc.sunset",
-        "label": "dc.sunset",
+        "id": "dc.earth",
+        "label": "dc.earth",
         "namespace": "dc",
         "colors": [
             "dc.earth2",
@@ -112,8 +112,8 @@ PALETTES: list[dict] = [
         ],
     },
     {
-        "id": "dc.autumn",
-        "label": "dc.autumn",
+        "id": "dc.dusty",
+        "label": "dc.dusty",
         "namespace": "dc",
         "colors": [
             "dc.dusty3",
@@ -125,8 +125,8 @@ PALETTES: list[dict] = [
         ],
     },
     {
-        "id": "dc.cyber",
-        "label": "dc.cyber",
+        "id": "dc.jewel",
+        "label": "dc.jewel",
         "namespace": "dc",
         "colors": [
             "dc.jewel3",
@@ -138,21 +138,21 @@ PALETTES: list[dict] = [
         ],
     },
     {
-        "id": "dc.pop",
-        "label": "dc.pop",
+        "id": "dc.neon",
+        "label": "dc.neon",
         "namespace": "dc",
         "colors": [
-            "dc.vivid3",
-            "dc.vivid1",
-            "dc.vivid5",
-            "dc.vivid0",
-            "dc.vivid2",
-            "dc.vivid4",
+            "dc.neon3",
+            "dc.neon1",
+            "dc.neon5",
+            "dc.neon0",
+            "dc.neon2",
+            "dc.neon4",
         ],
     },
     {
-        "id": "dc.nordic",
-        "label": "dc.nordic",
+        "id": "dc.teal_indigo",
+        "label": "dc.teal_indigo",
         "namespace": "dc",
         "colors": [
             "dc.teal_indigo3",

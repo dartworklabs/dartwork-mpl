@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import typing
+
 import matplotlib.colors as mcolors
 
 from dartwork_mpl.colors._loader import _load_json_palette, ensure_loaded
@@ -160,3 +162,32 @@ class TestPaletteRenameLifecycle:
             "dc.purple_green1",
         ):
             assert token in mapping, f"{token} missing"
+
+
+class TestVendoredLibraryCounts:
+    """Per-prefix count pins for the vendored color libraries — the
+    ``test_dc_palette_count`` pattern extended to every library, so a
+    dropped family/shade in an upstream JSON can't pass silently (a
+    malformed shape crashes loudly, but a shrunken one previously
+    didn't)."""
+
+    EXPECTED: typing.ClassVar[dict[str, int]] = {
+        "oc.": 140,
+        "tw.": 242,
+        "md.": 190,
+        "ad.": 130,
+        "cu.": 100,
+        "pr.": 90,
+    }
+
+    def test_per_prefix_counts(self) -> None:
+        import matplotlib.colors as mcolors
+
+        ensure_loaded()
+        mapping = mcolors.get_named_colors_mapping()
+        for prefix, expected in self.EXPECTED.items():
+            actual = sum(1 for k in mapping if k.startswith(prefix))
+            assert actual == expected, (
+                f"{prefix} count {actual} != pinned {expected}; if this "
+                f"change is deliberate, update the pin in the same PR"
+            )

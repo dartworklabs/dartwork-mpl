@@ -74,7 +74,11 @@ def _extract_base_color_name(color_name: str) -> str:
 def _extract_number_from_color_name(color_name: str) -> int | None:
     """Extract number from color name if present."""
     name = color_name
-    for prefix in ["dc.", "tw.", "md.", "ad.", "cu.", "pr."]:
+    # Prefixes derive from the COLOR_LIBRARIES SSOT (like the other
+    # consumers in this module) instead of a re-hardcoded list.
+    from ..colors._loader import COLOR_LIBRARIES
+
+    for prefix in [lib[1] for lib in COLOR_LIBRARIES]:
         if name.startswith(prefix):
             name = name[len(prefix) :]
             break

@@ -14,8 +14,8 @@ color.
 
 | Prefix  | Library                          | Example         |
 | ------- | -------------------------------- | --------------- |
-| `dc.*`  | **dartwork Color (recommended)** — 8 mood palettes (`vivid`, `autumn`, `cyber`, `forest`, `nordic`, `ocean`, `pop`, `sunset`) × 6 shades each | `dc.teal3`     |
-| `dm.*`  | Alias of `dc.*` (legacy)         | `dm.ocean3`     |
+| `dc.*`  | **dartwork Color (recommended)** — 24 curated palettes × 8 shades each (index 0 dark → 7 light); see the [palette catalog](../color_system/categorical-palettes.md) | `dc.teal3`     |
+| `dm.*`  | Alias of `dc.*` (legacy)         | `dm.teal3`      |
 | `oc.*`  | OpenColor                        | `oc.blue5`      |
 | `tw.*`  | Tailwind CSS                     | `tw.blue500`    |
 | `md.*`  | Material Design                  | `md.red500`     |
@@ -80,20 +80,25 @@ mpl.rcParams["axes.prop_cycle"] = cycler(color=[
 
 ### Picking a `dc.*` swatch
 
-The eight families are tuned to evoke different moods, so the family
-name is usually a good first filter. Inside each family the index is a
-**lightness ramp from 0 (light) → 5 (dark)**:
+The 24 curated palettes are grouped into 11 families by the *shape and
+job* of your data; the palette name is usually a good first filter.
+Inside each palette the index is a **lightness ramp from 0 (dark) →
+7 (light)**. A few everyday picks:
 
-| Family       | Use it for                                                         |
-| ------------ | ------------------------------------------------------------------ |
-| `dc.ocean`   | Cool blue primaries — line charts, sequential data, default brand color |
-| `dc.forest`  | Cool greens — comparison series, "good"/positive states            |
-| `dc.sunset`  | Warm accents — call-outs, highlights, alerts that aren't alarming  |
-| `dc.vivid`   | Saturated brand colors — high-contrast primary lines, headlines    |
-| `dc.cyber`   | Magenta / purple — secondary brand color, contrast against ocean    |
-| `dc.autumn`  | Warm earth tones — segmentations with low-key palette intent       |
-| `dc.nordic`  | Neutrals / muted — grid lines, baselines, secondary text, fills    |
-| `dc.pop`     | Saturated playful set — categorical data with 4–6 distinct groups  |
+| Palette             | Use it for                                                     |
+| ------------------- | -------------------------------------------------------------- |
+| `dc.trustworthy`    | The everyday default — balanced 4–8 category sets              |
+| `dc.teal`           | Cool sequential ramp — line charts, ordered data, house brand  |
+| `dc.forest`         | Cool greens — comparison series, "good"/positive states        |
+| `dc.vivid` / `dc.neon` | Full-spectrum loud sets — many categories, max distinctness |
+| `dc.earth` / `dc.jewel` | Warm/premium tones — aesthetic verticals, segmentations   |
+| `dc.pastel` / `dc.dusty` | Soft editorial — high-key / low-key muted pair           |
+| `dc.gray`           | True neutrals — grid lines, baselines, secondary fills         |
+| `dc.cool_warm`      | Diverging ± data — change, correlation                         |
+| `dc.teal_accent`    | Highlight one series, mute the rest                            |
+
+→ The full 24-palette catalog with an interactive picker lives on the
+[Categorical palettes](../color_system/categorical-palettes.md) page.
 
 **Coming from `oc.*`?** A rough drop-in mapping:
 
@@ -133,24 +138,23 @@ import dartwork_mpl as dm
 
 # List all discrete color palettes
 palettes = dm.list_palettes()
-print(palettes[:5])  # ['dc.vivid', 'oc.blue', 'oc.red', 'tw.emerald', ...]
+print(palettes[:5])  # ['ad.blue', 'ad.cyan', 'ad.geekblue', 'ad.gold', 'ad.green']
 
 # List all colormaps
 cmaps = dm.list_colormaps()
-print(cmaps[:5])  # ['dc.deep_sea', 'dc.forest', 'dc.sunset', ...]
+print(cmaps[:5])  # ['dc.amethyst', 'dc.arctic_heat', 'dc.aurora', 'dc.autumn_leaf', 'dc.candy']
 
 # Preview a specific palette
-dm.show_palette('oc.blue')  # Shows all shades: blue0, blue1, ..., blue9
-
-# Visualize multiple palettes at once
-dm.plot_colors(['oc.blue', 'tw.emerald', 'md.purple'])
+dm.show_palette('dc.teal')  # Shows all shades: teal0, teal1, ..., teal7
 
 # Visualize colormaps
-dm.plot_colormaps(['dc.deep_sea', 'dc.forest'])
+dm.plot_colormaps(cmap_list=['dc.deep_sea', 'dc.sunset_glow'])
 
-# Classify a colormap by type
-cmap_type = dm.classify_colormap('viridis')
-print(cmap_type)  # 'sequential'
+# Classify a colormap by type (takes a Colormap object)
+import matplotlib as mpl
+
+cmap_type = dm.classify_colormap(mpl.colormaps['dc.deep_sea'])
+print(cmap_type)  # 'Multi-Hue'
 ```
 
 ## Color interpolation
@@ -246,7 +250,7 @@ print(cmap.name)                       # 'dc.deep_sea'
 print(dm.classify_colormap(cmap))      # 'sequential' (tells you the type)
 ```
 
-Add `_r` to reverse any colormap (e.g., `dc.sunset_r`). Browse all available
+Add `_r` to reverse any colormap (e.g., `dc.sunset_glow_r`). Browse all available
 colormaps on the [Colormaps](../color_system/colormaps.md) page.
 
 ## See also

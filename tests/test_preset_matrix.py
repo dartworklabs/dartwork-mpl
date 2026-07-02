@@ -39,6 +39,29 @@ def _all_preset_names() -> list[str]:
 
 
 @pytest.mark.parametrize("preset", _all_preset_names())
+def test_preset_applies_without_bad_values(
+    preset: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    """``style.use`` must not trip matplotlib's rcParams validator.
+
+    matplotlib logs (not raises) a ``Bad value`` warning for an
+    unresolvable token in a style file and then *silently skips* the
+    key — e.g. a renamed ``dc.*`` palette in a prop_cycle ships the
+    default tab colors while every test stays green. Gate on the log
+    record so that class fails loudly (prefix-agnostic — it validates
+    every rcParams key, not just colors).
+    """
+    import logging
+
+    with caplog.at_level(logging.WARNING, logger="matplotlib"):
+        dm.style.use(preset)
+    bad = [
+        r.getMessage() for r in caplog.records if "Bad value" in r.getMessage()
+    ]
+    assert not bad, f"{preset}: matplotlib rejected style values: {bad}"
+
+
+@pytest.mark.parametrize("preset", _all_preset_names())
 def test_preset_round_trip(preset: str, tmp_path: Path) -> None:
     """Apply ``preset``, build a trivial chart, save PNG+PDF, validate."""
     dm.style.use(preset)

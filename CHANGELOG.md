@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Visual: 24 of the 56 bundled colormaps regenerated** so the shipped
+  assets match the gamut-safe OKLCH conversion introduced by the #240
+  chroma-reduction fix (the committed txt files pre-dated it; channel
+  deltas up to 0.41 on the most saturated anchors). The generator ↔
+  asset reproducibility is now pinned by
+  ``tests/test_cmap_sources_consistency.py``.
+
+### Added
+
+- **Bundled font corpus expanded to 16 families** (204 files), including
+  four monospace families (IBM Plex Mono, JetBrains Mono, Source Code
+  Pro, Roboto Mono), with eager registration on import so every family
+  resolves by bare rcParam name immediately (#370).
+
 ## [0.5.5] - 2026-07-01
 
 ### Changed

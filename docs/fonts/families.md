@@ -1,7 +1,13 @@
 # Font Families
 
-dartwork-mpl bundles 9 professional font families with a total of 130 font
-variants. Each family is optimized for different use cases in data visualization.
+dartwork-mpl bundles 16 professional font families with a total of 204 font
+files. Each family is optimized for different use cases in data
+visualization. This page profiles the core families in depth; for a
+one-click specimen of **every** family — including Pretendard, Source
+Sans 3, IBM Plex Sans, and the four monospace families (IBM Plex Mono,
+JetBrains Mono, Source Code Pro, Roboto Mono) — use the
+[interactive font picker](../_static/fonts_picker.html) or the
+[font explorer](index.md).
 
 ## Why fonts matter
 
