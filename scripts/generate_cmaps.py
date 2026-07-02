@@ -20,7 +20,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import dartwork_mpl as dm
 
-CMAP_DIR = Path("src/dartwork_mpl/asset/cmap")
+# Anchored to the repo root via __file__ so the script (and the
+# reproducibility test that overrides this) work from any CWD.
+# tests/test_cmap_sources_consistency.py pins asset/cmap/*.txt to this
+# generator's output — regenerate + commit together.
+CMAP_DIR = (
+    Path(__file__).resolve().parent.parent / "src/dartwork_mpl/asset/cmap"
+)
 
 # ──────────────────────────────────────────────────
 # Continuous colormaps — OKLCH anchor interpolation
