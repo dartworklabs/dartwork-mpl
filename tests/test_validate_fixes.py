@@ -150,6 +150,82 @@ class TestProperColorsHeuristic:
         assert check_agent_requirements(fig)["proper_colors"] is True
         plt.close(fig)
 
+    def test_scatter_basic_color_flagged(self) -> None:
+        """Scatter marks live in ``ax.collections``, which the heuristic
+        previously never inspected — ``color="red"`` passed (VAL-1)."""
+        from dartwork_mpl.validate_fixes import check_agent_requirements
+
+        fig, ax = plt.subplots()
+        ax.scatter([1, 2, 3], [1, 2, 3], color="red")
+        assert check_agent_requirements(fig)["proper_colors"] is False
+        plt.close(fig)
+
+    def test_scatter_hex_color_not_flagged(self) -> None:
+        from dartwork_mpl.validate_fixes import check_agent_requirements
+
+        fig, ax = plt.subplots()
+        ax.scatter([1, 2, 3], [1, 2, 3], color="#1a73e8")
+        assert check_agent_requirements(fig)["proper_colors"] is True
+        plt.close(fig)
+
+
+class TestAxisLabelsExemptions:
+    """``axis_labels`` skips axes types that have no meaningful x/y
+    labels — pie/donut, polar, 3D, frame-off (VAL-3)."""
+
+    def test_pie_chart_passes_axis_labels(self) -> None:
+        from dartwork_mpl.validate_fixes import check_agent_requirements
+
+        fig, ax = plt.subplots()
+        ax.pie([1, 2, 3])
+        assert check_agent_requirements(fig)["axis_labels"] is True
+        plt.close(fig)
+
+    def test_polar_axes_passes_axis_labels(self) -> None:
+        from dartwork_mpl.validate_fixes import check_agent_requirements
+
+        fig = plt.figure()
+        fig.add_subplot(projection="polar")
+        assert check_agent_requirements(fig)["axis_labels"] is True
+        plt.close(fig)
+
+    def test_rectilinear_axes_still_required(self) -> None:
+        from dartwork_mpl.validate_fixes import check_agent_requirements
+
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3])  # no labels set
+        assert check_agent_requirements(fig)["axis_labels"] is False
+        plt.close(fig)
+
+
+class TestOverflowSuggestionClamped:
+    """Suggested ``subplots_adjust`` fractions stay in a valid band even
+    for large overflows (VAL-2: px=90 used to suggest left=1.05)."""
+
+    def test_large_left_overflow_clamped(self) -> None:
+        warning = VisualWarning(
+            check_id="OVERFLOW",
+            severity=Severity.WARNING,
+            message="left overflow 90px",
+            detail={"side": "left", "px": 90},
+        )
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
+        adjust = next(s for s in suggestions if "subplots_adjust" in s)
+        value = float(adjust.split("left=")[1].rstrip(")"))
+        assert 0.0 < value < 0.5
+
+    def test_large_top_overflow_clamped(self) -> None:
+        warning = VisualWarning(
+            check_id="OVERFLOW",
+            severity=Severity.WARNING,
+            message="top overflow 90px",
+            detail={"side": "top", "px": 90},
+        )
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
+        adjust = next(s for s in suggestions if "subplots_adjust" in s)
+        value = float(adjust.split("top=")[1].rstrip(")"))
+        assert 0.5 < value < 1.0
+
 
 class TestAutoApplyAppliesLayoutOnce:
     """OVERFLOW / MARGIN_ASYMMETRY share one whole-figure fix; auto-apply

@@ -67,6 +67,17 @@ def validate_figure(
         "CLIPPED_TEXT": lambda: check_clipped_text(fig, renderer),
     }
 
+    # Fail loud on unknown IDs: a typo (``"OVERFLW"``) or a renamed
+    # check would otherwise silently run *zero* checks and report the
+    # figure clean when it was never inspected.
+    if checks is not None:
+        unknown = set(checks) - all_checks.keys()
+        if unknown:
+            raise ValueError(
+                f"Unknown check IDs: {sorted(unknown)}. "
+                f"Valid IDs: {sorted(all_checks)}"
+            )
+
     selected = (
         {k: v for k, v in all_checks.items() if k in checks}
         if checks is not None

@@ -10,6 +10,7 @@ from collections.abc import Callable
 import matplotlib.colors as mcolors
 from matplotlib.figure import Figure
 
+from .helpers.quality import _MIN_RECOMMENDED_DPI
 from .validate import Severity, VisualWarning, validate_figure
 
 # Auto-apply path of ``validate_with_fixes`` calls ``dm.simple_layout``
@@ -110,26 +111,35 @@ def _fix_overflow(warning: VisualWarning) -> list[str]:
     suggestions: list[str] = []
     side = warning.detail.get("side", "")
     px = warning.detail.get("px", 0)
+    # Clamp the suggested fractions into a valid band: matplotlib
+    # requires left/bottom < right/top, all within [0, 1]. Unclamped,
+    # a large overflow (px ≈ 90 on a small figure) produced
+    # copy-paste suggestions like ``subplots_adjust(left=1.05)`` that
+    # raise ValueError when applied.
+    grow = min(0.45, 0.15 + px / 100)
+    shrink_right = max(0.55, 0.95 - px / 100)
+    shrink_top = max(0.55, 0.9 - px / 100)
     if side == "left":
         suggestions.append(
-            f"# Increase left margin\nfig.subplots_adjust(left={0.15 + px / 100:.2f})"
+            f"# Increase left margin\nfig.subplots_adjust(left={grow:.2f})"
         )
         suggestions.append("# Or use simple_layout\ndm.simple_layout(fig)")
     elif side == "right":
         suggestions.append(
-            f"# Increase right margin\nfig.subplots_adjust(right={0.95 - px / 100:.2f})"
+            "# Increase right margin\n"
+            f"fig.subplots_adjust(right={shrink_right:.2f})"
         )
         suggestions.append("# Or use simple_layout\ndm.simple_layout(fig)")
     elif side == "bottom":
         suggestions.append(
-            f"# Increase bottom margin\nfig.subplots_adjust(bottom={0.15 + px / 100:.2f})"
+            f"# Increase bottom margin\nfig.subplots_adjust(bottom={grow:.2f})"
         )
         suggestions.append(
             "# Rotate x-tick labels\nax.tick_params(axis='x', rotation=45)"
         )
     elif side == "top":
         suggestions.append(
-            f"# Increase top margin\nfig.subplots_adjust(top={0.9 - px / 100:.2f})"
+            f"# Increase top margin\nfig.subplots_adjust(top={shrink_top:.2f})"
         )
     return suggestions
 
@@ -328,8 +338,9 @@ def check_agent_requirements(fig: Figure) -> dict[str, bool]:
     """
     requirements = {}
 
-    # Check DPI
-    requirements["high_dpi"] = fig.dpi >= 200
+    # Check DPI — threshold comes from the single source in
+    # helpers.quality so the two checks can never drift apart again.
+    requirements["high_dpi"] = fig.dpi >= _MIN_RECOMMENDED_DPI
 
     # Check if a (dartwork) style preset was applied — figure-local, not
     # the process-global rcParams (which any later style.use / rcdefaults
@@ -339,11 +350,24 @@ def check_agent_requirements(fig: Figure) -> dict[str, bool]:
     # Check for axis labels
     has_labels = True
     for ax in fig.axes:
-        if ax.get_visible():
-            if ax.xaxis.get_visible() and not ax.get_xlabel():
-                has_labels = False
-            if ax.yaxis.get_visible() and not ax.get_ylabel():
-                has_labels = False
+        if not ax.get_visible():
+            continue
+        # Axes with no meaningful x/y-label vocabulary are exempt:
+        # pie/donut (wedge patches — same detection as pie_label.py),
+        # non-rectilinear projections (polar, 3D), and axes whose axis
+        # frame is turned off entirely. Requiring labels there produced
+        # false failures that dragged the advisory OVERALL SCORE down
+        # for perfectly correct charts.
+        if not ax.axison:
+            continue
+        if ax.name != "rectilinear":
+            continue
+        if any(hasattr(p, "theta1") for p in ax.patches):
+            continue
+        if ax.xaxis.get_visible() and not ax.get_xlabel():
+            has_labels = False
+        if ax.yaxis.get_visible() and not ax.get_ylabel():
+            has_labels = False
     requirements["axis_labels"] = has_labels
 
     # Check for data
@@ -409,7 +433,14 @@ def _is_default_color_string(color: object) -> bool:
 
 
 def _uses_basic_default_colors(fig: Figure) -> bool:
-    """Detect explicit matplotlib basic colors on data marks."""
+    """Detect explicit matplotlib basic colors on data marks.
+
+    Covers lines (original color string preserved), patches
+    (bars/areas, resolved RGBA), and collections (scatter/hexbin/
+    LineCollection marks, RGBA arrays) — the latter were previously
+    skipped, so ``ax.scatter(..., color="red")`` passed the
+    ``proper_colors`` requirement it exists to catch.
+    """
     for ax in fig.axes:
         for line in ax.lines:
             if _is_default_color_string(line.get_color()):
@@ -421,6 +452,18 @@ def _uses_basic_default_colors(fig: Figure) -> bool:
                 continue
             if rgba in _MPL_BASIC_COLOR_RGBA:
                 return True
+        for coll in ax.collections:
+            for getter in (coll.get_facecolor, coll.get_edgecolor):
+                try:
+                    # ``to_rgba_array`` normalizes every shape a
+                    # collection can return (single RGBA, (N, 4) array,
+                    # empty) into an (N, 4) float array.
+                    rgba_rows = mcolors.to_rgba_array(getter())
+                except (ValueError, TypeError):
+                    continue
+                for row in rgba_rows:
+                    if tuple(float(c) for c in row) in _MPL_BASIC_COLOR_RGBA:
+                        return True
     return False
 
 
