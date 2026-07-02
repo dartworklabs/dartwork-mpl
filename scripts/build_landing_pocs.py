@@ -140,6 +140,9 @@ def vanilla():
     """Yield with a *truly* unstyled matplotlib state, then restore."""
     saved = matplotlib.rcParams.copy()
     matplotlib.rcdefaults()
+    # rcdefaults() resets svg.hashsalt to None; re-pin it so the vanilla
+    # "before" SVGs get stable element IDs (deterministic output).
+    matplotlib.rcParams["svg.hashsalt"] = "dartwork-mpl"
     try:
         yield
     finally:
@@ -155,9 +158,12 @@ def save(fig: plt.Figure, name: str) -> Path:
     # Saving at the raw figsize keeps both SVGs at exactly the same
     # canvas dimensions, so the wipe compares like-for-like.
     out_svg = OUT / f"{name}.svg"
-    fig.savefig(out_svg, format="svg")
+    # metadata={"Date": None} drops the <dc:date> creation timestamp so
+    # re-running the generator produces byte-identical SVGs (svg.hashsalt,
+    # set at import, already pins the element IDs).
+    fig.savefig(out_svg, format="svg", metadata={"Date": None})
     out_png = OUT / f"{name}.png"
-    fig.savefig(out_png, format="png", dpi=140)
+    fig.savefig(out_png, format="png", dpi=140, metadata={"Software": None})
     plt.close(fig)
     return out_svg
 
