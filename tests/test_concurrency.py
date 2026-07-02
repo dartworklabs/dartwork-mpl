@@ -42,6 +42,8 @@ from dartwork_mpl import cmap as cmap_module
 from dartwork_mpl import font as font_module
 from dartwork_mpl import icon as icon_module
 from dartwork_mpl.cmap import ensure_loaded as ensure_cmaps_loaded
+from dartwork_mpl.colors import _loader as colors_loader_module
+from dartwork_mpl.colors._loader import ensure_loaded as ensure_colors_loaded
 from dartwork_mpl.font import ensure_loaded as ensure_fonts_loaded
 from dartwork_mpl.icon import ensure_loaded as ensure_icons_loaded
 
@@ -118,6 +120,27 @@ def _reset_font_loaded() -> Iterator[None]:
     finally:
         font_module._add_fonts = original_loader  # type: ignore[assignment]
         font_module._loaded = True if original_loaded else font_module._loaded
+
+
+@pytest.fixture
+def _reset_colors_loaded() -> Iterator[None]:
+    """Force the colours loader back to its unloaded state for one test.
+
+    Same stub-friendly pattern as the cmap/font/icon resets; leaves
+    ``_loaded = True`` on teardown so downstream tests take the fast path
+    (matplotlib's named-colour mapping was already populated by an
+    earlier real-loader call).
+    """
+    original_loaded = colors_loader_module._loaded
+    original_loader = colors_loader_module._load_colors
+    colors_loader_module._loaded = False
+    try:
+        yield
+    finally:
+        colors_loader_module._load_colors = original_loader  # type: ignore[assignment]
+        colors_loader_module._loaded = (
+            True if original_loaded else colors_loader_module._loaded
+        )
 
 
 def _race(fn: Callable[[], Any], submissions: int = _SUBMISSIONS) -> None:
@@ -240,6 +263,40 @@ class TestFontEnsureLoadedConcurrency:
         assert font_module._loaded is True
         _race(ensure_fonts_loaded)
         assert font_module._loaded is True
+
+
+class TestColorsEnsureLoadedConcurrency:
+    """Stress tests for :func:`dartwork_mpl.colors._loader.ensure_loaded`.
+
+    The colours loader was the one sibling that shipped without the
+    double-checked lock that cmap/font/icon/Style got in PR #79 / #236.
+    Without it, a racing first access could run ``_load_colors`` twice
+    and mutate matplotlib's global named-colour mapping concurrently.
+    """
+
+    def test_concurrent_unloaded_runs_loader_exactly_once(
+        self, _reset_colors_loaded: None
+    ) -> None:
+        call_count = {"n": 0}
+
+        def _counting_loader() -> None:
+            call_count["n"] += 1
+
+        colors_loader_module._load_colors = _counting_loader  # type: ignore[assignment]
+
+        _race(ensure_colors_loaded)
+
+        assert call_count["n"] == 1, (
+            f"_load_colors ran {call_count['n']} times; "
+            "the lock failed to serialize threads."
+        )
+        assert colors_loader_module._loaded is True
+
+    def test_fast_path_after_loaded_is_race_free(self) -> None:
+        ensure_colors_loaded()
+        assert colors_loader_module._loaded is True
+        _race(ensure_colors_loaded)
+        assert colors_loader_module._loaded is True
 
 
 class TestStyleStackConcurrency:

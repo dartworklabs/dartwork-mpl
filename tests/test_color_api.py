@@ -209,6 +209,44 @@ class TestFromRgbValidation:
 
 
 # ============================================================================
+# from_oklab / from_oklch value-domain validation
+# ============================================================================
+
+
+class TestFromOklabOklchValidation:
+    """OKLab/OKLCH constructors fail loud on out-of-domain input instead
+    of silently rendering white (NaN) or flipping the hue (negative C)."""
+
+    @pytest.mark.parametrize(
+        "lab",
+        [
+            (float("nan"), 0.0, 0.0),
+            (0.7, float("inf"), 0.0),
+            (0.7, 0.0, float("nan")),
+        ],
+    )
+    def test_from_oklab_non_finite_rejected(self, lab) -> None:
+        with pytest.raises(ValueError, match="finite"):
+            Color.from_oklab(*lab)
+
+    def test_from_oklch_non_finite_component_rejected(self) -> None:
+        # A NaN L propagates through the conversion and is caught by the
+        # shared ``_from_oklab`` finiteness guard.
+        with pytest.raises(ValueError, match="finite"):
+            Color.from_oklch(float("nan"), 0.1, 120.0)
+
+    def test_from_oklch_negative_chroma_rejected(self) -> None:
+        # Negative chroma silently flips the hue; reject it to match the
+        # OklchView.C setter contract.
+        with pytest.raises(ValueError, match=">= 0"):
+            Color.from_oklch(0.7, -0.1, 120.0)
+
+    def test_from_oklch_zero_chroma_accepted(self) -> None:
+        # C == 0 is the achromatic axis and must remain valid.
+        Color.from_oklch(0.7, 0.0, 120.0)
+
+
+# ============================================================================
 # cspace accepts the same string forms as dm.color (#236, domain E)
 # ============================================================================
 

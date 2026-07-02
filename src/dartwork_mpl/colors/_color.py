@@ -125,6 +125,17 @@ class Color:
         # Internal fast-path that skips str-parsing in __init__ — used
         # by every from_* factory and by copy(). Mirrors
         # ``Length._from_inch``.
+        #
+        # Validate finiteness at this single construction choke point so
+        # a NaN/inf can never silently reach ``to_rgb`` and render as
+        # white (the ``_rgb_to_hex`` NaN guard downstream is otherwise
+        # unreachable in practice). Mirrors the ``from_rgb`` fail-loud
+        # contract.
+        for _name, _val in (("L", L), ("a", a), ("b", b)):
+            if not math.isfinite(_val):
+                raise ValueError(
+                    f"OKLab component {_name}={_val!r} must be a finite number"
+                )
         obj = cls.__new__(cls)
         obj._L = float(L)
         obj._a = float(a)
@@ -247,6 +258,12 @@ class Color:
         Color
             Color instance.
         """
+        # Reject negative chroma: OKLCH C is a radius (>= 0). A negative
+        # value silently flips the hue by 180 deg (and breaks the
+        # OKLCH round-trip), so fail loud to match the ``OklchView.C``
+        # setter, which already rejects it.
+        if C < 0:
+            raise ValueError(f"from_oklch: C={C!r} must be >= 0")
         # Convert degrees to radians for internal calculation
         h_rad: float = math.radians(h)
         _, a, b = _oklch_to_oklab(L, C, h_rad)
