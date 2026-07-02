@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
+from ._registry import register_check
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 __all__ = ["check_cross_axes_overlap"]
 
 
+@register_check("CROSS_AXES_OVERLAP", order=30)
 def check_cross_axes_overlap(
     fig: Figure, renderer: RendererBase
 ) -> list[VisualWarning]:

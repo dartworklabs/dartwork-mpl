@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
+from ._registry import register_check
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -15,6 +16,7 @@ __all__ = ["check_legend_overflow"]
 _THRESHOLD = 0.30  # 30% of axes area
 
 
+@register_check("LEGEND_OVERFLOW", order=40)
 def check_legend_overflow(
     fig: Figure, renderer: RendererBase
 ) -> list[VisualWarning]:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
+from ._registry import register_check
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 __all__ = ["check_overflow"]
 
 
+@register_check("OVERFLOW", order=10)
 def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
     """Detect elements whose bounding boxes extend beyond the figure canvas."""
     warnings: list[VisualWarning] = []

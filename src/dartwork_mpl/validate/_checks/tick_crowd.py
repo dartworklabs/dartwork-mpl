@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
+from ._registry import register_check
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -85,6 +86,7 @@ def _tick_crowd_for_axis(
     return None, False
 
 
+@register_check("TICK_CROWD", order=50)
 def check_tick_crowding(
     fig: Figure, renderer: RendererBase
 ) -> list[VisualWarning]:

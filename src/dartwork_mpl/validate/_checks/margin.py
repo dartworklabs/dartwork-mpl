@@ -6,6 +6,7 @@ import contextlib
 from typing import TYPE_CHECKING
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
+from ._registry import register_check
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -17,6 +18,7 @@ _RATIO_THRESHOLD = 3.0
 _MIN_MARGIN_PX = 30  # ignore sides with very small margins
 
 
+@register_check("MARGIN_ASYMMETRY", order=70)
 def check_margin_asymmetry(
     fig: Figure, renderer: RendererBase
 ) -> list[VisualWarning]:
