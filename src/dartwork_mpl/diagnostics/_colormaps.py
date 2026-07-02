@@ -47,6 +47,12 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     "dc.topaz": "Single-Hue",
     "dc.graphite": "Single-Hue",
     "dc.coral": "Single-Hue",
+    # Single-Hue (vibrant tier — "Single-Hue (Vibrant)" in
+    # scripts/generate_cmaps.py)
+    "dc.neon_blue": "Single-Hue",
+    "dc.neon_green": "Single-Hue",
+    "dc.neon_pink": "Single-Hue",
+    "dc.neon_orange": "Single-Hue",
     # Multi-Hue
     "dc.aurora": "Multi-Hue",
     "dc.sunset_glow": "Multi-Hue",
@@ -56,6 +62,12 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     "dc.autumn_leaf": "Multi-Hue",
     "dc.nebula_dust": "Multi-Hue",
     "dc.tropical_fruit": "Multi-Hue",
+    # Multi-Hue (vibrant tier — "Multi-Hue (Vibrant)" in
+    # scripts/generate_cmaps.py)
+    "dc.cyberpunk": "Multi-Hue",
+    "dc.synthwave": "Multi-Hue",
+    "dc.vivid_dusk": "Multi-Hue",
+    "dc.toxic_glow": "Multi-Hue",
     # Diverging
     "dc.ice_fire": "Diverging",
     "dc.earth_sky": "Diverging",

@@ -216,3 +216,23 @@ class TestTopLevelReexport:
         assert explore.plot_colormaps is diagnostics.plot_colormaps
         assert explore.plot_colors is diagnostics.plot_colors
         assert explore.plot_fonts is diagnostics.plot_fonts
+
+
+class TestClassificationOverridesParity:
+    """``_CLASSIFICATION_OVERRIDES`` must stay 1:1 with the bundled
+    colormap assets — a new/renamed map without an explicit class falls
+    back to the heuristic, which misclassified 7 of the 8 maps that
+    were missing before this guard."""
+
+    def test_overrides_match_bundled_cmaps_exactly(self) -> None:
+        from pathlib import Path
+
+        import dartwork_mpl.diagnostics._colormaps as dcm
+
+        cmap_dir = Path(dcm.__file__).parent.parent / "asset" / "cmap"
+        stems = {f"dc.{p.stem}" for p in cmap_dir.glob("*.txt")}
+        overrides = set(dcm._CLASSIFICATION_OVERRIDES)
+        assert overrides == stems, (
+            f"missing: {sorted(stems - overrides)}; "
+            f"stale: {sorted(overrides - stems)}"
+        )

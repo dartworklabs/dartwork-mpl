@@ -51,6 +51,23 @@ _ASSET_DIR = Path(__file__).parent.parent / "asset"
 _TEMPLATE_DIR = _ASSET_DIR / "prompt" / "05-templates"
 _MPLSTYLE_DIR = _ASSET_DIR / "mplstyle"
 
+# ``helpers.quality.suggest_chart_type`` speaks in *chart semantics*
+# (``grouped_bar``, ``scatter_density``, ``hexbin``, …) while the bundled
+# templates are keyed by canonical stems (``bar_grouped``, ``scatter``,
+# …). This mapping normalizes recommender output to the template
+# vocabulary before template URIs are built — without it, six of the
+# recommender's output classes silently fell back to the wrong ``bar``
+# template (or ``None``), breaking the advertised recommend →
+# pull-template loop. Ids that already are template stems pass through.
+_SUGGEST_TO_TEMPLATE: dict[str, str] = {
+    "grouped_bar": "bar_grouped",
+    "count_bar": "bar",
+    "bar_line": "line",
+    "multi_line": "line",
+    "scatter_density": "scatter",
+    "hexbin": "scatter",
+}
+
 # ``@mcp.tool()\n    def <name>(`` — empty- and keyword-arg forms.
 _TOOL_DEF_RE = re.compile(
     r"@mcp\.tool\([^)]*\)\s*\n\s*def\s+(\w+)\s*\(", re.MULTILINE
@@ -200,7 +217,13 @@ def register_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     def mix_colors(color1: str, color2: str, ratio: float = 0.5) -> str:
-        """Blend two colors and return the resulting hex code.
+        """Blend two colors in OKLab space and return the resulting hex code.
+
+        Delegates to the public :func:`dartwork_mpl.mix_colors`, which
+        blends in OKLab (perceptually uniform) rather than gamma-encoded
+        sRGB — so red + blue gives a purple, not a dark desaturated
+        grey. The MCP tool therefore always agrees with what
+        ``dm.mix_colors`` produces in generated plot code.
 
         Parameters
         ----------
@@ -210,6 +233,7 @@ def register_tools(mcp: FastMCP) -> None:
             Second color name or hex code.
         ratio : float
             Weight of the first color (0.0 to 1.0). Default 0.5.
+            Maps to ``dm.mix_colors``' ``alpha`` parameter.
 
         Returns
         -------
@@ -231,21 +255,16 @@ def register_tools(mcp: FastMCP) -> None:
                 "Error: ratio must be between 0.0 and 1.0 "
                 f"(weight of color1), got {ratio!r}."
             )
+        from ..util import mix_colors as _mix_oklab
+
         try:
-            c1 = mcolors.to_rgb(color1)
-            c2 = mcolors.to_rgb(color2)
-            blended = tuple(
-                ratio * a + (1 - ratio) * b
-                for a, b in zip(c1, c2, strict=False)
-            )
-            return mcolors.to_hex(
-                blended  # type: ignore[arg-type]
-            )
+            return mcolors.to_hex(_mix_oklab(color1, color2, alpha=ratio))
         except (ValueError, KeyError, TypeError) as e:
-            # ``to_rgb`` raises ``ValueError`` for unknown / malformed
-            # colors and ``KeyError`` for missing names; ``TypeError``
-            # for non-string inputs. We intentionally do not surface
-            # the full traceback to the agent — the message is enough.
+            # ``to_rgb`` (inside the public helper) raises ``ValueError``
+            # for unknown / malformed colors and ``KeyError`` for missing
+            # names; ``TypeError`` for non-string inputs. We intentionally
+            # do not surface the full traceback to the agent — the
+            # message is enough.
             return f"Error blending colors: {e}"
 
     @mcp.tool()
@@ -468,9 +487,7 @@ def register_tools(mcp: FastMCP) -> None:
         import textwrap
         from pathlib import Path as _Path
 
-        from .. import prompt as _prompt_mod
-
-        template_dir = _prompt_mod._PROMPT_DIR / "05-templates"
+        template_dir = _TEMPLATE_DIR
         path = template_dir / f"{plot_type.lower()}.py"
         if not path.exists():
             available = sorted(p.stem for p in template_dir.glob("*.py"))
@@ -664,6 +681,25 @@ def register_tools(mcp: FastMCP) -> None:
 
         from dartwork_mpl.lint import lint as _lint
 
+        def _finalize(payload: dict[str, Any]) -> dict[str, Any]:
+            """Normalize every return path to the documented shape.
+
+            ``semantic_warnings`` is present (possibly empty) iff
+            ``chart_type_hint`` was supplied — including on the
+            ``lint_blocked`` / ``timeout`` / ``exec_error`` early
+            returns, so callers doing ``resp["semantic_warnings"]``
+            don't ``KeyError`` on exactly the failure paths where
+            robust handling matters. Routing all four returns through
+            this one closure keeps the shapes from drifting apart
+            again.
+            """
+            payload.setdefault("visual_warnings", [])
+            if chart_type_hint is None:
+                payload.pop("semantic_warnings", None)
+            else:
+                payload.setdefault("semantic_warnings", [])
+            return payload
+
         lint_issues = [
             {
                 "rule_id": i.rule_id,
@@ -676,15 +712,18 @@ def register_tools(mcp: FastMCP) -> None:
         ]
         critical = [i for i in lint_issues if i["severity"] == "critical"]
         if critical:
-            return {
-                "status": "lint_blocked",
-                "lint": lint_issues,
-                "visual_warnings": [],
-                "stderr": (
-                    "Critical lint issues must be fixed before execution: "
-                    + ", ".join(str(i["rule_id"]) for i in critical)
-                ),
-            }
+            return _finalize(
+                {
+                    "status": "lint_blocked",
+                    "lint": lint_issues,
+                    "visual_warnings": [],
+                    "stderr": (
+                        "Critical lint issues must be fixed before "
+                        "execution: "
+                        + ", ".join(str(i["rule_id"]) for i in critical)
+                    ),
+                }
+            )
 
         runner = textwrap.dedent(
             """\
@@ -845,35 +884,35 @@ def register_tools(mcp: FastMCP) -> None:
                 timeout=timeout_seconds,
             )
         except subprocess.TimeoutExpired as exc:
-            return {
-                "status": "timeout",
-                "lint": lint_issues,
-                "visual_warnings": [],
-                "stderr": f"Subprocess exceeded {exc.timeout}s timeout.",
-            }
+            return _finalize(
+                {
+                    "status": "timeout",
+                    "lint": lint_issues,
+                    "visual_warnings": [],
+                    "stderr": f"Subprocess exceeded {exc.timeout}s timeout.",
+                }
+            )
 
         stderr = proc.stderr.strip()
         try:
             payload: dict[str, Any] = json.loads(proc.stdout)
         except json.JSONDecodeError:
-            return {
-                "status": "exec_error",
-                "lint": lint_issues,
-                "visual_warnings": [],
-                "stderr": stderr or proc.stdout[:1000],
-            }
+            return _finalize(
+                {
+                    "status": "exec_error",
+                    "lint": lint_issues,
+                    "visual_warnings": [],
+                    "stderr": stderr or proc.stdout[:1000],
+                }
+            )
 
         payload["lint"] = lint_issues
-        payload.setdefault("visual_warnings", [])
-        # Only surface ``semantic_warnings`` when a hint was supplied —
-        # otherwise the key is dropped so the response shape stays
-        # backwards-compatible for callers that don't pass the hint.
-        if chart_type_hint is None:
-            payload.pop("semantic_warnings", None)
-        else:
-            payload.setdefault("semantic_warnings", [])
         payload["stderr"] = stderr
-        return payload
+        # ``_finalize`` applies the hint-conditional ``semantic_warnings``
+        # shaping (present iff ``chart_type_hint`` was supplied) so the
+        # response shape stays backwards-compatible for callers that
+        # don't pass the hint.
+        return _finalize(payload)
 
     # ── Data Validation Tool ─────────────────────────────────────────
 
@@ -980,20 +1019,27 @@ def register_tools(mcp: FastMCP) -> None:
         dict
             ``{"recommended": str, "basic_template_uri": str,
             "advanced_template_uri": str | None, "rationale": str}``.
+            ``recommended`` is a canonical template stem (normalized via
+            ``_SUGGEST_TO_TEMPLATE``), so it always resolves through
+            ``render_template`` / ``find_template``; when the raw
+            recommender label differed (e.g. ``scatter_density``), the
+            semantic label is preserved in ``rationale``.
             ``advanced_template_uri`` is ``None`` when no tier-2 version
             exists yet for the recommended plot type.
         """
-        from .. import prompt as _prompt_mod
         from .. import suggest_chart_type as _suggest
 
-        recommended = _suggest(
+        raw = _suggest(
             x_type=x_type, y_type=y_type, n_points=n_points, n_series=n_series
         )
+        # Normalize recommender semantics to the template vocabulary so
+        # the returned id and URIs always resolve (see
+        # ``_SUGGEST_TO_TEMPLATE``). The raw semantic label is kept in
+        # the rationale when it differs.
+        recommended = _SUGGEST_TO_TEMPLATE.get(raw, raw)
 
-        # Map suggest output to a template id where possible.
-        template_dir = _prompt_mod._PROMPT_DIR / "05-templates"
-        basic_path = template_dir / f"{recommended}.py"
-        advanced_path = template_dir / "advanced" / f"{recommended}.py"
+        basic_path = _TEMPLATE_DIR / f"{recommended}.py"
+        advanced_path = _TEMPLATE_DIR / "advanced" / f"{recommended}.py"
         basic_uri = (
             f"dartwork-mpl://templates/{recommended}"
             if basic_path.exists()
@@ -1005,9 +1051,16 @@ def register_tools(mcp: FastMCP) -> None:
             else None
         )
 
+        semantic_note = (
+            f" (recommender semantic: {raw!r} — rendered with the "
+            f"{recommended!r} template)"
+            if raw != recommended
+            else ""
+        )
         rationale = (
             f"x={x_type}, y={y_type}, n_points={n_points}, "
-            f"n_series={n_series} → recommended: {recommended!r}. "
+            f"n_series={n_series} → recommended: {recommended!r}"
+            f"{semantic_note}. "
             "Tier-1 templates show the minimal API call; tier-2 (advanced) "
             "templates add reference lines, value labels, narrative title, "
             "and source footnote — copy the advanced version when you "
@@ -1065,10 +1118,8 @@ def register_tools(mcp: FastMCP) -> None:
             requested layers that are NOT yet in the canonical
             template and would need to be added by hand.
         """
-        from .. import prompt as _prompt_mod
-
         layers = list(layers or [])
-        template_dir = _prompt_mod._PROMPT_DIR / "05-templates"
+        template_dir = _TEMPLATE_DIR
         if tier == "advanced":
             path = template_dir / "advanced" / f"{plot_type.lower()}.py"
             if not path.exists():
@@ -1172,9 +1223,7 @@ def register_tools(mcp: FastMCP) -> None:
         import textwrap
         from pathlib import Path as _Path
 
-        from .. import prompt as _prompt_mod
-
-        template_dir = _prompt_mod._PROMPT_DIR / "05-templates"
+        template_dir = _TEMPLATE_DIR
         advanced_path = template_dir / "advanced" / f"{plot_type.lower()}.py"
         basic_path = template_dir / f"{plot_type.lower()}.py"
 

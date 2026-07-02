@@ -3,12 +3,12 @@
 Usage (interactive)::
 
     python -m dartwork_mpl.ui init
-    dartwork-ui init
+    dartwork-mpl-ui init
 
 Usage (non-interactive)::
 
     python -m dartwork_mpl.ui init ./my-viewer --example simple
-    dartwork-ui init ./my-viewer --example complex
+    dartwork-mpl-ui init ./my-viewer --example complex
 """
 
 import argparse
@@ -23,7 +23,16 @@ def _interactive_init() -> None:
     Uses InquirerPy to ask the user for the target directory and
     example template, then runs the scaffold.
     """
-    from InquirerPy import inquirer
+    try:
+        from InquirerPy import inquirer
+    except ImportError as exc:
+        # Mirror the graceful optional-dep gating used by the mcp /
+        # notebook extras instead of surfacing a raw ImportError.
+        raise SystemExit(
+            "Interactive init requires the 'ui' extra: "
+            'pip install "dartwork-mpl[ui]" — or skip the prompts by '
+            "passing a target directory: dartwork-mpl-ui init ./my-viewer"
+        ) from exc
 
     print()
     print("  \033[1;36m◆ Dartwork UI — New Project\033[0m")

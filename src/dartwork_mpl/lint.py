@@ -139,12 +139,17 @@ def _scan_one(code: str, rule: Rule) -> list[Issue]:
             if found < 0:
                 break
             line = code.count("\n", 0, found) + 1
+            # Populate ``snippet`` symmetrically with the regex branch —
+            # it used to be regex-only, so substring issues rendered
+            # without their offending line.
+            snippet = code.splitlines()[line - 1].strip() if code else None
             matches.append(
                 Issue(
                     rule_id=rule.id,
                     severity=rule.severity,
                     message=rule.message,
                     line=line,
+                    snippet=snippet,
                     column=found,
                     fix_suggestion=rule.fix_suggestion,
                 )
@@ -300,6 +305,35 @@ _MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
         re.compile(r"\bdm\.xplot\b"),
         "dm.xplot removed; templates now live in dm.templates / "
         "dm.helpers (see docs/migration.md).",
+    ),
+    (
+        re.compile(r"\bdm\.auto_layout\s*\("),
+        "dm.auto_layout removed in 0.5.4; use "
+        "dm.simple_layout(fig, margin=...) (legacy padding maps to "
+        "margin; max_iter/tolerance are obsolete).",
+    ),
+    (
+        re.compile(
+            r"\bdm\.(?:install_llm_txt|uninstall_llm_txt|INSTALL_TARGETS)\b"
+        ),
+        "install_llm_txt family removed in 0.5; use "
+        "dm.get_agent_doc(name) / dm.agent_doc_path(name) or the MCP "
+        "dartwork-mpl://guide/* resources.",
+    ),
+    (
+        re.compile(r"\bdm\.(?:style_spines|add_grid|minimal_axes)\b"),
+        "dm.style_spines/add_grid/minimal_axes removed in 0.4.1; inline "
+        "the raw matplotlib calls (see docs/usage_guide/recipes.md).",
+    ),
+    (
+        re.compile(r"\bdm\.auto_select_colors\b"),
+        "dm.auto_select_colors renamed in 0.4.1; use "
+        "dm.make_palette(n, kind=..., highlight=...).",
+    ),
+    (
+        re.compile(r"\bdm\.named\s*\("),
+        "dm.named removed in 0.4.1; use dm.color(...) (accepts token "
+        "names, hex, rgb()/oklch()/oklab()).",
     ),
 )
 

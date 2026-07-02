@@ -30,6 +30,10 @@ from matplotlib.gridspec import (
 )
 from matplotlib.transforms import Bbox
 
+# ``BBOX_ERRORS`` is shared with the validation checks via ``_helpers``
+# — one source for the bbox-measurement exception set (the two modules
+# used to carry identical private copies).
+from ._helpers import BBOX_ERRORS as _BBOX_ERRORS
 from ._helpers import get_renderer
 from .units import Length
 
@@ -131,23 +135,31 @@ def _parse_margin(
 # ─────────────────────────────────────────────────────────────────────
 
 
-_BBOX_ERRORS = (RuntimeError, ValueError, AttributeError)
-
-
 def _axes_content_extent_px(
     ax: Axes, renderer: RendererBase, fig: Figure
 ) -> tuple[float, float, float, float] | None:
     """Return ``(x0, x1, y0, y1)`` in display pixels enclosing every
     visible artist of ``ax``.
 
-    Walks the same artist set as ``_measure_overflow`` (texts, title,
-    axis labels, view-limited tick labels, axis offset text, legend)
-    plus the axes' own window extent so the result is never smaller
-    than the plot area.
+    Walks texts, title, axis labels, view-limited tick labels, axis
+    offset text, and legend, plus the axes' own window extent so the
+    result is never smaller than the plot area. This is *almost* the
+    artist set ``_measure_overflow`` walks, with three deliberate
+    deltas: the offset text and the axes window extent are only
+    measured here, and the ``_LEGEND_FRAME_PAD`` slack is only added
+    there — so do not treat ``_measure_overflow`` as an exact
+    post-``simple_layout`` invariant.
 
-    Returns ``None`` if the axes has no measurable extent (rare —
-    only for fully invisible axes).
+    Returns ``None`` for invisible axes (a hidden panel must not
+    constrain the layout — matplotlib keeps a valid window extent for
+    it, which used to push the visible axes' margins) and for axes
+    with no measurable extent.
     """
+    # Hidden axes must not contribute margins; mirrors the visibility
+    # rule in ``validate_fixes.check_agent_requirements``.
+    if not ax.get_visible():
+        return None
+
     pts: list[tuple[float, float]] = []
 
     # Plot area corners — guarantees the result is at least the axes
@@ -226,7 +238,7 @@ def _axes_content_extent_px(
 
 
 def _resolve_gridspec(
-    fig: Figure, gs: GridSpec | SubplotSpec | None
+    fig: Figure, gs: GridSpecBase | SubplotSpec | None
 ) -> GridSpec | None:
     """Pick the GridSpec to update. Walks past ``GridSpecFromSubplotSpec``
     to its root so ``.update`` is callable.
@@ -378,7 +390,7 @@ def adopt_axis_label_font(fig: Figure) -> None:
 
 def simple_layout(
     fig: Figure,
-    gs: GridSpec | SubplotSpec | None = None,
+    gs: GridSpecBase | SubplotSpec | None = None,
     *,
     margin: Length | str | float = 0,
     ml: Length | str | float | None = None,
@@ -487,7 +499,20 @@ def simple_layout(
         mb_f = base_v
 
     last: tuple[float, float, float, float] | None = None
-    gs_id = id(actual_gs)
+    # Filter target axes by the gridspec the caller actually pointed at
+    # (the *immediate* one), not the root that ``_resolve_gridspec``
+    # walks to for ``.update()``. ``ax.get_gridspec()`` returns the
+    # immediate ``GridSpecFromSubplotSpec`` for nested axes, so matching
+    # on the root id made ``use_all_axes=False`` a silent no-op for any
+    # nested gs (zero axes measured → early return). Matching the
+    # immediate id keeps the documented "only this gridspec's axes"
+    # semantics without over-matching sibling sub-gridspecs.
+    requested_gs: GridSpecBase | None
+    if gs is not None:
+        requested_gs = gs.get_gridspec() if isinstance(gs, SubplotSpec) else gs
+    else:
+        requested_gs = fig.axes[0].get_gridspec()
+    gs_id = id(requested_gs)
 
     for it in range(_MAX_ITER):
         result = _solve_layout_step(
@@ -630,8 +655,10 @@ def _measure_overflow(fig: Figure) -> dict[str, float]:
     """Measure per-side overflow of all visible artists beyond figure bounds.
 
     Returns a ``{"left", "right", "bottom", "top"}`` dict in display pixels.
-    Used by the robustness suite as the post-layout invariant check;
-    not called by :func:`simple_layout` itself.
+    Used only by the legend-regression tests in ``tests/test_layout.py``;
+    not called by :func:`simple_layout` itself. Note the measured artist
+    set deliberately differs from ``_axes_content_extent_px`` (see its
+    docstring), so this is not an exact post-layout invariant.
     """
     fig.canvas.draw()
     renderer = get_renderer(fig)

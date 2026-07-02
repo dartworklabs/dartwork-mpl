@@ -50,6 +50,17 @@ class TestValidateFigureClean:
         assert captured.out == ""
         plt.close(fig)
 
+    def test_unknown_check_id_raises(self) -> None:
+        """A typo'd check ID must fail loud, not silently run zero
+        checks and report the figure clean (VAL-4)."""
+        import pytest
+
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.plot([1, 2, 3])
+        with pytest.raises(ValueError, match="Unknown check IDs"):
+            validate_figure(fig, checks=("OVERFLW",), quiet=True)
+        plt.close(fig)
+
 
 class TestCheckOverflow:
     """Tests for OVERFLOW detection."""

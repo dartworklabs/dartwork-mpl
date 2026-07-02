@@ -18,6 +18,11 @@ __all__ = ["ensure_loaded"]
 # missing assets — likely a slim install or accidental deletion.
 _EXPECTED_MIN_FONTS: int = 5
 
+# Bundled font directory — single source, also consumed by
+# ``diagnostics._fonts.plot_fonts`` (which used to rebuild the same
+# path with os.path idioms).
+_FONT_DIR: Path = Path(__file__).parent / "asset" / "font"
+
 
 def _add_fonts() -> None:
     """Register bundled custom fonts with matplotlib's font manager.
@@ -32,8 +37,7 @@ def _add_fonts() -> None:
     This function is called automatically once when the library is
     imported; users do not need to call it directly.
     """
-    font_dir: list[Path] = [Path(__file__).parent / "asset/font"]
-    found = font_manager.findSystemFonts(font_dir)
+    found = font_manager.findSystemFonts([_FONT_DIR])
     for font in found:
         font_manager.fontManager.addfont(font)
 
@@ -43,11 +47,16 @@ def _add_fonts() -> None:
     if len(found) < _EXPECTED_MIN_FONTS:
         warnings.warn(
             f"dartwork-mpl found only {len(found)} bundled font file(s) "
-            f"in {font_dir[0]}. The Korean/CJK fallback chain may "
+            f"in {_FONT_DIR}. The Korean/CJK fallback chain may "
             f"degrade to system fonts. Reinstall the package to "
             f"restore the bundled assets.",
             UserWarning,
-            stacklevel=3,
+            # Points at the ``_add_fonts()`` call inside
+            # ``ensure_loaded`` — a stable in-package frame. The
+            # previous ``stacklevel=3`` walked one frame further into
+            # whatever happened to import the package, which was never
+            # a useful location.
+            stacklevel=2,
         )
 
 

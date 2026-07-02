@@ -93,3 +93,26 @@ class TestAddFonts:
             and "dartwork-mpl" in str(w.message)
         ]
         assert bundle_warnings == []
+
+
+class TestEagerRegistrationContract:
+    """``import dartwork_mpl`` must make the bundled families resolvable
+    by bare rcParam name immediately — the documented contract behind
+    the eager ``font.ensure_loaded()`` call in ``__init__``. Runs in a
+    fresh interpreter so an earlier test import can't mask a regression."""
+
+    def test_bundled_families_resolve_after_fresh_import(self) -> None:
+        import subprocess
+        import sys
+
+        code = (
+            "import dartwork_mpl\n"
+            "from matplotlib import font_manager\n"
+            "names = {f.name for f in font_manager.fontManager.ttflist}\n"
+            "for family in ('Inter', 'Pretendard', 'Roboto'):\n"
+            "    assert family in names, f'{family} not registered: eager'\n"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", code], capture_output=True, text=True
+        )
+        assert result.returncode == 0, result.stderr

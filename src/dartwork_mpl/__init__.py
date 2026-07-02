@@ -6,8 +6,12 @@ utility functions for Matplotlib visualizations.
 
 # ruff: noqa: E402
 
-from importlib.metadata import PackageNotFoundError, version
-from typing import Any
+# Underscore-aliased so implementation imports don't leak into the
+# public namespace (``dm.version`` / ``dm.Any`` /
+# ``dm.PackageNotFoundError`` used to resolve).
+from importlib.metadata import PackageNotFoundError as _PackageNotFoundError
+from importlib.metadata import version as _metadata_version
+from typing import Any as _Any
 
 # Derive the version from the installed distribution metadata so there
 # is a single source of truth. For a built/released wheel this always
@@ -17,8 +21,8 @@ from typing import Any
 # The fallback covers running from a source tree with no installed
 # metadata at all.
 try:
-    __version__ = version("dartwork-mpl")
-except PackageNotFoundError:  # pragma: no cover - source-tree fallback
+    __version__ = _metadata_version("dartwork-mpl")
+except _PackageNotFoundError:  # pragma: no cover - source-tree fallback
     __version__ = "0.0.0+unknown"
 
 # Import submodules so they are accessible under ``dm.<submodule>``
@@ -267,7 +271,7 @@ if not getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False):
     _original_twinx = matplotlib.axes.Axes.twinx
 
     def _patched_twinx(
-        self: matplotlib.axes.Axes, *args: Any, **kwargs: Any
+        self: matplotlib.axes.Axes, *args: _Any, **kwargs: _Any
     ) -> matplotlib.axes.Axes:
         ax2 = _original_twinx(self, *args, **kwargs)
         ax2.spines["right"].set_visible(True)
@@ -291,14 +295,16 @@ font.ensure_loaded()
 
 
 # 0.3 width tokens (SW/MW/TW/DW/WIDTHS), figure-size tuples (FS_*), the
-# cm2in helper, the figure constructors (subplots/figure), and the
-# agent_utils/xplot module aliases were removed across 0.4.x; the
-# install_llm_txt installer (install_llm_txt/uninstall_llm_txt/
-# INSTALL_TARGETS) was removed in 0.5. Accessing any of them now raises
-# AttributeError. The ``__getattr__`` hook below turns those bare misses
-# into an actionable message naming the version and the replacement API,
-# instead of Python's default "module has no attribute" string.
-# Migration paths: see docs/migration.md.
+# cm2in helper, the figure constructors (subplots/figure), the
+# agent_utils/xplot module aliases, and the 0.4.1 helper removals
+# (style_spines/add_grid/minimal_axes/auto_select_colors/named) were
+# removed across 0.4.x; the install_llm_txt installer
+# (install_llm_txt/uninstall_llm_txt/INSTALL_TARGETS) was removed in
+# 0.5; auto_layout was removed in 0.5.4. Accessing any of them now
+# raises AttributeError. The ``__getattr__`` hook below turns those
+# bare misses into an actionable message naming the version and the
+# replacement API, instead of Python's default "module has no
+# attribute" string. Migration paths: see docs/migration.md.
 
 # Removed names → ``(version-removed, replacement-hint)``. Keyed by exact
 # attribute name; the ``FS_*`` family is handled by the prefix branch.
@@ -348,10 +354,37 @@ _REMOVED_NAMES: dict[str, tuple[str, str]] = {
         "dm.get_agent_doc(name) / the MCP resources (install targets no "
         "longer exist)",
     ),
+    # 0.4.1 helper removals (#156). These were previously covered only
+    # by the lint engine, so hitting them at *runtime* gave a bare
+    # "no attribute" error — closing that gap keeps the migration-hint
+    # contract uniform across every removed public name.
+    "style_spines": (
+        "0.4.1",
+        "raw matplotlib spine calls (ax.spines[s].set_color(...) / "
+        ".set_linewidth(...)); see docs/usage_guide/recipes.md",
+    ),
+    "add_grid": (
+        "0.4.1",
+        "ax.grid(True, color='oc.gray3', alpha=0.3, linewidth=0.5) plus "
+        "ax.set_axisbelow(True)",
+    ),
+    "minimal_axes": (
+        "0.4.1",
+        "the minimal-axes recipe in docs/usage_guide/recipes.md",
+    ),
+    "auto_select_colors": (
+        "0.4.1",
+        "dm.make_palette(n, kind=..., highlight=...) (arguments renamed: "
+        "n_series→n, color_type→kind, highlight_index→highlight)",
+    ),
+    "named": (
+        "0.4.1",
+        "dm.color(...) (accepts token names, hex, rgb()/oklch()/oklab())",
+    ),
 }
 
 
-def __getattr__(name: str) -> Any:
+def __getattr__(name: str) -> _Any:
     """Surface a migration hint for removed 0.3/0.4/0.5 names.
 
     Without this, ``dm.SW`` / ``dm.cm2in`` / ``dm.subplots`` /

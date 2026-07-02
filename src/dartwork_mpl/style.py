@@ -386,6 +386,14 @@ class Style:
         --------
         >>> with dm.style.context("dark"):
         ...     plt.plot([1, 2, 3])
+
+        Notes
+        -----
+        Not thread-safe: the underlying ``plt.rcParams`` mutation is
+        process-global, and holding a lock across the ``yield`` would
+        deadlock any body code that calls ``style.use``. Apply styles
+        from one thread (matplotlib itself is not thread-safe for
+        concurrent rcParams mutation).
         """
         if preset_name not in self.presets:
             raise KeyError(self._unknown_preset_message(preset_name))

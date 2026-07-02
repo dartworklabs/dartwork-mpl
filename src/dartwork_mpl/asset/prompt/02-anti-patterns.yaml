@@ -152,6 +152,56 @@ rules:
       `highlight_index` → `highlight`.
     fix_suggestion: 'dm.make_palette(n, kind="categorical")'
 
+  - id: dm-auto-layout-removed
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\bdm\.auto_layout\s*\('
+    message: |
+      `dm.auto_layout` was REMOVED in 0.5.4 — accessing it now raises
+      `AttributeError`. Use `dm.simple_layout(fig, margin=...)`: the
+      legacy `padding` inches argument maps to `margin`;
+      `max_iter`/`tolerance` are obsolete (simple_layout is
+      direct-calc).
+    fix_suggestion: 'dm.simple_layout(fig)'
+
+  - id: dm-named-renamed
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\bdm\.named\s*\('
+    message: |
+      `dm.named` was REMOVED in 0.4.1 — the replacement is
+      `dm.color(...)`, a single string-parser entry point that accepts
+      token names, hex, and `rgb()`/`oklch()`/`oklab()` functional
+      strings.
+    fix_suggestion: 'dm.color("oc.red5")'
+
+  - id: dm-removed-namespaces
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\bdm\.(?:agent_utils|xplot)\b'
+    message: |
+      `dm.agent_utils` and `dm.xplot` were REMOVED in 0.4. The
+      agent_utils surfaces moved to `dm.lint` / `dm.validate_figure` /
+      `dm.helpers`; the xplot templates now live in `dm.templates`
+      (e.g. `dm.templates.plot_diverging_bar`). See docs/migration.md.
+    fix_suggestion: 'see docs/migration.md'
+
+  - id: dm-install-llm-txt-removed
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\bdm\.(?:install_llm_txt|uninstall_llm_txt|INSTALL_TARGETS)\b'
+    message: |
+      The `install_llm_txt` installer family
+      (`install_llm_txt`/`uninstall_llm_txt`/`INSTALL_TARGETS`) was
+      REMOVED in 0.5. The agent-doc corpus is read at runtime — use
+      `dm.get_agent_doc(name)` / `dm.agent_doc_path(name)`, or the MCP
+      `dartwork-mpl://guide/*` resources.
+    fix_suggestion: 'dm.get_agent_doc("general-guide")'
+
   - id: deprecated-width-token
     severity: critical
     detector:

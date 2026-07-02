@@ -26,13 +26,18 @@ classifiers = [
     "Framework :: Matplotlib",
     "Typing :: Typed",
 ]
+# Runtime dependencies of ``import dartwork_mpl`` only. Audit note
+# (2026-07): ``palettable`` had zero imports anywhere and was dropped;
+# ``colorspacious`` (palette generation script + its guard test) and
+# ``scipy`` (docs examples only) moved to the dev group — nothing under
+# ``src/`` imports either. ``cycler`` is imported directly by
+# ``helpers/colors.py`` (``set_cycle``), so it is declared here instead
+# of being relied on as a matplotlib transitive.
 dependencies = [
-    "colorspacious>=1.1.2",
+    "cycler>=0.12",
     "matplotlib>=3.10.1",
     "numpy>=1.26",
-    "palettable>=3.3.3",
     "pyyaml>=6.0",
-    "scipy>=1.15.2",
 ]
 
 [project.urls]
@@ -117,6 +122,13 @@ packages = ["src/dartwork_mpl"]
 
 [dependency-groups]
 dev = [
+    # CIELAB palette generation (docs/_static/scripts/gen_palettes.py)
+    # and its reproducibility guard test. Not a runtime dependency —
+    # the shipped dc_palettes.json is pre-generated.
+    "colorspacious>=1.1.2",
+    # Docs example scripts only (KDE/Voronoi/MCMC galleries). Nothing
+    # under src/ imports scipy.
+    "scipy>=1.15.2",
     # Enables sphinx-gallery's parallel example execution (conf.py
     # `parallel`), which speeds up cache-miss docs builds.
     "joblib>=1.3.0",
