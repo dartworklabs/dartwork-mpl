@@ -7,7 +7,7 @@
 # difficulty: intermediate
 # data_shape: categories: list[str], values: list[float], threshold: float
 # tags: bar, ranking, reference-line, annotated, narrative
-# narrative: 2024 BEV market share, top-5 leaders vs. EU 2030 mandate (60%)
+# narrative: 2024 BEV market share, top-5 leaders vs. EU 2030 mandate (55%)
 # advanced_apis: dm.cspace, dm.format_axis_si (for non-percent), PercentFormatter, axhline, ax.text per bar, dm.check_figure_quality
 # ai-template-meta-end
 

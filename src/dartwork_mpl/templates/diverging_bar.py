@@ -58,7 +58,9 @@ def plot_diverging_bar(
         Array of positive values (one per label). Values should be
         positive. If None, default sample data is used. Default is None.
     add_total : bool, optional
-        If True, appends a "Total" row with mean values. Default is True.
+        If True, appends an "Average" summary row whose values are the
+        mean of each side (labelled "Average", not "Total", because the
+        values are averages, not sums). Default is True.
     figsize : tuple[float, float] | None, optional
         Figure size (width, height) in inches. If None, (12cm, 12cm)
         is used. Default is None.
@@ -189,9 +191,11 @@ def plot_diverging_bar(
     neg_vals = neg_values.copy()
     pos_vals = pos_values.copy()
 
-    # Add Total row if requested
+    # Add a summary row if requested. The values are per-side *means*, so
+    # the row is labelled "Average" — calling it "Total" (a sum) was
+    # misleading about what the bar represents.
     if add_total:
-        labels_list.append("Total")
+        labels_list.append("Average")
         neg_vals = np.append(neg_vals, np.mean(neg_vals))
         pos_vals = np.append(pos_vals, np.mean(pos_vals))
 

@@ -52,11 +52,7 @@ for i, (name, vals) in enumerate(lines.items()):
     ax.plot(months, vals, color=colors[i], linewidth=dm.lw(0))
     ax.fill_between(months, vals, vals.min(), color=colors[i], alpha=0.08)
     ax.set_title(
-        f"({'abcdef'[i]})  {name}",
-        loc="left",
-        fontsize=dm.fs(0),
-        fontweight=dm.fw(1),
-        pad=4,
+        name, loc="left", fontsize=dm.fs(0), fontweight=dm.fw(1), pad=4
     )
     # Per-panel takeaway: total growth.
     delta = vals[-1] - vals[0]
@@ -71,6 +67,10 @@ for i, (name, vals) in enumerate(lines.items()):
         color=colors[i],
         fontweight=dm.fw(1),
     )
+
+# Panel IDs (a)-(f) via the dartwork helper (as the template advertises)
+# rather than hand-formatted into each title.
+dm.label_axes(axes_flat)
 
 # Shared axis labels.
 fig.supxlabel("Month after launch", fontsize=dm.fs(0), y=0.04)
