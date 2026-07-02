@@ -88,3 +88,14 @@ class TestShowPalette:
     def test_unknown_palette_raises(self) -> None:
         with pytest.raises(ValueError, match="not found"):
             show_palette("zz.definitely-not-a-real-palette")
+
+
+class TestListPalettesNoDeprecatedAliases:
+    """list_palettes must not surface deprecated dm.* aliases (2026-07 audit)."""
+
+    def test_no_dm_prefix(self) -> None:
+        import dartwork_mpl as dm
+
+        assert not [
+            p for p in dm.explore.list_palettes() if p.startswith("dm.")
+        ]

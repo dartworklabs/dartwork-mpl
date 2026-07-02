@@ -7,6 +7,8 @@ for backward compatibility.
 
 from __future__ import annotations
 
+import math
+
 # Re-exports for backward compatibility - these were moved to
 # dedicated modules but many consumers still import from util.
 from .annotation import arrow_axis, label_axes
@@ -95,6 +97,15 @@ def mix_colors(
         sRGB tuple of the blended result, compatible with any matplotlib
         ``color=`` argument.
 
+    Raises
+    ------
+    ValueError
+        If ``alpha`` is not a finite number in ``[0, 1]``. Values outside
+        the closed interval extrapolate and gamut-clamp to a
+        plausible-looking but wrong colour (e.g. ``alpha=2`` yields
+        salmon for a red/blue blend), so they are rejected rather than
+        silently returned.
+
     Notes
     -----
     The result will differ subtly from previous versions for non-grayscale
@@ -102,6 +113,10 @@ def mix_colors(
     saturated midpoints.  ``dm.pseudo_alpha`` (which delegates to this
     function) inherits the same improvement.
     """
+    if not math.isfinite(alpha) or not 0.0 <= alpha <= 1.0:
+        raise ValueError(
+            f"alpha must be a finite number in [0, 1], got {alpha!r}"
+        )
     r1, g1, b1 = mcolors.to_rgb(color1)
     r2, g2, b2 = mcolors.to_rgb(color2)
     c1 = Color.from_rgb(r1, g1, b1)

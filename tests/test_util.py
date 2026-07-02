@@ -320,3 +320,16 @@ class TestMakeOffset:
         offset = make_offset(0, 0, fig)
         assert offset is not None
         plt.close(fig)
+
+
+class TestMixColorsAlphaValidation:
+    """mix_colors rejects out-of-range alpha (2026-07 audit)."""
+
+    @pytest.mark.parametrize("bad", [2.0, -1.0, float("nan"), float("inf")])
+    def test_out_of_range_alpha_raises(self, bad: float) -> None:
+        with pytest.raises(ValueError):
+            mix_colors("red", "blue", bad)
+
+    def test_boundary_alpha_ok(self) -> None:
+        assert mix_colors("red", "blue", 0.0) is not None
+        assert mix_colors("red", "blue", 1.0) is not None

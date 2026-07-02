@@ -37,6 +37,21 @@ __all__ = [
 ]
 
 
+def _is_light(color: str) -> bool:
+    """True when ``color`` is light enough to need dark (black) label text.
+
+    Uses WCAG relative luminance on the linearized sRGB channels so the
+    decision holds for any palette scale, not just Open Color's 0-9.
+    """
+    r, g, b = mcolors.to_rgb(color)
+
+    def _lin(c: float) -> float:
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+    luminance = 0.2126 * _lin(r) + 0.7152 * _lin(g) + 0.0722 * _lin(b)
+    return luminance > 0.4
+
+
 def _get_all_colors() -> list[str]:
     from .colors._loader import ensure_loaded
 
@@ -59,6 +74,11 @@ def list_palettes() -> list[str]:
     for c in colors:
         match = pattern.match(c)
         if match:
+            # Skip the deprecated ``dm.*`` back-compat aliases — they
+            # duplicate every ``dc.*`` palette and are not part of the
+            # typed colour vocabulary.
+            if match.group(1) == "dm":
+                continue
             palettes.add(f"{match.group(1)}.{match.group(2)}")
     return sorted(palettes)
 
@@ -135,9 +155,12 @@ def show_palette(palette_name: str) -> None:
             mpatches.Rectangle((i, 0), 1, 1, facecolor=cname, edgecolor="none")
         )
 
-        # Simple contrast heuristic: lighter text for darker shades (index >= 5 usually)
+        # Choose label colour by the swatch's actual luminance, not the
+        # shade index - index thresholds assume Open Color's 0-9 scale and
+        # put white text on the near-white 50/100/200 swatches of the
+        # Tailwind (50-950) / Material / Ant (1-10) families.
         shade_idx = palette_colors[i][0]
-        text_color = "white" if shade_idx >= 5 else "black"
+        text_color = "black" if _is_light(cname) else "white"
 
         ax.text(
             i + 0.5,

@@ -263,3 +263,19 @@ class TestCspaceFunctionalStrings:
     def test_rgb_string_endpoint(self) -> None:
         colors = cspace("rgb(1, 0, 0)", "oklch(0.7, 0.15, 200)", n=4)
         assert len(colors) == 4
+
+
+class TestCspaceAchromaticHue:
+    """Achromatic endpoints must not inject a noise hue (2026-07 audit)."""
+
+    def test_white_to_blue_stays_blue(self) -> None:
+        ramp = cspace("white", "oc.blue9", n=5, space="oklch")
+        mid = ramp[2].to_rgb()
+        # Before the fix the midpoint was green/teal (g > b); a white->blue
+        # tint ramp must keep blue dominant.
+        assert mid[2] >= mid[1]
+
+    def test_black_to_red_stays_red(self) -> None:
+        ramp = cspace("black", "#ff0000", n=5, space="oklch")
+        mid = ramp[2].to_rgb()
+        assert mid[0] >= mid[1] and mid[0] >= mid[2]
