@@ -112,3 +112,26 @@ def test_agent_utils_submodule_import_raises():
 def test_xplot_submodule_import_raises():
     with pytest.raises(ModuleNotFoundError):
         import dartwork_mpl.xplot  # noqa: F401
+
+
+def _removed_names_from_source() -> dict[str, tuple[str, str]]:
+    """The runtime removal map itself — so this guard can never lag it."""
+    from dartwork_mpl import _REMOVED_NAMES
+
+    return _REMOVED_NAMES
+
+
+@pytest.mark.parametrize("name", sorted(_removed_names_from_source()))
+def test_every_removed_name_raises_with_version_and_hint(name):
+    """Parametrized off ``_REMOVED_NAMES`` directly: a name added to the
+    runtime map (e.g. ``auto_layout`` in 0.5.4, which this file's
+    hand-written ``REMOVED_NAMES`` tuple previously missed) is
+    automatically covered and can no longer silently lag."""
+    version, hint = _removed_names_from_source()[name]
+    with pytest.raises(AttributeError) as excinfo:
+        getattr(dm, name)
+    msg = str(excinfo.value)
+    assert f"removed in {version}" in msg
+    assert "migration" in msg.lower()
+    # The message must carry the hint's leading replacement pointer.
+    assert hint.split(" ")[0] in msg
