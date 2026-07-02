@@ -90,8 +90,10 @@ jobs:
           | tee /tmp/integration-output.log
           # Fail if any of the files collected 0 items (silent skip
           # of an entire file would otherwise pass CI). The summary
-          # line looks like ``=== 27 passed in 1.5s ===``.
-          if grep -E "no tests ran|0 passed" /tmp/integration-output.log; then
+          # line looks like ``=== 27 passed in 1.5s ===``. The digit
+          # guard on ``0 passed`` avoids matching counts that merely
+          # end in zero (``130 passed`` contains ``0 passed``).
+          if grep -E "no tests ran|(^|[^0-9])0 passed" /tmp/integration-output.log; then
             echo "::error::Integration tests collected 0 items"
             exit 1
           fi

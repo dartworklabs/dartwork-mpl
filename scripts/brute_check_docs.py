@@ -10,7 +10,7 @@ hard-edged check for:
 - broken <link> stylesheets / <script> assets
 - broken in-page anchor links (#foo where #foo does not exist)
 - pages with stray markdown (e.g. `**text**` that bled past Sphinx)
-- the radix-design.css overlay actually loads on every page
+- the dartwork-design.css overlay actually loads on every page
 
 Runs against a local Sphinx server (default http://localhost:8080).
 Outputs a JSON report. Exit 0 = clean, exit 1 = issues found.
@@ -165,11 +165,13 @@ def audit_page(base: str, rel_url: str) -> dict:
     html = body.decode("utf-8", errors="replace")
     p = parse_page(html)
 
-    # ── 1. stylesheets — confirm radix-design.css present + every link 200
-    has_radix = any("radix-design.css" in s for s in p.stylesheets)
-    if not has_radix:
+    # ── 1. stylesheets — confirm the design overlay is present + links 200.
+    # The overlay was renamed radix-design.css -> dartwork-design.css when
+    # the docs dropped Radix; checking the old name flagged every page.
+    has_design_css = any("dartwork-design.css" in s for s in p.stylesheets)
+    if not has_design_css:
         issues.append(
-            {"type": "missing-radix-css", "stylesheets": p.stylesheets}
+            {"type": "missing-design-css", "stylesheets": p.stylesheets}
         )
 
     for href in p.stylesheets + p.scripts:
@@ -287,7 +289,7 @@ def audit_page(base: str, rel_url: str) -> dict:
             "ids": len(p.ids),
         },
         "issues": issues,
-        "has_radix": has_radix,
+        "has_design_css": has_design_css,
     }
 
 

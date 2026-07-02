@@ -227,6 +227,11 @@ split-on-trailing-comma = false
 # rendered HTML output, not Python source style.
 "docs/color_system/generate_assets.py" = ["E402", "W293"]
 "docs/fonts/generate_assets.py" = ["E402"]
+# These SVG generators set the matplotlib backend + a deterministic
+# ``svg.hashsalt`` before importing pyplot, so imports follow module-level
+# setup statements by design.
+"scripts/build_landing_pocs.py" = ["E402"]
+"scripts/build_palette_demos.py" = ["E402"]
 # BLE001 + PERF203: these asset generators run a best-effort batch loop
 # that must continue past any individual failure (one broken example
 # shouldn't abort the whole build). The blind-except + try/except-in-

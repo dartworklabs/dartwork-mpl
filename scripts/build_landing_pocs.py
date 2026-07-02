@@ -25,6 +25,10 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+# Deterministic SVG output: a fixed hash salt makes matplotlib emit
+# stable element IDs (clip-paths, gradients) so re-running this generator
+# produces byte-identical SVGs instead of a noisy diff on every build.
+matplotlib.rcParams["svg.hashsalt"] = "dartwork-mpl"
 
 import matplotlib.pyplot as plt
 import numpy as np
