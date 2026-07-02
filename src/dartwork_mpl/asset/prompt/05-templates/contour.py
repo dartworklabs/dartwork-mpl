@@ -21,10 +21,10 @@ Z = np.sin(X) * np.cos(Y)
 
 fig, ax = plt.subplots(figsize=dm.figsize("11cm", "square"))
 cs = ax.contourf(X, Y, Z, levels=20, cmap="viridis")
-cbar = fig.colorbar(cs, ax=ax)
-cbar.ax.tick_params(labelsize=dm.fs(-1))
+fig.colorbar(cs, ax=ax)
 ax.set_xlabel("x")
 ax.set_ylabel("y")
 ax.set_title("sin(x)·cos(y)", fontsize=dm.fs(1), fontweight=dm.fw(1))
+
 dm.simple_layout(fig)
 dm.save_formats(fig, "contour")

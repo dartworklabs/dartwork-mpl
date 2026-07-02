@@ -17,7 +17,7 @@ dm.style.use("scientific")
 rng = np.random.default_rng(42)
 n_per_cluster = 60
 centers = [(0, 0, 0), (3, 3, 2), (4, 1, 4)]
-colors = ["oc.blue5", "oc.green5", "oc.orange5"]
+colors = ["dc.teal2", "dc.forest2", "dc.earth2"]
 
 fig, ax = plt.subplots(
     figsize=dm.figsize("13cm", "square"), subplot_kw={"projection": "3d"}
@@ -31,5 +31,6 @@ ax.set_xlabel("X axis")
 ax.set_ylabel("Y axis")
 ax.set_zlabel("Z axis")
 ax.set_title("3D clusters", fontsize=dm.fs(1), fontweight=dm.fw(1))
+
 dm.simple_layout(fig)
 dm.save_formats(fig, "plot_3d")

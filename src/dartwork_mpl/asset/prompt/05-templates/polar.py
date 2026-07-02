@@ -28,17 +28,22 @@ fig, ax = plt.subplots(
     figsize=dm.figsize("11cm", "square"), subplot_kw={"projection": "polar"}
 )
 ax.plot(
-    theta_closed, a_closed, color="oc.blue6", linewidth=dm.lw(0), label="Plan A"
+    theta_closed, a_closed, color="dc.teal3", linewidth=dm.lw(0), label="Plan A"
 )
-ax.fill(theta_closed, a_closed, color="oc.blue3", alpha=0.3)
+ax.fill(theta_closed, a_closed, color="dc.teal1", alpha=0.3)
 ax.plot(
-    theta_closed, b_closed, color="oc.red6", linewidth=dm.lw(0), label="Plan B"
+    theta_closed,
+    b_closed,
+    color="dc.vivid3",
+    linewidth=dm.lw(0),
+    label="Plan B",
 )
-ax.fill(theta_closed, b_closed, color="oc.red3", alpha=0.3)
+ax.fill(theta_closed, b_closed, color="dc.vivid1", alpha=0.3)
 ax.set_xticks(theta)
-ax.set_xticklabels(categories, fontsize=dm.fs(-1))
+ax.set_xticklabels(categories)
 ax.set_ylim(0, 5)
-ax.set_title("Radar comparison", fontsize=dm.fs(1), fontweight=dm.fw(1), pad=12)
-ax.legend(loc="upper right", bbox_to_anchor=(1.25, 1.1), fontsize=dm.fs(-1))
+ax.legend(loc="upper right", bbox_to_anchor=(1.25, 1.1))
+ax.set_title("Radar comparison", fontsize=dm.fs(1), fontweight=dm.fw(1))
+
 dm.simple_layout(fig)
 dm.save_formats(fig, "polar")
