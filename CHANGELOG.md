@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- **MCP: closed a path-traversal hole in the template tools.** An
+  unsanitized ``plot_type`` let ``render_template`` /
+  ``render_template_advanced`` / ``compose_layered_plot`` escape the
+  bundled template directory (``"../../.../x"``), turning them into
+  arbitrary ``.py`` exec / read primitives. ``plot_type`` is now
+  validated to a bare stem inside the template dir.
+
 ### Changed
 
 - **Visual: 24 of the 56 bundled colormaps regenerated** so the shipped
@@ -15,6 +24,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   deltas up to 0.41 on the most saturated anchors). The generator ↔
   asset reproducibility is now pinned by
   ``tests/test_cmap_sources_consistency.py``.
+- **Visual: ``day_night`` and ``synthwave`` colormaps regenerated** to
+  reflect the ``cspace`` achromatic-hue fix below (they interpolate
+  through a near-black/near-white endpoint whose hue was previously
+  floating-point noise).
+
+### Fixed
+
+- **``cspace`` OKLCH ramps from achromatic endpoints.** White / black /
+  grey endpoints carry a meaningless atan2-noise hue; ramps like
+  ``cspace("white", "oc.blue9")`` returned green/teal midpoints. Per CSS
+  Color 4, a near-zero-chroma hue is now treated as missing and the
+  other endpoint's hue is carried.
+- **``simple_layout`` geometry.** Inverted axes no longer drop their tick
+  labels (the view interval is sorted); figure-level artists
+  (``suptitle`` / ``fig.legend`` / ``fig.text``) are measured so axes
+  content is not laid on top of them; a figure with no GridSpec
+  (``fig.add_axes``) now warns instead of silently doing nothing.
+- **Style preset switching.** Switching presets no longer leaks the prior
+  preset's rcParams (franken-theme); a preset that declares a key to
+  matplotlib's default value now wins over a pre-existing user value; the
+  underscore kwarg form works for rcParams whose canonical name contains
+  an underscore (e.g. ``legend_title_fontsize``); ``load_style_dict``
+  unwraps quoted values (``"#1e1e1e"`` → ``#1e1e1e``).
+- **Validation / lint engine.** ``apply_lint_fixes`` no longer rewrites
+  inside string literals / comments, preserves the receiver of
+  ``<fig>.tight_layout()``, and no longer double-counts issues; the
+  geometric checks stop firing false positives on the library's own
+  flush ``simple_layout`` output (``CLIPPED_TEXT``), on off-view phantom
+  ticks (``CROSS_AXES_OVERLAP`` / ``TICK_CROWD``), and on legend-only
+  panels (``EMPTY_AXES``); ``OVERFLOW`` / ``LEGEND_OVERFLOW`` now see
+  figure-level text and off-canvas legends; a check that errors no longer
+  lets the figure be reported "clean".
+- **Misc correctness.** ``import dartwork_mpl`` no longer deletes
+  matplotlib's global ``xkcd:*`` colours; ``mix_colors`` rejects
+  out-of-range ``alpha``; ``check_figure_quality`` recognises
+  bar/histogram/pie/imshow as data; ``validate_data`` accepts categorical
+  x instead of crashing; the millions/billions formatters never render
+  ``-0.0M``; ``arrow_axis`` validates ``direction``; ``label_axes`` labels
+  grids larger than 26 panels; ``dm.config`` rejects typo'd attributes;
+  ``save_and_show`` handles PNG/PDF paths (and the quickstart's
+  extensionless one) instead of raising a raw XML error;
+  ``classify_colormap`` no longer mislabels ``Spectral`` as categorical.
 
 ### Added
 
