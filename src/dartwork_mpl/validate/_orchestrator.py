@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import sys
 from typing import TYPE_CHECKING, Any
 
@@ -21,9 +20,27 @@ from ._checks import (
 from ._types import BBOX_ERRORS, VisualWarning
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from matplotlib.figure import Figure
 
 __all__ = ["validate_figure"]
+
+
+def _run_check_safely(
+    check_fn: Callable[[], list[VisualWarning]],
+) -> list[VisualWarning] | None:
+    """Run one check, returning its warnings or ``None`` if it errored.
+
+    Isolating the ``try`` here (rather than inside the orchestration
+    loop) keeps a failing check from crashing the save pipeline while
+    still letting the caller distinguish "ran clean" from "could not
+    run" — the latter must never be reported as a clean figure.
+    """
+    try:
+        return check_fn()
+    except BBOX_ERRORS:
+        return None
 
 
 def validate_figure(
@@ -85,16 +102,30 @@ def validate_figure(
     )
 
     warnings: list[VisualWarning] = []
-    for check_fn in selected.values():
-        # Never crash the save pipeline.
-        with contextlib.suppress(*BBOX_ERRORS):
-            warnings.extend(check_fn())
+    errored: list[str] = []
+    for check_id, check_fn in selected.items():
+        # Never crash the save pipeline, but don't silently swallow a
+        # failed check either — a check that raises must not let the
+        # figure be reported "clean" as if it had run and found nothing.
+        result = _run_check_safely(check_fn)
+        if result is None:
+            errored.append(check_id)
+        else:
+            warnings.extend(result)
 
     # Structured stdout output for agent consumption.
     if not quiet:
         if warnings:
             for w in warnings:
                 print(str(w), file=sys.stdout, flush=True)
+        elif errored:
+            print(
+                "[VISUAL] ⚠️ No issues found, but "
+                f"{len(errored)} check(s) could not run "
+                f"({', '.join(sorted(errored))}); result is incomplete.",
+                file=sys.stdout,
+                flush=True,
+            )
         else:
             print(
                 "[VISUAL] ✅ No visual issues detected.",

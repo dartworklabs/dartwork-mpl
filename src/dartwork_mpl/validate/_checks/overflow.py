@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 
@@ -122,5 +122,57 @@ def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
                         )
                     )
                     break  # one per axis is enough
+
+    # --- figure-level text (suptitle / supxlabel / supylabel / fig.text)
+    #
+    # These live on the Figure, not on any Axes, so the per-axes loop
+    # above never sees them. A suptitle nudged off the top edge or a
+    # footnote running past the bottom would otherwise validate clean.
+    fig_texts: list[Any] = [
+        getattr(fig, "_suptitle", None),
+        getattr(fig, "_supxlabel", None),
+        getattr(fig, "_supylabel", None),
+        *fig.texts,
+    ]
+    for txt in fig_texts:
+        if txt is None or not txt.get_visible() or txt.get_text().strip() == "":
+            continue
+        try:
+            ext = txt.get_window_extent(renderer)
+        except BBOX_ERRORS:
+            continue
+        if ext.width <= 0 or ext.height <= 0:
+            continue
+        dx_left = fig_bbox.x0 - ext.x0
+        dx_right = ext.x1 - fig_bbox.x1
+        dy_bottom = fig_bbox.y0 - ext.y0
+        dy_top = ext.y1 - fig_bbox.y1
+        overflow = max(dx_left, dx_right, dy_bottom, dy_top)
+        if overflow > 2.0:
+            label = repr(txt.get_text()[:40])
+            side = (
+                "left"
+                if dx_left == overflow
+                else "right"
+                if dx_right == overflow
+                else "bottom"
+                if dy_bottom == overflow
+                else "top"
+            )
+            warnings.append(
+                VisualWarning(
+                    severity=Severity.WARNING,
+                    check_id="OVERFLOW",
+                    message=(
+                        f"Figure text {label} exceeds figure bounds "
+                        f"({side} by {overflow:.1f}px)"
+                    ),
+                    detail={
+                        "text": txt.get_text(),
+                        "side": side,
+                        "px": round(overflow, 1),
+                    },
+                )
+            )
 
     return warnings

@@ -37,15 +37,28 @@ def check_pie_label_offset(
         if not wedges:
             continue
 
-        # Determine if donut (wedge width < 1.0). matplotlib pie wedges
-        # have ``width=None`` for a regular (filled) pie, so coerce to 1.0.
-        wedge_widths = [(getattr(w, "width", None) or 1.0) for w in wedges]
-        if all(w >= 0.99 for w in wedge_widths):
+        # Outer radius of the pie. matplotlib Wedge patches carry ``.r``
+        # (= the ``radius`` passed to ``ax.pie``); a hardcoded 1.0
+        # misplaces the ideal for any non-unit pie and flags
+        # geometrically-correct labels.
+        radii = [getattr(w, "r", 1.0) or 1.0 for w in wedges]
+        outer_r = sum(radii) / len(radii)
+
+        # A filled pie has ``width=None`` (coerced to the outer radius);
+        # a donut has a ring narrower than the radius. Compare as a
+        # fraction of the radius so non-unit pies classify correctly.
+        wedge_widths = [
+            (getattr(w, "width", None) or r)
+            for w, r in zip(wedges, radii, strict=False)
+        ]
+        if all(
+            w >= 0.99 * r for w, r in zip(wedge_widths, radii, strict=False)
+        ):
             continue  # regular pie, not a donut
 
         avg_width = sum(wedge_widths) / len(wedge_widths)
-        # Ideal pctdistance = center of donut ring.
-        ideal_r = 1.0 - avg_width / 2.0
+        # Ideal pctdistance = center of the donut ring.
+        ideal_r = outer_r - avg_width / 2.0
 
         for txt in ax.texts:
             text_str = txt.get_text().strip()

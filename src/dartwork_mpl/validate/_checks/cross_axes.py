@@ -31,6 +31,10 @@ def check_cross_axes_overlap(
     # label across all axes.
     entries: list[tuple[int, str, str, Any]] = []
     for idx, ax in enumerate(fig.axes):
+        try:
+            ax_bbox = ax.get_window_extent(renderer)
+        except BBOX_ERRORS:
+            ax_bbox = None
         candidates: list[tuple[str, Any]] = [
             ("title", ax.title),
             ("xlabel", ax.xaxis.label),
@@ -57,6 +61,7 @@ def check_cross_axes_overlap(
             ("xtick", ax.get_xticklabels()),
             ("ytick", ax.get_yticklabels()),
         ):
+            is_x = role == "xtick"
             for tl in ticklabels:
                 if not tl.get_visible() or tl.get_text().strip() == "":
                     continue
@@ -66,6 +71,19 @@ def check_cross_axes_overlap(
                     continue
                 if ext.width <= 0 or ext.height <= 0:
                     continue
+                # Skip out-of-view ticks: matplotlib keeps ticks outside
+                # the data range on the artist tree (visible=True) but
+                # clips them from the render, so their bboxes are phantom
+                # and must not count as overlaps (mirrors check_overflow).
+                if ax_bbox is not None:
+                    if is_x:
+                        anchor = (ext.x0 + ext.x1) / 2
+                        if not (ax_bbox.x0 - 0.5 <= anchor <= ax_bbox.x1 + 0.5):
+                            continue
+                    else:
+                        anchor = (ext.y0 + ext.y1) / 2
+                        if not (ax_bbox.y0 - 0.5 <= anchor <= ax_bbox.y1 + 0.5):
+                            continue
                 entries.append((idx, role, tl.get_text()[:30], ext))
 
     seen_pairs: set[tuple[int, int, str, str]] = set()

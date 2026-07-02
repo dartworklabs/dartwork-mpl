@@ -12,7 +12,11 @@ if TYPE_CHECKING:
 
 __all__ = ["check_clipped_text"]
 
-_TIGHT_TOL_PX = 1.0
+# A label is clipped only when its bbox extends *past* the canvas edge
+# (negative margin) by more than this tolerance. A label sitting flush
+# at the edge (margin 0) is fully rendered — and is exactly what
+# ``dm.simple_layout(margin=0)`` produces — so it must not be flagged.
+_CLIP_TOL_PX = 1.0
 
 
 def check_clipped_text(
@@ -98,7 +102,10 @@ def check_clipped_text(
                 ext.y0 - fig_bbox.y0,
                 fig_bbox.y1 - ext.y1,
             )
-            if margin >= _TIGHT_TOL_PX:
+            # Fire only when the label extends *past* the edge (negative
+            # margin). Flush-at-edge (margin ≈ 0), the documented
+            # ``simple_layout(margin=0)`` result, is fully rendered.
+            if margin >= -_CLIP_TOL_PX:
                 continue
             label = txt.get_text()[:30]
             key = (label, str(round(margin, 1)))
@@ -110,8 +117,7 @@ def check_clipped_text(
                     severity=Severity.WARNING,
                     check_id="CLIPPED_TEXT",
                     message=(
-                        f"Text {label!r} sits within "
-                        f"{_TIGHT_TOL_PX:.0f}px of the canvas edge "
+                        f"Text {label!r} extends past the canvas edge "
                         f"(margin: {margin:.1f}px)"
                     ),
                     detail={
