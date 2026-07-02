@@ -8,112 +8,112 @@
           "label": "dc.vivid",
           "namespace": "dc",
           "swatch": [
-            "#06b6d4",
-            "#dc2626",
-            "#f59e0b",
-            "#2563eb",
-            "#16a34a",
-            "#9333ea"
+            "#05a7f7",
+            "#81d383",
+            "#04696f",
+            "#cbac4d",
+            "#cb5a51",
+            "#9455a6"
           ],
           "file": "demo_bar_dc_vivid.svg"
         },
         {
-          "id": "dc.ocean",
-          "label": "dc.ocean",
+          "id": "dc.teal",
+          "label": "dc.teal",
           "namespace": "dc",
           "swatch": [
-            "#4a6fa5",
-            "#1b98e0",
-            "#2e4057",
-            "#62b6cb",
-            "#00838f",
-            "#0b3d91"
+            "#129e8e",
+            "#166c61",
+            "#5dcebd",
+            "#2a524c",
+            "#008577",
+            "#21b8a5"
           ],
-          "file": "demo_bar_dc_ocean.svg"
+          "file": "demo_bar_dc_teal.svg"
         },
         {
           "id": "dc.forest",
           "label": "dc.forest",
           "namespace": "dc",
           "swatch": [
-            "#b5838d",
-            "#74c69d",
-            "#1b4332",
-            "#95d5b2",
-            "#52b788",
-            "#2d6a4f"
+            "#a4daa8",
+            "#8cac74",
+            "#80c6a0",
+            "#475b26",
+            "#5b8554",
+            "#37734d"
           ],
           "file": "demo_bar_dc_forest.svg"
         },
         {
-          "id": "dc.sunset",
-          "label": "dc.sunset",
+          "id": "dc.earth",
+          "label": "dc.earth",
           "namespace": "dc",
           "swatch": [
-            "#e63946",
-            "#6b4d57",
-            "#ffc857",
-            "#264653",
-            "#f28c28",
-            "#457b9d"
+            "#94744b",
+            "#666a3d",
+            "#80443a",
+            "#e5a48e",
+            "#cb9375",
+            "#d6c898"
           ],
-          "file": "demo_bar_dc_sunset.svg"
+          "file": "demo_bar_dc_earth.svg"
         },
         {
-          "id": "dc.autumn",
-          "label": "dc.autumn",
+          "id": "dc.dusty",
+          "label": "dc.dusty",
           "namespace": "dc",
           "swatch": [
-            "#bc4749",
-            "#da7b5c",
-            "#6a4c3c",
-            "#eec643",
-            "#a77b5c",
-            "#386641"
+            "#9cb8a2",
+            "#8992ae",
+            "#aba285",
+            "#346162",
+            "#916d68",
+            "#7c5f71"
           ],
-          "file": "demo_bar_dc_autumn.svg"
+          "file": "demo_bar_dc_dusty.svg"
         },
         {
-          "id": "dc.cyber",
-          "label": "dc.cyber",
+          "id": "dc.jewel",
+          "label": "dc.jewel",
           "namespace": "dc",
           "swatch": [
-            "#4361ee",
-            "#00b4d8",
-            "#3a0ca3",
-            "#4cc9f0",
-            "#f72585",
-            "#7209b7"
+            "#b3bdfe",
+            "#25a88a",
+            "#caa65e",
+            "#02504f",
+            "#0375a0",
+            "#963c3e"
           ],
-          "file": "demo_bar_dc_cyber.svg"
+          "file": "demo_bar_dc_jewel.svg"
         },
         {
-          "id": "dc.pop",
-          "label": "dc.pop",
+          "id": "dc.neon",
+          "label": "dc.neon",
           "namespace": "dc",
           "swatch": [
-            "#ff595e",
-            "#8ac926",
-            "#6a4c93",
-            "#ffca3a",
-            "#ff924c",
-            "#1982c4"
+            "#ffa9db",
+            "#02a5f5",
+            "#e4a431",
+            "#045f5e",
+            "#a357c4",
+            "#5f6c02"
           ],
-          "file": "demo_bar_dc_pop.svg"
+          "file": "demo_bar_dc_neon.svg"
         },
         {
-          "id": "dc.nordic",
-          "label": "dc.nordic",
+          "id": "dc.teal_indigo",
+          "label": "dc.teal_indigo",
           "namespace": "dc",
           "swatch": [
-            "#d63031",
-            "#00b894",
-            "#2d3436",
-            "#b2bec3",
-            "#0984e3",
-            "#636e72"
+            "#a1d3ff",
+            "#4cb3c3",
+            "#aeb6ed",
+            "#056463",
+            "#2b88aa",
+            "#486d9d"
           ],
-          "file": "demo_bar_dc_nordic.svg"
+          "file": "demo_bar_dc_teal_indigo.svg"
         }
       ]
     },
