@@ -34,7 +34,7 @@ from matplotlib.transforms import Bbox
 # — one source for the bbox-measurement exception set (the two modules
 # used to carry identical private copies).
 from ._helpers import BBOX_ERRORS as _BBOX_ERRORS
-from ._helpers import get_renderer
+from ._helpers import get_renderer, iter_figure_level_extents
 from .units import Length
 
 if TYPE_CHECKING:
@@ -587,33 +587,8 @@ def _figure_artist_reservations(
     artists are present (so the layout math is unchanged in the common
     case).
     """
-    from matplotlib.text import Text as _Text
-
-    artists: list[Any] = []
-    suptitle = getattr(fig, "_suptitle", None)
-    if suptitle is not None:
-        artists.append(suptitle)
-    supxlabel = getattr(fig, "_supxlabel", None)
-    if supxlabel is not None:
-        artists.append(supxlabel)
-    supylabel = getattr(fig, "_supylabel", None)
-    if supylabel is not None:
-        artists.append(supylabel)
-    artists.extend(fig.texts)
-    artists.extend(fig.legends)
-
     res_l = res_r = res_b = res_t = 0.0
-    for art in artists:
-        if not getattr(art, "get_visible", lambda: True)():
-            continue
-        if isinstance(art, _Text) and not art.get_text().strip():
-            continue
-        try:
-            ext = art.get_window_extent(renderer)
-        except _BBOX_ERRORS:
-            continue
-        if ext.width <= 0 or ext.height <= 0:
-            continue
+    for _art, ext in iter_figure_level_extents(fig, renderer):
         x0f, x1f = ext.x0 / fw_px, ext.x1 / fw_px
         y0f, y1f = ext.y0 / fh_px, ext.y1 / fh_px
         # Assign to the nearest figure edge by perpendicular distance.
@@ -881,28 +856,10 @@ def tight_crop(
             if bb.width > 0 and bb.height > 0:
                 bboxes_disp.append(bb)
 
-    suptitle = getattr(fig, "_suptitle", None)
-    if suptitle is not None and suptitle.get_visible():
-        with contextlib.suppress(*_BBOX_ERRORS):
-            bboxes_disp.append(suptitle.get_window_extent(renderer))
-    for txt in fig.texts:
-        if not txt.get_visible():
-            continue
-        try:
-            bb = txt.get_window_extent(renderer)
-        except _BBOX_ERRORS:
-            continue
-        if bb.width > 0 and bb.height > 0:
-            bboxes_disp.append(bb)
-    for leg in getattr(fig, "legends", []):
-        if not leg.get_visible():
-            continue
-        try:
-            bb = leg.get_window_extent(renderer)
-        except _BBOX_ERRORS:
-            continue
-        if bb.width > 0 and bb.height > 0:
-            bboxes_disp.append(bb)
+    # Figure-level artists (suptitle, sup-labels, fig.text, fig.legend)
+    # share the guarded walk with the layout engine.
+    for _art, bb in iter_figure_level_extents(fig, renderer):
+        bboxes_disp.append(bb)
 
     if not bboxes_disp:
         w, h = fig.get_size_inches()
