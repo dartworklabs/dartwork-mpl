@@ -2,8 +2,9 @@
 Perceptual Color Mixing Matrix
 ==============================
 
-``dm.mix_colors()`` blends two colors by linearly interpolating their
-sRGB values. This 6×6 matrix shows every pairwise 50/50 blend of the
+``dm.mix_colors()`` blends two colors in OKLab space (perceptually
+uniform), avoiding the muddy saturation dip that naive sRGB
+interpolation produces. This 6×6 matrix shows every pairwise 50/50 blend of the
 default ``dc.0``\u2013``dc.5`` color cycle, creating a comprehensive
 cross-reference of the library's default palette.
 

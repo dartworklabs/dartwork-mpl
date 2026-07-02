@@ -848,6 +848,110 @@ class TestMcpTools:
         assert result["status"] == "exec_error"
         assert result["exc_msg"] == "boom"
 
+    def test_validate_generated_plot_semantic_warnings_on_early_returns(
+        self,
+    ) -> None:
+        """Early returns honor the documented ``semantic_warnings``
+        contract: present (possibly empty) iff ``chart_type_hint`` was
+        supplied — including on ``lint_blocked``/``exec_error``, where a
+        caller doing ``resp["semantic_warnings"]`` previously KeyError'd
+        (MCP-2)."""
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        bad = "plt.tight_layout()\n"
+        with_hint = captured["validate_generated_plot"](
+            bad, chart_type_hint="bar"
+        )
+        assert with_hint["status"] == "lint_blocked"
+        assert with_hint["semantic_warnings"] == []
+
+        without_hint = captured["validate_generated_plot"](bad)
+        assert without_hint["status"] == "lint_blocked"
+        assert "semantic_warnings" not in without_hint
+
+        exec_err = captured["validate_generated_plot"](
+            "raise ValueError('boom')\n", chart_type_hint="bar"
+        )
+        assert exec_err["status"] == "exec_error"
+        assert exec_err["semantic_warnings"] == []
+
+    def test_mix_colors_blends_in_oklab_matching_public_fn(self) -> None:
+        """MCP ``mix_colors`` delegates to the public OKLab blend (H2).
+
+        The tool previously reimplemented the blend in naive sRGB
+        (red+blue → ``#800080``), contradicting ``dm.mix_colors``'s
+        perceptually-uniform OKLab contract."""
+        import matplotlib.colors as mcolors
+
+        import dartwork_mpl as dm
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        result = captured["mix_colors"]("red", "blue", 0.5)
+        expected = mcolors.to_hex(dm.mix_colors("red", "blue", alpha=0.5))
+        assert result == expected
+        assert result != "#800080"  # the old naive-sRGB midpoint
+
+    @pytest.mark.parametrize(
+        ("x_type", "y_type", "n_points", "n_series"),
+        [
+            # Every reachable output class of the src recommender —
+            # including the six semantic labels (grouped_bar, count_bar,
+            # bar_line, multi_line, scatter_density, hexbin) that
+            # previously fell back to the wrong ``bar`` template (H3).
+            ("continuous", None, 50, 1),  # histogram
+            ("categorical", None, 5, 1),  # count_bar
+            ("temporal", None, 5, 1),  # line
+            ("categorical", "continuous", 5, 1),  # bar
+            ("categorical", "continuous", 5, 2),  # grouped_bar
+            ("temporal", "continuous", 10, 1),  # bar_line
+            ("temporal", "continuous", 30, 1),  # line
+            ("temporal", "continuous", 10, 2),  # multi_line
+            ("continuous", "continuous", 30, 1),  # scatter
+            ("continuous", "continuous", 100, 1),  # scatter_density
+            ("continuous", "continuous", 600, 1),  # hexbin
+            ("continuous", "categorical", 50, 1),  # line
+        ],
+    )
+    def test_suggest_chart_type_resolves_to_real_template(
+        self, x_type, y_type, n_points, n_series
+    ) -> None:
+        """Every recommender output resolves to a real template stem and
+        a matching (non-fallback) basic template URI (H3)."""
+        from dartwork_mpl.mcp.tools import _TEMPLATE_DIR, register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        result = captured["suggest_chart_type"](
+            x_type, y_type, n_points, n_series
+        )
+        recommended = result["recommended"]
+        assert (_TEMPLATE_DIR / f"{recommended}.py").exists(), (
+            f"recommended {recommended!r} has no template"
+        )
+        assert result["basic_template_uri"] == (
+            f"dartwork-mpl://templates/{recommended}"
+        )
+
+    def test_suggest_to_template_values_are_real_stems(self) -> None:
+        """Parity guard: every ``_SUGGEST_TO_TEMPLATE`` target is a
+        bundled template stem, so the mapping can't silently rot when
+        templates are renamed."""
+        from dartwork_mpl.mcp.tools import _SUGGEST_TO_TEMPLATE, _TEMPLATE_DIR
+
+        stems = {p.stem for p in _TEMPLATE_DIR.glob("*.py")}
+        for target in _SUGGEST_TO_TEMPLATE.values():
+            assert target in stems, f"{target!r} is not a template stem"
+
 
 # ── Prompt Tests ─────────────────────────────────────────────────────
 
