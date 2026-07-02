@@ -81,3 +81,30 @@ class TestIconFont:
     def test_fa_solid(self) -> None:
         fp = icon_font("fa-solid")
         assert isinstance(fp, FontProperties)
+
+
+class TestRegistryAssetParity:
+    """The icon registry and asset/icon directory must stay 1:1 —
+    previously only 2 of 4 fonts had existence checks, so removing
+    fa-regular / fa-brands surfaced only as a runtime FileNotFoundError."""
+
+    def test_every_registry_file_exists(self) -> None:
+        from dartwork_mpl import icon as icon_module
+
+        for name, filename in icon_module._REGISTRY.items():
+            path = icon_module._ICON_DIR / filename
+            assert path.exists(), f"{name}: {filename} missing from asset/icon"
+
+    def test_no_orphan_icon_assets(self) -> None:
+        from dartwork_mpl import icon as icon_module
+
+        on_disk = {
+            p.name
+            for p in icon_module._ICON_DIR.iterdir()
+            if p.suffix.lower() in {".ttf", ".otf"}
+        }
+        assert on_disk == set(icon_module._REGISTRY.values()), (
+            f"asset/icon vs _REGISTRY drift: "
+            f"orphans={sorted(on_disk - set(icon_module._REGISTRY.values()))}, "
+            f"missing={sorted(set(icon_module._REGISTRY.values()) - on_disk)}"
+        )
