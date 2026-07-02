@@ -105,34 +105,76 @@ def test_get_palette_resolves_every_curated_name() -> None:
         assert cols[0] == f"dc.{name}0", f"{name} slot 0 mismatch: {cols[0]}"
 
 
-_STALE_DC = re.compile(
-    r"dc\.(?:focus|focuswarm|muted|tealseq|indigoseq|coralseq|tealindigo|"
-    r"warmcool|blueorange|tealcoral|grayseq|warmgray|coolgray|tealamber)\d?"
+def _load_script(name: str):
+    spec = importlib.util.spec_from_file_location(
+        f"_widget_{name}", _SCRIPTS / f"{name}.py"
+    )
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+@pytest.mark.parametrize(
+    ("builder", "artifact", "suffix"),
+    [
+        # Mirror each script's own writer exactly: the explorer writes
+        # ``build()`` verbatim; the showcase appends one newline.
+        ("build_categorical_explorer", "categorical_explorer.html", ""),
+        ("build_showcase", "palette_showcase.html", "\n"),
+    ],
 )
+def test_built_widgets_match_their_builders(
+    builder: str, artifact: str, suffix: str
+) -> None:
+    """Committed widget HTML == rebuilding it from source, byte-for-byte.
 
-
-def test_built_widgets_have_no_renamed_away_names() -> None:
-    """Generated palette widgets must not reference the old (pre-rename) dc.* names.
-
-    ``palette_showcase.html`` and ``categorical_explorer.html`` are committed,
-    generator-produced artifacts. If their generator's name mapping drifts, they
-    would label swatches ``dc.focus0`` / ``dc.muted0`` etc. — names the package
-    no longer registers. This pins the generated output to the current names.
+    Replaces the old backward-looking ``_STALE_DC`` regex (which could
+    only catch names renamed *before* it was written): a byte-compare
+    catches hand edits, stale regens after a data.js/builder change,
+    and the *next* rename wave alike. Both builders are deterministic
+    (no timestamps/randomness) — verified byte-identical at the time
+    this guard was added.
     """
-    widgets = [
-        _REPO / "docs" / "_static" / "palette_showcase.html",
-        _REPO / "docs" / "_static" / "categorical_explorer.html",
-    ]
-    offenders = {}
-    for widget in widgets:
-        if not widget.exists():
+    mod = _load_script(builder)
+    built = mod.build() + suffix
+    committed = (_REPO / "docs" / "_static" / artifact).read_text(
+        encoding="utf-8"
+    )
+    assert built == committed, (
+        f"{artifact} is stale — rerun docs/_static/scripts/{builder}.py"
+    )
+
+
+def test_widget_verification_stats_match_gen_json() -> None:
+    """The ``bw:``/``cvd:`` readouts baked into the explorer data must
+    equal the verification stats in ``dm_palettes_gen.json`` (the HTML
+    byte-compare cannot see this — data.js is the input, so a stale
+    stat there reproduces byte-identically)."""
+    name_map = _name_map()
+    gen = json.loads(
+        (_SCRIPTS / "dm_palettes_gen.json").read_text(encoding="utf-8")
+    )
+    js = (_SCRIPTS / "categorical_explorer_data.js").read_text(encoding="utf-8")
+    checked = 0
+    for gen_key, public in name_map.items():
+        verify = gen[gen_key].get("verify")
+        if not verify:
             continue
-        hits = sorted(
-            {m.group(0) for m in _STALE_DC.finditer(widget.read_text())}
-        )
-        if hits:
-            offenders[widget.name] = hits
-    assert not offenders, f"stale palette names in built widgets: {offenders}"
+        m = re.search(rf"\b{public}:\s*\{{", js)
+        assert m, f"{public} missing from explorer data"
+        block = js[m.end() : m.end() + 2000]
+        bw = re.search(r'bw:"min ΔL\* ([0-9.]+)"', block)
+        cvd = re.search(r'cvd:"d([0-9.]+) / p([0-9.]+) / t([0-9.]+)"', block)
+        assert bw and cvd, f"{public}: bw/cvd readouts not found"
+        assert float(bw.group(1)) == verify["bw_min_dLstar"], public
+        assert (
+            float(cvd.group(1)),
+            float(cvd.group(2)),
+            float(cvd.group(3)),
+        ) == (verify["deuter"], verify["protan"], verify["tritan"]), public
+        checked += 1
+    assert checked >= 20, f"only {checked} palettes had stats — parser broken?"
 
 
 def test_gen_palettes_reproduces_committed_ssot() -> None:
