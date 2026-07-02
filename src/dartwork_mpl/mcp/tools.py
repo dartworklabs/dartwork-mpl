@@ -51,6 +51,40 @@ _ASSET_DIR = Path(__file__).parent.parent / "asset"
 _TEMPLATE_DIR = _ASSET_DIR / "prompt" / "05-templates"
 _MPLSTYLE_DIR = _ASSET_DIR / "mplstyle"
 
+# Bundled template ids are bare stems (``bar``, ``scatter_density`` etc.).
+# ``render_template`` / ``compose_layered_plot`` execute or read the
+# resolved ``.py`` file, so ``plot_type`` MUST NOT be able to escape
+# ``_TEMPLATE_DIR`` — an unsanitized ``plot_type="../../../evil"`` would
+# otherwise turn these tools into arbitrary-file read/exec primitives.
+_TEMPLATE_STEM_RE = re.compile(r"\A[a-z0-9_]+\Z")
+
+
+def _resolve_template_path(
+    plot_type: str, *, advanced: bool = False
+) -> Path | None:
+    """Resolve a template id to its bundled ``.py`` path, or ``None``.
+
+    Returns ``None`` for any id that is not a plain lowercase stem
+    (rejecting path separators, ``..``, absolute paths, empty strings)
+    or whose resolved location falls outside ``_TEMPLATE_DIR`` — a
+    defence-in-depth check so a stem regex change can't reopen traversal.
+    A ``None`` return means "no such template", identical to a missing
+    file, so callers keep their existing unknown-template handling.
+    """
+    stem = plot_type.lower()
+    if not _TEMPLATE_STEM_RE.match(stem):
+        return None
+    base = _TEMPLATE_DIR / "advanced" if advanced else _TEMPLATE_DIR
+    path = base / f"{stem}.py"
+    try:
+        resolved = path.resolve()
+        if not resolved.is_relative_to(base.resolve()):
+            return None
+    except OSError:
+        return None
+    return path if path.exists() else None
+
+
 # ``helpers.quality.suggest_chart_type`` speaks in *chart semantics*
 # (``grouped_bar``, ``scatter_density``, ``hexbin``, …) while the bundled
 # templates are keyed by canonical stems (``bar_grouped``, ``scatter``,
@@ -488,8 +522,8 @@ def register_tools(mcp: FastMCP) -> None:
         from pathlib import Path as _Path
 
         template_dir = _TEMPLATE_DIR
-        path = template_dir / f"{plot_type.lower()}.py"
-        if not path.exists():
+        path = _resolve_template_path(plot_type)
+        if path is None:
             available = sorted(p.stem for p in template_dir.glob("*.py"))
             return {
                 "status": "unknown_template",
@@ -1121,13 +1155,13 @@ def register_tools(mcp: FastMCP) -> None:
         layers = list(layers or [])
         template_dir = _TEMPLATE_DIR
         if tier == "advanced":
-            path = template_dir / "advanced" / f"{plot_type.lower()}.py"
-            if not path.exists():
+            path = _resolve_template_path(plot_type, advanced=True)
+            if path is None:
                 # Fall back to basic if advanced doesn't exist yet.
-                path = template_dir / f"{plot_type.lower()}.py"
+                path = _resolve_template_path(plot_type)
                 tier = "basic"
         elif tier == "basic":
-            path = template_dir / f"{plot_type.lower()}.py"
+            path = _resolve_template_path(plot_type)
         else:
             return {
                 "status": "invalid_tier",
@@ -1138,7 +1172,7 @@ def register_tools(mcp: FastMCP) -> None:
                 "missing": [],
             }
 
-        if not path.exists():
+        if path is None:
             available = sorted(p.stem for p in template_dir.glob("*.py"))
             return {
                 "status": "unknown_template",
@@ -1224,14 +1258,14 @@ def register_tools(mcp: FastMCP) -> None:
         from pathlib import Path as _Path
 
         template_dir = _TEMPLATE_DIR
-        advanced_path = template_dir / "advanced" / f"{plot_type.lower()}.py"
-        basic_path = template_dir / f"{plot_type.lower()}.py"
+        advanced_path = _resolve_template_path(plot_type, advanced=True)
+        basic_path = _resolve_template_path(plot_type)
 
-        if advanced_path.exists():
+        if advanced_path is not None:
             path = advanced_path
             tier = "advanced"
             fell_back = False
-        elif basic_path.exists():
+        elif basic_path is not None:
             path = basic_path
             tier = "basic"
             fell_back = True
