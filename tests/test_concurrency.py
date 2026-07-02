@@ -31,6 +31,7 @@ The counting-loader pattern isolates the lock's behavior cleanly.
 from __future__ import annotations
 
 import importlib
+import time
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
@@ -58,6 +59,16 @@ style_module = importlib.import_module("dartwork_mpl.style")
 # enough to keep the test fast and deterministic on CI.
 _WORKERS: int = 16
 _SUBMISSIONS: int = 64
+
+# Race window held inside each counting stub. Without it the stub returns
+# so fast that the first thread sets ``_loaded = True`` before any other
+# thread reaches the double-check, so *even with the lock removed* the
+# loader runs exactly once — i.e. the guard test would pass against an
+# unlocked loader and could not detect the regression it exists to catch.
+# Sleeping briefly forces several threads to pile up in the slow path, so
+# an unlocked loader visibly runs more than once. It never makes the
+# locked case flake: with the lock, exactly one thread ever enters.
+_RACE_WINDOW_S: float = 0.02
 
 
 @pytest.fixture
@@ -175,6 +186,7 @@ class TestCmapEnsureLoadedConcurrency:
         call_count = {"n": 0}
 
         def _counting_loader() -> None:
+            time.sleep(_RACE_WINDOW_S)  # widen the race window
             call_count["n"] += 1
 
         cmap_module._load_colormaps = _counting_loader  # type: ignore[assignment]
@@ -214,6 +226,7 @@ class TestIconEnsureLoadedConcurrency:
         call_count = {"n": 0}
 
         def _counting_loader() -> None:
+            time.sleep(_RACE_WINDOW_S)  # widen the race window
             call_count["n"] += 1
 
         icon_module._register_icon_fonts = _counting_loader  # type: ignore[assignment]
@@ -245,6 +258,7 @@ class TestFontEnsureLoadedConcurrency:
         call_count = {"n": 0}
 
         def _counting_loader() -> None:
+            time.sleep(_RACE_WINDOW_S)  # widen the race window
             call_count["n"] += 1
 
         font_module._add_fonts = _counting_loader  # type: ignore[assignment]
@@ -280,6 +294,7 @@ class TestColorsEnsureLoadedConcurrency:
         call_count = {"n": 0}
 
         def _counting_loader() -> None:
+            time.sleep(_RACE_WINDOW_S)  # widen the race window
             call_count["n"] += 1
 
         colors_loader_module._load_colors = _counting_loader  # type: ignore[assignment]
@@ -403,3 +418,44 @@ class TestMixedScenarioConcurrency:
         family = plt.rcParams["font.family"]
         assert isinstance(family, list)
         assert len(family) > 0
+
+
+class TestGuardEfficacy:
+    """Prove the 'runs exactly once' assertions above are meaningful.
+
+    A guard test that passes even when the thing it guards is removed is
+    worthless. Here we replace the real lock with a no-op and confirm the
+    widened race window makes the (unlocked) loader run more than once —
+    so removing the double-checked lock would fail the guard tests, not
+    slip through unnoticed.
+    """
+
+    class _NoLock:
+        def __enter__(self) -> TestGuardEfficacy._NoLock:
+            return self
+
+        def __exit__(self, *_exc: object) -> bool:
+            return False
+
+    def test_removing_lock_makes_loader_run_more_than_once(
+        self, _reset_cmap_loaded: None
+    ) -> None:
+        call_count = {"n": 0}
+
+        def _counting_loader() -> None:
+            time.sleep(_RACE_WINDOW_S)
+            call_count["n"] += 1
+
+        original_lock = cmap_module._lock
+        cmap_module._lock = self._NoLock()  # type: ignore[assignment]
+        cmap_module._load_colormaps = _counting_loader  # type: ignore[assignment]
+        try:
+            _race(ensure_cmaps_loaded)
+        finally:
+            cmap_module._lock = original_lock
+
+        assert call_count["n"] > 1, (
+            "with the lock removed the loader must run more than once; if "
+            "it still runs exactly once the race window is too small and "
+            "the guard tests above cannot detect a removed lock"
+        )
