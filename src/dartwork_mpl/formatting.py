@@ -51,9 +51,13 @@ def format_axis_millions(
         str
             Formatted string with millions suffix
         """
-        if x == 0:
+        # Any value that rounds to zero at the requested precision (0, or
+        # a small negative like -40 000 → -0.04 → -0.0) renders as the
+        # bare zero tick — suffix-less and never "-0.0M".
+        scaled = x / 1e6
+        if round(scaled, decimals) == 0:
             return f"{0:.{decimals}f}"
-        return f"{x / 1e6:.{decimals}f}{suffix}"
+        return f"{scaled:.{decimals}f}{suffix}"
 
     formatter = ticker.FuncFormatter(millions_formatter)
 
@@ -102,9 +106,12 @@ def format_axis_billions(
         str
             Formatted string with billions suffix
         """
-        if x == 0:
+        # Any value that rounds to zero at the requested precision
+        # renders as the bare zero tick — suffix-less and never "-0.0B".
+        scaled = x / 1e9
+        if round(scaled, decimals) == 0:
             return f"{0:.{decimals}f}"
-        return f"{x / 1e9:.{decimals}f}{suffix}"
+        return f"{scaled:.{decimals}f}{suffix}"
 
     formatter = ticker.FuncFormatter(billions_formatter)
 
@@ -226,7 +233,8 @@ def format_axis_si(
             return f"{sign}{abs_x / 1e6:.{decimals}f}M"
         if abs_x >= 1e3:
             return f"{sign}{abs_x / 1e3:.{decimals}f}k"
-        return f"{x:.{decimals}f}"
+        # Sub-1000: no SI prefix. Normalise ``-0.0`` to ``0.0``.
+        return f"{round(x, decimals) or 0.0:.{decimals}f}"
 
     formatter = ticker.FuncFormatter(si_formatter)
 

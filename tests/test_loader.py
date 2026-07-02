@@ -55,12 +55,16 @@ class TestEnsureLoaded:
         mapping = mcolors.get_named_colors_mapping()
         assert "pr.blue5" in mapping
 
-    def test_xkcd_removed(self) -> None:
-        """xkcd colours are stripped from the mapping."""
+    def test_xkcd_preserved(self) -> None:
+        """matplotlib's built-in xkcd colours are NOT stripped.
+
+        Deleting them from the process-global mapping to declutter our
+        galleries broke unrelated code using ``color="xkcd:..."`` — the
+        galleries filter ``xkcd:`` at display time instead.
+        """
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
-        xkcd_keys = [k for k in mapping if k.startswith("xkcd:")]
-        assert len(xkcd_keys) == 0
+        assert "xkcd:sky blue" in mapping
 
     def test_color_values_are_hex(self) -> None:
         """Registered colours are valid hex strings."""

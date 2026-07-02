@@ -1136,3 +1136,61 @@ class TestMcpAgenticReliability:
         for good in (0.0, 1.0):
             result = captured["mix_colors"]("red", "blue", good)
             assert result.startswith("#")
+
+
+class TestMcpTemplatePathTraversal:
+    """``plot_type`` must never escape the bundled template directory.
+
+    ``render_template`` execs and ``compose_layered_plot`` reads the
+    resolved ``.py`` file, so an unsanitized traversal id would be an
+    arbitrary-file exec / read primitive.
+    """
+
+    @pytest.mark.parametrize(
+        "evil",
+        [
+            "../../../../../../tmp/x",
+            "../../../../etc/passwd",
+            "/etc/hosts",
+            "foo/bar",
+            "a.b",
+            "",
+        ],
+    )
+    def test_resolver_rejects_traversal(self, evil: str) -> None:
+        from dartwork_mpl.mcp.tools import _resolve_template_path
+
+        assert _resolve_template_path(evil) is None
+        assert _resolve_template_path(evil, advanced=True) is None
+
+    def test_resolver_accepts_bundled_stems(self) -> None:
+        from dartwork_mpl.mcp.tools import _TEMPLATE_DIR, _resolve_template_path
+
+        assert _resolve_template_path("bar") == _TEMPLATE_DIR / "bar.py"
+        # case-insensitive stem
+        assert _resolve_template_path("BAR") == _TEMPLATE_DIR / "bar.py"
+
+    def test_render_template_traversal_is_unknown(self) -> None:
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        result = captured["render_template"]("../../../../../../etc/hosts")
+        assert result["status"] == "unknown_template"
+        assert result["png_base64"] is None
+
+    def test_compose_layered_plot_traversal_is_unknown(self) -> None:
+        from dartwork_mpl.mcp.tools import register_tools
+
+        mock_mcp = MagicMock()
+        captured = _capture_decorators(mock_mcp, "tool")
+        register_tools(mock_mcp)
+
+        result = captured["compose_layered_plot"](
+            "../../../../../../etc/hosts", tier="basic"
+        )
+        assert result["status"] == "unknown_template"
+        # The traversal target's contents must not leak into ``code``.
+        assert "root:" not in result["code"]

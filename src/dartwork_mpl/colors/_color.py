@@ -744,6 +744,20 @@ def cspace(
         end_L, end_C, end_h = end_color_obj.to_oklch()
         # h is in degrees
 
+        # Achromatic endpoints (white / black / grey) have a hue that is
+        # pure floating-point noise from the OKLab→OKLCH atan2 — white is
+        # (1.0, ~3.7e-8, ~90°). Interpolating through that noise hue turns
+        # a white→blue tint ramp green/teal. Per CSS Color 4, treat a
+        # near-zero-chroma hue as "missing" and carry the other endpoint's
+        # hue so the ramp stays on the chromatic endpoint's hue line.
+        _ACHROMATIC_C = 1e-4
+        start_achromatic = start_C < _ACHROMATIC_C
+        end_achromatic = end_C < _ACHROMATIC_C
+        if start_achromatic and not end_achromatic:
+            start_h = end_h
+        elif end_achromatic and not start_achromatic:
+            end_h = start_h
+
         # Handle hue wrapping (shortest path in degrees)
         h_diff: float = end_h - start_h
         # Normalize to [-180, 180] range for shortest path

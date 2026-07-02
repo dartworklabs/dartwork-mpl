@@ -313,3 +313,21 @@ class TestFormatAxisCurrencyNegativeSign:
         # negative zero (e.g. from floating-point arithmetic)
         assert formatter(-0.0, 0) == "$0.00"
         plt.close(fig)
+
+
+class TestFormatAxisNoNegativeZero:
+    """Small negatives must not render as '-0.0M'/'-0.0B' (2026-07 audit)."""
+
+    def test_millions_small_negative_is_bare_zero(self) -> None:
+        fig, ax = _axes()
+        dm.format_axis_millions(ax, axis="y", decimals=1)
+        fmt = ax.yaxis.get_major_formatter()
+        assert fmt(-40_000, 0) == "0.0"
+        plt.close(fig)
+
+    def test_billions_small_negative_is_bare_zero(self) -> None:
+        fig, ax = _axes()
+        dm.format_axis_billions(ax, axis="y", decimals=1)
+        fmt = ax.yaxis.get_major_formatter()
+        assert fmt(-40_000_000, 0) == "0.0"
+        plt.close(fig)

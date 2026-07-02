@@ -26,6 +26,9 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+# Deterministic SVG output — fixed hash salt yields stable element IDs so
+# regenerating this demo set produces byte-identical SVGs, not a diff.
+matplotlib.rcParams["svg.hashsalt"] = "dartwork-mpl"
 
 import matplotlib.pyplot as plt
 
@@ -35,10 +38,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 # Reuse the canonical helpers/data from the main PoC builder.
-from build_landing_pocs import (  # noqa: E402  (sys.path injection)
-    LANDING_W_DM,
-    save,
-)
+from build_landing_pocs import LANDING_W_DM, save
 
 OUT = ROOT / "docs" / "_static" / "palette_demo"
 OUT.mkdir(parents=True, exist_ok=True)

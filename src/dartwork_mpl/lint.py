@@ -23,7 +23,7 @@ __all__ = [
 ]
 
 import re
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -437,7 +437,70 @@ def migrate_legacy_code(code: str) -> str:
 # is intentionally left to the caller, who can pair this helper with
 # ``migrate_legacy_code`` or the MCP ``apply_lint_fixes`` flow.
 
-_AUTO_FIX_TABLE: tuple[tuple[str, re.Pattern[str], str], ...] = (
+
+def _rewrite_tight_layout(match: re.Match[str]) -> str:
+    """Rewrite ``<recv>.tight_layout()`` preserving the receiver name."""
+    receiver = match.group(1)
+    figure = "fig" if receiver == "plt" else receiver
+    return f"dm.simple_layout({figure})"
+
+
+def _protected_spans(code: str) -> list[tuple[int, int]]:
+    """Absolute ``(start, end)`` offsets of string / comment tokens.
+
+    Auto-fix substitutions must not rewrite text inside string literals
+    or comments (e.g. a docstring mentioning ``plt.tight_layout()``), so
+    those regions are masked out. Returns ``[]`` if the source can't be
+    tokenized (malformed snippet) — the caller then falls back to a
+    plain whole-source substitution.
+    """
+    import io
+    import tokenize
+
+    # Map 1-based line number → absolute offset of that line's start.
+    line_starts = [0]
+    for line in code.splitlines(keepends=True):
+        line_starts.append(line_starts[-1] + len(line))
+
+    def _abs(row: int, col: int) -> int:
+        return line_starts[row - 1] + col
+
+    try:
+        toks = list(tokenize.generate_tokens(io.StringIO(code).readline))
+    except (tokenize.TokenError, IndentationError, SyntaxError):
+        return []
+    return [
+        (_abs(*tok.start), _abs(*tok.end))
+        for tok in toks
+        # FSTRING_* tokens exist on 3.12+; guard by name.
+        if tok.type in (tokenize.STRING, tokenize.COMMENT)
+        or tokenize.tok_name.get(tok.type, "").startswith("FSTRING")
+    ]
+
+
+def _sub_outside_strings(
+    pattern: re.Pattern[str],
+    repl: str | Callable[[re.Match[str]], str],
+    code: str,
+) -> str:
+    """``pattern.sub`` applied only outside string / comment regions."""
+    protected = _protected_spans(code)
+    if not protected:
+        return pattern.sub(repl, code)
+
+    def _guarded(match: re.Match[str]) -> str:
+        s, e = match.span()
+        for ps, pe in protected:
+            if s < pe and e > ps:  # overlaps a protected span
+                return match.group(0)
+        return repl(match) if callable(repl) else match.expand(repl)
+
+    return pattern.sub(_guarded, code)
+
+
+_AUTO_FIX_TABLE: tuple[
+    tuple[str, re.Pattern[str], str | Callable[[re.Match[str]], str]], ...
+] = (
     # rule_id, search regex, replacement.
     #
     # Each rule_id MUST be a real id in the anti-pattern SSOT
@@ -452,15 +515,16 @@ _AUTO_FIX_TABLE: tuple[tuple[str, re.Pattern[str], str], ...] = (
     # substitution would be *wrong* (``cm2in`` returns inches, ``cm``
     # returns a Length), so we leave it to ``migrate_legacy_code``.
     ("plt-style-use", re.compile(r"\bplt\.style\.use\b"), "dm.style.use"),
-    # plt.tight_layout() / fig.tight_layout() → dm.simple_layout(fig).
-    # The replacement assumes the figure is bound to a name we cannot
-    # know, so we conservatively use ``fig`` (the canonical name in
-    # every dartwork-mpl template + recipe). Callers passing a
-    # differently-named figure can fix that manually after the rewrite.
+    # plt.tight_layout() / <fig>.tight_layout() → dm.simple_layout(<fig>).
+    # The receiver is preserved so ``myfig.tight_layout()`` rewrites to
+    # ``dm.simple_layout(myfig)`` rather than the canonical-but-wrong
+    # ``dm.simple_layout(fig)`` (which would reference an undefined name).
+    # A ``plt`` receiver has no figure handle, so it falls back to the
+    # canonical ``fig`` used across every template and recipe.
     (
         "tight-layout",
-        re.compile(r"\b(?:plt|[A-Za-z_][A-Za-z0-9_]*)\.tight_layout\s*\(\s*\)"),
-        "dm.simple_layout(fig)",
+        re.compile(r"\b(plt|[A-Za-z_][A-Za-z0-9_]*)\.tight_layout\s*\(\s*\)"),
+        _rewrite_tight_layout,
     ),
 )
 
@@ -490,14 +554,21 @@ def apply_lint_fixes(code: str) -> tuple[str, list[Issue], list[Issue]]:
     """
     before = lint(code)
 
+    fixable_ids = {rule_id for rule_id, _, _ in _AUTO_FIX_TABLE}
     for _rule_id, pattern, replacement in _AUTO_FIX_TABLE:
-        code = pattern.sub(replacement, code)
+        code = _sub_outside_strings(pattern, replacement, code)
 
     after = lint(code)
     after_signatures = {(i.rule_id, i.line, i.column) for i in after}
+    # An issue is "applied" only if this function could fix its rule and
+    # the issue is gone. Restricting to ``fixable_ids`` prevents a
+    # non-fixable issue (e.g. ``figsize-direct``) whose column merely
+    # shifted after a same-line rewrite from being falsely reported as
+    # both applied and still-unfixed.
     applied = [
         i
         for i in before
-        if (i.rule_id, i.line, i.column) not in after_signatures
+        if i.rule_id in fixable_ids
+        and (i.rule_id, i.line, i.column) not in after_signatures
     ]
     return code, applied, after

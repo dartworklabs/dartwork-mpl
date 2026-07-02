@@ -332,6 +332,19 @@ class RgbView(_BaseColorView):
         g_c = max(0.0, min(1.0, g))
         b_c = max(0.0, min(1.0, b))
 
+        # No-op guard: if the (clamped) target equals the colour's current
+        # sRGB, don't rewrite the OKLab source. Otherwise setting one
+        # channel to its existing value would still round-trip through
+        # sRGB and gamut-map the whole colour, silently discarding any
+        # out-of-gamut precision in the untouched channels.
+        cur_r, cur_g, cur_b = self._get_rgb()
+        if (
+            abs(r_c - cur_r) < 1e-12
+            and abs(g_c - cur_g) < 1e-12
+            and abs(b_c - cur_b) < 1e-12
+        ):
+            return
+
         r_lin: float | np.ndarray[Any, Any] = _srgb_to_linear(r_c)
         g_lin: float | np.ndarray[Any, Any] = _srgb_to_linear(g_c)
         b_lin: float | np.ndarray[Any, Any] = _srgb_to_linear(b_c)

@@ -30,6 +30,10 @@ _GALLERY_CATEGORIES = [
     "07_real_world_dashboards",
     "08_creative_visualizations",
     "09_ai_templates",
+    # sphinx-gallery renders 09_ai_templates_advanced (it is in conf.py's
+    # examples_dirs/gallery_dirs), so it must appear here too — otherwise
+    # its 18 tier-2 pages are orphaned from the manual toctree.
+    "09_ai_templates_advanced",
 ]
 
 

@@ -60,3 +60,9 @@ docs/_static/font-face.css
 # Python package build artifacts (uv build)
 dist/
 *.egg-info/
+
+# Stray render artifacts from running the quickstart / examples in the
+# repo root (e.g. save_and_show(fig, "first") -> first.png).
+/first.png
+/output.png
+/output/

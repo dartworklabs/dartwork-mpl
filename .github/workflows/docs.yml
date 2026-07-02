@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: docs/examples_gallery
-          key: gallery-${{ runner.os }}-${{ hashFiles('docs/examples_source/**', 'src/dartwork_mpl/**/*.py', 'docs/conf.py', 'docs/_ext/build_hooks.py', 'uv.lock') }}
+          key: gallery-${{ runner.os }}-${{ hashFiles('docs/examples_source/**', 'src/dartwork_mpl/**/*.py', 'src/dartwork_mpl/asset/**', 'docs/conf.py', 'docs/_ext/build_hooks.py', 'uv.lock') }}
 
       # The diagrams PoC page (docs/internals/diagrams_poc.md) renders a
       # sphinx.ext.graphviz directive (auto-extracted module dep graph).

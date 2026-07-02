@@ -13,6 +13,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
 from xml.dom import minidom
+from xml.parsers.expat import ExpatError
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
@@ -196,15 +197,24 @@ def show(image_path: str, size: int = 600, unit: str = "pt") -> None:
         """Wrap the IPython HTML-display call to centralise typing."""
         display(HTML(svg_data))  # type: ignore[no-untyped-call]
 
-    svg_obj = SVG(data=image_path)  # type: ignore[no-untyped-call]
+    # ``show`` renders SVG only. A non-SVG path (``.png`` / ``.pdf`` or an
+    # extensionless file) makes IPython's ``SVG`` raise an XML ExpatError
+    # — either while reading the file here or when we re-parse the payload
+    # below. Convert both to one clear message pointing at
+    # ``save_and_show`` (which dispatches by format) instead of surfacing
+    # a raw XML error. The payload is matplotlib's own SVG backend
+    # output, never user-supplied XML, so XXE/billion-laughs don't apply.
+    try:
+        svg_obj = SVG(data=image_path)  # type: ignore[no-untyped-call]
+        dom = minidom.parseString(svg_obj.data)  # trusted dartwork SVG only
+    except ExpatError as exc:
+        raise ValueError(
+            f"dm.show() displays SVG only, but {image_path!r} is not valid "
+            "SVG. Save with a '.svg' path, or use dm.save_and_show() which "
+            "handles PNG/JPG/PDF too."
+        ) from exc
 
     desired_width = size
-
-    # Parse SVG dimensions with defensive handling.
-    # The SVG payload is produced by matplotlib's own SVG backend (via
-    # IPython.display.SVG) on dartwork-mpl figures, never user-supplied
-    # XML, so XXE/billion-laughs vectors do not apply here.
-    dom = minidom.parseString(svg_obj.data)  # trusted dartwork SVG only
     doc_el = dom.documentElement
     width_attr = doc_el.getAttribute("width") if doc_el else ""
     height_attr = doc_el.getAttribute("height") if doc_el else ""
@@ -307,6 +317,52 @@ def save_and_show(
     else:
         create_parent_path(image_path)
         fig.savefig(image_path, bbox_inches=None, **kwargs)
+        # matplotlib appends the default format when the path has no
+        # recognised extension (``"first"`` -> ``"first.png"``), so
+        # resolve the file actually written *before* closing the figure
+        # (its canvas is the authoritative list of supported formats).
+        saved_path = _resolve_saved_path(image_path, kwargs, fig)
         if close_figure:
             plt.close(fig)
-        show(image_path, size=size, unit=unit)
+        _display_saved(saved_path, size=size, unit=unit)
+
+
+def _resolve_saved_path(
+    image_path: str, kwargs: dict[str, Any], fig: Figure
+) -> str:
+    """Return the path ``savefig`` actually wrote for ``image_path``.
+
+    ``savefig`` appends ``format`` / ``rcParams["savefig.format"]`` when
+    the path has no recognised extension.
+    """
+    suffix = Path(image_path).suffix.lstrip(".").lower()
+    known = set(fig.canvas.get_supported_filetypes())
+    if suffix in known:
+        return image_path
+    fmt = str(kwargs.get("format") or plt.rcParams["savefig.format"])
+    return f"{image_path}.{fmt.lstrip('.')}"
+
+
+def _display_saved(path: str, *, size: int, unit: str) -> None:
+    """Display a saved figure inline, dispatching on its file format."""
+    suffix = Path(path).suffix.lower()
+    if suffix == ".svg":
+        show(path, size=size, unit=unit)
+        return
+    if suffix in (".png", ".jpg", ".jpeg", ".gif", ".webp"):
+        try:
+            from IPython.display import Image, display
+        except ImportError as exc:  # pragma: no cover - mirror show()
+            raise ImportError(
+                "dm.save_and_show() needs IPython for inline display; "
+                "install it with 'pip install \"dartwork-mpl[notebook]\"'."
+            ) from exc
+        display(Image(filename=path, width=size))  # type: ignore[no-untyped-call]
+        return
+    # Non-inlineable formats (PDF, EPS, …) were still saved; there is no
+    # inline preview, so report the path rather than crashing.
+    warnings.warn(
+        f"Saved {path!r}; inline preview is only available for SVG and "
+        "raster formats, so nothing is displayed for this format.",
+        stacklevel=2,
+    )

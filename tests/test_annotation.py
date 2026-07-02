@@ -100,3 +100,46 @@ class TestArrowAxis:
 
         arrow_axis(ax, "x", "Price", low="Cheap", high="Expensive")
         plt.close(fig)
+
+
+class TestConfigSlots:
+    """dm.config rejects typo'd attributes (2026-07 audit)."""
+
+    def test_typo_attribute_raises(self) -> None:
+        import pytest
+
+        import dartwork_mpl as dm
+
+        with pytest.raises(AttributeError):
+            dm.config.adopt_orphan_tick_fonts = False  # plural typo
+
+
+class TestArrowAxisDirection:
+    """arrow_axis validates direction (2026-07 audit)."""
+
+    def test_invalid_direction_raises(self) -> None:
+        import matplotlib.pyplot as plt
+        import pytest
+
+        import dartwork_mpl as dm
+
+        fig, ax = plt.subplots()
+        with pytest.raises(ValueError, match="direction"):
+            dm.arrow_axis(ax, "X", "label")
+        plt.close(fig)
+
+
+class TestLabelAxesBeyond26:
+    """label_axes labels grids larger than 26 panels (2026-07 audit)."""
+
+    def test_thirty_panels_all_labeled(self) -> None:
+        import matplotlib.pyplot as plt
+
+        import dartwork_mpl as dm
+
+        fig, axes = plt.subplots(6, 5)
+        flat = axes.flatten()
+        texts = dm.label_axes(flat)
+        assert len(texts) == 30
+        assert texts[26].get_text() == "aa"
+        plt.close(fig)

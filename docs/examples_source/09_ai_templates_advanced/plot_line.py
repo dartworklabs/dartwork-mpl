@@ -45,7 +45,7 @@ fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))
 ax.axvspan(launch_idx, launch_idx + 2, alpha=0.12, color="dc.earth4", zorder=0)
 ax.text(
     launch_idx + 1,
-    ax.get_ylim()[1] if False else max(y_primary.max(), y_compare.max()),
+    max(y_primary.max(), y_compare.max()),
     "Product v2 launch",
     ha="center",
     va="top",

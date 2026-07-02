@@ -596,3 +596,68 @@ class TestCheckClippedText:
         ids = {w.check_id for w in warnings}
         assert "CLIPPED_TEXT" in ids
         plt.close(fig)
+
+
+class TestValidateAuditRegressions:
+    """Regressions for the 2026-07 quality audit (Batch D)."""
+
+    def test_clipped_text_silent_on_flush_layout(self) -> None:
+        import dartwork_mpl as dm
+
+        fig, ax = plt.subplots()
+        ax.plot([0, 1], [0, 1])
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        dm.simple_layout(fig)  # margin=0 -> content flush at edges
+        warnings = validate_figure(fig, quiet=True)
+        assert not [w for w in warnings if w.check_id == "CLIPPED_TEXT"]
+        plt.close(fig)
+
+    def test_empty_axes_ignores_legend_panel(self) -> None:
+        fig, (ax1, axleg) = plt.subplots(1, 2)
+        (line,) = ax1.plot([0, 1], [0, 1], label="s")
+        axleg.axis("off")
+        axleg.legend(handles=[line], loc="center")
+        warnings = validate_figure(fig, quiet=True)
+        assert not [w for w in warnings if w.check_id == "EMPTY_AXES"]
+        plt.close(fig)
+
+    def test_empty_axes_ignores_invisible_only_artist(self) -> None:
+        fig, ax = plt.subplots()
+        (line,) = ax.plot([0, 1], [0, 1])
+        line.set_visible(False)
+        warnings = validate_figure(fig, quiet=True)
+        assert [w for w in warnings if w.check_id == "EMPTY_AXES"]
+        plt.close(fig)
+
+    def test_overflow_catches_offcanvas_suptitle(self) -> None:
+        fig, ax = plt.subplots()
+        ax.plot([0, 1], [0, 1])
+        fig.suptitle("A long suptitle pushed off the top", y=1.15)
+        warnings = validate_figure(fig, quiet=True)
+        assert [
+            w
+            for w in warnings
+            if w.check_id == "OVERFLOW" and "Figure text" in w.message
+        ]
+        plt.close(fig)
+
+    def test_legend_overflow_catches_offcanvas_anchor(self) -> None:
+        fig, ax = plt.subplots()
+        for k in range(12):
+            ax.plot([0, 1], [k, k + 1], label=f"series {k}")
+        ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left")
+        warnings = validate_figure(fig, quiet=True)
+        assert [w for w in warnings if w.check_id == "LEGEND_OVERFLOW"]
+        plt.close(fig)
+
+    def test_errored_check_does_not_report_clean(self, capsys) -> None:
+        from dartwork_mpl.validate import _types
+        from dartwork_mpl.validate._orchestrator import _run_check_safely
+
+        # A check raising a bbox error yields None (could-not-run),
+        # never an empty "ran clean" list.
+        def boom() -> list:
+            raise _types.BBOX_ERRORS[0]("boom")
+
+        assert _run_check_safely(boom) is None

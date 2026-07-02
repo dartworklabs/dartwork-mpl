@@ -7,7 +7,7 @@ ticks-per-inch density.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 
@@ -27,6 +27,28 @@ _TICK_CROWD_MIN_GAP_FRAC = 0.15
 # measured (e.g. a renderer that refuses get_window_extent). The measured
 # path is font- and label-length-aware and is preferred.
 _TICK_CROWD_FALLBACK_DENSITY = 4.0
+
+
+def _tick_in_view(
+    tick: Text, ax_ext: Any, *, horizontal: bool, renderer: RendererBase
+) -> bool:
+    """True when the tick label's anchor lies inside the axes view.
+
+    matplotlib keeps out-of-range ticks on the artist tree (visible but
+    clipped from the render). Their phantom extents inflate the crowding
+    footprint and produce false TICK_CROWD warnings, so exclude them.
+    """
+    try:
+        ext = tick.get_window_extent(renderer)
+    except BBOX_ERRORS:
+        return False
+    if ext.width <= 0 or ext.height <= 0:
+        return False
+    if horizontal:
+        anchor = (ext.x0 + ext.x1) / 2
+        return bool(ax_ext.x0 - 0.5 <= anchor <= ax_ext.x1 + 0.5)
+    anchor = (ext.y0 + ext.y1) / 2
+    return bool(ax_ext.y0 - 0.5 <= anchor <= ax_ext.y1 + 0.5)
 
 
 def _tick_crowd_for_axis(
@@ -81,7 +103,13 @@ def check_tick_crowding(
             ("y", ax.yaxis.get_ticklabels, ax_ext.height, False),
         ):
             ticks = [
-                t for t in getter() if t.get_visible() and t.get_text().strip()
+                t
+                for t in getter()
+                if t.get_visible()
+                and t.get_text().strip()
+                and _tick_in_view(
+                    t, ax_ext, horizontal=horizontal, renderer=renderer
+                )
             ]
             result = _tick_crowd_for_axis(
                 ticks, span_px, horizontal=horizontal, renderer=renderer
