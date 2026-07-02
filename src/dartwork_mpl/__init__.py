@@ -9,10 +9,13 @@ utility functions for Matplotlib visualizations.
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
-# Derive the version from the installed distribution metadata so it
-# never drifts from ``pyproject.toml`` (a release bumps that file; this
-# value follows automatically). The fallback covers running from a
-# source tree with no installed metadata.
+# Derive the version from the installed distribution metadata so there
+# is a single source of truth. For a built/released wheel this always
+# equals ``pyproject.toml``. For an *editable* dev checkout the metadata
+# is captured at install time, so a ``pyproject.toml`` version bump only
+# shows up here after reinstalling (``uv sync`` / ``pip install -e .``).
+# The fallback covers running from a source tree with no installed
+# metadata at all.
 try:
     __version__ = version("dartwork-mpl")
 except PackageNotFoundError:  # pragma: no cover - source-tree fallback

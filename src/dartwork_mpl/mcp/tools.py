@@ -23,9 +23,11 @@ def _version_surface() -> str:
     """Major.minor of the installed dartwork-mpl (e.g. ``"0.5"``).
 
     Derived from the distribution metadata so the advertised surface
-    tracks the actual release instead of a hand-maintained literal that
-    silently drifts — the same registry-derivation principle used for
-    the tool/template catalog below.
+    tracks the actual release instead of a hand-maintained literal —
+    the same registry-derivation principle used for the tool/template
+    catalog below. Note this reflects the *installed* metadata, so an
+    editable dev checkout reports the version captured at install time
+    until it is reinstalled.
     """
     try:
         ver = _pkg_version("dartwork-mpl")
