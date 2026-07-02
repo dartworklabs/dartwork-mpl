@@ -1118,7 +1118,7 @@
             yLen +
             " chars on a " +
             width.toFixed(1) +
-            "″ figure — likely to clip without auto_layout().",
+            "″ figure — likely to clip without dm.simple_layout(fig).",
         });
       }
 
@@ -1149,7 +1149,7 @@
         });
       }
 
-      // Margin asymmetry pre-check: if figure < 3 inches and no helper called, mention auto_layout
+      // Margin asymmetry pre-check: if figure < 3 inches and no helper called, mention simple_layout
       if (width < 3 || height < 2) {
         msgs.push({
           level: "info",

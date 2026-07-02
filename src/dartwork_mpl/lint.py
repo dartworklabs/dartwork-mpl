@@ -27,7 +27,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-import yaml  # type: ignore[import-untyped]
+import yaml
 
 _RULES_PATH: Path = (
     Path(__file__).parent / "asset" / "prompt" / "02-anti-patterns.yaml"
@@ -233,25 +233,37 @@ def format_report(issues: list[Issue]) -> str:
 #
 # Splits its job into two passes:
 #   1. Safe textual substitutions that the agent can rely on
-#      mechanically (``dm.cm2in`` → ``dm.cm``, ``plt.style.use`` →
-#      ``dm.style.use``).
-#   2. Patterns whose replacement depends on context — the deprecated
-#      width tokens, the removed ``dm.subplots`` / ``dm.figure``,
-#      ``figsize=(w, h)`` raw tuples, ``tight_layout()`` calls, and
-#      the removed ``dm.agent_utils`` / ``dm.xplot`` namespaces. Those
-#      get a one-line ``# TODO(dm-migrate): …`` comment inserted
-#      directly above the offending line.
+#      mechanically (``plt.style.use`` → ``dm.style.use``).
+#   2. Patterns whose replacement depends on context — the ``dm.cm2in``
+#      helper (returned inches; the correct rewrite depends on whether
+#      it sits inside a ``figsize=``), the deprecated width tokens, the
+#      removed ``dm.subplots`` / ``dm.figure``, ``figsize=(w, h)`` raw
+#      tuples, ``tight_layout()`` calls, and the removed
+#      ``dm.agent_utils`` / ``dm.xplot`` namespaces. Those get a
+#      one-line ``# TODO(dm-migrate): …`` comment inserted directly
+#      above the offending line.
 #
 # The function is intentionally regex-only. AST-based migration is in
 # the spec's "Out of Scope" list.
 # ---------------------------------------------------------------------------
 
+# NOTE: ``dm.cm2in`` is deliberately NOT a safe rewrite. ``cm2in``
+# returned a float (inches); ``dm.cm`` returns a ``Length``. A blind
+# ``dm.cm2in`` → ``dm.cm`` swap produces broken ``figsize=(dm.cm(9), …)``
+# code AND erases the token the ``cm2in-figsize`` critical lint rule keys
+# on. It is handled as a context-dependent hint below (mirrors the same
+# reasoning in ``_AUTO_FIX_TABLE``).
 _MIGRATE_SAFE_REWRITES: tuple[tuple[re.Pattern[str], str], ...] = (
-    (re.compile(r"\bdm\.cm2in\b"), "dm.cm"),
     (re.compile(r"\bplt\.style\.use\b"), "dm.style.use"),
 )
 
 _MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (
+        re.compile(r"\bdm\.cm2in\b"),
+        "dm.cm2in removed in 0.4 (it returned inches). Inside a figsize, "
+        'use figsize=dm.figsize("<n>cm", "<aspect>"); elsewhere use '
+        "dm.cm(<n>), which returns a Length, not a float.",
+    ),
     (
         re.compile(r"\bdm\.(?:SW|MW|TW|DW)\b"),
         "dm.SW/MW/TW/DW removed in 0.4; use dm.col1, dm.col2, or dm.cm(<num>).",
@@ -298,14 +310,15 @@ def migrate_legacy_code(code: str) -> str:
     Two passes:
 
     1. **Safe substitutions** are applied in place
-       (``dm.cm2in`` → ``dm.cm``, ``plt.style.use`` → ``dm.style.use``).
-    2. **Context-dependent patterns** (deprecated width tokens, the
-       removed ``dm.subplots`` / ``dm.figure``, raw ``figsize=(w,h)``
-       tuples, ``tight_layout()`` calls, and the removed
-       ``dm.agent_utils`` / ``dm.xplot`` namespaces) get a
+       (``plt.style.use`` → ``dm.style.use``).
+    2. **Context-dependent patterns** (``dm.cm2in``, deprecated width
+       tokens, the removed ``dm.subplots`` / ``dm.figure``, raw
+       ``figsize=(w,h)`` tuples, ``tight_layout()`` calls, and the
+       removed ``dm.agent_utils`` / ``dm.xplot`` namespaces) get a
        ``# TODO(dm-migrate): …`` comment inserted above the offending
        line so the agent can see what to change without losing the
-       original code.
+       original code. Re-running on already-migrated output is
+       idempotent — existing hint comments are not re-flagged.
 
     Parameters
     ----------
@@ -344,13 +357,32 @@ def migrate_legacy_code(code: str) -> str:
         # part of the comment text. Force ``\n`` for the comment line
         # whenever the original had no terminator.
         comment_terminator = line_terminator or "\n"
+        # Idempotency guard 1: a hint comment can itself contain a pattern
+        # token (the ``dm.cm2in`` / ``dm.SW`` hint text), so never re-flag
+        # our own injected comments.
+        if body.lstrip().startswith("# TODO(dm-migrate):"):
+            output_lines.append(line)
+            continue
         leading_ws_match = re.match(r"\s*", body)
         indent = leading_ws_match.group(0) if leading_ws_match else ""
+        # Idempotency guard 2: the offending code line is left in place
+        # (only annotated), so on a re-run it still matches its pattern.
+        # Skip any hint that already sits in the contiguous hint block
+        # directly above this line so re-runs don't stack duplicates.
+        # Multiple *distinct* hints for one line are still allowed.
+        existing_hints: set[str] = set()
+        for prev in reversed(output_lines):
+            if prev.lstrip().startswith("# TODO(dm-migrate):"):
+                existing_hints.add(prev.strip())
+            else:
+                break
         for pattern, hint in _MIGRATE_HINTS:
             if pattern.search(body):
-                output_lines.append(
+                hint_line = (
                     f"{indent}# TODO(dm-migrate): {hint}{comment_terminator}"
                 )
+                if hint_line.strip() not in existing_hints:
+                    output_lines.append(hint_line)
         output_lines.append(line)
     return "".join(output_lines)
 

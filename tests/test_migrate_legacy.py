@@ -9,11 +9,6 @@ from dartwork_mpl.lint import migrate_legacy_code
 class TestSafeSubstitutions:
     """Pass 1 — patterns whose 0.4 replacement is unambiguous."""
 
-    def test_cm2in_becomes_cm(self) -> None:
-        out = migrate_legacy_code("x = dm.cm2in(9)")
-        assert "dm.cm(9)" in out
-        assert "dm.cm2in" not in out
-
     def test_plt_style_use_becomes_dm_style_use(self) -> None:
         out = migrate_legacy_code('plt.style.use("scientific")')
         assert 'dm.style.use("scientific")' in out
@@ -25,7 +20,7 @@ class TestSafeSubstitutions:
         assert out == "fig, ax = plt.subplots()"
 
     def test_safe_pass_does_not_add_hint_comments(self) -> None:
-        out = migrate_legacy_code("x = dm.cm2in(9)\n")
+        out = migrate_legacy_code('plt.style.use("x")\n')
         assert "TODO(dm-migrate)" not in out
 
 
@@ -72,6 +67,26 @@ class TestHintComments:
         out = migrate_legacy_code("dm.xplot.bar(ax, x, y)")
         assert "TODO(dm-migrate)" in out
         assert "dm.xplot" in out
+
+    def test_cm2in_gets_hint_not_a_token_swap(self) -> None:
+        # ``dm.cm2in`` returned inches while ``dm.cm`` returns a Length,
+        # so a blind swap is wrong. The migrator flags it for a
+        # context-aware rewrite instead of substituting it (#H1).
+        out = migrate_legacy_code(
+            "fig = plt.figure(figsize=(dm.cm2in(9), dm.cm2in(6)))"
+        )
+        assert "TODO(dm-migrate)" in out
+        assert "dm.cm2in" in out  # original preserved, not rewritten
+        assert "dm.figsize" in out  # hint points at the correct API
+
+    def test_rerun_does_not_stack_hints(self) -> None:
+        # Re-running on already-migrated output must be idempotent: the
+        # hint text itself contains tokens (``dm.SW``) that would
+        # otherwise re-trigger and stack duplicate comments (#LM-2).
+        once = migrate_legacy_code("w = dm.SW")
+        twice = migrate_legacy_code(once)
+        assert once.count("TODO(dm-migrate)") == 1
+        assert twice.count("TODO(dm-migrate)") == 1
 
     def test_dm_subplots_gets_hint(self) -> None:
         # ``dm.subplots`` and ``dm.figure`` were removed; the migrator

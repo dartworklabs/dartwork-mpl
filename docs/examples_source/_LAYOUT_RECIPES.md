@@ -316,7 +316,7 @@ canvas keeps text legible.
 | `dm.simple_layout(fig, ml=..., mt=..., ...)`  | Per-side asymmetric margins.                         |
 | `dm.simple_layout(fig, gs=gs)`                | Target a specific GridSpec (multi-panel).            |
 | ❌ `fig.tight_layout()`                       | Forbidden — collides with dartwork-mpl spines/legends. |
-| ❌ `dm.auto_layout(fig)`                      | Deprecated alias of `simple_layout`; emits `DeprecationWarning`. |
+| ❌ `dm.auto_layout(fig)`                      | Removed in 0.5.4 — now raises `AttributeError`. Use `dm.simple_layout(fig, margin=...)`. |
 
 `simple_layout` measures every visible artist on every axes
 (texts, title, axis labels, view-limited tick labels, axis offset

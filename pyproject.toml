@@ -121,6 +121,15 @@ dev = [
     # `parallel`), which speeds up cache-miss docs builds.
     "joblib>=1.3.0",
     "mypy>=1.8.0",
+    # PyYAML type stubs so `import yaml` type-checks identically on
+    # every mypy version. Without the stubs installed, whether
+    # ``ignore_missing_imports`` suppresses the ``import-untyped``
+    # error depends on the mypy release — CI (lockfile mypy) errored
+    # while a newer local mypy passed, and a `# type: ignore` comment
+    # can't satisfy both (unused-ignore on one side, needed on the
+    # other). Installing the stubs makes yaml genuinely typed and the
+    # question moot.
+    "types-PyYAML>=6.0",
     "myst-parser>=4.0.1",
     "notebook>=7.4.1",
     "openpyxl>=3.1.5",
