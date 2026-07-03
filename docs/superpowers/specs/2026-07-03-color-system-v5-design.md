@@ -272,26 +272,33 @@ S-곡선(ease)이 유용하다. 그래서 v5는 간격을 워프 함수로 열�
 | `pink` | 350 | +18 | 0.85 | 0.85 | 0.210 | 39 | 0.05 | 0.85 |
 
 > gray는 별도 규칙(A6): L\* 96→28 균등, 쿨 틴트 h250.
-> 유도 파라미터(`C_max`·`floor`·`c₀`·`c_end`)는 위 표에 값으로 적었지만 실제로는 `h₀`에서 전역
-> 푸리에 곡선으로 계산된다. 신규 family를 추가할 때는 `h₀`·`Δh`·`γ`·`t_p` 4개만 정하면 나머지가
-> 자동 유도된다. **완전한 기계 판독용 SSOT는 [`color_v5_ssot.json`](assets/2026-07-03-color-system-v5/color_v5_ssot.json).**
+> **운영 SSOT는 위 표다.** 유도 파라미터(`C_max`·`floor`·`c₀`·`c_end`)는 전역 푸리에 곡선을
+> `h₀`에서 평가해 같은 그리드로 반올림한 값이며, 신규 family를 추가할 때는 `h₀`·`Δh`·`γ`·`t_p`
+> 4개만 정하면 나머지가 곡선에서 자동 유도된다. 반올림 경계 때문에 곡선 유도값과 표가 그리드
+> 1스텝 어긋날 수 있고(현행 60값 중 3값), 이 경우 표가 우선한다 — 곡선은 *확장 메커니즘*,
+> 표는 *확정 값*이다. **완전한 기계 판독용 SSOT는 [`color_v5_ssot.json`](assets/2026-07-03-color-system-v5/color_v5_ssot.json)
+> (자유 60 + 푸리에 24 + 상수 7 전부 수록).**
 
 ### 생성 알고리즘 (핵심)
 
 ```python
 # family 파라미터 p + 전역 곡선 → 10단계 hex
-def swatch(p, t):                       # t ∈ [0,1], 0=밝음 1=어두움
+def swatch(p, t):                       # t ∈ [0,1], 0=밝음 1=어두움 — *float sRGB* 반환
     L = 96 + (p.floor - 96) * t         # 밝기: L_TOP → floor
     h = p.h0 + p.dh * t ** p.gamma      # A4 드리프트 멱법칙
     c = p.cmax * shape(t, p.tp, p.c0, p.cend)   # A3 hue지문 × 공통형상
     return gamut_map_to_srgb(oklch=(solve_L(h, c, L), c, h))  # A1: L*·h 유지, C 축소
 
-def compile_family(p, dense=121):       # A5 지각 등간격 배치
-    path = [swatch(p, i/(dense-1)) for i in range(dense)]     # 촘촘한 경로
+def compile_family(p, dense=121):       # A5 지각 등간격 배치 — 연속 공간에서
+    path = [swatch(p, i/(dense-1)) for i in range(dense)]     # float 경로 (hex 아님!)
     ts = equalize_by_arc_length(path, metric=oklab_dE)        # OKLab ΔE 등화
     ts = iterate_chord_equalization(ts, target_cv=0.015)      # 코드 ΔE 반복 등화
-    return [swatch(p, t) for t in ts]                         # 10단계
+    return [to_hex(swatch(p, t)) for t in ts]                 # hex 변환은 최종 1회
 ```
+
+> **등화는 반드시 연속(float) 공간에서 한다.** dense 경로를 hex로 평가하면 스텝당 ΔE가 8-bit
+> 양자화 오차보다 작아져 호장 적분이 노이즈에 지배된다(§9 공통 프로토콜 1 — 실측으로 검출된
+> 결함이며, 수정 후 팔레트 이웃 ΔE cv가 0.01~0.05 → **0.011~0.022**로 개선).
 
 프로덕션 참조 구현은 §14 아키텍처에 따라 구현 계획(writing-plans) 단계에서 작성한다. 확정 파라미터·
 팔레트·cycle·컬러맵의 기계 판독 값은 [`color_v5_ssot.json`](assets/2026-07-03-color-system-v5/color_v5_ssot.json)이 SSOT다.
@@ -304,10 +311,12 @@ def compile_family(p, dense=121):       # A5 지각 등간격 배치
 
 | cycle | 구성 | 최악-CVD min ΔE00 | 흑백 ΔL\* | 용도 |
 |---|---|--:|--:|---|
-| **`dc.cycle`** (기본) | blue6 · orange9 · green5 · violet8 · amber7 · pink3 · cyan8 (7색) | **10.7** | 2.6 | 화면·PDF. 전원 라인 안전 |
-| **`dc.cycle.print`** (인쇄) | 8색 명도 분산 | 11.3 | 6.3 | 흑백 인쇄·복사 배포 |
+| **`dc.cycle`** (기본) | blue6 · orange9 · green5 · violet8 · amber7 · pink3 · cyan8 (7색) | **10.3** | 2.8 | 화면·PDF. 전원 라인 안전 |
+| **`dc.cycle.print`** (인쇄) | 8색 명도 분산 | 11.0 | 6.1 | 흑백 인쇄·복사 배포 |
 
 벤치마크: Okabe-Ito(CVD 표준 8색) min ΔE00 = 11.1, matplotlib tab10 = **1.4**(deutan에서 사실상 붕괴).
+기본 7색이 10.3, 인쇄 8색이 11.0으로 — 라인 안전 대역 제약(L\* 42~78)을 추가로 지면서도 Okabe-Ito급
+판별 거리를 유지한다.
 
 **설계 결정:**
 
@@ -364,10 +373,10 @@ def compile_family(p, dense=121):       # A5 지각 등간격 배치
 | 계열 | 이름 | 개수 | 게이트 |
 |---|---|--:|---|
 | 단일색 sequential (잉크) | `red` `rose` `orange` `amber` `yellow` `lime` `green` `teal` `cyan` `sky` `blue` `indigo` `violet` `purple` `pink` `gray` | 16 | L\* 단조 ✓ · 그레이 단조 ✓ · L\* 범위 ~72 |
-| 멀티휴 sequential (빛) | `aurora`(기본) `afterglow` `blaze` `lava` `lagoon` `glacier` `canopy` `haze` `iris` | 9 | L\* 단조 ✓ · ΔE cv 0.13~0.22 · L\* 범위 76~83 |
+| 멀티휴 sequential (빛) | `aurora`(기본) `afterglow` `blaze` `lava` `lagoon` `glacier` `canopy` `haze` `iris` | 9 | L\* 단조 ✓ · ΔE cv 0.04~0.09 · L\* 범위 76~83 |
 | diverging (잉크) | `blue_red`(+`_deep`/`_soft`) `blue_orange` `teal_rose` `green_purple` `purple_orange` `cyan_red` `teal_amber` `violet_lime` `indigo_amber` `gray_blue` `gray_red` | 13 | apex 정확히 50.0% · 양팔 L\* 대칭 |
 | topo (기준면) | `coast` | 1 | 반부별 L\* 단조 ✓ · 해안선 ΔL\* 42(설계) |
-| cyclic (빛) | `hue` `halo` `corona` | 3 | 이음매 비율 0.9~1.4 (매끄러움) |
+| cyclic (빛) | `hue` `halo` `corona` | 3 | 이음매 비율 1.00~1.05 (사실상 완전 연속) |
 | qualitative (등록) | `cycle` `cycle_print` | 2 | §8 cycle 게이트 그대로 (신규 디자인 없음) |
 
 ### 단일색 sequential — family 이름 (16)
@@ -400,17 +409,22 @@ h₀에서만 선택한다(앵커 그래프 정합).
 
 warm 3종의 역할 분담: `afterglow`는 자홍 경유(plasma류), `blaze`는 어두운 보라에서 출발(magma류),
 `lava`는 **보라를 전혀 지나지 않는** 순수 화염 — matplotlib `hot`이 담당하던 자리를 지각 균일하게
-대체한다(ΔE cv 0.133, 멀티휴 중 최저). cool 쪽도 대칭적으로 `lagoon`(청→록), `glacier`(남→청),
-`canopy`(록→황록)가 서로 다른 앵커 경로를 가진다.
+대체한다. cool 쪽도 대칭적으로 `lagoon`(청→록), `glacier`(남→청), `canopy`(록→황록)가 서로 다른
+앵커 경로를 가진다.
 
-기본 `aurora`는 viridis 대체품이다:
+matplotlib 대표 멀티휴 3종과의 벤치마크 — **측정 프로토콜을 명시한다**: 양쪽 모두 32-stop
+8-bit hex로 샘플링하고 이웃 OKLab ΔE의 변동계수(cv)로 잰다(동일 조건 — 한쪽만 유리한 해상도·정밀도
+금지). L\* 단조는 두 계열 모두 통과하므로 표에서 생략한다.
 
-| 지표 | `aurora` | viridis |
-|---|--:|--:|
-| ΔE 변동계수 (균일성) | 0.185 | 0.203 |
-| L\* 선형 이탈 (max) | 0.4 | 2.0 |
-| L\* 범위 | 79.8 | 76.0 |
-| 그레이 단조 | ✓ | ✓ |
+| 비교쌍 | ΔE cv (낮을수록 균일) | L\* 범위 |
+|---|---|---|
+| **`aurora`** vs viridis | **0.044** vs 0.086 | **81.9** vs 76.0 |
+| `afterglow` vs plasma | **0.068** vs 0.082 | 75.9 vs 78.9 |
+| `blaze` vs magma | **0.091** vs 0.201 | 82.1 vs 97.8 |
+
+aurora는 viridis 대비 균일성 2배·L\* 범위 +5.9로 기본값 자격이 있다. magma의 넓은 L\* 범위(97.8)는
+끝이 순수 검정·흰색에 닿는 대가로 균일성(0.201)을 크게 잃은 것이다 — blaze는 그 트레이드오프에서
+균일성을 택했다.
 
 ### diverging — 양극 pair 이름 (13)
 
@@ -451,10 +465,20 @@ warm 3종의 역할 분담: `afterglow`는 자홍 경유(plasma류), `blaze`는 
 A7의 L\* 단조 게이트는 cyclic에 적용되지 않는 대신, **이음매 연속성 게이트**(이음매 ΔE ≈ 이웃 평균,
 비율 ≤1.5)로 매끄러운 폐곡선을 강제한다.
 
-### 공통 — dense 평가
+### 공통 — 연속 공간 dense 평가 (측정·등화 프로토콜)
 
-모든 연속 cmap은 소수 앵커의 sRGB 보간이 아니라 **레시피를 256점에서 직접 평가한 dense 테이블로
-export**하고 게이트도 dense에서 실행한다(앵커 접점의 기울기 불연속으로 인한 Mach band 방지).
+모든 연속 cmap은 소수 앵커의 sRGB 보간이 아니라 **레시피를 dense(513점)에서 직접 평가**해 OKLab
+ΔE 등호장으로 재배치한 테이블로 export한다. 이때 세 가지 함정을 프로토콜로 차단한다(각각 실측으로
+검출된 결함):
+
+1. **등화는 연속(float sRGB) 공간에서.** dense 경로를 hex(8-bit)로 평가하면 스텝당 ΔE(~0.17)가
+   양자화 오차(~0.3)에 묻혀 호장 적분이 노이즈에 지배된다. hex 변환은 최종 스와치 1회만.
+2. **멀티휴 hue·chroma 경로는 단조 3차(Fritsch–Carlson)로 knot을 통과.** 구간선형 보간은 앵커에서
+   경로가 꺾여(기울기 불연속) 코드 ΔE 균일성과 Mach band를 해친다. 우리 앵커 경로는 전부 언랩
+   후 단조이므로 형상 보존 3차가 오버슈트 없이 맞는다.
+3. **게이트·벤치마크 샘플은 n-stop 직접 렌더로.** 256 테이블을 `round()` 스트라이드로 다운샘플하면
+   창 크기가 8/9로 교차하는 앨리어싱이 cv를 인위적으로 부풀린다(실측: 동일 맵이 32-stop 0.12 →
+   64-stop 0.20으로 역전). 게이트는 등호장 32점을 직접 렌더해 잰다.
 
 ---
 
@@ -490,7 +514,8 @@ export**하고 게이트도 dense에서 실행한다(앵커 접점의 기울기 
 
 | 발견 | 판정 | 조치 |
 |---|---|---|
-| CVD 게이트가 ΔE76 위에 서 있어 당시 cycle이 deutan에서 실질 실패(수정 전 조합 ΔE00 2.4) | ✅ 수정 | 게이트를 ΔE00으로 교체, cycle 전면 재탐색(신규 기본 min ΔE00 10.7) |
+| CVD 게이트가 ΔE76 위에 서 있어 당시 cycle이 deutan에서 실질 실패(수정 전 조합 ΔE00 2.4) | ✅ 수정 | 게이트를 ΔE00으로 교체, cycle 전면 재탐색(신규 기본 min ΔE00 10.3) |
+| 등화·측정 프로토콜 결함 3종 — hex 공간 등화(양자화 노이즈 지배)·구간선형 knot(앵커 꺾임)·round() 다운샘플(앨리어싱 cv 오염) | ✅ 수정 | float 공간 등화 + 단조 3차(pchip) + n-stop 직접 렌더(§9 공통 프로토콜). 초기 aurora-viridis 벤치마크가 이 결함 위의 측정이어서 폐기·재측정 |
 | 스텝 등화가 ΔE76에만 균등(ΔE00 cv 0.15~0.31) | ✅ 수정 | 등화 지표를 OKLab ΔE로 교체(cv 0.012~0.064) |
 | categorical에 배경 대비 게이트 부재(amber3 1.42:1) | ✅ 수정 | 라인 안전 대역 제약 후 재탐색 |
 | viridis급 광역 cmap 부재 | ✅ 설계 | `aurora` 신설(§9) |
