@@ -80,6 +80,11 @@ _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
         _n_cmaps,
     ),
     (
+        "docs/design_system/index.md",
+        r"(\d+) OKLCH-designed colormaps",
+        _n_cmaps,
+    ),
+    (
         "docs/fonts/index.md",
         r"bundles \*\*(\d+) text font files across \d+ families\*\*",
         _n_font_files,

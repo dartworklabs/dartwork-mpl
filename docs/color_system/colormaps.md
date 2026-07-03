@@ -74,6 +74,9 @@ strictly monotonic, so you skip the muddy midtones that appear when
 RGB hex codes are blended directly. Both panels below use the same
 2D Gaussian so you can read the ramps doing their job side-by-side.
 
+*Full walkthrough — interactive builder plus registration:
+[Color Space › Creating custom colormaps](space.md#creating-custom-colormaps).*
+
 ::::{grid} 1
 :gutter: 3
 
@@ -140,6 +143,6 @@ All `dc.*` maps are verified under three CVD simulations — **deuteranopia**,
 ## See also
 
 - [Colors](colors.md) — full named palette catalog
-- [Color Space & Manipulation](space.md) — programmatic color manipulation and custom colormap creation
+- [Color Space](space.md) — programmatic color manipulation and custom colormap creation
 - [Usage Guide › Colors](../usage_guide/colors.md) — practical color usage patterns
 - [API › Color Utilities](../api/color.rst) for all color functions

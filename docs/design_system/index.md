@@ -18,13 +18,14 @@ design systems (OpenColor, Tailwind, Material, Ant, Chakra, Primer).
 - 140+ swatches, copy-on-click
 - Full sheets, no hub click-through
 - Drop names anywhere matplotlib accepts a color
+- Interactive picker + `set_cycle`/`get_palette` → [Categorical palettes](../color_system/categorical-palettes)
 :::
 
 :::{grid-item-card} **Colormaps**
 :link: ../color_system/colormaps
 :link-type: doc
 
-16 OKLCH-designed colormaps across single-hue, multi-hue, diverging,
+56 OKLCH-designed colormaps across single-hue, multi-hue, diverging,
 cyclical, and categorical families.
 
 - Live explorer — tab to category, toggle Color / Mono
