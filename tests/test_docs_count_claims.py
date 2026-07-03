@@ -34,6 +34,20 @@ def _n_font_files() -> int:
     )
 
 
+def _n_font_families() -> int:
+    # Family = filename prefix before the first "-" (the grouping both
+    # font-gallery generators use). Pretendard and Noto Sans CJK ship as
+    # .otf, so the ".ttf"/".otf" filter must match — see
+    # test_fonts_generator_parity.
+    return len(
+        {
+            p.stem.split("-")[0]
+            for p in (_ASSET / "font").iterdir()
+            if p.suffix.lower() in {".ttf", ".otf"}
+        }
+    )
+
+
 def _n_presets() -> int:
     presets = json.loads(
         (_ASSET / "mplstyle" / "presets.json").read_text(encoding="utf-8")
@@ -69,6 +83,32 @@ _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
         "docs/fonts/index.md",
         r"bundles \*\*(\d+) text font files across \d+ families\*\*",
         _n_font_files,
+    ),
+    (
+        "docs/fonts/index.md",
+        r"text font files across \*?\*?(\d+) families",
+        _n_font_families,
+    ),
+    (
+        "docs/fonts/families.md",
+        r"bundles (\d+) professional font families",
+        _n_font_families,
+    ),
+    ("docs/fonts/families.md", r"with a total of (\d+) font", _n_font_files),
+    (
+        "docs/fonts/utilities.md",
+        r"all (\d+) bundled fonts are automatically",
+        _n_font_files,
+    ),
+    (
+        "docs/design_system/index.md",
+        r"(\d+) publication-grade fonts from \d+ families",
+        _n_font_files,
+    ),
+    (
+        "docs/design_system/index.md",
+        r"publication-grade fonts from (\d+) families",
+        _n_font_families,
     ),
     (
         "docs/usage_guide/styles.md",
