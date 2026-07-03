@@ -113,3 +113,9 @@ This is also why the `dm.style_spines`, `dm.add_grid`, and
 `dm.minimal_axes` wrappers were removed in 0.4.1
 ([#156](https://github.com/dartworklabs/dartwork-mpl/issues/156)) — the
 curated kwargs they encoded now live in the recipes above.
+
+## See also
+
+- [Layout and Typography](layout.md) — `simple_layout` and the spine / grid context these snippets tune
+- [Styles and Presets](styles.md) — set a preset first; the recipes adjust what it leaves open
+- [Colors and Colormaps](colors.md) — the `oc.*` / `dc.*` tokens the snippets reference
