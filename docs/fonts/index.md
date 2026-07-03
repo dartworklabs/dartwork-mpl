@@ -45,6 +45,7 @@ import dartwork_mpl as dm
 import matplotlib.pyplot as plt
 
 dm.style.use("scientific")  # Apply dartwork style (includes Roboto font)
+plt.rcParams["font.family"] = "Inter"  # optional: pick any bundled family (see the summary table below)
 
 fig, ax = plt.subplots()
 ax.set_title("Publication-Ready Title", fontsize=dm.fs(4), fontweight=dm.fw(2))
