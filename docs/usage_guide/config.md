@@ -138,6 +138,9 @@ mutates the dataclass defaults.
 
 ## When to add a new field
 
+*For library contributors — most users can skip this section; it's about
+proposing a new `dm.config` field, not using the existing ones.*
+
 Don't reach for `dm.config` for everything. Use it when:
 
 - The toggle is a **bool / enum default** the user might want to flip

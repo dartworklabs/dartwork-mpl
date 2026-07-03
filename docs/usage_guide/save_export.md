@@ -20,7 +20,7 @@ dm.save_formats(
     validate=True,   # runs visual checks before saving (see below)
 )
 dm.save_and_show(fig, "output/experiment")  # save + inline preview
-dm.show("output/forecast.svg", size=540)    # display a saved file in notebooks
+dm.show("output/experiment.svg", size=540)  # display a saved file in notebooks
 ```
 
 :::{figure} images/save_scientific.svg

@@ -187,7 +187,9 @@ requested margin from each figure edge. This means:
 - **Unit-flexible** — `margin` accepts `Length`, unit strings (`"5mm"`),
   percentages (`"5%"`), or figure-fractions
 
-**Key layout functions:**
+**Key layout functions** — the full layout API at a glance (for the
+`simple_layout` margin / GridSpec options specifically, see
+[Which call to use?](#which-call-to-use) above):
 
 | Function                      | What it solves                                                |
 | ----------------------------- | ------------------------------------------------------------- |

@@ -4,10 +4,6 @@ Short copy-pasteable matplotlib snippets for the common spine and
 grid styling patterns. Each recipe is the canonical dartwork-mpl
 look written as raw matplotlib — drop into any axes after plotting.
 
-The wrappers `dm.style_spines`, `dm.add_grid`, and `dm.minimal_axes`
-were removed in 0.4.1 ([#156](https://github.com/dartworklabs/dartwork-mpl/issues/156));
-the curated kwargs that they encoded live here instead.
-
 ## Publication grid
 
 A subtle grid behind the data, in dartwork-mpl's recommended gray.
@@ -112,3 +108,8 @@ default kwargs are a learning tax — every reader has to chase down
 what they expand to. Inlining the matplotlib calls keeps the
 project's surface honest and the code self-explanatory. The recipes
 above preserve the curated values; nothing is lost.
+
+This is also why the `dm.style_spines`, `dm.add_grid`, and
+`dm.minimal_axes` wrappers were removed in 0.4.1
+([#156](https://github.com/dartworklabs/dartwork-mpl/issues/156)) — the
+curated kwargs they encoded now live in the recipes above.
