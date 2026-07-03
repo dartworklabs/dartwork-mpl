@@ -313,8 +313,7 @@ Read-only data that the AI assistant can retrieve on demand.
 | `dartwork-mpl://styles/{preset}`          | Content of a specific mplstyle preset file                                  |
 | `dartwork-mpl://templates/list`           | Available plot template types                                               |
 | `dartwork-mpl://templates/{plot_type}`    | Boilerplate Python script for a specific plot type                          |
-| `dartwork-mpl://guide/general-guide`      | _Deprecated alias_ for `guide/agent-entry` (kept for 0.3 clients)           |
-| `dartwork-mpl://guide/layout-guide`       | _Deprecated alias_ for `guide/policy` (kept for 0.3 clients)                |
+| `dartwork-mpl://templates/advanced/{plot_type}` | Tier-2 (advanced) template for a plot type — synthetic data, reference lines, value labels, narrative title; falls back to the basic template |
 
 ### Tools
 
