@@ -330,8 +330,11 @@ Callable functions the AI assistant can invoke during a conversation.
 | `lint_dartwork_mpl_code_json(code)`         | Same as above, returning structured JSON for programmatic consumption           |
 | `apply_lint_fixes(code)`                    | Apply safe identifier-level rewrites (`plt.style.use → dm.style.use`, no-arg `tight_layout()` → `dm.simple_layout(fig)`, `dm.cm2in → dm.cm`); returns fixed code + the issues that still need agent attention |
 | `migrate_legacy_code(code)`                 | Rewrite 0.3-era source toward 0.4 idioms (safe substitutions + TODO hints)      |
+| `suggest_chart_type(x_type, y_type, ...)`   | Recommend a chart type from the data's characteristics, with pointers to the matching basic and advanced templates |
 | `find_template(intent, top_k)`              | Rank the 18 bundled AI plot templates against a free-text intent                |
 | `render_template(plot_type)`                | Execute a bundled template in a subprocess and return the rendered PNG (base64 or path) for inline preview |
+| `render_template_advanced(plot_type)`       | Render the tier-2 (advanced) version of a bundled template — synthetic data, reference lines, value labels, and a narrative title, so it reads like a finished report figure |
+| `compose_layered_plot(plot_type, layers)`   | Return a template plus a checklist of annotation/composition layers to apply (guidance for the agent to edit, not a code rewriter) |
 | `validate_plot_data(plot_type, data_json)`  | Validate whether a data structure matches a plot type's requirements            |
 | `validate_generated_plot(code)`             | Execute a script in an isolated subprocess and return the `dm.validate_figure` report (overflow, clipped text, asymmetric margins). Lint-critical issues short-circuit before execution. |
 | `dartwork_mpl_info()`                       | Get a structured summary of all capabilities, presets, and templates            |
