@@ -21,11 +21,24 @@ Tests that *intentionally* depend on a specific style should call
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
+from pathlib import Path
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pytest
+
+_SSOT_PATH = (
+    Path(__file__).parents[1]
+    / "docs/superpowers/specs/assets/2026-07-03-color-system-v5/color_v5_ssot.json"
+)
+
+
+@pytest.fixture(scope="session")
+def v5_ssot() -> dict:
+    """설계 확정 SSOT (스펙 §7 — 구현이 이 값을 재생산해야 함)."""
+    return json.loads(_SSOT_PATH.read_text(encoding="utf-8"))
 
 
 @pytest.fixture(autouse=True)
