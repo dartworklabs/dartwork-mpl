@@ -6,6 +6,12 @@ ladder and screened for grayscale and color-blindness (CVD) legibility;
 the loudest high-chroma sets deliberately trade some CVD margin for
 vibrancy (the generation pipeline reports both scores per palette).
 
+:::{note}
+**This page** picks a categorical palette by intent and applies it with
+`set_cycle` / `get_palette`. For a static swatch reference of *every* color —
+all `dc.*` shades plus the six third-party systems — see **[Palettes](colors.md)**.
+:::
+
 Pick by the *shape and job* of your data:
 
 - **Ordered** (rank / amount) → Sequential, or Neutral if hue carries no meaning

@@ -5,6 +5,13 @@ The `dc.*` ("dartwork color") family is the recommended starting point
 for publication figures; six third-party design systems are bundled
 for cross-team consistency.
 
+:::{note}
+**This page** is the static swatch reference — every color as a full-width
+sheet for browsing and copy-paste. To *pick* a categorical `dc.*` palette
+interactively (by intent, with B&W and color-blindness previews) and apply it
+with `set_cycle` / `get_palette`, see **[Categorical palettes](categorical-palettes.md)**.
+:::
+
 ## How to read the labels
 
 - Format: `library.colorweight` (e.g. `tw.blue500`, `md.red700`, `oc.gray6`).
@@ -31,12 +38,18 @@ plt.show()
 families (sequential, analogous, duo, balanced, neutral, emphasis, muted,
 vivid, diverging, tone, accessible). Every palette is 8 colours,
 CIELAB-generated and verified for black-&-white + colour-blindness, anchored on
-the house-teal hue family. Reach for `dc.trustworthy` as the everyday default,
-`dc.vivid` / `dc.neon` for many categories, `dc.cool_warm` / `dc.teal_amber`
-for ± diverging data, or `dc.teal_accent` to highlight one series. The interactive
-picker (intent, B&W, colour-blindness, 9 chart shapes) lives on the
-[Categorical palettes](categorical-palettes.md) page. The pre-0.5 ad-hoc names
-(`dc.ocean`, `dc.sunset`, …) were **removed** — see the <!-- color-lint: ignore -->
+the house-teal hue family.
+
+Reach for:
+
+- `dc.trustworthy` — the everyday default
+- `dc.vivid` / `dc.neon` — many categories
+- `dc.cool_warm` / `dc.teal_amber` — ± diverging data
+- `dc.teal_accent` — highlight one series
+
+The interactive picker (intent, B&W, colour-blindness, 9 chart shapes) lives on
+the [Categorical palettes](categorical-palettes.md) page. The pre-0.5 ad-hoc
+names (`dc.ocean`, `dc.sunset`, …) were **removed** — see the <!-- color-lint: ignore -->
 [migration guide](../migration.md) for the rename map.
 
 ```{raw} html
