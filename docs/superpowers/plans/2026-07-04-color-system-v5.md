@@ -1886,6 +1886,7 @@ dc.legacy_teal_rose (name ceded to v5 catalog)."
 **Files:**
 - Create: `src/dartwork_mpl/colors/_compat_v4.py`
 - Modify: `src/dartwork_mpl/colors/_color.py` (`Color.from_name`에 deprecation 훅 1줄), `colors/__init__.py`·`dartwork_mpl/__init__.py` export
+- Modify: `src/dartwork_mpl/helpers/colors.py` (`get_palette` 큐레이트 bare-name 길이 정책 — 아래 §get_palette 참조)
 - Test: `tests/test_color_v5_compat.py`
 
 **Interfaces:**
@@ -1894,6 +1895,19 @@ dc.legacy_teal_rose (name ceded to v5 catalog)."
   - `set_palette_version(v: int) -> None` — `5`: 충돌 토큰(dc.teal*·dc.indigo*·dc.gray* 0-7)을 v5 hex로 remap; `4`: 동결 레거시로 복원 (mpl named mapping 직접 갱신)
   - `LEGACY_TOKEN_NAMES: frozenset[str]` — 레거시 전용 토큰(`dc.vivid*`·`dc.pastel*`·`dc.0-7` 등 v5 counterpart 없는 것 포함 전체)
   - `warn_if_legacy(name: str) -> None` — 세션당 토큰당 1회 DeprecationWarning (제거 예정 버전 명시: "+2 minor")
+
+**§get_palette — 큐레이트 bare-name 길이 정책 (Task 9 리뷰 Important 해소):**
+Task 9에서 v5 토큰을 등록하면서 `dc.teal8/9`·`dc.indigo8/9`·`dc.gray8/9`가 생겨,
+`get_palette("teal")`(정규식 `dc.<name>\d+` 스캔)이 기존 8스텝(레거시 0-7)에서 10스텝
+(레거시 0-7 + v5 8-9)으로 *조용히* 변했다. teal 0-7(레거시 생성기)과 teal 8-9(v5 생성기)는
+서로 다른 명도·채도 곡선이라 이 10스텝은 비정합 램프다(§11 "no silent change" 위반).
+
+**해소**: `get_palette`의 *레거시 큐레이트 3종*(teal·indigo·gray)에 대해 **버전 인식 길이 캡**을
+적용한다 — 기본(v4)은 레거시 8스텝만 반환(비정합 8-9 제외, 기존 계약 보존), `set_palette_version(5)`
+opt-in 시 v5 remap으로 0-7이 v5가 되어 *정합 10스텝* 반환. `helpers/colors.py`의
+`_palette_color_names`(또는 `get_palette`)에 이 3종 캡 로직을 추가하고, 코드 주석으로 §11/본 Task를
+가리켜 결정을 durable하게 남긴다. 그 외 family(red·blue 등 legacy 무충돌)는 항상 v5 10스텝.
+테스트: 기본 `len(get_palette("teal"))==8`, `set_palette_version(5)` 후 `==10`(+원복 `set_palette_version(4)`).
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
