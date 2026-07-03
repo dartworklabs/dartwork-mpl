@@ -1,0 +1,3696 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="389.094803pt" height="180.982756pt" viewBox="0 0 389.094803 180.982756" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-07-03T20:54:39.221283</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.8, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 180.982756 
+L 389.094803 180.982756 
+L 389.094803 0 
+L 0 0 
+L 0 180.982756 
+z
+" style="fill: none"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 102.828696 96.933543 
+L 142.658625 96.933543 
+L 142.658625 51.034961 
+L 102.828696 51.034961 
+z
+" clip-path="url(#pee3765c53d)" style="fill: #1385e0; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 144.190545 96.933543 
+L 184.020475 96.933543 
+L 184.020475 51.034961 
+L 144.190545 51.034961 
+z
+" clip-path="url(#pee3765c53d)" style="fill: #8258f7; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 102.828696 154.306772 
+L 142.658625 154.306772 
+L 142.658625 108.408189 
+L 102.828696 108.408189 
+z
+" clip-path="url(#pee3765c53d)" style="fill: #347ade; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 144.190545 154.306772 
+L 184.020475 154.306772 
+L 184.020475 108.408189 
+L 144.190545 108.408189 
+z
+" clip-path="url(#pee3765c53d)" style="fill: #0073f4; stroke: #ffffff; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <!-- 정상 시각 -->
+    <g style="fill: #343a40" transform="translate(73.922935 75.966752) scale(0.065 -0.065)">
+     <defs>
+      <path id="Paperlogy-3Light-c815" d="M 4665 5220 
+L 5049 5220 
+L 5049 2148 
+L 4665 2148 
+L 4665 3740 
+L 3499 3740 
+L 3499 4096 
+L 4665 4096 
+L 4665 5220 
+z
+M 2041 3541 
+Q 1799 3051 1362 2745 
+Q 925 2439 349 2347 
+L 349 2716 
+Q 1060 2844 1476 3352 
+Q 1892 3861 1941 4686 
+L 413 4686 
+L 413 5042 
+L 3733 5042 
+L 3733 4686 
+L 2325 4686 
+Q 2304 4260 2183 3883 
+L 3897 2702 
+L 3691 2389 
+L 2041 3541 
+z
+M 2909 1920 
+Q 3890 1920 4491 1657 
+Q 5092 1394 5092 853 
+Q 5092 313 4494 50 
+Q 3897 -213 2909 -213 
+Q 1927 -213 1333 50 
+Q 740 313 740 853 
+Q 740 1394 1337 1657 
+Q 1934 1920 2909 1920 
+z
+M 2909 135 
+Q 3698 135 4192 320 
+Q 4686 505 4686 853 
+Q 4686 1202 4192 1387 
+Q 3698 1572 2909 1572 
+Q 2126 1572 1632 1387 
+Q 1138 1202 1138 853 
+Q 1138 505 1632 320 
+Q 2126 135 2909 135 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-c0c1" d="M 5646 3691 
+L 4857 3691 
+L 4857 2197 
+L 4473 2197 
+L 4473 5220 
+L 4857 5220 
+L 4857 4075 
+L 5646 4075 
+L 5646 3691 
+z
+M 1970 3627 
+Q 1700 3115 1269 2784 
+Q 839 2453 263 2347 
+L 263 2724 
+Q 782 2837 1159 3185 
+Q 1536 3534 1731 4046 
+Q 1927 4558 1934 5156 
+L 2318 5134 
+Q 2318 4516 2119 3961 
+L 3833 2780 
+L 3634 2475 
+L 1970 3627 
+z
+M 2781 1970 
+Q 3755 1970 4348 1699 
+Q 4942 1429 4942 875 
+Q 4942 320 4348 53 
+Q 3755 -213 2781 -213 
+Q 1806 -213 1212 53 
+Q 619 320 619 875 
+Q 619 1429 1212 1699 
+Q 1806 1970 2781 1970 
+z
+M 2781 142 
+Q 3556 142 4050 330 
+Q 4544 519 4544 875 
+Q 4544 1237 4050 1425 
+Q 3556 1614 2781 1614 
+Q 2005 1614 1514 1425 
+Q 1024 1237 1024 875 
+Q 1024 519 1514 330 
+Q 2005 142 2781 142 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-20" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-c2dc" d="M 5006 -242 
+L 4622 -242 
+L 4622 5220 
+L 5006 5220 
+L 5006 -242 
+z
+M 2468 5063 
+Q 2453 3762 2247 2773 
+L 4004 370 
+L 3698 135 
+L 2133 2304 
+Q 1870 1330 1422 761 
+Q 974 192 363 121 
+L 363 512 
+Q 910 612 1294 1252 
+Q 1678 1892 1873 2891 
+Q 2069 3890 2077 5070 
+L 2468 5063 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-ac01" d="M 4857 3520 
+L 4857 1956 
+L 4473 1956 
+L 4473 5220 
+L 4857 5220 
+L 4857 3904 
+L 5646 3904 
+L 5646 3520 
+L 4857 3520 
+z
+M 3335 4480 
+Q 3335 3328 2567 2759 
+Q 1799 2190 405 2190 
+L 405 2567 
+Q 1621 2567 2286 3029 
+Q 2951 3492 2951 4437 
+L 2951 4686 
+L 405 4686 
+L 405 5049 
+L 3335 5049 
+L 3335 4480 
+z
+M 4857 1600 
+L 4857 -213 
+L 4466 -213 
+L 4466 1237 
+L 576 1237 
+L 576 1600 
+L 4857 1600 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Paperlogy-3Light-c815"/>
+     <use xlink:href="#Paperlogy-3Light-c0c1" transform="translate(87.999985 0)"/>
+     <use xlink:href="#Paperlogy-3Light-20" transform="translate(175.999969 0)"/>
+     <use xlink:href="#Paperlogy-3Light-c2dc" transform="translate(197.999954 0)"/>
+     <use xlink:href="#Paperlogy-3Light-ac01" transform="translate(285.999939 0)"/>
+    </g>
+   </g>
+   <g id="text_2">
+    <!-- 2형 색각이상 -->
+    <g style="fill: #343a40" transform="translate(63.869263 129.428199) scale(0.065 -0.065)">
+     <defs>
+      <path id="Paperlogy-3Light-32" d="M 3861 0 
+L 413 0 
+L 413 284 
+L 2510 2368 
+Q 2923 2773 3068 3061 
+Q 3214 3349 3214 3655 
+Q 3214 4124 2894 4387 
+Q 2574 4651 1977 4651 
+Q 1053 4651 562 4075 
+L 277 4302 
+Q 555 4651 996 4832 
+Q 1437 5013 2005 5013 
+Q 2745 5013 3179 4657 
+Q 3613 4302 3613 3684 
+Q 3613 3300 3445 2951 
+Q 3278 2603 2809 2148 
+L 1017 363 
+L 3861 363 
+L 3861 0 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-d615" d="M 270 4352 
+L 270 4686 
+L 1813 4686 
+L 1813 5319 
+L 2205 5319 
+L 2205 4686 
+L 3613 4686 
+L 3613 4352 
+L 270 4352 
+z
+M 3741 2667 
+L 3741 3015 
+L 4672 3015 
+L 4672 3790 
+L 3741 3790 
+L 3741 4146 
+L 4672 4146 
+L 4672 5220 
+L 5049 5220 
+L 5049 1870 
+L 4672 1870 
+L 4672 2667 
+L 3741 2667 
+z
+M 2013 2020 
+Q 1344 2020 942 2283 
+Q 541 2546 541 3001 
+Q 541 3463 942 3726 
+Q 1344 3989 2013 3989 
+Q 2674 3989 3072 3726 
+Q 3470 3463 3470 3001 
+Q 3470 2546 3072 2283 
+Q 2674 2020 2013 2020 
+z
+M 2013 3662 
+Q 1493 3662 1209 3473 
+Q 925 3285 925 3001 
+Q 925 2716 1205 2535 
+Q 1486 2354 2013 2354 
+Q 2539 2354 2820 2535 
+Q 3101 2716 3101 3001 
+Q 3101 3292 2820 3477 
+Q 2539 3662 2013 3662 
+z
+M 2930 1685 
+Q 3918 1685 4515 1457 
+Q 5113 1230 5113 740 
+Q 5113 249 4512 18 
+Q 3911 -213 2930 -213 
+Q 1949 -213 1348 18 
+Q 747 249 747 740 
+Q 747 1230 1344 1457 
+Q 1941 1685 2930 1685 
+z
+M 2930 128 
+Q 3726 128 4217 281 
+Q 4708 434 4708 740 
+Q 4708 1038 4213 1194 
+Q 3719 1351 2930 1351 
+Q 2141 1351 1643 1194 
+Q 1145 1038 1145 740 
+Q 1145 434 1639 281 
+Q 2133 128 2930 128 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-c0c9" d="M 5149 1849 
+L 4772 1849 
+L 4772 3520 
+L 3677 3520 
+L 3677 1906 
+L 3307 1906 
+L 3307 5184 
+L 3677 5184 
+L 3677 3897 
+L 4772 3897 
+L 4772 5220 
+L 5149 5220 
+L 5149 1849 
+z
+M 1600 3385 
+Q 1209 2290 249 2048 
+L 249 2425 
+Q 917 2631 1191 3345 
+Q 1465 4060 1465 5156 
+L 1835 5141 
+Q 1835 4338 1721 3797 
+L 2987 2368 
+L 2724 2112 
+L 1600 3385 
+z
+M 5149 1493 
+L 5149 -213 
+L 4765 -213 
+L 4765 1138 
+L 683 1138 
+L 683 1493 
+L 5149 1493 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-c774" d="M 4622 -242 
+L 4622 5220 
+L 5013 5220 
+L 5013 -242 
+L 4622 -242 
+z
+M 2041 5063 
+Q 2496 5063 2841 4785 
+Q 3186 4508 3381 3946 
+Q 3577 3385 3577 2553 
+Q 3577 1721 3381 1159 
+Q 3186 597 2841 320 
+Q 2496 43 2041 43 
+Q 1344 43 924 679 
+Q 505 1316 505 2553 
+Q 505 3790 924 4426 
+Q 1344 5063 2041 5063 
+z
+M 2041 4686 
+Q 1522 4686 1202 4145 
+Q 882 3605 882 2553 
+Q 882 1500 1202 960 
+Q 1522 420 2041 420 
+Q 2553 420 2869 960 
+Q 3186 1500 3186 2553 
+Q 3186 3605 2869 4145 
+Q 2553 4686 2041 4686 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Paperlogy-3Light-32"/>
+     <use xlink:href="#Paperlogy-3Light-d615" transform="translate(66.666656 0)"/>
+     <use xlink:href="#Paperlogy-3Light-20" transform="translate(154.666641 0)"/>
+     <use xlink:href="#Paperlogy-3Light-c0c9" transform="translate(176.666626 0)"/>
+     <use xlink:href="#Paperlogy-3Light-ac01" transform="translate(264.666611 0)"/>
+     <use xlink:href="#Paperlogy-3Light-c774" transform="translate(352.666595 0)"/>
+     <use xlink:href="#Paperlogy-3Light-c0c1" transform="translate(440.66658 0)"/>
+    </g>
+    <!-- (deutan) 시뮬레이션 -->
+    <g style="fill: #343a40" transform="translate(41.005513 137.251762) scale(0.065 -0.065)">
+     <defs>
+      <path id="Paperlogy-3Light-28" d="M 1358 -356 
+Q 1017 199 835 928 
+Q 654 1657 654 2489 
+Q 654 3328 835 4060 
+Q 1017 4793 1358 5333 
+L 1693 5333 
+Q 996 4167 996 2489 
+Q 996 1650 1166 946 
+Q 1337 242 1693 -356 
+L 1358 -356 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-64" d="M 3797 0 
+L 3442 0 
+L 3442 889 
+Q 3236 455 2855 213 
+Q 2475 -28 1998 -28 
+Q 1508 -28 1109 210 
+Q 711 448 480 882 
+Q 249 1316 249 1863 
+Q 249 2411 480 2844 
+Q 711 3278 1109 3516 
+Q 1508 3755 1998 3755 
+Q 2468 3755 2848 3516 
+Q 3229 3278 3428 2852 
+L 3428 5276 
+L 3797 5276 
+L 3797 0 
+z
+M 2034 327 
+Q 2432 327 2748 519 
+Q 3065 711 3246 1063 
+Q 3428 1415 3428 1863 
+Q 3428 2311 3246 2663 
+Q 3065 3015 2748 3207 
+Q 2432 3399 2034 3399 
+Q 1629 3399 1312 3207 
+Q 996 3015 814 2663 
+Q 633 2311 633 1863 
+Q 633 1415 814 1063 
+Q 996 711 1312 519 
+Q 1629 327 2034 327 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-65" d="M 3641 1771 
+L 626 1771 
+Q 640 1344 832 1017 
+Q 1024 690 1351 505 
+Q 1678 320 2091 320 
+Q 2432 320 2727 451 
+Q 3022 583 3214 839 
+L 3435 590 
+Q 3193 284 2844 128 
+Q 2496 -28 2084 -28 
+Q 1557 -28 1137 213 
+Q 718 455 483 885 
+Q 249 1316 249 1863 
+Q 249 2411 473 2841 
+Q 697 3271 1084 3513 
+Q 1472 3755 1956 3755 
+Q 2432 3755 2816 3516 
+Q 3200 3278 3420 2855 
+Q 3641 2432 3641 1884 
+L 3641 1771 
+z
+M 1956 3420 
+Q 1408 3420 1038 3040 
+Q 669 2660 626 2062 
+L 3293 2062 
+Q 3264 2453 3082 2762 
+Q 2901 3072 2609 3246 
+Q 2318 3420 1956 3420 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-75" d="M 3691 0 
+L 3335 0 
+L 3335 796 
+Q 3157 405 2812 188 
+Q 2468 -28 2005 -28 
+Q 1323 -28 928 377 
+Q 533 782 533 1550 
+L 533 3719 
+L 903 3719 
+L 903 1593 
+Q 903 974 1202 654 
+Q 1501 334 2055 334 
+Q 2638 334 2979 711 
+Q 3321 1088 3321 1742 
+L 3321 3719 
+L 3691 3719 
+L 3691 0 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-74" d="M 2418 242 
+Q 2283 107 2087 39 
+Q 1892 -28 1671 -28 
+Q 1209 -28 956 245 
+Q 704 519 704 996 
+L 704 3371 
+L 57 3371 
+L 57 3705 
+L 704 3705 
+L 704 4537 
+L 1074 4537 
+L 1074 3705 
+L 2190 3705 
+L 2190 3371 
+L 1074 3371 
+L 1074 1031 
+Q 1074 683 1237 498 
+Q 1401 313 1714 313 
+Q 1870 313 2016 370 
+Q 2162 427 2261 526 
+L 2418 242 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-61" d="M 1835 3755 
+Q 2503 3755 2858 3399 
+Q 3214 3044 3214 2354 
+L 3214 0 
+L 2859 0 
+L 2859 676 
+Q 2695 341 2368 156 
+Q 2041 -28 1593 -28 
+Q 996 -28 654 263 
+Q 313 555 313 1038 
+Q 313 1500 633 1792 
+Q 953 2084 1643 2084 
+L 2845 2084 
+Q 2845 2204 2830 2432 
+Q 2816 2916 2556 3164 
+Q 2297 3413 1806 3413 
+Q 1451 3413 1131 3281 
+Q 811 3150 590 2937 
+L 413 3221 
+Q 683 3470 1056 3612 
+Q 1429 3755 1835 3755 
+z
+M 1650 284 
+Q 2091 284 2393 494 
+Q 2695 704 2845 1102 
+L 2845 1792 
+L 1664 1792 
+Q 1152 1792 917 1593 
+Q 683 1394 683 1060 
+Q 683 697 939 490 
+Q 1195 284 1650 284 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-6e" d="M 2290 3755 
+Q 2951 3755 3338 3349 
+Q 3726 2944 3726 2176 
+L 3726 0 
+L 3349 0 
+L 3349 2133 
+Q 3349 2752 3057 3072 
+Q 2766 3392 2226 3392 
+Q 1621 3392 1269 3011 
+Q 917 2631 917 1984 
+L 917 0 
+L 541 0 
+L 541 3719 
+L 903 3719 
+L 903 2923 
+Q 1081 3314 1440 3534 
+Q 1799 3755 2290 3755 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-29" d="M 263 -356 
+Q 619 242 786 946 
+Q 953 1650 953 2489 
+Q 953 4174 263 5333 
+L 590 5333 
+Q 932 4800 1109 4067 
+Q 1287 3335 1287 2489 
+Q 1287 1643 1109 917 
+Q 932 192 590 -356 
+L 263 -356 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-bbac" d="M 647 3449 
+L 647 5120 
+L 4992 5120 
+L 4992 3449 
+L 647 3449 
+z
+M 1031 4793 
+L 1031 3776 
+L 4608 3776 
+L 4608 4793 
+L 1031 4793 
+z
+M 3982 1920 
+L 5013 1920 
+L 5013 754 
+L 1003 754 
+L 1003 178 
+L 5113 178 
+L 5113 -142 
+L 626 -142 
+L 626 1045 
+L 4629 1045 
+L 4629 1600 
+L 612 1600 
+L 612 1920 
+L 1650 1920 
+L 1650 2617 
+L 242 2617 
+L 242 2951 
+L 5390 2951 
+L 5390 2617 
+L 3982 2617 
+L 3982 1920 
+z
+M 2027 2617 
+L 2027 1920 
+L 3605 1920 
+L 3605 2617 
+L 2027 2617 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-b808" d="M 5149 -242 
+L 4772 -242 
+L 4772 5220 
+L 5149 5220 
+L 5149 -242 
+z
+M 3918 5184 
+L 3918 -149 
+L 3541 -149 
+L 3541 2496 
+L 2788 2496 
+L 2788 2873 
+L 3541 2873 
+L 3541 5184 
+L 3918 5184 
+z
+M 1301 484 
+Q 1856 484 2250 551 
+Q 2645 619 2958 775 
+L 2958 391 
+Q 2382 121 1301 121 
+L 434 121 
+L 434 2780 
+L 2069 2780 
+L 2069 4622 
+L 434 4622 
+L 434 4985 
+L 2439 4985 
+L 2439 2418 
+L 797 2418 
+L 797 484 
+L 1301 484 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-c158" d="M 3406 3036 
+L 3406 3385 
+L 4672 3385 
+L 4672 4203 
+L 3406 4203 
+L 3406 4551 
+L 4672 4551 
+L 4672 5220 
+L 5049 5220 
+L 5049 1152 
+L 4672 1152 
+L 4672 3036 
+L 3406 3036 
+z
+M 1899 3292 
+Q 1636 2738 1220 2375 
+Q 804 2012 270 1913 
+L 270 2297 
+Q 775 2404 1145 2823 
+Q 1515 3243 1707 3858 
+Q 1899 4473 1906 5156 
+L 2290 5134 
+Q 2290 4331 2055 3669 
+L 3741 2219 
+L 3485 1920 
+L 1899 3292 
+z
+M 5184 -135 
+L 747 -135 
+L 747 1515 
+L 1131 1515 
+L 1131 235 
+L 5184 235 
+L 5184 -135 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Paperlogy-3Light-28"/>
+     <use xlink:href="#Paperlogy-3Light-64" transform="translate(30.444443 0)"/>
+     <use xlink:href="#Paperlogy-3Light-65" transform="translate(99.555542 0)"/>
+     <use xlink:href="#Paperlogy-3Light-75" transform="translate(160.333313 0)"/>
+     <use xlink:href="#Paperlogy-3Light-74" transform="translate(226.444412 0)"/>
+     <use xlink:href="#Paperlogy-3Light-61" transform="translate(264.083298 0)"/>
+     <use xlink:href="#Paperlogy-3Light-6e" transform="translate(321.277725 0)"/>
+     <use xlink:href="#Paperlogy-3Light-29" transform="translate(387.833267 0)"/>
+     <use xlink:href="#Paperlogy-3Light-20" transform="translate(418.388809 0)"/>
+     <use xlink:href="#Paperlogy-3Light-c2dc" transform="translate(440.388794 0)"/>
+     <use xlink:href="#Paperlogy-3Light-bbac" transform="translate(528.388779 0)"/>
+     <use xlink:href="#Paperlogy-3Light-b808" transform="translate(616.388763 0)"/>
+     <use xlink:href="#Paperlogy-3Light-c774" transform="translate(704.388748 0)"/>
+     <use xlink:href="#Paperlogy-3Light-c158" transform="translate(792.388733 0)"/>
+    </g>
+   </g>
+   <g id="text_3">
+    <!-- blue7 -->
+    <g style="fill: #868e96" transform="translate(114.90616 46.445102) scale(0.055 -0.055)">
+     <defs>
+      <path id="Paperlogy-3Light-62" d="M 2439 3755 
+Q 2923 3755 3321 3516 
+Q 3719 3278 3946 2844 
+Q 4174 2411 4174 1863 
+Q 4174 1316 3946 882 
+Q 3719 448 3321 210 
+Q 2923 -28 2439 -28 
+Q 1956 -28 1575 213 
+Q 1195 455 989 889 
+L 989 0 
+L 626 0 
+L 626 5276 
+L 1003 5276 
+L 1003 2852 
+Q 1202 3278 1586 3516 
+Q 1970 3755 2439 3755 
+z
+M 2404 327 
+Q 2802 327 3118 519 
+Q 3435 711 3616 1063 
+Q 3797 1415 3797 1863 
+Q 3797 2311 3616 2663 
+Q 3435 3015 3118 3207 
+Q 2802 3399 2404 3399 
+Q 1998 3399 1681 3207 
+Q 1365 3015 1184 2663 
+Q 1003 2311 1003 1863 
+Q 1003 1415 1184 1063 
+Q 1365 711 1681 519 
+Q 1998 327 2404 327 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-6c" d="M 1003 5276 
+L 1003 0 
+L 626 0 
+L 626 5276 
+L 1003 5276 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-37" d="M 3897 4700 
+L 1757 0 
+L 1316 0 
+L 3428 4622 
+L 676 4622 
+L 676 3669 
+L 299 3669 
+L 299 4978 
+L 3897 4978 
+L 3897 4700 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Paperlogy-3Light-62"/>
+     <use xlink:href="#Paperlogy-3Light-6c" transform="translate(69.111099 0)"/>
+     <use xlink:href="#Paperlogy-3Light-75" transform="translate(94.555542 0)"/>
+     <use xlink:href="#Paperlogy-3Light-65" transform="translate(160.666641 0)"/>
+     <use xlink:href="#Paperlogy-3Light-37" transform="translate(218.319412 0)"/>
+    </g>
+   </g>
+   <g id="text_4">
+    <!-- violet7 -->
+    <g style="fill: #868e96" transform="translate(154.883127 46.445102) scale(0.055 -0.055)">
+     <defs>
+      <path id="Paperlogy-3Light-76" d="M 1906 0 
+L 1536 0 
+L -64 3719 
+L 334 3719 
+L 1728 455 
+L 3129 3719 
+L 3506 3719 
+L 1906 0 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-69" d="M 818 4594 
+Q 690 4594 601 4679 
+Q 512 4764 512 4892 
+Q 512 5020 601 5109 
+Q 690 5198 818 5198 
+Q 939 5198 1028 5113 
+Q 1117 5028 1117 4907 
+Q 1117 4772 1028 4683 
+Q 939 4594 818 4594 
+z
+M 1003 3719 
+L 1003 0 
+L 626 0 
+L 626 3719 
+L 1003 3719 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-6f" d="M 2027 -28 
+Q 1522 -28 1116 213 
+Q 711 455 480 885 
+Q 249 1316 249 1863 
+Q 249 2411 480 2841 
+Q 711 3271 1116 3513 
+Q 1522 3755 2027 3755 
+Q 2532 3755 2937 3513 
+Q 3342 3271 3573 2841 
+Q 3805 2411 3805 1863 
+Q 3805 1316 3573 885 
+Q 3342 455 2937 213 
+Q 2532 -28 2027 -28 
+z
+M 2027 327 
+Q 2425 327 2745 519 
+Q 3065 711 3246 1063 
+Q 3428 1415 3428 1863 
+Q 3428 2311 3246 2663 
+Q 3065 3015 2745 3207 
+Q 2425 3399 2027 3399 
+Q 1629 3399 1312 3207 
+Q 996 3015 814 2663 
+Q 633 2311 633 1863 
+Q 633 1415 814 1063 
+Q 996 711 1312 519 
+Q 1629 327 2027 327 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Paperlogy-3Light-76"/>
+     <use xlink:href="#Paperlogy-3Light-69" transform="translate(53.777771 0)"/>
+     <use xlink:href="#Paperlogy-3Light-6f" transform="translate(79.222214 0)"/>
+     <use xlink:href="#Paperlogy-3Light-6c" transform="translate(142.555542 0)"/>
+     <use xlink:href="#Paperlogy-3Light-65" transform="translate(167.999985 0)"/>
+     <use xlink:href="#Paperlogy-3Light-74" transform="translate(228.777756 0)"/>
+     <use xlink:href="#Paperlogy-3Light-37" transform="translate(268.666641 0)"/>
+    </g>
+   </g>
+   <g id="text_5">
+    <!-- 정상 시각엔 다른 두 색이… -->
+    <g transform="translate(53.807244 27.822992) scale(0.08 -0.08)">
+     <defs>
+      <path id="Paperlogy-4Regular-c815" d="M 4573 5220 
+L 5085 5220 
+L 5085 2148 
+L 4573 2148 
+L 4573 3684 
+L 3506 3684 
+L 3506 4153 
+L 4573 4153 
+L 4573 5220 
+z
+M 2041 3456 
+Q 1785 2987 1344 2691 
+Q 903 2396 334 2325 
+L 334 2809 
+Q 1003 2916 1397 3388 
+Q 1792 3861 1849 4601 
+L 398 4601 
+L 398 5063 
+L 3719 5063 
+L 3719 4601 
+L 2368 4601 
+Q 2347 4210 2240 3890 
+L 3890 2780 
+L 3627 2375 
+L 2041 3456 
+z
+M 2909 1948 
+Q 3911 1948 4519 1681 
+Q 5127 1415 5127 860 
+Q 5127 306 4519 39 
+Q 3911 -228 2909 -228 
+Q 1906 -228 1301 39 
+Q 697 306 697 860 
+Q 697 1415 1301 1681 
+Q 1906 1948 2909 1948 
+z
+M 2909 220 
+Q 3655 220 4121 384 
+Q 4587 548 4587 860 
+Q 4587 1173 4117 1336 
+Q 3648 1500 2909 1500 
+Q 2169 1500 1703 1336 
+Q 1237 1173 1237 860 
+Q 1237 548 1703 384 
+Q 2169 220 2909 220 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-c0c1" d="M 5653 3627 
+L 4900 3627 
+L 4900 2197 
+L 4388 2197 
+L 4388 5220 
+L 4900 5220 
+L 4900 4132 
+L 5653 4132 
+L 5653 3627 
+z
+M 1977 3556 
+Q 1700 3051 1259 2734 
+Q 818 2418 249 2325 
+L 249 2816 
+Q 747 2916 1109 3250 
+Q 1472 3584 1664 4082 
+Q 1856 4580 1856 5163 
+L 2375 5134 
+Q 2375 4516 2183 3989 
+L 3833 2852 
+L 3570 2453 
+L 1977 3556 
+z
+M 2781 1998 
+Q 3769 1998 4373 1724 
+Q 4978 1451 4978 882 
+Q 4978 313 4373 42 
+Q 3769 -228 2781 -228 
+Q 1792 -228 1187 42 
+Q 583 313 583 882 
+Q 583 1451 1187 1724 
+Q 1792 1998 2781 1998 
+z
+M 2781 220 
+Q 3513 220 3975 391 
+Q 4437 562 4437 882 
+Q 4437 1209 3975 1379 
+Q 3513 1550 2781 1550 
+Q 2048 1550 1586 1379 
+Q 1124 1209 1124 882 
+Q 1124 562 1586 391 
+Q 2048 220 2781 220 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-20" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-c2dc" d="M 5049 -242 
+L 4530 -242 
+L 4530 5220 
+L 5049 5220 
+L 5049 -242 
+z
+M 2517 5063 
+Q 2503 3769 2297 2795 
+L 4011 427 
+L 3598 114 
+L 2133 2169 
+Q 1856 1237 1397 700 
+Q 939 164 334 100 
+L 334 633 
+Q 861 725 1230 1340 
+Q 1600 1956 1792 2930 
+Q 1984 3904 1991 5077 
+L 2517 5063 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-ac01" d="M 4900 3449 
+L 4900 1956 
+L 4388 1956 
+L 4388 5220 
+L 4900 5220 
+L 4900 3968 
+L 5653 3968 
+L 5653 3449 
+L 4900 3449 
+z
+M 3342 4459 
+Q 3342 3307 2556 2734 
+Q 1771 2162 377 2162 
+L 377 2652 
+Q 1543 2660 2186 3090 
+Q 2830 3520 2830 4380 
+L 2830 4601 
+L 377 4601 
+L 377 5070 
+L 3342 5070 
+L 3342 4459 
+z
+M 4900 1636 
+L 4900 -228 
+L 4381 -228 
+L 4381 1159 
+L 548 1159 
+L 548 1636 
+L 4900 1636 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-c5d4" d="M 4701 1109 
+L 4701 5220 
+L 5191 5220 
+L 5191 1109 
+L 4701 1109 
+z
+M 2702 3356 
+Q 2667 2674 2361 2275 
+Q 2055 1877 1515 1877 
+Q 946 1877 633 2321 
+Q 320 2766 320 3527 
+Q 320 4288 633 4729 
+Q 946 5170 1515 5170 
+Q 2020 5170 2322 4818 
+Q 2624 4466 2688 3854 
+L 3449 3854 
+L 3449 5191 
+L 3940 5191 
+L 3940 1209 
+L 3449 1209 
+L 3449 3356 
+L 2702 3356 
+z
+M 804 3527 
+Q 804 2958 992 2649 
+Q 1181 2340 1515 2340 
+Q 1849 2340 2037 2649 
+Q 2226 2958 2226 3527 
+Q 2226 4096 2037 4405 
+Q 1849 4715 1515 4715 
+Q 1181 4715 992 4405 
+Q 804 4096 804 3527 
+z
+M 5333 -156 
+L 761 -156 
+L 761 1515 
+L 1280 1515 
+L 1280 334 
+L 5333 334 
+L 5333 -156 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-b2e4" d="M 4900 2446 
+L 4900 -242 
+L 4388 -242 
+L 4388 5220 
+L 4900 5220 
+L 4900 2958 
+L 5653 2958 
+L 5653 2446 
+L 4900 2446 
+z
+M 2546 590 
+Q 2916 590 3285 665 
+Q 3655 740 3890 860 
+L 3890 363 
+Q 3662 242 3285 171 
+Q 2909 100 2525 100 
+L 491 100 
+L 491 5006 
+L 3485 5006 
+L 3485 4516 
+L 1010 4516 
+L 1010 590 
+L 2546 590 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-b978" d="M 1124 3698 
+L 1124 3044 
+L 5099 3044 
+L 5099 2631 
+L 626 2631 
+L 626 4082 
+L 4523 4082 
+L 4523 4729 
+L 619 4729 
+L 619 5141 
+L 5021 5141 
+L 5021 3698 
+L 1124 3698 
+z
+M 228 1643 
+L 228 2084 
+L 5405 2084 
+L 5405 1643 
+L 228 1643 
+z
+M 5127 292 
+L 5127 -164 
+L 605 -164 
+L 605 1180 
+L 1124 1180 
+L 1124 292 
+L 5127 292 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-b450" d="M 605 2446 
+L 605 5070 
+L 5063 5070 
+L 5063 4572 
+L 1124 4572 
+L 1124 2937 
+L 5127 2937 
+L 5127 2446 
+L 605 2446 
+z
+M 3072 1252 
+L 3072 -370 
+L 2553 -370 
+L 2553 1252 
+L 228 1252 
+L 228 1764 
+L 5405 1764 
+L 5405 1252 
+L 3072 1252 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-c0c9" d="M 5191 1849 
+L 4701 1849 
+L 4701 3442 
+L 3726 3442 
+L 3726 1906 
+L 3243 1906 
+L 3243 5191 
+L 3726 5191 
+L 3726 3947 
+L 4701 3947 
+L 4701 5220 
+L 5191 5220 
+L 5191 1849 
+z
+M 1600 3292 
+Q 1195 2240 235 2027 
+L 235 2532 
+Q 1394 2859 1394 5156 
+L 1892 5141 
+Q 1892 4380 1771 3819 
+L 3008 2425 
+L 2660 2091 
+L 1600 3292 
+z
+M 5191 1529 
+L 5191 -228 
+L 4679 -228 
+L 4679 1060 
+L 654 1060 
+L 654 1529 
+L 5191 1529 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-c774" d="M 4530 -242 
+L 4530 5220 
+L 5049 5220 
+L 5049 -242 
+L 4530 -242 
+z
+M 2027 5077 
+Q 2738 5077 3161 4437 
+Q 3584 3797 3584 2553 
+Q 3584 1308 3161 668 
+Q 2738 28 2027 28 
+Q 1316 28 892 668 
+Q 469 1308 469 2553 
+Q 469 3797 892 4437 
+Q 1316 5077 2027 5077 
+z
+M 2027 4587 
+Q 1550 4587 1265 4078 
+Q 981 3570 981 2553 
+Q 981 1529 1265 1024 
+Q 1550 519 2027 519 
+Q 2489 519 2780 1027 
+Q 3072 1536 3072 2553 
+Q 3072 3563 2780 4075 
+Q 2489 4587 2027 4587 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-2026" d="M 761 2091 
+Q 597 2091 480 2204 
+Q 363 2318 363 2489 
+Q 363 2660 480 2773 
+Q 597 2887 761 2887 
+Q 925 2887 1042 2773 
+Q 1159 2660 1159 2489 
+Q 1159 2318 1042 2204 
+Q 925 2091 761 2091 
+z
+M 2318 2091 
+Q 2155 2091 2037 2204 
+Q 1920 2318 1920 2489 
+Q 1920 2660 2037 2773 
+Q 2155 2887 2318 2887 
+Q 2482 2887 2599 2773 
+Q 2717 2660 2717 2489 
+Q 2717 2318 2599 2204 
+Q 2482 2091 2318 2091 
+z
+M 3876 2091 
+Q 3712 2091 3594 2204 
+Q 3477 2318 3477 2489 
+Q 3477 2660 3594 2773 
+Q 3712 2887 3876 2887 
+Q 4039 2887 4153 2773 
+Q 4267 2660 4267 2489 
+Q 4267 2318 4153 2204 
+Q 4039 2091 3876 2091 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Paperlogy-4Regular-c815"/>
+     <use xlink:href="#Paperlogy-4Regular-c0c1" transform="translate(87.999985 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-20" transform="translate(175.999969 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-c2dc" transform="translate(197.999954 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-ac01" transform="translate(285.999939 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-c5d4" transform="translate(373.999924 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-20" transform="translate(461.999908 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-b2e4" transform="translate(483.999893 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-b978" transform="translate(571.999878 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-20" transform="translate(659.999863 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-b450" transform="translate(681.999847 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-20" transform="translate(769.999832 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-c0c9" transform="translate(791.999817 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-c774" transform="translate(879.999802 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-2026" transform="translate(967.999786 0)"/>
+    </g>
+   </g>
+  </g>
+  <g id="axes_2">
+   <g id="patch_6">
+    <path d="M 230.066171 162.912756 
+L 383.334803 162.912756 
+L 383.334803 33.822992 
+L 230.066171 33.822992 
+L 230.066171 162.912756 
+z
+" style="fill: none"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <defs>
+       <path id="m328333db7a" d="M 0 0 
+L 0 2 
+" style="stroke: #000000; stroke-width: 0.3"/>
+      </defs>
+      <g>
+       <use xlink:href="#m328333db7a" x="271.866707" y="162.912756" style="stroke: #000000; stroke-width: 0.3"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <!-- $\Delta$E76 -->
+      <g transform="translate(261.586707 173.507756) scale(0.08 -0.08)">
+       <defs>
+        <path id="NotoSansMath-Regular-394" d="M 128 0 
+L 128 352 
+L 1568 4570 
+L 2144 4570 
+L 3590 346 
+L 3590 0 
+L 128 0 
+z
+M 742 506 
+L 2957 506 
+L 2157 2886 
+Q 2061 3174 1981 3443 
+Q 1901 3712 1850 3942 
+Q 1792 3712 1718 3446 
+Q 1645 3181 1555 2912 
+L 742 506 
+z
+" transform="scale(0.015625)"/>
+        <path id="Paperlogy-3Light-45" d="M 3826 0 
+L 548 0 
+L 548 4978 
+L 3733 4978 
+L 3733 4622 
+L 925 4622 
+L 925 2709 
+L 3435 2709 
+L 3435 2347 
+L 925 2347 
+L 925 363 
+L 3826 363 
+L 3826 0 
+z
+" transform="scale(0.015625)"/>
+        <path id="Paperlogy-3Light-36" d="M 2347 2958 
+Q 2837 2958 3217 2777 
+Q 3598 2596 3808 2261 
+Q 4018 1927 4018 1479 
+Q 4018 1024 3801 682 
+Q 3584 341 3203 152 
+Q 2823 -36 2347 -36 
+Q 1373 -36 853 622 
+Q 334 1280 334 2460 
+Q 334 3285 611 3857 
+Q 889 4430 1390 4721 
+Q 1892 5013 2560 5013 
+Q 3285 5013 3712 4743 
+L 3541 4430 
+Q 3193 4658 2567 4658 
+Q 1721 4658 1234 4110 
+Q 747 3563 747 2517 
+Q 747 2261 789 1948 
+Q 939 2425 1362 2691 
+Q 1785 2958 2347 2958 
+z
+M 2333 306 
+Q 2909 306 3264 622 
+Q 3620 939 3620 1465 
+Q 3620 1991 3260 2304 
+Q 2901 2617 2290 2617 
+Q 1892 2617 1586 2464 
+Q 1280 2311 1109 2044 
+Q 939 1778 939 1451 
+Q 939 1159 1099 896 
+Q 1259 633 1575 469 
+Q 1892 306 2333 306 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#NotoSansMath-Regular-394" transform="translate(0 0.671875)"/>
+       <use xlink:href="#Paperlogy-3Light-45" transform="translate(58.099991 0.671875)"/>
+       <use xlink:href="#Paperlogy-3Light-37" transform="translate(122.877762 0.671875)"/>
+       <use xlink:href="#Paperlogy-3Light-36" transform="translate(189.544418 0.671875)"/>
+      </g>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2">
+      <g>
+       <use xlink:href="#m328333db7a" x="341.534267" y="162.912756" style="stroke: #000000; stroke-width: 0.3"/>
+      </g>
+     </g>
+     <g id="text_7">
+      <!-- $\Delta$E00 -->
+      <g transform="translate(331.254267 173.507756) scale(0.08 -0.08)">
+       <defs>
+        <path id="Paperlogy-3Light-30" d="M 2133 -36 
+Q 1565 -36 1117 273 
+Q 669 583 420 1155 
+Q 171 1728 171 2489 
+Q 171 3257 420 3826 
+Q 669 4395 1117 4704 
+Q 1565 5013 2133 5013 
+Q 2709 5013 3153 4704 
+Q 3598 4395 3847 3826 
+Q 4096 3257 4096 2489 
+Q 4096 1728 3847 1155 
+Q 3598 583 3153 273 
+Q 2709 -36 2133 -36 
+z
+M 2133 334 
+Q 2603 334 2955 590 
+Q 3307 846 3502 1333 
+Q 3698 1820 3698 2489 
+Q 3698 3157 3502 3648 
+Q 3307 4139 2955 4395 
+Q 2603 4651 2133 4651 
+Q 1671 4651 1319 4395 
+Q 967 4139 775 3648 
+Q 583 3157 583 2489 
+Q 583 1820 775 1333 
+Q 967 846 1319 590 
+Q 1671 334 2133 334 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#NotoSansMath-Regular-394" transform="translate(0 0.671875)"/>
+       <use xlink:href="#Paperlogy-3Light-45" transform="translate(58.099991 0.671875)"/>
+       <use xlink:href="#Paperlogy-3Light-30" transform="translate(122.877762 0.671875)"/>
+       <use xlink:href="#Paperlogy-3Light-30" transform="translate(189.544418 0.671875)"/>
+      </g>
+     </g>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_3">
+      <defs>
+       <path id="m2ae69044c4" d="M 0 0 
+L -2 0 
+" style="stroke: #000000; stroke-width: 0.3"/>
+      </defs>
+      <g>
+       <use xlink:href="#m2ae69044c4" x="230.066171" y="162.912756" style="stroke: #000000; stroke-width: 0.3"/>
+      </g>
+     </g>
+     <g id="text_8">
+      <!-- 0.0 -->
+      <g transform="translate(214.602421 166.210256) scale(0.08 -0.08)">
+       <defs>
+        <path id="Paperlogy-3Light-2e" d="M 718 -36 
+Q 583 -36 490 56 
+Q 398 149 398 284 
+Q 398 420 490 512 
+Q 583 604 718 604 
+Q 853 604 945 512 
+Q 1038 420 1038 284 
+Q 1038 149 945 56 
+Q 853 -36 718 -36 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#Paperlogy-3Light-30"/>
+       <use xlink:href="#Paperlogy-3Light-2e" transform="translate(66.666656 0)"/>
+       <use xlink:href="#Paperlogy-3Light-30" transform="translate(89.111099 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_4">
+      <g>
+       <use xlink:href="#m2ae69044c4" x="230.066171" y="146.776535" style="stroke: #000000; stroke-width: 0.3"/>
+      </g>
+     </g>
+     <g id="text_9">
+      <!-- 2.5 -->
+      <g transform="translate(214.602421 150.074035) scale(0.08 -0.08)">
+       <defs>
+        <path id="Paperlogy-3Light-35" d="M 1771 2908 
+Q 3840 2908 3840 1444 
+Q 3840 1017 3641 682 
+Q 3442 348 3047 156 
+Q 2653 -36 2084 -36 
+Q 1536 -36 1059 149 
+Q 583 334 320 640 
+L 519 939 
+Q 747 668 1163 501 
+Q 1579 334 2077 334 
+Q 2738 334 3086 633 
+Q 3435 932 3435 1436 
+Q 3435 1984 3036 2265 
+Q 2638 2546 1685 2546 
+L 661 2546 
+L 917 4978 
+L 3577 4978 
+L 3577 4622 
+L 1259 4622 
+L 1067 2908 
+L 1771 2908 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#Paperlogy-3Light-32"/>
+       <use xlink:href="#Paperlogy-3Light-2e" transform="translate(66.666656 0)"/>
+       <use xlink:href="#Paperlogy-3Light-35" transform="translate(89.111099 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_5">
+      <g>
+       <use xlink:href="#m2ae69044c4" x="230.066171" y="130.640315" style="stroke: #000000; stroke-width: 0.3"/>
+      </g>
+     </g>
+     <g id="text_10">
+      <!-- 5.0 -->
+      <g transform="translate(214.602421 133.937815) scale(0.08 -0.08)">
+       <use xlink:href="#Paperlogy-3Light-35"/>
+       <use xlink:href="#Paperlogy-3Light-2e" transform="translate(66.666656 0)"/>
+       <use xlink:href="#Paperlogy-3Light-30" transform="translate(89.111099 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#m2ae69044c4" x="230.066171" y="114.504094" style="stroke: #000000; stroke-width: 0.3"/>
+      </g>
+     </g>
+     <g id="text_11">
+      <!-- 7.5 -->
+      <g transform="translate(215.002421 117.801594) scale(0.08 -0.08)">
+       <use xlink:href="#Paperlogy-3Light-37"/>
+       <use xlink:href="#Paperlogy-3Light-2e" transform="translate(61.666656 0)"/>
+       <use xlink:href="#Paperlogy-3Light-35" transform="translate(84.111099 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_7">
+      <g>
+       <use xlink:href="#m2ae69044c4" x="230.066171" y="98.367874" style="stroke: #000000; stroke-width: 0.3"/>
+      </g>
+     </g>
+     <g id="text_12">
+      <!-- 10.0 -->
+      <g transform="translate(209.268671 101.665374) scale(0.08 -0.08)">
+       <defs>
+        <path id="Paperlogy-3Light-31" d="M 2546 0 
+L 2148 0 
+L 2148 4622 
+L 939 4622 
+L 939 4978 
+L 2546 4978 
+L 2546 0 
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#Paperlogy-3Light-31"/>
+       <use xlink:href="#Paperlogy-3Light-30" transform="translate(66.666656 0)"/>
+       <use xlink:href="#Paperlogy-3Light-2e" transform="translate(133.333313 0)"/>
+       <use xlink:href="#Paperlogy-3Light-30" transform="translate(155.777756 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_8">
+      <g>
+       <use xlink:href="#m2ae69044c4" x="230.066171" y="82.231654" style="stroke: #000000; stroke-width: 0.3"/>
+      </g>
+     </g>
+     <g id="text_13">
+      <!-- 12.5 -->
+      <g transform="translate(209.268671 85.529154) scale(0.08 -0.08)">
+       <use xlink:href="#Paperlogy-3Light-31"/>
+       <use xlink:href="#Paperlogy-3Light-32" transform="translate(66.666656 0)"/>
+       <use xlink:href="#Paperlogy-3Light-2e" transform="translate(133.333313 0)"/>
+       <use xlink:href="#Paperlogy-3Light-35" transform="translate(155.777756 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_7">
+     <g id="line2d_9">
+      <g>
+       <use xlink:href="#m2ae69044c4" x="230.066171" y="66.095433" style="stroke: #000000; stroke-width: 0.3"/>
+      </g>
+     </g>
+     <g id="text_14">
+      <!-- 15.0 -->
+      <g transform="translate(209.268671 69.392933) scale(0.08 -0.08)">
+       <use xlink:href="#Paperlogy-3Light-31"/>
+       <use xlink:href="#Paperlogy-3Light-35" transform="translate(66.666656 0)"/>
+       <use xlink:href="#Paperlogy-3Light-2e" transform="translate(133.333313 0)"/>
+       <use xlink:href="#Paperlogy-3Light-30" transform="translate(155.777756 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_8">
+     <g id="line2d_10">
+      <g>
+       <use xlink:href="#m2ae69044c4" x="230.066171" y="49.959213" style="stroke: #000000; stroke-width: 0.3"/>
+      </g>
+     </g>
+     <g id="text_15">
+      <!-- 17.5 -->
+      <g transform="translate(209.668671 53.256713) scale(0.08 -0.08)">
+       <use xlink:href="#Paperlogy-3Light-31"/>
+       <use xlink:href="#Paperlogy-3Light-37" transform="translate(66.666656 0)"/>
+       <use xlink:href="#Paperlogy-3Light-2e" transform="translate(128.333313 0)"/>
+       <use xlink:href="#Paperlogy-3Light-35" transform="translate(150.777756 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="ytick_9">
+     <g id="line2d_11">
+      <g>
+       <use xlink:href="#m2ae69044c4" x="230.066171" y="33.822992" style="stroke: #000000; stroke-width: 0.3"/>
+      </g>
+     </g>
+     <g id="text_16">
+      <!-- 20.0 -->
+      <g transform="translate(209.268671 37.120492) scale(0.08 -0.08)">
+       <use xlink:href="#Paperlogy-3Light-32"/>
+       <use xlink:href="#Paperlogy-3Light-30" transform="translate(66.666656 0)"/>
+       <use xlink:href="#Paperlogy-3Light-2e" transform="translate(133.333313 0)"/>
+       <use xlink:href="#Paperlogy-3Light-30" transform="translate(155.777756 0)"/>
+      </g>
+     </g>
+    </g>
+    <g id="text_17">
+     <!-- deutan 시뮬레이션 후 색차 -->
+     <g transform="translate(203.660859 140.804397) rotate(-90) scale(0.075 -0.075)">
+      <defs>
+       <path id="Paperlogy-4Regular-64" d="M 3861 0 
+L 3371 0 
+L 3371 804 
+Q 3165 405 2805 184 
+Q 2446 -36 1991 -36 
+Q 1493 -36 1095 206 
+Q 697 448 466 882 
+Q 235 1316 235 1877 
+Q 235 2432 466 2866 
+Q 697 3300 1095 3538 
+Q 1493 3776 1991 3776 
+Q 2439 3776 2798 3562 
+Q 3157 3349 3357 2965 
+L 3357 5276 
+L 3861 5276 
+L 3861 0 
+z
+M 2055 434 
+Q 2425 434 2723 611 
+Q 3022 789 3193 1120 
+Q 3364 1451 3364 1877 
+Q 3364 2297 3193 2624 
+Q 3022 2951 2723 3132 
+Q 2425 3314 2055 3314 
+Q 1685 3314 1386 3132 
+Q 1088 2951 917 2624 
+Q 747 2297 747 1877 
+Q 747 1451 917 1120 
+Q 1088 789 1386 611 
+Q 1685 434 2055 434 
+z
+" transform="scale(0.015625)"/>
+       <path id="Paperlogy-4Regular-65" d="M 3705 1735 
+L 740 1735 
+Q 775 1145 1155 786 
+Q 1536 427 2119 427 
+Q 2453 427 2734 547 
+Q 3015 668 3200 910 
+L 3492 583 
+Q 3243 277 2887 120 
+Q 2532 -36 2112 -36 
+Q 1565 -36 1134 209 
+Q 704 455 466 889 
+Q 228 1323 228 1877 
+Q 228 2425 455 2855 
+Q 683 3285 1084 3530 
+Q 1486 3776 1977 3776 
+Q 2468 3776 2862 3538 
+Q 3257 3300 3484 2873 
+Q 3712 2446 3712 1892 
+L 3705 1735 
+z
+M 1984 3342 
+Q 1472 3342 1127 2997 
+Q 782 2652 740 2098 
+L 3229 2098 
+Q 3179 2645 2834 2993 
+Q 2489 3342 1984 3342 
+z
+" transform="scale(0.015625)"/>
+       <path id="Paperlogy-4Regular-75" d="M 3769 0 
+L 3285 0 
+L 3285 732 
+Q 3101 370 2766 167 
+Q 2432 -36 1998 -36 
+Q 1309 -36 907 376 
+Q 505 789 505 1572 
+L 505 3740 
+L 1017 3740 
+L 1017 1636 
+Q 1017 1052 1291 750 
+Q 1565 448 2077 448 
+Q 2624 448 2940 803 
+Q 3257 1159 3257 1785 
+L 3257 3740 
+L 3769 3740 
+L 3769 0 
+z
+" transform="scale(0.015625)"/>
+       <path id="Paperlogy-4Regular-74" d="M 2482 228 
+Q 2347 100 2144 32 
+Q 1941 -36 1721 -36 
+Q 1223 -36 946 252 
+Q 669 540 669 1060 
+L 669 3278 
+L 43 3278 
+L 43 3712 
+L 669 3712 
+L 669 4565 
+L 1181 4565 
+L 1181 3712 
+L 2254 3712 
+L 2254 3278 
+L 1181 3278 
+L 1181 1088 
+Q 1181 761 1333 590 
+Q 1486 420 1785 420 
+Q 2105 420 2304 612 
+L 2482 228 
+z
+" transform="scale(0.015625)"/>
+       <path id="Paperlogy-4Regular-61" d="M 1849 3776 
+Q 2553 3776 2926 3410 
+Q 3300 3044 3300 2318 
+L 3300 0 
+L 2816 0 
+L 2816 640 
+Q 2653 320 2336 142 
+Q 2020 -36 1586 -36 
+Q 981 -36 633 263 
+Q 285 562 285 1052 
+Q 285 1529 619 1820 
+Q 953 2112 1664 2112 
+L 2788 2112 
+Q 2788 2325 2759 2475 
+Q 2695 3328 1792 3328 
+Q 1451 3328 1138 3207 
+Q 825 3086 612 2880 
+L 391 3257 
+Q 669 3506 1053 3641 
+Q 1437 3776 1849 3776 
+z
+M 1678 370 
+Q 2503 370 2788 1124 
+L 2788 1749 
+L 1700 1749 
+Q 789 1749 789 1074 
+Q 789 747 1024 558 
+Q 1259 370 1678 370 
+z
+" transform="scale(0.015625)"/>
+       <path id="Paperlogy-4Regular-6e" d="M 2361 3776 
+Q 3029 3776 3420 3367 
+Q 3812 2958 3812 2176 
+L 3812 0 
+L 3300 0 
+L 3300 2112 
+Q 3300 2695 3026 2997 
+Q 2752 3300 2247 3300 
+Q 1685 3300 1354 2940 
+Q 1024 2581 1024 1963 
+L 1024 0 
+L 512 0 
+L 512 3740 
+L 1003 3740 
+L 1003 3015 
+Q 1195 3371 1543 3573 
+Q 1892 3776 2361 3776 
+z
+" transform="scale(0.015625)"/>
+       <path id="Paperlogy-4Regular-bbac" d="M 619 3420 
+L 619 5141 
+L 5021 5141 
+L 5021 3420 
+L 619 3420 
+z
+M 1124 4722 
+L 1124 3840 
+L 4509 3840 
+L 4509 4722 
+L 1124 4722 
+z
+M 4046 1948 
+L 5035 1948 
+L 5035 725 
+L 1102 725 
+L 1102 228 
+L 5127 228 
+L 5127 -164 
+L 605 -164 
+L 605 1074 
+L 4530 1074 
+L 4530 1557 
+L 590 1557 
+L 590 1948 
+L 1586 1948 
+L 1586 2560 
+L 228 2560 
+L 228 2980 
+L 5405 2980 
+L 5405 2560 
+L 4046 2560 
+L 4046 1948 
+z
+M 2091 2560 
+L 2091 1948 
+L 3541 1948 
+L 3541 2560 
+L 2091 2560 
+z
+" transform="scale(0.015625)"/>
+       <path id="Paperlogy-4Regular-b808" d="M 5191 -242 
+L 4701 -242 
+L 4701 5220 
+L 5191 5220 
+L 5191 -242 
+z
+M 3940 5191 
+L 3940 -149 
+L 3449 -149 
+L 3449 2425 
+L 2759 2425 
+L 2759 2930 
+L 3449 2930 
+L 3449 5191 
+L 3940 5191 
+z
+M 1365 569 
+Q 2347 569 2930 839 
+L 2930 356 
+Q 2382 100 1344 100 
+L 405 100 
+L 405 2823 
+L 1956 2823 
+L 1956 4537 
+L 405 4537 
+L 405 5006 
+L 2446 5006 
+L 2446 2354 
+L 889 2354 
+L 889 569 
+L 1365 569 
+z
+" transform="scale(0.015625)"/>
+       <path id="Paperlogy-4Regular-c158" d="M 3399 2994 
+L 3399 3449 
+L 4580 3449 
+L 4580 4167 
+L 3399 4167 
+L 3399 4622 
+L 4580 4622 
+L 4580 5220 
+L 5085 5220 
+L 5085 1152 
+L 4580 1152 
+L 4580 2994 
+L 3399 2994 
+z
+M 1913 3221 
+Q 1629 2674 1209 2325 
+Q 789 1977 249 1892 
+L 249 2396 
+Q 733 2496 1088 2898 
+Q 1444 3300 1632 3897 
+Q 1821 4494 1828 5163 
+L 2347 5134 
+Q 2347 4359 2112 3698 
+L 3755 2297 
+L 3428 1906 
+L 1913 3221 
+z
+M 5205 -156 
+L 711 -156 
+L 711 1536 
+L 1230 1536 
+L 1230 334 
+L 5205 334 
+L 5205 -156 
+z
+" transform="scale(0.015625)"/>
+       <path id="Paperlogy-4Regular-d6c4" d="M 427 4160 
+L 427 4629 
+L 2546 4629 
+L 2546 5355 
+L 3065 5355 
+L 3065 4629 
+L 5198 4629 
+L 5198 4160 
+L 427 4160 
+z
+M 683 2745 
+Q 683 3250 1269 3506 
+Q 1856 3762 2816 3762 
+Q 3776 3762 4362 3506 
+Q 4949 3250 4949 2745 
+Q 4949 2247 4359 1991 
+Q 3769 1735 2816 1735 
+Q 1856 1735 1269 1991 
+Q 683 2247 683 2745 
+z
+M 4423 2745 
+Q 4423 3029 3978 3171 
+Q 3534 3314 2816 3314 
+Q 2091 3314 1650 3171 
+Q 1209 3029 1209 2745 
+Q 1209 2468 1650 2325 
+Q 2091 2183 2816 2183 
+Q 3534 2183 3978 2325 
+Q 4423 2468 4423 2745 
+z
+M 3072 832 
+L 3072 -370 
+L 2553 -370 
+L 2553 832 
+L 228 832 
+L 228 1316 
+L 5405 1316 
+L 5405 832 
+L 3072 832 
+z
+" transform="scale(0.015625)"/>
+       <path id="Paperlogy-4Regular-cc28" d="M 2340 3833 
+Q 2304 3122 2190 2546 
+L 3876 455 
+L 3499 107 
+L 2020 1956 
+Q 1764 1145 1319 665 
+Q 875 185 299 100 
+L 299 626 
+Q 747 718 1077 1152 
+Q 1408 1586 1596 2279 
+Q 1785 2972 1821 3833 
+L 391 3833 
+L 391 4331 
+L 1828 4331 
+L 1828 5234 
+L 2347 5234 
+L 2347 4331 
+L 3712 4331 
+L 3712 3833 
+L 2340 3833 
+z
+M 4900 2446 
+L 4900 -242 
+L 4388 -242 
+L 4388 5220 
+L 4900 5220 
+L 4900 2958 
+L 5653 2958 
+L 5653 2446 
+L 4900 2446 
+z
+" transform="scale(0.015625)"/>
+      </defs>
+      <use xlink:href="#Paperlogy-4Regular-64"/>
+      <use xlink:href="#Paperlogy-4Regular-65" transform="translate(69.444427 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-75" transform="translate(130.999969 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-74" transform="translate(197.888855 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-61" transform="translate(236.305511 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-6e" transform="translate(294.166611 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-20" transform="translate(361.611038 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-c2dc" transform="translate(383.611023 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-bbac" transform="translate(471.611008 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-b808" transform="translate(559.610992 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-c774" transform="translate(647.610977 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-c158" transform="translate(735.610962 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-20" transform="translate(823.610947 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-d6c4" transform="translate(845.610931 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-20" transform="translate(933.610916 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-c0c9" transform="translate(955.610901 0)"/>
+      <use xlink:href="#Paperlogy-4Regular-cc28" transform="translate(1043.610886 0)"/>
+     </g>
+    </g>
+   </g>
+   <g id="patch_7">
+    <path d="M 253.753141 162.912756 
+L 289.980273 162.912756 
+L 289.980273 49.731718 
+L 253.753141 49.731718 
+z
+" clip-path="url(#pa87eac01dc)" style="fill: #fa5252"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 323.420702 162.912756 
+L 359.647833 162.912756 
+L 359.647833 143.31498 
+L 323.420702 143.31498 
+z
+" clip-path="url(#pa87eac01dc)" style="fill: #0ca678"/>
+   </g>
+   <g id="line2d_12">
+    <path d="M 230.066171 98.367874 
+L 383.334803 98.367874 
+" clip-path="url(#pa87eac01dc)" style="fill: none; stroke-dasharray: 2.1,1.05; stroke-dashoffset: 0; stroke: #343a40; stroke-width: 0.7"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 230.066171 162.912756 
+L 230.066171 33.822992 
+" style="fill: none; stroke: #000000; stroke-width: 0.3; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 230.066171 162.912756 
+L 383.334803 162.912756 
+" style="fill: none; stroke: #000000; stroke-width: 0.3; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_18">
+    <!-- 17.5 -->
+    <g transform="translate(262.22784 46.504474) scale(0.085 -0.085)">
+     <defs>
+      <path id="Paperlogy-7Bold-31" d="M 2859 0 
+L 1856 0 
+L 1856 4167 
+L 818 4167 
+L 818 4978 
+L 2859 4978 
+L 2859 0 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-7Bold-37" d="M 4061 4324 
+L 2155 0 
+L 1067 0 
+L 2916 4153 
+L 1045 4153 
+L 1045 3314 
+L 149 3314 
+L 149 4978 
+L 4061 4978 
+L 4061 4324 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-7Bold-2e" d="M 889 -50 
+Q 626 -50 448 124 
+Q 270 299 270 569 
+Q 270 839 448 1009 
+Q 626 1180 889 1180 
+Q 1152 1180 1330 1009 
+Q 1508 839 1508 569 
+Q 1508 299 1330 124 
+Q 1152 -50 889 -50 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-7Bold-35" d="M 1956 3065 
+Q 3022 3065 3520 2656 
+Q 4018 2247 4018 1543 
+Q 4018 1088 3797 722 
+Q 3577 356 3125 139 
+Q 2674 -78 2013 -78 
+Q 1486 -78 985 71 
+Q 484 220 135 484 
+L 541 1252 
+Q 811 1024 1191 899 
+Q 1572 775 1984 775 
+Q 2468 775 2734 970 
+Q 3001 1166 3001 1508 
+Q 3001 1870 2716 2058 
+Q 2432 2247 1728 2247 
+L 505 2247 
+L 761 4978 
+L 3719 4978 
+L 3719 4167 
+L 1593 4167 
+L 1493 3065 
+L 1956 3065 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Paperlogy-7Bold-31"/>
+     <use xlink:href="#Paperlogy-7Bold-37" transform="translate(66.666656 0)"/>
+     <use xlink:href="#Paperlogy-7Bold-2e" transform="translate(132.333313 0)"/>
+     <use xlink:href="#Paperlogy-7Bold-35" transform="translate(160.111084 0)"/>
+    </g>
+   </g>
+   <g id="text_19">
+    <!-- 통과라 판정 -->
+    <g style="fill: #ffffff" transform="translate(258.006707 106.268731) scale(0.06 -0.06)">
+     <defs>
+      <path id="Paperlogy-3Light-d1b5" d="M 5390 1991 
+L 242 1991 
+L 242 2325 
+L 2624 2325 
+L 2624 2944 
+L 654 2944 
+L 654 5120 
+L 5042 5120 
+L 5042 4814 
+L 1038 4814 
+L 1038 4181 
+L 4949 4181 
+L 4949 3890 
+L 1038 3890 
+L 1038 3250 
+L 5077 3250 
+L 5077 2944 
+L 3008 2944 
+L 3008 2325 
+L 5390 2325 
+L 5390 1991 
+z
+M 2816 1508 
+Q 3776 1508 4412 1294 
+Q 5049 1081 5049 640 
+Q 5049 192 4416 -18 
+Q 3783 -228 2816 -228 
+Q 1849 -228 1216 -18 
+Q 583 192 583 640 
+Q 583 1081 1219 1294 
+Q 1856 1508 2816 1508 
+z
+M 2816 100 
+Q 3563 100 4107 235 
+Q 4651 370 4651 640 
+Q 4651 910 4107 1045 
+Q 3563 1180 2816 1180 
+Q 2069 1180 1521 1045 
+Q 974 910 974 640 
+Q 974 370 1521 235 
+Q 2069 100 2816 100 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-acfc" d="M 4871 2567 
+L 4871 -242 
+L 4487 -242 
+L 4487 5220 
+L 4871 5220 
+L 4871 2944 
+L 5646 2944 
+L 5646 2567 
+L 4871 2567 
+z
+M 448 4608 
+L 448 4978 
+L 3364 4978 
+L 3364 1479 
+L 2980 1479 
+L 2980 4608 
+L 448 4608 
+z
+M 2105 498 
+Q 3449 498 3982 740 
+L 3982 356 
+Q 3399 121 2112 121 
+L 242 121 
+L 242 498 
+L 1280 498 
+L 1280 2987 
+L 1664 2987 
+L 1664 498 
+L 2105 498 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-b77c" d="M 4857 2517 
+L 4857 -242 
+L 4473 -242 
+L 4473 5220 
+L 4857 5220 
+L 4857 2894 
+L 5646 2894 
+L 5646 2517 
+L 4857 2517 
+z
+M 2574 491 
+Q 2951 491 3317 562 
+Q 3684 633 3918 754 
+L 3918 384 
+Q 3691 256 3321 188 
+Q 2951 121 2567 121 
+L 519 121 
+L 519 2788 
+L 2958 2788 
+L 2958 4615 
+L 505 4615 
+L 505 4985 
+L 3342 4985 
+L 3342 2425 
+L 903 2425 
+L 903 491 
+L 2574 491 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-d310" d="M 5646 3413 
+L 4857 3413 
+L 4857 1159 
+L 4473 1159 
+L 4473 5220 
+L 4857 5220 
+L 4857 3797 
+L 5646 3797 
+L 5646 3413 
+z
+M 4018 2389 
+Q 3741 2268 3250 2193 
+Q 2759 2119 2119 2119 
+L 249 2119 
+L 249 2475 
+L 1003 2475 
+L 1003 4693 
+L 256 4693 
+L 256 5049 
+L 3762 5049 
+L 3762 4693 
+L 3022 4693 
+L 3022 2517 
+Q 3605 2574 4018 2752 
+L 4018 2389 
+z
+M 2055 2475 
+Q 2461 2475 2645 2482 
+L 2645 4693 
+L 1380 4693 
+L 1380 2475 
+L 2055 2475 
+z
+M 5035 235 
+L 5035 -135 
+L 633 -135 
+L 633 1536 
+L 1017 1536 
+L 1017 235 
+L 5035 235 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Paperlogy-3Light-d1b5"/>
+     <use xlink:href="#Paperlogy-3Light-acfc" transform="translate(87.999985 0)"/>
+     <use xlink:href="#Paperlogy-3Light-b77c" transform="translate(175.999969 0)"/>
+     <use xlink:href="#Paperlogy-3Light-20" transform="translate(263.999954 0)"/>
+     <use xlink:href="#Paperlogy-3Light-d310" transform="translate(285.999939 0)"/>
+     <use xlink:href="#Paperlogy-3Light-c815" transform="translate(373.999924 0)"/>
+    </g>
+    <!-- → 실제론 붕괴 -->
+    <g style="fill: #ffffff" transform="translate(255.346551 113.490481) scale(0.06 -0.06)">
+     <defs>
+      <path id="Paperlogy-3Light-2192" d="M 2532 583 
+L 2133 583 
+L 2951 1778 
+L 555 1778 
+L 555 2098 
+L 2944 2098 
+L 2133 3285 
+L 2532 3285 
+L 3477 1941 
+L 2532 583 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-c2e4" d="M 4622 2532 
+L 4622 5220 
+L 5006 5220 
+L 5006 2532 
+L 4622 2532 
+z
+M 2041 3769 
+Q 1771 3328 1330 3036 
+Q 889 2745 327 2638 
+L 327 3008 
+Q 846 3122 1233 3435 
+Q 1621 3748 1824 4199 
+Q 2027 4651 2034 5156 
+L 2411 5134 
+Q 2411 4558 2212 4089 
+L 3968 3051 
+L 3776 2731 
+L 2041 3769 
+z
+M 5170 -135 
+L 725 -135 
+L 725 1173 
+L 4615 1173 
+L 4615 1842 
+L 711 1842 
+L 711 2176 
+L 5006 2176 
+L 5006 868 
+L 1109 868 
+L 1109 192 
+L 5170 192 
+L 5170 -135 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-c81c" d="M 5149 -242 
+L 4772 -242 
+L 4772 5220 
+L 5149 5220 
+L 5149 -242 
+z
+M 3783 5184 
+L 3783 -149 
+L 3413 -149 
+L 3413 2695 
+L 2510 2695 
+L 2510 3072 
+L 3413 3072 
+L 3413 5184 
+L 3783 5184 
+z
+M 1813 4615 
+Q 1799 3527 1714 2795 
+L 3008 384 
+L 2695 192 
+L 1614 2233 
+Q 1273 391 313 121 
+L 313 519 
+Q 875 718 1152 1799 
+Q 1429 2880 1437 4615 
+L 384 4615 
+L 384 4985 
+L 2823 4985 
+L 2823 4615 
+L 1813 4615 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-b860" d="M 5390 1628 
+L 242 1628 
+L 242 1970 
+L 2624 1970 
+L 2624 2695 
+L 654 2695 
+L 654 4068 
+L 4629 4068 
+L 4629 4793 
+L 654 4793 
+L 654 5120 
+L 4999 5120 
+L 4999 3762 
+L 1031 3762 
+L 1031 3022 
+L 5077 3022 
+L 5077 2695 
+L 3008 2695 
+L 3008 1970 
+L 5390 1970 
+L 5390 1628 
+z
+M 5113 206 
+L 5113 -142 
+L 633 -142 
+L 633 1166 
+L 1024 1166 
+L 1024 206 
+L 5113 206 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-bd95" d="M 647 3115 
+L 647 5170 
+L 1031 5170 
+L 1031 4480 
+L 4608 4480 
+L 4608 5170 
+L 4992 5170 
+L 4992 3115 
+L 647 3115 
+z
+M 4608 4167 
+L 1031 4167 
+L 1031 3442 
+L 4608 3442 
+L 4608 4167 
+z
+M 3008 1557 
+Q 3911 1536 4487 1330 
+Q 5063 1124 5063 668 
+Q 5063 185 4434 -21 
+Q 3805 -228 2816 -228 
+Q 1828 -228 1198 -18 
+Q 569 192 569 668 
+Q 569 1124 1145 1330 
+Q 1721 1536 2624 1557 
+L 2624 2197 
+L 242 2197 
+L 242 2539 
+L 5390 2539 
+L 5390 2197 
+L 3008 2197 
+L 3008 1557 
+z
+M 4672 668 
+Q 4672 967 4131 1095 
+Q 3591 1223 2816 1223 
+Q 2034 1223 1493 1095 
+Q 953 967 953 668 
+Q 953 370 1493 238 
+Q 2034 107 2816 107 
+Q 3598 107 4135 238 
+Q 4672 370 4672 668 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-ad34" d="M 5013 -242 
+L 4637 -242 
+L 4637 5220 
+L 5013 5220 
+L 5013 -242 
+z
+M 491 4608 
+L 491 4978 
+L 3456 4978 
+L 3456 1479 
+L 3065 1479 
+L 3065 4608 
+L 491 4608 
+z
+M 2247 498 
+Q 3591 498 4132 740 
+L 4132 356 
+Q 3534 121 2254 121 
+L 242 121 
+L 242 498 
+L 1351 498 
+L 1351 2937 
+L 1728 2937 
+L 1728 498 
+L 2247 498 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Paperlogy-3Light-2192"/>
+     <use xlink:href="#Paperlogy-3Light-20" transform="translate(66.666656 0)"/>
+     <use xlink:href="#Paperlogy-3Light-c2e4" transform="translate(88.666641 0)"/>
+     <use xlink:href="#Paperlogy-3Light-c81c" transform="translate(176.666626 0)"/>
+     <use xlink:href="#Paperlogy-3Light-b860" transform="translate(264.666611 0)"/>
+     <use xlink:href="#Paperlogy-3Light-20" transform="translate(352.666595 0)"/>
+     <use xlink:href="#Paperlogy-3Light-bd95" transform="translate(374.66658 0)"/>
+     <use xlink:href="#Paperlogy-3Light-ad34" transform="translate(462.666565 0)"/>
+    </g>
+   </g>
+   <g id="text_20">
+    <!-- 3.0 -->
+    <g transform="translate(334.686455 140.087736) scale(0.085 -0.085)">
+     <defs>
+      <path id="Paperlogy-7Bold-33" d="M 2525 2923 
+Q 3214 2837 3577 2456 
+Q 3940 2076 3940 1500 
+Q 3940 1067 3716 707 
+Q 3492 348 3040 135 
+Q 2589 -78 1934 -78 
+Q 1408 -78 906 71 
+Q 405 220 64 484 
+L 462 1252 
+Q 733 1024 1117 899 
+Q 1501 775 1913 775 
+Q 2389 775 2659 967 
+Q 2930 1159 2930 1500 
+Q 2930 1835 2677 2019 
+Q 2425 2204 1899 2204 
+L 1415 2204 
+L 1415 2873 
+L 2525 4167 
+L 299 4167 
+L 299 4978 
+L 3719 4978 
+L 3719 4324 
+L 2525 2923 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-7Bold-30" d="M 2133 -78 
+Q 1529 -78 1052 227 
+Q 576 533 306 1112 
+Q 36 1692 36 2489 
+Q 36 3285 306 3864 
+Q 576 4444 1052 4750 
+Q 1529 5056 2133 5056 
+Q 2745 5056 3221 4750 
+Q 3698 4444 3964 3864 
+Q 4231 3285 4231 2489 
+Q 4231 1692 3964 1112 
+Q 3698 533 3221 227 
+Q 2745 -78 2133 -78 
+z
+M 2133 775 
+Q 2638 775 2933 1205 
+Q 3229 1636 3229 2489 
+Q 3229 3342 2933 3772 
+Q 2638 4203 2133 4203 
+Q 1636 4203 1344 3772 
+Q 1053 3342 1053 2489 
+Q 1053 1636 1344 1205 
+Q 1636 775 2133 775 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Paperlogy-7Bold-33"/>
+     <use xlink:href="#Paperlogy-7Bold-2e" transform="translate(66.666656 0)"/>
+     <use xlink:href="#Paperlogy-7Bold-30" transform="translate(94.444427 0)"/>
+    </g>
+   </g>
+   <g id="text_21">
+    <!-- 실패로 -->
+    <g style="fill: #343a40" transform="translate(333.614267 121.114054) scale(0.06 -0.06)">
+     <defs>
+      <path id="Paperlogy-3Light-d328" d="M 5149 -242 
+L 4779 -242 
+L 4779 2546 
+L 3797 2546 
+L 3797 -149 
+L 3435 -149 
+L 3435 5184 
+L 3797 5184 
+L 3797 2916 
+L 4779 2916 
+L 4779 5220 
+L 5149 5220 
+L 5149 -242 
+z
+M 2418 548 
+Q 2852 597 3179 782 
+L 3179 405 
+Q 2660 121 1316 121 
+L 213 121 
+L 213 484 
+L 775 484 
+L 775 4622 
+L 249 4622 
+L 249 4985 
+L 2944 4985 
+L 2944 4622 
+L 2418 4622 
+L 2418 548 
+z
+M 1266 484 
+Q 1749 484 2055 512 
+L 2055 4622 
+L 1131 4622 
+L 1131 484 
+L 1266 484 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-b85c" d="M 5390 57 
+L 242 57 
+L 242 427 
+L 2603 427 
+L 2603 1678 
+L 626 1678 
+L 626 3513 
+L 4651 3513 
+L 4651 4622 
+L 626 4622 
+L 626 4985 
+L 5035 4985 
+L 5035 3157 
+L 1003 3157 
+L 1003 2048 
+L 5113 2048 
+L 5113 1678 
+L 2994 1678 
+L 2994 427 
+L 5390 427 
+L 5390 57 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Paperlogy-3Light-c2e4"/>
+     <use xlink:href="#Paperlogy-3Light-d328" transform="translate(87.999985 0)"/>
+     <use xlink:href="#Paperlogy-3Light-b85c" transform="translate(175.999969 0)"/>
+    </g>
+    <!-- 정확히 판정 -->
+    <g style="fill: #343a40" transform="translate(327.674267 128.335804) scale(0.06 -0.06)">
+     <defs>
+      <path id="Paperlogy-3Light-d655" d="M 277 4380 
+L 277 4708 
+L 1792 4708 
+L 1792 5369 
+L 2176 5369 
+L 2176 4708 
+L 3748 4708 
+L 3748 4380 
+L 277 4380 
+z
+M 4871 3257 
+L 4871 1479 
+L 4487 1479 
+L 4487 5220 
+L 4871 5220 
+L 4871 3634 
+L 5646 3634 
+L 5646 3257 
+L 4871 3257 
+z
+M 3982 1863 
+Q 3741 1756 3232 1699 
+Q 2724 1643 2062 1643 
+L 242 1643 
+L 242 1977 
+L 1799 1977 
+L 1799 2460 
+Q 1202 2489 867 2709 
+Q 533 2930 533 3264 
+Q 533 3627 928 3851 
+Q 1323 4075 1998 4075 
+Q 2674 4075 3068 3851 
+Q 3463 3627 3463 3264 
+Q 3463 2930 3122 2709 
+Q 2781 2489 2183 2460 
+L 2183 1977 
+Q 3492 1991 3982 2197 
+L 3982 1863 
+z
+M 896 3264 
+Q 896 3051 1198 2908 
+Q 1501 2766 1998 2766 
+Q 2489 2766 2791 2908 
+Q 3093 3051 3093 3264 
+Q 3093 3477 2791 3619 
+Q 2489 3762 1998 3762 
+Q 1501 3762 1198 3619 
+Q 896 3477 896 3264 
+z
+M 4871 1131 
+L 4871 -213 
+L 4487 -213 
+L 4487 796 
+L 612 796 
+L 612 1131 
+L 4871 1131 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-d788" d="M 3826 4274 
+L 3826 3904 
+L 420 3904 
+L 420 4274 
+L 1927 4274 
+L 1927 5234 
+L 2318 5234 
+L 2318 4274 
+L 3826 4274 
+z
+M 5006 -242 
+L 4622 -242 
+L 4622 5220 
+L 5006 5220 
+L 5006 -242 
+z
+M 2119 3364 
+Q 2517 3364 2844 3157 
+Q 3172 2951 3360 2574 
+Q 3549 2197 3549 1707 
+Q 3549 1216 3360 842 
+Q 3172 469 2844 263 
+Q 2517 57 2119 57 
+Q 1721 57 1394 263 
+Q 1067 469 878 842 
+Q 690 1216 690 1707 
+Q 690 2197 878 2574 
+Q 1067 2951 1394 3157 
+Q 1721 3364 2119 3364 
+z
+M 2119 420 
+Q 2411 420 2649 580 
+Q 2887 740 3026 1031 
+Q 3165 1323 3165 1707 
+Q 3165 2098 3026 2389 
+Q 2887 2681 2649 2841 
+Q 2411 3001 2119 3001 
+Q 1835 3001 1596 2841 
+Q 1358 2681 1216 2386 
+Q 1074 2091 1074 1707 
+Q 1074 1323 1216 1031 
+Q 1358 740 1596 580 
+Q 1835 420 2119 420 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Paperlogy-3Light-c815"/>
+     <use xlink:href="#Paperlogy-3Light-d655" transform="translate(87.999985 0)"/>
+     <use xlink:href="#Paperlogy-3Light-d788" transform="translate(175.999969 0)"/>
+     <use xlink:href="#Paperlogy-3Light-20" transform="translate(263.999954 0)"/>
+     <use xlink:href="#Paperlogy-3Light-d310" transform="translate(285.999939 0)"/>
+     <use xlink:href="#Paperlogy-3Light-c815" transform="translate(373.999924 0)"/>
+    </g>
+   </g>
+   <g id="text_22">
+    <!-- 게이트 임계 10 -->
+    <g style="fill: #343a40" transform="translate(341.02079 95.14063) scale(0.055 -0.055)">
+     <defs>
+      <path id="Paperlogy-3Light-ac8c" d="M 5149 -242 
+L 4772 -242 
+L 4772 5220 
+L 5149 5220 
+L 5149 -242 
+z
+M 3876 5184 
+L 3876 -149 
+L 3499 -149 
+L 3499 2539 
+L 2411 2539 
+Q 2226 1444 1696 793 
+Q 1166 142 391 142 
+L 391 519 
+Q 910 526 1301 917 
+Q 1693 1308 1902 1998 
+Q 2112 2688 2112 3577 
+L 2112 4615 
+L 391 4615 
+L 391 4985 
+L 2489 4985 
+L 2489 3598 
+Q 2489 3193 2453 2916 
+L 3499 2916 
+L 3499 5184 
+L 3876 5184 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-d2b8" d="M 626 1572 
+L 626 4985 
+L 5028 4985 
+L 5028 4622 
+L 1003 4622 
+L 1003 3463 
+L 4971 3463 
+L 4971 3108 
+L 1003 3108 
+L 1003 1941 
+L 5113 1941 
+L 5113 1572 
+L 626 1572 
+z
+M 5390 57 
+L 242 57 
+L 242 427 
+L 5390 427 
+L 5390 57 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-c784" d="M 4622 2247 
+L 4622 5220 
+L 5006 5220 
+L 5006 2247 
+L 4622 2247 
+z
+M 1941 5141 
+Q 2432 5141 2794 4967 
+Q 3157 4793 3349 4483 
+Q 3541 4174 3541 3776 
+Q 3541 3378 3349 3068 
+Q 3157 2759 2794 2585 
+Q 2432 2411 1941 2411 
+Q 1458 2411 1099 2585 
+Q 740 2759 548 3068 
+Q 356 3378 356 3776 
+Q 356 4174 548 4483 
+Q 740 4793 1099 4967 
+Q 1458 5141 1941 5141 
+z
+M 1941 4800 
+Q 1401 4800 1070 4526 
+Q 740 4252 740 3776 
+Q 740 3300 1070 3026 
+Q 1401 2752 1941 2752 
+Q 2489 2752 2819 3026 
+Q 3150 3300 3150 3776 
+Q 3150 4252 2819 4526 
+Q 2489 4800 1941 4800 
+z
+M 782 -135 
+L 782 1892 
+L 5006 1892 
+L 5006 -135 
+L 782 -135 
+z
+M 4622 1536 
+L 1166 1536 
+L 1166 220 
+L 4622 220 
+L 4622 1536 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-3Light-acc4" d="M 5149 -242 
+L 4779 -242 
+L 4779 5220 
+L 5149 5220 
+L 5149 -242 
+z
+M 3897 5184 
+L 3897 -149 
+L 3527 -149 
+L 3527 1643 
+L 2162 1643 
+Q 1892 932 1440 537 
+Q 989 142 391 142 
+L 391 519 
+Q 910 526 1294 917 
+Q 1678 1308 1884 1998 
+Q 2091 2688 2091 3577 
+L 2091 4615 
+L 391 4615 
+L 391 4985 
+L 2468 4985 
+L 2468 3748 
+L 3527 3748 
+L 3527 5184 
+L 3897 5184 
+z
+M 3527 3364 
+L 2468 3364 
+Q 2432 2610 2269 2020 
+L 3527 2020 
+L 3527 3364 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Paperlogy-3Light-ac8c"/>
+     <use xlink:href="#Paperlogy-3Light-c774" transform="translate(87.999985 0)"/>
+     <use xlink:href="#Paperlogy-3Light-d2b8" transform="translate(175.999969 0)"/>
+     <use xlink:href="#Paperlogy-3Light-20" transform="translate(263.999954 0)"/>
+     <use xlink:href="#Paperlogy-3Light-c784" transform="translate(285.999939 0)"/>
+     <use xlink:href="#Paperlogy-3Light-acc4" transform="translate(373.999924 0)"/>
+     <use xlink:href="#Paperlogy-3Light-20" transform="translate(461.999908 0)"/>
+     <use xlink:href="#Paperlogy-3Light-31" transform="translate(483.999893 0)"/>
+     <use xlink:href="#Paperlogy-3Light-30" transform="translate(550.66655 0)"/>
+    </g>
+   </g>
+   <g id="text_23">
+    <!-- …같은 쌍을 두 지표가 정반대로 판정 -->
+    <g transform="translate(230.066171 27.822992) scale(0.08 -0.08)">
+     <defs>
+      <path id="Paperlogy-4Regular-ac19" d="M 5653 3662 
+L 4900 3662 
+L 4900 2532 
+L 4388 2532 
+L 4388 5220 
+L 4900 5220 
+L 4900 4181 
+L 5653 4181 
+L 5653 3662 
+z
+M 3342 4544 
+Q 3342 2645 377 2645 
+L 377 3100 
+Q 1550 3108 2190 3438 
+Q 2830 3769 2830 4473 
+L 2830 4615 
+L 377 4615 
+L 377 5070 
+L 3342 5070 
+L 3342 4544 
+z
+M 4957 256 
+L 4957 -156 
+L 605 -156 
+L 605 2212 
+L 4900 2212 
+L 4900 1799 
+L 1117 1799 
+L 1117 1230 
+L 4829 1230 
+L 4829 839 
+L 1117 839 
+L 1117 256 
+L 4957 256 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-c740" d="M 2816 5248 
+Q 3449 5248 3968 5113 
+Q 4487 4978 4793 4711 
+Q 5099 4444 5099 4060 
+Q 5099 3676 4793 3409 
+Q 4487 3143 3968 3011 
+Q 3449 2880 2816 2880 
+Q 1828 2880 1177 3186 
+Q 526 3492 526 4060 
+Q 526 4444 832 4711 
+Q 1138 4978 1660 5113 
+Q 2183 5248 2816 5248 
+z
+M 2816 4800 
+Q 2084 4800 1575 4601 
+Q 1067 4402 1067 4060 
+Q 1067 3719 1572 3523 
+Q 2077 3328 2816 3328 
+Q 3549 3328 4053 3523 
+Q 4558 3719 4558 4060 
+Q 4558 4402 4053 4601 
+Q 3549 4800 2816 4800 
+z
+M 228 1884 
+L 228 2347 
+L 5405 2347 
+L 5405 1884 
+L 228 1884 
+z
+M 5127 306 
+L 5127 -164 
+L 605 -164 
+L 605 1380 
+L 1124 1380 
+L 1124 306 
+L 5127 306 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-c30d" d="M 5653 3541 
+L 4928 3541 
+L 4928 2197 
+L 4423 2197 
+L 4423 5220 
+L 4928 5220 
+L 4928 4053 
+L 5653 4053 
+L 5653 3541 
+z
+M 1159 3328 
+Q 804 2539 71 2354 
+L 71 2859 
+Q 526 3008 771 3641 
+Q 1017 4274 1031 5163 
+L 1522 5141 
+Q 1515 4373 1351 3797 
+L 1956 2930 
+Q 2347 3150 2553 3751 
+Q 2759 4352 2773 5163 
+L 3257 5141 
+Q 3243 4388 3108 3883 
+L 4089 2702 
+L 3733 2396 
+L 2937 3406 
+Q 2567 2546 1806 2354 
+L 1159 3328 
+z
+M 2788 1998 
+Q 3783 1998 4394 1724 
+Q 5006 1451 5006 882 
+Q 5006 313 4394 42 
+Q 3783 -228 2788 -228 
+Q 1799 -228 1191 42 
+Q 583 313 583 882 
+Q 583 1451 1191 1724 
+Q 1799 1998 2788 1998 
+z
+M 2788 220 
+Q 3527 220 3993 391 
+Q 4459 562 4459 882 
+Q 4459 1209 3993 1379 
+Q 3527 1550 2788 1550 
+Q 2055 1550 1589 1379 
+Q 1124 1209 1124 882 
+Q 1124 562 1589 391 
+Q 2055 220 2788 220 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-c744" d="M 2816 5227 
+Q 3826 5227 4451 4988 
+Q 5077 4750 5077 4245 
+Q 5077 3740 4451 3505 
+Q 3826 3271 2816 3271 
+Q 1806 3271 1177 3505 
+Q 548 3740 548 4245 
+Q 548 4750 1177 4988 
+Q 1806 5227 2816 5227 
+z
+M 2816 4807 
+Q 2055 4807 1568 4668 
+Q 1081 4530 1081 4245 
+Q 1081 3961 1564 3826 
+Q 2048 3691 2816 3691 
+Q 3577 3691 4060 3826 
+Q 4544 3961 4544 4245 
+Q 4544 4530 4057 4668 
+Q 3570 4807 2816 4807 
+z
+M 228 2453 
+L 228 2880 
+L 5405 2880 
+L 5405 2453 
+L 228 2453 
+z
+M 1102 732 
+L 1102 235 
+L 5127 235 
+L 5127 -164 
+L 605 -164 
+L 605 1074 
+L 4530 1074 
+L 4530 1557 
+L 590 1557 
+L 590 1948 
+L 5035 1948 
+L 5035 732 
+L 1102 732 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-c9c0" d="M 5049 -242 
+L 4530 -242 
+L 4530 5220 
+L 5049 5220 
+L 5049 -242 
+z
+M 2404 4508 
+Q 2397 3527 2240 2695 
+L 3968 469 
+L 3563 149 
+L 2077 2098 
+Q 1821 1216 1380 700 
+Q 939 185 356 100 
+L 356 633 
+Q 825 732 1166 1255 
+Q 1508 1778 1692 2620 
+Q 1877 3463 1892 4508 
+L 469 4508 
+L 469 5006 
+L 3783 5006 
+L 3783 4508 
+L 2404 4508 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-d45c" d="M 5405 36 
+L 228 36 
+L 228 526 
+L 1557 526 
+L 1557 1892 
+L 505 1892 
+L 505 2382 
+L 1451 2382 
+L 1451 4473 
+L 555 4473 
+L 555 4964 
+L 5070 4964 
+L 5070 4473 
+L 4181 4473 
+L 4181 2382 
+L 5127 2382 
+L 5127 1892 
+L 4075 1892 
+L 4075 526 
+L 5405 526 
+L 5405 36 
+z
+M 3669 2382 
+L 3669 4473 
+L 1963 4473 
+L 1963 2382 
+L 3669 2382 
+z
+M 3556 526 
+L 3556 1892 
+L 2069 1892 
+L 2069 526 
+L 3556 526 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-ac00" d="M 4900 2446 
+L 4900 -242 
+L 4388 -242 
+L 4388 5220 
+L 4900 5220 
+L 4900 2958 
+L 5653 2958 
+L 5653 2446 
+L 4900 2446 
+z
+M 3229 5006 
+L 3229 3726 
+Q 3229 2645 2894 1827 
+Q 2560 1010 1927 562 
+Q 1294 114 427 114 
+L 427 626 
+Q 1145 626 1660 1003 
+Q 2176 1380 2446 2076 
+Q 2717 2773 2717 3705 
+L 2717 4516 
+L 427 4516 
+L 427 5006 
+L 3229 5006 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-bc18" d="M 5653 3342 
+L 4900 3342 
+L 4900 1159 
+L 4388 1159 
+L 4388 5220 
+L 4900 5220 
+L 4900 3861 
+L 5653 3861 
+L 5653 3342 
+z
+M 427 2069 
+L 427 5113 
+L 932 5113 
+L 932 4110 
+L 2930 4110 
+L 2930 5113 
+L 3435 5113 
+L 3435 2069 
+L 427 2069 
+z
+M 2930 3648 
+L 932 3648 
+L 932 2532 
+L 2930 2532 
+L 2930 3648 
+z
+M 5056 334 
+L 5056 -156 
+L 597 -156 
+L 597 1557 
+L 1117 1557 
+L 1117 334 
+L 5056 334 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-b300" d="M 5191 -242 
+L 4701 -242 
+L 4701 2475 
+L 3762 2475 
+L 3762 -149 
+L 3278 -149 
+L 3278 5191 
+L 3762 5191 
+L 3762 2980 
+L 4701 2980 
+L 4701 5220 
+L 5191 5220 
+L 5191 -242 
+z
+M 1657 583 
+Q 1991 583 2311 640 
+Q 2631 697 2866 796 
+L 2866 320 
+Q 2631 213 2297 156 
+Q 1963 100 1593 100 
+L 405 100 
+L 405 5006 
+L 2645 5006 
+L 2645 4523 
+L 903 4523 
+L 903 583 
+L 1657 583 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-b85c" d="M 5405 36 
+L 228 36 
+L 228 526 
+L 2546 526 
+L 2546 1650 
+L 597 1650 
+L 597 3570 
+L 4544 3570 
+L 4544 4523 
+L 590 4523 
+L 590 5006 
+L 5056 5006 
+L 5056 3100 
+L 1102 3100 
+L 1102 2133 
+L 5134 2133 
+L 5134 1650 
+L 3058 1650 
+L 3058 526 
+L 5405 526 
+L 5405 36 
+z
+" transform="scale(0.015625)"/>
+      <path id="Paperlogy-4Regular-d310" d="M 5653 3342 
+L 4900 3342 
+L 4900 1159 
+L 4388 1159 
+L 4388 5220 
+L 4900 5220 
+L 4900 3861 
+L 5653 3861 
+L 5653 3342 
+z
+M 3975 2347 
+Q 3712 2226 3246 2155 
+Q 2781 2084 2190 2084 
+L 242 2084 
+L 242 2546 
+L 932 2546 
+L 932 4608 
+L 249 4608 
+L 249 5070 
+L 3741 5070 
+L 3741 4608 
+L 3058 4608 
+L 3058 2588 
+Q 3613 2652 3975 2809 
+L 3975 2347 
+z
+M 2560 2553 
+L 2560 4608 
+L 1429 4608 
+L 1429 2546 
+L 2027 2546 
+L 2560 2553 
+z
+M 5056 334 
+L 5056 -156 
+L 597 -156 
+L 597 1557 
+L 1117 1557 
+L 1117 334 
+L 5056 334 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Paperlogy-4Regular-2026"/>
+     <use xlink:href="#Paperlogy-4Regular-ac19" transform="translate(72.444427 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-c740" transform="translate(160.444412 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-20" transform="translate(248.444397 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-c30d" transform="translate(270.444382 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-c744" transform="translate(358.444366 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-20" transform="translate(446.444351 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-b450" transform="translate(468.444336 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-20" transform="translate(556.444321 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-c9c0" transform="translate(578.444305 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-d45c" transform="translate(666.44429 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-ac00" transform="translate(754.444275 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-20" transform="translate(842.44426 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-c815" transform="translate(864.444244 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-bc18" transform="translate(952.444229 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-b300" transform="translate(1040.444214 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-b85c" transform="translate(1128.444199 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-20" transform="translate(1216.444183 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-d310" transform="translate(1238.444168 0)"/>
+     <use xlink:href="#Paperlogy-4Regular-c815" transform="translate(1326.444153 0)"/>
+    </g>
+   </g>
+  </g>
+  <g id="text_24">
+   <!-- 지표 개혁 — $\Delta$E76은 고채도 거리를 부풀린다 -->
+   <g transform="translate(5.76 14.168625) scale(0.102 -0.102)">
+    <defs>
+     <path id="Paperlogy-7Bold-c9c0" d="M 5170 -242 
+L 4267 -242 
+L 4267 5220 
+L 5170 5220 
+L 5170 -242 
+z
+M 2574 4203 
+Q 2553 3321 2439 2731 
+L 4004 626 
+L 3293 64 
+L 2133 1678 
+Q 1835 910 1362 487 
+Q 889 64 306 36 
+L 306 988 
+Q 704 1045 1006 1461 
+Q 1309 1877 1483 2584 
+Q 1657 3292 1671 4203 
+L 441 4203 
+L 441 5070 
+L 3755 5070 
+L 3755 4203 
+L 2574 4203 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-d45c" d="M 5433 -28 
+L 199 -28 
+L 199 832 
+L 1373 832 
+L 1373 1849 
+L 448 1849 
+L 448 2709 
+L 1273 2709 
+L 1273 4203 
+L 498 4203 
+L 498 5063 
+L 5134 5063 
+L 5134 4203 
+L 4359 4203 
+L 4359 2709 
+L 5184 2709 
+L 5184 1849 
+L 4260 1849 
+L 4260 832 
+L 5433 832 
+L 5433 -28 
+z
+M 3463 2709 
+L 3463 4203 
+L 2169 4203 
+L 2169 2709 
+L 3463 2709 
+z
+M 3357 832 
+L 3357 1849 
+L 2269 1849 
+L 2269 832 
+L 3357 832 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-20" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-ac1c" d="M 5312 -242 
+L 4459 -242 
+L 4459 2261 
+L 3869 2261 
+L 3869 -149 
+L 3022 -149 
+L 3022 5198 
+L 3869 5198 
+L 3869 3157 
+L 4459 3157 
+L 4459 5220 
+L 5312 5220 
+L 5312 -242 
+z
+M 2532 5070 
+L 2532 3492 
+Q 2532 2396 2236 1621 
+Q 1941 846 1433 448 
+Q 925 50 292 43 
+L 292 924 
+Q 711 953 1020 1251 
+Q 1330 1550 1500 2112 
+Q 1671 2674 1671 3449 
+L 1671 4217 
+L 292 4217 
+L 292 5070 
+L 2532 5070 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-d601" d="M 185 4096 
+L 185 4828 
+L 1508 4828 
+L 1508 5319 
+L 2418 5319 
+L 2418 4828 
+L 3556 4828 
+L 3556 4096 
+L 185 4096 
+z
+M 5198 1749 
+L 4317 1749 
+L 4317 2318 
+L 3726 2318 
+L 3726 3108 
+L 4317 3108 
+L 4317 3577 
+L 3726 3577 
+L 3726 4359 
+L 4317 4359 
+L 4317 5220 
+L 5198 5220 
+L 5198 1749 
+z
+M 1949 1764 
+Q 1280 1764 839 2048 
+Q 398 2332 398 2844 
+Q 398 3349 839 3637 
+Q 1280 3925 1949 3925 
+Q 2617 3925 3058 3637 
+Q 3499 3349 3499 2844 
+Q 3499 2332 3058 2048 
+Q 2617 1764 1949 1764 
+z
+M 1949 3243 
+Q 1629 3243 1440 3132 
+Q 1252 3022 1252 2844 
+Q 1252 2667 1440 2556 
+Q 1629 2446 1949 2446 
+Q 2269 2446 2457 2556 
+Q 2645 2667 2645 2844 
+Q 2645 3022 2457 3132 
+Q 2269 3243 1949 3243 
+z
+M 5191 1522 
+L 5191 -284 
+L 4281 -284 
+L 4281 732 
+L 590 732 
+L 590 1522 
+L 5191 1522 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-2014" d="M 7111 2802 
+L 7111 2190 
+L 0 2190 
+L 0 2802 
+L 7111 2802 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-45" d="M 4061 0 
+L 477 0 
+L 477 4978 
+L 3968 4978 
+L 3968 4167 
+L 1422 4167 
+L 1422 2923 
+L 3677 2923 
+L 3677 2133 
+L 1422 2133 
+L 1422 811 
+L 4061 811 
+L 4061 0 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-36" d="M 2468 3086 
+Q 2951 3086 3338 2894 
+Q 3726 2702 3950 2353 
+Q 4174 2005 4174 1550 
+Q 4174 1067 3932 697 
+Q 3691 327 3271 124 
+Q 2852 -78 2333 -78 
+Q 1301 -78 725 565 
+Q 149 1209 149 2396 
+Q 149 3236 458 3836 
+Q 768 4437 1326 4746 
+Q 1885 5056 2624 5056 
+Q 3008 5056 3356 4970 
+Q 3705 4885 3961 4729 
+L 3584 3989 
+Q 3214 4231 2645 4231 
+Q 2055 4231 1674 3914 
+Q 1294 3598 1202 2987 
+Q 1166 2745 1173 2532 
+Q 1373 2802 1707 2944 
+Q 2041 3086 2468 3086 
+z
+M 2276 683 
+Q 2688 683 2944 907 
+Q 3200 1131 3200 1508 
+Q 3200 1884 2944 2108 
+Q 2688 2332 2254 2332 
+Q 1835 2332 1564 2097 
+Q 1294 1863 1294 1500 
+Q 1294 1145 1557 914 
+Q 1821 683 2276 683 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-c740" d="M 2816 5298 
+Q 3861 5298 4519 4978 
+Q 5177 4658 5177 4053 
+Q 5177 3456 4519 3139 
+Q 3861 2823 2816 2823 
+Q 1764 2823 1109 3139 
+Q 455 3456 455 4053 
+Q 455 4658 1109 4978 
+Q 1764 5298 2816 5298 
+z
+M 2816 4558 
+Q 2190 4558 1799 4423 
+Q 1408 4288 1408 4053 
+Q 1408 3826 1799 3694 
+Q 2190 3563 2816 3563 
+Q 3442 3563 3829 3694 
+Q 4217 3826 4217 4053 
+Q 4217 4288 3826 4423 
+Q 3435 4558 2816 4558 
+z
+M 199 1714 
+L 199 2496 
+L 5433 2496 
+L 5433 1714 
+L 199 1714 
+z
+M 5184 576 
+L 5184 -220 
+L 519 -220 
+L 519 1372 
+L 1437 1372 
+L 1437 576 
+L 5184 576 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-ace0" d="M 484 4196 
+L 484 5070 
+L 5127 5070 
+L 5127 1472 
+L 4189 1472 
+L 4189 4196 
+L 484 4196 
+z
+M 5433 -28 
+L 199 -28 
+L 199 853 
+L 1963 853 
+L 1963 3079 
+L 2894 3079 
+L 2894 853 
+L 5433 853 
+L 5433 -28 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-cc44" d="M 1949 3698 
+Q 1934 2980 1877 2581 
+L 3065 519 
+L 2368 100 
+L 1629 1422 
+Q 1181 107 206 36 
+L 206 939 
+Q 619 1010 850 1742 
+Q 1081 2475 1095 3698 
+L 285 3698 
+L 285 4544 
+L 1095 4544 
+L 1095 5241 
+L 1949 5241 
+L 1949 4544 
+L 2759 4544 
+L 2759 3698 
+L 1949 3698 
+z
+M 5312 -242 
+L 4473 -242 
+L 4473 2261 
+L 3911 2261 
+L 3911 -149 
+L 3079 -149 
+L 3079 5198 
+L 3911 5198 
+L 3911 3157 
+L 4473 3157 
+L 4473 5220 
+L 5312 5220 
+L 5312 -242 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-b3c4" d="M 5433 -28 
+L 199 -28 
+L 199 846 
+L 2361 846 
+L 2361 1877 
+L 498 1877 
+L 498 5070 
+L 5127 5070 
+L 5127 4196 
+L 1415 4196 
+L 1415 2752 
+L 5184 2752 
+L 5184 1877 
+L 3271 1877 
+L 3271 846 
+L 5433 846 
+L 5433 -28 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-ac70" d="M 5198 -242 
+L 4302 -242 
+L 4302 2261 
+L 3122 2261 
+Q 2837 1209 2126 626 
+Q 1415 43 391 43 
+L 391 939 
+Q 1351 939 1863 1653 
+Q 2375 2368 2375 3634 
+L 2375 4210 
+L 391 4210 
+L 391 5070 
+L 3293 5070 
+L 3293 3641 
+Q 3293 3470 3264 3143 
+L 4302 3143 
+L 4302 5220 
+L 5198 5220 
+L 5198 -242 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-b9ac" d="M 4267 -242 
+L 4267 5220 
+L 5170 5220 
+L 5170 -242 
+L 4267 -242 
+z
+M 1344 2155 
+L 1344 882 
+L 2596 882 
+Q 2958 882 3324 956 
+Q 3691 1031 3940 1145 
+L 3940 299 
+Q 3705 178 3328 107 
+Q 2951 36 2560 36 
+L 448 36 
+L 448 2994 
+L 2546 2994 
+L 2546 4217 
+L 441 4217 
+L 441 5070 
+L 3435 5070 
+L 3435 2155 
+L 1344 2155 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-b97c" d="M 1415 3876 
+L 1415 3612 
+L 5156 3612 
+L 5156 3051 
+L 541 3051 
+L 541 4380 
+L 4231 4380 
+L 4231 4636 
+L 526 4636 
+L 526 5198 
+L 5099 5198 
+L 5099 3876 
+L 1415 3876 
+z
+M 199 2169 
+L 199 2802 
+L 5433 2802 
+L 5433 2169 
+L 199 2169 
+z
+M 1394 597 
+L 1394 341 
+L 5177 341 
+L 5177 -220 
+L 526 -220 
+L 526 1102 
+L 4245 1102 
+L 4245 1358 
+L 512 1358 
+L 512 1913 
+L 5113 1913 
+L 5113 597 
+L 1394 597 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-bd80" d="M 519 2283 
+L 519 5148 
+L 1401 5148 
+L 1401 4572 
+L 4231 4572 
+L 4231 5148 
+L 5113 5148 
+L 5113 2283 
+L 519 2283 
+z
+M 4231 3748 
+L 1401 3748 
+L 1401 3122 
+L 4231 3122 
+L 4231 3748 
+z
+M 3278 946 
+L 3278 -370 
+L 2354 -370 
+L 2354 946 
+L 199 946 
+L 199 1813 
+L 5433 1813 
+L 5433 946 
+L 3278 946 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-d480" d="M 477 3243 
+L 477 3911 
+L 1309 3911 
+L 1309 4537 
+L 533 4537 
+L 533 5198 
+L 5099 5198 
+L 5099 4537 
+L 4317 4537 
+L 4317 3911 
+L 5149 3911 
+L 5149 3243 
+L 477 3243 
+z
+M 3435 3911 
+L 3435 4537 
+L 2197 4537 
+L 2197 3911 
+L 3435 3911 
+z
+M 3264 1977 
+L 5113 1977 
+L 5113 626 
+L 1408 626 
+L 1408 370 
+L 5177 370 
+L 5177 -220 
+L 526 -220 
+L 526 1138 
+L 4231 1138 
+L 4231 1394 
+L 512 1394 
+L 512 1977 
+L 2368 1977 
+L 2368 2290 
+L 199 2290 
+L 199 2980 
+L 5433 2980 
+L 5433 2290 
+L 3264 2290 
+L 3264 1977 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-b9b0" d="M 4267 1152 
+L 4267 5220 
+L 5170 5220 
+L 5170 1152 
+L 4267 1152 
+z
+M 1287 3143 
+L 1287 2588 
+L 2631 2588 
+Q 3029 2588 3381 2641 
+Q 3733 2695 3954 2795 
+L 3954 2048 
+Q 3741 1948 3385 1895 
+Q 3029 1842 2610 1842 
+L 391 1842 
+L 391 3840 
+L 2631 3840 
+L 2631 4388 
+L 377 4388 
+L 377 5134 
+L 3520 5134 
+L 3520 3143 
+L 1287 3143 
+z
+M 5262 619 
+L 5262 -220 
+L 597 -220 
+L 597 1451 
+L 1515 1451 
+L 1515 619 
+L 5262 619 
+z
+" transform="scale(0.015625)"/>
+     <path id="Paperlogy-7Bold-b2e4" d="M 5021 2247 
+L 5021 -242 
+L 4125 -242 
+L 4125 5220 
+L 5021 5220 
+L 5021 3157 
+L 5668 3157 
+L 5668 2247 
+L 5021 2247 
+z
+M 2475 889 
+Q 2845 889 3214 960 
+Q 3584 1031 3819 1145 
+L 3819 292 
+Q 3598 171 3203 103 
+Q 2809 36 2411 36 
+L 398 36 
+L 398 5070 
+L 3413 5070 
+L 3413 4217 
+L 1309 4217 
+L 1309 889 
+L 2475 889 
+z
+" transform="scale(0.015625)"/>
+    </defs>
+    <use xlink:href="#Paperlogy-7Bold-c9c0" transform="translate(0 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-d45c" transform="translate(87.999985 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-20" transform="translate(175.999969 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-ac1c" transform="translate(197.999954 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-d601" transform="translate(285.999939 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-20" transform="translate(373.999924 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-2014" transform="translate(395.999908 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-20" transform="translate(507.111008 0.890625)"/>
+    <use xlink:href="#NotoSansMath-Regular-394" transform="translate(529.110992 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-45" transform="translate(587.210983 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-37" transform="translate(654.099869 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-36" transform="translate(720.766525 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-c740" transform="translate(787.433182 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-20" transform="translate(875.433167 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-ace0" transform="translate(897.433151 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-cc44" transform="translate(985.433136 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-b3c4" transform="translate(1073.433121 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-20" transform="translate(1161.433105 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-ac70" transform="translate(1183.43309 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-b9ac" transform="translate(1271.433075 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-b97c" transform="translate(1359.43306 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-20" transform="translate(1447.433044 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-bd80" transform="translate(1469.433029 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-d480" transform="translate(1557.433014 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-b9b0" transform="translate(1645.432999 0.890625)"/>
+    <use xlink:href="#Paperlogy-7Bold-b2e4" transform="translate(1733.432983 0.890625)"/>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pee3765c53d">
+   <rect x="53.807244" y="33.822992" width="133.277071" height="129.089764"/>
+  </clipPath>
+  <clipPath id="pa87eac01dc">
+   <rect x="230.066171" y="33.822992" width="153.268632" height="129.089764"/>
+  </clipPath>
+ </defs>
+</svg>
