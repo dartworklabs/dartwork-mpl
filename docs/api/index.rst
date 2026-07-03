@@ -10,6 +10,11 @@ Core
 
 The essential modules you'll use in every project.
 
+.. tip::
+
+   New here? **Style Management**, **Figure Creation**, and **Save &
+   Export** cover almost every plot; reach for the rest as you need them.
+
 .. toctree::
    :maxdepth: 1
    :titlesonly:

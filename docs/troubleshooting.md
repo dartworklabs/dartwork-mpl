@@ -16,10 +16,8 @@ sticky as you scroll. Press <kbd>?</kbd> for site-wide shortcuts.
 
 ## Category index (static fallback)
 
-Plain-text replacement for the dynamic filter / jump pills — useful
-when JavaScript is disabled (AI agents, terminal browsers,
-search-engine indexing). Every entry below is also reachable via the
-sidebar TOC.
+Plain-text jump list mirroring the filter pills above (for JS-disabled
+contexts — AI agents, terminal browsers, indexing; also in the sidebar TOC):
 
 | Category | Jump |
 | -------- | ---- |
