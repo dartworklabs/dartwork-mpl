@@ -267,6 +267,32 @@ support.**
 
 ---
 
+### Pretendard
+
+```{raw} html
+:file: _generated/pretendard_showcase.html
+```
+
+A modern geometric-humanist sans-serif with comprehensive Korean (한글) and
+Latin coverage, drawing on the proportions of contemporary system-UI
+typefaces. Pretendard keeps its clarity from caption to display sizes, which
+makes it a natural first choice for bilingual Korean–English reports and
+dashboards. **Full Korean (한글) glyph support across nine weights
+(Thin → Black).**
+
+**Author:** [Kil Hyungjin (길형진)](https://github.com/orioncactus/pretendard) · **License:** OFL 1.1
+
+:::{admonition} All weights
+:class: dropdown
+
+```{raw} html
+:file: _generated/pretendard.html
+```
+
+:::
+
+---
+
 ## Font Weight Reference
 
 <div class="dm-font-tester">

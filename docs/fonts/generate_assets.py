@@ -66,6 +66,11 @@ FONT_FAMILIES = {
         "use_case": "Reports, academic papers, professional documents",
         "variants": 4,
     },
+    "Pretendard": {
+        "description": "Modern geometric-humanist sans with full Korean (한글) coverage",
+        "use_case": "Bilingual Korean–English reports, UI, body text",
+        "variants": 9,
+    },
     "Roboto": {
         "description": "Google's flagship sans-serif, default font in dartwork-mpl",
         "use_case": "Default body text, general purpose (dartwork-mpl default)",

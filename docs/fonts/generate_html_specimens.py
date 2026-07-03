@@ -57,6 +57,10 @@ FONT_META = {
         "description": "Clean, professional font designed for documents · Korean (한글) support",
         "sample": "김도균 & 이주임 님이 만든 아름다운 페이퍼로지 폰트.",
     },
+    "Pretendard": {
+        "description": "Modern geometric-humanist sans · full Korean (한글) support",
+        "sample": "다트워크는 아름다운 데이터 아트워크를 만듭니다.",
+    },
     "Roboto": {
         "description": "Google's flagship sans-serif, default font in dartwork-mpl",
         "sample": "The dartwork designs beautiful data artworks since 2021.",
