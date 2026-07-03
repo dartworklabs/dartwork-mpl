@@ -159,6 +159,21 @@ def _load_colors() -> None:
     for prefix, filename in _JSON_PALETTES:
         color_dict.update(_load_json_palette(root_dir, filename, prefix))
 
+    # --- v5 generated palette (스펙 §11 충돌 정책) --------------------
+    # 레거시 dc_palettes.json 과 정확히 같은 이름의 토큰은 레거시 hex 가
+    # 기본값(동결 — silent recolor 금지). v5 값은 set_palette_version(5)
+    # opt-in 시 _compat_v4 가 remap 한다. 레거시에 없는 이름은 즉시 v5.
+    from ._generated import PALETTE as _V5_PALETTE
+
+    legacy_dc_names = {k for k in color_dict if k.startswith("dc.")}
+    v5_tokens: dict[str, str] = {}
+    for fam, row in _V5_PALETTE.items():
+        for step, hexval in enumerate(row):
+            token = f"dc.{fam}{step}"
+            if token not in legacy_dc_names:
+                v5_tokens[token] = hexval
+    color_dict.update(v5_tokens)
+
     # Add backward compatibility aliases for 'dc.' -> 'dm.'
     compat_dict: dict[str, str] = {}
     for k, v in color_dict.items():
@@ -203,3 +218,28 @@ def ensure_loaded() -> None:
             return
         _load_colors()
         _loaded = True
+
+
+def v5_collision_tokens() -> dict[str, str]:
+    """Return v5 palette tokens shadowed by the frozen legacy palette.
+
+    Returns
+    -------
+    dict[str, str]
+        Mapping of ``"dc.{family}{step}"`` to v5 hex values, restricted
+        to tokens whose exact name already exists in the legacy
+        ``dc_palettes.json`` palette (and therefore were *not* registered
+        under that name by :func:`_load_colors` — see spec §11). Consumed
+        by ``set_palette_version(5)`` to opt in to the v5 recolor.
+    """
+    from ._generated import PALETTE
+
+    root = files("dartwork_mpl") / "asset" / "color"
+    legacy = _load_json_palette(root, "dc_palettes.json", "dc")
+    out: dict[str, str] = {}
+    for fam, row in PALETTE.items():
+        for step, hexval in enumerate(row):
+            token = f"dc.{fam}{step}"
+            if token in legacy:
+                out[token] = hexval
+    return out

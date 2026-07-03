@@ -96,12 +96,20 @@ def test_palette_sources_agree_hex_for_hex() -> None:
 
 
 def test_get_palette_resolves_every_curated_name() -> None:
-    """Every curated public name resolves through the loader to dc.<name>0..7."""
+    """Every curated public name resolves through the loader to dc.<name>0..7 —
+    except the three names ("teal"/"indigo"/"gray") that collide with a v5
+    family: v5 registers their non-colliding steps 8-9 under the same bare
+    name (spec §11), so the loader's dc.<name>N scan picks those up too and
+    those three resolve to dc.<name>0..9."""
     import dartwork_mpl as dm
 
+    v5_extended = {"teal", "indigo", "gray"}
     for name in _name_map().values():
         cols = dm.get_palette(name)
-        assert len(cols) == 8, f"{name} did not resolve to 8 colors"
+        expected = 10 if name in v5_extended else 8
+        assert len(cols) == expected, (
+            f"{name} did not resolve to {expected} colors"
+        )
         assert cols[0] == f"dc.{name}0", f"{name} slot 0 mismatch: {cols[0]}"
 
 
