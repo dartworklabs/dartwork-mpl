@@ -920,8 +920,21 @@ def gate_seq_cmap(hexes: list[str]) -> dict:
 
 
 def gate_div_cmap(hexes: list[str]) -> dict:
+    """Diverging: the brightest region must sit at the center (apex 50%).
+
+    Reports the midpoint of the max-L* plateau (within 0.5 L* = one 8-bit
+    granule), NOT a single argmax. A symmetric diverging sampled to an EVEN
+    length has its true apex *between* the two center swatches (e.g. indices
+    15/16 of a 32-stop), which are equally bright by construction — a single
+    `.index(max())` biases to one side and reads 48.4%. The plateau midpoint
+    lands at exactly 50% for a symmetric map of any parity, and drifts off 50%
+    (flagging the gate) only when the arms are genuinely asymmetric.
+    """
     ls = [lab_l_hex(h) for h in hexes]
-    return {"apex_pct": round(100 * ls.index(max(ls)) / (len(ls) - 1), 1)}
+    top = max(ls)
+    plateau = [i for i, v in enumerate(ls) if v >= top - 0.5]
+    apex = (plateau[0] + plateau[-1]) / 2
+    return {"apex_pct": round(100 * apex / (len(ls) - 1), 1)}
 
 
 def gate_topo_cmap(hexes: list[str]) -> dict:
