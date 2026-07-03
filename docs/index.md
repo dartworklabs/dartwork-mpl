@@ -14,6 +14,8 @@
 </div>
 ```
 
+*Just want to see it plot? Jump straight to the [Quick Example](#quick-example).*
+
 ## Built for AI-assisted plotting
 
 Most matplotlib code in 2026 is written through an agent — Cursor,
