@@ -4,8 +4,10 @@
 > 30-second setup, IDE compatibility matrix, prompt corpus, and plot templates.
 
 dartwork-mpl is designed from the ground up to work **with** AI coding
-assistants. This page shows the concrete features that make AI-generated
-plots reliable.
+assistants. This page is the runnable, in-depth version of the hub's
+[Why agents work well here](../ai/index.md#why-agents-work-well-here)
+cards — each section below is a concrete, copy-paste example of one feature
+that makes AI-generated plots reliable.
 
 > **Design rationale:** For the philosophy behind these decisions — why
 > thin utilities beat wrappers for AI — see

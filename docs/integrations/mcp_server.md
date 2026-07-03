@@ -63,8 +63,10 @@ Add to `~/.claude.json` (global) **or** `<project>/.claude/mcp_servers.json`
 }
 ```
 
-That's the entire config when `dartwork-mpl-mcp` is on `PATH`. If you want
-to pin to a specific virtualenv, use the absolute path to the script:
+That's the entire config when `dartwork-mpl-mcp` is on `PATH`. Prefer the
+CLI? Running `claude mcp add dartwork-mpl dartwork-mpl-mcp` writes exactly
+this config for you. If you want to pin to a specific virtualenv, use the
+absolute path to the script:
 
 ```json
 {
