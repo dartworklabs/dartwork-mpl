@@ -282,6 +282,98 @@ def plan() -> list[dict]:
                 "LICENSE-RobotoMono.txt",
             ),
         },
+        # ── Families added 2026-07 for full re-sourcing coverage ──
+        # These were bundled by hand before; the entries below let
+        # fetch_fonts reproduce them from the same OFL/Apache upstreams.
+        # Licenses are already bundled (LICENSE-Inter / -NotoSans /
+        # -NotoSansCJK) and G11-mapped, so no `license` key is needed.
+        {
+            "family": "Inter",
+            "kind": "release-zip",
+            "repo": "rsms/inter",
+            # Inter-<ver>.zip; static instances live in extras/ttf/.
+            "asset_contains": "Inter-",
+            "ext": "ttf",
+            "weights": STD,
+            "italics": True,
+            "stem": "Inter",
+        },
+        {
+            "family": "Inter Display",
+            "kind": "release-zip",
+            "repo": "rsms/inter",
+            "asset_contains": "Inter-",  # same zip, InterDisplay-* statics
+            "ext": "ttf",
+            "weights": STD,
+            "italics": True,
+            "stem": "InterDisplay",
+        },
+        {
+            "family": "Noto Sans",
+            "kind": "gh-dir",
+            "repo": "notofonts/notofonts.github.io",
+            "path": "fonts/NotoSans/full/ttf",
+            "ext": "ttf",
+            "weights": STD,
+            "italics": True,
+            "stem": "NotoSans",
+        },
+        {
+            "family": "Noto Sans Condensed",
+            "kind": "gh-dir-width",
+            "repo": "notofonts/notofonts.github.io",
+            "path": "fonts/NotoSans/full/ttf",
+            "ext": "ttf",
+            "weights": STD,
+            "italics": True,
+            "src_stem": "NotoSans",
+            "width": "Condensed",
+            "stem": "NotoSans_Condensed",
+        },
+        {
+            "family": "Noto Sans SemiCondensed",
+            "kind": "gh-dir-width",
+            "repo": "notofonts/notofonts.github.io",
+            "path": "fonts/NotoSans/full/ttf",
+            "ext": "ttf",
+            "weights": STD,
+            "italics": True,
+            "src_stem": "NotoSans",
+            "width": "SemiCondensed",
+            "stem": "NotoSans_SemiCondensed",
+        },
+        {
+            "family": "Noto Sans Math",
+            "kind": "gh-dir",
+            "repo": "notofonts/notofonts.github.io",
+            "path": "fonts/NotoSansMath/full/ttf",
+            "ext": "ttf",
+            "weights": ["Regular"],
+            "italics": False,
+            "stem": "NotoSansMath",
+        },
+        {
+            "family": "Noto Sans CJK KR",
+            "kind": "gh-file-subset",
+            "repo": "notofonts/noto-cjk",
+            "src_path": "Sans/OTF/Korean/NotoSansCJKkr-Regular.otf",
+            "ext": "otf",
+            "weight": "Regular",
+            "stem": "NotoSansCJK",
+            # Korean (Hangul syllables + jamo) + Latin + CJK punctuation.
+            "unicodes": [
+                (0x0020, 0x007E),  # Basic Latin
+                (0x00A0, 0x00FF),  # Latin-1 Supplement
+                (0x2000, 0x206F),  # General Punctuation
+                (0x3000, 0x303F),  # CJK Symbols and Punctuation
+                (0x3130, 0x318F),  # Hangul Compatibility Jamo
+                (0x1100, 0x11FF),  # Hangul Jamo
+                (0xA960, 0xA97F),  # Hangul Jamo Extended-A
+                (0xAC00, 0xD7A3),  # Hangul Syllables
+                (0xD7B0, 0xD7FF),  # Hangul Jamo Extended-B
+                (0xFF00, 0xFFEF),  # Halfwidth and Fullwidth Forms
+            ],
+        },
     ]
 
 
@@ -359,6 +451,89 @@ def do_repo_zip(spec: dict, added: list[str]) -> None:
     write_license(spec)
 
 
+def _grab(urls: dict[str, str], src: str, tgt: str, added: list[str]) -> None:
+    """Download ``urls[src]`` and write it under the target filename ``tgt``."""
+    if src not in urls:
+        print(f"    ?? upstream missing {src}")
+        return
+    (FONT_DIR / tgt).write_bytes(fetch(urls[src]))
+    added.append(tgt)
+
+
+def do_gh_dir_width(spec: dict, added: list[str]) -> None:
+    """Fetch a Noto width sub-family, renaming to dartwork's stem convention.
+
+    Upstream encodes the width as a name prefix on the weight
+    (``NotoSans-CondensedBold.ttf``); dartwork bundles it under a
+    stem-separated name (``NotoSans_Condensed-Bold.ttf``). This maps each
+    upstream face to that canonical target.
+    """
+    urls = dir_urls(spec["repo"], spec["path"])
+    src_stem = spec["src_stem"]  # e.g. "NotoSans"
+    width = spec["width"]  # e.g. "Condensed"
+    ext = spec["ext"]
+    for w in spec["weights"]:
+        # upright: Regular has no weight token upstream (NotoSans-Condensed)
+        src_up = (
+            f"{src_stem}-{width}.{ext}"
+            if w == "Regular"
+            else f"{src_stem}-{width}{w}.{ext}"
+        )
+        _grab(urls, src_up, f"{spec['stem']}-{w}.{ext}", added)
+        if spec.get("italics"):
+            it = "Italic" if w == "Regular" else f"{w}Italic"
+            _grab(
+                urls,
+                f"{src_stem}-{width}{it}.{ext}",
+                f"{spec['stem']}-{it}.{ext}",
+                added,
+            )
+    write_license(spec)
+
+
+def do_gh_file_subset(spec: dict, added: list[str]) -> None:
+    """Download one large OTF and write a language-subset copy.
+
+    The bundled ``NotoSansCJK-Regular.otf`` is a Korean+Latin subset of
+    the full 16 MB ``NotoSansCJKkr-Regular.otf`` — shipping the whole CJK
+    face would balloon the wheel. Subsets via ``fontTools`` (already a
+    matplotlib dependency) to the configured unicode ranges.
+    """
+    from fontTools import subset as _subset
+    from fontTools.ttLib import TTFont as _TTFont
+
+    meta = gh_json(
+        f"repos/{spec['repo']}/contents/{spec['src_path'].replace(' ', '%20')}"
+    )
+    blob = fetch(meta["download_url"])
+    src_tmp = FONT_DIR / f".{spec['stem']}-src.tmp"
+    src_tmp.write_bytes(blob)
+    try:
+        options = _subset.Options()
+        # Keep OpenType layout + hinting so Korean renders identically to
+        # the full face; only glyph coverage is reduced.
+        options.name_IDs = ["*"]
+        options.recalc_bounds = True
+        font = _TTFont(str(src_tmp))
+        subsetter = _subset.Subsetter(options=options)
+        subsetter.populate(unicodes=_expand_unicode_ranges(spec["unicodes"]))
+        subsetter.subset(font)
+        tgt = f"{spec['stem']}-{spec['weight']}.{spec['ext']}"
+        font.save(str(FONT_DIR / tgt))
+        font.close()
+        added.append(tgt)
+    finally:
+        src_tmp.unlink(missing_ok=True)
+    write_license(spec)
+
+
+def _expand_unicode_ranges(ranges: list[tuple[int, int]]) -> list[int]:
+    out: list[int] = []
+    for lo, hi in ranges:
+        out.extend(range(lo, hi + 1))
+    return out
+
+
 def verify() -> None:
     from matplotlib import ft2font
 
@@ -408,6 +583,10 @@ def main() -> None:
                 do_release_zip(spec, added)
             elif spec["kind"] == "repo-zip":
                 do_repo_zip(spec, added)
+            elif spec["kind"] == "gh-dir-width":
+                do_gh_dir_width(spec, added)
+            elif spec["kind"] == "gh-file-subset":
+                do_gh_file_subset(spec, added)
         except Exception as e:  # noqa: BLE001
             print(f"    !! {spec['family']} failed: {e}", file=sys.stderr)
     print(f"\nAdded/refreshed {len(added)} files.")
