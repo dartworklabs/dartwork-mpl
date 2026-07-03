@@ -103,9 +103,18 @@ def _get_font_dir() -> Path:
 
 
 def _collect_fonts() -> dict[str, list[str]]:
-    """Collect and group font files by family."""
+    """Collect and group font files by family.
+
+    Both ``.ttf`` and ``.otf`` are collected — Pretendard and the
+    Noto Sans CJK subset ship as OpenType (``.otf``), so a ``.ttf``-only
+    filter would silently drop them from the generated all-families
+    preview even though they count toward the advertised 16 families.
+    Kept in sync with ``generate_html_specimens._collect_fonts``.
+    """
     font_dir = _get_font_dir()
-    font_files = [f for f in os.listdir(font_dir) if f.endswith(".ttf")]
+    font_files = [
+        f for f in os.listdir(font_dir) if f.endswith((".ttf", ".otf"))
+    ]
 
     font_families = defaultdict(list)
     for font in font_files:
