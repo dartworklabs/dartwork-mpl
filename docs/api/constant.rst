@@ -9,8 +9,9 @@ Figure Constants (deprecated)
    sugar. See :doc:`../migration` for the per-token mapping table.
 
 Predefined figure width constants commonly used in scientific
-publications.  These are computed from :func:`~dartwork_mpl.cm2in` at
-import time and match standard single- and double-column widths.
+publications.  They were computed from ``cm2in`` (itself removed in 0.4 —
+use ``dm.cm``) at import time and matched standard single- and
+double-column widths.
 
 ``SW`` (deprecated 0.4.0)
    Single-column figure width: ``cm2in(9)`` ≈ 3.543 inches.
