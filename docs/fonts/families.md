@@ -37,12 +37,25 @@ Not sure which font to use? Pick based on your primary need:
 | ---------------------------- | -------------------------- | ------------------------------------------- |
 | **General chart text**       | Roboto (default)           | Clean, legible at all sizes                 |
 | **UI-style dashboards**      | Inter                      | Tall x-height, excellent screen readability |
-| **Titles & headings**        | InterDisplay               | Tighter spacing optimized for large text    |
+| **Titles & headings**        | Inter Display              | Tighter spacing optimized for large text    |
 | **Dense tables / legends**   | Noto Sans Condensed family | Same readability, narrower footprint        |
 | **Korean text (한글)**       | Paperlogy                  | Native Korean design, 9 weights             |
 | **CJK (日本語 / 中文)**      | Noto Sans CJK              | Comprehensive CJK glyph coverage            |
 | **Math / scientific**        | Noto Sans Math             | Full symbol set: ∑ ∫ √ ∞ π θ α β γ          |
 | **Multi-language documents** | Noto Sans                  | Broadest Unicode coverage                   |
+
+To apply any row's font, set matplotlib's `font.family` to the exact
+registered name (as it appears in the
+[Bundled Fonts Summary](index.md#bundled-fonts-summary) — e.g. `Inter Display`
+with a space, not `InterDisplay`):
+
+```python
+import matplotlib.pyplot as plt
+
+plt.rcParams["font.family"] = "Inter"   # or any family name from the table
+```
+
+Fine-tune size and weight next → [Font Utilities › Custom Font Configuration](utilities.md#custom-font-configuration).
 
 ## Fonts in Chart Context
 

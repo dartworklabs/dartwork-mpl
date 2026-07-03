@@ -3,6 +3,10 @@
 dartwork-mpl provides helper functions and automatic font registration to
 simplify typography management in your visualizations.
 
+> **Just want to switch the active font family?** Jump to
+> [Custom Font Configuration](#custom-font-configuration). This page otherwise
+> covers the `fs()` / `fw()` sizing helpers and automatic registration.
+
 > **API signatures:** See [API Reference › Font Utilities](../api/font) for the
 > concise API listing and autodoc output.
 
