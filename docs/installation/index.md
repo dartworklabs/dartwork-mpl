@@ -52,6 +52,9 @@ pip install --upgrade dartwork-mpl
 
 ::::
 
+Using **Poetry** or **conda**? See the exact commands in the
+[Plain text install matrix](#plain-text-install-matrix) below.
+
 ### Optional extras
 
 The core install is intentionally lean — add an extra only when you need it:

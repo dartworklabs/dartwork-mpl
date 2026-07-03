@@ -18,18 +18,11 @@ further down lists the same base values per preset.
 
 | What used to hurt                   | dartwork-mpl                                    |
 | ----------------------------------- | ----------------------------------------------- |
-| Hand-tuning `figsize` and `dpi`     | `plt.subplots(figsize=dm.figsize("13cm", "standard"))`  |
+| Hand-tuning `figsize` and `dpi`     | `plt.subplots(figsize=dm.figsize("15cm", "wide"))`  |
 | `tight_layout` clipping labels      | `dm.simple_layout(fig)` — deterministic, content-aware |
-| Reaching for hex codes              | `color="dc.teal3"` (curated 8-mood palette), plus `"oc.*"`, `"tw.*"`, `"md.*"`, `"ad.*"`, `"cu.*"`, `"pr.*"` for third-party systems |
+| Reaching for hex codes              | `color="dc.teal3"` (the curated `dc.*` system), plus `"oc.*"`, `"tw.*"`, `"md.*"`, `"ad.*"`, `"cu.*"`, `"pr.*"` for third-party systems |
 | Saving in 3 formats                 | `dm.save_formats(fig, "out", formats=("png", "svg", "pdf"))` |
 | Catching margin / overflow problems | `dm.validate_with_fixes(fig)`                   |
-
-:::{note}
-**Upgrading from a previous PyPI release?** The
-[Migration Guide](../migration.md) lists every renamed / removed name
-since v0.4.0 with a side-by-side `Before → After` table — most call
-sites are one-liners.
-:::
 
 Here's a typical matplotlib figure, then the same figure with dartwork-mpl:
 
@@ -109,7 +102,7 @@ and `simple_layout`.
 | Call                                          | Purpose                                                                            |
 | --------------------------------------------- | ---------------------------------------------------------------------------------- |
 | `dm.style.use("scientific")`                  | Sets palette, fonts, line weights — see [Styles](styles.md)                        |
-| `dm.figsize("13cm", "standard")`              | Physical width plus an aspect token, returned as the inches tuple `figsize=` expects. |
+| `dm.figsize("15cm", "wide")`                  | Physical width plus an aspect token, returned as the inches tuple `figsize=` expects. |
 | `dm.fs(0)`                                    | Returns the base font size of the active preset (`fs(2)` = base + 2 pt, and so on) |
 | `dm.simple_layout(fig)`                       | Deterministic content-aware margins (replaces `tight_layout`)                      |
 | `dm.save_and_show(fig, "first")`              | Saves multi-format and previews inline in the notebook                             |
@@ -215,9 +208,9 @@ dm.simple_layout(fig)
 ## Adding color
 
 dartwork-mpl ships its own curated palette — `dc.*` ("dartwork color"),
-8 mood families × 6 shades each — and registers six third-party design
-systems alongside it. Use any of them anywhere matplotlib accepts a
-color string:
+a 24-palette system across 11 families (8 shades each) — and registers six
+third-party design systems alongside it. Use any of them anywhere matplotlib
+accepts a color string:
 
 ```python
 # Curated dartwork palette (recommended starting point)
@@ -359,3 +352,10 @@ audit, plus ready-to-use plot templates like `plot_diverging_bar`.
 :::
 
 ::::
+
+:::{note}
+**Upgrading from a previous PyPI release?** The
+[Migration Guide](../migration.md) lists every renamed / removed name
+since v0.4.0 with a side-by-side `Before → After` table — most call
+sites are one-liners.
+:::
