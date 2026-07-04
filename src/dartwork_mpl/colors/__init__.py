@@ -6,6 +6,7 @@ across OKLab, OKLCH, RGB, and Hex color spaces.
 
 from ._color import Color, color, cspace, hex, oklab, oklch, rgb
 from ._compat_v4 import set_palette_version
+from ._cycle_api import cycle
 from ._loader import ensure_loaded as _ensure_colors_loaded
 from ._register import ensure_registered as _ensure_cmaps_registered
 from ._typing import DartworkColor, DartworkColormap
@@ -30,6 +31,7 @@ __all__ = [
     "RgbViewIterator",
     "color",
     "cspace",
+    "cycle",
     "hex",
     "oklab",
     "oklch",
