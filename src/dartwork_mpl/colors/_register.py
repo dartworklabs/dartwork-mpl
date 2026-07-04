@@ -26,19 +26,26 @@ _lock = threading.Lock()
 
 
 def _register() -> None:
+    # Store colors as RGBA tuples (not the raw hex strings) so `cmap.colors`
+    # matches the convention of every other cmap in the package (the bundled
+    # .txt cmaps parse to float RGB) — downstream code that indexes a color as
+    # a tuple (e.g. the docs asset generator's `color[:3]`) would otherwise
+    # crash on a hex string. The LUT is identical either way.
     for name, hexes in CMAPS_256.items():
+        rgba = [mcolors.to_rgba(h) for h in hexes]
+        mpl.colormaps.register(mcolors.ListedColormap(rgba, name=f"dc.{name}"))
         mpl.colormaps.register(
-            mcolors.ListedColormap(list(hexes), name=f"dc.{name}")
+            mcolors.ListedColormap(rgba[::-1], name=f"dc.{name}_r")
         )
+    for cmap_name, key in (
+        ("dc.cycle", "default"),
+        ("dc.cycle_print", "print"),
+    ):
         mpl.colormaps.register(
-            mcolors.ListedColormap(list(hexes)[::-1], name=f"dc.{name}_r")
+            mcolors.ListedColormap(
+                [mcolors.to_rgba(h) for h in CYCLES[key]], name=cmap_name
+            )
         )
-    mpl.colormaps.register(
-        mcolors.ListedColormap(list(CYCLES["default"]), name="dc.cycle")
-    )
-    mpl.colormaps.register(
-        mcolors.ListedColormap(list(CYCLES["print"]), name="dc.cycle_print")
-    )
 
 
 def ensure_registered() -> None:

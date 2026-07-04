@@ -531,7 +531,10 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
                 num_colors = len(cmap.colors)
                 step = 100.0 / num_colors
                 for j, color in enumerate(cmap.colors):
-                    hex_c = mpl.colors.to_hex(color[:3])
+                    # to_hex handles hex strings AND (r,g,b[,a]) tuples and
+                    # drops alpha itself — do not pre-slice `color[:3]`, which
+                    # truncates a hex string ("#2d99f0" -> "#2d").
+                    hex_c = mpl.colors.to_hex(color)
                     start = j * step
                     end = (j + 1) * step
                     stops.append(f"{hex_c} {start}%")
