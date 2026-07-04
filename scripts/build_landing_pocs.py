@@ -159,9 +159,10 @@ def save(fig: plt.Figure, name: str) -> Path:
     # canvas dimensions, so the wipe compares like-for-like.
     out_svg = OUT / f"{name}.svg"
     # metadata={"Date": None} drops the <dc:date> creation timestamp so
-    # re-running the generator produces byte-identical SVGs (svg.hashsalt,
-    # set at import, already pins the element IDs).
-    fig.savefig(out_svg, format="svg", metadata={"Date": None})
+    # re-running the generator produces byte-identical SVGs; a per-output
+    # svg.hashsalt pins element IDs while avoiding cross-asset coupling.
+    with matplotlib.rc_context({"svg.hashsalt": name}):
+        fig.savefig(out_svg, format="svg", metadata={"Date": None})
     out_png = OUT / f"{name}.png"
     fig.savefig(out_png, format="png", dpi=140, metadata={"Software": None})
     plt.close(fig)

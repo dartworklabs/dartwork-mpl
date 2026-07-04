@@ -37,8 +37,8 @@ import dartwork_mpl as dm
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
-# Reuse the canonical helpers/data from the main PoC builder.
-from build_landing_pocs import LANDING_W_DM, save
+# Reuse the canonical sizing from the main PoC builder.
+from build_landing_pocs import LANDING_W_DM
 
 OUT = ROOT / "docs" / "_static" / "palette_demo"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -388,6 +388,22 @@ def _draw_palette_demo(axes) -> None:
     ax_bar.set_yticks([0, 30, 60, 90])
 
 
+def _clean_output_dir() -> None:
+    for path in OUT.glob("demo_bar_*.*"):
+        if path.suffix in {".png", ".svg"}:
+            path.unlink()
+
+
+def _save_palette_demo(fig: plt.Figure, name: str) -> None:
+    out_svg = OUT / f"{name}.svg"
+    with matplotlib.rc_context({"svg.hashsalt": name}):
+        fig.savefig(out_svg, format="svg", metadata={"Date": None})
+
+    out_png = OUT / f"{name}.png"
+    fig.savefig(out_png, format="png", dpi=140, metadata={"Software": None})
+    plt.close(fig)
+
+
 def render_one(palette: dict) -> None:
     dm.style.use("report")
     _apply_palette(palette["colors"])
@@ -399,10 +415,11 @@ def render_one(palette: dict) -> None:
     )
     _draw_palette_demo(axes)
     dm.simple_layout(fig, margin="2mm")
-    save(fig, f"demo_bar_{palette['id'].replace('.', '_')}")
+    _save_palette_demo(fig, f"demo_bar_{palette['id'].replace('.', '_')}")
 
 
 def main():
+    _clean_output_dir()
     manifest_entries = []
     for p in PALETTES:
         try:
@@ -420,18 +437,6 @@ def main():
             print(f"  ✓ {p['id']}")
         except Exception as e:  # noqa: BLE001, PERF203  (PoC tool, log + continue)
             print(f"  ✗ {p['id']}: {e}")
-
-    # Move rendered files from the build_landing_pocs OUT (landing_pocs/)
-    # over to palette_demo/. Easier: re-point save() output — but we
-    # reuse build_landing_pocs.save() which writes to landing_pocs/. So
-    # move them after the fact.
-    src_dir = ROOT / "docs" / "_static" / "landing_pocs"
-    for entry in manifest_entries:
-        for ext in ("svg", "png"):
-            stem = entry["file"].replace(".svg", "")
-            src = src_dir / f"{stem}.{ext}"
-            if src.exists():
-                src.rename(OUT / f"{stem}.{ext}")
 
     # Group manifest entries by namespace for the picker UI.
     by_ns: dict[str, list] = {}

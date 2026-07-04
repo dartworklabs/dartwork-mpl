@@ -22,6 +22,15 @@ OUTPUT = [820, 870, 910, 980, 1050, 1120, 1190, 1280]
 EFFICIENCY = [18.5, 19.2, 20.1, 21.0, 22.3, 23.1, 24.0, 24.8]
 
 
+def _save_svg(fig: plt.Figure, path: Path, **savefig_kwargs) -> Path:
+    """Write *fig* as a byte-stable SVG."""
+    with matplotlib.rc_context({"svg.hashsalt": path.stem}):
+        fig.savefig(
+            path, format="svg", metadata={"Date": None}, **savefig_kwargs
+        )
+    return path
+
+
 def generate_before_after() -> None:
     """Generate Before (default mpl) vs After (dartwork) SVGs."""
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -42,9 +51,7 @@ def generate_before_after() -> None:
     ax2.set_ylabel("Efficiency (%)")
     ax.tick_params(axis="x", rotation=45)
     fig_before.tight_layout()
-    fig_before.savefig(
-        OUT_DIR / "before_default.svg", format="svg", bbox_inches="tight"
-    )
+    _save_svg(fig_before, OUT_DIR / "before_default.svg", bbox_inches="tight")
     plt.close(fig_before)
     print("[comparison] wrote before_default.svg")
 
@@ -71,9 +78,7 @@ def generate_before_after() -> None:
     ax.tick_params(axis="y", labelsize=dm.fs(-0.5))
     ax2.tick_params(axis="y", labelsize=dm.fs(-0.5))
     dm.simple_layout(fig_after)
-    fig_after.savefig(
-        OUT_DIR / "after_dartwork.svg", format="svg", bbox_inches="tight"
-    )
+    _save_svg(fig_after, OUT_DIR / "after_dartwork.svg", bbox_inches="tight")
     plt.close(fig_after)
     print("[comparison] wrote after_dartwork.svg")
 
@@ -170,9 +175,7 @@ def generate_chart_context() -> None:
 
     ax.set_ylim(0, 850)
     dm.simple_layout(fig)
-    fig.savefig(
-        OUT_DIR / "chart_context.svg", format="svg", bbox_inches="tight"
-    )
+    _save_svg(fig, OUT_DIR / "chart_context.svg", bbox_inches="tight")
     plt.close(fig)
     print("[comparison] wrote chart_context.svg")
 
