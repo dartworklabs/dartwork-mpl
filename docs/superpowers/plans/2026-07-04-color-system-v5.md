@@ -1733,7 +1733,7 @@ git commit -m "feat(colors): register v5 palette tokens with legacy-freeze colli
 
 ---
 
-### Task 10: cmap 등록 + `dm.cmap()` 접근자 + 레거시 2건 리네임
+### Task 10: cmap 등록 (mpl 레지스트리 `dc.<name>`) + 레거시 2건 리네임
 
 **Files:**
 - Modify: `src/dartwork_mpl/cmap.py` (레거시 로더 — 변경 없음 확인만), `src/dartwork_mpl/colors/__init__.py`, `src/dartwork_mpl/__init__.py`
@@ -2354,7 +2354,7 @@ Expected: 실패 목록 수집. 예상 실패 지점과 처방:
 ```markdown
 ### Added
 - Color system v5: generative 91-parameter palette (16 families x 10 steps),
-  42 perceptually-gated colormaps (`dm.cmap("aurora")`), 2 categorical cycles
+  42 perceptually-gated colormaps (`cmap="dc.aurora"`), 2 categorical cycles
   (`dm.cycle()`), locale-aware semantic tokens (`dc.pos`/`dc.neg`/`dc.ref`/`dc.hl`),
   `dm.set_palette_version(5)` opt-in remap. Design spec:
   docs/superpowers/specs/2026-07-03-color-system-v5-design.md
@@ -2402,7 +2402,7 @@ gh pr create --title "feat(colors): color system v5 — generative palette + 42-
 ## Risk / Open Questions (스펙에서 이월된 결정 — plan에서 확정한 값)
 
 1. **레거시 충돌 정책**: 정확히 같은 토큰명만 동결-우선(teal/indigo/gray 0-7), 나머지 v5 즉시 등록. 충돌 family의 8·9 스텝은 v5 (혼합 사다리 가능성은 compat docstring에 명시, opt-in으로 해소).
-2. **`dm.cmap` 이름 충돌**: 패키지 attribute는 접근자 함수, 모듈은 `import dartwork_mpl.cmap` 경로 유지 (Task 10).
+2. **`dm.cmap` 이름 충돌 (해소됨)**: 스펙 초안의 `dm.cmap(name)` 접근자는 기존 `dartwork_mpl.cmap` 모듈과 충돌(파이썬 import 의미론+mypy)해 불가능. 사용자 결정(2026-07-04)으로 별도 접근자를 폐기하고 matplotlib 레지스트리 네이티브(`cmap="dc.aurora"`)로 확정. 모듈은 무변경 (Task 10).
 3. **prop_cycle 곱 표현식**: mplstyle 파싱 실패 시 `Style.use` 주입 폴백 (Task 14 Step 3).
 4. **결정론 범위**: golden test는 개발/CI 단일 플랫폼 기준 byte-exact. 크로스 플랫폼 libm ULP 차이가 관측되면 그때 경로 입력 반올림(1e-9)을 도입하고 SSOT를 1회 재생성한다 — 선제 도입은 YAGNI.
 5. **tritan Machado 유지**: 스펙 §12의 BVM 교체는 게이트 값 재산출이 필요해 v5.1로 이월 (Task 1 주석에 기록).
