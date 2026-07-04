@@ -12,11 +12,11 @@ pre-wired into every style preset. Pick the one you need:
 :link: ../color_system/colors
 :link-type: doc
 
-Named palette sheets for the curated `dc.*` family plus six third-party
+Named palette sheets for the generative `dc.*` families plus six third-party
 design systems (OpenColor, Tailwind, Material, Ant, Chakra, Primer).
 
-- 140+ swatches, copy-on-click
-- Full sheets, no hub click-through
+- 300+ swatches, copy-on-click
+- 16 perceptual families + curated categorical palettes
 - Drop names anywhere matplotlib accepts a color
 - Interactive picker + `set_cycle`/`get_palette` → [Categorical palettes](../color_system/categorical-palettes)
 :::
@@ -25,12 +25,12 @@ design systems (OpenColor, Tailwind, Material, Ant, Chakra, Primer).
 :link: ../color_system/colormaps
 :link-type: doc
 
-56 OKLCH-designed colormaps across single-hue, multi-hue, diverging,
-cyclical, and categorical families.
+42 perceptually-designed colormaps across single-hue, multi-hue,
+diverging, cyclic, and topographic families.
 
 - Live explorer — tab to category, toggle Color / Mono
 - Guaranteed monotonic lightness (greyscale-safe)
-- Sequential, diverging, cyclic, categorical
+- The generation axioms behind them → [Color system design](../color_system/design)
 :::
 
 :::{grid-item-card} **Color Space**
@@ -75,6 +75,7 @@ direct sidebar link.
 Palettes <../color_system/colors>
 Categorical palettes <../color_system/categorical-palettes>
 Colormaps <../color_system/colormaps>
+Color system design <../color_system/design>
 Color Space <../color_system/space>
 Fonts <../fonts/index>
 ```

@@ -195,6 +195,88 @@ class TestClassifyColormap:
         result = classify_colormap(matplotlib.colormaps["viridis"])
         assert isinstance(result, str)
 
+    def test_v5_catalog_categories(self) -> None:
+        """Every v5 colormap classifies into its true taxonomy bucket.
+
+        The HSV heuristic mislabels the v5 maps (single-hue family ramps look
+        multi-hue, warm scenes look single-hue), so the taxonomy is pinned in
+        ``_CLASSIFICATION_OVERRIDES``. Expected categories here are stated
+        independently of that dict — this is the regression guard.
+        """
+        import dartwork_mpl  # noqa: F401 — registers the v5 catalog
+        from dartwork_mpl.colors._generated import CMAPS_256
+        from dartwork_mpl.diagnostics import classify_colormap
+
+        expected = {
+            **dict.fromkeys(
+                (
+                    "red",
+                    "rose",
+                    "orange",
+                    "amber",
+                    "yellow",
+                    "lime",
+                    "green",
+                    "teal",
+                    "cyan",
+                    "sky",
+                    "blue",
+                    "indigo",
+                    "violet",
+                    "purple",
+                    "pink",
+                    "gray",
+                ),
+                "Single-Hue",
+            ),
+            **dict.fromkeys(
+                (
+                    "aurora",
+                    "afterglow",
+                    "blaze",
+                    "lava",
+                    "lagoon",
+                    "glacier",
+                    "canopy",
+                    "haze",
+                    "iris",
+                    "coast",
+                ),
+                "Multi-Hue",
+            ),
+            **dict.fromkeys(
+                (
+                    "blue_red",
+                    "blue_red_deep",
+                    "blue_red_soft",
+                    "blue_orange",
+                    "teal_rose",
+                    "green_purple",
+                    "purple_orange",
+                    "cyan_red",
+                    "teal_amber",
+                    "violet_lime",
+                    "indigo_amber",
+                    "gray_blue",
+                    "gray_red",
+                ),
+                "Diverging",
+            ),
+            **dict.fromkeys(("hue", "halo", "corona"), "Cyclical"),
+        }
+        # every generated map has a stated expectation (coast + cyclics extend
+        # the 42 base names)
+        assert set(CMAPS_256) <= set(expected)
+        for name, want in expected.items():
+            got = classify_colormap(matplotlib.colormaps[f"dc.{name}"])
+            assert got == want, f"dc.{name}: {got} != {want}"
+        # the registered qualitative cycles read as categorical
+        for name in ("cycle", "cycle_print"):
+            assert (
+                classify_colormap(matplotlib.colormaps[f"dc.{name}"])
+                == "Categorical"
+            )
+
 
 class TestTopLevelReexport:
     """The four names must be reachable from the top-level namespace."""
@@ -219,22 +301,27 @@ class TestTopLevelReexport:
 
 
 class TestClassificationOverridesParity:
-    """``_CLASSIFICATION_OVERRIDES`` must stay 1:1 with the bundled
-    colormap assets — a new/renamed map without an explicit class falls
-    back to the heuristic, which misclassified 7 of the 8 maps that
-    were missing before this guard."""
+    """``_CLASSIFICATION_OVERRIDES`` must stay 1:1 with every real dartwork
+    colormap — a new/renamed map without an explicit class falls back to the
+    heuristic, which misclassified 7 of the 8 maps that were missing before
+    this guard. Two sources contribute maps: the legacy bundle
+    (``asset/cmap/*.txt``) and the v5 catalog
+    (``colors._generated.CMAPS_256`` + the two registered cycles)."""
 
     def test_overrides_match_bundled_cmaps_exactly(self) -> None:
         from pathlib import Path
 
         import dartwork_mpl.diagnostics._colormaps as dcm
+        from dartwork_mpl.colors._generated import CMAPS_256
 
         cmap_dir = Path(dcm.__file__).parent.parent / "asset" / "cmap"
-        stems = {f"dc.{p.stem}" for p in cmap_dir.glob("*.txt")}
+        legacy = {f"dc.{p.stem}" for p in cmap_dir.glob("*.txt")}
+        v5 = {f"dc.{n}" for n in CMAPS_256} | {"dc.cycle", "dc.cycle_print"}
+        expected = legacy | v5
         overrides = set(dcm._CLASSIFICATION_OVERRIDES)
-        assert overrides == stems, (
-            f"missing: {sorted(stems - overrides)}; "
-            f"stale: {sorted(overrides - stems)}"
+        assert overrides == expected, (
+            f"missing: {sorted(expected - overrides)}; "
+            f"stale: {sorted(overrides - expected)}"
         )
 
 

@@ -10,7 +10,8 @@ criteria. Color count is negotiable; the criteria are not.*
 ## 0. Why this exists (the gap)
 
 dartwork-mpl ships a rich color ecosystem — 7 named libraries (`dc. oc. tw. md.
-ad. cu. pr.`), 56 colormaps, and a `dc.` family of 24 hand-curated palettes. But
+ad. cu. pr.`), 42 colormaps, and a `dc.` family of 16 generative + 24 curated
+palettes. But
 for **discrete categorical** use (the color *cycle* that distinguishes series in
 a line/bar/scatter plot) there is one structural gap:
 

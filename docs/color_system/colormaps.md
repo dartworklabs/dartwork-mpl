@@ -1,38 +1,34 @@
 # Colormaps
 
-dartwork-mpl ships **56 curated colormaps** — all designed or refined in the
-perceptually uniform **OKLCH** color space, spanning single-hue and multi-hue
-sequentials, diverging, cyclical, and discrete categorical maps (plus a
-vibrant tier for high-energy figures).
+dartwork-mpl ships **42 colormaps** (plus their `_r` reverses, plus the two
+categorical cycles registered for `cmap=` interfaces). Every one is generated
+by the same perceptual recipe as the `dc.*` palette — designed on CIELAB L\*
+and OKLCH, equalized in OKLab ΔE, and checked against hard gates before it
+ships.
+
+:::{note}
+This page is the **practical catalog** — how the maps are grouped, named, and
+applied. For the theory behind them (the generation axioms, the metric
+system, the naming grammar, and the benchmarks), see
+**[Color system design](design.md)**.
+:::
 
 ---
 
-## Design philosophy
+## Why not just use viridis?
 
-Most colormap libraries pick colors that "look nice" in sRGB and then
-interpolate linearly between them. This creates two hidden problems:
+viridis is excellent — but it is one map. Publication figures need a
+*family*: single-hue ramps for density, multi-hue ramps for heatmaps,
+diverging scales for signed values, cyclic maps for phase, all sharing the
+same perceptual integrity. Standard matplotlib maps (`viridis`, `Blues`,
+`tab10`, …) keep working without any prefix; the `dc.` prefix reaches the
+dartwork set (and avoids collisions with matplotlib's own `pink`/`gray`
+maps — the same convention as cmocean's `cmo.` and Crameri's `cmc.`).
 
-1. **Perceptual non-uniformity** — equal numeric steps produce unequal
-   visual steps (grey bands, shimmering artefacts).
-2. **Lightness reversals** — parts of the ramp can become darker _then_
-   lighter, destroying print/greyscale readability.
-
-dartwork-mpl solves both by **designing entirely in OKLCH space**, the most
-modern perceptually uniform color model (an improvement over CIE-LAB):
-
-| Principle                  | How we enforce it                                                                        |
-| -------------------------- | ---------------------------------------------------------------------------------------- |
-| **Lightness monotonicity** | Every sequential map has strictly monotonic OKLCH _L_. Greyscale readability guaranteed. |
-| **Smooth hue path**        | Anchor colors placed along natural hue arcs (no muddy brown shortcuts).                  |
-| **Bow-shaped chroma**      | Chroma peaks mid-ramp and tapers at boundaries, avoiding gamut clipping.                 |
-| **Color-blind awareness**  | All maps verified under deuteranopia, protanopia, and tritanopia simulations.            |
-
-> **Why not just use viridis?** &nbsp; viridis is excellent but it's only one
-> map. For publication figures you need a _family_: sequential ramps for bars,
-> diverging scales for anomalies, categorical sets for labels, and cyclical
-> maps for phases — all sharing the same perceptual integrity.
-> Standard Matplotlib maps (`viridis`, `Blues`, `tab10`, …) continue to work
-> without any prefix.
+The dartwork set adds what one map cannot: guaranteed **monotonic
+lightness** on every sequential map (grayscale-safe), a smooth hue path
+with no muddy shortcuts, and CIEDE2000-verified behavior under
+color-vision-deficiency simulation.
 
 ---
 
@@ -45,34 +41,109 @@ import numpy as np
 
 dm.style.use("scientific")
 data = np.random.randn(50, 50).cumsum(axis=0)
-im = plt.imshow(data, cmap="dc.sunset_glow", vmin=-8, vmax=8)
+im = plt.imshow(data, cmap="dc.aurora")          # the default multi-hue map
 cb = plt.colorbar(im, extend="both", shrink=0.9, pad=0.02)
 cb.set_label("normalized signal")
 cb.outline.set_visible(False)
 plt.show()
 ```
 
-- Add `_r` to reverse any map: `dc.sunset_glow_r`
+- Reach any map by name in `cmap=`: `cmap="dc.blue"`, `cmap="dc.blue_red"`.
+- Fetch the `Colormap` object with `plt.colormaps["dc.aurora"]`.
+- Add `_r` to reverse any map: `dc.aurora_r`, `dc.blue_red_r`.
 
 ---
 
-## Colormap catalog
+## The catalog
 
-Explore all 56 built-in colormaps dynamically using the catalog below. Use the tabs to browse by data type.
+Explore all 42 built-in colormaps below. Use the tabs to browse by data type.
 
 ```{raw} html
 :file: images/colormap_explorer.html
 ```
 
+The catalog is five generation families plus the two registered cycles:
+
+| Family | Names | Count | Direction |
+|---|---|--:|---|
+| **Single-hue** (ink) | `red` `rose` `orange` `amber` `yellow` `lime` `green` `teal` `cyan` `sky` `blue` `indigo` `violet` `purple` `pink` `gray` | 16 | high = darker |
+| **Multi-hue** (light) | `aurora` (default) `afterglow` `blaze` `lava` `lagoon` `glacier` `canopy` `haze` `iris` | 9 | high = brighter |
+| **Diverging** (ink) | `blue_red` (+`_deep`/`_soft`) `blue_orange` `teal_rose` `green_purple` `purple_orange` `cyan_red` `teal_amber` `violet_lime` `indigo_amber` `gray_blue` `gray_red` | 13 | anchored at the midpoint |
+| **Topographic** | `coast` | 1 | anchored at a datum |
+| **Cyclic** (light) | `hue` `halo` `corona` | 3 | start = end |
+| **Qualitative** | `cycle` `cycle_print` | 2 | discrete classes |
+
+---
+
+## Naming grammar
+
+The name states color identity; the suffix states a variant. The single rule
+runs from color tokens to colormaps:
+
+- **Single-hue** maps take the **family name itself** — `cmap="dc.blue"` is
+  the same recipe as the `dc.blue` palette, rendered continuously over a wide
+  L\* range.
+- **Multi-hue** maps take a **natural-light scene name** — `aurora`, `blaze`,
+  `lagoon` — with hue way-points chosen only at family anchors.
+- **Diverging** maps take a **`low_high` pair name** — `blue_red`,
+  `gray_red` — so the two poles are `dc.{a}6`/`dc.{b}6` and a line chart's
+  colors match the heatmap's extremes automatically.
+- **Cyclic** maps take a **circular-light-phenomenon name** — `halo`,
+  `corona`, plus the structural `hue`.
+- **`_r`** reverses; **`_deep`/`_soft`** set diverging strength.
+
+**Direction is an ink/light metaphor.** Ink maps (single-hue, diverging) run
+*high = darker* (ink on paper); light maps (multi-hue, cyclic) run
+*high = brighter* (light from dark, the viridis convention); `coast` is
+anchored at a datum. See [Color system design › Colormaps](design.md#colormaps-derived-from-the-palette)
+for the full grammar and the anchor graph.
+
+---
+
+## Choosing a map
+
+| Your data | Reach for |
+|---|---|
+| One magnitude / density | a single-hue map (`dc.blue`, `dc.gray`) |
+| A heatmap that needs maximum resolution | a multi-hue map (`dc.aurora` default, `dc.haze` for CVD) |
+| Signed values / anomalies around zero | a diverging map (`dc.blue_red`; `dc.gray_red` for risk/drawdown) |
+| Elevation / depth around a datum | `dc.coast` (pair with `TwoSlopeNorm(vcenter=0)`) |
+| Angle / phase (0° = 360°) | a cyclic map (`dc.hue`, `dc.halo`) |
+| Discrete classes | `dc.cycle` / `dc.cycle_print`, or `dm.set_cycle(...)` |
+
+`aurora` is the default heatmap map: against viridis it is roughly twice as
+uniform (OKLab ΔE cv 0.044 vs 0.086) over a wider lightness range (81.9 vs
+76.0), measured identically at 32 stops. The warm multi-hue maps divide the
+work: `afterglow` runs through magenta (plasma-like), `blaze` starts in dark
+violet (magma-like), and `lava` never touches violet at all — a
+perceptually uniform replacement for matplotlib's `hot`.
+
+---
+
+## Color-blind safety
+
+Every sequential map is verified under three CVD simulations —
+**deuteranopia**, **protanopia**, and **tritanopia**.
+
+- Sequential maps have **strictly monotonic lightness**, so data order
+  survives even when hue perception is reduced.
+- Single-hue maps (`dc.blue`, `dc.gray`, `dc.teal`, …) are **inherently
+  CVD-safe** — their only contrast channel is lightness.
+- `dc.haze` is the low-chroma multi-hue map tuned for maximum CVD margin
+  (the cividis role).
+
+> **Recommendation.** For the highest accessibility, choose maps whose
+> primary contrast channel is **lightness** rather than hue. Diverging maps
+> converge to one lightness at the midpoint (an inherent limit of every
+> diverging map) — for grayscale print, pair them with contours or hatching.
+
 ---
 
 ## Creating custom colormaps
 
-If the built-ins don't fit your data, build a colormap by interpolating
-in **OKLCH space** with `dm.cspace()`. The lightness ramp stays
-strictly monotonic, so you skip the muddy midtones that appear when
-RGB hex codes are blended directly. Both panels below use the same
-2D Gaussian so you can read the ramps doing their job side-by-side.
+If the built-ins don't fit, build a map by interpolating in **OKLCH** with
+`dm.cspace()`. The lightness ramp stays monotonic, so you skip the muddy
+midtones that appear when hex codes are blended in RGB.
 
 *Full walkthrough — interactive builder plus registration:
 [Color Space › Creating custom colormaps](space.md#creating-custom-colormaps).*
@@ -118,31 +189,17 @@ cmap = mpl.colors.ListedColormap(
 
 ---
 
-## Color-blind safety
-
-All `dc.*` maps are verified under three CVD simulations — **deuteranopia**,
-**protanopia**, and **tritanopia**.
-
-- Every sequential map has **strictly monotonic lightness**, preserving data
-  ordering even when color perception is reduced.
-- Single-hue maps (`dc.obsidian`, `dc.graphite`, `dc.sapphire`, …) are
-  **inherently CVD-safe** — their contrast channel is lightness alone.
-
-> **Recommendation**: For highest accessibility, choose maps whose primary
-> contrast channel is **lightness** rather than hue.
-
----
-
 ## Rendering tips
 
 - Set `vmin` / `vmax` yourself for stable colorbars across facets or animations.
-- Reverse any map with the `_r` suffix (`dc.ice_fire_r`).
+- Reverse any map with the `_r` suffix (`dc.blue_red_r`).
 - Hide colorbar outlines: `cb.outline.set_visible(False)`.
 - For diverging data, use symmetric limits and `extend="both"`.
 
 ## See also
 
-- [Colors](colors.md) — full named palette catalog
-- [Color Space](space.md) — programmatic color manipulation and custom colormap creation
-- [Usage Guide › Colors](../usage_guide/colors.md) — practical color usage patterns
-- [API › Color Utilities](../api/color.rst) for all color functions
+- [Color system design](design.md) — the axioms, metrics, and naming grammar
+  behind every map.
+- [Palettes](colors.md) — the full named palette catalog.
+- [Color Space](space.md) — programmatic color manipulation and custom colormap creation.
+- [API › Color Utilities](../api/color.rst) for all color functions.

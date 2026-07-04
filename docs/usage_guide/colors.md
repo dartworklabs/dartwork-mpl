@@ -27,9 +27,9 @@ color.
 > publication-ready output. Reach for the third-party prefixes when
 > you need to match an external brand or design system.
 >
-> The `dc.*` namespace also holds 100+ curated **colormaps** — see the
+> The `dc.*` namespace also holds 42 curated **colormaps** — see the
 > [Colormap catalog](../color_system/colormaps.md). Colormap names like
-> `dc.deep_sea` only work as `cmap=` arguments, not as `color=` strings;
+> `dc.aurora` only work as `cmap=` arguments, not as `color=` strings;
 > the named-colors above are the ones you pass to `color=`.
 
 ```python
@@ -140,20 +140,20 @@ import dartwork_mpl as dm
 palettes = dm.list_palettes()
 print(palettes[:5])  # ['ad.blue', 'ad.cyan', 'ad.geekblue', 'ad.gold', 'ad.green']
 
-# List all colormaps
+# List the dartwork colormaps
 cmaps = dm.list_colormaps()
-print(cmaps[:5])  # ['dc.afterglow', 'dc.amber', 'dc.amethyst', 'dc.arctic_heat', 'dc.aurora']
+print('dc.aurora' in cmaps, 'dc.blue_red' in cmaps)  # True True
 
-# Preview a specific palette
-dm.show_palette('dc.teal')  # Shows all shades: teal0, teal1, ..., teal7
+# Preview a specific family (ten steps, blue0 … blue9)
+dm.show_palette('dc.blue')
 
 # Visualize colormaps
-dm.plot_colormaps(cmap_list=['dc.deep_sea', 'dc.sunset_glow'])
+dm.plot_colormaps(cmap_list=['dc.aurora', 'dc.blue_red'])
 
 # Classify a colormap by type (takes a Colormap object)
 import matplotlib as mpl
 
-cmap_type = dm.classify_colormap(mpl.colormaps['dc.deep_sea'])
+cmap_type = dm.classify_colormap(mpl.colormaps['dc.aurora'])
 print(cmap_type)  # 'Multi-Hue'
 ```
 
@@ -245,12 +245,12 @@ perceptually uniform gradients. They work like any matplotlib colormap:
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
-cmap = plt.colormaps["dc.deep_sea"]
-print(cmap.name)                       # 'dc.deep_sea'
-print(dm.classify_colormap(cmap))      # 'sequential' (tells you the type)
+cmap = plt.colormaps["dc.aurora"]
+print(cmap.name)                       # 'dc.aurora'
+print(dm.classify_colormap(cmap))      # 'Multi-Hue' (tells you the type)
 ```
 
-Add `_r` to reverse any colormap (e.g., `dc.sunset_glow_r`). Browse all available
+Add `_r` to reverse any colormap (e.g., `dc.aurora_r`). Browse all available
 colormaps on the [Colormaps](../color_system/colormaps.md) page.
 
 ## See also

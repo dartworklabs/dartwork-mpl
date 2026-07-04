@@ -61,14 +61,20 @@ def _prepare_images_dir(base_dir: Path | None = None) -> Path:
 
 
 def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
-    """Bucket colormaps by category."""
-    from dartwork_mpl.cmap import ensure_loaded as cmap_ensure_loaded
+    """Bucket the v5 colormap catalog by category.
 
-    cmap_ensure_loaded()
+    Sources the names from the authoritative v5 catalog
+    (``dartwork_mpl.colors._generated.CMAPS_256`` + the two registered
+    cycles), *not* from a raw ``dc.``-prefix scan — the legacy
+    ``dartwork_mpl.cmap`` loader can also register backward-compat maps
+    (``dc.obsidian``, ``dc.legacy_aurora``, …) into the same registry, and
+    the docs explorer must show only the default v5 surface.
+    """
+    from dartwork_mpl.colors._generated import CMAPS_256
+
+    v5_names = {f"dc.{n}" for n in CMAPS_256} | {"dc.cycle", "dc.cycle_print"}
     cmap_list: Iterable[str] = (
-        name
-        for name in mpl.colormaps
-        if str(name).startswith("dc.") and not str(name).endswith("_r")
+        name for name in mpl.colormaps if str(name) in v5_names
     )
     cmaps = [mpl.colormaps[name] for name in cmap_list]
 
@@ -182,6 +188,46 @@ def _write_dc_sheet(images_dir: Path, label: str, mapping: dict) -> Path:
     return path
 
 
+def _write_dc_family_sheet(images_dir: Path) -> Path:
+    """Build the v5 generative-family sheet: 16 single-hue families, ten
+    perceptually-equalized steps each, straight from the shipped palette SSOT
+    (``dartwork_mpl.colors._generated.PALETTE``). Ordered by hue so the sheet
+    reads as one continuous system. Swatches are interactive (hover → name).
+    """
+    from dartwork_mpl.colors._generated import PALETTE
+    from dartwork_mpl.colors._recipe import FAMILIES
+
+    order = [*FAMILIES, "gray"]  # hue order, achromatic last
+
+    html = [
+        '<div class="dm-color-sheet">',
+        '<div class="dm-sheet-title">dartwork Color — v5 families</div>',
+    ]
+    for fam in order:
+        rows = PALETTE.get(fam)
+        if not rows:
+            continue
+        html.append('<div class="dm-color-group">')
+        html.append(f'<span class="dm-group-label">dc.{fam}</span>')
+        html.append('<div class="dm-swatch-row">')
+        for i, hex_val in enumerate(rows):
+            cname = f"dc.{fam}{i}"
+            tc = _text_color_for_bg(hex_val)
+            html.append(
+                f'<div class="dm-swatch" style="background:{hex_val}"'
+                f' title="{cname}">'
+                f'<span class="dm-swatch-name" style="color:{tc}">{i}</span>'
+                f'<span class="dm-swatch-hex" style="color:{tc}">'
+                f"{hex_val}</span></div>"
+            )
+        html.append("</div></div>")
+    html.append("</div>")
+
+    path = images_dir / "colors_dc_families.html"
+    path.write_text("\n".join(html), encoding="utf-8")
+    return path
+
+
 def _save_color_sheets_html(images_dir: Path) -> list[Path]:
     """Generate HTML fragment files for each color library."""
     from dartwork_mpl.colors._loader import ensure_loaded
@@ -201,6 +247,7 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
         # 24 curated palettes read as designed (generic base-grouping with
         # OKLCH sort scrambles slot order and drops the dc.0-7 default).
         if library_key == "dc":
+            paths.append(_write_dc_family_sheet(images_dir))
             paths.append(_write_dc_sheet(images_dir, label, mapping))
             continue
 
