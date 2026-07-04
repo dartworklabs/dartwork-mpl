@@ -1742,13 +1742,24 @@ git commit -m "feat(colors): register v5 palette tokens with legacy-freeze colli
 - Create: `src/dartwork_mpl/colors/_register.py`
 - Test: `tests/test_color_v5_register.py`
 
+> **접근 방식 결정 (사용자 2026-07-04): matplotlib 레지스트리 네이티브 = 기존·익숙·기술부채 0.**
+> v5 cmap은 mpl 레지스트리에 `dc.<name>`으로 등록만 하고, 접근은 기존 코드·docs가 이미 쓰는
+> 표준 matplotlib 방식(`cmap="dc.aurora"` / `plt.colormaps["dc.aurora"]` / `dm.list_colormaps()`)을
+> 그대로 쓴다. 별도 `dm.cmap(name)` 파이썬 접근자는 **만들지 않는다** — 그것이 기존
+> `dartwork_mpl.cmap` 모듈과 충돌(파이썬 import 의미론)하고 callable-module/mypy 기술부채를
+> 유발한 원인이었다. `dartwork_mpl.cmap`은 모듈로 그대로 유지(무변경).
+
+**Files (수정):**
+- Create: `src/dartwork_mpl/colors/_register.py` (등록 전용 — 접근자 함수 없음)
+- **DROP**: `dartwork_mpl/__init__.py`의 `from .colors import cmap` shadowing 배선 (하지 않음)
+
 **Interfaces:**
 - Consumes: `_generated.CMAPS_256`, `_generated.CYCLES`
 - Produces:
-  - mpl registry: 42종 × (`dc.<name>` + `dc.<name>_r`) LinearSegmented가 아닌 `ListedColormap(N=256)`; cyclic 3종은 회전 대칭 유지 위해 `_r`도 단순 역순
+  - mpl registry: 42종 × (`dc.<name>` + `dc.<name>_r`) `ListedColormap(N=256)`; cyclic 3종 `_r`도 단순 역순
   - qualitative: `dc.cycle`(7)·`dc.cycle_print`(8) ListedColormap
-  - `cmap(name: str) -> Colormap` 접근자 — 평면 이름(`"aurora"`)·`_r` 지원, 미존재 시 `KeyError`+후보 제안
-  - `dm.cmap` = 이 함수 (모듈 `dartwork_mpl.cmap`은 `import dartwork_mpl.cmap`으로 계속 접근 가능 — 패키지 attribute만 함수로 교체)
+  - `ensure_registered() -> None` — 최초 접근 시 42+2 등록 (double-checked locking). `colors/__init__.py`에서 팔레트 로드 다음 호출
+  - **접근자 함수 없음**. 사용자는 `plt.colormaps["dc.aurora"]` / `cmap="dc.aurora"`로 접근 (기존 docs 관용). `dm.list_colormaps()`가 신규 v5 이름을 자동 포함(레지스트리 스캔)
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
@@ -1772,14 +1783,17 @@ def test_registry_names():
     assert "dc.cycle" in mpl.colormaps and "dc.cycle_print" in mpl.colormaps
 
 
-def test_accessor_flat_names():
-    cm = dm.cmap("aurora")
+def test_registry_access_matplotlib_native():
+    # 기존·익숙한 방식: matplotlib 레지스트리 직접 접근 (별도 접근자 없음)
+    cm = mpl.colormaps["dc.aurora"]
     assert cm.N == 256
     assert [mpl.colors.to_hex(c) for c in cm.colors] == list(_generated.CMAPS_256["aurora"])
     # _r 역방향
-    assert mpl.colors.to_hex(dm.cmap("aurora_r").colors[0]) == _generated.CMAPS_256["aurora"][-1]
+    assert mpl.colors.to_hex(mpl.colormaps["dc.aurora_r"].colors[0]) == \
+        _generated.CMAPS_256["aurora"][-1]
+    # 미존재 이름은 matplotlib 자신이 KeyError
     with pytest.raises(KeyError):
-        dm.cmap("no_such_map")
+        mpl.colormaps["dc.no_such_map"]
 
 
 def test_legacy_renames():
@@ -1790,9 +1804,12 @@ def test_legacy_renames():
         mpl.colormaps["dc.legacy_aurora"].colors)
 
 
-def test_module_still_importable():
+def test_cmap_module_untouched():
+    # dartwork_mpl.cmap 은 모듈 그대로 (shadowing 없음) — 기존 코드 무변경
     import dartwork_mpl.cmap as cmap_module
     assert hasattr(cmap_module, "ensure_loaded")
+    from dartwork_mpl import cmap as pkg_attr
+    assert pkg_attr is cmap_module   # 패키지 attribute도 모듈 (함수 아님)
 ```
 
 - [ ] **Step 2: 실패 확인** — FAIL
@@ -1806,11 +1823,15 @@ git mv src/dartwork_mpl/asset/cmap/teal_rose.txt src/dartwork_mpl/asset/cmap/leg
 
 ```python
 # src/dartwork_mpl/colors/_register.py
-"""v5 cmap/cycle registration + flat-name accessor (스펙 §9 명명 문법)."""
+"""v5 cmap/cycle registration — matplotlib 레지스트리에 dc.<name> 등록.
+
+접근은 matplotlib 네이티브(`plt.colormaps["dc.aurora"]` / `cmap="dc.aurora"`) —
+별도 파이썬 접근자를 두지 않는다(기존 dartwork_mpl.cmap 모듈과의 충돌·기술부채 회피,
+사용자 결정 2026-07-04).
+"""
 
 from __future__ import annotations
 
-import difflib
 import threading
 
 import matplotlib as mpl
@@ -1818,7 +1839,7 @@ import matplotlib.colors as mcolors
 
 from ._generated import CMAPS_256, CYCLES
 
-__all__ = ["cmap", "ensure_registered"]
+__all__ = ["ensure_registered"]
 
 _loaded = False
 _lock = threading.Lock()
@@ -1844,23 +1865,12 @@ def ensure_registered() -> None:
             return
         _register()
         _loaded = True
-
-
-def cmap(name: str) -> mcolors.Colormap:
-    """v5 컬러맵 접근자 — 평면 이름(`"aurora"`, `"blue_red_deep"`, `"aurora_r"`)."""
-    ensure_registered()
-    base = name[:-2] if name.endswith("_r") else name
-    if base not in CMAPS_256 and base not in ("cycle", "cycle_print"):
-        hint = difflib.get_close_matches(name, list(CMAPS_256), n=3)
-        raise KeyError(f"unknown dartwork colormap {name!r}"
-                       + (f" — did you mean {hint}?" if hint else ""))
-    return mpl.colormaps[f"dc.{name}"]
 ```
 
 배선:
-- `colors/__init__.py`: `from ._register import cmap, ensure_registered as _ensure_cmaps_registered` 추가, `__all__`에 `"cmap"`, 파일 말미 `_ensure_cmaps_registered()` 호출(팔레트 로드 다음).
-- `dartwork_mpl/__init__.py`: 기존 `from . import (cmap, ...)` **다음에** `from .colors import cmap  # noqa: F811 — 패키지 attribute를 접근자 함수로 교체(모듈은 dartwork_mpl.cmap 경로로 유지)` 추가. `__all__`(있다면)에 반영.
-- `tests/test_cmap.py`: `EXPECTED_DC_NAMES`에서 `"aurora"`→`"legacy_aurora"`, `"teal_rose"`→`"legacy_teal_rose"` 치환. `from dartwork_mpl import cmap as cmap_module`가 있으면 `import dartwork_mpl.cmap as cmap_module`로 교체.
+- `colors/__init__.py`: `from ._register import ensure_registered as _ensure_cmaps_registered` 추가, 파일 말미 `_ensure_cmaps_registered()` 호출(팔레트 로드 다음). **`cmap` export 없음.**
+- `dartwork_mpl/__init__.py`: **변경 없음** — 기존 `from . import (cmap, ...)`(모듈) 그대로. `from .colors import cmap` shadowing은 추가하지 않는다(이것이 충돌 원인이었음).
+- `tests/test_cmap.py`: `EXPECTED_DC_NAMES`에서 `"aurora"`→`"legacy_aurora"`, `"teal_rose"`→`"legacy_teal_rose"` 치환. (모듈 접근 패턴은 무변경 — shadowing이 없으므로 기존 `from dartwork_mpl import cmap as cmap_module` 등 전부 그대로 동작.)
 
 - [ ] **Step 4: 통과 확인**
 
@@ -1872,8 +1882,11 @@ Expected: PASS
 - [ ] **Step 5: 커밋**
 
 ```bash
-git add -A src/dartwork_mpl/asset/cmap src/dartwork_mpl/colors src/dartwork_mpl/__init__.py tests/test_color_v5_register.py tests/test_cmap.py
-git commit -m "feat(colors): register 42 v5 cmaps + qualitative cycles, add dm.cmap() accessor
+git add -A src/dartwork_mpl/asset/cmap src/dartwork_mpl/colors tests/test_color_v5_register.py tests/test_cmap.py
+git commit -m "feat(colors): register 42 v5 cmaps + qualitative cycles in mpl registry
+
+Access via matplotlib-native cmap=\"dc.aurora\" / plt.colormaps[\"dc.aurora\"]
+(no bespoke accessor — dartwork_mpl.cmap stays the module).
 
 BREAKING: legacy cmaps dc.aurora/dc.teal_rose renamed to dc.legacy_aurora/
 dc.legacy_teal_rose (name ceded to v5 catalog)."

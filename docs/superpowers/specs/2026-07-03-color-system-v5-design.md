@@ -350,7 +350,7 @@ def compile_family(p, dense=121):       # A5 지각 등간격 배치 — 연속 
 |---|---|---|---|
 | 색 토큰 | `dc.{family}{step}` | `dc.blue6` | — (원천) |
 | categorical cycle | `cycle` · `cycle_print` | `dm.cycle()` | 팔레트 스텝에서 전수 탐색으로 선발 |
-| cmap 단일색 | **family명 그대로** | `dm.cmap("blue")` | **같은 family 레시피의 연속 렌더링** (A8 광역 L\*) |
+| cmap 단일색 | **family명 그대로** | `cmap="dc.blue"` | **같은 family 레시피의 연속 렌더링** (A8 광역 L\*) |
 | cmap 멀티휴 | **자연광 장면 고유명** | `aurora` `blaze` | hue 경유점을 **family 앵커 h₀에서만 선택** |
 | cmap diverging | **저값\_고값 pair명** | `blue_red` | 양극 = `dc.{a}6`·`dc.{b}6`에서 유도 |
 | cmap topo | **자연 지형 장면 고유명** | `coast` | 반부별 앵커 경로 2개(해저·육지)의 접합 |
@@ -358,9 +358,10 @@ def compile_family(p, dense=121):       # A5 지각 등간격 배치 — 연속 
 | cmap qualitative | **cycle명 그대로** | `dc.cycle` | 팔레트 cycle의 ListedColormap 등록 (신규 디자인 0) |
 | 변형 접미사 | `_r`(역방향) · `_deep`/`_soft`(diverging 강도) | `aurora_r` `blue_red_deep` | — |
 
-- **접근**: `dm.cmap("이름")` 평면 네임스페이스(카테고리 접두사 없음). **matplotlib 전역 레지스트리
-  등록명은 `dc.<이름>`** — mpl 내장 `pink`·`gray` cmap과의 충돌을 원천 차단(cmocean `cmo.`·
-  crameri `cmc.`·cmasher `cmr.` 관행과 동일).
+- **접근**: **matplotlib 레지스트리 네이티브** — `cmap="dc.<이름>"`(플롯 인자) · `plt.colormaps["dc.<이름>"]`
+  · `dm.list_colormaps()`. 별도 파이썬 접근자를 두지 않는다(기존 관용이자 기술부채 0 — 사용자 결정
+  2026-07-04). 등록명 접두사 `dc.`는 mpl 내장 `pink`·`gray` cmap과의 충돌을 원천 차단(cmocean `cmo.`·
+  crameri `cmc.`·cmasher `cmr.` 관행과 동일)이며, 기존 `dartwork_mpl.cmap` 모듈과의 이름 충돌도 회피한다.
 - **방향 규칙 (잉크/빛 은유)**: *잉크 계열*(단일색·diverging)은 흰 종이에 잉크가 쌓이는 은유 —
   **고값=진함**. *빛 계열*(멀티휴·cyclic)은 어둠에서 빛이 나는 은유 — **고값=밝음**(viridis 관례).
   *topo*는 기준면 은유 — 기준면 0에서 멀수록 아래는 어두움(심해), 위는 밝음(고봉).
@@ -381,7 +382,7 @@ def compile_family(p, dense=121):       # A5 지각 등간격 배치 — 연속 
 
 ### 단일색 sequential — family 이름 (16)
 
-family별 히트맵 램프이며 **이름은 family명 그대로**(`dm.cmap("blue")`) — 팔레트의 `dc.blue`와 같은
+family별 히트맵 램프이며 **이름은 family명 그대로**(`cmap="dc.blue"`) — 팔레트의 `dc.blue`와 같은
 레시피(h₀·Δh·γ·t_p)에서 생성되므로 같은 이름이 정당하다. **팔레트 사다리를 그대로 쓰지 않는다**(A8) —
 팔레트는 hue별 floor 때문에 L\* 범위가 제각각이라 패널 간 비교가 왜곡되고 동적 범위가 부족하다. 대신
 각 family를 **공통 광역 L\*(96→24, 범위 ~72)** 로 재생성하고, 어두운 끝은 채도를 롤오프해 색 정체성을

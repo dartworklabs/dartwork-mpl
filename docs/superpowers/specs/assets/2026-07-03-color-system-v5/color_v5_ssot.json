@@ -468,7 +468,7 @@
   }
  },
  "colormaps": {
-  "access": "dm.cmap(\"<name>\") — 평면 네임스페이스. mpl 레지스트리 등록명은 \"dc.<name>\" (내장 pink·gray 충돌 차단, cmo./cmr./cmc. 관행)",
+  "access": "matplotlib 레지스트리 네이티브 — cmap=\"dc.<name>\" / plt.colormaps[\"dc.<name>\"] / dm.list_colormaps(). 별도 파이썬 접근자 없음(기존 관용·기술부채 0). 등록명 접두사 dc.는 mpl 내장 pink·gray 및 dartwork_mpl.cmap 모듈 충돌 회피 (cmo./cmr./cmc. 관행).",
   "grammar": {
    "rule": "이름은 색 정체성, 접미사는 변형 (_r 역방향 · _deep/_soft diverging 강도)",
    "single_hue": "family명 그대로 (blue, red, …, gray) — 팔레트 family 레시피의 연속 렌더링(A8 광역 L*)",
