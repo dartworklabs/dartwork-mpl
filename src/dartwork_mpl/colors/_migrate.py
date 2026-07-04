@@ -24,6 +24,7 @@ import difflib
 import re
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 from ._compat_v4 import _COLLISIONS, _FROZEN
 from ._metrics import de2000_hex
@@ -31,7 +32,9 @@ from ._metrics import de2000_hex
 __all__ = [
     "CMAP_RENAMES",
     "PALETTE_RENAMES",
+    "BareHit",
     "collision_shift_table",
+    "find_bare_names",
     "migrate_text",
 ]
 
@@ -144,6 +147,71 @@ def migrate_text(src: str) -> tuple[str, list[Change]]:
     return _TOKEN_RE.sub(_sub, src), changes
 
 
+# ── report-only detection of unprefixed bare names ─────────────────────────
+# Removed palette bases that were also first-class *unprefixed* v4 API —
+# ``set_cycle("spectrum")`` / ``get_palette("ocean")``. Unlike the ``dc.*`` /
+# ``dm.*`` tokens these have no namespace to prove intent, so they are NEVER
+# auto-rewritten — only reported. Derived from ``PALETTE_RENAMES`` so the two
+# stay in lockstep: every removed base, minus the ones that are still a live
+# v5 target (``vivid`` remains a valid family, so a bare ``"vivid"`` needs no
+# migration — matches the ``_MANUAL_ONLY`` allowlist in test_color_migrate_scope).
+_CURRENT_TARGETS: frozenset[str] = frozenset(
+    new for new, _kind in PALETTE_RENAMES.values()
+)
+_BARE_REMOVED: dict[str, str] = {
+    old.lower(): new
+    for old, (new, _kind) in PALETTE_RENAMES.items()
+    if old.lower() not in _CURRENT_TARGETS
+}
+
+# A removed bare name is flagged only inside a recognisable palette-API
+# context immediately before the quoted string — a ``set_cycle(`` /
+# ``get_palette(`` call or a ``cycle=`` / ``palette=`` kwarg — so an unrelated
+# bare word (``focus`` in prose, ``d.pop("focus")``) is not a false positive.
+# The string must be EXACTLY the bare name: the closing backreference quote
+# rejects a shade index or a ``dc.``-prefixed value (those the codemod already
+# rewrites), so the two paths never double-report the same site. Longest base
+# first so ``focus_warm`` wins over ``focus``.
+_BARE_RE = re.compile(
+    r"(?:\b(?:set_cycle|get_palette)\s*\(\s*|\b(?:cycle|palette)\s*=\s*)"
+    r"(['\"])("
+    + "|".join(
+        re.escape(b) for b in sorted(_BARE_REMOVED, key=len, reverse=True)
+    )
+    + r")\1"
+)
+
+
+class BareHit(NamedTuple):
+    """One report-only bare-name hit: ``{name}`` at ``{lineno}`` → ``{suggestion}``.
+
+    ``name`` is the removed unprefixed base as written in the source;
+    ``suggestion`` is its current curated equivalent. These are advisory —
+    the codemod never rewrites bare names (no namespace to disambiguate).
+    """
+
+    lineno: int
+    name: str
+    suggestion: str
+
+
+def find_bare_names(src: str) -> list[BareHit]:
+    """Report unprefixed removed palette names used as a palette-API argument.
+
+    Detection only, never rewriting: returns a :class:`BareHit` per quoted
+    bare removed base (``set_cycle("spectrum")``, ``get_palette("ocean")``,
+    ``cycle="pop"`` …), with its 1-based line number and the suggested current
+    name. Prefixed tokens (``set_cycle("dc.spectrum")``) are excluded here —
+    :func:`migrate_text` rewrites those — so a site is never double-reported.
+    """
+    hits: list[BareHit] = []
+    for m in _BARE_RE.finditer(src):
+        name = m.group(2)
+        lineno = src.count("\n", 0, m.start()) + 1
+        hits.append(BareHit(lineno, name, _BARE_REMOVED[name]))
+    return hits
+
+
 def collision_shift_table() -> list[tuple[str, str, str, float]]:
     """``(token, frozen_v4_hex, v5_hex, ΔE00)`` for every collision token.
 
@@ -160,7 +228,11 @@ def collision_shift_table() -> list[tuple[str, str, str, float]]:
 
 
 def _render_report(
-    path: Path, src: str, new: str, changes: list[Change]
+    path: Path,
+    src: str,
+    new: str,
+    changes: list[Change],
+    bare: list[BareHit] | None = None,
 ) -> str:
     diff = "".join(
         difflib.unified_diff(
@@ -179,6 +251,11 @@ def _render_report(
             else "MERGE — review colours"
         )
         lines.append(f"  {tok:>18} → {c.new_token():<18}  ({note})")
+    lines.extend(
+        f"  {path}:{hit.lineno}: bare '{hit.name}' → '{hit.suggestion}'  "
+        "(not auto-rewritten (bare name — verify context))"
+        for hit in sorted(bare or [])
+    )
     return "\n".join(lines)
 
 
@@ -203,22 +280,26 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     total = 0
+    bare_total = 0
     for path in args.paths:
         if not path.is_file():
             print(f"skip (not a file): {path}", file=sys.stderr)
             continue
         src = path.read_text(encoding="utf-8")
         new, changes = migrate_text(src)
-        if not changes:
+        bare = find_bare_names(src)
+        if not changes and not bare:
             continue
         total += len(changes)
-        print(_render_report(path, src, new, changes))
-        if args.apply:
+        bare_total += len(bare)
+        print(_render_report(path, src, new, changes, bare))
+        # --apply only writes the prefixed rewrites; bare names are advisory.
+        if args.apply and changes:
             path.write_text(new, encoding="utf-8")
             print(f"  ✓ wrote {path} ({len(changes)} token(s))")
         print()
 
-    if total == 0:
+    if total == 0 and bare_total == 0:
         print("No removed v0.5.5 palette tokens found.")
 
     if not args.no_advisory:
@@ -230,11 +311,13 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {tok:<12} {old:<12} {new:<12} {de:>6.1f}")
         # Derive the sentence from CMAP_RENAMES so a third entry surfaces
         # automatically (the dict is the single source of truth).
-        bare = " / ".join(f"'dc.{k}'" for k in CMAP_RENAMES)
-        legacy = " / ".join(f"'dc.{v}'" for v in CMAP_RENAMES.values())
+        cmap_bare_names = " / ".join(f"'dc.{k}'" for k in CMAP_RENAMES)
+        cmap_legacy_names = " / ".join(
+            f"'dc.{v}'" for v in CMAP_RENAMES.values()
+        )
         print(
-            f"\n  Colormaps: cmap={bare} now render the v5 map; "
-            f"switch to {legacy} for the pre-v5 look."
+            f"\n  Colormaps: cmap={cmap_bare_names} now render the v5 map; "
+            f"switch to {cmap_legacy_names} for the pre-v5 look."
         )
 
     return 1 if (total and not args.apply) else 0
