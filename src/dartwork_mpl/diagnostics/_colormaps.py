@@ -35,9 +35,71 @@ _CATEGORY_STYLE: dict[str, tuple[str, str]] = {
 }
 
 
-# Override classification for standard dartwork customized maps
-# 30+ maps mapped into 5 core types
+# Override classification for standard dartwork customized maps.
+# Two sets coexist: the v5 catalog (dartwork_mpl.colors — the default surface,
+# 42 maps + 2 cycles) and the legacy dartwork_mpl.cmap maps (kept for backward
+# compatibility). The HSV heuristic below mislabels the v5 maps (single-hue
+# family ramps read as "Multi-Hue", warm scenes as "Single-Hue"), so the v5
+# taxonomy is pinned explicitly from the authoritative catalog.
 _CLASSIFICATION_OVERRIDES: dict[str, str] = {
+    # ── v5 catalog (dartwork_mpl.colors) ──
+    **{
+        f"dc.{n}": "Single-Hue"
+        for n in (
+            "red",
+            "rose",
+            "orange",
+            "amber",
+            "yellow",
+            "lime",
+            "green",
+            "teal",
+            "cyan",
+            "sky",
+            "blue",
+            "indigo",
+            "violet",
+            "purple",
+            "pink",
+            "gray",
+        )
+    },
+    **{
+        f"dc.{n}": "Multi-Hue"
+        for n in (
+            "aurora",
+            "afterglow",
+            "blaze",
+            "lava",
+            "lagoon",
+            "glacier",
+            "canopy",
+            "haze",
+            "iris",
+            "coast",
+        )
+    },
+    **{
+        f"dc.{n}": "Diverging"
+        for n in (
+            "blue_red",
+            "blue_red_deep",
+            "blue_red_soft",
+            "blue_orange",
+            "teal_rose",
+            "green_purple",
+            "purple_orange",
+            "cyan_red",
+            "teal_amber",
+            "violet_lime",
+            "indigo_amber",
+            "gray_blue",
+            "gray_red",
+        )
+    },
+    **{f"dc.{n}": "Cyclical" for n in ("hue", "halo", "corona")},
+    **{f"dc.{n}": "Categorical" for n in ("cycle", "cycle_print")},
+    # ── legacy dartwork_mpl.cmap maps (backward-compat) ──
     # Single-Hue
     "dc.obsidian": "Single-Hue",
     "dc.sapphire": "Single-Hue",
