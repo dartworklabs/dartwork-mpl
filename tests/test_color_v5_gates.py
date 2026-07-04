@@ -22,15 +22,17 @@ def test_palette_ladders_pass(v5_ssot):
 def test_cycle_gate_pass(v5_ssot):
     pal = v5_ssot["palette"]
     hexes = [pal[f][k] for f, k in v5_ssot["cycle_default"]["spec"]]
-    assert gate_cycle(hexes)["min00"] >= 10.0
+    g = gate_cycle(hexes)
+    assert g["common_min"] >= 10.0  # normal + protan + deutan
+    assert g["tritan"] >= 8.0  # rare S-cone deficiency, realistic floor
 
 
 def test_gate_detects_violations():
     # 인위 실패: 비단조 사다리
     bad = ["#f0f0f0", "#101010", "#e0e0e0"] + ["#808080"] * 7
     assert not gate_ladder(bad)["mono"]
-    # 인위 실패: 붕괴 cycle (tab10류 red-green)
-    assert gate_cycle(["#d62728", "#2ca02c", "#1f77b4"])["min00"] < 10.0
+    # 인위 실패: 붕괴 cycle (tab10류 red-green) — deutan에서 common 게이트 실패
+    assert gate_cycle(["#d62728", "#2ca02c", "#1f77b4"])["common_min"] < 10.0
 
 
 def test_cmap_gates_pass_ssot(v5_ssot):

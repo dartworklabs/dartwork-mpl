@@ -318,6 +318,13 @@ def compile_family(p, dense=121):       # A5 지각 등간격 배치 — 연속 
 기본 7색이 10.3, 인쇄 8색이 11.0으로 — 라인 안전 대역 제약(L\* 42~78)을 추가로 지면서도 Okabe-Ito급
 판별 거리를 유지한다.
 
+> **정정 (BVM tritan, §12)**: 위 10.3·11.0은 *Machado tritan* 기준 설계-시점 값이다.
+> tritan을 정확한 Brettel–Viénot–Mollon 1997로 교체하자 `dc.cycle`의 실제 worst-case(tritan
+> 포함) min ΔE00은 **9.0**(기본)·**8.5**(인쇄)로, Machado가 tritan을 과대평가했음이 드러났다.
+> 흔한 색각이상(deutan·protan)은 여전히 10.3·13.5로 강하다. 7색으로 ≥10 tritan은 물리적으로
+> 불가하므로(재탐색 상한 9.03), 게이트는 *흔한 색각이상 ≥10 ∧ 희귀 tritan ≥8*로 tiered 정정했다
+> (색 불변, 수치만 정직화 — 원칙 3).
+
 **설계 결정:**
 
 - **기본은 7 chromatic + gray 예약.** 8번째 슬롯을 데이터색으로 쓰지 않고 gray를 격자·기준선용으로
@@ -527,7 +534,7 @@ A7의 L\* 단조 게이트는 cyclic에 적용되지 않는 대신, **이음매 
 | cyclic(위상) cmap 부재 | ✅ 생성 완료 | `hue`·`halo`·`corona` 3종 v5 포함(§9) |
 | legacy 하드 제거 시 스크립트·preset 즉사 + silent 재채색 | ✅ 정책 수정 | §11 동결·opt-in·codemod |
 | warm 다크 스텝 교차-family 붕괴(amber9↔orange8 ΔE00 2.5) | 🟡 문서화 | 충돌 매트릭스 공시 + 정체성 유효 구간(스텝 0~7) 명시 |
-| Machado tritan 부정확 + gamut clamp 오염 | 🟡 스펙 반영 | tritan은 Brettel–Viénot–Mollon 1997로 교체 |
+| Machado tritan 부정확 + gamut clamp 오염 | ✅ 구현 | tritan을 Brettel–Viénot–Mollon 1997로 교체(libDaltonLens 선형-RGB 결합행렬, M²=M·분리면 연속성 검증). 정확한 tritan에서 `dc.cycle`의 실제 tritan min ΔE00은 **~9**(Machado가 10.3으로 과대평가). 7색으로 ≥10 tritan 불가 → 게이트를 tiered(흔한 색각이상 ≥10, 희귀 tritan ≥8)로 정정. 색 불변(원칙 3) |
 | 다크 배경 모드 부재 | ⏸ 보류(v5.1) | 게이트에 bg_L 파라미터 설계만 예약 |
 | 10색 확장 요구(tab10 패리티) | ❌ 기각 | 상호 CVD-안전 10색은 부존재(우리 4.0, tab10 1.4). 선스타일 병행이 정답 |
 | turbo류 고대비 rainbow 요구 | ❌ 기각 | L\* 비단조라 A7 공리 위반 — `iris`가 단조 상한(§13) |
