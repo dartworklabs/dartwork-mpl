@@ -12,13 +12,18 @@ def _cycle_entries():
     return list(mpl.rcParams["axes.prop_cycle"])
 
 
-def test_base_cycle_is_v5_with_linestyle_extension():
+def test_base_cycle_is_v5_colors_only():
+    # Default prop_cycle is the 7 v5 colors, color-only (no linestyle product):
+    # a linestyle in the default cycle breaks any ax.plot(lw=0) that inherits a
+    # dashed linestyle (dash scaled by lw=0 → ValueError). The linestyle
+    # extension for >7 line series is opt-in via dm.cycle_cycler() (tested in
+    # test_color_v5_cycle_api.py).
     dm.style.use("scientific")
     entries = _cycle_entries()
-    assert len(entries) == 21  # 7색 x 3 linestyle
-    first7 = [mcolors.to_hex(mcolors.to_rgb(e["color"])) for e in entries[:7]]
-    assert first7 == list(_generated.CYCLES["default"])
-    assert entries[0]["linestyle"] == "-" and entries[7]["linestyle"] == "--"
+    assert len(entries) == 7
+    colors = [mcolors.to_hex(mcolors.to_rgb(e["color"])) for e in entries]
+    assert colors == list(_generated.CYCLES["default"])
+    assert all("linestyle" not in e for e in entries)
 
 
 def test_default_image_cmap_is_aurora():

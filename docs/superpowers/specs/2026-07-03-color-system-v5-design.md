@@ -327,8 +327,11 @@ def compile_family(p, dense=121):       # A5 지각 등간격 배치 — 연속 
   조합이 전수 탐색에서 발견되었다.
 - **인쇄 cycle은 명도를 어두운 쪽으로 분산**(밝은 파스텔 멤버를 피함)해 얇은 라인 가시성과 흑백
   구분을 동시에 확보한다.
-- **8색 초과 시 선스타일 자동 병행.** 스타일 preset이 9번째 시리즈부터 dash/marker를 순환시킨다
-  (색 재사용으로 인한 오독 방지).
+- **8색 초과 시 선스타일 병행 — opt-in.** 기본 prop_cycle은 7색 *color-only*다. 선스타일을 기본
+  cycle에 넣으면 lw=0인 `ax.plot`(투명 테두리 구성 등)이 dashed 선스타일을 상속받아 dash를 lw=0으로
+  스케일하다 깨진다(matplotlib "dash list must be positive"). 그래서 선스타일 확장은 `dm.cycle_cycler()`로
+  **명시적 opt-in**한다 — 8색 초과 라인 시리즈가 필요한 Axes에서 `ax.set_prop_cycle(dm.cycle_cycler())`로
+  적용하면 7색×3선스타일(21개)로 확장되어 색 재사용 오독을 방지한다.
 
 ---
 
