@@ -30,6 +30,11 @@ def _cv(hexes: list[str]) -> float:
     rgbs = [rgb_from_hex(h) for h in hexes]
     d = [de_ok_rgb(rgbs[i], rgbs[i + 1]) for i in range(len(rgbs) - 1)]
     m = sum(d) / len(d)
+    if m == 0:
+        # Degenerate all-identical input: mean step is 0, so the normalized
+        # coefficient of variation is undefined. Report maximal non-uniformity
+        # (inf) so the mono/cv gates fail loudly instead of raising.
+        return float("inf")
     return math.sqrt(sum((x - m) ** 2 for x in d) / len(d)) / m
 
 
@@ -57,23 +62,31 @@ def gate_cycle(hexes: list[str]) -> dict[str, float]:
     red-green floor. So ``common_min`` (normal + protan + deutan) is held to 10
     while ``tritan`` is held to a realistic 8; ``min00`` is the overall worst
     for reference.
+
+    The ``normal``/``protan``/``deutan``/``tritan``/``common_min``/``min00``
+    keys are rounded to 1 decimal (docs, tests, and swatch reports pin these).
+    The ``common_min_raw``/``tritan_raw`` keys carry the *unrounded* floors so
+    the build gate can threshold on the true value — rounding up (e.g. 9.9626
+    → 10.0) must not let a sub-floor cycle slip through :func:`check_all`.
     """
     per: dict[str, float] = {}
+    raw: dict[str, float] = {}
     for kind in ("normal", *_CVD_KINDS):
         if kind == "normal":
             sim = hexes
         else:
             sim = [hex_from_rgb(cvd_rgb(rgb_from_hex(h), kind)) for h in hexes]
-        per[kind] = round(
-            min(
-                de2000_hex(sim[i], sim[j])
-                for i in range(len(sim))
-                for j in range(i + 1, len(sim))
-            ),
-            1,
+        mn = min(
+            de2000_hex(sim[i], sim[j])
+            for i in range(len(sim))
+            for j in range(i + 1, len(sim))
         )
+        raw[kind] = mn
+        per[kind] = round(mn, 1)
     per["common_min"] = min(per["normal"], per["protan"], per["deutan"])
     per["min00"] = min(per["common_min"], per["tritan"])
+    per["common_min_raw"] = min(raw["normal"], raw["protan"], raw["deutan"])
+    per["tritan_raw"] = raw["tritan"]
     return per
 
 
@@ -146,12 +159,18 @@ def check_all(
             bad.append(f"palette {fam}: cv {g['cv']} > 0.08")
     for name, hexes in cycles.items():
         g_cycle = gate_cycle(hexes)
-        if g_cycle["common_min"] < 10.0:
+        # Threshold on the UNROUNDED floors — a cycle whose true min rounds up
+        # across the floor (e.g. 9.9626 → 10.0) must still fail. The message
+        # shows the same unrounded value (2 dp) so it never reads "10.0 < 10".
+        if g_cycle["common_min_raw"] < 10.0:
             bad.append(
-                f"cycle {name}: common-CVD dE00 {g_cycle['common_min']} < 10"
+                f"cycle {name}: common-CVD dE00 "
+                f"{g_cycle['common_min_raw']:.2f} < 10"
             )
-        if g_cycle["tritan"] < 8.0:
-            bad.append(f"cycle {name}: tritan dE00 {g_cycle['tritan']} < 8")
+        if g_cycle["tritan_raw"] < 8.0:
+            bad.append(
+                f"cycle {name}: tritan dE00 {g_cycle['tritan_raw']:.2f} < 8"
+            )
     for name, hexes in cmaps.items():
         kind = name.split(".", 1)[0]
         if kind == "div":
