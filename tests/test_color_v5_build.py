@@ -46,3 +46,28 @@ def test_rebuild_is_byte_identical(tmp_path):
     assert src.read_bytes() == before, (
         "rebuild drifted — nondeterminism or stale commit"
     )
+
+
+def test_build_taxonomy_names_are_real_cmaps(v5_ssot):
+    """_build's hand-maintained diverging/cyclic/topo name sets must all be
+    real compile_cmaps outputs.
+
+    _build._prefixed tags each cmap with a gate category (div./cyc./topo./seq.)
+    from these sets. If a diverging/cyclic/topo map is renamed or removed in
+    _cmaps.py without mirroring the change here, the stale name would silently
+    gate nothing (or the renamed map would fall through to seq. and be checked
+    with the wrong gate). This asserts the sets stay in sync with the catalog.
+
+    NOTE: the reverse drift — a NEW cmap added to _cmaps but not to a set, so
+    it is mis-tagged seq. — cannot be auto-detected here without _cmaps
+    declaring its own taxonomy; keep the sets in sync when adding maps.
+    """
+    from dartwork_mpl.colors import _build
+
+    keys = set(v5_ssot["colormaps"]["swatches_32"])  # == compile_cmaps() output
+    assert keys >= _build._DIVERGING_CMAPS, _build._DIVERGING_CMAPS - keys
+    assert keys >= _build._CYCLIC_CMAPS, _build._CYCLIC_CMAPS - keys
+    assert "coast" in keys
+    # No name is double-categorized.
+    assert not (_build._DIVERGING_CMAPS & _build._CYCLIC_CMAPS)
+    assert "coast" not in _build._DIVERGING_CMAPS | _build._CYCLIC_CMAPS

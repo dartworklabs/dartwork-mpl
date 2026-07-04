@@ -22,10 +22,11 @@ def _legacy_tokens() -> dict[str, str]:
     return _load_json_palette(root, "dc_palettes.json", "dc")
 
 
-LEGACY_TOKEN_NAMES: frozenset[str] = frozenset(_legacy_tokens())
+_LEGACY_TOKENS: dict[str, str] = _legacy_tokens()  # read the JSON once
+LEGACY_TOKEN_NAMES: frozenset[str] = frozenset(_LEGACY_TOKENS)
 _COLLISIONS: dict[str, str] = v5_collision_tokens()  # token -> v5 hex
 _FROZEN: dict[str, str] = {
-    k: v for k, v in _legacy_tokens().items() if k in _COLLISIONS
+    k: v for k, v in _LEGACY_TOKENS.items() if k in _COLLISIONS
 }
 _warned: set[str] = set()
 _version: int = 4
