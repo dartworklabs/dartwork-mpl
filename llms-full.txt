@@ -461,6 +461,22 @@ default. Design spec:
    reference-line role so it stays consistent whichever palette version
    is active.
 
+### Automated migration
+
+A codemod rewrites the removed v0.5.5 palette-token names (see the table
+below) to their current equivalents — never at runtime, always as a visible
+diff you review before applying:
+
+```bash
+python -m dartwork_mpl.colors._migrate path/to/script.py      # dry-run diff
+python -m dartwork_mpl.colors._migrate --apply path/to/*.py   # write
+```
+
+Each rewrite is tagged *colours preserved* (a pure rename) or *review* (a
+merge into a different palette). The run also prints an advisory table of the
+per-token CIEDE2000 ΔE by which `teal` / `indigo` / `gray` shift under
+`set_palette_version(5)`, so opting into the v5 values is an informed choice.
+
 ## v0.5.5 — categorical palette overhaul
 
 A judge-panel redesign reworked the 24 curated `dc.*` palettes into a
