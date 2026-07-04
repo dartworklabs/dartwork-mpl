@@ -8,6 +8,8 @@ from __future__ import annotations
 
 __all__ = ["save_and_show", "save_formats", "show"]
 
+import gzip
+import io
 import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -71,6 +73,42 @@ def _normalize_image_stem(image_stem: str) -> str:
     return image_stem
 
 
+def _with_reproducible_metadata(
+    caller_metadata: dict[str, Any] | None, drop_key: str
+) -> dict[str, Any]:
+    """Return savefig ``metadata`` that drops a churning timestamp field.
+
+    Matplotlib's SVG / PDF backends embed a wall-clock timestamp
+    (``Date`` in SVG's ``<dc:date>``, ``CreationDate`` in PDF) that makes
+    every re-render differ even when the plotted data is identical.
+    Setting the field to ``None`` omits it entirely, so an unchanged
+    figure serialises to a byte-identical file. The caller always wins:
+    if they passed a ``metadata`` dict that already sets ``drop_key`` it is
+    returned unchanged; otherwise a copy with ``drop_key=None`` added is
+    returned, leaving their other keys intact.
+    """
+    if caller_metadata is None:
+        return {drop_key: None}
+    if drop_key in caller_metadata:
+        return caller_metadata
+    merged = dict(caller_metadata)
+    merged[drop_key] = None
+    return merged
+
+
+def _save_deterministic_svgz(
+    fig: Figure, out: str, bbox_inches: str | None, svg_kwargs: dict[str, Any]
+) -> None:
+    """Write SVGZ with a fixed gzip header timestamp."""
+    buf = io.BytesIO()
+    fig.savefig(buf, format="svg", bbox_inches=bbox_inches, **svg_kwargs)
+    with (
+        open(out, "wb") as raw,
+        gzip.GzipFile(fileobj=raw, mode="wb", mtime=0) as compressed,
+    ):
+        compressed.write(buf.getvalue())
+
+
 def save_formats(
     fig: Figure,
     image_stem: str,
@@ -124,10 +162,24 @@ def save_formats(
         = False`` once to flip every call site at once. Pass ``True`` /
         ``False`` explicitly to override per call.
     **kwargs
-        Additional keyword arguments passed to ``savefig``.
+        Additional keyword arguments passed to ``savefig``. A
+        ``metadata`` dict is honoured (see the Reproducibility note).
 
     Notes
     -----
+    **Reproducibility.** SVG and PDF output is deterministic by default:
+    the SVG element ids are pinned with a fixed ``svg.hashsalt`` derived
+    from the output basename, and the wall-clock timestamp each backend
+    would otherwise embed (SVG ``<dc:date>``, PDF ``/CreationDate``) is
+    dropped, so re-rendering an unchanged figure yields a byte-identical
+    file instead of churning version control. PNG is left untouched.
+    To override: pass your own ``metadata={"Date": ...}`` /
+    ``metadata={"CreationDate": ...}`` to keep a timestamp (the caller
+    always wins; other metadata keys are preserved), or set
+    ``matplotlib.rcParams["svg.hashsalt"]`` globally to keep your own salt
+    (a non-``None`` ambient salt is never overridden). No global rcParams
+    state is mutated — the salt is applied via a scoped ``rc_context``.
+
     When the adoption is on (whether via this keyword or the
     :data:`dartwork_mpl.config` default), this call **mutates the
     figure**: it restyles the tick-label fonts of any unlabeled axis,
@@ -157,11 +209,44 @@ def save_formats(
 
     image_stem = _normalize_image_stem(image_stem)
     create_parent_path(image_stem)
+    # Salt SVG element ids with the output basename so a re-render of an
+    # unchanged figure is byte-identical (see the Reproducibility note).
+    salt = Path(image_stem).name
+    caller_metadata = kwargs.get("metadata")
     for fmt in formats:
         # Accept both ``"png"`` and ``".png"`` — without the lstrip a
         # leading-dot format produced ``name..png``.
         fmt = fmt.lstrip(".")
-        fig.savefig(f"{image_stem}.{fmt}", bbox_inches=bbox_inches, **kwargs)
+        out = f"{image_stem}.{fmt}"
+        if fmt in ("svg", "svgz"):
+            svg_kwargs = dict(kwargs)
+            svg_kwargs["metadata"] = _with_reproducible_metadata(
+                caller_metadata, "Date"
+            )
+            # Only pin the hashsalt when the caller hasn't set one globally
+            # — a user who configured ``svg.hashsalt`` for their own
+            # reproducible build keeps it.
+            if plt.rcParams["svg.hashsalt"] is None:
+                with plt.rc_context({"svg.hashsalt": salt}):
+                    if fmt == "svgz":
+                        _save_deterministic_svgz(
+                            fig, out, bbox_inches, svg_kwargs
+                        )
+                    else:
+                        fig.savefig(out, bbox_inches=bbox_inches, **svg_kwargs)
+            else:
+                if fmt == "svgz":
+                    _save_deterministic_svgz(fig, out, bbox_inches, svg_kwargs)
+                else:
+                    fig.savefig(out, bbox_inches=bbox_inches, **svg_kwargs)
+        elif fmt == "pdf":
+            pdf_kwargs = dict(kwargs)
+            pdf_kwargs["metadata"] = _with_reproducible_metadata(
+                caller_metadata, "CreationDate"
+            )
+            fig.savefig(out, bbox_inches=bbox_inches, **pdf_kwargs)
+        else:
+            fig.savefig(out, bbox_inches=bbox_inches, **kwargs)
 
 
 def show(image_path: str, size: int = 600, unit: str = "pt") -> None:

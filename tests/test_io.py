@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import gzip
+import time
 from pathlib import Path
 
 import matplotlib
@@ -61,6 +63,116 @@ class TestSaveFormats:
 
         assert (tmp_path / "no_validate.png").exists()
         plt.close(fig)
+
+
+class TestSaveFormatsDeterministic:
+    """save_formats() SVG/PDF output is byte-reproducible by default:
+    fixed per-file svg.hashsalt + dropped embedded timestamp, so an
+    unchanged figure re-renders identically instead of churning VCS."""
+
+    def _fig(self):
+        fig, ax = plt.subplots()
+        ax.plot([1, 2, 3], [1, 4, 9])
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        return fig
+
+    def test_svg_byte_identical_across_reruns(self, tmp_path: Path) -> None:
+        from dartwork_mpl.io import save_formats
+
+        fig = self._fig()
+        stem = str(tmp_path / "det_chart")
+        save_formats(fig, stem, formats=("svg",), validate=False)
+        first = (tmp_path / "det_chart.svg").read_bytes()
+        # Re-render the same figure to the same stem — same salt ⇒ same ids,
+        # no embedded date ⇒ byte-identical.
+        save_formats(fig, stem, formats=("svg",), validate=False)
+        second = (tmp_path / "det_chart.svg").read_bytes()
+        plt.close(fig)
+
+        assert first == second
+        # No churning wall-clock timestamp embedded by default.
+        assert b"dc:date" not in first
+
+    def test_svgz_byte_identical_across_reruns(self, tmp_path: Path) -> None:
+        from dartwork_mpl.io import save_formats
+
+        fig = self._fig()
+        stem = str(tmp_path / "det_chart")
+        save_formats(fig, stem, formats=("svgz",), validate=False)
+        first = (tmp_path / "det_chart.svgz").read_bytes()
+        time.sleep(1.1)
+        save_formats(fig, stem, formats=("svgz",), validate=False)
+        second = (tmp_path / "det_chart.svgz").read_bytes()
+        plt.close(fig)
+
+        assert first == second
+        svg = gzip.decompress(first)
+        assert svg.startswith((b"<?xml", b"<svg"))
+        assert b"dc:date" not in svg
+
+    def test_caller_metadata_date_survives(self, tmp_path: Path) -> None:
+        """A caller-supplied metadata Date is not clobbered, and other
+        metadata keys pass through untouched."""
+        from dartwork_mpl.io import save_formats
+
+        fig = self._fig()
+        stem = str(tmp_path / "with_date")
+        save_formats(
+            fig,
+            stem,
+            formats=("svg",),
+            validate=False,
+            metadata={"Date": "2020-01-01", "Creator": "unit-test"},
+        )
+        content = (tmp_path / "with_date.svg").read_text(encoding="utf-8")
+        plt.close(fig)
+
+        # Caller's Date wins (not replaced by the default None-drop) …
+        assert "2020-01-01" in content
+        # … and their other metadata key is preserved.
+        assert "unit-test" in content
+
+    def test_pdf_byte_identical_across_reruns(self, tmp_path: Path) -> None:
+        from dartwork_mpl.io import save_formats
+
+        fig = self._fig()
+        stem = str(tmp_path / "det_doc")
+        save_formats(fig, stem, formats=("pdf",), validate=False)
+        first = (tmp_path / "det_doc.pdf").read_bytes()
+        save_formats(fig, stem, formats=("pdf",), validate=False)
+        second = (tmp_path / "det_doc.pdf").read_bytes()
+        plt.close(fig)
+
+        assert first == second
+        # PDF CreationDate is dropped by default.
+        assert b"/CreationDate" not in first
+
+    def test_ambient_hashsalt_is_respected(self, tmp_path: Path) -> None:
+        """A user who set svg.hashsalt globally keeps their salt — the
+        per-file basename salt only applies when the ambient one is None."""
+        from dartwork_mpl.io import save_formats
+
+        fig = self._fig()
+        # Same figure, two different stems, but the *same* ambient salt ⇒
+        # identical element ids (basename would otherwise differ them).
+        with plt.rc_context({"svg.hashsalt": "user-fixed-salt"}):
+            save_formats(
+                fig, str(tmp_path / "a"), formats=("svg",), validate=False
+            )
+            save_formats(
+                fig, str(tmp_path / "b"), formats=("svg",), validate=False
+            )
+        plt.close(fig)
+
+        a = (tmp_path / "a.svg").read_text(encoding="utf-8")
+        b = (tmp_path / "b.svg").read_text(encoding="utf-8")
+        # Element-id salt shared ⇒ the id-bearing markup matches.
+        import re
+
+        ids_a = sorted(set(re.findall(r'id="([^"]+)"', a)))
+        ids_b = sorted(set(re.findall(r'id="([^"]+)"', b)))
+        assert ids_a == ids_b
 
 
 class TestSaveFormatsStripsExtension:

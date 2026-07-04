@@ -54,6 +54,13 @@ dm.style.use("report-kr")
 # the axiom labels need. Pin the whole figure to Pretendard so titles resolve
 # Δ / γ / ² / ₀ instead of falling back to a tofu box.
 plt.rcParams["font.family"] = "Pretendard"
+# The cmap catalog labels its gradients with `family="monospace"`, which
+# resolves to font.monospace[0]. Left unpinned that is whatever monospace the
+# build machine happens to win (macOS Andale Mono vs. CI DejaVu Sans Mono),
+# baking machine-dependent glyph paths into theory_9_cmap_catalog.svg. Pin it
+# to DejaVu Sans Mono — it ships inside matplotlib, so every machine renders
+# the identical bytes.
+plt.rcParams["font.monospace"] = ["DejaVu Sans Mono"]
 plt.rcParams["svg.fonttype"] = "path"
 
 PALETTE = G.PALETTE  # fam -> [10 hex]

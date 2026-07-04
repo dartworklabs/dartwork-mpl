@@ -46,6 +46,22 @@ def _prepare_images_dir(base_dir: Path | None = None) -> Path:
     return images_dir
 
 
+def _save_svg(fig, path: Path, **savefig_kwargs) -> Path:
+    """Write *fig* as a byte-stable SVG.
+
+    A fixed per-file ``svg.hashsalt`` (the output basename) pins the
+    element ids and ``metadata={"Date": None}`` drops the embedded
+    timestamp, so re-rendering an unchanged figure is byte-identical
+    instead of churning the tracked asset. Mirrors the ``save`` helper in
+    docs/color_system/generate_theory_figures.py.
+    """
+    with matplotlib.rc_context({"svg.hashsalt": path.stem}):
+        fig.savefig(
+            path, format="svg", metadata={"Date": None}, **savefig_kwargs
+        )
+    return path
+
+
 # ── quickstart.md ──────────────────────────────────────────────────────
 
 
@@ -63,7 +79,7 @@ def _save_quickstart_first_figure(images_dir: Path) -> Path:
     dm.simple_layout(fig)
 
     path = images_dir / "quickstart_first_figure.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -91,7 +107,7 @@ def _save_quickstart_multi_panel(images_dir: Path) -> Path:
     dm.simple_layout(fig, gs=gs)
 
     path = images_dir / "quickstart_multi_panel.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -161,7 +177,7 @@ def _save_layout_tight(images_dir: Path) -> Path:
     """Layout comparison: tight_layout version."""
     fig = _make_challenging_figure(use_simple_layout=False)
     path = images_dir / "layout_tight.svg"
-    fig.savefig(path, format="svg")
+    _save_svg(fig, path)
     plt.close(fig)
     return path
 
@@ -170,7 +186,7 @@ def _save_layout_simple(images_dir: Path) -> Path:
     """Layout comparison: simple_layout version."""
     fig = _make_challenging_figure(use_simple_layout=True)
     path = images_dir / "layout_simple.svg"
-    fig.savefig(path, format="svg")
+    _save_svg(fig, path)
     plt.close(fig)
     return path
 
@@ -202,7 +218,7 @@ def _save_layout_gridspec(images_dir: Path) -> Path:
     dm.simple_layout(fig, gs=gs, ml=0.05, mr=0.08, mt=0.06, mb=0.08)
 
     path = images_dir / "layout_gridspec.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -222,7 +238,7 @@ def _save_layout_typography(images_dir: Path) -> Path:
     dm.simple_layout(fig)
 
     path = images_dir / "layout_typography.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -343,7 +359,7 @@ def _make_evolution_figure(step: int) -> plt.Figure:
 def _save_evolution_step1(images_dir: Path) -> Path:
     fig = _make_evolution_figure(1)
     path = images_dir / "evolution_step1.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight" if False else None)
+    _save_svg(fig, path, bbox_inches="tight" if False else None)
     plt.close(fig)
     return path
 
@@ -351,7 +367,7 @@ def _save_evolution_step1(images_dir: Path) -> Path:
 def _save_evolution_step2(images_dir: Path) -> Path:
     fig = _make_evolution_figure(2)
     path = images_dir / "evolution_step2.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight" if False else None)
+    _save_svg(fig, path, bbox_inches="tight" if False else None)
     plt.close(fig)
     return path
 
@@ -359,7 +375,7 @@ def _save_evolution_step2(images_dir: Path) -> Path:
 def _save_evolution_step3(images_dir: Path) -> Path:
     fig = _make_evolution_figure(3)
     path = images_dir / "evolution_step3.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight" if False else None)
+    _save_svg(fig, path, bbox_inches="tight" if False else None)
     plt.close(fig)
     return path
 
@@ -367,7 +383,7 @@ def _save_evolution_step3(images_dir: Path) -> Path:
 def _save_evolution_step4(images_dir: Path) -> Path:
     fig = _make_evolution_figure(4)
     path = images_dir / "evolution_step4.svg"
-    fig.savefig(path, format="svg")  # no bbox_inches for simple_layout
+    _save_svg(fig, path)  # no bbox_inches for simple_layout
     plt.close(fig)
     return path
 
@@ -411,7 +427,7 @@ def _save_label_axes_vanilla(images_dir: Path) -> Path:
     """Save vanilla matplotlib version of label_axes comparison."""
     fig = _make_label_axes_compare(use_dm=False)
     path = images_dir / "label_axes_vanilla.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -420,7 +436,7 @@ def _save_label_axes_dm(images_dir: Path) -> Path:
     """Save dartwork-mpl version of label_axes comparison."""
     fig = _make_label_axes_compare(use_dm=True)
     path = images_dir / "label_axes_dm.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -450,7 +466,7 @@ def _save_set_decimal_vanilla(images_dir: Path) -> Path:
     """Save vanilla matplotlib version of set_decimal comparison."""
     fig = _make_set_decimal_compare(use_dm=False)
     path = images_dir / "set_decimal_vanilla.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -459,7 +475,7 @@ def _save_set_decimal_dm(images_dir: Path) -> Path:
     """Save dartwork-mpl version of set_decimal comparison."""
     fig = _make_set_decimal_compare(use_dm=True)
     path = images_dir / "set_decimal_dm.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -491,7 +507,7 @@ def _save_arrow_axis_example(images_dir: Path) -> Path:
     dm.simple_layout(fig)
     path = images_dir / "arrow_axis_example.svg"
     try:
-        fig.savefig(path, format="svg", bbox_inches="tight")
+        _save_svg(fig, path, bbox_inches="tight")
     except Exception as e:
         print(f"Warning: arrow_axis failed {e}")
     plt.close(fig)
@@ -561,9 +577,8 @@ def _save_validation_example(images_dir: Path) -> Path:
     )
 
     path = images_dir / "validation_example.svg"
-    fig.savefig(
-        path, format="svg"
-    )  # don't use bbox_inches="tight" so it actually cuts off
+    # don't use bbox_inches="tight" so it actually cuts off
+    _save_svg(fig, path)
     plt.close(fig)
     return path
 
@@ -589,7 +604,7 @@ def _save_scientific_chart(images_dir: Path) -> Path:
     dm.simple_layout(fig)
 
     path = images_dir / "save_scientific.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -610,7 +625,7 @@ def _save_diverging_bar(images_dir: Path) -> Path:
     )
 
     path = images_dir / "save_diverging_bar.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 

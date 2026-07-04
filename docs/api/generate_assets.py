@@ -45,6 +45,22 @@ def _prepare_images_dir(base_dir: Path | None = None) -> Path:
     return images_dir
 
 
+def _save_svg(fig, path: Path, **savefig_kwargs) -> Path:
+    """Write *fig* as a byte-stable SVG.
+
+    A fixed per-file ``svg.hashsalt`` (the output basename) pins the
+    element ids and ``metadata={"Date": None}`` drops the embedded
+    timestamp, so re-rendering an unchanged figure is byte-identical
+    instead of churning the tracked asset. Mirrors the ``save`` helper in
+    docs/color_system/generate_theory_figures.py.
+    """
+    with matplotlib.rc_context({"svg.hashsalt": path.stem}):
+        fig.savefig(
+            path, format="svg", metadata={"Date": None}, **savefig_kwargs
+        )
+    return path
+
+
 # ── layout.rst ─────────────────────────────────────────────────────────
 
 
@@ -75,7 +91,7 @@ def _save_layout_example(images_dir: Path) -> Path:
     dm.arrow_axis(ax3, "y", "Information richness")
 
     path = images_dir / "layout_example.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -151,7 +167,7 @@ def _save_icon_example(images_dir: Path) -> Path:
     dm.simple_layout(fig)
 
     path = images_dir / "icon_example.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -208,7 +224,7 @@ def _save_font_example(images_dir: Path) -> Path:
     dm.simple_layout(fig)
 
     path = images_dir / "font_example.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -232,7 +248,7 @@ def _save_xplot_example(images_dir: Path) -> Path:
     )
 
     path = images_dir / "xplot_example.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
