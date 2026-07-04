@@ -1,2 +1,8 @@
-font.family: sans-serif
-font.sans-serif: Paperlogy, Noto Sans CJK KR, Pretendard, Gothic A1, Freesentation, AppleGothic, Malgun Gothic, sans-serif
+# Korean presets: Paperlogy leads the explicit family list so Hangul
+# renders in the KR face, with the bundled math/symbol faces appended for
+# per-glyph fallback (see base.mplstyle for why font.family must be
+# explicit, not the generic `sans-serif`). font.sans-serif keeps the full
+# KR preference ladder for the generic terminator; its tail must stay
+# equal to base's tail (tests/test_style_chain_parity.py).
+font.family: Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
+font.sans-serif: Paperlogy, Noto Sans CJK KR, Pretendard, Gothic A1, Freesentation, AppleGothic, Malgun Gothic, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif

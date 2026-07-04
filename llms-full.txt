@@ -480,10 +480,13 @@ merge into a different palette). The run also prints an advisory table of the
 per-token CIEDE2000 ΔE by which `teal` / `indigo` / `gray` shift under
 `set_palette_version(5)`, so opting into the v5 values is an informed choice.
 
-The codemod matches prefixed tokens — a shade colour like `dc.ocean2` and
-quoted bare names like `set_cycle("dc.spectrum")`. Bare names *without* a
-`dc.` / `dm.` prefix (e.g. `set_cycle("spectrum")`, `get_palette("ocean")`)
-are not detected — update those by hand.
+The codemod *rewrites* prefixed tokens — a shade colour like `dc.ocean2` and
+quoted `dc.` / `dm.` names like `set_cycle("dc.spectrum")`. Bare names *without*
+a `dc.` / `dm.` prefix (e.g. `set_cycle("spectrum")`, `get_palette("ocean")`,
+`cycle="pop"`) are now *reported* — flagged with `file:line` and the suggested
+current name when they appear in a palette-API call — but are still **not**
+auto-rewritten (a bare string has no namespace to prove intent), so review and
+update those by hand.
 
 ## v0.5.5 — categorical palette overhaul
 

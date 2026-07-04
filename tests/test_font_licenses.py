@@ -33,6 +33,10 @@ _PREFIX_TO_LICENSE: dict[str, str] = {
     "NotoSans_Condensed-": "LICENSE-NotoSans",
     "NotoSans_SemiCondensed-": "LICENSE-NotoSans",
     "NotoSansMath-": "LICENSE-NotoSans",
+    # Noto Sans Symbols / Symbols 2 come from the same notofonts upstream as
+    # Noto Sans (one OFL text per upstream project), so they share its license.
+    "NotoSansSymbols-": "LICENSE-NotoSans",
+    "NotoSansSymbols2-": "LICENSE-NotoSans",
     "NotoSansCJK": "LICENSE-NotoSansCJK",
     "Paperlogy-": "LICENSE-Paperlogy",
     "Pretendard-": "LICENSE-Pretendard",

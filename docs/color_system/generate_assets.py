@@ -60,6 +60,22 @@ def _prepare_images_dir(base_dir: Path | None = None) -> Path:
     return images_dir
 
 
+def _save_svg(fig, path: Path, **savefig_kwargs) -> Path:
+    """Write *fig* as a byte-stable SVG.
+
+    A fixed per-file ``svg.hashsalt`` (the output basename) pins the
+    element ids and ``metadata={"Date": None}`` drops the embedded
+    timestamp, so re-rendering an unchanged figure is byte-identical
+    instead of churning the tracked asset. Mirrors the ``save`` helper in
+    docs/color_system/generate_theory_figures.py.
+    """
+    with matplotlib.rc_context({"svg.hashsalt": path.stem}):
+        fig.savefig(
+            path, format="svg", metadata={"Date": None}, **savefig_kwargs
+        )
+    return path
+
+
 def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
     """Bucket the v5 colormap catalog by category.
 
@@ -715,7 +731,7 @@ def _save_color_space_creation(images_dir: Path) -> Path:
 
     dm.simple_layout(fig, gs=gs)
     path = images_dir / "color_space_creation.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -820,7 +836,7 @@ def _save_color_space_conversion(images_dir: Path) -> Path:
 
     dm.simple_layout(fig, gs=gs)
     path = images_dir / "color_space_conversion.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -932,7 +948,7 @@ def _save_color_space_interpolation(images_dir: Path) -> Path:
     dm.simple_layout(fig, gs=gs)
 
     path = images_dir / "color_space_interpolation.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -988,7 +1004,7 @@ def _save_cspace_swatch(
 
     dm.simple_layout(fig)
     path = images_dir / f"color_space_colormap_{kind}.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 

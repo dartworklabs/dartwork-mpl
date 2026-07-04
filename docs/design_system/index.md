@@ -49,7 +49,7 @@ OKLCH space — adjust hue, saturation, and lightness predictably.
 :link: ../fonts/index
 :link-type: doc
 
-204 publication-grade fonts from 16 families, auto-registered with
+206 publication-grade fonts from 18 families, auto-registered with
 matplotlib on import. Drop in by name — no `font_manager` plumbing.
 
 - Family catalog with live specimens

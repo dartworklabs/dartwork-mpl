@@ -29,10 +29,16 @@ _COMMITTED = _REPO / "docs" / "_static" / "fonts_explorer_data.js"
 _CSS = _REPO / "docs" / "_static" / "font-face.css"
 _FONT_DIR = _REPO / "src" / "dartwork_mpl" / "asset" / "font"
 
-# Roman stems deliberately not surfaced in the explorer (empty today —
-# every non-italic cut is exposed). Add entries here only as a conscious
-# editorial waiver, with a justification comment.
-_EXPLORER_UNSURFACED: list[str] = []
+# Roman stems deliberately not surfaced in the explorer. Add entries here
+# only as a conscious editorial waiver, with a justification comment.
+_EXPLORER_UNSURFACED: list[str] = [
+    # Pure symbol fallback faces — bundled for the plain-text scientific /
+    # report fallback chain (arrows, ⚠ ✓ ★, dingbats), not selectable text
+    # typefaces. They are intentionally left out of the font explorer/picker
+    # (unlike Noto Sans Math, which is surfaced under "Monospace & Symbols").
+    "NotoSansSymbols-Regular",
+    "NotoSansSymbols2-Regular",
+]
 
 
 def _builder():

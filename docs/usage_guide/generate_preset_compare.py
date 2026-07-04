@@ -212,9 +212,13 @@ def _render_preset_svg(preset: str) -> str:
 
     dm.simple_layout(fig)
 
-    # Render SVG to string — NO bbox_inches='tight' for uniform size
+    # Render SVG to string — NO bbox_inches='tight' for uniform size.
+    # A fixed per-preset ``svg.hashsalt`` + ``metadata={"Date": None}``
+    # keep the embedded SVG element ids and timestamp stable, so the
+    # tracked preset_compare.html doesn't churn on every regeneration.
     buf = io.StringIO()
-    fig.savefig(buf, format="svg")
+    with matplotlib.rc_context({"svg.hashsalt": f"preset_compare_{preset}"}):
+        fig.savefig(buf, format="svg", metadata={"Date": None})
     plt.close(fig)
     return buf.getvalue()
 

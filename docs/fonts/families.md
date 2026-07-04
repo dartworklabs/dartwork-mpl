@@ -1,6 +1,6 @@
 # Font Families
 
-dartwork-mpl bundles 16 professional font families with a total of 204 font
+dartwork-mpl bundles 18 professional font families with a total of 206 font
 files. Each family is optimized for different use cases in data
 visualization. This page profiles the core families in depth; for a
 one-click specimen of **every** family — including Pretendard, Source
@@ -42,6 +42,7 @@ Not sure which font to use? Pick based on your primary need:
 | **Korean text (한글)**       | Paperlogy                  | Native Korean design, 9 weights             |
 | **CJK (日本語 / 中文)**      | Noto Sans CJK              | Comprehensive CJK glyph coverage            |
 | **Math / scientific**        | Noto Sans Math             | Full symbol set: ∑ ∫ √ ∞ π θ α β γ          |
+| **Symbol fallback**          | Noto Sans Symbols 1 / 2    | Plain-text arrows, dingbats: → ⚠ ✓ ★         |
 | **Multi-language documents** | Noto Sans                  | Broadest Unicode coverage                   |
 
 To apply any row's font, set matplotlib's `font.family` to the exact

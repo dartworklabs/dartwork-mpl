@@ -93,6 +93,96 @@ def test_migrate_regex_edges() -> None:
     assert changes and changes[0].prefix == "dc"
 
 
+def test_bare_name_reported_with_suggestion() -> None:
+    """A bare (unprefixed) removed name in a palette-API call is reported
+    with its current suggested name — but NOT rewritten."""
+    from dartwork_mpl.colors._migrate import find_bare_names, migrate_text
+
+    src = 'dm.set_cycle("spectrum")\n'
+    hits = find_bare_names(src)
+    assert len(hits) == 1
+    hit = hits[0]
+    assert hit.name == "spectrum"
+    assert hit.suggestion == "vivid"
+    assert hit.lineno == 1
+    # Report-only: migrate_text must not touch a bare name.
+    new, changes = migrate_text(src)
+    assert new == src
+    assert changes == []
+
+
+def test_bare_name_contexts() -> None:
+    """set_cycle( / get_palette( calls and cycle= / palette= kwargs are the
+    recognised contexts; the suggestion comes from PALETTE_RENAMES."""
+    from dartwork_mpl.colors._migrate import find_bare_names
+
+    cases = {
+        'set_cycle("spectrum")': ("spectrum", "vivid"),
+        "get_palette('ocean')": ("ocean", "teal"),
+        'cycle="pop"': ("pop", "vivid"),
+        "palette='corporate'": ("corporate", "trustworthy"),
+    }
+    for src, (name, suggestion) in cases.items():
+        hits = find_bare_names(src)
+        assert len(hits) == 1, src
+        assert (hits[0].name, hits[0].suggestion) == (name, suggestion), src
+
+
+def test_bare_name_longest_match_wins() -> None:
+    """focus_warm must not be reported as bare 'focus'."""
+    from dartwork_mpl.colors._migrate import find_bare_names
+
+    hits = find_bare_names('set_cycle("focus_warm")')
+    assert [h.name for h in hits] == ["focus_warm"]
+    assert hits[0].suggestion == "coral_accent"
+
+
+def test_bare_name_negatives_no_false_positive() -> None:
+    """Bare removed words outside a palette-API context are NOT flagged, and
+    a bare name that is still a live v5 target (vivid) is never flagged."""
+    from dartwork_mpl.colors._migrate import find_bare_names
+
+    for src in (
+        "# keep the focus on the data, not the chrome\n",  # prose comment
+        'title = "ocean depth study"',  # arbitrary string
+        'd.pop("focus")',  # unrelated method call
+        'set_cycle("vivid")',  # vivid still resolves in v5 → no migration
+        'get_palette("teal")',  # teal is a current family, not removed
+    ):
+        assert find_bare_names(src) == [], src
+
+
+def test_bare_name_not_double_reported_with_prefixed_rewrite() -> None:
+    """A prefixed token is rewritten by migrate_text and must NOT also show
+    up as a bare-name hit (no double report of the same site)."""
+    from dartwork_mpl.colors._migrate import find_bare_names, migrate_text
+
+    src = 'set_cycle("dc.spectrum")'
+    new, changes = migrate_text(src)
+    assert new == 'set_cycle("dc.vivid")'  # rewritten as before
+    assert {c.old for c in changes} == {"spectrum"}
+    assert find_bare_names(src) == []  # not reported as bare
+
+
+def test_cli_bare_only_suppresses_all_clear(tmp_path, capsys) -> None:
+    """A file with only bare-name hits must be reported (with the advisory
+    label) and must NOT print the 'No removed … tokens found.' all-clear."""
+    from dartwork_mpl.colors._migrate import main
+
+    f = tmp_path / "uses_bare.py"
+    f.write_text('dm.set_cycle("spectrum")\n', encoding="utf-8")
+    rc = main([str(f), "--no-advisory"])
+    out = capsys.readouterr().out
+    assert "No removed v0.5.5 palette tokens found." not in out
+    assert "bare 'spectrum'" in out
+    assert "not auto-rewritten (bare name — verify context)" in out
+    assert "→ 'vivid'" in out
+    # Nothing was rewritten, so the file is untouched.
+    assert f.read_text(encoding="utf-8") == 'dm.set_cycle("spectrum")\n'
+    # Report-only bare hits don't force a nonzero (rewrite-pending) exit.
+    assert rc == 0
+
+
 def test_collision_shift_table() -> None:
     from dartwork_mpl.colors._migrate import collision_shift_table
 

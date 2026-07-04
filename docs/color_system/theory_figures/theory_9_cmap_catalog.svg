@@ -350,611 +350,627 @@ z
    </g>
    <g id="text_2">
     <!-- red -->
-    <g style="fill: #343a40" transform="translate(234.293203 28.676895) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(234.256641 28.902872) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-72" d="M 3231 3169 
-L 3034 2700 
-Q 2713 2841 2478 2841 
-Q 2263 2841 2056 2717 
-Q 1850 2594 1676 2364 
-Q 1503 2134 1503 2106 
-L 1503 0 
-L 1019 0 
-L 1019 3256 
-L 1503 3256 
-L 1503 2597 
-Q 1894 3334 2516 3334 
-Q 2884 3334 3231 3169 
+      <path id="DejaVuSansMono-72" d="M 3609 2778 
+Q 3425 2922 3234 2987 
+Q 3044 3053 2816 3053 
+Q 2278 3053 1993 2715 
+Q 1709 2378 1709 1741 
+L 1709 0 
+L 1131 0 
+L 1131 3500 
+L 1709 3500 
+L 1709 2816 
+Q 1853 3188 2151 3386 
+Q 2450 3584 2859 3584 
+Q 3072 3584 3256 3531 
+Q 3441 3478 3609 3366 
+L 3609 2778 
 z
 " transform="scale(0.015625)"/>
-      <path id="AndaleMono-65" d="M 3278 1613 
-L 1044 1613 
-Q 1044 1059 1364 700 
-Q 1684 341 2150 341 
-Q 2594 341 3066 500 
-L 3150 109 
-Q 2719 -84 2144 -84 
-Q 1419 -84 975 381 
-Q 531 847 531 1638 
-Q 531 2413 929 2873 
-Q 1328 3334 1959 3334 
-Q 2522 3334 2900 2906 
-Q 3278 2478 3278 1766 
-L 3278 1613 
+      <path id="DejaVuSansMono-65" d="M 3475 1894 
+L 3475 1613 
+L 984 1613 
+L 984 1594 
+Q 984 1022 1282 709 
+Q 1581 397 2125 397 
+Q 2400 397 2700 484 
+Q 3000 572 3341 750 
+L 3341 178 
+Q 3013 44 2708 -23 
+Q 2403 -91 2119 -91 
+Q 1303 -91 843 398 
+Q 384 888 384 1747 
+Q 384 2584 834 3084 
+Q 1284 3584 2034 3584 
+Q 2703 3584 3089 3131 
+Q 3475 2678 3475 1894 
 z
-M 2747 2009 
-Q 2747 2391 2509 2652 
-Q 2272 2913 1978 2913 
-Q 1600 2913 1351 2663 
-Q 1103 2413 1075 2009 
-L 2747 2009 
+M 2900 2063 
+Q 2888 2569 2661 2833 
+Q 2434 3097 2009 3097 
+Q 1594 3097 1325 2822 
+Q 1056 2547 1006 2059 
+L 2900 2063 
 z
 " transform="scale(0.015625)"/>
-      <path id="AndaleMono-64" d="M 3169 0 
+      <path id="DejaVuSansMono-64" d="M 2681 3053 
+L 2681 4863 
+L 3256 4863 
+L 3256 0 
 L 2681 0 
-L 2681 469 
-Q 2531 228 2251 72 
-Q 1972 -84 1663 -84 
-Q 1103 -84 778 414 
-Q 453 913 453 1678 
-Q 453 2394 792 2864 
-Q 1131 3334 1691 3334 
-Q 2306 3334 2681 2834 
-L 2681 4409 
-L 3169 4409 
-L 3169 0 
+L 2681 441 
+Q 2538 181 2298 45 
+Q 2059 -91 1747 -91 
+Q 1113 -91 748 401 
+Q 384 894 384 1759 
+Q 384 2613 750 3098 
+Q 1116 3584 1747 3584 
+Q 2063 3584 2303 3448 
+Q 2544 3313 2681 3053 
 z
-M 2681 997 
-L 2681 2350 
-Q 2331 2913 1838 2913 
-Q 1434 2913 1200 2555 
-Q 966 2197 966 1650 
-Q 966 1088 1186 720 
-Q 1406 353 1791 353 
-Q 1975 353 2162 453 
-Q 2350 553 2515 753 
-Q 2681 953 2681 997 
+M 991 1747 
+Q 991 1078 1203 737 
+Q 1416 397 1831 397 
+Q 2247 397 2464 740 
+Q 2681 1084 2681 1747 
+Q 2681 2413 2464 2755 
+Q 2247 3097 1831 3097 
+Q 1416 3097 1203 2756 
+Q 991 2416 991 1747 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-72"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-64" transform="translate(120.019531 0)"/>
+     <use xlink:href="#DejaVuSansMono-72"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-64" transform="translate(120.410156 0)"/>
     </g>
    </g>
    <g id="text_3">
     <!-- rose -->
-    <g style="fill: #343a40" transform="translate(230.392188 41.151756) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(230.343438 41.377732) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-6f" d="M 1919 3334 
-Q 2591 3334 2987 2865 
-Q 3384 2397 3384 1631 
-Q 3384 859 2987 387 
-Q 2591 -84 1919 -84 
-Q 1244 -84 848 386 
-Q 453 856 453 1631 
-Q 453 2400 850 2867 
-Q 1247 3334 1919 3334 
+      <path id="DejaVuSansMono-6f" d="M 1925 3097 
+Q 1488 3097 1263 2756 
+Q 1038 2416 1038 1747 
+Q 1038 1081 1263 739 
+Q 1488 397 1925 397 
+Q 2366 397 2591 739 
+Q 2816 1081 2816 1747 
+Q 2816 2416 2591 2756 
+Q 2366 3097 1925 3097 
 z
-M 1919 341 
-Q 2363 341 2619 716 
-Q 2875 1091 2875 1625 
-Q 2875 2188 2622 2550 
-Q 2369 2913 1919 2913 
-Q 1466 2913 1216 2555 
-Q 966 2197 966 1625 
-Q 966 1081 1219 711 
-Q 1472 341 1919 341 
+M 1925 3584 
+Q 2653 3584 3039 3112 
+Q 3425 2641 3425 1747 
+Q 3425 850 3040 379 
+Q 2656 -91 1925 -91 
+Q 1197 -91 812 379 
+Q 428 850 428 1747 
+Q 428 2641 812 3112 
+Q 1197 3584 1925 3584 
 z
 " transform="scale(0.015625)"/>
-      <path id="AndaleMono-73" d="M 2841 2791 
-Q 2431 2925 2069 2925 
-Q 1672 2925 1440 2792 
-Q 1209 2659 1209 2438 
-Q 1209 2297 1315 2192 
-Q 1422 2088 1741 1997 
-L 2206 1863 
-Q 2528 1772 2731 1645 
-Q 2934 1519 3036 1339 
-Q 3138 1159 3138 922 
-Q 3138 456 2747 186 
-Q 2356 -84 1753 -84 
-Q 1153 -84 763 97 
-L 856 519 
-Q 1266 325 1734 325 
-Q 2141 325 2395 476 
-Q 2650 628 2650 878 
-Q 2650 1047 2523 1180 
-Q 2397 1313 1928 1456 
-Q 1550 1572 1372 1630 
-Q 1194 1688 1041 1800 
-Q 888 1913 808 2069 
-Q 728 2225 728 2419 
-Q 728 2841 1097 3087 
-Q 1466 3334 2075 3334 
-Q 2469 3334 2950 3200 
-L 2841 2791 
+      <path id="DejaVuSansMono-73" d="M 3041 3378 
+L 3041 2816 
+Q 2794 2959 2544 3031 
+Q 2294 3103 2034 3103 
+Q 1644 3103 1451 2976 
+Q 1259 2850 1259 2591 
+Q 1259 2356 1403 2240 
+Q 1547 2125 2119 2016 
+L 2350 1972 
+Q 2778 1891 2998 1647 
+Q 3219 1403 3219 1013 
+Q 3219 494 2850 201 
+Q 2481 -91 1825 -91 
+Q 1566 -91 1281 -36 
+Q 997 19 666 128 
+L 666 722 
+Q 988 556 1281 473 
+Q 1575 391 1838 391 
+Q 2219 391 2428 545 
+Q 2638 700 2638 978 
+Q 2638 1378 1872 1531 
+L 1847 1538 
+L 1631 1581 
+Q 1134 1678 906 1908 
+Q 678 2138 678 2534 
+Q 678 3038 1018 3311 
+Q 1359 3584 1991 3584 
+Q 2272 3584 2531 3532 
+Q 2791 3481 3041 3378 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-72"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-73" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(180.029297 0)"/>
+     <use xlink:href="#DejaVuSansMono-72"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-73" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(180.615234 0)"/>
     </g>
    </g>
    <g id="text_4">
     <!-- orange -->
-    <g style="fill: #343a40" transform="translate(222.590156 53.626617) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(222.517031 53.807906) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-61" d="M 3263 0 
-L 2778 0 
-Q 2719 197 2719 525 
-Q 2303 -84 1588 -84 
-Q 1225 -84 948 173 
-Q 672 431 672 838 
-Q 672 1078 769 1262 
-Q 866 1447 1053 1573 
-Q 1241 1700 1509 1773 
-Q 1778 1847 2147 1875 
-L 2694 1919 
-L 2694 2075 
-Q 2694 2913 1913 2913 
-Q 1728 2913 1445 2833 
-Q 1163 2753 959 2644 
-L 831 2994 
-Q 1497 3334 2069 3334 
-Q 3181 3334 3181 2156 
-L 3181 756 
-Q 3181 331 3263 0 
+      <path id="DejaVuSansMono-61" d="M 2194 1759 
+L 2003 1759 
+Q 1500 1759 1245 1582 
+Q 991 1406 991 1056 
+Q 991 741 1181 566 
+Q 1372 391 1709 391 
+Q 2184 391 2456 720 
+Q 2728 1050 2731 1631 
+L 2731 1759 
+L 2194 1759 
 z
-M 2694 966 
-L 2694 1556 
-Q 2034 1497 1789 1445 
-Q 1544 1394 1364 1253 
-Q 1184 1113 1184 872 
-Q 1184 653 1337 518 
-Q 1491 384 1728 384 
-Q 1988 384 2244 539 
-Q 2500 694 2694 966 
-z
-" transform="scale(0.015625)"/>
-      <path id="AndaleMono-6e" d="M 3181 0 
-L 2694 0 
-L 2694 2088 
-Q 2694 2522 2555 2717 
-Q 2416 2913 2119 2913 
-Q 1672 2913 1159 2356 
-L 1159 0 
-L 672 0 
-L 672 3256 
-L 1159 3256 
-L 1159 2778 
-Q 1684 3334 2266 3334 
-Q 3181 3334 3181 2228 
-L 3181 0 
+M 3309 1997 
+L 3309 0 
+L 2731 0 
+L 2731 519 
+Q 2547 206 2267 57 
+Q 1988 -91 1588 -91 
+Q 1053 -91 734 211 
+Q 416 513 416 1019 
+Q 416 1603 808 1906 
+Q 1200 2209 1959 2209 
+L 2731 2209 
+L 2731 2300 
+Q 2728 2719 2518 2908 
+Q 2309 3097 1850 3097 
+Q 1556 3097 1256 3012 
+Q 956 2928 672 2766 
+L 672 3341 
+Q 991 3463 1283 3523 
+Q 1575 3584 1850 3584 
+Q 2284 3584 2592 3456 
+Q 2900 3328 3091 3072 
+Q 3209 2916 3259 2686 
+Q 3309 2456 3309 1997 
 z
 " transform="scale(0.015625)"/>
-      <path id="AndaleMono-67" d="M 1575 1228 
-Q 1119 1006 1119 838 
-Q 1119 747 1223 684 
-Q 1328 622 1509 622 
-L 2606 653 
-Q 2997 653 3214 462 
-Q 3431 272 3431 -78 
-Q 3431 -631 2937 -959 
-Q 2444 -1288 1784 -1288 
-Q 1244 -1288 900 -1061 
-Q 556 -834 556 -475 
-Q 556 -84 1088 184 
-Q 647 391 647 691 
-Q 647 1034 1216 1331 
-Q 953 1491 812 1744 
-Q 672 1997 672 2278 
-Q 672 2738 984 3033 
-Q 1297 3328 1766 3328 
-Q 2103 3328 2375 3188 
-L 3341 3334 
-L 3341 2859 
-L 2719 2859 
-Q 2859 2613 2859 2278 
-Q 2859 1834 2550 1528 
-Q 2241 1222 1766 1222 
-Q 1666 1222 1575 1228 
+      <path id="DejaVuSansMono-6e" d="M 3284 2169 
+L 3284 0 
+L 2706 0 
+L 2706 2169 
+Q 2706 2641 2540 2862 
+Q 2375 3084 2022 3084 
+Q 1619 3084 1401 2798 
+Q 1184 2513 1184 1978 
+L 1184 0 
+L 609 0 
+L 609 3500 
+L 1184 3500 
+L 1184 2975 
+Q 1338 3275 1600 3429 
+Q 1863 3584 2222 3584 
+Q 2756 3584 3020 3232 
+Q 3284 2881 3284 2169 
 z
-M 1766 1600 
-Q 2034 1600 2204 1786 
-Q 2375 1972 2375 2272 
-Q 2375 2588 2209 2766 
-Q 2044 2944 1766 2944 
-Q 1506 2944 1329 2758 
-Q 1153 2572 1153 2272 
-Q 1153 1978 1329 1789 
-Q 1506 1600 1766 1600 
+" transform="scale(0.015625)"/>
+      <path id="DejaVuSansMono-67" d="M 2681 1778 
+Q 2681 2425 2470 2761 
+Q 2259 3097 1856 3097 
+Q 1434 3097 1212 2761 
+Q 991 2425 991 1778 
+Q 991 1131 1214 792 
+Q 1438 453 1863 453 
+Q 2259 453 2470 793 
+Q 2681 1134 2681 1778 
 z
-M 1784 -909 
-Q 2266 -909 2605 -695 
-Q 2944 -481 2944 -166 
-Q 2944 159 2463 159 
-Q 2303 159 1913 141 
-Q 1666 128 1525 128 
-Q 1456 128 1311 15 
-Q 1166 -97 1089 -211 
-Q 1013 -325 1013 -447 
-Q 1013 -638 1225 -773 
-Q 1438 -909 1784 -909 
+M 3256 225 
+Q 3256 -563 2884 -969 
+Q 2513 -1375 1791 -1375 
+Q 1553 -1375 1293 -1331 
+Q 1034 -1288 775 -1203 
+L 775 -634 
+Q 1081 -778 1331 -847 
+Q 1581 -916 1791 -916 
+Q 2256 -916 2468 -662 
+Q 2681 -409 2681 141 
+L 2681 166 
+L 2681 556 
+Q 2544 263 2306 119 
+Q 2069 -25 1728 -25 
+Q 1116 -25 750 465 
+Q 384 956 384 1778 
+Q 384 2603 750 3093 
+Q 1116 3584 1728 3584 
+Q 2066 3584 2300 3450 
+Q 2534 3316 2681 3034 
+L 2681 3488 
+L 3256 3488 
+L 3256 225 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-6f"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6e" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-67" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(300.048828 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6e" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-67" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(301.025391 0)"/>
     </g>
    </g>
    <g id="text_5">
     <!-- amber -->
-    <g style="fill: #343a40" transform="translate(226.491172 66.101478) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(226.430234 66.327454) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-6d" d="M 3438 0 
-L 2950 0 
-L 2950 2138 
-Q 2950 2913 2663 2913 
-Q 2516 2913 2339 2645 
-Q 2163 2378 2163 2350 
-L 2163 0 
+      <path id="DejaVuSansMono-6d" d="M 2113 3144 
+Q 2219 3369 2383 3476 
+Q 2547 3584 2778 3584 
+Q 3200 3584 3373 3257 
+Q 3547 2931 3547 2028 
+L 3547 0 
+L 3022 0 
+L 3022 2003 
+Q 3022 2744 2939 2923 
+Q 2856 3103 2638 3103 
+Q 2388 3103 2295 2911 
+Q 2203 2719 2203 2003 
+L 2203 0 
 L 1678 0 
-L 1678 2138 
-Q 1678 2913 1388 2913 
-Q 1244 2913 1067 2645 
-Q 891 2378 891 2350 
-L 891 0 
-L 403 0 
-L 403 3256 
-L 872 3256 
-L 872 2766 
-Q 1009 3025 1198 3179 
-Q 1388 3334 1575 3334 
-Q 1772 3334 1928 3179 
-Q 2084 3025 2144 2766 
-Q 2281 3025 2472 3179 
-Q 2663 3334 2847 3334 
-Q 3438 3334 3438 2278 
-L 3438 0 
+L 1678 2003 
+Q 1678 2753 1589 2928 
+Q 1500 3103 1269 3103 
+Q 1041 3103 952 2911 
+Q 863 2719 863 2003 
+L 863 0 
+L 341 0 
+L 341 3500 
+L 863 3500 
+L 863 3200 
+Q 966 3388 1120 3486 
+Q 1275 3584 1472 3584 
+Q 1709 3584 1867 3475 
+Q 2025 3366 2113 3144 
 z
 " transform="scale(0.015625)"/>
-      <path id="AndaleMono-62" d="M 1159 2834 
-Q 1322 3059 1598 3196 
-Q 1875 3334 2181 3334 
-Q 2750 3334 3067 2878 
-Q 3384 2422 3384 1678 
-Q 3384 925 3046 420 
-Q 2709 -84 2144 -84 
-Q 1841 -84 1577 67 
-Q 1313 219 1159 469 
-L 1159 0 
-L 672 0 
-L 672 4409 
-L 1159 4409 
-L 1159 2834 
+      <path id="DejaVuSansMono-62" d="M 2869 1747 
+Q 2869 2416 2656 2756 
+Q 2444 3097 2028 3097 
+Q 1609 3097 1393 2755 
+Q 1178 2413 1178 1747 
+Q 1178 1084 1393 740 
+Q 1609 397 2028 397 
+Q 2444 397 2656 737 
+Q 2869 1078 2869 1747 
 z
-M 1159 2350 
-L 1159 997 
-Q 1297 722 1531 537 
-Q 1766 353 2016 353 
-Q 2409 353 2642 728 
-Q 2875 1103 2875 1650 
-Q 2875 2213 2653 2563 
-Q 2431 2913 2034 2913 
-Q 1519 2913 1159 2350 
+M 1178 3053 
+Q 1316 3309 1558 3446 
+Q 1800 3584 2119 3584 
+Q 2750 3584 3112 3098 
+Q 3475 2613 3475 1759 
+Q 3475 894 3111 401 
+Q 2747 -91 2113 -91 
+Q 1800 -91 1561 45 
+Q 1322 181 1178 441 
+L 1178 0 
+L 603 0 
+L 603 4863 
+L 1178 4863 
+L 1178 3053 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-61"/>
-     <use xlink:href="#AndaleMono-6d" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-62" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(240.039062 0)"/>
+     <use xlink:href="#DejaVuSansMono-61"/>
+     <use xlink:href="#DejaVuSansMono-6d" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-62" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(240.820312 0)"/>
     </g>
    </g>
    <g id="text_6">
     <!-- yellow -->
-    <g style="fill: #343a40" transform="translate(222.590156 78.576339) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(222.517031 78.802315) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-79" d="M 3328 3256 
-L 2094 0 
-Q 1825 -719 1561 -1003 
-Q 1297 -1288 959 -1288 
-Q 659 -1288 366 -1178 
-L 447 -788 
-Q 684 -863 872 -863 
-Q 1134 -863 1303 -659 
-Q 1472 -456 1644 6 
-L 422 3256 
-L 953 3256 
-L 1875 659 
-L 2797 3256 
-L 3328 3256 
+      <path id="DejaVuSansMono-79" d="M 2681 1125 
+Q 2538 759 2316 163 
+Q 2006 -663 1900 -844 
+Q 1756 -1088 1540 -1209 
+Q 1325 -1331 1038 -1331 
+L 575 -1331 
+L 575 -850 
+L 916 -850 
+Q 1169 -850 1312 -703 
+Q 1456 -556 1678 56 
+L 325 3500 
+L 934 3500 
+L 1972 763 
+L 2994 3500 
+L 3603 3500 
+L 2681 1125 
 z
 " transform="scale(0.015625)"/>
-      <path id="AndaleMono-6c" d="M 2944 0 
-L 1613 0 
-L 1613 3988 
-L 763 3988 
-L 763 4409 
-L 2100 4409 
-L 2100 422 
-L 2944 422 
-L 2944 0 
+      <path id="DejaVuSansMono-6c" d="M 1997 1269 
+Q 1997 881 2139 684 
+Q 2281 488 2559 488 
+L 3231 488 
+L 3231 0 
+L 2503 0 
+Q 1988 0 1705 331 
+Q 1422 663 1422 1269 
+L 1422 4447 
+L 500 4447 
+L 500 4897 
+L 1997 4897 
+L 1997 1269 
 z
 " transform="scale(0.015625)"/>
-      <path id="AndaleMono-77" d="M 3566 3256 
-L 3097 0 
-L 2725 0 
-L 1959 1844 
-L 1191 0 
+      <path id="DejaVuSansMono-77" d="M 0 3500 
+L 569 3500 
+L 1178 672 
+L 1678 2478 
+L 2169 2478 
+L 2675 672 
+L 3284 3500 
+L 3853 3500 
+L 3034 0 
+L 2484 0 
+L 1925 1919 
+L 1369 0 
 L 819 0 
-L 359 3256 
-L 844 3256 
-Q 1103 975 1113 863 
-L 1709 2278 
-L 2209 2278 
-L 2803 872 
-L 3066 3256 
-L 3566 3256 
+L 0 3500 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-79"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-77" transform="translate(300.048828 0)"/>
+     <use xlink:href="#DejaVuSansMono-79"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-77" transform="translate(301.025391 0)"/>
     </g>
    </g>
    <g id="text_7">
     <!-- lime -->
-    <g style="fill: #343a40" transform="translate(230.392188 91.0512) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(230.343438 91.277176) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-69" d="M 2131 4488 
-Q 2269 4488 2366 4389 
-Q 2463 4291 2463 4153 
-Q 2463 4009 2367 3912 
-Q 2272 3816 2131 3816 
-Q 2003 3816 1904 3917 
-Q 1806 4019 1806 4153 
-Q 1806 4288 1904 4388 
-Q 2003 4488 2131 4488 
+      <path id="DejaVuSansMono-69" d="M 800 3500 
+L 2272 3500 
+L 2272 447 
+L 3413 447 
+L 3413 0 
+L 556 0 
+L 556 447 
+L 1697 447 
+L 1697 3053 
+L 800 3053 
+L 800 3500 
 z
-M 2369 0 
-L 1881 0 
-L 1881 2834 
-L 922 2834 
-L 922 3256 
-L 2369 3256 
-L 2369 0 
+M 1697 4863 
+L 2272 4863 
+L 2272 4134 
+L 1697 4134 
+L 1697 4863 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-6c"/>
-     <use xlink:href="#AndaleMono-69" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-6d" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(180.029297 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c"/>
+     <use xlink:href="#DejaVuSansMono-69" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-6d" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(180.615234 0)"/>
     </g>
    </g>
    <g id="text_8">
     <!-- green -->
-    <g style="fill: #343a40" transform="translate(226.491172 103.52606) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-67"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-6e" transform="translate(240.039062 0)"/>
+    <g style="fill: #343a40" transform="translate(226.430234 103.70735) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-67"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-6e" transform="translate(240.820312 0)"/>
     </g>
    </g>
    <g id="text_9">
     <!-- teal -->
-    <g style="fill: #343a40" transform="translate(230.392188 116.000921) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(230.343438 116.226898) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-74" d="M 3213 147 
-Q 2722 -78 2247 -78 
-Q 1375 -78 1375 844 
-L 1375 2834 
-L 750 2834 
-L 750 3256 
-L 1375 3256 
-L 1375 4147 
-L 1850 4147 
-L 1850 3256 
-L 2956 3256 
-L 2956 2834 
-L 1850 2834 
-L 1850 972 
-Q 1850 675 1981 511 
-Q 2113 347 2338 347 
-Q 2738 347 3128 525 
-L 3213 147 
+      <path id="DejaVuSansMono-74" d="M 1919 4494 
+L 1919 3500 
+L 3225 3500 
+L 3225 3053 
+L 1919 3053 
+L 1919 1153 
+Q 1919 766 2066 612 
+Q 2213 459 2578 459 
+L 3225 459 
+L 3225 0 
+L 2522 0 
+Q 1875 0 1609 259 
+Q 1344 519 1344 1153 
+L 1344 3053 
+L 409 3053 
+L 409 3500 
+L 1344 3500 
+L 1344 4494 
+L 1919 4494 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-74"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(180.029297 0)"/>
+     <use xlink:href="#DejaVuSansMono-74"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(180.615234 0)"/>
     </g>
    </g>
    <g id="text_10">
     <!-- cyan -->
-    <g style="fill: #343a40" transform="translate(230.392188 128.475782) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(230.343438 128.701759) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-63" d="M 3169 109 
-Q 2744 -84 2234 -84 
-Q 1466 -84 1008 383 
-Q 550 850 550 1625 
-Q 550 2400 1011 2867 
-Q 1472 3334 2222 3334 
-Q 2713 3334 3156 3163 
-L 3028 2759 
-Q 2584 2913 2228 2913 
-Q 1691 2913 1377 2566 
-Q 1063 2219 1063 1625 
-Q 1063 1081 1388 711 
-Q 1713 341 2234 341 
-Q 2647 341 3084 500 
-L 3169 109 
+      <path id="DejaVuSansMono-63" d="M 3316 178 
+Q 3084 44 2839 -23 
+Q 2594 -91 2338 -91 
+Q 1525 -91 1067 396 
+Q 609 884 609 1747 
+Q 609 2609 1067 3096 
+Q 1525 3584 2338 3584 
+Q 2591 3584 2831 3518 
+Q 3072 3453 3316 3316 
+L 3316 2713 
+Q 3088 2916 2858 3006 
+Q 2628 3097 2338 3097 
+Q 1797 3097 1506 2747 
+Q 1216 2397 1216 1747 
+Q 1216 1100 1508 748 
+Q 1800 397 2338 397 
+Q 2638 397 2875 489 
+Q 3113 581 3316 775 
+L 3316 178 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-63"/>
-     <use xlink:href="#AndaleMono-79" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6e" transform="translate(180.029297 0)"/>
+     <use xlink:href="#DejaVuSansMono-63"/>
+     <use xlink:href="#DejaVuSansMono-79" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6e" transform="translate(180.615234 0)"/>
     </g>
    </g>
    <g id="text_11">
     <!-- sky -->
-    <g style="fill: #343a40" transform="translate(234.293203 140.950643) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(234.256641 141.17662) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-6b" d="M 3500 0 
-L 2859 0 
-L 1478 1619 
-L 1159 1344 
-L 1159 0 
-L 672 0 
-L 672 4409 
-L 1159 4409 
-L 1159 1881 
-L 2688 3256 
-L 3309 3256 
-L 1825 1925 
-L 3500 0 
+      <path id="DejaVuSansMono-6b" d="M 738 4863 
+L 1331 4863 
+L 1331 2047 
+L 2841 3500 
+L 3541 3500 
+L 2163 2181 
+L 3756 0 
+L 3053 0 
+L 1759 1806 
+L 1331 1403 
+L 1331 0 
+L 738 0 
+L 738 4863 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-73"/>
-     <use xlink:href="#AndaleMono-6b" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-79" transform="translate(120.019531 0)"/>
+     <use xlink:href="#DejaVuSansMono-73"/>
+     <use xlink:href="#DejaVuSansMono-6b" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-79" transform="translate(120.410156 0)"/>
     </g>
    </g>
    <g id="text_12">
     <!-- blue -->
-    <g style="fill: #343a40" transform="translate(230.392188 153.425504) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(230.343438 153.651481) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-75" d="M 3175 0 
-L 2688 0 
-L 2688 481 
-Q 2163 -78 1581 -78 
-Q 666 -78 666 1031 
-L 666 3256 
-L 1153 3256 
-L 1153 1172 
-Q 1153 756 1284 551 
-Q 1416 347 1728 347 
-Q 2175 347 2688 903 
-L 2688 3256 
-L 3175 3256 
-L 3175 0 
+      <path id="DejaVuSansMono-75" d="M 609 1325 
+L 609 3494 
+L 1184 3494 
+L 1184 1325 
+Q 1184 853 1351 631 
+Q 1519 409 1869 409 
+Q 2275 409 2490 695 
+Q 2706 981 2706 1516 
+L 2706 3494 
+L 3284 3494 
+L 3284 0 
+L 2706 0 
+L 2706 525 
+Q 2553 222 2289 65 
+Q 2025 -91 1672 -91 
+Q 1134 -91 871 261 
+Q 609 613 609 1325 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-62"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-75" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(180.029297 0)"/>
+     <use xlink:href="#DejaVuSansMono-62"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-75" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(180.615234 0)"/>
     </g>
    </g>
    <g id="text_13">
     <!-- indigo -->
-    <g style="fill: #343a40" transform="translate(222.590156 165.940482) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-69"/>
-     <use xlink:href="#AndaleMono-6e" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-64" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-69" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-67" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(300.048828 0)"/>
+    <g style="fill: #343a40" transform="translate(222.517031 166.086732) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-69"/>
+     <use xlink:href="#DejaVuSansMono-6e" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-64" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-69" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-67" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(301.025391 0)"/>
     </g>
    </g>
    <g id="text_14">
     <!-- violet -->
-    <g style="fill: #343a40" transform="translate(222.590156 178.375226) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(222.517031 178.601202) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-76" d="M 3328 3256 
-L 2094 0 
-L 1650 0 
-L 422 3256 
-L 953 3256 
-L 1875 666 
-L 2797 3256 
-L 3328 3256 
+      <path id="DejaVuSansMono-76" d="M 313 3500 
+L 909 3500 
+L 1925 563 
+L 2944 3500 
+L 3541 3500 
+L 2297 0 
+L 1556 0 
+L 313 3500 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-76"/>
-     <use xlink:href="#AndaleMono-69" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-74" transform="translate(300.048828 0)"/>
+     <use xlink:href="#DejaVuSansMono-76"/>
+     <use xlink:href="#DejaVuSansMono-69" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-74" transform="translate(301.025391 0)"/>
     </g>
    </g>
    <g id="text_15">
     <!-- purple -->
-    <g style="fill: #343a40" transform="translate(222.590156 190.850087) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(222.517031 191.076063) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-70" d="M 1159 2834 
-Q 1322 3059 1598 3196 
-Q 1875 3334 2181 3334 
-Q 2744 3334 3064 2870 
-Q 3384 2406 3384 1663 
-Q 3384 913 3048 414 
-Q 2713 -84 2144 -84 
-Q 1841 -84 1577 67 
-Q 1313 219 1159 469 
-L 1159 -1288 
-L 672 -1288 
-L 672 3256 
-L 1159 3256 
-L 1159 2834 
+      <path id="DejaVuSansMono-70" d="M 1172 441 
+L 1172 -1331 
+L 594 -1331 
+L 594 3500 
+L 1172 3500 
+L 1172 3053 
+Q 1316 3313 1555 3448 
+Q 1794 3584 2106 3584 
+Q 2741 3584 3102 3093 
+Q 3463 2603 3463 1734 
+Q 3463 881 3100 395 
+Q 2738 -91 2106 -91 
+Q 1788 -91 1548 45 
+Q 1309 181 1172 441 
 z
-M 1159 2350 
-L 1159 997 
-Q 1297 722 1531 537 
-Q 1766 353 2016 353 
-Q 2409 353 2642 722 
-Q 2875 1091 2875 1638 
-Q 2875 2200 2653 2556 
-Q 2431 2913 2034 2913 
-Q 1519 2913 1159 2350 
+M 2859 1747 
+Q 2859 2416 2648 2756 
+Q 2438 3097 2022 3097 
+Q 1603 3097 1387 2755 
+Q 1172 2413 1172 1747 
+Q 1172 1084 1387 740 
+Q 1603 397 2022 397 
+Q 2438 397 2648 737 
+Q 2859 1078 2859 1747 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-70"/>
-     <use xlink:href="#AndaleMono-75" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-70" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(300.048828 0)"/>
+     <use xlink:href="#DejaVuSansMono-70"/>
+     <use xlink:href="#DejaVuSansMono-75" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-70" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(301.025391 0)"/>
     </g>
    </g>
    <g id="text_16">
     <!-- pink -->
-    <g style="fill: #343a40" transform="translate(230.392188 203.365065) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-70"/>
-     <use xlink:href="#AndaleMono-69" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-6e" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6b" transform="translate(180.029297 0)"/>
+    <g style="fill: #343a40" transform="translate(230.343438 203.550924) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-70"/>
+     <use xlink:href="#DejaVuSansMono-69" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-6e" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6b" transform="translate(180.615234 0)"/>
     </g>
    </g>
    <g id="text_17">
     <!-- gray -->
-    <g style="fill: #343a40" transform="translate(230.392188 215.799809) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-67"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-79" transform="translate(180.029297 0)"/>
+    <g style="fill: #343a40" transform="translate(230.343438 215.981098) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-67"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-79" transform="translate(180.615234 0)"/>
     </g>
    </g>
    <g id="text_18">
@@ -1245,154 +1261,157 @@ z
    </g>
    <g id="text_19">
     <!-- aurora -->
-    <g style="fill: #343a40" transform="translate(222.590156 244.491989) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-61"/>
-     <use xlink:href="#AndaleMono-75" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(300.048828 0)"/>
+    <g style="fill: #343a40" transform="translate(222.517031 244.717965) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-61"/>
+     <use xlink:href="#DejaVuSansMono-75" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(301.025391 0)"/>
     </g>
    </g>
    <g id="text_20">
     <!-- afterglow -->
-    <g style="fill: #343a40" transform="translate(210.887109 257.006967) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(210.777422 257.170482) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-66" d="M 3213 4359 
-L 3084 3963 
-Q 2738 4063 2463 4063 
-Q 2200 4063 2101 3914 
-Q 2003 3766 2003 3316 
-L 2003 3256 
-L 3097 3256 
-L 3097 2834 
-L 2003 2834 
-L 2003 0 
-L 1516 0 
-L 1516 2834 
-L 697 2834 
-L 697 3256 
-L 1516 3256 
-L 1516 3366 
-Q 1516 3988 1728 4238 
-Q 1941 4488 2463 4488 
-Q 2800 4488 3213 4359 
+      <path id="DejaVuSansMono-66" d="M 3322 4863 
+L 3322 4384 
+L 2669 4384 
+Q 2359 4384 2239 4257 
+Q 2119 4131 2119 3809 
+L 2119 3500 
+L 3322 3500 
+L 3322 3053 
+L 2119 3053 
+L 2119 0 
+L 1544 0 
+L 1544 3053 
+L 609 3053 
+L 609 3500 
+L 1544 3500 
+L 1544 3744 
+Q 1544 4319 1808 4591 
+Q 2072 4863 2631 4863 
+L 3322 4863 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-61"/>
-     <use xlink:href="#AndaleMono-66" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-74" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-67" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(420.068359 0)"/>
-     <use xlink:href="#AndaleMono-77" transform="translate(480.078125 0)"/>
+     <use xlink:href="#DejaVuSansMono-61"/>
+     <use xlink:href="#DejaVuSansMono-66" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-74" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-67" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(421.435547 0)"/>
+     <use xlink:href="#DejaVuSansMono-77" transform="translate(481.640625 0)"/>
     </g>
    </g>
    <g id="text_21">
     <!-- blaze -->
-    <g style="fill: #343a40" transform="translate(226.491172 269.441711) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(226.430234 269.667687) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-7a" d="M 3138 0 
+      <path id="DejaVuSansMono-7a" d="M 709 3506 
+L 3250 3506 
+L 3250 2981 
+L 1241 469 
+L 3250 469 
+L 3250 0 
 L 634 0 
-L 634 263 
-L 2491 2828 
-L 678 2828 
-L 678 3256 
-L 3138 3256 
-L 3138 3016 
-L 1281 428 
-L 3138 428 
-L 3138 0 
+L 634 531 
+L 2644 3047 
+L 709 3047 
+L 709 3506 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-62"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-7a" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(240.039062 0)"/>
+     <use xlink:href="#DejaVuSansMono-62"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-7a" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(240.820312 0)"/>
     </g>
    </g>
    <g id="text_22">
     <!-- lava -->
-    <g style="fill: #343a40" transform="translate(230.392188 281.916572) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-6c"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-76" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(180.029297 0)"/>
+    <g style="fill: #343a40" transform="translate(230.343438 282.142548) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-6c"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-76" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(180.615234 0)"/>
     </g>
    </g>
    <g id="text_23">
     <!-- lagoon -->
-    <g style="fill: #343a40" transform="translate(222.590156 294.391432) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-6c"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-67" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-6e" transform="translate(300.048828 0)"/>
+    <g style="fill: #343a40" transform="translate(222.517031 294.595065) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-6c"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-67" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-6e" transform="translate(301.025391 0)"/>
     </g>
    </g>
    <g id="text_24">
     <!-- glacier -->
-    <g style="fill: #343a40" transform="translate(218.689141 306.906411) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-67"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-63" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-69" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(360.058594 0)"/>
+    <g style="fill: #343a40" transform="translate(218.603828 307.069926) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-67"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-63" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-69" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(361.230469 0)"/>
     </g>
    </g>
    <g id="text_25">
     <!-- canopy -->
-    <g style="fill: #343a40" transform="translate(222.590156 319.341154) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-63"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-6e" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-70" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-79" transform="translate(300.048828 0)"/>
+    <g style="fill: #343a40" transform="translate(222.517031 319.567131) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-63"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-6e" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-70" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-79" transform="translate(301.025391 0)"/>
     </g>
    </g>
    <g id="text_26">
     <!-- haze -->
-    <g style="fill: #343a40" transform="translate(230.392188 331.816015) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(230.343438 332.041992) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-68" d="M 3181 0 
-L 2694 0 
-L 2694 2088 
-Q 2694 2522 2555 2717 
-Q 2416 2913 2119 2913 
-Q 1672 2913 1159 2356 
-L 1159 0 
-L 672 0 
-L 672 4409 
-L 1159 4409 
-L 1159 2778 
-Q 1684 3334 2266 3334 
-Q 3181 3334 3181 2228 
-L 3181 0 
+      <path id="DejaVuSansMono-68" d="M 3284 2169 
+L 3284 0 
+L 2706 0 
+L 2706 2169 
+Q 2706 2641 2540 2862 
+Q 2375 3084 2022 3084 
+Q 1619 3084 1401 2798 
+Q 1184 2513 1184 1978 
+L 1184 0 
+L 609 0 
+L 609 4863 
+L 1184 4863 
+L 1184 2975 
+Q 1338 3275 1600 3429 
+Q 1863 3584 2222 3584 
+Q 2756 3584 3020 3232 
+Q 3284 2881 3284 2169 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-68"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-7a" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(180.029297 0)"/>
+     <use xlink:href="#DejaVuSansMono-68"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-7a" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(180.615234 0)"/>
     </g>
    </g>
    <g id="text_27">
     <!-- iris -->
-    <g style="fill: #343a40" transform="translate(230.392188 344.290876) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-69"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-69" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-73" transform="translate(180.029297 0)"/>
+    <g style="fill: #343a40" transform="translate(230.343438 344.516853) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-69"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-69" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-73" transform="translate(180.615234 0)"/>
     </g>
    </g>
    <g id="text_28">
@@ -1513,213 +1532,213 @@ z
    </g>
    <g id="text_29">
     <!-- blue_red -->
-    <g style="fill: #343a40" transform="translate(214.788125 372.929228) scale(0.065 -0.065)">
+    <g style="fill: #343a40" transform="translate(214.690625 373.118642) scale(0.065 -0.065)">
      <defs>
-      <path id="AndaleMono-5f" d="M 3841 -1394 
-L 0 -1394 
-L 0 -984 
-L 3841 -984 
-L 3841 -1394 
+      <path id="DejaVuSansMono-5f" d="M 3853 -1259 
+L 3853 -1509 
+L 0 -1509 
+L 0 -1259 
+L 3853 -1259 
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#AndaleMono-62"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-75" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-64" transform="translate(420.068359 0)"/>
+     <use xlink:href="#DejaVuSansMono-62"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-75" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-64" transform="translate(421.435547 0)"/>
     </g>
    </g>
    <g id="text_30">
     <!-- blue_red_deep -->
-    <g style="fill: #343a40" transform="translate(195.283047 385.404089) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-62"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-75" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-64" transform="translate(420.068359 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(480.078125 0)"/>
-     <use xlink:href="#AndaleMono-64" transform="translate(540.087891 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(600.097656 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(660.107422 0)"/>
-     <use xlink:href="#AndaleMono-70" transform="translate(720.117188 0)"/>
+    <g style="fill: #343a40" transform="translate(195.124609 385.593503) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-62"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-75" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-64" transform="translate(421.435547 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(481.640625 0)"/>
+     <use xlink:href="#DejaVuSansMono-64" transform="translate(541.845703 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(602.050781 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(662.255859 0)"/>
+     <use xlink:href="#DejaVuSansMono-70" transform="translate(722.460938 0)"/>
     </g>
    </g>
    <g id="text_31">
     <!-- blue_red_soft -->
-    <g style="fill: #343a40" transform="translate(195.283047 397.919067) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-62"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-75" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-64" transform="translate(420.068359 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(480.078125 0)"/>
-     <use xlink:href="#AndaleMono-73" transform="translate(540.087891 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(600.097656 0)"/>
-     <use xlink:href="#AndaleMono-66" transform="translate(660.107422 0)"/>
-     <use xlink:href="#AndaleMono-74" transform="translate(720.117188 0)"/>
+    <g style="fill: #343a40" transform="translate(195.124609 398.068364) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-62"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-75" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-64" transform="translate(421.435547 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(481.640625 0)"/>
+     <use xlink:href="#DejaVuSansMono-73" transform="translate(541.845703 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(602.050781 0)"/>
+     <use xlink:href="#DejaVuSansMono-66" transform="translate(662.255859 0)"/>
+     <use xlink:href="#DejaVuSansMono-74" transform="translate(722.460938 0)"/>
     </g>
    </g>
    <g id="text_32">
     <!-- blue_orange -->
-    <g style="fill: #343a40" transform="translate(203.085078 410.353811) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-62"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-75" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(420.068359 0)"/>
-     <use xlink:href="#AndaleMono-6e" transform="translate(480.078125 0)"/>
-     <use xlink:href="#AndaleMono-67" transform="translate(540.087891 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(600.097656 0)"/>
+    <g style="fill: #343a40" transform="translate(202.951016 410.543225) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-62"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-75" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(421.435547 0)"/>
+     <use xlink:href="#DejaVuSansMono-6e" transform="translate(481.640625 0)"/>
+     <use xlink:href="#DejaVuSansMono-67" transform="translate(541.845703 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(602.050781 0)"/>
     </g>
    </g>
    <g id="text_33">
     <!-- teal_rose -->
-    <g style="fill: #343a40" transform="translate(210.887109 422.828672) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-74"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-73" transform="translate(420.068359 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(480.078125 0)"/>
+    <g style="fill: #343a40" transform="translate(210.777422 423.018086) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-74"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-73" transform="translate(421.435547 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(481.640625 0)"/>
     </g>
    </g>
    <g id="text_34">
     <!-- green_purple -->
-    <g style="fill: #343a40" transform="translate(199.184063 435.303533) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-67"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-6e" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-70" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-75" transform="translate(420.068359 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(480.078125 0)"/>
-     <use xlink:href="#AndaleMono-70" transform="translate(540.087891 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(600.097656 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(660.107422 0)"/>
+    <g style="fill: #343a40" transform="translate(199.037813 435.492947) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-67"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-6e" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-70" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-75" transform="translate(421.435547 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(481.640625 0)"/>
+     <use xlink:href="#DejaVuSansMono-70" transform="translate(541.845703 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(602.050781 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(662.255859 0)"/>
     </g>
    </g>
    <g id="text_35">
     <!-- purple_orange -->
-    <g style="fill: #343a40" transform="translate(195.283047 447.778394) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-70"/>
-     <use xlink:href="#AndaleMono-75" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-70" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(420.068359 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(480.078125 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(540.087891 0)"/>
-     <use xlink:href="#AndaleMono-6e" transform="translate(600.097656 0)"/>
-     <use xlink:href="#AndaleMono-67" transform="translate(660.107422 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(720.117188 0)"/>
+    <g style="fill: #343a40" transform="translate(195.124609 447.967808) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-70"/>
+     <use xlink:href="#DejaVuSansMono-75" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-70" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(421.435547 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(481.640625 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(541.845703 0)"/>
+     <use xlink:href="#DejaVuSansMono-6e" transform="translate(602.050781 0)"/>
+     <use xlink:href="#DejaVuSansMono-67" transform="translate(662.255859 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(722.460938 0)"/>
     </g>
    </g>
    <g id="text_36">
     <!-- cyan_red -->
-    <g style="fill: #343a40" transform="translate(214.788125 460.253254) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-63"/>
-     <use xlink:href="#AndaleMono-79" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6e" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-64" transform="translate(420.068359 0)"/>
+    <g style="fill: #343a40" transform="translate(214.690625 460.425403) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-63"/>
+     <use xlink:href="#DejaVuSansMono-79" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6e" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-64" transform="translate(421.435547 0)"/>
     </g>
    </g>
    <g id="text_37">
     <!-- teal_amber -->
-    <g style="fill: #343a40" transform="translate(206.986094 472.728115) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-74"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-6d" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-62" transform="translate(420.068359 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(480.078125 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(540.087891 0)"/>
+    <g style="fill: #343a40" transform="translate(206.864219 472.917529) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-74"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-6d" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-62" transform="translate(421.435547 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(481.640625 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(541.845703 0)"/>
     </g>
    </g>
    <g id="text_38">
     <!-- violet_lime -->
-    <g style="fill: #343a40" transform="translate(203.085078 485.243093) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-76"/>
-     <use xlink:href="#AndaleMono-69" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-74" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(420.068359 0)"/>
-     <use xlink:href="#AndaleMono-69" transform="translate(480.078125 0)"/>
-     <use xlink:href="#AndaleMono-6d" transform="translate(540.087891 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(600.097656 0)"/>
+    <g style="fill: #343a40" transform="translate(202.951016 485.39239) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-76"/>
+     <use xlink:href="#DejaVuSansMono-69" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-74" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(421.435547 0)"/>
+     <use xlink:href="#DejaVuSansMono-69" transform="translate(481.640625 0)"/>
+     <use xlink:href="#DejaVuSansMono-6d" transform="translate(541.845703 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(602.050781 0)"/>
     </g>
    </g>
    <g id="text_39">
     <!-- indigo_amber -->
-    <g style="fill: #343a40" transform="translate(199.184063 497.717954) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-69"/>
-     <use xlink:href="#AndaleMono-6e" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-64" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-69" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-67" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(420.068359 0)"/>
-     <use xlink:href="#AndaleMono-6d" transform="translate(480.078125 0)"/>
-     <use xlink:href="#AndaleMono-62" transform="translate(540.087891 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(600.097656 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(660.107422 0)"/>
+    <g style="fill: #343a40" transform="translate(199.037813 497.849986) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-69"/>
+     <use xlink:href="#DejaVuSansMono-6e" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-64" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-69" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-67" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(421.435547 0)"/>
+     <use xlink:href="#DejaVuSansMono-6d" transform="translate(481.640625 0)"/>
+     <use xlink:href="#DejaVuSansMono-62" transform="translate(541.845703 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(602.050781 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(662.255859 0)"/>
     </g>
    </g>
    <g id="text_40">
     <!-- gray_blue -->
-    <g style="fill: #343a40" transform="translate(210.887109 510.152698) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-67"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-79" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-62" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-75" transform="translate(420.068359 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(480.078125 0)"/>
+    <g style="fill: #343a40" transform="translate(210.777422 510.342112) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-67"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-79" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-62" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-75" transform="translate(421.435547 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(481.640625 0)"/>
     </g>
    </g>
    <g id="text_41">
     <!-- gray_red -->
-    <g style="fill: #343a40" transform="translate(214.788125 522.627559) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-67"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-79" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-64" transform="translate(420.068359 0)"/>
+    <g style="fill: #343a40" transform="translate(214.690625 522.799707) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-67"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-79" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-64" transform="translate(421.435547 0)"/>
     </g>
    </g>
    <g id="text_42">
@@ -1804,12 +1823,12 @@ z
    </g>
    <g id="text_43">
     <!-- coast -->
-    <g style="fill: #343a40" transform="translate(226.491172 551.373567) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-63"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-73" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-74" transform="translate(240.039062 0)"/>
+    <g style="fill: #343a40" transform="translate(226.430234 551.599544) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-63"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-73" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-74" transform="translate(240.820312 0)"/>
     </g>
    </g>
    <g id="text_44">
@@ -1869,30 +1888,30 @@ z
    </g>
    <g id="text_45">
     <!-- hue -->
-    <g style="fill: #343a40" transform="translate(234.293203 580.065747) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-68"/>
-     <use xlink:href="#AndaleMono-75" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(120.019531 0)"/>
+    <g style="fill: #343a40" transform="translate(234.256641 580.291724) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-68"/>
+     <use xlink:href="#DejaVuSansMono-75" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(120.410156 0)"/>
     </g>
    </g>
    <g id="text_46">
     <!-- halo -->
-    <g style="fill: #343a40" transform="translate(230.392188 592.540608) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-68"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(180.029297 0)"/>
+    <g style="fill: #343a40" transform="translate(230.343438 592.766585) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-68"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(180.615234 0)"/>
     </g>
    </g>
    <g id="text_47">
     <!-- corona -->
-    <g style="fill: #343a40" transform="translate(222.590156 605.015469) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-63"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6f" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-6e" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-61" transform="translate(300.048828 0)"/>
+    <g style="fill: #343a40" transform="translate(222.517031 605.241446) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-63"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6f" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-6e" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-61" transform="translate(301.025391 0)"/>
     </g>
    </g>
    <g id="text_48">
@@ -1984,28 +2003,28 @@ z
    </g>
    <g id="text_49">
     <!-- cycle -->
-    <g style="fill: #343a40" transform="translate(226.491172 633.707649) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-63"/>
-     <use xlink:href="#AndaleMono-79" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-63" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(240.039062 0)"/>
+    <g style="fill: #343a40" transform="translate(226.430234 633.933626) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-63"/>
+     <use xlink:href="#DejaVuSansMono-79" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-63" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(240.820312 0)"/>
     </g>
    </g>
    <g id="text_50">
     <!-- cycle_print -->
-    <g style="fill: #343a40" transform="translate(203.085078 646.168799) scale(0.065 -0.065)">
-     <use xlink:href="#AndaleMono-63"/>
-     <use xlink:href="#AndaleMono-79" transform="translate(60.009766 0)"/>
-     <use xlink:href="#AndaleMono-63" transform="translate(120.019531 0)"/>
-     <use xlink:href="#AndaleMono-6c" transform="translate(180.029297 0)"/>
-     <use xlink:href="#AndaleMono-65" transform="translate(240.039062 0)"/>
-     <use xlink:href="#AndaleMono-5f" transform="translate(300.048828 0)"/>
-     <use xlink:href="#AndaleMono-70" transform="translate(360.058594 0)"/>
-     <use xlink:href="#AndaleMono-72" transform="translate(420.068359 0)"/>
-     <use xlink:href="#AndaleMono-69" transform="translate(480.078125 0)"/>
-     <use xlink:href="#AndaleMono-6e" transform="translate(540.087891 0)"/>
-     <use xlink:href="#AndaleMono-74" transform="translate(600.097656 0)"/>
+    <g style="fill: #343a40" transform="translate(202.951016 646.318096) scale(0.065 -0.065)">
+     <use xlink:href="#DejaVuSansMono-63"/>
+     <use xlink:href="#DejaVuSansMono-79" transform="translate(60.205078 0)"/>
+     <use xlink:href="#DejaVuSansMono-63" transform="translate(120.410156 0)"/>
+     <use xlink:href="#DejaVuSansMono-6c" transform="translate(180.615234 0)"/>
+     <use xlink:href="#DejaVuSansMono-65" transform="translate(240.820312 0)"/>
+     <use xlink:href="#DejaVuSansMono-5f" transform="translate(301.025391 0)"/>
+     <use xlink:href="#DejaVuSansMono-70" transform="translate(361.230469 0)"/>
+     <use xlink:href="#DejaVuSansMono-72" transform="translate(421.435547 0)"/>
+     <use xlink:href="#DejaVuSansMono-69" transform="translate(481.640625 0)"/>
+     <use xlink:href="#DejaVuSansMono-6e" transform="translate(541.845703 0)"/>
+     <use xlink:href="#DejaVuSansMono-74" transform="translate(602.050781 0)"/>
     </g>
    </g>
   </g>
