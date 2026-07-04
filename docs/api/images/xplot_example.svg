@@ -6,7 +6,6 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2025-01-01T00:00:00+00:00</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -45,7 +44,7 @@ L 172.753918 258.228543
 L 172.753918 212.671738 
 L 240.967317 212.671738 
 z
-" clip-path="url(#p7fe0272d4f)" style="fill: #191970"/>
+" clip-path="url(#p4c3726d514)" style="fill: #191970"/>
    </g>
    <g id="patch_4">
     <path d="M 240.967317 185.337655 
@@ -53,7 +52,7 @@ L 200.039277 185.337655
 L 200.039277 139.780849 
 L 240.967317 139.780849 
 z
-" clip-path="url(#p7fe0272d4f)" style="fill: #191970"/>
+" clip-path="url(#p4c3726d514)" style="fill: #191970"/>
    </g>
    <g id="patch_5">
     <path d="M 240.967317 112.446766 
@@ -61,7 +60,7 @@ L 159.111238 112.446766
 L 159.111238 66.889961 
 L 240.967317 66.889961 
 z
-" clip-path="url(#p7fe0272d4f)" style="fill: #191970"/>
+" clip-path="url(#p4c3726d514)" style="fill: #191970"/>
    </g>
    <g id="patch_6">
     <path d="M 240.967317 258.228543 
@@ -69,7 +68,7 @@ L 336.466074 258.228543
 L 336.466074 212.671738 
 L 240.967317 212.671738 
 z
-" clip-path="url(#p7fe0272d4f)" style="fill: #6495ed"/>
+" clip-path="url(#p4c3726d514)" style="fill: #6495ed"/>
    </g>
    <g id="patch_7">
     <path d="M 240.967317 185.337655 
@@ -77,7 +76,7 @@ L 391.036793 185.337655
 L 391.036793 139.780849 
 L 240.967317 139.780849 
 z
-" clip-path="url(#p7fe0272d4f)" style="fill: #6495ed"/>
+" clip-path="url(#p4c3726d514)" style="fill: #6495ed"/>
    </g>
    <g id="patch_8">
     <path d="M 240.967317 112.446766 
@@ -85,12 +84,12 @@ L 350.108754 112.446766
 L 350.108754 66.889961 
 L 240.967317 66.889961 
 z
-" clip-path="url(#p7fe0272d4f)" style="fill: #6495ed"/>
+" clip-path="url(#p4c3726d514)" style="fill: #6495ed"/>
    </g>
    <g id="line2d_1">
     <path d="M 240.967317 277.362402 
 L 240.967317 47.756102 
-" clip-path="url(#p7fe0272d4f)" style="fill: none; stroke: #d3d3d3; stroke-width: 0.8; stroke-linecap: square"/>
+" clip-path="url(#p4c3726d514)" style="fill: none; stroke: #d3d3d3; stroke-width: 0.8; stroke-linecap: square"/>
    </g>
    <g id="text_1">
     <!-- Category C -->
@@ -1031,7 +1030,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="p7fe0272d4f">
+  <clipPath id="p4c3726d514">
    <rect x="147.514961" y="47.756102" width="255.11811" height="229.606299"/>
   </clipPath>
  </defs>
