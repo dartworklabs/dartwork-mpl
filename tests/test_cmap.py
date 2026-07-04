@@ -26,7 +26,7 @@ EXPECTED_DC_NAMES = {
     "graphite",
     "coral",
     # Sequential Multi-Hue
-    "aurora",
+    "legacy_aurora",
     "sunset_glow",
     "plasma_arc",
     "spring_bloom",
@@ -37,7 +37,7 @@ EXPECTED_DC_NAMES = {
     # Diverging
     "ice_fire",
     "earth_sky",
-    "teal_rose",
+    "legacy_teal_rose",
     "purple_lime",
     "navy_gold",
     "forest_brick",
@@ -108,16 +108,28 @@ class TestEnsureLoaded:
         ensure_loaded()
 
     def test_registers_exactly_56_dc_colormaps(self) -> None:
-        """After loading, exactly 56 dc.* colormaps (non-reversed) should exist."""
+        """After loading, all 56 legacy dc.* colormaps (non-reversed)
+        should exist in matplotlib's global registry.
+
+        This used to be an exact-equality check, back when the legacy
+        asset/cmap/*.txt loader was the *only* registrant of the
+        ``dc.*`` namespace. ``dartwork_mpl.colors._register`` (the v5
+        cmap catalog, see ``tests/test_color_v5_register.py``) now also
+        registers 42 cmaps + 2 qualitative cycles under ``dc.*``,
+        eagerly, at package import time -- so ``mpl.colormaps`` always
+        contains more than just this module's 56 legacy names. The
+        namespace is intentionally shared (``aurora``/``teal_rose`` were
+        ceded to v5; the legacy originals moved to ``legacy_aurora``/
+        ``legacy_teal_rose``), so this test asserts the legacy set is a
+        *subset* of the registry rather than the whole of it.
+        """
         dc_names = {
             name
             for name in mpl.colormaps
             if name.startswith("dc.") and not name.endswith("_r")
         }
         expected = {f"dc.{name}" for name in EXPECTED_DC_NAMES}
-        assert dc_names == expected, (
-            f"Missing: {expected - dc_names}, Extra: {dc_names - expected}"
-        )
+        assert expected <= dc_names, f"Missing: {expected - dc_names}"
 
     def test_reversed_variants_exist(self) -> None:
         """Every dc.* cmap should have a dc.*_r reversed variant."""
@@ -127,7 +139,15 @@ class TestEnsureLoaded:
             )
 
     def test_cmap_count_and_names(self) -> None:
-        """Verify exactly 112 `dc.*` colormaps exist (56 base + 56 reversed)."""
+        """Verify all 112 legacy `dc.*` colormaps (56 base + 56 reversed)
+        are present in the registry.
+
+        See ``test_registers_exactly_56_dc_colormaps`` above: the v5
+        cmap catalog shares the ``dc.*`` namespace and registers its
+        own 84 (42 base + 42 reversed) + 2 qualitative cycles, so the
+        registry's *total* size is no longer exactly 112 -- only a
+        superset check on the legacy names is meaningful here.
+        """
         # 1. Get all colormaps currently registered in Matplotlib
         all_mpl_cmaps = set(plt.colormaps())
 
@@ -136,13 +156,9 @@ class TestEnsureLoaded:
             name for name in all_mpl_cmaps if name.startswith("dc.")
         }
 
-        # 3. Assert the count is exactly 112
-        assert len(dc_cmaps_registered) == 112, (
-            f"Expected exactly 112 'dc.' colormaps, but found {len(dc_cmaps_registered)}."
-        )
-        assert dc_cmaps_registered == EXPECTED_DC_CMAPS, (
-            f"Missing: {EXPECTED_DC_CMAPS - dc_cmaps_registered}, "
-            f"Extra: {dc_cmaps_registered - EXPECTED_DC_CMAPS}"
+        # 3. Assert the legacy 112 are all present (registry may hold more)
+        assert dc_cmaps_registered >= EXPECTED_DC_CMAPS, (
+            f"Missing: {EXPECTED_DC_CMAPS - dc_cmaps_registered}"
         )
 
     def test_discrete_cmap_colors(self) -> None:

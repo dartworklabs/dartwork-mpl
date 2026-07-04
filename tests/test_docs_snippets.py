@@ -96,11 +96,11 @@ def test_discovery_block_output_comments_are_true() -> None:
         "ad.green",
     ]
     assert dm.list_colormaps()[:5] == [
+        "dc.afterglow",
+        "dc.amber",
         "dc.amethyst",
         "dc.arctic_heat",
         "dc.aurora",
-        "dc.autumn_leaf",
-        "dc.candy",
     ]
     import matplotlib as mpl
 

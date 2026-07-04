@@ -54,7 +54,10 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     "dc.neon_pink": "Single-Hue",
     "dc.neon_orange": "Single-Hue",
     # Multi-Hue
-    "dc.aurora": "Multi-Hue",
+    # "dc.aurora" ceded its name to the v5 catalog; this bundled
+    # asset/cmap/*.txt map now lives at "dc.legacy_aurora" (see
+    # dartwork_mpl.colors._register for the v5 registration).
+    "dc.legacy_aurora": "Multi-Hue",
     "dc.sunset_glow": "Multi-Hue",
     "dc.plasma_arc": "Multi-Hue",
     "dc.spring_bloom": "Multi-Hue",
@@ -71,7 +74,9 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     # Diverging
     "dc.ice_fire": "Diverging",
     "dc.earth_sky": "Diverging",
-    "dc.teal_rose": "Diverging",
+    # "dc.teal_rose" ceded its name to the v5 catalog (same rationale as
+    # "dc.legacy_aurora" above) -- lives under "dc.legacy_teal_rose" now.
+    "dc.legacy_teal_rose": "Diverging",
     "dc.purple_lime": "Diverging",
     "dc.navy_gold": "Diverging",
     "dc.forest_brick": "Diverging",
