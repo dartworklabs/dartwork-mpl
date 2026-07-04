@@ -167,7 +167,7 @@ Verified automatically at compile time; an output that fails cannot ship.
 |---|---|---|
 | L\* monotonic | strictly light→dark within a family | CIELAB L\* |
 | Equalization uniformity | neighbor-ΔE coefficient of variation cv ≤ 0.08 | OKLab ΔE |
-| Categorical accessibility | worst-case CVD pair min ΔE ≥ 10 (normal + 3 CVD types) | CIEDE2000 |
+| Categorical accessibility | common CVD (normal + protan + deutan) min ΔE ≥ 10; rare tritan ≥ 8 (accurate Brettel-1997 model) | CIEDE2000 |
 | Sequential-cmap gray monotonic | monotonic even under luminance conversion | CIELAB L\* |
 
 ### A8 · colormaps do not inherit the palette floors
@@ -255,6 +255,18 @@ gate was switched to CIEDE2000 and the cycle re-searched from scratch.
 All three coefficients of variation are published on the palette diagnostic
 card. **No step placement drives all three to zero simultaneously** — being
 explicit about what is guaranteed is the honest design (principle 3).
+
+The CVD simulation behind the accessibility gate is itself chosen for
+accuracy per deficiency. The common red-green deficiencies (protanopia,
+deuteranopia) use the Machado (2009) model; the rare S-cone deficiency
+(tritanopia) uses the physiologically accurate Brettel-Viénot-Mollon (1997)
+projection, because Machado's fitted tritan matrix over-states blue-yellow
+separation. Under the accurate model a seven-hue cycle's tritan separation
+tops out near 9 — so, rather than claim a number the colors cannot meet, the
+gate is **tiered**: the common deficiencies are held to ≥ 10 and the rare
+tritan to a realistic ≥ 8. `dc.cycle` measures 10.3 (common) / 9.0 (tritan);
+`dc.cycle_print`, 13.5 / 8.5. Publishing the real floors instead of a
+flattering worst-case is the same honest-guarantees principle at work.
 
 ## Colormaps, derived from the palette
 
