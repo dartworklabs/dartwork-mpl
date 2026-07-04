@@ -396,8 +396,10 @@
    "normal": 19.3,
    "protan": 13.7,
    "deutan": 10.3,
-   "tritan": 10.7,
-   "min00": 10.3,
+   "tritan": 9.0,
+   "common_min": 10.3,
+   "min00": 9.0,
+   "tritan_model": "brettel1997",
    "dl4": 2.8,
    "dlall": 2.8
   }
@@ -441,8 +443,10 @@
    "normal": 18.6,
    "protan": 14.5,
    "deutan": 13.5,
-   "tritan": 11.0,
-   "min00": 11.0,
+   "tritan": 8.5,
+   "common_min": 13.5,
+   "min00": 8.5,
+   "tritan_model": "brettel1997",
    "dl4": 7.4,
    "dlall": 6.1
   }
@@ -452,8 +456,10 @@
    "normal": 21.7,
    "protan": 12.3,
    "deutan": 11.5,
-   "tritan": 11.1,
-   "min00": 11.1,
+   "tritan": 7.9,
+   "common_min": 11.5,
+   "min00": 7.9,
+   "tritan_model": "brettel1997",
    "dl4": 0.8,
    "dlall": 0.8
   },
@@ -461,8 +467,10 @@
    "normal": 16.2,
    "protan": 1.4,
    "deutan": 3.4,
-   "tritan": 9.6,
+   "tritan": 6.6,
+   "common_min": 1.4,
    "min00": 1.4,
+   "tritan_model": "brettel1997",
    "dl4": 1.1,
    "dlall": 1.1
   }

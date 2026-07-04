@@ -145,7 +145,7 @@ import dartwork_mpl as dm
 
 # Works with any matplotlib color name
 color1 = dm.color("red")
-color2 = dm.color("dc.teal2")      # OpenColor palette
+color2 = dm.color("dc.teal2")      # dartwork Color palette
 color3 = dm.color("tw.blue500")    # Tailwind colors
 ```
 

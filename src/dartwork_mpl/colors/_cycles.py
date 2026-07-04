@@ -9,7 +9,7 @@ from __future__ import annotations
 __all__ = ["CYCLE_SPECS", "cycle_hexes"]
 
 CYCLE_SPECS: dict[str, tuple[tuple[str, int], ...]] = {
-    # 기본 7 chromatic — 라인 안전(L* 42~78, CR>=2.2), 최악-CVD dE00 10.3.
+    # 기본 7 chromatic — 라인 안전(L* 42~78, CR>=2.2), 공통-CVD dE00 10.3 · tritan 9.0 (BVM).
     # gray는 격자·기준선용으로 예약(멤버 아님 — 스펙 §8).
     "default": (
         ("blue", 6),
@@ -20,7 +20,7 @@ CYCLE_SPECS: dict[str, tuple[tuple[str, int], ...]] = {
         ("violet", 8),
         ("cyan", 8),
     ),
-    # 인쇄 8색 — 명도 분산(전쌍 dL* >= 6.1), 최악-CVD dE00 11.0.
+    # 인쇄 8색 — 명도 분산(전쌍 dL* >= 6.1), 공통-CVD dE00 13.5 · tritan 8.5 (BVM).
     "print": (
         ("blue", 9),
         ("orange", 2),
