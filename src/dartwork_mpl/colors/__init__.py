@@ -9,6 +9,7 @@ from ._compat_v4 import set_palette_version
 from ._cycle_api import cycle
 from ._loader import ensure_loaded as _ensure_colors_loaded
 from ._register import ensure_registered as _ensure_cmaps_registered
+from ._semantic import apply_semantic as _apply_default_semantic
 from ._typing import DartworkColor, DartworkColormap
 from ._views import (
     OklabView,
@@ -47,3 +48,12 @@ _ensure_colors_loaded()
 # immediately above (eager, not lazy like the legacy asset/cmap/*.txt
 # loader in dartwork_mpl.cmap).
 _ensure_cmaps_registered()
+
+# Register the locale-aware semantic tokens (dc.pos/neg/ref/hl, spec §10)
+# with the default (non-KR) mapping on first import — same eager pattern
+# as the two calls above, so the "dc." namespace count stays fixed
+# regardless of whether a ``Style.use(...)`` call has happened yet in
+# this process. ``Style.use`` re-applies with the correct locale (kr vs
+# default) on every preset switch; it never changes which keys exist,
+# only their values.
+_apply_default_semantic("default")

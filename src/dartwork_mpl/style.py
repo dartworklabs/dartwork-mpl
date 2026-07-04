@@ -436,6 +436,12 @@ class Style:
             with _style_lock:
                 plt.rcParams.update(overrides)
 
+        from .colors._semantic import apply_semantic
+
+        names = preset_name if isinstance(preset_name, list) else [preset_name]
+        is_kr = any(nm.endswith("-kr") or "lang-kr" in nm for nm in names)
+        apply_semantic("kr" if is_kr else "default")
+
     @contextlib.contextmanager
     def context(
         self, preset_name: str, **kwargs: float | str
