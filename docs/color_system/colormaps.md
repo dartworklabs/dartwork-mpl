@@ -56,7 +56,7 @@ plt.show()
 
 ## The catalog
 
-Explore every built-in map below. Use the tabs to browse by data type.
+Explore all 42 built-in colormaps below. Use the tabs to browse by data type.
 
 ```{raw} html
 :file: images/colormap_explorer.html

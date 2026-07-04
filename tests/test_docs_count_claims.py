@@ -20,8 +20,13 @@ _REPO = Path(__file__).resolve().parents[1]
 _ASSET = _REPO / "src" / "dartwork_mpl" / "asset"
 
 
-def _n_cmaps() -> int:
-    return len(list((_ASSET / "cmap").glob("*.txt")))
+def _n_v5_cmaps() -> int:
+    # The v5 catalog (the default colormap surface) — 42 generated maps.
+    # The legacy asset/cmap/*.txt bundle is a separate backward-compat set
+    # and is no longer what the docs count.
+    from dartwork_mpl.colors._generated import CMAPS_256
+
+    return len(CMAPS_256)
 
 
 def _n_font_files() -> int:
@@ -71,18 +76,18 @@ def _n_basic_templates() -> int:
 _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
     (
         "docs/color_system/colormaps.md",
-        r"ships \*\*(\d+) curated colormaps\*\*",
-        _n_cmaps,
+        r"ships \*\*(\d+) colormaps\*\*",
+        _n_v5_cmaps,
     ),
     (
         "docs/color_system/colormaps.md",
         r"Explore all (\d+) built-in colormaps",
-        _n_cmaps,
+        _n_v5_cmaps,
     ),
     (
         "docs/design_system/index.md",
-        r"(\d+) OKLCH-designed colormaps",
-        _n_cmaps,
+        r"(\d+) perceptually-designed colormaps",
+        _n_v5_cmaps,
     ),
     (
         "docs/fonts/index.md",
