@@ -29,10 +29,11 @@ _M_RGB2XYZ = (
 )
 _WHITE = (0.95047, 1.0, 1.08883)
 
-# Machado, Oliveira & Fernandes (2009), severity 1.0.
-# NOTE: tritan 행렬은 스펙 §12 판정에 따라 Brettel-Viénot-Mollon(1997)로 교체
-# 예정이나 v5 게이트 산출값은 Machado 기준으로 확정되었다 — SSOT 재현을 위해
-# Machado를 유지하고, BVM 교체는 게이트 재산출과 함께 별도 사이클에서 수행한다.
+# Machado, Oliveira & Fernandes (2009), severity 1.0 — protan/deutan only.
+# Tritan uses Brettel-Viénot-Mollon (1997) instead (see _BVM_TRITAN_* below):
+# Machado's tritan matrix is a fitted extrapolation and inaccurate for the rare
+# S-cone deficiency (스펙 §12). protan/deutan stay Machado — accurate for the
+# common red-green deficiencies and unchanged from the v5 gate baseline.
 _MACHADO = {
     "protan": (
         (0.152286, 1.052583, -0.204868),
@@ -44,12 +45,25 @@ _MACHADO = {
         (0.280085, 0.672501, 0.047413),
         (-0.011820, 0.042940, 0.968881),
     ),
-    "tritan": (
-        (1.255528, -0.076749, -0.178779),
-        (-0.078411, 0.930809, 0.147602),
-        (0.004733, 0.691367, 0.303900),
-    ),
 }
+
+# Brettel, Viénot & Mollon (1997), tritanopia — the two-half-plane dichromat
+# projection (the physiologically-grounded model; §12). Values are the
+# linear-sRGB combined matrices from libDaltonLens (github.com/DaltonLens),
+# applied in the same linear space as the Machado path. Verified correct: each
+# matrix is an idempotent projection (M² = M) and the two agree on the
+# separation plane, exactly as BVM's construction requires.
+_BVM_TRITAN_SEP = (0.03901, -0.02788, -0.01113)
+_BVM_TRITAN_HI = (  # dot(rgb_linear, SEP) >= 0
+    (1.01277, 0.13548, -0.14826),
+    (-0.01243, 0.86812, 0.14431),
+    (0.07589, 0.80500, 0.11911),
+)
+_BVM_TRITAN_LO = (  # dot(rgb_linear, SEP) < 0
+    (0.93678, 0.18979, -0.12657),
+    (0.06154, 0.81526, 0.12320),
+    (-0.37562, 1.12767, 0.24796),
+)
 
 
 def _lin(c: float) -> float:
@@ -183,6 +197,18 @@ def cvd_rgb(
         v = _delin(y)
         return (v, v, v)
     lin = [_lin(c) for c in rgb]
+    if kind == "tritan":
+        # Brettel-Viénot-Mollon (1997): pick the half-plane projection by the
+        # sign of the dot product with the separation-plane normal. The
+        # projection can leave sRGB, so clamp before the gamma round-trip.
+        dot = sum(s * v for s, v in zip(_BVM_TRITAN_SEP, lin, strict=True))
+        matrix = _BVM_TRITAN_HI if dot >= 0 else _BVM_TRITAN_LO
+        out = [
+            sum(m * v for m, v in zip(row, lin, strict=True)) for row in matrix
+        ]
+        return tuple(  # type: ignore[return-value]
+            _delin(min(max(c, 0.0), 1.0)) for c in out
+        )
     out = [
         sum(m * v for m, v in zip(row, lin, strict=True))
         for row in _MACHADO[kind]

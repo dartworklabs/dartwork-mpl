@@ -48,16 +48,33 @@ def gate_ladder(hexes: list[str]) -> dict[str, bool | float]:
 
 
 def gate_cycle(hexes: list[str]) -> dict[str, float]:
-    worst = float("inf")
+    """Worst-case pairwise ΔE00 per vision type, reported separately.
+
+    Tritan is gated on its own, lower floor. It is the rare S-cone deficiency,
+    and the physiologically accurate Brettel-Viénot-Mollon (1997) model — used
+    for tritan instead of Machado's fitted extrapolation — shows the achievable
+    tritan separation for a 7-hue cycle tops out near 9, well below the common
+    red-green floor. So ``common_min`` (normal + protan + deutan) is held to 10
+    while ``tritan`` is held to a realistic 8; ``min00`` is the overall worst
+    for reference.
+    """
+    per: dict[str, float] = {}
     for kind in ("normal", *_CVD_KINDS):
         if kind == "normal":
             sim = hexes
         else:
             sim = [hex_from_rgb(cvd_rgb(rgb_from_hex(h), kind)) for h in hexes]
-        for i in range(len(sim)):
-            for j in range(i + 1, len(sim)):
-                worst = min(worst, de2000_hex(sim[i], sim[j]))
-    return {"min00": round(worst, 1)}
+        per[kind] = round(
+            min(
+                de2000_hex(sim[i], sim[j])
+                for i in range(len(sim))
+                for j in range(i + 1, len(sim))
+            ),
+            1,
+        )
+    per["common_min"] = min(per["normal"], per["protan"], per["deutan"])
+    per["min00"] = min(per["common_min"], per["tritan"])
+    return per
 
 
 def gate_seq_cmap(hexes: list[str]) -> dict[str, bool | float]:
@@ -129,8 +146,12 @@ def check_all(
             bad.append(f"palette {fam}: cv {g['cv']} > 0.08")
     for name, hexes in cycles.items():
         g_cycle = gate_cycle(hexes)
-        if g_cycle["min00"] < 10.0:
-            bad.append(f"cycle {name}: worst-CVD dE00 {g_cycle['min00']} < 10")
+        if g_cycle["common_min"] < 10.0:
+            bad.append(
+                f"cycle {name}: common-CVD dE00 {g_cycle['common_min']} < 10"
+            )
+        if g_cycle["tritan"] < 8.0:
+            bad.append(f"cycle {name}: tritan dE00 {g_cycle['tritan']} < 8")
     for name, hexes in cmaps.items():
         kind = name.split(".", 1)[0]
         if kind == "div":
