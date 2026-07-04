@@ -56,6 +56,7 @@ from .colors import (
     oklab,
     oklch,
     rgb,
+    set_palette_version,
 )
 
 # Config (process-wide behaviour-toggle defaults)
@@ -169,6 +170,7 @@ __all__ = [  # noqa: RUF022
     "oklab",
     "oklch",
     "rgb",
+    "set_palette_version",
     "DartworkColor",
     "DartworkColormap",
     # Icon module

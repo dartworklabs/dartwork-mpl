@@ -392,6 +392,14 @@ class Color:
         ValueError
             If the color name is not recognized by matplotlib.
         """
+        if name.startswith(("dc.", "dm.")):
+            # Legacy-token deprecation hook (spec §11) — warns once per
+            # session for legacy-only dc.* tokens (no v5 counterpart).
+            # Normalizes the "dm." alias to its canonical "dc." name so
+            # both prefixes share the same one-warning-per-token budget.
+            from ._compat_v4 import warn_if_legacy
+
+            warn_if_legacy("dc." + name.split(".", 1)[1])
         try:
             # Use matplotlib's to_rgb to convert color name to RGB
             r: float

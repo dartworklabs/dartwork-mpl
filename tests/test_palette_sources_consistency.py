@@ -96,21 +96,41 @@ def test_palette_sources_agree_hex_for_hex() -> None:
 
 
 def test_get_palette_resolves_every_curated_name() -> None:
-    """Every curated public name resolves through the loader to dc.<name>0..7 —
-    except the three names ("teal"/"indigo"/"gray") that collide with a v5
-    family: v5 registers their non-colliding steps 8-9 under the same bare
-    name (spec §11), so the loader's dc.<name>N scan picks those up too and
-    those three resolve to dc.<name>0..9."""
+    """Every curated public name resolves through the loader to dc.<name>0..7.
+
+    Three names ("teal"/"indigo"/"gray") also collide with a v5 family:
+    v5 registers their non-colliding steps 8-9 under the same bare name
+    (spec §11), so the loader's dc.<name>N scan technically finds 10
+    tokens for them. But Task 11's version-aware length cap
+    (``helpers/colors.py::_palette_color_names``) keeps ``get_palette``
+    at the legacy 8-step ramp by default — mixing legacy steps 0-7 with
+    v5 steps 8-9 would be an incoherent ramp (two different generators)
+    — and only widens to the full 10 once
+    ``dartwork_mpl.set_palette_version(5)`` remaps 0-7 to v5 too, making
+    all 10 steps share one generator."""
     import dartwork_mpl as dm
+    from dartwork_mpl.colors._compat_v4 import set_palette_version
 
     v5_extended = {"teal", "indigo", "gray"}
-    for name in _name_map().values():
-        cols = dm.get_palette(name)
-        expected = 10 if name in v5_extended else 8
-        assert len(cols) == expected, (
-            f"{name} did not resolve to {expected} colors"
-        )
-        assert cols[0] == f"dc.{name}0", f"{name} slot 0 mismatch: {cols[0]}"
+    try:
+        for name in _name_map().values():
+            cols = dm.get_palette(name)
+            assert len(cols) == 8, f"{name} did not resolve to 8 colors"
+            assert cols[0] == f"dc.{name}0", (
+                f"{name} slot 0 mismatch: {cols[0]}"
+            )
+
+        # Opt-in v5 remap widens exactly the three colliding names to 10.
+        set_palette_version(5)
+        for name in _name_map().values():
+            cols = dm.get_palette(name)
+            expected = 10 if name in v5_extended else 8
+            assert len(cols) == expected, (
+                f"{name} did not resolve to {expected} colors after "
+                f"set_palette_version(5)"
+            )
+    finally:
+        set_palette_version(4)
 
 
 def _load_script(name: str):
