@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **Color system v5**: a generative 91-parameter palette (16 families ×
+  10 perceptually-equalized steps, `dc.{family}{step}`), 42 perceptually
+  gated colormaps registered natively in matplotlib's colormap registry
+  (`cmap="dc.aurora"` — no separate accessor), 2 CVD-verified categorical
+  cycles (`dm.cycle()` — default 7-color screen/PDF cycle plus an 8-color
+  print variant), and locale-aware semantic tokens (`dc.pos` / `dc.neg` /
+  `dc.ref` / `dc.hl`) that resolve to the correct color regardless of
+  red/green-for-gain-or-loss convention. An opt-in
+  `dm.set_palette_version(5)` remaps the small set of v4/v5 name
+  collisions (`dc.teal*` / `dc.indigo*` / `dc.gray*` 0-7) to their v5
+  hex values; the default (`4`) keeps every existing script visually
+  unchanged. Design spec:
+  `docs/superpowers/specs/2026-07-03-color-system-v5-design.md`.
+
+### Changed
+
+- **Internal style presets now use the v5 categorical cycle.** Every
+  named preset except `dark` / `dark-kr` (deferred to v5.1 — see the
+  design spec §12) now cycles `dc.blue6 · dc.orange9 · dc.green5 ·
+  dc.pink3 · dc.amber7 · dc.violet8 · dc.cyan8`, with the style layer
+  automatically extending into `linestyle` (dash / dot) once a plot
+  exceeds 7 series so reused colors stay distinguishable. The default
+  `image.cmap` rcParam is now `dc.aurora` (the v5 colormap of that
+  name — see "Changed (breaking)" below).
+
+### Deprecated
+
+- **All v4-only `dc.*` tokens** (`dc.vivid*`, `dc.pastel*`, `dc.0`
+  through `dc.7`, and the rest of the 24-palette legacy catalog) are
+  frozen at their existing hex values and now emit a one-time
+  `DeprecationWarning` on first access; removal is planned no sooner
+  than two minor releases out.
+
+### Changed (breaking)
+
+- **`dc.aurora` and `dc.teal_rose` renamed to `dc.legacy_aurora` and
+  `dc.legacy_teal_rose`.** Both names are ceded to the new v5 colormap
+  catalog, which ships a differently-tuned `dc.aurora`. Scripts that
+  pass `cmap="dc.aurora"` or `cmap="dc.teal_rose"` will silently start
+  rendering the v5 colormap after upgrading; use the `dc.legacy_*` name
+  to keep the pre-v5 rendering.
+
 ### Security
 
 - **MCP: closed a path-traversal hole in the template tools.** An

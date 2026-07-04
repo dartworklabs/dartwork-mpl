@@ -311,7 +311,7 @@ def compile_family(p, dense=121):       # A5 지각 등간격 배치 — 연속 
 
 | cycle | 구성 | 최악-CVD min ΔE00 | 흑백 ΔL\* | 용도 |
 |---|---|--:|--:|---|
-| **`dc.cycle`** (기본) | blue6 · orange9 · green5 · violet8 · amber7 · pink3 · cyan8 (7색) | **10.3** | 2.8 | 화면·PDF. 전원 라인 안전 |
+| **`dc.cycle`** (기본) | blue6 · orange9 · green5 · pink3 · amber7 · violet8 · cyan8 (7색) | **10.3** | 2.8 | 화면·PDF. 전원 라인 안전 |
 | **`dc.cycle.print`** (인쇄) | 8색 명도 분산 | 11.0 | 6.1 | 흑백 인쇄·복사 배포 |
 
 벤치마크: Okabe-Ito(CVD 표준 8색) min ΔE00 = 11.1, matplotlib tab10 = **1.4**(deutan에서 사실상 붕괴).
