@@ -104,4 +104,15 @@ savefig.dpi:       300      # figure dots per inch or 'figure'
 savefig.facecolor: white        # figure face color when saving
 savefig.bbox:      standard    # {tight, standard}
 ps.fonttype:       42       # Output Type 3 (Type3) or Type 42 (TrueType)
-axes.prop_cycle: cycler('color', ['dc.0', 'dc.1', 'dc.2', 'dc.3', 'dc.4', 'dc.5'])
+
+# v5 categorical cycle (spec §8) — 7 colors, extended with a linestyle
+# product so series 8-14 reuse the same 7 colors dashed and series 15-21
+# reuse them dotted, instead of matplotlib's default color-repeat.
+# matplotlib's rcsetup cycler parser evaluates this via `eval(s, {'cycler':
+# cycler, '__builtins__': {}})` (see matplotlib.rcsetup.validate_cycler) —
+# the `*` product operator and the `dc.*` named-color tokens both resolve
+# fine here because dartwork_mpl registers its named colors into
+# matplotlib's global color mapping on package import, which always
+# happens before Style.stack() parses this file.
+axes.prop_cycle: cycler('linestyle', ['-', '--', ':']) * cycler('color', ['dc.blue6', 'dc.orange9', 'dc.green5', 'dc.pink3', 'dc.amber7', 'dc.violet8', 'dc.cyan8'])
+image.cmap: dc.aurora

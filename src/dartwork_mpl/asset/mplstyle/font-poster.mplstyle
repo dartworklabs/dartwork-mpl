@@ -26,6 +26,3 @@ figure.labelweight: 400
 axes.linewidth:     0.5
 axes.spines.top:    False
 axes.spines.right:  False
-
-# categorical cycle — Bold (curated high-contrast punch for large-format)
-axes.prop_cycle: cycler('color', ['dc.vivid0', 'dc.vivid1', 'dc.vivid2', 'dc.vivid3', 'dc.vivid4', 'dc.vivid5'])
