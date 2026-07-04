@@ -11,12 +11,14 @@ required.
 
 Font Families <families>
 Font Utilities <utilities>
+Math & Special Characters <math_and_symbols>
 ```
 
 ## Overview
 
-dartwork-mpl bundles **204 text font files across 16 families** (sans-serif
-plus four monospace), all optimized for data visualization and
+dartwork-mpl bundles **206 text font files across 18 families** (sans-serif
+plus four monospace, and two symbol-fallback faces), all optimized for data
+visualization and
 publication-quality figures. They are registered with matplotlib's font
 manager on `import dartwork_mpl`, so `plt.rcParams["font.family"] = "Inter"`
 (or any bundled family) resolves immediately — no manual font installation
@@ -60,7 +62,7 @@ plt.show()
 ## Key Features
 
 **Auto-Registration**
-: All 204 font files are registered with matplotlib's font manager on
+: All 206 font files are registered with matplotlib's font manager on
 `import dartwork_mpl`. No manual font installation or configuration needed.
 
 **Relative Sizing**
@@ -68,9 +70,11 @@ plt.show()
 weights in standardized steps. Both keep typography consistent across
 different output formats.
 
-**Math Support**
-: Noto Sans Math provides comprehensive mathematical symbol coverage for
-scientific notation and equations.
+**Math & Symbols**
+: Noto Sans Math powers the `$…$` mathtext stack (with STIX fallback), and
+the plain-text fallback chain — Noto Sans Math plus Noto Sans Symbols 1/2 —
+renders bare symbols (→ ± ℃ ∑ σ ⚠ ✓ ★) in labels without tofu. See
+[Math & special characters →](math_and_symbols.md).
 
 **Multi-Language**
 : Pretendard and Paperlogy for Korean (한글), Noto Sans CJK for
@@ -106,6 +110,13 @@ texts are bundled under `asset/font/licenses/`.
 | **Source Code Pro**          | 14    | Monospace, pairs with Source Sans  |
 | **Roboto Mono**              | 10    | Monospace, pairs with Roboto       |
 | **Noto Sans Math**           | 1     | Mathematical expressions           |
+| **Noto Sans Symbols**        | 1     | Plain-text symbol fallback (arrows) |
+| **Noto Sans Symbols 2**      | 1     | Plain-text symbol fallback (⚠ ✓ ★) |
+
+The last three families (Noto Sans Math, Noto Sans Symbols 1/2) are
+symbol-fallback faces — they back the per-glyph fallback chain rather than
+being picked as a body typeface. See
+[Math & special characters](math_and_symbols.md).
 
 ## Bundled Icon Fonts
 

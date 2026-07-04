@@ -1,5 +1,18 @@
-font.family: sans-serif
-font.sans-serif: Roboto, Lato, Inter, Open Sans, Arial, Helvetica, Paperlogy, Noto Sans CJK KR, Pretendard, Gothic A1, Freesentation, AppleGothic, Malgun Gothic, sans-serif
+# font.family MUST be the explicit family list (not the generic
+# `sans-serif` alias) for matplotlib's per-glyph fallback to work in
+# PLAIN text: _find_fonts_by_props() builds its fallback chain from
+# prop.get_family(), and a generic `sans-serif` resolves to a SINGLE
+# best-scoring font — so every glyph the primary face lacks becomes tofu
+# regardless of what font.sans-serif lists. Listing only the *bundled*
+# families (+ the `sans-serif` terminator) keeps the fallback chain
+# deterministic and silent: unlisted OS fonts (Lato, Arial, …) would each
+# emit a "findfont: Font family … not found" log line. The bundled corpus
+# already covers the scientific/report symbol set (see
+# tests/test_font_glyph_coverage.py). font.sans-serif keeps the full
+# preference ladder (incl. OS fallbacks) for the generic terminator and is
+# pinned by tests/test_style_chain_parity.py.
+font.family: Roboto, Inter, Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
+font.sans-serif: Roboto, Lato, Inter, Open Sans, Arial, Helvetica, Paperlogy, Noto Sans CJK KR, Pretendard, Gothic A1, Freesentation, AppleGothic, Malgun Gothic, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
 lines.linewidth: 1.0               # line width in points
 lines.color:     oc.blue4                # has no affect on plot(); see axes.prop_cycle
 lines.dashed_pattern: 3, 1.5
@@ -22,10 +35,11 @@ mathtext.it:  Noto Sans Math:italic
 mathtext.rm:  Noto Sans Math
 mathtext.sf:  Noto Sans Math
 mathtext.tt:  Noto Sans Math
-mathtext.fallback: None  # Select fallback font from ['cm' (Computer Modern), 'stix'
+mathtext.fallback: stix  # Select fallback font from ['cm' (Computer Modern), 'stix'
                         # 'stixsans'] when a symbol can not be found in one of the
-                        # custom math fonts. Select 'None' to not perform fallback
-                        # and replace the missing character by a dummy symbol.
+                        # custom math fonts. 'stix' is bundled by matplotlib (zero
+                        # extra bytes) and lets math glyphs outside Noto Sans Math
+                        # resolve gracefully instead of hard-failing to a dummy box.
 mathtext.default: it  # The default font to use for math.
                        # Can be any of the LaTeX font names, including
                        # the special name "regular" for the same font

@@ -108,7 +108,7 @@ def _collect_fonts() -> dict[str, list[str]]:
     Both ``.ttf`` and ``.otf`` are collected — Pretendard and the
     Noto Sans CJK subset ship as OpenType (``.otf``), so a ``.ttf``-only
     filter would silently drop them from the generated all-families
-    preview even though they count toward the advertised 16 families.
+    preview even though they count toward the advertised family count.
     Kept in sync with ``generate_html_specimens._collect_fonts``.
     """
     font_dir = _get_font_dir()

@@ -22,6 +22,8 @@ publishes static instances" decision:
   · JetBrains Mono 8 uprights + 8 italics  (no Black upstream)
   · Source Code Pro 7 uprights + 7 italics (no Thin upstream)
   · Roboto Mono    5 uprights + 5 italics  (Thin Light Reg Med Bold)
+  · Noto Sans Symbols   1 upright (Regular) — plain-text symbol fallback
+  · Noto Sans Symbols 2 1 upright (Regular) — dingbat / warning / star fallback
 """
 
 from __future__ import annotations
@@ -287,6 +289,10 @@ def plan() -> list[dict]:
         # fetch_fonts reproduce them from the same OFL/Apache upstreams.
         # Licenses are already bundled (LICENSE-Inter / -NotoSans /
         # -NotoSansCJK) and G11-mapped, so no `license` key is needed.
+        # The Noto Sans Symbols / Symbols 2 families (added 2026-07 for
+        # scientific/report special-character coverage) come from the same
+        # notofonts upstream and are covered by LICENSE-NotoSans (one OFL
+        # text per upstream project — see tests/test_font_licenses.py).
         {
             "family": "Inter",
             "kind": "release-zip",
@@ -351,6 +357,32 @@ def plan() -> list[dict]:
             "weights": ["Regular"],
             "italics": False,
             "stem": "NotoSansMath",
+        },
+        {
+            "family": "Noto Sans Symbols",
+            "kind": "gh-dir",
+            "repo": "notofonts/notofonts.github.io",
+            "path": "fonts/NotoSansSymbols/full/ttf",
+            "ext": "ttf",
+            # Regular only: the plain-text fallback chain needs a single
+            # weight for symbol coverage (arrows, geometric shapes, misc
+            # technical). Upstream ships 9 weights; we bundle just Regular.
+            "weights": ["Regular"],
+            "italics": False,
+            "stem": "NotoSansSymbols",
+        },
+        {
+            "family": "Noto Sans Symbols 2",
+            "kind": "gh-dir",
+            "repo": "notofonts/notofonts.github.io",
+            "path": "fonts/NotoSansSymbols2/full/ttf",
+            "ext": "ttf",
+            # Regular is the only weight upstream publishes. Covers the
+            # dingbat / warning / star / check ranges (⚠ ✓ ★) the sans and
+            # math faces lack.
+            "weights": ["Regular"],
+            "italics": False,
+            "stem": "NotoSansSymbols2",
         },
         {
             "family": "Noto Sans CJK KR",

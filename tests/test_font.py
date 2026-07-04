@@ -109,6 +109,13 @@ CONTRACT_FAMILIES: tuple[str, ...] = (
     "Paperlogy",
     "Noto Sans CJK KR",
     "Noto Sans Math",
+    # Symbol fallback faces bundled for scientific/report special-character
+    # coverage (arrows, ⚠ ✓ ★, dingbats). They sit in every preset's
+    # font.family / font.sans-serif fallback chain. Deletion is caught by
+    # this eager-registration contract; the glyph-coverage test catches
+    # chain/coverage regressions via uniquely served symbol glyphs.
+    "Noto Sans Symbols",
+    "Noto Sans Symbols 2",
 )
 
 
