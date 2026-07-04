@@ -12,6 +12,54 @@ vibrancy (the generation pipeline reports both scores per palette).
 all `dc.*` shades plus the six third-party systems — see **[Palettes](colors.md)**.
 :::
 
+## The default cycle
+
+For a coherent data-series cycle without choosing a palette, use the v5
+`dc.cycle` — seven chromatic colors selected by exhaustive search to stay
+distinct under color-vision-deficiency simulation (worst-case CVD
+min ΔE00 = 10.3, on par with the Okabe-Ito benchmark of 11.1; matplotlib's
+`tab10` scores 1.4 and effectively collapses under deuteranopia). Gray is
+reserved for grids and reference lines, not spent as a data color.
+
+```python
+import dartwork_mpl as dm
+
+dm.set_cycle(dm.cycle("default"))   # 7-color screen/PDF cycle (the default)
+dm.set_cycle(dm.cycle("print"))     # 8-color cycle, spread darker for B&W print
+```
+
+Need more than eight line series? Opt in to line-style variation with
+`dm.cycle_cycler()` — it expands the seven colors × three line styles (21
+combinations) so a repeated color never reads as the same series. Line styles
+are opt-in rather than baked into the default cycle, because an `ax.plot` with
+`lw=0` would otherwise inherit a dashed style and break.
+
+```python
+ax.set_prop_cycle(dm.cycle_cycler())
+```
+
+The cycles are also registered as colormaps (`dc.cycle`, `dc.cycle_print`) for
+`scatter(c=...)` and seaborn `palette=` interfaces.
+
+## Semantic tokens
+
+Role-based aliases keep meaning separate from color: `dc.pos` (up / positive),
+`dc.neg` (down / negative), `dc.ref` (reference), `dc.hl` (highlight). The
+mapping is **locale-aware** — under a `*-kr` style, up = red and down = blue
+(the Korean finance convention); otherwise up = green, down = red — so report
+prose and charts share one semantic.
+
+```python
+ax.plot(gains, color="dc.pos")        # green — or red under a *-kr style
+ax.axhline(baseline, color="dc.ref")  # neutral reference line
+```
+
+> Three families (`teal`, `indigo`, `gray`) share names with legacy tokens
+> and stay frozen to their pre-v5 hex by default; opt in to the v5 values with
+> `dm.set_palette_version(5)`. See the [migration guide](../migration.md).
+
+## Pick a palette by intent
+
 Pick by the *shape and job* of your data:
 
 - **Ordered** (rank / amount) → Sequential, or Neutral if hue carries no meaning

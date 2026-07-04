@@ -273,8 +273,8 @@ result.
 
 ```python
 fig, axes = plt.subplots(1, 2, figsize=dm.figsize("17cm", "wide"))
-cf = axes[0].imshow(field, cmap="dc.deep_sea")
-axes[1].plot(profile, color="dc.teal_indigo3", lw=dm.lw(1))
+cf = axes[0].imshow(field, cmap="dc.aurora")
+axes[1].plot(profile, color="dc.indigo6", lw=dm.lw(1))
 fig.colorbar(cf, ax=axes[0], shrink=0.85, pad=0.02)
 
 dm.label_axes(axes)

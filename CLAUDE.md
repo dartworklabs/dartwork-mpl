@@ -91,7 +91,7 @@ inside Python.
 |---|---|
 | 5-minute hands-on tour | [`docs/usage_guide/quickstart.md`](docs/usage_guide/quickstart.md) |
 | Width / aspect / layout deep dive | [`docs/usage_guide/layout.md`](docs/usage_guide/layout.md) |
-| Color system & palettes | [`docs/color_system/index.md`](docs/color_system/index.md) |
+| Color system & palettes | [`docs/color_system/colors.md`](docs/color_system/colors.md) (or the [design rationale](docs/color_system/design.md)) |
 | 18 ready-to-use plot templates | [`docs/examples_gallery/09_ai_templates/`](docs/examples_gallery/09_ai_templates/) (rendered) or [`src/dartwork_mpl/asset/prompt/05-templates/`](src/dartwork_mpl/asset/prompt/05-templates/) (source) |
 | Why this design exists | [`docs/philosophy/ai_native.md`](docs/philosophy/ai_native.md) |
 | AI integration overview | [`docs/integrations/index.md`](docs/integrations/index.md) |

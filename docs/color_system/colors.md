@@ -34,20 +34,33 @@ plt.show()
 
 ## Palette sheets
 
-**dartwork Color.** The curated **24-palette categorical system** across 11
-families (sequential, analogous, duo, balanced, neutral, emphasis, muted,
-vivid, diverging, tone, accessible). Every palette is 8 colours,
-CIELAB-generated and verified for black-&-white + colour-blindness, anchored on
-the house-teal hue family.
+### dartwork Color — v5 families
 
-Reach for:
+The **16 single-hue families** are the perceptual backbone of the system.
+Each is ten steps (`dc.blue0` … `dc.blue9`), generated deterministically on
+CIELAB L\* + OKLCH and equalized so that *step-number difference = perceptual
+difference* (`dc.blue3↔dc.blue5` covers the same distance as
+`dc.blue6↔dc.blue8`). Reach any color as a plain string — `color="dc.blue6"`
+— anywhere matplotlib accepts a color; the `dc.*` colormaps derive from these
+same recipes. The full theory is on the
+[Color system design](design.md) page.
+
+```{raw} html
+:file: images/colors_dc_families.html
+```
+
+### dartwork Color — curated categorical palettes
+
+Alongside the families, a curated **24-palette categorical system** (8 colors
+each, CIELAB-generated and verified for black-&-white + color-blindness) is
+kept for pick-by-intent workflows:
 
 - `dc.trustworthy` — the everyday default
 - `dc.vivid` / `dc.neon` — many categories
 - `dc.cool_warm` / `dc.teal_amber` — ± diverging data
 - `dc.teal_accent` — highlight one series
 
-The interactive picker (intent, B&W, colour-blindness, 9 chart shapes) lives on
+The interactive picker (intent, B&W, color-blindness, 9 chart shapes) lives on
 the [Categorical palettes](categorical-palettes.md) page. The pre-0.5 ad-hoc
 names (`dc.ocean`, `dc.sunset`, …) were **removed** — see the <!-- color-lint: ignore -->
 [migration guide](../migration.md) for the rename map.

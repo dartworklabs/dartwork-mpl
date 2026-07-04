@@ -72,8 +72,8 @@ single-row swatch, perfect for Jupyter completion.
 >>> dm.list_palettes()[:5]
 ['ad.blue', 'ad.cyan', 'ad.geekblue', 'ad.gold', 'ad.green']
 
->>> dm.list_colormaps()[:5]
-['dc.afterglow', 'dc.amber', 'dc.amethyst', 'dc.arctic_heat', 'dc.aurora']
+>>> "dc.aurora" in dm.list_colormaps()   # the default heatmap map
+True
 
 >>> dm.show_palette("oc.blue")   # renders a horizontal swatch row
 ```

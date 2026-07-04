@@ -44,7 +44,7 @@ also doubles as a tour of the in-house palette.
 | **L4** | Dual-axis dashboard | twinx coordination + colour-coded right axis |
 | **L5** | Small multiples (2×2) | grid spacing + panel labels + multi-hue series |
 | **L6** | Stacked area composition | stack ordering + separator lines + curated palette |
-| **L7** | Annotated heatmap | `dc.deep_sea` colormap + cell-aware text contrast |
+| **L7** | Annotated heatmap | `dc.aurora` colormap + cell-aware text contrast |
 | **L8** | Distribution comparison | violin + jittered raw points + inline median labels |
 
 ## Picking one (or two)
