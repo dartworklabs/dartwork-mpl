@@ -16,10 +16,12 @@ all `dc.*` shades plus the six third-party systems — see **[Palettes](colors.m
 
 For a coherent data-series cycle without choosing a palette, use the v5
 `dc.cycle` — seven chromatic colors selected by exhaustive search to stay
-distinct under color-vision-deficiency simulation (worst-case CVD
-min ΔE00 = 10.3, on par with the Okabe-Ito benchmark of 11.1; matplotlib's
-`tab10` scores 1.4 and effectively collapses under deuteranopia). Gray is
-reserved for grids and reference lines, not spent as a data color.
+distinct under color-vision-deficiency simulation: the common red-green
+deficiencies clear min ΔE00 10.3 (on par with the Okabe-Ito benchmark of
+11.1), and the rare tritan clears 9.0 under the accurate Brettel-1997 model
+(see [Color system design](design.md));
+matplotlib's `tab10` scores 1.4 and effectively collapses under deuteranopia.
+Gray is reserved for grids and reference lines, not spent as a data color.
 
 ```python
 import dartwork_mpl as dm
