@@ -18,6 +18,8 @@ from typing import TYPE_CHECKING
 
 import matplotlib.colors as mcolors
 
+from ._generated import PALETTE
+
 if TYPE_CHECKING:
     # ``Traversable`` moved from ``importlib.abc`` (3.10) to
     # ``importlib.resources.abc`` (3.11+); only needed for typing.
@@ -163,11 +165,9 @@ def _load_colors() -> None:
     # 레거시 dc_palettes.json 과 정확히 같은 이름의 토큰은 레거시 hex 가
     # 기본값(동결 — silent recolor 금지). v5 값은 set_palette_version(5)
     # opt-in 시 _compat_v4 가 remap 한다. 레거시에 없는 이름은 즉시 v5.
-    from ._generated import PALETTE as _V5_PALETTE
-
     legacy_dc_names = {k for k in color_dict if k.startswith("dc.")}
     v5_tokens: dict[str, str] = {}
-    for fam, row in _V5_PALETTE.items():
+    for fam, row in PALETTE.items():
         for step, hexval in enumerate(row):
             token = f"dc.{fam}{step}"
             if token not in legacy_dc_names:
@@ -232,8 +232,6 @@ def v5_collision_tokens() -> dict[str, str]:
         under that name by :func:`_load_colors` — see spec §11). Consumed
         by ``set_palette_version(5)`` to opt in to the v5 recolor.
     """
-    from ._generated import PALETTE
-
     root = files("dartwork_mpl") / "asset" / "color"
     legacy = _load_json_palette(root, "dc_palettes.json", "dc")
     out: dict[str, str] = {}

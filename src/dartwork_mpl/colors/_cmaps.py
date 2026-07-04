@@ -10,8 +10,9 @@ import math
 from bisect import bisect_left
 from collections.abc import Callable
 
+from ._color import Color
 from ._generate import gamut_max_chroma, solve_swatch_rgb
-from ._metrics import de_ok_rgb, hex_from_rgb
+from ._metrics import de_ok_rgb, hex_from_rgb, lab_l_hex
 from ._recipe import FAMILIES, FAMILY_PARAMS
 
 __all__ = [
@@ -191,8 +192,6 @@ def diverging_pair(
     양극 정체성은 dc.{a}6/dc.{b}6 hex의 OKLCH chroma·hue에서 유도한다.
     포인트별 독립 솔브(등화 없음)라 hex 직접 생성으로 충분하다.
     """
-    from ._color import Color
-
     arms: list[list[str]] = []
     for src in (hex_a, hex_b):
         _, c_max, hue = Color(src).to_oklch()
@@ -236,8 +235,6 @@ def compile_cmaps(
     palette: dict[str, list[str]], n: int = 256
 ) -> dict[str, list[str]]:
     """42종 카탈로그 — 키는 SSOT swatches_32와 동일한 평면 공개 이름."""
-    from ._color import Color
-
     A = ANCHORS
     cm: dict[str, list[str]] = {}
 
@@ -324,8 +321,6 @@ def compile_cmaps(
     # 샘플 수 규약: diverging_pair 는 홀수(2·half-1) 샘플 → endpoint-inclusive
     # 정수-stride 리샘플로 n에 맞춘다. n=32 golden 은 half=32(63→32, stride 2.0
     # 정확 — SSOT 생성 방식과 동일), n=256 export 는 half=128(255→256).
-    from ._metrics import lab_l_hex
-
     def _resample(hexes: list[str], m: int) -> list[str]:
         last = len(hexes) - 1
         return [hexes[round(i * last / (m - 1))] for i in range(m)]
