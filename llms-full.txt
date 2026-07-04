@@ -376,7 +376,7 @@ sites are one-liners.
 
 
 ---
-## Migration (0.3 → 0.4)
+## Migration guide
 ---
 orphan: true
 ---
@@ -431,7 +431,10 @@ default. Design spec:
    (steps 0–7) are the only names that exist in both catalogs; calling
    this remaps those specific tokens (and their `dm.*` alias) to their
    v5 hex in place. The default (`dm.set_palette_version(4)`, implicit)
-   keeps them frozen at the legacy value.
+   keeps them frozen at the legacy value. Note: the legacy ramps run
+   dark→light; the v5 ramps run light→dark, so step indices invert
+   meaning under version 5 (e.g. `dc.gray0` goes from near-black to
+   near-white).
 3. **Colormaps are matplotlib-native — no bespoke accessor.** Use
    `cmap="dc.aurora"` in any plotting call, or `plt.colormaps["dc.aurora"]`
    / `mpl.colormaps["dc.aurora"]` to fetch the `Colormap` object directly.
@@ -476,6 +479,11 @@ Each rewrite is tagged *colours preserved* (a pure rename) or *review* (a
 merge into a different palette). The run also prints an advisory table of the
 per-token CIEDE2000 ΔE by which `teal` / `indigo` / `gray` shift under
 `set_palette_version(5)`, so opting into the v5 values is an informed choice.
+
+The codemod matches prefixed tokens — a shade colour like `dc.ocean2` and
+quoted bare names like `set_cycle("dc.spectrum")`. Bare names *without* a
+`dc.` / `dm.` prefix (e.g. `set_cycle("spectrum")`, `get_palette("ocean")`)
+are not detected — update those by hand.
 
 ## v0.5.5 — categorical palette overhaul
 

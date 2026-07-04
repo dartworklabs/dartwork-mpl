@@ -111,9 +111,10 @@ for the full grammar and the anchor graph.
 | Angle / phase (0° = 360°) | a cyclic map (`dc.hue`, `dc.halo`) |
 | Discrete classes | `dc.cycle` / `dc.cycle_print`, or `dm.set_cycle(...)` |
 
-`aurora` is the default heatmap map: against viridis it is roughly twice as
-uniform (OKLab ΔE cv 0.044 vs 0.086) over a wider lightness range (81.9 vs
-76.0), measured identically at 32 stops. The warm multi-hue maps divide the
+`aurora` is the default heatmap map: against viridis it is roughly 1.3× as
+uniform (OKLab ΔE cv 0.063 vs 0.086) over a wider lightness range (81.9 vs
+76.0), measured identically at 32 stops on the shipped 256-LUT. The warm
+multi-hue maps divide the
 work: `afterglow` runs through magenta (plasma-like), `blaze` starts in dark
 violet (magma-like), and `lava` never touches violet at all — a
 perceptually uniform replacement for matplotlib's `hot`.

@@ -9,7 +9,6 @@ distinct under normal + deuteranopia + protanopia + tritanopia simulation.
 from __future__ import annotations
 
 import re
-from itertools import combinations
 from pathlib import Path
 
 import matplotlib
@@ -65,25 +64,29 @@ def test_cycle_members_legible_on_facecolor() -> None:
 
 
 def test_cycle_cvd_safe() -> None:
-    from dartwork_mpl.colors._metrics import (
-        cvd_rgb,
-        de2000_hex,
-        hex_from_rgb,
-        rgb_from_hex,
-    )
+    """theme-dark's cycle clears the shipped *tiered* CVD gate.
+
+    The v5 gate is not a flat ΔE≥10 across all four vision types: tritanopia
+    (the rare S-cone deficiency) is held to a realistic lower floor (8) than
+    the common red-green floor (10), matching ``gate_cycle``'s design. Assert
+    the actual policy via ``gate_cycle`` rather than re-deriving ΔE inline.
+    """
+    from dartwork_mpl.colors._gates import gate_cycle
 
     _, hexes = _parse_style()
-
-    def sim(h: str, kind: str) -> str:
-        return (
-            h
-            if kind == "normal"
-            else hex_from_rgb(cvd_rgb(rgb_from_hex(h), kind))
-        )
-
-    worst = min(
-        de2000_hex(sim(a, k), sim(b, k))
-        for k in ("normal", "deutan", "protan", "tritan")
-        for a, b in combinations(hexes, 2)
+    g = gate_cycle(hexes)
+    # Shipped tiered policy — assert the SAME unrounded floors check_all gates
+    # on (common_min_raw / tritan_raw), not the rounded display keys, so this
+    # test cannot green a cycle whose true floor rounds up across the gate.
+    assert g["common_min_raw"] >= 10.0, g[
+        "common_min_raw"
+    ]  # normal+protan+deutan
+    assert g["tritan_raw"] >= 8.0, g[
+        "tritan_raw"
+    ]  # rare S-cone deficiency floor
+    # Design MARGIN for THIS dark cycle (not the gate) — its members are tuned
+    # so even tritan clears well above the 8.0 floor (measured 11.0). Kept as a
+    # regression tripwire against a future palette edit eroding that headroom.
+    assert g["tritan_raw"] >= 10.0, (
+        f"tritan margin {g['tritan_raw']:.2f} < 10.0 (not gate)"
     )
-    assert worst >= 10.0, f"worst-case CVD min ΔE00 {worst:.2f} < 10 gate"

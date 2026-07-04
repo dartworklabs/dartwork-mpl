@@ -240,10 +240,12 @@ class TestClassifyColormap:
                     "canopy",
                     "haze",
                     "iris",
-                    "coast",
                 ),
                 "Multi-Hue",
             ),
+            # dc.coast is a datum-anchored topographic map, pinned to its own
+            # "Topographic" family (docs: colormaps.md, design.md), not Multi-Hue.
+            "coast": "Topographic",
             **dict.fromkeys(
                 (
                     "blue_red",

@@ -59,6 +59,40 @@ def test_idempotent_and_leaves_valid_tokens() -> None:
     assert twice == "dc.vivid3"
 
 
+def test_migrate_regex_edges() -> None:
+    """T3 — prefix preservation, base rewrites, and negative-match guards."""
+    from dartwork_mpl.colors._migrate import migrate_text
+
+    # dm.* mirror prefix is preserved through the rewrite.
+    assert migrate_text("dm.coolwarm4")[0] == "dm.cool_warm4"
+    # v0.5.4 base-name alias rewrite.
+    assert migrate_text("dc.ocean2")[0] == "dc.teal2"
+    # Negatives — must NOT be rewritten. group 3 requires a shade digit OR a
+    # trailing string quote, so ordinary attribute/method access is excluded:
+    #   xdc.spectrum3   → no word boundary before "dc"
+    #   dc.bold_r       → "_" is a word char, so no boundary after "bold"
+    #   dc.spectrum3x   → trailing word char, so (\d+)\b never matches
+    #   dc.pop(0) / dm.pop(key) / dm.focus()  → method call (base + "(")
+    #   dm.muted / x = dm.pop  → bare attribute (no digit, no quote)
+    for src in (
+        "xdc.spectrum3",
+        "dc.bold_r",
+        "dc.spectrum3x",
+        "dc.pop(0)",
+        "dm.pop(key)",
+        "dm.focus()",
+        "dm.muted",
+        "x = dm.pop",
+    ):
+        assert migrate_text(src)[0] == src, src
+    # A bare removed name inside a string IS rewritten (set_cycle name arg).
+    assert migrate_text('set_cycle("dc.pop")')[0] == 'set_cycle("dc.vivid")'
+    # A token inside an f-string still rewrites (plain text substitution).
+    new, changes = migrate_text('label = f"series {dc.nordic1}"')
+    assert new == 'label = f"series {dc.teal_indigo1}"'
+    assert changes and changes[0].prefix == "dc"
+
+
 def test_collision_shift_table() -> None:
     from dartwork_mpl.colors._migrate import collision_shift_table
 

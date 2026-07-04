@@ -157,7 +157,8 @@ Gray alone uses an even L\* ladder (96→28) with a faint cool tint
 (h250, C ≤ 0.011). Having no hue identity, it is exempt from the drift and
 chroma-fingerprint rules; even L\* alone keeps its neighbor ΔE uniform. Gray
 is reserved for grids, reference lines, benchmarks, and "other" categories —
-it is deliberately **not** part of the categorical cycle.
+it is deliberately **not** part of the default `dc.cycle`; the print cycle
+adds a dark gray as its 8th color for B&W lightness spread.
 
 ### A7 · the hard gates
 
@@ -166,7 +167,7 @@ Verified automatically at compile time; an output that fails cannot ship.
 | Gate | Criterion | Metric |
 |---|---|---|
 | L\* monotonic | strictly light→dark within a family | CIELAB L\* |
-| Equalization uniformity | neighbor-ΔE coefficient of variation cv ≤ 0.08 | OKLab ΔE |
+| Equalization uniformity | neighbor-ΔE coefficient of variation cv ≤ 0.08 (palette ladders only — sequential-cmap cv is measured, not hard-gated) | OKLab ΔE |
 | Categorical accessibility | common CVD (normal + protan + deutan) min ΔE ≥ 10; rare tritan ≥ 8 (accurate Brettel-1997 model) | CIEDE2000 |
 | Sequential-cmap gray monotonic | monotonic even under luminance conversion | CIELAB L\* |
 
@@ -183,8 +184,8 @@ A palette ladder stops at its hue floor, so different families span
 different L\* ranges — fine for categorical swatches, wrong for a heatmap
 where dynamic range and cross-panel comparability matter. Colormaps are
 regenerated over a shared wide range instead. `aurora` holds monotonic,
-near-linear L\* (ΔE cv 0.044, L\* range 81.9) against viridis (cv 0.086,
-76.0) on the same 32-stop measurement.
+near-linear L\* (ΔE cv 0.063, L\* range 81.9) against viridis (cv 0.086,
+76.0) on the same 32-stop measurement of the shipped 256-LUT.
 :::
 
 ## Anatomy of a family
@@ -334,9 +335,9 @@ path actually appears," with hue way-points chosen only at family anchors:
 | `haze` | misty dawn (low-chroma, CVD-optimal) | blue→sky→green→yellow | cividis |
 | `iris` | wide-band spectrum | violet→blue→cyan→green→yellow→orange | Spectral |
 
-`aurora` earns the default: against viridis it is twice as uniform (ΔE cv
-0.044 vs 0.086) over a wider L\* range (81.9 vs 76.0), measured identically
-at 32 stops.
+`aurora` earns the default: against viridis it is ~1.3× as uniform (ΔE cv
+0.063 vs 0.086) over a wider L\* range (81.9 vs 76.0), measured identically
+at 32 stops on the shipped 256-LUT.
 
 ### The cyclic maps
 

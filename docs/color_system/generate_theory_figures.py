@@ -30,6 +30,7 @@ from matplotlib.colors import ListedColormap
 
 import dartwork_mpl as dm
 from dartwork_mpl.colors import Color
+from dartwork_mpl.colors import _gates as GA
 from dartwork_mpl.colors import _generate as GEN
 from dartwork_mpl.colors import _generated as G
 from dartwork_mpl.colors import _metrics as M
@@ -581,6 +582,14 @@ def fig_dcseq():
     vir = [
         mpl.colors.to_hex(mpl.colormaps["viridis"](i / 31)) for i in range(32)
     ]
+    # Measure the two swatch strips the figure actually renders, with the same
+    # gate the rest of the system uses — so the printed numbers ARE the number
+    # the picture proves (the page's "pictures are the proof" principle). NOTE:
+    # aurora here is the shipped 256-LUT sampled at 32 stops, NOT the SSOT's
+    # direct-render swatches_32 — those differ (only ~half overlap), so this cv
+    # is the honest same-protocol figure vs viridis.
+    g_seq = GA.gate_seq_cmap(seq)
+    g_vir = GA.gate_seq_cmap(vir)
     fig, axs = plt.subplots(
         2,
         1,
@@ -642,8 +651,9 @@ def fig_dcseq():
     ax2.text(
         0.98,
         20,
-        "aurora: ΔE cv 0.044 · L* range 81.9\n"
-        "viridis: cv 0.086 · 76.0  (same 32-stop measurement)",
+        f"aurora: ΔE cv {g_seq['cv']:.3f} · L* range {g_seq['L_span']}\n"
+        f"viridis: cv {g_vir['cv']:.3f} · {g_vir['L_span']}"
+        "  (same 32-stop measurement)",
         ha="right",
         va="bottom",
         fontsize=dm.fs(-2.5),

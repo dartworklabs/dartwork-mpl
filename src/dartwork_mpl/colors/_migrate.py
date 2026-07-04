@@ -1,14 +1,15 @@
 """v4 → v5 color-token migration codemod (spec §11.3).
 
 Migration is visible and opt-in, never a silent runtime rewrite. This tool
-rewrites the palette-token names that the v0.5.5 overhaul *removed* (so the
-old names no longer resolve and break scripts) to their current curated
-equivalents, and reports — but does not auto-apply — the two ambiguous v5
-changes: the ``teal``/``indigo``/``gray`` collision-token colour shift under
-:func:`set_palette_version` (5), and the ``aurora``/``teal_rose`` colormap
-rename. Every rewrite is shown as a unified diff, and each token change is
-accompanied by its old→new CIEDE2000 ΔE so the size of the visual shift is
-explicit.
+rewrites the palette-token names that the v0.5.4/v0.5.5 overhaul waves
+*removed* (so the old names no longer resolve and break scripts) to their
+current curated equivalents, and reports — but does not auto-apply — the two
+ambiguous v5 changes: the ``teal``/``indigo``/``gray`` collision-token colour
+shift under :func:`set_palette_version` (5), and the ``aurora``/``teal_rose``
+colormap rename. Every rewrite is shown as a unified diff. The
+:func:`collision_shift_table` *advisory* (not the per-token rewrites) carries
+the old→new CIEDE2000 ΔE for each collision token, so opting into the v5
+colours is an informed choice; removed-token rewrites have no old hex to diff.
 
 Run::
 
@@ -34,16 +35,44 @@ __all__ = [
     "migrate_text",
 ]
 
-# Removed v0.5.5 palette bases → current base, tagged with whether the colours
-# are preserved (``rename``) or changed (``merge`` — review the result). These
-# old names no longer resolve, so a script using them is already broken; the
-# rewrite makes it run again. Source: docs/migration.md (v0.5.5 overhaul).
+# Removed palette bases → current base, tagged with whether the colours are
+# preserved (``rename``) or changed (``merge`` — review the result). These old
+# names no longer resolve, so a script using them is already broken; the
+# rewrite makes it run again. Source: docs/migration.md — the "dc.* palette
+# migration (cumulative)" table folds every 0.5.4/0.5.5 rename hop into a
+# single 1:1 lookup (shade index preserved). The cumulative table's own note
+# states migrated tokens are "a starting point, not a byte-identical swap"
+# (colours re-generated in the overhaul), so every entry sourced from it is
+# tagged ``merge`` — "review colours" is the honest note.
 PALETTE_RENAMES: dict[str, tuple[str, str]] = {
+    # v0.5.5 overhaul (unchanged from the original codemod).
     "spectrum": ("vivid", "rename"),
     "coolwarm": ("cool_warm", "rename"),
     "bold": ("vivid", "merge"),
     "corporate": ("trustworthy", "merge"),
     "warm_cool": ("blue_orange", "merge"),
+    # v0.5.4 legacy-alias removal (base names) — colours re-generated, so merge.
+    "sunset": ("earth", "merge"),
+    "ocean": ("teal", "merge"),
+    "pop": ("vivid", "merge"),
+    "cyber": ("jewel", "merge"),
+    "autumn": ("dusty", "merge"),
+    "nordic": ("teal_indigo", "merge"),
+    # v0.5.4 snake_case renames — colours re-generated, so merge.
+    "teal_seq": ("teal", "merge"),
+    "focus": ("teal_accent", "merge"),
+    "focus_warm": ("coral_accent", "merge"),
+    "muted": ("pastel", "merge"),
+    "teal_amber_div": ("teal_amber", "merge"),
+    # v0.5.4 capitalized back-compat aliases (Vivid/Sunset/... no longer
+    # resolve). Vivid maps to the still-valid lowercase ``vivid``.
+    "Vivid": ("vivid", "merge"),
+    "Sunset": ("earth", "merge"),
+    "Ocean": ("teal", "merge"),
+    "Pop": ("vivid", "merge"),
+    "Cyber": ("jewel", "merge"),
+    "Autumn": ("dusty", "merge"),
+    "Nordic": ("teal_indigo", "merge"),
 }
 
 # v5 ceded these colormap names to a differently-tuned map; a script that wants
@@ -54,43 +83,63 @@ CMAP_RENAMES: dict[str, str] = {
     "teal_rose": "legacy_teal_rose",
 }
 
-# ``dc.spectrum3`` / ``dc.coolwarm`` (bare cycle name) / ``dc.warm_cool7`` …
+# ``dc.spectrum3`` / ``"dc.warm_cool"`` / ``dm.ocean2`` …
+# The loader mirrors every ``dc.*`` token to ``dm.*``, so a v4 script may have
+# written either prefix; capture it (group 1) and preserve it on rewrite. The
+# base alternation is longest-match first (``focus_warm`` before ``focus``) so
+# a longer removed name wins over one that is a prefix of it. A token is
+# rewritten ONLY when it is a real palette reference: group 3 requires a shade
+# index (``\d+`` — a colour like ``dc.ocean2``) OR a bare name immediately
+# followed by a string quote (``(?=["'])`` — ``set_cycle("dc.warm_cool")``).
+# That excludes ordinary attribute/method access on a user variable named
+# ``dc``/``dm`` — ``dc.pop(k)`` / ``dm.focus()`` / ``dm.muted`` are NOT
+# rewritten (several removed bases — ``pop``/``focus``/``muted`` — collide with
+# common method names). The trailing ``\b`` rejects ``dc.spectrum3x`` /
+# ``dc.bold_r`` (word char after the token → no boundary).
 _TOKEN_RE = re.compile(
-    r"\bdc\.("
+    r"\b(dc|dm)\.("
     + "|".join(sorted(PALETTE_RENAMES, key=len, reverse=True))
-    + r")(\d*)\b"
+    + r")(\d+|(?=[\"']))\b"
 )
 
 
 class Change:
-    """One token rewrite: ``dc.{old}{step}`` → ``dc.{new}{step}``."""
+    """One token rewrite: ``{prefix}.{old}{step}`` → ``{prefix}.{new}{step}``.
 
-    __slots__ = ("kind", "new", "old", "step")
+    ``prefix`` is the matched namespace (``dc`` or its mirrored ``dm`` alias),
+    preserved so a rewrite keeps the same namespace it was written with.
+    """
 
-    def __init__(self, old: str, new: str, step: str, kind: str) -> None:
+    __slots__ = ("kind", "new", "old", "prefix", "step")
+
+    def __init__(
+        self, old: str, new: str, step: str, kind: str, prefix: str = "dc"
+    ) -> None:
         self.old, self.new, self.step, self.kind = old, new, step, kind
+        self.prefix = prefix
 
     def old_token(self) -> str:
-        return f"dc.{self.old}{self.step}"
+        return f"{self.prefix}.{self.old}{self.step}"
 
     def new_token(self) -> str:
-        return f"dc.{self.new}{self.step}"
+        return f"{self.prefix}.{self.new}{self.step}"
 
 
 def migrate_text(src: str) -> tuple[str, list[Change]]:
-    """Rewrite removed v0.5.5 palette tokens to their current names.
+    """Rewrite removed v0.5.4/v0.5.5 palette tokens to their current names.
 
     Returns the rewritten source and the list of changes applied. A pure
     ``rename`` preserves colours; a ``merge`` points at a different palette,
-    so those changes are flagged for review.
+    so those changes are flagged for review. The ``dc``/``dm`` prefix of each
+    matched token is preserved on rewrite.
     """
     changes: list[Change] = []
 
     def _sub(m: re.Match[str]) -> str:
-        old_base, step = m.group(1), m.group(2)
+        prefix, old_base, step = m.group(1), m.group(2), m.group(3)
         new_base, kind = PALETTE_RENAMES[old_base]
-        changes.append(Change(old_base, new_base, step, kind))
-        return f"dc.{new_base}{step}"
+        changes.append(Change(old_base, new_base, step, kind, prefix))
+        return f"{prefix}.{new_base}{step}"
 
     return _TOKEN_RE.sub(_sub, src), changes
 
@@ -179,9 +228,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  {'token':<12} {'v4 (frozen)':<12} {'v5':<12} {'ΔE00':>6}")
         for tok, old, new, de in collision_shift_table():
             print(f"  {tok:<12} {old:<12} {new:<12} {de:>6.1f}")
+        # Derive the sentence from CMAP_RENAMES so a third entry surfaces
+        # automatically (the dict is the single source of truth).
+        bare = " / ".join(f"'dc.{k}'" for k in CMAP_RENAMES)
+        legacy = " / ".join(f"'dc.{v}'" for v in CMAP_RENAMES.values())
         print(
-            "\n  Colormaps: cmap='dc.aurora' / 'dc.teal_rose' now render the v5 map; "
-            "switch to 'dc.legacy_aurora' / 'dc.legacy_teal_rose' for the pre-v5 look."
+            f"\n  Colormaps: cmap={bare} now render the v5 map; "
+            f"switch to {legacy} for the pre-v5 look."
         )
 
     return 1 if (total and not args.apply) else 0

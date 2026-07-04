@@ -46,7 +46,13 @@ def render(
     for i in range(1, dense):
         cum.append(cum[-1] + de_ok_rgb(pts[i - 1], pts[i]))
     if closed:
-        cum.append(cum[-1] + de_ok_rgb(pts[-1], pts[0]))
+        # A closed map must genuinely close: the seam ΔE must be ~0. If it is
+        # not, the arc-length resample below would duplicate tail colors near
+        # the seam. Assert here so a future non-closing "closed" map fails
+        # loudly at build instead of shipping a seam-clamped map silently.
+        seam = de_ok_rgb(pts[-1], pts[0])
+        assert seam < 1e-6, f"closed render: seam ΔE {seam:.4g} is not ~0"
+        cum.append(cum[-1] + seam)
     total = cum[-1]
     out: list[Rgb] = []
     m = n if not closed else n + 1

@@ -118,7 +118,14 @@ def equalize(
             cumd.append(cumd[-1] + v)
         tot = cumd[-1]
         mean = tot / (n - 1)
-        cv = (sum((x - mean) ** 2 for x in d) / (n - 1)) ** 0.5 / mean
+        if mean == 0:
+            # Degenerate all-identical swatch: zero total arc length, so the
+            # normalized cv is undefined. Treat as maximal non-uniformity
+            # (inf) rather than dividing by zero — nothing to equalize, and
+            # the downstream gate_ladder cv check flags the broken output.
+            cv = float("inf")
+        else:
+            cv = (sum((x - mean) ** 2 for x in d) / (n - 1)) ** 0.5 / mean
         if cv < 0.015:
             break
         new_ts = [0.0]
