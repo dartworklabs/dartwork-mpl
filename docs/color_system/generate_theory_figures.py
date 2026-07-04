@@ -115,11 +115,19 @@ def title(fig, text, top=0.84, y=0.965, fs=2.3, **adj):
 
 
 def save(fig, name):
+    # Deterministic SVG: a fixed per-figure hashsalt keeps the clip-path /
+    # gradient element ids stable across runs, and ``metadata={"Date": None}``
+    # drops the embedded timestamp — so re-rendering yields a byte-identical
+    # file unless the plotted data actually changed. That keeps "the pictures
+    # are the proof" honest: a number correction is a one-line diff, not a full
+    # re-serialization from churned ids + a new date.
+    matplotlib.rcParams["svg.hashsalt"] = name
     fig.savefig(
         OUTDIR / f"{name}.svg",
         bbox_inches="tight",
         pad_inches=0.08,
         transparent=True,
+        metadata={"Date": None},
     )
     fig.savefig(
         PREVIEW / f"{name}.png", bbox_inches="tight", pad_inches=0.08, dpi=120
@@ -901,11 +909,13 @@ def fig_catalog():
     ax.set_ylim(y, -0.3)
     ax.axis("off")
     dm.simple_layout(fig)
+    matplotlib.rcParams["svg.hashsalt"] = "theory_9_cmap_catalog"
     fig.savefig(
         OUTDIR / "theory_9_cmap_catalog.svg",
         bbox_inches="tight",
         pad_inches=0.08,
         transparent=True,
+        metadata={"Date": None},
     )
     fig.savefig(
         PREVIEW / "theory_9_cmap_catalog.png",
@@ -966,11 +976,13 @@ def fig_cyclic_demo():
         ha="left",
         y=0.98,
     )
+    matplotlib.rcParams["svg.hashsalt"] = "theory_10_cyclic_demo"
     fig.savefig(
         OUTDIR / "theory_10_cyclic_demo.svg",
         bbox_inches="tight",
         pad_inches=0.08,
         transparent=True,
+        metadata={"Date": None},
     )
     fig.savefig(
         PREVIEW / "theory_10_cyclic_demo.png",
