@@ -372,6 +372,18 @@ class Style:
             # as preset residue rather than user intent.
             _dm_managed_keys.update(incoming_keys)
 
+            # Locale-aware semantic tokens (dc.pos/neg/ref/hl) applied at the
+            # choke point use() funnels through, so direct stack() callers and
+            # use() both get locale semantics. KR is detected from the STYLE
+            # names (they carry "lang-kr" for Korean presets). Under the lock
+            # for the same reason the rcParams mutation above is.
+            from .colors._semantic import apply_semantic
+
+            is_kr = any(
+                "lang-kr" in nm or nm.endswith("-kr") for nm in style_names
+            )
+            apply_semantic("kr" if is_kr else "default")
+
     def use(self, preset_name: str | list[str], **kwargs: float | str) -> None:
         """
         Apply a preset style configuration or a list of presets.
@@ -436,12 +448,6 @@ class Style:
             with _style_lock:
                 plt.rcParams.update(overrides)
 
-        from .colors._semantic import apply_semantic
-
-        names = preset_name if isinstance(preset_name, list) else [preset_name]
-        is_kr = any(nm.endswith("-kr") or "lang-kr" in nm for nm in names)
-        apply_semantic("kr" if is_kr else "default")
-
     @contextlib.contextmanager
     def context(
         self, preset_name: str, **kwargs: float | str
@@ -482,8 +488,25 @@ class Style:
                 overrides[_resolve_rcparam_key(k)] = v
             style_list.append(overrides)
 
-        with plt.style.context(style_list):
-            yield
+        import matplotlib.colors as mcolors
+
+        from .colors._semantic import SEMANTIC_TOKEN_NAMES, apply_semantic
+
+        mapping = mcolors.get_named_colors_mapping()
+        saved = {t: mapping.get(t) for t in SEMANTIC_TOKEN_NAMES}
+        is_kr = preset_name.endswith("-kr") or any(
+            "lang-kr" in s for s in self.presets[preset_name]
+        )
+        try:
+            with plt.style.context(style_list):
+                apply_semantic("kr" if is_kr else "default")
+                yield
+        finally:
+            for token, value in saved.items():
+                if value is None:
+                    mapping.pop(token, None)
+                else:
+                    mapping[token] = value
 
     def presets_dict(self) -> dict[str, list[str]]:
         """

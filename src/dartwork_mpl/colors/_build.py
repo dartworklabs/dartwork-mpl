@@ -6,6 +6,7 @@ usage: python -m dartwork_mpl.colors._build
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -89,7 +90,13 @@ def main() -> int:
         + "\n"
         + _fmt("CMAPS_256", cmaps256)
     )
-    _OUT.write_text(_HEADER + body, encoding="utf-8")
+    # Atomic write: stage in a temp file in the same directory, then
+    # os.replace (atomic on POSIX) into the tracked _generated.py — a
+    # crash mid-write can never leave the committed source truncated
+    # or half-written.
+    tmp_path = _OUT.with_suffix(_OUT.suffix + ".tmp")
+    tmp_path.write_text(_HEADER + body, encoding="utf-8")
+    os.replace(tmp_path, _OUT)
     print(
         f"OK: {_OUT} ({len(palette)} families, {len(cmaps256)} cmaps, "
         "gates green)"

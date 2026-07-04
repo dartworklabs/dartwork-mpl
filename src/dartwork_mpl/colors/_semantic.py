@@ -15,7 +15,21 @@ import matplotlib.colors as mcolors
 
 from ._generated import PALETTE
 
-__all__ = ["apply_semantic"]
+__all__ = ["SEMANTIC_TOKEN_NAMES", "apply_semantic"]
+
+# Every named-color key ``apply_semantic`` writes. Callers that need to
+# snapshot/restore the semantic mapping (e.g. ``Style.context``) iterate
+# this tuple rather than re-deriving the key set.
+SEMANTIC_TOKEN_NAMES: tuple[str, ...] = (
+    "dc.pos",
+    "dc.neg",
+    "dc.ref",
+    "dc.hl",
+    "dm.pos",
+    "dm.neg",
+    "dm.ref",
+    "dm.hl",
+)
 
 _MAPS: dict[str, dict[str, str]] = {
     # Korean financial convention: gains = red, losses = blue.
