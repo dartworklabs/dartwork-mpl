@@ -142,7 +142,7 @@ print(palettes[:5])  # ['ad.blue', 'ad.cyan', 'ad.geekblue', 'ad.gold', 'ad.gree
 
 # List all colormaps
 cmaps = dm.list_colormaps()
-print(cmaps[:5])  # ['dc.amethyst', 'dc.arctic_heat', 'dc.aurora', 'dc.autumn_leaf', 'dc.candy']
+print(cmaps[:5])  # ['dc.afterglow', 'dc.amber', 'dc.amethyst', 'dc.arctic_heat', 'dc.aurora']
 
 # Preview a specific palette
 dm.show_palette('dc.teal')  # Shows all shades: teal0, teal1, ..., teal7

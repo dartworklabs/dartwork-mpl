@@ -128,17 +128,42 @@ def make_palette(
     return colors
 
 
+#: Legacy curated bare names that also became v5 family names (spec §11).
+#: v5 registers their non-colliding steps 8-9 under the same ``dc.``/``dm.``
+#: bare name (see ``colors/_loader.py::_load_colors``), so a naive
+#: ``dc.<name>\d+`` scan would silently widen these three from the legacy
+#: 8-step ramp to a 10-step ramp mixing two different colour generators
+#: (legacy 0-7 + v5 8-9) — see ``_palette_color_names``'s version-aware cap.
+_COLLIDING_CURATED_FAMILIES: frozenset[str] = frozenset(
+    {"teal", "indigo", "gray"}
+)
+
+
 def _palette_color_names(name: str) -> list[str]:
     """Return every colour name in palette ``name``, sorted by weight.
 
     ``name`` may be a fully-qualified base (``"dc.trustworthy"``,
     ``"oc.blue"``) or a bare dartwork name (``"trustworthy"`` resolves to
     ``"dc.trustworthy"``).
+
+    Task 11 / spec §11 length policy
+    ---------------------------------
+    For the three legacy curated names that collide with a v5 family
+    (``teal``/``indigo``/``gray``, under either the ``dc.`` or mirrored
+    ``dm.`` namespace), the *default* palette version (v4, frozen legacy)
+    caps the result at the legacy 8-step ramp (steps 0-7) rather than also
+    returning v5's non-colliding steps 8-9 — those two generators produce
+    different lightness/chroma curves, so an uncapped 8+2 mix is not a
+    coherent ramp. Once :func:`dartwork_mpl.set_palette_version` (5) remaps
+    steps 0-7 to v5 too, all 10 steps share the v5 generator and the full
+    ramp is returned. Every other family (no legacy collision) always
+    returns the full v5 10-step ramp, unaffected by this cap.
     """
     import re
 
     import matplotlib.colors as mcolors
 
+    from ..colors._compat_v4 import get_palette_version
     from ..colors._loader import ensure_loaded
 
     ensure_loaded()
@@ -155,7 +180,16 @@ def _palette_color_names(name: str) -> list[str]:
             f"See dm.list_palettes()."
         )
     found.sort(key=lambda t: t[0])
-    return [cname for _, cname in found]
+    names = [cname for _, cname in found]
+
+    prefix, _sep, family = base.partition(".")
+    if (
+        prefix in ("dc", "dm")
+        and family in _COLLIDING_CURATED_FAMILIES
+        and get_palette_version() != 5
+    ):
+        names = names[:8]
+    return names
 
 
 def _lstar(color: str) -> float:

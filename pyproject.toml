@@ -186,6 +186,10 @@ addopts = [
 [tool.ruff]
 line-length = 80
 target-version = "py310"
+# Deterministic build artifact: rows are one hex tuple per line (256 hex
+# per cmap ≈ 2.8k chars). Wrapping would diverge from `_build.py`'s emitter
+# and break `test_rebuild_is_byte_identical`. Never hand-edited.
+extend-exclude = ["src/dartwork_mpl/colors/_generated.py"]
 
 [tool.ruff.format]
 quote-style = "double"

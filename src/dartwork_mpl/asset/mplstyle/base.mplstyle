@@ -104,4 +104,16 @@ savefig.dpi:       300      # figure dots per inch or 'figure'
 savefig.facecolor: white        # figure face color when saving
 savefig.bbox:      standard    # {tight, standard}
 ps.fonttype:       42       # Output Type 3 (Type3) or Type 42 (TrueType)
-axes.prop_cycle: cycler('color', ['dc.0', 'dc.1', 'dc.2', 'dc.3', 'dc.4', 'dc.5'])
+
+# v5 categorical cycle (spec §8) — 7 color-only entries. Kept color-only
+# (NOT a linestyle product) because a linestyle in the DEFAULT prop_cycle is
+# a footgun: any `ax.plot(..., lw=0)` (zero-width lines — common for
+# invisible-edge constructs) that inherits a dashed/dotted linestyle from the
+# cycle crashes matplotlib ("At least one value in the dash list must be
+# positive" — dash pattern scaled by lw=0). For >7 line series needing extra
+# distinguishability, opt in per-Axes with `ax.set_prop_cycle(dm.cycle_cycler())`,
+# which adds the linestyle extension only where it is safe. The dc.* tokens
+# resolve because dartwork_mpl registers its named colors into matplotlib's
+# global mapping on package import, before Style.stack() parses this file.
+axes.prop_cycle: cycler('color', ['dc.blue6', 'dc.orange9', 'dc.green5', 'dc.pink3', 'dc.amber7', 'dc.violet8', 'dc.cyan8'])
+image.cmap: dc.aurora

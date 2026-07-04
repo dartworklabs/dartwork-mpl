@@ -13,6 +13,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import matplotlib as mpl
 import matplotlib.colors as mcolors
 import pytest
 
@@ -26,6 +27,13 @@ _MPLSTYLE_DIR = (
     / "mplstyle"
 )
 
+# rc keys whose ``dc.*``-prefixed value names a *colormap* (registered in
+# ``mpl.colormaps``) rather than a *named color* (registered in
+# ``mcolors.get_named_colors_mapping()``) — the two registries are
+# disjoint, so a token on one of these lines must be checked against the
+# colormap registry instead of the color mapping.
+_CMAP_KEYS = frozenset({"image.cmap"})
+
 
 def _prefixes() -> set[str]:
     """Color-library prefixes derived from the live registry."""
@@ -36,20 +44,32 @@ def _prefixes() -> set[str]:
     }
 
 
-def _tokens_in(path: Path) -> set[str]:
+def _scan(path: Path) -> tuple[set[str], set[str]]:
+    """Return ``(color_tokens, cmap_tokens)`` found in ``path``."""
     prefixes = _prefixes()
     pattern = re.compile(
         r"\b("
         + "|".join(re.escape(p[:-1]) for p in prefixes)
         + r")\.[A-Za-z_0-9]+\b"
     )
-    tokens: set[str] = set()
+    color_tokens: set[str] = set()
+    cmap_tokens: set[str] = set()
     for line in path.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue
-        tokens.update(m.group(0) for m in pattern.finditer(stripped))
-    return tokens
+        key = stripped.split(":", 1)[0].strip()
+        found = {m.group(0) for m in pattern.finditer(stripped)}
+        if key in _CMAP_KEYS:
+            cmap_tokens.update(found)
+        else:
+            color_tokens.update(found)
+    return color_tokens, cmap_tokens
+
+
+def _tokens_in(path: Path) -> set[str]:
+    color_tokens, cmap_tokens = _scan(path)
+    return color_tokens | cmap_tokens
 
 
 @pytest.mark.parametrize(
@@ -57,9 +77,11 @@ def _tokens_in(path: Path) -> set[str]:
 )
 def test_every_style_color_token_resolves(style_file: Path) -> None:
     mapping = mcolors.get_named_colors_mapping()
-    unresolved = {t for t in _tokens_in(style_file) if t not in mapping}
+    color_tokens, cmap_tokens = _scan(style_file)
+    unresolved = {t for t in color_tokens if t not in mapping}
+    unresolved |= {t for t in cmap_tokens if t not in mpl.colormaps}
     assert not unresolved, (
-        f"{style_file.name}: unresolvable color tokens {sorted(unresolved)} "
+        f"{style_file.name}: unresolvable color/cmap tokens {sorted(unresolved)} "
         f"— matplotlib would silently skip these and ship default colors"
     )
 

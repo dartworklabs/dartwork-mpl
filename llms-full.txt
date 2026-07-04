@@ -414,6 +414,53 @@ coming from:
 The per-release sections below carry the full detail and runnable
 snippets.
 
+## v5 — generative color system (Unreleased)
+
+A 91-parameter generative palette (16 families × 10 perceptually-equalized
+steps, `dc.{family}{step}`) replaces the hand-curated v4 catalog as the
+default. Design spec:
+`docs/superpowers/specs/2026-07-03-color-system-v5-design.md`.
+
+1. **v4 `dc.*` tokens are frozen, not removed.** Every legacy-only token
+   (`dc.vivid*`, `dc.pastel*`, `dc.0`–`dc.7`, …) keeps resolving to its
+   pre-v5 hex value — existing scripts render unchanged. Accessing one
+   emits a one-time `DeprecationWarning` per token; removal is planned
+   no sooner than two minor releases out.
+2. **Opt in to the v5 remap for the three colliding families** with
+   `dm.set_palette_version(5)`. `dc.teal*`, `dc.indigo*`, and `dc.gray*`
+   (steps 0–7) are the only names that exist in both catalogs; calling
+   this remaps those specific tokens (and their `dm.*` alias) to their
+   v5 hex in place. The default (`dm.set_palette_version(4)`, implicit)
+   keeps them frozen at the legacy value.
+3. **Colormaps are matplotlib-native — no bespoke accessor.** Use
+   `cmap="dc.aurora"` in any plotting call, or `plt.colormaps["dc.aurora"]`
+   / `mpl.colormaps["dc.aurora"]` to fetch the `Colormap` object directly.
+4. **BREAKING: `dc.aurora` / `dc.teal_rose` renamed to
+   `dc.legacy_aurora` / `dc.legacy_teal_rose`.** Both names are ceded to
+   the new v5 colormap catalog, which ships a differently-tuned
+   `dc.aurora`. A script that passes `cmap="dc.aurora"` will silently
+   start rendering the v5 colormap after upgrading — swap to
+   `cmap="dc.legacy_aurora"` (or `dc.legacy_teal_rose`) to keep the
+   pre-v5 rendering.
+5. **`get_palette("teal" | "indigo" | "gray")` length depends on the
+   active palette version.** These three curated names collide with a
+   v5 family, so under the default version (4) they stay capped at the
+   legacy 8-step ramp; call `dm.set_palette_version(5)` first to get the
+   full, coherent 10-step v5 ramp. Every other family always returns 10
+   steps regardless of version.
+6. **The `DeprecationWarning` only fires through `dm.color()` /
+   `Color()`.** Native matplotlib color resolution — e.g.
+   `plt.plot(color="dc.vivid3")` — reads the named-color mapping
+   directly and does not go through dartwork-mpl's warning hook, so it
+   will not warn even though the token is frozen-legacy.
+7. **`dc.ref` is a new token, not an alias for `dc.gray6`.** The
+   locale-aware semantic tokens (`dc.pos` / `dc.neg` / `dc.ref` /
+   `dc.hl`) are new in v5; `dc.ref` happens to equal the v5 `gray6` hex,
+   which is not the same value as the frozen-legacy `dc.gray6` under the
+   default palette version. Use `dc.ref` (not `dc.gray6`) for the
+   reference-line role so it stays consistent whichever palette version
+   is active.
+
 ## v0.5.5 — categorical palette overhaul
 
 A judge-panel redesign reworked the 24 curated `dc.*` palettes into a
