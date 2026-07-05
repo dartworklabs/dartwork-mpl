@@ -29,11 +29,13 @@ repos:
   # `mirrors-mypy` runs in an isolated env where missing optional deps
   # silently change strict-mode results (unused-ignore, type-var,
   # no-any-return divergence between local and CI).
+  # `--frozen` installs from the existing lockfile but never rewrites `uv.lock`, so this hook can't
+  # trip pre-commit's "files were modified by this hook" failure on the required check.
   - repo: local
     hooks:
       - id: mypy
         name: mypy
-        entry: uv run mypy src/dartwork_mpl/
+        entry: uv run --frozen mypy src/dartwork_mpl/
         language: system
         types: [python]
         pass_filenames: false

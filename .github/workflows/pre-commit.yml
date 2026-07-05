@@ -20,9 +20,16 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      # The local mypy hook shells out to ``uv run mypy`` so the runner
+      # The local mypy hook shells out to ``uv run --frozen mypy`` so the runner
       # needs ``uv`` on PATH before pre-commit fires.
       - uses: astral-sh/setup-uv@v7
+      # Pre-populate the uv-managed venv from the locked deps so the local
+      # mypy hook (`uv run --frozen mypy`) has every optional dependency
+      # available without re-resolving. `--frozen` guarantees the hook never
+      # rewrites uv.lock (which previously produced spurious "files were
+      # modified by this hook" failures on this required check).
+      - name: Sync uv environment (frozen, all extras + dev)
+        run: uv sync --frozen --all-extras --dev
       # pre-commit/action caches the per-hook environments under
       # ~/.cache/pre-commit, keyed off the .pre-commit-config.yaml hash,
       # so subsequent runs only pay the network cost when a hook is bumped.
