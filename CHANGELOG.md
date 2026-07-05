@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [0.5.6] - 2026-07-05
+
+### Added
+
 - **Color system v5**: a generative 91-parameter palette (16 families ×
   10 perceptually-equalized steps, `dc.{family}{step}`), 42 perceptually
   gated colormaps registered natively in matplotlib's colormap registry
