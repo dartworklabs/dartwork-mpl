@@ -326,6 +326,76 @@ _MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
         "the raw matplotlib calls (see docs/usage_guide/recipes.md).",
     ),
     (
+        re.compile(r"\bdm\.format_axis_percent\s*\("),
+        "dm.format_axis_percent removed in 0.4.1; use "
+        "ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0)) "
+        "(from matplotlib import ticker).",
+    ),
+    (
+        re.compile(r"\bdm\.format_axis_labels\s*\("),
+        "dm.format_axis_labels removed in 0.4.1; use "
+        'ax.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:,.0f}")) '
+        "(from matplotlib import ticker).",
+    ),
+    (
+        re.compile(r"\bdm\.format_axis_thousands\s*\("),
+        "dm.format_axis_thousands removed in 0.4.1; use "
+        'ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: f"{x:,.0f}")) '
+        "(from matplotlib import ticker).",
+    ),
+    (
+        re.compile(r"\bdm\.add_frame\s*\("),
+        "dm.add_frame removed in 0.4.1; use "
+        "fig.patches.append(plt.Rectangle((0, 0), 1, 1, fill=False, "
+        "transform=fig.transFigure)).",
+    ),
+    (
+        re.compile(r"\bdm\.add_value_labels\s*\("),
+        "dm.add_value_labels removed in 0.4.1; use a plain loop of "
+        "ax.text(bar.get_x() + bar.get_width()/2, bar.get_height(), "
+        'f"{bar.get_height():.0f}", ha="center", va="bottom").',
+    ),
+    (
+        re.compile(r"\bdm\.set_xmargin\s*\("),
+        "dm.set_xmargin removed in 0.4.1; use ax.set_xmargin(...) "
+        "(the matplotlib Axes method).",
+    ),
+    (
+        re.compile(r"\bdm\.set_ymargin\s*\("),
+        "dm.set_ymargin removed in 0.4.1; use ax.set_ymargin(...) "
+        "(the matplotlib Axes method).",
+    ),
+    (
+        re.compile(r"\bdm\.hide_spines\s*\("),
+        "dm.hide_spines removed in 0.4.1; use "
+        'for s in ("top", "right"): ax.spines[s].set_visible(False).',
+    ),
+    (
+        re.compile(r"\bdm\.hide_all_spines\s*\("),
+        "dm.hide_all_spines removed in 0.4.1; use "
+        "for s in ax.spines: ax.spines[s].set_visible(False).",
+    ),
+    (
+        re.compile(r"\bdm\.show_only_spines\s*\("),
+        "dm.show_only_spines removed in 0.4.1; use "
+        'for s in ax.spines: ax.spines[s].set_visible(s in ("left", "bottom")).',
+    ),
+    (
+        re.compile(r"\bdm\.remove_grid\s*\("),
+        "dm.remove_grid removed in 0.4.1; use ax.grid(False).",
+    ),
+    (
+        re.compile(r"\bdm\.save_figure\s*\("),
+        "dm.save_figure removed in 0.4.1; use fig.savefig(...) "
+        "(or dm.save_formats(fig, path) for multi-format).",
+    ),
+    (
+        re.compile(r"\bdm\.create_figure_with_style\s*\("),
+        "dm.create_figure_with_style removed in 0.4.1; use "
+        'dm.style.use(style); plt.subplots(figsize=dm.figsize("<n>cm", '
+        '"<aspect>")).',
+    ),
+    (
         re.compile(r"\bdm\.auto_select_colors\b"),
         "dm.auto_select_colors renamed in 0.4.1; use "
         "dm.make_palette(n, kind=..., highlight=...).",

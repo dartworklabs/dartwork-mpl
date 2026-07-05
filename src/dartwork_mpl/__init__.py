@@ -387,6 +387,64 @@ _REMOVED_NAMES: dict[str, tuple[str, str]] = {
         "0.4.1",
         "dm.color(...) (accepts token names, hex, rgb()/oklch()/oklab())",
     ),
+    # 0.4.1 formatter / spine / margin / figure wrapper removals
+    # (audit rounds 2-3).
+    "format_axis_percent": (
+        "0.4.1",
+        "ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0)) "
+        "(from matplotlib import ticker)",
+    ),
+    "format_axis_labels": (
+        "0.4.1",
+        'ax.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:,.0f}")) '
+        "(from matplotlib import ticker)",
+    ),
+    "format_axis_thousands": (
+        "0.4.1",
+        "ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, p: "
+        'f"{x:,.0f}")) (from matplotlib import ticker)',
+    ),
+    "add_frame": (
+        "0.4.1",
+        "fig.patches.append(plt.Rectangle((0, 0), 1, 1, fill=False, "
+        "transform=fig.transFigure))",
+    ),
+    "add_value_labels": (
+        "0.4.1",
+        "a plain loop of ax.text(bar.get_x() + bar.get_width()/2, "
+        'bar.get_height(), f"{bar.get_height():.0f}", ha="center", '
+        'va="bottom")',
+    ),
+    "set_xmargin": (
+        "0.4.1",
+        "ax.set_xmargin(...) (the matplotlib Axes method)",
+    ),
+    "set_ymargin": (
+        "0.4.1",
+        "ax.set_ymargin(...) (the matplotlib Axes method)",
+    ),
+    "hide_spines": (
+        "0.4.1",
+        'for s in ("top", "right"): ax.spines[s].set_visible(False)',
+    ),
+    "hide_all_spines": (
+        "0.4.1",
+        "for s in ax.spines: ax.spines[s].set_visible(False)",
+    ),
+    "show_only_spines": (
+        "0.4.1",
+        'for s in ax.spines: ax.spines[s].set_visible(s in ("left", "bottom"))',
+    ),
+    "remove_grid": ("0.4.1", "ax.grid(False)"),
+    "save_figure": (
+        "0.4.1",
+        "fig.savefig(...) (or dm.save_formats(fig, path) for multi-format)",
+    ),
+    "create_figure_with_style": (
+        "0.4.1",
+        'dm.style.use(style); plt.subplots(figsize=dm.figsize("<n>cm", '
+        '"<aspect>"))',
+    ),
 }
 
 
