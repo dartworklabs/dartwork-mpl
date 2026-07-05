@@ -69,37 +69,6 @@ class RobustnessScenario:
     category: str = "visual-only"
 
 
-# Scenarios still wrapped with pytest.mark.xfail(strict=True) because
-# the underlying library limitation hasn't been resolved yet. Each
-# entry is a (scenario_name, reason, tracking_url) tuple — the
-# tracking URL points to a GitHub issue that scopes the fix. Lift
-# the xfail and remove the entry when the issue is closed and the
-# scenario now passes naturally.
-KNOWN_LIMITATIONS: tuple[tuple[str, str, str], ...] = (
-    (
-        "long_xtick_labels_90_rotation",
-        "Same root cause as 45_rotation but more severe at 90 degrees.",
-        "https://github.com/dartworklabs/dartwork-mpl/issues/109",
-    ),
-    (
-        "outside_axes_annotation",
-        "Axes-fraction xytext at (-0.4, 0.5) escapes the canvas; "
-        "simple_layout's iterative margin expansion can't reach the "
-        "necessary padding within max_iter.",
-        "https://github.com/dartworklabs/dartwork-mpl/issues/111",
-    ),
-    (
-        "colorbar_below_axes",
-        "Horizontal colorbar shifts the figure into the top edge after "
-        "simple_layout. Likely needs a colorbar-aware layout pass.",
-        "https://github.com/dartworklabs/dartwork-mpl/issues/113",
-    ),
-)
-# Architectural meta-issue tracking the simple_layout / simple_layout
-# redesign that would unblock most KNOWN_LIMITATIONS at once:
-# https://github.com/dartworklabs/dartwork-mpl/issues/115
-
-
 # ───────────────────────────────────────────────────────
 # A. Tick label stress
 # ───────────────────────────────────────────────────────
@@ -690,20 +659,19 @@ def _build_donut_wide_wrong_pctdistance() -> Figure:
     return fig
 
 
-# A few entries are wrapped in ``pytest.param(..., marks=xfail)`` so
-# the suite can carry KNOWN_LIMITATIONS without losing the rest. The
-# wrapper makes the list shape mixed; ``test_catalog_alignment.py``
-# and ``test_robustness_suite.py`` unwrap as needed. The type hint is
-# left at ``list`` (no element type) because ``pytest.ParameterSet``
-# isn't part of pytest's public API and the file isn't in the
-# ``mypy --strict`` CI scope (CI only checks ``src/dartwork_mpl/``).
+# SCENARIOS is a flat list of RobustnessScenario (no pytest.param
+# wrappers remain after the #159/#160 redesign). test_catalog_alignment.py
+# and test_robustness_suite.py still route entries through small
+# defensive helpers. The type hint is left at bare ``list`` because the
+# file isn't in the ``mypy --strict`` CI scope (CI only checks
+# ``src/dartwork_mpl/``).
 SCENARIOS: list = [
     # A. Tick label stress
     RobustnessScenario(
         name="long_xtick_labels_no_rotation",
         build=_build_long_xtick_labels_no_rotation,
         # 25-char labels, no rotation — simple_layout should resolve
-        # any overflow without xfail. Baseline "happy path" for section A.
+        # any overflow. Baseline "happy path" for section A.
         expect_warnings=(),
         forbid_warnings=("OVERFLOW",),
         pixel_checks=("assert_minimum_white_border",),
@@ -772,10 +740,9 @@ SCENARIOS: list = [
         name="extreme_left_squeeze",
         build=_build_extreme_left_squeeze,
         # MARGIN_ASYMMETRY is the whole point — must be flagged before
-        # simple_layout. simple_layout's scipy optimizer targets all four
-        # margins simultaneously, so it incidentally rebalances the
-        # squeeze without a dedicated symmetry pass (that is Task 13).
-        # No xfail needed.
+        # simple_layout. simple_layout's deterministic direct-calc computes
+        # all four margins simultaneously, so it incidentally rebalances the
+        # squeeze without a dedicated symmetry pass.
         expect_warnings=("MARGIN_ASYMMETRY",),
     ),
     RobustnessScenario(
