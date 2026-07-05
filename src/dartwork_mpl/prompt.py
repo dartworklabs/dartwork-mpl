@@ -1,7 +1,7 @@
 """Prompt guide file management module.
 
 Provides helper functions for finding, reading, listing, and copying
-the prompt guide Markdown files bundled with the dartwork package.
+the prompt guide files bundled with the dartwork package.
 """
 
 from __future__ import annotations
@@ -23,14 +23,14 @@ from ._helpers import create_parent_path
 
 _PROMPT_DIR: Path = Path(__file__).parent / "asset/prompt"
 
-# Canonical Markdown prompt corpus (T5). ``list_prompts`` warns when a
-# ``.md`` file outside this set appears next to it. The YAML
-# anti-pattern catalog (``02-anti-patterns.yaml``) and the
-# ``05-templates/`` subdirectory are separate surfaces with their own
-# loaders and are intentionally not listed here.
+# Canonical prompt corpus (T5/R3a). ``list_prompts`` warns when a
+# supported prompt file outside this set appears next to it. The
+# ``05-templates/`` subdirectory is a separate surface with its own
+# loader and is intentionally not listed here.
 _CANONICAL_PROMPTS: frozenset[str] = frozenset(
-    {"00-index", "01-policy", "03-recipes"}
+    {"00-index", "01-policy", "02-anti-patterns", "03-recipes"}
 )
+_PROMPT_SUFFIXES: tuple[str, ...] = (".md", ".yaml")
 
 
 def prompt_path(name: str) -> Path:
@@ -40,22 +40,26 @@ def prompt_path(name: str) -> Path:
     ----------
     name : str
         Name of the prompt guide to retrieve
-        (e.g., ``'00-index'``, ``'01-policy'``, ``'03-recipes'``).
+        (e.g., ``'00-index'``, ``'01-policy'``,
+        ``'02-anti-patterns'``, ``'03-recipes'``).
 
     Returns
     -------
     Path
-        Path to the prompt guide Markdown file.
+        Path to the prompt guide file.
 
     Raises
     ------
     ValueError
         If the specified guide cannot be found in the library.
     """
-    path: Path = _PROMPT_DIR / f"{name}.md"
-    if not path.exists():
-        raise ValueError(f"Prompt guide not found: {name}")
-    return path
+    for suffix in _PROMPT_SUFFIXES:
+        path: Path = _PROMPT_DIR / f"{name}{suffix}"
+        if path.exists():
+            return path
+    valid = list_prompts()
+    valid_msg = f" Valid names: {valid}." if valid else ""
+    raise ValueError(f"Prompt guide not found: {name}.{valid_msg}")
 
 
 def get_prompt(name: str) -> str:
@@ -69,7 +73,7 @@ def get_prompt(name: str) -> str:
     Returns
     -------
     str
-        The Markdown content of the prompt guide.
+        The content of the prompt guide.
     """
     path = prompt_path(name)
     return path.read_text(encoding="utf-8")
@@ -79,11 +83,11 @@ def list_prompts() -> list[str]:
     """List the bundled prompt guide files.
 
     The canonical corpus is exactly four entries — ``00-index``,
-    ``01-policy``, ``02-anti-patterns`` (YAML, not surfaced here),
-    ``03-recipes`` — plus the ``05-templates/`` subdirectory listed
-    separately. If extra ``*.md`` files appear (stale leftovers, an
-    in-progress addition, etc.), this function still returns them but
-    emits a :class:`UserWarning` so drift surfaces immediately.
+    ``01-policy``, ``02-anti-patterns`` (YAML), ``03-recipes`` — plus
+    the ``05-templates/`` subdirectory listed separately. If extra
+    supported prompt files appear (stale leftovers, an in-progress
+    addition, etc.), this function still returns them but emits a
+    :class:`UserWarning` so drift surfaces immediately.
 
     Returns
     -------
@@ -92,7 +96,13 @@ def list_prompts() -> list[str]:
     """
     if not _PROMPT_DIR.exists():
         return []
-    found = sorted([p.stem for p in _PROMPT_DIR.glob("*.md")])
+    found = sorted(
+        {
+            path.stem
+            for suffix in _PROMPT_SUFFIXES
+            for path in _PROMPT_DIR.glob(f"*{suffix}")
+        }
+    )
     unexpected = [name for name in found if name not in _CANONICAL_PROMPTS]
     if unexpected:
         warnings.warn(
@@ -228,7 +238,7 @@ def copy_prompt(name: str, destination: str | Path) -> Path:
     destination : str | Path
         Destination path.
         If a directory, the file is copied with its original name
-        (``name.md``). If a file path, that name is used.
+        and real extension. If a file path, that name is used.
 
     Returns
     -------
@@ -244,7 +254,7 @@ def copy_prompt(name: str, destination: str | Path) -> Path:
     dest_path = Path(destination)
 
     if dest_path.is_dir() or (not dest_path.exists() and not dest_path.suffix):
-        dest_path = dest_path / f"{name}.md"
+        dest_path = dest_path / source_path.name
 
     create_parent_path(dest_path)
     copy2(source_path, dest_path)

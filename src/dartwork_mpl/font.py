@@ -10,7 +10,7 @@ from pathlib import Path
 
 from matplotlib import font_manager
 
-__all__ = ["ensure_loaded"]
+__all__ = ["ensure_loaded", "get_font_dir", "list_registered"]
 
 # Rough sanity floor for the bundled font set. We expect at least a
 # handful of files spanning Roboto + Paperlogy + NotoSansCJK +
@@ -22,6 +22,35 @@ _EXPECTED_MIN_FONTS: int = 5
 # ``diagnostics._fonts.plot_fonts`` (which used to rebuild the same
 # path with os.path idioms).
 _FONT_DIR: Path = Path(__file__).parent / "asset" / "font"
+
+
+def get_font_dir() -> Path:
+    """Return the resolved bundled font asset directory."""
+    return _FONT_DIR.resolve()
+
+
+def _is_bundled_font_entry(
+    entry: font_manager.FontEntry, bundle_dir: Path
+) -> bool:
+    """Return whether a matplotlib font entry points inside the bundle."""
+    try:
+        fname = Path(entry.fname).resolve()
+        return fname.is_relative_to(bundle_dir)
+    except (OSError, ValueError):
+        return False
+
+
+def list_registered() -> list[str]:
+    """Return sorted bundled font family names registered in matplotlib."""
+    ensure_loaded()
+    bundle_dir = get_font_dir()
+    return sorted(
+        {
+            entry.name
+            for entry in font_manager.fontManager.ttflist
+            if _is_bundled_font_entry(entry, bundle_dir)
+        }
+    )
 
 
 def _promote_bundled_fonts() -> None:
@@ -50,16 +79,12 @@ def _promote_bundled_fonts() -> None:
     paths never reshuffle endlessly.
     """
     ttflist = font_manager.fontManager.ttflist
-    bundle_dir = _FONT_DIR.resolve()
+    bundle_dir = get_font_dir()
 
     bundled: list[font_manager.FontEntry] = []
     others: list[font_manager.FontEntry] = []
     for entry in ttflist:
-        try:
-            fname = Path(entry.fname).resolve()
-            is_bundled = fname.is_relative_to(bundle_dir)
-        except (OSError, ValueError):
-            is_bundled = False
+        is_bundled = _is_bundled_font_entry(entry, bundle_dir)
         (bundled if is_bundled else others).append(entry)
 
     if not bundled:

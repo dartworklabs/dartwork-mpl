@@ -32,6 +32,11 @@ class TestPromptPath:
         p = prompt_path("03-recipes")
         assert p.exists()
 
+    def test_anti_patterns_exists(self) -> None:
+        p = prompt_path("02-anti-patterns")
+        assert p.exists()
+        assert p.suffix == ".yaml"
+
     def test_nonexistent_raises(self) -> None:
         with pytest.raises(ValueError, match="not found"):
             prompt_path("nonexistent_prompt_xyzzy")
@@ -45,8 +50,12 @@ class TestGetPrompt:
         assert isinstance(content, str)
         assert len(content) > 0
 
+    def test_returns_anti_patterns_yaml(self) -> None:
+        content = get_prompt("02-anti-patterns")
+        assert "id: figsize-direct" in content
+
     def test_nonexistent_raises(self) -> None:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="02-anti-patterns"):
             get_prompt("nonexistent_prompt_xyzzy")
 
 
@@ -76,6 +85,12 @@ class TestListPrompts:
         assert set(result) == _CANONICAL_PROMPTS, (
             f"unexpected prompt files: {set(result) - _CANONICAL_PROMPTS}"
         )
+        assert result == [
+            "00-index",
+            "01-policy",
+            "02-anti-patterns",
+            "03-recipes",
+        ]
 
     def test_legacy_stubs_removed(self) -> None:
         """The redirect stubs deleted in T5 must stay deleted."""
@@ -102,7 +117,8 @@ class TestDriftGuard:
         fake_corpus = tmp_path / "asset" / "prompt"
         fake_corpus.mkdir(parents=True)
         for name in _CANONICAL_PROMPTS:
-            (fake_corpus / f"{name}.md").write_text("stub")
+            suffix = ".yaml" if name == "02-anti-patterns" else ".md"
+            (fake_corpus / f"{name}{suffix}").write_text("stub")
         (fake_corpus / "leaked-old-doc.md").write_text("stale")
 
         from dartwork_mpl import prompt as prompt_mod
@@ -129,6 +145,17 @@ class TestCopyPrompt:
         assert result.name == "00-index.md"
         assert result.read_text(encoding="utf-8") == get_prompt("00-index")
 
+    def test_copy_anti_patterns_preserves_yaml_suffix(
+        self, tmp_path: Path
+    ) -> None:
+        result = copy_prompt("02-anti-patterns", tmp_path)
+        assert result.exists()
+        assert result.name == "02-anti-patterns.yaml"
+        assert result.suffix == ".yaml"
+        assert result.read_text(encoding="utf-8") == get_prompt(
+            "02-anti-patterns"
+        )
+
     def test_copy_to_file_path(self, tmp_path: Path) -> None:
         dest = tmp_path / "my_prompt.md"
         result = copy_prompt("00-index", dest)
@@ -143,3 +170,8 @@ class TestCopyPrompt:
     def test_nonexistent_prompt_raises(self, tmp_path: Path) -> None:
         with pytest.raises(ValueError):
             copy_prompt("nonexistent_xyzzy", tmp_path)
+
+
+def test_anti_patterns_catalog_uses_live_agent_doc_name() -> None:
+    content = get_prompt("02-anti-patterns")
+    assert 'dm.get_agent_doc("general-guide")' not in content
