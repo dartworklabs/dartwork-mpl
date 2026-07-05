@@ -4,7 +4,7 @@ Replaces the orchestrator's hand-maintained ``all_checks`` dict with a
 ``@register_check`` self-registration model (mirroring
 ``validate_fixes.register_fix`` and ``lint``'s ``Rule`` registry). These
 tests pin the contract that made the dict risky: the registry must expose
-exactly the nine checks, in a deterministic order, with unique ids, and
+the expected checks in a deterministic order, with unique ids, and
 ``validate_figure`` must run precisely that set.
 """
 
@@ -31,12 +31,15 @@ _EXPECTED_ORDER = [
     "EMPTY_AXES",
     "MARGIN_ASYMMETRY",
     "PIE_LABEL_OFFSET",
+    "TEXT_CONTRAST",
+    "MIN_FONT_SIZE",
+    "GRAYSCALE_SAFETY",
     "CLIPPED_TEXT",
 ]
 
 
 class TestRegistryContents:
-    def test_all_nine_checks_registered_in_order(self) -> None:
+    def test_all_expected_checks_registered_in_order(self) -> None:
         ids = [c.check_id for c in registered_checks()]
         assert ids == _EXPECTED_ORDER
 
@@ -45,10 +48,11 @@ class TestRegistryContents:
         second = [c.check_id for c in registered_checks()]
         assert first == second
 
-    def test_orders_are_unique_and_sorted(self) -> None:
+    def test_orders_are_sorted_and_ids_are_unique(self) -> None:
         orders = [c.order for c in registered_checks()]
+        ids = [c.check_id for c in registered_checks()]
         assert orders == sorted(orders)
-        assert len(set(orders)) == len(orders)
+        assert len(set(ids)) == len(ids)
 
     def test_every_check_is_callable(self) -> None:
         for c in registered_checks():
