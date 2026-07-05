@@ -238,7 +238,6 @@ split-on-trailing-comma = false
 # These SVG generators set the matplotlib backend + a deterministic
 # ``svg.hashsalt`` before importing pyplot, so imports follow module-level
 # setup statements by design.
-"scripts/build_landing_pocs.py" = ["E402"]
 "scripts/build_palette_demos.py" = ["E402"]
 # BLE001 + PERF203: these asset generators run a best-effort batch loop
 # that must continue past any individual failure (one broken example

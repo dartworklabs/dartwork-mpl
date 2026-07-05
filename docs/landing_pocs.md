@@ -17,8 +17,8 @@ orphan: true
 
 ## How the PoCs were generated
 
-All eight pairs share a single deterministic dataset and are produced
-by [`scripts/build_landing_pocs.py`](https://github.com/dartworklabs/dartwork-mpl/blob/main/scripts/build_landing_pocs.py).
+All eight pairs share a single deterministic dataset and were produced
+by a one-off landing-hero PoC generator (since removed).
 Each one renders the *exact same data twice* — once via stock
 `matplotlib.pyplot` (saved with `vanilla()` to clear any rcParam state),
 once via:
