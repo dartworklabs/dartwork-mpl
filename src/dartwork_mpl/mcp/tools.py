@@ -1397,6 +1397,24 @@ def register_tools(mcp: FastMCP) -> None:
                 "name": "dartwork-mpl",
                 "version_surface": _version_surface(),
                 "description": "Publication-quality matplotlib design system",
+                "design_system_apis": {
+                    "semantic_tokens": (
+                        "dm.tokens.fs_*/lw_*/space/scatter_size + as_dict()/version()"
+                        " - preset-tracking design tokens"
+                    ),
+                    "locale_formatters": (
+                        "dm.format_axis_myriad (East-Asian 10^4 labels), "
+                        "dm.format_axis_year (year suffix)"
+                    ),
+                    "grid_sizing": (
+                        "dm.figsize_grid(panel_width, aspect, ncols=, nrows=, gap=)"
+                        " - per-panel physical sizing"
+                    ),
+                    "accessibility": (
+                        "dm.validate_figure now includes TEXT_CONTRAST / MIN_FONT_SIZE / "
+                        "GRAYSCALE_SAFETY checks"
+                    ),
+                },
                 "design_rules": {
                     "width_aspect": (
                         "Use plt.subplots(figsize=dm.figsize('13cm', 'standard')). "
