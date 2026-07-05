@@ -47,7 +47,7 @@ for s in ["top", "right"]:
 ax.set_ylabel("Count")
 ax.set_title("Grouped Count Comparison")
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(
     fig, OUTPUT_DIR / "bar_with_value_labels", formats=("pdf",), dpi=300
 )

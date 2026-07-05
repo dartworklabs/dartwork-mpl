@@ -37,13 +37,14 @@ ax.plot(
     label=f"회귀선: y = {z[0]:.1f}x + {z[1]:.1f}",
 )
 
-dm.add_grid(ax, alpha=0.15)
+ax.grid(True, color="dc.teal_indigo1", alpha=0.15, linewidth=0.5)
+ax.set_axisbelow(True)
 ax.set_xlabel("독립 변수")
 ax.set_ylabel("종속 변수")
 ax.set_title("상관관계 분석")
 ax.legend()
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(
     fig, OUTPUT_DIR / "scatter_with_fit_kr", formats=("png",), dpi=300
 )

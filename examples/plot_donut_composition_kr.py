@@ -47,7 +47,7 @@ for autotext in autotexts:
 
 ax.set_title("범주별 구성")
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(
     fig, OUTPUT_DIR / "donut_composition_kr", formats=("png",), dpi=300
 )

@@ -42,7 +42,7 @@ for s in ["top", "right"]:
 ax.set_ylabel("측정값")
 ax.set_title("그룹별 측정값 비교")
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(
     fig, OUTPUT_DIR / "bar_with_value_labels_kr", formats=("png",), dpi=300
 )

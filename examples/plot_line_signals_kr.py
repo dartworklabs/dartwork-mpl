@@ -29,15 +29,28 @@ ax.plot(x, y1, label="신호 A", linewidth=2)
 ax.plot(x, y2, label="신호 B", linewidth=2)
 
 dm.format_axis_si(ax, axis="y")
-dm.minimal_axes(ax)
-dm.add_grid(ax, which="major", alpha=0.2)
+ax.spines["top"].set_visible(False)
+ax.spines["right"].set_visible(False)
+ax.grid(
+    True,
+    axis="y",
+    color="dc.teal_indigo1",
+    alpha=0.2,
+    linestyle="--",
+    linewidth=0.5,
+)
+ax.set_axisbelow(True)
+for s in ("bottom", "left"):
+    ax.spines[s].set_color("dc.teal_indigo3")
+    ax.spines[s].set_linewidth(0.5)
+ax.grid(True, axis="x", color="dc.teal_indigo1", alpha=0.2, linewidth=0.5)
 
 ax.set_xlabel("시간 (초)")
 ax.set_ylabel("진폭")
 ax.set_title("신호 분석")
 ax.legend(loc="upper right")
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(fig, OUTPUT_DIR / "line_signals_kr", formats=("png",), dpi=300)
 plt.close(fig)
 print(f"저장: {OUTPUT_DIR / 'line_signals_kr.png'}")

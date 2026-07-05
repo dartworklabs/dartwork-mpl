@@ -38,7 +38,7 @@ ax.set_title("Heatmap Example")
 ax.set_xticks(np.arange(10))
 ax.set_yticks(np.arange(10))
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(fig, OUTPUT_DIR / "heatmap", formats=("pdf",), dpi=300)
 plt.close(fig)
 print(f"Saved: {OUTPUT_DIR / 'heatmap.pdf'}")
