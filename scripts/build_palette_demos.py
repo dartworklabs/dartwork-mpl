@@ -20,7 +20,6 @@ override changes between renders.
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 import matplotlib
@@ -35,10 +34,9 @@ import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
-
-# Reuse the canonical sizing from the main PoC builder.
-from build_landing_pocs import LANDING_W_DM
+# Canonical dartwork landing width (15cm * 0.75), inlined from the removed
+# build_landing_pocs PoC generator.
+LANDING_W_DM = "11.25cm"
 
 OUT = ROOT / "docs" / "_static" / "palette_demo"
 OUT.mkdir(parents=True, exist_ok=True)
