@@ -11,6 +11,73 @@ from typing import Literal
 import matplotlib.ticker as ticker
 from matplotlib.axes import Axes
 
+_MYRIAD_UNIT_LADDERS: dict[str, tuple[tuple[int, str], ...]] = {
+    "ko": ((10**4, "만"), (10**8, "억"), (10**12, "조"), (10**16, "경")),
+    "zh": ((10**4, "万"), (10**8, "亿"), (10**12, "兆"), (10**16, "京")),
+    "ja": ((10**4, "万"), (10**8, "億"), (10**12, "兆"), (10**16, "京")),
+}
+
+
+def format_axis_myriad(
+    ax: Axes,
+    axis: str = "y",
+    *,
+    locale: str = "ko",
+    decimals: int = 1,
+    currency: str = "",
+) -> None:
+    """Format axis ticks using East-Asian myriad units.
+
+    Parameters
+    ----------
+    ax:
+        Matplotlib axes to format.
+    axis:
+        Which axis to format: "x", "y", or "both".
+    locale:
+        Unit ladder locale: "ko", "zh", or "ja".
+    decimals:
+        Number of decimal places before trailing zero trimming.
+    currency:
+        Optional currency prefix inserted after the sign.
+    """
+    if locale not in _MYRIAD_UNIT_LADDERS:
+        raise ValueError(
+            f"locale must be one of 'ko', 'zh', or 'ja' (got {locale!r})"
+        )
+    if axis not in {"x", "y", "both"}:
+        raise ValueError("axis must be one of 'x', 'y', or 'both'")
+    if decimals < 0:
+        raise ValueError("decimals must be non-negative")
+
+    unit_ladder = _MYRIAD_UNIT_LADDERS[locale]
+
+    def _format_myriad(value: float, _pos: int | None = None) -> str:
+        if value == 0:
+            return "0"
+
+        sign = "-" if value < 0 else ""
+        prefix = f"{sign}{currency}"
+        abs_value = abs(value)
+
+        if abs_value < 10_000:
+            return f"{prefix}{abs_value:,.0f}"
+
+        threshold, unit = max(
+            item for item in unit_ladder if item[0] <= abs_value
+        )
+        scaled = abs_value / threshold
+        formatted = f"{scaled:,.{decimals}f}"
+        if decimals > 0:
+            formatted = formatted.rstrip("0").rstrip(".")
+        return f"{prefix}{formatted}{unit}"
+
+    formatter = ticker.FuncFormatter(_format_myriad)
+    if axis in {"x", "both"}:
+        ax.xaxis.set_major_formatter(formatter)
+    if axis in {"y", "both"}:
+        ax.yaxis.set_major_formatter(formatter)
+
 
 def format_axis_millions(
     ax: Axes,
