@@ -22,6 +22,9 @@ def test_scientific_semantic_token_values() -> None:
     assert dm.tokens.scatter_size() == pytest.approx(30.0)
     assert dm.tokens.scatter_size("small") == pytest.approx(16.0)
     assert dm.tokens.scatter_size("emphasis") == pytest.approx(45.0)
+    assert dm.tokens.space() == pytest.approx(8.0)
+    assert dm.tokens.space("xs") == pytest.approx(2.0)
+    assert dm.tokens.space("xl") == pytest.approx(16.0)
 
 
 def test_font_size_token_tracks_active_preset() -> None:
@@ -48,18 +51,29 @@ def test_as_dict_exports_all_resolved_tokens() -> None:
         "scatter_small",
         "scatter_default",
         "scatter_emphasis",
+        "space_xs",
+        "space_sm",
+        "space_md",
+        "space_lg",
+        "space_xl",
     }
 
     tokens = dm.tokens.as_dict()
 
     assert set(tokens) == expected_keys
+    assert len(tokens) == 18
     assert all(isinstance(value, float) for value in tokens.values())
 
 
 def test_version() -> None:
-    assert dm.tokens.version() == "1"
+    assert dm.tokens.version() == "2"
 
 
 def test_unknown_scatter_size_level_raises() -> None:
     with pytest.raises(ValueError, match="Valid levels"):
         dm.tokens.scatter_size("bogus")  # type: ignore[arg-type]
+
+
+def test_unknown_spacing_level_raises() -> None:
+    with pytest.raises(ValueError, match="Valid levels"):
+        dm.tokens.space("bogus")  # type: ignore[arg-type]

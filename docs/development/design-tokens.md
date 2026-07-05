@@ -6,7 +6,8 @@ orphan: true
 
 `dm.tokens` names common plotting roles: body, title, tick, label,
 annotation, and emphasis text sizes; hairline, reference, trend, and
-emphasis line weights; and small, default, and emphasis scatter sizes.
+emphasis line weights; small, default, and emphasis scatter sizes; and
+fixed pad/gap spacing values such as `dm.tokens.space("md")`.
 
 The font-size and line-width accessors resolve from `matplotlib`
 `rcParams` at call time, so they track the active dartwork-mpl preset in
