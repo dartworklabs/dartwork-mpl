@@ -38,6 +38,7 @@ from . import (  # noqa: F401
     icon,
     lint,
     templates,
+    tokens,
     validate_fixes,
 )
 
@@ -237,6 +238,7 @@ __all__ = [  # noqa: RUF022
     "figsize",
     "figsize_grid",
     "list_aspect_tokens",
+    "tokens",
     # Units (legacy helpers, kept for compatibility)
     "make_offset",
     # Formatting
