@@ -13,6 +13,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+## [0.6.0] - 2026-07-06
+
+### Added
+
+- **Visual regression testing** (#413): a two-layer harness — environment-robust
+  property/structural assertions across the full test matrix, plus `pytest-mpl`
+  pixel baselines (generated ubuntu-native on CI) over a curated 14-scenario
+  corpus of presets, archetypes, color, and fonts.
+- **`dm.tokens` — semantic design-token layer** (#417, #422): preset-tracking
+  accessors driven by a versioned JSON SSOT (`semantic_tokens.json`). Type scale
+  (`fs_annotation` / `fs_tick` / `fs_body` / `fs_label` / `fs_title` /
+  `fs_emphasis`), line-width ladder (`lw_hairline` / `lw_reference` / `lw_trend` /
+  `lw_emphasis`), scatter sizes (`scatter_size`), and a spacing scale (`space`),
+  plus `version()` and `as_dict()` for export.
+- **`dm.figsize_grid`** (#418): per-panel physical sizing for multi-panel grids,
+  with a physical inter-panel `gap`.
+- **Locale axis formatters** (#416, #423): `dm.format_axis_myriad` (East-Asian
+  10^4 만/억/조 labels; `ko` / `zh` / `ja`, optional currency prefix) and
+  `dm.format_axis_year` (year-suffix 년 / 年; `ko` / `ja` / `zh` / `en`).
+- **Accessibility validation** (#414): `dm.validate_figure` now runs
+  `TEXT_CONTRAST` (WCAG relative-luminance), `MIN_FONT_SIZE`, and
+  `GRAYSCALE_SAFETY` checks in addition to the layout checks.
+- **API-stability contract** (#415): a `dm.EXPERIMENTAL` marker and a
+  soft-deprecation cycle (`_DEPRECATED_NAMES` — a to-be-removed name still works,
+  emits `DeprecationWarning`, and aliases to its replacement for >= 2 minor
+  releases before it is hard-removed). Contract: `docs/development/api-stability.md`.
+- A `design_system_apis` section in the `dartwork_mpl_info()` MCP manifest so
+  agents discover the new surface (#424).
+- A cookbook gallery example combining `dm.tokens`, `format_axis_myriad`, and
+  `figsize_grid` (#421).
+- Repaired the examples gallery against the removed 0.4.1 API and added a
+  subprocess smoke-test guard; uniform runtime migration hints for 13
+  pre-registry removed helpers; broader executed-doc-fence coverage (#410).
+- **Revived the curated `dc.*` categorical palettes** (#427): 20 hand-tuned
+  qualitative / duo / diverging / tonal / neutral / accent sets, integrated with
+  v5 and resolvable through `get_palette` / `set_cycle` like any family.
+- **Four hue-gap-filling v5 families** (#427): `coral`, `tangerine`, `cobalt`,
+  and `fuchsia`, bringing the system to 20 single-hue families / 46 colormaps.
+- **Restored the interactive categorical-palette explorer** (#427): a single
+  "Qualitative" taxonomy group, unified naming, and a reorganized detail layout.
+- **User-first categorical-palettes docs page** (#431): the explorer moves to
+  the top with a consolidated apply block and a data→palette routing table;
+  the explorer gains title-row accessibility status chips (circle state dots,
+  live metrics, tooltips that explain *why* each verdict holds); the docs
+  canvas widens (container 96rem, 80ch prose measure guard).
+- `dm.avoid_tick_overlap` — declutter overlapping axis tick labels (#430).
+
+### Changed
+
+- **BREAKING — the color system is now v5-only** (#420): the v4 frozen palette and
+  the entire dual-mode compat layer are removed —
+  `dm.set_palette_version` / `warn_if_legacy`, the `dm.*` legacy palette aliases,
+  the bundled `dc_palettes.json` (176 legacy tokens), the `legacy_aurora` /
+  `teal_rose` colormaps, and the v4->v5 codemod. `get_palette` now always returns
+  the v5 10-step ramp and the default `prop_cycle` is the v5 cycle. (There were no
+  external users at removal time.)
+- **Default color cycle expands 7 -> 8** (#428): adds the CVD-optimal `dc.rose8`
+  as the 8th color while leaving the existing 7 unchanged, so <=7-series charts
+  are pixel-identical and an 8th series no longer wraps to blue. CVD floors hold
+  (common_min 10.3, tritan 8.3).
+- **The searched cycles are now named Octave / Octave Print** (#431):
+  canonical keys `octave` / `octave_print`, with `"default"` / `"print"` kept
+  as silent aliases (`dm.cycle()` and the `dc.cycle` / `dc.cycle_print`
+  colormap tokens are unchanged).
+- **Octave Print is re-searched to be hue-parallel with Octave** (#431): the
+  same hue identity per slot plus the dark-gray anchor
+  (`blue5 orange8 green1 pink2 amber5 violet9 cyan8 gray9`), so switching
+  cycles keeps each series' hue. The B&W ladder improves (all-pairs
+  ΔL* 6.1 → 7.7), tritan improves (8.5 → 9.8), and common CVD 10.4 holds the
+  ≥10 floor.
+- **Quieter mark defaults** (#430): `lines.markersize` 6 → 3,
+  `legend.markerscale` 0.5, and annotation labels default to normal weight.
+- Removed the legacy `build_landing_pocs.py` palette PoC script (#425).
+- CI: the mypy pre-commit hook runs via `uv run --frozen`, so it can no longer
+  rewrite `uv.lock` and trip the required check (#412).
+
+### Fixed
+
+- Font-preview SVGs are routed through the SVG determinism helper for
+  byte-identical output (#410).
+
 ## [0.5.6] - 2026-07-05
 
 ### Added
