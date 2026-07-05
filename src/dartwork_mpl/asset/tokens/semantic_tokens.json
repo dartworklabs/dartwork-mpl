@@ -1,0 +1,62 @@
+{
+  "version": "1",
+  "type_scale": {
+    "annotation": {
+      "rcparam": "font.size",
+      "offset": -1.0,
+      "multiplier": 1.0
+    },
+    "tick": {
+      "rcparam": "xtick.labelsize",
+      "offset": 0.0,
+      "multiplier": 1.0
+    },
+    "body": {
+      "rcparam": "font.size",
+      "offset": 0.0,
+      "multiplier": 1.0
+    },
+    "label": {
+      "rcparam": "axes.labelsize",
+      "offset": 0.0,
+      "multiplier": 1.0
+    },
+    "title": {
+      "rcparam": "axes.titlesize",
+      "offset": 0.0,
+      "multiplier": 1.0
+    },
+    "emphasis": {
+      "rcparam": "font.size",
+      "offset": 1.5,
+      "multiplier": 1.0
+    }
+  },
+  "lw_ladder": {
+    "hairline": {
+      "rcparam": "lines.linewidth",
+      "offset": 0.0,
+      "multiplier": 0.3
+    },
+    "reference": {
+      "rcparam": "lines.linewidth",
+      "offset": 0.0,
+      "multiplier": 0.3
+    },
+    "trend": {
+      "rcparam": "lines.linewidth",
+      "offset": 0.0,
+      "multiplier": 1.0
+    },
+    "emphasis": {
+      "rcparam": "lines.linewidth",
+      "offset": 0.0,
+      "multiplier": 1.6
+    }
+  },
+  "scatter_size": {
+    "small": 16.0,
+    "default": 30.0,
+    "emphasis": 45.0
+  }
+}
