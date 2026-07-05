@@ -18,5 +18,6 @@ The source of truth is the versioned JSON file at
 `dm.tokens.version()` to read the schema version and
 `dm.tokens.as_dict()` to export every currently resolved token.
 
-This brings the semantic layer that previously lived only in
-`valuation.theme` into dartwork-mpl as a render-neutral public API.
+This gives the semantic layer a first-class, render-neutral home in
+dartwork-mpl, so downstream packages no longer need to define these
+named roles themselves.
