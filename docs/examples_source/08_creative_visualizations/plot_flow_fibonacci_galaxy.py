@@ -38,8 +38,8 @@ x, y, theta = fibonacci_spiral(1500)
 
 arm_palettes = [
     ("dc.teal5", "dc.teal1"),
-    ("dc.jewel5", "dc.forest1"),
-    ("dc.teal5", "dc.forest1"),
+    ("dc.violet5", "dc.green1"),
+    ("dc.teal5", "dc.green1"),
 ]
 
 for arm in range(3):
@@ -77,8 +77,8 @@ ax.scatter(
 )
 
 ax.add_patch(plt.Circle((0, 0), 30, color="white", alpha=0.05))
-ax.add_patch(plt.Circle((0, 0), 20, color="dc.earth1", alpha=0.1))
-ax.add_patch(plt.Circle((0, 0), 10, color="dc.earth2", alpha=0.3))
+ax.add_patch(plt.Circle((0, 0), 20, color="dc.orange1", alpha=0.1))
+ax.add_patch(plt.Circle((0, 0), 10, color="dc.orange2", alpha=0.3))
 
 for s in ax.spines.values():
     s.set_visible(False)

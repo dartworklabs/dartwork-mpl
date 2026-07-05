@@ -92,14 +92,15 @@ def _load_json_palette(
 
 
 # Single source of truth for every bundled colour library:
-#   (key, prefix, filename, label).
+#   (key, prefix, source, label).
 # ``key`` is the stable id used for display order; ``prefix`` is the matplotlib
 # name prefix — note Ant / Chakra / Primer register under ``ad.`` / ``cu.`` /
-# ``pr.`` respectively; ``filename`` lives in ``asset/color/``. Consumers (this
-# loader, the docs asset generator, diagnostics, the MCP server) derive their
-# prefix / label / order lists from this list instead of re-hardcoding them.
+# ``pr.`` respectively. ``source`` is either an asset filename or the generated
+# v5 palette marker. Consumers (this loader, diagnostics, the MCP server)
+# derive their prefix / label / order lists from this list instead of
+# re-hardcoding them.
 COLOR_LIBRARIES: list[tuple[str, str, str, str]] = [
-    ("dc", "dc.", "dc_palettes.json", "dartwork Color"),
+    ("dc", "dc.", "_generated.PALETTE", "dartwork Color"),
     ("opencolor", "oc.", "opencolor.txt", "OpenColor"),
     ("tw", "tw.", "tailwind_colors.json", "Tailwind"),
     ("md", "md.", "material_colors.json", "Material Design"),
@@ -108,9 +109,9 @@ COLOR_LIBRARIES: list[tuple[str, str, str, str]] = [
     ("primer", "pr.", "primer_colors.json", "Primer"),
 ]
 
-# (prefix, filename) for the JSON-based palettes — derived from the SSOT above
-# (Open Color is a ``.txt`` loaded separately). Prefixes are distinct, so the
-# registration order here is not significant.
+# (prefix, filename) for JSON-based third-party palettes — derived from the
+# SSOT above. Dartwork's ``dc.`` namespace is registered from the generated v5
+# palette below.
 _JSON_PALETTES: list[tuple[str, str]] = [
     (prefix.rstrip("."), filename)
     for _key, prefix, filename, _label in COLOR_LIBRARIES
@@ -132,10 +133,10 @@ def _load_colors() -> None:
     """Load all color definitions from asset files and register them.
 
     This function loads colors from text files (Open Color, ``oc.``
-    prefix) and JSON files (Tailwind ``tw.``, Material Design ``md.``,
-    Ant Design ``ad.``, Chakra UI ``cu.``, Primer ``pr.``,
-    Dartwork Color ``dc.``) in the ``asset/color`` directory and
-    registers them with matplotlib.
+    prefix), JSON files (Tailwind ``tw.``, Material Design ``md.``,
+    Ant Design ``ad.``, Chakra UI ``cu.``, Primer ``pr.``) in the
+    ``asset/color`` directory, and the generated Dartwork v5 palette
+    (``dc.``). It then registers them with matplotlib.
 
     Notes
     -----
@@ -157,29 +158,14 @@ def _load_colors() -> None:
             {f"{prefix}.{k}": v for k, v in _parse_color_data(text).items()}
         )
 
-    # JSON-based palettes.
+    # JSON-based third-party palettes.
     for prefix, filename in _JSON_PALETTES:
         color_dict.update(_load_json_palette(root_dir, filename, prefix))
 
-    # --- v5 generated palette (스펙 §11 충돌 정책) --------------------
-    # 레거시 dc_palettes.json 과 정확히 같은 이름의 토큰은 레거시 hex 가
-    # 기본값(동결 — silent recolor 금지). v5 값은 set_palette_version(5)
-    # opt-in 시 _compat_v4 가 remap 한다. 레거시에 없는 이름은 즉시 v5.
-    legacy_dc_names = {k for k in color_dict if k.startswith("dc.")}
-    v5_tokens: dict[str, str] = {}
+    # Dartwork Color v5 generated palette.
     for fam, row in PALETTE.items():
         for step, hexval in enumerate(row):
-            token = f"dc.{fam}{step}"
-            if token not in legacy_dc_names:
-                v5_tokens[token] = hexval
-    color_dict.update(v5_tokens)
-
-    # Add backward compatibility aliases for 'dc.' -> 'dm.'
-    compat_dict: dict[str, str] = {}
-    for k, v in color_dict.items():
-        if k.startswith("dc."):
-            compat_dict["dm." + k[3:]] = v
-    color_dict.update(compat_dict)
+            color_dict[f"dc.{fam}{step}"] = hexval
 
     # Register with matplotlib.
     mcolors.get_named_colors_mapping().update(color_dict)
@@ -218,26 +204,3 @@ def ensure_loaded() -> None:
             return
         _load_colors()
         _loaded = True
-
-
-def v5_collision_tokens() -> dict[str, str]:
-    """Return v5 palette tokens shadowed by the frozen legacy palette.
-
-    Returns
-    -------
-    dict[str, str]
-        Mapping of ``"dc.{family}{step}"`` to v5 hex values, restricted
-        to tokens whose exact name already exists in the legacy
-        ``dc_palettes.json`` palette (and therefore were *not* registered
-        under that name by :func:`_load_colors` — see spec §11). Consumed
-        by ``set_palette_version(5)`` to opt in to the v5 recolor.
-    """
-    root = files("dartwork_mpl") / "asset" / "color"
-    legacy = _load_json_palette(root, "dc_palettes.json", "dc")
-    out: dict[str, str] = {}
-    for fam, row in PALETTE.items():
-        for step, hexval in enumerate(row):
-            token = f"dc.{fam}{step}"
-            if token in legacy:
-                out[token] = hexval
-    return out

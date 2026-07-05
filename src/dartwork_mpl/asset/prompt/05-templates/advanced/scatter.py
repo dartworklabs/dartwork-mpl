@@ -61,7 +61,7 @@ ax.scatter(
     price[outlier_idx],
     demand[outlier_idx],
     s=70,
-    color="dc.earth5",
+    color="dc.amber5",
     edgecolor="white",
     linewidth=0.5,
     marker="D",
@@ -98,8 +98,8 @@ ax.annotate(
     xy=(price[outlier_idx], demand[outlier_idx]),
     xytext=(price[outlier_idx] + 5, demand[outlier_idx] + 25),
     fontsize=dm.fs(-1),
-    color="dc.earth5",
-    arrowprops={"arrowstyle": "->", "color": "dc.earth5", "lw": 0.5},
+    color="dc.amber5",
+    arrowprops={"arrowstyle": "->", "color": "dc.amber5", "lw": 0.5},
 )
 
 dm.format_axis_currency(ax, axis="x", symbol="$", decimals=0)

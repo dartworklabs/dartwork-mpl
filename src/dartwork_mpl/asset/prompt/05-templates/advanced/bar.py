@@ -58,7 +58,7 @@ for bar_, v in zip(bars, bev_share, strict=False):
 
 # 6. Reference threshold — EU 2030 mandate as a horizontal context line.
 ax.axhline(
-    eu_2030_target, linestyle="--", linewidth=0.5, color="dc.earth4", zorder=1
+    eu_2030_target, linestyle="--", linewidth=0.5, color="dc.amber4", zorder=1
 )
 ax.text(
     len(countries) - 0.5,
@@ -67,7 +67,7 @@ ax.text(
     ha="right",
     va="bottom",
     fontsize=dm.fs(-1),
-    color="dc.earth4",
+    color="dc.amber4",
     fontstyle="italic",
 )
 

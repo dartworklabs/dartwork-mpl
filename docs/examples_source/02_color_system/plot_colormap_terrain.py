@@ -33,9 +33,9 @@ Z = (
 # Four scientifically useful colormaps
 colormaps = [
     ("dc.deep_sea", "dc.deep_sea \u2014 sequential cool"),
-    ("dc.sunset_glow", "dc.sunset_glow \u2014 sequential warm"),
+    ("dc.afterglow", "dc.afterglow \u2014 sequential warm"),
     ("dc.cool_warm", "dc.cool_warm \u2014 diverging"),
-    ("dc.neon_pulse", "dc.neon_pulse \u2014 perceptual multi-hue"),
+    ("dc.hue", "dc.hue \u2014 perceptual multi-hue"),
 ]
 
 fig = plt.figure(figsize=dm.figsize("17cm", 0.9))

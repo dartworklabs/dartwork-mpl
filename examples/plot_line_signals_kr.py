@@ -32,18 +32,13 @@ dm.format_axis_si(ax, axis="y")
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
 ax.grid(
-    True,
-    axis="y",
-    color="dc.teal_indigo1",
-    alpha=0.2,
-    linestyle="--",
-    linewidth=0.5,
+    True, axis="y", color="dc.indigo1", alpha=0.2, linestyle="--", linewidth=0.5
 )
 ax.set_axisbelow(True)
 for s in ("bottom", "left"):
-    ax.spines[s].set_color("dc.teal_indigo3")
+    ax.spines[s].set_color("dc.indigo3")
     ax.spines[s].set_linewidth(0.5)
-ax.grid(True, axis="x", color="dc.teal_indigo1", alpha=0.2, linewidth=0.5)
+ax.grid(True, axis="x", color="dc.indigo1", alpha=0.2, linewidth=0.5)
 
 ax.set_xlabel("시간 (초)")
 ax.set_ylabel("진폭")

@@ -5,7 +5,7 @@
       "basic_counterpart": "bar",
       "data_shape": "categories: list[str], values: list[float], threshold: float",
       "difficulty": "intermediate",
-      "narrative": "2024 BEV market share, top-5 leaders vs. EU 2030 mandate (60%)",
+      "narrative": "2024 BEV market share, top-5 leaders vs. EU 2030 mandate (55%)",
       "source_path": "docs/examples_source/09_ai_templates_advanced/plot_bar.py",
       "tags": [
         "bar",

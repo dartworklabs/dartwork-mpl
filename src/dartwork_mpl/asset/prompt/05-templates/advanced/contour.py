@@ -42,7 +42,7 @@ for i, (cx, cy, amp, _) in enumerate(peaks):
         cx,
         cy,
         s=40,
-        color="dc.earth5",
+        color="dc.amber5",
         edgecolor="white",
         linewidth=0.5,
         zorder=5,
@@ -53,8 +53,8 @@ for i, (cx, cy, amp, _) in enumerate(peaks):
         xy=(cx, cy),
         xytext=(cx + 0.4, cy + 0.6),
         fontsize=dm.fs(-1),
-        color="dc.earth5",
-        arrowprops={"arrowstyle": "->", "color": "dc.earth5", "lw": 0.5},
+        color="dc.amber5",
+        arrowprops={"arrowstyle": "->", "color": "dc.amber5", "lw": 0.5},
     )
 
 ax.set_xlabel("x")

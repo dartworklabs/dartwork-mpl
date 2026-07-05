@@ -140,39 +140,39 @@ class TestMakePaletteEdgeCases:
 class TestGetPalette:
     """``get_palette`` resolves dartwork discrete palettes by name."""
 
-    def test_full_palette_is_eight(self) -> None:
-        cols = get_palette("trustworthy")
-        assert len(cols) == 8
-        assert cols[0] == "dc.trustworthy0"
+    def test_full_palette_is_ten(self) -> None:
+        cols = get_palette("blue")
+        assert len(cols) == 10
+        assert cols[0] == "dc.blue0"
         # Every returned name must resolve to a real colour.
         for c in cols:
             mcolors.to_rgb(c)
 
     def test_bare_name_resolves_under_dc(self) -> None:
-        assert get_palette("vivid") == get_palette("dc.vivid")
+        assert get_palette("blue") == get_palette("dc.blue")
 
     def test_first_subset(self) -> None:
-        cols = get_palette("trustworthy", n=5)
-        assert cols == [f"dc.trustworthy{i}" for i in range(5)]
+        cols = get_palette("blue", n=5)
+        assert cols == [f"dc.blue{i}" for i in range(5)]
 
     def test_last_subset(self) -> None:
-        cols = get_palette("trustworthy", n=3, subset="last")
-        assert cols == [f"dc.trustworthy{i}" for i in (5, 6, 7)]
+        cols = get_palette("blue", n=3, subset="last")
+        assert cols == [f"dc.blue{i}" for i in (7, 8, 9)]
 
     def test_even_subset_spreads_across_palette(self) -> None:
-        cols = get_palette("cool_warm", n=4, subset="even")
+        cols = get_palette("blue", n=4, subset="even")
         assert len(cols) == 4
         # Endpoints are always included; picks are spread, not just the head.
-        assert cols[0] == "dc.cool_warm0"
-        assert cols[-1] == "dc.cool_warm7"
+        assert cols[0] == "dc.blue0"
+        assert cols[-1] == "dc.blue9"
 
     def test_oversubscribe_repeats(self) -> None:
-        cols = get_palette("pastel", n=10)
-        assert len(cols) == 10
-        assert cols[8] == cols[0]
+        cols = get_palette("blue", n=12)
+        assert len(cols) == 12
+        assert cols[10] == cols[0]
 
     def test_zero_returns_empty(self) -> None:
-        assert get_palette("pastel", n=0) == []
+        assert get_palette("blue", n=0) == []
 
     def test_unknown_palette_raises(self) -> None:
         with pytest.raises(ValueError):
@@ -189,51 +189,48 @@ class TestGetPaletteOrdering:
     """``order`` / ``reverse`` / ``seed`` re-arrange the picked colours."""
 
     def test_default_order_unchanged(self) -> None:
-        assert get_palette("trustworthy", n=6, order="default") == get_palette(
-            "trustworthy", n=6
+        assert get_palette("blue", n=6, order="default") == get_palette(
+            "blue", n=6
         )
 
     def test_reverse_reverses(self) -> None:
-        base = get_palette("trustworthy", n=6)
-        assert get_palette("trustworthy", n=6, reverse=True) == base[::-1]
+        base = get_palette("blue", n=6)
+        assert get_palette("blue", n=6, reverse=True) == base[::-1]
 
     def test_lightness_sorts_light_to_dark(self) -> None:
         from dartwork_mpl.helpers.colors import _lstar
 
-        cols = get_palette("trustworthy", n=8, order="lightness")
+        cols = get_palette("blue", n=8, order="lightness")
         ls = [_lstar(c) for c in cols]
         assert ls == sorted(ls, reverse=True)
-        assert set(cols) == set(get_palette("trustworthy", n=8))  # same colours
+        assert set(cols) == set(get_palette("blue", n=8))  # same colours
 
     def test_shuffle_is_a_permutation(self) -> None:
-        base = get_palette("vivid", n=8)
-        out = get_palette("vivid", n=8, order="shuffle", seed=7)
+        base = get_palette("blue", n=8)
+        out = get_palette("blue", n=8, order="shuffle", seed=7)
         assert sorted(out) == sorted(base)
 
     def test_shuffle_seed_is_deterministic(self) -> None:
-        a = get_palette("trustworthy", n=8, order="shuffle", seed=42)
-        b = get_palette("trustworthy", n=8, order="shuffle", seed=42)
+        a = get_palette("blue", n=8, order="shuffle", seed=42)
+        b = get_palette("blue", n=8, order="shuffle", seed=42)
         assert a == b
 
     def test_shuffle_seeds_differ(self) -> None:
-        a = get_palette("trustworthy", n=8, order="shuffle", seed=1)
-        b = get_palette("trustworthy", n=8, order="shuffle", seed=2)
+        a = get_palette("blue", n=8, order="shuffle", seed=1)
+        b = get_palette("blue", n=8, order="shuffle", seed=2)
         assert a != b
 
     def test_order_and_reverse_compose(self) -> None:
-        light = get_palette("trustworthy", n=6, order="lightness")
-        both = get_palette("trustworthy", n=6, order="lightness", reverse=True)
+        light = get_palette("blue", n=6, order="lightness")
+        both = get_palette("blue", n=6, order="lightness", reverse=True)
         assert both == light[::-1]
 
     def test_order_applies_to_full_palette(self) -> None:
-        assert (
-            get_palette("trustworthy", reverse=True)
-            == get_palette("trustworthy")[::-1]
-        )
+        assert get_palette("blue", reverse=True) == get_palette("blue")[::-1]
 
     def test_unknown_order_raises(self) -> None:
         with pytest.raises(ValueError):
-            get_palette("trustworthy", order="bogus")  # type: ignore[arg-type]
+            get_palette("blue", order="bogus")  # type: ignore[arg-type]
 
 
 class TestSetCycle:
@@ -241,29 +238,29 @@ class TestSetCycle:
 
     def test_global_from_name(self) -> None:
         with mpl.rc_context():
-            set_cycle("vivid")
+            set_cycle("blue")
             cyc = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-            assert cyc[0] == "dc.vivid0"
-            assert len(cyc) == 8
+            assert cyc[0] == "dc.blue0"
+            assert len(cyc) == 10
 
     def test_global_with_n(self) -> None:
         with mpl.rc_context():
-            set_cycle("trustworthy", n=5)
+            set_cycle("blue", n=5)
             cyc = plt.rcParams["axes.prop_cycle"].by_key()["color"]
             assert len(cyc) == 5
 
     def test_explicit_list(self) -> None:
         with mpl.rc_context():
-            set_cycle(["dc.teal_accent0", "oc.red5"])
+            set_cycle(["dc.teal0", "oc.red5"])
             cyc = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-            assert cyc == ["dc.teal_accent0", "oc.red5"]
+            assert cyc == ["dc.teal0", "oc.red5"]
 
     def test_per_axes_does_not_touch_global(self) -> None:
         with mpl.rc_context():
             before = plt.rcParams["axes.prop_cycle"]
             fig, ax = plt.subplots()
             try:
-                set_cycle("teal_accent", ax=ax)
+                set_cycle("teal", ax=ax)
                 # Global cycle is unchanged; only the Axes was updated.
                 assert plt.rcParams["axes.prop_cycle"] == before
             finally:

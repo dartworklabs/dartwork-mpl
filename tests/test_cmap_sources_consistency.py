@@ -1,7 +1,7 @@
 """Colormap assets must be reproducible by their sole writer (G1).
 
 The OKLCH gamut-mapping fix (#240) post-dated the 2026-03 asset
-generation, leaving 24 of 56 committed maps unreproducible (channel
+generation, leaving 24 of the committed maps unreproducible (channel
 deltas up to 0.41) — the exact drift class
 ``test_palette_sources_consistency`` guards for palettes. This test
 regenerates every map into a temp dir and compares numerically

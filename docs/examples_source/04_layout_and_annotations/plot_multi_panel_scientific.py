@@ -41,7 +41,7 @@ ax.scatter(
     x[::8],
     y_noise[::8],
     s=8,
-    color="dc.teal_indigo3",
+    color="dc.indigo3",
     zorder=3,
     label="Observations",
 )
@@ -56,13 +56,13 @@ ax = fig.add_subplot(gs[0, 1])
 n_pts = 80
 x_s = np.random.uniform(0, 10, n_pts)
 y_s = 1.8 * x_s + 3 + np.random.normal(0, 3, n_pts)
-ax.scatter(x_s, y_s, s=18, color="dc.jewel2", alpha=0.7, edgecolors="none")
+ax.scatter(x_s, y_s, s=18, color="dc.violet2", alpha=0.7, edgecolors="none")
 m, b = np.polyfit(x_s, y_s, 1)
 x_fit = np.linspace(0, 10, 50)
 ax.plot(
     x_fit,
     m * x_fit + b,
-    color="dc.vivid3",
+    color="dc.orange3",
     lw=dm.lw(1),
     label=f"y = {m:.1f}x + {b:.1f}",
 )
@@ -107,12 +107,12 @@ bp = ax.boxplot(
     groups,
     patch_artist=True,
     widths=0.6,
-    medianprops={"color": "dc.vivid3", "lw": dm.lw(0)},
+    medianprops={"color": "dc.orange3", "lw": dm.lw(0)},
 )
-box_colors = ["dc.teal1", "dc.jewel1", "dc.forest1", "dc.earth1", "dc.vivid1"]
+box_colors = ["dc.teal1", "dc.violet1", "dc.green1", "dc.orange1", "dc.red1"]
 for patch, color in zip(bp["boxes"], box_colors, strict=False):
     patch.set_facecolor(color)
-    patch.set_edgecolor("dc.teal_indigo3")
+    patch.set_edgecolor("dc.indigo3")
 ax.set_xticklabels(["A", "B", "C", "D", "E"])
 ax.set_title("Group Comparison", fontsize=dm.fs(0), weight="bold", pad=12)
 ax.set_xlabel("Group")

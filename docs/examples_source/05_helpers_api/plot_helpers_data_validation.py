@@ -22,7 +22,7 @@ def _minimal(ax: plt.Axes) -> None:
         True,
         axis="y",
         alpha=0.2,
-        color="dc.teal_indigo1",
+        color="dc.indigo1",
         linestyle="--",
         linewidth=0.5,
     )
@@ -45,7 +45,7 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=dm.figsize("16cm", "cinema"))
 
 # Raw input, including the bad values.
 ax1.scatter(
-    x_raw, y_raw, color="dc.vivid2", s=50, alpha=0.6, label="Raw (NaN / Inf)"
+    x_raw, y_raw, color="dc.red2", s=50, alpha=0.6, label="Raw (NaN / Inf)"
 )
 ax1.set_title("Raw Data", fontsize=dm.fs(1))
 ax1.set_xlabel("X", fontsize=dm.fs(0))
@@ -55,9 +55,9 @@ _minimal(ax1)
 
 # Cleaned input.
 ax2.scatter(
-    x_clean, y_clean, color="dc.forest2", s=50, alpha=0.6, label="Cleaned"
+    x_clean, y_clean, color="dc.green2", s=50, alpha=0.6, label="Cleaned"
 )
-ax2.plot(x_clean, y_clean, color="dc.forest4", lw=dm.lw(0.5), alpha=0.5)
+ax2.plot(x_clean, y_clean, color="dc.green4", lw=dm.lw(0.5), alpha=0.5)
 ax2.set_title("Validated Data", fontsize=dm.fs(1))
 ax2.set_xlabel("X", fontsize=dm.fs(0))
 ax2.set_ylabel("Y", fontsize=dm.fs(0))

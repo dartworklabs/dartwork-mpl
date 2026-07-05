@@ -51,19 +51,22 @@ same recipes. The full theory is on the
 
 ### dartwork Color — curated categorical palettes
 
-Alongside the families, a curated **24-palette categorical system** (8 colors
-each, CIELAB-generated and verified for black-&-white + color-blindness) is
-kept for pick-by-intent workflows:
+Alongside the continuous family sheets, the v5 families form a curated
+**16-palette categorical system** (10 colors each, CIELAB/OKLCH-generated and
+verified for black-&-white + color-blindness). The searched `dc.cycle` is the
+everyday default for unrelated categories; family palettes are best when hue
+should carry a specific tone:
 
-- `dc.trustworthy` — the everyday default
-- `dc.vivid` / `dc.neon` — many categories
-- `dc.cool_warm` / `dc.teal_amber` — ± diverging data
-- `dc.teal_accent` — highlight one series
+- `dc.cycle` — the everyday 7-color screen/PDF cycle
+- `dc.blue` / `dc.teal` / `dc.indigo` — cool analytical series
+- `dc.green` / `dc.red` — positive/negative or status color families
+- `dc.amber` / `dc.orange` — warm emphasis and threshold context
+- `dc.gray` — reference, grid, and secondary marks
 
 The interactive picker (intent, B&W, color-blindness, 9 chart shapes) lives on
-the [Categorical palettes](categorical-palettes.md) page. The pre-0.5 ad-hoc
-names (`dc.ocean`, `dc.sunset`, …) were **removed** — see the <!-- color-lint: ignore -->
-[migration guide](../migration.md) for the rename map.
+the [Categorical palettes](categorical-palettes.md) page. Legacy v4 family
+names were **removed** in the v5 clean break; see the
+[migration guide](../migration.md) for the manual rename map.
 
 ```{raw} html
 :file: images/colors_dc.html

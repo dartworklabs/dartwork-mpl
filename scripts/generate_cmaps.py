@@ -112,11 +112,6 @@ COLORMAPS: dict[str, list[str]] = {
     "neon_pink": ["#FDF2F8", "#EC4899", "#BE185D", "#831843", "#4C0519"],
     "neon_orange": ["#FFF7ED", "#F97316", "#C2410C", "#7C2D12", "#431407"],
     # --- Multi-Hue (Classic) ---
-    # "aurora" ceded its dc.* name to the v5 catalog (dartwork_mpl.colors
-    # ._register / _generated.CMAPS_256) -- this legacy map now lives
-    # under dc.legacy_aurora (asset/cmap/legacy_aurora.txt, see PR for
-    # the color-system-v5 cmap registration task).
-    "legacy_aurora": ["#081736", "#2B478B", "#4DB39A", "#D1F5D8"],
     "sunset_glow": ["#1A0724", "#611051", "#B82E47", "#F07B37", "#FCE09D"],
     "plasma_arc": [
         "#0D0221",
@@ -182,9 +177,6 @@ COLORMAPS: dict[str, list[str]] = {
     # --- Diverging (Classic) ---
     "ice_fire": ["#0C275C", "#2966C7", "#F2F5F7", "#D42A38", "#570911"],
     "earth_sky": ["#382412", "#7A5029", "#F7F5F0", "#3E8FA3", "#123F4D"],
-    # "teal_rose" ceded its dc.* name to the v5 catalog (same rationale
-    # as "legacy_aurora" above) -- lives under dc.legacy_teal_rose now.
-    "legacy_teal_rose": ["#064240", "#1A8A85", "#F2F7F7", "#CF3E5C", "#4A0A19"],
     "purple_lime": ["#250C42", "#5A2594", "#F5F2F7", "#76BD24", "#203806"],
     "navy_gold": ["#071638", "#1A4196", "#F2F5F7", "#D1961F", "#4D3404"],
     "forest_brick": ["#06331A", "#1D7541", "#F5F7F5", "#AD3C2B", "#421008"],

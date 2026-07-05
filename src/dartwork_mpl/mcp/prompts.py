@@ -221,7 +221,7 @@ for bar_, v in zip(bars, values):
             fontsize=dm.fs(-1), fontweight=dm.fw(1))
 
 # Reference threshold.
-ax.axhline(threshold, linestyle="--", linewidth=0.5, color="dc.earth4")
+ax.axhline(threshold, linestyle="--", linewidth=0.5, color="dc.amber4")
 
 # Domain-aware tick formatter (pick one).
 # dm.format_axis_currency(ax, axis="y", symbol="$")

@@ -43,7 +43,7 @@ values = np.array([r[1] for r in data])
 median = float(np.median(values))
 
 # Color rule — top-1 gets the accent, the rest a uniform muted blue.
-accent = dm.color("dc.earth5").to_hex()
+accent = dm.color("dc.amber5").to_hex()
 default = dm.color("dc.teal3").to_hex()
 colors = [accent if v == values.max() else default for v in values]
 

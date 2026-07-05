@@ -4,116 +4,228 @@
       "namespace": "dc",
       "entries": [
         {
-          "id": "dc.vivid",
-          "label": "dc.vivid",
+          "id": "dc.amber",
+          "label": "dc.amber",
           "namespace": "dc",
           "swatch": [
-            "#05a7f7",
-            "#81d383",
-            "#04696f",
-            "#cbac4d",
-            "#cb5a51",
-            "#9455a6"
+            "#fb9600",
+            "#ffbb50",
+            "#ec7200",
+            "#fbda9b",
+            "#ffa926",
+            "#f38500"
           ],
-          "file": "demo_bar_dc_vivid.svg"
+          "file": "demo_bar_dc_amber.svg"
+        },
+        {
+          "id": "dc.blue",
+          "label": "dc.blue",
+          "namespace": "dc",
+          "swatch": [
+            "#2d99f0",
+            "#69bcff",
+            "#1474ca",
+            "#aadaff",
+            "#4aabfa",
+            "#1686e0"
+          ],
+          "file": "demo_bar_dc_blue.svg"
+        },
+        {
+          "id": "dc.cyan",
+          "label": "dc.cyan",
+          "namespace": "dc",
+          "swatch": [
+            "#22a6ba",
+            "#48cadb",
+            "#128397",
+            "#9be3ec",
+            "#31b8cc",
+            "#1894a9"
+          ],
+          "file": "demo_bar_dc_cyan.svg"
+        },
+        {
+          "id": "dc.gray",
+          "label": "dc.gray",
+          "namespace": "dc",
+          "swatch": [
+            "#74797f",
+            "#9ba0a6",
+            "#505458",
+            "#c6c9cd",
+            "#878d93",
+            "#62666c"
+          ],
+          "file": "demo_bar_dc_gray.svg"
+        },
+        {
+          "id": "dc.green",
+          "label": "dc.green",
+          "namespace": "dc",
+          "swatch": [
+            "#40bf59",
+            "#6edd80",
+            "#359b46",
+            "#aeedb5",
+            "#4fd067",
+            "#39ad4e"
+          ],
+          "file": "demo_bar_dc_green.svg"
+        },
+        {
+          "id": "dc.indigo",
+          "label": "dc.indigo",
+          "namespace": "dc",
+          "swatch": [
+            "#6683ff",
+            "#93aaff",
+            "#405de3",
+            "#c1cfff",
+            "#7c97ff",
+            "#516ff9"
+          ],
+          "file": "demo_bar_dc_indigo.svg"
+        },
+        {
+          "id": "dc.lime",
+          "label": "dc.lime",
+          "namespace": "dc",
+          "swatch": [
+            "#85c32a",
+            "#aadf57",
+            "#67a51d",
+            "#cfeca1",
+            "#96d336",
+            "#75b422"
+          ],
+          "file": "demo_bar_dc_lime.svg"
+        },
+        {
+          "id": "dc.orange",
+          "label": "dc.orange",
+          "namespace": "dc",
+          "swatch": [
+            "#ff8825",
+            "#ffb064",
+            "#ef611a",
+            "#fdd3a2",
+            "#ff9d46",
+            "#f97311"
+          ],
+          "file": "demo_bar_dc_orange.svg"
+        },
+        {
+          "id": "dc.pink",
+          "label": "dc.pink",
+          "namespace": "dc",
+          "swatch": [
+            "#ef5389",
+            "#fd8bb3",
+            "#ca1f5e",
+            "#fdc0d6",
+            "#f96f9f",
+            "#e03673"
+          ],
+          "file": "demo_bar_dc_pink.svg"
+        },
+        {
+          "id": "dc.purple",
+          "label": "dc.purple",
+          "namespace": "dc",
+          "swatch": [
+            "#c85ce4",
+            "#e191f6",
+            "#9f37b8",
+            "#edc2f8",
+            "#d776f0",
+            "#b545d1"
+          ],
+          "file": "demo_bar_dc_purple.svg"
+        },
+        {
+          "id": "dc.red",
+          "label": "dc.red",
+          "namespace": "dc",
+          "swatch": [
+            "#fb5b5e",
+            "#ff9292",
+            "#d82c30",
+            "#ffc2c3",
+            "#ff7879",
+            "#ed4146"
+          ],
+          "file": "demo_bar_dc_red.svg"
+        },
+        {
+          "id": "dc.rose",
+          "label": "dc.rose",
+          "namespace": "dc",
+          "swatch": [
+            "#f55474",
+            "#ff8ca1",
+            "#cf234a",
+            "#ffbfcb",
+            "#ff708b",
+            "#e5385d"
+          ],
+          "file": "demo_bar_dc_rose.svg"
+        },
+        {
+          "id": "dc.sky",
+          "label": "dc.sky",
+          "namespace": "dc",
+          "swatch": [
+            "#10a1d2",
+            "#57c3ec",
+            "#007eab",
+            "#a2def5",
+            "#30b3e2",
+            "#008fbf"
+          ],
+          "file": "demo_bar_dc_sky.svg"
         },
         {
           "id": "dc.teal",
           "label": "dc.teal",
           "namespace": "dc",
           "swatch": [
-            "#129e8e",
-            "#166c61",
-            "#5dcebd",
-            "#2a524c",
-            "#008577",
-            "#21b8a5"
+            "#00b586",
+            "#30d9aa",
+            "#029167",
+            "#97ecd0",
+            "#00c897",
+            "#00a376"
           ],
           "file": "demo_bar_dc_teal.svg"
         },
         {
-          "id": "dc.forest",
-          "label": "dc.forest",
+          "id": "dc.violet",
+          "label": "dc.violet",
           "namespace": "dc",
           "swatch": [
-            "#a4daa8",
-            "#8cac74",
-            "#80c6a0",
-            "#475b26",
-            "#5b8554",
-            "#37734d"
+            "#926fff",
+            "#b49cff",
+            "#6c46e3",
+            "#d5c7ff",
+            "#a386ff",
+            "#8158f9"
           ],
-          "file": "demo_bar_dc_forest.svg"
+          "file": "demo_bar_dc_violet.svg"
         },
         {
-          "id": "dc.earth",
-          "label": "dc.earth",
+          "id": "dc.yellow",
+          "label": "dc.yellow",
           "namespace": "dc",
           "swatch": [
-            "#94744b",
-            "#666a3d",
-            "#80443a",
-            "#e5a48e",
-            "#cb9375",
-            "#d6c898"
+            "#f2a800",
+            "#fccb2a",
+            "#e78400",
+            "#f6e396",
+            "#f8b900",
+            "#ec9600"
           ],
-          "file": "demo_bar_dc_earth.svg"
-        },
-        {
-          "id": "dc.dusty",
-          "label": "dc.dusty",
-          "namespace": "dc",
-          "swatch": [
-            "#9cb8a2",
-            "#8992ae",
-            "#aba285",
-            "#346162",
-            "#916d68",
-            "#7c5f71"
-          ],
-          "file": "demo_bar_dc_dusty.svg"
-        },
-        {
-          "id": "dc.jewel",
-          "label": "dc.jewel",
-          "namespace": "dc",
-          "swatch": [
-            "#b3bdfe",
-            "#25a88a",
-            "#caa65e",
-            "#02504f",
-            "#0375a0",
-            "#963c3e"
-          ],
-          "file": "demo_bar_dc_jewel.svg"
-        },
-        {
-          "id": "dc.neon",
-          "label": "dc.neon",
-          "namespace": "dc",
-          "swatch": [
-            "#ffa9db",
-            "#02a5f5",
-            "#e4a431",
-            "#045f5e",
-            "#a357c4",
-            "#5f6c02"
-          ],
-          "file": "demo_bar_dc_neon.svg"
-        },
-        {
-          "id": "dc.teal_indigo",
-          "label": "dc.teal_indigo",
-          "namespace": "dc",
-          "swatch": [
-            "#a1d3ff",
-            "#4cb3c3",
-            "#aeb6ed",
-            "#056463",
-            "#2b88aa",
-            "#486d9d"
-          ],
-          "file": "demo_bar_dc_teal_indigo.svg"
+          "file": "demo_bar_dc_yellow.svg"
         }
       ]
     },

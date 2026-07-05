@@ -31,7 +31,7 @@ y = np.sin(x) + 0.1 * np.random.randn(100)
 
 def _make_figure(margin_label: str):
     fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
-    ax.plot(x, y, color="dc.forest2", lw=dm.lw(1))
+    ax.plot(x, y, color="dc.green2", lw=dm.lw(1))
     ax.set_title(
         "Complex Title with\nMultiple Lines\nThat Might Overflow",
         fontsize=dm.fs(1),

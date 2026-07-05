@@ -136,7 +136,7 @@ jobs:
           assert dm.AGENT_DOCS
           dm.style.use('scientific')
           fig, ax = plt.subplots(figsize=dm.figsize('8cm', 'wide'))
-          ax.plot([0, 1, 2], [1, 3, 2], color=dm.get_palette('trustworthy')[0], lw=dm.lw(0))
+          ax.plot([0, 1, 2], [1, 3, 2], color=dm.get_palette('blue')[0], lw=dm.lw(0))
           ax.set_xlabel('x', fontsize=dm.fs(0))
           dm.simple_layout(fig)
           with tempfile.TemporaryDirectory() as d:

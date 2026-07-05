@@ -5,7 +5,7 @@ Perceptual Color Mixing Matrix
 ``dm.mix_colors()`` blends two colors in OKLab space (perceptually
 uniform), avoiding the muddy saturation dip that naive sRGB
 interpolation produces. This 6×6 matrix shows every pairwise 50/50 blend of the
-default ``dc.0``\u2013``dc.5`` color cycle, creating a comprehensive
+default ``dc.blue6``\u2013``dc.violet8`` color cycle, creating a comprehensive
 cross-reference of the library's default palette.
 
 The diagonal shows the original pure colors; off-diagonal cells reveal
@@ -20,8 +20,15 @@ import dartwork_mpl as dm
 
 dm.style.use("presentation")
 
-# The 6 default dartwork-mpl cycle colors
-palette = ["dc.0", "dc.1", "dc.2", "dc.3", "dc.4", "dc.5"]
+# The first 6 default dartwork-mpl cycle colors
+palette = [
+    "dc.blue6",
+    "dc.orange9",
+    "dc.green5",
+    "dc.pink3",
+    "dc.amber7",
+    "dc.violet8",
+]
 n = len(palette)
 
 fig, ax = plt.subplots(figsize=dm.figsize("11.7cm", "square"))
@@ -50,7 +57,7 @@ for i in range(n):
             ax.text(
                 j + 0.5,
                 n - 1 - i + 0.5,
-                f"dc.{i}",
+                palette[i],
                 ha="center",
                 va="center",
                 fontsize=dm.fs(-0.5),
@@ -62,15 +69,15 @@ ax.set_xlim(0, n)
 ax.set_ylim(0, n)
 ax.set_aspect("equal")
 ax.set_xticks([i + 0.5 for i in range(n)])
-ax.set_xticklabels([f"dc.{i}" for i in range(n)], fontsize=dm.fs(-0.5))
+ax.set_xticklabels(palette, fontsize=dm.fs(-0.5), rotation=35, ha="right")
 ax.set_yticks([i + 0.5 for i in range(n)])
-ax.set_yticklabels([f"dc.{n - 1 - i}" for i in range(n)], fontsize=dm.fs(-0.5))
+ax.set_yticklabels([palette[n - 1 - i] for i in range(n)], fontsize=dm.fs(-0.5))
 ax.tick_params(
     bottom=False, left=False, labelbottom=True, labelleft=True, pad=8
 )
 
 ax.set_title(
-    "50/50 Color Mixing Matrix (dc.0\u2013dc.5)",
+    "50/50 Color Mixing Matrix (v5 default cycle)",
     fontsize=dm.fs(1),
     weight="bold",
     pad=24,

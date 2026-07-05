@@ -42,7 +42,7 @@ compare_color = dm.color("oc.gray6").to_hex()
 fig, ax = plt.subplots(figsize=dm.figsize("14.5cm", "standard"))
 
 # Event window — the launch quarter as a context band.
-ax.axvspan(launch_idx, launch_idx + 2, alpha=0.12, color="dc.earth4", zorder=0)
+ax.axvspan(launch_idx, launch_idx + 2, alpha=0.12, color="dc.amber4", zorder=0)
 ax.text(
     launch_idx + 1,
     max(y_primary.max(), y_compare.max()),
@@ -50,7 +50,7 @@ ax.text(
     ha="center",
     va="top",
     fontsize=dm.fs(-1),
-    color="dc.earth5",
+    color="dc.amber5",
     fontstyle="italic",
 )
 

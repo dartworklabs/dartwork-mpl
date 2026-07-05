@@ -63,12 +63,9 @@ def _n_presets() -> int:
 
 
 def _n_curated_palettes() -> int:
-    pkg = json.loads(
-        (_ASSET / "color" / "dc_palettes.json").read_text(encoding="utf-8")
-    )
-    # The unnamed "" key is the default prop-cycle repoint (dc.0..7),
-    # not one of the curated named palettes.
-    return len([k for k in pkg if k])
+    from dartwork_mpl.colors._generated import PALETTE
+
+    return len(PALETTE)
 
 
 def _n_basic_templates() -> int:

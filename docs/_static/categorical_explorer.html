@@ -1,523 +1,197 @@
 <!-- GENERATED FILE - do not edit by hand.
      Source: docs/_static/scripts/build_categorical_explorer.py
-             + docs/_static/scripts/categorical_explorer_data.js (palette data SSOT).
-     Regenerate: python3 build_categorical_explorer.py -->
-<div id="dm-exp" class="yue">
-<style>
-#dm-exp * {box-sizing:border-box;}
-#dm-exp {margin:0;background:var(--dm-bg-page);color:var(--dm-gray-12);
-  font-family:var(--dm-f-sys,"Inter",system-ui,sans-serif);letter-spacing:-.003em;}
-#dm-exp .poc-wrap {max-width:1180px;margin:0 auto;padding:26px 24px 90px;}
-#dm-exp .poc-h {font-size:13px;color:var(--dm-text-muted);margin:0 0 18px;line-height:1.5;}
-#dm-exp .poc-h b {color:var(--dm-gray-12);font-weight:650;}
-#dm-exp .mini {display:inline-flex;height:13px;border-radius:3px;overflow:hidden;}
-#dm-exp .mini i {flex:1;min-width:3px;}
-#dm-exp .strip {display:flex;gap:6px;margin:0 0 4px;}
-#dm-exp .sw {appearance:none;background:transparent;border:0;padding:0;font:inherit;flex:1;min-width:0;
-  cursor:pointer;display:block;text-align:center;}
-#dm-exp .sw .chip {display:block;height:34px;border-radius:6px;transition:transform .1s,box-shadow .1s;}
-#dm-exp .sw:hover .chip {transform:translateY(-2px);box-shadow:0 2px 6px rgba(0,0,0,.12);}
-#dm-exp .sw .hx {font-family:var(--dm-f-mono,monospace);font-size:9px;color:var(--dm-text-muted);margin-top:4px;overflow:hidden;}
-#dm-exp .sw.copied .hx {color:var(--dm-accent-11);font-weight:700;}
-#dm-exp .sw.copied .hx::after {content:" ✓";}
-#dm-exp .plots {display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:12px;}
-#dm-exp .pcell {border:1px solid var(--dm-border-faint);border-radius:10px;padding:9px 11px;background:var(--dm-bg-page);}
-#dm-exp .pcell .pl {font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--dm-text-muted);margin-bottom:7px;}
-#dm-exp .plots.gs svg, #dm-exp .strip.gs .chip {filter:grayscale(1);}
-#dm-exp svg {display:block;width:100%;height:auto;}
-#dm-exp .meta {font-size:12px;color:var(--dm-text-muted);line-height:1.6;display:grid;gap:3px;margin-top:13px;}
-#dm-exp .meta b {color:var(--dm-gray-12);font-weight:600;}
-#dm-exp .code {margin-top:13px;background:var(--dm-i-code-surface);border-radius:8px;padding:11px 14px;
-  font-family:var(--dm-f-mono,monospace);font-size:11.5px;color:var(--dm-gray-12);white-space:pre;overflow-x:auto;}
-#dm-exp .cwrap {display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--dm-text-muted);}
-#dm-exp .cwrap input[type=range] {width:96px;accent-color:var(--dm-accent-9);}
-#dm-exp .seg {display:inline-flex;align-items:center;gap:1px;border:1px solid var(--dm-border-faint);
-  border-radius:8px;padding:2px;background:var(--dm-bg-page);}
-#dm-exp .seg .sl {font-size:9.5px;color:var(--dm-text-muted);text-transform:uppercase;letter-spacing:.05em;padding:0 6px 0 4px;}
-#dm-exp .segbtn {appearance:none;background:transparent;border:0;border-radius:6px;padding:4px 11px;font:inherit;
-  font-size:11.5px;font-weight:500;color:var(--dm-text-muted);cursor:pointer;transition:background .12s,color .12s;}
-#dm-exp .segbtn:hover {color:var(--dm-gray-12);}
-#dm-exp .segbtn.on {background:var(--dm-accent-3);color:var(--dm-accent-11);font-weight:600;}
-#dm-exp .dh {display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;}
-#dm-exp .dh h3 {margin:0;font-size:16px;font-weight:700;}
-#dm-exp .dh .band {font-size:11px;color:var(--dm-text-muted);font-family:var(--dm-f-mono,monospace);}
-#dm-exp .dctrl {margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-#dm-exp .dm-toast {position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--dm-gray-12);color:var(--dm-bg-page);padding:8px 16px;border-radius:999px;font-size:12.5px;opacity:0;transition:opacity .18s;pointer-events:none;z-index:99999;}
-#dm-exp .dm-toast.show {opacity:1;}
-#dm-exp .poc-switch {position:fixed;top:0;left:0;right:0;z-index:99;display:flex;gap:8px;justify-content:center;
-  background:#111;color:#fff;padding:7px;font:600 12px Inter,system-ui,sans-serif;}
-#dm-exp .poc-switch a {color:#fff;text-decoration:none;padding:4px 13px;border-radius:999px;border:1px solid #444;opacity:.72;}
-#dm-exp .poc-switch a.on {background:#12a594;border-color:#12a594;opacity:1;}
-#dm-exp .term {position:relative;display:inline-block;border-bottom:1px dotted var(--dm-gray-7);cursor:help;outline:none;}
-#dm-exp .term:focus {border-bottom-color:var(--dm-accent-9);}
-#dm-exp .term::after {content:attr(data-tip);position:absolute;left:0;top:calc(100% + 8px);width:max-content;max-width:250px;
-  background:var(--dm-gray-12);color:var(--dm-bg-page);padding:9px 12px;border-radius:9px;
-  font:400 11px/1.55 var(--dm-f-sys,"Inter",system-ui,sans-serif);letter-spacing:0;text-transform:none;
-  opacity:0;visibility:hidden;transform:translateY(-3px);transition:opacity .14s ease,transform .14s ease;
-  z-index:60;pointer-events:none;box-shadow:0 5px 16px rgba(0,0,0,.17);white-space:normal;}
-#dm-exp .term:hover::after, #dm-exp .term:focus::after {opacity:1;visibility:visible;transform:translateY(0);}
-#dm-exp .term.r::after {left:auto;right:0;}
-@media(prefers-reduced-motion:reduce) {
-#dm-exp .term::after {transition:none;}
-}
-#dm-exp .ro {display:flex;flex-direction:column;gap:8px;margin:15px 0 19px;}
-#dm-exp .ro-i {display:flex;align-items:baseline;gap:9px;font-size:14.5px;flex-wrap:wrap;}
-#dm-exp .ro-ic {font-size:13px;line-height:1.2;color:var(--dm-gray-7);font-weight:700;}
-#dm-exp .ro-ic.ok {color:var(--dm-accent-10);}
-#dm-exp .ro-tx {color:var(--dm-text-muted);}
-#dm-exp .ro-tx b {color:var(--dm-gray-12);font-weight:600;}
-#dm-exp .ro-n {font-family:var(--dm-f-mono,monospace);font-size:11.5px;color:var(--dm-gray-8);}
-#dm-exp .swcap {font-size:11px;color:var(--dm-gray-8);margin-bottom:9px;}
-#dm-exp .poc-h {font-size:14.5px;line-height:1.65;}
-#dm-exp .meta {font-size:14.5px;line-height:1.72;}
-#dm-exp .meta b {font-weight:650;}
-#dm-exp .code pre {margin:0;padding:0;background:transparent;font:inherit;color:inherit;white-space:pre;overflow-x:auto;}
-#dm-exp .field {display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;}
-#dm-exp .cl {font-size:13px;font-weight:500;color:var(--dm-gray-9);letter-spacing:normal;text-transform:none;white-space:nowrap;}
-#dm-exp .crng {accent-color:var(--dm-accent-9);width:70px;}
-#dm-exp .cval {font-size:14px;font-weight:700;color:var(--dm-accent-11);min-width:1ch;}
-#dm-exp .optset {display:inline-flex;align-items:center;gap:15px;}
-#dm-exp .topt {appearance:none;border:0;background:transparent;padding:1px 1px 5px;font:inherit;font-size:14px;color:var(--dm-text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:color .12s,border-color .12s;}
-#dm-exp .topt:hover {color:var(--dm-gray-12);}
-#dm-exp .topt.on {color:var(--dm-gray-12);font-weight:650;border-bottom-color:var(--dm-accent-9);}
-#dm-exp .cchips {display:inline-flex;gap:6px;}
-#dm-exp .copt {appearance:none;background:var(--dm-bg-page);border:1px solid var(--dm-border);border-radius:999px;padding:4px 13px;font:inherit;font-size:13.5px;color:var(--dm-gray-11);cursor:pointer;transition:all .12s;}
-#dm-exp .copt:hover {border-color:var(--dm-border-strong);}
-#dm-exp .copt.on {background:var(--dm-accent-9);border-color:var(--dm-accent-9);color:#fff;font-weight:600;}
-#dm-exp .cchk {display:inline-flex;align-items:center;gap:7px;font-size:14px;color:var(--dm-gray-12);cursor:pointer;}
-#dm-exp .cchk input {accent-color:var(--dm-accent-9);width:15px;height:15px;}
-#dm-exp .cgrp {display:inline-flex;align-items:center;gap:20px;flex-wrap:wrap;}
-#dm-exp .tgl {appearance:none;border:0;background:transparent;padding:0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font:inherit;flex:0 0 auto;white-space:nowrap;}
-#dm-exp .tgl .tgl-l {font-size:13px;font-weight:500;color:var(--dm-gray-9);transition:color .12s;}
-#dm-exp .tgl.on .tgl-l {color:var(--dm-gray-12);}
-#dm-exp .tgl-tr {width:32px;height:18px;border-radius:999px;background:var(--dm-gray-5);position:relative;transition:background .15s;flex:0 0 auto;}
-#dm-exp .tgl-kn {position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.28);transition:left .15s;}
-#dm-exp .tgl.on .tgl-tr {background:var(--dm-accent-9);}
-#dm-exp .tgl.on .tgl-kn {left:16px;}
-#dm-exp .step {display:inline-flex;align-items:center;gap:8px;}
-#dm-exp .stepb {appearance:none;border:1px solid var(--dm-border);background:var(--dm-bg-page);border-radius:7px;
-  width:24px;height:24px;font:inherit;font-size:15px;line-height:1;color:var(--dm-gray-11);cursor:pointer;
-  display:inline-flex;align-items:center;justify-content:center;}
-#dm-exp .stepb:hover {border-color:var(--dm-border-strong);color:var(--dm-gray-12);}
-#dm-exp .stepv {font-size:14px;font-weight:700;color:var(--dm-accent-11);min-width:1ch;text-align:center;}
-#dm-exp .md {display:grid;grid-template-columns:198px 1fr;gap:28px;align-items:start;}
-@media(max-width:760px) {
-#dm-exp .md {grid-template-columns:1fr;gap:18px;}
-#dm-exp .detail {position:static!important;}
-}
-#dm-exp .rail {display:flex;flex-direction:column;gap:1px;}
-#dm-exp .rail .fh {font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;
-  color:var(--dm-gray-10);margin:16px 0 5px;}
-#dm-exp .rail .fh:first-child {margin-top:0;}
-#dm-exp .ri {display:flex;align-items:center;gap:10px;padding:4px 9px;border-radius:9px;cursor:pointer;min-width:0;}
-#dm-exp .ri:hover {background:var(--dm-gray-a2);}
-#dm-exp .ri.on {background:var(--dm-accent-2);}
-#dm-exp .ri .mini {flex:0 0 36px;height:12px;border-radius:4px;}
-#dm-exp .ri .nm {font-size:12px;font-weight:400;color:var(--dm-gray-12);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
-#dm-exp .ri.on .nm {color:var(--dm-accent-11);font-weight:500;}
-#dm-exp .detail {position:sticky;top:48px;background:var(--dm-bg-subtle);border-radius:18px;padding:24px 26px;}
-#dm-exp .d-ey {font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--dm-accent-11);margin-bottom:7px;}
-#dm-exp .d-title {display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;}
-#dm-exp .d-title h3 {margin:0;font-size:25px;font-weight:700;letter-spacing:-.02em;}
-#dm-exp .d-key {font-family:var(--dm-f-mono,monospace);font-size:13px;color:var(--dm-accent-11);background:var(--dm-accent-2);
-  padding:2px 9px;border-radius:6px;font-weight:500;cursor:pointer;transition:background .12s;align-self:center;}
-#dm-exp .d-key:hover {background:var(--dm-accent-3);}
-#dm-exp .d-key.copied {background:var(--dm-accent-9);color:#fff;}
-#dm-exp .d-key.copied::after {content:" ✓";}
-#dm-exp .d-use {font-size:15.5px;color:var(--dm-gray-11);line-height:1.62;margin:11px 0 8px;min-height:4.86em;}
-#dm-exp .d-bar {display:flex;align-items:center;gap:13px;flex-wrap:nowrap;margin-bottom:16px;}
-#dm-exp .swhost {display:flex;gap:7px;margin-bottom:18px;}
-#dm-exp .swhost .sw {flex:1;}
-#dm-exp .swhost .chip {height:46px;border-radius:11px;}
-#dm-exp .swhost .hx {font-size:9px;}
-#dm-exp .plots {gap:13px;}
-#dm-exp .pcell {border:0;background:var(--dm-bg-page);border-radius:13px;padding:10px 12px;}
-#dm-exp .meta {margin-top:8px;}
-#dm-exp{width:100%;font-family:inherit;letter-spacing:normal;}
-#dm-exp .rail{position:sticky;top:96px;max-height:calc(100vh - 120px);overflow-y:auto;padding-right:8px;}
-#dm-exp .detail{position:static;top:auto;}
-#dm-exp .rail{scrollbar-width:thin;}
-#dm-exp .rail::-webkit-scrollbar{width:9px;}
-#dm-exp .rail::-webkit-scrollbar-thumb{background:var(--dm-gray-a4);border-radius:9px;border:2px solid transparent;background-clip:content-box;}
-#rside,.sy-rside{display:none!important;}
-@media(min-width:1280px){.sy-main{width:calc(100% - 18rem)!important;max-width:none!important;}}
-.yue,.yue.bd-article,.bd-article,.bd-content,.bd-article-container,.bd-main{max-width:none!important;}
-</style>
-<div class="md"><div class="rail" id="rail"></div><div class="detail" id="detail"></div></div>
-<script>(function(){const PALETTES = {
-    // ── SEQUENTIAL — single-hue lightness ramps (very narrow) ──
-    teal:    { name:"Teal", fam:"Sequential", band:"very-narrow · single hue",
-      cols:["#2A524C","#166C61","#008577","#129E8E","#21B8A5","#5DCEBD","#94E3D5","#CAF7EE"],
-      intent:"Categories with a natural ORDER — quality tiers, time periods, confidence buckets — where rank should read straight off the lightness. A single house-teal hue stepped light to dark, which also makes it the most black-and-white-perfect palette in the set.",
-      design:"One hue (house teal, CIELAB h≈182) held constant; 8 steps on a monotonic L* ramp 32→94, chroma peaking mid.",
-      application:"Stacked area (weight top→bottom), ordered bars, confidence ribbons. Avoid for UNordered categories.",
-      bw:"min ΔL* 8.6", cvd:"d8.6 / p7.2 / t9.0" },
-    indigo:  { name:"Indigo", fam:"Sequential", band:"very-narrow · single hue",
-      cols:["#414B64","#4D6089","#5B76AE","#6D8CCD","#86A4E6","#A3BCF8","#C5D4FF","#E8EDFF"],
-      intent:"Ordered categories in a cooler, more corporate register than teal — magnitude buckets, tiers, time periods. One indigo hue on an even lightness ramp, so rank reads instantly and every step survives grayscale printing intact.",
-      design:"Single indigo hue (CIELAB h≈280) on a monotonic L* ramp 32→94. Pairs as the cool member of the sequential set.",
-      application:"Heatmap rows, ordered bars, area, ribbons. Reads as rank.",
-      bw:"min ΔL* 8.6", cvd:"d8.9 / p8.6 / t8.9" },
-    coral:   { name:"Coral", fam:"Sequential", band:"very-narrow · single hue",
-      cols:["#6C4A45","#93564E","#B86259","#D87368","#F1897D","#FEA69A","#FFC6BE","#FFE5E1"],
-      intent:"Ordered categories in a warm, human register — intensity, recency, heat or severity scales. A single coral hue stepped light to dark; the warm counterpart to the teal and indigo sequential ramps, and still safe in black and white.",
-      design:"Single coral hue (CIELAB h≈32) on a monotonic L* ramp 35→93. Warm counterpart to teal/indigo sequential.",
-      application:"Heat/intensity encodings, ordered bars, area. The warm sequential.",
-      bw:"min ΔL* 8.1", cvd:"d7.7 / p7.3 / t8.3" },
-    // ── ANALOGOUS — one-mood hue arcs (narrow) ──
-    teal_indigo: { name:"Teal → Indigo", fam:"Analogous", band:"narrow · cool arc",
-      cols:["#056463","#4CB3C3","#2B88AA","#A1D3FF","#486D9D","#AEB6ED","#958BBF","#F3DAFF"],
-      intent:"A few related series that should feel like ONE cool mood rather than a rainbow — cohesion over maximum distinctness. A teal-to-indigo arc separated by lightness, best for thin multi-line ensembles with an editorial, institutional tone.",
-      design:"A ~120° cool arc (teal→blue→indigo) on a staggered even L* ladder 38→90, so adjacent series contrast by lightness while sharing a family. Anchored on house teal.",
-      application:"Multi-series LINE ensembles (3–6 thin lines), area fills, refined scatter. Editorial / institutional tone.",
-      bw:"min ΔL* 7.4", cvd:"d6.3 / p5.5 / t9.6" },
-    forest:      { name:"Forest", fam:"Analogous", band:"narrow · green arc",
-      cols:["#475B26","#8CAC74","#5B8554","#A4DAA8","#37734D","#80C6A0","#619B70","#C7EEB4"],
-      intent:"A few related series in a natural, organic register — ESG, agriculture, environment, growth themes. A green arc held to one hue family and separated by lightness, so the lines read as cohesive and calm rather than scattered or noisy.",
-      design:"A ~40° green arc (yellow-green→teal-green) on a staggered even L* ladder 36→90 — one hue family, lightness-separated.",
-      application:"Multi-series line / area for environmental or organic topics. Calm, cohesive.",
-      bw:"min ΔL* 7.7", cvd:"d7.8 / p6.8 / t8.7" },
-    // ── DUO — warm vs cool split (medium) ──
-    blue_orange: { name:"Blue / Orange", fam:"Duo", band:"medium · 180° split",
-      cols:["#036085","#2485C2","#17B2E3","#B1CFFF","#A9532C","#CB8043","#FEA18A","#FFDDBA"],
-      intent:"Two opposed groups using the single most colorblind-robust opposition, blue versus orange — A/B, gain/loss, before/after. The widest temperature split available, so the two sides stay clearly distinct even in grayscale or for CVD viewers.",
-      design:"4 blue + 4 orange hues (~180° apart), each an internal L* ramp; even ladder 38→90.",
-      application:"Grouped bars, two-cluster scatter, paired lines. Best-in-class CVD across all three types.",
-      bw:"min ΔL* 7.3", cvd:"d12.6 / p12.2 / t14.8" },
-    teal_coral:  { name:"Teal / Coral", fam:"Duo", band:"medium · 180° split",
-      cols:["#01655C","#0D8D8A","#2AB9A1","#3AE3E7","#AE5029","#D07D3E","#FFA183","#FFDCBE"],
-      intent:"Two opposed groups in the house-teal brand voice — teal against warm coral for A/B, before/after, or sentiment splits. The on-brand alternative to blue/orange, pairing the same temperature contrast with the dartwork identity color.",
-      design:"4 teal + 4 coral hues; even ladder 38→90. The warm side is pushed toward ORANGE (h≈44–68, not pure red) so the teal↔warm split lands on the blue-yellow axis and survives protanopia.",
-      application:"Brand-forward duos, grouped bars, paired lines. CVD-safe after the orange re-tune (still the softest of the three duos; for maximum accessibility, Blue/Orange or Warm/Cool lead).",
-      bw:"min ΔL* 7.2", cvd:"d13.3 / p8.4 / t14.6" },
-    // ── BALANCED — everyday default (medium-wide) ──
-    trustworthy: { name:"Trustworthy", fam:"Balanced", band:"medium-wide · teal + neutrals",
-      cols:["#06655A","#72A6DB","#8076A9","#FFB8A5","#467647","#EF9DC2","#83919C","#D0DFEB"],
-      intent:"The everyday DEFAULT — reach for this first for 4 to 8 unrelated categories. Six evenly-spaced hues anchored on house teal plus two neutrals, muted enough to stay report-grade yet distinct enough that the series never tangle or shout.",
-      design:"6 evenly-spaced hues anchored on house teal + 2 neutrals, muted chroma (no neon), staggered even L* ladder 38→88.",
-      application:"Everything — line, bar, scatter; works on white pages and in tables. The general-purpose cycle.",
-      bw:"min ΔL* 7.1", cvd:"d11.7 / p9.9 / t6.8" },
-    // ── MUTED — soft editorial (medium-wide, low chroma) ──
-    pastel:       { name:"Pastel", fam:"Muted", band:"medium-wide · low chroma",
-      cols:["#538789","#AEB9DA","#BC918B","#C0E0C7","#A68398","#D3C8A7","#8BAFC8","#DBEAF6"],
-      intent:"A soft, editorial categorical set for dense dashboards or backgrounds where vivid color would shout. High-key pastels carry 4 to 8 categories quietly, keeping the data readable without competing for attention on an already busy page.",
-      design:"Same 8-hue spread as the default but low chroma (~18) and a higher L* band 52→90. Calm, magazine-like. (B&W is softer by design.)",
-      application:"Dashboards, small multiples, annotation-heavy figures. Pair with one vivid accent for emphasis.",
-      bw:"min ΔL* 5.4", cvd:"d5.9 / p4.8 / t6.3" },
-    // ── SPECTRUM — full hue wheel (widest) ──
-    vivid:    { name:"Vivid", fam:"Spectrum", band:"widest · full wheel",
-      cols:["#04696F","#05A7F7","#CB5A51","#81D383","#9455A6","#CBAC4D","#8F82DD","#51EABB"],
-      intent:"MANY unrelated categories — up to eight — where color alone must separate everything and maximum distinctness matters more than restraint. An even, vivid rainbow spread for legends, maps, and crowded categorical charts that need every series apart.",
-      design:"8 hues evenly spaced 45° around the full wheel (teal-anchored), high chroma, staggered even L* ladder 40→88 so it still survives B&W.",
-      application:"8-category scatter, side-by-side bars, editorial infographics. Vivid, confident tone.",
-      bw:"min ΔL* 6.1", cvd:"d4.9 / p9.5 / t10.9" },
-    // ── ACCESSIBLE — fixed Okabe-Ito CUD (CVD gold standard) ──
-    accessible:  { name:"Okabe-Ito", fam:"Accessible", band:"widest · CVD gold standard",
-      cols:["#000000","#E69F00","#56B4E9","#009E73","#F0E442","#0072B2","#D55E00","#CC79A7"],
-      intent:"When colorblind-safety is mandatory — journals, public-sector, clinical work. The proven Okabe-Ito CUD eight-color set shipped verbatim, so every pair stays distinguishable under all of the common forms of color-vision deficiency.",
-      design:"Fixed Okabe & Ito (2008) palette — NOT regenerated. Tuned for deuter/protan/tritan separation (the strongest in the family).",
-      application:"Any figure where CVD accessibility is a hard requirement. Not built for B&W (near-equal lightness) — don't lean on grayscale for this one.",
-      bw:"min ΔL* 0.8", cvd:"d14.8 / p14.0 / t11.0" },
-    // ── INTENT-based families (organised by purpose, not spectral width) ──
-    gray:    { name:"Neutral Gray", fam:"Neutral", band:"neutral · hue-free L* ramp",
-      cols:["#353535","#4B4B4B","#636363","#7C7C7C","#969696","#B0B0B0","#CCCCCC","#E8E8E8"],
-      intent:"Ordered AMOUNT with no hue meaning — magnitude, density, or rank where color should not imply a separate category. A pure neutral lightness ramp, the most print-safe and colorblind-bulletproof option for encoding pure quantity.",
-      design:"8-step TRUE neutral L* ramp 22→92, chroma 0 (R=G=B, no cast). Pure lightness ⇒ perfect B&W and CVD. The cast-free anchor beside Warm Gray and Cool Gray.",
-      application:"Heat tables, ordered bars/area where hue is noise, backgrounds. Pair with one accent for emphasis.",
-      bw:"min ΔL* 9.7", cvd:"d8.9 / p8.9 / t8.9" },
-    // DIVERGING — two-ended, pale center (ordered ± data). B&W-exempt by design.
-    cool_warm:    { name:"Cool ↔ Warm", fam:"Diverging", band:"two-ended · pale center",
-      cols:["#055F8B","#3B8BBA","#81B7DB","#BCDCF1","#F5CEC9","#DFA19C","#BB6F6E","#943D45"],
-      intent:"Ordered data with a meaningful MIDPOINT at zero — change, delta, correlation, z-scores, above or below average. Blue marks negative and red positive through a pale center, so both direction and magnitude read at a single glance.",
-      design:"Symmetric L* tent (dark ends → pale center), blue (h≈250) ↔ red (h≈25). Excellent CVD. NOT a categorical set — the order IS the meaning.",
-      application:"Correlation matrices, change heatmaps, anomaly/sentiment scales, Likert. ⚠ B&W not separable (ends share lightness — inherent to diverging).",
-      bw:"min ΔL* 0.0", cvd:"d12.6 / p13.6 / t14.2" },
-    teal_amber: { name:"Teal ↔ Amber", fam:"Diverging", band:"two-ended · pale center",
-      cols:["#06655C","#209389","#74BDB6","#B4E0DB","#EBD3BC","#D0A987","#AA7951","#844C21"],
-      intent:"The diverging intent in the house voice — teal for negative and amber for positive through a pale neutral center. An on-brand alternative to blue-red for deltas, correlations, and above-or-below-average encodings on branded material.",
-      design:"Symmetric L* tent, teal (h≈186) ↔ amber (h≈66). The blue-yellow axis is CVD-robust.",
-      application:"Brand-forward change/delta heatmaps, ± scales. ⚠ B&W not separable by design.",
-      bw:"min ΔL* 0.0", cvd:"d13.1 / p8.8 / t13.9" },
-    // TONE — frequently-reached aesthetic families
-    earth:       { name:"Earth", fam:"Tone", band:"warm · earthy",
-      cols:["#80443A","#CB9375","#94744B","#D6C898","#666A3D","#E5A48E","#A0895F","#D1E3B7"],
-      intent:"Categorical series in a warm, organic register — ESG and sustainability, geography, agriculture, or premium-natural brands. Earthy, grounded hues that feel editorial and separate a handful of categories without ever looking corporate.",
-      design:"Terracotta, ochre, olive, sand, sage, clay (h 35→125, muted chroma ~26-30), staggered even L* ladder 36→88.",
-      application:"Multi-series line/bar/area for environmental or earthy topics. Calm, grounded, magazine-like.",
-      bw:"min ΔL* 7.2", cvd:"d6.1 / p6.3 / t7.5" },
-    jewel:       { name:"Jewel", fam:"Tone", band:"deep · rich saturation",
-      cols:["#02504F","#25A88A","#0375A0","#B3BDFE","#963C3E","#CAA65E","#A26EB0","#42ECFB"],
-      intent:"Rich, deep, saturated variety for premium or luxury editorial. Distinct from Vivid by going darker and deeper rather than brighter, so many categories stay separable while the whole set keeps an upscale, high-contrast mood.",
-      design:"Emerald, sapphire, indigo, vermilion, topaz, amethyst, deep teal/cyan (high chroma 42), even L* ladder 30→86. Retuned to clear the protanopia collapse.",
-      application:"Up to 8 categories where you want depth + luxury. ⚠ Softest CVD of the set (protan ~4) — for strict accessibility use Accessible or a Duo.",
-      bw:"min ΔL* 7.8", cvd:"d7.6 / p4.2 / t16.3" },
-    // ── singleton families expanded to 2-3 siblings ──
-    dusty:       { name:"Dusty", fam:"Muted", band:"deep · vintage muted",
-      cols:["#346162","#8992AE","#916D68","#9CB8A2","#7C5F71","#ABA285","#69889E","#B4C3CF"],
-      intent:"A deeper, more vintage muted set — lower lightness than the high-key Pastel. Built for moody editorial, dark-on-cream layouts, and retro themes where soft-but-saturated tones suit the page better than bright, high-key color.",
-      design:"Same 8-hue spread as Muted but a mid L* band 40→78 and low chroma ~16. Calm but with more body than pastel.",
-      application:"Dense editorial, atmospheric dashboards, retro / vintage themes. (B&W softer by design.)",
-      bw:"min ΔL* 5.5", cvd:"d6.2 / p5.1 / t6.5" },
-    warm_gray:   { name:"Warm Gray", fam:"Neutral", band:"neutral · warm taupe ramp",
-      cols:["#3A342E","#514A44","#69625B","#827B74","#9D958E","#B7AFA8","#D3CBC3","#EFE7DF"],
-      intent:"A hue-free ordered ramp with a WARM taupe or greige cast — for cream paper, editorial warmth, or warm brand systems. Encodes magnitude or rank without implying any category, staying soft and print-friendly from light to dark.",
-      design:"8-step L* ramp 22→92 at a warm hue (h≈70), chroma ≈ 5. Pure lightness ⇒ perfect B&W + CVD.",
-      application:"Warm-toned heat tables, ordered bars / area, backgrounds on cream stock.",
-      bw:"min ΔL* 9.7", cvd:"d8.9 / p9.0 / t8.9" },
-    cool_gray:   { name:"Cool Gray", fam:"Neutral", band:"neutral · cool slate ramp",
-      cols:["#2D363D","#434D54","#5B656C","#737D85","#8D97A0","#A7B2BB","#C2CED6","#DEEAF3"],
-      intent:"A hue-free ordered ramp with a COOL slate or blue cast — for tech, clinical, or cool brand systems. Encodes magnitude or rank without implying any category, holding a crisp, neutral tone the whole way from light to dark.",
-      design:"8-step L* ramp 22→92 at a cool hue (h≈250), chroma ≈ 6. Perfect B&W + CVD.",
-      application:"Cool-toned heat tables, ordered encodings, UI backgrounds.",
-      bw:"min ΔL* 9.7", cvd:"d9.0 / p8.9 / t9.0" },
-    teal_accent:       { name:"Teal Accent", fam:"Emphasis", band:"1 teal accent + 7 neutrals",
-      cols:["#0A7B6E","#767E85","#868F96","#97A0A7","#A8B1B8","#B9C3CA","#CBD4DC","#DDE7EE"],
-      intent:"Highlight ONE series while everything else recedes to gray — the storytelling staple, color the one thing. House teal marks the salient series and graded neutrals carry the rest, keeping attention exactly where you point it.",
-      design:"Slot 0 = house teal (salient), slots 1-7 = graded neutrals on an even L* ladder 46→91. Pair with Coral Accent for the warm-highlight version, or combine the two accent colors to highlight a second series.",
-      application:"Single-series emphasis in line / bar charts, explanatory figures, slide builds.",
-      bw:"min ΔL* 6.2", cvd:"d5.8 / p5.7 / t5.8" },
-    coral_accent:  { name:"Coral Accent", fam:"Emphasis", band:"1 warm accent + 7 neutrals",
-      cols:["#B54B43","#767E85","#868F96","#97A0A7","#A8B1B8","#B9C3CA","#CBD4DC","#DDE7EE"],
-      intent:"Highlight one series with a WARM coral accent instead of teal — for warmth, alerts, or when teal clashes with the content. Coral marks the salient line and graded neutrals mute everything else quietly into the background.",
-      design:"Slot 0 = coral (h≈32, salient), slots 1-7 = graded neutrals, even L* ladder 46→91.",
-      application:"Single-series emphasis where a warm highlight reads better (e.g., risk / attention).",
-      bw:"min ΔL* 6.2", cvd:"d5.8 / p5.7 / t5.8" },
-
-    neon: { name:"Neon", fam:"Spectrum", band:"max chroma · electric",
-      cols:["#045F5E","#02A5F5","#A357C4","#FFA9DB","#5F6C02","#E4A431","#5584F8","#08F2CC"],
-      intent:"MAXIMUM chroma — the loudest legal categorical, at the sRGB gamut edge. Up to 6 vivid categories on dark UI or hero moments.",
-      design:"Electric hues at the per-rung gamut ceiling; CVD-confusable pairs thrown far apart in L* so loudness never costs separability.",
-      application:"Dark-mode dashboards, brand hero charts, few-category small multiples.",
-      bw:"min ΔL* 7.0", cvd:"d8.3 / p10.4 / t8.9" },
-    ember: { name:"Ember", fam:"Tone", band:"warm · vibrant",
-      cols:["#942732","#E6835F","#9E6B29","#D9C778","#536A26","#FF91AB","#C17746","#D0DFEB"],
-      intent:"The saturated WARM categorical — brick, coral, orange, amber, gold, olive plus a cool-neutral anchor. Golden-hour energy without earth's muteness.",
-      design:"All-warm hues carry little CVD margin, so the even L* stagger + a cool anchor + one green do the separating.",
-      application:"Warmth-themed dashboards, seasonal / energy / hospitality decks.",
-      bw:"min ΔL* 7.6", cvd:"d5.3 / p4.9 / t8.1" },
-    purple_green: { name:"Purple / Green", fam:"Diverging", band:"two-ended · pale center",
-      cols:["#523F87","#8573AA","#B9ABCC","#E8DFEE","#D8E6DA","#99B89E","#56875A","#09581B"],
-      intent:"Diverging purple to green around a pale centre (PRGn lineage) — the TRITAN-robust axis that blue-orange and teal-amber lack.",
-      design:"Symmetric even-L* tent: dark saturated ends, pale low-chroma centre; both arms separable under all three CVD types.",
-      application:"Signed quantities where blue-yellow deficiency must be covered.",
-      bw:"min ΔL* 0.0", cvd:"d8.6 / p10.4 / t8.1" },
-};
-const ORDER = ["teal","indigo","coral","gray","warm_gray","cool_gray","forest","teal_indigo","blue_orange","teal_coral","trustworthy","pastel","dusty","vivid","neon","ember","earth","jewel","cool_warm","teal_amber","purple_green","teal_accent","coral_accent","accessible"];
-const VB='0 0 100 56';
-  const P = {
-    line(c){ const n=c.length; let s=`<svg viewBox="${VB}" preserveAspectRatio="none">`;
-      for(let i=0;i<n;i++){ const yc=n>1?9+i*(38/(n-1)):28; let d='';
-        for(let x=0;x<=100;x+=1.25){ const t=x/100; const y=yc+Math.sin(t*4.6+i*0.9)*3.5-(t-0.5)*(i-n/2)*1.8; d+=(x===0?'M':'L')+x.toFixed(2)+' '+y.toFixed(2)+' '; }
-        s+=`<path d="${d}" fill="none" stroke="${c[i]}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`; }
-      return s+'</svg>'; },
-    scatter(c){ const n=c.length; let s=`<svg viewBox="${VB}">`;
-      for(let i=0;i<n;i++){ const cx=12+(i/(n-1||1))*76, cy=15+((i*37)%28);
-        for(let k=0;k<11;k++){ const a=i*2.3+k*1.7; s+=`<circle cx="${(cx+Math.cos(a)*9+Math.sin(k*3.1)*2.6).toFixed(1)}" cy="${(cy+Math.sin(a)*9+Math.cos(k*2.2)*2.6).toFixed(1)}" r="2" fill="${c[i]}" opacity="0.82"/>`; } }
-      return s+'</svg>'; },
-    area(c){ const n=c.length, S=48, acc=new Array(S+1).fill(54); let s=`<svg viewBox="${VB}" preserveAspectRatio="none">`;
-      for(let i=0;i<n;i++){ let top='',bot='';
-        for(let xi=0;xi<=S;xi++){ const x=xi*(100/S), v=(46/n)*(0.85+0.34*Math.sin(xi*0.22+i*0.95)), y0=acc[xi], y1=acc[xi]-v; acc[xi]=y1; top+=(xi===0?'M':'L')+x.toFixed(2)+' '+y1.toFixed(2)+' '; bot=x.toFixed(2)+' '+y0.toFixed(2)+' '+bot; }
-        s+=`<path d="${top}L${bot}Z" fill="${c[i]}" opacity="0.96"/>`; }
-      return s+'</svg>'; },
-    bar(c){ const n=c.length, g=2.2, bw=100/n, h=[40,28,48,34,44,30,38,46]; let s=`<svg viewBox="${VB}" preserveAspectRatio="none">`;
-      for(let i=0;i<n;i++){ const x=i*bw+g/2, bh=h[i%8]; s+=`<rect x="${x.toFixed(1)}" y="${(52-bh).toFixed(1)}" width="${(bw-g).toFixed(1)}" height="${bh}" rx="0.8" fill="${c[i]}"/>`; }
-      return s+'</svg>'; },
-    heatmap(c){ const n=c.length, cw=100/n, rows=5, rh=56/rows; let s=`<svg viewBox="${VB}">`;
-      for(let i=0;i<n;i++){ for(let r=0;r<rows;r++){ s+=`<rect x="${(i*cw).toFixed(1)}" y="${(r*rh).toFixed(1)}" width="${cw.toFixed(1)}" height="${rh.toFixed(1)}" fill="${c[i]}" opacity="${(0.4+r*0.14).toFixed(2)}"/>`; } } return s+'</svg>'; },
-    bubble(c){ const n=c.length; let s=`<svg viewBox="${VB}">`;
-      for(let i=0;i<n;i++){ const cx=12+(i/(n-1||1))*76, cy=16+((i*29)%26);
-        for(let k=0;k<5;k++){ const a=i*1.7+k*2.2, rr=1.6+((i+k*3)%4)*1.4; s+=`<circle cx="${(cx+Math.cos(a)*8).toFixed(1)}" cy="${(cy+Math.sin(a)*8).toFixed(1)}" r="${rr.toFixed(1)}" fill="${c[i]}" opacity="0.68"/>`; } }
-      return s+'</svg>'; },
-    lollipop(c){ const n=c.length, g=100/(n+1); let s=`<svg viewBox="${VB}">`;
-      for(let i=0;i<n;i++){ const x=g*(i+1), y=52-(14+Math.abs(Math.sin(i*1.5+0.4))*32); s+=`<line x1="${x.toFixed(1)}" y1="52" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${c[i]}" stroke-width="1.4"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${c[i]}"/>`; }
-      return s+'</svg>'; },
-    waffle(c){ const n=c.length, cols=12, rows=5, cell=56/rows, cw=100/cols, total=cols*rows; const raw=[]; let t=0; for(let i=0;i<n;i++){ const v=0.6+Math.abs(Math.sin(i*1.7+0.2)); raw.push(v); t+=v; }
-      const cnt=raw.map(v=>Math.max(1,Math.round(total*v/t)));
-      let s=`<svg viewBox="${VB}">`, idx=0;
-      for(let ci=0;ci<n;ci++){ for(let k=0;k<cnt[ci]&&idx<total;k++,idx++){ const r=Math.floor(idx/cols), col=idx%cols; s+=`<rect x="${(col*cw+0.6).toFixed(2)}" y="${(r*cell+0.6).toFixed(2)}" width="${(cw-1.2).toFixed(2)}" height="${(cell-1.2).toFixed(2)}" rx="1" fill="${c[ci]}"/>`; } }
-      return s+'</svg>'; },
-  };
-const PLABEL={line:"line",area:"stacked area",scatter:"scatter",bubble:"bubble",bar:"bar",lollipop:"lollipop",waffle:"waffle",heatmap:"heatmap"};
-const FAM_NOTE={Sequential:"ordered amount",Analogous:"one-mood arc",Duo:"two opposed groups",Balanced:"everyday default",Muted:"soft / editorial",Spectrum:"many categories",Accessible:"CVD-mandatory",Neutral:"hue-free ramp",Emphasis:"highlight one",Diverging:"around a midpoint",Tone:"a specific mood"};
-
-// ── 9th chart: squarified treemap (variable-size rects show all colors) ──
-P.treemap=function(c){
-  var W=100,H=56;
-  var vals=c.map(function(_,i){return 1+Math.abs(Math.sin(i*1.7+0.3))*1.7;});
-  var tot=vals.reduce(function(a,b){return a+b;},0);
-  var items=c.map(function(col,i){return {col:col,area:vals[i]/tot*(W*H)};});
-  var x=0,y=0,w=W,h=H,rects=[];
-  function worst(row,len){var s=0,mn=Infinity,mx=0;row.forEach(function(r){s+=r.area;if(r.area<mn)mn=r.area;if(r.area>mx)mx=r.area;});
-    return Math.max(len*len*mx/(s*s),s*s/(len*len*mn));}
-  function lay(row,horiz){var sum=0;row.forEach(function(r){sum+=r.area;});
-    if(horiz){var rh=sum/w,cx=x;row.forEach(function(r){var rw=r.area/rh;rects.push({x:cx,y:y,w:rw,h:rh,col:r.col});cx+=rw;});y+=rh;h-=rh;}
-    else{var rw=sum/h,cy=y;row.forEach(function(r){var rh=r.area/rw;rects.push({x:x,y:cy,w:rw,h:rh,col:r.col});cy+=rh;});x+=rw;w-=rw;}}
-  var q=items.slice(),row=[];
-  while(q.length){var horiz=(w<=h),len=horiz?w:h,nx=q[0];
-    if(row.length===0||worst(row,len)>=worst(row.concat([nx]),len)){row.push(q.shift());}
-    else{lay(row,horiz);row=[];}}
-  if(row.length)lay(row,(w<=h));
-  var s='<svg viewBox="'+VB+'">';
-  rects.forEach(function(r){s+='<rect x="'+r.x.toFixed(2)+'" y="'+r.y.toFixed(2)+'" width="'+Math.max(0,r.w-0.5).toFixed(2)+'" height="'+Math.max(0,r.h-0.5).toFixed(2)+'" rx="1" fill="'+r.col+'"/>';});
-  return s+'</svg>';};
-PLABEL.treemap="treemap";
-// ── waffle: cumulative assignment fills ALL cells (no blank at small n) ──
-P.waffle=function(c){var n=c.length,cols=12,rows=5,cell=56/rows,cw=100/cols,total=cols*rows;
-  var raw=c.map(function(_,i){return 0.6+Math.abs(Math.sin(i*1.7+0.2));});
-  var t=raw.reduce(function(a,b){return a+b;},0),cum=0;
-  var bounds=raw.map(function(v){cum+=v;return Math.round(cum/t*total);});
-  var s='<svg viewBox="'+VB+'">',idx=0;
-  for(var ci=0;ci<n;ci++){var end=(ci===n-1)?total:bounds[ci];
-    for(;idx<end;idx++){var r=Math.floor(idx/cols),col=idx%cols;
-      s+='<rect x="'+(col*cw+0.6).toFixed(2)+'" y="'+(r*cell+0.6).toFixed(2)+'" width="'+(cw-1.2).toFixed(2)+'" height="'+(cell-1.2).toFixed(2)+'" rx="1" fill="'+c[ci]+'"/>';}}
-  return s+'</svg>';};
-
-const SHOWORDER=["line","bar","scatter","area","lollipop","bubble","heatmap","waffle","treemap"];
-const state={pal:"trustworthy",n:8,gs:false,show:9};
-function active(){var p=PALETTES[state.pal];return p.cols.slice(0,state.n);}
-function pySnip(){var p=PALETTES[state.pal];return "import dartwork_mpl as dm\n# "+p.name+"  ("+state.n+" colors)\ndm.set_cycle(dm.get_palette('"+state.pal+"', n="+state.n+"))";}
-function dmToast(msg){var el=document.getElementById('dm-toast');if(!el){el=document.createElement('div');el.id='dm-toast';el.className='dm-toast';document.body.appendChild(el);}el.textContent=msg;el.classList.add('show');clearTimeout(window._dmtt);window._dmtt=setTimeout(function(){el.classList.remove('show');},1100);}
-function hexRgb(h){var m=h.replace('#','');return 'rgb('+parseInt(m.substr(0,2),16)+', '+parseInt(m.substr(2,2),16)+', '+parseInt(m.substr(4,2),16)+')';}
-function swStrip(cs){return cs.map(function(c){return '<button class="sw" data-hex="'+c+'" title="click: copy '+c+'   ·   shift-click: copy rgb"><span class="chip" style="background:'+c+'"></span><span class="hx">'+c+'</span></button>';}).join('');}
-function wireSwatches(root){root.querySelectorAll('.sw[data-hex]').forEach(function(b){b.onclick=function(e){var hex=b.dataset.hex,txt=e.shiftKey?hexRgb(hex):hex;if(navigator.clipboard)navigator.clipboard.writeText(txt);dmToast(txt+' copied');b.classList.add('copied');setTimeout(function(){b.classList.remove('copied');},800);};});}
-function plots(cs){return SHOWORDER.slice(0,state.show).map(function(pt){return '<div class="pcell"><div class="pl">'+PLABEL[pt]+'</div>'+P[pt](cs)+'</div>';}).join('');}
-function metaBlock(p){return '<div class="meta"><div><b>Intent:</b> '+p.intent+'</div><div><b>Design:</b> '+p.design+'</div><div><b>Application:</b> '+p.application+'</div><div><b>B&amp;W:</b> '+p.bw+' · <b>CVD:</b> '+p.cvd+'</div></div>';}
-function controlsHTML(){
-  return '<span class="cwrap">colors <input type="range" min="2" max="8" value="'+state.n+'" id="cnt"><b id="cv">'+state.n+'</b></span>'
-    +'<span class="seg"><span class="sl">show</span>'+[3,6,9].map(function(s){return '<button class="segbtn'+(state.show===s?' on':'')+'" data-show="'+s+'">'+s+'</button>';}).join('')+'</span>'
-    +'<span class="seg" title="preview in grayscale — checks black-&-white separability"><button class="segbtn'+(!state.gs?' on':'')+'" data-gs="0">Color</button><button class="segbtn'+(state.gs?' on':'')+'" data-gs="1">B&amp;W</button></span>';
-}
-function wireControls(root,paint){
-  var cnt=root.querySelector('#cnt');if(cnt)cnt.oninput=function(e){state.n=+e.target.value;var cv=root.querySelector('#cv');if(cv)cv.textContent=state.n;paint();};
-  root.querySelectorAll('[data-show]').forEach(function(b){b.onclick=function(){state.show=+b.dataset.show;root.querySelectorAll('[data-show]').forEach(function(x){x.classList.toggle('on',+x.dataset.show===state.show);});paint();};});
-  root.querySelectorAll('[data-gs]').forEach(function(b){b.onclick=function(){state.gs=(b.dataset.gs==='1');root.querySelectorAll('[data-gs]').forEach(function(x){x.classList.toggle('on',(x.dataset.gs==='1')===state.gs);});paint();};});
-}
-function famGroups(){var fams={};ORDER.forEach(function(k){var f=PALETTES[k].fam;(fams[f]=fams[f]||[]).push(k);});return fams;}
-function mini(k,w){return '<span class="mini" style="width:'+(w||'auto')+'">'+PALETTES[k].cols.map(function(c){return '<i style="background:'+c+'"></i>';}).join('')+'</span>';}
-
-
-var GLOSSARY={
- dl:"ΔL* — the smallest lightness gap between any two colors (CIE L*, a 0–100 brightness scale). Bigger means they stay distinct in grayscale or black-and-white print.",
- ls:"L* — CIE lightness, 0 (black) to 100 (white): how bright a color looks to the eye.",
- cvd:"Color-vision check — the smallest difference between colors as seen with simulated color-blindness. Bigger is safer.",
- d:"Deuteranopia — the most common red–green color-blindness (missing green cone), about 6% of men.",
- p:"Protanopia — red–green color-blindness (missing red cone).",
- t:"Tritanopia — blue–yellow color-blindness (rare)."
-};
-function term(txt,key,cls){return '<span class="term'+(cls?' '+cls:'')+'" tabindex="0" role="note" data-tip="'+GLOSSARY[key].replace(/"/g,'&quot;')+'">'+txt+'</span>';}
-function lstar(hex){var m=hex.replace('#','');function L(v){v/=255;return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4);}
-  var Y=0.2126*L(parseInt(m.substr(0,2),16))+0.7152*L(parseInt(m.substr(2,2),16))+0.0722*L(parseInt(m.substr(4,2),16));
-  var f=Y>0.008856?Math.pow(Y,1/3):(7.787*Y+16/116);return Math.round(116*f-16);}
-function bwNum(p){var m=p.bw.match(/([\d.]+)/);return m?+m[1]:0;}
-function cvdNums(p){var m=p.cvd.match(/d([\d.]+).*?p([\d.]+).*?t([\d.]+)/);return m?{d:+m[1],p:+m[2],t:+m[3]}:{d:0,p:0,t:0};}
-function bwVerdict(p){var v=bwNum(p);return v>=6?'Stays clear in black & white':(v>=4?'Mostly clear in black & white':'Some colors merge in black & white');}
-function cvdVerdict(p){var c=cvdNums(p),m=Math.min(c.d,c.p,c.t);return m>=6?'Color-blind safe':(m>=4?'Mostly color-blind safe':'Take care for color-blind viewers');}
-function readoutHTML(p){var c=cvdNums(p),bwok=bwNum(p)>=6,cvok=Math.min(c.d,c.p,c.t)>=6;
-  return '<div class="ro">'
-   +'<div class="ro-i"><span class="ro-ic'+(bwok?' ok':'')+'">'+(bwok?'✓':'◑')+'</span>'
-     +'<span class="ro-tx">'+term('Black & white','dl')+' — <b>'+bwVerdict(p)+'</b></span>'
-     +'<span class="ro-n">ΔL* '+bwNum(p)+'</span></div>'
-   +'<div class="ro-i"><span class="ro-ic'+(cvok?' ok':'')+'">'+(cvok?'✓':'◔')+'</span>'
-     +'<span class="ro-tx">'+term('Color-vision','cvd')+' — <b>'+cvdVerdict(p)+'</b></span>'
-     +'<span class="ro-n">'+term('d','d')+' '+c.d+' · '+term('p','p')+' '+c.p+' · '+term('t','t','r')+' '+c.t+'</span></div>'
-   +'</div>';}
-function railHTML(){var fg=famGroups(),h='';Object.keys(fg).forEach(function(f){
-  h+='<div class="fh">'+f+'</div>';
-  fg[f].forEach(function(k){h+='<div class="ri'+(k===state.pal?' on':'')+'" data-k="'+k+'">'+mini(k,'44px')+'<span class="nm">'+PALETTES[k].name+'</span></div>';});});
-  return h;}
-// ── palette-manipulation options — drive the widget AND the code example ──
-// these candidates are proposed get_palette() params: order / start / reverse
-state.order='default';state.rev=false;state.shuffleSeed=1;
-function shuffleSeeded(arr,seed){var s=(0x6d2b79f5^seed)>>>0;function rnd(){s=s+0x6d2b79f5>>>0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}
-  for(var i=arr.length-1;i>0;i--){var j=Math.floor(rnd()*(i+1)),tmp=arr[i];arr[i]=arr[j];arr[j]=tmp;}return arr;}
-function active(){var sel=PALETTES[state.pal].cols.slice(0,state.n);
-  if(state.order==='lightness')sel=sel.slice().sort(function(a,b){return lstar(b)-lstar(a);});
-  else if(state.order==='shuffle')sel=shuffleSeeded(sel.slice(),state.shuffleSeed);
-  if(state.rev)sel=sel.slice().reverse();
-  return sel;}
-function pySnip(){var p=PALETTES[state.pal];
-  var parts=["'"+state.pal+"'","n="+state.n];
-  if(state.order==='lightness')parts.push("order='lightness'");
-  else if(state.order==='shuffle'){parts.push("order='shuffle'");parts.push('seed='+state.shuffleSeed);}
-  if(state.rev)parts.push("reverse=True");
-  var note=[state.n+' colors'];
-  if(state.order==='lightness')note.push('gradient');
-  else if(state.order==='shuffle')note.push('shuffled');
-  if(state.rev)note.push('reversed');
-  return "import dartwork_mpl as dm\n# "+p.name+"  ("+note.join(', ')+")\ndm.set_cycle(dm.get_palette("+parts.join(', ')+"))";}
-function wireRail(after){document.querySelectorAll('.ri').forEach(function(e){e.onclick=function(){state.pal=e.dataset.k;state.n=8;document.getElementById('rail').innerHTML=railHTML();wireRail(after);renderDetail();if(after)after();};});}
-function flash(){var d=document.getElementById('detail');d.classList.remove('flash');void d.offsetWidth;d.classList.add('flash');}
-// ── Python syntax highlight using the docs' own Pygments token classes ──
-var PYKW={'import':'kn','from':'kn','as':'k','def':'k','return':'k','for':'k','in':'k','if':'k','None':'kc','True':'kc','False':'kc'};
-function _esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function pyHighlight(code){return code.split('\n').map(function(line){
-  if(/^\s*#/.test(line))return '<span class="c1">'+_esc(line)+'</span>';
-  var imp=/^\s*(import|from)\b/.test(line),nameCls=imp?'nn':'n',out='';
-  var re=/(\s+)|('[^']*'|"[^"]*")|(\b\d+\b)|([A-Za-z_]\w*)|(.)/g,m;
-  while((m=re.exec(line))){
-    if(m[1])out+='<span class="w">'+m[1]+'</span>';
-    else if(m[2])out+='<span class="'+(m[2][0]==="'"?'s1':'s2')+'">'+_esc(m[2])+'</span>';
-    else if(m[3])out+='<span class="mi">'+m[3]+'</span>';
-    else if(m[4]){var w=m[4];out+='<span class="'+(PYKW[w]||nameCls)+'">'+w+'</span>';}
-    else{var ch=m[5],c=(ch==='('||ch===')'||ch===',')?'p':((ch==='.'||ch==='=')?'o':'');
-      out+=c?'<span class="'+c+'">'+_esc(ch)+'</span>':_esc(ch);}
-  }
-  return out;}).join('\n');}
-function paintInto(d,strip){var cs=active();
-  var sh=d.querySelector('.swhost');sh.className='swhost strip'+(state.gs?' gs':'');sh.innerHTML=strip(cs);
-  var pl=d.querySelector('.plots');pl.className='plots'+(state.gs?' gs':'');pl.innerHTML=plots(cs);
-  d.querySelector('.code').innerHTML='<pre>'+pyHighlight(pySnip())+'</pre>';wireSwatches(d);}
-// ── control styles (overrides the shared segmented controls) ──
-var CTRL='tabs';
-function _field(label,ctrl){return '<span class="field"><span class="cl">'+label+'</span>'+ctrl+'</span>';}
-function _tgl(key,label,on){return '<button class="tgl'+(on?' on':'')+'" data-tgl="'+key+'"><span class="tgl-l">'+label+'</span><span class="tgl-tr"><span class="tgl-kn"></span></span></button>';}
-function controlsHTML(){
-  var colors=_field('Colors','<input type="range" min="2" max="8" value="'+state.n+'" id="cnt" class="crng"><b id="cv" class="cval">'+state.n+'</b>');
-  if(CTRL==='slider'){
-    var idx={3:0,6:1,9:2}[state.show];
-    var charts=_field('Charts','<input type="range" min="0" max="2" value="'+idx+'" id="shrng" class="crng"><b id="shv" class="cval">'+state.show+'</b>');
-    return charts+colors+_tgl('light','Gradient',state.order==='lightness')+_tgl('rev','Reverse',state.rev)
-          +_tgl('shuffle','Shuffle',state.order==='shuffle')+_tgl('bw','B&amp;W',state.gs);
-  }
-  if(CTRL==='chips'){
-    return colors
-      +_field('Charts','<span class="cchips">'+[3,6,9].map(function(s){return '<button class="copt'+(state.show===s?' on':'')+'" data-show="'+s+'">'+s+'</button>';}).join('')+'</span>')
-      +_field('View','<span class="cchips"><button class="copt'+(!state.gs?' on':'')+'" data-gs="0">Color</button><button class="copt'+(state.gs?' on':'')+'" data-gs="1">B&amp;W</button></span>');
-  }
-  return colors
-    +_field('Charts','<span class="optset">'+[3,6,9].map(function(s){return '<button class="topt'+(state.show===s?' on':'')+'" data-show="'+s+'">'+s+'</button>';}).join('')+'</span>')
-    +_field('View','<span class="optset"><button class="topt'+(!state.gs?' on':'')+'" data-gs="0">Color</button><button class="topt'+(state.gs?' on':'')+'" data-gs="1">B&amp;W</button></span>');
-}
-function wireControls(root,paint){
-  var cnt=root.querySelector('#cnt');if(cnt)cnt.oninput=function(e){state.n=+e.target.value;var cv=root.querySelector('#cv');if(cv)cv.textContent=state.n;paint();};
-  root.querySelectorAll('[data-show]').forEach(function(b){b.onclick=function(){state.show=+b.dataset.show;root.querySelectorAll('[data-show]').forEach(function(x){x.classList.toggle('on',+x.dataset.show===state.show);});paint();};});
-  root.querySelectorAll('[data-gs]').forEach(function(b){b.onclick=function(){state.gs=(b.dataset.gs==='1');root.querySelectorAll('[data-gs]').forEach(function(x){x.classList.toggle('on',(x.dataset.gs==='1')===state.gs);});paint();};});
-  var sh=root.querySelector('#shrng');if(sh)sh.oninput=function(){state.show=[3,6,9][+sh.value];var v=root.querySelector('#shv');if(v)v.textContent=state.show;paint();};
-  root.querySelectorAll('.tgl[data-tgl]').forEach(function(b){b.onclick=function(){var k=b.dataset.tgl;
-    if(k==='bw')state.gs=!state.gs;
-    else if(k==='rev')state.rev=!state.rev;
-    else if(k==='light')state.order=(state.order==='lightness')?'default':'lightness';
-    else if(k==='shuffle'){state.order=(state.order==='shuffle')?'default':'shuffle';if(state.order==='shuffle')state.shuffleSeed=Math.floor(Math.random()*100000);}
-    root.querySelectorAll('.tgl[data-tgl]').forEach(function(x){var kk=x.dataset.tgl,on=false;
-      if(kk==='bw')on=state.gs;else if(kk==='rev')on=state.rev;
-      else if(kk==='light')on=(state.order==='lightness');else if(kk==='shuffle')on=(state.order==='shuffle');
-      x.classList.toggle('on',on);});
-    paint();};});
-}
-
-CTRL='slider';
-
-function renderDetail(){var p=PALETTES[state.pal],d=document.getElementById('detail');
-  d.innerHTML='<div class="d-ey">'+p.fam+' palette</div>'
-    +'<div class="d-title"><h3>'+p.name+'</h3><code class="d-key" title="copy the name to use in code">'+state.pal+'</code></div>'
-    +'<p class="d-use">'+p.intent+'</p>'
-    +readoutHTML(p)
-    +'<div class="d-bar">'+controlsHTML()+'</div>'
-    +'<div class="swhost"></div><div class="plots"></div>'
-    +'<div class="meta"><div><b>How it’s built</b> '+p.design+'</div><div><b>Good for</b> '+p.application+'</div></div>'
-    +'<div class="code highlight"></div>';
-  var dk=d.querySelector('.d-key');if(dk)dk.onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText(state.pal);dmToast(state.pal+' copied');dk.classList.add('copied');setTimeout(function(){dk.classList.remove('copied');},900);};
-  function paint(){paintInto(d,swStrip);}wireControls(d,paint);paint();}
-document.getElementById('rail').innerHTML=railHTML();wireRail();renderDetail();
-})();</script>
+     Regenerate: python3 docs/_static/scripts/build_categorical_explorer.py -->
+<div class="dm-v5-explorer">
+  <style>
+    .dm-v5-explorer{container-type:inline-size}
+    .dm-v5-head{display:flex;justify-content:space-between;gap:16px;align-items:end;margin:0 0 18px}
+    .dm-v5-head h2{margin:0;font-size:1.05rem}
+    .dm-v5-head p{margin:.25rem 0 0;color:var(--dm-text-muted,#667085);font-size:.9rem}
+    .dm-v5-count{font:600 .8rem ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--dm-text-muted,#667085);white-space:nowrap}
+    .dm-v5-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .dm-v5-card{border:1px solid var(--dm-border-faint,#e5e7eb);border-radius:8px;padding:12px;background:var(--dm-bg-page,#fff)}
+    .dm-v5-card h3{margin:0;font:700 .9rem ui-monospace,SFMono-Regular,Menlo,monospace}
+    .dm-v5-card p{margin:.25rem 0 .65rem;color:var(--dm-text-muted,#667085);font-size:.8rem;line-height:1.35}
+    .dm-v5-row{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px}
+    .dm-v5-sw{appearance:none;border:0;border-radius:5px;background:var(--c);color:var(--tc);min-height:38px;cursor:pointer}
+    .dm-v5-sw span{font-weight:760;font-size:.75rem}
+    .dm-v5-sw:hover{outline:2px solid var(--dm-gray-12,#1f2933);outline-offset:1px}
+    @container (max-width: 760px){.dm-v5-grid{grid-template-columns:1fr}.dm-v5-head{display:block}.dm-v5-count{display:block;margin-top:6px}}
+  </style>
+  <div class="dm-v5-head">
+    <div>
+      <h2>v5 family palettes</h2>
+      <p>Sixteen generated families, ten perceptually equalized steps each. Click a swatch to copy its token.</p>
+    </div>
+    <div class="dm-v5-count">16 families / 160 colors</div>
+  </div>
+  <div class="dm-v5-grid">
+<article class="dm-v5-card"><h3>dc.amber</h3><p>warm thresholds and contextual bands</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#fbf3df;--tc:#1f2933" data-token="dc.amber0" title="dc.amber0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#f9e7bf;--tc:#1f2933" data-token="dc.amber1" title="dc.amber1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#fbda9b;--tc:#1f2933" data-token="dc.amber2" title="dc.amber2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#fecc75;--tc:#1f2933" data-token="dc.amber3" title="dc.amber3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#ffbb50;--tc:#1f2933" data-token="dc.amber4" title="dc.amber4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#ffa926;--tc:#1f2933" data-token="dc.amber5" title="dc.amber5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#fb9600;--tc:#1f2933" data-token="dc.amber6" title="dc.amber6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#f38500;--tc:#1f2933" data-token="dc.amber7" title="dc.amber7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#ec7200;--tc:#1f2933" data-token="dc.amber8" title="dc.amber8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#e65f0b;--tc:#fff" data-token="dc.amber9" title="dc.amber9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.blue</h3><p>primary analytical series</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#e8f6ff;--tc:#1f2933" data-token="dc.blue0" title="dc.blue0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#c9e8ff;--tc:#1f2933" data-token="dc.blue1" title="dc.blue1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#aadaff;--tc:#1f2933" data-token="dc.blue2" title="dc.blue2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#8acbff;--tc:#1f2933" data-token="dc.blue3" title="dc.blue3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#69bcff;--tc:#1f2933" data-token="dc.blue4" title="dc.blue4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#4aabfa;--tc:#1f2933" data-token="dc.blue5" title="dc.blue5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#2d99f0;--tc:#1f2933" data-token="dc.blue6" title="dc.blue6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#1686e0;--tc:#fff" data-token="dc.blue7" title="dc.blue7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#1474ca;--tc:#fff" data-token="dc.blue8" title="dc.blue8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#1864b0;--tc:#fff" data-token="dc.blue9" title="dc.blue9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.cyan</h3><p>cool secondary series and dense marks</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#e6f7f8;--tc:#1f2933" data-token="dc.cyan0" title="dc.cyan0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#c3edf1;--tc:#1f2933" data-token="dc.cyan1" title="dc.cyan1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#9be3ec;--tc:#1f2933" data-token="dc.cyan2" title="dc.cyan2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#71d8e5;--tc:#1f2933" data-token="dc.cyan3" title="dc.cyan3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#48cadb;--tc:#1f2933" data-token="dc.cyan4" title="dc.cyan4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#31b8cc;--tc:#1f2933" data-token="dc.cyan5" title="dc.cyan5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#22a6ba;--tc:#1f2933" data-token="dc.cyan6" title="dc.cyan6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#1894a9;--tc:#1f2933" data-token="dc.cyan7" title="dc.cyan7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#128397;--tc:#fff" data-token="dc.cyan8" title="dc.cyan8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#107285;--tc:#fff" data-token="dc.cyan9" title="dc.cyan9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.gray</h3><p>reference, grid, and secondary context</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#f2f4f5;--tc:#1f2933" data-token="dc.gray0" title="dc.gray0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#dcdee1;--tc:#1f2933" data-token="dc.gray1" title="dc.gray1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#c6c9cd;--tc:#1f2933" data-token="dc.gray2" title="dc.gray2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#b0b5ba;--tc:#1f2933" data-token="dc.gray3" title="dc.gray3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#9ba0a6;--tc:#1f2933" data-token="dc.gray4" title="dc.gray4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#878d93;--tc:#1f2933" data-token="dc.gray5" title="dc.gray5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#74797f;--tc:#fff" data-token="dc.gray6" title="dc.gray6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#62666c;--tc:#fff" data-token="dc.gray7" title="dc.gray7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#505458;--tc:#fff" data-token="dc.gray8" title="dc.gray8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#404245;--tc:#fff" data-token="dc.gray9" title="dc.gray9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.green</h3><p>positive states and growth</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#e6f8e9;--tc:#1f2933" data-token="dc.green0" title="dc.green0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#cbf2cf;--tc:#1f2933" data-token="dc.green1" title="dc.green1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#aeedb5;--tc:#1f2933" data-token="dc.green2" title="dc.green2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#8fe69b;--tc:#1f2933" data-token="dc.green3" title="dc.green3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#6edd80;--tc:#1f2933" data-token="dc.green4" title="dc.green4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#4fd067;--tc:#1f2933" data-token="dc.green5" title="dc.green5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#40bf59;--tc:#1f2933" data-token="dc.green6" title="dc.green6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#39ad4e;--tc:#1f2933" data-token="dc.green7" title="dc.green7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#359b46;--tc:#1f2933" data-token="dc.green8" title="dc.green8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#338a3f;--tc:#fff" data-token="dc.green9" title="dc.green9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.indigo</h3><p>cool comparison series</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#f0f3ff;--tc:#1f2933" data-token="dc.indigo0" title="dc.indigo0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#d8e1ff;--tc:#1f2933" data-token="dc.indigo1" title="dc.indigo1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#c1cfff;--tc:#1f2933" data-token="dc.indigo2" title="dc.indigo2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#aabcff;--tc:#1f2933" data-token="dc.indigo3" title="dc.indigo3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#93aaff;--tc:#1f2933" data-token="dc.indigo4" title="dc.indigo4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#7c97ff;--tc:#1f2933" data-token="dc.indigo5" title="dc.indigo5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#6683ff;--tc:#1f2933" data-token="dc.indigo6" title="dc.indigo6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#516ff9;--tc:#fff" data-token="dc.indigo7" title="dc.indigo7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#405de3;--tc:#fff" data-token="dc.indigo8" title="dc.indigo8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#3552c2;--tc:#fff" data-token="dc.indigo9" title="dc.indigo9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.lime</h3><p>fresh/biological ordered data</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#eff6e1;--tc:#1f2933" data-token="dc.lime0" title="dc.lime0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#dff1c2;--tc:#1f2933" data-token="dc.lime1" title="dc.lime1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#cfeca1;--tc:#1f2933" data-token="dc.lime2" title="dc.lime2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#bde67d;--tc:#1f2933" data-token="dc.lime3" title="dc.lime3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#aadf57;--tc:#1f2933" data-token="dc.lime4" title="dc.lime4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#96d336;--tc:#1f2933" data-token="dc.lime5" title="dc.lime5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#85c32a;--tc:#1f2933" data-token="dc.lime6" title="dc.lime6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#75b422;--tc:#1f2933" data-token="dc.lime7" title="dc.lime7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#67a51d;--tc:#1f2933" data-token="dc.lime8" title="dc.lime8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#5a9619;--tc:#1f2933" data-token="dc.lime9" title="dc.lime9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.orange</h3><p>warm emphasis and warnings</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#fff2df;--tc:#1f2933" data-token="dc.orange0" title="dc.orange0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#fce3c1;--tc:#1f2933" data-token="dc.orange1" title="dc.orange1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#fdd3a2;--tc:#1f2933" data-token="dc.orange2" title="dc.orange2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#ffc381;--tc:#1f2933" data-token="dc.orange3" title="dc.orange3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#ffb064;--tc:#1f2933" data-token="dc.orange4" title="dc.orange4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#ff9d46;--tc:#1f2933" data-token="dc.orange5" title="dc.orange5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#ff8825;--tc:#1f2933" data-token="dc.orange6" title="dc.orange6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#f97311;--tc:#1f2933" data-token="dc.orange7" title="dc.orange7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#ef611a;--tc:#fff" data-token="dc.orange8" title="dc.orange8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#e24f26;--tc:#fff" data-token="dc.orange9" title="dc.orange9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.pink</h3><p>soft editorial accents</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#faf1f5;--tc:#1f2933" data-token="dc.pink0" title="dc.pink0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#fad9e6;--tc:#1f2933" data-token="dc.pink1" title="dc.pink1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#fdc0d6;--tc:#1f2933" data-token="dc.pink2" title="dc.pink2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#fea6c5;--tc:#1f2933" data-token="dc.pink3" title="dc.pink3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#fd8bb3;--tc:#1f2933" data-token="dc.pink4" title="dc.pink4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#f96f9f;--tc:#1f2933" data-token="dc.pink5" title="dc.pink5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#ef5389;--tc:#fff" data-token="dc.pink6" title="dc.pink6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#e03673;--tc:#fff" data-token="dc.pink7" title="dc.pink7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#ca1f5e;--tc:#fff" data-token="dc.pink8" title="dc.pink8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#af1f4f;--tc:#fff" data-token="dc.pink9" title="dc.pink9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.purple</h3><p>qualitative accent groups</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#f7f2f9;--tc:#1f2933" data-token="dc.purple0" title="dc.purple0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#f1daf7;--tc:#1f2933" data-token="dc.purple1" title="dc.purple1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#edc2f8;--tc:#1f2933" data-token="dc.purple2" title="dc.purple2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#e8aaf8;--tc:#1f2933" data-token="dc.purple3" title="dc.purple3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#e191f6;--tc:#1f2933" data-token="dc.purple4" title="dc.purple4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#d776f0;--tc:#1f2933" data-token="dc.purple5" title="dc.purple5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#c85ce4;--tc:#1f2933" data-token="dc.purple6" title="dc.purple6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#b545d1;--tc:#fff" data-token="dc.purple7" title="dc.purple7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#9f37b8;--tc:#fff" data-token="dc.purple8" title="dc.purple8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#882c9f;--tc:#fff" data-token="dc.purple9" title="dc.purple9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.red</h3><p>negative states and alerts</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#fff0f0;--tc:#1f2933" data-token="dc.red0" title="dc.red0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#ffd9da;--tc:#1f2933" data-token="dc.red1" title="dc.red1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#ffc2c3;--tc:#1f2933" data-token="dc.red2" title="dc.red2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#ffabab;--tc:#1f2933" data-token="dc.red3" title="dc.red3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#ff9292;--tc:#1f2933" data-token="dc.red4" title="dc.red4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#ff7879;--tc:#1f2933" data-token="dc.red5" title="dc.red5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#fb5b5e;--tc:#1f2933" data-token="dc.red6" title="dc.red6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#ed4146;--tc:#fff" data-token="dc.red7" title="dc.red7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#d82c30;--tc:#fff" data-token="dc.red8" title="dc.red8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#bf2525;--tc:#fff" data-token="dc.red9" title="dc.red9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.rose</h3><p>warm editorial highlights</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#fff0f3;--tc:#1f2933" data-token="dc.rose0" title="dc.rose0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#ffd8e0;--tc:#1f2933" data-token="dc.rose1" title="dc.rose1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#ffbfcb;--tc:#1f2933" data-token="dc.rose2" title="dc.rose2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#ffa6b7;--tc:#1f2933" data-token="dc.rose3" title="dc.rose3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#ff8ca1;--tc:#1f2933" data-token="dc.rose4" title="dc.rose4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#ff708b;--tc:#1f2933" data-token="dc.rose5" title="dc.rose5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#f55474;--tc:#fff" data-token="dc.rose6" title="dc.rose6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#e5385d;--tc:#fff" data-token="dc.rose7" title="dc.rose7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#cf234a;--tc:#fff" data-token="dc.rose8" title="dc.rose8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#b4233e;--tc:#fff" data-token="dc.rose9" title="dc.rose9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.sky</h3><p>light cool data and backgrounds</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#e6f7fc;--tc:#1f2933" data-token="dc.sky0" title="dc.sky0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#c5eaf7;--tc:#1f2933" data-token="dc.sky1" title="dc.sky1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#a2def5;--tc:#1f2933" data-token="dc.sky2" title="dc.sky2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#7dd1f2;--tc:#1f2933" data-token="dc.sky3" title="dc.sky3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#57c3ec;--tc:#1f2933" data-token="dc.sky4" title="dc.sky4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#30b3e2;--tc:#1f2933" data-token="dc.sky5" title="dc.sky5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#10a1d2;--tc:#1f2933" data-token="dc.sky6" title="dc.sky6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#008fbf;--tc:#fff" data-token="dc.sky7" title="dc.sky7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#007eab;--tc:#fff" data-token="dc.sky8" title="dc.sky8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#056d96;--tc:#fff" data-token="dc.sky9" title="dc.sky9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.teal</h3><p>house analytical color and ordered ramps</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#e3f8f2;--tc:#1f2933" data-token="dc.teal0" title="dc.teal0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#c0f1e1;--tc:#1f2933" data-token="dc.teal1" title="dc.teal1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#97ecd0;--tc:#1f2933" data-token="dc.teal2" title="dc.teal2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#6ae4be;--tc:#1f2933" data-token="dc.teal3" title="dc.teal3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#30d9aa;--tc:#1f2933" data-token="dc.teal4" title="dc.teal4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#00c897;--tc:#1f2933" data-token="dc.teal5" title="dc.teal5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#00b586;--tc:#1f2933" data-token="dc.teal6" title="dc.teal6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#00a376;--tc:#1f2933" data-token="dc.teal7" title="dc.teal7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#029167;--tc:#fff" data-token="dc.teal8" title="dc.teal8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#157f59;--tc:#fff" data-token="dc.teal9" title="dc.teal9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.violet</h3><p>premium/editorial qualitative groups</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#f5f2ff;--tc:#1f2933" data-token="dc.violet0" title="dc.violet0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#e5dcff;--tc:#1f2933" data-token="dc.violet1" title="dc.violet1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#d5c7ff;--tc:#1f2933" data-token="dc.violet2" title="dc.violet2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#c4b2ff;--tc:#1f2933" data-token="dc.violet3" title="dc.violet3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#b49cff;--tc:#1f2933" data-token="dc.violet4" title="dc.violet4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#a386ff;--tc:#1f2933" data-token="dc.violet5" title="dc.violet5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#926fff;--tc:#1f2933" data-token="dc.violet6" title="dc.violet6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#8158f9;--tc:#fff" data-token="dc.violet7" title="dc.violet7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#6c46e3;--tc:#fff" data-token="dc.violet8" title="dc.violet8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#5a3ec3;--tc:#fff" data-token="dc.violet9" title="dc.violet9"><span>9</span></button></div></article>
+<article class="dm-v5-card"><h3>dc.yellow</h3><p>high-key warm highlights</p><div class="dm-v5-row"><button class="dm-v5-sw" style="--c:#f8f4e0;--tc:#1f2933" data-token="dc.yellow0" title="dc.yellow0"><span>0</span></button>
+<button class="dm-v5-sw" style="--c:#f5ecbd;--tc:#1f2933" data-token="dc.yellow1" title="dc.yellow1"><span>1</span></button>
+<button class="dm-v5-sw" style="--c:#f6e396;--tc:#1f2933" data-token="dc.yellow2" title="dc.yellow2"><span>2</span></button>
+<button class="dm-v5-sw" style="--c:#f9d969;--tc:#1f2933" data-token="dc.yellow3" title="dc.yellow3"><span>3</span></button>
+<button class="dm-v5-sw" style="--c:#fccb2a;--tc:#1f2933" data-token="dc.yellow4" title="dc.yellow4"><span>4</span></button>
+<button class="dm-v5-sw" style="--c:#f8b900;--tc:#1f2933" data-token="dc.yellow5" title="dc.yellow5"><span>5</span></button>
+<button class="dm-v5-sw" style="--c:#f2a800;--tc:#1f2933" data-token="dc.yellow6" title="dc.yellow6"><span>6</span></button>
+<button class="dm-v5-sw" style="--c:#ec9600;--tc:#1f2933" data-token="dc.yellow7" title="dc.yellow7"><span>7</span></button>
+<button class="dm-v5-sw" style="--c:#e78400;--tc:#1f2933" data-token="dc.yellow8" title="dc.yellow8"><span>8</span></button>
+<button class="dm-v5-sw" style="--c:#e37100;--tc:#1f2933" data-token="dc.yellow9" title="dc.yellow9"><span>9</span></button></div></article>
+  </div>
 </div>
+<script>
+document.querySelectorAll('.dm-v5-sw').forEach((button) => {
+  button.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(button.dataset.token); } catch (_) {}
+  });
+});
+</script>

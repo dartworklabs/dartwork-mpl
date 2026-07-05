@@ -65,7 +65,7 @@ ax_price.patch.set_visible(False)  # transparent so volume bars show
 
 # Target axhline.
 ax_price.axhline(
-    target, color="dc.earth5", linewidth=0.5, linestyle="--", zorder=2
+    target, color="dc.amber5", linewidth=0.5, linestyle="--", zorder=2
 )
 ax_price.text(
     n - 1,
@@ -74,7 +74,7 @@ ax_price.text(
     ha="right",
     va="bottom",
     fontsize=dm.fs(-1),
-    color="dc.earth5",
+    color="dc.amber5",
     fontstyle="italic",
 )
 

@@ -208,15 +208,15 @@ dm.simple_layout(fig)
 ## Adding color
 
 dartwork-mpl ships its own curated palette — `dc.*` ("dartwork color"),
-a 24-palette system across 11 families (8 shades each) — and registers six
-third-party design systems alongside it. Use any of them anywhere matplotlib
-accepts a color string:
+a 16-family v5 system with 10 perceptual steps per family — and registers six
+third-party design systems alongside it. Use any named color anywhere
+matplotlib accepts a color string:
 
 ```python
 # Curated dartwork palette (recommended starting point)
 ax.plot(x, y, color="dc.teal3")                   # cool blue
-ax.fill_between(x, y1, y2, color="dc.earth1")     # warm accent
-ax.bar(categories, values, color="dc.vivid1")      # bold call-out
+ax.fill_between(x, y1, y2, color="dc.orange1")     # warm accent
+ax.bar(categories, values, color="dc.red1")      # bold call-out
 
 # Third-party systems also available for cross-team consistency
 ax.plot(x, y2, color="oc.blue5")                   # OpenColor
@@ -229,7 +229,7 @@ ax.plot(x, y1, color="tw.emerald500")              # Tailwind
 import dartwork_mpl as dm
 
 dm.list_palettes()[:5]      # → ['ad.blue', 'ad.cyan', 'ad.geekblue', ...]
-dm.show_palette("dc.teal")  # renders the 8-shade swatch row in Jupyter
+dm.show_palette("dc.teal")  # renders the 10-step swatch row in Jupyter
 dm.plot_colors(ncols=4)     # full library overview, one figure per system
 ```
 
@@ -251,7 +251,7 @@ gs = fig.add_gridspec(1, 2, wspace=0.3)
 ax1 = fig.add_subplot(gs[0])
 ax2 = fig.add_subplot(gs[1])
 
-ax1.plot(x, np.sin(x), color="dc.vivid1")
+ax1.plot(x, np.sin(x), color="dc.red1")
 ax2.plot(x, np.cos(x), color="dc.teal3")
 
 dm.label_axes([ax1, ax2])  # adds (a), (b) panel labels

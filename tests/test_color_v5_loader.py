@@ -1,4 +1,4 @@
-"""v5 palette token registration + legacy collision policy (스펙 §11)."""
+"""v5 palette token registration."""
 
 from __future__ import annotations
 
@@ -19,13 +19,11 @@ def test_v5_tokens_registered_for_noncolliding_families():
             assert named[f"dc.{fam}{step}"] == _generated.PALETTE[fam][step]
 
 
-def test_colliding_tokens_default_to_frozen_legacy():
-    # dc.teal5 는 레거시 dc_palettes.json 값 유지 (silent recolor 금지 — §11)
+def test_v5_tokens_default_to_generated_values():
     named = _named()
-    assert named["dc.teal5"] != _generated.PALETTE["teal"][5]
-    # 레거시에 없는 스텝(8·9)은 v5 값으로 등록
+    assert named["dc.teal5"] == _generated.PALETTE["teal"][5]
     assert named["dc.teal8"] == _generated.PALETTE["teal"][8]
 
 
-def test_dm_alias_exists():
-    assert _named()["dm.blue6"] == _named()["dc.blue6"]
+def test_dm_alias_removed():
+    assert "dm.blue6" not in _named()

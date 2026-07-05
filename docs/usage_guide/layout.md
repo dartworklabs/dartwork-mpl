@@ -239,7 +239,7 @@ import dartwork_mpl as dm
 dm.style.use("scientific-kr")  # English/Korean fonts set together
 
 fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
-ax.plot([0, 1, 2], [0, 1, 0.4], color="dc.forest2", lw=dm.lw(0.5))
+ax.plot([0, 1, 2], [0, 1, 0.4], color="dc.green2", lw=dm.lw(0.5))
 ax.set_title("Experiment result", fontsize=dm.fs(2), fontweight=dm.fw(1))
 ax.set_xlabel("Time")
 ax.set_ylabel("Response")
