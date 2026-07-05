@@ -216,7 +216,7 @@ dartwork-mpl styles configure fonts through matplotlib's rcParams:
 
 ### Default Font Settings (dmpl style)
 
-```python
+```ini
 # Font family and weight
 font.family: roboto
 font.weight: 300
@@ -254,8 +254,12 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 
-# Change font family
-plt.rcParams['font.family'] = 'Inter'
+# Change primary font family while preserving fallback coverage
+family_chain = plt.rcParams["font.family"]
+plt.rcParams["font.family"] = [
+    "Inter",
+    *[family for family in family_chain if family != "Inter"],
+]
 
 # Change base weight
 plt.rcParams['font.weight'] = 400  # Regular instead of Light

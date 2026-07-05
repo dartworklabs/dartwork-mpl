@@ -45,7 +45,7 @@ def cm2in(cm: float) -> float:
     """Convert centimeters to inches."""
     return cm / 2.54
 
-def simple_layout(fig, margins=(0.05, 0.05, 0.05, 0.05)):
+def simple_layout(fig, margin=0.05):
     """Optimize figure layout via scipy L-BFGS-B."""
     gs = fig.axes[0].get_gridspec()
     # ... ~30 lines of standard scipy + matplotlib

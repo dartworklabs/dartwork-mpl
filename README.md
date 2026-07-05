@@ -58,8 +58,8 @@ pip install "dartwork-mpl[notebook]"   # or [mcp], [ui]
 
 - **Geometry, decoupled from inches.** `dm.figsize("13cm", "standard")` takes a
   physical width (cm / in / mm / pt, or `dm.col1` = 9 cm / `dm.col2` = 17 cm) and
-  one of six aspect tokens (`square / portrait / standard / golden / wide /
-  cinema`); the height follows. Bare numbers are rejected so the unit is always
+  one of ten aspect tokens (`square / portrait / tall / standard / golden /
+  wide / a4 / slide / cinema / panoramic`); the height follows. Bare numbers are rejected so the unit is always
   explicit.
 - **Deterministic layout.** `simple_layout(fig)` measures every visible artist and
   places the GridSpec arithmetically — reproducible across machines, unlike
@@ -72,7 +72,8 @@ pip install "dartwork-mpl[notebook]"   # or [mcp], [ui]
   `fw` / `lw` so literals never drift when you switch themes.
 - **Validation & export.** `validate_figure(fig)` flags overflow, text/legend
   overlap, tick crowding, and empty axes — invisible failures in headless agent
-  pipelines. `save_formats(fig, ...)` writes SVG / PNG / PDF / EPS at once.
+  pipelines. `save_formats(fig, ...)` writes SVG / PNG / PDF / EPS at once, with
+  deterministic SVG/PDF/SVGZ output for unchanged figures.
 - **AI-native.** A bundled [MCP](https://modelcontextprotocol.io) server exposes
   lint + auto-fix, figure validation, color lookup, and the live policy corpus to
   Claude Code / Cursor / Windsurf. No-MCP agents read the same corpus from disk.
@@ -142,6 +143,9 @@ Full catalog: [`02-anti-patterns.yaml`](src/dartwork_mpl/asset/prompt/02-anti-pa
 Reachable at runtime via `dm.get_prompt("02-anti-patterns")` or
 `lint_dartwork_mpl_code(code)` over MCP.
 
+Upgrading from v4? See the [Migration Guide](docs/migration.md) for the
+palette codemod and removed-name map.
+
 <br/>
 
 ## Style presets
@@ -167,8 +171,8 @@ dartwork-mpl ships a built-in **Model Context Protocol** server so AI coding
 assistants pull the current policy guides, color palettes, lint catalog, and
 helper tools straight into the chat — no copy-pasting docs. It exposes **16 tools**
 (lint + auto-fix, figure validation, render, color lookup, info, chart-type
-recommender, layered-plot composer, advanced-tier render), **12 resources +
-3 resource templates** (the prompt corpus + 18 basic + 18 tier-2 advanced plot
+recommender, layered-plot composer, advanced-tier render), **10 resources +
+4 resource templates** (the prompt corpus + 18 basic + 18 tier-2 advanced plot
 templates), and **2 prompts**.
 
 ```shell

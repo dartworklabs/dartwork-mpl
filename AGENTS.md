@@ -12,7 +12,7 @@ concatenated dump in [`llms-full.txt`](llms-full.txt).
 ## What is dartwork-mpl
 
 A thin utility layer on top of matplotlib that gives you a free-form
-physical-width API, six aspect tokens, curated style presets, an
+physical-width API, ten aspect tokens, curated style presets, an
 OKLCH-aware color system, content-aware layout, validation, and an
 MCP server for AI agent integration. It does **not** wrap matplotlib
 with a new API — `Figure` / `Axes` stay native.
@@ -73,8 +73,8 @@ below) for the complete list. The most common ones AI agents trip on:
 For Claude Code / Cursor / any MCP client, see the step-by-step setup
 in [`docs/integrations/mcp_server.md`](docs/integrations/mcp_server.md).
 The server exposes 16 tools (lint + auto-fix + figure validation + render + color lookup + info
-+ chart-type recommender + layered-plot composer + advanced-tier render), 12 resources +
-3 resource templates (the prompt corpus + 18 basic + 18 tier-2 advanced plot templates), and 2 prompts. The tools you'll
++ chart-type recommender + layered-plot composer + advanced-tier render), 10 resources +
+4 resource templates (the prompt corpus + 18 basic + 18 tier-2 advanced plot templates), and 2 prompts. The tools you'll
 use most:
 
 - `lint_dartwork_mpl_code(code)` — anti-pattern detection.
@@ -92,6 +92,9 @@ inside Python.
 | 5-minute hands-on tour | [`docs/usage_guide/quickstart.md`](docs/usage_guide/quickstart.md) |
 | Width / aspect / layout deep dive | [`docs/usage_guide/layout.md`](docs/usage_guide/layout.md) |
 | Color system & palettes | [`docs/color_system/colors.md`](docs/color_system/colors.md) (or the [design rationale](docs/color_system/design.md)) |
+| Fonts, math & symbols | [`docs/fonts/index.md`](docs/fonts/index.md) (or the [math/symbol guide](docs/fonts/math_and_symbols.md)) |
+| Saving, validation & reproducible output | [`docs/usage_guide/save_export.md`](docs/usage_guide/save_export.md) |
 | 18 ready-to-use plot templates | [`docs/examples_gallery/09_ai_templates/`](docs/examples_gallery/09_ai_templates/) (rendered) or [`src/dartwork_mpl/asset/prompt/05-templates/`](src/dartwork_mpl/asset/prompt/05-templates/) (source) |
+| Upgrading from v4 | [`docs/migration.md`](docs/migration.md) |
 | Why this design exists | [`docs/philosophy/ai_native.md`](docs/philosophy/ai_native.md) |
-| AI integration overview | [`docs/integrations/index.md`](docs/integrations/index.md) |
+| AI integration overview | [`docs/ai/index.md`](docs/ai/index.md) |

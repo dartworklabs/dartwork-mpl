@@ -94,6 +94,7 @@ diff you review before applying:
 ```bash
 python -m dartwork_mpl.colors._migrate path/to/script.py      # dry-run diff
 python -m dartwork_mpl.colors._migrate --apply path/to/*.py   # write
+python -m dartwork_mpl.colors._migrate --no-advisory script.py # omit the ΔE advisory table
 ```
 
 Each rewrite is tagged *colours preserved* (a pure rename) or *review* (a
@@ -108,6 +109,11 @@ a `dc.` / `dm.` prefix (e.g. `set_cycle("spectrum")`, `get_palette("ocean")`,
 current name when they appear in a palette-API call — but are still **not**
 auto-rewritten (a bare string has no namespace to prove intent), so review and
 update those by hand.
+
+Exit codes are CI-friendly for prefixed rewrites: dry-run exits `1` when
+prefixed rewrites are pending, and exits `0` for `--apply` runs or clean files.
+Files with only bare-name reports also exit `0`, so do not use the exit code
+alone as a gate for manual bare-name cleanup.
 
 ## v0.5.5 — categorical palette overhaul
 

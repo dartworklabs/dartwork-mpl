@@ -206,7 +206,7 @@ structured JSON.
 | Asset | Use it for | Entry point |
 |---|---|---|
 | **MCP server** | Live doc access + lint inside the chat | `dartwork-mpl-mcp` console script ([setup](../integrations/mcp_server.md)) |
-| **Prompt corpus** (15 files) | Anti-patterns, style rules, recipes — paste-able | `dm.list_prompts()` / `dm.get_prompt("02-anti-patterns")` |
+| **Prompt corpus** (4 guides + templates) | Anti-patterns, style rules, recipes — paste-able | `dm.list_prompts()` → `["00-index", "01-policy", "02-anti-patterns", "03-recipes"]`; `dm.get_prompt("02-anti-patterns")` |
 | **18 plot templates** | Drop-in patterns for bar / line / scatter / heatmap / dashboards | [AI Plot Templates gallery](../examples_gallery/09_ai_templates/index.rst) |
 | **`AGENTS.md` / `CLAUDE.md`** | 30-second onboarding for any LLM | Repo root |
 | **`llms.txt`** | Lightweight index (≈ 2.5 KB) — fits in any system prompt | Repo root |

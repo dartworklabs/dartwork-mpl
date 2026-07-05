@@ -52,10 +52,14 @@ shapes; raw floats are accepted when you need a non-standard ratio.
 | :----------- | :---------- | :------------------------------------ |
 | `square`     | 1.000       | Polar, scatter with equal axes        |
 | `portrait`   | 1.250       | Tall plots, vertical bar charts       |
+| `tall`       | 1.500       | Mobile reading, long vertical panels  |
 | `standard`   | 0.750       | Default; most single panels           |
 | `golden`     | 0.618       | Time series, line plots               |
 | `wide`       | 0.667       | Side-by-side comparisons              |
+| `a4`         | 0.707       | ISO paper ratios in landscape         |
+| `slide`      | 0.562       | 16:9 slide decks                      |
 | `cinema`     | 0.500       | Slide banners, very wide trends       |
+| `panoramic`  | 0.333       | Long banners, sparklines              |
 
 Raw floats also work: `aspect=0.4` or `aspect=1.1`. Use them only when
 no named token fits; the tokens are the lingua franca and reviewers

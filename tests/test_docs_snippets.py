@@ -23,6 +23,8 @@ _REPO = Path(__file__).resolve().parents[1]
 _DOCS = [
     _REPO / "docs" / "usage_guide" / "colors.md",
     _REPO / "docs" / "usage_guide" / "quickstart.md",
+    _REPO / "docs" / "usage_guide" / "save_export.md",
+    _REPO / "docs" / "color_system" / "categorical-palettes.md",
 ]
 
 _FENCE = re.compile(r"```python\n(.*?)```", re.S)
@@ -65,6 +67,8 @@ def _preamble_namespace() -> dict:
         "y2": x + 0.5,
         "categories": ["A", "B", "C"],
         "values": [3.0, 1.5, 2.2],
+        "gains": [1.0, 1.8, 1.4, 2.2],
+        "baseline": 1.5,
     }
 
 
@@ -73,9 +77,16 @@ def _preamble_namespace() -> dict:
     _snippets(),
     ids=[f"{d}:{n}" for d, n, _ in _snippets()],
 )
-def test_snippet_executes(doc: str, lineno: int, code: str) -> None:
+def test_snippet_executes(
+    doc: str,
+    lineno: int,
+    code: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     import matplotlib.pyplot as plt
 
+    monkeypatch.chdir(tmp_path)
     ns = _preamble_namespace()
     try:
         exec(compile(code, f"{doc}:{lineno}", "exec"), ns)

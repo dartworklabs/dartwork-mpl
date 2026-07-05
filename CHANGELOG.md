@@ -22,6 +22,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   hex values; the default (`4`) keeps every existing script visually
   unchanged. Design spec:
   `docs/superpowers/specs/2026-07-03-color-system-v5-design.md`.
+- **Math & special-character coverage.** The default mathtext stack now
+  uses Noto Sans Math with STIX fallback, and the explicit plain-text
+  fallback chain bundles Noto Sans Math plus Noto Sans Symbols 1/2 so
+  labels render symbols such as `→`, `±`, `℃`, `∑`, `σ`, `⚠`, and `✓`
+  without tofu. New guide: `docs/fonts/math_and_symbols.md`.
+- **Deterministic SVG/PDF/SVGZ output by default.** `dm.save_formats`
+  pins SVG ids with a stable `svg.hashsalt`, drops churning SVG/PDF
+  timestamp metadata unless the caller supplies it, and writes SVGZ with
+  gzip `mtime=0`, so unchanged figures re-render byte-identically.
+- **Prompt and diagnostic convenience surfaces.** `dm.cycle_cycler` is
+  exported at the package root, `dm.get_prompt("02-anti-patterns")` and
+  `dm.list_prompts()` now include the YAML anti-pattern catalog, and
+  `dm.font.list_registered()` / `dm.font.get_font_dir()` expose bundled
+  font diagnostics for troubleshooting.
 
 ### Changed
 
@@ -33,6 +47,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   exceeds 7 series so reused colors stay distinguishable. The default
   `image.cmap` rcParam is now `dc.aurora` (the v5 colormap of that
   name — see "Changed (breaking)" below).
+- **Bundled fonts win `findfont` ties.** Registered bundled faces are
+  promoted ahead of identically-named system copies, so figures resolve
+  to the shipped font files consistently across machines.
+- **Palette migration codemod hardened.** `python -m
+  dartwork_mpl.colors._migrate` rewrites prefixed removed-token names as
+  visible diffs, preserves `dc.` / `dm.` namespace intent, reports
+  bare-name palette calls for manual review, documents its exit codes,
+  and offers `--no-advisory` for CI logs that do not need the ΔE table.
 
 ### Deprecated
 
@@ -114,6 +136,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   panels (``EMPTY_AXES``); ``OVERFLOW`` / ``LEGEND_OVERFLOW`` now see
   figure-level text and off-canvas legends; a check that errors no longer
   lets the figure be reported "clean".
+- **Color gate integrity.** CVD and contrast gate checks now compare
+  unrounded threshold values, avoiding false passes/failures caused by
+  display-rounded numbers in reports and docs.
 - **Misc correctness.** ``import dartwork_mpl`` no longer deletes
   matplotlib's global ``xkcd:*`` colours; ``mix_colors`` rejects
   out-of-range ``alpha``; ``check_figure_quality`` recognises
@@ -124,6 +149,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   ``save_and_show`` handles PNG/PDF paths (and the quickstart's
   extensionless one) instead of raising a raw XML error;
   ``classify_colormap`` no longer mislabels ``Spectral`` as categorical.
+- **Docs asset normalization.** Generated documentation figures and
+  static SVG/PDF/SVGZ assets are normalized through the reproducible
+  export path, reducing meaningless artifact churn in docs-only changes.
 
 ### Added
 

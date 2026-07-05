@@ -18,21 +18,33 @@ Available Checks
    * - Check ID
      - Description
      - Severity
-   * - ``overflow``
-     - Artists whose bounding box exceeds the figure canvas
+   * - ``OVERFLOW``
+     - Text, tick labels, or figure-level text extend past the canvas
      - WARNING
-   * - ``overlap``
-     - Overlapping text labels within each axes
+   * - ``OVERLAP``
+     - Text labels overlap within a single axes
      - WARNING
-   * - ``legend_overflow``
-     - Legends occupying too much of the axes area
+   * - ``CROSS_AXES_OVERLAP``
+     - Labels from different axes overlap in multi-panel figures
      - WARNING
-   * - ``tick_crowding``
-     - Overcrowded tick labels on either axis
+   * - ``LEGEND_OVERFLOW``
+     - Legends dominate the axes or spill past the figure
      - WARNING
-   * - ``empty_axes``
-     - Axes with no visible data
+   * - ``TICK_CROWD``
+     - Tick labels consume more space than the axis can comfortably hold
      - INFO
+   * - ``EMPTY_AXES``
+     - Axes contain no visible plotted artist or annotation
+     - INFO
+   * - ``MARGIN_ASYMMETRY``
+     - Opposite outer margins differ by more than the threshold
+     - WARNING
+   * - ``PIE_LABEL_OFFSET``
+     - Donut-chart percentage labels are not centered in the ring
+     - INFO
+   * - ``CLIPPED_TEXT``
+     - Text is clipped at an axes or canvas boundary
+     - WARNING
 
 Example
 -------
@@ -51,7 +63,7 @@ Example
        print(w)
 
    # Run specific checks only
-   warnings = dm.validate_figure(fig, checks=('overlap', 'tick_crowding'))
+   warnings = dm.validate_figure(fig, checks=('OVERLAP', 'TICK_CROWD'))
 
    # Integrated in save_formats (on by default)
    dm.save_formats(fig, 'output/fig', validate=True)
@@ -80,16 +92,25 @@ Example with Auto-Fix
 .. code-block:: python
 
    import dartwork_mpl as dm
-   from dartwork_mpl.validate_fixes import validate_with_fixes
+   from dartwork_mpl.validate_fixes import (
+       generate_validation_report,
+       get_fix_suggestions,
+       validate_with_fixes,
+   )
 
    # Validate and get fix suggestions
    issues, fixes = validate_with_fixes(fig)
 
-   # Apply suggested fixes
-   for fix in fixes:
-       if fix['auto_fixable']:
-           fix['apply'](fig, **fix['params'])
+   # `fixes` is a list[str] of auto-applied changes. To inspect
+   # suggestions without mutating the figure, ask for each issue.
+   for issue in issues:
+       for suggestion in get_fix_suggestions(issue):
+           print(suggestion)
+
+   # Or ask validate_with_fixes to apply its safe layout fix once.
+   issues_after, applied = validate_with_fixes(fig, auto_apply=True)
+   print(applied)
 
    # Generate report for logging
-   report = generate_validation_report(issues, fixes)
+   report = generate_validation_report(fig)
    print(report)

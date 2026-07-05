@@ -22,7 +22,7 @@ The helpers module is organized into specialized submodules:
 
 - **data**: Data validation and cleaning utilities
 - **colors**: Automatic color selection and management
-- **labels**: Axis labels, legends, and value annotations
+- **labels**: Legend placement and formatting
 - **quality**: Quality checks and chart suggestions
 - **io**: Figure creation and saving utilities
 
@@ -85,11 +85,12 @@ Example:
    for i, color in enumerate(colors):
        ax.plot(x, data[i], color=color, label=f"Series {i+1}")
 
-Label, Legend, and Annotation Helpers
--------------------------------------
+Label and Legend Helpers
+------------------------
 
-Functions for composing axis labels, placing legends, and adding
-value annotations.
+Functions for placing and formatting legends. Axis labels use
+matplotlib's native ``ax.set_xlabel`` / ``ax.set_ylabel`` calls; value
+annotations use ``ax.text`` or ``ax.bar_label`` directly.
 
 .. automodule:: dartwork_mpl.helpers.labels
    :members:
@@ -106,27 +107,14 @@ Example:
    fig, ax = plt.subplots()
    ax.plot(x, y)
 
-   # Format axis labels automatically
-   dm.helpers.labels.format_axis_labels(
-       ax,
-       xlabel="Time",
-       ylabel="Value",
-       use_latex=False
-   )
+   ax.set_xlabel("Time", fontsize=dm.fs(0))
+   ax.set_ylabel("Value", fontsize=dm.fs(0))
 
    # Optimize legend placement
    dm.helpers.labels.optimize_legend(
        ax,
-       loc='best',
-       frameon=False
-   )
-
-   # Add value labels to data points
-   dm.helpers.labels.add_value_labels(
-       ax,
-       x, y,
-       format_str="{:.1f}",
-       offset=(0, 5)
+       preferred_loc="best",
+       outside=False,
    )
 
 Quality Checks
@@ -154,9 +142,10 @@ Example:
 
    # Get chart type suggestions
    suggested_type = dm.helpers.quality.suggest_chart_type(
-       x_data=x,
-       y_data=y,
-       data_type='continuous'
+       x_type="continuous",
+       y_type="continuous",
+       n_points=len(x),
+       n_series=1,
    )
    print(f"Suggested chart type: {suggested_type}")
 
@@ -199,6 +188,7 @@ without hand-tuning every call.
 
 .. code-block:: python
 
+   import matplotlib.pyplot as plt
    import dartwork_mpl as dm
 
    def automated_visualization(data, chart_type=None):
@@ -209,12 +199,16 @@ without hand-tuning every call.
 
        # 2. Suggest a chart type if not specified
        if chart_type is None:
-           chart_type = dm.helpers.quality.suggest_chart_type(x, y)
+           chart_type = dm.helpers.quality.suggest_chart_type(
+               x_type="continuous",
+               y_type="continuous",
+               n_points=len(x),
+               n_series=1,
+           )
 
        # 3. Create the figure with an appropriate style
-       fig, ax = dm.helpers.io.create_figure_with_style(
-           style="scientific" if chart_type == "scatter" else "web",
-       )
+       dm.style.use("scientific" if chart_type == "scatter" else "web")
+       fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 
        # 4. Pick a curated palette
        colors = dm.make_palette(
@@ -229,7 +223,8 @@ without hand-tuning every call.
            ax.scatter(x, y, color=colors[0])
 
        # 6. Format and quality-check
-       dm.helpers.labels.format_axis_labels(ax)
+       ax.set_xlabel("X", fontsize=dm.fs(0))
+       ax.set_ylabel("Y", fontsize=dm.fs(0))
        dm.helpers.labels.optimize_legend(ax)
        issues = dm.helpers.quality.check_figure_quality(fig)
 
