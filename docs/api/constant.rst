@@ -22,6 +22,7 @@ double-column widths.
 Example (legacy 0.3 idiom)
 --------------------------
 
+.. snippet: no-run
 .. code-block:: python
 
    import matplotlib.pyplot as plt

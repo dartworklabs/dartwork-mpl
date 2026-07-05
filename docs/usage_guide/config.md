@@ -86,6 +86,8 @@ adoption emits a `UserWarning` that includes the axis it touched, so
 you can isolate the offender.
 
 ```python
+import warnings
+
 dm.config.warn_on_orphan_tick_adoption = True
 
 with warnings.catch_warnings(record=True) as caught:

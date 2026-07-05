@@ -8,6 +8,7 @@ notebooks/reports.
 Example
 -------
 
+.. snippet: no-run
 .. code-block:: python
 
    import dartwork_mpl as dm

@@ -12,6 +12,7 @@ non-self-contained opt out with an HTML comment directly above::
 from __future__ import annotations
 
 import re
+import textwrap
 from pathlib import Path
 
 import matplotlib
@@ -25,6 +26,16 @@ _DOCS = [
     _REPO / "docs" / "usage_guide" / "quickstart.md",
     _REPO / "docs" / "usage_guide" / "save_export.md",
     _REPO / "docs" / "color_system" / "categorical-palettes.md",
+    _REPO / "docs" / "usage_guide" / "config.md",
+    _REPO / "docs" / "usage_guide" / "extras.md",
+    _REPO / "docs" / "usage_guide" / "interactive.md",
+    _REPO / "docs" / "usage_guide" / "layout.md",
+    _REPO / "docs" / "usage_guide" / "recipes.md",
+    _REPO / "docs" / "usage_guide" / "styles.md",
+    _REPO / "docs" / "usage_guide" / "tutorials.md",
+    _REPO / "docs" / "color_system" / "colormaps.md",
+    _REPO / "docs" / "color_system" / "colors.md",
+    _REPO / "docs" / "color_system" / "space.md",
 ]
 
 _FENCE = re.compile(r"```python\n(.*?)```", re.S)
@@ -41,6 +52,60 @@ def _snippets() -> list[tuple[str, int, str]]:
             if any(_NO_RUN in line for line in preceding):
                 continue
             out.append((doc.name, lineno, m.group(1)))
+    return out
+
+
+def _rst_snippets() -> list[tuple[str, int, str]]:
+    out = []
+    for doc in sorted((_REPO / "docs" / "api").glob("*.rst")):
+        lines = doc.read_text(encoding="utf-8").splitlines()
+        i = 0
+        while i < len(lines):
+            if lines[i].strip() != ".. code-block:: python":
+                i += 1
+                continue
+
+            lineno = i + 1
+            preceding = lines[max(0, i - 3) : i]
+            skip = any(_NO_RUN in line for line in preceding)
+
+            j = i + 1
+            while j < len(lines):
+                stripped = lines[j].lstrip(" ")
+                indent = len(lines[j]) - len(stripped)
+                if indent >= 3 and stripped.startswith(":"):
+                    j += 1
+                    continue
+                break
+
+            if j < len(lines) and lines[j].strip() == "":
+                j += 1
+
+            body = []
+            while j < len(lines):
+                line = lines[j]
+                if line.strip() == "":
+                    body.append(line)
+                    j += 1
+                    continue
+
+                stripped = line.lstrip(" ")
+                indent = len(line) - len(stripped)
+                if indent >= 3:
+                    body.append(line)
+                    j += 1
+                    continue
+                break
+
+            if not skip:
+                out.append(
+                    (
+                        f"api/{doc.name}",
+                        lineno,
+                        textwrap.dedent("\n".join(body)),
+                    )
+                )
+            i = j
     return out
 
 
@@ -78,6 +143,28 @@ def _preamble_namespace() -> dict:
     ids=[f"{d}:{n}" for d, n, _ in _snippets()],
 )
 def test_snippet_executes(
+    doc: str,
+    lineno: int,
+    code: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import matplotlib.pyplot as plt
+
+    monkeypatch.chdir(tmp_path)
+    ns = _preamble_namespace()
+    try:
+        exec(compile(code, f"{doc}:{lineno}", "exec"), ns)
+    finally:
+        plt.close("all")
+
+
+@pytest.mark.parametrize(
+    ("doc", "lineno", "code"),
+    _rst_snippets(),
+    ids=[f"{d}:{n}" for d, n, _ in _rst_snippets()],
+)
+def test_rst_snippet_executes(
     doc: str,
     lineno: int,
     code: str,

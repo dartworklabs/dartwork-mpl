@@ -68,6 +68,7 @@ preview figure), use `dm.list_palettes()`, `dm.list_colormaps()`, or
 single-row swatch, perfect for Jupyter completion.
 :::
 
+<!-- snippet: no-run -->
 ```python
 >>> dm.list_palettes()[:5]
 ['ad.blue', 'ad.cyan', 'ad.geekblue', 'ad.gold', 'ad.green']
