@@ -414,11 +414,12 @@ coming from:
 The per-release sections below carry the full detail and runnable
 snippets.
 
-## v5 — generative color system (Unreleased)
+## v5 — generative color system (0.5.6)
 
-A 91-parameter generative palette (16 families × 10 perceptually-equalized
-steps, `dc.{family}{step}`) replaces the hand-curated v4 catalog as the
-default. Design spec:
+A 91-parameter generative system (16 families × 10 perceptually-equalized
+steps, `dc.{family}{step}`) ships in 0.5.6. Its colormap catalog is the new
+default; the categorical `dc.{family}{step}` remap is opt-in via
+`dm.set_palette_version(5)` (see below). Design spec:
 `docs/superpowers/specs/2026-07-03-color-system-v5-design.md`.
 
 1. **v4 `dc.*` tokens are frozen, not removed.** Every legacy-only token
