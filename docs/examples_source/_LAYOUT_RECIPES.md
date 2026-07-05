@@ -160,7 +160,7 @@ fig, axes = plt.subplots(1, 2, figsize=dm.figsize("17cm", "wide"))
 
 axes[0].plot(x, y1, color="dc.teal3", lw=dm.lw(1))
 axes[0].set_title("Before")
-axes[1].plot(x, y2, color="dc.vivid3", lw=dm.lw(1))
+axes[1].plot(x, y2, color="dc.orange3", lw=dm.lw(1))
 axes[1].set_title("After")
 
 dm.label_axes(axes)
@@ -175,7 +175,7 @@ dm.simple_layout(fig)
 ```python
 fig, axes = plt.subplots(2, 1, figsize=dm.figsize("13cm", "portrait"), sharex=True)
 axes[0].plot(t, signal, color="dc.teal3", lw=dm.lw(1))
-axes[1].plot(t, residuals, color="dc.teal_indigo3", lw=dm.lw(1))
+axes[1].plot(t, residuals, color="dc.indigo3", lw=dm.lw(1))
 axes[1].set_xlabel("Time (s)")
 
 dm.label_axes(axes)
@@ -299,9 +299,9 @@ ax.bar(x, temperature, color="dc.teal2", width=0.55)
 ax.set_ylabel("Temperature (°C)")
 
 ax2 = ax.twinx()             # right spine visible by design
-ax2.plot(x, change_pct, "o-", color="dc.earth3", lw=dm.lw(1))
-ax2.set_ylabel("Change (%)", color="dc.earth3")
-ax2.tick_params(axis="y", labelcolor="dc.earth3")
+ax2.plot(x, change_pct, "o-", color="dc.orange3", lw=dm.lw(1))
+ax2.set_ylabel("Change (%)", color="dc.orange3")
+ax2.tick_params(axis="y", labelcolor="dc.orange3")
 
 dm.simple_layout(fig)
 ```
@@ -413,7 +413,7 @@ Use `dm.lw(level)` for relative scaling. Never hard-code `lw=2.5`.
 
 ```python
 ax.plot(x, y, lw=dm.lw(1))            # primary trend
-ax.axhline(0, lw=dm.lw(-1), color="dc.teal_indigo2")  # reference
+ax.axhline(0, lw=dm.lw(-1), color="dc.indigo2")  # reference
 ```
 
 ### 10.3 Colors

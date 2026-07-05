@@ -38,10 +38,10 @@ _CATEGORY_STYLE: dict[str, tuple[str, str]] = {
 
 # Override classification for standard dartwork customized maps.
 # Two sets coexist: the v5 catalog (dartwork_mpl.colors — the default surface,
-# 42 maps + 2 cycles) and the legacy dartwork_mpl.cmap maps (kept for backward
-# compatibility). The HSV heuristic below mislabels the v5 maps (single-hue
-# family ramps read as "Multi-Hue", warm scenes as "Single-Hue"), so the v5
-# taxonomy is pinned explicitly from the authoritative catalog.
+# 42 maps + 2 cycles) and the asset/cmap maps exposed by dartwork_mpl.cmap.
+# The HSV heuristic below mislabels the v5 maps (single-hue family ramps read
+# as "Multi-Hue", warm scenes as "Single-Hue"), so the v5 taxonomy is pinned
+# explicitly from the authoritative catalog.
 _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     # ── v5 catalog (dartwork_mpl.colors) ──
     **{
@@ -103,7 +103,7 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     },
     **{f"dc.{n}": "Cyclical" for n in ("hue", "halo", "corona")},
     **{f"dc.{n}": "Categorical" for n in ("cycle", "cycle_print")},
-    # ── legacy dartwork_mpl.cmap maps (backward-compat) ──
+    # ── dartwork_mpl.cmap asset maps ──
     # Single-Hue
     "dc.obsidian": "Single-Hue",
     "dc.sapphire": "Single-Hue",
@@ -120,10 +120,6 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     "dc.neon_pink": "Single-Hue",
     "dc.neon_orange": "Single-Hue",
     # Multi-Hue
-    # "dc.aurora" ceded its name to the v5 catalog; this bundled
-    # asset/cmap/*.txt map now lives at "dc.legacy_aurora" (see
-    # dartwork_mpl.colors._register for the v5 registration).
-    "dc.legacy_aurora": "Multi-Hue",
     "dc.sunset_glow": "Multi-Hue",
     "dc.plasma_arc": "Multi-Hue",
     "dc.spring_bloom": "Multi-Hue",
@@ -140,9 +136,6 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     # Diverging
     "dc.ice_fire": "Diverging",
     "dc.earth_sky": "Diverging",
-    # "dc.teal_rose" ceded its name to the v5 catalog (same rationale as
-    # "dc.legacy_aurora" above) -- lives under "dc.legacy_teal_rose" now.
-    "dc.legacy_teal_rose": "Diverging",
     "dc.purple_lime": "Diverging",
     "dc.navy_gold": "Diverging",
     "dc.forest_brick": "Diverging",

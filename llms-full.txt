@@ -222,15 +222,15 @@ dm.simple_layout(fig)
 ## Adding color
 
 dartwork-mpl ships its own curated palette — `dc.*` ("dartwork color"),
-a 24-palette system across 11 families (8 shades each) — and registers six
-third-party design systems alongside it. Use any of them anywhere matplotlib
-accepts a color string:
+a 16-family v5 system with 10 perceptual steps per family — and registers six
+third-party design systems alongside it. Use any named color anywhere
+matplotlib accepts a color string:
 
 ```python
 # Curated dartwork palette (recommended starting point)
 ax.plot(x, y, color="dc.teal3")                   # cool blue
-ax.fill_between(x, y1, y2, color="dc.earth1")     # warm accent
-ax.bar(categories, values, color="dc.vivid1")      # bold call-out
+ax.fill_between(x, y1, y2, color="dc.orange1")     # warm accent
+ax.bar(categories, values, color="dc.red1")      # bold call-out
 
 # Third-party systems also available for cross-team consistency
 ax.plot(x, y2, color="oc.blue5")                   # OpenColor
@@ -243,7 +243,7 @@ ax.plot(x, y1, color="tw.emerald500")              # Tailwind
 import dartwork_mpl as dm
 
 dm.list_palettes()[:5]      # → ['ad.blue', 'ad.cyan', 'ad.geekblue', ...]
-dm.show_palette("dc.teal")  # renders the 8-shade swatch row in Jupyter
+dm.show_palette("dc.teal")  # renders the 10-step swatch row in Jupyter
 dm.plot_colors(ncols=4)     # full library overview, one figure per system
 ```
 
@@ -265,7 +265,7 @@ gs = fig.add_gridspec(1, 2, wspace=0.3)
 ax1 = fig.add_subplot(gs[0])
 ax2 = fig.add_subplot(gs[1])
 
-ax1.plot(x, np.sin(x), color="dc.vivid1")
+ax1.plot(x, np.sin(x), color="dc.red1")
 ax2.plot(x, np.cos(x), color="dc.teal3")
 
 dm.label_axes([ax1, ax2])  # adds (a), (b) panel labels
@@ -404,110 +404,53 @@ coming from:
 | `dm.figure(width=..., aspect=...)`    | `plt.figure(figsize=dm.figsize(...))`                |
 | `plt.tight_layout()`                  | `dm.simple_layout(fig)`                              |
 | `dm.auto_layout(fig)`                 | `dm.simple_layout(fig, margin=...)`                  |
-| `dm.named("oc.red5")`                 | `dm.color("oc.red5")` (also accepts hex / `rgb(...)` / `oklch(...)` / `oklab(...)`) |
+| old named-color helper                | `dm.color("oc.red5")` (also accepts hex / `rgb(...)` / `oklch(...)` / `oklab(...)`) |
 | `from dartwork_mpl.color import ...`  | `from dartwork_mpl.colors import ...` (submodule renamed) |
 | `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`                           |
 | `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`                        |
 | `dm.install_llm_txt()`                | `dm.get_agent_doc(name)` / `dm.agent_doc_path(name)` (or MCP `dartwork-mpl://guide/*`) |
-| `dc.ocean*`, `dc.spectrum*`, `dc.focus*`, … | see [dc.* palette migration](#dc-palette-migration-cumulative) |
+| legacy `ocean*`, `spectrum*`, `focus*`, … families | see [dc.* palette migration](#dc-palette-migration-cumulative) |
 
 The per-release sections below carry the full detail and runnable
 snippets.
 
-## v5 — generative color system (0.5.6)
+## v5 — generative color system (0.5.6 clean break)
 
-A 91-parameter generative system (16 families × 10 perceptually-equalized
-steps, `dc.{family}{step}`) ships in 0.5.6. Its colormap catalog is the new
-default; the categorical `dc.{family}{step}` remap is opt-in via
-`dm.set_palette_version(5)` (see below). Design spec:
-`docs/superpowers/specs/2026-07-03-color-system-v5-design.md`.
+A 91-number generative palette (16 families × 10 perceptually equalized
+steps, `dc.{family}{step}`) replaced the hand-curated v4 catalog. v5 is a
+**full clean break** (design spec:
+`docs/superpowers/specs/2026-07-03-color-system-v5-design.md`):
 
-1. **v4 `dc.*` tokens are frozen, not removed.** Every legacy-only token
-   (`dc.vivid*`, `dc.pastel*`, `dc.0`–`dc.7`, …) keeps resolving to its
-   pre-v5 hex value — existing scripts render unchanged. Accessing one
-   emits a one-time `DeprecationWarning` per token; removal is planned
-   no sooner than two minor releases out.
-2. **Opt in to the v5 remap for the three colliding families** with
-   `dm.set_palette_version(5)`. `dc.teal*`, `dc.indigo*`, and `dc.gray*`
-   (steps 0–7) are the only names that exist in both catalogs; calling
-   this remaps those specific tokens (and their `dm.*` alias) to their
-   v5 hex in place. The default (`dm.set_palette_version(4)`, implicit)
-   keeps them frozen at the legacy value. Note: the legacy ramps run
-   dark→light; the v5 ramps run light→dark, so step indices invert
-   meaning under version 5 (e.g. `dc.gray0` goes from near-black to
-   near-white).
-3. **Colormaps are matplotlib-native — no bespoke accessor.** Use
-   `cmap="dc.aurora"` in any plotting call, or `plt.colormaps["dc.aurora"]`
-   / `mpl.colormaps["dc.aurora"]` to fetch the `Colormap` object directly.
-4. **BREAKING: `dc.aurora` / `dc.teal_rose` renamed to
-   `dc.legacy_aurora` / `dc.legacy_teal_rose`.** Both names are ceded to
-   the new v5 colormap catalog, which ships a differently-tuned
-   `dc.aurora`. A script that passes `cmap="dc.aurora"` will silently
-   start rendering the v5 colormap after upgrading — swap to
-   `cmap="dc.legacy_aurora"` (or `dc.legacy_teal_rose`) to keep the
-   pre-v5 rendering.
-5. **`get_palette("teal" | "indigo" | "gray")` length depends on the
-   active palette version.** These three curated names collide with a
-   v5 family, so under the default version (4) they stay capped at the
-   legacy 8-step ramp; call `dm.set_palette_version(5)` first to get the
-   full, coherent 10-step v5 ramp. Every other family always returns 10
-   steps regardless of version.
-6. **The `DeprecationWarning` only fires through `dm.color()` /
-   `Color()`.** Native matplotlib color resolution — e.g.
-   `plt.plot(color="dc.vivid3")` — reads the named-color mapping
-   directly and does not go through dartwork-mpl's warning hook, so it
-   will not warn even though the token is frozen-legacy.
-7. **`dc.ref` is a new token, not an alias for `dc.gray6`.** The
-   locale-aware semantic tokens (`dc.pos` / `dc.neg` / `dc.ref` /
-   `dc.hl`) are new in v5; `dc.ref` happens to equal the v5 `gray6` hex,
-   which is not the same value as the frozen-legacy `dc.gray6` under the
-   default palette version. Use `dc.ref` (not `dc.gray6`) for the
-   reference-line role so it stays consistent whichever palette version
-   is active.
-
-### Automated migration
-
-A codemod rewrites the removed v0.5.5 palette-token names (see the table
-below) to their current equivalents — never at runtime, always as a visible
-diff you review before applying:
-
-```bash
-python -m dartwork_mpl.colors._migrate path/to/script.py      # dry-run diff
-python -m dartwork_mpl.colors._migrate --apply path/to/*.py   # write
-python -m dartwork_mpl.colors._migrate --no-advisory script.py # omit the ΔE advisory table
-```
-
-Each rewrite is tagged *colours preserved* (a pure rename) or *review* (a
-merge into a different palette). The run also prints an advisory table of the
-per-token CIEDE2000 ΔE by which `teal` / `indigo` / `gray` shift under
-`set_palette_version(5)`, so opting into the v5 values is an informed choice.
-
-The codemod *rewrites* prefixed tokens — a shade colour like `dc.ocean2` and
-quoted `dc.` / `dm.` names like `set_cycle("dc.spectrum")`. Bare names *without*
-a `dc.` / `dm.` prefix (e.g. `set_cycle("spectrum")`, `get_palette("ocean")`,
-`cycle="pop"`) are now *reported* — flagged with `file:line` and the suggested
-current name when they appear in a palette-API call — but are still **not**
-auto-rewritten (a bare string has no namespace to prove intent), so review and
-update those by hand.
-
-Exit codes are CI-friendly for prefixed rewrites: dry-run exits `1` when
-prefixed rewrites are pending, and exits `0` for `--apply` runs or clean files.
-Files with only bare-name reports also exit `0`, so do not use the exit code
-alone as a gate for manual bare-name cleanup.
+1. **v4-only palette tokens were removed.** Legacy categorical families such
+   as `vivid*`, `forest*`, `earth*`, `teal_indigo*`, `trustworthy*`, and the
+   numeric cycle aliases `0`–`7` no longer resolve as live colors.
+2. **There is no runtime palette-version switch.** The live registry is
+   v5-only, so `teal`, `indigo`, and `gray` always mean the 10-step v5
+   families.
+3. **The old `dm.*` color aliases are gone.** Use `dc.*` named colors or
+   `dm.color(...)` when you need a `Color` object.
+4. **The palette-token codemod was deleted with the clean break.** The
+   mapping table below is reference material for manual edits; there is no
+   supported command to rewrite files automatically.
+5. **Pre-v5 compatibility colormap files were removed.** Names such as
+   `dc.aurora` and `dc.teal_rose` now refer to the v5 colormap catalog.
+6. **Semantic tokens are v5-native.** Use `dc.pos`, `dc.neg`, `dc.ref`, and
+   `dc.hl` for role-based color; use `dc.ref` rather than a gray shade for
+   reference lines.
 
 ## v0.5.5 — categorical palette overhaul
 
-A judge-panel redesign reworked the 24 curated `dc.*` palettes into a
-more coherent, better-covered set. Every palette is still CIELAB-generated
-on an even-L\* ladder and CVD + B&W verified — but several were renamed,
-merged, or dropped. The token mapping:
+A judge-panel redesign reworked the then-current curated `dc.*` palette
+catalog into a more coherent, better-covered set. Every palette in that
+historical catalog was CIELAB-generated on an even-L\* ladder and CVD + B&W
+verified — but several were renamed, merged, or dropped. The token mapping:
 
 | Old token       | New token          | Change |
 | --------------- | ------------------ | ------ |
-| `dc.spectrum*`  | `dc.vivid*`        | rename |
-| `dc.coolwarm*`  | `dc.cool_warm*`    | rename (uniform diverging underscore) |
-| `dc.bold*`      | `dc.vivid*`        | merged into `vivid` |
-| `dc.corporate*` | `dc.trustworthy*`  | merged into `trustworthy` |
+| `spectrum*`  | `vivid*`        | rename |
+| `coolwarm*`  | `dc.cool_warm*`    | rename (uniform diverging underscore) |
+| `bold*`      | `vivid*`        | merged into `vivid` |
+| `corporate*` | `trustworthy*`  | merged into `trustworthy` |
 | `dc.warm_cool*` | `dc.blue_orange*`  | removed (weakest under CVD) — use `blue_orange` or `teal_coral` |
 
 `pastel` / `dusty` were also re-designed into an intentional high-key /
@@ -521,19 +464,19 @@ low-key pair (shared hue plan, different L\* band).
 ### Legacy `dc.*` aliases removed
 
 The 7 original back-compat aliases (`Vivid`, `Sunset`, `Ocean`, `Pop`,
-`Cyber`, `Autumn`, `Nordic`) no longer resolve — `dc.ocean2`, `dc.nordic1`,
+`Cyber`, `Autumn`, `Nordic`) no longer resolve — `ocean2`, `nordic1`,
 … now raise the usual "not a valid color" error. Their shade index is
 preserved when you switch to the curated replacement:
 
 | Old token     | New token (0.5.4)  |
 | ------------- | ------------------ |
-| `dc.vivid*`   | `dc.bold*`         |
-| `dc.sunset*`  | `dc.earth*`        |
-| `dc.ocean*`   | `dc.teal*`         |
-| `dc.pop*`     | `dc.spectrum*`     |
-| `dc.cyber*`   | `dc.jewel*`        |
-| `dc.autumn*`  | `dc.dusty*`        |
-| `dc.nordic*`  | `dc.teal_indigo*`  |
+| `vivid*`   | `bold*`         |
+| `sunset*`  | `earth*`        |
+| `ocean*`   | `dc.teal*`         |
+| `pop*`     | `spectrum*`     |
+| `cyber*`   | `jewel*`        |
+| `autumn*`  | `dusty*`        |
+| `nordic*`  | `teal_indigo*`  |
 
 > **Coming from 0.5.4 or earlier?** `bold` and `spectrum` were themselves
 > renamed again in 0.5.5. The
@@ -547,7 +490,7 @@ preserved when you switch to the curated replacement:
 | `dc.teal_seq*`     | `dc.teal*`        |
 | `dc.focus*`        | `dc.teal_accent*` |
 | `dc.focus_warm*`   | `dc.coral_accent*`|
-| `dc.muted*`        | `dc.pastel*`      |
+| `muted*`        | `pastel*`      |
 | `dc.teal_amber_div*` | `dc.teal_amber*`|
 
 ### Module & entry-point removals
@@ -702,26 +645,26 @@ silently misinterpret the value. `dm.Inches` is no longer importable.
 If you have `dc.*` tokens from any release before 0.5.5, this table folds
 every rename hop (0.5.4 legacy-alias removal, 0.5.4 snake_case, 0.5.5
 overhaul) into a single lookup. Shade indices are preserved
-(`dc.ocean2` → `dc.teal2`).
+(`ocean2` → `dc.teal2`).
 
 | Legacy token (0.5.3 or earlier) | Current token (0.5.5) |
 | ------------------------------- | --------------------- |
-| `dc.Vivid*` / `dc.vivid*` (alias) | `dc.vivid*` |
-| `dc.Sunset*` / `dc.sunset*`     | `dc.earth*`           |
-| `dc.Ocean*` / `dc.ocean*`       | `dc.teal*`            |
-| `dc.Pop*` / `dc.pop*`           | `dc.vivid*`           |
-| `dc.Cyber*` / `dc.cyber*`       | `dc.jewel*`           |
-| `dc.Autumn*` / `dc.autumn*`     | `dc.dusty*`           |
-| `dc.Nordic*` / `dc.nordic*`     | `dc.teal_indigo*`     |
-| `dc.spectrum*`                  | `dc.vivid*`           |
-| `dc.bold*`                      | `dc.vivid*`           |
-| `dc.coolwarm*`                  | `dc.cool_warm*`       |
-| `dc.corporate*`                 | `dc.trustworthy*`     |
+| `Vivid*` / `vivid*` (alias) | `vivid*` |
+| `Sunset*` / `sunset*`     | `earth*`           |
+| `Ocean*` / `ocean*`       | `dc.teal*`            |
+| `Pop*` / `pop*`           | `vivid*`           |
+| `Cyber*` / `cyber*`       | `jewel*`           |
+| `Autumn*` / `autumn*`     | `dusty*`           |
+| `Nordic*` / `nordic*`     | `teal_indigo*`     |
+| `spectrum*`                  | `vivid*`           |
+| `bold*`                      | `vivid*`           |
+| `coolwarm*`                  | `dc.cool_warm*`       |
+| `corporate*`                 | `trustworthy*`     |
 | `dc.warm_cool*`                 | `dc.blue_orange*`     |
 | `dc.teal_seq*`                  | `dc.teal*`            |
 | `dc.focus*`                     | `dc.teal_accent*`     |
 | `dc.focus_warm*`                | `dc.coral_accent*`    |
-| `dc.muted*`                     | `dc.pastel*`          |
+| `muted*`                     | `pastel*`          |
 | `dc.teal_amber_div*`            | `dc.teal_amber*`      |
 
 > These map each old token to its **closest current palette** — the
@@ -730,14 +673,14 @@ overhaul) into a single lookup. Shade indices are preserved
 > set on the [categorical palettes](color_system/categorical-palettes.md)
 > page.
 
-## color parsing (`dm.named` → `dm.color`)
+## color parsing (old named-color helper → `dm.color`)
 
-`dm.named` is gone. The replacement is `dm.color`, a single string-parser
+The old named-color helper is gone. The replacement is `dm.color`, a single string-parser
 entry point that mirrors `dm.length`:
 
 ```python
 # Before
-red = dm.named("oc.red5")
+red = legacy_named_color("oc.red5")
 
 # Now
 red = dm.color("oc.red5")               # palette token
@@ -1028,7 +971,7 @@ rules:
     message: |
       Raw hex colors bypass dartwork-mpl's color system. Prefer named
       tokens passed as strings, e.g. `color="oc.blue6"` (Open Color),
-      `color="tw.sky500"` (Tailwind), or `color="dc.0"` (dartwork core
+      `color="tw.sky500"` (Tailwind), or `color="dc.blue6"` (dartwork core
       categorical). These register as matplotlib named colors; wrap in
       `dm.color("oc.blue6")` when you need a Color object.
     why: |

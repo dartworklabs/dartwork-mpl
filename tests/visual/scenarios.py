@@ -36,8 +36,8 @@ class Scenario:
     expect: Expectations
 
 
-def _trustworthy_tokens(count: int | None = None) -> tuple[str, ...]:
-    tokens = tuple(dm.get_palette("trustworthy"))
+def _blue_tokens(count: int | None = None) -> tuple[str, ...]:
+    tokens = tuple(dm.get_palette("blue"))
     return tokens if count is None else tokens[:count]
 
 
@@ -45,7 +45,7 @@ def _build_preset_report_line() -> Figure:
     dm.style.use("report")
     fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     x = np.arange(1, 9)
-    palette = _trustworthy_tokens(3)
+    palette = _blue_tokens(3)
 
     series = (
         ("Revenue", np.array([9.2, 9.8, 10.1, 10.8, 11.6, 12.0, 12.4, 13.1])),
@@ -60,7 +60,7 @@ def _build_preset_report_line() -> Figure:
     ax.set_xlabel("Quarter", fontsize=dm.fs(0))
     ax.set_ylabel("Index", fontsize=dm.fs(0))
     ax.set_title("Report KPI Signals", fontsize=dm.fs(1), fontweight=dm.fw(1))
-    ax.grid(True, axis="y", color="dc.trustworthy1", alpha=0.16, linewidth=0.5)
+    ax.grid(True, axis="y", color="dc.blue1", alpha=0.16, linewidth=0.5)
     ax.legend()
     dm.simple_layout(fig)
     return fig
@@ -71,7 +71,7 @@ def _build_preset_report_kr_bars() -> Figure:
     fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
     categories = ["매출", "이익", "고객", "유지율"]
     values = [128, 74, 96, 88]
-    palette = _trustworthy_tokens(4)
+    palette = _blue_tokens(4)
 
     bars = ax.bar(categories, values, color=palette)
     for bar, value in zip(bars, values, strict=True):
@@ -97,7 +97,7 @@ def _build_preset_scientific_scatter() -> Figure:
     rng = np.random.default_rng(3)
     x = np.linspace(-2.5, 2.5, 56)
     y = 1.45 * x + rng.normal(0, 0.42, size=x.size)
-    palette = _trustworthy_tokens(2)
+    palette = _blue_tokens(2)
 
     ax.scatter(x, y, s=34, color=palette[0], alpha=0.72, label="Samples")
     slope, intercept = np.polyfit(x, y, 1)
@@ -114,7 +114,7 @@ def _build_preset_scientific_scatter() -> Figure:
     ax.set_xlabel("Input", fontsize=dm.fs(0))
     ax.set_ylabel("Response", fontsize=dm.fs(0))
     ax.set_title("Scientific Scatter Fit", fontsize=dm.fs(1))
-    ax.grid(True, color="dc.trustworthy1", alpha=0.14, linewidth=0.5)
+    ax.grid(True, color="dc.blue1", alpha=0.14, linewidth=0.5)
     ax.legend()
     dm.simple_layout(fig)
     return fig
@@ -125,7 +125,7 @@ def _build_preset_scientific_kr_hist() -> Figure:
     fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
     rng = np.random.default_rng(11)
     data = rng.normal(64, 7, 360)
-    palette = _trustworthy_tokens(2)
+    palette = _blue_tokens(2)
 
     ax.hist(
         data,
@@ -159,7 +159,7 @@ def _build_line_signals() -> Figure:
     x = np.linspace(0, 10, 100)
     y1 = np.sin(x) * 1e6
     y2 = np.cos(x) * 1e6
-    palette = _trustworthy_tokens(2)
+    palette = _blue_tokens(2)
 
     ax.plot(x, y1, label="Signal A", color=palette[0], linewidth=dm.lw(0))
     ax.plot(x, y2, label="Signal B", color=palette[1], linewidth=dm.lw(0))
@@ -169,16 +169,16 @@ def _build_line_signals() -> Figure:
     ax.grid(
         True,
         axis="y",
-        color="dc.teal_indigo1",
+        color="dc.indigo1",
         alpha=0.2,
         linestyle="--",
         linewidth=0.5,
     )
     ax.set_axisbelow(True)
     for spine_name in ("bottom", "left"):
-        ax.spines[spine_name].set_color("dc.teal_indigo3")
+        ax.spines[spine_name].set_color("dc.indigo3")
         ax.spines[spine_name].set_linewidth(0.5)
-    ax.grid(True, axis="x", color="dc.teal_indigo1", alpha=0.2, linewidth=0.5)
+    ax.grid(True, axis="x", color="dc.indigo1", alpha=0.2, linewidth=0.5)
     ax.set_xlabel("Time (s)", fontsize=dm.fs(0))
     ax.set_ylabel("Amplitude", fontsize=dm.fs(0))
     ax.set_title("Signal Analysis", fontsize=dm.fs(1))
@@ -192,7 +192,7 @@ def _build_bar_value_labels() -> Figure:
     fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
     categories = ["Group A", "Group B", "Group C", "Group D"]
     values = [1_200_000, 1_450_000, 1_380_000, 1_620_000]
-    palette = _trustworthy_tokens(4)
+    palette = _blue_tokens(4)
 
     bars = ax.bar(categories, values, color=palette)
     dm.format_axis_millions(ax, axis="y")
@@ -221,7 +221,7 @@ def _build_scatter_fit() -> Figure:
     rng = np.random.default_rng(42)
     x = rng.standard_normal(50)
     y = 2 * x + rng.standard_normal(50) * 0.5
-    palette = _trustworthy_tokens(2)
+    palette = _blue_tokens(2)
 
     ax.scatter(x, y, alpha=0.6, s=50, color=palette[0], label="Samples")
     slope, intercept = np.polyfit(x, y, 1)
@@ -235,7 +235,7 @@ def _build_scatter_fit() -> Figure:
         linewidth=dm.lw(0),
         label=f"y = {slope:.2f}x + {intercept:.2f}",
     )
-    ax.grid(True, color="dc.teal_indigo1", alpha=0.15, linewidth=0.5)
+    ax.grid(True, color="dc.indigo1", alpha=0.15, linewidth=0.5)
     ax.set_axisbelow(True)
     ax.set_xlabel("X Variable", fontsize=dm.fs(0))
     ax.set_ylabel("Y Variable", fontsize=dm.fs(0))
@@ -250,7 +250,7 @@ def _build_histogram_normal_fit() -> Figure:
     fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
     rng = np.random.default_rng(42)
     data = rng.normal(100, 15, 1000)
-    palette = _trustworthy_tokens(2)
+    palette = _blue_tokens(2)
 
     ax.hist(
         data,
@@ -308,7 +308,7 @@ def _build_donut_composition() -> Figure:
     fig, ax = plt.subplots(figsize=dm.figsize("9cm", "square"))
     sizes = [35, 30, 20, 10, 5]
     labels = ["범주 A", "범주 B", "범주 C", "범주 D", "기타"]
-    colors = _trustworthy_tokens(5)
+    colors = _blue_tokens(5)
 
     _wedges, _texts, autotexts = ax.pie(
         sizes,
@@ -347,7 +347,7 @@ def _build_dual_axis_timeseries() -> Figure:
     )
     rng = np.random.default_rng(0)
     secondary = primary * 0.15 + rng.standard_normal(12) * 5
-    palette = _trustworthy_tokens(2)
+    palette = _blue_tokens(2)
 
     ax.bar(dates, primary, alpha=0.3, label="주 계열", color=palette[0])
     ax.set_xlabel("월", fontsize=dm.fs(0))
@@ -378,7 +378,7 @@ def _build_dual_axis_timeseries() -> Figure:
 def _build_palette_swatch() -> Figure:
     dm.style.use("report")
     fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
-    palette = _trustworthy_tokens()
+    palette = _blue_tokens()
     positions = np.arange(len(palette))
 
     ax.bar(positions, np.ones(len(palette)), color=palette, width=0.82)
@@ -420,7 +420,7 @@ def _build_kr_math_labels() -> Figure:
     dm.style.use("scientific-kr")
     fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
     x = np.linspace(0, 4, 80)
-    palette = _trustworthy_tokens(1)
+    palette = _blue_tokens(1)
 
     ax.plot(
         x,
@@ -451,12 +451,12 @@ def _build_kr_math_labels() -> Figure:
 
 
 def all_scenarios() -> list[Scenario]:
-    trustworthy = _trustworthy_tokens()
+    blue_palette = _blue_tokens()
     return [
         Scenario(
             "preset_report_line",
             _build_preset_report_line,
-            Expectations(min_lines=3, palette=trustworthy[:3]),
+            Expectations(min_lines=3, palette=blue_palette[:3]),
         ),
         Scenario(
             "preset_report_kr_bars",
@@ -464,7 +464,7 @@ def all_scenarios() -> list[Scenario]:
             Expectations(
                 min_patches=4,
                 texts_contain=("매출",),
-                palette=trustworthy[:4],
+                palette=blue_palette[:4],
                 tolerance=22.0,
             ),
         ),
@@ -472,7 +472,7 @@ def all_scenarios() -> list[Scenario]:
             "preset_scientific_scatter",
             _build_preset_scientific_scatter,
             Expectations(
-                min_lines=1, min_collections=1, palette=trustworthy[:2]
+                min_lines=1, min_collections=1, palette=blue_palette[:2]
             ),
         ),
         Scenario(
@@ -482,27 +482,29 @@ def all_scenarios() -> list[Scenario]:
                 min_lines=1,
                 min_patches=5,
                 texts_contain=("확률 밀도",),
-                palette=trustworthy[:2],
+                palette=blue_palette[:2],
                 tolerance=22.0,
             ),
         ),
         Scenario(
             "line_signals",
             _build_line_signals,
-            Expectations(min_lines=2, palette=trustworthy[:2]),
+            Expectations(min_lines=2, palette=blue_palette[:2]),
         ),
         Scenario(
             "bar_value_labels",
             _build_bar_value_labels,
             Expectations(
-                min_patches=4, texts_contain=("1.20M",), palette=trustworthy[:4]
+                min_patches=4,
+                texts_contain=("1.20M",),
+                palette=blue_palette[:4],
             ),
         ),
         Scenario(
             "scatter_fit",
             _build_scatter_fit,
             Expectations(
-                min_lines=1, min_collections=1, palette=trustworthy[:2]
+                min_lines=1, min_collections=1, palette=blue_palette[:2]
             ),
         ),
         Scenario(
@@ -512,7 +514,7 @@ def all_scenarios() -> list[Scenario]:
                 min_lines=1,
                 min_patches=5,
                 texts_contain=("Normal fit",),
-                palette=trustworthy[:2],
+                palette=blue_palette[:2],
             ),
         ),
         Scenario(
@@ -526,7 +528,7 @@ def all_scenarios() -> list[Scenario]:
             Expectations(
                 min_patches=3,
                 texts_contain=("구성",),
-                palette=trustworthy[:5],
+                palette=blue_palette[:5],
                 require_ylabel=False,
                 tolerance=24.0,
             ),
@@ -539,14 +541,14 @@ def all_scenarios() -> list[Scenario]:
                 min_lines=1,
                 min_patches=12,
                 texts_contain=("보조 계열",),
-                palette=trustworthy[:2],
+                palette=blue_palette[:2],
                 tolerance=24.0,
             ),
         ),
         Scenario(
             "palette_swatch",
             _build_palette_swatch,
-            Expectations(min_patches=8, palette=trustworthy),
+            Expectations(min_patches=8, palette=blue_palette),
         ),
         Scenario(
             "colormap_strip",
@@ -559,7 +561,7 @@ def all_scenarios() -> list[Scenario]:
             Expectations(
                 min_lines=1,
                 texts_contain=("한글", _SPECIAL_CHARS),
-                palette=trustworthy[:1],
+                palette=blue_palette[:1],
                 tolerance=25.0,
             ),
         ),

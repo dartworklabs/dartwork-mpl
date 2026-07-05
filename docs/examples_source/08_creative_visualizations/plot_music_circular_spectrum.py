@@ -62,7 +62,7 @@ center = plt.Circle(
     (0, 0),
     2,
     transform=ax.transData._b,
-    facecolor="dc.teal_indigo1",
+    facecolor="dc.indigo1",
     edgecolor="oc.purple9",
     linewidth=dm.lw(0),
 )
@@ -92,7 +92,7 @@ for r in [3, 5, 7, 9]:
             r,
             transform=ax.transData._b,
             fill=False,
-            edgecolor="dc.teal_indigo4",
+            edgecolor="dc.indigo4",
             linewidth=0.3,
             alpha=0.6,
         )

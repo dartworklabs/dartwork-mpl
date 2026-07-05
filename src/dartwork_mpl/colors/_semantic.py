@@ -20,16 +20,7 @@ __all__ = ["SEMANTIC_TOKEN_NAMES", "apply_semantic"]
 # Every named-color key ``apply_semantic`` writes. Callers that need to
 # snapshot/restore the semantic mapping (e.g. ``Style.context``) iterate
 # this tuple rather than re-deriving the key set.
-SEMANTIC_TOKEN_NAMES: tuple[str, ...] = (
-    "dc.pos",
-    "dc.neg",
-    "dc.ref",
-    "dc.hl",
-    "dm.pos",
-    "dm.neg",
-    "dm.ref",
-    "dm.hl",
-)
+SEMANTIC_TOKEN_NAMES: tuple[str, ...] = ("dc.pos", "dc.neg", "dc.ref", "dc.hl")
 
 _MAPS: dict[str, dict[str, str]] = {
     # Korean financial convention: gains = red, losses = blue.
@@ -55,13 +46,10 @@ def apply_semantic(locale: str) -> None:
 
     Notes
     -----
-    Registers both the ``dc.*`` token and its ``dm.*`` alias (e.g.
-    ``dc.pos`` and ``dm.pos``) into
-    ``matplotlib.colors.get_named_colors_mapping()``, so either prefix can
-    be used in ``color="dc.pos"`` / ``color="dm.pos"`` calls.
+    Registers the ``dc.*`` tokens into
+    ``matplotlib.colors.get_named_colors_mapping()``.
     """
     mapping = mcolors.get_named_colors_mapping()
     sem = {**_COMMON, **_MAPS.get(locale, _MAPS["default"])}
     for token, hexval in sem.items():
         mapping[token] = hexval
-        mapping["dm." + token[3:]] = hexval

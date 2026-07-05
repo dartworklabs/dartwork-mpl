@@ -22,7 +22,7 @@ fig, ax1 = plt.subplots(figsize=dm.figsize("15cm", "wide"))
 ax2 = ax1.twinx()
 ax1.bar(x, precip, color="dc.teal1", alpha=0.7, label="Precipitation")
 ax2.plot(
-    x, temp, color="dc.vivid3", marker="o", markersize=3, label="Temperature"
+    x, temp, color="dc.orange3", marker="o", markersize=3, label="Temperature"
 )
 ax1.set_xlabel("Month")
 ax1.set_ylabel("Precipitation (mm)")

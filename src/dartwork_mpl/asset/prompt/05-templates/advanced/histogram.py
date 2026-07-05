@@ -64,7 +64,7 @@ ax.axvline(
 # SLA threshold — the headline.
 ax.axvline(
     sla_threshold,
-    color="dc.earth5",
+    color="dc.amber5",
     linewidth=0.5,
     linestyle="--",
     label=f"SLA = {sla_threshold:.0f} ms",
@@ -74,7 +74,7 @@ ax.text(
     ax.get_ylim()[1] * 0.9 if False else 320,
     f"{breach_rate:.1f}% breach SLA",
     fontsize=dm.fs(-1),
-    color="dc.earth5",
+    color="dc.amber5",
     fontstyle="italic",
 )
 

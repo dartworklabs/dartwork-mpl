@@ -1,10 +1,11 @@
 # Categorical palettes
 
-dartwork's discrete categorical palettes — a curated 24-palette system across
-11 families. Every palette is 8 colors, generated on an even-L* CIELAB
-ladder and screened for grayscale and color-blindness (CVD) legibility;
-the loudest high-chroma sets deliberately trade some CVD margin for
-vibrancy (the generation pipeline reports both scores per palette).
+dartwork's discrete categorical palettes — a curated 16-palette system across
+the v5 color families. Every family has 10 perceptually equalized steps,
+generated on CIELAB L* + OKLCH and screened for grayscale and
+color-vision-deficiency (CVD) legibility. For ordinary data series, start with
+the searched `dc.cycle`; for tone-specific series, sample a family with
+`get_palette`.
 
 :::{note}
 **This page** picks a categorical palette by intent and applies it with
@@ -58,9 +59,9 @@ ax.plot(gains, color="dc.pos")        # green — or red under a *-kr style
 ax.axhline(baseline, color="dc.ref")  # neutral reference line
 ```
 
-> Three families (`teal`, `indigo`, `gray`) share names with legacy tokens
-> and stay frozen to their pre-v5 hex by default; opt in to the v5 values with
-> `dm.set_palette_version(5)`. See the [migration guide](../migration.md).
+> v5 is a clean break: legacy v4-only categorical names were removed from the
+> live registry. See the [migration guide](../migration.md) for the manual
+> rename table.
 
 ## Pick a palette by intent
 
@@ -68,20 +69,20 @@ Pick by the *shape and job* of your data:
 
 - **Ordered** (rank / amount) → Sequential, or Neutral if hue carries no meaning
 - **Ordered around a midpoint** (±, change, correlation) → Diverging
-- **Highlight one series**, mute the rest → Emphasis
-- **A few related series** → Analogous · **Two opposed groups** → Duo
-- **Everyday 4–8 categories** → Balanced · **Many unrelated** → Spectrum
-- **A specific tone** → Muted, Earth, or Jewel · **Mandatory CVD** → Accessible (Okabe-Ito)
+- **Highlight one series**, mute the rest → `dc.hl` plus gray/reference tones
+- **A few related series** → one hue family, sampled evenly
+- **Everyday 4–8 categories** → `dc.cycle` / `dm.cycle("default")`
+- **A specific tone** → pick the named v5 family (`green`, `amber`, `violet`, ...)
 
 ```python
 import dartwork_mpl as dm
 
-dm.set_cycle("trustworthy")              # everyday default cycle (global)
-dm.set_cycle("teal_accent", ax=ax)       # highlight one series, this Axes only
+dm.set_cycle(dm.cycle("default"))        # everyday default cycle (global)
+dm.set_cycle(["dc.hl", "dc.gray3", "dc.gray5"], ax=ax)  # one Axes only
 
-cols = dm.get_palette("vivid", n=6)                # first 6 — best-separated subset
-cols = dm.get_palette("vivid", n=4, subset="even")             # or: 4 spread across the range
-cols = dm.get_palette("vivid", order="lightness", reverse=True)  # or: re-sorted dark → light
+cols = dm.get_palette("blue", n=6)                 # first 6 family steps
+cols = dm.get_palette("blue", n=4, subset="even")  # or: 4 spread across the range
+cols = dm.get_palette("blue", order="lightness", reverse=True)  # or: dark → light
 dm.set_cycle(cols)                       # apply a palette result (or any color list)
 ```
 
@@ -90,8 +91,8 @@ order="default"|"lightness"|"shuffle", reverse=False, seed=None)` returns color
 names — choose how many (`n` / `subset`), then optionally re-arrange them: `order`
 sorts light→dark by lightness or shuffles; `reverse` flips the cycle; `seed` makes a
 shuffle reproducible. `dm.set_cycle(palette, ax=None, n=None)` applies a palette (or
-an explicit color list) to the global cycle or a single Axes. Bare names resolve
-under `dc.` (`"trustworthy"` → `dc.trustworthy0…7`).
+an explicit color list) to the global cycle or a single Axes. Bare v5 family
+names resolve under `dc.` (`"blue"` → `dc.blue0` … `dc.blue9`).
 
 ## Explore
 

@@ -21,7 +21,7 @@ negative = [-8, -20, -12, -28]
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 y_pos = np.arange(len(categories))
 ax.barh(y_pos, positive, color="dc.teal2", label="Positive")
-ax.barh(y_pos, negative, color="dc.vivid2", label="Negative")
+ax.barh(y_pos, negative, color="dc.red2", label="Negative")
 ax.set_yticks(y_pos)
 ax.set_yticklabels(categories)
 ax.axvline(0, color="black", linewidth=0.3)

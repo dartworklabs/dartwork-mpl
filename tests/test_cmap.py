@@ -26,7 +26,6 @@ EXPECTED_DC_NAMES = {
     "graphite",
     "coral",
     # Sequential Multi-Hue
-    "legacy_aurora",
     "sunset_glow",
     "plasma_arc",
     "spring_bloom",
@@ -37,7 +36,6 @@ EXPECTED_DC_NAMES = {
     # Diverging
     "ice_fire",
     "earth_sky",
-    "legacy_teal_rose",
     "purple_lime",
     "navy_gold",
     "forest_brick",
@@ -85,8 +83,8 @@ for name in EXPECTED_DC_NAMES:
     EXPECTED_DC_CMAPS.add(f"dc.{name}")
     EXPECTED_DC_CMAPS.add(f"dc.{name}_r")
 
-assert len(EXPECTED_DC_NAMES) == 56
-assert len(EXPECTED_DC_CMAPS) == 112
+assert len(EXPECTED_DC_NAMES) == 54
+assert len(EXPECTED_DC_CMAPS) == 108
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -107,8 +105,8 @@ class TestEnsureLoaded:
         ensure_loaded()
         ensure_loaded()
 
-    def test_registers_exactly_56_dc_colormaps(self) -> None:
-        """After loading, all 56 legacy dc.* colormaps (non-reversed)
+    def test_registers_exactly_54_dc_colormaps(self) -> None:
+        """After loading, all 54 asset/cmap dc.* colormaps (non-reversed)
         should exist in matplotlib's global registry.
 
         This used to be an exact-equality check, back when the legacy
@@ -117,10 +115,8 @@ class TestEnsureLoaded:
         cmap catalog, see ``tests/test_color_v5_register.py``) now also
         registers 42 cmaps + 2 qualitative cycles under ``dc.*``,
         eagerly, at package import time -- so ``mpl.colormaps`` always
-        contains more than just this module's 56 legacy names. The
-        namespace is intentionally shared (``aurora``/``teal_rose`` were
-        ceded to v5; the legacy originals moved to ``legacy_aurora``/
-        ``legacy_teal_rose``), so this test asserts the legacy set is a
+        contains more than just this module's 54 asset names. The
+        namespace is intentionally shared, so this test asserts the asset set is a
         *subset* of the registry rather than the whole of it.
         """
         dc_names = {
@@ -139,10 +135,10 @@ class TestEnsureLoaded:
             )
 
     def test_cmap_count_and_names(self) -> None:
-        """Verify all 112 legacy `dc.*` colormaps (56 base + 56 reversed)
+        """Verify all 108 asset `dc.*` colormaps (54 base + 54 reversed)
         are present in the registry.
 
-        See ``test_registers_exactly_56_dc_colormaps`` above: the v5
+        See ``test_registers_exactly_54_dc_colormaps`` above: the v5
         cmap catalog shares the ``dc.*`` namespace and registers its
         own 84 (42 base + 42 reversed) + 2 qualitative cycles, so the
         registry's *total* size is no longer exactly 112 -- only a
@@ -156,7 +152,7 @@ class TestEnsureLoaded:
             name for name in all_mpl_cmaps if name.startswith("dc.")
         }
 
-        # 3. Assert the legacy 112 are all present (registry may hold more)
+        # 3. Assert the asset cmaps are all present (registry may hold more)
         assert dc_cmaps_registered >= EXPECTED_DC_CMAPS, (
             f"Missing: {EXPECTED_DC_CMAPS - dc_cmaps_registered}"
         )
@@ -220,14 +216,14 @@ class TestParseColormap:
         assert cmap_fwd.colors[0] == cmap_rev.colors[-1]
         assert cmap_fwd.colors[-1] == cmap_rev.colors[0]
 
-    def test_file_count_is_56(self) -> None:
-        """asset/cmap/ should contain exactly 56 .txt files."""
+    def test_file_count_is_54(self) -> None:
+        """asset/cmap/ should contain exactly 54 .txt files."""
         cmap_dir = Path(__file__).parent.parent / (
             "src/dartwork_mpl/asset/cmap"
         )
         txt_files = list(cmap_dir.glob("*.txt"))
-        assert len(txt_files) == 56, (
-            f"Expected 56 .txt files, got {len(txt_files)}: "
+        assert len(txt_files) == 54, (
+            f"Expected 54 .txt files, got {len(txt_files)}: "
             f"{sorted(f.name for f in txt_files)}"
         )
 

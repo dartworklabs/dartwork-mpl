@@ -18,7 +18,7 @@ dm.style.use("report")
 fig, ax = plt.subplots(figsize=dm.figsize("9cm", "wide"))
 
 x = np.linspace(0, 10, 100)
-base_color = "dc.vivid3"
+base_color = "dc.orange3"
 
 # Original color (full opacity equivalent)
 ax.plot(x, np.sin(x), color=base_color, label="Base (100%)", lw=dm.lw(1))

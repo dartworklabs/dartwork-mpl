@@ -65,7 +65,7 @@ def list_palettes() -> list[str]:
     Returns
     -------
     list[str]
-        Sorted list of palette names (e.g., 'dc.vivid', 'oc.blue').
+        Sorted list of palette names (e.g., 'dc.teal', 'oc.blue').
     """
     colors: list[str] = _get_all_colors()
     palettes: set[str] = set()
@@ -115,7 +115,7 @@ def show_palette(palette_name: str) -> None:
     Parameters
     ----------
     palette_name : str
-        Name of the palette to visualize (e.g., 'dc.acid', 'oc.gray').
+        Name of the palette to visualize (e.g., 'dc.blue', 'oc.gray').
 
     Raises
     ------

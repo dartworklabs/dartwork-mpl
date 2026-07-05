@@ -78,7 +78,7 @@ Thousands separator (matplotlib direct)
 
    sample_counts = np.array([125000, 248000, 392000, 516000, 687000])
    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
-   ax.plot(sample_counts, color="dc.forest2")
+   ax.plot(sample_counts, color="dc.green2")
 
    # 125,000 / 248,000 / …
    ax.yaxis.set_major_formatter(StrMethodFormatter("{x:,.0f}"))
@@ -101,7 +101,7 @@ Millions and billions
 
    # World population in billions
    population = np.array([1.8e9, 2.1e9, 2.4e9, 2.7e9])
-   ax2.plot(population, "o-", color="dc.jewel2", lw=dm.lw(0))
+   ax2.plot(population, "o-", color="dc.violet2", lw=dm.lw(0))
    dm.format_axis_billions(ax2, axis="y", suffix="B")  # 1.8B, 2.1B, …
    ax2.set_title("Population")
 
@@ -119,7 +119,7 @@ Currency
    prices = np.array([19.99, 34.50, 78.25, 124.00, 259.99])
 
    # US dollars — prefix
-   ax1.bar(range(len(prices)), prices, color="dc.forest2")
+   ax1.bar(range(len(prices)), prices, color="dc.green2")
    dm.format_axis_currency(ax1, axis="y", symbol="$", position="prefix")
    ax1.set_title("Product prices (USD)")
 
@@ -142,14 +142,14 @@ SI prefixes
    # Frequency response — 1 kHz to 1 GHz
    freq = np.logspace(3, 9, 50)
    response = -20 * np.log10(freq / 1e6)
-   ax1.semilogx(freq, response, color="dc.vivid2")
+   ax1.semilogx(freq, response, color="dc.red2")
    dm.format_axis_si(ax1, axis="x")  # 1k, 10k, 100k, 1M, …
    ax1.set_xlabel("Frequency (Hz)")
    ax1.set_ylabel("Response (dB)")
 
    # Power measurements — nW to kW
    power = np.array([1e-9, 1e-6, 1e-3, 1, 1e3])
-   ax2.bar(range(len(power)), power, color="dc.earth2")
+   ax2.bar(range(len(power)), power, color="dc.orange2")
    ax2.set_yscale("log")
    dm.format_axis_si(ax2, axis="y")  # 1n, 1μ, 1m, 1, 1k
    ax2.set_ylabel("Power (W)")
@@ -175,7 +175,7 @@ Rotating labels
    values = np.random.randn(len(categories))
 
    for ax, deg, ha in [(ax1, 45, "right"), (ax2, 90, "right"), (ax3, 30, "right")]:
-       ax.bar(range(len(categories)), values, color="dc.teal_indigo2")
+       ax.bar(range(len(categories)), values, color="dc.indigo2")
        ax.set_xticks(range(len(categories)))
        ax.set_xticklabels(categories)
        dm.rotate_tick_labels(ax, axis="x", rotation=deg, ha=ha)
@@ -211,7 +211,7 @@ finance template.
    gs = fig.add_gridspec(2, 2, hspace=0.45, wspace=0.30)
 
    ax1 = fig.add_subplot(gs[0, 0])
-   ax1.bar(periods, samples, color="dc.forest2")
+   ax1.bar(periods, samples, color="dc.green2")
    ax1.yaxis.set_major_formatter(StrMethodFormatter("{x:,.0f}"))
    ax1.set_title("Sample count")
    ax1.set_ylabel("Samples")
@@ -227,7 +227,7 @@ finance template.
    ax3.set_title("Dataset rows")
 
    ax4 = fig.add_subplot(gs[1, 1])
-   ax4.bar(periods, cumulative_energy, color="dc.earth2")
+   ax4.bar(periods, cumulative_energy, color="dc.orange2")
    dm.format_axis_billions(ax4, axis="y", suffix="B")
    ax4.set_title("Cumulative energy")
    ax4.set_ylabel("Joules")
@@ -235,7 +235,7 @@ finance template.
    for ax in (ax1, ax2, ax3, ax4):
        ax.spines["top"].set_visible(False)
        ax.spines["right"].set_visible(False)
-       ax.grid(True, axis="y", alpha=0.2, color="dc.teal_indigo1", linewidth=dm.lw(0))
+       ax.grid(True, axis="y", alpha=0.2, color="dc.indigo1", linewidth=dm.lw(0))
        ax.set_axisbelow(True)
        dm.rotate_tick_labels(ax, axis="x", rotation=45)
 

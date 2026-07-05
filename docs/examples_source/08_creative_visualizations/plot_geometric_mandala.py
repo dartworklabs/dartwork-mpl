@@ -78,7 +78,7 @@ for ring_idx, (radius, n_petal, colors) in enumerate(
 theta_center = np.linspace(0, 2 * np.pi, 100)
 for r, alpha in [(0.3, 0.8), (0.2, 0.6), (0.1, 0.4)]:
     r_center = r * (1 + 0.2 * np.sin(6 * theta_center))
-    ax.fill(theta_center, r_center, color="dc.earth2", alpha=alpha)
+    ax.fill(theta_center, r_center, color="dc.orange2", alpha=alpha)
 
 # Radial guide lines
 for angle in np.linspace(0, 2 * np.pi, 12, endpoint=False):

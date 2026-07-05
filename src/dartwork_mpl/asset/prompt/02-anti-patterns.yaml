@@ -265,7 +265,7 @@ rules:
     message: |
       Raw hex colors bypass dartwork-mpl's color system. Prefer named
       tokens passed as strings, e.g. `color="oc.blue6"` (Open Color),
-      `color="tw.sky500"` (Tailwind), or `color="dc.0"` (dartwork core
+      `color="tw.sky500"` (Tailwind), or `color="dc.blue6"` (dartwork core
       categorical). These register as matplotlib named colors; wrap in
       `dm.color("oc.blue6")` when you need a Color object.
     why: |

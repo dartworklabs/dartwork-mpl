@@ -21,8 +21,7 @@ legend.labelcolor:  "#cccccc"
 
 savefig.facecolor:  "#1e1e1e"
 
-# categorical cycle — dark-background-gated v5 families (migrated off the
-# legacy dc.vivid* palette, per the v5 internal-preset transition). The white
+# categorical cycle — dark-background-gated v5 families. The white
 # v5 cycle is contrast-gated against white, so it is void on this dark
 # facecolor; these seven steps are the bg_L-aware version — each legible on
 # #1e1e1e (WCAG contrast >= 3.8) and mutually distinct under normal + deutan +

@@ -21,7 +21,7 @@ fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"))
 np.random.seed(0)
 for ax in axes.flat:
     x = np.cumsum(np.random.randn(100))
-    ax.plot(x, color="dc.teal_indigo3", lw=dm.lw(0))
+    ax.plot(x, color="dc.indigo3", lw=dm.lw(0))
     ax.spines["right"].set_visible(False)
     ax.spines["top"].set_visible(False)
 

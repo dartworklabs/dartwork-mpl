@@ -79,7 +79,7 @@ for i in range(n_particles):
         particles_y[i],
         s=20,
         c=[color.to_hex()],
-        edgecolors="dc.teal_indigo1",
+        edgecolors="dc.indigo1",
         linewidths=0.4,
         alpha=0.95,
         zorder=10,
@@ -96,7 +96,7 @@ for wx, wy, strength in wells:
         Circle(
             (wx, wy),
             0.3,
-            facecolor="dc.teal_indigo1",
+            facecolor="dc.indigo1",
             edgecolor="dc.teal5",
             linewidth=dm.lw(0),
             zorder=15,
@@ -119,7 +119,7 @@ title = ax.text(
     weight="bold",
 )
 title.set_path_effects(
-    [path_effects.withStroke(linewidth=dm.lw(0), foreground="dc.teal_indigo1")]
+    [path_effects.withStroke(linewidth=dm.lw(0), foreground="dc.indigo1")]
 )
 
 dm.simple_layout(fig)

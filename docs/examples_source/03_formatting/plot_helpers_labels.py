@@ -24,7 +24,7 @@ def _minimal(ax: plt.Axes) -> None:
         True,
         axis="y",
         alpha=0.2,
-        color="dc.teal_indigo1",
+        color="dc.indigo1",
         linestyle="--",
         linewidth=0.5,
     )
@@ -55,8 +55,8 @@ _minimal(ax1)
 
 # Optimized legend placement.
 ax2 = axes[0, 1]
-ax2.plot(x, y1, color="dc.vivid2", label="Signal A", lw=dm.lw(1))
-ax2.plot(x, y2, color="dc.forest2", label="Signal B", lw=dm.lw(1))
+ax2.plot(x, y1, color="dc.red2", label="Signal A", lw=dm.lw(1))
+ax2.plot(x, y2, color="dc.green2", label="Signal B", lw=dm.lw(1))
 ax2.fill_between(x[40:60], -0.5, 0.5, alpha=0.3, color="gray", label="Region")
 dm.helpers.labels.optimize_legend(ax2, preferred_loc="best")
 ax2.set_title("Optimized Legend", fontsize=dm.fs(1))
@@ -79,7 +79,7 @@ for xi, yi in zip(x_points, y_points, strict=False):
         ha="center",
         va="bottom",
         fontsize=dm.fs(-1),
-        color="dc.teal_indigo3",
+        color="dc.indigo3",
     )
 ax3.set_title("Value Labels on Bars", fontsize=dm.fs(1))
 ax3.set_xlabel("Category", fontsize=dm.fs(0))

@@ -25,7 +25,7 @@ dm.style.use("scientific")
 
 rng = np.random.default_rng(42)
 data = [rng.normal(0, std, 100) for std in (1, 2, 3, 4)]
-colors = ["dc.teal2", "dc.forest2", "dc.earth2", "dc.vivid2"]
+colors = ["dc.teal2", "dc.green2", "dc.orange2", "dc.red2"]
 
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 bp = ax.boxplot(data, patch_artist=True)

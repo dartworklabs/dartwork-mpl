@@ -26,7 +26,7 @@ ax = fig.add_subplot(111)
 
 x = np.linspace(0, 10, 100)
 ax.plot(x, np.sin(x), color="dc.teal2", lw=dm.lw(1.5), label="sin(x)")
-ax.plot(x, np.cos(x), color="dc.vivid2", lw=dm.lw(1.5), label="cos(x)")
+ax.plot(x, np.cos(x), color="dc.red2", lw=dm.lw(1.5), label="cos(x)")
 ax.set_xlabel("x", fontsize=dm.fs(0))
 ax.set_ylabel("y", fontsize=dm.fs(0))
 ax.set_title("Styled Figure", fontsize=dm.fs(2))
@@ -35,12 +35,7 @@ ax.legend(fontsize=dm.fs(-1))
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
 ax.grid(
-    True,
-    axis="y",
-    alpha=0.2,
-    color="dc.teal_indigo1",
-    linestyle="--",
-    linewidth=0.5,
+    True, axis="y", alpha=0.2, color="dc.indigo1", linestyle="--", linewidth=0.5
 )
 ax.set_axisbelow(True)
 dm.simple_layout(fig)

@@ -70,7 +70,7 @@ ax.plot(
 ax.scatter(
     x_train,
     y_train,
-    color="dc.vivid3",
+    color="dc.orange3",
     s=40,
     zorder=5,
     edgecolors="white",

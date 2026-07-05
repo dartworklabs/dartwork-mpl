@@ -34,7 +34,7 @@ for i, c in enumerate(colors_seq):
 
 # ── Panel 2: Warm sequential scale (yellow → deep red) ──
 colors_warm = dm.cspace(
-    dm.color("dc.earth1"), dm.color("dc.vivid5"), n=n_colors, space="oklch"
+    dm.color("dc.orange1"), dm.color("dc.violet5"), n=n_colors, space="oklch"
 )
 axs[1].set_title("Warm Sequential Scale via OKLCH")
 

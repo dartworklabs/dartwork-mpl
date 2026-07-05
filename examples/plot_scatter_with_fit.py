@@ -37,7 +37,7 @@ ax.plot(
     x_line, p(x_line), "r--", alpha=0.8, label=f"y = {z[0]:.2f}x + {z[1]:.2f}"
 )
 
-ax.grid(True, color="dc.teal_indigo1", alpha=0.15, linewidth=0.5)
+ax.grid(True, color="dc.indigo1", alpha=0.15, linewidth=0.5)
 ax.set_axisbelow(True)
 ax.set_xlabel("X Variable")
 ax.set_ylabel("Y Variable")

@@ -60,7 +60,7 @@ for i, (cx, cy, _, _) in enumerate(peaks):
         cy,
         zmin,
         s=40,
-        color="dc.earth5",
+        color="dc.amber5",
         edgecolor="white",
         linewidth=0.5,
         depthshade=False,
@@ -71,7 +71,7 @@ for i, (cx, cy, _, _) in enumerate(peaks):
         zmin - 0.15,
         f"Min {i + 1}",
         fontsize=dm.fs(-1),
-        color="dc.earth5",
+        color="dc.amber5",
         ha="center",
     )
 

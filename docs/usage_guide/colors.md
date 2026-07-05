@@ -14,8 +14,7 @@ color.
 
 | Prefix  | Library                          | Example         |
 | ------- | -------------------------------- | --------------- |
-| `dc.*`  | **dartwork Color (recommended)** — 24 curated palettes × 8 shades each (index 0 dark → 7 light); see the [palette catalog](../color_system/categorical-palettes.md) | `dc.teal3`     |
-| `dm.*`  | Alias of `dc.*` (legacy)         | `dm.teal3`      |
+| `dc.*`  | **dartwork Color (recommended)** — 16 v5 families × 10 perceptual steps, plus `dc.cycle`; see the [palette catalog](../color_system/categorical-palettes.md) | `dc.teal3`     |
 | `oc.*`  | OpenColor                        | `oc.blue5`      |
 | `tw.*`  | Tailwind CSS                     | `tw.blue500`    |
 | `md.*`  | Material Design                  | `md.red500`     |
@@ -39,11 +38,11 @@ import dartwork_mpl as dm
 dm.style.use("presentation")
 
 fig, ax = plt.subplots(figsize=dm.figsize("8cm", "wide"))
-ax.plot([0, 1, 2], [1, 2, 1.5], marker="o", color="dc.forest2", label="dc.forest2")
+ax.plot([0, 1, 2], [1, 2, 1.5], marker="o", color="dc.green2", label="dc.green2")
 ax.plot([0, 1, 2], [1.2, 1.6, 2.1], marker="s", color="dc.teal3", label="dc.teal3")
-highlight = dm.mix_colors("dc.earth1", "white", alpha=0.45)
+highlight = dm.mix_colors("dc.orange1", "white", alpha=0.45)
 ax.fill_between([0, 1, 2], 0.9, 1.3, color=highlight, label="Mixed shade")
-muted_line = dm.pseudo_alpha("dc.jewel3", alpha=0.65, background="white")
+muted_line = dm.pseudo_alpha("dc.violet3", alpha=0.65, background="white")
 ax.plot([0, 1, 2], [0.8, 1.1, 1.4], color=muted_line, label="Pseudo alpha")
 ax.legend()
 dm.simple_layout(fig)
@@ -80,24 +79,23 @@ mpl.rcParams["axes.prop_cycle"] = cycler(color=[
 
 ### Picking a `dc.*` swatch
 
-The 24 curated palettes are grouped into 11 families by the *shape and
-job* of your data; the palette name is usually a good first filter.
-Inside each palette the index is a **lightness ramp from 0 (dark) →
-7 (light)**. A few everyday picks:
+The v5 `dc.*` surface is 16 hue families, each with 10 perceptually equalized
+steps. Index 0 is the light end and index 9 is the dark end. For unrelated
+categories use `dc.cycle`; for related tones pick a family and sample the
+steps you need.
 
 | Palette             | Use it for                                                     |
 | ------------------- | -------------------------------------------------------------- |
-| `dc.trustworthy`    | The everyday default — balanced 4–8 category sets              |
-| `dc.teal`           | Cool sequential ramp — line charts, ordered data, house brand  |
-| `dc.forest`         | Cool greens — comparison series, "good"/positive states        |
-| `dc.vivid` / `dc.neon` | Full-spectrum loud sets — many categories, max distinctness |
-| `dc.earth` / `dc.jewel` | Warm/premium tones — aesthetic verticals, segmentations   |
-| `dc.pastel` / `dc.dusty` | Soft editorial — high-key / low-key muted pair           |
-| `dc.gray`           | True neutrals — grid lines, baselines, secondary fills         |
-| `dc.cool_warm`      | Diverging ± data — change, correlation                         |
-| `dc.teal_accent`    | Highlight one series, mute the rest                            |
+| `dc.cycle`          | Everyday unrelated categories                                  |
+| `dc.blue` / `dc.teal` / `dc.indigo` | Cool analytical series and ordered data        |
+| `dc.green` / `dc.red` | Positive/negative states and status colors                  |
+| `dc.amber` / `dc.orange` | Warm emphasis, thresholds, and call-outs                 |
+| `dc.violet` / `dc.purple` / `dc.pink` | Editorial accents and qualitative groups      |
+| `dc.gray`           | Grid lines, baselines, secondary fills                         |
+| `dc.blue_red` / `dc.teal_amber` | Diverging ± data — change, correlation              |
+| `dc.hl`             | Semantic highlight token                                       |
 
-→ The full 24-palette catalog with an interactive picker lives on the
+→ The full 16-palette catalog with an interactive picker lives on the
 [Categorical palettes](../color_system/categorical-palettes.md) page.
 
 **Coming from `oc.*`?** A rough drop-in mapping:
@@ -105,11 +103,11 @@ Inside each palette the index is a **lightness ramp from 0 (dark) →
 | If you were reaching for…                       | Try…                                |
 | ----------------------------------------------- | ----------------------------------- |
 | `oc.blue6` / `oc.indigo6` / `oc.cyan6`          | `dc.teal3`                         |
-| `oc.red6` / `oc.pink6`                          | `dc.vivid1` or `dc.earth3`         |
-| `oc.orange5` / `oc.yellow5`                     | `dc.earth1` / `dc.earth0`         |
-| `oc.green6` / `oc.teal6` / `oc.lime6`           | `dc.forest2` or `dc.vivid0`           |
-| `oc.violet6` / `oc.grape6`                      | `dc.jewel3`                         |
-| `oc.gray3..7` (light → dark)                    | `dc.teal_indigo1..3`                     |
+| `oc.red6` / `oc.pink6`                          | `dc.red5` or `dc.rose5`           |
+| `oc.orange5` / `oc.yellow5`                     | `dc.orange1` / `dc.orange0`         |
+| `oc.green6` / `oc.teal6` / `oc.lime6`           | `dc.green2` or `dc.red0`           |
+| `oc.violet6` / `oc.grape6`                      | `dc.violet3`                         |
+| `oc.gray3..7` (light → dark)                    | `dc.gray2..7`                     |
 
 ## Color class
 
@@ -168,7 +166,7 @@ for i, c in enumerate(palette):
     ax.bar(i, 1, color=c.to_hex())
 
 # Also supports 'oklab' and 'rgb' spaces
-gradient = dm.cspace(dm.color('dc.vivid1'), dm.color('dc.teal3'), n=10)
+gradient = dm.cspace(dm.color('dc.red1'), dm.color('dc.teal3'), n=10)
 ```
 
 ```{raw} html

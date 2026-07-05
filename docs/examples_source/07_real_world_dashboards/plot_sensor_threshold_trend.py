@@ -24,16 +24,16 @@ ax = fig.add_subplot(gs[0, 0])
 
 x = np.arange(len(periods))
 ax.plot(
-    x, humidity, "o-", color="dc.forest3", linewidth=dm.lw(1.5), markersize=6
+    x, humidity, "o-", color="dc.green3", linewidth=dm.lw(1.5), markersize=6
 )
-ax.fill_between(x, 0, humidity, color="dc.forest2", alpha=0.15)
+ax.fill_between(x, 0, humidity, color="dc.green2", alpha=0.15)
 ax.axhline(
-    target, color="dc.vivid2", linestyle="--", alpha=0.7, label="Target (60%)"
+    target, color="dc.red2", linestyle="--", alpha=0.7, label="Target (60%)"
 )
 ax.axhspan(
     68,
     ax.get_ylim()[1] if ax.get_ylim()[1] > 68 else 80,
-    color="dc.vivid2",
+    color="dc.red2",
     alpha=0.08,
     label="Out of spec",
 )

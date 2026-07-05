@@ -6,6 +6,7 @@ import typing
 
 import matplotlib.colors as mcolors
 
+from dartwork_mpl.colors import _generated
 from dartwork_mpl.colors._loader import _load_json_palette, ensure_loaded
 
 
@@ -73,42 +74,44 @@ class TestEnsureLoaded:
         assert mapping["oc.blue5"].startswith("#")
         assert mapping["tw.blue500"].startswith("#")
 
-    def test_dc_palettes_registered(self) -> None:
-        """Dartwork Color palettes (dc.* prefix) are available."""
+    def test_dc_v5_palettes_registered(self) -> None:
+        """Dartwork Color v5 palette families (dc.* prefix) are available."""
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
-        assert "dc.trustworthy0" in mapping
-        assert "dc.trustworthy7" in mapping
-        # The unnamed default palette (the shared prop_cycle).
-        assert "dc.0" in mapping
-        assert "dc.5" in mapping
+        assert "dc.blue0" in mapping
+        assert "dc.blue9" in mapping
+        assert "dc.teal5" in mapping
+        assert "dc.0" not in mapping
 
     def test_dc_palette_count(self) -> None:
-        """24 curated x 8 + 8 default = 200 legacy (palettes removed in 0.5),
-        plus 136 v5 family tokens that don't collide with a legacy name
-        (160 v5 tokens - 24 frozen collisions, spec §11) = 336,
-        plus 4 locale-aware semantic tokens (dc.pos/neg/ref/hl, spec §10,
-        eagerly registered alongside the palette on package import)
-        = 340."""
+        """16 v5 families x 10 steps + 4 semantic tokens = 164 dc colors."""
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
         dc_keys = [k for k in mapping if k.startswith("dc.")]
-        assert len(dc_keys) == 340
+        assert len(dc_keys) == 164
 
     def test_legacy_aliases_removed(self) -> None:
         """The old ad-hoc palette names were removed in 0.5 — they must not
         resolve (docs/examples/templates migrated to curated palettes)."""
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
-        for name in ("dc.sunset2", "dc.ocean2", "dc.nordic0", "dc.cyber3"):
+        for name in (
+            "dc.sunset2",
+            "dc.ocean2",
+            "dc.nordic0",
+            "dc.cyber3",
+            "dc.vivid1",
+            "dc.trustworthy1",
+            "dc.cool_warm1",
+        ):
             assert name not in mapping
 
     def test_dc_color_values_are_hex(self) -> None:
         """dc.* colours are valid hex strings."""
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
-        assert mapping["dc.trustworthy0"].startswith("#")
-        assert mapping["dc.cool_warm2"].startswith("#")
+        assert mapping["dc.blue6"].startswith("#")
+        assert mapping["dc.orange2"].startswith("#")
 
 
 class TestLoadJsonPalette:
@@ -137,11 +140,8 @@ class TestLoadJsonPalette:
         assert "t.deeppurple500" in result
 
 
-class TestPaletteRenameLifecycle:
-    """0.5.5 palette overhaul: removed/renamed dc tokens must be gone
-    and their replacements present (regression guard for the rename
-    map — spectrum/bold→vivid, coolwarm→cool_warm, corporate→
-    trustworthy, warm_cool removed)."""
+class TestPaletteCleanBreak:
+    """Removed pre-v5 palette tokens must stay gone; v5 families resolve."""
 
     def test_removed_tokens_do_not_resolve(self) -> None:
         import matplotlib.colors as mcolors
@@ -154,23 +154,20 @@ class TestPaletteRenameLifecycle:
             "dc.coolwarm1",
             "dc.corporate1",
             "dc.warm_cool1",
+            "dc.vivid1",
+            "dc.trustworthy1",
         ):
             assert token not in mapping, f"{token} should be removed"
 
-    def test_replacement_tokens_resolve(self) -> None:
+    def test_v5_family_tokens_resolve(self) -> None:
         import matplotlib.colors as mcolors
 
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
-        for token in (
-            "dc.vivid1",
-            "dc.cool_warm1",
-            "dc.trustworthy1",
-            "dc.neon1",
-            "dc.ember1",
-            "dc.purple_green1",
-        ):
-            assert token in mapping, f"{token} missing"
+        for family in _generated.PALETTE:
+            for step in range(10):
+                token = f"dc.{family}{step}"
+                assert token in mapping, f"{token} missing"
 
 
 class TestVendoredLibraryCounts:

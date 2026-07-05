@@ -155,38 +155,31 @@ def _text_color_for_bg(hex_str: str) -> str:
 
 
 def _write_dc_sheet(images_dir: Path, label: str, mapping: dict) -> Path:
-    """Build the dc categorical sheet: one row per curated palette, slots in
-    their **designed order** (not lightness-sorted), curated order from the
-    palette SSOT. Swatches are interactive (hover → name+hex).
+    """Build the dc v5 sheet: one row per generated family, slots in
+    numeric step order. Swatches are interactive (hover → name+hex).
     """
-    import json
+    from dartwork_mpl.colors._generated import PALETTE
+    from dartwork_mpl.colors._recipe import FAMILIES
 
-    import dartwork_mpl as _dm_pkg
-
-    pkg_path = (
-        Path(_dm_pkg.__file__).parent / "asset" / "color" / "dc_palettes.json"
-    )
-    pal = json.loads(pkg_path.read_text(encoding="utf-8"))
-    # default (dc.0-7) first, then the 24 curated palettes in SSOT order.
-    order = [""] + [k for k in pal if k]
+    order = [*FAMILIES, "gray"]
 
     html = [
         '<div class="dm-color-sheet">',
         f'<div class="dm-sheet-title">{label}</div>',
     ]
     for key in order:
-        if key not in pal:
+        if key not in PALETTE:
             continue
-        base = "" if key == "" else key.lower()
-        glabel = "dc" if base == "" else f"dc.{base}"
+        base = key.lower()
+        glabel = f"dc.{base}"
         html.append('<div class="dm-color-group">')
         html.append(f'<span class="dm-group-label">{glabel}</span>')
         html.append('<div class="dm-swatch-row">')
-        for i in range(len(pal[key])):
+        for i, fallback in enumerate(PALETTE[key]):
             cname = f"dc.{base}{i}"
             spec = mapping.get(cname)
             if spec is None:
-                continue
+                spec = fallback
             hex_val = spec if isinstance(spec, str) else mpl.colors.to_hex(spec)
             tc = _text_color_for_bg(hex_val)
             html.append(
@@ -259,9 +252,7 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
         prefix = prefix_map.get(library_key, "")
         label = COLOR_LIBRARY_LABELS.get(library_key, library_key)
 
-        # dc uses a dedicated palette-ordered, slot-preserving builder so the
-        # 24 curated palettes read as designed (generic base-grouping with
-        # OKLCH sort scrambles slot order and drops the dc.0-7 default).
+        # dc uses dedicated v5 builders so family steps stay in numeric order.
         if library_key == "dc":
             paths.append(_write_dc_family_sheet(images_dir))
             paths.append(_write_dc_sheet(images_dir, label, mapping))
@@ -304,7 +295,7 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
 
         for base in sorted(lib_colors.keys()):
             colors_list = sorted(lib_colors[base], key=_weight_sort_key)
-            # Group label shows prefix+base (e.g. "tw.amber", "dc.vivid")
+            # Group label shows prefix+base (e.g. "tw.amber", "dc.red")
             group_label = f"{prefix}{base}"
 
             html_parts.append('<div class="dm-color-group">')
@@ -568,7 +559,7 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
     tabs_html = []
     panels_html = []
 
-    # We include Categorical now because we have dc.vivid, dc.neon, dc.dusty, dc.pastel
+    # We include Categorical now because we have dc.red, dc.cyan, dc.gray, dc.pink
     display_categories = CATEGORY_ORDER
 
     for category in display_categories:

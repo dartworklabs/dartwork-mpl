@@ -32,7 +32,7 @@ for i in range(n_params):
 
 # Colors extracted from an OKLCH perceptual space
 c1 = dm.color("dc.teal5").to_hex()
-c2 = dm.color("dc.forest3").to_hex()
+c2 = dm.color("dc.green3").to_hex()
 ridge_colors = dm.cspace(c1, c2, n=n_params, space="oklch")
 
 fig, axes = plt.subplots(
@@ -89,15 +89,15 @@ for _i, (ax, trace, color, label) in enumerate(
         va="center",
         fontsize=dm.fs(0.5),
         weight="bold",
-        color="dc.teal_indigo4",
+        color="dc.indigo4",
     )
     ax.patch.set_alpha(0)  # Transparent background
 
-    ax.axhline(0, color="dc.teal_indigo1", linewidth=0.5, zorder=3)
+    ax.axhline(0, color="dc.indigo1", linewidth=0.5, zorder=3)
 
 # Shared x-axis on the bottom
 axes[-1].spines["bottom"].set_visible(True)
-axes[-1].spines["bottom"].set_color("dc.teal_indigo2")
+axes[-1].spines["bottom"].set_color("dc.indigo2")
 axes[-1].set_xlabel(
     "Effect Value (Standardized)", fontsize=dm.fs(0), labelpad=10
 )

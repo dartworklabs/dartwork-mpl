@@ -192,7 +192,7 @@ self-contained `.py` file capturing:
 from scatter_viewer import ScatterParams, plot_scatter
 import dartwork_mpl as dm
 
-params = ScatterParams(n=250, alpha=0.35, color="dc.forest2")
+params = ScatterParams(n=250, alpha=0.35, color="dc.green2")
 fig = plot_scatter(params)
 dm.save_formats(fig, "scatter_final", formats=("png", "svg"), dpi=300)
 ```

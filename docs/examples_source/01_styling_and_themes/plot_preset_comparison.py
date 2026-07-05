@@ -37,7 +37,7 @@ fig, axes = plt.subplots(2, 2, figsize=dm.figsize("16cm", "standard"))
 for ax, preset in zip(axes.flat, PRESETS, strict=False):
     with dm.style.context(preset):
         ax.plot(x, y1, label="Signal A", color="dc.teal2", lw=dm.lw(0))
-        ax.plot(x, y2, label="Signal B", color="dc.jewel2", lw=dm.lw(0))
+        ax.plot(x, y2, label="Signal B", color="dc.violet2", lw=dm.lw(0))
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("Amplitude")
         ax.legend(loc="upper right", fontsize=dm.fs(-2))

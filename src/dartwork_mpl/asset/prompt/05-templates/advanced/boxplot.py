@@ -65,14 +65,14 @@ for i, (color, vals) in enumerate(zip(colors, data, strict=False)):
 
 # Market baseline.
 ax.axhline(
-    market_baseline, color="dc.earth4", linewidth=0.5, linestyle="--", zorder=2
+    market_baseline, color="dc.amber4", linewidth=0.5, linestyle="--", zorder=2
 )
 ax.text(
     len(labels) + 0.3,
     market_baseline,
     f"Market baseline = {market_baseline:.2f}%",
     fontsize=dm.fs(-1),
-    color="dc.earth5",
+    color="dc.amber5",
     ha="right",
     va="bottom",
     fontstyle="italic",

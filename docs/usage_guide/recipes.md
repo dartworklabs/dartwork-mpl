@@ -15,7 +15,7 @@ directly.
 ax.grid(
     True,
     which="major",
-    color="dc.teal_indigo1",
+    color="dc.indigo1",
     alpha=0.3,
     linestyle="-",
     linewidth=0.5,
@@ -38,7 +38,7 @@ ax.spines["right"].set_visible(False)
 ax.grid(
     True,
     axis="y",
-    color="dc.teal_indigo1",
+    color="dc.indigo1",
     alpha=0.2,
     linestyle="--",
     linewidth=0.5,
@@ -47,7 +47,7 @@ ax.set_axisbelow(True)
 
 # Soft gray bottom + left spines
 for s in ("bottom", "left"):
-    ax.spines[s].set_color("dc.teal_indigo3")
+    ax.spines[s].set_color("dc.indigo3")
     ax.spines[s].set_linewidth(0.5)
 ```
 
@@ -59,7 +59,7 @@ recommended weight + color (typical for framed scientific figures).
 ```python
 for s in ax.spines.values():
     if s.get_visible():
-        s.set_color("dc.teal_indigo3")
+        s.set_color("dc.indigo3")
         s.set_linewidth(0.5)
 ```
 

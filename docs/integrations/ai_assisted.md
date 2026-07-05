@@ -92,13 +92,13 @@ def plot_signal(
 
 # Usage: Easy to modify by changing arguments
 data = np.random.randn(100).cumsum()
-fig, ax = plot_signal(data, color='dc.vivid2', linewidth=1.2)
+fig, ax = plot_signal(data, color='dc.red2', linewidth=1.2)
 dm.save_and_show(fig)
 ```
 
 **Why this works better with AI:**
 
-- "Change the line color to `dc.vivid2`" → AI modifies one argument
+- "Change the line color to `dc.red2`" → AI modifies one argument
 - "Make the line thicker" → AI adjusts `linewidth=1.2`
 - No risk of breaking other parts of the code
 
@@ -115,7 +115,7 @@ When asking AI to modify your plots, refer to specific parameters:
 
 | ✅ Specific (better results)               | ❌ Vague (slower, error-prone) |
 | ------------------------------------------ | ------------------------------ |
-| "Change color to `dc.vivid2`"                | "Make it a bit redder"         |
+| "Change color to `dc.red2`"                | "Make it a bit redder"         |
 | "Set linewidth to 1.2"                     | "Make the line thicker"        |
 | "Resize to `dm.figsize(\"17cm\", \"wide\")`" | "Make the chart bigger"        |
 | "Add title `'Signal Response'`"            | "Make it look better"          |
@@ -138,7 +138,7 @@ import dartwork_mpl as dm
 def plot_comparison(
     data1: np.ndarray,
     data2: np.ndarray,
-    color1: str = 'dc.vivid2',
+    color1: str = 'dc.red2',
     color2: str = 'dc.teal2',
     linewidth: float = 0.7,
     title: str | None = None,
@@ -168,7 +168,7 @@ from plotting import plot_comparison
 
 data1 = np.random.randn(100).cumsum()
 data2 = np.random.randn(100).cumsum() + 5
-fig, ax = plot_comparison(data1, data2, color1='dc.forest2', title='Comparison')
+fig, ax = plot_comparison(data1, data2, color1='dc.green2', title='Comparison')
 dm.save_and_show(fig)
 ```
 

@@ -7,7 +7,7 @@ generated from the same runtime registries the names resolve against:
 
 - ``DartworkColor``   ← ``matplotlib.colors.get_named_colors_mapping()``
   for the seven canonical library prefixes (``dc/oc/tw/md/ad/cu/pr``;
-  the ``dm.*`` back-compat aliases are deliberately excluded).
+  ``dm.*`` is not a color namespace).
 - ``DartworkColormap`` ← every registered ``dc.*`` colormap, including
   the derived ``_r`` variants.
 
@@ -26,9 +26,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TARGET = REPO_ROOT / "src" / "dartwork_mpl" / "colors" / "_typing.py"
 
-# The canonical library prefixes (dot included). ``dm.`` is a
-# registered alias namespace for ``dc.`` and intentionally not part of
-# the typed vocabulary.
+# The canonical library prefixes (dot included). ``dm.`` is not a color
+# namespace and is intentionally not part of the typed vocabulary.
 COLOR_PREFIXES: tuple[str, ...] = (
     "ad.",
     "cu.",

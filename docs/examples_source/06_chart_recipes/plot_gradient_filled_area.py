@@ -24,7 +24,7 @@ y = 3.5 * np.sin(x * 0.8) * np.exp(-0.08 * x) + 4
 # Generate OKLCH gradient (teal-light → teal-dark, 50 steps)
 n_bands = 50
 gradient_colors = dm.cspace(
-    dm.color("dc.forest0"), dm.color("dc.forest4"), n=n_bands, space="oklch"
+    dm.color("dc.green0"), dm.color("dc.green4"), n=n_bands, space="oklch"
 )
 
 # Draw horizontal bands as stacked fill_between slices
@@ -41,7 +41,7 @@ for i in range(n_bands):
     )
 
 # Signal outline on top
-ax.plot(x, y, color="dc.forest5", lw=dm.lw(1.5), zorder=5)
+ax.plot(x, y, color="dc.green5", lw=dm.lw(1.5), zorder=5)
 
 ax.set_xlim(0, 8)
 ax.set_ylim(0, y_max)

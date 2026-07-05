@@ -126,7 +126,7 @@ ax.set_ylim(-2, 10)
 ax.set_aspect("equal")
 for s in ax.spines.values():
     s.set_visible(False)
-ax.set_facecolor("dc.teal_indigo5")
+ax.set_facecolor("dc.indigo5")
 
 ax.text(
     0,

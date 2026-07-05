@@ -37,31 +37,31 @@ ax.fill_between(
     x,
     boundary1,
     boundary2,
-    color=dm.pseudo_alpha("dc.jewel3", 0.20, background="white"),
+    color=dm.pseudo_alpha("dc.violet3", 0.20, background="white"),
     label="Phase II  (Liquid)",
 )
 ax.fill_between(
     x,
     boundary2,
     14,
-    color=dm.pseudo_alpha("dc.vivid3", 0.20, background="white"),
+    color=dm.pseudo_alpha("dc.orange3", 0.20, background="white"),
     label="Phase III  (Gas)",
 )
 
 # Phase boundary lines
 ax.plot(x, boundary1, color="dc.teal3", lw=dm.lw(1))
-ax.plot(x, boundary2, color="dc.jewel3", lw=dm.lw(1))
+ax.plot(x, boundary2, color="dc.violet3", lw=dm.lw(1))
 
 # Critical point annotation
 cp_x, cp_y = 6.5, boundary2[130]
-ax.plot(cp_x, cp_y, "o", color="dc.vivid3", markersize=8, zorder=5)
+ax.plot(cp_x, cp_y, "o", color="dc.orange3", markersize=8, zorder=5)
 ax.annotate(
     "Critical\nPoint",
     xy=(cp_x, cp_y),
     xytext=(cp_x + 1.5, cp_y - 1.8),
     fontsize=dm.fs(-0.5),
     ha="center",
-    arrowprops={"arrowstyle": "->", "color": "dc.teal_indigo3", "lw": 0.8},
+    arrowprops={"arrowstyle": "->", "color": "dc.indigo3", "lw": 0.8},
 )
 
 ax.set_title(

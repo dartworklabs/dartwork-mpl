@@ -61,7 +61,7 @@ def generate_before_after() -> None:
     ax.bar(
         QUARTERS,
         OUTPUT,
-        color="dc.forest2",
+        color="dc.green2",
         width=0.6,
         edgecolor="white",
         linewidth=0.5,
@@ -71,7 +71,12 @@ def generate_before_after() -> None:
     ax.set_xlabel("Phase", fontsize=dm.fs(0))
     ax2 = ax.twinx()
     ax2.plot(
-        QUARTERS, EFFICIENCY, "-o", color="dc.earth2", markersize=5, linewidth=2
+        QUARTERS,
+        EFFICIENCY,
+        "-o",
+        color="dc.orange2",
+        markersize=5,
+        linewidth=2,
     )
     ax2.set_ylabel("Efficiency (%)", fontsize=dm.fs(0))
     ax.tick_params(axis="x", rotation=45, labelsize=dm.fs(-0.5))
@@ -104,7 +109,7 @@ def generate_chart_context() -> None:
         x - w / 2,
         throughput,
         w,
-        color="dc.forest2",
+        color="dc.green2",
         label="Throughput",
         edgecolor="white",
         linewidth=0.5,
@@ -113,7 +118,7 @@ def generate_chart_context() -> None:
         x + w / 2,
         overhead,
         w,
-        color="dc.teal_indigo2",
+        color="dc.indigo2",
         label="Overhead",
         edgecolor="white",
         linewidth=0.5,

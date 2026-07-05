@@ -1,4 +1,4 @@
-"""v5 cmap registration (matplotlib-native access) + legacy renames."""
+"""v5 cmap registration (matplotlib-native access)."""
 
 from __future__ import annotations
 
@@ -6,21 +6,14 @@ import matplotlib as mpl
 import pytest
 
 import dartwork_mpl  # noqa: F401 — registers dc.* cmaps on import
-from dartwork_mpl.cmap import ensure_loaded as _ensure_legacy_cmaps_loaded
+from dartwork_mpl.cmap import ensure_loaded as _ensure_asset_cmaps_loaded
 from dartwork_mpl.colors import _generated
 
 
 @pytest.fixture(scope="module", autouse=True)
-def _load_legacy_cmaps() -> None:
-    """The legacy ``asset/cmap/*.txt`` loader is lazy (only triggered by
-    ``dm.style.use(...)`` / ``dm.list_colormaps()`` / an explicit call —
-    unlike the v5 catalog, which registers eagerly at package import
-    time). ``test_legacy_renames`` below asserts on ``dc.legacy_aurora``
-    / ``dc.legacy_teal_rose``, so this module must trigger the legacy
-    loader itself rather than depend on another test module (e.g.
-    ``test_cmap.py``) having already done so first.
-    """
-    _ensure_legacy_cmaps_loaded()
+def _load_asset_cmaps() -> None:
+    """The ``asset/cmap/*.txt`` loader is lazy; load it for absence checks."""
+    _ensure_asset_cmaps_loaded()
 
 
 def test_registry_names():
@@ -44,13 +37,11 @@ def test_registry_access_matplotlib_native():
         mpl.colormaps["dc.no_such_map"]
 
 
-def test_legacy_renames():
-    assert "dc.legacy_aurora" in mpl.colormaps
-    assert "dc.legacy_teal_rose" in mpl.colormaps
-    # v5 aurora 가 이름을 가져감 — 레거시 hex 와 달라야 함
-    assert list(mpl.colormaps["dc.aurora"].colors) != list(
-        mpl.colormaps["dc.legacy_aurora"].colors
-    )
+def test_deleted_legacy_cmaps_are_absent():
+    assert "dc.legacy_aurora" not in mpl.colormaps
+    assert "dc.legacy_aurora_r" not in mpl.colormaps
+    assert "dc.legacy_teal_rose" not in mpl.colormaps
+    assert "dc.legacy_teal_rose_r" not in mpl.colormaps
 
 
 def test_cmap_module_untouched():

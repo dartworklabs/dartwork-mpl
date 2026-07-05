@@ -128,42 +128,16 @@ def make_palette(
     return colors
 
 
-#: Legacy curated bare names that also became v5 family names (spec §11).
-#: v5 registers their non-colliding steps 8-9 under the same ``dc.``/``dm.``
-#: bare name (see ``colors/_loader.py::_load_colors``), so a naive
-#: ``dc.<name>\d+`` scan would silently widen these three from the legacy
-#: 8-step ramp to a 10-step ramp mixing two different colour generators
-#: (legacy 0-7 + v5 8-9) — see ``_palette_color_names``'s version-aware cap.
-_COLLIDING_CURATED_FAMILIES: frozenset[str] = frozenset(
-    {"teal", "indigo", "gray"}
-)
-
-
 def _palette_color_names(name: str) -> list[str]:
     """Return every colour name in palette ``name``, sorted by weight.
 
-    ``name`` may be a fully-qualified base (``"dc.trustworthy"``,
-    ``"oc.blue"``) or a bare dartwork name (``"trustworthy"`` resolves to
-    ``"dc.trustworthy"``).
-
-    Task 11 / spec §11 length policy
-    ---------------------------------
-    For the three legacy curated names that collide with a v5 family
-    (``teal``/``indigo``/``gray``, under either the ``dc.`` or mirrored
-    ``dm.`` namespace), the *default* palette version (v4, frozen legacy)
-    caps the result at the legacy 8-step ramp (steps 0-7) rather than also
-    returning v5's non-colliding steps 8-9 — those two generators produce
-    different lightness/chroma curves, so an uncapped 8+2 mix is not a
-    coherent ramp. Once :func:`dartwork_mpl.set_palette_version` (5) remaps
-    steps 0-7 to v5 too, all 10 steps share the v5 generator and the full
-    ramp is returned. Every other family (no legacy collision) always
-    returns the full v5 10-step ramp, unaffected by this cap.
+    ``name`` may be a fully-qualified base (``"dc.teal"``, ``"oc.blue"``)
+    or a bare dartwork v5 family name (``"teal"`` resolves to ``"dc.teal"``).
     """
     import re
 
     import matplotlib.colors as mcolors
 
-    from ..colors._compat_v4 import get_palette_version
     from ..colors._loader import ensure_loaded
 
     ensure_loaded()
@@ -180,16 +154,7 @@ def _palette_color_names(name: str) -> list[str]:
             f"See dm.list_palettes()."
         )
     found.sort(key=lambda t: t[0])
-    names = [cname for _, cname in found]
-
-    prefix, _sep, family = base.partition(".")
-    if (
-        prefix in ("dc", "dm")
-        and family in _COLLIDING_CURATED_FAMILIES
-        and get_palette_version() != 5
-    ):
-        names = names[:8]
-    return names
+    return [cname for _, cname in found]
 
 
 def _lstar(color: str) -> float:
@@ -261,11 +226,11 @@ def get_palette(
     Parameters
     ----------
     name : str
-        Palette base name — ``"trustworthy"`` / ``"dc.trustworthy"`` /
-        ``"oc.blue"``. Bare names resolve under the ``dc.`` namespace.
+        Palette base name — ``"teal"`` / ``"dc.teal"`` / ``"oc.blue"``.
+        Bare names resolve under the ``dc.`` namespace.
     n : int | None
-        Number of colours. ``None`` returns the whole palette (8 for the
-        dartwork categorical set). If ``n`` exceeds the palette size the
+        Number of colours. ``None`` returns the whole v5 family (10 for
+        ``dc.*`` palette families). If ``n`` exceeds the palette size the
         colours repeat (matching :func:`make_palette`).
     subset : {"first", "even", "last"}
         How to pick ``n`` of the palette's colours. ``"first"`` (default)
@@ -290,12 +255,12 @@ def get_palette(
 
     Examples
     --------
-    >>> get_palette("trustworthy")            # all 8
-    >>> get_palette("trustworthy", n=5)       # first 5 (best-separated)
-    >>> get_palette("cool_warm", n=7, subset="even")
-    >>> get_palette("trustworthy", n=6, order="lightness")   # light→dark
-    >>> get_palette("trustworthy", reverse=True)             # reversed cycle
-    >>> get_palette("vivid", n=5, order="shuffle", seed=42)  # reproducible
+    >>> get_palette("teal")                  # all 10 v5 steps
+    >>> get_palette("teal", n=5)             # first 5
+    >>> get_palette("blue", n=7, subset="even")
+    >>> get_palette("teal", n=6, order="lightness")   # light→dark
+    >>> get_palette("teal", reverse=True)             # reversed cycle
+    >>> get_palette("blue", n=5, order="shuffle", seed=42)  # reproducible
     """
     base = _palette_color_names(name)
     if n is None:
@@ -339,7 +304,7 @@ def set_cycle(
     Parameters
     ----------
     palette : str | list[str]
-        A palette base name (``"trustworthy"``, ``"dc.vivid"``) or an
+        A palette base name (``"teal"``, ``"dc.blue"``) or an
         explicit list of colours / colour names.
     ax : matplotlib.axes.Axes | None
         If given, set the cycle on that Axes only (``ax.set_prop_cycle``).
@@ -351,9 +316,9 @@ def set_cycle(
 
     Examples
     --------
-    >>> set_cycle("vivid")                 # global, all 8
-    >>> set_cycle("trustworthy", n=5)         # global, first 5
-    >>> set_cycle("teal_accent", ax=ax)             # this Axes only
+    >>> set_cycle("teal")                    # global, all 10
+    >>> set_cycle("blue", n=5)               # global, first 5
+    >>> set_cycle("violet", ax=ax)           # this Axes only
     """
     import matplotlib.pyplot as plt
     from cycler import cycler

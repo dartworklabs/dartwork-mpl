@@ -25,7 +25,7 @@ dartwork-mpl solves this with **human-readable, deterministic color names**:
 
 ```python
 # AI can describe and produce these reliably
-ax.plot(x, y1, color='dc.vivid2')       # OpenColor red, weight 5
+ax.plot(x, y1, color='dc.red2')       # OpenColor red, weight 5
 ax.plot(x, y2, color='tw.blue500')    # Tailwind blue 500
 
 # Compare with raw matplotlib
