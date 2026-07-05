@@ -11,6 +11,43 @@ from typing import Literal
 import matplotlib.ticker as ticker
 from matplotlib.axes import Axes
 
+_YEAR_SUFFIX = {"ko": "년", "ja": "年", "zh": "年", "en": ""}
+
+
+def format_axis_year(
+    ax: Axes,
+    axis: Literal["x", "y", "both"] = "x",
+    locale: Literal["ko", "ja", "zh", "en"] = "ko",
+) -> None:
+    """Format numeric year ticks with a locale suffix.
+
+    Parameters
+    ----------
+    ax:
+        Matplotlib axes to format.
+    axis:
+        Axis to format: ``"x"``, ``"y"``, or ``"both"``.
+    locale:
+        Locale suffix to apply. Korean uses ``년``, Japanese and Chinese use
+        ``年``, and English uses no suffix.
+    """
+    if locale not in _YEAR_SUFFIX:
+        valid = ", ".join(_YEAR_SUFFIX)
+        raise ValueError(f"Unknown locale {locale!r}; valid locales: {valid}")
+
+    suffix = _YEAR_SUFFIX[locale]
+
+    def formatter(value: float, _pos: int | None = None) -> str:
+        return f"{round(value)}{suffix}"
+
+    year_formatter = ticker.FuncFormatter(formatter)
+
+    if axis in ("x", "both"):
+        ax.xaxis.set_major_formatter(year_formatter)
+    if axis in ("y", "both"):
+        ax.yaxis.set_major_formatter(year_formatter)
+
+
 _MYRIAD_UNIT_LADDERS: dict[str, tuple[tuple[int, str], ...]] = {
     "ko": ((10**4, "만"), (10**8, "억"), (10**12, "조"), (10**16, "경")),
     "zh": ((10**4, "万"), (10**8, "亿"), (10**12, "兆"), (10**16, "京")),
