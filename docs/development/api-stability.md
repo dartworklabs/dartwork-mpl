@@ -1,4 +1,6 @@
-:orphan:
+---
+orphan: true
+---
 
 # API stability
 
