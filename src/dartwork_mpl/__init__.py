@@ -84,6 +84,7 @@ from .formatting import (
     format_axis_millions,
     format_axis_myriad,
     format_axis_si,
+    format_axis_year,
     rotate_tick_labels,
 )
 
@@ -243,6 +244,7 @@ __all__ = [  # noqa: RUF022
     "set_decimal",
     "format_axis_millions",
     "format_axis_myriad",
+    "format_axis_year",
     "format_axis_billions",
     "format_axis_currency",
     "format_axis_si",
