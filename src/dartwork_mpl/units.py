@@ -19,6 +19,7 @@ __all__ = [
     "Length",
     "cm",
     "figsize",
+    "figsize_grid",
     "inch",
     "length",
     "list_aspect_tokens",
@@ -509,6 +510,41 @@ def parse_width(value: str | Length) -> float:
         )
 
     return _parse_unit_string(value)
+
+
+def figsize_grid(
+    panel_width: str | Length,
+    aspect: str | int | float = DEFAULT_ASPECT,
+    *,
+    ncols: int = 1,
+    nrows: int = 1,
+    gap: str | Length = "0.6cm",
+) -> tuple[float, float]:
+    """Return a whole-figure size for a grid of physical panels.
+
+    Pair this with ``plt.subplots(ncols=..., nrows=...,
+    figsize=dm.figsize_grid(...))`` and finish the figure with
+    ``dm.simple_layout(fig)``. ``gap`` is a physical separation between
+    panels, unlike matplotlib's relative ``wspace`` / ``hspace`` values.
+    Matplotlib may still apply its own spacing, so the resulting panel
+    size is an approximation; ``simple_layout`` is recommended for
+    deterministic content-aware margins.
+    """
+    if ncols < 1:
+        msg = "ncols must be >= 1"
+        raise ValueError(msg)
+    if nrows < 1:
+        msg = "nrows must be >= 1"
+        raise ValueError(msg)
+
+    panel_width_inches = parse_width(panel_width)
+    gap_inches = parse_width(gap)
+    ratio = parse_aspect(aspect)
+    panel_height_inches = panel_width_inches * ratio
+
+    fig_width = ncols * panel_width_inches + (ncols - 1) * gap_inches
+    fig_height = nrows * panel_height_inches + (nrows - 1) * gap_inches
+    return fig_width, fig_height
 
 
 def figsize(
