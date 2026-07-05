@@ -200,7 +200,7 @@ rules:
       REMOVED in 0.5. The agent-doc corpus is read at runtime — use
       `dm.get_agent_doc(name)` / `dm.agent_doc_path(name)`, or the MCP
       `dartwork-mpl://guide/*` resources.
-    fix_suggestion: 'dm.get_agent_doc("general-guide")'
+    fix_suggestion: 'dm.get_agent_doc("llms")'
 
   - id: deprecated-width-token
     severity: critical

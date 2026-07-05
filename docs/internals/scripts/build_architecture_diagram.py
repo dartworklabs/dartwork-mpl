@@ -103,7 +103,7 @@ def main() -> int:
 
             with Cluster("AI / validation layer (read-only observers)"):
                 checks = Python("lint engine +\nvalidate_figure()")
-                mcp = Fastapi("MCP server\n(13 tools · 12 resources)")
+                mcp = Fastapi("MCP server\n(16 tools · 14 resources)")
 
             artifact = Storage("PNG · PDF · SVG\n+ provenance")
 

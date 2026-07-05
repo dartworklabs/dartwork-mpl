@@ -16,14 +16,14 @@ no slow generator invocation). It is the sibling of
 the ``theory_figures`` set specifically.
 """
 
+import subprocess
 from pathlib import Path
 
+_ROOT = Path(__file__).resolve().parents[1]
 _DOCS = Path(__file__).resolve().parents[1] / "docs"
 
-# Every one of these dirs is fully version-controlled (no gitignore rule
-# lets stray SVGs live here — cf. .gitignore, which only ignores
-# color_system/images, fonts/images, and images/*.png), so globbing *.svg
-# is equivalent to "tracked SVG".
+# Kept as a smoke check for the three generator-owned asset dirs covered by
+# the original PR. The whole-docs guard below is the net contract.
 _SVG_DIRS = (
     _DOCS / "usage_guide" / "images",
     _DOCS / "api" / "images",
@@ -33,11 +33,41 @@ _SVG_DIRS = (
 _PRESET_COMPARE = _DOCS / "usage_guide" / "images" / "preset_compare.html"
 
 
+def _tracked_docs_svgs() -> list[Path]:
+    """Return tracked docs SVGs without walking ignored render directories."""
+    result = subprocess.run(
+        ["git", "ls-files", "--", "docs"],
+        cwd=_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    svgs = []
+    for path in result.stdout.splitlines():
+        full_path = _ROOT / path
+        if path.endswith(".svg") and full_path.exists():
+            # During this cleanup, deleted tracked SVGs remain in
+            # ``git ls-files`` until the orchestrator stages them.
+            svgs.append(full_path)
+    return sorted(svgs)
+
+
 def test_tracked_docs_svgs_have_no_embedded_date() -> None:
     svgs = sorted(p for d in _SVG_DIRS for p in d.glob("*.svg"))
     assert svgs, "no docs asset SVGs found"
     dated = [
         str(p.relative_to(_DOCS))
+        for p in svgs
+        if "<dc:date" in p.read_text(encoding="utf-8")
+    ]
+    assert not dated, f"non-deterministic (timestamped) docs SVGs: {dated}"
+
+
+def test_all_tracked_docs_svgs_have_no_embedded_date() -> None:
+    svgs = _tracked_docs_svgs()
+    assert svgs, "no tracked docs SVGs found"
+    dated = [
+        str(p.relative_to(_ROOT))
         for p in svgs
         if "<dc:date" in p.read_text(encoding="utf-8")
     ]

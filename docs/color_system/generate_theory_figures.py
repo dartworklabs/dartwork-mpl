@@ -51,9 +51,13 @@ PREVIEW.mkdir(parents=True, exist_ok=True)
 dm.style.use("report-kr")
 # report-kr renders bold titles in Paperlogy, which lacks Greek / super- and
 # subscripts; Pretendard covers the full Latin + Greek + sub/superscript set
-# the axiom labels need. Pin the whole figure to Pretendard so titles resolve
-# Δ / γ / ² / ₀ instead of falling back to a tofu box.
-plt.rcParams["font.family"] = "Pretendard"
+# the axiom labels need. Lead the fallback chain with Pretendard so titles
+# resolve Δ / γ / ² / ₀ without dropping the math/symbol/CJK fallbacks.
+family_chain = plt.rcParams["font.family"]
+plt.rcParams["font.family"] = [
+    "Pretendard",
+    *[family for family in family_chain if family != "Pretendard"],
+]
 # The cmap catalog labels its gradients with `family="monospace"`, which
 # resolves to font.monospace[0]. Left unpinned that is whatever monospace the
 # build machine happens to win (macOS Andale Mono vs. CI DejaVu Sans Mono),

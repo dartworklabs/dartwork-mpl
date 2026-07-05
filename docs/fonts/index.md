@@ -20,14 +20,13 @@ dartwork-mpl bundles **206 text font files across 18 families** (sans-serif
 plus four monospace, and two symbol-fallback faces), all optimized for data
 visualization and
 publication-quality figures. They are registered with matplotlib's font
-manager on `import dartwork_mpl`, so `plt.rcParams["font.family"] = "Inter"`
-(or any bundled family) resolves immediately — no manual font installation
-or configuration required.
+manager on `import dartwork_mpl`, and bundled entries win same-named
+system-font ties — no manual font installation or configuration required.
 
 **Every family, one click apart.** The picker below cycles through them
 live — each tab swaps the specimen below to that family's actual rendered
 samples, with the correct weights, so what you see is exactly what
-`plt.rcParams["font.family"] = "..."` will produce in a chart.
+that family will contribute when it leads the fallback chain.
 
 ```{raw} html
 :file: ../_static/fonts_picker.html
@@ -47,7 +46,11 @@ import dartwork_mpl as dm
 import matplotlib.pyplot as plt
 
 dm.style.use("scientific")  # Apply dartwork style (includes Roboto font)
-plt.rcParams["font.family"] = "Inter"  # optional: pick any bundled family (see the summary table below)
+family_chain = plt.rcParams["font.family"]
+plt.rcParams["font.family"] = [
+    "Inter",
+    *[family for family in family_chain if family != "Inter"],
+]  # optional: lead with any bundled family while preserving fallbacks
 
 fig, ax = plt.subplots()
 ax.set_title("Publication-Ready Title", fontsize=dm.fs(4), fontweight=dm.fw(2))
@@ -63,7 +66,8 @@ plt.show()
 
 **Auto-Registration**
 : All 206 font files are registered with matplotlib's font manager on
-`import dartwork_mpl`. No manual font installation or configuration needed.
+`import dartwork_mpl`. Bundled fonts are promoted ahead of same-named
+system copies, so figures render with the shipped assets wherever possible.
 
 **Relative Sizing**
 : `fs(n)` adjusts font sizes relative to your base style. `fw(n)` adjusts

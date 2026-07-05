@@ -2,7 +2,7 @@
 
 AI coding agents — Cursor, Copilot, Claude, and other LLM-powered assistants — already know matplotlib. It is one of the most heavily represented Python libraries in any LLM's training data, with **40M+ monthly PyPI downloads** and **70k+ Stack Overflow questions**.
 
-dartwork-mpl is built to leverage this fact. This page explains the **design principles** behind our AI-friendly API. For concrete features and setup instructions, see the [AI Integration](../integrations/index) guide.
+dartwork-mpl is built to leverage this fact. This page explains the **design principles** behind our AI-friendly API. For concrete features and setup instructions, see the [AI Integration](../ai/index) guide.
 
 ## One Right Way to Do Things
 
@@ -48,11 +48,12 @@ The agent generates correct code because the underlying matplotlib API is well-k
 dartwork-mpl bundles its documentation **inside the package**, accessible even in air-gapped environments:
 
 ```python
-dm.list_prompts()                       # ['general-guide', 'layout-guide']
-content = dm.get_prompt('general-guide') # read guide programmatically
+dm.list_prompts()
+# ['00-index', '01-policy', '02-anti-patterns', '03-recipes']
+content = dm.get_prompt("02-anti-patterns")  # read the lint catalog
 ```
 
-For real-time access, dartwork-mpl also ships a **Model Context Protocol (MCP) server** — see [AI Integration](../integrations/index) for setup.
+For real-time access, dartwork-mpl also ships a **Model Context Protocol (MCP) server** — see [AI Integration](../ai/index) for setup.
 
 ## See also
 

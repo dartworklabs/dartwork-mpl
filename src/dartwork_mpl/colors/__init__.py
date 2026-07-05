@@ -6,7 +6,7 @@ across OKLab, OKLCH, RGB, and Hex color spaces.
 
 from ._color import Color, color, cspace, hex, oklab, oklch, rgb
 from ._compat_v4 import set_palette_version
-from ._cycle_api import cycle
+from ._cycle_api import cycle, cycle_cycler
 from ._loader import ensure_loaded as _ensure_colors_loaded
 from ._register import ensure_registered as _ensure_cmaps_registered
 from ._semantic import apply_semantic as _apply_default_semantic
@@ -33,6 +33,7 @@ __all__ = [
     "color",
     "cspace",
     "cycle",
+    "cycle_cycler",
     "hex",
     "oklab",
     "oklch",

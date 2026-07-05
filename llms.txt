@@ -1,7 +1,7 @@
 # dartwork-mpl
 
 > Publication-quality matplotlib utilities: free-form physical-width
-> API (`width="13cm"`), six aspect tokens, curated style presets, an
+> API (`width="13cm"`), ten aspect tokens, curated style presets, an
 > OKLCH color system, content-aware layout (`simple_layout`), visual
 > validation, and an MCP server for AI coding assistants.
 
@@ -21,7 +21,7 @@ wheel under `dartwork_mpl/asset/prompt/`.
 
 ## AI integration
 
-- [AI integration overview](https://dartworklabs.github.io/dartwork-mpl/integrations/index.html): three integration tiers (MCP, file-based prompts, plain Python).
+- [AI integration overview](https://dartworklabs.github.io/dartwork-mpl/ai/index.html): three integration tiers (MCP, file-based prompts, plain Python).
 - [MCP server setup](https://dartworklabs.github.io/dartwork-mpl/integrations/mcp_server.html): step-by-step guide for Claude Code, Cursor, Continue.
 - [Anti-pattern catalog (raw YAML)](https://raw.githubusercontent.com/dartworklabs/dartwork-mpl/main/src/dartwork_mpl/asset/prompt/02-anti-patterns.yaml): SSOT used by `dm.lint` / MCP `lint_dartwork_mpl_code`.
 - [Plot templates index](https://dartworklabs.github.io/dartwork-mpl/examples_gallery/09_ai_templates/index.html): 18 ready-to-use scripts — bar, line, scatter, heatmap, etc.

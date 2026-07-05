@@ -45,15 +45,20 @@ Not sure which font to use? Pick based on your primary need:
 | **Symbol fallback**          | Noto Sans Symbols 1 / 2    | Plain-text arrows, dingbats: → ⚠ ✓ ★         |
 | **Multi-language documents** | Noto Sans                  | Broadest Unicode coverage                   |
 
-To apply any row's font, set matplotlib's `font.family` to the exact
-registered name (as it appears in the
+To apply any row's font, prepend the exact registered name to matplotlib's
+current `font.family` chain (as it appears in the
 [Bundled Fonts Summary](index.md#bundled-fonts-summary) — e.g. `Inter Display`
-with a space, not `InterDisplay`):
+with a space, not `InterDisplay`). Keep the rest of the chain so Korean,
+CJK, math, and symbol fallback still work:
 
 ```python
 import matplotlib.pyplot as plt
 
-plt.rcParams["font.family"] = "Inter"   # or any family name from the table
+family_chain = plt.rcParams["font.family"]
+plt.rcParams["font.family"] = [
+    "Inter",
+    *[family for family in family_chain if family != "Inter"],
+]  # or any family name from the table
 ```
 
 Fine-tune size and weight next → [Font Utilities › Custom Font Configuration](utilities.md#custom-font-configuration).

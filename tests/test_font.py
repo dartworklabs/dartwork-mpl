@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 import warnings
+from pathlib import Path
 
 import pytest
 
 from dartwork_mpl import font as font_module
-from dartwork_mpl.font import _EXPECTED_MIN_FONTS, _add_fonts, ensure_loaded
+from dartwork_mpl.font import (
+    _EXPECTED_MIN_FONTS,
+    _add_fonts,
+    ensure_loaded,
+    get_font_dir,
+    list_registered,
+)
 
 
 class TestEnsureLoaded:
@@ -20,6 +27,23 @@ class TestEnsureLoaded:
         """Calling ensure_loaded() twice should not raise."""
         ensure_loaded()
         ensure_loaded()
+
+
+class TestFontDiagnostics:
+    """Tests for documented font diagnostic helpers."""
+
+    def test_get_font_dir_returns_bundled_asset_dir(self) -> None:
+        font_dir = get_font_dir()
+        assert isinstance(font_dir, Path)
+        assert font_dir.is_dir()
+        assert (font_dir / "NotoSansMath-Regular.ttf").is_file()
+
+    def test_list_registered_reports_bundled_families(self) -> None:
+        registered = list_registered()
+        assert registered == sorted(registered)
+        assert len(registered) == len(set(registered))
+        assert "Roboto" in registered
+        assert "Noto Sans Symbols 2" in registered
 
 
 class TestAddFonts:

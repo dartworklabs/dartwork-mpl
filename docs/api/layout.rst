@@ -23,7 +23,7 @@ Example
    dm.label_axes(axes)  # adds a, b, c
 
    # Layout optimization
-   dm.simple_layout(fig, margins=(0.08, 0.05, 0.1, 0.08))
+   dm.simple_layout(fig, ml=0.08, mr=0.05, mb=0.10, mt=0.08)
 
    # Decimal formatting
    dm.set_decimal(axes[0], xn=2, yn=1)

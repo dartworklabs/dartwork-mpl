@@ -171,7 +171,7 @@ equivalent forms; use whichever reads naturally for the call site:
 
 | Form                      | Example                              | Notes                                            |
 | :------------------------ | :----------------------------------- | :----------------------------------------------- |
-| Aspect token              | `dm.figsize("13cm", "wide")`         | One of `square / portrait / standard / golden / wide / cinema`. |
+| Aspect token              | `dm.figsize("13cm", "wide")`         | One of `square / portrait / tall / standard / golden / wide / a4 / slide / cinema / panoramic`. |
 | Numeric ratio             | `dm.figsize("13cm", 0.6)`            | Positive `int` / `float` interpreted as `height / width`. |
 | Unit-suffix string height | `dm.figsize("13cm", "8cm")`          | Width and height units may differ.               |
 | `Length` value            | `dm.figsize("13cm", dm.cm(8))`       | Useful for `dm.col1` / `dm.col2` heights.        |
