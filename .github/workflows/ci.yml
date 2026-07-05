@@ -145,6 +145,35 @@ jobs:
           print('OK: base install imports + renders cleanly')
           "
 
+  visual:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Visual regression (pixel baselines)
+        env:
+          MPLBACKEND: Agg
+        run: uv run pytest tests/visual/test_visual_pixels.py --mpl -v --no-cov
+
+      - name: Upload diff images on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs
+          path: /tmp/pytest-mpl-*/**
+
   # Build the docs on every PR (the deploy workflow only runs on main, so
   # without this a doc-breaking change isn't caught until after merge).
   # Two gates: (1) -W turns Sphinx warnings into build failures; (2) the
