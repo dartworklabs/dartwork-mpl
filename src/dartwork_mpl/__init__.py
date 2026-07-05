@@ -9,9 +9,11 @@ utility functions for Matplotlib visualizations.
 # Underscore-aliased so implementation imports don't leak into the
 # public namespace (``dm.version`` / ``dm.Any`` /
 # ``dm.PackageNotFoundError`` used to resolve).
+import warnings as _warnings
 from importlib.metadata import PackageNotFoundError as _PackageNotFoundError
 from importlib.metadata import version as _metadata_version
 from typing import Any as _Any
+from typing import NamedTuple as _NamedTuple
 
 # Derive the version from the installed distribution metadata so there
 # is a single source of truth. For a built/released wheel this always
@@ -81,6 +83,7 @@ from .formatting import (
     format_axis_billions,
     format_axis_currency,
     format_axis_millions,
+    format_axis_myriad,
     format_axis_si,
     rotate_tick_labels,
 )
@@ -119,7 +122,17 @@ from .style import Style, list_styles, load_style_dict, style, style_path
 from .templates import plot_diverging_bar
 
 # Unit helpers (0.4+: free-form width input)
-from .units import Length, cm, figsize, inch, length, list_aspect_tokens, mm, pt
+from .units import (
+    Length,
+    cm,
+    figsize,
+    figsize_grid,
+    inch,
+    length,
+    list_aspect_tokens,
+    mm,
+    pt,
+)
 
 # Color utilities
 from .util import make_offset, mix_colors, pseudo_alpha, set_decimal
@@ -127,6 +140,12 @@ from .util import make_offset, mix_colors, pseudo_alpha, set_decimal
 # Academic column-width sugar (0.4+).
 col1: Length = cm(9)
 col2: Length = cm(17)
+
+# Public surfaces that are provisional -- shape may change in a minor
+# release without a full deprecation cycle. Documented in
+# docs/development/api-stability.md. Empty today because the interactive
+# UI is a subpackage, not an advertised top-level ``dm.ui`` attribute.
+EXPERIMENTAL: frozenset[str] = frozenset()
 
 # High-level composition helpers (T2 in the AI-readiness roadmap).
 # These wrap the lower-level primitives above so that AI agents and
@@ -162,6 +181,8 @@ from .validate_fixes import validate_with_fixes
 # related names together. RUF022 is silenced for that reason.
 
 __all__ = [  # noqa: RUF022
+    # API stability markers
+    "EXPERIMENTAL",
     # Config
     "Config",
     "config",
@@ -215,6 +236,7 @@ __all__ = [  # noqa: RUF022
     "col2",
     "Length",
     "figsize",
+    "figsize_grid",
     "list_aspect_tokens",
     "tokens",
     # Units (legacy helpers, kept for compatibility)
@@ -222,6 +244,7 @@ __all__ = [  # noqa: RUF022
     # Formatting
     "set_decimal",
     "format_axis_millions",
+    "format_axis_myriad",
     "format_axis_billions",
     "format_axis_currency",
     "format_axis_si",
@@ -312,7 +335,24 @@ font.ensure_loaded()
 # raises AttributeError. The ``__getattr__`` hook below turns those
 # bare misses into an actionable message naming the version and the
 # replacement API, instead of Python's default "module has no
-# attribute" string. Migration paths: see docs/migration.md.
+# attribute" string. Future removals now pass through
+# ``_DEPRECATED_NAMES`` for at least two minor releases (soft alias with
+# warning) before landing here (hard removal); see
+# docs/development/api-stability.md. Migration paths: see
+# docs/migration.md.
+
+
+class _Deprecation(_NamedTuple):
+    target: str
+    since: str
+    removed_in: str
+    hint: str
+
+
+# Public names that still work but emit DeprecationWarning and alias to a
+# replacement. Removals now go through here for >= 2 minor releases BEFORE
+# moving to _REMOVED_NAMES. Ships empty -- infrastructure for future removals.
+_DEPRECATED_NAMES: dict[str, _Deprecation] = {}
 
 # Removed names → ``(version-removed, replacement-hint)``. Keyed by exact
 # attribute name; the ``FS_*`` family is handled by the prefix branch.
@@ -451,13 +491,22 @@ _REMOVED_NAMES: dict[str, tuple[str, str]] = {
 
 
 def __getattr__(name: str) -> _Any:
-    """Surface a migration hint for removed 0.3/0.4/0.5 names.
+    """Surface deprecation aliases and removed-name migration hints.
 
     Without this, ``dm.SW`` / ``dm.cm2in`` / ``dm.subplots`` /
     ``dm.install_llm_txt`` / ``dm.FS_SINGLE`` would raise Python's
     default ``AttributeError`` with no pointer to the replacement. See
     docs/migration.md for the full mapping.
     """
+    if name in _DEPRECATED_NAMES:
+        dep = _DEPRECATED_NAMES[name]
+        _warnings.warn(
+            f"dm.{name} is deprecated since {dep.since} and will be "
+            f"removed in {dep.removed_in}. Use {dep.hint}.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return globals()[dep.target]
     if name in _REMOVED_NAMES:
         version, hint = _REMOVED_NAMES[name]
         raise AttributeError(
