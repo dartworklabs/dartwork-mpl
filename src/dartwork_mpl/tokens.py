@@ -22,16 +22,18 @@ class _TokenData(TypedDict):
     type_scale: dict[str, _ResolvedToken]
     lw_ladder: dict[str, _ResolvedToken]
     scatter_size: dict[str, float]
+    spacing: dict[str, float]
 
 
 ScatterLevel = Literal["small", "default", "emphasis"]
+SpacingLevel = Literal["xs", "sm", "md", "lg", "xl"]
 
 _TOKEN_PATH = (
     Path(__file__).parent / "asset" / "tokens" / "semantic_tokens.json"
 )
 
 _FALLBACK_TOKENS: _TokenData = {
-    "version": "1",
+    "version": "2",
     "type_scale": {
         "annotation": {
             "rcparam": "font.size",
@@ -79,6 +81,7 @@ _FALLBACK_TOKENS: _TokenData = {
         },
     },
     "scatter_size": {"small": 16.0, "default": 30.0, "emphasis": 45.0},
+    "spacing": {"xs": 2.0, "sm": 4.0, "md": 8.0, "lg": 12.0, "xl": 16.0},
 }
 
 
@@ -118,6 +121,7 @@ def _load_tokens() -> _TokenData:
             "type_scale": _coerce_token_map(raw_tokens["type_scale"]),
             "lw_ladder": _coerce_token_map(raw_tokens["lw_ladder"]),
             "scatter_size": _coerce_float_map(raw_tokens["scatter_size"]),
+            "spacing": _coerce_float_map(raw_tokens["spacing"]),
         }
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError):
         return _FALLBACK_TOKENS
@@ -217,6 +221,17 @@ def scatter_size(level: ScatterLevel = "default") -> float:
     return sizes[level]
 
 
+def space(level: SpacingLevel = "md") -> float:
+    """Return the spacing value in points for the requested semantic level."""
+    spacing = _TOKENS["spacing"]
+    if level not in spacing:
+        valid = ", ".join(sorted(spacing))
+        raise ValueError(
+            f"Unknown spacing level {level!r}. Valid levels: {valid}."
+        )
+    return spacing[level]
+
+
 def as_dict() -> dict[str, float]:
     """Return all currently resolved semantic tokens as exportable floats."""
     return {
@@ -233,6 +248,11 @@ def as_dict() -> dict[str, float]:
         "scatter_small": scatter_size("small"),
         "scatter_default": scatter_size("default"),
         "scatter_emphasis": scatter_size("emphasis"),
+        "space_xs": space("xs"),
+        "space_sm": space("sm"),
+        "space_md": space("md"),
+        "space_lg": space("lg"),
+        "space_xl": space("xl"),
     }
 
 
@@ -249,5 +269,6 @@ __all__ = [
     "lw_reference",
     "lw_trend",
     "scatter_size",
+    "space",
     "version",
 ]

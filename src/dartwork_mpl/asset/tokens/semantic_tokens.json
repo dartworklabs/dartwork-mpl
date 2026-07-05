@@ -1,5 +1,5 @@
 {
-  "version": "1",
+  "version": "2",
   "type_scale": {
     "annotation": {
       "rcparam": "font.size",
@@ -58,5 +58,12 @@
     "small": 16.0,
     "default": 30.0,
     "emphasis": 45.0
+  },
+  "spacing": {
+    "xs": 2.0,
+    "sm": 4.0,
+    "md": 8.0,
+    "lg": 12.0,
+    "xl": 16.0
   }
 }
