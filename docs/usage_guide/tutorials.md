@@ -142,6 +142,7 @@ dm.save_formats(fig, "korean_report", formats=("png", "pdf"))
 
 Set up a Jupyter workflow optimized for dark themes:
 
+<!-- snippet: no-run -->
 ```python
 # Cell 1: Setup
 %config InlineBackend.figure_format = 'retina'

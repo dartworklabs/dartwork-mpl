@@ -3,7 +3,7 @@
 Synthetic correlated data fit with ``numpy.polyfit``. Demonstrates:
 
 - ``dm.style.use("scientific")`` for a compact science preset
-- ``dm.add_grid`` at low alpha for a subtle background
+- a subtle low-alpha background grid via ``ax.grid``
 - Legend with the fitted equation
 
 Run with:
@@ -37,13 +37,14 @@ ax.plot(
     x_line, p(x_line), "r--", alpha=0.8, label=f"y = {z[0]:.2f}x + {z[1]:.2f}"
 )
 
-dm.add_grid(ax, alpha=0.15)
+ax.grid(True, color="dc.teal_indigo1", alpha=0.15, linewidth=0.5)
+ax.set_axisbelow(True)
 ax.set_xlabel("X Variable")
 ax.set_ylabel("Y Variable")
 ax.set_title("Correlation Analysis")
 ax.legend()
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(fig, OUTPUT_DIR / "scatter_with_fit", formats=("pdf",), dpi=300)
 plt.close(fig)
 print(f"Saved: {OUTPUT_DIR / 'scatter_with_fit.pdf'}")

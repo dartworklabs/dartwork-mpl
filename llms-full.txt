@@ -414,11 +414,12 @@ coming from:
 The per-release sections below carry the full detail and runnable
 snippets.
 
-## v5 — generative color system (Unreleased)
+## v5 — generative color system (0.5.6)
 
-A 91-parameter generative palette (16 families × 10 perceptually-equalized
-steps, `dc.{family}{step}`) replaces the hand-curated v4 catalog as the
-default. Design spec:
+A 91-parameter generative system (16 families × 10 perceptually-equalized
+steps, `dc.{family}{step}`) ships in 0.5.6. Its colormap catalog is the new
+default; the categorical `dc.{family}{step}` remap is opt-in via
+`dm.set_palette_version(5)` (see below). Design spec:
 `docs/superpowers/specs/2026-07-03-color-system-v5-design.md`.
 
 1. **v4 `dc.*` tokens are frozen, not removed.** Every legacy-only token
@@ -900,6 +901,20 @@ rules:
       `docs/usage_guide/recipes.md` (publication grid, minimal axes,
       thin gray spines).
     fix_suggestion: 'see docs/usage_guide/recipes.md'
+
+  - id: dm-legacy-wrappers-removed
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\bdm\.(?:format_axis_percent|format_axis_labels|format_axis_thousands|add_frame|add_value_labels|set_xmargin|set_ymargin|hide_spines|hide_all_spines|show_only_spines|remove_grid|save_figure|create_figure_with_style)\s*\('
+    message: |
+      These legacy `dm.*` helpers were REMOVED in 0.4.1. They were
+      thin formatter, spine, margin, and figure wrappers around native
+      matplotlib calls. Inline the matplotlib API directly, or use the
+      recipes in `docs/migration.md` / `docs/usage_guide/recipes.md`;
+      dartwork-mpl keeps recipes and utilities rather than wrapper
+      functions for simple matplotlib operations.
+    fix_suggestion: 'see docs/migration.md'
 
   - id: dm-auto-select-colors-renamed
     severity: critical

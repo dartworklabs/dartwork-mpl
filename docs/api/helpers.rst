@@ -74,6 +74,7 @@ Curated dartwork palette sized to the data series count and kind.
 
 Example:
 
+.. snippet: no-run
 .. code-block:: python
 
    import dartwork_mpl as dm

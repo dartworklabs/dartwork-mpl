@@ -29,6 +29,15 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 
+def _save_svg(fig: plt.Figure, path: Path, **savefig_kwargs) -> Path:
+    """Write *fig* as a byte-stable SVG (fixed hashsalt, no wall-clock Date)."""
+    with matplotlib.rc_context({"svg.hashsalt": path.stem}):
+        fig.savefig(
+            path, format="svg", metadata={"Date": None}, **savefig_kwargs
+        )
+    return path
+
+
 # Font family metadata
 FONT_FAMILIES = {
     "Inter": {
@@ -217,7 +226,7 @@ def _save_all_fonts_preview(images_dir: Path) -> Path:
             )
 
     path = images_dir / "fonts_all_families.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 
@@ -352,7 +361,7 @@ def _save_family_preview(
                 )
 
         path = images_dir / f"font_{family.lower()}.svg"
-        fig.savefig(path, format="svg", bbox_inches="tight")
+        _save_svg(fig, path, bbox_inches="tight")
         plt.close(fig)
         return path
 
@@ -385,7 +394,7 @@ def _save_family_preview(
         )
 
     path = images_dir / f"font_{family.lower()}.svg"
-    fig.savefig(path, format="svg", bbox_inches="tight")
+    _save_svg(fig, path, bbox_inches="tight")
     plt.close(fig)
     return path
 

@@ -33,22 +33,6 @@ class TestMainCli:
         assert (dest / "app.py").exists()
         assert (dest / "README.md").exists()
 
-    @pytest.mark.skip(
-        reason="complex template removed - dashboards no longer supported"
-    )
-    def test_init_complex_example(self, tmp_path: Path) -> None:
-        """'init' with --example complex generates complex template."""
-        from dartwork_mpl.ui.__main__ import main
-
-        dest = tmp_path / "proj"
-        with patch.object(
-            sys, "argv", ["ui", "init", str(dest), "--example", "complex"]
-        ):
-            main()
-
-        content = (dest / "app.py").read_text()
-        assert len(content) > 100
-
     def test_init_without_example_triggers_interactive(self) -> None:
         """'init' with target but no --example triggers interactive."""
         from dartwork_mpl.ui.__main__ import main

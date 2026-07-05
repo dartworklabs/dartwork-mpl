@@ -19,19 +19,6 @@ class TestScaffold:
         assert (dest / "README.md").exists()
         assert (dest / ".gitignore").exists()
 
-    def test_complex_creates_files(self, tmp_path: Path) -> None:
-        """Complex example also creates all expected files."""
-        import pytest
-
-        pytest.skip("complex template removed - dashboards no longer supported")
-
-        dest = tmp_path / "my_project"
-        scaffold(str(dest), example="complex")
-
-        assert (dest / "app.py").exists()
-        assert (dest / "README.md").exists()
-        assert (dest / ".gitignore").exists()
-
     def test_app_py_has_content(self, tmp_path: Path) -> None:
         """Generated app.py is non-empty."""
         dest = tmp_path / "my_project"

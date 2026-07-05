@@ -43,6 +43,7 @@ Features
 Example
 -------
 
+.. snippet: no-run
 .. code-block:: python
 
    from dartwork_mpl.ui import ParamModel, run

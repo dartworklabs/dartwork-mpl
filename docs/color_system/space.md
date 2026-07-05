@@ -420,6 +420,7 @@ cmap_div = mcolors.ListedColormap([c.to_rgb() for c in colors],
 
 To make your custom colormap available globally in your session:
 
+<!-- snippet: no-run -->
 ```python
 import matplotlib as mpl
 

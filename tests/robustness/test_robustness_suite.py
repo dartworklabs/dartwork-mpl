@@ -35,13 +35,10 @@ _MIN_PNG_BYTES: int = 1024
 
 def _scenario_id(s: object) -> str:
     """Return the pytest test id for either a bare RobustnessScenario
-    or a pytest.param-wrapped one (used in Task 4+ to mark
-    expected-to-fail scenarios via pytest.mark.xfail).
+    or for a ``pytest.param``-wrapped one if any are ever added (none
+    today).
 
-    pytest.param wraps scenarios in a ParameterSet that exposes
-    ``.values``; RobustnessScenario intentionally has no ``.values``
-    field. If this check ever fires on a bare scenario, the dataclass
-    gained a ``.values`` field and this function must be updated.
+    pytest.param exposes ``.values``; RobustnessScenario has none.
     """
     if hasattr(s, "values"):
         return s.values[0].name  # type: ignore[attr-defined,no-any-return]

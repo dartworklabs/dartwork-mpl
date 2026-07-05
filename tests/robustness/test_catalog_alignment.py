@@ -34,9 +34,9 @@ def _all_rule_ids() -> set[str]:
 def _unwrap(entry: object) -> RobustnessScenario:
     """Return the underlying ``RobustnessScenario``.
 
-    A few entries in ``SCENARIOS`` are wrapped in ``pytest.param(...)``
-    because they sit on the KNOWN_LIMITATIONS xfail list. Strip that
-    wrapper if present so the alignment test sees a uniform stream.
+    Some future entries could be wrapped in ``pytest.param(...)``;
+    strip that wrapper if present so the alignment test sees a uniform
+    stream. (No entries are wrapped today.)
     """
     if isinstance(entry, RobustnessScenario):
         return entry
@@ -105,10 +105,8 @@ def test_per_scenario_category_string() -> None:
     """Per-scenario classification with one assertion failure per
     offender so the report names the bad scenario directly.
 
-    A plain loop (not parametrize) is used here because parametrize
-    interacts badly with the ``pytest.param(..., marks=xfail)``
-    wrappers in ``SCENARIOS``: the alignment test would inherit the
-    xfail mark and report XPASS / XFAIL instead of plain pass/fail.
+    A plain loop (not parametrize) is used so each offender is named
+    directly in one assertion failure.
     """
     bad: list[str] = []
     for scenario in _iter_scenarios():

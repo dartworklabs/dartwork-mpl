@@ -50,7 +50,7 @@ ax.set_ylabel("확률 밀도")
 ax.set_title("분포 분석")
 ax.legend()
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(
     fig, OUTPUT_DIR / "histogram_normal_fit_kr", formats=("png",), dpi=300
 )

@@ -139,6 +139,20 @@ rules:
       thin gray spines).
     fix_suggestion: 'see docs/usage_guide/recipes.md'
 
+  - id: dm-legacy-wrappers-removed
+    severity: critical
+    detector:
+      kind: regex
+      pattern: '\bdm\.(?:format_axis_percent|format_axis_labels|format_axis_thousands|add_frame|add_value_labels|set_xmargin|set_ymargin|hide_spines|hide_all_spines|show_only_spines|remove_grid|save_figure|create_figure_with_style)\s*\('
+    message: |
+      These legacy `dm.*` helpers were REMOVED in 0.4.1. They were
+      thin formatter, spine, margin, and figure wrappers around native
+      matplotlib calls. Inline the matplotlib API directly, or use the
+      recipes in `docs/migration.md` / `docs/usage_guide/recipes.md`;
+      dartwork-mpl keeps recipes and utilities rather than wrapper
+      functions for simple matplotlib operations.
+    fix_suggestion: 'see docs/migration.md'
+
   - id: dm-auto-select-colors-renamed
     severity: critical
     detector:

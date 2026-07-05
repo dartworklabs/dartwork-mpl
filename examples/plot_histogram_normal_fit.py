@@ -52,7 +52,7 @@ ax.set_ylabel("Density")
 ax.set_title("Distribution Analysis")
 ax.legend()
 
-dm.auto_layout(fig)
+dm.simple_layout(fig)
 dm.save_formats(
     fig, OUTPUT_DIR / "histogram_normal_fit", formats=("pdf",), dpi=300
 )

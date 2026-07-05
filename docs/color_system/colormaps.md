@@ -178,6 +178,8 @@ cmap = mpl.colors.ListedColormap([c.to_rgb() for c in colors])
 ```
 
 ```python
+import matplotlib as mpl
+
 left = dm.cspace("#1a237e", "#ffffff", n=128, space="oklch")
 right = dm.cspace("#ffffff", "#c62828", n=128, space="oklch")
 cmap = mpl.colors.ListedColormap(
