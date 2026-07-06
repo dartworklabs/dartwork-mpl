@@ -15,7 +15,7 @@ def cycle(name: str = "default") -> list[str]:
     Parameters
     ----------
     name : str
-        Cycle name. ``"default"`` is the 7-color screen/PDF cycle;
+        Cycle name. ``"default"`` is the 8-color screen/PDF cycle;
         ``"print"`` is the 8-color CVD-verified variant tuned for print
         reproduction.
 

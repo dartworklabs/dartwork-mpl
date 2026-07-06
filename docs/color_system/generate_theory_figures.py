@@ -69,7 +69,7 @@ plt.rcParams["svg.fonttype"] = "path"
 
 PALETTE = G.PALETTE  # fam -> [10 hex]
 CMAPS = G.CMAPS_256  # name -> [256 hex]
-CYCLES = G.CYCLES  # 'default' -> [7 hex], 'print' -> [8 hex]
+CYCLES = G.CYCLES  # 'default' -> [8 hex], 'print' -> [8 hex]
 PARAMS = R.FAMILY_PARAMS  # fam -> FamilyParams (15 chromatic)
 FOURIER = R.FOURIER
 

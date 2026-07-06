@@ -139,7 +139,7 @@ CYCLE_ORDER = ["default", "print"]
 CYCLE_LABEL = {"default": "Default", "print": "Print"}
 CYCLE_INTENT = {
     "default": "The everyday categorical cycle — reach for this first for 4–8 "
-    "unrelated series. Seven chromatic colours chosen by exhaustive "
+    "unrelated series. Eight chromatic colours chosen by exhaustive "
     "search to stay distinct under color-vision-deficiency "
     "simulation; gray is reserved for grids, not spent as a series.",
     "print": "The print variant — an 8th dark-gray colour and a wider "

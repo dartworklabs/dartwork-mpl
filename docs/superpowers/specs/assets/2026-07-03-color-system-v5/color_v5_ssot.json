@@ -478,18 +478,22 @@
    [
     "cyan",
     8
+   ],
+   [
+    "rose",
+    8
    ]
   ],
   "m": {
-   "normal": 19.3,
+   "normal": 18.6,
    "protan": 13.7,
    "deutan": 10.3,
-   "tritan": 9.0,
+   "tritan": 8.3,
    "common_min": 10.3,
-   "min00": 9.0,
+   "min00": 8.3,
    "tritan_model": "brettel1997",
    "dl4": 2.8,
-   "dlall": 2.8
+   "dlall": 2.7
   }
  },
  "cycle_print": {

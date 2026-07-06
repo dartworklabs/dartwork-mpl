@@ -16,7 +16,7 @@ categorical sets, each hand-tuned and screened for grayscale and
 color-vision-deficiency (CVD) legibility.
 
 Count rule: sequential family ramps have **10 steps**; curated categorical sets
-have **8 colors**; the default cycle is a searched CVD-optimal **7-color** set,
+have **8 colors**; the default cycle is a searched CVD-optimal **8-color** set,
 and the print cycle has **8 colors**. Every palette applies the same way through
 `dm.cycle(...)`, `dm.get_palette(...)`, or `dm.set_cycle(...)`.
 
@@ -29,25 +29,25 @@ third-party systems — see **[Palettes](colors.md)**.
 ## The default cycle
 
 For a coherent data-series cycle without choosing a palette, use the default
-`dc.cycle` — seven chromatic colors selected by exhaustive search to stay
+`dc.cycle` — eight chromatic colors selected by exhaustive search to stay
 distinct under color-vision-deficiency simulation: the common red-green
 deficiencies clear min ΔE00 10.3 (vs the Okabe-Ito benchmark's 11.5), and on
-the rare tritan the default cycle's 9.0 actually beats Okabe-Ito's 7.9 — both under
+the rare tritan the default cycle's 8.3 actually beats Okabe-Ito's 7.9 — both under
 the accurate Brettel-1997 model (see [Color system design](design.md));
 matplotlib's `tab10` scores 1.4 and effectively collapses under protanopia.
 Gray is reserved for grids and reference lines, not spent as a data color in
-the default `dc.cycle`; the print cycle adds a dark gray as its 8th color for
-B&W lightness spread.
+the default `dc.cycle`; its 8th series color is chromatic rose. The print cycle
+uses a dark gray as its 8th color for B&W lightness spread.
 
 ```python
 import dartwork_mpl as dm
 
-dm.set_cycle(dm.cycle("default"))   # 7-color screen/PDF cycle (the default)
+dm.set_cycle(dm.cycle("default"))   # 8-color screen/PDF cycle (the default)
 dm.set_cycle(dm.cycle("print"))     # 8-color cycle, spread darker for B&W print
 ```
 
 Need more than eight line series? Opt in to line-style variation with
-`dm.cycle_cycler()` — it expands the seven colors × three line styles (21
+`dm.cycle_cycler()` — it expands the eight colors × three line styles (24
 combinations) so a repeated color never reads as the same series. Line styles
 are opt-in rather than baked into the default cycle, because an `ax.plot` with
 `lw=0` would otherwise inherit a dashed style and break.
