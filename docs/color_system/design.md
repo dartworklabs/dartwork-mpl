@@ -269,7 +269,7 @@ projection, because Machado's fitted tritan matrix over-states blue-yellow
 separation. Under the accurate model a seven-hue cycle's tritan separation
 tops out near 9 — so, rather than claim a number the colors cannot meet, the
 gate is **tiered**: the common deficiencies are held to ≥ 10 and the rare
-tritan to a realistic ≥ 8. `dc.cycle` measures 10.3 (common) / 9.0 (tritan);
+tritan to a realistic ≥ 8. `dc.cycle` measures 10.3 (common) / 8.3 (tritan);
 `dc.cycle_print`, 13.5 / 8.5. Publishing the real floors instead of a
 flattering worst-case is the same honest-guarantees principle at work.
 

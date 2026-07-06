@@ -61,7 +61,7 @@ no generative equivalent. They resolve through the same API as any family, so
 like `dm.get_palette("blue")`.
 
 Counts are intentional: sequential family ramps have 10 steps, curated
-categorical sets have 8 colors, the searched default cycle currently has 7
+categorical sets have 8 colors, the searched default cycle has 8 chromatic
 colors, and the print cycle has 8. In the interactive explorer, the default
 cycle, print cycle, `trustworthy`, `vivid`, and `neon` form one **Qualitative**
 group ordered from restrained to high chroma.

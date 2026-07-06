@@ -84,7 +84,7 @@ def _viridis_cv() -> float:
 
 # (relpath, one-group claim-regex, expected-value callable, decimal places)
 _CLAIMS: list[tuple[str, str, Callable[[], float], int]] = [
-    # --- design.md: cycle floors quoted at "10.3 (common) / 9.0 (tritan)" ---
+    # --- design.md: cycle floors quoted at "10.3 (common) / 8.3 (tritan)" ---
     (
         "docs/color_system/design.md",
         r"`dc\.cycle` measures (\d+\.\d+) \(common\)",

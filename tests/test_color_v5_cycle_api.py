@@ -17,9 +17,9 @@ def test_cycle_hexes():
 
 def test_cycler_product_color_first():
     cyc = list(cycle_cycler())
-    n = len(_generated.CYCLES["default"])  # 7
+    n = len(_generated.CYCLES["default"])  # 8
     assert len(cyc) == n * 3
-    # 처음 7개: solid + 7색 순환
+    # 처음 8개: solid + 8색 순환
     assert all(c["linestyle"] == "-" for c in cyc[:n])
     assert [c["color"] for c in cyc[:n]] == list(_generated.CYCLES["default"])
     # 8번째(색 재사용 시작)부터 dashed

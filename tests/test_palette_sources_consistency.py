@@ -36,6 +36,7 @@ def test_default_cycle_tokens_are_generated_v5_values() -> None:
         "dc.amber7",
         "dc.violet8",
         "dc.cyan8",
+        "dc.rose8",
     )
     expected_hexes = [dm.color(token).to_hex() for token in expected_tokens]
     assert list(_generated.CYCLES["default"]) == expected_hexes

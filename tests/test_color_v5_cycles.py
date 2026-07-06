@@ -18,8 +18,9 @@ def test_specs_match_ssot(v5_ssot):
 def test_hexes_and_gate(v5_ssot):
     pal = v5_ssot["palette"]
     default = cycle_hexes("default", pal)
-    assert len(default) == 7
+    assert len(default) == 8
     assert default[0] == pal["blue"][6]
+    assert default[-1] == pal["rose"][8]
     # Common deficiencies (normal + protan + deutan) held to 10; the rare
     # tritan to a realistic 8 under the accurate Brettel-1997 model.
     for hexes in (default, cycle_hexes("print", pal)):

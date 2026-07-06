@@ -30,7 +30,7 @@ PALETTE: dict[str, tuple[str, ...]] = {
 }
 
 CYCLES: dict[str, tuple[str, ...]] = {
-    "default": ("#2d99f0", "#e24f26", "#4fd067", "#fea6c5", "#f38500", "#6c46e3", "#128397"),
+    "default": ("#2d99f0", "#e24f26", "#4fd067", "#fea6c5", "#f38500", "#6c46e3", "#128397", "#cf234a"),
     "print": ("#1864b0", "#fdd3a2", "#338a3f", "#ef5389", "#fb9600", "#d776f0", "#71d8e5", "#505458"),
 }
 
