@@ -37,14 +37,20 @@ snippets.
 
 ## v5 — generative color system (0.5.6 clean break)
 
-A 91-number generative palette (16 families × 10 perceptually equalized
+A 107-number generative palette (20 families × 10 perceptually equalized
 steps, `dc.{family}{step}`) replaced the hand-curated v4 catalog. v5 is a
 **full clean break** (design spec:
 `docs/superpowers/specs/2026-07-03-color-system-v5-design.md`):
 
-1. **v4-only palette tokens were removed.** Legacy categorical families such
-   as `vivid*`, `forest*`, `earth*`, `teal_indigo*`, `trustworthy*`, and the
-   numeric cycle aliases `0`–`7` no longer resolve as live colors.
+1. **The throwaway v4 aliases were removed — but the curated categorical sets
+   were kept.** The flat ad-hoc names (`sunset*`, `ocean*`, `nordic*`,
+   `cyber*`, `spectrum*`, `bold*`, `corporate*`) and the numeric cycle aliases
+   `0`–`7` no longer resolve. The scientifically curated categorical *sets* —
+   `trustworthy`, `vivid`, `neon`, `jewel`, `cool_warm`, `teal_amber`, `earth`,
+   `forest`, `blue_orange`, and the rest — are **preserved** as first-class
+   `dc.*` palettes: reach them through `dm.get_palette("trustworthy", n=6)` /
+   `dm.set_cycle("vivid")`, exactly like a v5 family (see
+   [Categorical palettes](color_system/categorical-palettes.md)).
 2. **There is no runtime palette-version switch.** The live registry is
    v5-only, so `teal`, `indigo`, and `gray` always mean the 10-step v5
    families.
@@ -58,6 +64,9 @@ steps, `dc.{family}{step}`) replaced the hand-curated v4 catalog. v5 is a
 6. **Semantic tokens are v5-native.** Use `dc.pos`, `dc.neg`, `dc.ref`, and
    `dc.hl` for role-based color; use `dc.ref` rather than a gray shade for
    reference lines.
+7. **The v5 family set later gained `coral`, `tangerine`, `cobalt`, and
+   `fuchsia`.** `coral` is now a recipe-generated 10-step family rather than
+   a curated 8-step set.
 
 ## v0.5.5 — categorical palette overhaul
 

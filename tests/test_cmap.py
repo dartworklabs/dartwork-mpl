@@ -113,7 +113,7 @@ class TestEnsureLoaded:
         asset/cmap/*.txt loader was the *only* registrant of the
         ``dc.*`` namespace. ``dartwork_mpl.colors._register`` (the v5
         cmap catalog, see ``tests/test_color_v5_register.py``) now also
-        registers 42 cmaps + 2 qualitative cycles under ``dc.*``,
+        registers 46 cmaps + 2 qualitative cycles under ``dc.*``,
         eagerly, at package import time -- so ``mpl.colormaps`` always
         contains more than just this module's 54 asset names. The
         namespace is intentionally shared, so this test asserts the asset set is a
@@ -140,7 +140,7 @@ class TestEnsureLoaded:
 
         See ``test_registers_exactly_54_dc_colormaps`` above: the v5
         cmap catalog shares the ``dc.*`` namespace and registers its
-        own 84 (42 base + 42 reversed) + 2 qualitative cycles, so the
+        own 92 (46 base + 46 reversed) + 2 qualitative cycles, so the
         registry's *total* size is no longer exactly 112 -- only a
         superset check on the legacy names is meaningful here.
         """

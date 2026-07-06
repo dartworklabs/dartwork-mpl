@@ -2,7 +2,7 @@
  "meta": {
   "version": "v5",
   "date": "2026-07-03",
-  "note": "dartwork color system — generative axiom SSOT. 91 numbers (60 free + 24 Fourier + 7 constants) regenerate all. 등화는 연속(float sRGB) 공간, hex는 최종 1회 변환.",
+  "note": "dartwork color system — generative axiom SSOT. 107 numbers (76 free + 24 Fourier + 7 constants) regenerate all. 등화는 연속(float sRGB) 공간, hex는 최종 1회 변환.",
   "metrics": {
    "equalize": "OKLab dE",
    "accessibility_gate": "CIEDE2000",
@@ -35,6 +35,26 @@
    "floor": 40.0,
    "cend": 0.85,
    "c0": 0.1
+  },
+  "coral": {
+   "h0": 27.0,
+   "dh": 2.0,
+   "gamma": 1.15,
+   "tp": 0.85,
+   "cmax": 0.205,
+   "floor": 44.0,
+   "cend": 0.9,
+   "c0": 0.1
+  },
+  "tangerine": {
+   "h0": 52.0,
+   "dh": -12.0,
+   "gamma": 1.2,
+   "tp": 0.85,
+   "cmax": 0.195,
+   "floor": 49.0,
+   "cend": 0.95,
+   "c0": 0.15
   },
   "orange": {
    "h0": 77.0,
@@ -126,6 +146,16 @@
    "cend": 0.85,
    "c0": 0.15
   },
+  "cobalt": {
+   "h0": 256.0,
+   "dh": 5.0,
+   "gamma": 1.25,
+   "tp": 0.8,
+   "cmax": 0.19,
+   "floor": 40.0,
+   "cend": 0.85,
+   "c0": 0.15
+  },
   "indigo": {
    "h0": 273.0,
    "dh": -5.0,
@@ -156,6 +186,16 @@
    "cend": 0.85,
    "c0": 0.05
   },
+  "fuchsia": {
+   "h0": 335.0,
+   "dh": 9.0,
+   "gamma": 0.95,
+   "tp": 0.8,
+   "cmax": 0.21,
+   "floor": 37.0,
+   "cend": 0.85,
+   "c0": 0.05
+  },
   "pink": {
    "h0": 350.0,
    "dh": 18.0,
@@ -168,6 +208,162 @@
   }
  },
  "palette": {
+  "amber": [
+   "#fbf3df",
+   "#f9e7bf",
+   "#fbda9b",
+   "#fecc75",
+   "#ffbb50",
+   "#ffa926",
+   "#fb9600",
+   "#f38500",
+   "#ec7200",
+   "#e65f0b"
+  ],
+  "blue": [
+   "#e8f6ff",
+   "#c9e8ff",
+   "#aadaff",
+   "#8acbff",
+   "#69bcff",
+   "#4aabfa",
+   "#2d99f0",
+   "#1686e0",
+   "#1474ca",
+   "#1864b0"
+  ],
+  "cobalt": [
+   "#ecf4ff",
+   "#d1e4ff",
+   "#b5d4ff",
+   "#99c3ff",
+   "#7eb2ff",
+   "#62a1ff",
+   "#468efe",
+   "#327bef",
+   "#2869d7",
+   "#255aba"
+  ],
+  "coral": [
+   "#fff0ee",
+   "#ffdbd6",
+   "#ffc5bd",
+   "#ffaea4",
+   "#ff978b",
+   "#ff7f70",
+   "#fd6355",
+   "#ef4b3e",
+   "#dc382d",
+   "#c33026"
+  ],
+  "cyan": [
+   "#e6f7f8",
+   "#c3edf1",
+   "#9be3ec",
+   "#71d8e5",
+   "#48cadb",
+   "#31b8cc",
+   "#22a6ba",
+   "#1894a9",
+   "#128397",
+   "#107285"
+  ],
+  "fuchsia": [
+   "#f9f1f7",
+   "#f6d9ee",
+   "#f6c0e6",
+   "#f4a6dd",
+   "#f18bd3",
+   "#ea70c6",
+   "#de54b5",
+   "#cc3aa1",
+   "#b6298c",
+   "#9d2176"
+  ],
+  "gray": [
+   "#f2f4f5",
+   "#dcdee1",
+   "#c6c9cd",
+   "#b0b5ba",
+   "#9ba0a6",
+   "#878d93",
+   "#74797f",
+   "#62666c",
+   "#505458",
+   "#404245"
+  ],
+  "green": [
+   "#e6f8e9",
+   "#cbf2cf",
+   "#aeedb5",
+   "#8fe69b",
+   "#6edd80",
+   "#4fd067",
+   "#40bf59",
+   "#39ad4e",
+   "#359b46",
+   "#338a3f"
+  ],
+  "indigo": [
+   "#f0f3ff",
+   "#d8e1ff",
+   "#c1cfff",
+   "#aabcff",
+   "#93aaff",
+   "#7c97ff",
+   "#6683ff",
+   "#516ff9",
+   "#405de3",
+   "#3552c2"
+  ],
+  "lime": [
+   "#eff6e1",
+   "#dff1c2",
+   "#cfeca1",
+   "#bde67d",
+   "#aadf57",
+   "#96d336",
+   "#85c32a",
+   "#75b422",
+   "#67a51d",
+   "#5a9619"
+  ],
+  "orange": [
+   "#fff2df",
+   "#fce3c1",
+   "#fdd3a2",
+   "#ffc381",
+   "#ffb064",
+   "#ff9d46",
+   "#ff8825",
+   "#f97311",
+   "#ef611a",
+   "#e24f26"
+  ],
+  "pink": [
+   "#faf1f5",
+   "#fad9e6",
+   "#fdc0d6",
+   "#fea6c5",
+   "#fd8bb3",
+   "#f96f9f",
+   "#ef5389",
+   "#e03673",
+   "#ca1f5e",
+   "#af1f4f"
+  ],
+  "purple": [
+   "#f7f2f9",
+   "#f1daf7",
+   "#edc2f8",
+   "#e8aaf8",
+   "#e191f6",
+   "#d776f0",
+   "#c85ce4",
+   "#b545d1",
+   "#9f37b8",
+   "#882c9f"
+  ],
   "red": [
    "#fff0f0",
    "#ffd9da",
@@ -192,65 +388,29 @@
    "#cf234a",
    "#b4233e"
   ],
-  "orange": [
-   "#fff2df",
-   "#fce3c1",
-   "#fdd3a2",
-   "#ffc381",
-   "#ffb064",
-   "#ff9d46",
-   "#ff8825",
-   "#f97311",
-   "#ef611a",
-   "#e24f26"
+  "sky": [
+   "#e6f7fc",
+   "#c5eaf7",
+   "#a2def5",
+   "#7dd1f2",
+   "#57c3ec",
+   "#30b3e2",
+   "#10a1d2",
+   "#008fbf",
+   "#007eab",
+   "#056d96"
   ],
-  "amber": [
-   "#fbf3df",
-   "#f9e7bf",
-   "#fbda9b",
-   "#fecc75",
-   "#ffbb50",
-   "#ffa926",
-   "#fb9600",
-   "#f38500",
-   "#ec7200",
-   "#e65f0b"
-  ],
-  "yellow": [
-   "#f8f4e0",
-   "#f5ecbd",
-   "#f6e396",
-   "#f9d969",
-   "#fccb2a",
-   "#f8b900",
-   "#f2a800",
-   "#ec9600",
-   "#e78400",
-   "#e37100"
-  ],
-  "lime": [
-   "#eff6e1",
-   "#dff1c2",
-   "#cfeca1",
-   "#bde67d",
-   "#aadf57",
-   "#96d336",
-   "#85c32a",
-   "#75b422",
-   "#67a51d",
-   "#5a9619"
-  ],
-  "green": [
-   "#e6f8e9",
-   "#cbf2cf",
-   "#aeedb5",
-   "#8fe69b",
-   "#6edd80",
-   "#4fd067",
-   "#40bf59",
-   "#39ad4e",
-   "#359b46",
-   "#338a3f"
+  "tangerine": [
+   "#fff1e9",
+   "#ffdfcc",
+   "#ffccb0",
+   "#ffb994",
+   "#ffa577",
+   "#ff9058",
+   "#fe7934",
+   "#f36414",
+   "#e25400",
+   "#ce4700"
   ],
   "teal": [
    "#e3f8f2",
@@ -264,54 +424,6 @@
    "#029167",
    "#157f59"
   ],
-  "cyan": [
-   "#e6f7f8",
-   "#c3edf1",
-   "#9be3ec",
-   "#71d8e5",
-   "#48cadb",
-   "#31b8cc",
-   "#22a6ba",
-   "#1894a9",
-   "#128397",
-   "#107285"
-  ],
-  "sky": [
-   "#e6f7fc",
-   "#c5eaf7",
-   "#a2def5",
-   "#7dd1f2",
-   "#57c3ec",
-   "#30b3e2",
-   "#10a1d2",
-   "#008fbf",
-   "#007eab",
-   "#056d96"
-  ],
-  "blue": [
-   "#e8f6ff",
-   "#c9e8ff",
-   "#aadaff",
-   "#8acbff",
-   "#69bcff",
-   "#4aabfa",
-   "#2d99f0",
-   "#1686e0",
-   "#1474ca",
-   "#1864b0"
-  ],
-  "indigo": [
-   "#f0f3ff",
-   "#d8e1ff",
-   "#c1cfff",
-   "#aabcff",
-   "#93aaff",
-   "#7c97ff",
-   "#6683ff",
-   "#516ff9",
-   "#405de3",
-   "#3552c2"
-  ],
   "violet": [
    "#f5f2ff",
    "#e5dcff",
@@ -324,41 +436,17 @@
    "#6c46e3",
    "#5a3ec3"
   ],
-  "purple": [
-   "#f7f2f9",
-   "#f1daf7",
-   "#edc2f8",
-   "#e8aaf8",
-   "#e191f6",
-   "#d776f0",
-   "#c85ce4",
-   "#b545d1",
-   "#9f37b8",
-   "#882c9f"
-  ],
-  "pink": [
-   "#faf1f5",
-   "#fad9e6",
-   "#fdc0d6",
-   "#fea6c5",
-   "#fd8bb3",
-   "#f96f9f",
-   "#ef5389",
-   "#e03673",
-   "#ca1f5e",
-   "#af1f4f"
-  ],
-  "gray": [
-   "#f2f4f5",
-   "#dcdee1",
-   "#c6c9cd",
-   "#b0b5ba",
-   "#9ba0a6",
-   "#878d93",
-   "#74797f",
-   "#62666c",
-   "#505458",
-   "#404245"
+  "yellow": [
+   "#f8f4e0",
+   "#f5ecbd",
+   "#f6e396",
+   "#f9d969",
+   "#fccb2a",
+   "#f8b900",
+   "#f2a800",
+   "#ec9600",
+   "#e78400",
+   "#e37100"
   ]
  },
  "cycle_default": {
@@ -488,12 +576,12 @@
    "direction": "잉크 계열(단일색·diverging): 고값=진함 / 빛 계열(멀티휴·cyclic): 고값=밝음 / topo: 기준면에서 멀수록 어두움(심해)·밝음(고봉). 반전은 _r"
   },
   "counts": {
-   "single": 16,
+   "single": 20,
    "multi": 9,
    "diverging": 13,
    "topo": 1,
    "cyclic": 3,
-   "total": 42,
+   "total": 46,
    "qualitative_registered": 2
   },
   "gates": {
@@ -508,6 +596,18 @@
     "gray_mono": true,
     "cv": 0.035,
     "L_span": 71.9
+   },
+   "coral": {
+    "mono": true,
+    "gray_mono": true,
+    "cv": 0.036,
+    "L_span": 71.9
+   },
+   "tangerine": {
+    "mono": true,
+    "gray_mono": true,
+    "cv": 0.039,
+    "L_span": 72.1
    },
    "orange": {
     "mono": true,
@@ -563,6 +663,12 @@
     "cv": 0.042,
     "L_span": 71.8
    },
+   "cobalt": {
+    "mono": true,
+    "gray_mono": true,
+    "cv": 0.036,
+    "L_span": 72.1
+   },
    "indigo": {
     "mono": true,
     "gray_mono": true,
@@ -580,6 +686,12 @@
     "gray_mono": true,
     "cv": 0.041,
     "L_span": 72.1
+   },
+   "fuchsia": {
+    "mono": true,
+    "gray_mono": true,
+    "cv": 0.032,
+    "L_span": 71.9
    },
    "pink": {
     "mono": true,
@@ -769,6 +881,74 @@
     "#5d3033",
     "#513334",
     "#443636"
+   ],
+   "coral": [
+    "#fff0ef",
+    "#fee7e4",
+    "#feddd8",
+    "#fed3cd",
+    "#fec9c2",
+    "#fdc0b7",
+    "#fcb6ac",
+    "#fbaca2",
+    "#f9a297",
+    "#f7988c",
+    "#f58d81",
+    "#f28377",
+    "#ef796c",
+    "#eb6e61",
+    "#e76357",
+    "#e2594c",
+    "#dd4d42",
+    "#d84237",
+    "#d1362d",
+    "#ca2922",
+    "#c21b18",
+    "#b71915",
+    "#ac1713",
+    "#a11410",
+    "#96120e",
+    "#8b1b14",
+    "#7f231b",
+    "#742921",
+    "#682e27",
+    "#5d312b",
+    "#513430",
+    "#443634"
+   ],
+   "tangerine": [
+    "#fff1e9",
+    "#fee8dc",
+    "#fce0d0",
+    "#fad7c4",
+    "#f8cfb7",
+    "#f7c6ab",
+    "#f5bd9e",
+    "#f3b492",
+    "#f1ab85",
+    "#efa279",
+    "#ed996c",
+    "#ea9060",
+    "#e78753",
+    "#e47d46",
+    "#e07438",
+    "#dc6a2a",
+    "#d76017",
+    "#ce5b15",
+    "#c45514",
+    "#bb5012",
+    "#b24a11",
+    "#a8450f",
+    "#9f400d",
+    "#963b0c",
+    "#8d360a",
+    "#833109",
+    "#7a2c08",
+    "#702e13",
+    "#65311d",
+    "#5a3325",
+    "#4f352c",
+    "#433632"
    ],
    "orange": [
     "#fdf2e3",
@@ -1076,6 +1256,40 @@
     "#303e4e",
     "#333a42"
    ],
+   "cobalt": [
+    "#edf4ff",
+    "#e1eefe",
+    "#d6e7fe",
+    "#cae0fe",
+    "#bfd9fd",
+    "#b4d3fd",
+    "#a9ccfc",
+    "#9ec5fc",
+    "#93befb",
+    "#88b7fa",
+    "#7db0f9",
+    "#72a8f7",
+    "#67a1f5",
+    "#5d9af3",
+    "#5292f0",
+    "#488aed",
+    "#3e82e9",
+    "#347be4",
+    "#2a73df",
+    "#206bda",
+    "#1763d3",
+    "#0c5bcc",
+    "#0a54c1",
+    "#0b4eb5",
+    "#134ba6",
+    "#1a4998",
+    "#1f478a",
+    "#24447b",
+    "#29426d",
+    "#2d3f5f",
+    "#303c51",
+    "#343943"
+   ],
    "indigo": [
     "#f0f3ff",
     "#e6ecfe",
@@ -1177,6 +1391,40 @@
     "#4f3656",
     "#47364c",
     "#3f3641"
+   ],
+   "fuchsia": [
+    "#ffeffb",
+    "#fce6f6",
+    "#fadcf1",
+    "#f8d2ed",
+    "#f5c8e9",
+    "#f3bee4",
+    "#f1b4e0",
+    "#efaadb",
+    "#eda0d7",
+    "#ea96d2",
+    "#e78bcd",
+    "#e481c8",
+    "#e177c2",
+    "#dd6cbc",
+    "#d861b6",
+    "#d357b0",
+    "#ce4ca9",
+    "#c841a2",
+    "#c1359b",
+    "#ba2993",
+    "#b31c8b",
+    "#a91983",
+    "#9f177a",
+    "#951872",
+    "#8b206a",
+    "#802563",
+    "#762a5c",
+    "#6c2d56",
+    "#62304f",
+    "#583349",
+    "#4d3443",
+    "#42363d"
    ],
    "pink": [
     "#fff0f6",

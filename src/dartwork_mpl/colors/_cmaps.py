@@ -240,11 +240,11 @@ def cyclic_twilight(hue_a: float, hue_b: float, n: int = 256) -> list[str]:
 def compile_cmaps(
     palette: dict[str, list[str]], n: int = 256
 ) -> dict[str, list[str]]:
-    """42종 카탈로그 — 키는 SSOT swatches_32와 동일한 평면 공개 이름."""
+    """46종 카탈로그 — 키는 SSOT swatches_32와 동일한 평면 공개 이름."""
     A = ANCHORS
     cm: dict[str, list[str]] = {}
 
-    # 단일색 16 (family명 그대로)
+    # 단일색 20 (family명 그대로)
     for fam in FAMILIES:
         cm[fam] = seq_single(fam, n=n)
     cm["gray"] = seq_gray(n=n)

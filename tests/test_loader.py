@@ -84,26 +84,32 @@ class TestEnsureLoaded:
         assert "dc.0" not in mapping
 
     def test_dc_palette_count(self) -> None:
-        """16 v5 families x 10 steps + 4 semantic tokens = 164 dc colors."""
+        """20 v5 families x10 + 20 curated categorical sets + 4 semantic tokens.
+
+        Derived from the SSOT so adding/removing a palette can't silently
+        drift the count out of sync.
+        """
+        from dartwork_mpl.colors import _curated, _generated
+
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
         dc_keys = [k for k in mapping if k.startswith("dc.")]
-        assert len(dc_keys) == 164
+        families = sum(len(row) for row in _generated.PALETTE.values())
+        curated = sum(len(row) for row in _curated.CURATED.values())
+        semantic = 4  # dc.pos / dc.neg / dc.ref / dc.hl
+        assert len(dc_keys) == families + curated + semantic
 
     def test_legacy_aliases_removed(self) -> None:
-        """The old ad-hoc palette names were removed in 0.5 — they must not
-        resolve (docs/examples/templates migrated to curated palettes)."""
+        """Genuinely-legacy ad-hoc palette names stay gone.
+
+        The v5 clean break trims tw/oc-tier throwaway names; the curated
+        ``dc.*`` categorical sets (vivid / trustworthy / cool_warm / ...) are
+        deliberately preserved and are covered by
+        ``TestCuratedPalettes`` instead.
+        """
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
-        for name in (
-            "dc.sunset2",
-            "dc.ocean2",
-            "dc.nordic0",
-            "dc.cyber3",
-            "dc.vivid1",
-            "dc.trustworthy1",
-            "dc.cool_warm1",
-        ):
+        for name in ("dc.sunset2", "dc.ocean2", "dc.nordic0", "dc.cyber3"):
             assert name not in mapping
 
     def test_dc_color_values_are_hex(self) -> None:
@@ -148,14 +154,16 @@ class TestPaletteCleanBreak:
 
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
+        # NOTE: the curated categorical sets (vivid / trustworthy / cool_warm
+        # / ...) are NOT in this list — they were revived as first-class dc.*
+        # palettes and are covered by ``TestCuratedPalettes``. Only genuinely
+        # dead ad-hoc / renamed aliases must stay gone.
         for token in (
             "dc.spectrum1",
             "dc.bold1",
-            "dc.coolwarm1",
+            "dc.coolwarm1",  # note: the curated diverging set is ``cool_warm``
             "dc.corporate1",
             "dc.warm_cool1",
-            "dc.vivid1",
-            "dc.trustworthy1",
         ):
             assert token not in mapping, f"{token} should be removed"
 
@@ -168,6 +176,51 @@ class TestPaletteCleanBreak:
             for step in range(10):
                 token = f"dc.{family}{step}"
                 assert token in mapping, f"{token} missing"
+
+
+class TestCuratedPalettes:
+    """The curated categorical dc.* sets are revived and integrated with v5."""
+
+    def test_curated_tokens_resolve(self) -> None:
+        """Every curated palette step registers as a ``dc.<name><step>``."""
+        import matplotlib.colors as mcolors
+
+        from dartwork_mpl.colors._curated import CURATED
+
+        ensure_loaded()
+        mapping = mcolors.get_named_colors_mapping()
+        for name, row in CURATED.items():
+            for step, hexval in enumerate(row):
+                token = f"dc.{name}{step}"
+                assert token in mapping, f"{token} missing"
+                assert mapping[token].lower() == hexval.lower()
+
+    def test_curated_never_shadows_a_v5_family(self) -> None:
+        """Curated names must not collide with the generated v5 families."""
+        from dartwork_mpl.colors._curated import CURATED
+        from dartwork_mpl.colors._generated import PALETTE
+
+        assert set(CURATED) & set(PALETTE) == set()
+
+    def test_get_palette_resolves_curated_sets(self) -> None:
+        """``get_palette`` / ``set_cycle`` accept curated names like families."""
+        import matplotlib as mpl
+
+        import dartwork_mpl as dm
+
+        assert dm.get_palette("trustworthy", n=6) == [
+            f"dc.trustworthy{i}" for i in range(6)
+        ]
+        dm.set_cycle("vivid")
+        cyc = [c["color"] for c in mpl.rcParams["axes.prop_cycle"]]
+        assert cyc == [f"dc.vivid{i}" for i in range(8)]
+
+    def test_collision_name_resolves_to_v5_family(self) -> None:
+        """A name shared with a v5 family (teal) resolves to the 10-step family,
+        not an 8-step curated ramp."""
+        import dartwork_mpl as dm
+
+        assert len(dm.get_palette("teal")) == 10
 
 
 class TestVendoredLibraryCounts:

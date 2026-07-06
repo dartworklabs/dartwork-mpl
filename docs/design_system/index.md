@@ -16,7 +16,7 @@ Named palette sheets for the generative `dc.*` families plus six third-party
 design systems (OpenColor, Tailwind, Material, Ant, Chakra, Primer).
 
 - 300+ swatches, copy-on-click
-- 16 perceptual families + curated categorical palettes
+- 20 perceptual families + curated categorical palettes
 - Drop names anywhere matplotlib accepts a color
 - Interactive picker + `set_cycle`/`get_palette` → [Categorical palettes](../color_system/categorical-palettes)
 :::
@@ -25,7 +25,7 @@ design systems (OpenColor, Tailwind, Material, Ant, Chakra, Primer).
 :link: ../color_system/colormaps
 :link-type: doc
 
-42 perceptually-designed colormaps across single-hue, multi-hue,
+46 perceptually-designed colormaps across single-hue, multi-hue,
 diverging, cyclic, and topographic families.
 
 - Live explorer — tab to category, toggle Color / Mono

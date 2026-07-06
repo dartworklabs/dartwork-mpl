@@ -2,7 +2,7 @@
 
 The `dc.*` color system is not a hand-picked table of hex codes. Every
 palette color, every colormap, and every cycle is **generated
-deterministically from 91 numbers** by a small set of perceptual axioms,
+deterministically from 107 numbers** by a small set of perceptual axioms,
 and each output is checked against color-science gates before it ships. This
 page explains why the system is built that way — the theory, with the
 figures that are its evidence.
@@ -190,8 +190,8 @@ near-linear L\* (ΔE cv 0.063, L\* range 81.9) against viridis (cv 0.086,
 
 ## Anatomy of a family
 
-The whole system regenerates from **91 numbers**: 15 families × 4 free
-parameters (60) + 24 Fourier coefficients for the global hue curves + 7
+The whole system regenerates from **107 numbers**: 19 chromatic families × 4 free
+parameters (76) + 24 Fourier coefficients for the global hue curves + 7
 constants. A family's four free numbers are `h₀` (hue anchor), `Δh` (total
 drift), `γ` (drift timing), and `t_p` (chroma-peak position); the other four
 (`C_max`, `floor`, `c₀`, `c_end`) are *derived* from the global curves.
@@ -212,6 +212,8 @@ palette by mean ΔE 0.5–1.4, below the 8-bit hex quantization floor):
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
 | `red` | 16 | +11 | 1.10 | 0.85 | 0.210 | 42 | 0.10 | 0.90 |
 | `rose` | 3 | +14 | 1.00 | 0.85 | 0.210 | 40 | 0.10 | 0.85 |
+| `coral` | 27 | +2 | 1.15 | 0.85 | 0.205 | 44 | 0.10 | 0.90 |
+| `tangerine` | 52 | −12 | 1.20 | 0.85 | 0.195 | 49 | 0.15 | 0.95 |
 | `orange` | 77 | −41 | 1.30 | 0.85 | 0.190 | 54 | 0.15 | 1.00 |
 | `amber` | 88 | −44 | 1.40 | 0.65 | 0.185 | 57 | 0.15 | 1.00 |
 | `yellow` | 99 | −46 | 1.50 | 0.45 | 0.180 | 60 | 0.15 | 1.00 |
@@ -221,9 +223,11 @@ palette by mean ΔE 0.5–1.4, below the 8-bit hex quantization floor):
 | `cyan` | 202 | +13 | 0.85 | 0.45 | 0.115 | 44 | 0.15 | 0.75 |
 | `sky` | 220 | +14 | 0.85 | 0.60 | 0.130 | 43 | 0.15 | 0.80 |
 | `blue` | 238 | +15 | 0.85 | 0.75 | 0.165 | 42 | 0.15 | 0.85 |
+| `cobalt` | 256 | +5 | 1.25 | 0.80 | 0.190 | 40 | 0.15 | 0.85 |
 | `indigo` | 273 | −5 | 1.65 | 0.85 | 0.210 | 39 | 0.10 | 0.85 |
 | `violet` | 298 | −12 | 1.25 | 0.85 | 0.230 | 37 | 0.10 | 0.85 |
 | `purple` | 319 | +0 | 1.00 | 0.75 | 0.220 | 37 | 0.05 | 0.85 |
+| `fuchsia` | 335 | +9 | 0.95 | 0.80 | 0.210 | 37 | 0.05 | 0.85 |
 | `pink` | 350 | +18 | 0.85 | 0.85 | 0.210 | 39 | 0.05 | 0.85 |
 
 > `gray` follows the A6 rule (L\* 96→28, cool tint h250). A new family needs
@@ -272,16 +276,16 @@ flattering worst-case is the same honest-guarantees principle at work.
 ## Colormaps, derived from the palette
 
 The colormaps are made by the *same* generative system (perceptual
-coordinates + recipe + ΔE equalization + gates): 42 maps across five
+coordinates + recipe + ΔE equalization + gates): 46 maps across five
 families, plus the two palette cycles registered as qualitative maps. A
 colormap is not a separate color vocabulary — it is *derived from the
 palette*, and the naming grammar enforces that relationship.
 
 :::{figure} theory_figures/theory_9_cmap_catalog.svg
-:alt: The full 42-map v5 colormap catalog rendered as gradients, grouped by family.
+:alt: The full 46-map v5 colormap catalog rendered as gradients, grouped by family.
 :width: 100%
 
-The full catalog: 16 single-hue ramps, 9 multi-hue scenes, 13 diverging
+The full catalog: 20 single-hue ramps, 9 multi-hue scenes, 13 diverging
 pairs, one two-ramp topographic map, three cyclic maps, and the two
 qualitative cycle registrations.
 :::
@@ -380,7 +384,7 @@ Stated plainly, per principle 3:
 ## Reproducibility
 
 The machine-readable SSOT (all 91 parameters, the palette, the cycles, and
-the 42-map catalog) lives beside the design record:
+the 46-map catalog) lives beside the design record:
 
 - `docs/superpowers/specs/2026-07-03-color-system-v5-design.md` — the full
   design rationale.
@@ -393,5 +397,5 @@ the 42-map catalog) lives beside the design record:
 
 - [Palettes](colors.md) — the generated `dc.*` families as swatch sheets.
 - [Categorical palettes](categorical-palettes.md) — pick a cycle by intent.
-- [Colormaps](colormaps.md) — the 42-map catalog, applied.
+- [Colormaps](colormaps.md) — the 46-map catalog, applied.
 - [Color Space](space.md) — the `Color` class and custom colormaps.

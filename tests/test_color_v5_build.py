@@ -11,10 +11,10 @@ from dartwork_mpl.colors import _generated
 
 
 def test_generated_tables_shape():
-    assert len(_generated.PALETTE) == 16
+    assert len(_generated.PALETTE) == 20
     assert all(len(row) == 10 for row in _generated.PALETTE.values())
     assert set(_generated.CYCLES) == {"default", "print"}
-    assert len(_generated.CMAPS_256) == 42
+    assert len(_generated.CMAPS_256) == 46
     assert all(len(v) == 256 for v in _generated.CMAPS_256.values())
 
 

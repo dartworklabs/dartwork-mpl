@@ -158,7 +158,7 @@ _CLAIMS: list[tuple[str, str, Callable[[], float], int]] = [
     ),
     (
         "docs/color_system/categorical-palettes.md",
-        r"v5 cycle's (\d+\.\d+) actually beats",
+        r"default cycle's (\d+\.\d+) actually beats",
         _default_tritan,
         1,
     ),

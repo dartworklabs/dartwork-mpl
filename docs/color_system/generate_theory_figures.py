@@ -822,7 +822,7 @@ def _grad(ax, hexes, y, label, h=0.82):
 def fig_catalog():
     groups = [
         (
-            "Single-hue 16 — family name as-is",
+            "Single-hue 20 — family name as-is",
             [
                 "red",
                 "rose",

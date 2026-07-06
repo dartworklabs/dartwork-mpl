@@ -1,4 +1,4 @@
-"""91-number SSOT — 스펙 §7의 자유 60 + 푸리에 24 + 상수 7.
+"""107-number SSOT — 스펙 §7의 자유 76 + 푸리에 24 + 상수 7.
 
 표(FAMILY_PARAMS)가 운영 SSOT이고 푸리에 곡선은 신규 family 확장 메커니즘이다
 (유도값과 표가 그리드 1스텝 어긋날 수 있으며 표가 우선 — 스펙 §7).
@@ -44,6 +44,8 @@ class FamilyParams:
 FAMILIES: tuple[str, ...] = (
     "red",
     "rose",
+    "coral",
+    "tangerine",
     "orange",
     "amber",
     "yellow",
@@ -53,9 +55,11 @@ FAMILIES: tuple[str, ...] = (
     "cyan",
     "sky",
     "blue",
+    "cobalt",
     "indigo",
     "violet",
     "purple",
+    "fuchsia",
     "pink",
 )
 
@@ -64,6 +68,8 @@ FAMILIES: tuple[str, ...] = (
 FAMILY_PARAMS: dict[str, FamilyParams] = {
     "red": FamilyParams(16, +11, 1.10, 0.85, 0.210, 42, 0.90, 0.10),
     "rose": FamilyParams(3, +14, 1.00, 0.85, 0.210, 40, 0.85, 0.10),
+    "coral": FamilyParams(27, +2, 1.15, 0.85, 0.205, 44, 0.90, 0.10),
+    "tangerine": FamilyParams(52, -12, 1.20, 0.85, 0.195, 49, 0.95, 0.15),
     "orange": FamilyParams(77, -41, 1.30, 0.85, 0.190, 54, 1.00, 0.15),
     "amber": FamilyParams(88, -44, 1.40, 0.65, 0.185, 57, 1.00, 0.15),
     "yellow": FamilyParams(99, -46, 1.50, 0.45, 0.180, 60, 1.00, 0.15),
@@ -73,9 +79,11 @@ FAMILY_PARAMS: dict[str, FamilyParams] = {
     "cyan": FamilyParams(202, +13, 0.85, 0.45, 0.115, 44, 0.75, 0.15),
     "sky": FamilyParams(220, +14, 0.85, 0.60, 0.130, 43, 0.80, 0.15),
     "blue": FamilyParams(238, +15, 0.85, 0.75, 0.165, 42, 0.85, 0.15),
+    "cobalt": FamilyParams(256, +5, 1.25, 0.80, 0.190, 40, 0.85, 0.15),
     "indigo": FamilyParams(273, -5, 1.65, 0.85, 0.210, 39, 0.85, 0.10),
     "violet": FamilyParams(298, -12, 1.25, 0.85, 0.230, 37, 0.85, 0.10),
     "purple": FamilyParams(319, +0, 1.00, 0.75, 0.220, 37, 0.85, 0.05),
+    "fuchsia": FamilyParams(335, +9, 0.95, 0.80, 0.210, 37, 0.85, 0.05),
     "pink": FamilyParams(350, +18, 0.85, 0.85, 0.210, 39, 0.85, 0.05),
 }
 

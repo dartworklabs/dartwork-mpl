@@ -5,8 +5,9 @@ categorical catalog.
 
 ## What Ships
 
-- 16 `dc.*` families: amber, blue, cyan, gray, green, indigo, lime, orange,
-  pink, purple, red, rose, sky, teal, violet, yellow.
+- 20 `dc.*` families: red, rose, coral, tangerine, orange, amber, yellow,
+  lime, green, teal, cyan, sky, blue, cobalt, indigo, violet, purple,
+  fuchsia, pink, gray.
 - 10 perceptually equalized steps per family: `dc.blue0` through `dc.blue9`.
 - Two searched cycles: `dc.cycle` for screen/PDF and `dc.cycle_print` for
   darker print-friendly output.
@@ -16,8 +17,9 @@ categorical catalog.
 
 Use the searched cycle for unrelated categories. Use a family palette when hue
 has semantic value: `green` for positive states, `red` for negative states,
-`amber`/`orange` for thresholds, `gray` for reference and secondary context,
-and cool families (`blue`, `teal`, `indigo`, `cyan`) for analytical series.
+`coral`/`tangerine`/`amber`/`orange` for thresholds, `gray` for reference and
+secondary context, and cool families (`blue`, `cobalt`, `teal`, `indigo`,
+`cyan`) for analytical series.
 
 Every family is generated from the v5 recipe in
 `src/dartwork_mpl/colors/_recipe.py` and materialized in

@@ -34,15 +34,16 @@ plt.show()
 
 ## Palette sheets
 
-### dartwork Color — v5 families
+### dartwork Color — families
 
-The **16 single-hue families** are the perceptual backbone of the system.
-Each is ten steps (`dc.blue0` … `dc.blue9`), generated deterministically on
-CIELAB L\* + OKLCH and equalized so that *step-number difference = perceptual
-difference* (`dc.blue3↔dc.blue5` covers the same distance as
-`dc.blue6↔dc.blue8`). Reach any color as a plain string — `color="dc.blue6"`
-— anywhere matplotlib accepts a color; the `dc.*` colormaps derive from these
-same recipes. The full theory is on the
+The **20 single-hue families** — 19 chromatic ramps plus gray — are the
+perceptual backbone of the system. Each is ten steps (`dc.blue0` …
+`dc.blue9`), generated deterministically on CIELAB L\* + OKLCH and equalized
+so that *step-number difference = perceptual difference*
+(`dc.blue3↔dc.blue5` covers the same distance as `dc.blue6↔dc.blue8`). Reach
+any color as a plain string — `color="dc.blue6"` — anywhere matplotlib accepts
+a color; the `dc.*` colormaps derive from these same recipes. The full theory
+is on the
 [Color system design](design.md) page.
 
 ```{raw} html
@@ -51,22 +52,36 @@ same recipes. The full theory is on the
 
 ### dartwork Color — curated categorical palettes
 
-Alongside the continuous family sheets, the v5 families form a curated
-**16-palette categorical system** (10 colors each, CIELAB/OKLCH-generated and
-verified for black-&-white + color-blindness). The searched `dc.cycle` is the
-everyday default for unrelated categories; family palettes are best when hue
-should carry a specific tone:
+Beyond the 20 single-hue families, dartwork ships a curated
+**20-palette categorical system** — hand-tuned qualitative, analogous, muted,
+tonal, duo, diverging, neutral-cast, emphasis, and accessible *sets*
+(CIELAB/OKLCH-anchored and verified for black-&-white + color-blindness) with
+no generative equivalent. They resolve through the same API as any family, so
+`dm.set_cycle("trustworthy")` and `dm.get_palette("cool_warm")` work exactly
+like `dm.get_palette("blue")`.
 
-- `dc.cycle` — the everyday 7-color screen/PDF cycle
-- `dc.blue` / `dc.teal` / `dc.indigo` — cool analytical series
-- `dc.green` / `dc.red` — positive/negative or status color families
-- `dc.amber` / `dc.orange` — warm emphasis and threshold context
-- `dc.gray` — reference, grid, and secondary marks
+Counts are intentional: sequential family ramps have 10 steps, curated
+categorical sets have 8 colors, the searched default cycle currently has 7
+colors, and the print cycle has 8. In the interactive explorer, the default
+cycle, print cycle, `trustworthy`, `vivid`, and `neon` form one **Qualitative**
+group ordered from restrained to high chroma.
 
-The interactive picker (intent, B&W, color-blindness, 9 chart shapes) lives on
-the [Categorical palettes](categorical-palettes.md) page. Legacy v4 family
-names were **removed** in the v5 clean break; see the
-[migration guide](../migration.md) for the manual rename map.
+- `trustworthy` / `vivid` / `neon` — qualitative sets aligned with the default
+  and print cycles for unrelated categories
+- `pastel` / `dusty` — muted qualitative sets for soft editorial color
+- `forest` / `teal_indigo` — analogous one-mood arcs
+- `blue_orange` / `teal_coral` — two opposed groups
+- `cool_warm` / `teal_amber` / `purple_green` — diverging ± scales
+- `earth` / `jewel` / `ember` — tonal moods
+- `warm_gray` / `cool_gray` — hue-free ramps with a cast
+- `teal_accent` / `coral_accent` — highlight one series, mute the rest
+- `accessible` — the Okabe-Ito CVD gold standard
+
+The interactive picker (Qualitative palettes, Sequential families, intent
+groups, B&W readout, CVD metrics, 9 chart shapes) lives on the
+[Categorical palettes](categorical-palettes.md) page. The v5 clean break kept
+these curated `dc.*` sets and trimmed only the throwaway ad-hoc aliases; see
+the [migration guide](../migration.md) for the manual rename map.
 
 ```{raw} html
 :file: images/colors_dc.html

@@ -18,22 +18,26 @@ OUT = SCRIPT_DIR.parent / "palette_showcase.html"
 GENERATED = ROOT / "src" / "dartwork_mpl" / "colors" / "_generated.py"
 
 ORDER = [
-    "amber",
-    "blue",
-    "cyan",
-    "gray",
-    "green",
-    "indigo",
-    "lime",
-    "orange",
-    "pink",
-    "purple",
     "red",
     "rose",
-    "sky",
-    "teal",
-    "violet",
+    "coral",
+    "tangerine",
+    "orange",
+    "amber",
     "yellow",
+    "lime",
+    "green",
+    "teal",
+    "cyan",
+    "sky",
+    "blue",
+    "cobalt",
+    "indigo",
+    "violet",
+    "purple",
+    "fuchsia",
+    "pink",
+    "gray",
 ]
 
 
@@ -98,9 +102,9 @@ h2{margin:0 0 8px;font-size:13px;font-weight:680;font-family:ui-monospace,SFMono
 <header>
 <div>
 <h1>dartwork color v5 families</h1>
-<p>16 generated families, 10 perceptually equalized steps each. Click a swatch to copy its token.</p>
+<p>20 generated families, 10 perceptually equalized steps each. Click a swatch to copy its token.</p>
 </div>
-<div class="count">160 named colors</div>
+<div class="count">200 named colors</div>
 </header>
 """
         + "\n".join(rows)

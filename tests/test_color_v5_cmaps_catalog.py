@@ -1,4 +1,4 @@
-"""Golden tests — full 42-map catalog must reproduce SSOT swatches_32."""
+"""Golden tests — full 46-map catalog must reproduce SSOT swatches_32."""
 
 from __future__ import annotations
 
@@ -15,13 +15,13 @@ def test_full_catalog_matches_ssot(v5_ssot):
 
 def test_counts(v5_ssot):
     counts = v5_ssot["colormaps"]["counts"]
-    assert counts["total"] == 42
+    assert counts["total"] == 46
     assert counts == {
-        "single": 16,
+        "single": 20,
         "multi": 9,
         "diverging": 13,
         "topo": 1,
         "cyclic": 3,
-        "total": 42,
+        "total": 46,
         "qualitative_registered": 2,
     }

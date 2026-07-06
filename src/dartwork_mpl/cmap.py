@@ -68,10 +68,12 @@ def _load_colormaps() -> None:
     root_dir: Path = Path(__file__).parent / "asset/cmap"
     for path in root_dir.glob("*.txt"):
         cmap: mcolors.ListedColormap = _parse_colormap(path)
-        mpl.colormaps.register(cmap=cmap)
+        if cmap.name not in mpl.colormaps:
+            mpl.colormaps.register(cmap=cmap)
 
         cmap_r: mcolors.ListedColormap = _parse_colormap(path, reverse=True)
-        mpl.colormaps.register(cmap=cmap_r)
+        if cmap_r.name not in mpl.colormaps:
+            mpl.colormaps.register(cmap=cmap_r)
 
 
 _loaded: bool = False

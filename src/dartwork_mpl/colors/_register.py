@@ -1,6 +1,6 @@
 """v5 cmap/cycle registration into matplotlib's global registry.
 
-Registers the 42 v5 colormaps (from ``_generated.CMAPS_256``) as
+Registers the 46 v5 colormaps (from ``_generated.CMAPS_256``) as
 ``dc.<name>`` + ``dc.<name>_r``, plus the two qualitative cycles as
 ``dc.cycle`` / ``dc.cycle_print``. Access is matplotlib-native — there
 is no bespoke accessor: use ``cmap="dc.aurora"`` in any plotting call,

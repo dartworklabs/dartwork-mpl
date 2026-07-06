@@ -14,7 +14,7 @@ color.
 
 | Prefix  | Library                          | Example         |
 | ------- | -------------------------------- | --------------- |
-| `dc.*`  | **dartwork Color (recommended)** — 16 v5 families × 10 perceptual steps, plus `dc.cycle`; see the [palette catalog](../color_system/categorical-palettes.md) | `dc.teal3`     |
+| `dc.*`  | **dartwork Color (recommended)** — 20 v5 families × 10 perceptual steps, plus `dc.cycle`; see the [palette catalog](../color_system/categorical-palettes.md) | `dc.teal3`     |
 | `oc.*`  | OpenColor                        | `oc.blue5`      |
 | `tw.*`  | Tailwind CSS                     | `tw.blue500`    |
 | `md.*`  | Material Design                  | `md.red500`     |
@@ -26,7 +26,7 @@ color.
 > publication-ready output. Reach for the third-party prefixes when
 > you need to match an external brand or design system.
 >
-> The `dc.*` namespace also holds 42 curated **colormaps** — see the
+> The `dc.*` namespace also holds 46 curated **colormaps** — see the
 > [Colormap catalog](../color_system/colormaps.md). Colormap names like
 > `dc.aurora` only work as `cmap=` arguments, not as `color=` strings;
 > the named-colors above are the ones you pass to `color=`.
@@ -79,23 +79,23 @@ mpl.rcParams["axes.prop_cycle"] = cycler(color=[
 
 ### Picking a `dc.*` swatch
 
-The v5 `dc.*` surface is 16 hue families, each with 10 perceptually equalized
-steps. Index 0 is the light end and index 9 is the dark end. For unrelated
-categories use `dc.cycle`; for related tones pick a family and sample the
-steps you need.
+The v5 `dc.*` surface is 19 chromatic hue families plus gray, each with 10
+perceptually equalized steps. Index 0 is the light end and index 9 is the dark
+end. For unrelated categories use `dc.cycle`; for related tones pick a family
+and sample the steps you need.
 
 | Palette             | Use it for                                                     |
 | ------------------- | -------------------------------------------------------------- |
 | `dc.cycle`          | Everyday unrelated categories                                  |
 | `dc.blue` / `dc.teal` / `dc.indigo` | Cool analytical series and ordered data        |
 | `dc.green` / `dc.red` | Positive/negative states and status colors                  |
-| `dc.amber` / `dc.orange` | Warm emphasis, thresholds, and call-outs                 |
-| `dc.violet` / `dc.purple` / `dc.pink` | Editorial accents and qualitative groups      |
+| `dc.coral` / `dc.tangerine` / `dc.orange` / `dc.amber` | Warm emphasis, thresholds, and call-outs |
+| `dc.cobalt` / `dc.violet` / `dc.purple` / `dc.fuchsia` / `dc.pink` | Editorial accents and qualitative groups |
 | `dc.gray`           | Grid lines, baselines, secondary fills                         |
 | `dc.blue_red` / `dc.teal_amber` | Diverging ± data — change, correlation              |
 | `dc.hl`             | Semantic highlight token                                       |
 
-→ The full 16-palette catalog with an interactive picker lives on the
+→ The full 20-family catalog with an interactive picker lives on the
 [Categorical palettes](../color_system/categorical-palettes.md) page.
 
 **Coming from `oc.*`?** A rough drop-in mapping:
