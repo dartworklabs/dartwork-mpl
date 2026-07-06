@@ -23,7 +23,7 @@ _ASSET = _REPO / "src" / "dartwork_mpl" / "asset"
 
 
 def _n_v5_cmaps() -> int:
-    # The v5 catalog (the default colormap surface) — 42 generated maps.
+    # The v5 catalog (the default colormap surface) — 46 generated maps.
     # The legacy asset/cmap/*.txt bundle is a separate backward-compat set
     # and is no longer what the docs count.
     from dartwork_mpl.colors._generated import CMAPS_256
@@ -63,9 +63,11 @@ def _n_presets() -> int:
 
 
 def _n_curated_palettes() -> int:
-    from dartwork_mpl.colors._generated import PALETTE
+    """The count of hand-tuned curated categorical *sets* (not the generative
+    v5 families) — the number the categorical docs claim."""
+    from dartwork_mpl.colors._curated import CURATED
 
-    return len(PALETTE)
+    return len(CURATED)
 
 
 def _n_basic_templates() -> int:

@@ -1,6 +1,6 @@
 # Colormaps
 
-dartwork-mpl ships **42 colormaps** (plus their `_r` reverses, plus the two
+dartwork-mpl ships **46 colormaps** (plus their `_r` reverses, plus the two
 categorical cycles registered for `cmap=` interfaces). Every one is generated
 by the same perceptual recipe as the `dc.*` palette — designed on CIELAB L\*
 and OKLCH, equalized in OKLab ΔE, and checked against hard gates before it
@@ -56,7 +56,7 @@ plt.show()
 
 ## The catalog
 
-Explore all 42 built-in colormaps below. Use the tabs to browse by data type.
+Explore all 46 built-in colormaps below. Use the tabs to browse by data type.
 
 ```{raw} html
 :file: images/colormap_explorer.html
@@ -66,7 +66,7 @@ The catalog is five generation families plus the two registered cycles:
 
 | Family | Names | Count | Direction |
 |---|---|--:|---|
-| **Single-hue** (ink) | `red` `rose` `orange` `amber` `yellow` `lime` `green` `teal` `cyan` `sky` `blue` `indigo` `violet` `purple` `pink` `gray` | 16 | high = darker |
+| **Single-hue** (ink) | `red` `rose` `coral` `tangerine` `orange` `amber` `yellow` `lime` `green` `teal` `cyan` `sky` `blue` `cobalt` `indigo` `violet` `purple` `fuchsia` `pink` `gray` | 20 | high = darker |
 | **Multi-hue** (light) | `aurora` (default) `afterglow` `blaze` `lava` `lagoon` `glacier` `canopy` `haze` `iris` | 9 | high = brighter |
 | **Diverging** (ink) | `blue_red` (+`_deep`/`_soft`) `blue_orange` `teal_rose` `green_purple` `purple_orange` `cyan_red` `teal_amber` `violet_lime` `indigo_amber` `gray_blue` `gray_red` | 13 | anchored at the midpoint |
 | **Topographic** | `coast` | 1 | anchored at a datum |

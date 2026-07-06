@@ -1,4 +1,4 @@
-"""Tests for colors._recipe — 91-number SSOT constants."""
+"""Tests for colors._recipe — 107-number SSOT constants."""
 
 from __future__ import annotations
 
@@ -16,7 +16,28 @@ from dartwork_mpl.colors._recipe import (
 
 
 def test_families_complete():
-    assert len(FAMILIES) == 15
+    assert len(FAMILIES) == 19
+    assert FAMILIES == (
+        "red",
+        "rose",
+        "coral",
+        "tangerine",
+        "orange",
+        "amber",
+        "yellow",
+        "lime",
+        "green",
+        "teal",
+        "cyan",
+        "sky",
+        "blue",
+        "cobalt",
+        "indigo",
+        "violet",
+        "purple",
+        "fuchsia",
+        "pink",
+    )
     assert FAMILIES[0] == "red" and FAMILIES[-1] == "pink"
     assert set(FAMILY_PARAMS) == set(FAMILIES)
 

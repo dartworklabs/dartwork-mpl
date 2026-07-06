@@ -198,7 +198,7 @@ def _write_dc_sheet(images_dir: Path, label: str, mapping: dict) -> Path:
 
 
 def _write_dc_family_sheet(images_dir: Path) -> Path:
-    """Build the v5 generative-family sheet: 16 single-hue families, ten
+    """Build the v5 generative-family sheet: 20 single-hue families, ten
     perceptually-equalized steps each, straight from the shipped palette SSOT
     (``dartwork_mpl.colors._generated.PALETTE``). Ordered by hue so the sheet
     reads as one continuous system. Swatches are interactive (hover → name).

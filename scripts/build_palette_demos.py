@@ -55,7 +55,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 #   hues at a single shade level. Six hues each.
 
 PALETTES: list[dict] = [
-    # ---- dc.* v5 generated families (16 families x 10 steps) ----
+    # ---- dc.* v5 generated families (20 families x 10 steps) ----
     {
         "id": "dc.amber",
         "label": "dc.amber",

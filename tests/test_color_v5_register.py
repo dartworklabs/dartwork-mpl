@@ -37,6 +37,19 @@ def test_registry_access_matplotlib_native():
         mpl.colormaps["dc.no_such_map"]
 
 
+def test_v5_coral_colormap_wins_legacy_asset_collision():
+    """Promoted v5 families own their ``dc.<family>`` colormap names.
+
+    The legacy ``asset/cmap/coral.txt`` bundle is lazy-loaded through
+    ``dartwork_mpl.cmap``; once coral is a generated v5 family, that loader
+    must not overwrite or crash on the already-registered v5 ``dc.coral``.
+    """
+    cm = mpl.colormaps["dc.coral"]
+    assert [mpl.colors.to_hex(c) for c in cm.colors] == list(
+        _generated.CMAPS_256["coral"]
+    )
+
+
 def test_deleted_legacy_cmaps_are_absent():
     assert "dc.legacy_aurora" not in mpl.colormaps
     assert "dc.legacy_aurora_r" not in mpl.colormaps

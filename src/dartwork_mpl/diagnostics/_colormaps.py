@@ -38,7 +38,7 @@ _CATEGORY_STYLE: dict[str, tuple[str, str]] = {
 
 # Override classification for standard dartwork customized maps.
 # Two sets coexist: the v5 catalog (dartwork_mpl.colors — the default surface,
-# 42 maps + 2 cycles) and the asset/cmap maps exposed by dartwork_mpl.cmap.
+# 46 maps + 2 cycles) and the asset/cmap maps exposed by dartwork_mpl.cmap.
 # The HSV heuristic below mislabels the v5 maps (single-hue family ramps read
 # as "Multi-Hue", warm scenes as "Single-Hue"), so the v5 taxonomy is pinned
 # explicitly from the authoritative catalog.
@@ -49,6 +49,8 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
         for n in (
             "red",
             "rose",
+            "coral",
+            "tangerine",
             "orange",
             "amber",
             "yellow",
@@ -58,9 +60,11 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
             "cyan",
             "sky",
             "blue",
+            "cobalt",
             "indigo",
             "violet",
             "purple",
+            "fuchsia",
             "pink",
             "gray",
         )

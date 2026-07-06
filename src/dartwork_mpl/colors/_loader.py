@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 import matplotlib.colors as mcolors
 
+from ._curated import CURATED
 from ._generated import PALETTE
 
 if TYPE_CHECKING:
@@ -166,6 +167,17 @@ def _load_colors() -> None:
     for fam, row in PALETTE.items():
         for step, hexval in enumerate(row):
             color_dict[f"dc.{fam}{step}"] = hexval
+
+    # Dartwork curated categorical palettes (dc.* qualitative / duo /
+    # diverging / tone / accent sets — see colors/_curated.py). Registered
+    # after the generated families so a family name always wins; the curated
+    # SSOT excludes the three single-hue names (teal / indigo / gray) that the
+    # v5 families already supersede, so there is no token collision here.
+    for name, row in CURATED.items():
+        if name in PALETTE:  # defensive: never shadow a generated family
+            continue
+        for step, hexval in enumerate(row):
+            color_dict[f"dc.{name}{step}"] = hexval
 
     # Register with matplotlib.
     mcolors.get_named_colors_mapping().update(color_dict)

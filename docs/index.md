@@ -114,7 +114,7 @@ long Korean labels included. No `bbox_inches="tight"` guessing.
 :link-type: doc
 Open Color, Tailwind, Material, Ant Design, Chakra, and Primer
 shipped as plain color strings — `color="dc.blue6"` works anywhere
-matplotlib accepts a color. Plus 42 perceptually-uniform colormaps.
+matplotlib accepts a color. Plus 46 perceptually-uniform colormaps.
 :::
 
 :::{grid-item-card} **Validation before you ship**

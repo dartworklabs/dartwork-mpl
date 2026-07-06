@@ -208,7 +208,7 @@ dm.simple_layout(fig)
 ## Adding color
 
 dartwork-mpl ships its own curated palette — `dc.*` ("dartwork color"),
-a 16-family v5 system with 10 perceptual steps per family — and registers six
+a 20-family v5 system with 10 perceptual steps per family — and registers six
 third-party design systems alongside it. Use any named color anywhere
 matplotlib accepts a color string:
 

@@ -212,6 +212,8 @@ class TestClassifyColormap:
                 (
                     "red",
                     "rose",
+                    "coral",
+                    "tangerine",
                     "orange",
                     "amber",
                     "yellow",
@@ -221,9 +223,11 @@ class TestClassifyColormap:
                     "cyan",
                     "sky",
                     "blue",
+                    "cobalt",
                     "indigo",
                     "violet",
                     "purple",
+                    "fuchsia",
                     "pink",
                     "gray",
                 ),
@@ -267,7 +271,7 @@ class TestClassifyColormap:
             **dict.fromkeys(("hue", "halo", "corona"), "Cyclical"),
         }
         # every generated map has a stated expectation (coast + cyclics extend
-        # the 42 base names)
+        # the 46 base names)
         assert set(CMAPS_256) <= set(expected)
         for name, want in expected.items():
             got = classify_colormap(matplotlib.colormaps[f"dc.{name}"])
