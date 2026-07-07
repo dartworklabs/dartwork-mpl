@@ -1,11 +1,13 @@
 Color Utilities
 ===============
 
-Importing ``dartwork_mpl`` registers a large catalog of named colors with
-matplotlib (``oc.*`` plus Tailwind ``tw.``, Material ``md.``, Ant Design
-``ad.``, Chakra ``cu.``, and Primer ``pr.`` prefixes). In addition to the
-named palette, a ``Color`` class provides perceptually uniform color
-manipulation across OKLab, OKLCH, RGB, and hex color spaces.
+Importing ``dartwork_mpl`` registers the named color libraries that users reach
+for in plotting code: dartwork Color (``dc.``), OpenColor (``oc.``), Tailwind
+(``tw.``), Material Design (``md.``), Ant Design (``ad.``), Chakra UI
+(``cu.``), and Primer (``pr.``). Use those strings anywhere matplotlib accepts
+a color. In addition to the named palette, a ``Color`` class provides
+perceptually uniform color manipulation across OKLab, OKLCH, RGB, and hex
+color spaces.
 
 Example
 -------

@@ -1,10 +1,11 @@
 """Numeric asset-count claims in docs must equal the mechanical count (G4).
 
-"16 curated colormaps" survived in the flagship colormap page while 56
-shipped; the font pages predate the #370 corpus expansion. Each entry
-pairs a claim-regex with the callable that computes the true number —
-and the regex MUST match, so rewording a claim can't silently disable
-its check.
+The color and font asset surfaces have split into a few user-facing
+categories: v5 colormaps vs. legacy text-file maps, font files vs.
+documented file groups vs. registered matplotlib family names. Each
+entry pairs a claim-regex with the callable that computes the true
+number — and the regex MUST match, so rewording a claim can't silently
+disable its check.
 """
 
 from __future__ import annotations
@@ -31,6 +32,22 @@ def _n_v5_cmaps() -> int:
     return len(CMAPS_256)
 
 
+def _n_v5_cycles() -> int:
+    from dartwork_mpl.colors._generated import CYCLES
+
+    return len(CYCLES)
+
+
+def _n_legacy_cmaps() -> int:
+    return len(list((_ASSET / "cmap").glob("*.txt")))
+
+
+def _n_listed_colormaps() -> int:
+    import dartwork_mpl as dm
+
+    return len(dm.list_colormaps())
+
+
 def _n_font_files() -> int:
     return len(
         [
@@ -41,10 +58,10 @@ def _n_font_files() -> int:
     )
 
 
-def _n_font_families() -> int:
-    # Family = filename prefix before the first "-" (the grouping both
-    # font-gallery generators use). Pretendard and Noto Sans CJK ship as
-    # .otf, so the ".ttf"/".otf" filter must match — see
+def _n_font_file_groups() -> int:
+    # File group = filename prefix before the first "-" (the grouping
+    # both font-gallery generators use). Pretendard and Noto Sans CJK
+    # ship as .otf, so the ".ttf"/".otf" filter must match — see
     # test_fonts_generator_parity.
     return len(
         {
@@ -53,6 +70,12 @@ def _n_font_families() -> int:
             if p.suffix.lower() in {".ttf", ".otf"}
         }
     )
+
+
+def _n_registered_font_families() -> int:
+    from dartwork_mpl import font
+
+    return len(font.list_registered())
 
 
 def _n_presets() -> int:
@@ -160,12 +183,27 @@ def _claim_to_int(value: str) -> int:
 _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
     (
         "docs/color_system/colormaps.md",
-        r"ships \*\*(\d+) colormaps\*\*",
+        r"\*\*(\d+) v5 colormaps\*\*",
         _n_v5_cmaps,
     ),
     (
         "docs/color_system/colormaps.md",
-        r"Explore all (\d+) built-in colormaps",
+        r"\*\*(\d+) qualitative cycle maps\*\*",
+        _n_v5_cycles,
+    ),
+    (
+        "docs/color_system/colormaps.md",
+        r"\*\*(\d+) legacy text-file maps\*\*",
+        _n_legacy_cmaps,
+    ),
+    (
+        "docs/color_system/colormaps.md",
+        r"returns (\d+) non-reversed `dc\.\*` names",
+        _n_listed_colormaps,
+    ),
+    (
+        "docs/color_system/colormaps.md",
+        r"Explore the (\d+)-map v5 catalog",
         _n_v5_cmaps,
     ),
     (
@@ -175,20 +213,38 @@ _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
     ),
     (
         "docs/fonts/index.md",
-        r"bundles \*\*(\d+) text font files across \d+ families\*\*",
+        r"bundles \*\*(\d+) text font files\*\* organized into "
+        r"\*\*\d+ documented\s+file\s+groups\*\*",
         _n_font_files,
     ),
     (
         "docs/fonts/index.md",
-        r"text font files across \*?\*?(\d+) families",
-        _n_font_families,
+        r"text font files\*\* organized into \*\*(\d+) documented\s+"
+        r"file\s+groups\*\*",
+        _n_font_file_groups,
+    ),
+    (
+        "docs/fonts/index.md",
+        r"registers those files as \*\*(\d+) matplotlib family names\*\*",
+        _n_registered_font_families,
     ),
     (
         "docs/fonts/families.md",
-        r"bundles (\d+) professional font families",
-        _n_font_families,
+        r"bundles \*\*(\d+) text font files\*\* across \*\*\d+ "
+        r"documented\s+file\s+groups\*\*",
+        _n_font_files,
     ),
-    ("docs/fonts/families.md", r"with a total of (\d+) font", _n_font_files),
+    (
+        "docs/fonts/families.md",
+        r"text font files\*\* across \*\*(\d+) documented\s+file\s+"
+        r"groups\*\*",
+        _n_font_file_groups,
+    ),
+    (
+        "docs/fonts/families.md",
+        r"assets as \*\*(\d+) matplotlib family names\*\*",
+        _n_registered_font_families,
+    ),
     (
         "docs/fonts/utilities.md",
         r"all (\d+) bundled fonts are automatically",
@@ -202,7 +258,7 @@ _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
     (
         "docs/design_system/index.md",
         r"publication-grade fonts from (\d+) families",
-        _n_font_families,
+        _n_font_file_groups,
     ),
     (
         "docs/usage_guide/styles.md",

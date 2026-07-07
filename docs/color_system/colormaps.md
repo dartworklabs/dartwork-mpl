@@ -1,10 +1,18 @@
 # Colormaps
 
-dartwork-mpl ships **46 colormaps** (plus their `_r` reverses, plus the two
-categorical cycles registered for `cmap=` interfaces). Every one is generated
+The default colormap surface is the v5 catalog: **46 v5 colormaps**, their
+`_r` reverses, and **2 qualitative cycle maps** (`dc.cycle`,
+`dc.cycle_print`) registered for `cmap=` interfaces. Every v5 map is generated
 by the same perceptual recipe as the `dc.*` palette — designed on CIELAB L\*
 and OKLCH, equalized in OKLab ΔE, and checked against hard gates before it
 ships.
+
+For backward compatibility, dartwork-mpl also keeps **54 legacy text-file maps**
+from `asset/cmap/`. They remain usable by name and are included in
+diagnostic/listing helpers, but the explorer and guidance below focus on the
+v5 surface you should start with for new figures. In this release,
+`dm.list_colormaps()` returns 101 non-reversed `dc.*` names because it includes
+both the v5 catalog and those legacy maps.
 
 :::{note}
 This page is the **practical catalog** — how the maps are grouped, named, and
@@ -56,7 +64,7 @@ plt.show()
 
 ## The catalog
 
-Explore all 46 built-in colormaps below. Use the tabs to browse by data type.
+Explore the 46-map v5 catalog below. Use the tabs to browse by data type.
 
 ```{raw} html
 :file: images/colormap_explorer.html
@@ -110,6 +118,10 @@ for the full grammar and the anchor graph.
 | Elevation / depth around a datum | `dc.coast` (pair with `TwoSlopeNorm(vcenter=0)`) |
 | Angle / phase (0° = 360°) | a cyclic map (`dc.hue`, `dc.halo`) |
 | Discrete classes | `dc.cycle` / `dc.cycle_print`, or `dm.set_cycle(...)` |
+
+If you are maintaining an older chart, legacy names such as `dc.deep_sea` and
+`dc.arctic_heat` still work. For new work, prefer the v5 names in the table
+above; they share the palette vocabulary and the current design gates.
 
 `aurora` is the default heatmap map: against viridis it is roughly 1.3× as
 uniform (OKLab ΔE cv 0.063 vs 0.086) over a wider lightness range (81.9 vs

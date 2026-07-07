@@ -1,8 +1,11 @@
 # Font Families
 
-dartwork-mpl bundles 18 professional font families with a total of 206 font
-files. Each family is optimized for different use cases in data
-visualization. This page profiles the core families in depth; for a
+dartwork-mpl bundles **206 text font files** across **18 documented file
+groups**. Matplotlib registers those assets as **16 matplotlib family names**;
+Condensed and SemiCondensed Noto Sans files register as Noto Sans with width
+metadata rather than separate family names. Each group is optimized for
+different use cases in data visualization. This page profiles the core groups
+in depth; for a
 one-click specimen of **every** family — including Pretendard, Source
 Sans 3, IBM Plex Sans, and the four monospace families (IBM Plex Mono,
 JetBrains Mono, Source Code Pro, Roboto Mono) — use the
@@ -45,11 +48,12 @@ Not sure which font to use? Pick based on your primary need:
 | **Symbol fallback**          | Noto Sans Symbols 1 / 2    | Plain-text arrows, dingbats: → ⚠ ✓ ★         |
 | **Multi-language documents** | Noto Sans                  | Broadest Unicode coverage                   |
 
-To apply any row's font, prepend the exact registered name to matplotlib's
-current `font.family` chain (as it appears in the
-[Bundled Fonts Summary](index.md#bundled-fonts-summary) — e.g. `Inter Display`
-with a space, not `InterDisplay`). Keep the rest of the chain so Korean,
-CJK, math, and symbol fallback still work:
+To apply a font, prepend its exact matplotlib family name to the current
+`font.family` chain (e.g. `Inter Display` with a space, not `InterDisplay`).
+For documented file groups whose name is not a separate family
+(`Noto Sans Condensed`, `Noto Sans SemiCondensed`), use the bundled styles or
+the `Noto Sans` family plus width-aware styling. Keep the rest of the chain so
+Korean, CJK, math, and symbol fallback still work:
 
 ```python
 import matplotlib.pyplot as plt
