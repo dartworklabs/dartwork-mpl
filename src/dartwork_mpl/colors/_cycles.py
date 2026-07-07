@@ -9,9 +9,9 @@ from __future__ import annotations
 __all__ = ["CYCLE_SPECS", "cycle_hexes"]
 
 CYCLE_SPECS: dict[str, tuple[tuple[str, int], ...]] = {
-    # 기본 8 chromatic — 라인 안전(L* 42~78, CR>=2.2), 공통-CVD dE00 10.3 · tritan 8.3 (BVM).
+    # Octave: 기본 8 chromatic — 라인 안전(L* 42~78, CR>=2.2), 공통-CVD dE00 10.3 · tritan 8.3 (BVM).
     # gray는 격자·기준선용으로 예약(멤버 아님 — 스펙 §8).
-    "default": (
+    "octave": (
         ("blue", 6),
         ("orange", 9),
         ("green", 5),
@@ -21,16 +21,17 @@ CYCLE_SPECS: dict[str, tuple[tuple[str, int], ...]] = {
         ("cyan", 8),
         ("rose", 8),
     ),
-    # 인쇄 8색 — 명도 분산(전쌍 dL* >= 6.1), 공통-CVD dE00 13.5 · tritan 8.5 (BVM).
-    "print": (
-        ("blue", 9),
-        ("orange", 2),
-        ("green", 9),
-        ("pink", 6),
-        ("amber", 6),
-        ("purple", 5),
-        ("cyan", 3),
-        ("gray", 8),
+    # Octave Print: 인쇄 8색 — Octave와 hue-parallel(6번 violet 일치, 8번 gray anchor).
+    # 명도 분산(전쌍 dL* >= 7.7), 공통-CVD dE00 10.4 · tritan 9.8 (BVM).
+    "octave_print": (
+        ("blue", 5),
+        ("orange", 8),
+        ("green", 1),
+        ("pink", 2),
+        ("amber", 5),
+        ("violet", 9),
+        ("cyan", 8),
+        ("gray", 9),
     ),
 }
 

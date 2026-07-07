@@ -30,8 +30,8 @@ PALETTE: dict[str, tuple[str, ...]] = {
 }
 
 CYCLES: dict[str, tuple[str, ...]] = {
-    "default": ("#2d99f0", "#e24f26", "#4fd067", "#fea6c5", "#f38500", "#6c46e3", "#128397", "#cf234a"),
-    "print": ("#1864b0", "#fdd3a2", "#338a3f", "#ef5389", "#fb9600", "#d776f0", "#71d8e5", "#505458"),
+    "octave": ("#2d99f0", "#e24f26", "#4fd067", "#fea6c5", "#f38500", "#6c46e3", "#128397", "#cf234a"),
+    "octave_print": ("#4aabfa", "#ef611a", "#cbf2cf", "#fdc0d6", "#ffa926", "#5a3ec3", "#128397", "#404245"),
 }
 
 CMAPS_256: dict[str, tuple[str, ...]] = {

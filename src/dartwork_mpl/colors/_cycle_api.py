@@ -8,16 +8,24 @@ from ._generated import CYCLES
 
 __all__ = ["cycle", "cycle_cycler"]
 
+_ALIASES = {"default": "octave", "print": "octave_print"}
 
-def cycle(name: str = "default") -> list[str]:
+
+def _canonical_name(name: str) -> str:
+    return _ALIASES.get(name, name)
+
+
+def cycle(name: str = "octave") -> list[str]:
     """Return the hex color list for a named categorical cycle.
 
     Parameters
     ----------
     name : str
-        Cycle name. ``"default"`` is the 8-color screen/PDF cycle;
-        ``"print"`` is the 8-color CVD-verified variant tuned for print
-        reproduction.
+        Cycle name. ``"octave"`` is the 8-color screen/PDF cycle;
+        ``"octave_print"`` is the 8-color CVD-verified variant tuned for
+        print reproduction. The legacy names ``"default"`` and
+        ``"print"`` are silent aliases for ``"octave"`` and
+        ``"octave_print"``.
 
     Returns
     -------
@@ -31,13 +39,14 @@ def cycle(name: str = "default") -> list[str]:
     KeyError
         If ``name`` is not a registered cycle.
     """
-    if name not in CYCLES:
+    key = _canonical_name(name)
+    if key not in CYCLES:
         raise KeyError(f"unknown cycle {name!r} — available: {sorted(CYCLES)}")
-    return list(CYCLES[name])
+    return list(CYCLES[key])
 
 
 def cycle_cycler(
-    name: str = "default", linestyles: tuple[str, ...] = ("-", "--", ":")
+    name: str = "octave", linestyles: tuple[str, ...] = ("-", "--", ":")
 ) -> Cycler[str, str]:
     """색이 먼저 순환하고, 색 재사용이 시작되는 시리즈부터 선스타일이 바뀐다."""
     return cycler(linestyle=list(linestyles)) * cycler(color=cycle(name))
