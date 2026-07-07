@@ -46,9 +46,9 @@ def cm2in(cm: float) -> float:
     return cm / 2.54
 
 def simple_layout(fig, margin=0.05):
-    """Optimize figure layout via scipy L-BFGS-B."""
+    """Measure visible artists and place GridSpec edges deterministically."""
     gs = fig.axes[0].get_gridspec()
-    # ... ~30 lines of standard scipy + matplotlib
+    # ... standard matplotlib extent measurement + GridSpec arithmetic
 ```
 
 > **Zero lock-in:** At every level, dartwork-mpl is designed to be optional.

@@ -2,8 +2,9 @@ Layout Utilities
 ================
 
 Utilities for tightening layouts without juggling ``plt.subplots_adjust``.
-``simple_layout`` optimizes margins with L-BFGS-B so axes fit inside a bounding
-box; ``make_offset`` nudges text/legends in point units; ``label_axes`` adds
+``simple_layout`` measures visible artists and arithmetically places GridSpec
+edges so axes content lands at the requested distance from the figure bounds;
+``make_offset`` nudges text/legends in point units; ``label_axes`` adds
 standardized panel labels; ``arrow_axis`` draws annotated bidirectional arrows;
 and ``set_decimal``/``get_bounding_box`` provide quick helpers when formatting axes.
 

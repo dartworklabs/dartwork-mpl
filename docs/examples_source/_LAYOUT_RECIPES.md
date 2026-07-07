@@ -270,8 +270,8 @@ dm.simple_layout(fig)
 
 **Why `simple_layout` here:** the top row spans columns, so per-cell
 overflow measurement isn't well-defined. `simple_layout` solves the
-GridSpec margins directly via L-BFGS-B and produces a deterministic
-result.
+GridSpec margins directly from measured artist extents and produces a
+deterministic result without scipy or an optimizer.
 
 ### 4.2 Colorbar attached to a single panel
 

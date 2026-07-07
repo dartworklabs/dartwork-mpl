@@ -89,3 +89,20 @@ def test_doc_resource_table_matches_registered_resources() -> None:
         f"mcp_server.md Resources table lists URIs that are not registered "
         f"resources: {sorted(extra)} — remove or fix the row"
     )
+
+
+def test_local_clone_docs_include_mcp_extra() -> None:
+    """Local checkout launch examples must install the optional MCP deps.
+
+    A checkout launched via ``uv run --directory`` does not necessarily have
+    the ``fastmcp``/``httpx`` extra installed in its venv. Keep both the JSON
+    client config and the generic stdio command on the documented
+    ``--extra mcp`` path so copy-paste setups do not depend on ambient venv
+    state.
+    """
+    text = _DOC.read_text(encoding="utf-8")
+
+    assert '"--extra",\n        "mcp"' in text
+    assert (
+        "uv run --directory /path/to/dartwork-mpl --extra mcp dartwork-mpl-mcp"
+    ) in text

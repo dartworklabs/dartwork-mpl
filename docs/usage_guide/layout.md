@@ -125,9 +125,8 @@ Useful for:
 | Multi-panel via GridSpec | `dm.simple_layout(fig, gs=gs)` |
 | Debugging layout convergence | `dm.simple_layout(fig, verbose=True)` |
 
-The historical `dm.auto_layout(fig)` is now a deprecated alias that
-forwards to `simple_layout`; new code should call `simple_layout`
-directly.
+The historical `dm.auto_layout(fig)` was removed in 0.5.4 and now
+raises a migration-hint `AttributeError`. Use `simple_layout` directly.
 
 ### `simple_layout` vs `tight_layout`
 
