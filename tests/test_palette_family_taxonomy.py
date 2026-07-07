@@ -133,8 +133,8 @@ def test_builder_rail_groups_use_qualitative_taxonomy() -> None:
     assert builder["RAIL_GROUP_ORDER"] == _RAIL_GROUP_ORDER
     assert [label for label, _ in payload["groups"]] == _RAIL_GROUP_ORDER
     assert groups["Qualitative"] == [
-        "default",
-        "print",
+        "octave",
+        "octave_print",
         "trustworthy",
         "vivid",
         "neon",
@@ -157,12 +157,12 @@ def test_builder_presentation_names_are_title_case_without_code_key_drift() -> (
     payload = builder["build_payload"]()
     palettes = payload["palettes"]
 
-    assert palettes["default"]["name"] == "Default"
-    assert palettes["print"]["name"] == "Print"
+    assert palettes["octave"]["name"] == "Octave"
+    assert palettes["octave_print"]["name"] == "Octave Print"
     assert palettes["coral"]["name"] == "Coral"
     assert palettes["cobalt"]["name"] == "Cobalt"
     assert palettes["warm_gray"]["name"] == "Warm Gray"
-    assert set(palettes) >= {"default", "print", "coral", "warm_gray"}
+    assert set(palettes) >= {"octave", "octave_print", "coral", "warm_gray"}
 
 
 def test_builder_family_intents_are_substantive_layout_copy() -> None:
@@ -178,6 +178,29 @@ def test_builder_family_intents_are_substantive_layout_copy() -> None:
     assert not terse
 
 
+def test_builder_cycle_intents_explain_screen_print_tradeoff() -> None:
+    """Octave and Octave Print lead with the screen-vs-print reason both exist."""
+    builder = runpy.run_path(str(_BUILDER))
+    cycle_intent = dict(builder["CYCLE_INTENT"])
+
+    assert "screen-first" in cycle_intent["octave"]
+    assert "line-safe L* 43-78 band" in cycle_intent["octave"]
+    assert "thin lines on white" in cycle_intent["octave"]
+    assert "some pairs share a gray tone" in cycle_intent["octave"]
+    assert "min ΔL* 2.7" in cycle_intent["octave"]
+
+    assert "print-first" in cycle_intent["octave_print"]
+    assert "same hue per slot as Octave" in cycle_intent["octave_print"]
+    assert "violet slot matches Octave" in cycle_intent["octave_print"]
+    assert (
+        "every pair is at least about 7 L* apart"
+        in cycle_intent["octave_print"]
+    )
+    assert "min ΔL* 7.7" in cycle_intent["octave_print"]
+    assert "grayscale printing and photocopies" in cycle_intent["octave_print"]
+    assert "dark gray takes the 8th slot" in cycle_intent["octave_print"]
+
+
 def test_explorer_generated_payload_uses_new_presentation_taxonomy() -> None:
     """The checked-in generated explorer matches the builder taxonomy."""
     payload = _payload()
@@ -185,26 +208,33 @@ def test_explorer_generated_payload_uses_new_presentation_taxonomy() -> None:
 
     assert [label for label, _ in payload["groups"]] == _RAIL_GROUP_ORDER
     assert groups["Qualitative"] == [
-        "default",
-        "print",
+        "octave",
+        "octave_print",
         "trustworthy",
         "vivid",
         "neon",
     ]
     assert payload["palettes"]["coral"]["name"] == "Coral"
-    assert payload["palettes"]["default"]["name"] == "Default"
-    assert payload["palettes"]["print"]["name"] == "Print"
+    assert payload["palettes"]["octave"]["name"] == "Octave"
+    assert payload["palettes"]["octave_print"]["name"] == "Octave Print"
     assert not {"Cycles", "Balanced", "Spectrum"} & set(groups)
 
 
 def test_explorer_detail_presentation_order_and_eyebrow_copy() -> None:
-    """Actionable code appears before the readout and reference footer."""
+    """A11y chips live in the title row; controls precede the slim footer."""
     html = _EXPLORER.read_text(encoding="utf-8")
 
     assert "v5 cycle" not in html
     assert "v5 family" not in html
     assert " · curated" not in html
     assert "var ey=p.group;" in html
+    assert "Design targets" not in html
+    assert (
+        '\'<div class="d-title"><h3>\'+p.name+\'</h3><code class="d-key" '
+        "title=\"copy the palette name\">'+state.key+'</code><span "
+        'class="a11y-chips"></span></div>\''
+    ) in html
+    assert '<div class="a11y-host">' not in html
 
     ordered_fragments = [
         '<div class="d-ey">',
@@ -214,11 +244,118 @@ def test_explorer_detail_presentation_order_and_eyebrow_copy() -> None:
         '<div class="swhost">',
         '<div class="plots">',
         '<div class="code highlight">',
-        '<div class="ro-host">',
         '<div class="meta-host">',
     ]
     positions = [html.index(fragment) for fragment in ordered_fragments]
     assert positions == sorted(positions)
+
+
+def test_explorer_layout_fits_article_column() -> None:
+    """The explorer uses a bounded grid track and wrapping controls."""
+    html = _EXPLORER.read_text(encoding="utf-8")
+
+    assert "grid-template-columns:168px minmax(0,1fr)" in html
+    assert "#dm-cat-exp {width:100%;max-width:100%;overflow:clip;" in html
+    assert "#dm-cat-exp .detail {min-width:0;" in html
+    assert "flex-wrap:wrap;row-gap:8px;" in html
+
+
+def test_explorer_title_row_chips_replace_badge_readout() -> None:
+    """Accessibility checks render as title-row outline chips with circle dots."""
+    html = _EXPLORER.read_text(encoding="utf-8")
+    readout_start = html.index("// ── live accessibility readout ──")
+    readout_end = html.index("function metaRow", readout_start)
+    readout = html[readout_start:readout_end]
+
+    assert ".a11y-chips" in html
+    assert ".a11y-chip" in html
+    assert ".a-dot" in html
+    assert "border-radius:50%" in html
+    assert "margin-left:auto" in html
+    assert "function chipHTML(" in html
+    assert "d.querySelector('.a11y-chips').innerHTML=a11yHTML();" in html
+    assert "function bwTip(v){" in html
+    assert "function cvdTip(c){" in html
+    assert "the smallest lightness gap between any two colors here" in html
+    assert "some pairs share a gray tone when printed" in html
+    assert "Octave Print fixes this" in html
+    assert "Worst-case ΔE00 color difference" in html
+    assert "all three deficiency types" in html
+    assert ".a11y-badge" not in html
+    assert ".a11y-badges" not in html
+    assert "function badgeHTML(" not in html
+    assert ".a11y-host" not in html
+    assert "function stateIcon(" not in html
+    assert "function readoutHTML(" not in html
+    for glyph in ("✓", "×", "◑", "◔"):  # noqa: RUF001 — the banned glyphs themselves
+        assert glyph not in readout
+
+
+def test_cycle_payload_includes_cvd_metrics_from_ssot() -> None:
+    """Octave and Octave Print carry CVD metrics for the badge parser."""
+    builder = runpy.run_path(str(_BUILDER))
+    for payload in (builder["build_payload"](), _payload()):
+        for key in ("octave", "octave_print"):
+            cvd = payload["palettes"][key]["cvd"]
+            assert re.fullmatch(r"d\d+\.\d / p\d+\.\d / t\d+\.\d", cvd)
+
+
+def test_docs_semantic_aliases_live_on_static_palette_page() -> None:
+    cat = (
+        _REPO / "docs" / "color_system" / "categorical-palettes.md"
+    ).read_text(encoding="utf-8")
+    colors = (_REPO / "docs" / "color_system" / "colors.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "### Semantic tokens" not in cat
+    assert "62ch" not in cat
+    assert "## Semantic aliases" in colors
+    assert 'ax.plot(gains, color="dc.pos")' in colors
+    assert 'ax.axhline(baseline, color="dc.ref")' in colors
+
+
+def test_docs_octave_reference_keeps_pinned_phrases_and_tradeoff() -> None:
+    """The reference paragraph preserves fact pins and mirrors the trade-off."""
+    cat = (
+        _REPO / "docs" / "color_system" / "categorical-palettes.md"
+    ).read_text(encoding="utf-8")
+    cat_flat = re.sub(r"\s+", " ", cat)
+
+    for phrase in (
+        "min ΔE00 10.3",
+        "Okabe-Ito benchmark's 11.5",
+        "default cycle's 8.3 actually beats",
+        "beats Okabe-Ito's 7.9",
+        "curated 20-palette system",
+    ):
+        assert phrase in cat
+    assert "line-safe L* 43-78 band" in cat_flat
+    assert "same hue per slot as Octave" in cat_flat
+    assert "violet slot matches Octave" in cat_flat
+    assert (
+        "Octave Print guarantees every pair is at least about 7 L* apart"
+        in cat_flat
+    )
+    assert "min ΔL* 7.7" in cat_flat
+
+
+def test_palette_metadata_fact_audit_claims_are_current() -> None:
+    curated = (
+        _REPO / "src" / "dartwork_mpl" / "colors" / "_curated.py"
+    ).read_text(encoding="utf-8")
+    rationale = (
+        _REPO / "docs" / "_static" / "dartwork-discrete-palette-rationale.md"
+    ).read_text(encoding="utf-8")
+
+    assert "Up to 6 vivid categories" not in curated
+    assert "Up to 8 vivid categories" in curated
+    assert "brick, coral, orange, amber, gold, olive plus" not in curated
+    assert "brick, coral, ochre, gold, olive, pink, and clay plus" in curated
+    assert "Up to 6 vivid categories" not in rationale
+    assert "brick, coral, orange, amber, gold, olive plus" not in rationale
+    assert "old hand-curated palette asset" not in rationale
+    assert "20 curated categorical sets" in rationale
 
 
 def test_explorer_families_match_palette_ssot() -> None:

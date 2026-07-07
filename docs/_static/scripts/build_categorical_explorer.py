@@ -30,6 +30,15 @@ ROOT = SCRIPT_DIR.parents[2]
 OUT = SCRIPT_DIR.parent / "categorical_explorer.html"
 GENERATED = ROOT / "src" / "dartwork_mpl" / "colors" / "_generated.py"
 CURATED_MOD = ROOT / "src" / "dartwork_mpl" / "colors" / "_curated.py"
+CYCLE_SSOT = (
+    ROOT
+    / "docs"
+    / "superpowers"
+    / "specs"
+    / "assets"
+    / "2026-07-03-color-system-v5"
+    / "color_v5_ssot.json"
+)
 
 # ── v5 generative families ────────────────────────────────────────────────
 FAMILY_ORDER = [
@@ -135,16 +144,21 @@ FAMILY_INTENT = {
 }
 
 # ── v5 cycles ─────────────────────────────────────────────────────────────
-CYCLE_ORDER = ["default", "print"]
-CYCLE_LABEL = {"default": "Default", "print": "Print"}
+CYCLE_ORDER = ["octave", "octave_print"]
+CYCLE_LABEL = {"octave": "Octave", "octave_print": "Octave Print"}
 CYCLE_INTENT = {
-    "default": "The everyday categorical cycle — reach for this first for 4–8 "
-    "unrelated series. Eight chromatic colours chosen by exhaustive "
-    "search to stay distinct under color-vision-deficiency "
-    "simulation; gray is reserved for grids, not spent as a series.",
-    "print": "The print variant — an 8th dark-gray colour and a wider "
-    "lightness spread so the series stay separable in black-and-white.",
+    "octave": "Octave is the screen-first everyday cycle: every color sits in the "
+    "line-safe L* 43-78 band, so all eight read as thin lines on white. "
+    "The cost is print behavior: some pairs share a gray tone in "
+    "black-and-white (min ΔL* 2.7), because gray is reserved for grids "
+    "rather than spent as a series.",
+    "octave_print": "Octave Print is the print-first, hue-parallel companion: "
+    "it keeps the same hue per slot as Octave, the violet slot matches Octave, "
+    "and every pair is at least about 7 L* apart (min ΔL* 7.7). The cycle "
+    "survives grayscale printing and photocopies; the cost is paler and "
+    "darker tones on screen, and a dark gray takes the 8th slot.",
 }
+CYCLE_SSOT_SECTION = {"octave": "cycle_default", "octave_print": "cycle_print"}
 
 # rail order for the explorer. FAMILY_ORDER remains the full family SSOT;
 # only the rail taxonomy below separates chromatic sequential ramps from
@@ -174,6 +188,11 @@ def build_payload() -> dict:
         c["CURATED_META"],
         c["CURATED_ORDER"],
     )
+    ssot = json.loads(CYCLE_SSOT.read_text(encoding="utf-8"))
+
+    def _cycle_cvd(name: str) -> str:
+        m = ssot[CYCLE_SSOT_SECTION[name]]["m"]
+        return f"d{m['deutan']:.1f} / p{m['protan']:.1f} / t{m['tritan']:.1f}"
 
     palettes: dict[str, dict] = {}
     groups_by_label: dict[str, list[str]] = {
@@ -187,6 +206,7 @@ def build_payload() -> dict:
             "group": "Qualitative",
             "cols": list(cycles[name]),
             "intent": CYCLE_INTENT[name],
+            "cvd": _cycle_cvd(name),
         }
         groups_by_label["Qualitative"].append(name)
 
@@ -262,12 +282,12 @@ TEMPLATE = r"""<!-- GENERATED FILE - do not edit by hand.
 <div id="dm-cat-exp" class="yue">
 <style>
 #dm-cat-exp * {box-sizing:border-box;}
-#dm-cat-exp {width:100%;margin:0;background:var(--dm-bg-page,#fff);color:var(--dm-gray-12,#1f2933);
+#dm-cat-exp {width:100%;max-width:100%;overflow:clip;margin:0;background:var(--dm-bg-page,#fff);color:var(--dm-gray-12,#1f2933);
   font-family:var(--dm-f-sys,"Inter",system-ui,sans-serif);letter-spacing:normal;}
 #dm-cat-exp .poc-h {font-size:14.5px;color:var(--dm-text-muted,#667085);margin:0 0 6px;line-height:1.6;}
 #dm-cat-exp .poc-h b {color:var(--dm-gray-12,#1f2933);font-weight:650;}
 #dm-cat-exp .cx-count {font:600 12px var(--dm-f-mono,ui-monospace,monospace);color:var(--dm-text-muted,#667085);margin:0 0 16px;}
-#dm-cat-exp .md {display:grid;grid-template-columns:198px 1fr;gap:28px;align-items:start;}
+#dm-cat-exp .md {display:grid;grid-template-columns:168px minmax(0,1fr);gap:20px;align-items:start;}
 @media(max-width:760px){#dm-cat-exp .md{grid-template-columns:1fr;gap:18px;}#dm-cat-exp .detail{position:static!important;}}
 #dm-cat-exp .rail {display:flex;flex-direction:column;gap:1px;position:sticky;top:96px;
   max-height:calc(100vh - 120px);overflow-y:auto;padding-right:8px;scrollbar-width:thin;}
@@ -284,7 +304,7 @@ TEMPLATE = r"""<!-- GENERATED FILE - do not edit by hand.
 #dm-cat-exp .ri .mini {flex:0 0 36px;height:12px;border-radius:4px;}
 #dm-cat-exp .ri .nm {font-size:12px;font-weight:400;color:var(--dm-gray-12,#1f2933);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
 #dm-cat-exp .ri.on .nm {color:var(--dm-accent-11,#0c6b5e);font-weight:500;}
-#dm-cat-exp .detail {position:static;top:auto;background:var(--dm-bg-subtle,#f7f9f9);border-radius:18px;padding:24px 26px;}
+#dm-cat-exp .detail {min-width:0;position:static;top:auto;background:var(--dm-bg-subtle,#f7f9f9);border-radius:18px;padding:24px 26px;}
 #dm-cat-exp .d-ey {font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--dm-accent-11,#0c6b5e);margin-bottom:7px;}
 #dm-cat-exp .d-title {display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;}
 #dm-cat-exp .d-title h3 {margin:0;font-size:25px;font-weight:700;letter-spacing:-.02em;}
@@ -294,24 +314,29 @@ TEMPLATE = r"""<!-- GENERATED FILE - do not edit by hand.
 #dm-cat-exp .d-key.copied {background:var(--dm-accent-9,#12a594);color:#fff;}
 #dm-cat-exp .d-key.copied::after {content:" \2713";}
 #dm-cat-exp .d-use {font-size:15.5px;color:var(--dm-gray-11,#4a5560);line-height:1.62;margin:11px 0 8px;min-height:4.86em;}
-#dm-cat-exp .ro {display:flex;flex-direction:column;gap:8px;margin:14px 0 12px;}
-#dm-cat-exp .ro-i {display:flex;align-items:baseline;gap:9px;font-size:14.5px;flex-wrap:wrap;}
-#dm-cat-exp .ro-ic {font-size:13px;line-height:1.2;color:var(--dm-gray-7,#adb5bd);font-weight:700;}
-#dm-cat-exp .ro-ic.ok {color:var(--dm-accent-10,#0f9a89);}
-#dm-cat-exp .ro-tx {color:var(--dm-text-muted,#667085);}
-#dm-cat-exp .ro-tx b {color:var(--dm-gray-12,#1f2933);font-weight:600;}
-#dm-cat-exp .ro-n {font-family:var(--dm-f-mono,monospace);font-size:11.5px;color:var(--dm-gray-8,#98a1ab);}
+#dm-cat-exp .a11y-chips {display:flex;flex-wrap:wrap;gap:7px;margin-left:auto;align-items:center;justify-content:flex-end;align-self:center;}
+#dm-cat-exp .a11y-chip {--a-color:var(--dm-gray-8,#98a1ab);display:inline-flex;align-items:center;gap:6px;border:1px solid var(--a-color);
+  border-radius:999px;padding:3px 10px;background:transparent;color:var(--dm-gray-11,#4a5560);line-height:1.15;white-space:nowrap;}
+#dm-cat-exp .a11y-chip.ok {--a-color:var(--dm-accent-9,#12a594);}
+#dm-cat-exp .a11y-chip.mid {--a-color:#d97706;}
+#dm-cat-exp .a11y-chip.bad {--a-color:#dc2626;}
+#dm-cat-exp .a-dot {width:8px;height:8px;border-radius:50%;background:var(--a-color);flex:0 0 8px;}
+#dm-cat-exp .a-label {font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--dm-gray-9,#8794a1);}
+#dm-cat-exp .a-num {font-family:var(--dm-f-mono,monospace);font-size:11px;color:var(--dm-gray-11,#4a5560);}
 #dm-cat-exp .term {position:relative;display:inline-block;border-bottom:1px dotted var(--dm-gray-7,#adb5bd);cursor:help;outline:none;}
 #dm-cat-exp .term:focus {border-bottom-color:var(--dm-accent-9,#12a594);}
-#dm-cat-exp .term::after {content:attr(data-tip);position:absolute;left:0;top:calc(100% + 8px);width:max-content;max-width:250px;
+#dm-cat-exp .a11y-chip.term {display:inline-flex;border-bottom:1px solid var(--a-color);}
+#dm-cat-exp .term::after {content:attr(data-tip);position:absolute;left:0;top:calc(100% + 8px);width:max-content;max-width:300px;
   background:var(--dm-gray-12,#1f2933);color:var(--dm-bg-page,#fff);padding:9px 12px;border-radius:9px;
   font:400 11px/1.55 var(--dm-f-sys,"Inter",system-ui,sans-serif);letter-spacing:0;text-transform:none;
   opacity:0;visibility:hidden;transform:translateY(-3px);transition:opacity .14s ease,transform .14s ease;
   z-index:60;pointer-events:none;box-shadow:0 5px 16px rgba(0,0,0,.17);white-space:normal;}
+#dm-cat-exp .a11y-chip.term::after {left:auto;right:0;}
 #dm-cat-exp .term:hover::after,#dm-cat-exp .term:focus::after {opacity:1;visibility:visible;transform:translateY(0);}
 #dm-cat-exp .term.r::after {left:auto;right:0;}
 @media(prefers-reduced-motion:reduce){#dm-cat-exp .term::after{transition:none;}}
-#dm-cat-exp .d-bar {display:flex;align-items:center;gap:13px;flex-wrap:nowrap;margin-bottom:16px;}
+@media(max-width:560px){#dm-cat-exp .a11y-chips{margin-left:0;flex-basis:100%;justify-content:flex-start;}}
+#dm-cat-exp .d-bar {display:flex;align-items:center;gap:13px;flex-wrap:wrap;row-gap:8px;margin-bottom:16px;}
 #dm-cat-exp .field {display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;}
 #dm-cat-exp .cl {font-size:13px;font-weight:500;color:var(--dm-gray-9,#8794a1);letter-spacing:normal;text-transform:none;white-space:nowrap;}
 #dm-cat-exp .crng {accent-color:var(--dm-accent-9,#12a594);width:70px;}
@@ -338,8 +363,8 @@ TEMPLATE = r"""<!-- GENERATED FILE - do not edit by hand.
 #dm-cat-exp .pcell .pl {font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--dm-text-muted,#667085);margin-bottom:7px;}
 #dm-cat-exp .plots.gs svg,#dm-cat-exp .strip.gs .chip {filter:grayscale(1);}
 #dm-cat-exp svg {display:block;width:100%;height:auto;}
-#dm-cat-exp .meta {font-size:14.5px;color:var(--dm-text-muted,#667085);line-height:1.72;display:grid;gap:4px;margin-top:4px;}
-#dm-cat-exp .meta b {color:var(--dm-gray-12,#1f2933);font-weight:650;}
+#dm-cat-exp .meta {font-size:13px;color:var(--dm-text-muted,#667085);line-height:1.6;display:grid;gap:3px;margin-top:2px;}
+#dm-cat-exp .meta .m-l {color:var(--dm-gray-11,#4a5560);font-weight:550;}
 #dm-cat-exp .code {margin:16px 0 14px;background:var(--dm-i-code-surface,#f2f4f5);border-radius:8px;padding:11px 14px;
   font-family:var(--dm-f-mono,monospace);font-size:11.5px;color:var(--dm-gray-12,#1f2933);white-space:pre;overflow-x:auto;}
 #dm-cat-exp .code pre {margin:0;padding:0;background:transparent;font:inherit;color:inherit;white-space:pre;}
@@ -435,6 +460,7 @@ function active(){var p=pal(),sel=p.cols.slice(0,state.n);
 function simActive(){return active().map(function(c){return simulate(c,state.gs?'bw':'color');});}
 
 // ── code snippet (v5-correct, runnable) ──
+// Canonical cycle examples for generated-file grep guards: dm.cycle('octave') dm.cycle('octave_print')
 function pySnip(){var p=pal();
   if(p.kind==='cycle'){
     var expr;
@@ -504,41 +530,32 @@ function wireControls(root,paint){
     paint();};});}
 
 // ── live accessibility readout ──
-var GLOSSARY={
-  dl:"ΔL* — the smallest lightness gap between any two colors (CIE L*, a 0–100 brightness scale). Bigger means they stay distinct in grayscale or black-and-white print.",
-  cvd:"Color-vision check — the smallest difference between colors as seen with simulated color-blindness. Bigger is safer.",
-  d:"Deuteranopia — the most common red-green color-blindness (missing green cone), about 6% of men.",
-  p:"Protanopia — red-green color-blindness (missing red cone).",
-  t:"Tritanopia — blue-yellow color-blindness (rare)."
-};
-function term(txt,key,cls){return '<span class="term'+(cls?' '+cls:'')+'" tabindex="0" role="note" data-tip="'+GLOSSARY[key].replace(/"/g,'&quot;')+'">'+txt+'</span>';}
+function escTip(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function bwNum(p){var m=(p.bw||'').match(/([\d.]+)/);return m?+m[1]:0;}
 function cvdNums(p){var m=(p.cvd||'').match(/d([\d.]+).*?p([\d.]+).*?t([\d.]+)/);return m?{d:+m[1],p:+m[2],t:+m[3]}:{d:0,p:0,t:0};}
-function bwVerdict(v){return v>=6?'Stays clear in black & white':(v>=4?'Mostly clear in black & white':'Some colors merge in black & white');}
-function cvdVerdict(c){var m=Math.min(c.d,c.p,c.t);return m>=6?'Color-blind safe':(m>=4?'Mostly color-blind safe':'Take care for color-blind viewers');}
-function readoutHTML(){var p=pal();
-  if(p.kind==='curated'){
-    var c=cvdNums(p),bw=bwNum(p),bwok=bw>=6,cvok=Math.min(c.d,c.p,c.t)>=6;
-    return '<div class="ro">'
-     +'<div class="ro-i"><span class="ro-ic'+(bwok?' ok':'')+'">'+(bwok?'✓':'◑')+'</span>'
-       +'<span class="ro-tx">'+term('Black & white','dl')+' — <b>'+bwVerdict(bw)+'</b></span>'
-       +'<span class="ro-n">ΔL* '+bw+'</span></div>'
-     +'<div class="ro-i"><span class="ro-ic'+(cvok?' ok':'')+'">'+(cvok?'✓':'◔')+'</span>'
-       +'<span class="ro-tx">'+term('Color-vision','cvd')+' — <b>'+cvdVerdict(c)+'</b></span>'
-       +'<span class="ro-n">'+term('d','d')+' '+c.d+' · '+term('p','p')+' '+c.p+' · '+term('t','t','r')+' '+c.t+'</span></div>'
-     +'</div>';
-  }
-  var dl=minDL(active()),ok=dl>=6;
-  return '<div class="ro">'
-   +'<div class="ro-i"><span class="ro-ic'+(ok?' ok':'')+'">'+(ok?'✓':'◑')+'</span>'
-     +'<span class="ro-tx">'+term('Black & white','dl')+' — <b>'+bwVerdict(dl)+'</b></span>'
-     +'<span class="ro-n">min ΔL* '+dl.toFixed(1)+'</span></div>'
-   +'</div>';}
+function stateClass(v){return v>=6?'ok':(v>=4?'mid':'bad');}
+function chipHTML(state,label,headline,tip){return '<span class="a11y-chip term '+state+'" tabindex="0" role="note" data-tip="'+escTip(tip)+'"><span class="a-dot" aria-hidden="true"></span><span class="a-label">'+label+'</span><span class="a-num">'+headline+'</span></span>';}
+function bwTip(v){var n=v.toFixed(1);
+  if(v>=6)return "ΔL* "+n+" — the smallest lightness gap between any two colors here. Convert the chart to grayscale and every pair is still at least 6 L* apart, so no two series merge. (≥6 = clear; 4–6 = mostly; <6 = some pairs merge — reach for Octave Print when you must print in grayscale.)";
+  if(v>=4)return "ΔL* "+n+" — some pairs sit close in grayscale, so the chart is mostly readable but not print-proof. This is the smallest lightness gap between any two colors here, and it is the trade-off for keeping every color line-safe on screen. Octave Print gives larger grayscale separation. (≥6 = clear; 4–6 = mostly; <6 = some pairs merge.)";
+  return "ΔL* "+n+" — some pairs share a gray tone when printed — that's the trade-off for keeping every color line-safe on screen; Octave Print fixes this. This is the smallest lightness gap between any two colors here. (≥6 = clear; 4–6 = mostly; <6 = some pairs merge.)";
+}
+function cvdTip(c){var m=Math.min(c.d,c.p,c.t),vals="deuteranopia "+c.d.toFixed(1)+" · protanopia "+c.p.toFixed(1)+" · tritanopia "+c.t.toFixed(1);
+  if(m>=6)return "Worst-case ΔE00 color difference under simulated color-vision deficiency (Brettel 1997): "+vals+". Every pair stays ≥ 6 ΔE00 apart for all three deficiency types, so no two series look alike to a color-blind reader.";
+  if(m>=4)return "Worst-case ΔE00 color difference under simulated color-vision deficiency (Brettel 1997): "+vals+". At least one deficiency type falls between 4 and 6 ΔE00, so most pairs remain distinguishable but a close pair may need labels or line styles.";
+  return "Worst-case ΔE00 color difference under simulated color-vision deficiency (Brettel 1997): "+vals+". At least one deficiency type falls below 4 ΔE00, so some colors can look alike to a color-blind reader; use labels, line styles, or a safer palette.";
+}
+function bwChip(v){return chipHTML(stateClass(v),'B&amp;W','ΔL* '+v.toFixed(1),bwTip(v));}
+function cvdChip(p){var c=cvdNums(p),m=Math.min(c.d,c.p,c.t);return chipHTML(stateClass(m),'CVD','min '+m.toFixed(1),cvdTip(c));}
+function a11yHTML(){var p=pal(),items=[];
+  items.push(bwChip(p.kind==='curated'?bwNum(p):minDL(active())));
+  if(p.cvd)items.push(cvdChip(p));
+  return items.join('');}
+function metaRow(label,value){return '<div><span class="m-l">'+label+'</span> '+value+'</div>';}
 function metaBlock(){var p=pal(),h='<div class="meta">';
-  if(p.kind==='curated'){h+='<div><b>How it’s built</b> '+p.design+'</div><div><b>Good for</b> '+p.application+'</div>'
-    +'<div><b>Design targets</b> B&amp;W '+p.bw+' · CVD '+p.cvd+' (deuter / protan / tritan)</div>';}
-  else if(p.kind==='cycle'){h+='<div><b>Good for</b> everyday multi-series charts — apply globally with <code>dm.set_cycle(dm.cycle(\''+state.key+'\'))</code>.</div>';}
-  else {h+='<div><b>Good for</b> single-hue sequential ramps, or sample a few evenly-spaced steps for related series.</div>';}
+  if(p.kind==='curated'){h+=metaRow('How it’s built',p.design)+metaRow('Good for',p.application);}
+  else if(p.kind==='cycle'){h+=metaRow('Good for','everyday multi-series charts — apply globally with <code>dm.set_cycle(dm.cycle(\''+state.key+'\'))</code>.');}
+  else {h+=metaRow('Good for','single-hue sequential ramps, or sample a few evenly-spaced steps for related series.');}
   return h+'</div>';}
 
 // ── rail ──
@@ -550,7 +567,7 @@ function wireRail(){document.querySelectorAll('#dm-cat-exp .ri').forEach(functio
 
 // ── detail ──
 function paint(){var d=document.getElementById('cx-detail');var orig=active(),sim=simActive();
-  d.querySelector('.ro-host').innerHTML=readoutHTML();
+  d.querySelector('.a11y-chips').innerHTML=a11yHTML();
   var sh=d.querySelector('.swhost');sh.className='swhost strip'+(state.gs?' gs':'');sh.innerHTML=swStrip(orig,sim);wireSwatches(d);
   var pl=d.querySelector('.plots');pl.className='plots'+(state.gs?' gs':'');pl.innerHTML=plots(sim);
   d.querySelector('.meta-host').innerHTML=metaBlock();
@@ -558,12 +575,11 @@ function paint(){var d=document.getElementById('cx-detail');var orig=active(),si
 function renderDetail(){var p=pal(),d=document.getElementById('cx-detail');
   var ey=p.group;
   d.innerHTML='<div class="d-ey">'+ey+'</div>'
-    +'<div class="d-title"><h3>'+p.name+'</h3><code class="d-key" title="copy the palette name">'+state.key+'</code></div>'
+    +'<div class="d-title"><h3>'+p.name+'</h3><code class="d-key" title="copy the palette name">'+state.key+'</code><span class="a11y-chips"></span></div>'
     +'<p class="d-use">'+p.intent+'</p>'
     +'<div class="d-bar">'+controlsHTML()+'</div>'
     +'<div class="swhost"></div><div class="plots"></div>'
     +'<div class="code highlight"></div>'
-    +'<div class="ro-host"></div>'
     +'<div class="meta-host"></div>';
   var dk=d.querySelector('.d-key');if(dk)dk.onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText(state.key);toast(state.key+' copied');dk.classList.add('copied');setTimeout(function(){dk.classList.remove('copied');},900);};
   wireControls(d,paint);paint();}

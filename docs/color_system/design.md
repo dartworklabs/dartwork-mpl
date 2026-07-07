@@ -157,8 +157,8 @@ Gray alone uses an even L\* ladder (96→28) with a faint cool tint
 (h250, C ≤ 0.011). Having no hue identity, it is exempt from the drift and
 chroma-fingerprint rules; even L\* alone keeps its neighbor ΔE uniform. Gray
 is reserved for grids, reference lines, benchmarks, and "other" categories —
-it is deliberately **not** part of the default `dc.cycle`; the print cycle
-adds a dark gray as its 8th color for B&W lightness spread.
+it is deliberately **not** part of Octave (`dc.cycle`); Octave Print adds a
+dark gray as its 8th color for B&W lightness spread.
 
 ### A7 · the hard gates
 
@@ -269,9 +269,13 @@ projection, because Machado's fitted tritan matrix over-states blue-yellow
 separation. Under the accurate model a seven-hue cycle's tritan separation
 tops out near 9 — so, rather than claim a number the colors cannot meet, the
 gate is **tiered**: the common deficiencies are held to ≥ 10 and the rare
-tritan to a realistic ≥ 8. `dc.cycle` measures 10.3 (common) / 8.3 (tritan);
-`dc.cycle_print`, 13.5 / 8.5. Publishing the real floors instead of a
-flattering worst-case is the same honest-guarantees principle at work.
+tritan to a realistic ≥ 8. `dc.cycle` measures 10.3 (common) / 8.3 (tritan)
+for Octave; `dc.cycle_print`, 10.4 / 9.8 for Octave Print. Octave Print is
+hue-parallel with Octave — same hue per slot, with the violet slot matching
+and the dark gray anchor in slot eight — while keeping every pair at least
+about 7 L\* apart (min ΔL\* 7.7) for grayscale. Publishing the real floors
+instead of a flattering worst-case is the same honest-guarantees principle at
+work.
 
 ## Colormaps, derived from the palette
 
@@ -296,13 +300,13 @@ variant.
 | Kind | Rule | Example |
 |---|---|---|
 | color token | `dc.{family}{step}` | `dc.blue6` |
-| categorical cycle | `cycle` · `cycle_print` | `dm.cycle()` |
+| categorical cycle | `octave` · `octave_print` | `dm.cycle()` |
 | single-hue cmap | the family name itself | `cmap="dc.blue"` |
 | multi-hue cmap | a natural-light scene name | `dc.aurora` |
 | diverging cmap | a `low_high` pair name | `dc.blue_red` |
 | topo cmap | a landform scene name | `dc.coast` |
 | cyclic cmap | a circular-light-phenomenon name | `dc.halo` |
-| qualitative cmap | the cycle name | `dc.cycle` |
+| qualitative cmap | stable public cycle token | `dc.cycle` |
 | variant suffix | `_r` (reverse) · `_deep`/`_soft` (diverging strength) | `dc.aurora_r` |
 
 **Direction — an ink/light metaphor.** *Ink* maps (single-hue, diverging)

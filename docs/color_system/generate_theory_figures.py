@@ -911,8 +911,8 @@ def fig_catalog():
     )
     y += 1.0
     for name, hexes in [
-        ("cycle", CYCLES["default"]),
-        ("cycle_print", CYCLES["print"]),
+        ("cycle", CYCLES["octave"]),
+        ("cycle_print", CYCLES["octave_print"]),
     ]:
         _grad(ax, hexes, y, name)
         y += 1.0

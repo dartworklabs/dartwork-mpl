@@ -71,7 +71,7 @@ The catalog is five generation families plus the two registered cycles:
 | **Diverging** (ink) | `blue_red` (+`_deep`/`_soft`) `blue_orange` `teal_rose` `green_purple` `purple_orange` `cyan_red` `teal_amber` `violet_lime` `indigo_amber` `gray_blue` `gray_red` | 13 | anchored at the midpoint |
 | **Topographic** | `coast` | 1 | anchored at a datum |
 | **Cyclic** (light) | `hue` `halo` `corona` | 3 | start = end |
-| **Qualitative** | `cycle` `cycle_print` | 2 | discrete classes |
+| **Qualitative** | `cycle` (Octave) `cycle_print` (Octave Print) | 2 | discrete classes |
 
 ---
 
