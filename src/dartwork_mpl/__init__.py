@@ -321,9 +321,10 @@ if not getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False):
 # ``plt.rcParams["font.family"] = "Inter"`` (or any bundled family) resolves
 # immediately after ``import dartwork_mpl`` — matching the documented
 # contract. This is a one-time ~70 ms cost; the same font-manager work would
-# otherwise run on the first ``dm.style.use(...)`` anyway. Colours and
-# colormaps stay lazy (registered on first access) because, unlike fonts,
-# they are never addressed by a bare matplotlib rcParam string.
+# otherwise run on the first ``dm.style.use(...)`` anyway. Named colors and
+# the generated v5 colormap catalog are also registered during import through
+# the ``dartwork_mpl.colors`` import above; only the legacy ``asset/cmap`` text
+# maps stay on-demand behind ``dm.cmap.ensure_loaded()``.
 font.ensure_loaded()
 
 

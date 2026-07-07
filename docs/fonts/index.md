@@ -16,12 +16,17 @@ Math & Special Characters <math_and_symbols>
 
 ## Overview
 
-dartwork-mpl bundles **206 text font files across 18 families** (sans-serif
-plus four monospace, and two symbol-fallback faces), all optimized for data
-visualization and
-publication-quality figures. They are registered with matplotlib's font
-manager on `import dartwork_mpl`, and bundled entries win same-named
-system-font ties — no manual font installation or configuration required.
+dartwork-mpl bundles **206 text font files** organized into **18 documented
+file groups** for data visualization and publication figures. Matplotlib
+registers those files as **16 matplotlib family names** on
+`import dartwork_mpl`, and bundled entries win same-named system-font ties —
+no manual font installation or configuration required.
+
+The difference is intentional: file groups describe the shipped assets, while
+matplotlib family names describe what you put in `font.family`. Condensed and
+SemiCondensed Noto Sans files register as Noto Sans with their width metadata,
+so choose them through the style/fallback chain rather than by a separate
+family name.
 
 **Every family, one click apart.** The picker below cycles through them
 live — each tab swaps the specimen below to that family's actual rendered
@@ -92,9 +97,10 @@ with its sans sibling).
 
 ## Bundled Fonts Summary
 
-Every family ships a full weight range (plus italics where the upstream
-publishes them). All are SIL Open Font License or Apache-2.0; the license
-texts are bundled under `asset/font/licenses/`.
+Every row below describes a documented file group. Most rows are also exact
+matplotlib family names; the two Noto Sans width groups are bundled files that
+register under the `Noto Sans` family name. All are SIL Open Font License or
+Apache-2.0; the license texts are bundled under `asset/font/licenses/`.
 
 | Family                       | Files | Primary use case                   |
 | ---------------------------- | ----- | ---------------------------------- |

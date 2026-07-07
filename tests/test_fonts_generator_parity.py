@@ -9,8 +9,8 @@ Each groups the bundled font files into families with the same
 asset builder collected ``.ttf`` only. That silently dropped the two
 OpenType families — Pretendard (9 ``.otf`` weights) and the Noto Sans CJK
 subset (1 ``.otf``) — from the all-families preview, contradicting the
-advertised "16 families" and the Pretendard profile that sits right next
-to it. This test pins both collectors to the exact family set derived
+advertised file-group inventory and the Pretendard profile that sits right
+next to it. This test pins both collectors to the exact family set derived
 from every bundled ``.ttf``/``.otf`` file, so a filter regression in
 either one fails loudly.
 """
