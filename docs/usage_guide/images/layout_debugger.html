@@ -124,7 +124,7 @@
   /* True Axes Box (shrinks if labels hit safe area) */
   .dm-ld-axes {
     position: absolute;
-    /* dynamically calculated in JS to simulate optimizer */
+    /* dynamically calculated in JS to simulate direct GridSpec edge placement */
     background: white;
     border: 2px solid #212529;
     z-index: 2;
@@ -308,7 +308,7 @@
         stage.style.setProperty("--label-size-px", lsizePx + "px");
         stage.style.setProperty("--label-pad-px", lpadPx + "px");
 
-        // Simulate L-BFGS-B optimizer:
+        // Simulate direct GridSpec edge placement:
         // Axes wants to be at `marginsPx` from the edge.
         // BUT the label bounding box extends `lsizePx + lpadPx` outwards from the axes.
         // The label bounding box MUST NOT violate `padPx` from the edge.
@@ -316,7 +316,7 @@
         // Calculate required margin to fit labels safely
         var requiredMarginForLabels = lsizePx + lpadPx + padPx;
 
-        // Effective margin optimizer logic: take max of target margin and required margin
+        // Effective edge-placement logic: take max of target margin and required margin
         var effectiveMargin = Math.max(marginsPx, requiredMarginForLabels);
 
         // Apply to axes

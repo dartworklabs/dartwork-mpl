@@ -176,7 +176,7 @@ directly:
 ```bash
 dartwork-mpl-mcp
 # or, when working from a checkout:
-uv run --directory /path/to/dartwork-mpl dartwork-mpl-mcp
+uv run --directory /path/to/dartwork-mpl --extra mcp dartwork-mpl-mcp
 # or via the module:
 python -m dartwork_mpl.mcp.server
 ```
