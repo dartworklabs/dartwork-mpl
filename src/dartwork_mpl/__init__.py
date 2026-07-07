@@ -79,6 +79,7 @@ from .explore import list_colormaps, list_palettes, show_palette
 
 # Formatting utilities
 from .formatting import (
+    avoid_tick_overlap,
     format_axis_billions,
     format_axis_currency,
     format_axis_millions,
@@ -249,6 +250,7 @@ __all__ = [  # noqa: RUF022
     "format_axis_currency",
     "format_axis_si",
     "rotate_tick_labels",
+    "avoid_tick_overlap",
     # I/O
     "save_formats",
     "save_and_show",

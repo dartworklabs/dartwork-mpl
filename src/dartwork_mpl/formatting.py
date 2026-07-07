@@ -6,7 +6,9 @@ tick labels, and other matplotlib elements.
 
 from __future__ import annotations
 
-from typing import Literal
+import math
+from itertools import pairwise
+from typing import Any, Literal
 
 import matplotlib.ticker as ticker
 from matplotlib.axes import Axes
@@ -398,3 +400,59 @@ def rotate_tick_labels(
         for label in ax.get_yticklabels():
             label.set_rotation(rotation)
             label.set_horizontalalignment(resolved_ha)
+
+
+def avoid_tick_overlap(
+    ax: Axes,
+    axis: Literal["x", "y"] = "x",
+    *,
+    max_visible: int = 8,
+    rotation: float = 30,
+) -> None:
+    """Reduce dense tick-label collisions before layout is computed.
+
+    If an axis has too many visible labels, hide evenly spaced intermediate
+    labels while keeping the first and last visible. If the remaining labels
+    still overlap after a draw, rotate them in place. Call this after
+    setting ticks/labels and before ``simple_layout``.
+    """
+    fig = ax.get_figure()
+    if fig is None or fig.canvas is None:
+        return
+
+    labels = ax.get_xticklabels() if axis == "x" else ax.get_yticklabels()
+    visible = [
+        label for label in labels if label.get_visible() and label.get_text()
+    ]
+    if len(visible) <= 1:
+        return
+
+    if max_visible > 0 and len(visible) > max_visible:
+        step = max(1, math.ceil(len(visible) / max_visible))
+        last_idx = len(visible) - 1
+        for idx, label in enumerate(visible):
+            label.set_visible(idx == 0 or idx == last_idx or idx % step == 0)
+
+    canvas: Any = fig.canvas
+    canvas.draw()
+    renderer = canvas.get_renderer()
+    visible = [
+        label for label in labels if label.get_visible() and label.get_text()
+    ]
+    if len(visible) <= 1:
+        return
+    boxes = [label.get_window_extent(renderer) for label in visible]
+    if axis == "x":
+        boxes = sorted(boxes, key=lambda box: box.x0)
+        overlaps = any(a.x1 > b.x0 - 1 for a, b in pairwise(boxes))
+        if overlaps:
+            for label in visible:
+                label.set_rotation(rotation)
+                label.set_horizontalalignment("right")
+    else:
+        boxes = sorted(boxes, key=lambda box: box.y0)
+        overlaps = any(a.y1 > b.y0 - 1 for a, b in pairwise(boxes))
+        if overlaps:
+            for label in visible:
+                label.set_rotation(rotation)
+                label.set_verticalalignment("center")

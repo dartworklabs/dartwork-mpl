@@ -15,6 +15,7 @@ font.family: Roboto, Inter, Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans M
 font.sans-serif: Roboto, Lato, Inter, Open Sans, Arial, Helvetica, Paperlogy, Noto Sans CJK KR, Pretendard, Gothic A1, Freesentation, AppleGothic, Malgun Gothic, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
 lines.linewidth: 1.0               # line width in points
 lines.color:     oc.blue4                # has no affect on plot(); see axes.prop_cycle
+lines.markersize: 3.0              # compact default marker size for report charts
 lines.dashed_pattern: 3, 1.5
 lines.dashdot_pattern: 1, 1.25, 4, 1.25
 lines.dotted_pattern: 1.0, 1.25
@@ -98,6 +99,7 @@ legend.framealpha:    1.0      # legend patch transparency
 legend.edgecolor:     0.0      # background patch boundary color
 legend.fancybox:      False     # if True, use a rounded box for the
 legend.numpoints:     1        # the number of marker points in the legend line
+legend.markerscale:   0.5      # keep legend markers visually quiet
 legend.fontsize:      6.5
 
 ## Dimensions as fraction of font size:

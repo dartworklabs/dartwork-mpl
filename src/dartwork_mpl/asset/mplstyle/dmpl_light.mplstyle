@@ -126,7 +126,7 @@ lines.color:     oc.blue4                # has no affect on plot(); see axes.pro
 #lines.markerfacecolor: auto        # the default marker face color
 #lines.markeredgecolor: auto        # the default marker edge color
 #lines.markeredgewidth: 1.0         # the line width around the marker symbol
-#lines.markersize:      6           # marker size, in points
+lines.markersize:      3           # marker size, in points
 #lines.dash_joinstyle:  round       # {miter, round, bevel}
 #lines.dash_capstyle:   butt        # {butt, round, projecting}
 #lines.solid_joinstyle: round       # {miter, round, bevel}
@@ -542,7 +542,7 @@ legend.fancybox:      False     # if True, use a rounded box for the
 #legend.shadow:        False    # if True, give background a shadow effect
 legend.numpoints:     1        # the number of marker points in the legend line
 #legend.scatterpoints: 1        # number of scatter points
-#legend.markerscale:   1.0      # the relative size of legend markers vs. original
+legend.markerscale:   0.5      # the relative size of legend markers vs. original
 legend.fontsize:      5.5
 #legend.labelcolor:    None
 #legend.title_fontsize: None    # None sets to the same as the default axes.

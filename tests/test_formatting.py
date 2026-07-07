@@ -114,6 +114,25 @@ class TestRotateTickLabelsAlignment:
         plt.close(fig)
 
 
+class TestAvoidTickOverlap:
+    def test_dense_x_labels_are_thinned(self) -> None:
+        fig, ax = _axes()
+        labels = [f"very-long-label-{i}" for i in range(12)]
+        ax.plot(range(len(labels)), range(len(labels)))
+        ax.set_xticks(range(len(labels)))
+        ax.set_xticklabels(labels)
+
+        dm.avoid_tick_overlap(ax, max_visible=5)
+
+        visible = [
+            t for t in ax.get_xticklabels() if t.get_visible() and t.get_text()
+        ]
+        assert len(visible) <= 5
+        assert visible[0].get_text() == labels[0]
+        assert visible[-1].get_text() == labels[-1]
+        plt.close(fig)
+
+
 class TestFormatAxisSiBoundaries:
     """Boundary-value tests for ``format_axis_si``.
 

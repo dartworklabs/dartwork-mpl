@@ -23,6 +23,7 @@ class TestLabelAxes:
         assert len(texts) == 2
         assert texts[0].get_text() == "a"
         assert texts[1].get_text() == "b"
+        assert texts[0].get_fontweight() == "normal"
         plt.close(fig)
 
     def test_custom_labels(self) -> None:
