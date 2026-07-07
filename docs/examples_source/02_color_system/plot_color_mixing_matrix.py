@@ -77,7 +77,7 @@ ax.tick_params(
 )
 
 ax.set_title(
-    "50/50 Color Mixing Matrix (v5 default cycle)",
+    "50/50 Color Mixing Matrix (Octave cycle)",
     fontsize=dm.fs(1),
     weight="bold",
     pad=24,

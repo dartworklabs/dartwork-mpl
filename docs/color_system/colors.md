@@ -61,13 +61,15 @@ no generative equivalent. They resolve through the same API as any family, so
 like `dm.get_palette("blue")`.
 
 Counts are intentional: sequential family ramps have 10 steps, curated
-categorical sets have 8 colors, the searched default cycle has 8 chromatic
-colors, and the print cycle has 8. In the interactive explorer, the default
-cycle, print cycle, `trustworthy`, `vivid`, and `neon` form one **Qualitative**
-group ordered from restrained to high chroma.
+categorical sets have 8 colors, Octave has 8 chromatic colors, and Octave Print
+has 7 chromatic colors plus dark gray. Octave Print is hue-parallel with
+Octave, so the first seven slots keep the same hue identity while improving
+print lightness separation. In the interactive explorer, Octave, Octave Print,
+`trustworthy`, `vivid`, and `neon` form one **Qualitative** group ordered from
+restrained to high chroma.
 
-- `trustworthy` / `vivid` / `neon` — qualitative sets aligned with the default
-  and print cycles for unrelated categories
+- `trustworthy` / `vivid` / `neon` — qualitative sets aligned with Octave and
+  Octave Print for unrelated categories
 - `pastel` / `dusty` — muted qualitative sets for soft editorial color
 - `forest` / `teal_indigo` — analogous one-mood arcs
 - `blue_orange` / `teal_coral` — two opposed groups
@@ -78,13 +80,27 @@ group ordered from restrained to high chroma.
 - `accessible` — the Okabe-Ito CVD gold standard
 
 The interactive picker (Qualitative palettes, Sequential families, intent
-groups, B&W readout, CVD metrics, 9 chart shapes) lives on the
+groups, B&W badges, CVD metrics, 9 chart shapes) lives on the
 [Categorical palettes](categorical-palettes.md) page. The v5 clean break kept
 these curated `dc.*` sets and trimmed only the throwaway ad-hoc aliases; see
 the [migration guide](../migration.md) for the manual rename map.
 
 ```{raw} html
 :file: images/colors_dc.html
+```
+
+## Semantic aliases
+
+Role aliases keep meaning separate from hue choice. Use `dc.pos` and `dc.neg`
+for signed data such as gains versus losses, anomalies above or below a
+baseline, or pass / fail states; use `dc.ref` for reference lines; and use
+`dc.hl` for the one series you want the eye to find first. The `pos` / `neg`
+hues follow the active style's locale convention (`*-kr` styles swap to the
+red-up / blue-down convention).
+
+```python
+ax.plot(gains, color="dc.pos")
+ax.axhline(baseline, color="dc.ref")
 ```
 
 **OpenColor.** Balanced neutrals and calm hues for dashboards and UI frames. Even

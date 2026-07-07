@@ -1,24 +1,39 @@
 # Categorical palettes
 
-dartwork's categorical color system is one `dc.*` surface for choosing discrete
-series colors and ordered ramps. The explorer groups palettes by intent:
-**Qualitative**, **Sequential**, **Analogous**, **Muted**, **Tone**, **Duo**,
-**Diverging**, **Neutral**, **Emphasis**, and **Accessible**.
+```{raw} html
+<style>
+article:has(#dm-cat-exp) .dm-lead {
+  margin: .7em 0 1.25em;
+  color: var(--dm-text-muted, var(--dm-gray-10, #667085));
+  font-size: 1.09em; line-height: 1.72;
+}
+article:has(#dm-cat-exp) section > h2 { margin-top: 2.6em; padding-top: .72em; border-top: 1px solid var(--dm-gray-a4, rgba(0, 0, 0, 0.12)); }
+article:has(#dm-cat-exp) section > h3 { margin-top: 1.9em; }
+article:has(#dm-cat-exp) table {
+  width: 100%; border-collapse: separate; border-spacing: 0; overflow: hidden; font-variant-numeric: tabular-nums;
+  border: 1px solid var(--dm-gray-a4, rgba(0, 0, 0, 0.12)); border-radius: var(--dm-radius-md, 8px);
+}
+article:has(#dm-cat-exp) thead th { background: var(--dm-bg-subtle, var(--dm-gray-2, #f7f9f9)); }
+article:has(#dm-cat-exp) th, article:has(#dm-cat-exp) td {
+  padding: .68rem .82rem; vertical-align: top; border-bottom: 1px solid var(--dm-gray-a4, rgba(0, 0, 0, 0.12));
+}
+article:has(#dm-cat-exp) th + th, article:has(#dm-cat-exp) td + td { border-left: 1px solid var(--dm-gray-a4, rgba(0, 0, 0, 0.12)); }
+article:has(#dm-cat-exp) tbody tr:last-child td { border-bottom: 0; }
+article:has(#dm-cat-exp) tbody tr:hover { background: var(--dm-accent-2, #e6f7f4); }
+article:has(#dm-cat-exp) p code, article:has(#dm-cat-exp) li code,
+article:has(#dm-cat-exp) td code, article:has(#dm-cat-exp) th code,
+article:has(#dm-cat-exp) blockquote code {
+  padding: .08em .35em; border: 1px solid var(--dm-gray-a4, rgba(0, 0, 0, 0.12));
+  border-radius: var(--dm-radius-sm, 5px); font-size: .91em; background: var(--dm-i-code-surface, var(--dm-gray-2, #f2f4f5));
+  font-family: var(--dm-f-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+html[data-theme="dark"] article:has(#dm-cat-exp) tbody tr:hover { background: var(--dm-accent-3, rgba(18, 165, 148, 0.16)); }
+</style>
+```
 
-The **Qualitative** group is the everyday categorical family: the searched
-default cycle, the print cycle, and the curated `trustworthy`, `vivid`, and
-`neon` sets all pick unrelated categories and mainly differ by chroma and print
-behavior. The **Sequential** group is the 20 generative single-hue families
-(19 chromatic ramps plus gray), each with ten perceptually equalized steps
-generated on CIELAB L\* + OKLCH. The curated 20-palette system covers
-analogous, muted, tonal, duo, diverging, neutral-cast, emphasis, and accessible
-categorical sets, each hand-tuned and screened for grayscale and
-color-vision-deficiency (CVD) legibility.
-
-Count rule: sequential family ramps have **10 steps**; curated categorical sets
-have **8 colors**; the default cycle is a searched CVD-optimal **8-color** set,
-and the print cycle has **8 colors**. Every palette applies the same way through
-`dm.cycle(...)`, `dm.get_palette(...)`, or `dm.set_cycle(...)`.
+```{raw} html
+<p class="dm-lead">Pick a palette visually, preview it across nine chart shapes, and apply it with one line. Start with the explorer, then copy the matching Python call or a swatch hex when you need exact colors.</p>
+```
 
 :::{note}
 **This page** picks a categorical palette by intent and applies it. For a
@@ -26,155 +41,133 @@ static swatch reference of *every* color — all `dc.*` shades plus the bundled
 third-party systems — see **[Palettes](colors.md)**.
 :::
 
-## The default cycle
+## Pick a palette
 
-For a coherent data-series cycle without choosing a palette, use the default
-`dc.cycle` — eight chromatic colors selected by exhaustive search to stay
-distinct under color-vision-deficiency simulation: the common red-green
-deficiencies clear min ΔE00 10.3 (vs the Okabe-Ito benchmark's 11.5), and on
-the rare tritan the default cycle's 8.3 actually beats Okabe-Ito's 7.9 — both under
-the accurate Brettel-1997 model (see [Color system design](design.md));
-matplotlib's `tab10` scores 1.4 and effectively collapses under protanopia.
-Gray is reserved for grids and reference lines, not spent as a data color in
-the default `dc.cycle`; its 8th series color is chromatic rose. The print cycle
-uses a dark gray as its 8th color for B&W lightness spread.
-
-```python
-import dartwork_mpl as dm
-
-dm.set_cycle(dm.cycle("default"))   # 8-color screen/PDF cycle (the default)
-dm.set_cycle(dm.cycle("print"))     # 8-color cycle, spread darker for B&W print
-```
-
-Need more than eight line series? Opt in to line-style variation with
-`dm.cycle_cycler()` — it expands the eight colors × three line styles (24
-combinations) so a repeated color never reads as the same series. Line styles
-are opt-in rather than baked into the default cycle, because an `ax.plot` with
-`lw=0` would otherwise inherit a dashed style and break.
-
-```python
-ax.set_prop_cycle(dm.cycle_cycler())
-```
-
-The cycles are also registered as colormaps (`dc.cycle`, `dc.cycle_print`) for
-`scatter(c=...)` and seaborn `palette=` interfaces.
-
-## Semantic tokens
-
-Role-based aliases keep meaning separate from color: `dc.pos` (up / positive),
-`dc.neg` (down / negative), `dc.ref` (reference), `dc.hl` (highlight). The
-mapping is **locale-aware** — under a `*-kr` style, up = red and down = blue
-(the Korean finance convention); otherwise up = green, down = red — so report
-prose and charts share one semantic.
-
-```python
-ax.plot(gains, color="dc.pos")        # green — or red under a *-kr style
-ax.axhline(baseline, color="dc.ref")  # neutral reference line
-```
-
-## Generative families
-
-The families are 19 chromatic single-hue ramps plus gray — `dc.blue0` …
-`dc.blue9` — of ten perceptually equalized steps, generated on CIELAB L\* +
-OKLCH. Use a whole ramp as an ordered / sequential scale, or sample a few
-evenly-spaced steps for a set of related series. A bare family name resolves
-under `dc.`.
-
-```python
-cols = dm.get_palette("blue", n=6)                 # first 6 family steps
-cols = dm.get_palette("blue", n=4, subset="even")  # 4 spread across the range
-cols = dm.get_palette("teal", order="lightness")   # light → dark ordered scale
-dm.set_cycle("green", n=5)                          # apply 5 green steps globally
-```
-
-The chromatic families follow the hue spectrum: `red` · `rose` · `coral` ·
-`tangerine` · `orange` · `amber` · `yellow` · `lime` · `green` · `teal` ·
-`cyan` · `sky` · `blue` · `cobalt` · `indigo` · `violet` · `purple` ·
-`fuchsia` · `pink`, plus `gray`.
-
-## Curated categorical sets
-
-Alongside the generative families, dartwork ships **20 curated categorical
-sets** — hand-tuned qualitative, analogous, muted, tonal, duo, diverging,
-neutral-cast, emphasis, and accessible schemes that have no generative
-equivalent. They are the scientifically curated palettes carried over from the
-0.5.5 categorical overhaul and preserved verbatim through the v5 clean break.
-Each resolves through exactly the same API as a family —
-`dm.get_palette("trustworthy", n=6)`, `dm.set_cycle("vivid")` — and every set is
-grayscale- and CVD-screened.
-
-| Explorer group | Members |
-| --- | --- |
-| Qualitative (unrelated categories, low→high chroma) | `dm.cycle("default")` · `dm.cycle("print")` · `trustworthy` · `vivid` · `neon` |
-| Sequential (ordered amount) | the 20 generative families, ten steps each |
-| Analogous (one-mood arcs) | `forest` · `teal_indigo` |
-| Muted (soft editorial) | `pastel` · `dusty` |
-| Tone (specific mood) | `ember` · `earth` · `jewel` |
-| Duo (two opposed groups) | `blue_orange` · `teal_coral` |
-| Diverging (± around a midpoint) | `cool_warm` · `teal_amber` · `purple_green` |
-| Neutral (hue-free, warm/cool cast) | `gray` · `warm_gray` · `cool_gray` |
-| Emphasis (highlight one series) | `teal_accent` · `coral_accent` |
-| Accessible (CVD-mandatory) | `accessible` (Okabe-Ito) |
-
-```python
-dm.set_cycle("trustworthy")                    # everyday 8-category default
-cols = dm.get_palette("cool_warm")             # diverging ± scale (dark→pale→dark)
-dm.set_cycle(dm.get_palette("vivid", n=6))     # 6 maximally-distinct categories
-dm.set_cycle(dm.get_palette("teal_accent", n=5))  # one teal series, rest gray
-```
-
-Single-hue sequential ramps are served by the generative families above (10
-recipe-generated steps), so they are not duplicated as curated sets.
-
-## Pick a palette by intent
-
-Pick by the *shape and job* of your data:
-
-- **Everyday 4–8 categories** → Qualitative `dc.cycle` /
-  `dm.cycle("default")`, or curated `trustworthy`
-- **Many unrelated categories** (up to 8) → high-chroma Qualitative `vivid` /
-  `neon`
-- **A few related series** → one hue family sampled evenly, or analogous
-  `forest` / `teal_indigo`
-- **Ordered** (rank / amount) → a single family ramp, or `gray` if hue carries
-  no meaning
-- **Ordered around a midpoint** (±, change, correlation) → curated diverging
-  `cool_warm` / `teal_amber` / `purple_green`
-- **Two opposed groups** (A/B, before/after) → curated `blue_orange` /
-  `teal_coral`
-- **Highlight one series**, mute the rest → curated `teal_accent` /
-  `coral_accent`, or `dc.hl` plus gray tones
-- **Colorblind-mandatory** → curated `accessible` (Okabe-Ito)
-
-```python
-import dartwork_mpl as dm
-
-dm.set_cycle(dm.cycle("default"))        # everyday default cycle (global)
-dm.set_cycle(["dc.hl", "dc.gray3", "dc.gray5"], ax=ax)  # one Axes only
-dm.set_cycle(dm.get_palette("cool_warm", order="lightness", reverse=True))
-```
-
-`dm.get_palette(name, n=None, subset="first"|"even"|"last", *,
-order="default"|"lightness"|"shuffle", reverse=False, seed=None)` returns color
-names — choose how many (`n` / `subset`), then optionally re-arrange them: `order`
-sorts light→dark by lightness or shuffles; `reverse` flips the cycle; `seed` makes a
-shuffle reproducible. `dm.set_cycle(palette, ax=None, n=None)` applies a palette (or
-an explicit color list) to the global cycle or a single Axes. Family and curated
-names both resolve under `dc.` (`"blue"` → `dc.blue0` …; `"trustworthy"` →
-`dc.trustworthy0` …).
-
-> The v5 clean break trimmed the throwaway ad-hoc aliases; the curated `dc.*`
-> categorical sets are deliberately preserved. See the
-> [migration guide](../migration.md) for the manual rename table.
-
-## Explore
-
-Pick a **Qualitative** palette, a **Sequential** family, or another intent group
-and read it across nine chart shapes in a single view. Drag the color count,
-sort by lightness, shuffle or reverse, preview black-and-white behavior, and
-read the CVD metrics in the reference footer. Click a swatch to copy its hex, or
-copy the matching `dm.get_palette(...)` / `dm.cycle(...)` call.
+Use the left rail to choose a palette, drag the color-count control, and toggle
+black-and-white preview. Click any swatch to copy its hex, or copy the matching
+Python call from the explorer.
 
 ```{raw} html
 :file: ../_static/categorical_explorer.html
 ```
+
+## Apply it
+
+```python
+import dartwork_mpl as dm
+
+dm.set_cycle(dm.cycle("octave"))   # Octave — the searched 8-color default
+dm.set_cycle("trustworthy")                  # any curated set, by name
+dm.set_cycle("green", n=5)                   # 5 steps of one hue family
+dm.set_cycle(["dc.hl", "dc.gray3", "dc.gray5"], ax=ax)   # one Axes only
+cols = dm.get_palette("blue", n=4, subset="even")        # colors, not cycle
+ax.set_prop_cycle(dm.cycle_cycler())         # >8 series: 8 colors x 3 styles
+```
+
+Every name resolves under `dc.*`: `"blue"` expands to `dc.blue0` … `dc.blue9`,
+and `"trustworthy"` expands to `dc.trustworthy0` … `dc.trustworthy7`. The cycles
+are also registered as colormaps (`dc.cycle`, `dc.cycle_print`) for
+`scatter(c=...)` and seaborn `palette=`.
+
+## Which palette for which data?
+
+| Your data | Reach for | Explorer group |
+| --- | --- | --- |
+| Everyday 4-8 categories | `dm.cycle("octave")` or `trustworthy` | Qualitative |
+| Many unrelated categories, max distinctness | `vivid` or `neon` | Qualitative |
+| A few related series, one mood | a hue family sampled evenly, or `forest` / `teal_indigo` | Sequential / Analogous |
+| Ordered amount (rank) | one family ramp; `gray` if hue means nothing | Sequential / Neutral |
+| Ordered around a midpoint (+/- / change / correlation) | `cool_warm`, `teal_amber`, or `purple_green` | Diverging |
+| Two opposed groups (A/B, before-after) | `blue_orange` or `teal_coral` | Duo |
+| Soft, editorial, dense dashboards | `pastel` or `dusty` | Muted |
+| A specific mood (warm / earthy / luxury) | `ember`, `earth`, or `jewel` | Tone |
+| Highlight one series, mute the rest | `teal_accent`, `coral_accent`, or `dc.hl` + grays | Emphasis |
+| Colorblind-mandatory | `accessible` (Okabe-Ito) | Accessible |
+
+## How the system is organized
+
+Everything lives in one `dc.*` namespace and uses one API: `dm.cycle(...)` for
+matplotlib cycles, `dm.get_palette(...)` for color lists, and
+`dm.set_cycle(...)` to apply colors globally or to one Axes.
+
+There are three layers: Octave, the searched default cycle for everyday charts; 20
+generative single-hue families (19 chromatic plus gray, ten perceptually
+equalized steps on CIELAB L\* + OKLCH) for ordered and sequential work; and the
+curated 20-palette system of hand-tuned qualitative, duo, diverging, tonal,
+neutral, emphasis, and accessible sets, all grayscale- and CVD-screened.
+
+The count rule is simple: families have 10 steps; curated sets have 8 colors;
+Octave has 8 chromatic colors, with rose in the eighth slot; and Octave Print
+has 7 chromatic colors plus dark gray. Single-hue curated ramps are not
+duplicated; the families serve that job.
+
+## Reference
+
+### Octave — the default cycle
+
+Octave is the default coherent data-series cycle when you do not want to choose
+a palette by hand; use `dm.cycle("octave")` or the stable `dc.cycle` colormap
+token. Its eight chromatic colors were selected by exhaustive search to stay
+distinct under color-vision-deficiency simulation. The common red-green
+deficiencies clear min ΔE00 10.3 (vs the Okabe-Ito benchmark's 11.5), and on
+the rare tritan the default cycle's 8.3 actually beats Okabe-Ito's 7.9 — both
+under the accurate Brettel-1997 model (see [Color system design](design.md));
+matplotlib's `tab10` scores 1.4 and effectively collapses under protanopia.
+
+Gray is reserved for grids and reference lines, not spent as a data color in
+Octave; its eighth series color is chromatic rose. Octave Print uses a dark
+gray as its eighth color for black-and-white lightness spread. The trade-off is
+screen versus print: Octave keeps every color in the line-safe L* 43-78 band
+for thin lines on white, while Octave Print guarantees every pair is at least
+about 7 L* apart (min ΔL* 7.7) for grayscale printing and photocopies. It
+keeps the same hue per slot as Octave, and the violet slot matches Octave. Need
+more than eight line series? Opt in to `dm.cycle_cycler()`, which expands the
+cycle to 8 × 3 = 24 color/style combinations. Line styles are opt-in because a
+plot with `lw=0` would otherwise inherit dashes and break.
+
+### Hue families
+
+The chromatic families follow the hue spectrum: `red` · `rose` · `coral` ·
+`tangerine` · `orange` · `amber` · `yellow` · `lime` · `green` · `teal` ·
+`cyan` · `sky` · `blue` · `cobalt` · `indigo` · `violet` · `purple` ·
+`fuchsia` · `pink`, plus `gray`. Use a whole ramp for an ordered scale, or
+sample evenly spaced steps for related series.
+
+```python
+cols = dm.get_palette("blue", n=4, subset="even")
+cols = dm.get_palette("teal", order="lightness")
+```
+
+### Curated sets
+
+The curated 20-palette system is the hand-tuned set collection preserved
+verbatim through the v5 clean break. Curated sets use the same API as families,
+and all are grayscale- and CVD-screened.
+
+| Group | Members |
+| --- | --- |
+| Analogous | `forest`, `teal_indigo` |
+| Muted | `pastel`, `dusty` |
+| Tone | `ember`, `earth`, `jewel` |
+| Duo | `blue_orange`, `teal_coral` |
+| Diverging | `cool_warm`, `teal_amber`, `purple_green` |
+| Neutral | `warm_gray`, `cool_gray` (+ the generative `gray`) |
+| Emphasis | `teal_accent`, `coral_accent` |
+| Accessible | `accessible` (Okabe-Ito) |
+| Qualitative | `trustworthy`, `vivid`, `neon` |
+
+### `get_palette` and `set_cycle` options
+
+| Option | What it does |
+| --- | --- |
+| `n` / `subset` (`"first"` \| `"even"` \| `"last"`) | Choose how many colors and which steps to sample. |
+| `order` (`"default"` \| `"lightness"` \| `"shuffle"`) | Keep palette order, sort by lightness, or shuffle. |
+| `reverse` | Flip the resulting order. |
+| `seed` | Make shuffled order reproducible. |
+| `set_cycle(palette, ax=None, n=None)` | Apply a palette globally, or to one Axes with `ax=`. |
+
+Names resolve under `dc.*`, so `"blue"` and `"trustworthy"` are enough.
+
+> The v5 clean break trimmed the throwaway ad-hoc aliases; the curated `dc.*`
+> categorical sets are deliberately preserved. See the
+> [migration guide](../migration.md) for the manual rename table.

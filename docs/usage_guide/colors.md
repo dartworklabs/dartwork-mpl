@@ -14,7 +14,7 @@ color.
 
 | Prefix  | Library                          | Example         |
 | ------- | -------------------------------- | --------------- |
-| `dc.*`  | **dartwork Color (recommended)** — 20 v5 families × 10 perceptual steps, plus `dc.cycle`; see the [palette catalog](../color_system/categorical-palettes.md) | `dc.teal3`     |
+| `dc.*`  | **dartwork Color (recommended)** — 20 v5 families × 10 perceptual steps, plus Octave as `dc.cycle`; see the [palette catalog](../color_system/categorical-palettes.md) | `dc.teal3`     |
 | `oc.*`  | OpenColor                        | `oc.blue5`      |
 | `tw.*`  | Tailwind CSS                     | `tw.blue500`    |
 | `md.*`  | Material Design                  | `md.red500`     |
@@ -81,12 +81,12 @@ mpl.rcParams["axes.prop_cycle"] = cycler(color=[
 
 The v5 `dc.*` surface is 19 chromatic hue families plus gray, each with 10
 perceptually equalized steps. Index 0 is the light end and index 9 is the dark
-end. For unrelated categories use `dc.cycle`; for related tones pick a family
-and sample the steps you need.
+end. For unrelated categories use Octave via `dm.cycle("octave")` or
+`dc.cycle`; for related tones pick a family and sample the steps you need.
 
 | Palette             | Use it for                                                     |
 | ------------------- | -------------------------------------------------------------- |
-| `dc.cycle`          | Everyday unrelated categories                                  |
+| `dc.cycle`          | Octave, for everyday unrelated categories                      |
 | `dc.blue` / `dc.teal` / `dc.indigo` | Cool analytical series and ordered data        |
 | `dc.green` / `dc.red` | Positive/negative states and status colors                  |
 | `dc.coral` / `dc.tangerine` / `dc.orange` / `dc.amber` | Warm emphasis, thresholds, and call-outs |

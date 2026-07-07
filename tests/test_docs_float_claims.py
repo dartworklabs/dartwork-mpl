@@ -45,19 +45,19 @@ _OKABE_ITO = [
 
 
 def _default_common() -> float:
-    return float(gate_cycle(CYCLES["default"])["common_min"])
+    return float(gate_cycle(CYCLES["octave"])["common_min"])
 
 
 def _default_tritan() -> float:
-    return float(gate_cycle(CYCLES["default"])["tritan"])
+    return float(gate_cycle(CYCLES["octave"])["tritan"])
 
 
 def _print_common() -> float:
-    return float(gate_cycle(CYCLES["print"])["common_min"])
+    return float(gate_cycle(CYCLES["octave_print"])["common_min"])
 
 
 def _print_tritan() -> float:
-    return float(gate_cycle(CYCLES["print"])["tritan"])
+    return float(gate_cycle(CYCLES["octave_print"])["tritan"])
 
 
 def _okabe_common() -> float:

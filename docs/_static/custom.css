@@ -4457,3 +4457,30 @@ body[data-theme="dark"] :is(.dm-color-sheet, .dm-cmap-panel, .dm-gradient-picker
   border: 0;
   box-shadow: none;
 }
+
+/* ───────────────────────────────────────────────────────────────────────
+ * Global docs width: keep the page viewport-capped, give article content a
+ * wider canvas, and cap running prose so long-form text remains readable.
+ * Shibuya exposes the compiled container width in CSS rather than an
+ * html_theme_options knob, so this override is the narrowest stable hook.
+ * ─────────────────────────────────────────────────────────────────────── */
+.sy-container {
+  max-width: 96rem;
+}
+
+.sy-main div:has(> article.yue) {
+  max-width: 80rem;
+}
+
+@media (min-width: 80rem) {
+  .sy-main div:has(> article.yue) {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+}
+
+article section > p,
+article section > ul,
+article section > ol {
+  max-width: 80ch;
+}
