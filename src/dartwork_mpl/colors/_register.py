@@ -23,6 +23,17 @@ __all__ = ["ensure_registered"]
 
 _loaded = False
 _lock = threading.Lock()
+_CYCLE_CMAPS = (
+    ("dc.cycle", "octave", "default"),
+    ("dc.cycle_print", "octave_print", "print"),
+)
+
+
+def _cycle_hexes(canonical: str, legacy_bootstrap: str) -> tuple[str, ...]:
+    """Resolve cycle colors while a pre-regeneration artifact may still exist."""
+    if canonical in CYCLES:
+        return CYCLES[canonical]
+    return CYCLES[legacy_bootstrap]
 
 
 def _register() -> None:
@@ -37,13 +48,14 @@ def _register() -> None:
         mpl.colormaps.register(
             mcolors.ListedColormap(rgba[::-1], name=f"dc.{name}_r")
         )
-    for cmap_name, key in (
-        ("dc.cycle", "default"),
-        ("dc.cycle_print", "print"),
-    ):
+    for cmap_name, key, legacy_bootstrap in _CYCLE_CMAPS:
         mpl.colormaps.register(
             mcolors.ListedColormap(
-                [mcolors.to_rgba(h) for h in CYCLES[key]], name=cmap_name
+                [
+                    mcolors.to_rgba(h)
+                    for h in _cycle_hexes(key, legacy_bootstrap)
+                ],
+                name=cmap_name,
             )
         )
 

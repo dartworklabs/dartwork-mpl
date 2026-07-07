@@ -26,8 +26,8 @@ def test_get_palette_resolves_every_v5_family_to_ten_steps() -> None:
         assert cols == [f"dc.{family}{i}" for i in range(10)]
 
 
-def test_default_cycle_tokens_are_generated_v5_values() -> None:
-    """The published default cycle is a selected subset of v5 palette tokens."""
+def test_octave_cycle_tokens_are_generated_v5_values() -> None:
+    """The published Octave cycle is a selected subset of v5 palette tokens."""
     expected_tokens = (
         "dc.blue6",
         "dc.orange9",
@@ -39,4 +39,4 @@ def test_default_cycle_tokens_are_generated_v5_values() -> None:
         "dc.rose8",
     )
     expected_hexes = [dm.color(token).to_hex() for token in expected_tokens]
-    assert list(_generated.CYCLES["default"]) == expected_hexes
+    assert list(_generated.CYCLES["octave"]) == expected_hexes

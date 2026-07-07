@@ -11,6 +11,7 @@ import pytest
 
 from dartwork_mpl import cmap as cmap_module
 from dartwork_mpl.cmap import _parse_colormap, ensure_loaded
+from dartwork_mpl.colors import _generated
 
 # The curated colormaps (no _r variants) — this set is pinned
 # bidirectionally against asset/cmap/*.txt below, so it must be
@@ -175,6 +176,17 @@ class TestEnsureLoaded:
             assert len(cmap.colors) >= 5, (
                 f"Expected >=5 colors for dc.{name}, got {len(cmap.colors)}"
             )
+
+    def test_v5_cycle_cmap_tokens_stay_stable(self) -> None:
+        """Renaming cycle API keys must not rename public cmap tokens."""
+        assert "dc.cycle" in mpl.colormaps
+        assert "dc.cycle_print" in mpl.colormaps
+        assert [
+            mpl.colors.to_hex(c) for c in mpl.colormaps["dc.cycle"].colors
+        ] == list(_generated.CYCLES["octave"])
+        assert [
+            mpl.colors.to_hex(c) for c in mpl.colormaps["dc.cycle_print"].colors
+        ] == list(_generated.CYCLES["octave_print"])
 
 
 class TestParseColormap:

@@ -309,21 +309,21 @@ def compile_family(p, dense=121):       # A5 지각 등간격 배치 — 연속 
 
 한 축(색상 family)으로 범주를 인코딩하는 이산 팔레트. 목적별로 두 종을 제공한다.
 
-| cycle | 구성 | 최악-CVD min ΔE00 | 흑백 ΔL\* | 용도 |
+| cycle | 구성 | 공통-CVD / tritan min ΔE00 | 흑백 ΔL\* | 용도 |
 |---|---|--:|--:|---|
-| **`dc.cycle`** (기본) | blue6 · orange9 · green5 · pink3 · amber7 · violet8 · cyan8 (7색) | **10.3** | 2.8 | 화면·PDF. 전원 라인 안전 |
-| **`dc.cycle.print`** (인쇄) | 8색 명도 분산 | 11.0 | 6.1 | 흑백 인쇄·복사 배포 |
+| **`dc.cycle`** (기본) | blue6 · orange9 · green5 · pink3 · amber7 · violet8 · cyan8 · rose8 (8색) | **10.3 / 8.3** | 2.7 | 화면·PDF. 전원 라인 안전 |
+| **`dc.cycle_print`** (인쇄) | blue5 · orange8 · green1 · pink2 · amber5 · violet9 · cyan8 · gray9 (hue-parallel 8색) | **10.4 / 9.8** | 7.7 | 흑백 인쇄·복사 배포 |
 
 벤치마크: Okabe-Ito(CVD 표준 8색) min ΔE00 = 11.1, matplotlib tab10 = **1.4**(protan에서 사실상 붕괴).
-기본 7색이 10.3, 인쇄 8색이 11.0으로 — 라인 안전 대역 제약(L\* 42~78)을 추가로 지면서도 Okabe-Ito급
-판별 거리를 유지한다.
+기본 8색이 공통-CVD 10.3, 인쇄 8색이 공통-CVD 10.4로 — 라인 안전 대역 제약(L\* 42~78)을
+추가로 지면서도 Okabe-Ito급 판별 거리를 유지한다.
 
 > **정정 (BVM tritan, §12)**: 위 10.3·11.0은 *Machado tritan* 기준 설계-시점 값이다.
 > tritan을 정확한 Brettel–Viénot–Mollon 1997로 교체하자 `dc.cycle`의 실제 worst-case(tritan
-> 포함) min ΔE00은 **9.0**(기본)·**8.5**(인쇄)로, Machado가 tritan을 과대평가했음이 드러났다.
-> 흔한 색각이상(deutan·protan)은 여전히 10.3·13.5로 강하다. 벤치마크 Okabe-Ito의 11.1도
+> 포함) min ΔE00은 **8.3**(기본)·**9.8**(인쇄)로, Machado가 tritan을 과대평가했음이 드러났다.
+> 흔한 색각이상(deutan·protan)은 여전히 10.3·10.4로 강하다. 벤치마크 Okabe-Ito의 11.1도
 > 같은 *Machado tritan* min00이며, 동일 BVM 자에서는 공통 11.5·tritan 7.9다 — `dc.cycle`의
-> tritan 9.0은 같은 자에서 Okabe-Ito의 7.9를 오히려 앞선다. 7색으로 ≥10 tritan은 물리적으로
+> tritan 8.3은 같은 자에서 Okabe-Ito의 7.9를 오히려 앞선다. 8색으로 ≥10 tritan은 물리적으로
 > 불가하므로(재탐색 상한 9.03), 게이트는 *흔한 색각이상 ≥10 ∧ 희귀 tritan ≥8*로 tiered 정정했다
 > (색 불변, 수치만 정직화 — 원칙 3).
 

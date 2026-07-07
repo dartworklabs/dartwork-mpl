@@ -54,6 +54,23 @@ def test_fourier_match_ssot(v5_ssot):
         assert list(FOURIER[key]) == pytest.approx(v5_ssot["fourier"][key])
 
 
+def test_cycle_print_ssot_maps_to_octave_print_spec(v5_ssot):
+    from dartwork_mpl.colors._cycles import CYCLE_SPECS
+
+    expected = [
+        ["blue", 5],
+        ["orange", 8],
+        ["green", 1],
+        ["pink", 2],
+        ["amber", 5],
+        ["violet", 9],
+        ["cyan", 8],
+        ["gray", 9],
+    ]
+    assert v5_ssot["cycle_print"]["spec"] == expected
+    assert [list(x) for x in CYCLE_SPECS["octave_print"]] == expected
+
+
 def test_derive_within_one_grid_step():
     # 스펙 §7: 곡선 유도값과 표는 그리드 1스텝(cmax 0.005·floor 1·c 0.05)까지
     # 어긋날 수 있고 표가 우선한다. 현행 60값 중 3값이 1스텝 차이.
