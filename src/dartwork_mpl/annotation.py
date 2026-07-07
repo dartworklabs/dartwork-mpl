@@ -42,7 +42,7 @@ def label_axes(
     axes: list[Axes] | np.ndarray[Any, Any],
     labels: list[str] | None = None,
     fontsize: float | None = None,
-    fontweight: str = "bold",
+    fontweight: str = "normal",
     x: float | str = "auto",
     y: float = 1.05,
     **kwargs: Any,
@@ -64,7 +64,7 @@ def label_axes(
         ``fs(1)`` so panel labels track the active preset's base font
         size instead of a fixed point value.
     fontweight : str, optional
-        Font weight for the labels. Default is "bold".
+        Font weight for the labels. Default is "normal".
     x : float | str, optional
         Horizontal position in Axes-relative coordinates (may exceed 0.0-1.0).
         If "auto", the optimal x position is determined based on whether
