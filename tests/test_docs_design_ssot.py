@@ -33,6 +33,116 @@ def test_typography_role_tokens_exist() -> None:
         assert token in css
 
 
+def test_layout_width_contract_lives_in_design_ssot() -> None:
+    design_css = read_static("dartwork-design.css")
+    custom_css = read_static("custom.css")
+
+    required = {
+        "--dm-layout-shell-max": "96rem",
+        "--dm-layout-article-max": "72rem",
+        "--dm-layout-prose-max": "72ch",
+        "--dm-layout-gutter": "28px",
+    }
+    for token, value in required.items():
+        assert f"{token}: {value};" in design_css
+
+    assert "--sy-c-content-width: var(--dm-layout-article-max);" in design_css
+    assert "article section > p" not in custom_css
+    assert ".sy-container" not in custom_css
+    assert ".sy-main div:has(> article.yue)" not in custom_css
+
+
+def test_wide_component_contract_avoids_viewport_breakouts() -> None:
+    css = read_static("dartwork-design.css")
+    match = re.search(r"\.dm-wide\s*\{(?P<body>[^}]+)\}", css)
+    assert match, ".dm-wide must be a documented article-local width primitive"
+
+    body = match.group("body")
+    assert "max-width: 100%;" in body
+    assert "width: 100%;" in body
+    for forbidden in ("100vw", "calc(50%", "margin-left: -", "margin-right: -"):
+        assert forbidden not in body
+
+
+def test_gallery_cards_use_stable_tokenized_media_slots() -> None:
+    css = read_static("custom.css")
+
+    assert "container-type: inline-size;" in css
+    assert "height: clamp(8.5rem, 62cqw, 13rem);" in css
+    assert "max-height: none;" in css
+    assert "object-fit: contain;" in css
+    assert "aspect-ratio: 16 / 10;" in css
+    assert "--dm-gallery-thumb-bg" in css
+    assert "min-height: calc(3 * 1.22em);" in css
+
+
+def test_gallery_toolbar_keeps_component_surface() -> None:
+    css = read_static("custom.css")
+    flush_match = re.search(
+        r"T1 flush.*?\*/(?P<body>.*?)html\.dark :is", css, flags=re.S
+    )
+    assert flush_match, "T1 flush block should remain auditable"
+    assert ".dm-gallery-toolbar" not in flush_match.group("body")
+
+    toolbar_match = re.search(
+        r"\.dm-gallery-toolbar\s*\{(?P<body>[^}]+)\}", css
+    )
+    assert toolbar_match
+    toolbar = toolbar_match.group("body")
+    assert "background: var(--dm-bg-panel);" in toolbar
+    assert "border: 1px solid var(--dm-border-faint);" in toolbar
+    assert "box-shadow: var(--dm-shadow-1);" in toolbar
+
+
+def test_gallery_download_code_keeps_inline_code_surface() -> None:
+    css = read_static("custom.css")
+    match = re.search(
+        r"\.sphx-glr-download code(?:\.xref)?\s*\{(?P<body>[^}]+)\}", css
+    )
+    assert match, "Sphinx-gallery download code needs explicit styling"
+    body = match.group("body")
+    assert "background-color: var(--dm-i-code-surface)" in body
+    assert "border-radius: var(--dm-radius-2)" in body
+    assert css.rfind(".sphx-glr-download a code.xref") > css.rfind(
+        "article a code"
+    )
+
+
+def test_categorical_page_styles_are_global_not_inline() -> None:
+    page = (
+        ROOT / "docs" / "color_system" / "categorical-palettes.md"
+    ).read_text(encoding="utf-8")
+    design_css = read_static("dartwork-design.css")
+
+    assert "<style>" not in page
+    assert "article:has(#dm-cat-exp)" not in page
+    assert "article:has(#dm-cat-exp)" in design_css
+
+
+def test_docs_layout_regression_script_covers_width_contract() -> None:
+    script = (ROOT / "scripts" / "check_docs_layout.py").read_text(
+        encoding="utf-8"
+    )
+
+    for page in (
+        "examples_gallery/index.html",
+        "color_system/categorical-palettes.html",
+    ):
+        assert page in script
+
+    for width in ("390", "1024", "1440", "1680"):
+        assert f'"width": {width}' in script
+
+    for selector in (
+        ".sphx-glr-thumbcontainer",
+        ".dm-wide",
+        ".sy-rside",
+        ".sy-right-toc",
+        ".sy-offcanvas",
+    ):
+        assert selector in script
+
+
 def test_font_specimens_use_design_tokens_instead_of_private_palette() -> None:
     css = read_static("font-specimens.css")
     assert "var(--dm-bg-panel)" in css

@@ -113,6 +113,9 @@ body[data-theme="dark"] {
 
 .sphx-glr-download code.xref {
   color: inherit !important;
+  background-color: var(--dm-i-code-surface);
+  border-radius: var(--dm-radius-2);
+  padding: 0.1em 0.35em;
 }/* Override sphinx-gallery default button gradient colors */
 
 
@@ -150,39 +153,45 @@ body[data-theme="dark"] {
 
 main :is(h1, h2, h3)[id] {
   scroll-margin-top: 80px;
-}/* Gallery: four-up grid on wide screens with responsive breakpoints */
+}/* Gallery: tokenized cards with stable media slots */
 
 
 .sphx-glr-thumbnails {
+  --dm-gallery-thumb-bg: var(--dm-bg-subtle);
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--dm-space-5);
   width: 100%;
   max-width: 100%;
-  margin: 0 auto 32px;
+  margin: 0 auto var(--dm-space-6);
   box-sizing: border-box;
 }
 
 .sphx-glr-thumbcontainer {
+  container-type: inline-size;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  background: #fff;
-  border: 1px solid #ece8e1;
-  box-shadow: 0 10px 30px rgba(24, 31, 41, 0.06);
+  background: var(--dm-bg-panel);
+  border: 1px solid var(--dm-border-faint);
+  border-radius: var(--dm-radius-4);
+  box-shadow: var(--dm-shadow-1);
   overflow: hidden;
-  padding: 12px;
+  padding: var(--dm-space-3);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  gap: var(--dm-space-3);
   transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .sphx-glr-thumbcontainer:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 40px rgba(24, 31, 41, 0.12);
+  transform: translateY(-2px);
+  border-color: var(--dm-border);
+  box-shadow: var(--dm-shadow-3);
 }
 
 .sphx-glr-thumbcontainer:hover img {
@@ -190,40 +199,38 @@ main :is(h1, h2, h3)[id] {
 }
 
 .sphx-glr-thumbcontainer img {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: clamp(8.5rem, 62cqw, 13rem);
+  max-height: none;
+  aspect-ratio: 16 / 10;
+  object-fit: contain;
+  object-position: center;
+  border-radius: var(--dm-radius-3);
+  display: block;
+  background: var(--dm-gallery-thumb-bg);
   transition: transform 0.25s ease;
-}
-
-@media (max-width: 1200px) {
-  .sphx-glr-thumbnails {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 900px) {
-  .sphx-glr-thumbnails {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 @media (max-width: 560px) {
   .sphx-glr-thumbnails {
     grid-template-columns: 1fr;
+    gap: var(--dm-space-4);
   }
-}
-
-.sphx-glr-thumbcontainer img {
-  width: 100% !important;
-  max-width: 100% !important;
-  height: auto !important;
-  border-radius: 10px;
-  display: block;
 }
 
 .sphx-glr-thumbnail-title {
   text-align: center;
-  font-weight: 600;
-  line-height: 1.25;
-  padding: 4px 6px 2px;
+  font-size: var(--dm-type-heading-size);
+  font-weight: var(--dm-type-heading-weight);
+  line-height: 1.22;
+  color: var(--dm-text-strong);
+  min-height: calc(3 * 1.22em);
+  padding: 0 var(--dm-space-2) var(--dm-space-1);
+  overflow-wrap: anywhere;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }/* Gallery detail page: scale SVG/PNG images to fill container width */
 
 
@@ -2418,61 +2425,51 @@ body[data-theme="dark"] .dm-cs-cmap-code {
   position: sticky;
   top: 56px;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--dm-bg-panel);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--dm-gray-4);
+  border: 1px solid var(--dm-border-faint);
   border-radius: var(--dm-radius-5);
-  padding: 12px 16px;
+  padding: var(--dm-space-3) var(--dm-space-4);
   margin-bottom: 1.5em;
-  box-shadow: 0 4px 20px rgba(24, 31, 41, 0.06);
+  box-shadow: var(--dm-shadow-1);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-html.dark .dm-gallery-toolbar,
-body[data-theme="dark"] .dm-gallery-toolbar {
-  background: rgba(26, 26, 46, 0.92);
-  border-color: var(--dm-gray-6);
+  gap: var(--dm-space-3);
 }
 
 .dm-gallery-search-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dm-space-2);
 }
 
 .dm-gallery-search {
   flex: 1;
+  min-width: min(100%, 18rem);
   padding: 8px 14px;
-  font-size: 0.88em;
-  border: 1px solid var(--dm-gray-6);
+  font-size: var(--dm-type-label-size);
+  line-height: var(--dm-type-label-line);
+  border: 1px solid var(--dm-border);
   border-radius: var(--dm-radius-4);
-  background: #fff;
-  color: var(--dm-gray-12);
+  background: var(--dm-bg-page);
+  color: var(--dm-text-strong);
   outline: none;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
 }
 
-.dm-gallery-search:focus {
+.dm-gallery-search:focus-visible {
   border-color: var(--dm-accent-9);
-  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
-}
-
-html.dark .dm-gallery-search,
-body[data-theme="dark"] .dm-gallery-search {
-  background: var(--dm-gray-2);
-  border-color: var(--dm-gray-6);
-  color: var(--dm-gray-12);
+  box-shadow: 0 0 0 3px var(--dm-accent-3);
 }
 
 .dm-gallery-search-count {
-  font-size: 0.78em;
-  font-family: "SFMono-Regular", Consolas, monospace;
-  color: var(--dm-gray-10);
+  font-size: var(--dm-type-caption-size);
+  font-family: var(--dm-f-mono);
+  font-weight: var(--dm-type-caption-weight);
+  color: var(--dm-text-faint);
   white-space: nowrap;
   min-width: 60px;
   text-align: right;
@@ -2481,50 +2478,36 @@ body[data-theme="dark"] .dm-gallery-search {
 .dm-gallery-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--dm-space-2);
 }
 
 .dm-gallery-pill {
-  font-size: 0.72em;
-  font-weight: 600;
+  font-size: var(--dm-type-label-size);
+  line-height: var(--dm-type-label-line);
+  font-weight: var(--dm-type-label-weight);
   padding: 4px 12px;
-  border: 1px solid var(--dm-gray-6);
-  border-radius: 20px;
+  border: 1px solid var(--dm-border);
+  border-radius: var(--dm-radius-full);
   background: transparent;
-  color: var(--dm-gray-11);
+  color: var(--dm-text-muted);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
   white-space: nowrap;
 }
 
 .dm-gallery-pill:hover {
-  border-color: var(--dm-accent-9);
-  color: var(--dm-accent-9);
+  border-color: var(--dm-accent-7);
+  color: var(--dm-accent-11);
+  background: var(--dm-accent-2);
 }
 
 .dm-gallery-pill.active {
-  background: var(--dm-accent-9);
-  color: #fff;
-  border-color: var(--dm-accent-9);
-}
-
-html.dark .dm-gallery-pill,
-body[data-theme="dark"] .dm-gallery-pill {
-  border-color: var(--dm-gray-6);
-  color: var(--dm-gray-11);
-}
-
-html.dark .dm-gallery-pill:hover,
-body[data-theme="dark"] .dm-gallery-pill:hover {
-  border-color: var(--dm-accent-9);
-  color: var(--dm-accent-9);
-}
-
-html.dark .dm-gallery-pill.active,
-body[data-theme="dark"] .dm-gallery-pill.active {
-  background: var(--dm-accent-9);
-  color: #fff;
-  border-color: var(--dm-accent-9);
+  background: var(--dm-accent-3);
+  color: var(--dm-accent-11);
+  border-color: var(--dm-accent-7);
 }/* Card transition for filter */
 
 
@@ -4401,6 +4384,14 @@ main a code {
   padding: 0;
   border-radius: 0;
   font-size: inherit;
+}
+
+.sphx-glr-download a code.xref {
+  background-color: var(--dm-i-code-surface);
+  color: inherit;
+  padding: 0.1em 0.35em;
+  border-radius: var(--dm-radius-2);
+  font-size: 0.92em;
 }/* ───────────────────────── Custom colormap cards (cspace) ─────────────
    Two side-by-side cards on the Colormaps page. The default sphinx-design
    grid-item-card leaves a tight inner padding that crops the swatch SVG
@@ -4436,7 +4427,7 @@ main a code {
  * ─────────────────────────────────────────────────────────────────────── */
 .dm-color-sheet, .dm-cmap-panel, .dm-gradient-picker, .dm-preset-compare,
 .dm-ruler-widget, .dm-hierarchy-widget, .dm-cs-converter, .dm-cs-interp,
-.dm-cs-cmap-builder, .dm-gallery-toolbar, .dm-conv-widget, .dm-cmap-builder,
+.dm-cs-cmap-builder, .dm-conv-widget, .dm-cmap-builder,
 .dm-font-tester, .dm-util-playground, .dm-interp-widget, .dm-compare-widget,
 .dm-constructor-widget, .dm-type-tester {
   background: var(--dm-bg-page);
@@ -4445,42 +4436,15 @@ main a code {
 }
 html.dark :is(.dm-color-sheet, .dm-cmap-panel, .dm-gradient-picker,
 .dm-preset-compare, .dm-ruler-widget, .dm-hierarchy-widget, .dm-cs-converter,
-.dm-cs-interp, .dm-cs-cmap-builder, .dm-gallery-toolbar, .dm-conv-widget,
+.dm-cs-interp, .dm-cs-cmap-builder, .dm-conv-widget,
 .dm-cmap-builder, .dm-font-tester, .dm-util-playground, .dm-interp-widget,
 .dm-compare-widget, .dm-constructor-widget, .dm-type-tester),
 body[data-theme="dark"] :is(.dm-color-sheet, .dm-cmap-panel, .dm-gradient-picker,
 .dm-preset-compare, .dm-ruler-widget, .dm-hierarchy-widget, .dm-cs-converter,
-.dm-cs-interp, .dm-cs-cmap-builder, .dm-gallery-toolbar, .dm-conv-widget,
+.dm-cs-interp, .dm-cs-cmap-builder, .dm-conv-widget,
 .dm-cmap-builder, .dm-font-tester, .dm-util-playground, .dm-interp-widget,
 .dm-compare-widget, .dm-constructor-widget, .dm-type-tester) {
   background: var(--dm-bg-page);
   border: 0;
   box-shadow: none;
-}
-
-/* ───────────────────────────────────────────────────────────────────────
- * Global docs width: keep the page viewport-capped, give article content a
- * wider canvas, and cap running prose so long-form text remains readable.
- * Shibuya exposes the compiled container width in CSS rather than an
- * html_theme_options knob, so this override is the narrowest stable hook.
- * ─────────────────────────────────────────────────────────────────────── */
-.sy-container {
-  max-width: 96rem;
-}
-
-.sy-main div:has(> article.yue) {
-  max-width: 80rem;
-}
-
-@media (min-width: 80rem) {
-  .sy-main div:has(> article.yue) {
-    padding-left: 28px;
-    padding-right: 28px;
-  }
-}
-
-article section > p,
-article section > ul,
-article section > ol {
-  max-width: 80ch;
 }
