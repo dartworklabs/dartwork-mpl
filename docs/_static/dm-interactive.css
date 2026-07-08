@@ -16,8 +16,9 @@
  *   • Every control is a real <button>/<a>/<input> with aria state.
  *   • Theme-adaptive throughout — no hardcoded navy/slate/hex.
  *
- * Primitives:  .dm-seg  .dm-tabs/.dm-tab  .dm-chip  .dm-swatch  .dm-slider
- *              .dm-icon-btn  .dm-code  .dm-cta  .dm-callout
+ * Primitives:  .dm-seg  .dm-tabs/.dm-tab  .dm-chip  .dm-field/.dm-input
+ *              .dm-swatch  .dm-slider  .dm-icon-btn  .dm-code  .dm-cta
+ *              .dm-callout
  *
  * Consumers migrate onto these in later tiers (install picker → .dm-seg, FAQ
  * filter → .dm-chip, pickers → .dm-tabs, compare → .dm-seg, etc.).
@@ -205,7 +206,47 @@ body[data-theme="dark"] {
 .dm-chip__x:hover { opacity: 1; background: var(--dm-gray-a4); }
 
 /* ---------------------------------------------------------------------------
- * 4. Swatch tile — color / palette / colormap pickers. Selected = teal ring
+ * 4. Field + input — gallery/color search. Static shadcn-style field grammar:
+ *    wrapper owns layout, input owns neutral surface + teal focus ring, empty
+ *    state is classed on helper/count text rather than inline color.
+ * --------------------------------------------------------------------------- */
+.dm-field {
+  display: flex;
+  align-items: center;
+  gap: var(--dm-space-2);
+  min-width: 0;
+}
+.dm-input {
+  flex: 1;
+  min-width: min(100%, 18rem);
+  padding: 8px 14px;
+  border: 1px solid var(--dm-i-border-strong);
+  border-radius: var(--dm-i-radius);
+  background: var(--dm-bg-page);
+  color: var(--dm-i-strong);
+  font-family: var(--dm-f-sys);
+  font-size: var(--dm-type-label-size);
+  line-height: var(--dm-type-label-line);
+  outline: none;
+  transition:
+    border-color 0.15s var(--dm-i-ease),
+    box-shadow 0.15s var(--dm-i-ease),
+    background 0.15s var(--dm-i-ease);
+}
+.dm-input::placeholder { color: var(--dm-text-faint); }
+.dm-input:focus,
+.dm-input:focus-visible {
+  border-color: var(--dm-i-focus);
+  box-shadow: 0 0 0 3px var(--dm-i-active-soft);
+}
+.dm-input:disabled,
+.dm-input[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ---------------------------------------------------------------------------
+ * 5. Swatch tile — color / palette / colormap pickers. Selected = teal ring
  *    (double box-shadow so the ring reads on any swatch color, any theme).
  * --------------------------------------------------------------------------- */
 .dm-swatch {
@@ -224,7 +265,7 @@ body[data-theme="dark"] {
 }
 
 /* ---------------------------------------------------------------------------
- * 5. Range slider — evolution / interactive widgets. Teal handle + filled
+ * 6. Range slider — evolution / interactive widgets. Teal handle + filled
  *    track. Keep native <input type=range> for keyboard a11y. JS paints the
  *    fill via a linear-gradient background on the element.
  * --------------------------------------------------------------------------- */
@@ -262,7 +303,7 @@ body[data-theme="dark"] {
 }
 
 /* ---------------------------------------------------------------------------
- * 6. Ghost icon button — copy, toggle. Faint by default, teal-soft on hover.
+ * 7. Ghost icon button — copy, toggle. Faint by default, teal-soft on hover.
  *    NOT a dark filled button. Always wraps a real <button aria-label>.
  * --------------------------------------------------------------------------- */
 .dm-icon-btn {
@@ -287,7 +328,7 @@ body[data-theme="dark"] {
 .dm-icon-btn.is-copied { color: var(--dm-i-active-text); }
 
 /* ---------------------------------------------------------------------------
- * 7. Light code surface — install command + any inline command. Follows the
+ * 8. Light code surface — install command + any inline command. Follows the
  *    theme (gray-2 light / gray-3 dark), NEVER a forced navy slab. Teal prompt.
  * --------------------------------------------------------------------------- */
 .dm-code {
@@ -306,7 +347,7 @@ body[data-theme="dark"] {
 .dm-code > .dm-icon-btn { position: absolute; top: 8px; right: 8px; }
 
 /* ---------------------------------------------------------------------------
- * 8. CTA buttons — landing. Solid-teal primary, teal-outline secondary, ghost.
+ * 9. CTA buttons — landing. Solid-teal primary, teal-outline secondary, ghost.
  *    Replaces the light-mode PURPLE fill. Both themes via one teal token.
  * --------------------------------------------------------------------------- */
 .dm-cta {
@@ -344,7 +385,7 @@ body[data-theme="dark"] {
 .dm-cta--ghost:hover { color: var(--dm-i-strong); border-color: var(--dm-i-border-strong); }
 
 /* ---------------------------------------------------------------------------
- * 9. Callout stripe — evolution description etc. Left teal stripe + soft wash;
+ * 10. Callout stripe — evolution description etc. Left teal stripe + soft wash;
  *    echoes the radix admonition idiom already in the docs.
  * --------------------------------------------------------------------------- */
 .dm-callout {
@@ -358,7 +399,7 @@ body[data-theme="dark"] {
 .dm-callout strong { color: var(--dm-i-active-text); }
 
 /* ---------------------------------------------------------------------------
- * 10. Install picker — layout C5: ONE surface, no nested boxes. Both segmented
+ * 11. Install picker — layout C5: ONE surface, no nested boxes. Both segmented
  *     controls (.dm-seg) fold into the surface's own top bar (.dm-ip-head); the
  *     command line (.dm-code) sits seamlessly below it (its primitive border /
  *     radius / margin are dropped here); the contextual note closes it out.

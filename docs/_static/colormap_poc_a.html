@@ -1,7 +1,7 @@
 <div class="cm-poc-a">
 <style>
   .cm-poc-a {
-    font-family: var(--sy-f-sys, system-ui), sans-serif;
+    font-family: var(--dm-f-sys, system-ui), sans-serif;
     color: var(--dm-gray-12, #1c2024);
     margin: 1rem 0;
   }
@@ -26,12 +26,13 @@
     font-family: inherit;
   }
   .cm-poc-a-tab:hover { color: var(--dm-gray-12, #1c2024); }
-  .cm-poc-a-tab.active {
+  .cm-poc-a-tab.is-active,
+  .cm-poc-a-tab[aria-selected="true"] {
     color: var(--dm-gray-12, #1c2024);
     border-bottom-color: var(--dm-accent-9, #12a594);
   }
   .cm-poc-a-panel { display: none; }
-  .cm-poc-a-panel.active { display: block; }
+  .cm-poc-a-panel.is-active { display: block; }
   .cm-poc-a-head {
     display: flex;
     justify-content: space-between;
@@ -42,7 +43,7 @@
     font-size: 16px;
     font-weight: 600;
     color: var(--dm-gray-12, #1c2024);
-    letter-spacing: -0.005em;
+    letter-spacing: 0;
   }
   .cm-poc-a-desc {
     color: var(--dm-gray-11, #60646c);
@@ -68,7 +69,8 @@
     font-family: inherit;
   }
   .cm-poc-a-tone-btn:hover { color: var(--dm-gray-12, #1c2024); }
-  .cm-poc-a-tone-btn.active {
+  .cm-poc-a-tone-btn.is-active,
+  .cm-poc-a-tone-btn[aria-pressed="true"] {
     color: var(--dm-gray-12, #1c2024);
     border-bottom-color: var(--dm-accent-9, #12a594);
   }
@@ -83,7 +85,7 @@
     gap: 6px;
   }
   .cm-poc-a-name {
-    font-family: var(--sy-f-mono, monospace);
+    font-family: var(--dm-f-mono, monospace);
     font-size: 12.5px;
     color: var(--dm-gray-12, #1c2024);
     font-weight: 500;
@@ -97,23 +99,23 @@
   .cm-poc-a.mono .cm-poc-a-bar { filter: grayscale(100%); }
 </style>
 
-<div class="cm-poc-a-tabs">
-  <button class="cm-poc-a-tab active" data-cat="single">Single-Hue</button>
-  <button class="cm-poc-a-tab" data-cat="multi">Multi-Hue</button>
-  <button class="cm-poc-a-tab" data-cat="diverging">Diverging</button>
-  <button class="cm-poc-a-tab" data-cat="cyclical">Cyclical</button>
-  <button class="cm-poc-a-tab" data-cat="categorical">Categorical</button>
+<div class="cm-poc-a-tabs dm-tabs" role="tablist" aria-label="Colormap category">
+  <button class="cm-poc-a-tab dm-tab is-active" role="tab" aria-selected="true" tabindex="0" type="button" data-cat="single">Single-Hue</button>
+  <button class="cm-poc-a-tab dm-tab" role="tab" aria-selected="false" tabindex="-1" type="button" data-cat="multi">Multi-Hue</button>
+  <button class="cm-poc-a-tab dm-tab" role="tab" aria-selected="false" tabindex="-1" type="button" data-cat="diverging">Diverging</button>
+  <button class="cm-poc-a-tab dm-tab" role="tab" aria-selected="false" tabindex="-1" type="button" data-cat="cyclical">Cyclical</button>
+  <button class="cm-poc-a-tab dm-tab" role="tab" aria-selected="false" tabindex="-1" type="button" data-cat="categorical">Categorical</button>
 </div>
 
-<div class="cm-poc-a-panel active" data-cat="single">
+<div class="cm-poc-a-panel is-active" data-cat="single">
   <div class="cm-poc-a-head">
     <div>
       <div class="cm-poc-a-title">Single-Hue</div>
       <div class="cm-poc-a-desc">One hue that ramps value cleanly. Great for magnitude and density.</div>
     </div>
-    <div class="cm-poc-a-tone">
-      <button class="cm-poc-a-tone-btn active" data-tone="color">Color</button>
-      <button class="cm-poc-a-tone-btn" data-tone="mono">Mono</button>
+    <div class="cm-poc-a-tone dm-seg no-thumb" role="group" aria-label="Tone">
+      <button class="cm-poc-a-tone-btn dm-opt is-active" type="button" aria-pressed="true" data-tone="color">Color</button>
+      <button class="cm-poc-a-tone-btn dm-opt" type="button" aria-pressed="false" data-tone="mono">Mono</button>
     </div>
   </div>
   <div class="cm-poc-a-list">
@@ -130,9 +132,9 @@
       <div class="cm-poc-a-title">Multi-Hue</div>
       <div class="cm-poc-a-desc">Multiple hues with monotonic lightness. Reads in print and greyscale.</div>
     </div>
-    <div class="cm-poc-a-tone">
-      <button class="cm-poc-a-tone-btn active" data-tone="color">Color</button>
-      <button class="cm-poc-a-tone-btn" data-tone="mono">Mono</button>
+    <div class="cm-poc-a-tone dm-seg no-thumb" role="group" aria-label="Tone">
+      <button class="cm-poc-a-tone-btn dm-opt is-active" type="button" aria-pressed="true" data-tone="color">Color</button>
+      <button class="cm-poc-a-tone-btn dm-opt" type="button" aria-pressed="false" data-tone="mono">Mono</button>
     </div>
   </div>
   <div class="cm-poc-a-list">
@@ -148,9 +150,9 @@
       <div class="cm-poc-a-title">Diverging</div>
       <div class="cm-poc-a-desc">Two opposing hues meeting at a neutral midpoint. For deviations from zero.</div>
     </div>
-    <div class="cm-poc-a-tone">
-      <button class="cm-poc-a-tone-btn active" data-tone="color">Color</button>
-      <button class="cm-poc-a-tone-btn" data-tone="mono">Mono</button>
+    <div class="cm-poc-a-tone dm-seg no-thumb" role="group" aria-label="Tone">
+      <button class="cm-poc-a-tone-btn dm-opt is-active" type="button" aria-pressed="true" data-tone="color">Color</button>
+      <button class="cm-poc-a-tone-btn dm-opt" type="button" aria-pressed="false" data-tone="mono">Mono</button>
     </div>
   </div>
   <div class="cm-poc-a-list">
@@ -165,9 +167,9 @@
       <div class="cm-poc-a-title">Cyclical</div>
       <div class="cm-poc-a-desc">Start and end hue match — for phase and angular data.</div>
     </div>
-    <div class="cm-poc-a-tone">
-      <button class="cm-poc-a-tone-btn active" data-tone="color">Color</button>
-      <button class="cm-poc-a-tone-btn" data-tone="mono">Mono</button>
+    <div class="cm-poc-a-tone dm-seg no-thumb" role="group" aria-label="Tone">
+      <button class="cm-poc-a-tone-btn dm-opt is-active" type="button" aria-pressed="true" data-tone="color">Color</button>
+      <button class="cm-poc-a-tone-btn dm-opt" type="button" aria-pressed="false" data-tone="mono">Mono</button>
     </div>
   </div>
   <div class="cm-poc-a-list">
@@ -181,9 +183,9 @@
       <div class="cm-poc-a-title">Categorical</div>
       <div class="cm-poc-a-desc">Discrete swatches for labels and series. Maximum perceptual distance.</div>
     </div>
-    <div class="cm-poc-a-tone">
-      <button class="cm-poc-a-tone-btn active" data-tone="color">Color</button>
-      <button class="cm-poc-a-tone-btn" data-tone="mono">Mono</button>
+    <div class="cm-poc-a-tone dm-seg no-thumb" role="group" aria-label="Tone">
+      <button class="cm-poc-a-tone-btn dm-opt is-active" type="button" aria-pressed="true" data-tone="color">Color</button>
+      <button class="cm-poc-a-tone-btn dm-opt" type="button" aria-pressed="false" data-tone="mono">Mono</button>
     </div>
   </div>
   <div class="cm-poc-a-list">
@@ -197,17 +199,25 @@
   var root = document.currentScript.parentNode;
   root.querySelectorAll('.cm-poc-a-tab').forEach(function(tab){
     tab.addEventListener('click', function(){
-      root.querySelectorAll('.cm-poc-a-tab').forEach(function(t){t.classList.remove('active');});
-      root.querySelectorAll('.cm-poc-a-panel').forEach(function(p){p.classList.remove('active');});
-      tab.classList.add('active');
-      root.querySelector('.cm-poc-a-panel[data-cat="'+tab.dataset.cat+'"]').classList.add('active');
+      root.querySelectorAll('.cm-poc-a-tab').forEach(function(t){
+        var selected = t === tab;
+        t.classList.toggle('is-active', selected);
+        t.setAttribute('aria-selected', selected ? 'true' : 'false');
+        t.tabIndex = selected ? 0 : -1;
+      });
+      root.querySelectorAll('.cm-poc-a-panel').forEach(function(p){
+        p.classList.toggle('is-active', p.dataset.cat === tab.dataset.cat);
+      });
     });
   });
   root.querySelectorAll('.cm-poc-a-tone-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
       var panel = btn.closest('.cm-poc-a-panel');
-      panel.querySelectorAll('.cm-poc-a-tone-btn').forEach(function(b){b.classList.remove('active');});
-      btn.classList.add('active');
+      panel.querySelectorAll('.cm-poc-a-tone-btn').forEach(function(b){
+        var selected = b === btn;
+        b.classList.toggle('is-active', selected);
+        b.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      });
       if(btn.dataset.tone === 'mono'){ root.classList.add('mono'); }
       else { root.classList.remove('mono'); }
     });

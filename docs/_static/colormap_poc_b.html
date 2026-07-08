@@ -1,7 +1,7 @@
 <div class="cm-poc-b">
 <style>
   .cm-poc-b {
-    font-family: var(--sy-f-sys, system-ui), sans-serif;
+    font-family: var(--dm-f-sys, system-ui), sans-serif;
     color: var(--dm-gray-12, #1c2024);
     margin: 1rem 0;
   }
@@ -56,7 +56,8 @@
     color: var(--dm-gray-12, #1c2024);
     background: var(--dm-gray-a3, rgba(0,8,60,0.059));
   }
-  .cm-poc-b-tone-btn.active {
+  .cm-poc-b-tone-btn.is-active,
+  .cm-poc-b-tone-btn[aria-pressed="true"] {
     color: var(--dm-gray-12, #1c2024);
     background: var(--dm-gray-a4, rgba(0,0,39,0.090));
   }
@@ -73,7 +74,7 @@
     font-size: 16px;
     font-weight: 600;
     color: var(--dm-gray-12, #1c2024);
-    letter-spacing: -0.005em;
+    letter-spacing: 0;
   }
   .cm-poc-b-section-desc {
     color: var(--dm-gray-11, #60646c);
@@ -90,7 +91,7 @@
     gap: 6px;
   }
   .cm-poc-b-name {
-    font-family: var(--sy-f-mono, monospace);
+    font-family: var(--dm-f-mono, monospace);
     font-size: 12.5px;
     color: var(--dm-gray-12, #1c2024);
     font-weight: 500;
@@ -112,9 +113,9 @@
     <a href="#poc-b-cyclical">Cyclical</a>
     <a href="#poc-b-categorical">Categorical</a>
   </nav>
-  <div class="cm-poc-b-tone">
-    <button class="cm-poc-b-tone-btn active" data-tone="color">Color</button>
-    <button class="cm-poc-b-tone-btn" data-tone="mono">Mono</button>
+  <div class="cm-poc-b-tone dm-seg no-thumb" role="group" aria-label="Tone">
+    <button class="cm-poc-b-tone-btn dm-opt is-active" type="button" data-tone="color" aria-pressed="true">Color</button>
+    <button class="cm-poc-b-tone-btn dm-opt" type="button" data-tone="mono" aria-pressed="false">Mono</button>
   </div>
 </div>
 
@@ -180,8 +181,11 @@
   var root = document.currentScript.parentNode;
   root.querySelectorAll('.cm-poc-b-tone-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
-      root.querySelectorAll('.cm-poc-b-tone-btn').forEach(function(b){b.classList.remove('active');});
-      btn.classList.add('active');
+      root.querySelectorAll('.cm-poc-b-tone-btn').forEach(function(b){
+        var selected = b === btn;
+        b.classList.toggle('is-active', selected);
+        b.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      });
       if(btn.dataset.tone === 'mono'){ root.classList.add('mono'); }
       else { root.classList.remove('mono'); }
     });

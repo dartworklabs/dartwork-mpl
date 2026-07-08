@@ -17,12 +17,15 @@
     /* page scaffold ONLY — primitives come from dm-interactive.css */
     body { margin:0; background:var(--dm-bg-page); color:var(--dm-text-default);
       font-family:var(--dm-f-sys); font-size:var(--dm-type-body-size);
-      line-height:var(--dm-type-body-line); letter-spacing:var(--dm-type-body-spacing);
+      line-height:var(--dm-type-body-line); letter-spacing: 0;
       -webkit-font-smoothing:antialiased; }
-    .wrap { max-width:780px; margin:0 auto; padding:40px 24px 110px; }
+    .wrap {
+      max-width:min(var(--dm-layout-article-max), calc(100vw - 2 * var(--dm-layout-gutter)));
+      margin:0 auto; padding:40px var(--dm-layout-gutter) 110px;
+    }
     .topbar { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
     .topbar h1 { font-size:var(--dm-type-display-size); font-weight:var(--dm-type-display-weight);
-      letter-spacing:var(--dm-type-display-spacing); line-height:var(--dm-type-display-line); margin:0; }
+      letter-spacing: 0; line-height:var(--dm-type-display-line); margin:0; }
     .topbar p { margin:7px 0 0; color:var(--dm-text-muted); font-size:var(--dm-type-body-size);
       line-height:var(--dm-type-body-line); max-width:56ch; }
     .src { font-family:var(--dm-f-mono); font-size:var(--dm-type-mono-size);
@@ -34,7 +37,7 @@
     .sec-num { font-family:var(--dm-f-mono); font-size:var(--dm-type-mono-size);
       font-weight:var(--dm-type-mono-weight); line-height:var(--dm-type-mono-line); color:var(--dm-accent-11); }
     .sec-title { font-size:var(--dm-type-heading-size); font-weight:var(--dm-type-heading-weight);
-      letter-spacing:var(--dm-type-heading-spacing); line-height:var(--dm-type-heading-line); margin:0; }
+      letter-spacing: 0; line-height:var(--dm-type-heading-line); margin:0; }
     .sec-cls { font-family:var(--dm-f-mono); font-size:var(--dm-type-mono-size);
       line-height:var(--dm-type-mono-line); color:var(--dm-text-muted);
       background:var(--dm-gray-a3); border-radius:5px; padding:2px 7px; }
@@ -42,12 +45,15 @@
     html.dark .panel { background:var(--dm-gray-2); }
     .lead { display:flex; align-items:center; gap:14px; margin:10px 0; flex-wrap:wrap; }
     .rl { font-size:var(--dm-type-caption-size); font-weight:var(--dm-type-caption-weight);
-      line-height:var(--dm-type-caption-line); text-transform:uppercase; letter-spacing:.06em;
+      line-height:var(--dm-type-caption-line); text-transform:uppercase; letter-spacing: 0;
       color:var(--dm-text-muted); min-width:54px; }
     .theme-toggle { display:inline-flex; align-items:center; gap:8px; background:var(--dm-gray-1);
       color:var(--dm-gray-12); border:1px solid var(--dm-border); border-radius:999px; padding:7px 14px;
       font:inherit; font-size:var(--dm-type-label-size); font-weight:var(--dm-type-label-weight); cursor:pointer; }
     html.dark .theme-toggle { background:var(--dm-gray-2); }
+    .chip-row { display:inline-flex; gap:7px; flex-wrap:wrap; }
+    .panel .dm-tabs { max-width:100%; overflow-x:auto; }
+    .panel .dm-tab { flex:0 0 auto; }
     .swatches { display:flex; gap:14px; flex-wrap:wrap; padding-bottom:6px; }
     .steps { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
     .type-roles { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; }
@@ -55,9 +61,9 @@
     .type-role__name { color:var(--dm-accent-11); font-family:var(--dm-f-mono);
       font-size:var(--dm-type-mono-size); line-height:var(--dm-type-mono-line); margin-bottom:8px; }
     .type-role__sample--display { font-size:var(--dm-type-display-size); font-weight:var(--dm-type-display-weight);
-      letter-spacing:var(--dm-type-display-spacing); line-height:var(--dm-type-display-line); }
+      letter-spacing: 0; line-height:var(--dm-type-display-line); }
     .type-role__sample--heading { font-size:var(--dm-type-heading-size); font-weight:var(--dm-type-heading-weight);
-      letter-spacing:var(--dm-type-heading-spacing); line-height:var(--dm-type-heading-line); }
+      letter-spacing: 0; line-height:var(--dm-type-heading-line); }
     .type-role__sample--body { font-size:var(--dm-type-body-size); line-height:var(--dm-type-body-line); }
     .type-role__sample--label { font-size:var(--dm-type-label-size); font-weight:var(--dm-type-label-weight);
       line-height:var(--dm-type-label-line); }
@@ -96,27 +102,27 @@
       <h2 class="sec-title">Segmented control</h2><span class="sec-cls">.dm-seg · install picker, compare toggles</span></div>
       <div class="panel">
         <div class="lead"><span class="rl">Tool</span>
-          <div class="dm-seg" data-seg><span class="dm-seg__thumb"></span>
-            <button class="dm-opt is-active" aria-pressed="true" type="button">uv</button>
-            <button class="dm-opt" aria-pressed="false" type="button">pip</button>
-            <button class="dm-opt" aria-pressed="false" type="button">Poetry</button>
-            <button class="dm-opt" aria-pressed="false" type="button">conda</button></div></div>
+          <div class="dm-seg" data-seg role="group" aria-label="Tool selector"><span class="dm-seg__thumb"></span>
+            <button class="dm-opt is-active" aria-pressed="true" tabindex="0" type="button">uv</button>
+            <button class="dm-opt" aria-pressed="false" tabindex="-1" type="button">pip</button>
+            <button class="dm-opt" aria-pressed="false" tabindex="-1" type="button">Poetry</button>
+            <button class="dm-opt" aria-pressed="false" tabindex="-1" type="button">conda</button></div></div>
         <div class="lead"><span class="rl">OS</span>
-          <div class="dm-seg" data-seg><span class="dm-seg__thumb"></span>
-            <button class="dm-opt is-active" aria-pressed="true" type="button">macOS</button>
-            <button class="dm-opt" aria-pressed="false" type="button">Linux</button>
-            <button class="dm-opt" aria-pressed="false" type="button">Windows</button></div></div>
+          <div class="dm-seg" data-seg role="group" aria-label="Operating system selector"><span class="dm-seg__thumb"></span>
+            <button class="dm-opt is-active" aria-pressed="true" tabindex="0" type="button">macOS</button>
+            <button class="dm-opt" aria-pressed="false" tabindex="-1" type="button">Linux</button>
+            <button class="dm-opt" aria-pressed="false" tabindex="-1" type="button">Windows</button></div></div>
       </div></section>
 
     <!-- underline tabs -->
     <section class="sec"><div class="sec-head"><span class="sec-num">02</span>
       <h2 class="sec-title">Underline tabs</h2><span class="sec-cls">.dm-tabs / .dm-tab · pickers, doc tab-sets</span></div>
       <div class="panel">
-        <div class="dm-tabs" data-tabs>
-          <button class="dm-tab is-active" aria-selected="true" type="button">Sequential</button>
-          <button class="dm-tab" aria-selected="false" type="button">Diverging</button>
-          <button class="dm-tab" aria-selected="false" type="button">Cyclic</button>
-          <button class="dm-tab" aria-selected="false" type="button">Categorical</button></div>
+        <div class="dm-tabs" data-tabs role="tablist" aria-label="Colormap family">
+          <button class="dm-tab is-active" role="tab" aria-selected="true" tabindex="0" type="button">Sequential</button>
+          <button class="dm-tab" role="tab" aria-selected="false" tabindex="-1" type="button">Diverging</button>
+          <button class="dm-tab" role="tab" aria-selected="false" tabindex="-1" type="button">Cyclic</button>
+          <button class="dm-tab" role="tab" aria-selected="false" tabindex="-1" type="button">Categorical</button></div>
       </div></section>
 
     <!-- chips -->
@@ -124,13 +130,13 @@
       <h2 class="sec-title">Soft chips</h2><span class="sec-cls">.dm-chip · FAQ filter, favorites</span></div>
       <div class="panel">
         <div class="lead"><span class="rl">Filter</span>
-          <div data-chips style="display:inline-flex;gap:7px;flex-wrap:wrap">
+          <div class="chip-row" data-chips role="group" aria-label="Filter examples">
             <button class="dm-chip is-active" aria-pressed="true" type="button">All</button>
             <button class="dm-chip" aria-pressed="false" type="button">Install</button>
             <button class="dm-chip" aria-pressed="false" type="button">Color</button>
             <button class="dm-chip" aria-pressed="false" type="button">Layout</button></div></div>
         <div class="lead"><span class="rl">Saved</span>
-          <div style="display:inline-flex;gap:7px;flex-wrap:wrap">
+          <div class="chip-row" role="list" aria-label="Saved example chips">
             <span class="dm-chip is-active">quickstart <span class="dm-chip__x" data-x>×</span></span>
             <span class="dm-chip is-active">figsize <span class="dm-chip__x" data-x>×</span></span></div></div>
       </div></section>
@@ -138,7 +144,7 @@
     <!-- swatches -->
     <section class="sec"><div class="sec-head"><span class="sec-num">04</span>
       <h2 class="sec-title">Swatch tiles</h2><span class="sec-cls">.dm-swatch · color / palette picker</span></div>
-      <div class="panel"><div class="swatches" data-swatches>
+      <div class="panel"><div class="swatches" data-swatches role="group" aria-label="Swatch examples">
         <button class="dm-swatch is-active" aria-pressed="true" type="button" style="background:linear-gradient(135deg,#12a594,#0d3d38)"></button>
         <button class="dm-swatch" aria-pressed="false" type="button" style="background:linear-gradient(135deg,#3b82f6,#1e3a8a)"></button>
         <button class="dm-swatch" aria-pressed="false" type="button" style="background:linear-gradient(135deg,#f59e0b,#7c2d12)"></button>
@@ -151,9 +157,9 @@
       <h2 class="sec-title">Range slider</h2><span class="sec-cls">.dm-slider · evolution / interactive</span></div>
       <div class="panel">
         <input class="dm-slider" type="range" min="0" max="3" value="1" step="1" data-slider aria-label="Evolution step" />
-        <div class="steps" data-steps>
-          <button class="dm-chip" type="button">Base</button><button class="dm-chip is-active" type="button">+ Style</button>
-          <button class="dm-chip" type="button">+ Labels</button><button class="dm-chip" type="button">+ Layout</button></div>
+        <div class="steps" data-steps role="group" aria-label="Evolution steps">
+          <button class="dm-chip" aria-pressed="false" type="button">Base</button><button class="dm-chip is-active" aria-pressed="true" type="button">+ Style</button>
+          <button class="dm-chip" aria-pressed="false" type="button">+ Labels</button><button class="dm-chip" aria-pressed="false" type="button">+ Layout</button></div>
         <div class="dm-callout" style="margin-top:16px"><strong>+ Style</strong> — swap rcParams via <code>dm.style.use("scientific")</code>.</div>
       </div></section>
 
@@ -189,12 +195,12 @@
       if(t&&a){ t.style.width=a.offsetWidth+"px"; t.style.transform="translateX("+a.offsetLeft+"px)"; } }
     document.querySelectorAll("[data-seg]").forEach(seg=>{
       seg.addEventListener("click",e=>{ const o=e.target.closest(".dm-opt"); if(!o)return;
-        seg.querySelectorAll(".dm-opt").forEach(x=>{ const on=x===o; x.classList.toggle("is-active",on); x.setAttribute("aria-pressed",on); });
+        seg.querySelectorAll(".dm-opt").forEach(x=>{ const on=x===o; x.classList.toggle("is-active",on); x.setAttribute("aria-pressed",on); x.tabIndex=on?0:-1; });
         moveThumb(seg); });
       requestAnimationFrame(()=>moveThumb(seg)); });
 
     document.querySelectorAll("[data-tabs]").forEach(t=>t.addEventListener("click",e=>{ const o=e.target.closest(".dm-tab"); if(!o)return;
-      t.querySelectorAll(".dm-tab").forEach(x=>{ const on=x===o; x.classList.toggle("is-active",on); x.setAttribute("aria-selected",on); }); }));
+      t.querySelectorAll(".dm-tab").forEach(x=>{ const on=x===o; x.classList.toggle("is-active",on); x.setAttribute("aria-selected",on); x.tabIndex=on?0:-1; }); }));
     document.querySelectorAll("[data-chips]").forEach(c=>c.addEventListener("click",e=>{ const ch=e.target.closest(".dm-chip"); if(!ch)return;
       c.querySelectorAll(".dm-chip").forEach(x=>{ const on=x===ch; x.classList.toggle("is-active",on); x.setAttribute("aria-pressed",on); }); }));
     document.querySelectorAll("[data-x]").forEach(x=>x.addEventListener("click",e=>{ e.stopPropagation(); x.closest(".dm-chip").remove(); }));
@@ -204,7 +210,7 @@
     function paint(sl){ const p=(sl.value-sl.min)/(sl.max-sl.min)*100;
       sl.style.background="linear-gradient(90deg,var(--dm-accent-9) "+p+"%,var(--dm-gray-a4) "+p+"%)";
       const steps=document.querySelector("[data-steps]").querySelectorAll(".dm-chip");
-      steps.forEach((c,i)=>c.classList.toggle("is-active",i==sl.value)); }
+      steps.forEach((c,i)=>{ const on=i==sl.value; c.classList.toggle("is-active",on); c.setAttribute("aria-pressed",on); }); }
     document.querySelectorAll("[data-slider]").forEach(sl=>{ paint(sl); sl.addEventListener("input",()=>paint(sl)); });
 
     document.getElementById("themeToggle").addEventListener("click",()=>{ const r=document.documentElement;

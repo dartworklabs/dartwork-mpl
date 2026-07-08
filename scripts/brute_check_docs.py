@@ -299,7 +299,10 @@ def audit_page(base: str, rel_url: str) -> dict:
 
 
 def list_pages(root: Path) -> list[str]:
-    skip_dirs = {"_modules", "_static", "_sources"}
+    # _downloads can contain standalone HTML fragments copied from static
+    # assets. They are downloadable artifacts, not Sphinx pages with the docs
+    # shell or dartwork-design.css link.
+    skip_dirs = {"_downloads", "_modules", "_static", "_sources"}
     out: list[str] = []
     for p in root.rglob("*.html"):
         parts = set(p.parts)

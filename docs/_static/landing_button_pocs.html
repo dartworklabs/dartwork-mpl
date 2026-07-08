@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="dm-interactive.css" />
   <style>
     body { margin:0; background:var(--dm-bg-page); color:var(--dm-gray-12);
-      font-family:var(--dm-f-sys,"Inter",system-ui,sans-serif); letter-spacing:-.003em; }
+      font-family:var(--dm-f-sys,"Inter",system-ui,sans-serif); letter-spacing: 0; }
     .wrap { max-width:920px; margin:0 auto; padding:36px 24px 120px; }
     .bar { position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between;
       gap:12px; padding:12px 16px; margin:-36px -24px 16px; background:var(--dm-bg-panel);
@@ -25,8 +25,11 @@
     .tt { background:var(--dm-bg-panel); color:var(--dm-gray-12); border:1px solid var(--dm-border);
       border-radius:999px; padding:6px 13px; font:inherit; font-size:13px; cursor:pointer; }
 
-    .tl { font-weight:800; line-height:1.12; letter-spacing:-.028em; margin:0 0 .4em; white-space:nowrap;
-      font-size:clamp(20px,4.4vw,44px); color:var(--dm-gray-12); }
+    .tl { font-weight:800; line-height:1.12; letter-spacing: 0; margin:0 0 .4em; white-space:nowrap;
+      font-size:44px; color:var(--dm-gray-12); }
+    @media (max-width: 640px) {
+      .tl { font-size:30px; }
+    }
     .tl .bf, .tl .ai { color:var(--dm-accent-11); }
     .sub { font-size:1.05rem; color:var(--dm-text-muted); max-width:520px; margin:0 auto 1.5em; }
 
