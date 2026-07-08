@@ -21,6 +21,7 @@ _REPO = Path(__file__).resolve().parents[1]
 _SCRIPTS = _REPO / "docs" / "_static" / "scripts"
 _EXPLORER = _REPO / "docs" / "_static" / "colormap_explorer.html"
 _BUILDER = _SCRIPTS / "build_colormap_explorer.py"
+_DESIGN_CSS = _REPO / "docs" / "_static" / "dartwork-design.css"
 
 _SEQUENTIAL = [
     "red",
@@ -114,9 +115,11 @@ def _payload_from_html() -> dict:
     return json.loads(m.group(1))
 
 
-def _style_block() -> str:
-    html = _EXPLORER.read_text(encoding="utf-8")
-    return re.search(r"<style>(.*?)</style>", html, re.S).group(1)
+def _colormap_css() -> str:
+    css = _DESIGN_CSS.read_text(encoding="utf-8")
+    start = css.index("/* Continuous colormap explorer widget.")
+    end = css.index("/* Categorical palette page polish.", start)
+    return css[start:end]
 
 
 # ── taxonomy partition ─────────────────────────────────────────────────────
@@ -268,23 +271,27 @@ def test_demo_library_is_sixteen_without_radial_and_with_four_new_grammars() -> 
 def test_root_wrapper_is_wide_yue_with_unique_id() -> None:
     html = _EXPLORER.read_text(encoding="utf-8")
     assert '<div id="dm-cmap-exp" class="dm-wide yue">' in html
+    assert "<style" not in html
     # distinct id from the categorical explorer so both can coexist
     assert "dm-cat-exp" not in html
 
 
 def test_layout_uses_design_tokens_and_bounded_grid() -> None:
-    html = _EXPLORER.read_text(encoding="utf-8")
-    assert "grid-template-columns:minmax(10.5rem,12rem) minmax(0,1fr)" in html
-    assert "#dm-cmap-exp {width:100%;max-width:100%;overflow:clip;" in html
-    assert "gap:var(--dm-space-5,24px)" in html
-    assert "flex-wrap:wrap;row-gap:8px;" in html
+    css = _colormap_css()
+    assert "grid-template-columns:minmax(10.5rem,12rem) minmax(0,1fr)" in css
+    assert (
+        "#dm-cmap-exp {width:100%;max-width:100%;container-type:inline-size;"
+        in css
+    )
+    assert "gap:var(--dm-space-5,24px)" in css
+    assert "flex-wrap:wrap;row-gap:8px;" in css
     assert (
         "#dm-cmap-exp .demo-tools .demo-field {flex:1 1 100%;min-width:0;align-items:flex-start;}"
-        in html
+        in css
     )
     assert (
         "#dm-cmap-exp .demo-picker {display:flex;align-items:center;gap:6px;flex-wrap:wrap;row-gap:6px;min-width:0;}"
-        in html
+        in css
     )
     for token in (
         "var(--dm-bg-page",
@@ -297,24 +304,27 @@ def test_layout_uses_design_tokens_and_bounded_grid() -> None:
         "var(--dm-space-5",
         "var(--dm-gray-12",
     ):
-        assert token in html, token
+        assert token in css, token
     # POC-only bespoke tokens must be re-homed onto real --dm-* tokens
-    assert "--dm-bg-subtle" not in html
-    assert "var(--dm-line" not in html
+    assert "--dm-bg-subtle" not in css
+    assert "var(--dm-line" not in css
+    assert "calc(100cqw - 32px)" in css
+    assert "calc(100vw - 32px)" not in css
 
 
 def test_no_raw_hex_in_css_block_outside_fallbacks() -> None:
-    style = _style_block()
-    for m in re.finditer(r"#[0-9a-fA-F]{3,8}\b", style):
-        prev = style[m.start() - 1 : m.start()]
+    css = _colormap_css()
+    for m in re.finditer(r"#[0-9a-fA-F]{3,8}\b", css):
+        prev = css[m.start() - 1 : m.start()]
         assert prev == ",", (
             f"raw hex {m.group(0)} not a var() fallback: "
-            f"...{style[max(0, m.start() - 24) : m.start()]}"
+            f"...{css[max(0, m.start() - 24) : m.start()]}"
         )
 
 
 def test_removed_colorbars_frames_and_poc_chrome() -> None:
     html = _EXPLORER.read_text(encoding="utf-8")
+    css = _colormap_css()
     # item 3 / item 4: no demo-embedded colorbar strip, no inner frame rect
     assert "colorbar" not in html.lower()
     assert 'rx="5" fill="none"' not in html  # POC streamlines/isolines frame
@@ -330,22 +340,23 @@ def test_removed_colorbars_frames_and_poc_chrome() -> None:
     ):
         assert banned not in html, banned
     # centered demo content, not top-left anchored (item 2)
-    assert "align-items:center;justify-content:center;" in html
+    assert "align-items:center;justify-content:center;" in css
 
 
 def test_retina_gradient_backgrounds_are_non_repeating_images() -> None:
     """Retina guard: gradient shorthands must not reset repeat/size."""
     html = _EXPLORER.read_text(encoding="utf-8")
-    assert "#dm-cmap-exp .grad,#dm-cmap-exp .ri .mini" in html
-    assert "background-repeat:no-repeat;background-size:100% 100%;" in html
+    css = _colormap_css()
+    assert "#dm-cmap-exp .grad,#dm-cmap-exp .ri .mini" in css
+    assert "background-repeat:no-repeat;background-size:100% 100%;" in css
     assert "g.style.backgroundImage=gradientCSS();" in html
     assert 'style="background-image:linear-gradient(90deg,' in html
     assert 'style="background:linear-gradient(90deg,' not in html
 
 
 def test_rail_mini_strips_are_square_non_clipping_rectangles() -> None:
-    style = _style_block()
-    m = re.search(r"#dm-cmap-exp \.ri \.mini \{([^}]*)\}", style)
+    css = _colormap_css()
+    m = re.search(r"#dm-cmap-exp \.ri \.mini \{([^}]*)\}", css)
     assert m, "rail mini CSS rule missing"
     mini_rule = m.group(1)
     assert "border-radius" not in mini_rule
@@ -354,7 +365,7 @@ def test_rail_mini_strips_are_square_non_clipping_rectangles() -> None:
     assert "box-shadow" not in mini_rule
     assert (
         "#dm-cmap-exp .grad {position:relative;height:44px;border-radius:"
-        in style
+        in css
     )
 
 
@@ -378,6 +389,7 @@ def test_demo_geometry_uses_canvas_for_continuous_fields_and_svg_for_strokes() -
     None
 ):
     html = _EXPLORER.read_text(encoding="utf-8")
+    css = _colormap_css()
     assert (
         'function openStroke(label){return \'<svg class="demo-svg" viewBox="0 0 '
         "'+VW+' '+VH+'\" preserveAspectRatio=\"xMidYMid meet\""
@@ -385,9 +397,9 @@ def test_demo_geometry_uses_canvas_for_continuous_fields_and_svg_for_strokes() -
     assert "var VW=160,VH=100;" in html
     assert (
         "#dm-cmap-exp canvas.demo-canvas {display:block;width:100%;height:100%;"
-        in html
+        in css
     )
-    assert "#dm-cmap-exp .demo-grid.gs canvas.demo-canvas" in html
+    assert "#dm-cmap-exp .demo-grid.gs canvas.demo-canvas" in css
     for demo in _CANVAS_DEMOS:
         assert (
             "data-canvas-demo=\"'+esc(t)+'\"" in html
