@@ -126,55 +126,44 @@ CSS = """
      of how Sphinx copies the _generated/ directory. */
 
   .dm-fp {
-    max-width: 720px;
+    width: 100%;
+    max-width: 100%;
     margin: 1.6em auto 2em;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--dm-f-sys);
   }
 
-  .dm-fp-tabs {
+  .dm-fp-tabs.dm-tabs {
     display: flex;
     flex-wrap: wrap;
-    gap: 0;
-    border-bottom: 1px solid #e7e4dd;
+    gap: var(--dm-space-1);
+    border-bottom: 1px solid var(--dm-border-faint);
     margin-bottom: 14px;
   }
-  html.dark .dm-fp-tabs,
-  body[data-theme="dark"] .dm-fp-tabs {
-    border-bottom-color: #2c2c38;
-  }
-  .dm-fp-tab {
+  .dm-fp-tab.dm-tab {
     border: none;
     background: transparent;
     padding: 7px 12px;
     margin: 0 4px;
-    font-size: 0.84em;
-    color: #777;
+    font-size: var(--dm-type-label-size);
+    color: var(--dm-text-muted);
     cursor: pointer;
     border-bottom: 2px solid transparent;
     transition: color 0.12s ease, border-color 0.12s ease;
   }
-  html.dark .dm-fp-tab,
-  body[data-theme="dark"] .dm-fp-tab {
-    color: #aaa;
-  }
-  .dm-fp-tab:hover { color: #0d9488; }
-  .dm-fp-tab.active {
-    color: #0d9488;
-    border-bottom-color: #0d9488;
+  .dm-fp-tab.dm-tab:hover { color: var(--dm-i-active-text); }
+  .dm-fp-tab.dm-tab.is-active,
+  .dm-fp-tab.dm-tab[aria-selected="true"] {
+    color: var(--dm-i-active-text);
+    border-bottom-color: var(--dm-i-active-line);
     font-weight: 600;
   }
 
   .dm-fp-stage {
     min-height: 200px;
     padding: 22px 22px 18px;
-    border: 1px solid #ebe9e2;
-    border-radius: 10px;
-    background: #fbfaf7;
-  }
-  html.dark .dm-fp-stage,
-  body[data-theme="dark"] .dm-fp-stage {
-    background: rgba(255, 255, 255, 0.02);
-    border-color: #2a2a3e;
+    border: 1px solid var(--dm-border-faint);
+    border-radius: var(--dm-radius-5);
+    background: var(--dm-bg-panel);
   }
 
   /* Showcase styles — match existing dm-font-showcase styling so the
@@ -182,31 +171,19 @@ CSS = """
   .dm-fp-stage h3 {
     margin: 0 0 4px;
     font-size: 1.4em;
-    color: #1a1a1a;
-  }
-  html.dark .dm-fp-stage h3,
-  body[data-theme="dark"] .dm-fp-stage h3 {
-    color: #f0f0f0;
+    color: var(--dm-text-strong);
   }
   .dm-fp-stage .desc {
     margin: 0 0 14px;
-    color: #777;
+    color: var(--dm-text-muted);
     font-size: 0.86em;
-  }
-  html.dark .dm-fp-stage .desc,
-  body[data-theme="dark"] .dm-fp-stage .desc {
-    color: #aaa;
   }
   .dm-fp-stage .dm-showcase-hero {
     font-size: 2.4em;
     line-height: 1.1;
-    color: #222;
+    color: var(--dm-text-strong);
     margin: 6px 0 18px;
-    letter-spacing: -0.01em;
-  }
-  html.dark .dm-fp-stage .dm-showcase-hero,
-  body[data-theme="dark"] .dm-fp-stage .dm-showcase-hero {
-    color: #f0f0f0;
+    letter-spacing: 0;
   }
   .dm-fp-stage .dm-showcase-grid {
     display: grid;
@@ -229,49 +206,35 @@ CSS = """
   .dm-fp-stage .dm-showcase-weight,
   .dm-fp-stage .label {
     font-size: 0.82em;
-    color: #888;
+    color: var(--dm-text-muted);
     text-align: right;
   }
   .dm-fp-stage .dm-showcase-num {
-    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-family: var(--dm-f-mono);
     font-size: 0.78em;
-    color: #999;
+    color: var(--dm-text-faint);
   }
   .dm-fp-stage .dm-showcase-sample,
   .dm-fp-stage .sample {
     font-size: 1.05em;
-    color: #2a2a2a;
-  }
-  html.dark .dm-fp-stage .dm-showcase-sample,
-  html.dark .dm-fp-stage .sample,
-  body[data-theme="dark"] .dm-fp-stage .dm-showcase-sample,
-  body[data-theme="dark"] .dm-fp-stage .sample {
-    color: #e0e0e0;
+    color: var(--dm-text);
   }
   .dm-fp-stage .expr {
     font-size: 1.2em;
-    color: #2a2a2a;
-  }
-  html.dark .dm-fp-stage .expr,
-  body[data-theme="dark"] .dm-fp-stage .expr {
-    color: #e0e0e0;
+    color: var(--dm-text);
   }
 
   .dm-fp-meta {
     margin-top: 12px;
-    font-size: 0.8em;
-    color: #888;
-    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
-  }
-  html.dark .dm-fp-meta,
-  body[data-theme="dark"] .dm-fp-meta {
-    color: #999;
+    font-size: var(--dm-type-caption-size);
+    color: var(--dm-text-muted);
+    font-family: var(--dm-f-mono);
   }
   .dm-fp-meta code {
-    background: rgba(13, 148, 136, 0.1);
-    color: #0d9488;
+    background: var(--dm-i-code-surface, #f0f0f3);
+    color: var(--dm-i-active-text, #008573);
     padding: 1px 6px;
-    border-radius: 3px;
+    border-radius: var(--dm-radius-2);
   }
 </style>
 """.strip()
@@ -294,7 +257,10 @@ JS = """
       stage.innerHTML = "";
       stage.appendChild(t.content.cloneNode(true));
       tabsHost.querySelectorAll(".dm-fp-tab").forEach(function (b) {
-        b.classList.toggle("active", b.dataset.id === id);
+        var selected = b.dataset.id === id;
+        b.classList.toggle("is-active", selected);
+        b.setAttribute("aria-selected", selected ? "true" : "false");
+        b.tabIndex = selected ? 0 : -1;
       });
       var m = meta_by_id[id] || {};
       metaHost.innerHTML = 'Family: <code>' + (m.label || id) + '</code> · '
@@ -305,6 +271,14 @@ JS = """
       document.querySelectorAll(".dm-fp-tab"),
       function (b) {
         b.addEventListener("click", function () { activate(b.dataset.id); });
+        b.addEventListener("keydown", function (ev) {
+          var tabs = Array.prototype.slice.call(tabsHost.querySelectorAll(".dm-fp-tab"));
+          var pos = tabs.indexOf(b);
+          if (ev.key === "ArrowRight") { ev.preventDefault(); tabs[(pos + 1) % tabs.length].click(); tabs[(pos + 1) % tabs.length].focus(); }
+          if (ev.key === "ArrowLeft") { ev.preventDefault(); tabs[(pos - 1 + tabs.length) % tabs.length].click(); tabs[(pos - 1 + tabs.length) % tabs.length].focus(); }
+          if (ev.key === "Home") { ev.preventDefault(); tabs[0].click(); tabs[0].focus(); }
+          if (ev.key === "End") { ev.preventDefault(); tabs[tabs.length - 1].click(); tabs[tabs.length - 1].focus(); }
+        });
       }
     );
 
@@ -321,13 +295,18 @@ def main() -> None:
 
     # Tabs
     tab_buttons = []
-    for fam_id, label, _spec, _note in FAMILIES:
+    for idx, (fam_id, label, _spec, _note) in enumerate(FAMILIES):
+        selected = idx == 0
         tab_buttons.append(
-            f'    <button class="dm-fp-tab" data-id="{fam_id}">{label}</button>'
+            f'    <button class="dm-fp-tab dm-tab{" is-active" if selected else ""}" '
+            f'role="tab" aria-selected="{str(selected).lower()}" '
+            f'tabindex="{0 if selected else -1}" type="button" '
+            f'data-id="{fam_id}">{label}</button>'
         )
     parts.append(
         '<div class="dm-fp">\n'
-        '  <div class="dm-fp-tabs" id="dm-fp-tabs">\n'
+        '  <div class="dm-fp-tabs dm-tabs" id="dm-fp-tabs" '
+        'role="tablist" aria-label="Font family">\n'
         + "\n".join(tab_buttons)
         + "\n  </div>\n"
         '  <div class="dm-fp-stage" id="dm-fp-stage"></div>\n'

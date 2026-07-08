@@ -64,7 +64,7 @@
     * { box-sizing:border-box; }
     body {
       margin:0; background:var(--page-bg); color:var(--dm-text-strong);
-      font-family:var(--sans); letter-spacing:-.003em;
+      font-family:var(--sans); letter-spacing: 0;
       -webkit-font-smoothing:antialiased;
     }
     .wrap { max-width:760px; margin:0 auto; padding:40px 24px 96px; }
@@ -74,7 +74,7 @@
       gap:16px; margin-bottom:8px; flex-wrap:wrap;
     }
     .topbar h1 {
-      font-size:26px; font-weight:700; letter-spacing:-.022em; margin:0;
+      font-size:26px; font-weight:700; letter-spacing: 0; margin:0;
     }
     .topbar p { margin:6px 0 0; color:var(--dm-text-muted); font-size:14px; max-width:46ch; }
 
@@ -93,23 +93,23 @@
     .poc-head { display:flex; align-items:baseline; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
     .poc-badge {
       font-family:var(--mono); font-size:11px; font-weight:600;
-      letter-spacing:.06em; color:#fff; background:var(--dm-accent-9);
+      letter-spacing: 0; color:#fff; background:var(--dm-accent-9);
       border-radius:6px; padding:3px 8px;
     }
-    .poc-name { font-size:17px; font-weight:600; letter-spacing:-.01em; margin:0; }
+    .poc-name { font-size:17px; font-weight:600; letter-spacing: 0; margin:0; }
     .poc-desc { width:100%; margin:2px 0 0; color:var(--dm-text-muted); font-size:13.5px; line-height:1.5; }
 
     /* ─── shared widget structure (every POC reuses these) ─────────────── */
     .ip { font-family:var(--sans); }
     .ip-eyebrow {
-      font-size:.72rem; font-weight:700; letter-spacing:.09em;
+      font-size:.72rem; font-weight:700; letter-spacing: 0;
       text-transform:uppercase; color:var(--dm-accent-11);
     }
     .ip-detected { font-size:.8rem; color:var(--dm-text-muted); }
     .ip-detected strong { color:var(--dm-text-strong); }
     .ip-row-label {
       font-size:.7rem; font-weight:700; text-transform:uppercase;
-      letter-spacing:.06em; color:var(--dm-text-muted);
+      letter-spacing: 0; color:var(--dm-text-muted);
       min-width:40px; user-select:none;
     }
     .ip-cmd { position:relative; }

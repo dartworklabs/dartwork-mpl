@@ -1,10 +1,10 @@
 <div class="evolution-container">
   <div class="evolution-header">
-    <h3 style="margin-top: 0; margin-bottom: 0.5rem;">The Evolution of a Plot</h3>
-    <p style="margin-bottom: 1.5rem; color: var(--pst-color-text-muted); font-size: 0.9em;">Drag the slider to experience the dartwork-mpl pipeline step-by-step.</p>
+    <h3 class="evolution-title">The Evolution of a Plot</h3>
+    <p class="evolution-subtitle">Drag the slider to experience the dartwork-mpl pipeline step-by-step.</p>
   </div>
   <div class="evolution-images">
-    <img id="evo-img-0" class="evo-img active">
+    <img id="evo-img-0" class="evo-img is-active">
     <img id="evo-img-1" class="evo-img">
     <img id="evo-img-2" class="evo-img">
     <img id="evo-img-3" class="evo-img">
@@ -29,12 +29,12 @@
     })();
   </script>
   <div class="evolution-controls">
-    <input type="range" id="evo-slider" min="0" max="3" step="0.02" value="0">
-    <div class="evo-labels">
-      <span class="evo-label" onclick="setEvo(0)">1. Base</span>
-      <span class="evo-label" onclick="setEvo(1)">2. Apply Style</span>
-      <span class="evo-label" onclick="setEvo(2)">3. Label & Format</span>
-      <span class="evo-label" onclick="setEvo(3)">4. Smart Layout</span>
+    <input type="range" class="dm-slider" id="evo-slider" min="0" max="3" step="0.02" value="0" aria-label="Plot evolution step">
+    <div class="evo-labels" role="group" aria-label="Plot evolution milestones">
+      <button class="evo-label dm-chip is-active" type="button" data-evo="0" aria-pressed="true">1. Base</button>
+      <button class="evo-label dm-chip" type="button" data-evo="1" aria-pressed="false">2. Apply Style</button>
+      <button class="evo-label dm-chip" type="button" data-evo="2" aria-pressed="false">3. Label & Format</button>
+      <button class="evo-label dm-chip" type="button" data-evo="3" aria-pressed="false">4. Smart Layout</button>
     </div>
   </div>
   <div class="evolution-description" id="evo-desc">
@@ -45,21 +45,30 @@
 <style>
 .evolution-container {
   margin: 2rem 0;
-  border: 1px solid var(--pst-color-border);
-  border-radius: 8px;
-  padding: 1.5rem;
-  background: var(--pst-color-surface);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border: 1px solid var(--dm-border-faint);
+  border-radius: var(--dm-radius-4);
+  padding: var(--dm-space-5);
+  background: var(--dm-bg-panel);
+  box-shadow: var(--dm-shadow-1);
+}
+.evolution-title {
+  margin-top: 0;
+  margin-bottom: var(--dm-space-2);
+}
+.evolution-subtitle {
+  margin-bottom: var(--dm-space-5);
+  color: var(--dm-text-muted);
+  font-size: var(--dm-type-body-size);
 }
 .evolution-images {
   position: relative;
   width: 100%;
   aspect-ratio: 2.5 / 1;
   overflow: hidden;
-  margin-bottom: 1.5rem;
-  background: white;
-  border-radius: 4px;
-  border: 1px solid var(--pst-color-border-muted);
+  margin-bottom: var(--dm-space-5);
+  background: var(--dm-bg-page);
+  border-radius: var(--dm-radius-3);
+  border: 1px solid var(--dm-border-faint);
 }
 @media (max-width: 768px) {
   .evolution-images { aspect-ratio: 1.5 / 1; }
@@ -74,42 +83,39 @@
   opacity: 0;
   will-change: opacity;
 }
-.evo-img.active { opacity: 1; z-index: 2; }
-.evolution-controls { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
+.evo-img.is-active { opacity: 1; z-index: 2; }
+.evolution-controls { display: flex; flex-direction: column; gap: var(--dm-space-3); margin-bottom: var(--dm-space-5); }
 #evo-slider {
   width: 100%;
   cursor: pointer;
-  accent-color: var(--pst-color-primary);
 }
 .evo-labels {
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--dm-space-2);
   justify-content: space-between;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--pst-color-text-muted);
 }
-.evo-label {
+.evo-label.dm-chip {
   cursor: pointer;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+  font-size: var(--dm-type-label-size);
+  line-height: var(--dm-type-label-line);
+  color: var(--dm-text-muted);
 }
-.evo-label:hover {
-  color: var(--pst-color-text-base);
-  background: var(--pst-color-surface-hover, rgba(0,0,0,0.05));
-}
-.evo-label.active {
-  color: var(--pst-color-primary);
+.evo-label.dm-chip.is-active,
+.evo-label.dm-chip[aria-pressed="true"] {
+  color: var(--dm-i-active-text);
+  background: var(--dm-i-active-soft);
+  border-color: var(--dm-i-soft-border);
   font-weight: 700;
 }
 .evolution-description {
-  font-size: 0.95rem;
-  color: var(--pst-color-text-base);
+  font-size: var(--dm-type-body-size);
+  color: var(--dm-text);
   min-height: 4em;
-  padding: 1rem;
-  background: var(--pst-color-background);
-  border-left: 4px solid var(--pst-color-primary);
-  border-radius: 0 4px 4px 0;
+  padding: var(--dm-space-4);
+  background: var(--dm-bg-subtle);
+  border-left: 4px solid var(--dm-i-active-line);
+  border-radius: 0 var(--dm-radius-3) var(--dm-radius-3) 0;
 }
 </style>
 
@@ -131,11 +137,16 @@ function updateEvo(val) {
       const opacity = Math.max(0, 1 - Math.abs(val - i));
       img.style.opacity = opacity;
       img.style.zIndex = opacity > 0.5 ? 2 : 1;
+      img.classList.toggle('is-active', opacity > 0.5);
     }
   }
 
   const nearest = Math.round(val);
-  evoLabels.forEach((l, i) => l.classList.toggle('active', i === nearest));
+  evoLabels.forEach((l, i) => {
+    const selected = i === nearest;
+    l.classList.toggle('is-active', selected);
+    l.setAttribute('aria-pressed', selected ? 'true' : 'false');
+  });
   if (evoDesc) evoDesc.innerHTML = descs[nearest];
 }
 
@@ -148,6 +159,9 @@ function setEvo(val) {
 
 if (evoSlider) {
   evoSlider.addEventListener('input', (e) => updateEvo(parseFloat(e.target.value)));
+  evoLabels.forEach((label) => {
+    label.addEventListener('click', () => setEvo(parseFloat(label.dataset.evo || '0')));
+  });
   updateEvo(0);
 }
 </script>

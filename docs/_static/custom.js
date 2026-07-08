@@ -390,13 +390,13 @@ document.addEventListener("click", function (e) {
 
     // Search input
     var searchWrap = document.createElement("div");
-    searchWrap.className = "dm-color-search-wrap";
+    searchWrap.className = "dm-color-search-wrap dm-field";
     var searchIcon = document.createElement("span");
     searchIcon.className = "dm-color-search-icon";
     searchIcon.textContent = "⌕";
     var searchInput = document.createElement("input");
     searchInput.type = "text";
-    searchInput.className = "dm-color-search";
+    searchInput.className = "dm-color-search dm-input";
     searchInput.placeholder = "Search colors… (e.g. oc.blue, tw.red, #FF)";
     searchInput.setAttribute("aria-label", "Search named colors");
     var searchCount = document.createElement("span");
@@ -407,7 +407,9 @@ document.addEventListener("click", function (e) {
 
     // Colorblind buttons
     var cbWrap = document.createElement("div");
-    cbWrap.className = "dm-cvd-buttons";
+    cbWrap.className = "dm-cvd-buttons dm-seg no-thumb";
+    cbWrap.setAttribute("role", "group");
+    cbWrap.setAttribute("aria-label", "Color vision deficiency simulation");
     var cbLabel = document.createElement("span");
     cbLabel.className = "dm-cvd-label";
     cbLabel.textContent = "CVD";
@@ -419,17 +421,18 @@ document.addEventListener("click", function (e) {
       { id: "deuteranopia", label: "Deutan" },
       { id: "tritanopia", label: "Tritan" },
     ];
-    var activeCVD = "none";
-
     modes.forEach(function (mode) {
       var btn = document.createElement("button");
-      btn.className = "dm-cvd-btn" + (mode.id === "none" ? " active" : "");
+      btn.className =
+        "dm-cvd-btn dm-opt" + (mode.id === "none" ? " is-active" : "");
       btn.textContent = mode.label;
       btn.setAttribute("data-cvd", mode.id);
+      btn.setAttribute("aria-pressed", mode.id === "none" ? "true" : "false");
       btn.addEventListener("click", function () {
-        activeCVD = mode.id;
         cbWrap.querySelectorAll(".dm-cvd-btn").forEach(function (b) {
-          b.classList.toggle("active", b.getAttribute("data-cvd") === mode.id);
+          var selected = b.getAttribute("data-cvd") === mode.id;
+          b.classList.toggle("is-active", selected);
+          b.setAttribute("aria-pressed", selected ? "true" : "false");
         });
         sheets.forEach(function (sheet) {
           if (mode.id === "none") {
@@ -506,13 +509,14 @@ document.addEventListener("click", function (e) {
       if (query) {
         if (matchCount === 0) {
           searchCount.textContent = "no match";
-          searchCount.style.color = "#e53935";
+          searchCount.classList.add("is-empty");
         } else {
           searchCount.textContent = matchCount + " found";
-          searchCount.style.color = "";
+          searchCount.classList.remove("is-empty");
         }
       } else {
         searchCount.textContent = "";
+        searchCount.classList.remove("is-empty");
       }
     });
   });
@@ -542,11 +546,11 @@ document.addEventListener("click", function (e) {
 
     // Search input
     var searchWrap = document.createElement("div");
-    searchWrap.className = "dm-gallery-search-wrap";
+    searchWrap.className = "dm-gallery-search-wrap dm-field";
     var searchInput = document.createElement("input");
     searchInput.type = "text";
-    searchInput.className = "dm-gallery-search";
-    searchInput.placeholder = "Filter examples… (e.g. bar, scatter, legend)";
+    searchInput.className = "dm-gallery-search dm-input";
+    searchInput.placeholder = "Filter examples…";
     searchInput.setAttribute("aria-label", "Filter gallery examples");
     var searchCount = document.createElement("span");
     searchCount.className = "dm-gallery-search-count";
@@ -556,11 +560,14 @@ document.addEventListener("click", function (e) {
     // Category pills
     var pillWrap = document.createElement("div");
     pillWrap.className = "dm-gallery-pills";
+    pillWrap.setAttribute("role", "group");
+    pillWrap.setAttribute("aria-label", "Filter by example category");
 
     var pillAll = document.createElement("button");
-    pillAll.className = "dm-gallery-pill active";
+    pillAll.className = "dm-gallery-pill dm-chip is-active";
     pillAll.textContent = "All";
     pillAll.setAttribute("data-category", "all");
+    pillAll.setAttribute("aria-pressed", "true");
     pillWrap.appendChild(pillAll);
 
     var activeCategory = "all";
@@ -574,9 +581,10 @@ document.addEventListener("click", function (e) {
       categoryMap[id] = { name: name, section: sec };
 
       var pill = document.createElement("button");
-      pill.className = "dm-gallery-pill";
+      pill.className = "dm-gallery-pill dm-chip";
       pill.textContent = name;
       pill.setAttribute("data-category", id);
+      pill.setAttribute("aria-pressed", "false");
       pillWrap.appendChild(pill);
     });
 
@@ -598,10 +606,9 @@ document.addEventListener("click", function (e) {
 
       activeCategory = btn.getAttribute("data-category");
       pillWrap.querySelectorAll(".dm-gallery-pill").forEach(function (p) {
-        p.classList.toggle(
-          "active",
-          p.getAttribute("data-category") === activeCategory,
-        );
+        var selected = p.getAttribute("data-category") === activeCategory;
+        p.classList.toggle("is-active", selected);
+        p.setAttribute("aria-pressed", selected ? "true" : "false");
       });
       applyFilter();
     });
@@ -657,9 +664,10 @@ document.addEventListener("click", function (e) {
       // Update count
       if (query || activeCategory !== "all") {
         searchCount.textContent = matched + " / " + totalExamples;
-        searchCount.style.color = matched === 0 ? "#e53935" : "";
+        searchCount.classList.toggle("is-empty", matched === 0);
       } else {
         searchCount.textContent = "";
+        searchCount.classList.remove("is-empty");
       }
     }
   });
@@ -687,7 +695,9 @@ document.addEventListener("click", function (e) {
 
     // Build control bar
     var ctrlBar = document.createElement("div");
-    ctrlBar.className = "dm-example-controls";
+    ctrlBar.className = "dm-example-controls dm-seg no-thumb";
+    ctrlBar.setAttribute("role", "group");
+    ctrlBar.setAttribute("aria-label", "Example view mode");
 
     var modes = [
       { id: "full", label: "Full", icon: "📄" },
@@ -700,13 +710,17 @@ document.addEventListener("click", function (e) {
     modes.forEach(function (mode) {
       var btn = document.createElement("button");
       btn.className =
-        "dm-example-mode-btn" + (mode.id === "full" ? " active" : "");
+        "dm-example-mode-btn dm-opt" +
+        (mode.id === "full" ? " is-active" : "");
       btn.innerHTML = mode.icon + " " + mode.label;
       btn.setAttribute("data-mode", mode.id);
+      btn.setAttribute("aria-pressed", mode.id === "full" ? "true" : "false");
       btn.addEventListener("click", function () {
         activeMode = mode.id;
         ctrlBar.querySelectorAll(".dm-example-mode-btn").forEach(function (b) {
-          b.classList.toggle("active", b.getAttribute("data-mode") === mode.id);
+          var selected = b.getAttribute("data-mode") === mode.id;
+          b.classList.toggle("is-active", selected);
+          b.setAttribute("aria-pressed", selected ? "true" : "false");
         });
         applyMode();
       });
@@ -1035,10 +1049,13 @@ document.addEventListener("click", function (e) {
       tab.addEventListener("click", function () {
         activeMode = tab.getAttribute("data-type");
         tabs.forEach(function (t) {
-          t.classList.remove("active");
+          var selected = t.getAttribute("data-type") === activeMode;
+          t.classList.toggle("is-active", selected);
+          t.setAttribute("aria-pressed", selected ? "true" : "false");
         });
-        tab.classList.add("active");
-        midGroup.style.display = activeMode === "diverging" ? "flex" : "none";
+        var showMidpoint = activeMode === "diverging";
+        midGroup.hidden = !showMidpoint;
+        midGroup.setAttribute("aria-hidden", showMidpoint ? "false" : "true");
         render();
       });
     });
@@ -1321,10 +1338,12 @@ document.addEventListener("click", function (e) {
       btn.addEventListener("click", function () {
         activeMode = btn.getAttribute("data-mode");
         toggleBtns.forEach(function (b) {
+          var selected = b.getAttribute("data-mode") === activeMode;
           b.classList.toggle(
-            "active",
-            b.getAttribute("data-mode") === activeMode,
+            "is-active",
+            selected,
           );
+          b.setAttribute("aria-pressed", selected ? "true" : "false");
         });
         render();
       });

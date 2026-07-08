@@ -1,0 +1,914 @@
+<!doctype html>
+<!--
+  layout_width_pocs.html - live layout-width comparison for docs review.
+  This page loads the real built docs in an iframe and injects only width CSS,
+  so each option can be judged against actual API, gallery, and widget pages.
+-->
+<html lang="en" class="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Layout width POCs - dartwork docs</title>
+  <link rel="stylesheet" href="dartwork-design.css" />
+  <link rel="stylesheet" href="dm-interactive.css" />
+  <style>
+    html {
+      overflow-anchor: none;
+    }
+
+    body {
+      margin: 0;
+      background: var(--dm-bg-page);
+      color: var(--dm-text-default);
+      font-family: var(--dm-f-sys);
+      font-size: var(--dm-type-body-size);
+      line-height: var(--dm-type-body-line);
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap {
+      max-width: min(112rem, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 16px 80px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: start;
+      margin: -28px -16px 18px;
+      padding: 18px 16px;
+      background: color-mix(in srgb, var(--dm-bg-page) 92%, transparent);
+      border-bottom: 1px solid var(--dm-border-faint);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .topbar__actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: var(--dm-type-display-size);
+      line-height: var(--dm-type-display-line);
+      font-weight: var(--dm-type-display-weight);
+      letter-spacing: 0;
+    }
+
+    .intro {
+      max-width: 82ch;
+      margin: 8px 0 0;
+      color: var(--dm-text-muted);
+    }
+
+    .controls {
+      display: grid;
+      gap: 14px;
+      margin: 18px 0;
+    }
+
+    .control-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .label {
+      color: var(--dm-text-faint);
+      font-size: var(--dm-type-caption-size);
+      font-weight: var(--dm-type-caption-weight);
+      line-height: var(--dm-type-caption-line);
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .poc-btn {
+      border: 1px solid var(--dm-border);
+      border-radius: var(--dm-radius-full);
+      background: var(--dm-bg-panel);
+      color: var(--dm-text-muted);
+      cursor: pointer;
+      font: inherit;
+      font-size: var(--dm-type-label-size);
+      font-weight: var(--dm-type-label-weight);
+      line-height: var(--dm-type-label-line);
+      padding: 7px 13px;
+    }
+
+    .poc-btn:hover {
+      border-color: var(--dm-accent-7);
+      color: var(--dm-accent-11);
+      background: var(--dm-accent-2);
+    }
+
+    .poc-btn.is-active {
+      border-color: var(--dm-accent-7);
+      color: var(--dm-accent-11);
+      background: var(--dm-accent-3);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 18px 0 22px;
+    }
+
+    .summary-card {
+      border: 1px solid var(--dm-border-faint);
+      border-radius: var(--dm-radius-4);
+      background: var(--dm-bg-panel);
+      padding: 13px 14px;
+    }
+
+    .summary-card.is-active {
+      border-color: var(--dm-accent-7);
+      box-shadow: inset 0 0 0 1px var(--dm-accent-a6);
+    }
+
+    .summary-card.is-current {
+      border-color: var(--dm-warning-7);
+    }
+
+    .summary-card h2 {
+      margin: 0 0 6px;
+      font-size: var(--dm-type-label-size);
+      line-height: var(--dm-type-label-line);
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .summary-card p {
+      margin: 0;
+      color: var(--dm-text-muted);
+      font-size: var(--dm-type-caption-size);
+      line-height: var(--dm-type-caption-line);
+    }
+
+    .summary-card__badge,
+    .compare-card__badge {
+      display: inline-flex;
+      width: fit-content;
+      border: 1px solid var(--dm-border-faint);
+      border-radius: var(--dm-radius-full);
+      background: var(--dm-gray-a3);
+      color: var(--dm-text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.3;
+      padding: 2px 7px;
+    }
+
+    .summary-card__badge[data-tone="current"],
+    .compare-card__badge[data-tone="current"] {
+      border-color: var(--dm-warning-7);
+      background: var(--dm-warning-a3);
+      color: var(--dm-warning-11);
+    }
+
+    .summary-card__badge[data-tone="candidate"],
+    .compare-card__badge[data-tone="candidate"] {
+      border-color: var(--dm-accent-7);
+      background: var(--dm-accent-3);
+      color: var(--dm-accent-11);
+    }
+
+    .summary-card__badge + p,
+    .compare-card__badge + .compare-card__note {
+      margin-top: 6px;
+    }
+
+    .status-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 16px 0 2px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      border: 1px solid var(--dm-border-faint);
+      border-radius: var(--dm-radius-full);
+      background: var(--dm-bg-panel);
+      color: var(--dm-text-muted);
+      font-size: var(--dm-type-caption-size);
+      line-height: var(--dm-type-caption-line);
+      padding: 5px 10px;
+    }
+
+    .status-pill strong {
+      color: var(--dm-text-default);
+      font-weight: 700;
+    }
+
+    .decision-guide {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: -8px 0 22px;
+    }
+
+    .decision-guide__item {
+      border: 1px solid var(--dm-border-faint);
+      border-radius: var(--dm-radius-4);
+      background: var(--dm-gray-a2);
+      padding: 10px 12px;
+      color: var(--dm-text-muted);
+      font-size: var(--dm-type-caption-size);
+      line-height: var(--dm-type-caption-line);
+    }
+
+    .decision-guide__item strong {
+      color: var(--dm-text-default);
+      font-weight: 700;
+    }
+
+    .stage-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      padding: 10px 0;
+      border-top: 1px solid var(--dm-border-faint);
+    }
+
+    .metric-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--dm-text-muted);
+      font-family: var(--dm-f-mono);
+      font-size: var(--dm-type-mono-size);
+      line-height: var(--dm-type-mono-line);
+    }
+
+    .metric {
+      border: 1px solid var(--dm-border-faint);
+      border-radius: var(--dm-radius-full);
+      background: var(--dm-gray-a2);
+      padding: 4px 8px;
+    }
+
+    .frame-scroll {
+      overflow-x: auto;
+      border: 1px solid var(--dm-border);
+      border-radius: var(--dm-radius-5);
+      background: var(--dm-bg-subtle);
+      box-shadow: var(--dm-shadow-2);
+    }
+
+    .frame-shell {
+      width: 1440px;
+      min-width: 320px;
+      max-width: 100%;
+      height: 840px;
+      margin: 0 auto;
+      background: var(--dm-bg-page);
+    }
+
+    iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: white;
+    }
+
+    .is-hidden {
+      display: none !important;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .compare-card {
+      border: 1px solid var(--dm-border);
+      border-radius: var(--dm-radius-5);
+      background: var(--dm-bg-panel);
+      box-shadow: var(--dm-shadow-1);
+      overflow: hidden;
+    }
+
+    .compare-card.is-active {
+      border-color: var(--dm-accent-7);
+      box-shadow: inset 0 0 0 1px var(--dm-accent-a6), var(--dm-shadow-2);
+    }
+
+    .compare-card.is-current {
+      border-color: var(--dm-warning-7);
+    }
+
+    .compare-card__head {
+      display: grid;
+      gap: 5px;
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--dm-border-faint);
+    }
+
+    .compare-card__title {
+      margin: 0;
+      font-size: var(--dm-type-label-size);
+      line-height: var(--dm-type-label-line);
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .compare-card__note {
+      margin: 0;
+      color: var(--dm-text-muted);
+      font-size: var(--dm-type-caption-size);
+      line-height: var(--dm-type-caption-line);
+    }
+
+    .compare-card__metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 2px;
+    }
+
+    .compare-card__metrics .metric {
+      font-size: 11px;
+      padding: 2px 6px;
+    }
+
+    .compare-crop {
+      overflow: hidden;
+      background: var(--dm-bg-subtle);
+    }
+
+    .compare-viewport {
+      height: 760px;
+      min-width: 320px;
+      transform-origin: top left;
+      background: white;
+    }
+
+    @media (max-width: 900px) {
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .decision-guide {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .compare-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .decision-guide {
+        grid-template-columns: 1fr;
+      }
+
+      .frame-shell {
+        height: 720px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div>
+        <h1>Docs layout width POCs</h1>
+        <p class="intro">
+          Compare width contracts on real built docs pages. Each option injects
+          only layout CSS into the iframe, leaving the rest of the docs styling
+          unchanged.
+        </p>
+      </div>
+      <div class="topbar__actions">
+        <button class="poc-btn" id="copyViewLink" type="button">Copy view link</button>
+        <button class="poc-btn" id="themeToggle" type="button">Toggle theme</button>
+      </div>
+    </header>
+
+    <section class="controls" aria-label="Layout POC controls">
+      <div class="control-group">
+        <div class="label">View mode</div>
+        <div class="button-row" id="modeControls" role="group" aria-label="View mode"></div>
+      </div>
+      <div class="control-group">
+        <div class="label">Option</div>
+        <div class="button-row" id="variantControls" role="group" aria-label="Layout option"></div>
+      </div>
+      <div class="control-group">
+        <div class="label">Docs page</div>
+        <div class="button-row" id="pageControls" role="group" aria-label="Docs page"></div>
+      </div>
+      <div class="control-group">
+        <div class="label">Viewport</div>
+        <div class="button-row" id="viewportControls" role="group" aria-label="Viewport width"></div>
+      </div>
+    </section>
+
+    <section class="status-strip" aria-label="Current layout status">
+      <span class="status-pill"><strong>Current shipping CSS</strong>: C split prose/component</span>
+      <span class="status-pill"><strong>POC variants</strong>: iframe-only CSS injection</span>
+      <span class="status-pill"><strong>Remaining alternative</strong>: D page-aware split</span>
+    </section>
+
+    <section class="summary-grid" id="summaryGrid" aria-label="Option summaries"></section>
+
+    <section class="decision-guide" aria-label="Decision guide">
+      <div class="decision-guide__item"><strong>A</strong>: use only if maximum line length feels acceptable everywhere.</div>
+      <div class="decision-guide__item"><strong>B</strong>: use if tighter global docs are more important than wide widgets.</div>
+      <div class="decision-guide__item"><strong>C</strong>: use if text should read well while components keep room.</div>
+      <div class="decision-guide__item"><strong>D</strong>: use if API/usage prose should be stricter than gallery/widget pages.</div>
+    </section>
+
+    <section class="stage" id="singleStage">
+      <div class="stage-head">
+        <div class="metric-row" id="metrics" aria-live="polite">
+          <span class="metric">loading metrics...</span>
+        </div>
+        <a class="poc-btn" id="openPage" href="#" target="_blank" rel="noopener">Open base page</a>
+      </div>
+      <div class="frame-scroll">
+        <div class="frame-shell" id="frameShell">
+          <iframe id="preview" title="Docs layout width preview"></iframe>
+        </div>
+      </div>
+    </section>
+
+    <section class="stage" id="compareStage">
+      <div class="stage-head">
+        <div class="metric-row">
+          <span class="metric">all options</span>
+          <span class="metric" id="compareViewportMetric">viewport 1440px</span>
+        </div>
+        <a class="poc-btn" id="openCompareBasePage" href="#" target="_blank" rel="noopener">Open base page</a>
+      </div>
+      <div class="compare-grid" id="compareGrid" aria-label="All layout options"></div>
+    </section>
+  </div>
+
+  <script>
+    const pages = [
+      { id: "api", label: "API helpers", path: "../api/helpers.html", kind: "api" },
+      { id: "gallery", label: "Examples gallery", path: "../examples_gallery/index.html", kind: "gallery" },
+      { id: "categorical", label: "Categorical palettes", path: "../color_system/categorical-palettes.html", kind: "wide" },
+      { id: "usage", label: "Usage colors", path: "../usage_guide/colors.html", kind: "usage" },
+    ];
+
+    const viewports = [
+      { id: "390", label: "390", width: 390 },
+      { id: "1024", label: "1024", width: 1024 },
+      { id: "1440", label: "1440", width: 1440 },
+      { id: "1680", label: "1680", width: 1680 },
+      { id: "2048", label: "2048", width: 2048 },
+    ];
+
+    const variants = [
+      {
+        id: "full",
+        label: "A. Full article",
+        badge: "wide alternative",
+        tone: "neutral",
+        short: "Wide article for everything. Fastest fix for old narrow wrapping, but long prose can become too wide.",
+        css: `
+          :root {
+            --dm-layout-shell-max: 120rem !important;
+            --dm-layout-article-max: 88rem !important;
+            --dm-layout-prose-max: 88rem !important;
+            --sy-c-content-width: var(--dm-layout-article-max) !important;
+          }
+          .sy-container { max-width: var(--dm-layout-shell-max) !important; }
+          .sy-main div:has(> article.yue) { max-width: var(--dm-layout-article-max) !important; }
+          .yue { max-width: none !important; }
+          .yue > p, .yue > ul, .yue > ol, .yue > section > p, .yue > section > ul, .yue > section > ol {
+            max-width: none !important;
+          }
+        `,
+      },
+      {
+        id: "compact",
+        label: "B. Compact article",
+        badge: "alternative",
+        tone: "neutral",
+        short: "Shrink the whole canvas to 64rem. Prose is comfortable, but galleries and wide widgets lose useful room.",
+        css: `
+          :root {
+            --dm-layout-shell-max: 104rem !important;
+            --dm-layout-article-max: 64rem !important;
+            --dm-layout-prose-max: 64rem !important;
+            --sy-c-content-width: var(--dm-layout-article-max) !important;
+          }
+          .sy-container { max-width: var(--dm-layout-shell-max) !important; }
+          .sy-main div:has(> article.yue) { max-width: var(--dm-layout-article-max) !important; }
+          .yue { max-width: none !important; }
+          .dm-wide { max-width: 100% !important; width: 100% !important; }
+        `,
+      },
+      {
+        id: "split",
+        label: "C. Split prose/component",
+        badge: "current shipping",
+        tone: "current",
+        short: "Wide canvas for components, readable measure for text. This is the selected shipping contract.",
+        css: `
+          :root {
+            --dm-layout-shell-max: 120rem !important;
+            --dm-layout-article-max: 88rem !important;
+            --dm-layout-prose-max: 86ch !important;
+            --sy-c-content-width: var(--dm-layout-article-max) !important;
+          }
+          .sy-container { max-width: var(--dm-layout-shell-max) !important; }
+          .sy-main div:has(> article.yue) { max-width: var(--dm-layout-article-max) !important; }
+          .yue { max-width: none !important; }
+          article.yue > p,
+          article.yue > ul,
+          article.yue > ol,
+          article.yue > .admonition,
+          article.yue section > p,
+          article.yue section > ul,
+          article.yue section > ol,
+          article.yue section > .admonition {
+            max-width: var(--dm-layout-prose-max) !important;
+          }
+          article.yue .sphx-glr-thumbnails,
+          article.yue .dm-wide,
+          article.yue .highlight,
+          article.yue table,
+          article.yue figure {
+            max-width: 100% !important;
+          }
+        `,
+      },
+      {
+        id: "typed",
+        label: "D. Page-aware split",
+        badge: "candidate",
+        tone: "candidate",
+        short: "API and usage pages get readable text; gallery and wide widget pages keep the full component canvas.",
+        cssFor(kind) {
+          const proseCss = `
+            article.yue > p,
+            article.yue > ul,
+            article.yue > ol,
+            article.yue > .admonition,
+            article.yue section > p,
+            article.yue section > ul,
+            article.yue section > ol,
+            article.yue section > .admonition {
+              max-width: var(--dm-layout-prose-max) !important;
+            }
+          `;
+          return `
+            :root {
+              --dm-layout-shell-max: 120rem !important;
+              --dm-layout-article-max: 88rem !important;
+              --dm-layout-prose-max: ${kind === "api" ? "84ch" : "88ch"} !important;
+              --sy-c-content-width: var(--dm-layout-article-max) !important;
+            }
+            .sy-container { max-width: var(--dm-layout-shell-max) !important; }
+            .sy-main div:has(> article.yue) { max-width: var(--dm-layout-article-max) !important; }
+            .yue { max-width: none !important; }
+            ${(kind === "api" || kind === "usage") ? proseCss : ""}
+            article.yue .sphx-glr-thumbnails,
+            article.yue .dm-wide,
+            article.yue .highlight,
+            article.yue table,
+            article.yue figure {
+              max-width: 100% !important;
+            }
+          `;
+        },
+      },
+    ];
+
+    const modes = [
+      { id: "compare", label: "Compare all" },
+      { id: "single", label: "Single option" },
+    ];
+
+    const state = {
+      mode: "compare",
+      variant: "split",
+      page: "api",
+      viewport: "1440",
+      theme: "light",
+    };
+
+    function validId(list, id) {
+      return list.some((item) => item.id === id);
+    }
+
+    function hydrateStateFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const mode = params.get("mode");
+      const variant = params.get("variant");
+      const page = params.get("page");
+      const viewport = params.get("viewport");
+      const theme = params.get("theme");
+
+      if (validId(modes, mode)) state.mode = mode;
+      if (validId(variants, variant)) state.variant = variant;
+      if (validId(pages, page)) state.page = page;
+      if (validId(viewports, viewport)) state.viewport = viewport;
+      if (theme === "dark" || theme === "light") state.theme = theme;
+    }
+
+    function currentViewUrl() {
+      const url = new URL(window.location.href);
+      url.searchParams.set("mode", state.mode);
+      url.searchParams.set("variant", state.variant);
+      url.searchParams.set("page", state.page);
+      url.searchParams.set("viewport", state.viewport);
+      url.searchParams.set("theme", state.theme);
+      return url;
+    }
+
+    function persistState() {
+      window.history.replaceState({}, "", currentViewUrl());
+    }
+
+    const preview = document.getElementById("preview");
+    const frameShell = document.getElementById("frameShell");
+    const metrics = document.getElementById("metrics");
+    const openPage = document.getElementById("openPage");
+    const openCompareBasePage = document.getElementById("openCompareBasePage");
+    const singleStage = document.getElementById("singleStage");
+    const compareStage = document.getElementById("compareStage");
+    const compareGrid = document.getElementById("compareGrid");
+    const compareViewportMetric = document.getElementById("compareViewportMetric");
+    const copyViewLink = document.getElementById("copyViewLink");
+
+    function getActive(list, id) {
+      return list.find((item) => item.id === id) || list[0];
+    }
+
+    function setActiveButtons(container, activeId) {
+      container.querySelectorAll(".poc-btn").forEach((button) => {
+        const active = button.dataset.id === activeId;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+    }
+
+    function renderControls() {
+      const modeControls = document.getElementById("modeControls");
+      const variantControls = document.getElementById("variantControls");
+      const pageControls = document.getElementById("pageControls");
+      const viewportControls = document.getElementById("viewportControls");
+      const summaryGrid = document.getElementById("summaryGrid");
+
+      modeControls.innerHTML = modes.map((mode) =>
+        `<button class="poc-btn" type="button" data-id="${mode.id}" aria-pressed="false">${mode.label}</button>`
+      ).join("");
+      variantControls.innerHTML = variants.map((variant) =>
+        `<button class="poc-btn" type="button" data-id="${variant.id}" aria-pressed="false">${variant.label}</button>`
+      ).join("");
+      pageControls.innerHTML = pages.map((page) =>
+        `<button class="poc-btn" type="button" data-id="${page.id}" aria-pressed="false">${page.label}</button>`
+      ).join("");
+      viewportControls.innerHTML = viewports.map((viewport) =>
+        `<button class="poc-btn" type="button" data-id="${viewport.id}" aria-pressed="false">${viewport.label}px</button>`
+      ).join("");
+      summaryGrid.innerHTML = variants.map((variant) =>
+        `<article class="summary-card ${variant.id === "split" ? "is-current" : ""}" data-id="${variant.id}">
+          <h2>${variant.label}</h2>
+          <span class="summary-card__badge" data-tone="${variant.tone}">${variant.badge}</span>
+          <p>${variant.short}</p>
+        </article>`
+      ).join("");
+      compareGrid.innerHTML = variants.map((variant) => `
+        <article class="compare-card ${variant.id === "split" ? "is-current" : ""}" data-variant-id="${variant.id}">
+          <div class="compare-card__head">
+            <h2 class="compare-card__title">${variant.label}</h2>
+            <span class="compare-card__badge" data-tone="${variant.tone}">${variant.badge}</span>
+            <p class="compare-card__note">${variant.short}</p>
+            <div class="compare-card__metrics" aria-live="polite">
+              <span class="metric">loading...</span>
+            </div>
+          </div>
+          <div class="compare-crop">
+            <div class="compare-viewport">
+              <iframe title="${variant.label} preview"></iframe>
+            </div>
+          </div>
+        </article>
+      `).join("");
+
+      modeControls.addEventListener("click", (event) => {
+        const button = event.target.closest(".poc-btn");
+        if (!button) return;
+        state.mode = button.dataset.id;
+        sync();
+      });
+      variantControls.addEventListener("click", (event) => {
+        const button = event.target.closest(".poc-btn");
+        if (!button) return;
+        state.variant = button.dataset.id;
+        sync();
+      });
+      pageControls.addEventListener("click", (event) => {
+        const button = event.target.closest(".poc-btn");
+        if (!button) return;
+        state.page = button.dataset.id;
+        loadFrame();
+      });
+      viewportControls.addEventListener("click", (event) => {
+        const button = event.target.closest(".poc-btn");
+        if (!button) return;
+        state.viewport = button.dataset.id;
+        sync();
+      });
+      summaryGrid.addEventListener("click", (event) => {
+        const card = event.target.closest(".summary-card");
+        if (!card) return;
+        state.variant = card.dataset.id;
+        state.mode = "single";
+        sync();
+      });
+
+      compareGrid.querySelectorAll("iframe").forEach((frame) => {
+        frame.addEventListener("load", () => {
+          const card = frame.closest(".compare-card");
+          applyVariantToFrame(frame, card.dataset.variantId);
+          readFrameMetrics(frame, card.querySelector(".compare-card__metrics"));
+        });
+      });
+    }
+
+    function getVariantCss(variantId, kind) {
+      const variant = getActive(variants, variantId);
+      return variant.cssFor ? variant.cssFor(kind) : variant.css;
+    }
+
+    function applyVariantToFrame(frame, variantId) {
+      const page = getActive(pages, state.page);
+      const doc = frame.contentDocument;
+      if (!doc) return;
+      let style = doc.getElementById("dm-layout-poc-style");
+      if (!style) {
+        style = doc.createElement("style");
+        style.id = "dm-layout-poc-style";
+        doc.head.appendChild(style);
+      }
+      style.textContent = getVariantCss(variantId, page.kind);
+      doc.documentElement.dataset.layoutPoc = variantId;
+      doc.documentElement.dataset.docKind = page.kind;
+      doc.documentElement.classList.toggle("dark", state.theme === "dark");
+      doc.documentElement.classList.toggle("light", state.theme !== "dark");
+      doc.body?.setAttribute("data-theme", state.theme);
+    }
+
+    function readFrameMetrics(frame, target) {
+      const doc = frame.contentDocument;
+      if (!doc) return;
+      const article = doc.querySelector("article.yue, article[role='main'], .yue");
+      const paragraph = Array.from(doc.querySelectorAll("article.yue > p, article.yue > section > p, .yue > p"))
+        .find((node) => node.textContent.trim().length > 40);
+      const galleryImage = doc.querySelector(".sphx-glr-thumbcontainer img");
+      const wide = doc.querySelector(".dm-wide, #categorical-explorer, iframe[src*='categorical']");
+      const box = (node) => node ? node.getBoundingClientRect() : null;
+      const articleBox = box(article);
+      const paragraphBox = box(paragraph);
+      const imageBox = box(galleryImage);
+      const wideBox = box(wide);
+      const values = [
+        `viewport ${frame.clientWidth}px`,
+        articleBox ? `article ${Math.round(articleBox.width)}px` : "article n/a",
+        paragraphBox ? `text ${Math.round(paragraphBox.width)}px` : "text n/a",
+      ];
+      if (imageBox) values.push(`thumb ${Math.round(imageBox.width)}x${Math.round(imageBox.height)}`);
+      if (wideBox) values.push(`wide ${Math.round(wideBox.width)}px`);
+      target.innerHTML = values.map((value) => `<span class="metric">${value}</span>`).join("");
+    }
+
+    function readMetrics() {
+      readFrameMetrics(preview, metrics);
+    }
+
+    function syncCompareFrames() {
+      const page = getActive(pages, state.page);
+      const viewport = getActive(viewports, state.viewport);
+      compareViewportMetric.textContent = `viewport ${viewport.width}px`;
+      openCompareBasePage.href = page.path;
+
+      compareGrid.querySelectorAll(".compare-card").forEach((card) => {
+        const frame = card.querySelector("iframe");
+        const crop = card.querySelector(".compare-crop");
+        const viewportShell = card.querySelector(".compare-viewport");
+        const scale = Math.min(1, Math.max(0.25, (crop.clientWidth - 2) / viewport.width));
+        viewportShell.style.width = `${viewport.width}px`;
+        viewportShell.style.transform = `scale(${scale})`;
+        crop.style.height = `${Math.round(760 * scale)}px`;
+        card.classList.toggle("is-active", card.dataset.variantId === state.variant);
+        if (frame.dataset.pageId !== state.page) {
+          frame.src = page.path;
+          frame.dataset.pageId = state.page;
+        } else {
+          applyVariantToFrame(frame, card.dataset.variantId);
+          readFrameMetrics(frame, card.querySelector(".compare-card__metrics"));
+        }
+      });
+    }
+
+    function sync() {
+      const variant = getActive(variants, state.variant);
+      const page = getActive(pages, state.page);
+      const viewport = getActive(viewports, state.viewport);
+      document.title = `${variant.label} - ${page.label}`;
+      frameShell.style.width = `${viewport.width}px`;
+      frameShell.style.maxWidth = viewport.width > window.innerWidth - 48 ? "none" : "100%";
+      openPage.href = page.path;
+      openCompareBasePage.href = page.path;
+      persistState();
+      singleStage.classList.toggle("is-hidden", state.mode !== "single");
+      compareStage.classList.toggle("is-hidden", state.mode !== "compare");
+      setActiveButtons(document.getElementById("modeControls"), state.mode);
+      setActiveButtons(document.getElementById("variantControls"), state.variant);
+      setActiveButtons(document.getElementById("pageControls"), state.page);
+      setActiveButtons(document.getElementById("viewportControls"), state.viewport);
+      document.querySelectorAll(".summary-card").forEach((card) => {
+        card.classList.toggle("is-active", card.dataset.id === state.variant);
+      });
+      applyVariantToFrame(preview, state.variant);
+      requestAnimationFrame(readMetrics);
+      setTimeout(readMetrics, 250);
+      requestAnimationFrame(syncCompareFrames);
+      setTimeout(syncCompareFrames, 250);
+    }
+
+    function loadFrame() {
+      const page = getActive(pages, state.page);
+      preview.src = page.path;
+      openPage.href = page.path;
+      openCompareBasePage.href = page.path;
+      metrics.innerHTML = `<span class="metric">loading metrics...</span>`;
+      compareGrid.querySelectorAll("iframe").forEach((frame) => {
+        frame.src = page.path;
+        frame.dataset.pageId = state.page;
+      });
+    }
+
+    preview.addEventListener("load", () => {
+      sync();
+      setTimeout(readMetrics, 700);
+    });
+
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      state.theme = state.theme === "dark" ? "light" : "dark";
+      document.documentElement.classList.toggle("dark", state.theme === "dark");
+      document.documentElement.classList.toggle("light", state.theme !== "dark");
+      sync();
+    });
+
+    copyViewLink.addEventListener("click", async () => {
+      const url = currentViewUrl().toString();
+      try {
+        await navigator.clipboard.writeText(url);
+        copyViewLink.textContent = "Copied";
+      } catch {
+        window.prompt("Copy this view link", url);
+        copyViewLink.textContent = "Link ready";
+      }
+      setTimeout(() => {
+        copyViewLink.textContent = "Copy view link";
+      }, 1300);
+    });
+
+    window.addEventListener("resize", () => {
+      requestAnimationFrame(syncCompareFrames);
+    });
+
+    hydrateStateFromUrl();
+    renderControls();
+    sync();
+    loadFrame();
+    setTimeout(() => window.scrollTo(0, 0), 800);
+  </script>
+</body>
+</html>

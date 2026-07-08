@@ -15,7 +15,7 @@
   --dm-ux-bg-mute: var(--dm-bg-subtle);
   --dm-ux-text: var(--dm-text-strong);
   --dm-ux-text-weak: var(--dm-text-muted);
-  --dm-ux-danger: var(--dm-warning-11);
+  --dm-ux-danger: var(--dm-danger-11);
   --dm-ux-overlay: color-mix(in oklab, var(--dm-gray-12) 55%, transparent);
   --dm-ux-code-bg: var(--dm-gray-12);
   --dm-ux-code-text: var(--dm-gray-1);
@@ -51,7 +51,7 @@ body[data-theme="dark"] {
   border-radius: 999px;
   font-size: 0.85rem;
   font-weight: 500;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
   box-shadow: var(--dm-ux-elev);
   opacity: 0;
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -297,10 +297,6 @@ body.dm-kbd-pending-g::after {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid var(--dm-ux-border);
-  background: var(--dm-ux-bg-mute);
-  padding: 6px 10px;
-  border-radius: var(--dm-radius-4);
 }
 .dm-faq-search-icon {
   color: var(--dm-ux-text-weak);
@@ -308,17 +304,13 @@ body.dm-kbd-pending-g::after {
 }
 .dm-faq-search {
   flex: 1;
-  border: 0;
-  background: transparent;
-  color: var(--dm-ux-text);
   font-size: 0.95rem;
-  outline: none;
 }
 .dm-faq-search-count {
   font-size: 0.78rem;
   color: var(--dm-ux-text-weak);
 }
-.dm-faq-search-count.zero {
+.dm-faq-search-count.is-empty {
   color: var(--dm-ux-danger);
 }
 .dm-faq-pills {
@@ -326,24 +318,10 @@ body.dm-kbd-pending-g::after {
   flex-wrap: wrap;
   gap: 6px;
 }
-.dm-faq-pill {
-  background: var(--dm-ux-bg-mute);
-  border: 1px solid var(--dm-ux-border);
-  color: var(--dm-ux-text);
+.dm-faq-pill.dm-chip {
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 0.82rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.dm-faq-pill:hover {
-  border-color: var(--dm-ux-accent);
-  color: var(--dm-ux-accent);
-}
-.dm-faq-pill.active {
-  background: var(--dm-ux-accent-soft);
-  border-color: var(--dm-ux-accent);
-  color: var(--dm-accent-11);
 }
 
 /* ───────────────────────── 6. Helper ruler ──────────────────────────── */
@@ -390,7 +368,7 @@ body.dm-kbd-pending-g::after {
   font-size: 0.78rem;
   color: var(--dm-ux-text-weak);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -626,9 +604,10 @@ body.dm-kbd-pending-g::after {
 
 /* ───────────────────────── 8. Favorites tray ────────────────────────── */
 .dm-fav-tray {
+  --dm-fav-tray-bottom: 70px;
   position: fixed;
   right: 18px;
-  bottom: 70px;
+  bottom: var(--dm-fav-tray-bottom);
   width: 250px;
   background: var(--dm-ux-bg);
   border: 1px solid var(--dm-ux-border);
@@ -639,7 +618,7 @@ body.dm-kbd-pending-g::after {
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 .dm-fav-tray.collapsed {
-  transform: translateY(calc(100% - 38px));
+  transform: translateY(calc(100% - 38px + var(--dm-fav-tray-bottom)));
 }
 .dm-fav-tray.empty {
   opacity: 0.92;
@@ -777,6 +756,19 @@ body.dm-kbd-pending-g::after {
   color: var(--dm-warning-11);
   background: var(--dm-ux-pin-on-bg);
   box-shadow: 0 0 0 1px var(--dm-warning-9);
+}
+@media (max-width: 99.999rem) {
+  .dm-fav-tray {
+    display: none;
+  }
+}
+@media (max-width: 1100px) {
+  .dm-fav-tray {
+    --dm-fav-tray-bottom: 18px;
+    right: 72px;
+    width: min(250px, calc(100vw - 96px));
+    display: none;
+  }
 }
 @media (max-width: 720px) {
   .dm-fav-tray {

@@ -2,8 +2,8 @@
 
 > Single source of truth for every **interactive** control in the docs.
 > Foundation for the 2026-06 consistency overhaul. Pairs with
-> `dm-interactive.css` (implementation) and `interactive_overhaul_pocs.html`
-> / styleguide (living reference).
+> `dm-interactive.css` (implementation), `dm-interactive-styleguide.html`
+> (living reference), and `_overhaul_review.html` (visual checkpoint).
 
 ## Why this exists
 
@@ -23,6 +23,11 @@ selected Tool/OS button rendered **transparent + white text = invisible**.
 
 The overhaul collapses everything to **one token system + one primitive per
 interaction pattern**.
+
+Legacy literals in this document are diagnostic examples only. In the current
+shipping docs surface, component CSS and generated widget HTML must use
+`--dm-*` / `--dm-i-*` tokens plus `is-active` and ARIA state. Hardcoded legacy
+accent values are confined to historical notes and explicit comparison POCs.
 
 ## Token SSOT
 
@@ -84,15 +89,56 @@ the page is deliberately demonstrating a size scale.
 
 | Primitive | Class | Active cue | Maps from |
 |---|---|---|---|
-| Segmented control | `.dm-seg` / `.dm-seg__thumb` / `.dm-opt` | sliding panel thumb (260ms) | install picker Tool/OS, compare/wipe toggles, tone toggles |
-| Underline tab | `.dm-tabs` / `.dm-tab` | 2px `accent-9` underline | doc tab-sets (`.sd-tab-set`), `.dm-pc-tab`, picker tabs |
-| Soft chip | `.dm-chip` (+`.dm-chip__x`) | `accent-3` wash + `accent-11` text | FAQ filter pills, favorites tray |
+| Segmented control | `.dm-seg` / `.dm-seg__thumb` / `.dm-opt` | sliding panel thumb, or `.no-thumb` static fill for tiny groups | install picker Tool/OS, CVD toggle, example view toggle, colormap type toggle, interpolation comparison toggle, tone toggles |
+| Underline tab | `.dm-tabs` / `.dm-tab` | 2px `accent-9` underline | doc tab-sets (`.sd-tab-set`), generated palette explorer tabs, palette picker namespaces, font picker families, before/after compare widgets |
+| Soft chip | `.dm-chip` (+`.dm-chip__x`) | `accent-3` wash + `accent-11` text | gallery/FAQ filter pills, palette choices, evolution milestones, favorites tray |
+| Field/input | `.dm-field` / `.dm-input` | neutral input surface + teal focus ring | gallery search, color search, FAQ search |
 | Swatch tile | `.dm-swatch` | teal double-ring | palette / colormap / color picker |
 | Range slider | `.dm-slider` | teal handle + filled track | evolution / interactive sliders |
 | Ghost icon button | `.dm-icon-btn` | faint → `accent-3` hover | copy buttons, toggles |
 | Light code surface | `.dm-code` / `.dm-code__prompt` | n/a (theme-adaptive slab) | install command, inline commands |
 | CTA button | `.dm-cta--primary/secondary/ghost` | solid/outline/ghost teal | landing CTA (replaces purple) |
 | Callout stripe | `.dm-callout` | left teal stripe | evolution description, notes |
+
+## shadcn/Base UI component grammar
+
+Use shadcn as a naming and composition reference, not as a React runtime inside
+Sphinx. The docs already have a static Shibuya shell and page TOC, so the safe
+borrowed surface is CSS class grammar:
+
+| shadcn pattern | Docs primitive | Notes |
+|---|---|---|
+| Button variants/sizes/icons | `.dm-cta`, `.dm-icon-btn`, `.dm-chip`; future `.dm-button` only after repeated generic actions | Gallery pills intentionally behave like chips, not rectangular buttons. |
+| Card header/content/footer | gallery card anatomy now follows tokenized card rules; promote `.dm-card*` only when hand-authored repeated cards need it | Generated Sphinx-gallery classes remain the stable hook. |
+| Tabs list/trigger/content | `.dm-tabs` / `.dm-tab` | Already implemented and should absorb navigation-like tab sets; compact mutually exclusive controls use `.dm-seg`. |
+| Input + Field description/error | `.dm-field` / `.dm-input` | Gallery and color search now share one static field primitive; keep focus ring and disabled/error states aligned with interaction tokens. |
+| Command menu | gallery search/filter layout grammar only | No global command palette until there is a real keyboard/action model. |
+| Sheet/Dialog side panel | not adopted | Shibuya owns offcanvas sidebars and the right TOC; duplicating sheet behavior risks overlap and focus conflicts. |
+
+## shadcn adoption matrix for the docs
+
+| Decision | shadcn/Base UI idea | Where it lands in this docs codebase | Reason |
+|---|---|---|---|
+| **Adopt now** | Field + Input | `.dm-field` / `.dm-input` for Examples Gallery search, Color search, and FAQ search | Static Sphinx pages need consistent focus, disabled, empty, and warning states without React form runtime. |
+| **Adopt now** | Badge / Chip | `.dm-chip` for gallery category pills, FAQ section pills, palette choices, evolution milestones, and small filter affordances | Filter chips are repeated, stateful, and compact; the shadcn chip grammar fits better than rectangular buttons. |
+| **Adopt now** | Segmented Control / Toggle Group | `.dm-seg` / `.dm-opt` for CVD mode selection, example Code/Output view controls, colormap type, and OKLCH/RGB comparison modes | Mutually exclusive toolbar options should share ARIA pressed state and active surface semantics instead of local `.active` button skins. |
+| **Adopt now** | Tabs | `.dm-tabs` / `.dm-tab` for generated palette explorer tabs, palette picker namespaces, font picker families, before/after compare widgets, tab-like pickers, and future doc tab sets | This is already a stable primitive and avoids every widget inventing its own active underline. |
+| **Adopt now** | Icon button | `.dm-icon-btn` for copy/toggle/icon-only actions | Small utility actions should use a quiet ghost button with a focus ring, not local filled-button skins. |
+| **Adopt as anatomy, not class yet** | Card | Sphinx Gallery cards, categorical explorer panels, and repeated future content blocks use tokenized card anatomy | Generated Sphinx classes are the stable hook today; add `.dm-card*` only when hand-authored repeated cards need it. |
+| **Adopt later only if repeated** | Generic Button | Reserve `.dm-button` for future repeated generic commands; today use `.dm-cta`, `.dm-chip`, or `.dm-icon-btn` | Prevents adding an abstraction before there is a real repeated generic button surface. |
+| **Defer / spike** | Command menu | Search/filter density only; no global command palette | A real command palette needs keyboard scope, action registry, and focus management. |
+| **Do not adopt in this PR** | Sheet / Dialog / Popover runtime | Keep Shibuya sidebars, offcanvas, and right TOC as the only page-level rails | Extra overlay primitives would compete with Sphinx navigation and can collide with the page TOC. |
+
+Gallery filter categories use `.dm-chip` as a **mobile chip rail** on narrow
+content canvases up to 1100px: the rail stays one row tall and scrolls
+horizontally instead of wrapping into a tall toolbar. This preserves
+first-screen access to the first gallery section and cards while keeping the
+same chip semantics on desktop and mobile.
+
+For tab-like widgets, `.dm-tab[aria-selected="true"]` and `.dm-tab.is-active`
+are the supported active hooks. Old aliases such as bespoke `*-active` classes
+or `.active` selectors are not part of the shipping grammar; they remain only
+inside comparison POCs where the point is to show a historical alternative.
 
 ## Decided directions (2026-06-12, after 4-lens critique)
 
@@ -122,5 +168,7 @@ the page is deliberately demonstrating a size scale.
 | `dartwork-design.css` | raw token scale + Tier 1–6 legacy overrides |
 | `dm-interactive.css` | **interactive primitive SSOT** (this system) |
 | `dm-interactive-system.md` | this doc — the human SSOT |
-| `interactive_overhaul_pocs.html` | rendered styleguide / living reference |
+| `dm-interactive-styleguide.html` | living styleguide linked to real CSS, included in layout audits |
+| `_overhaul_review.html` | visual checkpoint linked to real CSS/JS, included in layout audits |
+| `interactive_overhaul_pocs.html` | comparison gallery for historical alternatives |
 | `install_picker_pocs.html`, `install_command_pocs.html` | exploration galleries (the directions that were compared) |

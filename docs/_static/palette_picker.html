@@ -4,25 +4,21 @@
      itself, so adding/removing palettes never requires changing this file. */
 
   .dm-pp {
-    max-width: 720px;
+    width: 100%;
+    max-width: 100%;
     margin: 1.6em auto 2em;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--dm-f-sys);
   }
 
   /* Demo image — picker swaps its src */
   .dm-pp-stage {
     position: relative;
     width: 100%;
-    border-radius: 6px;
-    border: 1px solid #e7e4dd;
-    background: #fbfaf7;
+    border-radius: var(--dm-radius-4);
+    border: 1px solid var(--dm-border-faint);
+    background: var(--dm-bg-panel);
     overflow: hidden;
     margin-bottom: 12px;
-  }
-  html.dark .dm-pp-stage,
-  body[data-theme="dark"] .dm-pp-stage {
-    background: #14141d;
-    border-color: #2a2a36;
   }
   .dm-pp-stage img {
     display: block;
@@ -33,54 +29,43 @@
   .dm-pp-stage img.is-loading { opacity: 0.55; }
 
   .dm-pp-caption {
-    font-size: 0.85em;
-    color: #777;
+    font-size: var(--dm-type-caption-size);
+    color: var(--dm-text-muted);
     text-align: center;
     margin-bottom: 16px;
   }
-  html.dark .dm-pp-caption,
-  body[data-theme="dark"] .dm-pp-caption {
-    color: #aaa;
-  }
   .dm-pp-caption code {
-    background: rgba(13, 148, 136, 0.1);
-    color: #0d9488;
+    background: var(--dm-i-code-surface);
+    color: var(--dm-i-active-text);
     padding: 1px 5px;
-    border-radius: 3px;
+    border-radius: var(--dm-radius-2);
     font-size: 0.9em;
   }
 
   /* Tabs (one per namespace: dc / oc / tw / md / ad / cu / pr) */
-  .dm-pp-tabs {
+  .dm-pp-tabs.dm-tabs {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    border-bottom: 1px solid #e7e4dd;
+    border-bottom: 1px solid var(--dm-border-faint);
     margin-bottom: 10px;
   }
-  html.dark .dm-pp-tabs,
-  body[data-theme="dark"] .dm-pp-tabs {
-    border-bottom-color: #2c2c38;
-  }
-  .dm-pp-tab {
+  .dm-pp-tab.dm-tab {
     border: none;
     background: transparent;
     padding: 6px 14px;
-    font-size: 0.88em;
-    color: #777;
+    font-size: var(--dm-type-label-size);
+    color: var(--dm-text-muted);
     cursor: pointer;
-    border-radius: 4px 4px 0 0;
+    border-radius: var(--dm-radius-3) var(--dm-radius-3) 0 0;
     border-bottom: 2px solid transparent;
-    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-family: var(--dm-f-mono);
   }
-  html.dark .dm-pp-tab,
-  body[data-theme="dark"] .dm-pp-tab {
-    color: #aaa;
-  }
-  .dm-pp-tab:hover { color: #0d9488; }
-  .dm-pp-tab.active {
-    color: #0d9488;
-    border-bottom-color: #0d9488;
+  .dm-pp-tab.dm-tab:hover { color: var(--dm-i-active-text); }
+  .dm-pp-tab.dm-tab.is-active,
+  .dm-pp-tab.dm-tab[aria-selected="true"] {
+    color: var(--dm-i-active-text);
+    border-bottom-color: var(--dm-i-active-line);
     font-weight: 600;
   }
 
@@ -91,42 +76,46 @@
   .dm-pp-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px 14px;
+    gap: var(--dm-space-2);
     margin: 8px 0 12px;
   }
-  .dm-pp-btn {
+  .dm-pp-btn.dm-chip {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    padding: 3px 6px;
-    border-radius: 4px;
-    border: none;
+    padding: 4px 8px;
+    border-radius: var(--dm-radius-full);
+    border: 1px solid var(--dm-border-faint);
     background: transparent;
     cursor: pointer;
-    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
-    font-size: 0.78em;
-    color: #666;
-    transition: color 0.12s ease;
+    font-family: var(--dm-f-mono);
+    font-size: var(--dm-type-caption-size);
+    color: var(--dm-text-muted);
+    transition:
+      background 0.12s ease,
+      border-color 0.12s ease,
+      color 0.12s ease;
   }
-  html.dark .dm-pp-btn,
-  body[data-theme="dark"] .dm-pp-btn {
-    color: #aaa;
+  .dm-pp-btn.dm-chip:hover {
+    color: var(--dm-i-active-text);
+    border-color: var(--dm-border);
   }
-  .dm-pp-btn:hover {
-    color: #0d9488;
-  }
-  .dm-pp-btn.active {
-    color: #0d9488;
+  .dm-pp-btn.dm-chip.is-active,
+  .dm-pp-btn.dm-chip[aria-pressed="true"] {
+    background: var(--dm-i-active-soft);
+    border-color: var(--dm-i-soft-border);
+    color: var(--dm-i-active-text);
     font-weight: 600;
   }
-  .dm-pp-btn.active .dm-pp-swatch {
-    box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.55);
+  .dm-pp-btn.dm-chip.is-active .dm-pp-swatch,
+  .dm-pp-btn.dm-chip[aria-pressed="true"] .dm-pp-swatch {
+    box-shadow: 0 0 0 2px var(--dm-i-active-line);
   }
   .dm-pp-swatch {
     display: inline-flex;
     border-radius: 999px;
     overflow: hidden;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--dm-border-faint);
     flex-shrink: 0;
   }
   .dm-pp-swatch span {
@@ -136,25 +125,21 @@
   }
 
   .dm-pp-active-info {
-    font-size: 0.78em;
-    color: #888;
+    font-size: var(--dm-type-caption-size);
+    color: var(--dm-text-muted);
     margin-top: 8px;
-    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
-  }
-  html.dark .dm-pp-active-info,
-  body[data-theme="dark"] .dm-pp-active-info {
-    color: #999;
+    font-family: var(--dm-f-mono);
   }
   .dm-pp-active-info code {
-    background: rgba(13, 148, 136, 0.08);
-    color: #0d9488;
+    background: var(--dm-i-code-surface);
+    color: var(--dm-i-active-text);
     padding: 1px 6px;
-    border-radius: 3px;
+    border-radius: var(--dm-radius-2);
   }
 </style>
 
 <div class="dm-pp">
-  <div class="dm-pp-tabs" id="dm-pp-tabs"></div>
+  <div class="dm-pp-tabs dm-tabs" id="dm-pp-tabs" role="tablist" aria-label="Palette namespace"></div>
   <div class="dm-pp-buttons" id="dm-pp-buttons"></div>
 
   <div class="dm-pp-stage">
@@ -217,24 +202,44 @@
       // Build namespace tabs.
       groups.forEach(function (g) {
         var tab = document.createElement("button");
-        tab.className = "dm-pp-tab" + (g.namespace === activeNs ? " active" : "");
+        var selected = g.namespace === activeNs;
+        tab.className = "dm-pp-tab dm-tab" + (selected ? " is-active" : "");
         tab.dataset.ns = g.namespace;
+        tab.type = "button";
+        tab.setAttribute("role", "tab");
+        tab.setAttribute("aria-selected", selected ? "true" : "false");
+        tab.tabIndex = selected ? 0 : -1;
         tab.textContent = g.namespace + ".*";
         tab.addEventListener("click", function () { showNamespace(g.namespace); });
+        tab.addEventListener("keydown", function (ev) {
+          var tabs = Array.prototype.slice.call(tabsHost.querySelectorAll(".dm-pp-tab"));
+          var pos = tabs.indexOf(tab);
+          if (ev.key === "ArrowRight") { ev.preventDefault(); tabs[(pos + 1) % tabs.length].click(); tabs[(pos + 1) % tabs.length].focus(); }
+          if (ev.key === "ArrowLeft") { ev.preventDefault(); tabs[(pos - 1 + tabs.length) % tabs.length].click(); tabs[(pos - 1 + tabs.length) % tabs.length].focus(); }
+          if (ev.key === "Home") { ev.preventDefault(); tabs[0].click(); tabs[0].focus(); }
+          if (ev.key === "End") { ev.preventDefault(); tabs[tabs.length - 1].click(); tabs[tabs.length - 1].focus(); }
+        });
         tabsHost.appendChild(tab);
       });
 
       function showNamespace(ns) {
         activeNs = ns;
         tabsHost.querySelectorAll(".dm-pp-tab").forEach(function (t) {
-          t.classList.toggle("active", t.dataset.ns === ns);
+          var selected = t.dataset.ns === ns;
+          t.classList.toggle("is-active", selected);
+          t.setAttribute("aria-selected", selected ? "true" : "false");
+          t.tabIndex = selected ? 0 : -1;
         });
         var group = groups.find(function (g) { return g.namespace === ns; });
         btnsHost.innerHTML = "";
+        btnsHost.setAttribute("role", "group");
+        btnsHost.setAttribute("aria-label", "Palette choices");
         group.entries.forEach(function (e, idx) {
           var btn = document.createElement("button");
-          btn.className = "dm-pp-btn";
+          btn.className = "dm-pp-btn dm-chip";
           btn.dataset.id = e.id;
+          btn.type = "button";
+          btn.setAttribute("aria-pressed", "false");
           var swatchHtml = '<span class="dm-pp-swatch">'
             + e.swatch.map(function (c) {
                 return '<span style="background:' + c + ';"></span>';
@@ -258,7 +263,9 @@
         };
         temp.src = nextSrc;
         btnsHost.querySelectorAll(".dm-pp-btn").forEach(function (b) {
-          b.classList.toggle("active", b.dataset.id === entry.id);
+          var selected = b.dataset.id === entry.id;
+          b.classList.toggle("is-active", selected);
+          b.setAttribute("aria-pressed", selected ? "true" : "false");
         });
         infoHost.innerHTML = "Active palette: <code>" + entry.id
           + "</code> · " + entry.swatch.length + " colors · pass to "

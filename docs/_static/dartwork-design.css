@@ -69,12 +69,13 @@
   --dm-pink-3: #fceef5;
   --dm-pink-11: #cd1d8d;
 
-  /* Semantic status scales (Radix amber / blue / green) — for callouts,
+  /* Semantic status scales (Radix amber / blue / green / red) — for callouts,
    * lint tags, admonitions. Steps: 3 = soft bg, 6 = border, 9 = solid/stripe,
    * 11 = text-on-soft. Replaces the raw Tailwind callout hexes. */
   --dm-warning-3: #fff7c2; --dm-warning-6: #f3d673; --dm-warning-9: #ffc53d; --dm-warning-11: #ab6400;
   --dm-info-3: #e6f4fe;    --dm-info-6: #acd8fc;    --dm-info-9: #0090ff;    --dm-info-11: #0d74ce;
   --dm-success-3: #e6f6eb; --dm-success-6: #adddc0; --dm-success-9: #30a46c; --dm-success-11: #218358;
+  --dm-danger-3: #feebec;  --dm-danger-6: #fdbdbe;  --dm-danger-9: #e5484d;  --dm-danger-11: #ce2c31;
 
   /* Space scale (px-based; --scaling=1 baseline) */
   --dm-space-1: 4px;
@@ -110,17 +111,16 @@
   --dm-lh-8: 40px;
   --dm-lh-9: 60px;
 
-  /* Letter-spacing scale — Radix tightens larger sizes for optical
-   * balance; tiny positive ls on size 1 (12px) keeps small caps legible. */
-  --dm-ls-1: 0.0025em;
+  /* Letter-spacing scale — keep text tracking neutral across viewports. */
+  --dm-ls-1: 0em;
   --dm-ls-2: 0em;
   --dm-ls-3: 0em;
-  --dm-ls-4: -0.0025em;
-  --dm-ls-5: -0.005em;
-  --dm-ls-6: -0.00625em;
-  --dm-ls-7: -0.0075em;
-  --dm-ls-8: -0.01em;
-  --dm-ls-9: -0.025em;
+  --dm-ls-4: 0em;
+  --dm-ls-5: 0em;
+  --dm-ls-6: 0em;
+  --dm-ls-7: 0em;
+  --dm-ls-8: 0em;
+  --dm-ls-9: 0em;
 
   /* Font weights — Radix Themes ships a four-step ladder
    * (light/regular/medium/bold). We add one extra `semibold` step
@@ -216,10 +216,11 @@
   /* Layout contract — keep page chrome, article canvas, and reading measure
    * separate. Shibuya consumes --sy-c-content-width, so map it to the
    * dartwork article token instead of scattering rem values across files. */
-  --dm-layout-shell-max: 96rem;
-  --dm-layout-article-max: 72rem;
-  --dm-layout-prose-max: 72ch;
+  --dm-layout-shell-max: 120rem;
+  --dm-layout-article-max: 88rem;
+  --dm-layout-prose-max: 86ch;
   --dm-layout-gutter: 28px;
+  --dm-layout-right-toc-min: 100rem;
   --sy-c-content-width: var(--dm-layout-article-max);
 }
 
@@ -270,10 +271,11 @@ body[data-theme="dark"] {
   --dm-pink-3: #310f1f;
   --dm-pink-11: #e93d82;
 
-  /* Semantic status scales — dark steps (Radix amber / blue / green dark). */
+  /* Semantic status scales — dark steps (Radix amber / blue / green / red). */
   --dm-warning-3: #302008; --dm-warning-6: #5c3d05; --dm-warning-9: #ffc53d; --dm-warning-11: #ffca16;
   --dm-info-3: #0d2847;    --dm-info-6: #104d87;    --dm-info-9: #0090ff;    --dm-info-11: #70b8ff;
   --dm-success-3: #132d21; --dm-success-6: #20573e; --dm-success-9: #30a46c; --dm-success-11: #3dd68c;
+  --dm-danger-3: #3b1219;  --dm-danger-6: #72232d;  --dm-danger-9: #e5484d;  --dm-danger-11: #ff9592;
 
   --dm-bg-page: #0c0c0e;
   --dm-bg-subtle: var(--dm-gray-2);
@@ -283,10 +285,10 @@ body[data-theme="dark"] {
 /* ---------------------------------------------------------------------------
  * 2. Typography — heading scale + body rhythm
  *
- * Match Radix Themes' h1/h2 scale (35/24 with negative letter-spacing).
+ * Match Radix Themes' h1/h2 scale (35/24) with neutral tracking.
  * Shibuya gives h1=36/800 by default; Radix runs 35/700. We adopt 700
- * weight + the tighter letter-spacing because 800 reads cramped on the
- * Inter cuts we ship.
+ * weight with neutral tracking because tightened text gets cramped in the
+ * wider docs canvas.
  * --------------------------------------------------------------------------- */
 
 body {
@@ -298,10 +300,10 @@ body {
 }
 
 /* Headings — pin each to a Radix Text step.
- *   h1 → size-8  (35/40, -0.01em, bold)
- *   h2 → size-6  (24/30, -0.00625em, bold)
- *   h3 → size-5  (20/28, -0.005em, semibold·600 lift for hierarchy)
- *   h4 → size-4  (18/26, -0.0025em, semibold·600)
+ *   h1 → size-8  (35/40, neutral tracking, bold)
+ *   h2 → size-6  (24/30, neutral tracking, bold)
+ *   h3 → size-5  (20/28, neutral tracking, semibold·600 lift for hierarchy)
+ *   h4 → size-4  (18/26, neutral tracking, semibold·600)
  * Radix's spec uses medium (500) for h3/h4; we lift to 600 because
  * Shibuya's sidebar and TOC ride at medium too — without the lift,
  * h3 disappears into the chrome.
@@ -329,7 +331,7 @@ body {
   font-size: var(--dm-fs-8);
   font-weight: var(--dm-weight-semibold);
   line-height: var(--dm-lh-8);
-  letter-spacing: var(--dm-ls-8);
+  letter-spacing: 0;
   margin-top: 0;
   margin-bottom: var(--dm-space-2);
 }
@@ -338,7 +340,7 @@ body {
   font-size: var(--dm-fs-6);
   font-weight: var(--dm-weight-semibold);
   line-height: var(--dm-lh-6);
-  letter-spacing: var(--dm-ls-6);
+  letter-spacing: 0;
   margin-top: var(--dm-space-8);
   margin-bottom: var(--dm-space-3);
 }
@@ -347,7 +349,7 @@ body {
   font-size: var(--dm-fs-5);
   font-weight: var(--dm-weight-medium);
   line-height: var(--dm-lh-5);
-  letter-spacing: var(--dm-ls-5);
+  letter-spacing: 0;
   margin-top: var(--dm-space-6);
   margin-bottom: var(--dm-space-2);
 }
@@ -356,7 +358,7 @@ body {
   font-size: var(--dm-fs-4);
   font-weight: var(--dm-weight-medium);
   line-height: var(--dm-lh-4);
-  letter-spacing: var(--dm-ls-4);
+  letter-spacing: 0;
   margin-top: var(--dm-space-5);
   margin-bottom: var(--dm-space-2);
 }
@@ -372,7 +374,7 @@ body {
   font-size: var(--dm-fs-3);
   font-weight: var(--dm-weight-regular);
   line-height: var(--dm-lh-3);
-  letter-spacing: var(--dm-ls-3);
+  letter-spacing: 0;
   color: var(--dm-text-default);
 }
 
@@ -397,7 +399,7 @@ body {
 .yue .rx-text-2 {
   font-size: var(--dm-fs-2);
   line-height: var(--dm-lh-2);
-  letter-spacing: var(--dm-ls-2);
+  letter-spacing: 0;
 }
 
 :where(.yue) p {
@@ -509,7 +511,7 @@ body {
 .sy-sidebar .caption {
   font-size: 11px;
   font-weight: var(--dm-weight-semibold);
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--dm-text-faint);
   margin-top: var(--dm-space-5);
@@ -541,6 +543,41 @@ body {
   color: var(--dm-text-strong);
 }
 
+.sy-main {
+  overflow-x: clip;
+}
+
+@media (max-width: 99.999rem) {
+  .sy-rside {
+    display: none;
+  }
+
+  .sy-main {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 1180px) {
+  .sy-head-nav,
+  .sy-head-extra,
+  .sy-head-actions {
+    min-width: 0;
+  }
+
+  .sy-head-links,
+  .sy-head-extra .searchbox {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .sy-breadcrumbs {
+    display: none;
+  }
+}
+
 /* ---------------------------------------------------------------------------
  * 8. Admonitions / callouts — flatten the colored stripe, use a softer ring
  * --------------------------------------------------------------------------- */
@@ -566,7 +603,7 @@ body {
   color: var(--dm-text-strong);
   font-weight: var(--dm-weight-semibold);
   font-size: 14px;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   margin: 0 0 var(--dm-space-2);
   padding: 0;
 }
@@ -690,22 +727,25 @@ body {
 
 .shibuya-toc,
 .sy-toc,
+.sy-rside .localtoc,
 .sy-right-toc {
   font-size: 13px;
 }
 
 .shibuya-toc .caption-text,
 .sy-toc .caption-text,
+.sy-rside .localtoc h3,
 .sy-right-toc .caption-text {
   font-size: 11px;
   font-weight: var(--dm-weight-semibold);
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
   text-transform: uppercase;
   color: var(--dm-text-faint);
 }
 
 .shibuya-toc a,
 .sy-toc a,
+.sy-rside .localtoc a,
 .sy-right-toc a {
   color: var(--dm-text-muted);
   padding: 4px 0;
@@ -714,12 +754,14 @@ body {
 
 .shibuya-toc a:hover,
 .sy-toc a:hover,
+.sy-rside .localtoc a:hover,
 .sy-right-toc a:hover {
   color: var(--dm-text-strong);
 }
 
 .shibuya-toc .active > a,
 .sy-toc .active > a,
+.sy-rside .localtoc .active > a,
 .sy-right-toc .active > a {
   color: var(--dm-accent-11);
   font-weight: var(--dm-weight-semibold);
@@ -829,20 +871,19 @@ body {
 
 /* --- Group B — designer chrome --- */
 
-/* Body letter-spacing — Inter tightens slightly for the Linear/Vercel feel */
+/* Body letter-spacing — keep neutral tracking for predictable docs wrapping. */
 body,
 .yue {
-  letter-spacing: -0.003em;
+  letter-spacing: 0;
 }
 
-/* Heading letter-spacing — already negative; tighten the larger steps
- * one more notch for optical balance. */
+/* Heading letter-spacing — neutral tracking prevents cramped large headings. */
 .yue h1 {
-  letter-spacing: -0.022em;
+  letter-spacing: 0;
 }
 
 .yue h2 {
-  letter-spacing: -0.014em;
+  letter-spacing: 0;
 }
 
 /* Sidebar active — replace the accent-3 fill with a left-stripe so the
@@ -887,8 +928,7 @@ body,
 /* --- Group C — hero --- */
 
 /* Tagline — gradient → solid gray-12 + weight 600 (user choice).
- * Letter-spacing lifted from -0.035em to -0.025em (still tight, but no
- * longer cramped). */
+ * Neutral tracking keeps the hero title from feeling cramped. */
 .dm-landing-tagline {
   background: none !important;
   -webkit-background-clip: initial !important;
@@ -896,7 +936,7 @@ body,
   background-clip: initial !important;
   color: var(--dm-gray-12) !important;
   font-weight: var(--dm-weight-semibold) !important;
-  letter-spacing: -0.025em !important;
+  letter-spacing: 0;
 }
 
 html.dark .dm-landing-tagline,
@@ -959,7 +999,7 @@ body[data-theme="dark"] .dm-landing-tagline {
   color: var(--dm-text-muted) !important;
   font-size: 0.85em !important;
   font-weight: var(--dm-weight-medium) !important;
-  letter-spacing: 0 !important;
+  letter-spacing: 0;
   border-bottom: 2px solid transparent !important;
   margin-bottom: -1px !important;
   transition: color 0.12s, border-color 0.12s !important;
@@ -1040,7 +1080,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
   color: var(--dm-text-muted) !important;
   font-weight: var(--dm-weight-medium) !important;
   font-size: 14.5px !important;
-  letter-spacing: 0 !important;
+  letter-spacing: 0;
   padding: 8px 16px !important;
   margin: 0 !important;
   transition: color 0.12s, border-color 0.12s !important;
@@ -1102,7 +1142,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
   font-family: inherit !important;
   font-weight: var(--dm-weight-medium) !important;
   font-size: 14px !important;
-  letter-spacing: 0 !important;
+  letter-spacing: 0;
   padding: 8px 14px !important;
   margin-bottom: -1px !important;
   transition: color 0.12s, border-color 0.12s !important;
@@ -1113,8 +1153,8 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
   border-color: transparent !important;
 }
 
-.dm-pc-tab-active,
-.dm-pc-tab.active {
+.dm-pc-tab.is-active,
+.dm-pc-tab[aria-selected="true"] {
   color: var(--dm-text-strong) !important;
   border-bottom-color: var(--dm-accent-9) !important;
   background: transparent !important;
@@ -1138,7 +1178,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
   font-size: 18px !important;
   font-weight: var(--dm-weight-semibold) !important;
   color: var(--dm-text-strong) !important;
-  letter-spacing: -0.005em !important;
+  letter-spacing: 0;
 }
 
 .dm-section-divider {
@@ -1186,7 +1226,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 .dm-rw-title {
   font-size: 16px !important;
   font-weight: var(--dm-weight-semibold) !important;
-  letter-spacing: -0.005em !important;
+  letter-spacing: 0;
 }
 
 .dm-rw-title code {
@@ -1230,7 +1270,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
   font-size: 12.5px !important;
   font-weight: var(--dm-weight-medium) !important;
   color: var(--dm-text-muted) !important;
-  letter-spacing: 0 !important;
+  letter-spacing: 0;
   text-transform: none !important;
 }
 
@@ -1278,7 +1318,7 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 .dm-ls-title {
   font-size: 16px !important;
   font-weight: var(--dm-weight-semibold) !important;
-  letter-spacing: -0.005em !important;
+  letter-spacing: 0;
 }
 
 .dm-ls-sub {
@@ -1321,9 +1361,11 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 /* ===========================================================================
  * TIER 6 — docs layout contract
  *
- * The outer shell is the full page frame, the article is the component canvas,
- * prose is the readable measure, and .dm-wide is an article-local opt-in for
- * wide widgets. Nothing breaks into the right TOC rail.
+ * The outer shell is the full page frame and the article is the component
+ * canvas. Normal Sphinx/API prose uses a readable measure inside that canvas;
+ * code, tables, figures, galleries, and widgets keep the full article width.
+ * .dm-wide is an article-local opt-in for wide widgets. Nothing breaks into
+ * the right TOC rail.
  * =========================================================================== */
 
 .sy-container {
@@ -1353,9 +1395,19 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
   max-width: var(--dm-layout-article-max);
 }
 
-article section > p,
-article section > ul,
-article section > ol {
+.dm-prose,
+.dm-readable {
+  max-width: var(--dm-layout-prose-max);
+}
+
+article.yue > p,
+article.yue > ul,
+article.yue > ol,
+article.yue > .admonition,
+article.yue section > p,
+article.yue section > ul,
+article.yue section > ol,
+article.yue section > .admonition {
   max-width: var(--dm-layout-prose-max);
 }
 
@@ -1373,8 +1425,101 @@ article section > ol {
   margin-bottom: 0;
 }
 
+/* Categorical palette explorer widget. Generated HTML from
+ * build_categorical_explorer.py must not carry page-local inline style tags;
+ * keep the widget skin here so it shares the docs design tokens. */
+#dm-cat-exp * {box-sizing:border-box;}
+#dm-cat-exp {width:100%;max-width:100%;container-type:inline-size;overflow:clip;background:var(--dm-bg-page,#fff);color:var(--dm-gray-12,#1f2933);
+  font-family:var(--dm-f-sys,"Inter",system-ui,sans-serif);letter-spacing: 0;}
+#dm-cat-exp .poc-h {font-size:var(--dm-type-label-size,14px);color:var(--dm-text-muted,#667085);margin:0 0 6px;line-height:var(--dm-type-label-line,20px);}
+#dm-cat-exp .poc-h b {color:var(--dm-gray-12,#1f2933);font-weight:650;}
+#dm-cat-exp .cx-count {font:600 12px var(--dm-f-mono,ui-monospace,monospace);color:var(--dm-text-muted,#667085);margin:0 0 16px;}
+#dm-cat-exp .md {display:grid;grid-template-columns:minmax(10.5rem,12rem) minmax(0,1fr);gap:var(--dm-space-5,24px);align-items:start;}
+@media(max-width:760px){#dm-cat-exp .md{grid-template-columns:1fr;gap:var(--dm-space-4,16px);}#dm-cat-exp .detail{position:static!important;}}
+#dm-cat-exp .rail {display:flex;flex-direction:column;gap:1px;position:sticky;top:96px;
+  max-height:calc(100vh - 120px);overflow-y:auto;padding-right:8px;scrollbar-width:thin;}
+#dm-cat-exp .rail::-webkit-scrollbar{width:9px;}
+#dm-cat-exp .rail::-webkit-scrollbar-thumb{background:var(--dm-gray-a4,rgba(0,0,0,.13));border-radius:9px;border:2px solid transparent;background-clip:content-box;}
+#dm-cat-exp .rail .fh {font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing: 0;
+  color:var(--dm-gray-10,#7c8794);margin:16px 0 5px;}
+#dm-cat-exp .rail .fh:first-child {margin-top:0;}
+#dm-cat-exp .ri {display:flex;align-items:center;gap:10px;padding:4px 9px;border-radius:var(--dm-radius-4,8px);cursor:pointer;min-width:0;}
+#dm-cat-exp .ri:hover {background:var(--dm-gray-a2,rgba(0,0,0,.05));}
+#dm-cat-exp .ri.on {background:var(--dm-accent-2,#e6f7f4);}
+#dm-cat-exp .mini {display:inline-flex;height:13px;border-radius:var(--dm-radius-1,3px);overflow:hidden;}
+#dm-cat-exp .mini i {flex:1;min-width:3px;}
+#dm-cat-exp .ri .mini {flex:0 0 36px;height:12px;border-radius:var(--dm-radius-2,4px);}
+#dm-cat-exp .ri .nm {font-size:12px;font-weight:400;color:var(--dm-gray-12,#1f2933);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+#dm-cat-exp .ri.on .nm {color:var(--dm-accent-11,#0c6b5e);font-weight:500;}
+#dm-cat-exp .detail {min-width:0;position:static;top:auto;background:var(--dm-bg-panel,#f7f9f9);border:1px solid var(--dm-border-faint,rgba(0,0,0,.12));border-radius:var(--dm-radius-5,12px);padding:var(--dm-space-5,24px);}
+#dm-cat-exp .d-ey {font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing: 0;color:var(--dm-accent-11,#0c6b5e);margin-bottom:7px;}
+#dm-cat-exp .d-title {display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;}
+#dm-cat-exp .d-title h3 {margin:0;font-size:var(--dm-type-display-size,25px);line-height:var(--dm-type-display-line,1.2);font-weight:var(--dm-type-display-weight,700);letter-spacing: 0;}
+#dm-cat-exp .d-key {font-family:var(--dm-f-mono,monospace);font-size:13px;color:var(--dm-accent-11,#0c6b5e);
+  background:var(--dm-accent-2,#e6f7f4);padding:2px 9px;border-radius:var(--dm-radius-3,6px);font-weight:500;cursor:pointer;align-self:center;}
+#dm-cat-exp .d-key:hover {background:var(--dm-accent-3,#d3f1ea);}
+#dm-cat-exp .d-key.copied {background:var(--dm-accent-3,#e0f8f3);color:var(--dm-accent-11,#008573);}
+#dm-cat-exp .d-key.copied::after {content:" \2713";}
+#dm-cat-exp .d-use {font-size:15.5px;color:var(--dm-gray-11,#4a5560);line-height:1.62;margin:11px 0 8px;min-height:4.86em;}
+#dm-cat-exp .a11y-chips {display:flex;flex-wrap:wrap;gap:7px;margin-left:auto;align-items:center;justify-content:flex-end;align-self:center;}
+#dm-cat-exp .a11y-chip {--a-color:var(--dm-gray-8,#98a1ab);display:inline-flex;align-items:center;gap:6px;border:1px solid var(--a-color);
+  border-radius:var(--dm-radius-full,999px);padding:3px 10px;background:transparent;color:var(--dm-gray-11,#4a5560);line-height:1.15;white-space:nowrap;}
+#dm-cat-exp .a11y-chip.ok {--a-color:var(--dm-accent-9,#12a594);}
+#dm-cat-exp .a11y-chip.mid {--a-color:var(--dm-warning-11);}
+#dm-cat-exp .a11y-chip.bad {--a-color:var(--dm-danger-11);}
+#dm-cat-exp .a-dot {width:8px;height:8px;border-radius:50%;background:var(--a-color);flex:0 0 8px;}
+#dm-cat-exp .a-label {font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing: 0;color:var(--dm-gray-9,#8794a1);}
+#dm-cat-exp .a-num {font-family:var(--dm-f-mono,monospace);font-size:11px;color:var(--dm-gray-11,#4a5560);}
+#dm-cat-exp .term {position:relative;display:inline-block;border-bottom:1px dotted var(--dm-gray-7,#adb5bd);cursor:help;outline:none;}
+#dm-cat-exp .term:focus {border-bottom-color:var(--dm-accent-9,#12a594);}
+#dm-cat-exp .a11y-chip.term {display:inline-flex;border-bottom:1px solid var(--a-color);}
+#dm-cat-exp .term::after {content:attr(data-tip);position:absolute;left:0;top:calc(100% + 8px);width:max-content;max-width:min(300px,calc(100cqw - 32px));
+  background:var(--dm-gray-12,#1f2933);color:var(--dm-bg-page,#fff);padding:9px 12px;border-radius:var(--dm-radius-4,8px);
+  font:400 11px/1.55 var(--dm-f-sys,"Inter",system-ui,sans-serif);letter-spacing: 0;text-transform:none;
+  opacity:0;visibility:hidden;transform:translateY(-3px);transition:opacity .14s ease,transform .14s ease;
+  z-index:60;pointer-events:none;box-shadow:var(--dm-shadow-3,0 5px 16px rgba(0,0,0,.17));white-space:normal;}
+#dm-cat-exp .a11y-chip.term::after {left:auto;right:0;}
+#dm-cat-exp .term:hover::after,#dm-cat-exp .term:focus::after {opacity:1;visibility:visible;transform:translateY(0);}
+#dm-cat-exp .term.r::after {left:auto;right:0;}
+@media(prefers-reduced-motion:reduce){#dm-cat-exp .term::after{transition:none;}}
+@media(max-width:560px){#dm-cat-exp .a11y-chips{margin-left:0;flex-basis:100%;justify-content:flex-start;}}
+#dm-cat-exp .d-bar {display:flex;align-items:center;gap:13px;flex-wrap:wrap;row-gap:8px;margin-bottom:16px;}
+#dm-cat-exp .field {display:inline-flex;align-items:center;gap:8px;flex:0 0 auto;}
+#dm-cat-exp .cl {font-size:13px;font-weight:500;color:var(--dm-gray-9,#8794a1);letter-spacing: 0;text-transform:none;white-space:nowrap;}
+#dm-cat-exp .crng {accent-color:var(--dm-accent-9,#12a594);width:70px;}
+#dm-cat-exp .cval {font-size:14px;font-weight:700;color:var(--dm-accent-11,#0c6b5e);min-width:1ch;}
+#dm-cat-exp .tgl {appearance:none;border:0;background:transparent;padding:0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font:inherit;flex:0 0 auto;white-space:nowrap;}
+#dm-cat-exp .tgl .tgl-l {font-size:13px;font-weight:500;color:var(--dm-gray-9,#8794a1);transition:color .12s;}
+#dm-cat-exp .tgl.on .tgl-l {color:var(--dm-gray-12,#1f2933);}
+#dm-cat-exp .tgl-tr {width:32px;height:18px;border-radius:999px;background:var(--dm-gray-5,#c3c9d0);position:relative;transition:background .15s;flex:0 0 auto;}
+#dm-cat-exp .tgl-kn {position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.28);transition:left .15s;}
+#dm-cat-exp .tgl.on .tgl-tr {background:var(--dm-accent-9,#12a594);}
+#dm-cat-exp .tgl.on .tgl-kn {left:16px;}
+#dm-cat-exp .swhost {display:flex;gap:7px;margin-bottom:18px;}
+#dm-cat-exp .strip {display:flex;gap:6px;margin:0 0 4px;}
+#dm-cat-exp .sw {appearance:none;background:transparent;border:0;padding:0;font:inherit;flex:1;min-width:0;cursor:pointer;display:block;text-align:center;}
+#dm-cat-exp .sw .chip {display:block;height:34px;border-radius:var(--dm-radius-3,6px);transition:transform .1s,box-shadow .1s;}
+#dm-cat-exp .swhost .sw {flex:1;}
+#dm-cat-exp .swhost .chip {height:46px;border-radius:var(--dm-radius-5,12px);}
+#dm-cat-exp .sw:hover .chip {transform:translateY(-2px);box-shadow:0 2px 6px rgba(0,0,0,.12);}
+#dm-cat-exp .sw .hx {font-family:var(--dm-f-mono,monospace);font-size:9px;color:var(--dm-text-muted,#667085);margin-top:4px;overflow:hidden;}
+#dm-cat-exp .sw.copied .hx {color:var(--dm-accent-11,#0c6b5e);font-weight:700;}
+#dm-cat-exp .sw.copied .hx::after {content:" \2713";}
+#dm-cat-exp .plots {display:grid;grid-template-columns:repeat(3,1fr);gap:13px;}
+#dm-cat-exp .pcell {background:var(--dm-bg-page,#fff);border:1px solid var(--dm-border-faint,rgba(0,0,0,.12));border-radius:var(--dm-radius-4,8px);padding:10px 12px;}
+#dm-cat-exp .pcell .pl {font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing: 0;color:var(--dm-text-muted,#667085);margin-bottom:7px;}
+#dm-cat-exp .plots.gs svg,#dm-cat-exp .strip.gs .chip {filter:grayscale(1);}
+#dm-cat-exp svg {display:block;width:100%;height:auto;}
+#dm-cat-exp .meta {font-size:13px;color:var(--dm-text-muted,#667085);line-height:1.6;display:grid;gap:3px;margin-top:2px;}
+#dm-cat-exp .meta .m-l {color:var(--dm-gray-11,#4a5560);font-weight:550;}
+#dm-cat-exp .code {margin:16px 0 14px;background:var(--dm-i-code-surface,#f2f4f5);border-radius:var(--dm-radius-4,8px);padding:11px 14px;
+  font-family:var(--dm-f-mono,monospace);font-size:11.5px;color:var(--dm-gray-12,#1f2933);white-space:pre;overflow-x:auto;}
+#dm-cat-exp .code pre {margin:0;padding:0;background:transparent;font:inherit;color:inherit;white-space:pre;}
+#dm-cat-exp .dm-toast {position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--dm-gray-12,#1f2933);color:#fff;padding:8px 16px;border-radius:999px;font-size:12.5px;opacity:0;transition:opacity .18s;pointer-events:none;z-index:99999;}
+#dm-cat-exp .dm-toast.show {opacity:1;}
+
 /* Categorical palette page polish. The page content opts in naturally by
- * embedding #dm-cat-exp; keep the styling global so page-local raw <style>
+ * embedding #dm-cat-exp; keep the styling global so page-local raw style tags
  * blocks do not drift from the docs design system. */
 article:has(#dm-cat-exp) .dm-lead {
   margin: 0.7em 0 1.25em;

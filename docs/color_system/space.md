@@ -337,9 +337,9 @@ the generated Python code.
 <div class="dm-cmap-builder">
   <div class="dm-cb-header">
     <div class="dm-cb-title">Colormap Builder</div>
-    <div class="dm-cb-tabs">
-      <button class="dm-cb-tab active" data-type="sequential">Sequential</button>
-      <button class="dm-cb-tab" data-type="diverging">Diverging</button>
+    <div class="dm-cb-tabs dm-seg no-thumb" role="group" aria-label="Colormap type">
+      <button class="dm-cb-tab dm-opt is-active" data-type="sequential" aria-pressed="true">Sequential</button>
+      <button class="dm-cb-tab dm-opt" data-type="diverging" aria-pressed="false">Diverging</button>
     </div>
   </div>
   <div class="dm-cb-body">
@@ -351,7 +351,7 @@ the generated Python code.
           <span class="dm-cb-hex">#1A237E</span>
         </div>
       </div>
-      <div class="dm-cb-color-group dm-cb-mid-group" style="display: none;">
+      <div class="dm-cb-color-group dm-cb-mid-group" hidden aria-hidden="true">
         <label>Midpoint</label>
         <div class="dm-cb-input-wrap">
           <input type="color" class="dm-cb-picker dm-cb-mid" value="#ffffff" aria-label="Midpoint color">

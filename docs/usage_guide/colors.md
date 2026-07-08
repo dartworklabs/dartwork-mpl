@@ -205,10 +205,10 @@ human eye:
     <div class="dm-compare-subtitle">Why color space matters for gradient quality</div>
   </div>
   <div class="dm-compare-controls">
-    <div class="dm-compare-toggle">
-      <button class="dm-compare-toggle-btn active" data-mode="both">Side by Side</button>
-      <button class="dm-compare-toggle-btn" data-mode="oklch">OKLCH Only</button>
-      <button class="dm-compare-toggle-btn" data-mode="rgb">RGB Only</button>
+    <div class="dm-compare-toggle dm-seg no-thumb" role="group" aria-label="Interpolation comparison mode">
+      <button class="dm-compare-toggle-btn dm-opt is-active" data-mode="both" aria-pressed="true">Side by Side</button>
+      <button class="dm-compare-toggle-btn dm-opt" data-mode="oklch" aria-pressed="false">OKLCH Only</button>
+      <button class="dm-compare-toggle-btn dm-opt" data-mode="rgb" aria-pressed="false">RGB Only</button>
     </div>
     <div class="dm-compare-slider-group">
       <span class="dm-interp-label">Steps</span>

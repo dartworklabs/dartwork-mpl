@@ -326,7 +326,7 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
 
     _PE_TEMPLATE = textwrap.dedent("""\
     <div class="dm-pe-widget">
-      <div class="dm-pc-tabs" id="dm-pe-tabs">
+      <div class="dm-pc-tabs dm-tabs" id="dm-pe-tabs" role="tablist" aria-label="Color library">
     {tabs_html}
       </div>
       <div class="dm-pe-body" id="dm-pe-stage">
@@ -340,19 +340,33 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
         var panels = document.querySelectorAll(".dm-pe-panel");
         function activate(preset) {{
           tabs.forEach(function(t) {{
-            t.classList.toggle("active", t.dataset.preset === preset);
+            var selected = t.dataset.preset === preset;
+            t.classList.toggle("is-active", selected);
+            t.setAttribute("aria-selected", selected ? "true" : "false");
+            t.tabIndex = selected ? 0 : -1;
           }});
           panels.forEach(function(p) {{
-            p.classList.toggle("active", p.dataset.preset === preset);
-            if (p.dataset.preset === preset) {{
-              p.style.display = "block";
-            }} else {{
-              p.style.display = "none";
-            }}
+            var selected = p.dataset.preset === preset;
+            p.classList.toggle("is-active", selected);
+            p.hidden = !selected;
           }});
         }}
         tabs.forEach(function(t) {{
           t.addEventListener("click", function() {{ activate(t.dataset.preset); }});
+          t.addEventListener("keydown", function(e) {{
+            var keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
+            if (keys.indexOf(e.key) === -1) return;
+            e.preventDefault();
+            var items = Array.prototype.slice.call(tabs);
+            var current = items.indexOf(t);
+            var next = current;
+            if (e.key === "ArrowLeft") next = (current - 1 + items.length) % items.length;
+            if (e.key === "ArrowRight") next = (current + 1) % items.length;
+            if (e.key === "Home") next = 0;
+            if (e.key === "End") next = items.length - 1;
+            activate(items[next].dataset.preset);
+            items[next].focus();
+          }});
         }});
         if (tabs.length > 0) {{ activate(tabs[0].dataset.preset); }}
       }});
@@ -365,16 +379,28 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
     for i, library_key in enumerate(COLOR_LIBRARY_ORDER):
         label = COLOR_LIBRARY_LABELS.get(library_key, library_key)
         # Tab
+        selected = i == 0
+        tab_classes = "dm-pc-tab dm-pe-tab dm-tab"
+        if selected:
+            tab_classes += " is-active"
         tabs_html.append(
-            f'    <button class="dm-pc-tab dm-pe-tab" data-preset="{library_key}">{label}</button>'
+            f'    <button class="{tab_classes}" role="tab" '
+            f'aria-selected="{str(selected).lower()}" '
+            f'tabindex="{0 if selected else -1}" '
+            f'data-preset="{library_key}">{label}</button>'
         )
         # Panel content - read from the file we just wrote
         sheet_path = images_dir / f"colors_{library_key}.html"
         if sheet_path.exists():
             content = sheet_path.read_text(encoding="utf-8")
-            display_style = "block" if i == 0 else "none"
+            panel_attrs = (
+                'class="dm-pe-panel is-active"'
+                if i == 0
+                else 'class="dm-pe-panel" hidden'
+            )
             panels_html.append(
-                f'    <div class="dm-pe-panel" data-preset="{library_key}" style="display: {display_style};">'
+                f"    <div {panel_attrs} "
+                f'data-preset="{library_key}" role="tabpanel">'
             )
             panels_html.append(content)
             panels_html.append("    </div>")
@@ -406,7 +432,7 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
     <div class="dm-ce">
     <style>
       .dm-ce {{
-        font-family: var(--sy-f-sys, system-ui), sans-serif;
+        font-family: var(--dm-f-sys, system-ui), sans-serif;
         color: var(--rx-gray-12, #1c2024);
         margin: 1rem 0 1.5rem;
       }}
@@ -444,7 +470,8 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
         letter-spacing: 0;
       }}
       .dm-ce-tab:hover {{ color: var(--rx-gray-12, #1c2024); }}
-      .dm-ce-tab.active {{
+      .dm-ce-tab.is-active,
+      .dm-ce-tab[aria-selected="true"] {{
         color: var(--rx-gray-12, #1c2024);
         border-bottom-color: var(--rx-accent-9, #12a594);
       }}
@@ -469,17 +496,18 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
         color: var(--rx-gray-12, #1c2024);
         background: var(--rx-gray-a3, rgba(0,8,60,0.059));
       }}
-      .dm-ce-tone-btn.active {{
+      .dm-ce-tone-btn.is-active,
+      .dm-ce-tone-btn[aria-pressed="true"] {{
         color: var(--rx-gray-12, #1c2024);
         background: var(--rx-gray-a4, rgba(0,0,39,0.09));
       }}
       .dm-ce-panel {{ display: none; }}
-      .dm-ce-panel.active {{ display: block; }}
+      .dm-ce-panel.is-active {{ display: block; }}
       .dm-ce-panel-title {{
         font-size: 16px;
         font-weight: 600;
         color: var(--rx-gray-12, #1c2024);
-        letter-spacing: -0.005em;
+        letter-spacing: 0;
         margin: 0 0 4px;
       }}
       .dm-ce-panel-desc {{
@@ -500,7 +528,7 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
         gap: 6px;
       }}
       .dm-cmap-name {{
-        font-family: var(--sy-f-mono, monospace);
+        font-family: var(--dm-f-mono, monospace);
         font-size: 12.5px;
         color: var(--rx-gray-12, #1c2024);
         font-weight: 500;
@@ -515,12 +543,12 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
     </style>
 
     <div class="dm-ce-bar">
-      <div class="dm-ce-tabs">
+      <div class="dm-ce-tabs dm-tabs" role="tablist" aria-label="Colormap category">
     {tabs_html}
       </div>
-      <div class="dm-ce-tone" role="group" aria-label="Tone toggle">
-        <button class="dm-ce-tone-btn active" data-tone="color">Color</button>
-        <button class="dm-ce-tone-btn" data-tone="mono">Mono</button>
+      <div class="dm-ce-tone dm-seg no-thumb" role="group" aria-label="Tone toggle">
+        <button class="dm-ce-tone-btn dm-opt is-active" data-tone="color" aria-pressed="true">Color</button>
+        <button class="dm-ce-tone-btn dm-opt" data-tone="mono" aria-pressed="false">Mono</button>
       </div>
     </div>
 
@@ -534,19 +562,45 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
       var tabs = root.querySelectorAll(".dm-ce-tab");
       var panels = root.querySelectorAll(".dm-ce-panel");
       function activate(preset) {{
-        tabs.forEach(function(t) {{ t.classList.toggle("active", t.dataset.preset === preset); }});
-        panels.forEach(function(p) {{ p.classList.toggle("active", p.dataset.preset === preset); }});
+        tabs.forEach(function(t) {{
+          var selected = t.dataset.preset === preset;
+          t.classList.toggle("is-active", selected);
+          t.setAttribute("aria-selected", selected ? "true" : "false");
+          t.tabIndex = selected ? 0 : -1;
+        }});
+        panels.forEach(function(p) {{
+          var selected = p.dataset.preset === preset;
+          p.classList.toggle("is-active", selected);
+          p.hidden = !selected;
+        }});
       }}
       tabs.forEach(function(t) {{
         t.addEventListener("click", function() {{ activate(t.dataset.preset); }});
+        t.addEventListener("keydown", function(e) {{
+          var keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
+          if (keys.indexOf(e.key) === -1) return;
+          e.preventDefault();
+          var items = Array.prototype.slice.call(tabs);
+          var current = items.indexOf(t);
+          var next = current;
+          if (e.key === "ArrowLeft") next = (current - 1 + items.length) % items.length;
+          if (e.key === "ArrowRight") next = (current + 1) % items.length;
+          if (e.key === "Home") next = 0;
+          if (e.key === "End") next = items.length - 1;
+          activate(items[next].dataset.preset);
+          items[next].focus();
+        }});
       }});
       if (tabs.length > 0) {{ activate(tabs[0].dataset.preset); }}
 
       var toneBtns = root.querySelectorAll(".dm-ce-tone-btn");
       toneBtns.forEach(function(btn) {{
         btn.addEventListener("click", function() {{
-          toneBtns.forEach(function(b) {{ b.classList.remove("active"); }});
-          btn.classList.add("active");
+          toneBtns.forEach(function(b) {{
+            var selected = b === btn;
+            b.classList.toggle("is-active", selected);
+            b.setAttribute("aria-pressed", selected ? "true" : "false");
+          }});
           if (btn.dataset.tone === "mono") {{ root.classList.add("mono"); }}
           else {{ root.classList.remove("mono"); }}
         }});
@@ -619,11 +673,24 @@ def _save_colormap_panels_html(images_dir: Path) -> list[Path]:
         paths.append(path)
 
         # Tab + panel for the unified explorer
+        selected = len(tabs_html) == 0
+        tab_classes = "dm-ce-tab dm-tab"
+        if selected:
+            tab_classes += " is-active"
         tabs_html.append(
-            f'    <button class="dm-ce-tab" data-preset="{slug}">{category}</button>'
+            f'    <button class="{tab_classes}" role="tab" '
+            f'aria-selected="{str(selected).lower()}" '
+            f'tabindex="{0 if selected else -1}" '
+            f'data-preset="{slug}">{category}</button>'
+        )
+        panel_attrs = (
+            'class="dm-ce-panel is-active"'
+            if selected
+            else 'class="dm-ce-panel" hidden'
         )
         panels_html.append(
-            f'    <div class="dm-ce-panel" data-preset="{slug}">{frag_html}</div>'
+            f'    <div {panel_attrs} data-preset="{slug}" role="tabpanel">'
+            f"{frag_html}</div>"
         )
 
     ce_html = _CE_TEMPLATE.format(

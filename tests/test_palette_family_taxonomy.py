@@ -19,6 +19,7 @@ from dartwork_mpl.colors import _curated, _generated
 _REPO = Path(__file__).resolve().parents[1]
 _SCRIPTS = _REPO / "docs" / "_static" / "scripts"
 _EXPLORER = _REPO / "docs" / "_static" / "categorical_explorer.html"
+_DESIGN_CSS = _REPO / "docs" / "_static" / "dartwork-design.css"
 _BUILDER = _SCRIPTS / "build_categorical_explorer.py"
 _RAIL_GROUP_ORDER = [
     "Qualitative",
@@ -253,27 +254,34 @@ def test_explorer_detail_presentation_order_and_eyebrow_copy() -> None:
 def test_explorer_layout_fits_article_column() -> None:
     """The explorer uses a bounded grid track and wrapping controls."""
     html = _EXPLORER.read_text(encoding="utf-8")
+    css = _DESIGN_CSS.read_text(encoding="utf-8")
 
     assert '<div id="dm-cat-exp" class="dm-wide yue">' in html
-    assert "grid-template-columns:minmax(10.5rem,12rem) minmax(0,1fr)" in html
-    assert "#dm-cat-exp {width:100%;max-width:100%;overflow:clip;" in html
-    assert "#dm-cat-exp .detail {min-width:0;" in html
-    assert "gap:var(--dm-space-5,24px)" in html
-    assert "flex-wrap:wrap;row-gap:8px;" in html
+    assert "<style" not in html
+    assert "grid-template-columns:minmax(10.5rem,12rem) minmax(0,1fr)" in css
+    assert (
+        "#dm-cat-exp {width:100%;max-width:100%;container-type:inline-size;"
+        in css
+    )
+    assert "#dm-cat-exp .detail {min-width:0;" in css
+    assert "gap:var(--dm-space-5,24px)" in css
+    assert "flex-wrap:wrap;row-gap:8px;" in css
 
 
 def test_explorer_title_row_chips_replace_badge_readout() -> None:
     """Accessibility checks render as title-row outline chips with circle dots."""
     html = _EXPLORER.read_text(encoding="utf-8")
+    css = _DESIGN_CSS.read_text(encoding="utf-8")
     readout_start = html.index("// ── live accessibility readout ──")
     readout_end = html.index("function metaRow", readout_start)
     readout = html[readout_start:readout_end]
 
     assert ".a11y-chips" in html
     assert ".a11y-chip" in html
-    assert ".a-dot" in html
-    assert "border-radius:50%" in html
-    assert "margin-left:auto" in html
+    assert "a-dot" in html
+    assert ".a-dot" in css
+    assert "border-radius:50%" in css
+    assert "margin-left:auto" in css
     assert "function chipHTML(" in html
     assert "d.querySelector('.a11y-chips').innerHTML=a11yHTML();" in html
     assert "function bwTip(v){" in html

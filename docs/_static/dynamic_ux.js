@@ -665,11 +665,11 @@
 
     var bar = el("div", { class: "dm-faq-toolbar" });
 
-    var searchWrap = el("div", { class: "dm-faq-search-wrap" });
+    var searchWrap = el("div", { class: "dm-faq-search-wrap dm-field" });
     var searchIcon = el("span", { class: "dm-faq-search-icon", text: "⌕" });
     var searchInput = el("input", {
       type: "search",
-      class: "dm-faq-search",
+      class: "dm-faq-search dm-input",
       placeholder: "Filter FAQ… (e.g. font, layout, svg)",
       "aria-label": "Filter FAQ entries",
     });
@@ -680,9 +680,12 @@
     bar.appendChild(searchWrap);
 
     var pillWrap = el("div", { class: "dm-faq-pills" });
+    pillWrap.setAttribute("role", "group");
+    pillWrap.setAttribute("aria-label", "Filter FAQ sections");
     var pillAll = el("button", {
-      class: "dm-faq-pill active",
+      class: "dm-faq-pill dm-chip is-active",
       "data-target": "__all__",
+      "aria-pressed": "true",
       text: "All",
     });
     pillWrap.appendChild(pillAll);
@@ -706,8 +709,9 @@
       var label = (h2.textContent || "").replace(/¶|#/g, "").trim();
       pillWrap.appendChild(
         el("button", {
-          class: "dm-faq-pill",
+          class: "dm-faq-pill dm-chip",
           "data-target": slug,
+          "aria-pressed": "false",
           text: label,
         }),
       );
@@ -752,10 +756,9 @@
       if (!btn) return;
       activePill = btn.getAttribute("data-target");
       $$(".dm-faq-pill", pillWrap).forEach(function (p) {
-        p.classList.toggle(
-          "active",
-          p.getAttribute("data-target") === activePill,
-        );
+        var selected = p.getAttribute("data-target") === activePill;
+        p.classList.toggle("is-active", selected);
+        p.setAttribute("aria-pressed", selected ? "true" : "false");
       });
       apply();
       if (activePill !== "__all__") {
@@ -818,10 +821,10 @@
       if (q) {
         searchCount.textContent =
           matched === 0 ? "no match" : matched + " of " + total;
-        searchCount.classList.toggle("zero", matched === 0);
+        searchCount.classList.toggle("is-empty", matched === 0);
       } else {
         searchCount.textContent = "";
-        searchCount.classList.remove("zero");
+        searchCount.classList.remove("is-empty");
       }
     }
   }
@@ -1502,6 +1505,23 @@
     tray.appendChild(trayList);
     tray.appendChild(trayHint);
     document.body.appendChild(tray);
+    var trayToggle = trayHead.querySelector(".dm-fav-toggle");
+
+    function syncTrayExpanded() {
+      if (!trayToggle) return;
+      trayToggle.setAttribute(
+        "aria-expanded",
+        String(!tray.classList.contains("collapsed")),
+      );
+    }
+
+    if (
+      window.matchMedia &&
+      window.matchMedia("(max-width: 1100px)").matches
+    ) {
+      tray.classList.add("collapsed");
+    }
+    syncTrayExpanded();
 
     function render() {
       var favs = readFavs();
@@ -1551,8 +1571,9 @@
       writeFavs([]);
       render();
     });
-    trayHead.querySelector(".dm-fav-toggle").addEventListener("click", function () {
+    trayToggle.addEventListener("click", function () {
       tray.classList.toggle("collapsed");
+      syncTrayExpanded();
     });
 
     // Inject favorite-pin hover hooks on every swatch

@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="dm-interactive.css" />
   <style>
     body { margin:0; background:var(--dm-bg-page); color:var(--dm-gray-12);
-      font-family:var(--dm-f-sys,"Inter",system-ui,sans-serif); letter-spacing:-.003em; }
+      font-family:var(--dm-f-sys,"Inter",system-ui,sans-serif); letter-spacing: 0; }
     .wrap { max-width:1000px; margin:0 auto; padding:36px 24px 120px; }
     .bar { position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between;
       gap:12px; padding:12px 16px; margin:-36px -24px 16px; background:var(--dm-bg-panel);
@@ -28,7 +28,7 @@
     .tt { background:var(--dm-bg-panel); color:var(--dm-gray-12); border:1px solid var(--dm-border);
       border-radius:999px; padding:6px 13px; font:inherit; font-size:13px; cursor:pointer; }
     .grp { margin-top:40px; }
-    .grp > h2 { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.07em;
+    .grp > h2 { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing: 0;
       color:var(--dm-text-muted); padding-bottom:8px; border-bottom:1px solid var(--dm-border-faint); }
     .poc { margin-top:18px; padding:26px 20px; border:1px solid var(--dm-border-faint);
       border-radius:var(--dm-radius-5); }
@@ -38,12 +38,16 @@
     .hero { text-align:center; padding:8px 0 4px; }
 
     /* ── tagline base — ALWAYS visible (solid color), folds onto ONE line ── */
-    .tl { font-weight:800; line-height:1.12; letter-spacing:-.028em; margin:0 0 .5em;
+    .tl { font-weight:800; line-height:1.12; letter-spacing: 0; margin:0 0 .5em;
       white-space:nowrap; }
     .tl .ai, .tl .bf { color:var(--dm-accent-11); }
     /* one-line responsive sizing: shrinks to fit, never wraps */
-    .tl.sz { font-size:clamp(20px, 4.4vw, 44px); }
-    .tl.szs { font-size:clamp(17px, 3.6vw, 36px); }
+    .tl.sz { font-size:44px; }
+    .tl.szs { font-size:36px; }
+    @media (max-width: 640px) {
+      .tl.sz { font-size:30px; }
+      .tl.szs { font-size:26px; }
+    }
     /* style S-solid: whole line gray-12 + teal keywords (robust default) */
     .tl.solid { color:var(--dm-gray-12); }
     /* style S-grad: gradient ONLY on keywords (safe — base stays solid) */

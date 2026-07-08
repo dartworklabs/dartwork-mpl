@@ -36,11 +36,11 @@
     flex-wrap: wrap;
   }
   .lpoc-id {
-    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-family: var(--dm-f-mono, "SF Mono", "Fira Code", "Consolas", monospace);
     font-size: 0.72em;
-    letter-spacing: 0.08em;
-    color: #1a8e7c;
-    background: rgba(13, 148, 136, 0.1);
+    letter-spacing: 0;
+    color: var(--dm-i-active-text, #008573);
+    background: var(--dm-i-active-soft, rgba(0, 133, 115, 0.1));
     padding: 3px 10px;
     border-radius: 999px;
     text-transform: uppercase;
@@ -148,7 +148,7 @@
     z-index: 5;
     pointer-events: none;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0;
     color: #fff;
   }
   .lpoc-tag-before {
@@ -157,7 +157,7 @@
   }
   .lpoc-tag-after {
     right: 10px;
-    background: rgba(13, 148, 136, 0.85);
+    background: color-mix(in srgb, var(--dm-i-active-line, #12a594) 85%, transparent);
   }
 
   .lpoc-footer {
@@ -176,18 +176,18 @@
   }
   .lpoc-vote {
     display: inline-block;
-    background: rgba(13, 148, 136, 0.08);
-    color: #0d9488;
-    border: 1px solid rgba(13, 148, 136, 0.25);
+    background: var(--dm-i-active-soft, rgba(0, 133, 115, 0.1));
+    color: var(--dm-i-active-text, #008573);
+    border: 1px solid var(--dm-i-soft-border, #8bdcd2);
     border-radius: 999px;
     padding: 5px 12px;
     font-weight: 600;
-    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-family: var(--dm-f-mono, "SF Mono", "Fira Code", "Consolas", monospace);
     font-size: 0.82em;
     user-select: all;
   }
   .lpoc-meta {
-    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-family: var(--dm-f-mono, "SF Mono", "Fira Code", "Consolas", monospace);
     color: #888;
   }
 
@@ -248,7 +248,7 @@
     border: 1px solid #e0ddd6;
     background: #fff;
     cursor: pointer;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--dm-f-sys, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
     font-size: 0.84em;
     color: #444;
     transition: all 0.15s ease;
@@ -260,14 +260,15 @@
     color: #ccc;
   }
   .lpoc-palette-btn:hover {
-    border-color: #0d9488;
-    color: #0d9488;
+    border-color: var(--dm-i-active-line, #12a594);
+    color: var(--dm-i-active-text, #008573);
   }
-  .lpoc-palette-btn.active {
-    background: #0d9488;
-    border-color: #0d9488;
+  .lpoc-palette-btn.is-active,
+  .lpoc-palette-btn[aria-pressed="true"] {
+    background: var(--dm-i-active-line, #12a594);
+    border-color: var(--dm-i-active-line, #12a594);
     color: #fff;
-    box-shadow: 0 1px 4px rgba(13, 148, 136, 0.3);
+    box-shadow: 0 1px 4px color-mix(in srgb, var(--dm-i-active-line, #12a594) 30%, transparent);
   }
   .lpoc-palette-swatch {
     display: inline-flex;
@@ -410,10 +411,15 @@ eight PoCs. Pick a (PoC, palette) pair you want as the hero and tell us
 
     function buildPalettePicker() {
       var host = document.getElementById("lpoc-palettes");
+      host.setAttribute("role", "group");
+      host.setAttribute("aria-label", "Choose preview palette");
       palettes.forEach(function (p) {
         var btn = document.createElement("button");
-        btn.className = "lpoc-palette-btn" + (p.id === activePalette ? " active" : "");
+        var selected = p.id === activePalette;
+        btn.type = "button";
+        btn.className = "lpoc-palette-btn" + (selected ? " is-active" : "");
         btn.dataset.palette = p.id;
+        btn.setAttribute("aria-pressed", selected ? "true" : "false");
         var swatchHtml = '<span class="lpoc-palette-swatch">'
           + p.swatch.map(function (c) {
               return '<span style="background:' + c + ';"></span>';
@@ -435,7 +441,9 @@ eight PoCs. Pick a (PoC, palette) pair you want as the hero and tell us
       });
       // Update active button styling.
       document.querySelectorAll(".lpoc-palette-btn").forEach(function (btn) {
-        btn.classList.toggle("active", btn.dataset.palette === id);
+        var selected = btn.dataset.palette === id;
+        btn.classList.toggle("is-active", selected);
+        btn.setAttribute("aria-pressed", selected ? "true" : "false");
       });
       // Update vote chips to include palette ID for easy copy/paste.
       document.querySelectorAll(".lpoc-vote").forEach(function (chip) {

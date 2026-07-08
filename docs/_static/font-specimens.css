@@ -24,7 +24,7 @@
   color: var(--dm-text-strong);
   font-size: var(--dm-type-heading-size);
   font-weight: var(--dm-type-heading-weight);
-  letter-spacing: var(--dm-type-heading-spacing);
+  letter-spacing: 0;
   line-height: var(--dm-type-heading-line);
   margin: 0 0 var(--dm-space-1);
   text-align: left;
@@ -36,7 +36,7 @@
   color: var(--dm-text-muted);
   font-size: var(--dm-type-body-size);
   font-weight: var(--dm-type-body-weight);
-  letter-spacing: var(--dm-type-body-spacing);
+  letter-spacing: 0;
   line-height: var(--dm-type-body-line);
   margin: 0 0 var(--dm-space-4);
   text-align: left;
@@ -58,7 +58,7 @@
   color: var(--dm-text-muted);
   font-size: var(--dm-type-label-size);
   font-weight: var(--dm-type-label-weight);
-  letter-spacing: var(--dm-type-label-spacing);
+  letter-spacing: 0;
   line-height: var(--dm-type-label-line);
 }
 
@@ -72,7 +72,7 @@
   color: var(--dm-text-strong);
   font-size: var(--dm-type-body-size);
   font-weight: var(--dm-type-body-weight);
-  letter-spacing: var(--dm-type-body-spacing);
+  letter-spacing: 0;
   line-height: var(--dm-type-body-line);
 }
 
@@ -80,7 +80,7 @@
   color: var(--dm-text-strong);
   font-size: var(--dm-type-display-size);
   font-weight: var(--dm-type-display-weight);
-  letter-spacing: var(--dm-type-display-spacing);
+  letter-spacing: 0;
   line-height: var(--dm-type-display-line);
   margin-bottom: var(--dm-space-5);
 }
@@ -113,7 +113,7 @@
   font-family: var(--dm-f-mono);
   font-size: var(--dm-type-mono-size);
   font-weight: var(--dm-type-mono-weight);
-  letter-spacing: var(--dm-type-mono-spacing);
+  letter-spacing: 0;
   line-height: var(--dm-type-mono-line);
 }
 
@@ -251,7 +251,7 @@
   display: inline-block;
   font-size: var(--dm-type-caption-size);
   font-weight: var(--dm-type-caption-weight);
-  letter-spacing: 0.05em;
+  letter-spacing: 0;
   line-height: var(--dm-type-caption-line);
   margin-bottom: var(--dm-space-3);
   text-transform: uppercase;
@@ -267,7 +267,7 @@
   color: var(--dm-text-strong);
   font-size: var(--dm-type-heading-size);
   font-weight: var(--dm-type-heading-weight);
-  letter-spacing: var(--dm-type-heading-spacing);
+  letter-spacing: 0;
   line-height: var(--dm-type-heading-line);
   margin-bottom: var(--dm-space-2);
 }
@@ -343,7 +343,7 @@
   display: block;
   font-size: var(--dm-type-caption-size);
   font-weight: var(--dm-type-caption-weight);
-  letter-spacing: 0.06em;
+  letter-spacing: 0;
   line-height: var(--dm-type-caption-line);
   padding: var(--dm-space-2) 0 0;
   text-align: center;

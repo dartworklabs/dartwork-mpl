@@ -235,7 +235,7 @@ def _strip_xml_declaration(svg: str) -> str:
     """Remove the <?xml ...?> line so inline embedding works."""
     lines = svg.split("\n")
     return "\n".join(
-        line for line in lines if not line.strip().startswith("<?xml")
+        line.rstrip() for line in lines if not line.strip().startswith("<?xml")
     )
 
 
@@ -245,8 +245,7 @@ _HTML_TEMPLATE = textwrap.dedent("""\
 <meta charset="utf-8" />
 <style>
   .dm-pc-widget {{
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      sans-serif;
+    font-family: var(--dm-f-sys);
     max-width: 100%;
     margin: 0 auto;
   }}
@@ -265,21 +264,21 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     min-width: 0;
   }}
   .dm-pc-name {{
-    font-size: 18px;
-    font-weight: 600;
-    color: #1a1a1a;
-    letter-spacing: -0.01em;
+    font-size: var(--dm-type-heading-size);
+    font-weight: var(--dm-type-heading-weight);
+    color: var(--dm-text-strong);
+    letter-spacing: 0;
   }}
   .dm-pc-desc {{
-    font-size: 13px;
-    color: #777;
+    font-size: var(--dm-type-caption-size);
+    color: var(--dm-text-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }}
   .dm-pc-counter {{
-    font-size: 12px;
-    color: #999;
+    font-size: var(--dm-type-caption-size);
+    color: var(--dm-text-faint);
     font-variant-numeric: tabular-nums;
     flex-shrink: 0;
   }}
@@ -295,9 +294,9 @@ _HTML_TEMPLATE = textwrap.dedent("""\
   }}
   .dm-pc-stage {{
     position: relative;
-    background: #fafafa;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
+    background: var(--dm-bg-panel);
+    border: 1px solid var(--dm-border-faint);
+    border-radius: var(--dm-radius-4);
     overflow: hidden;
     width: 100%;
     aspect-ratio: {aspect_ratio};
@@ -310,7 +309,7 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     transition: opacity 0.45s ease;
     pointer-events: none;
   }}
-  .dm-pc-panel.active {{
+  .dm-pc-panel.is-active {{
     opacity: 1;
     pointer-events: auto;
   }}
@@ -326,25 +325,26 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     transform: translateY(-50%);
     width: 36px;
     height: 36px;
-    border-radius: 50%;
-    border: 1px solid #d0d0d0;
-    background: rgba(255, 255, 255, 0.92);
-    color: #333;
+    border-radius: var(--dm-radius-full);
+    border: 1px solid var(--dm-border-faint);
+    background: var(--dm-bg-panel);
+    color: var(--dm-text-strong);
     font-size: 16px;
     line-height: 1;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    box-shadow: var(--dm-shadow-1);
     transition: all 0.15s ease;
     user-select: none;
     z-index: 2;
   }}
   .dm-pc-arrow:hover {{
-    background: #fff;
-    border-color: #888;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    background: var(--dm-i-active-soft);
+    border-color: var(--dm-i-soft-border);
+    color: var(--dm-i-active-text);
+    box-shadow: var(--dm-shadow-2);
   }}
   .dm-pc-arrow-prev {{ left: 8px; }}
   .dm-pc-arrow-next {{ right: 8px; }}
@@ -360,65 +360,70 @@ _HTML_TEMPLATE = textwrap.dedent("""\
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #ccc;
-    border: none;
+    background: var(--dm-gray-a5);
+    border: 1px solid transparent;
     padding: 0;
     cursor: pointer;
     transition: all 0.2s ease;
   }}
   .dm-pc-dot:hover {{
-    background: #999;
+    background: var(--dm-gray-a7);
     transform: scale(1.15);
   }}
-  .dm-pc-dot.active {{
-    background: #333;
+  .dm-pc-dot.is-active,
+  .dm-pc-dot[aria-pressed="true"] {{
+    background: var(--dm-i-active-line);
+    border-color: var(--dm-i-active-line);
     width: 22px;
-    border-radius: 4px;
+    border-radius: var(--dm-radius-2);
   }}
   /* Autoplay progress bar */
   .dm-pc-progress {{
     height: 2px;
-    background: #eee;
+    background: var(--dm-gray-a4);
     margin-top: 8px;
     border-radius: 1px;
     overflow: hidden;
   }}
   .dm-pc-progress-bar {{
     height: 100%;
-    background: #333;
+    background: var(--dm-i-active-line);
     width: 0%;
     transition: width 0.1s linear;
   }}
   /* ── Parameter info panel (multi-column grid) ── */
   .dm-pc-params {{
-    font-size: 13px;
-    background: #fdfdfd;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
+    font-size: var(--dm-type-caption-size);
+    background: var(--dm-bg-subtle);
+    border: 1px solid var(--dm-border-faint);
+    border-radius: var(--dm-radius-4);
     padding: 16px;
   }}
   .dm-pc-params-grid {{
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px 48px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    gap: 10px 28px;
   }}
   .dm-pc-param-item {{
     display: flex;
     justify-content: flex-start;
     align-items: baseline;
-    border-bottom: 1px solid #eee;
+    column-gap: var(--dm-space-2);
+    border-bottom: 1px solid var(--dm-border-faint);
     padding-bottom: 6px;
+    min-width: 0;
   }}
   .dm-pc-param-key {{
-    flex: 0 0 130px;
-    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
-    color: #555;
+    flex: 0 0 11.5ch;
+    font-family: var(--dm-f-mono);
+    color: var(--dm-text-muted);
     white-space: nowrap;
   }}
   .dm-pc-param-val {{
     font-weight: 600;
-    color: #333;
-    white-space: nowrap;
+    color: var(--dm-text-strong);
+    min-width: 0;
+    overflow-wrap: anywhere;
   }}
   .dm-pc-param-special {{
     grid-column: 1 / -1;
@@ -442,13 +447,13 @@ _HTML_TEMPLATE = textwrap.dedent("""\
   </div>
   <div class="dm-pc-body">
     <div class="dm-pc-stage-wrap">
-      <button class="dm-pc-arrow dm-pc-arrow-prev" id="dm-pc-prev" aria-label="Previous preset">&#10094;</button>
+      <button class="dm-pc-arrow dm-icon-btn dm-pc-arrow-prev" id="dm-pc-prev" aria-label="Previous preset" type="button">&#10094;</button>
       <div class="dm-pc-stage" id="dm-pc-stage">
 {panels_html}
       </div>
-      <button class="dm-pc-arrow dm-pc-arrow-next" id="dm-pc-next" aria-label="Next preset">&#10095;</button>
+      <button class="dm-pc-arrow dm-icon-btn dm-pc-arrow-next" id="dm-pc-next" aria-label="Next preset" type="button">&#10095;</button>
     </div>
-    <div class="dm-pc-dots" id="dm-pc-dots">
+    <div class="dm-pc-dots" id="dm-pc-dots" role="group" aria-label="Preset slide">
 {dots_html}
     </div>
     <div class="dm-pc-progress" aria-hidden="true"><div class="dm-pc-progress-bar" id="dm-pc-progress-bar"></div></div>
@@ -488,10 +493,15 @@ _HTML_TEMPLATE = textwrap.dedent("""\
       var preset = presets[idx];
 
       panels.forEach(function(p, i) {{
-        p.classList.toggle("active", i === idx);
+        var selected = i === idx;
+        p.classList.toggle("is-active", selected);
+        p.setAttribute("aria-hidden", selected ? "false" : "true");
       }});
       dots.forEach(function(d, i) {{
-        d.classList.toggle("active", i === idx);
+        var selected = i === idx;
+        d.classList.toggle("is-active", selected);
+        d.setAttribute("aria-pressed", selected ? "true" : "false");
+        d.tabIndex = selected ? 0 : -1;
       }});
 
       nameEl.textContent = preset;
@@ -616,18 +626,26 @@ def build_preset_compare_html(output_path: Path | None = None) -> Path:
         svgs[preset] = _normalize_svg_viewbox(svgs[preset], target_vb)
 
     # ── Build dot-indicator HTML ──
-    dots_lines = [
-        f'      <button class="dm-pc-dot" data-preset="{preset}" '
-        f'aria-label="Show {preset} preset"></button>'
-        for preset in PRESETS
-    ]
+    dots_lines = []
+    for idx, preset in enumerate(PRESETS):
+        selected = idx == 0
+        dots_lines.append(
+            f'      <button class="dm-pc-dot{" is-active" if selected else ""}" '
+            f'data-preset="{preset}" type="button" '
+            f'aria-label="Show {preset} preset" '
+            f'aria-pressed="{str(selected).lower()}" '
+            f'tabindex="{0 if selected else -1}"></button>'
+        )
     dots_html = "\n".join(dots_lines)
 
     # ── Build panels HTML ──
     panels_lines = []
-    for preset in PRESETS:
+    for idx, preset in enumerate(PRESETS):
+        selected = idx == 0
         panels_lines.append(
-            f'        <div class="dm-pc-panel" data-preset="{preset}">'
+            f'        <div class="dm-pc-panel{" is-active" if selected else ""}" '
+            f'data-preset="{preset}" '
+            f'aria-hidden="{str(not selected).lower()}">'
         )
         panels_lines.append(f"          {svgs[preset]}")
         panels_lines.append("        </div>")
