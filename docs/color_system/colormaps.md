@@ -64,22 +64,35 @@ plt.show()
 
 ## The catalog
 
-Explore the 46-map v5 catalog below. Use the tabs to browse by data type.
+Explore the 46-map v5 catalog below. Pick a map on the left; the true
+gradient strip, accessibility chips, and the demo plots on the right
+re-render live. Drag **Levels** to quantize, toggle **Reverse** / **B&W**,
+switch the demo grid layout, and pick which of the 13 demo types to show.
 
 ```{raw} html
-:file: images/colormap_explorer.html
+:file: ../_static/colormap_explorer.html
 ```
 
-The catalog is five generation families plus the two registered cycles:
+The continuous set is 46 maps in four groups:
 
-| Family | Names | Count | Direction |
+| Group | Names | Count | Direction |
 |---|---|--:|---|
-| **Single-hue** (ink) | `red` `rose` `coral` `tangerine` `orange` `amber` `yellow` `lime` `green` `teal` `cyan` `sky` `blue` `cobalt` `indigo` `violet` `purple` `fuchsia` `pink` `gray` | 20 | high = darker |
-| **Multi-hue** (light) | `aurora` (default) `afterglow` `blaze` `lava` `lagoon` `glacier` `canopy` `haze` `iris` | 9 | high = brighter |
-| **Diverging** (ink) | `blue_red` (+`_deep`/`_soft`) `blue_orange` `teal_rose` `green_purple` `purple_orange` `cyan_red` `teal_amber` `violet_lime` `indigo_amber` `gray_blue` `gray_red` | 13 | anchored at the midpoint |
-| **Topographic** | `coast` | 1 | anchored at a datum |
-| **Cyclic** (light) | `hue` `halo` `corona` | 3 | start = end |
-| **Qualitative** | `cycle` (Octave) `cycle_print` (Octave Print) | 2 | discrete classes |
+| **Sequential** (single-hue) | `red` `rose` `coral` `tangerine` `orange` `amber` `yellow` `lime` `green` `teal` `cyan` `sky` `blue` `cobalt` `indigo` `violet` `purple` `fuchsia` `pink` `gray` | 20 | high = darker |
+| **Multi-hue** | `afterglow` `aurora` (default) `blaze` `canopy` `coast` `glacier` `haze` `iris` `lagoon` `lava` | 10 | high = brighter |
+| **Diverging** | `blue_red` (+`_deep`/`_soft`) `blue_orange` `cyan_red` `teal_amber` `teal_rose` `indigo_amber` `green_purple` `purple_orange` `violet_lime` `gray_blue` `gray_red` `corona` `halo` | 15 | anchored at the midpoint |
+| **Cyclic** | `hue` | 1 | start = end |
+
+Two members carry a structural note. `coast` is a **segmented** multi-hue
+map — a blue water ramp joined to a green land ramp with a seam at the
+midpoint, for data with a natural bathymetry/topography break. `corona` and
+`halo` are **dark-center diverging** maps: pale ends around a dark neutral
+middle (L\*≈93 at both ends, L\*≈18 at the center), for dark-background
+figures or where the extremes should glow.
+
+Separately, the two qualitative **cycles** `dc.cycle` (Octave) and
+`dc.cycle_print` (Octave Print) are registered for `cmap=` too, but they are
+discrete class palettes, **not** part of the 46-map continuous set above —
+reach them through `dm.set_cycle(...)` for categorical series.
 
 ---
 
