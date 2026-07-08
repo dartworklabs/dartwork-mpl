@@ -1,37 +1,6 @@
 # Categorical palettes
 
 ```{raw} html
-<style>
-article:has(#dm-cat-exp) .dm-lead {
-  margin: .7em 0 1.25em;
-  color: var(--dm-text-muted, var(--dm-gray-10, #667085));
-  font-size: 1.09em; line-height: 1.72;
-}
-article:has(#dm-cat-exp) section > h2 { margin-top: 2.6em; padding-top: .72em; border-top: 1px solid var(--dm-gray-a4, rgba(0, 0, 0, 0.12)); }
-article:has(#dm-cat-exp) section > h3 { margin-top: 1.9em; }
-article:has(#dm-cat-exp) table {
-  width: 100%; border-collapse: separate; border-spacing: 0; overflow: hidden; font-variant-numeric: tabular-nums;
-  border: 1px solid var(--dm-gray-a4, rgba(0, 0, 0, 0.12)); border-radius: var(--dm-radius-md, 8px);
-}
-article:has(#dm-cat-exp) thead th { background: var(--dm-bg-subtle, var(--dm-gray-2, #f7f9f9)); }
-article:has(#dm-cat-exp) th, article:has(#dm-cat-exp) td {
-  padding: .68rem .82rem; vertical-align: top; border-bottom: 1px solid var(--dm-gray-a4, rgba(0, 0, 0, 0.12));
-}
-article:has(#dm-cat-exp) th + th, article:has(#dm-cat-exp) td + td { border-left: 1px solid var(--dm-gray-a4, rgba(0, 0, 0, 0.12)); }
-article:has(#dm-cat-exp) tbody tr:last-child td { border-bottom: 0; }
-article:has(#dm-cat-exp) tbody tr:hover { background: var(--dm-accent-2, #e6f7f4); }
-article:has(#dm-cat-exp) p code, article:has(#dm-cat-exp) li code,
-article:has(#dm-cat-exp) td code, article:has(#dm-cat-exp) th code,
-article:has(#dm-cat-exp) blockquote code {
-  padding: .08em .35em; border: 1px solid var(--dm-gray-a4, rgba(0, 0, 0, 0.12));
-  border-radius: var(--dm-radius-sm, 5px); font-size: .91em; background: var(--dm-i-code-surface, var(--dm-gray-2, #f2f4f5));
-  font-family: var(--dm-f-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
-}
-html[data-theme="dark"] article:has(#dm-cat-exp) tbody tr:hover { background: var(--dm-accent-3, rgba(18, 165, 148, 0.16)); }
-</style>
-```
-
-```{raw} html
 <p class="dm-lead">Pick a palette visually, preview it across nine chart shapes, and apply it with one line. Start with the explorer, then copy the matching Python call or a swatch hex when you need exact colors.</p>
 ```
 

@@ -254,9 +254,11 @@ def test_explorer_layout_fits_article_column() -> None:
     """The explorer uses a bounded grid track and wrapping controls."""
     html = _EXPLORER.read_text(encoding="utf-8")
 
-    assert "grid-template-columns:168px minmax(0,1fr)" in html
+    assert '<div id="dm-cat-exp" class="dm-wide yue">' in html
+    assert "grid-template-columns:minmax(10.5rem,12rem) minmax(0,1fr)" in html
     assert "#dm-cat-exp {width:100%;max-width:100%;overflow:clip;" in html
     assert "#dm-cat-exp .detail {min-width:0;" in html
+    assert "gap:var(--dm-space-5,24px)" in html
     assert "flex-wrap:wrap;row-gap:8px;" in html
 
 

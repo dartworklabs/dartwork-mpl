@@ -49,6 +49,7 @@ dartwork_mpl as dm` and the `.dm-*` classes). Not `dw` (a second abbreviation
 | **Radius** | `--dm-radius-1..6` + `full` (3/4/6/8/12/16/9999) | round orphans (5→radius-3, 10→radius-4/5, 20→radius-6, 2→radius-1, 50%→full). No half-steps. |
 | **Shadow** | `--dm-shadow-1..4` (gray-alpha) | already defined. Remap literal `0 8px 28px …` families onto the ladder; DELETE purple-tinted shadows. |
 | **Border** | `--dm-border-faint` / `--dm-border` / `--dm-border-strong` (+ `--dm-i-soft-border`=accent-7) | collapse warm `#ebe9e2`/`#e4e2dd`/`#d5d3cc` & cool `#e0e0e0` → the two-token system. |
+| **Layout** | `--dm-layout-shell-max: 96rem`, `--dm-layout-article-max: 72rem`, `--dm-layout-prose-max: 72ch`, `--dm-layout-gutter: 28px` | shell = page frame, article = component canvas, prose = readable measure. `--sy-c-content-width` maps to article width. |
 | **Motion** | `--dm-i-transition` (when next touched) | out of scope now; add one timing token instead of per-widget literals. |
 
 ## Component SSOT
@@ -62,6 +63,8 @@ dartwork_mpl as dm` and the `.dm-*` classes). Not `dw` (a second abbreviation
 | Links | `--dm-link`/`-hover`, underline `accent-7` (now dark-correct after P1) |
 | Sidebar / TOC | active `accent-3` bg + `accent-11` text; sizes → `fs-2`/`fs-0`/`fs-00` |
 | Buttons | primary=`accent-9`+white+semibold, secondary=`accent-9` border+`accent-11`+medium → `.dm-cta--*` |
+| Page width | prose is capped by `--dm-layout-prose-max`; `.dm-wide` is article-local and never uses viewport breakout or negative margins |
+| Gallery cards | tokenized card surface + fixed media slot (`object-fit: contain`) so generated thumbnails keep their plot aspect |
 | **Interactive** | `dm-interactive.css` primitives: `.dm-seg` `.dm-tabs/.dm-tab` `.dm-chip` `.dm-swatch` `.dm-slider` `.dm-icon-btn` `.dm-code` `.dm-cta` `.dm-callout` — see `dm-interactive-system.md` |
 
 ## Redesign decisions (where variation was too chaotic)
@@ -74,6 +77,8 @@ dartwork_mpl as dm` and the `.dm-*` classes). Not `dw` (a second abbreviation
 | `font-specimens.css` + `dynamic_ux.css` bespoke sheets | reskin over tokens; `--dm-ux-accent #14b8a6` → `accent-9`; navy code → `--dm-i-code-surface` | they define a 2nd parallel accent + hand-maintained dark that won't track tokens |
 | Carded shadows + warm borders | one `--dm-shadow-1` + two-token border | per-widget literals have no dark variant |
 | Letter-spacing magic numbers | bake into `--dm-ls` scale + one `--dm-text-tight` | 3 layered opaque adjustments are unauditable |
+| React/Base UI islands | defer for now; borrow Radix/shadcn component grammar through static CSS tokens | Sphinx already owns the static document shell; React islands are reserved for a future explorer rewrite, not layout cleanup |
+| Page-local `<style>` blocks | move into global CSS or generator CSS | keeps rendered pages and docs source from inventing one-off component rules |
 
 ## Roadmap (phased, checkpoint each)
 

@@ -212,6 +212,15 @@
   --dm-border-faint: var(--dm-gray-a4);
   --dm-border: var(--dm-gray-a6);
   --dm-border-strong: var(--dm-gray-a8);
+
+  /* Layout contract — keep page chrome, article canvas, and reading measure
+   * separate. Shibuya consumes --sy-c-content-width, so map it to the
+   * dartwork article token instead of scattering rem values across files. */
+  --dm-layout-shell-max: 96rem;
+  --dm-layout-article-max: 72rem;
+  --dm-layout-prose-max: 72ch;
+  --dm-layout-gutter: 28px;
+  --sy-c-content-width: var(--dm-layout-article-max);
 }
 
 /* Dark mode counterparts — Radix slateDark + tealDark */
@@ -1310,18 +1319,26 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 
 
 /* ===========================================================================
- * TIER 6 — widen the docs body
+ * TIER 6 — docs layout contract
  *
- * User: "docs 전체 폭을 사용하지도 않아 — 전체 폭을 사용하게 해줘."
- *
- * Shibuya's default content max-width is around 48–52rem in its
- * publication CSS, which leaves a wide gutter on 1440px+ displays and
- * crops figures (notably the simple_layout vs tight_layout side-by-side).
- * Bump the article width up; the TOC right rail still gets its column.
+ * The outer shell is the full page frame, the article is the component canvas,
+ * prose is the readable measure, and .dm-wide is an article-local opt-in for
+ * wide widgets. Nothing breaks into the right TOC rail.
  * =========================================================================== */
 
-:root {
-  --sy-c-content-width: 64rem;
+.sy-container {
+  max-width: var(--dm-layout-shell-max);
+}
+
+.sy-main div:has(> article.yue) {
+  max-width: var(--dm-layout-article-max);
+}
+
+@media (min-width: 80rem) {
+  .sy-main div:has(> article.yue) {
+    padding-left: var(--dm-layout-gutter);
+    padding-right: var(--dm-layout-gutter);
+  }
 }
 
 .yue {
@@ -1333,7 +1350,99 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 .bd-main,
 .yue.bd-article,
 .bd-article {
-  max-width: 64rem;
+  max-width: var(--dm-layout-article-max);
+}
+
+article section > p,
+article section > ul,
+article section > ol {
+  max-width: var(--dm-layout-prose-max);
+}
+
+.dm-wide {
+  width: 100%;
+  max-width: 100%;
+  margin-block: var(--dm-space-6);
+}
+
+.dm-wide > :first-child {
+  margin-top: 0;
+}
+
+.dm-wide > :last-child {
+  margin-bottom: 0;
+}
+
+/* Categorical palette page polish. The page content opts in naturally by
+ * embedding #dm-cat-exp; keep the styling global so page-local raw <style>
+ * blocks do not drift from the docs design system. */
+article:has(#dm-cat-exp) .dm-lead {
+  margin: 0.7em 0 1.25em;
+  color: var(--dm-text-muted);
+  font-size: 1.09em;
+  line-height: 1.72;
+}
+
+article:has(#dm-cat-exp) section > h2 {
+  margin-top: 2.6em;
+  padding-top: 0.72em;
+  border-top: 1px solid var(--dm-border-faint);
+}
+
+article:has(#dm-cat-exp) section > h3 {
+  margin-top: 1.9em;
+}
+
+article:has(#dm-cat-exp) table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--dm-border-faint);
+  border-radius: var(--dm-radius-4);
+}
+
+article:has(#dm-cat-exp) thead th {
+  background: var(--dm-bg-subtle);
+}
+
+article:has(#dm-cat-exp) th,
+article:has(#dm-cat-exp) td {
+  padding: 0.68rem 0.82rem;
+  vertical-align: top;
+  border-bottom: 1px solid var(--dm-border-faint);
+}
+
+article:has(#dm-cat-exp) th + th,
+article:has(#dm-cat-exp) td + td {
+  border-left: 1px solid var(--dm-border-faint);
+}
+
+article:has(#dm-cat-exp) tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+article:has(#dm-cat-exp) tbody tr:hover {
+  background: var(--dm-accent-2);
+}
+
+html.dark article:has(#dm-cat-exp) tbody tr:hover,
+body[data-theme="dark"] article:has(#dm-cat-exp) tbody tr:hover {
+  background: var(--dm-accent-3);
+}
+
+article:has(#dm-cat-exp) p code,
+article:has(#dm-cat-exp) li code,
+article:has(#dm-cat-exp) td code,
+article:has(#dm-cat-exp) th code,
+article:has(#dm-cat-exp) blockquote code {
+  padding: 0.08em 0.35em;
+  border: 1px solid var(--dm-border-faint);
+  border-radius: var(--dm-radius-2);
+  font-size: 0.91em;
+  background: var(--dm-i-code-surface);
+  font-family: var(--dm-f-mono);
 }
 
 
