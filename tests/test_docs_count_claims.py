@@ -261,19 +261,14 @@ _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
         _n_presets,
     ),
     (
-        "docs/color_system/categorical-palettes.md",
+        "docs/color_system/palettes.md",
         r"and (\d+) curated qualitative sets",
         _n_curated_palettes,
     ),
     (
-        "docs/color_system/categorical-palettes.md",
+        "docs/color_system/palettes.md",
         r"The rail has (\d+) qualitative choices",
         _n_qualitative_rail_palettes,
-    ),
-    (
-        "docs/color_system/colors.md",
-        r"ships (\d+) curated\s+\*\*qualitative sets\*\*",
-        _n_curated_palettes,
     ),
     ("llms.txt", r"(\d+) ready-to-use scripts", _n_basic_templates),
     ("CLAUDE.md", r"(\d+) ready-to-use plot templates", _n_basic_templates),

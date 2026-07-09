@@ -49,8 +49,8 @@ steps, `dc.{family}{step}`) replaced the hand-curated v4 catalog. v5 is a
    `trustworthy`, `vivid`, `neon`, `jewel`, `blue_red`, `teal_amber`, `earth`,
    `forest`, `blue_orange`, and the rest — are **preserved** as first-class
    `dc.*` palettes: reach them through `dm.colors("trustworthy", n=6)` /
-   `dm.set_colors("vivid")`, exactly like a v5 family (see
-   [Categorical palettes](color_system/categorical-palettes.md)).
+   `dm.set_colors("vivid")`, exactly like a generated family (see
+   [Palettes](color_system/palettes.md)).
 2. **There is no runtime palette-version switch.** The live registry is
    v5-only, so `teal`, `indigo`, and `gray` always mean the 10-step v5
    families.
@@ -64,7 +64,7 @@ steps, `dc.{family}{step}`) replaced the hand-curated v4 catalog. v5 is a
 6. **Semantic tokens are v5-native.** Use `dc.pos`, `dc.neg`, `dc.ref`, and
    `dc.hl` for role-based color; use `dc.ref` rather than a gray shade for
    reference lines.
-7. **The v5 family set later gained `coral`, `tangerine`, `cobalt`, and
+7. **The generated family set later gained `coral`, `tangerine`, `cobalt`, and
    `fuchsia`.** `coral` is now a recipe-generated 10-step family rather than
    a curated 8-step set.
 
@@ -300,7 +300,7 @@ overhaul) into a single lookup. Shade indices are preserved
 > These map each old token to its **closest current palette** — the
 > colours themselves were re-generated in the overhaul, so a migrated
 > token is a starting point, not a byte-identical swap. Browse the live
-> set on the [categorical palettes](color_system/categorical-palettes.md)
+> set on the [Palettes](color_system/palettes.md)
 > page.
 
 ## color parsing (old named-color helper → `dm.color`)

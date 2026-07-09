@@ -34,20 +34,10 @@ Quick examples
    # Classify an arbitrary colormap
    diagnostics.classify_cmap(mpl.colormaps["coolwarm"])  # → "Diverging"
 
-``dm.show_colors`` previews the registered Model B families; the broader color
-system is best browsed live — hover a swatch for its hex and L*, filter by
-family:
-
-.. raw:: html
-
-   <iframe src="../_static/palette_showcase.html" title="dartwork palette specimen"
-           loading="lazy"
-           style="width:100%;height:760px;border:1px solid var(--dm-border-faint,#e6e6e6);border-radius:12px;"></iframe>
-
-For a click-and-copy palette browser without leaving the docs, see
-the :doc:`interactive palette explorer <../color_system/colors>`. For
-a colormap browser, see the :doc:`colormap explorer
-<../color_system/colormaps>`.
+``dm.show_colors`` previews the registered Model B families. Browse the full
+token sheets in :doc:`Colors <../color_system/colors>`, choose series palettes
+in :doc:`Palettes <../color_system/palettes>`, and inspect continuous maps in
+the :doc:`Colormaps <../color_system/colormaps>` catalog.
 
 Choosing the right helper
 -------------------------

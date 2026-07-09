@@ -6,9 +6,8 @@ failure (#235): a ``Length`` from ``dm.cm(...)`` passed straight to
 ``ufunc 'isfinite' not supported``. ``dm.figsize(...)`` returns plain
 inch floats, which is the contract this test pins.
 
-(``viz_example`` itself was retired — the color swatch dump is now an
-interactive ``palette_showcase.html`` embed, so there is no static
-SVG asset to render here anymore.)
+(``viz_example`` itself was retired, so there is no static SVG asset to render
+here anymore.)
 """
 
 from __future__ import annotations

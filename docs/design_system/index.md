@@ -1,81 +1,86 @@
-# Design System
+# Overview
 
-dartwork-mpl ships with four reference catalogs of design tokens —
-palettes, colormaps, the OKLCH-aware `Color` class, and typography —
-pre-wired into every style preset. Pick the one you need:
+The color system has one rule: the name is a family, and `n` picks the form.
+Use the same family name as a token, a discrete list, or a colormap depending
+on the matplotlib surface you are filling.
 
-::::{grid} 2
+| you want to | you write | catalog |
+|---|---|---|
+| color one thing | `color="dc.blue6"` | [Colors](../color_system/colors.md) |
+| color N series | `dm.set_colors("vivid")` / `dm.colors("vivid", n=6)` | [Palettes](../color_system/palettes.md) |
+| color a field | `cmap="dc.aurora"` | [Colormaps](../color_system/colormaps.md) |
+| build your own | `dm.color()`, `dm.oklch()`, `dm.cspace()` | [Color class](../color_system/color-class.md) |
+
+The catalog has five kinds: sequential, multi-hue, diverging, cyclic, and
+qualitative. Most families have a continuous form for `cmap=` and a designed
+discrete form for `dm.colors(name, n=...)`; qualitative families are discrete
+sets that also register as qualitative colormaps. `dm.list_colors()` returns
+the 56 family records that make those forms explicit.
+
+::::{grid} 1 1 2 3
 :gutter: 3
 :margin: 4 4 0 0
 
-:::{grid-item-card} **Palettes**
+:::{grid-item-card} **Colors**
 :link: ../color_system/colors
 :link-type: doc
 
-Named palette sheets for the generative `dc.*` families plus six third-party
-design systems (OpenColor, Tailwind, Material, Ant, Chakra, Primer).
+Static token sheets for `color="..."`: the generated `dc.*` ramps, semantic
+aliases, and the six bundled third-party design systems.
+:::
 
-- 300+ swatches, copy-on-click
-- 20 perceptual families + 11 curated qualitative sets
-- Drop names anywhere matplotlib accepts a color
-- Interactive picker + `dm.set_colors`/`dm.colors` → [Categorical palettes](../color_system/categorical-palettes)
+:::{grid-item-card} **Palettes**
+:link: ../color_system/palettes
+:link-type: doc
+
+Discrete forms for series color: Octave, curated qualitative sets, family
+samples, and diverging/sequential lists through `dm.set_colors()` and
+`dm.colors(name, n=...)`.
 :::
 
 :::{grid-item-card} **Colormaps**
 :link: ../color_system/colormaps
 :link-type: doc
 
-43 perceptually-designed colormaps across single-hue, multi-hue,
-diverging, and cyclic families.
-
-- Live explorer — tab to category, toggle Color / Mono
-- Guaranteed monotonic lightness (greyscale-safe)
-- The generation axioms behind them → [Color system design](../color_system/design)
+43 perceptually-designed colormaps for `cmap=`, plus qualitative colormaps
+for class data and `_r` reverses for direction control.
 :::
 
-:::{grid-item-card} **Color Space**
-:link: ../color_system/space
+:::{grid-item-card} **Color class**
+:link: ../color_system/color-class
 :link-type: doc
 
-The `Color` class for perceptually uniform manipulation in OKLab /
-OKLCH space — adjust hue, saturation, and lightness predictably.
-
-- Lighten / darken / desaturate
-- Smooth custom gradients in OKLCH
-- Cross-color-space conversion utilities
+The programmatic color engine: construct, convert, modify, interpolate, and
+register custom colormaps in OKLab / OKLCH.
 :::
 
 :::{grid-item-card} **Fonts**
 :link: ../fonts/index
 :link-type: doc
 
-206 publication-grade fonts from 18 families, auto-registered with
-matplotlib on import. Drop in by name — no `font_manager` plumbing.
+206 publication-grade fonts from 18 families, auto-registered with matplotlib
+and wired into the style presets.
+:::
 
-- Family catalog with live specimens
-- Weight + variant matrix
-- Per-preset default-font reference (`Roboto`, `Pretendard`, …)
+:::{grid-item-card} **Design rationale**
+:link: ../color_system/design-rationale
+:link-type: doc
+
+The evidence page for the design system: perceptual color theory today, with
+typography rationale reserved for the fonts overhaul.
 :::
 
 ::::
-
-## Why one nav entry for four catalogs?
-
-Palettes, colormaps, the color space, and fonts are the four leaf-level
-token systems every other dartwork-mpl feature depends on — presets
-pick from them, examples reference them, the linter enforces them.
-Grouping them under a single **Design System** entry keeps the top
-navigation under seven items while still surfacing each catalog as a
-direct sidebar link.
 
 ```{toctree}
 :hidden:
 :maxdepth: 1
 
-Palettes <../color_system/colors>
-Categorical palettes <../color_system/categorical-palettes>
+Overview <self>
+Colors <../color_system/colors>
+Palettes <../color_system/palettes>
 Colormaps <../color_system/colormaps>
-Color system design <../color_system/design>
-Color Space <../color_system/space>
+Color class <../color_system/color-class>
 Fonts <../fonts/index>
+Design rationale <../color_system/design-rationale>
 ```

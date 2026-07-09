@@ -84,7 +84,7 @@ class TestEnsureLoaded:
         assert "dc.0" not in mapping
 
     def test_dc_palette_count(self) -> None:
-        """20 v5 families x10 + curated/generated discrete sets + semantics.
+        """20 generated families x10 + curated/generated discrete sets + semantics.
 
         Derived from the SSOT so adding/removing a palette can't silently
         drift the count out of sync.
@@ -151,7 +151,7 @@ class TestLoadJsonPalette:
 
 
 class TestPaletteCleanBreak:
-    """Removed pre-v5 palette tokens must stay gone; v5 families resolve."""
+    """Removed pre-v5 palette tokens must stay gone; generated families resolve."""
 
     def test_removed_tokens_do_not_resolve(self) -> None:
         import matplotlib.colors as mcolors
@@ -200,7 +200,7 @@ class TestCuratedPalettes:
                 assert mapping[token].lower() == hexval.lower()
 
     def test_curated_never_shadows_a_v5_family(self) -> None:
-        """Curated names must not collide with the generated v5 families."""
+        """Curated names must not collide with the generated families."""
         from dartwork_mpl._colors._curated import CURATED
         from dartwork_mpl._colors._generated import PALETTE
 
@@ -221,7 +221,7 @@ class TestCuratedPalettes:
         assert cyc == list(_curated.CURATED["vivid"])
 
     def test_collision_name_resolves_to_v5_family(self) -> None:
-        """A name shared with a v5 family (teal) resolves to the 10-step family,
+        """A name shared with a generated family (teal) resolves to 10 steps,
         not an 8-step curated ramp."""
         import dartwork_mpl as dm
 

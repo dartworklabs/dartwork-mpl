@@ -3,7 +3,7 @@
 > Single source of truth for every **interactive** control in the docs.
 > Foundation for the 2026-06 consistency overhaul. Pairs with
 > `dm-interactive.css` (implementation), `dm-interactive-styleguide.html`
-> (living reference), and `_overhaul_review.html` (visual checkpoint).
+> (living reference).
 
 ## Why this exists
 
@@ -169,6 +169,3 @@ inside comparison POCs where the point is to show a historical alternative.
 | `dm-interactive.css` | **interactive primitive SSOT** (this system) |
 | `dm-interactive-system.md` | this doc — the human SSOT |
 | `dm-interactive-styleguide.html` | living styleguide linked to real CSS |
-| `_overhaul_review.html` | visual checkpoint linked to real CSS/JS |
-| `interactive_overhaul_pocs.html` | comparison gallery for historical alternatives |
-| `install_picker_pocs.html`, `install_command_pocs.html` | exploration galleries (the directions that were compared) |

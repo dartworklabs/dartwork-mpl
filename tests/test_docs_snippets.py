@@ -28,7 +28,7 @@ _DOCS = [
     _REPO / "docs" / "usage_guide" / "colors.md",
     _REPO / "docs" / "usage_guide" / "quickstart.md",
     _REPO / "docs" / "usage_guide" / "save_export.md",
-    _REPO / "docs" / "color_system" / "categorical-palettes.md",
+    _REPO / "docs" / "color_system" / "palettes.md",
     _REPO / "docs" / "usage_guide" / "config.md",
     _REPO / "docs" / "usage_guide" / "extras.md",
     _REPO / "docs" / "usage_guide" / "interactive.md",
@@ -38,7 +38,7 @@ _DOCS = [
     _REPO / "docs" / "usage_guide" / "tutorials.md",
     _REPO / "docs" / "color_system" / "colormaps.md",
     _REPO / "docs" / "color_system" / "colors.md",
-    _REPO / "docs" / "color_system" / "space.md",
+    _REPO / "docs" / "color_system" / "color-class.md",
 ]
 
 _FENCE = re.compile(r"```python\n(.*?)```", re.S)

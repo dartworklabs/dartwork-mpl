@@ -11,7 +11,7 @@ Run::
     PYTHONPATH=src python docs/color_system/generate_theory_figures.py
 
 Output: ``docs/color_system/theory_figures/theory_*.svg`` (tracked static
-assets referenced by ``docs/color_system/design.md``). The figures only need
+assets referenced by ``docs/color_system/design-rationale.md``). The figures only need
 to be regenerated when the 91-parameter SSOT changes.
 """
 

@@ -65,8 +65,7 @@ extensions = [
 # --- Graphviz (sphinx.ext.graphviz) ---
 # Emit SVG (vector, crisp at any zoom) and let it shrink/grow naturally.
 # Note: requires the `dot` binary on $PATH (sudo apt install graphviz / brew
-# install graphviz). The diagrams PoC page uses the dot directive to render
-# the module dependency graph extracted automatically from src/dartwork_mpl/.
+# install graphviz).
 graphviz_output_format = "svg"
 graphviz_dot_args = [
     "-Gfontname=Inter, system-ui, sans-serif",

@@ -1,14 +1,10 @@
-# Categorical palettes
+# Palettes
 
 ```{raw} html
-<p class="dm-lead">Pick a palette visually, preview it across nine chart shapes, and apply it with one line. Start with the explorer, then copy the matching Python call or a swatch hex when you need exact colors.</p>
+<p class="dm-lead">Discrete color forms for series: the Octave default cycle, curated qualitative sets, and designed sequential or diverging samples from <code>dm.colors(name, n=...)</code>.</p>
 ```
 
-:::{note}
-**This page** picks a categorical palette by intent and applies it. For a
-static swatch reference of *every* color — all `dc.*` shades plus the bundled
-third-party systems — see **[Palettes](colors.md)**.
-:::
+For a static token sheet of every single-color string, use [Colors](colors.md).
 
 ## Pick a palette
 
@@ -26,7 +22,7 @@ Octave Print, and 11 curated qualitative sets.
 ```python
 import dartwork_mpl as dm
 
-dm.set_colors()                              # Octave — the searched default
+dm.set_colors()                              # octave — the searched default cycle
 dm.set_colors("trustworthy")                 # any curated set, by name
 dm.set_colors("green", n=5)                  # 5 steps of one hue family
 dm.set_colors(["dc.hl", "dc.gray3", "dc.gray5"], ax=ax)  # one Axes only
@@ -35,10 +31,10 @@ dm.set_colors(ax=ax, styles=True)            # >8 series: 8 colors x 3 styles
 ```
 
 Every name resolves under `dc.*`: `"blue"` can return designed samples from the
-single-hue family, and `"trustworthy"` returns the curated qualitative set. The
-qualitative families are also registered as colormaps (`dc.octave`,
-`dc.octave_print`, `dc.trustworthy`, …) for `scatter(c=...)` and seaborn
-`palette=`.
+single-hue family, `"blue_red"` can return a diverging list, and
+`"trustworthy"` returns the curated qualitative set. The qualitative families
+are also registered as colormaps (`dc.octave`, `dc.octave_print`,
+`dc.trustworthy`, …) for `scatter(c=...)` and seaborn `palette=`.
 
 ## Which palette for which data?
 
@@ -61,13 +57,11 @@ colormaps or designed color lists, `dm.set_colors(...)` to apply colors globally
 or to one Axes, `dm.list_colors(...)` for family metadata, and
 `dm.show_colors(...)` for previews.
 
-There are three layers: Octave, the searched default cycle for everyday charts;
-20 generative single-hue families (19 chromatic plus gray, ten perceptually
-equalized steps on CIELAB L\* + OKLCH) for ordered and sequential work; and 11
-hand-tuned curated qualitative sets for muted, tonal, forest, and emphasis use
-cases. Four canonical diverging discrete forms (`blue_red`, `blue_orange`,
-`teal_amber`, `green_purple`) remain available through `dm.colors(..., n=8)`
-and `dc.*` tokens, but they are not categorical rail choices.
+There are four discrete forms: Octave, the searched default cycle for everyday
+charts; 11 hand-tuned curated qualitative sets for muted, tonal, forest, and
+emphasis use cases; 20 generative single-hue families sampled for ordered and
+sequential work; and canonical diverging lists such as `blue_red`,
+`blue_orange`, `teal_amber`, and `green_purple` for centered data.
 
 The count rule is simple: families have 10 steps; curated qualitative and
 diverging sets have 8 colors; Octave has 8 chromatic colors, with rose in the
@@ -84,7 +78,8 @@ token. Its eight chromatic colors were selected by exhaustive search to stay
 distinct under color-vision-deficiency simulation. The common red-green
 deficiencies clear min ΔE00 10.3 (vs the Okabe-Ito benchmark's 11.5), and on
 the rare tritan the default cycle's 8.3 actually beats Okabe-Ito's 7.9 — both
-under the accurate Brettel-1997 model (see [Color system design](design.md));
+under the accurate Brettel-1997 model (see
+[Design rationale](design-rationale.md));
 matplotlib's `tab10` scores 1.4 and effectively collapses under protanopia.
 
 Gray is reserved for grids and reference lines, not spent as a data color in

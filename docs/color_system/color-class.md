@@ -1,13 +1,13 @@
-# Color Space
+# Color class
 
-dartwork-mpl provides a powerful `Color` class for working with colors in
-different color spaces. If you've ever mixed two colors and gotten a muddy
-brown, or built a gradient that dips through gray — that's because most tools
-work in RGB, which doesn't match how humans perceive color.
+The `Color` class is the programmatic fourth entry point in the design system:
+use it when a named token, discrete palette, or registered colormap is not the
+right shape. It is the engine behind color construction, conversion,
+manipulation, interpolation, and custom colormap registration.
 
-dartwork-mpl solves this by using **OKLab** and **OKLCH** — perceptually
-uniform color spaces where equal numeric distances correspond to equal visual
-differences. This page covers:
+dartwork-mpl uses **OKLab** and **OKLCH** — perceptually uniform color spaces
+where equal numeric distances correspond to equal visual differences. This page
+covers:
 
 - **Creating** Color objects from any format
 - **Converting** between color spaces
@@ -445,7 +445,9 @@ mpl.colormaps.register(cmap=cmap)
 
 ## See also
 
-- [Colors](colors.md) — full named palette catalog
-- [Colormaps](colormaps.md) — predefined colormap collections with design philosophy
+- [Colors](colors.md) — full named color-token catalog
+- [Palettes](palettes.md) — discrete forms for series color
+- [Colormaps](colormaps.md) — predefined colormap collections
+- [Design rationale](design-rationale.md) — why the color system is built this way
 - [Usage Guide › Colors](../usage_guide/colors.md) — practical color usage and mixing
 - [API › Color Utilities](../api/color.rst) for all color functions

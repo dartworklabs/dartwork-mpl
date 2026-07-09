@@ -198,7 +198,7 @@ def _write_dc_sheet(images_dir: Path, label: str, mapping: dict) -> Path:
 
 
 def _write_dc_family_sheet(images_dir: Path) -> Path:
-    """Build the v5 generative-family sheet: 20 single-hue families, ten
+    """Build the generative-family sheet: 20 single-hue families, ten
     perceptually-equalized steps each, straight from the shipped palette SSOT
     (``dartwork_mpl._colors._generated.PALETTE``). Ordered by hue so the sheet
     reads as one continuous system. Swatches are interactive (hover → name).
@@ -210,7 +210,7 @@ def _write_dc_family_sheet(images_dir: Path) -> Path:
 
     html = [
         '<div class="dm-color-sheet">',
-        '<div class="dm-sheet-title">dartwork Color — v5 families</div>',
+        '<div class="dm-sheet-title">dartwork Color — families</div>',
     ]
     for fam in order:
         rows = PALETTE.get(fam)
@@ -320,97 +320,6 @@ def _save_color_sheets_html(images_dir: Path) -> list[Path]:
         path = images_dir / f"colors_{library_key}.html"
         path.write_text("\n".join(html_parts), encoding="utf-8")
         paths.append(path)
-
-    # --- Assemble Tabbed Palette Explorer ---
-    import textwrap
-
-    _PE_TEMPLATE = textwrap.dedent("""\
-    <div class="dm-pe-widget">
-      <div class="dm-pc-tabs dm-tabs" id="dm-pe-tabs" role="tablist" aria-label="Color library">
-    {tabs_html}
-      </div>
-      <div class="dm-pe-body" id="dm-pe-stage">
-    {panels_html}
-      </div>
-    </div>
-    <script>
-    (function() {{
-      document.addEventListener("DOMContentLoaded", function() {{
-        var tabs = document.querySelectorAll(".dm-pe-tab");
-        var panels = document.querySelectorAll(".dm-pe-panel");
-        function activate(preset) {{
-          tabs.forEach(function(t) {{
-            var selected = t.dataset.preset === preset;
-            t.classList.toggle("is-active", selected);
-            t.setAttribute("aria-selected", selected ? "true" : "false");
-            t.tabIndex = selected ? 0 : -1;
-          }});
-          panels.forEach(function(p) {{
-            var selected = p.dataset.preset === preset;
-            p.classList.toggle("is-active", selected);
-            p.hidden = !selected;
-          }});
-        }}
-        tabs.forEach(function(t) {{
-          t.addEventListener("click", function() {{ activate(t.dataset.preset); }});
-          t.addEventListener("keydown", function(e) {{
-            var keys = ["ArrowLeft", "ArrowRight", "Home", "End"];
-            if (keys.indexOf(e.key) === -1) return;
-            e.preventDefault();
-            var items = Array.prototype.slice.call(tabs);
-            var current = items.indexOf(t);
-            var next = current;
-            if (e.key === "ArrowLeft") next = (current - 1 + items.length) % items.length;
-            if (e.key === "ArrowRight") next = (current + 1) % items.length;
-            if (e.key === "Home") next = 0;
-            if (e.key === "End") next = items.length - 1;
-            activate(items[next].dataset.preset);
-            items[next].focus();
-          }});
-        }});
-        if (tabs.length > 0) {{ activate(tabs[0].dataset.preset); }}
-      }});
-    }})();
-    </script>
-    """)
-
-    tabs_html = []
-    panels_html = []
-    for i, library_key in enumerate(COLOR_LIBRARY_ORDER):
-        label = COLOR_LIBRARY_LABELS.get(library_key, library_key)
-        # Tab
-        selected = i == 0
-        tab_classes = "dm-pc-tab dm-pe-tab dm-tab"
-        if selected:
-            tab_classes += " is-active"
-        tabs_html.append(
-            f'    <button class="{tab_classes}" role="tab" '
-            f'aria-selected="{str(selected).lower()}" '
-            f'tabindex="{0 if selected else -1}" '
-            f'data-preset="{library_key}">{label}</button>'
-        )
-        # Panel content - read from the file we just wrote
-        sheet_path = images_dir / f"colors_{library_key}.html"
-        if sheet_path.exists():
-            content = sheet_path.read_text(encoding="utf-8")
-            panel_attrs = (
-                'class="dm-pe-panel is-active"'
-                if i == 0
-                else 'class="dm-pe-panel" hidden'
-            )
-            panels_html.append(
-                f"    <div {panel_attrs} "
-                f'data-preset="{library_key}" role="tabpanel">'
-            )
-            panels_html.append(content)
-            panels_html.append("    </div>")
-
-    pe_html = _PE_TEMPLATE.format(
-        tabs_html="\n".join(tabs_html), panels_html="\n".join(panels_html)
-    )
-    pe_path = images_dir / "palette_explorer.html"
-    pe_path.write_text(pe_html, encoding="utf-8")
-    paths.append(pe_path)
 
     return paths
 

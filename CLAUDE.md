@@ -91,7 +91,7 @@ inside Python.
 |---|---|
 | 5-minute hands-on tour | [`docs/usage_guide/quickstart.md`](docs/usage_guide/quickstart.md) |
 | Width / aspect / layout deep dive | [`docs/usage_guide/layout.md`](docs/usage_guide/layout.md) |
-| Color system & palettes | [`docs/color_system/colors.md`](docs/color_system/colors.md) (or the [design rationale](docs/color_system/design.md)) |
+| Color system & palettes | [`docs/color_system/colors.md`](docs/color_system/colors.md) (or the [design rationale](docs/color_system/design-rationale.md)) |
 | Fonts, math & symbols | [`docs/fonts/index.md`](docs/fonts/index.md) (or the [math/symbol guide](docs/fonts/math_and_symbols.md)) |
 | Saving, validation & reproducible output | [`docs/usage_guide/save_export.md`](docs/usage_guide/save_export.md) |
 | 18 ready-to-use plot templates | [`docs/examples_gallery/09_ai_templates/`](docs/examples_gallery/09_ai_templates/) (rendered) or [`src/dartwork_mpl/asset/prompt/05-templates/`](src/dartwork_mpl/asset/prompt/05-templates/) (source) |

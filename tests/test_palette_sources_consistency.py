@@ -20,7 +20,7 @@ def test_generated_palette_registers_every_v5_token_hex_for_hex() -> None:
 
 
 def test_colors_resolves_every_v5_family_to_ten_steps() -> None:
-    """Bare v5 family names resolve to the full 10-step ``dc.<family>`` row."""
+    """Bare generated family names resolve to the full 10-step row."""
     for family in _generated.PALETTE:
         cols = dm.colors(family, n=10)
         assert cols == list(_generated.PALETTE[family])
