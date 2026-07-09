@@ -47,11 +47,14 @@ from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc
 
 # Axes annotation
 from .annotation import (
+    annotate_corner,
     annotate_value,
     arrow_axis,
     label_axes,
     label_hline,
     place_legend,
+    wrap_axis_label,
+    wrap_axis_labels,
 )
 
 # Import color module exports
@@ -269,9 +272,12 @@ __all__ = [  # noqa: RUF022
     "show_palette",
     # Axes annotation
     "annotate_value",
+    "annotate_corner",
     "label_axes",
     "label_hline",
     "place_legend",
+    "wrap_axis_label",
+    "wrap_axis_labels",
     "arrow_axis",
     # Prompt utilities
     "prompt_path",
