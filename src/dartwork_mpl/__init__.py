@@ -46,7 +46,13 @@ from . import (  # noqa: F401
 from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc
 
 # Axes annotation
-from .annotation import arrow_axis, label_axes
+from .annotation import (
+    annotate_value,
+    arrow_axis,
+    label_axes,
+    label_hline,
+    place_legend,
+)
 
 # Import color module exports
 from .colors import (
@@ -262,7 +268,10 @@ __all__ = [  # noqa: RUF022
     "list_colormaps",
     "show_palette",
     # Axes annotation
+    "annotate_value",
     "label_axes",
+    "label_hline",
+    "place_legend",
     "arrow_axis",
     # Prompt utilities
     "prompt_path",

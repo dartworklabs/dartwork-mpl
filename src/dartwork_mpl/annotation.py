@@ -1,22 +1,37 @@
 """Axes-based annotation helper module.
 
 Provides ``label_axes`` for adding standard alphabetic sub-labels to figure
-panels, and ``arrow_axis`` for drawing bidirectional Low-High arrow axes.
+panels, ``annotate_value`` / ``label_hline`` for compact in-axes labels,
+``place_legend`` for axes legends, and ``arrow_axis`` for drawing
+bidirectional Low-High arrow axes.
 """
 
 from __future__ import annotations
 
-__all__ = ["arrow_axis", "label_axes"]
+__all__ = [
+    "annotate_value",
+    "arrow_axis",
+    "label_axes",
+    "label_hline",
+    "place_legend",
+]
 
 import string
-from typing import Any
+from itertools import pairwise
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.legend import Legend
 from matplotlib.text import Text
+from matplotlib.transforms import Bbox, blended_transform_factory
 
-from ._helpers import get_renderer
+from ._helpers import BBOX_ERRORS, get_renderer
 from .scale import fs
+
+if TYPE_CHECKING:
+    from matplotlib.backend_bases import RendererBase
+    from matplotlib.figure import Figure, SubFigure
 
 
 def _auto_panel_labels(n: int) -> list[str]:
@@ -110,6 +125,310 @@ def label_axes(
         texts.append(t)
 
     return texts
+
+
+def _renderer_for_axes(ax: Axes) -> tuple[Figure | SubFigure, RendererBase]:
+    fig = ax.get_figure()
+    if fig is None or fig.canvas is None:
+        raise ValueError("Axes must be part of a Figure with a canvas")
+    fig.canvas.draw()
+    return fig, get_renderer(fig)
+
+
+def _padded_bbox(
+    x0: float, y0: float, x1: float, y1: float, pad: float
+) -> Bbox:
+    return Bbox.from_extents(x0 - pad, y0 - pad, x1 + pad, y1 + pad)
+
+
+def _overlap_area(a: Bbox, b: Bbox) -> float:
+    width = min(a.x1, b.x1) - max(a.x0, b.x0)
+    height = min(a.y1, b.y1) - max(a.y0, b.y0)
+    if width <= 0 or height <= 0:
+        return 0.0
+    return float(width * height)
+
+
+def _line_segment_bboxes(ax: Axes, pad_px: float = 2.0) -> list[Bbox]:
+    bboxes: list[Bbox] = []
+    for line in ax.lines:
+        if not line.get_visible():
+            continue
+        xy = np.asarray(line.get_xydata(), dtype=float)
+        if len(xy) < 2:
+            continue
+        points = line.get_transform().transform(xy)
+        points = points[np.isfinite(points).all(axis=1)]
+        if len(points) < 2:
+            continue
+        for left, right in pairwise(points):
+            bboxes.append(
+                _padded_bbox(
+                    float(min(left[0], right[0])),
+                    float(min(left[1], right[1])),
+                    float(max(left[0], right[0])),
+                    float(max(left[1], right[1])),
+                    pad_px,
+                )
+            )
+    return bboxes
+
+
+def _patch_bboxes(ax: Axes) -> list[Bbox]:
+    bboxes: list[Bbox] = []
+    for patch in ax.patches:
+        if not patch.get_visible():
+            continue
+        try:
+            bbox = (
+                patch.get_path()
+                .transformed(patch.get_transform())
+                .get_extents()
+            )
+        except (RuntimeError, ValueError, AttributeError):
+            continue
+        if bbox.width > 0 and bbox.height > 0:
+            bboxes.append(bbox)
+    return bboxes
+
+
+def _collection_bboxes(ax: Axes, pad_px: float = 6.0) -> list[Bbox]:
+    bboxes: list[Bbox] = []
+    for collection in ax.collections:
+        if not collection.get_visible():
+            continue
+        try:
+            offsets = collection.get_offsets()
+            points = collection.get_offset_transform().transform(offsets)
+        except (RuntimeError, ValueError, AttributeError):
+            continue
+        if len(points) == 0:
+            continue
+        points = points[np.isfinite(points).all(axis=1)]
+        for x, y in points:
+            bboxes.append(
+                _padded_bbox(float(x), float(y), float(x), float(y), pad_px)
+            )
+    return bboxes
+
+
+def _text_bboxes(texts: list[Text], renderer: Any) -> list[Bbox]:
+    bboxes: list[Bbox] = []
+    for text in texts:
+        if not text.get_visible() or not text.get_text().strip():
+            continue
+        try:
+            bbox = text.get_window_extent(renderer)
+        except BBOX_ERRORS:
+            continue
+        if bbox.width > 0 and bbox.height > 0:
+            bboxes.append(bbox)
+    return bboxes
+
+
+def _data_occupancy_bboxes(ax: Axes, renderer: Any | None = None) -> list[Bbox]:
+    bboxes = [*_line_segment_bboxes(ax), *_patch_bboxes(ax)]
+    bboxes.extend(_collection_bboxes(ax))
+    if renderer is not None:
+        bboxes.extend(_text_bboxes(list(ax.texts), renderer))
+    return bboxes
+
+
+def _set_annotation_offset(text: Text, offset: tuple[float, float]) -> None:
+    text.set_position(offset)
+    if hasattr(text, "xyann"):
+        text.xyann = offset
+
+
+def annotate_value(
+    ax: Axes,
+    x: float,
+    y: float,
+    text: str,
+    *,
+    side: str = "auto",
+    offset_pt: float = 3.0,
+    fontsize: float | None = None,
+    **kw: Any,
+) -> Text:
+    """Annotate one data value with a compact point-offset label.
+
+    ``side="auto"`` starts above the point, then flips below when the
+    rendered label would overlap same-axes data/text or escape the axes top.
+    When text needs to move, this helper uses a vertical single-axis offset
+    first; it does not introduce diagonal arrow-style displacement.
+    """
+    if fontsize is None:
+        fontsize = fs(-2)
+    if side not in {"auto", "above", "below"}:
+        raise ValueError("side must be 'auto', 'above', or 'below'")
+
+    existing_texts = list(ax.texts)
+    place_below = side == "below"
+    va = "top" if place_below else "bottom"
+    offset = (0.0, -float(offset_pt) if place_below else float(offset_pt))
+
+    ann = ax.annotate(
+        text,
+        xy=(x, y),
+        xycoords="data",
+        xytext=offset,
+        textcoords="offset points",
+        ha=kw.pop("ha", "center"),
+        va=kw.pop("va", va),
+        fontsize=fontsize,
+        annotation_clip=kw.pop("annotation_clip", False),
+        **kw,
+    )
+
+    if side != "auto":
+        return ann
+
+    fig, renderer = _renderer_for_axes(ax)
+    try:
+        label_bbox = ann.get_window_extent(renderer)
+        axes_bbox = ax.get_window_extent(renderer)
+    except BBOX_ERRORS:
+        return ann
+
+    collision_bboxes = [
+        *_line_segment_bboxes(ax),
+        *_patch_bboxes(ax),
+        *_collection_bboxes(ax),
+        *_text_bboxes(existing_texts, renderer),
+    ]
+    overlaps = any(
+        _overlap_area(label_bbox, bbox) > 0 for bbox in collision_bboxes
+    )
+    escapes_top = label_bbox.y1 > axes_bbox.y1
+    if overlaps or escapes_top:
+        ann.set_verticalalignment("top")
+        _set_annotation_offset(ann, (0.0, -float(offset_pt)))
+        fig.canvas.draw()
+
+    return ann
+
+
+def label_hline(
+    ax: Axes,
+    y: float,
+    text: str,
+    *,
+    x: str | float = "right",
+    side: str = "above",
+    gap_pt: float = 2.0,
+    fontsize: float | None = None,
+    **kw: Any,
+) -> Text:
+    """Place a label tightly against a horizontal reference line.
+
+    ``x`` is interpreted in axes-fraction coordinates (``"left"``,
+    ``"center"``, ``"right"``, or a float). Vertical movement uses a
+    single-axis point offset so the label stays attached to the reference
+    line rather than drifting diagonally.
+    """
+    if fontsize is None:
+        fontsize = fs(-2)
+    if side not in {"above", "below"}:
+        raise ValueError("side must be 'above' or 'below'")
+
+    if isinstance(x, str):
+        x_map = {"left": 0.0, "center": 0.5, "right": 1.0}
+        if x not in x_map:
+            raise ValueError("x must be 'left', 'center', 'right', or a float")
+        x_pos = x_map[x]
+        ha = x
+    else:
+        x_pos = float(x)
+        ha = "center"
+
+    va = "bottom" if side == "above" else "top"
+    offset = (0.0, float(gap_pt) if side == "above" else -float(gap_pt))
+    transform = blended_transform_factory(ax.transAxes, ax.transData)
+    return ax.annotate(
+        text,
+        xy=(x_pos, y),
+        xycoords=transform,
+        xytext=offset,
+        textcoords="offset points",
+        ha=kw.pop("ha", ha),
+        va=kw.pop("va", va),
+        fontsize=fontsize,
+        annotation_clip=kw.pop("annotation_clip", False),
+        **kw,
+    )
+
+
+def _legend_for_loc(
+    ax: Axes,
+    handles: list[Any],
+    labels: list[str],
+    loc: str,
+    legend_kw: dict[str, Any],
+) -> Legend:
+    return ax.legend(handles, labels, loc=loc, **legend_kw)
+
+
+def _score_legend_candidate(
+    legend_bbox: Bbox, data_bboxes: list[Bbox]
+) -> float:
+    area = max(float(legend_bbox.width * legend_bbox.height), 1.0)
+    return sum(_overlap_area(legend_bbox, bbox) for bbox in data_bboxes) / area
+
+
+def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
+    """Place or reposition an axes legend.
+
+    ``loc="best"`` delegates to matplotlib for line-only axes. For
+    patch/collection-heavy axes, it scores four corners plus upper center
+    against data-artist occupancy and selects the least occupied location.
+    """
+    handles, labels = ax.get_legend_handles_labels()
+    if not handles:
+        legend = ax.get_legend()
+        if legend is None:
+            return None
+        handles = [
+            handle for handle in legend.legend_handles if handle is not None
+        ]
+        labels = [text.get_text() for text in legend.get_texts()]
+    if not handles:
+        return None
+
+    if loc != "best" or not (ax.patches or ax.collections):
+        return _legend_for_loc(ax, list(handles), list(labels), loc, kw)
+
+    fig, renderer = _renderer_for_axes(ax)
+    data_bboxes = _data_occupancy_bboxes(ax)
+    if not data_bboxes:
+        return _legend_for_loc(ax, list(handles), list(labels), "best", kw)
+
+    old_legend = ax.get_legend()
+    if old_legend is not None:
+        old_legend.remove()
+
+    candidates = (
+        "upper right",
+        "upper left",
+        "lower left",
+        "lower right",
+        "upper center",
+    )
+    scores: list[tuple[float, str]] = []
+    for candidate in candidates:
+        legend = _legend_for_loc(ax, list(handles), list(labels), candidate, kw)
+        fig.canvas.draw()
+        try:
+            bbox = legend.get_window_extent(renderer)
+        except BBOX_ERRORS:
+            score = float("inf")
+        else:
+            score = _score_legend_candidate(bbox, data_bboxes)
+        scores.append((score, candidate))
+        legend.remove()
+
+    _score, best_loc = min(scores, key=lambda item: item[0])
+    return _legend_for_loc(ax, list(handles), list(labels), best_loc, kw)
 
 
 def arrow_axis(
