@@ -3,8 +3,9 @@
 
 The fragment is embedded by ``docs/fonts/index.md`` via MyST
 ``{raw} html :file:``. It is generated from the bundled matplotlib font
-registry, and validates every emitted webfont face against
-``docs/_static/font-face.css``.
+registry. Webfont face names are derived from the package font-file SSOT;
+a local generated ``docs/_static/font-face.css`` is only checked as an
+optional drift warning when present.
 
 Regenerate::
 
@@ -15,6 +16,7 @@ from __future__ import annotations
 
 import json
 import re
+import warnings
 from collections import defaultdict
 from pathlib import Path
 
@@ -27,7 +29,6 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parents[2]
 OUT = SCRIPT_DIR.parent / "font_explorer.html"
 FONT_FACE_CSS = SCRIPT_DIR.parent / "font-face.css"
-STATIC_FONT_DIR = SCRIPT_DIR.parent / "fonts"
 
 MONO_FAMILIES = [
     "IBM Plex Mono",
@@ -85,19 +86,59 @@ def _slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
-def _declared_faces() -> set[str]:
-    css = FONT_FACE_CSS.read_text(encoding="utf-8")
-    return set(re.findall(r"font-family: '([^']+)'", css))
+def _bundled_font_files() -> list[Path]:
+    font_dir = font.get_font_dir()
+    return sorted(
+        path
+        for path in font_dir.iterdir()
+        if path.suffix.lower() in {".ttf", ".otf"}
+    )
 
 
-def _font_files_by_face() -> dict[str, str]:
+def _expected_font_face_files() -> dict[str, str]:
+    return {
+        font.css_font_face_name(path): path.name
+        for path in _bundled_font_files()
+    }
+
+
+def _warn_if_local_css_disagrees() -> None:
+    if not FONT_FACE_CSS.is_file():
+        return
+
     css = FONT_FACE_CSS.read_text(encoding="utf-8")
-    return dict(
+    local = dict(
         re.findall(
             r"font-family: '([^']+)';\s*src: url\('fonts/([^']+)'\)",
             css,
             flags=re.S,
         )
+    )
+    expected = _expected_font_face_files()
+    missing = sorted(set(expected) - set(local))
+    extra = sorted(
+        face for face in set(local) - set(expected) if face.startswith("dm-")
+    )
+    mismatched = sorted(
+        face
+        for face, filename in expected.items()
+        if face in local and local[face] != filename
+    )
+    if not (missing or extra or mismatched):
+        return
+
+    details = []
+    if missing:
+        details.append(f"missing={missing[:8]}")
+    if extra:
+        details.append(f"extra={extra[:8]}")
+    if mismatched:
+        details.append(f"mismatched={mismatched[:8]}")
+    warnings.warn(
+        "local docs/_static/font-face.css disagrees with bundled font "
+        f"naming SSOT ({'; '.join(details)}); rebuild docs assets",
+        RuntimeWarning,
+        stacklevel=2,
     )
 
 
@@ -192,8 +233,7 @@ def _fw_offset(weight: int) -> int | float:
 
 
 def _build_family_inventory() -> dict:
-    declared_faces = _declared_faces()
-    face_files = _font_files_by_face()
+    _warn_if_local_css_disagrees()
     entries_by_family: dict[str, list[font_manager.FontEntry]] = defaultdict(
         list
     )
@@ -220,7 +260,7 @@ def _build_family_inventory() -> dict:
             path = Path(entry.fname)
             stem = path.stem
             label = _weight_label(stem)
-            face = f"dm-{stem}"
+            face = font.css_font_face_name(path)
             style = str(entry.style)
             key = (label, int(entry.weight), style)
             usable[key] = {
@@ -241,18 +281,7 @@ def _build_family_inventory() -> dict:
         for key, item in normal_by_weight.items():
             italic = italic_by_weight.get(key)
             face = item["face"]
-            if face not in declared_faces:
-                raise AssertionError(f"missing @font-face for {family}: {face}")
-            if (
-                face_files.get(face)
-                and not (STATIC_FONT_DIR / face_files[face]).exists()
-            ):
-                raise AssertionError(f"@font-face file missing for {face}")
             italic_face = italic["face"] if italic else None
-            if italic_face and italic_face not in declared_faces:
-                raise AssertionError(
-                    f"missing italic @font-face for {family}: {italic_face}"
-                )
             weights.append(
                 {
                     "label": item["label"],

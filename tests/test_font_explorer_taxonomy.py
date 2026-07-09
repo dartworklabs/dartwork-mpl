@@ -10,6 +10,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from fontTools.ttLib import TTFont
 from matplotlib import font_manager
 
 from dartwork_mpl import font
@@ -19,7 +20,6 @@ _SCRIPTS = _REPO / "docs" / "_static" / "scripts"
 _BUILDER = _SCRIPTS / "build_font_explorer.py"
 _EXPLORER = _REPO / "docs" / "_static" / "font_explorer.html"
 _DESIGN_CSS = _REPO / "docs" / "_static" / "dartwork-design.css"
-_FONT_FACE_CSS = _REPO / "docs" / "_static" / "font-face.css"
 
 _DEMO_KEYS = [
     "title_axes",
@@ -52,24 +52,8 @@ _MONO_FAMILIES = [
     "Roboto Mono",
     "Source Code Pro",
 ]
-_HANGUL_MATRIX = {
-    "IBM Plex Mono": False,
-    "IBM Plex Sans": False,
-    "Inter": False,
-    "Inter Display": False,
-    "JetBrains Mono": False,
-    "Noto Sans": False,
-    "Noto Sans CJK KR": True,
-    "Noto Sans Math": False,
-    "Noto Sans Symbols": False,
-    "Noto Sans Symbols 2": False,
-    "Paperlogy": True,
-    "Pretendard": True,
-    "Roboto": False,
-    "Roboto Mono": False,
-    "Source Code Pro": False,
-    "Source Sans 3": False,
-}
+_FONT_SUFFIXES = {".ttf", ".otf"}
+_HANGUL_SAMPLE = "한글 데이터 축 값"
 _REPLACE_LAST_HANDLER = (
     "function capDemosToLayout(){if(state.demos.length>state.layout)"
     "state.demos=state.demos.slice(0,state.layout);}\n"
@@ -98,6 +82,47 @@ def _payload_from_html() -> dict:
 
 def _builder_payload() -> dict:
     return runpy.run_path(str(_BUILDER))["build_payload"]()
+
+
+def _bundled_font_face_files() -> dict[str, Path]:
+    font_dir = font.get_font_dir()
+    return {
+        font.css_font_face_name(path): path
+        for path in font_dir.iterdir()
+        if path.suffix.lower() in _FONT_SUFFIXES
+    }
+
+
+def _cmap_codepoints(path: Path) -> set[int]:
+    ttfont = TTFont(str(path), lazy=True)
+    codepoints: set[int] = set()
+    try:
+        for table in ttfont["cmap"].tables:
+            if table.isUnicode():
+                codepoints.update(table.cmap.keys())
+    finally:
+        ttfont.close()
+    return codepoints
+
+
+def _has_hangul(path: Path) -> bool:
+    codepoints = _cmap_codepoints(path)
+    return all(
+        ord(char) in codepoints for char in _HANGUL_SAMPLE if char != " "
+    )
+
+
+def test_builder_payload_does_not_require_generated_font_assets(
+    tmp_path,
+) -> None:
+    builder = runpy.run_path(str(_BUILDER))
+    builder_globals = builder["build_payload"].__globals__
+    builder_globals["FONT_FACE_CSS"] = tmp_path / "missing-font-face.css"
+    builder_globals["STATIC_FONT_DIR"] = tmp_path / "missing-fonts"
+
+    payload = builder["build_payload"]()
+
+    assert payload["counts"]["families"] == 16
 
 
 def _registered_weights_by_family() -> dict[str, set[int]]:
@@ -153,6 +178,7 @@ def test_builder_inventory_comes_from_registered_font_ssot() -> None:
     assert payload["order"][0] == "Roboto"
 
     weights_by_family = _registered_weights_by_family()
+    bundled_faces = _bundled_font_face_files()
     for family, meta in families.items():
         assert meta["weights"], family
         segment_weights = {entry["weight"] for entry in meta["weights"]}
@@ -160,13 +186,17 @@ def test_builder_inventory_comes_from_registered_font_ssot() -> None:
         assert any(entry["weight"] == 400 for entry in meta["weights"])
         assert meta["default_weight"] == 400
         assert isinstance(meta["italic"], bool)
-        assert meta["hangul"] is _HANGUL_MATRIX[family]
+        assert meta["regular_face"] in bundled_faces
+        assert meta["hangul"] is _has_hangul(
+            bundled_faces[meta["regular_face"]]
+        )
+        for entry in meta["weights"]:
+            assert entry["face"] == font.css_font_face_name(entry["file"])
 
 
 def test_font_faces_referenced_by_weight_segments_exist() -> None:
     payload = _builder_payload()
-    css = _FONT_FACE_CSS.read_text(encoding="utf-8")
-    declared = set(re.findall(r"font-family: '([^']+)'", css))
+    bundled_faces = _bundled_font_face_files()
 
     referenced = {
         weight["face"]
@@ -179,7 +209,8 @@ def test_font_faces_referenced_by_weight_segments_exist() -> None:
         for weight in family["weights"]
         if weight.get("italic_face")
     }
-    assert referenced <= declared
+    assert referenced <= set(bundled_faces)
+    assert all(bundled_faces[face].is_file() for face in referenced)
     assert all(face.startswith("dm-") for face in referenced)
 
 
@@ -205,10 +236,15 @@ def test_demo_library_defaults_and_replace_last_logic_are_pinned() -> None:
 
 def test_hangul_coverage_matrix_and_no_tofu_fallback_copy_are_pinned() -> None:
     payload = _builder_payload()
+    bundled_faces = _bundled_font_face_files()
     matrix = {
         family: meta["hangul"] for family, meta in payload["families"].items()
     }
-    assert matrix == _HANGUL_MATRIX
+    expected = {
+        family: _has_hangul(bundled_faces[meta["regular_face"]])
+        for family, meta in payload["families"].items()
+    }
+    assert matrix == expected
     html = _EXPLORER.read_text(encoding="utf-8")
     assert "No bundled Hangul in this face" in html
     assert 'data-hangul="0"' in html

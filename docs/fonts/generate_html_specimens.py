@@ -12,6 +12,8 @@ import shutil
 from collections import defaultdict
 from pathlib import Path
 
+from dartwork_mpl.font import css_font_face_name
+
 ROOT = Path(__file__).resolve().parents[2]
 FONT_DIR = ROOT / "src" / "dartwork_mpl" / "asset" / "font"
 OUT_DIR = Path(__file__).parent / "_generated"
@@ -98,11 +100,6 @@ def _variant_label(filename: str) -> str:
     return variant.lstrip("0123456789")
 
 
-def _font_face_name(filename: str) -> str:
-    """Generate unique CSS font-family name: dm-{filename without ext}."""
-    return f"dm-{os.path.splitext(filename)[0]}"
-
-
 def _find_regular(fonts: list[str]) -> str | None:
     """Find the Regular/Medium variant for weight labels."""
     for f in fonts:
@@ -135,7 +132,7 @@ def generate_fontface_css() -> str:
     for family, fonts in families.items():
         lines.append(f"/* ── {family} ── */")
         for font in sorted(fonts):
-            css_name = _font_face_name(font)
+            css_name = css_font_face_name(font)
             fmt = "opentype" if font.lower().endswith(".otf") else "truetype"
             lines.append("@font-face {")
             lines.append(f"  font-family: '{css_name}';")
@@ -160,12 +157,12 @@ def generate_family_html(family: str, fonts: list[str]) -> str:
     upright_fonts = [f for f in fonts if "Italic" not in f]
     sorted_fonts = sorted(upright_fonts, key=_get_weight_score)
     regular = _find_regular(sorted_fonts)
-    regular_css = _font_face_name(regular) if regular else "sans-serif"
+    regular_css = css_font_face_name(regular) if regular else "sans-serif"
 
     rows = []
     for font in sorted_fonts:
         label = _variant_label(font)
-        css_name = _font_face_name(font)
+        css_name = css_font_face_name(font)
         rows.append(
             f'  <span class="label" style="font-family:\'{regular_css}\'">'
             f"{label}</span>\n"
@@ -190,7 +187,7 @@ def generate_family_showcase_html(family: str, fonts: list[str]) -> str:
 
     sorted_fonts = sorted(fonts, key=_get_weight_score)
     regular = _find_regular(sorted_fonts)
-    regular_css = _font_face_name(regular) if regular else "sans-serif"
+    regular_css = css_font_face_name(regular) if regular else "sans-serif"
 
     # Find key weight fonts
     key_fonts = [f for f in sorted_fonts if _is_key_weight(f)]
@@ -220,7 +217,7 @@ def generate_family_showcase_html(family: str, fonts: list[str]) -> str:
     rows = []
     for font in key_fonts:
         label = _variant_label(font)
-        css_name = _font_face_name(font)
+        css_name = css_font_face_name(font)
         num = weight_numeric.get(label, "")
         rows.append(
             f'  <div class="dm-showcase-row">\n'
@@ -272,7 +269,7 @@ def generate_condensed_comparison_html(families: dict[str, list[str]]) -> str:
         regular = _find_regular(fonts)
         if not regular:
             continue
-        css_name = _font_face_name(regular)
+        css_name = css_font_face_name(regular)
         rows.append(
             f'  <div class="dm-condensed-row">\n'
             f'    <span class="dm-condensed-label">'
@@ -331,7 +328,7 @@ def generate_multilang_html() -> str:
 
     rows = []
     for label, sample, font_file, display_name in langs:
-        css_name = _font_face_name(font_file)
+        css_name = css_font_face_name(font_file)
         rows.append(
             f'  <span class="lang-label" '
             f"style=\"font-family:'{css_name}'\">"
