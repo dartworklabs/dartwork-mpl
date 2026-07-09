@@ -5,6 +5,7 @@ across OKLab, OKLCH, RGB, and Hex color spaces.
 """
 
 from ._color import Color, color, cspace, hex, oklab, oklch, rgb
+from ._contrast import ensure_contrast, readable_text_color
 from ._cycle_api import cycle, cycle_cycler
 from ._loader import ensure_loaded as _ensure_colors_loaded
 from ._register import ensure_registered as _ensure_cmaps_registered
@@ -33,9 +34,11 @@ __all__ = [
     "cspace",
     "cycle",
     "cycle_cycler",
+    "ensure_contrast",
     "hex",
     "oklab",
     "oklch",
+    "readable_text_color",
     "rgb",
 ]
 
