@@ -79,8 +79,9 @@ saving. If issues are found, they're printed as warnings — the file is still
 saved, but you'll know what to fix.
 
 **Available checks:** overflow detection, text overlap (within and across
-axes), legend overflow, tick crowding, empty axes, margin asymmetry, pie
-label offsets, and clipped text. Example output:
+axes), legend overflow, tick crowding, tick-unit duplication, tick rotation,
+tick decimal precision, empty axes, margin asymmetry, pie label offsets, and
+clipped text. Example output:
 
 ```text
 ⚠ OVERFLOW: Text 'ylabel' extends beyond figure bounds by 3.2 pt
@@ -101,9 +102,12 @@ column is the suggestion delivered by
 | -------------------- | -------- | -------------------------------------------------- | ------------------------------------------------------------------- |
 | `OVERFLOW`           | warning  | Text or axes content extends past the figure edge  | Re-run `dm.simple_layout(fig, margin="3mm")` or shorten the label   |
 | `OVERLAP`            | warning  | Two text labels visually overlap                   | Rotate, abbreviate, or split into multiple panels                   |
+| `UNIT_DUP`           | warning  | Axis label declares a unit also shown on ticks     | Keep the unit in the axis label; use bare numeric tick labels       |
 | `CROSS_AXES_OVERLAP` | warning  | Text labels from different axes overlap            | Increase `hspace` / `wspace` or re-run `dm.simple_layout(fig)`      |
 | `LEGEND_OVERFLOW`    | warning  | Legend extends past axes / figure edge             | Move legend outside via `bbox_to_anchor` or shrink with `ncols`     |
 | `TICK_CROWD`         | info     | Tick labels consume too much of the axis span      | Reduce tick density (`MaxNLocator`) or rotate labels                |
+| `TICK_ROTATION`      | info     | X tick labels are rotated needlessly or overlap    | Set `rotation=0`, rotate to 45°, or reduce tick count               |
+| `TICK_DECIMAL`       | warn/info | Tick labels have mixed, duplicate, or excessive decimals | Match formatter precision to `dm.recommend_tick_decimals(values)` |
 | `EMPTY_AXES`         | info     | Axes carry no plotted artist                       | Plot data or remove the empty axes via `fig.delaxes(ax)`            |
 | `MARGIN_ASYMMETRY`   | warning  | Left / right or top / bottom margins differ a lot  | Re-run `dm.simple_layout(fig)` (or call it for the first time)      |
 | `PIE_LABEL_OFFSET`   | info     | Pie wedge label sits outside its wedge             | Set `pctdistance = 1.0 - wedge_width / 2`                           |

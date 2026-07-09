@@ -133,6 +133,22 @@ class TestAvoidTickOverlap:
         plt.close(fig)
 
 
+class TestRecommendTickDecimals:
+    def test_integer_steps_need_no_decimals(self) -> None:
+        assert dm.recommend_tick_decimals([0, 5, 10]) == 0
+
+    def test_fractional_step_uses_minimum_required_decimals(self) -> None:
+        assert dm.recommend_tick_decimals([0, 2.5, 5.0]) == 0
+        assert dm.recommend_tick_decimals([0, 0.5, 1.0]) == 1
+        assert dm.recommend_tick_decimals([0, 0.01, 0.02]) == 2
+
+    def test_caps_at_four_decimals(self) -> None:
+        assert dm.recommend_tick_decimals([0, 0.00001, 0.00002]) == 4
+
+    def test_ignores_duplicate_and_nonfinite_values(self) -> None:
+        assert dm.recommend_tick_decimals([0, 0, float("nan"), 1]) == 0
+
+
 class TestFormatAxisSiBoundaries:
     """Boundary-value tests for ``format_axis_si``.
 

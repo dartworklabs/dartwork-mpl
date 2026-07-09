@@ -46,7 +46,16 @@ from . import (  # noqa: F401
 from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc
 
 # Axes annotation
-from .annotation import arrow_axis, label_axes
+from .annotation import (
+    annotate_corner,
+    annotate_value,
+    arrow_axis,
+    label_axes,
+    label_hline,
+    place_legend,
+    wrap_axis_label,
+    wrap_axis_labels,
+)
 
 # Import color module exports
 from .colors import (
@@ -86,6 +95,7 @@ from .formatting import (
     format_axis_myriad,
     format_axis_si,
     format_axis_year,
+    recommend_tick_decimals,
     rotate_tick_labels,
 )
 
@@ -249,6 +259,7 @@ __all__ = [  # noqa: RUF022
     "format_axis_billions",
     "format_axis_currency",
     "format_axis_si",
+    "recommend_tick_decimals",
     "rotate_tick_labels",
     "avoid_tick_overlap",
     # I/O
@@ -260,7 +271,13 @@ __all__ = [  # noqa: RUF022
     "list_colormaps",
     "show_palette",
     # Axes annotation
+    "annotate_value",
+    "annotate_corner",
     "label_axes",
+    "label_hline",
+    "place_legend",
+    "wrap_axis_label",
+    "wrap_axis_labels",
     "arrow_axis",
     # Prompt utilities
     "prompt_path",

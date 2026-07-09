@@ -25,9 +25,12 @@ matplotlib.use("Agg")  # Non-interactive backend for testing.
 _EXPECTED_ORDER = [
     "OVERFLOW",
     "OVERLAP",
+    "UNIT_DUP",
     "CROSS_AXES_OVERLAP",
     "LEGEND_OVERFLOW",
     "TICK_CROWD",
+    "TICK_ROTATION",
+    "TICK_DECIMAL",
     "EMPTY_AXES",
     "MARGIN_ASYMMETRY",
     "PIE_LABEL_OFFSET",

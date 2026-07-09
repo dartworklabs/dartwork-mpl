@@ -30,6 +30,9 @@ from .overlap import check_overlap
 from .pie_label import check_pie_label_offset
 from .text_contrast import check_text_contrast
 from .tick_crowd import check_tick_crowding
+from .tick_decimal import check_tick_decimal
+from .tick_rotation import check_tick_rotation
+from .unit_dup import check_unit_dup
 
 __all__ = [
     "RegisteredCheck",
@@ -45,6 +48,9 @@ __all__ = [
     "check_pie_label_offset",
     "check_text_contrast",
     "check_tick_crowding",
+    "check_tick_decimal",
+    "check_tick_rotation",
+    "check_unit_dup",
     "register_check",
     "registered_checks",
 ]
