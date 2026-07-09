@@ -82,8 +82,8 @@ so the kind of any family is guessable from its name (AI-native requirement).
 | palette `teal_indigo` | analogous niche; pair-name grammar collision | **delete** (adjacent-hue jobs: take two sequential families' tokens) |
 | palette `accessible` (Okabe-Ito) | external constant outside the generative system | **delete** (kept as a benchmark comparison in the design-rationale page only; `octave` passes the CVD gates) |
 | `dc.cycle` = `octave` = `"default"` triple naming | alias debt | **single name `octave` / `octave_print`**; registry `dc.octave`, `dc.octave_print`; `dc.cycle*` and `"default"`/`"print"` aliases removed |
-| legacy text-file maps (56) + `cmap.py` loader | double surface | **delete** (with `docs/api/cmap.rst`) |
-| `dm.*` token alias, `set_palette_version()`, frozen legacy tokens (teal/indigo/gray) | migration remnants | **delete** (v5 is the only system) |
+| legacy text-file maps (56) + `cmap.py` loader | double surface | **delete** (with `docs/api/cmap.rst`, `scripts/generate_cmaps.py`, the loader hooks in `style.py`/`explore.py`/`diagnostics`, and the loader-concurrency tests) |
+| `dm.*` token alias, `set_palette_version()`, frozen legacy tokens (teal/indigo/gray) | migration remnants | **no action — already removed on main** (verified 2026-07-09; earlier sightings came from a stale working tree) |
 | `teal_accent`, `coral_accent` | position-0-is-accent order semantics | **keep** — `<hue>_accent` promoted to official qualitative sub-grammar |
 | docs "24 palettes", "42/46 maps", "101 names" | stale numbers | all counts rendered from code by doc builders |
 
@@ -164,7 +164,7 @@ tokens (n-dependent forms).
 
 | PR | scope | notes |
 |---|---|---|
-| **L0 — dead weight** | delete legacy cmap loader + 56 txt assets + `api/cmap.rst`; delete `dm.*` alias, `set_palette_version` + frozen tokens; prune docs mentions | zero catalog change; mostly deletions |
+| **L0 — dead weight** | delete the legacy text-file colormap system end to end (loader, 56 txt assets, generator script, `style.py`/`explore.py`/`diagnostics` hooks, `api/cmap.rst`, loader-concurrency tests); re-pin doc count claims | zero catalog change; mostly deletions |
 | **L1 — catalog truth** | ledger surgery (delete coast/_deep/_soft/7 palettes; absorb 4 into diverging; corona+halo → cyclic; octave rename incl. preset references); family metadata (kind, forms, sizes); CI invariant gates; colormap-explorer + categorical-explorer payload/tests/doc numbers regenerated (partition 20/9/11/3 = 43 maps + 13 qualitative) | old verbs still work on surviving names |
 | **L2 — API swap** | `dm.colors` / `set_colors` / `list_colors` / `show_colors`; discrete generators per §5; qualitative ListedColormap + diverging-token registration; remove old verbs; preset prop_cycle audit (presets route through `octave` unless deliberately overridden); sync lint rules, MCP tools, llms.txt / llms-full.txt, prompt corpus, AGENTS/CLAUDE.md; explorer copy-code emits `dm.colors` | breaking swap, no users |
 | **D1 — color docs IA** | restructure Design System pages to the family model (final page names + theory placement confirmed at kickoff — defaults: catalogs `Colors` / discrete / continuous split with explorers kept; `Design rationale` last, flat; `Color class` promoted); delete legacy widgets (`palette_picker`, `palette_explorer`) + stale POC files; all numbers builder-rendered | user decisions #2/#3 land here |
