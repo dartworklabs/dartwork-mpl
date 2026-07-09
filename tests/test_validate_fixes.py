@@ -372,3 +372,35 @@ class TestGetFixSuggestionsBranches:
         assert any("simple_layout" in s for s in suggestions)
         assert any("rotate_tick_labels" in s for s in suggestions)
         assert any("labelsize" in s for s in suggestions)
+
+    def test_unit_dup(self) -> None:
+        warning = VisualWarning(
+            check_id="UNIT_DUP",
+            severity=Severity.WARNING,
+            message="duplicated unit",
+            detail={"axis": "y", "label_unit": "%", "tick_affix": "%"},
+        )
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
+        assert any("PercentFormatter" in s for s in suggestions)
+        assert any("symbol=''" in s for s in suggestions)
+
+    def test_tick_rotation(self) -> None:
+        warning = VisualWarning(
+            check_id="TICK_ROTATION",
+            severity=Severity.INFO,
+            message="rotation unnecessary",
+            detail={"axis": "x", "recommended_rotation": 0},
+        )
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
+        assert any("rotate_tick_labels" in s for s in suggestions)
+
+    def test_tick_decimal(self) -> None:
+        warning = VisualWarning(
+            check_id="TICK_DECIMAL",
+            severity=Severity.INFO,
+            message="trailing zero",
+            detail={"axis": "y", "recommended_decimals": 0},
+        )
+        suggestions = dm.validate_fixes.get_fix_suggestions(warning)
+        assert any("StrMethodFormatter" in s for s in suggestions)
+        assert any(".0f" in s for s in suggestions)
