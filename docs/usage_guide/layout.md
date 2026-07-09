@@ -194,9 +194,11 @@ requested margin from each figure edge. This means:
 | ----------------------------- | ------------------------------------------------------------- |
 | `simple_layout(fig, gs=gs)`   | Places content at requested margin — replaces `tight_layout()` |
 | `label_axes(axes)`            | Adds (a), (b), (c) labels with auto-positioning for ylabels   |
-| `annotate_value(ax, x, y, s)` | Adds compact value labels with point offsets and auto flip     |
-| `label_hline(ax, y, s)`       | Attaches text tightly above/below a horizontal reference line  |
-| `place_legend(ax)`            | Places patch/collection legends in the least occupied region   |
+| `annotate_value(ax, x, y, s)` | Adds compact value labels with vertical/horizontal fallback    |
+| `annotate_corner(ax, s)`      | Adds spine-tight narrative notes in the least obstructed corner |
+| `label_hline(ax, y, s)`       | Attaches text tightly to a horizontal reference-line endpoint  |
+| `place_legend(ax)`            | Places legends around data/text obstacles and can raise ncol   |
+| `wrap_axis_label(ax)`         | Wraps an overlong axis label to two word-boundary lines        |
 | `arrow_axis(ax, 'x', 'Cost')` | Creates `Low ◄── Cost ──► High` bidirectional annotations     |
 | `set_decimal(ax, xn, yn)`     | Fixes tick decimal places for publication-ready labels        |
 | `make_offset(x, y, fig)`      | Creates point-based offsets for precise text positioning      |
@@ -227,15 +229,21 @@ Raw matplotlib ticks can sometimes mix integers and floats (e.g. `0.5`, `1`, `1.
 ### Compact value and reference labels
 
 `dm.annotate_value(ax, x, y, text)` uses a small point offset above the data
-point by default and flips below when the rendered label would collide or leave
-the axes. `dm.label_hline(ax, y, text)` keeps horizontal-reference labels close
-to the line with a 2 pt default gap.
+point by default, tries below when vertical placement collides, and falls back
+to left/right placement when the label would cross the axes spine. Explicit
+`side="left"` / `side="right"` also works with `arrowprops`, keeping the arrow
+straight along one axis. `dm.annotate_corner(ax, text)` places narrative notes
+just inside a corner and can move to a less obstructed corner after rendering.
+`dm.label_hline(ax, y, text)` keeps horizontal-reference labels close to the
+visible line endpoint with a 2 pt default gap.
 
 ```python
 dm.annotate_value(ax, x[-1], y[-1], f"{y[-1]:.1f}")
+dm.annotate_corner(ax, "Screened subset", loc="upper left")
 ax.axhline(baseline, lw=0.5, ls=":")
-dm.label_hline(ax, baseline, "Reference")
+dm.label_hline(ax, baseline, "Reference", x="auto")
 dm.place_legend(ax)
+dm.wrap_axis_label(ax, axis="y")
 ```
 
 ### Bidirectional arrow axes (`arrow_axis`)

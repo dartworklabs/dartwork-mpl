@@ -15,10 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   ambiguous or over-precise numeric tick labels. `dm.recommend_tick_decimals()`
   exposes the decimal-step rule as a small public helper for formatter code.
 - **Annotation and legend primitives.** `dm.annotate_value()` adds compact
-  point-offset value labels with automatic above/below flipping,
-  `dm.label_hline()` keeps reference-line labels attached with a small
-  point gap, and `dm.place_legend()` scores patch/collection-heavy axes
-  against candidate legend positions before choosing the emptiest location.
+  point-offset value labels with automatic vertical or horizontal placement,
+  `dm.annotate_corner()` adds spine-tight narrative corner notes,
+  `dm.label_hline()` keeps reference-line labels attached to visible line
+  endpoints, `dm.place_legend()` scores data/text obstacles across locations
+  and one to three columns, and `dm.wrap_axis_label()` /
+  `dm.wrap_axis_labels()` wrap overlong axis labels to two lines.
 
 ### Changed
 
