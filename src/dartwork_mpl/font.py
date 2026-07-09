@@ -6,13 +6,21 @@ matplotlib's internal font manager.
 
 import threading
 import warnings
+from collections.abc import Mapping
+from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
+from types import MappingProxyType
+from typing import Any, Literal
 
 from matplotlib import font_manager
 
 __all__ = [
+    "FONTS",
+    "FontFamily",
     "css_font_face_name",
     "ensure_loaded",
+    "font_families",
     "get_font_dir",
     "list_registered",
 ]
@@ -27,6 +35,228 @@ _EXPECTED_MIN_FONTS: int = 5
 # ``diagnostics._fonts.plot_fonts`` (which used to rebuild the same
 # path with os.path idioms).
 _FONT_DIR: Path = Path(__file__).parent / "asset" / "font"
+_FONT_SUFFIXES: frozenset[str] = frozenset({".ttf", ".otf"})
+_CHART_GLYPHS: tuple[str, ...] = ("−", "×", "±", "→", "°", "μ", "σ", "Δ")  # noqa: RUF001
+_HANGUL_SAMPLE: str = "한글"
+_FIXED_WIDTH_PROBE: str = "0123456789ilW"
+
+FontRole = Literal["body", "display", "kr-body", "mono", "fallback-tail"]
+
+
+@dataclass(frozen=True)
+class FontFaceMeasurement:
+    """Measured facts for one bundled font file."""
+
+    file: str
+    weight: int
+    italic: bool
+    tnum: bool
+    fixed_pitch: bool
+    chart_glyphs: tuple[str, ...]
+    hangul: bool
+    license: str
+
+
+@dataclass(frozen=True)
+class FontMeasurement:
+    """Measured facts aggregated at matplotlib-family level."""
+
+    family: str
+    files: tuple[FontFaceMeasurement, ...]
+    weights: tuple[int, ...]
+    italic: bool
+    tnum: bool
+    fixed_pitch: bool
+    chart_glyphs: tuple[str, ...]
+    hangul: bool
+    licenses: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class FontFamily:
+    """Curated job record for a bundled matplotlib font family."""
+
+    name: str
+    role: FontRole
+    job: str
+    alternates: tuple[str, ...] = ()
+    quirks: tuple[str, ...] = ()
+    weight_exceptions: tuple[int, ...] = ()
+
+    @property
+    def weights(self) -> tuple[int, ...]:
+        return _measure(self.name).weights
+
+    @property
+    def italic(self) -> bool:
+        return _measure(self.name).italic
+
+    @property
+    def tnum(self) -> bool:
+        return _measure(self.name).tnum
+
+    @property
+    def mono(self) -> bool:
+        return _measure(self.name).fixed_pitch
+
+    @property
+    def numeric_axes(self) -> bool:
+        measurement = _measure(self.name)
+        return measurement.tnum or measurement.fixed_pitch
+
+    @property
+    def chart_glyphs(self) -> tuple[str, ...]:
+        return _measure(self.name).chart_glyphs
+
+    @property
+    def hangul(self) -> bool:
+        return _measure(self.name).hangul
+
+    @property
+    def licenses(self) -> tuple[str, ...]:
+        return _measure(self.name).licenses
+
+
+def _alternates(name: str, ordered: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(family for family in ordered if family != name)
+
+
+_BODY_FAMILIES: tuple[str, ...] = (
+    "Roboto",
+    "Inter",
+    "IBM Plex Sans",
+    "Source Sans 3",
+    "Noto Sans",
+)
+_KR_BODY_FAMILIES: tuple[str, ...] = (
+    "Paperlogy",
+    "Pretendard",
+    "Noto Sans CJK KR",
+)
+_MONO_FAMILIES: tuple[str, ...] = (
+    "JetBrains Mono",
+    "IBM Plex Mono",
+    "Roboto Mono",
+    "Source Code Pro",
+)
+_FALLBACK_TAIL_FAMILIES: tuple[str, ...] = (
+    "Noto Sans Math",
+    "Noto Sans Symbols",
+    "Noto Sans Symbols 2",
+)
+
+FONTS: Mapping[str, FontFamily] = MappingProxyType(
+    {
+        "Roboto": FontFamily(
+            name="Roboto",
+            role="body",
+            job="Default neutral body face for chart labels, ticks, legends, and captions.",
+            alternates=_alternates("Roboto", _BODY_FAMILIES),
+            quirks=("Thin ships as OS/2 250 - upstream quirk.",),
+            weight_exceptions=(250,),
+        ),
+        "Inter": FontFamily(
+            name="Inter",
+            role="body",
+            job="Screen-native body alternate for dashboards and dense interface figures.",
+            alternates=_alternates("Inter", _BODY_FAMILIES),
+        ),
+        "IBM Plex Sans": FontFamily(
+            name="IBM Plex Sans",
+            role="body",
+            job="Technical editorial body alternate that pairs with IBM Plex Mono.",
+            alternates=_alternates("IBM Plex Sans", _BODY_FAMILIES),
+        ),
+        "Source Sans 3": FontFamily(
+            name="Source Sans 3",
+            role="body",
+            job="Humanist editorial body alternate for captions and longer annotations.",
+            alternates=_alternates("Source Sans 3", _BODY_FAMILIES),
+        ),
+        "Noto Sans": FontFamily(
+            name="Noto Sans",
+            role="body",
+            job="Pan-script body alternate and width-variant source for tight labels.",
+            alternates=_alternates("Noto Sans", _BODY_FAMILIES),
+        ),
+        "Inter Display": FontFamily(
+            name="Inter Display",
+            role="display",
+            job="Display cut for large chart titles, section heads, and poster-scale numbers.",
+        ),
+        "Paperlogy": FontFamily(
+            name="Paperlogy",
+            role="kr-body",
+            job="Default Korean body face for Hangul chart titles, labels, and values.",
+            alternates=_alternates("Paperlogy", _KR_BODY_FAMILIES),
+            quirks=(
+                "Thin and ExtraLight both ship as OS/2 250 - upstream quirk.",
+            ),
+            weight_exceptions=(250,),
+        ),
+        "Pretendard": FontFamily(
+            name="Pretendard",
+            role="kr-body",
+            job="Modern Korean-Latin alternate for bilingual figures and interface-like charts.",
+            alternates=_alternates("Pretendard", _KR_BODY_FAMILIES),
+        ),
+        "Noto Sans CJK KR": FontFamily(
+            name="Noto Sans CJK KR",
+            role="kr-body",
+            job="CJK coverage fallback when Korean, Japanese, or Chinese glyph breadth matters.",
+            alternates=_alternates("Noto Sans CJK KR", _KR_BODY_FAMILIES),
+        ),
+        "JetBrains Mono": FontFamily(
+            name="JetBrains Mono",
+            role="mono",
+            job="Default monospace for code, timestamps, aligned values, and dense numeric columns.",
+            alternates=_alternates("JetBrains Mono", _MONO_FAMILIES),
+        ),
+        "IBM Plex Mono": FontFamily(
+            name="IBM Plex Mono",
+            role="mono",
+            job="Technical monospace companion for IBM Plex Sans figures.",
+            alternates=_alternates("IBM Plex Mono", _MONO_FAMILIES),
+        ),
+        "Roboto Mono": FontFamily(
+            name="Roboto Mono",
+            role="mono",
+            job="Neutral monospace companion for Roboto-led charts.",
+            alternates=_alternates("Roboto Mono", _MONO_FAMILIES),
+            quirks=(
+                "Static files have equal glyph advances but post.isFixedPitch is 0.",
+            ),
+        ),
+        "Source Code Pro": FontFamily(
+            name="Source Code Pro",
+            role="mono",
+            job="Adobe monospace companion for Source Sans 3 editorial figures.",
+            alternates=_alternates("Source Code Pro", _MONO_FAMILIES),
+        ),
+        "Noto Sans Math": FontFamily(
+            name="Noto Sans Math",
+            role="fallback-tail",
+            job="First math and operator fallback for scientific chart glyphs and mathtext.",
+            alternates=_alternates("Noto Sans Math", _FALLBACK_TAIL_FAMILIES),
+        ),
+        "Noto Sans Symbols": FontFamily(
+            name="Noto Sans Symbols",
+            role="fallback-tail",
+            job="Symbol fallback for arrows, signs, and miscellaneous scientific marks.",
+            alternates=_alternates(
+                "Noto Sans Symbols", _FALLBACK_TAIL_FAMILIES
+            ),
+        ),
+        "Noto Sans Symbols 2": FontFamily(
+            name="Noto Sans Symbols 2",
+            role="fallback-tail",
+            job="Final symbol fallback for dingbats, enclosed marks, and pictographic signs.",
+            alternates=_alternates(
+                "Noto Sans Symbols 2", _FALLBACK_TAIL_FAMILIES
+            ),
+        ),
+    }
+)
 
 
 def get_font_dir() -> Path:
@@ -39,6 +269,11 @@ def css_font_face_name(font_file: str | Path) -> str:
     return f"dm-{Path(font_file).stem}"
 
 
+def font_families() -> Mapping[str, FontFamily]:
+    """Return the curated bundled-font family registry."""
+    return FONTS
+
+
 def _is_bundled_font_entry(
     entry: font_manager.FontEntry, bundle_dir: Path
 ) -> bool:
@@ -48,6 +283,148 @@ def _is_bundled_font_entry(
         return fname.is_relative_to(bundle_dir)
     except (OSError, ValueError):
         return False
+
+
+def _bundled_font_entries() -> tuple[font_manager.FontEntry, ...]:
+    ensure_loaded()
+    bundle_dir = get_font_dir()
+    entries = [
+        entry
+        for entry in font_manager.fontManager.ttflist
+        if _is_bundled_font_entry(entry, bundle_dir)
+    ]
+    return tuple(sorted(entries, key=lambda entry: (entry.name, entry.fname)))
+
+
+def _entries_for_family(family: str) -> tuple[font_manager.FontEntry, ...]:
+    entries = tuple(
+        entry for entry in _bundled_font_entries() if entry.name == family
+    )
+    if not entries:
+        raise KeyError(f"bundled font family not found: {family}")
+    return entries
+
+
+def _cmap_mapping(ttfont: Any) -> dict[int, str]:
+    cmap: dict[int, str] = {}
+    for table in ttfont["cmap"].tables:
+        if table.isUnicode():
+            cmap.update(table.cmap)
+    return cmap
+
+
+def _has_tnum_feature(ttfont: Any) -> bool:
+    if "GSUB" not in ttfont:
+        return False
+    feature_list = getattr(ttfont["GSUB"].table, "FeatureList", None)
+    if feature_list is None:
+        return False
+    return any(
+        record.FeatureTag == "tnum" for record in feature_list.FeatureRecord
+    )
+
+
+def _has_fixed_width_advances(ttfont: Any, cmap: Mapping[int, str]) -> bool:
+    hmtx = ttfont["hmtx"]
+    widths: list[int] = []
+    for char in _FIXED_WIDTH_PROBE:
+        glyph = cmap.get(ord(char))
+        if glyph is None:
+            return False
+        widths.append(int(hmtx[glyph][0]))
+    return len(set(widths)) == 1
+
+
+def _is_fixed_pitch(ttfont: Any, cmap: Mapping[int, str]) -> bool:
+    return bool(ttfont["post"].isFixedPitch) or _has_fixed_width_advances(
+        ttfont, cmap
+    )
+
+
+def _classify_license(ttfont: Any) -> str:
+    text_parts: list[str] = []
+    for record in ttfont["name"].names:
+        if int(record.nameID) not in {0, 13, 14}:
+            continue
+        try:
+            text_parts.append(record.toUnicode())
+        except UnicodeDecodeError:
+            continue
+
+    text = " ".join(text_parts).lower()
+    if "apache" in text:
+        return "Apache-2.0"
+    if "open font license" in text or "ofl" in text:
+        return "OFL-1.1"
+    return "unknown"
+
+
+@cache
+def _family_codepoints(family: str) -> frozenset[int]:
+    from fontTools.ttLib import TTFont
+
+    codepoints: set[int] = set()
+    for entry in _entries_for_family(family):
+        ttfont: Any = TTFont(str(entry.fname), lazy=True)
+        try:
+            codepoints.update(_cmap_mapping(ttfont))
+        finally:
+            ttfont.close()
+    return frozenset(codepoints)
+
+
+@cache
+def _measure(family: str) -> FontMeasurement:
+    from fontTools.ttLib import TTFont
+
+    faces: list[FontFaceMeasurement] = []
+    family_codepoints: set[int] = set()
+    for entry in _entries_for_family(family):
+        path = Path(entry.fname)
+        if path.suffix.lower() not in _FONT_SUFFIXES:
+            continue
+        ttfont: Any = TTFont(str(path), lazy=False)
+        try:
+            cmap = _cmap_mapping(ttfont)
+            codepoints = set(cmap)
+            family_codepoints.update(codepoints)
+            faces.append(
+                FontFaceMeasurement(
+                    file=path.name,
+                    weight=int(ttfont["OS/2"].usWeightClass),
+                    italic=str(entry.style) == "italic",
+                    tnum=_has_tnum_feature(ttfont),
+                    fixed_pitch=_is_fixed_pitch(ttfont, cmap),
+                    chart_glyphs=tuple(
+                        glyph
+                        for glyph in _CHART_GLYPHS
+                        if ord(glyph) in codepoints
+                    ),
+                    hangul=all(
+                        ord(char) in codepoints for char in _HANGUL_SAMPLE
+                    ),
+                    license=_classify_license(ttfont),
+                )
+            )
+        finally:
+            ttfont.close()
+
+    if not faces:
+        raise KeyError(f"no bundled font files measured for family: {family}")
+
+    return FontMeasurement(
+        family=family,
+        files=tuple(sorted(faces, key=lambda face: face.file)),
+        weights=tuple(sorted({face.weight for face in faces})),
+        italic=any(face.italic for face in faces),
+        tnum=any(face.tnum for face in faces),
+        fixed_pitch=any(face.fixed_pitch for face in faces),
+        chart_glyphs=tuple(
+            glyph for glyph in _CHART_GLYPHS if ord(glyph) in family_codepoints
+        ),
+        hangul=all(ord(char) in family_codepoints for char in _HANGUL_SAMPLE),
+        licenses=tuple(sorted({face.license for face in faces})),
+    )
 
 
 def list_registered() -> list[str]:
