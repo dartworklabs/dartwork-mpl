@@ -21,6 +21,44 @@ _SCRIPTS = _REPO / "docs" / "_static" / "scripts"
 _EXPLORER = _REPO / "docs" / "_static" / "categorical_explorer.html"
 _DESIGN_CSS = _REPO / "docs" / "_static" / "dartwork-design.css"
 _BUILDER = _SCRIPTS / "build_categorical_explorer.py"
+_DEMO_KEYS = [
+    "line",
+    "bar",
+    "scatter",
+    "area",
+    "lollipop",
+    "bubble",
+    "heatmap",
+    "waffle",
+    "treemap",
+    "donut",
+    "bump",
+    "slope",
+    "streamgraph",
+    "dotplot",
+    "boxplot",
+]
+_DEFAULT_9 = [
+    "line",
+    "bar",
+    "scatter",
+    "area",
+    "heatmap",
+    "treemap",
+    "donut",
+    "bump",
+    "slope",
+]
+_NEW_DEMOS = ["donut", "bump", "slope", "streamgraph", "dotplot", "boxplot"]
+_REPLACE_LAST_HANDLER = (
+    "function capDemosToLayout(){if(state.demos.length>state.layout)"
+    "state.demos=state.demos.slice(0,state.layout);}\n"
+    "function setLayout(n){state.layout=n;capDemosToLayout();renderDetail();}\n"
+    "function toggleDemo(k){capDemosToLayout();var idx=state.demos.indexOf(k);\n"
+    "  if(idx>=0)state.demos.splice(idx,1);else if(state.demos.length>=state.layout)"
+    "state.demos.splice(state.demos.length-1,1,k);else state.demos.push(k);"
+    "renderDetail();}"
+)
 _RAIL_GROUP_ORDER = [
     "Qualitative",
     "Sequential",
@@ -41,6 +79,10 @@ def _payload() -> dict:
     m = re.search(r"var D = (\{.*?\});\s*\nvar PALETTES", html, re.S)
     assert m, "explorer payload (var D = {...}) not found"
     return json.loads(m.group(1))
+
+
+def _builder_payload() -> dict:
+    return runpy.run_path(str(_BUILDER))["build_payload"]()
 
 
 def _by_kind(payload: dict, kind: str) -> dict[str, tuple[str, ...]]:
@@ -242,13 +284,91 @@ def test_explorer_detail_presentation_order_and_eyebrow_copy() -> None:
         '<div class="d-title">',
         '<p class="d-use">',
         '<div class="d-bar">',
+        "+demoToolsHTML()",
         '<div class="swhost">',
-        '<div class="plots">',
+        '<div class="demo-host">',
         '<div class="code highlight">',
         '<div class="meta-host">',
     ]
-    positions = [html.index(fragment) for fragment in ordered_fragments]
+    detail_start = html.index("function renderDetail()")
+    detail_end = html.index("document.getElementById('cx-rail')", detail_start)
+    detail = html[detail_start:detail_end]
+    positions = [detail.index(fragment) for fragment in ordered_fragments]
     assert positions == sorted(positions)
+
+
+def test_categorical_demo_library_defaults_and_coverage_self_check() -> None:
+    """The categorical explorer ships 15 selectable demos and a 3x3 default."""
+    builder = runpy.run_path(str(_BUILDER))
+    lib = [key for key, _label in builder["DEMO_LIBRARY"]]
+
+    assert lib == _DEMO_KEYS
+    assert len(lib) == 15
+    for key in _NEW_DEMOS:
+        assert key in lib
+    assert builder["DEFAULT_9"] == _DEFAULT_9
+    assert builder["DEFAULT_6"] == _DEFAULT_9[:6]
+    assert builder["DEFAULT_4"] == _DEFAULT_9[:4]
+    assert len(set(builder["DEFAULT_9"])) == 9
+
+    payload = _builder_payload()
+    assert [demo["key"] for demo in payload["library"]] == _DEMO_KEYS
+    assert payload["defaults"] == {
+        "4": builder["DEFAULT_4"],
+        "6": builder["DEFAULT_6"],
+        "9": builder["DEFAULT_9"],
+    }
+    rows = payload["demo_coverage"]
+    assert [row["demo"] for row in rows] == _DEMO_KEYS
+    assert all(row["selected"] == 8 for row in rows)
+    assert min(row["distinct"] for row in rows) >= 8
+
+
+def test_categorical_explorer_uses_shared_demo_and_layout_pickers() -> None:
+    """Demo chips and 2x2/2x3/3x3 layout controls replace the Charts slider."""
+    html = _EXPLORER.read_text(encoding="utf-8")
+    payload = _payload()
+
+    assert [demo["key"] for demo in payload["library"]] == _DEMO_KEYS
+    assert payload["defaults"]["9"] == _DEFAULT_9
+    assert "Charts" not in html
+    assert 'id="shrng"' not in html
+    assert "state.show" not in html
+    assert "demoToolsHTML()" in html
+    assert 'class="demo-picker"' in html
+    assert "data-demo-pick" in html
+    assert 'data-layout="4"' in html
+    assert 'data-layout="6"' in html
+    assert 'data-layout="9"' in html
+    assert "'+state.layout" in html
+    assert "visibleDemos()" in html
+    for key in _NEW_DEMOS:
+        assert f'"key":"{key}"' in html
+
+
+def test_categorical_demo_picker_replaces_last_full_slot() -> None:
+    """Demo selection is capped to the layout and swaps the newest slot."""
+    html = _EXPLORER.read_text(encoding="utf-8")
+
+    assert _REPLACE_LAST_HANDLER in html
+    assert "var k=b.dataset.demoPick,idx=state.demos.indexOf(k)" not in html
+    assert "if(wasDefault)" not in html
+    assert "P.grouped" not in html
+    assert '"key":"grouped"' not in html
+    assert '{"key":"bump","name":"Bump chart"}' in html
+
+    demos = _DEFAULT_9[:4]
+    new_key = "streamgraph"
+    if new_key in demos:
+        demos.remove(new_key)
+    elif len(demos) >= 4:
+        demos[-1] = new_key
+    else:
+        demos.append(new_key)
+    assert demos == ["line", "bar", "scatter", "streamgraph"]
+
+    demos.remove("bar")
+    assert demos == ["line", "scatter", "streamgraph"]
 
 
 def test_explorer_layout_fits_article_column() -> None:
