@@ -8,11 +8,11 @@ It emits a plain (non-module) script that defines three globals:
     var DM_FONT_ORDER  // [slug, …]  canonical rail order
     var DM_FONT_GROUPS // [{title, items:[slug,…]}, …]  grouped rail
 
-Each ``weights[]`` entry is ``{label, num, face}`` where ``face`` is the
-``@font-face`` family declared in ``docs/_static/font-face.css`` (naming:
-``dm-<ttf-basename-without-ext>``). Computing the faces here — rather than
-hand-typing 60+ family strings across POCs — removes the silent-fallback
-bug class where a typo'd face name renders in a system font.
+Each ``weights[]`` entry is ``{label, num, face}`` where ``face`` is derived
+with ``dartwork_mpl.font.css_font_face_name`` from the bundled font filename.
+Computing the faces here — rather than hand-typing 60+ family strings across
+POCs — removes the silent-fallback bug class where a typo'd face name renders
+in a system font.
 
 Editorial copy (intent / application / pairing / personality) lives in
 ``META`` below; weights are derived from ``WEIGHT_SPEC``. Output is
@@ -25,6 +25,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+
+from dartwork_mpl.font import css_font_face_name
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 OUT = SCRIPT_DIR.parent / "fonts_explorer_data.js"
@@ -381,7 +383,13 @@ ORDER = [k for _title, items in GROUPS for k in items]
 def _weights(slug: str) -> list[dict]:
     out = []
     for label, token in WEIGHT_SPEC[slug]:
-        out.append({"label": label, "num": WNUM[label], "face": f"dm-{token}"})
+        out.append(
+            {
+                "label": label,
+                "num": WNUM[label],
+                "face": css_font_face_name(token),
+            }
+        )
     return out
 
 

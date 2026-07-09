@@ -28,13 +28,15 @@ SemiCondensed Noto Sans files register as Noto Sans with their width metadata,
 so choose them through the style/fallback chain rather than by a separate
 family name.
 
-**Every family, one click apart.** The picker below cycles through them
-live — each tab swaps the specimen below to that family's actual rendered
-samples, with the correct weights, so what you see is exactly what
-that family will contribute when it leads the fallback chain.
+**Every family in chart context.** The chart-context font explorer below
+shows each registered matplotlib family inside real figure situations:
+titles, axes, legends, annotations, value labels, numeric ticks, Korean
+fallback behavior, code blocks, and weight/size ladders. Pick a family on
+the rail, then adjust weight, size, italic, demos, and layout before copying
+the matching matplotlib idiom.
 
 ```{raw} html
-:file: ../_static/fonts_picker.html
+:file: ../_static/font_explorer.html
 ```
 
 Need the long-form catalog with every weight and variant on a single

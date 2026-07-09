@@ -10,7 +10,12 @@ from pathlib import Path
 
 from matplotlib import font_manager
 
-__all__ = ["ensure_loaded", "get_font_dir", "list_registered"]
+__all__ = [
+    "css_font_face_name",
+    "ensure_loaded",
+    "get_font_dir",
+    "list_registered",
+]
 
 # Rough sanity floor for the bundled font set. We expect at least a
 # handful of files spanning Roboto + Paperlogy + NotoSansCJK +
@@ -27,6 +32,11 @@ _FONT_DIR: Path = Path(__file__).parent / "asset" / "font"
 def get_font_dir() -> Path:
     """Return the resolved bundled font asset directory."""
     return _FONT_DIR.resolve()
+
+
+def css_font_face_name(font_file: str | Path) -> str:
+    """Return the CSS ``@font-face`` family name for a bundled font file."""
+    return f"dm-{Path(font_file).stem}"
 
 
 def _is_bundled_font_entry(

@@ -9,7 +9,6 @@ in depth; for a
 one-click specimen of **every** family — including Pretendard, Source
 Sans 3, IBM Plex Sans, and the four monospace families (IBM Plex Mono,
 JetBrains Mono, Source Code Pro, Roboto Mono) — use the
-[interactive font picker](../_static/fonts_picker.html) or the
 [font explorer](index.md).
 
 ## Why fonts matter

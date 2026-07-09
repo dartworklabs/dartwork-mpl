@@ -320,26 +320,12 @@ def test_generated_tabs_expose_shadcn_tab_aliases() -> None:
 
 
 def test_embedded_active_widgets_use_shared_primitives() -> None:
-    fonts_picker = read_static("fonts_picker.html")
-    font_picker_generator = (
-        ROOT / "scripts" / "build_fonts_picker.py"
-    ).read_text(encoding="utf-8")
     preset_generator = (
         ROOT / "docs" / "usage_guide" / "generate_preset_compare.py"
     ).read_text(encoding="utf-8")
     preset_widget = (
         ROOT / "docs" / "usage_guide" / "images" / "preset_compare.html"
     ).read_text(encoding="utf-8")
-
-    for snippet in (
-        "dm-fp-tabs dm-tabs",
-        "dm-fp-tab dm-tab",
-        'role="tablist"',
-        "aria-selected",
-        "tabIndex = selected ? 0 : -1",
-    ):
-        assert snippet in fonts_picker
-        assert snippet in font_picker_generator
 
     for snippet in (
         "dm-pc-arrow dm-icon-btn",
@@ -354,13 +340,7 @@ def test_embedded_active_widgets_use_shared_primitives() -> None:
     assert "dm-pc-arrow dm-icon-btn" in preset_widget
     assert "dm-pc-dot is-active" in preset_widget
 
-    for html in (fonts_picker,):
-        assert 'classList.toggle("active"' not in html
-        assert ".active" not in html
-        assert "#0d9488" not in html
-        assert "rgba(13, 148, 136" not in html
-
-    for text in (font_picker_generator, preset_generator):
+    for text in (preset_generator,):
         assert 'classList.toggle("active"' not in text
         assert ".active" not in text
         assert "#0d9488" not in text
