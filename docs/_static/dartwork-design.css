@@ -1415,6 +1415,26 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 #dm-cat-exp .dm-toast,#dm-cmap-exp .dm-toast {position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--dm-gray-12,#1f2933);color:var(--dm-bg-page,#fff);padding:8px 16px;border-radius:var(--dm-radius-full,999px);font-size:12.5px;opacity:0;transition:opacity .18s;pointer-events:none;z-index:99999;}
 #dm-cat-exp .dm-toast.show,#dm-cmap-exp .dm-toast.show {opacity:1;}
 
+#dm-cat-exp .seg,#dm-cmap-exp .seg {display:inline-flex;align-items:center;border:1px solid var(--dm-border-faint,rgba(0,0,0,.12));border-radius:var(--dm-radius-full,999px);overflow:hidden;background:var(--dm-bg-page,#fff);}
+#dm-cat-exp .seg button,#dm-cmap-exp .seg button {appearance:none;border:0;border-right:1px solid var(--dm-border-faint,rgba(0,0,0,.12));background:transparent;color:var(--dm-gray-10,#667085);padding:5px 9px;font:650 11px var(--dm-f-mono,ui-monospace,monospace);cursor:pointer;white-space:nowrap;}
+#dm-cat-exp .seg button:last-child,#dm-cmap-exp .seg button:last-child {border-right:0;}
+#dm-cat-exp .seg button.on,#dm-cmap-exp .seg button.on {background:var(--dm-accent-2,#e6f7f4);color:var(--dm-accent-11,#0c6b5e);}
+#dm-cat-exp .demo-tools,#dm-cmap-exp .demo-tools {display:flex;align-items:flex-start;gap:13px;flex-wrap:wrap;row-gap:8px;border-top:1px solid var(--dm-border-faint,rgba(0,0,0,.12));padding-top:12px;margin-bottom:14px;}
+#dm-cat-exp .demo-tools .demo-field,#dm-cmap-exp .demo-tools .demo-field {flex:1 1 100%;min-width:0;align-items:flex-start;}
+#dm-cat-exp .demo-picker,#dm-cmap-exp .demo-picker {display:flex;align-items:center;gap:6px;flex-wrap:wrap;row-gap:6px;min-width:0;}
+#dm-cat-exp .demo-chip,#dm-cmap-exp .demo-chip {appearance:none;border:1px solid var(--dm-border-faint,rgba(0,0,0,.12));background:var(--dm-bg-page,#fff);color:var(--dm-gray-10,#667085);border-radius:var(--dm-radius-full,999px);padding:4px 9px;font:650 11px var(--dm-f-sys,system-ui);display:inline-flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;}
+#dm-cat-exp .demo-chip svg,#dm-cmap-exp .demo-chip svg {width:18px;height:14px;}
+#dm-cat-exp .demo-chip.on,#dm-cmap-exp .demo-chip.on {border-color:var(--dm-accent-8,#57c7b6);background:var(--dm-accent-2,#e6f7f4);color:var(--dm-accent-11,#0c6b5e);}
+#dm-cat-exp .demo-grid,#dm-cmap-exp .demo-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+#dm-cat-exp .demo-grid.layout-4,#dm-cat-exp .demo-grid.layout-6,#dm-cmap-exp .demo-grid.layout-4,#dm-cmap-exp .demo-grid.layout-6 {grid-template-columns:repeat(2,minmax(0,1fr));}
+@media(max-width:1040px){#dm-cat-exp .demo-grid,#dm-cmap-exp .demo-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:680px){#dm-cat-exp .demo-grid,#dm-cat-exp .demo-grid.layout-4,#dm-cat-exp .demo-grid.layout-6,#dm-cmap-exp .demo-grid,#dm-cmap-exp .demo-grid.layout-4,#dm-cmap-exp .demo-grid.layout-6{grid-template-columns:1fr;}}
+#dm-cat-exp .demo-card,#dm-cmap-exp .demo-card {position:relative;background:var(--dm-bg-page,#fff);border:1px solid var(--dm-border-faint,rgba(0,0,0,.12));border-radius:var(--dm-radius-4,8px);aspect-ratio:16/10;overflow:hidden;}
+#dm-cat-exp .demo-flex,#dm-cmap-exp .demo-flex {position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+#dm-cat-exp .demo-label,#dm-cmap-exp .demo-label {position:absolute;left:8px;top:6px;z-index:2;font:700 10px var(--dm-f-mono,ui-monospace,monospace);color:var(--dm-gray-12,#1f2933);letter-spacing:0;background:color-mix(in srgb,var(--dm-bg-page,#fff) 82%,transparent);border-radius:var(--dm-radius-full,999px);padding:2px 6px;backdrop-filter:blur(3px);box-shadow:0 1px 4px rgba(0,0,0,.13);}
+#dm-cat-exp svg.demo-svg,#dm-cmap-exp svg.demo-svg {display:block;width:100%;height:100%;}
+#dm-cat-exp .demo-grid.gs svg.demo-svg,#dm-cmap-exp .demo-grid.gs svg.demo-svg,#dm-cmap-exp .demo-grid.gs canvas.demo-canvas {filter:grayscale(1);}
+
 /* Categorical palette explorer unique parts. */
 #dm-cat-exp .swhost {display:flex;gap:7px;margin-bottom:18px;}
 #dm-cat-exp .strip {display:flex;gap:6px;margin:0 0 4px;}
@@ -1426,37 +1446,14 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
 #dm-cat-exp .sw .hx {font-family:var(--dm-f-mono,monospace);font-size:9px;color:var(--dm-text-muted,#667085);margin-top:4px;overflow:hidden;}
 #dm-cat-exp .sw.copied .hx {color:var(--dm-accent-11,#0c6b5e);font-weight:700;}
 #dm-cat-exp .sw.copied .hx::after {content:" \2713";}
-#dm-cat-exp .plots {display:grid;grid-template-columns:repeat(3,1fr);gap:13px;}
-#dm-cat-exp .pcell {background:var(--dm-bg-page,#fff);border:1px solid var(--dm-border-faint,rgba(0,0,0,.12));border-radius:var(--dm-radius-4,8px);padding:10px 12px;}
-#dm-cat-exp .pcell .pl {font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing: 0;color:var(--dm-text-muted,#667085);margin-bottom:7px;}
-#dm-cat-exp .plots.gs svg,#dm-cat-exp .strip.gs .chip {filter:grayscale(1);}
-#dm-cat-exp svg {display:block;width:100%;height:auto;}
+#dm-cat-exp .strip.gs .chip {filter:grayscale(1);}
 
 /* Continuous colormap explorer unique parts. */
-#dm-cmap-exp .seg {display:inline-flex;align-items:center;border:1px solid var(--dm-border-faint,rgba(0,0,0,.12));border-radius:var(--dm-radius-full,999px);overflow:hidden;background:var(--dm-bg-page,#fff);}
-#dm-cmap-exp .seg button {appearance:none;border:0;border-right:1px solid var(--dm-border-faint,rgba(0,0,0,.12));background:transparent;color:var(--dm-gray-10,#667085);padding:5px 9px;font:650 11px var(--dm-f-mono,ui-monospace,monospace);cursor:pointer;white-space:nowrap;}
-#dm-cmap-exp .seg button:last-child {border-right:0;}
-#dm-cmap-exp .seg button.on {background:var(--dm-accent-2,#e6f7f4);color:var(--dm-accent-11,#0c6b5e);}
-#dm-cmap-exp .demo-tools {display:flex;align-items:flex-start;gap:13px;flex-wrap:wrap;row-gap:8px;border-top:1px solid var(--dm-border-faint,rgba(0,0,0,.12));padding-top:12px;margin-bottom:14px;}
-#dm-cmap-exp .demo-tools .demo-field {flex:1 1 100%;min-width:0;align-items:flex-start;}
-#dm-cmap-exp .demo-picker {display:flex;align-items:center;gap:6px;flex-wrap:wrap;row-gap:6px;min-width:0;}
-#dm-cmap-exp .demo-chip {appearance:none;border:1px solid var(--dm-border-faint,rgba(0,0,0,.12));background:var(--dm-bg-page,#fff);color:var(--dm-gray-10,#667085);border-radius:var(--dm-radius-full,999px);padding:4px 9px;font:650 11px var(--dm-f-sys,system-ui);display:inline-flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;}
-#dm-cmap-exp .demo-chip svg {width:18px;height:14px;}
-#dm-cmap-exp .demo-chip.on {border-color:var(--dm-accent-8,#57c7b6);background:var(--dm-accent-2,#e6f7f4);color:var(--dm-accent-11,#0c6b5e);}
 #dm-cmap-exp .grad-wrap {margin:0 0 16px;}
 #dm-cmap-exp .grad {position:relative;height:44px;border-radius:var(--dm-radius-4,8px);overflow:hidden;border:1px solid var(--dm-border-faint,rgba(0,0,0,.12));}
 #dm-cmap-exp .grad,#dm-cmap-exp .ri .mini {background-repeat:no-repeat;background-size:100% 100%;}
 #dm-cmap-exp .grad.gs {filter:grayscale(1);}
-#dm-cmap-exp .demo-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
-#dm-cmap-exp .demo-grid.layout-4,#dm-cmap-exp .demo-grid.layout-6 {grid-template-columns:repeat(2,minmax(0,1fr));}
-@media(max-width:1040px){#dm-cmap-exp .demo-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
-@media(max-width:680px){#dm-cmap-exp .demo-grid,#dm-cmap-exp .demo-grid.layout-4,#dm-cmap-exp .demo-grid.layout-6{grid-template-columns:1fr;}}
-#dm-cmap-exp .demo-card {position:relative;background:var(--dm-bg-page,#fff);border:1px solid var(--dm-border-faint,rgba(0,0,0,.12));border-radius:var(--dm-radius-4,8px);aspect-ratio:16/10;overflow:hidden;}
-#dm-cmap-exp .demo-flex {position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
-#dm-cmap-exp .demo-label {position:absolute;left:8px;top:6px;z-index:2;font:700 10px var(--dm-f-mono,ui-monospace,monospace);color:var(--dm-gray-12,#1f2933);letter-spacing:0;background:color-mix(in srgb,var(--dm-bg-page,#fff) 82%,transparent);border-radius:var(--dm-radius-full,999px);padding:2px 6px;backdrop-filter:blur(3px);box-shadow:0 1px 4px rgba(0,0,0,.13);}
-#dm-cmap-exp svg.demo-svg {display:block;width:100%;height:100%;}
 #dm-cmap-exp canvas.demo-canvas {display:block;width:100%;height:100%;image-rendering:auto;}
-#dm-cmap-exp .demo-grid.gs svg.demo-svg,#dm-cmap-exp .demo-grid.gs canvas.demo-canvas {filter:grayscale(1);}
 
 /* Categorical palette page polish. The page content opts in naturally by
  * embedding #dm-cat-exp; keep the styling global so page-local raw style tags
