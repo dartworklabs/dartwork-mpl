@@ -1,0 +1,279 @@
+"""Interactive font explorer taxonomy, fragment, and docs pins."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+import runpy
+import shutil
+import subprocess
+from pathlib import Path
+
+from matplotlib import font_manager
+
+from dartwork_mpl import font
+
+_REPO = Path(__file__).resolve().parents[1]
+_SCRIPTS = _REPO / "docs" / "_static" / "scripts"
+_BUILDER = _SCRIPTS / "build_font_explorer.py"
+_EXPLORER = _REPO / "docs" / "_static" / "font_explorer.html"
+_DESIGN_CSS = _REPO / "docs" / "_static" / "dartwork-design.css"
+_FONT_FACE_CSS = _REPO / "docs" / "_static" / "font-face.css"
+
+_DEMO_KEYS = [
+    "title_axes",
+    "tick_numerals",
+    "value_labels",
+    "legend",
+    "annotation",
+    "weights_ladder",
+    "size_ladder",
+    "paragraph",
+    "numerals_confusables",
+    "korean",
+    "code_mono",
+    "caps_tracking",
+]
+_DEFAULT_9 = [
+    "title_axes",
+    "tick_numerals",
+    "value_labels",
+    "legend",
+    "annotation",
+    "weights_ladder",
+    "size_ladder",
+    "paragraph",
+    "numerals_confusables",
+]
+_MONO_FAMILIES = [
+    "IBM Plex Mono",
+    "JetBrains Mono",
+    "Roboto Mono",
+    "Source Code Pro",
+]
+_HANGUL_MATRIX = {
+    "IBM Plex Mono": False,
+    "IBM Plex Sans": False,
+    "Inter": False,
+    "Inter Display": False,
+    "JetBrains Mono": False,
+    "Noto Sans": False,
+    "Noto Sans CJK KR": True,
+    "Noto Sans Math": False,
+    "Noto Sans Symbols": False,
+    "Noto Sans Symbols 2": False,
+    "Paperlogy": True,
+    "Pretendard": True,
+    "Roboto": False,
+    "Roboto Mono": False,
+    "Source Code Pro": False,
+    "Source Sans 3": False,
+}
+_REPLACE_LAST_HANDLER = (
+    "function capDemosToLayout(){if(state.demos.length>state.layout)"
+    "state.demos=state.demos.slice(0,state.layout);}\n"
+    "function setLayout(n){state.layout=n;capDemosToLayout();renderDetail();}\n"
+    "function toggleDemo(k){capDemosToLayout();var idx=state.demos.indexOf(k);\n"
+    "  if(idx>=0)state.demos.splice(idx,1);else if(state.demos.length>=state.layout)"
+    "state.demos.splice(state.demos.length-1,1,k);else state.demos.push(k);"
+    "renderDetail();}"
+)
+_COLOR_FRAGMENT_HASHES = {
+    "categorical_explorer.html": (
+        "3c7bbcbd1ed844f2618d1c46caf34b3bb07097f9957a4646371447eb33dc6236"
+    ),
+    "colormap_explorer.html": (
+        "607a554e7da302c8efa24ae1c5b7000adf5cedf58b023216b4a411e38b315ed5"
+    ),
+}
+
+
+def _payload_from_html() -> dict:
+    html = _EXPLORER.read_text(encoding="utf-8")
+    m = re.search(r"var D=(\{.*?\});\nvar FONTS", html, re.S)
+    assert m, "font explorer payload (var D={...}) not found"
+    return json.loads(m.group(1))
+
+
+def _builder_payload() -> dict:
+    return runpy.run_path(str(_BUILDER))["build_payload"]()
+
+
+def _registered_weights_by_family() -> dict[str, set[int]]:
+    font.ensure_loaded()
+    bundle_dir = font.get_font_dir().resolve()
+    out: dict[str, set[int]] = {}
+    for entry in font_manager.fontManager.ttflist:
+        try:
+            if not Path(entry.fname).resolve().is_relative_to(bundle_dir):
+                continue
+        except (OSError, ValueError):
+            continue
+        out.setdefault(entry.name, set()).add(int(entry.weight))
+    return out
+
+
+def test_fragment_exists_without_inline_style_and_node_parses() -> None:
+    html = _EXPLORER.read_text(encoding="utf-8")
+    assert '<div id="dm-font-exp" class="yue">' in html
+    assert "<style" not in html
+    assert html.count("<script>") == 1
+    assert html.count("</script>") == 1
+    assert _EXPLORER.stat().st_size <= 350_000
+
+    node = shutil.which("node")
+    assert node, "node is required for the font explorer parse gate"
+    script = re.search(r"<script>(.*)</script>", html, re.S)
+    assert script, "single script tag not found"
+    subprocess.run(
+        [node, "--check", "-"],
+        input=script.group(1),
+        text=True,
+        check=True,
+        capture_output=True,
+    )
+
+
+def test_builder_inventory_comes_from_registered_font_ssot() -> None:
+    payload = _builder_payload()
+    families = payload["families"]
+    registered = font.list_registered()
+
+    assert payload["counts"]["families"] == 16
+    assert payload["counts"]["families"] == len(registered)
+    assert set(families) == set(registered)
+    assert payload["groups"] == [
+        [
+            "Sans",
+            [name for name in payload["order"] if name not in _MONO_FAMILIES],
+        ],
+        ["Mono", _MONO_FAMILIES],
+    ]
+    assert payload["order"][0] == "Roboto"
+
+    weights_by_family = _registered_weights_by_family()
+    for family, meta in families.items():
+        assert meta["weights"], family
+        segment_weights = {entry["weight"] for entry in meta["weights"]}
+        assert segment_weights <= weights_by_family[family]
+        assert any(entry["weight"] == 400 for entry in meta["weights"])
+        assert meta["default_weight"] == 400
+        assert isinstance(meta["italic"], bool)
+        assert meta["hangul"] is _HANGUL_MATRIX[family]
+
+
+def test_font_faces_referenced_by_weight_segments_exist() -> None:
+    payload = _builder_payload()
+    css = _FONT_FACE_CSS.read_text(encoding="utf-8")
+    declared = set(re.findall(r"font-family: '([^']+)'", css))
+
+    referenced = {
+        weight["face"]
+        for family in payload["families"].values()
+        for weight in family["weights"]
+    }
+    referenced |= {
+        weight["italic_face"]
+        for family in payload["families"].values()
+        for weight in family["weights"]
+        if weight.get("italic_face")
+    }
+    assert referenced <= declared
+    assert all(face.startswith("dm-") for face in referenced)
+
+
+def test_demo_library_defaults_and_replace_last_logic_are_pinned() -> None:
+    builder = runpy.run_path(str(_BUILDER))
+    html = _EXPLORER.read_text(encoding="utf-8")
+    payload = _payload_from_html()
+
+    assert [key for key, _label in builder["DEMO_LIBRARY"]] == _DEMO_KEYS
+    assert builder["DEFAULT_9"] == _DEFAULT_9
+    assert builder["DEFAULT_6"] == _DEFAULT_9[:6]
+    assert builder["DEFAULT_4"] == _DEFAULT_9[:4]
+    assert [demo["key"] for demo in payload["library"]] == _DEMO_KEYS
+    assert payload["defaults"] == {
+        "4": _DEFAULT_9[:4],
+        "6": _DEFAULT_9[:6],
+        "9": _DEFAULT_9,
+    }
+    assert _REPLACE_LAST_HANDLER in html
+    assert "if(wasDefault)" not in html
+    assert "state.show" not in html
+
+
+def test_hangul_coverage_matrix_and_no_tofu_fallback_copy_are_pinned() -> None:
+    payload = _builder_payload()
+    matrix = {
+        family: meta["hangul"] for family, meta in payload["families"].items()
+    }
+    assert matrix == _HANGUL_MATRIX
+    html = _EXPLORER.read_text(encoding="utf-8")
+    assert "No bundled Hangul in this face" in html
+    assert 'data-hangul="0"' in html
+    assert 'data-hangul="1"' in html
+
+
+def test_shared_css_layer_includes_font_explorer_only_for_shared_widgets() -> (
+    None
+):
+    css = _DESIGN_CSS.read_text(encoding="utf-8")
+    for selector in (
+        "#dm-cat-exp *,#dm-cmap-exp *,#dm-font-exp *",
+        "#dm-cat-exp,#dm-cmap-exp,#dm-font-exp {width:100%;max-width:100%;",
+        "#dm-cat-exp .md,#dm-cmap-exp .md,#dm-font-exp .md",
+        "#dm-cat-exp .demo-tools .demo-field,#dm-cmap-exp .demo-tools .demo-field,#dm-font-exp .demo-tools .demo-field",
+        "#dm-cat-exp .demo-picker,#dm-cmap-exp .demo-picker,#dm-font-exp .demo-picker",
+        "#dm-cat-exp .demo-grid,#dm-cmap-exp .demo-grid,#dm-font-exp .demo-grid",
+        "#dm-cat-exp .demo-label,#dm-cmap-exp .demo-label,#dm-font-exp .demo-label",
+    ):
+        assert selector in css
+
+    css_no_comments = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    for m in re.finditer(
+        r"([^{}]+)\{[^{}]*#dm-font-exp|([^{}]+#dm-font-exp[^{}]*)\{",
+        css_no_comments,
+    ):
+        selector = (m.group(1) or m.group(2) or "").strip()
+        if "#dm-font-exp" not in selector:
+            continue
+        if "#dm-cat-exp" in selector and "#dm-cmap-exp" in selector:
+            continue
+        assert selector.startswith(
+            "#dm-font-exp .font-"
+        ) or selector.startswith("#dm-font-exp .rail .font-"), selector
+
+
+def test_docs_embed_font_explorer_and_drop_legacy_picker() -> None:
+    index = (_REPO / "docs" / "fonts" / "index.md").read_text(encoding="utf-8")
+    families = (_REPO / "docs" / "fonts" / "families.md").read_text(
+        encoding="utf-8"
+    )
+    index_squashed = " ".join(index.split())
+    families_squashed = " ".join(families.split())
+    legacy = "fonts" + "_picker"
+
+    assert ":file: ../_static/font_explorer.html" in index
+    assert legacy not in index
+    assert legacy not in families
+    assert "chart-context font explorer" in index
+    for text in (index_squashed, families_squashed):
+        assert "**206 text font files**" in text
+        assert "**18 documented file groups**" in text
+        assert "**16 matplotlib family names**" in text
+
+
+def test_legacy_picker_artifacts_are_gone() -> None:
+    assert not (
+        _REPO / "docs" / "_static" / ("fonts" + "_picker.html")
+    ).exists()
+    assert not (_REPO / "scripts" / ("build_fonts" + "_picker.py")).exists()
+
+
+def test_color_explorer_fragments_stay_byte_identical() -> None:
+    for name, expected in _COLOR_FRAGMENT_HASHES.items():
+        actual = hashlib.sha256(
+            (_REPO / "docs" / "_static" / name).read_bytes()
+        ).hexdigest()
+        assert actual == expected
