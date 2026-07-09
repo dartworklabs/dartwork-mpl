@@ -570,22 +570,20 @@
  "colormaps": {
   "access": "matplotlib 레지스트리 네이티브 — cmap=\"dc.<name>\" / plt.colormaps[\"dc.<name>\"] / dm.list_colormaps(). 별도 파이썬 접근자 없음(기존 관용·기술부채 0). 등록명 접두사 dc.는 mpl 내장 pink·gray 및 dartwork_mpl.cmap 모듈 충돌 회피 (cmo./cmr./cmc. 관행).",
   "grammar": {
-   "rule": "이름은 색 정체성, 접미사는 변형 (_r 역방향 · _deep/_soft diverging 강도)",
+   "rule": "이름은 색 정체성, 접미사는 변형 (_r 역방향)",
    "single_hue": "family명 그대로 (blue, red, …, gray) — 팔레트 family 레시피의 연속 렌더링(A8 광역 L*)",
    "multi_hue": "자연광 장면 고유명 (aurora=기본, afterglow, blaze, lava, lagoon, glacier, canopy, haze, iris) — hue knot은 family 앵커 h0에서만, knot 사이는 단조 3차(pchip)로 통과",
-   "diverging": "저값_고값 pair명 (blue_red 등 13) — 양극 = dc.{a}6/dc.{b}6에서 유도",
-   "topo": "기준면 2단 multi-sequential (coast) — 반부별 독립 L* 단조 ramp, 중앙(해안선) L* 불연속은 설계 (기준면 0이 시각적으로 튀도록)",
+   "diverging": "저값_고값 pair명 (blue_red 등 11) — 양극 = dc.{a}6/dc.{b}6에서 유도",
    "cyclic": "원형 빛 현상 (halo, corona) + 구조명 hue — 팔은 family hue 앵커",
    "qualitative": "팔레트 cycle을 ListedColormap으로 등록 (dc.cycle, dc.cycle_print) — 신규 디자인 없음, 범주형 c= 인자 호환용",
-   "direction": "잉크 계열(단일색·diverging): 고값=진함 / 빛 계열(멀티휴·cyclic): 고값=밝음 / topo: 기준면에서 멀수록 어두움(심해)·밝음(고봉). 반전은 _r"
+   "direction": "잉크 계열(단일색·diverging): 고값=진함 / 빛 계열(멀티휴·cyclic): 고값=밝음. 반전은 _r"
   },
   "counts": {
    "single": 20,
    "multi": 9,
-   "diverging": 13,
-   "topo": 1,
+   "diverging": 11,
    "cyclic": 3,
-   "total": 46,
+   "total": 43,
    "qualitative_registered": 2
   },
   "gates": {
@@ -766,12 +764,6 @@
    "blue_red": {
     "apex_pct": 50.0
    },
-   "blue_red_deep": {
-    "apex_pct": 50.0
-   },
-   "blue_red_soft": {
-    "apex_pct": 50.0
-   },
    "blue_orange": {
     "apex_pct": 50.0
    },
@@ -801,11 +793,6 @@
    },
    "gray_red": {
     "apex_pct": 50.0
-   },
-   "coast": {
-    "sea_mono": true,
-    "land_mono": true,
-    "coast_break_dL": 41.9
    },
    "hue": {
     "seam_ratio": 1.02
@@ -1838,74 +1825,6 @@
     "#fe6768",
     "#fc5c5f"
    ],
-   "blue_red_deep": [
-    "#00345b",
-    "#00406d",
-    "#004b80",
-    "#005793",
-    "#0f63a3",
-    "#2a70ab",
-    "#3f7db4",
-    "#5289bd",
-    "#6596c5",
-    "#77a3cd",
-    "#89b0d6",
-    "#9cbdde",
-    "#afcae5",
-    "#c2d7ec",
-    "#d6e5f3",
-    "#eaf2f9",
-    "#fbeeed",
-    "#f8dddb",
-    "#f3ccc9",
-    "#edbbb8",
-    "#e7aba7",
-    "#e09a97",
-    "#d88a86",
-    "#d07a77",
-    "#c76a67",
-    "#be5a58",
-    "#b54949",
-    "#ab363a",
-    "#a2212b",
-    "#96001c",
-    "#810017",
-    "#6c0011"
-   ],
-   "blue_red_soft": [
-    "#0076c3",
-    "#117dcb",
-    "#2c84cd",
-    "#3f8bcf",
-    "#4e92d0",
-    "#5d99d2",
-    "#6aa0d3",
-    "#78a7d5",
-    "#85aed7",
-    "#91b5d8",
-    "#9ebcda",
-    "#aac3dc",
-    "#b7cadd",
-    "#c3d1df",
-    "#cfd8e1",
-    "#dbdfe3",
-    "#e4dddc",
-    "#e4d3d2",
-    "#e4cac8",
-    "#e3c0bd",
-    "#e3b6b3",
-    "#e3aca8",
-    "#e2a19e",
-    "#e19793",
-    "#e08d89",
-    "#df827e",
-    "#de7774",
-    "#dc6b69",
-    "#da5f5f",
-    "#d85354",
-    "#d64549",
-    "#d4343e"
-   ],
    "blue_orange": [
     "#0066ab",
     "#006fb9",
@@ -2245,40 +2164,6 @@
     "#cd4347",
     "#c8333b",
     "#c11e2f"
-   ],
-   "coast": [
-    "#1c2355",
-    "#1f2e62",
-    "#213a6e",
-    "#23457b",
-    "#235288",
-    "#235e94",
-    "#246ba0",
-    "#2578aa",
-    "#2885b4",
-    "#2e92bd",
-    "#37a0c5",
-    "#41adcd",
-    "#4dbad4",
-    "#5ac7dc",
-    "#68d5e3",
-    "#76e2ea",
-    "#29713b",
-    "#3c7941",
-    "#4c8146",
-    "#5c8a4d",
-    "#6b9353",
-    "#799b5b",
-    "#88a463",
-    "#97ac6b",
-    "#a5b575",
-    "#b4bd81",
-    "#c2c58e",
-    "#cfce9c",
-    "#dcd7ac",
-    "#e7e0bc",
-    "#f2e9cd",
-    "#fcf3dd"
    ],
    "hue": [
     "#d17d97",

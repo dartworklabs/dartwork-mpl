@@ -30,7 +30,7 @@ _REPO = Path(__file__).resolve().parents[1]
 
 # Okabe-Ito 8-color CVD-safe palette (Wong 2011, Nature Methods) — the
 # accessibility benchmark the v5 gate is calibrated against. Measured under the
-# SAME shipped Brettel-1997 tritan gate as dc.cycle, so the comparison is
+# SAME shipped Brettel-1997 tritan gate as dc.octave, so the comparison is
 # apples-to-apples.
 _OKABE_ITO = [
     "#000000",
@@ -87,7 +87,7 @@ _CLAIMS: list[tuple[str, str, Callable[[], float], int]] = [
     # --- design.md: cycle floors quoted at "10.3 (common) / 8.3 (tritan)" ---
     (
         "docs/color_system/design.md",
-        r"`dc\.cycle` measures (\d+\.\d+) \(common\)",
+        r"`dc\.octave` measures (\d+\.\d+) \(common\)",
         _default_common,
         1,
     ),
@@ -99,13 +99,13 @@ _CLAIMS: list[tuple[str, str, Callable[[], float], int]] = [
     ),
     (
         "docs/color_system/design.md",
-        r"`dc\.cycle_print`, (\d+\.\d+) /",
+        r"`dc\.octave_print`, (\d+\.\d+) /",
         _print_common,
         1,
     ),
     (
         "docs/color_system/design.md",
-        r"`dc\.cycle_print`, \d+\.\d+ / (\d+\.\d+)",
+        r"`dc\.octave_print`, \d+\.\d+ / (\d+\.\d+)",
         _print_tritan,
         1,
     ),

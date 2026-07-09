@@ -14,7 +14,8 @@ third-party systems — see **[Palettes](colors.md)**.
 
 Use the left rail to choose a palette, drag the color-count control, and toggle
 black-and-white preview. Click any swatch to copy its hex, or copy the matching
-Python call from the explorer.
+Python call from the explorer. The rail has 13 qualitative choices: Octave,
+Octave Print, and 11 curated qualitative sets.
 
 ```{raw} html
 :file: ../_static/categorical_explorer.html
@@ -35,7 +36,7 @@ ax.set_prop_cycle(dm.cycle_cycler())         # >8 series: 8 colors x 3 styles
 
 Every name resolves under `dc.*`: `"blue"` expands to `dc.blue0` … `dc.blue9`,
 and `"trustworthy"` expands to `dc.trustworthy0` … `dc.trustworthy7`. The cycles
-are also registered as colormaps (`dc.cycle`, `dc.cycle_print`) for
+are also registered as colormaps (`dc.octave`, `dc.octave_print`) for
 `scatter(c=...)` and seaborn `palette=`.
 
 ## Which palette for which data?
@@ -44,14 +45,13 @@ are also registered as colormaps (`dc.cycle`, `dc.cycle_print`) for
 | --- | --- | --- |
 | Everyday 4-8 categories | `dm.cycle("octave")` or `trustworthy` | Qualitative |
 | Many unrelated categories, max distinctness | `vivid` or `neon` | Qualitative |
-| A few related series, one mood | a hue family sampled evenly, or `forest` / `teal_indigo` | Sequential / Analogous |
+| A few related series, one mood | a hue family sampled evenly, or `forest` | Sequential / Qualitative |
 | Ordered amount (rank) | one family ramp; `gray` if hue means nothing | Sequential / Neutral |
-| Ordered around a midpoint (+/- / change / correlation) | `cool_warm`, `teal_amber`, or `purple_green` | Diverging |
-| Two opposed groups (A/B, before-after) | `blue_orange` or `teal_coral` | Duo |
+| Ordered around a midpoint (+/- / change / correlation) | `blue_red`, `blue_orange`, `teal_amber`, or `green_purple` | Diverging API |
 | Soft, editorial, dense dashboards | `pastel` or `dusty` | Muted |
 | A specific mood (warm / earthy / luxury) | `ember`, `earth`, or `jewel` | Tone |
 | Highlight one series, mute the rest | `teal_accent`, `coral_accent`, or `dc.hl` + grays | Emphasis |
-| Colorblind-mandatory | `accessible` (Okabe-Ito) | Accessible |
+| Colorblind-mandatory | `dm.cycle("octave")` or `trustworthy` | Qualitative |
 
 ## How the system is organized
 
@@ -59,23 +59,25 @@ Everything lives in one `dc.*` namespace and uses one API: `dm.cycle(...)` for
 matplotlib cycles, `dm.get_palette(...)` for color lists, and
 `dm.set_cycle(...)` to apply colors globally or to one Axes.
 
-There are three layers: Octave, the searched default cycle for everyday charts; 20
-generative single-hue families (19 chromatic plus gray, ten perceptually
-equalized steps on CIELAB L\* + OKLCH) for ordered and sequential work; and the
-curated 20-palette system of hand-tuned qualitative, duo, diverging, tonal,
-neutral, emphasis, and accessible sets, all grayscale- and CVD-screened.
+There are three layers: Octave, the searched default cycle for everyday charts;
+20 generative single-hue families (19 chromatic plus gray, ten perceptually
+equalized steps on CIELAB L\* + OKLCH) for ordered and sequential work; and 11
+hand-tuned curated qualitative sets for muted, tonal, forest, and emphasis use
+cases. Four canonical diverging discrete forms (`blue_red`, `blue_orange`,
+`teal_amber`, `green_purple`) remain available through `dm.get_palette(...)`
+and `dc.*` tokens, but they are not categorical rail choices.
 
-The count rule is simple: families have 10 steps; curated sets have 8 colors;
-Octave has 8 chromatic colors, with rose in the eighth slot; and Octave Print
-has 7 chromatic colors plus dark gray. Single-hue curated ramps are not
-duplicated; the families serve that job.
+The count rule is simple: families have 10 steps; curated qualitative and
+diverging sets have 8 colors; Octave has 8 chromatic colors, with rose in the
+eighth slot; and Octave Print has 7 chromatic colors plus dark gray. Single-hue
+curated ramps are not duplicated; the families serve that job.
 
 ## Reference
 
 ### Octave — the default cycle
 
 Octave is the default coherent data-series cycle when you do not want to choose
-a palette by hand; use `dm.cycle("octave")` or the stable `dc.cycle` colormap
+a palette by hand; use `dm.cycle("octave")` or the stable `dc.octave` colormap
 token. Its eight chromatic colors were selected by exhaustive search to stay
 distinct under color-vision-deficiency simulation. The common red-green
 deficiencies clear min ΔE00 10.3 (vs the Okabe-Ito benchmark's 11.5), and on
@@ -109,21 +111,21 @@ cols = dm.get_palette("teal", order="lightness")
 
 ### Curated sets
 
-The curated 20-palette system is the hand-tuned set collection preserved
-verbatim through the v5 clean break. Curated sets use the same API as families,
-and all are grayscale- and CVD-screened.
+The curated qualitative rail is the hand-tuned set collection preserved through
+the v5 clean break. Curated sets use the same API as families, and all are
+grayscale- and CVD-screened.
 
 | Group | Members |
 | --- | --- |
-| Analogous | `forest`, `teal_indigo` |
+| Qualitative | `trustworthy`, `vivid`, `neon`, `forest` |
 | Muted | `pastel`, `dusty` |
 | Tone | `ember`, `earth`, `jewel` |
-| Duo | `blue_orange`, `teal_coral` |
-| Diverging | `cool_warm`, `teal_amber`, `purple_green` |
-| Neutral | `warm_gray`, `cool_gray` (+ the generative `gray`) |
 | Emphasis | `teal_accent`, `coral_accent` |
-| Accessible | `accessible` (Okabe-Ito) |
-| Qualitative | `trustworthy`, `vivid`, `neon` |
+
+The four canonical discrete diverging forms are `blue_red`, `blue_orange`,
+`teal_amber`, and `green_purple`. They are ordered encodings for centered data,
+not unordered categorical sets, so the explorer keeps them out of the
+qualitative rail.
 
 ### `get_palette` and `set_cycle` options
 

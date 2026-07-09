@@ -9,10 +9,9 @@ categorical catalog.
   lime, green, teal, cyan, sky, blue, cobalt, indigo, violet, purple,
   fuchsia, pink, gray.
 - 10 perceptually equalized steps per family: `dc.blue0` through `dc.blue9`.
-- Two searched cycles: Octave (`dc.cycle`) for screen/PDF and the hue-parallel
-  Octave Print (`dc.cycle_print`) for print-friendly lightness separation.
-- 20 curated categorical sets for qualitative, analogous, muted, tonal, duo,
-  diverging, neutral-cast, emphasis, and accessible use cases.
+- Two searched cycles: Octave (`dc.octave`) for screen/PDF and the hue-parallel
+  Octave Print (`dc.octave_print`) for print-friendly lightness separation.
+- 11 curated qualitative sets for general, muted, tonal, and emphasis use cases.
 - Role tokens: `dc.pos`, `dc.neg`, `dc.ref`, and `dc.hl`.
 
 ## Design Rule

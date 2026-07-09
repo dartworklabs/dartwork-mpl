@@ -81,13 +81,13 @@ def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
 
     Sources the names from the authoritative v5 catalog
     (``dartwork_mpl.colors._generated.CMAPS_256`` + the two registered
-    cycles), *not* from a raw ``dc.``-prefix scan. That keeps the docs
+    octave cycles), *not* from a raw ``dc.``-prefix scan. That keeps the docs
     explorer pinned to the supported catalog even if user code registers
     additional ``dc.`` maps in the same process.
     """
     from dartwork_mpl.colors._generated import CMAPS_256
 
-    v5_names = {f"dc.{n}" for n in CMAPS_256} | {"dc.cycle", "dc.cycle_print"}
+    v5_names = {f"dc.{n}" for n in CMAPS_256} | {"dc.octave", "dc.octave_print"}
     cmap_list: Iterable[str] = (
         name for name in mpl.colormaps if str(name) in v5_names
     )

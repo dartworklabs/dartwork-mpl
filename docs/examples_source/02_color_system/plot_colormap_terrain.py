@@ -32,9 +32,9 @@ Z = (
 
 # Four scientifically useful colormaps
 colormaps = [
-    ("dc.deep_sea", "dc.deep_sea \u2014 sequential cool"),
+    ("dc.lagoon", "dc.lagoon \u2014 water and climate"),
     ("dc.afterglow", "dc.afterglow \u2014 sequential warm"),
-    ("dc.cool_warm", "dc.cool_warm \u2014 diverging"),
+    ("dc.blue_red", "dc.blue_red \u2014 diverging"),
     ("dc.hue", "dc.hue \u2014 perceptual multi-hue"),
 ]
 

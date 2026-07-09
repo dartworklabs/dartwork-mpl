@@ -23,7 +23,7 @@ _ASSET = _REPO / "src" / "dartwork_mpl" / "asset"
 
 
 def _n_v5_cmaps() -> int:
-    # The v5 catalog (the only colormap surface) — 46 generated maps.
+    # The v5 continuous colormap surface — generated maps excluding cycles.
     from dartwork_mpl.colors._generated import CMAPS_256
 
     return len(CMAPS_256)
@@ -79,11 +79,18 @@ def _n_presets() -> int:
 
 
 def _n_curated_palettes() -> int:
-    """The count of hand-tuned curated categorical *sets* (not the generative
-    v5 families) — the number the categorical docs claim."""
-    from dartwork_mpl.colors._curated import CURATED
+    """Hand-tuned qualitative sets on the categorical explorer rail."""
+    from dartwork_mpl.colors._curated import CURATED_QUALITATIVE_ORDER
 
-    return len(CURATED)
+    return len(CURATED_QUALITATIVE_ORDER)
+
+
+def _n_qualitative_rail_palettes() -> int:
+    """Categorical explorer rail choices: curated qualitative sets + cycles."""
+    from dartwork_mpl.colors._curated import CURATED_QUALITATIVE_ORDER
+    from dartwork_mpl.colors._generated import CYCLES
+
+    return len(CURATED_QUALITATIVE_ORDER) + len(CYCLES)
 
 
 def _n_basic_templates() -> int:
@@ -174,7 +181,11 @@ def _claim_to_int(value: str) -> int:
 
 
 _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
-    ("docs/color_system/colormaps.md", r"\*\*(\d+) colormaps\*\*", _n_v5_cmaps),
+    (
+        "docs/color_system/colormaps.md",
+        r"\*\*(\d+) continuous colormaps\*\*",
+        _n_v5_cmaps,
+    ),
     (
         "docs/color_system/colormaps.md",
         r"\*\*(\d+) qualitative cycle maps\*\*",
@@ -187,7 +198,7 @@ _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
     ),
     (
         "docs/color_system/colormaps.md",
-        r"Explore the (\d+)-map v5 catalog",
+        r"Explore the (\d+)-map continuous v5 catalog",
         _n_v5_cmaps,
     ),
     (
@@ -251,12 +262,17 @@ _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
     ),
     (
         "docs/color_system/categorical-palettes.md",
-        r"curated (\d+)-palette system",
+        r"and (\d+) curated qualitative sets",
         _n_curated_palettes,
     ),
     (
+        "docs/color_system/categorical-palettes.md",
+        r"The rail has (\d+) qualitative choices",
+        _n_qualitative_rail_palettes,
+    ),
+    (
         "docs/color_system/colors.md",
-        r"\*\*(\d+)-palette categorical system\*\*",
+        r"ships (\d+) curated\s+\*\*qualitative sets\*\*",
         _n_curated_palettes,
     ),
     ("llms.txt", r"(\d+) ready-to-use scripts", _n_basic_templates),

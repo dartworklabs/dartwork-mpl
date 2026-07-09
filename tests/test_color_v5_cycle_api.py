@@ -16,9 +16,11 @@ def test_cycle_hexes():
         dm.cycle("nope")
 
 
-def test_cycle_legacy_aliases_resolve_silently():
-    assert dm.cycle("default") == dm.cycle("octave")
-    assert dm.cycle("print") == dm.cycle("octave_print")
+def test_cycle_legacy_aliases_are_removed():
+    with pytest.raises(KeyError):
+        dm.cycle("default")
+    with pytest.raises(KeyError):
+        dm.cycle("print")
 
 
 def test_cycler_product_color_first():

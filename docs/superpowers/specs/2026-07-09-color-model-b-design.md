@@ -61,7 +61,7 @@ narrative):
 | sequential | monotonic L\*, open ends | token-ladder subset (n ≤ 10, interior window for n ≤ 8) | hue noun (`blue`) |
 | multi-hue | monotonic L\*, multi-hue path | L\*∈[35, 90] clamp + max–min-ΔE00 subset along the path (n ≤ 8), deterministic | natural-light scene (`aurora`) |
 | diverging | interior anchor, two monotonic arms, L\*-mirrored ±tol | designed canonical 8 (absorbed curated set where one exists; else generated from pole-family ladders), subsets from it | `low_high` pair (`blue_red`) |
-| cyclic | ΔE00(color(0), color(1)) ≤ 2, no interior seam | equal-phase samples at i/n (wrap-aware), n ≤ 24 | circular-light phenomenon (`halo`) |
+| cyclic | ΔE00(color(0), color(1)) ≤ 2.01 (measured seams: hue 0.7 / halo 1.9 / corona 2.0), no interior seam | equal-phase samples at i/n (wrap-aware), n ≤ 24 | circular-light phenomenon (`halo`) |
 | qualitative | unordered point cloud, L\* legibility band | the curated set itself (prefix-optimized order; `n` = prefix), no continuous form | mood noun (`vivid`) or `<hue>_accent` |
 
 After the ledger below, **name grammar ↔ kind is 1:1 with zero exceptions**,

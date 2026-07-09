@@ -20,7 +20,6 @@ __all__ = [
     "gate_div_cmap",
     "gate_ladder",
     "gate_seq_cmap",
-    "gate_topo_cmap",
 ]
 
 _CVD_KINDS = ("protan", "deutan", "tritan")
@@ -122,21 +121,6 @@ def gate_div_cmap(hexes: list[str]) -> dict[str, float]:
     return {"apex_pct": round(100 * apex / (len(ls) - 1), 1)}
 
 
-def gate_topo_cmap(hexes: list[str]) -> dict[str, bool | float]:
-    mid = len(hexes) // 2
-
-    def half_mono(seg: list[str]) -> bool:
-        return _mono([lab_l_hex(h) for h in seg], 0.4)
-
-    return {
-        "sea_mono": half_mono(hexes[:mid]),
-        "land_mono": half_mono(hexes[mid:]),
-        "coast_break_dL": round(
-            abs(lab_l_hex(hexes[mid]) - lab_l_hex(hexes[mid - 1])), 1
-        ),
-    }
-
-
 def gate_cyclic_cmap(hexes: list[str]) -> dict[str, float]:
     rgbs = [rgb_from_hex(h) for h in hexes]
     d = [de_ok_rgb(rgbs[i], rgbs[i + 1]) for i in range(len(rgbs) - 1)]
@@ -176,10 +160,6 @@ def check_all(
         if kind == "div":
             if gate_div_cmap(hexes)["apex_pct"] != 50.0:
                 bad.append(f"cmap {name}: apex != 50%")
-        elif kind == "topo":
-            g_topo = gate_topo_cmap(hexes)
-            if not (g_topo["sea_mono"] and g_topo["land_mono"]):
-                bad.append(f"cmap {name}: half not monotone")
         elif kind == "cyc":
             if gate_cyclic_cmap(hexes)["seam_ratio"] > 1.5:
                 bad.append(f"cmap {name}: seam ratio > 1.5")

@@ -29,7 +29,6 @@ if TYPE_CHECKING:
 _CATEGORY_STYLE: dict[str, tuple[str, str]] = {
     "Single-Hue": ("#e3f2fd", "#1565c0"),
     "Multi-Hue": ("#e8f5e9", "#2e7d32"),
-    "Topographic": ("#efebe9", "#4e342e"),
     "Diverging": ("#fff3e0", "#e65100"),
     "Cyclical": ("#f3e5f5", "#7b1fa2"),
     "Categorical": ("#fce4ec", "#c62828"),
@@ -81,16 +80,10 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
             "iris",
         )
     },
-    # dc.coast is a datum-anchored two-band (sea/land) topographic map, not a
-    # free multi-hue scene — the docs (colormaps.md, design.md) treat it as its
-    # own "Topographic" family, so it is pinned there rather than "Multi-Hue".
-    "dc.coast": "Topographic",
     **{
         f"dc.{n}": "Diverging"
         for n in (
             "blue_red",
-            "blue_red_deep",
-            "blue_red_soft",
             "blue_orange",
             "teal_rose",
             "green_purple",
@@ -104,7 +97,7 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
         )
     },
     **{f"dc.{n}": "Cyclical" for n in ("hue", "halo", "corona")},
-    **{f"dc.{n}": "Categorical" for n in ("cycle", "cycle_print")},
+    **{f"dc.{n}": "Categorical" for n in ("octave", "octave_print")},
 }
 
 
@@ -298,12 +291,10 @@ def plot_colormaps(
 
     # ----- Group by category -----
     # Must include every category classify_colormap can return, else the
-    # ``categories[category].append`` below raises KeyError (dc.coast now
-    # classifies as "Topographic").
+    # ``categories[category].append`` below raises KeyError.
     category_order = [
         "Single-Hue",
         "Multi-Hue",
-        "Topographic",
         "Diverging",
         "Cyclical",
         "Categorical",

@@ -31,8 +31,6 @@ from __future__ import annotations
 # Cmap category prefixes (gate runner's `kind` dispatch — see ._gates.check_all).
 _DIVERGING_CMAPS = {
     "blue_red",
-    "blue_red_deep",
-    "blue_red_soft",
     "blue_orange",
     "teal_rose",
     "green_purple",
@@ -57,15 +55,13 @@ def _fmt(name: str, table: dict[str, list[str]]) -> str:
 
 
 def _prefixed(cmaps: dict[str, list[str]]) -> dict[str, list[str]]:
-    """Tag each cmap key with its gate category (``div.``/``topo.``/``cyc.``/``seq.``)."""
+    """Tag each cmap key with its gate category (``div.``/``cyc.``/``seq.``)."""
     out: dict[str, list[str]] = {}
     for key, hexes in cmaps.items():
         if key in _DIVERGING_CMAPS:
             out[f"div.{key}"] = hexes
         elif key in _CYCLIC_CMAPS:
             out[f"cyc.{key}"] = hexes
-        elif key == "coast":
-            out[f"topo.{key}"] = hexes
         else:
             out[f"seq.{key}"] = hexes
     return out

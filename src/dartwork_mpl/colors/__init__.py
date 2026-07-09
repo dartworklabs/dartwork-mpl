@@ -43,7 +43,7 @@ __all__ = [
 _ensure_colors_loaded()
 
 # Register the v5 cmap catalog + qualitative cycles (dc.<name> / dc.<name>_r
-# / dc.cycle / dc.cycle_print) on first import — mirrors the palette load
+# / dc.octave / dc.octave_print) on first import — mirrors the palette load
 # immediately above.
 _ensure_cmaps_registered()
 

@@ -46,7 +46,7 @@ def test_colormap_docs_explain_v5_inventory() -> None:
     cycle_count = len(CYCLES)
     listed_count = len(dm.list_colormaps())
 
-    assert f"**{v5_count} colormaps**" in text
+    assert f"**{v5_count} continuous colormaps**" in text
     assert f"**{cycle_count} qualitative cycle maps**" in text
     assert (
         f"`dm.list_colormaps()` returns the {listed_count} non-reversed names"

@@ -9,7 +9,6 @@ from dartwork_mpl.colors._gates import (
     gate_div_cmap,
     gate_ladder,
     gate_seq_cmap,
-    gate_topo_cmap,
 )
 
 
@@ -71,9 +70,6 @@ def test_cmap_gates_pass_ssot(v5_ssot):
         exp = gexp[name]
         if "apex_pct" in exp:
             assert gate_div_cmap(hexes)["apex_pct"] == 50.0, name
-        elif "sea_mono" in exp:
-            g = gate_topo_cmap(hexes)
-            assert g["sea_mono"] and g["land_mono"], name
         elif "seam_ratio" in exp:
             assert gate_cyclic_cmap(hexes)["seam_ratio"] <= 1.5, name
         else:

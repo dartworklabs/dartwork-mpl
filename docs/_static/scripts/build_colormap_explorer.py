@@ -2,7 +2,7 @@
 """Build the interactive continuous-colormap explorer fragment.
 
 Sibling of ``build_categorical_explorer.py``; same architecture — Python
-computes the 46-map payload from the color SSOT and injects it into an HTML
+computes the 43-map payload from the color SSOT and injects it into an HTML
 fragment (CSS in ``dartwork-design.css`` + vanilla JS), embedded by
 ``docs/color_system/colormaps.md`` via MyST ``{raw} html :file:``.
 
@@ -42,7 +42,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parents[2]
 OUT = SCRIPT_DIR.parent / "colormap_explorer.html"
 
-# ── taxonomy (verified against CMAPS_256: 20 / 10 / 15 / 1 = 46) ───────────
+# ── taxonomy (verified against CMAPS_256: 20 / 9 / 11 / 3 = 43) ───────────
 SEQUENTIAL = [
     "red",
     "rose",
@@ -70,7 +70,6 @@ MULTI_HUE = [
     "aurora",
     "blaze",
     "canopy",
-    "coast",
     "glacier",
     "haze",
     "iris",
@@ -79,8 +78,6 @@ MULTI_HUE = [
 ]
 DIVERGING = [
     "blue_red",
-    "blue_red_deep",
-    "blue_red_soft",
     "blue_orange",
     "cyan_red",
     "teal_amber",
@@ -91,10 +88,8 @@ DIVERGING = [
     "violet_lime",
     "gray_blue",
     "gray_red",
-    "corona",
-    "halo",
 ]
-CYCLIC = ["hue"]
+CYCLIC = ["hue", "halo", "corona"]
 GROUPS = [
     ("Sequential", SEQUENTIAL),
     ("Multi-hue", MULTI_HUE),
@@ -207,7 +202,6 @@ MULTI_INTENT = {
     "aurora": "Aurora is the general-purpose multi-hue light ramp: violet, blue, green, and pale gold move through one ordered scalar sequence. It is the default heatmap map.",
     "blaze": "Blaze runs through ember, orange, and hot yellow for heat, activity, density, and other positive-only quantities that need immediate visual force.",
     "canopy": "Canopy shifts through shaded green into sunlit yellow-green, giving ecological and terrain-like fields a natural scalar voice.",
-    "coast": "Coast joins a blue water ramp to a green land ramp, making a natural break readable while distance on either side still carries magnitude.",
     "glacier": "Glacier moves through deep blue, ice cyan, and pale cold highlights for frozen, precise, or technical scalar fields.",
     "haze": "Haze is a low-chroma multi-hue ramp for atmospheric gradients, background fields, and uncertainty surfaces that should stay quiet; it holds the largest CVD margin.",
     "iris": "Iris crosses violet, blue, and cyan in a controlled editorial register for continuous measurements that need more character than blue.",
@@ -216,8 +210,6 @@ MULTI_INTENT = {
 }
 DIVERGING_INTENT = {
     "blue_red": "Blue Red is the canonical signed scale: blue for negative, red for positive, and a pale center for zero.",
-    "blue_red_deep": "Blue Red Deep keeps the same signed semantics while pushing both poles darker and stronger for dense matrices and small cells.",
-    "blue_red_soft": "Blue Red Soft is the gentler signed scale for editorial or presentation contexts where saturation should stay quiet.",
     "blue_orange": "Blue Orange separates cool negative from warm positive on a familiar colorblind-friendlier axis.",
     "cyan_red": "Cyan Red gives negative values a bright technical cyan and positive values a clear red pole for anomaly fields.",
     "teal_amber": "Teal Amber is the house signed scale, with teal below zero and amber above zero through a pale center.",
@@ -228,17 +220,17 @@ DIVERGING_INTENT = {
     "violet_lime": "Violet Lime is a high-contrast signed map where polarity should remain obvious at small sizes.",
     "gray_blue": "Gray Blue anchors one side in neutral gray and the other in blue when only one direction should feel chromatic.",
     "gray_red": "Gray Red anchors one side in neutral gray and the other in red for one-sided alert semantics on a centered scale.",
-    "corona": "Corona is a dark-center diverging map with pale green and orange ends around a dark neutral middle; it suits dark-background figures or cases where extremes should glow.",
-    "halo": "Halo is a dark-center diverging map with pale blue and red ends around a dark neutral middle; it suits dark-background figures or cases where extremes should glow.",
 }
 CYCLIC_INTENT = {
-    "hue": "Hue is the cyclic angle map: it holds one flat lightness so the first and last colors meet, letting phase, direction, and orientation wrap without a visible break."
+    "hue": "Hue is the cyclic angle map: it holds one flat lightness so the first and last colors meet, letting phase, direction, and orientation wrap without a visible break.",
+    "halo": "Halo is a cyclic dark-center phase map with pale blue and red lobes that wrap through a matched bright seam.",
+    "corona": "Corona is a cyclic dark-center phase map with pale teal and orange lobes that wrap through a matched bright seam.",
 }
 KIND_RECIPE = {
     "family": "Single-hue family ramp sampled as a continuous colormap with an ordered lightness ladder.",
     "multi": "Multi-hue sequential ramp: hue moves for character while lightness carries scalar order.",
     "diverging": "Two arms meet at a neutral center, built for signed values around a meaningful baseline.",
-    "cyclic": "Isoluminant hue circle with matched endpoints for angular and phase data.",
+    "cyclic": "Matched-endpoint cycle for angular, phase, and wraparound data.",
 }
 KIND_GOOD_FOR = {
     "family": "Ordered magnitude, grayscale-safe scalar legends, and related-series samples.",
@@ -483,16 +475,6 @@ def _chips_for(key: str, stops: list[str]) -> list[dict]:
             )
         )
 
-    if key == "coast":
-        chips.append(
-            _chip(
-                "info",
-                "Segmented",
-                "2 ramps",
-                "Two joined sequential segments meet at the midpoint seam, made "
-                "for data with a natural bathymetry/topography break.",
-            )
-        )
     return chips
 
 
@@ -1431,7 +1413,7 @@ def build_payload() -> dict:
     actual = set(CMAPS_256)
     missing = sorted(actual - set(order))
     extra = sorted(set(order) - actual)
-    if missing or extra or len(order) != len(set(order)) or len(order) != 46:
+    if missing or extra or len(order) != len(set(order)) or len(order) != 43:
         raise AssertionError(
             f"colormap taxonomy partition mismatch: count={len(order)} "
             f"missing={missing} extra={extra}"

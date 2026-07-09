@@ -247,14 +247,9 @@ class TestClassifyColormap:
                 ),
                 "Multi-Hue",
             ),
-            # dc.coast is a datum-anchored topographic map, pinned to its own
-            # "Topographic" family (docs: colormaps.md, design.md), not Multi-Hue.
-            "coast": "Topographic",
             **dict.fromkeys(
                 (
                     "blue_red",
-                    "blue_red_deep",
-                    "blue_red_soft",
                     "blue_orange",
                     "teal_rose",
                     "green_purple",
@@ -270,14 +265,13 @@ class TestClassifyColormap:
             ),
             **dict.fromkeys(("hue", "halo", "corona"), "Cyclical"),
         }
-        # every generated map has a stated expectation (coast + cyclics extend
-        # the 46 base names)
+        # every generated map has a stated expectation.
         assert set(CMAPS_256) <= set(expected)
         for name, want in expected.items():
             got = classify_colormap(matplotlib.colormaps[f"dc.{name}"])
             assert got == want, f"dc.{name}: {got} != {want}"
         # the registered qualitative cycles read as categorical
-        for name in ("cycle", "cycle_print"):
+        for name in ("octave", "octave_print"):
             assert (
                 classify_colormap(matplotlib.colormaps[f"dc.{name}"])
                 == "Categorical"
@@ -317,7 +311,7 @@ class TestClassificationOverridesParity:
         import dartwork_mpl.diagnostics._colormaps as dcm
         from dartwork_mpl.colors._generated import CMAPS_256
 
-        v5 = {f"dc.{n}" for n in CMAPS_256} | {"dc.cycle", "dc.cycle_print"}
+        v5 = {f"dc.{n}" for n in CMAPS_256} | {"dc.octave", "dc.octave_print"}
         expected = v5
         overrides = set(dcm._CLASSIFICATION_OVERRIDES)
         assert overrides == expected, (

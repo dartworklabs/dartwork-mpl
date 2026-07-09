@@ -1,4 +1,4 @@
-"""Colormap catalog compiler — 42종 (스펙 §9).
+"""Colormap catalog compiler — 43종 (스펙 §9).
 
 프로토콜(§9 공통): float 경로 등화(hex 최종 1회) · pchip knot 보간 ·
 게이트/스와치는 n-stop 직접 렌더.
@@ -26,7 +26,6 @@ __all__ = [
     "seq_gray",
     "seq_multi",
     "seq_single",
-    "seq_topo",
     "unwrap_hues",
 ]
 
@@ -162,29 +161,6 @@ def seq_multi(
     return render(at, n=n)
 
 
-TopoSpec = tuple[list[float], list[float], float, float]
-
-
-def seq_topo(sea: TopoSpec, land: TopoSpec, n: int = 256) -> list[str]:
-    """기준면 2단 — 반부별 독립 등화, 중앙 L* 불연속은 설계 (해안선)."""
-
-    def half(
-        hk: list[float], ck: list[float], l0: float, l1: float
-    ) -> list[str]:
-        hku = unwrap_hues(hk)
-        tk = [i / (len(hku) - 1) for i in range(len(hku))]
-
-        def at(t: float) -> Rgb:
-            h = pchip(tk, hku, t) % 360
-            l_t = l0 + (l1 - l0) * t
-            c = min(pchip(tk, ck, t), gamut_max_chroma(h, l_t) * 0.97)
-            return solve_swatch_rgb(h, c, l_t)
-
-        return render(at, n=n // 2)
-
-    return half(*sea) + half(*land)
-
-
 def diverging_pair(
     hex_a: str,
     hex_b: str,
@@ -240,7 +216,7 @@ def cyclic_twilight(hue_a: float, hue_b: float, n: int = 256) -> list[str]:
 def compile_cmaps(
     palette: dict[str, list[str]], n: int = 256
 ) -> dict[str, list[str]]:
-    """46종 카탈로그 — 키는 SSOT swatches_32와 동일한 평면 공개 이름."""
+    """43-map catalog — keys match SSOT swatches_32 public names."""
     A = ANCHORS
     cm: dict[str, list[str]] = {}
 
@@ -323,7 +299,7 @@ def compile_cmaps(
     for name, (hk, ck, l0, l1) in multi.items():
         cm[name] = seq_multi(hk, ck, L_start=l0, L_end=l1, n=n)
 
-    # diverging 13 (저값_고값 pair — 양극 = dc.{a}6/dc.{b}6)
+    # diverging 11 (저값_고값 pair — 양극 = dc.{a}6/dc.{b}6)
     # 샘플 수 규약: diverging_pair 는 홀수(2·half-1) 샘플 → endpoint-inclusive
     # 정수-stride 리샘플로 n에 맞춘다. n=32 golden 은 half=32(63→32, stride 2.0
     # 정확 — SSOT 생성 방식과 동일), n=256 export 는 half=128(255→256).
@@ -358,8 +334,6 @@ def compile_cmaps(
         l_end=(lab_l_hex(palette["blue"][6]) + lab_l_hex(palette["red"][6]))
         / 2,
     )
-    cm["blue_red_deep"] = dv("blue", "red", l_end=21, l_center=97.5)
-    cm["blue_red_soft"] = dv("blue", "red", l_end=48, l_center=90, gamma=1.1)
     for a, b, le in (
         ("blue", "orange", 42),
         ("teal", "rose", 44),
@@ -373,23 +347,6 @@ def compile_cmaps(
         ("gray", "red", 42),
     ):
         cm[f"{a}_{b}"] = dv(a, b, l_end=le)
-
-    # topo 1
-    cm["coast"] = seq_topo(
-        sea=(
-            [A["indigo"], A["blue"], A["cyan"]],
-            [0.09, 0.11, 0.10],
-            16.0,
-            84.0,
-        ),
-        land=(
-            [A["green"], A["lime"], A["amber"]],
-            [0.11, 0.09, 0.03],
-            42.0,
-            96.0,
-        ),
-        n=n,
-    )
 
     # cyclic 3 (원형 빛 현상)
     def hue_of(fam: str) -> float:

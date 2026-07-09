@@ -168,11 +168,10 @@ def _load_colors() -> None:
         for step, hexval in enumerate(row):
             color_dict[f"dc.{fam}{step}"] = hexval
 
-    # Dartwork curated categorical palettes (dc.* qualitative / duo /
-    # diverging / tone / accent sets — see colors/_curated.py). Registered
-    # after the generated families so a family name always wins; the curated
-    # SSOT excludes the three single-hue names (teal / indigo / gray) that the
-    # v5 families already supersede, so there is no token collision here.
+    # Dartwork curated palettes (dc.* qualitative sets plus canonical
+    # discrete forms for the four absorbed diverging families — see
+    # colors/_curated.py). Registered after the generated families so a family
+    # name always wins.
     for name, row in CURATED.items():
         if name in PALETTE:  # defensive: never shadow a generated family
             continue

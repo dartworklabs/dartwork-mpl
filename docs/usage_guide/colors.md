@@ -14,7 +14,7 @@ color.
 
 | Prefix  | Library                          | Example         |
 | ------- | -------------------------------- | --------------- |
-| `dc.*`  | **dartwork Color (recommended)** — 20 v5 families × 10 perceptual steps, plus Octave as `dc.cycle`; see the [palette catalog](../color_system/categorical-palettes.md) | `dc.teal3`     |
+| `dc.*`  | **dartwork Color (recommended)** — 20 v5 families × 10 perceptual steps, plus Octave as `dc.octave`; see the [palette catalog](../color_system/categorical-palettes.md) | `dc.teal3`     |
 | `oc.*`  | OpenColor                        | `oc.blue5`      |
 | `tw.*`  | Tailwind CSS                     | `tw.blue500`    |
 | `md.*`  | Material Design                  | `md.red500`     |
@@ -26,7 +26,8 @@ color.
 > publication-ready output. Reach for the third-party prefixes when
 > you need to match an external brand or design system.
 >
-> The `dc.*` namespace also holds 46 curated **colormaps** — see the
+> The `dc.*` namespace also holds 43 continuous **colormaps** plus the two
+> Octave cycle colormaps — see the
 > [Colormap catalog](../color_system/colormaps.md). Colormap names like
 > `dc.aurora` only work as `cmap=` arguments, not as `color=` strings;
 > the named-colors above are the ones you pass to `color=`.
@@ -82,11 +83,11 @@ mpl.rcParams["axes.prop_cycle"] = cycler(color=[
 The v5 `dc.*` surface is 19 chromatic hue families plus gray, each with 10
 perceptually equalized steps. Index 0 is the light end and index 9 is the dark
 end. For unrelated categories use Octave via `dm.cycle("octave")` or
-`dc.cycle`; for related tones pick a family and sample the steps you need.
+`dc.octave`; for related tones pick a family and sample the steps you need.
 
 | Palette             | Use it for                                                     |
 | ------------------- | -------------------------------------------------------------- |
-| `dc.cycle`          | Octave, for everyday unrelated categories                      |
+| `dc.octave`         | Octave, for everyday unrelated categories                      |
 | `dc.blue` / `dc.teal` / `dc.indigo` | Cool analytical series and ordered data        |
 | `dc.green` / `dc.red` | Positive/negative states and status colors                  |
 | `dc.coral` / `dc.tangerine` / `dc.orange` / `dc.amber` | Warm emphasis, thresholds, and call-outs |

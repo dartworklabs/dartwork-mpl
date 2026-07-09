@@ -152,7 +152,7 @@ def _make_challenging_figure(use_simple_layout: bool = True) -> plt.Figure:
 
     # Right: heatmap with colorbar
     data = np.random.randn(8, 8).cumsum(axis=0)
-    im = ax2.imshow(data, cmap="dc.deep_sea", aspect="equal")
+    im = ax2.imshow(data, cmap="dc.lagoon", aspect="equal")
     # Pin the colorbar to the heatmap so its bar length matches the
     # image's spine exactly (no taller/shorter floating bar).
     cax = make_axes_locatable(ax2).append_axes("right", size="4%", pad=0.12)
@@ -316,7 +316,7 @@ def _make_evolution_figure(step: int) -> plt.Figure:
         x,
         v,
         c=t,
-        cmap="viridis" if step == 1 else "dc.deep_sea",
+        cmap="viridis" if step == 1 else "dc.lagoon",
         s=4 if step == 1 else 2,
     )
     ax2.set_xlabel("Position $x$ [m]", fontsize=10 if step == 1 else dm.fs(0))

@@ -2,8 +2,8 @@
 
 The interactive colormap explorer fragment is generated from the color SSOT
 (``_generated.CMAPS_256``) by ``build_colormap_explorer.py``. These guards keep
-the generated fragment and the builder pinned to the verified 46-map taxonomy
-(20 sequential / 10 multi-hue / 15 diverging / 1 cyclic), the item-1 chroma
+the generated fragment and the builder pinned to the verified 43-map taxonomy
+(20 sequential / 9 multi-hue / 11 diverging / 3 cyclic), the item-1 chroma
 vivid-clip self-check, the 16-demo library, the design-token layout literals,
 and zero-Hangul / no-raw-hex hygiene.
 """
@@ -50,7 +50,6 @@ _MULTI_HUE = [
     "aurora",
     "blaze",
     "canopy",
-    "coast",
     "glacier",
     "haze",
     "iris",
@@ -59,8 +58,6 @@ _MULTI_HUE = [
 ]
 _DIVERGING = [
     "blue_red",
-    "blue_red_deep",
-    "blue_red_soft",
     "blue_orange",
     "cyan_red",
     "teal_amber",
@@ -71,10 +68,8 @@ _DIVERGING = [
     "violet_lime",
     "gray_blue",
     "gray_red",
-    "corona",
-    "halo",
 ]
-_CYCLIC = ["hue"]
+_CYCLIC = ["hue", "halo", "corona"]
 _DEMO_KEYS = [
     "heatmap",
     "contours",
@@ -144,7 +139,7 @@ def test_builder_taxonomy_partition_matches_cmaps_ssot() -> None:
         + builder["DIVERGING"]
         + builder["CYCLIC"]
     )
-    assert len(partition) == len(set(partition)) == 46
+    assert len(partition) == len(set(partition)) == 43
     assert set(partition) == set(_generated.CMAPS_256)
 
 
@@ -166,10 +161,10 @@ def test_payload_group_counts_and_order() -> None:
         assert groups["Cyclic"] == _CYCLIC
         assert payload["counts"] == {
             "sequential": 20,
-            "multi_hue": 10,
-            "diverging": 15,
-            "cyclic": 1,
-            "total": 46,
+            "multi_hue": 9,
+            "diverging": 11,
+            "cyclic": 3,
+            "total": 43,
         }
         assert payload["order"] == (
             _SEQUENTIAL + _MULTI_HUE + _DIVERGING + _CYCLIC
@@ -206,9 +201,9 @@ def test_self_check_table_and_seq_multi_ratios_clear_055() -> None:
     """Item 1 step 6: darkest demo swatch >= 0.55 x own peak (seq+multi)."""
     payload = runpy.run_path(str(_BUILDER))["build_payload"]()
     rows = payload["self_check"]
-    assert len(rows) == 46
+    assert len(rows) == 43
     seq_multi = [r for r in rows if r["group"] in ("family", "multi")]
-    assert len(seq_multi) == 30
+    assert len(seq_multi) == 29
     offenders = [r for r in seq_multi if r["ratio"] < 0.55]
     assert not offenders, offenders
     assert min(r["ratio"] for r in seq_multi) >= 0.55
@@ -623,7 +618,6 @@ def test_chip_vocabulary_present() -> None:
         "Center",
         "Seamless",
         "Isoluminant",
-        "Segmented",
     ):
         assert expected in labels, expected
     assert "Ends" not in labels
@@ -642,5 +636,5 @@ def test_colormaps_md_embeds_real_static_path() -> None:
     assert ":file: ../_static/colormap_explorer.html" in md
     assert "images/colormap_explorer.html" not in md
     # verified taxonomy in the catalog table
-    assert "20 |" in md and "10 |" in md and "15 |" in md
+    assert "20 |" in md and "9 |" in md and "11 |" in md and "3 |" in md
     assert "Topographic" not in md  # stale row removed

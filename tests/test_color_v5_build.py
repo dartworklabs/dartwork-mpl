@@ -14,7 +14,7 @@ def test_generated_tables_shape():
     assert len(_generated.PALETTE) == 20
     assert all(len(row) == 10 for row in _generated.PALETTE.values())
     assert set(_generated.CYCLES) == {"octave", "octave_print"}
-    assert len(_generated.CMAPS_256) == 46
+    assert len(_generated.CMAPS_256) == 43
     assert all(len(v) == 256 for v in _generated.CMAPS_256.values())
 
 
@@ -49,11 +49,11 @@ def test_rebuild_is_byte_identical(tmp_path):
 
 
 def test_build_taxonomy_names_are_real_cmaps(v5_ssot):
-    """_build's hand-maintained diverging/cyclic/topo name sets must all be
+    """_build's hand-maintained diverging/cyclic name sets must all be
     real compile_cmaps outputs.
 
-    _build._prefixed tags each cmap with a gate category (div./cyc./topo./seq.)
-    from these sets. If a diverging/cyclic/topo map is renamed or removed in
+    _build._prefixed tags each cmap with a gate category (div./cyc./seq.)
+    from these sets. If a diverging/cyclic map is renamed or removed in
     _cmaps.py without mirroring the change here, the stale name would silently
     gate nothing (or the renamed map would fall through to seq. and be checked
     with the wrong gate). This asserts the sets stay in sync with the catalog.
@@ -67,7 +67,5 @@ def test_build_taxonomy_names_are_real_cmaps(v5_ssot):
     keys = set(v5_ssot["colormaps"]["swatches_32"])  # == compile_cmaps() output
     assert keys >= _build._DIVERGING_CMAPS, _build._DIVERGING_CMAPS - keys
     assert keys >= _build._CYCLIC_CMAPS, _build._CYCLIC_CMAPS - keys
-    assert "coast" in keys
     # No name is double-categorized.
     assert not (_build._DIVERGING_CMAPS & _build._CYCLIC_CMAPS)
-    assert "coast" not in _build._DIVERGING_CMAPS | _build._CYCLIC_CMAPS

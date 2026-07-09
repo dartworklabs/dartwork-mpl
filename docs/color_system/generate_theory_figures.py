@@ -857,11 +857,9 @@ def fig_catalog():
             ],
         ),
         (
-            "Diverging 13 — bipolar pair (ink metaphor)",
+            "Diverging 11 — bipolar pair (ink metaphor)",
             [
                 "blue_red",
-                "blue_red_deep",
-                "blue_red_soft",
                 "blue_orange",
                 "teal_rose",
                 "green_purple",
@@ -873,10 +871,6 @@ def fig_catalog():
                 "gray_blue",
                 "gray_red",
             ],
-        ),
-        (
-            "Topo 1 — two-ramp datum (coastline discontinuity is by design)",
-            ["coast"],
         ),
         ("Cyclic 3 — circular light phenomena", ["hue", "halo", "corona"]),
     ]
@@ -911,8 +905,8 @@ def fig_catalog():
     )
     y += 1.0
     for name, hexes in [
-        ("cycle", CYCLES["octave"]),
-        ("cycle_print", CYCLES["octave_print"]),
+        ("octave", CYCLES["octave"]),
+        ("octave_print", CYCLES["octave_print"]),
     ]:
         _grad(ax, hexes, y, name)
         y += 1.0

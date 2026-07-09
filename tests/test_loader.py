@@ -84,7 +84,7 @@ class TestEnsureLoaded:
         assert "dc.0" not in mapping
 
     def test_dc_palette_count(self) -> None:
-        """20 v5 families x10 + 20 curated categorical sets + 4 semantic tokens.
+        """20 v5 families x10 + current curated sets + 4 semantic tokens.
 
         Derived from the SSOT so adding/removing a palette can't silently
         drift the count out of sync.
@@ -103,7 +103,7 @@ class TestEnsureLoaded:
         """Genuinely-legacy ad-hoc palette names stay gone.
 
         The v5 clean break trims tw/oc-tier throwaway names; the curated
-        ``dc.*`` categorical sets (vivid / trustworthy / cool_warm / ...) are
+        ``dc.*`` curated sets (vivid / trustworthy / blue_red / ...) are
         deliberately preserved and are covered by
         ``TestCuratedPalettes`` instead.
         """
@@ -154,14 +154,14 @@ class TestPaletteCleanBreak:
 
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
-        # NOTE: the curated categorical sets (vivid / trustworthy / cool_warm
+        # NOTE: the curated sets (vivid / trustworthy / blue_red
         # / ...) are NOT in this list — they were revived as first-class dc.*
         # palettes and are covered by ``TestCuratedPalettes``. Only genuinely
         # dead ad-hoc / renamed aliases must stay gone.
         for token in (
             "dc.spectrum1",
             "dc.bold1",
-            "dc.coolwarm1",  # note: the curated diverging set is ``cool_warm``
+            "dc.coolwarm1",  # note: the current diverging set is ``blue_red``
             "dc.corporate1",
             "dc.warm_cool1",
         ):
