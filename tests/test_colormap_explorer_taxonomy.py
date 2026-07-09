@@ -423,7 +423,7 @@ def test_demo_geometry_uses_canvas_for_continuous_fields_and_svg_for_strokes() -
         "function cylinderFlowVec(x,y)",
         "function catmullRomPath(pts)",
         "function catmullRomSegmentPath(pts,i)",
-        "drawContourBoundaries(ctx,sz,bands,lo,span);",
+        "function contourEdgeShade(vals,i,x,y,fw,fh,lo,span,bands)",
         "function polarHeat(cv,lut)",
         "function ridgelineSVG(){var rows=11,rowGap=8.6,peakH=rowGap*1.6",
         "function quiverSVG()",
@@ -436,6 +436,48 @@ def test_demo_geometry_uses_canvas_for_continuous_fields_and_svg_for_strokes() -
         "var CANVAS_DEMOS={heatmap:1,contours:1,terrain:1,signal:1,polar_heat:1}"
         in html
     )
+
+
+def test_canvas_backing_store_is_dpr_aware_and_pixel_capped() -> None:
+    html = _EXPLORER.read_text(encoding="utf-8")
+    assert "MAX_CANVAS_PIXELS=1600000" in html
+    assert "Math.min(Math.max(window.devicePixelRatio||1,1),2)" in html
+    assert "Math.sqrt(MAX_CANVAS_PIXELS/(cw*ch))" in html
+    assert "w=Math.max(1,Math.round(cw*scale))" in html
+    assert "h=Math.max(1,Math.round(ch*scale))" in html
+    assert "if(cv.width!==w)cv.width=w" in html
+    assert "if(cv.height!==h)cv.height=h" in html
+    assert "watchCanvasDpr()" in html
+
+
+def test_polar_heat_uses_per_pixel_field_without_sector_bins() -> None:
+    html = _EXPLORER.read_text(encoding="utf-8")
+    assert "function polarHeatFieldRange()" in html
+    assert "polarValue(rr,th)" in html
+    assert 'var cyclic=map().kind==="cyclic"' in html
+    assert "if(cyclic)" in html
+    assert "ti=scaledT(v,sc,p/4)" in html
+    assert "rBins=9" not in html
+    assert "aBins=36" not in html
+    assert "Math.floor(rr*rBins)" not in html
+    assert "Math.floor(th*aBins)" not in html
+
+
+def test_svg_curve_demos_publish_cubic_path_stats() -> None:
+    payload = runpy.run_path(str(_BUILDER))["build_payload"]()
+    stats = payload["svg_path_stats"]
+    assert stats["isolines"]["c_segments"] > 0
+    assert stats["isolines"]["l_segments"] == 0
+    assert (
+        stats["streamlines"]["c_segments"] >= stats["streamlines"]["paths"] * 30
+    )
+    assert stats["streamlines"]["l_segments"] == 0
+    assert stats["lines"] == {"paths": 6, "c_segments": 480, "l_segments": 0}
+    assert stats["ridgeline"] == {
+        "paths": 11,
+        "c_segments": 583,
+        "l_segments": 22,
+    }
 
 
 def test_red_demo_spectrum_coverage_self_check_hits_both_ends() -> None:

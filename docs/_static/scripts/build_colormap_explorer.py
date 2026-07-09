@@ -706,6 +706,167 @@ def _streamline_path_stats() -> dict:
     return {"paths": len(lines), "c_segments": c_segments, "l_segments": 0}
 
 
+def _point_key(point: tuple[float, float]) -> tuple[int, int]:
+    return (round(point[0] * 1000), round(point[1] * 1000))
+
+
+def _chain_segments(
+    segments: list[tuple[tuple[float, float], tuple[float, float]]],
+) -> list[list[tuple[float, float]]]:
+    endpoints: dict[tuple[int, int], list[int]] = {}
+    for idx, (start, end) in enumerate(segments):
+        endpoints.setdefault(_point_key(start), []).append(idx)
+        endpoints.setdefault(_point_key(end), []).append(idx)
+
+    used = [False] * len(segments)
+
+    def _next_unused(point: tuple[float, float]) -> int | None:
+        for idx in endpoints.get(_point_key(point), []):
+            if not used[idx]:
+                return idx
+        return None
+
+    chains: list[list[tuple[float, float]]] = []
+    for idx, segment in enumerate(segments):
+        if used[idx]:
+            continue
+        used[idx] = True
+        chain = [segment[0], segment[1]]
+
+        while True:
+            next_idx = _next_unused(chain[-1])
+            if next_idx is None:
+                break
+            used[next_idx] = True
+            start, end = segments[next_idx]
+            chain.append(
+                end if _point_key(start) == _point_key(chain[-1]) else start
+            )
+
+        while True:
+            next_idx = _next_unused(chain[0])
+            if next_idx is None:
+                break
+            used[next_idx] = True
+            start, end = segments[next_idx]
+            chain.insert(
+                0, end if _point_key(start) == _point_key(chain[0]) else start
+            )
+
+        chains.append(chain)
+    return chains
+
+
+def _isoline_path_stats() -> dict:
+    cols, rows = 40, 26
+    values = [
+        _demo_field(c / (cols - 1), r / (rows - 1))
+        for r in range(rows)
+        for c in range(cols)
+    ]
+    lo, hi = min(values), max(values)
+    span = hi - lo or 1.0
+    scaled = [(value - lo) / span for value in values]
+    table = [scaled[r * cols : (r + 1) * cols] for r in range(rows)]
+
+    def fx(col: int) -> float:
+        return col / (cols - 1) * 160.0
+
+    def fy(row: int) -> float:
+        return row / (rows - 1) * 100.0
+
+    def interp(
+        xa: float,
+        ya: float,
+        va: float,
+        xb: float,
+        yb: float,
+        vb: float,
+        level: float,
+    ) -> tuple[float, float]:
+        t = 0.5 if abs(vb - va) < 1e-9 else (level - va) / (vb - va)
+        t = max(0.0, min(1.0, t))
+        return xa + (xb - xa) * t, ya + (yb - ya) * t
+
+    chains = 0
+    c_segments = 0
+    for level_idx in range(12):
+        level = (level_idx + 1) / 13
+        segments: list[tuple[tuple[float, float], tuple[float, float]]] = []
+        for row in range(rows - 1):
+            for col in range(cols - 1):
+                v00 = table[row][col]
+                v10 = table[row][col + 1]
+                v11 = table[row + 1][col + 1]
+                v01 = table[row + 1][col]
+                edges = []
+                if (v00 - level) * (v10 - level) < 0:
+                    edges.append(
+                        interp(
+                            fx(col),
+                            fy(row),
+                            v00,
+                            fx(col + 1),
+                            fy(row),
+                            v10,
+                            level,
+                        )
+                    )
+                if (v10 - level) * (v11 - level) < 0:
+                    edges.append(
+                        interp(
+                            fx(col + 1),
+                            fy(row),
+                            v10,
+                            fx(col + 1),
+                            fy(row + 1),
+                            v11,
+                            level,
+                        )
+                    )
+                if (v01 - level) * (v11 - level) < 0:
+                    edges.append(
+                        interp(
+                            fx(col),
+                            fy(row + 1),
+                            v01,
+                            fx(col + 1),
+                            fy(row + 1),
+                            v11,
+                            level,
+                        )
+                    )
+                if (v00 - level) * (v01 - level) < 0:
+                    edges.append(
+                        interp(
+                            fx(col),
+                            fy(row),
+                            v00,
+                            fx(col),
+                            fy(row + 1),
+                            v01,
+                            level,
+                        )
+                    )
+                segments.extend(
+                    (edges[edge_idx], edges[edge_idx + 1])
+                    for edge_idx in range(0, len(edges) - 1, 2)
+                )
+        level_chains = _chain_segments(segments)
+        chains += len(level_chains)
+        c_segments += sum(max(0, len(chain) - 1) for chain in level_chains)
+    return {"paths": chains, "c_segments": c_segments, "l_segments": 0}
+
+
+def _svg_path_stats() -> dict:
+    return {
+        "isolines": _isoline_path_stats(),
+        "streamlines": _streamline_path_stats(),
+        "lines": {"paths": 6, "c_segments": 6 * 80, "l_segments": 0},
+        "ridgeline": {"paths": 11, "c_segments": 11 * 53, "l_segments": 11 * 2},
+    }
+
+
 def _network_values() -> list[float]:
     rows, cols = 5, 8
     spacing = 0.175
@@ -839,9 +1000,9 @@ def _polar_value(radial: float, theta: float) -> float:
 
 def _polar_values() -> list[float]:
     return [
-        _polar_value((r + 0.5) / 9, (a + 0.5) / 36)
-        for r in range(9)
-        for a in range(36)
+        _polar_value((r + 0.5) / 72, (a + 0.5) / 144)
+        for r in range(72)
+        for a in range(144)
     ]
 
 
@@ -1027,6 +1188,7 @@ def build_payload() -> dict:
         "self_check": self_check,
         "demo_coverage": demo_coverage,
         "streamline_path_stats": _streamline_path_stats(),
+        "svg_path_stats": _svg_path_stats(),
         "quiver_geometry_stats": _quiver_geometry_stats(),
     }
 
@@ -1081,6 +1243,13 @@ def main() -> None:
             f"  {r['demo']:12s} {r['t0_hit']!s:>4s} "
             f"{r['t1_hit']!s:>4s} {r['distinct']:4d}"
         )
+    print("\nSVG curve path stats:")
+    print(f"  {'demo':12s} {'paths':>5s} {'C':>5s} {'L':>5s}")
+    for name, stats in payload["svg_path_stats"].items():
+        print(
+            f"  {name:12s} {stats['paths']:5d} "
+            f"{stats['c_segments']:5d} {stats['l_segments']:5d}"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -1102,7 +1271,7 @@ var D=__PAYLOAD__;
 var MAPS=D.maps,GROUPS=D.groups,DEMOS=D.library,LEVELS=D.levels,FIELD=D.field,CONTOUR_FIELD=D.contour_field;
 var LEVEL_LABEL=["5","10","15","20","25","30","35","40","45","50","∞"];
 var DEFAULT={4:D.defaults["4"],6:D.defaults["6"],9:D.defaults["9"]};
-var CANVAS_DEMOS={heatmap:1,contours:1,terrain:1,signal:1,polar_heat:1},CANVAS_TIMINGS=[];
+var CANVAS_DEMOS={heatmap:1,contours:1,terrain:1,signal:1,polar_heat:1},CANVAS_TIMINGS=[],MAX_CANVAS_PIXELS=1600000;
 var state={key:D.order[0],rev:false,bw:false,level:LEVELS.length-1,
   layout:9,demos:DEFAULT[9].slice()};
 
@@ -1120,7 +1289,8 @@ function unlin(v){v=v<=0.0031308?v*12.92:1.055*Math.pow(v,1/2.4)-0.055;return v*
 function gray(hex){var p=hexToRgb(hex),Y=0.2126*lin(p[0])+0.7152*lin(p[1])+0.0722*lin(p[2]),g=unlin(Y);return rgbToHex(g,g,g);}
 function clamp01(v){return Math.max(0,Math.min(1,v));}
 function quantT(t){var lev=LEVELS[state.level];t=clamp01(t);return lev?Math.round(t*(lev-1))/(lev-1):t;}
-function bandT(t,bands){t=clamp01(t);var b=Math.max(0,Math.min(bands-1,Math.floor(t*bands)));return bands>1?b/(bands-1):0;}
+function bandIndex(t,bands){return Math.max(0,Math.min(bands-1,Math.floor(clamp01(t)*bands)));}
+function bandT(t,bands){var b=bandIndex(t,bands);return bands>1?b/(bands-1):0;}
 function interpHex(a,t){t=clamp01(t);var p=t*(a.length-1),i=Math.floor(p),j=Math.min(a.length-1,i+1),f=p-i,c0=hexToRgb(a[i]),c1=hexToRgb(a[j]);
   return rgbToHex(c0[0]+(c1[0]-c0[0])*f,c0[1]+(c1[1]-c0[1])*f,c0[2]+(c1[2]-c0[2])*f);}
 // The strip uses the TRUE full ramp (stops); demos use the clipped ramp (demo).
@@ -1178,6 +1348,17 @@ function catmullRomPath(pts){if(pts.length<2)return "";var d="M"+pts[0][0].toFix
 function catmullRomSegmentPath(pts,i){if(i<0||i>=pts.length-1)return "";var p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(pts.length-1,i+2)];
   var c1x=p1[0]+(p2[0]-p0[0])/6,c1y=p1[1]+(p2[1]-p0[1])/6,c2x=p2[0]-(p3[0]-p1[0])/6,c2y=p2[1]-(p3[1]-p1[1])/6;
   return "M"+p1[0].toFixed(2)+" "+p1[1].toFixed(2)+" C "+c1x.toFixed(2)+" "+c1y.toFixed(2)+" "+c2x.toFixed(2)+" "+c2y.toFixed(2)+" "+p2[0].toFixed(2)+" "+p2[1].toFixed(2);}
+function pointKey(p){return p[0].toFixed(3)+","+p[1].toFixed(3);}
+function samePoint(a,b){return pointKey(a)===pointKey(b);}
+function chainSegments(segs){var ends={},used=new Array(segs.length),chains=[];
+  function add(p,i){var k=pointKey(p);(ends[k]||(ends[k]=[])).push(i);}
+  segs.forEach(function(s,i){add(s[0],i);add(s[1],i);});
+  function next(p){var a=ends[pointKey(p)]||[];for(var i=0;i<a.length;i++)if(!used[a[i]])return a[i];return -1;}
+  segs.forEach(function(s,i){if(used[i])return;used[i]=1;var ch=[s[0],s[1]],n;
+    while((n=next(ch[ch.length-1]))>=0){used[n]=1;var q=segs[n];ch.push(samePoint(q[0],ch[ch.length-1])?q[1]:q[0]);}
+    while((n=next(ch[0]))>=0){used[n]=1;var q2=segs[n];ch.unshift(samePoint(q2[0],ch[0])?q2[1]:q2[0]);}
+    chains.push(ch);});
+  return chains;}
 function polarValue(r,t){return .46*r+.26*Math.sin(6.283*(t*2+r*.34))+.18*Math.cos(6.283*(t*3-r*.22))+.10*Math.sin(6.283*r*2.1);}
 var VW=160,VH=100;
 function openArea(label){return '<svg class="demo-svg" viewBox="0 0 '+VW+' '+VH+'" preserveAspectRatio="none" aria-label="'+esc(label)+'">';}
@@ -1185,45 +1366,45 @@ function openStroke(label){return '<svg class="demo-svg" viewBox="0 0 '+VW+' '+V
 
 function canvasShell(t){return '<canvas class="demo-canvas" data-canvas-demo="'+esc(t)+'" aria-label="'+esc(demoName(t))+'"></canvas>';}
 function sizeCanvas(cv){var r=cv.getBoundingClientRect(),cw=Math.max(1,Math.round(r.width||cv.parentNode.clientWidth||320)),ch=Math.max(1,Math.round(r.height||cv.parentNode.clientHeight||200)),
-  dpr=window.devicePixelRatio||1,scale=Math.min(dpr,640/cw,420/ch);cv.width=Math.max(1,Math.round(cw*scale));cv.height=Math.max(1,Math.round(ch*scale));return {w:cv.width,h:cv.height};}
+  dpr=Math.min(Math.max(window.devicePixelRatio||1,1),2),scale=Math.min(dpr,Math.sqrt(MAX_CANVAS_PIXELS/(cw*ch))),w=Math.max(1,Math.round(cw*scale)),h=Math.max(1,Math.round(ch*scale));
+  if(cv.width!==w)cv.width=w;if(cv.height!==h)cv.height=h;cv.dataset.dpr=scale.toFixed(3);return {w:w,h:h,cssW:cw,cssH:ch,dpr:scale};}
 function putRgb(data,p,lut,idx,shade){idx=Math.max(0,Math.min(255,idx|0))*3;shade=shade==null?1:shade;data[p]=Math.max(0,Math.min(255,lut[idx]*shade));data[p+1]=Math.max(0,Math.min(255,lut[idx+1]*shade));data[p+2]=Math.max(0,Math.min(255,lut[idx+2]*shade));data[p+3]=255;}
-function renderRaster(cv,kind,lut,bands){var sz=sizeCanvas(cv),ctx=cv.getContext("2d"),block=Math.max(1,Math.ceil(sz.w/320)),fw=Math.max(1,Math.ceil(sz.w/block)),fh=Math.max(1,Math.ceil(sz.h/block)),
-  img=ctx.createImageData(fw,fh),vals=new Float32Array(fw*fh),lo=Infinity,hi=-Infinity,idx=0;
-  for(var y=0;y<fh;y++)for(var x=0;x<fw;x++,idx++){var v=(kind==="contours"?contourField:field)((x+.5)/fw,(y+.5)/fh);vals[idx]=v;if(v<lo)lo=v;if(v>hi)hi=v;}
-  var span=hi-lo||1,p=0;for(var yy=0;yy<fh;yy++)for(var xx=0;xx<fw;xx++,p+=4){var t=clamp01((vals[yy*fw+xx]-lo)/span),li=Math.round((bands?bandT(t,bands):t)*255),shade=1;
+function valueGrid(fw,fh,fn){var gw=Math.max(2,Math.ceil(fw/2)+1),gh=Math.max(2,Math.ceil(fh/2)+1),vals=new Float32Array(gw*gh),lo=Infinity,hi=-Infinity,idx=0;
+  for(var y=0;y<gh;y++)for(var x=0;x<gw;x++,idx++){var v=fn(gw===1?0:x/(gw-1),gh===1?0:y/(gh-1));vals[idx]=v;if(v<lo)lo=v;if(v>hi)hi=v;}
+  return {w:gw,h:gh,vals:vals,lo:lo,hi:hi};}
+function sampleGrid(g,x,y,fw,fh){var gx=(x+.5)/fw*(g.w-1),gy=(y+.5)/fh*(g.h-1),x0=Math.max(0,Math.min(g.w-1,Math.floor(gx))),y0=Math.max(0,Math.min(g.h-1,Math.floor(gy))),
+  x1=Math.min(g.w-1,x0+1),y1=Math.min(g.h-1,y0+1),tx=gx-x0,ty=gy-y0,row0=y0*g.w,row1=y1*g.w,
+  a=g.vals[row0+x0],b=g.vals[row0+x1],c=g.vals[row1+x0],d=g.vals[row1+x1];
+  return (a+(b-a)*tx)*(1-ty)+(c+(d-c)*tx)*ty;}
+function contourBandAt(vals,i,lo,span,bands){return bandIndex((vals[i]-lo)/span,bands);}
+function contourEdgeShade(vals,i,x,y,fw,fh,lo,span,bands){var b=contourBandAt(vals,i,lo,span,bands);
+  if(x+1<fw&&contourBandAt(vals,i+1,lo,span,bands)!==b)return .82;
+  if(y+1<fh&&contourBandAt(vals,i+fw,lo,span,bands)!==b)return .82;
+  return 1;}
+function renderRaster(cv,kind,lut,bands){var sz=sizeCanvas(cv),ctx=cv.getContext("2d"),fw=sz.w,fh=sz.h,
+  img=ctx.createImageData(fw,fh),vals=new Float32Array(fw*fh),grid=valueGrid(fw,fh,kind==="contours"?contourField:field),idx=0;
+  for(var y=0;y<fh;y++)for(var x=0;x<fw;x++,idx++)vals[idx]=sampleGrid(grid,x,y,fw,fh);
+  var lo=grid.lo,span=grid.hi-grid.lo||1,p=0;for(var yy=0;yy<fh;yy++)for(var xx=0;xx<fw;xx++,p+=4){var t=clamp01((vals[yy*fw+xx]-lo)/span),li=Math.round((bands?bandT(t,bands):t)*255),shade=1;
     if(kind==="terrain"){var row=yy*fw,left=vals[row+Math.max(0,xx-1)],right=vals[row+Math.min(fw-1,xx+1)],up=vals[Math.max(0,yy-1)*fw+xx],down=vals[Math.min(fh-1,yy+1)*fw+xx],
       dx=(right-left)*fw*.5,dy=(down-up)*fh*.5;shade=Math.max(.64,Math.min(1.16,.9-dx*.08+dy*.06));}
+    if(kind==="contours"&&bands)shade=contourEdgeShade(vals,yy*fw+xx,xx,yy,fw,fh,lo,span,bands);
     putRgb(img.data,p,lut,li,shade);}
   var scratch=renderRaster._scratch||(renderRaster._scratch=document.createElement("canvas"));scratch.width=fw;scratch.height=fh;scratch.getContext("2d").putImageData(img,0,0);
-  ctx.clearRect(0,0,sz.w,sz.h);ctx.imageSmoothingEnabled=kind!=="contours"&&!LEVELS[state.level];ctx.drawImage(scratch,0,0,fw,fh,0,0,sz.w,sz.h);
-  if(kind==="contours")drawContourBoundaries(ctx,sz,bands,lo,span);}
-function drawContourBoundaries(ctx,sz,bands,lo,span){if(!bands)return;var cols=52,rows=34,T=[],r,c;
-  for(r=0;r<rows;r++){T[r]=[];for(c=0;c<cols;c++)T[r][c]=clamp01((contourField(c/(cols-1),r/(rows-1))-lo)/span);}
-  function px(c){return c/(cols-1)*sz.w;}function py(r){return r/(rows-1)*sz.h;}
-  ctx.save();ctx.strokeStyle=state.bw?"rgba(31,41,51,.38)":"rgba(255,255,255,.58)";ctx.lineWidth=Math.max(1,sz.w/420);ctx.lineCap="round";ctx.lineJoin="round";
-  for(var bi=1;bi<bands;bi++){var L=bi/bands;ctx.beginPath();
-    for(r=0;r<rows-1;r++)for(c=0;c<cols-1;c++){var v00=T[r][c],v10=T[r][c+1],v11=T[r+1][c+1],v01=T[r+1][c],e=[];
-      function ip(xa,ya,va,xb,yb,vb){var t=Math.abs(vb-va)<1e-9?.5:(L-va)/(vb-va);t=clamp01(t);return [xa+(xb-xa)*t,ya+(yb-ya)*t];}
-      if((v00-L)*(v10-L)<0)e.push(ip(px(c),py(r),v00,px(c+1),py(r),v10));
-      if((v10-L)*(v11-L)<0)e.push(ip(px(c+1),py(r),v10,px(c+1),py(r+1),v11));
-      if((v01-L)*(v11-L)<0)e.push(ip(px(c),py(r+1),v01,px(c+1),py(r+1),v11));
-      if((v00-L)*(v01-L)<0)e.push(ip(px(c),py(r),v00,px(c),py(r+1),v01));
-      for(var i=0;i+1<e.length;i+=2){ctx.moveTo(e[i][0],e[i][1]);ctx.lineTo(e[i+1][0],e[i+1][1]);}}
-    ctx.stroke();}
-  ctx.restore();}
-function polarHeat(cv,lut){var sz=sizeCanvas(cv),ctx=cv.getContext("2d"),block=Math.max(1,Math.ceil(sz.w/360)),fw=Math.max(1,Math.ceil(sz.w/block)),fh=Math.max(1,Math.ceil(sz.h/block)),
-  img=ctx.createImageData(fw,fh),rBins=9,aBins=36,vals=[],angs=[],i,p=0;
-  for(var rb=0;rb<rBins;rb++)for(var ab=0;ab<aBins;ab++){var rv=(rb+.5)/rBins,av=(ab+.5)/aBins;vals.push(polarValue(rv,av));angs.push(av);}
-  var sc=demoScale(vals,{angles:angs}),R=Math.hypot(fw,fh)*.53,cx=fw/2,cy=fh/2;
-  for(var y=0;y<fh;y++)for(var x=0;x<fw;x++,p+=4){var dx=(x+.5-cx)/R,dy=(y+.5-cy)/R,rr=clamp01(Math.hypot(dx,dy)),th=(Math.atan2(dy,dx)/6.283+1)%1;
-    var rbi=Math.min(rBins-1,Math.floor(rr*rBins)),abi=Math.min(aBins-1,Math.floor(th*aBins));i=rbi*aBins+abi;
-    putRgb(img.data,p,lut,Math.round((map().kind==="cyclic"?angs[i]:scaledT(vals[i],sc,i))*255),1);}
+  ctx.clearRect(0,0,sz.w,sz.h);ctx.imageSmoothingEnabled=false;ctx.drawImage(scratch,0,0,fw,fh,0,0,sz.w,sz.h);}
+function polarHeatFieldRange(){var vals=[];for(var r=0;r<72;r++)for(var a=0;a<144;a++)vals.push(polarValue((r+.5)/72,(a+.5)/144));return demoScale(vals);}
+function polarHeat(cv,lut){var sz=sizeCanvas(cv),ctx=cv.getContext("2d"),fw=sz.w,fh=sz.h,
+  img=ctx.createImageData(fw,fh),p=0;
+  var cyclic=map().kind==="cyclic",sc=cyclic?null:polarHeatFieldRange(),R=Math.hypot(fw,fh)*.53,cx=fw/2,cy=fh/2,grid=cyclic?null:valueGrid(fw,fh,function(nx,ny){var dx=(nx*fw+.5-cx)/R,dy=(ny*fh+.5-cy)/R,rr=clamp01(Math.hypot(dx,dy)),th=(Math.atan2(dy,dx)/6.283+1)%1;return polarValue(rr,th);});
+  for(var y=0;y<fh;y++)for(var x=0;x<fw;x++,p+=4){var ti;if(cyclic){var dx=(x+.5-cx)/R,dy=(y+.5-cy)/R;ti=(Math.atan2(dy,dx)/6.283+1)%1;}
+    else{var v=sampleGrid(grid,x,y,fw,fh);ti=scaledT(v,sc,p/4);}
+    putRgb(img.data,p,lut,Math.round(ti*255),1);}
   var scratch=polarHeat._scratch||(polarHeat._scratch=document.createElement("canvas"));scratch.width=fw;scratch.height=fh;scratch.getContext("2d").putImageData(img,0,0);
   ctx.clearRect(0,0,sz.w,sz.h);ctx.imageSmoothingEnabled=false;ctx.drawImage(scratch,0,0,fw,fh,0,0,sz.w,sz.h);}
-function renderSignal(cv,lut){var sz=sizeCanvas(cv),ctx=cv.getContext("2d"),block=Math.max(1,Math.ceil(sz.w/320)),fw=Math.max(1,Math.ceil(sz.w/block)),fh=Math.max(1,Math.ceil(sz.h/block)),
-  vals=[],angs=[],img=ctx.createImageData(fw,fh),p=0;
+function renderSignal(cv,lut){var sz=sizeCanvas(cv),ctx=cv.getContext("2d"),fw=sz.w,fh=sz.h,
+  vals=[],angs=[],img=ctx.createImageData(fw,fh),rowData=new Uint8ClampedArray(fw*4),p=0;
   for(var x=0;x<fw;x++){var t=fw===1?0:x/(fw-1);vals.push(signalValue(t));angs.push(t+0.09*Math.sin(t*6.283*3));}
-  var sc=demoScale(vals,{angles:angs});for(var y=0;y<fh;y++)for(var xx=0;xx<fw;xx++,p+=4)putRgb(img.data,p,lut,Math.round(scaledT(vals[xx],sc,xx)*255),1);
+  var sc=demoScale(vals,{angles:angs});for(var xx=0;xx<fw;xx++,p+=4)putRgb(rowData,p,lut,Math.round(scaledT(vals[xx],sc,xx)*255),1);
+  for(var y=0;y<fh;y++)img.data.set(rowData,y*fw*4);
   var scratch=renderSignal._scratch||(renderSignal._scratch=document.createElement("canvas"));scratch.width=fw;scratch.height=fh;scratch.getContext("2d").putImageData(img,0,0);
   ctx.clearRect(0,0,sz.w,sz.h);ctx.imageSmoothingEnabled=!LEVELS[state.level];ctx.drawImage(scratch,0,0,fw,fh,0,0,sz.w,sz.h);
   ctx.beginPath();for(var i=0;i<sz.w;i++){var tx=sz.w===1?0:i/(sz.w-1),v=signalValue(tx),a=tx+0.09*Math.sin(tx*6.283*3),t=scaledT(v,{kind:sc.kind,lo:sc.lo,hi:sc.hi,span:sc.span,center:sc.center,den:sc.den,angles:[a]},0),
@@ -1234,6 +1415,11 @@ function noteCanvasTiming(name,ms){var row={demo:name,ms:Math.round(ms*100)/100}
 function renderCanvasDemo(cv,t){var start=nowMs(),lev=LEVELS[state.level],bands=t==="contours"?(lev||10):0,lut=demoLUT({bands:bands});
   if(t==="signal")renderSignal(cv,lut);else if(t==="polar_heat")polarHeat(cv,lut);else renderRaster(cv,t,lut,bands);var ms=nowMs()-start;cv.dataset.renderMs=ms.toFixed(2);noteCanvasTiming(t,ms);}
 function renderCanvases(root){root.querySelectorAll("canvas.demo-canvas").forEach(function(cv){renderCanvasDemo(cv,cv.dataset.canvasDemo);});}
+function rerenderVisibleCanvases(){var host=document.querySelector("#cx-detail .demo-host");if(host)renderCanvases(host);}
+function watchCanvasDpr(){var last=window.devicePixelRatio||1,timer=0;
+  function changed(){var cur=window.devicePixelRatio||1;if(Math.abs(cur-last)>.001){last=cur;rerenderVisibleCanvases();}}
+  window.addEventListener("resize",function(){clearTimeout(timer);timer=setTimeout(function(){changed();rerenderVisibleCanvases();},80);});
+  if(window.matchMedia)[1,1.25,1.5,1.75,2].forEach(function(v){var mq=window.matchMedia("(resolution: "+v+"dppx)"),cb=changed;if(mq.addEventListener)mq.addEventListener("change",cb);else if(mq.addListener)mq.addListener(cb);});}
 // marching-squares isolines (no fill, no frame rect)
 function isolinesSVG(){var cols=40,rows=26,s=openStroke("isolines");
   function fx(c){return c/(cols-1)*VW;}function fy(r){return r/(rows-1)*VH;}
@@ -1241,15 +1427,18 @@ function isolinesSVG(){var cols=40,rows=26,s=openStroke("isolines");
   var sc=demoScale(vals),T=[],idx=0;for(var rr=0;rr<rows;rr++){T[rr]=[];for(var cc=0;cc<cols;cc++,idx++)T[rr][cc]=scaledT(vals[idx],sc,idx);}
   var isoN=LEVELS[state.level]?Math.min(16,Math.max(2,LEVELS[state.level])):12,levels=[],colorT=[];
   for(var li0=0;li0<isoN;li0++){levels.push((li0+1)/(isoN+1));colorT.push(isoN>1?li0/(isoN-1):0);}
-  levels.forEach(function(L,li){var d="";
+  var pathCount=0,cSeg=0;
+  levels.forEach(function(L,li){var segs=[],d="";
     for(var r=0;r<rows-1;r++)for(var c=0;c<cols-1;c++){var v00=T[r][c],v10=T[r][c+1],v11=T[r+1][c+1],v01=T[r+1][c];var e=[];
       function ip(xa,ya,va,xb,yb,vb){var t=Math.abs(vb-va)<1e-9?0.5:(L-va)/(vb-va);t=Math.max(0,Math.min(1,t));return [xa+(xb-xa)*t,ya+(yb-ya)*t];}
       if((v00-L)*(v10-L)<0)e.push(ip(fx(c),fy(r),v00,fx(c+1),fy(r),v10));
       if((v10-L)*(v11-L)<0)e.push(ip(fx(c+1),fy(r),v10,fx(c+1),fy(r+1),v11));
       if((v01-L)*(v11-L)<0)e.push(ip(fx(c),fy(r+1),v01,fx(c+1),fy(r+1),v11));
       if((v00-L)*(v01-L)<0)e.push(ip(fx(c),fy(r),v00,fx(c),fy(r+1),v01));
-      for(var i=0;i+1<e.length;i+=2)d+="M"+e[i][0].toFixed(2)+" "+e[i][1].toFixed(2)+"L"+e[i+1][0].toFixed(2)+" "+e[i+1][1].toFixed(2);}
-    s+='<path d="'+d+'" fill="none" stroke="'+demoLookup(colorT[li])+'" stroke-width="1.8" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';});
+      for(var i=0;i+1<e.length;i+=2)segs.push([e[i],e[i+1]]);}
+    chainSegments(segs).forEach(function(ch){if(ch.length<2)return;d+=catmullRomPath(ch);pathCount++;cSeg+=Math.max(0,ch.length-1);});
+    s+='<path d="'+d+'" fill="none" stroke="'+demoLookup(colorT[li])+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';});
+  window.dmCmapExplorerIsolineStats={paths:pathCount,cSegments:cSeg,lSegments:0};
   return s+"</svg>";}
 function scatterSVG(){var s=openStroke("scatter"),pts=[],vals=[],n=90,minX=1,maxX=0,minY=1,maxY=0;
   for(var i=0;i<n;i++){var x=((i*37+11)%97)/97,y=((i*53+29)%97)/97;x=clamp01(x+0.03*Math.sin(i*1.7));y=clamp01(y+0.03*Math.cos(i*2.1));pts.push([x,y]);vals.push(field(x,y));minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);}
@@ -1302,7 +1491,7 @@ function linesSVG(){var n=6,s=openStroke("lines"),vals=[],series=[],lo=Infinity,
 function networkSVG(){var s=openStroke("network"),rows=5,cols=8,spacing=28,rowH=spacing*Math.sqrt(3)/2,x0=-18,y0=2,nodes=[],vals=[],edges=[],jit=spacing*.10;
   for(var r=0;r<rows;r++)for(var c=0;c<cols;c++){var jx=jit*Math.sin((r+1)*2.17+c*1.31),jy=jit*Math.cos((c+1)*1.73+r*1.19),x=x0+c*spacing+(r%2)*spacing*.5+jx,y=y0+r*rowH+jy,v=field(x/VW,y/VH);nodes.push([x,y,v]);vals.push(v);}
   for(var a=0;a<nodes.length;a++)for(var b=a+1;b<nodes.length;b++){var d=Math.hypot(nodes[a][0]-nodes[b][0],nodes[a][1]-nodes[b][1]);if(d<=spacing*1.2)edges.push([a,b]);}
-  var sc=demoScale(vals);edges.forEach(function(e){s+='<line x1="'+nodes[e[0]][0].toFixed(2)+'" y1="'+nodes[e[0]][1].toFixed(2)+'" x2="'+nodes[e[1]][0].toFixed(2)+'" y2="'+nodes[e[1]][1].toFixed(2)+'" stroke="var(--dm-gray-7,#adb5bd)" stroke-width=".72" opacity=".72" vector-effect="non-scaling-stroke"/>';});
+  var sc=demoScale(vals);edges.forEach(function(e){s+='<line x1="'+nodes[e[0]][0].toFixed(2)+'" y1="'+nodes[e[0]][1].toFixed(2)+'" x2="'+nodes[e[1]][0].toFixed(2)+'" y2="'+nodes[e[1]][1].toFixed(2)+'" stroke="var(--dm-gray-7,#adb5bd)" stroke-width=".72" stroke-linecap="round" opacity=".72" vector-effect="non-scaling-stroke"/>';});
   nodes.forEach(function(nd,i){s+='<circle cx="'+nd[0].toFixed(2)+'" cy="'+nd[1].toFixed(2)+'" r="3.55" fill="'+scaledColor(vals[i],sc,i)+'" stroke="var(--dm-bg-page,#fff)" stroke-width=".7" vector-effect="non-scaling-stroke"/>';});
   return s+"</svg>";}
 function ridgeProfile(row,x,rows){var drift=.34+.26*row/(rows-1)+.035*Math.sin(row*.77),offs=[-.18,-.045,.12,.27],v=0,bn=2+(row%3);
@@ -1319,7 +1508,7 @@ function quiverSVG(){var rows=7,cols=10,s=openStroke("quiver"),arrows=[],vals=[]
   for(var r=0;r<rows;r++)for(var c=0;c<cols;c++){var x=(c+.5+(r%2)*.5)/(cols+.5),y=(r+.5)/rows,v=flowVec(x,y),m=Math.hypot(v[0],v[1])||1;arrows.push([x*VW,y*VH,v[0]/m,-v[1]/m,m]);vals.push(m);angs.push((Math.atan2(v[1],v[0])+Math.PI)/6.283);}
   var sc=demoScale(vals,{angles:angs}),lo=Math.min.apply(null,vals),hi=Math.max.apply(null,vals),span=hi-lo||1;
   arrows.forEach(function(a,i){var magT=(vals[i]-lo)/span,len=7.2+magT*(13.8-7.2),ux=a[2],uy=a[3],tailX=a[0]-ux*len*.5,tailY=a[1]-uy*len*.5,tipX=a[0]+ux*len*.5,tipY=a[1]+uy*len*.5,headLen=4.6,headHalf=headLen/2.6,xBase=tipX-ux*headLen,yBase=tipY-uy*headLen,px=-uy,py=ux,col=scaledColor(vals[i],sc,i);
-    s+='<path d="M'+tailX.toFixed(2)+' '+tailY.toFixed(2)+'L'+xBase.toFixed(2)+' '+yBase.toFixed(2)+'" fill="none" stroke="'+col+'" stroke-width="1.45" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+    s+='<path d="M'+tailX.toFixed(2)+' '+tailY.toFixed(2)+'L'+xBase.toFixed(2)+' '+yBase.toFixed(2)+'" fill="none" stroke="'+col+'" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';
     s+='<polygon points="'+tipX.toFixed(2)+','+tipY.toFixed(2)+' '+(xBase+px*headHalf).toFixed(2)+','+(yBase+py*headHalf).toFixed(2)+' '+(xBase-px*headHalf).toFixed(2)+','+(yBase-py*headHalf).toFixed(2)+'" fill="'+col+'"/>';});
   return s+"</svg>";}
 function waffleSVG(){var rows=9,cols=14,s=openArea("waffle"),vals=[],cells=[];
@@ -1418,7 +1607,7 @@ function renderDetail(){var m=map(),d=document.getElementById("cx-detail");
   d.querySelector(".d-key").onclick=function(){copy(m.key,this);};wireControls(d);paint();}
 
 document.getElementById("cx-count").textContent=D.counts.total+" colormaps — "+D.counts.sequential+" sequential, "+D.counts.multi_hue+" multi-hue, "+D.counts.diverging+" diverging, "+D.counts.cyclic+" cyclic";
-document.getElementById("cx-rail").innerHTML=railHTML();wireRail();renderDetail();
+document.getElementById("cx-rail").innerHTML=railHTML();wireRail();renderDetail();watchCanvasDpr();
 })();</script>
 </div>
 """
