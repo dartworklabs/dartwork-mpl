@@ -125,7 +125,8 @@ dm.show_colors(...)         # visual preview (absorbs plot_colors /
 
 # engine (unchanged)
 dm.color() / dm.oklab() / dm.oklch() / Color / dm.cspace() /
-mix_colors / pseudo_alpha
+mix_colors / pseudo_alpha  (+ helpers.make_palette — a user-palette
+construction helper on the engine layer, kept as-is)
 ```
 
 **Removed public API**: `get_palette`, `set_cycle`, `cycle`, `cycle_cycler`,
