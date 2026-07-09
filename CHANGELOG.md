@@ -14,10 +14,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   axis/tick unit affixes, avoidable or missing x-tick rotation, and
   ambiguous or over-precise numeric tick labels. `dm.recommend_tick_decimals()`
   exposes the decimal-step rule as a small public helper for formatter code.
+- **Annotation and legend primitives.** `dm.annotate_value()` adds compact
+  point-offset value labels with automatic above/below flipping,
+  `dm.label_hline()` keeps reference-line labels attached with a small
+  point gap, and `dm.place_legend()` scores patch/collection-heavy axes
+  against candidate legend positions before choosing the emptiest location.
 
 ### Changed
 
 ### Fixed
+
+- **`TICK_DECIMAL` now enforces axis-wide decimal consistency.** Mixed
+  numeric tick labels such as `17.5, 20, 22.5` now warn as non-uniform,
+  while fractional-step labels such as `17.5, 20.0, 22.5` remain valid.
+  Trailing-zero advice now applies only to integer-valued tick sequences.
 
 ## [0.5.6] - 2026-07-05
 

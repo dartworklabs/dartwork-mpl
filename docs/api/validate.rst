@@ -40,8 +40,8 @@ Available Checks
      - X tick labels are rotated needlessly or overlap when horizontal
      - INFO
    * - ``TICK_DECIMAL``
-     - Numeric tick labels are ambiguous or over-precise for their step
-     - INFO
+     - Numeric tick labels are mixed, ambiguous, or over-precise for their step
+     - WARNING / INFO
    * - ``EMPTY_AXES``
      - Axes contain no visible plotted artist or annotation
      - INFO

@@ -194,6 +194,9 @@ requested margin from each figure edge. This means:
 | ----------------------------- | ------------------------------------------------------------- |
 | `simple_layout(fig, gs=gs)`   | Places content at requested margin — replaces `tight_layout()` |
 | `label_axes(axes)`            | Adds (a), (b), (c) labels with auto-positioning for ylabels   |
+| `annotate_value(ax, x, y, s)` | Adds compact value labels with point offsets and auto flip     |
+| `label_hline(ax, y, s)`       | Attaches text tightly above/below a horizontal reference line  |
+| `place_legend(ax)`            | Places patch/collection legends in the least occupied region   |
 | `arrow_axis(ax, 'x', 'Cost')` | Creates `Low ◄── Cost ──► High` bidirectional annotations     |
 | `set_decimal(ax, xn, yn)`     | Fixes tick decimal places for publication-ready labels        |
 | `make_offset(x, y, fig)`      | Creates point-based offsets for precise text positioning      |
@@ -219,6 +222,20 @@ Raw matplotlib ticks can sometimes mix integers and floats (e.g. `0.5`, `1`, `1.
 
 ```{raw} html
 :file: images/set_decimal_slider.html
+```
+
+### Compact value and reference labels
+
+`dm.annotate_value(ax, x, y, text)` uses a small point offset above the data
+point by default and flips below when the rendered label would collide or leave
+the axes. `dm.label_hline(ax, y, text)` keeps horizontal-reference labels close
+to the line with a 2 pt default gap.
+
+```python
+dm.annotate_value(ax, x[-1], y[-1], f"{y[-1]:.1f}")
+ax.axhline(baseline, lw=0.5, ls=":")
+dm.label_hline(ax, baseline, "Reference")
+dm.place_legend(ax)
 ```
 
 ### Bidirectional arrow axes (`arrow_axis`)

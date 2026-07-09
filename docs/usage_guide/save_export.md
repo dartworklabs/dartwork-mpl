@@ -107,7 +107,7 @@ column is the suggestion delivered by
 | `LEGEND_OVERFLOW`    | warning  | Legend extends past axes / figure edge             | Move legend outside via `bbox_to_anchor` or shrink with `ncols`     |
 | `TICK_CROWD`         | info     | Tick labels consume too much of the axis span      | Reduce tick density (`MaxNLocator`) or rotate labels                |
 | `TICK_ROTATION`      | info     | X tick labels are rotated needlessly or overlap    | Set `rotation=0`, rotate to 45°, or reduce tick count               |
-| `TICK_DECIMAL`       | info     | Tick labels have duplicate or excessive decimals   | Match formatter precision to `dm.recommend_tick_decimals(values)`   |
+| `TICK_DECIMAL`       | warn/info | Tick labels have mixed, duplicate, or excessive decimals | Match formatter precision to `dm.recommend_tick_decimals(values)` |
 | `EMPTY_AXES`         | info     | Axes carry no plotted artist                       | Plot data or remove the empty axes via `fig.delaxes(ax)`            |
 | `MARGIN_ASYMMETRY`   | warning  | Left / right or top / bottom margins differ a lot  | Re-run `dm.simple_layout(fig)` (or call it for the first time)      |
 | `PIE_LABEL_OFFSET`   | info     | Pie wedge label sits outside its wedge             | Set `pctdistance = 1.0 - wedge_width / 2`                           |
