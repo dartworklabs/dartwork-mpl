@@ -472,12 +472,28 @@ def test_svg_curve_demos_publish_cubic_path_stats() -> None:
         stats["streamlines"]["c_segments"] >= stats["streamlines"]["paths"] * 30
     )
     assert stats["streamlines"]["l_segments"] == 0
-    assert stats["lines"] == {"paths": 6, "c_segments": 480, "l_segments": 0}
+    assert stats["lines"] == {"paths": 6, "c_segments": 1200, "l_segments": 0}
     assert stats["ridgeline"] == {
         "paths": 11,
-        "c_segments": 583,
+        "c_segments": 1540,
         "l_segments": 22,
     }
+
+
+def test_svg_curve_quality_sampling_and_turning_angle_gate() -> None:
+    payload = runpy.run_path(str(_BUILDER))["build_payload"]()
+    quality = payload["svg_curve_quality"]
+
+    assert quality["isolines"]["grid_cells"] == [220, 140]
+    assert quality["isolines"]["simplify_epsilon"] == 0.15
+    assert quality["isolines"]["angle_gate_degrees"] == 20.0
+    assert quality["streamlines"]["arc_spacing"] <= 1.7
+    assert quality["lines"]["samples_per_series"] >= 161
+    assert quality["ridgeline"]["samples_per_profile"] >= 141
+
+    for demo in ("isolines", "streamlines", "lines", "ridgeline"):
+        angles = quality[demo]["turning_angle_degrees"]
+        assert angles["max"] < quality[demo]["angle_gate_degrees"], demo
 
 
 def test_red_demo_spectrum_coverage_self_check_hits_both_ends() -> None:

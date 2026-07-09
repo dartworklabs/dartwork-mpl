@@ -161,9 +161,18 @@ CONTOUR_FIELD_PARAMS = {
 }
 CYLINDER_FLOW_PARAMS = {"cx": 0.35, "cy": 0.50, "r": 0.18, "aspect": 1.6}
 STREAMLINE_SEEDS = 28
+VIEWBOX_WIDTH = 160.0
+VIEWBOX_HEIGHT = 100.0
+ISOLINE_GRID_COLS = 221
+ISOLINE_GRID_ROWS = 141
+ISOLINE_SIMPLIFY_EPSILON = 0.15
+CURVE_ANGLE_GATE_DEGREES = 20.0
+STREAMLINE_ARC_SPACING = 1.65
+LINE_SERIES_SAMPLES = 201
 HISTOGRAM_BINS = 28
 RIDGELINE_ROWS = 11
 RIDGELINE_GAP = 8.6
+RIDGELINE_PROFILE_SAMPLES = 141
 QUIVER_ROWS = 7
 QUIVER_COLS = 10
 QUIVER_MIN_LEN = 7.2
@@ -663,6 +672,149 @@ def _cylinder_rk4_step(x: float, y: float, h: float) -> tuple[float, float]:
     )
 
 
+def _view_point(x: float, y: float) -> tuple[float, float]:
+    return x * VIEWBOX_WIDTH, (1.0 - y) * VIEWBOX_HEIGHT
+
+
+def _norm_from_view(point: tuple[float, float]) -> tuple[float, float]:
+    return point[0] / VIEWBOX_WIDTH, 1.0 - point[1] / VIEWBOX_HEIGHT
+
+
+def _resample_polyline(
+    points: list[tuple[float, float]], spacing: float
+) -> list[tuple[float, float]]:
+    if len(points) < 2:
+        return points[:]
+
+    out = [points[0]]
+    remaining = spacing
+    prev = points[0]
+    for target in points[1:]:
+        dx = target[0] - prev[0]
+        dy = target[1] - prev[1]
+        seg_len = math.hypot(dx, dy)
+        if seg_len <= 1e-12:
+            prev = target
+            continue
+        while seg_len >= remaining:
+            t = remaining / seg_len
+            next_point = (prev[0] + dx * t, prev[1] + dy * t)
+            out.append(next_point)
+            prev = next_point
+            dx = target[0] - prev[0]
+            dy = target[1] - prev[1]
+            seg_len = math.hypot(dx, dy)
+            remaining = spacing
+        remaining -= seg_len
+        prev = target
+
+    if (
+        math.hypot(out[-1][0] - points[-1][0], out[-1][1] - points[-1][1])
+        > 1e-6
+    ):
+        out.append(points[-1])
+    return out
+
+
+def _point_segment_distance(
+    point: tuple[float, float],
+    start: tuple[float, float],
+    end: tuple[float, float],
+) -> float:
+    dx = end[0] - start[0]
+    dy = end[1] - start[1]
+    denom = dx * dx + dy * dy
+    if denom <= 1e-12:
+        return math.hypot(point[0] - start[0], point[1] - start[1])
+    t = ((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / denom
+    t = max(0.0, min(1.0, t))
+    px = start[0] + dx * t
+    py = start[1] + dy * t
+    return math.hypot(point[0] - px, point[1] - py)
+
+
+def _douglas_peucker_open(
+    points: list[tuple[float, float]], epsilon: float
+) -> list[tuple[float, float]]:
+    if len(points) <= 2:
+        return points[:]
+    max_distance = -1.0
+    split_index = 0
+    for idx, point in enumerate(points[1:-1], start=1):
+        distance = _point_segment_distance(point, points[0], points[-1])
+        if distance > max_distance:
+            max_distance = distance
+            split_index = idx
+    if max_distance > epsilon:
+        left = _douglas_peucker_open(points[: split_index + 1], epsilon)
+        right = _douglas_peucker_open(points[split_index:], epsilon)
+        return left[:-1] + right
+    return [points[0], points[-1]]
+
+
+def _same_view_point(
+    a: tuple[float, float], b: tuple[float, float], tol: float = 1e-6
+) -> bool:
+    return math.hypot(a[0] - b[0], a[1] - b[1]) <= tol
+
+
+def _simplify_polyline(
+    points: list[tuple[float, float]], epsilon: float
+) -> list[tuple[float, float]]:
+    if len(points) <= 2:
+        return points[:]
+    if _same_view_point(points[0], points[-1]) and len(points) > 4:
+        ring = points[:-1]
+        anchor = max(
+            range(len(ring)),
+            key=lambda idx: math.hypot(
+                ring[idx][0] - ring[0][0], ring[idx][1] - ring[0][1]
+            ),
+        )
+        ordered = ring[anchor:] + ring[: anchor + 1]
+        simplified = _douglas_peucker_open(ordered, epsilon)
+        if not _same_view_point(simplified[0], simplified[-1]):
+            simplified.append(simplified[0])
+        return simplified
+    return _douglas_peucker_open(points, epsilon)
+
+
+def _percentile(values: list[float], q: float) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    pos = (len(ordered) - 1) * q
+    lo = math.floor(pos)
+    hi = math.ceil(pos)
+    if lo == hi:
+        return ordered[lo]
+    return ordered[lo] * (hi - pos) + ordered[hi] * (pos - lo)
+
+
+def _turning_angle_distribution(
+    paths: list[list[tuple[float, float]]],
+) -> dict[str, float]:
+    path_maxima: list[float] = []
+    for points in paths:
+        angles = []
+        for a, b, c in zip(points, points[1:], points[2:], strict=False):
+            v1 = (b[0] - a[0], b[1] - a[1])
+            v2 = (c[0] - b[0], c[1] - b[1])
+            n1 = math.hypot(*v1)
+            n2 = math.hypot(*v2)
+            if n1 <= 1e-9 or n2 <= 1e-9:
+                continue
+            dot = (v1[0] * v2[0] + v1[1] * v2[1]) / (n1 * n2)
+            angles.append(math.degrees(math.acos(max(-1.0, min(1.0, dot)))))
+        if angles:
+            path_maxima.append(max(angles))
+    return {
+        "p50": round(_percentile(path_maxima, 0.50), 2),
+        "p95": round(_percentile(path_maxima, 0.95), 2),
+        "max": round(max(path_maxima, default=0.0), 2),
+    }
+
+
 def _streamline_seed_points() -> list[tuple[float, float]]:
     return [
         (0.0, (r + 0.5) / STREAMLINE_SEEDS) for r in range(STREAMLINE_SEEDS)
@@ -690,11 +842,15 @@ def _streamline_points() -> list[dict]:
         )
         if arc < 0.94 or len(parts) < 22 or parts[-1][0] < 0.94:
             continue
+        view_points = _resample_polyline(
+            [_view_point(px, py) for px, py in parts], STREAMLINE_ARC_SPACING
+        )
+        resampled = [_norm_from_view(point) for point in view_points]
         lines.append(
             {
-                "points": parts,
-                "speeds": [_cylinder_speed(x, y) for x, y in parts],
-                "angles": [_cylinder_angle(x, y) for x, y in parts],
+                "points": resampled,
+                "speeds": [_cylinder_speed(px, py) for px, py in resampled],
+                "angles": [_cylinder_angle(px, py) for px, py in resampled],
             }
         )
     return lines[:STREAMLINE_SEEDS]
@@ -704,6 +860,13 @@ def _streamline_path_stats() -> dict:
     lines = _streamline_points()
     c_segments = sum(max(0, len(line["points"]) - 1) for line in lines)
     return {"paths": len(lines), "c_segments": c_segments, "l_segments": 0}
+
+
+def _streamline_view_paths() -> list[list[tuple[float, float]]]:
+    return [
+        [_view_point(x, y) for x, y in line["points"]]
+        for line in _streamline_points()
+    ]
 
 
 def _point_key(point: tuple[float, float]) -> tuple[int, int]:
@@ -757,8 +920,11 @@ def _chain_segments(
     return chains
 
 
-def _isoline_path_stats() -> dict:
-    cols, rows = 40, 26
+def _isoline_chains(
+    cols: int = ISOLINE_GRID_COLS,
+    rows: int = ISOLINE_GRID_ROWS,
+    simplify_epsilon: float = ISOLINE_SIMPLIFY_EPSILON,
+) -> list[list[tuple[float, float]]]:
     values = [
         _demo_field(c / (cols - 1), r / (rows - 1))
         for r in range(rows)
@@ -770,10 +936,10 @@ def _isoline_path_stats() -> dict:
     table = [scaled[r * cols : (r + 1) * cols] for r in range(rows)]
 
     def fx(col: int) -> float:
-        return col / (cols - 1) * 160.0
+        return col / (cols - 1) * VIEWBOX_WIDTH
 
     def fy(row: int) -> float:
-        return row / (rows - 1) * 100.0
+        return row / (rows - 1) * VIEWBOX_HEIGHT
 
     def interp(
         xa: float,
@@ -788,8 +954,11 @@ def _isoline_path_stats() -> dict:
         t = max(0.0, min(1.0, t))
         return xa + (xb - xa) * t, ya + (yb - ya) * t
 
-    chains = 0
-    c_segments = 0
+    def scaled_center(col: int, row: int) -> float:
+        value = _demo_field((col + 0.5) / (cols - 1), (row + 0.5) / (rows - 1))
+        return (value - lo) / span
+
+    chains: list[list[tuple[float, float]]] = []
     for level_idx in range(12):
         level = (level_idx + 1) / 13
         segments: list[tuple[tuple[float, float], tuple[float, float]]] = []
@@ -799,71 +968,201 @@ def _isoline_path_stats() -> dict:
                 v10 = table[row][col + 1]
                 v11 = table[row + 1][col + 1]
                 v01 = table[row + 1][col]
-                edges = []
+                edges: dict[str, tuple[float, float]] = {}
                 if (v00 - level) * (v10 - level) < 0:
-                    edges.append(
-                        interp(
-                            fx(col),
-                            fy(row),
-                            v00,
-                            fx(col + 1),
-                            fy(row),
-                            v10,
-                            level,
-                        )
+                    edges["top"] = interp(
+                        fx(col), fy(row), v00, fx(col + 1), fy(row), v10, level
                     )
                 if (v10 - level) * (v11 - level) < 0:
-                    edges.append(
-                        interp(
-                            fx(col + 1),
-                            fy(row),
-                            v10,
-                            fx(col + 1),
-                            fy(row + 1),
-                            v11,
-                            level,
-                        )
+                    edges["right"] = interp(
+                        fx(col + 1),
+                        fy(row),
+                        v10,
+                        fx(col + 1),
+                        fy(row + 1),
+                        v11,
+                        level,
                     )
                 if (v01 - level) * (v11 - level) < 0:
-                    edges.append(
-                        interp(
-                            fx(col),
-                            fy(row + 1),
-                            v01,
-                            fx(col + 1),
-                            fy(row + 1),
-                            v11,
-                            level,
-                        )
+                    edges["bottom"] = interp(
+                        fx(col),
+                        fy(row + 1),
+                        v01,
+                        fx(col + 1),
+                        fy(row + 1),
+                        v11,
+                        level,
                     )
                 if (v00 - level) * (v01 - level) < 0:
-                    edges.append(
-                        interp(
-                            fx(col),
-                            fy(row),
-                            v00,
-                            fx(col),
-                            fy(row + 1),
-                            v01,
-                            level,
-                        )
+                    edges["left"] = interp(
+                        fx(col), fy(row), v00, fx(col), fy(row + 1), v01, level
                     )
-                segments.extend(
-                    (edges[edge_idx], edges[edge_idx + 1])
-                    for edge_idx in range(0, len(edges) - 1, 2)
+                if len(edges) == 2:
+                    start, end = edges.values()
+                    segments.append((start, end))
+                elif len(edges) == 4:
+                    case_id = (
+                        (1 if v00 >= level else 0)
+                        + (2 if v10 >= level else 0)
+                        + (4 if v11 >= level else 0)
+                        + (8 if v01 >= level else 0)
+                    )
+                    center_high = scaled_center(col, row) >= level
+                    top_right_bottom_left = (
+                        center_high if case_id == 5 else not center_high
+                    )
+                    if top_right_bottom_left:
+                        segments.append((edges["top"], edges["right"]))
+                        segments.append((edges["bottom"], edges["left"]))
+                    else:
+                        segments.append((edges["top"], edges["left"]))
+                        segments.append((edges["right"], edges["bottom"]))
+        chains.extend(
+            _simplify_polyline(chain, simplify_epsilon)
+            for chain in _chain_segments(segments)
+            if len(chain) >= 2
+        )
+    return chains
+
+
+def _isoline_path_stats() -> dict:
+    chains = _isoline_chains()
+    return {
+        "paths": len(chains),
+        "c_segments": sum(max(0, len(chain) - 1) for chain in chains),
+        "l_segments": 0,
+    }
+
+
+def _line_paths(
+    samples: int = LINE_SERIES_SAMPLES,
+) -> list[list[tuple[float, float]]]:
+    paths: list[list[tuple[float, float]]] = []
+    for series_idx in range(6):
+        raw = []
+        lo = math.inf
+        hi = -math.inf
+        for sample_idx in range(samples):
+            px = sample_idx * (VIEWBOX_WIDTH / (samples - 1))
+            x = px / VIEWBOX_WIDTH
+            value = (
+                (series_idx - (6 - 1) / 2) * 0.38
+                + 0.74
+                * math.sin(
+                    math.tau * ((1.05 + series_idx * 0.09) * x)
+                    + series_idx * 0.72
                 )
-        level_chains = _chain_segments(segments)
-        chains += len(level_chains)
-        c_segments += sum(max(0, len(chain) - 1) for chain in level_chains)
-    return {"paths": chains, "c_segments": c_segments, "l_segments": 0}
+                + 0.34
+                * math.cos(
+                    math.tau * ((2.05 + series_idx * 0.13) * x)
+                    - series_idx * 0.43
+                )
+                + 0.16 * math.sin(math.tau * (3.4 * x + series_idx * 0.11))
+            )
+            raw.append((px, value))
+            lo = min(lo, value)
+            hi = max(hi, value)
+        span = hi - lo or 1.0
+        paths.append(
+            [
+                (
+                    x,
+                    VIEWBOX_HEIGHT * 0.96
+                    - ((value - lo) / span) * VIEWBOX_HEIGHT * 0.92,
+                )
+                for x, value in raw
+            ]
+        )
+    return paths
+
+
+def _ridgeline_paths(
+    samples: int = RIDGELINE_PROFILE_SAMPLES,
+) -> list[list[tuple[float, float]]]:
+    paths: list[list[tuple[float, float]]] = []
+    base0 = VIEWBOX_HEIGHT - RIDGELINE_GAP * (RIDGELINE_ROWS - 1)
+    peak_h = RIDGELINE_GAP * 1.6
+    for row in range(RIDGELINE_ROWS):
+        profile = []
+        peak = 0.0
+        for sample_idx in range(samples):
+            x = -0.04 + sample_idx * (1.08 / (samples - 1))
+            value = _ridge_profile(row, x, RIDGELINE_ROWS)
+            profile.append((x, value))
+            peak = max(peak, value)
+        base = base0 + row * RIDGELINE_GAP
+        paths.append(
+            [
+                (x * VIEWBOX_WIDTH, base - (value / (peak or 1.0)) * peak_h)
+                for x, value in profile
+            ]
+        )
+    return paths
+
+
+def _svg_curve_quality_stats() -> dict:
+    quality = {
+        "isolines": {
+            "grid_points": [ISOLINE_GRID_COLS, ISOLINE_GRID_ROWS],
+            "grid_cells": [ISOLINE_GRID_COLS - 1, ISOLINE_GRID_ROWS - 1],
+            "simplify_epsilon": ISOLINE_SIMPLIFY_EPSILON,
+            "angle_gate_degrees": CURVE_ANGLE_GATE_DEGREES,
+        },
+        "streamlines": {
+            "arc_spacing": STREAMLINE_ARC_SPACING,
+            "angle_gate_degrees": CURVE_ANGLE_GATE_DEGREES,
+        },
+        "lines": {
+            "samples_per_series": LINE_SERIES_SAMPLES,
+            "angle_gate_degrees": CURVE_ANGLE_GATE_DEGREES,
+        },
+        "ridgeline": {
+            "samples_per_profile": RIDGELINE_PROFILE_SAMPLES,
+            "angle_gate_degrees": CURVE_ANGLE_GATE_DEGREES,
+        },
+    }
+    paths_by_demo = {
+        "isolines": _isoline_chains(),
+        "streamlines": _streamline_view_paths(),
+        "lines": _line_paths(),
+        "ridgeline": _ridgeline_paths(),
+    }
+    for demo, paths in paths_by_demo.items():
+        quality[demo]["paths"] = len(paths)
+        quality[demo]["c_segments"] = sum(
+            max(0, len(path) - 1) for path in paths
+        )
+        quality[demo]["turning_angle_degrees"] = _turning_angle_distribution(
+            paths
+        )
+    offenders = [
+        demo
+        for demo, row in quality.items()
+        if row["turning_angle_degrees"]["max"] >= row["angle_gate_degrees"]
+    ]
+    if offenders:
+        detail = ", ".join(
+            f"{demo}={quality[demo]['turning_angle_degrees']['max']}"
+            for demo in offenders
+        )
+        raise AssertionError(f"SVG curve turning-angle gate failed: {detail}")
+    return quality
 
 
 def _svg_path_stats() -> dict:
     return {
         "isolines": _isoline_path_stats(),
         "streamlines": _streamline_path_stats(),
-        "lines": {"paths": 6, "c_segments": 6 * 80, "l_segments": 0},
-        "ridgeline": {"paths": 11, "c_segments": 11 * 53, "l_segments": 11 * 2},
+        "lines": {
+            "paths": 6,
+            "c_segments": 6 * (LINE_SERIES_SAMPLES - 1),
+            "l_segments": 0,
+        },
+        "ridgeline": {
+            "paths": RIDGELINE_ROWS,
+            "c_segments": RIDGELINE_ROWS * (RIDGELINE_PROFILE_SAMPLES - 1),
+            "l_segments": RIDGELINE_ROWS * 2,
+        },
     }
 
 
@@ -1168,6 +1467,7 @@ def build_payload() -> dict:
         )
     red_default = maps["red"]["variants"][maps["red"]["default_variant"]]
     demo_coverage = _demo_coverage_table(red_default["demo"])
+    svg_curve_quality = _svg_curve_quality_stats()
 
     return {
         "maps": maps,
@@ -1189,6 +1489,7 @@ def build_payload() -> dict:
         "demo_coverage": demo_coverage,
         "streamline_path_stats": _streamline_path_stats(),
         "svg_path_stats": _svg_path_stats(),
+        "svg_curve_quality": svg_curve_quality,
         "quiver_geometry_stats": _quiver_geometry_stats(),
     }
 
@@ -1205,6 +1506,7 @@ def main() -> None:
         )
     OUT.write_text(html, encoding="utf-8")
     print(f"wrote {OUT}")
+    print(f"fragment bytes: {OUT.stat().st_size}")
     print(
         "taxonomy: "
         + ", ".join(f"{label}={len(keys)}" for label, keys in GROUPS)
@@ -1236,6 +1538,25 @@ def main() -> None:
         f"\nsequential+multi ({len(sm)}): all ratios >= 0.55 -> "
         f"{all(r['ratio'] >= 0.55 for r in sm)} (min {min(r['ratio'] for r in sm):.2f})"
     )
+    print("\nSVG curve quality gate (path-max turning angle degrees):")
+    print(
+        f"  {'demo':12s} {'sample/grid':>14s} {'p50':>6s} {'p95':>6s} {'max':>6s}"
+    )
+    for demo in ("isolines", "streamlines", "lines", "ridgeline"):
+        row = payload["svg_curve_quality"][demo]
+        angles = row["turning_angle_degrees"]
+        if demo == "isolines":
+            sample = f"{row['grid_cells'][0]}x{row['grid_cells'][1]}"
+        elif demo == "streamlines":
+            sample = f"{row['arc_spacing']:.2f}vu"
+        elif demo == "lines":
+            sample = f"{row['samples_per_series']}pts"
+        else:
+            sample = f"{row['samples_per_profile']}pts"
+        print(
+            f"  {demo:12s} {sample:>14s} "
+            f"{angles['p50']:6.2f} {angles['p95']:6.2f} {angles['max']:6.2f}"
+        )
     print("\nred demo spectrum coverage (item 2b):")
     print(f"  {'demo':12s} {'t0':>4s} {'t1':>4s} {'n':>4s}")
     for r in payload["demo_coverage"]:
@@ -1318,6 +1639,9 @@ function scaledColor(v,sc,i){return demoLookup(scaledT(v,sc,i));}
 function field(x,y){var raw=FIELD.base.x*x+FIELD.base.y*y,bs=FIELD.bumps;
   for(var i=0;i<bs.length;i++){var b=bs[i],dx=(x-b.cx)/b.sx,dy=(y-b.cy)/b.sy;raw+=b.amp*Math.exp(-(dx*dx+dy*dy));}
   return raw;}
+function fieldDeriv(x,y){var gx=FIELD.base.x,gy=FIELD.base.y,bs=FIELD.bumps;
+  for(var i=0;i<bs.length;i++){var b=bs[i],dx=(x-b.cx)/b.sx,dy=(y-b.cy)/b.sy,e=b.amp*Math.exp(-(dx*dx+dy*dy));gx+=e*(-2*(x-b.cx)/(b.sx*b.sx));gy+=e*(-2*(y-b.cy)/(b.sy*b.sy));}
+  return [gx,gy];}
 function contourField(x,y){var s=CONTOUR_FIELD.saddle,r=CONTOUR_FIELD.ridge,w=CONTOUR_FIELD.waves,dx=x-s.x,dy=y-s.y;
   var raw=s.xx*dx*dx+s.yy*dy*dy+s.xy*dx*dy;
   raw+=r.amp*Math.exp(-(((x-r.cx)/r.sx)*((x-r.cx)/r.sx)+((y-r.cy)/r.sy)*((y-r.cy)/r.sy)));
@@ -1348,6 +1672,23 @@ function catmullRomPath(pts){if(pts.length<2)return "";var d="M"+pts[0][0].toFix
 function catmullRomSegmentPath(pts,i){if(i<0||i>=pts.length-1)return "";var p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(pts.length-1,i+2)];
   var c1x=p1[0]+(p2[0]-p0[0])/6,c1y=p1[1]+(p2[1]-p0[1])/6,c2x=p2[0]-(p3[0]-p1[0])/6,c2y=p2[1]-(p3[1]-p1[1])/6;
   return "M"+p1[0].toFixed(2)+" "+p1[1].toFixed(2)+" C "+c1x.toFixed(2)+" "+c1y.toFixed(2)+" "+c2x.toFixed(2)+" "+c2y.toFixed(2)+" "+p2[0].toFixed(2)+" "+p2[1].toFixed(2);}
+function resamplePath(pts,spacing){if(pts.length<2)return pts.slice();var out=[pts[0]],rem=spacing,prev=pts[0];
+  for(var i=1;i<pts.length;i++){var target=pts[i],dx=target[0]-prev[0],dy=target[1]-prev[1],seg=Math.hypot(dx,dy);if(seg<=1e-12){prev=target;continue;}
+    while(seg>=rem){var t=rem/seg,next=[prev[0]+dx*t,prev[1]+dy*t];out.push(next);prev=next;dx=target[0]-prev[0];dy=target[1]-prev[1];seg=Math.hypot(dx,dy);rem=spacing;}
+    rem-=seg;prev=target;}
+  var last=pts[pts.length-1];if(Math.hypot(out[out.length-1][0]-last[0],out[out.length-1][1]-last[1])>1e-6)out.push(last);return out;}
+function pointSegmentDistance(p,a,b){var dx=b[0]-a[0],dy=b[1]-a[1],den=dx*dx+dy*dy;if(den<=1e-12)return Math.hypot(p[0]-a[0],p[1]-a[1]);
+  var t=((p[0]-a[0])*dx+(p[1]-a[1])*dy)/den;t=Math.max(0,Math.min(1,t));return Math.hypot(p[0]-(a[0]+dx*t),p[1]-(a[1]+dy*t));}
+function simplifyOpen(pts,eps){if(pts.length<=2)return pts.slice();var md=-1,mi=0;
+  for(var i=1;i<pts.length-1;i++){var d=pointSegmentDistance(pts[i],pts[0],pts[pts.length-1]);if(d>md){md=d;mi=i;}}
+  if(md>eps){var left=simplifyOpen(pts.slice(0,mi+1),eps),right=simplifyOpen(pts.slice(mi),eps);return left.slice(0,-1).concat(right);}
+  return [pts[0],pts[pts.length-1]];}
+function closeEnough(a,b){return Math.hypot(a[0]-b[0],a[1]-b[1])<=1e-6;}
+function simplifyPath(pts,eps){if(pts.length<=2)return pts.slice();
+  if(closeEnough(pts[0],pts[pts.length-1])&&pts.length>4){var ring=pts.slice(0,-1),anchor=0,far=-1;
+    for(var i=0;i<ring.length;i++){var d=Math.hypot(ring[i][0]-ring[0][0],ring[i][1]-ring[0][1]);if(d>far){far=d;anchor=i;}}
+    var ordered=ring.slice(anchor).concat(ring.slice(0,anchor+1)),out=simplifyOpen(ordered,eps);if(!closeEnough(out[0],out[out.length-1]))out.push(out[0]);return out;}
+  return simplifyOpen(pts,eps);}
 function pointKey(p){return p[0].toFixed(3)+","+p[1].toFixed(3);}
 function samePoint(a,b){return pointKey(a)===pointKey(b);}
 function chainSegments(segs){var ends={},used=new Array(segs.length),chains=[];
@@ -1361,6 +1702,7 @@ function chainSegments(segs){var ends={},used=new Array(segs.length),chains=[];
   return chains;}
 function polarValue(r,t){return .46*r+.26*Math.sin(6.283*(t*2+r*.34))+.18*Math.cos(6.283*(t*3-r*.22))+.10*Math.sin(6.283*r*2.1);}
 var VW=160,VH=100;
+var ISOC=221,ISOR=141,ISOEPS=.15,STREAM_ARC=1.65,LINE_SAMPLES=201,RIDGE_SAMPLES=141;
 function openArea(label){return '<svg class="demo-svg" viewBox="0 0 '+VW+' '+VH+'" preserveAspectRatio="none" aria-label="'+esc(label)+'">';}
 function openStroke(label){return '<svg class="demo-svg" viewBox="0 0 '+VW+' '+VH+'" preserveAspectRatio="xMidYMid meet" aria-label="'+esc(label)+'">';}
 
@@ -1369,10 +1711,10 @@ function sizeCanvas(cv){var r=cv.getBoundingClientRect(),cw=Math.max(1,Math.roun
   dpr=Math.min(Math.max(window.devicePixelRatio||1,1),2),scale=Math.min(dpr,Math.sqrt(MAX_CANVAS_PIXELS/(cw*ch))),w=Math.max(1,Math.round(cw*scale)),h=Math.max(1,Math.round(ch*scale));
   if(cv.width!==w)cv.width=w;if(cv.height!==h)cv.height=h;cv.dataset.dpr=scale.toFixed(3);return {w:w,h:h,cssW:cw,cssH:ch,dpr:scale};}
 function putRgb(data,p,lut,idx,shade){idx=Math.max(0,Math.min(255,idx|0))*3;shade=shade==null?1:shade;data[p]=Math.max(0,Math.min(255,lut[idx]*shade));data[p+1]=Math.max(0,Math.min(255,lut[idx+1]*shade));data[p+2]=Math.max(0,Math.min(255,lut[idx+2]*shade));data[p+3]=255;}
-function valueGrid(fw,fh,fn){var gw=Math.max(2,Math.ceil(fw/2)+1),gh=Math.max(2,Math.ceil(fh/2)+1),vals=new Float32Array(gw*gh),lo=Infinity,hi=-Infinity,idx=0;
-  for(var y=0;y<gh;y++)for(var x=0;x<gw;x++,idx++){var v=fn(gw===1?0:x/(gw-1),gh===1?0:y/(gh-1));vals[idx]=v;if(v<lo)lo=v;if(v>hi)hi=v;}
+function valueGrid(fw,fh,fn){var gw=fw,gh=fh,vals=new Float32Array(gw*gh),lo=Infinity,hi=-Infinity,idx=0;
+  for(var y=0;y<gh;y++)for(var x=0;x<gw;x++,idx++){var v=fn((x+.5)/fw,(y+.5)/fh);vals[idx]=v;if(v<lo)lo=v;if(v>hi)hi=v;}
   return {w:gw,h:gh,vals:vals,lo:lo,hi:hi};}
-function sampleGrid(g,x,y,fw,fh){var gx=(x+.5)/fw*(g.w-1),gy=(y+.5)/fh*(g.h-1),x0=Math.max(0,Math.min(g.w-1,Math.floor(gx))),y0=Math.max(0,Math.min(g.h-1,Math.floor(gy))),
+function sampleGrid(g,x,y,fw,fh){if(g.w===fw&&g.h===fh)return g.vals[y*fw+x];var gx=(x+.5)/fw*(g.w-1),gy=(y+.5)/fh*(g.h-1),x0=Math.max(0,Math.min(g.w-1,Math.floor(gx))),y0=Math.max(0,Math.min(g.h-1,Math.floor(gy))),
   x1=Math.min(g.w-1,x0+1),y1=Math.min(g.h-1,y0+1),tx=gx-x0,ty=gy-y0,row0=y0*g.w,row1=y1*g.w,
   a=g.vals[row0+x0],b=g.vals[row0+x1],c=g.vals[row1+x0],d=g.vals[row1+x1];
   return (a+(b-a)*tx)*(1-ty)+(c+(d-c)*tx)*ty;}
@@ -1385,8 +1727,7 @@ function renderRaster(cv,kind,lut,bands){var sz=sizeCanvas(cv),ctx=cv.getContext
   img=ctx.createImageData(fw,fh),vals=new Float32Array(fw*fh),grid=valueGrid(fw,fh,kind==="contours"?contourField:field),idx=0;
   for(var y=0;y<fh;y++)for(var x=0;x<fw;x++,idx++)vals[idx]=sampleGrid(grid,x,y,fw,fh);
   var lo=grid.lo,span=grid.hi-grid.lo||1,p=0;for(var yy=0;yy<fh;yy++)for(var xx=0;xx<fw;xx++,p+=4){var t=clamp01((vals[yy*fw+xx]-lo)/span),li=Math.round((bands?bandT(t,bands):t)*255),shade=1;
-    if(kind==="terrain"){var row=yy*fw,left=vals[row+Math.max(0,xx-1)],right=vals[row+Math.min(fw-1,xx+1)],up=vals[Math.max(0,yy-1)*fw+xx],down=vals[Math.min(fh-1,yy+1)*fw+xx],
-      dx=(right-left)*fw*.5,dy=(down-up)*fh*.5;shade=Math.max(.64,Math.min(1.16,.9-dx*.08+dy*.06));}
+    if(kind==="terrain"){var g=fieldDeriv((xx+.5)/fw,(yy+.5)/fh);shade=Math.max(.64,Math.min(1.16,.9-g[0]*.08+g[1]*.06));}
     if(kind==="contours"&&bands)shade=contourEdgeShade(vals,yy*fw+xx,xx,yy,fw,fh,lo,span,bands);
     putRgb(img.data,p,lut,li,shade);}
   var scratch=renderRaster._scratch||(renderRaster._scratch=document.createElement("canvas"));scratch.width=fw;scratch.height=fh;scratch.getContext("2d").putImageData(img,0,0);
@@ -1394,7 +1735,7 @@ function renderRaster(cv,kind,lut,bands){var sz=sizeCanvas(cv),ctx=cv.getContext
 function polarHeatFieldRange(){var vals=[];for(var r=0;r<72;r++)for(var a=0;a<144;a++)vals.push(polarValue((r+.5)/72,(a+.5)/144));return demoScale(vals);}
 function polarHeat(cv,lut){var sz=sizeCanvas(cv),ctx=cv.getContext("2d"),fw=sz.w,fh=sz.h,
   img=ctx.createImageData(fw,fh),p=0;
-  var cyclic=map().kind==="cyclic",sc=cyclic?null:polarHeatFieldRange(),R=Math.hypot(fw,fh)*.53,cx=fw/2,cy=fh/2,grid=cyclic?null:valueGrid(fw,fh,function(nx,ny){var dx=(nx*fw+.5-cx)/R,dy=(ny*fh+.5-cy)/R,rr=clamp01(Math.hypot(dx,dy)),th=(Math.atan2(dy,dx)/6.283+1)%1;return polarValue(rr,th);});
+  var cyclic=map().kind==="cyclic",sc=cyclic?null:polarHeatFieldRange(),R=Math.hypot(fw,fh)*.53,cx=fw/2,cy=fh/2,grid=cyclic?null:valueGrid(fw,fh,function(nx,ny){var dx=(nx*fw-cx)/R,dy=(ny*fh-cy)/R,rr=clamp01(Math.hypot(dx,dy)),th=(Math.atan2(dy,dx)/6.283+1)%1;return polarValue(rr,th);});
   for(var y=0;y<fh;y++)for(var x=0;x<fw;x++,p+=4){var ti;if(cyclic){var dx=(x+.5-cx)/R,dy=(y+.5-cy)/R;ti=(Math.atan2(dy,dx)/6.283+1)%1;}
     else{var v=sampleGrid(grid,x,y,fw,fh);ti=scaledT(v,sc,p/4);}
     putRgb(img.data,p,lut,Math.round(ti*255),1);}
@@ -1421,7 +1762,7 @@ function watchCanvasDpr(){var last=window.devicePixelRatio||1,timer=0;
   window.addEventListener("resize",function(){clearTimeout(timer);timer=setTimeout(function(){changed();rerenderVisibleCanvases();},80);});
   if(window.matchMedia)[1,1.25,1.5,1.75,2].forEach(function(v){var mq=window.matchMedia("(resolution: "+v+"dppx)"),cb=changed;if(mq.addEventListener)mq.addEventListener("change",cb);else if(mq.addListener)mq.addListener(cb);});}
 // marching-squares isolines (no fill, no frame rect)
-function isolinesSVG(){var cols=40,rows=26,s=openStroke("isolines");
+function isolinesSVG(){var cols=ISOC,rows=ISOR,s=openStroke("isolines");
   function fx(c){return c/(cols-1)*VW;}function fy(r){return r/(rows-1)*VH;}
   var vals=[];for(var r=0;r<rows;r++)for(var c=0;c<cols;c++)vals.push(field(c/(cols-1),r/(rows-1)));
   var sc=demoScale(vals),T=[],idx=0;for(var rr=0;rr<rows;rr++){T[rr]=[];for(var cc=0;cc<cols;cc++,idx++)T[rr][cc]=scaledT(vals[idx],sc,idx);}
@@ -1429,14 +1770,19 @@ function isolinesSVG(){var cols=40,rows=26,s=openStroke("isolines");
   for(var li0=0;li0<isoN;li0++){levels.push((li0+1)/(isoN+1));colorT.push(isoN>1?li0/(isoN-1):0);}
   var pathCount=0,cSeg=0;
   levels.forEach(function(L,li){var segs=[],d="";
-    for(var r=0;r<rows-1;r++)for(var c=0;c<cols-1;c++){var v00=T[r][c],v10=T[r][c+1],v11=T[r+1][c+1],v01=T[r+1][c];var e=[];
+    for(var r=0;r<rows-1;r++)for(var c=0;c<cols-1;c++){var v00=T[r][c],v10=T[r][c+1],v11=T[r+1][c+1],v01=T[r+1][c];var e={};
       function ip(xa,ya,va,xb,yb,vb){var t=Math.abs(vb-va)<1e-9?0.5:(L-va)/(vb-va);t=Math.max(0,Math.min(1,t));return [xa+(xb-xa)*t,ya+(yb-ya)*t];}
-      if((v00-L)*(v10-L)<0)e.push(ip(fx(c),fy(r),v00,fx(c+1),fy(r),v10));
-      if((v10-L)*(v11-L)<0)e.push(ip(fx(c+1),fy(r),v10,fx(c+1),fy(r+1),v11));
-      if((v01-L)*(v11-L)<0)e.push(ip(fx(c),fy(r+1),v01,fx(c+1),fy(r+1),v11));
-      if((v00-L)*(v01-L)<0)e.push(ip(fx(c),fy(r),v00,fx(c),fy(r+1),v01));
-      for(var i=0;i+1<e.length;i+=2)segs.push([e[i],e[i+1]]);}
-    chainSegments(segs).forEach(function(ch){if(ch.length<2)return;d+=catmullRomPath(ch);pathCount++;cSeg+=Math.max(0,ch.length-1);});
+      if((v00-L)*(v10-L)<0)e.top=ip(fx(c),fy(r),v00,fx(c+1),fy(r),v10);
+      if((v10-L)*(v11-L)<0)e.right=ip(fx(c+1),fy(r),v10,fx(c+1),fy(r+1),v11);
+      if((v01-L)*(v11-L)<0)e.bottom=ip(fx(c),fy(r+1),v01,fx(c+1),fy(r+1),v11);
+      if((v00-L)*(v01-L)<0)e.left=ip(fx(c),fy(r),v00,fx(c),fy(r+1),v01);
+      var ks=Object.keys(e);
+      if(ks.length===2)segs.push([e[ks[0]],e[ks[1]]]);
+      else if(ks.length===4){var caseId=(v00>=L?1:0)+(v10>=L?2:0)+(v11>=L?4:0)+(v01>=L?8:0),
+        center=scaledT(field((c+.5)/(cols-1),(r+.5)/(rows-1)),sc,0)>=L,trbl=caseId===5?center:!center;
+        if(trbl){segs.push([e.top,e.right]);segs.push([e.bottom,e.left]);}
+        else{segs.push([e.top,e.left]);segs.push([e.right,e.bottom]);}}}
+    chainSegments(segs).forEach(function(ch){ch=simplifyPath(ch,ISOEPS);if(ch.length<2)return;d+=catmullRomPath(ch);pathCount++;cSeg+=Math.max(0,ch.length-1);});
     s+='<path d="'+d+'" fill="none" stroke="'+demoLookup(colorT[li])+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>';});
   window.dmCmapExplorerIsolineStats={paths:pathCount,cSegments:cSeg,lSegments:0};
   return s+"</svg>";}
@@ -1450,7 +1796,9 @@ function streamlineData(){var lines=[];
       parts.push([nx,ny]);speeds.push(cylinderSpeed(nx,ny));angs.push(cylinderAngle(nx,ny));x=nx;y=ny;if(x>=1.02)break;}
     var arc=0;for(var i=1;i<parts.length;i++)arc+=Math.hypot(parts[i][0]-parts[i-1][0],parts[i][1]-parts[i-1][1]);
     if(arc<.94||parts.length<22||parts[parts.length-1][0]<.94)continue;
-    lines.push({pts:parts.map(function(p){return [p[0]*VW,(1-p[1])*VH];}),speeds:speeds,angles:angs});}
+    var pts=resamplePath(parts.map(function(p){return [p[0]*VW,(1-p[1])*VH];}),STREAM_ARC);
+    speeds=[];angs=[];pts.forEach(function(p){var nx=p[0]/VW,ny=1-p[1]/VH;speeds.push(cylinderSpeed(nx,ny));angs.push(cylinderAngle(nx,ny));});
+    lines.push({pts:pts,speeds:speeds,angles:angs});}
   return lines.slice(0,28);}
 function streamlinesSVG(){var s=openStroke("streamlines"),lines=streamlineData(),vals=[],angs=[],segs=[],cSeg=0;
   lines.forEach(function(L){for(var j=0;j<L.pts.length-1;j++){vals.push((L.speeds[j]+L.speeds[j+1])*.5);angs.push((L.angles[j]+L.angles[j+1])*.5);segs.push([L,j]);}});
@@ -1482,7 +1830,7 @@ function mosaicSVG(){var s=openArea("mosaic"),rects=[[0,0,1,1,0]];
   return s+"</svg>";}
 function linesSVG(){var n=6,s=openStroke("lines"),vals=[],series=[],lo=Infinity,hi=-Infinity;
   for(var j=0;j<n;j++){vals.push(j/(n-1));var pts=[];
-    for(var px=0;px<=VW;px+=2){var x=px/VW,v=(j-(n-1)/2)*.38+.74*Math.sin(6.283*((1.05+j*.09)*x)+j*.72)+.34*Math.cos(6.283*((2.05+j*.13)*x)-j*.43)+.16*Math.sin(6.283*(3.4*x+j*.11));pts.push([px,v]);lo=Math.min(lo,v);hi=Math.max(hi,v);}
+    for(var i=0;i<LINE_SAMPLES;i++){var px=i*(VW/(LINE_SAMPLES-1)),x=px/VW,v=(j-(n-1)/2)*.38+.74*Math.sin(6.283*((1.05+j*.09)*x)+j*.72)+.34*Math.cos(6.283*((2.05+j*.13)*x)-j*.43)+.16*Math.sin(6.283*(3.4*x+j*.11));pts.push([px,v]);lo=Math.min(lo,v);hi=Math.max(hi,v);}
     series.push(pts);}
   var span=hi-lo||1,sc=demoScale(vals,{angles:vals});
   series.forEach(function(pts,j){var p=pts.map(function(q){return [q[0],VH*.96-((q[1]-lo)/span)*VH*.92];}),d=catmullRomPath(p);
@@ -1498,7 +1846,7 @@ function ridgeProfile(row,x,rows){var drift=.34+.26*row/(rows-1)+.035*Math.sin(r
   for(var j=0;j<bn;j++){var ctr=drift+offs[j]+.025*Math.sin((row+1)*(j+1)*.83),w=.070+.020*((row+j)%4)+.012*j,h=.46+.18*((row*2+j*3)%5)/4+(j===1?.20:0);v+=h*Math.exp(-((x-ctr)/w)*((x-ctr)/w));}
   return Math.max(0,v+.035*Math.sin(6.283*(x*1.5+row*.07)));}
 function ridgelineSVG(){var rows=11,rowGap=8.6,peakH=rowGap*1.6,s=openStroke("ridgeline"),profiles=[],rowVals=[];
-  for(var r=0;r<rows;r++){var prof=[],peak=0;for(var i=0;i<54;i++){var x=-.04+i*(1.08/53),v=ridgeProfile(r,x,rows);prof.push([x,v]);peak=Math.max(peak,v);}profiles.push({p:prof,peak:peak||1});rowVals.push(r/(rows-1));}
+  for(var r=0;r<rows;r++){var prof=[],peak=0;for(var i=0;i<RIDGE_SAMPLES;i++){var x=-.04+i*(1.08/(RIDGE_SAMPLES-1)),v=ridgeProfile(r,x,rows);prof.push([x,v]);peak=Math.max(peak,v);}profiles.push({p:prof,peak:peak||1});rowVals.push(r/(rows-1));}
   var sc=demoScale(rowVals,{angles:rowVals}),base0=VH-rowGap*(rows-1);
   profiles.forEach(function(row,r){var base=base0+r*rowGap,pts=row.p.map(function(p){return [p[0]*VW,base-(p[1]/row.peak)*peakH];}),d=catmullRomPath(pts);
     d+="L"+(row.p[row.p.length-1][0]*VW).toFixed(2)+" "+base.toFixed(2)+"L"+(row.p[0][0]*VW).toFixed(2)+" "+base.toFixed(2)+"Z";
