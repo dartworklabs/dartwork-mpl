@@ -27,8 +27,8 @@ import re
 import statistics
 from pathlib import Path
 
-from dartwork_mpl.colors._generated import CMAPS_256
-from dartwork_mpl.colors._metrics import (
+from dartwork_mpl._colors._generated import CMAPS_256
+from dartwork_mpl._colors._metrics import (
     cvd_rgb,
     de2000_hex,
     de2000_rgb,
@@ -1562,8 +1562,8 @@ def main() -> None:
 # ---------------------------------------------------------------------------
 TEMPLATE = r"""<!-- GENERATED FILE - do not edit by hand.
      Source: docs/_static/scripts/build_colormap_explorer.py
-     Data:   src/dartwork_mpl/colors/_generated.py (CMAPS_256)
-             src/dartwork_mpl/colors/_metrics.py (Lab / chroma / CVD metrics)
+     Data:   src/dartwork_mpl/_colors/_generated.py (CMAPS_256)
+             src/dartwork_mpl/_colors/_metrics.py (Lab / chroma / CVD metrics)
      Regenerate: python3 docs/_static/scripts/build_colormap_explorer.py -->
 <div id="dm-cmap-exp" class="yue">
 <p class="cx-count" id="cx-count"></p>

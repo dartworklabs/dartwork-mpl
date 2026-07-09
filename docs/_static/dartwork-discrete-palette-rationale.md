@@ -23,8 +23,8 @@ secondary context, and cool families (`blue`, `cobalt`, `teal`, `indigo`,
 `cyan`) for analytical series.
 
 Every family is generated from the v5 recipe in
-`src/dartwork_mpl/colors/_recipe.py` and materialized in
-`src/dartwork_mpl/colors/_generated.py`. The preserved curated categorical
-sets live in `src/dartwork_mpl/colors/_curated.py`; their legacy standalone
+`src/dartwork_mpl/_colors/_recipe.py` and materialized in
+`src/dartwork_mpl/_colors/_generated.py`. The preserved curated categorical
+sets live in `src/dartwork_mpl/_colors/_curated.py`; their legacy standalone
 generator was removed, but the palette sets remain part of the `dc.*` system.
 This file is documentation only.

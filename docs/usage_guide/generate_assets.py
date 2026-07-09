@@ -639,7 +639,7 @@ def _save_diverging_bar(images_dir: Path) -> Path:
 #
 # def _save_diagnostics_preview(images_dir: Path) -> Path:
 #     dm.style.use("presentation")
-#     figs = dm.plot_colors(ncols=4, sort_colors=True, show_hex=False)
+#     fig = dm.show_colors(kind="qualitative")
 #     ...
 
 

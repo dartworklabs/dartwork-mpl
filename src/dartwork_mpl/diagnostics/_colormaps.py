@@ -1,8 +1,4 @@
-"""Colormap diagnostics — classify and render registered colormaps.
-
-Part of the :mod:`dartwork_mpl.diagnostics` package; the public entry
-points are re-exported from its ``__init__``.
-"""
+"""Colormap diagnostics for registered colormaps."""
 
 from __future__ import annotations
 
@@ -13,6 +9,14 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
+
+from .._colors._families import (
+    CYCLIC,
+    DIVERGING,
+    MULTI_HUE,
+    QUALITATIVE,
+    SEQUENTIAL,
+)
 
 if TYPE_CHECKING:
     from matplotlib.colors import Colormap
@@ -40,68 +44,15 @@ _CATEGORY_STYLE: dict[str, tuple[str, str]] = {
 # "Multi-Hue", warm scenes as "Single-Hue"), so the v5 taxonomy is pinned
 # explicitly from the authoritative catalog.
 _CLASSIFICATION_OVERRIDES: dict[str, str] = {
-    # ── v5 catalog (dartwork_mpl.colors) ──
-    **{
-        f"dc.{n}": "Single-Hue"
-        for n in (
-            "red",
-            "rose",
-            "coral",
-            "tangerine",
-            "orange",
-            "amber",
-            "yellow",
-            "lime",
-            "green",
-            "teal",
-            "cyan",
-            "sky",
-            "blue",
-            "cobalt",
-            "indigo",
-            "violet",
-            "purple",
-            "fuchsia",
-            "pink",
-            "gray",
-        )
-    },
-    **{
-        f"dc.{n}": "Multi-Hue"
-        for n in (
-            "aurora",
-            "afterglow",
-            "blaze",
-            "lava",
-            "lagoon",
-            "glacier",
-            "canopy",
-            "haze",
-            "iris",
-        )
-    },
-    **{
-        f"dc.{n}": "Diverging"
-        for n in (
-            "blue_red",
-            "blue_orange",
-            "teal_rose",
-            "green_purple",
-            "purple_orange",
-            "cyan_red",
-            "teal_amber",
-            "violet_lime",
-            "indigo_amber",
-            "gray_blue",
-            "gray_red",
-        )
-    },
-    **{f"dc.{n}": "Cyclical" for n in ("hue", "halo", "corona")},
-    **{f"dc.{n}": "Categorical" for n in ("octave", "octave_print")},
+    **{f"dc.{name}": "Single-Hue" for name in SEQUENTIAL},
+    **{f"dc.{name}": "Multi-Hue" for name in MULTI_HUE},
+    **{f"dc.{name}": "Diverging" for name in DIVERGING},
+    **{f"dc.{name}": "Cyclical" for name in CYCLIC},
+    **{f"dc.{name}": "Categorical" for name in QUALITATIVE},
 }
 
 
-def classify_colormap(cmap: Colormap) -> str:
+def classify_cmap(cmap: Colormap) -> str:
     """Classify a colormap into one of the following categories.
 
     Categories
@@ -247,12 +198,12 @@ def classify_colormap(cmap: Colormap) -> str:
     return "Multi-Hue"
 
 
-def plot_colormaps(
+def render_cmap_catalog(
     cmap_list: list[str] | list[Colormap] | None = None,
     ncols: int = 3,
     group_by_type: bool = True,
 ) -> list[Figure]:
-    """Plot colormaps grouped by type.
+    """Render colormaps grouped by type.
 
     Returns a list of figures, one per category.  Does **not** call
     ``plt.show()`` — the caller decides when to display.
@@ -290,7 +241,7 @@ def plot_colormaps(
         return [_plot_flat(cmap_list, gradient, ncols)]
 
     # ----- Group by category -----
-    # Must include every category classify_colormap can return, else the
+    # Must include every category classify_cmap can return, else the
     # ``categories[category].append`` below raises KeyError.
     category_order = [
         "Single-Hue",
@@ -302,7 +253,7 @@ def plot_colormaps(
 
     categories: dict[str, list[Any]] = {cat: [] for cat in category_order}
     for cmap in cmap_list:
-        category = classify_colormap(cmap)
+        category = classify_cmap(cmap)
         categories[category].append(cmap)
 
     categories = {k: v for k, v in categories.items() if v}

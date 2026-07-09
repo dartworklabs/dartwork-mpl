@@ -26,24 +26,25 @@ Octave Print, and 11 curated qualitative sets.
 ```python
 import dartwork_mpl as dm
 
-dm.set_cycle(dm.cycle("octave"))   # Octave — the searched 8-color default
-dm.set_cycle("trustworthy")                  # any curated set, by name
-dm.set_cycle("green", n=5)                   # 5 steps of one hue family
-dm.set_cycle(["dc.hl", "dc.gray3", "dc.gray5"], ax=ax)   # one Axes only
-cols = dm.get_palette("blue", n=4, subset="even")        # colors, not cycle
-ax.set_prop_cycle(dm.cycle_cycler())         # >8 series: 8 colors x 3 styles
+dm.set_colors()                              # Octave — the searched default
+dm.set_colors("trustworthy")                 # any curated set, by name
+dm.set_colors("green", n=5)                  # 5 steps of one hue family
+dm.set_colors(["dc.hl", "dc.gray3", "dc.gray5"], ax=ax)  # one Axes only
+cols = dm.colors("blue", n=4)                # designed color list
+dm.set_colors(ax=ax, styles=True)            # >8 series: 8 colors x 3 styles
 ```
 
-Every name resolves under `dc.*`: `"blue"` expands to `dc.blue0` … `dc.blue9`,
-and `"trustworthy"` expands to `dc.trustworthy0` … `dc.trustworthy7`. The cycles
-are also registered as colormaps (`dc.octave`, `dc.octave_print`) for
-`scatter(c=...)` and seaborn `palette=`.
+Every name resolves under `dc.*`: `"blue"` can return designed samples from the
+single-hue family, and `"trustworthy"` returns the curated qualitative set. The
+qualitative families are also registered as colormaps (`dc.octave`,
+`dc.octave_print`, `dc.trustworthy`, …) for `scatter(c=...)` and seaborn
+`palette=`.
 
 ## Which palette for which data?
 
 | Your data | Reach for | Explorer group |
 | --- | --- | --- |
-| Everyday 4-8 categories | `dm.cycle("octave")` or `trustworthy` | Qualitative |
+| Everyday 4-8 categories | `dm.colors("octave", n=8)` or `trustworthy` | Qualitative |
 | Many unrelated categories, max distinctness | `vivid` or `neon` | Qualitative |
 | A few related series, one mood | a hue family sampled evenly, or `forest` | Sequential / Qualitative |
 | Ordered amount (rank) | one family ramp; `gray` if hue means nothing | Sequential / Neutral |
@@ -51,20 +52,21 @@ are also registered as colormaps (`dc.octave`, `dc.octave_print`) for
 | Soft, editorial, dense dashboards | `pastel` or `dusty` | Muted |
 | A specific mood (warm / earthy / luxury) | `ember`, `earth`, or `jewel` | Tone |
 | Highlight one series, mute the rest | `teal_accent`, `coral_accent`, or `dc.hl` + grays | Emphasis |
-| Colorblind-mandatory | `dm.cycle("octave")` or `trustworthy` | Qualitative |
+| Colorblind-mandatory | `dm.colors("octave", n=8)` or `trustworthy` | Qualitative |
 
 ## How the system is organized
 
-Everything lives in one `dc.*` namespace and uses one API: `dm.cycle(...)` for
-matplotlib cycles, `dm.get_palette(...)` for color lists, and
-`dm.set_cycle(...)` to apply colors globally or to one Axes.
+Everything lives in one `dc.*` namespace and uses one API: `dm.colors(...)` for
+colormaps or designed color lists, `dm.set_colors(...)` to apply colors globally
+or to one Axes, `dm.list_colors(...)` for family metadata, and
+`dm.show_colors(...)` for previews.
 
 There are three layers: Octave, the searched default cycle for everyday charts;
 20 generative single-hue families (19 chromatic plus gray, ten perceptually
 equalized steps on CIELAB L\* + OKLCH) for ordered and sequential work; and 11
 hand-tuned curated qualitative sets for muted, tonal, forest, and emphasis use
 cases. Four canonical diverging discrete forms (`blue_red`, `blue_orange`,
-`teal_amber`, `green_purple`) remain available through `dm.get_palette(...)`
+`teal_amber`, `green_purple`) remain available through `dm.colors(..., n=8)`
 and `dc.*` tokens, but they are not categorical rail choices.
 
 The count rule is simple: families have 10 steps; curated qualitative and
@@ -77,7 +79,7 @@ curated ramps are not duplicated; the families serve that job.
 ### Octave — the default cycle
 
 Octave is the default coherent data-series cycle when you do not want to choose
-a palette by hand; use `dm.cycle("octave")` or the stable `dc.octave` colormap
+a palette by hand; use `dm.set_colors()` or the stable `dc.octave` colormap
 token. Its eight chromatic colors were selected by exhaustive search to stay
 distinct under color-vision-deficiency simulation. The common red-green
 deficiencies clear min ΔE00 10.3 (vs the Okabe-Ito benchmark's 11.5), and on
@@ -92,9 +94,9 @@ screen versus print: Octave keeps every color in the line-safe L* 43-78 band
 for thin lines on white, while Octave Print guarantees every pair is at least
 about 7 L* apart (min ΔL* 7.7) for grayscale printing and photocopies. It
 keeps the same hue per slot as Octave, and the violet slot matches Octave. Need
-more than eight line series? Opt in to `dm.cycle_cycler()`, which expands the
-cycle to 8 × 3 = 24 color/style combinations. Line styles are opt-in because a
-plot with `lw=0` would otherwise inherit dashes and break.
+more than eight line series? Opt in to `dm.set_colors(styles=True)`, which
+expands the cycle to 8 × 3 = 24 color/style combinations. Line styles are opt-in
+because a plot with `lw=0` would otherwise inherit dashes and break.
 
 ### Hue families
 
@@ -105,8 +107,8 @@ The chromatic families follow the hue spectrum: `red` · `rose` · `coral` ·
 sample evenly spaced steps for related series.
 
 ```python
-cols = dm.get_palette("blue", n=4, subset="even")
-cols = dm.get_palette("teal", order="lightness")
+cols = dm.colors("blue", n=4)
+cols = dm.colors("teal", n=6, reverse=True)
 ```
 
 ### Curated sets
@@ -127,15 +129,14 @@ The four canonical discrete diverging forms are `blue_red`, `blue_orange`,
 not unordered categorical sets, so the explorer keeps them out of the
 qualitative rail.
 
-### `get_palette` and `set_cycle` options
+### `colors` and `set_colors` options
 
 | Option | What it does |
 | --- | --- |
-| `n` / `subset` (`"first"` \| `"even"` \| `"last"`) | Choose how many colors and which steps to sample. |
-| `order` (`"default"` \| `"lightness"` \| `"shuffle"`) | Keep palette order, sort by lightness, or shuffle. |
-| `reverse` | Flip the resulting order. |
-| `seed` | Make shuffled order reproducible. |
-| `set_cycle(palette, ax=None, n=None)` | Apply a palette globally, or to one Axes with `ax=`. |
+| `colors(name, n=None)` | Return the registered colormap when `n` is omitted, or a designed list when `n` is set. |
+| `n` | Choose how many colors from the designed discrete form. Continuous families require it when used with `set_colors`. |
+| `reverse` | Flip the resulting list or colormap. |
+| `set_colors(name_or_list=None, ax=None, n=None, styles=False)` | Apply a palette globally, to one Axes with `ax=`, or expand it with line styles. |
 
 Names resolve under `dc.*`, so `"blue"` and `"trustworthy"` are enough.
 

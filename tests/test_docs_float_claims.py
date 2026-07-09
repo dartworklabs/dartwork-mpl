@@ -23,8 +23,8 @@ from pathlib import Path
 import matplotlib as mpl
 import pytest
 
-from dartwork_mpl.colors._gates import gate_cycle, gate_seq_cmap
-from dartwork_mpl.colors._generated import CMAPS_256, CYCLES
+from dartwork_mpl._colors._gates import gate_cycle, gate_seq_cmap
+from dartwork_mpl._colors._generated import CMAPS_256, CYCLES
 
 _REPO = Path(__file__).resolve().parents[1]
 

@@ -43,7 +43,7 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.transforms import ScaledTranslation
 
-from .colors import Color
+from ._colors import Color
 
 
 def set_decimal(ax: Axes, xn: int | None = None, yn: int | None = None) -> None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.colors._metrics import (
+from dartwork_mpl._colors._metrics import (
     cvd_rgb,
     de2000_hex,
     de_ok_rgb,

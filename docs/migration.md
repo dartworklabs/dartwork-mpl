@@ -26,7 +26,7 @@ coming from:
 | `plt.tight_layout()`                  | `dm.simple_layout(fig)`                              |
 | `dm.auto_layout(fig)`                 | `dm.simple_layout(fig, margin=...)`                  |
 | old named-color helper                | `dm.color("oc.red5")` (also accepts hex / `rgb(...)` / `oklch(...)` / `oklab(...)`) |
-| `from dartwork_mpl.color import ...`  | `from dartwork_mpl.colors import ...` (submodule renamed) |
+| `from dartwork_mpl.color import ...`  | `from dartwork_mpl._colors import ...` (submodule renamed) |
 | `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`                           |
 | `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`                        |
 | `dm.install_llm_txt()`                | `dm.get_agent_doc(name)` / `dm.agent_doc_path(name)` (or MCP `dartwork-mpl://guide/*`) |
@@ -48,8 +48,8 @@ steps, `dc.{family}{step}`) replaced the hand-curated v4 catalog. v5 is a
    `0`–`7` no longer resolve. The scientifically curated categorical *sets* —
    `trustworthy`, `vivid`, `neon`, `jewel`, `blue_red`, `teal_amber`, `earth`,
    `forest`, `blue_orange`, and the rest — are **preserved** as first-class
-   `dc.*` palettes: reach them through `dm.get_palette("trustworthy", n=6)` /
-   `dm.set_cycle("vivid")`, exactly like a v5 family (see
+   `dc.*` palettes: reach them through `dm.colors("trustworthy", n=6)` /
+   `dm.set_colors("vivid")`, exactly like a v5 family (see
    [Categorical palettes](color_system/categorical-palettes.md)).
 2. **There is no runtime palette-version switch.** The live registry is
    v5-only, so `teal`, `indigo`, and `gray` always mean the 10-step v5
@@ -328,5 +328,5 @@ The submodule was also renamed `color` → `colors`. Anywhere you used
 from dartwork_mpl.color import Color
 
 # Now
-from dartwork_mpl.colors import Color
+from dartwork_mpl._colors import Color
 ```

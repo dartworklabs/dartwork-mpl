@@ -31,26 +31,27 @@ parameter list.
 
 ## Diagnostics & previews (`diagnostics`)
 
-The four asset-inspection helpers live in `dartwork_mpl.diagnostics`
-and are also re-exported at the top level (`dm.<name>`). Use them to
-audit *exactly* what your environment has registered — fonts, color
-libraries, and curated colormaps — before you commit to a chart.
+Asset-inspection helpers live in `dartwork_mpl.diagnostics`; `dm.show_colors`
+covers the Model B color-family preview directly. Use them to audit *exactly*
+what your environment has registered — fonts, color libraries, and curated
+colormaps — before you commit to a chart.
 
 ```python
 import dartwork_mpl as dm
+from dartwork_mpl import diagnostics
 
-# 1. What named colors are available, grouped by library?
-dm.plot_colors(ncols=5, sort_colors=True)
+# 1. What Model B families are available?
+dm.show_colors(kind="qualitative")
 
 # 2. Which colormaps does dartwork-mpl bundle, by category?
-dm.plot_colormaps(group_by_type=True, ncols=4)
+diagnostics.render_cmap_catalog(group_by_type=True, ncols=4)
 
 # 3. Are my fonts registered? (sanity-check Korean/CJK installs)
 dm.plot_fonts(font_size=11, ncols=3)
 
 # 4. What category does an arbitrary colormap belong to?
 import matplotlib as mpl
-print(dm.classify_colormap(mpl.colormaps["coolwarm"]))  # → "Diverging"
+print(diagnostics.classify_cmap(mpl.colormaps["coolwarm"]))  # → "Diverging"
 ```
 
 :::{note}
@@ -62,21 +63,20 @@ checks; the catalog page is the place to browse.
 :::
 
 :::{tip}
-**Lightweight discovery.** If you only need a list (not a full
-preview figure), use `dm.list_palettes()`, `dm.list_colormaps()`, or
-`dm.show_palette("oc.blue")` — these return Python lists or render a
-single-row swatch, perfect for Jupyter completion.
+**Lightweight discovery.** If you only need a list (not a full preview figure),
+use `dm.list_colors()`; if you need the actual colors, call
+`dm.colors("blue", n=5)` or `dm.colors("aurora")`.
 :::
 
 <!-- snippet: no-run -->
 ```python
->>> dm.list_palettes()[:5]
-['ad.blue', 'ad.cyan', 'ad.geekblue', 'ad.gold', 'ad.green']
+>>> [record["name"] for record in dm.list_colors()[:5]]
+['amber', 'blue', 'cobalt', 'coral', 'cyan']
 
->>> "dc.aurora" in dm.list_colormaps()   # the default heatmap map
-True
+>>> dm.colors("aurora").name
+'dc.aurora'
 
->>> dm.show_palette("oc.blue")   # renders a horizontal swatch row
+>>> dm.show_colors(names=["blue"], n=5)   # renders a compact preview
 ```
 
 See [API › Visualization Tools](../api/visualization.rst) for full

@@ -128,7 +128,7 @@ _WIDTH_RE = re.compile(
 class Length:
     """Physical length with multi-unit views.
 
-    Mirrors the :class:`~dartwork_mpl.colors.Color` design: an opaque
+    Mirrors the :class:`~dartwork_mpl._colors.Color` design: an opaque
     wrapper with a single canonical store (inches) and per-unit
     property views (``length.cm``, ``length.mm``, ``length.inch``,
     ``length.pt``). Deliberately **not** a ``float`` subclass —
@@ -423,7 +423,7 @@ def length(value: str | Length) -> Length:
     """Parse a unit string (or pass through a Length) into :class:`Length`.
 
     The string-parser counterpart to :func:`cm` / :func:`inch` /
-    :func:`mm` / :func:`pt`. Mirrors :func:`dartwork_mpl.colors.hex`.
+    :func:`mm` / :func:`pt`. Mirrors :func:`dartwork_mpl._colors.hex`.
     """
     return Length(value)
 

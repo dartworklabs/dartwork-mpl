@@ -6,7 +6,7 @@ import matplotlib as mpl
 import pytest
 
 import dartwork_mpl  # noqa: F401 — registers dc.* cmaps on import
-from dartwork_mpl.colors import _generated
+from dartwork_mpl._colors import _generated
 
 
 def test_registry_names():

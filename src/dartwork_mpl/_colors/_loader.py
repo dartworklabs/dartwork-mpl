@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 import matplotlib.colors as mcolors
 
 from ._curated import CURATED
+from ._discrete import DIVERGING_CANONICALS, GENERATED_DIVERGING
 from ._generated import PALETTE
 
 if TYPE_CHECKING:
@@ -170,12 +171,18 @@ def _load_colors() -> None:
 
     # Dartwork curated palettes (dc.* qualitative sets plus canonical
     # discrete forms for the four absorbed diverging families — see
-    # colors/_curated.py). Registered after the generated families so a family
+    # _colors/_curated.py). Registered after the generated families so a family
     # name always wins.
     for name, row in CURATED.items():
         if name in PALETTE:  # defensive: never shadow a generated family
             continue
         for step, hexval in enumerate(row):
+            color_dict[f"dc.{name}{step}"] = hexval
+
+    # Generated canonical diverging discrete forms (the four absorbed
+    # curated forms are registered by CURATED above).
+    for name in GENERATED_DIVERGING:
+        for step, hexval in enumerate(DIVERGING_CANONICALS[name]):
             color_dict[f"dc.{name}{step}"] = hexval
 
     # Register with matplotlib.

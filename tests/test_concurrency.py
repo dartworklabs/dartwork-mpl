@@ -41,8 +41,8 @@ import pytest
 
 from dartwork_mpl import font as font_module
 from dartwork_mpl import icon as icon_module
-from dartwork_mpl.colors import _loader as colors_loader_module
-from dartwork_mpl.colors._loader import ensure_loaded as ensure_colors_loaded
+from dartwork_mpl._colors import _loader as colors_loader_module
+from dartwork_mpl._colors._loader import ensure_loaded as ensure_colors_loaded
 from dartwork_mpl.font import ensure_loaded as ensure_fonts_loaded
 from dartwork_mpl.icon import ensure_loaded as ensure_icons_loaded
 
@@ -204,7 +204,7 @@ class TestFontEnsureLoadedConcurrency:
 
 
 class TestColorsEnsureLoadedConcurrency:
-    """Stress tests for :func:`dartwork_mpl.colors._loader.ensure_loaded`.
+    """Stress tests for :func:`dartwork_mpl._colors._loader.ensure_loaded`.
 
     The colours loader was the one sibling that shipped without the
     double-checked lock that font/icon/Style got in PR #79 / #236.

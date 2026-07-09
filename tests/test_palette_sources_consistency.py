@@ -5,8 +5,8 @@ from __future__ import annotations
 import matplotlib.colors as mcolors
 
 import dartwork_mpl as dm
-from dartwork_mpl.colors import _generated
-from dartwork_mpl.colors._loader import ensure_loaded
+from dartwork_mpl._colors import _generated
+from dartwork_mpl._colors._loader import ensure_loaded
 
 
 def test_generated_palette_registers_every_v5_token_hex_for_hex() -> None:
@@ -19,11 +19,11 @@ def test_generated_palette_registers_every_v5_token_hex_for_hex() -> None:
             assert mapping[f"dc.{family}{step}"] == expected
 
 
-def test_get_palette_resolves_every_v5_family_to_ten_steps() -> None:
+def test_colors_resolves_every_v5_family_to_ten_steps() -> None:
     """Bare v5 family names resolve to the full 10-step ``dc.<family>`` row."""
     for family in _generated.PALETTE:
-        cols = dm.get_palette(family)
-        assert cols == [f"dc.{family}{i}" for i in range(10)]
+        cols = dm.colors(family, n=10)
+        assert cols == list(_generated.PALETTE[family])
 
 
 def test_octave_cycle_tokens_are_generated_v5_values() -> None:

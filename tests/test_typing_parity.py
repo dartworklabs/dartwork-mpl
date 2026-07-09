@@ -15,7 +15,7 @@ import matplotlib.colors as mcolors
 import pytest
 
 import dartwork_mpl  # noqa: F401 — registers color namespaces
-from dartwork_mpl.colors._typing import DartworkColor, DartworkColormap
+from dartwork_mpl._colors._typing import DartworkColor, DartworkColormap
 
 _REGEN = ".venv-local/bin/python scripts/generate_typing.py"
 

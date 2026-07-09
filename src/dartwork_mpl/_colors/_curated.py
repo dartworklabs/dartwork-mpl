@@ -4,7 +4,7 @@
 
 - 11 qualitative sets shown in the categorical explorer rail.
 - 4 absorbed diverging canonical 8-color forms. These stay here so
-  ``dc.<name>0`` tokens and ``dm.get_palette("<name>")`` resolve through the
+  ``dc.<name>0`` tokens and ``dm.colors("<name>", n=8)`` resolve through the
   existing loader, but explorer builders filter them out with
   ``CURATED_QUALITATIVE_ORDER``.
 

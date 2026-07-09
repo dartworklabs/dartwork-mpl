@@ -5,12 +5,12 @@ Magnetic Field Visualization
 Four magnetic dipoles arranged on the cardinal axes generate the field
 plotted here. Three thousand short "iron filings" are oriented along
 the local field direction, then a streamplot superimposes smooth field
-lines coloured by magnitude with the ``dc.ice_fire`` colormap.
+lines coloured by magnitude with the ``dc.teal_amber`` colormap.
 
 This example highlights:
 
 - Mixing custom ``dm.mix_colors`` blends with built-in dartwork-mpl
-  colormaps (``dc.ice_fire``).
+  colormaps (``dc.teal_amber``).
 - Marking dipole poles with red/blue Circle patches plus N/S labels
   for instant orientation.
 """
@@ -87,7 +87,7 @@ ax.streamplot(
     Bx,
     By,
     color=B_mag,
-    cmap="dc.ice_fire",
+    cmap="dc.teal_amber",
     linewidth=dm.lw(-1),
     density=0.8,
     arrowsize=1,

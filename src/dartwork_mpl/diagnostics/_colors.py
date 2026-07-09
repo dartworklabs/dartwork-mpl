@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.patches import FancyBboxPatch
 
-from ..colors._loader import COLOR_LIBRARIES
+from .._colors._loader import COLOR_LIBRARIES
 
 if TYPE_CHECKING:
     pass
@@ -54,7 +54,7 @@ def _extract_number_from_color_name(color_name: str) -> int | None:
     name = color_name
     # Prefixes derive from the COLOR_LIBRARIES SSOT (like the other
     # consumers in this module) instead of a re-hardcoded list.
-    from ..colors._loader import COLOR_LIBRARIES
+    from .._colors._loader import COLOR_LIBRARIES
 
     for prefix in [lib[1] for lib in COLOR_LIBRARIES]:
         if name.startswith(prefix):
@@ -465,14 +465,14 @@ def _plot_single_library(
     return fig
 
 
-def plot_colors(
+def render_color_catalog(
     colors: dict[str, str | tuple[float, float, float]] | None = None,
     *,
     ncols: int = 4,
     sort_colors: bool = True,
     show_hex: bool = True,
 ) -> list[Figure]:
-    """Plot a grid of named colors with their names and hex values.
+    """Render a grid of named colors with their names and hex values.
 
     Creates separate figures for each color library (Open Color,
     Tailwind, Material Design, Ant Design, Chakra UI, Primer, Other).

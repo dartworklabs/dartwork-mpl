@@ -51,8 +51,8 @@ orphan: true
   in the v0.3.x series (see issue #57). The legacy `asset_viz`
   subpackage is a thin deprecation shim that re-exports the same
   four helpers.
-- `dm.explore` re-exports `classify_colormap` / `plot_colormaps` /
-  `plot_colors` / `plot_fonts` so discovery-oriented workflows can
+- `dm.explore` re-exports `classify_cmap` / `render_cmap_catalog` /
+  `render_color_catalog` / `plot_fonts` so discovery-oriented workflows can
   reach every asset-introspection helper through a single module.
 
 ## Final Structure

@@ -4,12 +4,11 @@ Provides facilities for loading, registering, and converting colors
 across OKLab, OKLCH, RGB, and Hex color spaces.
 """
 
+from ._api import colors, list_colors, set_colors, show_colors
 from ._color import Color, color, cspace, hex, oklab, oklch, rgb
-from ._cycle_api import cycle, cycle_cycler
 from ._loader import ensure_loaded as _ensure_colors_loaded
 from ._register import ensure_registered as _ensure_cmaps_registered
 from ._semantic import apply_semantic as _apply_default_semantic
-from ._typing import DartworkColor, DartworkColormap
 from ._views import (
     OklabView,
     OklabViewIterator,
@@ -21,8 +20,6 @@ from ._views import (
 
 __all__ = [
     "Color",
-    "DartworkColor",
-    "DartworkColormap",
     "OklabView",
     "OklabViewIterator",
     "OklchView",
@@ -30,13 +27,15 @@ __all__ = [
     "RgbView",
     "RgbViewIterator",
     "color",
+    "colors",
     "cspace",
-    "cycle",
-    "cycle_cycler",
     "hex",
+    "list_colors",
     "oklab",
     "oklch",
     "rgb",
+    "set_colors",
+    "show_colors",
 ]
 
 # Register bundled color palettes with matplotlib on first import.

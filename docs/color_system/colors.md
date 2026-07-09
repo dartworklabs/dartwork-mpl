@@ -9,7 +9,7 @@ for cross-team consistency.
 **This page** is the static swatch reference — every color as a full-width
 sheet for browsing and copy-paste. To *pick* a categorical `dc.*` palette
 interactively (by intent, with B&W and color-blindness previews) and apply it
-with `set_cycle` / `get_palette`, see **[Categorical palettes](categorical-palettes.md)**.
+with `dm.set_colors(...)` / `dm.colors(..., n=...)`, see **[Categorical palettes](categorical-palettes.md)**.
 :::
 
 ## How to read the labels
@@ -56,8 +56,8 @@ Beyond the 20 single-hue families, dartwork ships 11 curated
 **qualitative sets** — hand-tuned qualitative, muted, tonal, forest, and
 emphasis palettes (CIELAB/OKLCH-anchored and verified for black-&-white +
 color-blindness) with no generative equivalent. They resolve through the same
-API as any family, so `dm.set_cycle("trustworthy")` and
-`dm.get_palette("pastel")` work exactly like `dm.get_palette("blue")`.
+API as any family, so `dm.set_colors("trustworthy")` and
+`dm.colors("pastel", n=8)` work alongside `dm.colors("blue", n=5)`.
 
 Counts are intentional: sequential family ramps have 10 steps, curated
 qualitative sets have 8 colors, Octave has 8 chromatic colors, and Octave Print

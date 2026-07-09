@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dartwork_mpl.colors import _generated
+from dartwork_mpl._colors import _generated
 
 
 def test_generated_tables_shape():
@@ -24,7 +24,7 @@ def test_generated_matches_ssot_palette(v5_ssot):
 
 
 def test_rebuild_is_byte_identical(tmp_path):
-    src = Path("src/dartwork_mpl/colors/_generated.py")
+    src = Path("src/dartwork_mpl/_colors/_generated.py")
     before = src.read_bytes()
     env = dict(os.environ)
     # Isolation: force the subprocess interpreter to resolve
@@ -37,7 +37,7 @@ def test_rebuild_is_byte_identical(tmp_path):
         f"{src_dir}{os.pathsep}{existing}" if existing else src_dir
     )
     r = subprocess.run(
-        [sys.executable, "-m", "dartwork_mpl.colors._build"],
+        [sys.executable, "-m", "dartwork_mpl._colors._build"],
         capture_output=True,
         text=True,
         env=env,
@@ -62,7 +62,7 @@ def test_build_taxonomy_names_are_real_cmaps(v5_ssot):
     it is mis-tagged seq. — cannot be auto-detected here without _cmaps
     declaring its own taxonomy; keep the sets in sync when adding maps.
     """
-    from dartwork_mpl.colors import _build
+    from dartwork_mpl._colors import _build
 
     keys = set(v5_ssot["colormaps"]["swatches_32"])  # == compile_cmaps() output
     assert keys >= _build._DIVERGING_CMAPS, _build._DIVERGING_CMAPS - keys

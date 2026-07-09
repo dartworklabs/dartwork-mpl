@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from itertools import combinations
 
-from dartwork_mpl.colors._cycles import CYCLE_SPECS, cycle_hexes
-from dartwork_mpl.colors._gates import gate_cycle
-from dartwork_mpl.colors._metrics import lab_l_hex
+from dartwork_mpl._colors._cycles import CYCLE_SPECS, cycle_hexes
+from dartwork_mpl._colors._gates import gate_cycle
+from dartwork_mpl._colors._metrics import lab_l_hex
 
 _OCTAVE_PRINT_SPEC = [
     ["blue", 5],

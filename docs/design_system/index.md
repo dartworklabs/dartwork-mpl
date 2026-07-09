@@ -18,7 +18,7 @@ design systems (OpenColor, Tailwind, Material, Ant, Chakra, Primer).
 - 300+ swatches, copy-on-click
 - 20 perceptual families + 11 curated qualitative sets
 - Drop names anywhere matplotlib accepts a color
-- Interactive picker + `set_cycle`/`get_palette` → [Categorical palettes](../color_system/categorical-palettes)
+- Interactive picker + `dm.set_colors`/`dm.colors` → [Categorical palettes](../color_system/categorical-palettes)
 :::
 
 :::{grid-item-card} **Colormaps**

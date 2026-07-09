@@ -5,7 +5,7 @@ from __future__ import annotations
 import matplotlib.colors as mcolors
 
 import dartwork_mpl  # noqa: F401  (등록 트리거)
-from dartwork_mpl.colors import _generated
+from dartwork_mpl._colors import _generated
 
 
 def _named() -> dict:

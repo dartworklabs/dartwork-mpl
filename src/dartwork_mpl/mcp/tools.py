@@ -308,7 +308,7 @@ def register_tools(mcp: FastMCP) -> None:
         Returns a JSON object grouping colors by prefix
         (dc.*, tw.*, oc.*, etc.) with counts and examples.
         """
-        from ..colors._loader import COLOR_LIBRARIES
+        from .._colors._loader import COLOR_LIBRARIES
 
         mapping = mcolors.get_named_colors_mapping()
         prefixes = [prefix for _key, prefix, _fn, _label in COLOR_LIBRARIES]

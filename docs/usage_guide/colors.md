@@ -82,7 +82,7 @@ mpl.rcParams["axes.prop_cycle"] = cycler(color=[
 
 The v5 `dc.*` surface is 19 chromatic hue families plus gray, each with 10
 perceptually equalized steps. Index 0 is the light end and index 9 is the dark
-end. For unrelated categories use Octave via `dm.cycle("octave")` or
+end. For unrelated categories use Octave via `dm.set_colors()` or
 `dc.octave`; for related tones pick a family and sample the steps you need.
 
 | Palette             | Use it for                                                     |
@@ -130,29 +130,27 @@ constructors, views, interpolation, and custom colormaps.
 
 ## Exploring Available Colors
 
-dartwork-mpl provides utilities to discover and explore available color palettes:
+dartwork-mpl provides utilities to discover and explore available color families:
 
 ```python
 import dartwork_mpl as dm
 
-# List all discrete color palettes
-palettes = dm.list_palettes()
-print(palettes[:5])  # ['ad.blue', 'ad.cyan', 'ad.geekblue', 'ad.gold', 'ad.green']
+# List Model B family records
+families = dm.list_colors()
+print(families[:2])  # [{'name': 'amber', 'kind': 'sequential', ...}, ...]
 
-# List the dartwork colormaps
-cmaps = dm.list_colormaps()
-print('dc.aurora' in cmaps, 'dc.blue_red' in cmaps)  # True True
+# Fetch a registered colormap or a designed discrete list
+cmap = dm.colors("aurora")
+cols = dm.colors("blue_red", n=5)
 
-# Preview a specific family (ten steps, blue0 … blue9)
-dm.show_palette('dc.blue')
-
-# Visualize colormaps
-dm.plot_colormaps(cmap_list=['dc.aurora', 'dc.blue_red'])
+# Preview specific families
+dm.show_colors(names=["blue", "blue_red"], n=5)
 
 # Classify a colormap by type (takes a Colormap object)
 import matplotlib as mpl
+from dartwork_mpl.diagnostics import classify_cmap
 
-cmap_type = dm.classify_colormap(mpl.colormaps['dc.aurora'])
+cmap_type = classify_cmap(mpl.colormaps['dc.aurora'])
 print(cmap_type)  # 'Multi-Hue'
 ```
 
@@ -243,10 +241,11 @@ perceptually uniform gradients. They work like any matplotlib colormap:
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
+from dartwork_mpl.diagnostics import classify_cmap
 
 cmap = plt.colormaps["dc.aurora"]
 print(cmap.name)                       # 'dc.aurora'
-print(dm.classify_colormap(cmap))      # 'Multi-Hue' (tells you the type)
+print(classify_cmap(cmap))             # 'Multi-Hue' (tells you the type)
 ```
 
 Add `_r` to reverse any colormap (e.g., `dc.aurora_r`). Browse all available

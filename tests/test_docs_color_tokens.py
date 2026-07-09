@@ -45,7 +45,12 @@ def _scan_files() -> list[Path]:
 def _registries() -> tuple[set[str], set[str], set[str]]:
     named = set(mcolors.get_named_colors_mapping())
     cmaps = {n for n in mpl.colormaps if n.startswith("dc.")}
-    palettes = set(dm.list_palettes())
+    palette_pattern = re.compile(r"^([a-z]+)\.([a-z][a-z_]*)\d+$")
+    palettes = set()
+    for color_name in named:
+        match = palette_pattern.match(color_name)
+        if match and match.group(1) != "dm":
+            palettes.add(f"{match.group(1)}.{match.group(2)}")
     return named, cmaps, palettes
 
 

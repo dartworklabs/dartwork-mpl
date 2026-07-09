@@ -5,9 +5,9 @@ from __future__ import annotations
 from collections import Counter
 from itertools import pairwise
 
-from dartwork_mpl.colors import _curated, _generated
-from dartwork_mpl.colors._families import FAMILIES
-from dartwork_mpl.colors._metrics import de2000_hex, lab_l_hex
+from dartwork_mpl._colors import _curated, _generated
+from dartwork_mpl._colors._families import FAMILIES
+from dartwork_mpl._colors._metrics import de2000_hex, lab_l_hex
 
 EXPECTED = {
     "sequential": {

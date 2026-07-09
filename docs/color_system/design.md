@@ -299,7 +299,7 @@ variant.
 | Kind | Rule | Example |
 |---|---|---|
 | color token | `dc.{family}{step}` | `dc.blue6` |
-| categorical cycle | `octave` · `octave_print` | `dm.cycle("octave")` |
+| categorical cycle | `octave` · `octave_print` | `dm.set_colors()` |
 | single-hue cmap | the family name itself | `cmap="dc.blue"` |
 | multi-hue cmap | a natural-light scene name | `dc.aurora` |
 | diverging cmap | a `low_high` pair name | `dc.blue_red` |

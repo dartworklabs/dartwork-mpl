@@ -6,8 +6,8 @@ import typing
 
 import matplotlib.colors as mcolors
 
-from dartwork_mpl.colors import _generated
-from dartwork_mpl.colors._loader import _load_json_palette, ensure_loaded
+from dartwork_mpl._colors import _generated
+from dartwork_mpl._colors._loader import _load_json_palette, ensure_loaded
 
 
 class TestEnsureLoaded:
@@ -84,20 +84,24 @@ class TestEnsureLoaded:
         assert "dc.0" not in mapping
 
     def test_dc_palette_count(self) -> None:
-        """20 v5 families x10 + current curated sets + 4 semantic tokens.
+        """20 v5 families x10 + curated/generated discrete sets + semantics.
 
         Derived from the SSOT so adding/removing a palette can't silently
         drift the count out of sync.
         """
-        from dartwork_mpl.colors import _curated, _generated
+        from dartwork_mpl._colors import _curated, _generated
+        from dartwork_mpl._colors._discrete import GENERATED_DIVERGING
 
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
         dc_keys = [k for k in mapping if k.startswith("dc.")]
         families = sum(len(row) for row in _generated.PALETTE.values())
         curated = sum(len(row) for row in _curated.CURATED.values())
+        generated_diverging = len(GENERATED_DIVERGING) * 8
         semantic = 4  # dc.pos / dc.neg / dc.ref / dc.hl
-        assert len(dc_keys) == families + curated + semantic
+        assert (
+            len(dc_keys) == families + curated + generated_diverging + semantic
+        )
 
     def test_legacy_aliases_removed(self) -> None:
         """Genuinely-legacy ad-hoc palette names stay gone.
@@ -185,7 +189,7 @@ class TestCuratedPalettes:
         """Every curated palette step registers as a ``dc.<name><step>``."""
         import matplotlib.colors as mcolors
 
-        from dartwork_mpl.colors._curated import CURATED
+        from dartwork_mpl._colors._curated import CURATED
 
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()
@@ -197,30 +201,31 @@ class TestCuratedPalettes:
 
     def test_curated_never_shadows_a_v5_family(self) -> None:
         """Curated names must not collide with the generated v5 families."""
-        from dartwork_mpl.colors._curated import CURATED
-        from dartwork_mpl.colors._generated import PALETTE
+        from dartwork_mpl._colors._curated import CURATED
+        from dartwork_mpl._colors._generated import PALETTE
 
         assert set(CURATED) & set(PALETTE) == set()
 
-    def test_get_palette_resolves_curated_sets(self) -> None:
-        """``get_palette`` / ``set_cycle`` accept curated names like families."""
+    def test_colors_api_resolves_curated_sets(self) -> None:
+        """``colors`` / ``set_colors`` accept curated names like families."""
         import matplotlib as mpl
 
         import dartwork_mpl as dm
+        from dartwork_mpl._colors import _curated
 
-        assert dm.get_palette("trustworthy", n=6) == [
-            f"dc.trustworthy{i}" for i in range(6)
-        ]
-        dm.set_cycle("vivid")
+        assert dm.colors("trustworthy", n=6) == list(
+            _curated.CURATED["trustworthy"][:6]
+        )
+        dm.set_colors("vivid")
         cyc = [c["color"] for c in mpl.rcParams["axes.prop_cycle"]]
-        assert cyc == [f"dc.vivid{i}" for i in range(8)]
+        assert cyc == list(_curated.CURATED["vivid"])
 
     def test_collision_name_resolves_to_v5_family(self) -> None:
         """A name shared with a v5 family (teal) resolves to the 10-step family,
         not an 8-step curated ramp."""
         import dartwork_mpl as dm
 
-        assert len(dm.get_palette("teal")) == 10
+        assert len(dm.colors("teal", n=10)) == 10
 
 
 class TestVendoredLibraryCounts:

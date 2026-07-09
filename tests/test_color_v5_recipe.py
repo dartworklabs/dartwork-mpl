@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.colors._recipe import (
+from dartwork_mpl._colors._recipe import (
     FAMILIES,
     FAMILY_PARAMS,
     FOURIER,
@@ -55,7 +55,7 @@ def test_fourier_match_ssot(v5_ssot):
 
 
 def test_cycle_print_ssot_maps_to_octave_print_spec(v5_ssot):
-    from dartwork_mpl.colors._cycles import CYCLE_SPECS
+    from dartwork_mpl._colors._cycles import CYCLE_SPECS
 
     expected = [
         ["blue", 5],

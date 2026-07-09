@@ -4,7 +4,7 @@ Graphviz DOT file rendered to SVG.
 Walks ``src/dartwork_mpl/`` with :mod:`ast`, parses every ``from
 dartwork_mpl(.sub) import …`` / ``import dartwork_mpl.sub`` statement, and
 collapses everything to *top-level submodule granularity* (e.g. the
-internal helpers under ``dartwork_mpl/colors/`` all roll up to a single
+internal helpers under ``dartwork_mpl/_colors/`` all roll up to a single
 ``colors`` node). The resulting DOT is checked in as a static asset, so
 docs builds without the ``dot`` binary still show the rendered graph via
 the committed SVG fallback.

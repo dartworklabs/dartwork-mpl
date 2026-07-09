@@ -13,7 +13,7 @@ import re
 import runpy
 from pathlib import Path
 
-from dartwork_mpl.colors import _curated, _generated
+from dartwork_mpl._colors import _curated, _generated
 
 _REPO = Path(__file__).resolve().parents[1]
 _SCRIPTS = _REPO / "docs" / "_static" / "scripts"
@@ -483,7 +483,7 @@ def test_docs_octave_reference_keeps_pinned_phrases_and_tradeoff() -> None:
 
 def test_palette_metadata_fact_audit_claims_are_current() -> None:
     curated = (
-        _REPO / "src" / "dartwork_mpl" / "colors" / "_curated.py"
+        _REPO / "src" / "dartwork_mpl" / "_colors" / "_curated.py"
     ).read_text(encoding="utf-8")
     ember_intent = _curated.CURATED_META["ember"]["intent"]
     rationale = (
@@ -547,6 +547,6 @@ def test_absorbed_diverging_palettes_are_registered_but_hidden() -> None:
     payload = _payload()
     names = mcolors.get_named_colors_mapping()
     for key in _ABSORBED_DIVERGING:
-        assert dm.get_palette(key) == [f"dc.{key}{i}" for i in range(8)]
+        assert dm.colors(key, n=8) == list(_curated.CURATED[key])
         assert all(f"dc.{key}{i}" in names for i in range(8))
         assert key not in payload["order"]

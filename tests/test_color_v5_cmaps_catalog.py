@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dartwork_mpl.colors._cmaps import compile_cmaps
+from dartwork_mpl._colors._cmaps import compile_cmaps
 
 
 def test_full_catalog_matches_ssot(v5_ssot):

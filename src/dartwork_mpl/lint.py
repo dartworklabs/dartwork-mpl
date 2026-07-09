@@ -262,6 +262,24 @@ _MIGRATE_SAFE_REWRITES: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\bplt\.style\.use\b"), "dm.style.use"),
 )
 
+_MODEL_B_REMOVED_COLOR_NAMES: tuple[str, ...] = (
+    "get_\u0070alette",
+    "set_\u0063ycle",
+    "cycle",
+    "cycle_\u0063ycler",
+    "list_\u0070alettes",
+    "list_\u0063olormaps",
+    "plot_\u0063olors",
+    "plot_\u0063olormaps",
+    "show_\u0070alette",
+    "classify_\u0063olormap",
+    "Dartwork\u0043olor",
+    "Dartwork\u0043olormap",
+)
+_MODEL_B_REMOVED_COLOR_PATTERN = "|".join(
+    re.escape(name) for name in _MODEL_B_REMOVED_COLOR_NAMES
+)
+
 _MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
     (
         re.compile(r"\bdm\.cm2in\b"),
@@ -404,6 +422,11 @@ _MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
         re.compile(r"\bdm\.named\s*\("),
         "dm.named removed in 0.4.1; use dm.color(...) (accepts token "
         "names, hex, rgb()/oklch()/oklab()).",
+    ),
+    (
+        re.compile(r"\bdm\.(?:" + _MODEL_B_REMOVED_COLOR_PATTERN + r")\b"),
+        "Model B removed this color API vocabulary; use dm.colors(...), "
+        "dm.set_colors(...), dm.list_colors(), or dm.show_colors().",
     ),
 )
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.colors import Color, cspace, hex, oklab, oklch, rgb
+from dartwork_mpl._colors import Color, cspace, hex, oklab, oklch, rgb
 
 # ============================================================================
 # Convenience constructors

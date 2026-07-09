@@ -1,4 +1,4 @@
-"""Regenerate ``src/dartwork_mpl/colors/_typing.py`` from the live registries.
+"""Regenerate ``src/dartwork_mpl/_colors/_typing.py`` from the live registries.
 
 The two public ``Literal`` vocabularies (``DartworkColor``,
 ``DartworkColormap``) fossilized badly when maintained by hand (the
@@ -24,7 +24,7 @@ from __future__ import annotations
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-TARGET = REPO_ROOT / "src" / "dartwork_mpl" / "colors" / "_typing.py"
+TARGET = REPO_ROOT / "src" / "dartwork_mpl" / "_colors" / "_typing.py"
 
 # The canonical library prefixes (dot included). ``dm.`` is not a color
 # namespace and is intentionally not part of the typed vocabulary.

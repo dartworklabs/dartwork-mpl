@@ -4,14 +4,13 @@
 Restores the left-rail + live-plot explorer, generated entirely from the v5
 color SSOT — no hand-maintained JS data file:
 
-- ``src/dartwork_mpl/colors/_generated.py``  ``CYCLES``
-- ``src/dartwork_mpl/colors/_curated.py``     qualitative ``CURATED`` rail + meta
+- ``src/dartwork_mpl/_colors/_generated.py``  ``CYCLES``
+- ``src/dartwork_mpl/_colors/_curated.py``     qualitative ``CURATED`` rail + meta
 
 Pick a qualitative set on the left; the selected demo plots on the right
 re-render live in that palette. Drag the colour count, sort by lightness,
 shuffle or reverse, choose a demo layout, and preview in black & white. Click a
-swatch to copy its hex, or copy the matching
-``dm.get_palette(...)`` / ``dm.cycle(...)`` call.
+swatch to copy its hex, or copy the matching ``dm.set_colors(...)`` call.
 
 The fragment is embedded by ``docs/color_system/categorical-palettes.md`` via
 MyST ``{raw} html :file:``. Regenerate::
@@ -28,8 +27,8 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parents[2]
 OUT = SCRIPT_DIR.parent / "categorical_explorer.html"
-GENERATED = ROOT / "src" / "dartwork_mpl" / "colors" / "_generated.py"
-CURATED_MOD = ROOT / "src" / "dartwork_mpl" / "colors" / "_curated.py"
+GENERATED = ROOT / "src" / "dartwork_mpl" / "_colors" / "_generated.py"
+CURATED_MOD = ROOT / "src" / "dartwork_mpl" / "_colors" / "_curated.py"
 CYCLE_SSOT = (
     ROOT
     / "docs"
@@ -200,8 +199,8 @@ def main() -> None:
 # ---------------------------------------------------------------------------
 TEMPLATE = r"""<!-- GENERATED FILE - do not edit by hand.
      Source: docs/_static/scripts/build_categorical_explorer.py
-     Data:   src/dartwork_mpl/colors/_generated.py (CYCLES)
-             src/dartwork_mpl/colors/_curated.py (qualitative CURATED sets)
+     Data:   src/dartwork_mpl/_colors/_generated.py (CYCLES)
+             src/dartwork_mpl/_colors/_curated.py (qualitative CURATED sets)
      Regenerate: python3 docs/_static/scripts/build_categorical_explorer.py -->
 <div id="dm-cat-exp" class="yue">
 <div class="md"><div class="rail" id="cx-rail"></div><div class="detail" id="cx-detail"></div></div>
@@ -328,30 +327,17 @@ function active(){var p=pal(),sel=p.cols.slice(0,state.n);
   return sel;}
 function simActive(){return active().map(function(c){return simulate(c,state.gs?'bw':'color');});}
 
-// ── code snippet (v5-correct, runnable) ──
-// Canonical cycle examples for generated-file grep guards: dm.cycle('octave') dm.cycle('octave_print')
+// ── code snippet (Model B, runnable) ──
 function pySnip(){var p=pal();
-  if(p.kind==='cycle'){
-    var expr;
-    if(state.order==='default'){
-      expr="dm.cycle('"+state.key+"')";
-      if(state.n<p.cols.length)expr+="[:"+state.n+"]";
-      if(state.rev)expr+="[::-1]";
-    }else{
-      expr="["+active().map(function(c){return "'"+c+"'";}).join(", ")+"]";
-    }
-    var note=[state.n+' colors'];
-    if(state.order==='lightness')note.push('gradient');else if(state.order==='shuffle')note.push('shuffled');
-    if(state.rev)note.push('reversed');
-    return "import dartwork_mpl as dm\n# "+p.name+"  ("+note.join(', ')+")\ndm.set_cycle("+expr+")";}
-  var parts=["'"+state.key+"'","n="+state.n];
-  if(state.order==='lightness')parts.push("order='lightness'");
-  else if(state.order==='shuffle'){parts.push("order='shuffle'");parts.push("seed="+state.shuffleSeed);}
-  if(state.rev)parts.push("reverse=True");
-  var note2=[state.n+' colors'];
-  if(state.order==='lightness')note2.push('gradient');else if(state.order==='shuffle')note2.push('shuffled');
-  if(state.rev)note2.push('reversed');
-  return "import dartwork_mpl as dm\n# "+p.name+"  ("+note2.join(', ')+")\ndm.set_cycle(dm.get_palette("+parts.join(', ')+"))";}
+  var note=[state.n+' colors'];
+  if(state.order==='lightness')note.push('gradient');else if(state.order==='shuffle')note.push('shuffled');
+  if(state.rev)note.push('reversed');
+  if(state.order==='default'&&!state.rev){
+    var parts=["'"+state.key+"'"];
+    if(!(p.kind==='cycle'||p.kind==='curated')||state.n<p.cols.length)parts.push("n="+state.n);
+    return "import dartwork_mpl as dm\n# "+p.name+"  ("+note.join(', ')+")\ndm.set_colors("+parts.join(', ')+")";}
+  var expr="["+active().map(function(c){return "'"+c+"'";}).join(", ")+"]";
+  return "import dartwork_mpl as dm\n# "+p.name+"  ("+note.join(', ')+")\ndm.set_colors("+expr+")";}
 
 // ── syntax highlight via the docs' own Pygments token classes ──
 var PYKW={'import':'kn','from':'kn','as':'k','def':'k','return':'k','for':'k','in':'k','None':'kc','True':'kc','False':'kc'};
@@ -449,7 +435,7 @@ function a11yHTML(){var p=pal(),items=[];
 function metaRow(label,value){return '<div><span class="m-l">'+label+'</span> '+value+'</div>';}
 function metaBlock(){var p=pal(),h='<div class="meta">';
   if(p.kind==='curated'){h+=metaRow('How it’s built',p.design)+metaRow('Good for',p.application);}
-  else if(p.kind==='cycle'){h+=metaRow('Good for','everyday multi-series charts — apply globally with <code>dm.set_cycle(dm.cycle(\''+state.key+'\'))</code>.');}
+  else if(p.kind==='cycle'){h+=metaRow('Good for','everyday multi-series charts — apply globally with <code>dm.set_colors(\''+state.key+'\')</code>.');}
   else {h+=metaRow('Good for','single-hue sequential ramps, or sample a few evenly-spaced steps for related series.');}
   return h+'</div>';}
 

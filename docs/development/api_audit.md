@@ -47,13 +47,13 @@
 | `OklabView` | `dartwork_mpl.color._views` | class | 0 | N | 4 | 2 | keep | OKLab 좌표 뷰 — sequence 프로토콜 + __iter__/__len__/__repr__; OKLCH 색 시스템 구성 요소 | audited |
 | `OklchView` | `dartwork_mpl.color._views` | class | 0 | N | 4 | 2 | keep | OKLCH 좌표 뷰 — 동상; OKLCH 색 시스템 구성 요소 | audited |
 | `RgbView` | `dartwork_mpl.color._views` | class | 0 | N | 4 | 2 | keep | RGB 좌표 뷰 — 동상; OKLCH 색 시스템 구성 요소 | audited |
-| `classify_colormap` | `dartwork_mpl.diagnostics` | func | 120 | N | 21 | 3 | keep | HSV 분석 기반 다분기 분류 (Categorical/Single-Hue/Multi-Hue/Diverging/Cyclical) — non-trivial classifier | audited |
-| `plot_colormaps` | `dartwork_mpl.diagnostics` | func | 48 | N | 26 | 3 | keep | colormap 시각화 + classify_colormap 기반 그룹화 — diagnostic asset visualizer | audited |
-| `plot_colors` | `dartwork_mpl.diagnostics` | func | 32 | N | 35 | 3 | keep | 팔레트 색상 배열 시각화 — diagnostic asset visualizer | audited |
+| `classify_cmap` | `dartwork_mpl.diagnostics` | func | 120 | N | 21 | 3 | keep | HSV 분석 기반 다분기 분류 (Categorical/Single-Hue/Multi-Hue/Diverging/Cyclical) — non-trivial classifier | audited |
+| `render_cmap_catalog` | `dartwork_mpl.diagnostics` | func | 48 | N | 26 | 3 | keep | colormap 시각화 + classify_cmap 기반 그룹화 — diagnostic asset visualizer | audited |
+| `render_color_catalog` | `dartwork_mpl.diagnostics` | func | 32 | N | 35 | 3 | keep | 팔레트 색상 배열 시각화 — diagnostic asset visualizer | audited |
 | `plot_fonts` | `dartwork_mpl.diagnostics` | func | 203 | N | 29 | 3 | keep | 폰트 specimen 패널 생성 (203 LOC) — diagnostic asset visualizer | audited |
-| `list_colormaps` | `dartwork_mpl.explore` | func | 7 | N | 5 | 2 | keep | ensure_loaded + dc.* prefix filter + _r 제거 — resource discovery; no matplotlib equivalent | audited |
-| `list_palettes` | `dartwork_mpl.explore` | func | 11 | N | 6 | 2 | keep | regex 기반 named-color map 순회 → prefix.name 집합 추출 — resource discovery | audited |
-| `show_palette` | `dartwork_mpl.explore` | func | 52 | N | 6 | 3 | keep | 색상 swatch 렌더러 (52 LOC) + contrast 휴리스틱 + 라벨 배치 — palette visualizer | audited |
+| `list_colors` | `dartwork_mpl.explore` | func | 7 | N | 5 | 2 | keep | ensure_loaded + dc.* prefix filter + _r 제거 — resource discovery; no matplotlib equivalent | audited |
+| `list_colors` | `dartwork_mpl.explore` | func | 11 | N | 6 | 2 | keep | regex 기반 named-color map 순회 → prefix.name 집합 추출 — resource discovery | audited |
+| `show_colors` | `dartwork_mpl.explore` | func | 52 | N | 6 | 3 | keep | 색상 swatch 렌더러 (52 LOC) + contrast 휴리스틱 + 라벨 배치 — palette visualizer | audited |
 | `figure` | `dartwork_mpl.figure` | func | 62 | N | 403 | 3 | keep | 물리 단위 width API + aspect 토큰 + legacy figsize=/dpi= 명시 거부 — 핵심 abstraction | audited |
 | `subplots` | `dartwork_mpl.figure` | func | 82 | N | 657 | 3 | keep | 동상 — width/aspect → figsize 변환, gridspec/ratios 통합, legacy 인자 거부 | audited |
 | `ensure_loaded` | `dartwork_mpl.font` | func | 11 | N | 47 | 1 | keep | thread-safe double-checked locking + _add_fonts() 등록 — 폰트 시스템 bootstrap; 47 내부 callsites | audited |
@@ -179,7 +179,7 @@ Three items are reclassified `keep` → `remove`. The fourth
 (`auto_select_colors`) stays `keep` because its body is a curated
 palette **lookup**, not a kwarg recipe — but is renamed to
 `make_palette` in Round 5 for vocabulary alignment with `make_offset`
-/ `list_palettes` / `show_palette`. The audit framework stays
+/ `list_colors` / `show_colors`. The audit framework stays
 3-bucket; no new value. Round 5 implements.
 
 | name | module | LOC | from | to | preservation vehicle |

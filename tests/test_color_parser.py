@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from dartwork_mpl.colors import Color
+from dartwork_mpl._colors import Color
 
 # --- Hex ------------------------------------------------------------------- #
 
@@ -130,7 +130,7 @@ def test_parse_rgb_non_numeric_args_raises():
 # --------------------------------------------------------------------------- #
 
 
-from dartwork_mpl.colors import color  # noqa: E402  (intentional late import)
+from dartwork_mpl._colors import color  # noqa: E402  (intentional late import)
 
 
 def test_color_passthrough_copies_instance():

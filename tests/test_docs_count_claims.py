@@ -24,21 +24,21 @@ _ASSET = _REPO / "src" / "dartwork_mpl" / "asset"
 
 def _n_v5_cmaps() -> int:
     # The v5 continuous colormap surface — generated maps excluding cycles.
-    from dartwork_mpl.colors._generated import CMAPS_256
+    from dartwork_mpl._colors._generated import CMAPS_256
 
     return len(CMAPS_256)
 
 
-def _n_v5_cycles() -> int:
-    from dartwork_mpl.colors._generated import CYCLES
+def _n_qualitative_cmaps() -> int:
+    from dartwork_mpl._colors._families import QUALITATIVE
 
-    return len(CYCLES)
+    return len(QUALITATIVE)
 
 
 def _n_listed_colormaps() -> int:
     import dartwork_mpl as dm
 
-    return len(dm.list_colormaps())
+    return len(dm.list_colors())
 
 
 def _n_font_files() -> int:
@@ -80,15 +80,15 @@ def _n_presets() -> int:
 
 def _n_curated_palettes() -> int:
     """Hand-tuned qualitative sets on the categorical explorer rail."""
-    from dartwork_mpl.colors._curated import CURATED_QUALITATIVE_ORDER
+    from dartwork_mpl._colors._curated import CURATED_QUALITATIVE_ORDER
 
     return len(CURATED_QUALITATIVE_ORDER)
 
 
 def _n_qualitative_rail_palettes() -> int:
     """Categorical explorer rail choices: curated qualitative sets + cycles."""
-    from dartwork_mpl.colors._curated import CURATED_QUALITATIVE_ORDER
-    from dartwork_mpl.colors._generated import CYCLES
+    from dartwork_mpl._colors._curated import CURATED_QUALITATIVE_ORDER
+    from dartwork_mpl._colors._generated import CYCLES
 
     return len(CURATED_QUALITATIVE_ORDER) + len(CYCLES)
 
@@ -188,12 +188,12 @@ _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
     ),
     (
         "docs/color_system/colormaps.md",
-        r"\*\*(\d+) qualitative cycle maps\*\*",
-        _n_v5_cycles,
+        r"\*\*(\d+) qualitative colormaps\*\*",
+        _n_qualitative_cmaps,
     ),
     (
         "docs/color_system/colormaps.md",
-        r"returns the\s+(\d+)\s+non-reversed names",
+        r"returns the\s+(\d+)\s+Model B family records",
         _n_listed_colormaps,
     ),
     (

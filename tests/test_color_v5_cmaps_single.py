@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.colors._cmaps import pchip, render, seq_gray, seq_single
-from dartwork_mpl.colors._generate import solve_swatch_rgb
+from dartwork_mpl._colors._cmaps import pchip, render, seq_gray, seq_single
+from dartwork_mpl._colors._generate import solve_swatch_rgb
 
 
 def test_pchip_monotone_no_overshoot():

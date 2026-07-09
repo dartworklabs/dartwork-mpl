@@ -242,9 +242,9 @@ ax.plot(x, y1, color="tw.emerald500")              # Tailwind
 ```python
 import dartwork_mpl as dm
 
-dm.list_palettes()[:5]      # → ['ad.blue', 'ad.cyan', 'ad.geekblue', ...]
-dm.show_palette("dc.teal")  # renders the 10-step swatch row in Jupyter
-dm.plot_colors(ncols=4)     # full library overview, one figure per system
+dm.list_colors()[:2]        # → [{'name': 'amber', 'kind': 'sequential', ...}, ...]
+dm.colors("teal", n=5)      # designed 5-color list
+dm.show_colors(names=["teal"], n=5)  # preview swatches and ramps
 ```
 
 See [Colors and Colormaps](colors.md) for the full palette reference,
@@ -359,8 +359,8 @@ script that reproduces what you see.
 :::
 
 :::{grid-item-card} 🔬 Diagnostics & Templates
-`dm.plot_colors()` / `plot_colormaps()` / `plot_fonts()` for asset
-audit, plus ready-to-use plot templates like `plot_diverging_bar`.
+`dm.show_colors()` / `plot_fonts()` for asset audit, plus ready-to-use plot
+templates like `plot_diverging_bar`.
 
 → [Extras guide](extras.md)
 :::
@@ -405,7 +405,7 @@ coming from:
 | `plt.tight_layout()`                  | `dm.simple_layout(fig)`                              |
 | `dm.auto_layout(fig)`                 | `dm.simple_layout(fig, margin=...)`                  |
 | old named-color helper                | `dm.color("oc.red5")` (also accepts hex / `rgb(...)` / `oklch(...)` / `oklab(...)`) |
-| `from dartwork_mpl.color import ...`  | `from dartwork_mpl.colors import ...` (submodule renamed) |
+| `from dartwork_mpl.color import ...`  | `from dartwork_mpl._colors import ...` (submodule renamed) |
 | `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`                           |
 | `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`                        |
 | `dm.install_llm_txt()`                | `dm.get_agent_doc(name)` / `dm.agent_doc_path(name)` (or MCP `dartwork-mpl://guide/*`) |
@@ -427,8 +427,8 @@ steps, `dc.{family}{step}`) replaced the hand-curated v4 catalog. v5 is a
    `0`–`7` no longer resolve. The scientifically curated categorical *sets* —
    `trustworthy`, `vivid`, `neon`, `jewel`, `blue_red`, `teal_amber`, `earth`,
    `forest`, `blue_orange`, and the rest — are **preserved** as first-class
-   `dc.*` palettes: reach them through `dm.get_palette("trustworthy", n=6)` /
-   `dm.set_cycle("vivid")`, exactly like a v5 family (see
+   `dc.*` palettes: reach them through `dm.colors("trustworthy", n=6)` /
+   `dm.set_colors("vivid")`, exactly like a v5 family (see
    [Categorical palettes](color_system/categorical-palettes.md)).
 2. **There is no runtime palette-version switch.** The live registry is
    v5-only, so `teal`, `indigo`, and `gray` always mean the 10-step v5
@@ -707,7 +707,7 @@ The submodule was also renamed `color` → `colors`. Anywhere you used
 from dartwork_mpl.color import Color
 
 # Now
-from dartwork_mpl.colors import Color
+from dartwork_mpl._colors import Color
 ```
 
 
@@ -875,8 +875,8 @@ rules:
       pattern: '\bdm\.(?:helpers\.colors\.)?auto_select_colors\s*\('
     message: |
       `auto_select_colors` was renamed to `make_palette` in 0.4.1
-      (#156) for vocabulary alignment with `make_offset` /
-      `list_palettes`. Argument cleanup at the same time:
+      (#156) for vocabulary alignment with `make_offset`.
+      Argument cleanup at the same time:
       `n_series` → `n`, `color_type` → `kind`,
       `highlight_index` → `highlight`.
     fix_suggestion: 'dm.make_palette(n, kind="categorical")'
@@ -905,6 +905,17 @@ rules:
       token names, hex, and `rgb()`/`oklch()`/`oklab()` functional
       strings.
     fix_suggestion: 'dm.color("oc.red5")'
+
+  - id: dm-model-b-color-api-removed
+    severity: critical
+    detector:
+      kind: regex
+      pattern: "\\bdm\\.(?:get_\u0070alette|set_\u0063ycle|cycle|cycle_\u0063ycler|list_\u0070alettes|list_\u0063olormaps|plot_\u0063olors|plot_\u0063olormaps|show_\u0070alette|classify_\u0063olormap|Dartwork\u0043olor|Dartwork\u0043olormap)\\b"
+    message: |
+      The Model B color API removed the old palette, cycle, diagnostic,
+      and color-class vocabulary. Use `dm.colors(...)`,
+      `dm.set_colors(...)`, `dm.list_colors()`, or `dm.show_colors()`.
+    fix_suggestion: 'dm.colors("blue", n=5)'
 
   - id: dm-removed-namespaces
     severity: critical
@@ -1037,7 +1048,7 @@ rules:
       `nipy_spectral`, `rainbow`) misrepresent ordinal data. Use a
       perceptually uniform colormap (`viridis`, `cividis`, `inferno`,
       `magma`, `plasma`) or one of the dartwork-registered colormaps
-      (`dm.list_colormaps()`).
+      (`dm.list_colors()`).
     fix_suggestion: 'cmap="viridis"'
 
   - id: oversize-width

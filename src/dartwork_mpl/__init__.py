@@ -41,40 +41,32 @@ from . import (  # noqa: F401
     validate_fixes,
 )
 
+# Import color module exports
+from ._colors import (
+    Color,
+    color,
+    colors,
+    cspace,
+    hex,
+    list_colors,
+    oklab,
+    oklch,
+    rgb,
+    set_colors,
+    show_colors,
+)
+
 # Import bundled agent-onboarding helpers
 from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc
 
 # Axes annotation
 from .annotation import arrow_axis, label_axes
 
-# Import color module exports
-from .colors import (
-    Color,
-    DartworkColor,
-    DartworkColormap,
-    color,
-    cspace,
-    cycle,
-    cycle_cycler,
-    hex,
-    oklab,
-    oklch,
-    rgb,
-)
-
 # Config (process-wide behaviour-toggle defaults)
 from .config import Config, config
 
 # Import asset-diagnostic visualization helpers.
-from .diagnostics import (
-    classify_colormap,
-    plot_colormaps,
-    plot_colors,
-    plot_fonts,
-)
-
-# Explore
-from .explore import list_colormaps, list_palettes, show_palette
+from .diagnostics import plot_fonts
 
 # Formatting utilities
 from .formatting import (
@@ -154,10 +146,8 @@ EXPERIMENTAL: frozenset[str] = frozenset()
 # (``dm.helpers.<name>``) remains available as well.
 from .helpers import (
     check_figure_quality,
-    get_palette,
     make_palette,
     optimize_legend,
-    set_cycle,
     suggest_chart_type,
     validate_data,
 )
@@ -189,15 +179,15 @@ __all__ = [  # noqa: RUF022
     # Color module
     "Color",
     "color",
+    "colors",
     "cspace",
-    "cycle",
-    "cycle_cycler",
     "hex",
+    "list_colors",
     "oklab",
     "oklch",
     "rgb",
-    "DartworkColor",
-    "DartworkColormap",
+    "set_colors",
+    "show_colors",
     # Icon module
     "icon_font",
     "icon_font_path",
@@ -254,10 +244,6 @@ __all__ = [  # noqa: RUF022
     "save_formats",
     "save_and_show",
     "show",
-    # Explore
-    "list_palettes",
-    "list_colormaps",
-    "show_palette",
     # Axes annotation
     "label_axes",
     "arrow_axis",
@@ -274,8 +260,6 @@ __all__ = [  # noqa: RUF022
     # Helpers (high-level composition utilities)
     "validate_data",
     "make_palette",
-    "get_palette",
-    "set_cycle",
     "optimize_legend",
     "suggest_chart_type",
     "check_figure_quality",
@@ -285,10 +269,7 @@ __all__ = [  # noqa: RUF022
     # Extended plots
     "plot_diverging_bar",
     # Asset diagnostics (from diagnostics)
-    "plot_colormaps",
-    "plot_colors",
     "plot_fonts",
-    "classify_colormap",
 ]
 
 # --- Monkey-patch matplotlib.axes.Axes.twinx to always show right spine ---
@@ -321,7 +302,7 @@ if not getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False):
 # immediately after ``import dartwork_mpl`` — matching the documented
 # contract. This is a one-time ~70 ms cost; the same font-manager work would
 # otherwise run on the first ``dm.style.use(...)`` anyway. Named colors and
-# all ``dc.*`` colormaps register eagerly through the ``dartwork_mpl.colors``
+# all ``dc.*`` colormaps register eagerly through the ``dartwork_mpl._colors``
 # import above.
 font.ensure_loaded()
 
@@ -489,6 +470,68 @@ _REMOVED_NAMES: dict[str, tuple[str, str]] = {
         '"<aspect>"))',
     ),
 }
+
+
+def _removed_name(*parts: str) -> str:
+    return "".join(parts)
+
+
+_MODEL_B_REMOVED = "the Model B color API"
+_REMOVED_NAMES.update(
+    {
+        _removed_name("get", "_", "palette"): (
+            _MODEL_B_REMOVED,
+            "dm.colors(..., n=...) for lists or dm.set_colors(...) for cycles; "
+            "see docs/color_system",
+        ),
+        _removed_name("set", "_", "cycle"): (
+            _MODEL_B_REMOVED,
+            "dm.set_colors(...); see docs/color_system",
+        ),
+        "cycle": (
+            _MODEL_B_REMOVED,
+            "dm.colors('octave', n=8) or dm.set_colors(); see docs/color_system",
+        ),
+        _removed_name("cycle", "_", "cycler"): (
+            _MODEL_B_REMOVED,
+            "dm.set_colors(..., styles=True); see docs/color_system",
+        ),
+        _removed_name("list", "_", "palettes"): (
+            _MODEL_B_REMOVED,
+            "dm.list_colors(); see docs/color_system",
+        ),
+        _removed_name("list", "_", "colormaps"): (
+            _MODEL_B_REMOVED,
+            "dm.list_colors() or matplotlib.colormaps; see docs/color_system",
+        ),
+        _removed_name("plot", "_", "colors"): (
+            _MODEL_B_REMOVED,
+            "dm.show_colors(); see docs/color_system",
+        ),
+        _removed_name("plot", "_", "colormaps"): (
+            _MODEL_B_REMOVED,
+            "dm.show_colors(); see docs/color_system",
+        ),
+        _removed_name("show", "_", "palette"): (
+            _MODEL_B_REMOVED,
+            "dm.show_colors(names=[...]); see docs/color_system",
+        ),
+        _removed_name("classify", "_", "colormap"): (
+            _MODEL_B_REMOVED,
+            "dm.list_colors() metadata and dm.show_colors(); see docs/color_system",
+        ),
+        _removed_name("Dartwork", "Color"): (
+            _MODEL_B_REMOVED,
+            "the internal _colors._typing aliases; runtime code should use "
+            "dm.colors(); see docs/color_system",
+        ),
+        _removed_name("Dartwork", "Colormap"): (
+            _MODEL_B_REMOVED,
+            "the internal _colors._typing aliases; runtime code should use "
+            "dm.colors(); see docs/color_system",
+        ),
+    }
+)
 
 
 def __getattr__(name: str) -> _Any:

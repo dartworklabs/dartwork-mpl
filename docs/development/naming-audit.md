@@ -24,16 +24,16 @@ group, asked:
 
 | Prefix | Count | Members | Verdict |
 |---|---:|---|---|
-| **`(noprefix)`** | 48 | `cm`, `inch`, `mm`, `pt`, `dpi`, `fs`, `fw`, `lw`, `col1`, `col2`, `figsize`, `length`, `Color`, `Length`, `Style`, `Config`, `config`, `color`, `cspace`, `hex`, `oklab`, `oklch`, `rgb`, `mix_colors`, `pseudo_alpha`, `make_palette`, `make_offset`, `classify_colormap`, `set_decimal`, `rotate_tick_labels`, `arrow_axis`, `label_axes`, `adopt_axis_label_font`, `simple_layout`, `tight_crop`, `figsize`, `find_template`, `lint_code`, `migrate_legacy_code`, `optimize_legend`, `suggest_chart_type`, `check_figure_quality`, `copy_prompt`, `load_style_dict`, `prompt_path`, `show`, `AGENT_DOCS`, `DartworkColor`, `DartworkColormap` | **Keep** — primitives, factories, and verb-action helpers. Prefixing every primitive (`dm.unit_cm`, `dm.scale_fs`) would add noise without clarity |
-| **`list_`** | 6 | `list_aspect_tokens`, `list_colormaps`, `list_icon_fonts`, `list_palettes`, `list_prompts`, `list_styles` | **Keep** — consistent "return a list of *X*" convention; sibling-set complete |
-| **`plot_`** | 4 | `plot_colormaps`, `plot_colors`, `plot_diverging_bar`, `plot_fonts` | **Watch** — mixed semantics. `plot_diverging_bar` is a *user* plot helper (creates a chart from data); the other three are *diagnostic* helpers (visualise package internals). Consider splitting at next major: `diagnose_*` for the diagnostic trio, `plot_*` for user-facing chart helpers (M3 #305 will add more `plot_*`) |
+| **`(noprefix)`** | 46 | `cm`, `inch`, `mm`, `pt`, `dpi`, `fs`, `fw`, `lw`, `col1`, `col2`, `figsize`, `length`, `Color`, `Length`, `Style`, `Config`, `config`, `color`, `cspace`, `hex`, `oklab`, `oklch`, `rgb`, `mix_colors`, `pseudo_alpha`, `make_palette`, `make_offset`, `classify_cmap`, `set_decimal`, `rotate_tick_labels`, `arrow_axis`, `label_axes`, `adopt_axis_label_font`, `simple_layout`, `tight_crop`, `figsize`, `find_template`, `lint_code`, `migrate_legacy_code`, `optimize_legend`, `suggest_chart_type`, `check_figure_quality`, `copy_prompt`, `load_style_dict`, `prompt_path`, `show`, `AGENT_DOCS` | **Keep** — primitives, factories, and verb-action helpers. Prefixing every primitive (`dm.unit_cm`, `dm.scale_fs`) would add noise without clarity |
+| **`list_`** | 6 | `list_aspect_tokens`, `list_colors`, `list_icon_fonts`, `list_colors`, `list_prompts`, `list_styles` | **Keep** — consistent "return a list of *X*" convention; sibling-set complete |
+| **`plot_`** | 4 | `render_cmap_catalog`, `render_color_catalog`, `plot_diverging_bar`, `plot_fonts` | **Watch** — mixed semantics. `plot_diverging_bar` is a *user* plot helper (creates a chart from data); the other three are *diagnostic* helpers (visualise package internals). Consider splitting at next major: `diagnose_*` for the diagnostic trio, `plot_*` for user-facing chart helpers (M3 #305 will add more `plot_*`) |
 | **`format_axis_`** | 4 | `format_axis_billions`, `format_axis_currency`, `format_axis_millions`, `format_axis_si` | **Keep** — clear sibling set, parallel signatures, `axis` kwarg consistent across all four |
 | **`validate_`** | 4 | `validate_data`, `validate_figure`, `validate_fixes` (module), `validate_with_fixes` | **Watch** — `validate_fixes` is a *module*; `validate_with_fixes` is a *function*. Importing both side-by-side is mildly confusing (`from dartwork_mpl import validate_fixes` vs `from dartwork_mpl import validate_with_fixes`). Already in place by the time it landed; would be a breaking rename today. Live with it; add a `# noqa` documentation note in the module docstring if surprises arise |
 | **`get_`** | 3 | `get_agent_doc`, `get_bounding_box`, `get_prompt` | **Keep** — accessor convention; consistent |
 | **`save_`** | 2 | `save_and_show`, `save_formats` | **Keep** — both write to disk; consistent |
 | **`icon_`** | 2 | `icon_font`, `icon_font_path` | **Keep** — function/path pair, mirror of `style` / `style_path` |
 | **`style*`** | 2 | `style` (singleton), `style_path` | **Keep** — singleton + path-resolver pair |
-| **`show_`** | 1 | `show_palette` | **Orphan** — sibling-less. Either rename to `plot_palette` (matches `plot_colors` / `plot_colormaps`) or accept as a special case. Current name reads naturally; not worth a breaking rename |
+| **`show_`** | 1 | `show_colors` | **Orphan** — sibling-less. Either rename to `plot_palette` (matches `render_color_catalog` / `render_cmap_catalog`) or accept as a special case. Current name reads naturally; not worth a breaking rename |
 | **`agent_`** | 1 | `agent_doc_path` | **Orphan but justified** — paired with `get_agent_doc`. Could be flattened to `agent_doc(...)` returning `(path, content)` tuple, but the split is fine as-is |
 
 ## Sibling-set completeness checks
@@ -44,7 +44,7 @@ counterpart that enumerates the valid choices. Audit:
 | Function | Takes a category | `list_*` counterpart exists | Status |
 |---|---|---|---|
 | `style.use(preset)` | yes | `list_styles()` | ✓ |
-| `color(token)` | yes | `list_palettes()` | ✓ |
+| `color(token)` | yes | `list_colors()` | ✓ |
 | `make_palette(kind=...)` | yes | (no `list_palette_kinds()`) | **Gap** — only 3 enum values (`categorical`/`sequential`/`diverging`); arguably a `Literal` is enough |
 | `icon_font(name)` | yes | `list_icon_fonts()` | ✓ |
 | `get_prompt(name)` | yes | `list_prompts()` | ✓ |
@@ -78,7 +78,7 @@ Functions that *mutate* a figure / axes should use a verb. Audit:
 | `make_offset` | factory verb | ✓ |
 | `pseudo_alpha` | special-case helper | **Keep** — name describes what it does (fake alpha by mixing against background) |
 | `oklab`, `oklch`, `rgb`, `hex` | color-space constructors | **Keep** — lowercase short-form matches scientific convention |
-| `DartworkColor`, `DartworkColormap` | `Literal[...]` type aliases | **Watch** — capitalised but they're aliases, not classes. The convention is fine (PascalCase for type-shaped names), but a docstring "Type alias for valid color names" would help users who see them in mypy errors |
+| internal color Literal aliases | `Literal[...]` type aliases | **Internal** — generated in `_colors._typing` for signatures and parity checks, not exported at package root |
 
 ## Module-level vs package-level names
 
@@ -93,7 +93,7 @@ Functions that *mutate* a figure / axes should use a verb. Audit:
 |---|---|---|
 | **No renames in 0.x → 1.0 transition** | High | Every entry is reachable as-is. Naming choices that read awkwardly today have been there long enough that breaking them is a net loss |
 | **Add `list_templates()` next time `find_template` changes** | Medium | Completes the `*` / `list_*` sibling set. Pair with #305 (M3) |
-| **Splitting `plot_*` for diagnostic vs user** | Medium | If #305 (M3) ships 3+ user-facing `plot_*` helpers, the existing diagnostic `plot_colors` / `plot_colormaps` / `plot_fonts` start to look anomalous. Plan the split for next minor (0.6.0) |
+| **Splitting `plot_*` for diagnostic vs user** | Medium | If #305 (M3) ships 3+ user-facing `plot_*` helpers, the existing diagnostic `render_color_catalog` / `render_cmap_catalog` / `plot_fonts` start to look anomalous. Plan the split for next minor (0.6.0) |
 | **Treat `arrow_axis` rename at H2 time** | Low | If `dm.add_grid` (issue #302) lands, evaluate `arrow_axis → add_arrow_axis` in the same wave for sibling-set consistency |
 | **Docstring nudges for `cspace`, `col1`/`col2`, `Dartwork*` aliases** | Low | Pure documentation; can ship alongside the next docs PR |
 

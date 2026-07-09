@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dartwork_mpl.colors._gates import (
+from dartwork_mpl._colors._gates import (
     check_all,
     gate_cycle,
     gate_cyclic_cmap,
