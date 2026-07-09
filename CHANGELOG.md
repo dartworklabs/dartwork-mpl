@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Visual tick consistency checks.** `validate_figure()` now includes
+  `UNIT_DUP`, `TICK_ROTATION`, and `TICK_DECIMAL` to catch duplicated
+  axis/tick unit affixes, avoidable or missing x-tick rotation, and
+  ambiguous or over-precise numeric tick labels. `dm.recommend_tick_decimals()`
+  exposes the decimal-step rule as a small public helper for formatter code.
+
 ### Changed
 
 ### Fixed
