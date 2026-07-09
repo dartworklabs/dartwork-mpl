@@ -28,6 +28,9 @@ SemiCondensed Noto Sans files register as Noto Sans with their width metadata,
 so choose them through the style/fallback chain rather than by a separate
 family name.
 
+For why these families, roles, and fallback gates ship together, see
+[Design rationale › Typography](../color_system/design-rationale.md#typography-rationale).
+
 **Every family in chart context.** The chart-context font explorer below
 shows each registered matplotlib family inside real figure situations:
 titles, axes, legends, annotations, value labels, numeric ticks, Korean

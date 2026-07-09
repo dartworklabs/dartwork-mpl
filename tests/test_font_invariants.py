@@ -1,0 +1,162 @@
+"""Measured font-system invariants for the typography registry."""
+
+# ruff: noqa: RUF001
+
+from __future__ import annotations
+
+import runpy
+from pathlib import Path
+
+from dartwork_mpl import font
+
+_REPO = Path(__file__).resolve().parents[1]
+_BASE_MPLSTYLE = (
+    _REPO / "src" / "dartwork_mpl" / "asset" / "mplstyle" / "base.mplstyle"
+)
+_TYPOGRAPHY_MATRIX_BUILDER = (
+    _REPO / "docs" / "_static" / "scripts" / "build_typography_matrix.py"
+)
+_TYPOGRAPHY_MATRIX = _REPO / "docs" / "_static" / "typography_matrix.html"
+_GRID_WEIGHTS = frozenset(range(100, 1000, 100))
+_LICENSES = {"Apache-2.0", "OFL-1.1"}
+_RESOLVER_PROBES = tuple("−×±→°μσΔ") + tuple("0123456789") + ("한",)
+_BASE_CHAIN = (
+    "Roboto",
+    "Inter",
+    "Paperlogy",
+    "Noto Sans CJK KR",
+    "Pretendard",
+    "Noto Sans Math",
+    "Noto Sans Symbols",
+    "Noto Sans Symbols 2",
+    "sans-serif",
+)
+_RESOLVER_GOLDEN = {
+    "−": "Roboto",
+    "×": "Roboto",
+    "±": "Roboto",
+    "→": "Inter",
+    "°": "Roboto",
+    "μ": "Roboto",
+    "σ": "Roboto",
+    "Δ": "Roboto",
+    "0": "Roboto",
+    "1": "Roboto",
+    "2": "Roboto",
+    "3": "Roboto",
+    "4": "Roboto",
+    "5": "Roboto",
+    "6": "Roboto",
+    "7": "Roboto",
+    "8": "Roboto",
+    "9": "Roboto",
+    "한": "Paperlogy",
+}
+
+
+def _base_font_family_chain() -> tuple[str, ...]:
+    for line in _BASE_MPLSTYLE.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped.startswith("font.family:"):
+            return tuple(
+                item.strip()
+                for item in stripped.partition(":")[2].split(",")
+                if item.strip()
+            )
+    raise AssertionError("font.family not found in base.mplstyle")
+
+
+def test_registry_matches_registered_matplotlib_families() -> None:
+    registered = set(font.list_registered())
+    registry = font.font_families()
+
+    assert len(registry) == 16
+    assert set(registry) == registered
+    assert set(font.FONTS) == registered
+    for family in registry.values():
+        assert family.name in registered
+        assert family.job.endswith(".")
+
+
+def test_os2_weights_are_grid_values_or_named_exceptions() -> None:
+    unexpected: list[tuple[str, str, int]] = []
+    for family, record in font.font_families().items():
+        exceptions = set(record.weight_exceptions)
+        if exceptions:
+            assert record.quirks, family
+        for face in font._measure(family).files:
+            if face.weight in _GRID_WEIGHTS:
+                continue
+            if face.weight not in exceptions:
+                unexpected.append((family, face.file, face.weight))
+
+    assert not unexpected
+
+
+def test_numeric_axis_recommendation_requires_tnum_or_fixed_width() -> None:
+    numeric_false = set()
+    for family, record in font.font_families().items():
+        measurement = font._measure(family)
+        measured_numeric = measurement.tnum or measurement.fixed_pitch
+        assert record.numeric_axes is measured_numeric
+        if record.numeric_axes:
+            assert measurement.tnum or measurement.fixed_pitch
+        else:
+            numeric_false.add(family)
+
+    assert numeric_false == {
+        "IBM Plex Sans",
+        "Source Sans 3",
+        "Paperlogy",
+        "Noto Sans CJK KR",
+        "Noto Sans Math",
+        "Noto Sans Symbols",
+        "Noto Sans Symbols 2",
+    }
+
+
+def test_base_chain_chart_glyph_resolver_is_pinned() -> None:
+    chain = _base_font_family_chain()
+    assert chain == _BASE_CHAIN
+
+    resolved: dict[str, str] = {}
+    for char in _RESOLVER_PROBES:
+        for family in chain:
+            assert family != "sans-serif", f"{char!r} fell through to DejaVu"
+            if ord(char) in font._family_codepoints(family):
+                resolved[char] = family
+                break
+
+    assert resolved == _RESOLVER_GOLDEN
+
+
+def test_every_file_license_is_allowed() -> None:
+    for family in font.font_families():
+        measurement = font._measure(family)
+        assert set(measurement.licenses) <= _LICENSES
+        for face in measurement.files:
+            assert face.license in _LICENSES
+
+
+def test_registry_flags_match_measured_truth() -> None:
+    for family, record in font.font_families().items():
+        measurement = font._measure(family)
+        assert record.hangul is measurement.hangul
+        assert record.italic is measurement.italic
+        assert record.mono is measurement.fixed_pitch
+
+
+def test_measurement_is_deterministic() -> None:
+    first = {family: font._measure(family) for family in font.font_families()}
+    second = {family: font._measure(family) for family in font.font_families()}
+
+    assert first == second
+
+
+def test_typography_matrix_matches_builder() -> None:
+    built = runpy.run_path(str(_TYPOGRAPHY_MATRIX_BUILDER))["build"]()
+    committed = _TYPOGRAPHY_MATRIX.read_text(encoding="utf-8")
+
+    assert built == committed
+    assert "<style" not in committed
+    assert committed.count("<tr><td>") == 16

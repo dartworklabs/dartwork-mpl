@@ -397,9 +397,52 @@ the 43-map catalog) lives beside the design record:
 - [Colormaps](colormaps.md) — the 43-map catalog, applied.
 - [Color class](color-class.md) — the `Color` class and custom colormaps.
 
-## Typography rationale (placeholder)
+## Typography rationale
 
-The same principled treatment — selection criteria, registration rules,
-measured gates, preset wiring — is planned for the font system. It lands
-with the fonts overhaul; until then this section is intentionally a stub
-so the page's scope (the whole design system, not just color) is explicit.
+The font system now follows the same evidence pattern as color: families are
+not bundled because they look plausible in a specimen sheet. Each family has
+one chart job, every measured claim is derived from the shipped font files,
+and the fallback chain is treated as product behavior rather than an accident
+of matplotlib configuration.
+
+**T1 · Jobs before taste.** Every registered matplotlib family has exactly one
+documented role: body, display, Korean body, monospace, or fallback tail. A
+new family must do a job that another bundled family does not already do
+better.
+
+**T2 · Measured gates.** OS/2 weights, tabular-numeral support, fixed-width
+truth, chart-glyph coverage, Hangul coverage, and license class are read from
+the bundled files in tests and docs. Known upstream metadata quirks are named
+in the registry instead of being silently normalized.
+
+**T3 · Roles in user space.** Presets and docs speak in roles, while users keep
+native matplotlib `Figure` / `Axes` objects. Size and weight still flow through
+`dm.fs()` and `dm.fw()`, so swapping presets does not strand literal point
+sizes or arbitrary font weights.
+
+**T4 · Fallback is pinned.** The base text chain is
+`Roboto → Inter → Paperlogy → Noto Sans CJK KR → Pretendard → Noto Sans Math
+→ Noto Sans Symbols → Noto Sans Symbols 2 → sans-serif`. Tests pin the first
+family that resolves every guaranteed chart glyph, the digits, and `한`.
+
+| Role | Default | Alternates | Job |
+|---|---|---|---|
+| body | Roboto | Inter · IBM Plex Sans · Source Sans 3 · Noto Sans | neutral Latin chart text and editorial alternates |
+| display | Inter Display | - | large titles, headings, poster-scale numerals |
+| kr-body | Paperlogy | Pretendard · Noto Sans CJK KR | Korean and CJK labels without system-font dependence |
+| mono | JetBrains Mono | IBM Plex Mono · Roboto Mono · Source Code Pro | code, timestamps, aligned labels, tabular data |
+| fallback-tail | Noto Sans Math | Noto Sans Symbols · Noto Sans Symbols 2 | math operators, arrows, signs, and dingbats |
+
+```{raw} html
+:file: ../_static/typography_matrix.html
+```
+
+### Anatomy of the fallback chain
+
+Plain text in matplotlib resolves glyphs from `font.family`, so the chain must
+name actual bundled families, not just the generic `sans-serif` alias. The
+order starts with the body voice (`Roboto`, then `Inter`), moves through
+Korean and CJK coverage (`Paperlogy`, `Noto Sans CJK KR`, `Pretendard`), then
+lands on math and symbol faces. In the pinned resolver map, digits and most
+operators resolve in Roboto, `→` first appears in Inter, and `한` first appears
+in Paperlogy; nothing falls through to DejaVu.

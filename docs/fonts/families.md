@@ -31,21 +31,19 @@ the same data plotted with default matplotlib fonts (left) and dartwork-mpl font
 
 ::::
 
-## Font Selection Guide
+## Role System
 
-Not sure which font to use? Pick based on your primary need:
+Pick fonts by role first, then by voice. The registry gives every bundled
+matplotlib family one job, and the measured rationale explains why those jobs
+exist: [Design rationale › Typography](../color_system/design-rationale.md#typography-rationale).
 
-| Need                         | Recommended Font           | Why                                         |
-| ---------------------------- | -------------------------- | ------------------------------------------- |
-| **General chart text**       | Roboto (default)           | Clean, legible at all sizes                 |
-| **UI-style dashboards**      | Inter                      | Tall x-height, excellent screen readability |
-| **Titles & headings**        | Inter Display              | Tighter spacing optimized for large text    |
-| **Dense tables / legends**   | Noto Sans Condensed family | Same readability, narrower footprint        |
-| **Korean text (한글)**       | Paperlogy                  | Native Korean design, 9 weights             |
-| **CJK (日本語 / 中文)**      | Noto Sans CJK              | Comprehensive CJK glyph coverage            |
-| **Math / scientific**        | Noto Sans Math             | Full symbol set: ∑ ∫ √ ∞ π θ α β γ          |
-| **Symbol fallback**          | Noto Sans Symbols 1 / 2    | Plain-text arrows, dingbats: → ⚠ ✓ ★         |
-| **Multi-language documents** | Noto Sans                  | Broadest Unicode coverage                   |
+| Role | Default | Alternates | When to pick |
+| --- | --- | --- | --- |
+| **body** | Roboto | Inter · IBM Plex Sans · Source Sans 3 · Noto Sans | General Latin chart text; choose an alternate for screen UI, technical, editorial, or multilingual tone. |
+| **display** | Inter Display | - | Titles, section headings, and poster-scale numbers. |
+| **kr-body** | Paperlogy | Pretendard · Noto Sans CJK KR | Korean labels and bilingual KR/EN figures; use Noto Sans CJK KR when broader CJK coverage matters. |
+| **mono** | JetBrains Mono | IBM Plex Mono · Roboto Mono · Source Code Pro | Code, timestamps, aligned values, and tabular labels; pair alternates with their sans siblings. |
+| **fallback-tail** | Noto Sans Math | Noto Sans Symbols · Noto Sans Symbols 2 | Keep these in the chain for math operators, arrows, signs, and dingbats rather than choosing them as body faces. |
 
 To apply a font, prepend its exact matplotlib family name to the current
 `font.family` chain (e.g. `Inter Display` with a space, not `InterDisplay`).
@@ -68,28 +66,30 @@ Fine-tune size and weight next → [Font Utilities › Custom Font Configuration
 
 ## Fonts in Chart Context
 
-Each font plays a specific role in a chart. This annotated example shows which
-font is used where:
+Each role appears in chart context. This annotated example shows which family is
+used where:
 
 ```{image} _generated/chart_context.svg
 :alt: Chart fonts in context
 :align: center
 ```
 
-> **Title** uses InterDisplay Bold for maximum impact. **Axis labels** use
+> **Title** uses Inter Display Bold for maximum impact. **Axis labels** use
 > Roboto Regular for clear identification. **Tick marks** use Roboto Light
 > for unobtrusive readability.
 
-## Font Pairing Recommendations
+## Role-Based Pairing
 
-Curated combinations for common chart styles:
+Start from the default role stack, then swap within a role only when the chart
+needs a different voice:
 
-| Style         | Title                 | Body            | Ticks               | Why it works                                 |
-| ------------- | --------------------- | --------------- | ------------------- | -------------------------------------------- |
-| **Academic**  | InterDisplay SemiBold | Roboto Light    | Roboto Light        | High contrast between display and body       |
-| **Dashboard** | Inter Medium          | Inter Regular   | Noto Sans Condensed | Uniform feel, condensed ticks save space     |
-| **Poster**    | InterDisplay Bold     | Roboto Regular  | Roboto Regular      | Large-scale readability                      |
-| **Korean**    | Paperlogy SemiBold    | Paperlogy Light | Paperlogy Light     | Native Korean design, consistent weight axis |
+| Need | Pairing |
+| --- | --- |
+| **Default publication chart** | Inter Display titles · Roboto labels · fallback tail intact |
+| **Screen dashboard** | Inter Display titles · Inter labels · JetBrains Mono for code or aligned values |
+| **Technical report** | Inter Display titles · IBM Plex Sans labels · IBM Plex Mono snippets |
+| **Editorial captions** | Inter Display titles · Source Sans 3 captions · Source Code Pro code |
+| **Korean report** | Paperlogy titles and labels · Pretendard alternate for KR/EN interface tone |
 
 ## Size Scale
 
@@ -101,7 +101,7 @@ Common size ranges used in charts, mapped to `fs()` offsets:
 | Axis labels | 7.5–10.5   | `fs(0)`              | Base size — matches the active preset      |
 | Legend      | 5.5–9      | `fs(-2)` to `fs(1)`  | Smaller than axis labels                   |
 | Subtitles   | 9–13       | `fs(2)` to `fs(4)`   | Medium weight (500) adds hierarchy         |
-| Titles      | 8.5–14     | `fs(1)` to `fs(6)`   | Use InterDisplay or bold weight for impact |
+| Titles      | 8.5–14     | `fs(1)` to `fs(6)`   | Use Inter Display or bold weight for impact |
 
 ---
 
@@ -166,7 +166,7 @@ many OpenType features.
 
 ---
 
-### InterDisplay
+### Inter Display
 
 ```{raw} html
 :file: _generated/interdisplay_showcase.html

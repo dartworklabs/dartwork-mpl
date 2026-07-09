@@ -194,6 +194,27 @@ def test_builder_inventory_comes_from_registered_font_ssot() -> None:
             assert entry["face"] == font.css_font_face_name(entry["file"])
 
 
+def test_committed_fragment_payload_matches_builder() -> None:
+    assert _payload_from_html() == _builder_payload()
+
+
+def test_jetbrains_mono_weight_segments_are_standard_grid() -> None:
+    payload = _builder_payload()
+    weights = payload["families"]["JetBrains Mono"]["weights"]
+
+    assert [entry["weight"] for entry in weights] == [
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+    ]
+    assert [entry["offset"] for entry in weights] == [-2, -1, 0, 1, 2, 3, 4, 5]
+
+
 def test_font_faces_referenced_by_weight_segments_exist() -> None:
     payload = _builder_payload()
     bundled_faces = _bundled_font_face_files()
