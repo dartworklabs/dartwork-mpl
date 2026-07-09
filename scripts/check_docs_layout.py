@@ -112,16 +112,6 @@ CHECKS: list[dict[str, Any]] = [
         "colormap_builder": True,
     },
     {
-        "path": "color_system/colormaps.html",
-        "viewports": [
-            {"width": 390, "height": 844},
-            {"width": 1440, "height": 1000},
-        ],
-        "themes": ["light", "dark"],
-        "article_text": True,
-        "colormap_explorer": True,
-    },
-    {
         "path": "colormap_poc.html",
         "viewports": [
             {"width": 390, "height": 844},

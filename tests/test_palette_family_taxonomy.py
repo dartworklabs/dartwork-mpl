@@ -258,14 +258,32 @@ def test_explorer_layout_fits_article_column() -> None:
 
     assert '<div id="dm-cat-exp" class="dm-wide yue">' in html
     assert "<style" not in html
-    assert "grid-template-columns:minmax(10.5rem,12rem) minmax(0,1fr)" in css
+    assert "grid-template-columns:minmax(10rem,10.5rem) minmax(0,1fr)" in css
     assert (
-        "#dm-cat-exp {width:100%;max-width:100%;container-type:inline-size;"
+        "#dm-cat-exp,#dm-cmap-exp {width:100%;max-width:100%;container-type:inline-size;"
         in css
     )
-    assert "#dm-cat-exp .detail {min-width:0;" in css
-    assert "gap:var(--dm-space-5,24px)" in css
+    assert "#dm-cat-exp .detail,#dm-cmap-exp .detail {min-width:0;" in css
+    assert "gap:var(--dm-space-4,16px)" in css
+    assert "padding-right:4px" in css
     assert "flex-wrap:wrap;row-gap:8px;" in css
+    assert "grid-template-columns:minmax(10.5rem,12rem)" not in css
+
+
+def test_rail_mini_strips_share_square_non_clipping_rectangles() -> None:
+    """Categorical and colormap rail minis use the same square-ended strip."""
+    css = _DESIGN_CSS.read_text(encoding="utf-8")
+    m = re.search(
+        r"#dm-cat-exp \.ri \.mini,#dm-cmap-exp \.ri \.mini \{([^}]*)\}", css
+    )
+    assert m, "shared rail mini CSS rule missing"
+    mini_rule = m.group(1)
+    assert "flex:0 0 40px" in mini_rule
+    assert "height:12px" in mini_rule
+    assert "border-radius" not in mini_rule
+    assert "overflow" not in mini_rule
+    assert "border" not in mini_rule
+    assert "box-shadow" not in mini_rule
 
 
 def test_explorer_title_row_chips_replace_badge_readout() -> None:
@@ -280,7 +298,7 @@ def test_explorer_title_row_chips_replace_badge_readout() -> None:
     assert ".a11y-chip" in html
     assert "a-dot" in html
     assert ".a-dot" in css
-    assert "border-radius:50%" in css
+    assert "border-radius:var(--dm-radius-full,999px)" in css
     assert "margin-left:auto" in css
     assert "function chipHTML(" in html
     assert "d.querySelector('.a11y-chips').innerHTML=a11yHTML();" in html

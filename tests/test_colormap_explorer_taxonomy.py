@@ -117,7 +117,7 @@ def _payload_from_html() -> dict:
 
 def _colormap_css() -> str:
     css = _DESIGN_CSS.read_text(encoding="utf-8")
-    start = css.index("/* Continuous colormap explorer widget.")
+    start = css.index("/* Explorer widget shared layer.")
     end = css.index("/* Categorical palette page polish.", start)
     return css[start:end]
 
@@ -278,13 +278,15 @@ def test_root_wrapper_is_wide_yue_with_unique_id() -> None:
 
 def test_layout_uses_design_tokens_and_bounded_grid() -> None:
     css = _colormap_css()
-    assert "grid-template-columns:minmax(10.5rem,12rem) minmax(0,1fr)" in css
+    assert "grid-template-columns:minmax(10rem,10.5rem) minmax(0,1fr)" in css
     assert (
-        "#dm-cmap-exp {width:100%;max-width:100%;container-type:inline-size;"
+        "#dm-cat-exp,#dm-cmap-exp {width:100%;max-width:100%;container-type:inline-size;"
         in css
     )
-    assert "gap:var(--dm-space-5,24px)" in css
+    assert "gap:var(--dm-space-4,16px)" in css
+    assert "padding-right:4px" in css
     assert "flex-wrap:wrap;row-gap:8px;" in css
+    assert "grid-template-columns:minmax(10.5rem,12rem)" not in css
     assert (
         "#dm-cmap-exp .demo-tools .demo-field {flex:1 1 100%;min-width:0;align-items:flex-start;}"
         in css
@@ -356,9 +358,13 @@ def test_retina_gradient_backgrounds_are_non_repeating_images() -> None:
 
 def test_rail_mini_strips_are_square_non_clipping_rectangles() -> None:
     css = _colormap_css()
-    m = re.search(r"#dm-cmap-exp \.ri \.mini \{([^}]*)\}", css)
-    assert m, "rail mini CSS rule missing"
+    m = re.search(
+        r"#dm-cat-exp \.ri \.mini,#dm-cmap-exp \.ri \.mini \{([^}]*)\}", css
+    )
+    assert m, "shared rail mini CSS rule missing"
     mini_rule = m.group(1)
+    assert "flex:0 0 40px" in mini_rule
+    assert "height:12px" in mini_rule
     assert "border-radius" not in mini_rule
     assert "overflow" not in mini_rule
     assert "border" not in mini_rule
