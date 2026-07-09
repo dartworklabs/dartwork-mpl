@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-import math
 from itertools import pairwise
 from typing import TYPE_CHECKING, Literal
 
+from ...formatting import recommend_tick_decimals
 from .._types import Severity, VisualWarning
 from ._registry import register_check
 from ._tick_utils import iter_view_ticks, split_tick_affixes
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
     from matplotlib.text import Text
@@ -20,21 +18,6 @@ if TYPE_CHECKING:
 __all__ = ["check_tick_decimal"]
 
 _INTEGER_REL_TOL = 1e-9
-
-
-def _recommend_tick_decimals(values: Sequence[float]) -> int:
-    finite = [float(value) for value in values if math.isfinite(float(value))]
-    if len(finite) < 2:
-        return 0
-    diffs = [
-        abs(right - left)
-        for left, right in pairwise(finite)
-        if abs(right - left) > 0
-    ]
-    if not diffs:
-        return 0
-    step = min(diffs)
-    return min(4, max(0, math.ceil(-math.log10(step) - 1e-9)))
 
 
 def _axis_value(tick: Text, axis: Literal["x", "y"]) -> float | None:
@@ -93,7 +76,7 @@ def check_tick_decimal(
             rendered_values = [row[1] for row in tick_rows]
             axis_values = [row[2] for row in tick_rows]
             rendered_decimals = max(row[3] for row in tick_rows)
-            recommended_decimals = _recommend_tick_decimals(axis_values)
+            recommended_decimals = recommend_tick_decimals(axis_values)
 
             duplicate = next(
                 (

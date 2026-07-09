@@ -7,6 +7,7 @@ tick labels, and other matplotlib elements.
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from itertools import pairwise
 from typing import Any, Literal
 
@@ -14,6 +15,35 @@ import matplotlib.ticker as ticker
 from matplotlib.axes import Axes
 
 _YEAR_SUFFIX = {"ko": "년", "ja": "年", "zh": "年", "en": ""}
+
+
+def recommend_tick_decimals(values: Sequence[float]) -> int:
+    """Recommend the minimum decimal places needed for numeric tick values.
+
+    The recommendation is based on the smallest positive step between
+    adjacent sorted values, with a conservative cap of four decimals.
+    Duplicate and non-finite values are ignored.
+    """
+    finite: list[float] = []
+    for value in values:
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(numeric):
+            finite.append(numeric)
+    if len(finite) < 2:
+        return 0
+
+    ordered = sorted(finite)
+    diffs = [
+        right - left for left, right in pairwise(ordered) if right - left > 0
+    ]
+    if not diffs:
+        return 0
+
+    step = min(diffs)
+    return min(4, max(0, math.ceil(-math.log10(step) - 1e-9)))
 
 
 def format_axis_year(
