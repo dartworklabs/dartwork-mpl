@@ -2,9 +2,41 @@
 
 from __future__ import annotations
 
+import colorsys
+
+import matplotlib.colors as mcolors
 import pytest
 
+import dartwork_mpl as dm
 from dartwork_mpl.colors import Color, cspace, hex, oklab, oklch, rgb
+
+
+def _relative_luminance(color: str) -> float:
+    r, g, b = mcolors.to_rgb(color)
+
+    def linearize(channel: float) -> float:
+        return (
+            channel / 12.92
+            if channel <= 0.03928
+            else ((channel + 0.055) / 1.055) ** 2.4
+        )
+
+    return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b)
+
+
+def _contrast_ratio(foreground: str, background: str) -> float:
+    hi, lo = sorted(
+        (_relative_luminance(foreground), _relative_luminance(background)),
+        reverse=True,
+    )
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def _hue(color: str) -> float:
+    r, g, b = mcolors.to_rgb(color)
+    hue, _lightness, _saturation = colorsys.rgb_to_hls(r, g, b)
+    return hue
+
 
 # ============================================================================
 # Convenience constructors
@@ -72,6 +104,58 @@ class TestHex:
         assert r == pytest.approx(1.0, abs=0.01)
         assert g == pytest.approx(0.0, abs=0.01)
         assert b == pytest.approx(0.0, abs=0.01)
+
+
+# ============================================================================
+# Contrast-aware ink helpers
+# ============================================================================
+
+
+class TestReadableTextColor:
+    """Tests for choosing readable text color from candidate inks."""
+
+    def test_dark_background_uses_light_ink(self) -> None:
+        assert dm.readable_text_color("#111111") == "white"
+
+    def test_light_background_uses_standard_dark_ink(self) -> None:
+        assert dm.readable_text_color("#f7f7f7") == "black"
+
+    def test_candidates_are_compared_by_contrast_ratio(self) -> None:
+        result = dm.readable_text_color(
+            "#777777", light="#bbbbbb", dark="#111111"
+        )
+
+        assert result == "#111111"
+        assert _contrast_ratio(result, "#777777") > _contrast_ratio(
+            "#bbbbbb", "#777777"
+        )
+
+
+class TestEnsureContrast:
+    """Tests for minimal deterministic lightness adjustment."""
+
+    def test_passing_color_is_returned_unchanged(self) -> None:
+        original = "#112233"
+
+        assert dm.ensure_contrast(original, "white") == original
+
+    def test_light_color_against_white_is_darkened_to_minimum_ratio(
+        self,
+    ) -> None:
+        original = "#d9d97a"
+
+        adjusted = dm.ensure_contrast(original, "white", min_ratio=4.5)
+
+        assert adjusted != original
+        assert _contrast_ratio(adjusted, "white") >= 4.5
+        assert mcolors.to_rgb(adjusted)[0] < mcolors.to_rgb(original)[0]
+        assert _hue(adjusted) == pytest.approx(_hue(original), abs=0.01)
+
+    def test_adjustment_is_deterministic(self) -> None:
+        first = dm.ensure_contrast("#d9d97a", "white", min_ratio=4.5)
+        second = dm.ensure_contrast("#d9d97a", "white", min_ratio=4.5)
+
+        assert first == second
 
 
 # ============================================================================

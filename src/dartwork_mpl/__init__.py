@@ -66,9 +66,11 @@ from .colors import (
     cspace,
     cycle,
     cycle_cycler,
+    ensure_contrast,
     hex,
     oklab,
     oklch,
+    readable_text_color,
     rgb,
 )
 
@@ -207,6 +209,8 @@ __all__ = [  # noqa: RUF022
     "oklab",
     "oklch",
     "rgb",
+    "readable_text_color",
+    "ensure_contrast",
     "DartworkColor",
     "DartworkColormap",
     # Icon module
