@@ -181,6 +181,40 @@ def _fix_tick_crowd(warning: VisualWarning) -> list[str]:
     return suggestions
 
 
+@register_fix("UNIT_DUP")
+def _fix_unit_dup(warning: VisualWarning) -> list[str]:
+    axis = warning.detail.get("axis", "y")
+    return [
+        "# Keep the unit in the axis label only\n"
+        f"ax.{axis}axis.set_major_formatter(mticker.PercentFormatter(symbol=''))",
+        "# Or use a bare numeric formatter\n"
+        f"ax.{axis}axis.set_major_formatter(mticker.StrMethodFormatter('{{x:g}}'))",
+    ]
+
+
+@register_fix("TICK_ROTATION")
+def _fix_tick_rotation(warning: VisualWarning) -> list[str]:
+    rotation = warning.detail.get("recommended_rotation", 45)
+    return [
+        "# Adjust x tick label rotation\n"
+        f"dm.rotate_tick_labels(ax, axis='x', rotation={rotation})",
+        "# Or reduce tick density\n"
+        "ax.xaxis.set_major_locator(plt.MaxNLocator(nbins=6))",
+    ]
+
+
+@register_fix("TICK_DECIMAL")
+def _fix_tick_decimal(warning: VisualWarning) -> list[str]:
+    axis = warning.detail.get("axis", "y")
+    decimals = int(warning.detail.get("recommended_decimals", 0))
+    return [
+        "# Match tick precision to the tick step\n"
+        f"ax.{axis}axis.set_major_formatter(mticker.StrMethodFormatter('{{x:.{decimals}f}}'))",
+        "# Or let matplotlib choose compact numeric labels\n"
+        f"ax.{axis}axis.set_major_formatter(mticker.ScalarFormatter())",
+    ]
+
+
 @register_fix("EMPTY_AXES")
 def _fix_empty_axes(_warning: VisualWarning) -> list[str]:
     return [
