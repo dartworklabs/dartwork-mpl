@@ -32,7 +32,7 @@ _DEMO_KEYS = [
     "waffle",
     "treemap",
     "donut",
-    "grouped",
+    "bump",
     "slope",
     "streamgraph",
     "dotplot",
@@ -46,10 +46,19 @@ _DEFAULT_9 = [
     "heatmap",
     "treemap",
     "donut",
-    "grouped",
+    "bump",
     "slope",
 ]
-_NEW_DEMOS = ["donut", "grouped", "slope", "streamgraph", "dotplot", "boxplot"]
+_NEW_DEMOS = ["donut", "bump", "slope", "streamgraph", "dotplot", "boxplot"]
+_REPLACE_LAST_HANDLER = (
+    "function capDemosToLayout(){if(state.demos.length>state.layout)"
+    "state.demos=state.demos.slice(0,state.layout);}\n"
+    "function setLayout(n){state.layout=n;capDemosToLayout();renderDetail();}\n"
+    "function toggleDemo(k){capDemosToLayout();var idx=state.demos.indexOf(k);\n"
+    "  if(idx>=0)state.demos.splice(idx,1);else if(state.demos.length>=state.layout)"
+    "state.demos.splice(state.demos.length-1,1,k);else state.demos.push(k);"
+    "renderDetail();}"
+)
 _RAIL_GROUP_ORDER = [
     "Qualitative",
     "Sequential",
@@ -335,6 +344,31 @@ def test_categorical_explorer_uses_shared_demo_and_layout_pickers() -> None:
     assert "visibleDemos()" in html
     for key in _NEW_DEMOS:
         assert f'"key":"{key}"' in html
+
+
+def test_categorical_demo_picker_replaces_last_full_slot() -> None:
+    """Demo selection is capped to the layout and swaps the newest slot."""
+    html = _EXPLORER.read_text(encoding="utf-8")
+
+    assert _REPLACE_LAST_HANDLER in html
+    assert "var k=b.dataset.demoPick,idx=state.demos.indexOf(k)" not in html
+    assert "if(wasDefault)" not in html
+    assert "P.grouped" not in html
+    assert '"key":"grouped"' not in html
+    assert '{"key":"bump","name":"Bump chart"}' in html
+
+    demos = _DEFAULT_9[:4]
+    new_key = "streamgraph"
+    if new_key in demos:
+        demos.remove(new_key)
+    elif len(demos) >= 4:
+        demos[-1] = new_key
+    else:
+        demos.append(new_key)
+    assert demos == ["line", "bar", "scatter", "streamgraph"]
+
+    demos.remove("bar")
+    assert demos == ["line", "scatter", "streamgraph"]
 
 
 def test_explorer_layout_fits_article_column() -> None:

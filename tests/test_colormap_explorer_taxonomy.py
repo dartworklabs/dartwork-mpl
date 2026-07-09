@@ -105,6 +105,15 @@ _DEFAULT_9 = [
     "waffle",
 ]
 _CANVAS_DEMOS = ["heatmap", "contours", "terrain", "signal", "polar_heat"]
+_REPLACE_LAST_HANDLER = (
+    "function capDemosToLayout(){if(state.demos.length>state.layout)"
+    "state.demos=state.demos.slice(0,state.layout);}\n"
+    "function setLayout(n){state.layout=n;capDemosToLayout();renderDetail();}\n"
+    "function toggleDemo(k){capDemosToLayout();var idx=state.demos.indexOf(k);\n"
+    "  if(idx>=0)state.demos.splice(idx,1);else if(state.demos.length>=state.layout)"
+    "state.demos.splice(state.demos.length-1,1,k);else state.demos.push(k);"
+    "renderDetail();}"
+)
 
 
 def _payload_from_html() -> dict:
@@ -265,6 +274,28 @@ def test_demo_library_is_sixteen_without_radial_and_with_four_new_grammars() -> 
     html = _EXPLORER.read_text(encoding="utf-8")
     assert "Radial" not in html
     assert "radialSVG" not in html
+
+
+def test_colormap_demo_picker_replaces_last_full_slot() -> None:
+    """Demo selection is capped to the layout and swaps the newest slot."""
+    html = _EXPLORER.read_text(encoding="utf-8")
+
+    assert _REPLACE_LAST_HANDLER in html
+    assert "var k=b.dataset.demoPick,idx=state.demos.indexOf(k)" not in html
+    assert "if(wasDefault)" not in html
+
+    demos = _DEFAULT_9[:4]
+    new_key = "waffle"
+    if new_key in demos:
+        demos.remove(new_key)
+    elif len(demos) >= 4:
+        demos[-1] = new_key
+    else:
+        demos.append(new_key)
+    assert demos == ["heatmap", "contours", "streamlines", "waffle"]
+
+    demos.remove("contours")
+    assert demos == ["heatmap", "streamlines", "waffle"]
 
 
 # ── layout / style literals ────────────────────────────────────────────────

@@ -174,7 +174,7 @@ DEMO_LIBRARY = [
     ("waffle", "Waffle"),
     ("treemap", "Treemap"),
     ("donut", "Donut"),
-    ("grouped", "Grouped bars"),
+    ("bump", "Bump chart"),
     ("slope", "Slope"),
     ("streamgraph", "Streamgraph"),
     ("dotplot", "Dot plot"),
@@ -191,7 +191,7 @@ DEFAULT_9 = [
     "heatmap",
     "treemap",
     "donut",
-    "grouped",
+    "bump",
     "slope",
 ]
 DEFAULT_6 = DEFAULT_9[:6]
@@ -354,6 +354,7 @@ function catmullTail(pts){var d='';for(var i=0;i<pts.length-1;i++){var p0=pts[i-
     d+='C'+c1[0].toFixed(2)+' '+c1[1].toFixed(2)+' '+c2[0].toFixed(2)+' '+c2[1].toFixed(2)+' '+p2[0].toFixed(2)+' '+p2[1].toFixed(2);}
   return d;}
 function catmullPath(pts){return 'M'+pts[0][0].toFixed(2)+' '+pts[0][1].toFixed(2)+catmullTail(pts);}
+function roundTopRectPath(x,y,w,h,r){r=Math.min(r,w/2,h);return 'M'+x.toFixed(2)+' '+(y+h).toFixed(2)+'L'+x.toFixed(2)+' '+(y+r).toFixed(2)+'Q'+x.toFixed(2)+' '+y.toFixed(2)+' '+(x+r).toFixed(2)+' '+y.toFixed(2)+'L'+(x+w-r).toFixed(2)+' '+y.toFixed(2)+'Q'+(x+w).toFixed(2)+' '+y.toFixed(2)+' '+(x+w).toFixed(2)+' '+(y+r).toFixed(2)+'L'+(x+w).toFixed(2)+' '+(y+h).toFixed(2)+'Z';}
 // ── 15 self-contained SVG chart renderers (take a hex array) ──
 var P = {
   line: function(c){ var n=c.length, s=svgOpen();
@@ -361,18 +362,18 @@ var P = {
       for(var x=0;x<=100;x+=1.25){ var t=x/100, y=yc+Math.sin(t*4.6+i*0.9)*3.5-(t-0.5)*(i-n/2)*1.8; d+=(x===0?'M':'L')+x.toFixed(2)+' '+y.toFixed(2)+' '; }
       s+='<path d="'+d+'" fill="none" stroke="'+c[i]+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'; }
     return s+'</svg>'; },
-  scatter: function(c){ var n=c.length, s=svgOpen(' preserveAspectRatio="xMidYMid meet"');
-    for(var i=0;i<n;i++){ var cx=12+(i/(n-1||1))*76, cy=15+((i*37)%28);
-      for(var k=0;k<11;k++){ var a=i*2.3+k*1.7; s+='<circle cx="'+(cx+Math.cos(a)*9+Math.sin(k*3.1)*2.6).toFixed(1)+'" cy="'+(cy+Math.sin(a)*9+Math.cos(k*2.2)*2.6).toFixed(1)+'" r="2" fill="'+c[i]+'" opacity="0.82"/>'; } }
+  scatter: function(c){ var n=c.length, s=svgOpen();
+    for(var i=0;i<n;i++){ for(var k=0;k<11;k++){ var cx=5+((i*19+k*37)%91), cy=4+((i*31+k*23)%49), a=i*1.9+k*2.4;
+      s+='<circle cx="'+(cx+Math.cos(a)*2.5).toFixed(1)+'" cy="'+(cy+Math.sin(a)*2.2).toFixed(1)+'" r="1.9" fill="'+c[i]+'" opacity="0.82"/>'; } }
     return s+'</svg>'; },
   area: function(c){ var n=c.length, S=48, acc=[], s=svgOpen();
-    for(var q=0;q<=S;q++)acc.push(54);
+    for(var q=0;q<=S;q++)acc.push(56);
     for(var i=0;i<n;i++){ var top='',bot='';
-      for(var xi=0;xi<=S;xi++){ var x=xi*(100/S), v=(46/n)*(0.85+0.34*Math.sin(xi*0.22+i*0.95)), y0=acc[xi], y1=acc[xi]-v; acc[xi]=y1; top+=(xi===0?'M':'L')+x.toFixed(2)+' '+y1.toFixed(2)+' '; bot=x.toFixed(2)+' '+y0.toFixed(2)+' '+bot; }
+      for(var xi=0;xi<=S;xi++){ var x=xi*(100/S), v=(48/n)*(0.85+0.34*Math.sin(xi*0.22+i*0.95)), y0=acc[xi], y1=acc[xi]-v; acc[xi]=y1; top+=(xi===0?'M':'L')+x.toFixed(2)+' '+y1.toFixed(2)+' '; bot=x.toFixed(2)+' '+y0.toFixed(2)+' '+bot; }
       s+='<path d="'+top+'L'+bot+'Z" fill="'+c[i]+'" opacity="0.96"/>'; }
     return s+'</svg>'; },
   bar: function(c){ var n=c.length, g=2.2, bw=100/n, h=[40,28,48,34,44,30,38,46], s=svgOpen();
-    for(var i=0;i<n;i++){ var x=i*bw+g/2, bh=h[i%8]; s+='<rect x="'+x.toFixed(1)+'" y="'+(52-bh).toFixed(1)+'" width="'+(bw-g).toFixed(1)+'" height="'+bh+'" rx="0.8" fill="'+c[i]+'"/>'; }
+    for(var i=0;i<n;i++){ var x=i*bw+g/2, bh=h[i%8], w=bw-g, y=56-bh; s+='<path d="'+roundTopRectPath(x,y,w,bh,3.1)+'" fill="'+c[i]+'"/>'; }
     return s+'</svg>'; },
   heatmap: function(c){ var n=c.length, cw=100/n, rows=5, rh=56/rows, s=svgOpen();
     for(var i=0;i<n;i++){ for(var r=0;r<rows;r++){ s+='<rect x="'+(i*cw).toFixed(1)+'" y="'+(r*rh).toFixed(1)+'" width="'+cw.toFixed(1)+'" height="'+rh.toFixed(1)+'" fill="'+c[i]+'" opacity="'+(0.4+r*0.14).toFixed(2)+'"/>'; } } return s+'</svg>'; },
@@ -396,7 +397,7 @@ P.treemap = function(c){ var W=100,H=56,vals=c.map(function(_,i){return 1+Math.a
   while(q.length){var horiz=(w<=h),len=horiz?w:h,nx=q[0];
     if(row.length===0||worst(row,len)>=worst(row.concat([nx]),len)){row.push(q.shift());}else{lay(row,horiz);row=[];}}
   if(row.length)lay(row,(w<=h));
-  var s=svgOpen();rects.forEach(function(r){s+='<rect x="'+r.x.toFixed(2)+'" y="'+r.y.toFixed(2)+'" width="'+Math.max(0,r.w-0.5).toFixed(2)+'" height="'+Math.max(0,r.h-0.5).toFixed(2)+'" rx="1" fill="'+r.col+'"/>';});
+  var s=svgOpen();rects.forEach(function(r){s+='<rect x="'+r.x.toFixed(2)+'" y="'+r.y.toFixed(2)+'" width="'+Math.max(0,r.w).toFixed(2)+'" height="'+Math.max(0,r.h).toFixed(2)+'" rx="0.9" fill="'+r.col+'" stroke="var(--dm-bg-page,#fff)" stroke-width="0.45"/>';});
   return s+'</svg>';};
 // waffle — cumulative assignment fills every cell
 P.waffle = function(c){ var n=c.length,cols=12,rows=5,cell=56/rows,cw=100/cols,total=cols*rows;
@@ -406,28 +407,32 @@ P.waffle = function(c){ var n=c.length,cols=12,rows=5,cell=56/rows,cw=100/cols,t
   for(var ci=0;ci<n;ci++){var end=(ci===n-1)?total:bounds[ci];
     for(;idx<end;idx++){var r=Math.floor(idx/cols),col=idx%cols;s+='<rect x="'+(col*cw+0.6).toFixed(2)+'" y="'+(r*cell+0.6).toFixed(2)+'" width="'+(cw-1.2).toFixed(2)+'" height="'+(cell-1.2).toFixed(2)+'" rx="1" fill="'+c[ci]+'"/>';}}
   return s+'</svg>';};
-P.donut = function(c){var n=c.length,cx=50,cy=28,r1=22,r0=12.1,gap=0.018,raw=c.map(function(_,i){return 0.75+Math.abs(Math.sin(i*1.33+0.45))*1.25;}),tot=raw.reduce(function(a,b){return a+b;},0),a=-Math.PI/2,s=svgOpen(' preserveAspectRatio="xMidYMid meet"');
-  for(var i=0;i<n;i++){var span=raw[i]/tot*Math.PI*2,a0=a+gap,a1=a+span-gap;if(a1<a0)a1=a0+0.001;s+='<path d="'+arcPath(cx,cy,r0,r1,a0,a1)+'" fill="'+c[i]+'" stroke="var(--dm-bg-page,#fff)" stroke-width="0.8"/>';a+=span;}
+P.donut = function(c){var n=c.length,cx=50,cy=28,r1=25.5,r0=10.7,gap=0.016,raw=c.map(function(_,i){return 0.75+Math.abs(Math.sin(i*1.33+0.45))*1.25;}),tot=raw.reduce(function(a,b){return a+b;},0),a=-Math.PI/2,s=svgOpen(' preserveAspectRatio="xMidYMid meet"');
+  for(var i=0;i<n;i++){var span=raw[i]/tot*Math.PI*2,a0=a+gap,a1=a+span-gap;if(a1<a0)a1=a0+0.001;s+='<path d="'+arcPath(cx,cy,r0,r1,a0,a1)+'" fill="'+c[i]+'" stroke="var(--dm-bg-page,#fff)" stroke-width="0.75"/>';a+=span;}
   return s+'</svg>';};
-P.grouped = function(c){var n=c.length,groups=4,base=52,gap=4,gW=(100-gap*2)/groups,s=svgOpen();
-  for(var g=0;g<groups;g++){var x0=gap+g*gW+2,slot=(gW-5)/n;for(var i=0;i<n;i++){var h=12+34*(0.35+0.65*Math.abs(Math.sin((g+1)*0.72+i*0.83))),x=x0+i*slot+slot*0.12;s+='<rect x="'+x.toFixed(2)+'" y="'+(base-h).toFixed(2)+'" width="'+Math.max(1,slot*0.76).toFixed(2)+'" height="'+h.toFixed(2)+'" rx="0.7" fill="'+c[i]+'"/>';}}
+P.bump = function(c){var n=c.length,steps=7,orders=[],order=[],s=svgOpen();
+  for(var i=0;i<n;i++)order.push(i);
+  for(var t=0;t<steps;t++){if(t>0&&n>1){var a=(t*3+1)%(n-1),tmp=order[a];order[a]=order[a+1];order[a+1]=tmp;if(n>4&&t%2===0){var b=(t*5+2)%(n-1);if(Math.abs(b-a)>1){tmp=order[b];order[b]=order[b+1];order[b+1]=tmp;}}}orders.push(order.slice());}
+  for(var j=0;j<n;j++){var pts=[];for(var q=0;q<steps;q++){var rank=orders[q].indexOf(j),x=3+q*(94/(steps-1)),y=4+rank*(48/(n-1||1));pts.push([x,y]);}
+    s+='<path d="'+catmullPath(pts)+'" fill="none" stroke="'+c[j]+'" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" opacity="0.92"/>';
+    for(var k=0;k<pts.length;k++)s+='<circle cx="'+pts[k][0].toFixed(2)+'" cy="'+pts[k][1].toFixed(2)+'" r="1.55" fill="'+c[j]+'" stroke="var(--dm-bg-page,#fff)" stroke-width="0.35"/>';}
   return s+'</svg>';};
-P.slope = function(c){var n=c.length,left=[],right=[],s=svgOpen(' preserveAspectRatio="xMidYMid meet"');
+P.slope = function(c){var n=c.length,left=[],right=[],s=svgOpen();
   for(var i=0;i<n;i++){left.push(i);right.push(i);}right.sort(function(a,b){return Math.sin(a*2.11+0.7)-Math.sin(b*2.11+0.7);});
-  s+='<line x1="18" y1="7" x2="18" y2="49" stroke="var(--dm-border-faint,rgba(0,0,0,.12))" stroke-width="1"/><line x1="82" y1="7" x2="82" y2="49" stroke="var(--dm-border-faint,rgba(0,0,0,.12))" stroke-width="1"/>';
-  for(var j=0;j<n;j++){var rankR=right.indexOf(j),y0=9+(left[j]/(n-1||1))*38,y1=9+(rankR/(n-1||1))*38;s+='<path d="M18 '+y0.toFixed(2)+'L82 '+y1.toFixed(2)+'" fill="none" stroke="'+c[j]+'" stroke-width="1.7" stroke-linecap="round" opacity="0.9"/><circle cx="18" cy="'+y0.toFixed(2)+'" r="2.1" fill="'+c[j]+'"/><circle cx="82" cy="'+y1.toFixed(2)+'" r="2.1" fill="'+c[j]+'"/>';}
+  s+='<line x1="10" y1="6" x2="10" y2="50" stroke="var(--dm-border-faint,rgba(0,0,0,.12))" stroke-width="0.9"/><line x1="90" y1="6" x2="90" y2="50" stroke="var(--dm-border-faint,rgba(0,0,0,.12))" stroke-width="0.9"/>';
+  for(var j=0;j<n;j++){var rankR=right.indexOf(j),y0=7+(left[j]/(n-1||1))*42,y1=7+(rankR/(n-1||1))*42;s+='<path d="M10 '+y0.toFixed(2)+'L90 '+y1.toFixed(2)+'" fill="none" stroke="'+c[j]+'" stroke-width="1.35" stroke-linecap="round" opacity="0.9"/><circle cx="10" cy="'+y0.toFixed(2)+'" r="1.7" fill="'+c[j]+'"/><circle cx="90" cy="'+y1.toFixed(2)+'" r="1.7" fill="'+c[j]+'"/>';}
   return s+'</svg>';};
 P.streamgraph = function(c){var n=c.length,S=150,layers=[],s=svgOpen(),acc=[],tot=[];
   for(var q=0;q<=S;q++){acc.push(0);tot.push(0);}for(var i=0;i<n;i++){var vals=[];for(var x=0;x<=S;x++){var t=x/S,v=0.34+0.34*Math.sin(t*6.283*(1+i%3)*0.45+i*0.7)+0.22*Math.sin(t*6.283*(2.2+i*0.13)+i*1.1);v=Math.max(0.08,v);vals.push(v);tot[x]+=v;}layers.push(vals);}
   var scale=42/Math.max.apply(null,tot),base=28;for(var k=0;k<n;k++){var top=[],bot=[];for(var xi=0;xi<=S;xi++){var x2=xi*(100/S),y0=base+(tot[xi]*scale)/2-acc[xi]*scale,y1=y0-layers[k][xi]*scale;bot.push([x2,y0]);top.push([x2,y1]);acc[xi]+=layers[k][xi];}
     var rb=bot.slice().reverse(),d=catmullPath(top)+'L'+rb[0][0].toFixed(2)+' '+rb[0][1].toFixed(2)+catmullTail(rb)+'Z';s+='<path d="'+d+'" fill="'+c[k]+'" opacity="0.94" stroke="var(--dm-bg-page,#fff)" stroke-width="0.25"/>';}
   return s+'</svg>';};
-P.dotplot = function(c){var n=c.length,rows=5,s=svgOpen(' preserveAspectRatio="xMidYMid meet"');
-  for(var r=0;r<rows;r++){var y=9+r*9.5,xs=[];for(var i=0;i<n;i++){var v=0.08+0.86*Math.abs(Math.sin((r+1)*0.71+i*0.47));xs.push(14+72*v);}var mn=Math.min.apply(null,xs),mx=Math.max.apply(null,xs);s+='<line x1="'+mn.toFixed(1)+'" y1="'+y.toFixed(1)+'" x2="'+mx.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="var(--dm-border-faint,rgba(0,0,0,.12))" stroke-width="1"/>';for(var j=0;j<n;j++)s+='<circle cx="'+xs[j].toFixed(1)+'" cy="'+y.toFixed(1)+'" r="1.9" fill="'+c[j]+'" opacity="0.9"/>';}
+P.dotplot = function(c){var n=c.length,rows=5,s=svgOpen();
+  for(var r=0;r<rows;r++){var y=7+r*10.5,xs=[];for(var i=0;i<n;i++){var v=0.03+0.94*Math.abs(Math.sin((r+1)*0.71+i*0.47));xs.push(8+84*v);}s+='<line x1="8" y1="'+y.toFixed(1)+'" x2="92" y2="'+y.toFixed(1)+'" stroke="var(--dm-border-faint,rgba(0,0,0,.12))" stroke-width="0.9"/>';for(var j=0;j<n;j++)s+='<circle cx="'+xs[j].toFixed(1)+'" cy="'+y.toFixed(1)+'" r="1.9" fill="'+c[j]+'" opacity="0.9"/>';}
   return s+'</svg>';};
 P.boxplot = function(c){var n=c.length,g=100/(n+1),s=svgOpen(' preserveAspectRatio="xMidYMid meet"');
   for(var i=0;i<n;i++){var x=g*(i+1),q1=20+((i*7)%13),q3=q1+12+((i*5)%9),med=q1+(q3-q1)*(0.42+0.16*Math.sin(i*1.3)),lo=Math.max(6,q1-8-((i*3)%5)),hi=Math.min(51,q3+7+((i*2)%6)),w=Math.max(3.2,Math.min(7,g*0.46)),dk=darken(c[i],0.55);
-    s+='<line x1="'+x.toFixed(1)+'" y1="'+lo.toFixed(1)+'" x2="'+x.toFixed(1)+'" y2="'+hi.toFixed(1)+'" stroke="'+c[i]+'" stroke-width="1.1" stroke-linecap="round"/><line x1="'+(x-w*.45).toFixed(1)+'" y1="'+lo.toFixed(1)+'" x2="'+(x+w*.45).toFixed(1)+'" y2="'+lo.toFixed(1)+'" stroke="'+c[i]+'" stroke-width="1.1"/><line x1="'+(x-w*.45).toFixed(1)+'" y1="'+hi.toFixed(1)+'" x2="'+(x+w*.45).toFixed(1)+'" y2="'+hi.toFixed(1)+'" stroke="'+c[i]+'" stroke-width="1.1"/><rect x="'+(x-w/2).toFixed(1)+'" y="'+q1.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+(q3-q1).toFixed(1)+'" rx="0.8" fill="'+c[i]+'" opacity="0.82"/><line x1="'+(x-w/2).toFixed(1)+'" y1="'+med.toFixed(1)+'" x2="'+(x+w/2).toFixed(1)+'" y2="'+med.toFixed(1)+'" stroke="'+dk+'" stroke-width="1.4"/>';}
+    s+='<line x1="'+x.toFixed(1)+'" y1="'+lo.toFixed(1)+'" x2="'+x.toFixed(1)+'" y2="'+q1.toFixed(1)+'" stroke="'+c[i]+'" stroke-width="0.9" stroke-linecap="round"/><line x1="'+x.toFixed(1)+'" y1="'+q3.toFixed(1)+'" x2="'+x.toFixed(1)+'" y2="'+hi.toFixed(1)+'" stroke="'+c[i]+'" stroke-width="0.9" stroke-linecap="round"/><line x1="'+(x-w*.45).toFixed(1)+'" y1="'+lo.toFixed(1)+'" x2="'+(x+w*.45).toFixed(1)+'" y2="'+lo.toFixed(1)+'" stroke="'+c[i]+'" stroke-width="0.9"/><line x1="'+(x-w*.45).toFixed(1)+'" y1="'+hi.toFixed(1)+'" x2="'+(x+w*.45).toFixed(1)+'" y2="'+hi.toFixed(1)+'" stroke="'+c[i]+'" stroke-width="0.9"/><rect x="'+(x-w/2).toFixed(1)+'" y="'+q1.toFixed(1)+'" width="'+w.toFixed(1)+'" height="'+(q3-q1).toFixed(1)+'" rx="0.8" fill="'+c[i]+'" opacity="0.88" stroke="'+c[i]+'" stroke-width="0.9"/><line x1="'+(x-w/2).toFixed(1)+'" y1="'+med.toFixed(1)+'" x2="'+(x+w/2).toFixed(1)+'" y2="'+med.toFixed(1)+'" stroke="'+dk+'" stroke-width="1.1"/>';}
   return s+'</svg>';};
 
 // ── colour math: L* and grayscale ──
@@ -515,7 +520,7 @@ function glyph(t){var c='viewBox="0 0 24 16" aria-hidden="true"';
   if(t==='waffle')return '<svg '+c+'><rect x="4" y="3" width="4" height="4" rx="1" fill="currentColor"/><rect x="10" y="3" width="4" height="4" rx="1" fill="currentColor" opacity=".75"/><rect x="16" y="3" width="4" height="4" rx="1" fill="currentColor" opacity=".55"/><rect x="4" y="9" width="4" height="4" rx="1" fill="currentColor" opacity=".6"/><rect x="10" y="9" width="4" height="4" rx="1" fill="currentColor"/><rect x="16" y="9" width="4" height="4" rx="1" fill="currentColor" opacity=".8"/></svg>';
   if(t==='treemap')return '<svg '+c+'><rect x="3" y="3" width="7" height="10" fill="currentColor"/><rect x="11" y="3" width="10" height="5" fill="currentColor" opacity=".75"/><rect x="11" y="9" width="10" height="4" fill="currentColor" opacity=".5"/></svg>';
   if(t==='donut')return '<svg '+c+'><path d="M12 2A6 6 0 0 1 18 8L14.5 8A2.5 2.5 0 0 0 12 5.5Z" fill="currentColor"/><path d="M18 8A6 6 0 1 1 12 2L12 5.5A2.5 2.5 0 1 0 14.5 8Z" fill="currentColor" opacity=".55"/></svg>';
-  if(t==='grouped')return '<svg '+c+'><rect x="4" y="7" width="2" height="6" fill="currentColor"/><rect x="7" y="4" width="2" height="9" fill="currentColor" opacity=".75"/><rect x="12" y="5" width="2" height="8" fill="currentColor"/><rect x="15" y="8" width="2" height="5" fill="currentColor" opacity=".75"/><rect x="20" y="3" width="2" height="10" fill="currentColor"/></svg>';
+  if(t==='bump')return '<svg '+c+'><path d="M4 4C8 4 8 12 12 12S16 5 20 5M4 12C8 12 8 4 12 4S16 11 20 11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="4" cy="4" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="20" cy="5" r="1.4" fill="currentColor"/></svg>';
   if(t==='slope')return '<svg '+c+'><path d="M5 4L19 10M5 12L19 5M5 8L19 8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
   if(t==='streamgraph')return '<svg '+c+'><path d="M2 10C6 4 10 12 14 6S20 5 22 9L22 13C18 9 14 15 10 11S5 12 2 14Z" fill="currentColor"/></svg>';
   if(t==='dotplot')return '<svg '+c+'><path d="M4 5H20M4 9H20M4 13H20" stroke="currentColor" stroke-width=".8" opacity=".4"/><circle cx="8" cy="5" r="1.8" fill="currentColor"/><circle cx="15" cy="9" r="1.8" fill="currentColor"/><circle cx="18" cy="13" r="1.8" fill="currentColor"/></svg>';
@@ -524,9 +529,10 @@ function glyph(t){var c='viewBox="0 0 24 16" aria-hidden="true"';
 function visibleDemos(){return state.demos.slice(0,state.layout);}
 function demoCard(t,sim){var f=P[t]||P.line;return '<div class="demo-card"><span class="demo-label">'+_esc(demoName(t))+'</span><div class="demo-flex">'+f(sim)+'</div></div>';}
 function demoGridHTML(sim){return '<div class="demo-grid layout-'+state.layout+(state.gs?' gs':'')+'">'+visibleDemos().map(function(pt){return demoCard(pt,sim);}).join('')+'</div>';}
-function sameList(a,b){return a.length===b.length&&a.every(function(v,i){return v===b[i];});}
-function setLayout(n){var wasDefault=sameList(state.demos,DEFAULT[4])||sameList(state.demos,DEFAULT[6])||sameList(state.demos,DEFAULT[9]);
-  state.layout=n;if(wasDefault)state.demos=DEFAULT[n].slice();renderDetail();}
+function capDemosToLayout(){if(state.demos.length>state.layout)state.demos=state.demos.slice(0,state.layout);}
+function setLayout(n){state.layout=n;capDemosToLayout();renderDetail();}
+function toggleDemo(k){capDemosToLayout();var idx=state.demos.indexOf(k);
+  if(idx>=0)state.demos.splice(idx,1);else if(state.demos.length>=state.layout)state.demos.splice(state.demos.length-1,1,k);else state.demos.push(k);renderDetail();}
 function demoToolsHTML(){var chips=DEMOS.map(function(d){return '<button class="demo-chip'+(state.demos.indexOf(d.key)>=0?' on':'')+'" type="button" data-demo-pick="'+_esc(d.key)+'">'+glyph(d.key)+'<span>'+_esc(d.name)+'</span></button>';}).join('');
   return '<div class="demo-tools"><span class="field demo-field"><span class="cl">Demos</span><span class="demo-picker">'+chips+'</span></span>'
     +'<span class="field"><span class="cl">Layout</span><span class="seg"><button type="button" data-layout="4" class="'+(state.layout===4?'on':'')+'">2×2</button><button type="button" data-layout="6" class="'+(state.layout===6?'on':'')+'">2×3</button><button type="button" data-layout="9" class="'+(state.layout===9?'on':'')+'">3×3</button></span></span></div>';}
@@ -541,8 +547,7 @@ function controlsHTML(){
 function wireControls(root,paint){
   var cnt=root.querySelector('#cnt');if(cnt)cnt.oninput=function(e){state.n=+e.target.value;var cv=root.querySelector('#cv');if(cv)cv.textContent=state.n;paint();};
   root.querySelectorAll('[data-layout]').forEach(function(b){b.onclick=function(){setLayout(+b.dataset.layout);};});
-  root.querySelectorAll('[data-demo-pick]').forEach(function(b){b.onclick=function(){var k=b.dataset.demoPick,idx=state.demos.indexOf(k);
-    if(idx>=0){if(state.demos.length===1)return;state.demos.splice(idx,1);}else state.demos.push(k);renderDetail();};});
+  root.querySelectorAll('[data-demo-pick]').forEach(function(b){b.onclick=function(){toggleDemo(b.dataset.demoPick);};});
   root.querySelectorAll('.tgl[data-tgl]').forEach(function(b){b.onclick=function(){var k=b.dataset.tgl;
     if(k==='bw')state.gs=!state.gs;
     else if(k==='rev')state.rev=!state.rev;
