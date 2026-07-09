@@ -8,7 +8,9 @@ import matplotlib
 
 matplotlib.use("Agg")
 
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+import pytest
 
 import dartwork_mpl as dm
 from dartwork_mpl.validate import Severity, VisualWarning, validate_figure
@@ -73,6 +75,108 @@ class TestTextContrast:
         assert hits
         assert hits[0].severity == Severity.INFO
         assert 3.0 <= hits[0].detail["ratio"] < 4.5
+        plt.close(fig)
+
+    def test_white_text_inside_dark_opaque_patch_passes(self) -> None:
+        fig, ax = _new_figure()
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.add_patch(
+            mpatches.Rectangle(
+                (0.2, 0.2), 0.6, 0.6, facecolor="#222222", edgecolor="none"
+            )
+        )
+        ax.text(
+            0.5,
+            0.5,
+            "inside",
+            color="white",
+            ha="center",
+            va="center",
+            fontsize=dm.fs(0),
+        )
+
+        warnings = _warnings_for(fig, "TEXT_CONTRAST")
+
+        assert not [w for w in warnings if w.check_id == "TEXT_CONTRAST"]
+        plt.close(fig)
+
+    def test_white_text_on_bare_axes_warns(self) -> None:
+        fig, ax = _new_figure()
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.text(
+            0.5,
+            0.5,
+            "bare",
+            color="white",
+            ha="center",
+            va="center",
+            fontsize=dm.fs(0),
+        )
+
+        warnings = _warnings_for(fig, "TEXT_CONTRAST")
+        hits = [w for w in warnings if w.check_id == "TEXT_CONTRAST"]
+
+        assert hits
+        assert hits[0].severity == Severity.WARNING
+        assert hits[0].detail["ratio"] == pytest.approx(1.0)
+        assert hits[0].detail["background_color"] == "#ffffff"
+        plt.close(fig)
+
+    def test_semitransparent_patch_uses_composited_background(self) -> None:
+        fig, ax = _new_figure()
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.add_patch(
+            mpatches.Rectangle(
+                (0.2, 0.2),
+                0.6,
+                0.6,
+                facecolor=(0.0, 0.0, 0.0, 0.5),
+                edgecolor="none",
+            )
+        )
+        ax.text(
+            0.5,
+            0.5,
+            "alpha",
+            color="white",
+            ha="center",
+            va="center",
+            fontsize=dm.fs(0),
+        )
+
+        warnings = _warnings_for(fig, "TEXT_CONTRAST")
+        hits = [w for w in warnings if w.check_id == "TEXT_CONTRAST"]
+
+        assert hits
+        assert hits[0].severity == Severity.INFO
+        assert 3.0 <= hits[0].detail["ratio"] < 4.5
+        assert hits[0].detail["background_color"] not in {"#000000", "#ffffff"}
+        plt.close(fig)
+
+    def test_text_bbox_facecolor_wins_over_axes_background(self) -> None:
+        fig, ax = _new_figure()
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.text(
+            0.5,
+            0.5,
+            "boxed",
+            color="black",
+            ha="center",
+            va="center",
+            fontsize=dm.fs(0),
+            bbox={"facecolor": "#111111", "edgecolor": "none"},
+        )
+
+        warnings = _warnings_for(fig, "TEXT_CONTRAST")
+        hits = [w for w in warnings if w.check_id == "TEXT_CONTRAST"]
+
+        assert hits
+        assert hits[0].severity == Severity.WARNING
+        assert hits[0].detail["background_color"] == "#111111"
         plt.close(fig)
 
 
