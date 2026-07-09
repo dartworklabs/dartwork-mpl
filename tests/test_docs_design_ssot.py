@@ -698,3 +698,18 @@ def test_review_harnesses_use_type_roles_and_no_legacy_accent() -> None:
         "dynamic_ux.js inserts .dm-install-picker",
     ):
         assert snippet in overhaul
+
+
+def test_explorer_demo_label_is_outline_text() -> None:
+    css = read_static("dartwork-design.css")
+    idx = css.index("#dm-cat-exp .demo-label,#dm-cmap-exp .demo-label")
+    rule = css[idx : css.index("}", idx)]
+    assert "-webkit-text-stroke:1.7px var(--dm-bg-page,#fff)" in rule
+    assert "paint-order:stroke fill" in rule
+    for banned in (
+        "backdrop-filter",
+        "box-shadow",
+        "border-radius",
+        "background:",
+    ):
+        assert banned not in rule
