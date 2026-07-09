@@ -281,7 +281,7 @@ TEMPLATE = r"""<!-- GENERATED FILE - do not edit by hand.
      Data:   src/dartwork_mpl/colors/_generated.py (PALETTE + CYCLES)
              src/dartwork_mpl/colors/_curated.py (CURATED categorical sets)
      Regenerate: python3 docs/_static/scripts/build_categorical_explorer.py -->
-<div id="dm-cat-exp" class="dm-wide yue">
+<div id="dm-cat-exp" class="yue">
 <div class="md"><div class="rail" id="cx-rail"></div><div class="detail" id="cx-detail"></div></div>
 <script>(function(){
 var D = __PAYLOAD__;

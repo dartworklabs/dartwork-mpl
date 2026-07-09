@@ -54,7 +54,6 @@ dartwork_mpl as dm` and the `.dm-*` classes). Not `dw` (a second abbreviation
 | **Radius** | `--dm-radius-1..6` + `full` (3/4/6/8/12/16/9999) | round orphans (5→radius-3, 10→radius-4/5, 20→radius-6, 2→radius-1, 50%→full). No half-steps. |
 | **Shadow** | `--dm-shadow-1..4` (gray-alpha) | already defined. Remap literal `0 8px 28px …` families onto the ladder; DELETE purple-tinted shadows. |
 | **Border** | `--dm-border-faint` / `--dm-border` / `--dm-border-strong` (+ `--dm-i-soft-border`=accent-7) | collapse warm `#ebe9e2`/`#e4e2dd`/`#d5d3cc` & cool `#e0e0e0` → the two-token system. |
-| **Layout** | `--dm-layout-shell-max: 120rem`, `--dm-layout-article-max: 88rem`, `--dm-layout-prose-max: 86ch`, `--dm-layout-gutter: 28px`, `--dm-layout-right-toc-min: 100rem` | shell = page frame, article = component canvas, prose = readable measure for normal text. Code, tables, figures, galleries, and widgets keep the article canvas. `--sy-c-content-width` maps to article width; the right page TOC appears only once the shell can leave the article a useful canvas. |
 | **Motion** | `--dm-i-transition` (when next touched) | out of scope now; add one timing token instead of per-widget literals. |
 
 ## Component SSOT
@@ -68,7 +67,6 @@ dartwork_mpl as dm` and the `.dm-*` classes). Not `dw` (a second abbreviation
 | Links | `--dm-link`/`-hover`, underline `accent-7` (now dark-correct after P1) |
 | Sidebar / TOC | active `accent-3` bg + `accent-11` text; sizes → `fs-2`/`fs-0`/`fs-00` |
 | Buttons | primary=`accent-9`+white+semibold, secondary=`accent-9` border+`accent-11`+medium → `.dm-cta--*`; generic toolbar buttons should map to `.dm-chip`, `.dm-icon-btn`, or future `.dm-button` rather than inventing local button skins |
-| Page width | article stays wide for components, while normal docs/API prose uses `--dm-layout-prose-max`; `.dm-wide` is article-local and never uses viewport breakout or negative margins |
 | Gallery cards | tokenized card surface + fixed media slot (`object-fit: contain`) so generated thumbnails keep their plot aspect |
 | **Interactive** | `dm-interactive.css` primitives: `.dm-seg` `.dm-tabs/.dm-tab` `.dm-chip` `.dm-field/.dm-input` `.dm-swatch` `.dm-slider` `.dm-icon-btn` `.dm-code` `.dm-cta` `.dm-callout` — see `dm-interactive-system.md` |
 
@@ -84,24 +82,6 @@ dartwork_mpl as dm` and the `.dm-*` classes). Not `dw` (a second abbreviation
 | Letter-spacing magic numbers | bake into `--dm-ls` scale + one `--dm-text-tight` | 3 layered opaque adjustments are unauditable |
 | React/Base UI islands | defer for now; borrow Radix/shadcn component grammar through static CSS tokens | Sphinx already owns the static document shell; React islands are reserved for a future explorer rewrite, not layout cleanup |
 | Page-local `<style>` blocks | move into global CSS or generator CSS | keeps rendered pages and docs source from inventing one-off component rules |
-
-## Layout Contract
-
-The docs width system has four distinct layers:
-
-| Layer | Token/Class | Contract |
-|---|---|---|
-| Shell | `--dm-layout-shell-max` | whole Shibuya page frame, including left nav, article, and right page TOC; wide enough that the sidebars do not pin API prose to the old narrow canvas on large displays |
-| Article canvas | `--dm-layout-article-max` | component canvas for code, tables, figures, galleries, and widgets |
-| Readable measure | `--dm-layout-prose-max` | normal docs/API prose measure; `.dm-prose` / `.dm-readable` remain explicit helper classes for custom narrative blocks |
-| Wide block | `.dm-wide` | article-local full-width component slot; no `100vw`, negative margins, or viewport breakout |
-| Right page TOC | `--dm-layout-right-toc-min` | visible only at wide desktop widths; below 100rem the TOC gives space back to the article instead of recreating the old narrow text column |
-
-Do cap normal prose at the readable measure, but keep component blocks on the
-article canvas. The selected contract is **C: split prose/component**:
-paragraphs, lists, and admonitions read at `86ch`; code, tables, figures,
-galleries, and interactive widgets keep the wider article canvas. This avoids
-the old cramped `72ch` measure without letting long API text run full width.
 
 ## shadcn grammar we borrow
 
@@ -123,20 +103,15 @@ as tokenized anatomy for generated gallery cards and explorer panels; defer
 **Sheet/Dialog/Popover** runtime because Shibuya owns page rails and the right
 page TOC.
 
-Current layout/component cleanup status:
+Current component cleanup status:
 
-- The width contract is centralized in `dartwork-design.css`; `custom.css` does
-  not override Shibuya content width.
-- Normal docs/API text uses the `86ch` readable measure by default; code,
-  tables, galleries, figures, and widgets use the article canvas.
-- `.dm-wide` is article-local and cannot break into the right page TOC.
 - Typography tracking is neutralized: all `--dm-ls-*` tokens are `0em`, and
   shipping docs surfaces avoid viewport-driven `font-size` scaling.
 - Generated palette/font/compare/evolution/gallery controls use `is-active`
   plus ARIA state, not legacy `.active` or one-off active classes.
 - `dm-interactive-styleguide.html` and `_overhaul_review.html` are linked to
-  real shipping CSS/JS and are included in the Playwright layout audit, so
-  visual checkpoints cannot silently drift from the component contract.
+  real shipping CSS/JS, so visual checkpoints cannot silently drift from the
+  component contract.
 - Review-only comparison POCs may still display historical colors by name, but
   they are not the shipping component grammar.
 

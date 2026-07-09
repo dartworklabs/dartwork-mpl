@@ -168,7 +168,7 @@ inside comparison POCs where the point is to show a historical alternative.
 | `dartwork-design.css` | raw token scale + Tier 1–6 legacy overrides |
 | `dm-interactive.css` | **interactive primitive SSOT** (this system) |
 | `dm-interactive-system.md` | this doc — the human SSOT |
-| `dm-interactive-styleguide.html` | living styleguide linked to real CSS, included in layout audits |
-| `_overhaul_review.html` | visual checkpoint linked to real CSS/JS, included in layout audits |
+| `dm-interactive-styleguide.html` | living styleguide linked to real CSS |
+| `_overhaul_review.html` | visual checkpoint linked to real CSS/JS |
 | `interactive_overhaul_pocs.html` | comparison gallery for historical alternatives |
 | `install_picker_pocs.html`, `install_command_pocs.html` | exploration galleries (the directions that were compared) |
