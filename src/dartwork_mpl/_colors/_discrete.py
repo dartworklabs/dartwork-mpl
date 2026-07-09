@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from functools import cache
 from typing import NamedTuple
 
@@ -50,12 +51,22 @@ MULTI_HUE_MIN_DE00_FLOORS: dict[str, float] = {
     "lava": 6.8,
 }
 
+_VIVID_CHROMA_FLOOR_RATIO = 0.6
+
 
 class _CandidateData(NamedTuple):
     indices: tuple[int, ...]
     hexes: tuple[str, ...]
     distances: tuple[tuple[float, ...], ...]
     thresholds: tuple[float, ...]
+
+
+class _VividCutoff(NamedTuple):
+    cut_index: int
+    dark_hi: bool
+    peak_chroma: float
+    cutoff_chroma: float
+    threshold_chroma: float
 
 
 def _family_name(name: str) -> str:
@@ -122,11 +133,52 @@ def _chroma(hex_color: str) -> float:
     return math.hypot(a_value, b_value)
 
 
+def _vivid_chroma_values(stops: Sequence[str]) -> tuple[float, ...]:
+    return tuple(_chroma(hex_color) for hex_color in stops)
+
+
+def _vivid_chroma_floor(chroma_values: Sequence[float]) -> float:
+    if not chroma_values:
+        raise ValueError("vivid cutoff needs at least one color stop")
+    return _VIVID_CHROMA_FLOOR_RATIO * max(chroma_values)
+
+
+def _vivid_cutoff(stops: Sequence[str]) -> _VividCutoff:
+    """Return the dark-tail chroma cutoff for vivid sequential demos."""
+    if not stops:
+        raise ValueError("vivid cutoff needs at least one color stop")
+    chroma_values = _vivid_chroma_values(stops)
+    peak_i = max(range(len(chroma_values)), key=chroma_values.__getitem__)
+    peak = chroma_values[peak_i]
+    threshold = _vivid_chroma_floor(chroma_values)
+    dark_hi = lab_l_hex(stops[-1]) < lab_l_hex(stops[0])
+    index = peak_i
+    if dark_hi:
+        while (
+            index + 1 <= len(chroma_values) - 1
+            and chroma_values[index + 1] >= threshold
+        ):
+            index += 1
+    else:
+        while index - 1 >= 0 and chroma_values[index - 1] >= threshold:
+            index -= 1
+    dark_end = len(chroma_values) - 1 if dark_hi else 0
+    if index == dark_end and len(chroma_values) > 1:
+        index = index - 1 if dark_hi else index + 1
+    return _VividCutoff(
+        cut_index=index,
+        dark_hi=dark_hi,
+        peak_chroma=peak,
+        cutoff_chroma=chroma_values[index],
+        threshold_chroma=threshold,
+    )
+
+
 @cache
 def _candidate_data(name: str) -> _CandidateData:
     row = _generated.CMAPS_256[name]
-    chroma_values = [_chroma(hex_color) for hex_color in row]
-    chroma_floor = 0.6 * max(chroma_values)
+    chroma_values = _vivid_chroma_values(row)
+    chroma_floor = _vivid_chroma_floor(chroma_values)
     pairs = [
         (i, hex_color)
         for i, hex_color in enumerate(row)
