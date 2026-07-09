@@ -378,6 +378,31 @@ class TestCheckTickDecimal:
         assert "trailing zero" in hits[0].message
         plt.close(fig)
 
+    def test_non_uniform_decimal_places_warn(self) -> None:
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot([0, 1, 2], [17.5, 20.0, 22.5])
+        ax.set_yticks([17.5, 20.0, 22.5])
+        ax.set_yticklabels(["17.5", "20", "22.5"])
+
+        warnings = validate_figure(fig, checks=("TICK_DECIMAL",), quiet=True)
+
+        hits = [w for w in warnings if w.check_id == "TICK_DECIMAL"]
+        assert len(hits) == 1
+        assert hits[0].severity == Severity.WARNING
+        assert "non-uniform" in hits[0].message
+        plt.close(fig)
+
+    def test_fractional_step_uniform_decimal_places_are_clean(self) -> None:
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot([0, 1, 2], [17.5, 20.0, 22.5])
+        ax.set_yticks([17.5, 20.0, 22.5])
+        ax.set_yticklabels(["17.5", "20.0", "22.5"])
+
+        warnings = validate_figure(fig, checks=("TICK_DECIMAL",), quiet=True)
+
+        assert not [w for w in warnings if w.check_id == "TICK_DECIMAL"]
+        plt.close(fig)
+
     def test_half_step_with_one_decimal_is_clean(self) -> None:
         fig, ax = plt.subplots(figsize=(5, 3))
         ax.plot([0, 1, 2], [0, 2.5, 5.0])

@@ -75,6 +75,7 @@ def check_tick_decimal(
             rendered_texts = [row[0] for row in tick_rows]
             rendered_values = [row[1] for row in tick_rows]
             axis_values = [row[2] for row in tick_rows]
+            decimal_places = [row[3] for row in tick_rows]
             rendered_decimals = max(row[3] for row in tick_rows)
             recommended_decimals = recommend_tick_decimals(axis_values)
 
@@ -102,6 +103,27 @@ def check_tick_decimal(
                             "rendered_decimals": rendered_decimals,
                             "recommended_decimals": recommended_decimals,
                             "duplicate_label": duplicate[0],
+                        },
+                    )
+                )
+                continue
+
+            unique_decimal_places = sorted(set(decimal_places))
+            if len(unique_decimal_places) > 1:
+                warnings.append(
+                    VisualWarning(
+                        severity=Severity.WARNING,
+                        check_id="TICK_DECIMAL",
+                        message=(
+                            f"{axis_name.upper()}-axis[{axes_index}]: "
+                            "non-uniform decimal places in numeric tick labels "
+                            f"({unique_decimal_places})"
+                        ),
+                        detail={
+                            "axis": axis_name,
+                            "axes_index": axes_index,
+                            "decimal_places": unique_decimal_places,
+                            "recommended_decimals": recommended_decimals,
                         },
                     )
                 )
