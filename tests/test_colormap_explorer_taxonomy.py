@@ -10,6 +10,7 @@ and zero-Hangul / no-raw-hex hygiene.
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 import runpy
@@ -99,6 +100,62 @@ _DEFAULT_9 = [
     "polar_heat",
     "waffle",
 ]
+_MULTI_HUE_VIVID_CUTOFFS = {
+    "afterglow": {
+        "index": 1,
+        "dark_hi": False,
+        "peak_chroma": 66.71,
+        "cutoff_chroma": 42.07,
+    },
+    "aurora": {
+        "index": 33,
+        "dark_hi": False,
+        "peak_chroma": 66.52,
+        "cutoff_chroma": 41.29,
+    },
+    "blaze": {
+        "index": 8,
+        "dark_hi": False,
+        "peak_chroma": 82.79,
+        "cutoff_chroma": 50.31,
+    },
+    "canopy": {
+        "index": 16,
+        "dark_hi": False,
+        "peak_chroma": 68.04,
+        "cutoff_chroma": 41.38,
+    },
+    "glacier": {
+        "index": 1,
+        "dark_hi": False,
+        "peak_chroma": 44.32,
+        "cutoff_chroma": 40.41,
+    },
+    "haze": {
+        "index": 37,
+        "dark_hi": False,
+        "peak_chroma": 52.82,
+        "cutoff_chroma": 31.75,
+    },
+    "iris": {
+        "index": 32,
+        "dark_hi": False,
+        "peak_chroma": 74.37,
+        "cutoff_chroma": 47.61,
+    },
+    "lagoon": {
+        "index": 29,
+        "dark_hi": False,
+        "peak_chroma": 64.85,
+        "cutoff_chroma": 39.0,
+    },
+    "lava": {
+        "index": 19,
+        "dark_hi": False,
+        "peak_chroma": 71.98,
+        "cutoff_chroma": 43.64,
+    },
+}
 _CANVAS_DEMOS = ["heatmap", "contours", "terrain", "signal", "polar_heat"]
 _REPLACE_LAST_HANDLER = (
     "function capDemosToLayout(){if(state.demos.length>state.layout)"
@@ -232,6 +289,38 @@ def test_unclipped_dark_ends_would_fail_the_guard() -> None:
         peak = max(chroma(h) for h in cmap)
         raw_dark_ratio = chroma(cmap[255]) / peak
         assert raw_dark_ratio < 0.2, (key, raw_dark_ratio)  # near-black
+
+
+def test_builder_delegates_vivid_cutoff_to_library_helper() -> None:
+    """The docs builder must not carry a local copy of the cutoff rule."""
+    source = _BUILDER.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    local_functions = {
+        node.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef)
+    }
+    assert "_vivid_cutoff" not in local_functions
+    assert "_chroma" not in local_functions
+    assert "0.6 * peak" not in source
+    assert ">= 0.6 x peak" not in source
+
+
+def test_library_multi_hue_vivid_cutoffs_match_pinned_goldens() -> None:
+    """Pin the shared vivid cutoff helper for every multi-hue family."""
+    from dartwork_mpl._colors._discrete import _vivid_cutoff
+
+    for key, expected in _MULTI_HUE_VIVID_CUTOFFS.items():
+        idx = list(range(0, 256, 4))
+        idx[-1] = 255
+        stops = [_generated.CMAPS_256[key][i] for i in idx]
+        cut = _vivid_cutoff(stops)
+        assert {
+            "index": cut.cut_index,
+            "dark_hi": cut.dark_hi,
+            "peak_chroma": round(cut.peak_chroma, 2),
+            "cutoff_chroma": round(cut.cutoff_chroma, 2),
+        } == expected, key
 
 
 # ── removed Ends / L* profile payload ──────────────────────────────────────

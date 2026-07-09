@@ -27,12 +27,12 @@ import re
 import statistics
 from pathlib import Path
 
+from dartwork_mpl._colors._discrete import _chroma, _vivid_cutoff, _VividCutoff
 from dartwork_mpl._colors._generated import CMAPS_256
 from dartwork_mpl._colors._metrics import (
     cvd_rgb,
     de2000_hex,
     de2000_rgb,
-    lab_from_rgb,
     lab_l_hex,
     lab_l_rgb,
     rgb_from_hex,
@@ -272,14 +272,8 @@ def _intent_for(key: str) -> str:
     return CYCLIC_INTENT[key]
 
 
-def _chroma(hex_color: str) -> float:
-    _l, a, b = lab_from_rgb(rgb_from_hex(hex_color))
-    return math.hypot(a, b)
-
-
 def _lab_l_c(hex_color: str) -> tuple[float, float]:
-    l_value, a_value, b_value = lab_from_rgb(rgb_from_hex(hex_color))
-    return l_value, math.hypot(a_value, b_value)
+    return lab_l_hex(hex_color), _chroma(hex_color)
 
 
 def _subsample_64(hexes: tuple[str, ...]) -> list[str]:
@@ -299,51 +293,13 @@ def _resample64(stops: list[str], start: int, end: int) -> list[str]:
     return [stops[round(start + i * (end - start) / 63)] for i in range(64)]
 
 
-def _vivid_cutoff(stops64: list[str], kind: str) -> dict | None:
-    """Chroma-based dark-tail clip (item 1).
-
-    Walk from the peak-chroma index toward the dark-anchor end and take the
-    LAST index whose chroma still holds >= 0.6 x peak. Demos map the most
-    extreme data value onto this index instead of the true endpoint, so the
-    darkest demo swatch stays a saturated dark hue rather than a near-black
-    mush. Diverging / cyclic maps keep their true endpoints (their extremes
-    are already saturated, or intentionally neutral — see the self-check).
-    """
-    if kind in ("diverging", "cyclic"):
-        return None
-    cs = [_chroma(h) for h in stops64]
-    peak_i = max(range(len(cs)), key=lambda i: cs[i])
-    peak = cs[peak_i]
-    thr = 0.6 * peak
-    dark_hi = lab_l_hex(stops64[-1]) < lab_l_hex(stops64[0])
-    idx = peak_i
-    if dark_hi:
-        while idx + 1 <= len(cs) - 1 and cs[idx + 1] >= thr:
-            idx += 1
-    else:
-        while idx - 1 >= 0 and cs[idx - 1] >= thr:
-            idx -= 1
-    dark_end = len(cs) - 1 if dark_hi else 0
-    if idx == dark_end and len(cs) > 1:
-        # Some dark-start maps, and some L*-refined variants, are already
-        # above the chroma threshold at the dark endpoint. Still make the demo
-        # range an actual clipped preview by stepping one stop toward the peak.
-        idx = idx - 1 if dark_hi else idx + 1
-    return {
-        "idx": idx,
-        "dark_hi": dark_hi,
-        "peak_c": round(peak, 2),
-        "cutoff_c": round(cs[idx], 2),
-    }
-
-
-def _demo_stops(stops64: list[str], cut: dict | None) -> list[str]:
+def _demo_stops(stops64: list[str], cut: _VividCutoff | None) -> list[str]:
     """The clipped 64-stop ramp the demo plots sample (item 1 step 4)."""
     if cut is None:
         return list(stops64)
-    if cut["dark_hi"]:  # dark at the high index -> keep [0 .. idx]
-        return _resample64(stops64, 0, cut["idx"])
-    return _resample64(stops64, cut["idx"], 63)  # dark at low index
+    if cut.dark_hi:  # dark at the high index -> keep [0 .. index]
+        return _resample64(stops64, 0, cut.cut_index)
+    return _resample64(stops64, cut.cut_index, 63)  # dark at low index
 
 
 def _monotone(profile: list[float], tol: float = 0.4) -> bool:
@@ -480,11 +436,11 @@ def _chips_for(key: str, stops: list[str]) -> list[dict]:
 
 def _variant(key: str, stops: list[str]) -> dict:
     kind = _kind_for(key)
-    cut = _vivid_cutoff(stops, kind)
+    cut = None if kind in ("diverging", "cyclic") else _vivid_cutoff(stops)
     return {
         "stops": stops,
         "demo": _demo_stops(stops, cut),
-        "vivid_cutoff": (cut["idx"] if cut else None),
+        "vivid_cutoff": (cut.cut_index if cut else None),
         "chips": _chips_for(key, stops),
     }
 
