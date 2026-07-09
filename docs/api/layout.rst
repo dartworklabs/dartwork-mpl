@@ -5,8 +5,11 @@ Utilities for tightening layouts without juggling ``plt.subplots_adjust``.
 ``simple_layout`` measures visible artists and arithmetically places GridSpec
 edges so axes content lands at the requested distance from the figure bounds;
 ``make_offset`` nudges text/legends in point units; ``label_axes`` adds
-standardized panel labels; ``arrow_axis`` draws annotated bidirectional arrows;
-and ``set_decimal``/``get_bounding_box`` provide quick helpers when formatting axes.
+standardized panel labels; ``annotate_value``, ``annotate_corner``, and
+``label_hline`` create compact point-offset labels; ``place_legend`` chooses
+data/text-aware axes legend positions and can raise legend columns; ``arrow_axis``
+draws annotated bidirectional arrows; and ``wrap_axis_label`` /
+``set_decimal``/``get_bounding_box`` provide quick helpers when formatting axes.
 
 Example
 -------
@@ -57,6 +60,12 @@ Annotation Functions
 
 .. autofunction:: dartwork_mpl.make_offset
 .. autofunction:: dartwork_mpl.label_axes
+.. autofunction:: dartwork_mpl.annotate_value
+.. autofunction:: dartwork_mpl.annotate_corner
+.. autofunction:: dartwork_mpl.label_hline
+.. autofunction:: dartwork_mpl.place_legend
+.. autofunction:: dartwork_mpl.wrap_axis_label
+.. autofunction:: dartwork_mpl.wrap_axis_labels
 .. autofunction:: dartwork_mpl.arrow_axis
 
 Utility Functions

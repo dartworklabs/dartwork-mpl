@@ -109,6 +109,11 @@ dm.mix_colors("oc.blue5", "white", alpha=0.35)
 dm.simple_layout(fig)               # deterministic content-aware margins
 dm.simple_layout(fig, margin="2%", gs=gs)   # buffer + target a GridSpec
 dm.label_axes(axes)                 # (a) (b) (c) panel labels
+dm.annotate_value(ax, x[-1], y[-1], "peak")  # compact value label
+dm.annotate_corner(ax, "note")                # tight corner annotation
+dm.label_hline(ax, 0.8, "Reference", x="auto")  # endpoint reference label
+dm.place_legend(ax)                 # data/text-aware axes legend
+dm.wrap_axis_label(ax, "y")          # two-line overlong axis label
 dm.arrow_axis(ax, "x", "Cost")      # Low ◄── Cost ──► High
 
 # ── Validate, export, icons ───────────────────────────────────────────

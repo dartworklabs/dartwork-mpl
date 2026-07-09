@@ -6,6 +6,7 @@ across OKLab, OKLCH, RGB, and Hex color spaces.
 
 from ._api import colors, list_colors, set_colors, show_colors
 from ._color import Color, color, cspace, hex, oklab, oklch, rgb
+from ._contrast import ensure_contrast, readable_text_color
 from ._loader import ensure_loaded as _ensure_colors_loaded
 from ._register import ensure_registered as _ensure_cmaps_registered
 from ._semantic import apply_semantic as _apply_default_semantic
@@ -29,10 +30,12 @@ __all__ = [
     "color",
     "colors",
     "cspace",
+    "ensure_contrast",
     "hex",
     "list_colors",
     "oklab",
     "oklch",
+    "readable_text_color",
     "rgb",
     "set_colors",
     "show_colors",

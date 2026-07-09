@@ -22,6 +22,10 @@ Tests that *intentionally* depend on a specific style should call
 from __future__ import annotations
 
 import json
+import os
+import re
+import shutil
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -29,9 +33,55 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pytest
 
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_SRC_PATH = str(_REPO_ROOT / "src")
+_METADATA_ROOT = _REPO_ROOT / ".pytest_cache" / "dartwork_mpl_metadata"
+
+
+def _pyproject_version() -> str:
+    text = (_REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    match = re.search(r'(?m)^version\s*=\s*"([^"]+)"', text)
+    if match is None:
+        raise RuntimeError("Could not find project.version in pyproject.toml")
+    return match.group(1)
+
+
+def _ensure_source_tree_metadata() -> str:
+    version = _pyproject_version()
+    _METADATA_ROOT.mkdir(parents=True, exist_ok=True)
+    for old in _METADATA_ROOT.glob("dartwork_mpl-*.dist-info"):
+        if old.name != f"dartwork_mpl-{version}.dist-info":
+            shutil.rmtree(old)
+    dist_info = _METADATA_ROOT / f"dartwork_mpl-{version}.dist-info"
+    dist_info.mkdir(exist_ok=True)
+    metadata = dist_info / "METADATA"
+    metadata.write_text(
+        f"Metadata-Version: 2.1\nName: dartwork-mpl\nVersion: {version}\n",
+        encoding="utf-8",
+    )
+    return str(_METADATA_ROOT)
+
+
+_METADATA_PATH = _ensure_source_tree_metadata()
+# Source-tree test runs use ``src`` ahead of site-packages. Mirror that for
+# package metadata and subprocesses so a shared venv's stale editable install
+# cannot leak a different ``dartwork-mpl`` version or package path into tests.
+if _METADATA_PATH not in sys.path:
+    sys.path.insert(0, _METADATA_PATH)
+if _SRC_PATH not in sys.path:
+    sys.path.insert(0, _SRC_PATH)
+_PYTHONPATH_PARTS = [
+    part for part in os.environ.get("PYTHONPATH", "").split(os.pathsep) if part
+]
+for path in (_SRC_PATH, _METADATA_PATH):
+    if path not in _PYTHONPATH_PARTS:
+        _PYTHONPATH_PARTS.insert(0, path)
+os.environ["PYTHONPATH"] = os.pathsep.join(_PYTHONPATH_PARTS)
+
 _SSOT_PATH = (
-    Path(__file__).parents[1]
-    / "docs/superpowers/specs/assets/2026-07-03-color-system-v5/color_v5_ssot.json"
+    _REPO_ROOT
+    / "docs/superpowers/specs/assets"
+    / "2026-07-03-color-system-v5/color_v5_ssot.json"
 )
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter, PercentFormatter
 
 from dartwork_mpl.validate import Severity, VisualWarning, validate_figure
 
@@ -235,6 +236,211 @@ class TestCheckTickCrowding:
             return n
 
         assert crowd_count(20) > crowd_count(4)
+
+
+class TestTickUtils:
+    """Shared tick parsing helpers used by multiple visual checks."""
+
+    def test_split_tick_affixes_normalizes_commas_and_spacing(self) -> None:
+        from dartwork_mpl.validate._checks._tick_utils import (
+            parse_numeric_tick,
+            split_tick_affixes,
+        )
+
+        assert split_tick_affixes("  $ 1,234.50 % ") == ("$ ", "1234.50", " %")
+        assert parse_numeric_tick(f"{chr(0x2212)}1,234.5 kg") == -1234.5
+
+    def test_split_tick_affixes_skips_category_and_mathtext(self) -> None:
+        from dartwork_mpl.validate._checks._tick_utils import split_tick_affixes
+
+        assert split_tick_affixes("Q1") is None
+        assert split_tick_affixes("$10^2$") is None
+
+
+class TestCheckUnitDup:
+    """UNIT_DUP detects duplicated axis-unit declarations."""
+
+    def test_percent_axis_label_and_percent_ticks_warn(self) -> None:
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot([0, 1, 2], [0.0, 0.1, 0.2])
+        ax.set_yticks([0.0, 0.1, 0.2])
+        ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+        ax.set_ylabel("수익률 (%)")
+
+        warnings = validate_figure(fig, checks=("UNIT_DUP",), quiet=True)
+
+        hits = [w for w in warnings if w.check_id == "UNIT_DUP"]
+        assert len(hits) == 1
+        assert hits[0].severity == Severity.WARNING
+        assert hits[0].detail["axis"] == "y"
+        assert hits[0].detail["label_unit"] == "%"
+        assert hits[0].detail["tick_affix"] == "%"
+        plt.close(fig)
+
+    def test_percent_axis_label_with_bare_numeric_ticks_is_clean(self) -> None:
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot([0, 1, 2], [0.0, 0.1, 0.2])
+        ax.set_yticks([0.0, 0.1, 0.2])
+        ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, symbol=""))
+        ax.set_ylabel("수익률 (%)")
+
+        warnings = validate_figure(fig, checks=("UNIT_DUP",), quiet=True)
+
+        assert not [w for w in warnings if w.check_id == "UNIT_DUP"]
+        plt.close(fig)
+
+    def test_tick_affix_without_axis_unit_is_clean(self) -> None:
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot([0, 1, 2], [0.0, 0.1, 0.2])
+        ax.set_yticks([0.0, 0.1, 0.2])
+        ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+        ax.set_ylabel("Rate")
+
+        warnings = validate_figure(fig, checks=("UNIT_DUP",), quiet=True)
+
+        assert not [w for w in warnings if w.check_id == "UNIT_DUP"]
+        plt.close(fig)
+
+    def test_mismatched_tick_affix_reports_info(self) -> None:
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot([0, 1, 2], [1, 2, 3])
+        ax.set_yticks([1, 2, 3])
+        ax.yaxis.set_major_formatter(FormatStrFormatter("%.0f pts"))
+        ax.set_ylabel("Value [score]")
+
+        warnings = validate_figure(fig, checks=("UNIT_DUP",), quiet=True)
+
+        hits = [w for w in warnings if w.check_id == "UNIT_DUP"]
+        assert len(hits) == 1
+        assert hits[0].severity == Severity.INFO
+        assert hits[0].detail["tick_affix"] == " pts"
+        plt.close(fig)
+
+
+class TestCheckTickRotation:
+    """TICK_ROTATION catches avoidable and missing x-label rotation."""
+
+    def test_short_labels_rotated_with_room_fire(self) -> None:
+        fig, ax = plt.subplots(figsize=(6, 3))
+        labels = ["A", "B", "C", "D"]
+        ax.plot(range(len(labels)), [1, 2, 3, 4])
+        ax.set_xticks(range(len(labels)))
+        ax.set_xticklabels(labels, rotation=45)
+
+        warnings = validate_figure(fig, checks=("TICK_ROTATION",), quiet=True)
+
+        hits = [w for w in warnings if w.check_id == "TICK_ROTATION"]
+        assert len(hits) == 1
+        assert "rotation=0" in hits[0].message
+        plt.close(fig)
+
+    def test_dense_long_labels_without_rotation_fire(self) -> None:
+        fig, ax = plt.subplots(figsize=(3, 2))
+        labels = [f"very long category {i:02d}" for i in range(6)]
+        ax.plot(range(len(labels)), range(len(labels)))
+        ax.set_xticks(range(len(labels)))
+        ax.set_xticklabels(labels, rotation=0)
+
+        warnings = validate_figure(fig, checks=("TICK_ROTATION",), quiet=True)
+
+        hits = [w for w in warnings if w.check_id == "TICK_ROTATION"]
+        assert len(hits) == 1
+        assert "45" in hits[0].message
+        plt.close(fig)
+
+    def test_horizontal_labels_with_room_are_clean(self) -> None:
+        fig, ax = plt.subplots(figsize=(6, 3))
+        labels = ["A", "B", "C", "D"]
+        ax.plot(range(len(labels)), [1, 2, 3, 4])
+        ax.set_xticks(range(len(labels)))
+        ax.set_xticklabels(labels, rotation=0)
+
+        warnings = validate_figure(fig, checks=("TICK_ROTATION",), quiet=True)
+
+        assert not [w for w in warnings if w.check_id == "TICK_ROTATION"]
+        plt.close(fig)
+
+
+class TestCheckTickDecimal:
+    """TICK_DECIMAL detects ambiguous or over-precise numeric tick labels."""
+
+    def test_integer_ticks_rendered_with_decimal_fire(self) -> None:
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot([0, 1, 2], [0, 5, 10])
+        ax.set_yticks([0, 5, 10])
+        ax.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
+
+        warnings = validate_figure(fig, checks=("TICK_DECIMAL",), quiet=True)
+
+        hits = [w for w in warnings if w.check_id == "TICK_DECIMAL"]
+        assert len(hits) == 1
+        assert hits[0].severity == Severity.INFO
+        assert "trailing zero" in hits[0].message
+        plt.close(fig)
+
+    def test_non_uniform_decimal_places_warn(self) -> None:
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot([0, 1, 2], [17.5, 20.0, 22.5])
+        ax.set_yticks([17.5, 20.0, 22.5])
+        ax.set_yticklabels(["17.5", "20", "22.5"])
+
+        warnings = validate_figure(fig, checks=("TICK_DECIMAL",), quiet=True)
+
+        hits = [w for w in warnings if w.check_id == "TICK_DECIMAL"]
+        assert len(hits) == 1
+        assert hits[0].severity == Severity.WARNING
+        assert "non-uniform" in hits[0].message
+        plt.close(fig)
+
+    def test_fractional_step_uniform_decimal_places_are_clean(self) -> None:
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot([0, 1, 2], [17.5, 20.0, 22.5])
+        ax.set_yticks([17.5, 20.0, 22.5])
+        ax.set_yticklabels(["17.5", "20.0", "22.5"])
+
+        warnings = validate_figure(fig, checks=("TICK_DECIMAL",), quiet=True)
+
+        assert not [w for w in warnings if w.check_id == "TICK_DECIMAL"]
+        plt.close(fig)
+
+    def test_half_step_with_one_decimal_is_clean(self) -> None:
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot([0, 1, 2], [0, 2.5, 5.0])
+        ax.set_yticks([0, 2.5, 5.0])
+        ax.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
+
+        warnings = validate_figure(fig, checks=("TICK_DECIMAL",), quiet=True)
+
+        assert not [w for w in warnings if w.check_id == "TICK_DECIMAL"]
+        plt.close(fig)
+
+    def test_adjacent_ticks_rendered_same_string_warn(self) -> None:
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot([0, 1, 2], [0, 0.04, 0.08])
+        ax.set_yticks([0, 0.04, 0.08])
+        ax.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
+
+        warnings = validate_figure(fig, checks=("TICK_DECIMAL",), quiet=True)
+
+        hits = [w for w in warnings if w.check_id == "TICK_DECIMAL"]
+        assert len(hits) == 1
+        assert hits[0].severity == Severity.WARNING
+        assert "same string" in hits[0].message
+        plt.close(fig)
+
+    def test_excess_precision_fire(self) -> None:
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot([0, 1, 2], [0, 0.5, 1.0])
+        ax.set_yticks([0, 0.5, 1.0])
+        ax.yaxis.set_major_formatter(FormatStrFormatter("%.4f"))
+
+        warnings = validate_figure(fig, checks=("TICK_DECIMAL",), quiet=True)
+
+        hits = [w for w in warnings if w.check_id == "TICK_DECIMAL"]
+        assert len(hits) == 1
+        assert hits[0].severity == Severity.INFO
+        assert "precision" in hits[0].message
+        plt.close(fig)
 
 
 class TestCheckLegendOverflow:

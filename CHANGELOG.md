@@ -9,9 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Visual tick consistency checks.** `validate_figure()` now includes
+  `UNIT_DUP`, `TICK_ROTATION`, and `TICK_DECIMAL` to catch duplicated
+  axis/tick unit affixes, avoidable or missing x-tick rotation, and
+  ambiguous or over-precise numeric tick labels. `dm.recommend_tick_decimals()`
+  exposes the decimal-step rule as a small public helper for formatter code.
+- **Annotation and legend primitives.** `dm.annotate_value()` adds compact
+  point-offset value labels with automatic vertical or horizontal placement,
+  `dm.annotate_corner()` adds spine-tight narrative corner notes,
+  `dm.label_hline()` keeps reference-line labels attached to visible line
+  endpoints, `dm.place_legend()` scores data/text obstacles across locations
+  and one to three columns, and `dm.wrap_axis_label()` /
+  `dm.wrap_axis_labels()` wrap overlong axis labels to two lines.
+
 ### Changed
 
 ### Fixed
+
+- **`TICK_DECIMAL` now enforces axis-wide decimal consistency.** Mixed
+  numeric tick labels such as `17.5, 20, 22.5` now warn as non-uniform,
+  while fractional-step labels such as `17.5, 20.0, 22.5` remain valid.
+  Trailing-zero advice now applies only to integer-valued tick sequences.
 
 ## [0.5.6] - 2026-07-05
 

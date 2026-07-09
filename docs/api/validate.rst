@@ -24,6 +24,9 @@ Available Checks
    * - ``OVERLAP``
      - Text labels overlap within a single axes
      - WARNING
+   * - ``UNIT_DUP``
+     - Axis label declares a unit also shown as a tick affix
+     - WARNING
    * - ``CROSS_AXES_OVERLAP``
      - Labels from different axes overlap in multi-panel figures
      - WARNING
@@ -33,6 +36,12 @@ Available Checks
    * - ``TICK_CROWD``
      - Tick labels consume more space than the axis can comfortably hold
      - INFO
+   * - ``TICK_ROTATION``
+     - X tick labels are rotated needlessly or overlap when horizontal
+     - INFO
+   * - ``TICK_DECIMAL``
+     - Numeric tick labels are mixed, ambiguous, or over-precise for their step
+     - WARNING / INFO
    * - ``EMPTY_AXES``
      - Axes contain no visible plotted artist or annotation
      - INFO

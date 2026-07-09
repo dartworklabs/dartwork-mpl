@@ -47,10 +47,12 @@ from ._colors import (
     color,
     colors,
     cspace,
+    ensure_contrast,
     hex,
     list_colors,
     oklab,
     oklch,
+    readable_text_color,
     rgb,
     set_colors,
     show_colors,
@@ -60,7 +62,16 @@ from ._colors import (
 from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc
 
 # Axes annotation
-from .annotation import arrow_axis, label_axes
+from .annotation import (
+    annotate_corner,
+    annotate_value,
+    arrow_axis,
+    label_axes,
+    label_hline,
+    place_legend,
+    wrap_axis_label,
+    wrap_axis_labels,
+)
 
 # Config (process-wide behaviour-toggle defaults)
 from .config import Config, config
@@ -77,6 +88,7 @@ from .formatting import (
     format_axis_myriad,
     format_axis_si,
     format_axis_year,
+    recommend_tick_decimals,
     rotate_tick_labels,
 )
 
@@ -188,6 +200,8 @@ __all__ = [  # noqa: RUF022
     "rgb",
     "set_colors",
     "show_colors",
+    "ensure_contrast",
+    "readable_text_color",
     # Icon module
     "icon_font",
     "icon_font_path",
@@ -238,6 +252,7 @@ __all__ = [  # noqa: RUF022
     "format_axis_billions",
     "format_axis_currency",
     "format_axis_si",
+    "recommend_tick_decimals",
     "rotate_tick_labels",
     "avoid_tick_overlap",
     # I/O
@@ -245,7 +260,13 @@ __all__ = [  # noqa: RUF022
     "save_and_show",
     "show",
     # Axes annotation
+    "annotate_value",
+    "annotate_corner",
     "label_axes",
+    "label_hline",
+    "place_legend",
+    "wrap_axis_label",
+    "wrap_axis_labels",
     "arrow_axis",
     # Prompt utilities
     "prompt_path",
