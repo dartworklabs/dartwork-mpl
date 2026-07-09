@@ -6,8 +6,7 @@ Registers the 46 v5 colormaps (from ``_generated.CMAPS_256``) as
 is no bespoke accessor: use ``cmap="dc.aurora"`` in any plotting call,
 or ``plt.colormaps["dc.aurora"]`` / ``mpl.colormaps["dc.aurora"]`` to
 fetch the object (the same idiom existing code and docs already use for
-the legacy ``asset/cmap/*.txt`` maps). ``dartwork_mpl.cmap`` stays the
-legacy-loader *module*, untouched.
+the rest of Matplotlib's colormap registry).
 """
 
 from __future__ import annotations

@@ -199,8 +199,8 @@ def ensure_loaded() -> None:
 
     Thread-safe: uses double-checked locking so that concurrent first
     accesses from multiple threads register the colour mapping exactly
-    once. This mirrors :func:`dartwork_mpl.cmap.ensure_loaded` and
-    :func:`dartwork_mpl.font.ensure_loaded` (PR #79); the colours loader
+    once. This mirrors :func:`dartwork_mpl.font.ensure_loaded` (PR #79);
+    the colours loader
     was previously the one sibling without the lock, so a racing first
     access could run ``_load_colors`` twice and mutate matplotlib's
     global named-colour mapping concurrently.

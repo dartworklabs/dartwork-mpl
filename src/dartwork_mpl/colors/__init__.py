@@ -44,8 +44,7 @@ _ensure_colors_loaded()
 
 # Register the v5 cmap catalog + qualitative cycles (dc.<name> / dc.<name>_r
 # / dc.cycle / dc.cycle_print) on first import — mirrors the palette load
-# immediately above (eager, not lazy like the legacy asset/cmap/*.txt
-# loader in dartwork_mpl.cmap).
+# immediately above.
 _ensure_cmaps_registered()
 
 # Register the locale-aware semantic tokens (dc.pos/neg/ref/hl, spec §10)

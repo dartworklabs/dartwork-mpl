@@ -340,12 +340,11 @@ class Style:
         >>> import dartwork_mpl as dm
         >>> dm.style.stack(["base", "font-scientific", "lang-kr"])
         """
-        from .cmap import ensure_loaded as ensure_cmaps_loaded
         from .font import ensure_loaded as ensure_fonts_loaded
 
-        # Ensure fonts and colormaps are registered before Matplotlib tries to resolve them
+        # Ensure fonts are registered before Matplotlib tries to resolve
+        # them (v5 colormaps register eagerly at import time).
         ensure_fonts_loaded()
-        ensure_cmaps_loaded()
 
         # Keys the incoming preset explicitly declares — parsed from the
         # style files, so "does the preset own this key?" is answered by

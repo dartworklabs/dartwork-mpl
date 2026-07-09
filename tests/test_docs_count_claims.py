@@ -1,11 +1,10 @@
 """Numeric asset-count claims in docs must equal the mechanical count (G4).
 
 The color and font asset surfaces have split into a few user-facing
-categories: v5 colormaps vs. legacy text-file maps, font files vs.
-documented file groups vs. registered matplotlib family names. Each
-entry pairs a claim-regex with the callable that computes the true
-number — and the regex MUST match, so rewording a claim can't silently
-disable its check.
+categories: colormaps, font files vs. documented file groups vs.
+registered matplotlib family names. Each entry pairs a claim-regex with
+the callable that computes the true number — and the regex MUST match,
+so rewording a claim can't silently disable its check.
 """
 
 from __future__ import annotations
@@ -24,9 +23,7 @@ _ASSET = _REPO / "src" / "dartwork_mpl" / "asset"
 
 
 def _n_v5_cmaps() -> int:
-    # The v5 catalog (the default colormap surface) — 46 generated maps.
-    # The legacy asset/cmap/*.txt bundle is a separate backward-compat set
-    # and is no longer what the docs count.
+    # The v5 catalog (the only colormap surface) — 46 generated maps.
     from dartwork_mpl.colors._generated import CMAPS_256
 
     return len(CMAPS_256)
@@ -36,10 +33,6 @@ def _n_v5_cycles() -> int:
     from dartwork_mpl.colors._generated import CYCLES
 
     return len(CYCLES)
-
-
-def _n_legacy_cmaps() -> int:
-    return len(list((_ASSET / "cmap").glob("*.txt")))
 
 
 def _n_listed_colormaps() -> int:
@@ -181,11 +174,7 @@ def _claim_to_int(value: str) -> int:
 
 
 _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
-    (
-        "docs/color_system/colormaps.md",
-        r"\*\*(\d+) v5 colormaps\*\*",
-        _n_v5_cmaps,
-    ),
+    ("docs/color_system/colormaps.md", r"\*\*(\d+) colormaps\*\*", _n_v5_cmaps),
     (
         "docs/color_system/colormaps.md",
         r"\*\*(\d+) qualitative cycle maps\*\*",
@@ -193,12 +182,7 @@ _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
     ),
     (
         "docs/color_system/colormaps.md",
-        r"\*\*(\d+) legacy text-file maps\*\*",
-        _n_legacy_cmaps,
-    ),
-    (
-        "docs/color_system/colormaps.md",
-        r"returns (\d+) non-reversed `dc\.\*` names",
+        r"returns the\s+(\d+)\s+non-reversed names",
         _n_listed_colormaps,
     ),
     (

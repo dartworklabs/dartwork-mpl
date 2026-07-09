@@ -36,11 +36,9 @@ _CATEGORY_STYLE: dict[str, tuple[str, str]] = {
 }
 
 
-# Override classification for standard dartwork customized maps.
-# Two sets coexist: the v5 catalog (dartwork_mpl.colors — the default surface,
-# 46 maps + 2 cycles) and the asset/cmap maps exposed by dartwork_mpl.cmap.
-# The HSV heuristic below mislabels the v5 maps (single-hue family ramps read
-# as "Multi-Hue", warm scenes as "Single-Hue"), so the v5 taxonomy is pinned
+# Override classification for standard dartwork v5 maps.
+# The HSV heuristic below mislabels these maps (single-hue family ramps read as
+# "Multi-Hue", warm scenes as "Single-Hue"), so the v5 taxonomy is pinned
 # explicitly from the authoritative catalog.
 _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     # ── v5 catalog (dartwork_mpl.colors) ──
@@ -107,70 +105,6 @@ _CLASSIFICATION_OVERRIDES: dict[str, str] = {
     },
     **{f"dc.{n}": "Cyclical" for n in ("hue", "halo", "corona")},
     **{f"dc.{n}": "Categorical" for n in ("cycle", "cycle_print")},
-    # ── dartwork_mpl.cmap asset maps ──
-    # Single-Hue
-    "dc.obsidian": "Single-Hue",
-    "dc.sapphire": "Single-Hue",
-    "dc.emerald": "Single-Hue",
-    "dc.ruby": "Single-Hue",
-    "dc.amethyst": "Single-Hue",
-    "dc.topaz": "Single-Hue",
-    "dc.graphite": "Single-Hue",
-    "dc.coral": "Single-Hue",
-    # Single-Hue (vibrant tier — "Single-Hue (Vibrant)" in
-    # scripts/generate_cmaps.py)
-    "dc.neon_blue": "Single-Hue",
-    "dc.neon_green": "Single-Hue",
-    "dc.neon_pink": "Single-Hue",
-    "dc.neon_orange": "Single-Hue",
-    # Multi-Hue
-    "dc.sunset_glow": "Multi-Hue",
-    "dc.plasma_arc": "Multi-Hue",
-    "dc.spring_bloom": "Multi-Hue",
-    "dc.deep_sea": "Multi-Hue",
-    "dc.autumn_leaf": "Multi-Hue",
-    "dc.nebula_dust": "Multi-Hue",
-    "dc.tropical_fruit": "Multi-Hue",
-    # Multi-Hue (vibrant tier — "Multi-Hue (Vibrant)" in
-    # scripts/generate_cmaps.py)
-    "dc.cyberpunk": "Multi-Hue",
-    "dc.synthwave": "Multi-Hue",
-    "dc.vivid_dusk": "Multi-Hue",
-    "dc.toxic_glow": "Multi-Hue",
-    # Diverging
-    "dc.ice_fire": "Diverging",
-    "dc.earth_sky": "Diverging",
-    "dc.purple_lime": "Diverging",
-    "dc.navy_gold": "Diverging",
-    "dc.forest_brick": "Diverging",
-    "dc.magenta_cyan": "Diverging",
-    "dc.slate_orange": "Diverging",
-    "dc.cool_warm": "Diverging",
-    "dc.arctic_heat": "Diverging",
-    "dc.frost_flame": "Diverging",
-    "dc.water_fire": "Diverging",
-    "dc.spring_autumn": "Diverging",
-    "dc.summer_winter": "Diverging",
-    "dc.electric_surge": "Diverging",
-    "dc.neon_pulse": "Diverging",
-    # Cyclical
-    "dc.twilight_oklch": "Cyclical",
-    "dc.phase_wheel": "Cyclical",
-    "dc.color_wheel": "Cyclical",
-    "dc.seasons": "Cyclical",
-    "dc.day_night": "Cyclical",
-    "dc.rainbow_cycle": "Cyclical",
-    "dc.neon_wheel": "Cyclical",
-    "dc.electric_cycle": "Cyclical",
-    # Discrete
-    "dc.vivid": "Categorical",
-    "dc.lucid": "Categorical",
-    "dc.chalk": "Categorical",
-    "dc.vibrant": "Categorical",
-    "dc.pastel": "Categorical",
-    "dc.candy": "Categorical",
-    "dc.pop": "Categorical",
-    "dc.macaron": "Categorical",
 }
 
 
@@ -347,10 +281,6 @@ def plot_colormaps(
         One figure per category (or a single-element list when
         *group_by_type* is False).
     """
-    from ..cmap import ensure_loaded as ensure_cmaps_loaded
-
-    ensure_cmaps_loaded()
-
     if cmap_list is None:
         cmap_list = list(mpl.colormaps.keys())
         cmap_list = [c for c in cmap_list if not c.endswith("_r")]

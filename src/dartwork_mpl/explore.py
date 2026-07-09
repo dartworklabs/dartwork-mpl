@@ -97,9 +97,6 @@ def list_colormaps(include_reversed: bool = False) -> list[str]:
     list[str]
         Sorted list of registered colormap names.
     """
-    from .cmap import ensure_loaded
-
-    ensure_loaded()
     cmaps: list[str] = [c for c in plt.colormaps() if c.startswith("dc.")]
     if not include_reversed:
         cmaps = [c for c in cmaps if not c.endswith("_r")]

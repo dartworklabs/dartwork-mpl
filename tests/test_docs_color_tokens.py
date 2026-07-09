@@ -19,7 +19,6 @@ import matplotlib.colors as mcolors
 import pytest
 
 import dartwork_mpl as dm
-from dartwork_mpl.cmap import ensure_loaded
 
 _REPO = Path(__file__).resolve().parents[1]
 _DOCS = _REPO / "docs"
@@ -44,7 +43,6 @@ def _scan_files() -> list[Path]:
 
 
 def _registries() -> tuple[set[str], set[str], set[str]]:
-    ensure_loaded()
     named = set(mcolors.get_named_colors_mapping())
     cmaps = {n for n in mpl.colormaps if n.startswith("dc.")}
     palettes = set(dm.list_palettes())

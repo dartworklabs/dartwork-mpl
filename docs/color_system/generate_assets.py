@@ -81,10 +81,9 @@ def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
 
     Sources the names from the authoritative v5 catalog
     (``dartwork_mpl.colors._generated.CMAPS_256`` + the two registered
-    cycles), *not* from a raw ``dc.``-prefix scan — the legacy
-    ``dartwork_mpl.cmap`` loader can also register backward-compat maps
-    (``dc.obsidian``, ``dc.legacy_aurora``, …) into the same registry, and
-    the docs explorer must show only the default v5 surface.
+    cycles), *not* from a raw ``dc.``-prefix scan. That keeps the docs
+    explorer pinned to the supported catalog even if user code registers
+    additional ``dc.`` maps in the same process.
     """
     from dartwork_mpl.colors._generated import CMAPS_256
 

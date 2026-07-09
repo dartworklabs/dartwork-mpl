@@ -66,9 +66,8 @@ def _color_names() -> list[str]:
 def _colormap_names() -> list[str]:
     import matplotlib as mpl
 
-    from dartwork_mpl.cmap import ensure_loaded
+    import dartwork_mpl  # noqa: F401 — registers dc.* cmaps on import
 
-    ensure_loaded()
     return sorted(n for n in mpl.colormaps if n.startswith("dc."))
 
 

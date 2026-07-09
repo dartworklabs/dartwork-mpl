@@ -32,7 +32,6 @@ except _PackageNotFoundError:  # pragma: no cover - source-tree fallback
 # silenced because ruff's "unused-import" check can't see
 # attribute-style access at the package level.
 from . import (  # noqa: F401
-    cmap,
     font,
     helpers,
     icon,
@@ -322,9 +321,8 @@ if not getattr(matplotlib.axes.Axes.twinx, "__dm_patched__", False):
 # immediately after ``import dartwork_mpl`` — matching the documented
 # contract. This is a one-time ~70 ms cost; the same font-manager work would
 # otherwise run on the first ``dm.style.use(...)`` anyway. Named colors and
-# the generated v5 colormap catalog are also registered during import through
-# the ``dartwork_mpl.colors`` import above; only the legacy ``asset/cmap`` text
-# maps stay on-demand behind ``dm.cmap.ensure_loaded()``.
+# all ``dc.*`` colormaps register eagerly through the ``dartwork_mpl.colors``
+# import above.
 font.ensure_loaded()
 
 

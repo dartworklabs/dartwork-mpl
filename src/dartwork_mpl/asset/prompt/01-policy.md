@@ -89,8 +89,7 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
   `rainbow`); they misrepresent ordinal data (lint warning:
   `jet-cmap`). Use perceptually uniform options: `viridis`, `magma`,
   `cividis`, `plasma`, `inferno`. dartwork-mpl also registers
-  domain-specific palettes via `dm.cmap` — see
-  `dm.list_colormaps()` for the current set.
+  domain-specific colormaps — see `dm.list_colormaps()` for the current set.
 
 ## Font and weight
 

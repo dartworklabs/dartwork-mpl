@@ -310,20 +310,15 @@ class TestClassificationOverridesParity:
     """``_CLASSIFICATION_OVERRIDES`` must stay 1:1 with every real dartwork
     colormap — a new/renamed map without an explicit class falls back to the
     heuristic, which misclassified 7 of the 8 maps that were missing before
-    this guard. Two sources contribute maps: the legacy bundle
-    (``asset/cmap/*.txt``) and the v5 catalog
-    (``colors._generated.CMAPS_256`` + the two registered cycles)."""
+    this guard. The v5 catalog (``colors._generated.CMAPS_256`` + the two
+    registered cycles) is the only dartwork colormap surface."""
 
     def test_overrides_match_bundled_cmaps_exactly(self) -> None:
-        from pathlib import Path
-
         import dartwork_mpl.diagnostics._colormaps as dcm
         from dartwork_mpl.colors._generated import CMAPS_256
 
-        cmap_dir = Path(dcm.__file__).parent.parent / "asset" / "cmap"
-        legacy = {f"dc.{p.stem}" for p in cmap_dir.glob("*.txt")}
         v5 = {f"dc.{n}" for n in CMAPS_256} | {"dc.cycle", "dc.cycle_print"}
-        expected = legacy | v5
+        expected = v5
         overrides = set(dcm._CLASSIFICATION_OVERRIDES)
         assert overrides == expected, (
             f"missing: {sorted(expected - overrides)}; "

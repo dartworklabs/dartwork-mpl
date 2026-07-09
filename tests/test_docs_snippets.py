@@ -196,10 +196,10 @@ def test_discovery_block_output_comments_are_true() -> None:
     assert dm.list_colormaps()[:5] == [
         "dc.afterglow",
         "dc.amber",
-        "dc.amethyst",
-        "dc.arctic_heat",
         "dc.aurora",
+        "dc.blaze",
+        "dc.blue",
     ]
     import matplotlib as mpl
 
-    assert dm.classify_colormap(mpl.colormaps["dc.deep_sea"]) == "Multi-Hue"
+    assert dm.classify_colormap(mpl.colormaps["dc.aurora"]) == "Multi-Hue"

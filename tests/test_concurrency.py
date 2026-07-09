@@ -1,22 +1,22 @@
 """Concurrency stress tests for ``ensure_loaded`` / ``Style.stack``.
 
 PR #79 (G1) introduced ``threading.Lock`` + double-checked locking to
-:func:`dartwork_mpl.cmap.ensure_loaded`,
-:func:`dartwork_mpl.font.ensure_loaded`, and
+:func:`dartwork_mpl.font.ensure_loaded` and
 :func:`dartwork_mpl.style.Style.stack` to prevent races where multiple
-threads would otherwise re-register the same colormap / font with
-matplotlib (raising ``ValueError``) or interleave ``rcParams`` updates.
+threads would otherwise re-register the same font with matplotlib
+(raising ``ValueError``) or interleave ``rcParams`` updates. Later work
+applied the same pattern to icon fonts and the colors loader.
 
 These tests exercise the locks under realistic contention by:
 
 1. Resetting the ``_loaded`` flag back to ``False`` so every worker
    thread re-enters the slow path simultaneously (otherwise the fast
    path short-circuits before the lock is even touched).
-2. Substituting the real ``_load_colormaps`` / ``_add_fonts`` with a
-   counting stub so we can prove the loader runs exactly once even
-   under heavy contention. This indirectly proves the duplicate-
-   registration race that PR #79 fixed cannot recur — if the loader
-   runs only once, matplotlib's registry can never be touched twice.
+2. Substituting the real loader functions with a counting stub so we can
+   prove the loader runs exactly once even under heavy contention. This
+   indirectly proves duplicate-registration races cannot recur — if the
+   loader runs only once, matplotlib's registry can never be touched
+   twice.
 3. Submitting many concurrent calls via :class:`ThreadPoolExecutor`.
 4. Re-raising any worker exception via ``future.result()`` so any
    accidental ``ValueError`` from matplotlib surfaces as a failure.
@@ -39,10 +39,8 @@ from typing import Any
 import matplotlib.pyplot as plt
 import pytest
 
-from dartwork_mpl import cmap as cmap_module
 from dartwork_mpl import font as font_module
 from dartwork_mpl import icon as icon_module
-from dartwork_mpl.cmap import ensure_loaded as ensure_cmaps_loaded
 from dartwork_mpl.colors import _loader as colors_loader_module
 from dartwork_mpl.colors._loader import ensure_loaded as ensure_colors_loaded
 from dartwork_mpl.font import ensure_loaded as ensure_fonts_loaded
@@ -72,37 +70,10 @@ _RACE_WINDOW_S: float = 0.02
 
 
 @pytest.fixture
-def _reset_cmap_loaded() -> Iterator[None]:
-    """Force the cmap module back to its unloaded state for one test.
-
-    Saves and restores both ``_loaded`` and ``_load_colormaps`` so the
-    test can swap in a counting stub without leaking it. Critically,
-    we do *not* invoke the real loader on teardown — by this point in
-    the suite, matplotlib's registry already contains the dc.* cmaps
-    from earlier tests (e.g. ``test_cmap.py``), so re-running the real
-    loader would raise ``"already registered"``. Setting ``_loaded =
-    True`` is enough to keep the fast path working for downstream
-    tests.
-    """
-    original_loaded = cmap_module._loaded
-    original_loader = cmap_module._load_colormaps
-    cmap_module._loaded = False
-    try:
-        yield
-    finally:
-        cmap_module._load_colormaps = original_loader  # type: ignore[assignment]
-        # Leave the module believing cmaps are loaded so subsequent
-        # tests take the fast path. Matplotlib's registry was populated
-        # by an earlier real-loader call (or by this test's stub did
-        # not touch it), so the flag is the only thing to restore.
-        cmap_module._loaded = True if original_loaded else cmap_module._loaded
-
-
-@pytest.fixture
 def _reset_icon_loaded() -> Iterator[None]:
     """Force the icon module back to its unloaded state for one test.
 
-    Same stub-friendly pattern as the cmap/font resets; leaves
+    Same stub-friendly pattern as the font reset; leaves
     ``_loaded = True`` on teardown so downstream tests take the fast path.
     """
     original_loaded = icon_module._loaded
@@ -119,9 +90,8 @@ def _reset_icon_loaded() -> Iterator[None]:
 def _reset_font_loaded() -> Iterator[None]:
     """Force the font module back to its unloaded state for one test.
 
-    Same pattern as ``_reset_cmap_loaded``: stub-friendly reset that
-    leaves ``_loaded = True`` on teardown so downstream tests don't
-    re-enter the slow path.
+    Stub-friendly reset that leaves ``_loaded = True`` on teardown so
+    downstream tests don't re-enter the slow path.
     """
     original_loaded = font_module._loaded
     original_loader = font_module._add_fonts
@@ -137,7 +107,7 @@ def _reset_font_loaded() -> Iterator[None]:
 def _reset_colors_loaded() -> Iterator[None]:
     """Force the colours loader back to its unloaded state for one test.
 
-    Same stub-friendly pattern as the cmap/font/icon resets; leaves
+    Same stub-friendly pattern as the font/icon resets; leaves
     ``_loaded = True`` on teardown so downstream tests take the fast path
     (matplotlib's named-colour mapping was already populated by an
     earlier real-loader call).
@@ -166,56 +136,10 @@ def _race(fn: Callable[[], Any], submissions: int = _SUBMISSIONS) -> None:
             f.result()
 
 
-class TestCmapEnsureLoadedConcurrency:
-    """Stress tests for :func:`dartwork_mpl.cmap.ensure_loaded`."""
-
-    def test_concurrent_unloaded_runs_loader_exactly_once(
-        self, _reset_cmap_loaded: None
-    ) -> None:
-        """Reset to unloaded state and race many threads through
-        ``ensure_loaded``.
-
-        With the double-checked lock the underlying loader must execute
-        exactly once and the flag must end up ``True``. Without the
-        lock, multiple threads would observe ``_loaded is False`` and
-        all enter ``_load_colormaps`` — which in production would crash
-        on the second ``mpl.colormaps.register`` call. Here we use a
-        counting stub so the test isolates the lock's behavior from
-        matplotlib's global registry state.
-        """
-        call_count = {"n": 0}
-
-        def _counting_loader() -> None:
-            time.sleep(_RACE_WINDOW_S)  # widen the race window
-            call_count["n"] += 1
-
-        cmap_module._load_colormaps = _counting_loader  # type: ignore[assignment]
-
-        _race(ensure_cmaps_loaded)
-
-        assert call_count["n"] == 1, (
-            f"_load_colormaps ran {call_count['n']} times; "
-            "the lock failed to serialize threads."
-        )
-        assert cmap_module._loaded is True
-
-    def test_fast_path_after_loaded_is_race_free(self) -> None:
-        """Once loaded, every concurrent call must take the fast path
-        without raising. This guards against accidentally introducing a
-        write to ``_loaded`` that could be torn under contention.
-        """
-        # Ensure loaded once first (idempotent — likely already True).
-        ensure_cmaps_loaded()
-        assert cmap_module._loaded is True
-        _race(ensure_cmaps_loaded)
-        # Flag must remain True; a torn write would flip it back.
-        assert cmap_module._loaded is True
-
-
 class TestIconEnsureLoadedConcurrency:
     """Stress tests for :func:`dartwork_mpl.icon.ensure_loaded`.
 
-    icon.ensure_loaded gained the same double-checked lock as cmap/font
+    icon.ensure_loaded gained the same double-checked lock as font
     (domain D, #236); without it concurrent first-use would register the
     icon fonts multiple times.
     """
@@ -252,7 +176,7 @@ class TestFontEnsureLoadedConcurrency:
     def test_concurrent_unloaded_runs_loader_exactly_once(
         self, _reset_font_loaded: None
     ) -> None:
-        """Same pattern as the cmap variant: many threads, one loader
+        """Same pattern as the icon variant: many threads, one loader
         invocation, no duplicate ``font_manager.addfont`` calls.
         """
         call_count = {"n": 0}
@@ -283,7 +207,7 @@ class TestColorsEnsureLoadedConcurrency:
     """Stress tests for :func:`dartwork_mpl.colors._loader.ensure_loaded`.
 
     The colours loader was the one sibling that shipped without the
-    double-checked lock that cmap/font/icon/Style got in PR #79 / #236.
+    double-checked lock that font/icon/Style got in PR #79 / #236.
     Without it, a racing first access could run ``_load_colors`` twice
     and mutate matplotlib's global named-colour mapping concurrently.
     """
@@ -366,13 +290,13 @@ class TestStyleStackConcurrency:
 class TestMixedScenarioConcurrency:
     """Mixed scenarios — different ensure_loaded paths racing each other.
 
-    Even though the cmap and font locks are independent, both touch
+    Even though the icon and font locks are independent, both touch
     matplotlib's global state. We verify that interleaving the two
     families of calls under heavy contention is safe.
     """
 
-    def test_cmap_and_font_loaders_race_safely(self) -> None:
-        """One half of the pool drives ``cmap.ensure_loaded``, the other
+    def test_icon_and_font_loaders_race_safely(self) -> None:
+        """One half of the pool drives ``icon.ensure_loaded``, the other
         half drives ``font.ensure_loaded``. Both must complete without
         raising; the loaded flags must end up ``True``.
 
@@ -383,12 +307,12 @@ class TestMixedScenarioConcurrency:
         # Pre-warm to the loaded state — the test is about the fast
         # path under simultaneous contention from two different
         # modules. (The slow-path lock behavior is covered above.)
-        ensure_cmaps_loaded()
+        ensure_icons_loaded()
         ensure_fonts_loaded()
 
         def _worker(idx: int) -> None:
             if idx % 2 == 0:
-                ensure_cmaps_loaded()
+                ensure_icons_loaded()
             else:
                 ensure_fonts_loaded()
 
@@ -397,14 +321,13 @@ class TestMixedScenarioConcurrency:
             for f in futures:
                 f.result()
 
-        assert cmap_module._loaded is True
+        assert icon_module._loaded is True
         assert font_module._loaded is True
 
-    def test_style_use_implicitly_drives_both_loaders(self) -> None:
-        """``Style.stack`` calls ``ensure_fonts_loaded`` and
-        ``ensure_cmaps_loaded`` before mutating rcParams. Concurrent
-        ``style.use`` therefore exercises all three locks at once
-        (cmap, font, style) — closely mirroring real workloads where
+    def test_style_use_implicitly_drives_font_loader(self) -> None:
+        """``Style.stack`` calls ``ensure_fonts_loaded`` before mutating
+        rcParams. Concurrent ``style.use`` therefore exercises the font
+        and style locks together, closely mirroring real workloads where
         several threads each call ``dm.style.use(...)`` at startup.
         """
 
@@ -413,7 +336,6 @@ class TestMixedScenarioConcurrency:
 
         _race(_apply, submissions=_SUBMISSIONS)
 
-        assert cmap_module._loaded is True
         assert font_module._loaded is True
         family = plt.rcParams["font.family"]
         assert isinstance(family, list)
@@ -438,7 +360,7 @@ class TestGuardEfficacy:
             return False
 
     def test_removing_lock_makes_loader_run_more_than_once(
-        self, _reset_cmap_loaded: None
+        self, _reset_font_loaded: None
     ) -> None:
         call_count = {"n": 0}
 
@@ -446,13 +368,13 @@ class TestGuardEfficacy:
             time.sleep(_RACE_WINDOW_S)
             call_count["n"] += 1
 
-        original_lock = cmap_module._lock
-        cmap_module._lock = self._NoLock()  # type: ignore[assignment]
-        cmap_module._load_colormaps = _counting_loader  # type: ignore[assignment]
+        original_lock = font_module._lock
+        font_module._lock = self._NoLock()  # type: ignore[assignment]
+        font_module._add_fonts = _counting_loader  # type: ignore[assignment]
         try:
-            _race(ensure_cmaps_loaded)
+            _race(ensure_fonts_loaded)
         finally:
-            cmap_module._lock = original_lock
+            font_module._lock = original_lock
 
         assert call_count["n"] > 1, (
             "with the lock removed the loader must run more than once; if "
