@@ -160,8 +160,8 @@ rules:
       pattern: '\bdm\.(?:helpers\.colors\.)?auto_select_colors\s*\('
     message: |
       `auto_select_colors` was renamed to `make_palette` in 0.4.1
-      (#156) for vocabulary alignment with `make_offset` /
-      `list_palettes`. Argument cleanup at the same time:
+      (#156) for vocabulary alignment with `make_offset`.
+      Argument cleanup at the same time:
       `n_series` → `n`, `color_type` → `kind`,
       `highlight_index` → `highlight`.
     fix_suggestion: 'dm.make_palette(n, kind="categorical")'
@@ -190,6 +190,17 @@ rules:
       token names, hex, and `rgb()`/`oklch()`/`oklab()` functional
       strings.
     fix_suggestion: 'dm.color("oc.red5")'
+
+  - id: dm-model-b-color-api-removed
+    severity: critical
+    detector:
+      kind: regex
+      pattern: "\\bdm\\.(?:get_\u0070alette|set_\u0063ycle|cycle|cycle_\u0063ycler|list_\u0070alettes|list_\u0063olormaps|plot_\u0063olors|plot_\u0063olormaps|show_\u0070alette|classify_\u0063olormap|Dartwork\u0043olor|Dartwork\u0043olormap)\\b"
+    message: |
+      The Model B color API removed the old palette, cycle, diagnostic,
+      and color-class vocabulary. Use `dm.colors(...)`,
+      `dm.set_colors(...)`, `dm.list_colors()`, or `dm.show_colors()`.
+    fix_suggestion: 'dm.colors("blue", n=5)'
 
   - id: dm-removed-namespaces
     severity: critical
@@ -322,7 +333,7 @@ rules:
       `nipy_spectral`, `rainbow`) misrepresent ordinal data. Use a
       perceptually uniform colormap (`viridis`, `cividis`, `inferno`,
       `magma`, `plasma`) or one of the dartwork-registered colormaps
-      (`dm.list_colormaps()`).
+      (`dm.list_colors()`).
     fix_suggestion: 'cmap="viridis"'
 
   - id: oversize-width

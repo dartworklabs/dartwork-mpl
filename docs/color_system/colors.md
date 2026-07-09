@@ -9,7 +9,7 @@ for cross-team consistency.
 **This page** is the static swatch reference — every color as a full-width
 sheet for browsing and copy-paste. To *pick* a categorical `dc.*` palette
 interactively (by intent, with B&W and color-blindness previews) and apply it
-with `set_cycle` / `get_palette`, see **[Categorical palettes](categorical-palettes.md)**.
+with `dm.set_colors(...)` / `dm.colors(..., n=...)`, see **[Categorical palettes](categorical-palettes.md)**.
 :::
 
 ## How to read the labels
@@ -50,34 +50,33 @@ is on the
 :file: images/colors_dc_families.html
 ```
 
-### dartwork Color — curated categorical palettes
+### dartwork Color — curated qualitative palettes
 
-Beyond the 20 single-hue families, dartwork ships a curated
-**20-palette categorical system** — hand-tuned qualitative, analogous, muted,
-tonal, duo, diverging, neutral-cast, emphasis, and accessible *sets*
-(CIELAB/OKLCH-anchored and verified for black-&-white + color-blindness) with
-no generative equivalent. They resolve through the same API as any family, so
-`dm.set_cycle("trustworthy")` and `dm.get_palette("cool_warm")` work exactly
-like `dm.get_palette("blue")`.
+Beyond the 20 single-hue families, dartwork ships 11 curated
+**qualitative sets** — hand-tuned qualitative, muted, tonal, forest, and
+emphasis palettes (CIELAB/OKLCH-anchored and verified for black-&-white +
+color-blindness) with no generative equivalent. They resolve through the same
+API as any family, so `dm.set_colors("trustworthy")` and
+`dm.colors("pastel", n=8)` work alongside `dm.colors("blue", n=5)`.
 
 Counts are intentional: sequential family ramps have 10 steps, curated
-categorical sets have 8 colors, Octave has 8 chromatic colors, and Octave Print
+qualitative sets have 8 colors, Octave has 8 chromatic colors, and Octave Print
 has 7 chromatic colors plus dark gray. Octave Print is hue-parallel with
 Octave, so the first seven slots keep the same hue identity while improving
 print lightness separation. In the interactive explorer, Octave, Octave Print,
-`trustworthy`, `vivid`, and `neon` form one **Qualitative** group ordered from
-restrained to high chroma.
+and the 11 curated qualitative sets form the 13-choice rail.
 
 - `trustworthy` / `vivid` / `neon` — qualitative sets aligned with Octave and
   Octave Print for unrelated categories
 - `pastel` / `dusty` — muted qualitative sets for soft editorial color
-- `forest` / `teal_indigo` — analogous one-mood arcs
-- `blue_orange` / `teal_coral` — two opposed groups
-- `cool_warm` / `teal_amber` / `purple_green` — diverging ± scales
+- `forest` — a one-mood green qualitative set
 - `earth` / `jewel` / `ember` — tonal moods
-- `warm_gray` / `cool_gray` — hue-free ramps with a cast
 - `teal_accent` / `coral_accent` — highlight one series, mute the rest
-- `accessible` — the Okabe-Ito CVD gold standard
+
+Four canonical diverging discrete forms also resolve as palettes:
+`blue_red`, `blue_orange`, `teal_amber`, and `green_purple`. They are ordered
+encodings for centered data rather than categorical sets, so they are not
+shown in the qualitative rail.
 
 The interactive picker (Qualitative palettes, Sequential families, intent
 groups, B&W badges, CVD metrics, 9 chart shapes) lives on the

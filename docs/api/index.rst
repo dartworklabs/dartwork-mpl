@@ -41,7 +41,6 @@ Additional tools for specialized use cases.
 
    Font Utilities <font>
    Icon Font System <icon>
-   Colormap Registry <cmap>
    Plot Templates <templates>
    Agent Helper Utilities <helpers>
    Interactive Viewer <ui>

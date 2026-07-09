@@ -77,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   promoted ahead of identically-named system copies, so figures resolve
   to the shipped font files consistently across machines.
 - **Palette migration codemod hardened.** `python -m
-  dartwork_mpl.colors._migrate` rewrites prefixed removed-token names as
+  dartwork_mpl._colors._migrate` rewrites prefixed removed-token names as
   visible diffs, preserves `dc.` / `dm.` namespace intent, reports
   bare-name palette calls for manual review, documents its exit codes,
   and offers `--no-advisory` for CI logs that do not need the ΔE table.

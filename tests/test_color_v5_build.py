@@ -7,14 +7,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dartwork_mpl.colors import _generated
+from dartwork_mpl._colors import _generated
 
 
 def test_generated_tables_shape():
     assert len(_generated.PALETTE) == 20
     assert all(len(row) == 10 for row in _generated.PALETTE.values())
     assert set(_generated.CYCLES) == {"octave", "octave_print"}
-    assert len(_generated.CMAPS_256) == 46
+    assert len(_generated.CMAPS_256) == 43
     assert all(len(v) == 256 for v in _generated.CMAPS_256.values())
 
 
@@ -24,7 +24,7 @@ def test_generated_matches_ssot_palette(v5_ssot):
 
 
 def test_rebuild_is_byte_identical(tmp_path):
-    src = Path("src/dartwork_mpl/colors/_generated.py")
+    src = Path("src/dartwork_mpl/_colors/_generated.py")
     before = src.read_bytes()
     env = dict(os.environ)
     # Isolation: force the subprocess interpreter to resolve
@@ -37,7 +37,7 @@ def test_rebuild_is_byte_identical(tmp_path):
         f"{src_dir}{os.pathsep}{existing}" if existing else src_dir
     )
     r = subprocess.run(
-        [sys.executable, "-m", "dartwork_mpl.colors._build"],
+        [sys.executable, "-m", "dartwork_mpl._colors._build"],
         capture_output=True,
         text=True,
         env=env,
@@ -49,11 +49,11 @@ def test_rebuild_is_byte_identical(tmp_path):
 
 
 def test_build_taxonomy_names_are_real_cmaps(v5_ssot):
-    """_build's hand-maintained diverging/cyclic/topo name sets must all be
+    """_build's hand-maintained diverging/cyclic name sets must all be
     real compile_cmaps outputs.
 
-    _build._prefixed tags each cmap with a gate category (div./cyc./topo./seq.)
-    from these sets. If a diverging/cyclic/topo map is renamed or removed in
+    _build._prefixed tags each cmap with a gate category (div./cyc./seq.)
+    from these sets. If a diverging/cyclic map is renamed or removed in
     _cmaps.py without mirroring the change here, the stale name would silently
     gate nothing (or the renamed map would fall through to seq. and be checked
     with the wrong gate). This asserts the sets stay in sync with the catalog.
@@ -62,12 +62,10 @@ def test_build_taxonomy_names_are_real_cmaps(v5_ssot):
     it is mis-tagged seq. — cannot be auto-detected here without _cmaps
     declaring its own taxonomy; keep the sets in sync when adding maps.
     """
-    from dartwork_mpl.colors import _build
+    from dartwork_mpl._colors import _build
 
     keys = set(v5_ssot["colormaps"]["swatches_32"])  # == compile_cmaps() output
     assert keys >= _build._DIVERGING_CMAPS, _build._DIVERGING_CMAPS - keys
     assert keys >= _build._CYCLIC_CMAPS, _build._CYCLIC_CMAPS - keys
-    assert "coast" in keys
     # No name is double-categorized.
     assert not (_build._DIVERGING_CMAPS & _build._CYCLIC_CMAPS)
-    assert "coast" not in _build._DIVERGING_CMAPS | _build._CYCLIC_CMAPS

@@ -6,8 +6,8 @@ import math
 
 import pytest
 
-from dartwork_mpl.colors import Color
-from dartwork_mpl.colors._conversion import (
+from dartwork_mpl._colors import Color
+from dartwork_mpl._colors._conversion import (
     _linear_srgb_to_oklab,
     _linear_to_srgb,
     _oklab_to_linear_srgb,

@@ -30,9 +30,9 @@ classifiers = [
 # (2026-07): ``palettable`` had zero imports anywhere and was dropped;
 # ``colorspacious`` (palette generation script + its guard test) and
 # ``scipy`` (docs examples only) moved to the dev group — nothing under
-# ``src/`` imports either. ``cycler`` is imported directly by
-# ``helpers/colors.py`` (``set_cycle``), so it is declared here instead
-# of being relied on as a matplotlib transitive.
+# ``src/`` imports either. ``cycler`` is imported directly by the Model B
+# color-cycle API, so it is declared here instead of being relied on as a
+# matplotlib transitive.
 dependencies = [
     "cycler>=0.12",
     "matplotlib>=3.10.1",
@@ -194,7 +194,7 @@ target-version = "py310"
 # Deterministic build artifact: rows are one hex tuple per line (256 hex
 # per cmap ≈ 2.8k chars). Wrapping would diverge from `_build.py`'s emitter
 # and break `test_rebuild_is_byte_identical`. Never hand-edited.
-extend-exclude = ["src/dartwork_mpl/colors/_generated.py"]
+extend-exclude = ["src/dartwork_mpl/_colors/_generated.py"]
 
 [tool.ruff.format]
 quote-style = "double"

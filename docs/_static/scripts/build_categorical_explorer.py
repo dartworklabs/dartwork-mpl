@@ -4,14 +4,13 @@
 Restores the left-rail + live-plot explorer, generated entirely from the v5
 color SSOT — no hand-maintained JS data file:
 
-- ``src/dartwork_mpl/colors/_generated.py``  ``PALETTE`` (20 families) + ``CYCLES``
-- ``src/dartwork_mpl/colors/_curated.py``     ``CURATED`` (20 curated sets) + meta
+- ``src/dartwork_mpl/_colors/_generated.py``  ``CYCLES``
+- ``src/dartwork_mpl/_colors/_curated.py``     qualitative ``CURATED`` rail + meta
 
-Pick a cycle, a generative family, or a curated categorical set on the left;
-the selected demo plots on the right re-render live in that palette. Drag the
-colour count, sort by lightness, shuffle or reverse, choose a demo layout, and
-preview in black & white. Click a swatch to copy its hex, or copy the matching
-``dm.get_palette(...)`` / ``dm.cycle(...)`` call.
+Pick a qualitative set on the left; the selected demo plots on the right
+re-render live in that palette. Drag the colour count, sort by lightness,
+shuffle or reverse, choose a demo layout, and preview in black & white. Click a
+swatch to copy its hex, or copy the matching ``dm.set_colors(...)`` call.
 
 The fragment is embedded by ``docs/color_system/categorical-palettes.md`` via
 MyST ``{raw} html :file:``. Regenerate::
@@ -28,8 +27,8 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parents[2]
 OUT = SCRIPT_DIR.parent / "categorical_explorer.html"
-GENERATED = ROOT / "src" / "dartwork_mpl" / "colors" / "_generated.py"
-CURATED_MOD = ROOT / "src" / "dartwork_mpl" / "colors" / "_curated.py"
+GENERATED = ROOT / "src" / "dartwork_mpl" / "_colors" / "_generated.py"
+CURATED_MOD = ROOT / "src" / "dartwork_mpl" / "_colors" / "_curated.py"
 CYCLE_SSOT = (
     ROOT
     / "docs"
@@ -39,109 +38,6 @@ CYCLE_SSOT = (
     / "2026-07-03-color-system-v5"
     / "color_v5_ssot.json"
 )
-
-# ── v5 generative families ────────────────────────────────────────────────
-FAMILY_ORDER = [
-    "red",
-    "rose",
-    "coral",
-    "tangerine",
-    "orange",
-    "amber",
-    "yellow",
-    "lime",
-    "green",
-    "teal",
-    "cyan",
-    "sky",
-    "blue",
-    "cobalt",
-    "indigo",
-    "violet",
-    "purple",
-    "fuchsia",
-    "pink",
-    "gray",
-]
-FAMILY_INTENT = {
-    "red": "Use red for ordered negative states: severity, loss, alerts, or "
-    "risk intensity. It runs as a warm single-hue ramp, so the light to "
-    "dark steps still carry rank when printed in black and white.",
-    "rose": "Use rose for warm ordered annotations that should feel editorial "
-    "rather than alarming. Its red-pink hue gives recency or intensity "
-    "a softer voice while preserving the family ramp's lightness order.",
-    "coral": "Use coral for human-scale ordered data such as intensity, recency, "
-    "heat, or severity without going fully red. The orange-red hue "
-    "feels warm and approachable, and its sequential ramp remains "
-    "legible by lightness in grayscale.",
-    "tangerine": "Use tangerine for ordered thresholds that need more attention "
-    "than coral but less alarm than red. The bright orange-coral "
-    "hue works for warnings and high-attention marks while the "
-    "ramp keeps amount readable in black and white.",
-    "orange": "Use orange for ordered warnings, warm emphasis, and operational "
-    "thresholds. Its familiar caution hue reads quickly, and the "
-    "single-hue ramp carries magnitude through lightness rather than "
-    "hue changes.",
-    "amber": "Use amber for ordered bands, caution zones, and contextual "
-    "thresholds that should feel less urgent than orange. The golden "
-    "hue is warm and stable, with lightness steps that hold up for "
-    "sequential legends and print.",
-    "yellow": "Use yellow for high-key ordered highlights, attention fields, "
-    "and pale-to-rich emphasis where the page can support a bright "
-    "hue. The ramp is intentionally luminous, so pair it with strong "
-    "labels while relying on lightness for sequence.",
-    "lime": "Use lime for ordered biological, ecological, or freshness scales "
-    "where green alone feels too conventional. The yellow-green hue "
-    "keeps the ramp lively, and the light-to-dark structure preserves "
-    "rank under grayscale viewing.",
-    "green": "Use green for ordered positive states: growth, health, progress, "
-    "or success intensity. It is a clear natural hue with a sequential "
-    "lightness ladder that still communicates amount in black and "
-    "white.",
-    "teal": "Use teal for the house analytical ramp and for ordered quantities "
-    "that should feel calm, precise, and central to the system. Rank "
-    "reads straight from lightness, making it the safest default "
-    "single-hue ramp for grayscale and print.",
-    "cyan": "Use cyan for ordered cool secondary data, dense marks, and related "
-    "series that need distance from blue or teal. Its bright blue-green "
-    "character stays technical and airy while the sequential ramp "
-    "keeps magnitude readable.",
-    "sky": "Use sky for ordered light-cool data, background quantities, or "
-    "gentle secondary scales. The hue is the airy counterpart to blue, "
-    "and its ramp is best when a calm lightness progression matters "
-    "more than saturated color.",
-    "blue": "Use blue for primary ordered analytical data and dependable "
-    "amount scales. Sampled evenly it can carry a few related series, "
-    "but as a full ramp it encodes magnitude through a robust lightness "
-    "sequence.",
-    "cobalt": "Use cobalt for ordered institutional emphasis when blue needs a "
-    "deeper, more focused voice. It bridges blue and indigo, keeping "
-    "a strong analytical character while preserving sequential "
-    "lightness for grayscale reading.",
-    "indigo": "Use indigo for ordered corporate or comparison data that should "
-    "feel cooler and more formal than blue. The violet-blue hue adds "
-    "depth, and the lightness ladder keeps the ramp usable for "
-    "ranked values.",
-    "violet": "Use violet for ordered premium, editorial, or exploratory data "
-    "where a cooler accent is appropriate. Its purple-blue hue adds "
-    "character without breaking the sequential light-to-dark read.",
-    "purple": "Use purple for ordered accent groups, editorial quantities, and "
-    "secondary ramps that need more warmth than violet. The hue is "
-    "expressive, but the family still behaves as a lightness-ordered "
-    "sequential scale.",
-    "fuchsia": "Use fuchsia for ordered expressive accents between purple and "
-    "pink, especially when a vivid editorial note is intentional. "
-    "Its magenta hue is attention-getting, so the ramp relies on "
-    "clear lightness steps to keep sequence legible.",
-    "pink": "Use pink for ordered soft editorial accents, warmth, and "
-    "approachable emphasis. The hue is gentle rather than urgent, and "
-    "the light-to-dark ramp supports small sequential scales and "
-    "grayscale fallback.",
-    "gray": "Use gray when ordered amount should carry no separate hue meaning: "
-    "reference values, grids, confidence, or neutral magnitude. It is "
-    "the hue-free ramp, so black-and-white behavior is the design "
-    "rather than a fallback.",
-}
 
 # ── v5 cycles ─────────────────────────────────────────────────────────────
 CYCLE_ORDER = ["octave", "octave_print"]
@@ -159,6 +55,10 @@ CYCLE_INTENT = {
     "darker tones on screen, and a dark gray takes the 8th slot.",
 }
 CYCLE_SSOT_SECTION = {"octave": "cycle_default", "octave_print": "cycle_print"}
+
+# ── Model B qualitative rail ─────────────────────────────────────────────
+RAIL_GROUP_ORDER = ["Qualitative", "Muted", "Tone", "Emphasis"]
+GROUP_REMAP = {"Balanced": "Qualitative", "Spectrum": "Qualitative"}
 
 # 15 demo plots spanning lines, bars, points, areas, matrix, hierarchy,
 # part-to-whole, rank change, distributions, and common categorical
@@ -197,24 +97,6 @@ DEFAULT_9 = [
 DEFAULT_6 = DEFAULT_9[:6]
 DEFAULT_4 = DEFAULT_9[:4]
 
-# rail order for the explorer. FAMILY_ORDER remains the full family SSOT;
-# only the rail taxonomy below separates chromatic sequential ramps from
-# hue-free neutral ramps.
-CHROMATIC_FAMILY_ORDER = [fam for fam in FAMILY_ORDER if fam != "gray"]
-RAIL_GROUP_ORDER = [
-    "Qualitative",
-    "Sequential",
-    "Analogous",
-    "Muted",
-    "Tone",
-    "Duo",
-    "Diverging",
-    "Neutral",
-    "Emphasis",
-    "Accessible",
-]
-GROUP_REMAP = {"Balanced": "Qualitative", "Spectrum": "Qualitative"}
-
 
 def _demo_coverage_table(selected: int = 8) -> list[dict]:
     """Build-time guard that every demo uses every selected color at n=8."""
@@ -232,12 +114,12 @@ def _demo_coverage_table(selected: int = 8) -> list[dict]:
 
 def build_payload() -> dict:
     g = runpy.run_path(str(GENERATED))
-    palette, cycles = g["PALETTE"], g["CYCLES"]
+    cycles = g["CYCLES"]
     c = runpy.run_path(str(CURATED_MOD))
     curated, meta, cur_order = (
         c["CURATED"],
         c["CURATED_META"],
-        c["CURATED_ORDER"],
+        c["CURATED_QUALITATIVE_ORDER"],
     )
     ssot = json.loads(CYCLE_SSOT.read_text(encoding="utf-8"))
 
@@ -261,20 +143,6 @@ def build_payload() -> dict:
         }
         groups_by_label["Qualitative"].append(name)
 
-    for fam in FAMILY_ORDER:
-        group = "Neutral" if fam == "gray" else "Sequential"
-        palettes[fam] = {
-            "name": fam.capitalize(),
-            "kind": "family",
-            "group": group,
-            "cols": list(palette[fam]),
-            "intent": FAMILY_INTENT[fam],
-        }
-        if fam in CHROMATIC_FAMILY_ORDER:
-            groups_by_label["Sequential"].append(fam)
-        else:
-            groups_by_label["Neutral"].append(fam)
-
     for key in cur_order:
         m = meta[key]
         group = GROUP_REMAP.get(m["family"], m["family"])
@@ -291,9 +159,6 @@ def build_payload() -> dict:
         }
         groups_by_label[group].append(key)
 
-    # Chromatic families are recipe-generated CIELAB/OKLCH 10-step ramps.
-    # Gray, warm_gray, and cool_gray are hue-free ramps, so the rail presents
-    # them together as Neutral.
     groups = [
         (label, groups_by_label[label])
         for label in RAIL_GROUP_ORDER
@@ -309,9 +174,8 @@ def build_payload() -> dict:
         "defaults": {"4": DEFAULT_4, "6": DEFAULT_6, "9": DEFAULT_9},
         "counts": {
             "curated": len(cur_order),
-            "families": len(FAMILY_ORDER),
-            "family_colors": sum(len(palette[f]) for f in FAMILY_ORDER),
             "cycles": len(CYCLE_ORDER),
+            "qualitative": len(cur_order) + len(CYCLE_ORDER),
         },
         "demo_coverage": _demo_coverage_table(),
     }
@@ -335,8 +199,8 @@ def main() -> None:
 # ---------------------------------------------------------------------------
 TEMPLATE = r"""<!-- GENERATED FILE - do not edit by hand.
      Source: docs/_static/scripts/build_categorical_explorer.py
-     Data:   src/dartwork_mpl/colors/_generated.py (PALETTE + CYCLES)
-             src/dartwork_mpl/colors/_curated.py (CURATED categorical sets)
+     Data:   src/dartwork_mpl/_colors/_generated.py (CYCLES)
+             src/dartwork_mpl/_colors/_curated.py (qualitative CURATED sets)
      Regenerate: python3 docs/_static/scripts/build_categorical_explorer.py -->
 <div id="dm-cat-exp" class="yue">
 <div class="md"><div class="rail" id="cx-rail"></div><div class="detail" id="cx-detail"></div></div>
@@ -463,30 +327,17 @@ function active(){var p=pal(),sel=p.cols.slice(0,state.n);
   return sel;}
 function simActive(){return active().map(function(c){return simulate(c,state.gs?'bw':'color');});}
 
-// ── code snippet (v5-correct, runnable) ──
-// Canonical cycle examples for generated-file grep guards: dm.cycle('octave') dm.cycle('octave_print')
+// ── code snippet (Model B, runnable) ──
 function pySnip(){var p=pal();
-  if(p.kind==='cycle'){
-    var expr;
-    if(state.order==='default'){
-      expr="dm.cycle('"+state.key+"')";
-      if(state.n<p.cols.length)expr+="[:"+state.n+"]";
-      if(state.rev)expr+="[::-1]";
-    }else{
-      expr="["+active().map(function(c){return "'"+c+"'";}).join(", ")+"]";
-    }
-    var note=[state.n+' colors'];
-    if(state.order==='lightness')note.push('gradient');else if(state.order==='shuffle')note.push('shuffled');
-    if(state.rev)note.push('reversed');
-    return "import dartwork_mpl as dm\n# "+p.name+"  ("+note.join(', ')+")\ndm.set_cycle("+expr+")";}
-  var parts=["'"+state.key+"'","n="+state.n];
-  if(state.order==='lightness')parts.push("order='lightness'");
-  else if(state.order==='shuffle'){parts.push("order='shuffle'");parts.push("seed="+state.shuffleSeed);}
-  if(state.rev)parts.push("reverse=True");
-  var note2=[state.n+' colors'];
-  if(state.order==='lightness')note2.push('gradient');else if(state.order==='shuffle')note2.push('shuffled');
-  if(state.rev)note2.push('reversed');
-  return "import dartwork_mpl as dm\n# "+p.name+"  ("+note2.join(', ')+")\ndm.set_cycle(dm.get_palette("+parts.join(', ')+"))";}
+  var note=[state.n+' colors'];
+  if(state.order==='lightness')note.push('gradient');else if(state.order==='shuffle')note.push('shuffled');
+  if(state.rev)note.push('reversed');
+  if(state.order==='default'&&!state.rev){
+    var parts=["'"+state.key+"'"];
+    if(!(p.kind==='cycle'||p.kind==='curated')||state.n<p.cols.length)parts.push("n="+state.n);
+    return "import dartwork_mpl as dm\n# "+p.name+"  ("+note.join(', ')+")\ndm.set_colors("+parts.join(', ')+")";}
+  var expr="["+active().map(function(c){return "'"+c+"'";}).join(", ")+"]";
+  return "import dartwork_mpl as dm\n# "+p.name+"  ("+note.join(', ')+")\ndm.set_colors("+expr+")";}
 
 // ── syntax highlight via the docs' own Pygments token classes ──
 var PYKW={'import':'kn','from':'kn','as':'k','def':'k','return':'k','for':'k','in':'k','None':'kc','True':'kc','False':'kc'};
@@ -584,7 +435,7 @@ function a11yHTML(){var p=pal(),items=[];
 function metaRow(label,value){return '<div><span class="m-l">'+label+'</span> '+value+'</div>';}
 function metaBlock(){var p=pal(),h='<div class="meta">';
   if(p.kind==='curated'){h+=metaRow('How it’s built',p.design)+metaRow('Good for',p.application);}
-  else if(p.kind==='cycle'){h+=metaRow('Good for','everyday multi-series charts — apply globally with <code>dm.set_cycle(dm.cycle(\''+state.key+'\'))</code>.');}
+  else if(p.kind==='cycle'){h+=metaRow('Good for','everyday multi-series charts — apply globally with <code>dm.set_colors(\''+state.key+'\')</code>.');}
   else {h+=metaRow('Good for','single-hue sequential ramps, or sample a few evenly-spaced steps for related series.');}
   return h+'</div>';}
 

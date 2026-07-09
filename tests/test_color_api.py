@@ -8,7 +8,7 @@ import matplotlib.colors as mcolors
 import pytest
 
 import dartwork_mpl as dm
-from dartwork_mpl.colors import Color, cspace, hex, oklab, oklch, rgb
+from dartwork_mpl._colors import Color, cspace, hex, oklab, oklch, rgb
 
 
 def _relative_luminance(color: str) -> float:

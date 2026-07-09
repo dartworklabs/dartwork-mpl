@@ -15,7 +15,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parents[2]
 OUT = SCRIPT_DIR.parent / "palette_showcase.html"
-GENERATED = ROOT / "src" / "dartwork_mpl" / "colors" / "_generated.py"
+GENERATED = ROOT / "src" / "dartwork_mpl" / "_colors" / "_generated.py"
 
 ORDER = [
     "red",

@@ -6,8 +6,9 @@ from pathlib import Path
 
 import dartwork_mpl as dm
 from dartwork_mpl import font
-from dartwork_mpl.colors._generated import CMAPS_256, CYCLES
-from dartwork_mpl.colors._loader import COLOR_LIBRARIES
+from dartwork_mpl._colors._families import QUALITATIVE
+from dartwork_mpl._colors._generated import CMAPS_256
+from dartwork_mpl._colors._loader import COLOR_LIBRARIES
 
 _REPO = Path(__file__).resolve().parents[1]
 
@@ -18,10 +19,6 @@ def _read_doc(*parts: str) -> str:
 
 def _squash_ws(text: str) -> str:
     return " ".join(text.split())
-
-
-def _legacy_cmap_count() -> int:
-    return len(list((_REPO / "src/dartwork_mpl/asset/cmap").glob("*.txt")))
 
 
 def _font_file_count() -> int:
@@ -44,25 +41,24 @@ def _font_file_group_count() -> int:
     )
 
 
-def test_colormap_docs_explain_v5_and_legacy_inventory() -> None:
+def test_colormap_docs_explain_v5_inventory() -> None:
     text = _squash_ws(_read_doc("color_system", "colormaps.md"))
     v5_count = len(CMAPS_256)
-    cycle_count = len(CYCLES)
-    legacy_count = _legacy_cmap_count()
-    listed_count = len(dm.list_colormaps())
+    qualitative_count = len(QUALITATIVE)
+    listed_count = len(dm.list_colors())
 
-    assert f"**{v5_count} v5 colormaps**" in text
-    assert f"**{cycle_count} qualitative cycle maps**" in text
-    assert f"**{legacy_count} legacy text-file maps**" in text
-    assert f"`dm.list_colormaps()` returns {listed_count}" in text
+    assert f"**{v5_count} continuous colormaps**" in text
+    assert f"**{qualitative_count} qualitative colormaps**" in text
+    assert (
+        f"`dm.list_colors()` returns the {listed_count} Model B family records"
+        in text
+    )
 
 
-def test_cmap_api_docs_name_the_two_colormap_surfaces() -> None:
-    text = _read_doc("api", "cmap.rst")
+def test_cmap_api_docs_removed_from_index() -> None:
+    text = _read_doc("api", "index.rst")
 
-    assert "v5 catalog" in text
-    assert "legacy text-file maps" in text
-    assert "dm.list_colormaps()" in text
+    assert "Colormap Registry <cmap>" not in text
 
 
 def test_font_docs_distinguish_file_groups_from_registered_families() -> None:

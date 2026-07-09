@@ -5,7 +5,7 @@ import matplotlib as mpl
 import matplotlib.colors as mcolors
 
 import dartwork_mpl as dm
-from dartwork_mpl.colors import _generated
+from dartwork_mpl._colors import _generated
 
 
 def _cycle_entries():
@@ -16,8 +16,7 @@ def test_base_cycle_is_v5_colors_only():
     # Default prop_cycle is the 8 Octave colors, color-only (no linestyle product):
     # a linestyle in the default cycle breaks any ax.plot(lw=0) that inherits a
     # dashed linestyle (dash scaled by lw=0 → ValueError). The linestyle
-    # extension for >8 line series is opt-in via dm.cycle_cycler() (tested in
-    # test_color_v5_cycle_api.py).
+    # extension for >8 line series is opt-in via dm.set_colors(..., styles=True).
     dm.style.use("scientific")
     entries = _cycle_entries()
     assert len(entries) == 8

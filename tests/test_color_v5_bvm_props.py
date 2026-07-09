@@ -18,7 +18,7 @@ the invariants are asserted on the linear matrices, not on the clamped output.
 
 from __future__ import annotations
 
-from dartwork_mpl.colors._metrics import (
+from dartwork_mpl._colors._metrics import (
     _BVM_TRITAN_HI,
     _BVM_TRITAN_LO,
     _BVM_TRITAN_SEP,

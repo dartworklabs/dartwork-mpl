@@ -14,7 +14,7 @@ color.
 
 | Prefix  | Library                          | Example         |
 | ------- | -------------------------------- | --------------- |
-| `dc.*`  | **dartwork Color (recommended)** — 20 v5 families × 10 perceptual steps, plus Octave as `dc.cycle`; see the [palette catalog](../color_system/categorical-palettes.md) | `dc.teal3`     |
+| `dc.*`  | **dartwork Color (recommended)** — 20 v5 families × 10 perceptual steps, plus Octave as `dc.octave`; see the [palette catalog](../color_system/categorical-palettes.md) | `dc.teal3`     |
 | `oc.*`  | OpenColor                        | `oc.blue5`      |
 | `tw.*`  | Tailwind CSS                     | `tw.blue500`    |
 | `md.*`  | Material Design                  | `md.red500`     |
@@ -26,7 +26,8 @@ color.
 > publication-ready output. Reach for the third-party prefixes when
 > you need to match an external brand or design system.
 >
-> The `dc.*` namespace also holds 46 curated **colormaps** — see the
+> The `dc.*` namespace also holds 43 continuous **colormaps** plus the two
+> Octave cycle colormaps — see the
 > [Colormap catalog](../color_system/colormaps.md). Colormap names like
 > `dc.aurora` only work as `cmap=` arguments, not as `color=` strings;
 > the named-colors above are the ones you pass to `color=`.
@@ -81,12 +82,12 @@ mpl.rcParams["axes.prop_cycle"] = cycler(color=[
 
 The v5 `dc.*` surface is 19 chromatic hue families plus gray, each with 10
 perceptually equalized steps. Index 0 is the light end and index 9 is the dark
-end. For unrelated categories use Octave via `dm.cycle("octave")` or
-`dc.cycle`; for related tones pick a family and sample the steps you need.
+end. For unrelated categories use Octave via `dm.set_colors()` or
+`dc.octave`; for related tones pick a family and sample the steps you need.
 
 | Palette             | Use it for                                                     |
 | ------------------- | -------------------------------------------------------------- |
-| `dc.cycle`          | Octave, for everyday unrelated categories                      |
+| `dc.octave`         | Octave, for everyday unrelated categories                      |
 | `dc.blue` / `dc.teal` / `dc.indigo` | Cool analytical series and ordered data        |
 | `dc.green` / `dc.red` | Positive/negative states and status colors                  |
 | `dc.coral` / `dc.tangerine` / `dc.orange` / `dc.amber` | Warm emphasis, thresholds, and call-outs |
@@ -129,29 +130,27 @@ constructors, views, interpolation, and custom colormaps.
 
 ## Exploring Available Colors
 
-dartwork-mpl provides utilities to discover and explore available color palettes:
+dartwork-mpl provides utilities to discover and explore available color families:
 
 ```python
 import dartwork_mpl as dm
 
-# List all discrete color palettes
-palettes = dm.list_palettes()
-print(palettes[:5])  # ['ad.blue', 'ad.cyan', 'ad.geekblue', 'ad.gold', 'ad.green']
+# List Model B family records
+families = dm.list_colors()
+print(families[:2])  # [{'name': 'amber', 'kind': 'sequential', ...}, ...]
 
-# List the dartwork colormaps
-cmaps = dm.list_colormaps()
-print('dc.aurora' in cmaps, 'dc.blue_red' in cmaps)  # True True
+# Fetch a registered colormap or a designed discrete list
+cmap = dm.colors("aurora")
+cols = dm.colors("blue_red", n=5)
 
-# Preview a specific family (ten steps, blue0 … blue9)
-dm.show_palette('dc.blue')
-
-# Visualize colormaps
-dm.plot_colormaps(cmap_list=['dc.aurora', 'dc.blue_red'])
+# Preview specific families
+dm.show_colors(names=["blue", "blue_red"], n=5)
 
 # Classify a colormap by type (takes a Colormap object)
 import matplotlib as mpl
+from dartwork_mpl.diagnostics import classify_cmap
 
-cmap_type = dm.classify_colormap(mpl.colormaps['dc.aurora'])
+cmap_type = classify_cmap(mpl.colormaps['dc.aurora'])
 print(cmap_type)  # 'Multi-Hue'
 ```
 
@@ -242,10 +241,11 @@ perceptually uniform gradients. They work like any matplotlib colormap:
 ```python
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
+from dartwork_mpl.diagnostics import classify_cmap
 
 cmap = plt.colormaps["dc.aurora"]
 print(cmap.name)                       # 'dc.aurora'
-print(dm.classify_colormap(cmap))      # 'Multi-Hue' (tells you the type)
+print(classify_cmap(cmap))             # 'Multi-Hue' (tells you the type)
 ```
 
 Add `_r` to reverse any colormap (e.g., `dc.aurora_r`). Browse all available

@@ -1,10 +1,9 @@
 """v5 categorical explorer ↔ color-SSOT parity (G13).
 
 The interactive categorical explorer fragment is generated from the color SSOT
-— ``_generated.PALETTE`` (families) + ``_generated.CYCLES`` (cycles) +
-``_curated.CURATED`` (curated sets). These guards keep the generated fragment
-and the builder's family/intent lists pinned to that SSOT, and keep the removed
-v4 JS data file gone.
+— ``_generated.CYCLES`` (cycles) + the qualitative rail subset of
+``_curated.CURATED``. These guards keep the generated fragment and the builder's
+intent lists pinned to that SSOT, and keep the removed v4 JS data file gone.
 """
 
 from __future__ import annotations
@@ -14,7 +13,7 @@ import re
 import runpy
 from pathlib import Path
 
-from dartwork_mpl.colors import _curated, _generated
+from dartwork_mpl._colors import _curated, _generated
 
 _REPO = Path(__file__).resolve().parents[1]
 _SCRIPTS = _REPO / "docs" / "_static" / "scripts"
@@ -59,18 +58,21 @@ _REPLACE_LAST_HANDLER = (
     "state.demos.splice(state.demos.length-1,1,k);else state.demos.push(k);"
     "renderDetail();}"
 )
-_RAIL_GROUP_ORDER = [
-    "Qualitative",
-    "Sequential",
-    "Analogous",
-    "Muted",
-    "Tone",
-    "Duo",
-    "Diverging",
-    "Neutral",
-    "Emphasis",
-    "Accessible",
+_RAIL_GROUP_ORDER = ["Qualitative", "Muted", "Tone", "Emphasis"]
+_QUALITATIVE_ORDER = [
+    "trustworthy",
+    "vivid",
+    "neon",
+    "pastel",
+    "dusty",
+    "ember",
+    "earth",
+    "jewel",
+    "forest",
+    "teal_accent",
+    "coral_accent",
 ]
+_ABSORBED_DIVERGING = ["blue_red", "blue_orange", "teal_amber", "green_purple"]
 
 
 def _payload() -> dict:
@@ -99,72 +101,50 @@ def test_no_legacy_js_data_file() -> None:
 
 
 def test_builder_family_lists_match_palette_ssot() -> None:
-    """The builder's FAMILY_ORDER / FAMILY_INTENT cover exactly the v5
-    families — no drift, no duplicates."""
-    builder = runpy.run_path(str(_BUILDER))
-    fam_order = list(builder["FAMILY_ORDER"])
-    fam_intent = dict(builder["FAMILY_INTENT"])
-    assert fam_order == [
-        "red",
-        "rose",
-        "coral",
-        "tangerine",
-        "orange",
-        "amber",
-        "yellow",
-        "lime",
-        "green",
-        "teal",
-        "cyan",
-        "sky",
-        "blue",
-        "cobalt",
-        "indigo",
-        "violet",
-        "purple",
-        "fuchsia",
-        "pink",
-        "gray",
-    ]
-    assert len(fam_order) == len(set(fam_order)), fam_order
-    assert set(fam_order) == set(_generated.PALETTE), (
-        f"FAMILY_ORDER drift: only-builder="
-        f"{sorted(set(fam_order) - set(_generated.PALETTE))}, "
-        f"only-PALETTE={sorted(set(_generated.PALETTE) - set(fam_order))}"
-    )
-    assert set(fam_intent) == set(_generated.PALETTE)
-
-
-def test_builder_rail_groups_keep_chromatic_and_neutral_ramps_apart() -> None:
-    """Sequential rail is the hue spectrum; neutral rail is gray ramps only."""
+    """The categorical explorer no longer carries sequential family ramps."""
     builder = runpy.run_path(str(_BUILDER))
     payload = builder["build_payload"]()
-    groups = dict(payload["groups"])
 
-    assert groups["Sequential"] == [
-        "red",
-        "rose",
-        "coral",
-        "tangerine",
-        "orange",
-        "amber",
-        "yellow",
-        "lime",
-        "green",
-        "teal",
-        "cyan",
-        "sky",
-        "blue",
-        "cobalt",
-        "indigo",
-        "violet",
-        "purple",
-        "fuchsia",
-        "pink",
-    ]
-    assert groups["Neutral"] == ["gray", "warm_gray", "cool_gray"]
-    assert payload["palettes"]["coral"]["kind"] == "family"
-    assert "coral" not in _curated.CURATED
+    assert "FAMILY_ORDER" not in builder
+    assert "FAMILY_INTENT" not in builder
+    assert _by_kind(payload, "family") == {}
+    assert set(payload["order"]) == {
+        "octave",
+        "octave_print",
+        *_QUALITATIVE_ORDER,
+    }
+
+
+def test_curated_ssot_splits_qualitative_rail_from_absorbed_diverging() -> None:
+    """Absorbed diverging forms stay registered but leave the qualitative rail."""
+    builder = runpy.run_path(str(_BUILDER))
+    payload = builder["build_payload"]()
+
+    assert list(_curated.CURATED_QUALITATIVE_ORDER) == _QUALITATIVE_ORDER
+    assert list(_curated.CURATED_DIVERGING_ORDER) == _ABSORBED_DIVERGING
+    assert set(_curated.CURATED) == set(_QUALITATIVE_ORDER) | set(
+        _ABSORBED_DIVERGING
+    )
+    assert all(
+        _curated.CURATED_META[k]["kind"] == "qualitative"
+        for k in _QUALITATIVE_ORDER
+    )
+    assert all(
+        _curated.CURATED_META[k]["kind"] == "diverging"
+        for k in _ABSORBED_DIVERGING
+    )
+    assert not {
+        "warm_gray",
+        "cool_gray",
+        "teal_coral",
+        "teal_indigo",
+        "accessible",
+        "cool_warm",
+        "purple_green",
+    } & set(_curated.CURATED)
+    assert _curated.CURATED["green_purple"][0] == "#09581b"
+    assert _curated.CURATED["green_purple"][-1] == "#523f87"
+    assert not set(_ABSORBED_DIVERGING) & set(payload["order"])
 
 
 def test_builder_rail_groups_use_qualitative_taxonomy() -> None:
@@ -181,12 +161,21 @@ def test_builder_rail_groups_use_qualitative_taxonomy() -> None:
         "trustworthy",
         "vivid",
         "neon",
+        "forest",
     ]
     assert groups["Muted"] == ["pastel", "dusty"]
     assert groups["Tone"] == ["ember", "earth", "jewel"]
-    assert groups["Duo"] == ["blue_orange", "teal_coral"]
-    assert groups["Neutral"] == ["gray", "warm_gray", "cool_gray"]
-    assert not {"Cycles", "Balanced", "Spectrum"} & set(groups)
+    assert groups["Emphasis"] == ["teal_accent", "coral_accent"]
+    assert not {
+        "Cycles",
+        "Balanced",
+        "Spectrum",
+        "Analogous",
+        "Duo",
+        "Diverging",
+        "Neutral",
+        "Accessible",
+    } & set(groups)
 
     for key in groups["Qualitative"]:
         assert payload["palettes"][key]["group"] == "Qualitative"
@@ -202,20 +191,23 @@ def test_builder_presentation_names_are_title_case_without_code_key_drift() -> (
 
     assert palettes["octave"]["name"] == "Octave"
     assert palettes["octave_print"]["name"] == "Octave Print"
-    assert palettes["coral"]["name"] == "Coral"
-    assert palettes["cobalt"]["name"] == "Cobalt"
-    assert palettes["warm_gray"]["name"] == "Warm Gray"
-    assert set(palettes) >= {"octave", "octave_print", "coral", "warm_gray"}
+    assert palettes["forest"]["name"] == "Forest"
+    assert set(palettes) >= {"octave", "octave_print", "forest"}
+    assert "coral" not in palettes
+    assert "warm_gray" not in palettes
 
 
 def test_builder_family_intents_are_substantive_layout_copy() -> None:
-    """Family copy fills the reserved detail-panel space with real guidance."""
+    """Qualitative copy fills the reserved detail-panel space with guidance."""
     builder = runpy.run_path(str(_BUILDER))
-    fam_intent = dict(builder["FAMILY_INTENT"])
+    payload = builder["build_payload"]()
+    qualitative = {
+        key: payload["palettes"][key]["intent"] for key in _QUALITATIVE_ORDER
+    }
 
     terse = [
-        fam
-        for fam, text in fam_intent.items()
+        key
+        for key, text in qualitative.items()
         if text.count(".") + text.count("!") + text.count("?") < 2
     ]
     assert not terse
@@ -256,8 +248,9 @@ def test_explorer_generated_payload_uses_new_presentation_taxonomy() -> None:
         "trustworthy",
         "vivid",
         "neon",
+        "forest",
     ]
-    assert payload["palettes"]["coral"]["name"] == "Coral"
+    assert payload["palettes"]["forest"]["name"] == "Forest"
     assert payload["palettes"]["octave"]["name"] == "Octave"
     assert payload["palettes"]["octave_print"]["name"] == "Octave Print"
     assert not {"Cycles", "Balanced", "Spectrum"} & set(groups)
@@ -475,7 +468,7 @@ def test_docs_octave_reference_keeps_pinned_phrases_and_tradeoff() -> None:
         "Okabe-Ito benchmark's 11.5",
         "default cycle's 8.3 actually beats",
         "beats Okabe-Ito's 7.9",
-        "curated 20-palette system",
+        "13 qualitative choices",
     ):
         assert phrase in cat
     assert "line-safe L* 43-78 band" in cat_flat
@@ -490,8 +483,9 @@ def test_docs_octave_reference_keeps_pinned_phrases_and_tradeoff() -> None:
 
 def test_palette_metadata_fact_audit_claims_are_current() -> None:
     curated = (
-        _REPO / "src" / "dartwork_mpl" / "colors" / "_curated.py"
+        _REPO / "src" / "dartwork_mpl" / "_colors" / "_curated.py"
     ).read_text(encoding="utf-8")
+    ember_intent = _curated.CURATED_META["ember"]["intent"]
     rationale = (
         _REPO / "docs" / "_static" / "dartwork-discrete-palette-rationale.md"
     ).read_text(encoding="utf-8")
@@ -499,35 +493,31 @@ def test_palette_metadata_fact_audit_claims_are_current() -> None:
     assert "Up to 6 vivid categories" not in curated
     assert "Up to 8 vivid categories" in curated
     assert "brick, coral, orange, amber, gold, olive plus" not in curated
-    assert "brick, coral, ochre, gold, olive, pink, and clay plus" in curated
+    assert (
+        "brick, coral, ochre, gold, olive, pink, and clay plus" in ember_intent
+    )
     assert "Up to 6 vivid categories" not in rationale
     assert "brick, coral, orange, amber, gold, olive plus" not in rationale
     assert "old hand-curated palette asset" not in rationale
-    assert "20 curated categorical sets" in rationale
+    assert "11 curated qualitative sets" in rationale
 
 
 def test_explorer_families_match_palette_ssot() -> None:
+    """The categorical explorer rail is qualitative only."""
     fam = _by_kind(_payload(), "family")
-    assert set(fam) == set(_generated.PALETTE)
-    mismatched = {
-        k: (fam[k], tuple(_generated.PALETTE[k]))
-        for k in _generated.PALETTE
-        if fam[k] != tuple(_generated.PALETTE[k])
-    }
-    assert not mismatched, (
-        f"family color drift (explorer, PALETTE): {mismatched}"
-    )
+    assert fam == {}
 
 
 def test_explorer_curated_match_curated_ssot() -> None:
     cur = _by_kind(_payload(), "curated")
-    assert set(cur) == set(_curated.CURATED), (
-        f"curated drift: only-explorer={sorted(set(cur) - set(_curated.CURATED))}, "
-        f"only-CURATED={sorted(set(_curated.CURATED) - set(cur))}"
+    expected = set(_curated.CURATED_QUALITATIVE_ORDER)
+    assert set(cur) == expected, (
+        f"curated drift: only-explorer={sorted(set(cur) - expected)}, "
+        f"only-qualitative={sorted(expected - set(cur))}"
     )
     mismatched = {
         k: (cur[k], tuple(_curated.CURATED[k]))
-        for k in _curated.CURATED
+        for k in expected
         if cur[k] != tuple(_curated.CURATED[k])
     }
     assert not mismatched, (
@@ -544,9 +534,19 @@ def test_explorer_cycles_match_cycles_ssot() -> None:
 
 def test_explorer_counts_match_ssot() -> None:
     counts = _payload()["counts"]
-    assert counts["families"] == len(_generated.PALETTE)
-    assert counts["curated"] == len(_curated.CURATED)
+    assert counts["qualitative"] == 13
+    assert counts["curated"] == len(_curated.CURATED_QUALITATIVE_ORDER)
     assert counts["cycles"] == len(_generated.CYCLES)
-    assert counts["family_colors"] == sum(
-        len(row) for row in _generated.PALETTE.values()
-    )
+
+
+def test_absorbed_diverging_palettes_are_registered_but_hidden() -> None:
+    import matplotlib.colors as mcolors
+
+    import dartwork_mpl as dm
+
+    payload = _payload()
+    names = mcolors.get_named_colors_mapping()
+    for key in _ABSORBED_DIVERGING:
+        assert dm.colors(key, n=8) == list(_curated.CURATED[key])
+        assert all(f"dc.{key}{i}" in names for i in range(8))
+        assert key not in payload["order"]

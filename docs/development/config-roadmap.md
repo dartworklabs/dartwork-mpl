@@ -56,7 +56,7 @@ see real demand.
 |---|---|---|
 | `use_all_axes` (simple_layout) | `True` | Niche; the alternative is "GridSpec edges only," which advanced users already know to set per call |
 | `validate_quiet_default` for `validate_figure(quiet=...)` | `False` | `validate_figure` is rarely called directly — the SaveFlow's `validate_quiet` covers it |
-| `include_reversed` (list_colormaps) | `False` | A docs / introspection helper; once-off use, per-call decision is fine |
+| `include_reversed` (list_colors) | `False` | A docs / introspection helper; once-off use, per-call decision is fine |
 | `add_total` (plot_diverging_bar) | `True` | Plot-specific; per-call decision feels right |
 | `validate_with_fixes(verbose=...)` | `True` | Default is already correct for both audiences (interactive + CI). Toggle would be cosmetic |
 
@@ -71,8 +71,8 @@ by another singleton (style preset).
 | `format_axis_currency` | `position: 'prefix' \| 'suffix'` | Currency convention is regional; if anything belongs in a *style preset*, not config |
 | `rotate_tick_labels` | `axis`, `ha` | Same — per-figure layout decision |
 | `make_palette` | `kind: 'categorical' \| 'sequential' \| 'diverging'` | Choice is *intent-driven* per call (visualising categories vs. magnitudes vs. polarity). Wrong shape for a global default |
-| `plot_colors` | `sort_colors`, `show_hex` | Diagnostic display options for a one-shot palette dump |
-| `plot_colormaps` | `group_by_type` | Same as above — diagnostic display option |
+| `render_color_catalog` | `sort_colors`, `show_hex` | Diagnostic display options for a one-shot palette dump |
+| `render_cmap_catalog` | `group_by_type` | Same as above — diagnostic display option |
 | `save_and_show` | `close_figure` | Already in `dm.config` via the orphan-tick chain; the kwarg is the per-call escape hatch |
 | `Config` | `adopt_orphan_tick_font`, `warn_on_orphan_tick_adoption` | Already shipped (this is the singleton itself) |
 

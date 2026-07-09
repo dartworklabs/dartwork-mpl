@@ -228,9 +228,9 @@ ax.plot(x, y1, color="tw.emerald500")              # Tailwind
 ```python
 import dartwork_mpl as dm
 
-dm.list_palettes()[:5]      # → ['ad.blue', 'ad.cyan', 'ad.geekblue', ...]
-dm.show_palette("dc.teal")  # renders the 10-step swatch row in Jupyter
-dm.plot_colors(ncols=4)     # full library overview, one figure per system
+dm.list_colors()[:2]        # → [{'name': 'amber', 'kind': 'sequential', ...}, ...]
+dm.colors("teal", n=5)      # designed 5-color list
+dm.show_colors(names=["teal"], n=5)  # preview swatches and ramps
 ```
 
 See [Colors and Colormaps](colors.md) for the full palette reference,
@@ -345,8 +345,8 @@ script that reproduces what you see.
 :::
 
 :::{grid-item-card} 🔬 Diagnostics & Templates
-`dm.plot_colors()` / `plot_colormaps()` / `plot_fonts()` for asset
-audit, plus ready-to-use plot templates like `plot_diverging_bar`.
+`dm.show_colors()` / `plot_fonts()` for asset audit, plus ready-to-use plot
+templates like `plot_diverging_bar`.
 
 → [Extras guide](extras.md)
 :::

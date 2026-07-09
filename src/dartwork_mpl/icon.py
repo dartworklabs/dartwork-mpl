@@ -146,8 +146,7 @@ def ensure_loaded() -> None:
 
     Thread-safe: uses double-checked locking to avoid duplicate icon-font
     registration when called concurrently from multiple threads (matching
-    :func:`dartwork_mpl.font.ensure_loaded` /
-    :func:`dartwork_mpl.cmap.ensure_loaded`).
+    :func:`dartwork_mpl.font.ensure_loaded`).
     """
     global _loaded
 

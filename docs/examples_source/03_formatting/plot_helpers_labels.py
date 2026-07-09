@@ -90,7 +90,7 @@ _minimal(ax3)
 ax4 = axes[1, 1]
 x_scatter = np.random.randn(20)
 y_scatter = 2 * x_scatter + np.random.randn(20) * 0.5
-ax4.scatter(x_scatter, y_scatter, c=y_scatter, cmap="dc.deep_sea", s=50)
+ax4.scatter(x_scatter, y_scatter, c=y_scatter, cmap="dc.lagoon", s=50)
 ax4.set_xlabel("Independent Variable", fontsize=dm.fs(0))
 ax4.set_ylabel("Dependent Variable", fontsize=dm.fs(0))
 z = np.polyfit(x_scatter, y_scatter, 1)

@@ -16,7 +16,10 @@ import textwrap
 from pathlib import Path
 
 import matplotlib
+import matplotlib as mpl
 import pytest
+
+from dartwork_mpl.diagnostics import classify_cmap
 
 matplotlib.use("Agg")
 
@@ -186,20 +189,12 @@ def test_discovery_block_output_comments_are_true() -> None:
     match reality (they were once fabricated)."""
     import dartwork_mpl as dm
 
-    assert dm.list_palettes()[:5] == [
-        "ad.blue",
-        "ad.cyan",
-        "ad.geekblue",
-        "ad.gold",
-        "ad.green",
+    assert [record["name"] for record in dm.list_colors()[:5]] == [
+        "amber",
+        "blue",
+        "cobalt",
+        "coral",
+        "cyan",
     ]
-    assert dm.list_colormaps()[:5] == [
-        "dc.afterglow",
-        "dc.amber",
-        "dc.amethyst",
-        "dc.arctic_heat",
-        "dc.aurora",
-    ]
-    import matplotlib as mpl
-
-    assert dm.classify_colormap(mpl.colormaps["dc.deep_sea"]) == "Multi-Hue"
+    assert dm.colors("aurora").name == "dc.aurora"
+    assert classify_cmap(mpl.colormaps["dc.aurora"]) == "Multi-Hue"

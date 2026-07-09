@@ -54,7 +54,7 @@ ax_joint.scatter(
     x, y, s=dm.fs(-5) ** 2, color="dc.indigo2", alpha=0.1, zorder=1
 )
 contour = ax_joint.contourf(
-    X, Y, Z, levels=12, cmap="dc.deep_sea", alpha=0.85, zorder=2
+    X, Y, Z, levels=12, cmap="dc.lagoon", alpha=0.85, zorder=2
 )
 ax_joint.contour(X, Y, Z, levels=12, colors="white", linewidths=0.5, zorder=3)
 

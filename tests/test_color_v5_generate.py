@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from dartwork_mpl.colors._generate import (
+from dartwork_mpl._colors._generate import (
     compile_family,
     compile_gray,
     compile_palette,
     solve_swatch_rgb,
 )
-from dartwork_mpl.colors._metrics import lab_l_rgb
-from dartwork_mpl.colors._recipe import FAMILY_PARAMS
+from dartwork_mpl._colors._metrics import lab_l_rgb
+from dartwork_mpl._colors._recipe import FAMILY_PARAMS
 
 
 def test_solve_swatch_hits_l_target():

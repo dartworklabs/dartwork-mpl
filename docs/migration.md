@@ -26,7 +26,7 @@ coming from:
 | `plt.tight_layout()`                  | `dm.simple_layout(fig)`                              |
 | `dm.auto_layout(fig)`                 | `dm.simple_layout(fig, margin=...)`                  |
 | old named-color helper                | `dm.color("oc.red5")` (also accepts hex / `rgb(...)` / `oklch(...)` / `oklab(...)`) |
-| `from dartwork_mpl.color import ...`  | `from dartwork_mpl.colors import ...` (submodule renamed) |
+| `from dartwork_mpl.color import ...`  | `from dartwork_mpl._colors import ...` (submodule renamed) |
 | `dartwork_mpl.asset_viz`              | `dartwork_mpl.diagnostics`                           |
 | `dartwork_mpl.helpers.formatting`     | `dartwork_mpl.helpers.labels`                        |
 | `dm.install_llm_txt()`                | `dm.get_agent_doc(name)` / `dm.agent_doc_path(name)` (or MCP `dartwork-mpl://guide/*`) |
@@ -46,10 +46,10 @@ steps, `dc.{family}{step}`) replaced the hand-curated v4 catalog. v5 is a
    were kept.** The flat ad-hoc names (`sunset*`, `ocean*`, `nordic*`,
    `cyber*`, `spectrum*`, `bold*`, `corporate*`) and the numeric cycle aliases
    `0`–`7` no longer resolve. The scientifically curated categorical *sets* —
-   `trustworthy`, `vivid`, `neon`, `jewel`, `cool_warm`, `teal_amber`, `earth`,
+   `trustworthy`, `vivid`, `neon`, `jewel`, `blue_red`, `teal_amber`, `earth`,
    `forest`, `blue_orange`, and the rest — are **preserved** as first-class
-   `dc.*` palettes: reach them through `dm.get_palette("trustworthy", n=6)` /
-   `dm.set_cycle("vivid")`, exactly like a v5 family (see
+   `dc.*` palettes: reach them through `dm.colors("trustworthy", n=6)` /
+   `dm.set_colors("vivid")`, exactly like a v5 family (see
    [Categorical palettes](color_system/categorical-palettes.md)).
 2. **There is no runtime palette-version switch.** The live registry is
    v5-only, so `teal`, `indigo`, and `gray` always mean the 10-step v5
@@ -78,16 +78,16 @@ verified — but several were renamed, merged, or dropped. The token mapping:
 | Old token       | New token          | Change |
 | --------------- | ------------------ | ------ |
 | `spectrum*`  | `vivid*`        | rename |
-| `coolwarm*`  | `dc.cool_warm*`    | rename (uniform diverging underscore) |
+| `coolwarm*`  | `dc.blue_red*`     | absorbed into the canonical blue-red diverging form |
 | `bold*`      | `vivid*`        | merged into `vivid` |
 | `corporate*` | `trustworthy*`  | merged into `trustworthy` |
-| `dc.warm_cool*` | `dc.blue_orange*`  | removed (weakest under CVD) — use `blue_orange` or `teal_coral` |
+| `dc.warm_cool*` | `dc.blue_orange*`  | removed (weakest under CVD) — use `blue_orange` |
 
 `pastel` / `dusty` were also re-designed into an intentional high-key /
 low-key pair (shared hue plan, different L\* band).
 
 **New palettes** you can now reach for: `neon` (max-chroma electric),
-`ember` (warm-vibrant), and `purple_green` (tritan-robust diverging).
+`ember` (warm-vibrant), and `green_purple` (tritan-robust diverging).
 
 ## v0.5.4 — palette cleanup, module & MCP renames
 
@@ -277,7 +277,7 @@ every rename hop (0.5.4 legacy-alias removal, 0.5.4 snake_case, 0.5.5
 overhaul) into a single lookup. Shade indices are preserved
 (`ocean2` → `dc.teal2`).
 
-| Legacy token (0.5.3 or earlier) | Current token (0.5.5) |
+| Legacy token (0.5.3 or earlier) | Current token |
 | ------------------------------- | --------------------- |
 | `Vivid*` / `vivid*` (alias) | `vivid*` |
 | `Sunset*` / `sunset*`     | `earth*`           |
@@ -285,10 +285,10 @@ overhaul) into a single lookup. Shade indices are preserved
 | `Pop*` / `pop*`           | `vivid*`           |
 | `Cyber*` / `cyber*`       | `jewel*`           |
 | `Autumn*` / `autumn*`     | `dusty*`           |
-| `Nordic*` / `nordic*`     | `teal_indigo*`     |
+| `Nordic*` / `nordic*`     | `forest*`          |
 | `spectrum*`                  | `vivid*`           |
 | `bold*`                      | `vivid*`           |
-| `coolwarm*`                  | `dc.cool_warm*`       |
+| `coolwarm*`                  | `dc.blue_red*`        |
 | `corporate*`                 | `trustworthy*`     |
 | `dc.warm_cool*`                 | `dc.blue_orange*`     |
 | `dc.teal_seq*`                  | `dc.teal*`            |
@@ -328,5 +328,5 @@ The submodule was also renamed `color` → `colors`. Anywhere you used
 from dartwork_mpl.color import Color
 
 # Now
-from dartwork_mpl.colors import Color
+from dartwork_mpl._colors import Color
 ```

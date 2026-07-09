@@ -157,7 +157,7 @@ Gray alone uses an even L\* ladder (96→28) with a faint cool tint
 (h250, C ≤ 0.011). Having no hue identity, it is exempt from the drift and
 chroma-fingerprint rules; even L\* alone keeps its neighbor ΔE uniform. Gray
 is reserved for grids, reference lines, benchmarks, and "other" categories —
-it is deliberately **not** part of Octave (`dc.cycle`); Octave Print adds a
+it is deliberately **not** part of Octave (`dc.octave`); Octave Print adds a
 dark gray as its 8th color for B&W lightness spread.
 
 ### A7 · the hard gates
@@ -269,8 +269,8 @@ projection, because Machado's fitted tritan matrix over-states blue-yellow
 separation. Under the accurate model a seven-hue cycle's tritan separation
 tops out near 9 — so, rather than claim a number the colors cannot meet, the
 gate is **tiered**: the common deficiencies are held to ≥ 10 and the rare
-tritan to a realistic ≥ 8. `dc.cycle` measures 10.3 (common) / 8.3 (tritan)
-for Octave; `dc.cycle_print`, 10.4 / 9.8 for Octave Print. Octave Print is
+tritan to a realistic ≥ 8. `dc.octave` measures 10.3 (common) / 8.3 (tritan)
+for Octave; `dc.octave_print`, 10.4 / 9.8 for Octave Print. Octave Print is
 hue-parallel with Octave — same hue per slot, with the violet slot matching
 and the dark gray anchor in slot eight — while keeping every pair at least
 about 7 L\* apart (min ΔL\* 7.7) for grayscale. Publishing the real floors
@@ -280,18 +280,17 @@ work.
 ## Colormaps, derived from the palette
 
 The colormaps are made by the *same* generative system (perceptual
-coordinates + recipe + ΔE equalization + gates): 46 maps across five
-families, plus the two palette cycles registered as qualitative maps. A
-colormap is not a separate color vocabulary — it is *derived from the
-palette*, and the naming grammar enforces that relationship.
+coordinates + recipe + ΔE equalization + gates): 43 continuous maps across
+four families, plus the two palette cycles registered as qualitative maps. A
+colormap is not a separate color vocabulary — it is *derived from the palette*,
+and the naming grammar enforces that relationship.
 
 :::{figure} theory_figures/theory_9_cmap_catalog.svg
-:alt: The full 46-map v5 colormap catalog rendered as gradients, grouped by family.
+:alt: The full 43-map v5 continuous colormap catalog rendered as gradients, grouped by family.
 :width: 100%
 
-The full catalog: 20 single-hue ramps, 9 multi-hue scenes, 13 diverging
-pairs, one two-ramp topographic map, three cyclic maps, and the two
-qualitative cycle registrations.
+The full catalog: 20 single-hue ramps, 9 multi-hue scenes, 11 diverging pairs,
+three cyclic maps, and the two qualitative cycle registrations.
 :::
 
 **One naming grammar.** The name states color identity; the suffix states a
@@ -300,29 +299,26 @@ variant.
 | Kind | Rule | Example |
 |---|---|---|
 | color token | `dc.{family}{step}` | `dc.blue6` |
-| categorical cycle | `octave` · `octave_print` | `dm.cycle()` |
+| categorical cycle | `octave` · `octave_print` | `dm.set_colors()` |
 | single-hue cmap | the family name itself | `cmap="dc.blue"` |
 | multi-hue cmap | a natural-light scene name | `dc.aurora` |
 | diverging cmap | a `low_high` pair name | `dc.blue_red` |
-| topo cmap | a landform scene name | `dc.coast` |
 | cyclic cmap | a circular-light-phenomenon name | `dc.halo` |
-| qualitative cmap | stable public cycle token | `dc.cycle` |
-| variant suffix | `_r` (reverse) · `_deep`/`_soft` (diverging strength) | `dc.aurora_r` |
+| qualitative cmap | stable public cycle token | `dc.octave` |
+| variant suffix | `_r` (reverse) | `dc.aurora_r` |
 
 **Direction — an ink/light metaphor.** *Ink* maps (single-hue, diverging)
 follow the "ink on white paper" metaphor: **high value = darker**. *Light*
 maps (multi-hue, cyclic) follow the "light out of darkness" metaphor:
-**high value = brighter** (the viridis convention). *Topo* is anchored at a
-datum: below zero darkens (deep sea), above brightens (high peaks). This
-replaces matplotlib's unprincipled mix of directions (`Blues` runs
-light→dark, `viridis` runs dark→light) with an explicit rule; reverse any
-map with `_r`.
+**high value = brighter** (the viridis convention). This replaces matplotlib's
+unprincipled mix of directions (`Blues` runs light→dark, `viridis` runs
+dark→light) with an explicit rule; reverse any map with `_r`.
 
 **Anchor-graph coherence.** The 15 family anchors (`h₀`) are the system's
 only hue vocabulary. A single-hue map renders one anchor; a diverging map
 joins an anchor *pair*; a multi-hue map traces a *path* through anchors; a
-topo map joins *two* paths; a cyclic map is a *closed loop* back to its
-start. Palette, cycle, and colormap all live on one graph.
+cyclic map is a *closed loop* back to its start. Palette, cycle, and colormap
+all live on one graph.
 
 ### The multi-hue scenes
 
@@ -388,7 +384,7 @@ Stated plainly, per principle 3:
 ## Reproducibility
 
 The machine-readable SSOT (all 91 parameters, the palette, the cycles, and
-the 46-map catalog) lives beside the design record:
+the 43-map catalog) lives beside the design record:
 
 - `docs/superpowers/specs/2026-07-03-color-system-v5-design.md` — the full
   design rationale.
@@ -401,5 +397,5 @@ the 46-map catalog) lives beside the design record:
 
 - [Palettes](colors.md) — the generated `dc.*` families as swatch sheets.
 - [Categorical palettes](categorical-palettes.md) — pick a cycle by intent.
-- [Colormaps](colormaps.md) — the 46-map catalog, applied.
+- [Colormaps](colormaps.md) — the 43-map catalog, applied.
 - [Color Space](space.md) — the `Color` class and custom colormaps.

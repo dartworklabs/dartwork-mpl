@@ -1,11 +1,10 @@
 """Numeric asset-count claims in docs must equal the mechanical count (G4).
 
 The color and font asset surfaces have split into a few user-facing
-categories: v5 colormaps vs. legacy text-file maps, font files vs.
-documented file groups vs. registered matplotlib family names. Each
-entry pairs a claim-regex with the callable that computes the true
-number — and the regex MUST match, so rewording a claim can't silently
-disable its check.
+categories: colormaps, font files vs. documented file groups vs.
+registered matplotlib family names. Each entry pairs a claim-regex with
+the callable that computes the true number — and the regex MUST match,
+so rewording a claim can't silently disable its check.
 """
 
 from __future__ import annotations
@@ -24,28 +23,22 @@ _ASSET = _REPO / "src" / "dartwork_mpl" / "asset"
 
 
 def _n_v5_cmaps() -> int:
-    # The v5 catalog (the default colormap surface) — 46 generated maps.
-    # The legacy asset/cmap/*.txt bundle is a separate backward-compat set
-    # and is no longer what the docs count.
-    from dartwork_mpl.colors._generated import CMAPS_256
+    # The v5 continuous colormap surface — generated maps excluding cycles.
+    from dartwork_mpl._colors._generated import CMAPS_256
 
     return len(CMAPS_256)
 
 
-def _n_v5_cycles() -> int:
-    from dartwork_mpl.colors._generated import CYCLES
+def _n_qualitative_cmaps() -> int:
+    from dartwork_mpl._colors._families import QUALITATIVE
 
-    return len(CYCLES)
-
-
-def _n_legacy_cmaps() -> int:
-    return len(list((_ASSET / "cmap").glob("*.txt")))
+    return len(QUALITATIVE)
 
 
 def _n_listed_colormaps() -> int:
     import dartwork_mpl as dm
 
-    return len(dm.list_colormaps())
+    return len(dm.list_colors())
 
 
 def _n_font_files() -> int:
@@ -86,11 +79,18 @@ def _n_presets() -> int:
 
 
 def _n_curated_palettes() -> int:
-    """The count of hand-tuned curated categorical *sets* (not the generative
-    v5 families) — the number the categorical docs claim."""
-    from dartwork_mpl.colors._curated import CURATED
+    """Hand-tuned qualitative sets on the categorical explorer rail."""
+    from dartwork_mpl._colors._curated import CURATED_QUALITATIVE_ORDER
 
-    return len(CURATED)
+    return len(CURATED_QUALITATIVE_ORDER)
+
+
+def _n_qualitative_rail_palettes() -> int:
+    """Categorical explorer rail choices: curated qualitative sets + cycles."""
+    from dartwork_mpl._colors._curated import CURATED_QUALITATIVE_ORDER
+    from dartwork_mpl._colors._generated import CYCLES
+
+    return len(CURATED_QUALITATIVE_ORDER) + len(CYCLES)
 
 
 def _n_basic_templates() -> int:
@@ -183,27 +183,22 @@ def _claim_to_int(value: str) -> int:
 _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
     (
         "docs/color_system/colormaps.md",
-        r"\*\*(\d+) v5 colormaps\*\*",
+        r"\*\*(\d+) continuous colormaps\*\*",
         _n_v5_cmaps,
     ),
     (
         "docs/color_system/colormaps.md",
-        r"\*\*(\d+) qualitative cycle maps\*\*",
-        _n_v5_cycles,
+        r"\*\*(\d+) qualitative colormaps\*\*",
+        _n_qualitative_cmaps,
     ),
     (
         "docs/color_system/colormaps.md",
-        r"\*\*(\d+) legacy text-file maps\*\*",
-        _n_legacy_cmaps,
-    ),
-    (
-        "docs/color_system/colormaps.md",
-        r"returns (\d+) non-reversed `dc\.\*` names",
+        r"returns the\s+(\d+)\s+Model B family records",
         _n_listed_colormaps,
     ),
     (
         "docs/color_system/colormaps.md",
-        r"Explore the (\d+)-map v5 catalog",
+        r"Explore the (\d+)-map continuous v5 catalog",
         _n_v5_cmaps,
     ),
     (
@@ -267,12 +262,17 @@ _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
     ),
     (
         "docs/color_system/categorical-palettes.md",
-        r"curated (\d+)-palette system",
+        r"and (\d+) curated qualitative sets",
         _n_curated_palettes,
     ),
     (
+        "docs/color_system/categorical-palettes.md",
+        r"The rail has (\d+) qualitative choices",
+        _n_qualitative_rail_palettes,
+    ),
+    (
         "docs/color_system/colors.md",
-        r"\*\*(\d+)-palette categorical system\*\*",
+        r"ships (\d+) curated\s+\*\*qualitative sets\*\*",
         _n_curated_palettes,
     ),
     ("llms.txt", r"(\d+) ready-to-use scripts", _n_basic_templates),

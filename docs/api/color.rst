@@ -57,7 +57,7 @@ API
 Color Manipulation
 ^^^^^^^^^^^^^^^^^^
 
-.. automodule:: dartwork_mpl.colors
+.. automodule:: dartwork_mpl._colors
    :members:
    :undoc-members:
    :show-inheritance:
@@ -76,16 +76,12 @@ Color Interpolation
 
 .. autofunction:: dartwork_mpl.cspace
 
-Palette Discovery
+Model B Color API
 ^^^^^^^^^^^^^^^^^
 
-.. autofunction:: dartwork_mpl.list_palettes
-.. autofunction:: dartwork_mpl.list_colormaps
-.. autofunction:: dartwork_mpl.show_palette
+.. currentmodule:: dartwork_mpl
 
-Visualization Tools
-^^^^^^^^^^^^^^^^^^^^
-
-.. autofunction:: dartwork_mpl.plot_colors
-.. autofunction:: dartwork_mpl.plot_colormaps
-.. autofunction:: dartwork_mpl.classify_colormap
+.. autofunction:: colors
+.. autofunction:: set_colors
+.. autofunction:: list_colors
+.. autofunction:: show_colors

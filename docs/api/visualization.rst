@@ -1,17 +1,17 @@
 Asset Diagnostics
 =================
 
-The :mod:`dartwork_mpl.diagnostics` module bundles four helpers that
+The :mod:`dartwork_mpl.diagnostics` module bundles helpers that
 let you inspect *exactly* what colormaps, color libraries, and fonts
 are registered in your current environment. They render
 publication-quality preview figures without ever calling
 ``plt.show()``, so they compose with your normal save / display
 pipeline.
 
-The four helpers are also re-exported at the top level
-(``dm.classify_colormap``, ``dm.plot_colormaps``, ``dm.plot_colors``,
-``dm.plot_fonts``) and from :mod:`dartwork_mpl.explore`. Upgrading
-from an older alias path? See the :doc:`Migration Guide <../migration>`.
+The Model B color-family preview is available as ``dm.show_colors``. The
+diagnostic color-library and colormap catalog renderers live under
+``dartwork_mpl.diagnostics``. Upgrading from an older alias path? See the
+:doc:`Migration Guide <../migration>`.
 
 Quick examples
 --------------
@@ -20,21 +20,23 @@ Quick examples
 
    import dartwork_mpl as dm
    import matplotlib as mpl
+   from dartwork_mpl import diagnostics
 
    # Group colormaps by category and render one figure per group
-   figs = dm.plot_colormaps(group_by_type=True, ncols=4)
+   figs = diagnostics.render_cmap_catalog(group_by_type=True, ncols=4)
 
-   # Preview every named color, one figure per design system
-   figs = dm.plot_colors(ncols=5, show_hex=True)
+   # Preview Model B color families
+   fig = dm.show_colors(kind="qualitative")
 
    # Audit registered font families with weight + italic spectrum
    fig = dm.plot_fonts(font_size=11, ncols=3)
 
    # Classify an arbitrary colormap
-   dm.classify_colormap(mpl.colormaps["coolwarm"])  # → "Diverging"
+   diagnostics.classify_cmap(mpl.colormaps["coolwarm"])  # → "Diverging"
 
-``plot_colors`` previews the registered palettes; the ``dc`` system is best
-browsed live — hover a swatch for its hex and L*, filter by family:
+``dm.show_colors`` previews the registered Model B families; the broader color
+system is best browsed live — hover a swatch for its hex and L*, filter by
+family:
 
 .. raw:: html
 
@@ -57,29 +59,25 @@ Choosing the right helper
    * - Goal
      - Helper
    * - "What named colors do I have available?"
-     - :func:`~dartwork_mpl.plot_colors` — one figure per design system
+     - :func:`~dartwork_mpl.show_colors` for Model B families, or
+       :func:`~dartwork_mpl.diagnostics.render_color_catalog` for all libraries
    * - "Which colormaps come bundled, by category?"
-     - :func:`~dartwork_mpl.plot_colormaps` — grouped or flat overview
+     - :func:`~dartwork_mpl.diagnostics.render_cmap_catalog` — grouped or flat overview
    * - "Are my Korean / CJK fonts registered?"
      - :func:`~dartwork_mpl.plot_fonts` — pangram + weight spectrum
    * - "Is this colormap sequential, diverging, or cyclical?"
-     - :func:`~dartwork_mpl.classify_colormap`
+     - :func:`~dartwork_mpl.diagnostics.classify_cmap`
    * - "I just want a Python list, not a figure"
-     - :func:`~dartwork_mpl.list_palettes`,
-       :func:`~dartwork_mpl.list_colormaps`,
-       :func:`~dartwork_mpl.show_palette`
-       (see :doc:`explore module <../api/index>`)
+     - ``dm.list_colors`` or ``dm.colors``
 
 API
 ---
 
-.. autofunction:: dartwork_mpl.plot_colormaps
-   :no-index:
-.. autofunction:: dartwork_mpl.plot_colors
+.. autofunction:: dartwork_mpl.show_colors
    :no-index:
 .. autofunction:: dartwork_mpl.plot_fonts
    :no-index:
-.. autofunction:: dartwork_mpl.classify_colormap
+.. autofunction:: dartwork_mpl.diagnostics.classify_cmap
    :no-index:
 
 Module Reference

@@ -36,8 +36,8 @@ class Scenario:
     expect: Expectations
 
 
-def _blue_tokens(count: int | None = None) -> tuple[str, ...]:
-    tokens = tuple(dm.get_palette("blue"))
+def _blue_colors(count: int | None = None) -> tuple[str, ...]:
+    tokens = tuple(dm.colors("blue", n=10))
     return tokens if count is None else tokens[:count]
 
 
@@ -45,7 +45,7 @@ def _build_preset_report_line() -> Figure:
     dm.style.use("report")
     fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     x = np.arange(1, 9)
-    palette = _blue_tokens(3)
+    palette = _blue_colors(3)
 
     series = (
         ("Revenue", np.array([9.2, 9.8, 10.1, 10.8, 11.6, 12.0, 12.4, 13.1])),
@@ -71,7 +71,7 @@ def _build_preset_report_kr_bars() -> Figure:
     fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
     categories = ["매출", "이익", "고객", "유지율"]
     values = [128, 74, 96, 88]
-    palette = _blue_tokens(4)
+    palette = _blue_colors(4)
 
     bars = ax.bar(categories, values, color=palette)
     for bar, value in zip(bars, values, strict=True):
@@ -97,7 +97,7 @@ def _build_preset_scientific_scatter() -> Figure:
     rng = np.random.default_rng(3)
     x = np.linspace(-2.5, 2.5, 56)
     y = 1.45 * x + rng.normal(0, 0.42, size=x.size)
-    palette = _blue_tokens(2)
+    palette = _blue_colors(2)
 
     ax.scatter(x, y, s=34, color=palette[0], alpha=0.72, label="Samples")
     slope, intercept = np.polyfit(x, y, 1)
@@ -125,7 +125,7 @@ def _build_preset_scientific_kr_hist() -> Figure:
     fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
     rng = np.random.default_rng(11)
     data = rng.normal(64, 7, 360)
-    palette = _blue_tokens(2)
+    palette = _blue_colors(2)
 
     ax.hist(
         data,
@@ -159,7 +159,7 @@ def _build_line_signals() -> Figure:
     x = np.linspace(0, 10, 100)
     y1 = np.sin(x) * 1e6
     y2 = np.cos(x) * 1e6
-    palette = _blue_tokens(2)
+    palette = _blue_colors(2)
 
     ax.plot(x, y1, label="Signal A", color=palette[0], linewidth=dm.lw(0))
     ax.plot(x, y2, label="Signal B", color=palette[1], linewidth=dm.lw(0))
@@ -192,7 +192,7 @@ def _build_bar_value_labels() -> Figure:
     fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
     categories = ["Group A", "Group B", "Group C", "Group D"]
     values = [1_200_000, 1_450_000, 1_380_000, 1_620_000]
-    palette = _blue_tokens(4)
+    palette = _blue_colors(4)
 
     bars = ax.bar(categories, values, color=palette)
     dm.format_axis_millions(ax, axis="y")
@@ -221,7 +221,7 @@ def _build_scatter_fit() -> Figure:
     rng = np.random.default_rng(42)
     x = rng.standard_normal(50)
     y = 2 * x + rng.standard_normal(50) * 0.5
-    palette = _blue_tokens(2)
+    palette = _blue_colors(2)
 
     ax.scatter(x, y, alpha=0.6, s=50, color=palette[0], label="Samples")
     slope, intercept = np.polyfit(x, y, 1)
@@ -250,7 +250,7 @@ def _build_histogram_normal_fit() -> Figure:
     fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
     rng = np.random.default_rng(42)
     data = rng.normal(100, 15, 1000)
-    palette = _blue_tokens(2)
+    palette = _blue_colors(2)
 
     ax.hist(
         data,
@@ -308,7 +308,7 @@ def _build_donut_composition() -> Figure:
     fig, ax = plt.subplots(figsize=dm.figsize("9cm", "square"))
     sizes = [35, 30, 20, 10, 5]
     labels = ["범주 A", "범주 B", "범주 C", "범주 D", "기타"]
-    colors = _blue_tokens(5)
+    colors = _blue_colors(5)
 
     _wedges, _texts, autotexts = ax.pie(
         sizes,
@@ -347,7 +347,7 @@ def _build_dual_axis_timeseries() -> Figure:
     )
     rng = np.random.default_rng(0)
     secondary = primary * 0.15 + rng.standard_normal(12) * 5
-    palette = _blue_tokens(2)
+    palette = _blue_colors(2)
 
     ax.bar(dates, primary, alpha=0.3, label="주 계열", color=palette[0])
     ax.set_xlabel("월", fontsize=dm.fs(0))
@@ -378,7 +378,7 @@ def _build_dual_axis_timeseries() -> Figure:
 def _build_palette_swatch() -> Figure:
     dm.style.use("report")
     fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
-    palette = _blue_tokens()
+    palette = _blue_colors()
     positions = np.arange(len(palette))
 
     ax.bar(positions, np.ones(len(palette)), color=palette, width=0.82)
@@ -420,7 +420,7 @@ def _build_kr_math_labels() -> Figure:
     dm.style.use("scientific-kr")
     fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
     x = np.linspace(0, 4, 80)
-    palette = _blue_tokens(1)
+    palette = _blue_colors(1)
 
     ax.plot(
         x,
@@ -451,7 +451,7 @@ def _build_kr_math_labels() -> Figure:
 
 
 def all_scenarios() -> list[Scenario]:
-    blue_palette = _blue_tokens()
+    blue_palette = _blue_colors()
     return [
         Scenario(
             "preset_report_line",

@@ -71,7 +71,7 @@ def test_cycle_cvd_safe() -> None:
     the common red-green floor (10), matching ``gate_cycle``'s design. Assert
     the actual policy via ``gate_cycle`` rather than re-deriving ΔE inline.
     """
-    from dartwork_mpl.colors._gates import gate_cycle
+    from dartwork_mpl._colors._gates import gate_cycle
 
     _, hexes = _parse_style()
     g = gate_cycle(hexes)

@@ -2,7 +2,7 @@
 
 Ten self-contained vector figures that explain each generation axiom
 visually. Every data point is computed live from the *shipped* v5 package
-(``dartwork_mpl.colors``) — the palette, the recipe parameters, and the
+(``dartwork_mpl._colors``) — the palette, the recipe parameters, and the
 perceptual metrics — so the figures are evidence of the theory rather than
 decoration.
 
@@ -29,12 +29,12 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 
 import dartwork_mpl as dm
-from dartwork_mpl.colors import Color
-from dartwork_mpl.colors import _gates as GA
-from dartwork_mpl.colors import _generate as GEN
-from dartwork_mpl.colors import _generated as G
-from dartwork_mpl.colors import _metrics as M
-from dartwork_mpl.colors import _recipe as R
+from dartwork_mpl._colors import Color
+from dartwork_mpl._colors import _gates as GA
+from dartwork_mpl._colors import _generate as GEN
+from dartwork_mpl._colors import _generated as G
+from dartwork_mpl._colors import _metrics as M
+from dartwork_mpl._colors import _recipe as R
 
 HERE = Path(__file__).resolve().parent
 OUTDIR = HERE / "theory_figures"
@@ -857,11 +857,9 @@ def fig_catalog():
             ],
         ),
         (
-            "Diverging 13 — bipolar pair (ink metaphor)",
+            "Diverging 11 — bipolar pair (ink metaphor)",
             [
                 "blue_red",
-                "blue_red_deep",
-                "blue_red_soft",
                 "blue_orange",
                 "teal_rose",
                 "green_purple",
@@ -873,10 +871,6 @@ def fig_catalog():
                 "gray_blue",
                 "gray_red",
             ],
-        ),
-        (
-            "Topo 1 — two-ramp datum (coastline discontinuity is by design)",
-            ["coast"],
         ),
         ("Cyclic 3 — circular light phenomena", ["hue", "halo", "corona"]),
     ]
@@ -911,8 +905,8 @@ def fig_catalog():
     )
     y += 1.0
     for name, hexes in [
-        ("cycle", CYCLES["octave"]),
-        ("cycle_print", CYCLES["octave_print"]),
+        ("octave", CYCLES["octave"]),
+        ("octave_print", CYCLES["octave_print"]),
     ]:
         _grad(ax, hexes, y, name)
         y += 1.0

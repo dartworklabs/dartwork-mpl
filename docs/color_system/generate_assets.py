@@ -29,7 +29,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 import dartwork_mpl as dm
-from dartwork_mpl.colors._loader import COLOR_LIBRARIES
+from dartwork_mpl._colors._loader import COLOR_LIBRARIES
 
 # Sane defaults for how we display things.
 CATEGORY_ORDER = [
@@ -48,7 +48,7 @@ CATEGORY_BLURBS: dict[str, str] = {
     "Categorical": "Distinct steps with little interpolation. Use for discrete classes.",
 }
 
-# Derived from the colour-library SSOT (dartwork_mpl.colors._loader).
+# Derived from the colour-library SSOT (dartwork_mpl._colors._loader).
 COLOR_LIBRARY_ORDER = [key for key, _p, _f, _lbl in COLOR_LIBRARIES]
 COLOR_LIBRARY_LABELS = {key: label for key, _p, _f, label in COLOR_LIBRARIES}
 
@@ -80,15 +80,15 @@ def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
     """Bucket the v5 colormap catalog by category.
 
     Sources the names from the authoritative v5 catalog
-    (``dartwork_mpl.colors._generated.CMAPS_256`` + the two registered
-    cycles), *not* from a raw ``dc.``-prefix scan — the legacy
-    ``dartwork_mpl.cmap`` loader can also register backward-compat maps
-    (``dc.obsidian``, ``dc.legacy_aurora``, …) into the same registry, and
-    the docs explorer must show only the default v5 surface.
+    (``dartwork_mpl._colors._generated.CMAPS_256`` + the two registered
+    octave cycles), *not* from a raw ``dc.``-prefix scan. That keeps the docs
+    explorer pinned to the supported catalog even if user code registers
+    additional ``dc.`` maps in the same process.
     """
-    from dartwork_mpl.colors._generated import CMAPS_256
+    from dartwork_mpl._colors._generated import CMAPS_256
+    from dartwork_mpl.diagnostics import classify_cmap
 
-    v5_names = {f"dc.{n}" for n in CMAPS_256} | {"dc.cycle", "dc.cycle_print"}
+    v5_names = {f"dc.{n}" for n in CMAPS_256} | {"dc.octave", "dc.octave_print"}
     cmap_list: Iterable[str] = (
         name for name in mpl.colormaps if str(name) in v5_names
     )
@@ -98,7 +98,7 @@ def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
         category: [] for category in CATEGORY_ORDER
     }
     for cmap in cmaps:
-        category = dm.classify_colormap(cmap)
+        category = classify_cmap(cmap)
         if category in categories:
             categories[category].append(cmap)
 
@@ -158,8 +158,8 @@ def _write_dc_sheet(images_dir: Path, label: str, mapping: dict) -> Path:
     """Build the dc v5 sheet: one row per generated family, slots in
     numeric step order. Swatches are interactive (hover → name+hex).
     """
-    from dartwork_mpl.colors._generated import PALETTE
-    from dartwork_mpl.colors._recipe import FAMILIES
+    from dartwork_mpl._colors._generated import PALETTE
+    from dartwork_mpl._colors._recipe import FAMILIES
 
     order = [*FAMILIES, "gray"]
 
@@ -200,11 +200,11 @@ def _write_dc_sheet(images_dir: Path, label: str, mapping: dict) -> Path:
 def _write_dc_family_sheet(images_dir: Path) -> Path:
     """Build the v5 generative-family sheet: 20 single-hue families, ten
     perceptually-equalized steps each, straight from the shipped palette SSOT
-    (``dartwork_mpl.colors._generated.PALETTE``). Ordered by hue so the sheet
+    (``dartwork_mpl._colors._generated.PALETTE``). Ordered by hue so the sheet
     reads as one continuous system. Swatches are interactive (hover → name).
     """
-    from dartwork_mpl.colors._generated import PALETTE
-    from dartwork_mpl.colors._recipe import FAMILIES
+    from dartwork_mpl._colors._generated import PALETTE
+    from dartwork_mpl._colors._recipe import FAMILIES
 
     order = [*FAMILIES, "gray"]  # hue order, achromatic last
 
@@ -239,7 +239,7 @@ def _write_dc_family_sheet(images_dir: Path) -> Path:
 
 def _save_color_sheets_html(images_dir: Path) -> list[Path]:
     """Generate HTML fragment files for each color library."""
-    from dartwork_mpl.colors._loader import ensure_loaded
+    from dartwork_mpl._colors._loader import ensure_loaded
 
     ensure_loaded()
     mapping = mpl.colors.get_named_colors_mapping()
