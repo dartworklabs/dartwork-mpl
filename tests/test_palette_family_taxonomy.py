@@ -256,7 +256,7 @@ def test_explorer_layout_fits_article_column() -> None:
     html = _EXPLORER.read_text(encoding="utf-8")
     css = _DESIGN_CSS.read_text(encoding="utf-8")
 
-    assert '<div id="dm-cat-exp" class="dm-wide yue">' in html
+    assert '<div id="dm-cat-exp" class="yue">' in html
     assert "<style" not in html
     assert "grid-template-columns:minmax(10rem,10.5rem) minmax(0,1fr)" in css
     assert (

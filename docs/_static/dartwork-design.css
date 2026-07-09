@@ -213,15 +213,6 @@
   --dm-border: var(--dm-gray-a6);
   --dm-border-strong: var(--dm-gray-a8);
 
-  /* Layout contract — keep page chrome, article canvas, and reading measure
-   * separate. Shibuya consumes --sy-c-content-width, so map it to the
-   * dartwork article token instead of scattering rem values across files. */
-  --dm-layout-shell-max: 120rem;
-  --dm-layout-article-max: 88rem;
-  --dm-layout-prose-max: 86ch;
-  --dm-layout-gutter: 28px;
-  --dm-layout-right-toc-min: 100rem;
-  --sy-c-content-width: var(--dm-layout-article-max);
 }
 
 /* Dark mode counterparts — Radix slateDark + tealDark */
@@ -541,22 +532,6 @@ body {
 .sy-head-nav a:hover,
 .sy-head-nav a.active {
   color: var(--dm-text-strong);
-}
-
-.sy-main {
-  overflow-x: clip;
-}
-
-@media (max-width: 99.999rem) {
-  .sy-rside {
-    display: none;
-  }
-
-  .sy-main {
-    flex: 1 1 auto;
-    width: auto;
-    min-width: 0;
-  }
 }
 
 @media (max-width: 1180px) {
@@ -1357,73 +1332,6 @@ input.dmc-radio + input.dmc-radio:checked + .dmc-tabs .dmc-tab-before {
   margin: 0 auto;
 }
 
-
-/* ===========================================================================
- * TIER 6 — docs layout contract
- *
- * The outer shell is the full page frame and the article is the component
- * canvas. Normal Sphinx/API prose uses a readable measure inside that canvas;
- * code, tables, figures, galleries, and widgets keep the full article width.
- * .dm-wide is an article-local opt-in for wide widgets. Nothing breaks into
- * the right TOC rail.
- * =========================================================================== */
-
-.sy-container {
-  max-width: var(--dm-layout-shell-max);
-}
-
-.sy-main div:has(> article.yue) {
-  max-width: var(--dm-layout-article-max);
-}
-
-@media (min-width: 80rem) {
-  .sy-main div:has(> article.yue) {
-    padding-left: var(--dm-layout-gutter);
-    padding-right: var(--dm-layout-gutter);
-  }
-}
-
-.yue {
-  max-width: none;
-}
-
-.bd-article-container,
-.bd-content,
-.bd-main,
-.yue.bd-article,
-.bd-article {
-  max-width: var(--dm-layout-article-max);
-}
-
-.dm-prose,
-.dm-readable {
-  max-width: var(--dm-layout-prose-max);
-}
-
-article.yue > p,
-article.yue > ul,
-article.yue > ol,
-article.yue > .admonition,
-article.yue section > p,
-article.yue section > ul,
-article.yue section > ol,
-article.yue section > .admonition {
-  max-width: var(--dm-layout-prose-max);
-}
-
-.dm-wide {
-  width: 100%;
-  max-width: 100%;
-  margin-block: var(--dm-space-6);
-}
-
-.dm-wide > :first-child {
-  margin-top: 0;
-}
-
-.dm-wide > :last-child {
-  margin-bottom: 0;
-}
 
 /* Explorer widget shared layer. Generated HTML from
  * build_categorical_explorer.py and build_colormap_explorer.py must not carry

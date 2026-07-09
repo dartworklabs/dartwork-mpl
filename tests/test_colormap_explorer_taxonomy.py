@@ -270,7 +270,7 @@ def test_demo_library_is_sixteen_without_radial_and_with_four_new_grammars() -> 
 # ── layout / style literals ────────────────────────────────────────────────
 def test_root_wrapper_is_wide_yue_with_unique_id() -> None:
     html = _EXPLORER.read_text(encoding="utf-8")
-    assert '<div id="dm-cmap-exp" class="dm-wide yue">' in html
+    assert '<div id="dm-cmap-exp" class="yue">' in html
     assert "<style" not in html
     # distinct id from the categorical explorer so both can coexist
     assert "dm-cat-exp" not in html

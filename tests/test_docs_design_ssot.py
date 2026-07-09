@@ -122,47 +122,6 @@ def test_semantic_status_tokens_cover_non_teal_states() -> None:
         assert raw_status_hex not in design_css
 
 
-def test_layout_width_contract_lives_in_design_ssot() -> None:
-    design_css = read_static("dartwork-design.css")
-    custom_css = read_static("custom.css")
-
-    required = {
-        "--dm-layout-shell-max": "120rem",
-        "--dm-layout-article-max": "88rem",
-        "--dm-layout-prose-max": "86ch",
-        "--dm-layout-gutter": "28px",
-        "--dm-layout-right-toc-min": "100rem",
-    }
-    for token, value in required.items():
-        assert f"{token}: {value};" in design_css
-
-    assert "--sy-c-content-width: var(--dm-layout-article-max);" in design_css
-    assert "article.yue section > p" in design_css
-    assert "article.yue section > ul" in design_css
-    assert "article.yue section > ol" in design_css
-    assert "article section > p" not in custom_css
-    assert ".dm-prose" in design_css
-    assert "max-width: var(--dm-layout-prose-max);" in design_css
-    assert ".sy-container" not in custom_css
-    assert ".sy-main div:has(> article.yue)" not in custom_css
-    assert "@media (max-width: 99.999rem)" in design_css
-    assert ".sy-rside" in design_css
-    assert "flex: 1 1 auto;" in design_css
-    assert "width: auto;" in design_css
-
-
-def test_wide_component_contract_avoids_viewport_breakouts() -> None:
-    css = read_static("dartwork-design.css")
-    match = re.search(r"\.dm-wide\s*\{(?P<body>[^}]+)\}", css)
-    assert match, ".dm-wide must be a documented article-local width primitive"
-
-    body = match.group("body")
-    assert "max-width: 100%;" in body
-    assert "width: 100%;" in body
-    for forbidden in ("100vw", "calc(50%", "margin-left: -", "margin-right: -"):
-        assert forbidden not in body
-
-
 def test_gallery_cards_use_stable_tokenized_media_slots() -> None:
     css = read_static("custom.css")
 
@@ -490,8 +449,6 @@ def test_tablet_header_and_color_swatches_do_not_force_page_overflow() -> None:
     assert "@media (max-width: 1180px)" in design_css
     assert ".sy-head-links" in design_css
     assert ".sy-head-extra .searchbox" in design_css
-    assert ".sy-main" in design_css
-    assert "overflow-x: clip;" in design_css
     assert "@media (max-width: 480px)" in design_css
     assert ".sy-breadcrumbs" in design_css
     assert "display: none;" in design_css
@@ -553,121 +510,6 @@ def test_categorical_page_styles_are_global_not_inline() -> None:
     assert "#dm-cat-exp .detail" in design_css
 
 
-def test_docs_layout_regression_script_covers_width_contract() -> None:
-    script = (ROOT / "scripts" / "check_docs_layout.py").read_text(
-        encoding="utf-8"
-    )
-
-    for page in (
-        "usage_guide/index.html",
-        "usage_guide/styles.html",
-        "fonts/index.html",
-        "examples_gallery/index.html",
-        "examples_gallery/01_styling_and_themes/plot_dark_mode.html",
-        "color_system/colors.html",
-        "color_system/space.html",
-        "color_system/colormaps.html",
-        "colormap_poc.html",
-        "usage_guide/colors.html",
-        "landing_pocs.html",
-        "_static/dm-interactive-styleguide.html",
-        "_static/_overhaul_review.html",
-        "_static/layout_width_pocs.html",
-        "usage_guide/quickstart.html",
-        "troubleshooting.html",
-        "color_system/categorical-palettes.html",
-        "api/helpers.html",
-    ):
-        assert page in script
-
-    for width in (
-        "320",
-        "390",
-        "700",
-        "760",
-        "900",
-        "1024",
-        "1200",
-        "1440",
-        "1680",
-        "2048",
-    ):
-        assert f'"width": {width}' in script
-
-    for selector in (
-        ".sphx-glr-thumbcontainer",
-        ".dm-wide",
-        ".sy-rside",
-        ".sy-rside .localtoc",
-        ".sy-right-toc",
-        ".sy-offcanvas",
-    ):
-        assert selector in script
-
-    assert "api_prose" in script
-    assert "article_text" in script
-    assert "api-article-canvas-too-narrow" in script
-    assert "toc-visible-too-early" in script
-    assert "header-nav-search-overlap" in script
-    assert "articleR.width < 1000" in script
-    assert "1280" in script
-    assert "api-prose-too-narrow" in script
-    assert "api-prose-too-wide" in script
-    assert "article-text-too-narrow" in script
-    assert "article-text-too-wide" in script
-    assert ".dm-prose" in script
-    assert ".dm-readable" in script
-    assert "gallery-toolbar-too-tall" in script
-    assert "gallery-focused-chip-hidden" in script
-    assert "sticky-overlay-covered" in script
-    assert "categorical-inline-style" in script
-    assert '"themes": ["light", "dark"]' in script
-    assert "apply_theme" in script
-    assert "static-version-mismatch" in script
-    assert "assetVersions" in script
-    assert "search-empty-state" in script
-    assert "search-empty-inline-color" in script
-    assert "count.style.color" in script
-    assert "color_search" in script
-    assert "example_controls" in script
-    assert "colormap_builder" in script
-    assert "colormap-builder-midpoint-initial-state" in script
-    assert "colormap-builder-inline-display-state" in script
-    assert "colormap-builder-midpoint-diverging-state" in script
-    assert "colormap_explorer" in script
-    assert "colormap_poc" in script
-    assert "compare_controls" in script
-    assert "palette_tabs" in script
-    assert "palette_picker" in script
-    assert "landing_pocs" in script
-    assert "styleguide_harness" in script
-    assert "overhaul_harness" in script
-    assert "layout_width_poc" in script
-    assert "layout_width_poc_deeplink" in script
-    assert "layout-poc-current-text-width" in script
-    assert "C split prose/component" in script
-    assert "styleguide-canvas-too-narrow" in script
-    assert "overhaul-install-picker-missing" in script
-    assert "font_picker" in script
-    assert "preset_compare" in script
-    assert "evolution_widget" in script
-    assert "faq_controls" in script
-    assert "field-input-primitive" in script
-    assert "pressed-group-primitive" in script
-    assert "selected-tab-primitive" in script
-    assert "compare-widget-tab-primitive" in script
-    assert "preset-compare-primitive" in script
-    assert ".cm-poc-a-tabs.dm-tabs" in script
-    assert ".lpoc-palettes" in script
-    assert "clippedParam" in script
-    assert "evolution-widget-primitive" in script
-    assert "scroll-target-covered" in script
-    assert "favorites-tray-not-collapsed" in script
-    assert "favorites-tray-collapsed-too-tall" in script
-    assert "favorites-tray-article-overlap" in script
-    assert "favorites-tray-visible-too-early" in script
-
-
 def test_favorites_tray_starts_collapsed_on_tablet_widths() -> None:
     js = read_static("dynamic_ux.js")
     css = read_static("dynamic_ux.css")
@@ -690,7 +532,7 @@ def test_shadcn_adoption_decisions_are_documented() -> None:
 
     assert "Current PR scope: adopt the static shadcn grammar" in design_doc
     assert "Literal legacy accent values may appear only" in design_doc
-    assert "Current layout/component cleanup status" in design_doc
+    assert "Current component cleanup status" in design_doc
     assert (
         "Review-only comparison POCs may still display historical colors"
         in (design_doc)
@@ -831,8 +673,6 @@ def test_review_harnesses_use_type_roles_and_no_legacy_accent() -> None:
         assert "#8b5cf6" not in html
 
     for snippet in (
-        "var(--dm-layout-article-max)",
-        "calc(100vw - 2 * var(--dm-layout-gutter))",
         ".panel .dm-tabs { max-width:100%; overflow-x:auto; }",
         ".panel .dm-tab { flex:0 0 auto; }",
         'role="group" aria-label="Tool selector"',
@@ -858,22 +698,3 @@ def test_review_harnesses_use_type_roles_and_no_legacy_accent() -> None:
         "dynamic_ux.js inserts .dm-install-picker",
     ):
         assert snippet in overhaul
-
-
-def test_layout_width_poc_tracks_current_shipping_contract() -> None:
-    poc = read_static("layout_width_pocs.html")
-
-    for snippet in (
-        "Current shipping CSS</strong>: C split prose/component",
-        "Remaining alternative</strong>: D page-aware split",
-        'id: "split"',
-        'badge: "current shipping"',
-        'variant: "split"',
-        'data-variant-id="${variant.id}"',
-        "hydrateStateFromUrl",
-        "currentViewUrl",
-        "copyViewLink",
-    ):
-        assert snippet in poc
-
-    assert "A-like full article" not in poc
