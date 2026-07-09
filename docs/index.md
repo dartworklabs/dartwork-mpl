@@ -171,8 +171,9 @@ philosophy/index
 troubleshooting
 ```
 
-% color_system/colors|colormaps|space and fonts/index are reachable via
-% design_system/index (4-sibling Design System landing). Including them at
+% color_system/colors|palettes|colormaps|color-class|design-rationale and
+% fonts/index are reachable via design_system/index (flat Design System
+% sidebar). Including them at
 % the root toctree appends them under the previous caption in Shibuya's
 % sidebar, which looks like a duplicate entry. Make them orphans of the
 % root toctree — Sphinx is still happy because design_system/index links

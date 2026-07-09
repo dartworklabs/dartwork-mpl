@@ -12,7 +12,7 @@ re-render live in that palette. Drag the colour count, sort by lightness,
 shuffle or reverse, choose a demo layout, and preview in black & white. Click a
 swatch to copy its hex, or copy the matching ``dm.set_colors(...)`` call.
 
-The fragment is embedded by ``docs/color_system/categorical-palettes.md`` via
+The fragment is embedded by ``docs/color_system/palettes.md`` via
 MyST ``{raw} html :file:``. Regenerate::
 
     python3 docs/_static/scripts/build_categorical_explorer.py

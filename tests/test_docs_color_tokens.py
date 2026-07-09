@@ -32,14 +32,12 @@ _IGNORE_MARKER = "color-lint: ignore"
 
 
 def _scan_files() -> list[Path]:
-    files = [
+    return sorted(
         f
         for f in _DOCS.rglob("*.md")
         if not any(part in f.parts for part in _EXCLUDE_PARTS)
         and f.name not in _EXCLUDE_NAMES
-    ]
-    files.append(_REPO / "scripts" / "build_palette_demos.py")
-    return sorted(files)
+    )
 
 
 def _registries() -> tuple[set[str], set[str], set[str]]:

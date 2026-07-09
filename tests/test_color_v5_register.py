@@ -36,7 +36,7 @@ def test_registry_access_matplotlib_native():
 
 
 def test_v5_coral_colormap_comes_from_generated_catalog():
-    """Promoted v5 families own their ``dc.<family>`` colormap names."""
+    """Promoted generated families own their ``dc.<family>`` colormap names."""
     cm = mpl.colormaps["dc.coral"]
     assert [mpl.colors.to_hex(c) for c in cm.colors] == list(
         _generated.CMAPS_256["coral"]

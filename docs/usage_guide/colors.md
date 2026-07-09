@@ -2,8 +2,8 @@
 
 This page covers practical usage: picking colors, mixing them, interpolating
 gradients, and using colormaps. For full visual catalogs, jump to the
-[Palette](../color_system/colors.md) or [Colormap](../color_system/colormaps.md)
-catalogs under **Design System**.
+[Colors](../color_system/colors.md), [Palettes](../color_system/palettes.md),
+or [Colormaps](../color_system/colormaps.md) catalogs under **Design System**.
 
 ## Named colors
 
@@ -14,7 +14,7 @@ color.
 
 | Prefix  | Library                          | Example         |
 | ------- | -------------------------------- | --------------- |
-| `dc.*`  | **dartwork Color (recommended)** — 20 v5 families × 10 perceptual steps, plus Octave as `dc.octave`; see the [palette catalog](../color_system/categorical-palettes.md) | `dc.teal3`     |
+| `dc.*`  | **dartwork Color (recommended)** — 20 families × 10 perceptual steps, plus Octave as `dc.octave`; see the [palette catalog](../color_system/palettes.md) | `dc.teal3`     |
 | `oc.*`  | OpenColor                        | `oc.blue5`      |
 | `tw.*`  | Tailwind CSS                     | `tw.blue500`    |
 | `md.*`  | Material Design                  | `md.red500`     |
@@ -49,23 +49,12 @@ ax.legend()
 dm.simple_layout(fig)
 ```
 
-```{raw} html
-:file: ../color_system/images/palette_explorer.html
-```
+To choose a series palette visually, use the
+[Palettes explorer](../color_system/palettes.md). It previews Octave, curated
+qualitative sets, family samples, B&W/CVD checks, and copyable
+`dm.set_colors(...)` / `dm.colors(..., n=...)` calls.
 
-### Interactive palette picker — try one click before committing
-
-Pick a palette below and the demo chart re-renders with that
-`prop_cycle`. Swatch chips show the actual hex values you'd get; the
-tabs group palettes by namespace (`dc.*` first, then the third-party
-design systems). The bar plot's data and labels are byte-identical
-across every render — only `axes.prop_cycle` changes.
-
-```{raw} html
-:file: ../_static/palette_picker.html
-```
-
-Once you've picked one, apply it in your own script:
+Once you've picked a set, apply it in your own script:
 
 ```python
 import matplotlib as mpl
@@ -80,7 +69,7 @@ mpl.rcParams["axes.prop_cycle"] = cycler(color=[
 
 ### Picking a `dc.*` swatch
 
-The v5 `dc.*` surface is 19 chromatic hue families plus gray, each with 10
+The `dc.*` surface is 19 chromatic hue families plus gray, each with 10
 perceptually equalized steps. Index 0 is the light end and index 9 is the dark
 end. For unrelated categories use Octave via `dm.set_colors()` or
 `dc.octave`; for related tones pick a family and sample the steps you need.
@@ -96,8 +85,8 @@ end. For unrelated categories use Octave via `dm.set_colors()` or
 | `dc.blue_red` / `dc.teal_amber` | Diverging ± data — change, correlation              |
 | `dc.hl`             | Semantic highlight token                                       |
 
-→ The full 20-family catalog with an interactive picker lives on the
-[Categorical palettes](../color_system/categorical-palettes.md) page.
+→ The full token catalog lives on [Colors](../color_system/colors.md); the
+series explorer lives on [Palettes](../color_system/palettes.md).
 
 **Coming from `oc.*`?** A rough drop-in mapping:
 
@@ -125,7 +114,7 @@ color.oklch.C *= 1.2                 # boost chroma in-place
 print(color.to_hex())                # '#...'
 ```
 
-→ **Full guide:** [Color Space & Manipulation](../color_system/space.md) —
+→ **Full guide:** [Color class & manipulation](../color_system/color-class.md) —
 constructors, views, interpolation, and custom colormaps.
 
 ## Exploring Available Colors
@@ -254,6 +243,6 @@ colormaps on the [Colormaps](../color_system/colormaps.md) page.
 ## See also
 
 - **Next →** [Layout and Typography](layout.md) — physical-width geometry, aspect tokens, and `simple_layout`
-- [Design System → Palettes / Colormaps / Color Space](../design_system/index) — the visual catalogs
+- [Design System → Colors / Palettes / Colormaps / Color class](../design_system/index) — the visual catalogs
 - [API › Color Utilities](../api/color) and [Visualization Tools](../api/visualization)
 - Color sources: `asset/color/*.txt` + Tailwind/Material/Ant/Chakra/Primer/opencolor JSON

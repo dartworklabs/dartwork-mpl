@@ -107,13 +107,10 @@ Current component cleanup status:
 
 - Typography tracking is neutralized: all `--dm-ls-*` tokens are `0em`, and
   shipping docs surfaces avoid viewport-driven `font-size` scaling.
-- Generated palette/font/compare/evolution/gallery controls use `is-active`
+- Generated font/compare/gallery controls use `is-active`
   plus ARIA state, not legacy `.active` or one-off active classes.
-- `dm-interactive-styleguide.html` and `_overhaul_review.html` are linked to
-  real shipping CSS/JS, so visual checkpoints cannot silently drift from the
-  component contract.
-- Review-only comparison POCs may still display historical colors by name, but
-  they are not the shipping component grammar.
+- `dm-interactive-styleguide.html` is linked to real shipping CSS/JS, so visual
+  checkpoints cannot silently drift from the component contract.
 
 ## Roadmap (phased, checkpoint each)
 
@@ -139,4 +136,3 @@ screenshots Read; grep custom.css for residual hex/legacy → ~0.
 | `dartwork-design-system.md` | **this — master SSOT + roadmap** |
 | `dm-interactive-system.md` | interactive primitive deep-dive |
 | `dm-interactive-styleguide.html` | living styleguide (links real CSS) |
-| `install_picker_pocs.html` / `install_command_pocs.html` / `interactive_overhaul_pocs.html` | exploration galleries |

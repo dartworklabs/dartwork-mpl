@@ -1,16 +1,13 @@
-# Palettes
+# Colors
 
-Every named palette in dartwork-mpl, rendered as full-width sheets.
-The `dc.*` ("dartwork color") family is the recommended starting point
-for publication figures; six third-party design systems are bundled
-for cross-team consistency.
+Every named color token in dartwork-mpl, rendered as full-width sheets. The
+`dc.*` ("dartwork color") family is the recommended starting point for
+publication figures; six third-party design systems are bundled for cross-team
+consistency.
 
-:::{note}
-**This page** is the static swatch reference — every color as a full-width
-sheet for browsing and copy-paste. To *pick* a categorical `dc.*` palette
-interactively (by intent, with B&W and color-blindness previews) and apply it
-with `dm.set_colors(...)` / `dm.colors(..., n=...)`, see **[Categorical palettes](categorical-palettes.md)**.
-:::
+Use this page when you need a single `color="..."` string. For series color
+through `dm.set_colors(...)` or `dm.colors(..., n=...)`, use
+[Palettes](palettes.md).
 
 ## How to read the labels
 
@@ -44,48 +41,10 @@ so that *step-number difference = perceptual difference*
 any color as a plain string — `color="dc.blue6"` — anywhere matplotlib accepts
 a color; the `dc.*` colormaps derive from these same recipes. The full theory
 is on the
-[Color system design](design.md) page.
+[Design rationale](design-rationale.md) page.
 
 ```{raw} html
 :file: images/colors_dc_families.html
-```
-
-### dartwork Color — curated qualitative palettes
-
-Beyond the 20 single-hue families, dartwork ships 11 curated
-**qualitative sets** — hand-tuned qualitative, muted, tonal, forest, and
-emphasis palettes (CIELAB/OKLCH-anchored and verified for black-&-white +
-color-blindness) with no generative equivalent. They resolve through the same
-API as any family, so `dm.set_colors("trustworthy")` and
-`dm.colors("pastel", n=8)` work alongside `dm.colors("blue", n=5)`.
-
-Counts are intentional: sequential family ramps have 10 steps, curated
-qualitative sets have 8 colors, Octave has 8 chromatic colors, and Octave Print
-has 7 chromatic colors plus dark gray. Octave Print is hue-parallel with
-Octave, so the first seven slots keep the same hue identity while improving
-print lightness separation. In the interactive explorer, Octave, Octave Print,
-and the 11 curated qualitative sets form the 13-choice rail.
-
-- `trustworthy` / `vivid` / `neon` — qualitative sets aligned with Octave and
-  Octave Print for unrelated categories
-- `pastel` / `dusty` — muted qualitative sets for soft editorial color
-- `forest` — a one-mood green qualitative set
-- `earth` / `jewel` / `ember` — tonal moods
-- `teal_accent` / `coral_accent` — highlight one series, mute the rest
-
-Four canonical diverging discrete forms also resolve as palettes:
-`blue_red`, `blue_orange`, `teal_amber`, and `green_purple`. They are ordered
-encodings for centered data rather than categorical sets, so they are not
-shown in the qualitative rail.
-
-The interactive picker (Qualitative palettes, Sequential families, intent
-groups, B&W badges, CVD metrics, 9 chart shapes) lives on the
-[Categorical palettes](categorical-palettes.md) page. The v5 clean break kept
-these curated `dc.*` sets and trimmed only the throwaway ad-hoc aliases; see
-the [migration guide](../migration.md) for the manual rename map.
-
-```{raw} html
-:file: images/colors_dc.html
 ```
 
 ## Semantic aliases

@@ -84,48 +84,53 @@ def _viridis_cv() -> float:
 
 # (relpath, one-group claim-regex, expected-value callable, decimal places)
 _CLAIMS: list[tuple[str, str, Callable[[], float], int]] = [
-    # --- design.md: cycle floors quoted at "10.3 (common) / 8.3 (tritan)" ---
+    # --- design-rationale.md: cycle floors quoted at "10.3 (common) / 8.3 (tritan)" ---
     (
-        "docs/color_system/design.md",
+        "docs/color_system/design-rationale.md",
         r"`dc\.octave` measures (\d+\.\d+) \(common\)",
         _default_common,
         1,
     ),
     (
-        "docs/color_system/design.md",
+        "docs/color_system/design-rationale.md",
         r"\(common\) / (\d+\.\d+) \(tritan\)",
         _default_tritan,
         1,
     ),
     (
-        "docs/color_system/design.md",
+        "docs/color_system/design-rationale.md",
         r"`dc\.octave_print`, (\d+\.\d+) /",
         _print_common,
         1,
     ),
     (
-        "docs/color_system/design.md",
+        "docs/color_system/design-rationale.md",
         r"`dc\.octave_print`, \d+\.\d+ / (\d+\.\d+)",
         _print_tritan,
         1,
     ),
-    # --- design.md: aurora vs viridis uniformity (same-protocol @32) ---
+    # --- design-rationale.md: aurora vs viridis uniformity (same-protocol @32) ---
     # (\s+ tolerates the line wrap "ΔE cv\n0.063 vs 0.086")
     (
-        "docs/color_system/design.md",
+        "docs/color_system/design-rationale.md",
         r"ΔE cv\s+(\d\.\d+)\s+vs\s+\d\.\d+",
         _aurora_cv,
         3,
     ),
     (
-        "docs/color_system/design.md",
+        "docs/color_system/design-rationale.md",
         r"ΔE cv\s+\d\.\d+\s+vs\s+(\d\.\d+)",
         _viridis_cv,
         3,
     ),
-    ("docs/color_system/design.md", r"ΔE cv (\d\.\d+), L", _aurora_cv, 3),
     (
-        "docs/color_system/design.md",
+        "docs/color_system/design-rationale.md",
+        r"ΔE cv (\d\.\d+), L",
+        _aurora_cv,
+        3,
+    ),
+    (
+        "docs/color_system/design-rationale.md",
         r"against viridis \(cv (\d\.\d+),",
         _viridis_cv,
         3,
@@ -143,27 +148,27 @@ _CLAIMS: list[tuple[str, str, Callable[[], float], int]] = [
         _viridis_cv,
         3,
     ),
-    # --- categorical-palettes.md: default cycle + Okabe-Ito benchmark ---
+    # --- palettes.md: default cycle + Okabe-Ito benchmark ---
     (
-        "docs/color_system/categorical-palettes.md",
+        "docs/color_system/palettes.md",
         r"min ΔE00 (\d+\.\d+)",
         _default_common,
         1,
     ),
     (
-        "docs/color_system/categorical-palettes.md",
+        "docs/color_system/palettes.md",
         r"Okabe-Ito benchmark's (\d+\.\d+)",
         _okabe_common,
         1,
     ),
     (
-        "docs/color_system/categorical-palettes.md",
+        "docs/color_system/palettes.md",
         r"default cycle's (\d+\.\d+) actually beats",
         _default_tritan,
         1,
     ),
     (
-        "docs/color_system/categorical-palettes.md",
+        "docs/color_system/palettes.md",
         r"beats Okabe-Ito's (\d+\.\d+)",
         _okabe_tritan,
         1,

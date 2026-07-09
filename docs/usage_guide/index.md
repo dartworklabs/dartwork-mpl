@@ -3,10 +3,6 @@
 dartwork-mpl bundles stylistic presets, curated colors/colormaps, and
 layout/font helpers so you get **predictable results** fast.
 
-```{raw} html
-:file: ../_static/evolution_widget.html
-```
-
 ## Choosing the right tools
 
 ### Which preset?
@@ -34,7 +30,7 @@ layout/font helpers so you get **predictable results** fast.
 
 | Style | Prefix | Best for |
 |-------|--------|----------|
-| dartwork curated | `dc.*` | **Recommended starting point** — 20 v5 families, 10 perceptual steps each, CVD-screened |
+| dartwork curated | `dc.*` | **Recommended starting point** — 20 families, 10 perceptual steps each, CVD-screened |
 | Open Color | `oc.*` | General purpose, well-balanced |
 | Tailwind CSS | `tw.*` | Web-style designs, wider shade range (50–950) |
 | Material Design | `md.*` | Google-style, vibrant |

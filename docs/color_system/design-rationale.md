@@ -1,20 +1,17 @@
-# Color system design
+# Design rationale
 
-The `dc.*` color system is not a hand-picked table of hex codes. Every
-palette color, every colormap, and every cycle is **generated
-deterministically from 107 numbers** by a small set of perceptual axioms,
-and each output is checked against color-science gates before it ships. This
-page explains why the system is built that way — the theory, with the
-figures that are its evidence.
+This is the design system's evidence page: why the colors — and eventually the
+typography — are built and gated this way. The `dc.*` color system is not a
+hand-picked table of hex codes. Every palette color, every colormap, and every
+cycle is **generated deterministically from 107 numbers** by a small set of
+perceptual axioms, and each output is checked against color-science gates
+before it ships.
 
-:::{note}
-**This is the "why" page.** To *use* the colors, see
-[Palettes](colors.md), [Categorical palettes](categorical-palettes.md),
-[Colormaps](colormaps.md), and [Color Space](space.md). Every figure below
-is rendered live from the shipped package by
-`docs/color_system/generate_theory_figures.py`, so the pictures *are* the
-proof.
-:::
+To use the color surfaces directly, see [Colors](colors.md),
+[Palettes](palettes.md), [Colormaps](colormaps.md), and
+[Color class](color-class.md). Every figure below is rendered live from the
+shipped package by `docs/color_system/generate_theory_figures.py`, so the
+pictures are the proof.
 
 ## Three principles
 
@@ -386,7 +383,7 @@ Stated plainly, per principle 3:
 The machine-readable SSOT (all 91 parameters, the palette, the cycles, and
 the 43-map catalog) lives beside the design record:
 
-- `docs/superpowers/specs/2026-07-03-color-system-v5-design.md` — the full
+- `docs/superpowers/specs/2026-07-03-color-system-v5-design-rationale.md` — the full
   design rationale.
 - `docs/superpowers/specs/assets/2026-07-03-color-system-v5/color_v5_ssot.json`
   — the parameter/palette/cmap SSOT.
@@ -395,7 +392,14 @@ the 43-map catalog) lives beside the design record:
 
 ## See also
 
-- [Palettes](colors.md) — the generated `dc.*` families as swatch sheets.
-- [Categorical palettes](categorical-palettes.md) — pick a cycle by intent.
+- [Colors](colors.md) — the generated `dc.*` families as swatch sheets.
+- [Palettes](palettes.md) — pick a cycle by intent.
 - [Colormaps](colormaps.md) — the 43-map catalog, applied.
-- [Color Space](space.md) — the `Color` class and custom colormaps.
+- [Color class](color-class.md) — the `Color` class and custom colormaps.
+
+## Typography rationale (placeholder)
+
+The same principled treatment — selection criteria, registration rules,
+measured gates, preset wiring — is planned for the font system. It lands
+with the fonts overhaul; until then this section is intentionally a stub
+so the page's scope (the whole design system, not just color) is explicit.

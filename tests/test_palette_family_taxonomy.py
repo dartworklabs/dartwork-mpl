@@ -261,7 +261,7 @@ def test_explorer_detail_presentation_order_and_eyebrow_copy() -> None:
     html = _EXPLORER.read_text(encoding="utf-8")
 
     assert "v5 cycle" not in html
-    assert "v5 family" not in html
+    assert "legacy family" not in html
     assert " · curated" not in html
     assert "var ey=p.group;" in html
     assert "Design targets" not in html
@@ -442,9 +442,9 @@ def test_cycle_payload_includes_cvd_metrics_from_ssot() -> None:
 
 
 def test_docs_semantic_aliases_live_on_static_palette_page() -> None:
-    cat = (
-        _REPO / "docs" / "color_system" / "categorical-palettes.md"
-    ).read_text(encoding="utf-8")
+    cat = (_REPO / "docs" / "color_system" / "palettes.md").read_text(
+        encoding="utf-8"
+    )
     colors = (_REPO / "docs" / "color_system" / "colors.md").read_text(
         encoding="utf-8"
     )
@@ -458,9 +458,9 @@ def test_docs_semantic_aliases_live_on_static_palette_page() -> None:
 
 def test_docs_octave_reference_keeps_pinned_phrases_and_tradeoff() -> None:
     """The reference paragraph preserves fact pins and mirrors the trade-off."""
-    cat = (
-        _REPO / "docs" / "color_system" / "categorical-palettes.md"
-    ).read_text(encoding="utf-8")
+    cat = (_REPO / "docs" / "color_system" / "palettes.md").read_text(
+        encoding="utf-8"
+    )
     cat_flat = re.sub(r"\s+", " ", cat)
 
     for phrase in (

@@ -78,7 +78,7 @@ def test_docs_typography_uses_neutral_tracking_and_fixed_font_steps() -> None:
     non_zero_tracking_re = re.compile(
         r"letter-spacing\s*:(?!\s*0(?:\s*!important)?\s*[;}])([^;}]+)", re.I
     )
-    allowed_prefixes = {Path("docs/_build"), Path("docs/_static/palette_demo")}
+    allowed_prefixes = {Path("docs/_build")}
 
     for base in (ROOT / "docs", ROOT / "scripts"):
         for path in base.rglob("*"):
@@ -196,9 +196,9 @@ def test_toggle_groups_use_segmented_primitive() -> None:
     js = read_static("custom.js")
     dynamic_css = read_static("dynamic_ux.css")
     dynamic_js = read_static("dynamic_ux.js")
-    color_space_page = (ROOT / "docs" / "color_system" / "space.md").read_text(
-        encoding="utf-8"
-    )
+    color_space_page = (
+        ROOT / "docs" / "color_system" / "color-class.md"
+    ).read_text(encoding="utf-8")
     usage_colors_page = (ROOT / "docs" / "usage_guide" / "colors.md").read_text(
         encoding="utf-8"
     )
@@ -284,9 +284,7 @@ def test_generated_tabs_expose_shadcn_tab_aliases() -> None:
     custom_css = read_static("custom.css")
 
     for snippet in (
-        "dm-pc-tabs dm-tabs",
         'role="tablist"',
-        "dm-pc-tab dm-pe-tab dm-tab",
         "dm-ce-tabs dm-tabs",
         "dm-ce-tab dm-tab",
         "dm-ce-tone dm-seg no-thumb",
@@ -317,66 +315,11 @@ def test_generated_tabs_expose_shadcn_tab_aliases() -> None:
     assert "dm-pc-tab-active" not in custom_css
     assert ".dm-pc-tab.active" not in design_css
     assert ".dm-pc-tab.active" not in custom_css
-    assert ".dm-pe-widget" in custom_css
     assert ".dm-ce" in custom_css
     assert "scroll-margin-top: 150px;" in custom_css
 
 
-def test_review_poc_widgets_use_shared_primitives() -> None:
-    colormap_a = read_static("colormap_poc_a.html")
-    colormap_b = read_static("colormap_poc_b.html")
-    landing = read_static("landing_pocs_preview.html")
-
-    for snippet in (
-        "cm-poc-a-tabs dm-tabs",
-        "cm-poc-a-tab dm-tab is-active",
-        'role="tablist"',
-        "aria-selected",
-        "tabIndex = selected ? 0 : -1",
-        "cm-poc-a-tone dm-seg no-thumb",
-        "cm-poc-a-tone-btn dm-opt is-active",
-        "aria-pressed",
-        "var(--dm-f-sys",
-        "var(--dm-f-mono",
-    ):
-        assert snippet in colormap_a
-
-    for snippet in (
-        "cm-poc-b-tone dm-seg no-thumb",
-        "cm-poc-b-tone-btn dm-opt is-active",
-        'role="group"',
-        "aria-pressed",
-        "var(--dm-f-sys",
-        "var(--dm-f-mono",
-    ):
-        assert snippet in colormap_b
-
-    for snippet in (
-        "lpoc-palette-btn",
-        "is-active",
-        "aria-pressed",
-        'host.setAttribute("role", "group")',
-        'host.setAttribute("aria-label", "Choose preview palette")',
-        "var(--dm-i-active-soft",
-        "var(--dm-i-active-line",
-        "var(--dm-i-soft-border",
-        "var(--dm-f-sys",
-        "var(--dm-f-mono",
-    ):
-        assert snippet in landing
-
-    for html in (colormap_a, colormap_b, landing):
-        assert 'classList.toggle("active"' not in html
-        assert "classList.toggle('active'" not in html
-        assert ".active" not in html
-        assert "#0d9488" not in html
-        assert "rgba(13, 148, 136" not in html
-        assert "--sy-f-" not in html
-
-
 def test_embedded_active_widgets_use_shared_primitives() -> None:
-    palette_picker = read_static("palette_picker.html")
-    evolution_widget = read_static("evolution_widget.html")
     fonts_picker = read_static("fonts_picker.html")
     font_picker_generator = (
         ROOT / "scripts" / "build_fonts_picker.py"
@@ -389,16 +332,6 @@ def test_embedded_active_widgets_use_shared_primitives() -> None:
     ).read_text(encoding="utf-8")
 
     for snippet in (
-        "dm-pp-tabs dm-tabs",
-        "dm-pp-tab dm-tab",
-        "dm-pp-btn dm-chip",
-        'role="tablist"',
-        "aria-selected",
-        "aria-pressed",
-    ):
-        assert snippet in palette_picker
-
-    for snippet in (
         "dm-fp-tabs dm-tabs",
         "dm-fp-tab dm-tab",
         'role="tablist"',
@@ -407,15 +340,6 @@ def test_embedded_active_widgets_use_shared_primitives() -> None:
     ):
         assert snippet in fonts_picker
         assert snippet in font_picker_generator
-
-    for snippet in (
-        "dm-slider",
-        "evo-label dm-chip",
-        'role="group"',
-        "aria-pressed",
-        "evo-img.is-active",
-    ):
-        assert snippet in evolution_widget
 
     for snippet in (
         "dm-pc-arrow dm-icon-btn",
@@ -430,7 +354,7 @@ def test_embedded_active_widgets_use_shared_primitives() -> None:
     assert "dm-pc-arrow dm-icon-btn" in preset_widget
     assert "dm-pc-dot is-active" in preset_widget
 
-    for html in (palette_picker, evolution_widget, fonts_picker):
+    for html in (fonts_picker,):
         assert 'classList.toggle("active"' not in html
         assert ".active" not in html
         assert "#0d9488" not in html
@@ -487,9 +411,9 @@ def test_gallery_download_code_keeps_inline_code_surface() -> None:
 
 
 def test_categorical_page_styles_are_global_not_inline() -> None:
-    page = (
-        ROOT / "docs" / "color_system" / "categorical-palettes.md"
-    ).read_text(encoding="utf-8")
+    page = (ROOT / "docs" / "color_system" / "palettes.md").read_text(
+        encoding="utf-8"
+    )
     generator = (
         ROOT / "docs" / "_static" / "scripts" / "build_categorical_explorer.py"
     ).read_text(encoding="utf-8")
@@ -534,9 +458,10 @@ def test_shadcn_adoption_decisions_are_documented() -> None:
     assert "Literal legacy accent values may appear only" in design_doc
     assert "Current component cleanup status" in design_doc
     assert (
-        "Review-only comparison POCs may still display historical colors"
+        "dm-interactive-styleguide.html` is linked to real shipping CSS/JS"
         in (design_doc)
     )
+    assert "Review-only comparison POCs" not in design_doc
     assert "Legacy literals in this document are diagnostic examples only" in (
         interactive_doc
     )
@@ -613,11 +538,9 @@ def test_legacy_accent_literals_are_confined_to_docs_and_comparison_pocs() -> (
     allowed_files = {
         Path("docs/_static/dartwork-design-system.md"),
         Path("docs/_static/dm-interactive-system.md"),
-        Path("docs/_static/interactive_overhaul_pocs.html"),
     }
     allowed_prefixes = {
         Path("docs/superpowers"),
-        Path("docs/_static/palette_demo"),
         Path("docs/color_system/images"),
         Path("docs/_build"),
     }
@@ -664,13 +587,11 @@ def test_validation_svg_reads_css_variables_instead_of_literal_skin() -> None:
 
 def test_review_harnesses_use_type_roles_and_no_legacy_accent() -> None:
     styleguide = read_static("dm-interactive-styleguide.html")
-    overhaul = read_static("_overhaul_review.html")
 
-    for html in [styleguide, overhaul]:
-        assert "var(--dm-type-" in html
-        assert "#14b8a6" not in html
-        assert "#0d9488" not in html
-        assert "#8b5cf6" not in html
+    assert "var(--dm-type-" in styleguide
+    assert "#14b8a6" not in styleguide
+    assert "#0d9488" not in styleguide
+    assert "#8b5cf6" not in styleguide
 
     for snippet in (
         ".panel .dm-tabs { max-width:100%; overflow-x:auto; }",
@@ -688,16 +609,6 @@ def test_review_harnesses_use_type_roles_and_no_legacy_accent() -> None:
         'c.setAttribute("aria-pressed",on)',
     ):
         assert snippet in styleguide
-
-    for snippet in (
-        "custom.css",
-        "dynamic_ux.css",
-        "dartwork-design.css",
-        "dm-interactive.css",
-        "dynamic_ux.js",
-        "dynamic_ux.js inserts .dm-install-picker",
-    ):
-        assert snippet in overhaul
 
 
 def test_explorer_demo_label_is_outline_text() -> None:
