@@ -168,7 +168,7 @@ tokens (n-dependent forms).
 | **L0 — dead weight** | delete the legacy text-file colormap system end to end (loader, 56 txt assets, generator script, `style.py`/`explore.py`/`diagnostics` hooks, `api/cmap.rst`, loader-concurrency tests); re-pin doc count claims | zero catalog change; mostly deletions |
 | **L1 — catalog truth** | ledger surgery (delete coast/_deep/_soft/7 palettes; absorb 4 into diverging; corona+halo → cyclic; octave rename incl. preset references); family metadata (kind, forms, sizes); CI invariant gates; colormap-explorer + categorical-explorer payload/tests/doc numbers regenerated (partition 20/9/11/3 = 43 maps + 13 qualitative) | old verbs still work on surviving names |
 | **L2 — API swap** | `dm.colors` / `set_colors` / `list_colors` / `show_colors`; discrete generators per §5; qualitative ListedColormap + diverging-token registration; remove old verbs; preset prop_cycle audit (presets route through `octave` unless deliberately overridden); sync lint rules, MCP tools, llms.txt / llms-full.txt, prompt corpus, AGENTS/CLAUDE.md; explorer copy-code emits `dm.colors` | breaking swap, no users |
-| **D1 — color docs IA** | restructure Design System pages to the family model (final page names + theory placement confirmed at kickoff — defaults: catalogs `Colors` / discrete / continuous split with explorers kept; `Design rationale` last, flat; `Color class` promoted); delete legacy widgets (`palette_picker`, `palette_explorer`) + stale POC files; all numbers builder-rendered | user decisions #2/#3 land here |
+| **D1 — color docs IA** | restructure to the confirmed flat sidebar `Overview / Colors / Palettes / Colormaps / Color class / Fonts / Design rationale` (POC-confirmed 2026-07-09); **Design rationale = system-wide rationale page**: color theory from design.md **plus a clearly-marked Fonts rationale placeholder section** (typography principles land with the fonts overhaul, D2+ — the fonts side is not yet principled); delete legacy widgets (`palette_picker`, `palette_explorer`) + stale POC files; all numbers builder-rendered | decisions #2/#3 resolved |
 | **D2 — fonts explorer** | rebuild the fonts page widget on the explorer framework (rail + demos + controls + dark mode + replace-last), reconcile font counts | separate feature |
 | **D3 — docs-wide sync** | usage_guide/colors rewrite on the new API, landing, troubleshooting, migration note for the removed API | final sweep |
 
@@ -192,10 +192,12 @@ release branch is rebased then; tagging/publishing stays a user action).
 
 ## 8. Open questions (defaults if not revisited)
 
-1. **D1 page names & theory placement** — default: flat sidebar `Overview /
-   Colors / <discrete page> / <continuous page> / Color class / Fonts /
-   Design rationale`; exact titles decided at D1 kickoff (user decisions #2
-   and #3, POC already served).
+1. **D1 page names & theory placement** — RESOLVED (user, 2026-07-09 via
+   POC): flat sidebar `Overview / Colors / Palettes / Colormaps / Color
+   class / Fonts / Design rationale`. `Design rationale` is the whole
+   design system's evidence page — color theory now, plus a placeholder
+   section for typography rationale until the fonts overhaul bakes in the
+   same principled treatment.
 2. Multi-hue optimizer parameters (L\* band, chroma cutoff) are tunable
    constants — locked by gate outputs, not by narrative.
 3. Preset audit may reveal presets that intentionally diverge from `octave`
