@@ -136,7 +136,11 @@ def test_payload_flags_and_ladders_match_measurements() -> None:
             key=lambda face: (face.weight, face.file),
         )
 
+        assert isinstance(entry["role"], str) and entry["role"]
         assert entry["role"] == record.role
+        assert "tnum" in entry
+        assert type(entry["tnum"]) is bool
+        assert entry["tnum"] is record.tnum
         assert entry["italic"] is measurement.italic
         assert entry["mono"] is measurement.fixed_pitch
         assert entry["hangul"] is measurement.hangul
