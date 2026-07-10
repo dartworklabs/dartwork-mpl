@@ -410,10 +410,11 @@ documented role: body, display, Korean body, serif, monospace, Korean
 monospace, or fallback tail. A new family must do a job that another bundled
 family does not already do better.
 
-**T2 · Measured gates.** OS/2 weights, tabular-numeral support, fixed-width
-truth, chart-glyph coverage, Hangul coverage, and license class are read from
-the bundled files in tests and docs. Known upstream metadata quirks are named
-in the registry instead of being silently normalized.
+**T2 · Measured gates.** OS/2 weights, matplotlib-safe numeric axes,
+browser-only tabular-numeral availability, fixed-width truth, chart-glyph
+coverage, Hangul coverage, and license class are read from the bundled files
+in tests and docs. Known upstream metadata quirks are named in the registry
+instead of being silently normalized.
 
 **T3 · Roles in user space.** Presets and docs speak in roles, while users keep
 native matplotlib `Figure` / `Axes` objects. Size and weight still flow through
@@ -446,6 +447,13 @@ fixed-width.
 ```{raw} html
 :file: ../_static/typography_matrix.html
 ```
+
+In the matrix, **Numeric axes** means the default digit advances are uniform in
+real matplotlib output, or the family is fixed-width. **tnum available** is a
+browser/specimen signal only: `Inter` and `Pretendard` expose the OpenType
+feature, but matplotlib does not apply it, so use `IBM Plex Sans`, `Source Sans
+3`, `Paperlogy`, `Noto Sans`, `Roboto`, `Source Serif 4`, or monospace
+families when aligned numeric axes are the requirement.
 
 ### Anatomy of the fallback chain
 

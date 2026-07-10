@@ -17,10 +17,10 @@ def _weights_text(weights: tuple[int, ...]) -> str:
 
 
 def _numeric_axes_text(measurement: font.FontMeasurement) -> str:
-    if measurement.tnum:
-        return "tnum"
     if measurement.fixed_pitch:
         return "mono"
+    if measurement.default_digit_widths_uniform:
+        return "digits"
     return "-"
 
 
@@ -40,6 +40,7 @@ def _row(family: font.FontFamily) -> str:
         family.role,
         _weights_text(measurement.weights),
         _numeric_axes_text(measurement),
+        _yes_no(measurement.tnum_available),
         _chart_glyph_text(measurement),
         _yes_no(measurement.hangul),
         " / ".join(measurement.licenses),
@@ -57,7 +58,7 @@ def build() -> str:
 <div id="dm-typography-matrix" class="yue">
 <table>
 <thead>
-<tr><th>Family</th><th>Role</th><th>Weights</th><th>Numeric axes</th><th>Chart glyphs</th><th>Hangul</th><th>License</th></tr>
+<tr><th>Family</th><th>Role</th><th>Weights</th><th>Numeric axes</th><th>tnum available</th><th>Chart glyphs</th><th>Hangul</th><th>License</th></tr>
 </thead>
 <tbody>
 {rows}

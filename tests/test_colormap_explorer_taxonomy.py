@@ -395,7 +395,7 @@ def test_layout_uses_design_tokens_and_bounded_grid() -> None:
     css = _colormap_css()
     assert "grid-template-columns:minmax(10rem,10.5rem) minmax(0,1fr)" in css
     assert (
-        "#dm-cat-exp,#dm-cmap-exp,#dm-font-exp {width:100%;max-width:100%;container-type:inline-size;"
+        "#dm-cat-exp,#dm-cmap-exp {width:100%;max-width:100%;container-type:inline-size;"
         in css
     )
     assert "gap:var(--dm-space-4,16px)" in css
@@ -403,11 +403,11 @@ def test_layout_uses_design_tokens_and_bounded_grid() -> None:
     assert "flex-wrap:wrap;row-gap:8px;" in css
     assert "grid-template-columns:minmax(10.5rem,12rem)" not in css
     assert (
-        "#dm-cat-exp .demo-tools .demo-field,#dm-cmap-exp .demo-tools .demo-field,#dm-font-exp .demo-tools .demo-field {flex:1 1 100%;min-width:0;align-items:flex-start;}"
+        "#dm-cat-exp .demo-tools .demo-field,#dm-cmap-exp .demo-tools .demo-field {flex:1 1 100%;min-width:0;align-items:flex-start;}"
         in css
     )
     assert (
-        "#dm-cat-exp .demo-picker,#dm-cmap-exp .demo-picker,#dm-font-exp .demo-picker {display:flex;align-items:center;gap:6px;flex-wrap:wrap;row-gap:6px;min-width:0;}"
+        "#dm-cat-exp .demo-picker,#dm-cmap-exp .demo-picker {display:flex;align-items:center;gap:6px;flex-wrap:wrap;row-gap:6px;min-width:0;}"
         in css
     )
     for token in (
@@ -474,8 +474,7 @@ def test_retina_gradient_backgrounds_are_non_repeating_images() -> None:
 def test_rail_mini_strips_are_square_non_clipping_rectangles() -> None:
     css = _colormap_css()
     m = re.search(
-        r"#dm-cat-exp \.ri \.mini,#dm-cmap-exp \.ri \.mini,#dm-font-exp \.ri \.mini \{([^}]*)\}",
-        css,
+        r"#dm-cat-exp \.ri \.mini,#dm-cmap-exp \.ri \.mini\{([^}]*)\}", css
     )
     assert m, "shared rail mini CSS rule missing"
     mini_rule = m.group(1)
