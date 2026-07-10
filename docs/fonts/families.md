@@ -10,7 +10,7 @@ one-click specimen of **every** family — including Pretendard, Source
 Sans 3, IBM Plex Sans, the serif body face Source Serif 4, and the monospace
 families (JetBrains Mono, D2Coding, IBM Plex Mono, Source Code Pro,
 Roboto Mono) — use the
-[font explorer](index.md).
+[font browser](index.md).
 
 ## Why fonts matter
 

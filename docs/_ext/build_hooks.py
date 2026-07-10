@@ -354,13 +354,14 @@ def copy_fonts_to_static(app):
     font_dst = Path(app.srcdir) / "_static" / "fonts"
     font_dst.mkdir(parents=True, exist_ok=True)
 
-    for ttf in font_src.glob("*.ttf"):
-        dst_file = font_dst / ttf.name
-        if (
-            not dst_file.exists()
-            or ttf.stat().st_mtime > dst_file.stat().st_mtime
-        ):
-            shutil.copy2(ttf, dst_file)
+    for pattern in ("*.ttf", "*.otf"):
+        for font_file in font_src.glob(pattern):
+            dst_file = font_dst / font_file.name
+            if (
+                not dst_file.exists()
+                or font_file.stat().st_mtime > dst_file.stat().st_mtime
+            ):
+                shutil.copy2(font_file, dst_file)
 
 
 def write_manual_indices(app, env, docnames):
