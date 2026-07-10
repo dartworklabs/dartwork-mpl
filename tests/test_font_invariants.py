@@ -26,6 +26,9 @@ _TYPOGRAPHY_MATRIX_BUILDER = (
     _REPO / "docs" / "_static" / "scripts" / "build_typography_matrix.py"
 )
 _TYPOGRAPHY_MATRIX = _REPO / "docs" / "_static" / "typography_matrix.html"
+_FONT_DOCS = _REPO / "docs" / "fonts"
+_FONT_ASSETS = _REPO / "src" / "dartwork_mpl" / "asset" / "font"
+_FONT_LICENSES = _FONT_ASSETS / "licenses"
 _GRID_WEIGHTS = frozenset(range(100, 1000, 100))
 _LICENSES = {"Apache-2.0", "OFL-1.1"}
 _RESOLVER_PROBES = tuple("−×±→°μσΔ") + tuple("0123456789") + ("한",)
@@ -185,6 +188,75 @@ def test_typography_matrix_matches_builder() -> None:
     assert built == committed
     assert "<style" not in committed
     assert committed.count("<tr><td>") == 18
+
+
+def test_docs_font_counts_match_reality() -> None:
+    font_files = sorted(
+        path
+        for path in _FONT_ASSETS.iterdir()
+        if path.suffix.lower() in {".ttf", ".otf"}
+    )
+    actual = {
+        "text font files": len(font_files),
+        "documented file groups": len(
+            {path.stem.split("-", 1)[0] for path in font_files}
+        ),
+        "matplotlib family names": len(font.list_registered()),
+    }
+
+    for doc_name in ("index.md", "families.md"):
+        text = (_FONT_DOCS / doc_name).read_text(encoding="utf-8")
+        for label, count in actual.items():
+            label_pattern = re.escape(label).replace(r"\ ", r"\s+")
+            match = re.search(
+                rf"\*\*(\d+)\s+{label_pattern}\*\*", text, re.DOTALL
+            )
+            assert match is not None, (doc_name, label)
+            assert int(match.group(1)) == count, (doc_name, label)
+
+    utilities = (_FONT_DOCS / "utilities.md").read_text(encoding="utf-8")
+    bundled = re.search(r"all\s+(\d+)\s+bundled fonts", utilities)
+    assert bundled is not None
+    assert int(bundled.group(1)) == actual["text font files"]
+
+
+def test_every_family_has_license_file() -> None:
+    license_by_group = {
+        "Roboto": "LICENSE-Roboto.txt",
+        "RobotoMono": "LICENSE-RobotoMono.txt",
+        "Inter": "LICENSE-Inter.txt",
+        "InterDisplay": "LICENSE-Inter.txt",
+        "IBMPlexSans": "LICENSE-IBMPlex.txt",
+        "IBMPlexMono": "LICENSE-IBMPlex.txt",
+        "SourceSans3": "LICENSE-SourceSans3.txt",
+        "SourceSerif4": "LICENSE-SourceSerif4.txt",
+        "SourceCodePro": "LICENSE-SourceCodePro.txt",
+        "JetBrainsMono": "LICENSE-JetBrainsMono.txt",
+        "NotoSans": "LICENSE-NotoSans.txt",
+        "NotoSans_Condensed": "LICENSE-NotoSans.txt",
+        "NotoSans_SemiCondensed": "LICENSE-NotoSans.txt",
+        "NotoSansCJK": "LICENSE-NotoSansCJK.txt",
+        "NotoSansMath": "LICENSE-NotoSans.txt",
+        "NotoSansSymbols": "LICENSE-NotoSans.txt",
+        "NotoSansSymbols2": "LICENSE-NotoSans.txt",
+        "Paperlogy": "LICENSE-Paperlogy.txt",
+        "Pretendard": "LICENSE-Pretendard.txt",
+        "D2Coding": "LICENSE-D2Coding.txt",
+    }
+    disk_groups = {
+        path.stem.split("-", 1)[0]
+        for path in _FONT_ASSETS.iterdir()
+        if path.suffix.lower() in {".ttf", ".otf"}
+    }
+    disk_licenses = {
+        path.name for path in _FONT_LICENSES.iterdir() if path.is_file()
+    }
+
+    assert set(license_by_group) == disk_groups
+    assert set(license_by_group.values()) == disk_licenses
+    assert all(
+        (_FONT_LICENSES / name).is_file() for name in license_by_group.values()
+    )
 
 
 # --- P0-1 mathtext coherence gate ---------------------------------------
