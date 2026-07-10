@@ -277,3 +277,43 @@ def test_card_copy_and_badge_contract_is_pinned() -> None:
         "axesBadge"
     )
     assert markup_source.index("axesBadge") < markup_source.index("monoBadge")
+
+
+def test_drawer_composition_and_descenders_are_pinned() -> None:
+    assert "width: min(640px, 94vw);" in _FRAGMENT
+    assert "Agile 24" not in _FRAGMENT
+    assert "flex: 0 0 112px;" in _FRAGMENT
+    assert "align-items: center;" in _FRAGMENT
+    assert "escapeHtml(f.raw.sample)" in _FRAGMENT
+
+    sample_rule_match = re.search(
+        r"#dm-fontfacets \.ladder-sample \{(.*?)\}", _FRAGMENT, re.DOTALL
+    )
+    assert sample_rule_match is not None
+    sample_rule = sample_rule_match.group(1)
+    assert "line-height: 1.4" in sample_rule
+    assert "overflow" not in sample_rule
+    assert "max-height" not in sample_rule
+    assert "text-overflow: ellipsis" in _FRAGMENT
+
+    drawer_source = _FRAGMENT.split("dBody.innerHTML =", 1)[1].split(
+        'dBody.querySelector(".snippet-copy")', 1
+    )[0]
+    labels = [
+        "Specimen",
+        "Weight ladder",
+        "Numerals &amp; symbols",
+        "widthVariants +",
+        "Why this face",
+        "rcParams snippet",
+    ]
+    positions = [drawer_source.index(label) for label in labels]
+    assert positions == sorted(positions)
+    assert '<p class="lbl">Width variants</p>' in _FRAGMENT
+    assert 'class="specimen-line"' in drawer_source
+    assert "f.raw.hero" not in drawer_source
+    assert "escapeHtml(f.raw.application)" in drawer_source
+    assert "escapeHtml(f.raw.pairing)" in drawer_source
+    assert "Pairs well: " in drawer_source
+    assert "width: 100%;" in _FRAGMENT
+    assert "overflow-x: auto;" in _FRAGMENT

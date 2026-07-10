@@ -185,7 +185,7 @@
 #dm-fontfacets .detail-backdrop.open { opacity: 1; pointer-events: auto; }
 #dm-fontfacets .detail {
   position: fixed; top: 0; right: 0; bottom: 0; z-index: 61;
-  width: min(440px, 92vw); background: var(--dm-bg-panel);
+  width: min(640px, 94vw); background: var(--dm-bg-panel);
   border-left: 1px solid var(--dm-border); box-shadow: var(--dm-shadow-4);
   transform: translateX(100%); transition: transform .22s cubic-bezier(.4,0,.2,1);
   display: flex; flex-direction: column; overflow: hidden;
@@ -220,7 +220,7 @@
   font-size: 10.5px; font-weight: 600; text-transform: uppercase;
   color: var(--dm-text-faint); margin: 0 0 var(--dm-space-2);
 }
-#dm-fontfacets .hero-line { font-size: 34px; line-height: 1.2; color: var(--dm-text-strong); margin: 0; word-break: break-word; }
+#dm-fontfacets .specimen-line { font-size: 26px; line-height: 1.4; color: var(--dm-text-strong); margin: 0; overflow-wrap: anywhere; }
 #dm-fontfacets .numerals { font-size: 22px; color: var(--dm-text); margin: 0; font-variant-numeric: tabular-nums; }
 #dm-fontfacets .tnum-proof {
   margin-top: var(--dm-space-3); padding-top: var(--dm-space-3);
@@ -233,10 +233,12 @@
 #dm-fontfacets .tnum-values div { white-space: nowrap; }
 #dm-fontfacets .tnum-caption { margin: 4px 0 0; color: var(--dm-text-faint); font-size: 11.5px; }
 #dm-fontfacets .intent-txt { font-size: 13px; line-height: 1.55; color: var(--dm-text-muted); margin: 0; }
+#dm-fontfacets .intent-txt + .intent-txt { margin-top: var(--dm-space-2); }
+#dm-fontfacets .pairing-txt { font-size: 11.5px; line-height: 1.5; color: var(--dm-text-faint); margin: var(--dm-space-3) 0 0; }
 
 #dm-fontfacets .ladder { display: flex; flex-direction: column; }
 #dm-fontfacets .ladder-row {
-  display: flex; align-items: baseline; gap: var(--dm-space-3);
+  display: flex; align-items: center; gap: var(--dm-space-3);
   padding: 7px 0; border-bottom: 1px solid var(--dm-border-faint);
 }
 #dm-fontfacets .ladder-row:last-child { border-bottom: 0; }
@@ -246,10 +248,11 @@
   transition: background .12s;
 }
 #dm-fontfacets .ladder-copy:hover { background: var(--dm-accent-2); }
-#dm-fontfacets .ladder-meta { flex: 0 0 96px; }
+#dm-fontfacets .ladder-meta { flex: 0 0 112px; white-space: nowrap; }
 #dm-fontfacets .ladder-meta .w-label { display: block; font-size: 12px; font-weight: 500; color: var(--dm-text); }
 #dm-fontfacets .ladder-meta .w-num { display: block; font-family: var(--dm-f-mono); font-size: 10.5px; color: var(--dm-text-faint); font-variant-numeric: tabular-nums; }
-#dm-fontfacets .ladder-sample { flex: 1 1 auto; min-width: 0; font-size: 19px; line-height: 1.1; color: var(--dm-text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#dm-fontfacets .ladder-sample { flex: 1 1 auto; min-width: 0; font-size: 19px; line-height: 1.4; color: var(--dm-text-strong); }
+#dm-fontfacets .ladder-sample-text { display: block; min-width: 0; padding-block: 0.08em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #dm-fontfacets .copy-hint {
   margin-left: auto; color: var(--dm-text-faint); font-size: 10.5px;
   opacity: 0; transition: opacity .12s, color .12s;
@@ -258,7 +261,7 @@
 #dm-fontfacets .ladder-copy:focus-visible .copy-hint { opacity: 1; color: var(--dm-accent-11); }
 
 #dm-fontfacets .snippet {
-  position: relative;
+  position: relative; width: 100%; max-width: 100%;
   font-family: var(--dm-f-mono); font-size: 11.5px; line-height: 1.6;
   color: var(--dm-text); background: var(--dm-bg-subtle);
   border: 1px solid var(--dm-border-faint); border-radius: var(--dm-radius-3);
@@ -1836,7 +1839,8 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
       return '<button type="button" class="ladder-row ladder-copy" data-weight="' + w.num + '" aria-label="Copy fontweight=' + w.num + '">' +
         '<span class="ladder-meta"><span class="w-label">' + escapeHtml(w.label) + "</span>" +
         '<span class="w-num">' + w.num + "</span></span>" +
-        '<span class="ladder-sample" style="font-family:\'' + w.face + "', var(--dm-f-sys)\">Agile 24</span>" +
+        '<span class="ladder-sample" style="font-family:\'' + w.face + "', var(--dm-f-sys)\">" +
+          '<span class="ladder-sample-text">' + escapeHtml(f.raw.sample) + "</span></span>" +
         '<span class="copy-hint" aria-hidden="true">Copy</span>' +
         "</button>";
     }).join("");
@@ -1867,7 +1871,8 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
       var widthRows = f.raw.width_variants.map(function (variant) {
         return '<div class="ladder-row">' +
           '<div class="ladder-meta"><div class="w-label">' + escapeHtml(variant.label) + "</div></div>" +
-          '<div class="ladder-sample" style="font-family:\'' + variant.face + "', var(--dm-f-sys)\">" + escapeHtml(f.raw.sample) + "</div>" +
+          '<div class="ladder-sample" style="font-family:\'' + variant.face + "', var(--dm-f-sys)\">" +
+            '<span class="ladder-sample-text">' + escapeHtml(f.raw.sample) + "</span></div>" +
           "</div>";
       }).join("");
       widthVariants =
@@ -1876,14 +1881,17 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
     }
 
     dBody.innerHTML =
-      '<section><p class="lbl">Hero</p>' +
-        '<p class="hero-line" style="font-family:\'' + reg + "', var(--dm-f-sys)\">" + escapeHtml(f.raw.hero) + "</p></section>" +
+      '<section><p class="lbl">Specimen</p>' +
+        '<p class="specimen-line" style="font-family:\'' + reg + "', var(--dm-f-sys)\">" + escapeHtml(f.raw.sample) + "</p></section>" +
+      '<section><p class="lbl">Weight ladder</p><div class="ladder">' + ladder + "</div></section>" +
       '<section><p class="lbl">Numerals &amp; symbols</p>' +
         '<p class="numerals" style="font-family:\'' + reg + "', var(--dm-f-mono)\">" + escapeHtml("0123456789 " + f.raw.chart_glyphs) + "</p>" +
         tnumProof + "</section>" +
-      '<section><p class="lbl">Weight ladder</p><div class="ladder">' + ladder + "</div></section>" +
       widthVariants +
-      '<section><p class="lbl">Why this face</p><p class="intent-txt">' + escapeHtml(f.raw.intent) + "</p></section>" +
+      '<section><p class="lbl">Why this face</p>' +
+        '<p class="intent-txt">' + escapeHtml(f.raw.intent) + "</p>" +
+        '<p class="intent-txt">' + escapeHtml(f.raw.application) + "</p>" +
+        '<p class="pairing-txt">Pairs well: ' + escapeHtml(f.raw.pairing) + "</p></section>" +
       '<section><p class="lbl">rcParams snippet</p>' +
         '<div class="snippet"><button type="button" class="snippet-copy">Copy</button>' + escapeHtml(snippet) + "</div></section>";
 
