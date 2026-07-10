@@ -1,0 +1,1608 @@
+<!-- Faceted font browser R3 — a palette-twin: the rail is the categorical-explorer rail,
+     the weight ladder is a swatch strip. Scoped to #dm-fbr3; the docs own the theme. -->
+<div id="dm-fbr3">
+<style>
+#dm-fbr3 *, #dm-fbr3 *::before, #dm-fbr3 *::after { box-sizing: border-box; }
+#dm-fbr3 {
+  width: 100%; max-width: 100%;
+  container-type: inline-size;
+  background: var(--dm-bg-page);
+  color: var(--dm-gray-12);
+  font-family: var(--dm-f-sys);
+  font-size: 14px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+#dm-fbr3 button { font-family: inherit; color: inherit; }
+#dm-fbr3 :focus { outline: none; }
+#dm-fbr3 :focus-visible {
+  outline: 2px solid var(--dm-accent-8);
+  outline-offset: 2px; border-radius: var(--dm-radius-2);
+}
+
+/* ---- eyebrow / live count (mirrors .cx-count) ---- */
+#dm-fbr3 .cx-count { font: 600 12px var(--dm-f-mono); color: var(--dm-text-muted); margin: 0 0 16px; }
+#dm-fbr3 .cx-count b { color: var(--dm-gray-12); }
+
+/* ---- two-column shell (mirrors palette .md) ---- */
+#dm-fbr3 .md {
+  display: grid;
+  grid-template-columns: minmax(10rem, 10.5rem) minmax(0, 1fr);
+  gap: var(--dm-space-4);
+  align-items: start;
+}
+
+/* ---- rail (mirrors palette .rail) ---- */
+#dm-fbr3 .rail {
+  display: flex; flex-direction: column; gap: 1px;
+  position: sticky; top: 96px;
+  max-height: calc(100vh - 120px); overflow-y: auto;
+  padding-right: 4px;
+}
+#dm-fbr3 .rail::-webkit-scrollbar { width: 9px; }
+#dm-fbr3 .rail::-webkit-scrollbar-thumb {
+  background: var(--dm-gray-a4); border-radius: 9px;
+  border: 2px solid transparent; background-clip: content-box;
+}
+
+/* rail search */
+#dm-fbr3 .rsearch { position: relative; margin-bottom: 10px; }
+#dm-fbr3 .rsearch .mag { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--dm-gray-9); pointer-events: none; }
+#dm-fbr3 .rsearch input {
+  width: 100%; padding: 7px 26px 7px 28px;
+  font: 400 12.5px var(--dm-f-sys); color: var(--dm-gray-12);
+  background: var(--dm-bg-page);
+  border: 1px solid var(--dm-border-faint); border-radius: var(--dm-radius-4);
+  transition: border-color .15s;
+}
+#dm-fbr3 .rsearch input::placeholder { color: var(--dm-gray-9); }
+#dm-fbr3 .rsearch input:focus { border-color: var(--dm-accent-8); }
+#dm-fbr3 .rsearch .rsx {
+  position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+  border: 0; background: transparent; cursor: pointer; padding: 3px;
+  color: var(--dm-gray-9); line-height: 0; border-radius: var(--dm-radius-full); display: none;
+}
+#dm-fbr3 .rsearch.on .rsx { display: block; }
+#dm-fbr3 .rsearch .rsx:hover { color: var(--dm-gray-12); background: var(--dm-gray-a2); }
+
+/* .fh group header (mirrors palette .fh) */
+#dm-fbr3 .fh {
+  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0;
+  color: var(--dm-gray-9); margin: 14px 0 4px;
+}
+#dm-fbr3 .fh:first-of-type { margin-top: 2px; }
+
+/* .ri rail item (mirrors palette .ri — restyled facet row) */
+#dm-fbr3 .ri {
+  display: flex; align-items: center; gap: 10px;
+  padding: 4px 9px; border-radius: var(--dm-radius-4);
+  cursor: pointer; min-width: 0; border: 0; background: transparent;
+  text-align: left; color: inherit; width: 100%; transition: background .12s;
+}
+#dm-fbr3 .ri:hover { background: var(--dm-gray-a2); }
+#dm-fbr3 .ri.on { background: var(--dm-accent-2); }
+#dm-fbr3 .ri .rmini {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 40px; height: 18px; font-size: 13px; line-height: 1;
+  color: var(--dm-gray-12); overflow: hidden; white-space: nowrap;
+}
+#dm-fbr3 .ri .rnm {
+  flex: 1; min-width: 0; font-size: 12px; font-weight: 400; color: var(--dm-gray-12);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#dm-fbr3 .ri.on .rnm { color: var(--dm-accent-11); font-weight: 500; }
+#dm-fbr3 .ri .rct {
+  flex: 0 0 auto; margin-left: auto;
+  font: 650 10px var(--dm-f-mono); color: var(--dm-gray-9);
+  background: var(--dm-gray-a2); border-radius: var(--dm-radius-full);
+  padding: 2px 6px; line-height: 1.2;
+}
+#dm-fbr3 .ri.on .rct { color: var(--dm-accent-11); background: var(--dm-accent-3); }
+#dm-fbr3 .ri.empty { opacity: .4; cursor: default; }
+
+/* rail foot */
+#dm-fbr3 .rfoot {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--dm-border-faint);
+}
+#dm-fbr3 .rfoot .rlive { font-size: 12px; color: var(--dm-gray-11); }
+#dm-fbr3 .rfoot .rlive b { font-family: var(--dm-f-mono); color: var(--dm-gray-12); }
+#dm-fbr3 .clr {
+  border: 0; background: transparent; cursor: pointer; padding: 2px 4px;
+  font-size: 12px; color: var(--dm-gray-9); text-decoration: underline;
+  text-underline-offset: 2px; border-radius: var(--dm-radius-2);
+}
+#dm-fbr3 .clr:hover { color: var(--dm-accent-11); }
+#dm-fbr3 .clr[disabled] { opacity: .4; cursor: default; text-decoration: none; }
+
+/* ---- results column ---- */
+#dm-fbr3 .results { min-width: 0; }
+
+/* top control bar (mirrors palette .d-bar / .field / .seg) */
+#dm-fbr3 .d-bar { display: flex; align-items: center; gap: 13px; flex-wrap: wrap; row-gap: 8px; margin-bottom: 16px; }
+#dm-fbr3 .field { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+#dm-fbr3 .field.grow { flex: 1 1 240px; min-width: 0; }
+#dm-fbr3 .cl { font-size: 13px; font-weight: 500; color: var(--dm-gray-9); white-space: nowrap; }
+#dm-fbr3 .ptext {
+  flex: 1; min-width: 0; padding: 6px 10px;
+  font: 400 13px var(--dm-f-sys); color: var(--dm-gray-12);
+  background: var(--dm-bg-page); border: 1px solid var(--dm-border-faint);
+  border-radius: var(--dm-radius-4); transition: border-color .15s;
+}
+#dm-fbr3 .ptext:focus { border-color: var(--dm-accent-8); }
+#dm-fbr3 .ptext::placeholder { color: var(--dm-gray-9); }
+#dm-fbr3 .seg {
+  display: inline-flex; align-items: center; border: 1px solid var(--dm-border-faint);
+  border-radius: var(--dm-radius-full); overflow: hidden; background: var(--dm-bg-page);
+}
+#dm-fbr3 .seg button {
+  appearance: none; border: 0; border-right: 1px solid var(--dm-border-faint);
+  background: transparent; color: var(--dm-gray-10);
+  padding: 5px 11px; font: 650 11px var(--dm-f-mono); cursor: pointer;
+}
+#dm-fbr3 .seg button:last-child { border-right: 0; }
+#dm-fbr3 .seg button.on { background: var(--dm-accent-2); color: var(--dm-accent-11); }
+
+/* ---- cards (siblings of the colour-sheet cards) ---- */
+#dm-fbr3 .cards { display: flex; flex-direction: column; gap: var(--dm-space-4); }
+@keyframes fbr3in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+#dm-fbr3 .fcard {
+  min-width: 0; background: var(--dm-bg-panel);
+  border: 1px solid var(--dm-border-faint); border-radius: var(--dm-radius-5);
+  padding: var(--dm-space-5);
+  transition: border-color .12s, box-shadow .12s;
+  animation: fbr3in .28s ease both;
+}
+#dm-fbr3 .fcard:hover { border-color: var(--dm-border-strong); box-shadow: var(--dm-shadow-1); }
+#dm-fbr3 .fcard.open { border-color: var(--dm-accent-8); box-shadow: var(--dm-shadow-1); }
+
+/* identity row */
+#dm-fbr3 .fhead { display: flex; align-items: flex-start; gap: var(--dm-space-3); }
+#dm-fbr3 .fexpand {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 10px;
+  background: transparent; border: 0; padding: 0; cursor: pointer; text-align: left;
+}
+#dm-fbr3 .fname {
+  flex: 1; min-width: 0; font-size: 26px; line-height: 1.15;
+  color: var(--dm-gray-12); letter-spacing: 0; margin: 0; word-break: break-word;
+}
+#dm-fbr3 .chev { flex: 0 0 auto; color: var(--dm-gray-9); transition: transform .18s; }
+#dm-fbr3 .fcard.open .chev { transform: rotate(180deg); }
+#dm-fbr3 .fside { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+
+/* copyable mono chip (mirrors palette .d-key) */
+#dm-fbr3 .d-key {
+  font-family: var(--dm-f-mono); font-size: 13px; color: var(--dm-accent-11);
+  background: var(--dm-accent-2); border: 0; border-radius: var(--dm-radius-3);
+  padding: 3px 8px; cursor: pointer; line-height: 1.4; white-space: nowrap;
+  transition: background .12s;
+}
+#dm-fbr3 .d-key:hover { background: var(--dm-accent-3); }
+#dm-fbr3 .d-key.copied::after { content: " \2713"; }
+
+#dm-fbr3 .fbadges { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
+#dm-fbr3 .fbadge {
+  font: 650 10px var(--dm-f-mono); color: var(--dm-gray-10);
+  background: var(--dm-gray-a2); border-radius: var(--dm-radius-full);
+  padding: 2px 7px; line-height: 1.3; white-space: nowrap;
+}
+#dm-fbr3 .fbadge.script { color: var(--dm-info-11); background: var(--dm-info-3); }
+#dm-fbr3 .fbadge.mono { color: var(--dm-warning-11); background: var(--dm-warning-3); }
+
+/* specimen line(s) */
+#dm-fbr3 .fspec { font-size: 19px; line-height: 1.4; color: var(--dm-gray-12); margin: 16px 0 14px; word-break: break-word; }
+#dm-fbr3 .fspec.main { margin-bottom: 6px; }
+#dm-fbr3 .fspec.kr { margin-top: 0; margin-bottom: 14px; }
+#dm-fbr3 .fspec.main:last-of-type { margin-bottom: 14px; }
+
+/* weight-ladder = swatch strip (mirrors palette .swhost / .sw) */
+#dm-fbr3 .wstrip { display: flex; gap: 6px; }
+#dm-fbr3 .ws {
+  appearance: none; background: transparent; border: 0; padding: 0; font: inherit;
+  flex: 1; min-width: 0; cursor: pointer; display: block; text-align: center;
+}
+#dm-fbr3 .ws-tile {
+  display: flex; align-items: center; justify-content: center;
+  height: 46px; border-radius: var(--dm-radius-4);
+  background: var(--dm-bg-page); border: 1px solid var(--dm-border-faint);
+  font-size: 22px; line-height: 1; color: var(--dm-gray-12); overflow: hidden;
+  transition: transform .1s, box-shadow .1s, border-color .1s;
+}
+#dm-fbr3 .ws:hover .ws-tile { transform: translateY(-2px); box-shadow: var(--dm-shadow-2); border-color: var(--dm-border-strong); }
+#dm-fbr3 .ws-lb {
+  display: block; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font: 500 9.5px var(--dm-f-sys); color: var(--dm-gray-10);
+}
+#dm-fbr3 .ws-num { font-family: var(--dm-f-mono); font-size: 8.5px; color: var(--dm-gray-9); }
+#dm-fbr3 .ws.copied .ws-lb { color: var(--dm-accent-11); font-weight: 700; }
+#dm-fbr3 .ws.copied .ws-lb::after { content: " \2713"; }
+
+/* expandable detail (palette-detail visual style) */
+#dm-fbr3 .fdetail { display: none; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--dm-border-faint); }
+#dm-fbr3 .fcard.open .fdetail { display: block; animation: fbr3in .22s ease both; }
+#dm-fbr3 .fsec { margin-bottom: 18px; }
+#dm-fbr3 .fsec:last-child { margin-bottom: 0; }
+#dm-fbr3 .flbl { font-size: 10.5px; font-weight: 700; letter-spacing: 0; text-transform: uppercase; color: var(--dm-gray-9); margin: 0 0 8px; }
+#dm-fbr3 .fhero { font-size: 34px; line-height: 1.2; color: var(--dm-gray-12); margin: 0; word-break: break-word; }
+#dm-fbr3 .fnum { font-size: 22px; letter-spacing: .03em; color: var(--dm-gray-12); margin: 0; font-variant-numeric: tabular-nums; }
+#dm-fbr3 .fwhy { font-size: 15.5px; color: var(--dm-gray-11); line-height: 1.62; margin: 0; }
+
+/* code snippet (mirrors palette .code + pygments tokens) */
+#dm-fbr3 .code {
+  position: relative; margin: 0; background: var(--dm-i-code-surface);
+  border-radius: var(--dm-radius-4); padding: 11px 40px 11px 14px;
+  font: 12px/1.6 var(--dm-f-mono); color: var(--dm-gray-12); overflow-x: auto;
+}
+#dm-fbr3 .code pre { margin: 0; padding: 0; background: transparent; font: inherit; color: inherit; white-space: pre; }
+#dm-fbr3 .code .c1 { color: var(--dm-gray-10); }
+#dm-fbr3 .code .s1, #dm-fbr3 .code .s2 { color: var(--dm-accent-11); }
+#dm-fbr3 .code .kn, #dm-fbr3 .code .k { color: var(--dm-code-kw, var(--dm-accent-11)); font-weight: 650; }
+#dm-fbr3 .code .mi { color: var(--dm-warning-11); }
+#dm-fbr3 .code .o, #dm-fbr3 .code .p { color: var(--dm-gray-11); }
+#dm-fbr3 .csnip-copy {
+  position: absolute; top: 7px; right: 7px;
+  border: 1px solid var(--dm-border-faint); background: var(--dm-bg-panel); cursor: pointer;
+  font: 500 10.5px var(--dm-f-sys); color: var(--dm-gray-10);
+  padding: 3px 8px; border-radius: var(--dm-radius-2);
+}
+#dm-fbr3 .csnip-copy:hover { background: var(--dm-accent-2); color: var(--dm-accent-11); border-color: var(--dm-accent-8); }
+
+/* empty state */
+#dm-fbr3 .empty {
+  text-align: center; padding: var(--dm-space-8) var(--dm-space-5);
+  border: 1px dashed var(--dm-border-strong); border-radius: var(--dm-radius-5);
+  color: var(--dm-gray-11);
+}
+#dm-fbr3 .empty .eg { font: 26px var(--dm-f-mono); color: var(--dm-gray-9); margin-bottom: 12px; }
+#dm-fbr3 .empty h4 { margin: 0 0 8px; font-size: 16px; color: var(--dm-gray-12); }
+#dm-fbr3 .empty p { margin: 0 auto 16px; max-width: 42ch; font-size: 13px; }
+#dm-fbr3 .empty button {
+  border: 1px solid var(--dm-accent-8); background: var(--dm-accent-9); color: #fff;
+  font: 500 13px var(--dm-f-sys); padding: 8px 16px; border-radius: var(--dm-radius-4); cursor: pointer;
+}
+#dm-fbr3 .empty button:hover { background: var(--dm-accent-10); }
+
+/* toast (mirrors palette .dm-toast) */
+#dm-fbr3 .dm-toast {
+  position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%);
+  background: var(--dm-gray-12); color: var(--dm-bg-page);
+  padding: 8px 16px; border-radius: var(--dm-radius-full);
+  font: 500 12.5px var(--dm-f-sys); box-shadow: var(--dm-shadow-3);
+  opacity: 0; transition: opacity .18s; pointer-events: none; z-index: 99999;
+  max-width: 88vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#dm-fbr3 .dm-toast.show { opacity: 1; }
+#dm-fbr3 .dm-toast b { font-family: var(--dm-f-mono); font-weight: 600; }
+
+/* ---- responsive ---- */
+@media (max-width: 820px) {
+  #dm-fbr3 .md { grid-template-columns: 1fr; }
+  #dm-fbr3 .rail { position: static; max-height: none; overflow: visible; padding-right: 0; }
+  #dm-fbr3 .fname { font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #dm-fbr3 *, #dm-fbr3 *::before, #dm-fbr3 *::after { transition: none !important; animation: none !important; }
+}
+</style>
+
+<div class="cx-count">Fonts · <b id="fbr3-live">16</b> of 16 families</div>
+
+<div class="md">
+  <aside class="rail" id="fbr3-rail" aria-label="Filters">
+    <div class="rsearch" id="fbr3-rsearch">
+      <svg class="mag" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+      <input id="fbr3-search" type="search" placeholder="Search families…" autocomplete="off" aria-label="Search font families">
+      <button type="button" class="rsx" id="fbr3-rsx" aria-label="Clear search"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+    </div>
+    <div id="fbr3-facets"></div>
+    <div class="rfoot">
+      <span class="rlive"><b id="fbr3-rcount">16</b> families</span>
+      <button type="button" class="clr" id="fbr3-clear" disabled>Clear</button>
+    </div>
+  </aside>
+
+  <section class="results" aria-label="Font families">
+    <div class="d-bar">
+      <span class="field grow"><span class="cl">Preview</span><input class="ptext" id="fbr3-text" type="text" placeholder="Type to preview every specimen…" autocomplete="off" aria-label="Custom preview text"></span>
+      <span class="field"><span class="cl">Tiles</span><span class="seg" id="fbr3-seg"><button type="button" data-g="letters" class="on">Aa</button><button type="button" data-g="numbers">123</button></span></span>
+    </div>
+    <div class="cards" id="fbr3-grid"></div>
+  </section>
+</div>
+
+<div class="dm-toast" id="fbr3-toast" role="status" aria-live="polite"></div>
+
+<script>
+// ---- inlined data (copied verbatim from poc_fonts_facets.frag.html) ----
+// GENERATED FILE - do not edit by hand.
+// Source: docs/_static/scripts/build_fonts_explorer_data.py
+var DM_FONT_DATA = {
+  "roboto": {
+    "name": "Roboto",
+    "mpl": "Roboto",
+    "faceStem": "dm-Roboto",
+    "group": "Workhorse",
+    "script": "Latin",
+    "hero": "Aa Gg Rr 0123",
+    "sample": "The dartwork designs beautiful data artworks since 2021.",
+    "desc": "Google's flagship sans-serif and dartwork's default body face.",
+    "intent": "The default. A mechanical skeleton with friendly, humanist curves that disappears into the data so the chart does the talking.",
+    "application": "Body text, axis labels, and any figure where the type should stay invisible.",
+    "pairing": "Stands alone, or takes titles from Inter Display for a display/body split.",
+    "personality": "Neutral · geometric-humanist",
+    "variants": 6,
+    "regular": "dm-Roboto-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-Roboto-Thin"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-Roboto-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-Roboto-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-Roboto-Medium"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-Roboto-Bold"
+      },
+      {
+        "label": "Black",
+        "num": 900,
+        "face": "dm-Roboto-Black"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold",
+      "Black"
+    ]
+  },
+  "inter": {
+    "name": "Inter",
+    "mpl": "Inter",
+    "faceStem": "dm-Inter",
+    "group": "Workhorse",
+    "script": "Latin",
+    "hero": "Aa Gg Rr 0123",
+    "sample": "The dartwork designs beautiful data artworks since 2021.",
+    "desc": "A screen-native grotesque built for interface text.",
+    "intent": "Tall x-height and open apertures keep it razor-legible at small sizes — engineered for dense dashboards and on-screen figures.",
+    "application": "Interface labels, legends, presentation slides, and any figure viewed on a screen.",
+    "pairing": "Its natural partner is Inter Display for headings.",
+    "personality": "Neutral · high-legibility",
+    "variants": 9,
+    "regular": "dm-Inter-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-Inter-Thin"
+      },
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-Inter-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-Inter-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-Inter-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-Inter-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-Inter-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-Inter-Bold"
+      },
+      {
+        "label": "ExtraBold",
+        "num": 800,
+        "face": "dm-Inter-ExtraBold"
+      },
+      {
+        "label": "Black",
+        "num": 900,
+        "face": "dm-Inter-Black"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold",
+      "Black"
+    ]
+  },
+  "source_sans": {
+    "name": "Source Sans 3",
+    "mpl": "Source Sans 3",
+    "faceStem": "dm-SourceSans3",
+    "group": "Workhorse",
+    "script": "Latin",
+    "hero": "Aa Gg Rr 0123",
+    "sample": "The dartwork designs beautiful data artworks since 2021.",
+    "desc": "Adobe's humanist sans, tuned for extended reading.",
+    "intent": "Warmer and more open than the grotesques — the natural choice when a figure carries real body copy or long captions.",
+    "application": "Captions, annotations, and report body text.",
+    "pairing": "Reads well beside Inter or Roboto for a UI/body split.",
+    "personality": "Humanist · readable",
+    "variants": 7,
+    "regular": "dm-SourceSans3-Regular",
+    "weights": [
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-SourceSans3-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-SourceSans3-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-SourceSans3-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-SourceSans3-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-SourceSans3-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-SourceSans3-Bold"
+      },
+      {
+        "label": "Black",
+        "num": 900,
+        "face": "dm-SourceSans3-Black"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold",
+      "Black"
+    ]
+  },
+  "inter_display": {
+    "name": "Inter Display",
+    "mpl": "Inter Display",
+    "faceStem": "dm-InterDisplay",
+    "group": "Display",
+    "script": "Latin",
+    "hero": "Aa Gg Rr 0123",
+    "sample": "The dartwork designs beautiful data artworks since 2021.",
+    "desc": "Inter's display cut, tuned for large sizes.",
+    "intent": "Tighter spacing and more delicate detail give titles presence at poster scale — without introducing a second typeface.",
+    "application": "Chart titles, section headings, and poster-scale numbers.",
+    "pairing": "Set titles here, body in Inter or Roboto.",
+    "personality": "Confident · display-optimized",
+    "variants": 9,
+    "regular": "dm-InterDisplay-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-InterDisplay-Thin"
+      },
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-InterDisplay-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-InterDisplay-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-InterDisplay-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-InterDisplay-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-InterDisplay-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-InterDisplay-Bold"
+      },
+      {
+        "label": "ExtraBold",
+        "num": 800,
+        "face": "dm-InterDisplay-ExtraBold"
+      },
+      {
+        "label": "Black",
+        "num": 900,
+        "face": "dm-InterDisplay-Black"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold",
+      "Black"
+    ]
+  },
+  "ibm_plex_sans": {
+    "name": "IBM Plex Sans",
+    "mpl": "IBM Plex Sans",
+    "faceStem": "dm-IBMPlexSans",
+    "group": "Technical",
+    "script": "Latin",
+    "hero": "Aa Gg Rr 0123",
+    "sample": "The dartwork designs beautiful data artworks since 2021.",
+    "desc": "IBM's corporate humanist grotesque.",
+    "intent": "A precise, engineered voice with a full weight range — a distinct alternative to Inter's neutrality for technical work.",
+    "application": "Technical dashboards, interface labels, engineering figures.",
+    "pairing": "Pairs with IBM Plex Mono for text-and-data layouts.",
+    "personality": "Engineered · corporate",
+    "variants": 7,
+    "regular": "dm-IBMPlexSans-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-IBMPlexSans-Thin"
+      },
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-IBMPlexSans-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-IBMPlexSans-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-IBMPlexSans-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-IBMPlexSans-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-IBMPlexSans-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-IBMPlexSans-Bold"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold"
+    ]
+  },
+  "noto_sans": {
+    "name": "Noto Sans",
+    "mpl": "Noto Sans",
+    "faceStem": "dm-NotoSans",
+    "group": "Multilingual",
+    "script": "Latin + pan-script",
+    "hero": "Aa Gg Rr 0123",
+    "sample": "The dartwork designs beautiful data artworks since 2021.",
+    "desc": "Google's pan-script workhorse with harmonized metrics.",
+    "intent": "One family whose weights and proportions match across scripts — the safe choice whenever a figure mixes languages.",
+    "application": "Multi-language documents, international reports, and neutral fallback body.",
+    "pairing": "Pairs with Paperlogy for KR/EN and Noto Sans Math for symbols.",
+    "personality": "Neutral · universal",
+    "variants": 9,
+    "regular": "dm-NotoSans-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-NotoSans-Thin"
+      },
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-NotoSans-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-NotoSans-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-NotoSans-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-NotoSans-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-NotoSans-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-NotoSans-Bold"
+      },
+      {
+        "label": "ExtraBold",
+        "num": 800,
+        "face": "dm-NotoSans-ExtraBold"
+      },
+      {
+        "label": "Black",
+        "num": 900,
+        "face": "dm-NotoSans-Black"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold",
+      "Black"
+    ]
+  },
+  "noto_semicondensed": {
+    "name": "Noto Sans SemiCondensed",
+    "mpl": "Noto Sans SemiCondensed",
+    "faceStem": "dm-NotoSans_SemiCondensed",
+    "group": "Condensed",
+    "script": "Latin",
+    "hero": "Aa Gg Rr 0123",
+    "sample": "The dartwork designs beautiful data artworks since 2021.",
+    "desc": "A gentle narrowing of Noto Sans.",
+    "intent": "Recovers horizontal space in legends and tick labels without looking compressed — the middle width.",
+    "application": "Legends, tick labels, and moderately tight tables.",
+    "pairing": "Shares metrics with Noto Sans and Noto Sans Condensed — mix widths freely.",
+    "personality": "Efficient · unobtrusive",
+    "variants": 9,
+    "regular": "dm-NotoSans_SemiCondensed-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-NotoSans_SemiCondensed-Thin"
+      },
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-NotoSans_SemiCondensed-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-NotoSans_SemiCondensed-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-NotoSans_SemiCondensed-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-NotoSans_SemiCondensed-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-NotoSans_SemiCondensed-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-NotoSans_SemiCondensed-Bold"
+      },
+      {
+        "label": "ExtraBold",
+        "num": 800,
+        "face": "dm-NotoSans_SemiCondensed-ExtraBold"
+      },
+      {
+        "label": "Black",
+        "num": 900,
+        "face": "dm-NotoSans_SemiCondensed-Black"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold",
+      "Black"
+    ]
+  },
+  "noto_condensed": {
+    "name": "Noto Sans Condensed",
+    "mpl": "Noto Sans Condensed",
+    "faceStem": "dm-NotoSans_Condensed",
+    "group": "Condensed",
+    "script": "Latin",
+    "hero": "Aa Gg Rr 0123",
+    "sample": "The dartwork designs beautiful data artworks since 2021.",
+    "desc": "The tightest Noto width.",
+    "intent": "Packs long labels and data tables into narrow columns while staying readable — for when horizontal space runs out.",
+    "application": "Dense tables, small-multiple labels, and crowded axes.",
+    "pairing": "Step up to Noto Sans SemiCondensed or Noto Sans when space allows.",
+    "personality": "Compact · space-saving",
+    "variants": 9,
+    "regular": "dm-NotoSans_Condensed-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-NotoSans_Condensed-Thin"
+      },
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-NotoSans_Condensed-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-NotoSans_Condensed-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-NotoSans_Condensed-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-NotoSans_Condensed-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-NotoSans_Condensed-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-NotoSans_Condensed-Bold"
+      },
+      {
+        "label": "ExtraBold",
+        "num": 800,
+        "face": "dm-NotoSans_Condensed-ExtraBold"
+      },
+      {
+        "label": "Black",
+        "num": 900,
+        "face": "dm-NotoSans_Condensed-Black"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold",
+      "Black"
+    ]
+  },
+  "pretendard": {
+    "name": "Pretendard",
+    "mpl": "Pretendard",
+    "faceStem": "dm-Pretendard",
+    "group": "Korean & CJK",
+    "script": "한글 + Latin",
+    "hero": "가나다 Ag 0123",
+    "sample": "데이터 시각화를 위한 아름다운 한글 타이포그래피, 2021년부터.",
+    "desc": "A modern KR + Latin superfamily built on Inter's metrics.",
+    "intent": "Hangul and Latin share one rhythm, so bilingual figures never clash — nine weights from Thin to Black.",
+    "application": "Korean and mixed KR/EN titles, labels, and UI.",
+    "pairing": "Self-contained KR+Latin; also sits naturally beside Inter.",
+    "personality": "Modern · bilingual",
+    "variants": 9,
+    "regular": "dm-Pretendard-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-Pretendard-Thin"
+      },
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-Pretendard-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-Pretendard-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-Pretendard-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-Pretendard-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-Pretendard-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-Pretendard-Bold"
+      },
+      {
+        "label": "ExtraBold",
+        "num": 800,
+        "face": "dm-Pretendard-ExtraBold"
+      },
+      {
+        "label": "Black",
+        "num": 900,
+        "face": "dm-Pretendard-Black"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold",
+      "Black"
+    ]
+  },
+  "paperlogy": {
+    "name": "Paperlogy",
+    "mpl": "Paperlogy",
+    "faceStem": "dm-Paperlogy",
+    "group": "Korean & CJK",
+    "script": "한글 + Latin",
+    "hero": "가나다 Ag 0123",
+    "sample": "데이터 시각화를 위한 아름다운 한글 타이포그래피, 2021년부터.",
+    "desc": "A clean, professional 한글 family — dartwork's Korean default.",
+    "intent": "Even color and open counters keep Hangul crisp at chart sizes, and its Latin set sits naturally beside the workhorses.",
+    "application": "Korean (한글) titles and labels, and mixed KR/EN figures.",
+    "pairing": "Pairs with Inter or Roboto for the Latin run in bilingual charts.",
+    "personality": "Clean · bilingual",
+    "variants": 9,
+    "regular": "dm-Paperlogy-4Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-Paperlogy-1Thin"
+      },
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-Paperlogy-2ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-Paperlogy-3Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-Paperlogy-4Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-Paperlogy-5Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-Paperlogy-6SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-Paperlogy-7Bold"
+      },
+      {
+        "label": "ExtraBold",
+        "num": 800,
+        "face": "dm-Paperlogy-8ExtraBold"
+      },
+      {
+        "label": "Black",
+        "num": 900,
+        "face": "dm-Paperlogy-9Black"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold",
+      "Black"
+    ]
+  },
+  "noto_cjk": {
+    "name": "Noto Sans CJK KR",
+    "mpl": "Noto Sans CJK KR",
+    "faceStem": "dm-NotoSansCJK",
+    "group": "Korean & CJK",
+    "script": "CJK (한·중·일)",
+    "hero": "한자 漢字 かな",
+    "sample": "데이터 시각화 · データ可視化 · 数据可视化",
+    "desc": "Full CJK coverage — 한국어, 日本語, 中文 in one face.",
+    "intent": "The fallback that keeps East-Asian glyphs from going missing when a figure mixes scripts.",
+    "application": "Japanese / Chinese labels and mixed CJK figures.",
+    "pairing": "Sits under the Latin workhorses as a CJK fallback.",
+    "personality": "Pan-CJK · complete",
+    "variants": 1,
+    "regular": "dm-NotoSansCJK-Regular",
+    "weights": [
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-NotoSansCJK-Regular"
+      }
+    ],
+    "keyWeights": [
+      "Regular"
+    ]
+  },
+  "ibm_plex_mono": {
+    "name": "IBM Plex Mono",
+    "mpl": "IBM Plex Mono",
+    "faceStem": "dm-IBMPlexMono",
+    "group": "Monospace & Symbols",
+    "script": "Latin (monospace)",
+    "hero": "Ag 012 {}",
+    "sample": "The dartwork designs beautiful data artworks since 2021.",
+    "desc": "A fixed-width companion to IBM Plex Sans.",
+    "intent": "Aligns digits and code so tabular numbers and inline snippets line up column-perfect.",
+    "application": "Tabular figures, code, and fixed-width axis labels.",
+    "pairing": "Pairs with IBM Plex Sans for text next to data.",
+    "personality": "Monospace · aligned",
+    "variants": 7,
+    "regular": "dm-IBMPlexMono-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-IBMPlexMono-Thin"
+      },
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-IBMPlexMono-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-IBMPlexMono-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-IBMPlexMono-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-IBMPlexMono-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-IBMPlexMono-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-IBMPlexMono-Bold"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold"
+    ]
+  },
+  "jetbrains_mono": {
+    "name": "JetBrains Mono",
+    "mpl": "JetBrains Mono",
+    "faceStem": "dm-JetBrainsMono",
+    "group": "Monospace & Symbols",
+    "script": "Latin (monospace)",
+    "hero": "il1 O0 =>",
+    "sample": "def render(fig): return dm.save_formats(fig, 'out')",
+    "desc": "A developer monospace with a tall x-height.",
+    "intent": "Increased letter height and disambiguated shapes (il1, O0) keep code and dense numeric columns readable at small sizes.",
+    "application": "Code blocks, log output, and tightly packed data tables.",
+    "pairing": "Stands alone; sits well beside Inter for docs.",
+    "personality": "Monospace · developer",
+    "variants": 8,
+    "regular": "dm-JetBrainsMono-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-JetBrainsMono-Thin"
+      },
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-JetBrainsMono-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-JetBrainsMono-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-JetBrainsMono-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-JetBrainsMono-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-JetBrainsMono-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-JetBrainsMono-Bold"
+      },
+      {
+        "label": "ExtraBold",
+        "num": 800,
+        "face": "dm-JetBrainsMono-ExtraBold"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold"
+    ]
+  },
+  "source_code_pro": {
+    "name": "Source Code Pro",
+    "mpl": "Source Code Pro",
+    "faceStem": "dm-SourceCodePro",
+    "group": "Monospace & Symbols",
+    "script": "Latin (monospace)",
+    "hero": "il1 O0 =>",
+    "sample": "sum([x for x in range(2021)])  # 2041210",
+    "desc": "Adobe's monospace companion to Source Sans 3.",
+    "intent": "Even color and clear punctuation make it a calm, neutral fixed-width face for code and figures alike.",
+    "application": "Code, fixed-width labels, and numeric tables.",
+    "pairing": "Pairs with Source Sans 3 for a full text+code system.",
+    "personality": "Monospace · neutral",
+    "variants": 7,
+    "regular": "dm-SourceCodePro-Regular",
+    "weights": [
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-SourceCodePro-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-SourceCodePro-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-SourceCodePro-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-SourceCodePro-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-SourceCodePro-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-SourceCodePro-Bold"
+      },
+      {
+        "label": "Black",
+        "num": 900,
+        "face": "dm-SourceCodePro-Black"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold",
+      "Black"
+    ]
+  },
+  "roboto_mono": {
+    "name": "Roboto Mono",
+    "mpl": "Roboto Mono",
+    "faceStem": "dm-RobotoMono",
+    "group": "Monospace & Symbols",
+    "script": "Latin (monospace)",
+    "hero": "il1 O0 =>",
+    "sample": "2021-07-01  12:00:00  +02.5%  ▲",
+    "desc": "The monospace cut of Roboto.",
+    "intent": "Shares Roboto's mechanical skeleton, so mono labels sit seamlessly next to Roboto body text.",
+    "application": "Timestamps, fixed-width tick labels, and inline figures.",
+    "pairing": "Pairs with Roboto for a unified text+data look.",
+    "personality": "Monospace · neutral",
+    "variants": 5,
+    "regular": "dm-RobotoMono-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-RobotoMono-Thin"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-RobotoMono-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-RobotoMono-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-RobotoMono-Medium"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-RobotoMono-Bold"
+      }
+    ],
+    "keyWeights": [
+      "Light",
+      "Regular",
+      "Medium",
+      "Bold"
+    ]
+  },
+  "noto_math": {
+    "name": "Noto Sans Math",
+    "mpl": "Noto Sans Math",
+    "faceStem": "dm-NotoSansMath",
+    "group": "Monospace & Symbols",
+    "script": "Math symbols",
+    "hero": "∑ ∫ √ π",
+    "sample": "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∪ ∩ ∀ ∃",
+    "desc": "Comprehensive mathematical symbol coverage.",
+    "intent": "Integrals, operators, Greek, and set theory in one face — so scientific notation renders correctly inside a figure.",
+    "application": "Equations, symbol annotations, and scientific axis labels.",
+    "pairing": "Drop symbols into a Noto Sans or Inter run.",
+    "personality": "Technical · complete",
+    "variants": 1,
+    "regular": "dm-NotoSansMath-Regular",
+    "weights": [
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-NotoSansMath-Regular"
+      }
+    ],
+    "keyWeights": [
+      "Regular"
+    ]
+  }
+};
+var DM_FONT_ORDER = ["roboto", "inter", "source_sans", "inter_display", "ibm_plex_sans", "noto_sans", "noto_semicondensed", "noto_condensed", "pretendard", "paperlogy", "noto_cjk", "ibm_plex_mono", "jetbrains_mono", "source_code_pro", "roboto_mono", "noto_math"];
+var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "source_sans"]}, {"title": "Display", "items": ["inter_display"]}, {"title": "Technical", "items": ["ibm_plex_sans"]}, {"title": "Multilingual", "items": ["noto_sans"]}, {"title": "Condensed", "items": ["noto_semicondensed", "noto_condensed"]}, {"title": "Korean & CJK", "items": ["pretendard", "paperlogy", "noto_cjk"]}, {"title": "Monospace & Symbols", "items": ["ibm_plex_mono", "jetbrains_mono", "source_code_pro", "roboto_mono", "noto_math"]}];
+</script>
+
+<script>
+/* ============================================================
+   Faceted font browser R3 — palette-twin.
+   Reads DM_FONT_DATA / DM_FONT_ORDER / DM_FONT_GROUPS (inlined
+   above). Scoped to #dm-fbr3; the docs own the light/dark theme.
+   Signature: the rail IS the categorical-explorer rail, and the
+   weight ladder IS a copyable swatch strip.
+   ============================================================ */
+(function () {
+  "use strict";
+
+  var ROOT = document.getElementById("dm-fbr3");
+  if (!ROOT) return;
+
+  // ---- helpers ------------------------------------------------
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  var toastEl = ROOT.querySelector("#fbr3-toast");
+  var toastTimer = null;
+  function showToast(html) {
+    toastEl.innerHTML = html;
+    toastEl.classList.add("show");
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 1600);
+  }
+  function copyText(text, label) {
+    var done = function () { showToast("Copied <b>" + esc(label) + "</b>"); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { legacyCopy(text, done); });
+    } else { legacyCopy(text, done); }
+  }
+  function legacyCopy(text, done) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    ROOT.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) { /* no-op */ }
+    ROOT.removeChild(ta);
+  }
+  function flash(el) {
+    if (!el) return;
+    el.classList.add("copied");
+    setTimeout(function () { el.classList.remove("copied"); }, 900);
+  }
+
+  // ---- data model --------------------------------------------
+  var DATA = window.DM_FONT_DATA || {};
+  var ORDER = window.DM_FONT_ORDER || Object.keys(DATA);
+  var GROUPS = window.DM_FONT_GROUPS || [];
+  var MONO_GROUP = "Monospace & Symbols";
+  var LAT = "The dartwork designs beautiful data artworks.";
+
+  function uniq(arr) {
+    var seen = {}, out = [];
+    arr.forEach(function (v) { if (!seen[v]) { seen[v] = 1; out.push(v); } });
+    return out;
+  }
+
+  var FAMILIES = ORDER.map(function (key) {
+    var f = DATA[key];
+    return {
+      key: key, raw: f, name: f.name, mpl: f.mpl,
+      group: f.group, script: f.script, isMono: f.group === MONO_GROUP,
+      weightCount: f.weights.length,
+      hay: [f.name, f.desc, f.personality, f.intent, f.mpl, f.script, f.group, f.application]
+        .join(" ").toLowerCase()
+    };
+  });
+  var BYKEY = {};
+  FAMILIES.forEach(function (f) { BYKEY[f.key] = f; });
+
+  var GROUP_TITLES = GROUPS.map(function (g) { return g.title; });
+  var SCRIPTS = uniq(FAMILIES.map(function (f) { return f.script; }));
+
+  // per-family glyph for the mini + tiles (script-aware)
+  function famGlyph(f) {
+    if (/Math/.test(f.script)) return "∑π";       // ∑π
+    if (/한글/.test(f.script)) return "가A";     // 가A
+    if (/CJK/.test(f.script)) return "한字";         // 한字
+    return "Ag";
+  }
+
+  // ---- facets -------------------------------------------------
+  var FACETS = [
+    { facet: "group", label: "Group", values: GROUP_TITLES },
+    { facet: "script", label: "Script", values: SCRIPTS },
+    { facet: "style", label: "Style", values: ["Sans", "Mono"] }
+  ];
+
+  function famMatches(f, facet, value) {
+    switch (facet) {
+      case "group": return f.group === value;
+      case "script": return f.script === value;
+      case "style": return value === "Mono" ? f.isMono : !f.isMono;
+    }
+    return false;
+  }
+
+  var sel = { group: new Set(), script: new Set(), style: new Set() };
+  var state = { query: "", customText: "", glyphMode: "letters" };
+  var openKeys = new Set();
+
+  function passesFacet(f, facet) {
+    var s = sel[facet];
+    if (s.size === 0) return true;
+    var ok = false;
+    s.forEach(function (v) { if (famMatches(f, facet, v)) ok = true; });
+    return ok;
+  }
+  function passesSearch(f) { return state.query === "" || f.hay.indexOf(state.query) !== -1; }
+  function isVisible(f) {
+    return passesSearch(f) && passesFacet(f, "group") && passesFacet(f, "script") && passesFacet(f, "style");
+  }
+  // count if this value were added, holding OTHER facets + search fixed
+  function chipCount(facet, value) {
+    return FAMILIES.filter(function (f) {
+      if (!passesSearch(f)) return false;
+      for (var k in sel) { if (k === facet) continue; if (!passesFacet(f, k)) return false; }
+      return famMatches(f, facet, value);
+    }).length;
+  }
+  function anyActive() {
+    if (state.query !== "") return true;
+    for (var k in sel) if (sel[k].size) return true;
+    return false;
+  }
+
+  // representative face + glyph for a facet mini-preview
+  function repFace(facet, value) {
+    for (var i = 0; i < FAMILIES.length; i++) if (famMatches(FAMILIES[i], facet, value)) return FAMILIES[i].raw.regular;
+    return FAMILIES[0].raw.regular;
+  }
+  function repGlyph(facet, value) {
+    if (facet === "style") return "Ag";
+    for (var i = 0; i < FAMILIES.length; i++) if (famMatches(FAMILIES[i], facet, value)) return famGlyph(FAMILIES[i]);
+    return "Ag";
+  }
+
+  // ---- rail ---------------------------------------------------
+  var facetsEl = ROOT.querySelector("#fbr3-facets");
+  function railHTML() {
+    var h = "";
+    FACETS.forEach(function (spec) {
+      h += '<div class="fh">' + esc(spec.label) + "</div>";
+      spec.values.forEach(function (value) {
+        var on = sel[spec.facet].has(value);
+        var ct = chipCount(spec.facet, value);
+        var empty = ct === 0 && !on;
+        var face = repFace(spec.facet, value);
+        h += '<button type="button" class="ri' + (on ? " on" : "") + (empty ? " empty" : "") + '"' +
+          ' data-facet="' + spec.facet + '" data-value="' + esc(value) + '" aria-pressed="' + on + '">' +
+          '<span class="rmini" style="font-family:\'' + face + "', var(--dm-f-sys)\">" + esc(repGlyph(spec.facet, value)) + "</span>" +
+          '<span class="rnm">' + esc(value) + "</span>" +
+          '<span class="rct">' + ct + "</span>" +
+          "</button>";
+      });
+    });
+    return h;
+  }
+  facetsEl.addEventListener("click", function (e) {
+    var ri = e.target.closest(".ri");
+    if (!ri || ri.classList.contains("empty")) return;
+    var facet = ri.dataset.facet, value = ri.dataset.value;
+    var s = sel[facet];
+    if (s.has(value)) s.delete(value); else s.add(value);
+    render();
+  });
+
+  // ---- search / clear ----------------------------------------
+  var searchEl = ROOT.querySelector("#fbr3-search");
+  var searchWrap = ROOT.querySelector("#fbr3-rsearch");
+  var searchClear = ROOT.querySelector("#fbr3-rsx");
+  searchEl.addEventListener("input", function () {
+    state.query = searchEl.value.trim().toLowerCase();
+    searchWrap.classList.toggle("on", searchEl.value !== "");
+    render();
+  });
+  searchClear.addEventListener("click", function () {
+    searchEl.value = ""; state.query = "";
+    searchWrap.classList.remove("on"); searchEl.focus(); render();
+  });
+  var clearBtn = ROOT.querySelector("#fbr3-clear");
+  clearBtn.addEventListener("click", clearAll);
+  function clearAll() {
+    for (var k in sel) sel[k].clear();
+    state.query = ""; searchEl.value = ""; searchWrap.classList.remove("on");
+    render();
+  }
+
+  // ---- top controls: preview text + tile glyph ---------------
+  var textEl = ROOT.querySelector("#fbr3-text");
+  textEl.addEventListener("input", function () {
+    state.customText = textEl.value;
+    updateSpecimens();
+  });
+  var segEl = ROOT.querySelector("#fbr3-seg");
+  segEl.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-g]");
+    if (!b) return;
+    state.glyphMode = b.dataset.g;
+    segEl.querySelectorAll("button").forEach(function (x) { x.classList.toggle("on", x.dataset.g === state.glyphMode); });
+    updateTiles();
+  });
+
+  // ---- python highlight (mirrors palette pyHi) ---------------
+  var PYKW = { "import": "kn", "from": "kn", "as": "k", "def": "k", "return": "k", "for": "k", "in": "k", "None": "kc", "True": "kc", "False": "kc" };
+  function pyHi(code) {
+    return code.split("\n").map(function (line) {
+      if (/^\s*#/.test(line)) return '<span class="c1">' + esc(line) + "</span>";
+      var imp = /^\s*(import|from)\b/.test(line), nameCls = imp ? "nn" : "n", out = "";
+      var re = /(\s+)|('[^']*'|"[^"]*")|(\b\d+\b)|([A-Za-z_]\w*)|(.)/g, m;
+      while ((m = re.exec(line))) {
+        if (m[1]) out += '<span class="w">' + m[1] + "</span>";
+        else if (m[2]) out += '<span class="' + (m[2][0] === "'" ? "s1" : "s2") + '">' + esc(m[2]) + "</span>";
+        else if (m[3]) out += '<span class="mi">' + m[3] + "</span>";
+        else if (m[4]) { var w = m[4]; out += '<span class="' + (PYKW[w] || nameCls) + '">' + w + "</span>"; }
+        else { var ch = m[5], cc = (ch === "(" || ch === ")" || ch === ",") ? "p" : ((ch === "." || ch === "=") ? "o" : ""); out += cc ? '<span class="' + cc + '">' + esc(ch) + "</span>" : esc(ch); }
+      }
+      return out;
+    }).join("\n");
+  }
+  function snippetFor(f) {
+    return 'import dartwork_mpl as dm\ndm.set_theme()\nplt.rcParams["font.family"] = "' + f.mpl + '"';
+  }
+
+  // ---- card ---------------------------------------------------
+  var grid = ROOT.querySelector("#fbr3-grid");
+  var CHEV = '<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>';
+
+  function tileGlyph(f) { return state.glyphMode === "numbers" ? "012" : famGlyph(f); }
+
+  function cardHTML(f) {
+    var reg = f.raw.regular;
+    var open = openKeys.has(f.key);
+    var isKR = f.group === "Korean & CJK";
+    var mainText = state.customText || (isKR ? LAT : f.raw.sample);
+    var glyph = tileGlyph(f);
+
+    var tiles = f.raw.weights.map(function (w) {
+      return '<button type="button" class="ws" data-w="' + w.num + '">' +
+        '<span class="ws-tile" style="font-family:\'' + w.face + "', var(--dm-f-sys); font-weight:" + w.num + '">' + esc(glyph) + "</span>" +
+        '<span class="ws-lb">' + esc(w.label) + ' <span class="ws-num">' + w.num + "</span></span>" +
+        "</button>";
+    }).join("");
+
+    var badges = '<span class="fbadge">' + f.weightCount + " wt</span>" +
+      '<span class="fbadge script">' + esc(f.script) + "</span>" +
+      (f.isMono ? '<span class="fbadge mono">Mono</span>' : "");
+
+    var krLine = isKR
+      ? '<p class="fspec kr" style="font-family:\'' + reg + "', var(--dm-f-sys); display:" + (state.customText ? "none" : "block") + '">' + esc(f.raw.sample) + "</p>"
+      : "";
+
+    var detail =
+      '<div class="fsec"><p class="flbl">Hero</p><p class="fhero" style="font-family:\'' + reg + "', var(--dm-f-sys)\">" + esc(f.raw.hero) + "</p></div>" +
+      '<div class="fsec"><p class="flbl">Numerals &amp; symbols</p><p class="fnum" style="font-family:\'' + reg + "', var(--dm-f-mono)\">0123456789 &nbsp; ., $ %</p></div>" +
+      '<div class="fsec"><p class="flbl">Why this face</p><p class="fwhy">' + esc(f.raw.intent) + "</p></div>" +
+      '<div class="fsec"><p class="flbl">rcParams snippet</p><div class="code highlight"><button type="button" class="csnip-copy">Copy</button><pre>' + pyHi(snippetFor(f)) + "</pre></div></div>";
+
+    return '<div class="fcard' + (open ? " open" : "") + '" data-key="' + f.key + '">' +
+      '<div class="fhead">' +
+        '<button type="button" class="fexpand" aria-expanded="' + open + '">' +
+          '<span class="fname" style="font-family:\'' + reg + "', var(--dm-f-sys)\">" + esc(f.name) + "</span>" + CHEV +
+        "</button>" +
+        '<div class="fside">' +
+          '<button type="button" class="d-key" title="Copy mpl family name">' + esc(f.mpl) + "</button>" +
+          '<div class="fbadges">' + badges + "</div>" +
+        "</div>" +
+      "</div>" +
+      '<p class="fspec main" style="font-family:\'' + reg + "', var(--dm-f-sys)\">" + esc(mainText) + "</p>" +
+      krLine +
+      '<div class="wstrip">' + tiles + "</div>" +
+      '<div class="fdetail">' + detail + "</div>" +
+    "</div>";
+  }
+
+  function emptyHTML() {
+    return '<div class="empty"><div class="eg">( ˘ ³˘)</div>' +
+      "<h4>No families match</h4>" +
+      "<p>Your filters are narrower than the library. Clear a facet to widen the search.</p>" +
+      '<button type="button" id="fbr3-emptyclear">Clear all filters</button></div>';
+  }
+
+  // grid interactions (delegated — survives re-render)
+  grid.addEventListener("click", function (e) {
+    var dk = e.target.closest(".d-key");
+    if (dk) { var f1 = BYKEY[dk.closest(".fcard").dataset.key]; copyText(f1.mpl, f1.mpl); flash(dk); return; }
+    var ws = e.target.closest(".ws");
+    if (ws) { var w = ws.dataset.w; copyText("fontweight=" + w, "fontweight=" + w); flash(ws); return; }
+    var cp = e.target.closest(".csnip-copy");
+    if (cp) { var f2 = BYKEY[cp.closest(".fcard").dataset.key]; copyText(snippetFor(f2), "rcParams snippet"); flash(cp); return; }
+    var ec = e.target.closest("#fbr3-emptyclear");
+    if (ec) { clearAll(); return; }
+    var ex = e.target.closest(".fexpand");
+    if (ex) {
+      var card = ex.closest(".fcard"), key = card.dataset.key;
+      if (openKeys.has(key)) openKeys.delete(key); else openKeys.add(key);
+      var nowOpen = openKeys.has(key);
+      card.classList.toggle("open", nowOpen);
+      ex.setAttribute("aria-expanded", String(nowOpen));
+    }
+  });
+
+  // in-place updates (no re-render → no flashing while typing)
+  function updateSpecimens() {
+    grid.querySelectorAll(".fcard").forEach(function (card) {
+      var f = BYKEY[card.dataset.key], isKR = f.group === "Korean & CJK";
+      var main = card.querySelector(".fspec.main"), kr = card.querySelector(".fspec.kr");
+      if (main) main.textContent = state.customText || (isKR ? LAT : f.raw.sample);
+      if (kr) kr.style.display = state.customText ? "none" : "block";
+    });
+  }
+  function updateTiles() {
+    grid.querySelectorAll(".fcard").forEach(function (card) {
+      var f = BYKEY[card.dataset.key], t = tileGlyph(f);
+      card.querySelectorAll(".ws-tile").forEach(function (el) { el.textContent = t; });
+    });
+  }
+
+  // ---- render -------------------------------------------------
+  var liveEl = ROOT.querySelector("#fbr3-live");
+  var railCountEl = ROOT.querySelector("#fbr3-rcount");
+  function render() {
+    facetsEl.innerHTML = railHTML();
+    var visible = FAMILIES.filter(isVisible);
+    liveEl.textContent = visible.length;
+    railCountEl.textContent = visible.length;
+    clearBtn.disabled = !anyActive();
+    grid.innerHTML = visible.length ? visible.map(cardHTML).join("") : emptyHTML();
+  }
+
+  render();
+})();
+</script>
+</div>
