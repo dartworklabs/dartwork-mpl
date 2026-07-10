@@ -403,11 +403,11 @@ def test_layout_uses_design_tokens_and_bounded_grid() -> None:
     assert "flex-wrap:wrap;row-gap:8px;" in css
     assert "grid-template-columns:minmax(10.5rem,12rem)" not in css
     assert (
-        "#dm-cat-exp .demo-tools .demo-field,#dm-cmap-exp .demo-tools .demo-field,#dm-font-exp .demo-tools .demo-field {flex:1 1 100%;min-width:0;align-items:flex-start;}"
+        "#dm-cat-exp .demo-tools .demo-field,#dm-cmap-exp .demo-tools .demo-field {flex:1 1 100%;min-width:0;align-items:flex-start;}"
         in css
     )
     assert (
-        "#dm-cat-exp .demo-picker,#dm-cmap-exp .demo-picker,#dm-font-exp .demo-picker {display:flex;align-items:center;gap:6px;flex-wrap:wrap;row-gap:6px;min-width:0;}"
+        "#dm-cat-exp .demo-picker,#dm-cmap-exp .demo-picker {display:flex;align-items:center;gap:6px;flex-wrap:wrap;row-gap:6px;min-width:0;}"
         in css
     )
     for token in (

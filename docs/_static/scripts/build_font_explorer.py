@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Build the interactive font explorer fragment.
+"""Build the interactive two-panel font explorer fragment.
 
 The fragment is embedded by ``docs/fonts/index.md`` via MyST
 ``{raw} html :file:``. It is generated from the bundled matplotlib font
-registry. Webfont face names are derived from the package font-file SSOT;
-a local generated ``docs/_static/font-face.css`` is only checked as an
-optional drift warning when present.
+registry and references real matplotlib SVG chart renders produced by
+``build_font_realplots.py`` during the docs build.
 
 Regenerate::
 
@@ -35,9 +34,6 @@ DEFAULT_WEIGHT = 400
 BASE_WEIGHT = 300
 HANGUL_SAMPLE = "한글 데이터 축 값"
 
-# Explorer rail groups are role-driven from the font registry SSOT: the
-# `serif` role rails under Serif, `mono`/`mono-kr` under Mono, and every
-# other role (body, display, kr-body, fallback-tail) under Sans.
 _ROLE_GROUP = {"serif": "Serif", "mono": "Mono", "mono-kr": "Mono"}
 
 
@@ -56,34 +52,6 @@ WEIGHT_ORDER = {
     "ExtraBold": 800,
     "Black": 900,
 }
-
-DEMO_LIBRARY = [
-    ("title_axes", "Title & axes"),
-    ("tick_numerals", "Tick numerals"),
-    ("value_labels", "Value labels"),
-    ("legend", "Legend"),
-    ("annotation", "Annotation"),
-    ("weights_ladder", "Weights ladder"),
-    ("size_ladder", "Size ladder"),
-    ("paragraph", "Paragraph"),
-    ("numerals_confusables", "Numerals & confusables"),
-    ("korean", "Korean"),
-    ("code_mono", "Code / mono"),
-    ("caps_tracking", "Caps & tracking"),
-]
-DEFAULT_9 = [
-    "title_axes",
-    "tick_numerals",
-    "value_labels",
-    "legend",
-    "annotation",
-    "weights_ladder",
-    "size_ladder",
-    "paragraph",
-    "numerals_confusables",
-]
-DEFAULT_6 = DEFAULT_9[:6]
-DEFAULT_4 = DEFAULT_9[:4]
 
 
 def _slug(name: str) -> str:
@@ -164,10 +132,6 @@ def _entry_records() -> list[font_manager.FontEntry]:
 def _weight_label(stem: str) -> str:
     suffix = stem.split("-", 1)[1] if "-" in stem else "Regular"
     suffix = suffix.removesuffix("Italic")
-    # Source Serif 4 names its italic cuts with a bare "It" suffix
-    # (e.g. SourceSerif4-BoldIt, SourceSerif4-It) rather than "Italic", so
-    # strip that too — the roman/italic pair must share one weight label to
-    # pair up. No roman weight label ends in "It", so this is a no-op there.
     suffix = suffix.removesuffix("It")
     suffix = re.sub(r"^\d+", "", suffix)
     if suffix in {"", "Italic"}:
@@ -212,10 +176,8 @@ def _rail_sample(family: str) -> str:
     if family == "Noto Sans Symbols 2":
         return "⚠★"
     role = font.FONTS[family].role
-    if role == "mono-kr":
-        return "한글"
-    if role == "mono":
-        return "0O1l"
+    if role in {"mono", "mono-kr"}:
+        return "0O1l" if role == "mono" else "한글"
     if role == "kr-body":
         return "한글"
     return "Aa"
@@ -234,11 +196,24 @@ def _family_note(family: str, mono: bool, hangul: bool) -> str:
         return "Symbol fallback face for arrows, marks, and dingbats."
     if family == "D2Coding":
         return "Monospaced Hangul for code blocks and aligned Korean tables."
+    if family in {"Inter", "Pretendard"}:
+        return (
+            "Browser tabular numerals are available, but real matplotlib uses "
+            "proportional default digits for numeric axes."
+        )
     if hangul:
         return "Bundled Hangul coverage for Korean and mixed-language figures."
     if mono:
         return "Fixed-width family for code, timestamps, and tabular labels."
     return "Bundled sans-serif family for publication chart typography."
+
+
+def _numeric_label(record: font.FontFamily) -> str:
+    if record.numeric_axes:
+        return "numeric axes"
+    if record.tnum_available:
+        return "browser tnum"
+    return "proportional digits"
 
 
 def _fw_offset(weight: int) -> int | float:
@@ -268,9 +243,6 @@ def _build_family_inventory() -> dict:
     for family in registered:
         usable: dict[tuple[str, int, str], dict] = {}
         for entry in entries_by_family[family]:
-            # Noto Sans registers Condensed/SemiCondensed files as the same
-            # matplotlib family. The explorer is one chip per family name, so
-            # the normal-width face is the representative for that family.
             if family == "Noto Sans" and entry.stretch != "normal":
                 continue
             path = Path(entry.fname)
@@ -296,15 +268,13 @@ def _build_family_inventory() -> dict:
         weights: list[dict] = []
         for key, item in normal_by_weight.items():
             italic = italic_by_weight.get(key)
-            face = item["face"]
-            italic_face = italic["face"] if italic else None
             weights.append(
                 {
                     "label": item["label"],
                     "weight": item["weight"],
                     "offset": _fw_offset(item["weight"]),
-                    "face": face,
-                    "italic_face": italic_face,
+                    "face": item["face"],
+                    "italic_face": italic["face"] if italic else None,
                     "file": item["file"],
                 }
             )
@@ -319,17 +289,24 @@ def _build_family_inventory() -> dict:
         hangul_path = font.get_font_dir() / regular["file"]
         group = _group_for(family)
         mono = group == "Mono"
+        has_hangul = _has_hangul(hangul_path)
+        record = font.FONTS[family]
+        slug = _slug(family)
         families[family] = {
             "name": family,
-            "slug": _slug(family),
+            "slug": slug,
+            "realplot": f"../_static/realplots/{slug}.svg",
             "group": group,
             "mono": mono,
-            "hangul": _has_hangul(hangul_path),
+            "hangul": has_hangul,
             "italic": any(entry.get("italic_face") for entry in weights),
+            "numeric_axes": record.numeric_axes,
+            "tnum_available": record.tnum_available,
+            "numeric_label": _numeric_label(record),
             "default_weight": DEFAULT_WEIGHT,
             "regular_face": regular["face"],
             "rail_sample": _rail_sample(family),
-            "note": _family_note(family, mono, _has_hangul(hangul_path)),
+            "note": _family_note(family, mono, has_hangul),
             "weights": weights,
         }
 
@@ -379,8 +356,6 @@ def build_payload() -> dict:
         "families": families,
         "order": order,
         "groups": groups,
-        "library": [{"key": key, "name": name} for key, name in DEMO_LIBRARY],
-        "defaults": {"4": DEFAULT_4, "6": DEFAULT_6, "9": DEFAULT_9},
         "counts": _font_counts(),
     }
 
@@ -415,78 +390,42 @@ TEMPLATE = r"""<!-- GENERATED FILE - do not edit by hand.
 <div class="md"><div class="rail" id="fx-rail"></div><div class="detail" id="fx-detail"></div></div>
 <script>(function(){
 var D=__PAYLOAD__;
-var FONTS=D.families,GROUPS=D.groups,DEMOS=D.library,DEFAULT={4:D.defaults["4"],6:D.defaults["6"],9:D.defaults["9"]};
-var state={family:D.order[0],weight:0,size:0,italic:false,layout:9,demos:DEFAULT[9].slice()};
+var FONTS=D.families,GROUPS=D.groups;
+var state={family:D.order[0],weight:0,size:0,italic:false};
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 function fam(){return FONTS[state.family];}
 function weights(){return fam().weights;}
 function defaultWeightIndex(f){for(var i=0;i<f.weights.length;i++)if(f.weights[i].weight===f.default_weight)return i;return 0;}
 function wt(){var w=weights();if(state.weight>=w.length)state.weight=defaultWeightIndex(fam());return w[state.weight];}
 function faceFor(w){return (state.italic&&w.italic_face)?w.italic_face:w.face;}
-function fontStyle(w,extra){var size=12+state.size;return "--font-face:'"+faceFor(w)+"';--font-weight:"+w.weight+";--font-size:"+size+"px;"+(extra||"");}
-function faceStyle(face){return "font-family:'"+face+"',var(--dm-f-sys,system-ui,sans-serif)";}
-function fixedFontStyle(face,weight,extra){return "--font-face:'"+face+"';--font-weight:"+weight+";"+(extra||"");}
-function cardStyle(w){return ' style="'+fontStyle(w)+'"';}
 function signed(n){return n>0?"+"+n:String(n);}
 function offsetExpr(v){return Number.isInteger(v)?String(v):String(v);}
-function demoName(t){for(var i=0;i<DEMOS.length;i++)if(DEMOS[i].key===t)return DEMOS[i].name;return t;}
-function rcLine(){return 'plt.rcParams["font.family"] = "'+state.family+'"';}
-function codeText(){var w=wt();return ['import matplotlib.pyplot as plt','import dartwork_mpl as dm','', 'dm.style.use("scientific")',rcLine(),'ax.set_title("Quarterly revenue", fontsize=dm.fs('+state.size+'), fontweight=dm.fw('+offsetExpr(w.offset)+'))'].join("\n");}
+function faceStyle(face){return "font-family:'"+face+"',var(--dm-f-sys,system-ui,sans-serif)";}
+function fontStyle(w,extra){var size=12+state.size;return "--font-face:'"+faceFor(w)+"';--font-weight:"+w.weight+";--font-size:"+size+"px;"+(extra||"");}
+function fixedFontStyle(face,weight,extra){return "--font-face:'"+face+"';--font-weight:"+weight+";"+(extra||"");}
+function cardStyle(w){return ' style="'+fontStyle(w)+'"';}
+function rcLine(){return 'plt.rcParams["font.family"] = ["'+state.family+'"]';}
+function codeText(){var w=wt();return ['import matplotlib.pyplot as plt','import dartwork_mpl as dm','', 'dm.style.use("scientific")',rcLine(),'fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))','ax.set_title("Quarterly revenue", fontsize=dm.fs(0), fontweight=dm.fw('+offsetExpr(w.offset)+'))','dm.simple_layout(fig)'].join("\n");}
 function copy(txt,el){if(navigator.clipboard)navigator.clipboard.writeText(txt);toast(txt+" copied");if(el){el.classList.add("copied");setTimeout(function(){el.classList.remove("copied");},900);}}
 function toast(msg){var el=document.getElementById("fx-toast");if(!el){el=document.createElement("div");el.id="fx-toast";el.className="dm-toast";document.body.appendChild(el);}el.textContent=msg;el.classList.add("show");clearTimeout(window._fontToast);window._fontToast=setTimeout(function(){el.classList.remove("show");},1100);}
-function glyph(t){var c='viewBox="0 0 24 16" aria-hidden="true"';
-  if(t==="title_axes")return '<svg '+c+'><path d="M4 13H21M4 13V3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7 9H18" stroke="currentColor" stroke-width="1.8"/><path d="M7 5H14" stroke="currentColor" stroke-width="1.4" opacity=".6"/></svg>';
-  if(t==="tick_numerals")return '<svg '+c+'><path d="M3 12H21" stroke="currentColor"/><path d="M5 12V9M10 12V7M15 12V9M20 12V6" stroke="currentColor"/><text x="4" y="6" font-size="5" fill="currentColor">123</text></svg>';
-  if(t==="value_labels")return '<svg '+c+'><rect x="5" y="7" width="3" height="6" fill="currentColor"/><rect x="11" y="4" width="3" height="9" fill="currentColor" opacity=".7"/><rect x="17" y="9" width="3" height="4" fill="currentColor" opacity=".55"/></svg>';
-  if(t==="legend")return '<svg '+c+'><path d="M4 10 9 7 14 9 20 4" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="5" y="3" width="10" height="3" fill="currentColor" opacity=".25"/></svg>';
-  if(t==="annotation")return '<svg '+c+'><path d="M3 12C8 4 15 14 21 5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M14 5 18 2" stroke="currentColor"/><circle cx="14" cy="5" r="1.6" fill="currentColor"/></svg>';
-  if(t==="weights_ladder")return '<svg '+c+'><path d="M4 4H20M4 8H20M4 12H20" stroke="currentColor" stroke-width="1.8"/></svg>';
-  if(t==="size_ladder")return '<svg '+c+'><text x="4" y="6" font-size="5" fill="currentColor">Aa</text><text x="10" y="11" font-size="10" fill="currentColor">Aa</text></svg>';
-  if(t==="paragraph")return '<svg '+c+'><path d="M4 4H20M4 8H18M4 12H16" stroke="currentColor" stroke-width="1.4"/></svg>';
-  if(t==="numerals_confusables")return '<svg '+c+'><text x="3" y="11" font-size="9" fill="currentColor">0O1l</text></svg>';
-  if(t==="korean")return '<svg '+c+'><text x="3" y="11" font-size="8" fill="currentColor">한글</text></svg>';
-  if(t==="code_mono")return '<svg '+c+'><path d="M7 4 4 8 7 12M17 4 20 8 17 12M10 12 14 4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>';
-  return '<svg '+c+'><text x="4" y="11" font-size="8" fill="currentColor">ABC</text></svg>';}
-function visibleDemos(){return state.demos.slice(0,state.layout);}
-function svgOpen(){return '<svg class="demo-svg font-svg" viewBox="0 0 160 100" preserveAspectRatio="none">';}
-function axisFrame(){return '<path class="font-axis" d="M28 76H148M28 76V18"/><path class="font-gridline" d="M28 56H148M28 36H148"/>';}
-var R={
-  title_axes:function(){return svgOpen()+axisFrame()+'<text class="font-demo-text font-title" x="28" y="14">Quarterly revenue</text><text class="font-demo-text font-axis-label" x="88" y="94">Period</text><text class="font-demo-text font-axis-label" transform="translate(12 52) rotate(-90)">Revenue</text><text class="font-demo-text font-tick" x="28" y="88">Q1</text><text class="font-demo-text font-tick" x="67" y="88">Q2</text><text class="font-demo-text font-tick" x="106" y="88">Q3</text><text class="font-demo-text font-tick" x="140" y="88">Q4</text><path class="font-accent-stroke" d="M32 61 67 49 106 34 142 27"/></svg>';},
-  tick_numerals:function(){var s=svgOpen()+axisFrame();for(var i=0;i<9;i++){var x=30+i*14;s+='<path class="font-tickmark" d="M'+x+' 76V80"/><text class="font-demo-text font-tick" x="'+(x-6)+'" y="91">'+(1000+i*125)+'</text>';}return s+'<text class="font-demo-text font-title" x="30" y="18">Dense numeric ticks</text></svg>';},
-  value_labels:function(){var vals=[42,68,55,91,74],s=svgOpen()+axisFrame();for(var i=0;i<vals.length;i++){var h=vals[i]*.54,x=38+i*22,y=76-h;s+='<rect class="font-bar" x="'+x+'" y="'+y.toFixed(1)+'" width="13" height="'+h.toFixed(1)+'" rx="2"/><text class="font-demo-text font-value" x="'+(x+6.5)+'" y="'+(y-5).toFixed(1)+'">'+vals[i]+'</text>';}return s+'</svg>';},
-  legend:function(){return svgOpen()+axisFrame()+'<path class="font-series-a" d="M32 62C58 42 74 58 98 35S126 43 144 24"/><path class="font-series-b" d="M32 70C58 66 78 38 102 54S130 55 144 38"/><rect class="font-legend-box" x="94" y="18" width="48" height="27" rx="3"/><path class="font-series-a" d="M100 27H115"/><path class="font-series-b" d="M100 37H115"/><text class="font-demo-text font-legend" x="119" y="30">Plan</text><text class="font-demo-text font-legend" x="119" y="40">Actual</text></svg>';},
-  annotation:function(){return svgOpen()+axisFrame()+'<path class="font-series-a" d="M32 65C52 36 68 66 88 44S124 22 144 36"/><circle class="font-point" cx="106" cy="29" r="3"/><path class="font-callout-line" d="M106 29 121 16"/><text class="font-demo-text font-callout" x="84" y="15">Peak +18%</text></svg>';},
-  paragraph:function(){return '<div class="font-copy font-demo-text">A caption has to stay readable beside data, labels, and legends. This specimen uses chart-length prose instead of a poster headline.</div>';},
-  numerals_confusables:function(){return '<div class="font-bigrow font-demo-text">0O 1lI 3.1415 −+ ×</div>';},
-  code_mono:function(){return '<pre class="font-codeblock font-demo-text">fig, ax = plt.subplots()\\nax.plot(x, y, lw=dm.lw(0))\\ndm.simple_layout(fig)</pre>';},
-  caps_tracking:function(){return '<div class="font-caps-wrap font-demo-text"><span>OPERATING MARGIN</span><b>Q4 2026</b></div>';},
-  korean:function(){if(fam().hangul)return '<div class="font-korean font-demo-text" data-hangul="1"><b>매출 추이</b><span>한글 축 레이블과 값 표시</span></div>';return '<div class="font-korean font-fallback-note" data-hangul="0"><b>No bundled Hangul in this face</b><span>Keep Pretendard, Paperlogy, or Noto Sans CJK KR in the fallback chain.</span></div>';},
-  weights_ladder:function(){return '<div class="font-ladder">'+weights().map(function(w){return '<div class="font-ladder-row font-demo-text" style="'+fixedFontStyle(w.face,w.weight)+'"><span>'+esc(w.label)+'</span><b>Data labels '+w.weight+'</b></div>';}).join("")+'</div>';},
-  size_ladder:function(){var rows=[];for(var i=-2;i<=4;i++){rows.push('<div class="font-size-row font-demo-text" style="'+fontStyle(wt(),'--font-size:'+(12+i)+'px')+'"><span>fs('+signed(i)+')</span><b>Small multiple label</b></div>');}return '<div class="font-size-ladder">'+rows.join("")+'</div>';}
-};
-function demoCard(t){var body=(R[t]||R.title_axes)();return '<div class="demo-card font-card" data-demo="'+esc(t)+'"><span class="demo-label">'+esc(demoName(t))+'</span><div class="demo-flex"'+cardStyle(wt())+'>'+body+'</div></div>';}
-function demoGridHTML(){return '<div class="demo-grid layout-'+state.layout+'">'+visibleDemos().map(demoCard).join("")+'</div>';}
-function capDemosToLayout(){if(state.demos.length>state.layout)state.demos=state.demos.slice(0,state.layout);}
-function setLayout(n){state.layout=n;capDemosToLayout();renderDetail();}
-function toggleDemo(k){capDemosToLayout();var idx=state.demos.indexOf(k);
-  if(idx>=0)state.demos.splice(idx,1);else if(state.demos.length>=state.layout)state.demos.splice(state.demos.length-1,1,k);else state.demos.push(k);renderDetail();}
-function demoToolsHTML(){var chips=DEMOS.map(function(d){return '<button class="demo-chip'+(state.demos.indexOf(d.key)>=0?" on":"")+'" type="button" data-demo-pick="'+esc(d.key)+'">'+glyph(d.key)+'<span>'+esc(d.name)+'</span></button>';}).join("");
-  return '<div class="demo-tools"><span class="field demo-field"><span class="cl">Demos</span><span class="demo-picker">'+chips+'</span></span>'
-    +'<span class="field"><span class="cl">Layout</span><span class="seg"><button type="button" data-layout="4" class="'+(state.layout===4?"on":"")+'">2×2</button><button type="button" data-layout="6" class="'+(state.layout===6?"on":"")+'">2×3</button><button type="button" data-layout="9" class="'+(state.layout===9?"on":"")+'">3×3</button></span></span></div>';}
+function weightsLadderHTML(){return '<div class="font-ladder">'+weights().map(function(w){return '<div class="font-ladder-row font-demo-text" style="'+fixedFontStyle(w.face,w.weight)+'"><span>'+esc(w.label)+'</span><b>Data labels '+w.weight+'</b></div>';}).join("")+'</div>';}
+function koreanLineHTML(){if(fam().hangul)return '<div class="font-korean font-demo-text" data-hangul="1"><b>매출 추이</b><span>한글 축 레이블과 값 표시</span></div>';return '<div class="font-korean font-fallback-note" data-hangul="0"><b>No bundled Hangul in this face</b><span>Keep Pretendard, Paperlogy, or Noto Sans CJK KR in the fallback chain.</span></div>';}
+function specimenHTML(){var w=wt();return '<div class="font-specimen-card"'+cardStyle(w)+'><div class="font-specimen-body"><div class="font-specimen-ladder">'+weightsLadderHTML()+'</div><p class="font-copy font-demo-text">A compact caption stays readable beside axes, legends, and numeric labels.</p><div class="font-bigrow font-demo-text">0O 1lI 3.1415 −×±</div>'+koreanLineHTML()+'</div><div class="font-foot">브라우저 렌더 (동일 TTF)</div></div>';}
 function controlsHTML(){var f=fam(),ws=weights(),wchips=ws.map(function(w,i){return '<button type="button" data-weight="'+i+'" class="'+(i===state.weight?"on":"")+'">'+esc(w.label)+'<span>'+w.weight+'</span></button>';}).join("");
   var ital='<button class="tgl font-italic-toggle'+(state.italic?" on":"")+(f.italic?"":" font-disabled")+'" data-tgl="italic" type="button"'+(f.italic?"":' disabled')+'><span class="tgl-l">Italic</span><span class="tgl-tr"><span class="tgl-kn"></span></span></button>';
   var step='<span class="font-stepper"><button type="button" data-size-step="-1">−</button><b>dm.fs('+signed(state.size)+')</b><button type="button" data-size-step="1">+</button></span>';
   return '<span class="field font-weight-field"><span class="cl">Weight</span><span class="seg font-weight-seg">'+wchips+'</span></span><span class="field"><span class="cl">Size</span>'+step+'</span>'+ital;}
 function codeHTML(){return '<button class="code font-code-chip" type="button" data-copy-code><pre>'+esc(codeText())+'</pre></button>';}
-function metaHTML(){var f=fam(),w=wt();return '<div class="meta"><div><span class="m-l">Inventory</span> '+f.weights.length+' upright weights'+(f.italic?", italic cuts available":", no italic cuts")+(f.hangul?", Hangul coverage detected":", Latin/symbol coverage only")+'</div><div><span class="m-l">Current face</span> '+esc(faceFor(w))+' · fontweight '+w.weight+' · dm.fs('+signed(state.size)+')</div></div>';}
-function detailHTML(){var f=fam();return '<div class="d-ey">Font explorer</div><div class="d-title"><h3 style="'+faceStyle(f.regular_face)+'">'+esc(f.name)+'</h3><button class="d-key" type="button" data-copy-family>font.family</button></div><p class="d-use">'+esc(f.note)+'</p><div class="d-bar">'+controlsHTML()+'</div>'+demoToolsHTML()+demoGridHTML()+codeHTML()+metaHTML();}
-function railHTML(){var h="";GROUPS.forEach(function(g){h+='<div class="fh">'+esc(g[0])+'</div>';g[1].forEach(function(name){var f=FONTS[name],on=name===state.family,w=f.weights[defaultWeightIndex(f)],fs=faceStyle(w.face);h+='<button class="ri'+(on?" on":"")+'" type="button" data-family="'+esc(name)+'"><span class="font-rail-sample" style="'+fs+'">'+esc(f.rail_sample)+'</span><span class="nm" style="'+fs+'">'+esc(f.name)+'</span><span class="font-count">'+f.weights.length+'</span>'+(f.hangul?'<span class="font-badge">KR</span>':"")+'</button>';});});return h;}
+function badgesHTML(){var f=fam(),h='<div class="a11y-chips">';h+='<span class="a11y-chip '+(f.numeric_axes?"ok":"info")+'" data-tip="'+esc(f.numeric_label)+'"><span class="a-dot"></span><span class="a-label">NUM</span><span class="a-num">'+(f.numeric_axes?"yes":"-")+'</span></span>';if(f.tnum_available)h+='<span class="a11y-chip info" data-tip="Browser OpenType tabular numerals available"><span class="a-dot"></span><span class="a-label">tnum</span><span class="a-num">yes</span></span>';return h+'</div>';}
+function realplotHTML(){var f=fam();return '<div class="font-panel font-realplot-card"><div class="font-panel-head"><h4>실제 플롯</h4><span>Panel A</span></div><img class="font-realplot-img" src="'+esc(f.realplot)+'" alt="'+esc(f.name)+' real matplotlib chart" loading="lazy"><p class="font-caption">실제 matplotlib 출력 · dm.style.use("scientific") 기본 상태 · Weight/Size 컨트롤 비적용</p></div>';}
+function specimenPanelHTML(){return '<div class="font-panel"><div class="font-panel-head"><h4>타이포 스펙시멘</h4><span>Panel B</span></div><div class="d-bar">'+controlsHTML()+'</div>'+specimenHTML()+'</div>';}
+function metaHTML(){var f=fam(),w=wt();return '<div class="meta"><div><span class="m-l">Inventory</span> '+f.weights.length+' upright weights'+(f.italic?", italic cuts available":", no italic cuts")+(f.hangul?", Hangul coverage detected":", Latin/symbol coverage only")+'</div><div><span class="m-l">Current specimen face</span> '+esc(faceFor(w))+' · fontweight '+w.weight+' · dm.fs('+signed(state.size)+')</div><div><span class="m-l">Numeric axes</span> '+esc(f.numeric_label)+'</div></div>';}
+function detailHTML(){var f=fam();return '<div class="d-ey">Font explorer</div><div class="d-title"><h3 style="'+faceStyle(f.regular_face)+'">'+esc(f.name)+'</h3><button class="d-key" type="button" data-copy-family>font.family</button>'+badgesHTML()+'</div><p class="d-use">'+esc(f.note)+'</p><div class="font-panels">'+realplotHTML()+specimenPanelHTML()+'</div>'+codeHTML()+metaHTML();}
+function railHTML(){var h="";GROUPS.forEach(function(g){h+='<div class="fh">'+esc(g[0])+'</div>';g[1].forEach(function(name){var f=FONTS[name],on=name===state.family,w=f.weights[defaultWeightIndex(f)],fs=faceStyle(w.face);h+='<button class="ri'+(on?" on":"")+'" type="button" data-family="'+esc(name)+'"><span class="font-rail-sample" style="'+fs+'">'+esc(f.rail_sample)+'</span><span class="nm" style="'+fs+'">'+esc(f.name)+'</span><span class="font-count">'+f.weights.length+'</span>'+(f.numeric_axes?'<span class="font-badge font-num-badge">NUM</span>':"")+(f.hangul?'<span class="font-badge">KR</span>':"")+'</button>';});});return h;}
 function renderRail(){document.getElementById("fx-rail").innerHTML=railHTML();wireRail();}
 function renderDetail(){document.getElementById("fx-detail").innerHTML=detailHTML();wireDetail();}
 function wireRail(){document.querySelectorAll("#dm-font-exp .ri").forEach(function(e){e.onclick=function(){state.family=e.dataset.family;state.weight=defaultWeightIndex(fam());state.italic=false;renderRail();renderDetail();};});}
 function wireDetail(){var root=document.getElementById("fx-detail");
-  root.querySelectorAll("[data-layout]").forEach(function(b){b.onclick=function(){setLayout(+b.dataset.layout);};});
-  root.querySelectorAll("[data-demo-pick]").forEach(function(b){b.onclick=function(){toggleDemo(b.dataset.demoPick);};});
   root.querySelectorAll("[data-weight]").forEach(function(b){b.onclick=function(){state.weight=+b.dataset.weight;renderDetail();};});
   root.querySelectorAll("[data-size-step]").forEach(function(b){b.onclick=function(){state.size=Math.max(-2,Math.min(4,state.size+(+b.dataset.sizeStep)));renderDetail();};});
   var it=root.querySelector('[data-tgl="italic"]');if(it)it.onclick=function(){if(fam().italic){state.italic=!state.italic;renderDetail();}};

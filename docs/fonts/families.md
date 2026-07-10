@@ -67,6 +67,12 @@ plt.rcParams["font.family"] = [
 
 Fine-tune size and weight next → [Font Utilities › Custom Font Configuration](utilities.md#custom-font-configuration).
 
+For numeric-heavy axes, prefer families whose default digits are already
+uniform in matplotlib (`Roboto`, `IBM Plex Sans`, `Source Sans 3`, `Paperlogy`,
+`Noto Sans`, `Source Serif 4`, or the monospace families). `Inter` and
+`Pretendard` expose browser OpenType `tnum`, but matplotlib does not apply that
+feature, so their real plot digits remain proportional.
+
 ## Fonts in Chart Context
 
 Each role appears in chart context. This annotated example shows which family is

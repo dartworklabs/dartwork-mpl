@@ -18,34 +18,10 @@ from dartwork_mpl import font
 _REPO = Path(__file__).resolve().parents[1]
 _SCRIPTS = _REPO / "docs" / "_static" / "scripts"
 _BUILDER = _SCRIPTS / "build_font_explorer.py"
+_REALPLOT_BUILDER = _SCRIPTS / "build_font_realplots.py"
 _EXPLORER = _REPO / "docs" / "_static" / "font_explorer.html"
 _DESIGN_CSS = _REPO / "docs" / "_static" / "dartwork-design.css"
 
-_DEMO_KEYS = [
-    "title_axes",
-    "tick_numerals",
-    "value_labels",
-    "legend",
-    "annotation",
-    "weights_ladder",
-    "size_ladder",
-    "paragraph",
-    "numerals_confusables",
-    "korean",
-    "code_mono",
-    "caps_tracking",
-]
-_DEFAULT_9 = [
-    "title_axes",
-    "tick_numerals",
-    "value_labels",
-    "legend",
-    "annotation",
-    "weights_ladder",
-    "size_ladder",
-    "paragraph",
-    "numerals_confusables",
-]
 _SERIF_FAMILIES = ["Source Serif 4"]
 _MONO_FAMILIES = [
     "D2Coding",
@@ -56,15 +32,6 @@ _MONO_FAMILIES = [
 ]
 _FONT_SUFFIXES = {".ttf", ".otf"}
 _HANGUL_SAMPLE = "한글 데이터 축 값"
-_REPLACE_LAST_HANDLER = (
-    "function capDemosToLayout(){if(state.demos.length>state.layout)"
-    "state.demos=state.demos.slice(0,state.layout);}\n"
-    "function setLayout(n){state.layout=n;capDemosToLayout();renderDetail();}\n"
-    "function toggleDemo(k){capDemosToLayout();var idx=state.demos.indexOf(k);\n"
-    "  if(idx>=0)state.demos.splice(idx,1);else if(state.demos.length>=state.layout)"
-    "state.demos.splice(state.demos.length-1,1,k);else state.demos.push(k);"
-    "renderDetail();}"
-)
 _COLOR_FRAGMENT_HASHES = {
     "categorical_explorer.html": (
         "3c7bbcbd1ed844f2618d1c46caf34b3bb07097f9957a4646371447eb33dc6236"
@@ -84,6 +51,10 @@ def _payload_from_html() -> dict:
 
 def _builder_payload() -> dict:
     return runpy.run_path(str(_BUILDER))["build_payload"]()
+
+
+def _slug(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
 def _bundled_font_face_files() -> dict[str, Path]:
@@ -147,7 +118,7 @@ def test_fragment_exists_without_inline_style_and_node_parses() -> None:
     assert "<style" not in html
     assert html.count("<script>") == 1
     assert html.count("</script>") == 1
-    assert _EXPLORER.stat().st_size <= 350_000
+    assert _EXPLORER.stat().st_size <= 200_000
 
     node = shutil.which("node")
     assert node, "node is required for the font explorer parse gate"
@@ -195,6 +166,24 @@ def test_builder_inventory_comes_from_registered_font_ssot() -> None:
             assert entry["face"] == font.css_font_face_name(entry["file"])
 
 
+def test_payload_realplot_references_match_registry_slugs() -> None:
+    payload = _builder_payload()
+    families = payload["families"]
+    expected = {_slug(family) for family in font.list_registered()}
+
+    realplots = {
+        Path(meta["realplot"]).stem: meta["realplot"]
+        for meta in families.values()
+    }
+
+    assert set(realplots) == expected
+    assert all(
+        src == f"../_static/realplots/{slug}.svg"
+        for slug, src in realplots.items()
+    )
+    assert len(realplots) == 18
+
+
 def test_committed_fragment_payload_matches_builder() -> None:
     assert _payload_from_html() == _builder_payload()
 
@@ -236,24 +225,28 @@ def test_font_faces_referenced_by_weight_segments_exist() -> None:
     assert all(face.startswith("dm-") for face in referenced)
 
 
-def test_demo_library_defaults_and_replace_last_logic_are_pinned() -> None:
-    builder = runpy.run_path(str(_BUILDER))
+def test_fragment_is_two_panel_realplot_and_specimen_ui() -> None:
     html = _EXPLORER.read_text(encoding="utf-8")
     payload = _payload_from_html()
 
-    assert [key for key, _label in builder["DEMO_LIBRARY"]] == _DEMO_KEYS
-    assert builder["DEFAULT_9"] == _DEFAULT_9
-    assert builder["DEFAULT_6"] == _DEFAULT_9[:6]
-    assert builder["DEFAULT_4"] == _DEFAULT_9[:4]
-    assert [demo["key"] for demo in payload["library"]] == _DEMO_KEYS
-    assert payload["defaults"] == {
-        "4": _DEFAULT_9[:4],
-        "6": _DEFAULT_9[:6],
-        "9": _DEFAULT_9,
-    }
-    assert _REPLACE_LAST_HANDLER in html
-    assert "if(wasDefault)" not in html
-    assert "state.show" not in html
+    assert "library" not in payload
+    assert "defaults" not in payload
+    assert "실제 플롯" in html
+    assert "타이포 스펙시멘" in html
+    assert "실제 matplotlib 출력" in html
+    assert "브라우저 렌더 (동일 TTF)" in html
+    assert "font-realplot-img" in html
+    assert "font-specimen-card" in html
+    assert "data-weight" in html
+    assert "data-size-step" in html
+    assert 'data-tgl="italic"' in html
+    assert "data-layout" not in html
+    assert "data-demo-pick" not in html
+    assert "demo-picker" not in html
+    assert "demo-grid" not in html
+    assert "capDemosToLayout" not in html
+    assert "toggleDemo" not in html
+    assert html.count("../_static/realplots/") == 18
 
 
 def test_hangul_coverage_matrix_and_no_tofu_fallback_copy_are_pinned() -> None:
@@ -281,12 +274,19 @@ def test_shared_css_layer_includes_font_explorer_only_for_shared_widgets() -> (
         "#dm-cat-exp *,#dm-cmap-exp *,#dm-font-exp *",
         "#dm-cat-exp,#dm-cmap-exp,#dm-font-exp {width:100%;max-width:100%;",
         "#dm-cat-exp .md,#dm-cmap-exp .md,#dm-font-exp .md",
-        "#dm-cat-exp .demo-tools .demo-field,#dm-cmap-exp .demo-tools .demo-field,#dm-font-exp .demo-tools .demo-field",
-        "#dm-cat-exp .demo-picker,#dm-cmap-exp .demo-picker,#dm-font-exp .demo-picker",
-        "#dm-cat-exp .demo-grid,#dm-cmap-exp .demo-grid,#dm-font-exp .demo-grid",
-        "#dm-cat-exp .demo-label,#dm-cmap-exp .demo-label,#dm-font-exp .demo-label",
+        "#dm-cat-exp .demo-tools .demo-field,#dm-cmap-exp .demo-tools .demo-field",
+        "#dm-cat-exp .demo-picker,#dm-cmap-exp .demo-picker",
+        "#dm-cat-exp .demo-grid,#dm-cmap-exp .demo-grid",
+        "#dm-cat-exp .demo-label,#dm-cmap-exp .demo-label",
     ):
         assert selector in css
+    for removed in (
+        "#dm-font-exp .demo-tools",
+        "#dm-font-exp .demo-picker",
+        "#dm-font-exp .demo-grid",
+        "#dm-font-exp .demo-label",
+    ):
+        assert removed not in css
 
     css_no_comments = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
     for m in re.finditer(
@@ -316,10 +316,36 @@ def test_docs_embed_font_explorer_and_drop_legacy_picker() -> None:
     assert legacy not in index
     assert legacy not in families
     assert "chart-context font explorer" in index
+    assert "real matplotlib chart" in index
+    assert (
+        "Weight, Size, and Italic controls apply only to the specimen"
+        in index_squashed
+    )
+    for removed in ("demos", "layout picker", "data-layout"):
+        assert removed not in index.lower()
     for text in (index_squashed, families_squashed):
         assert "**220 text font files**" in text
         assert "**20 documented file groups**" in text
         assert "**18 matplotlib family names**" in text
+
+
+def test_realplot_generator_is_deterministic_and_cached_for_one_family(
+    tmp_path,
+) -> None:
+    builder = runpy.run_path(str(_REALPLOT_BUILDER))
+    build_realplots = builder["build_realplots"]
+
+    rendered = build_realplots(tmp_path, family_names=("Roboto",), force=True)
+    svg = tmp_path / "roboto.svg"
+    first = svg.read_bytes()
+    cached = build_realplots(tmp_path, family_names=("Roboto",))
+    forced = build_realplots(tmp_path, family_names=("Roboto",), force=True)
+
+    assert rendered["rendered"] == ["roboto"]
+    assert cached["skipped"] == ["roboto"]
+    assert forced["rendered"] == ["roboto"]
+    assert svg.stat().st_size > 5_000
+    assert svg.read_bytes() == first
 
 
 def test_legacy_picker_artifacts_are_gone() -> None:

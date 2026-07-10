@@ -31,12 +31,11 @@ family name.
 For why these families, roles, and fallback gates ship together, see
 [Design rationale › Typography](../color_system/design-rationale.md#typography-rationale).
 
-**Every family in chart context.** The chart-context font explorer below
-shows each registered matplotlib family inside real figure situations:
-titles, axes, legends, annotations, value labels, numeric ticks, Korean
-fallback behavior, code blocks, and weight/size ladders. Pick a family on
-the rail, then adjust weight, size, italic, demos, and layout before copying
-the matching matplotlib idiom.
+**Every family in chart context.** The chart-context font explorer below pairs
+one real matplotlib chart with a compact browser specimen for every registered
+family. The real matplotlib chart uses the selected family in
+`dm.style.use("scientific")` defaults; Weight, Size, and Italic controls apply
+only to the specimen panel before copying the matching matplotlib idiom.
 
 ```{raw} html
 :file: ../_static/font_explorer.html

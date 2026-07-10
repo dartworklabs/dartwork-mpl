@@ -102,26 +102,42 @@ def test_os2_weights_are_grid_values_or_named_exceptions() -> None:
     assert not unexpected
 
 
-def test_numeric_axis_recommendation_requires_tnum_or_fixed_width() -> None:
+def test_numeric_axis_recommendation_requires_default_digits_or_fixed_width() -> (
+    None
+):
     numeric_false = set()
     for family, record in font.font_families().items():
         measurement = font._measure(family)
-        measured_numeric = measurement.tnum or measurement.fixed_pitch
+        measured_numeric = (
+            measurement.default_digit_widths_uniform or measurement.fixed_pitch
+        )
         assert record.numeric_axes is measured_numeric
         if record.numeric_axes:
-            assert measurement.tnum or measurement.fixed_pitch
+            assert (
+                measurement.default_digit_widths_uniform
+                or measurement.fixed_pitch
+            )
         else:
             numeric_false.add(family)
 
-    assert numeric_false == {
-        "IBM Plex Sans",
-        "Source Sans 3",
-        "Paperlogy",
-        "Noto Sans CJK KR",
-        "Noto Sans Math",
-        "Noto Sans Symbols",
-        "Noto Sans Symbols 2",
+    assert numeric_false == {"Inter", "Inter Display", "Pretendard"}
+
+
+def test_numeric_axis_flips_and_tnum_available_are_pinned() -> None:
+    expected = {
+        "Inter": (False, True),
+        "Pretendard": (False, True),
+        "IBM Plex Sans": (True, False),
+        "Source Sans 3": (True, False),
+        "Paperlogy": (True, False),
     }
+
+    for family, (numeric_axes, tnum_available) in expected.items():
+        record = font.font_families()[family]
+        measurement = font._measure(family)
+        assert record.numeric_axes is numeric_axes
+        assert record.tnum_available is tnum_available
+        assert measurement.tnum_available is tnum_available
 
 
 def test_base_chain_chart_glyph_resolver_is_pinned() -> None:

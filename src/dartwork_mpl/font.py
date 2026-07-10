@@ -37,6 +37,7 @@ _EXPECTED_MIN_FONTS: int = 5
 _FONT_DIR: Path = Path(__file__).parent / "asset" / "font"
 _FONT_SUFFIXES: frozenset[str] = frozenset({".ttf", ".otf"})
 _CHART_GLYPHS: tuple[str, ...] = ("−", "×", "±", "→", "°", "μ", "σ", "Δ")  # noqa: RUF001
+_DIGIT_ADVANCE_PROBE: str = "0123456789"
 _HANGUL_SAMPLE: str = "한글"
 _FIXED_WIDTH_PROBE: str = "0123456789ilW"
 
@@ -52,11 +53,18 @@ class FontFaceMeasurement:
     file: str
     weight: int
     italic: bool
-    tnum: bool
+    stretch: str
+    tnum_available: bool
+    digit_widths_uniform: bool
     fixed_pitch: bool
     chart_glyphs: tuple[str, ...]
     hangul: bool
     license: str
+
+    @property
+    def tnum(self) -> bool:
+        """Backward-compatible alias for browser tabular-numeral support."""
+        return self.tnum_available
 
 
 @dataclass(frozen=True)
@@ -67,11 +75,17 @@ class FontMeasurement:
     files: tuple[FontFaceMeasurement, ...]
     weights: tuple[int, ...]
     italic: bool
-    tnum: bool
+    tnum_available: bool
+    default_digit_widths_uniform: bool
     fixed_pitch: bool
     chart_glyphs: tuple[str, ...]
     hangul: bool
     licenses: tuple[str, ...]
+
+    @property
+    def tnum(self) -> bool:
+        """Backward-compatible alias for browser tabular-numeral support."""
+        return self.tnum_available
 
 
 @dataclass(frozen=True)
@@ -95,7 +109,11 @@ class FontFamily:
 
     @property
     def tnum(self) -> bool:
-        return _measure(self.name).tnum
+        return _measure(self.name).tnum_available
+
+    @property
+    def tnum_available(self) -> bool:
+        return _measure(self.name).tnum_available
 
     @property
     def mono(self) -> bool:
@@ -104,7 +122,9 @@ class FontFamily:
     @property
     def numeric_axes(self) -> bool:
         measurement = _measure(self.name)
-        return measurement.tnum or measurement.fixed_pitch
+        return (
+            measurement.default_digit_widths_uniform or measurement.fixed_pitch
+        )
 
     @property
     def chart_glyphs(self) -> tuple[str, ...]:
@@ -341,6 +361,17 @@ def _has_tnum_feature(ttfont: Any) -> bool:
     )
 
 
+def _has_uniform_digit_advances(ttfont: Any, cmap: Mapping[int, str]) -> bool:
+    hmtx = ttfont["hmtx"]
+    widths: list[int] = []
+    for char in _DIGIT_ADVANCE_PROBE:
+        glyph = cmap.get(ord(char))
+        if glyph is None:
+            return False
+        widths.append(int(hmtx[glyph][0]))
+    return len(set(widths)) == 1
+
+
 def _has_fixed_width_advances(ttfont: Any, cmap: Mapping[int, str]) -> bool:
     hmtx = ttfont["hmtx"]
     widths: list[int] = []
@@ -356,6 +387,16 @@ def _is_fixed_pitch(ttfont: Any, cmap: Mapping[int, str]) -> bool:
     return bool(ttfont["post"].isFixedPitch) or _has_fixed_width_advances(
         ttfont, cmap
     )
+
+
+def _default_numeric_face(
+    faces: list[FontFaceMeasurement],
+) -> FontFaceMeasurement:
+    upright = [face for face in faces if not face.italic]
+    candidates = upright or faces
+    normal_width = [face for face in candidates if face.stretch == "normal"]
+    candidates = normal_width or candidates
+    return min(candidates, key=lambda face: (abs(face.weight - 400), face.file))
 
 
 def _classify_license(ttfont: Any) -> str:
@@ -410,7 +451,11 @@ def _measure(family: str) -> FontMeasurement:
                     file=path.name,
                     weight=int(ttfont["OS/2"].usWeightClass),
                     italic=str(entry.style) == "italic",
-                    tnum=_has_tnum_feature(ttfont),
+                    stretch=str(entry.stretch),
+                    tnum_available=_has_tnum_feature(ttfont),
+                    digit_widths_uniform=_has_uniform_digit_advances(
+                        ttfont, cmap
+                    ),
                     fixed_pitch=_is_fixed_pitch(ttfont, cmap),
                     chart_glyphs=tuple(
                         glyph
@@ -429,12 +474,14 @@ def _measure(family: str) -> FontMeasurement:
     if not faces:
         raise KeyError(f"no bundled font files measured for family: {family}")
 
+    default_face = _default_numeric_face(faces)
     return FontMeasurement(
         family=family,
         files=tuple(sorted(faces, key=lambda face: face.file)),
         weights=tuple(sorted({face.weight for face in faces})),
         italic=any(face.italic for face in faces),
-        tnum=any(face.tnum for face in faces),
+        tnum_available=any(face.tnum_available for face in faces),
+        default_digit_widths_uniform=default_face.digit_widths_uniform,
         fixed_pitch=any(face.fixed_pitch for face in faces),
         chart_glyphs=tuple(
             glyph for glyph in _CHART_GLYPHS if ord(glyph) in family_codepoints

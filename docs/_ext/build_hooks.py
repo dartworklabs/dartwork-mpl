@@ -363,6 +363,29 @@ def copy_fonts_to_static(app):
             shutil.copy2(ttf, dst_file)
 
 
+def generate_font_realplots(app):
+    """Render cached real matplotlib chart SVGs for the font explorer."""
+    import importlib.util
+
+    script = (
+        Path(app.srcdir) / "_static" / "scripts" / "build_font_realplots.py"
+    )
+    spec = importlib.util.spec_from_file_location("_dm_font_realplots", script)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"could not import font realplot builder: {script}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    out_dir = Path(app.srcdir) / "_static" / "realplots"
+    result = module.build_realplots(out_dir)
+    print(
+        "Font realplots: "
+        f"{len(result['rendered'])} rendered, "
+        f"{len(result['skipped'])} cached, "
+        f"{result['seconds']:.2f}s"
+    )
+
+
 def write_manual_indices(app, env, docnames):
     """Write manual index files AFTER sphinx-gallery but BEFORE Sphinx reads."""
     gallery_dir = Path(app.srcdir) / "examples_gallery"
