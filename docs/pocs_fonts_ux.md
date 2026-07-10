@@ -2,10 +2,7 @@
 orphan: true
 ---
 
-# Fonts browser — UX 개선 A/B
-
-공통 개선(문구·복사 편의·키보드·role 배지·tnum 증명·drawer 이동)은 이미
-`/fonts/`에 적용되어 있습니다. 아래 두 변형은 그 위에 얹는 상호작용 방향입니다.
+# Fonts browser — B 리파인
 
 ```{raw} html
 <style>
@@ -15,20 +12,8 @@ orphan: true
 </style>
 ```
 
-## A — Preview workbench (내 문장 + 차트 롤 크기)
-
 ```{raw} html
-<div class="poc-banner">시그니처 = 타이핑한 문장을 tick/label/title 실측 크기로 전 패밀리 오디션</div>
-```
-
-```{raw} html
-:file: _static/pocs/fonts_ux_a.frag.html
-```
-
-## B — Pin & compare (후보 고정 + 나란히 비교)
-
-```{raw} html
-<div class="poc-banner">시그니처 = 최대 3개 패밀리를 고정해 같은 문장·같은 크기로 비교</div>
+<div class="poc-banner">공통 개선(rail·카드·드로어)은 <code>/fonts/</code>에서, B의 핀 비교는 이 페이지에서 확인.</div>
 ```
 
 ```{raw} html

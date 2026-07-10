@@ -22,6 +22,8 @@ _BUILDER_PATH = (
 )
 _FRAGMENT_PATH = _REPO / "docs" / "_static" / "fonts_browser.frag.html"
 _POC_B_PATH = _REPO / "docs" / "_static" / "pocs" / "fonts_ux_b.frag.html"
+_POC_A_PATH = _REPO / "docs" / "_static" / "pocs" / "fonts_ux_a.frag.html"
+_POC_PAGE_PATH = _REPO / "docs" / "pocs_fonts_ux.md"
 
 
 def _load_builder() -> ModuleType:
@@ -362,3 +364,15 @@ def test_poc_b_is_resynced_and_uses_a_stacked_specimen_tray() -> None:
     assert "border-bottom" in item_rule
     assert "background:" not in item_rule
     assert "border-radius:" not in item_rule
+
+
+def test_preview_page_keeps_only_the_chosen_b_direction() -> None:
+    page = _POC_PAGE_PATH.read_text(encoding="utf-8")
+
+    assert "# Fonts browser — B 리파인" in page
+    assert "공통 개선(rail·카드·드로어)은" in page
+    assert "B의 핀 비교는 이 페이지에서 확인" in page
+    assert "fonts_ux_b.frag.html" in page
+    assert "fonts_ux_a" not in page
+    assert "## A" not in page
+    assert not _POC_A_PATH.exists()
