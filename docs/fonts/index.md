@@ -27,7 +27,7 @@ what your chart will render.
 
 ## How registration works
 
-dartwork-mpl bundles **220 text font files** organized into **20 documented
+dartwork-mpl bundles **230 text font files** organized into **20 documented
 file groups**. Matplotlib registers those files as **18 matplotlib family names**
 on `import dartwork_mpl`, with bundled copies promoted ahead of
 same-named system fonts. Condensed and SemiCondensed Noto Sans files register

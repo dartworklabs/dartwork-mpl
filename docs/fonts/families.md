@@ -1,6 +1,6 @@
 # Font Families
 
-dartwork-mpl bundles **220 text font files** across **20 documented file
+dartwork-mpl bundles **230 text font files** across **20 documented file
 groups**. Matplotlib registers those assets as **18 matplotlib family names**;
 Condensed and SemiCondensed Noto Sans files register as Noto Sans with width
 metadata rather than separate family names. Each group is optimized for
@@ -139,7 +139,7 @@ Google's flagship sans-serif typeface and the **default font in dartwork-mpl**.
 Roboto features friendly, open curves while maintaining a mechanical skeleton,
 making it highly legible at all sizes.
 
-**Author:** Christian Robertson · **License:** [Apache 2.0](https://fonts.google.com/specimen/Roboto)
+**Author:** Christian Robertson · **License:** [OFL 1.1](https://fonts.google.com/specimen/Roboto)
 
 :::{admonition} All weights
 :class: dropdown
