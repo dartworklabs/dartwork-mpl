@@ -1,0 +1,426 @@
+#!/usr/bin/env python3
+"""Build the registry-backed data region in the interactive font browser."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+from pathlib import Path
+from typing import Any
+
+from dartwork_mpl import font
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+TARGET = SCRIPT_DIR.parent / "fonts_browser.frag.html"
+
+BEGIN_MARKER = "// DM_FONT_DATA:BEGIN — GENERATED, do not edit."
+END_MARKER = "// DM_FONT_DATA:END"
+
+LATIN = "The dartwork designs beautiful data artworks since 2021."
+HERO_LATIN = "Aa Gg Rr 0123"
+
+# Editorial fields are deliberately curated, but their keys must exactly match
+# the live registry. All technical fields are measured from bundled font files.
+META: dict[str, dict[str, str]] = {
+    "Roboto": {
+        "script": "Latin",
+        "hero": HERO_LATIN,
+        "sample": LATIN,
+        "desc": "Google's flagship sans-serif and dartwork's default body face.",
+        "intent": "The default. A mechanical skeleton with friendly, humanist curves that disappears into the data so the chart does the talking.",
+        "application": "Body text, axis labels, and any figure where the type should stay invisible.",
+        "pairing": "Stands alone, or takes titles from Inter Display for a display/body split.",
+        "personality": "Neutral · geometric-humanist",
+    },
+    "Inter": {
+        "script": "Latin",
+        "hero": HERO_LATIN,
+        "sample": LATIN,
+        "desc": "A screen-native grotesque built for interface text.",
+        "intent": "Tall x-height and open apertures keep it razor-legible at small sizes — engineered for dense dashboards and on-screen figures.",
+        "application": "Interface labels, legends, presentation slides, and any figure viewed on a screen.",
+        "pairing": "Its natural partner is Inter Display for headings.",
+        "personality": "Neutral · high-legibility",
+    },
+    "IBM Plex Sans": {
+        "script": "Latin",
+        "hero": HERO_LATIN,
+        "sample": LATIN,
+        "desc": "IBM's corporate humanist grotesque.",
+        "intent": "A precise, engineered voice with a full weight range — a distinct alternative to Inter's neutrality for technical work.",
+        "application": "Technical dashboards, interface labels, engineering figures.",
+        "pairing": "Pairs with IBM Plex Mono for text-and-data layouts.",
+        "personality": "Engineered · corporate",
+    },
+    "Source Sans 3": {
+        "script": "Latin",
+        "hero": HERO_LATIN,
+        "sample": LATIN,
+        "desc": "Adobe's humanist sans, tuned for extended reading.",
+        "intent": "Warmer and more open than the grotesques — the natural choice when a figure carries real body copy or long captions.",
+        "application": "Captions, annotations, and report body text.",
+        "pairing": "Reads well beside Inter or Roboto for a UI/body split.",
+        "personality": "Humanist · readable",
+    },
+    "Noto Sans": {
+        "script": "Latin + pan-script",
+        "hero": HERO_LATIN,
+        "sample": LATIN,
+        "desc": "Google's pan-script workhorse with harmonized metrics.",
+        "intent": "One family whose weights and proportions match across scripts — the safe choice whenever a figure mixes languages.",
+        "application": "Multi-language documents, international reports, and neutral fallback body.",
+        "pairing": "Pairs with Paperlogy for KR/EN and Noto Sans Math for symbols.",
+        "personality": "Neutral · universal",
+    },
+    "Inter Display": {
+        "script": "Latin",
+        "hero": HERO_LATIN,
+        "sample": LATIN,
+        "desc": "Inter's display cut, tuned for large sizes.",
+        "intent": "Tighter spacing and more delicate detail give titles presence at poster scale — without introducing a second typeface.",
+        "application": "Chart titles, section headings, and poster-scale numbers.",
+        "pairing": "Set titles here, body in Inter or Roboto.",
+        "personality": "Confident · display-optimized",
+    },
+    "Paperlogy": {
+        "script": "한글 + Latin",
+        "hero": "가나다 Ag 0123",
+        "sample": "데이터 시각화를 위한 아름다운 한글 타이포그래피, 2021년부터.",
+        "desc": "A clean, professional 한글 family — dartwork's Korean default.",
+        "intent": "Even color and open counters keep Hangul crisp at chart sizes, and its Latin set sits naturally beside the workhorses.",
+        "application": "Korean (한글) titles and labels, and mixed KR/EN figures.",
+        "pairing": "Pairs with Inter or Roboto for the Latin run in bilingual charts.",
+        "personality": "Clean · bilingual",
+    },
+    "Pretendard": {
+        "script": "한글 + Latin",
+        "hero": "가나다 Ag 0123",
+        "sample": "데이터 시각화를 위한 아름다운 한글 타이포그래피, 2021년부터.",
+        "desc": "A modern KR + Latin superfamily built on Inter's metrics.",
+        "intent": "Hangul and Latin share one rhythm, so bilingual figures never clash — nine weights from Thin to Black.",
+        "application": "Korean and mixed KR/EN titles, labels, and UI.",
+        "pairing": "Self-contained KR+Latin; also sits naturally beside Inter.",
+        "personality": "Modern · bilingual",
+    },
+    "Noto Sans CJK KR": {
+        "script": "한글 + Latin",
+        "hero": "한글 가나다 0123",
+        "sample": "데이터 시각화를 위한 한국어 글꼴 2021",
+        "desc": "Noto Sans CJK's Korean regional face with broad Hangul coverage.",
+        "intent": "A Korean fallback with Noto's neutral proportions for figures that need dependable Hangul coverage.",
+        "application": "Korean labels and mixed KR/EN figures.",
+        "pairing": "Sits under the Latin workhorses as a Korean fallback.",
+        "personality": "Korean · comprehensive",
+    },
+    "Source Serif 4": {
+        "script": "Latin",
+        "hero": HERO_LATIN,
+        "sample": LATIN,
+        "desc": "Adobe's serif body face for journal- and book-matched figures.",
+        "intent": "A contemporary serif with even color at text sizes — print gravitas for figures, opt-in only (never wired into a preset chain).",
+        "application": "Journal, report, and book figures that need a serif voice.",
+        "pairing": "Pairs with Source Sans 3 and Source Code Pro in the Source superfamily.",
+        "personality": "Editorial · print-rooted",
+    },
+    "JetBrains Mono": {
+        "script": "Latin (monospace)",
+        "hero": "il1 O0 =>",
+        "sample": "def render(fig): return dm.save_formats(fig, 'out')",
+        "desc": "A developer monospace with a tall x-height.",
+        "intent": "Increased letter height and disambiguated shapes (il1, O0) keep code and dense numeric columns readable at small sizes.",
+        "application": "Code blocks, log output, and tightly packed data tables.",
+        "pairing": "Stands alone; sits well beside Inter for docs.",
+        "personality": "Monospace · developer",
+    },
+    "IBM Plex Mono": {
+        "script": "Latin (monospace)",
+        "hero": "Ag 012 {}",
+        "sample": LATIN,
+        "desc": "A fixed-width companion to IBM Plex Sans.",
+        "intent": "Aligns digits and code so tabular numbers and inline snippets line up column-perfect.",
+        "application": "Tabular figures, code, and fixed-width axis labels.",
+        "pairing": "Pairs with IBM Plex Sans for text next to data.",
+        "personality": "Monospace · aligned",
+    },
+    "Roboto Mono": {
+        "script": "Latin (monospace)",
+        "hero": "il1 O0 =>",
+        "sample": "2021-07-01  12:00:00  +02.5%",
+        "desc": "The monospace cut of Roboto.",
+        "intent": "Shares Roboto's mechanical skeleton, so mono labels sit seamlessly next to Roboto body text.",
+        "application": "Timestamps, fixed-width tick labels, and inline figures.",
+        "pairing": "Pairs with Roboto for a unified text+data look.",
+        "personality": "Monospace · neutral",
+    },
+    "Source Code Pro": {
+        "script": "Latin (monospace)",
+        "hero": "il1 O0 =>",
+        "sample": "sum([x for x in range(2021)])  # 2041210",
+        "desc": "Adobe's monospace companion to Source Sans 3.",
+        "intent": "Even color and clear punctuation make it a calm, neutral fixed-width face for code and figures alike.",
+        "application": "Code, fixed-width labels, and numeric tables.",
+        "pairing": "Pairs with Source Sans 3 for a full text+code system.",
+        "personality": "Monospace · neutral",
+    },
+    "D2Coding": {
+        "script": "한글 + Latin (mono)",
+        "hero": "가나 012 {}",
+        "sample": "데이터 시각화 코드 정렬 0123456789",
+        "desc": "Naver's monospaced Hangul for code and aligned Korean tables.",
+        "intent": "Fixed-pitch Hangul keeps mixed KR/EN code and tables column-perfect — the only bundled mono that speaks Korean.",
+        "application": "Korean code blocks and aligned Korean tables.",
+        "pairing": "Trails a Latin mono: font.family = ['JetBrains Mono', 'D2Coding'].",
+        "personality": "Monospace · bilingual",
+    },
+    "Noto Sans Math": {
+        "script": "Math symbols",
+        "hero": "∑ ∫ √ π",
+        "sample": "∑ ∫ √ ∞ ≈ ≠ ≤ ≥ ∂ Δ π θ α β γ ∈ ∪ ∩ ∀ ∃",
+        "desc": "Comprehensive mathematical symbol coverage.",
+        "intent": "Integrals, operators, Greek, and set theory in one face — so scientific notation renders correctly inside a figure.",
+        "application": "Equations, symbol annotations, and scientific axis labels.",
+        "pairing": "Drop symbols into a Noto Sans or Inter run.",
+        "personality": "Technical · complete",
+    },
+    "Noto Sans Symbols": {
+        "script": "Symbols",
+        "hero": "← ↑ → ↓",
+        "sample": "← ↑ → ↓ ♪ − × °",
+        "desc": "Symbol fallback for arrows, signs, and miscellaneous marks.",
+        "intent": "Keeps arrows, stars, and signs from rendering as tofu — a fallback tail, not a body face.",
+        "application": "End-of-chain fallback for annotation symbols.",
+        "pairing": "Sits after Noto Sans Math in every preset chain.",
+        "personality": "Fallback · coverage",
+    },
+    "Noto Sans Symbols 2": {
+        "script": "Symbols",
+        "hero": "⚠ ☑ ◐ ⬟",
+        "sample": "⚠ ☑ ◐ ⬟ ⌚ ⏱",
+        "desc": "Final symbol fallback for dingbats, enclosed marks, and pictographic signs.",
+        "intent": "Extends the fallback tail into dingbats, enclosed marks, and pictographs that text faces do not cover.",
+        "application": "Final fallback for pictographic annotations and status marks.",
+        "pairing": "Sits last in every preset font fallback chain.",
+        "personality": "Fallback · pictographic",
+    },
+}
+
+GROUPS: list[tuple[str, list[str]]] = [
+    ("Workhorse", ["Roboto", "Inter", "Source Sans 3"]),
+    ("Display", ["Inter Display"]),
+    ("Technical", ["IBM Plex Sans"]),
+    ("Multilingual", ["Noto Sans"]),
+    ("Serif", ["Source Serif 4"]),
+    ("Korean & CJK", ["Pretendard", "Paperlogy", "Noto Sans CJK KR"]),
+    (
+        "Monospace",
+        [
+            "JetBrains Mono",
+            "IBM Plex Mono",
+            "Source Code Pro",
+            "Roboto Mono",
+            "D2Coding",
+        ],
+    ),
+    (
+        "Symbols & Math",
+        ["Noto Sans Math", "Noto Sans Symbols", "Noto Sans Symbols 2"],
+    ),
+]
+
+
+def slug(name: str) -> str:
+    """Return the stable JavaScript key for a registry family name."""
+    return re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+
+
+def _weight_label(filename: str) -> str:
+    token = Path(filename).stem.partition("-")[2] or Path(filename).stem
+    label = re.sub(r"^\d+", "", token)
+    return {"Semibold": "SemiBold"}.get(label, label)
+
+
+def _chain(name: str, role: str) -> list[str]:
+    if role in {"body", "display", "serif", "kr-body"}:
+        return [name, "Noto Sans Math"]
+    if role == "mono":
+        return [name, "D2Coding"]
+    if role == "mono-kr":
+        return ["JetBrains Mono", "D2Coding"]
+    if role == "fallback-tail":
+        return ["Roboto", name]
+    raise AssertionError(f"unknown font role for {name}: {role}")
+
+
+def _width_variants(measurement: font.FontMeasurement) -> list[dict[str, str]]:
+    def bucket(filename: str, stretch: str) -> str:
+        if stretch == "normal":
+            return "normal"
+        if "_SemiCondensed-" in filename:
+            return "semi-condensed"
+        if "_Condensed-" in filename:
+            return "condensed"
+        raise SystemExit(
+            f"unrecognized Noto Sans width metadata: {filename} ({stretch})"
+        )
+
+    labels = (
+        ("normal", "Normal"),
+        ("semi-condensed", "SemiCondensed"),
+        ("condensed", "Condensed"),
+    )
+    variants: list[dict[str, str]] = []
+    for stretch, label in labels:
+        candidates = [
+            face
+            for face in measurement.files
+            if not face.italic and bucket(face.file, face.stretch) == stretch
+        ]
+        if not candidates:
+            raise SystemExit(f"Noto Sans width bucket missing: {stretch}")
+        regular = min(
+            candidates, key=lambda face: (abs(face.weight - 400), face.file)
+        )
+        variants.append(
+            {"label": label, "face": font.css_font_face_name(regular.file)}
+        )
+    return variants
+
+
+def build_catalog() -> tuple[
+    dict[str, dict[str, Any]], list[str], list[dict[str, Any]]
+]:
+    """Derive the complete browser catalog from the live font registry."""
+    registry = font.font_families()
+    registry_names = set(registry)
+    if set(META) != registry_names:
+        missing = sorted(registry_names - set(META))
+        extra = sorted(set(META) - registry_names)
+        raise SystemExit(
+            f"META/registry drift: missing={missing}, extra={extra}"
+        )
+
+    grouped_names = [name for _title, names in GROUPS for name in names]
+    if (
+        len(grouped_names) != len(set(grouped_names))
+        or set(grouped_names) != registry_names
+    ):
+        missing = sorted(registry_names - set(grouped_names))
+        extra = sorted(set(grouped_names) - registry_names)
+        raise SystemExit(
+            f"GROUPS/registry drift: missing={missing}, extra={extra}"
+        )
+
+    order = [slug(name) for name in grouped_names]
+    if len(order) != len(set(order)):
+        raise SystemExit("registry family names produced duplicate slugs")
+
+    catalog: dict[str, dict[str, Any]] = {}
+    for name in grouped_names:
+        record = registry[name]
+        if record.name != name:
+            raise SystemExit(
+                f"registry key/name drift: {name!r} != {record.name!r}"
+            )
+        measurement = font._measure(name)
+        ladder_faces = sorted(
+            (
+                face
+                for face in measurement.files
+                if not face.italic and face.stretch == "normal"
+            ),
+            key=lambda face: (face.weight, face.file),
+        )
+        if not ladder_faces:
+            raise SystemExit(f"no upright normal-stretch faces for {name}")
+        weights = [
+            {
+                "label": _weight_label(face.file),
+                "num": face.weight,
+                "face": font.css_font_face_name(face.file),
+            }
+            for face in ladder_faces
+        ]
+        regular = min(
+            ladder_faces, key=lambda face: (abs(face.weight - 400), face.file)
+        )
+        group = next(title for title, names in GROUPS if name in names)
+        entry: dict[str, Any] = {
+            "name": name,
+            "mpl": name,
+            "role": record.role,
+            "group": group,
+            **META[name],
+            "regular": font.css_font_face_name(regular.file),
+            "weights": weights,
+            "italic": measurement.italic,
+            "mono": measurement.fixed_pitch,
+            "hangul": measurement.hangul,
+            "numeric_axes": record.numeric_axes,
+            "tnum_available": measurement.tnum_available,
+            "chart_glyphs": "".join(measurement.chart_glyphs),
+            "licenses": list(measurement.licenses),
+            "chain": _chain(name, record.role),
+        }
+        if name == "Noto Sans":
+            entry["width_variants"] = _width_variants(measurement)
+        catalog[slug(name)] = entry
+
+    groups = [
+        {"title": title, "items": [slug(name) for name in names]}
+        for title, names in GROUPS
+    ]
+    return catalog, order, groups
+
+
+def build_payload() -> str:
+    """Return the deterministic marker-delimited JavaScript payload."""
+    catalog, order, groups = build_catalog()
+    return (
+        f"{BEGIN_MARKER}\n"
+        "// Source: docs/_static/scripts/build_fonts_browser_data.py\n"
+        "// Regenerate: python3 docs/_static/scripts/build_fonts_browser_data.py\n"
+        f"var DM_FONT_DATA = {json.dumps(catalog, ensure_ascii=False, indent=2)};\n"
+        f"var DM_FONT_ORDER = {json.dumps(order, ensure_ascii=False)};\n"
+        f"var DM_FONT_GROUPS = {json.dumps(groups, ensure_ascii=False)};\n"
+        f"{END_MARKER}"
+    )
+
+
+def splice(source: str, payload: str | None = None) -> str:
+    """Replace exactly one generated region in ``source``."""
+    if source.count(BEGIN_MARKER) != 1 or source.count(END_MARKER) != 1:
+        raise SystemExit("font browser must contain exactly one marker pair")
+    start = source.index(BEGIN_MARKER)
+    end = source.index(END_MARKER, start) + len(END_MARKER)
+    return source[:start] + (payload or build_payload()) + source[end:]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="exit 2 when regenerating would change the committed fragment",
+    )
+    args = parser.parse_args()
+
+    source = TARGET.read_text(encoding="utf-8")
+    generated = splice(source)
+    if args.check:
+        if generated != source:
+            print(f"out of date: {TARGET}")
+            return 2
+        print(f"OK - up to date: {TARGET}")
+        return 0
+
+    if generated != source:
+        TARGET.write_text(generated, encoding="utf-8")
+        print(f"OK - wrote {TARGET} ({len(generated):,} B)")
+    else:
+        print(f"OK - unchanged: {TARGET}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
