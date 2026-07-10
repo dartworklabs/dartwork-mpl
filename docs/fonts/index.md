@@ -1,8 +1,8 @@
 # Fonts
 
 dartwork-mpl bundles publication fonts and registers them with matplotlib on
-import. The registry is static documentation: no interactive font widgets are
-shipped on this page.
+import. This page pairs the measured registry with an interactive browser
+backed by it.
 
 ```{toctree}
 :maxdepth: 1
@@ -25,6 +25,16 @@ than separate `font.family` names.
 
 The family names below are the names to put in `font.family`. For every weight
 and specimen sheet, see [Font Families](families.md).
+
+## Font browser
+
+Filter the 18 registered families by group, script, style, italics, and
+weight depth. Every sample renders in the family's own bundled cut; click
+a card for the weight ladder and a copyable `rcParams` snippet.
+
+```{raw} html
+:file: ../_static/fonts_browser.frag.html
+```
 
 ## Quick Start
 
