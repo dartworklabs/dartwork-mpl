@@ -140,6 +140,39 @@ re-scope ids to `dm-fbuxb`, re-apply the preview-input + pin deltas), then:
 5. Quick data spot-check: Roboto entry now lists 9 weights 100–900;
    Roboto Mono 7.
 
+## Addendum (user request): legacy-Roboto artifacts + unused-asset cleanup
+
+### W1-addendum — license correctness
+When replacing the Roboto / Roboto Mono files, also replace
+`src/dartwork_mpl/asset/font/licenses/LICENSE-Roboto.txt` and
+`LICENSE-RobotoMono.txt` with the license files shipped INSIDE the downloaded
+zips (Google migrated several core families Apache→OFL; do not assume — use
+what the zip ships). Note the license name change (if any) in the commit body
+so W2 can sync the invariants' license-coverage lock.
+
+### W2 T-clean — delete audited-dead assets (Fable-verified reachability audit)
+DELETE (zero references from any live page, conf.py, _ext, src, tests):
+- `docs/_static/landing_pocs/` — the ENTIRE directory (~123 files, manifest +
+  poc_0N_* renders). Its referencing page (`docs/landing_pocs.md`) was already
+  removed from the repo; the dir is an orphaned island.
+- `docs/_static/compare_after.svg`, `docs/_static/compare_before.svg` —
+  `compare_slider.html` references `landing_hero_{before,after}.svg`, not these.
+
+DO NOT delete (audited, kept deliberately — mention in the report):
+- `docs/_static/scripts/{gen_palettes.py, dm_palettes_gen.json, _svg_determinism.py}`
+  — no external consumers in-source today, but they are the generation
+  provenance of the dc palette system / svg determinism; another session is
+  actively reworking palettes. Keep.
+- `docs/_static/pocs/fonts_ux_b.frag.html` (current work), `fonts_ux_a` is
+  already deleted by T6.
+- `interactive_slider.html`, `interactive_viewer_*.jpeg` (used by
+  usage_guide/interactive.md), `dm-interactive-*` + `dartwork-design-system.md`
+  etc. (referenced via conf.py / governance docs).
+Also purge the stale local build dir once (`rm -rf docs/_build/html docs/_build/doctrees`)
+before the verification build so deleted assets don't linger in output.
+Commit (separate, easy to revert): `chore(docs): remove orphaned landing_pocs
+renders + stale compare svgs (dead-asset audit)`
+
 ## Notes
 - Fragment ground rules unchanged (scoped CSS, no theme mutation, tokens only,
   buttons, focus rings, reduced-motion, <820px responsive).
