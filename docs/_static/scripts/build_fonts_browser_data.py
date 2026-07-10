@@ -252,6 +252,18 @@ def _chain(name: str, role: str) -> list[str]:
     raise AssertionError(f"unknown font role for {name}: {role}")
 
 
+def _unique_faces(
+    measurement: font.FontMeasurement,
+) -> tuple[font.FontFaceMeasurement, ...]:
+    """Return one measured record per bundled filename."""
+    by_file: dict[str, font.FontFaceMeasurement] = {}
+    for face in measurement.files:
+        previous = by_file.setdefault(face.file, face)
+        if previous != face:
+            raise SystemExit(f"conflicting measurements for {face.file}")
+    return tuple(by_file[filename] for filename in sorted(by_file))
+
+
 def _width_variants(measurement: font.FontMeasurement) -> list[dict[str, str]]:
     def bucket(filename: str, stretch: str) -> str:
         if stretch == "normal":
@@ -273,7 +285,7 @@ def _width_variants(measurement: font.FontMeasurement) -> list[dict[str, str]]:
     for stretch, label in labels:
         candidates = [
             face
-            for face in measurement.files
+            for face in _unique_faces(measurement)
             if not face.italic and bucket(face.file, face.stretch) == stretch
         ]
         if not candidates:
@@ -323,10 +335,11 @@ def build_catalog() -> tuple[
                 f"registry key/name drift: {name!r} != {record.name!r}"
             )
         measurement = font._measure(name)
+        measured_faces = _unique_faces(measurement)
         ladder_faces = sorted(
             (
                 face
-                for face in measurement.files
+                for face in measured_faces
                 if not face.italic and face.stretch == "normal"
             ),
             key=lambda face: (face.weight, face.file),

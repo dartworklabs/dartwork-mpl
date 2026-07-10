@@ -7,9 +7,12 @@ import json
 import re
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 from types import ModuleType
 from typing import Any
+
+import pytest
 
 from dartwork_mpl import font
 
@@ -71,6 +74,21 @@ def test_generator_is_idempotent_and_matches_committed_bytes() -> None:
     assert checked.returncode == 0, checked.stdout + checked.stderr
 
 
+def test_generator_deduplicates_repeated_measured_entries(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected = _BUILDER.build_payload()
+    original_measure = _BUILDER.font._measure
+
+    def duplicated_measurement(name: str) -> font.FontMeasurement:
+        measurement = original_measure(name)
+        return replace(measurement, files=measurement.files + measurement.files)
+
+    monkeypatch.setattr(_BUILDER.font, "_measure", duplicated_measurement)
+
+    assert _BUILDER.build_payload() == expected
+
+
 def test_payload_names_and_groups_equal_registry() -> None:
     catalog, order, groups = _parse_payload()
     registered = set(font.list_registered())
@@ -108,10 +126,11 @@ def test_payload_flags_and_ladders_match_measurements() -> None:
         name = entry["mpl"]
         record = font.FONTS[name]
         measurement = font._measure(name)
+        measured_by_file = {face.file: face for face in measurement.files}
         expected_faces = sorted(
             (
                 face
-                for face in measurement.files
+                for face in measured_by_file.values()
                 if not face.italic and face.stretch == "normal"
             ),
             key=lambda face: (face.weight, face.file),
