@@ -308,7 +308,6 @@ from build_hooks import (  # noqa: E402
     cleanup_sg_execution_times,
     copy_fonts_to_static,
     create_placeholder_index,
-    generate_font_realplots,
     generate_gallery_assets,
     generate_llms_full_txt,
     generate_template_index,
@@ -325,7 +324,6 @@ def setup(app):
     app.connect("builder-inited", create_placeholder_index)
     app.connect("builder-inited", generate_gallery_assets)
     app.connect("builder-inited", copy_fonts_to_static)
-    app.connect("builder-inited", generate_font_realplots)
     app.connect("builder-inited", generate_llms_full_txt)
     app.connect("builder-inited", generate_template_index)
     app.connect("env-before-read-docs", write_manual_indices)

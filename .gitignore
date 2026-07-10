@@ -56,7 +56,6 @@ docs/fonts/_preview.html
 docs/fonts/_generated/
 docs/fonts/images/
 docs/_static/font-face.css
-docs/_static/realplots/
 
 # Python package build artifacts (uv build)
 dist/
