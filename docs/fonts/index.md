@@ -1,8 +1,8 @@
 # Fonts
 
-dartwork-mpl bundles publication fonts and registers them with matplotlib on
-import. This page pairs the measured registry with an interactive browser
-backed by it.
+dartwork-mpl ships **18 publication-ready font families**, registered
+with matplotlib the moment you `import dartwork_mpl`. Browse them below,
+preview your own text, and copy a ready-to-paste `font.family` setup.
 
 ```{toctree}
 :maxdepth: 1
@@ -14,7 +14,18 @@ Font Utilities <utilities>
 Math & Special Characters <math_and_symbols>
 ```
 
-## Overview
+## Font browser
+
+Type your own preview text, narrow by script or style, and open any family
+for its weight ladder and a ready-to-paste `rcParams` snippet. Every sample
+is drawn by the family's own bundled file — what you see here is exactly
+what your chart will render.
+
+```{raw} html
+:file: ../_static/fonts_browser.frag.html
+```
+
+## How registration works
 
 dartwork-mpl bundles **220 text font files** organized into **20 documented
 file groups**. Matplotlib registers those files as **18 matplotlib family names**
@@ -25,16 +36,6 @@ than separate `font.family` names.
 
 The family names below are the names to put in `font.family`. For every weight
 and specimen sheet, see [Font Families](families.md).
-
-## Font browser
-
-Filter the 18 registered families by group, script, style, italics, and
-weight depth. Every sample renders in the family's own bundled cut; click
-a card for the weight ladder and a copyable `rcParams` snippet.
-
-```{raw} html
-:file: ../_static/fonts_browser.frag.html
-```
 
 ## Quick Start
 
@@ -79,6 +80,8 @@ plt.rcParams["font.family"] = ["Source Serif 4", "Noto Sans Math"]
 ```
 
 ## Roles
+
+The browser's role badges follow this table; use it as the print-friendly summary.
 
 | Role | Default | Alternates | When to pick |
 | --- | --- | --- | --- |
