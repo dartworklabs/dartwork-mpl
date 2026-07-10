@@ -21,6 +21,7 @@ _BUILDER_PATH = (
     _REPO / "docs" / "_static" / "scripts" / "build_fonts_browser_data.py"
 )
 _FRAGMENT_PATH = _REPO / "docs" / "_static" / "fonts_browser.frag.html"
+_POC_B_PATH = _REPO / "docs" / "_static" / "pocs" / "fonts_ux_b.frag.html"
 
 
 def _load_builder() -> ModuleType:
@@ -35,6 +36,7 @@ def _load_builder() -> ModuleType:
 
 _BUILDER = _load_builder()
 _FRAGMENT = _FRAGMENT_PATH.read_text(encoding="utf-8")
+_POC_B = _POC_B_PATH.read_text(encoding="utf-8")
 
 
 def _parse_payload() -> tuple[
@@ -317,3 +319,46 @@ def test_drawer_composition_and_descenders_are_pinned() -> None:
     assert "Pairs well: " in drawer_source
     assert "width: 100%;" in _FRAGMENT
     assert "overflow-x: auto;" in _FRAGMENT
+
+
+def test_poc_b_is_resynced_and_uses_a_stacked_specimen_tray() -> None:
+    def generated_region(fragment: str) -> str:
+        return fragment.split(_BUILDER.BEGIN_MARKER, 1)[1].split(
+            _BUILDER.END_MARKER, 1
+        )[0]
+
+    assert 'id="dm-fbuxb"' in _POC_B
+    assert "dm-fontfacets" not in _POC_B
+    assert generated_region(_POC_B) == generated_region(_FRAGMENT)
+    assert 'id="fbuxb-preview-text"' in _POC_B
+    assert 'class="pin-toggle"' in _POC_B
+    assert "pinnedKeys.length >= 3" in _POC_B
+
+    assert "Finalists — same sentence, same size." in _POC_B
+    assert "Clear pins" in _POC_B
+    assert "max-height: 40vh" in _POC_B
+    assert "overflow-y: auto" in _POC_B
+    assert "font-size: 24px" in _POC_B
+    assert "line-height: 1.4" in _POC_B
+    assert "var COMPARE_SAMPLE" in _POC_B
+    assert (
+        "var compareText = previewText.trim() ? previewText : COMPARE_SAMPLE;"
+        in _POC_B
+    )
+    assert "escapeHtml(compareText)" in _POC_B
+    assert 'class="compare-copy">Copy chain</button>' in _POC_B
+    assert 'class="compare-unpin"' in _POC_B
+    assert ">\u00d7</button>" in _POC_B
+    assert ".compare-item:hover .compare-copy" in _POC_B
+    assert ".compare-item:focus-within .compare-copy" in _POC_B
+    assert "compare-chain" not in _POC_B
+    assert "grid-template-columns: repeat(auto-fit" not in _POC_B
+
+    item_rule_match = re.search(
+        r"#dm-fbuxb \.compare-item \{(.*?)\}", _POC_B, re.DOTALL
+    )
+    assert item_rule_match is not None
+    item_rule = item_rule_match.group(1)
+    assert "border-bottom" in item_rule
+    assert "background:" not in item_rule
+    assert "border-radius:" not in item_rule
