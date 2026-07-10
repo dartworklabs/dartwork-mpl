@@ -30,18 +30,18 @@
 /* ---------- two-column layout ---------- */
 #dm-fontfacets .workbench {
   display: grid;
-  grid-template-columns: 244px minmax(0, 1fr);
+  grid-template-columns: 184px minmax(0, 1fr);
   gap: var(--dm-space-6);
   align-items: start;
 }
 
 /* ---------- left rail (sticky facets) ---------- */
 #dm-fontfacets .rail { position: sticky; top: var(--dm-space-5); }
-#dm-fontfacets .search-wrap { position: relative; margin-bottom: var(--dm-space-5); }
+#dm-fontfacets .search-wrap { position: relative; margin-bottom: var(--dm-space-4); }
 #dm-fontfacets .search-wrap svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--dm-text-faint); pointer-events: none; }
 #dm-fontfacets #search {
-  width: 100%; padding: 9px 30px 9px 32px;
-  font-size: 13px; font-family: var(--dm-f-sys);
+  width: 100%; padding: 7px 28px 7px 30px;
+  font-size: 12.5px; font-family: var(--dm-f-sys);
   color: var(--dm-text); background: var(--dm-bg-panel);
   border: 1px solid var(--dm-border); border-radius: var(--dm-radius-3);
   transition: border-color .15s;
@@ -57,19 +57,19 @@
 #dm-fontfacets .search-clear:hover { color: var(--dm-text); background: var(--dm-bg-hover); }
 #dm-fontfacets .search-wrap.has-value .search-clear { display: block; }
 
-#dm-fontfacets .facet { margin-bottom: var(--dm-space-5); }
+#dm-fontfacets .facet { margin-bottom: var(--dm-space-4); }
 #dm-fontfacets .facet-head {
   display: flex; align-items: baseline; justify-content: space-between;
-  margin-bottom: var(--dm-space-2);
+  margin-bottom: var(--dm-space-1);
 }
 #dm-fontfacets .facet-head h3 {
   margin: 0; font-size: 11px; font-weight: 600;
   text-transform: uppercase; color: var(--dm-text-faint);
 }
-#dm-fontfacets .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+#dm-fontfacets .chips { display: flex; flex-wrap: wrap; gap: 4px; }
 #dm-fontfacets .chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 5px 9px; font-size: 12px; font-weight: 500;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; font-size: 11.5px; font-weight: 500;
   color: var(--dm-text-muted); background: var(--dm-bg-panel);
   border: 1px solid var(--dm-border); border-radius: var(--dm-radius-full);
   cursor: pointer; transition: background .12s, border-color .12s, color .12s;

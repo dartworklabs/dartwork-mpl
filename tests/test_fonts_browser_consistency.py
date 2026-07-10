@@ -240,3 +240,11 @@ def test_fragment_is_clean_and_has_one_complete_generated_region() -> None:
     assert 'dm.style.use("scientific")' in _FRAGMENT
     assert 'values: ["Sans", "Serif", "Mono"]' in _FRAGMENT
     assert "Numeric axes" in _FRAGMENT
+
+
+def test_facet_rail_density_is_pinned() -> None:
+    assert "grid-template-columns: 184px minmax(0, 1fr);" in _FRAGMENT
+    assert "padding: 7px 28px 7px 30px;" in _FRAGMENT
+    assert ".chips { display: flex; flex-wrap: wrap; gap: 4px; }" in _FRAGMENT
+    assert "padding: 3px 8px; font-size: 11.5px;" in _FRAGMENT
+    assert "margin-bottom: var(--dm-space-1);" in _FRAGMENT
