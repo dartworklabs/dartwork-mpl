@@ -5,14 +5,22 @@
 # best-scoring font — so every glyph the primary face lacks becomes tofu
 # regardless of what font.sans-serif lists. Listing only the *bundled*
 # families (+ the `sans-serif` terminator) keeps the fallback chain
-# deterministic and silent: unlisted OS fonts (Lato, Arial, …) would each
-# emit a "findfont: Font family … not found" log line. The bundled corpus
-# already covers the scientific/report symbol set (see
-# tests/test_font_glyph_coverage.py). font.sans-serif keeps the full
-# preference ladder (incl. OS fallbacks) for the generic terminator and is
-# pinned by tests/test_style_chain_parity.py.
+# deterministic and silent. font.sans-serif is held IDENTICAL to
+# font.family: only bundled families plus the generic `sans-serif`
+# terminator. Non-bundled system fonts (Lato, Open Sans, Arial, Helvetica,
+# Gothic A1, Freesentation, AppleGothic, Malgun Gothic) were removed —
+# anything past the bundle intentionally falls to matplotlib's default
+# rather than a machine-dependent OS font, so output is reproducible across
+# machines. The bundled corpus already covers the scientific/report symbol
+# set (see tests/test_font_glyph_coverage.py). Both chains are pinned by
+# tests/test_style_chain_parity.py.
 font.family: Roboto, Inter, Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
-font.sans-serif: Roboto, Lato, Inter, Open Sans, Arial, Helvetica, Paperlogy, Noto Sans CJK KR, Pretendard, Gothic A1, Freesentation, AppleGothic, Malgun Gothic, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
+font.sans-serif: Roboto, Inter, Paperlogy, Noto Sans CJK KR, Pretendard, Noto Sans Math, Noto Sans Symbols, Noto Sans Symbols 2, sans-serif
+# Monospace role chain: JetBrains Mono (default) → D2Coding (mono-kr, for
+# monospaced Hangul in code blocks and aligned Korean tables) → the Latin
+# mono siblings, then the generic terminator. For Korean code/tables set
+# font.family=["JetBrains Mono", "D2Coding"] so Hangul stays fixed-width.
+font.monospace: JetBrains Mono, D2Coding, IBM Plex Mono, Roboto Mono, Source Code Pro, monospace
 lines.linewidth: 1.0               # line width in points
 lines.color:     oc.blue4                # has no affect on plot(); see axes.prop_cycle
 lines.markersize: 3.0              # compact default marker size for report charts
@@ -28,20 +36,32 @@ font.weight:  300
 #font.stretch: normal
 font.size:    7.5
 
+# Custom mathtext fontset matched to the BODY family so a math segment
+# ($R^2$, $\mu m$) renders in the same voice as the labels around it,
+# instead of leaking matplotlib's DejaVu default. Every face below MUST
+# resolve to a real font file (verified in tests/test_font_invariants.py):
+# rm/it/bf/sf -> Roboto (the body face), tt -> JetBrains Mono (the mono
+# role), cal -> STIXGeneral (matplotlib-bundled, the only calligraphic
+# face we can resolve without shipping one). Greek/operators absent from
+# these fall to `stixsans` (matplotlib-bundled, zero extra bytes) — NOT
+# DejaVu. `mathtext.default: regular` makes bare mathtext use the same
+# upright body face as regular text, so numbers and Latin in `$…$` match
+# the surrounding labels.
 mathtext.fontset: custom  # Should be 'dejavusans' (default),
 
-mathtext.bf:  Noto Sans Math:bold
-mathtext.cal: Noto Sans Math
-mathtext.it:  Noto Sans Math:italic
-mathtext.rm:  Noto Sans Math
-mathtext.sf:  Noto Sans Math
-mathtext.tt:  Noto Sans Math
-mathtext.fallback: stix  # Select fallback font from ['cm' (Computer Modern), 'stix'
-                        # 'stixsans'] when a symbol can not be found in one of the
-                        # custom math fonts. 'stix' is bundled by matplotlib (zero
-                        # extra bytes) and lets math glyphs outside Noto Sans Math
-                        # resolve gracefully instead of hard-failing to a dummy box.
-mathtext.default: it  # The default font to use for math.
+mathtext.bf:  Roboto:bold
+mathtext.cal: STIXGeneral:italic
+mathtext.it:  Roboto:italic
+mathtext.rm:  Roboto
+mathtext.sf:  Roboto
+mathtext.tt:  JetBrains Mono
+mathtext.fallback: stixsans  # Select fallback font from ['cm' (Computer
+                        # Modern), 'stix', 'stixsans'] when a symbol is not
+                        # in one of the custom math faces above. 'stixsans'
+                        # is bundled by matplotlib (zero extra bytes) and
+                        # keeps the fallback sans-serif to match the body,
+                        # resolving gracefully instead of a dummy box.
+mathtext.default: regular  # The default font to use for math.
                        # Can be any of the LaTeX font names, including
                        # the special name "regular" for the same font
                        # used in regular text.

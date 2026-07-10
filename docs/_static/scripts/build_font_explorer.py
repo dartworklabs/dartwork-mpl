@@ -30,16 +30,20 @@ ROOT = SCRIPT_DIR.parents[2]
 OUT = SCRIPT_DIR.parent / "font_explorer.html"
 FONT_FACE_CSS = SCRIPT_DIR.parent / "font-face.css"
 
-MONO_FAMILIES = [
-    "IBM Plex Mono",
-    "JetBrains Mono",
-    "Roboto Mono",
-    "Source Code Pro",
-]
 DEFAULT_FAMILY = "Roboto"
 DEFAULT_WEIGHT = 400
 BASE_WEIGHT = 300
 HANGUL_SAMPLE = "한글 데이터 축 값"
+
+# Explorer rail groups are role-driven from the font registry SSOT: the
+# `serif` role rails under Serif, `mono`/`mono-kr` under Mono, and every
+# other role (body, display, kr-body, fallback-tail) under Sans.
+_ROLE_GROUP = {"serif": "Serif", "mono": "Mono", "mono-kr": "Mono"}
+
+
+def _group_for(family: str) -> str:
+    return _ROLE_GROUP.get(font.FONTS[family].role, "Sans")
+
 
 WEIGHT_ORDER = {
     "Thin": 100,
@@ -160,6 +164,11 @@ def _entry_records() -> list[font_manager.FontEntry]:
 def _weight_label(stem: str) -> str:
     suffix = stem.split("-", 1)[1] if "-" in stem else "Regular"
     suffix = suffix.removesuffix("Italic")
+    # Source Serif 4 names its italic cuts with a bare "It" suffix
+    # (e.g. SourceSerif4-BoldIt, SourceSerif4-It) rather than "Italic", so
+    # strip that too — the roman/italic pair must share one weight label to
+    # pair up. No roman weight label ends in "It", so this is a no-op there.
+    suffix = suffix.removesuffix("It")
     suffix = re.sub(r"^\d+", "", suffix)
     if suffix in {"", "Italic"}:
         return "Regular"
@@ -202,9 +211,12 @@ def _rail_sample(family: str) -> str:
         return "→±"
     if family == "Noto Sans Symbols 2":
         return "⚠★"
-    if family in MONO_FAMILIES:
+    role = font.FONTS[family].role
+    if role == "mono-kr":
+        return "한글"
+    if role == "mono":
         return "0O1l"
-    if family in {"Paperlogy", "Pretendard", "Noto Sans CJK KR"}:
+    if role == "kr-body":
         return "한글"
     return "Aa"
 
@@ -214,10 +226,14 @@ def _family_note(family: str, mono: bool, hangul: bool) -> str:
         return "Default chart body face with a quiet, neutral voice."
     if family == "Inter Display":
         return "Display cut for large chart titles and poster-scale numbers."
+    if family == "Source Serif 4":
+        return "Serif body for journal- and book-matched figures (opt-in)."
     if family == "Noto Sans Math":
         return "Math and operator fallback for scientific notation."
     if family.startswith("Noto Sans Symbols"):
         return "Symbol fallback face for arrows, marks, and dingbats."
+    if family == "D2Coding":
+        return "Monospaced Hangul for code blocks and aligned Korean tables."
     if hangul:
         return "Bundled Hangul coverage for Korean and mixed-language figures."
     if mono:
@@ -301,11 +317,12 @@ def _build_family_inventory() -> dict:
 
         regular = _closest_regular(weights)
         hangul_path = font.get_font_dir() / regular["file"]
-        mono = family in MONO_FAMILIES
+        group = _group_for(family)
+        mono = group == "Mono"
         families[family] = {
             "name": family,
             "slug": _slug(family),
-            "group": "Mono" if mono else "Sans",
+            "group": group,
             "mono": mono,
             "hangul": _has_hangul(hangul_path),
             "italic": any(entry.get("italic_face") for entry in weights),
@@ -319,15 +336,22 @@ def _build_family_inventory() -> dict:
     return families
 
 
-def _ordered_families(families: dict[str, dict]) -> list[str]:
-    sans = sorted(
-        name for name, item in families.items() if item["group"] == "Sans"
+def _group_members(families: dict[str, dict], group: str) -> list[str]:
+    return sorted(
+        name for name, item in families.items() if item["group"] == group
     )
-    mono = [name for name in MONO_FAMILIES if name in families]
+
+
+def _ordered_families(families: dict[str, dict]) -> list[str]:
+    sans = _group_members(families, "Sans")
     if DEFAULT_FAMILY in sans:
         sans.remove(DEFAULT_FAMILY)
         sans.insert(0, DEFAULT_FAMILY)
-    return sans + mono
+    return (
+        sans
+        + _group_members(families, "Serif")
+        + _group_members(families, "Mono")
+    )
 
 
 def _font_counts() -> dict[str, int]:
@@ -348,8 +372,8 @@ def build_payload() -> dict:
     families = _build_family_inventory()
     order = _ordered_families(families)
     groups = [
-        ["Sans", [name for name in order if families[name]["group"] == "Sans"]],
-        ["Mono", [name for name in order if families[name]["group"] == "Mono"]],
+        [title, [name for name in order if families[name]["group"] == title]]
+        for title in ("Sans", "Serif", "Mono")
     ]
     return {
         "families": families,

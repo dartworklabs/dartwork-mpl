@@ -170,10 +170,10 @@ dm.style.use("dark")
 Append `-kr` to any preset name to swap the font family to Korean-capable
 typefaces:
 
-| Layer       | Primary font fallback chain                           |
-| ----------- | ----------------------------------------------------- |
-| **English** | Roboto → Lato → Inter → Open Sans → Arial             |
-| **Korean**  | Paperlogy → Noto Sans CJK KR → Pretendard → Gothic A1 |
+| Layer       | Primary font fallback chain                                |
+| ----------- | --------------------------------------------------------- |
+| **English** | Roboto → Inter → Paperlogy → Noto Sans CJK KR → Pretendard |
+| **Korean**  | Paperlogy → Noto Sans CJK KR → Pretendard → Noto Sans Math |
 
 ```python
 dm.style.use("report-kr")       # report sizing + Korean fonts

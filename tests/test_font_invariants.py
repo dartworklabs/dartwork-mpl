@@ -4,10 +4,19 @@
 
 from __future__ import annotations
 
+import io
+import re
 import runpy
+import warnings
 from pathlib import Path
 
+import matplotlib
+import matplotlib.pyplot as plt
+
+import dartwork_mpl as dm
 from dartwork_mpl import font
+
+matplotlib.use("Agg")  # headless-safe; must precede any figure creation
 
 _REPO = Path(__file__).resolve().parents[1]
 _BASE_MPLSTYLE = (
@@ -70,7 +79,7 @@ def test_registry_matches_registered_matplotlib_families() -> None:
     registered = set(font.list_registered())
     registry = font.font_families()
 
-    assert len(registry) == 16
+    assert len(registry) == 18
     assert set(registry) == registered
     assert set(font.FONTS) == registered
     for family in registry.values():
@@ -159,4 +168,64 @@ def test_typography_matrix_matches_builder() -> None:
 
     assert built == committed
     assert "<style" not in committed
-    assert committed.count("<tr><td>") == 16
+    assert committed.count("<tr><td>") == 18
+
+
+# --- P0-1 mathtext coherence gate ---------------------------------------
+# The custom mathtext fontset in base.mplstyle matches the body family, so a
+# math segment must NOT leak matplotlib's DejaVu default. Render the label
+# to an SVG with the glyphs kept as text (svg.fonttype: none) so the
+# font-family attributes are inspectable, then assert no DejaVu leaks and the
+# body family shows up. `mathtext.default: regular` makes bare mathtext use
+# the body face, so scientific renders R/m/digits in Roboto and report-kr
+# renders them in Paperlogy while the Greek falls to STIX (never DejaVu).
+_MATH_LABEL = r"$R^2 \mu m 10^3$"
+
+
+def _math_svg_font_families(preset: str) -> tuple[list[str], list[str]]:
+    """Render the math label under ``preset`` into a text-embedded SVG.
+
+    Returns the SVG's ``font-family`` attribute values and any matplotlib
+    "missing from font" (tofu) warning messages.
+    """
+    dm.style.use(preset)
+    plt.rcParams["svg.fonttype"] = "none"
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    try:
+        ax.text(0.5, 0.5, _MATH_LABEL, ha="center", va="center")
+        buf = io.BytesIO()
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            fig.savefig(buf, format="svg")
+    finally:
+        plt.close(fig)
+    svg = buf.getvalue().decode("utf-8")
+    families = re.findall(r"font-family:\s*([^;\"]+)", svg)
+    missing = [
+        str(w.message) for w in caught if "missing from font" in str(w.message)
+    ]
+    return families, missing
+
+
+def test_mathtext_scientific_matches_body_without_dejavu() -> None:
+    families, missing = _math_svg_font_families("scientific")
+    assert families, "no font-family attributes in the SVG"
+    assert all("DejaVu" not in value for value in families), (
+        f"mathtext leaked DejaVu under 'scientific': {families}"
+    )
+    assert any("Roboto" in value for value in families), (
+        f"body family Roboto absent from mathtext SVG: {families}"
+    )
+    assert not missing, f"tofu warnings under 'scientific': {missing}"
+
+
+def test_mathtext_kr_stays_latin_without_dejavu() -> None:
+    families, missing = _math_svg_font_families("report-kr")
+    assert families, "no font-family attributes in the SVG"
+    assert all("DejaVu" not in value for value in families), (
+        f"mathtext leaked DejaVu under 'report-kr': {families}"
+    )
+    assert any("Paperlogy" in value for value in families), (
+        f"body family Paperlogy absent from mathtext SVG: {families}"
+    )
+    assert not missing, f"tofu warnings under 'report-kr': {missing}"

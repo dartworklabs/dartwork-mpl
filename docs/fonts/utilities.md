@@ -12,7 +12,7 @@ simplify typography management in your visualizations.
 
 ## Automatic Font Registration
 
-When you import dartwork-mpl, all 206 bundled fonts are automatically
+When you import dartwork-mpl, all 220 bundled fonts are automatically
 registered with matplotlib's font manager — no manual installation or
 system-level configuration required:
 

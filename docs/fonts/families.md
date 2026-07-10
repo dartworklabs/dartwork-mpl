@@ -1,14 +1,15 @@
 # Font Families
 
-dartwork-mpl bundles **206 text font files** across **18 documented file
-groups**. Matplotlib registers those assets as **16 matplotlib family names**;
+dartwork-mpl bundles **220 text font files** across **20 documented file
+groups**. Matplotlib registers those assets as **18 matplotlib family names**;
 Condensed and SemiCondensed Noto Sans files register as Noto Sans with width
 metadata rather than separate family names. Each group is optimized for
 different use cases in data visualization. This page profiles the core groups
 in depth; for a
 one-click specimen of **every** family — including Pretendard, Source
-Sans 3, IBM Plex Sans, and the four monospace families (IBM Plex Mono,
-JetBrains Mono, Source Code Pro, Roboto Mono) — use the
+Sans 3, IBM Plex Sans, the serif body face Source Serif 4, and the monospace
+families (JetBrains Mono, D2Coding, IBM Plex Mono, Source Code Pro,
+Roboto Mono) — use the
 [font explorer](index.md).
 
 ## Why fonts matter
@@ -42,7 +43,9 @@ exist: [Design rationale › Typography](../color_system/design-rationale.md#typ
 | **body** | Roboto | Inter · IBM Plex Sans · Source Sans 3 · Noto Sans | General Latin chart text; choose an alternate for screen UI, technical, editorial, or multilingual tone. |
 | **display** | Inter Display | - | Titles, section headings, and poster-scale numbers. |
 | **kr-body** | Paperlogy | Pretendard · Noto Sans CJK KR | Korean labels and bilingual KR/EN figures; use Noto Sans CJK KR when broader CJK coverage matters. |
+| **serif** | Source Serif 4 | - | Opt-in serif body for journal- or book-matched figures. Not wired into any preset chain, so set `plt.rcParams["font.family"] = "Source Serif 4"` explicitly. No Korean serif (명조) is bundled — that is out of scope by design (bundle size). |
 | **mono** | JetBrains Mono | IBM Plex Mono · Roboto Mono · Source Code Pro | Code, timestamps, aligned values, and tabular labels; pair alternates with their sans siblings. |
+| **mono-kr** | D2Coding | - | Monospaced Hangul for code blocks and aligned Korean tables. Pair with the Latin mono as `font.family = ["JetBrains Mono", "D2Coding"]` so Hangul stays fixed-width. |
 | **fallback-tail** | Noto Sans Math | Noto Sans Symbols · Noto Sans Symbols 2 | Keep these in the chain for math operators, arrows, signs, and dingbats rather than choosing them as body faces. |
 
 To apply a font, prepend its exact matplotlib family name to the current

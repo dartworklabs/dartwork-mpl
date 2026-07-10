@@ -46,7 +46,9 @@ _DEFAULT_9 = [
     "paragraph",
     "numerals_confusables",
 ]
+_SERIF_FAMILIES = ["Source Serif 4"]
 _MONO_FAMILIES = [
+    "D2Coding",
     "IBM Plex Mono",
     "JetBrains Mono",
     "Roboto Mono",
@@ -122,7 +124,7 @@ def test_builder_payload_does_not_require_generated_font_assets(
 
     payload = builder["build_payload"]()
 
-    assert payload["counts"]["families"] == 16
+    assert payload["counts"]["families"] == 18
 
 
 def _registered_weights_by_family() -> dict[str, set[int]]:
@@ -165,14 +167,13 @@ def test_builder_inventory_comes_from_registered_font_ssot() -> None:
     families = payload["families"]
     registered = font.list_registered()
 
-    assert payload["counts"]["families"] == 16
+    assert payload["counts"]["families"] == 18
     assert payload["counts"]["families"] == len(registered)
     assert set(families) == set(registered)
+    _grouped = set(_SERIF_FAMILIES) | set(_MONO_FAMILIES)
     assert payload["groups"] == [
-        [
-            "Sans",
-            [name for name in payload["order"] if name not in _MONO_FAMILIES],
-        ],
+        ["Sans", [name for name in payload["order"] if name not in _grouped]],
+        ["Serif", _SERIF_FAMILIES],
         ["Mono", _MONO_FAMILIES],
     ]
     assert payload["order"][0] == "Roboto"
@@ -316,9 +317,9 @@ def test_docs_embed_font_explorer_and_drop_legacy_picker() -> None:
     assert legacy not in families
     assert "chart-context font explorer" in index
     for text in (index_squashed, families_squashed):
-        assert "**206 text font files**" in text
-        assert "**18 documented file groups**" in text
-        assert "**16 matplotlib family names**" in text
+        assert "**220 text font files**" in text
+        assert "**20 documented file groups**" in text
+        assert "**18 matplotlib family names**" in text
 
 
 def test_legacy_picker_artifacts_are_gone() -> None:

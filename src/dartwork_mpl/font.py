@@ -40,7 +40,9 @@ _CHART_GLYPHS: tuple[str, ...] = ("−", "×", "±", "→", "°", "μ", "σ", "�
 _HANGUL_SAMPLE: str = "한글"
 _FIXED_WIDTH_PROBE: str = "0123456789ilW"
 
-FontRole = Literal["body", "display", "kr-body", "mono", "fallback-tail"]
+FontRole = Literal[
+    "body", "display", "kr-body", "serif", "mono", "mono-kr", "fallback-tail"
+]
 
 
 @dataclass(frozen=True)
@@ -206,6 +208,16 @@ FONTS: Mapping[str, FontFamily] = MappingProxyType(
             job="CJK coverage fallback when Korean, Japanese, or Chinese glyph breadth matters.",
             alternates=_alternates("Noto Sans CJK KR", _KR_BODY_FAMILIES),
         ),
+        "Source Serif 4": FontFamily(
+            name="Source Serif 4",
+            role="serif",
+            job="Serif body for journal- and book-matched figures where a serif voice is wanted.",
+            quirks=(
+                "Opt-in family - not wired into any preset fallback chain. "
+                "No Korean serif is bundled (명조): a legible Hangul serif "
+                "would add several MB, so KR serif is out of scope by design.",
+            ),
+        ),
         "JetBrains Mono": FontFamily(
             name="JetBrains Mono",
             role="mono",
@@ -232,6 +244,11 @@ FONTS: Mapping[str, FontFamily] = MappingProxyType(
             role="mono",
             job="Adobe monospace companion for Source Sans 3 editorial figures.",
             alternates=_alternates("Source Code Pro", _MONO_FAMILIES),
+        ),
+        "D2Coding": FontFamily(
+            name="D2Coding",
+            role="mono-kr",
+            job="Monospaced Hangul for code blocks and aligned Korean tables.",
         ),
         "Noto Sans Math": FontFamily(
             name="Noto Sans Math",

@@ -39,19 +39,14 @@ _MPLSTYLE_DIR = (
     / "mplstyle"
 )
 
-# Families the presets may reference without bundling them — OS-provided
-# fallbacks further down the chains. Every entry is justified by an
-# actual occurrence in a chain today.
+# Families the presets may reference without bundling them. Every entry is
+# justified by an actual occurrence in a chain today. The chains were
+# cleaned of machine-dependent OS sans fonts (Lato, Open Sans, Arial, …),
+# so the only non-bundled references left are the matplotlib-provided
+# mathtext calligraphic face and the generic terminator.
 _SYSTEM_FALLBACKS: frozenset[str] = frozenset(
     {
-        "Lato",  # base/dmpl sans chain slot 2
-        "Open Sans",  # sans chain slot 4
-        "Arial",  # ubiquitous OS fallback
-        "Helvetica",  # macOS fallback
-        "Gothic A1",  # Korean OS fallback
-        "Freesentation",  # Korean fallback
-        "AppleGothic",  # macOS Korean fallback
-        "Malgun Gothic",  # Windows Korean fallback
+        "STIXGeneral",  # base mathtext.cal — matplotlib-bundled STIX face
         "sans-serif",  # matplotlib generic terminator
     }
 )

@@ -16,9 +16,9 @@ Math & Special Characters <math_and_symbols>
 
 ## Overview
 
-dartwork-mpl bundles **206 text font files** organized into **18 documented
+dartwork-mpl bundles **220 text font files** organized into **20 documented
 file groups** for data visualization and publication figures. Matplotlib
-registers those files as **16 matplotlib family names** on
+registers those files as **18 matplotlib family names** on
 `import dartwork_mpl`, and bundled entries win same-named system-font ties —
 no manual font installation or configuration required.
 
@@ -75,7 +75,7 @@ plt.show()
 ## Key Features
 
 **Auto-Registration**
-: All 206 font files are registered with matplotlib's font manager on
+: All 220 font files are registered with matplotlib's font manager on
 `import dartwork_mpl`. Bundled fonts are promoted ahead of same-named
 system copies, so figures render with the shipped assets wherever possible.
 

@@ -133,6 +133,10 @@ CONTRACT_FAMILIES: tuple[str, ...] = (
     "Paperlogy",
     "Noto Sans CJK KR",
     "Noto Sans Math",
+    # base.mplstyle points mathtext.tt at JetBrains Mono, so every preset's
+    # custom mathtext fontset needs it to resolve. Deleting it would break
+    # \mathtt in every preset — exactly the eager-registration contract.
+    "JetBrains Mono",
     # Symbol fallback faces bundled for scientific/report special-character
     # coverage (arrows, ⚠ ✓ ★, dingbats). They sit in every preset's
     # font.family / font.sans-serif fallback chain. Deletion is caught by
