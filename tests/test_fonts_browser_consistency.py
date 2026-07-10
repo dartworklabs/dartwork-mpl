@@ -239,7 +239,7 @@ def test_fragment_is_clean_and_has_one_complete_generated_region() -> None:
     )
     assert 'dm.style.use("scientific")' in _FRAGMENT
     assert 'values: ["Sans", "Serif", "Mono"]' in _FRAGMENT
-    assert "Numeric axes" in _FRAGMENT
+    assert "Numeric axes" not in _FRAGMENT
 
 
 def test_facet_rail_density_is_pinned() -> None:
@@ -248,3 +248,32 @@ def test_facet_rail_density_is_pinned() -> None:
     assert ".chips { display: flex; flex-wrap: wrap; gap: 4px; }" in _FRAGMENT
     assert "padding: 3px 8px; font-size: 11.5px;" in _FRAGMENT
     assert "margin-bottom: var(--dm-space-1);" in _FRAGMENT
+
+
+def test_card_copy_and_badge_contract_is_pinned() -> None:
+    assert ".mono-name" not in _FRAGMENT
+    assert 'querySelector(".mono-name")' not in _FRAGMENT
+    assert 'escapeHtml(f.raw.desc + " " + f.raw.application)' in _FRAGMENT
+    assert "Aligned digits" in _FRAGMENT
+    assert (
+        "Digits share one width, so numeric axis labels stay aligned "
+        "(the registry's numeric-axes gate)."
+    ) in _FRAGMENT
+
+    card_source = _FRAGMENT.split("function makeCard(f)", 1)[1].split(
+        "function markSelected", 1
+    )[0]
+    markup_source = card_source.split("card.innerHTML =", 1)[1]
+    assert markup_source.index('class="card-desc"') > markup_source.index(
+        'class="card-top"'
+    )
+    assert markup_source.index("badge role") < markup_source.index(
+        "badge script"
+    )
+    assert markup_source.index("badge script") < markup_source.index(
+        "f.weightCount"
+    )
+    assert markup_source.index("f.weightCount") < markup_source.index(
+        "axesBadge"
+    )
+    assert markup_source.index("axesBadge") < markup_source.index("monoBadge")

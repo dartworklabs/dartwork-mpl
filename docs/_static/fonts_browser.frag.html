@@ -126,12 +126,12 @@
   position: absolute; inset: 0; z-index: 1; width: 100%;
   border: 0; border-radius: inherit; background: transparent; cursor: pointer;
 }
-#dm-fontfacets .card-top, #dm-fontfacets .badges, #dm-fontfacets .sample-line {
+#dm-fontfacets .card-top, #dm-fontfacets .card-desc, #dm-fontfacets .badges, #dm-fontfacets .sample-line {
   position: relative; z-index: 2; pointer-events: none;
 }
 #dm-fontfacets .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--dm-space-2); }
 #dm-fontfacets .card-name { font-size: 15px; font-weight: 600; color: var(--dm-text-strong); margin: 0; }
-#dm-fontfacets .card-desc { font-size: 11.5px; color: var(--dm-text-muted); margin: 2px 0 0; }
+#dm-fontfacets .card-desc { font-size: 11.5px; line-height: 1.45; color: var(--dm-text-muted); margin: 0; }
 #dm-fontfacets .badges { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 #dm-fontfacets .badge {
   font-size: 10.5px; font-weight: 500; padding: 2px 7px;
@@ -146,16 +146,6 @@
   position: relative; z-index: 3; display: flex; flex-wrap: wrap;
   align-items: center; justify-content: flex-end; gap: 5px; pointer-events: auto;
 }
-#dm-fontfacets .mono-name {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-family: var(--dm-f-mono); font-size: 11px; font-weight: 500;
-  color: var(--dm-text-muted); background: var(--dm-bg-subtle);
-  border: 1px solid var(--dm-border-faint); border-radius: var(--dm-radius-2);
-  padding: 3px 7px; cursor: copy; transition: background .12s, color .12s;
-  white-space: nowrap; line-height: 1.2;
-}
-#dm-fontfacets .mono-name:hover { background: var(--dm-accent-3); color: var(--dm-accent-11); border-color: var(--dm-accent-8); }
-#dm-fontfacets .mono-name svg { flex: 0 0 auto; }
 #dm-fontfacets .chain-copy {
   border: 1px solid transparent; border-radius: var(--dm-radius-2);
   background: transparent; color: var(--dm-text-faint); cursor: copy;
@@ -1783,36 +1773,30 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
     var roleLabel = ROLE_LABELS[f.raw.role] || f.raw.role;
     var defaultBadge = f.key === "roboto" ? '<span class="badge">Default</span>' : "";
     var monoBadge = f.isMono && roleLabel !== "Mono" ? '<span class="badge mono-flag">Mono</span>' : "";
-    var axesBadge = f.raw.numeric_axes ? '<span class="badge">Numeric axes</span>' : "";
+    var axesBadge = f.raw.numeric_axes
+      ? "<span class='badge' title=\"Digits share one width, so numeric axis labels stay aligned (the registry's numeric-axes gate).\">Aligned digits</span>"
+      : "";
     var chainLine = 'plt.rcParams["font.family"] = ' + JSON.stringify(f.raw.chain);
     card.innerHTML =
       '<button type="button" class="card-open" aria-label="Open ' + escapeHtml(f.name) + ' details"></button>' +
       '<div class="card-top">' +
-        '<div><h3 class="card-name">' + escapeHtml(f.name) + "</h3>" +
-        '<p class="card-desc">' + escapeHtml(f.raw.desc) + "</p></div>" +
+        '<h3 class="card-name">' + escapeHtml(f.name) + "</h3>" +
         '<div class="card-actions">' +
-          '<button type="button" class="mono-name" aria-label="Copy matplotlib family name" title="Copy matplotlib family name">' +
-            '<span>' + escapeHtml(f.mpl) + '</span>' +
-            '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>' +
-          "</button>" +
           '<button type="button" class="chain-copy">Copy chain</button>' +
         "</div>" +
       "</div>" +
+      '<p class="card-desc">' + escapeHtml(f.raw.desc + " " + f.raw.application) + "</p>" +
       '<div class="badges">' +
         '<span class="badge role">' + escapeHtml(roleLabel) + "</span>" +
         defaultBadge +
         '<span class="badge script">' + escapeHtml(f.script) + "</span>" +
-        monoBadge +
-        axesBadge +
         '<span class="badge">' + f.weightCount + " weight" + (f.weightCount === 1 ? "" : "s") + "</span>" +
+        axesBadge +
+        monoBadge +
       "</div>" +
       '<p class="sample-line" style="font-family:\'' + f.raw.regular + "', var(--dm-f-sys)\">" + escapeHtml(f.raw.sample) + "</p>";
 
     card.querySelector(".card-open").addEventListener("click", function () { openDetail(f.key); });
-    var monoEl = card.querySelector(".mono-name");
-    monoEl.addEventListener("click", function () {
-      copyText(f.mpl, "<b>" + escapeHtml(f.mpl) + "</b> copied — paste into font.family");
-    });
     card.querySelector(".chain-copy").addEventListener("click", function () {
       copyText(chainLine, "font.family chain copied");
     });
