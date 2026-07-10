@@ -9,6 +9,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from fontTools.ttLib import TTFont
+
 from dartwork_mpl import font
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -19,6 +21,9 @@ END_MARKER = "// DM_FONT_DATA:END"
 
 LATIN = "The dartwork designs beautiful data artworks since 2021."
 HERO_LATIN = "Aa Gg Rr 0123"
+LADDER_LATIN = "Beautiful data graphs 0123"
+LADDER_KOREAN = "아름다운 데이터 그래프 0123"
+LADDER_MONO = "plot(fig=dm) # 0123"
 
 # Editorial fields are deliberately curated, but their keys must exactly match
 # the live registry. All technical fields are measured from bundled font files.
@@ -299,6 +304,43 @@ def _width_variants(measurement: font.FontMeasurement) -> list[dict[str, str]]:
     return variants
 
 
+def _face_codepoints(filename: str) -> frozenset[int]:
+    ttfont = TTFont(font.get_font_dir() / filename, lazy=True)
+    try:
+        return frozenset(font._cmap_mapping(ttfont))
+    finally:
+        ttfont.close()
+
+
+def _ladder_sample(
+    name: str,
+    role: str,
+    measurement: font.FontMeasurement,
+    regular: font.FontFaceMeasurement,
+) -> str:
+    codepoints = _face_codepoints(regular.file)
+    if measurement.fixed_pitch:
+        candidate = LADDER_MONO
+    elif role == "fallback-tail":
+        glyphs = [
+            glyph
+            for glyph in measurement.chart_glyphs
+            if ord(glyph) in codepoints
+        ][:14]
+        candidate = " ".join(glyphs)
+        if all(ord(char) in codepoints for char in "0123"):
+            candidate += " 0123"
+    elif measurement.hangul:
+        candidate = LADDER_KOREAN
+    else:
+        candidate = LADDER_LATIN
+
+    for text in (candidate.strip(), META[name]["hero"]):
+        if text and all(ord(char) in codepoints for char in text):
+            return text
+    raise SystemExit(f"no coverage-safe ladder sample for {name}")
+
+
 def build_catalog() -> tuple[
     dict[str, dict[str, Any]], list[str], list[dict[str, Any]]
 ]:
@@ -364,6 +406,9 @@ def build_catalog() -> tuple[
             "role": record.role,
             "group": group,
             **META[name],
+            "ladder_sample": _ladder_sample(
+                name, record.role, measurement, regular
+            ),
             "regular": font.css_font_face_name(regular.file),
             "weights": weights,
             "italic": measurement.italic,

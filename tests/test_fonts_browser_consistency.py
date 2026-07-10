@@ -13,6 +13,7 @@ from types import ModuleType
 from typing import Any
 
 import pytest
+from fontTools.ttLib import TTFont
 
 from dartwork_mpl import font
 
@@ -186,6 +187,7 @@ def test_editorial_fields_and_sample_codepoints_are_honest() -> None:
         "personality",
         "hero",
         "sample",
+        "ladder_sample",
         "chain",
     }
 
@@ -199,6 +201,21 @@ def test_editorial_fields_and_sample_codepoints_are_honest() -> None:
                 if not char.isascii() and ord(char) not in codepoints
             }
             assert not missing, (entry["mpl"], field, missing)
+
+        regular_face = next(
+            face
+            for face in font._measure(entry["mpl"]).files
+            if font.css_font_face_name(face.file) == entry["regular"]
+        )
+        ttfont = TTFont(font.get_font_dir() / regular_face.file, lazy=True)
+        try:
+            regular_codepoints = set(font._cmap_mapping(ttfont))
+        finally:
+            ttfont.close()
+        assert entry["ladder_sample"]
+        assert all(
+            ord(char) in regular_codepoints for char in entry["ladder_sample"]
+        ), entry["mpl"]
 
 
 def test_chains_and_noto_width_variants_are_registry_valid() -> None:
