@@ -189,7 +189,7 @@
 
 /* ---------- detail drawer ---------- */
 #dm-fontfacets .detail-backdrop {
-  position: fixed; inset: 0; z-index: 60; background: var(--dm-gray-a8, rgba(0,0,0,0.4));
+  position: fixed; inset: 0; z-index: 60; background: var(--dm-gray-a8);
   opacity: 0; pointer-events: none; transition: opacity .18s;
 }
 #dm-fontfacets .detail-backdrop.open { opacity: 1; pointer-events: auto; }
@@ -1493,9 +1493,9 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
   function legacyCopy(text, done) {
     var ta = document.createElement("textarea");
     ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
-    document.body.appendChild(ta); ta.select();
+    ROOT.appendChild(ta); ta.select();
     try { document.execCommand("copy"); done(); } catch (e) { /* no-op */ }
-    document.body.removeChild(ta);
+    ROOT.removeChild(ta);
   }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
