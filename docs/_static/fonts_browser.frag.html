@@ -112,7 +112,7 @@
 #dm-fontfacets .grid { display: grid; grid-template-columns: minmax(0,1fr); gap: var(--dm-space-3); }
 
 #dm-fontfacets .card {
-  text-align: left; width: 100%; cursor: pointer;
+  position: relative; text-align: left; width: 100%;
   background: var(--dm-bg-panel); border: 1px solid var(--dm-border);
   border-radius: var(--dm-radius-4); padding: var(--dm-space-4);
   transition: border-color .12s, background .12s, box-shadow .12s;
@@ -121,6 +121,13 @@
 #dm-fontfacets .card:hover { border-color: var(--dm-border-strong); box-shadow: var(--dm-shadow-1); }
 #dm-fontfacets .card[aria-selected="true"] {
   border-color: var(--dm-accent-8); background: var(--dm-accent-2);
+}
+#dm-fontfacets .card-open {
+  position: absolute; inset: 0; z-index: 1; width: 100%;
+  border: 0; border-radius: inherit; background: transparent; cursor: pointer;
+}
+#dm-fontfacets .card-top, #dm-fontfacets .badges, #dm-fontfacets .sample-line {
+  position: relative; z-index: 2; pointer-events: none;
 }
 #dm-fontfacets .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--dm-space-2); }
 #dm-fontfacets .card-name { font-size: 15px; font-weight: 600; color: var(--dm-text-strong); margin: 0; }
@@ -132,16 +139,32 @@
   background: var(--dm-bg-subtle); color: var(--dm-text-muted);
   border: 1px solid var(--dm-border-faint);
 }
+#dm-fontfacets .badge.role { background: var(--dm-accent-3); color: var(--dm-accent-11); border-color: transparent; }
 #dm-fontfacets .badge.script { background: var(--dm-info-3); color: var(--dm-info-11); border-color: transparent; }
 #dm-fontfacets .badge.mono-flag { background: var(--dm-warning-3); color: var(--dm-warning-11); border-color: transparent; }
+#dm-fontfacets .card-actions {
+  position: relative; z-index: 3; display: flex; flex-wrap: wrap;
+  align-items: center; justify-content: flex-end; gap: 5px; pointer-events: auto;
+}
 #dm-fontfacets .mono-name {
+  display: inline-flex; align-items: center; gap: 4px;
   font-family: var(--dm-f-mono); font-size: 11px; font-weight: 500;
   color: var(--dm-text-muted); background: var(--dm-bg-subtle);
   border: 1px solid var(--dm-border-faint); border-radius: var(--dm-radius-2);
   padding: 3px 7px; cursor: copy; transition: background .12s, color .12s;
-  white-space: nowrap;
+  white-space: nowrap; line-height: 1.2;
 }
 #dm-fontfacets .mono-name:hover { background: var(--dm-accent-3); color: var(--dm-accent-11); border-color: var(--dm-accent-8); }
+#dm-fontfacets .mono-name svg { flex: 0 0 auto; }
+#dm-fontfacets .chain-copy {
+  border: 1px solid transparent; border-radius: var(--dm-radius-2);
+  background: transparent; color: var(--dm-text-faint); cursor: copy;
+  padding: 3px 6px; font-size: 10.5px; font-weight: 500; line-height: 1.2;
+  transition: background .12s, border-color .12s, color .12s;
+}
+#dm-fontfacets .chain-copy:hover {
+  background: var(--dm-accent-3); border-color: var(--dm-accent-8); color: var(--dm-accent-11);
+}
 #dm-fontfacets .sample-line {
   font-size: 17px; line-height: 1.35; color: var(--dm-text);
   margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -185,6 +208,15 @@
 }
 #dm-fontfacets .detail-head h2 { margin: 0; font-size: 20px; font-weight: 700; color: var(--dm-text-strong); }
 #dm-fontfacets .detail-head .d-sub { margin: 3px 0 0; font-size: 12px; color: var(--dm-text-muted); }
+#dm-fontfacets .detail-title { min-width: 0; }
+#dm-fontfacets .detail-head-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+#dm-fontfacets .detail-nav { display: flex; align-items: center; gap: 4px; }
+#dm-fontfacets .detail-nav-btn {
+  border: 1px solid var(--dm-border); background: transparent; cursor: pointer;
+  min-height: 30px; padding: 4px 8px; border-radius: var(--dm-radius-2);
+  color: var(--dm-text-muted); font-size: 11px; font-weight: 500;
+}
+#dm-fontfacets .detail-nav-btn:hover { background: var(--dm-bg-hover); color: var(--dm-text); }
 #dm-fontfacets .detail-close {
   border: 1px solid var(--dm-border); background: var(--dm-bg-page); cursor: pointer;
   width: 30px; height: 30px; border-radius: var(--dm-radius-full);
@@ -200,6 +232,16 @@
 }
 #dm-fontfacets .hero-line { font-size: 34px; line-height: 1.2; color: var(--dm-text-strong); margin: 0; word-break: break-word; }
 #dm-fontfacets .numerals { font-size: 22px; color: var(--dm-text); margin: 0; font-variant-numeric: tabular-nums; }
+#dm-fontfacets .tnum-proof {
+  margin-top: var(--dm-space-3); padding-top: var(--dm-space-3);
+  border-top: 1px solid var(--dm-border-faint);
+}
+#dm-fontfacets .tnum-values {
+  color: var(--dm-text-strong); font-size: 17px; line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+#dm-fontfacets .tnum-values div { white-space: nowrap; }
+#dm-fontfacets .tnum-caption { margin: 4px 0 0; color: var(--dm-text-faint); font-size: 11.5px; }
 #dm-fontfacets .intent-txt { font-size: 13px; line-height: 1.55; color: var(--dm-text-muted); margin: 0; }
 
 #dm-fontfacets .ladder { display: flex; flex-direction: column; }
@@ -208,10 +250,22 @@
   padding: 7px 0; border-bottom: 1px solid var(--dm-border-faint);
 }
 #dm-fontfacets .ladder-row:last-child { border-bottom: 0; }
+#dm-fontfacets .ladder-copy {
+  width: 100%; text-align: left; background: transparent; cursor: copy;
+  border: 0; border-bottom: 1px solid var(--dm-border-faint);
+  transition: background .12s;
+}
+#dm-fontfacets .ladder-copy:hover { background: var(--dm-accent-2); }
 #dm-fontfacets .ladder-meta { flex: 0 0 96px; }
-#dm-fontfacets .ladder-meta .w-label { font-size: 12px; font-weight: 500; color: var(--dm-text); }
-#dm-fontfacets .ladder-meta .w-num { font-family: var(--dm-f-mono); font-size: 10.5px; color: var(--dm-text-faint); font-variant-numeric: tabular-nums; }
-#dm-fontfacets .ladder-sample { font-size: 19px; line-height: 1.1; color: var(--dm-text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#dm-fontfacets .ladder-meta .w-label { display: block; font-size: 12px; font-weight: 500; color: var(--dm-text); }
+#dm-fontfacets .ladder-meta .w-num { display: block; font-family: var(--dm-f-mono); font-size: 10.5px; color: var(--dm-text-faint); font-variant-numeric: tabular-nums; }
+#dm-fontfacets .ladder-sample { flex: 1 1 auto; min-width: 0; font-size: 19px; line-height: 1.1; color: var(--dm-text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#dm-fontfacets .copy-hint {
+  margin-left: auto; color: var(--dm-text-faint); font-size: 10.5px;
+  opacity: 0; transition: opacity .12s, color .12s;
+}
+#dm-fontfacets .ladder-copy:hover .copy-hint,
+#dm-fontfacets .ladder-copy:focus-visible .copy-hint { opacity: 1; color: var(--dm-accent-11); }
 
 #dm-fontfacets .snippet {
   position: relative;
@@ -259,7 +313,7 @@
     <aside class="rail" aria-label="Filters">
       <div class="search-wrap" id="searchWrap">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
-        <input id="search" type="search" placeholder="Search families…" autocomplete="off" aria-label="Search font families by name, description, or personality">
+        <input id="search" type="search" placeholder="Search families — name, feel, or use case…" autocomplete="off" aria-label="Search font families by name, description, or personality">
         <button type="button" class="search-clear" id="searchClear" aria-label="Clear search">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
         </button>
@@ -287,13 +341,19 @@
 <div class="detail-backdrop" id="backdrop"></div>
 <aside class="detail" id="detail" aria-label="Font detail" aria-hidden="true">
   <div class="detail-head">
-    <div>
+    <div class="detail-title">
       <h2 id="dName">—</h2>
       <p class="d-sub" id="dSub">—</p>
     </div>
-    <button type="button" class="detail-close" id="dClose" aria-label="Close detail">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
-    </button>
+    <div class="detail-head-actions">
+      <div class="detail-nav" aria-label="Browse visible font families">
+        <button type="button" class="detail-nav-btn" id="dPrev">‹ Prev</button>
+        <button type="button" class="detail-nav-btn" id="dNext">Next ›</button>
+      </div>
+      <button type="button" class="detail-close" id="dClose" aria-label="Close detail">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
   </div>
   <div class="detail-body" id="dBody"><!-- detail injected --></div>
 </aside>
@@ -1422,8 +1482,8 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { toast.classList.remove("show"); }, 1900);
   }
-  function copyText(text, label) {
-    var done = function () { showToast("Copied <b>" + escapeHtml(label) + "</b>"); };
+  function copyText(text, successHtml) {
+    var done = function () { showToast(successHtml); };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(done, function () { legacyCopy(text, done); });
     } else {
@@ -1447,7 +1507,30 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
   var DATA = window.DM_FONT_DATA || {};
   var ORDER = window.DM_FONT_ORDER || Object.keys(DATA);
   var GROUPS = window.DM_FONT_GROUPS || [];
-  var WEIGHT_THRESHOLD = 9; // "9+ weights" vs "<9"
+  var WEIGHT_THRESHOLD = 9;
+  var ROLE_LABELS = {
+    body: "Body",
+    display: "Display",
+    serif: "Serif",
+    mono: "Mono",
+    "kr-body": "Korean body",
+    korean_body: "Korean body",
+    "mono-kr": "Korean mono",
+    korean_mono: "Korean mono",
+    "fallback-tail": "Symbols",
+    symbols: "Symbols",
+    math: "Symbols"
+  };
+  var GROUP_TOOLTIPS = {
+    Workhorse: "Everyday body faces — the safe defaults",
+    Display: "Large titles and poster-scale numbers",
+    Technical: "Interface and engineering voice",
+    Multilingual: "Broad script coverage in one family",
+    Serif: "Opt-in serif voice for journals and reports",
+    "Korean & CJK": "Hangul-first and CJK coverage",
+    Monospace: "Fixed-width for code and aligned figures",
+    "Symbols & Math": "Fallback tail — operators, arrows, symbols"
+  };
 
   // enrich each family with derived facet fields
   var FAMILIES = ORDER.map(function (key) {
@@ -1490,8 +1573,8 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
       case "group": return f.group === value;
       case "script": return f.script === value;
       case "style": return f.style === value;
-      case "italic": return value === "Has italics" ? f.hasItalic : !f.hasItalic;
-      case "weights": return value === "9+ weights" ? f.manyWeights : !f.manyWeights;
+      case "italic": return value === "Italics available" ? f.hasItalic : !f.hasItalic;
+      case "weights": return value === "Deep (9+ weights)" ? f.manyWeights : !f.manyWeights;
     }
     return false;
   }
@@ -1513,6 +1596,7 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
       passesFacet(f, "style") && passesFacet(f, "italic") &&
       passesFacet(f, "weights");
   }
+  function visibleFamilies() { return FAMILIES.filter(isVisible); }
 
   // count for a chip: how many WOULD show if this value were added,
   // holding every OTHER facet's current selection + search fixed.
@@ -1532,8 +1616,8 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
     { facet: "group", label: "Group", values: GROUP_TITLES },
     { facet: "script", label: "Script", values: SCRIPTS },
     { facet: "style", label: "Style", values: ["Sans", "Serif", "Mono"] },
-    { facet: "italic", label: "Italic", values: ["Has italics", "No italics"] },
-    { facet: "weights", label: "Weights", values: ["9+ weights", "<9"] }
+    { facet: "italic", label: "Italic", values: ["Italics available", "Upright only"] },
+    { facet: "weights", label: "Weights", values: ["Deep (9+ weights)", "Compact (under 9)"] }
   ];
 
   var facetsEl = ROOT.querySelector("#facets");
@@ -1550,6 +1634,7 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
       chip.setAttribute("aria-pressed", "false");
       chip.dataset.facet = spec.facet;
       chip.dataset.value = value;
+      if (spec.facet === "group") chip.title = GROUP_TOOLTIPS[value];
       chip.innerHTML = '<span class="lb">' + escapeHtml(value) + '</span><span class="ct">0</span>';
       chip.addEventListener("click", function () { toggleChip(spec.facet, value); });
       chips.appendChild(chip);
@@ -1574,10 +1659,20 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
     searchWrap.classList.toggle("has-value", searchEl.value !== "");
     render();
   });
-  searchClear.addEventListener("click", function () {
+  function clearSearch() {
     searchEl.value = ""; query = "";
     searchWrap.classList.remove("has-value");
-    searchEl.focus(); render();
+    render();
+  }
+  searchClear.addEventListener("click", function () {
+    clearSearch();
+    searchEl.focus();
+  });
+  searchEl.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape" || detail.classList.contains("open")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    clearSearch();
   });
 
   // ---- clear all --------------------------------------------
@@ -1613,7 +1708,7 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
       chip.dataset.empty = String(ct === 0 && !pressed);
     });
 
-    var visible = FAMILIES.filter(isVisible);
+    var visible = visibleFamilies();
     railCount.textContent = visible.length;
     resultCount.textContent = visible.length;
     clearAllBtn.disabled = !anyActive();
@@ -1634,28 +1729,39 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
     box.innerHTML =
       '<div class="glyph">( ˘ ³˘)</div>' +
       "<h3>No families match</h3>" +
-      "<p>Your filters are narrower than the library. Clear a filter to widen the search.</p>" +
+      "<p>Nothing matches that combination. Loosen a filter or clear the search.</p>" +
       '<button type="button" id="emptyClear">Clear all filters</button>';
     grid.appendChild(box);
     ROOT.querySelector("#emptyClear").addEventListener("click", clearAll);
   }
 
   function makeCard(f) {
-    var card = document.createElement("button");
-    card.type = "button";
+    var card = document.createElement("article");
     card.classList.add("card");
     card.dataset.key = f.key;
     card.setAttribute("aria-selected", "false");
 
-    var monoBadge = f.isMono ? '<span class="badge mono-flag">Mono</span>' : "";
+    var roleLabel = ROLE_LABELS[f.raw.role] || f.raw.role;
+    var defaultBadge = f.key === "roboto" ? '<span class="badge">Default</span>' : "";
+    var monoBadge = f.isMono && roleLabel !== "Mono" ? '<span class="badge mono-flag">Mono</span>' : "";
     var axesBadge = f.raw.numeric_axes ? '<span class="badge">Numeric axes</span>' : "";
+    var chainLine = 'plt.rcParams["font.family"] = ' + JSON.stringify(f.raw.chain);
     card.innerHTML =
+      '<button type="button" class="card-open" aria-label="Open ' + escapeHtml(f.name) + ' details"></button>' +
       '<div class="card-top">' +
         '<div><h3 class="card-name">' + escapeHtml(f.name) + "</h3>" +
         '<p class="card-desc">' + escapeHtml(f.raw.desc) + "</p></div>" +
-        '<span class="mono-name" role="button" tabindex="0" title="Copy mpl name">' + escapeHtml(f.mpl) + "</span>" +
+        '<div class="card-actions">' +
+          '<button type="button" class="mono-name" aria-label="Copy matplotlib family name" title="Copy matplotlib family name">' +
+            '<span>' + escapeHtml(f.mpl) + '</span>' +
+            '<svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>' +
+          "</button>" +
+          '<button type="button" class="chain-copy">Copy chain</button>' +
+        "</div>" +
       "</div>" +
       '<div class="badges">' +
+        '<span class="badge role">' + escapeHtml(roleLabel) + "</span>" +
+        defaultBadge +
         '<span class="badge script">' + escapeHtml(f.script) + "</span>" +
         monoBadge +
         axesBadge +
@@ -1663,13 +1769,13 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
       "</div>" +
       '<p class="sample-line" style="font-family:\'' + f.raw.regular + "', var(--dm-f-sys)\">" + escapeHtml(f.raw.sample) + "</p>";
 
-    // card opens detail
-    card.addEventListener("click", function (e) { openDetail(f.key); });
-    // mono chip copies (and stops the card from opening)
+    card.querySelector(".card-open").addEventListener("click", function () { openDetail(f.key); });
     var monoEl = card.querySelector(".mono-name");
-    monoEl.addEventListener("click", function (e) { e.stopPropagation(); copyText(f.mpl, f.mpl); });
-    monoEl.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); copyText(f.mpl, f.mpl); }
+    monoEl.addEventListener("click", function () {
+      copyText(f.mpl, "<b>" + escapeHtml(f.mpl) + "</b> copied — paste into font.family");
+    });
+    card.querySelector(".chain-copy").addEventListener("click", function () {
+      copyText(chainLine, "font.family chain copied");
     });
     return card;
   }
@@ -1686,14 +1792,17 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
   var dName = ROOT.querySelector("#dName");
   var dSub = ROOT.querySelector("#dSub");
   var dBody = ROOT.querySelector("#dBody");
+  var dPrev = ROOT.querySelector("#dPrev");
+  var dNext = ROOT.querySelector("#dNext");
   var currentKey = null;
   var lastFocus = null;
 
   function openDetail(key) {
     var f = FAMILIES.filter(function (x) { return x.key === key; })[0];
     if (!f) return;
+    var wasOpen = detail.classList.contains("open");
     currentKey = key;
-    lastFocus = document.activeElement;
+    if (!wasOpen) lastFocus = document.activeElement;
     markSelected(key);
 
     dName.textContent = f.name;
@@ -1701,18 +1810,34 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
 
     var reg = f.raw.regular;
     var ladder = f.raw.weights.map(function (w) {
-      return '<div class="ladder-row">' +
-        '<div class="ladder-meta"><div class="w-label">' + escapeHtml(w.label) + "</div>" +
-        '<div class="w-num">' + w.num + "</div></div>" +
-        '<div class="ladder-sample" style="font-family:\'' + w.face + "', var(--dm-f-sys)\">Agile 24</div>" +
-        "</div>";
+      return '<button type="button" class="ladder-row ladder-copy" data-weight="' + w.num + '" aria-label="Copy fontweight=' + w.num + '">' +
+        '<span class="ladder-meta"><span class="w-label">' + escapeHtml(w.label) + "</span>" +
+        '<span class="w-num">' + w.num + "</span></span>" +
+        '<span class="ladder-sample" style="font-family:\'' + w.face + "', var(--dm-f-sys)\">Agile 24</span>" +
+        '<span class="copy-hint" aria-hidden="true">Copy</span>' +
+        "</button>";
     }).join("");
 
+    var chainComment = f.raw.chain.length > 1
+      ? "# ordered fallback: family → Latin fallback → math/symbols\n"
+      : "";
     var snippet =
       "import dartwork_mpl as dm\n" +
       "import matplotlib.pyplot as plt\n\n" +
       'dm.style.use("scientific")\n' +
+      chainComment +
       'plt.rcParams["font.family"] = ' + JSON.stringify(f.raw.chain);
+
+    var tnumProof = "";
+    if (f.raw.tnum) {
+      tnumProof =
+        '<div class="tnum-proof">' +
+          '<div class="tnum-values" style="font-family:\'' + reg + "', var(--dm-f-sys)\">" +
+            "<div>1,111,111.11</div><div>8,888,888.88</div>" +
+          "</div>" +
+          '<p class="tnum-caption">Tabular numerals — digits align in columns.</p>' +
+        "</div>";
+    }
 
     var widthVariants = "";
     if (f.raw.width_variants) {
@@ -1731,7 +1856,8 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
       '<section><p class="lbl">Hero</p>' +
         '<p class="hero-line" style="font-family:\'' + reg + "', var(--dm-f-sys)\">" + escapeHtml(f.raw.hero) + "</p></section>" +
       '<section><p class="lbl">Numerals &amp; symbols</p>' +
-        '<p class="numerals" style="font-family:\'' + reg + "', var(--dm-f-mono)\">" + escapeHtml("0123456789 " + f.raw.chart_glyphs) + "</p></section>" +
+        '<p class="numerals" style="font-family:\'' + reg + "', var(--dm-f-mono)\">" + escapeHtml("0123456789 " + f.raw.chart_glyphs) + "</p>" +
+        tnumProof + "</section>" +
       '<section><p class="lbl">Weight ladder</p><div class="ladder">' + ladder + "</div></section>" +
       widthVariants +
       '<section><p class="lbl">Why this face</p><p class="intent-txt">' + escapeHtml(f.raw.intent) + "</p></section>" +
@@ -1739,13 +1865,28 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
         '<div class="snippet"><button type="button" class="snippet-copy" id="snipCopy">Copy</button>' + escapeHtml(snippet) + "</div></section>";
 
     ROOT.querySelector("#snipCopy").addEventListener("click", function () {
-      copyText(snippet, "rcParams snippet");
+      copyText(snippet, "rcParams snippet copied");
+    });
+    dBody.querySelectorAll(".ladder-copy").forEach(function (row) {
+      row.addEventListener("click", function () {
+        var weight = "fontweight=" + row.dataset.weight;
+        copyText(weight, weight + " copied");
+      });
     });
 
     detail.classList.add("open");
     detail.setAttribute("aria-hidden", "false");
     backdrop.classList.add("open");
-    ROOT.querySelector("#dClose").focus();
+    if (!wasOpen) ROOT.querySelector("#dClose").focus();
+  }
+
+  function stepDetail(delta) {
+    var visible = visibleFamilies();
+    if (visible.length === 0) return;
+    var index = visible.findIndex(function (f) { return f.key === currentKey; });
+    if (index === -1) index = delta > 0 ? -1 : 0;
+    var nextIndex = (index + delta + visible.length) % visible.length;
+    openDetail(visible[nextIndex].key);
   }
 
   function closeDetail() {
@@ -1757,9 +1898,29 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
   ROOT.querySelector("#dClose").addEventListener("click", closeDetail);
+  dPrev.addEventListener("click", function () { stepDetail(-1); });
+  dNext.addEventListener("click", function () { stepDetail(1); });
   backdrop.addEventListener("click", closeDetail);
+  function isTypingTarget(target) {
+    if (!target) return false;
+    var tag = target.tagName;
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
+  }
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && detail.classList.contains("open")) closeDetail();
+    if (e.key === "Escape" && detail.classList.contains("open")) {
+      e.preventDefault();
+      closeDetail();
+      return;
+    }
+    if (detail.classList.contains("open") && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+      e.preventDefault();
+      stepDetail(e.key === "ArrowLeft" ? -1 : 1);
+      return;
+    }
+    if (e.key === "/" && !e.altKey && !e.ctrlKey && !e.metaKey && !isTypingTarget(e.target)) {
+      e.preventDefault();
+      searchEl.focus();
+    }
   });
 
   // ---- boot --------------------------------------------------
