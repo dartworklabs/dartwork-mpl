@@ -37,6 +37,28 @@ _EXPLORER_UNSURFACED: list[str] = [
     # (unlike Noto Sans Math, which is surfaced under "Monospace & Symbols").
     "NotoSansSymbols-Regular",
     "NotoSansSymbols2-Regular",
+    # Source Serif 4 (serif role) and D2Coding (mono-kr role) are surfaced in
+    # the registry-driven primary explorer (docs/_static/font_explorer.html,
+    # built from font.list_registered()). This legacy data file is a
+    # hand-curated META/WEIGHT_SPEC SSOT that is no longer embedded by any
+    # docs page, so it is not expanded for the two new families. Source
+    # Serif 4's italic cuts use a bare "It" suffix (not "Italic"), so every
+    # SourceSerif4 stem is classified roman by this test's naive filter and
+    # must be waived here.
+    "SourceSerif4-Black",
+    "SourceSerif4-BlackIt",
+    "SourceSerif4-Bold",
+    "SourceSerif4-BoldIt",
+    "SourceSerif4-ExtraLight",
+    "SourceSerif4-ExtraLightIt",
+    "SourceSerif4-It",
+    "SourceSerif4-Light",
+    "SourceSerif4-LightIt",
+    "SourceSerif4-Regular",
+    "SourceSerif4-Semibold",
+    "SourceSerif4-SemiboldIt",
+    "D2Coding-Regular",
+    "D2Coding-Bold",
 ]
 
 

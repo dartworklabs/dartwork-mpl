@@ -406,9 +406,9 @@ and the fallback chain is treated as product behavior rather than an accident
 of matplotlib configuration.
 
 **T1 · Jobs before taste.** Every registered matplotlib family has exactly one
-documented role: body, display, Korean body, monospace, or fallback tail. A
-new family must do a job that another bundled family does not already do
-better.
+documented role: body, display, Korean body, serif, monospace, Korean
+monospace, or fallback tail. A new family must do a job that another bundled
+family does not already do better.
 
 **T2 · Measured gates.** OS/2 weights, tabular-numeral support, fixed-width
 truth, chart-glyph coverage, Hangul coverage, and license class are read from
@@ -430,8 +430,18 @@ family that resolves every guaranteed chart glyph, the digits, and `한`.
 | body | Roboto | Inter · IBM Plex Sans · Source Sans 3 · Noto Sans | neutral Latin chart text and editorial alternates |
 | display | Inter Display | - | large titles, headings, poster-scale numerals |
 | kr-body | Paperlogy | Pretendard · Noto Sans CJK KR | Korean and CJK labels without system-font dependence |
+| serif | Source Serif 4 | - | opt-in serif body for journal- or book-matched figures (not in any preset chain) |
 | mono | JetBrains Mono | IBM Plex Mono · Roboto Mono · Source Code Pro | code, timestamps, aligned labels, tabular data |
+| mono-kr | D2Coding | - | monospaced Hangul for code blocks and aligned Korean tables |
 | fallback-tail | Noto Sans Math | Noto Sans Symbols · Noto Sans Symbols 2 | math operators, arrows, signs, and dingbats |
+
+Source Serif 4 is an opt-in family: it is not wired into any preset fallback
+chain, so a serif figure asks for it explicitly with
+`plt.rcParams["font.family"] = "Source Serif 4"`. No Korean serif (명조) is
+bundled — a legible Hangul serif would add several megabytes, so KR serif is
+out of scope by design. For monospaced Hangul (code blocks, aligned Korean
+tables) set `font.family = ["JetBrains Mono", "D2Coding"]` so both scripts stay
+fixed-width.
 
 ```{raw} html
 :file: ../_static/typography_matrix.html
@@ -446,3 +456,18 @@ Korean and CJK coverage (`Paperlogy`, `Noto Sans CJK KR`, `Pretendard`), then
 lands on math and symbol faces. In the pinned resolver map, digits and most
 operators resolve in Roboto, `→` first appears in Inter, and `한` first appears
 in Paperlogy; nothing falls through to DejaVu.
+
+`font.sans-serif` is held identical to `font.family` — bundled families plus
+the generic terminator, with no machine-dependent OS fonts (Lato, Arial,
+Malgun Gothic, …). Anything past the bundle intentionally falls to
+matplotlib's default rather than a font that happens to be installed, so a
+figure renders the same on every machine.
+
+Math segments obey the same discipline. The custom mathtext fontset is matched
+to the body: `rm`/`it`/`bf`/`sf` are Roboto, `tt` is JetBrains Mono, and `cal`
+is the matplotlib-bundled STIXGeneral. Greek and operators absent from those
+fall to `stixsans` (also matplotlib-bundled), never DejaVu, and
+`mathtext.default: regular` makes a bare `$R^2$` render in the same upright
+body face as the labels around it. Under a `-kr` preset the body face is
+Paperlogy, so the Latin and digits in a math span match the Korean labels while
+symbols still resolve through STIX.
