@@ -21,6 +21,7 @@ publishes static instances" decision:
   · Pretendard    9 uprights               (no italics upstream — Korean)
   · IBM Plex Sans 7 uprights + 7 italics   (Text weight skipped)
   · IBM Plex Mono 7 uprights + 7 italics   (Text weight skipped)
+  · IBM Plex Serif 7 uprights + 7 italics  (Text weight skipped)
   · Source Sans 3 7 uprights + 7 italics   (no Thin upstream)
   · JetBrains Mono 8 uprights + 8 italics  (no Black upstream)
   · Source Code Pro 7 uprights + 7 italics (no Thin upstream)
@@ -28,6 +29,10 @@ publishes static instances" decision:
                                             google/fonts variable font)
   · Noto Sans Symbols   1 upright (Regular) — plain-text symbol fallback
   · Noto Sans Symbols 2 1 upright (Regular) — dingbat / warning / star fallback
+  · Noto Serif    9 uprights + 9 italics   (100-900, instanced from the
+                                            google/fonts variable font, like
+                                            Roboto — GF static zips clamp
+                                            Thin/ExtraLight usWeightClass)
 """
 
 from __future__ import annotations
@@ -193,6 +198,31 @@ def plan() -> list[dict]:
             ],
             "italics": True,
             "stem": "IBMPlexMono",
+            "license": None,  # same OFL as IBM Plex Sans
+        },
+        {
+            # Completes the Plex superfamily. Same source style as the other
+            # Plex entries; the upstream ships a "Text" (450) cut we skip to
+            # match the bundled Plex Sans/Mono 7-weight ladder. The Plex OFL
+            # is one text for the whole superfamily, so no license key —
+            # covered by the bundled LICENSE-IBMPlex.txt (verified byte-
+            # identical to packages/plex-serif/.../license.txt).
+            "family": "IBM Plex Serif",
+            "kind": "gh-dir",
+            "repo": "IBM/plex",
+            "path": "packages/plex-serif/fonts/complete/ttf",
+            "ext": "ttf",
+            "weights": [
+                "Thin",
+                "ExtraLight",
+                "Light",
+                "Regular",
+                "Medium",
+                "SemiBold",
+                "Bold",
+            ],
+            "italics": True,
+            "stem": "IBMPlexSerif",
             "license": None,  # same OFL as IBM Plex Sans
         },
         {
@@ -416,6 +446,40 @@ def plan() -> list[dict]:
             "weights": ["Regular"],
             "italics": False,
             "stem": "NotoSansSymbols2",
+        },
+        {
+            # Serif sibling of Noto Sans. Like Roboto, the current Google
+            # Fonts Noto Serif is a wdth,wght variable font whose packaged
+            # static instances clamp Thin/ExtraLight usWeightClass, so we
+            # instance the variable font directly (pin wdth=100) for honest
+            # 100-900 usWeightClass values. Family name records stay
+            # "Noto Serif". This upstream (google/fonts) is distinct from the
+            # notofonts.github.io Noto Sans upstream, so it ships its own OFL.
+            "family": "Noto Serif",
+            "kind": "gf-variable-instance",
+            "repo": "google/fonts",
+            "vf_path": "ofl/notoserif/NotoSerif[wdth,wght].ttf",
+            "vf_italic_path": "ofl/notoserif/NotoSerif-Italic[wdth,wght].ttf",
+            "pin": {"wdth": 100},
+            "ext": "ttf",
+            "wght": {
+                "Thin": 100,
+                "ExtraLight": 200,
+                "Light": 300,
+                "Regular": 400,
+                "Medium": 500,
+                "SemiBold": 600,
+                "Bold": 700,
+                "ExtraBold": 800,
+                "Black": 900,
+            },
+            "italics": True,
+            "stem": "NotoSerif",
+            "license": (
+                "google/fonts",
+                "ofl/notoserif/OFL.txt",
+                "LICENSE-NotoSerif.txt",
+            ),
         },
         {
             "family": "Noto Sans CJK KR",
