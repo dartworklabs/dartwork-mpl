@@ -350,11 +350,24 @@ def _is_bundled_font_entry(
 def _bundled_font_entries() -> tuple[font_manager.FontEntry, ...]:
     ensure_loaded()
     bundle_dir = get_font_dir()
-    entries = [
-        entry
-        for entry in font_manager.fontManager.ttflist
-        if _is_bundled_font_entry(entry, bundle_dir)
-    ]
+    # ``FontManager.addfont`` *appends* without dedup, so a bundled file
+    # registered more than once — e.g. a direct ``_add_fonts()`` call after
+    # the import-time registration — appears multiple times in ``ttflist``.
+    # Measure each physical file once so per-family facts reflect the
+    # bundled asset set on disk, not registration bookkeeping.
+    seen: set[str] = set()
+    entries: list[font_manager.FontEntry] = []
+    for entry in font_manager.fontManager.ttflist:
+        if not _is_bundled_font_entry(entry, bundle_dir):
+            continue
+        try:
+            key = str(Path(entry.fname).resolve())
+        except (OSError, ValueError):
+            key = entry.fname
+        if key in seen:
+            continue
+        seen.add(key)
+        entries.append(entry)
     return tuple(sorted(entries, key=lambda entry: (entry.name, entry.fname)))
 
 
