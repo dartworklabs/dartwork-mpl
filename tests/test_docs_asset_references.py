@@ -1,4 +1,4 @@
-"""Reachability checks for raw-included documentation assets."""
+"""Targets must exist as committed files, or be gitignored build outputs produced by the docs build."""
 
 from __future__ import annotations
 
@@ -35,6 +35,28 @@ def _tracked_docs_html() -> list[Path]:
     return [_ROOT / path for path in result.stdout.splitlines()]
 
 
+def _gitignored_paths(paths: list[Path]) -> set[Path]:
+    if not paths:
+        return set()
+
+    relative_paths = [path.relative_to(_ROOT) for path in paths]
+    result = subprocess.run(
+        ["git", "check-ignore", "--stdin"],
+        cwd=_ROOT,
+        input="".join(f"{path.as_posix()}\n" for path in relative_paths),
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode not in (0, 1):
+        raise subprocess.CalledProcessError(
+            result.returncode,
+            result.args,
+            output=result.stdout,
+            stderr=result.stderr,
+        )
+    return {Path(path) for path in result.stdout.splitlines()}
+
+
 def _source_asset(include: Path, src: str) -> Path:
     static_match = re.fullmatch(r"(?:\.\./)?_static/(.+)", src)
     if static_match:
@@ -49,11 +71,17 @@ def _source_asset(include: Path, src: str) -> Path:
 
 def test_raw_html_file_targets_exist() -> None:
     missing = [
-        f"{source.relative_to(_ROOT)} -> {target.relative_to(_ROOT)}"
+        (target, f"{source.relative_to(_ROOT)} -> {target.relative_to(_ROOT)}")
         for source, target in _raw_includes()
         if not target.is_file()
     ]
-    assert not missing, "missing raw HTML targets:\n" + "\n".join(missing)
+    ignored = _gitignored_paths([target for target, _ in missing])
+    broken = [
+        message
+        for target, message in missing
+        if target.relative_to(_ROOT) not in ignored
+    ]
+    assert not broken, "missing raw HTML targets:\n" + "\n".join(broken)
 
 
 def test_committed_html_relative_sources_exist() -> None:
@@ -61,7 +89,8 @@ def test_committed_html_relative_sources_exist() -> None:
     for source, target in _raw_includes():
         include_sources[target].append(source)
 
-    missing = []
+    missing: list[tuple[Path, str]] = []
+    structural_errors = []
     for html in _tracked_docs_html():
         text = html.read_text(encoding="utf-8")
         relative_srcs = [
@@ -72,7 +101,7 @@ def test_committed_html_relative_sources_exist() -> None:
         for src in relative_srcs:
             owners = include_sources.get(html.resolve(), [])
             if not owners:
-                missing.append(
+                structural_errors.append(
                     f"{html.relative_to(_ROOT)}: no including document"
                 )
                 continue
@@ -80,8 +109,17 @@ def test_committed_html_relative_sources_exist() -> None:
                 asset = _source_asset(owner, src)
                 if not asset.is_file():
                     missing.append(
-                        f"{html.relative_to(_ROOT)}: {src} -> "
-                        f"{asset.relative_to(_ROOT)}"
+                        (
+                            asset,
+                            f"{html.relative_to(_ROOT)}: {src} -> "
+                            f"{asset.relative_to(_ROOT)}",
+                        )
                     )
 
-    assert not missing, "missing relative HTML assets:\n" + "\n".join(missing)
+    ignored = _gitignored_paths([asset for asset, _ in missing])
+    broken = structural_errors + [
+        message
+        for asset, message in missing
+        if asset.relative_to(_ROOT) not in ignored
+    ]
+    assert not broken, "missing relative HTML assets:\n" + "\n".join(broken)
