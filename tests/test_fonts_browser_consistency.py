@@ -263,6 +263,43 @@ def test_fragment_is_clean_and_has_one_complete_generated_region() -> None:
     assert "Numeric axes" not in _FRAGMENT
 
 
+def test_search_has_one_custom_clear_and_uses_fonts_terminology() -> None:
+    fragments = {"#dm-fontfacets": _FRAGMENT, "#dm-fbuxb": _POC_B}
+
+    for root, fragment in fragments.items():
+        assert (
+            f'{root} .search-wrap input[type="search"]'
+            "::-webkit-search-cancel-button"
+        ) in fragment
+        assert "-webkit-appearance: none; appearance: none;" in fragment
+        assert fragment.count('class="search-clear"') == 1
+        assert 'placeholder="Search fonts"' in fragment
+        assert 'aria-label="Search fonts"' in fragment
+        assert ">20</b> fonts</span>" in fragment
+        assert ">20</b> of 20 fonts</span>" in fragment
+        assert "No fonts match" in fragment
+        assert "Browse visible fonts" in fragment
+        assert "Broad script coverage in one font" in fragment
+        assert "One font whose weights and proportions match" in fragment
+        assert "A clean, professional 한글 font" in fragment
+
+        for legacy in (
+            "Search families",
+            "Search font families",
+            "No families match",
+            "Browse visible font families",
+            "</b> families</span>",
+            "One family whose weights and proportions match",
+            "A clean, professional 한글 family",
+        ):
+            assert legacy not in fragment
+
+    index = (_REPO / "docs" / "fonts" / "index.md").read_text(encoding="utf-8")
+    assert "**20 publication-ready fonts**" in index
+    assert "open any font" in index
+    assert "publication-ready font families" not in index
+
+
 def test_facet_rail_density_is_pinned() -> None:
     assert "grid-template-columns: 184px minmax(0, 1fr);" in _FRAGMENT
     assert "padding: 7px 28px 7px 30px;" in _FRAGMENT

@@ -1,6 +1,6 @@
 # Fonts
 
-dartwork-mpl ships **18 publication-ready font families**, registered
+dartwork-mpl ships **20 publication-ready fonts**, registered
 with matplotlib the moment you `import dartwork_mpl`. Browse them below,
 preview your own text, and copy a ready-to-paste `font.family` setup.
 
@@ -9,16 +9,16 @@ preview your own text, and copy a ready-to-paste `font.family` setup.
 :titlesonly:
 :hidden:
 
-Font Families <families>
+Fonts <families>
 Font Utilities <utilities>
 Math & Special Characters <math_and_symbols>
 ```
 
 ## Font browser
 
-Type your own preview text, narrow by script or style, and open any family
+Type your own preview text, narrow by script or style, and open any font
 for its weight ladder and a ready-to-paste `rcParams` snippet. Every sample
-is drawn by the family's own bundled file — what you see here is exactly
+is drawn by the font's own bundled file — what you see here is exactly
 what your chart will render.
 
 ```{raw} html
@@ -35,7 +35,7 @@ as Noto Sans with width metadata, so they are documented as file groups rather
 than separate `font.family` names.
 
 The family names below are the names to put in `font.family`. For every weight
-and specimen sheet, see [Font Families](families.md).
+and specimen sheet, see [Fonts](families.md).
 
 ## Quick Start
 
@@ -101,6 +101,6 @@ The browser's role badges follow this table; use it as the print-friendly summar
 
 ## Full Specimens
 
-The full static specimen catalog lives in [Font Families](families.md). For
-the reasoning behind the family roles, fallback chain, and numeric-axis gates,
+The full static specimen catalog lives in [Fonts](families.md). For
+the reasoning behind the font roles, fallback chain, and numeric-axis gates,
 see [Design rationale › Typography](../color_system/design-rationale.md#typography-rationale).

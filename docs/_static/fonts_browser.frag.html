@@ -48,6 +48,7 @@
 }
 #dm-fontfacets #search::placeholder { color: var(--dm-text-faint); }
 #dm-fontfacets #search:focus { border-color: var(--dm-accent-8); }
+#dm-fontfacets .search-wrap input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 #dm-fontfacets .search-clear {
   position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
   border: 0; background: transparent; cursor: pointer; padding: 4px;
@@ -306,7 +307,7 @@
     <aside class="rail" aria-label="Filters">
       <div class="search-wrap" id="searchWrap">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
-        <input id="search" type="search" placeholder="Search families — name, feel, or use case…" autocomplete="off" aria-label="Search font families by name, description, or personality">
+        <input id="search" type="search" placeholder="Search fonts" autocomplete="off" aria-label="Search fonts">
         <button type="button" class="search-clear" id="searchClear" aria-label="Clear search">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
         </button>
@@ -315,7 +316,7 @@
       <div id="facets"><!-- facet groups injected --></div>
 
       <div class="rail-foot">
-        <span class="count-live"><b id="railCount">18</b> families</span>
+        <span class="count-live"><b id="railCount">20</b> fonts</span>
         <button type="button" class="clear-all" id="clearAll" disabled>Clear all</button>
       </div>
     </aside>
@@ -323,7 +324,7 @@
     <!-- RIGHT: results -->
     <section aria-label="Results">
       <div class="results-head">
-        <span class="rh-count"><b id="resultCount">18</b> of 18 families</span>
+        <span class="rh-count"><b id="resultCount">20</b> of 20 fonts</span>
       </div>
       <div class="grid" id="grid"><!-- cards injected --></div>
     </section>
@@ -339,7 +340,7 @@
       <p class="d-sub" id="dSub">—</p>
     </div>
     <div class="detail-head-actions">
-      <div class="detail-nav" aria-label="Browse visible font families">
+      <div class="detail-nav" aria-label="Browse visible fonts">
         <button type="button" class="detail-nav-btn" id="dPrev">‹ Prev</button>
         <button type="button" class="detail-nav-btn" id="dNext">Next ›</button>
       </div>
@@ -733,7 +734,7 @@ var DM_FONT_DATA = {
     "hero": "Aa Gg Rr 0123",
     "sample": "The dartwork designs beautiful data artworks since 2021.",
     "desc": "Google's pan-script workhorse with harmonized metrics.",
-    "intent": "One family whose weights and proportions match across scripts — the safe choice whenever a figure mixes languages.",
+    "intent": "One font whose weights and proportions match across scripts — the safe choice whenever a figure mixes languages.",
     "application": "Multi-language documents, international reports, and neutral fallback body.",
     "pairing": "Pairs with Paperlogy for KR/EN and Noto Sans Math for symbols.",
     "personality": "Neutral · universal",
@@ -962,7 +963,7 @@ var DM_FONT_DATA = {
     "script": "한글 + Latin",
     "hero": "가나다 Ag 0123",
     "sample": "데이터 시각화를 위한 아름다운 한글 타이포그래피, 2021년부터.",
-    "desc": "A clean, professional 한글 family — dartwork's Korean default.",
+    "desc": "A clean, professional 한글 font — dartwork's Korean default.",
     "intent": "Even color and open counters keep Hangul crisp at chart sizes, and its Latin set sits naturally beside the workhorses.",
     "application": "Korean (한글) titles and labels, and mixed KR/EN figures.",
     "pairing": "Pairs with Inter or Roboto for the Latin run in bilingual charts.",
@@ -1575,7 +1576,7 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
     Workhorse: "Everyday body faces — the safe defaults",
     Display: "Large titles and poster-scale numbers",
     Technical: "Interface and engineering voice",
-    Multilingual: "Broad script coverage in one family",
+    Multilingual: "Broad script coverage in one font",
     Serif: "Opt-in serif voice for journals and reports",
     "Korean & CJK": "Hangul-first and CJK coverage",
     Monospace: "Fixed-width for code and aligned figures",
@@ -1778,7 +1779,7 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
     box.classList.add("empty");
     box.innerHTML =
       '<div class="glyph">( ˘ ³˘)</div>' +
-      "<h3>No families match</h3>" +
+      "<h3>No fonts match</h3>" +
       "<p>Nothing matches that combination. Loosen a filter or clear the search.</p>" +
       '<button type="button" class="empty-clear">Clear all filters</button>';
     grid.appendChild(box);
