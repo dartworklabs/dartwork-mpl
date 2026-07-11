@@ -23,6 +23,7 @@ publishes static instances" decision:
   · IBM Plex Mono 7 uprights + 7 italics   (Text weight skipped)
   · IBM Plex Serif 7 uprights + 7 italics  (Text weight skipped)
   · Source Sans 3 7 uprights + 7 italics   (no Thin upstream)
+  · Source Serif 4 6 uprights + 6 italics  (4.005 release TTFs)
   · JetBrains Mono 8 uprights + 8 italics  (no Black upstream)
   · Source Code Pro 7 uprights + 7 italics (no Thin upstream)
   · Roboto Mono    7 uprights + 7 italics  (100-700, instanced from the
@@ -33,6 +34,7 @@ publishes static instances" decision:
                                             google/fonts variable font, like
                                             Roboto — GF static zips clamp
                                             Thin/ExtraLight usWeightClass)
+  · D2Coding      2 uprights               (Regular + Bold, Ver 1.3.2)
 """
 
 from __future__ import annotations
@@ -249,6 +251,30 @@ def plan() -> list[dict]:
             ),
         },
         {
+            # Pin the 4.005 release: the Adobe TTF zip uses the historical
+            # ``It`` and ``Semibold`` spellings that match the shipped stems.
+            "family": "Source Serif 4",
+            "kind": "release-zip",
+            "repo": "adobe-fonts/source-serif",
+            "release_tag": "4.005R",
+            "asset_contains": "_Desktop.zip",
+            "ext": "ttf",
+            "file_map": {
+                "SourceSerif4-ExtraLight.ttf": "SourceSerif4-ExtraLight.ttf",
+                "SourceSerif4-ExtraLightIt.ttf": "SourceSerif4-ExtraLightIt.ttf",
+                "SourceSerif4-Light.ttf": "SourceSerif4-Light.ttf",
+                "SourceSerif4-LightIt.ttf": "SourceSerif4-LightIt.ttf",
+                "SourceSerif4-Regular.ttf": "SourceSerif4-Regular.ttf",
+                "SourceSerif4-It.ttf": "SourceSerif4-It.ttf",
+                "SourceSerif4-Semibold.ttf": "SourceSerif4-Semibold.ttf",
+                "SourceSerif4-SemiboldIt.ttf": "SourceSerif4-SemiboldIt.ttf",
+                "SourceSerif4-Bold.ttf": "SourceSerif4-Bold.ttf",
+                "SourceSerif4-BoldIt.ttf": "SourceSerif4-BoldIt.ttf",
+                "SourceSerif4-Black.ttf": "SourceSerif4-Black.ttf",
+                "SourceSerif4-BlackIt.ttf": "SourceSerif4-BlackIt.ttf",
+            },
+        },
+        {
             "family": "Paperlogy",
             "kind": "repo-zip",
             "repo": "Freesentation/paperlogy",
@@ -272,6 +298,20 @@ def plan() -> list[dict]:
                 "OFL license.txt",
                 "LICENSE-Paperlogy.txt",
             ),
+        },
+        {
+            # D2Coding Ver 1.3.2 release zip. Upstream names the regular and
+            # bold members by release date; map them to the shipped stems.
+            "family": "D2Coding",
+            "kind": "release-zip",
+            "repo": "naver/d2codingfont",
+            "release_tag": "VER1.3.2",
+            "asset_contains": "D2Coding-Ver1.3.2-20180524.zip",
+            "ext": "ttf",
+            "file_map": {
+                "D2Coding-Ver1.3.2-20180524.ttf": "D2Coding-Regular.ttf",
+                "D2CodingBold-Ver1.3.2-20180524.ttf": "D2Coding-Bold.ttf",
+            },
         },
         {
             "family": "JetBrains Mono",
@@ -536,25 +576,39 @@ def do_gh_dir(spec: dict, added: list[str]) -> None:
 
 
 def do_release_zip(spec: dict, added: list[str]) -> None:
-    rel = gh_json(f"repos/{spec['repo']}/releases/latest")
+    release_tag = spec.get("release_tag")
+    endpoint = (
+        f"repos/{spec['repo']}/releases/tags/{release_tag}"
+        if release_tag
+        else f"repos/{spec['repo']}/releases/latest"
+    )
+    rel = gh_json(endpoint)
     asset = next(
         a for a in rel["assets"] if spec["asset_contains"] in a["name"]
     )
     blob = fetch(asset["browser_download_url"])
     zf = zipfile.ZipFile(io.BytesIO(blob))
-    # Case-insensitive map so upstream spellings (Adobe's "Semibold",
-    # "…It") resolve to our canonical target names ("SemiBold", "…Italic").
-    wanted = {
-        w.lower(): w
-        for w in want_std_faces(
-            spec["stem"], spec["weights"], spec["italics"], spec["ext"]
-        )
-    }
+    # Explicit maps pin release-member names to shipped stems. Other release
+    # zips use a case-insensitive map so Adobe's "Semibold" / "…It" spellings
+    # resolve to our canonical "SemiBold" / "…Italic" target names.
+    exact_map = spec.get("file_map")
+    if exact_map:
+        wanted = {
+            source.lower(): target for source, target in exact_map.items()
+        }
+    else:
+        wanted = {
+            w.lower(): w
+            for w in want_std_faces(
+                spec["stem"], spec["weights"], spec["italics"], spec["ext"]
+            )
+        }
     for member in zf.namelist():
         base = Path(member).name
         if not base.lower().endswith("." + spec["ext"]):
             continue
-        canon = wanted.get(norm_italic(base).lower())
+        lookup = base.lower() if exact_map else norm_italic(base).lower()
+        canon = wanted.get(lookup)
         if canon:
             (FONT_DIR / canon).write_bytes(zf.read(member))
             added.append(canon)

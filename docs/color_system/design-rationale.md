@@ -448,7 +448,7 @@ fixed-width.
 :file: ../_static/typography_matrix.html
 ```
 
-In the matrix, **Numeric axes** means the default digit advances are uniform in
+In the matrix, **Aligned digits** means the default digit advances are uniform in
 real matplotlib output, or the family is fixed-width. **tnum available** is a
 browser/specimen signal only: `Inter` and `Pretendard` expose the OpenType
 feature, but matplotlib does not apply it, so use `IBM Plex Sans`, `Source Sans

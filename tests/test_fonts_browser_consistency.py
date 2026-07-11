@@ -25,6 +25,7 @@ _FRAGMENT_PATH = _REPO / "docs" / "_static" / "fonts_browser.frag.html"
 _POC_B_PATH = _REPO / "docs" / "_static" / "pocs" / "fonts_ux_b.frag.html"
 _POC_A_PATH = _REPO / "docs" / "_static" / "pocs" / "fonts_ux_a.frag.html"
 _POC_PAGE_PATH = _REPO / "docs" / "pocs_fonts_ux.md"
+_DESIGN_CSS_PATH = _REPO / "docs" / "_static" / "dartwork-design.css"
 
 
 def _load_builder() -> ModuleType:
@@ -311,7 +312,7 @@ def test_fragment_is_clean_and_has_one_complete_generated_region() -> None:
     )
     assert 'dm.style.use("scientific")' in _FRAGMENT
     assert 'values: ["Sans", "Serif", "Mono"]' in _FRAGMENT
-    assert "Numeric axes" not in _FRAGMENT
+    assert " ".join(("Numeric", "axes")) not in _FRAGMENT
 
 
 def test_search_has_one_custom_clear_and_uses_fonts_terminology() -> None:
@@ -425,6 +426,40 @@ def test_card_copy_and_badge_contract_is_pinned() -> None:
         assert markup_source.index("italicsBadge") < markup_source.index(
             "axesBadge"
         )
+
+
+def test_badge_color_ladder_and_type_scale_are_pinned() -> None:
+    type_scale = {
+        "sample": "22px",
+        "specimen": "26px",
+        "ladder": "19px",
+        "tray": "24px",
+        "numerals": "22px",
+        "tnum": "17px",
+    }
+
+    for fragment in (_FRAGMENT, _POC_B):
+        for token, value in type_scale.items():
+            assert f"--fbx-fs-{token}: {value}" in fragment
+        assert ".badge.default { background: var(--dm-accent-9)" in fragment
+        assert ".badge.coverage { background: var(--dm-accent-3)" in fragment
+
+        badge_rules = re.findall(
+            r"\.badge(?:\.[\w-]+)?\s*\{(.*?)\}", fragment, re.DOTALL
+        )
+        assert badge_rules
+        badge_css = "\n".join(badge_rules)
+        assert "--dm-info-" not in badge_css
+        assert "--dm-warning-" not in badge_css
+
+
+def test_fragment_css_uses_only_defined_tokens() -> None:
+    design_css = _DESIGN_CSS_PATH.read_text(encoding="utf-8")
+    defined = set(re.findall(r"(--dm-[\w-]+)\s*:", design_css))
+
+    for fragment in (_FRAGMENT, _POC_B):
+        referenced = set(re.findall(r"var\((--dm-[\w-]+)", fragment))
+        assert referenced <= defined, sorted(referenced - defined)
 
 
 def test_drawer_composition_and_descenders_are_pinned() -> None:

@@ -4,15 +4,15 @@
 <div id="dm-fontfacets" data-dm-font-browser>
 <style>
 #dm-fontfacets *, #dm-fontfacets *::before, #dm-fontfacets *::after { box-sizing: border-box; }
-/* Type scale: card sample 22 / drawer specimen 26 / ladder 19 / tray 24.
+/* S4 type scale: card sample 22 / drawer specimen 26 / ladder 19 / tray 24 / numerals 22 / tnum 17.
    Sample text: card+specimen+tray use the family `sample` sentence;
    ladder+width-variants use the short `ladder_sample`. Nothing else. */
 #dm-fontfacets {
   --fbx-fs-sample: 22px; --fbx-fs-specimen: 26px; --fbx-fs-ladder: 19px;
-  --fbx-fs-tray: 24px;
+  --fbx-fs-tray: 24px; --fbx-fs-numerals: 22px; --fbx-fs-tnum: 17px;
   margin: 0; padding: 0;
   background: var(--dm-bg-page);
-  color: var(--dm-text);
+  color: var(--dm-text-default);
   font-family: var(--dm-f-sys);
   font-size: 14px;
   line-height: 1.5;
@@ -47,7 +47,7 @@
 #dm-fontfacets #search {
   width: 100%; padding: 7px 28px 7px 30px;
   font-size: 12.5px; font-family: var(--dm-f-sys);
-  color: var(--dm-text); background: var(--dm-bg-panel);
+  color: var(--dm-text-default); background: var(--dm-bg-panel);
   border: 1px solid var(--dm-border); border-radius: var(--dm-radius-3);
   transition: border-color .15s;
 }
@@ -60,7 +60,7 @@
   color: var(--dm-text-faint); line-height: 0; border-radius: var(--dm-radius-full);
   display: none;
 }
-#dm-fontfacets .search-clear:hover { color: var(--dm-text); background: var(--dm-bg-hover); }
+#dm-fontfacets .search-clear:hover { color: var(--dm-text-default); background: var(--dm-bg-hover); }
 #dm-fontfacets .search-wrap.has-value .search-clear { display: block; }
 
 #dm-fontfacets .facet { margin-bottom: var(--dm-space-4); }
@@ -81,7 +81,7 @@
   cursor: pointer; transition: background .12s, border-color .12s, color .12s;
   line-height: 1;
 }
-#dm-fontfacets .chip:hover { background: var(--dm-bg-hover); color: var(--dm-text); }
+#dm-fontfacets .chip:hover { background: var(--dm-bg-hover); color: var(--dm-text-default); }
 #dm-fontfacets .chip .ct {
   font-family: var(--dm-f-mono); font-size: 10.5px;
   color: var(--dm-text-faint); font-variant-numeric: tabular-nums;
@@ -147,6 +147,7 @@
 #dm-fontfacets .card-desc { font-size: 11.5px; line-height: 1.45; color: var(--dm-text-muted); margin: 0; }
 #dm-fontfacets .badges { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 /* Badge color ladder — 3 steps: Default = solid accent · coverage = accent tint · facts = neutral outline. */
+/* Coverage tint is non-interactive by design (pointer-events: none); accent here marks capability tier, not affordance. */
 #dm-fontfacets .badge {
   font-size: 10.5px; font-weight: 500; padding: 2px 7px;
   border-radius: var(--dm-radius-full); line-height: 1.4;
@@ -169,7 +170,7 @@
   background: var(--dm-accent-3); border-color: var(--dm-accent-8); color: var(--dm-accent-11);
 }
 #dm-fontfacets .sample-line {
-  font-size: var(--fbx-fs-sample); line-height: 1.4; color: var(--dm-text);
+  font-size: var(--fbx-fs-sample); line-height: 1.4; color: var(--dm-text-default);
   margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
@@ -219,14 +220,14 @@
   min-height: 30px; padding: 4px 8px; border-radius: var(--dm-radius-2);
   color: var(--dm-text-muted); font-size: 11px; font-weight: 500;
 }
-#dm-fontfacets .detail-nav-btn:hover { background: var(--dm-bg-hover); color: var(--dm-text); }
+#dm-fontfacets .detail-nav-btn:hover { background: var(--dm-bg-hover); color: var(--dm-text-default); }
 #dm-fontfacets .detail-close {
   border: 1px solid var(--dm-border); background: var(--dm-bg-page); cursor: pointer;
   width: 30px; height: 30px; border-radius: var(--dm-radius-full);
   color: var(--dm-text-muted); line-height: 0; flex: 0 0 auto;
   display: inline-flex; align-items: center; justify-content: center;
 }
-#dm-fontfacets .detail-close:hover { background: var(--dm-bg-hover); color: var(--dm-text); }
+#dm-fontfacets .detail-close:hover { background: var(--dm-bg-hover); color: var(--dm-text-default); }
 #dm-fontfacets .detail-body { overflow-y: auto; padding: var(--dm-space-5); }
 #dm-fontfacets .detail-body section { margin-bottom: var(--dm-space-5); }
 #dm-fontfacets .detail-body .lbl {
@@ -234,13 +235,13 @@
   color: var(--dm-text-faint); margin: 0 0 var(--dm-space-2);
 }
 #dm-fontfacets .specimen-line { font-size: var(--fbx-fs-specimen); line-height: 1.4; color: var(--dm-text-strong); margin: 0; overflow-wrap: anywhere; }
-#dm-fontfacets .numerals { font-size: 22px; color: var(--dm-text); margin: 0; font-variant-numeric: tabular-nums; }
+#dm-fontfacets .numerals { font-size: var(--fbx-fs-numerals); color: var(--dm-text-default); margin: 0; font-variant-numeric: tabular-nums; }
 #dm-fontfacets .tnum-proof {
   margin-top: var(--dm-space-3); padding-top: var(--dm-space-3);
   border-top: 1px solid var(--dm-border-faint);
 }
 #dm-fontfacets .tnum-values {
-  color: var(--dm-text-strong); font-size: 17px; line-height: 1.35;
+  color: var(--dm-text-strong); font-size: var(--fbx-fs-tnum); line-height: 1.35;
   font-variant-numeric: tabular-nums;
 }
 #dm-fontfacets .tnum-values div { white-space: nowrap; }
@@ -265,7 +266,7 @@
 }
 #dm-fontfacets .ladder-copy:hover { background: var(--dm-accent-2); }
 #dm-fontfacets .ladder-meta { flex: 0 0 112px; white-space: nowrap; }
-#dm-fontfacets .ladder-meta .w-label { display: block; font-size: 12px; font-weight: 500; color: var(--dm-text); }
+#dm-fontfacets .ladder-meta .w-label { display: block; font-size: 12px; font-weight: 500; color: var(--dm-text-default); }
 #dm-fontfacets .ladder-meta .w-num { display: block; font-family: var(--dm-f-mono); font-size: 10.5px; color: var(--dm-text-faint); font-variant-numeric: tabular-nums; }
 #dm-fontfacets .ladder-sample { flex: 1 1 auto; min-width: 0; font-size: var(--fbx-fs-ladder); line-height: 1.4; color: var(--dm-text-strong); }
 #dm-fontfacets .ladder-sample-text { display: block; min-width: 0; padding-block: 0.08em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -279,7 +280,7 @@
 #dm-fontfacets .snippet {
   position: relative; width: 100%; max-width: 100%;
   font-family: var(--dm-f-mono); font-size: 11.5px; line-height: 1.6;
-  color: var(--dm-text); background: var(--dm-bg-subtle);
+  color: var(--dm-text-default); background: var(--dm-bg-subtle);
   border: 1px solid var(--dm-border-faint); border-radius: var(--dm-radius-3);
   padding: var(--dm-space-3) var(--dm-space-4); white-space: pre; overflow-x: auto;
 }

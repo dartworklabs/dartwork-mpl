@@ -58,8 +58,8 @@ register custom colormaps in OKLab / OKLCH.
 :link: ../fonts/index
 :link-type: doc
 
-262 publication-grade fonts from 22 families, auto-registered with matplotlib
-and wired into the style presets.
+20 publication-ready fonts (262 files across 22 file groups), auto-registered
+with matplotlib and wired into the style presets.
 :::
 
 :::{grid-item-card} **Design rationale**

@@ -191,6 +191,18 @@ def test_measurement_is_deterministic() -> None:
     assert first == second
 
 
+def test_bundled_registration_is_idempotent() -> None:
+    font._add_fonts()
+    font._measure.cache_clear()
+
+    assert len(font._measure("Roboto").files) == 18
+    assert len(font._measure("Roboto Mono").files) == 14
+    assert (
+        sum(len(font._measure(family).files) for family in font.font_families())
+        == 262
+    )
+
+
 def test_typography_matrix_matches_builder() -> None:
     built = runpy.run_path(str(_TYPOGRAPHY_MATRIX_BUILDER))["build"]()
     committed = _TYPOGRAPHY_MATRIX.read_text(encoding="utf-8")
