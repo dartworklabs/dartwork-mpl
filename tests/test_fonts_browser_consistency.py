@@ -153,6 +153,7 @@ def test_payload_flags_and_ladders_match_measurements() -> None:
         assert entry["tnum_available"] is measurement.tnum_available
         assert entry["chart_glyphs"] == "".join(measurement.chart_glyphs)
         assert entry["licenses"] == list(measurement.licenses)
+        assert entry["license"] == measurement.licenses[0]
         assert [weight["num"] for weight in entry["weights"]] == [
             face.weight for face in expected_faces
         ]
@@ -184,6 +185,9 @@ def test_editorial_fields_and_sample_codepoints_are_honest() -> None:
         "intent",
         "application",
         "pairing",
+        "foundry",
+        "source",
+        "license",
         "personality",
         "hero",
         "sample",
@@ -318,23 +322,42 @@ def test_card_copy_and_badge_contract_is_pinned() -> None:
         "(the registry's numeric-axes gate)."
     ) in _FRAGMENT
 
-    card_source = _FRAGMENT.split("function makeCard(f)", 1)[1].split(
-        "function markSelected", 1
-    )[0]
-    markup_source = card_source.split("card.innerHTML =", 1)[1]
-    assert markup_source.index('class="card-desc"') > markup_source.index(
-        'class="card-top"'
-    )
-    assert markup_source.index("badge role") < markup_source.index(
-        "badge script"
-    )
-    assert markup_source.index("badge script") < markup_source.index(
-        "f.weightCount"
-    )
-    assert markup_source.index("f.weightCount") < markup_source.index(
-        "axesBadge"
-    )
-    assert markup_source.index("axesBadge") < markup_source.index("monoBadge")
+    for fragment in (_FRAGMENT, _POC_B):
+        assert 'korean_body: "Body"' in fragment
+        assert 'korean_mono: "Mono"' in fragment
+        assert 'math: "Symbols"' in fragment
+        assert '"kr-body": "Body"' in fragment
+        assert '"mono-kr": "Mono"' in fragment
+        assert '"Korean body"' not in fragment
+        assert '"Korean mono"' not in fragment
+        assert "var italicsBadge = f.hasItalic" in fragment
+        assert ">Italics</span>" in fragment
+
+        card_source = fragment.split("function makeCard(f)", 1)[1].split(
+            "function markSelected", 1
+        )[0]
+        markup_source = card_source.split("card.innerHTML =", 1)[1]
+        assert markup_source.index(
+            'class="title-badges"'
+        ) < markup_source.index('class="card-desc"')
+        assert markup_source.index('class="card-desc"') < markup_source.index(
+            'class="sample-line"'
+        )
+        assert markup_source.index('class="sample-line"') < markup_source.index(
+            'class="badges capability-badges"'
+        )
+        assert markup_source.index("badge script") < markup_source.index(
+            "f.weightCount"
+        )
+        assert markup_source.index("f.weightCount") < markup_source.index(
+            "italicsBadge"
+        )
+        assert markup_source.index("italicsBadge") < markup_source.index(
+            "axesBadge"
+        )
+        assert markup_source.index("axesBadge") < markup_source.index(
+            "monoBadge"
+        )
 
 
 def test_drawer_composition_and_descenders_are_pinned() -> None:
@@ -364,6 +387,7 @@ def test_drawer_composition_and_descenders_are_pinned() -> None:
         "widthVariants +",
         "Why this face",
         "rcParams snippet",
+        "About",
     ]
     positions = [drawer_source.index(label) for label in labels]
     assert positions == sorted(positions)
@@ -371,8 +395,16 @@ def test_drawer_composition_and_descenders_are_pinned() -> None:
     assert 'class="specimen-line"' in drawer_source
     assert "f.raw.hero" not in drawer_source
     assert "escapeHtml(f.raw.application)" in drawer_source
-    assert "escapeHtml(f.raw.pairing)" in drawer_source
-    assert "Pairs well: " in drawer_source
+    why_source = drawer_source.split("Why this face", 1)[1].split(
+        "rcParams snippet", 1
+    )[0]
+    assert "f.raw.pairing" not in why_source
+    about_source = drawer_source.split("About", 1)[1]
+    about_labels = ["Foundry", "License", "Source", "Pairs well"]
+    about_positions = [about_source.index(label) for label in about_labels]
+    assert about_positions == sorted(about_positions)
+    for field in ("foundry", "license", "source", "pairing"):
+        assert f"f.raw.{field}" in about_source
     assert "width: 100%;" in _FRAGMENT
     assert "overflow-x: auto;" in _FRAGMENT
 

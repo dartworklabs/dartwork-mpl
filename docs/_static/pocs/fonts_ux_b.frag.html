@@ -151,7 +151,9 @@
   position: relative; z-index: 2; pointer-events: none;
 }
 #dm-fbuxb .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--dm-space-2); }
+#dm-fbuxb .card-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
 #dm-fbuxb .card-name { font-size: 15px; font-weight: 600; color: var(--dm-text-strong); margin: 0; }
+#dm-fbuxb .title-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
 #dm-fbuxb .card-desc { font-size: 11.5px; line-height: 1.45; color: var(--dm-text-muted); margin: 0; }
 #dm-fbuxb .badges { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 #dm-fbuxb .badge {
@@ -163,6 +165,7 @@
 #dm-fbuxb .badge.role { background: var(--dm-accent-3); color: var(--dm-accent-11); border-color: transparent; }
 #dm-fbuxb .badge.script { background: var(--dm-info-3); color: var(--dm-info-11); border-color: transparent; }
 #dm-fbuxb .badge.mono-flag { background: var(--dm-warning-3); color: var(--dm-warning-11); border-color: transparent; }
+#dm-fbuxb .capability-badges { color: var(--dm-text-faint); }
 #dm-fbuxb .card-actions {
   position: relative; z-index: 3; display: flex; flex-wrap: wrap;
   align-items: center; justify-content: flex-end; gap: 5px; pointer-events: auto;
@@ -267,7 +270,10 @@
 #dm-fbuxb .tnum-caption { margin: 4px 0 0; color: var(--dm-text-faint); font-size: 11.5px; }
 #dm-fbuxb .intent-txt { font-size: 13px; line-height: 1.55; color: var(--dm-text-muted); margin: 0; }
 #dm-fbuxb .intent-txt + .intent-txt { margin-top: var(--dm-space-2); }
-#dm-fbuxb .pairing-txt { font-size: 11.5px; line-height: 1.5; color: var(--dm-text-faint); margin: var(--dm-space-3) 0 0; }
+#dm-fbuxb .about-list { display: grid; gap: var(--dm-space-2); margin: 0; }
+#dm-fbuxb .about-row { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: var(--dm-space-3); }
+#dm-fbuxb .about-row dt { color: var(--dm-text-faint); font-size: 11.5px; font-weight: 600; }
+#dm-fbuxb .about-row dd { color: var(--dm-text-muted); font-size: 12px; margin: 0; overflow-wrap: anywhere; }
 
 #dm-fbuxb .ladder { display: flex; flex-direction: column; }
 #dm-fbuxb .ladder-row {
@@ -483,6 +489,8 @@ var DM_FONT_DATA = {
     "application": "Body text, axis labels, and any figure where the type should stay invisible.",
     "pairing": "Stands alone, or takes titles from Inter Display for a display/body split.",
     "personality": "Neutral · geometric-humanist",
+    "foundry": "Google",
+    "source": "Google Fonts",
     "ladder_sample": "Beautiful data graphs 0123",
     "regular": "dm-Roboto-Regular",
     "weights": [
@@ -539,6 +547,7 @@ var DM_FONT_DATA = {
     "tnum": true,
     "tnum_available": true,
     "chart_glyphs": "−×±°μσΔ",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -560,6 +569,8 @@ var DM_FONT_DATA = {
     "application": "Interface labels, legends, presentation slides, and any figure viewed on a screen.",
     "pairing": "Its natural partner is Inter Display for headings.",
     "personality": "Neutral · high-legibility",
+    "foundry": "Rasmus Andersson",
+    "source": "rsms/inter",
     "ladder_sample": "Beautiful data graphs 0123",
     "regular": "dm-Inter-Regular",
     "weights": [
@@ -616,6 +627,7 @@ var DM_FONT_DATA = {
     "tnum": true,
     "tnum_available": true,
     "chart_glyphs": "−×±→°μσΔ",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -637,6 +649,8 @@ var DM_FONT_DATA = {
     "application": "Captions, annotations, and report body text.",
     "pairing": "Reads well beside Inter or Roboto for a UI/body split.",
     "personality": "Humanist · readable",
+    "foundry": "Adobe",
+    "source": "adobe-fonts/source-sans",
     "ladder_sample": "Beautiful data graphs 0123",
     "regular": "dm-SourceSans3-Regular",
     "weights": [
@@ -683,6 +697,7 @@ var DM_FONT_DATA = {
     "tnum": false,
     "tnum_available": false,
     "chart_glyphs": "−×±→°μσΔ",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -704,6 +719,8 @@ var DM_FONT_DATA = {
     "application": "Chart titles, section headings, and poster-scale numbers.",
     "pairing": "Set titles here, body in Inter or Roboto.",
     "personality": "Confident · display-optimized",
+    "foundry": "Rasmus Andersson",
+    "source": "rsms/inter",
     "ladder_sample": "Beautiful data graphs 0123",
     "regular": "dm-InterDisplay-Regular",
     "weights": [
@@ -760,6 +777,7 @@ var DM_FONT_DATA = {
     "tnum": true,
     "tnum_available": true,
     "chart_glyphs": "−×±→°μσΔ",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -781,6 +799,8 @@ var DM_FONT_DATA = {
     "application": "Technical dashboards, interface labels, engineering figures.",
     "pairing": "Pairs with IBM Plex Mono for text-and-data layouts.",
     "personality": "Engineered · corporate",
+    "foundry": "IBM",
+    "source": "IBM Plex",
     "ladder_sample": "Beautiful data graphs 0123",
     "regular": "dm-IBMPlexSans-Regular",
     "weights": [
@@ -827,6 +847,7 @@ var DM_FONT_DATA = {
     "tnum": false,
     "tnum_available": false,
     "chart_glyphs": "−×±→°μσΔ",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -848,6 +869,8 @@ var DM_FONT_DATA = {
     "application": "Multi-language documents, international reports, and neutral fallback body.",
     "pairing": "Pairs with Paperlogy for KR/EN and Noto Sans Math for symbols.",
     "personality": "Neutral · universal",
+    "foundry": "Google",
+    "source": "Google Fonts",
     "ladder_sample": "Beautiful data graphs 0123",
     "regular": "dm-NotoSans-Regular",
     "weights": [
@@ -904,6 +927,7 @@ var DM_FONT_DATA = {
     "tnum": true,
     "tnum_available": true,
     "chart_glyphs": "−×±°μσΔ",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -939,6 +963,8 @@ var DM_FONT_DATA = {
     "application": "Journal, report, and book figures that need a serif voice.",
     "pairing": "Pairs with Source Sans 3 and Source Code Pro in the Source superfamily.",
     "personality": "Editorial · print-rooted",
+    "foundry": "Adobe",
+    "source": "adobe-fonts/source-serif",
     "ladder_sample": "Beautiful data graphs 0123",
     "regular": "dm-SourceSerif4-Regular",
     "weights": [
@@ -980,11 +1006,162 @@ var DM_FONT_DATA = {
     "tnum": true,
     "tnum_available": true,
     "chart_glyphs": "−×±→°μσΔ",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
     "chain": [
       "Source Serif 4",
+      "Noto Sans Math"
+    ]
+  },
+  "noto_serif": {
+    "name": "Noto Serif",
+    "mpl": "Noto Serif",
+    "role": "serif",
+    "group": "Serif",
+    "script": "Latin + pan-script",
+    "hero": "Aa Gg Rr 0123",
+    "sample": "The dartwork designs beautiful data artworks since 2021.",
+    "desc": "Noto Sans's serif sibling with harmonized pan-script metrics.",
+    "intent": "A multilingual serif that keeps Noto's measured rhythm while adding an editorial voice, opt-in only.",
+    "application": "Journal-matched multilingual figures, reports, and serif-led annotations.",
+    "pairing": "Pairs with Noto Sans and Noto Sans Math for a matched fallback system.",
+    "personality": "Multilingual · editorial",
+    "foundry": "Google",
+    "source": "Google Fonts",
+    "ladder_sample": "Beautiful data graphs 0123",
+    "regular": "dm-NotoSerif-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-NotoSerif-Thin"
+      },
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-NotoSerif-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-NotoSerif-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-NotoSerif-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-NotoSerif-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-NotoSerif-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-NotoSerif-Bold"
+      },
+      {
+        "label": "ExtraBold",
+        "num": 800,
+        "face": "dm-NotoSerif-ExtraBold"
+      },
+      {
+        "label": "Black",
+        "num": 900,
+        "face": "dm-NotoSerif-Black"
+      }
+    ],
+    "italic": true,
+    "mono": false,
+    "hangul": false,
+    "numeric_axes": true,
+    "tnum": true,
+    "tnum_available": true,
+    "chart_glyphs": "−×±°μσΔ",
+    "license": "OFL-1.1",
+    "licenses": [
+      "OFL-1.1"
+    ],
+    "chain": [
+      "Noto Serif",
+      "Noto Sans Math"
+    ]
+  },
+  "ibm_plex_serif": {
+    "name": "IBM Plex Serif",
+    "mpl": "IBM Plex Serif",
+    "role": "serif",
+    "group": "Serif",
+    "script": "Latin",
+    "hero": "Aa Gg Rr 0123",
+    "sample": "The dartwork designs beautiful data artworks since 2021.",
+    "desc": "IBM's serif voice for the Plex superfamily.",
+    "intent": "Distinctive engineered details carry the Plex identity into editorial figures, opt-in only.",
+    "application": "Technical reports and editorial figures that pair serif text with Plex Sans or Mono.",
+    "pairing": "Pairs with IBM Plex Sans and IBM Plex Mono.",
+    "personality": "Engineered · editorial",
+    "foundry": "IBM",
+    "source": "IBM Plex",
+    "ladder_sample": "Beautiful data graphs 0123",
+    "regular": "dm-IBMPlexSerif-Regular",
+    "weights": [
+      {
+        "label": "Thin",
+        "num": 100,
+        "face": "dm-IBMPlexSerif-Thin"
+      },
+      {
+        "label": "ExtraLight",
+        "num": 200,
+        "face": "dm-IBMPlexSerif-ExtraLight"
+      },
+      {
+        "label": "Light",
+        "num": 300,
+        "face": "dm-IBMPlexSerif-Light"
+      },
+      {
+        "label": "Regular",
+        "num": 400,
+        "face": "dm-IBMPlexSerif-Regular"
+      },
+      {
+        "label": "Medium",
+        "num": 500,
+        "face": "dm-IBMPlexSerif-Medium"
+      },
+      {
+        "label": "SemiBold",
+        "num": 600,
+        "face": "dm-IBMPlexSerif-SemiBold"
+      },
+      {
+        "label": "Bold",
+        "num": 700,
+        "face": "dm-IBMPlexSerif-Bold"
+      }
+    ],
+    "italic": true,
+    "mono": false,
+    "hangul": false,
+    "numeric_axes": true,
+    "tnum": false,
+    "tnum_available": false,
+    "chart_glyphs": "−×±→°μσΔ",
+    "license": "OFL-1.1",
+    "licenses": [
+      "OFL-1.1"
+    ],
+    "chain": [
+      "IBM Plex Serif",
       "Noto Sans Math"
     ]
   },
@@ -1001,6 +1178,8 @@ var DM_FONT_DATA = {
     "application": "Korean and mixed KR/EN titles, labels, and UI.",
     "pairing": "Self-contained KR+Latin; also sits naturally beside Inter.",
     "personality": "Modern · bilingual",
+    "foundry": "길형진 (orioncactus)",
+    "source": "orioncactus/pretendard",
     "ladder_sample": "아름다운 데이터 그래프 0123",
     "regular": "dm-Pretendard-Regular",
     "weights": [
@@ -1057,6 +1236,7 @@ var DM_FONT_DATA = {
     "tnum": true,
     "tnum_available": true,
     "chart_glyphs": "−×±→°μσΔ",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -1078,6 +1258,8 @@ var DM_FONT_DATA = {
     "application": "Korean (한글) titles and labels, and mixed KR/EN figures.",
     "pairing": "Pairs with Inter or Roboto for the Latin run in bilingual charts.",
     "personality": "Clean · bilingual",
+    "foundry": "Freesentation",
+    "source": "Freesentation/Paperlogy",
     "ladder_sample": "아름다운 데이터 그래프 0123",
     "regular": "dm-Paperlogy-4Regular",
     "weights": [
@@ -1134,6 +1316,7 @@ var DM_FONT_DATA = {
     "tnum": false,
     "tnum_available": false,
     "chart_glyphs": "−×±→°",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -1155,6 +1338,8 @@ var DM_FONT_DATA = {
     "application": "Korean labels and mixed KR/EN figures.",
     "pairing": "Sits under the Latin workhorses as a Korean fallback.",
     "personality": "Korean · comprehensive",
+    "foundry": "Google · Adobe",
+    "source": "notofonts/noto-cjk",
     "ladder_sample": "아름다운 데이터 그래프 0123",
     "regular": "dm-NotoSansCJK-Regular",
     "weights": [
@@ -1171,6 +1356,7 @@ var DM_FONT_DATA = {
     "tnum": false,
     "tnum_available": false,
     "chart_glyphs": "×±°",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -1192,6 +1378,8 @@ var DM_FONT_DATA = {
     "application": "Code blocks, log output, and tightly packed data tables.",
     "pairing": "Stands alone; sits well beside Inter for docs.",
     "personality": "Monospace · developer",
+    "foundry": "JetBrains",
+    "source": "JetBrains/JetBrainsMono",
     "ladder_sample": "plot(fig=dm) # 0123",
     "regular": "dm-JetBrainsMono-Regular",
     "weights": [
@@ -1243,6 +1431,7 @@ var DM_FONT_DATA = {
     "tnum": false,
     "tnum_available": false,
     "chart_glyphs": "−×±→°μσΔ",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -1264,6 +1453,8 @@ var DM_FONT_DATA = {
     "application": "Tabular figures, code, and fixed-width axis labels.",
     "pairing": "Pairs with IBM Plex Sans for text next to data.",
     "personality": "Monospace · aligned",
+    "foundry": "IBM",
+    "source": "IBM Plex",
     "ladder_sample": "plot(fig=dm) # 0123",
     "regular": "dm-IBMPlexMono-Regular",
     "weights": [
@@ -1310,6 +1501,7 @@ var DM_FONT_DATA = {
     "tnum": false,
     "tnum_available": false,
     "chart_glyphs": "−×±→°",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -1331,6 +1523,8 @@ var DM_FONT_DATA = {
     "application": "Code, fixed-width labels, and numeric tables.",
     "pairing": "Pairs with Source Sans 3 for a full text+code system.",
     "personality": "Monospace · neutral",
+    "foundry": "Adobe",
+    "source": "adobe-fonts/source-code-pro",
     "ladder_sample": "plot(fig=dm) # 0123",
     "regular": "dm-SourceCodePro-Regular",
     "weights": [
@@ -1377,6 +1571,7 @@ var DM_FONT_DATA = {
     "tnum": false,
     "tnum_available": false,
     "chart_glyphs": "−×±→°μσΔ",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -1398,6 +1593,8 @@ var DM_FONT_DATA = {
     "application": "Timestamps, fixed-width tick labels, and inline figures.",
     "pairing": "Pairs with Roboto for a unified text+data look.",
     "personality": "Monospace · neutral",
+    "foundry": "Google",
+    "source": "Google Fonts",
     "ladder_sample": "plot(fig=dm) # 0123",
     "regular": "dm-RobotoMono-Regular",
     "weights": [
@@ -1444,6 +1641,7 @@ var DM_FONT_DATA = {
     "tnum": false,
     "tnum_available": false,
     "chart_glyphs": "−×±°μσΔ",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -1465,6 +1663,8 @@ var DM_FONT_DATA = {
     "application": "Korean code blocks and aligned Korean tables.",
     "pairing": "Trails a Latin mono: font.family = ['JetBrains Mono', 'D2Coding'].",
     "personality": "Monospace · bilingual",
+    "foundry": "Naver",
+    "source": "naver/d2codingfont",
     "ladder_sample": "plot(fig=dm) # 0123",
     "regular": "dm-D2Coding-Regular",
     "weights": [
@@ -1486,6 +1686,7 @@ var DM_FONT_DATA = {
     "tnum": false,
     "tnum_available": false,
     "chart_glyphs": "−×±→°μσΔ",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -1507,6 +1708,8 @@ var DM_FONT_DATA = {
     "application": "Equations, symbol annotations, and scientific axis labels.",
     "pairing": "Drop symbols into a Noto Sans or Inter run.",
     "personality": "Technical · complete",
+    "foundry": "Google",
+    "source": "notofonts/math",
     "ladder_sample": "− × ± → ° μ σ Δ 0123",
     "regular": "dm-NotoSansMath-Regular",
     "weights": [
@@ -1523,6 +1726,7 @@ var DM_FONT_DATA = {
     "tnum": false,
     "tnum_available": false,
     "chart_glyphs": "−×±→°μσΔ",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -1544,6 +1748,8 @@ var DM_FONT_DATA = {
     "application": "End-of-chain fallback for annotation symbols.",
     "pairing": "Sits after Noto Sans Math in every preset chain.",
     "personality": "Fallback · coverage",
+    "foundry": "Google",
+    "source": "notofonts/symbols",
     "ladder_sample": "− × → ° 0123",
     "regular": "dm-NotoSansSymbols-Regular",
     "weights": [
@@ -1560,6 +1766,7 @@ var DM_FONT_DATA = {
     "tnum": false,
     "tnum_available": false,
     "chart_glyphs": "−×→°",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -1581,6 +1788,8 @@ var DM_FONT_DATA = {
     "application": "Final fallback for pictographic annotations and status marks.",
     "pairing": "Sits last in every preset font fallback chain.",
     "personality": "Fallback · pictographic",
+    "foundry": "Google",
+    "source": "notofonts/symbols",
     "ladder_sample": "− × ° 0123",
     "regular": "dm-NotoSansSymbols2-Regular",
     "weights": [
@@ -1597,6 +1806,7 @@ var DM_FONT_DATA = {
     "tnum": false,
     "tnum_available": false,
     "chart_glyphs": "−×°",
+    "license": "OFL-1.1",
     "licenses": [
       "OFL-1.1"
     ],
@@ -1606,8 +1816,8 @@ var DM_FONT_DATA = {
     ]
   }
 };
-var DM_FONT_ORDER = ["roboto", "inter", "source_sans_3", "inter_display", "ibm_plex_sans", "noto_sans", "source_serif_4", "pretendard", "paperlogy", "noto_sans_cjk_kr", "jetbrains_mono", "ibm_plex_mono", "source_code_pro", "roboto_mono", "d2coding", "noto_sans_math", "noto_sans_symbols", "noto_sans_symbols_2"];
-var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "source_sans_3"]}, {"title": "Display", "items": ["inter_display"]}, {"title": "Technical", "items": ["ibm_plex_sans"]}, {"title": "Multilingual", "items": ["noto_sans"]}, {"title": "Serif", "items": ["source_serif_4"]}, {"title": "Korean & CJK", "items": ["pretendard", "paperlogy", "noto_sans_cjk_kr"]}, {"title": "Monospace", "items": ["jetbrains_mono", "ibm_plex_mono", "source_code_pro", "roboto_mono", "d2coding"]}, {"title": "Symbols & Math", "items": ["noto_sans_math", "noto_sans_symbols", "noto_sans_symbols_2"]}];
+var DM_FONT_ORDER = ["roboto", "inter", "source_sans_3", "inter_display", "ibm_plex_sans", "noto_sans", "source_serif_4", "noto_serif", "ibm_plex_serif", "pretendard", "paperlogy", "noto_sans_cjk_kr", "jetbrains_mono", "ibm_plex_mono", "source_code_pro", "roboto_mono", "d2coding", "noto_sans_math", "noto_sans_symbols", "noto_sans_symbols_2"];
+var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "source_sans_3"]}, {"title": "Display", "items": ["inter_display"]}, {"title": "Technical", "items": ["ibm_plex_sans"]}, {"title": "Multilingual", "items": ["noto_sans"]}, {"title": "Serif", "items": ["source_serif_4", "noto_serif", "ibm_plex_serif"]}, {"title": "Korean & CJK", "items": ["pretendard", "paperlogy", "noto_sans_cjk_kr"]}, {"title": "Monospace", "items": ["jetbrains_mono", "ibm_plex_mono", "source_code_pro", "roboto_mono", "d2coding"]}, {"title": "Symbols & Math", "items": ["noto_sans_math", "noto_sans_symbols", "noto_sans_symbols_2"]}];
 // DM_FONT_DATA:END
 
 /* ============================================================
@@ -1674,10 +1884,10 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
     display: "Display",
     serif: "Serif",
     mono: "Mono",
-    "kr-body": "Korean body",
-    korean_body: "Korean body",
-    "mono-kr": "Korean mono",
-    korean_mono: "Korean mono",
+    "kr-body": "Body",
+    korean_body: "Body",
+    "mono-kr": "Mono",
+    korean_mono: "Mono",
     "fallback-tail": "Symbols",
     symbols: "Symbols",
     math: "Symbols"
@@ -1923,8 +2133,9 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
     card.dataset.selected = "false";
 
     var roleLabel = ROLE_LABELS[f.raw.role] || f.raw.role;
-    var defaultBadge = f.key === "roboto" ? '<span class="badge">Default</span>' : "";
-    var monoBadge = f.isMono && roleLabel !== "Mono" ? '<span class="badge mono-flag">Mono</span>' : "";
+    var defaultBadge = f.key === "roboto" ? '<span class="badge default">Default</span>' : "";
+    var monoBadge = f.isMono ? '<span class="badge mono-flag">Mono</span>' : "";
+    var italicsBadge = f.hasItalic ? '<span class="badge">Italics</span>' : "";
     var axesBadge = f.raw.numeric_axes
       ? "<span class='badge' title=\"Digits share one width, so numeric axis labels stay aligned (the registry's numeric-axes gate).\">Aligned digits</span>"
       : "";
@@ -1933,7 +2144,8 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
     card.innerHTML =
       '<button type="button" class="card-open" aria-label="Open ' + escapeHtml(f.name) + ' details"></button>' +
       '<div class="card-top">' +
-        '<h3 class="card-name">' + escapeHtml(f.name) + "</h3>" +
+        '<div class="card-title"><h3 class="card-name">' + escapeHtml(f.name) + "</h3>" +
+          '<div class="title-badges"><span class="badge role">' + escapeHtml(roleLabel) + "</span>" + defaultBadge + "</div></div>" +
         '<div class="card-actions">' +
           '<button type="button" class="chain-copy">Copy chain</button>' +
           '<button type="button" class="pin-toggle" aria-pressed="' + String(pinned) + '" ' +
@@ -1944,15 +2156,14 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
         "</div>" +
       "</div>" +
       '<p class="card-desc">' + escapeHtml(f.raw.desc + " " + f.raw.application) + "</p>" +
-      '<div class="badges">' +
-        '<span class="badge role">' + escapeHtml(roleLabel) + "</span>" +
-        defaultBadge +
+      '<p class="sample-line" style="font-family:\'' + f.raw.regular + "', var(--dm-f-sys)\">" + escapeHtml(previewText.trim() ? previewText : f.raw.sample) + "</p>" +
+      '<div class="badges capability-badges">' +
         '<span class="badge script">' + escapeHtml(f.script) + "</span>" +
-        '<span class="badge">' + f.weightCount + " weight" + (f.weightCount === 1 ? "" : "s") + "</span>" +
+        '<span class="badge">' + f.weightCount + " weights</span>" +
+        italicsBadge +
         axesBadge +
         monoBadge +
-      "</div>" +
-      '<p class="sample-line" style="font-family:\'' + f.raw.regular + "', var(--dm-f-sys)\">" + escapeHtml(previewText.trim() ? previewText : f.raw.sample) + "</p>";
+      "</div>";
 
     card.querySelector(".card-open").addEventListener("click", function () { openDetail(f.key); });
     card.querySelector(".chain-copy").addEventListener("click", function () {
@@ -2127,10 +2338,15 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
       widthVariants +
       '<section><p class="lbl">Why this face</p>' +
         '<p class="intent-txt">' + escapeHtml(f.raw.intent) + "</p>" +
-        '<p class="intent-txt">' + escapeHtml(f.raw.application) + "</p>" +
-        '<p class="pairing-txt">Pairs well: ' + escapeHtml(f.raw.pairing) + "</p></section>" +
+        '<p class="intent-txt">' + escapeHtml(f.raw.application) + "</p></section>" +
       '<section><p class="lbl">rcParams snippet</p>' +
-        '<div class="snippet"><button type="button" class="snippet-copy">Copy</button>' + escapeHtml(snippet) + "</div></section>";
+        '<div class="snippet"><button type="button" class="snippet-copy">Copy</button>' + escapeHtml(snippet) + "</div></section>" +
+      '<section class="about"><p class="lbl">About</p><dl class="about-list">' +
+        '<div class="about-row"><dt>Foundry</dt><dd>' + escapeHtml(f.raw.foundry) + "</dd></div>" +
+        '<div class="about-row"><dt>License</dt><dd>' + escapeHtml(f.raw.license) + "</dd></div>" +
+        '<div class="about-row"><dt>Source</dt><dd>' + escapeHtml(f.raw.source) + "</dd></div>" +
+        '<div class="about-row"><dt>Pairs well</dt><dd>' + escapeHtml(f.raw.pairing) + "</dd></div>" +
+      "</dl></section>";
 
     dBody.querySelector(".snippet-copy").addEventListener("click", function () {
       copyText(snippet, "rcParams snippet copied");

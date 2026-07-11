@@ -37,6 +37,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Body text, axis labels, and any figure where the type should stay invisible.",
         "pairing": "Stands alone, or takes titles from Inter Display for a display/body split.",
         "personality": "Neutral · geometric-humanist",
+        "foundry": "Google",
+        "source": "Google Fonts",
     },
     "Inter": {
         "script": "Latin",
@@ -47,6 +49,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Interface labels, legends, presentation slides, and any figure viewed on a screen.",
         "pairing": "Its natural partner is Inter Display for headings.",
         "personality": "Neutral · high-legibility",
+        "foundry": "Rasmus Andersson",
+        "source": "rsms/inter",
     },
     "IBM Plex Sans": {
         "script": "Latin",
@@ -57,6 +61,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Technical dashboards, interface labels, engineering figures.",
         "pairing": "Pairs with IBM Plex Mono for text-and-data layouts.",
         "personality": "Engineered · corporate",
+        "foundry": "IBM",
+        "source": "IBM Plex",
     },
     "Source Sans 3": {
         "script": "Latin",
@@ -67,6 +73,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Captions, annotations, and report body text.",
         "pairing": "Reads well beside Inter or Roboto for a UI/body split.",
         "personality": "Humanist · readable",
+        "foundry": "Adobe",
+        "source": "adobe-fonts/source-sans",
     },
     "Noto Sans": {
         "script": "Latin + pan-script",
@@ -77,6 +85,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Multi-language documents, international reports, and neutral fallback body.",
         "pairing": "Pairs with Paperlogy for KR/EN and Noto Sans Math for symbols.",
         "personality": "Neutral · universal",
+        "foundry": "Google",
+        "source": "Google Fonts",
     },
     "Inter Display": {
         "script": "Latin",
@@ -87,6 +97,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Chart titles, section headings, and poster-scale numbers.",
         "pairing": "Set titles here, body in Inter or Roboto.",
         "personality": "Confident · display-optimized",
+        "foundry": "Rasmus Andersson",
+        "source": "rsms/inter",
     },
     "Paperlogy": {
         "script": "한글 + Latin",
@@ -97,6 +109,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Korean (한글) titles and labels, and mixed KR/EN figures.",
         "pairing": "Pairs with Inter or Roboto for the Latin run in bilingual charts.",
         "personality": "Clean · bilingual",
+        "foundry": "Freesentation",
+        "source": "Freesentation/Paperlogy",
     },
     "Pretendard": {
         "script": "한글 + Latin",
@@ -107,6 +121,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Korean and mixed KR/EN titles, labels, and UI.",
         "pairing": "Self-contained KR+Latin; also sits naturally beside Inter.",
         "personality": "Modern · bilingual",
+        "foundry": "길형진 (orioncactus)",
+        "source": "orioncactus/pretendard",
     },
     "Noto Sans CJK KR": {
         "script": "한글 + Latin",
@@ -117,6 +133,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Korean labels and mixed KR/EN figures.",
         "pairing": "Sits under the Latin workhorses as a Korean fallback.",
         "personality": "Korean · comprehensive",
+        "foundry": "Google · Adobe",
+        "source": "notofonts/noto-cjk",
     },
     "Source Serif 4": {
         "script": "Latin",
@@ -127,6 +145,32 @@ META: dict[str, dict[str, str]] = {
         "application": "Journal, report, and book figures that need a serif voice.",
         "pairing": "Pairs with Source Sans 3 and Source Code Pro in the Source superfamily.",
         "personality": "Editorial · print-rooted",
+        "foundry": "Adobe",
+        "source": "adobe-fonts/source-serif",
+    },
+    "Noto Serif": {
+        "script": "Latin + pan-script",
+        "hero": HERO_LATIN,
+        "sample": LATIN,
+        "desc": "Noto Sans's serif sibling with harmonized pan-script metrics.",
+        "intent": "A multilingual serif that keeps Noto's measured rhythm while adding an editorial voice, opt-in only.",
+        "application": "Journal-matched multilingual figures, reports, and serif-led annotations.",
+        "pairing": "Pairs with Noto Sans and Noto Sans Math for a matched fallback system.",
+        "personality": "Multilingual · editorial",
+        "foundry": "Google",
+        "source": "Google Fonts",
+    },
+    "IBM Plex Serif": {
+        "script": "Latin",
+        "hero": HERO_LATIN,
+        "sample": LATIN,
+        "desc": "IBM's serif voice for the Plex superfamily.",
+        "intent": "Distinctive engineered details carry the Plex identity into editorial figures, opt-in only.",
+        "application": "Technical reports and editorial figures that pair serif text with Plex Sans or Mono.",
+        "pairing": "Pairs with IBM Plex Sans and IBM Plex Mono.",
+        "personality": "Engineered · editorial",
+        "foundry": "IBM",
+        "source": "IBM Plex",
     },
     "JetBrains Mono": {
         "script": "Latin (monospace)",
@@ -137,6 +181,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Code blocks, log output, and tightly packed data tables.",
         "pairing": "Stands alone; sits well beside Inter for docs.",
         "personality": "Monospace · developer",
+        "foundry": "JetBrains",
+        "source": "JetBrains/JetBrainsMono",
     },
     "IBM Plex Mono": {
         "script": "Latin (monospace)",
@@ -147,6 +193,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Tabular figures, code, and fixed-width axis labels.",
         "pairing": "Pairs with IBM Plex Sans for text next to data.",
         "personality": "Monospace · aligned",
+        "foundry": "IBM",
+        "source": "IBM Plex",
     },
     "Roboto Mono": {
         "script": "Latin (monospace)",
@@ -157,6 +205,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Timestamps, fixed-width tick labels, and inline figures.",
         "pairing": "Pairs with Roboto for a unified text+data look.",
         "personality": "Monospace · neutral",
+        "foundry": "Google",
+        "source": "Google Fonts",
     },
     "Source Code Pro": {
         "script": "Latin (monospace)",
@@ -167,6 +217,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Code, fixed-width labels, and numeric tables.",
         "pairing": "Pairs with Source Sans 3 for a full text+code system.",
         "personality": "Monospace · neutral",
+        "foundry": "Adobe",
+        "source": "adobe-fonts/source-code-pro",
     },
     "D2Coding": {
         "script": "한글 + Latin (mono)",
@@ -177,6 +229,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Korean code blocks and aligned Korean tables.",
         "pairing": "Trails a Latin mono: font.family = ['JetBrains Mono', 'D2Coding'].",
         "personality": "Monospace · bilingual",
+        "foundry": "Naver",
+        "source": "naver/d2codingfont",
     },
     "Noto Sans Math": {
         "script": "Math symbols",
@@ -187,6 +241,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Equations, symbol annotations, and scientific axis labels.",
         "pairing": "Drop symbols into a Noto Sans or Inter run.",
         "personality": "Technical · complete",
+        "foundry": "Google",
+        "source": "notofonts/math",
     },
     "Noto Sans Symbols": {
         "script": "Symbols",
@@ -197,6 +253,8 @@ META: dict[str, dict[str, str]] = {
         "application": "End-of-chain fallback for annotation symbols.",
         "pairing": "Sits after Noto Sans Math in every preset chain.",
         "personality": "Fallback · coverage",
+        "foundry": "Google",
+        "source": "notofonts/symbols",
     },
     "Noto Sans Symbols 2": {
         "script": "Symbols",
@@ -207,6 +265,8 @@ META: dict[str, dict[str, str]] = {
         "application": "Final fallback for pictographic annotations and status marks.",
         "pairing": "Sits last in every preset font fallback chain.",
         "personality": "Fallback · pictographic",
+        "foundry": "Google",
+        "source": "notofonts/symbols",
     },
 }
 
@@ -215,7 +275,7 @@ GROUPS: list[tuple[str, list[str]]] = [
     ("Display", ["Inter Display"]),
     ("Technical", ["IBM Plex Sans"]),
     ("Multilingual", ["Noto Sans"]),
-    ("Serif", ["Source Serif 4"]),
+    ("Serif", ["Source Serif 4", "Noto Serif", "IBM Plex Serif"]),
     ("Korean & CJK", ["Pretendard", "Paperlogy", "Noto Sans CJK KR"]),
     (
         "Monospace",
@@ -377,6 +437,11 @@ def build_catalog() -> tuple[
                 f"registry key/name drift: {name!r} != {record.name!r}"
             )
         measurement = font._measure(name)
+        if len(measurement.licenses) != 1:
+            raise SystemExit(
+                f"expected one measured license for {name}: "
+                f"{measurement.licenses}"
+            )
         measured_faces = _unique_faces(measurement)
         ladder_faces = sorted(
             (
@@ -418,6 +483,7 @@ def build_catalog() -> tuple[
             "tnum": record.tnum,
             "tnum_available": measurement.tnum_available,
             "chart_glyphs": "".join(measurement.chart_glyphs),
+            "license": measurement.licenses[0],
             "licenses": list(measurement.licenses),
             "chain": _chain(name, record.role),
         }
