@@ -124,13 +124,13 @@
 #dm-fontfacets .font-group-cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--dm-space-3); }
 
 #dm-fontfacets .card {
-  position: relative; text-align: left; width: 100%;
+  position: relative; text-align: left; width: 100%; cursor: pointer;
   background: var(--dm-bg-panel); border: 1px solid var(--dm-border);
   border-radius: var(--dm-radius-4); padding: var(--dm-space-4);
   transition: border-color .12s, background .12s, box-shadow .12s;
   display: flex; flex-direction: column; gap: var(--dm-space-3);
 }
-#dm-fontfacets .card:hover { border-color: var(--dm-border-strong); box-shadow: var(--dm-shadow-1); }
+#dm-fontfacets .card:hover { border-color: var(--dm-accent-6); box-shadow: var(--dm-shadow-1); }
 #dm-fontfacets .card[data-selected="true"] {
   border-color: var(--dm-accent-8); background: var(--dm-accent-2);
 }
@@ -2005,7 +2005,7 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
       groupSection.classList.add("font-group");
       var groupTitle = document.createElement("h3");
       groupTitle.classList.add("font-group-title");
-      groupTitle.textContent = group.title;
+      groupTitle.textContent = group.title + " · " + groupFonts.length;
       var groupCards = document.createElement("div");
       groupCards.classList.add("font-group-cards");
       groupFonts.forEach(function (f) { groupCards.appendChild(makeCard(f)); });
@@ -2061,8 +2061,11 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
         axesBadge +
       "</div>";
 
-    card.querySelector(".card-open").addEventListener("click", function () { openDetail(f.key); });
-    card.querySelector(".chain-copy").addEventListener("click", function () {
+    // Whole card opens the drawer; the .card-open button is the keyboard/a11y
+    // path (its click bubbles here). Inner buttons stop propagation.
+    card.addEventListener("click", function () { openDetail(f.key); });
+    card.querySelector(".chain-copy").addEventListener("click", function (e) {
+      e.stopPropagation();
       copyText(chainLine, "font.family chain copied");
     });
     return card;
