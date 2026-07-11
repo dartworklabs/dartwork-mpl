@@ -452,6 +452,33 @@ def test_poc_b_is_resynced_and_uses_a_stacked_specimen_tray() -> None:
     assert "border-radius:" not in item_rule
 
 
+def test_poc_badge_layout_switcher_reuses_one_card_dom() -> None:
+    assert 'class="badge-layout-control"' not in _FRAGMENT
+    assert 'class="badge-layout-c"' in _POC_B
+    assert 'class="badge-layout-control"' in _POC_B
+    assert "Badge layout:" in _POC_B
+    assert ">A 제목 옆</button>" in _POC_B
+    assert ">B 제목 아래</button>" in _POC_B
+    assert ">C 분리</button>" in _POC_B
+    assert 'data-layout="a" aria-pressed="false"' in _POC_B
+    assert 'data-layout="b" aria-pressed="false"' in _POC_B
+    assert 'data-layout="c" aria-pressed="true"' in _POC_B
+    assert (
+        'ROOT.classList.remove("badge-layout-a", "badge-layout-b", "badge-layout-c")'
+        in _POC_B
+    )
+    assert 'ROOT.classList.add("badge-layout-" + layout)' in _POC_B
+
+    for layout in ("a", "b", "c"):
+        assert f"#dm-fbuxb.badge-layout-{layout}" in _POC_B
+
+    card_source = _POC_B.split("function makeCard(f)", 1)[1].split(
+        "// ---- POC B pin-and-compare tray", 1
+    )[0]
+    assert card_source.count('class="title-badges"') == 1
+    assert card_source.count('class="badges capability-badges"') == 1
+
+
 def test_preview_page_keeps_only_the_chosen_b_direction() -> None:
     page = _POC_PAGE_PATH.read_text(encoding="utf-8")
 
