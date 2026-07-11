@@ -510,6 +510,9 @@ def build_catalog() -> tuple[
         )
         _validate_description_glyphs(name, regular)
         group = next(title for title, names in GROUPS if name in names)
+        # The coverage badge intentionally repeats a word from vendor names
+        # (Noto Sans Math/Symbols/CJK): uniform system plus intra-group
+        # discrimination beats per-card suppression.
         entry: dict[str, Any] = {
             "name": name,
             "mpl": name,
