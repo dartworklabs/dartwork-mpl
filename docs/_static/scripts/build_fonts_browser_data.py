@@ -248,7 +248,7 @@ META: dict[str, dict[str, str]] = {
         "script": "Symbols",
         "hero": "← ↑ → ↓",
         "sample": "← ↑ → ↓ ♪ − × °",
-        "desc": "Symbol fallback for arrows, signs, and miscellaneous marks.",
+        "desc": "Arrows, music, and miscellaneous signs — the first symbol fallback (← ↑ ♪ §).",
         "intent": "Keeps arrows, stars, and signs from rendering as tofu — a fallback tail, not a body face.",
         "application": "End-of-chain fallback for annotation symbols.",
         "pairing": "Sits after Noto Sans Math in every preset chain.",
@@ -260,7 +260,7 @@ META: dict[str, dict[str, str]] = {
         "script": "Symbols",
         "hero": "⚠ ☑ ◐ ⬟",
         "sample": "⚠ ☑ ◐ ⬟ ⌚ ⏱",
-        "desc": "Final symbol fallback for dingbats, enclosed marks, and pictographic signs.",
+        "desc": "Dingbats, enclosed marks, and pictographs — the final symbol fallback (⚠ ☑ ◐ ⏱).",
         "intent": "Extends the fallback tail into dingbats, enclosed marks, and pictographs that text faces do not cover.",
         "application": "Final fallback for pictographic annotations and status marks.",
         "pairing": "Sits last in every preset font fallback chain.",
@@ -372,6 +372,27 @@ def _face_codepoints(filename: str) -> frozenset[int]:
         ttfont.close()
 
 
+def _validate_description_glyphs(
+    name: str, regular: font.FontFaceMeasurement
+) -> None:
+    if name not in {"Noto Sans Symbols", "Noto Sans Symbols 2"}:
+        return
+    match = re.search(r"\(([^()]*)\)\.$", META[name]["desc"])
+    if match is None:
+        raise SystemExit(f"symbol description examples missing for {name}")
+    codepoints = _face_codepoints(regular.file)
+    missing = {
+        char
+        for char in match.group(1)
+        if not char.isspace() and ord(char) not in codepoints
+    }
+    if missing:
+        raise SystemExit(
+            f"symbol description glyphs not covered by {name}: "
+            f"{sorted(missing)}"
+        )
+
+
 def _ladder_sample(
     name: str,
     role: str,
@@ -464,6 +485,7 @@ def build_catalog() -> tuple[
         regular = min(
             ladder_faces, key=lambda face: (abs(face.weight - 400), face.file)
         )
+        _validate_description_glyphs(name, regular)
         group = next(title for title, names in GROUPS if name in names)
         entry: dict[str, Any] = {
             "name": name,

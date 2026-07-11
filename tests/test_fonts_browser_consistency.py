@@ -242,6 +242,33 @@ def test_chains_and_noto_width_variants_are_registry_valid() -> None:
     ]
 
 
+def test_symbol_descriptions_use_glyphs_covered_by_each_face() -> None:
+    catalog, _order, _groups = _parse_payload()
+    expected = {
+        "Noto Sans Symbols": (
+            "Arrows, music, and miscellaneous signs — the first symbol "
+            "fallback (← ↑ ♪ §)."
+        ),
+        "Noto Sans Symbols 2": (
+            "Dingbats, enclosed marks, and pictographs — the final symbol "
+            "fallback (⚠ ☑ ◐ ⏱)."
+        ),
+    }
+
+    for name, description in expected.items():
+        entry = next(item for item in catalog.values() if item["mpl"] == name)
+        assert entry["desc"] == description
+        examples = description.rsplit("(", 1)[1].removesuffix(").")
+        codepoints = font._family_codepoints(name)
+        assert all(
+            char.isspace() or ord(char) in codepoints for char in examples
+        )
+
+    assert "_validate_description_glyphs" in _BUILDER_PATH.read_text(
+        encoding="utf-8"
+    )
+
+
 def test_fragment_is_clean_and_has_one_complete_generated_region() -> None:
     lowered = _FRAGMENT.lower()
 
@@ -310,6 +337,29 @@ def test_facet_rail_density_is_pinned() -> None:
     assert ".chips { display: flex; flex-wrap: wrap; gap: 4px; }" in _FRAGMENT
     assert "padding: 3px 8px; font-size: 11.5px;" in _FRAGMENT
     assert "margin-bottom: var(--dm-space-1);" in _FRAGMENT
+
+
+def test_visible_results_render_registry_group_subheaders() -> None:
+    expected_titles = [
+        "Workhorse",
+        "Display",
+        "Technical",
+        "Multilingual",
+        "Serif",
+        "Korean & CJK",
+        "Monospace",
+        "Symbols & Math",
+    ]
+    _catalog, _order, groups = _parse_payload()
+    assert [group["title"] for group in groups] == expected_titles
+
+    for fragment in (_FRAGMENT, _POC_B):
+        assert 'classList.add("font-group")' in fragment
+        assert 'classList.add("font-group-title")' in fragment
+        assert 'classList.add("font-group-cards")' in fragment
+        assert "GROUPS.forEach(function (group)" in fragment
+        assert "if (groupFonts.length === 0) return;" in fragment
+        assert "groupFonts.forEach(function (f)" in fragment
 
 
 def test_card_copy_and_badge_contract_is_pinned() -> None:

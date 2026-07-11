@@ -110,7 +110,13 @@
 }
 #dm-fontfacets .results-head .rh-count { font-size: 13px; color: var(--dm-text-muted); }
 #dm-fontfacets .results-head .rh-count b { color: var(--dm-text-strong); font-variant-numeric: tabular-nums; }
-#dm-fontfacets .grid { display: grid; grid-template-columns: minmax(0,1fr); gap: var(--dm-space-3); }
+#dm-fontfacets .grid { display: flex; flex-direction: column; gap: var(--dm-space-5); }
+#dm-fontfacets .font-group { display: flex; flex-direction: column; gap: var(--dm-space-2); }
+#dm-fontfacets .font-group-title {
+  margin: 0; color: var(--dm-text-faint); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.03em; text-transform: uppercase;
+}
+#dm-fontfacets .font-group-cards { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--dm-space-3); }
 
 #dm-fontfacets .card {
   position: relative; text-align: left; width: 100%;
@@ -1633,7 +1639,7 @@ var DM_FONT_DATA = {
     "script": "Symbols",
     "hero": "← ↑ → ↓",
     "sample": "← ↑ → ↓ ♪ − × °",
-    "desc": "Symbol fallback for arrows, signs, and miscellaneous marks.",
+    "desc": "Arrows, music, and miscellaneous signs — the first symbol fallback (← ↑ ♪ §).",
     "intent": "Keeps arrows, stars, and signs from rendering as tofu — a fallback tail, not a body face.",
     "application": "End-of-chain fallback for annotation symbols.",
     "pairing": "Sits after Noto Sans Math in every preset chain.",
@@ -1673,7 +1679,7 @@ var DM_FONT_DATA = {
     "script": "Symbols",
     "hero": "⚠ ☑ ◐ ⬟",
     "sample": "⚠ ☑ ◐ ⬟ ⌚ ⏱",
-    "desc": "Final symbol fallback for dingbats, enclosed marks, and pictographic signs.",
+    "desc": "Dingbats, enclosed marks, and pictographs — the final symbol fallback (⚠ ☑ ◐ ⏱).",
     "intent": "Extends the fallback tail into dingbats, enclosed marks, and pictographs that text faces do not cover.",
     "application": "Final fallback for pictographic annotations and status marks.",
     "pairing": "Sits last in every preset font fallback chain.",
@@ -1979,7 +1985,21 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
       renderEmpty();
       return;
     }
-    visible.forEach(function (f) { grid.appendChild(makeCard(f)); });
+    GROUPS.forEach(function (group) {
+      var groupFonts = visible.filter(function (f) { return f.group === group.title; });
+      if (groupFonts.length === 0) return;
+      var groupSection = document.createElement("section");
+      groupSection.classList.add("font-group");
+      var groupTitle = document.createElement("h3");
+      groupTitle.classList.add("font-group-title");
+      groupTitle.textContent = group.title;
+      var groupCards = document.createElement("div");
+      groupCards.classList.add("font-group-cards");
+      groupFonts.forEach(function (f) { groupCards.appendChild(makeCard(f)); });
+      groupSection.appendChild(groupTitle);
+      groupSection.appendChild(groupCards);
+      grid.appendChild(groupSection);
+    });
     // keep selection highlight if drawer open
     if (currentKey) markSelected(currentKey);
   }
