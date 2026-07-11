@@ -393,13 +393,15 @@ def test_card_copy_and_badge_contract_is_pinned() -> None:
     ) in _FRAGMENT
 
     for fragment in (_FRAGMENT, _POC_B):
-        assert 'korean_body: "Body"' in fragment
-        assert 'korean_mono: "Mono"' in fragment
-        assert 'math: "Symbols"' in fragment
-        assert '"kr-body": "Body"' in fragment
-        assert '"mono-kr": "Mono"' in fragment
-        assert '"Korean body"' not in fragment
-        assert '"Korean mono"' not in fragment
+        # Retired badges: the role badge, ad-hoc script badge, and Mono flag.
+        assert "ROLE_LABELS" not in fragment
+        assert "badge role" not in fragment
+        assert "badge script" not in fragment
+        assert "badge mono-flag" not in fragment
+        assert "monoBadge" not in fragment
+        # Default chip renders for Roboto only; coverage badge replaces script.
+        assert '<span class="badge default">Default</span>' in fragment
+        assert 'class="badge coverage"' in fragment
         assert "var italicsBadge = f.hasItalic" in fragment
         assert ">Italics</span>" in fragment
 
@@ -407,16 +409,14 @@ def test_card_copy_and_badge_contract_is_pinned() -> None:
             "function markSelected", 1
         )[0]
         markup_source = card_source.split("card.innerHTML =", 1)[1]
-        assert markup_source.index(
-            'class="title-badges"'
-        ) < markup_source.index('class="card-desc"')
+        # Meta row order: coverage · N weights · Italics · Aligned digits.
         assert markup_source.index('class="card-desc"') < markup_source.index(
             'class="sample-line"'
         )
         assert markup_source.index('class="sample-line"') < markup_source.index(
             'class="badges capability-badges"'
         )
-        assert markup_source.index("badge script") < markup_source.index(
+        assert markup_source.index("coverageBadge") < markup_source.index(
             "f.weightCount"
         )
         assert markup_source.index("f.weightCount") < markup_source.index(
@@ -424,9 +424,6 @@ def test_card_copy_and_badge_contract_is_pinned() -> None:
         )
         assert markup_source.index("italicsBadge") < markup_source.index(
             "axesBadge"
-        )
-        assert markup_source.index("axesBadge") < markup_source.index(
-            "monoBadge"
         )
 
 
@@ -496,7 +493,7 @@ def test_poc_b_is_resynced_and_uses_a_stacked_specimen_tray() -> None:
     assert "Clear pins" in _POC_B
     assert "max-height: 40vh" in _POC_B
     assert "overflow-y: auto" in _POC_B
-    assert "font-size: 24px" in _POC_B
+    assert "--fbx-fs-tray: 24px" in _POC_B
     assert "line-height: 1.4" in _POC_B
     assert "var COMPARE_SAMPLE" in _POC_B
     assert (
@@ -522,31 +519,21 @@ def test_poc_b_is_resynced_and_uses_a_stacked_specimen_tray() -> None:
     assert "border-radius:" not in item_rule
 
 
-def test_poc_badge_layout_switcher_reuses_one_card_dom() -> None:
-    assert 'class="badge-layout-control"' not in _FRAGMENT
-    assert 'class="badge-layout-c"' in _POC_B
-    assert 'class="badge-layout-control"' in _POC_B
-    assert "Badge layout:" in _POC_B
-    assert ">A 제목 옆</button>" in _POC_B
-    assert ">B 제목 아래</button>" in _POC_B
-    assert ">C 분리</button>" in _POC_B
-    assert 'data-layout="a" aria-pressed="false"' in _POC_B
-    assert 'data-layout="b" aria-pressed="false"' in _POC_B
-    assert 'data-layout="c" aria-pressed="true"' in _POC_B
-    assert (
-        'ROOT.classList.remove("badge-layout-a", "badge-layout-b", "badge-layout-c")'
-        in _POC_B
-    )
-    assert 'ROOT.classList.add("badge-layout-" + layout)' in _POC_B
+def test_badge_layout_switcher_is_retired_and_c_is_the_layout() -> None:
+    # Layout C is adopted; the A/B/C switcher and its scaffolding are gone.
+    for fragment in (_FRAGMENT, _POC_B):
+        assert "badge-layout" not in fragment
+        assert "card-copy" not in fragment
+        assert "title-badges" not in fragment
+        assert "setBadgeLayout" not in fragment
 
-    for layout in ("a", "b", "c"):
-        assert f"#dm-fbuxb.badge-layout-{layout}" in _POC_B
-
-    card_source = _POC_B.split("function makeCard(f)", 1)[1].split(
+    # The refined C card is a flat structure (title row + desc + sample + meta),
+    # matching the /fonts/ fragment, plus B's pin toggle.
+    b_card = _POC_B.split("function makeCard(f)", 1)[1].split(
         "// ---- POC B pin-and-compare tray", 1
     )[0]
-    assert card_source.count('class="title-badges"') == 1
-    assert card_source.count('class="badges capability-badges"') == 1
+    assert b_card.count('class="badges capability-badges"') == 1
+    assert 'class="pin-toggle"' in b_card
 
 
 def test_preview_page_keeps_only_the_chosen_b_direction() -> None:

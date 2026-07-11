@@ -13,7 +13,7 @@ orphan: true
 ```
 
 ```{raw} html
-<div class="poc-banner">공통 개선(rail·카드·드로어)은 <code>/fonts/</code>에서, B의 핀 비교는 이 페이지에서 확인.</div>
+<div class="poc-banner">배지 레이아웃은 C로 확정 — 공통 개선(rail·카드·드로어)은 <code>/fonts/</code>에서, B의 핀 비교는 이 페이지에서 확인. 남은 delta는 미리보기 입력과 핀·비교 트레이.</div>
 ```
 
 ```{raw} html
