@@ -247,12 +247,17 @@ _CLAIMS: list[tuple[str, str, Callable[[], int]]] = [
     ),
     (
         "docs/design_system/index.md",
-        r"(\d+) publication-grade fonts from \d+ families",
+        r"(\d+) publication-ready fonts \(\d+ files across \d+ file groups\)",
+        _n_registered_font_families,
+    ),
+    (
+        "docs/design_system/index.md",
+        r"publication-ready fonts \((\d+) files across \d+ file groups\)",
         _n_font_files,
     ),
     (
         "docs/design_system/index.md",
-        r"publication-grade fonts from (\d+) families",
+        r"publication-ready fonts \(\d+ files across (\d+) file groups\)",
         _n_font_file_groups,
     ),
     (

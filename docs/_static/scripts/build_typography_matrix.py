@@ -58,7 +58,7 @@ def build() -> str:
 <div id="dm-typography-matrix" class="yue">
 <table>
 <thead>
-<tr><th>Family</th><th>Role</th><th>Weights</th><th>Numeric axes</th><th>tnum available</th><th>Chart glyphs</th><th>Hangul</th><th>License</th></tr>
+<tr><th>Family</th><th>Role</th><th>Weights</th><th>Aligned digits</th><th>tnum available</th><th>Chart glyphs</th><th>Hangul</th><th>License</th></tr>
 </thead>
 <tbody>
 {rows}

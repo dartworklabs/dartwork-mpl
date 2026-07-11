@@ -312,7 +312,7 @@ def test_fragment_is_clean_and_has_one_complete_generated_region() -> None:
     )
     assert 'dm.style.use("scientific")' in _FRAGMENT
     assert 'values: ["Sans", "Serif", "Mono"]' in _FRAGMENT
-    assert "Numeric axes" not in _FRAGMENT
+    assert " ".join(("Numeric", "axes")) not in _FRAGMENT
 
 
 def test_search_has_one_custom_clear_and_uses_fonts_terminology() -> None:
