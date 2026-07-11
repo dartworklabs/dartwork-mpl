@@ -1,15 +1,15 @@
 # Font Families
 
-dartwork-mpl bundles **220 text font files** across **20 documented file
-groups**. Matplotlib registers those assets as **18 matplotlib family names**;
+dartwork-mpl bundles **262 text font files** across **22 documented file
+groups**. Matplotlib registers those assets as **20 matplotlib family names**;
 Condensed and SemiCondensed Noto Sans files register as Noto Sans with width
 metadata rather than separate family names. Each group is optimized for
 different use cases in data visualization. This page profiles the core groups
 in depth; for a
-one-click specimen of **every** family — including Pretendard, Source
-Sans 3, IBM Plex Sans, the serif body face Source Serif 4, and the monospace
-families (JetBrains Mono, D2Coding, IBM Plex Mono, Source Code Pro,
-Roboto Mono) — use the
+one-click specimen of **every** family — including Pretendard, Source Sans 3,
+IBM Plex Sans, the serif faces Source Serif 4, Noto Serif, and IBM Plex Serif,
+and the monospace families (JetBrains Mono, D2Coding, IBM Plex Mono, Source
+Code Pro, Roboto Mono) — use the
 [font browser](index.md).
 
 ## Why fonts matter
@@ -43,7 +43,7 @@ exist: [Design rationale › Typography](../color_system/design-rationale.md#typ
 | **body** | Roboto | Inter · IBM Plex Sans · Source Sans 3 · Noto Sans | General Latin chart text; choose an alternate for screen UI, technical, editorial, or multilingual tone. |
 | **display** | Inter Display | - | Titles, section headings, and poster-scale numbers. |
 | **kr-body** | Paperlogy | Pretendard · Noto Sans CJK KR | Korean labels and bilingual KR/EN figures; use Noto Sans CJK KR when broader CJK coverage matters. |
-| **serif** | Source Serif 4 | - | Opt-in serif body for journal- or book-matched figures. Not wired into any preset chain, so set `plt.rcParams["font.family"] = "Source Serif 4"` explicitly. No Korean serif (명조) is bundled — that is out of scope by design (bundle size). |
+| **serif** | Source Serif 4 | Noto Serif · IBM Plex Serif | Opt-in serif body for journal- or book-matched figures. Not wired into any preset chain, so set the chosen serif in `plt.rcParams["font.family"]` explicitly. No Korean serif (명조) is bundled — that is out of scope by design (bundle size). |
 | **mono** | JetBrains Mono | IBM Plex Mono · Roboto Mono · Source Code Pro | Code, timestamps, aligned values, and tabular labels; pair alternates with their sans siblings. |
 | **mono-kr** | D2Coding | - | Monospaced Hangul for code blocks and aligned Korean tables. Pair with the Latin mono as `font.family = ["JetBrains Mono", "D2Coding"]` so Hangul stays fixed-width. |
 | **fallback-tail** | Noto Sans Math | Noto Sans Symbols · Noto Sans Symbols 2 | Keep these in the chain for math operators, arrows, signs, and dingbats rather than choosing them as body faces. |
@@ -69,9 +69,10 @@ Fine-tune size and weight next → [Font Utilities › Custom Font Configuration
 
 For numeric-heavy axes, prefer families whose default digits are already
 uniform in matplotlib (`Roboto`, `IBM Plex Sans`, `Source Sans 3`, `Paperlogy`,
-`Noto Sans`, `Source Serif 4`, or the monospace families). `Inter` and
-`Pretendard` expose browser OpenType `tnum`, but matplotlib does not apply that
-feature, so their real plot digits remain proportional.
+`Noto Sans`, `Source Serif 4`, `Noto Serif`, `IBM Plex Serif`, or the monospace
+families). `Inter` and `Pretendard` expose browser OpenType `tnum`, but
+matplotlib does not apply that feature, so their real plot digits remain
+proportional.
 
 ## Fonts in Chart Context
 
@@ -139,7 +140,7 @@ Google's flagship sans-serif typeface and the **default font in dartwork-mpl**.
 Roboto features friendly, open curves while maintaining a mechanical skeleton,
 making it highly legible at all sizes.
 
-**Author:** Christian Robertson · **License:** [Apache 2.0](https://fonts.google.com/specimen/Roboto)
+**Author:** Christian Robertson · **License:** [OFL 1.1](https://fonts.google.com/specimen/Roboto)
 
 :::{admonition} All weights
 :class: dropdown

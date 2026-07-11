@@ -13,17 +13,26 @@ Run:  python docs/fonts/fetch_fonts.py            # add missing / refresh all
 
 Weight depth follows the "full weights + italics, where the upstream
 publishes static instances" decision:
-  · Roboto        6 uprights + 6 italics   (Thin Light Reg Med Bold Black)
+  · Roboto        9 uprights + 9 italics   (100-900, instanced from the
+                                            google/fonts variable font —
+                                            GF static zips clamp Thin/
+                                            ExtraLight usWeightClass to 250)
   · Paperlogy     9 uprights               (no italics upstream — Korean)
   · Pretendard    9 uprights               (no italics upstream — Korean)
   · IBM Plex Sans 7 uprights + 7 italics   (Text weight skipped)
   · IBM Plex Mono 7 uprights + 7 italics   (Text weight skipped)
+  · IBM Plex Serif 7 uprights + 7 italics  (Text weight skipped)
   · Source Sans 3 7 uprights + 7 italics   (no Thin upstream)
   · JetBrains Mono 8 uprights + 8 italics  (no Black upstream)
   · Source Code Pro 7 uprights + 7 italics (no Thin upstream)
-  · Roboto Mono    5 uprights + 5 italics  (Thin Light Reg Med Bold)
+  · Roboto Mono    7 uprights + 7 italics  (100-700, instanced from the
+                                            google/fonts variable font)
   · Noto Sans Symbols   1 upright (Regular) — plain-text symbol fallback
   · Noto Sans Symbols 2 1 upright (Regular) — dingbat / warning / star fallback
+  · Noto Serif    9 uprights + 9 italics   (100-900, instanced from the
+                                            google/fonts variable font, like
+                                            Roboto — GF static zips clamp
+                                            Thin/ExtraLight usWeightClass)
 """
 
 from __future__ import annotations
@@ -103,17 +112,34 @@ def want_std_faces(
 def plan() -> list[dict]:
     return [
         {
+            # The current Google Fonts Roboto family is a wdth,wght variable
+            # font. Its packaged static instances clamp Thin/ExtraLight
+            # usWeightClass to 250, so we instance the variable font directly
+            # (pinning wdth=100 = normal width) to get honest 100-900
+            # usWeightClass values. Family name records stay "Roboto".
             "family": "Roboto",
-            "kind": "gh-dir",
-            "repo": "googlefonts/roboto-2",
-            "path": "src/hinted",
+            "kind": "gf-variable-instance",
+            "repo": "google/fonts",
+            "vf_path": "ofl/roboto/Roboto[wdth,wght].ttf",
+            "vf_italic_path": "ofl/roboto/Roboto-Italic[wdth,wght].ttf",
+            "pin": {"wdth": 100},
             "ext": "ttf",
-            "weights": ["Thin", "Light", "Regular", "Medium", "Bold", "Black"],
+            "wght": {
+                "Thin": 100,
+                "ExtraLight": 200,
+                "Light": 300,
+                "Regular": 400,
+                "Medium": 500,
+                "SemiBold": 600,
+                "Bold": 700,
+                "ExtraBold": 800,
+                "Black": 900,
+            },
             "italics": True,
             "stem": "Roboto",
             "license": (
-                "googlefonts/roboto-2",
-                "LICENSE",
+                "google/fonts",
+                "ofl/roboto/OFL.txt",
                 "LICENSE-Roboto.txt",
             ),
         },
@@ -172,6 +198,31 @@ def plan() -> list[dict]:
             ],
             "italics": True,
             "stem": "IBMPlexMono",
+            "license": None,  # same OFL as IBM Plex Sans
+        },
+        {
+            # Completes the Plex superfamily. Same source style as the other
+            # Plex entries; the upstream ships a "Text" (450) cut we skip to
+            # match the bundled Plex Sans/Mono 7-weight ladder. The Plex OFL
+            # is one text for the whole superfamily, so no license key —
+            # covered by the bundled LICENSE-IBMPlex.txt (verified byte-
+            # identical to packages/plex-serif/.../license.txt).
+            "family": "IBM Plex Serif",
+            "kind": "gh-dir",
+            "repo": "IBM/plex",
+            "path": "packages/plex-serif/fonts/complete/ttf",
+            "ext": "ttf",
+            "weights": [
+                "Thin",
+                "ExtraLight",
+                "Light",
+                "Regular",
+                "Medium",
+                "SemiBold",
+                "Bold",
+            ],
+            "italics": True,
+            "stem": "IBMPlexSerif",
             "license": None,  # same OFL as IBM Plex Sans
         },
         {
@@ -270,17 +321,29 @@ def plan() -> list[dict]:
             ),
         },
         {
+            # Roboto Mono is a wght-only variable font upstream; instance the
+            # 7 named weights (100-700) + italics for the full mono ladder.
             "family": "Roboto Mono",
-            "kind": "gh-dir",
-            "repo": "googlefonts/RobotoMono",
-            "path": "fonts/ttf",
+            "kind": "gf-variable-instance",
+            "repo": "google/fonts",
+            "vf_path": "ofl/robotomono/RobotoMono[wght].ttf",
+            "vf_italic_path": "ofl/robotomono/RobotoMono-Italic[wght].ttf",
+            "pin": {},
             "ext": "ttf",
-            "weights": ["Thin", "Light", "Regular", "Medium", "Bold"],
+            "wght": {
+                "Thin": 100,
+                "ExtraLight": 200,
+                "Light": 300,
+                "Regular": 400,
+                "Medium": 500,
+                "SemiBold": 600,
+                "Bold": 700,
+            },
             "italics": True,
             "stem": "RobotoMono",
             "license": (
-                "googlefonts/RobotoMono",
-                "OFL.txt",
+                "google/fonts",
+                "ofl/robotomono/OFL.txt",
                 "LICENSE-RobotoMono.txt",
             ),
         },
@@ -385,6 +448,40 @@ def plan() -> list[dict]:
             "stem": "NotoSansSymbols2",
         },
         {
+            # Serif sibling of Noto Sans. Like Roboto, the current Google
+            # Fonts Noto Serif is a wdth,wght variable font whose packaged
+            # static instances clamp Thin/ExtraLight usWeightClass, so we
+            # instance the variable font directly (pin wdth=100) for honest
+            # 100-900 usWeightClass values. Family name records stay
+            # "Noto Serif". This upstream (google/fonts) is distinct from the
+            # notofonts.github.io Noto Sans upstream, so it ships its own OFL.
+            "family": "Noto Serif",
+            "kind": "gf-variable-instance",
+            "repo": "google/fonts",
+            "vf_path": "ofl/notoserif/NotoSerif[wdth,wght].ttf",
+            "vf_italic_path": "ofl/notoserif/NotoSerif-Italic[wdth,wght].ttf",
+            "pin": {"wdth": 100},
+            "ext": "ttf",
+            "wght": {
+                "Thin": 100,
+                "ExtraLight": 200,
+                "Light": 300,
+                "Regular": 400,
+                "Medium": 500,
+                "SemiBold": 600,
+                "Bold": 700,
+                "ExtraBold": 800,
+                "Black": 900,
+            },
+            "italics": True,
+            "stem": "NotoSerif",
+            "license": (
+                "google/fonts",
+                "ofl/notoserif/OFL.txt",
+                "LICENSE-NotoSerif.txt",
+            ),
+        },
+        {
             "family": "Noto Sans CJK KR",
             "kind": "gh-file-subset",
             "repo": "notofonts/noto-cjk",
@@ -480,6 +577,55 @@ def do_repo_zip(spec: dict, added: list[str]) -> None:
                 (FONT_DIR / base).write_bytes(zf.read(member))
                 added.append(base)
                 break
+    write_license(spec)
+
+
+def do_gf_variable_instance(spec: dict, added: list[str]) -> None:
+    """Instance named weights from a Google Fonts variable font.
+
+    The modern Google Fonts Roboto / Roboto Mono families ship as variable
+    fonts; their packaged static instances clamp the lightest weights'
+    ``usWeightClass`` (Thin/ExtraLight both report 250). Pinning the weight
+    axis with ``fontTools.varLib.instancer`` instead yields honest 100-900
+    ``usWeightClass`` values, and ``updateFontNames`` keeps the typographic
+    family name record intact (``Roboto`` / ``Roboto Mono``) while labelling
+    each instance's subfamily.
+    """
+    from io import BytesIO
+
+    from fontTools.ttLib import TTFont
+    from fontTools.varLib import instancer
+
+    ext = spec["ext"]
+    pin = spec.get("pin", {})
+    italics = spec.get("italics", False)
+
+    up_dir, up_name = spec["vf_path"].rsplit("/", 1)
+    up_urls = dir_urls(spec["repo"], up_dir)
+    up_vf = fetch(up_urls[up_name])
+    it_vf = None
+    if italics:
+        it_dir, it_name = spec["vf_italic_path"].rsplit("/", 1)
+        it_urls = (
+            up_urls if it_dir == up_dir else dir_urls(spec["repo"], it_dir)
+        )
+        it_vf = fetch(it_urls[it_name])
+
+    def _instance(vf_bytes: bytes, wval: int, tgt: str) -> None:
+        # recalcTimestamp=False keeps the upstream ``head.modified`` date so
+        # re-runs are byte-identical (the default would stamp "now").
+        font = TTFont(BytesIO(vf_bytes), recalcTimestamp=False)
+        instancer.instantiateVariableFont(
+            font, {**pin, "wght": wval}, updateFontNames=True, inplace=True
+        )
+        font.save(str(FONT_DIR / tgt))
+        added.append(tgt)
+
+    for name, wval in spec["wght"].items():
+        _instance(up_vf, wval, f"{spec['stem']}-{name}.{ext}")
+        if italics and it_vf is not None:
+            it = "Italic" if name == "Regular" else f"{name}Italic"
+            _instance(it_vf, wval, f"{spec['stem']}-{it}.{ext}")
     write_license(spec)
 
 
@@ -617,6 +763,8 @@ def main() -> None:
                 do_repo_zip(spec, added)
             elif spec["kind"] == "gh-dir-width":
                 do_gh_dir_width(spec, added)
+            elif spec["kind"] == "gf-variable-instance":
+                do_gf_variable_instance(spec, added)
             elif spec["kind"] == "gh-file-subset":
                 do_gh_file_subset(spec, added)
         except Exception as e:  # noqa: BLE001

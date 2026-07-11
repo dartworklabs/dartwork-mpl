@@ -82,12 +82,22 @@ def test_registry_matches_registered_matplotlib_families() -> None:
     registered = set(font.list_registered())
     registry = font.font_families()
 
-    assert len(registry) == 18
+    assert len(registry) == 20
     assert set(registry) == registered
     assert set(font.FONTS) == registered
     for family in registry.values():
         assert family.name in registered
         assert family.job.endswith(".")
+
+
+def test_serif_families_cross_reference_each_other() -> None:
+    registry = font.font_families()
+    serif_families = ("Source Serif 4", "Noto Serif", "IBM Plex Serif")
+
+    for family in serif_families:
+        assert registry[family].alternates == tuple(
+            alternate for alternate in serif_families if alternate != family
+        )
 
 
 def test_os2_weights_are_grid_values_or_named_exceptions() -> None:
@@ -187,7 +197,7 @@ def test_typography_matrix_matches_builder() -> None:
 
     assert built == committed
     assert "<style" not in committed
-    assert committed.count("<tr><td>") == 18
+    assert committed.count("<tr><td>") == 20
 
 
 def test_docs_font_counts_match_reality() -> None:
@@ -220,6 +230,35 @@ def test_docs_font_counts_match_reality() -> None:
     assert int(bundled.group(1)) == actual["text font files"]
 
 
+def test_completed_font_corpus_is_pinned() -> None:
+    font_files = tuple(
+        path
+        for path in _FONT_ASSETS.iterdir()
+        if path.suffix.lower() in {".ttf", ".otf"}
+    )
+    roboto = font._measure("Roboto")
+    roboto_mono = font._measure("Roboto Mono")
+    noto_serif = font._measure("Noto Serif")
+    ibm_plex_serif = font._measure("IBM Plex Serif")
+
+    assert len(font_files) == 262
+    assert len(roboto.files) == 18
+    assert roboto.weights == tuple(range(100, 1000, 100))
+    assert roboto.licenses == ("OFL-1.1",)
+    assert len(roboto_mono.files) == 14
+    assert roboto_mono.weights == tuple(range(100, 800, 100))
+    assert roboto_mono.licenses == ("OFL-1.1",)
+    assert len(noto_serif.files) == 18
+    assert noto_serif.weights == tuple(range(100, 1000, 100))
+    assert noto_serif.italic is True
+    assert noto_serif.licenses == ("OFL-1.1",)
+    assert len(ibm_plex_serif.files) == 14
+    assert ibm_plex_serif.weights == tuple(range(100, 800, 100))
+    assert ibm_plex_serif.italic is True
+    assert ibm_plex_serif.licenses == ("OFL-1.1",)
+    assert (_FONT_LICENSES / "LICENSE-NotoSerif.txt").is_file()
+
+
 def test_every_family_has_license_file() -> None:
     license_by_group = {
         "Roboto": "LICENSE-Roboto.txt",
@@ -228,8 +267,10 @@ def test_every_family_has_license_file() -> None:
         "InterDisplay": "LICENSE-Inter.txt",
         "IBMPlexSans": "LICENSE-IBMPlex.txt",
         "IBMPlexMono": "LICENSE-IBMPlex.txt",
+        "IBMPlexSerif": "LICENSE-IBMPlex.txt",
         "SourceSans3": "LICENSE-SourceSans3.txt",
         "SourceSerif4": "LICENSE-SourceSerif4.txt",
+        "NotoSerif": "LICENSE-NotoSerif.txt",
         "SourceCodePro": "LICENSE-SourceCodePro.txt",
         "JetBrainsMono": "LICENSE-JetBrainsMono.txt",
         "NotoSans": "LICENSE-NotoSans.txt",
