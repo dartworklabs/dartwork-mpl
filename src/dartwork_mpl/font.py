@@ -155,6 +155,11 @@ _KR_BODY_FAMILIES: tuple[str, ...] = (
     "Pretendard",
     "Noto Sans CJK KR",
 )
+_SERIF_FAMILIES: tuple[str, ...] = (
+    "Source Serif 4",
+    "Noto Serif",
+    "IBM Plex Serif",
+)
 _MONO_FAMILIES: tuple[str, ...] = (
     "JetBrains Mono",
     "IBM Plex Mono",
@@ -232,10 +237,30 @@ FONTS: Mapping[str, FontFamily] = MappingProxyType(
             name="Source Serif 4",
             role="serif",
             job="Serif body for journal- and book-matched figures where a serif voice is wanted.",
+            alternates=_alternates("Source Serif 4", _SERIF_FAMILIES),
             quirks=(
                 "Opt-in family - not wired into any preset fallback chain. "
                 "No Korean serif is bundled (명조): a legible Hangul serif "
                 "would add several MB, so KR serif is out of scope by design.",
+            ),
+        ),
+        "Noto Serif": FontFamily(
+            name="Noto Serif",
+            role="serif",
+            job="Serif sibling of Noto Sans for journal-matched multilingual figures.",
+            alternates=_alternates("Noto Serif", _SERIF_FAMILIES),
+            quirks=(
+                "Opt-in family - not wired into any preset fallback chain.",
+                "Pan-script metrics are matched to Noto Sans.",
+            ),
+        ),
+        "IBM Plex Serif": FontFamily(
+            name="IBM Plex Serif",
+            role="serif",
+            job="Completes the Plex superfamily — serif voice that pairs with IBM Plex Sans and IBM Plex Mono.",
+            alternates=_alternates("IBM Plex Serif", _SERIF_FAMILIES),
+            quirks=(
+                "Opt-in family - not wired into any preset fallback chain.",
             ),
         ),
         "JetBrains Mono": FontFamily(

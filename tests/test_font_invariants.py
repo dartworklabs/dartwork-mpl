@@ -82,12 +82,22 @@ def test_registry_matches_registered_matplotlib_families() -> None:
     registered = set(font.list_registered())
     registry = font.font_families()
 
-    assert len(registry) == 18
+    assert len(registry) == 20
     assert set(registry) == registered
     assert set(font.FONTS) == registered
     for family in registry.values():
         assert family.name in registered
         assert family.job.endswith(".")
+
+
+def test_serif_families_cross_reference_each_other() -> None:
+    registry = font.font_families()
+    serif_families = ("Source Serif 4", "Noto Serif", "IBM Plex Serif")
+
+    for family in serif_families:
+        assert registry[family].alternates == tuple(
+            alternate for alternate in serif_families if alternate != family
+        )
 
 
 def test_os2_weights_are_grid_values_or_named_exceptions() -> None:
@@ -246,8 +256,10 @@ def test_every_family_has_license_file() -> None:
         "InterDisplay": "LICENSE-Inter.txt",
         "IBMPlexSans": "LICENSE-IBMPlex.txt",
         "IBMPlexMono": "LICENSE-IBMPlex.txt",
+        "IBMPlexSerif": "LICENSE-IBMPlex.txt",
         "SourceSans3": "LICENSE-SourceSans3.txt",
         "SourceSerif4": "LICENSE-SourceSerif4.txt",
+        "NotoSerif": "LICENSE-NotoSerif.txt",
         "SourceCodePro": "LICENSE-SourceCodePro.txt",
         "JetBrainsMono": "LICENSE-JetBrainsMono.txt",
         "NotoSans": "LICENSE-NotoSans.txt",

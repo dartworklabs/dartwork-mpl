@@ -38,6 +38,7 @@ _PREFIX_TO_LICENSE: dict[str, str] = {
     "NotoSansSymbols-": "LICENSE-NotoSans",
     "NotoSansSymbols2-": "LICENSE-NotoSans",
     "NotoSansCJK": "LICENSE-NotoSansCJK",
+    "NotoSerif-": "LICENSE-NotoSerif",
     "Paperlogy-": "LICENSE-Paperlogy",
     "Pretendard-": "LICENSE-Pretendard",
     "SourceSans3-": "LICENSE-SourceSans3",
@@ -46,6 +47,7 @@ _PREFIX_TO_LICENSE: dict[str, str] = {
     "D2Coding-": "LICENSE-D2Coding",
     "IBMPlexSans-": "LICENSE-IBMPlex",
     "IBMPlexMono-": "LICENSE-IBMPlex",
+    "IBMPlexSerif-": "LICENSE-IBMPlex",
     "JetBrainsMono-": "LICENSE-JetBrainsMono",
 }
 
