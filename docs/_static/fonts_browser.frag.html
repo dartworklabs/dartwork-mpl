@@ -4,7 +4,12 @@
 <div id="dm-fontfacets" data-dm-font-browser>
 <style>
 #dm-fontfacets *, #dm-fontfacets *::before, #dm-fontfacets *::after { box-sizing: border-box; }
+/* Type scale: card sample 22 / drawer specimen 26 / ladder 19 / tray 24.
+   Sample text: card+specimen+tray use the family `sample` sentence;
+   ladder+width-variants use the short `ladder_sample`. Nothing else. */
 #dm-fontfacets {
+  --fbx-fs-sample: 22px; --fbx-fs-specimen: 26px; --fbx-fs-ladder: 19px;
+  --fbx-fs-tray: 24px;
   margin: 0; padding: 0;
   background: var(--dm-bg-page);
   color: var(--dm-text);
@@ -136,24 +141,22 @@
 #dm-fontfacets .card-top, #dm-fontfacets .card-desc, #dm-fontfacets .badges, #dm-fontfacets .sample-line {
   position: relative; z-index: 2; pointer-events: none;
 }
-#dm-fontfacets .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--dm-space-2); }
-#dm-fontfacets .card-title { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
-#dm-fontfacets .card-name { font-size: 15px; font-weight: 600; color: var(--dm-text-strong); margin: 0; }
-#dm-fontfacets .title-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+#dm-fontfacets .card-top { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: var(--dm-space-2); }
+#dm-fontfacets .card-title { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; min-width: 0; }
+#dm-fontfacets .card-name { font-size: 15px; font-weight: 600; color: var(--dm-text-strong); margin: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #dm-fontfacets .card-desc { font-size: 11.5px; line-height: 1.45; color: var(--dm-text-muted); margin: 0; }
 #dm-fontfacets .badges { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+/* Badge color ladder — 3 steps: Default = solid accent · coverage = accent tint · facts = neutral outline. */
 #dm-fontfacets .badge {
   font-size: 10.5px; font-weight: 500; padding: 2px 7px;
   border-radius: var(--dm-radius-full); line-height: 1.4;
-  background: var(--dm-bg-subtle); color: var(--dm-text-muted);
-  border: 1px solid var(--dm-border-faint);
+  background: transparent; color: var(--dm-text-muted);
+  border: 1px solid var(--dm-border);
 }
-#dm-fontfacets .badge.role { background: var(--dm-accent-3); color: var(--dm-accent-11); border-color: transparent; }
-#dm-fontfacets .badge.script { background: var(--dm-info-3); color: var(--dm-info-11); border-color: transparent; }
-#dm-fontfacets .badge.mono-flag { background: var(--dm-warning-3); color: var(--dm-warning-11); border-color: transparent; }
-#dm-fontfacets .capability-badges { color: var(--dm-text-faint); }
+#dm-fontfacets .badge.default { background: var(--dm-accent-9); color: #fff; border-color: transparent; }
+#dm-fontfacets .badge.coverage { background: var(--dm-accent-3); color: var(--dm-accent-11); border-color: transparent; }
 #dm-fontfacets .card-actions {
-  position: relative; z-index: 3; display: flex; flex-wrap: wrap;
+  position: relative; z-index: 3; flex-shrink: 0; display: flex; flex-wrap: nowrap;
   align-items: center; justify-content: flex-end; gap: 5px; pointer-events: auto;
 }
 #dm-fontfacets .chain-copy {
@@ -166,7 +169,7 @@
   background: var(--dm-accent-3); border-color: var(--dm-accent-8); color: var(--dm-accent-11);
 }
 #dm-fontfacets .sample-line {
-  font-size: 17px; line-height: 1.35; color: var(--dm-text);
+  font-size: var(--fbx-fs-sample); line-height: 1.4; color: var(--dm-text);
   margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
@@ -230,7 +233,7 @@
   font-size: 10.5px; font-weight: 600; text-transform: uppercase;
   color: var(--dm-text-faint); margin: 0 0 var(--dm-space-2);
 }
-#dm-fontfacets .specimen-line { font-size: 26px; line-height: 1.4; color: var(--dm-text-strong); margin: 0; overflow-wrap: anywhere; }
+#dm-fontfacets .specimen-line { font-size: var(--fbx-fs-specimen); line-height: 1.4; color: var(--dm-text-strong); margin: 0; overflow-wrap: anywhere; }
 #dm-fontfacets .numerals { font-size: 22px; color: var(--dm-text); margin: 0; font-variant-numeric: tabular-nums; }
 #dm-fontfacets .tnum-proof {
   margin-top: var(--dm-space-3); padding-top: var(--dm-space-3);
@@ -264,7 +267,7 @@
 #dm-fontfacets .ladder-meta { flex: 0 0 112px; white-space: nowrap; }
 #dm-fontfacets .ladder-meta .w-label { display: block; font-size: 12px; font-weight: 500; color: var(--dm-text); }
 #dm-fontfacets .ladder-meta .w-num { display: block; font-family: var(--dm-f-mono); font-size: 10.5px; color: var(--dm-text-faint); font-variant-numeric: tabular-nums; }
-#dm-fontfacets .ladder-sample { flex: 1 1 auto; min-width: 0; font-size: 19px; line-height: 1.4; color: var(--dm-text-strong); }
+#dm-fontfacets .ladder-sample { flex: 1 1 auto; min-width: 0; font-size: var(--fbx-fs-ladder); line-height: 1.4; color: var(--dm-text-strong); }
 #dm-fontfacets .ladder-sample-text { display: block; min-width: 0; padding-block: 0.08em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #dm-fontfacets .copy-hint {
   margin-left: auto; color: var(--dm-text-faint); font-size: 10.5px;
@@ -1795,19 +1798,6 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
   var ORDER = window.DM_FONT_ORDER || Object.keys(DATA);
   var GROUPS = window.DM_FONT_GROUPS || [];
   var WEIGHT_THRESHOLD = 9;
-  var ROLE_LABELS = {
-    body: "Body",
-    display: "Display",
-    serif: "Serif",
-    mono: "Mono",
-    "kr-body": "Body",
-    korean_body: "Body",
-    "mono-kr": "Mono",
-    korean_mono: "Mono",
-    "fallback-tail": "Symbols",
-    symbols: "Symbols",
-    math: "Symbols"
-  };
   var GROUP_TOOLTIPS = {
     Workhorse: "Everyday body faces — the safe defaults",
     Display: "Large titles and poster-scale numbers",
@@ -2045,9 +2035,10 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
     card.dataset.key = f.key;
     card.dataset.selected = "false";
 
-    var roleLabel = ROLE_LABELS[f.raw.role] || f.raw.role;
     var defaultBadge = f.key === "roboto" ? '<span class="badge default">Default</span>' : "";
-    var monoBadge = f.isMono ? '<span class="badge mono-flag">Mono</span>' : "";
+    var coverageBadge = '<span class="badge coverage"' +
+      (f.raw.coverage === "Multiscript" ? ' title="Broad multi-script coverage in one family"' : "") +
+      ">" + escapeHtml(f.raw.coverage) + "</span>";
     var italicsBadge = f.hasItalic ? '<span class="badge">Italics</span>' : "";
     var axesBadge = f.raw.numeric_axes
       ? "<span class='badge' title=\"Digits share one width, so numeric axis labels stay aligned (the registry's numeric-axes gate).\">Aligned digits</span>"
@@ -2056,8 +2047,7 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
     card.innerHTML =
       '<button type="button" class="card-open" aria-label="Open ' + escapeHtml(f.name) + ' details"></button>' +
       '<div class="card-top">' +
-        '<div class="card-title"><h3 class="card-name">' + escapeHtml(f.name) + "</h3>" +
-          '<div class="title-badges"><span class="badge role">' + escapeHtml(roleLabel) + "</span>" + defaultBadge + "</div></div>" +
+        '<div class="card-title"><h3 class="card-name">' + escapeHtml(f.name) + "</h3>" + defaultBadge + "</div>" +
         '<div class="card-actions">' +
           '<button type="button" class="chain-copy">Copy chain</button>' +
         "</div>" +
@@ -2065,11 +2055,10 @@ var DM_FONT_GROUPS = [{"title": "Workhorse", "items": ["roboto", "inter", "sourc
       '<p class="card-desc">' + escapeHtml(f.raw.desc + " " + f.raw.application) + "</p>" +
       '<p class="sample-line" style="font-family:\'' + f.raw.regular + "', var(--dm-f-sys)\">" + escapeHtml(f.raw.sample) + "</p>" +
       '<div class="badges capability-badges">' +
-        '<span class="badge coverage"' + (f.raw.coverage === "Multiscript" ? ' title="Broad multi-script coverage in one family"' : "") + ">" + escapeHtml(f.raw.coverage) + "</span>" +
+        coverageBadge +
         '<span class="badge">' + f.weightCount + " weights</span>" +
         italicsBadge +
         axesBadge +
-        monoBadge +
       "</div>";
 
     card.querySelector(".card-open").addEventListener("click", function () { openDetail(f.key); });
