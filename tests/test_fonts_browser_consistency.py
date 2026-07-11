@@ -113,6 +113,19 @@ def test_payload_names_and_groups_equal_registry() -> None:
     assert {item for group in groups for item in group["items"]} == set(order)
 
 
+def test_payload_uses_normalized_coverage_vocabulary() -> None:
+    catalog, _order, _groups = _parse_payload()
+    allowed = {"Latin", "한글+Latin", "CJK", "Multiscript", "Math", "Symbols"}
+
+    assert len(catalog) == 20
+    assert all(entry["coverage"] for entry in catalog.values())
+    assert {entry["coverage"] for entry in catalog.values()} <= allowed
+    assert catalog["noto_sans_cjk_kr"]["script"] == "한글 + Latin"
+    assert catalog["noto_sans_cjk_kr"]["coverage"] == "CJK"
+    assert catalog["noto_sans"]["coverage"] == "Multiscript"
+    assert catalog["d2coding"]["coverage"] == "한글+Latin"
+
+
 def test_every_browser_face_maps_to_a_bundled_file() -> None:
     catalog, _order, _groups = _parse_payload()
     available = {

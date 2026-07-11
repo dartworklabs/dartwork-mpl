@@ -25,6 +25,17 @@ LADDER_LATIN = "Beautiful data graphs 0123"
 LADDER_KOREAN = "아름다운 데이터 그래프 0123"
 LADDER_MONO = "plot(fig=dm) # 0123"
 
+COVERAGE_BY_SCRIPT = {
+    "Latin": "Latin",
+    "Latin (monospace)": "Latin",
+    "Latin + pan-script": "Multiscript",
+    "한글 + Latin": "한글+Latin",
+    "한글 + Latin (mono)": "한글+Latin",
+    "CJK (한·중·일)": "CJK",
+    "Math symbols": "Math",
+    "Symbols": "Symbols",
+}
+
 # Editorial fields are deliberately curated, but their keys must exactly match
 # the live registry. All technical fields are measured from bundled font files.
 META: dict[str, dict[str, str]] = {
@@ -317,6 +328,18 @@ def _chain(name: str, role: str) -> list[str]:
     raise AssertionError(f"unknown font role for {name}: {role}")
 
 
+def _coverage(name: str, script: str) -> str:
+    # The current CJK KR editorial script is "한글 + Latin", so identify its
+    # broader CJK coverage by family before normalizing the shared script text.
+    if name == "Noto Sans CJK KR":
+        return "CJK"
+    try:
+        return COVERAGE_BY_SCRIPT[script]
+    except KeyError as exc:
+        message = f"unrecognized coverage script for {name}: {script}"
+        raise SystemExit(message) from exc
+
+
 def _unique_faces(
     measurement: font.FontMeasurement,
 ) -> tuple[font.FontFaceMeasurement, ...]:
@@ -492,7 +515,17 @@ def build_catalog() -> tuple[
             "mpl": name,
             "role": record.role,
             "group": group,
-            **META[name],
+            "script": META[name]["script"],
+            "coverage": _coverage(name, META[name]["script"]),
+            "hero": META[name]["hero"],
+            "sample": META[name]["sample"],
+            "desc": META[name]["desc"],
+            "intent": META[name]["intent"],
+            "application": META[name]["application"],
+            "pairing": META[name]["pairing"],
+            "personality": META[name]["personality"],
+            "foundry": META[name]["foundry"],
+            "source": META[name]["source"],
             "ladder_sample": _ladder_sample(
                 name, record.role, measurement, regular
             ),
