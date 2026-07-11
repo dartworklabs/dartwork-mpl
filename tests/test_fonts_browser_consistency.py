@@ -101,7 +101,14 @@ def test_payload_names_and_groups_equal_registry() -> None:
     assert {entry["mpl"] for entry in catalog.values()} == registered
     assert registered == set(font.FONTS)
     assert all(entry["name"] == entry["mpl"] for entry in catalog.values())
-    assert len(order) == len(set(order)) == len(registered)
+    assert (
+        len(catalog) == len(order) == len(set(order)) == len(registered) == 20
+    )
+    assert all(
+        entry[field]
+        for entry in catalog.values()
+        for field in ("foundry", "source", "license")
+    )
     assert set(catalog) == set(order)
     assert {item for group in groups for item in group["items"]} == set(order)
 
@@ -170,7 +177,7 @@ def test_payload_flags_and_ladders_match_measurements() -> None:
         )
         styles[style].append(name)
 
-    assert styles["Serif"] == ["Source Serif 4"]
+    assert styles["Serif"] == ["Source Serif 4", "Noto Serif", "IBM Plex Serif"]
     assert styles["Mono"]
     assert styles["Sans"]
     assert "hasItalic: f.italic" in _FRAGMENT

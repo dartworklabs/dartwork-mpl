@@ -27,8 +27,8 @@ what your chart will render.
 
 ## How registration works
 
-dartwork-mpl bundles **230 text font files** organized into **20 documented
-file groups**. Matplotlib registers those files as **18 matplotlib family names**
+dartwork-mpl bundles **262 text font files** organized into **22 documented
+file groups**. Matplotlib registers those files as **20 matplotlib family names**
 on `import dartwork_mpl`, with bundled copies promoted ahead of
 same-named system fonts. Condensed and SemiCondensed Noto Sans files register
 as Noto Sans with width metadata, so they are documented as file groups rather
@@ -72,8 +72,8 @@ D2Coding as the Korean fallback:
 plt.rcParams["font.family"] = ["JetBrains Mono", "D2Coding"]
 ```
 
-Source Serif 4 is deliberately opt-in; use it when a journal, report, or book
-needs a serif voice:
+The three serif fonts are deliberately opt-in; use one when a journal, report,
+or book needs a serif voice:
 
 ```python
 plt.rcParams["font.family"] = ["Source Serif 4", "Noto Sans Math"]
@@ -88,7 +88,7 @@ The browser's role badges follow this table; use it as the print-friendly summar
 | Body | Roboto | Inter, IBM Plex Sans, Source Sans 3, Noto Sans | General chart labels, ticks, legends, and captions. |
 | Display | Inter Display | — | Large titles, section heads, and poster-scale numbers. |
 | Korean body | Paperlogy | Pretendard, Noto Sans CJK KR | Hangul-first and bilingual figures. |
-| Serif | Source Serif 4 | — | Opt-in journal, report, or book figures that need a serif voice. |
+| Serif | Source Serif 4 | Noto Serif, IBM Plex Serif | Opt-in journal, report, or book figures that need a serif voice. |
 | Mono | JetBrains Mono | IBM Plex Mono, Roboto Mono, Source Code Pro | Code, timestamps, aligned values, and dense numeric columns. |
 | Korean mono | D2Coding | — | Monospaced Hangul code blocks and aligned Korean tables. |
 | Fallback tail | Noto Sans Math | Noto Sans Symbols, Noto Sans Symbols 2 | Math operators, arrows, signs, and symbol coverage at the end of the fallback chain. |
