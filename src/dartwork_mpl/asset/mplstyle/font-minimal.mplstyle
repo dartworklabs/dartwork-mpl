@@ -1,8 +1,8 @@
-font.weight:  300
+font.weight:  light
 font.size:    7.5
 
 axes.titlesize:     8.5
-axes.titleweight:   400
+axes.titleweight:   normal
 axes.labelsize:     7.5
 axes.labelweight:   400
 
@@ -11,6 +11,6 @@ ytick.labelsize:     7
 
 legend.fontsize:      5.5
 
-figure.titleweight: 400
+figure.titleweight: normal
 figure.labelsize:   7.5
 figure.labelweight: 300

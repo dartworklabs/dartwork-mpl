@@ -1,8 +1,8 @@
-font.weight:  300
+font.weight:  light
 font.size:    8.0
 
 axes.titlesize:     9.0   # font size of the axes title
-axes.titleweight:   400  # font weight of title
+axes.titleweight:   normal # font weight of title
 axes.labelsize:     8.0  # font size of the x and y labels
 axes.labelweight:   400  # weight of the x and y labels
 
@@ -12,7 +12,7 @@ ytick.labelsize:     8.0  # font size of the tick labels
 legend.fontsize:     6.0
 
 figure.titlesize:   9.0    # size of the figure title
-figure.titleweight: 400    # weight of the figure title
+figure.titleweight: normal # weight of the figure title
 figure.labelsize:   8.0     # size of the figure label
 figure.labelweight: 300    # weight of the figure label
 

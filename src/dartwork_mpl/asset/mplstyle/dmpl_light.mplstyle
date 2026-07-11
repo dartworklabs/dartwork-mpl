@@ -269,7 +269,7 @@ patch.linewidth:       0.5    # edge width in points.
 # font.family:  Fira Sans
 #font.style:   normal
 #font.variant: normal
-font.weight:  300
+font.weight:  light
 #font.stretch: normal
 font.size:    7.5
 
@@ -377,7 +377,7 @@ axes.grid:          False   # display grid or not
 #axes.grid.which:    major   # grid lines at {major, minor, both} ticks
 #axes.titlelocation: center  # alignment of the title: {left, right, center}
 axes.titlesize:     8.5   # font size of the axes title
-axes.titleweight:   400  # font weight of title
+axes.titleweight:   normal # font weight of title
 #axes.titlecolor:    auto    # color of the axes title, auto falls back to
                              # text.color as default value
 #axes.titley:        None    # position title (axes relative units).  None implies auto
@@ -562,7 +562,7 @@ legend.columnspacing: 0.75  # column separation
 ## ***************************************************************************
 ## See https://matplotlib.org/stable/api/figure_api.html#matplotlib.figure.Figure
 #figure.titlesize:   large     # size of the figure title (``Figure.suptitle()``)
-figure.titleweight: 400    # weight of the figure title
+figure.titleweight: normal # weight of the figure title
 figure.labelsize:   7.5     # size of the figure label (``Figure.sup[x|y]label()``)
 figure.labelweight: 300    # weight of the figure label
 # For guidance, Nature's standard figure sizes are 89 mm wide (single column)

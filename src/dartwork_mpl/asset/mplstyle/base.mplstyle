@@ -32,7 +32,7 @@ patch.linewidth:       0.5    # edge width in points.
 
 #font.style:   normal
 #font.variant: normal
-font.weight:  300
+font.weight:  light
 #font.stretch: normal
 font.size:    7.5
 
@@ -129,7 +129,7 @@ legend.handletextpad: 0.3  # the space between the legend line and legend text
 legend.borderaxespad: 0.4  # the border between the axes and legend edge
 legend.columnspacing: 0.75  # column separation
 
-figure.titleweight: 400    # weight of the figure title
+figure.titleweight: normal # weight of the figure title
 figure.labelsize:   7.5     # size of the figure label (``Figure.sup[x|y]label()``)
 figure.labelweight: 300    # weight of the figure label
 figure.figsize:     3.5, 3.0  # figure size in inches
