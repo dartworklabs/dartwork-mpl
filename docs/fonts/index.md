@@ -21,6 +21,10 @@ for its weight ladder and a ready-to-paste `rcParams` snippet. Every sample
 is drawn by the font's own bundled file — what you see here is exactly
 what your chart will render.
 
+Star a card to pin it, and pinned fonts stack in the bottom tray rendering the
+same sentence at the same size. Type your own sentence in the preview field and
+every card and the tray retype it, so you can weigh finalists on your real copy.
+
 ```{raw} html
 :file: ../_static/fonts_browser.frag.html
 ```

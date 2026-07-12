@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Font corpus expanded to 20 families (262 files): Noto Serif and IBM Plex Serif
   added, Roboto/Roboto Mono completed with instanced weights + italics;
   registry-backed interactive font browser on the fonts page (faceted filters,
-  specimen drawer, badge system).
+  specimen drawer, badge system, pin/compare tray, and a custom preview
+  sentence).
 - **Visual tick consistency checks.** `validate_figure()` now includes
   `UNIT_DUP`, `TICK_ROTATION`, and `TICK_DECIMAL` to catch duplicated
   axis/tick unit affixes, avoidable or missing x-tick rotation, and
