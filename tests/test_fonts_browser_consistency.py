@@ -22,10 +22,9 @@ _BUILDER_PATH = (
     _REPO / "docs" / "_static" / "scripts" / "build_fonts_browser_data.py"
 )
 _FRAGMENT_PATH = _REPO / "docs" / "_static" / "fonts_browser.frag.html"
-_POC_B_PATH = _REPO / "docs" / "_static" / "pocs" / "fonts_ux_b.frag.html"
-_POC_A_PATH = _REPO / "docs" / "_static" / "pocs" / "fonts_ux_a.frag.html"
-_POC_PAGE_PATH = _REPO / "docs" / "pocs_fonts_ux.md"
 _DESIGN_CSS_PATH = _REPO / "docs" / "_static" / "dartwork-design.css"
+_RETIRED_POCS_DIR = _REPO / "docs" / "_static" / "pocs"
+_RETIRED_POC_PAGE = _REPO / "docs" / "pocs_fonts_ux.md"
 
 
 def _load_builder() -> ModuleType:
@@ -40,7 +39,6 @@ def _load_builder() -> ModuleType:
 
 _BUILDER = _load_builder()
 _FRAGMENT = _FRAGMENT_PATH.read_text(encoding="utf-8")
-_POC_B = _POC_B_PATH.read_text(encoding="utf-8")
 
 
 def _parse_payload() -> tuple[
@@ -316,9 +314,7 @@ def test_fragment_is_clean_and_has_one_complete_generated_region() -> None:
 
 
 def test_search_has_one_custom_clear_and_uses_fonts_terminology() -> None:
-    fragments = {"#dm-fontfacets": _FRAGMENT, "#dm-fbuxb": _POC_B}
-
-    for root, fragment in fragments.items():
+    for root, fragment in (("#dm-fontfacets", _FRAGMENT),):
         assert (
             f'{root} .search-wrap input[type="search"]'
             "::-webkit-search-cancel-button"
@@ -374,7 +370,7 @@ def test_visible_results_render_registry_group_subheaders() -> None:
     _catalog, _order, groups = _parse_payload()
     assert [group["title"] for group in groups] == expected_titles
 
-    for fragment in (_FRAGMENT, _POC_B):
+    for fragment in (_FRAGMENT,):
         assert 'classList.add("font-group")' in fragment
         assert 'classList.add("font-group-title")' in fragment
         assert 'classList.add("font-group-cards")' in fragment
@@ -393,7 +389,7 @@ def test_card_copy_and_badge_contract_is_pinned() -> None:
         "(the registry's numeric-axes gate)."
     ) in _FRAGMENT
 
-    for fragment in (_FRAGMENT, _POC_B):
+    for fragment in (_FRAGMENT,):
         # Retired badges: the role badge, ad-hoc script badge, and Mono flag.
         assert "ROLE_LABELS" not in fragment
         assert "badge role" not in fragment
@@ -438,7 +434,7 @@ def test_badge_color_ladder_and_type_scale_are_pinned() -> None:
         "tnum": "17px",
     }
 
-    for fragment in (_FRAGMENT, _POC_B):
+    for fragment in (_FRAGMENT,):
         for token, value in type_scale.items():
             assert f"--fbx-fs-{token}: {value}" in fragment
         assert ".badge.default { background: var(--dm-accent-9)" in fragment
@@ -457,7 +453,7 @@ def test_fragment_css_uses_only_defined_tokens() -> None:
     design_css = _DESIGN_CSS_PATH.read_text(encoding="utf-8")
     defined = set(re.findall(r"(--dm-[\w-]+)\s*:", design_css))
 
-    for fragment in (_FRAGMENT, _POC_B):
+    for fragment in (_FRAGMENT,):
         referenced = set(re.findall(r"var\((--dm-[\w-]+)", fragment))
         assert referenced <= defined, sorted(referenced - defined)
 
@@ -467,7 +463,9 @@ def test_drawer_composition_and_descenders_are_pinned() -> None:
     assert "Agile 24" not in _FRAGMENT
     assert "flex: 0 0 112px;" in _FRAGMENT
     assert "align-items: center;" in _FRAGMENT
-    assert "escapeHtml(f.raw.sample)" in _FRAGMENT
+    # Card and drawer specimens render the custom preview sentence when typed,
+    # falling back to the font's own sample (folded-in dynamic superset).
+    assert "previewText.trim() ? previewText : f.raw.sample" in _FRAGMENT
 
     sample_rule_match = re.search(
         r"#dm-fontfacets \.ladder-sample \{(.*?)\}", _FRAGMENT, re.DOTALL
@@ -511,41 +509,35 @@ def test_drawer_composition_and_descenders_are_pinned() -> None:
     assert "overflow-x: auto;" in _FRAGMENT
 
 
-def test_poc_b_is_resynced_and_uses_a_stacked_specimen_tray() -> None:
-    def generated_region(fragment: str) -> str:
-        return fragment.split(_BUILDER.BEGIN_MARKER, 1)[1].split(
-            _BUILDER.END_MARKER, 1
-        )[0]
+def test_pin_compare_tray_lives_in_the_core_fragment() -> None:
+    # The pin/compare tray, preview toolbar, and their type scale were folded
+    # in from the retired POC B and now live in the single canonical fragment.
+    assert "--fbx-fs-tray: 24px" in _FRAGMENT
+    assert 'class="pin-toggle"' in _FRAGMENT
+    assert 'class="compare-tray"' in _FRAGMENT
+    assert 'id="fontfacets-preview-text"' in _FRAGMENT
+    assert "Finalists — same sentence, same size." in _FRAGMENT
+    assert "pinnedKeys.length >= 3" in _FRAGMENT
 
-    assert 'id="dm-fbuxb"' in _POC_B
-    assert "dm-fontfacets" not in _POC_B
-    assert generated_region(_POC_B) == generated_region(_FRAGMENT)
-    assert 'id="fbuxb-preview-text"' in _POC_B
-    assert 'class="pin-toggle"' in _POC_B
-    assert "pinnedKeys.length >= 3" in _POC_B
-
-    assert "Finalists — same sentence, same size." in _POC_B
-    assert "Clear pins" in _POC_B
-    assert "max-height: 40vh" in _POC_B
-    assert "overflow-y: auto" in _POC_B
-    assert "--fbx-fs-tray: 24px" in _POC_B
-    assert "line-height: 1.4" in _POC_B
-    assert "var COMPARE_SAMPLE" in _POC_B
+    assert "Clear pins" in _FRAGMENT
+    assert "max-height: 40vh" in _FRAGMENT
+    assert "overflow-y: auto" in _FRAGMENT
+    assert "var COMPARE_SAMPLE" in _FRAGMENT
     assert (
         "var compareText = previewText.trim() ? previewText : COMPARE_SAMPLE;"
-        in _POC_B
+        in _FRAGMENT
     )
-    assert "escapeHtml(compareText)" in _POC_B
-    assert 'class="compare-copy">Copy chain</button>' in _POC_B
-    assert 'class="compare-unpin"' in _POC_B
-    assert ">\u00d7</button>" in _POC_B
-    assert ".compare-item:hover .compare-copy" in _POC_B
-    assert ".compare-item:focus-within .compare-copy" in _POC_B
-    assert "compare-chain" not in _POC_B
-    assert "grid-template-columns: repeat(auto-fit" not in _POC_B
+    assert "escapeHtml(compareText)" in _FRAGMENT
+    assert 'class="compare-copy">Copy chain</button>' in _FRAGMENT
+    assert 'class="compare-unpin"' in _FRAGMENT
+    assert ">\u00d7</button>" in _FRAGMENT
+    assert ".compare-item:hover .compare-copy" in _FRAGMENT
+    assert ".compare-item:focus-within .compare-copy" in _FRAGMENT
+    assert "compare-chain" not in _FRAGMENT
+    assert "grid-template-columns: repeat(auto-fit" not in _FRAGMENT
 
     item_rule_match = re.search(
-        r"#dm-fbuxb \.compare-item \{(.*?)\}", _POC_B, re.DOTALL
+        r"#dm-fontfacets \.compare-item \{(.*?)\}", _FRAGMENT, re.DOTALL
     )
     assert item_rule_match is not None
     item_rule = item_rule_match.group(1)
@@ -556,28 +548,23 @@ def test_poc_b_is_resynced_and_uses_a_stacked_specimen_tray() -> None:
 
 def test_badge_layout_switcher_is_retired_and_c_is_the_layout() -> None:
     # Layout C is adopted; the A/B/C switcher and its scaffolding are gone.
-    for fragment in (_FRAGMENT, _POC_B):
+    for fragment in (_FRAGMENT,):
         assert "badge-layout" not in fragment
         assert "card-copy" not in fragment
         assert "title-badges" not in fragment
         assert "setBadgeLayout" not in fragment
 
     # The refined C card is a flat structure (title row + desc + sample + meta),
-    # matching the /fonts/ fragment, plus B's pin toggle.
-    b_card = _POC_B.split("function makeCard(f)", 1)[1].split(
+    # matching the /fonts/ fragment, plus the folded-in pin toggle.
+    card = _FRAGMENT.split("function makeCard(f)", 1)[1].split(
         "// ---- POC B pin-and-compare tray", 1
     )[0]
-    assert b_card.count('class="badges capability-badges"') == 1
-    assert 'class="pin-toggle"' in b_card
+    assert card.count('class="badges capability-badges"') == 1
+    assert 'class="pin-toggle"' in card
 
 
-def test_preview_page_keeps_only_the_chosen_b_direction() -> None:
-    page = _POC_PAGE_PATH.read_text(encoding="utf-8")
-
-    assert "# Fonts browser — B 리파인" in page
-    assert "공통 개선(rail·카드·드로어)은" in page
-    assert "B의 핀 비교는 이 페이지에서 확인" in page
-    assert "fonts_ux_b.frag.html" in page
-    assert "fonts_ux_a" not in page
-    assert "## A" not in page
-    assert not _POC_A_PATH.exists()
+def test_retired_poc_page_and_fragments_stay_deleted() -> None:
+    # The fonts POC page and its fragment directory were folded into the core
+    # browser and retired; they must not reappear.
+    assert not _RETIRED_POCS_DIR.exists()
+    assert not _RETIRED_POC_PAGE.exists()
