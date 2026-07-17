@@ -8,7 +8,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     steps:
       - uses: actions/checkout@v6
 
@@ -34,7 +34,7 @@ jobs:
         run: uv run mypy src/dartwork_mpl/
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
@@ -87,13 +87,13 @@ jobs:
             tests/test_cli.py \
             tests/test_drift.py \
             -v --no-cov \
-          | tee /tmp/integration-output.log
+          | tee "$RUNNER_TEMP/integration-output.log"
           # Fail if any of the files collected 0 items (silent skip
           # of an entire file would otherwise pass CI). The summary
           # line looks like ``=== 27 passed in 1.5s ===``. The digit
           # guard on ``0 passed`` avoids matching counts that merely
           # end in zero (``130 passed`` contains ``0 passed``).
-          if grep -E "no tests ran|(^|[^0-9])0 passed" /tmp/integration-output.log; then
+          if grep -E "no tests ran|(^|[^0-9])0 passed" "$RUNNER_TEMP/integration-output.log"; then
             echo "::error::Integration tests collected 0 items"
             exit 1
           fi
@@ -102,7 +102,7 @@ jobs:
   # import and pass the non-MCP tests. Catches regressions where a
   # core module accidentally requires fastmcp at import time.
   test-no-extras:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     steps:
       - uses: actions/checkout@v6
       - name: Install uv
@@ -146,7 +146,7 @@ jobs:
           "
 
   visual:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     steps:
       - uses: actions/checkout@v6
 
@@ -165,6 +165,7 @@ jobs:
       - name: Visual regression (pixel baselines)
         env:
           MPLBACKEND: Agg
+          TMPDIR: ${{ runner.temp }}
         run: uv run pytest tests/visual/test_visual_pixels.py --mpl -v --no-cov
 
       - name: Upload diff images on failure
@@ -172,7 +173,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: visual-diffs
-          path: /tmp/pytest-mpl-*/**
+          path: ${{ runner.temp }}/pytest-mpl-*/**
 
   # Build the docs on every PR (the deploy workflow only runs on main, so
   # without this a doc-breaking change isn't caught until after merge).
@@ -180,7 +181,7 @@ jobs:
   # ``builder-inited`` hook regenerates llms-full.txt, so a stale committed
   # copy (upstream edited but llms-full.txt not rebuilt) fails the drift check.
   docs:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     # Pin the docs build to a single modern interpreter. Without this,
     # `uv sync` floats the build venv to the requires-python floor (3.10),
     # whose gallery execution hit an environment-specific color-resolution
@@ -188,6 +189,8 @@ jobs:
     # (build-only job), so pin to 3.12 for a deterministic, known-good build.
     env:
       UV_PYTHON: "3.12"
+      # Keep the persistent runner's shared home cache out of this job.
+      MPLCONFIGDIR: ${{ github.workspace }}/.cache/matplotlib
     steps:
       - uses: actions/checkout@v6
 
@@ -214,7 +217,7 @@ jobs:
         with:
           path: |
             docs/_build/doctrees
-            ~/.cache/matplotlib
+            .cache/matplotlib
           key: docs-${{ runner.os }}-${{ hashFiles('docs/**/*.py', 'src/dartwork_mpl/**/*.py', 'src/dartwork_mpl/asset/**', 'uv.lock') }}
           restore-keys: |
             docs-${{ runner.os }}-
@@ -240,10 +243,21 @@ jobs:
 
       # The diagrams PoC page (docs/internals/diagrams_poc.md) uses
       # sphinx.ext.graphviz to render the auto-extracted module dependency
-      # graph (and its Diagrams-Python architecture script also shells out
-      # to the same `dot` binary). Ubuntu runners ship without it.
-      - name: Install Graphviz (dot binary for sphinx.ext.graphviz)
-        run: sudo apt-get update && sudo apt-get install -y graphviz
+      # graph. The persistent runner has no passwordless sudo, so avoid apt
+      # unless the runner image is missing `dot` and report how to repair it.
+      - name: Ensure Graphviz (dot binary for sphinx.ext.graphviz)
+        shell: bash
+        run: |
+          set -uo pipefail
+          if command -v dot >/dev/null 2>&1; then
+            dot -V
+            exit 0
+          fi
+          echo "Graphviz missing — attempting install"
+          sudo -n apt-get update && sudo -n apt-get install -y graphviz || {
+            echo "::error::Graphviz is missing and passwordless sudo is unavailable. Install on the runner: sudo apt-get install -y graphviz"
+            exit 1
+          }
 
       - name: Build documentation (warnings = errors)
         env:

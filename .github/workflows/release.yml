@@ -32,7 +32,7 @@ jobs:
   # publish to PyPI. `build`/`publish` now transitively require `test`.
   test:
     name: Test before release
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     steps:
       - uses: actions/checkout@v6
       - name: Install uv
@@ -50,7 +50,7 @@ jobs:
   build:
     name: Build sdist + wheel
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     steps:
       - uses: actions/checkout@v6
 
@@ -80,6 +80,21 @@ jobs:
       - name: Build distributions
         run: uv build
 
+      - name: Ensure packaging tools
+        shell: bash
+        run: |
+          set -uo pipefail
+          missing=()
+          for tool in tar unzip; do
+            command -v "$tool" >/dev/null 2>&1 || missing+=("$tool")
+          done
+          if [ "${#missing[@]}" -eq 0 ]; then
+            echo "Packaging tools present: tar, unzip"
+            exit 0
+          fi
+          echo "::error::Required packaging tools are missing on the ml-main runner: ${missing[*]}. Install on the runner: sudo apt-get install -y ${missing[*]}"
+          exit 1
+
       - name: Wheel ↔ git-tracked tree parity
         # Positive packaging gate: the wheel's package payload must equal
         # the git-tracked src/dartwork_mpl tree exactly (plus the four
@@ -95,9 +110,9 @@ jobs:
             | grep '^dartwork_mpl/' \
             | grep -v '\.dist-info/' \
             | grep -v '^dartwork_mpl/asset/agent/' \
-            | sort > /tmp/wheel_files.txt
-          git ls-files 'src/dartwork_mpl' | sed 's|^src/||' | sort > /tmp/git_files.txt
-          if ! diff -u /tmp/git_files.txt /tmp/wheel_files.txt; then
+            | sort > "$RUNNER_TEMP/wheel_files.txt"
+          git ls-files 'src/dartwork_mpl' | sed 's|^src/||' | sort > "$RUNNER_TEMP/git_files.txt"
+          if ! diff -u "$RUNNER_TEMP/git_files.txt" "$RUNNER_TEMP/wheel_files.txt"; then
             echo "::error ::wheel payload != git-tracked package tree (see diff above)"
             exit 1
           fi
@@ -124,7 +139,7 @@ jobs:
   publish:
     name: Publish to PyPI
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     # Header says workflow_dispatch is for dry runs (build only) — guard
     # the publish step so an accidental "Run workflow" click can't upload
     # an untagged build to production PyPI. The build job still runs on
@@ -134,6 +149,15 @@ jobs:
       # Required for OIDC-based PyPI publishing (no API tokens).
       id-token: write
     steps:
+      # This job has no checkout, so explicitly clear the persistent
+      # workspace destination before downloading this run's artifact.
+      - name: Prepare clean distribution directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          find dist -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+
       - name: Download distributions
         uses: actions/download-artifact@v8
         with:
@@ -152,13 +176,24 @@ jobs:
   github_release:
     name: Create / update GitHub Release
     needs: publish
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     # Tag pushes only — workflow_dispatch is a dry run and never publishes.
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v6
+
+      - name: Ensure GitHub CLI
+        shell: bash
+        run: |
+          set -uo pipefail
+          if command -v gh >/dev/null 2>&1; then
+            gh --version | head -1
+            exit 0
+          fi
+          echo "::error::GitHub CLI is missing on the ml-main runner. Install gh on the runner image."
+          exit 1
 
       # CHANGELOG.md hard-wraps paragraphs at ~72 chars (Keep a Changelog
       # convention). GitHub Releases render single newlines as soft

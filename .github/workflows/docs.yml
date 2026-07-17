@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     # Pin the docs build to a single modern interpreter (see ci.yml docs job):
     # `uv sync` otherwise floats to the requires-python floor (3.10), whose
     # gallery execution hit an environment-specific failure 3.11+ does not.
@@ -50,11 +50,21 @@ jobs:
           key: gallery-${{ runner.os }}-${{ hashFiles('docs/examples_source/**', 'src/dartwork_mpl/**/*.py', 'src/dartwork_mpl/asset/**', 'docs/conf.py', 'docs/_ext/build_hooks.py', 'uv.lock') }}
 
       # The diagrams PoC page (docs/internals/diagrams_poc.md) renders a
-      # sphinx.ext.graphviz directive (auto-extracted module dep graph).
-      # Without the `dot` binary the build aborts with "graphviz_dot
-      # executable not found". Mirrors the apt-get step in ci.yml.
-      - name: Install Graphviz (dot binary for sphinx.ext.graphviz)
-        run: sudo apt-get update && sudo apt-get install -y graphviz
+      # sphinx.ext.graphviz directive. The persistent runner has no
+      # passwordless sudo, so only attempt apt when `dot` is absent.
+      - name: Ensure Graphviz (dot binary for sphinx.ext.graphviz)
+        shell: bash
+        run: |
+          set -uo pipefail
+          if command -v dot >/dev/null 2>&1; then
+            dot -V
+            exit 0
+          fi
+          echo "Graphviz missing — attempting install"
+          sudo -n apt-get update && sudo -n apt-get install -y graphviz || {
+            echo "::error::Graphviz is missing and passwordless sudo is unavailable. Install on the runner: sudo apt-get install -y graphviz"
+            exit 1
+          }
 
       - name: Build documentation
         env:
@@ -81,7 +91,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     needs: build
     steps:
       - name: Deploy to GitHub Pages
