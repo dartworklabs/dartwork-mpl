@@ -23,7 +23,7 @@ jobs:
     env:
       UV_PYTHON: "3.12"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -44,7 +44,7 @@ jobs:
       # + lockfile, so any change forces a fresh full rebuild (no
       # restore-keys — a partial restore could ship stale images).
       - name: Cache sphinx-gallery output
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: docs/examples_gallery
           key: gallery-${{ runner.os }}-${{ hashFiles('docs/examples_source/**', 'src/dartwork_mpl/**/*.py', 'src/dartwork_mpl/asset/**', 'docs/conf.py', 'docs/_ext/build_hooks.py', 'uv.lock') }}

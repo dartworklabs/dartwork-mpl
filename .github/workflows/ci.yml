@@ -10,7 +10,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -39,7 +39,7 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -104,7 +104,7 @@ jobs:
   test-no-extras:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -148,7 +148,7 @@ jobs:
   visual:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -169,7 +169,7 @@ jobs:
 
       - name: Upload diff images on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: visual-diffs
           path: /tmp/pytest-mpl-*/**
@@ -189,7 +189,7 @@ jobs:
     env:
       UV_PYTHON: "3.12"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -210,7 +210,7 @@ jobs:
       # a data-only change (e.g. a dc_palettes.json rename) alters rendered
       # output, so it must bust the cache too.
       - name: Cache Sphinx doctrees + matplotlib font cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             docs/_build/doctrees
@@ -233,7 +233,7 @@ jobs:
       # purpose: a partial (prefix) restore could serve stale images for an
       # unchanged example whose library-side output actually changed.
       - name: Cache sphinx-gallery output
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: docs/examples_gallery
           key: gallery-${{ runner.os }}-${{ hashFiles('docs/examples_source/**', 'src/dartwork_mpl/**/*.py', 'src/dartwork_mpl/asset/**', 'docs/conf.py', 'docs/_ext/build_hooks.py', 'uv.lock') }}
