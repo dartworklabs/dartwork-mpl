@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>dartwork-mpl Brand Explorations - Round 7</title>
+    <!-- Premium Google Fonts -->
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+    </style>
+    <style>
+      :root {
+        /* Design Tokens (Light Mode) */
+        --slate-1: #ffffff;
+        --slate-2: #fcfcfd;
+        --slate-3: #f4f4f6;
+        --slate-4: #e4e4e7;
+        --slate-5: #d4d4d8;
+        --slate-6: #a1a1aa;
+        --slate-7: #71717a;
+        --slate-8: #52525b;
+        --slate-9: #3f3f46;
+        --slate-10: #18181b;
+        --slate-11: #09090b;
+
+        --teal-1: #f0faf9;
+        --teal-2: #e6f6f4;
+        --teal-3: #ccede9;
+        --teal-4: #99dbd2;
+        --teal-5: #66c8bb;
+        --teal-6: #3ebbab;
+        --teal-7: #1da797;
+        --teal-8: #12a594; /* Primary Accent */
+        --teal-9: #0d9686;
+        --teal-10: #0a8274;
+        --teal-11: #066e62;
+        --teal-12: #023d37;
+
+        --bg-page: var(--slate-3);
+        --bg-panel: var(--slate-1);
+        --bg-hover: rgba(0, 0, 0, 0.03);
+        --text-strong: var(--slate-10);
+        --text-muted: var(--slate-7);
+        --text-faint: var(--slate-6);
+        --accent: var(--teal-8);
+        --accent-hover: var(--teal-9);
+        --border-faint: rgba(9, 9, 11, 0.06);
+        --border: var(--slate-4);
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+        --shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.04);
+        --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.04);
+
+        --font-sans: "Plus Jakarta Sans", "Inter", -apple-system, sans-serif;
+        --font-mono: "JetBrains Mono", ui-monospace, monospace;
+      }
+
+      html.dark {
+        /* Design Tokens (Dark Mode) */
+        --slate-1: #09090b;
+        --slate-2: #121214;
+        --slate-3: #18181b;
+        --slate-4: #27272a;
+        --slate-5: #3f3f46;
+        --slate-6: #52525b;
+        --slate-7: #71717a;
+        --slate-8: #a1a1aa;
+        --slate-9: #d4d4d8;
+        --slate-10: #f4f4f5;
+        --slate-11: #ffffff;
+
+        --teal-1: #021a17;
+        --teal-2: #042f2b;
+        --teal-3: #064741;
+        --teal-4: #086159;
+        --teal-5: #0a7c72;
+        --teal-6: #0d9686;
+        --teal-7: #12a594;
+        --teal-8: #14b8a6; /* Primary Accent */
+        --teal-9: #2dd4bf;
+        --teal-10: #5eead4;
+        --teal-11: #99f6e4;
+        --teal-12: #ccfbf1;
+
+        --bg-page: var(--slate-1);
+        --bg-panel: var(--slate-2);
+        --bg-hover: var(--slate-3);
+        --text-strong: var(--slate-10);
+        --text-muted: var(--slate-8);
+        --text-faint: var(--slate-6);
+        --accent: var(--teal-8);
+        --accent-hover: var(--teal-9);
+        --border-faint: rgba(255, 255, 255, 0.06);
+        --border: var(--slate-4);
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+        --shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.2);
+        --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        font-family: var(--font-sans);
+        background-color: var(--bg-page);
+        color: var(--text-strong);
+        margin: 0;
+        padding: 0;
+        transition: background-color 0.3s ease, color 0.3s ease;
+        line-height: 1.6;
+        letter-spacing: -0.01em;
+      }
+
+      /* Navbar */
+      header.preview-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background-color: color-mix(in srgb, var(--bg-panel) 80%, transparent);
+        backdrop-filter: saturate(180%) blur(20px);
+        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        border-bottom: 1px solid var(--border-faint);
+        padding: 14px 32px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 16px;
+        letter-spacing: -0.03em;
+        color: var(--text-strong);
+      }
+
+      .logo-brand svg {
+        height: 22px;
+        width: auto;
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .btn {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border);
+        color: var(--text-strong);
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 13px;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .btn:hover {
+        background-color: var(--bg-hover);
+        border-color: var(--accent);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow);
+      }
+
+      .btn-primary {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background-color: var(--accent-hover);
+        border-color: var(--accent-hover);
+        color: white;
+      }
+
+      /* Hero */
+      .hero {
+        padding: 64px 32px 48px;
+        text-align: center;
+        background: radial-gradient(ellipse at top, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%);
+        border-bottom: 1px solid var(--border-faint);
+      }
+
+      .hero-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+        color: var(--accent);
+        border-radius: 99px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+
+      .hero-title {
+        font-size: 38px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        margin: 0 0 12px;
+        color: var(--text-strong);
+      }
+
+      .hero-subtitle {
+        font-size: 15px;
+        color: var(--text-muted);
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .container {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 32px 32px 64px;
+      }
+
+      /* Tabs */
+      .tabs-nav {
+        display: flex;
+        gap: 4px;
+        margin: 0 auto 32px;
+        background-color: var(--border-faint);
+        padding: 6px;
+        border-radius: 12px;
+        width: fit-content;
+      }
+
+      .tab-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        padding: 8px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tab-btn:hover {
+        color: var(--text-strong);
+      }
+
+      .tab-btn.active {
+        background-color: var(--bg-panel);
+        color: var(--text-strong);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .tab-content { display: none; }
+      .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Grid and Cards */
+      .section-heading {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0 0 8px;
+        letter-spacing: -0.02em;
+      }
+
+      .section-desc {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin: 0 0 24px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        gap: 24px;
+        margin-bottom: 48px;
+      }
+
+      .card {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border-faint);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+        border-color: color-mix(in srgb, var(--accent) 30%, var(--border-faint));
+      }
+
+      .card h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .card p.desc {
+        margin: -4px 0 0 0;
+        font-size: 13px;
+        color: var(--text-muted);
+        min-height: 38px;
+        line-height: 1.45;
+      }
+
+      /* Logo Display Area (Solid Plain Background as requested) */
+      .logo-display {
+        background-color: #ffffff; /* Explicitly white for clear lines evaluation */
+        border: 1px solid var(--border-faint);
+        border-radius: 12px;
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        transition: background-color 0.2s ease;
+      }
+
+      html.dark .logo-display {
+        background-color: #0c0c0e; /* Clean solid dark for contrast */
+      }
+
+      .svg-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 28px;
+        width: 100%;
+      }
+
+      .svg-wrap svg {
+        height: 100%;
+        width: 100%;
+        max-width: 100%;
+        display: block;
+      }
+
+      .logo-svg {
+        --svg-text: var(--text-strong);
+        --svg-accent: var(--accent);
+      }
+
+      /* Source Code details */
+      .source-details {
+        font-size: 11px;
+        font-family: var(--font-mono);
+        background-color: var(--bg-page);
+        border: 1px solid var(--border-faint);
+        border-radius: 8px;
+        padding: 10px;
+        color: var(--text-muted);
+      }
+
+      .source-details summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--accent);
+        outline: none;
+      }
+
+      .source-details pre {
+        margin: 8px 0 0;
+        white-space: pre-wrap;
+        word-break: break-all;
+        overflow-x: auto;
+        color: var(--text-strong);
+      }
+
+      /* Sandbox Layout */
+      .sandbox-layout {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 32px;
+        align-items: start;
+      }
+
+      .sandbox-panel {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border-faint);
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        box-shadow: var(--shadow);
+      }
+
+      .sandbox-control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .sandbox-control-group label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-strong);
+      }
+
+      .sandbox-control-group select,
+      .sandbox-control-group input[type="text"] {
+        background-color: var(--bg-page);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 13px;
+        color: var(--text-strong);
+        outline: none;
+        font-family: inherit;
+        transition: border-color 0.15s ease;
+      }
+
+      .sandbox-control-group select:focus,
+      .sandbox-control-group input[type="text"]:focus {
+        border-color: var(--accent);
+      }
+
+      .sandbox-canvas {
+        background-color: #ffffff;
+        border: 1px solid var(--border-faint);
+        border-radius: 16px;
+        padding: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow);
+        min-height: 180px;
+        transition: background-color 0.2s ease;
+      }
+
+      html.dark .sandbox-canvas {
+        background-color: #0c0c0e;
+      }
+
+      .sandbox-preview-pane {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .sandbox-code-card {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border-faint);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: var(--shadow);
+      }
+
+      .sandbox-code-card header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .sandbox-code-card h4 {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 600;
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+      }
+
+      .sandbox-code-card pre {
+        background-color: var(--bg-page);
+        border: 1px solid var(--border-faint);
+        border-radius: 8px;
+        padding: 12px;
+        margin: 0;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--text-strong);
+        white-space: pre-wrap;
+        word-break: break-all;
+        overflow-x: auto;
+      }
+
+      /* Mockups Layout */
+      .mockup-item {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border-faint);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+        margin-bottom: 24px;
+      }
+
+      .mockup-item h4 {
+        margin: 0 0 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .mockup-header-frame {
+        border: 1px solid var(--border);
+        background-color: #ffffff;
+        border-radius: 10px;
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: background-color 0.2s ease;
+      }
+
+      html.dark .mockup-header-frame {
+        background-color: #0c0c0e;
+      }
+
+      .mockup-terminal {
+        background-color: #0d1117;
+        border: 1px solid #30363d;
+        border-radius: 10px;
+        padding: 20px;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        color: #c9d1d9;
+      }
+
+      .color-picker-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .color-dot {
+        width: 20px; height: 20px; border-radius: 50%;
+        cursor: pointer; border: 2px solid transparent; transition: all 0.15s ease;
+      }
+      .color-dot.active {
+        border-color: var(--text-strong);
+        transform: scale(1.15);
+      }
+
+      .toast {
+        position: fixed; bottom: 24px; right: 24px;
+        background-color: var(--text-strong); color: var(--bg-page);
+        padding: 10px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;
+        opacity: 0; transform: translateY(8px); transition: all 0.2s ease;
+        z-index: 1000; box-shadow: var(--shadow-lg); pointer-events: none;
+      }
+      .toast.show { opacity: 1; transform: translateY(0); }
+    </style>
+  </head>
+  <body>
+    <!-- Premium Navbar -->
+    <header class="preview-header">
+      <div class="logo-brand">
+        <!-- Minimal graphic for navbar brand -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        dartwork-mpl Brand Lab
+      </div>
+      <div class="controls">
+        <a href="logo_pocs.html" class="btn" style="text-decoration: none;">← Original Showcase (C1-C9)</a>
+        <a href="logo_candidates.html" class="btn" style="text-decoration: none;">Archive (Shields)</a>
+        <button class="btn" id="themeToggle" onclick="toggleTheme()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41/></svg>
+          Dark Mode
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <div class="hero">
+      <div class="hero-badge">Exploration Round 7</div>
+      <h1 class="hero-title">Typography & Integrated Symbol Plays</h1>
+      <p class="hero-subtitle">
+        Focusing on semantic wrapper layout tricks. Clean, solid background canvases constructed to evaluate the core vectors of each candidate.
+      </p>
+    </div>
+
+    <div class="container">
+      <!-- Tab Control -->
+      <nav class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab(event, 'tab-typo-only')">Typography Plays (T1–T5)</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-logo-typo')">Logo & Font Plays (S1–S5)</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-sandbox')">Interactive Sandbox</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-mockups')">Context Mockups</button>
+      </nav>
+
+      <!-- TAB 1: TYPOGRAPHY PLAYS -->
+      <section id="tab-typo-only" class="tab-content active">
+        <h2 class="section-heading">Pure Typography & Inline Vector Plays</h2>
+        <p class="section-desc">Design solutions utilizing high-contrast letter weights, programming syntax, and inline visual elements directly in the text flow.</p>
+
+        <div class="grid">
+          <!-- T1 -->
+          <div class="card">
+            <h3><span>T1. Sparkline Ligature</span><button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="copyCodeFromCard('t1-code')">Copy</button></h3>
+            <p class="desc">하이픈 대신 연결 스파크라인 곡선과 2개의 데이터 노드 마커를 직접 배치하여 데이터의 흐름을 시각화합니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <text x="15" y="27" font-family="var(--font-sans)" font-size="22" font-weight="700" letter-spacing="-0.04em" fill="var(--text-strong)">dartwork</text>
+                  <path d="M106 20 Q 116 11, 124 20 T 139 20" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                  <circle cx="116" cy="13" r="2" fill="var(--text-strong)" opacity="0.8"/>
+                  <circle cx="128" cy="23" r="2" fill="var(--text-strong)" opacity="0.8"/>
+                  <text x="142" y="27" font-family="var(--font-sans)" font-size="22" font-weight="400" letter-spacing="-0.04em" fill="var(--accent)">mpl</text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="t1-code">&lt;svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;text x="15" y="27" font-family="sans-serif" font-size="22" font-weight="700" letter-spacing="-0.04em" fill="var(--text-strong)"&gt;dartwork&lt;/text&gt;
+  &lt;path d="M106 20 Q 116 11, 124 20 T 139 20" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/&gt;
+  &lt;circle cx="116" cy="13" r="2" fill="var(--text-strong)" opacity="0.8"/&gt;
+  &lt;circle cx="128" cy="23" r="2" fill="var(--text-strong)" opacity="0.8"/&gt;
+  &lt;text x="142" y="27" font-family="sans-serif" font-size="22" font-weight="400" letter-spacing="-0.04em" fill="var(--accent)"&gt;mpl&lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- T2 -->
+          <div class="card">
+            <h3><span>T2. Key-Value Index (Colon)</span><button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="copyCodeFromCard('t2-code')">Copy</button></h3>
+            <p class="desc">사전식 인덱스 접근 기호인 콜론(:)을 고대비 틸 컬러 도트 마커로 대체하고, 모노스페이스 접미사와 결합하여 테크니컬한 래퍼 감성을 냅니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <text x="15" y="27" font-family="var(--font-mono)" font-size="20" font-weight="700" fill="var(--text-strong)">dartwork</text>
+                  <circle cx="120" cy="16" r="3.2" fill="var(--accent)"/>
+                  <circle cx="120" cy="26" r="3.2" fill="var(--accent)"/>
+                  <text x="134" y="27" font-family="var(--font-mono)" font-size="20" font-weight="500" fill="var(--accent)">mpl</text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="t2-code">&lt;svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;text x="15" y="27" font-family="monospace" font-size="20" font-weight="700" fill="var(--text-strong)"&gt;dartwork&lt;/text&gt;
+  &lt;circle cx="120" cy="16" r="3.2" fill="var(--accent)"/&gt;
+  &lt;circle cx="120" cy="26" r="3.2" fill="var(--accent)"/&gt;
+  &lt;text x="134" y="27" font-family="monospace" font-size="20" font-weight="500" fill="var(--accent)"&gt;mpl&lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- T3 -->
+          <div class="card">
+            <h3><span>T3. Bracket Wrapper</span><button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="copyCodeFromCard('t3-code')">Copy</button></h3>
+            <p class="desc">접미사 `mpl`을 얇은 대괄호 기호 `[mpl]` 로 포장하여 'matplotlib 라이브러리를 구조적으로 래핑했다'는 의미론적 형태를 취합니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <text x="15" y="27" font-family="var(--font-sans)" font-size="22" font-weight="700" letter-spacing="-0.03em" fill="var(--text-strong)">dartwork</text>
+                  <path d="M117 9 H112 V29 H117" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" fill="none"/>
+                  <text x="122" y="26" font-family="var(--font-sans)" font-size="21" font-weight="500" letter-spacing="-0.03em" fill="var(--text-strong)">mpl</text>
+                  <path d="M165 9 H170 V29 H165" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" fill="none"/>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="t3-code">&lt;svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;text x="15" y="27" font-family="sans-serif" font-size="22" font-weight="700" letter-spacing="-0.03em" fill="var(--text-strong)"&gt;dartwork&lt;/text&gt;
+  &lt;path d="M117 9 H112 V29 H117" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" fill="none"/&gt;
+  &lt;text x="122" y="26" font-family="sans-serif" font-size="21" font-weight="500" letter-spacing="-0.03em" fill="var(--text-strong)"&gt;mpl&lt;/text&gt;
+  &lt;path d="M165 9 H170 V29 H165" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" fill="none"/&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- T4 -->
+          <div class="card">
+            <h3><span>T4. Prompt Terminal</span><button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="copyCodeFromCard('t4-code')">Copy</button></h3>
+            <p class="desc">터미널 CLI의 프롬프트 기호 `>_`를 음각 처리된 둥근 미니 배지로 앞에 심고, 전체 이름을 모노스페이스의 강직한 균형으로 표시합니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="15" y="8" width="30" height="24" rx="6" fill="var(--text-strong)" opacity="0.06"/>
+                  <path d="M22 15 L27 20 L22 25" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                  <line x1="30" y1="25" x2="35" y2="25" stroke="var(--text-strong)" stroke-width="2" stroke-linecap="round"/>
+                  <text x="55" y="27" font-family="var(--font-mono)" font-size="19" font-weight="700" letter-spacing="-0.02em" fill="var(--text-strong)">dartwork<tspan fill="var(--accent)">-mpl</tspan></text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="t4-code">&lt;svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;rect x="15" y="8" width="30" height="24" rx="6" fill="var(--text-strong)" opacity="0.06"/&gt;
+  &lt;path d="M22 15 L27 20 L22 25" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/&gt;
+  &lt;line x1="30" y1="25" x2="35" y2="25" stroke="var(--text-strong)" stroke-width="2" stroke-linecap="round"/&gt;
+  &lt;text x="55" y="27" font-family="monospace" font-size="19" font-weight="700" letter-spacing="-0.02em" fill="var(--text-strong)"&gt;dartwork&lt;tspan fill="var(--accent)"&gt;-mpl&lt;/tspan&gt;&lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- T5 -->
+          <div class="card">
+            <h3><span>T5. Trend Slice</span><button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="copyCodeFromCard('t5-code')">Copy</button></h3>
+            <p class="desc">두 단어 사이에 꺾인 꺾은선 차트 조각을 세련되게 삽입하여, 차트가 그려지는 동역학적 궤적을 하이픈 위치에 담아냅니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <text x="15" y="27" font-family="var(--font-sans)" font-size="22" font-weight="700" letter-spacing="-0.03em" fill="var(--text-strong)">dartwork</text>
+                  <path d="M106 24 L118 24 L126 14 L136 14" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                  <circle cx="126" cy="14" r="2.5" fill="var(--text-strong)"/>
+                  <text x="142" y="27" font-family="var(--font-sans)" font-size="22" font-weight="700" letter-spacing="-0.03em" fill="var(--text-strong)">mpl</text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="t5-code">&lt;svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;text x="15" y="27" font-family="sans-serif" font-size="22" font-weight="700" letter-spacing="-0.03em" fill="var(--text-strong)"&gt;dartwork&lt;/text&gt;
+  &lt;path d="M106 24 L118 24 L126 14 L136 14" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/&gt;
+  &lt;circle cx="126" cy="14" r="2.5" fill="var(--text-strong)"/&gt;
+  &lt;text x="142" y="27" font-family="sans-serif" font-size="22" font-weight="700" letter-spacing="-0.03em" fill="var(--text-strong)"&gt;mpl&lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: LOGO & TYPOGRAPHY PLAYS -->
+      <section id="tab-logo-typo" class="tab-content">
+        <h2 class="section-heading">Integrated Logo Symbols & Typography</h2>
+        <p class="section-desc">Eelegant, semantic vector emblems integrated directly on the left side of premium text layouts.</p>
+
+        <div class="grid">
+          <!-- S1 -->
+          <div class="card">
+            <h3><span>S1. Bezier Wrapper</span><button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="copyCodeFromCard('s1-code')">Copy</button></h3>
+            <p class="desc">둥글고 매끈한 베지어 곡선이 중심 마스터 노드를 유기적으로 감싸고 흐르는 형태로 라이브러리의 유연한 래핑 성능을 직관적으로 표현합니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 28 Q 16 10, 24 20 T 38 12" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                  <circle cx="24" cy="20" r="4.5" fill="var(--text-strong)"/>
+                  <circle cx="16" cy="14" r="2" fill="var(--accent)" opacity="0.5"/>
+                  <circle cx="32" cy="26" r="2" fill="var(--accent)" opacity="0.5"/>
+                  <text x="50" y="27" font-family="var(--font-sans)" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="700" fill="var(--text-strong)">dartwork</tspan><tspan font-weight="300" fill="var(--accent)">-mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="s1-code">&lt;svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;path d="M10 28 Q 16 10, 24 20 T 38 12" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/&gt;
+  &lt;circle cx="24" cy="20" r="4.5" fill="var(--text-strong)"/&gt;
+  &lt;circle cx="16" cy="14" r="2" fill="var(--accent)" opacity="0.5"/&gt;
+  &lt;circle cx="32" cy="26" r="2" fill="var(--accent)" opacity="0.5"/&gt;
+  &lt;text x="50" y="27" font-family="sans-serif" font-size="22" letter-spacing="-0.03em"&gt;
+    &lt;tspan font-weight="700" fill="var(--text-strong)"&gt;dartwork&lt;/tspan&gt;&lt;tspan font-weight="300" fill="var(--accent)"&gt;-mpl&lt;/tspan&gt;
+  &lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- S2 -->
+          <div class="card">
+            <h3><span>S2. Coordinates Crosshair</span><button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="copyCodeFromCard('s2-code')">Copy</button></h3>
+            <p class="desc">X/Y 정밀 축이 교차하는 지점에 빛나는 Accent 노드가 안착하여 차트 데이터 포인트의 절대 정밀도를 미니멀한 크로스헤어로 보여줍니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="24" y1="6" x2="24" y2="34" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.2"/>
+                  <line x1="8" y1="20" x2="36" y2="20" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.2"/>
+                  <circle cx="24" cy="20" r="4" fill="var(--accent)"/>
+                  <circle cx="24" cy="20" r="9" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="2 2" fill="none"/>
+                  <circle cx="16" cy="20" r="2" fill="var(--text-strong)" opacity="0.6"/>
+                  <circle cx="24" cy="12" r="2" fill="var(--text-strong)" opacity="0.6"/>
+                  <text x="50" y="27" font-family="var(--font-sans)" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="700" fill="var(--text-strong)">dartwork</tspan><tspan font-weight="500" fill="var(--accent)">:</tspan><tspan font-weight="500" fill="var(--accent)">mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="s2-code">&lt;svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;line x1="24" y1="6" x2="24" y2="34" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.2"/&gt;
+  &lt;line x1="8" y1="20" x2="36" y2="20" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.2"/&gt;
+  &lt;circle cx="24" cy="20" r="4" fill="var(--accent)"/&gt;
+  &lt;circle cx="24" cy="20" r="9" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="2 2" fill="none"/&gt;
+  &lt;circle cx="16" cy="20" r="2" fill="var(--text-strong)" opacity="0.6"/&gt;
+  &lt;circle cx="24" cy="12" r="2" fill="var(--text-strong)" opacity="0.6"/&gt;
+  &lt;text x="50" y="27" font-family="sans-serif" font-size="22" letter-spacing="-0.03em"&gt;
+    &lt;tspan font-weight="700" fill="var(--text-strong)"&gt;dartwork&lt;/tspan&gt;&lt;tspan font-weight="500" fill="var(--accent)"&gt;:&lt;/tspan&gt;&lt;tspan font-weight="500" fill="var(--accent)"&gt;mpl&lt;/tspan>
+  &lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- S3 -->
+          <div class="card">
+            <h3><span>S3. Stacked Canvas</span><button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="copyCodeFromCard('s3-code')">Copy</button></h3>
+            <p class="desc">두 개의 정적인 밑바닥 캔버스 위에, 화려한 틸 컬러 캔버스 레이어가 최종 적층(Wrapper Overlay)되어 고급스러운 3차원 축을 암시합니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="8" width="18" height="18" rx="4" stroke="var(--text-strong)" stroke-width="1.2" fill="none" opacity="0.2"/>
+                  <rect x="14" y="12" width="18" height="18" rx="4" stroke="var(--text-strong)" stroke-width="1.5" fill="none" opacity="0.4"/>
+                  <rect x="18" y="16" width="18" height="18" rx="4" stroke="var(--accent)" stroke-width="2.5" fill="none"/>
+                  <circle cx="27" cy="25" r="2.5" fill="var(--accent)"/>
+                  <text x="50" y="27" font-family="var(--font-sans)" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="700" fill="var(--text-strong)">dartwork</tspan><tspan font-weight="300" font-style="italic" fill="var(--accent)">-mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="s3-code">&lt;svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;rect x="10" y="8" width="18" height="18" rx="4" stroke="var(--text-strong)" stroke-width="1.2" fill="none" opacity="0.2"/&gt;
+  &lt;rect x="14" y="12" width="18" height="18" rx="4" stroke="var(--text-strong)" stroke-width="1.5" fill="none" opacity="0.4"/&gt;
+  &lt;rect x="18" y="16" width="18" height="18" rx="4" stroke="var(--accent)" stroke-width="2.5" fill="none"/&gt;
+  &lt;circle cx="27" cy="25" r="2.5" fill="var(--accent)"/&gt;
+  &lt;text x="50" y="27" font-family="sans-serif" font-size="22" letter-spacing="-0.03em"&gt;
+    &lt;tspan font-weight="700" fill="var(--text-strong)"&gt;dartwork&lt;/tspan&gt;&lt;tspan font-weight="300" font-style="italic" fill="var(--accent)"&gt;-mpl&lt;/tspan&gt;
+  &lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- S4 -->
+          <div class="card">
+            <h3><span>S4. The Dart Vector</span><button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="copyCodeFromCard('s4-code')">Copy</button></h3>
+            <p class="desc">우상향하는 화살촉(Dart) 심볼이 시각적으로 선명한 면적 플롯(Area Plot)의 기하학적 형태를 띄며, 정밀함과 성장의 벡터를 표현합니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 28 L28 12 M28 12 L18 12 M28 12 L28 22" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                  <path d="M12 28 L28 12 L28 28 Z" fill="var(--accent)" opacity="0.08"/>
+                  <line x1="10" y1="28" x2="30" y2="28" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/>
+                  <line x1="12" y1="10" x2="12" y2="30" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/>
+                  <text x="50" y="27" font-family="var(--font-sans)" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="700" fill="var(--text-strong)">dartwork</tspan><tspan font-weight="700" fill="var(--accent)">.mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="s4-code">&lt;svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;path d="M12 28 L28 12 M28 12 L18 12 M28 12 L28 22" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/&gt;
+  &lt;path d="M12 28 L28 12 L28 28 Z" fill="var(--accent)" opacity="0.08"/&gt;
+  &lt;line x1="10" y1="28" x2="30" y2="28" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/&gt;
+  &lt;line x1="12" y1="10" x2="12" y2="30" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/&gt;
+  &lt;text x="50" y="27" font-family="sans-serif" font-size="22" letter-spacing="-0.03em"&gt;
+    &lt;tspan font-weight="700" fill="var(--text-strong)"&gt;dartwork&lt;/tspan&gt;&lt;tspan font-weight="700" fill="var(--accent)"&gt;.mpl&lt;/tspan&gt;
+  &lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- S5 -->
+          <div class="card">
+            <h3><span>S5. Legend Key</span><button class="btn" style="padding: 4px 10px; font-size: 11px;" onclick="copyCodeFromCard('s5-code')">Copy</button></h3>
+            <p class="desc">도표 범례(Chart Legend)의 기호 형식을 빌려와 수직 키 라인과 결합하고, 대칭성을 주어 래핑 라이브러리 고유의 정체성을 부각시킵니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="24" y1="6" x2="24" y2="34" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="16" y1="12" x2="32" y2="12" stroke="var(--text-strong)" stroke-width="1.5" opacity="0.4"/>
+                  <line x1="16" y1="28" x2="32" y2="28" stroke="var(--text-strong)" stroke-width="1.5" opacity="0.4"/>
+                  <circle cx="24" cy="20" r="4.5" fill="var(--accent)"/>
+                  <text x="50" y="27" font-family="var(--font-sans)" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="600" fill="var(--text-strong)">dartwork</tspan><tspan font-weight="400" font-style="italic" fill="var(--accent)">-mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="s5-code">&lt;svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;line x1="24" y1="6" x2="24" y2="34" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/&gt;
+  &lt;line x1="16" y1="12" x2="32" y2="12" stroke="var(--text-strong)" stroke-width="1.5" opacity="0.4"/&gt;
+  &lt;line x1="16" y1="28" x2="32" y2="28" stroke="var(--text-strong)" stroke-width="1.5" opacity="0.4"/&gt;
+  &lt;circle cx="24" cy="20" r="4.5" fill="var(--accent)"/&gt;
+  &lt;text x="50" y="27" font-family="sans-serif" font-size="22" letter-spacing="-0.03em"&gt;
+    &lt;tspan font-weight="600" fill="var(--text-strong)"&gt;dartwork&lt;/tspan&gt;&lt;tspan font-weight="400" font-style="italic" fill="var(--accent)"&gt;-mpl&lt;/tspan&gt;
+  &lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: LIVE SANDBOX -->
+      <section id="tab-sandbox" class="tab-content">
+        <div class="sandbox-layout">
+          <div class="sandbox-panel">
+            <h3 style="margin: 0 0 8px; font-size: 16px;">Customization</h3>
+
+            <div class="sandbox-control-group">
+              <label>Brand Name</label>
+              <input type="text" id="sb-text" value="dartwork" oninput="renderSandbox()" />
+            </div>
+
+            <div class="sandbox-control-group">
+              <label>Suffix</label>
+              <input type="text" id="sb-suffix" value="mpl" oninput="renderSandbox()" />
+            </div>
+
+            <div class="sandbox-control-group">
+              <label>Design Structure</label>
+              <select id="sb-structure" onchange="renderSandbox()">
+                <option value="t1" selected>T1. Sparkline Ligature</option>
+                <option value="t2">T2. Key-Value Index (Colon)</option>
+                <option value="t3">T3. Bracket Wrapper</option>
+                <option value="t4">T4. Prompt Terminal</option>
+                <option value="t5">T5. Trend Slice</option>
+                <option value="s1">S1. Bezier Wrapper</option>
+                <option value="s2">S2. Coordinates Crosshair</option>
+                <option value="s3">S3. Stacked Canvas</option>
+                <option value="s4">S4. The Dart Vector</option>
+                <option value="s5">S5. Legend Key</option>
+              </select>
+            </div>
+
+            <div class="sandbox-control-group">
+              <label>Accent Color</label>
+              <div class="color-picker-row">
+                <div class="color-dot active" style="background-color: #12a594;" onclick="changeSandboxColor('#12a594', this)" title="Teal"></div>
+                <div class="color-dot" style="background-color: #3b82f6;" onclick="changeSandboxColor('#3b82f6', this)" title="Blue"></div>
+                <div class="color-dot" style="background-color: #8b5cf6;" onclick="changeSandboxColor('#8b5cf6', this)" title="Violet"></div>
+                <div class="color-dot" style="background-color: #10b981;" onclick="changeSandboxColor('#10b981', this)" title="Emerald"></div>
+                <div class="color-dot" style="background-color: #f43f5e;" onclick="changeSandboxColor('#f43f5e', this)" title="Rose"></div>
+                <div class="color-dot" style="background-color: #f59e0b;" onclick="changeSandboxColor('#f59e0b', this)" title="Amber"></div>
+              </div>
+            </div>
+
+            <div class="sandbox-control-group">
+              <label>Font Scale</label>
+              <select id="sb-font" onchange="renderSandbox()">
+                <option value="var(--font-sans)">Plus Jakarta Sans (Geometric)</option>
+                <option value="var(--font-mono)">JetBrains Mono (Tech)</option>
+                <option value="sans-serif">System Sans</option>
+              </select>
+            </div>
+
+            <div class="sandbox-control-group">
+              <label>Canvas Background</label>
+              <select id="sb-canvas-bg" onchange="changeCanvasBg(this.value)">
+                <option value="default">Default Theme Canvas</option>
+                <option value="#ffffff">Plain Light (#ffffff)</option>
+                <option value="#0c0c0e">Plain Dark (#0c0c0e)</option>
+                <option value="#f4f4f6">Muted Grey (#f4f4f6)</option>
+              </select>
+            </div>
+
+            <div class="sandbox-control-group" style="margin-top: 8px;">
+              <label>Preview Height: <span id="sb-size-val" style="float: right; color: var(--text-muted); font-weight: 400;">28px</span></label>
+              <input type="range" id="sb-size" min="20" max="64" value="28" oninput="updateSandboxSize(this.value)" style="padding: 0; appearance: auto; background: none; border: none;"/>
+            </div>
+          </div>
+
+          <div class="sandbox-preview-pane">
+            <div class="sandbox-canvas" id="main-sandbox-canvas">
+              <div id="sandbox-svg-target" style="height: 28px; display: flex; justify-content: center; width: 100%;"></div>
+            </div>
+
+            <div class="sandbox-code-card">
+              <header>
+                <h4>SVG MARKUP EXPORT</h4>
+                <button class="btn btn-primary" style="padding: 4px 12px; font-size: 11px;" onclick="copySandboxCode()">Copy SVG</button>
+              </header>
+              <pre id="sandbox-code-output"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: CONTEXT MOCKUPS -->
+      <section id="tab-mockups" class="tab-content">
+        <div class="mockup-item">
+          <h4>Sphinx Docs Header Preview</h4>
+          <div class="mockup-header-frame" id="mock-header-frame">
+            <div style="display: flex; align-items: center; gap: 24px;">
+              <div id="mock-navbar-logo-target" style="height: 22px;"></div>
+              <div style="display: flex; gap: 16px; font-size: 14px; font-weight: 500; color: var(--text-muted);">
+                <span style="color: var(--text-strong); font-weight: 600;">API Reference</span>
+                <span>User Guide</span>
+                <span>Gallery</span>
+              </div>
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted); border: 1px solid var(--border); padding: 4px 12px; border-radius: 6px; background-color: var(--bg-panel);">
+              Search Docs... <span style="opacity: 0.5; font-size: 11px;">(Cmd+K)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mockup-item">
+          <h4>Python Terminal Context</h4>
+          <div class="mockup-terminal">
+            <div><span style="color: #2dd4bf;">➜</span> <span style="color: #60a5fa;">wonjun@macbook</span> <span style="color: white;">pip install dartwork-mpl</span></div>
+            <div style="margin-top: 8px; color: #8b949e;">
+              Successfully installed dartwork-mpl-1.2.0
+            </div>
+            <div style="margin-top: 16px;"><span style="color: #2dd4bf;">➜</span> <span style="color: #60a5fa;">wonjun@macbook</span> <span style="color: white;">python</span></div>
+            <div style="margin-top: 4px; color: #8b949e;">Python 3.11.2 (default, Feb 12 2026, 14:32:01)</div>
+            <div style="color: #8b949e;">[Clang 15.0.0 (clang-1500.1.0.2.2)] on darwin</div>
+            <div><span style="color: #2dd4bf;">>>></span> <span style="color: white;">import dartwork_mpl as dm</span></div>
+            <div><span style="color: #2dd4bf;">>>></span> <span style="color: white;">dm.set_style("premium_dark")</span></div>
+            <div style="color: #2dd4bf; margin-top: 8px;">
+              [dartwork-mpl] Visual Identity applied: Elegant Canvas initialized.
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="copyToast">SVG Code Copied!</div>
+
+    <script>
+      let activeAccentColor = '#12a594';
+
+      const templates = {
+        t1: (txt, sfx, font, color) => `<svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <text x="15" y="27" font-family="${font}" font-size="22" font-weight="700" letter-spacing="-0.04em" fill="var(--text-strong)">${txt}</text>
+  <path d="M106 20 Q 116 11, 124 20 T 139 20" stroke="${color}" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <circle cx="116" cy="13" r="2" fill="var(--text-strong)" opacity="0.8"/>
+  <circle cx="128" cy="23" r="2" fill="var(--text-strong)" opacity="0.8"/>
+  <text x="142" y="27" font-family="${font}" font-size="22" font-weight="400" letter-spacing="-0.04em" fill="${color}">${sfx}</text>
+</svg>`,
+        t2: (txt, sfx, font, color) => `<svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <text x="15" y="27" font-family="${font}" font-size="20" font-weight="700" fill="var(--text-strong)">${txt}</text>
+  <circle cx="120" cy="16" r="3.2" fill="${color}"/>
+  <circle cx="120" cy="26" r="3.2" fill="${color}"/>
+  <text x="134" y="27" font-family="${font}" font-size="20" font-weight="500" fill="${color}">${sfx}</text>
+</svg>`,
+        t3: (txt, sfx, font, color) => `<svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <text x="15" y="27" font-family="${font}" font-size="22" font-weight="700" letter-spacing="-0.03em" fill="var(--text-strong)">${txt}</text>
+  <path d="M117 9 H112 V29 H117" stroke="${color}" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <text x="122" y="26" font-family="${font}" font-size="21" font-weight="500" letter-spacing="-0.03em" fill="var(--text-strong)">${sfx}</text>
+  <path d="M165 9 H170 V29 H165" stroke="${color}" stroke-width="2" stroke-linecap="round" fill="none"/>
+</svg>`,
+        t4: (txt, sfx, font, color) => `<svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="15" y="8" width="30" height="24" rx="6" fill="var(--text-strong)" opacity="0.06"/>
+  <path d="M22 15 L27 20 L22 25" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <line x1="30" y1="25" x2="35" y2="25" stroke="var(--text-strong)" stroke-width="2" stroke-linecap="round"/>
+  <text x="55" y="27" font-family="${font}" font-size="19" font-weight="700" letter-spacing="-0.02em" fill="var(--text-strong)">${txt}<tspan fill="${color}">-${sfx}</tspan></text>
+</svg>`,
+        t5: (txt, sfx, font, color) => `<svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <text x="15" y="27" font-family="${font}" font-size="22" font-weight="700" letter-spacing="-0.03em" fill="var(--text-strong)">${txt}</text>
+  <path d="M106 24 L118 24 L126 14 L136 14" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="126" cy="14" r="2.5" fill="var(--text-strong)"/>
+  <text x="142" y="27" font-family="${font}" font-size="22" font-weight="700" letter-spacing="-0.03em" fill="var(--text-strong)">${sfx}</text>
+</svg>`,
+        s1: (txt, sfx, font, color) => `<svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M10 28 Q 16 10, 24 20 T 38 12" stroke="${color}" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <circle cx="24" cy="20" r="4.5" fill="var(--text-strong)"/>
+  <circle cx="16" cy="14" r="2" fill="${color}" opacity="0.5"/>
+  <circle cx="32" cy="26" r="2" fill="${color}" opacity="0.5"/>
+  <text x="50" y="27" font-family="${font}" font-size="22" letter-spacing="-0.03em">
+    <tspan font-weight="700" fill="var(--text-strong)">${txt}</tspan><tspan font-weight="300" fill="${color}">-${sfx}</tspan>
+  </text>
+</svg>`,
+        s2: (txt, sfx, font, color) => `<svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <line x1="24" y1="6" x2="24" y2="34" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.2"/>
+  <line x1="8" y1="20" x2="36" y2="20" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.2"/>
+  <circle cx="24" cy="20" r="4" fill="${color}"/>
+  <circle cx="24" cy="20" r="9" stroke="${color}" stroke-width="1.5" stroke-dasharray="2 2" fill="none"/>
+  <circle cx="16" cy="20" r="2" fill="var(--text-strong)" opacity="0.6"/>
+  <circle cx="24" cy="12" r="2" fill="var(--text-strong)" opacity="0.6"/>
+  <text x="50" y="27" font-family="${font}" font-size="22" letter-spacing="-0.03em">
+    <tspan font-weight="700" fill="var(--text-strong)">${txt}</tspan><tspan font-weight="500" fill="${color}">:</tspan><tspan font-weight="500" fill="${color}">${sfx}</tspan>
+  </text>
+</svg>`,
+        s3: (txt, sfx, font, color) => `<svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="8" width="18" height="18" rx="4" stroke="var(--text-strong)" stroke-width="1.2" fill="none" opacity="0.2"/>
+  <rect x="14" y="12" width="18" height="18" rx="4" stroke="var(--text-strong)" stroke-width="1.5" fill="none" opacity="0.4"/>
+  <rect x="18" y="16" width="18" height="18" rx="4" stroke="${color}" stroke-width="2.5" fill="none"/>
+  <circle cx="27" cy="25" r="2.5" fill="${color}"/>
+  <text x="50" y="27" font-family="${font}" font-size="22" letter-spacing="-0.03em">
+    <tspan font-weight="700" fill="var(--text-strong)">${txt}</tspan><tspan font-weight="300" font-style="italic" fill="${color}">-${sfx}</tspan>
+  </text>
+</svg>`,
+        s4: (txt, sfx, font, color) => `<svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M12 28 L28 12 M28 12 L18 12 M28 12 L28 22" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M12 28 L28 12 L28 28 Z" fill="${color}" opacity="0.08"/>
+  <line x1="10" y1="28" x2="30" y2="28" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/>
+  <line x1="12" y1="10" x2="12" y2="30" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3" stroke-linecap="round"/>
+  <text x="50" y="27" font-family="${font}" font-size="22" letter-spacing="-0.03em">
+    <tspan font-weight="700" fill="var(--text-strong)">${txt}</tspan><tspan font-weight="700" fill="${color}">.${sfx}</tspan>
+  </text>
+</svg>`,
+        s5: (txt, sfx, font, color) => `<svg viewBox="0 0 280 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <line x1="24" y1="6" x2="24" y2="34" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+  <line x1="16" y1="12" x2="32" y2="12" stroke="var(--text-strong)" stroke-width="1.5" opacity="0.4"/>
+  <line x1="16" y1="28" x2="32" y2="28" stroke="var(--text-strong)" stroke-width="1.5" opacity="0.4"/>
+  <circle cx="24" cy="20" r="4.5" fill="${color}"/>
+  <text x="50" y="27" font-family="${font}" font-size="22" letter-spacing="-0.03em">
+    <tspan font-weight="600" fill="var(--text-strong)">${txt}</tspan><tspan font-weight="400" font-style="italic" fill="${color}">-${sfx}</tspan>
+  </text>
+</svg>`
+      };
+
+      function renderSandbox() {
+        const text = document.getElementById('sb-text').value;
+        const suffix = document.getElementById('sb-suffix').value;
+        const structure = document.getElementById('sb-structure').value;
+        const font = document.getElementById('sb-font').value;
+
+        const rendered = templates[structure](text, suffix, font, activeAccentColor);
+
+        document.getElementById('sandbox-svg-target').innerHTML = rendered;
+        document.getElementById('sandbox-code-output').textContent = rendered;
+
+        // Sync to Mockups
+        // Replace width="100%" with width="auto" for inline mockup placement
+        const inlineSvg = rendered.replace('width="100%"', 'width="auto"');
+        document.getElementById('mock-navbar-logo-target').innerHTML = inlineSvg;
+      }
+
+      function changeSandboxColor(color, el) {
+        activeAccentColor = color;
+        document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+        el.classList.add('active');
+        renderSandbox();
+      }
+
+      function changeCanvasBg(val) {
+        const canvas = document.getElementById('main-sandbox-canvas');
+        const mockFrame = document.getElementById('mock-header-frame');
+        if (val === 'default') {
+          canvas.style.backgroundColor = '';
+          mockFrame.style.backgroundColor = '';
+        } else {
+          canvas.style.backgroundColor = val;
+          mockFrame.style.backgroundColor = val;
+        }
+      }
+
+      function updateSandboxSize(val) {
+        document.getElementById('sb-size-val').textContent = val + 'px';
+        document.getElementById('sandbox-svg-target').style.height = val + 'px';
+      }
+
+      function copySandboxCode() {
+        const text = document.getElementById('sandbox-code-output').textContent;
+        navigator.clipboard.writeText(text).then(showToast);
+      }
+
+      function copyCodeFromCard(elementId) {
+        const code = document.getElementById(elementId).textContent;
+        navigator.clipboard.writeText(code).then(showToast);
+      }
+
+      function showToast() {
+        const t = document.getElementById('copyToast');
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2000);
+      }
+
+      function switchTab(e, tabId) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+        if (tabId === 'tab-sandbox' || tabId === 'tab-mockups') {
+          renderSandbox();
+        }
+      }
+
+      function toggleTheme() {
+        const html = document.documentElement;
+        html.classList.toggle('dark');
+        const isDark = html.classList.contains('dark');
+        document.getElementById('themeToggle').innerHTML = isDark ?
+          `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg> Light Mode` :
+          `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41/></svg> Dark Mode`;
+      }
+
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+        toggleTheme(); // sync text
+      }
+
+      renderSandbox();
+    </script>
+  </body>
+</html>

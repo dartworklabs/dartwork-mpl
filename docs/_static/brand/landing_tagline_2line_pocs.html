@@ -1,0 +1,102 @@
+<!doctype html>
+<!--
+  landing_tagline_2line_pocs.html — two-line tagline layouts. (A) where the em-dash
+  sits (end of line 1 vs start of line 2), and (B) fresh copy written for a
+  two-line hero. Rendered in the real tagline style (solid base + teal keywords,
+  clamp 30-54px). Links the real tokens; theme toggle.
+  Serve from docs/_static: python3 -m http.server 8137
+-->
+<html lang="en" class="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tagline — two-line layouts</title>
+  <link rel="stylesheet" href="dartwork-design.css" />
+  <link rel="stylesheet" href="dm-interactive.css" />
+  <style>
+    body { margin:0; background:var(--dm-bg-page); color:var(--dm-gray-12);
+      font-family:var(--dm-f-sys,"Inter",system-ui,sans-serif); letter-spacing:-.003em; }
+    .wrap { max-width:880px; margin:0 auto; padding:36px 24px 120px; }
+    .bar { position:sticky; top:0; z-index:50; display:flex; align-items:center; justify-content:space-between;
+      gap:12px; padding:12px 16px; margin:-36px -24px 16px; background:var(--dm-bg-panel);
+      border-bottom:1px solid var(--dm-border-faint); flex-wrap:wrap; }
+    .bar .t { font-size:15px; font-weight:700; }
+    .bar p { margin:0; font-size:12.5px; color:var(--dm-text-muted); flex-basis:100%; line-height:1.5; }
+    .tt { background:var(--dm-bg-panel); color:var(--dm-gray-12); border:1px solid var(--dm-border);
+      border-radius:999px; padding:6px 13px; font:inherit; font-size:13px; cursor:pointer; }
+    .grp { margin-top:34px; }
+    .grp > h2 { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.07em;
+      color:var(--dm-text-muted); padding-bottom:8px; border-bottom:1px solid var(--dm-border-faint); }
+    .poc { margin-top:16px; padding:30px 20px 24px; border:1px solid var(--dm-border-faint);
+      border-radius:var(--dm-radius-5); text-align:center; }
+    .poc .lbl { display:inline-block; font-family:var(--dm-f-mono,monospace); font-size:11px; font-weight:600;
+      color:#fff; background:var(--dm-accent-9); border-radius:6px; padding:2px 8px; margin-bottom:4px; }
+    .poc .lbl.rec { background:var(--dm-accent-11); }
+    .poc .d { font-size:12px; color:var(--dm-text-muted); margin:3px 0 18px; }
+    /* real tagline render */
+    .tl { font-weight:800; line-height:1.12; letter-spacing:-.028em; margin:0;
+      font-size:clamp(28px, 5.4vw, 50px); color:var(--dm-gray-12); }
+    .tl .k { color:var(--dm-accent-11); }
+    .tl .dash { color:var(--dm-gray-11); }   /* em-dash a touch quieter */
+    .sub { margin:14px auto 0; font-size:1.05rem; color:var(--dm-text-muted); max-width:480px; }
+  </style>
+</head>
+<body class="yue">
+  <div class="wrap">
+    <div class="bar">
+      <span class="t">Tagline — two-line layouts</span>
+      <button class="tt" id="tt" type="button">◐ theme</button>
+      <p>A = where the em-dash sits. B = fresh copy for a two-line hero. Real tagline style; toggle light/dark.</p>
+    </div>
+
+    <div class="grp">
+      <h2>A · em-dash placement (current copy)</h2>
+      <div class="poc">
+        <span class="lbl">A1 · dash ends line 1 (current)</span>
+        <p class="d">"matplotlib, but beautiful —" / "built for AI agents."</p>
+        <p class="tl">matplotlib, but <span class="k">beautiful</span> <span class="dash">—</span><br>built for <span class="k">AI&nbsp;agents</span>.</p>
+      </div>
+      <div class="poc">
+        <span class="lbl rec">A2 · dash starts line 2 (rec)</span>
+        <p class="d">"matplotlib, but beautiful" / "— built for AI agents." — the dash leads the second line, so it reads as a deliberate second beat.</p>
+        <p class="tl">matplotlib, but <span class="k">beautiful</span><br><span class="dash">—</span> built for <span class="k">AI&nbsp;agents</span>.</p>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h2>B · fresh two-line copy (no dash)</h2>
+      <div class="poc">
+        <span class="lbl rec">B1 · two clean statements (rec)</span>
+        <p class="d">A hard stop after "beautiful." makes each line land on its own.</p>
+        <p class="tl">matplotlib, but <span class="k">beautiful</span>.<br>Built for <span class="k">AI&nbsp;agents</span>.</p>
+      </div>
+      <div class="poc">
+        <span class="lbl">B2 · adjective-led</span>
+        <p class="d">Tighter, more direct; drops the "but" idiom.</p>
+        <p class="tl"><span class="k">Beautiful</span> matplotlib,<br>built for <span class="k">AI&nbsp;agents</span>.</p>
+      </div>
+      <div class="poc">
+        <span class="lbl">B3 · "now"</span>
+        <p class="d">Implies an evolution / new capability.</p>
+        <p class="tl">matplotlib, but <span class="k">beautiful</span>.<br>Now built for <span class="k">AI&nbsp;agents</span>.</p>
+      </div>
+      <div class="poc">
+        <span class="lbl">B4 · humans + agents</span>
+        <p class="d">Inclusive framing of the audience.</p>
+        <p class="tl">matplotlib, but <span class="k">beautiful</span> —<br>for humans and <span class="k">AI&nbsp;agents</span>.</p>
+      </div>
+      <div class="poc">
+        <span class="lbl">B5 · capability-led second line</span>
+        <p class="d">Second line states what the agent angle delivers.</p>
+        <p class="tl">matplotlib, but <span class="k">beautiful</span>.<br><span class="k">AI</span>-ready by design.</p>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.getElementById("tt").addEventListener("click",function(){
+      var r=document.documentElement; r.classList.toggle("dark"); r.classList.toggle("light");
+      document.body.setAttribute("data-theme", r.classList.contains("dark")?"dark":"light");
+    });
+  </script>
+</body>
+</html>

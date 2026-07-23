@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>dartwork-mpl Visual Identity & Brand System</title>
+    <!-- Modern Premium Fonts -->
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+    </style>
+    <style>
+      :root {
+        /* Premium Scale (Light Mode) */
+        --slate-1: #ffffff;
+        --slate-2: #fafafa;
+        --slate-3: #f4f4f5;
+        --slate-4: #e4e4e7;
+        --slate-5: #d4d4d8;
+        --slate-6: #a1a1aa;
+        --slate-7: #71717a;
+        --slate-8: #52525b;
+        --slate-9: #3f3f46;
+        --slate-10: #18181b;
+        --slate-11: #09090b;
+
+        --teal-1: #f0faf9;
+        --teal-2: #e6f6f4;
+        --teal-3: #ccede9;
+        --teal-4: #99dbd2;
+        --teal-5: #66c8bb;
+        --teal-6: #3ebbab;
+        --teal-7: #1da797;
+        --teal-8: #12a594; /* Primary Accent */
+        --teal-9: #0d9686;
+        --teal-10: #0a8274;
+        --teal-11: #066e62;
+        --teal-12: #023d37;
+
+        --bg-page: var(--slate-2);
+        --bg-panel: var(--slate-1);
+        --bg-hover: var(--slate-3);
+        --text-strong: var(--slate-10);
+        --text-muted: var(--slate-7);
+        --text-faint: var(--slate-6);
+        --accent: var(--teal-8);
+        --accent-hover: var(--teal-9);
+        --border-faint: rgba(9, 9, 11, 0.08);
+        --border: var(--slate-4);
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+        --shadow: 0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.04);
+        --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.04);
+
+        --font-sans: "Inter", -apple-system, sans-serif;
+        --font-mono: "JetBrains Mono", ui-monospace, monospace;
+        --font-display: "Plus Jakarta Sans", "Inter", sans-serif;
+      }
+
+      html.dark {
+        /* Premium Scale (Dark Mode) */
+        --slate-1: #09090b;
+        --slate-2: #121214;
+        --slate-3: #18181b;
+        --slate-4: #27272a;
+        --slate-5: #3f3f46;
+        --slate-6: #52525b;
+        --slate-7: #71717a;
+        --slate-8: #a1a1aa;
+        --slate-9: #d4d4d8;
+        --slate-10: #f4f4f5;
+        --slate-11: #ffffff;
+
+        --teal-1: #021a17;
+        --teal-2: #042f2b;
+        --teal-3: #064741;
+        --teal-4: #086159;
+        --teal-5: #0a7c72;
+        --teal-6: #0d9686;
+        --teal-7: #12a594;
+        --teal-8: #14b8a6; /* Primary Accent */
+        --teal-9: #2dd4bf;
+        --teal-10: #5eead4;
+        --teal-11: #99f6e4;
+        --teal-12: #ccfbf1;
+
+        --bg-page: var(--slate-1);
+        --bg-panel: var(--slate-2);
+        --bg-hover: var(--slate-3);
+        --text-strong: var(--slate-10);
+        --text-muted: var(--slate-8);
+        --text-faint: var(--slate-6);
+        --accent: var(--teal-8);
+        --accent-hover: var(--teal-9);
+        --border-faint: rgba(255, 255, 255, 0.08);
+        --border: var(--slate-4);
+
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+        --shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.2);
+        --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        font-family: var(--font-sans);
+        background-color: var(--bg-page);
+        color: var(--text-strong);
+        margin: 0;
+        padding: 0;
+        transition: background-color 0.3s ease, color 0.3s ease;
+        line-height: 1.6;
+        letter-spacing: -0.01em;
+      }
+
+      /* Navbar */
+      header.preview-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background-color: color-mix(in srgb, var(--bg-page) 80%, transparent);
+        backdrop-filter: saturate(180%) blur(20px);
+        -webkit-backdrop-filter: saturate(180%) blur(20px);
+        border-bottom: 1px solid var(--border-faint);
+        padding: 14px 32px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo-brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 15px;
+        letter-spacing: -0.02em;
+        color: var(--text-strong);
+      }
+
+      .logo-brand svg {
+        height: 20px;
+        width: auto;
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .btn {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border);
+        color: var(--text-strong);
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 13px;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .btn:hover {
+        background-color: var(--bg-hover);
+        border-color: var(--accent);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow);
+      }
+
+      /* Hero Section */
+      .hero {
+        padding: 80px 32px 64px;
+        text-align: center;
+        background: radial-gradient(ellipse at top, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%);
+        border-bottom: 1px solid var(--border-faint);
+      }
+
+      .hero-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+        color: var(--accent);
+        border-radius: 99px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-bottom: 20px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+
+      .hero-title {
+        font-family: var(--font-display);
+        font-size: 48px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        margin: 0 0 16px;
+        color: var(--text-strong);
+      }
+
+      .hero-subtitle {
+        font-size: 16px;
+        color: var(--text-muted);
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .container {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 40px 32px;
+      }
+
+      /* Tabs */
+      .tabs-nav {
+        display: flex;
+        gap: 4px;
+        margin: 0 auto 40px;
+        background-color: var(--border-faint);
+        padding: 6px;
+        border-radius: 12px;
+        width: fit-content;
+      }
+
+      .tab-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        padding: 8px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tab-btn:hover {
+        color: var(--text-strong);
+      }
+
+      .tab-btn.active {
+        background-color: var(--bg-panel);
+        color: var(--text-strong);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .tab-content { display: none; }
+      .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Cards */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 32px;
+      }
+
+      .card {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border-faint);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+        border-color: color-mix(in srgb, var(--accent) 40%, var(--border-faint));
+      }
+
+      .card h3 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .card p.desc {
+        margin: -8px 0 0;
+        font-size: 13px;
+        color: var(--text-muted);
+        min-height: 40px;
+      }
+
+      /* Premium Logo Display Box */
+      .logo-display {
+        border: 1px solid var(--border-faint);
+        background-color: var(--bg-panel);
+        border-radius: 12px;
+        height: 110px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        position: relative;
+      }
+
+      .svg-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 32px;
+        width: 100%;
+      }
+
+      .svg-wrap svg {
+        height: 100%;
+        width: 100%;
+        max-width: 100%;
+        display: block;
+      }
+
+      /* Source Code Accordion */
+      .source-details {
+        font-size: 11px;
+        font-family: var(--font-mono);
+        background-color: var(--bg-page);
+        border: 1px solid var(--border-faint);
+        border-radius: 8px;
+        padding: 12px;
+        color: var(--text-muted);
+      }
+
+      .source-details summary {
+        cursor: pointer;
+        outline: none;
+        user-select: none;
+        font-weight: 600;
+        color: var(--accent);
+      }
+
+      .source-details pre {
+        margin: 12px 0 0 0;
+        white-space: pre-wrap;
+        word-break: break-all;
+        overflow-x: auto;
+        color: var(--text-strong);
+      }
+
+      /* Sandbox Layout */
+      .sandbox-layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 40px;
+        align-items: start;
+      }
+
+      .sandbox-panel {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border-faint);
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        box-shadow: var(--shadow);
+      }
+
+      .sandbox-control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .sandbox-control-group label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-strong);
+      }
+
+      .sandbox-control-group select,
+      .sandbox-control-group input[type="text"] {
+        background-color: var(--bg-page);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 13px;
+        font-family: var(--font-sans);
+        color: var(--text-strong);
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .sandbox-control-group select {
+        appearance: none;
+        background-image: url('data:image/svg+xml;utf8,<svg fill="none" stroke="%23a1a1aa" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>');
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 14px;
+      }
+
+      .sandbox-control-group select:focus,
+      .sandbox-control-group input[type="text"]:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+      }
+
+      .sandbox-preview-pane {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .sandbox-canvas {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border-faint);
+        border-radius: 16px;
+        padding: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow);
+        min-height: 240px;
+      }
+
+      .sandbox-code-card {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border-faint);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .sandbox-code-card header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .sandbox-code-card h4 {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+      }
+
+      .sandbox-code-card pre {
+        background-color: var(--bg-page);
+        border: 1px solid var(--border-faint);
+        border-radius: 8px;
+        padding: 16px;
+        margin: 0;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--text-strong);
+        white-space: pre-wrap;
+        word-break: break-all;
+        overflow-x: auto;
+      }
+
+      /* Tokens Layout */
+      .token-section {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border-faint);
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: var(--shadow);
+        margin-bottom: 32px;
+      }
+
+      .token-section h3 {
+        margin: 0 0 8px;
+        font-family: var(--font-display);
+        font-size: 20px;
+      }
+
+      .token-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 24px;
+        margin-top: 24px;
+      }
+
+      .token-swatch {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-family: var(--font-mono);
+        color: var(--text-strong);
+        margin-bottom: 6px;
+        border: 1px solid rgba(0,0,0,0.05);
+      }
+
+      /* Mockups Layout */
+      .mockup-item {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border-faint);
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: var(--shadow);
+        margin-bottom: 32px;
+      }
+
+      .mockup-item h4 {
+        margin: 0 0 16px 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .mockup-header-frame {
+        border: 1px solid var(--border);
+        background-color: var(--bg-page);
+        border-radius: 12px;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .mockup-terminal {
+        background-color: #0d1117;
+        border: 1px solid #30363d;
+        border-radius: 12px;
+        padding: 24px;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        color: #c9d1d9;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+      }
+
+      .color-picker-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 4px;
+      }
+      .color-dot {
+        width: 24px; height: 24px; border-radius: 50%;
+        cursor: pointer; border: 2px solid transparent; transition: all 0.15s ease;
+      }
+      .color-dot.active {
+        border-color: var(--text-strong);
+        transform: scale(1.15);
+      }
+
+      .toast {
+        position: fixed; bottom: 32px; right: 32px;
+        background-color: var(--text-strong); color: var(--bg-page);
+        padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+        opacity: 0; transform: translateY(10px); transition: all 0.2s ease;
+        z-index: 1000; box-shadow: var(--shadow-lg); pointer-events: none;
+      }
+      .toast.show { opacity: 1; transform: translateY(0); }
+    </style>
+  </head>
+  <body>
+    <!-- Premium Navbar -->
+    <header class="preview-header">
+      <div class="logo-brand">
+        <!-- Minimal geometric logo for the gallery itself -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        dartwork-mpl
+      </div>
+      <div class="controls">
+        <a href="logo_new_explorations.html" class="btn" style="text-decoration: none; border-color: var(--accent); color: var(--accent); font-weight: 600;">New Explorations (Round 7) →</a>
+        <a href="logo_candidates.html" class="btn" style="text-decoration: none;">Archive (Shields)</a>
+        <button class="btn" id="themeToggle" onclick="toggleTheme()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          Dark Mode
+        </button>
+      </div>
+    </header>
+
+    <!-- Stunning Hero Section -->
+    <div class="hero">
+      <div class="hero-badge">Brand System v1.2</div>
+      <h1 class="hero-title">Visual Identity & Wrapper Semantics</h1>
+      <p class="hero-subtitle">
+        A state-of-the-art design system and interactive logo playground for dartwork-mpl.<br>
+        Explore responsive design tokens, wrapper-inspired semantic emblems, and high-end typography scaling.
+      </p>
+    </div>
+
+    <div class="container">
+      <!-- Navigation -->
+      <nav class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab(event, 'tab-showcase')">Proposals (C1–C9)</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-sandbox')">Live Sandbox</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-tokens')">Design Tokens</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-mockups')">Context Mockups</button>
+      </nav>
+
+      <!-- TAB 1: SHOWCASE -->
+      <section id="tab-showcase" class="tab-content active">
+        <div class="grid">
+          <!-- C1 -->
+          <div class="card">
+            <h3><span>C1. Bracket Shell</span><button class="btn" onclick="copyCodeFromCard('c1-code')">Copy</button></h3>
+            <p class="desc">코딩 기호인 대괄호 [ ]가 양방향에서 방패 실루엣을 이루어 내부의 핵심 데이터 포인트를 감싸는 형태입니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6 10 C6 7, 10 6, 12 6 M6 10 L6 30 C6 33, 10 34, 12 34" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                  <path d="M34 10 C34 7, 30 6, 28 6 M34 10 L34 30 C34 33, 30 34, 28 34" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                  <path d="M12 22 Q20 10, 28 18" stroke="var(--text-strong)" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+                  <circle cx="20" cy="15" r="3.5" fill="var(--text-strong)" />
+                  <text x="48" y="27" font-family="var(--font-sans)" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="500" fill="var(--accent)">&gt;</tspan> <tspan font-weight="600" fill="var(--text-strong)">dartwork-mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="c1-code">&lt;svg viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;path d="M6 10 C6 7, 10 6, 12 6 M6 10 L6 30 C6 33, 10 34, 12 34" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/&gt;
+  &lt;path d="M34 10 C34 7, 30 6, 28 6 M34 10 L34 30 C34 33, 30 34, 28 34" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/&gt;
+  &lt;path d="M12 22 Q20 10, 28 18" stroke="var(--text-strong)" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.4"/&gt;
+  &lt;circle cx="20" cy="15" r="3.5" fill="var(--text-strong)" /&gt;
+  &lt;text x="48" y="27" font-family="Inter, sans-serif" font-size="22" letter-spacing="-0.03em"&gt;
+    &lt;tspan font-weight="500" fill="var(--accent)"&gt;&amp;gt;&lt;/tspan&gt; &lt;tspan font-weight="600" fill="var(--text-strong)"&gt;dartwork-mpl&lt;/tspan&gt;
+  &lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- C2 -->
+          <div class="card">
+            <h3><span>C2. Nested Capsule</span><button class="btn" onclick="copyCodeFromCard('c2-code')">Copy</button></h3>
+            <p class="desc">외각의 얇고 매끈한 캡슐 라인이 내부의 틸 컬러 마스터 노드를 유기적으로 봉인하여 패키지/래퍼의 핵심 기능을 나타냅니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="5" y="7" width="30" height="26" rx="8" stroke="var(--text-strong)" stroke-width="1.5" opacity="0.3" fill="none"/>
+                  <rect x="11" y="13" width="18" height="14" rx="4" stroke="var(--accent)" stroke-width="2.5" fill="none"/>
+                  <circle cx="20" cy="20" r="3" fill="var(--accent)"/>
+                  <text x="48" y="27" font-family="var(--font-sans)" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="600" fill="var(--text-strong)">dartwork</tspan><tspan font-weight="400" font-style="italic" fill="var(--accent)">-mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="c2-code">&lt;svg viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;rect x="5" y="7" width="30" height="26" rx="8" stroke="var(--text-strong)" stroke-width="1.5" opacity="0.3" fill="none"/&gt;
+  &lt;rect x="11" y="13" width="18" height="14" rx="4" stroke="var(--accent)" stroke-width="2.5" fill="none"/&gt;
+  &lt;circle cx="20" cy="20" r="3" fill="var(--accent)"/&gt;
+  &lt;text x="48" y="27" font-family="Inter, sans-serif" font-size="22" letter-spacing="-0.03em"&gt;
+    &lt;tspan font-weight="600" fill="var(--text-strong)"&gt;dartwork&lt;/tspan&gt;&lt;tspan font-weight="400" font-style="italic" fill="var(--accent)"&gt;-mpl&lt;/tspan&gt;
+  &lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- C3 -->
+          <div class="card">
+            <h3><span>C3. Hex Shield</span><button class="btn" onclick="copyCodeFromCard('c3-code')">Copy</button></h3>
+            <p class="desc">대칭형 헥사곤 실루엣이 내부에 배치된 삼각형 그리드 시스템을 덮어주어, 안정감과 정밀한 분석 래핑 감성을 선사합니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 5 L34 13 L34 27 L20 35 L6 27 L6 13 Z" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" fill="none"/>
+                  <path d="M20 12 L28 26 L12 26 Z" fill="var(--text-strong)" opacity="0.2"/>
+                  <circle cx="20" cy="21" r="3.2" fill="var(--accent)"/>
+                  <text x="48" y="27" font-family="var(--font-sans)" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="600" fill="var(--text-strong)">dartwork</tspan><tspan font-weight="500" fill="var(--accent)">:</tspan><tspan font-weight="500" fill="var(--accent)">mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="c3-code">&lt;svg viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;path d="M20 5 L34 13 L34 27 L20 35 L6 27 L6 13 Z" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" fill="none"/&gt;
+  &lt;path d="M20 12 L28 26 L12 26 Z" fill="var(--text-strong)" opacity="0.2"/&gt;
+  &lt;circle cx="20" cy="21" r="3.2" fill="var(--accent)"/&gt;
+  &lt;text x="48" y="27" font-family="Inter, sans-serif" font-size="22" letter-spacing="-0.03em"&gt;
+    &lt;tspan font-weight="600" fill="var(--text-strong)"&gt;dartwork&lt;/tspan&gt;&lt;tspan font-weight="500" fill="var(--accent)"&gt;:&lt;/tspan&gt;&lt;tspan font-weight="500" fill="var(--accent)"&gt;mpl&lt;/tspan&gt;
+  &lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- C4 -->
+          <div class="card">
+            <h3><span>C4. Concentric Orbit</span><button class="btn" onclick="copyCodeFromCard('c4-code')">Copy</button></h3>
+            <p class="desc">외각의 견고한 궤도가 내부 코어를 270도 감싸며 dynamic 바인딩을 이룹니다. 터미널 프롬프트 느낌의 Monospace 글꼴과 결합되었습니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 20 A10 10 0 1 1 20 30" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" fill="none"/>
+                  <circle cx="20" cy="20" r="4" fill="var(--text-strong)"/>
+                  <circle cx="20" cy="20" r="14" stroke="var(--text-strong)" stroke-width="1" stroke-dasharray="2 2" opacity="0.3" fill="none"/>
+                  <text x="48" y="26" font-family="var(--font-mono)" font-size="19" letter-spacing="-0.02em">
+                    <tspan font-weight="500" fill="var(--accent)">&gt;</tspan> <tspan font-weight="700" fill="var(--text-strong)">dartwork-mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="c4-code">&lt;svg viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;path d="M10 20 A10 10 0 1 1 20 30" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" fill="none"/&gt;
+  &lt;circle cx="20" cy="20" r="4" fill="var(--text-strong)"/&gt;
+  &lt;circle cx="20" cy="20" r="14" stroke="var(--text-strong)" stroke-width="1" stroke-dasharray="2 2" opacity="0.3" fill="none"/&gt;
+  &lt;text x="48" y="26" font-family="monospace" font-size="19" letter-spacing="-0.02em"&gt;
+    &lt;tspan font-weight="500" fill="var(--accent)"&gt;&amp;gt;&lt;/tspan&gt; &lt;tspan font-weight="700" fill="var(--text-strong)"&gt;dartwork-mpl&lt;/tspan&gt;
+  &lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- C5 -->
+          <div class="card">
+            <h3><span>C5. Isometric Diamond</span><button class="btn" onclick="copyCodeFromCard('c5-code')">Copy</button></h3>
+            <p class="desc">외각의 얇은 3D 입체 다이아몬드 경계(Wrapper boundary)가 중심의 선명한 마스터 다이아몬드를 감싸 안는 구조적인 디자인입니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 5 L33 20 L20 35 L7 20 Z" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3" fill="none"/>
+                  <path d="M20 11 L29 20 L20 29 L11 20 Z" stroke="var(--accent)" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+                  <circle cx="20" cy="20" r="2.5" fill="var(--accent)"/>
+                  <text x="48" y="27" font-family="var(--font-sans)" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="600" fill="var(--text-strong)">dartwork</tspan><tspan font-weight="400" font-style="italic" fill="var(--accent)">-mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="c5-code">&lt;svg viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;path d="M20 5 L33 20 L20 35 L7 20 Z" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3" fill="none"/&gt;
+  &lt;path d="M20 11 L29 20 L20 29 L11 20 Z" stroke="var(--accent)" stroke-width="2.5" fill="none" stroke-linejoin="round"/&gt;
+  &lt;circle cx="20" cy="20" r="2.5" fill="var(--accent)"/&gt;
+  &lt;text x="48" y="27" font-family="Inter, sans-serif" font-size="22" letter-spacing="-0.03em"&gt;
+    &lt;tspan font-weight="600" fill="var(--text-strong)"&gt;dartwork&lt;/tspan&gt;&lt;tspan font-weight="400" font-style="italic" fill="var(--accent)"&gt;-mpl&lt;/tspan&gt;
+  &lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- C6 -->
+          <div class="card">
+            <h3><span>C6. Bounding Box</span><button class="btn" onclick="copyCodeFromCard('c6-code')">Copy</button></h3>
+            <p class="desc">차트의 영역을 지정하는 네 모서리 브랙킷이 내부 곡선을 안전하게 에워싸는 형태입니다. 키-밸류 콜론 타이포와 결합되었습니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 6 L6 6 L6 10" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                  <path d="M30 6 L34 6 L34 10" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                  <path d="M10 34 L6 34 L6 30" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                  <path d="M30 34 L34 34 L34 30" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                  <path d="M11 24 Q20 12, 29 24" stroke="var(--text-strong)" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+                  <circle cx="20" cy="18" r="3" fill="var(--text-strong)"/>
+                  <text x="48" y="27" font-family="var(--font-sans)" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="600" fill="var(--text-strong)">dartwork</tspan><tspan font-weight="500" fill="var(--accent)">:</tspan><tspan font-weight="500" fill="var(--accent)">mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="c6-code">&lt;svg viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;path d="M10 6 L6 6 L6 10" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/&gt;
+  &lt;path d="M30 6 L34 6 L34 10" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/&gt;
+  &lt;path d="M10 34 L6 34 L6 30" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/&gt;
+  &lt;path d="M30 34 L34 34 L34 30" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/&gt;
+  &lt;path d="M11 24 Q20 12, 29 24" stroke="var(--text-strong)" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.4"/&gt;
+  &lt;circle cx="20" cy="18" r="3" fill="var(--text-strong)"/&gt;
+  &lt;text x="48" y="27" font-family="Inter, sans-serif" font-size="22" letter-spacing="-0.03em"&gt;
+    &lt;tspan font-weight="600" fill="var(--text-strong)"&gt;dartwork&lt;/tspan&gt;&lt;tspan font-weight="500" fill="var(--accent)"&gt;:&lt;/tspan&gt;&lt;tspan font-weight="500" fill="var(--accent)"&gt;mpl&lt;/tspan&gt;
+  &lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- C7 -->
+          <div class="card">
+            <h3><span>C7. Wave Shield</span><button class="btn" onclick="copyCodeFromCard('c7-code')">Copy</button></h3>
+            <p class="desc">외각의 든든한 방패 실루엣(보호막) 내부에 데이터를 상징하는 고밀도 정현파가 교차하는 기하학적 형태입니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7 8 C7 8, 20 5, 20 5 C20 5, 33 8, 33 8 L33 22 C33 29, 20 35, 20 35 C20 35, 7 29, 7 22 Z" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3" fill="none"/>
+                  <path d="M12 20 Q16 12, 20 20 T28 20" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                  <circle cx="16" cy="16" r="2" fill="var(--accent)"/>
+                  <circle cx="24" cy="24" r="2" fill="var(--accent)"/>
+                  <text x="48" y="27" font-family="var(--font-sans)" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="500" fill="var(--accent)">&gt;</tspan> <tspan font-weight="600" fill="var(--text-strong)">dartwork-mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="c7-code">&lt;svg viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;path d="M7 8 C7 8, 20 5, 20 5 C20 5, 33 8, 33 8 L33 22 C33 29, 20 35, 20 35 C20 35, 7 29, 7 22 Z" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3" fill="none"/&gt;
+  &lt;path d="M12 20 Q16 12, 20 20 T28 20" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/&gt;
+  &lt;circle cx="16" cy="16" r="2" fill="var(--accent)"/&gt;
+  &lt;circle cx="24" cy="24" r="2" fill="var(--accent)"/&gt;
+  &lt;text x="48" y="27" font-family="Inter, sans-serif" font-size="22" letter-spacing="-0.03em"&gt;
+    &lt;tspan font-weight="500" fill="var(--accent)"&gt;&amp;gt;&lt;/tspan&gt; &lt;tspan font-weight="600" fill="var(--text-strong)"&gt;dartwork-mpl&lt;/tspan&gt;
+  &lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- C8 -->
+          <div class="card">
+            <h3><span>C8. Möbius Loop</span><button class="btn" onclick="copyCodeFromCard('c8-code')">Copy</button></h3>
+            <p class="desc">외각 궤도에서 시작하여 스스로를 휘감아 중심으로 들어가는 뫼비우스 리본 구조로 라이브러리 간의 결속을 은유합니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7 14 C7 7, 33 7, 33 20 C33 33, 13 33, 13 22 C13 16, 27 16, 27 22 C27 26, 21 26, 20 26" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                  <circle cx="20" cy="20" r="3.5" fill="var(--text-strong)" opacity="0.3" />
+                  <text x="48" y="27" font-family="var(--font-sans)" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="600" fill="var(--text-strong)">dartwork</tspan><tspan font-weight="400" font-style="italic" fill="var(--accent)">-mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="c8-code">&lt;svg viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;path d="M7 14 C7 7, 33 7, 33 20 C33 33, 13 33, 13 22 C13 16, 27 16, 27 22 C27 26, 21 26, 20 26" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/&gt;
+  &lt;circle cx="20" cy="20" r="3.5" fill="var(--text-strong)" opacity="0.3" /&gt;
+  &lt;text x="48" y="27" font-family="Inter, sans-serif" font-size="22" letter-spacing="-0.03em"&gt;
+    &lt;tspan font-weight="600" fill="var(--text-strong)"&gt;dartwork&lt;/tspan&gt;&lt;tspan font-weight="400" font-style="italic" fill="var(--accent)"&gt;-mpl&lt;/tspan&gt;
+  &lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+          <!-- C9 -->
+          <div class="card">
+            <h3><span>C9. Enclosing Arch</span><button class="btn" onclick="copyCodeFromCard('c9-code')">Copy</button></h3>
+            <p class="desc">외각의 틸 아치(Canopy) 장막이 중심의 좌표 축 및 3선 도트 매트릭스를 안전하게 덮어 싸는 디자인입니다.</p>
+            <div class="logo-display">
+              <div class="svg-wrap">
+                <svg class="logo-svg" viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M6 30 L6 16 C6 10, 12 5, 20 5 C28 5, 34 10, 34 16 L34 30" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                  <line x1="12" y1="20" x2="28" y2="20" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3"/>
+                  <circle cx="20" cy="20" r="4.5" fill="var(--text-strong)"/>
+                  <circle cx="12" cy="20" r="2" fill="var(--text-strong)" opacity="0.5"/>
+                  <circle cx="28" cy="20" r="2" fill="var(--text-strong)" opacity="0.5"/>
+                  <text x="48" y="27" font-family="var(--font-sans)" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="600" fill="var(--text-strong)">dartwork</tspan><tspan font-weight="500" fill="var(--accent)">:</tspan><tspan font-weight="500" fill="var(--accent)">mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+            <details class="source-details">
+              <summary>View SVG Code</summary>
+              <pre id="c9-code">&lt;svg viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;path d="M6 30 L6 16 C6 10, 12 5, 20 5 C28 5, 34 10, 34 16 L34 30" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" fill="none"/&gt;
+  &lt;line x1="12" y1="20" x2="28" y2="20" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3"/&gt;
+  &lt;circle cx="20" cy="20" r="4.5" fill="var(--text-strong)"/&gt;
+  &lt;circle cx="12" cy="20" r="2" fill="var(--text-strong)" opacity="0.5"/&gt;
+  &lt;circle cx="28" cy="20" r="2" fill="var(--text-strong)" opacity="0.5"/&gt;
+  &lt;text x="48" y="27" font-family="Inter, sans-serif" font-size="22" letter-spacing="-0.03em"&gt;
+    &lt;tspan font-weight="600" fill="var(--text-strong)"&gt;dartwork&lt;/tspan&gt;&lt;tspan font-weight="500" fill="var(--accent)"&gt;:&lt;/tspan&gt;&lt;tspan font-weight="500" fill="var(--accent)"&gt;mpl&lt;/tspan&gt;
+  &lt;/text&gt;
+&lt;/svg&gt;</pre>
+            </details>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 2: LIVE SANDBOX -->
+      <section id="tab-sandbox" class="tab-content">
+        <div class="sandbox-layout">
+          <div class="sandbox-panel">
+            <h3 style="margin: 0 0 8px; font-family: var(--font-display); font-size: 18px;">Customize Toolkit</h3>
+
+            <div class="sandbox-control-group">
+              <label>Text Prefix (Brand)</label>
+              <input type="text" id="sb-text" value="dartwork" oninput="renderSandbox()" />
+            </div>
+
+            <div class="sandbox-control-group">
+              <label>Text Suffix (Module)</label>
+              <input type="text" id="sb-suffix" value="mpl" oninput="renderSandbox()" />
+            </div>
+
+            <div class="sandbox-control-group">
+              <label>Typography Style</label>
+              <select id="sb-typo" onchange="renderSandbox()">
+                <option value="prompt" selected>&gt; Prompt Prefix</option>
+                <option value="italic">Italic Suffix</option>
+                <option value="colon">: Colon Key-Value</option>
+                <option value="normal">Normal Text</option>
+              </select>
+            </div>
+
+            <div class="sandbox-control-group">
+              <label>Wrapper Emblem</label>
+              <select id="sb-symbol" onchange="renderSandbox()">
+                <option value="c1" selected>C1. Bracket Shell</option>
+                <option value="c2">C2. Nested Capsule</option>
+                <option value="c3">C3. Hex Shield</option>
+                <option value="c4">C4. Concentric Orbit</option>
+                <option value="c5">C5. Isometric Diamond</option>
+                <option value="c6">C6. Bounding Box</option>
+                <option value="c7">C7. Wave Shield</option>
+                <option value="c8">C8. Möbius Loop</option>
+                <option value="c9">C9. Enclosing Arch</option>
+                <option value="none">None (Typography Only)</option>
+              </select>
+            </div>
+
+            <div class="sandbox-control-group">
+              <label>Accent Color</label>
+              <div class="color-picker-row">
+                <div class="color-dot active" style="background-color: #12a594;" onclick="changeSandboxColor('#12a594', this)" title="Teal"></div>
+                <div class="color-dot" style="background-color: #3b82f6;" onclick="changeSandboxColor('#3b82f6', this)" title="Blue"></div>
+                <div class="color-dot" style="background-color: #8b5cf6;" onclick="changeSandboxColor('#8b5cf6', this)" title="Violet"></div>
+                <div class="color-dot" style="background-color: #10b981;" onclick="changeSandboxColor('#10b981', this)" title="Emerald"></div>
+                <div class="color-dot" style="background-color: #f43f5e;" onclick="changeSandboxColor('#f43f5e', this)" title="Rose"></div>
+                <div class="color-dot" style="background-color: #f59e0b;" onclick="changeSandboxColor('#f59e0b', this)" title="Amber"></div>
+              </div>
+            </div>
+
+            <div class="sandbox-control-group">
+              <label>Font Family</label>
+              <select id="sb-font" onchange="renderSandbox()">
+                <option value="Inter, sans-serif">Inter (Classic Clean)</option>
+                <option value="'Plus Jakarta Sans', sans-serif">Plus Jakarta Sans (Geometric)</option>
+                <option value="'JetBrains Mono', monospace">JetBrains Mono (Tech)</option>
+              </select>
+            </div>
+
+            <div class="sandbox-control-group" style="margin-top: 8px;">
+              <label>Height Scale <span id="sb-size-val" style="float: right; color: var(--text-muted); font-weight: 400;">32px</span></label>
+              <input type="range" id="sb-size" min="20" max="80" value="32" oninput="updateSandboxSize(this.value)" style="padding: 0; appearance: auto; background: none; border: none;"/>
+            </div>
+          </div>
+
+          <div class="sandbox-preview-pane">
+            <div class="sandbox-canvas">
+              <div id="sandbox-svg-target" style="height: 32px; display: flex; justify-content: center; width: 100%;">
+                <!-- Dynamic SVG injected here -->
+              </div>
+            </div>
+
+            <div class="sandbox-code-card">
+              <header>
+                <h4>SVG CODE</h4>
+                <button class="btn" style="padding: 4px 12px; font-size: 11px;" onclick="copySandboxCode()">Copy</button>
+              </header>
+              <pre id="sandbox-code-output"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: DESIGN TOKENS -->
+      <section id="tab-tokens" class="tab-content">
+        <div class="token-section">
+          <h3>Palette Tokens (12-Step Scale)</h3>
+          <p style="color: var(--text-muted); margin-bottom: 24px; font-size: 14px;">Professional Slate and Teal token mapping ensuring perfect contrast ratios across Light/Dark modes.</p>
+
+          <div class="token-grid">
+            <div>
+              <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--text-muted); text-transform: uppercase;">Neutral / Slate</h4>
+              <div class="token-swatch" style="background-color: var(--slate-1); border: 1px solid var(--border);">
+                <span>slate-1 (App Bg)</span>
+              </div>
+              <div class="token-swatch" style="background-color: var(--slate-2); border: 1px solid var(--border);">
+                <span>slate-2 (Panel Bg)</span>
+              </div>
+              <div class="token-swatch" style="background-color: var(--slate-3);">
+                <span>slate-3 (Hover)</span>
+              </div>
+              <div class="token-swatch" style="background-color: var(--slate-4);">
+                <span>slate-4 (Border)</span>
+              </div>
+              <div class="token-swatch" style="background-color: var(--slate-6); color: white;">
+                <span>slate-6 (Muted Text)</span>
+              </div>
+              <div class="token-swatch" style="background-color: var(--slate-10); color: var(--slate-1);">
+                <span>slate-10 (Strong Text)</span>
+              </div>
+            </div>
+
+            <div>
+              <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--text-muted); text-transform: uppercase;">Accent / Teal</h4>
+              <div class="token-swatch" style="background-color: var(--teal-2); color: var(--teal-11);">
+                <span>teal-2 (Subtle Badge)</span>
+              </div>
+              <div class="token-swatch" style="background-color: var(--teal-4); color: var(--teal-11);">
+                <span>teal-4 (Border Accent)</span>
+              </div>
+              <div class="token-swatch" style="background-color: var(--teal-6); color: white;">
+                <span>teal-6 (Solid Hover)</span>
+              </div>
+              <div class="token-swatch" style="background-color: var(--teal-8); color: white;">
+                <span>teal-8 (Brand Main)</span>
+              </div>
+              <div class="token-swatch" style="background-color: var(--teal-10); color: white;">
+                <span>teal-10 (Text Hover)</span>
+              </div>
+              <div class="token-swatch" style="background-color: var(--teal-11); color: white;">
+                <span>teal-11 (Text Accent)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: MOCKUPS -->
+      <section id="tab-mockups" class="tab-content">
+        <div class="mockup-item">
+          <h4>Documentation Navbar Mockup</h4>
+          <div class="mockup-header-frame">
+            <div style="display: flex; align-items: center; gap: 24px;">
+              <div id="mock-navbar-logo-target" style="height: 22px;"></div>
+              <div style="display: flex; gap: 16px; font-size: 14px; font-weight: 500; color: var(--text-muted);">
+                <span style="color: var(--text-strong);">Overview</span>
+                <span>Installation</span>
+                <span>API Guide</span>
+              </div>
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted); opacity: 0.7;">Search (Cmd+K)</div>
+          </div>
+        </div>
+
+        <div class="mockup-item">
+          <h4>Terminal Execution Context</h4>
+          <div class="mockup-terminal">
+            <div><span style="color: #2dd4bf;">➜</span> <span style="color: #60a5fa;">wonjun@mac</span> <span style="color: white;">pip install dartwork-mpl</span></div>
+            <div style="margin-top: 8px; color: #8b949e; line-height: 1.5;">
+              Collecting dartwork-mpl<br>
+              Downloading dartwork_mpl-1.2.0-py3-none-any.whl (4.2 MB)<br>
+              Successfully installed dartwork-mpl-1.2.0
+            </div>
+            <div style="margin-top: 16px;"><span style="color: #2dd4bf;">➜</span> <span style="color: #60a5fa;">wonjun@mac</span> <span style="color: white;">python -c "import dartwork_mpl"</span></div>
+            <div style="margin-top: 8px; color: #2dd4bf; line-height: 1.5;">
+              [dartwork-mpl] Active Profile: Premium UI backend.<br>
+              [dartwork-mpl] Ready to render elegant data.
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="copyToast">SVG Code Copied!</div>
+
+    <script>
+      let activeAccentColor = '#12a594';
+
+      const symbolsSVG = {
+        c1: `<path d="M6 10 C6 7, 10 6, 12 6 M6 10 L6 30 C6 33, 10 34, 12 34" stroke="%%ACCENT%%" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+<path d="M34 10 C34 7, 30 6, 28 6 M34 10 L34 30 C34 33, 30 34, 28 34" stroke="%%ACCENT%%" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+<path d="M12 22 Q20 10, 28 18" stroke="var(--text-strong)" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+<circle cx="20" cy="15" r="3.5" fill="var(--text-strong)" />`,
+        c2: `<rect x="5" y="7" width="30" height="26" rx="8" stroke="var(--text-strong)" stroke-width="1.5" opacity="0.3" fill="none"/>
+<rect x="11" y="13" width="18" height="14" rx="4" stroke="%%ACCENT%%" stroke-width="2.5" fill="none"/>
+<circle cx="20" cy="20" r="3" fill="%%ACCENT%%"/>`,
+        c3: `<path d="M20 5 L34 13 L34 27 L20 35 L6 27 L6 13 Z" stroke="%%ACCENT%%" stroke-width="2" stroke-linejoin="round" fill="none"/>
+<path d="M20 12 L28 26 L12 26 Z" fill="var(--text-strong)" opacity="0.2"/>
+<circle cx="20" cy="21" r="3.2" fill="%%ACCENT%%"/>`,
+        c4: `<path d="M10 20 A10 10 0 1 1 20 30" stroke="%%ACCENT%%" stroke-width="3" stroke-linecap="round" fill="none"/>
+<circle cx="20" cy="20" r="4" fill="var(--text-strong)"/>
+<circle cx="20" cy="20" r="14" stroke="var(--text-strong)" stroke-width="1" stroke-dasharray="2 2" opacity="0.3" fill="none"/>`,
+        c5: `<path d="M20 5 L33 20 L20 35 L7 20 Z" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3" fill="none"/>
+<path d="M20 11 L29 20 L20 29 L11 20 Z" stroke="%%ACCENT%%" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+<circle cx="20" cy="20" r="2.5" fill="%%ACCENT%%"/>`,
+        c6: `<path d="M10 6 L6 6 L6 10" stroke="%%ACCENT%%" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+<path d="M30 6 L34 6 L34 10" stroke="%%ACCENT%%" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+<path d="M10 34 L6 34 L6 30" stroke="%%ACCENT%%" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+<path d="M30 34 L34 34 L34 30" stroke="%%ACCENT%%" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+<path d="M11 24 Q20 12, 29 24" stroke="var(--text-strong)" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+<circle cx="20" cy="18" r="3" fill="var(--text-strong)"/>`,
+        c7: `<path d="M7 8 C7 8, 20 5, 20 5 C20 5, 33 8, 33 8 L33 22 C33 29, 20 35, 20 35 C20 35, 7 29, 7 22 Z" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3" fill="none"/>
+<path d="M12 20 Q16 12, 20 20 T28 20" stroke="%%ACCENT%%" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+<circle cx="16" cy="16" r="2" fill="%%ACCENT%%"/>
+<circle cx="24" cy="24" r="2" fill="%%ACCENT%%"/>`,
+        c8: `<path d="M7 14 C7 7, 33 7, 33 20 C33 33, 13 33, 13 22 C13 16, 27 16, 27 22 C27 26, 21 26, 20 26" stroke="%%ACCENT%%" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<circle cx="20" cy="20" r="3.5" fill="var(--text-strong)" opacity="0.3" />`,
+        c9: `<path d="M6 30 L6 16 C6 10, 12 5, 20 5 C28 5, 34 10, 34 16 L34 30" stroke="%%ACCENT%%" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+<line x1="12" y1="20" x2="28" y2="20" stroke="var(--text-strong)" stroke-width="1.2" opacity="0.3"/>
+<circle cx="20" cy="20" r="4.5" fill="var(--text-strong)"/>
+<circle cx="12" cy="20" r="2" fill="var(--text-strong)" opacity="0.5"/>
+<circle cx="28" cy="20" r="2" fill="var(--text-strong)" opacity="0.5"/>`,
+        none: ''
+      };
+
+      function renderSandbox() {
+        const text = document.getElementById('sb-text').value;
+        const suffix = document.getElementById('sb-suffix').value;
+        const typoStyle = document.getElementById('sb-typo').value;
+        const symbolType = document.getElementById('sb-symbol').value;
+        const fontFam = document.getElementById('sb-font').value;
+
+        let symbolMarkup = symbolsSVG[symbolType] || '';
+        symbolMarkup = symbolMarkup.replace(/%%ACCENT%%/g, activeAccentColor);
+
+        let startX = symbolType === 'none' ? 10 : 48;
+        let textMarkup = '';
+
+        if (typoStyle === 'prompt') {
+          textMarkup = `<text x="${startX}" y="27" font-family="${fontFam}" font-size="22" letter-spacing="-0.03em">
+    <tspan font-weight="500" fill="${activeAccentColor}">&gt;</tspan> <tspan font-weight="600" fill="var(--text-strong)">${text}-${suffix}</tspan>
+  </text>`;
+        } else if (typoStyle === 'italic') {
+          textMarkup = `<text x="${startX}" y="27" font-family="${fontFam}" font-size="22" letter-spacing="-0.03em">
+    <tspan font-weight="600" fill="var(--text-strong)">${text}</tspan><tspan font-weight="400" font-style="italic" fill="${activeAccentColor}">-${suffix}</tspan>
+  </text>`;
+        } else if (typoStyle === 'colon') {
+          textMarkup = `<text x="${startX}" y="27" font-family="${fontFam}" font-size="22" letter-spacing="-0.03em">
+    <tspan font-weight="600" fill="var(--text-strong)">${text}</tspan><tspan font-weight="500" fill="${activeAccentColor}">:</tspan><tspan font-weight="500" fill="${activeAccentColor}">${suffix}</tspan>
+  </text>`;
+        } else {
+          textMarkup = `<text x="${startX}" y="27" font-family="${fontFam}" font-size="22" letter-spacing="-0.03em" font-weight="600" fill="var(--text-strong)">${text}-${suffix}</text>`;
+        }
+
+        const fullSVG = `<svg viewBox="0 0 260 40" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+  ${symbolMarkup}
+  ${textMarkup}
+</svg>`;
+
+        document.getElementById('sandbox-svg-target').innerHTML = fullSVG;
+        document.getElementById('sandbox-code-output').textContent = fullSVG;
+
+        // Mockups
+        const mockSvg = fullSVG.replace('width="100%"', 'width="auto"'); // specific for inline block in mockups
+        document.getElementById('mock-navbar-logo-target').innerHTML = mockSvg;
+      }
+
+      function changeSandboxColor(color, element) {
+        activeAccentColor = color;
+        document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+        element.classList.add('active');
+        renderSandbox();
+      }
+
+      function updateSandboxSize(val) {
+        document.getElementById('sb-size-val').textContent = val + 'px';
+        document.getElementById('sandbox-svg-target').style.height = val + 'px';
+      }
+
+      function copySandboxCode() {
+        navigator.clipboard.writeText(document.getElementById('sandbox-code-output').textContent).then(showToast);
+      }
+
+      function copyCodeFromCard(elementId) {
+        navigator.clipboard.writeText(document.getElementById(elementId).textContent).then(showToast);
+      }
+
+      function showToast() {
+        const t = document.getElementById('copyToast');
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2000);
+      }
+
+      function switchTab(e, tabId) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+        if (tabId === 'tab-sandbox' || tabId === 'tab-mockups') renderSandbox();
+      }
+
+      function toggleTheme() {
+        const html = document.documentElement;
+        if (html.classList.contains('dark')) {
+          html.classList.remove('dark');
+        } else {
+          html.classList.add('dark');
+        }
+      }
+
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+      }
+
+      renderSandbox();
+    </script>
+  </body>
+</html>
