@@ -8,7 +8,7 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     steps:
       - uses: actions/checkout@v6
 
@@ -34,7 +34,7 @@ jobs:
         run: uv run mypy src/dartwork_mpl/
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
@@ -102,7 +102,7 @@ jobs:
   # import and pass the non-MCP tests. Catches regressions where a
   # core module accidentally requires fastmcp at import time.
   test-no-extras:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     steps:
       - uses: actions/checkout@v6
       - name: Install uv
@@ -146,7 +146,7 @@ jobs:
           "
 
   visual:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     steps:
       - uses: actions/checkout@v6
 
@@ -180,7 +180,7 @@ jobs:
   # ``builder-inited`` hook regenerates llms-full.txt, so a stale committed
   # copy (upstream edited but llms-full.txt not rebuilt) fails the drift check.
   docs:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     # Pin the docs build to a single modern interpreter. Without this,
     # `uv sync` floats the build venv to the requires-python floor (3.10),
     # whose gallery execution hit an environment-specific color-resolution
@@ -242,8 +242,10 @@ jobs:
       # sphinx.ext.graphviz to render the auto-extracted module dependency
       # graph (and its Diagrams-Python architecture script also shells out
       # to the same `dot` binary). Ubuntu runners ship without it.
-      - name: Install Graphviz (dot binary for sphinx.ext.graphviz)
-        run: sudo apt-get update && sudo apt-get install -y graphviz
+      - name: Verify Graphviz (dot binary for sphinx.ext.graphviz)
+        # ml-main 러너에 미리 설치돼 있다. 러너에는 passwordless sudo 가
+        # 없으므로 설치 대신 존재만 확인하고, 없으면 즉시 실패시킨다.
+        run: dot -V
 
       - name: Build documentation (warnings = errors)
         env:
