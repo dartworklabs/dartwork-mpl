@@ -7,7 +7,7 @@ matplotlib's internal font manager.
 import threading
 import warnings
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import cache
 from pathlib import Path
 from types import MappingProxyType
@@ -36,6 +36,14 @@ _EXPECTED_MIN_FONTS: int = 5
 # path with os.path idioms).
 _FONT_DIR: Path = Path(__file__).parent / "asset" / "font"
 _FONT_SUFFIXES: frozenset[str] = frozenset({".ttf", ".otf"})
+_BUNDLED_FONT_WEIGHT_OVERRIDES: Mapping[str, int] = MappingProxyType(
+    {
+        # Both files report OS/2 weight 250, which makes Matplotlib choose
+        # either one for a light request according to cache/discovery order.
+        "Paperlogy-1Thin.ttf": 100,
+        "Paperlogy-2ExtraLight.ttf": 200,
+    }
+)
 _CHART_GLYPHS: tuple[str, ...] = ("−", "×", "±", "→", "°", "μ", "σ", "Δ")  # noqa: RUF001
 _DIGIT_ADVANCE_PROBE: str = "0123456789"
 _HANGUL_SAMPLE: str = "한글"
@@ -597,6 +605,24 @@ def _promote_bundled_fonts() -> None:
     font_manager.fontManager._findfont_cached.cache_clear()  # type: ignore[attr-defined]
 
 
+def _correct_bundled_weight_metadata() -> None:
+    """Correct known upstream weight metadata errors for bundled faces."""
+    bundle_dir = get_font_dir()
+    ttflist = font_manager.fontManager.ttflist
+    corrected = False
+    for index, entry in enumerate(ttflist):
+        if not _is_bundled_font_entry(entry, bundle_dir):
+            continue
+        intended_weight = _BUNDLED_FONT_WEIGHT_OVERRIDES.get(
+            Path(entry.fname).name
+        )
+        if intended_weight is not None:
+            ttflist[index] = replace(entry, weight=intended_weight)
+            corrected = True
+    if corrected:
+        font_manager.fontManager._findfont_cached.cache_clear()  # type: ignore[attr-defined]
+
+
 def _add_fonts() -> None:
     """Register bundled custom fonts with matplotlib's font manager.
 
@@ -616,6 +642,8 @@ def _add_fonts() -> None:
     found = font_manager.findSystemFonts([_FONT_DIR])
     for font in found:
         font_manager.fontManager.addfont(font)
+
+    _correct_bundled_weight_metadata()
 
     # ``addfont`` appends, so bundled entries lose score ties to earlier
     # system fonts of the same family. Promote them to the front so the

@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 import warnings
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from matplotlib.font_manager import FontProperties
 
 from dartwork_mpl import font as font_module
 from dartwork_mpl.font import (
@@ -119,6 +124,75 @@ class TestAddFonts:
         assert bundle_warnings == []
 
 
+class TestBundledWeightMetadata:
+    """Regression coverage for intentional bundled-weight corrections."""
+
+    def test_paperlogy_overrides_select_thin_and_extra_light(self) -> None:
+        """Distinct Paperlogy weights must select their intended faces."""
+        entries = {
+            Path(entry.fname).name: entry.weight
+            for entry in font_module._entries_for_family("Paperlogy")
+            if Path(entry.fname).name
+            in {"Paperlogy-1Thin.ttf", "Paperlogy-2ExtraLight.ttf"}
+        }
+
+        assert entries == {
+            "Paperlogy-1Thin.ttf": 100,
+            "Paperlogy-2ExtraLight.ttf": 200,
+        }
+        assert (
+            Path(
+                font_module.font_manager.findfont(
+                    FontProperties(family="Paperlogy", weight="ultralight"),
+                    fallback_to_default=False,
+                )
+            ).name
+            == "Paperlogy-1Thin.ttf"
+        )
+        assert (
+            Path(
+                font_module.font_manager.findfont(
+                    FontProperties(family="Paperlogy", weight="light"),
+                    fallback_to_default=False,
+                )
+            ).name
+            == "Paperlogy-2ExtraLight.ttf"
+        )
+
+    def test_weight_correction_clears_primed_findfont_cache(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Replacing a bundled entry's weight must invalidate resolution cache."""
+        manager = font_module.font_manager.fontManager
+        overrides = {"Paperlogy-1Thin.ttf", "Paperlogy-2ExtraLight.ttf"}
+        wrong_entries = [
+            replace(entry, weight=250)
+            if Path(entry.fname).name in overrides
+            else entry
+            for entry in manager.ttflist
+        ]
+        monkeypatch.setattr(manager, "ttflist", wrong_entries)
+        manager._findfont_cached.cache_clear()  # type: ignore[attr-defined]
+        manager.findfont(
+            FontProperties(family="Paperlogy", weight="light"),
+            fallback_to_default=False,
+        )
+        assert manager._findfont_cached.cache_info().currsize == 1  # type: ignore[attr-defined]
+
+        font_module._correct_bundled_weight_metadata()
+
+        assert manager._findfont_cached.cache_info().currsize == 0  # type: ignore[attr-defined]
+        corrected = {
+            Path(entry.fname).name: entry.weight
+            for entry in manager.ttflist
+            if Path(entry.fname).name in overrides
+        }
+        assert corrected == {
+            "Paperlogy-1Thin.ttf": 100,
+            "Paperlogy-2ExtraLight.ttf": 200,
+        }
+
+
 # The contract families: the primary chains of every preset (English
 # head, Korean head, and the mathtext face every preset points at).
 # Deleting any of these previously failed ZERO tests while silently
@@ -180,3 +254,48 @@ class TestEagerRegistrationContract:
             [sys.executable, "-c", code], capture_output=True, text=True
         )
         assert result.returncode == 0, result.stderr
+
+
+def test_paperlogy_light_resolution_is_stable_across_cold_and_warm_cache(
+    tmp_path: Path,
+) -> None:
+    """Paperlogy Light must resolve to its intended file after cache warmup.
+
+    The regression this catches is a tie between Thin and ExtraLight: both
+    files advertise OS/2 weight 250, so Matplotlib's cache/discovery order
+    chose a different file in the first and second process.
+    """
+    code = (
+        "from pathlib import Path\n"
+        "import dartwork_mpl\n"
+        "from matplotlib import font_manager\n"
+        "from matplotlib.font_manager import FontProperties\n"
+        "path = font_manager.findfont(\n"
+        "    FontProperties(family='Paperlogy', weight='light'),\n"
+        "    fallback_to_default=False,\n"
+        ")\n"
+        "print(Path(path).name)\n"
+    )
+    repo = Path(__file__).resolve().parents[1]
+    env = {
+        **os.environ,
+        "MPLCONFIGDIR": str(tmp_path),
+        "PYTHONPATH": str(repo / "src"),
+    }
+
+    resolved = [
+        subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            check=False,
+            env=env,
+            text=True,
+        )
+        for _ in range(2)
+    ]
+
+    assert all(result.returncode == 0 for result in resolved)
+    assert [result.stdout.strip() for result in resolved] == [
+        "Paperlogy-2ExtraLight.ttf",
+        "Paperlogy-2ExtraLight.ttf",
+    ]
