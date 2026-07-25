@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 import warnings
 from pathlib import Path
 
@@ -180,3 +183,48 @@ class TestEagerRegistrationContract:
             [sys.executable, "-c", code], capture_output=True, text=True
         )
         assert result.returncode == 0, result.stderr
+
+
+def test_paperlogy_light_resolution_is_stable_across_cold_and_warm_cache(
+    tmp_path: Path,
+) -> None:
+    """Paperlogy Light must resolve to its intended file after cache warmup.
+
+    The regression this catches is a tie between Thin and ExtraLight: both
+    files advertise OS/2 weight 250, so Matplotlib's cache/discovery order
+    chose a different file in the first and second process.
+    """
+    code = (
+        "from pathlib import Path\n"
+        "import dartwork_mpl\n"
+        "from matplotlib import font_manager\n"
+        "from matplotlib.font_manager import FontProperties\n"
+        "path = font_manager.findfont(\n"
+        "    FontProperties(family='Paperlogy', weight='light'),\n"
+        "    fallback_to_default=False,\n"
+        ")\n"
+        "print(Path(path).name)\n"
+    )
+    repo = Path(__file__).resolve().parents[1]
+    env = {
+        **os.environ,
+        "MPLCONFIGDIR": str(tmp_path),
+        "PYTHONPATH": str(repo / "src"),
+    }
+
+    resolved = [
+        subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True,
+            check=False,
+            env=env,
+            text=True,
+        )
+        for _ in range(2)
+    ]
+
+    assert all(result.returncode == 0 for result in resolved)
+    assert [result.stdout.strip() for result in resolved] == [
+        "Paperlogy-2ExtraLight.ttf",
+        "Paperlogy-2ExtraLight.ttf",
+    ]
