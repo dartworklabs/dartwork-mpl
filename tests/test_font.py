@@ -6,9 +6,11 @@ import os
 import subprocess
 import sys
 import warnings
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from matplotlib.font_manager import FontProperties
 
 from dartwork_mpl import font as font_module
 from dartwork_mpl.font import (
@@ -120,6 +122,75 @@ class TestAddFonts:
             and "dartwork-mpl" in str(w.message)
         ]
         assert bundle_warnings == []
+
+
+class TestBundledWeightMetadata:
+    """Regression coverage for intentional bundled-weight corrections."""
+
+    def test_paperlogy_overrides_select_thin_and_extra_light(self) -> None:
+        """Distinct Paperlogy weights must select their intended faces."""
+        entries = {
+            Path(entry.fname).name: entry.weight
+            for entry in font_module._entries_for_family("Paperlogy")
+            if Path(entry.fname).name
+            in {"Paperlogy-1Thin.ttf", "Paperlogy-2ExtraLight.ttf"}
+        }
+
+        assert entries == {
+            "Paperlogy-1Thin.ttf": 100,
+            "Paperlogy-2ExtraLight.ttf": 200,
+        }
+        assert (
+            Path(
+                font_module.font_manager.findfont(
+                    FontProperties(family="Paperlogy", weight="ultralight"),
+                    fallback_to_default=False,
+                )
+            ).name
+            == "Paperlogy-1Thin.ttf"
+        )
+        assert (
+            Path(
+                font_module.font_manager.findfont(
+                    FontProperties(family="Paperlogy", weight="light"),
+                    fallback_to_default=False,
+                )
+            ).name
+            == "Paperlogy-2ExtraLight.ttf"
+        )
+
+    def test_weight_correction_clears_primed_findfont_cache(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Replacing a bundled entry's weight must invalidate resolution cache."""
+        manager = font_module.font_manager.fontManager
+        overrides = {"Paperlogy-1Thin.ttf", "Paperlogy-2ExtraLight.ttf"}
+        wrong_entries = [
+            replace(entry, weight=250)
+            if Path(entry.fname).name in overrides
+            else entry
+            for entry in manager.ttflist
+        ]
+        monkeypatch.setattr(manager, "ttflist", wrong_entries)
+        manager._findfont_cached.cache_clear()  # type: ignore[attr-defined]
+        manager.findfont(
+            FontProperties(family="Paperlogy", weight="light"),
+            fallback_to_default=False,
+        )
+        assert manager._findfont_cached.cache_info().currsize == 1  # type: ignore[attr-defined]
+
+        font_module._correct_bundled_weight_metadata()
+
+        assert manager._findfont_cached.cache_info().currsize == 0  # type: ignore[attr-defined]
+        corrected = {
+            Path(entry.fname).name: entry.weight
+            for entry in manager.ttflist
+            if Path(entry.fname).name in overrides
+        }
+        assert corrected == {
+            "Paperlogy-1Thin.ttf": 100,
+            "Paperlogy-2ExtraLight.ttf": 200,
+        }
 
 
 # The contract families: the primary chains of every preset (English
