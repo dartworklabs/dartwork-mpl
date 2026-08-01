@@ -220,6 +220,72 @@ class TestGrayscaleSafety:
         assert hits[0].detail["pairs"]
         plt.close(fig)
 
+    def test_panels_are_judged_separately(self) -> None:
+        """Two series only collapse where a reader compares them.
+
+        Pooling every Axes reported a clash between a price panel's moving
+        average and a multiple panel's series on every multi-panel chart, which
+        is noise: the panels are read separately, so neither becomes harder to
+        identify. Each panel here is internally well separated.
+        """
+        dm.style.use("scientific")
+        fig, axes = plt.subplots(2, 1, figsize=dm.figsize("9cm", "standard"))
+        fig.patch.set_facecolor("white")
+        for ax in axes:
+            ax.set_facecolor("white")
+        # 0.018 vs 0.301: safely apart inside the panel.
+        axes[0].plot([1, 2, 3], [1, 4, 9], color="#212529")
+        axes[0].plot([1, 2, 3], [2, 5, 10], color="#339af0")
+        # 0.266 vs 0.653: also safely apart, but 0.266 sits beside the 0.301
+        # above, which the pooled comparison flagged.
+        axes[1].plot([1, 2, 3], [1, 4, 9], color="#868e96")
+        axes[1].plot([1, 2, 3], [2, 5, 10], color="#ced4da")
+
+        warnings = _warnings_for(fig, "GRAYSCALE_SAFETY")
+
+        assert not [w for w in warnings if w.check_id == "GRAYSCALE_SAFETY"]
+        plt.close(fig)
+
+    def test_a_clash_inside_one_panel_is_still_reported(self) -> None:
+        """Per-Axes comparison must not turn the check off."""
+        dm.style.use("scientific")
+        fig, axes = plt.subplots(2, 1, figsize=dm.figsize("9cm", "standard"))
+        fig.patch.set_facecolor("white")
+        for ax in axes:
+            ax.set_facecolor("white")
+        axes[0].plot([1, 2, 3], [1, 4, 9], color="#212529")
+        axes[1].plot([1, 2, 3], [1, 4, 9], color="#ff0000")
+        axes[1].plot([1, 2, 3], [2, 5, 10], color="#009400")
+
+        hits = [
+            w
+            for w in _warnings_for(fig, "GRAYSCALE_SAFETY")
+            if w.check_id == "GRAYSCALE_SAFETY"
+        ]
+
+        assert hits
+        plt.close(fig)
+
+    def test_one_clash_repeated_across_panels_is_reported_once(self) -> None:
+        """Small multiples share a palette; the fix is one change, not N."""
+        dm.style.use("scientific")
+        fig, axes = plt.subplots(3, 1, figsize=dm.figsize("9cm", "standard"))
+        fig.patch.set_facecolor("white")
+        for ax in axes:
+            ax.set_facecolor("white")
+            ax.plot([1, 2, 3], [1, 4, 9], color="#ff0000")
+            ax.plot([1, 2, 3], [2, 5, 10], color="#009400")
+
+        hits = [
+            w
+            for w in _warnings_for(fig, "GRAYSCALE_SAFETY")
+            if w.check_id == "GRAYSCALE_SAFETY"
+        ]
+
+        assert len(hits) == 1
+        assert len(hits[0].detail["pairs"]) == 1
+        plt.close(fig)
+
     def test_distinct_luminance_series_pass(self) -> None:
         fig, ax = _new_figure()
         ax.plot([1, 2, 3], [1, 4, 9], color="#111111")
