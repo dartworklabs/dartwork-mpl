@@ -32,19 +32,32 @@ import matplotlib
 
 matplotlib.use("Agg")
 
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.colors import ListedColormap
+# Same pin the other asset generators use (docs/api, docs/usage_guide) and the
+# one this generator was missing. Without it svg.hashsalt stays None, so
+# matplotlib salts SVG element ids with a fresh uuid4 and every <image> lands
+# with a different id on every machine -- which is what made the two
+# raster-bearing theory figures read as stale in CI while the eight pure-vector
+# ones matched. Must run before pyplot and dartwork_mpl are imported.
+sys.path.insert(
+    0, str(Path(__file__).resolve().parents[1] / "_static" / "scripts")
+)
+from _svg_determinism import apply_svg_determinism
 
-import dartwork_mpl as dm
-from dartwork_mpl._colors import _conversion as CONV
-from dartwork_mpl._colors import _curated as CUR
-from dartwork_mpl._colors import _gates as GA
-from dartwork_mpl._colors import _generate as GEN
-from dartwork_mpl._colors import _generated as G
-from dartwork_mpl._colors import _metrics as M
-from dartwork_mpl._colors import _recipe as R
-from dartwork_mpl._colors import _tone as TONE
+apply_svg_determinism()
+
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+from matplotlib.colors import ListedColormap  # noqa: E402
+
+import dartwork_mpl as dm  # noqa: E402
+from dartwork_mpl._colors import _conversion as CONV  # noqa: E402
+from dartwork_mpl._colors import _curated as CUR  # noqa: E402
+from dartwork_mpl._colors import _gates as GA  # noqa: E402
+from dartwork_mpl._colors import _generate as GEN  # noqa: E402
+from dartwork_mpl._colors import _generated as G  # noqa: E402
+from dartwork_mpl._colors import _metrics as M  # noqa: E402
+from dartwork_mpl._colors import _recipe as R  # noqa: E402
+from dartwork_mpl._colors import _tone as TONE  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_OUTPUT_DIR = HERE / "theory_figures"
