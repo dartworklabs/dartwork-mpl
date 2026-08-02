@@ -39,7 +39,14 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
+      # Full history: tests/test_color_v6_quality_oracle.py runs
+      # scripts/freeze_color_v5_quality.py, which resolves the frozen colour
+      # baseline with `git rev-parse <sha>^{commit}`. A shallow checkout has
+      # only the merge commit, so that lookup fails with "Needed a single
+      # revision" and the generator exits 2.
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7

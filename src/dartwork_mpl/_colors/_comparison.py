@@ -802,59 +802,58 @@ def _quality_fixture() -> dict[str, object]:
     return gates.load_quality_baseline()
 
 
-# See ``_gates._GATE_REL_TOL`` for the reasoning; the same noise floor applies
-# here. Recomputing the quality fixture on a different machine moves the last
-# bits of these derived doubles, which changes a canonical-JSON hash entirely
-# even though the catalog is identical.
-_FIXTURE_REL_TOL = 1e-12
-_FIXTURE_ABS_TOL = 1e-15
+# Same window as ``_gates._GATE_REL_TOL``; see that comment for how it was
+# measured. It lives here rather than in the oracle because the oracle pins its
+# own source SHA-256 against the quality fixture -- adding a helper there would
+# be exactly the self-modification that pin exists to prevent.
+QUALITY_REL_TOL = 1e-12
+QUALITY_ABS_TOL = 1e-15
 
 
-def _matches_pinned_fixture(recomputed: object, expected: object) -> bool:
-    """Compare a recomputed quality payload against the pinned fixture.
+def matches_recorded_quality(measured: object, recorded: object) -> bool:
+    """Compare a recomputed quality payload against a recorded one.
 
     Structure, keys, lengths, strings and booleans are compared exactly; only
-    numbers get a tolerance. The check still answers what it is for -- that the
-    fixture is a faithful recomputation from the frozen baseline rather than a
-    fabricated file -- without demanding bit-exact float reproduction across
-    architectures, which no machine can promise another.
+    numbers get a tolerance. The comparison still answers whether the catalog
+    changed, without requiring two architectures to agree on a last bit of a
+    derived double.
     """
-    if isinstance(recomputed, Mapping) or isinstance(expected, Mapping):
+    if isinstance(measured, Mapping) or isinstance(recorded, Mapping):
         if not (
-            isinstance(recomputed, Mapping) and isinstance(expected, Mapping)
+            isinstance(measured, Mapping) and isinstance(recorded, Mapping)
         ):
             return False
-        if set(recomputed) != set(expected):
+        if set(measured) != set(recorded):
             return False
         return all(
-            _matches_pinned_fixture(recomputed[key], expected[key])
-            for key in recomputed
+            matches_recorded_quality(measured[key], recorded[key])
+            for key in measured
         )
-    if isinstance(recomputed, str) or isinstance(expected, str):
-        return recomputed == expected
-    if isinstance(recomputed, bool) or isinstance(expected, bool):
-        return recomputed is expected
-    if isinstance(recomputed, Sequence) or isinstance(expected, Sequence):
+    if isinstance(measured, str) or isinstance(recorded, str):
+        return measured == recorded
+    if isinstance(measured, bool) or isinstance(recorded, bool):
+        return measured is recorded
+    if isinstance(measured, Sequence) or isinstance(recorded, Sequence):
         if not (
-            isinstance(recomputed, Sequence) and isinstance(expected, Sequence)
+            isinstance(measured, Sequence) and isinstance(recorded, Sequence)
         ):
             return False
-        if len(recomputed) != len(expected):
+        if len(measured) != len(recorded):
             return False
         return all(
-            _matches_pinned_fixture(left, right)
-            for left, right in zip(recomputed, expected, strict=True)
+            matches_recorded_quality(left, right)
+            for left, right in zip(measured, recorded, strict=True)
         )
-    if isinstance(recomputed, (int, float)) and isinstance(
-        expected, (int, float)
+    if isinstance(measured, (int, float)) and isinstance(
+        recorded, (int, float)
     ):
         return math.isclose(
-            float(recomputed),
-            float(expected),
-            rel_tol=_FIXTURE_REL_TOL,
-            abs_tol=_FIXTURE_ABS_TOL,
+            float(measured),
+            float(recorded),
+            rel_tol=QUALITY_REL_TOL,
+            abs_tol=QUALITY_ABS_TOL,
         )
-    return recomputed == expected
+    return measured == recorded
 
 
 def _quality_comparison(
@@ -880,9 +879,9 @@ def _quality_comparison(
     recomputed_metrics, recomputed_extrema = oracle.compute_catalog_quality(
         _catalog_for_oracle(baseline), baseline_previews
     )
-    baseline_matches = _matches_pinned_fixture(
+    baseline_matches = matches_recorded_quality(
         recomputed_metrics, expected_metrics
-    ) and _matches_pinned_fixture(recomputed_extrema, expected_extrema)
+    ) and matches_recorded_quality(recomputed_extrema, expected_extrema)
     if not baseline_matches:
         raise oracle.OracleValidationError(
             "recomputed v5 quality differs from the pinned fixture"

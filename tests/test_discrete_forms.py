@@ -13,6 +13,7 @@ import pytest
 import dartwork_mpl  # noqa: F401  (registers color names)
 import dartwork_mpl._colors._compatibility_metrics as oracle
 from dartwork_mpl._colors import _curated, _generated
+from dartwork_mpl._colors._comparison import matches_recorded_quality
 from dartwork_mpl._colors._discrete import DIVERGING_CANONICALS, discrete_colors
 from dartwork_mpl._colors._families import (
     CYCLIC,
@@ -237,7 +238,13 @@ def test_multi_hue_raw_quality_matches_the_independent_frozen_oracle(
         dict[str, dict[str, dict[str, object]]], metrics["discrete"]
     )
 
-    assert oracle.categorical_quality(expected_hex) == discrete[name][str(n)]
+    # Compared with the oracle's own tolerance rather than by ==: these are
+    # doubles recomputed from the frozen hex, and the recorded baseline was
+    # captured on a different machine than CI runs on. Structure, keys and
+    # every non-numeric leaf are still matched exactly.
+    assert matches_recorded_quality(
+        oracle.categorical_quality(expected_hex), discrete[name][str(n)]
+    )
 
 
 @pytest.mark.parametrize("name", CYCLIC)
