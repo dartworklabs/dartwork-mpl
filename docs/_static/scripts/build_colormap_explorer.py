@@ -1545,9 +1545,34 @@ def build_payload() -> dict:
     }
 
 
+# Serialised precision for the diagnostic arrays. Everything the explorer
+# does with these is display: draw a curve, label a chip. Emitting raw float64
+# instead pinned the generated file to whichever machine built it -- last-bit
+# differences in FMA contraction and vectorisation across architectures make
+# the bytes differ, so `--check` fails on a runner that is not the author's.
+# Six decimals is far beyond anything the page renders -- these arrays are
+# drawn as curves over [0, 1] or shown on chips rounded to one decimal -- and
+# it keeps every value at least ~1e-10 away from a rounding boundary, which is
+# five orders above the cross-machine noise it has to survive.
+_EMITTED_DECIMALS = 6
+
+
+def _round_for_emission(value: object) -> object:
+    """Round floats to a machine-independent precision, structure untouched."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, float):
+        return round(value, _EMITTED_DECIMALS)
+    if isinstance(value, Mapping):
+        return {key: _round_for_emission(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_round_for_emission(item) for item in value]
+    return value
+
+
 def render_html() -> str:
     """Render the complete deterministic explorer fragment in memory."""
-    payload = build_payload()
+    payload = _round_for_emission(build_payload())
     html = TEMPLATE.replace(
         "__PAYLOAD__",
         json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
