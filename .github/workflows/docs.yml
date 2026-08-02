@@ -56,6 +56,35 @@ jobs:
       - name: Install Graphviz (dot binary for sphinx.ext.graphviz)
         run: sudo apt-get update && sudo apt-get install -y graphviz
 
+      - name: Verify packaged color authorities
+        run: |
+          set -euo pipefail
+          uv run python scripts/build_color_v6_ssot.py \
+            --baseline-commit 12d16bac22dee790bd0696ca92a814a797dc728b \
+            --output /tmp/dartwork-color-v6-ssot.json
+          cmp /tmp/dartwork-color-v6-ssot.json src/dartwork_mpl/asset/color/color_v6_ssot.json
+          uv run python -m dartwork_mpl._colors._build --check
+
+      - name: Compare frozen and live color systems
+        run: uv run python scripts/compare_color_systems.py --output build/color-system-comparison --check
+
+      - name: Verify generated color documentation assets
+        env:
+          MPLBACKEND: Agg
+        run: |
+          set -euo pipefail
+          uv run python docs/_static/scripts/build_categorical_explorer.py --check
+          uv run python docs/_static/scripts/build_colormap_explorer.py --check
+          uv run python docs/color_system/generate_theory_figures.py --check
+
+      - name: Upload color-system comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: color-system-comparison
+          path: build/color-system-comparison
+          if-no-files-found: warn
+
       - name: Build documentation
         env:
           MPLBACKEND: Agg
