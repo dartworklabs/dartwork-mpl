@@ -1323,8 +1323,9 @@ document.addEventListener("click", function (e) {
             "notice the grey-brown colors in the middle.";
         } else if (activeMode === "oklch") {
           verdictEl.innerHTML =
-            "<strong>OKLCH</strong> — every step looks equally spaced to the human eye. " +
-            "Brightness, saturation, and hue all shift uniformly.";
+            "<strong>OKLCH</strong> — hue and chroma stay explicit, so the " +
+            "transition is often smoother than RGB mixing. Equal-looking " +
+            "steps are an approximation, not a guarantee.";
         } else {
           verdictEl.innerHTML =
             "<strong>RGB</strong> — linear component mixing produces uneven " +

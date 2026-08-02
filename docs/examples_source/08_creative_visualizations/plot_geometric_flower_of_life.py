@@ -9,7 +9,7 @@ intersections of the first ring.
 
 This example pairs precise geometric primitives with
 ``dm.cspace("dc.violet5", "dc.teal1", n=19, space="oklch")`` so the
-colour ramp is perceptually uniform.
+colour ramp follows a smooth path in perceptual OKLCH coordinates.
 """
 
 import matplotlib.pyplot as plt

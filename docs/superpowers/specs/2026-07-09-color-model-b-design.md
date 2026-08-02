@@ -4,6 +4,16 @@ Date: 2026-07-09 · Status: approved design (user-reviewed) · Scope: dartwork-m
 color API + catalog + docs IA · Breaking changes: allowed (zero external users;
 workspace grep confirms 0 usages of every removed symbol/name).
 
+> **Metric-model addendum (2026-07-14; API remains current).** The public
+> Model B API and catalog contract in this document remain authoritative.
+> Internally, construction now uses OKLab L, OKLCH C/h, and ΔEOK. Modeled
+> relative CIE Y calculated from nominal D65 sRGB is an optional shipped-output
+> compatibility lock, not a display measurement. CIELAB/CIEDE2000 and the named
+> CVD simulations are model-specific diagnostics; WCAG contrast luminance
+> remains separate.
+> See the
+> [accepted metric redesign](2026-07-14-oklab-centered-color-system-design.md).
+
 ## 1. Problem
 
 The color surface accumulated two parallel systems (discrete palettes vs

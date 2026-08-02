@@ -1,8 +1,8 @@
 # dartwork-mpl — full agent reference (llms-full.txt)
 
-This file is auto-generated at build time from the canonical sources
-listed below. Do **not** hand-edit; edit the upstream files and rebuild
-the docs (`uv run sphinx-build -b html docs docs/_build/html`).
+This file is generated from the canonical sources listed below and verified
+without mutation at docs-build time. Do **not** hand-edit; edit the upstream
+files, regenerate this authority explicitly, and then rebuild the docs.
 
 Companions:
 
@@ -416,8 +416,9 @@ snippets.
 
 ## v5 — generative color system (0.5.6 clean break)
 
-A 107-number generative palette (20 families × 10 perceptually equalized
-steps, `dc.{family}{step}`) replaced the hand-curated v4 catalog. v5 is a
+A 107-number generative palette (19 arc-length-equalized chromatic ladders plus
+one directly sampled gray ladder, each with 10 `dc.{family}{step}` tokens)
+replaced the hand-curated v4 catalog. v5 is a
 **full clean break** (design spec:
 `docs/superpowers/specs/2026-07-03-color-system-v5-design.md`):
 
@@ -728,6 +729,8 @@ from dartwork_mpl._colors import Color
 #
 # Rule IDs are part of the public API: tools, docs, and tests refer
 # to them. Do not rename without bumping the dartwork-mpl version.
+#
+# Modeled relative CIE Y (`relative_y`) is calculated from nominal D65 sRGB; it is not a measurement of a particular display, perceived brightness, or OKLab `L`.
 
 version: 1
 rules:
@@ -996,7 +999,12 @@ rules:
       `dm.color("oc.blue6")` when you need a Color object.
     why: |
       Named palettes give consistent perception across reports and
-      let style presets remap colors centrally.
+      let style presets remap colors centrally. The dartwork core catalog's
+      construction model uses OKLab L, OKLCH C/h, and ΔEOK. Its optional
+      modeled-relative-Y output lock preserves shipped colors and topology;
+      it is not an authoring space. CIELAB/CIEDE2000 and CVD simulation remain
+      model-specific validation diagnostics, and WCAG contrast luminance is a
+      separate pairwise text-contrast metric.
     fix_suggestion: 'color="oc.blue6"'
 
   - id: fontsize-literal

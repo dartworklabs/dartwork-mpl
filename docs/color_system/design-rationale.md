@@ -1,211 +1,506 @@
 # Design rationale
 
-This is the design system's evidence page: why the colors — and eventually the
-typography — are built and gated this way. The `dc.*` color system is not a
-hand-picked table of hex codes. Every palette color, every colormap, and every
-cycle is **generated deterministically from 107 numbers** by a small set of
-perceptual axioms, and each output is checked against color-science gates
-before it ships.
+This page explains why the design system's colors — and eventually its
+typography — are built and gated this way. It separates design choices,
+implementation contracts, measured catalog evidence, and limits so readers can
+judge each claim at the right scope.
+
+Modeled relative CIE Y (`relative_y`) is calculated from nominal D65 sRGB; it
+is not a measurement of a particular display, perceived brightness, or OKLab
+`L`.
 
 To use the color surfaces directly, see [Colors](colors.md),
 [Palettes](palettes.md), [Colormaps](colormaps.md), and
 [Color class](color-class.md). Every figure below is rendered live from the
 shipped package by `docs/color_system/generate_theory_figures.py`, so the
-pictures are the proof.
+pictures are reproducible evidence for the named build.
 
-## Three principles
+:::{note}
+**How to read the evidence**
 
-**1 · Perceptual-first.** Colors are designed on coordinates built for
-human vision, not on RGB or HSV. Lightness lives on CIELAB L\*; hue and
-chroma are manipulated in OKLCH. "Even in the numbers" and "even to the
-eye" are made to agree.
+- **Design choice** names an intended property or accepted trade-off.
+- **Implementation** names behavior pinned by the shipped software contract.
+- **Evidence** reports a result for the stated data, model, and protocol.
+- **Limits** state what that result does not measure or guarantee.
+:::
 
-**2 · Generative, not tabular.** Colors are not stored; they are *computed*.
-Each family is defined by a handful of numbers, and a compiler turns those
-numbers into a 10-step ladder. Consistency is enforced (every family passes
-the same rules), extension is principled (a new hue axis is a point on a
-curve, not a guess), and the design is verifiable (the per-family values lie
-on smooth low-order curves — evidence that it is *one curve*, not fifteen
-arbitrary choices).
+:::{tip}
+**The decision in plain language**
 
-**3 · Honest guarantees.** Color is a field of trade-offs: a palette that is
-perfect under one metric necessarily compromises under another. v5 does not
-hide this — it publishes **three metrics** and states, for each output, what
-it guarantees and what it does not. A claim like "accessible" or
-"perceptually uniform" is always qualified by *under which metric*.
+OKLab is a perceptually oriented working model, and OKLCH is its cylindrical
+coordinate view. The model gives the compiler useful lightness and distance
+coordinates; it is not a perfectly uniform law of vision.
 
-## The perceptual foundation (axiom A1)
+The shipped catalog also retains its modeled relative-Y targets where the
+compatibility contract requires them. A new, intentionally incompatible color
+system could use direct OKLCH `L` and choose different output rules. The extra
+Y lock is a compatibility promise, not a law of color theory.
 
-> **A1** — lightness is CIELAB L\* (D65); hue and chroma are OKLCH;
-> out-of-gamut colors are mapped the CSS Color 4 way (hold L\* and hue,
-> shrink chroma); every gate is judged in a ΔE metric.
+CIELAB, CIEDE2000, and named color-vision simulations do not construct the
+colors. They are model-specific checks on finished output. WCAG contrast
+answers a pairwise question for a named foreground and background.
+:::
+
+:::{note}
+**Four rulers, four different jobs**
+
+- OKLab and OKLCH are two coordinate views of the same perceptually oriented
+  working model. OKLab `L`, `a`, and `b` are Cartesian coordinates; OKLCH
+  expresses the same point with `L`, chroma `C`, and hue `h`.
+- `ΔEOK×100` is 100 times the raw Euclidean distance in Oklab. Multiplying by
+  100 changes displayed units, not ranking, equalized positions, or CV.
+- On the normalized modeled-relative-Y scale defined above, 0 means nominal
+  black and 1 means nominal reference white. This is modeled relative CIE Y
+  calculated from nominal D65 sRGB, not an observer or device measurement.
+- Catalog `relative_y` and WCAG relative luminance are closely related
+  decoded-sRGB Y-like calculations with separately pinned coefficient
+  conventions. WCAG adds a pairwise contrast ratio for a specified
+  foreground/background pair.
+
+CIELAB, CIEDE2000, and the named color-vision-deficiency (CVD) simulations are
+model-specific finished-output checks. Protan and deutan are red-green
+deficiency classes; tritan is a blue-yellow deficiency class. Each result is a
+model-specific regression diagnostic, not a construction coordinate, observer
+guarantee, or accessibility certification. A simulation result is not a
+guarantee for every individual observer.
+:::
+
+## Four principles
+
+**1 · One construction model.** Color construction uses OKLab L in the
+perceptually oriented OKLab model and authors chroma and hue through its
+cylindrical OKLCH coordinate view. Where a topology specifies path-distance
+placement, spacing uses `ΔEOK×100`; other topologies retain their explicit
+placement rules. CIELAB and CIEDE2000 do not drive the recipe or compiler.
+
+**2 · Generative, not tabular.** Colors are not authored as hand-picked
+tables; they are computed and stored as generated outputs. Each family is
+defined by a handful of numbers, and a compiler turns those numbers into a
+10-step ladder.
+
+Consistency is enforced because every family passes the same rules. Extension
+is principled because a new hue axis is a point on a curve, not a guess. The
+design is verifiable because the per-family values lie on smooth low-order
+curves rather than being unrelated choices.
+
+**3 · Separate compatibility output from perception.** The retained catalog
+contract is modeled `relative_y`, not a second perceptual lightness model. A
+recipe tone means `neutral_tone = cbrt(relative_y)`. For the shipped catalog,
+the relative-Y solver searches chromatic OKLCH `L` at the requested `C` and
+`h`; the common gamut mapper may then reduce `C` while preserving the
+resulting `L` and `h`.
+
+**4 · Honest validation.** The validation-only layer retains CIELAB, ΔE00,
+and named CVD simulations as model-specific regression diagnostics on finished
+colors. They do not control construction or certify accessibility.
+
+WCAG relative luminance uses a separately pinned coefficient convention, then
+adds a ratio for a specified foreground/background pair. No single metric
+makes a palette perfectly uniform.
+
+## The construction foundation (axiom A1)
+
+> **A1** — author color coordinates in OKLab/OKLCH, apply `ΔEOK×100`
+> arc-length placement only to the recipe paths that specify it, and retain
+> catalog `relative_y` as an explicit compatibility contract. For requests
+> whose OKLCH `L` is in range and chroma is non-negligible, pre-quantization
+> gamut mapping holds `L` and `h` constant while reducing `C`.
+> CIELAB/ΔE00/CVD remain model-specific finished-output diagnostics, and WCAG
+> contrast remains a pairwise check.
+
+The chromatic single-hue, continuous gray, and multi-hue sequential paths use
+ΔEOK arc-length resampling. The 11 diverging maps use pointwise symmetric arm
+construction followed by integer-index resampling; `hue` samples equal hue
+angles; and `halo` and `corona` use closed-path ΔEOK arc-length resampling.
+Discrete gray is the additional exception described in A6. These distinctions
+are part of construction, not validation.
+
+:::{note}
+**Gamut mapping in plain language**
+
+sRGB cannot display every OKLCH request. When a requested color is outside
+that displayable range, the mapper applies a narrow coordinate contract. For
+requests whose OKLCH `L` is in range and chroma is non-negligible, the
+pre-quantization bisection holds `L` and `h` constant while reducing `C`.
+Bisection repeatedly halves the remaining search range; the boundary search
+stops at the implementation's numeric tolerance. Near neutral, hue is powerless
+as a coordinate and numerically unstable, so no hue-preservation claim applies
+there. The final residual channel clamp and 8-bit serialization can perturb
+reconstructed OKLCH coordinates. Out-of-range achromatic lightness maps to
+black or white. This is a coordinate-preserving boundary policy, not a
+perceptual minimum-difference or global appearance optimization, and it does
+not preserve appearance exactly.
+:::
 
 :::{figure} theory_figures/theory_1_lightness_weber.svg
-:alt: Even steps in physical luminance bunch up at the light end; even steps in CIELAB L* are perceptually uniform.
+:alt: Neutral tone is the cube root of modeled relative CIE Y for nominal D65 sRGB; actual chromatic OKLab L remains a separate result coordinate.
 :width: 100%
 
-Human lightness perception responds to physical luminance logarithmically
-(Weber–Fechner). Even steps in luminance *Y* bunch up at the light end;
-even steps in CIELAB L\* form a perceptually even staircase.
+`neutral_tone` is the recipe's output coordinate: `relative_y = tone³`.
+Actual chromatic OKLab `L` is a result coordinate and can differ at the same
+tone because hue and chroma affect modeled relative Y. Keeping these names
+separate prevents a tone target from being mistaken for perceptual lightness.
 :::
 
-**Why L\* for lightness — "log spacing" is already built in.** A common
-instinct is to space color steps logarithmically rather than linearly. That
-instinct is already satisfied: L\* *is* the log-compressed coordinate
-(L\*50 ≈ 18% of white's luminance). Even spacing on L\* is therefore already
-even to the eye — applying a second log on top would double-compress and
-make the ramp *less* uniform.
+:::{note}
+**What these statistics mean**
 
-**Why OKLCH for hue and chroma.** CIELAB is excellent for lightness but
-distorts hue manipulation (brightening a blue drifts it toward purple).
-OKLCH (Ottosson, 2020) holds hue constant while lightness and chroma move
-independently, so a ladder keeps its color identity. The roles are split:
-**CIELAB L\* measures lightness, OKLCH does the manipulation.**
+The coefficient of variation (CV) compares the spread of neighboring
+distances with their mean. Lower CV means more even neighboring distances for
+the named sample; it does not prove that every observer sees perfectly equal
+steps. R² = 1 means a perfect fit to the specified model, so a value closer to
+1 is a better fit to that model, not proof that the model is universal. wRMSE
+is weighted fit error, so lower is better; it summarizes the named weighted
+data and is not itself a perception guarantee.
+:::
 
-**Gamut mapping.** When an OKLCH request falls outside sRGB, naive clipping
-skews the hue. The CSS Color 4 method holds L\* and hue fixed and shrinks
-chroma by bisection until the color is back in gamut.
+**Why OKLab/OKLCH throughout construction.** OKLab supplies the canonical
+`L`, `a`, `b` coordinates and ΔEOK path distance. Its cylindrical OKLCH view
+makes `C` and `h` convenient to author. A bounded ΔEOK coefficient of
+variation makes the ten steps more consistent; it does not assert that equal
+numbers guarantee exactly equal visual differences for every observer.
 
-## The generation axioms (A2–A8)
+:::{note}
+**Map words used below**
 
-Each axiom is a testable rule, recorded together with its adoption evidence
-(curve fit) and the alternative it beat.
+For forward/default registrations:
 
-### A2 · hue-specific lightness floor
+- Single-hue sequential: low values are light and high values are dark.
+- Multi-hue sequential: low values are dark and high values are light.
+- Diverging: two poles around a light center; no one monotonic low-to-high
+  direction applies.
+- Cyclic: no low/high direction; the generating path closes, as with angles
+  returning from 360° to 0°.
+- Qualitative: unordered categories rather than numeric values.
+- `_r` swaps the endpoint assignment for a registered continuous map.
+- The seam is the join between a cyclic map's end and start.
+- Isoluminant means designed to keep `relative_y` constant while hue changes;
+  it does not promise equal perceived brightness.
 
-> Every family starts at L\*96 and descends to a hue-specific floor. The
-> floor is not the gamut wall — it is a perceptual design value defined by a
-> Fourier curve `floor(h)`.
+Maintainers call a map's required output shape its *topology*: an ordered path,
+two matched arms, or a closed loop. A topology gate simply rejects output that
+breaks that required shape.
+:::
+
+:::{note}
+**What LUT means**
+
+A lookup table (LUT) is the ordered 256 colors shipped behind one continuous
+map. A renderer samples that stored sequence when it converts numeric values
+to colors. For a cyclic map, the continuous generating path includes a closing
+endpoint, but the shipped 256-entry LUT is endpoint-exclusive. Its first and
+last stored entries differ by one ordinary wrap step; they are not duplicate
+endpoints.
+:::
+
+**Why retain a relative-Y lock.** `relative_y` preserves the published nominal
+source-color ordering and continuous-map topology without asking CIELAB to
+drive construction. It is a compatibility requirement, much like a pinned
+numeric output budget. The unlocked diagnostic uses the same recipe and pre-limited
+chroma, rendered with `L=tone`; it isolates the relative-Y-lock effect and does
+not compute a new direct-L maximum-chroma boundary.
+
+This lock is not a universal law of color theory. A new, intentionally
+incompatible system could define `L=tone` and adopt different output rules.
+dartwork-mpl keeps the lock because the published palette and 43×256 LUTs,
+their modeled-relative-Y topology and behavior are
+compatibility contracts. Simply reinterpreting the migrated tone values as
+direct OKLCH `L` changes those outputs and breaks ordered/symmetric-map gates.
+The extra solve is therefore justified by an explicit compatibility promise,
+not by a need to mix CIELAB into construction.
+
+**Gamut mapping.** When an OKLCH request falls outside sRGB, channel clipping
+can skew hue. For an in-range `L` and non-negligible chroma, the named
+pre-quantization bisection holds the requested **OKLCH `L` and `h`** and reduces
+`C` until the color is in gamut. Near neutral, hue has no effective leverage;
+outside the achromatic lightness interval, the result is black or white. Final
+clamping and 8-bit serialization can slightly perturb reconstructed
+coordinates. No CIELAB target participates in this mapping.
+
+## The generation design rules (A2–A8)
+
+These are bounded catalog rules, not laws of color perception. Each rule names
+its design intent, current implementation, local evidence or illustration, and
+limits so that a catalog choice is not mistaken for a universal claim.
+
+:::{tip}
+**How to read A2–A8**
+
+Each design rule answers one practical question:
+
+- **A2:** How dark may each hue family go while retaining its identity?
+- **A3:** How colorful should each hue become, and where should it peak?
+- **A4:** How should hue turn as a family gets darker?
+- **A5:** Where should the ten named steps sit along the path?
+- **A6:** What changes for gray, which has no chromatic identity?
+- **A7:** What must pass before an output can be released?
+- **A8:** Why are colormap ranges chosen per topology and scene?
+:::
+
+### A2 · hue-specific dark endpoints
+
+> Every family follows a shared top tone and descends to a hue-specific
+> `tone_floor`. The floor is not the gamut wall: it is a design value defined
+> by a Fourier curve over hue and interpreted through `relative_y = tone³`.
+
+**Design intent.** Each family stops where the shipped catalog keeps the dark
+character chosen for that family. This is catalog art direction, not a
+psychophysical law. During catalog review, forcing the authored endpoints to
+one modeled-relative-Y minimum made the warm families look muddy. That is
+design history and judgment, not measured evidence.
+
+**Implementation.** The accepted model puts `tone_floor(h)` on a Fourier
+(k=3) curve. The v6 tone values were migrated once from the accepted v5 output
+targets and are now stored directly; production does not convert CIELAB values
+at runtime. A new family's floor is read from the tone curve.
 
 :::{figure} theory_figures/theory_2_floor.svg
-:alt: Each hue family descends only as far as its hue survives — yellow stops at L*60, violet reaches L*37.
+:alt: Each hue family descends to its own neutral-tone floor while the renderer preserves the corresponding modeled relative-Y target.
 :width: 100%
 
-Each hue goes only *as dark as the color survives*: yellow stops near L\*60
-(darker turns to olive mud), violet reaches L\*37 and is still violet. This
-is why the palette reads bright and crisp — dragging every family down to a
-shared minimum would muddy the warm hues.
+**Evidence.** In the accepted catalog, yellow has a higher tone floor than
+violet.
 :::
 
-The rejected alternative — "floor = the gamut wall where chroma has fallen
-to λ× its peak" — was physically elegant but missed the design floors by
-RMSE 15 L\*. The accepted model puts `floor(h)` on a Fourier (k=3) curve
-that fits the family floors to **RMSE 0.77 L\***: the floor is a smooth
-function of hue, and a new family's floor is read straight off the curve.
+**Limits.** `tone_floor` records the accepted catalog endpoint. It is neither
+the sRGB gamut boundary nor an experimentally measured threshold at which a hue
+stops being identifiable for every observer.
 
 ### A3 · chroma — hue fingerprint × shared shape
 
 > Peak chroma `C_max(h)` is a smooth function of hue (Fourier k=3); the
-> *shape* of the chroma ladder is one template shared by every family (rise
-> → peak at `t_p` → fall), and only the peak position `t_p` differs.
+> chroma ladder uses one shared rise-peak-fall functional form and shared
+> exponents. `C_max`, `t_p`, `c_0`, and `c_end` vary by family.
+
+**Design intent.** The families use one chroma grammar while retaining
+different scales, peak locations, and endpoint ratios. A3 shares a functional
+form, not every parameter.
+
+**Implementation.** Every family uses the same rise-peak-fall functional form
+and shape exponents. The scale (`C_max`), peak position (`t_p`), pastel-start
+ratio (`c_0`), and dark-end ratio (`c_end`) are family parameters. For example,
+red peaks dark (`t_p=0.85`) while yellow peaks mid-ladder (`t_p=0.45`).
 
 :::{figure} theory_figures/theory_4_chroma.svg
-:alt: Left, one Fourier curve fits every family's peak chroma; right, one shared rise-peak-fall shape with only t_p varying.
+:alt: Left, a Fourier curve descriptively fits the authored peak-chroma catalog; right, families share a functional form while their parameters vary.
 :width: 100%
 
-Left: one curve explains the peak chroma of all fifteen chromatic families
-(R²=0.945) — the cyan valley (sRGB is stingy with cyan) and violet peak fall
-out automatically. Right: the rise-peak-fall *shape* is identical for every
-family; only *when* the peak lands (`t_p`) changes — red peaks dark (0.85),
-yellow peaks mid-ladder (0.45).
+**Evidence.** Evaluating the Fourier curve at each family's mid-hue gives an
+in-sample R² of 0.997 across the authored nineteen-family catalog.
 :::
 
-### A4 · the drift power law
+**Limits.** The fit describes those authored `C_max` values. It is not
+predictive validation, proof of the sRGB gamut boundary, or a claim that the
+family peak positions are quality scores.
 
-> Hue rotates as a function of lightness: `h(t) = h₀ + Δh · t^γ`. As colors
-> darken, warm hues rotate a lot (toward flame-like orange/red), cool hues
-> a little.
+### A4 · catalog hue drift
+
+> Hue rotates along path progress: `h(t) = h₀ + Δh · t^γ`. As the path moves
+> toward its dark tone endpoint, warm hues rotate a lot (toward
+> flame-like orange/red), cool hues a little.
+
+**Design intent.** The accepted warm families turn toward orange/red at their
+dark ends, while the cool families turn less. This warm-hue drift is catalog
+art direction, not a psychophysical law.
+
+**Implementation.** Every chromatic family uses `h(t) = h₀ + Δh · t^γ`.
+The per-family `Δh` selects the endpoint rotation, and `γ` selects when that
+rotation occurs; `γ>1` concentrates it toward the dark end.
 
 :::{figure} theory_figures/theory_3_drift.svg
 :alt: Hue rotation curves — yellow rotates -46 degrees, blue only +15 degrees as they darken.
 :width: 100%
 
-Yellow rotates Δh −46° (bright lemon → dark amber); blue rotates only +15°.
-`γ` controls *when* the rotation happens (γ>1 accelerates it in the dark
-end). One power law captures every family's drift to wRMSE ≤ 1.7°. This
-drift is what keeps dark colors vivid instead of muddy.
+**Evidence.** Yellow rotates Δh −46° (bright lemon → dark amber), while blue
+rotates +15°. One power law fits the authored family paths to wRMSE ≤ 1.7°.
 :::
 
-### A5 · step placement is perceptual even-spacing
+**Limits.** The weighted fit error supports one compact description of this
+catalog. It does not establish identical perceived hue motion, preferred dark
+endpoints, or equal vividness for every observer.
 
-> The 10 steps are re-placed along the color path until neighbor ΔE is
-> uniform. Spacing is generalized by a warp function `w(t)`; the default is
-> linear (perceptually even), with `ease`/`exp`/`log` available as options.
+### A5 · chromatic ΔEOK arc-length step placement
+
+> Each 10-step chromatic family ladder is placed at equal arc-length intervals
+> along its rendered path under ΔEOK. The gray exception is specified in A6.
+
+**Design intent.** Fixed path-distance placement makes a two-index move a
+useful approximation to the same amount of travel elsewhere in one family.
+
+**Implementation.** For chromatic family ladders, the only shipped placement
+policy is fixed `ΔEOK` arc-length equalization. There is no public `ease`,
+`exp`, `log`, or spacing-warp option.
 
 :::{figure} theory_figures/theory_5_spacing.svg
 :alt: Equalized spacing flattens the neighbor delta-E curve; naive linear-t sampling leaves it uneven.
 :width: 100%
 
-Equalized spacing flattens the neighbor ΔE so that *step-number difference =
-perceptual difference* — index arithmetic becomes meaningful (`blue3↔blue5`
-covers the same perceptual distance as `blue6↔blue8`). Naive linear-*t*
-sampling leaves the spacing uneven.
+**Evidence.** Equalized spacing flattens the neighbor ΔEOK profile relative to
+naive linear-*t* sampling. That makes index
+differences a useful approximation (`blue3↔blue5` and `blue6↔blue8` cover
+similar path lengths).
 :::
 
-Even spacing is the default because it makes data visualization
-predictable. It is not the only valid answer: UI and document design often
-want more resolution at the ends (background pastels, emphasis darks), which
-an S-curve (`ease`) provides — so the spacing is left open as a warp option
-while the default stays linear.
+**Limits.** ΔEOK equalization is model-specific and is not an exact law of
+perception. Alternative placement policies are possible only as future,
+incompatible designs; shipping one would require an explicit public API and a
+compatibility contract.
 
-### A6 · the achromatic exception (gray)
+### A6 · the near-neutral gray exception
 
-Gray alone uses an even L\* ladder (96→28) with a faint cool tint
-(h250, C ≤ 0.011). Having no hue identity, it is exempt from the drift and
-chroma-fingerprint rules; even L\* alone keeps its neighbor ΔE uniform. Gray
-is reserved for grids, reference lines, benchmarks, and "other" categories —
-it is deliberately **not** part of Octave (`dc.octave`); Octave Print adds a
-dark gray as its 8th color for B&W lightness spread.
+**Design intent.** Gray is near-neutral, with a deliberate cool tint, so it can
+serve grids, reference lines, benchmarks, and "other" categories without
+competing with the chromatic families.
 
-### A7 · the hard gates
+**Implementation.** The gray ladder directly samples ten evenly spaced
+neutral-tone positions on the shared modeled-Y path at h250, using the stored
+chroma profile with C ≤ 0.011. It does not call the chromatic-family
+equalizer. Its resulting neighbor ΔEOK near-evenness is measured and protected
+by frozen non-regression gates. The separate continuous-gray colormap does use
+continuous ΔEOK arc-length resampling. The shipped ladder retains that small
+nonzero chroma. Gray is not part of Octave (`dc.octave`); Octave Print adds a
+dark gray as its eighth color for a distinct historical neutral-coordinate
+diagnostic.
 
-Verified automatically at compile time; an output that fails cannot ship.
+**Evidence.** No user-study or task-performance protocol has established that
+the cool tint improves those chart roles. A6 records a design choice rather
+than a measured benefit.
 
-| Gate | Criterion | Metric |
+**Limits.** The word "gray" names the catalog role. The colors are not
+perfectly achromatic, and the cool tint is not a guarantee of perceptual
+neutrality for every observer or surround.
+
+### A7 · per-asset release gates
+
+**Design intent.** Release validation preserves exact public output and rejects
+metric regressions relative to the accepted asset, rather than turning one
+design-time threshold into a universal color rule.
+
+**Implementation.** Current quality gates are per-asset frozen-baseline
+non-regression checks on raw, unrounded values. Exact mismatches or a listed
+quality regression fail the color-authority comparison.
+
+| Release surface | Current contract | Raw metric or authority |
 |---|---|---|
-| L\* monotonic | strictly light→dark within a family | CIELAB L\* |
-| Equalization uniformity | neighbor-ΔE coefficient of variation cv ≤ 0.08 (palette ladders only — sequential-cmap cv is measured, not hard-gated) | OKLab ΔE |
-| Categorical accessibility | common CVD (normal + protan + deutan) min ΔE ≥ 10; rare tritan ≥ 8 (accurate Brettel-1997 model) | CIEDE2000 |
-| Sequential-cmap gray monotonic | monotonic even under luminance conversion | CIELAB L\* |
+| Exact public surfaces | names, order, colors, and discrete selections reproduce the published catalog with zero mismatches | strict frozen compatibility payload |
+| Every direct-32 and full-256 row | count and degenerate-neighbor status match; step CV does not exceed its asset baseline | count, zero-step presence, and `ΔEOK×100` step CV |
+| Ordered palette and sequential/multi-hue direct-32/full-256 rows | preserve direction, modeled-relative-Y/OKLab-L monotonic floors, and modeled-relative-Y span; ordered direct-32 step CV ≤ `min(v5, 0.08)` | direction, oriented neighbor minima, span, and step CV |
+| Ordered sequential/multi-hue full-256 rows | the weakest adjacent normal-sRGB pair has non-negative modeled-relative-Y margin after expanding both stored colors to their local half-step 8-bit round-to-even cells | `oriented_delta_y + local_tolerance >= 0` at the recorded worst pair |
+| Diverging/cyclic direct-32 and every quantized full-256 row | step CV does not regress from that asset's frozen v5 value | per-asset `ΔEOK×100` step CV |
+| Categorical rows | normal, protan, deutan, tritan, and common minimum separations do not regress | per-asset CIEDE2000 minima after the named CVD pipelines |
+| Diverging full-LUT topology | center, both arms, arc/step balance, and mirrored modeled-relative-Y/ΔEOK summaries do not regress | per-asset diverging topology record |
+| Cyclic full-LUT topology | topology kind and seam metrics do not regress; `hue` retains its isoluminant modeled-relative-Y spread, while twilight maps retain their two-arm records | per-asset seam ΔEOK/CIEDE2000, modeled-relative-Y, and arm/mirror records |
 
-### A8 · colormaps do not inherit the palette floors
+The categorical pipeline starts from catalog hex colors, decodes nominal sRGB
+to linear sRGB, applies the named full-severity Machado (2009) protan/deutan or
+Brettel–Viénot–Mollon (1997) tritan simulation, clamps simulated channels and
+re-encodes nominal sRGB, applies the catalog's 8-bit hex quantization
+convention, converts the quantized results to CIELAB, and compares every pair
+with CIEDE2000.
 
-> Heatmap sequential colormaps are generated on a *wide* L\* range
-> (96 → ~20), not on the family's hue-specific floor.
+**Evidence.** The frozen oracle is checked with published Sharma et al.
+CIEDE2000 reference pairs, source-pinned Machado (2009) matrices,
+project-adapted Brettel–Viénot–Mollon (1997) matrices, and project-derived CVD
+regression cases before candidate metrics are compared. The common-CVD 10 and
+tritan 8 thresholds were historical Octave search criteria; they selected the
+accepted rows but are not universal categorical minima or the current shared
+release policy.
+
+The full-256 quantization margin is an encoding proof, not a perceptual
+threshold. It asks only whether the intended normal-sRGB modeled-Y order is
+possible inside the two local 8-bit cells. CVD results keep model-specific
+per-asset regression checks instead of borrowing that normal-sRGB proof.
+
+**Limits.** These gates show non-regression under named software models and
+accepted baselines. CVD simulation does not represent every observer, and a
+passing row is not a general accessibility certification.
+
+WCAG remains outside the color-authority compile-gate table. A tested pairwise
+contrast ratio and threshold is a separate check for a specified
+foreground/background pair; it does not certify the catalog.
+
+### A8 · palette-floor-independent, topology-specific ranges
+
+> Continuous-map ranges are palette-floor-independent but class- and
+> scene-specific. They do not inherit each palette family's hue-specific
+> `tone_floor`.
+
+**Design intent.** Each continuous map needs enough output range for its own
+ordered, diverging, or cyclic scene without forcing every topology through one
+range contract.
+
+**Implementation.** Single-hue ramps, multi-hue sequential scenes, diverging
+pairs, and cyclic maps use their own class- and scene-specific endpoint and
+topology recipes instead of palette family floors.
 
 :::{figure} theory_figures/theory_7_dcseq.svg
-:alt: aurora vs viridis — aurora holds a monotonic, near-linear L* over a wider range.
+:alt: Aurora and viridis compared with actual OKLab L, modeled relative Y, and neighbor DeltaEOK profiles.
 :width: 100%
 
-A palette ladder stops at its hue floor, so different families span
-different L\* ranges — fine for categorical swatches, wrong for a heatmap
-where dynamic range and cross-panel comparability matter. Colormaps are
-regenerated over a shared wide range instead. `aurora` holds monotonic,
-near-linear L\* (ΔE cv 0.063, L\* range 81.9) against viridis (cv 0.086,
-76.0) on the same 32-stop measurement of the shipped 256-LUT.
+**Illustration.** This is a bounded same-protocol benchmark under the displayed
+32-stop sampling: `aurora` reports ΔEOK cv 0.063, actual-OKLab-L span 0.696, and
+modeled-relative-Y span 0.884; viridis reports 0.086, 0.633, and 0.763
+respectively.
+Lower CV is more even, so these measurements show a lower step-variation
+coefficient for `aurora` in this sample. A larger span means more range on the
+named coordinate, so `aurora` also covers wider actual-OKLab-L and
+modeled-relative-Y spans here. The comparison does not establish perfect
+perceptual uniformity or universal perceived-brightness range.
 :::
+
+**Limits.** Cross-panel comparison of the same variable requires the same
+colormap, direction, and normalization, including identical limits or the same
+`Normalize` object. Different maps are not one comparable color scale. Even
+then, the reported spans and CV describe the named coordinates and sampling
+protocol rather than universal perception.
 
 ## Anatomy of a family
 
-The whole system regenerates from **107 numbers**: 19 chromatic families × 4 free
-parameters (76) + 24 Fourier coefficients for the global hue curves + 7
-constants. A family's four free numbers are `h₀` (hue anchor), `Δh` (total
-drift), `γ` (drift timing), and `t_p` (chroma-peak position); the other four
-(`C_max`, `floor`, `c₀`, `c_end`) are *derived* from the global curves.
+The generated `dc.*` ramps are not hand-picked tables of hex codes. Their
+palette-authoring recipe uses the bookkeeping and scalar-leaf counts below.
+Continuous maps carry additional topology-specific recipe data, while curated
+categorical sets are a separate, preserved manual surface. These figures
+describe palette authoring, not the MCP API (which exposes 16 tools, 10
+resources, 4 resource templates, and 2 prompts).
+
+The generated system has two related recipe counts.
+Its bookkeeping total is **107 named slots**:
+
+- 19 chromatic families × four free authoring fields = 76 named slots;
+- four third-order Fourier series × six coefficients = 24 named slots; and
+- seven named constants = seven slots.
+
+`GRAY_C_PROFILE` contains ten numbers but counts as one named constant. With
+the same exclusions, this corresponds to **116 scalar numeric leaves**.
+`TONE_DERIVATION_GRID` is migration-only and excluded from both totals.
+
+Shipped family records store all eight operational values. The four authored
+fields are `h₀` (hue anchor), `Δh` (total drift), `γ` (drift timing), and `t_p`
+(chroma-peak position). The four Fourier-derived fields are `C_max`,
+`tone_floor`, `c₀`, and `c_end`; they are an extension prior/mechanism, not
+recomputed for every current row at runtime.
+
+Gray makes the single-hue catalog 20 families total but follows its shared
+achromatic constants instead of a chromatic family row. The hand-tuned curated
+sets are preserved outputs, not part of either recipe count. Continuous maps
+carry additional topology-specific recipes, so 107 is not the input count for
+the entire continuous catalog.
 
 :::{figure} theory_figures/theory_8_anatomy.svg
-:alt: The eight numbers that define the yellow family and the L*, chroma, and hue trajectories they produce.
+:alt: Yellow family inputs and the actual OKLab L, modeled relative-Y, chroma, and hue trajectories they produce.
 :width: 100%
 
-The eight numbers behind `yellow`, and the trajectories they drive: L\*
-descends to the floor, chroma rises to its peak at `t_p`, and the hue drifts
-by `Δh` on the `γ` schedule.
+The yellow inputs and derived values drive four distinct traces: recipe tone,
+rendered catalog `relative_y`, actual OKLab `L`, and the OKLCH `C`/`h` path.
+The separation is deliberate: tone is not another spelling of chromatic `L`.
 :::
 
-The confirmed parameters, rounded to a human-readable grid (rounding moves a
-palette by mean ΔE 0.5–1.4, below the 8-bit hex quantization floor):
+The historical parameter grid below is retained to explain the exact v5→v6
+migration. The `legacy floor L*` column is provenance only: v6 stores the
+derived 0–1 `tone_floor` and production performs no CIELAB conversion. Other
+values are rounded for readability and are not a replacement SSOT.
 
-| family | h₀ | Δh | γ | t_p | C_max | floor | c₀ | c_end |
+| family | h₀ | Δh | γ | t_p | C_max | legacy floor L* | c₀ | c_end |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
 | `red` | 16 | +11 | 1.10 | 0.85 | 0.210 | 42 | 0.10 | 0.90 |
 | `rose` | 3 | +14 | 1.00 | 0.85 | 0.210 | 40 | 0.10 | 0.85 |
@@ -227,67 +522,90 @@ palette by mean ΔE 0.5–1.4, below the 8-bit hex quantization floor):
 | `fuchsia` | 335 | +9 | 0.95 | 0.80 | 0.210 | 37 | 0.05 | 0.85 |
 | `pink` | 350 | +18 | 0.85 | 0.85 | 0.210 | 39 | 0.05 | 0.85 |
 
-> `gray` follows the A6 rule (L\* 96→28, cool tint h250). A new family needs
-> only its four free numbers — the rest is read off the global curves.
+> `gray` follows the A6 neutral-tone rule with a cool tint at h250. Its
+> historical v5 endpoints were L\* 96→28; those numbers are migration
+> provenance, not live recipe inputs. A new chromatic family needs only its
+> four free numbers — the rest is read from the global curves.
 
 ## The metric system — what the ruler is
 
-A color system's credibility depends on **which ruler measures distance**.
-v5 uses three, each for what it is best at:
+A color system's credibility depends on **which ruler owns which decision**.
+The current system separates four roles without pretending that each name
+denotes an unrelated physical quantity:
 
-| Purpose | Metric | Why |
+| Purpose | Coordinate or metric | Role |
 |---|---|---|
-| Equalization & design | OKLab ΔE | the space the recipe lives in; built for gradient uniformity |
-| Accessibility gate | CIEDE2000 | the industry-standard discrimination metric, calibrated against the Okabe-Ito benchmark |
-| Lightness & grayscale guarantee | CIELAB L\* | matches physical print and grayscale conversion |
+| Construction | OKLab `L`, OKLCH `C`/`h`, `ΔEOK×100` | authoring and topology-specific path placement in one perceptually oriented model |
+| Catalog compatibility | `relative_y` from nominal D65 sRGB | accepted ordering, symmetry, and the `hue` isoluminant contract |
+| Finished-output diagnostics | CIELAB, CIEDE2000, Machado/BVM CVD | model-specific regression diagnostics only |
+| Text contrast | WCAG relative luminance plus contrast ratio | pairwise result for a specified foreground/background pair |
+
+Catalog `relative_y` and WCAG relative luminance both decode sRGB and form a
+Y-like weighted sum. Their separately pinned coefficient conventions are a
+software-compatibility detail, not evidence of two unrelated phenomena. WCAG
+then adds its pairwise contrast-ratio formula.
 
 :::{figure} theory_figures/theory_6_metric.svg
-:alt: blue7 and violet7 are distinct in normal vision but collapse under deutan simulation; ΔE76 scores it a pass, CIEDE2000 correctly fails it.
+:alt: Under the named deutan simulation, DeltaE76 and CIEDE2000 assign different model-specific distances to blue7 and violet7.
 :width: 100%
 
-The single most important correction in v5. An earlier design measured
-accessibility with ΔE76 (CIELAB Euclidean), which over-states the distance
-between high-chroma colors. `blue7` and `violet7` are two clear colors in
-normal vision but nearly merge under a deuteranopia simulation. ΔE76 scores
-them well above the gate threshold — a false pass — while CIEDE2000 scores
-them below it and correctly fails. An adversarial critique caught this; the
-gate was switched to CIEDE2000 and the cycle re-searched from scratch.
+This is an important regression-model correction inherited from v5. An earlier
+diagnostic used ΔE76 (CIELAB Euclidean), which assigns a larger distance to
+this high-chroma pair under the named simulation.
+
+`blue7` and `violet7` are distinct in their unsimulated nominal-sRGB rendering
+but nearly merge under the named deutan simulation. ΔE76 puts the pair above
+the historical regression threshold, while CIEDE2000 puts it below that
+threshold.
+
+That result motivated switching the shipped regression diagnostic to
+CIEDE2000 and re-searching the cycle. It does not establish that either score
+is an observer guarantee or accessibility certification.
 :::
 
-All three coefficients of variation are published on the palette diagnostic
-card. **No step placement drives all three to zero simultaneously** — being
-explicit about what is guaranteed is the honest design (principle 3).
+The diagnostics publish multiple model-specific rulers. Equalizing ΔEOK steps
+does not simultaneously equalize CIEDE2000 distances, modeled-relative-Y
+increments, or separations after a named CVD simulation. Being explicit about
+what is constructed and what is only validated is the honest design
+(principle 4).
 
-The CVD simulation behind the accessibility gate is itself chosen for
-accuracy per deficiency. The common red-green deficiencies (protanopia,
-deuteranopia) use the Machado (2009) model; the rare S-cone deficiency
-(tritanopia) uses the physiologically accurate Brettel-Viénot-Mollon (1997)
-projection, because Machado's fitted tritan matrix over-states blue-yellow
-separation. Under the accurate model a seven-hue cycle's tritan separation
-tops out near 9 — so, rather than claim a number the colors cannot meet, the
-gate is **tiered**: the common deficiencies are held to ≥ 10 and the rare
-tritan to a realistic ≥ 8. `dc.octave` measures 10.3 (common) / 8.3 (tritan)
-for Octave; `dc.octave_print`, 10.4 / 9.8 for Octave Print. Octave Print is
-hue-parallel with Octave — same hue per slot, with the violet slot matching
-and the dark gray anchor in slot eight — while keeping every pair at least
-about 7 L\* apart (min ΔL\* 7.7) for grayscale. Publishing the real floors
-instead of a flattering worst-case is the same honest-guarantees principle at
-work.
+The CVD validation model is chosen per deficiency. The common red-green
+deficiencies (protanopia and deuteranopia) use Machado et al. (2009) at full
+severity. Tritanopia uses the Brettel–Viénot–Mollon (BVM, 1997) projection.
+
+The common-CVD 10 and tritan 8 floors were historical Octave selection
+criteria, not current shared release gates. Under the named full-severity
+simulation diagnostics, `dc.octave` measures 10.3 (common) / 8.3 (tritan) for
+Octave; `dc.octave_print`, 10.4 / 9.8 for Octave Print. For these simulated
+minimum distances, higher is better because it means the nearest pair remains
+farther apart. The scores apply only to the named models and severity, not
+every observer or viewing condition, and they do not certify accessibility.
+
+Octave Print is hue-parallel with Octave — same hue per slot, with the violet
+slot matching and the dark gray anchor in slot eight. Its historical CIELAB
+neutral-coordinate diagnostic records a minimum pairwise ΔL\* of 7.7. A larger
+minimum means more source-color separation under that bounded calculation; it
+does not model a particular printer, paper, conversion workflow, background,
+overlap, or observer, and does not by itself guarantee readable text. These
+validation numbers do not feed color selection in the v6 compiler.
 
 ## Colormaps, derived from the palette
 
-The colormaps are made by the *same* generative system (perceptual
-coordinates + recipe + ΔE equalization + gates): 43 continuous maps across
-four families, plus the two palette cycles registered as qualitative maps. A
-colormap is not a separate color vocabulary — it is *derived from the palette*,
-and the naming grammar enforces that relationship.
+The continuous colormaps use the same OKLab/OKLCH construction and modeled
+relative-Y compatibility policy as the palette: **43 continuous maps** across
+four kinds.
+
+A separate set of **13 qualitative colormaps** comprises the two Octave cycles
+and 11 curated qualitative sets. `dm.list_colors()` therefore returns 56
+family records. The qualitative rows are registrations, not extra continuous
+recipes.
 
 :::{figure} theory_figures/theory_9_cmap_catalog.svg
-:alt: The full 43-map v5 continuous colormap catalog rendered as gradients, grouped by family.
+:alt: The full 43-map v5-compatible continuous colormap output rendered as gradients and grouped by kind.
 :width: 100%
 
-The full catalog: 20 single-hue ramps, 9 multi-hue scenes, 11 diverging pairs,
-three cyclic maps, and the two qualitative cycle registrations.
+The continuous catalog: 20 single-hue ramps, 9 multi-hue scenes, 11 diverging
+pairs, and 3 cyclic maps. Qualitative registrations are cataloged separately.
 :::
 
 **One naming grammar.** The name states color identity; the suffix states a
@@ -302,27 +620,39 @@ variant.
 | diverging cmap | a `low_high` pair name | `dc.blue_red` |
 | cyclic cmap | a circular-light-phenomenon name | `dc.halo` |
 | qualitative cmap | stable public cycle token | `dc.octave` |
-| variant suffix | `_r` (reverse) | `dc.aurora_r` |
+| continuous-map variant suffix | `_r` (reverse) | `dc.aurora_r` |
 
-**Direction — an ink/light metaphor.** *Ink* maps (single-hue, diverging)
-follow the "ink on white paper" metaphor: **high value = darker**. *Light*
-maps (multi-hue, cyclic) follow the "light out of darkness" metaphor:
-**high value = brighter** (the viridis convention). This replaces matplotlib's
-unprincipled mix of directions (`Blues` runs light→dark, `viridis` runs
-dark→light) with an explicit rule; reverse any map with `_r`.
+**Direction — an ink/light metaphor.** The metaphor applies to the two
+sequential classes, not every topology. For forward/default registrations,
+single-hue sequential maps assign low values to light colors and high values to
+dark colors; multi-hue sequential maps assign low values to dark colors and
+high values to light colors. Diverging maps have two poles around a light
+center, cyclic maps have no low/high direction, and qualitative maps are
+unordered.
 
-**Anchor-graph coherence.** The 15 family anchors (`h₀`) are the system's
-only hue vocabulary. A single-hue map renders one anchor; a diverging map
-joins an anchor *pair*; a multi-hue map traces a *path* through anchors; a
-cyclic map is a *closed loop* back to its start. Palette, cycle, and colormap
-all live on one graph.
+This replaces matplotlib's unprincipled mix of directions (`Blues` runs
+light→dark, `viridis` runs dark→light) with explicit sequential rules. `_r`
+is registered only for continuous maps and swaps the endpoint assignment.
+Reverse qualitative palettes with `dm.colors(..., reverse=True)`.
+
+**Anchor-graph coherence.** The 19 chromatic `h₀` anchors describe palette
+identity and multi-hue scene waypoints; they are not the only hue source. A
+single-hue map renders one family identity, and a multi-hue map interpolates
+through the named waypoints. Diverging recipes may use rendered poles, and
+cyclic recipes may traverse a full hue circle. Their generating paths still
+share the catalog's construction and validation contracts.
+
+Palette, cycle, and colormap all live on one graph.
 
 ### The multi-hue scenes
 
-Multi-hue maps traverse several hues to maximize perceptual resolution.
-Because they cannot be named after one family, they take scene names — but
-grounded in the dartwork theme "the natural-light scene where that color
-path actually appears," with hue way-points chosen only at family anchors:
+Multi-hue maps traverse several hues while retaining an ordered modeled
+relative-Y compatibility path. Because they cannot be named after one family,
+they take scene names.
+
+Scene names are mnemonic art-direction labels that evoke natural-light scenes;
+they do not claim colorimetric fidelity to those phenomena. Family anchors name
+the scene waypoints:
 
 | Name | Scene | Anchor path | Analogous to |
 |---|---|---|---|
@@ -333,12 +663,13 @@ path actually appears," with hue way-points chosen only at family anchors:
 | `lagoon` | lagoon water | blue→cyan→teal→green→lime | — |
 | `glacier` | glacier-crevasse light | indigo→blue→sky→cyan→teal | ice |
 | `canopy` | forest-canopy light | teal→green→lime→yellow | algae |
-| `haze` | misty dawn (low-chroma, CVD-optimal) | blue→sky→green→yellow | cividis |
+| `haze` | misty dawn (low-chroma, CVD-oriented) | blue→sky→green→yellow | cividis |
 | `iris` | wide-band spectrum | violet→blue→cyan→green→yellow→orange | Spectral |
 
-`aurora` earns the default: against viridis it is ~1.3× as uniform (ΔE cv
-0.063 vs 0.086) over a wider L\* range (81.9 vs 76.0), measured identically
-at 32 stops on the shipped 256-LUT.
+`aurora` earns the default through a combination of direction, range, and
+measured step consistency. Under the identical 32-stop shipped-LUT protocol,
+its ΔEOK cv 0.063 vs 0.086 for viridis is lower. That is a bounded
+same-protocol benchmark, not a claim of perfect uniformity.
 
 ### The cyclic maps
 
@@ -348,45 +679,68 @@ at 32 stops on the shipped 256-LUT.
 
 Angle and phase data (0° = 360° — CFD phase fields, FFT phase, wind
 direction) drawn with an ordinary sequential map grow a *false*
-discontinuity at the 0↔1 seam. A cyclic map starts where it ends, so the
-seam vanishes. `halo` and `corona` are double-lobed lightness loops; `hue`
-is an isoluminant hue wheel. The L\* monotonicity gate does not apply to
-cyclic maps; a seam-continuity gate does instead.
+discontinuity at the 0↔1 seam. A cyclic map's generating path closes at that
+join. The stored LUT remains endpoint-exclusive, so its first and last entries
+are adjacent rather than identical.
+
+`halo` and `corona` are **dark-center**, double-lobed modeled-relative-Y loops;
+only `hue` is an isoluminant hue wheel. Ordered-map monotonicity does not apply
+to cyclic maps; seam ΔEOK and topology gates do, while only `hue` has a
+`relative_y`-spread gate.
 :::
 
 ## What this system does not guarantee
 
-Stated plainly, per principle 3:
+Stated plainly, per principle 4:
 
-- **Grayscale separation of diverging maps.** Both arms converge to the same
-  lightness — the essence of a symmetric map. Grayscale print needs
-  contours, hatching, or numbers alongside.
-- **Body-text contrast of the yellow family.** 4.5:1 on white is
-  structurally impossible for yellow (true of every color system); each
-  family's "text-safe step" is marked on its diagnostic card.
+- **Neutral-coordinate convergence in diverging maps.** Both arms converge to
+  the same center by design. In workflows that remove or alter color, use
+  contours, hatching, or numbers alongside rather than relying on the palette
+  alone.
+- **Bright-yellow text on white.** No current shipped yellow token reaches
+  4.5:1 against white. Darker olive-yellow colors can exceed 4.5:1, but they
+  are outside the shipped yellow ramp's accepted endpoint. This is a
+  selected-ramp identity choice, not a structural impossibility of yellow. It
+  preserves the ramp's accepted bright-yellow identity. Each family diagnostic
+  card marks the first shipped step that passes its stated contrast check, or
+  explicitly reports that no shipped step passes.
 - **Cross-family orthogonality of the warm dark steps.** `yellow9`,
   `amber9`, and `orange8` converge in a narrow hue corridor (a geometric
   consequence of the drift aesthetic); the family names' color identity is
   reliable through steps 0–7.
-- **On-screen perceived brightness.** The L\* gate is a luminance (print)
-  criterion; the Helmholtz–Kohlrausch effect makes saturated dark steps
-  read brighter than an equal-L\* gray.
-- **Dark backgrounds.** Every gate assumes a white background in v5; a dark
-  variant is planned for v5.1.
-- **turbo-style high-contrast rainbows.** Their apparent "detail" comes from
-  a non-monotonic L\* — the very flaw that invents structure that is not in
-  the data (an A7 violation). `iris` is the widest monotonic hue path
-  possible.
+- **Display output or universal perceived brightness.** Catalog `relative_y`
+  is modeled from nominal sRGB values. It is neither a display measurement nor
+  a complete appearance model; the Helmholtz–Kohlrausch effect can make a
+  saturated color look brighter than a neutral with the same modeled Y.
+- **One contrast claim for every background.** A WCAG contrast result applies
+  only to its specified foreground/background pair. The dark preset's
+  seven-color cycle therefore has pair-specific WCAG text-contrast checks for
+  named backgrounds and separate model-specific ΔE00/CVD collision
+  diagnostics in `src/dartwork_mpl/asset/mplstyle/theme-dark.mplstyle`.
+- **Observer-wide accessibility.** CIELAB/CIEDE2000 and the named CVD
+  simulations are model-specific finished-output diagnostics. Their thresholds
+  are regression contracts, not guarantees for an individual observer,
+  viewing condition, or assistive need.
+- **turbo-style high-contrast rainbows.** Non-monotonic modeled relative Y is
+  a map property. Its suitability and its tendency to create ordering
+  ambiguity or emphasize variation are task-dependent. That does not mean that
+  all apparent detail is invented. `iris` keeps the accepted ordered-output
+  topology across its wide hue path.
 
 ## Reproducibility
 
-The machine-readable SSOT (all 91 parameters, the palette, the cycles, and
-the 43-map catalog) lives beside the design record:
+The packaged v6 authority contains the palette-authoring recipe's 107 named
+bookkeeping slots (116 scalar numeric leaves under the exclusions above),
+additional topology-specific continuous-map recipe data, compiled exact-output
+contracts, metric provenance, and catalog metadata. Historical v5 data remains
+an immutable compatibility fixture rather than a production recipe:
 
-- `docs/superpowers/specs/2026-07-03-color-system-v5-design-rationale.md` — the full
-  design rationale.
-- `docs/superpowers/specs/assets/2026-07-03-color-system-v5/color_v5_ssot.json`
-  — the parameter/palette/cmap SSOT.
+- `docs/adr/0001-oklab-centered-color-construction.md` — the accepted decision
+  and rejected alternatives.
+- `src/dartwork_mpl/asset/color/color_v6_ssot.json` — the packaged operational
+  recipe and contract SSOT.
+- `docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system/` — the
+  frozen v5 compatibility and quality fixtures.
 - `docs/color_system/generate_theory_figures.py` — regenerates the figures
   above from the shipped package (run only when the SSOT changes).
 
@@ -400,10 +754,11 @@ the 43-map catalog) lives beside the design record:
 ## Typography rationale
 
 The font system now follows the same evidence pattern as color: families are
-not bundled because they look plausible in a specimen sheet. Each family has
-one chart job, every measured claim is derived from the shipped font files,
-and the fallback chain is treated as product behavior rather than an accident
-of matplotlib configuration.
+not bundled because they look plausible in a specimen sheet.
+
+Each family has one chart job. Every measured claim is derived from the
+shipped font files, and the fallback chain is treated as product behavior
+rather than an accident of matplotlib configuration.
 
 **T1 · Jobs before taste.** Every registered matplotlib family has exactly one
 documented role: body, display, Korean body, serif, monospace, Korean
@@ -438,44 +793,55 @@ family that resolves every guaranteed chart glyph, the digits, and `한`.
 
 Source Serif 4 is an opt-in family: it is not wired into any preset fallback
 chain, so a serif figure asks for it explicitly with
-`plt.rcParams["font.family"] = "Source Serif 4"`. No Korean serif (명조) is
-bundled — a legible Hangul serif would add several megabytes, so KR serif is
-out of scope by design. For monospaced Hangul (code blocks, aligned Korean
-tables) set `font.family = ["JetBrains Mono", "D2Coding"]` so both scripts stay
-fixed-width.
+`plt.rcParams["font.family"] = "Source Serif 4"`.
+
+No Korean serif (명조) is bundled — a legible Hangul serif would add several
+megabytes, so KR serif is out of scope by design.
+
+For monospaced Hangul (code blocks, aligned Korean tables), set
+`font.family = ["JetBrains Mono", "D2Coding"]` so both scripts stay fixed-width.
 
 ```{raw} html
 :file: ../_static/typography_matrix.html
 ```
 
-In the matrix, **Aligned digits** means the default digit advances are uniform in
-real matplotlib output, or the family is fixed-width. **tnum available** is a
-browser/specimen signal only: `Inter` and `Pretendard` expose the OpenType
-feature, but matplotlib does not apply it, so use `IBM Plex Sans`, `Source Sans
-3`, `Paperlogy`, `Noto Sans`, `Roboto`, `Source Serif 4`, or monospace
-families when aligned numeric axes are the requirement.
+In the matrix, **Aligned digits** means the default digit advances are uniform
+in real matplotlib output, or the family is fixed-width.
+
+**tnum available** is a browser/specimen signal only: `Inter` and `Pretendard`
+expose the OpenType feature, but matplotlib does not apply it. Use
+`IBM Plex Sans`, `Source Sans 3`, `Paperlogy`, `Noto Sans`, `Roboto`,
+`Source Serif 4`, or monospace families when aligned numeric axes are the
+requirement.
 
 ### Anatomy of the fallback chain
 
 Plain text in matplotlib resolves glyphs from `font.family`, so the chain must
-name actual bundled families, not just the generic `sans-serif` alias. The
-order starts with the body voice (`Roboto`, then `Inter`), moves through
+name actual bundled families, not just the generic `sans-serif` alias.
+
+The order starts with the body voice (`Roboto`, then `Inter`), moves through
 Korean and CJK coverage (`Paperlogy`, `Noto Sans CJK KR`, `Pretendard`), then
-lands on math and symbol faces. In the pinned resolver map, digits and most
-operators resolve in Roboto, `→` first appears in Inter, and `한` first appears
-in Paperlogy; nothing falls through to DejaVu.
+lands on math and symbol faces.
+
+In the pinned resolver map, digits and most operators resolve in Roboto, `→`
+first appears in Inter, and `한` first appears in Paperlogy; nothing falls
+through to DejaVu.
 
 `font.sans-serif` is held identical to `font.family` — bundled families plus
 the generic terminator, with no machine-dependent OS fonts (Lato, Arial,
 Malgun Gothic, …). Anything past the bundle intentionally falls to
-matplotlib's default rather than a font that happens to be installed, so a
-figure renders the same on every machine.
+matplotlib's default rather than a font that happens to be installed. Byte
+reproducibility is bounded to bundled glyph coverage and a pinned rendering
+environment; unpinned matplotlib, FreeType, backend, or missing-glyph behavior
+can still change output.
 
 Math segments obey the same discipline. The custom mathtext fontset is matched
 to the body: `rm`/`it`/`bf`/`sf` are Roboto, `tt` is JetBrains Mono, and `cal`
-is the matplotlib-bundled STIXGeneral. Greek and operators absent from those
-fall to `stixsans` (also matplotlib-bundled), never DejaVu, and
-`mathtext.default: regular` makes a bare `$R^2$` render in the same upright
-body face as the labels around it. Under a `-kr` preset the body face is
-Paperlogy, so the Latin and digits in a math span match the Korean labels while
-symbols still resolve through STIX.
+is the matplotlib-bundled STIXGeneral.
+
+Greek and operators absent from those fall to `stixsans` (also
+matplotlib-bundled), never DejaVu. `mathtext.default: regular` makes a bare
+`$R^2$` render in the same upright body face as the labels around it.
+
+Under a `-kr` preset the body face is Paperlogy, so the Latin and digits in a
+math span match the Korean labels while symbols still resolve through STIX.

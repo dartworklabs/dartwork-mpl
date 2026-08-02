@@ -40,7 +40,7 @@ bev_share = [
 ]  # battery EV share of new car sales, %
 eu_2030_target = 55.0  # EU CO2 fleet target implies ~55% BEV share by 2030
 
-# 3. OKLCH gradient — color encodes magnitude (perceptually uniform).
+# 3. OKLCH gradient — color encodes magnitude on a regular authoring path.
 #    dm.cspace(start, end, n) returns Color objects across OKLCH space.
 #    Higher value → deeper hue (sequential convention).
 gradient = dm.cspace("dc.teal5", "dc.teal1", n=len(countries))

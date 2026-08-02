@@ -5,6 +5,67 @@ gradients, and using colormaps. For full visual catalogs, jump to the
 [Colors](../color_system/colors.md), [Palettes](../color_system/palettes.md),
 or [Colormaps](../color_system/colormaps.md) catalogs under **Design System**.
 
+## What should I use?
+
+| If you need to... | Use... | Matplotlib surface |
+|---|---|---|
+| color one mark, line, or area | a named color token | `color="dc.blue6"` |
+| color separate series or categories | a palette | `dm.set_colors(...)` |
+| turn numeric values into colors | a colormap | `cmap="dc.aurora"` |
+| create or adjust a color yourself | the `Color` class | `dm.oklch(...)` |
+
+:::{tip}
+Most readers only need the first three rows. You can ignore the color-space
+math unless you want to create or adjust colors yourself.
+:::
+
+Modeled relative CIE Y (`relative_y`) is calculated from nominal D65 sRGB; it
+is not a measurement of a particular display, perceived brightness, or OKLab
+`L`.
+
+## Four ideas
+
+Hue
+: Hue is the color family: red, green, and blue are different hues. In a line
+  chart, changing hue can distinguish one series from another.
+
+Lightness
+: Lightness describes the light-to-dark direction. A sequential heatmap can
+  use light colors for low values and dark colors for high values.
+
+Chroma
+: Chroma describes how colorful or muted a color is. In a scatter plot, a
+  vivid highlight can have more chroma than the muted background points.
+
+Contrast
+: Contrast describes how strongly two neighboring colors stand apart. For
+  example, a dark annotation on a white chart background has more contrast
+  than a pale one.
+
+Palette
+: A palette is a finite list of colors. Use one to give the separate series in
+  a bar chart distinct colors.
+
+Colormap
+: A colormap turns numeric values into colors. Use one to encode temperature
+  across a heatmap or the values of points in a scatter plot.
+
+Sequential
+: Sequential means one ordered path from low to high. A population-density map
+  can run from a light low end to a dark high end.
+
+Diverging
+: Diverging means two ordered arms meet at a meaningful center. A change chart
+  can show decreases on one side of zero and increases on the other.
+
+Cyclic
+: Cyclic means the last color joins the first. It fits a phase or wind-direction
+  chart where 360 degrees returns to 0 degrees.
+
+Qualitative
+: Qualitative, or categorical, means separate colors for labels with no numeric
+  order, such as the species in a grouped scatter plot.
+
 ## Named colors
 
 dartwork-mpl ships its own curated palette — `dc.*` ("dartwork color")
@@ -26,8 +87,8 @@ color.
 > publication-ready output. Reach for the third-party prefixes when
 > you need to match an external brand or design system.
 >
-> The `dc.*` namespace also holds 43 continuous **colormaps** plus the two
-> Octave cycle colormaps — see the
+> The `dc.*` namespace also holds 43 continuous **colormaps** and 13
+> qualitative colormaps (the two Octave cycles plus 11 curated sets) — see the
 > [Colormap catalog](../color_system/colormaps.md). Colormap names like
 > `dc.aurora` only work as `cmap=` arguments, not as `color=` strings;
 > the named-colors above are the ones you pass to `color=`.
@@ -49,30 +110,38 @@ ax.legend()
 dm.simple_layout(fig)
 ```
 
-To choose a series palette visually, use the
-[Palettes explorer](../color_system/palettes.md). It previews Octave, curated
-qualitative sets, family samples, B&W/CVD checks, and copyable
-`dm.set_colors(...)` / `dm.colors(..., n=...)` calls.
-
-Once you've picked a set, apply it in your own script:
-
-```python
-import matplotlib as mpl
-from cycler import cycler
-
-dm.style.use("report")  # base preset (font, line widths, spines, ...)
-mpl.rcParams["axes.prop_cycle"] = cycler(color=[
-    "dc.teal3", "dc.teal1", "dc.teal5",
-    "dc.teal0", "dc.teal2", "dc.teal4",
-])
-```
-
 ### Picking a `dc.*` swatch
 
-The `dc.*` surface is 19 chromatic hue families plus gray, each with 10
-perceptually equalized steps. Index 0 is the light end and index 9 is the dark
-end. For unrelated categories use Octave via `dm.set_colors()` or
-`dc.octave`; for related tones pick a family and sample the steps you need.
+The `dc.*` surface is 19 chromatic hue families plus gray (20 total), each with
+10 steps. Index 0 is the light end and index 9 is the dark end. The ramps are
+designed to give neighboring swatches clear separation while keeping a
+reliable light-to-dark order.
+
+#### Four separate jobs
+
+Construction
+: OKLab and OKLCH are used to construct and adjust colors. Construction uses
+  ΔEOK to space neighboring steps. ΔEOK is a color-distance ruler: larger means
+  more different.
+
+Modeled output ordering
+: Modeled `relative_y` records nominal output ordering, with nominal black at
+  0 and nominal reference white at 1 under this software convention.
+
+Independent validation
+: CIELAB, ΔE00, and color-vision deficiency (CVD) simulation are independent
+  validation checks only. They do not construct colors or define modeled
+  relative Y.
+
+Text contrast
+: Web Content Accessibility Guidelines (WCAG) contrast is a separate check for
+  text against a known background. It does not certify an entire palette.
+
+For the detailed construction, modeled-output, and validation evidence, see
+the [Design rationale](../color_system/design-rationale.md).
+
+For unrelated categories use Octave via `dm.set_colors()` or `dc.octave`; for
+related tones pick a family and sample the steps you need.
 
 | Palette             | Use it for                                                     |
 | ------------------- | -------------------------------------------------------------- |
@@ -95,16 +164,41 @@ series explorer lives on [Palettes](../color_system/palettes.md).
 | `oc.blue6` / `oc.indigo6` / `oc.cyan6`          | `dc.teal3`                         |
 | `oc.red6` / `oc.pink6`                          | `dc.red5` or `dc.rose5`           |
 | `oc.orange5` / `oc.yellow5`                     | `dc.orange1` / `dc.orange0`         |
-| `oc.green6` / `oc.teal6` / `oc.lime6`           | `dc.green2` or `dc.red0`           |
+| `oc.green6` / `oc.teal6` / `oc.lime6`           | `dc.green2` / `dc.teal2` / `dc.lime2` |
 | `oc.violet6` / `oc.grape6`                      | `dc.violet3`                         |
 | `oc.gray3..7` (light → dark)                    | `dc.gray2..7`                     |
+
+## Palettes for separate series
+
+To choose a series palette visually, use the
+[Palettes explorer](../color_system/palettes.md). It previews Octave, curated
+qualitative sets, family samples, black-and-white (B&W) and color-vision
+deficiency (CVD) checks, and copyable
+`dm.set_colors(...)` / `dm.colors(..., n=...)` calls.
+
+Once you've picked a set, apply it in your own script:
+
+```python
+import matplotlib as mpl
+from cycler import cycler
+
+dm.style.use("report")  # base preset (font, line widths, spines, ...)
+mpl.rcParams["axes.prop_cycle"] = cycler(color=[
+    "dc.teal3", "dc.teal1", "dc.teal5",
+    "dc.teal0", "dc.teal2", "dc.teal4",
+])
+```
 
 ## Color class
 
 For most plots, named color strings like `"dc.teal3"` are all you need. When
 you need to programmatically adjust hue, saturation, or lightness — or
-interpolate between colors in a perceptually uniform space — use the `Color`
+interpolate between colors in a perceptual color space — use the `Color`
 class:
+
+OKLab and OKLCH are two views of the same perceptual color model. OKLab is
+convenient for color math; OKLCH exposes lightness `L`, chroma `C`, and hue
+angle `h` for authoring.
 
 ```python
 import dartwork_mpl as dm
@@ -116,32 +210,6 @@ print(color.to_hex())                # '#...'
 
 → **Full guide:** [Color class & manipulation](../color_system/color-class.md) —
 constructors, views, interpolation, and custom colormaps.
-
-## Exploring Available Colors
-
-dartwork-mpl provides utilities to discover and explore available color families:
-
-```python
-import dartwork_mpl as dm
-
-# List Model B family records
-families = dm.list_colors()
-print(families[:2])  # [{'name': 'amber', 'kind': 'sequential', ...}, ...]
-
-# Fetch a registered colormap or a designed discrete list
-cmap = dm.colors("aurora")
-cols = dm.colors("blue_red", n=5)
-
-# Preview specific families
-dm.show_colors(names=["blue", "blue_red"], n=5)
-
-# Classify a colormap by type (takes a Colormap object)
-import matplotlib as mpl
-from dartwork_mpl.diagnostics import classify_cmap
-
-cmap_type = classify_cmap(mpl.colormaps['dc.aurora'])
-print(cmap_type)  # 'Multi-Hue'
-```
 
 ## Color interpolation
 
@@ -182,9 +250,10 @@ gradient = dm.cspace(dm.color('dc.red1'), dm.color('dc.teal3'), n=10)
 </div>
 ```
 
-**Why OKLCH matters:** Interpolating in RGB produces muddy, desaturated midtones.
-OKLCH maintains perceptual uniformity — every step looks equally spaced to the
-human eye:
+**Why OKLCH matters:** Interpolating in RGB can produce muddy, desaturated
+midtones. OKLCH keeps hue and chroma explicit and often produces a smoother,
+more vivid path. It improves the interpolation geometry; it does not guarantee
+that every step looks exactly equal to every observer:
 
 ```{raw} html
 <div class="dm-compare-widget">
@@ -206,7 +275,7 @@ human eye:
   </div>
   <div class="dm-compare-rows">
     <div class="dm-compare-row">
-      <div class="dm-compare-row-label">OKLCH<small>perceptually uniform</small></div>
+      <div class="dm-compare-row-label">OKLCH<small>perceptual interpolation</small></div>
       <div class="dm-compare-bar dm-compare-bar-oklch"></div>
     </div>
     <div class="dm-compare-row">
@@ -222,10 +291,41 @@ human eye:
 </div>
 ```
 
+## Exploring Available Colors
+
+dartwork-mpl provides utilities to discover and explore available color families:
+
+```python
+import dartwork_mpl as dm
+
+# List available color-family records
+families = dm.list_colors()
+print(families[:2])  # [{'name': 'amber', 'kind': 'sequential', ...}, ...]
+
+# Fetch a registered colormap or a designed discrete list
+cmap = dm.colors("aurora")
+cols = dm.colors("blue_red", n=5)
+
+# Preview specific families
+dm.show_colors(names=["blue", "blue_red"], n=5)
+
+# Classify a colormap by type (takes a Colormap object)
+import matplotlib as mpl
+from dartwork_mpl.diagnostics import classify_cmap
+
+cmap_type = classify_cmap(mpl.colormaps['dc.aurora'])
+print(cmap_type)  # 'Multi-Hue'
+```
+
 ## Colormaps
 
-dartwork-mpl bundles custom colormaps prefixed with `dc.` — curated for
-perceptually uniform gradients. They work like any matplotlib colormap:
+dartwork-mpl bundles custom colormaps prefixed with `dc.`. Their OKLab/OKLCH
+construction is topology-specific: single-hue, continuous-gray, and multi-hue
+sequential paths use ΔEOK arc-length resampling; diverging maps use symmetric
+pointwise arms and integer resampling; `hue` uses equal hue angles; and the two
+twilight cycles use closed-path ΔEOK resampling. Modeled relative Y is checked
+against each map's required direction or shape, followed by independent
+finished-output diagnostics. They work like any matplotlib colormap:
 
 ```python
 import matplotlib.pyplot as plt
@@ -239,6 +339,19 @@ print(classify_cmap(cmap))             # 'Multi-Hue' (tells you the type)
 
 Add `_r` to reverse any colormap (e.g., `dc.aurora_r`). Browse all available
 colormaps on the [Colormaps](../color_system/colormaps.md) page.
+
+## Accessibility checklist
+
+:::{important}
+1. Do not rely on hue alone for critical distinctions.
+2. For ordered values, choose a map that still changes from light to dark.
+3. For critical grayscale or print output, add labels, contours, markers,
+   hatching, or line styles.
+4. Web Content Accessibility Guidelines (WCAG) contrast applies to text
+   against a known background; it does not certify an entire palette.
+5. A color-vision deficiency (CVD) simulation is a useful model-based check,
+   not a guarantee for every individual observer.
+:::
 
 ## See also
 
