@@ -308,6 +308,21 @@ def _gate_equal(
     )
 
 
+# Quality metrics are double-precision values recomputed from the same hex
+# inputs. The baseline is frozen on one machine and re-measured on another,
+# where different FMA contraction and vectorisation move the last bits. A
+# 1-ULP difference is not a quality regression, and requiring bit-exact
+# reproduction of derived floats across architectures is not achievable.
+#
+# This tolerance is ~7 orders of magnitude above double epsilon, so it absorbs
+# that noise while still catching any real regression, which moves these
+# metrics by far more. It does NOT relax the shipped-colour contract: hex
+# values are compared exactly by the exact-surface comparison and by
+# tests/test_shipped_colors_hash.py.
+_GATE_REL_TOL = 1e-9
+_GATE_ABS_TOL = 1e-12
+
+
 def _gate_number(
     violations: list[GateViolation],
     *,
@@ -333,6 +348,10 @@ def _gate_number(
         return
     threshold = old if ceiling is None else min(old, ceiling)
     passed = new >= threshold if relation == ">=" else new <= threshold
+    if not passed:
+        passed = math.isclose(
+            new, threshold, rel_tol=_GATE_REL_TOL, abs_tol=_GATE_ABS_TOL
+        )
     if passed:
         return
     comparator = "at least" if relation == ">=" else "at most"

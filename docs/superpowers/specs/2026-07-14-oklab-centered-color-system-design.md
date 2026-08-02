@@ -1,8 +1,8 @@
 # OKLab-centered color system redesign
 
-**Date:** 2026-07-14  
-**Status:** Accepted  
-**Decision:** [ADR 0001](../../adr/0001-oklab-centered-color-construction.md)
+- **Date:** 2026-07-14
+- **Status:** Accepted
+- **Decision:** [ADR 0001](../../adr/0001-oklab-centered-color-construction.md)
 
 ## 1. 목표
 

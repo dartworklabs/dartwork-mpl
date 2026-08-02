@@ -1,8 +1,8 @@
 # Beginner-friendly color documentation design
 
-Date: 2026-07-17  
-Status: approved for implementation  
-Scope: current public Sphinx documentation for the dartwork-mpl color system
+- Date: 2026-07-17
+- Status: approved for implementation
+- Scope: current public Sphinx documentation for the dartwork-mpl color system
 
 ## 1. Problem
 
