@@ -123,7 +123,7 @@ class TestMixColors:
 
     # ------------------------------------------------------------------
     # OKLab-specific regression tests (added when mix_colors switched
-    # from naïve gamma-sRGB blend to perceptually-uniform OKLab blend)
+    # from naïve gamma-sRGB blend to a perceptually oriented OKLab blend)
     # ------------------------------------------------------------------
 
     def test_oklab_midpoint_is_not_naive_rgb(self) -> None:

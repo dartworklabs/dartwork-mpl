@@ -6,12 +6,193 @@ import importlib.util
 import re
 from pathlib import Path
 
+import pytest
+from markdown_it import MarkdownIt
+
 ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / "docs" / "_static"
+
+_HISTORICAL_STATUS = "Status: historical record — do not execute."
+_HISTORICAL_DIRECTIVE = "For agentic workers: REQUIRED SUB-SKILL"
+_HISTORICAL_SCOPE = (
+    "Everything below—including the “For agentic workers” directive, all "
+    "checkboxes, and every command block—is historical quotation only; do "
+    "not follow or execute it."
+)
+_HISTORICAL_PREFACE = """# Color Rationale Accuracy Implementation Plan
+
+> **Status: historical record — do not execute.**
+> The unchecked steps, damaged-worktree assumptions, absolute paths, metric
+> wording, and commit commands below describe the 2026-07-21 implementation
+> session only. They are preserved for provenance; current source, approved
+> specifications, tests, and the active goal govern current work.
+>
+> **Everything below—including the “For agentic workers” directive, all
+> checkboxes, and every command block—is historical quotation only; do not
+> follow or execute it.**
+
+"""
+_BEGINNER_PLAN_STATUS = "Status: historical record — do not execute."
+_BEGINNER_PLAN_SCOPE = (
+    "Everything below—including the “For agentic workers” directive, all "
+    "checkboxes, commands, /private/tmp paths, and 17-surface, physical-Y, "
+    "and print wording—is historical quotation only; do not follow or "
+    "execute it."
+)
+_BEGINNER_PLAN_PREFACE = """# Beginner-Friendly Color Documentation Implementation Plan
+
+> **Status: historical record — do not execute.**
+> The REQUIRED SUB-SKILL directive, unchecked checkboxes, commands,
+> `/private/tmp` paths, and 17-surface, physical-Y, and print wording below
+> describe the 2026-07-17 implementation session only. They are preserved for
+> provenance; current source, approved specifications, tests, and the active
+> goal govern current work.
+>
+> **Everything below—including the “For agentic workers” directive, all
+> checkboxes, commands, `/private/tmp` paths, and 17-surface, physical-Y, and
+> print wording—is historical quotation only; do not follow or execute it.**
+
+"""
 
 
 def read_static(name: str) -> str:
     return (STATIC / name).read_text(encoding="utf-8")
+
+
+def _visible_markdown_text(text: str) -> str:
+    """Return normalized inline text that CommonMark actually renders."""
+    without_hidden_html = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
+    hidden_element = re.compile(
+        r"<(?P<tag>[A-Za-z][\w:-]*)\b[^>]*\bhidden(?:\s*=\s*"
+        r"(?:[\"'][^\"']*[\"']|[^\s>]+))?[^>]*>.*?"
+        r"</(?P=tag)\s*>",
+        re.IGNORECASE | re.DOTALL,
+    )
+    while True:
+        stripped = hidden_element.sub("", without_hidden_html)
+        if stripped == without_hidden_html:
+            break
+        without_hidden_html = stripped
+
+    visible: list[str] = []
+    for token in MarkdownIt("commonmark").parse(without_hidden_html):
+        if token.type != "inline" or token.children is None:
+            continue
+        visible.extend(
+            child.content
+            for child in token.children
+            if child.type in {"text", "code_inline"}
+        )
+    return " ".join(" ".join(content.split()) for content in visible)
+
+
+def _assert_historical_plan_is_visibly_inactive(
+    plan: str,
+    *,
+    preface: str = _HISTORICAL_PREFACE,
+    status: str = _HISTORICAL_STATUS,
+    scope: str = _HISTORICAL_SCOPE,
+) -> None:
+    """Require an exact visible safety preface before the old directive."""
+    assert plan.startswith(preface)
+    visible = _visible_markdown_text(plan)
+    assert status in visible
+    assert scope in visible
+    assert visible.index(scope) < visible.index(_HISTORICAL_DIRECTIVE)
+
+
+def test_recovered_accuracy_plan_is_marked_as_historical() -> None:
+    """Do not present one damaged-worktree recovery plan as current steps."""
+    plan = (
+        ROOT / "docs/superpowers/plans/2026-07-21-color-rationale-accuracy.md"
+    ).read_text(encoding="utf-8")
+    _assert_historical_plan_is_visibly_inactive(plan)
+
+    preface_start = plan.index("> **Status:")
+    directive_start = plan.index("> **For agentic workers:")
+    hidden = (
+        plan[:preface_start]
+        + "<!--\n"
+        + plan[preface_start:directive_start]
+        + "-->\n"
+        + plan[directive_start:]
+    )
+    with pytest.raises(AssertionError):
+        _assert_historical_plan_is_visibly_inactive(hidden)
+
+    scope_start = plan.index("> **Everything below")
+    inline_hidden = (
+        plan[:scope_start]
+        + f"> <!-- {_HISTORICAL_SCOPE} -->\n\n"
+        + plan[directive_start:]
+    )
+    assert _HISTORICAL_SCOPE not in _visible_markdown_text(inline_hidden)
+    with pytest.raises(AssertionError):
+        _assert_historical_plan_is_visibly_inactive(inline_hidden)
+
+    html_hidden = (
+        plan[:scope_start]
+        + f"> <span hidden>{_HISTORICAL_SCOPE}</span>\n\n"
+        + plan[directive_start:]
+    )
+    with pytest.raises(AssertionError):
+        _assert_historical_plan_is_visibly_inactive(html_hidden)
+
+
+def test_recovered_beginner_plan_is_marked_as_historical() -> None:
+    """Seal the recovered plan without making stale commands executable."""
+    plan = (
+        ROOT
+        / "docs/superpowers/plans/2026-07-17-beginner-friendly-color-docs.md"
+    ).read_text(encoding="utf-8")
+    kwargs = {
+        "preface": _BEGINNER_PLAN_PREFACE,
+        "status": _BEGINNER_PLAN_STATUS,
+        "scope": _BEGINNER_PLAN_SCOPE,
+    }
+    _assert_historical_plan_is_visibly_inactive(plan, **kwargs)
+
+    preface_start = plan.index("> **Status:")
+    directive_start = plan.index("> **For agentic workers:")
+    hidden = (
+        plan[:preface_start]
+        + "<!--\n"
+        + plan[preface_start:directive_start]
+        + "-->\n"
+        + plan[directive_start:]
+    )
+    with pytest.raises(AssertionError):
+        _assert_historical_plan_is_visibly_inactive(hidden, **kwargs)
+
+    scope_start = plan.index("> **Everything below")
+    inline_hidden = (
+        plan[:scope_start]
+        + f"> <!-- {_BEGINNER_PLAN_SCOPE} -->\n\n"
+        + plan[directive_start:]
+    )
+    assert _BEGINNER_PLAN_SCOPE not in _visible_markdown_text(inline_hidden)
+    with pytest.raises(AssertionError):
+        _assert_historical_plan_is_visibly_inactive(inline_hidden, **kwargs)
+
+    html_hidden = (
+        plan[:scope_start]
+        + f"> <span hidden>{_BEGINNER_PLAN_SCOPE}</span>\n\n"
+        + plan[directive_start:]
+    )
+    assert _BEGINNER_PLAN_SCOPE not in _visible_markdown_text(html_hidden)
+    with pytest.raises(AssertionError):
+        _assert_historical_plan_is_visibly_inactive(html_hidden, **kwargs)
+
+
+def test_validation_describes_live_unlocked_oklch_diagnostics() -> None:
+    validation = (ROOT / "docs" / "color_system" / "validation.md").read_text(
+        encoding="utf-8"
+    )
+    normalized = " ".join(validation.split())
+
+    assert "all 43 continuous-map rows" in normalized
+    assert "explanatory, non-normative, and never a gate input" in normalized
+    assert "until that compiler path is introduced" not in normalized
 
 
 def load_brute_check_docs_module():

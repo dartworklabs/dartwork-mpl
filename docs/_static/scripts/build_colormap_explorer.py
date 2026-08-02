@@ -20,23 +20,29 @@ Regenerate::
 
 from __future__ import annotations
 
+import argparse
 import itertools
 import json
 import math
 import re
 import statistics
+from collections.abc import Mapping
 from pathlib import Path
+from typing import cast
 
+from dartwork_mpl._colors._compatibility_metrics import (
+    ciede2000_rgb,
+    cyclic_topology,
+    delta_e_ok,
+    hex_to_srgb,
+    relative_y_srgb_d65,
+    simulate_cvd_hex,
+    srgb_to_oklab,
+)
 from dartwork_mpl._colors._discrete import _chroma, _vivid_cutoff, _VividCutoff
 from dartwork_mpl._colors._generated import CMAPS_256
-from dartwork_mpl._colors._metrics import (
-    cvd_rgb,
-    de2000_hex,
-    de2000_rgb,
-    lab_l_hex,
-    lab_l_rgb,
-    rgb_from_hex,
-)
+from dartwork_mpl._colors._metrics import de2000_hex, lab_from_rgb, rgb_from_hex
+from dartwork_mpl._colors._ssot import load_color_v6_ssot
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parents[2]
@@ -96,6 +102,21 @@ GROUPS = [
     ("Diverging", DIVERGING),
     ("Cyclic", CYCLIC),
 ]
+
+_COLOR_AUTHORITY = load_color_v6_ssot()
+_PRESENTATION_POLICY = cast(
+    Mapping[str, object],
+    cast(Mapping[str, object], _COLOR_AUTHORITY["policies"])["presentation"],
+)
+_MULTI_HUE_VIVID_CUTOFFS = cast(
+    Mapping[str, int], _PRESENTATION_POLICY["multi_hue_vivid_cutoffs"]
+)
+_CVD_POLICY = cast(
+    Mapping[str, object],
+    cast(Mapping[str, object], _COLOR_AUTHORITY["policies"])["cvd"],
+)
+_CVD_MODELS = dict(cast(Mapping[str, str], _CVD_POLICY["models_by_deficiency"]))
+_CVD_Y_STEP_TOLERANCE = 0.004
 
 # 16 demo plots spanning raster fields, strokes, glyph grids, profiles, and mesh.
 DEMO_LIBRARY = [
@@ -222,7 +243,7 @@ DIVERGING_INTENT = {
     "gray_red": "Gray Red anchors one side in neutral gray and the other in red for one-sided alert semantics on a centered scale.",
 }
 CYCLIC_INTENT = {
-    "hue": "Hue is the cyclic angle map: it holds one flat lightness so the first and last colors meet, letting phase, direction, and orientation wrap without a visible break.",
+    "hue": "Hue is the cyclic angle map. Its modeled relative Y is nearly flat in the shipped LUT, but that is not constant OKLab L or equal perceived brightness. Equal hue angles let phase, direction, and orientation wrap without a visible break.",
     "halo": "Halo is a cyclic dark-center phase map with pale blue and red lobes that wrap through a matched bright seam.",
     "corona": "Corona is a cyclic dark-center phase map with pale teal and orange lobes that wrap through a matched bright seam.",
 }
@@ -233,9 +254,9 @@ KIND_RECIPE = {
     "cyclic": "Matched-endpoint cycle for angular, phase, and wraparound data.",
 }
 KIND_GOOD_FOR = {
-    "family": "Ordered magnitude, grayscale-safe scalar legends, and related-series samples.",
+    "family": "Ordered magnitude, scalar legends with a nominal neutral-preview diagnostic, and related-series samples.",
     "multi": "Continuous magnitude that benefits from hue motion while preserving a clear scalar read.",
-    "diverging": "Signed values with a meaningful zero or baseline; grayscale shows magnitude, not sign.",
+    "diverging": "Signed values with a meaningful zero or baseline; the nominal neutral preview encodes magnitude, not sign.",
     "cyclic": "Phase, angle, orientation, compass direction, and other circular values with no endpoint.",
 }
 
@@ -263,7 +284,8 @@ def _intent_for(key: str) -> str:
         return (
             f"Single-hue {_display_name(key)} ramp for ordered data in a "
             f"{FAMILY_REGISTER[key]} voice. Use it when magnitude should read "
-            "through one hue family and remain legible in grayscale."
+            "through one hue family with modeled relative-Y ordering as a "
+            "second nominal-model cue."
         )
     if kind == "multi":
         return MULTI_INTENT[key]
@@ -272,8 +294,15 @@ def _intent_for(key: str) -> str:
     return CYCLIC_INTENT[key]
 
 
-def _lab_l_c(hex_color: str) -> tuple[float, float]:
-    return lab_l_hex(hex_color), _chroma(hex_color)
+def _validation_lab_chroma(hex_color: str) -> float:
+    """Return legacy Lab chroma only for the frozen presentation self-check."""
+    _lightness, a_value, b_value = lab_from_rgb(rgb_from_hex(hex_color))
+    return math.hypot(a_value, b_value)
+
+
+def _oklab_l(hex_color: str) -> float:
+    """Return canonical OKLab L for one explorer stop."""
+    return srgb_to_oklab(hex_to_srgb(hex_color))[0]
 
 
 def _subsample_64(hexes: tuple[str, ...]) -> list[str]:
@@ -302,74 +331,120 @@ def _demo_stops(stops64: list[str], cut: _VividCutoff | None) -> list[str]:
     return _resample64(stops64, cut.cut_index, 63)  # dark at low index
 
 
-def _monotone(profile: list[float], tol: float = 0.4) -> bool:
+def _monotone(profile: list[float], tol: float = 0.004) -> bool:
     inc = all(b >= a - tol for a, b in itertools.pairwise(profile))
     dec = all(b <= a + tol for a, b in itertools.pairwise(profile))
     return inc or dec
 
 
-def _delta_e_cv(stops: list[str]) -> float:
-    steps = [de2000_hex(a, b) for a, b in itertools.pairwise(stops)]
-    mean = statistics.fmean(steps) if steps else 0.0
-    return statistics.pstdev(steps) / mean if mean > 1e-9 else 0.0
+def _coefficient_of_variation(values: list[float]) -> float:
+    """Return population CV for one finite non-empty metric sequence."""
+    mean = statistics.fmean(values) if values else 0.0
+    return statistics.pstdev(values) / mean if mean > 1e-9 else 0.0
 
 
-def _cvd_worst(stops: list[str]) -> tuple[float, bool]:
-    deciles = [stops[round(i * (len(stops) - 1) / 10)] for i in range(11)]
+def _metric_payload(stops: list[str]) -> dict[str, object]:
+    """Expose construction/output metrics separately from validation metrics."""
+    rgb = [hex_to_srgb(color) for color in stops]
+    return {
+        "oklab_l": [srgb_to_oklab(color)[0] for color in rgb],
+        "relative_y": [relative_y_srgb_d65(color) for color in rgb],
+        "delta_e_ok": [
+            delta_e_ok(first, second)
+            for first, second in itertools.pairwise(rgb)
+        ],
+        "delta_e_00": [
+            ciede2000_rgb(first, second)
+            for first, second in itertools.pairwise(rgb)
+        ],
+        "cvd_model": dict(_CVD_MODELS),
+    }
+
+
+def _cvd_worst(stops: list[str]) -> tuple[float, float, bool]:
+    """Return quantized CVD separation and oriented-Y explorer diagnostics."""
+    source_y = [relative_y_srgb_d65(hex_to_srgb(color)) for color in stops]
+    sign = 1.0 if source_y[-1] >= source_y[0] else -1.0
+    decile_indices = [round(i * (len(stops) - 1) / 10) for i in range(11)]
     worst = math.inf
-    monotone_all = True
+    worst_oriented_y = math.inf
     for mode in ("deutan", "protan", "tritan"):
-        dec_rgb = [cvd_rgb(rgb_from_hex(h), mode) for h in deciles]
-        distances = [de2000_rgb(a, b) for a, b in itertools.pairwise(dec_rgb)]
+        simulated = [simulate_cvd_hex(color, mode) for color in stops]
+        simulated_rgb = [hex_to_srgb(color) for color in simulated]
+        decile_rgb = [simulated_rgb[index] for index in decile_indices]
+        distances = [
+            ciede2000_rgb(first, second)
+            for first, second in itertools.pairwise(decile_rgb)
+        ]
         worst = min(worst, min(distances))
-        sim = [lab_l_rgb(cvd_rgb(rgb_from_hex(h), mode)) for h in stops]
-        monotone_all = monotone_all and _monotone(sim)
-    return worst, monotone_all
+        simulated_y = [relative_y_srgb_d65(color) for color in simulated_rgb]
+        oriented_y = [
+            sign * (second - first)
+            for first, second in itertools.pairwise(simulated_y)
+        ]
+        worst_oriented_y = min(worst_oriented_y, min(oriented_y))
+    return (worst, worst_oriented_y, worst_oriented_y >= -_CVD_Y_STEP_TOLERANCE)
 
 
 def _chip(cls: str, label: str, num: str, tip: str) -> dict:
     return {"cls": cls, "label": label, "num": num, "tip": tip}
 
 
-def _chips_for(key: str, stops: list[str]) -> list[dict]:
+def _chips_for(
+    key: str, stops: list[str], metrics: Mapping[str, object]
+) -> list[dict]:
     kind = _kind_for(key)
-    profile = [lab_l_hex(h) for h in stops]
+    profile = cast(list[float], metrics["oklab_l"])
+    y_profile = cast(list[float], metrics["relative_y"])
+    delta_ok = cast(list[float], metrics["delta_e_ok"])
     l_first, l_last = profile[0], profile[-1]
-    l_span = max(profile) - min(profile)
     chips: list[dict] = []
 
     if kind in ("family", "multi"):
-        cv = _delta_e_cv(stops)
+        cv = _coefficient_of_variation(delta_ok)
         mono = _monotone(profile)
         cls = "ok" if (mono and cv <= 0.5) else ("mid" if mono else "bad")
         chips.append(
             _chip(
                 cls,
                 "Uniform",
-                f"L* {l_first:.0f}->{l_last:.0f}",
-                f"Monotone lightness carries order; adjacent-step Delta E00 CV is "
-                f"{cv:.2f}, so equal data steps stay close to equal perceived steps.",
+                f"ΔEOK cv {cv:.2f}",
+                "Monotone OKLab L carries order; adjacent-step ΔEOK CV is "
+                f"{cv:.2f}. Lower CV means more even neighboring steps under "
+                "the ΔEOK model; it is not an observer guarantee.",
             )
         )
+        y_span = max(y_profile) - min(y_profile)
         chips.append(
             _chip(
-                "ok" if l_span >= 40 else "bad",
+                "ok" if _monotone(y_profile, tol=4e-4) else "bad",
                 "B&W",
-                f"span {l_span:.0f}",
-                "Black-and-white readability uses L* span >= 40 as the print-clean "
-                "threshold; lightness alone carries order in grayscale.",
+                f"Y span {y_span:.3f}",
+                "Modeled relative CIE Y from nominal D65 sRGB remains ordered "
+                "across this source-color ramp; it is a calculated diagnostic, "
+                "not a display measurement or the authoring axis.",
             )
         )
-        worst, mono_cvd = _cvd_worst(stops)
+        worst, worst_oriented_y, near_monotone_cvd = _cvd_worst(stops)
+        cvd_ordering = (
+            "is near-monotone within the explorer's 0.004 per-step tolerance"
+            if near_monotone_cvd
+            else "exceeds the explorer's 0.004 per-step reversal tolerance"
+        )
         chips.append(
             _chip(
                 "ok"
-                if (mono_cvd and worst >= 3)
+                if (near_monotone_cvd and worst >= 3)
                 else ("mid" if worst >= 2 else "bad"),
                 "CVD",
-                f"min Delta E {worst:.1f}",
-                "Order is carried by lightness, which color-vision deficiency does "
-                f"not remove; worst simulated adjacent-step distance stays {worst:.1f}.",
+                f"min ΔE00 {worst:.1f} · ΔY {worst_oriented_y:+.4f}",
+                "After the release oracle's named CVD simulation and 8-bit "
+                "hex quantization, modeled relative Y "
+                f"{cvd_ordering}. The worst oriented step is ΔY "
+                f"{worst_oriented_y:+.4f}. Zero or above would be strict "
+                "monotonicity. The minimum decile separation is ΔE00 "
+                f"{worst:.1f}. These are model-specific diagnostics, not "
+                "observer guarantees.",
             )
         )
     elif kind == "diverging":
@@ -377,20 +452,23 @@ def _chips_for(key: str, stops: list[str]) -> list[dict]:
         balance = abs(abs(center - l_first) - abs(center - l_last))
         chips.append(
             _chip(
-                "ok" if balance <= 3 else ("mid" if balance <= 6 else "bad"),
+                "ok"
+                if balance <= 0.03
+                else ("mid" if balance <= 0.06 else "bad"),
                 "Balanced",
-                f"Delta L* {balance:.1f}",
-                "Left and right arms travel a similar lightness distance from the "
-                "neutral point, so magnitude reads evenly on both sides.",
+                f"Δ OKLab L {100 * balance:.1f}",
+                "Left and right arms travel a similar OKLab L distance from the "
+                "neutral point. This describes the coordinate profile, not "
+                "equal perceived magnitude for every observer.",
             )
         )
-        dark_center = center < min(l_first, l_last)
-        headline = math.floor(center) if dark_center else round(center)
+        center_y = y_profile[len(y_profile) // 2]
+        dark_center = center_y < min(y_profile[0], y_profile[-1])
         chips.append(
             _chip(
                 "info",
                 "Center",
-                f"{'dark' if dark_center else 'pale'} L* {headline:.0f}",
+                f"{'dark' if dark_center else 'pale'} Y {center_y:.3f}",
                 "Dark-center diverging: pale ends and a dark middle suit "
                 "dark-background figures or cases where extremes should glow."
                 if dark_center
@@ -403,33 +481,53 @@ def _chips_for(key: str, stops: list[str]) -> list[dict]:
                 "mid",
                 "B&W",
                 "magnitude only",
-                "In grayscale this family shows distance from the center, not "
-                "which sign the value has.",
+                "The nominal source-RGB neutral preview encodes distance from "
+                "the center, not which sign the value has.",
             )
         )
     else:  # cyclic
-        endpoint_de = de2000_hex(stops[0], stops[-1])
-        l_mean = statistics.fmean(profile)
+        endpoint_de_ok = delta_e_ok(
+            hex_to_srgb(stops[0]), hex_to_srgb(stops[-1])
+        )
+        endpoint_de_00 = de2000_hex(stops[0], stops[-1])
         chips.append(
             _chip(
                 "ok"
-                if endpoint_de <= 2
-                else ("mid" if endpoint_de <= 5 else "bad"),
+                if endpoint_de_ok <= 2
+                else ("mid" if endpoint_de_ok <= 5 else "bad"),
                 "Seamless",
-                f"Delta E {endpoint_de:.1f}",
-                "First and last stops match closely, so angle and phase data wrap "
-                "without a visible endpoint break.",
+                f"ΔEOK {endpoint_de_ok:.1f}",
+                "First and last stops are close under ΔEOK; validation ΔE00 "
+                f"is {endpoint_de_00:.1f}. Inspect the rendered seam in its "
+                "intended context.",
             )
         )
-        chips.append(
-            _chip(
-                "info",
-                "Isoluminant",
-                f"L* {l_mean:.0f} flat",
-                "Hue-only encoding is intentional and becomes invisible in "
-                "grayscale; pair with a sequential map when print matters.",
+        topology = cyclic_topology(stops)
+        if topology["topology_kind"] == "isoluminant":
+            y_span = max(y_profile) - min(y_profile)
+            chips.append(
+                _chip(
+                    "info",
+                    "Isoluminant",
+                    f"Y span {y_span:.4f}",
+                    "Hue-only encoding keeps modeled relative CIE Y nearly "
+                    "flat, so the nominal neutral preview supplies little "
+                    "non-hue variation.",
+                )
             )
-        )
+        else:
+            midpoint = len(y_profile) // 2
+            center_y = min(y_profile[midpoint - 1 : midpoint + 1])
+            chips.append(
+                _chip(
+                    "info",
+                    "Dark center",
+                    f"Y min {center_y:.3f}",
+                    "This two-arm cyclic map's modeled relative Y reaches its "
+                    "global minimum at the midpoint; it is not a near-flat-Y "
+                    "wheel.",
+                )
+            )
 
     return chips
 
@@ -437,19 +535,34 @@ def _chips_for(key: str, stops: list[str]) -> list[dict]:
 def _variant(key: str, stops: list[str]) -> dict:
     kind = _kind_for(key)
     cut = None if kind in ("diverging", "cyclic") else _vivid_cutoff(stops)
+    if kind == "multi" and cut is not None:
+        cut_index = _MULTI_HUE_VIVID_CUTOFFS[key]
+        cut = _VividCutoff(
+            cut_index=cut_index,
+            dark_hi=cut.dark_hi,
+            peak_chroma=cut.peak_chroma,
+            cutoff_chroma=_chroma(stops[cut_index]),
+            threshold_chroma=cut.threshold_chroma,
+        )
+    metrics = _metric_payload(stops)
     return {
         "stops": stops,
         "demo": _demo_stops(stops, cut),
         "vivid_cutoff": (cut.cut_index if cut else None),
-        "chips": _chips_for(key, stops),
+        "chips": _chips_for(key, stops, metrics),
+        **metrics,
     }
 
 
 def _self_check_row(key: str, variant: dict) -> dict:
     """Item 1 step 6: darkest demo swatch chroma vs the map's true peak."""
-    peak_full = max(_chroma(h) for h in CMAPS_256[key])
-    darkest = min(variant["demo"], key=lambda h: _lab_l_c(h)[0])
-    dark_l, dark_c = _lab_l_c(darkest)
+    # New-family diagnostics use canonical OKLCH. The nine frozen multi-hue
+    # presentation cuts retain their historical independent-validation scale.
+    chroma = _validation_lab_chroma if _kind_for(key) == "multi" else _chroma
+    peak_full = max(chroma(h) for h in CMAPS_256[key])
+    darkest = min(variant["demo"], key=_oklab_l)
+    dark_l = 100.0 * _oklab_l(darkest)
+    dark_c = chroma(darkest)
     return {
         "map": key,
         "group": _kind_for(key),
@@ -1432,8 +1545,34 @@ def build_payload() -> dict:
     }
 
 
-def main() -> None:
-    payload = build_payload()
+# Serialised precision for the diagnostic arrays. Everything the explorer
+# does with these is display: draw a curve, label a chip. Emitting raw float64
+# instead pinned the generated file to whichever machine built it -- last-bit
+# differences in FMA contraction and vectorisation across architectures make
+# the bytes differ, so `--check` fails on a runner that is not the author's.
+# Six decimals is far beyond anything the page renders -- these arrays are
+# drawn as curves over [0, 1] or shown on chips rounded to one decimal -- and
+# it keeps every value at least ~1e-10 away from a rounding boundary, which is
+# five orders above the cross-machine noise it has to survive.
+_EMITTED_DECIMALS = 6
+
+
+def _round_for_emission(value: object) -> object:
+    """Round floats to a machine-independent precision, structure untouched."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, float):
+        return round(value, _EMITTED_DECIMALS)
+    if isinstance(value, Mapping):
+        return {key: _round_for_emission(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_round_for_emission(item) for item in value]
+    return value
+
+
+def render_html() -> str:
+    """Render the complete deterministic explorer fragment in memory."""
+    payload = _round_for_emission(build_payload())
     html = TEMPLATE.replace(
         "__PAYLOAD__",
         json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
@@ -1442,73 +1581,23 @@ def main() -> None:
         raise AssertionError(
             "output HTML contains Hangul; must be English only"
         )
-    OUT.write_text(html, encoding="utf-8")
-    print(f"wrote {OUT}")
-    print(f"fragment bytes: {OUT.stat().st_size}")
-    print(
-        "taxonomy: "
-        + ", ".join(f"{label}={len(keys)}" for label, keys in GROUPS)
-        + f", total={len(payload['order'])}"
-    )
-    print("\nvivid-clip self-check (item 1 step 6) — darkest demo swatch:")
-    print(
-        f"  {'map':14s} {'grp':6s} {'peakC':>6s} {'darkHex':8s} "
-        f"{'darkL':>6s} {'darkC':>6s} {'ratio':>6s} flag"
-    )
-    for r in payload["self_check"]:
-        seqmulti = r["group"] in ("family", "multi")
-        flag = (
-            ""
-            if r["ratio"] >= 0.55
-            else (
-                "  <- intentional-neutral (design)"
-                if not seqmulti
-                else "  <- FAIL"
-            )
-        )
-        print(
-            f"  {r['map']:14s} {r['group']:6s} {r['peak_c']:6.1f} "
-            f"{r['dark_hex']:8s} {r['dark_l']:6.1f} {r['dark_c']:6.1f} "
-            f"{r['ratio']:6.2f}{flag}"
-        )
-    sm = [r for r in payload["self_check"] if r["group"] in ("family", "multi")]
-    print(
-        f"\nsequential+multi ({len(sm)}): all ratios >= 0.55 -> "
-        f"{all(r['ratio'] >= 0.55 for r in sm)} (min {min(r['ratio'] for r in sm):.2f})"
-    )
-    print("\nSVG curve quality gate (path-max turning angle degrees):")
-    print(
-        f"  {'demo':12s} {'sample/grid':>14s} {'p50':>6s} {'p95':>6s} {'max':>6s}"
-    )
-    for demo in ("isolines", "streamlines", "lines", "ridgeline"):
-        row = payload["svg_curve_quality"][demo]
-        angles = row["turning_angle_degrees"]
-        if demo == "isolines":
-            sample = f"{row['grid_cells'][0]}x{row['grid_cells'][1]}"
-        elif demo == "streamlines":
-            sample = f"{row['arc_spacing']:.2f}vu"
-        elif demo == "lines":
-            sample = f"{row['samples_per_series']}pts"
-        else:
-            sample = f"{row['samples_per_profile']}pts"
-        print(
-            f"  {demo:12s} {sample:>14s} "
-            f"{angles['p50']:6.2f} {angles['p95']:6.2f} {angles['max']:6.2f}"
-        )
-    print("\nred demo spectrum coverage (item 2b):")
-    print(f"  {'demo':12s} {'t0':>4s} {'t1':>4s} {'n':>4s}")
-    for r in payload["demo_coverage"]:
-        print(
-            f"  {r['demo']:12s} {r['t0_hit']!s:>4s} "
-            f"{r['t1_hit']!s:>4s} {r['distinct']:4d}"
-        )
-    print("\nSVG curve path stats:")
-    print(f"  {'demo':12s} {'paths':>5s} {'C':>5s} {'L':>5s}")
-    for name, stats in payload["svg_path_stats"].items():
-        print(
-            f"  {name:12s} {stats['paths']:5d} "
-            f"{stats['c_segments']:5d} {stats['l_segments']:5d}"
-        )
+    return html
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Write the fragment, or verify tracked bytes without any mutation."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true")
+    arguments = parser.parse_args(argv)
+    html = render_html()
+    expected = html.encode("utf-8")
+    fresh = OUT.is_file() and OUT.read_bytes() == expected
+    if arguments.check:
+        return 0 if fresh else 1
+    if not fresh:
+        OUT.write_text(html, encoding="utf-8")
+        print(f"wrote {OUT}")
+    return 0
 
 
 # ---------------------------------------------------------------------------
@@ -1519,7 +1608,7 @@ def main() -> None:
 TEMPLATE = r"""<!-- GENERATED FILE - do not edit by hand.
      Source: docs/_static/scripts/build_colormap_explorer.py
      Data:   src/dartwork_mpl/_colors/_generated.py (CMAPS_256)
-             src/dartwork_mpl/_colors/_metrics.py (Lab / chroma / CVD metrics)
+             color_v6_ssot.json (metric policy and CVD provenance)
      Regenerate: python3 docs/_static/scripts/build_colormap_explorer.py -->
 <div id="dm-cmap-exp" class="yue">
 <p class="cx-count" id="cx-count"></p>
@@ -1900,4 +1989,4 @@ document.getElementById("cx-rail").innerHTML=railHTML();wireRail();renderDetail(
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

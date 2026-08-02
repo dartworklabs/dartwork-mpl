@@ -27,7 +27,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   and one to three columns, and `dm.wrap_axis_label()` /
   `dm.wrap_axis_labels()` wrap overlong axis labels to two lines.
 
+- **Shipped colours are now frozen by a machine check.**
+  `tests/test_shipped_colors_hash.py` pins five surfaces by sha256 — 1,272
+  named colours, 99 colormaps at 256 stops, 14 style presets, the full
+  `dm.colors(name, n)` grid, and the curated palettes. Any change to a shipped
+  colour fails the test and names the surface that moved, with no colour-theory
+  knowledge required to read the result.
+
 ### Changed
+
+- **Colour construction is unified on OKLab/OKLCH.** The compiler previously
+  authored OKLCH hue and chroma while solving rendered output against CIELAB
+  `L*`. CIELAB and CIEDE2000 remain as isolated validation diagnostics.
+  **Every shipped colour value is byte-identical** — verified by the freeze
+  above on both `main` and the refactor branch.
+- **Colour documentation now separates design choices from evidence.** Claims
+  are identifiable as design choice, implementation fact, reproducible
+  measurement, or stated limit, so a house style no longer reads as a law of
+  vision. `relative_y` is described as modeled relative CIE Y from nominal D65
+  sRGB rather than a measurement of any display.
 
 ### Fixed
 
@@ -193,6 +211,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [0.5.5] - 2026-07-01
 
+> **Never released.** No `v0.5.5` tag and no PyPI distribution exist; these
+> changes shipped as part of 0.5.6. `pip install dartwork-mpl==0.5.5` fails.
+
 ### Changed
 
 - **BREAKING — categorical palette system overhaul.** A judge-panel redesign
@@ -222,6 +243,9 @@ Migration: `dc.spectrum*` → `dc.vivid*`, `dc.bold*` → `dc.vivid*`,
 `dc.warm_cool*` → `dc.blue_orange*`.
 
 ## [0.5.4] - 2026-07-01
+
+> **Never released.** No `v0.5.4` tag and no PyPI distribution exist; these
+> changes shipped as part of 0.5.6. `pip install dartwork-mpl==0.5.4` fails.
 
 ### Removed
 

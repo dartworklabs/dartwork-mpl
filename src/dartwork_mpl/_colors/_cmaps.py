@@ -1,19 +1,17 @@
-"""Colormap catalog compiler — 43종 (스펙 §9).
+"""NeutralTone-based compiler for the 43-colormap catalog.
 
 프로토콜(§9 공통): float 경로 등화(hex 최종 1회) · pchip knot 보간 ·
 게이트/스와치는 n-stop 직접 렌더.
 """
 
-from __future__ import annotations
-
 import math
 from bisect import bisect_left
 from collections.abc import Callable
+from typing import TypeAlias
 
-from ._color import Color
-from ._generate import gamut_max_chroma, solve_swatch_rgb
-from ._metrics import de_ok_rgb, hex_from_rgb, lab_l_hex
-from ._recipe import FAMILIES, FAMILY_PARAMS
+from . import _conversion as conversion
+from . import _tone as tone
+from ._recipe import FAMILIES, FAMILY_PARAMS, GAMUT_CHROMA_FRAC
 
 __all__ = [
     "ANCHORS",
@@ -29,7 +27,49 @@ __all__ = [
     "unwrap_hues",
 ]
 
-Rgb = tuple[float, float, float]
+Rgb: TypeAlias = tuple[float, float, float]
+
+
+def _de_ok_rgb(first: Rgb, second: Rgb) -> float:
+    """Return the established 100-scaled Euclidean OKLab distance."""
+    return (
+        math.dist(
+            conversion._srgb_to_oklab(first), conversion._srgb_to_oklab(second)
+        )
+        * 100.0
+    )
+
+
+def _hex_from_rgb(rgb: Rgb) -> str:
+    """Quantize one encoded sRGB triple with the canonical encoder."""
+    return conversion._rgb_to_hex(*rgb)
+
+
+def _oklch_from_hex(value: str) -> tuple[float, float, float]:
+    """Decode one hex color into canonical degree-based OKLCH."""
+    return conversion._oklab_to_oklch_degrees(
+        *conversion._srgb_to_oklab(conversion._parse_hex(value))
+    )
+
+
+def _tone_from_hex(value: str) -> float:
+    """Derive NeutralTone from the color's modeled relative CIE Y."""
+    rgb = conversion._parse_hex(value)
+    return float(tone.tone_from_relative_y(conversion.relative_y_srgb_d65(rgb)))
+
+
+def _render_at_tone(
+    tone_value: float, chroma: float, hue: float, *, luminance_lock: bool
+) -> Rgb:
+    """Render one compiler coordinate through the shared tone primitive."""
+    return tone.render_oklch_at_tone(
+        tone=tone_value, chroma=chroma, hue=hue, luminance_lock=luminance_lock
+    )
+
+
+def _max_chroma(hue: float, tone_value: float) -> float:
+    """Return the geometric chroma boundary for one NeutralTone coordinate."""
+    return tone.max_chroma_at_tone(hue, tone.neutral_tone(tone_value))
 
 
 def render(
@@ -43,13 +83,13 @@ def render(
     pts = [swatch_at(t) for t in ts]
     cum = [0.0]
     for i in range(1, dense):
-        cum.append(cum[-1] + de_ok_rgb(pts[i - 1], pts[i]))
+        cum.append(cum[-1] + _de_ok_rgb(pts[i - 1], pts[i]))
     if closed:
         # A closed map must genuinely close: the seam ΔE must be ~0. If it is
         # not, the arc-length resample below would duplicate tail colors near
         # the seam. Assert here so a future non-closing "closed" map fails
         # loudly at build instead of shipping a seam-clamped map silently.
-        seam = de_ok_rgb(pts[-1], pts[0])
+        seam = _de_ok_rgb(pts[-1], pts[0])
         assert seam < 1e-6, f"closed render: seam ΔE {seam:.4g} is not ~0"
         cum.append(cum[-1] + seam)
     total = cum[-1]
@@ -61,7 +101,7 @@ def render(
         f = (tgt - cum[i - 1]) / (cum[i] - cum[i - 1] or 1)
         t_star = min(max(ts[i - 1] + f * (ts[i] - ts[i - 1]), 0.0), 1.0)
         out.append(swatch_at(t_star))
-    return [hex_from_rgb(p) for p in (out[:n] if closed else out)]
+    return [_hex_from_rgb(p) for p in (out[:n] if closed else out)]
 
 
 def pchip(knots: list[float], vals: list[float], t: float) -> float:
@@ -103,33 +143,49 @@ def unwrap_hues(hs: list[float]) -> list[float]:
 
 
 def seq_single(
-    fam: str, L_top: float = 96.0, L_bot: float = 24.0, n: int = 256
+    fam: str,
+    tone_top: float = 0.9655172091954044,
+    tone_bottom: float = 0.3448275747126444,
+    n: int = 256,
+    *,
+    luminance_lock: bool = True,
 ) -> list[str]:
-    """A8 — family 레시피의 광역 L* 연속 렌더링 (팔레트 floor 미상속)."""
+    """Render one family across its wide NeutralTone range."""
     p = FAMILY_PARAMS[fam]
 
-    def at(t: float) -> Rgb:
-        l_t = L_top + (L_bot - L_top) * t
-        h = (p.h0 + p.dh * t**p.gamma) % 360
-        if t <= p.tp:
-            c = p.cmax * (0.12 + 0.88 * math.sin(math.pi / 2 * t / p.tp) ** 1.2)
+    def at(fraction: float) -> Rgb:
+        tone_value = tone_top + (tone_bottom - tone_top) * fraction
+        hue = (p.h0 + p.dh * fraction**p.gamma) % 360
+        if fraction <= p.tp:
+            chroma = p.cmax * (
+                0.12 + 0.88 * math.sin(math.pi / 2 * fraction / p.tp) ** 1.2
+            )
         else:
-            u = (t - p.tp) / (1 - p.tp)
-            c = p.cmax * (1 - 0.90 * u**1.4)
-        c = min(c, gamut_max_chroma(h, l_t) * 0.97)
-        return solve_swatch_rgb(h, c, l_t)
+            progress = (fraction - p.tp) / (1 - p.tp)
+            chroma = p.cmax * (1 - 0.90 * progress**1.4)
+        chroma = min(chroma, _max_chroma(hue, tone_value) * GAMUT_CHROMA_FRAC)
+        return _render_at_tone(
+            tone_value, chroma, hue, luminance_lock=luminance_lock
+        )
 
     return render(at, n=n)
 
 
 def seq_gray(
-    L_top: float = 97.0, L_bot: float = 16.0, n: int = 256
+    tone_top: float = 0.9741378985632205,
+    tone_bottom: float = 0.2758620597701155,
+    n: int = 256,
+    *,
+    luminance_lock: bool = True,
 ) -> list[str]:
-    def at(t: float) -> Rgb:
-        return solve_swatch_rgb(
-            250,
-            0.006 + 0.006 * math.sin(math.pi * t),
-            L_top + (L_bot - L_top) * t,
+    """Render the weakly cool continuous gray ramp."""
+
+    def at(fraction: float) -> Rgb:
+        return _render_at_tone(
+            tone_top + (tone_bottom - tone_top) * fraction,
+            0.006 + 0.006 * math.sin(math.pi * fraction),
+            250.0,
+            luminance_lock=luminance_lock,
         )
 
     return render(at, n=n)
@@ -142,21 +198,25 @@ ANCHORS: dict[str, float] = {fam: FAMILY_PARAMS[fam].h0 for fam in FAMILIES}
 def seq_multi(
     hue_knots: list[float],
     chroma_knots: list[float],
-    L_start: float = 14.0,
-    L_end: float = 96.0,
+    tone_start: float = 0.2586206810344833,
+    tone_end: float = 0.9655172091954044,
     n: int = 256,
+    *,
+    luminance_lock: bool = True,
 ) -> list[str]:
     """빛 계열 관례: t=0=어두움(저값) → t=1=밝음. knot은 pchip으로 C1 통과."""
     hk = unwrap_hues(hue_knots)
     nk = len(hk)
     tk = [i / (nk - 1) for i in range(nk)]
 
-    def at(t: float) -> Rgb:
-        h = pchip(tk, hk, t) % 360
-        c = pchip(tk, chroma_knots, t)
-        l_t = L_start + (L_end - L_start) * t
-        c = min(c, gamut_max_chroma(h, l_t) * 0.97)
-        return solve_swatch_rgb(h, c, l_t)
+    def at(fraction: float) -> Rgb:
+        hue = pchip(tk, hk, fraction) % 360
+        chroma = pchip(tk, chroma_knots, fraction)
+        tone_value = tone_start + (tone_end - tone_start) * fraction
+        chroma = min(chroma, _max_chroma(hue, tone_value) * GAMUT_CHROMA_FRAC)
+        return _render_at_tone(
+            tone_value, chroma, hue, luminance_lock=luminance_lock
+        )
 
     return render(at, n=n)
 
@@ -164,140 +224,230 @@ def seq_multi(
 def diverging_pair(
     hex_a: str,
     hex_b: str,
-    l_end: float,
-    l_center: float = 96.0,
+    tone_end: float,
+    tone_center: float = 0.9655172091954044,
     gamma: float = 0.85,
     half: int = 32,
+    *,
+    luminance_lock: bool = True,
 ) -> list[str]:
-    """L* 대칭 diverging — 홀수 샘플(2·half-1)로 중심이 정확히 50%에 위치.
+    """Render a symmetric odd-sample diverging pair around a bright center.
 
     양극 정체성은 dc.{a}6/dc.{b}6 hex의 OKLCH chroma·hue에서 유도한다.
     포인트별 독립 솔브(등화 없음)라 hex 직접 생성으로 충분하다.
+
+    Notes
+    -----
+    Unlike ``seq_single``, ``seq_multi`` and ``cyclic_twilight``, this renderer
+    applies **no** ``max_chroma_at_tone`` cap. Requested chroma near the
+    saturated ends therefore leaves the sRGB gamut and is silently reduced by
+    the gamut mapper instead of being clamped beforehand.
+
+    This asymmetry is deliberate and load-bearing: adding the cap here changes
+    approved shipped output, darkening the dark arm of the eleven diverging
+    colormaps by up to 6 dEok. Do not "fix" it without an accepted colour
+    change (ADR 0001, appendix A2). ``tests/test_shipped_colors_hash.py`` will
+    fail if this is altered.
     """
     arms: list[list[str]] = []
     for src in (hex_a, hex_b):
-        _, c_max, hue = Color(src).to_oklch()
-        pts = []
+        _, maximum_chroma, hue = _oklch_from_hex(src)
+        points: list[str] = []
         for i in range(half):
-            t = i / (half - 1)  # 0=끝(포화) → 1=중심(밝음)
-            l_t = l_end + (l_center - l_end) * t
-            c = c_max * (1 - t) ** gamma + 0.004 * t
-            pts.append(hex_from_rgb(solve_swatch_rgb(hue, c, l_t)))
-        arms.append(pts)
+            fraction = i / (half - 1)  # 0=끝(포화) → 1=중심(밝음)
+            tone_value = tone_end + (tone_center - tone_end) * fraction
+            chroma = maximum_chroma * (1 - fraction) ** gamma + 0.004 * fraction
+            points.append(
+                _hex_from_rgb(
+                    _render_at_tone(
+                        tone_value, chroma, hue, luminance_lock=luminance_lock
+                    )
+                )
+            )
+        arms.append(points)
     return arms[0] + arms[1][:-1][::-1]
 
 
-def cyclic_hue(L: float = 62.0, n: int = 256) -> list[str]:
+def cyclic_hue(
+    tone: float = 0.6724137706896566,
+    n: int = 256,
+    *,
+    luminance_lock: bool = True,
+) -> list[str]:
     """등명도 색상환 — hue 균등(색상환은 hue가 지각축)."""
-    c_safe = min(gamut_max_chroma(h, L) for h in range(0, 360, 5)) * 0.95
+    safe_chroma = min(_max_chroma(hue, tone) for hue in range(0, 360, 5)) * 0.95
     return [
-        hex_from_rgb(solve_swatch_rgb((i / n * 360) % 360, c_safe, L))
+        _hex_from_rgb(
+            _render_at_tone(
+                tone,
+                safe_chroma,
+                (i / n * 360) % 360,
+                luminance_lock=luminance_lock,
+            )
+        )
         for i in range(n)
     ]
 
 
-def cyclic_twilight(hue_a: float, hue_b: float, n: int = 256) -> list[str]:
+def cyclic_twilight(
+    hue_a: float, hue_b: float, n: int = 256, *, luminance_lock: bool = True
+) -> list[str]:
     """이중 로브 cyclic — 밝은 이음매 → A팔 → 어두운 중심 → B팔 → 이음매."""
-    L_seam, L_center = 93.0, 18.0
+    seam_tone = 0.939655141091956
+    center_tone = 0.29310343850574777
 
-    def at(t: float) -> Rgb:
-        if t <= 0.5:
-            u, h, cmax = t / 0.5, hue_a, 0.15
+    def at(fraction: float) -> Rgb:
+        if fraction <= 0.5:
+            progress, hue, maximum_chroma = fraction / 0.5, hue_a, 0.15
         else:
-            u, h, cmax = 1 - (t - 0.5) / 0.5, hue_b, 0.16
-        l_t = L_seam + (L_center - L_seam) * u
-        c = cmax * math.sin(math.pi * u) ** 0.85
-        c = min(c, gamut_max_chroma(h % 360, l_t) * 0.96)
-        return solve_swatch_rgb(h % 360, c, l_t)
+            progress = 1 - (fraction - 0.5) / 0.5
+            hue = hue_b
+            maximum_chroma = 0.16
+        tone_value = (
+            center_tone
+            if progress == 1.0
+            else seam_tone + (center_tone - seam_tone) * progress
+        )
+        chroma = maximum_chroma * math.sin(math.pi * progress) ** 0.85
+        chroma = min(chroma, _max_chroma(hue % 360, tone_value) * 0.96)
+        return _render_at_tone(
+            tone_value, chroma, hue % 360, luminance_lock=luminance_lock
+        )
 
     return render(at, n=n, closed=True)
 
 
 def compile_cmaps(
-    palette: dict[str, list[str]], n: int = 256
+    palette: dict[str, list[str]], n: int = 256, *, luminance_lock: bool = True
 ) -> dict[str, list[str]]:
     """43-map catalog — keys match SSOT swatches_32 public names."""
-    A = ANCHORS
+    anchors = ANCHORS
     cm: dict[str, list[str]] = {}
 
     # 단일색 20 (family명 그대로)
     for fam in FAMILIES:
-        cm[fam] = seq_single(fam, n=n)
-    cm["gray"] = seq_gray(n=n)
+        cm[fam] = seq_single(fam, n=n, luminance_lock=luminance_lock)
+    cm["gray"] = seq_gray(n=n, luminance_lock=luminance_lock)
 
     # 멀티휴 9 (자연광 장면 — knot·chroma·L 범위는 스펙 §9 확정값)
     multi: dict[str, tuple[list[float], list[float], float, float]] = {
         "aurora": (
             [
-                A["violet"],
-                A["indigo"],
-                A["sky"],
-                A["teal"],
-                A["lime"],
-                A["yellow"],
+                anchors["violet"],
+                anchors["indigo"],
+                anchors["sky"],
+                anchors["teal"],
+                anchors["lime"],
+                anchors["yellow"],
             ],
             [0.08, 0.11, 0.13, 0.15, 0.16, 0.13],
-            14.0,
-            96.0,
+            0.2586206810344833,
+            0.9655172091954044,
         ),
         "afterglow": (
-            [A["violet"], A["purple"], A["pink"], A["red"], A["orange"]],
+            [
+                anchors["violet"],
+                anchors["purple"],
+                anchors["pink"],
+                anchors["red"],
+                anchors["orange"],
+            ],
             [0.10, 0.17, 0.20, 0.19, 0.16],
-            16.0,
-            92.0,
+            0.2758620597701155,
+            0.9310344517241399,
         ),
         "blaze": (
-            [A["violet"], A["pink"], A["red"], A["orange"], A["yellow"]],
+            [
+                anchors["violet"],
+                anchors["pink"],
+                anchors["red"],
+                anchors["orange"],
+                anchors["yellow"],
+            ],
             [0.09, 0.18, 0.20, 0.18, 0.13],
-            12.0,
-            94.0,
+            0.2413793022988511,
+            0.9482758304597722,
         ),
         "lava": (
-            [A["red"], A["orange"], A["amber"], A["yellow"]],
+            [
+                anchors["red"],
+                anchors["orange"],
+                anchors["amber"],
+                anchors["yellow"],
+            ],
             [0.15, 0.18, 0.16, 0.13],
-            12.0,
-            95.0,
+            0.2413793022988511,
+            0.9568965198275883,
         ),
         "lagoon": (
-            [A["blue"], A["cyan"], A["teal"], A["green"], A["lime"]],
+            [
+                anchors["blue"],
+                anchors["cyan"],
+                anchors["teal"],
+                anchors["green"],
+                anchors["lime"],
+            ],
             [0.10, 0.12, 0.14, 0.17, 0.15],
-            14.0,
-            96.0,
+            0.2586206810344833,
+            0.9655172091954044,
         ),
         "glacier": (
-            [A["indigo"], A["blue"], A["sky"], A["cyan"], A["teal"]],
+            [
+                anchors["indigo"],
+                anchors["blue"],
+                anchors["sky"],
+                anchors["cyan"],
+                anchors["teal"],
+            ],
             [0.10, 0.15, 0.14, 0.12, 0.12],
-            14.0,
-            96.0,
+            0.2586206810344833,
+            0.9655172091954044,
         ),
         "canopy": (
-            [A["teal"], A["green"], A["lime"], A["yellow"]],
+            [
+                anchors["teal"],
+                anchors["green"],
+                anchors["lime"],
+                anchors["yellow"],
+            ],
             [0.09, 0.14, 0.16, 0.13],
-            14.0,
-            96.0,
+            0.2586206810344833,
+            0.9655172091954044,
         ),
         "haze": (
-            [A["blue"], A["sky"], A["green"], A["yellow"]],
+            [
+                anchors["blue"],
+                anchors["sky"],
+                anchors["green"],
+                anchors["yellow"],
+            ],
             [0.05, 0.07, 0.09, 0.13],
-            14.0,
-            96.0,
+            0.2586206810344833,
+            0.9655172091954044,
         ),
         "iris": (
             [
-                A["violet"],
-                A["blue"],
-                A["cyan"],
-                A["green"],
-                A["yellow"],
-                A["orange"],
+                anchors["violet"],
+                anchors["blue"],
+                anchors["cyan"],
+                anchors["green"],
+                anchors["yellow"],
+                anchors["orange"],
             ],
             [0.14, 0.15, 0.11, 0.15, 0.16, 0.16],
-            14.0,
-            93.0,
+            0.2586206810344833,
+            0.939655141091956,
         ),
     }
-    for name, (hk, ck, l0, l1) in multi.items():
-        cm[name] = seq_multi(hk, ck, L_start=l0, L_end=l1, n=n)
+    for name, (hue_knots, chroma_knots, start_tone, end_tone) in multi.items():
+        cm[name] = seq_multi(
+            hue_knots,
+            chroma_knots,
+            tone_start=start_tone,
+            tone_end=end_tone,
+            n=n,
+            luminance_lock=luminance_lock,
+        )
 
     # diverging 11 (저값_고값 pair — 양극 = dc.{a}6/dc.{b}6)
     # 샘플 수 규약: diverging_pair 는 홀수(2·half-1) 샘플 → endpoint-inclusive
@@ -312,18 +462,19 @@ def compile_cmaps(
     def dv(
         fa: str,
         fb: str,
-        l_end: float,
-        l_center: float = 96.0,
+        tone_end: float,
+        tone_center: float = 0.9655172091954044,
         gamma: float = 0.85,
     ) -> list[str]:
         return _resample(
             diverging_pair(
                 palette[fa][6],
                 palette[fb][6],
-                l_end=l_end,
-                l_center=l_center,
+                tone_end=tone_end,
+                tone_center=tone_center,
                 gamma=gamma,
                 half=half,
+                luminance_lock=luminance_lock,
             ),
             n,
         )
@@ -331,28 +482,35 @@ def compile_cmaps(
     cm["blue_red"] = dv(
         "blue",
         "red",
-        l_end=(lab_l_hex(palette["blue"][6]) + lab_l_hex(palette["red"][6]))
-        / 2,
+        tone_end=(
+            _tone_from_hex(palette["blue"][6])
+            + _tone_from_hex(palette["red"][6])
+        )
+        / 2.0,
     )
-    for a, b, le in (
-        ("blue", "orange", 42),
-        ("teal", "rose", 44),
-        ("green", "purple", 40),
-        ("purple", "orange", 42),
-        ("cyan", "red", 44),
-        ("teal", "amber", 44),
-        ("violet", "lime", 42),
-        ("indigo", "amber", 40),
-        ("gray", "blue", 42),
-        ("gray", "red", 42),
+    for first, second, endpoint_tone in (
+        ("blue", "orange", 0.4999999833333344),
+        ("teal", "rose", 0.5172413620689666),
+        ("green", "purple", 0.4827586045977022),
+        ("purple", "orange", 0.4999999833333344),
+        ("cyan", "red", 0.5172413620689666),
+        ("teal", "amber", 0.5172413620689666),
+        ("violet", "lime", 0.4999999833333344),
+        ("indigo", "amber", 0.4827586045977022),
+        ("gray", "blue", 0.4999999833333344),
+        ("gray", "red", 0.4999999833333344),
     ):
-        cm[f"{a}_{b}"] = dv(a, b, l_end=le)
+        cm[f"{first}_{second}"] = dv(first, second, tone_end=endpoint_tone)
 
     # cyclic 3 (원형 빛 현상)
     def hue_of(fam: str) -> float:
-        return Color(palette[fam][6]).to_oklch()[2]
+        return _oklch_from_hex(palette[fam][6])[2]
 
-    cm["hue"] = cyclic_hue(n=n)
-    cm["halo"] = cyclic_twilight(hue_of("blue"), hue_of("red"), n=n)
-    cm["corona"] = cyclic_twilight(hue_of("teal"), hue_of("orange"), n=n)
+    cm["hue"] = cyclic_hue(n=n, luminance_lock=luminance_lock)
+    cm["halo"] = cyclic_twilight(
+        hue_of("blue"), hue_of("red"), n=n, luminance_lock=luminance_lock
+    )
+    cm["corona"] = cyclic_twilight(
+        hue_of("teal"), hue_of("orange"), n=n, luminance_lock=luminance_lock
+    )
     return cm

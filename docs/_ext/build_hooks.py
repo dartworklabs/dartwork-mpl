@@ -138,9 +138,9 @@ def generate_gallery_assets(_app):
 _LLMS_FULL_HEADER = """\
 # dartwork-mpl — full agent reference (llms-full.txt)
 
-This file is auto-generated at build time from the canonical sources
-listed below. Do **not** hand-edit; edit the upstream files and rebuild
-the docs (`uv run sphinx-build -b html docs docs/_build/html`).
+This file is generated from the canonical sources listed below and verified
+without mutation at docs-build time. Do **not** hand-edit; edit the upstream
+files, regenerate this authority explicitly, and then rebuild the docs.
 
 Companions:
 
@@ -165,13 +165,38 @@ _LLMS_FULL_SOURCES: list[tuple[str, str | None]] = [
 ]
 
 
-def generate_llms_full_txt(app):
-    """Concatenate canonical agent docs into ``llms-full.txt`` at repo root.
+def _check_or_write_authority(
+    path: Path, expected: str, *, label: str, write: bool
+) -> None:
+    """Check one tracked generated authority, or explicitly replace it."""
+    encoded = expected.encode("utf-8")
+    if write:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.is_file() and path.read_bytes() == encoded:
+            print(f"Unchanged generated authority: {label}")
+            return
+        path.write_bytes(encoded)
+        print(f"Wrote generated authority: {label}")
+        return
 
-    Runs every Sphinx build so that downstream consumers (the Python wheel
-    bundle, the GitHub raw URL, agents that fetch a single file) always see
-    the latest content. If any source is missing, the build fails so that
-    drift is caught immediately rather than silently shipping a stale dump.
+    if not path.is_file():
+        raise RuntimeError(
+            f"{label} is missing; regenerate it explicitly before the docs build"
+        )
+    if path.read_bytes() != encoded:
+        raise RuntimeError(
+            f"{label} is stale; regenerate it explicitly before the docs build"
+        )
+    print(f"Verified generated authority: {label}")
+
+
+def generate_llms_full_txt(app, *, write=False):
+    """Check ``llms-full.txt`` against its canonical agent-doc sources.
+
+    The Sphinx hook uses the non-writing default so a build cannot hide a
+    stale committed authority by mutating the checkout. Maintainers may call
+    this function with ``write=True`` as an explicit regeneration action.
+    Missing canonical sources always fail before either path can succeed.
     """
     repo_root = Path(app.srcdir).parent
 
@@ -189,8 +214,9 @@ def generate_llms_full_txt(app):
         parts.append(src.read_text(encoding="utf-8"))
 
     out = repo_root / "llms-full.txt"
-    out.write_text("".join(parts), encoding="utf-8")
-    print(f"Wrote concatenated agent reference: {out.relative_to(repo_root)}")
+    _check_or_write_authority(
+        out, "".join(parts), label=str(out.relative_to(repo_root)), write=write
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -263,10 +289,11 @@ def _parse_template_meta(block_body: str, source: str) -> dict[str, object]:
     return fields
 
 
-def generate_template_index(app):
-    """Build ``05-templates/_index.json`` from the gallery metadata blocks.
+def generate_template_index(app, *, write=False):
+    """Check ``05-templates/_index.json`` against gallery metadata blocks.
 
-    Runs every Sphinx build. Fails the build if any
+    The Sphinx hook is non-writing; ``write=True`` is reserved for an explicit
+    maintainer regeneration. Both modes fail if any
     ``09_ai_templates/plot_*.py`` lacks a complete metadata block, so
     drift is caught immediately rather than silently shipping a stale
     or partial index.
@@ -280,7 +307,9 @@ def generate_template_index(app):
     repo_root = Path(app.srcdir).parent
     template_dir = repo_root / "docs" / "examples_source" / "09_ai_templates"
     if not template_dir.exists():
-        return
+        raise FileNotFoundError(
+            f"AI template source directory is missing: {template_dir}"
+        )
 
     def _scan_tier(
         scan_dir: Path, tier: str
@@ -334,13 +363,11 @@ def generate_template_index(app):
         / "05-templates"
         / "_index.json"
     )
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(
-        json.dumps(index, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
-    print(
-        f"Wrote AI template index ({len(index)} entries): "
-        f"{out.relative_to(repo_root)}"
+    _check_or_write_authority(
+        out,
+        json.dumps(index, indent=2, sort_keys=True) + "\n",
+        label=str(out.relative_to(repo_root)),
+        write=write,
     )
 
 

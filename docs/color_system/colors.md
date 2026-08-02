@@ -1,20 +1,30 @@
 # Colors
 
-Every named color token in dartwork-mpl, rendered as full-width sheets. The
-`dc.*` ("dartwork color") family is the recommended starting point for
-publication figures; six third-party design systems are bundled for cross-team
-consistency.
+Use this page when you want to color one mark, line, area, label, or other plot
+element.
 
-Use this page when you need a single `color="..."` string. For series color
-through `dm.set_colors(...)` or `dm.colors(..., n=...)`, use
-[Palettes](palettes.md).
+A **color token** is one named color string, such as `"dc.blue6"`. A **family
+step** is one swatch in a related ramp: `dc.blue6` is step 6 of the blue
+family. For separate series or categories, use [Palettes](palettes.md).
+
+```python
+ax.plot(x, y, color="dc.blue6")
+```
 
 ## How to read the labels
 
-- Format: `library.colorweight` (e.g. `tw.blue500`, `md.red700`, `oc.gray6`).
+- A dartwork family step joins the `dc` prefix, a family name, and a number,
+  such as `dc.blue6`.
+- The general format is `library.colorweight` (for example, `tw.blue500`,
+  `md.red700`, or `oc.gray6`).
 - Works anywhere matplotlib accepts a color—no extra API layer required.
 - `dm.style.use("scientific")` loads the dartwork style so these names look
   consistent across lines, fills, markers, and legends.
+
+Every named color token in dartwork-mpl is rendered in the full-width sheets
+below. The `dc.*` ("dartwork color") family is the recommended starting point
+for publication figures; six third-party design systems are bundled for
+cross-team consistency.
 
 ```python
 import dartwork_mpl as dm
@@ -34,14 +44,20 @@ plt.show()
 ### dartwork Color — families
 
 The **20 single-hue families** — 19 chromatic ramps plus gray — are the
-perceptual backbone of the system. Each is ten steps (`dc.blue0` …
-`dc.blue9`), generated deterministically on CIELAB L\* + OKLCH and equalized
-so that *step-number difference = perceptual difference*
-(`dc.blue3↔dc.blue5` covers the same distance as `dc.blue6↔dc.blue8`). Reach
-any color as a plain string — `color="dc.blue6"` — anywhere matplotlib accepts
-a color; the `dc.*` colormaps derive from these same recipes. The full theory
-is on the
-[Design rationale](design-rationale.md) page.
+perceptual backbone of the system. Each contains ten family steps
+(`dc.blue0` … `dc.blue9`). Reach any step as a plain string —
+`color="dc.blue6"` — anywhere matplotlib accepts a color.
+
+:::{tip} In plain English
+Adjacent numbers are designed to progress more consistently, and ordered ramps
+also keep their accepted light-to-dark ordering under the catalog's nominal
+sRGB model. These are design targets, not a promise that every observer sees
+perfectly equal steps.
+:::
+
+See [Design rationale](design-rationale.md) for the exact construction and
+output metrics, and [Validation](validation.md) for the model-specific release
+checks.
 
 ```{raw} html
 :file: images/colors_dc_families.html

@@ -6,8 +6,9 @@ for in plotting code: dartwork Color (``dc.``), OpenColor (``oc.``), Tailwind
 (``tw.``), Material Design (``md.``), Ant Design (``ad.``), Chakra UI
 (``cu.``), and Primer (``pr.``). Use those strings anywhere matplotlib accepts
 a color. In addition to the named palette, a ``Color`` class provides
-perceptually uniform color manipulation across OKLab, OKLCH, RGB, and hex
-color spaces.
+perceptual color manipulation across OKLab, OKLCH, RGB, and hex color spaces.
+OKLab/OKLCH make distance and channel operations more consistent than RGB;
+they do not guarantee perfectly equal visual steps for every observer.
 
 Example
 -------

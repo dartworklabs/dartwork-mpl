@@ -111,34 +111,13 @@ def _collect_colormaps() -> dict[str, list[mpl.colors.Colormap]]:
 # ─── HTML/CSS native rendering ─────────────────────────────────────────
 
 
-def _oklch_lightness(hex_str: str) -> float:
-    """Compute OKLCH Lightness from a hex color string.
+def _text_brightness_rgb(r: float, g: float, b: float) -> float:
+    """Return a gamma-encoded BT.709-style text-brightness heuristic.
 
-    Uses the OKLab intermediate: hex → linear sRGB → OKLab L.
+    This intentionally preserves the historical foreground-selection
+    behavior. It is neither the project's modeled relative CIE Y nor WCAG
+    contrast luminance, and it must not be interpreted as a measurement.
     """
-    r_srgb, g_srgb, b_srgb = _hex_to_rgb01(hex_str)
-
-    # sRGB → linear RGB
-    def _lin(c: float) -> float:
-        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
-
-    r_lin, g_lin, b_lin = _lin(r_srgb), _lin(g_srgb), _lin(b_srgb)
-
-    # linear RGB → LMS (via OKLab matrix)
-    l_ = 0.4122214708 * r_lin + 0.5363325363 * g_lin + 0.0514459929 * b_lin
-    m_ = 0.2119034982 * r_lin + 0.6806995451 * g_lin + 0.1073969566 * b_lin
-    s_ = 0.0883024619 * r_lin + 0.2817188376 * g_lin + 0.6299787005 * b_lin
-
-    # LMS → OKLab L (cube root)
-    l_cr = l_ ** (1 / 3) if l_ >= 0 else 0.0
-    m_cr = m_ ** (1 / 3) if m_ >= 0 else 0.0
-    s_cr = s_ ** (1 / 3) if s_ >= 0 else 0.0
-
-    return 0.2104542553 * l_cr + 0.7936177850 * m_cr - 0.0040720468 * s_cr
-
-
-def _relative_luminance_rgb(r: float, g: float, b: float) -> float:
-    """ITU-R BT.709 relative luminance."""
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 
@@ -149,9 +128,9 @@ def _hex_to_rgb01(hex_str: str) -> tuple[float, float, float]:
 
 
 def _text_color_for_bg(hex_str: str) -> str:
-    """Return white or dark text depending on background luminance."""
+    """Return white or dark text from the display-brightness heuristic."""
     r, g, b = _hex_to_rgb01(hex_str)
-    return "#fff" if _relative_luminance_rgb(r, g, b) < 0.45 else "#333"
+    return "#fff" if _text_brightness_rgb(r, g, b) < 0.45 else "#333"
 
 
 def _write_dc_sheet(images_dir: Path, label: str, mapping: dict) -> Path:

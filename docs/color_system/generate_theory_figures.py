@@ -1,49 +1,78 @@
-"""dartwork color system v5 — design-theory figures for the docs site.
+"""dartwork color system — design-theory figures for the docs site.
 
-Ten self-contained vector figures that explain each generation axiom
-visually. Every data point is computed live from the *shipped* v5 package
-(``dartwork_mpl._colors``) — the palette, the recipe parameters, and the
-perceptual metrics — so the figures are evidence of the theory rather than
-decoration.
+Ten self-contained vector figures that explain the generation design rules
+visually. Every data point is computed live from the shipped package: OKLab /
+OKLCH construction, the optional modeled-relative-Y compatibility lock, and
+the independent validation metrics. The figures are evidence of the theory
+rather than decoration.
 
 Run::
 
     PYTHONPATH=src python docs/color_system/generate_theory_figures.py
 
 Output: ``docs/color_system/theory_figures/theory_*.svg`` (tracked static
-assets referenced by ``docs/color_system/design-rationale.md``). The figures only need
-to be regenerated when the 91-parameter SSOT changes.
+assets referenced by ``docs/color_system/design-rationale.md``). Relative
+``--output-dir`` values are resolved against this generator's directory;
+``--check`` renders into a temporary directory and never writes tracked files.
 """
 
 from __future__ import annotations
 
+import argparse
+import base64
+import io
 import math
+import re
+import sys
+from collections.abc import Sequence
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import matplotlib
 
 matplotlib.use("Agg")
 
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.colors import ListedColormap
+# Same pin the other asset generators use (docs/api, docs/usage_guide) and the
+# one this generator was missing. Without it svg.hashsalt stays None, so
+# matplotlib salts SVG element ids with a fresh uuid4 and every <image> lands
+# with a different id on every machine -- which is what made the two
+# raster-bearing theory figures read as stale in CI while the eight pure-vector
+# ones matched. Must run before pyplot and dartwork_mpl are imported.
+sys.path.insert(
+    0, str(Path(__file__).resolve().parents[1] / "_static" / "scripts")
+)
+from _svg_determinism import apply_svg_determinism
 
-import dartwork_mpl as dm
-from dartwork_mpl._colors import Color
-from dartwork_mpl._colors import _gates as GA
-from dartwork_mpl._colors import _generate as GEN
-from dartwork_mpl._colors import _generated as G
-from dartwork_mpl._colors import _metrics as M
-from dartwork_mpl._colors import _recipe as R
+apply_svg_determinism()
+
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+from matplotlib.colors import ListedColormap  # noqa: E402
+
+import dartwork_mpl as dm  # noqa: E402
+from dartwork_mpl._colors import _conversion as CONV  # noqa: E402
+from dartwork_mpl._colors import _curated as CUR  # noqa: E402
+from dartwork_mpl._colors import _gates as GA  # noqa: E402
+from dartwork_mpl._colors import _generate as GEN  # noqa: E402
+from dartwork_mpl._colors import _generated as G  # noqa: E402
+from dartwork_mpl._colors import _metrics as M  # noqa: E402
+from dartwork_mpl._colors import _recipe as R  # noqa: E402
+from dartwork_mpl._colors import _tone as TONE  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-OUTDIR = HERE / "theory_figures"
-OUTDIR.mkdir(parents=True, exist_ok=True)
-PREVIEW = Path(
-    "/private/tmp/claude-501/-Users-wonjun-Codes-company-analysis"
-    "/1cc38d4a-93c3-4c1f-a3c6-13cabee5ffdd/scratchpad/theory_prev"
+DEFAULT_OUTPUT_DIR = HERE / "theory_figures"
+FIGURE_NAMES: tuple[str, ...] = (
+    "theory_1_lightness_weber",
+    "theory_2_floor",
+    "theory_3_drift",
+    "theory_4_chroma",
+    "theory_5_spacing",
+    "theory_6_metric",
+    "theory_7_dcseq",
+    "theory_8_anatomy",
+    "theory_9_cmap_catalog",
+    "theory_10_cyclic_demo",
 )
-PREVIEW.mkdir(parents=True, exist_ok=True)
 
 # Pretendard (report-kr preset) gives full Latin + Greek + subscript coverage
 # for the mathtext labels; the labels themselves are English. This generator
@@ -51,7 +80,7 @@ PREVIEW.mkdir(parents=True, exist_ok=True)
 dm.style.use("report-kr")
 # report-kr renders bold titles in Paperlogy, which lacks Greek / super- and
 # subscripts; Pretendard covers the full Latin + Greek + sub/superscript set
-# the axiom labels need. Lead the fallback chain with Pretendard so titles
+# the design-rule labels need. Lead the fallback chain with Pretendard so titles
 # resolve Δ / γ / ² / ₀ without dropping the math/symbol/CJK fallbacks.
 family_chain = plt.rcParams["font.family"]
 plt.rcParams["font.family"] = [
@@ -70,18 +99,37 @@ plt.rcParams["svg.fonttype"] = "path"
 PALETTE = G.PALETTE  # fam -> [10 hex]
 CMAPS = G.CMAPS_256  # name -> [256 hex]
 CYCLES = G.CYCLES  # 'default' -> [8 hex], 'print' -> [8 hex]
-PARAMS = R.FAMILY_PARAMS  # fam -> FamilyParams (15 chromatic)
+PARAMS = R.FAMILY_PARAMS  # fam -> FamilyParams (19 chromatic)
 FOURIER = R.FOURIER
 
 # ── metric helpers over hex (thin wrappers on the shipped kernel) ──────────
 
 
-def lab_l(h: str) -> float:
-    return M.lab_l_hex(h)
+def rgb(h: str) -> tuple[float, float, float]:
+    """Parse one shipped hex color through the canonical conversion kernel."""
+    return CONV._parse_hex(h)
+
+
+def oklab_l(h: str) -> float:
+    """Return actual OKLab L in its native unit interval."""
+    return CONV._srgb_to_oklab(rgb(h))[0]
+
+
+def relative_y(h: str) -> float:
+    """Return modeled relative CIE Y from nominal D65 sRGB for one color."""
+    return CONV.relative_y_srgb_d65(rgb(h))
+
+
+def neutral_tone(h: str) -> float:
+    """Return the reversible catalog output coordinate, cube-root modeled Y."""
+    return float(TONE.tone_from_relative_y(relative_y(h)))
 
 
 def de_ok(a: str, b: str) -> float:
-    return M.de_ok_rgb(M.rgb_from_hex(a), M.rgb_from_hex(b))
+    return (
+        math.dist(CONV._srgb_to_oklab(rgb(a)), CONV._srgb_to_oklab(rgb(b)))
+        * 100
+    )
 
 
 def de2000(a: str, b: str) -> float:
@@ -99,7 +147,32 @@ def cvd(h: str, kind: str) -> str:
 
 
 def oklch(h: str) -> tuple[float, float, float]:
-    return Color(h).to_oklch()
+    return CONV._oklab_to_oklch_degrees(*CONV._srgb_to_oklab(rgb(h)))
+
+
+def neutral_hex_from_y(value: float) -> str:
+    """Encode a neutral whose nominal-sRGB modeled Y equals ``value``."""
+    channel = float(CONV._linear_to_srgb(value))
+    return CONV._rgb_to_hex(channel, channel, channel)
+
+
+def coefficient_of_determination(
+    observed: Sequence[float], fitted: Sequence[float]
+) -> float:
+    """Return ordinary in-sample R² for paired observations and fits."""
+    if len(observed) != len(fitted) or not observed:
+        raise ValueError(
+            "observed and fitted must be equally sized and non-empty"
+        )
+    mean = sum(observed) / len(observed)
+    total = sum((value - mean) ** 2 for value in observed)
+    if total == 0:
+        raise ValueError("R² is undefined when observed values are constant")
+    residual = sum(
+        (actual - predicted) ** 2
+        for actual, predicted in zip(observed, fitted, strict=True)
+    )
+    return 1.0 - residual / total
 
 
 # ── style tokens ──────────────────────────────────────────────────────────
@@ -125,56 +198,69 @@ def title(fig, text, top=0.84, y=0.965, fs=2.3, **adj):
     )
 
 
-def save(fig, name):
-    # Deterministic SVG: a fixed per-figure hashsalt keeps the clip-path /
-    # gradient element ids stable across runs, and ``metadata={"Date": None}``
-    # drops the embedded timestamp — so re-rendering yields a byte-identical
-    # file unless the plotted data actually changed. That keeps "the pictures
-    # are the proof" honest: a number correction is a one-line diff, not a full
-    # re-serialization from churned ids + a new date.
-    matplotlib.rcParams["svg.hashsalt"] = name
-    fig.savefig(
-        OUTDIR / f"{name}.svg",
+def save(fig, name: str, output_dir: Path) -> None:
+    """Apply project layout and save one deterministic tracked SVG."""
+    # Run the project layout pass after plotting, then retain the intentional
+    # editorial grid set by each figure's title helper. Several panels place
+    # explanatory text outside their axes; preserving those explicit GridSpec
+    # gaps prevents the generic fitter from collapsing a panel to satisfy one
+    # long annotation. ``bbox_inches='tight'`` still includes every artist.
+    subplotpars = fig.subplotpars
+    editorial_layout = {
+        "left": subplotpars.left,
+        "right": subplotpars.right,
+        "bottom": subplotpars.bottom,
+        "top": subplotpars.top,
+        "wspace": subplotpars.wspace,
+        "hspace": subplotpars.hspace,
+    }
+    grid_spec = fig.axes[0].get_gridspec()
+    dm.simple_layout(fig)
+    fig.subplots_adjust(**editorial_layout)
+    grid_spec.update(**editorial_layout)
+    dm.save_formats(
+        fig,
+        str(output_dir / name),
+        formats=("svg",),
         bbox_inches="tight",
         pad_inches=0.08,
         transparent=True,
-        metadata={"Date": None},
+        validate=False,
     )
-    fig.savefig(
-        PREVIEW / f"{name}.png", bbox_inches="tight", pad_inches=0.08, dpi=120
-    )
+    # Matplotlib indents multiline path data with a space before each newline.
+    # Strip that serialization-only whitespace so generated assets also pass
+    # the repository-wide ``git diff --check`` contract.
+    svg_path = output_dir / f"{name}.svg"
+    raw = svg_path.read_bytes()
+    cleaned = b"\n".join(line.rstrip(b" \t") for line in raw.split(b"\n"))
+    if cleaned != raw:
+        svg_path.write_bytes(cleaned)
     plt.close(fig)
     print(f"  {name}.svg")
 
 
-# ══════════════════════════════════════════════ 1 · why L* + OKLCH
-def fig_lightness_weber():
+# ══════════════════════════════════════════════ 1 · neutral tone and modeled Y
+def fig_lightness_weber(output_dir: Path) -> None:
     fig, axs = plt.subplots(2, 1, figsize=dm.figsize("15cm", 0.42))
     n = 12
-    ys = np.linspace(0.02, 1.0, n)
-    phys = [
-        "#{0:02x}{0:02x}{0:02x}".format(round(M._delin(y) * 255)) for y in ys
-    ]
-    ls = np.linspace(12, 97, n)
-    perc = []
-    for L in ls:
-        fy = (L + 16) / 116
-        yy = fy**3 if fy**3 > 216 / 24389 else (116 * fy - 16) * 27 / 24389
-        perc.append("#{0:02x}{0:02x}{0:02x}".format(round(M._delin(yy) * 255)))
+    tones = np.linspace(0.18, 0.98, n)
+    tone_row = [neutral_hex_from_y(float(tone**3)) for tone in tones]
+    y_values = np.linspace(float(tones[0] ** 3), float(tones[-1] ** 3), n)
+    y_row = [neutral_hex_from_y(float(value)) for value in y_values]
     rows = [
         (
             axs[0],
-            phys,
-            "Even steps in physical luminance (Y)",
-            "The light end bunches up — vision compresses lightness "
-            "logarithmically (Weber–Fechner)",
+            tone_row,
+            "Even neutral tone steps (T)",
+            "T is the reversible neutral output coordinate: "
+            "T = ∛(modeled relative CIE Y from nominal D65 sRGB)",
         ),
         (
             axs[1],
-            perc,
-            "Even steps in CIELAB L*",
-            "A perceptually even staircase — L* already performs that log "
-            "compression",
+            y_row,
+            "Even modeled relative Y steps",
+            "Y is a nominal-sRGB model coordinate; it is not the OKLab "
+            "authoring lightness axis or a display measurement",
         ),
     ]
     for ax, row, htitle, sub in rows:
@@ -197,17 +283,16 @@ def fig_lightness_weber():
         ax.axis("off")
     title(
         fig,
-        "Why the lightness axis is CIELAB L* — "
-        "“log spacing” is already built in",
+        "Neutral tone and modeled relative Y — one reversible catalog contract",
         top=0.80,
         y=0.95,
         hspace=1.15,
     )
-    save(fig, "theory_1_lightness_weber")
+    save(fig, "theory_1_lightness_weber", output_dir)
 
 
-# ══════════════════════════════════════════════ 2 · hue-specific floor
-def fig_floor():
+# ══════════════════════════════════════════════ 2 · hue-specific output floor
+def fig_floor(output_dir: Path) -> None:
     fams = [
         "yellow",
         "orange",
@@ -224,18 +309,23 @@ def fig_floor():
     for xi, fam in enumerate(fams):
         row = PALETTE[fam]
         for h in row:
-            L = lab_l(h)
+            tone = neutral_tone(h)
             ax.add_patch(
                 plt.Rectangle(
-                    (xi - 0.4, L - 2.1), 0.8, 4.2, color=h, ec="white", lw=0.5
+                    (xi - 0.4, tone - 0.012),
+                    0.8,
+                    0.024,
+                    color=h,
+                    ec="white",
+                    lw=0.5,
                 )
             )
-        floor = lab_l(row[9])
+        floor = neutral_tone(row[9])
         ax.plot([xi - 0.46, xi + 0.46], [floor, floor], color=INK, lw=1.0)
         ax.text(
             xi,
-            floor - 4.2,
-            f"{floor:.0f}",
+            floor - 0.025,
+            f"T {floor:.3f}\nY {relative_y(row[9]):.3f}",
             ha="center",
             va="top",
             fontsize=dm.fs(-2),
@@ -244,48 +334,44 @@ def fig_floor():
         )
     ax.set_xticks(range(len(fams)))
     ax.set_xticklabels(fams, fontsize=dm.fs(-1.5), rotation=32, ha="right")
-    ax.set_ylabel("CIELAB L* (lightness)", fontsize=dm.fs(0))
-    ax.set_ylim(30, 100)
+    ax.set_ylabel("NeutralTone T = ∛Y", fontsize=dm.fs(0))
+    ax.set_ylim(0.40, 1.0)
     ax.set_xlim(-0.8, len(fams) - 0.2)
-    ax.axhspan(30, 40, color=_C("oc.gray2"), alpha=0.35, zorder=0)
+    modeled_axis = ax.secondary_yaxis(
+        "right", functions=(lambda value: np.asarray(value) ** 3, np.cbrt)
+    )
+    modeled_axis.set_ylabel("modeled relative Y", fontsize=dm.fs(0))
+    top = float(R.TONE_TOP)
     ax.text(
         len(fams) - 0.3,
-        96,
-        "Lightness cap L*96\n(shared start for every family)",
+        top,
+        f"shared output start T={top:.3f}\n"
+        f"(modeled Y={float(TONE.relative_y_from_tone(R.TONE_TOP)):.3f})",
         ha="right",
         va="top",
         fontsize=dm.fs(-2),
         color=MUT,
     )
     ax.annotate(
-        "Yellow stops at L*60\n(darker turns olive)",
-        xy=(0, 60),
-        xytext=(1.7, 78),
-        fontsize=dm.fs(-2),
-        color=INK,
-        arrowprops={"arrowstyle": "->", "color": MUT, "lw": 0.9},
-    )
-    ax.annotate(
-        "Violet reaches L*37\n(stays violet when dark)",
-        xy=(7, 37),
-        xytext=(4.3, 46),
+        "Yellow stops earlier\n(darker turns olive)",
+        xy=(0, float(PARAMS["yellow"].tone_floor)),
+        xytext=(1.7, 0.78),
         fontsize=dm.fs(-2),
         color=INK,
         arrowprops={"arrowstyle": "->", "color": MUT, "lw": 0.9},
     )
     ax.set_title(
-        "Axiom A2 — hue-specific lightness floor: "
-        "“only as dark as the hue survives”",
+        "Optional output lock — authored hue-specific dark endpoint",
         fontsize=dm.fs(2.5),
         fontweight="bold",
         loc="left",
         pad=8,
     )
-    save(fig, "theory_2_floor")
+    save(fig, "theory_2_floor", output_dir)
 
 
 # ══════════════════════════════════════════════ 3 · drift power law
-def fig_drift():
+def fig_drift(output_dir: Path) -> None:
     fig, axs = plt.subplots(
         1,
         2,
@@ -335,24 +421,29 @@ def fig_drift():
         s.set_visible(False)
     title(
         fig,
-        "Axiom A4 — drift power law: warm hues rotate like flame as "
-        "they darken",
+        "Design rule A4 — authored catalog drift along each hue path",
         top=0.82,
         y=0.955,
         wspace=0.28,
     )
-    save(fig, "theory_3_drift")
+    save(fig, "theory_3_drift", output_dir)
 
 
 # ══════════════════════════════════════════════ 4 · chroma fingerprint
-def fig_chroma():
+def fig_chroma(output_dir: Path) -> None:
     fig, axs = plt.subplots(1, 2, figsize=dm.figsize("15cm", 0.46))
     ax = axs[0]
+    coefficients = FOURIER["cmax_k3"]
     hh = np.linspace(0, 360, 361)
-    cc = [R.fourier_eval(FOURIER["cmax_k3"], h) for h in hh]
+    cc = [R.fourier_eval(coefficients, h) for h in hh]
+    family_points = [
+        (family, params, R.mid_hue(params)) for family, params in PARAMS.items()
+    ]
+    observed = [params.cmax for _, params, _ in family_points]
+    fitted = [R.fourier_eval(coefficients, hue) for _, _, hue in family_points]
+    r_squared = coefficient_of_determination(observed, fitted)
     ax.plot(hh, cc, color=INK, lw=dm.lw(0.3), zorder=2)
-    for fam, p in PARAMS.items():
-        hm = R.mid_hue(p)
+    for fam, p, hm in family_points:
         ax.scatter(
             [hm],
             [p.cmax],
@@ -363,7 +454,7 @@ def fig_chroma():
             zorder=3,
         )
     ax.annotate(
-        "cyan valley\n(sRGB is stingy with cyan)",
+        "authored cyan minimum",
         xy=(202, 0.113),
         xytext=(150, 0.15),
         fontsize=dm.fs(-2.5),
@@ -383,7 +474,7 @@ def fig_chroma():
     ax.set_xlim(0, 360)
     ax.set_xticks([0, 90, 180, 270, 360])
     ax.set_title(
-        f"Chroma fingerprint {CMAX}(h)  (R²=0.945)",
+        f"Chroma fingerprint {CMAX}(h)  (In-sample R²={r_squared:.3f})",
         fontsize=dm.fs(-0.5),
         loc="left",
     )
@@ -409,22 +500,22 @@ def fig_chroma():
     ax2.set_ylabel(f"chroma ratio C / {CMAX}", fontsize=dm.fs(-0.5))
     ax2.legend(fontsize=dm.fs(-2.5), loc="lower center", frameon=False)
     ax2.set_title(
-        f"Shared shape template (only {TP} varies)",
+        "Shared functional form; family parameters vary",
         fontsize=dm.fs(-0.5),
         loc="left",
     )
     title(
         fig,
-        "Axiom A3 — chroma: hue fingerprint × shared shape",
+        "Design rule A3 — chroma: hue fingerprint × shared shape",
         top=0.82,
         y=0.955,
         wspace=0.34,
     )
-    save(fig, "theory_4_chroma")
+    save(fig, "theory_4_chroma", output_dir)
 
 
 # ══════════════════════════════════════════════ 5 · step spacing
-def fig_spacing():
+def fig_spacing(output_dir: Path) -> None:
     fig, axs = plt.subplots(
         2,
         1,
@@ -478,27 +569,26 @@ def fig_spacing():
             label=lbl,
         )
     ax2.set_xlabel("step transition (k → k+1)", fontsize=dm.fs(-0.5))
-    ax2.set_ylabel("neighbor ΔE (OKLab)", fontsize=dm.fs(-0.5))
+    ax2.set_ylabel("neighbor ΔEOK", fontsize=dm.fs(-0.5))
     ax2.legend(fontsize=dm.fs(-2), frameon=False, loc="upper center", ncol=2)
     ax2.set_title(
-        "Only equalization flattens neighbor ΔE — step "
+        "Only equalization flattens neighbor ΔEOK — step "
         "arithmetic becomes meaningful",
         fontsize=dm.fs(0),
         loc="left",
     )
     title(
         fig,
-        "Axiom A5 — step spacing: perceptual even-spacing by default "
-        "(warp is opt-in)",
+        "A5 — step spacing: fixed ΔEOK arc-length equalization",
         top=0.82,
         y=0.955,
         hspace=0.65,
     )
-    save(fig, "theory_5_spacing")
+    save(fig, "theory_5_spacing", output_dir)
 
 
 # ══════════════════════════════════════════════ 6 · metric reform
-def fig_metric():
+def fig_metric(output_dir: Path) -> None:
     a, b = PALETTE["blue"][7], PALETTE["violet"][7]
     fig, axs = plt.subplots(
         1,
@@ -508,9 +598,9 @@ def fig_metric():
     )
     ax = axs[0]
     pairs = [
-        ("normal vision", a, b),
+        ("unsimulated nominal sRGB", a, b),
         (
-            "deuteranopia\n(deutan) simulation",
+            "named deutan simulation\n(full severity)",
             cvd(a, "deutan"),
             cvd(b, "deutan"),
         ),
@@ -537,14 +627,32 @@ def fig_metric():
     ax.set_xlim(-1.6, 2.75)
     ax.set_ylim(-0.15, 2.1)
     ax.axis("off")
-    ax.set_title("Two clearly different colors…", fontsize=dm.fs(0), loc="left")
+    ax.set_title(
+        "Nominal rendering and one named simulation",
+        fontsize=dm.fs(0),
+        loc="left",
+    )
 
     ax2 = axs[1]
     d76 = de76(cvd(a, "deutan"), cvd(b, "deutan"))
     d00 = de2000(cvd(a, "deutan"), cvd(b, "deutan"))
     bars = [
-        ("ΔE76", d76, _C("oc.red6"), "looks safe\n→ collapses", "white", 8.5),
-        ("ΔE00", d00, _C("oc.teal7"), "correctly\nfails", INK, 6.2),
+        (
+            "ΔE76",
+            d76,
+            _C("oc.red6"),
+            "above historical\nsearch criterion",
+            "white",
+            8.5,
+        ),
+        (
+            "ΔE00",
+            d00,
+            _C("oc.teal7"),
+            "below historical\nsearch criterion",
+            INK,
+            6.2,
+        ),
     ]
     for xi, (_lbl, val, col, note, ncol, ny) in enumerate(bars):
         ax2.bar(xi, val, 0.52, color=col)
@@ -569,14 +677,16 @@ def fig_metric():
     ax2.text(
         1.48,
         10.5,
-        "gate threshold 10",
+        "historical Octave search criterion 10\n(not a current shared gate)",
         fontsize=dm.fs(-2.5),
         color=INK,
         ha="right",
     )
     ax2.set_xticks([0, 1])
     ax2.set_xticklabels(["ΔE76", "ΔE00"], fontsize=dm.fs(0))
-    ax2.set_ylabel("color distance after deutan sim", fontsize=dm.fs(-0.5))
+    ax2.set_ylabel(
+        "color distance after named deutan simulation", fontsize=dm.fs(-0.5)
+    )
     ax2.set_ylim(0, 20)
     ax2.set_xlim(-0.6, 1.6)
     ax2.set_title(
@@ -584,29 +694,29 @@ def fig_metric():
     )
     title(
         fig,
-        "Metric reform — ΔE76 inflates high-chroma distances",
+        "Model-specific CIEDE2000 regression diagnostic — "
+        "named deutan simulation",
         top=0.80,
         y=0.95,
         wspace=0.3,
         fs=2.2,
     )
-    save(fig, "theory_6_metric")
+    save(fig, "theory_6_metric", output_dir)
 
 
-# ══════════════════════════════════════════════ 7 · cmap wide L*
-def fig_dcseq():
+# ══════════════════════════════════════ 7 · sequential OKLab L and modeled Y
+def fig_dcseq(output_dir: Path) -> None:
     import matplotlib as mpl
 
     seq = [CMAPS["aurora"][round(i * 255 / 31)] for i in range(32)]
     vir = [
         mpl.colors.to_hex(mpl.colormaps["viridis"](i / 31)) for i in range(32)
     ]
-    # Measure the two swatch strips the figure actually renders, with the same
-    # gate the rest of the system uses — so the printed numbers ARE the number
-    # the picture proves (the page's "pictures are the proof" principle). NOTE:
-    # aurora here is the shipped 256-LUT sampled at 32 stops, NOT the SSOT's
-    # direct-render swatches_32 — those differ (only ~half overlap), so this cv
-    # is the honest same-protocol figure vs viridis.
+    # Measure the two swatch strips the figure actually renders with the same
+    # gate used elsewhere. The printed numbers report the values reproduced by
+    # this named 32-stop protocol. NOTE: aurora here is the shipped 256-LUT,
+    # not the SSOT's direct-render swatches_32; only about half of their samples
+    # overlap, so this is a same-protocol comparison with viridis.
     g_seq = GA.gate_seq_cmap(seq)
     g_vir = GA.gate_seq_cmap(vir)
     fig, axs = plt.subplots(
@@ -649,53 +759,77 @@ def fig_dcseq():
     )
 
     ax2 = axs[1]
-    ls_dc = [lab_l(h) for h in seq]
-    ls_vir = [lab_l(h) for h in vir]
+    ls_dc = [oklab_l(h) for h in seq]
+    ls_vir = [oklab_l(h) for h in vir]
+    ys_dc = [relative_y(h) for h in seq]
+    ys_vir = [relative_y(h) for h in vir]
     xx = np.linspace(0, 1, 32)
     ax2.plot(
-        xx, ls_dc, color=ACC, lw=dm.lw(0.5), marker="o", ms=2.2, label="aurora"
+        xx,
+        ls_dc,
+        color=ACC,
+        lw=dm.lw(0.5),
+        marker="o",
+        ms=2.2,
+        label="aurora — actual OKLab L",
     )
-    ax2.plot(xx, ls_vir, color=MUT, lw=dm.lw(0.3), ls="--", label="viridis")
     ax2.plot(
-        [0, 1],
-        [ls_dc[0], ls_dc[-1]],
-        color=INK,
-        lw=dm.lw(-0.3),
-        ls=":",
-        label="perfectly linear ref",
+        xx,
+        ys_dc,
+        color=ACC,
+        lw=dm.lw(0.3),
+        ls="--",
+        label="aurora — modeled relative Y",
+    )
+    ax2.plot(
+        xx, ls_vir, color=MUT, lw=dm.lw(0.3), label="viridis — actual OKLab L"
+    )
+    ax2.plot(
+        xx,
+        ys_vir,
+        color=MUT,
+        lw=dm.lw(0.3),
+        ls="--",
+        label="viridis — modeled relative Y",
     )
     ax2.set_xlabel("cmap position", fontsize=dm.fs(-0.5))
-    ax2.set_ylabel("CIELAB L*", fontsize=dm.fs(-0.5))
-    ax2.legend(fontsize=dm.fs(-2.5), frameon=False, loc="upper left")
+    ax2.set_ylabel("actual OKLab L / modeled relative Y", fontsize=dm.fs(-0.5))
+    ax2.set_ylim(0, 1)
+    ax2.legend(fontsize=dm.fs(-3), frameon=False, loc="upper left", ncol=2)
     ax2.text(
         0.98,
-        20,
-        f"aurora: ΔE cv {g_seq['cv']:.3f} · L* range {g_seq['L_span']}\n"
-        f"viridis: cv {g_vir['cv']:.3f} · {g_vir['L_span']}"
-        "  (same 32-stop measurement)",
+        0.04,
+        f"aurora: ΔEOK CV {g_seq['cv']:.3f} · "
+        f"L span {max(ls_dc) - min(ls_dc):.3f} · "
+        f"Y span {max(ys_dc) - min(ys_dc):.3f}\n"
+        f"viridis: ΔEOK CV {g_vir['cv']:.3f} · "
+        f"L span {max(ls_vir) - min(ls_vir):.3f} · "
+        f"Y span {max(ys_vir) - min(ys_vir):.3f}",
         ha="right",
         va="bottom",
         fontsize=dm.fs(-2.5),
         color=MUT,
     )
     ax2.set_title(
-        "Monotonic, near-linear L* — order preserved even in grayscale print",
+        "Modeled relative Y carries the catalog ordering contract; "
+        "actual OKLab L is a result profile",
         fontsize=dm.fs(0),
         loc="left",
     )
     title(
         fig,
-        "Axiom A8 — heatmap cmaps use a wide L* range, not the palette floors",
+        "Sequential maps — ΔEOK spacing plus distinct OKLab-L / "
+        "modeled-relative-Y profiles",
         top=0.82,
         y=0.955,
         hspace=0.55,
         fs=2.0,
     )
-    save(fig, "theory_7_dcseq")
+    save(fig, "theory_7_dcseq", output_dir)
 
 
 # ══════════════════════════════════════════════ 8 · recipe anatomy
-def fig_anatomy():
+def fig_anatomy(output_dir: Path) -> None:
     fam = "yellow"
     p = PARAMS[fam]
     row = PALETTE[fam]
@@ -724,18 +858,40 @@ def fig_anatomy():
     ax.set_title("yellow ladder", fontsize=dm.fs(-0.5), loc="left")
 
     ax2 = axs[1]
-    ls = [lab_l(h) for h in row]
+    ls = [oklab_l(h) for h in row]
+    ys = [relative_y(h) for h in row]
     cs = [oklch(h)[1] for h in row]
-    ax2.plot(range(10), ls, color=ACC, lw=dm.lw(0.3), marker="o", ms=2.4)
-    ax2.set_ylabel("L*", fontsize=dm.fs(-1), color=ACC)
-    ax2.axhline(p.floor, color=ACC, ls=":", lw=dm.lw(-0.3))
+    ax2.plot(
+        range(10),
+        ls,
+        color=ACC,
+        lw=dm.lw(0.3),
+        marker="o",
+        ms=2.4,
+        label="actual OKLab L",
+    )
+    ax2.plot(
+        range(10),
+        ys,
+        color=MUT,
+        lw=dm.lw(0.3),
+        ls="--",
+        marker=".",
+        ms=2.4,
+        label="modeled relative Y",
+    )
+    ax2.set_ylabel("actual OKLab L / modeled relative Y", fontsize=dm.fs(-1))
+    ax2.set_ylim(0, 1)
+    output_floor_y = float(TONE.relative_y_from_tone(p.tone_floor))
+    ax2.axhline(output_floor_y, color=MUT, ls=":", lw=dm.lw(-0.3))
     ax2.text(
         9,
-        p.floor + 2,
-        f"floor {p.floor:.0f}",
+        output_floor_y - 0.025,
+        f"output floor T={float(p.tone_floor):.3f}\nY={output_floor_y:.3f}",
         ha="right",
+        va="top",
         fontsize=dm.fs(-3),
-        color=ACC,
+        color=MUT,
     )
     ax2b = ax2.twinx()
     ax2b.plot(
@@ -752,7 +908,7 @@ def fig_anatomy():
     )
     ax2.set_xlabel("step k", fontsize=dm.fs(-1))
     ax2.set_title(
-        "L* (blue) · chroma (pink) trajectory", fontsize=dm.fs(-0.5), loc="left"
+        "profiles: L blue · Y gray · C pink", fontsize=dm.fs(-1), loc="left"
     )
 
     ax3 = axs[2]
@@ -763,8 +919,8 @@ def fig_anatomy():
     ax3.set_xlabel("step k", fontsize=dm.fs(-1))
     ax3.set_ylabel("hue h (°)", fontsize=dm.fs(-1))
     ax3.text(
-        0.3,
-        hs[0],
+        0.35,
+        hs[0] + 2.0,
         f"{H0} {p.h0:.0f}°",
         fontsize=dm.fs(-3),
         color=_C("oc.orange6"),
@@ -787,16 +943,14 @@ def fig_anatomy():
     ax3.set_title("hue drift", fontsize=dm.fs(-0.5), loc="left")
     title(
         fig,
-        f"Recipe anatomy — {fam}: 8 numbers  [{H0} {p.h0:.0f} · "
-        f"{DH} {p.dh:+.0f} · {GAM} {p.gamma:.2f} · {TP} "
-        f"{p.tp:.2f} · {CMAX} {p.cmax:.3f} · floor "
-        f"{p.floor:.0f} · {C0} {p.c0:.2f} · {CE} {p.cend:.2f}]",
-        top=0.80,
+        f"Recipe anatomy — {fam}: OKLCH construction + optional "
+        "modeled-relative-Y lock",
+        top=0.76,
         y=0.95,
         wspace=0.78,
-        fs=1.4,
+        fs=1.8,
     )
-    save(fig, "theory_8_anatomy")
+    save(fig, "theory_8_anatomy", output_dir)
 
 
 # ══════════════════════════════════════════════ 9 · catalog
@@ -819,29 +973,9 @@ def _grad(ax, hexes, y, label, h=0.82):
     )
 
 
-def fig_catalog():
+def fig_catalog(output_dir: Path) -> None:
     groups = [
-        (
-            "Single-hue 20 — family name as-is",
-            [
-                "red",
-                "rose",
-                "orange",
-                "amber",
-                "yellow",
-                "lime",
-                "green",
-                "teal",
-                "cyan",
-                "sky",
-                "blue",
-                "indigo",
-                "violet",
-                "purple",
-                "pink",
-                "gray",
-            ],
-        ),
+        ("Single-hue 20 — family name as-is", [*R.FAMILIES, "gray"]),
         (
             "Multi-hue 9 — natural-light scenes (light metaphor: low = dark)",
             [
@@ -874,7 +1008,7 @@ def fig_catalog():
         ),
         ("Cyclic 3 — circular light phenomena", ["hue", "halo", "corona"]),
     ]
-    fig, ax = plt.subplots(figsize=dm.figsize("16cm", 1.45))
+    fig, ax = plt.subplots(figsize=dm.figsize("16cm", 1.95))
     y = 0.0
     for gtitle, names in groups:
         ax.text(
@@ -892,11 +1026,11 @@ def fig_catalog():
             _grad(ax, CMAPS[name], y, name)
             y += 1.0
         y += 0.3
-    # qualitative — discrete cycle swatches
+    # qualitative — 11 curated sets plus two registered cycle surfaces
     ax.text(
         -0.15,
         y + 0.4,
-        "Qualitative 2 — palette cycle registration",
+        "Qualitative 13 — 11 curated sets + 2 registered cycles",
         ha="right",
         va="center",
         fontsize=dm.fs(0),
@@ -904,36 +1038,21 @@ def fig_catalog():
         color=INK,
     )
     y += 1.0
-    for name, hexes in [
-        ("octave", CYCLES["octave"]),
-        ("octave_print", CYCLES["octave_print"]),
-    ]:
+    qualitative = [
+        *((name, CUR.CURATED[name]) for name in CUR.CURATED_QUALITATIVE_ORDER),
+        *((name, CYCLES[name]) for name in CYCLES),
+    ]
+    for name, hexes in qualitative:
         _grad(ax, hexes, y, name)
         y += 1.0
     ax.set_xlim(-4.4, 10.2)
     ax.set_ylim(y, -0.3)
     ax.axis("off")
-    dm.simple_layout(fig)
-    matplotlib.rcParams["svg.hashsalt"] = "theory_9_cmap_catalog"
-    fig.savefig(
-        OUTDIR / "theory_9_cmap_catalog.svg",
-        bbox_inches="tight",
-        pad_inches=0.08,
-        transparent=True,
-        metadata={"Date": None},
-    )
-    fig.savefig(
-        PREVIEW / "theory_9_cmap_catalog.png",
-        bbox_inches="tight",
-        pad_inches=0.08,
-        dpi=115,
-    )
-    plt.close(fig)
-    print("  theory_9_cmap_catalog.svg")
+    save(fig, "theory_9_cmap_catalog", output_dir)
 
 
 # ══════════════════════════════════════════════ 10 · cyclic demo
-def fig_cyclic_demo():
+def fig_cyclic_demo(output_dir: Path) -> None:
     xx, yy = np.meshgrid(np.linspace(-3, 3, 220), np.linspace(-2, 2, 150))
     phase = (np.arctan2(yy, xx) + 0.6 * np.sin(np.hypot(xx, yy) * 1.5)) % (
         2 * np.pi
@@ -945,14 +1064,19 @@ def fig_cyclic_demo():
             axs[0],
             CMAPS["aurora"],
             "ordinary sequential (aurora)",
-            "false discontinuity at the 0↔1 seam (phantom shear line)",
+            "false seam\n(phantom discontinuity)",
         ),
-        (axs[1], CMAPS["halo"], "cyclic (halo)", "0 = 1 joins smoothly"),
+        (
+            axs[1],
+            CMAPS["halo"],
+            "dark-center cyclic (halo)",
+            "smooth seam\ndark center",
+        ),
         (
             axs[2],
             CMAPS["hue"],
             "cyclic (hue)",
-            "isoluminant hue wheel — phase = hue",
+            "isoluminant cycle\nphase = hue",
         ),
     ]
     for ax, hexes, ptitle, sub in panels:
@@ -964,7 +1088,7 @@ def fig_cyclic_demo():
         ax.set_title(ptitle, fontsize=dm.fs(-0.5), loc="left")
         ax.text(
             0.5,
-            -0.10,
+            -0.08,
             sub,
             transform=ax.transAxes,
             ha="center",
@@ -981,38 +1105,190 @@ def fig_cyclic_demo():
         ha="left",
         y=0.98,
     )
-    matplotlib.rcParams["svg.hashsalt"] = "theory_10_cyclic_demo"
-    fig.savefig(
-        OUTDIR / "theory_10_cyclic_demo.svg",
-        bbox_inches="tight",
-        pad_inches=0.08,
-        transparent=True,
-        metadata={"Date": None},
-    )
-    fig.savefig(
-        PREVIEW / "theory_10_cyclic_demo.png",
-        bbox_inches="tight",
-        pad_inches=0.08,
-        dpi=115,
-    )
-    plt.close(fig)
-    print("  theory_10_cyclic_demo.svg")
+    save(fig, "theory_10_cyclic_demo", output_dir)
 
 
-def main():
+def render_all(output_dir: Path) -> None:
+    """Render the complete ten-figure inventory into ``output_dir``."""
     print("rendering theory figures ...")
-    fig_lightness_weber()
-    fig_floor()
-    fig_drift()
-    fig_chroma()
-    fig_spacing()
-    fig_metric()
-    fig_dcseq()
-    fig_anatomy()
-    fig_catalog()
-    fig_cyclic_demo()
-    print(f"done → {OUTDIR}")
+    fig_lightness_weber(output_dir)
+    fig_floor(output_dir)
+    fig_drift(output_dir)
+    fig_chroma(output_dir)
+    fig_spacing(output_dir)
+    fig_metric(output_dir)
+    fig_dcseq(output_dir)
+    fig_anatomy(output_dir)
+    fig_catalog(output_dir)
+    fig_cyclic_demo(output_dir)
+    print(f"done → {output_dir}")
+
+
+def _resolve_output_dir(value: str) -> Path:
+    """Resolve relative CLI paths against the generator, not the caller cwd."""
+    candidate = Path(value).expanduser()
+    if candidate.is_absolute():
+        return candidate
+    return HERE / candidate
+
+
+def _svg_inventory(directory: Path) -> dict[str, bytes]:
+    """Read tracked-format theory assets without creating ``directory``."""
+    if not directory.is_dir():
+        return {}
+    return {
+        path.name: path.read_bytes()
+        for path in sorted(directory.glob("theory_*.svg"))
+        if path.is_file()
+    }
+
+
+# Two of the ten figures rasterise their gradients, so matplotlib embeds them
+# as base64 PNG; the other eight are pure vector and reproduce byte-identically
+# anywhere. PNG is zlib-compressed and its pixels come from antialiased float
+# math, so two machines can render the same picture into different bytes. This
+# check exists to ask whether the committed asset is still the picture the
+# generator produces, not whether two machines agree on a compressed stream.
+# Matplotlib wraps the payload across lines, so whitespace is part of it.
+_DATA_URI = re.compile(rb"data:image/png;base64,([A-Za-z0-9+/=\s]+?)\"")
+
+# matplotlib derives an <image> element's id from the compressed PNG bytes
+# (`oid = self._make_id('image', buf.getvalue())`), so the id is a fingerprint
+# of the encoding rather than of the picture. Eliding the payload alone still
+# leaked that fingerprint into the markup. These ids are declarations only --
+# nothing in the tracked figures references them -- so normalising them costs
+# no coverage.
+_IMAGE_ID = re.compile(rb'id="image[0-9a-f]+"')
+
+# One 8-bit level. A real change to a figure moves pixels far more than this;
+# cross-machine antialiasing noise does not.
+_PIXEL_TOLERANCE = 1
+
+
+def _split_rasters(svg: bytes) -> tuple[bytes, list[np.ndarray]]:
+    """Return the SVG with image payloads elided, plus their decoded pixels."""
+    from PIL import Image
+
+    images: list[np.ndarray] = []
+
+    def collect(match: re.Match[bytes]) -> bytes:
+        payload = base64.b64decode(b"".join(match.group(1).split()))
+        with Image.open(io.BytesIO(payload)) as opened:
+            images.append(np.asarray(opened.convert("RGBA"), dtype=np.int16))
+        return b'data:image/png;base64,<elided>"'
+
+    return _IMAGE_ID.sub(
+        b'id="image<elided>"', _DATA_URI.sub(collect, svg)
+    ), images
+
+
+def _svg_mismatch(tracked: bytes, generated: bytes) -> str | None:
+    """Return why two theory SVGs differ in content, or None if they agree.
+
+    The reason is reported rather than swallowed: when this check fails on a
+    machine that is not the author's, "stale" alone says nothing about whether
+    the picture changed, the surrounding markup changed, or only the
+    compression did.
+    """
+    if tracked == generated:
+        return None
+    tracked_text, tracked_images = _split_rasters(tracked)
+    generated_text, generated_images = _split_rasters(generated)
+    if tracked_text != generated_text:
+        for index, (tracked_byte, generated_byte) in enumerate(
+            zip(tracked_text, generated_text, strict=False)
+        ):
+            if tracked_byte != generated_byte:
+                window = slice(max(0, index - 40), index + 40)
+                return (
+                    f"markup differs at byte {index} of "
+                    f"{len(tracked_text)}/{len(generated_text)}: "
+                    f"{tracked_text[window]!r} -> {generated_text[window]!r}"
+                )
+        return (
+            f"markup length differs: {len(tracked_text)} vs "
+            f"{len(generated_text)}"
+        )
+    if len(tracked_images) != len(generated_images):
+        return (
+            f"raster count differs: {len(tracked_images)} vs "
+            f"{len(generated_images)}"
+        )
+    for index, (left, right) in enumerate(
+        zip(tracked_images, generated_images, strict=True)
+    ):
+        if left.shape != right.shape:
+            return f"raster {index} shape {left.shape} vs {right.shape}"
+        worst = int(np.abs(left - right).max(initial=0))
+        if worst > _PIXEL_TOLERANCE:
+            differing = int((np.abs(left - right) > _PIXEL_TOLERANCE).sum())
+            return (
+                f"raster {index} differs by up to {worst} levels "
+                f"({differing} of {left.size} samples beyond tolerance)"
+            )
+    return None
+
+
+def check(output_dir: Path) -> int:
+    """Render hermetically and compare every expected SVG without writing."""
+    with TemporaryDirectory(prefix="dartwork-mpl-theory-") as temporary:
+        generated_dir = Path(temporary)
+        render_all(generated_dir)
+        generated = _svg_inventory(generated_dir)
+
+    tracked = _svg_inventory(output_dir)
+    expected_names = {f"{name}.svg" for name in FIGURE_NAMES}
+    tracked_names = set(tracked)
+    generated_names = set(generated)
+    missing = sorted(expected_names - tracked_names)
+    extra = sorted(tracked_names - expected_names)
+    incomplete = sorted(expected_names - generated_names)
+    reasons = {}
+    for name in sorted(expected_names & tracked_names & generated_names):
+        reason = _svg_mismatch(tracked[name], generated[name])
+        if reason is not None:
+            reasons[name] = reason
+    stale = sorted(reasons)
+    if missing or extra or incomplete or stale:
+        for label, names in (
+            ("missing", missing),
+            ("extra", extra),
+            ("not generated", incomplete),
+            ("stale", stale),
+        ):
+            if names:
+                print(f"{label}: {', '.join(names)}", file=sys.stderr)
+        for name, reason in reasons.items():
+            print(f"  {name}: {reason}", file=sys.stderr)
+        return 1
+    print(f"theory assets are fresh: {output_dir}")
+    return 0
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output-dir",
+        default="theory_figures",
+        help="output directory (relative paths resolve beside this generator)",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="render temporarily and fail if tracked SVG bytes differ",
+    )
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Run normal generation or the non-writing deterministic check."""
+    args = _parser().parse_args(argv)
+    output_dir = _resolve_output_dir(args.output_dir)
+    if args.check:
+        return check(output_dir)
+    render_all(output_dir)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

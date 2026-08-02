@@ -4,6 +4,16 @@ The color system has one rule: the name is a family, and `n` picks the form.
 Use the same family name as a token, a discrete list, or a colormap depending
 on the matplotlib surface you are filling.
 
+:::{tip}
+New to color? Start with the beginner [Colors and Colormaps usage
+guide](../usage_guide/colors.md) to choose between a token, palette, colormap,
+and custom `Color` workflow.
+:::
+
+Modeled relative CIE Y (`relative_y`) is calculated from nominal D65 sRGB; it
+is not a measurement of a particular display, perceived brightness, or OKLab
+`L`.
+
 | you want to | you write | catalog |
 |---|---|---|
 | color one thing | `color="dc.blue6"` | [Colors](../color_system/colors.md) |
@@ -25,16 +35,18 @@ the 56 family records that make those forms explicit.
 :link: ../color_system/colors
 :link-type: doc
 
-Static token sheets for `color="..."`: the generated `dc.*` ramps, semantic
-aliases, and the six bundled third-party design systems.
+Use this catalog to color one mark, line, or area with `color="..."`. It shows
+the generated `dc.*` ramps, semantic aliases, and the six bundled third-party
+design systems.
 :::
 
 :::{grid-item-card} **Palettes**
 :link: ../color_system/palettes
 :link-type: doc
 
-Discrete forms for series color: Octave, curated qualitative sets, family
-samples, and diverging/sequential lists through `dm.set_colors()` and
+Use this catalog to give separate series or categories distinct colors. It
+shows Octave, curated qualitative sets, family samples, and
+diverging/sequential lists for `dm.set_colors()` and
 `dm.colors(name, n=...)`.
 :::
 
@@ -42,15 +54,22 @@ samples, and diverging/sequential lists through `dm.set_colors()` and
 :link: ../color_system/colormaps
 :link-type: doc
 
-43 perceptually-designed colormaps for `cmap=`, plus qualitative colormaps
-for class data and `_r` reverses for direction control.
+Use this catalog to turn numeric values into colors with `cmap=`. It contains
+43 perceptually-designed colormaps, plus 13 qualitative colormaps for class
+data: 56 family records in all. Continuous construction is topology-specific:
+single-hue, continuous-gray, multi-hue, and twilight paths use the applicable
+ΔEOK resampling, while diverging maps and `hue` use their own symmetric-arm or
+equal-angle rules. Explicit checks then confirm the required modeled-relative-Y
+direction or shape rather than claiming perfect uniformity; `_r` reverses
+control direction.
 :::
 
 :::{grid-item-card} **Color class**
 :link: ../color_system/color-class
 :link-type: doc
 
-The programmatic color engine: construct, convert, modify, interpolate, and
+Use this optional guide when you need to create or adjust a color yourself.
+The programmatic color engine can construct, convert, modify, interpolate, and
 register custom colormaps in OKLab / OKLCH.
 :::
 

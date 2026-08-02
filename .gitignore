@@ -66,3 +66,12 @@ dist/
 /first.png
 /output.png
 /output/
+/build/
+
+# Rendered output from running the example sources directly. The gallery
+# build regenerates these; docs/examples_source/ tracks only .py/.rst/.md.
+docs/examples_source/**/*.png
+docs/examples_source/**/*.pdf
+
+# Superpowers / SDD agent working notes, like .claude/ above.
+.superpowers/

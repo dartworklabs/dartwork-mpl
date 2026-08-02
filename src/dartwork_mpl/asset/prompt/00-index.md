@@ -4,6 +4,10 @@ You are working with **dartwork-mpl**, a publication-quality matplotlib
 design system. This file is the routing index — start here, then
 fetch the specific guide you need.
 
+Modeled relative CIE Y (`relative_y`) is calculated from nominal D65 sRGB; it
+is not a measurement of a particular display, perceived brightness, or OKLab
+`L`.
+
 ## Decision tree
 
 | If the user asked for… | Read this resource |
@@ -34,6 +38,15 @@ fetch the specific guide you need.
   `Length` height (`dm.cm(12)`).
 - Use named colors: `oc.*`, `tw.*`, `dc.*`, `md.*`, `ad.*`, `cu.*`,
   `pr.*`. Raw hex is allowed but discouraged.
+- The `dc.*` catalog's construction space is unified around OKLab L and
+  OKLCH C/h. ΔEOK arc-length spacing applies to the 19 chromatic family
+  ladders and to the sequential or closed twilight continuous paths that
+  declare it; discrete gray, diverging maps, and `hue` use their documented
+  topology-specific placement rules. A modeled-relative-Y lock is an optional
+  output constraint used to preserve shipped colors and topology; it is not a
+  second authoring space. CIELAB/CIEDE2000 and CVD simulation are
+  model-specific validation diagnostics, while WCAG contrast luminance is a
+  separate pairwise text-contrast metric.
 - **Always size fonts, line widths, and weights relative to the active
   style.** Pass `fontsize=dm.fs(n)`, `linewidth=dm.lw(n)`,
   `fontweight=dm.fw(n)` — never a literal `fontsize=12` or

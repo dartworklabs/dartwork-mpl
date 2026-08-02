@@ -37,8 +37,9 @@ snippets.
 
 ## v5 — generative color system (0.5.6 clean break)
 
-A 107-number generative palette (20 families × 10 perceptually equalized
-steps, `dc.{family}{step}`) replaced the hand-curated v4 catalog. v5 is a
+A 107-number generative palette (19 arc-length-equalized chromatic ladders plus
+one directly sampled gray ladder, each with 10 `dc.{family}{step}` tokens)
+replaced the hand-curated v4 catalog. v5 is a
 **full clean break** (design spec:
 `docs/superpowers/specs/2026-07-03-color-system-v5-design.md`):
 

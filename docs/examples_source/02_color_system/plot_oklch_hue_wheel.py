@@ -4,8 +4,9 @@ OKLCH Hue Wheel
 
 A polar scatter plot that sweeps through 360° of hue in the OKLCH color space
 at fixed Lightness and Chroma. Each ring represents a different lightness level,
-visually proving the **perceptual uniformity** of OKLCH — hue transitions are
-smooth without the muddy "dead zones" typical of HSL/HSV.
+demonstrating a smooth cylindrical hue traversal without the muddy coordinate
+dead zones typical of HSL/HSV. The wheel is diagnostic, not proof that equal
+numeric hue steps are perceived as exactly equal color differences.
 
 Use ``dm.oklch(L, C, h)`` to construct colors directly from perceptual
 coordinates.
@@ -57,7 +58,7 @@ ax.set_xticklabels(
     fontsize=dm.fs(-0.5),
 )
 ax.set_title(
-    "OKLCH Hue Wheel\u2009\u2014\u2009Perceptual Uniformity",
+    "OKLCH Hue Wheel\u2009\u2014\u2009Fixed L and C",
     fontsize=dm.fs(1),
     weight="bold",
     pad=30,

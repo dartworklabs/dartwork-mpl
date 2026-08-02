@@ -76,7 +76,7 @@ def mix_colors(
     color2: str | tuple[float, float, float],
     alpha: float = 0.5,
 ) -> tuple[float, float, float]:
-    """Blend two colors in OKLab space (perceptually uniform blend).
+    """Blend two colors along a perceptually oriented OKLab path.
 
     Blends in OKLab rather than gamma-encoded sRGB, so midpoints avoid the
     "muddy" saturation dip that naive RGB mixing produces for saturated hues

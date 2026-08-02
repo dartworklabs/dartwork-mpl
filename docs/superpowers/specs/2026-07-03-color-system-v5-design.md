@@ -1,5 +1,12 @@
 # dartwork color system v5 — 생성 공리 기반 색 시스템 설계
 
+> **Superseded metric model (2026-07-14).** This document is retained as the
+> historical v5 rationale. Current construction uses OKLab L, OKLCH C/h, and
+> ΔEOK, with modeled relative CIE Y from nominal D65 sRGB only as an optional
+> shipped-output compatibility lock. It is not a display measurement. See the
+> [accepted redesign](2026-07-14-oklab-centered-color-system-design.md) and
+> [ADR 0001](../../adr/0001-oklab-centered-color-construction.md).
+
 > **Status**: Design (approved for planning) · **Date**: 2026-07-03 · **Author**: color-system working session
 > **Scope**: `dartwork_mpl.colors` 전면 재설계 — 팔레트·컬러맵·색 공간·categorical cycle·시맨틱 토큰
 > **SSOT**: 이 문서 + [`assets/2026-07-03-color-system-v5/color_v5_ssot.json`](assets/2026-07-03-color-system-v5/color_v5_ssot.json)

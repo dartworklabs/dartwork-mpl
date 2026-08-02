@@ -24,6 +24,11 @@ _MPLSTYLE_DIR = Path(__file__).parent.parent / "asset" / "mplstyle"
 # 05-templates/, _legacy/, ...)
 _PROMPT_DIR = Path(__file__).parent.parent / "asset" / "prompt"
 _TEMPLATE_DIR = _PROMPT_DIR / "05-templates"
+_MODELED_Y_LIMITATION = (
+    "Modeled relative CIE Y (`relative_y`) is calculated from nominal D65 "
+    "sRGB; it is not a measurement of a particular display, perceived "
+    "brightness, or OKLab `L`."
+)
 
 
 def register_resources(mcp: FastMCP) -> None:
@@ -48,7 +53,7 @@ def register_resources(mcp: FastMCP) -> None:
 
     @mcp.resource("dartwork-mpl://guide/policy")
     def policy() -> str:
-        """0.4 policy: width, aspect, layout, color, font, save."""
+        """Policy: layout plus the OKLab/OKLCH color-metric split."""
         return get_prompt("01-policy")
 
     @mcp.resource(
@@ -117,11 +122,16 @@ def register_resources(mcp: FastMCP) -> None:
 
     @mcp.resource("dartwork-mpl://palette/colors")
     def palette_colors() -> str:
-        """Get the full list of dartwork-mpl registered colors with hex codes.
+        """Get the registered colors, whose ``dc.*`` values stay exact.
 
-        Returns a JSON object where keys are color names (e.g. 'dc.blue6')
-        and values are hex codes. Only dartwork-mpl prefixed colors are included:
-        dc.*, tw.*, md.*, ad.*, cu.*, pr.*, oc.*
+        The JSON keys are names such as ``dc.blue6`` and the values are hex
+        codes. It includes the prefixes dc.*, tw.*, md.*, ad.*, cu.*, pr.*,
+        and oc.*. Modeled relative Y is an optional shipped-output
+        compatibility lock, not a second construction space.
+
+        Modeled relative CIE Y (`relative_y`) is calculated from nominal D65
+        sRGB; it is not a measurement of a particular display, perceived
+        brightness, or OKLab `L`.
         """
         from .._colors._loader import COLOR_LIBRARIES
 

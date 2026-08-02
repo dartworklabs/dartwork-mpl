@@ -9,6 +9,12 @@
   ``CURATED_QUALITATIVE_ORDER``.
 
 The single-hue sequential ladders live in ``_generated.PALETTE``.
+
+These rows are preserved manual outputs, not inputs to the generated recipe.
+``CURATED_META`` is explanatory catalog copy: its ``bw``/L* figures are
+validation-only CIELAB diagnostics.  CVD figures are validation-only ΔE00
+summaries using Machado (2009) for protan/deutan and BVM (1997) for tritan;
+neither diagnostic participates in construction.
 """
 
 from __future__ import annotations
@@ -202,7 +208,8 @@ CURATED_META: dict[str, dict[str, str]] = {
         "report-grade yet distinct enough that the series never "
         "tangle or shout.",
         "design": "6 evenly-spaced hues anchored on house teal + 2 neutrals, "
-        "muted chroma (no neon), staggered even L* ladder 38→88.",
+        "muted chroma (no neon), on a staggered relative-Y ladder "
+        "(measured L* 38→88).",
         "application": "Everything — line, bar, scatter; works on white pages "
         "and in tables. The general-purpose cycle.",
         "bw": "min ΔL* 7.1",
@@ -213,13 +220,13 @@ CURATED_META: dict[str, dict[str, str]] = {
         "label": "Vivid",
         "family": "Qualitative",
         "band": "widest · full wheel",
-        "intent": "MANY unrelated categories — up to eight — where color alone must "
-        "separate everything and maximum distinctness matters more than "
-        "restraint. An even, vivid rainbow spread for legends, maps, and "
-        "crowded categorical charts that need every series apart.",
+        "intent": "MANY unrelated categories — up to eight — where color is the "
+        "primary differentiator and maximum distinctness matters more than "
+        "restraint. Add labels or markers whenever identities must survive "
+        "display, observer, or reproduction differences.",
         "design": "8 hues evenly spaced 45° around the full wheel (teal-anchored), "
-        "high chroma, staggered even L* ladder 40→88 so it still survives "
-        "B&W.",
+        "high chroma, on a staggered relative-Y ladder (measured L* 40→88) "
+        "so lightness carries a second ordering cue.",
         "application": "8-category scatter, side-by-side bars, editorial "
         "infographics. Vivid, confident tone.",
         "bw": "min ΔL* 6.1",
@@ -232,8 +239,9 @@ CURATED_META: dict[str, dict[str, str]] = {
         "band": "max chroma · electric",
         "intent": "MAXIMUM chroma — the loudest legal categorical, at the sRGB gamut "
         "edge. Up to 8 vivid categories on dark UI or hero moments.",
-        "design": "Electric hues at the per-rung gamut ceiling; CVD-confusable pairs "
-        "thrown far apart in L* so loudness never costs separability.",
+        "design": "Electric hues at the per-rung gamut ceiling; pairs the CVD "
+        "models flag as confusable are staggered in relative Y, so lightness "
+        "separates them too.",
         "application": "Dark-mode dashboards, brand hero charts, few-category small "
         "multiples.",
         "bw": "min ΔL* 7.0",
@@ -249,8 +257,8 @@ CURATED_META: dict[str, dict[str, str]] = {
         "carry 4 to 8 categories quietly, keeping the data readable "
         "without competing for attention on an already busy page.",
         "design": "Same 8-hue spread as the default but low chroma (~18) and a "
-        "higher L* band 52→90. Calm, magazine-like. (B&W is softer by "
-        "design.)",
+        "higher relative-Y band (measured L* 52→90). Calm, magazine-like; "
+        "the B&W preview has smaller gaps by design.",
         "application": "Dashboards, small multiples, annotation-heavy figures. "
         "Pair with one vivid accent for emphasis.",
         "bw": "min ΔL* 5.4",
@@ -265,8 +273,9 @@ CURATED_META: dict[str, dict[str, str]] = {
         "high-key Pastel. Built for moody editorial, dark-on-cream "
         "layouts, and retro themes where soft-but-saturated tones suit "
         "the page better than bright, high-key color.",
-        "design": "Same 8-hue spread as Muted but a mid L* band 40→78 and low "
-        "chroma ~16. Calm but with more body than pastel.",
+        "design": "Same 8-hue spread as Pastel but a middle relative-Y band "
+        "(measured L* 40→78) and low chroma ~16. Calm but with more body "
+        "than Pastel.",
         "application": "Dense editorial, atmospheric dashboards, retro / vintage "
         "themes. (B&W softer by design.)",
         "bw": "min ΔL* 5.5",
@@ -280,8 +289,9 @@ CURATED_META: dict[str, dict[str, str]] = {
         "intent": "The saturated WARM categorical — brick, coral, ochre, gold, "
         "olive, pink, and clay plus a cool-neutral anchor. Golden-hour "
         "energy without earth's muteness.",
-        "design": "All-warm hues carry little CVD margin, so the even L* stagger + "
-        "a cool anchor + one green do the separating.",
+        "design": "All-warm hues leave little margin in the CVD models, so "
+        "relative-Y staggering, a cool anchor, and one green add redundant "
+        "separation.",
         "application": "Warmth-themed dashboards, seasonal / energy / hospitality "
         "decks.",
         "bw": "min ΔL* 7.6",
@@ -297,7 +307,8 @@ CURATED_META: dict[str, dict[str, str]] = {
         "brands. Earthy, grounded hues that feel editorial and separate a "
         "handful of categories without ever looking corporate.",
         "design": "Terracotta, ochre, olive, sand, sage, clay (h 35→125, muted "
-        "chroma ~26-30), staggered even L* ladder 36→88.",
+        "chroma ~26-30), on a staggered relative-Y ladder "
+        "(measured L* 36→88).",
         "application": "Multi-series line/bar/area for environmental or earthy "
         "topics. Calm, grounded, magazine-like.",
         "bw": "min ΔL* 7.2",
@@ -313,11 +324,12 @@ CURATED_META: dict[str, dict[str, str]] = {
         "brighter, so many categories stay separable while the whole set "
         "keeps an upscale, high-contrast mood.",
         "design": "Emerald, sapphire, indigo, vermilion, topaz, amethyst, deep "
-        "teal/cyan (high chroma 42), even L* ladder 30→86. Retuned to "
-        "clear the protanopia collapse.",
-        "application": "Up to 8 categories where you want depth + luxury. ⚠ Softest "
-        "CVD of the set (protan ~4) — for strict accessibility use "
-        "Accessible or a Duo.",
+        "teal/cyan (high chroma 42), on a relative-Y ladder (measured "
+        "L* 30→86). Retuned once to clear a protanopia-model regression.",
+        "application": "Up to 8 categories where you want depth + luxury. "
+        "⚠ Smallest protan margin in the set (~4 in simulation) — where "
+        "color-vision safety matters, use Trustworthy or a Duo instead, or "
+        "reinforce identities with labels, markers, or line styles.",
         "bw": "min ΔL* 7.8",
         "cvd": "d7.6 / p4.2 / t16.3",
         "kind": "qualitative",
@@ -330,8 +342,9 @@ CURATED_META: dict[str, dict[str, str]] = {
         "agriculture, environment, growth themes. A green arc held to "
         "one hue family and separated by lightness, so the lines read as "
         "cohesive and calm rather than scattered or noisy.",
-        "design": "A ~40° green arc (yellow-green→teal-green) on a staggered even "
-        "L* ladder 36→90 — one hue family, lightness-separated.",
+        "design": "A ~40° green arc (yellow-green→teal-green) on a staggered "
+        "relative-Y ladder (measured L* 36→90) — one hue family, separated "
+        "by lightness.",
         "application": "Multi-series line / area for environmental or organic "
         "topics. Calm, cohesive.",
         "bw": "min ΔL* 7.7",
@@ -347,9 +360,9 @@ CURATED_META: dict[str, dict[str, str]] = {
         "marks the salient series and graded neutrals carry the "
         "rest, keeping attention exactly where you point it.",
         "design": "Slot 0 = house teal (salient), slots 1-7 = graded neutrals "
-        "on an even L* ladder 46→91. Pair with Coral Accent for the "
-        "warm-highlight version, or combine the two accent colors "
-        "to highlight a second series.",
+        "in relative-Y order (measured L* 46→91). Pair with Coral Accent for "
+        "the warm-highlight version, or combine the two accent colors to "
+        "highlight a second series.",
         "application": "Single-series emphasis in line / bar charts, "
         "explanatory figures, slide builds.",
         "bw": "min ΔL* 6.2",
@@ -365,7 +378,7 @@ CURATED_META: dict[str, dict[str, str]] = {
         "content. Coral marks the salient line and graded neutrals "
         "mute everything else quietly into the background.",
         "design": "Slot 0 = coral (h≈32, salient), slots 1-7 = graded "
-        "neutrals, even L* ladder 46→91.",
+        "neutrals in relative-Y order (measured L* 46→91).",
         "application": "Single-series emphasis where a warm highlight reads "
         "better (e.g., risk / attention).",
         "bw": "min ΔL* 6.2",
@@ -380,9 +393,10 @@ CURATED_META: dict[str, dict[str, str]] = {
         "for the continuous dc.blue_red diverging family. Use it for "
         "signed or centered quantities where both direction and "
         "magnitude matter.",
-        "design": "Symmetric L* tent (dark ends → pale center), blue (h≈250) ↔ "
-        "red (h≈25). Excellent CVD. NOT a categorical set — the order "
-        "IS the meaning.",
+        "design": "Symmetric relative-Y tent (dark ends → pale "
+        "center), blue (h≈250) ↔ red (h≈25). Checked with the named CVD "
+        "simulation diagnostics; NOT a categorical "
+        "set — the order IS the meaning.",
         "application": "Correlation matrices, change heatmaps, anomaly scales, "
         "and other midpoint-aware encodings.",
         "bw": "min ΔL* 0.0",
@@ -397,8 +411,8 @@ CURATED_META: dict[str, dict[str, str]] = {
         "form for the continuous dc.blue_orange diverging family. "
         "Use it for signed or centered quantities where both "
         "direction and magnitude matter.",
-        "design": "4 blue + 4 orange hues (~180° apart), each an internal L* "
-        "ramp; even ladder 38→90.",
+        "design": "4 blue + 4 orange hues (~180° apart), each an internal "
+        "relative-Y ramp (measured L* 38→90).",
         "application": "Correlation matrices, change heatmaps, anomaly "
         "scales, and other midpoint-aware encodings.",
         "bw": "min ΔL* 7.3",
@@ -413,8 +427,9 @@ CURATED_META: dict[str, dict[str, str]] = {
         "form for the continuous dc.teal_amber diverging family. Use "
         "it for signed or centered quantities where both direction "
         "and magnitude matter.",
-        "design": "Symmetric L* tent, teal (h≈186) ↔ amber (h≈66). The "
-        "blue-yellow axis is CVD-robust.",
+        "design": "Symmetric relative-Y tent, teal (h≈186) ↔ "
+        "amber (h≈66). The blue-yellow axis retains distance in the named "
+        "CVD-simulation report.",
         "application": "Correlation matrices, change heatmaps, anomaly scales, "
         "and other midpoint-aware encodings.",
         "bw": "min ΔL* 0.0",
@@ -429,9 +444,10 @@ CURATED_META: dict[str, dict[str, str]] = {
         "form for the continuous dc.green_purple diverging family. "
         "Use it for signed or centered quantities where both "
         "direction and magnitude matter.",
-        "design": "Symmetric even-L* tent: dark saturated ends, pale "
-        "low-chroma centre; both arms separable under all three "
-        "CVD types.",
+        "design": "Symmetric relative-Y tent: dark saturated ends, "
+        "pale "
+        "low-chroma centre; both arms are checked under all three CVD "
+        "validation modes.",
         "application": "Correlation matrices, change heatmaps, anomaly "
         "scales, and other midpoint-aware encodings.",
         "bw": "min ΔL* 0.0",

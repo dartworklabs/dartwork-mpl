@@ -39,7 +39,14 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
+      # Full history: tests/test_color_v6_quality_oracle.py runs
+      # scripts/freeze_color_v5_quality.py, which resolves the frozen colour
+      # baseline with `git rev-parse <sha>^{commit}`. A shallow checkout has
+      # only the merge commit, so that lookup fails with "Needed a single
+      # revision" and the generator exits 2.
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -177,8 +184,7 @@ jobs:
   # Build the docs on every PR (the deploy workflow only runs on main, so
   # without this a doc-breaking change isn't caught until after merge).
   # Two gates: (1) -W turns Sphinx warnings into build failures; (2) the
-  # ``builder-inited`` hook regenerates llms-full.txt, so a stale committed
-  # copy (upstream edited but llms-full.txt not rebuilt) fails the drift check.
+  # ``builder-inited`` hook rejects stale generated authorities before deploy.
   docs:
     runs-on: [self-hosted, ml-main]
     # Pin the docs build to a single modern interpreter. Without this,
@@ -206,9 +212,9 @@ jobs:
       # Caches the incremental-build state: Sphinx doctrees (skip re-parsing
       # unchanged pages) and the matplotlib font cache (skip the cold-start
       # font scan). Key invalidates when any docs/package Python source OR
-      # asset *data* (palettes, mplstyle, colormaps, prompt corpus) changes —
-      # a data-only change (e.g. a dc_palettes.json rename) alters rendered
-      # output, so it must bust the cache too.
+      # asset *data* (color authority, mplstyle, colormaps, prompt corpus)
+      # changes — a data-only change alters rendered output, so it must bust
+      # the cache too.
       - name: Cache Sphinx doctrees + matplotlib font cache
         uses: actions/cache@v4
         with:
@@ -227,8 +233,8 @@ jobs:
       # 70+ example executions that dominate the docs build (~9 min → ~1).
       # The key folds in the example sources, the package source AND its
       # asset data (examples import dartwork_mpl and render with its
-      # palettes/styles, so a data-only change like a dc_palettes.json
-      # rename must regenerate images), conf, the build hooks, and the
+      # palettes/styles, so a data-only color-authority change must regenerate
+      # images), conf, the build hooks, and the
       # lockfile; any change forces a fresh full rebuild. No restore-keys on
       # purpose: a partial (prefix) restore could serve stale images for an
       # unchanged example whose library-side output actually changed.
@@ -247,19 +253,47 @@ jobs:
         # 없으므로 설치 대신 존재만 확인하고, 없으면 즉시 실패시킨다.
         run: dot -V
 
+      - name: Verify packaged color authorities
+        run: |
+          set -euo pipefail
+          uv run python scripts/build_color_v6_ssot.py \
+            --baseline-commit 12d16bac22dee790bd0696ca92a814a797dc728b \
+            --output /tmp/dartwork-color-v6-ssot.json
+          cmp /tmp/dartwork-color-v6-ssot.json src/dartwork_mpl/asset/color/color_v6_ssot.json
+          uv run python -m dartwork_mpl._colors._build --check
+
+      - name: Compare frozen and live color systems
+        run: uv run python scripts/compare_color_systems.py --output build/color-system-comparison --check
+
+      - name: Verify generated color documentation assets
+        env:
+          MPLBACKEND: Agg
+        run: |
+          set -euo pipefail
+          uv run python docs/_static/scripts/build_categorical_explorer.py --check
+          uv run python docs/_static/scripts/build_colormap_explorer.py --check
+          uv run python docs/color_system/generate_theory_figures.py --check
+
+      - name: Upload color-system comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: color-system-comparison
+          path: build/color-system-comparison
+          if-no-files-found: warn
+
       - name: Build documentation (warnings = errors)
         env:
           MPLBACKEND: Agg
         run: uv run sphinx-build -b html -W --keep-going -d docs/_build/doctrees docs docs/_build/html
 
-      # The Sphinx build rewrites llms-full.txt in place. If it differs from
-      # the committed copy, an upstream agent-doc source was edited without
-      # rebuilding. (Generated SVG/HTML assets are non-deterministic, so the
-      # guard is scoped to llms-full.txt only — never the asset tree.)
-      - name: Assert llms-full.txt is in sync
+      # The Sphinx hook rejects a stale llms-full.txt without rewriting it.
+      # Keep this diff guard as a defense against any accidental tracked write
+      # introduced by a future build extension.
+      - name: Assert docs build left llms-full.txt untouched
         run: |
           if ! git diff --quiet -- llms-full.txt; then
-            echo "::error::llms-full.txt is stale — rebuild docs (uv run sphinx-build -b html docs docs/_build/html) and commit the regenerated file."
+            echo "::error::The docs build mutated llms-full.txt. Authority hooks must verify without writing. Regenerate explicitly before CI."
             git --no-pager diff -- llms-full.txt | head -60
             exit 1
           fi

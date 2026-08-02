@@ -12,6 +12,7 @@ import json
 import re
 import runpy
 from pathlib import Path
+from unittest.mock import patch
 
 from dartwork_mpl._colors import _curated, _generated
 
@@ -73,6 +74,11 @@ _QUALITATIVE_ORDER = [
     "coral_accent",
 ]
 _ABSORBED_DIVERGING = ["blue_red", "blue_orange", "teal_amber", "green_purple"]
+_CVD_MODELS = {
+    "deutan": "Machado et al. 2009 severity 1.0",
+    "protan": "Machado et al. 2009 severity 1.0",
+    "tritan": "Brettel-Vienot-Mollon 1997 adapted linear-sRGB",
+}
 
 
 def _payload() -> dict:
@@ -213,26 +219,31 @@ def test_builder_family_intents_are_substantive_layout_copy() -> None:
     assert not terse
 
 
-def test_builder_cycle_intents_explain_screen_print_tradeoff() -> None:
-    """Octave and Octave Print lead with the screen-vs-print reason both exist."""
+def test_builder_cycle_intents_bound_the_nominal_diagnostic_tradeoff() -> None:
+    """Cycle copy keeps its measured history without a print guarantee."""
     builder = runpy.run_path(str(_BUILDER))
     cycle_intent = dict(builder["CYCLE_INTENT"])
 
     assert "screen-first" in cycle_intent["octave"]
-    assert "line-safe L* 43-78 band" in cycle_intent["octave"]
-    assert "thin lines on white" in cycle_intent["octave"]
-    assert "some pairs share a gray tone" in cycle_intent["octave"]
-    assert "min ΔL* 2.7" in cycle_intent["octave"]
+    assert (
+        "historical validation-only CIELAB L* 43\u201378 band"
+        in cycle_intent["octave"]
+    )
+    assert "intended line width and background" in cycle_intent["octave"]
+    assert "minimum pairwise CIELAB ΔL* is 2.7" in cycle_intent["octave"]
+    assert (
+        "nominal neutral preview therefore has close pairs"
+        in cycle_intent["octave"]
+    )
 
     assert "print-first" in cycle_intent["octave_print"]
     assert "same hue per slot as Octave" in cycle_intent["octave_print"]
     assert "violet slot matches Octave" in cycle_intent["octave_print"]
+    assert "minimum pairwise CIELAB ΔL* of 7.7" in cycle_intent["octave_print"]
     assert (
-        "every pair is at least about 7 L* apart"
-        in cycle_intent["octave_print"]
+        "bounded diagnostic, not a printing or observer guarantee"
+        in (cycle_intent["octave_print"])
     )
-    assert "min ΔL* 7.7" in cycle_intent["octave_print"]
-    assert "grayscale printing and photocopies" in cycle_intent["octave_print"]
     assert "dark gray takes the 8th slot" in cycle_intent["octave_print"]
 
 
@@ -417,11 +428,17 @@ def test_explorer_title_row_chips_replace_badge_readout() -> None:
     assert "d.querySelector('.a11y-chips').innerHTML=a11yHTML();" in html
     assert "function bwTip(v){" in html
     assert "function cvdTip(c){" in html
-    assert "the smallest lightness gap between any two colors here" in html
-    assert "some pairs share a gray tone when printed" in html
-    assert "Octave Print fixes this" in html
-    assert "Worst-case ΔE00 color difference" in html
-    assert "all three deficiency types" in html
+    assert (
+        "minimum pairwise CIELAB lightness gap among these source colors"
+        in html
+    )
+    assert "nominal source-RGB neutral preview" in html
+    assert "not a printing or observer guarantee" in html
+    assert "Minimum pairwise ΔE00 under the named" in html
+    assert "It is model-specific, not an observer guarantee" in html
+    for model in _CVD_MODELS.values():
+        assert model in html
+    assert "under simulated color-vision deficiency (Brettel 1997)" not in html
     assert ".a11y-badge" not in html
     assert ".a11y-badges" not in html
     assert "function badgeHTML(" not in html
@@ -433,12 +450,81 @@ def test_explorer_title_row_chips_replace_badge_readout() -> None:
 
 
 def test_cycle_payload_includes_cvd_metrics_from_ssot() -> None:
-    """Octave and Octave Print carry CVD metrics for the badge parser."""
+    """Cycles carry validation metrics plus per-deficiency model provenance."""
     builder = runpy.run_path(str(_BUILDER))
     for payload in (builder["build_payload"](), _payload()):
+        assert payload["cvd_model"] == _CVD_MODELS
         for key in ("octave", "octave_print"):
             cvd = payload["palettes"][key]["cvd"]
             assert re.fullmatch(r"d\d+\.\d / p\d+\.\d / t\d+\.\d", cvd)
+
+    source = _BUILDER.read_text(encoding="utf-8")
+    assert "load_color_v6_ssot" in source
+    assert "models_by_deficiency" in source
+
+
+def test_categorical_builder_check_is_byte_stable_and_never_writes(
+    tmp_path: Path,
+) -> None:
+    """Fresh/stale/missing --check paths are all in-memory and read-only."""
+    builder = runpy.run_path(str(_BUILDER))
+    render_html = builder["render_html"]
+    first = render_html()
+    second = render_html()
+    assert isinstance(first, str)
+    assert first.encode("utf-8") == second.encode("utf-8")
+
+    main = builder["main"]
+    target = tmp_path / "categorical_explorer.html"
+    main.__globals__["OUT"] = target
+    target.write_bytes(first.encode("utf-8"))
+
+    def checked() -> int:
+        with (
+            patch.object(
+                Path, "write_text", side_effect=AssertionError("write")
+            ),
+            patch.object(
+                Path, "write_bytes", side_effect=AssertionError("write")
+            ),
+            patch.object(Path, "mkdir", side_effect=AssertionError("mkdir")),
+        ):
+            result = main(["--check"])
+        assert isinstance(result, int)
+        return result
+
+    before = (
+        target.read_bytes(),
+        target.stat().st_mtime_ns,
+        set(tmp_path.rglob("*")),
+    )
+    assert checked() == 0
+    assert (
+        target.read_bytes(),
+        target.stat().st_mtime_ns,
+        set(tmp_path.rglob("*")),
+    ) == before
+
+    target.write_bytes(b"stale")
+    before = (
+        target.read_bytes(),
+        target.stat().st_mtime_ns,
+        set(tmp_path.rglob("*")),
+    )
+    assert checked() != 0
+    assert (
+        target.read_bytes(),
+        target.stat().st_mtime_ns,
+        set(tmp_path.rglob("*")),
+    ) == before
+
+    target.unlink()
+    target = tmp_path / "missing" / "categorical_explorer.html"
+    main.__globals__["OUT"] = target
+    before_entries = set(tmp_path.rglob("*"))
+    assert checked() != 0
+    assert not target.exists()
+    assert set(tmp_path.rglob("*")) == before_entries
 
 
 def test_docs_semantic_aliases_live_on_static_palette_page() -> None:
@@ -470,15 +556,16 @@ def test_docs_octave_reference_keeps_pinned_phrases_and_tradeoff() -> None:
         "beats Okabe-Ito's 7.9",
         "13 qualitative choices",
     ):
-        assert phrase in cat
-    assert "line-safe L* 43-78 band" in cat_flat
-    assert "same hue per slot as Octave" in cat_flat
-    assert "violet slot matches Octave" in cat_flat
+        assert phrase in cat_flat
     assert (
-        "Octave Print guarantees every pair is at least about 7 L* apart"
+        "historical, validation-only CIELAB report records Octave's L* 43-78 range"
         in cat_flat
     )
-    assert "min ΔL* 7.7" in cat_flat
+    assert "same hue per slot as Octave" in cat_flat
+    assert "violet slot matches Octave" in cat_flat
+    assert "Octave Print records a minimum pairwise ΔL* of 7.7" in cat_flat
+    assert "not a print guarantee" in cat_flat
+    assert "does not model a particular printer" in cat_flat
 
 
 def test_palette_metadata_fact_audit_claims_are_current() -> None:

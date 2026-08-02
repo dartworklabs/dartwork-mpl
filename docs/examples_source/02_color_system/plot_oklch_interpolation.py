@@ -2,9 +2,10 @@
 Perceptual Color Interpolation (OKLCH)
 ======================================
 
-``dm.cspace()`` interpolates between two colors in the perceptually uniform OKLCH
-color space, preventing sequential gradients from becoming muddy or inconsistent
-in lightness. Use ``dm.color()`` to convert named palette colors to ``Color`` objects before interpolation.
+``dm.cspace()`` interpolates between two colors in perceptual OKLCH coordinates.
+This usually avoids the muddy midpoint of direct sRGB interpolation, but it does
+not promise perfect visual uniformity. Use ``dm.color()`` to convert named palette
+colors to ``Color`` objects before interpolation.
 """
 
 import matplotlib.pyplot as plt

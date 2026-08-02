@@ -20,9 +20,14 @@ MyST ``{raw} html :file:``. Regenerate::
 
 from __future__ import annotations
 
+import argparse
 import json
 import runpy
+from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import cast
+
+from dartwork_mpl._colors._ssot import load_color_v6_ssot
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parents[2]
@@ -44,15 +49,16 @@ CYCLE_ORDER = ["octave", "octave_print"]
 CYCLE_LABEL = {"octave": "Octave", "octave_print": "Octave Print"}
 CYCLE_INTENT = {
     "octave": "Octave is the screen-first everyday cycle: every color sits in the "
-    "line-safe L* 43-78 band, so all eight read as thin lines on white. "
-    "The cost is print behavior: some pairs share a gray tone in "
-    "black-and-white (min ΔL* 2.7), because gray is reserved for grids "
-    "rather than spent as a series.",
+    "historical validation-only CIELAB L* 43–78 band. Inspect it at the "
+    "intended line width and background. Its minimum pairwise CIELAB ΔL* "
+    "is 2.7; the nominal neutral preview therefore has close pairs, because "
+    "gray is reserved for grids rather than spent as a series.",
     "octave_print": "Octave Print is the print-first, hue-parallel companion: "
     "it keeps the same hue per slot as Octave, the violet slot matches Octave, "
-    "and every pair is at least about 7 L* apart (min ΔL* 7.7). The cycle "
-    "survives grayscale printing and photocopies; the cost is paler and "
-    "darker tones on screen, and a dark gray takes the 8th slot.",
+    "and its source colors have a minimum pairwise CIELAB ΔL* of 7.7 in "
+    "the nominal transform. That is a bounded diagnostic, not a printing or "
+    "observer guarantee. The cost is paler and darker tones on screen, and "
+    "a dark gray takes the 8th slot.",
 }
 CYCLE_SSOT_SECTION = {"octave": "cycle_default", "octave_print": "cycle_print"}
 
@@ -96,6 +102,24 @@ DEFAULT_9 = [
 ]
 DEFAULT_6 = DEFAULT_9[:6]
 DEFAULT_4 = DEFAULT_9[:4]
+
+
+def _cvd_models() -> dict[str, str]:
+    """Load per-deficiency validation-model provenance from the v6 SSOT.
+
+    Returns
+    -------
+    dict[str, str]
+        Model descriptions for deutan, protan, and tritan simulation.
+    """
+    authority = load_color_v6_ssot()
+    policies = cast(Mapping[str, object], authority["policies"])
+    cvd_policy = cast(Mapping[str, object], policies["cvd"])
+    models = cast(Mapping[str, str], cvd_policy["models_by_deficiency"])
+    return {
+        deficiency: models[deficiency]
+        for deficiency in ("deutan", "protan", "tritan")
+    }
 
 
 def _demo_coverage_table(selected: int = 8) -> list[dict]:
@@ -168,6 +192,7 @@ def build_payload() -> dict:
 
     return {
         "palettes": palettes,
+        "cvd_model": _cvd_models(),
         "order": order,
         "groups": groups,
         "library": [{"key": key, "name": name} for key, name in DEMO_LIBRARY],
@@ -181,14 +206,60 @@ def build_payload() -> dict:
     }
 
 
-def main() -> None:
+def render_html() -> str:
+    """Render the complete generated explorer fragment in memory.
+
+    Returns
+    -------
+    str
+        Deterministic UTF-8-compatible HTML text.
+    """
     payload = build_payload()
-    html = TEMPLATE.replace(
+    return TEMPLATE.replace(
         "__PAYLOAD__",
         json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
     )
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Generate the explorer or verify the tracked fragment without writes.
+
+    Parameters
+    ----------
+    argv : Sequence[str] | None, optional
+        Command-line arguments. ``None`` reads the process arguments.
+
+    Returns
+    -------
+    int
+        Zero when generation succeeds or the tracked output is current;
+        nonzero when ``--check`` finds a missing or stale output.
+    """
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="compare the tracked HTML without creating or changing files",
+    )
+    args = parser.parse_args(argv)
+    html = render_html()
+
+    if args.check:
+        if not OUT.is_file():
+            print(f"missing generated explorer: {OUT}")
+            return 1
+        if OUT.read_text(encoding="utf-8") != html:
+            print(f"stale generated explorer: {OUT}")
+            return 1
+        print(f"generated explorer is current: {OUT}")
+        return 0
+
+    if OUT.is_file() and OUT.read_text(encoding="utf-8") == html:
+        print(f"unchanged {OUT}")
+        return 0
     OUT.write_text(html, encoding="utf-8")
     print(f"wrote {OUT}")
+    return 0
 
 
 # ---------------------------------------------------------------------------
@@ -411,20 +482,22 @@ function wireControls(root,paint){
     paint();};});}
 
 // ── live accessibility readout ──
+// Values below are model-scoped diagnostics, not accessibility certification.
 function escTip(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function bwNum(p){var m=(p.bw||'').match(/([\d.]+)/);return m?+m[1]:0;}
 function cvdNums(p){var m=(p.cvd||'').match(/d([\d.]+).*?p([\d.]+).*?t([\d.]+)/);return m?{d:+m[1],p:+m[2],t:+m[3]}:{d:0,p:0,t:0};}
 function stateClass(v){return v>=6?'ok':(v>=4?'mid':'bad');}
 function chipHTML(state,label,headline,tip){return '<span class="a11y-chip term '+state+'" tabindex="0" role="note" data-tip="'+escTip(tip)+'"><span class="a-dot" aria-hidden="true"></span><span class="a-label">'+label+'</span><span class="a-num">'+headline+'</span></span>';}
 function bwTip(v){var n=v.toFixed(1);
-  if(v>=6)return "ΔL* "+n+" — the smallest lightness gap between any two colors here. Convert the chart to grayscale and every pair is still at least 6 L* apart, so no two series merge. (≥6 = clear; 4–6 = mostly; <6 = some pairs merge — reach for Octave Print when you must print in grayscale.)";
-  if(v>=4)return "ΔL* "+n+" — some pairs sit close in grayscale, so the chart is mostly readable but not print-proof. This is the smallest lightness gap between any two colors here, and it is the trade-off for keeping every color line-safe on screen. Octave Print gives larger grayscale separation. (≥6 = clear; 4–6 = mostly; <6 = some pairs merge.)";
-  return "ΔL* "+n+" — some pairs share a gray tone when printed — that's the trade-off for keeping every color line-safe on screen; Octave Print fixes this. This is the smallest lightness gap between any two colors here. (≥6 = clear; 4–6 = mostly; <6 = some pairs merge.)";
+  if(v>=6)return "ΔL* "+n+" — the minimum pairwise CIELAB lightness gap among these source colors. It falls in this explorer's ≥6 display band. The B&W toggle is a nominal source-RGB neutral preview, not a printing or observer guarantee; keep labels, markers, or line styles.";
+  if(v>=4)return "ΔL* "+n+" — the minimum pairwise CIELAB lightness gap among these source colors. It falls in this explorer's 4–6 display band, so the nominal neutral preview contains closer pairs. This diagnostic does not predict a particular printer or observer; keep redundant encodings.";
+  return "ΔL* "+n+" — the minimum pairwise CIELAB lightness gap among these source colors. It falls below this explorer's 4 display band, so inspect the nominal neutral preview carefully. This diagnostic does not predict a particular printer or observer; use redundant encodings.";
 }
-function cvdTip(c){var m=Math.min(c.d,c.p,c.t),vals="deuteranopia "+c.d.toFixed(1)+" · protanopia "+c.p.toFixed(1)+" · tritanopia "+c.t.toFixed(1);
-  if(m>=6)return "Worst-case ΔE00 color difference under simulated color-vision deficiency (Brettel 1997): "+vals+". Every pair stays ≥ 6 ΔE00 apart for all three deficiency types, so no two series look alike to a color-blind reader.";
-  if(m>=4)return "Worst-case ΔE00 color difference under simulated color-vision deficiency (Brettel 1997): "+vals+". At least one deficiency type falls between 4 and 6 ΔE00, so most pairs remain distinguishable but a close pair may need labels or line styles.";
-  return "Worst-case ΔE00 color difference under simulated color-vision deficiency (Brettel 1997): "+vals+". At least one deficiency type falls below 4 ΔE00, so some colors can look alike to a color-blind reader; use labels, line styles, or a safer palette.";
+function cvdProvenance(){return "deuteranopia: "+D.cvd_model.deutan+" · protanopia: "+D.cvd_model.protan+" · tritanopia: "+D.cvd_model.tritan;}
+function cvdTip(c){var m=Math.min(c.d,c.p,c.t),vals="deuteranopia "+c.d.toFixed(1)+" · protanopia "+c.p.toFixed(1)+" · tritanopia "+c.t.toFixed(1),models=cvdProvenance();
+  if(m>=6)return "Minimum pairwise ΔE00 under the named color-vision-deficiency simulations: "+vals+". Models — "+models+". The result falls in this explorer's ≥6 display band. It is model-specific, not an observer guarantee; keep labels, markers, or line styles.";
+  if(m>=4)return "Minimum pairwise ΔE00 under the named color-vision-deficiency simulations: "+vals+". Models — "+models+". The result falls in this explorer's 4–6 display band. It is model-specific, not an observer guarantee; keep redundant encodings.";
+  return "Minimum pairwise ΔE00 under the named color-vision-deficiency simulations: "+vals+". Models — "+models+". The result falls below this explorer's 4 display band. It is model-specific, not an observer guarantee; use redundant encodings.";
 }
 function bwChip(v){return chipHTML(stateClass(v),'B&amp;W','ΔL* '+v.toFixed(1),bwTip(v));}
 function cvdChip(p){var c=cvdNums(p),m=Math.min(c.d,c.p,c.t);return chipHTML(stateClass(m),'CVD','min '+m.toFixed(1),cvdTip(c));}
@@ -473,4 +546,4 @@ document.getElementById('cx-rail').innerHTML=railHTML();wireRail();renderDetail(
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

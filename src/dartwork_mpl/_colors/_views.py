@@ -15,14 +15,14 @@ __all__ = [
     "RgbViewIterator",
 ]
 
-import math
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from ._conversion import _linear_srgb_to_oklab, _oklch_to_oklab, _srgb_to_linear
+from . import _conversion as conversion
+from ._conversion import _linear_srgb_to_oklab, _srgb_to_linear
 
 if TYPE_CHECKING:
     from ._color import Color
@@ -232,8 +232,7 @@ class OklchView(_BaseColorView):
         h : float
             Hue in degrees.
         """
-        h_rad: float = math.radians(h)
-        _, a, b = _oklch_to_oklab(L, C, h_rad)
+        _, a, b = conversion._oklch_degrees_to_oklab(L, C, h)
         self._color._L = float(L)
         self._color._a = float(a)
         self._color._b = float(b)

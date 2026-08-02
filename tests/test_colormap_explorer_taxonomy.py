@@ -12,9 +12,16 @@ from __future__ import annotations
 
 import ast
 import json
+import math
 import re
 import runpy
+import statistics
+from itertools import pairwise
 from pathlib import Path
+from typing import TypedDict, cast
+from unittest.mock import patch
+
+import pytest
 
 from dartwork_mpl._colors import _generated
 
@@ -23,6 +30,12 @@ _SCRIPTS = _REPO / "docs" / "_static" / "scripts"
 _EXPLORER = _REPO / "docs" / "_static" / "colormap_explorer.html"
 _BUILDER = _SCRIPTS / "build_colormap_explorer.py"
 _DESIGN_CSS = _REPO / "docs" / "_static" / "dartwork-design.css"
+_V6_SSOT = _REPO / "src/dartwork_mpl/asset/color/color_v6_ssot.json"
+_CVD_MODELS = {
+    "deutan": "Machado et al. 2009 severity 1.0",
+    "protan": "Machado et al. 2009 severity 1.0",
+    "tritan": "Brettel-Vienot-Mollon 1997 adapted linear-sRGB",
+}
 
 _SEQUENTIAL = [
     "red",
@@ -101,60 +114,15 @@ _DEFAULT_9 = [
     "waffle",
 ]
 _MULTI_HUE_VIVID_CUTOFFS = {
-    "afterglow": {
-        "index": 1,
-        "dark_hi": False,
-        "peak_chroma": 66.71,
-        "cutoff_chroma": 42.07,
-    },
-    "aurora": {
-        "index": 33,
-        "dark_hi": False,
-        "peak_chroma": 66.52,
-        "cutoff_chroma": 41.29,
-    },
-    "blaze": {
-        "index": 8,
-        "dark_hi": False,
-        "peak_chroma": 82.79,
-        "cutoff_chroma": 50.31,
-    },
-    "canopy": {
-        "index": 16,
-        "dark_hi": False,
-        "peak_chroma": 68.04,
-        "cutoff_chroma": 41.38,
-    },
-    "glacier": {
-        "index": 1,
-        "dark_hi": False,
-        "peak_chroma": 44.32,
-        "cutoff_chroma": 40.41,
-    },
-    "haze": {
-        "index": 37,
-        "dark_hi": False,
-        "peak_chroma": 52.82,
-        "cutoff_chroma": 31.75,
-    },
-    "iris": {
-        "index": 32,
-        "dark_hi": False,
-        "peak_chroma": 74.37,
-        "cutoff_chroma": 47.61,
-    },
-    "lagoon": {
-        "index": 29,
-        "dark_hi": False,
-        "peak_chroma": 64.85,
-        "cutoff_chroma": 39.0,
-    },
-    "lava": {
-        "index": 19,
-        "dark_hi": False,
-        "peak_chroma": 71.98,
-        "cutoff_chroma": 43.64,
-    },
+    "afterglow": 1,
+    "aurora": 33,
+    "blaze": 8,
+    "canopy": 16,
+    "glacier": 1,
+    "haze": 37,
+    "iris": 32,
+    "lagoon": 29,
+    "lava": 19,
 }
 _CANVAS_DEMOS = ["heatmap", "contours", "terrain", "signal", "polar_heat"]
 _REPLACE_LAST_HANDLER = (
@@ -168,12 +136,54 @@ _REPLACE_LAST_HANDLER = (
 )
 
 
-def _payload_from_html() -> dict:
+class _ExplorerVariant(TypedDict):
+    """Subset of one generated variant used by parity assertions."""
+
+    stops: list[str]
+    demo: list[str]
+    vivid_cutoff: int | None
+    chips: list[dict[str, object]]
+    oklab_l: list[float]
+    relative_y: list[float]
+    delta_e_ok: list[float]
+    delta_e_00: list[float]
+    cvd_model: dict[str, str]
+
+
+class _ExplorerMap(TypedDict):
+    """Subset of one generated map record used by parity assertions."""
+
+    default_variant: str
+    intent: str
+    variants: dict[str, _ExplorerVariant]
+
+
+class _ExplorerLibraryItem(TypedDict):
+    """Subset of one generated demo-library item."""
+
+    key: str
+
+
+class _ExplorerPayload(TypedDict):
+    """Typed subset of the embedded explorer JSON payload."""
+
+    groups: list[tuple[str, list[str]]]
+    counts: dict[str, int]
+    order: list[str]
+    maps: dict[str, _ExplorerMap]
+    library: list[_ExplorerLibraryItem]
+    defaults: dict[str, list[str]]
+
+
+def _payload_from_html() -> _ExplorerPayload:
     """Parse the ``var D={...}`` JSON payload the builder injects."""
     html = _EXPLORER.read_text(encoding="utf-8")
     m = re.search(r"var D=(\{.*?\});\nvar MAPS", html, re.S)
     assert m, "explorer payload (var D={...}) not found"
-    return json.loads(m.group(1))
+    decoded: object = json.loads(m.group(1))
+    if not isinstance(decoded, dict):
+        raise TypeError("explorer payload must be a JSON object")
+    return cast(_ExplorerPayload, decoded)
 
 
 def _colormap_css() -> str:
@@ -306,21 +316,24 @@ def test_builder_delegates_vivid_cutoff_to_library_helper() -> None:
     assert ">= 0.6 x peak" not in source
 
 
-def test_library_multi_hue_vivid_cutoffs_match_pinned_goldens() -> None:
-    """Pin the shared vivid cutoff helper for every multi-hue family."""
-    from dartwork_mpl._colors._discrete import _vivid_cutoff
+def test_v6_ssot_pins_shipped_multi_hue_vivid_cutoffs() -> None:
+    """Keep compatibility presentation choices separate from color theory."""
+    payload = json.loads(_V6_SSOT.read_text(encoding="utf-8"))
 
-    for key, expected in _MULTI_HUE_VIVID_CUTOFFS.items():
-        idx = list(range(0, 256, 4))
-        idx[-1] = 255
-        stops = [_generated.CMAPS_256[key][i] for i in idx]
-        cut = _vivid_cutoff(stops)
-        assert {
-            "index": cut.cut_index,
-            "dark_hi": cut.dark_hi,
-            "peak_chroma": round(cut.peak_chroma, 2),
-            "cutoff_chroma": round(cut.cutoff_chroma, 2),
-        } == expected, key
+    assert (
+        payload["policies"]["presentation"]["multi_hue_vivid_cutoffs"]
+        == _MULTI_HUE_VIVID_CUTOFFS
+    )
+
+
+def test_explorer_uses_the_shipped_multi_hue_vivid_cutoffs() -> None:
+    """Preserve all nine current demo cutoffs while the metric changes."""
+    payload = runpy.run_path(str(_BUILDER))["build_payload"]()
+
+    assert {
+        key: payload["maps"][key]["variants"]["original"]["vivid_cutoff"]
+        for key in _MULTI_HUE
+    } == _MULTI_HUE_VIVID_CUTOFFS
 
 
 # ── removed Ends / L* profile payload ──────────────────────────────────────
@@ -335,7 +348,224 @@ def test_payload_ships_single_true_variant_without_profiles_or_refined_ends() ->
         assert cmap["default_variant"] == "original", key
         assert set(cmap["variants"]) == {"original"}, key
         variant = cmap["variants"]["original"]
-        assert set(variant) == {"stops", "demo", "vivid_cutoff", "chips"}, key
+        assert set(variant) == {
+            "stops",
+            "demo",
+            "vivid_cutoff",
+            "chips",
+            "oklab_l",
+            "relative_y",
+            "delta_e_ok",
+            "delta_e_00",
+            "cvd_model",
+        }, key
+
+
+def test_metric_payload_uses_canonical_and_validation_keys_with_finite_values() -> (
+    None
+):
+    """Explorer arrays expose OKLab/Y first and CIELAB/CVD as validation."""
+    from dartwork_mpl._colors._compatibility_metrics import (
+        ciede2000_rgb,
+        delta_e_ok,
+        hex_to_srgb,
+        relative_y_srgb_d65,
+        srgb_to_oklab,
+    )
+
+    builder_payload = runpy.run_path(str(_BUILDER))["build_payload"]()
+    for payload in (builder_payload, _payload_from_html()):
+        for key in payload["order"]:
+            variant = payload["maps"][key]["variants"]["original"]
+            rgb = [hex_to_srgb(color) for color in variant["stops"]]
+            expected = {
+                "oklab_l": [srgb_to_oklab(color)[0] for color in rgb],
+                "relative_y": [relative_y_srgb_d65(color) for color in rgb],
+                "delta_e_ok": [
+                    delta_e_ok(first, second) for first, second in pairwise(rgb)
+                ],
+                "delta_e_00": [
+                    ciede2000_rgb(first, second)
+                    for first, second in pairwise(rgb)
+                ],
+            }
+            assert variant["cvd_model"] == _CVD_MODELS, key
+            for metric, expected_values in expected.items():
+                actual = variant[metric]
+                expected_length = (
+                    64 if metric in {"oklab_l", "relative_y"} else 63
+                )
+                assert len(actual) == expected_length, (key, metric)
+                assert all(math.isfinite(value) for value in actual), (
+                    key,
+                    metric,
+                )
+                assert actual == pytest.approx(expected_values, abs=1e-6), (
+                    key,
+                    metric,
+                )
+
+
+def test_uniform_chip_means_delta_e_ok() -> None:
+    """The primary uniformity badge is computed and named in ΔEOK."""
+    for payload in (
+        runpy.run_path(str(_BUILDER))["build_payload"](),
+        _payload_from_html(),
+    ):
+        for key in _SEQUENTIAL + _MULTI_HUE:
+            variant = payload["maps"][key]["variants"]["original"]
+            chip = next(
+                item for item in variant["chips"] if item["label"] == "Uniform"
+            )
+            text = f"{chip['num']} {chip['tip']}"
+            assert "ΔEOK" in text, key
+            assert "ΔE00" not in text and "Delta E00" not in text, key
+            values = variant["delta_e_ok"]
+            expected_cv = statistics.pstdev(values) / statistics.fmean(values)
+            assert f"{expected_cv:.2f}" in text, key
+
+
+def test_cvd_chip_reports_quantized_near_monotone_margin_without_strict_claim() -> (
+    None
+):
+    """Expose tolerated CVD reversals instead of calling them ordered."""
+    from dartwork_mpl._colors._compatibility_metrics import (
+        hex_to_srgb,
+        relative_y_srgb_d65,
+        simulate_cvd_hex,
+    )
+
+    payloads = (
+        runpy.run_path(str(_BUILDER))["build_payload"](),
+        _payload_from_html(),
+    )
+    red = payloads[0]["maps"]["red"]["variants"]["original"]
+    source_y = [
+        relative_y_srgb_d65(hex_to_srgb(color)) for color in red["stops"]
+    ]
+    sign = 1.0 if source_y[-1] >= source_y[0] else -1.0
+    simulated_y = [
+        relative_y_srgb_d65(hex_to_srgb(simulate_cvd_hex(color, "protan")))
+        for color in red["stops"]
+    ]
+    red_protan_steps = [
+        sign * (second - first) for first, second in pairwise(simulated_y)
+    ]
+
+    assert min(red_protan_steps) < 0.0
+    assert min(red_protan_steps) >= -0.004
+
+    for payload in payloads:
+        red_variant = payload["maps"]["red"]["variants"]["original"]
+        chip = next(
+            item for item in red_variant["chips"] if item["label"] == "CVD"
+        )
+        text = f"{chip['num']} {chip['tip']}"
+        assert "remains ordered" not in text
+        assert (
+            "near-monotone within the explorer's 0.004 per-step tolerance"
+            in text
+        )
+        assert f"{min(red_protan_steps):+.4f}" in text
+        assert "Zero or above would be strict monotonicity" in text
+
+
+def test_cyclic_topology_labels_only_hue_isoluminant() -> None:
+    """Halo/corona are dark-center cycles; only hue is isoluminant."""
+    for payload in (
+        runpy.run_path(str(_BUILDER))["build_payload"](),
+        _payload_from_html(),
+    ):
+        labels = {
+            key: {
+                chip["label"] for chip in cmap["variants"]["original"]["chips"]
+            }
+            for key, cmap in payload["maps"].items()
+        }
+        assert [
+            key for key in payload["order"] if "Isoluminant" in labels[key]
+        ] == ["hue"]
+        for key in ("halo", "corona"):
+            assert "Isoluminant" not in labels[key]
+            assert "Dark center" in labels[key]
+            variant = payload["maps"][key]["variants"]["original"]
+            profile = variant["relative_y"]
+            assert profile.index(min(profile)) in {31, 32}, key
+            assert min(profile[0], profile[-1]) > min(profile), key
+
+
+def test_hue_intent_names_near_flat_y_without_flat_lightness_claim() -> None:
+    """Describe hue's measured Y profile without conflating lightness models."""
+    for payload in (
+        runpy.run_path(str(_BUILDER))["build_payload"](),
+        _payload_from_html(),
+    ):
+        intent = payload["maps"]["hue"]["intent"]
+        assert "modeled relative Y is nearly flat" in intent
+        assert "not constant OKLab L or equal perceived brightness" in intent
+        assert "one flat lightness" not in intent
+
+
+def test_builder_check_is_byte_stable_and_never_writes(tmp_path: Path) -> None:
+    """Fresh/stale/missing --check paths are all in-memory and read-only."""
+    builder = runpy.run_path(str(_BUILDER))
+    render_html = builder["render_html"]
+    first = render_html()
+    second = render_html()
+    assert isinstance(first, str)
+    assert first.encode("utf-8") == second.encode("utf-8")
+
+    main = builder["main"]
+    target = tmp_path / "colormap_explorer.html"
+    main.__globals__["OUT"] = target
+    target.write_bytes(first.encode("utf-8"))
+
+    def checked() -> int:
+        with (
+            patch.object(
+                Path, "write_text", side_effect=AssertionError("write")
+            ),
+            patch.object(
+                Path, "write_bytes", side_effect=AssertionError("write")
+            ),
+            patch.object(Path, "mkdir", side_effect=AssertionError("mkdir")),
+        ):
+            result = main(["--check"])
+        assert isinstance(result, int)
+        return result
+
+    before = (
+        target.read_bytes(),
+        target.stat().st_mtime_ns,
+        set(tmp_path.rglob("*")),
+    )
+    assert checked() == 0
+    assert (
+        target.read_bytes(),
+        target.stat().st_mtime_ns,
+        set(tmp_path.rglob("*")),
+    ) == before
+
+    target.write_bytes(b"stale")
+    before = (
+        target.read_bytes(),
+        target.stat().st_mtime_ns,
+        set(tmp_path.rglob("*")),
+    )
+    assert checked() != 0
+    assert (
+        target.read_bytes(),
+        target.stat().st_mtime_ns,
+        set(tmp_path.rglob("*")),
+    ) == before
+
+    target.unlink()
+    target = tmp_path / "missing" / "colormap_explorer.html"
+    main.__globals__["OUT"] = target
+    before_entries = set(tmp_path.rglob("*"))
+    assert checked() != 0
+    assert not target.exists()
+    assert set(tmp_path.rglob("*")) == before_entries
 
 
 # ── demo library + defaults ────────────────────────────────────────────────

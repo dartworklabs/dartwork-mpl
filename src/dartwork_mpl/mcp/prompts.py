@@ -16,6 +16,11 @@ from fastmcp import FastMCP
 __all__ = ["register_prompts"]
 
 _MAX_INPUT_CHARS = 8192
+_MODELED_Y_LIMITATION = (
+    "Modeled relative CIE Y (`relative_y`) is calculated from nominal D65 "
+    "sRGB; it is not a measurement of a particular display, perceived "
+    "brightness, or OKLab `L`."
+)
 
 
 def _truncate(value: str, label: str) -> str:
@@ -82,7 +87,7 @@ Generate a complete Python script that creates the following plot:
 3. **No raw `figsize=(w, h)` tuple** and no `dpi=` argument on `plt.subplots` / `plt.figure` (lint ids `figsize-direct`, `dpi-arg`). Always go through `dm.figsize`; dpi is governed by the active style preset.
 4. **Layout**: Call `dm.simple_layout(fig)` after data is plotted. The default snaps axes content flush against figure edges; pass `margin="2%"` (or `dm.mm(2)`, `dm.cm(0.5)`) for a uniform buffer, or `ml/mr/mt/mb` for per-side overrides. Do NOT call `tight_layout` (lint id `tight-layout`). `dm.auto_layout` was removed in 0.5.4 — use `dm.simple_layout`.
 5. **Style**: apply via `dm.style.use("scientific")` (or `dm.style.stack([...])` for a stack). No `plt.style.use` anywhere (lint id `plt-style-use`).
-6. **Colors**: prefer named palettes — `oc.*` (Open Color), `tw.*` (Tailwind), `dc.*` (dartwork core), `md.*`, `ad.*`, `cu.*`, `pr.*`. Raw hex works but triggers a lint info.
+6. **Colors**: prefer named palettes — `oc.*` (Open Color), `tw.*` (Tailwind), `dc.*` (dartwork core), `md.*`, `ad.*`, `cu.*`, `pr.*`. Raw hex works but triggers a lint info. The `dc.*` construction model uses OKLab L, OKLCH C/h, and ΔEOK; modeled relative Y is only an optional shipped-output compatibility lock. {_MODELED_Y_LIMITATION} CIELAB/CIEDE2000 and named CVD simulations are model-specific diagnostics, and WCAG contrast luminance is separate.
 7. **Fonts / weights / line widths**: do NOT pass literal `fontsize=` numbers. Use `dm.fs(n)` / `dm.fw(n)` / `dm.lw(n)` offsets from the active style.
 8. **Save**: end the script with `dm.save_formats(fig, "name", formats=("png", "pdf"), dpi=300)` (scripts) or `dm.save_and_show(fig, "name")` (notebooks). Do not stop at `plt.show` — the rendered artifact must be persisted (lint id `plt-show-only`).
 9. **Removed names**: `dm.subplots`, `dm.figure`, and the legacy width aliases (`dm.SW / MW / TW / DW / FS_* / WIDTHS`) raise `AttributeError` (lint ids `dm-subplots-removed`, `deprecated-width-token`). Use `plt.subplots(figsize=dm.figsize(...))` and `dm.col1` / `dm.col2` for academic columns.
@@ -130,9 +135,10 @@ Before writing code, call these in order:
 `dm.fs / dm.lw / dm.fw` are the bare minimum. For figures that need
 to read as finished, lean on these too:
 
-- **`dm.cspace(start, end, n)`** — OKLCH gradient of `n` perceptually
-  uniform colors between two endpoints. Use when bar / scatter / pie
-  series need to encode magnitude in color.
+- **`dm.cspace(start, end, n)`** — an OKLCH-interpolated gradient of `n`
+  colors between two endpoints. It gives a useful authoring path, not a
+  promise of perfectly equal visible steps in every context. Use it when
+  bar / scatter / pie series need to encode magnitude in color.
 - **`dm.format_axis_si / format_axis_millions / format_axis_billions
   / format_axis_currency`** — domain-aware tick formatters. Pick one
   to match the data unit (`SI` for raw counts, `currency` for prices,

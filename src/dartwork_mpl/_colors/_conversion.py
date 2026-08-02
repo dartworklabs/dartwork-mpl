@@ -1,7 +1,7 @@
-"""Color space conversion functions.
+"""Canonical sRGB, OKLab, OKLCH, hex, and modeled-relative-Y conversions.
 
-Pure mathematical functions for converting between sRGB, OKLab, OKLCH,
-and hex color representations. No external dependencies beyond numpy.
+This module is the sole production math kernel for color conversion. Validation
+metrics and WCAG helpers delegate here; this module does not import them.
 """
 
 from __future__ import annotations
@@ -10,16 +10,25 @@ __all__: list[str] = []  # All functions are private (_-prefixed)
 
 import math
 import re
-from typing import Any
+from typing import Any, TypeAlias
 
 import numpy as np
+
+Rgb: TypeAlias = tuple[float, float, float]
+Oklab: TypeAlias = tuple[float, float, float]
+
+# Nominal D65 sRGB modeled-relative-CIE-Y row. These coefficients normalize
+# the legacy v5 row to make white exactly 1 while preserving shipped 8-bit
+# output. The result is calculated from source sRGB.
+# It is not a measurement of a display or print process.
+# The unnormalized legacy row belongs only to private CIELAB validation.
+SRGB_D65_Y: Rgb = (0.21267287873271212, 0.7151521284847872, 0.07217499278250072)
 
 
 def _srgb_to_linear(
     c: float | np.ndarray[Any, Any],
 ) -> float | np.ndarray[Any, Any]:
-    """
-    Convert sRGB to linear RGB (gamma decoding).
+    """Convert an sRGB channel or array to linear RGB.
 
     Parameters
     ----------
@@ -31,16 +40,29 @@ def _srgb_to_linear(
     float or array
         Linear RGB value(s) in range [0, 1].
     """
-    c_arr: np.ndarray[Any, Any] = np.asarray(c)
-    mask: np.ndarray[Any, Any] = c_arr <= 0.04045
-    return np.where(mask, c_arr / 12.92, ((c_arr + 0.055) / 1.055) ** 2.4)
+    if isinstance(c, np.ndarray):
+        channels: np.ndarray[Any, Any] = c
+        linear: np.ndarray[Any, Any] = np.empty(
+            channels.shape, dtype=np.result_type(channels.dtype, 1.0)
+        )
+        linear_branch: np.ndarray[Any, Any] = channels <= 0.04045
+        linear[linear_branch] = channels[linear_branch] / 12.92
+        nonlinear_branch: np.ndarray[Any, Any] = ~linear_branch
+        linear[nonlinear_branch] = (
+            (channels[nonlinear_branch] + 0.055) / 1.055
+        ) ** 2.4
+        return linear
+
+    channel = float(c)
+    if channel <= 0.04045:
+        return channel / 12.92
+    return float(((channel + 0.055) / 1.055) ** 2.4)
 
 
 def _linear_to_srgb(
     c: float | np.ndarray[Any, Any],
 ) -> float | np.ndarray[Any, Any]:
-    """
-    Convert linear RGB to sRGB (gamma encoding).
+    """Convert a linear-RGB channel or array to sRGB.
 
     Parameters
     ----------
@@ -52,9 +74,23 @@ def _linear_to_srgb(
     float or array
         sRGB value(s) in range [0, 1].
     """
-    c_arr: np.ndarray[Any, Any] = np.asarray(c)
-    mask: np.ndarray[Any, Any] = c_arr <= 0.0031308
-    return np.where(mask, 12.92 * c_arr, 1.055 * (c_arr ** (1.0 / 2.4)) - 0.055)
+    if isinstance(c, np.ndarray):
+        channels: np.ndarray[Any, Any] = c
+        encoded: np.ndarray[Any, Any] = np.empty(
+            channels.shape, dtype=np.result_type(channels.dtype, 1.0)
+        )
+        linear_branch: np.ndarray[Any, Any] = channels <= 0.0031308
+        encoded[linear_branch] = 12.92 * channels[linear_branch]
+        nonlinear_branch: np.ndarray[Any, Any] = ~linear_branch
+        encoded[nonlinear_branch] = (
+            1.055 * channels[nonlinear_branch] ** (1.0 / 2.4) - 0.055
+        )
+        return encoded
+
+    channel = float(c)
+    if channel <= 0.0031308:
+        return 12.92 * channel
+    return float(1.055 * channel ** (1.0 / 2.4) - 0.055)
 
 
 def _linear_srgb_to_oklab(
@@ -81,9 +117,9 @@ def _linear_srgb_to_oklab(
     lms_s: float = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
 
     # Cube root
-    lms_l_cbrt: float = np.cbrt(lms_l)
-    lms_m_cbrt: float = np.cbrt(lms_m)
-    lms_s_cbrt: float = np.cbrt(lms_s)
+    lms_l_cbrt: float = float(np.cbrt(lms_l))
+    lms_m_cbrt: float = float(np.cbrt(lms_m))
+    lms_s_cbrt: float = float(np.cbrt(lms_s))
 
     # Matrix multiplication to OKLab
     L: float = (
@@ -103,6 +139,52 @@ def _linear_srgb_to_oklab(
     )
 
     return (L, a, b_val)
+
+
+def _srgb_to_oklab(rgb: Rgb) -> Oklab:
+    """Convert an encoded sRGB triple to OKLab.
+
+    Parameters
+    ----------
+    rgb : tuple[float, float, float]
+        Encoded sRGB channels.
+
+    Returns
+    -------
+    tuple[float, float, float]
+        OKLab ``(L, a, b)`` coordinates as Python floats.
+    """
+    red = float(_srgb_to_linear(rgb[0]))
+    green = float(_srgb_to_linear(rgb[1]))
+    blue = float(_srgb_to_linear(rgb[2]))
+    return _linear_srgb_to_oklab(red, green, blue)
+
+
+def relative_y_srgb_d65(rgb: Rgb) -> float:
+    """Return modeled relative CIE Y for encoded nominal D65 sRGB.
+
+    Parameters
+    ----------
+    rgb : tuple[float, float, float]
+        Encoded sRGB channels.
+
+    Returns
+    -------
+    float
+        Linear-light normalized model coordinate. Nominal sRGB white is
+        exactly ``1.0``.
+
+    Notes
+    -----
+    The explicit multiply/add order is part of the compatibility contract.
+    This calculated value is neither a display measurement nor perceived
+    brightness, and it is not the rounded WCAG contrast-luminance calculation.
+    """
+    red = float(_srgb_to_linear(rgb[0]))
+    green = float(_srgb_to_linear(rgb[1]))
+    blue = float(_srgb_to_linear(rgb[2]))
+    red_green = SRGB_D65_Y[0] * red + SRGB_D65_Y[1] * green
+    return float(red_green + SRGB_D65_Y[2] * blue)
 
 
 def _oklab_to_linear_srgb(
@@ -185,6 +267,46 @@ def _oklch_to_oklab(L: float, C: float, h: float) -> tuple[float, float, float]:
     a: float = C * math.cos(h)
     b: float = C * math.sin(h)
     return (L, a, b)
+
+
+def _oklab_to_oklch_degrees(
+    L: float, a: float, b: float
+) -> tuple[float, float, float]:
+    """Convert OKLab to OKLCH with hue expressed in degrees.
+
+    Parameters
+    ----------
+    L, a, b : float
+        OKLab coordinates.
+
+    Returns
+    -------
+    tuple[float, float, float]
+        ``(L, C, h)`` with hue normalized to ``[0, 360)`` degrees.
+    """
+    lightness, chroma, hue_radians = _oklab_to_oklch(L, a, b)
+    hue_degrees = math.degrees(hue_radians) % 360.0
+    return (lightness, chroma, hue_degrees)
+
+
+def _oklch_degrees_to_oklab(
+    L: float, C: float, h: float
+) -> tuple[float, float, float]:
+    """Convert degree-based OKLCH coordinates to OKLab.
+
+    Parameters
+    ----------
+    L, C : float
+        OKLCH lightness and chroma.
+    h : float
+        Hue in degrees.
+
+    Returns
+    -------
+    tuple[float, float, float]
+        ``(L, a, b)`` OKLab coordinates.
+    """
+    return _oklch_to_oklab(L, C, math.radians(h))
 
 
 def _parse_hex(hex_str: str) -> tuple[float, float, float]:

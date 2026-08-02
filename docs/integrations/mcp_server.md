@@ -1,5 +1,9 @@
 # MCP Server
 
+Modeled relative CIE Y (`relative_y`) is calculated from nominal D65 sRGB; it
+is not a measurement of a particular display, perceived brightness, or OKLab
+`L`.
+
 > Part of [AI & Agent-Assisted Plotting](../ai/index.md) — the hub covering the
 > 30-second setup, IDE compatibility matrix, prompt corpus, and plot templates.
 
@@ -295,6 +299,17 @@ If all four work, the integration is fully operational.
 ## What can MCP do?
 
 When the `dartwork-mpl` MCP server is connected, your AI assistant gains access to **resources**, **tools**, and **prompts** without you having to copy-paste documentation.
+
+The public inventory is fixed at **16 tools, 10 static resources, 4 resource
+templates, and 2 prompts**. The descriptions below explain the current color
+model without changing any of those names or schemas: `dc.*` construction uses
+OKLab L, OKLCH C/h, and ΔEOK. The modeled-relative-Y compatibility lock is an
+optional constraint for shipped exact-output compatibility and topology, not
+a second authoring space. CIELAB/CIEDE2000 and CVD are model-specific
+validation diagnostics; WCAG contrast luminance is a separate pairwise text
+contrast metric. A direct OKLCH rule without that output lock is appropriate
+only for a new, intentionally incompatible palette whose exact catalog
+contract may change.
 
 ### Resources
 

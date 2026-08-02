@@ -1,71 +1,410 @@
-"""Determinism + drift gate for the committed build artifact."""
-
-from __future__ import annotations
+"""Determinism, compatibility, and atomicity contracts for the color build."""
 
 import os
-import subprocess
-import sys
+import stat
+import tempfile
+from collections.abc import Mapping
 from pathlib import Path
+from types import SimpleNamespace
 
-from dartwork_mpl._colors import _generated
+import pytest
+
+from dartwork_mpl._colors import _build, _generated
+
+_GENERATED_TEXT = '"""generated test artifact"""\n'
 
 
-def test_generated_tables_shape():
+def _install_valid_pipeline(
+    monkeypatch: pytest.MonkeyPatch, events: list[str] | None = None
+) -> object:
+    """Install a cheap valid catalog pipeline around the build coordinator."""
+    candidate = object()
+    baseline = object()
+    quality_baseline: Mapping[str, object] = {"metrics": {}}
+    observed = events if events is not None else []
+
+    def compile_candidate_snapshot() -> object:
+        """Return one candidate while recording compilation."""
+        observed.append("compile")
+        return candidate
+
+    def load_quality_baseline() -> Mapping[str, object]:
+        """Return a validated stand-in for the frozen quality fixture."""
+        return quality_baseline
+
+    def evaluate_catalog(
+        value: object, quality: Mapping[str, object]
+    ) -> SimpleNamespace:
+        """Accept the candidate at the independent quality boundary."""
+        assert value is candidate
+        assert quality is quality_baseline
+        observed.append("gate")
+        return SimpleNamespace(passed=True, violations=())
+
+    def load_v5_snapshot() -> object:
+        """Return a stand-in for the frozen exact baseline."""
+        return baseline
+
+    def compare_exact_surfaces(
+        old: object, new: object
+    ) -> Mapping[str, SimpleNamespace]:
+        """Accept all frozen exact surfaces."""
+        assert old is baseline
+        assert new is candidate
+        observed.append("exact")
+        return {"palette": SimpleNamespace(mismatch_count=0, mismatches=())}
+
+    def render_generated(value: object) -> str:
+        """Render deterministic bytes from the already-compiled candidate."""
+        assert value is candidate
+        observed.append("render")
+        return _GENERATED_TEXT
+
+    monkeypatch.setattr(
+        _build,
+        "compile_candidate_snapshot",
+        compile_candidate_snapshot,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        _build, "load_quality_baseline", load_quality_baseline, raising=False
+    )
+    monkeypatch.setattr(
+        _build, "evaluate_catalog", evaluate_catalog, raising=False
+    )
+    monkeypatch.setattr(
+        _build, "load_v5_snapshot", load_v5_snapshot, raising=False
+    )
+    monkeypatch.setattr(
+        _build, "compare_exact_surfaces", compare_exact_surfaces, raising=False
+    )
+    monkeypatch.setattr(
+        _build, "_render_generated", render_generated, raising=False
+    )
+    return candidate
+
+
+def _forbid_publish(path: Path, text: str) -> None:
+    """Fail a test if a check or rejected build reaches publication."""
+    raise AssertionError(f"unexpected publication to {path}: {text!r}")
+
+
+def test_generated_tables_shape() -> None:
+    """Keep the committed generated artifact structurally complete."""
     assert len(_generated.PALETTE) == 20
     assert all(len(row) == 10 for row in _generated.PALETTE.values())
     assert set(_generated.CYCLES) == {"octave", "octave_print"}
     assert len(_generated.CMAPS_256) == 43
-    assert all(len(v) == 256 for v in _generated.CMAPS_256.values())
+    assert all(len(row) == 256 for row in _generated.CMAPS_256.values())
 
 
-def test_generated_matches_ssot_palette(v5_ssot):
-    for fam, row in v5_ssot["palette"].items():
-        assert list(_generated.PALETTE[fam]) == row, fam
+def test_generated_matches_ssot_palette(v5_ssot: Mapping[str, object]) -> None:
+    """Preserve every committed palette row from the frozen v5 contract."""
+    palette = v5_ssot["palette"]
+    assert isinstance(palette, Mapping)
+    for family, row in palette.items():
+        assert list(_generated.PALETTE[family]) == row, family
 
 
-def test_rebuild_is_byte_identical(tmp_path):
-    src = Path("src/dartwork_mpl/_colors/_generated.py")
-    before = src.read_bytes()
-    env = dict(os.environ)
-    # Isolation: force the subprocess interpreter to resolve
-    # `dartwork_mpl` from *this* worktree's src, not the shared venv's
-    # editable-install target (a sibling clone). Without this, the
-    # rebuild would target the wrong package copy entirely.
-    src_dir = str(Path("src").resolve())
-    existing = env.get("PYTHONPATH")
-    env["PYTHONPATH"] = (
-        f"{src_dir}{os.pathsep}{existing}" if existing else src_dir
+def test_build_compiles_once_then_gates_compares_renders_and_publishes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Compile one snapshot and consume it in the required build order."""
+    events: list[str] = []
+    _install_valid_pipeline(monkeypatch, events)
+    target = tmp_path / "injected_generated.py"
+
+    def publish(path: Path, text: str) -> None:
+        """Record the sole outgoing side effect after every contract passes."""
+        events.append("publish")
+        assert path == target
+        assert text == _GENERATED_TEXT
+        path.write_text(text, encoding="utf-8")
+
+    monkeypatch.setattr(_build, "_atomic_write_text", publish, raising=False)
+
+    exit_code = _build.main(["--output", str(target)])
+
+    assert exit_code == 0
+    assert events == ["compile", "gate", "exact", "render", "publish"]
+    assert target.read_text(encoding="utf-8") == _GENERATED_TEXT
+
+
+def test_build_refuses_quality_failure_before_exact_or_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Give a gate failure exit 1 precedence over stale generated bytes."""
+    events: list[str] = []
+    candidate = _install_valid_pipeline(monkeypatch, events)
+    target = tmp_path / "generated.py"
+    target.write_text("stale\n", encoding="utf-8")
+    before = target.read_bytes()
+
+    def reject_catalog(
+        value: object, quality: Mapping[str, object]
+    ) -> SimpleNamespace:
+        """Return one deterministic quality-contract violation."""
+        del quality
+        assert value is candidate
+        events.append("gate")
+        violation = SimpleNamespace(
+            asset="aurora",
+            metric="full_256.step_cv",
+            rule="not_increase",
+            observed=0.2,
+            allowed=0.1,
+            message="step CV regressed",
+        )
+        return SimpleNamespace(passed=False, violations=(violation,))
+
+    monkeypatch.setattr(_build, "evaluate_catalog", reject_catalog)
+    monkeypatch.setattr(
+        _build, "_atomic_write_text", _forbid_publish, raising=False
     )
-    r = subprocess.run(
-        [sys.executable, "-m", "dartwork_mpl._colors._build"],
-        capture_output=True,
-        text=True,
-        env=env,
+
+    exit_code = _build.main(["--output", str(target)])
+
+    assert exit_code == 1
+    assert events == ["compile", "gate"]
+    assert target.read_bytes() == before
+    assert tuple(tmp_path.iterdir()) == (target,)
+
+
+def test_build_refuses_exact_mismatch_before_render_or_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Reject an exact-only drift even when every quality gate passes."""
+    events: list[str] = []
+    candidate = _install_valid_pipeline(monkeypatch, events)
+    target = tmp_path / "generated.py"
+    target.write_text("stale\n", encoding="utf-8")
+    before = target.read_bytes()
+
+    def reject_exact(old: object, new: object) -> Mapping[str, SimpleNamespace]:
+        """Return one frozen-surface mismatch."""
+        del old
+        assert new is candidate
+        events.append("exact")
+        mismatch = SimpleNamespace(path="/palette/blue/0")
+        return {
+            "palette": SimpleNamespace(mismatch_count=1, mismatches=(mismatch,))
+        }
+
+    monkeypatch.setattr(_build, "compare_exact_surfaces", reject_exact)
+    monkeypatch.setattr(
+        _build, "_atomic_write_text", _forbid_publish, raising=False
     )
-    assert r.returncode == 0, r.stdout + r.stderr
-    assert src.read_bytes() == before, (
-        "rebuild drifted — nondeterminism or stale commit"
+
+    exit_code = _build.main(["--output", str(target)])
+
+    assert exit_code == 1
+    assert events == ["compile", "gate", "exact"]
+    assert target.read_bytes() == before
+    assert tuple(tmp_path.iterdir()) == (target,)
+
+
+def test_atomic_writer_uses_unique_sibling_fsync_and_replace(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Publish through one fsynced unique sibling and an atomic replace."""
+    target = tmp_path / "_generated.py"
+    real_mkstemp = tempfile.mkstemp
+    real_fsync = os.fsync
+    real_replace = os.replace
+    temporary_paths: list[Path] = []
+    fsynced: list[int] = []
+    replacements: list[tuple[Path, Path]] = []
+    atomic_events: list[str] = []
+
+    def record_mkstemp(
+        *, prefix: str, suffix: str, dir: str | os.PathLike[str]
+    ) -> tuple[int, str]:
+        """Record the exact sibling-temporary allocation contract."""
+        descriptor, name = real_mkstemp(prefix=prefix, suffix=suffix, dir=dir)
+        atomic_events.append("mkstemp")
+        temporary_paths.append(Path(name))
+        return descriptor, name
+
+    def record_fsync(descriptor: int) -> None:
+        """Record and perform the durability barrier."""
+        atomic_events.append("fsync")
+        assert os.fstat(descriptor).st_size == len(
+            _GENERATED_TEXT.encode("utf-8")
+        )
+        fsynced.append(descriptor)
+        real_fsync(descriptor)
+
+    def record_replace(
+        source: str | os.PathLike[str], destination: str | os.PathLike[str]
+    ) -> None:
+        """Record and perform the final atomic publication."""
+        source_path = Path(source)
+        destination_path = Path(destination)
+        assert source_path.is_file()
+        atomic_events.append("replace")
+        replacements.append((source_path, destination_path))
+        real_replace(source, destination)
+
+    monkeypatch.setattr(tempfile, "mkstemp", record_mkstemp)
+    monkeypatch.setattr(os, "fsync", record_fsync)
+    monkeypatch.setattr(os, "replace", record_replace)
+
+    _build._atomic_write_text(target, _GENERATED_TEXT)
+
+    assert target.read_text(encoding="utf-8") == _GENERATED_TEXT
+    assert len(temporary_paths) == 1
+    temporary = temporary_paths[0]
+    assert temporary.parent == target.parent
+    assert temporary.name.startswith(f".{target.name}.")
+    assert temporary.name.endswith(".tmp")
+    assert temporary != target.with_suffix(target.suffix + ".tmp")
+    assert len(fsynced) == 1
+    assert replacements == [(temporary, target)]
+    assert atomic_events == ["mkstemp", "fsync", "replace"]
+    assert not temporary.exists()
+
+
+def test_atomic_writer_cleans_sibling_after_replace_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Keep the old target and remove every temp after replace fails."""
+    target = tmp_path / "_generated.py"
+    target.write_text("old\n", encoding="utf-8")
+
+    class PublicationInterrupted(BaseException):
+        """Represent process-control interruption during atomic replace."""
+
+    def reject_replace(
+        source: str | os.PathLike[str], destination: str | os.PathLike[str]
+    ) -> None:
+        """Interrupt atomic publication after the temporary file is fsynced."""
+        raise PublicationInterrupted(
+            f"cannot replace {source} -> {destination}"
+        )
+
+    monkeypatch.setattr(os, "replace", reject_replace)
+
+    with pytest.raises(PublicationInterrupted, match="cannot replace"):
+        _build._atomic_write_text(target, _GENERATED_TEXT)
+
+    assert target.read_text(encoding="utf-8") == "old\n"
+    assert tuple(tmp_path.iterdir()) == (target,)
+
+
+def test_atomic_writer_preserves_existing_target_permissions(
+    tmp_path: Path,
+) -> None:
+    """Do not narrow a shared checkout file to mkstemp's private mode."""
+    target = tmp_path / "_generated.py"
+    target.write_text("old\n", encoding="utf-8")
+    target.chmod(0o640)
+
+    _build._atomic_write_text(target, _GENERATED_TEXT)
+
+    assert stat.S_IMODE(target.stat().st_mode) == 0o640
+
+
+def test_cli_returns_zero_for_valid_fresh_check_without_writing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Return 0 for a fresh valid target without allocating a temp file."""
+    _install_valid_pipeline(monkeypatch)
+    target = tmp_path / "generated.py"
+    target.write_text(_GENERATED_TEXT, encoding="utf-8")
+    before = target.read_bytes()
+    monkeypatch.setattr(
+        _build, "_atomic_write_text", _forbid_publish, raising=False
     )
 
+    exit_code = _build.main(["--output", str(target), "--check"])
 
-def test_build_taxonomy_names_are_real_cmaps(v5_ssot):
-    """_build's hand-maintained diverging/cyclic name sets must all be
-    real compile_cmaps outputs.
+    assert exit_code == 0
+    assert target.read_bytes() == before
+    assert tuple(tmp_path.iterdir()) == (target,)
 
-    _build._prefixed tags each cmap with a gate category (div./cyc./seq.)
-    from these sets. If a diverging/cyclic map is renamed or removed in
-    _cmaps.py without mirroring the change here, the stale name would silently
-    gate nothing (or the renamed map would fall through to seq. and be checked
-    with the wrong gate). This asserts the sets stay in sync with the catalog.
 
-    NOTE: the reverse drift — a NEW cmap added to _cmaps but not to a set, so
-    it is mis-tagged seq. — cannot be auto-detected here without _cmaps
-    declaring its own taxonomy; keep the sets in sync when adding maps.
-    """
-    from dartwork_mpl._colors import _build
+@pytest.mark.parametrize("target_state", ["stale", "missing"])
+def test_cli_returns_two_for_valid_drift_without_writing(
+    target_state: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Return 2 for a stale or missing valid target and never repair it."""
+    _install_valid_pipeline(monkeypatch)
+    target = tmp_path / "generated.py"
+    if target_state == "stale":
+        target.write_text("stale\n", encoding="utf-8")
+    before = target.read_bytes() if target.exists() else None
+    monkeypatch.setattr(
+        _build, "_atomic_write_text", _forbid_publish, raising=False
+    )
 
-    keys = set(v5_ssot["colormaps"]["swatches_32"])  # == compile_cmaps() output
-    assert keys >= _build._DIVERGING_CMAPS, _build._DIVERGING_CMAPS - keys
-    assert keys >= _build._CYCLIC_CMAPS, _build._CYCLIC_CMAPS - keys
-    # No name is double-categorized.
-    assert not (_build._DIVERGING_CMAPS & _build._CYCLIC_CMAPS)
+    exit_code = _build.main(["--output", str(target), "--check"])
+
+    assert exit_code == 2
+    after = target.read_bytes() if target.exists() else None
+    assert after == before
+    expected = (target,) if target_state == "stale" else ()
+    assert tuple(tmp_path.iterdir()) == expected
+
+
+def test_check_does_not_create_a_missing_output_parent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Keep check mode completely non-writing even above a missing target."""
+    _install_valid_pipeline(monkeypatch)
+    output_parent = tmp_path / "missing" / "nested"
+    target = output_parent / "generated.py"
+    monkeypatch.setattr(
+        _build, "_atomic_write_text", _forbid_publish, raising=False
+    )
+
+    exit_code = _build.main(["--output", str(target), "--check"])
+
+    assert exit_code == 2
+    assert not output_parent.exists()
+    assert tuple(tmp_path.iterdir()) == ()
+
+
+def test_write_mode_skips_publication_when_target_is_fresh(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Avoid an unnecessary replace when the generated bytes are current."""
+    _install_valid_pipeline(monkeypatch)
+    target = tmp_path / "generated.py"
+    target.write_text(_GENERATED_TEXT, encoding="utf-8")
+    before_stat = target.stat()
+    monkeypatch.setattr(
+        _build, "_atomic_write_text", _forbid_publish, raising=False
+    )
+
+    exit_code = _build.main(["--output", str(target)])
+
+    assert exit_code == 0
+    assert target.stat() == before_stat
+    assert target.read_text(encoding="utf-8") == _GENERATED_TEXT
+
+
+def test_write_mode_honors_injected_output_target(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Publish stale valid bytes only to the explicit generated-file target."""
+    _install_valid_pipeline(monkeypatch)
+    target = tmp_path / "custom_generated.py"
+
+    exit_code = _build.main(["--output", str(target)])
+
+    assert exit_code == 0
+    assert target.read_text(encoding="utf-8") == _GENERATED_TEXT
+    assert tuple(tmp_path.iterdir()) == (target,)
+
+
+def test_tracked_generated_check_is_fresh_and_non_writing() -> None:
+    """Run the real coordinator in check mode without touching source bytes."""
+    target = Path(_build.__file__).with_name("_generated.py")
+    before = target.read_bytes()
+    siblings = tuple(sorted(target.parent.iterdir()))
+
+    exit_code = _build.main(["--check"])
+
+    assert exit_code == 0
+    assert target.read_bytes() == before
+    assert tuple(sorted(target.parent.iterdir())) == siblings

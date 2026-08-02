@@ -2,6 +2,12 @@
 
 > Program umbrella #411, pillar EO5. Advisory/design by orchestrator; implementation by codex.
 
+> **Historical design record.** The grayscale wording below records the 2026-07-05
+> proposal and is not a current print, observer, or accessibility guarantee. The
+> implemented `GRAYSCALE_SAFETY` check is an INFO-only, pre-compositing
+> source-RGB proximity heuristic using modeled relative CIE Y from nominal D65
+> sRGB. See [current validation](../../color_system/validation.md).
+
 ## Problem
 
 `dm.validate_figure(fig)` runs self-registering visual checks (overflow, overlap, cross-axes,

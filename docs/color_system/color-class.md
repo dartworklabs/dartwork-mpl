@@ -1,13 +1,31 @@
 # Color class
 
+Most plots do not need the Color class: a named token, palette, or colormap is
+usually enough. When you do need to create, adjust, and export one color, the
+shortest path is:
+
+Modeled relative CIE Y (`relative_y`) is calculated from nominal D65 sRGB; it
+is not a measurement of a particular display, perceived brightness, or OKLab
+`L`.
+
+```python
+color = dm.oklch(0.7, 0.15, 150)
+color.oklch.C *= 1.2
+hex_value = color.to_hex()
+```
+
+`L` is the model's lightness coordinate, `C` controls how colorful or muted
+the color is, and `h` chooses the hue angle.
+
 The `Color` class is the programmatic fourth entry point in the design system:
 use it when a named token, discrete palette, or registered colormap is not the
 right shape. It is the engine behind color construction, conversion,
 manipulation, interpolation, and custom colormap registration.
 
-dartwork-mpl uses **OKLab** and **OKLCH** — perceptually uniform color spaces
-where equal numeric distances correspond to equal visual differences. This page
-covers:
+dartwork-mpl uses **OKLab** and **OKLCH** — perceptual color spaces designed so
+numeric distances track visual differences more consistently than RGB. They
+are useful approximations, not a promise that every equal distance looks
+exactly equal to every observer. This page covers:
 
 - **Creating** Color objects from any format
 - **Converting** between color spaces
@@ -22,9 +40,17 @@ channels. That's convenient for hardware but terrible for human perception.
 Two colors that are numerically "equidistant" in RGB can look wildly different
 to the eye.
 
-**Perceptually uniform** spaces like OKLab and OKLCH fix this. They model how
-humans actually see color, so operations like blending, lightening, and
-interpolating produce predictable and visually pleasing results.
+Perceptual spaces such as OKLab and OKLCH reduce this mismatch. Operations like
+blending, lightening, and interpolation are usually more consistent than RGB
+component arithmetic, while endpoint choice, gamut mapping, viewing conditions,
+and individual observers still matter.
+
+:::{note}
+OKLab and OKLCH are two coordinate views of the same underlying model, not two
+competing construction rules. Think of the model as a map: OKLab's `a` and `b`
+are rectangular map axes, while OKLCH converts those axes into distance from
+the center `C` and angle `h`.
+:::
 
 :::{tip}
 If you're new to color spaces, don't worry about the math — dartwork-mpl
@@ -304,7 +330,7 @@ import dartwork_mpl as dm
 
 dm.style.use("scientific")
 
-# Interpolate in OKLCH (default, perceptually uniform)
+# Interpolate in OKLCH (default perceptual path)
 colors_oklch = dm.cspace("#ff5733", "#33ff57", n=10, space="oklch")
 
 # Interpolate in OKLab
@@ -326,9 +352,15 @@ gradient = dm.cspace(start, end, n=20, space="oklch")
 
 ## Creating custom colormaps
 
-Use `cspace()` to build custom matplotlib colormaps with smooth,
-perceptually uniform transitions. This is far superior to manually
-specifying color stops in RGB.
+Use `cspace()` to build custom matplotlib colormaps with smooth OKLab/OKLCH
+paths. This often avoids the muddy midpoint of RGB component interpolation.
+
+:::{dropdown} Technical detail
+Unlike the shipped `dc.*` catalog, arbitrary custom endpoints are not
+automatically gated for ΔEOK variation, modeled-relative-Y topology, ΔE00, or
+CVD.
+See [Validation](validation.md) for the shipped checks and validation workflow.
+:::
 
 **Try it live:** Build your own colormap below. Toggle between
 **Sequential** and **Diverging** modes, pick your colors, and copy

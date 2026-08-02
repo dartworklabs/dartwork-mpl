@@ -254,10 +254,10 @@ def register_tools(mcp: FastMCP) -> None:
         """Blend two colors in OKLab space and return the resulting hex code.
 
         Delegates to the public :func:`dartwork_mpl.mix_colors`, which
-        blends in OKLab (perceptually uniform) rather than gamma-encoded
-        sRGB — so red + blue gives a purple, not a dark desaturated
-        grey. The MCP tool therefore always agrees with what
-        ``dm.mix_colors`` produces in generated plot code.
+        blends along an OKLab authoring path rather than gamma-encoded sRGB.
+        This generally improves perceptual regularity, but does not promise
+        perfectly equal visible steps. The MCP tool therefore always agrees
+        with what ``dm.mix_colors`` produces in generated plot code.
 
         Parameters
         ----------
@@ -1445,7 +1445,13 @@ def register_tools(mcp: FastMCP) -> None:
                     "color": (
                         "Use named palettes (oc.*, tw.*, dc.*, md.*, "
                         "ad.*, cu.*, pr.*); raw hex is allowed but "
-                        "discouraged."
+                        "discouraged. dc.* construction uses OKLab L, "
+                        "OKLCH C/h, and ΔEOK. Modeled relative Y is an "
+                        "optional shipped-output compatibility lock, not an "
+                        "authoring space or a display measurement. "
+                        "CIELAB/CIEDE2000 and named CVD simulations are "
+                        "model-specific diagnostics; WCAG contrast "
+                        "luminance is separate."
                     ),
                     "retired_policies": [
                         "Zero-Resize Policy (retired in 0.4.0; replaced "

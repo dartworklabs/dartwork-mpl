@@ -135,8 +135,12 @@ def _separate_colors_by_library(
     }
 
 
-def _relative_luminance(color_spec: str | tuple[float, float, float]) -> float:
-    """Compute relative luminance of a color (ITU-R BT.709).
+def _text_brightness(color_spec: str | tuple[float, float, float]) -> float:
+    """Return a gamma-encoded BT.709-style text brightness heuristic.
+
+    This deliberately preserves the historical swatch-label threshold.  The
+    weighted channels are gamma-encoded sRGB, so this is a text brightness
+    heuristic rather than a physical or contrast metric.
 
     Parameters
     ----------
@@ -146,7 +150,7 @@ def _relative_luminance(color_spec: str | tuple[float, float, float]) -> float:
     Returns
     -------
     float
-        Relative luminance in [0, 1].
+        Heuristic brightness in [0, 1].
     """
     r, g, b = mcolors.to_rgb(color_spec)
     return 0.2126 * r + 0.7152 * g + 0.0722 * b
@@ -163,10 +167,10 @@ def _contrast_text_color(color_spec: str | tuple[float, float, float]) -> str:
     Returns
     -------
     str
-        ``"white"`` or ``"#333333"`` depending on background
-        luminance.
+        ``"white"`` or ``"#333333"`` depending on heuristic background
+        brightness.
     """
-    return "#333333" if _relative_luminance(color_spec) > 0.45 else "white"
+    return "#333333" if _text_brightness(color_spec) > 0.45 else "white"
 
 
 def _color_to_hex(color_spec: str | tuple[float, float, float]) -> str:

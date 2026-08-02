@@ -1,5 +1,12 @@
 # Color System v5 Implementation Plan
 
+> **Superseded metric model (2026-07-14).** This plan is retained as a
+> historical implementation record. Current construction uses OKLab L,
+> OKLCH C/h, and ΔEOK, with physical relative Y only as an optional output
+> lock. See the
+> [accepted redesign](../specs/2026-07-14-oklab-centered-color-system-design.md)
+> and [ADR 0001](../../adr/0001-oklab-centered-color-construction.md).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 스펙 `docs/superpowers/specs/2026-07-03-color-system-v5-design.md`(커밋 c82569d)의 생성 공리 색 시스템을 `dartwork_mpl.colors` 레시피 컴파일러로 구현한다 — 91-파라미터 SSOT에서 팔레트(16×10)·cycle(2)·컬러맵(42종+등록 2)을 결정론적으로 생성하고, A7 게이트를 빌드 게이트로 강제하며, §11 마이그레이션 정책(레거시 동결 + opt-in remap)을 배선한다.

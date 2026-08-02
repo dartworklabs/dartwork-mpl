@@ -13,6 +13,8 @@
 #
 # Rule IDs are part of the public API: tools, docs, and tests refer
 # to them. Do not rename without bumping the dartwork-mpl version.
+#
+# Modeled relative CIE Y (`relative_y`) is calculated from nominal D65 sRGB; it is not a measurement of a particular display, perceived brightness, or OKLab `L`.
 
 version: 1
 rules:
@@ -281,7 +283,12 @@ rules:
       `dm.color("oc.blue6")` when you need a Color object.
     why: |
       Named palettes give consistent perception across reports and
-      let style presets remap colors centrally.
+      let style presets remap colors centrally. The dartwork core catalog's
+      construction model uses OKLab L, OKLCH C/h, and ΔEOK. Its optional
+      modeled-relative-Y output lock preserves shipped colors and topology;
+      it is not an authoring space. CIELAB/CIEDE2000 and CVD simulation remain
+      model-specific validation diagnostics, and WCAG contrast luminance is a
+      separate pairwise text-contrast metric.
     fix_suggestion: 'color="oc.blue6"'
 
   - id: fontsize-literal

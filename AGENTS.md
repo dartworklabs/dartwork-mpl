@@ -85,6 +85,33 @@ When MCP is unavailable, the same anti-pattern catalog is reachable
 through `dm.list_prompts()` + `dm.get_prompt("02-anti-patterns")`
 inside Python.
 
+## Design documents and agent work
+
+These four rules exist because a colour-system refactor stalled for weeks
+behind a 13,868-line design document whose completion criteria could not be
+met on any developer machine. The full post-mortem is
+[ADR 0002](docs/adr/0002-separate-shipped-color-compatibility-from-oklab-authoring.md).
+
+1. **A design document does not exceed 200 lines.** If it wants to be longer,
+   the work needs splitting, not a longer document. A design nobody can read
+   is not a design.
+2. **Adversarial review requires an external decider.** "Reviewer A and B both
+   passed" is not a stopping condition on its own — reviewers reading the same
+   document can always find one more gap, so the loop diverges. Land a
+   mechanical check first (a pinned digest, a golden file, a measured
+   threshold), then review against it.
+3. **An ADR may not release a preceding ADR's lock.** If an accepted decision
+   froze something, superseding it is a separate decision that needs its own
+   approval — not a clause inside the document that wants the freedom.
+4. **Completion criteria must be executable in this repository's development
+   environment.** A criterion that requires hardware, an OS or a tool nobody
+   has is not a high standard; it is an unreachable one.
+
+The colour freeze specifically: `tests/test_shipped_colors_hash.py` pins every
+shipped colour value. Never regenerate its digests to make a failing test pass
+— a failure means a shipped colour moved, which is a decision for a human, not
+a test fix.
+
 ## Where to read more
 
 | If you want… | Open |
