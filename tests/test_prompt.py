@@ -175,3 +175,31 @@ class TestCopyPrompt:
 def test_anti_patterns_catalog_uses_live_agent_doc_name() -> None:
     content = get_prompt("02-anti-patterns")
     assert 'dm.get_agent_doc("general-guide")' not in content
+
+
+def test_prompt_corpus_explains_the_color_metric_split() -> None:
+    """Keep agent guidance aligned with the accepted color architecture."""
+    corpus = "\n".join(
+        get_prompt(name)
+        for name in ("00-index", "01-policy", "02-anti-patterns")
+    )
+    normalized = corpus.lower().replace("_", " ").replace("-", " ")
+    required = (
+        "oklab",
+        "oklch",
+        "construction",
+        "modeled relative cie y",
+        "ciede2000",
+        "validation",
+    )
+    missing = [term for term in required if term not in normalized]
+    assert not missing, f"missing color-system guidance: {missing}"
+
+    stale_claims = (
+        "construction uses cielab",
+        "cielab l* target",
+        "preserve cielab l*",
+        "physical relative y",
+    )
+    stale = [claim for claim in stale_claims if claim in normalized]
+    assert not stale, f"stale hybrid-construction guidance: {stale}"

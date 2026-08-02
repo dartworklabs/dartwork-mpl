@@ -11,6 +11,8 @@ Covers the 0.5.0 minimal fixes:
 
 from __future__ import annotations
 
+import pytest
+
 import dartwork_mpl as dm
 
 
@@ -57,6 +59,19 @@ class TestColorInGamut:
     def test_in_gamut_returns_bool(self) -> None:
         assert isinstance(dm.Color.from_oklch(0.7, 0.05, 30).in_gamut(), bool)
 
+    def test_custom_tolerance_is_preserved_at_boundary(self) -> None:
+        color = dm.Color.from_oklch(0.7, 0.155202, 238)
+
+        assert color.in_gamut() is True
+        assert color.in_gamut(tol=0.0) is False
+
+    @pytest.mark.parametrize("tolerance", (True, "1e-6"))
+    def test_non_real_tolerance_is_rejected(self, tolerance: object) -> None:
+        color = dm.Color("#ff0000")
+
+        with pytest.raises(TypeError):
+            color.in_gamut(tol=tolerance)  # type: ignore[arg-type]
+
 
 class TestGamutMapping:
     """``to_rgb`` maps out-of-gamut OKLCH colors by chroma reduction that
@@ -97,3 +112,11 @@ class TestGamutMapping:
         # clamp must still yield a valid hex rather than crash.
         assert dm.Color.from_oklch(1.5, 0.10, 30).to_hex().startswith("#")
         assert dm.Color.from_oklch(-0.2, 0.10, 30).to_hex().startswith("#")
+
+    def test_direct_oklch_render_keeps_legacy_stored_oklab_path(self) -> None:
+        color = dm.Color.from_oklch(0.7, 0.4, 238)
+
+        assert color.to_rgb() == pytest.approx(
+            (0.0, 0.6658243598176259, 0.9512736139958143), abs=5e-12, rel=0.0
+        )
+        assert color.to_hex() == "#00aaf3"

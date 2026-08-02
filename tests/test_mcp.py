@@ -23,10 +23,20 @@ def _capture_decorators(mock_mcp, decorator_name: str) -> dict:
 
     def fake_decorator(*args, **kwargs):
         # Handle both @mcp.tool() and @mcp.resource("uri")
-        uri = args[0] if args else None
+        positional_name = args[0] if args else None
+        keyword_name = kwargs.get("name")
 
         def inner(fn):
-            key = uri if uri else fn.__name__
+            if decorator_name == "resource":
+                key = positional_name
+            else:
+                key = (
+                    keyword_name
+                    if keyword_name is not None
+                    else positional_name
+                )
+            if key is None:
+                key = fn.__name__
             captured[key] = fn
             return fn
 
@@ -34,6 +44,99 @@ def _capture_decorators(mock_mcp, decorator_name: str) -> dict:
 
     setattr(mock_mcp, decorator_name, fake_decorator)
     return captured
+
+
+def test_capture_decorators_honors_public_name_override() -> None:
+    """Keep registration tests sensitive to FastMCP's public alias."""
+    mock_mcp = MagicMock()
+    captured = _capture_decorators(mock_mcp, "tool")
+
+    @mock_mcp.tool(name="public_alias")
+    def internal_name() -> None:
+        pass
+
+    assert captured == {"public_alias": internal_name}
+
+
+_EXPECTED_MCP_TOOLS = frozenset(
+    {
+        "apply_lint_fixes",
+        "compose_layered_plot",
+        "dartwork_mpl_info",
+        "fetch_github_document",
+        "find_template",
+        "get_color_value",
+        "lint_dartwork_mpl_code",
+        "lint_dartwork_mpl_code_json",
+        "list_color_families",
+        "migrate_legacy_code",
+        "mix_colors",
+        "render_template",
+        "render_template_advanced",
+        "suggest_chart_type",
+        "validate_generated_plot",
+        "validate_plot_data",
+    }
+)
+_EXPECTED_MCP_RESOURCES = frozenset(
+    {
+        "dartwork-mpl://api/index",
+        "dartwork-mpl://guide/agent-entry",
+        "dartwork-mpl://guide/anti-patterns",
+        "dartwork-mpl://guide/migration",
+        "dartwork-mpl://guide/policy",
+        "dartwork-mpl://guide/recipes",
+        "dartwork-mpl://palette/colors",
+        "dartwork-mpl://palette/fonts",
+        "dartwork-mpl://styles/list",
+        "dartwork-mpl://templates/list",
+    }
+)
+_EXPECTED_MCP_RESOURCE_TEMPLATES = frozenset(
+    {
+        "dartwork-mpl://api/{name}",
+        "dartwork-mpl://styles/{preset}",
+        "dartwork-mpl://templates/{plot_type}",
+        "dartwork-mpl://templates/advanced/{plot_type}",
+    }
+)
+_EXPECTED_MCP_PROMPTS = frozenset({"create_plot", "style_review"})
+
+
+def test_public_mcp_tool_names_are_unchanged() -> None:
+    """Pin all 16 public tool names while their prose is updated."""
+    from dartwork_mpl.mcp.tools import register_tools
+
+    mock_mcp = MagicMock()
+    captured = _capture_decorators(mock_mcp, "tool")
+    register_tools(mock_mcp)
+
+    assert frozenset(captured) == _EXPECTED_MCP_TOOLS
+
+
+def test_public_mcp_resource_names_are_unchanged() -> None:
+    """Pin the 10 static and four templated public resource URIs."""
+    from dartwork_mpl.mcp.resources import register_resources
+
+    mock_mcp = MagicMock()
+    captured = _capture_decorators(mock_mcp, "resource")
+    register_resources(mock_mcp)
+    static = frozenset(uri for uri in captured if "{" not in uri)
+    templates = frozenset(uri for uri in captured if "{" in uri)
+
+    assert static == _EXPECTED_MCP_RESOURCES
+    assert templates == _EXPECTED_MCP_RESOURCE_TEMPLATES
+
+
+def test_public_mcp_prompt_names_are_unchanged() -> None:
+    """Pin both public prompt names while prompt wording changes."""
+    from dartwork_mpl.mcp.prompts import register_prompts
+
+    mock_mcp = MagicMock()
+    captured = _capture_decorators(mock_mcp, "prompt")
+    register_prompts(mock_mcp)
+
+    assert frozenset(captured) == _EXPECTED_MCP_PROMPTS
 
 
 # ── Server Tests ─────────────────────────────────────────────────────
@@ -884,7 +987,7 @@ class TestMcpTools:
 
         The tool previously reimplemented the blend in naive sRGB
         (red+blue → ``#800080``), contradicting ``dm.mix_colors``'s
-        perceptually-uniform OKLab contract."""
+        perceptually oriented OKLab contract."""
         import matplotlib.colors as mcolors
 
         import dartwork_mpl as dm

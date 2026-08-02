@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import ast
 import math
+import subprocess
+import sys
+from collections.abc import Callable
+from pathlib import Path
 
+import numpy as np
 import pytest
 
 from dartwork_mpl._colors import Color
+from dartwork_mpl._colors import _conversion as conversion
 from dartwork_mpl._colors._conversion import (
     _linear_srgb_to_oklab,
     _linear_to_srgb,
@@ -16,6 +23,21 @@ from dartwork_mpl._colors._conversion import (
     _parse_hex,
     _rgb_to_hex,
     _srgb_to_linear,
+)
+
+_OKLAB_PRIMARY_VECTORS = (
+    (
+        (1.0, 0.0, 0.0),
+        (0.6279553606145516, 0.2248630610659740, 0.1258462985307351),
+    ),
+    (
+        (0.0, 1.0, 0.0),
+        (0.8664396115356694, -0.2338875741879082, 0.1794984798967299),
+    ),
+    (
+        (0.0, 0.0, 1.0),
+        (0.4520137183853429, -0.0324569841687640, -0.3115281476783751),
+    ),
 )
 
 # ============================================================================
@@ -239,3 +261,246 @@ class TestColorRoundtrip:
     def test_from_name_invalid(self) -> None:
         with pytest.raises(ValueError, match="Invalid color name"):
             Color.from_name("notacolor_xyzzy")
+
+
+@pytest.mark.parametrize(
+    ("encoded", "expected"),
+    [
+        (
+            math.nextafter(0.04045, -math.inf),
+            math.nextafter(0.04045, -math.inf) / 12.92,
+        ),
+        (0.04045, 0.04045 / 12.92),
+        (
+            math.nextafter(0.04045, math.inf),
+            ((math.nextafter(0.04045, math.inf) + 0.055) / 1.055) ** 2.4,
+        ),
+    ],
+)
+def test_srgb_decode_breakpoint(encoded: float, expected: float) -> None:
+    """Pin the IEC sRGB decode branch and both adjacent floats."""
+    assert float(conversion._srgb_to_linear(encoded)) == expected
+
+
+@pytest.mark.parametrize(
+    ("linear", "expected"),
+    [
+        (
+            math.nextafter(0.0031308, -math.inf),
+            12.92 * math.nextafter(0.0031308, -math.inf),
+        ),
+        (0.0031308, 12.92 * 0.0031308),
+        (
+            math.nextafter(0.0031308, math.inf),
+            1.055 * math.nextafter(0.0031308, math.inf) ** (1.0 / 2.4) - 0.055,
+        ),
+    ],
+)
+def test_srgb_encode_breakpoint(linear: float, expected: float) -> None:
+    """Pin the IEC sRGB encode branch and both adjacent floats."""
+    assert float(conversion._linear_to_srgb(linear)) == expected
+
+
+@pytest.mark.parametrize(("rgb", "expected"), _OKLAB_PRIMARY_VECTORS)
+def test_published_oklab_primary_vectors(
+    rgb: tuple[float, float, float], expected: tuple[float, float, float]
+) -> None:
+    """Match Ottosson's published linear-sRGB primary vectors."""
+    linear = tuple(
+        float(conversion._srgb_to_linear(channel)) for channel in rgb
+    )
+    actual = conversion._linear_srgb_to_oklab(*linear)
+
+    assert actual == pytest.approx(expected, abs=1e-15, rel=0.0)
+
+
+def test_oklab_extended_domain_uses_real_cube_root() -> None:
+    """Keep negative LMS values in the real domain via ``numpy.cbrt``."""
+    actual = conversion._linear_srgb_to_oklab(-0.07739938080495357, 0.0, 0.0)
+
+    assert actual == pytest.approx(
+        (-0.2676134484186351, -0.09582907156799111, -0.05363145859217086),
+        abs=1e-15,
+        rel=0.0,
+    )
+    assert all(type(value) is float for value in actual)
+
+
+@pytest.mark.parametrize(
+    "function", (conversion._srgb_to_linear, conversion._linear_to_srgb)
+)
+def test_gamma_scalar_returns_python_float(
+    function: Callable[..., object],
+) -> None:
+    """Return Python floats to scalar production callers."""
+    result = function(0.25)
+
+    assert type(result) is float
+
+
+@pytest.mark.parametrize(
+    "function", (conversion._srgb_to_linear, conversion._linear_to_srgb)
+)
+def test_gamma_array_preserves_shape(function: Callable[..., object]) -> None:
+    """Retain the existing ndarray broadcasting surface for color views."""
+    channels = np.array([[0.0, 0.25], [0.5, 1.0]])
+    result = function(channels)
+
+    assert isinstance(result, np.ndarray)
+    assert result.shape == channels.shape
+
+
+@pytest.mark.parametrize(
+    ("function", "values"),
+    (
+        (
+            conversion._srgb_to_linear,
+            (
+                -0.1,
+                math.nextafter(0.04045, -math.inf),
+                0.04045,
+                math.nextafter(0.04045, math.inf),
+                0.5,
+                1.1,
+            ),
+        ),
+        (
+            conversion._linear_to_srgb,
+            (
+                -0.1,
+                math.nextafter(0.0031308, -math.inf),
+                0.0031308,
+                math.nextafter(0.0031308, math.inf),
+                0.5,
+                1.1,
+            ),
+        ),
+    ),
+)
+def test_gamma_array_matches_scalar_elementwise_exactly(
+    function: Callable[..., object], values: tuple[float, ...]
+) -> None:
+    """Pin ndarray arithmetic to the canonical scalar branch results."""
+    channels = np.array(values, dtype=np.float64)
+    array_result = function(channels)
+    scalar_result = np.array([function(float(value)) for value in channels])
+
+    assert isinstance(array_result, np.ndarray)
+    assert np.array_equal(array_result, scalar_result)
+
+
+def test_scalar_gamma_evaluates_only_the_selected_branch() -> None:
+    """Avoid invalid fractional powers on unused scalar branches."""
+    with np.errstate(invalid="raise"):
+        decoded = conversion._srgb_to_linear(-0.1)
+        encoded = conversion._linear_to_srgb(-0.1)
+
+    assert decoded == -0.1 / 12.92
+    assert encoded == 12.92 * -0.1
+
+
+def test_modeled_relative_y_uses_normalized_d65_row() -> None:
+    """Pin modeled-relative-CIE-Y primaries and white normalization."""
+    assert conversion.SRGB_D65_Y == (
+        0.21267287873271212,
+        0.7151521284847872,
+        0.07217499278250072,
+    )
+    assert (
+        conversion.relative_y_srgb_d65((1.0, 0.0, 0.0))
+        == (conversion.SRGB_D65_Y[0])
+    )
+    assert (
+        conversion.relative_y_srgb_d65((0.0, 1.0, 0.0))
+        == (conversion.SRGB_D65_Y[1])
+    )
+    assert (
+        conversion.relative_y_srgb_d65((0.0, 0.0, 1.0))
+        == (conversion.SRGB_D65_Y[2])
+    )
+    assert conversion.relative_y_srgb_d65((1.0, 1.0, 1.0)) == 1.0
+
+
+def test_mixed_modeled_y_is_float_and_left_associated() -> None:
+    """Pin scalar type and multiply/add order independently of BLAS."""
+    rgb = (0.1, 0.2, 0.3)
+    red = float(conversion._srgb_to_linear(rgb[0]))
+    green = float(conversion._srgb_to_linear(rgb[1]))
+    blue = float(conversion._srgb_to_linear(rgb[2]))
+    expected = (
+        conversion.SRGB_D65_Y[0] * red
+        + conversion.SRGB_D65_Y[1] * green
+        + conversion.SRGB_D65_Y[2] * blue
+    )
+    actual = conversion.relative_y_srgb_d65(rgb)
+
+    assert type(actual) is float
+    assert actual == expected
+    assert actual == 0.031092548556125525
+
+
+def test_hex_round_to_even_half_byte_values() -> None:
+    """Preserve Python round-to-even at exact half-byte coordinates."""
+    assert conversion._rgb_to_hex(0.5 / 255, 1.5 / 255, 2.5 / 255) == "#000202"
+    assert conversion._rgb_to_hex(3.5 / 255, 4.5 / 255, 5.5 / 255) == "#040406"
+
+
+@pytest.mark.parametrize(
+    "hex_color", ("", "#12", "#1234", "#gg0000", "##ff0000", "#-10000")
+)
+def test_hex_parser_rejects_malformed_input(hex_color: str) -> None:
+    """Reject malformed strings before attempting integer conversion."""
+    with pytest.raises(ValueError, match="Invalid hex color format"):
+        conversion._parse_hex(hex_color)
+
+
+@pytest.mark.parametrize("non_finite", (math.nan, math.inf, -math.inf))
+def test_hex_encoder_rejects_every_non_finite_channel(
+    non_finite: float,
+) -> None:
+    """Reject NaN and both infinities before channel clamping."""
+    with pytest.raises(ValueError, match="RGB channels must be finite"):
+        conversion._rgb_to_hex(0.0, non_finite, 0.0)
+
+
+def test_conversion_has_no_validation_or_luminance_import_edge() -> None:
+    """Keep the canonical math kernel below metrics and luminance wrappers."""
+    source_path = Path(conversion.__file__)
+    tree = ast.parse(source_path.read_text(encoding="utf-8"))
+    imported = {
+        node.module or ""
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom)
+    }
+    imported.update(
+        alias.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Import)
+        for alias in node.names
+    )
+
+    assert all("_metrics" not in name for name in imported)
+    assert all("_luminance" not in name for name in imported)
+
+
+def test_cold_package_import_succeeds_in_subprocess() -> None:
+    """Guard the conversion/luminance import order against a package cycle."""
+    root = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import dartwork_mpl; "
+                "from dartwork_mpl._luminance import _contrast_ratio; "
+                "assert _contrast_ratio((0,0,0),(1,1,1)) == 21.0; "
+                "print(dartwork_mpl.__version__)"
+            ),
+        ],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr

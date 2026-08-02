@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 from collections import Counter
-from itertools import pairwise
+from collections.abc import Mapping
+from functools import cache
+from typing import cast
 
+from dartwork_mpl._colors import _compatibility_metrics as oracle
 from dartwork_mpl._colors import _curated, _generated
 from dartwork_mpl._colors._families import FAMILIES
-from dartwork_mpl._colors._metrics import de2000_hex, lab_l_hex
+from dartwork_mpl._colors._gates import (
+    evaluate_quality_metrics,
+    load_quality_baseline,
+)
 
 EXPECTED = {
     "sequential": {
@@ -75,17 +81,34 @@ EXPECTED = {
 }
 
 
-def _lstars(name: str) -> list[float]:
-    return [lab_l_hex(h) for h in _generated.CMAPS_256[name]]
+def _mapping(value: object, label: str) -> Mapping[str, object]:
+    """Narrow one string-keyed raw quality mapping."""
+    assert isinstance(value, Mapping), label
+    assert all(isinstance(key, str) for key in value), label
+    return cast(Mapping[str, object], value)
 
 
-def _monotonic(
-    values: list[float], *, increasing: bool, tol: float = 0.2
-) -> bool:
-    pairs = pairwise(values)
-    if increasing:
-        return all(b >= a - tol for a, b in pairs)
-    return all(b <= a + tol for a, b in pairs)
+@cache
+def _baseline_metrics() -> Mapping[str, object]:
+    """Load the hash-validated raw v5 quality baseline once."""
+    baseline = load_quality_baseline()
+    return _mapping(baseline["metrics"], "quality metrics")
+
+
+def _evaluate_subset(
+    section: str,
+    baseline: Mapping[str, object],
+    candidate: Mapping[str, object],
+) -> None:
+    """Apply shared raw policy to one family-invariant metric section."""
+    metrics = _baseline_metrics()
+    dark = metrics["dark_cycle"]
+    violations = evaluate_quality_metrics(
+        {section: baseline, "dark_cycle": dark},
+        {section: candidate, "dark_cycle": dark},
+        {name: family.kind for name, family in FAMILIES.items()},
+    )
+    assert violations == ()
 
 
 def test_family_partition_matches_model_b_catalog() -> None:
@@ -119,50 +142,93 @@ def test_family_discrete_sizes_match_model_b_forms() -> None:
         assert FAMILIES[name].discrete_size == 8
 
 
-def test_sequential_and_multi_hue_lut_lightness_is_monotonic() -> None:
-    for name in EXPECTED["sequential"]:
-        assert _monotonic(_lstars(name), increasing=False), name
-    for name in EXPECTED["multi-hue"]:
-        assert _monotonic(_lstars(name), increasing=True), name
-
-
-def test_diverging_lut_arms_are_monotonic_and_lstar_mirrored() -> None:
-    max_mirror_delta = 0.0
-    for name in EXPECTED["diverging"]:
-        lstars = _lstars(name)
-        apex = max(range(len(lstars)), key=lstars.__getitem__)
-        left = lstars[: apex + 1]
-        right = lstars[apex:]
-        assert _monotonic(left, increasing=True), name
-        assert _monotonic(right, increasing=False), name
-        pairs = min(len(left), len(right))
-        mirror_delta = max(abs(left[-1 - i] - right[i]) for i in range(pairs))
-        max_mirror_delta = max(max_mirror_delta, mirror_delta)
-    assert max_mirror_delta <= 0.85
-
-
-def test_cyclic_lut_seams_are_closed_in_delta_e00() -> None:
+def test_sequential_and_multi_hue_lut_keep_raw_y_oklab_topology() -> None:
+    """Gate ordered LUT direction, Y/L minima, span, CVD, and step CV."""
+    names = EXPECTED["sequential"] | EXPECTED["multi-hue"]
+    baseline_rows = _mapping(
+        _baseline_metrics()["cmaps_full_256"], "full LUT baseline"
+    )
+    expected = {name: baseline_rows[name] for name in sorted(names)}
     measured = {
-        name: de2000_hex(
-            _generated.CMAPS_256[name][0], _generated.CMAPS_256[name][-1]
-        )
-        for name in EXPECTED["cyclic"]
+        name: oracle.ordered_quality(_generated.CMAPS_256[name])
+        for name in sorted(names)
     }
-    assert {name: round(value, 1) for name, value in measured.items()} == {
-        "hue": 0.7,
-        "halo": 1.9,
-        "corona": 2.0,
-    }
-    assert max(measured.values()) <= 2.01
+
+    _evaluate_subset("cmaps_full_256", expected, measured)
 
 
-def test_qualitative_members_stay_inside_pinned_lstar_band() -> None:
-    colors: list[str] = []
-    for name in EXPECTED["qualitative"]:
-        if name in _generated.CYCLES:
-            colors.extend(_generated.CYCLES[name])
-        else:
-            colors.extend(_curated.CURATED[name])
-    band = [lab_l_hex(h) for h in colors]
-    assert min(band) >= 26.0
-    assert max(band) <= 94.0
+def test_diverging_lut_keeps_raw_y_oklab_two_arm_topology() -> None:
+    """Gate center, both arms, mirrors, and OKLab step balance raw."""
+    topology = _mapping(_baseline_metrics()["topology"], "topology baseline")
+    baseline_rows = _mapping(topology["diverging"], "diverging baseline")
+    expected = {
+        name: baseline_rows[name] for name in sorted(EXPECTED["diverging"])
+    }
+    measured = {
+        name: oracle.diverging_topology(_generated.CMAPS_256[name])
+        for name in sorted(EXPECTED["diverging"])
+    }
+
+    _evaluate_subset(
+        "topology",
+        {"diverging": expected, "cyclic": {}},
+        {"diverging": measured, "cyclic": {}},
+    )
+
+
+def test_cyclic_lut_keeps_raw_oracle_seam_and_topology() -> None:
+    """Gate unrounded seam distances, Y spread, and twilight arm topology."""
+    topology = _mapping(_baseline_metrics()["topology"], "topology baseline")
+    baseline_rows = _mapping(topology["cyclic"], "cyclic baseline")
+    expected = {
+        name: baseline_rows[name] for name in sorted(EXPECTED["cyclic"])
+    }
+    measured = {
+        name: oracle.cyclic_topology(_generated.CMAPS_256[name])
+        for name in sorted(EXPECTED["cyclic"])
+    }
+
+    _evaluate_subset(
+        "topology",
+        {"diverging": {}, "cyclic": expected},
+        {"diverging": {}, "cyclic": measured},
+    )
+
+
+def test_qualitative_members_keep_raw_cvd_separation_floors() -> None:
+    """Use independent CIEDE2000/CVD validation, not an L* authoring band."""
+    metrics = _baseline_metrics()
+    baseline_cycles = _mapping(metrics["cycles"], "cycle baseline")
+    baseline_curated = _mapping(metrics["curated_rows"], "curated baseline")
+    cycle_names = EXPECTED["qualitative"] & set(_generated.CYCLES)
+    curated_names = EXPECTED["qualitative"] & set(_curated.CURATED)
+    expected_cycles = {
+        name: baseline_cycles[name] for name in sorted(cycle_names)
+    }
+    expected_curated = {
+        name: baseline_curated[name] for name in sorted(curated_names)
+    }
+    measured_cycles = {
+        name: oracle.categorical_quality(_generated.CYCLES[name])
+        for name in sorted(cycle_names)
+    }
+    measured_curated = {
+        name: oracle.categorical_quality(_curated.CURATED[name])
+        for name in sorted(curated_names)
+    }
+    dark = metrics["dark_cycle"]
+
+    violations = evaluate_quality_metrics(
+        {
+            "cycles": expected_cycles,
+            "curated_rows": expected_curated,
+            "dark_cycle": dark,
+        },
+        {
+            "cycles": measured_cycles,
+            "curated_rows": measured_curated,
+            "dark_cycle": dark,
+        },
+        {},
+    )
+    assert violations == ()
