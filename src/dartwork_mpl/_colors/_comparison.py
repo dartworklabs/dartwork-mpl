@@ -802,6 +802,61 @@ def _quality_fixture() -> dict[str, object]:
     return gates.load_quality_baseline()
 
 
+# See ``_gates._GATE_REL_TOL`` for the reasoning; the same noise floor applies
+# here. Recomputing the quality fixture on a different machine moves the last
+# bits of these derived doubles, which changes a canonical-JSON hash entirely
+# even though the catalog is identical.
+_FIXTURE_REL_TOL = 1e-12
+_FIXTURE_ABS_TOL = 1e-15
+
+
+def _matches_pinned_fixture(recomputed: object, expected: object) -> bool:
+    """Compare a recomputed quality payload against the pinned fixture.
+
+    Structure, keys, lengths, strings and booleans are compared exactly; only
+    numbers get a tolerance. The check still answers what it is for -- that the
+    fixture is a faithful recomputation from the frozen baseline rather than a
+    fabricated file -- without demanding bit-exact float reproduction across
+    architectures, which no machine can promise another.
+    """
+    if isinstance(recomputed, Mapping) or isinstance(expected, Mapping):
+        if not (
+            isinstance(recomputed, Mapping) and isinstance(expected, Mapping)
+        ):
+            return False
+        if set(recomputed) != set(expected):
+            return False
+        return all(
+            _matches_pinned_fixture(recomputed[key], expected[key])
+            for key in recomputed
+        )
+    if isinstance(recomputed, str) or isinstance(expected, str):
+        return recomputed == expected
+    if isinstance(recomputed, bool) or isinstance(expected, bool):
+        return recomputed is expected
+    if isinstance(recomputed, Sequence) or isinstance(expected, Sequence):
+        if not (
+            isinstance(recomputed, Sequence) and isinstance(expected, Sequence)
+        ):
+            return False
+        if len(recomputed) != len(expected):
+            return False
+        return all(
+            _matches_pinned_fixture(left, right)
+            for left, right in zip(recomputed, expected, strict=True)
+        )
+    if isinstance(recomputed, (int, float)) and isinstance(
+        expected, (int, float)
+    ):
+        return math.isclose(
+            float(recomputed),
+            float(expected),
+            rel_tol=_FIXTURE_REL_TOL,
+            abs_tol=_FIXTURE_ABS_TOL,
+        )
+    return recomputed == expected
+
+
 def _quality_comparison(
     baseline: CatalogSnapshot, candidate: CatalogSnapshot
 ) -> tuple[QualityComparison, Mapping[str, tuple[str, ...]]]:
@@ -825,13 +880,9 @@ def _quality_comparison(
     recomputed_metrics, recomputed_extrema = oracle.compute_catalog_quality(
         _catalog_for_oracle(baseline), baseline_previews
     )
-    baseline_matches = oracle.canonical_json_sha256(
-        recomputed_metrics
-    ) == oracle.canonical_json_sha256(
-        expected_metrics
-    ) and oracle.canonical_json_sha256(
-        recomputed_extrema
-    ) == oracle.canonical_json_sha256(expected_extrema)
+    baseline_matches = _matches_pinned_fixture(
+        recomputed_metrics, expected_metrics
+    ) and _matches_pinned_fixture(recomputed_extrema, expected_extrema)
     if not baseline_matches:
         raise oracle.OracleValidationError(
             "recomputed v5 quality differs from the pinned fixture"
