@@ -1,22 +1,14 @@
 """Designed discrete forms for Model B color families."""
 
-from __future__ import annotations
-
 import math
 from collections.abc import Sequence
-from functools import cache
 from typing import NamedTuple
 
-from . import _curated, _generated
+from . import _conversion, _curated, _generated
 from ._families import DIVERGING, FAMILIES
-from ._metrics import de2000_hex, lab_from_rgb, lab_l_hex, rgb_from_hex
+from ._generated import CMAPS_256, MULTI_HUE_DISCRETE_INDICES
 
-__all__ = [
-    "DIVERGING_CANONICALS",
-    "GENERATED_DIVERGING",
-    "MULTI_HUE_MIN_DE00_FLOORS",
-    "discrete_colors",
-]
+__all__ = ["DIVERGING_CANONICALS", "GENERATED_DIVERGING", "discrete_colors"]
 
 GENERATED_DIVERGING: tuple[str, ...] = tuple(
     name for name in DIVERGING if name not in _curated.CURATED_DIVERGING_ORDER
@@ -39,26 +31,7 @@ DIVERGING_CANONICALS: dict[str, tuple[str, ...]] = {
     for name in DIVERGING
 }
 
-MULTI_HUE_MIN_DE00_FLOORS: dict[str, float] = {
-    "afterglow": 6.7,
-    "aurora": 7.4,
-    "blaze": 12.0,
-    "canopy": 7.4,
-    "glacier": 7.5,
-    "haze": 3.7,
-    "iris": 8.0,
-    "lagoon": 5.1,
-    "lava": 6.8,
-}
-
 _VIVID_CHROMA_FLOOR_RATIO = 0.6
-
-
-class _CandidateData(NamedTuple):
-    indices: tuple[int, ...]
-    hexes: tuple[str, ...]
-    distances: tuple[tuple[float, ...], ...]
-    thresholds: tuple[float, ...]
 
 
 class _VividCutoff(NamedTuple):
@@ -129,8 +102,15 @@ def _diverging(name: str, n: int) -> list[str]:
 
 
 def _chroma(hex_color: str) -> float:
-    _l_value, a_value, b_value = lab_from_rgb(rgb_from_hex(hex_color))
-    return math.hypot(a_value, b_value)
+    """Return canonical OKLCH chroma for one encoded sRGB hex color."""
+    rgb = _conversion._parse_hex(hex_color)
+    coordinates = _conversion._srgb_to_oklab(rgb)
+    return _conversion._oklab_to_oklch_degrees(*coordinates)[1]
+
+
+def _relative_y(hex_color: str) -> float:
+    """Return modeled relative CIE Y calculated from nominal D65 sRGB."""
+    return _conversion.relative_y_srgb_d65(_conversion._parse_hex(hex_color))
 
 
 def _vivid_chroma_values(stops: Sequence[str]) -> tuple[float, ...]:
@@ -151,7 +131,7 @@ def _vivid_cutoff(stops: Sequence[str]) -> _VividCutoff:
     peak_i = max(range(len(chroma_values)), key=chroma_values.__getitem__)
     peak = chroma_values[peak_i]
     threshold = _vivid_chroma_floor(chroma_values)
-    dark_hi = lab_l_hex(stops[-1]) < lab_l_hex(stops[0])
+    dark_hi = _relative_y(stops[-1]) < _relative_y(stops[0])
     index = peak_i
     if dark_hi:
         while (
@@ -174,107 +154,9 @@ def _vivid_cutoff(stops: Sequence[str]) -> _VividCutoff:
     )
 
 
-@cache
-def _candidate_data(name: str) -> _CandidateData:
-    row = _generated.CMAPS_256[name]
-    chroma_values = _vivid_chroma_values(row)
-    chroma_floor = _vivid_chroma_floor(chroma_values)
-    pairs = [
-        (i, hex_color)
-        for i, hex_color in enumerate(row)
-        if 35.0 <= lab_l_hex(hex_color) <= 90.0
-        and chroma_values[i] >= chroma_floor
-    ]
-    indices = tuple(i for i, _hex in pairs)
-    hexes = tuple(hex_color for _i, hex_color in pairs)
-    size = len(hexes)
-    mutable = [[0.0] * size for _ in range(size)]
-    thresholds: list[float] = []
-    for i in range(size):
-        for j in range(i + 1, size):
-            distance = de2000_hex(hexes[i], hexes[j])
-            mutable[i][j] = mutable[j][i] = distance
-            thresholds.append(distance)
-    distances = tuple(tuple(row_) for row_ in mutable)
-    return _CandidateData(
-        indices=indices,
-        hexes=hexes,
-        distances=distances,
-        thresholds=tuple(sorted(set(thresholds))),
-    )
-
-
-def _compatible_masks(
-    data: _CandidateData, threshold: float
-) -> tuple[int, ...]:
-    masks: list[int] = []
-    size = len(data.hexes)
-    for i in range(size):
-        mask = 0
-        row = data.distances[i]
-        for j in range(i + 1, size):
-            if row[j] + 1e-12 >= threshold:
-                mask |= 1 << j
-        masks.append(mask)
-    return tuple(masks)
-
-
-def _first_ordered_clique(
-    masks: tuple[int, ...], threshold: float, n: int
-) -> tuple[int, ...] | None:
-    del threshold  # threshold is represented by masks; keep call-site explicit.
-    full = (1 << len(masks)) - 1
-
-    @cache
-    def search(mask: int, need: int) -> tuple[int, ...] | None:
-        if need == 0:
-            return ()
-        if mask.bit_count() < need:
-            return None
-        remaining = mask
-        while remaining:
-            bit = remaining & -remaining
-            i = bit.bit_length() - 1
-            after_i = mask & ~((1 << (i + 1)) - 1)
-            suffix = after_i & masks[i]
-            found = search(suffix, need - 1)
-            if found is not None:
-                return (i, *found)
-            remaining ^= bit
-        return None
-
-    return search(full, n)
-
-
-@cache
-def _multi_hue_tuple(name: str, n: int) -> tuple[str, ...]:
-    data = _candidate_data(name)
-    if len(data.hexes) < n:
-        raise RuntimeError(f"not enough candidate colors for {name!r} n={n}")
-
-    best: tuple[int, ...] | None = None
-    lo, hi = 0, len(data.thresholds) - 1
-    while lo <= hi:
-        mid = (lo + hi) // 2
-        threshold = data.thresholds[mid]
-        found = _first_ordered_clique(
-            _compatible_masks(data, threshold), threshold, n
-        )
-        if found is None:
-            hi = mid - 1
-        else:
-            best = found
-            lo = mid + 1
-    if best is None:  # pragma: no cover - n=1 is not routed here.
-        return (data.hexes[0],)
-    return tuple(data.hexes[i] for i in best)
-
-
 def _multi_hue(name: str, n: int) -> list[str]:
-    if n == 1:
-        data = _candidate_data(name)
-        return [data.hexes[len(data.hexes) // 2]]
-    return list(_multi_hue_tuple(name, n))
+    row = CMAPS_256[name]
+    return [row[index] for index in MULTI_HUE_DISCRETE_INDICES[name][n]]
 
 
 def _cyclic(name: str, n: int) -> list[str]:

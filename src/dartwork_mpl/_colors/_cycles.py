@@ -21,8 +21,11 @@ CYCLE_SPECS: dict[str, tuple[tuple[str, int], ...]] = {
         ("cyan", 8),
         ("rose", 8),
     ),
-    # Octave Print: 인쇄 8색 — Octave와 hue-parallel(6번 violet 일치, 8번 gray anchor).
-    # 명도 분산(전쌍 dL* >= 7.7), 공통-CVD dE00 10.4 · tritan 9.8 (BVM).
+    # "Octave Print" is a historical identifier for eight colors that are
+    # hue-parallel with Octave (slot 6 shares violet; slot 8 anchors gray). Its
+    # name does not guarantee behavior for a particular printer, paper, or
+    # conversion workflow. Validation-only diagnostics: pairwise dL* >= 7.7,
+    # common-CVD dE00 10.4, and BVM tritan 9.8.
     "octave_print": (
         ("blue", 5),
         ("orange", 8),

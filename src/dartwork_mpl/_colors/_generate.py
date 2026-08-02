@@ -1,26 +1,25 @@
-"""Recipe compiler — 스와치 솔버 + 연속(float) 공간 OKLab 등화 (스펙 §7).
+"""Recipe compiler — NeutralTone rendering + continuous OKLab equalization.
 
 등화는 반드시 float sRGB에서 한다: dense 경로를 hex로 평가하면 스텝당 dE가
 8-bit 양자화 오차에 묻혀 호장 적분이 노이즈에 지배된다(스펙 §9 프로토콜 1).
 """
 
-from __future__ import annotations
-
 import math
 from bisect import bisect_left
 from collections.abc import Callable
+from typing import TypeAlias
 
-from ._color import Color
-from ._metrics import de_ok_rgb, hex_from_rgb, lab_l_rgb
+from . import _conversion as conversion
+from . import _tone as tone
 from ._recipe import (
     FAMILIES,
     FAMILY_PARAMS,
     GRAY_C_PROFILE,
-    GRAY_FLOOR,
     GRAY_TINT_HUE,
-    L_TOP,
+    GRAY_TONE_FLOOR,
     SHAPE_Q,
     SHAPE_R,
+    TONE_TOP,
     FamilyParams,
 )
 
@@ -29,48 +28,26 @@ __all__ = [
     "compile_gray",
     "compile_palette",
     "equalize",
-    "gamut_max_chroma",
     "shape",
-    "solve_swatch_rgb",
     "swatch",
 ]
 
-Rgb = tuple[float, float, float]
+Rgb: TypeAlias = tuple[float, float, float]
 
 
-def solve_swatch_rgb(hue_deg: float, chroma: float, l_target: float) -> Rgb:
-    """OKLCH L 이진 탐색 — gamut-map된 float sRGB의 CIELAB L*가 타깃에 오도록."""
-    lo, hi = 0.0, 1.0
-    for _ in range(40):
-        mid = (lo + hi) / 2
-        if (
-            lab_l_rgb(Color.from_oklch(mid, chroma, hue_deg).to_rgb())
-            < l_target
-        ):
-            lo = mid
-        else:
-            hi = mid
-    return Color.from_oklch((lo + hi) / 2, chroma, hue_deg).to_rgb()
+def de_ok_rgb(first: Rgb, second: Rgb) -> float:
+    """Return the established 100-scaled Euclidean OKLab distance."""
+    return (
+        math.dist(
+            conversion._srgb_to_oklab(first), conversion._srgb_to_oklab(second)
+        )
+        * 100.0
+    )
 
 
-def gamut_max_chroma(hue_deg: float, l_target: float) -> float:
-    """해당 hue에서 CIELAB L* 타깃을 만족하는 최대 in-gamut OKLCH chroma (근사)."""
-    lo, hi = 0.0, 1.0
-    for _ in range(30):
-        mid = (lo + hi) / 2
-        if lab_l_rgb(Color.from_oklch(mid, 0.04, hue_deg).to_rgb()) < l_target:
-            lo = mid
-        else:
-            hi = mid
-    l_ok = (lo + hi) / 2
-    c_lo, c_hi = 0.0, 0.40
-    for _ in range(22):
-        c_mid = (c_lo + c_hi) / 2
-        if Color.from_oklch(l_ok, c_mid, hue_deg).in_gamut():
-            c_lo = c_mid
-        else:
-            c_hi = c_mid
-    return c_lo
+def hex_from_rgb(rgb: Rgb) -> str:
+    """Quantize one encoded sRGB triple with the canonical encoder."""
+    return conversion._rgb_to_hex(*rgb)
 
 
 def shape(t: float, tp: float, c0: float, cend: float) -> float:
@@ -85,12 +62,14 @@ def shape(t: float, tp: float, c0: float, cend: float) -> float:
     return float(1 - (1 - cend) * u**SHAPE_R)
 
 
-def swatch(p: FamilyParams, t: float) -> Rgb:
-    """A2(floor)·A3(채도)·A4(드리프트) 레시피 — t∈[0,1], 0=밝음 1=어두움."""
-    l_t = L_TOP + (p.floor - L_TOP) * t
+def swatch(p: FamilyParams, t: float, *, luminance_lock: bool = True) -> Rgb:
+    """Render one family recipe point, with zero as light and one as dark."""
+    tone_value = float(TONE_TOP + (p.tone_floor - TONE_TOP) * t)
     h = (p.h0 + p.dh * t**p.gamma) % 360
     c = p.cmax * shape(t, p.tp, p.c0, p.cend)
-    return solve_swatch_rgb(h, c, l_t)
+    return tone.render_oklch_at_tone(
+        tone=tone_value, chroma=c, hue=h, luminance_lock=luminance_lock
+    )
 
 
 def equalize(
@@ -140,24 +119,42 @@ def equalize(
     return row
 
 
-def compile_family(p: FamilyParams) -> list[str]:
-    return [hex_from_rgb(r) for r in equalize(lambda t: swatch(p, t), n=10)]
+def compile_family(
+    p: FamilyParams, *, luminance_lock: bool = True
+) -> list[str]:
+    """Compile one ten-stop family ladder through the selected tone policy."""
+    return [
+        hex_from_rgb(rgb)
+        for rgb in equalize(
+            lambda fraction: swatch(p, fraction, luminance_lock=luminance_lock),
+            n=10,
+        )
+    ]
 
 
-def compile_gray() -> list[str]:
-    """A6 — L* 균등 사다리 + 약한 쿨 틴트 (등화 불필요: L* 균등이 곧 dE 균등)."""
-    out = []
+def compile_gray(*, luminance_lock: bool = True) -> list[str]:
+    """Compile the evenly spaced, weakly cool NeutralTone ladder."""
+    out: list[str] = []
     for k in range(10):
-        l_t = L_TOP + (GRAY_FLOOR - L_TOP) * k / 9
+        tone_value = float(TONE_TOP + (GRAY_TONE_FLOOR - TONE_TOP) * k / 9)
         out.append(
             hex_from_rgb(
-                solve_swatch_rgb(GRAY_TINT_HUE, GRAY_C_PROFILE[k], l_t)
+                tone.render_oklch_at_tone(
+                    tone=tone_value,
+                    chroma=GRAY_C_PROFILE[k],
+                    hue=GRAY_TINT_HUE,
+                    luminance_lock=luminance_lock,
+                )
             )
         )
     return out
 
 
-def compile_palette() -> dict[str, list[str]]:
-    pal = {fam: compile_family(FAMILY_PARAMS[fam]) for fam in FAMILIES}
-    pal["gray"] = compile_gray()
+def compile_palette(*, luminance_lock: bool = True) -> dict[str, list[str]]:
+    """Compile all palette families with one explicit luminance-lock policy."""
+    pal = {
+        fam: compile_family(FAMILY_PARAMS[fam], luminance_lock=luminance_lock)
+        for fam in FAMILIES
+    }
+    pal["gray"] = compile_gray(luminance_lock=luminance_lock)
     return pal

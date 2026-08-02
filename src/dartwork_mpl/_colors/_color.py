@@ -16,30 +16,15 @@ from typing import Any
 import matplotlib.colors as mcolors
 import numpy as np
 
+from . import _conversion as conversion
+from . import _gamut as gamut
 from ._conversion import (
     _linear_srgb_to_oklab,
-    _linear_to_srgb,
-    _oklab_to_linear_srgb,
-    _oklab_to_oklch,
-    _oklch_to_oklab,
     _parse_hex,
     _rgb_to_hex,
     _srgb_to_linear,
 )
 from ._views import OklabView, OklchView, RgbView
-
-# Iterations for the binary chroma-reduction gamut search. ~C / 2**24
-# precision — far below 8-bit (1/255) quantization, so the boundary is
-# resolved exactly at hex precision while staying deterministic.
-_GAMUT_SEARCH_ITERS = 24
-
-
-def _linear_in_gamut(r: Any, g: Any, b: Any, tol: float = 1e-6) -> bool:
-    """Whether linear-sRGB channels all fall within ``[0, 1]`` (± ``tol``)."""
-    return all(
-        -tol <= float(np.asarray(ch).item()) <= 1.0 + tol for ch in (r, g, b)
-    )
-
 
 # ============================================================================
 # Color Class
@@ -264,9 +249,7 @@ class Color:
         # setter, which already rejects it.
         if C < 0:
             raise ValueError(f"from_oklch: C={C!r} must be >= 0")
-        # Convert degrees to radians for internal calculation
-        h_rad: float = math.radians(h)
-        _, a, b = _oklch_to_oklab(L, C, h_rad)
+        _, a, b = conversion._oklch_degrees_to_oklab(L, C, h)
         return cls._from_oklab(L, a, b)
 
     @classmethod
@@ -492,15 +475,7 @@ class Color:
         tuple[float, float, float]
             (L, C, h) OKLCH coordinates, where h is in degrees [0, 360).
         """
-        L: float
-        C: float
-        h_rad: float
-        L, C, h_rad = _oklab_to_oklch(self._L, self._a, self._b)
-        # Convert radians to degrees
-        h_deg: float = math.degrees(h_rad)
-        # Normalize to [0, 360)
-        h_deg = h_deg % 360.0
-        return (L, C, h_deg)
+        return conversion._oklab_to_oklch_degrees(self._L, self._a, self._b)
 
     def to_rgb(self) -> tuple[float, float, float]:
         """
@@ -524,47 +499,7 @@ class Color:
         alone cannot represent). Use :meth:`in_gamut` to detect whether
         a color required mapping.
         """
-        # Convert OKLab to linear RGB
-        r_linear: float
-        g_linear: float
-        b_linear: float
-        r_linear, g_linear, b_linear = _oklab_to_linear_srgb(
-            self._L, self._a, self._b
-        )
-
-        if not _linear_in_gamut(r_linear, g_linear, b_linear):
-            # Out of sRGB: reduce chroma holding L and h, binary-searching
-            # the largest in-gamut chroma along the requested hue line so
-            # the rendered color preserves lightness and hue.
-            L, chroma, h_rad = _oklab_to_oklch(self._L, self._a, self._b)
-            lo, hi = 0.0, chroma
-            for _ in range(_GAMUT_SEARCH_ITERS):
-                mid = (lo + hi) / 2.0
-                _, a_mid, b_mid = _oklch_to_oklab(L, mid, h_rad)
-                if _linear_in_gamut(*_oklab_to_linear_srgb(L, a_mid, b_mid)):
-                    lo = mid
-                else:
-                    hi = mid
-            _, a_g, b_g = _oklch_to_oklab(L, lo, h_rad)
-            r_linear, g_linear, b_linear = _oklab_to_linear_srgb(L, a_g, b_g)
-
-        # Final clamp absorbs sub-tolerance boundary residual (and clips
-        # an achromatic L outside [0, 1] that chroma reduction can't fix).
-        r_linear_clamped: float = max(0.0, min(1.0, r_linear))
-        g_linear_clamped: float = max(0.0, min(1.0, g_linear))
-        b_linear_clamped: float = max(0.0, min(1.0, b_linear))
-
-        # Convert linear RGB to sRGB
-        r: float | np.ndarray[Any, Any] = _linear_to_srgb(r_linear_clamped)
-        g: float | np.ndarray[Any, Any] = _linear_to_srgb(g_linear_clamped)
-        b: float | np.ndarray[Any, Any] = _linear_to_srgb(b_linear_clamped)
-
-        # Convert numpy scalars/arrays to Python floats
-        r_float: float = float(np.asarray(r).item())
-        g_float: float = float(np.asarray(g).item())
-        b_float: float = float(np.asarray(b).item())
-
-        return (r_float, g_float, b_float)
+        return gamut._map_oklab_to_srgb(self._L, self._a, self._b)
 
     def in_gamut(self, tol: float = 1e-6) -> bool:
         """
@@ -586,6 +521,13 @@ class Color:
         -------
         bool
 
+        Raises
+        ------
+        TypeError
+            If ``tol`` is not a real number or is a boolean.
+        ValueError
+            If ``tol`` is negative or non-finite.
+
         Examples
         --------
         >>> import dartwork_mpl as dm
@@ -594,10 +536,8 @@ class Color:
         >>> dm.Color.from_oklch(0.7, 0.40, 30).in_gamut()
         False
         """
-        r_linear, g_linear, b_linear = _oklab_to_linear_srgb(
-            self._L, self._a, self._b
-        )
-        return _linear_in_gamut(r_linear, g_linear, b_linear, tol)
+        linear_rgb = conversion._oklab_to_linear_srgb(self._L, self._a, self._b)
+        return gamut.linear_srgb_in_gamut(linear_rgb, tolerance=tol)
 
     def to_hex(self) -> str:
         """
@@ -695,7 +635,8 @@ def cspace(
         Total number of colors to generate (including start and end).
     space : str, optional
         Color space for interpolation: 'oklch' (default), 'oklab', or 'rgb'.
-        'oklch' produces the most perceptually uniform results.
+        'oklch' follows a perceptually oriented cylindrical path; no mode
+        guarantees uniformly perceived steps.
 
     Returns
     -------

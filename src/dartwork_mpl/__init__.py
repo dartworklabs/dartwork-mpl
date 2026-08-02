@@ -4,6 +4,11 @@ This package provides enhanced styling, color management, and various
 utility functions for Matplotlib visualizations.
 """
 
+from ._build_entry import run_color_build_if_requested as _run_color_build
+
+_run_color_build(__name__, __file__)
+del _run_color_build
+
 # ruff: noqa: E402
 
 # Underscore-aliased so implementation imports don't leak into the

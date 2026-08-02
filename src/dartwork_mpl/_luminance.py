@@ -13,22 +13,34 @@ RGB = Sequence[float]
 
 def _linearized(channel: float) -> float:
     """Convert an sRGB channel in 0..1 to linear light."""
-    return (
-        channel / 12.92
-        if channel <= 0.03928
-        else ((channel + 0.055) / 1.055) ** 2.4
-    )
+    # Lazy module import avoids a cold-import cycle through
+    # top-level package -> validate -> _luminance -> _colors -> _contrast.
+    # Attribute lookup stays dynamic so delegation remains observable.
+    from ._colors import _conversion as conversion
+
+    return float(conversion._srgb_to_linear(channel))
+
+
+def _wcag_relative_luminance(rgb: RGB) -> float:
+    """Return WCAG relative luminance using its rounded coefficients."""
+    red = _linearized(float(rgb[0]))
+    green = _linearized(float(rgb[1]))
+    blue = _linearized(float(rgb[2]))
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue
 
 
 def _rel_lum(rgb: RGB) -> float:
-    """Return WCAG relative luminance for an sRGB color."""
-    r = _linearized(float(rgb[0]))
-    g = _linearized(float(rgb[1]))
-    b = _linearized(float(rgb[2]))
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    """Return WCAG luminance through the historical compatibility name."""
+    return _wcag_relative_luminance(rgb)
 
 
 def _contrast_ratio(foreground: RGB, background: RGB) -> float:
     """Return the WCAG contrast ratio between two sRGB colors."""
-    hi, lo = sorted((_rel_lum(foreground), _rel_lum(background)), reverse=True)
+    hi, lo = sorted(
+        (
+            _wcag_relative_luminance(foreground),
+            _wcag_relative_luminance(background),
+        ),
+        reverse=True,
+    )
     return (hi + 0.05) / (lo + 0.05)

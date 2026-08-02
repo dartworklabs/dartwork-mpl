@@ -21,11 +21,11 @@ legend.labelcolor:  "#cccccc"
 
 savefig.facecolor:  "#1e1e1e"
 
-# categorical cycle — dark-background-gated generated families. The white
-# v5 cycle is contrast-gated against white, so it is void on this dark
-# facecolor; these seven steps are the bg_L-aware version — each legible on
-# #1e1e1e (WCAG contrast >= 3.8) and mutually distinct under normal + deutan +
-# protan + tritan simulation (worst-case min CIEDE2000 11.0, above the 10 gate
-# and on par with Okabe-Ito 11.1). Same hue order as the light cycle; see
-# tests/test_theme_dark_cycle.py for the live gate.
+# categorical cycle — separately gated for the #1e1e1e background. Each of
+# these seven family steps has WCAG contrast >= 3.8; WCAG contrast luminance is
+# distinct from modeled relative CIE Y (`relative_y`) calculated from nominal
+# D65 sRGB. Neither modeled quantity measures a display or print process. Pair
+# separation is validation-only ΔE00 under normal vision, Machado (2009)
+# protan/deutan, and BVM (1997) tritan simulation (worst-case minimum 11.0).
+# The hue order matches the light cycle; see tests/test_theme_dark_cycle.py.
 axes.prop_cycle: cycler('color', ['dc.blue3', 'dc.orange3', 'dc.green9', 'dc.pink6', 'dc.amber6', 'dc.violet5', 'dc.cyan6'])

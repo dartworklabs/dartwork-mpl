@@ -1,5 +1,9 @@
 # dartwork-mpl Policy
 
+Modeled relative CIE Y (`relative_y`) is calculated from nominal D65 sRGB; it
+is not a measurement of a particular display, perceived brightness, or OKLab
+`L`.
+
 Rules in this document are split into two tiers:
 
 - **Enforced** — there is a matching entry in
@@ -90,6 +94,27 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
   `jet-cmap`). Use perceptually uniform options: `viridis`, `magma`,
   `cividis`, `plasma`, `inferno`. dartwork-mpl also registers
   domain-specific colormaps — see `dm.list_colors()` for the current set.
+
+### Color construction and validation
+
+- The dartwork core catalog has one construction model: OKLab L for
+  construction lightness and OKLCH C/h for chroma and hue. ΔEOK arc-length
+  spacing applies to the 19 chromatic family ladders and to sequential or
+  closed twilight continuous paths that declare it. Discrete gray, diverging
+  maps, and `hue` keep their documented topology-specific placement rules.
+  These coordinates support useful perceptual regularity; they do not promise
+  perfectly uniform appearance for every observer, medium, or surrounding
+  context.
+- Modeled relative Y is an optional **output lock**, not an authoring
+  coordinate. The shipped catalog enables it where required to keep exact hex
+  output, compatibility, and ordered/cyclic topology unchanged.
+- A direct OKLCH rule without the Y lock is valid for a new, intentionally
+  incompatible palette. Do not apply it to the current catalog unless its
+  exact-output contract is explicitly retired.
+- CIELAB/CIEDE2000 and CVD simulation are model-specific validation
+  diagnostics only; they do not choose construction coordinates. WCAG
+  contrast luminance is a separate pairwise text-contrast calculation and
+  must not be confused with the catalog's modeled-relative-Y lock.
 
 ## Font and weight
 

@@ -1,13 +1,14 @@
-"""Perceptual metric kernel — CIELAB L*, OKLab dE, CIEDE2000, Machado CVD.
+"""Validation-only metrics: private CIELAB/CIEDE2000 and CVD simulation.
 
-스펙 §6 지표 3원화: 등화=OKLab dE, 접근성 게이트=CIEDE2000, 밝기·그레이=CIELAB L*.
-모든 함수는 float sRGB(0..1 tuple)를 1급 입력으로 받는다 — 등화 파이프라인이
-8-bit hex 양자화 노이즈에 오염되지 않게 하기 위함(스펙 §9 공통 프로토콜 1).
+Gamma, hex, and OKLab math delegate to ``_conversion``. The legacy raw XYZ
+matrix remains isolated here solely for CIELAB/CIEDE2000 compatibility.
 """
 
 from __future__ import annotations
 
 import math
+
+from . import _conversion as conversion
 
 __all__ = [
     "cvd_rgb",
@@ -29,11 +30,10 @@ _M_RGB2XYZ = (
 )
 _WHITE = (0.95047, 1.0, 1.08883)
 
-# Machado, Oliveira & Fernandes (2009), severity 1.0 — protan/deutan only.
-# Tritan uses Brettel-Viénot-Mollon (1997) instead (see _BVM_TRITAN_* below):
-# Machado's tritan matrix is a fitted extrapolation and inaccurate for the rare
-# S-cone deficiency (스펙 §12). protan/deutan stay Machado — accurate for the
-# common red-green deficiencies and unchanged from the v5 gate baseline.
+# Source-pinned Machado severity-1 matrices are used for the catalog's
+# protan/deutan regression diagnostics. Tritan uses the project-adapted BVM
+# matrices below. These choices preserve the named v5 validation protocol;
+# neither path establishes correctness for every observer.
 _MACHADO = {
     "protan": (
         (0.152286, 1.052583, -0.204868),
@@ -47,12 +47,12 @@ _MACHADO = {
     ),
 }
 
-# Brettel, Viénot & Mollon (1997), tritanopia — the two-half-plane dichromat
-# projection (the physiologically-grounded model; §12). Values are the
-# linear-sRGB combined matrices from libDaltonLens (github.com/DaltonLens),
-# applied in the same linear space as the Machado path. Verified correct: each
-# matrix is an idempotent projection (M² = M) and the two agree on the
-# separation plane, exactly as BVM's construction requires.
+# Project-adapted BVM matrices implement a two-half-plane tritan projection.
+# The linear-sRGB combined values originate from libDaltonLens and run in the
+# same linear space as the Machado path. Tests verify algebraic projection
+# invariants: each matrix is approximately idempotent and both agree on the
+# separation plane. Those invariants do not verify observer or model
+# correctness.
 _BVM_TRITAN_SEP = (0.03901, -0.02788, -0.01113)
 _BVM_TRITAN_HI = (  # dot(rgb_linear, SEP) >= 0
     (1.01277, 0.13548, -0.14826),
@@ -67,28 +67,28 @@ _BVM_TRITAN_LO = (  # dot(rgb_linear, SEP) < 0
 
 
 def _lin(c: float) -> float:
-    return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+    """Delegate sRGB gamma decoding to the canonical conversion kernel."""
+    return float(conversion._srgb_to_linear(c))
 
 
 def _delin(c: float) -> float:
-    c = min(max(c, 0.0), 1.0)
-    return 12.92 * c if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055
+    """Clamp a CVD channel, then delegate canonical sRGB gamma encoding."""
+    clamped = min(max(c, 0.0), 1.0)
+    return float(conversion._linear_to_srgb(clamped))
 
 
 def rgb_from_hex(hexstr: str) -> tuple[float, float, float]:
-    h = hexstr.lstrip("#")
-    if len(h) == 3:
-        h = "".join(ch * 2 for ch in h)
-    return tuple(int(h[i : i + 2], 16) / 255 for i in (0, 2, 4))  # type: ignore[return-value]
+    """Parse a supported hex spelling through the canonical strict parser."""
+    return conversion._parse_hex(hexstr)
 
 
 def hex_from_rgb(rgb: tuple[float, float, float]) -> str:
-    return "#" + "".join(
-        f"{round(min(max(v, 0.0), 1.0) * 255):02x}" for v in rgb
-    )
+    """Quantize an sRGB triple through the canonical strict encoder."""
+    return conversion._rgb_to_hex(*rgb)
 
 
 def lab_from_rgb(rgb: tuple[float, float, float]) -> tuple[float, float, float]:
+    """Convert encoded sRGB to validation-only legacy CIELAB."""
     lin = [_lin(c) for c in rgb]
     xyz = [
         sum(m * v for m, v in zip(row, lin, strict=True)) for row in _M_RGB2XYZ
@@ -103,26 +103,20 @@ def lab_from_rgb(rgb: tuple[float, float, float]) -> tuple[float, float, float]:
 
 
 def lab_l_rgb(rgb: tuple[float, float, float]) -> float:
+    """Return legacy CIELAB L* for an encoded sRGB triple."""
     return lab_from_rgb(rgb)[0]
 
 
 def lab_l_hex(hexstr: str) -> float:
+    """Return legacy CIELAB L* for a supported hex spelling."""
     return lab_l_rgb(rgb_from_hex(hexstr))
 
 
 def oklab_from_rgb(
     rgb: tuple[float, float, float],
 ) -> tuple[float, float, float]:
-    r, g, b = (_lin(c) for c in rgb)
-    lm = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
-    mm = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
-    sm = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
-    lm, mm, sm = lm ** (1 / 3), mm ** (1 / 3), sm ** (1 / 3)
-    return (
-        0.2104542553 * lm + 0.7936177850 * mm - 0.0040720468 * sm,
-        1.9779984951 * lm - 2.4285922050 * mm + 0.4505937099 * sm,
-        0.0259040371 * lm + 0.7827717662 * mm - 0.8086757660 * sm,
-    )
+    """Delegate encoded-sRGB to OKLab conversion to the canonical kernel."""
+    return conversion._srgb_to_oklab(rgb)
 
 
 def de_ok_rgb(
@@ -135,9 +129,30 @@ def de_ok_rgb(
 def de2000_rgb(
     rgb1: tuple[float, float, float], rgb2: tuple[float, float, float]
 ) -> float:
-    """CIEDE2000 (접근성 게이트 지표 — 스펙 §6)."""
-    L1, a1, b1 = lab_from_rgb(rgb1)
-    L2, a2, b2 = lab_from_rgb(rgb2)
+    """Return a validation-only color-difference regression metric.
+
+    CIEDE2000 is not an accessibility gate or observer guarantee.
+    """
+    return _de2000_lab(lab_from_rgb(rgb1), lab_from_rgb(rgb2))
+
+
+def _de2000_lab(
+    first: tuple[float, float, float], second: tuple[float, float, float]
+) -> float:
+    """Return CIEDE2000 for two validation-only CIELAB triples.
+
+    Parameters
+    ----------
+    first, second : tuple[float, float, float]
+        CIELAB ``(L*, a*, b*)`` coordinates.
+
+    Returns
+    -------
+    float
+        CIEDE2000 color difference with unit weighting factors.
+    """
+    L1, a1, b1 = first
+    L2, a2, b2 = second
     C1, C2 = math.hypot(a1, b1), math.hypot(a2, b2)
     Cb = (C1 + C2) / 2
     G = 0.5 * (1 - math.sqrt(Cb**7 / (Cb**7 + 25**7)))
@@ -183,18 +198,17 @@ def de2000_rgb(
 
 
 def de2000_hex(h1: str, h2: str) -> float:
+    """Return CIEDE2000 between two supported hex spellings."""
     return de2000_rgb(rgb_from_hex(h1), rgb_from_hex(h2))
 
 
 def cvd_rgb(
     rgb: tuple[float, float, float], kind: str
 ) -> tuple[float, float, float]:
-    """CVD 시뮬레이션 (protan/deutan/tritan) 또는 등L* 그레이 변환."""
+    """Simulate CVD or encode a modeled-relative-Y-preserving neutral gray."""
     if kind == "gray":
-        l_star = lab_l_rgb(rgb)
-        fy = (l_star + 16) / 116
-        y = fy**3 if fy**3 > 216 / 24389 else (116 * fy - 16) * 27 / 24389
-        v = _delin(y)
+        relative_y = conversion.relative_y_srgb_d65(rgb)
+        v = _delin(relative_y)
         return (v, v, v)
     lin = [_lin(c) for c in rgb]
     if kind == "tritan":
