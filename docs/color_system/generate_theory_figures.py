@@ -19,7 +19,10 @@ assets referenced by ``docs/color_system/design-rationale.md``). Relative
 from __future__ import annotations
 
 import argparse
+import base64
+import io
 import math
+import re
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -1127,6 +1130,52 @@ def _svg_inventory(directory: Path) -> dict[str, bytes]:
     }
 
 
+# Two of the ten figures rasterise their gradients, so matplotlib embeds them
+# as base64 PNG; the other eight are pure vector and reproduce byte-identically
+# anywhere. PNG is zlib-compressed and its pixels come from antialiased float
+# math, so two machines can render the same picture into different bytes. This
+# check exists to ask whether the committed asset is still the picture the
+# generator produces, not whether two machines agree on a compressed stream.
+# Matplotlib wraps the payload across lines, so whitespace is part of it.
+_DATA_URI = re.compile(rb"data:image/png;base64,([A-Za-z0-9+/=\s]+?)\"")
+
+# One 8-bit level. A real change to a figure moves pixels far more than this;
+# cross-machine antialiasing noise does not.
+_PIXEL_TOLERANCE = 1
+
+
+def _split_rasters(svg: bytes) -> tuple[bytes, list[np.ndarray]]:
+    """Return the SVG with image payloads elided, plus their decoded pixels."""
+    from PIL import Image
+
+    images: list[np.ndarray] = []
+
+    def collect(match: re.Match[bytes]) -> bytes:
+        payload = base64.b64decode(b"".join(match.group(1).split()))
+        with Image.open(io.BytesIO(payload)) as opened:
+            images.append(np.asarray(opened.convert("RGBA"), dtype=np.int16))
+        return b'data:image/png;base64,<elided>"'
+
+    return _DATA_URI.sub(collect, svg), images
+
+
+def _svg_matches(tracked: bytes, generated: bytes) -> bool:
+    """Compare two theory SVGs by content rather than by compressed bytes."""
+    if tracked == generated:
+        return True
+    tracked_text, tracked_images = _split_rasters(tracked)
+    generated_text, generated_images = _split_rasters(generated)
+    if tracked_text != generated_text:
+        return False
+    if len(tracked_images) != len(generated_images):
+        return False
+    return all(
+        left.shape == right.shape
+        and int(np.abs(left - right).max(initial=0)) <= _PIXEL_TOLERANCE
+        for left, right in zip(tracked_images, generated_images, strict=True)
+    )
+
+
 def check(output_dir: Path) -> int:
     """Render hermetically and compare every expected SVG without writing."""
     with TemporaryDirectory(prefix="dartwork-mpl-theory-") as temporary:
@@ -1144,7 +1193,7 @@ def check(output_dir: Path) -> int:
     stale = sorted(
         name
         for name in expected_names & tracked_names & generated_names
-        if tracked[name] != generated[name]
+        if not _svg_matches(tracked[name], generated[name])
     )
     if missing or extra or incomplete or stale:
         for label, names in (
