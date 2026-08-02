@@ -1,6 +1,7 @@
 """Pin the theory-figure generator and its tracked output contract."""
 
 import ast
+import importlib.util
 import os
 import re
 import subprocess
@@ -15,6 +16,18 @@ _ROOT = Path(__file__).resolve().parents[1]
 _GENERATOR = _ROOT / "docs" / "color_system" / "generate_theory_figures.py"
 _THEORY = _GENERATOR.parent / "theory_figures"
 _ASSET_SUFFIXES = frozenset({".html", ".svg"})
+
+
+def _svg_mismatch(tracked: bytes, generated: bytes) -> str | None:
+    """Borrow the generator's own content comparison for tracked SVGs."""
+    spec = importlib.util.spec_from_file_location(
+        "_theory_generator_for_tests", _GENERATOR
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    result: str | None = module._svg_mismatch(tracked, generated)
+    return result
 
 
 def _theory_assets() -> tuple[Path, ...]:
@@ -351,7 +364,22 @@ def test_theory_generator_renders_every_asset_byte_identically(
         sorted(path for path in output_dir.iterdir() if path.is_file())
     )
     generated = {path.name: path.read_bytes() for path in generated_paths}
-    assert generated == expected
+    assert set(generated) == set(expected)
+
+    # Compared with the generator's own content comparison rather than by
+    # bytes. Two of the ten figures embed a raster, and matplotlib derives that
+    # <image> element's id from the compressed PNG -- so the id, and the
+    # compressed stream behind it, differ between the machine that committed
+    # the asset and the machine re-rendering it. Everything outside the image
+    # payload is still matched exactly, and the pixels to within one 8-bit
+    # level.
+    mismatches = {
+        name: reason
+        for name in sorted(expected)
+        if (reason := _svg_mismatch(expected[name], generated[name]))
+        is not None
+    }
+    assert not mismatches, mismatches
 
 
 def test_theory_generator_check_is_nonwriting_and_fresh(tmp_path: Path) -> None:
