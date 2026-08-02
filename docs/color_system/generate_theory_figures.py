@@ -1172,15 +1172,15 @@ def _svg_mismatch(tracked: bytes, generated: bytes) -> str | None:
     tracked_text, tracked_images = _split_rasters(tracked)
     generated_text, generated_images = _split_rasters(generated)
     if tracked_text != generated_text:
-        for index, (left, right) in enumerate(
+        for index, (tracked_byte, generated_byte) in enumerate(
             zip(tracked_text, generated_text, strict=False)
         ):
-            if left != right:
-                excerpt = tracked_text[max(0, index - 40) : index + 40]
+            if tracked_byte != generated_byte:
+                window = slice(max(0, index - 40), index + 40)
                 return (
                     f"markup differs at byte {index} of "
                     f"{len(tracked_text)}/{len(generated_text)}: "
-                    f"{excerpt!r} -> {generated_text[max(0, index - 40) : index + 40]!r}"
+                    f"{tracked_text[window]!r} -> {generated_text[window]!r}"
                 )
         return (
             f"markup length differs: {len(tracked_text)} vs "
