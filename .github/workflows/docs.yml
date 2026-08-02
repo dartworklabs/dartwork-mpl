@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     # Pin the docs build to a single modern interpreter (see ci.yml docs job):
     # `uv sync` otherwise floats to the requires-python floor (3.10), whose
     # gallery execution hit an environment-specific failure 3.11+ does not.
@@ -52,9 +52,11 @@ jobs:
       # The diagrams PoC page (docs/internals/diagrams_poc.md) renders a
       # sphinx.ext.graphviz directive (auto-extracted module dep graph).
       # Without the `dot` binary the build aborts with "graphviz_dot
-      # executable not found". Mirrors the apt-get step in ci.yml.
-      - name: Install Graphviz (dot binary for sphinx.ext.graphviz)
-        run: sudo apt-get update && sudo apt-get install -y graphviz
+      # executable not found". Mirrors the verification step in ci.yml.
+      - name: Verify Graphviz (dot binary for sphinx.ext.graphviz)
+        # ml-main 러너에 미리 설치돼 있다. 러너에는 passwordless sudo 가
+        # 없으므로 설치 대신 존재만 확인하고, 없으면 즉시 실패시킨다.
+        run: dot -V
 
       - name: Verify packaged color authorities
         run: |
@@ -110,7 +112,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     needs: build
     steps:
       - name: Deploy to GitHub Pages

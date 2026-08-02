@@ -84,10 +84,25 @@ def _facecolor_rows(facecolors: object) -> Iterator[object]:
 def check_grayscale_safety(
     fig: Figure, _renderer: RendererBase
 ) -> list[VisualWarning]:
-    """Report source colors close under the project's modeled-Y heuristic."""
-    colors: dict[str, _RGB] = {}
+    """Report source colors close under the project's modeled-Y heuristic.
+
+    Colors are compared within each Axes, not across the figure. Two series
+    only collapse into each other where a reader compares them, and separate
+    panels are read separately: a price panel's moving average and a multiple
+    panel's series can sit at the same luminance without either becoming
+    harder to identify. Pooling the whole figure reported those pairs on every
+    multi-panel chart, which is noise that trains the warning away.
+    """
+    # Resolve the canonical color kernel lazily.  A module-level import would
+    # reintroduce the cold-import cycle through ``validate`` and ``_colors``.
+    from ..._colors._conversion import _srgb_to_oklab, relative_y_srgb_d65
+
+    collisions: list[_Collision] = []
+    seen: set[tuple[str, str]] = set()
 
     for ax in fig.axes:
+        colors: dict[str, _RGB] = {}
+
         for line in ax.lines:
             if line.get_visible():
                 _add_color(colors, line.get_color(), line.get_alpha())
@@ -102,28 +117,30 @@ def check_grayscale_safety(
             for facecolor in _facecolor_rows(collection.get_facecolor()):
                 _add_color(colors, facecolor, collection.get_alpha())
 
-    if len(colors) < 2:
-        return []
+        if len(colors) < 2:
+            continue
 
-    # Resolve the canonical color kernel lazily.  A module-level import would
-    # reintroduce the cold-import cycle through ``validate`` and ``_colors``.
-    from ..._colors._conversion import _srgb_to_oklab, relative_y_srgb_d65
-
-    collisions: list[_Collision] = []
-    relative_y = {
-        hex_color: relative_y_srgb_d65(rgb) for hex_color, rgb in colors.items()
-    }
-    oklab = {
-        hex_color: _srgb_to_oklab(rgb) for hex_color, rgb in colors.items()
-    }
-    # Deprecated compatibility value: keep using WCAG coefficients rather
-    # than silently reinterpreting the public ``delta_l`` detail key.
-    wcag_luminance = {
-        hex_color: _rel_lum(rgb) for hex_color, rgb in colors.items()
-    }
-    for first, second in combinations(colors.keys(), 2):
-        delta_y = abs(relative_y[first] - relative_y[second])
-        if delta_y < _DELTA_Y:
+        relative_y = {
+            hex_color: relative_y_srgb_d65(rgb)
+            for hex_color, rgb in colors.items()
+        }
+        oklab = {
+            hex_color: _srgb_to_oklab(rgb) for hex_color, rgb in colors.items()
+        }
+        # Deprecated compatibility value: keep using WCAG coefficients rather
+        # than silently reinterpreting the public ``delta_l`` detail key.
+        wcag_luminance = {
+            hex_color: _rel_lum(rgb) for hex_color, rgb in colors.items()
+        }
+        for first, second in combinations(colors.keys(), 2):
+            delta_y = abs(relative_y[first] - relative_y[second])
+            if delta_y >= _DELTA_Y:
+                continue
+            pair = (first, second) if first <= second else (second, first)
+            if pair in seen:
+                # The same clash repeated across panels is one problem to fix.
+                continue
+            seen.add(pair)
             collisions.append(
                 {
                     "colors": (first, second),

@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>dartwork-mpl Logo & Typography Candidates</title>
+    <style>
+      :root {
+        /* Light Theme Tokens */
+        --bg-page: #ffffff;
+        --bg-panel: #fcfcfd;
+        --bg-hover: rgba(0, 8, 60, 0.05);
+        --text-strong: #1c2024;
+        --text-muted: #60646c;
+        --text-faint: #8b8d98;
+        --accent-9: #12a594;
+        --accent-10: #0d9b8a;
+        --accent-11: #008573;
+        --border-faint: rgba(2, 8, 38, 0.09);
+        --border: #cdced6;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 10px 30px rgba(0, 0, 0, 0.03);
+        --font-sys: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
+      }
+
+      html.dark {
+        /* Dark Theme Tokens */
+        --bg-page: #0c0c0e;
+        --bg-panel: #111113;
+        --bg-hover: rgba(244, 246, 248, 0.075);
+        --text-strong: #edeef0;
+        --text-muted: #b0b4ba;
+        --text-faint: #777b84;
+        --accent-9: #12a594;
+        --accent-10: #25c2ad;
+        --accent-11: #76dac3;
+        --border-faint: rgba(229, 247, 251, 0.1);
+        --border: #43484e;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      body {
+        font-family: var(--font-sys);
+        background-color: var(--bg-page);
+        color: var(--text-strong);
+        margin: 0;
+        padding: 0;
+        transition: background-color 0.2s ease, color 0.2s ease;
+      }
+
+      header.preview-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background-color: color-mix(in srgb, var(--bg-page) 80%, transparent);
+        backdrop-filter: saturate(180%) blur(12px);
+        -webkit-backdrop-filter: saturate(180%) blur(12px);
+        border-bottom: 1px solid var(--border-faint);
+        padding: 16px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .header-title h1 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .header-title p {
+        margin: 4px 0 0;
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .btn {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border);
+        color: var(--text-strong);
+        padding: 8px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 13px;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+      }
+
+      .btn:hover {
+        background-color: var(--bg-hover);
+        border-color: var(--accent-9);
+      }
+
+      .size-control {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+
+      .container {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 40px 24px;
+      }
+
+      .section-title {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin-top: 40px;
+        margin-bottom: 8px;
+        border-bottom: 1px solid var(--border-faint);
+        padding-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .section-desc {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin-bottom: 28px;
+        margin-top: 0;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        gap: 24px;
+      }
+
+      .card {
+        background-color: var(--bg-panel);
+        border: 1px solid var(--border-faint);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card-header-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--accent-11);
+        background-color: color-mix(in srgb, var(--accent-9) 12%, transparent);
+        padding: 3px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .card h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        padding-right: 60px;
+      }
+
+      .card p.desc {
+        margin: -12px 0 8px;
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.45;
+        height: 54px;
+        overflow: hidden;
+      }
+
+      /* Logo Preview Area */
+      .logo-display {
+        border: 1px dashed var(--border);
+        background-color: var(--bg-page);
+        border-radius: 8px;
+        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        position: relative;
+      }
+
+      /* Header Mockup */
+      .header-mockup {
+        border: 1px solid var(--border-faint);
+        background-color: var(--bg-page);
+        border-radius: 8px;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 13px;
+      }
+
+      .mock-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .mock-nav {
+        display: flex;
+        gap: 12px;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .mock-nav span {
+        opacity: 0.6;
+      }
+      .mock-nav span.active {
+        opacity: 1;
+        color: var(--text-strong);
+        border-bottom: 2px solid var(--accent-9);
+        padding-bottom: 2px;
+      }
+
+      .mock-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-muted);
+      }
+
+      .svg-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.15s ease;
+      }
+
+      .svg-wrap svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Dark/Light mode color overrides within SVGs via CSS variables */
+      .logo-svg {
+        --svg-text: var(--text-strong);
+        --svg-text-muted: var(--text-muted);
+        --svg-accent: var(--accent-9);
+        --svg-accent-dark: var(--accent-11);
+        --svg-grid: var(--border);
+        --svg-grid-faint: var(--border-faint);
+        --svg-bg: var(--bg-page);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="preview-header">
+      <div class="header-title">
+        <h1>dartwork-mpl docs 브랜드 로고 1차 후보 시안 (Shield 결합)</h1>
+        <p>'Shield' 엠블럼과 선호 타이포 3종(classic, point, mono) 결합 후보 아카이브</p>
+      </div>
+      <div class="controls">
+        <div class="size-control">
+          <span>크기 조절:</span>
+          <input type="range" id="sizeSlider" min="20" max="64" value="28" oninput="updateLogoSize(this.value)" />
+          <span id="sizeValue">28px</span>
+        </div>
+        <a href="logo_new_explorations.html" class="btn" style="text-decoration: none; border-color: var(--accent-9); color: var(--accent-9); font-weight: 600;">Round 7 Explorations →</a>
+        <a href="logo_pocs.html" class="btn" style="text-decoration: none;">Original Showcase (C1-C9)</a>
+        <button class="btn" id="themeToggle" onclick="toggleTheme()">Dark Mode 전환</button>
+      </div>
+    </header>
+
+    <div class="container">
+      <h2 class="section-title" style="margin-top: 20px;">🛡️ Shield 엠블럼 후보군 (1차 조율 완료)</h2>
+      <p class="section-desc">세 개의 평행사변형 레이어가 정밀하게 중첩되어 구조적 깊이감을 주는 Shield 심볼과 결합된 최종 시안 3선입니다.</p>
+
+      <div class="grid">
+        <!-- Option 1: Shield + classic -->
+        <div class="card" style="border: 1px solid var(--accent-9); box-shadow: 0 0 15px rgba(18, 165, 148, 0.15);">
+          <div class="card-header-badge" style="background-color: var(--accent-9); color: white;">Option 1. classic</div>
+          <h3>Shield + classic</h3>
+          <p class="desc">정렬된 sans-serif 폰트에 두께 대조를 부여한 'classic' 타이포를 배치하여 정갈하고 세련된 완성형 대칭을 만듭니다. 가장 추천되는 표준 구성입니다.</p>
+          <div class="logo-display">
+            <div class="svg-wrap" style="height: 28px;">
+              <svg class="logo-svg" height="100%" viewBox="0 0 250 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 8 L22 8 L18 22 L4 22 Z" fill="var(--svg-text-muted)" opacity="0.2" />
+                <path d="M14 14 L28 14 L24 28 L10 28 Z" fill="var(--svg-accent)" opacity="0.8" />
+                <path d="M20 20 L34 20 L30 34 L16 34 Z" stroke="var(--svg-text)" stroke-width="1.2" fill="none" opacity="0.3" />
+                <text x="44" y="27" font-family="Inter, system-ui, sans-serif" font-size="22" letter-spacing="-0.03em">
+                  <tspan font-weight="600" fill="var(--svg-text)">dartwork</tspan><tspan font-weight="300" fill="var(--svg-accent)">-mpl</tspan>
+                </text>
+              </svg>
+            </div>
+          </div>
+          <div class="header-mockup">
+            <div class="mock-left">
+              <div class="svg-wrap-mock" style="height: 20px;">
+                <svg class="logo-svg" height="100%" viewBox="0 0 250 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 8 L22 8 L18 22 L4 22 Z" fill="var(--svg-text-muted)" opacity="0.2" />
+                  <path d="M14 14 L28 14 L24 28 L10 28 Z" fill="var(--svg-accent)" opacity="0.8" />
+                  <path d="M20 20 L34 20 L30 34 L16 34 Z" stroke="var(--svg-text)" stroke-width="1.2" fill="none" opacity="0.3" />
+                  <text x="44" y="27" font-family="Inter, system-ui, sans-serif" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="600" fill="var(--svg-text)">dartwork</tspan><tspan font-weight="300" fill="var(--svg-accent)">-mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Option 2: Shield + point -->
+        <div class="card" style="border: 1px solid var(--accent-9); box-shadow: 0 0 15px rgba(18, 165, 148, 0.15);">
+          <div class="card-header-badge" style="background-color: var(--accent-9); color: white;">Option 2. point</div>
+          <h3>Shield + point</h3>
+          <p class="desc">도트(.)를 틸 마커로 강조하여 `dartwork.mpl` 파일 시스템처럼 한눈에 들어오는 결합입니다. 정밀 차트 마커 포인트의 감성을 더해줍니다.</p>
+          <div class="logo-display">
+            <div class="svg-wrap" style="height: 28px;">
+              <svg class="logo-svg" height="100%" viewBox="0 0 250 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 8 L22 8 L18 22 L4 22 Z" fill="var(--svg-text-muted)" opacity="0.2" />
+                <path d="M14 14 L28 14 L24 28 L10 28 Z" fill="var(--svg-accent)" opacity="0.8" />
+                <path d="M20 20 L34 20 L30 34 L16 34 Z" stroke="var(--svg-text)" stroke-width="1.2" fill="none" opacity="0.3" />
+                <text x="44" y="27" font-family="Inter, system-ui, sans-serif" font-size="22" letter-spacing="-0.03em">
+                  <tspan font-weight="500" fill="var(--svg-text)">dartwork</tspan><tspan font-weight="700" fill="var(--svg-accent)">.mpl</tspan>
+                </text>
+              </svg>
+            </div>
+          </div>
+          <div class="header-mockup">
+            <div class="mock-left">
+              <div class="svg-wrap-mock" style="height: 20px;">
+                <svg class="logo-svg" height="100%" viewBox="0 0 250 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 8 L22 8 L18 22 L4 22 Z" fill="var(--svg-text-muted)" opacity="0.2" />
+                  <path d="M14 14 L28 14 L24 28 L10 28 Z" fill="var(--svg-accent)" opacity="0.8" />
+                  <path d="M20 20 L34 20 L30 34 L16 34 Z" stroke="var(--svg-text)" stroke-width="1.2" fill="none" opacity="0.3" />
+                  <text x="44" y="27" font-family="Inter, system-ui, sans-serif" font-size="22" letter-spacing="-0.03em">
+                    <tspan font-weight="500" fill="var(--svg-text)">dartwork</tspan><tspan font-weight="700" fill="var(--svg-accent)">.mpl</tspan>
+                  </text>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Option 3: Shield + mono -->
+        <div class="card" style="border: 1px solid var(--accent-9); box-shadow: 0 0 15px rgba(18, 165, 148, 0.15);">
+          <div class="card-header-badge" style="background-color: var(--accent-9); color: white;">Option 3. mono</div>
+          <h3>Shield + mono</h3>
+          <p class="desc">코딩 환경 감성의 'monospace' 타이포를 결합한 극단의 개발자 친화적 디자인입니다. AI 에이전트 연동의 지적 정체성을 드러냅니다.</p>
+          <div class="logo-display">
+            <div class="svg-wrap" style="height: 28px;">
+              <svg class="logo-svg" height="100%" viewBox="0 0 250 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 8 L22 8 L18 22 L4 22 Z" fill="var(--svg-text-muted)" opacity="0.2" />
+                <path d="M14 14 L28 14 L24 28 L10 28 Z" fill="var(--svg-accent)" opacity="0.8" />
+                <path d="M20 20 L34 20 L30 34 L16 34 Z" stroke="var(--svg-text)" stroke-width="1.2" fill="none" opacity="0.3" />
+                <text x="44" y="27" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-weight="700" font-size="19" fill="var(--svg-text)" letter-spacing="-0.01em">
+                  dartwork_mpl
+                </text>
+              </svg>
+            </div>
+          </div>
+          <div class="header-mockup">
+            <div class="mock-left">
+              <div class="svg-wrap-mock" style="height: 20px;">
+                <svg class="logo-svg" height="100%" viewBox="0 0 250 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 8 L22 8 L18 22 L4 22 Z" fill="var(--svg-text-muted)" opacity="0.2" />
+                  <path d="M14 14 L28 14 L24 28 L10 28 Z" fill="var(--svg-accent)" opacity="0.8" />
+                  <path d="M20 20 L34 20 L30 34 L16 34 Z" stroke="var(--svg-text)" stroke-width="1.2" fill="none" opacity="0.3" />
+                  <text x="44" y="27" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-weight="700" font-size="19" fill="var(--svg-text)" letter-spacing="-0.01em">
+                    dartwork_mpl
+                  </text>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function toggleTheme() {
+        const html = document.documentElement;
+        const btn = document.getElementById('themeToggle');
+        if (html.classList.contains('dark')) {
+          html.classList.remove('dark');
+          btn.textContent = 'Dark Mode 전환';
+        } else {
+          html.classList.add('dark');
+          btn.textContent = 'Light Mode 전환';
+        }
+      }
+
+      function updateLogoSize(val) {
+        document.getElementById('sizeValue').textContent = val + 'px';
+        const wrappers = document.querySelectorAll('.svg-wrap');
+        wrappers.forEach(w => {
+          w.style.height = val + 'px';
+        });
+      }
+
+      // Check OS preference
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.classList.add('dark');
+        document.getElementById('themeToggle').textContent = 'Light Mode 전환';
+      }
+    </script>
+  </body>
+</html>

@@ -32,7 +32,7 @@ jobs:
   # publish to PyPI. `build`/`publish` now transitively require `test`.
   test:
     name: Test before release
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     steps:
       - uses: actions/checkout@v6
       - name: Install uv
@@ -75,7 +75,7 @@ jobs:
   build:
     name: Build sdist + wheel
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     steps:
       - uses: actions/checkout@v6
 
@@ -149,7 +149,7 @@ jobs:
   publish:
     name: Publish to PyPI
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     # Header says workflow_dispatch is for dry runs (build only) — guard
     # the publish step so an accidental "Run workflow" click can't upload
     # an untagged build to production PyPI. The build job still runs on
@@ -177,7 +177,7 @@ jobs:
   github_release:
     name: Create / update GitHub Release
     needs: publish
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ml-main]
     # Tag pushes only — workflow_dispatch is a dry run and never publishes.
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     permissions:
