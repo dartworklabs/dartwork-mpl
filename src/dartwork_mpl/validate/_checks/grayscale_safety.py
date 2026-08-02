@@ -106,7 +106,9 @@ def check_grayscale_safety(
         if len(colors) < 2:
             continue
 
-        luminance = {hex_color: _rel_lum(rgb) for hex_color, rgb in colors.items()}
+        luminance = {
+            hex_color: _rel_lum(rgb) for hex_color, rgb in colors.items()
+        }
         for first, second in combinations(colors.keys(), 2):
             delta = abs(luminance[first] - luminance[second])
             if delta >= _DELTA_L:
