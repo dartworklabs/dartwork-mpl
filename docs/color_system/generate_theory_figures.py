@@ -1159,21 +1159,51 @@ def _split_rasters(svg: bytes) -> tuple[bytes, list[np.ndarray]]:
     return _DATA_URI.sub(collect, svg), images
 
 
-def _svg_matches(tracked: bytes, generated: bytes) -> bool:
-    """Compare two theory SVGs by content rather than by compressed bytes."""
+def _svg_mismatch(tracked: bytes, generated: bytes) -> str | None:
+    """Return why two theory SVGs differ in content, or None if they agree.
+
+    The reason is reported rather than swallowed: when this check fails on a
+    machine that is not the author's, "stale" alone says nothing about whether
+    the picture changed, the surrounding markup changed, or only the
+    compression did.
+    """
     if tracked == generated:
-        return True
+        return None
     tracked_text, tracked_images = _split_rasters(tracked)
     generated_text, generated_images = _split_rasters(generated)
     if tracked_text != generated_text:
-        return False
+        for index, (left, right) in enumerate(
+            zip(tracked_text, generated_text, strict=False)
+        ):
+            if left != right:
+                excerpt = tracked_text[max(0, index - 40) : index + 40]
+                return (
+                    f"markup differs at byte {index} of "
+                    f"{len(tracked_text)}/{len(generated_text)}: "
+                    f"{excerpt!r} -> {generated_text[max(0, index - 40) : index + 40]!r}"
+                )
+        return (
+            f"markup length differs: {len(tracked_text)} vs "
+            f"{len(generated_text)}"
+        )
     if len(tracked_images) != len(generated_images):
-        return False
-    return all(
-        left.shape == right.shape
-        and int(np.abs(left - right).max(initial=0)) <= _PIXEL_TOLERANCE
-        for left, right in zip(tracked_images, generated_images, strict=True)
-    )
+        return (
+            f"raster count differs: {len(tracked_images)} vs "
+            f"{len(generated_images)}"
+        )
+    for index, (left, right) in enumerate(
+        zip(tracked_images, generated_images, strict=True)
+    ):
+        if left.shape != right.shape:
+            return f"raster {index} shape {left.shape} vs {right.shape}"
+        worst = int(np.abs(left - right).max(initial=0))
+        if worst > _PIXEL_TOLERANCE:
+            differing = int((np.abs(left - right) > _PIXEL_TOLERANCE).sum())
+            return (
+                f"raster {index} differs by up to {worst} levels "
+                f"({differing} of {left.size} samples beyond tolerance)"
+            )
+    return None
 
 
 def check(output_dir: Path) -> int:
@@ -1190,11 +1220,12 @@ def check(output_dir: Path) -> int:
     missing = sorted(expected_names - tracked_names)
     extra = sorted(tracked_names - expected_names)
     incomplete = sorted(expected_names - generated_names)
-    stale = sorted(
-        name
-        for name in expected_names & tracked_names & generated_names
-        if not _svg_matches(tracked[name], generated[name])
-    )
+    reasons = {}
+    for name in sorted(expected_names & tracked_names & generated_names):
+        reason = _svg_mismatch(tracked[name], generated[name])
+        if reason is not None:
+            reasons[name] = reason
+    stale = sorted(reasons)
     if missing or extra or incomplete or stale:
         for label, names in (
             ("missing", missing),
@@ -1204,6 +1235,8 @@ def check(output_dir: Path) -> int:
         ):
             if names:
                 print(f"{label}: {', '.join(names)}", file=sys.stderr)
+        for name, reason in reasons.items():
+            print(f"  {name}: {reason}", file=sys.stderr)
         return 1
     print(f"theory assets are fresh: {output_dir}")
     return 0
