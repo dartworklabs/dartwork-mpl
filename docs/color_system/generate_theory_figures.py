@@ -1152,6 +1152,14 @@ def _svg_inventory(directory: Path) -> dict[str, bytes]:
 # Matplotlib wraps the payload across lines, so whitespace is part of it.
 _DATA_URI = re.compile(rb"data:image/png;base64,([A-Za-z0-9+/=\s]+?)\"")
 
+# matplotlib derives an <image> element's id from the compressed PNG bytes
+# (`oid = self._make_id('image', buf.getvalue())`), so the id is a fingerprint
+# of the encoding rather than of the picture. Eliding the payload alone still
+# leaked that fingerprint into the markup. These ids are declarations only --
+# nothing in the tracked figures references them -- so normalising them costs
+# no coverage.
+_IMAGE_ID = re.compile(rb'id="image[0-9a-f]+"')
+
 # One 8-bit level. A real change to a figure moves pixels far more than this;
 # cross-machine antialiasing noise does not.
 _PIXEL_TOLERANCE = 1
@@ -1169,7 +1177,9 @@ def _split_rasters(svg: bytes) -> tuple[bytes, list[np.ndarray]]:
             images.append(np.asarray(opened.convert("RGBA"), dtype=np.int16))
         return b'data:image/png;base64,<elided>"'
 
-    return _DATA_URI.sub(collect, svg), images
+    return _IMAGE_ID.sub(
+        b'id="image<elided>"', _DATA_URI.sub(collect, svg)
+    ), images
 
 
 def _svg_mismatch(tracked: bytes, generated: bytes) -> str | None:
