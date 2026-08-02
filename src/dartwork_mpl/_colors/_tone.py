@@ -443,7 +443,12 @@ def render_oklch_at_tone(
 def max_chroma_at_tone(
     hue_deg: float, tone: NeutralTone, policy: TonePolicy = SHIPPED_TONE_POLICY
 ) -> float:
-    """Return the geometric raw-sRGB chroma boundary at NeutralTone.
+    """Return the shipped-compatibility chroma boundary approximation.
+
+    .. warning::
+
+       Despite the name, this is **not** the true maximum chroma at fixed
+       modeled relative Y, and it must not be replaced with one. See Notes.
 
     Parameters
     ----------
@@ -461,6 +466,22 @@ def max_chroma_at_tone(
 
     Notes
     -----
+    The search runs in two stages: solve one OKLCH ``L`` that hits the target
+    relative Y *at the probe chroma* ``policy.probe_chroma``, freeze that
+    ``L``, then search chroma at it. Because OKLab ``L`` and modeled relative Y
+    diverge as chroma grows, the frozen ``L`` is only correct at the probe, and
+    the returned boundary departs from the true fixed-Y maximum by roughly
+    -21.5% to +13.2% across the hue and tone range. On the over-estimating
+    side the compiler's safety fraction does not always absorb the error, and
+    ``to_rgb`` silently reduces chroma instead.
+
+    This is a known defect that is deliberately retained. Replacing it changes
+    approved shipped output -- correcting it darkens the dark arm of the eleven
+    diverging colormaps by up to 6 dEok. **Replacement in the shipped call
+    graph is forbidden independently of the size of the mismatch** (ADR 0001,
+    appendix A2). A more rigorous fixed-Y solver belongs to the future
+    authoring lane, not here.
+
     This intentionally does not call the 40-step locked solver. The catalog
     fraction belongs to compiler policy and is not applied to this boundary.
     """

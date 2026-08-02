@@ -235,6 +235,19 @@ def diverging_pair(
 
     양극 정체성은 dc.{a}6/dc.{b}6 hex의 OKLCH chroma·hue에서 유도한다.
     포인트별 독립 솔브(등화 없음)라 hex 직접 생성으로 충분하다.
+
+    Notes
+    -----
+    Unlike ``seq_single``, ``seq_multi`` and ``cyclic_twilight``, this renderer
+    applies **no** ``max_chroma_at_tone`` cap. Requested chroma near the
+    saturated ends therefore leaves the sRGB gamut and is silently reduced by
+    the gamut mapper instead of being clamped beforehand.
+
+    This asymmetry is deliberate and load-bearing: adding the cap here changes
+    approved shipped output, darkening the dark arm of the eleven diverging
+    colormaps by up to 6 dEok. Do not "fix" it without an accepted colour
+    change (ADR 0001, appendix A2). ``tests/test_shipped_colors_hash.py`` will
+    fail if this is altered.
     """
     arms: list[list[str]] = []
     for src in (hex_a, hex_b):
