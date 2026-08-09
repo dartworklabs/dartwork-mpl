@@ -36,6 +36,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **Orphan tick-font adoption is now opt-in.**
+  `dm.config.adopt_orphan_tick_font` now defaults to `False`, so
+  `simple_layout`, `save_formats`, and `save_and_show` preserve tick fonts on
+  unlabeled axes unless callers pass `adopt_orphan_tick_font=True` or enable
+  the config field. This intentionally changes every existing figure with an
+  unlabeled axis: tick labels return to the smaller tick font. Set the config
+  field to `True` to retain the previous rendered output project-wide.
 - **Colour construction is unified on OKLab/OKLCH.** The compiler previously
   authored OKLCH hue and chroma while solving rendered output against CIELAB
   `L*`. CIELAB and CIEDE2000 remain as isolated validation diagnostics.

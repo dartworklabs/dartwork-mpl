@@ -1,5 +1,9 @@
 # Orphan tick-label axis-label font adoption — Implementation Plan
 
+> **Superseded default (2026-08-09):** The feature remains available, but
+> `Config.adopt_orphan_tick_font` now defaults to `False`. This plan preserves
+> the original default-on implementation steps for historical context.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** When an axis has no axis label, make its tick labels and offset text adopt the axis label's font (size, weight, family, style), judged independently for x and y.

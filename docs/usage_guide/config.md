@@ -17,14 +17,14 @@ more land as audit findings ship.
 
 | Field | Default | Affects |
 |---|---|---|
-| `adopt_orphan_tick_font` | `True` | `simple_layout`, `save_formats`, `save_and_show` — when an axis has tick labels but no axis label, dartwork copies the *axis label* font (size + weight + family) onto the ticks so the figure reads as one designed object. Set `False` to leave tick fonts alone. |
+| `adopt_orphan_tick_font` | `False` | `simple_layout`, `save_formats`, `save_and_show` — when enabled and an axis has tick labels but no axis label, dartwork copies the *axis label* font (size + weight + family) onto the ticks. Set `True` to opt in; otherwise tick fonts stay untouched. |
 | `warn_on_orphan_tick_adoption` | `False` | Same three call sites. When `True`, emits a one-time `UserWarning` every time the adoption mutates a figure. Useful when debugging surprise tick changes, or when running under matplotlib's `constrained_layout` where the font swap can trigger a re-layout. |
 
 The full surface is in [`config.py`](https://github.com/dartworklabs/dartwork-mpl/blob/main/src/dartwork_mpl/config.py) — that's the SSOT, this page is the cookbook.
 
 ## Patterns
 
-### 1. Flip a default project-wide
+### 1. Opt in project-wide
 
 Set once near the top of your entry script or notebook. Every
 `simple_layout` / `save_formats` / `save_and_show` call afterwards
@@ -34,15 +34,15 @@ picks it up.
 import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
-# This project prefers tick fonts left untouched.
-dm.config.adopt_orphan_tick_font = False
+# This project prefers orphan ticks to use the axis-label font.
+dm.config.adopt_orphan_tick_font = True
 
 dm.style.use("scientific")
 
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
 ax.plot([1, 2, 3], [1, 4, 9])
 
-dm.simple_layout(fig)          # tick fonts NOT adopted (config wins)
+dm.simple_layout(fig)          # tick fonts adopted (config wins)
 dm.save_formats(fig, "out", formats=("png", "svg"))
 ```
 
@@ -53,8 +53,6 @@ on exception. Use this when most of your code wants the default but
 one specific export needs the opposite.
 
 ```python
-dm.config.adopt_orphan_tick_font = False     # default: off
-
 with dm.config.override(adopt_orphan_tick_font=True):
     dm.simple_layout(fig)                    # adoption ON here
     dm.save_formats(fig, "press_release", formats=("pdf",))
@@ -125,7 +123,7 @@ the field name — if it fails, the field's gone or never existed.
 flowchart TD
     A["<b>① per-call keyword</b><br/><code>simple_layout(fig, adopt_orphan_tick_font=False)</code><br/><i>highest priority — always wins</i>"]
     B["<b>② dm.config field</b><br/><code>dm.config.adopt_orphan_tick_font = False</code><br/><i>project-wide default</i>"]
-    C["<b>③ hard-coded Config default</b><br/><code>True</code><br/><i>library fallback</i>"]
+    C["<b>③ hard-coded Config default</b><br/><code>False</code><br/><i>library fallback</i>"]
     A -->|"keyword is None → fall through"| B
     B -->|"field unset → fall through"| C
 
