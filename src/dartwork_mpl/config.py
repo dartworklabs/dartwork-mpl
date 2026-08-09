@@ -18,17 +18,14 @@ Example
     import matplotlib.pyplot as plt
     import dartwork_mpl as dm
 
-    # One-off: turn the orphan-tick adoption off project-wide.
-    dm.config.adopt_orphan_tick_font = False
-
     fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
     ax.plot([1, 2, 3], [1, 4, 9])  # no axis label
-    dm.simple_layout(fig)          # tick fonts left untouched
+    dm.simple_layout(fig)          # tick fonts left untouched by default
 
-    # Per-call override is still honoured.
+    # Opt in for one call.
     dm.simple_layout(fig, adopt_orphan_tick_font=True)
 
-    # Or scope the change to a block.
+    # Or scope the opt-in to a block.
     with dm.config.override(adopt_orphan_tick_font=True):
         dm.save_formats(fig, "out", formats=("png",))
 """
@@ -52,13 +49,13 @@ class Config:
 
     Attributes
     ----------
-    adopt_orphan_tick_font : bool, default ``True``
+    adopt_orphan_tick_font : bool, default ``False``
         Fallback default for the ``adopt_orphan_tick_font`` keyword on
         :func:`dartwork_mpl.simple_layout`, :func:`dartwork_mpl.save_formats`,
         and :func:`dartwork_mpl.save_and_show`. Each of those functions
         accepts ``True`` / ``False`` / ``None`` (the call-site default);
-        ``None`` is read here. Set this to ``False`` to leave orphan-axis
-        tick fonts alone everywhere by default. Per-call overrides
+        ``None`` is read here. Set this to ``True`` to make orphan-axis
+        tick fonts adopt the axis-label font everywhere. Per-call overrides
         (passing ``True`` / ``False`` explicitly) still win.
     warn_on_orphan_tick_adoption : bool, default ``False``
         When ``True``, emit a one-time :class:`UserWarning` every time
@@ -72,7 +69,7 @@ class Config:
         off so the common path stays quiet.
     """
 
-    adopt_orphan_tick_font: bool = True
+    adopt_orphan_tick_font: bool = False
     warn_on_orphan_tick_adoption: bool = False
 
     @contextmanager
@@ -99,9 +96,9 @@ class Config:
         -------
         ::
 
-            with dm.config.override(adopt_orphan_tick_font=False):
-                dm.simple_layout(fig)   # adoption skipped just here
-            dm.simple_layout(fig)        # adoption re-applied (back to default)
+            with dm.config.override(adopt_orphan_tick_font=True):
+                dm.simple_layout(fig)   # adoption enabled just here
+            dm.simple_layout(fig)        # adoption skipped (back to default)
         """
         known = {f.name for f in fields(self)}
         unknown = set(overrides) - known

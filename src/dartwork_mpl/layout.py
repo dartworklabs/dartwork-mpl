@@ -369,10 +369,9 @@ def _adopt_axis_label_font_core(fig: Figure) -> None:
 def adopt_axis_label_font(fig: Figure) -> None:
     """Draw ``fig`` then apply :func:`_adopt_axis_label_font_core`.
 
-    Use this when you are not calling :func:`simple_layout` (which already
-    applies the same adoption by default via ``adopt_orphan_tick_font``)
-    but still want unlabeled axes' tick labels to take the axis-label
-    font. A no-op on figures without axes.
+    Use this when you are not calling :func:`simple_layout` with
+    ``adopt_orphan_tick_font=True`` but still want unlabeled axes' tick
+    labels to take the axis-label font. A no-op on figures without axes.
 
     Note that the adoption reflects the figure state at call time: if you
     later add an axis label to a previously unlabeled axis, the ticks that
@@ -454,8 +453,8 @@ def simple_layout(
         each iteration *before* measurement so the computed margins fit
         the restyled ticks. Default is ``None`` — the value is read from
         :data:`dartwork_mpl.config.adopt_orphan_tick_font` (itself
-        defaulting to ``True``), so set ``dm.config.adopt_orphan_tick_font
-        = False`` once to flip every call site at once. Pass ``True`` /
+        defaulting to ``False``), so set ``dm.config.adopt_orphan_tick_font
+        = True`` once to opt in at every call site. Pass ``True`` /
         ``False`` explicitly to override per call.
     verbose : bool, optional
         If ``True``, prints per-iteration GridSpec edges and the

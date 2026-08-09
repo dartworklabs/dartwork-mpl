@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="393.307559pt" height="253.816037pt" viewBox="0 0 393.307559 253.816037" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="393.307559pt" height="249.807702pt" viewBox="0 0 393.307559 249.807702" xmlns="http://www.w3.org/2000/svg" version="1.1">
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
@@ -20,11 +20,11 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 253.816037
-L 393.307559 253.816037
+   <path d="M 0 249.807702
+L 393.307559 249.807702
 L 393.307559 0
 L 0 0
-L 0 253.816037
+L 0 249.807702
 z
 " style="fill: none"/>
   </g>
@@ -475,50 +475,87 @@ L 0 2
      </g>
      <g id="text_7">
       <!-- yellow -->
-      <g transform="translate(37.148894 245.524728) rotate(-32) scale(0.08 -0.08)">
+      <g transform="translate(41.486006 242.014156) rotate(-32) scale(0.065 -0.065)">
        <defs>
-        <path id="Pretendard-Regular-79" d="M 775 -1275
-C 1256 -1275 1588 -1019 1788 -488
-L 3225 3394
-L 2638 3394
-L 1713 700
-L 1675 700
-L 750 3394
-L 163 3394
-L 1419 -25
-L 1319 -281
-C 1138 -775 956 -794 738 -794
-C 656 -794 531 -788 475 -781
-L 475 -1263
-C 544 -1269 656 -1275 775 -1275
+        <path id="Pretendard-ExtraLight-79" d="M 675 -1275
+C 1119 -1275 1419 -1038 1588 -563
+L 3019 3394
+L 2681 3394
+L 1631 406
+L 1600 406
+L 550 3394
+L 213 3394
+L 1456 -44
+L 1313 -444
+C 1131 -938 881 -988 656 -988
+C 606 -988 538 -981 513 -981
+L 506 -1269
+C 544 -1269 613 -1275 675 -1275
 z
 " transform="scale(0.015625)"/>
-        <path id="Pretendard-Regular-77" d="M 1194 0
-L 1731 0
-L 2463 2588
-L 2513 2588
-L 3250 0
-L 3781 0
-L 4813 3394
-L 4250 3394
-L 3525 819
-L 3488 819
-L 2781 3394
-L 2206 3394
-L 1488 806
-L 1456 806
-L 731 3394
-L 163 3394
-L 1194 0
+        <path id="Pretendard-ExtraLight-65" d="M 1825 -69
+C 2506 -69 2963 319 3106 744
+L 2769 744
+C 2650 525 2356 219 1825 219
+C 1088 219 631 800 619 1619
+L 3188 1619
+L 3188 1794
+C 3188 2838 2519 3444 1763 3444
+C 913 3444 300 2700 300 1681
+C 300 663 894 -69 1825 -69
+z
+M 625 1900
+C 663 2603 1131 3156 1763 3156
+C 2394 3156 2869 2606 2869 1900
+L 625 1900
+z
+" transform="scale(0.015625)"/>
+        <path id="Pretendard-ExtraLight-6c" d="M 800 4525
+L 488 4525
+L 488 0
+L 800 0
+L 800 4525
+z
+" transform="scale(0.015625)"/>
+        <path id="Pretendard-ExtraLight-6f" d="M 1769 -69
+C 2625 -69 3238 663 3238 1688
+C 3238 2713 2625 3444 1769 3444
+C 913 3444 300 2713 300 1688
+C 300 663 913 -69 1769 -69
+z
+M 1769 219
+C 1063 219 619 869 619 1688
+C 619 2494 1063 3156 1769 3156
+C 2475 3156 2919 2500 2919 1688
+C 2919 869 2475 219 1769 219
+z
+" transform="scale(0.015625)"/>
+        <path id="Pretendard-ExtraLight-77" d="M 1231 0
+L 1569 0
+L 2413 2894
+L 2450 2894
+L 3294 0
+L 3631 0
+L 4650 3394
+L 4319 3394
+L 3469 469
+L 3444 469
+L 2600 3394
+L 2269 3394
+L 1419 463
+L 1394 463
+L 544 3394
+L 213 3394
+L 1231 0
 z
 " transform="scale(0.015625)"/>
        </defs>
-       <use xlink:href="#Pretendard-Regular-79"/>
-       <use xlink:href="#Pretendard-Regular-65" transform="translate(52.929688 0)"/>
-       <use xlink:href="#Pretendard-Regular-6c" transform="translate(108.203125 0)"/>
-       <use xlink:href="#Pretendard-Regular-6c" transform="translate(129.980469 0)"/>
-       <use xlink:href="#Pretendard-Regular-6f" transform="translate(151.757812 0)"/>
-       <use xlink:href="#Pretendard-Regular-77" transform="translate(208.496094 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-79"/>
+       <use xlink:href="#Pretendard-ExtraLight-65" transform="translate(50.488281 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6c" transform="translate(104.980469 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6c" transform="translate(125.097656 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6f" transform="translate(145.214844 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-77" transform="translate(200.488281 0)"/>
       </g>
      </g>
     </g>
@@ -530,55 +567,93 @@ z
      </g>
      <g id="text_8">
       <!-- orange -->
-      <g transform="translate(66.302727 246.631316) rotate(-32) scale(0.08 -0.08)">
+      <g transform="translate(71.039438 242.890116) rotate(-32) scale(0.065 -0.065)">
        <defs>
-        <path id="Pretendard-Regular-6e" d="M 969 2038
-C 969 2625 1331 2956 1825 2956
-C 2306 2956 2594 2644 2594 2119
-L 2594 0
-L 3131 0
-L 3131 2156
-C 3131 3019 2675 3438 1988 3438
-C 1469 3438 1156 3206 994 2863
-L 950 2863
-L 950 3394
-L 431 3394
-L 431 0
-L 969 0
-L 969 2038
+        <path id="Pretendard-ExtraLight-72" d="M 488 0
+L 800 0
+L 800 2219
+C 800 2750 1206 3138 1756 3138
+C 1838 3138 1900 3125 1938 3119
+L 1938 3438
+L 1775 3444
+C 1338 3444 963 3213 819 2863
+L 794 2863
+L 794 3394
+L 488 3394
+L 488 0
 z
 " transform="scale(0.015625)"/>
-        <path id="Pretendard-Regular-67" d="M 1806 -1344
-C 2631 -1344 3281 -969 3281 -94
-L 3281 3394
-L 2756 3394
-L 2756 2856
-L 2713 2856
-C 2588 3038 2375 3438 1719 3438
-C 869 3438 269 2788 269 1744
-C 269 675 888 50 1713 50
-C 2369 50 2588 438 2700 625
-L 2744 625
-L 2744 -63
-C 2744 -625 2388 -875 1806 -875
-C 1325 -875 1006 -700 931 -356
-L 369 -356
-C 431 -988 988 -1344 1806 -1344
+        <path id="Pretendard-ExtraLight-61" d="M 313 938
+C 313 288 806 -75 1400 -75
+C 1944 -75 2313 231 2481 588
+L 2506 588
+L 2506 0
+L 2819 0
+L 2819 2350
+C 2819 3144 2213 3444 1638 3444
+C 981 3444 481 3113 406 2594
+L 731 2594
+C 819 2944 1163 3163 1625 3163
+C 2175 3163 2506 2856 2506 2375
+L 2506 2013
+C 2344 2003 1778 1966 1538 1944
+C 744 1881 313 1538 313 938
 z
-M 1788 531
-C 1144 531 813 1019 813 1725
-C 813 2406 1138 2956 1788 2956
-C 2419 2956 2756 2450 2756 1725
-C 2756 975 2406 531 1788 531
+M 625 925
+C 625 1331 894 1625 1600 1675
+C 1784 1684 2334 1728 2506 1744
+L 2506 1356
+C 2506 706 2069 213 1438 213
+C 975 213 625 481 625 925
+z
+" transform="scale(0.015625)"/>
+        <path id="Pretendard-ExtraLight-6e" d="M 800 2175
+C 800 2763 1206 3150 1756 3150
+C 2306 3150 2669 2775 2669 2206
+L 2669 0
+L 2981 0
+L 2981 2225
+C 2981 2988 2513 3438 1825 3438
+C 1338 3438 981 3206 825 2856
+L 794 2856
+L 794 3394
+L 488 3394
+L 488 0
+L 800 0
+L 800 2175
+z
+" transform="scale(0.015625)"/>
+        <path id="Pretendard-ExtraLight-67" d="M 1738 -1344
+C 2538 -1344 3088 -931 3088 -81
+L 3088 3394
+L 2781 3394
+L 2781 2669
+L 2750 2669
+C 2594 3069 2269 3444 1675 3444
+C 844 3444 300 2738 300 1713
+C 300 681 863 25 1669 25
+C 2238 25 2600 350 2750 750
+L 2775 750
+L 2775 -69
+C 2775 -744 2388 -1063 1738 -1063
+C 1238 -1063 844 -875 750 -500
+L 419 -500
+C 519 -1063 1056 -1344 1738 -1344
+z
+M 1700 313
+C 1019 313 619 881 619 1706
+C 619 2519 1013 3156 1700 3156
+C 2381 3156 2781 2538 2781 1706
+C 2781 844 2369 313 1700 313
 z
 " transform="scale(0.015625)"/>
        </defs>
-       <use xlink:href="#Pretendard-Regular-6f"/>
-       <use xlink:href="#Pretendard-Regular-72" transform="translate(56.738281 0)"/>
-       <use xlink:href="#Pretendard-Regular-61" transform="translate(91.699219 0)"/>
-       <use xlink:href="#Pretendard-Regular-6e" transform="translate(145.214844 0)"/>
-       <use xlink:href="#Pretendard-Regular-67" transform="translate(200.878906 0)"/>
-       <use xlink:href="#Pretendard-Regular-65" transform="translate(258.789062 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6f"/>
+       <use xlink:href="#Pretendard-ExtraLight-72" transform="translate(55.273438 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-61" transform="translate(87.109375 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6e" transform="translate(138.867188 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-67" transform="translate(193.066406 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-65" transform="translate(249.121094 0)"/>
       </g>
      </g>
     </g>
@@ -590,11 +665,50 @@ z
      </g>
      <g id="text_9">
       <!-- lime -->
-      <g transform="translate(106.379666 241.115799) rotate(-32) scale(0.08 -0.08)">
-       <use xlink:href="#Pretendard-Regular-6c"/>
-       <use xlink:href="#Pretendard-Regular-69" transform="translate(21.777344 0)"/>
-       <use xlink:href="#Pretendard-Regular-6d" transform="translate(43.554688 0)"/>
-       <use xlink:href="#Pretendard-Regular-65" transform="translate(126.953125 0)"/>
+      <g transform="translate(109.20692 238.548691) rotate(-32) scale(0.065 -0.065)">
+       <defs>
+        <path id="Pretendard-ExtraLight-69" d="M 494 0
+L 813 0
+L 813 3394
+L 494 3394
+L 494 0
+z
+M 656 3988
+C 788 3988 900 4094 900 4225
+C 900 4356 788 4463 656 4463
+C 519 4463 406 4356 406 4225
+C 406 4094 519 3988 656 3988
+z
+" transform="scale(0.015625)"/>
+        <path id="Pretendard-ExtraLight-6d" d="M 488 0
+L 800 0
+L 800 2206
+C 800 2756 1144 3150 1656 3150
+C 2169 3150 2431 2800 2431 2294
+L 2431 0
+L 2750 0
+L 2750 2250
+C 2750 2769 3050 3150 3594 3150
+C 4094 3150 4375 2831 4375 2275
+L 4375 0
+L 4694 0
+L 4694 2275
+C 4694 3006 4325 3438 3675 3438
+C 3175 3438 2819 3188 2681 2794
+L 2656 2794
+C 2519 3194 2219 3438 1731 3438
+C 1288 3438 956 3225 825 2875
+L 794 2875
+L 794 3394
+L 488 3394
+L 488 0
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#Pretendard-ExtraLight-6c"/>
+       <use xlink:href="#Pretendard-ExtraLight-69" transform="translate(20.117188 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6d" transform="translate(40.527344 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-65" transform="translate(121.386719 0)"/>
       </g>
      </g>
     </g>
@@ -606,12 +720,12 @@ z
      </g>
      <g id="text_10">
       <!-- green -->
-      <g transform="translate(132.20703 244.300996) rotate(-32) scale(0.08 -0.08)">
-       <use xlink:href="#Pretendard-Regular-67"/>
-       <use xlink:href="#Pretendard-Regular-72" transform="translate(57.910156 0)"/>
-       <use xlink:href="#Pretendard-Regular-65" transform="translate(92.871094 0)"/>
-       <use xlink:href="#Pretendard-Regular-65" transform="translate(148.144531 0)"/>
-       <use xlink:href="#Pretendard-Regular-6e" transform="translate(203.417969 0)"/>
+      <g transform="translate(136.110998 241.080152) rotate(-32) scale(0.065 -0.065)">
+       <use xlink:href="#Pretendard-ExtraLight-67"/>
+       <use xlink:href="#Pretendard-ExtraLight-72" transform="translate(56.054688 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-65" transform="translate(87.890625 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-65" transform="translate(142.382812 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6e" transform="translate(196.875 0)"/>
       </g>
      </g>
     </g>
@@ -623,11 +737,32 @@ z
      </g>
      <g id="text_11">
       <!-- teal -->
-      <g transform="translate(169.754665 240.365964) rotate(-32) scale(0.08 -0.08)">
-       <use xlink:href="#Pretendard-Regular-74"/>
-       <use xlink:href="#Pretendard-Regular-65" transform="translate(33.984375 0)"/>
-       <use xlink:href="#Pretendard-Regular-61" transform="translate(89.257812 0)"/>
-       <use xlink:href="#Pretendard-Regular-6c" transform="translate(142.773438 0)"/>
+      <g transform="translate(172.312134 237.967436) rotate(-32) scale(0.065 -0.065)">
+       <defs>
+        <path id="Pretendard-ExtraLight-74" d="M 1731 3394
+L 1019 3394
+L 1019 4206
+L 706 4206
+L 706 3394
+L 206 3394
+L 206 3119
+L 706 3119
+L 706 769
+C 706 238 1119 -56 1550 -56
+C 1681 -56 1756 -50 1819 -38
+L 1819 256
+L 1575 250
+C 1281 250 1019 419 1019 831
+L 1019 3119
+L 1731 3119
+L 1731 3394
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#Pretendard-ExtraLight-74"/>
+       <use xlink:href="#Pretendard-ExtraLight-65" transform="translate(32.617188 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-61" transform="translate(87.109375 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6c" transform="translate(138.867188 0)"/>
       </g>
      </g>
     </g>
@@ -639,26 +774,26 @@ z
      </g>
      <g id="text_12">
       <!-- cyan -->
-      <g transform="translate(197.416056 242.506837) rotate(-32) scale(0.08 -0.08)">
+      <g transform="translate(200.665877 239.67568) rotate(-32) scale(0.065 -0.065)">
        <defs>
-        <path id="Pretendard-Regular-63" d="M 1819 -69
-C 2575 -69 3069 394 3156 1000
-L 2619 1000
-C 2525 625 2219 413 1819 413
-C 1200 413 806 913 806 1700
-C 806 2463 1213 2963 1819 2963
-C 2269 2963 2544 2681 2619 2369
-L 3156 2369
-C 3069 3013 2531 3438 1806 3438
-C 881 3438 269 2713 269 1681
-C 269 663 856 -69 1819 -69
+        <path id="Pretendard-ExtraLight-63" d="M 1781 -69
+C 2456 -69 2956 369 3050 994
+L 2731 994
+C 2644 519 2263 219 1781 219
+C 1088 219 619 844 619 1694
+C 619 2550 1100 3156 1781 3156
+C 2281 3156 2644 2825 2725 2388
+L 3044 2388
+C 2950 3019 2431 3444 1775 3444
+C 906 3444 300 2694 300 1688
+C 300 675 894 -69 1781 -69
 z
 " transform="scale(0.015625)"/>
        </defs>
-       <use xlink:href="#Pretendard-Regular-63"/>
-       <use xlink:href="#Pretendard-Regular-79" transform="translate(52.929688 0)"/>
-       <use xlink:href="#Pretendard-Regular-61" transform="translate(105.859375 0)"/>
-       <use xlink:href="#Pretendard-Regular-6e" transform="translate(159.375 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-63"/>
+       <use xlink:href="#Pretendard-ExtraLight-79" transform="translate(52.148438 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-61" transform="translate(102.636719 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6e" transform="translate(154.394531 0)"/>
       </g>
      </g>
     </g>
@@ -670,49 +805,49 @@ z
      </g>
      <g id="text_13">
       <!-- blue -->
-      <g transform="translate(230.107433 241.504628) rotate(-32) scale(0.08 -0.08)">
+      <g transform="translate(233.002266 238.895291) rotate(-32) scale(0.065 -0.065)">
        <defs>
-        <path id="Pretendard-Regular-62" d="M 500 0
-L 1019 0
-L 1019 519
-L 1081 519
-C 1200 331 1419 -69 2069 -69
-C 2913 -69 3513 613 3513 1688
-C 3513 2763 2913 3438 2063 3438
-C 1400 3438 1200 3038 1081 2856
-L 1038 2856
-L 1038 4525
-L 500 4525
-L 500 0
+        <path id="Pretendard-ExtraLight-62" d="M 575 0
+L 881 0
+L 881 706
+L 919 706
+C 1075 306 1406 -69 2000 -69
+C 2819 -69 3363 650 3363 1688
+C 3363 2719 2813 3444 1994 3444
+C 1406 3444 1069 3069 919 2669
+L 894 2669
+L 894 4525
+L 575 4525
+L 575 0
 z
-M 1025 1700
-C 1025 2450 1363 2956 1988 2956
-C 2644 2956 2969 2406 2969 1700
-C 2969 975 2631 413 1988 413
-C 1369 413 1025 938 1025 1700
+M 888 1694
+C 888 2538 1288 3156 1963 3156
+C 2650 3156 3050 2519 3050 1694
+C 3050 863 2650 219 1963 219
+C 1288 219 888 844 888 1694
 z
 " transform="scale(0.015625)"/>
-        <path id="Pretendard-Regular-75" d="M 2575 1394
-C 2575 763 2088 475 1706 475
-C 1275 475 969 788 969 1275
-L 969 3394
-L 431 3394
-L 431 1238
-C 431 375 888 -44 1531 -44
-C 2044 -44 2375 231 2538 575
-L 2575 575
-L 2575 0
-L 3106 0
-L 3106 3394
-L 2575 3394
-L 2575 1394
+        <path id="Pretendard-ExtraLight-75" d="M 2656 1238
+C 2656 625 2200 263 1694 263
+C 1169 263 800 631 800 1188
+L 800 3394
+L 488 3394
+L 488 1169
+C 488 406 956 -44 1619 -44
+C 2106 -44 2475 206 2631 556
+L 2656 556
+L 2656 0
+L 2969 0
+L 2969 3394
+L 2656 3394
+L 2656 1238
 z
 " transform="scale(0.015625)"/>
        </defs>
-       <use xlink:href="#Pretendard-Regular-62"/>
-       <use xlink:href="#Pretendard-Regular-6c" transform="translate(59.082031 0)"/>
-       <use xlink:href="#Pretendard-Regular-75" transform="translate(80.859375 0)"/>
-       <use xlink:href="#Pretendard-Regular-65" transform="translate(136.132812 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-62"/>
+       <use xlink:href="#Pretendard-ExtraLight-6c" transform="translate(57.324219 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-75" transform="translate(77.441406 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-65" transform="translate(131.445312 0)"/>
       </g>
      </g>
     </g>
@@ -724,13 +859,26 @@ z
      </g>
      <g id="text_14">
       <!-- violet -->
-      <g transform="translate(257.729602 243.67001) rotate(-32) scale(0.08 -0.08)">
-       <use xlink:href="#Pretendard-Regular-76"/>
-       <use xlink:href="#Pretendard-Regular-69" transform="translate(52.929688 0)"/>
-       <use xlink:href="#Pretendard-Regular-6f" transform="translate(74.707031 0)"/>
-       <use xlink:href="#Pretendard-Regular-6c" transform="translate(131.445312 0)"/>
-       <use xlink:href="#Pretendard-Regular-65" transform="translate(153.222656 0)"/>
-       <use xlink:href="#Pretendard-Regular-74" transform="translate(208.496094 0)"/>
+      <g transform="translate(261.473146 240.53034) rotate(-32) scale(0.065 -0.065)">
+       <defs>
+        <path id="Pretendard-ExtraLight-76" d="M 3019 3394
+L 2681 3394
+L 1631 406
+L 1600 406
+L 550 3394
+L 213 3394
+L 1438 0
+L 1788 0
+L 3019 3394
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#Pretendard-ExtraLight-76"/>
+       <use xlink:href="#Pretendard-ExtraLight-69" transform="translate(50.488281 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6f" transform="translate(70.898438 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6c" transform="translate(126.171875 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-65" transform="translate(146.289062 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-74" transform="translate(200.78125 0)"/>
       </g>
      </g>
     </g>
@@ -742,49 +890,49 @@ z
      </g>
      <g id="text_15">
       <!-- pink -->
-      <g transform="translate(292.581381 241.47048) rotate(-32) scale(0.08 -0.08)">
+      <g transform="translate(295.587256 238.639108) rotate(-32) scale(0.065 -0.065)">
        <defs>
-        <path id="Pretendard-Regular-70" d="M 431 -1275
-L 969 -1275
-L 969 519
-L 1013 519
-C 1125 331 1350 -69 2000 -69
-C 2844 -69 3438 613 3438 1688
-C 3438 2763 2844 3438 1994 3438
-C 1338 3438 1125 3038 1013 2856
-L 950 2856
-L 950 3394
-L 431 3394
-L 431 -1275
+        <path id="Pretendard-ExtraLight-70" d="M 488 -1275
+L 800 -1275
+L 800 706
+L 831 706
+C 981 306 1325 -69 1913 -69
+C 2725 -69 3275 656 3275 1688
+C 3275 2725 2731 3444 1906 3444
+C 1313 3444 981 3069 831 2669
+L 794 2669
+L 794 3394
+L 488 3394
+L 488 -1275
 z
-M 956 1700
-C 956 2450 1288 2956 1925 2956
-C 2575 2956 2900 2406 2900 1700
-C 2900 975 2569 413 1925 413
-C 1300 413 956 938 956 1700
+M 800 1694
+C 800 2538 1194 3156 1875 3156
+C 2569 3156 2956 2519 2956 1694
+C 2956 863 2563 219 1875 219
+C 1200 219 800 844 800 1694
 z
 " transform="scale(0.015625)"/>
-        <path id="Pretendard-Regular-6b" d="M 431 0
-L 969 0
-L 969 1269
-L 1331 1600
-L 2588 0
-L 3269 0
-L 1731 1944
-L 3163 3394
-L 2500 3394
-L 1031 1894
-L 969 1894
-L 969 4525
-L 431 4525
-L 431 0
+        <path id="Pretendard-ExtraLight-6b" d="M 488 0
+L 800 0
+L 800 1338
+L 1213 1731
+L 2575 0
+L 2975 0
+L 1438 1938
+L 2900 3394
+L 2494 3394
+L 838 1744
+L 800 1744
+L 800 4525
+L 488 4525
+L 488 0
 z
 " transform="scale(0.015625)"/>
        </defs>
-       <use xlink:href="#Pretendard-Regular-70"/>
-       <use xlink:href="#Pretendard-Regular-69" transform="translate(57.910156 0)"/>
-       <use xlink:href="#Pretendard-Regular-6e" transform="translate(79.6875 0)"/>
-       <use xlink:href="#Pretendard-Regular-6b" transform="translate(135.351562 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-70"/>
+       <use xlink:href="#Pretendard-ExtraLight-69" transform="translate(55.859375 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6e" transform="translate(76.269531 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6b" transform="translate(130.46875 0)"/>
       </g>
      </g>
     </g>
@@ -796,10 +944,32 @@ z
      </g>
      <g id="text_16">
       <!-- red -->
-      <g transform="translate(326.225751 239.720125) rotate(-32) scale(0.08 -0.08)">
-       <use xlink:href="#Pretendard-Regular-72"/>
-       <use xlink:href="#Pretendard-Regular-65" transform="translate(34.960938 0)"/>
-       <use xlink:href="#Pretendard-Regular-64" transform="translate(90.234375 0)"/>
+      <g transform="translate(328.595458 237.438924) rotate(-32) scale(0.065 -0.065)">
+       <defs>
+        <path id="Pretendard-ExtraLight-64" d="M 1669 -69
+C 2256 -69 2594 306 2750 706
+L 2781 706
+L 2781 0
+L 3088 0
+L 3088 4525
+L 2775 4525
+L 2775 2669
+L 2750 2669
+C 2600 3069 2263 3444 1675 3444
+C 850 3444 300 2719 300 1688
+C 300 650 844 -69 1669 -69
+z
+M 1700 219
+C 1013 219 619 863 619 1694
+C 619 2519 1013 3156 1700 3156
+C 2381 3156 2781 2538 2781 1694
+C 2781 844 2381 219 1700 219
+z
+" transform="scale(0.015625)"/>
+       </defs>
+       <use xlink:href="#Pretendard-ExtraLight-72"/>
+       <use xlink:href="#Pretendard-ExtraLight-65" transform="translate(31.835938 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-64" transform="translate(86.328125 0)"/>
       </g>
      </g>
     </g>
@@ -989,6 +1159,22 @@ L 4094 0
 L 4094 4525
 z
 " transform="scale(0.015625)"/>
+       <path id="Pretendard-Regular-75" d="M 2575 1394
+C 2575 763 2088 475 1706 475
+C 1275 475 969 788 969 1275
+L 969 3394
+L 431 3394
+L 431 1238
+C 431 375 888 -44 1531 -44
+C 2044 -44 2375 231 2538 575
+L 2575 575
+L 2575 0
+L 3106 0
+L 3106 3394
+L 2575 3394
+L 2575 1394
+z
+" transform="scale(0.015625)"/>
        <path id="Pretendard-Regular-54" d="M 250 4025
 L 1675 4025
 L 1675 0
@@ -998,6 +1184,22 @@ L 3663 4025
 L 3663 4525
 L 250 4525
 L 250 4025
+z
+" transform="scale(0.015625)"/>
+       <path id="Pretendard-Regular-6e" d="M 969 2038
+C 969 2625 1331 2956 1825 2956
+C 2306 2956 2594 2644 2594 2119
+L 2594 0
+L 3131 0
+L 3131 2156
+C 3131 3019 2675 3438 1988 3438
+C 1469 3438 1156 3206 994 2863
+L 950 2863
+L 950 3394
+L 431 3394
+L 431 0
+L 969 0
+L 969 2038
 z
 " transform="scale(0.015625)"/>
        <path id="Pretendard-Regular-3d" d="M 644 2181
@@ -2409,150 +2611,7 @@ L 800 0
 L 800 2175
 z
 " transform="scale(0.015625)"/>
-      <path id="Pretendard-ExtraLight-61" d="M 313 938
-C 313 288 806 -75 1400 -75
-C 1944 -75 2313 231 2481 588
-L 2506 588
-L 2506 0
-L 2819 0
-L 2819 2350
-C 2819 3144 2213 3444 1638 3444
-C 981 3444 481 3113 406 2594
-L 731 2594
-C 819 2944 1163 3163 1625 3163
-C 2175 3163 2506 2856 2506 2375
-L 2506 2013
-C 2344 2003 1778 1966 1538 1944
-C 744 1881 313 1538 313 938
-z
-M 625 925
-C 625 1331 894 1625 1600 1675
-C 1784 1684 2334 1728 2506 1744
-L 2506 1356
-C 2506 706 2069 213 1438 213
-C 975 213 625 481 625 925
-z
-" transform="scale(0.015625)"/>
-      <path id="Pretendard-ExtraLight-72" d="M 488 0
-L 800 0
-L 800 2219
-C 800 2750 1206 3138 1756 3138
-C 1838 3138 1900 3125 1938 3119
-L 1938 3438
-L 1775 3444
-C 1338 3444 963 3213 819 2863
-L 794 2863
-L 794 3394
-L 488 3394
-L 488 0
-z
-" transform="scale(0.015625)"/>
-      <path id="Pretendard-ExtraLight-65" d="M 1825 -69
-C 2506 -69 2963 319 3106 744
-L 2769 744
-C 2650 525 2356 219 1825 219
-C 1088 219 631 800 619 1619
-L 3188 1619
-L 3188 1794
-C 3188 2838 2519 3444 1763 3444
-C 913 3444 300 2700 300 1681
-C 300 663 894 -69 1825 -69
-z
-M 625 1900
-C 663 2603 1131 3156 1763 3156
-C 2394 3156 2869 2606 2869 1900
-L 625 1900
-z
-" transform="scale(0.015625)"/>
-      <path id="Pretendard-ExtraLight-64" d="M 1669 -69
-C 2256 -69 2594 306 2750 706
-L 2781 706
-L 2781 0
-L 3088 0
-L 3088 4525
-L 2775 4525
-L 2775 2669
-L 2750 2669
-C 2600 3069 2263 3444 1675 3444
-C 850 3444 300 2719 300 1688
-C 300 650 844 -69 1669 -69
-z
-M 1700 219
-C 1013 219 619 863 619 1694
-C 619 2519 1013 3156 1700 3156
-C 2381 3156 2781 2538 2781 1694
-C 2781 844 2381 219 1700 219
-z
-" transform="scale(0.015625)"/>
       <path id="Pretendard-ExtraLight-20" transform="scale(0.015625)"/>
-      <path id="Pretendard-ExtraLight-6f" d="M 1769 -69
-C 2625 -69 3238 663 3238 1688
-C 3238 2713 2625 3444 1769 3444
-C 913 3444 300 2713 300 1688
-C 300 663 913 -69 1769 -69
-z
-M 1769 219
-C 1063 219 619 869 619 1688
-C 619 2494 1063 3156 1769 3156
-C 2475 3156 2919 2500 2919 1688
-C 2919 869 2475 219 1769 219
-z
-" transform="scale(0.015625)"/>
-      <path id="Pretendard-ExtraLight-75" d="M 2656 1238
-C 2656 625 2200 263 1694 263
-C 1169 263 800 631 800 1188
-L 800 3394
-L 488 3394
-L 488 1169
-C 488 406 956 -44 1619 -44
-C 2106 -44 2475 206 2631 556
-L 2656 556
-L 2656 0
-L 2969 0
-L 2969 3394
-L 2656 3394
-L 2656 1238
-z
-" transform="scale(0.015625)"/>
-      <path id="Pretendard-ExtraLight-74" d="M 1731 3394
-L 1019 3394
-L 1019 4206
-L 706 4206
-L 706 3394
-L 206 3394
-L 206 3119
-L 706 3119
-L 706 769
-C 706 238 1119 -56 1550 -56
-C 1681 -56 1756 -50 1819 -38
-L 1819 256
-L 1575 250
-C 1281 250 1019 419 1019 831
-L 1019 3119
-L 1731 3119
-L 1731 3394
-z
-" transform="scale(0.015625)"/>
-      <path id="Pretendard-ExtraLight-70" d="M 488 -1275
-L 800 -1275
-L 800 706
-L 831 706
-C 981 306 1325 -69 1913 -69
-C 2725 -69 3275 656 3275 1688
-C 3275 2725 2731 3444 1906 3444
-C 1313 3444 981 3069 831 2669
-L 794 2669
-L 794 3394
-L 488 3394
-L 488 -1275
-z
-M 800 1694
-C 800 2538 1194 3156 1875 3156
-C 2569 3156 2956 2519 2956 1694
-C 2956 863 2563 219 1875 219
-C 1200 219 800 844 800 1694
-z
-" transform="scale(0.015625)"/>
       <path id="Pretendard-ExtraLight-54" d="M 281 4231
 L 1725 4231
 L 1725 0
@@ -2618,37 +2677,6 @@ L 1388 4719
 C 875 3869 588 2856 588 1725
 z
 " transform="scale(0.015625)"/>
-      <path id="Pretendard-ExtraLight-6d" d="M 488 0
-L 800 0
-L 800 2206
-C 800 2756 1144 3150 1656 3150
-C 2169 3150 2431 2800 2431 2294
-L 2431 0
-L 2750 0
-L 2750 2250
-C 2750 2769 3050 3150 3594 3150
-C 4094 3150 4375 2831 4375 2275
-L 4375 0
-L 4694 0
-L 4694 2275
-C 4694 3006 4325 3438 3675 3438
-C 3175 3438 2819 3188 2681 2794
-L 2656 2794
-C 2519 3194 2219 3438 1731 3438
-C 1288 3438 956 3225 825 2875
-L 794 2875
-L 794 3394
-L 488 3394
-L 488 0
-z
-" transform="scale(0.015625)"/>
-      <path id="Pretendard-ExtraLight-6c" d="M 800 4525
-L 488 4525
-L 488 0
-L 800 0
-L 800 4525
-z
-" transform="scale(0.015625)"/>
       <path id="Pretendard-ExtraLight-59" d="M 125 4525
 L 1756 2019
 L 1756 0
@@ -2703,40 +2731,6 @@ L 61.421889 134.445105
    <g id="text_36">
     <!-- Yellow stops earlier -->
     <g style="fill: #343a40" transform="translate(110.262514 89.528932) scale(0.06 -0.06)">
-     <defs>
-      <path id="Pretendard-ExtraLight-77" d="M 1231 0
-L 1569 0
-L 2413 2894
-L 2450 2894
-L 3294 0
-L 3631 0
-L 4650 3394
-L 4319 3394
-L 3469 469
-L 3444 469
-L 2600 3394
-L 2269 3394
-L 1419 463
-L 1394 463
-L 544 3394
-L 213 3394
-L 1231 0
-z
-" transform="scale(0.015625)"/>
-      <path id="Pretendard-ExtraLight-69" d="M 494 0
-L 813 0
-L 813 3394
-L 494 3394
-L 494 0
-z
-M 656 3988
-C 788 3988 900 4094 900 4225
-C 900 4356 788 4463 656 4463
-C 519 4463 406 4356 406 4225
-C 406 4094 519 3988 656 3988
-z
-" transform="scale(0.015625)"/>
-     </defs>
      <use xlink:href="#Pretendard-ExtraLight-59"/>
      <use xlink:href="#Pretendard-ExtraLight-65" transform="translate(60.058594 0)"/>
      <use xlink:href="#Pretendard-ExtraLight-6c" transform="translate(114.550781 0)"/>
@@ -2760,51 +2754,6 @@ z
     </g>
     <!-- (darker turns olive) -->
     <g style="fill: #343a40" transform="translate(110.262514 96.033119) scale(0.06 -0.06)">
-     <defs>
-      <path id="Pretendard-ExtraLight-6b" d="M 488 0
-L 800 0
-L 800 1338
-L 1213 1731
-L 2575 0
-L 2975 0
-L 1438 1938
-L 2900 3394
-L 2494 3394
-L 838 1744
-L 800 1744
-L 800 4525
-L 488 4525
-L 488 0
-z
-" transform="scale(0.015625)"/>
-      <path id="Pretendard-ExtraLight-6e" d="M 800 2175
-C 800 2763 1206 3150 1756 3150
-C 2306 3150 2669 2775 2669 2206
-L 2669 0
-L 2981 0
-L 2981 2225
-C 2981 2988 2513 3438 1825 3438
-C 1338 3438 981 3206 825 2856
-L 794 2856
-L 794 3394
-L 488 3394
-L 488 0
-L 800 0
-L 800 2175
-z
-" transform="scale(0.015625)"/>
-      <path id="Pretendard-ExtraLight-76" d="M 3019 3394
-L 2681 3394
-L 1631 406
-L 1600 406
-L 550 3394
-L 213 3394
-L 1438 0
-L 1788 0
-L 3019 3394
-z
-" transform="scale(0.015625)"/>
-     </defs>
      <use xlink:href="#Pretendard-ExtraLight-28"/>
      <use xlink:href="#Pretendard-ExtraLight-64" transform="translate(30.859375 0)"/>
      <use xlink:href="#Pretendard-ExtraLight-61" transform="translate(88.183594 0)"/>

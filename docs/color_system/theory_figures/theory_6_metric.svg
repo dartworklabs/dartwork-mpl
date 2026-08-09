@@ -840,71 +840,60 @@ L 0 2
      </g>
      <g id="text_6">
       <!-- ΔE76 -->
-      <g transform="translate(262.355457 172.569006) scale(0.08 -0.08)">
+      <g transform="translate(262.737957 172.569006) scale(0.08 -0.08)">
        <defs>
-        <path id="Pretendard-Regular-394" d="M 113 0
-L 4019 0
-L 2363 4525
-L 1769 4525
-L 113 0
+        <path id="Pretendard-ExtraLight-394" d="M 125 0
+L 3763 0
+L 2094 4525
+L 1794 4525
+L 125 0
 z
-M 881 500
-L 2044 3794
-L 2081 3794
-L 3244 500
-L 881 500
-z
-" transform="scale(0.015625)"/>
-        <path id="Pretendard-Regular-45" d="M 500 0
-L 3275 0
-L 3275 500
-L 1063 500
-L 1063 2019
-L 3100 2019
-L 3100 2513
-L 1063 2513
-L 1063 4025
-L 3244 4025
-L 3244 4525
-L 500 4525
-L 500 0
+M 575 300
+L 1931 4025
+L 1950 4025
+L 3306 300
+L 575 300
 z
 " transform="scale(0.015625)"/>
-        <path id="Pretendard-Regular-37" d="M 569 0
-L 1156 0
-L 3225 4000
-L 3225 4525
-L 250 4525
-L 250 4025
-L 2644 4025
-L 2644 3994
-L 569 0
+        <path id="Pretendard-ExtraLight-45" d="M 575 0
+L 3181 0
+L 3181 300
+L 900 300
+L 900 2119
+L 2994 2119
+L 2994 2413
+L 900 2413
+L 900 4231
+L 3138 4231
+L 3138 4525
+L 575 4525
+L 575 0
 z
 " transform="scale(0.015625)"/>
-        <path id="Pretendard-Regular-36" d="M 2000 -63
-C 2950 -69 3575 613 3575 1463
-C 3575 2338 2906 2963 2100 2963
-C 1613 2963 1200 2738 938 2363
-L 881 2363
-C 881 3450 1325 4088 2069 4088
-C 2575 4088 2875 3788 2981 3388
-L 3538 3388
-C 3419 4100 2863 4588 2069 4588
-C 1006 4588 350 3688 350 2088
-C 350 413 1213 -50 2000 -63
+        <path id="Pretendard-ExtraLight-36" d="M 1906 -63
+C 2775 -69 3350 606 3350 1400
+C 3350 2238 2706 2850 1938 2850
+C 1419 2850 944 2575 750 2150
+L 706 2150
+C 706 3519 1150 4288 1969 4288
+C 2538 4288 2894 3913 2963 3394
+L 3288 3394
+C 3206 4100 2706 4588 1969 4588
+C 863 4588 394 3456 394 2069
+C 394 531 1113 -56 1906 -63
 z
-M 2000 431
-C 1394 431 956 919 956 1450
-C 963 1988 1419 2469 2013 2469
-C 2606 2469 3025 2013 3031 1456
-C 3025 894 2588 431 2000 431
+M 1906 231
+C 1313 231 875 681 781 1363
+C 706 1994 1225 2556 1894 2556
+C 2538 2556 3031 2044 3031 1400
+C 3031 763 2556 231 1906 231
 z
 " transform="scale(0.015625)"/>
        </defs>
-       <use xlink:href="#Pretendard-Regular-394"/>
-       <use xlink:href="#Pretendard-Regular-45" transform="translate(64.550781 0)"/>
-       <use xlink:href="#Pretendard-Regular-37" transform="translate(121.289062 0)"/>
-       <use xlink:href="#Pretendard-Regular-36" transform="translate(176.464844 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-394"/>
+       <use xlink:href="#Pretendard-ExtraLight-45" transform="translate(60.644531 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-37" transform="translate(116.210938 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-36" transform="translate(169.726562 0)"/>
       </g>
      </g>
     </g>
@@ -916,26 +905,26 @@ z
      </g>
      <g id="text_7">
       <!-- ΔE00 -->
-      <g transform="translate(331.916767 172.569006) scale(0.08 -0.08)">
+      <g transform="translate(332.316142 172.569006) scale(0.08 -0.08)">
        <defs>
-        <path id="Pretendard-Regular-30" d="M 1906 -63
-C 2906 -63 3488 781 3488 2263
-C 3488 3731 2900 4588 1906 4588
-C 913 4588 325 3731 325 2263
-C 325 781 900 -63 1906 -63
+        <path id="Pretendard-ExtraLight-30" d="M 1825 -63
+C 2750 -63 3300 806 3300 2263
+C 3300 3713 2750 4588 1825 4588
+C 906 4588 356 3713 356 2263
+C 356 806 906 -63 1825 -63
 z
-M 1906 438
-C 1250 438 869 1094 869 2263
-C 869 3431 1256 4100 1906 4100
-C 2556 4100 2938 3431 2938 2263
-C 2938 1094 2556 438 1906 438
+M 1825 238
+C 1106 238 675 988 675 2263
+C 675 3544 1113 4294 1825 4294
+C 2544 4294 2981 3544 2981 2263
+C 2981 988 2550 238 1825 238
 z
 " transform="scale(0.015625)"/>
        </defs>
-       <use xlink:href="#Pretendard-Regular-394"/>
-       <use xlink:href="#Pretendard-Regular-45" transform="translate(64.550781 0)"/>
-       <use xlink:href="#Pretendard-Regular-30" transform="translate(121.289062 0)"/>
-       <use xlink:href="#Pretendard-Regular-30" transform="translate(180.859375 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-394"/>
+       <use xlink:href="#Pretendard-ExtraLight-45" transform="translate(60.644531 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-30" transform="translate(116.210938 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-30" transform="translate(173.339844 0)"/>
       </g>
      </g>
     </g>
@@ -956,19 +945,6 @@ L -2 0
       <!-- 0.0 -->
       <g transform="translate(216.027421 165.740881) scale(0.08 -0.08)">
        <defs>
-        <path id="Pretendard-ExtraLight-30" d="M 1825 -63
-C 2750 -63 3300 806 3300 2263
-C 3300 3713 2750 4588 1825 4588
-C 906 4588 356 3713 356 2263
-C 356 806 906 -63 1825 -63
-z
-M 1825 238
-C 1106 238 675 988 675 2263
-C 675 3544 1113 4294 1825 4294
-C 2544 4294 2981 3544 2981 2263
-C 2981 988 2550 238 1825 238
-z
-" transform="scale(0.015625)"/>
         <path id="Pretendard-ExtraLight-2e" d="M 756 -31
 C 906 -31 1025 88 1025 238
 C 1025 381 906 500 756 500

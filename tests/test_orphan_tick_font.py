@@ -132,22 +132,25 @@ class TestAdoptPublic:
 
 
 class TestSimpleLayoutIntegration:
-    def test_simple_layout_applies_by_default(self) -> None:
+    def test_simple_layout_keeps_tick_font_by_default(self) -> None:
         dm.style.use("scientific")
         fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
         ax.plot(range(10), range(10))
         ax.set_ylabel("y label")  # x unlabeled
+        ax.tick_params(axis="x", labelsize=5.5)
+        fig.canvas.draw()
+        before = (_x_tick(ax).get_fontsize(), _x_tick(ax).get_fontweight())
         simple_layout(fig)
-        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
+        after = (_x_tick(ax).get_fontsize(), _x_tick(ax).get_fontweight())
+        assert after == before
         plt.close(fig)
 
-    def test_simple_layout_toggle_off(self) -> None:
+    def test_simple_layout_explicit_true_adopts(self) -> None:
         dm.style.use("scientific")
         fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
         ax.plot(range(10), range(10))
-        default_weight = _x_tick(ax).get_fontweight()
-        simple_layout(fig, adopt_orphan_tick_font=False)
-        assert _x_tick(ax).get_fontweight() == default_weight
+        simple_layout(fig, adopt_orphan_tick_font=True)
+        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
         plt.close(fig)
 
     def test_margin_reflects_enlarged_orphan_ticks(self) -> None:
@@ -182,34 +185,35 @@ def test_exported_at_package_root() -> None:
 
 
 class TestSaveFormatsIntegration:
-    """save_formats applies the adoption so the saved output always
-    reflects it, even when simple_layout was never called."""
+    """save_formats preserves ticks by default and supports adoption."""
 
-    def test_save_formats_applies_by_default(self, tmp_path) -> None:
+    def test_save_formats_keeps_tick_font_by_default(self, tmp_path) -> None:
         dm.style.use("scientific")
         fig, ax = plt.subplots()
         ax.plot(range(10), range(10))
         ax.set_ylabel("y label")  # x unlabeled; NOTE: no simple_layout call
+        ax.tick_params(axis="x", labelsize=5.5)
+        fig.canvas.draw()
+        before = (_x_tick(ax).get_fontsize(), _x_tick(ax).get_fontweight())
         dm.save_formats(
             fig, str(tmp_path / "out"), formats=("png",), validate=False
         )
-        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
+        after = (_x_tick(ax).get_fontsize(), _x_tick(ax).get_fontweight())
+        assert after == before
         plt.close(fig)
 
-    def test_save_formats_toggle_off(self, tmp_path) -> None:
+    def test_save_formats_explicit_true_adopts(self, tmp_path) -> None:
         dm.style.use("scientific")
         fig, ax = plt.subplots()
         ax.plot(range(10), range(10))
-        fig.canvas.draw()
-        default_weight = _x_tick(ax).get_fontweight()
         dm.save_formats(
             fig,
             str(tmp_path / "out"),
             formats=("png",),
             validate=False,
-            adopt_orphan_tick_font=False,
+            adopt_orphan_tick_font=True,
         )
-        assert _x_tick(ax).get_fontweight() == default_weight
+        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
         plt.close(fig)
 
     def test_save_formats_y_orphan_adopts(self, tmp_path) -> None:
@@ -219,7 +223,11 @@ class TestSaveFormatsIntegration:
         ax.plot(range(10), range(10))
         ax.set_xlabel("x label")  # x labeled, y unlabeled
         dm.save_formats(
-            fig, str(tmp_path / "out"), formats=("png",), validate=False
+            fig,
+            str(tmp_path / "out"),
+            formats=("png",),
+            validate=False,
+            adopt_orphan_tick_font=True,
         )
         assert _y_tick(ax).get_fontweight() == ax.yaxis.label.get_fontweight()
         plt.close(fig)
@@ -230,7 +238,11 @@ class TestSaveFormatsIntegration:
         fig, ax = plt.subplots()
         ax.plot(range(10), [v * 1e9 for v in range(10)])  # 1e9 offset, no label
         dm.save_formats(
-            fig, str(tmp_path / "out"), formats=("png",), validate=False
+            fig,
+            str(tmp_path / "out"),
+            formats=("png",),
+            validate=False,
+            adopt_orphan_tick_font=True,
         )
         ot = ax.yaxis.get_offset_text()
         assert ot.get_text().strip()
@@ -245,7 +257,7 @@ class TestSaveFormatsIntegration:
         fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))
         ax.plot(range(10), range(10))
         ax.set_ylabel("y label")  # x orphan
-        simple_layout(fig)
+        simple_layout(fig, adopt_orphan_tick_font=True)
         xt = _x_tick(ax)
         before = (
             xt.get_fontsize(),
@@ -254,7 +266,11 @@ class TestSaveFormatsIntegration:
             xt.get_fontstyle(),
         )
         dm.save_formats(
-            fig, str(tmp_path / "out"), formats=("png",), validate=False
+            fig,
+            str(tmp_path / "out"),
+            formats=("png",),
+            validate=False,
+            adopt_orphan_tick_font=True,
         )
         xt = _x_tick(ax)
         after = (
@@ -278,9 +294,9 @@ class TestSaveFormatsIntegration:
 
 
 class TestSaveAndShowIntegration:
-    """save_and_show applies the same adoption as save_formats."""
+    """save_and_show preserves ticks by default and supports adoption."""
 
-    def test_save_and_show_applies_by_default(
+    def test_save_and_show_keeps_tick_font_by_default(
         self, tmp_path, monkeypatch
     ) -> None:
         monkeypatch.setattr("dartwork_mpl.io.show", lambda *a, **k: None)
@@ -288,20 +304,24 @@ class TestSaveAndShowIntegration:
         fig, ax = plt.subplots()
         ax.plot(range(10), range(10))
         ax.set_ylabel("y label")  # x orphan
+        ax.tick_params(axis="x", labelsize=5.5)
+        fig.canvas.draw()
+        before = (_x_tick(ax).get_fontsize(), _x_tick(ax).get_fontweight())
         dm.save_and_show(fig, str(tmp_path / "out.svg"))
-        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
+        after = (_x_tick(ax).get_fontsize(), _x_tick(ax).get_fontweight())
+        assert after == before
 
-    def test_save_and_show_toggle_off(self, tmp_path, monkeypatch) -> None:
+    def test_save_and_show_explicit_true_adopts(
+        self, tmp_path, monkeypatch
+    ) -> None:
         monkeypatch.setattr("dartwork_mpl.io.show", lambda *a, **k: None)
         dm.style.use("scientific")
         fig, ax = plt.subplots()
         ax.plot(range(10), range(10))
-        fig.canvas.draw()
-        default_weight = _x_tick(ax).get_fontweight()
         dm.save_and_show(
-            fig, str(tmp_path / "out.svg"), adopt_orphan_tick_font=False
+            fig, str(tmp_path / "out.svg"), adopt_orphan_tick_font=True
         )
-        assert _x_tick(ax).get_fontweight() == default_weight
+        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
 
 
 class TestConfigGlobalDefault:
@@ -318,16 +338,14 @@ class TestConfigGlobalDefault:
         ax.set_ylabel("y label")  # x is the orphan
         return fig, ax
 
-    def test_config_off_skips_simple_layout_adoption(self) -> None:
+    def test_config_on_applies_simple_layout_adoption(self) -> None:
         fig, ax = self._build()
-        fig.canvas.draw()
-        default_weight = _x_tick(ax).get_fontweight()
         try:
-            dm.config.adopt_orphan_tick_font = False
+            dm.config.adopt_orphan_tick_font = True
             simple_layout(fig)
         finally:
-            dm.config.adopt_orphan_tick_font = True
-        assert _x_tick(ax).get_fontweight() == default_weight
+            dm.config.adopt_orphan_tick_font = False
+        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
         plt.close(fig)
 
     def test_per_call_true_overrides_global_off(self) -> None:
@@ -336,7 +354,7 @@ class TestConfigGlobalDefault:
             dm.config.adopt_orphan_tick_font = False
             simple_layout(fig, adopt_orphan_tick_font=True)
         finally:
-            dm.config.adopt_orphan_tick_font = True
+            dm.config.adopt_orphan_tick_font = False
         assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
         plt.close(fig)
 
@@ -344,38 +362,37 @@ class TestConfigGlobalDefault:
         fig, ax = self._build()
         fig.canvas.draw()
         default_weight = _x_tick(ax).get_fontweight()
-        # global default is True; pass False explicitly
-        simple_layout(fig, adopt_orphan_tick_font=False)
+        try:
+            dm.config.adopt_orphan_tick_font = True
+            simple_layout(fig, adopt_orphan_tick_font=False)
+        finally:
+            dm.config.adopt_orphan_tick_font = False
         assert _x_tick(ax).get_fontweight() == default_weight
         plt.close(fig)
 
-    def test_config_off_skips_save_formats_adoption(self, tmp_path) -> None:
+    def test_config_on_applies_save_formats_adoption(self, tmp_path) -> None:
         fig, ax = self._build()
-        fig.canvas.draw()
-        default_weight = _x_tick(ax).get_fontweight()
         try:
-            dm.config.adopt_orphan_tick_font = False
+            dm.config.adopt_orphan_tick_font = True
             dm.save_formats(
                 fig, str(tmp_path / "out"), formats=("png",), validate=False
             )
         finally:
-            dm.config.adopt_orphan_tick_font = True
-        assert _x_tick(ax).get_fontweight() == default_weight
+            dm.config.adopt_orphan_tick_font = False
+        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
         plt.close(fig)
 
-    def test_config_off_skips_save_and_show_adoption(
+    def test_config_on_applies_save_and_show_adoption(
         self, tmp_path, monkeypatch
     ) -> None:
         monkeypatch.setattr("dartwork_mpl.io.show", lambda *a, **k: None)
         fig, ax = self._build()
-        fig.canvas.draw()
-        default_weight = _x_tick(ax).get_fontweight()
         try:
-            dm.config.adopt_orphan_tick_font = False
+            dm.config.adopt_orphan_tick_font = True
             dm.save_and_show(fig, str(tmp_path / "out.svg"))
         finally:
-            dm.config.adopt_orphan_tick_font = True
-        assert _x_tick(ax).get_fontweight() == default_weight
+            dm.config.adopt_orphan_tick_font = False
+        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
 
 
 class TestConfigOverrideContextManager:
@@ -383,19 +400,19 @@ class TestConfigOverrideContextManager:
     always restores the prior state, including on exception."""
 
     def test_override_restores_after_block(self) -> None:
-        assert dm.config.adopt_orphan_tick_font
-        with dm.config.override(adopt_orphan_tick_font=False):
-            assert not dm.config.adopt_orphan_tick_font
-        assert dm.config.adopt_orphan_tick_font
+        assert not dm.config.adopt_orphan_tick_font
+        with dm.config.override(adopt_orphan_tick_font=True):
+            assert dm.config.adopt_orphan_tick_font
+        assert not dm.config.adopt_orphan_tick_font
 
     def test_override_restores_after_exception(self) -> None:
-        assert dm.config.adopt_orphan_tick_font
+        assert not dm.config.adopt_orphan_tick_font
         try:
-            with dm.config.override(adopt_orphan_tick_font=False):
+            with dm.config.override(adopt_orphan_tick_font=True):
                 raise RuntimeError("boom")
         except RuntimeError:
             pass
-        assert dm.config.adopt_orphan_tick_font
+        assert not dm.config.adopt_orphan_tick_font
 
     def test_override_unknown_field_raises(self) -> None:
         import pytest
@@ -410,10 +427,9 @@ class TestConfigOverrideContextManager:
         ax.plot(range(10), range(10))
         ax.set_ylabel("y label")
         fig.canvas.draw()
-        default_weight = _x_tick(ax).get_fontweight()
-        with dm.config.override(adopt_orphan_tick_font=False):
+        with dm.config.override(adopt_orphan_tick_font=True):
             simple_layout(fig)
-        assert _x_tick(ax).get_fontweight() == default_weight
+        assert _x_tick(ax).get_fontweight() == ax.xaxis.label.get_fontweight()
         plt.close(fig)
 
 
@@ -422,7 +438,7 @@ def test_config_exported_at_package_root() -> None:
     assert hasattr(dm, "Config")
     assert "config" in dm.__all__
     assert "Config" in dm.__all__
-    assert dm.config.adopt_orphan_tick_font  # ships as on
+    assert not dm.config.adopt_orphan_tick_font  # ships as off
 
 
 class TestWarnOnOrphanTickAdoption:
@@ -446,7 +462,7 @@ class TestWarnOnOrphanTickAdoption:
             dm.config.warn_on_orphan_tick_adoption = True
             with warnings.catch_warnings(record=True) as caught:
                 warnings.simplefilter("always")
-                simple_layout(fig)
+                simple_layout(fig, adopt_orphan_tick_font=True)
         finally:
             dm.config.warn_on_orphan_tick_adoption = False
 
@@ -500,7 +516,7 @@ class TestWarnOnOrphanTickAdoption:
             dm.config.warn_on_orphan_tick_adoption = True
             with warnings.catch_warnings(record=True) as caught:
                 warnings.simplefilter("always")
-                simple_layout(fig)
+                simple_layout(fig, adopt_orphan_tick_font=True)
         finally:
             dm.config.warn_on_orphan_tick_adoption = False
 

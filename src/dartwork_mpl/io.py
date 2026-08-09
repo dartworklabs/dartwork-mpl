@@ -154,12 +154,12 @@ def save_formats(
         no axis label adopt that axis's label font before saving, via
         :func:`~dartwork_mpl.layout.adopt_axis_label_font`. This guarantees
         the saved output reflects the adoption even when
-        :func:`~dartwork_mpl.layout.simple_layout` was not called (it
-        already applies the same step by default). Default is ``None`` —
+        :func:`~dartwork_mpl.layout.simple_layout` was not called. Default is
+        ``None`` —
         the value is read from
         :data:`dartwork_mpl.config.adopt_orphan_tick_font` (itself
-        defaulting to ``True``), so set ``dm.config.adopt_orphan_tick_font
-        = False`` once to flip every call site at once. Pass ``True`` /
+        defaulting to ``False``), so set ``dm.config.adopt_orphan_tick_font
+        = True`` once to opt in at every call site. Pass ``True`` /
         ``False`` explicitly to override per call.
     **kwargs
         Additional keyword arguments passed to ``savefig``. A
@@ -367,7 +367,7 @@ def save_and_show(
         font, matching :func:`save_formats`. Mutates the figure (see that
         function's Notes). Default is ``None`` — the value is read from
         :data:`dartwork_mpl.config.adopt_orphan_tick_font` (itself
-        defaulting to ``True``). Pass ``True`` / ``False`` explicitly to
+        defaulting to ``False``). Pass ``True`` / ``False`` explicitly to
         override per call.
     close_figure : bool, optional
         If ``True`` (default), the figure is closed via :func:`plt.close`

@@ -5,6 +5,10 @@
 - **Repo:** `dartwork-mpl`
 - **Author:** agent + user (lesthesia)
 
+> **Superseded default (2026-08-09):** The feature remains available, but
+> `Config.adopt_orphan_tick_font` now defaults to `False`. This document
+> preserves the original default-on design for historical context.
+
 ## Problem
 
 When an axis carries tick labels but **no axis label**, the tick labels

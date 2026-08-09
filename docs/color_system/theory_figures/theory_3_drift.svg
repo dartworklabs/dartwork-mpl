@@ -1598,50 +1598,13 @@ z
      </g>
      <g id="text_19">
       <!-- yellow -->
-      <g transform="translate(252.899944 173.504439) scale(0.08 -0.08)">
-       <defs>
-        <path id="Pretendard-Regular-79" d="M 775 -1275
-C 1256 -1275 1588 -1019 1788 -488
-L 3225 3394
-L 2638 3394
-L 1713 700
-L 1675 700
-L 750 3394
-L 163 3394
-L 1419 -25
-L 1319 -281
-C 1138 -775 956 -794 738 -794
-C 656 -794 531 -788 475 -781
-L 475 -1263
-C 544 -1269 656 -1275 775 -1275
-z
-" transform="scale(0.015625)"/>
-        <path id="Pretendard-Regular-77" d="M 1194 0
-L 1731 0
-L 2463 2588
-L 2513 2588
-L 3250 0
-L 3781 0
-L 4813 3394
-L 4250 3394
-L 3525 819
-L 3488 819
-L 2781 3394
-L 2206 3394
-L 1488 806
-L 1456 806
-L 731 3394
-L 163 3394
-L 1194 0
-z
-" transform="scale(0.015625)"/>
-       </defs>
-       <use xlink:href="#Pretendard-Regular-79"/>
-       <use xlink:href="#Pretendard-Regular-65" transform="translate(52.929688 0)"/>
-       <use xlink:href="#Pretendard-Regular-6c" transform="translate(108.203125 0)"/>
-       <use xlink:href="#Pretendard-Regular-6c" transform="translate(129.980469 0)"/>
-       <use xlink:href="#Pretendard-Regular-6f" transform="translate(151.757812 0)"/>
-       <use xlink:href="#Pretendard-Regular-77" transform="translate(208.496094 0)"/>
+      <g transform="translate(256.054944 172.090376) scale(0.06 -0.06)">
+       <use xlink:href="#Pretendard-ExtraLight-79"/>
+       <use xlink:href="#Pretendard-ExtraLight-65" transform="translate(50.488281 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6c" transform="translate(104.980469 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6c" transform="translate(125.097656 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6f" transform="translate(145.214844 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-77" transform="translate(200.488281 0)"/>
       </g>
      </g>
     </g>
@@ -1653,13 +1616,13 @@ z
      </g>
      <g id="text_20">
       <!-- orange -->
-      <g transform="translate(285.398361 173.418189) scale(0.08 -0.08)">
-       <use xlink:href="#Pretendard-Regular-6f"/>
-       <use xlink:href="#Pretendard-Regular-72" transform="translate(56.738281 0)"/>
-       <use xlink:href="#Pretendard-Regular-61" transform="translate(91.699219 0)"/>
-       <use xlink:href="#Pretendard-Regular-6e" transform="translate(145.214844 0)"/>
-       <use xlink:href="#Pretendard-Regular-67" transform="translate(200.878906 0)"/>
-       <use xlink:href="#Pretendard-Regular-65" transform="translate(258.789062 0)"/>
+      <g transform="translate(288.851799 172.025689) scale(0.06 -0.06)">
+       <use xlink:href="#Pretendard-ExtraLight-6f"/>
+       <use xlink:href="#Pretendard-ExtraLight-72" transform="translate(55.273438 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-61" transform="translate(87.109375 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6e" transform="translate(138.867188 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-67" transform="translate(193.066406 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-65" transform="translate(249.121094 0)"/>
       </g>
      </g>
     </g>
@@ -1671,33 +1634,11 @@ z
      </g>
      <g id="text_21">
       <!-- blue -->
-      <g transform="translate(323.916153 173.504439) scale(0.08 -0.08)">
-       <defs>
-        <path id="Pretendard-Regular-62" d="M 500 0
-L 1019 0
-L 1019 519
-L 1081 519
-C 1200 331 1419 -69 2069 -69
-C 2913 -69 3513 613 3513 1688
-C 3513 2763 2913 3438 2063 3438
-C 1400 3438 1200 3038 1081 2856
-L 1038 2856
-L 1038 4525
-L 500 4525
-L 500 0
-z
-M 1025 1700
-C 1025 2450 1363 2956 1988 2956
-C 2644 2956 2969 2406 2969 1700
-C 2969 975 2631 413 1988 413
-C 1369 413 1025 938 1025 1700
-z
-" transform="scale(0.015625)"/>
-       </defs>
-       <use xlink:href="#Pretendard-Regular-62"/>
-       <use xlink:href="#Pretendard-Regular-6c" transform="translate(59.082031 0)"/>
-       <use xlink:href="#Pretendard-Regular-75" transform="translate(80.859375 0)"/>
-       <use xlink:href="#Pretendard-Regular-65" transform="translate(136.132812 0)"/>
+      <g transform="translate(325.994435 172.090376) scale(0.06 -0.06)">
+       <use xlink:href="#Pretendard-ExtraLight-62"/>
+       <use xlink:href="#Pretendard-ExtraLight-6c" transform="translate(57.324219 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-75" transform="translate(77.441406 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-65" transform="translate(131.445312 0)"/>
       </g>
      </g>
     </g>
@@ -1709,11 +1650,11 @@ z
      </g>
      <g id="text_22">
       <!-- cyan -->
-      <g transform="translate(356.58207 173.504439) scale(0.08 -0.08)">
-       <use xlink:href="#Pretendard-Regular-63"/>
-       <use xlink:href="#Pretendard-Regular-79" transform="translate(52.929688 0)"/>
-       <use xlink:href="#Pretendard-Regular-61" transform="translate(105.859375 0)"/>
-       <use xlink:href="#Pretendard-Regular-6e" transform="translate(159.375 0)"/>
+      <g transform="translate(358.926289 172.090376) scale(0.06 -0.06)">
+       <use xlink:href="#Pretendard-ExtraLight-63"/>
+       <use xlink:href="#Pretendard-ExtraLight-79" transform="translate(52.148438 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-61" transform="translate(102.636719 0)"/>
+       <use xlink:href="#Pretendard-ExtraLight-6e" transform="translate(154.394531 0)"/>
       </g>
      </g>
     </g>

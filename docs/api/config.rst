@@ -18,16 +18,16 @@ Example
 
    dm.style.use("scientific")
 
-   # Flip orphan-tick adoption off globally.
-   dm.config.adopt_orphan_tick_font = False
+   # Opt in to orphan-tick adoption globally.
+   dm.config.adopt_orphan_tick_font = True
 
    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
    ax.plot([1, 2, 3], [1, 4, 9])      # no axis label on x
-   dm.simple_layout(fig)              # tick fonts left untouched
-   dm.save_formats(fig, "out", formats=("png",))   # also untouched
+   dm.simple_layout(fig)              # orphan tick fonts adopted
+   dm.save_formats(fig, "out", formats=("png",))   # also adopted
 
-   # Per-call override still works.
-   dm.simple_layout(fig, adopt_orphan_tick_font=True)
+   # Per-call opt-out still works.
+   dm.simple_layout(fig, adopt_orphan_tick_font=False)
 
    # Or scope the change to a block.
    with dm.config.override(adopt_orphan_tick_font=True):
