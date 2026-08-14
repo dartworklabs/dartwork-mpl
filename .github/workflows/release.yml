@@ -34,7 +34,7 @@ jobs:
     name: Test before release
     runs-on: [self-hosted, ml-main]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -64,7 +64,7 @@ jobs:
           uv run python docs/color_system/generate_theory_figures.py --check
       - name: Upload color-system comparison
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: color-system-comparison
           path: build/color-system-comparison
@@ -77,7 +77,7 @@ jobs:
     needs: test
     runs-on: [self-hosted, ml-main]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -183,7 +183,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # CHANGELOG.md hard-wraps paragraphs at ~72 chars (Keep a Changelog
       # convention). GitHub Releases render single newlines as soft
