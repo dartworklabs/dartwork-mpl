@@ -1,14 +1,14 @@
 {
-  "version": "2",
+  "version": "3",
   "type_scale": {
     "annotation": {
       "rcparam": "font.size",
-      "offset": -1.0,
+      "offset": -2.0,
       "multiplier": 1.0
     },
     "tick": {
-      "rcparam": "xtick.labelsize",
-      "offset": 0.0,
+      "rcparam": "font.size",
+      "offset": -1.0,
       "multiplier": 1.0
     },
     "body": {
@@ -17,18 +17,18 @@
       "multiplier": 1.0
     },
     "label": {
-      "rcparam": "axes.labelsize",
-      "offset": 0.0,
-      "multiplier": 1.0
-    },
-    "title": {
-      "rcparam": "axes.titlesize",
+      "rcparam": "font.size",
       "offset": 0.0,
       "multiplier": 1.0
     },
     "emphasis": {
       "rcparam": "font.size",
-      "offset": 1.5,
+      "offset": 1.0,
+      "multiplier": 1.0
+    },
+    "title": {
+      "rcparam": "font.size",
+      "offset": 2.0,
       "multiplier": 1.0
     }
   },
@@ -41,7 +41,7 @@
     "reference": {
       "rcparam": "lines.linewidth",
       "offset": 0.0,
-      "multiplier": 0.3
+      "multiplier": 0.5
     },
     "trend": {
       "rcparam": "lines.linewidth",
