@@ -33,18 +33,30 @@ _TOKEN_PATH = (
 )
 
 _FALLBACK_TOKENS: _TokenData = {
-    "version": "3",
+    "version": "2",
     "type_scale": {
-        # v3 — 여섯 토큰 전부 font.size 상대값이다. v2 는 토큰마다 다른
-        # rcParam(xtick.labelsize · axes.titlesize)을 물어 preset 을 바꿔도
-        # 절반만 움직였고 emphasis 가 title 을 넘어섰다. 값은 valuation 쪽
-        # 사다리를 정본으로 올린 것이다 — 더 촘촘하고 단조다.
-        "annotation": {"rcparam": "font.size", "offset": -2.0, "multiplier": 1.0},
-        "tick": {"rcparam": "font.size", "offset": -1.0, "multiplier": 1.0},
+        "annotation": {
+            "rcparam": "font.size",
+            "offset": -1.0,
+            "multiplier": 1.0,
+        },
+        "tick": {
+            "rcparam": "xtick.labelsize",
+            "offset": 0.0,
+            "multiplier": 1.0,
+        },
         "body": {"rcparam": "font.size", "offset": 0.0, "multiplier": 1.0},
-        "label": {"rcparam": "font.size", "offset": 0.0, "multiplier": 1.0},
-        "emphasis": {"rcparam": "font.size", "offset": 1.0, "multiplier": 1.0},
-        "title": {"rcparam": "font.size", "offset": 2.0, "multiplier": 1.0},
+        "label": {
+            "rcparam": "axes.labelsize",
+            "offset": 0.0,
+            "multiplier": 1.0,
+        },
+        "title": {
+            "rcparam": "axes.titlesize",
+            "offset": 0.0,
+            "multiplier": 1.0,
+        },
+        "emphasis": {"rcparam": "font.size", "offset": 1.5, "multiplier": 1.0},
     },
     "lw_ladder": {
         "hairline": {
@@ -53,13 +65,9 @@ _FALLBACK_TOKENS: _TokenData = {
             "multiplier": 0.3,
         },
         "reference": {
-            # v2 는 hairline 과 같은 0.3 이라 사다리가 4단이 아니라 3단이었고,
-            # 0.3 과 1.0 사이가 비어 호출부가 생짜 0.5 로 그 칸을 메워 왔다
-            # (실측 2026-09-14: 갤러리 한 파일에만 47건). 그 관행이 실제로
-            # 옳았으므로 0.5 를 정본으로 올린다.
             "rcparam": "lines.linewidth",
             "offset": 0.0,
-            "multiplier": 0.5,
+            "multiplier": 0.3,
         },
         "trend": {
             "rcparam": "lines.linewidth",
