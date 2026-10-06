@@ -50,8 +50,14 @@ def format_axis_year(
     ax: Axes,
     axis: Literal["x", "y", "both"] = "x",
     locale: Literal["ko", "ja", "zh", "en"] = "ko",
+    digits: Literal[2, 4] = 2,
 ) -> None:
     """Format numeric year ticks with a locale suffix.
+
+    Tick years use the last two digits by default (``2025`` -> ``25년``):
+    four-digit years double the tick width and crowd neighbouring labels.
+    Pass ``digits=4`` only when an axis spans a century or more, where two
+    digits cannot tell ``1965`` from ``2065``.
 
     Parameters
     ----------
@@ -62,15 +68,22 @@ def format_axis_year(
     locale:
         Locale suffix to apply. Korean uses ``년``, Japanese and Chinese use
         ``年``, and English uses no suffix.
+    digits:
+        ``2`` (default) prints ``25``; ``4`` prints ``2025``.
     """
     if locale not in _YEAR_SUFFIX:
         valid = ", ".join(_YEAR_SUFFIX)
         raise ValueError(f"Unknown locale {locale!r}; valid locales: {valid}")
+    if digits not in (2, 4):
+        raise ValueError(f"digits must be 2 or 4, got {digits!r}")
 
     suffix = _YEAR_SUFFIX[locale]
 
     def formatter(value: float, _pos: int | None = None) -> str:
-        return f"{round(value)}{suffix}"
+        year = round(value)
+        if digits == 2:
+            return f"{year % 100:02d}{suffix}"
+        return f"{year}{suffix}"
 
     year_formatter = ticker.FuncFormatter(formatter)
 
