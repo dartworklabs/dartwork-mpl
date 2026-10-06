@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- `format_axis_year` prints two-digit tick years by default (`2025` -> `25년`,
+  `25年`, `25`). Four-digit tick years double the tick width and crowd
+  neighbouring labels; the company-analysis harness now rejects them
+  (user instruction 2026-10-06). Pass `digits=4` for axes spanning a century
+  or more.
 - **Orphan tick-font adoption is now opt-in.**
   `dm.config.adopt_orphan_tick_font` now defaults to `False`, so
   `simple_layout`, `save_formats`, and `save_and_show` preserve tick fonts on

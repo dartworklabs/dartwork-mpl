@@ -16,13 +16,22 @@ jobs:
     runs-on: [self-hosted, ml-main]
     steps:
       - uses: actions/checkout@v6
+      # The local mypy hook shells out to ``uv run --frozen mypy`` so the runner
+      # needs ``uv`` on PATH before pre-commit fires.
+      #
+      # setup-uv MUST run before setup-python. setup-uv prepends
+      # ``~/.local/bin`` to PATH, and on the ml-main runner that directory
+      # holds the ``python``/``python3`` launcher that execs a uv-managed
+      # interpreter (dotfiles #94, 2026-09-11). uv-managed interpreters carry a
+      # PEP 668 EXTERNALLY-MANAGED marker, so with that launcher first on PATH
+      # ``pre-commit/action``'s ``python -m pip install pre-commit`` dies with
+      # ``error: externally-managed-environment`` before any hook runs.
+      # Running setup-python last puts its toolcache interpreter back in front.
+      - uses: astral-sh/setup-uv@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
-      # The local mypy hook shells out to ``uv run --frozen mypy`` so the runner
-      # needs ``uv`` on PATH before pre-commit fires.
-      - uses: astral-sh/setup-uv@v7
       # Pre-populate the uv-managed venv from the locked deps so the local
       # mypy hook (`uv run --frozen mypy`) has every optional dependency
       # available without re-resolving. `--frozen` guarantees the hook never
