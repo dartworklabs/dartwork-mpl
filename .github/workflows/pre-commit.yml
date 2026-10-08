@@ -10,10 +10,12 @@ concurrency:
   group: pre-commit-${{ github.ref }}
   cancel-in-progress: true
 
+# Public PR validation runs on disposable GitHub-hosted machines.
+# Other events retain the existing ml-main route.
 jobs:
   pre-commit:
     name: Run pre-commit on changed files
-    runs-on: [self-hosted, ml-main]
+    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
     steps:
       - uses: actions/checkout@v6
       # The local mypy hook shells out to ``uv run --frozen mypy`` so the runner
