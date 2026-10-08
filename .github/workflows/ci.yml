@@ -53,6 +53,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Isolate matplotlib font discovery
+        shell: bash
+        run: |
+          printf 'MPLCONFIGDIR=%s/matplotlib-%s\n' "$RUNNER_TEMP" "$UV_PYTHON" >> "$GITHUB_ENV"
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
