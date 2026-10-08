@@ -7,9 +7,11 @@ on:
       - "tests/visual/**"
       - ".github/workflows/visual-baselines.yml"
 
+# Public PR validation runs on disposable GitHub-hosted machines.
+# Other events retain the existing ml-main route.
 jobs:
   baselines:
-    runs-on: [self-hosted, ml-main]
+    runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
     steps:
       - uses: actions/checkout@v6
 
