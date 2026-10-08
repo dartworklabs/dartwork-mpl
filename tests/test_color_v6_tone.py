@@ -208,18 +208,60 @@ def test_neutral_tone_recovers_exact_cube_from_adjacent_backend_result(
 
 @pytest.mark.parametrize(
     ("value", "backend_result"),
-    (
-        (math.nextafter(0.125, math.inf), 0.5),
-        (0.125, math.nextafter(math.nextafter(0.5, 0.0), 0.0)),
-    ),
+    ((math.nextafter(0.125, math.inf), 0.5), (0.0, 0.0), (1.0, 1.0)),
 )
-def test_neutral_tone_preserves_backend_result_without_exact_adjacent_cube(
+def test_neutral_tone_preserves_backend_result_without_better_adjacent_cube(
     value: float, backend_result: float, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     tone = _tone()
     monkeypatch.setattr(tone.np, "cbrt", lambda value: backend_result)
 
     assert tone.tone_from_relative_y(value) == backend_result
+
+
+def test_neutral_tone_corrects_observed_linux_cube_root_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tone = _tone()
+    values = (
+        math.nextafter(0.125, 0.0),
+        0.125,
+        math.nextafter(0.125, math.inf),
+    )
+    backend = dict(
+        zip(
+            values,
+            (0.5, math.nextafter(0.5, 0.0), math.nextafter(0.5, 0.0)),
+            strict=True,
+        )
+    )
+    monkeypatch.setattr(tone.np, "cbrt", backend.__getitem__)
+
+    assert [tone.tone_from_relative_y(value) for value in values] == [0.5] * 3
+
+
+def test_neutral_tone_preserves_backend_result_on_equal_cube_residual(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tone = _tone()
+    backend_result = 0.4
+    adjacent = math.nextafter(backend_result, math.inf)
+    value = (backend_result**3 + adjacent**3) / 2
+    assert abs(backend_result**3 - value) == abs(adjacent**3 - value)
+    monkeypatch.setattr(tone.np, "cbrt", lambda value: backend_result)
+
+    assert tone.tone_from_relative_y(value) == backend_result
+
+
+def test_neutral_tone_correction_is_bounded_to_one_adjacent_float(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tone = _tone()
+    adjacent = math.nextafter(0.5, 0.0)
+    backend_result = math.nextafter(adjacent, 0.0)
+    monkeypatch.setattr(tone.np, "cbrt", lambda value: backend_result)
+
+    assert tone.tone_from_relative_y(0.125) == adjacent
 
 
 def test_neutral_tone_is_bounded_monotonic_and_invertible_at_float_boundaries() -> (

@@ -73,6 +73,10 @@ jobs:
         if: matrix.python-version == '3.12'
         env:
           MPLBACKEND: Agg
+          # Python 3.12 supports sys.monitoring for this line-only gate.
+          # Recheck compatibility before adding branches or dynamic contexts.
+          COVERAGE_CORE: sysmon
+          COVERAGE_DEBUG: core
         run: uv run pytest tests/ -v --cov --cov-report=term-missing
 
       - name: Run tests
