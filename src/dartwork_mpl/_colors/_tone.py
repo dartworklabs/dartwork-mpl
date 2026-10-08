@@ -272,7 +272,18 @@ def tone_from_relative_y(value: float) -> NeutralTone:
         ``cbrt(relative_y)``.
     """
     validated = relative_y(value)
-    return neutral_tone(float(np.cbrt(float(validated))))
+    result = float(np.cbrt(float(validated)))
+    cubed = result**3
+    if cubed != validated:
+        # NumPy's scalar cube root can miss an exactly invertible value by
+        # one ULP on some platforms. Accept the adjacent float toward Y
+        # only when explicit cubing recovers the input exactly; preserve
+        # the NumPy result for every other value.
+        direction = math.inf if cubed < validated else -math.inf
+        adjacent = math.nextafter(result, direction)
+        if adjacent**3 == validated:
+            result = adjacent
+    return neutral_tone(result)
 
 
 def relative_y_from_tone(value: NeutralTone) -> RelativeY:

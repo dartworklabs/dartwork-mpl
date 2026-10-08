@@ -195,6 +195,60 @@ def test_neutral_tone_uses_cuberoot_of_modeled_relative_y() -> None:
     assert tone.relative_y_from_tone(tone.neutral_tone(0.5)) == 0.125
 
 
+@pytest.mark.parametrize("direction", (0.0, 1.0))
+def test_neutral_tone_recovers_exact_cube_from_adjacent_backend_result(
+    direction: float, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tone = _tone()
+    backend_result = math.nextafter(0.5, direction)
+    monkeypatch.setattr(tone.np, "cbrt", lambda value: backend_result)
+
+    assert tone.tone_from_relative_y(0.125) == 0.5
+
+
+@pytest.mark.parametrize(
+    ("value", "backend_result"),
+    (
+        (math.nextafter(0.125, math.inf), 0.5),
+        (0.125, math.nextafter(math.nextafter(0.5, 0.0), 0.0)),
+    ),
+)
+def test_neutral_tone_preserves_backend_result_without_exact_adjacent_cube(
+    value: float, backend_result: float, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tone = _tone()
+    monkeypatch.setattr(tone.np, "cbrt", lambda value: backend_result)
+
+    assert tone.tone_from_relative_y(value) == backend_result
+
+
+def test_neutral_tone_is_bounded_monotonic_and_invertible_at_float_boundaries() -> (
+    None
+):
+    tone = _tone()
+    values = sorted(
+        {
+            *(index / 1024 for index in range(1025)),
+            *(math.ldexp(1.0, exponent) for exponent in range(-1074, 1, 3)),
+            *(
+                math.nextafter(value, direction)
+                for value in (0.0, 0.125, 0.5, 1.0)
+                for direction in (0.0, 1.0)
+            ),
+        }
+    )
+
+    actual = [tone.tone_from_relative_y(value) for value in values]
+
+    assert actual[0] == 0.0
+    assert actual[-1] == 1.0
+    assert actual == sorted(actual)
+    for value, neutral in zip(values, actual, strict=True):
+        assert 0.0 <= neutral <= 1.0
+        recovered = tone.relative_y_from_tone(neutral)
+        assert abs(recovered - value) <= 8 * math.ulp(value)
+
+
 @pytest.mark.parametrize("value", (0.0, 0.05, 0.18, 0.5, 1.0))
 def test_neutral_tone_round_trip(value: float) -> None:
     tone = _tone()
