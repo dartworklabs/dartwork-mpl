@@ -867,3 +867,84 @@ class TestValidateAuditRegressions:
             raise _types.BBOX_ERRORS[0]("boom")
 
         assert _run_check_safely(boom) is None
+
+
+class TestFailedCheckReport:
+    """Tolerated check failures remain observable alongside real warnings."""
+
+    @staticmethod
+    def _register_failure(monkeypatch, error=ValueError) -> None:
+        """Isolate a registered failing check without replacing validation."""
+        from dartwork_mpl.validate._checks import _registry
+
+        monkeypatch.setattr(_registry, "_REGISTRY", dict(_registry._REGISTRY))
+
+        @_registry.register_check("FAULT_ORIGINAL", order=55)
+        def fail(fig, renderer):
+            """Raise a controlled bbox failure from an ordinary registry entry."""
+            raise error("controlled check failure")
+
+    def test_failed_check_is_returned_quietly(self, monkeypatch, capsys):
+        """Quiet suppresses printing but retains the original failed check ID."""
+        import dartwork_mpl as dm
+
+        self._register_failure(monkeypatch)
+        fig, _ = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+        try:
+            report = validate_figure(
+                fig, checks=("FAULT_ORIGINAL",), quiet=True
+            )
+            assert len(report) == 1
+            assert report[0].check_id == "CHECK_FAILED"
+            assert report[0].severity == Severity.WARNING
+            assert report[0].detail == {"check_id": "FAULT_ORIGINAL"}
+            assert capsys.readouterr().out == ""
+        finally:
+            plt.close(fig)
+
+    def test_failed_check_preserves_other_warnings(self, monkeypatch):
+        """Failure and real empty-axes warnings follow registry run order."""
+        import dartwork_mpl as dm
+
+        self._register_failure(monkeypatch)
+        fig, _ = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+        try:
+            report = validate_figure(
+                fig, checks=("EMPTY_AXES", "FAULT_ORIGINAL"), quiet=True
+            )
+            assert [w.check_id for w in report] == [
+                "CHECK_FAILED",
+                "EMPTY_AXES",
+            ]
+        finally:
+            plt.close(fig)
+
+    def test_failed_check_never_prints_clean(self, monkeypatch, capsys):
+        """Nonquiet validation prints the failure as an ordinary warning."""
+        import dartwork_mpl as dm
+
+        self._register_failure(monkeypatch)
+        fig, _ = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+        try:
+            report = validate_figure(fig, checks=("FAULT_ORIGINAL",))
+            output = capsys.readouterr().out
+            assert len(report) == 1
+            assert "CHECK_FAILED" in output and "FAULT_ORIGINAL" in output
+            assert "No visual issues" not in output
+            assert "No issues found" not in output
+        finally:
+            plt.close(fig)
+
+    def test_unexpected_failed_check_propagates(self, monkeypatch):
+        """Unexpected defects remain exceptions instead of tolerated warnings."""
+        import pytest
+
+        import dartwork_mpl as dm
+
+        self._register_failure(monkeypatch, KeyError)
+        fig, _ = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+        try:
+            with pytest.raises(KeyError, match="controlled check failure"):
+                validate_figure(fig, checks=("FAULT_ORIGINAL",), quiet=True)
+        finally:
+            plt.close(fig)

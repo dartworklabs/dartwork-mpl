@@ -669,10 +669,14 @@ def register_tools(mcp: FastMCP) -> None:
         Returns
         -------
         dict
-            ``{"status": "ok"|"lint_blocked"|"exec_error"|"no_figure"
-            |"timeout", "lint": list[...], "visual_warnings":
-            list[...], "semantic_warnings": list[...], "stderr":
-            str}``. ``visual_warnings`` items are ``{"severity",
+            Every response includes ``status``, ``lint``, ``visual_warnings``,
+            ``stdout: str``, ``stderr: str``, ``validation_complete: bool`` and
+            ``failed_checks: list[str]``. ``ok`` means validation completed,
+            even if warnings exist. Tolerated check failures instead return
+            ``validation_incomplete`` with original check IDs and incomplete
+            validation. ``lint_blocked``, ``exec_error``, ``no_figure`` and
+            ``timeout`` are also incomplete; known failed IDs survive errors.
+            ``visual_warnings`` items are ``{"severity",
             "check_id", "message", "detail"}`` dicts. ``semantic_warnings``
             items are ``{"check_id", "message"}`` dicts — only present
             (and possibly empty) when ``chart_type_hint`` was supplied.
@@ -684,30 +688,29 @@ def register_tools(mcp: FastMCP) -> None:
           environment.
         - This tool **executes the provided code**. It is intended
           for trusted agent-generated snippets, not arbitrary user
-          input from the web. The subprocess is sandboxed only in
-          the sense that it cannot affect the caller's matplotlib
-          state.
+          input from the web. It isolates Matplotlib state, not OS access:
+          cwd and real save effects are inherited. Hostile snippets can mutate
+          the runner; this is not a security sandbox. Internal results use a
+          private temporary file that is cleaned up independently of logs.
         """
         import json
         import subprocess
         import sys
         import textwrap
+        from tempfile import TemporaryDirectory
 
         from dartwork_mpl.lint import lint as _lint
 
         def _finalize(payload: dict[str, Any]) -> dict[str, Any]:
-            """Normalize every return path to the documented shape.
+            """Keep logs and completion fields consistent on every outcome.
 
-            ``semantic_warnings`` is present (possibly empty) iff
-            ``chart_type_hint`` was supplied — including on the
-            ``lint_blocked`` / ``timeout`` / ``exec_error`` early
-            returns, so callers doing ``resp["semantic_warnings"]``
-            don't ``KeyError`` on exactly the failure paths where
-            robust handling matters. Routing all four returns through
-            this one closure keeps the shapes from drifting apart
-            again.
+            Semantic warnings are present iff a chart hint was supplied.
+            An error cannot claim completion, even with partial check results.
             """
             payload.setdefault("visual_warnings", [])
+            payload.setdefault("stdout", "")
+            payload.setdefault("failed_checks", [])
+            payload["validation_complete"] = payload["status"] == "ok"
             if chart_type_hint is None:
                 payload.pop("semantic_warnings", None)
             else:
@@ -747,131 +750,39 @@ def register_tools(mcp: FastMCP) -> None:
             matplotlib.use("Agg")
             import matplotlib.pyplot as plt
 
+            result_path = sys.argv[1]
+            payload = {{"status": "exec_error", "failed_checks": []}}
+
+            def _write_result():
+                '''Persist internal results independently of snippet stdout.'''
+                encoded = json.dumps(payload)
+                with open(result_path, "w", encoding="utf-8") as channel:
+                    channel.write(encoded)
+
             ns: dict = {{"__name__": "__sandbox__"}}
             user_code = sys.stdin.read()
             try:
                 exec(compile(user_code, "<agent-snippet>", "exec"), ns)
-            except Exception as exc:
-                json.dump(
-                    {{
-                        "status": "exec_error",
-                        "exc_type": type(exc).__name__,
-                        "exc_msg": str(exc),
-                    }},
-                    sys.stdout,
-                )
-                sys.exit(0)
+                fig = ns.get({figure_var!r})
+                if fig is None:
+                    # Fall back to whatever Pyplot tracked.
+                    figs = plt.get_fignums()
+                    if figs:
+                        fig = plt.figure(figs[-1])
+                if fig is None:
+                    payload["status"] = "no_figure"
+                else:
+                    from dartwork_mpl import validate_figure
 
-            fig = ns.get({figure_var!r})
-            if fig is None:
-                # Fall back to whatever Pyplot tracked.
-                figs = plt.get_fignums()
-                if figs:
-                    fig = plt.figure(figs[-1])
-            if fig is None:
-                json.dump(
-                    {{"status": "no_figure"}},
-                    sys.stdout,
-                )
-                sys.exit(0)
-
-            from dartwork_mpl import validate_figure
-
-            warnings = validate_figure(fig, quiet=True)
-
-            # ── Semantic checks (only when a chart-type hint is given) ──
-            # Catch plot choices that render fine but read poorly:
-            # too many pie slices, too few scatter points, bars with
-            # no value labels, etc.
-            chart_hint = {chart_type_hint!r}
-            semantic = []
-            if chart_hint:
-                hint = chart_hint.lower()
-                ax_list = list(fig.axes)
-
-                def _ax_has_text(ax):
-                    # Annotation density proxy: number of Text artists
-                    # the user explicitly added (excludes tick labels,
-                    # title, axis labels which exist by default).
-                    return any(
-                        bool(getattr(t, "get_text", lambda: "")())
-                        for t in getattr(ax, "texts", [])
-                    )
-
-                for i, ax in enumerate(ax_list):
-                    label = f"axes[{{i}}]"
-                    if hint == "pie":
-                        wedges = [
-                            p for p in ax.patches
-                            if type(p).__name__ == "Wedge"
-                        ]
-                        if len(wedges) > 7:
-                            semantic.append({{
-                                "check_id": "pie_too_many_slices",
-                                "message": (
-                                    f"{{label}} has {{len(wedges)}} pie "
-                                    "slices; >7 is hard to read. "
-                                    "Consider bar_horizontal sorted "
-                                    "by share."
-                                ),
-                            }})
-                    elif hint == "scatter":
-                        n_points = sum(
-                            len(coll.get_offsets())
-                            for coll in ax.collections
-                            if hasattr(coll, "get_offsets")
-                        )
-                        if 0 < n_points < 5:
-                            semantic.append({{
-                                "check_id": "scatter_too_few_points",
-                                "message": (
-                                    f"{{label}} has only "
-                                    f"{{n_points}} points; weak signal."
-                                ),
-                            }})
-                    elif hint in ("bar", "bar_grouped",
-                                  "bar_horizontal", "stacked_bar"):
-                        bars = [
-                            p for p in ax.patches
-                            if type(p).__name__ == "Rectangle"
-                        ]
-                        if bars and not _ax_has_text(ax):
-                            semantic.append({{
-                                "check_id": "bar_missing_value_labels",
-                                "message": (
-                                    f"{{label}} has {{len(bars)}} bars "
-                                    "but no value labels — readers will "
-                                    "have to eyeball the y-axis."
-                                ),
-                            }})
-                    elif hint == "line":
-                        if not ax.lines:
-                            semantic.append({{
-                                "check_id": "line_no_lines",
-                                "message": (
-                                    f"{{label}} declared as a line chart "
-                                    "but has no Line2D artists."
-                                ),
-                            }})
-                    elif hint == "histogram":
-                        bars = [
-                            p for p in ax.patches
-                            if type(p).__name__ == "Rectangle"
-                        ]
-                        if bars and len(bars) < 10:
-                            semantic.append({{
-                                "check_id": "histogram_too_few_bins",
-                                "message": (
-                                    f"{{label}} has only {{len(bars)}} "
-                                    "bins; consider more for a smoother "
-                                    "shape (10 to 50 is typical)."
-                                ),
-                            }})
-
-            json.dump(
-                {{
-                    "status": "ok",
-                    "visual_warnings": [
+                    warnings = validate_figure(fig, quiet=True)
+                    payload["failed_checks"] = [
+                        w.detail["check_id"] for w in warnings
+                        if w.check_id == "CHECK_FAILED"
+                    ]
+                    # Keep the checkpoint incomplete until all processing finishes.
+                    # Preserve acquired failures even if later processing fails.
+                    _write_result()
+                    payload["visual_warnings"] = [
                         {{
                             "severity": w.severity.name
                             if hasattr(w.severity, "name")
@@ -881,52 +792,164 @@ def register_tools(mcp: FastMCP) -> None:
                             "detail": w.detail,
                         }}
                         for w in warnings
-                    ],
-                    "semantic_warnings": semantic,
-                }},
-                sys.stdout,
-            )
+                    ]
+                    _write_result()
+                    # ── Semantic checks (only when a chart-type hint is given) ──
+                    # Catch plot choices that render fine but read poorly:
+                    # too many pie slices, too few scatter points, bars with
+                    # no value labels, etc.
+                    chart_hint = {chart_type_hint!r}
+                    semantic = []
+                    if chart_hint:
+                        hint = chart_hint.lower()
+                        ax_list = list(fig.axes)
+
+                        def _ax_has_text(ax):
+                            '''Return whether explicit text supplies annotation content.'''
+                            # Annotation density proxy: number of Text artists
+                            # the user explicitly added (excludes tick labels,
+                            # title, axis labels which exist by default).
+                            return any(
+                                bool(getattr(t, "get_text", lambda: "")())
+                                for t in getattr(ax, "texts", [])
+                            )
+
+                        for i, ax in enumerate(ax_list):
+                            label = f"axes[{{i}}]"
+                            if hint == "pie":
+                                wedges = [
+                                    p for p in ax.patches
+                                    if type(p).__name__ == "Wedge"
+                                ]
+                                if len(wedges) > 7:
+                                    semantic.append({{
+                                        "check_id": "pie_too_many_slices",
+                                        "message": (
+                                            f"{{label}} has {{len(wedges)}} pie "
+                                            "slices; >7 is hard to read. "
+                                            "Consider bar_horizontal sorted "
+                                            "by share."
+                                        ),
+                                    }})
+                            elif hint == "scatter":
+                                n_points = sum(
+                                    len(coll.get_offsets())
+                                    for coll in ax.collections
+                                    if hasattr(coll, "get_offsets")
+                                )
+                                if 0 < n_points < 5:
+                                    semantic.append({{
+                                        "check_id": "scatter_too_few_points",
+                                        "message": (
+                                            f"{{label}} has only "
+                                            f"{{n_points}} points; weak signal."
+                                        ),
+                                    }})
+                            elif hint in ("bar", "bar_grouped",
+                                          "bar_horizontal", "stacked_bar"):
+                                bars = [
+                                    p for p in ax.patches
+                                    if type(p).__name__ == "Rectangle"
+                                ]
+                                if bars and not _ax_has_text(ax):
+                                    semantic.append({{
+                                        "check_id": "bar_missing_value_labels",
+                                        "message": (
+                                            f"{{label}} has {{len(bars)}} bars "
+                                            "but no value labels — readers will "
+                                            "have to eyeball the y-axis."
+                                        ),
+                                    }})
+                            elif hint == "line":
+                                if not ax.lines:
+                                    semantic.append({{
+                                        "check_id": "line_no_lines",
+                                        "message": (
+                                            f"{{label}} declared as a line chart "
+                                            "but has no Line2D artists."
+                                        ),
+                                    }})
+                            elif hint == "histogram":
+                                bars = [
+                                    p for p in ax.patches
+                                    if type(p).__name__ == "Rectangle"
+                                ]
+                                if bars and len(bars) < 10:
+                                    semantic.append({{
+                                        "check_id": "histogram_too_few_bins",
+                                        "message": (
+                                            f"{{label}} has only {{len(bars)}} "
+                                            "bins; consider more for a smoother "
+                                            "shape (10 to 50 is typical)."
+                                        ),
+                                    }})
+
+                    payload["semantic_warnings"] = semantic
+                    payload["status"] = (
+                        "validation_incomplete" if payload["failed_checks"] else "ok"
+                    )
+            except Exception as exc:
+                payload.update({{
+                    "status": "exec_error",
+                    "exc_type": type(exc).__name__,
+                    "exc_msg": str(exc),
+                }})
+            _write_result()
             """
         ).format(figure_var=figure_var, chart_type_hint=chart_type_hint)
 
-        try:
-            proc = subprocess.run(
-                [sys.executable, "-c", runner],
-                input=code,
-                capture_output=True,
-                text=True,
-                timeout=timeout_seconds,
-            )
-        except subprocess.TimeoutExpired as exc:
-            return _finalize(
-                {
-                    "status": "timeout",
-                    "lint": lint_issues,
-                    "visual_warnings": [],
-                    "stderr": f"Subprocess exceeded {exc.timeout}s timeout.",
-                }
+        def _read_result(path: Path) -> dict[str, Any]:
+            """Read the private checkpoint, or report missing/invalid framing."""
+            try:
+                result = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                return {"status": "exec_error"}
+            return (
+                result if isinstance(result, dict) else {"status": "exec_error"}
             )
 
-        stderr = proc.stderr.strip()
-        try:
-            payload: dict[str, Any] = json.loads(proc.stdout)
-        except json.JSONDecodeError:
-            return _finalize(
-                {
-                    "status": "exec_error",
-                    "lint": lint_issues,
-                    "visual_warnings": [],
-                    "stderr": stderr or proc.stdout[:1000],
-                }
-            )
+        def _log_text(value: str | bytes | None) -> str:
+            """Normalize timeout logs, which may be bytes despite text=True."""
+            if isinstance(value, bytes):
+                return value.decode("utf-8", errors="replace")
+            return value or ""
 
-        payload["lint"] = lint_issues
-        payload["stderr"] = stderr
-        # ``_finalize`` applies the hint-conditional ``semantic_warnings``
-        # shaping (present iff ``chart_type_hint`` was supplied) so the
-        # response shape stays backwards-compatible for callers that
-        # don't pass the hint.
-        return _finalize(payload)
+        # The private absolute channel is removed on success, error and timeout.
+        # Cwd stays inherited so snippet save destinations retain their meaning.
+        with TemporaryDirectory(prefix="dartwork-mpl-validate-") as directory:
+            result_path = Path(directory).resolve() / "result.json"
+            try:
+                proc = subprocess.run(
+                    [sys.executable, "-c", runner, str(result_path)],
+                    input=code,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=timeout_seconds,
+                )
+            except subprocess.TimeoutExpired as exc:
+                payload = _read_result(result_path)
+                payload.update(
+                    {
+                        "status": "timeout",
+                        "lint": lint_issues,
+                        "stdout": _log_text(exc.stdout),
+                        "stderr": (
+                            _log_text(exc.stderr).strip()
+                            + f"\nSubprocess exceeded {exc.timeout}s timeout."
+                        ).strip(),
+                    }
+                )
+                return _finalize(payload)
+
+            payload = _read_result(result_path)
+            if proc.returncode != 0:
+                payload["status"] = "exec_error"
+            payload["lint"] = lint_issues
+            payload["stdout"] = proc.stdout
+            payload["stderr"] = proc.stderr.strip()
+            return _finalize(payload)
 
     # ── Data Validation Tool ─────────────────────────────────────────
 

@@ -355,6 +355,33 @@ Callable functions the AI assistant can invoke during a conversation.
 | `validate_generated_plot(code)`             | Execute a script in an isolated subprocess and return the `dm.validate_figure` report (overflow, clipped text, asymmetric margins). Lint-critical issues short-circuit before execution. |
 | `dartwork_mpl_info()`                       | Get a structured summary of all capabilities, presets, and templates            |
 
+### Plot execution and validation results
+
+`validate_generated_plot(code, figure_var="fig", timeout_seconds=20.0,
+chart_type_hint=None)` executes **trusted local snippets** with the Agg backend.
+The fresh subprocess isolates Matplotlib state; it is not an OS security
+sandbox. It inherits cwd and retains real file-save effects. Hostile code that
+mutates the runner is outside this contract.
+
+Every response includes `stdout` and `stderr` strings, `validation_complete`
+(boolean), `failed_checks` (original check IDs in run order), `lint`, and
+`visual_warnings`. Printed text, JSON-looking logs, low-level stdout writes and
+save messages remain logs; invalid UTF-8 log bytes use replacement characters.
+The internal JSON result travels through a private,
+absolute temporary file that is cleaned up after execution, including timeout.
+
+- `ok`: validation completed (`true`, `[]`); visual warnings may still exist.
+- `validation_incomplete`: tolerated check failures prevented completion
+  (`false`, original IDs). Each appears as a WARNING `CHECK_FAILED` with
+  `detail.check_id`; successful warnings remain in registry order.
+- `lint_blocked`, `exec_error`, `no_figure`, `timeout`: validation is incomplete
+  (`false`, `[]` unless failures were already acquired). Unexpected validation
+  exceptions are visible errors. Captured logs survive errors and timeout.
+
+`semantic_warnings` is present, possibly empty, exactly when `chart_type_hint`
+is supplied, including on failure. Native `dm.validate_figure` keeps returning
+its warning list; `quiet=True` suppresses printing without removing failures.
+
 ### Prompts
 
 Interactive prompt templates that guide the AI through multi-step tasks.
