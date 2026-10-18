@@ -1,6 +1,6 @@
 # MCP artifact delivery
 
-Date: 2026-10-18. Status: Approved and implemented; final integration review pending.
+Date: 2026-10-18. Status: Approved, implemented and verified 2026-10-19.
 The user approved the complete design and separately selected
 “이번 예외 승인 후 구현 진행 (권장)” for the precise discovery exception in
 [ADR 0003](../../adr/0003-allow-scoped-mcp-artifact-discovery.md).
@@ -192,8 +192,8 @@ docs only when implementation is approved. No visual design changes are proposed
 ## 충돌·미확인
 
 Task 1/2 checkpoints `c14dd7bd`/`8747bf1a` passed independent review with no blockers.
-Local evidence: `.superpowers/sdd/2026-10-18-mcp-artifact-delivery/` reports/logs;
-real Client render/get/five-resource demo passed on Python 3.10/macOS.
-FastMCP 3.4.2/2.13.3 focused contracts passed; full slow suite, Python 3.11–3.13,
-other OS/filesystems and remote CI are unrun. Task 3: 452 passed/1 stale live assertion,
-repaired module 37 passed; native validation 116 passed. Final branch review pending.
+Evidence: `.superpowers/sdd/2026-10-18-mcp-artifact-delivery/` reports/logs.
+Task 3: 452 passed/1 stale live assertion, repaired module 37 passed; native 116 passed; no full rerun claimed.
+Final 2026-10-19: `final-review.md` found only M1; fixed at `60c89c2d`, `final-rereview.md` PASS, no open finding.
+Affected FastMCP 3.4.2/2.13.3: 54/46 passed separately, scoped quality and clean real-server demo passed on Python 3.10/macOS (`final-fix-report.md`).
+Existing dependency/glyph warnings remain; full slow suite, Python 3.11–3.13, OS/filesystem matrix and remote CI are unrun.
