@@ -123,7 +123,9 @@ No current contract grants arbitrary asset-path access. Existing execution trust
 cwd and save effects are deliberately retained for compatibility. Actual registered
 FastMCP read tests confirmed URI-decoding behavior.
 The design and plan were reviewed before dispatch; both task reviews approved
-the implemented scope. Final whole-branch review remains pending.
+the implemented scope. Final whole-branch review approved head `56809584` with
+no actionable findings; evidence is retained in the ignored session directory
+`.superpowers/sdd/2026-10-18-mcp-contract-stability/final-review.md`.
 
 ## Delivered evidence and verification limits
 

@@ -92,7 +92,7 @@ Tests stay under `tests/` because `pyproject.toml` sets `testpaths=["tests"]`.
 - [x] Run `uv run --no-sync ruff check src/ tests/`, `uv run --no-sync ruff format --check src/ tests/`, and `uv run --no-sync mypy src/dartwork_mpl/`; all must pass.
 - [x] Run `uv run --no-sync pytest tests/test_mcp_asset_boundary.py tests/test_mcp_validation_contract.py tests/test_mcp.py tests/test_mcp_heavy_tools.py tests/test_mcp_tool_hardening.py tests/test_mcp_render_smoke.py tests/test_mcp_validators_complete.py tests/test_cli.py tests/test_drift.py tests/test_shipped_colors_hash.py tests/test_docs_mcp_tools.py --no-cov -q`; all must pass with FastMCP installed and nonzero collection. Existing CI still owns the full matrix and pixel gate.
 - [x] Compare diff with the spec and five review cases, recheck target freshness, and preserve red/green commands/results in session evidence. Report checks not run and any remaining failures; do not regenerate frozen color hashes.
-- [ ] Parent completes the final whole-branch review, including this documentation, and reports actual behavior and verification to the user. Both task deliverables have independent approval; final branch review and user handoff remain pending. No UI PoC is needed because chart appearance and interaction are unchanged.
+- [x] Complete the final whole-branch review, including documentation. Reviewed head `56809584` was approved with no actionable findings; both task deliverables also have independent approval. The parent delivers the user handoff after this administrative update. No UI PoC is needed because chart appearance and interaction are unchanged.
 
 The later artifact, data-repair and agent-evaluation milestones in the spec are
 future work. The immediate baseline is deterministic workflow contract coverage;
@@ -108,7 +108,8 @@ Ruff check passed, format checked 271 files, and mypy passed on 99 source files.
 Task 2's native/MCP suite passed 245 tests with existing glyph/deprecation noise.
 Minimum FastMCP 2.13.3 checks passed 175 Task 1 tests and 19 Task 2 contract tests.
 These suites overlap; their counts must not be summed. Red/green logs, task
-reviews and integration evidence remain in the ignored session directory
+reviews, `final-review.md` (head `56809584`) and integration evidence remain in
+the ignored session directory
 `.superpowers/sdd/2026-10-18-mcp-contract-stability/`.
 
 The full baseline run stopped after 305/4945 tests; it is not a full-suite pass.
