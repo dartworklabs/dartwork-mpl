@@ -461,7 +461,9 @@ def test_vendor_and_mcp_loaders_match_frozen_discovery(
     """Parse bundled vendor assets and MCP decorator source without registries."""
     vendor_colors = _catalog.load_vendor_colors()
     vendor_names = _catalog.load_vendor_color_names()
-    discovery = _catalog.scan_mcp_discovery()
+    discovery = _catalog.project_legacy_mcp_discovery(
+        _catalog.scan_mcp_discovery()
+    )
 
     assert (
         len(vendor_colors),

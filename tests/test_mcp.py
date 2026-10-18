@@ -1137,6 +1137,12 @@ class TestMcpAgenticReliability:
         mock_mcp = MagicMock()
         captured = _capture_decorators(mock_mcp, "tool")
         register_tools(mock_mcp)
+        from dartwork_mpl.mcp.artifacts import (
+            ConfigurationError,
+            register_artifacts,
+        )
+
+        register_artifacts(mock_mcp, ConfigurationError())
 
         info = json.loads(captured["dartwork_mpl_info"]())
         assert set(info["tools"]) == set(captured.keys())
@@ -1153,6 +1159,12 @@ class TestMcpAgenticReliability:
         res_mcp = MagicMock()
         resources = _capture_decorators(res_mcp, "resource")
         register_resources(res_mcp)
+        from dartwork_mpl.mcp.artifacts import (
+            ConfigurationError,
+            register_artifacts,
+        )
+
+        register_artifacts(res_mcp, ConfigurationError())
 
         info = json.loads(tools["dartwork_mpl_info"]())
         assert set(info["resources"]) == set(resources.keys())

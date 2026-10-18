@@ -1,5 +1,6 @@
-"""Declared values and private durable storage for MCP artifact delivery."""
+"""Declared durable artifact values, use cases and MCP registration surface."""
 
+from .delivery import ArtifactFailure, get_artifact, render_artifact
 from .policy import (
     ArtifactBytes,
     ArtifactId,
@@ -23,9 +24,11 @@ from .policy import (
     parse_render_request,
 )
 from .store import ArtifactStore, StagedBundle, configure_store
+from .transport import register_artifacts
 
 __all__ = [
     "ArtifactBytes",
+    "ArtifactFailure",
     "ArtifactId",
     "ArtifactMember",
     "ArtifactStore",
@@ -44,8 +47,11 @@ __all__ = [
     "StoredBundle",
     "ValidationSummary",
     "configure_store",
+    "get_artifact",
     "is_expired",
     "parse_artifact_id",
     "parse_manifest",
     "parse_render_request",
+    "register_artifacts",
+    "render_artifact",
 ]

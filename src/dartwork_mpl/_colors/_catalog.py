@@ -26,6 +26,7 @@ __all__ = [
     "load_v5_snapshot",
     "load_vendor_color_names",
     "load_vendor_colors",
+    "project_legacy_mcp_discovery",
     "scan_mcp_discovery",
 ]
 
@@ -1051,15 +1052,40 @@ def scan_mcp_discovery() -> dict[str, tuple[str, ...]]:
     tools = _scan_mcp_source(_MCP_DIR / "tools.py")
     resources = _scan_mcp_source(_MCP_DIR / "resources.py")
     prompts = _scan_mcp_source(_MCP_DIR / "prompts.py")
+    artifacts = _scan_mcp_source(_MCP_DIR / "artifacts" / "transport.py")
     return {
-        "tool_names": tuple(tools.tool_names),
+        "tool_names": tuple(tools.tool_names + artifacts.tool_names),
         "resource_uris": tuple(
             uri for uri in resources.resource_uris if "{" not in uri
         ),
         "resource_template_uris": tuple(
-            uri for uri in resources.resource_uris if "{" in uri
+            uri
+            for uri in resources.resource_uris + artifacts.resource_uris
+            if "{" in uri
         ),
         "prompt_names": tuple(prompts.prompt_names),
+    }
+
+
+def project_legacy_mcp_discovery(
+    discovery: Mapping[str, Sequence[str]],
+) -> dict[str, tuple[str, ...]]:
+    """Project only ADR 0003's seven additions for frozen historical comparisons."""
+    additions = {
+        "tool_names": {"render_plot", "get_plot_artifact"},
+        "resource_template_uris": {
+            "dartwork-mpl://artifacts/{artifact_id}/plot.png",
+            "dartwork-mpl://artifacts/{artifact_id}/plot.pdf",
+            "dartwork-mpl://artifacts/{artifact_id}/source.py",
+            "dartwork-mpl://artifacts/{artifact_id}/report.json",
+            "dartwork-mpl://artifacts/{artifact_id}/manifest.json",
+        },
+    }
+    return {
+        key: tuple(
+            value for value in values if value not in additions.get(key, set())
+        )
+        for key, values in discovery.items()
     }
 
 
@@ -1424,7 +1450,7 @@ def compile_candidate_snapshot() -> CatalogSnapshot:
         taxonomy=taxonomy,
         registrations=registrations,
         typing_literals={},
-        mcp_discovery=scan_mcp_discovery(),
+        mcp_discovery=project_legacy_mcp_discovery(scan_mcp_discovery()),
         public_inventory=cast(PublicInventory, tuple(public_inventory)),
         discrete_hex=cast(NestedHexRows, discrete),
         reverse_discrete_hex=cast(NestedHexRows, reverse_discrete),
