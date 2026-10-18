@@ -137,6 +137,7 @@ def _run(
         import matplotlib.pyplot as plt
 
         result_path = sys.argv[1]
+        output_stem = {output_stem!r}
         payload = {{"status": "exec_error", "failed_checks": []}}
 
         def _write_result():
@@ -159,7 +160,7 @@ def _run(
                 payload["status"] = "no_figure"
             else:
                 from matplotlib.figure import Figure
-                if {output_stem!r} is not None and not isinstance(fig, Figure):
+                if output_stem is not None and not isinstance(fig, Figure):
                     raise TypeError("Selected value is not a matplotlib Figure")
                 from dartwork_mpl import validate_figure
 
@@ -277,11 +278,11 @@ def _run(
                 validated_status = (
                     "validation_incomplete" if payload["failed_checks"] else "ok"
                 )
-                if {output_stem!r} is not None:
+                if output_stem is not None:
                     _write_result()
                     try:
                         from dartwork_mpl import save_formats
-                        save_formats(fig, {output_stem!r}, formats=("png", "pdf"), validate=False, adopt_orphan_tick_font=False)
+                        save_formats(fig, output_stem, formats=("png", "pdf"), validate=False, adopt_orphan_tick_font=False)
                     except Exception:
                         payload["_export_failed"] = True
                         _write_result()

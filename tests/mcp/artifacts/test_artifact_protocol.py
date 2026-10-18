@@ -107,7 +107,7 @@ def test_render_retrieve_and_read_all_resources(tmp_path):
             assert bodies["source.py"] == SOURCE.encode("utf-8")
             report = json.loads(bodies["report.json"])
             assert report["stdout"] == "  stdout  \n"
-            assert report["stderr"].endswith("  stderr  \n")
+            assert report["stderr"] == "  stderr  \n"
             assert report["status"] == "ok"
             manifest = json.loads(bodies["manifest.json"])
             assert len(manifest["files"]) == 4

@@ -53,7 +53,7 @@ dm.save_formats(fig, {str(tmp_path / "reference")!r}, formats=('png',), validate
     assert isinstance(result, ExportedPlot), result
     assert marker.read_text() == "run\n"
     assert float(result.report["stdout"].strip()) >= 0
-    assert result.report["stderr"].endswith("  stderr spaces  \n")
+    assert result.report["stderr"] == "  stderr spaces  \n"
     image = mpimg.imread(io.BytesIO((tmp_path / "plot.png").read_bytes()))
     assert (
         image[image.shape[0] // 3, image.shape[1] // 2, 0] > 0.9
@@ -142,3 +142,15 @@ dm.save_formats(fig, {str(reference)!r}, formats=('png',), validate=False, adopt
     assert (tmp_path / "plot.png").read_bytes() == (
         tmp_path / "reference.png"
     ).read_bytes()
+
+
+@pytest.mark.parametrize(
+    "stderr", ["", "  user SyntaxWarning: keep this diagnostic  \n"]
+)
+def test_export_stderr_contains_only_original_user_output(tmp_path, stderr):
+    """Runner compilation stays silent while exact user diagnostics survive."""
+    code = FIGURE + f"import sys\nsys.stderr.write({stderr!r})\n"
+    result = export_plot(code, "fig", 20, None, output_stem=tmp_path / "plot")
+    assert isinstance(result, ExportedPlot), result
+    assert result.report["stderr"] == stderr
+    assert (tmp_path / "plot.png").exists()
