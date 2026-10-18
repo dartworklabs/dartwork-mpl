@@ -1,11 +1,11 @@
 # MCP artifact delivery
 
-Date: 2026-10-18. Status: Approved; implementation pending.
+Date: 2026-10-18. Status: Approved and implemented; final integration review pending.
 The user approved the complete design and separately selected
 “이번 예외 승인 후 구현 진행 (권장)” for the precise discovery exception in
 [ADR 0003](../../adr/0003-allow-scoped-mcp-artifact-discovery.md).
 API names, storage limits and retention below are accepted engineering choices.
-Approval authorizes planning and implementation; it does not claim shipped behavior.
+Implementation evidence is recorded below; no merge, release or deployment is claimed.
 
 ## Intent and scope
 
@@ -22,10 +22,10 @@ No Handbook exists; this design does not initialize one. Current authorities:
 | role | path | Current contract or observed state |
 | --- | --- | --- |
 | purpose | `AGENTS.md` | Native Figure/Axes, preset-relative drawing, ≤200-line designs; prior locks require separate approval. |
-| execution | `src/dartwork_mpl/mcp/tools.py` | `validate_generated_plot` executes trusted snippets once with Agg, inherited cwd/save effects, private result framing and explicit incomplete checks. Existing template renderers return base64 or a local path. |
+| execution | `src/dartwork_mpl/mcp/execution.py`, `tools.py`, `artifacts/` | Shared validation/export runner executes trusted snippets once with Agg, inherited cwd/save effects, private result framing and explicit incomplete checks. Existing template renderers return base64 or a local path. |
 | export | `src/dartwork_mpl/io.py` | Public `save_formats` supports PNG/PDF and `validate=False`. |
-| discovery | `src/dartwork_mpl/mcp/server.py`, `tools.py`, `resources.py`, `prompts.py` | Live server has 16 tools, 10 static resources, 4 templates, 2 prompts; info scanners read selected source modules. |
-| compatibility | `tests/test_color_v6_comparison.py::EXACT_FIELDS`, `src/dartwork_mpl/_colors/_catalog.py` | `mcp_discovery` is exact, including names/order; live source scan equals the frozen baseline. |
+| discovery | `src/dartwork_mpl/mcp/server.py`, `tools.py`, `resources.py`, `prompts.py` | Live server has 18 tools, 10 static resources, 9 templates, 2 prompts; scanners include `artifacts/transport.py`. |
+| compatibility | `tests/test_color_v6_comparison.py::EXACT_FIELDS`, `src/dartwork_mpl/_colors/_catalog.py` | Historical projection preserves frozen discovery; full live discovery separately pins exactly the seven approved additions. |
 | verification | `pyproject.toml`, `.github/workflows/ci.yml` | Python ≥3.10, FastMCP ≥2.13.3,<4; pytest collects `tests/`; CI runs Ruff, mypy and tests on Python 3.10–3.13. |
 
 ## 지켜야 할 현재 불변식
@@ -36,7 +36,7 @@ No Handbook exists; this design does not initialize one. Current authorities:
 - Never regenerate color baseline payloads or shipped-color digests for this work;
   no color algorithms, registrations, values or rendering styles change.
 - Add no runtime or test dependencies. Keep the core importable without MCP.
-- Apply only ADR 0003's approved discovery exception; implementation remains pending.
+- Apply only ADR 0003's approved discovery exception; all other exact surfaces remain frozen.
 
 ## 설계 이유와 제약
 
@@ -164,7 +164,7 @@ core plus exactly two tools/five templates, preserving core ordering and identit
 Full live scanners/info must include the artifact module; filtering runtime
 discovery to conceal additions is forbidden. Result: 18 tools, 10 static resources,
 9 templates, 2 prompts. The frozen baseline bytes/digests and other exact surfaces
-remain unchanged. This approved policy is a target, not current implementation.
+remain unchanged. Current implementation is checked against this approved policy.
 
 ## Verification and completion
 
@@ -191,7 +191,9 @@ docs only when implementation is approved. No visual design changes are proposed
 
 ## 충돌·미확인
 
-No approval boundary remains for this scoped design. ADR 0003 records the separate
-lock exception approval; the current code/table above remain the preimplementation
-state. The bounded builder check found no unresolved design-author questions;
-wire field spelling and internal helpers are builder choices pinned by tests.
+Task 1/2 checkpoints `c14dd7bd`/`8747bf1a` passed independent review with no blockers.
+Local evidence: `.superpowers/sdd/2026-10-18-mcp-artifact-delivery/` reports/logs;
+real Client render/get/five-resource demo passed on Python 3.10/macOS.
+FastMCP 3.4.2/2.13.3 focused contracts passed; full slow suite, Python 3.11–3.13,
+other OS/filesystems and remote CI are unrun. Task 3: 452 passed/1 stale live assertion,
+repaired module 37 passed; native validation 116 passed. Final branch review pending.

@@ -72,14 +72,16 @@ below) for the complete list. The most common ones AI agents trip on:
 
 For Claude Code / Cursor / any MCP client, see the step-by-step setup
 in [`docs/integrations/mcp_server.md`](docs/integrations/mcp_server.md).
-The server exposes 16 tools (lint + auto-fix + figure validation + render + color lookup + info
-+ chart-type recommender + layered-plot composer + advanced-tier render), 10 resources +
-4 resource templates (the prompt corpus + 18 basic + 18 tier-2 advanced plot templates), and 2 prompts. The tools you'll
+The server exposes 18 tools (lint + auto-fix + figure validation + render + color lookup + info
++ chart-type recommender + layered-plot composer + advanced-tier render + durable artifact delivery), 10 resources +
+9 resource templates (the prompt corpus + 18 basic + 18 tier-2 advanced plot templates + five artifact members), and 2 prompts. The tools you'll
 use most:
 
 - `lint_dartwork_mpl_code(code)` — anti-pattern detection.
 - `validate_plot_data(plot_type, data)` — input shape checks.
 - `dartwork_mpl_info()` — package version + capability summary.
+- `render_plot(code)` — execute trusted plotting code once; return PNG, PDF, exact source, report and manifest.
+- `get_plot_artifact(artifact_id)` — reopen that bundle without execution for seven days via MCP resources.
 
 When MCP is unavailable, the same anti-pattern catalog is reachable
 through `dm.list_prompts()` + `dm.get_prompt("02-anti-patterns")`

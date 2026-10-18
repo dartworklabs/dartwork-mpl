@@ -47,6 +47,8 @@ EXPECTED_MCP_TOOLS: frozenset[str] = frozenset(
         "compose_layered_plot",
         "render_template_advanced",
         "dartwork_mpl_info",
+        "render_plot",
+        "get_plot_artifact",
     }
 )
 
@@ -129,6 +131,7 @@ class TestMcpSurfaceContract:
         return asyncio.run(coro)
 
     def test_tool_set_matches_contract(self) -> None:
+        """Live discovery contains exactly the existing tools and approved additions."""
         tools = self._run(self.mcp.list_tools())
         got = {t.name for t in tools}
         assert got == EXPECTED_MCP_TOOLS, (
