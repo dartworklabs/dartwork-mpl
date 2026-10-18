@@ -12,11 +12,13 @@ An ordinary print must not break execution results, a check that could not run
 must not look clean, and a bundled-asset request must not read outside its root.
 These are deterministic contract repairs, not a claim of measured LLM performance.
 
-## 현재 권위와 상태
+## Planning baseline and authority paths
 
-No Handbook exists; none is initialized for this change. Actual authorities:
+No Handbook exists; none is initialized for this change. The following behavior
+snapshot is from planning baseline `e544273c`, before the repairs. Paths remain
+authorities; obsolete baseline behavior is not the delivered current behavior.
 
-| role | path | Current contract or observed implementation |
+| role | path | Contract or observed implementation at planning baseline |
 | --- | --- | --- |
 | purpose | `AGENTS.md` | Native Matplotlib, preset-relative sizing, ≤200-line designs, frozen shipped colors. |
 | execution | `src/dartwork_mpl/mcp/tools.py` | `validate_generated_plot` executes trusted local snippets in a fresh Agg subprocess and parses its entire stdout as JSON. |
@@ -118,10 +120,24 @@ and the repository's lint/type checks. No external model or service is needed.
 ## 충돌·미확인
 
 No current contract grants arbitrary asset-path access. Existing execution trust,
-cwd and save effects are deliberately retained for compatibility. Implementation
-must confirm FastMCP URI-decoding behavior with an actual registered read test.
-The parent reviews this design and plan before dispatch; no new approval round
-or commit is required merely to record the already authorized repair scope.
+cwd and save effects are deliberately retained for compatibility. Actual registered
+FastMCP read tests confirmed URI-decoding behavior.
+The design and plan were reviewed before dispatch; both task reviews approved
+the implemented scope. Final whole-branch review remains pending.
+
+## Delivered evidence and verification limits
+
+Repairs landed in `0b6f83a7` and `3f0b7b2f`: one shared confined asset resolver,
+private execution-result framing with captured logs, and returned failed-check
+warnings plus explicit MCP completion fields. The adopted targets above describe
+this delivered behavior; product usage is documented in `docs/integrations/mcp_server.md`.
+Local Python 3.10 integration at `3f0b7b2f` passed 270 tests, Ruff check/format
+(271 files) and mypy (99 files). Separate overlapping task suites and minimum
+FastMCP 2.13.3 checks also passed; their counts are not additive.
+The interrupted baseline run reached 305/4945 tests, not full-suite completion.
+Full final tests, Python 3.11–3.13, Sphinx, pixel tests and remote CI were not run.
+No PR, push or merge occurred. No dependency, UI or shipped-color change was made.
+Deterministic contract coverage does not measure real agent task performance.
 
 ## Subsequent roadmap — not implemented here
 
