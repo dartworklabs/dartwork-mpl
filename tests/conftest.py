@@ -28,10 +28,14 @@ import shutil
 import sys
 from collections.abc import Iterator
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pytest
+
+if TYPE_CHECKING:
+    from dartwork_mpl._colors._catalog import CatalogSnapshot
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _SRC_PATH = str(_REPO_ROOT / "src")
@@ -89,6 +93,18 @@ _SSOT_PATH = (
 def v5_ssot() -> dict:
     """설계 확정 SSOT (스펙 §7 — 구현이 이 값을 재생산해야 함)."""
     return json.loads(_SSOT_PATH.read_text(encoding="utf-8"))
+
+
+@pytest.fixture(scope="session")
+def candidate_catalog() -> CatalogSnapshot:
+    """Compile current source once into a deeply immutable color snapshot.
+
+    Golden comparisons and mutation gates share these real compiler outputs;
+    tests of changed compiler inputs still invoke the compiler independently.
+    """
+    from dartwork_mpl._colors._catalog import compile_candidate_snapshot
+
+    return compile_candidate_snapshot()
 
 
 @pytest.fixture(autouse=True)

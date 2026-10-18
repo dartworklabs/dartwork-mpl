@@ -103,6 +103,16 @@ jobs:
           path: docs/build.log
           retention-days: 7
 
+      # The build hooks verify generated authorities without rewriting them.
+      # Catch an accidental tracked write before publishing the Pages bundle.
+      - name: Assert docs build left llms-full.txt untouched
+        run: |
+          if ! git diff --quiet -- llms-full.txt; then
+            echo "::error::The docs build mutated llms-full.txt. Authority hooks must verify without writing. Regenerate explicitly before CI."
+            git --no-pager diff -- llms-full.txt | head -60
+            exit 1
+          fi
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:

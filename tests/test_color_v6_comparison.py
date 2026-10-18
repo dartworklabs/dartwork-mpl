@@ -92,12 +92,6 @@ def baseline_catalog() -> "_catalog.CatalogSnapshot":
     return _catalog.load_v5_snapshot()
 
 
-@pytest.fixture(scope="module")
-def candidate_catalog() -> "_catalog.CatalogSnapshot":
-    """Compile the live candidate catalog once for catalog tests."""
-    return _catalog.compile_candidate_snapshot()
-
-
 def test_current_catalog_matches_frozen_v5_exactly(
     baseline_catalog: "_catalog.CatalogSnapshot",
     candidate_catalog: "_catalog.CatalogSnapshot",

@@ -13,10 +13,7 @@ import pytest
 
 from dartwork_mpl._colors import _compatibility_metrics as oracle
 from dartwork_mpl._colors import _gates, _ssot
-from dartwork_mpl._colors._catalog import (
-    CatalogSnapshot,
-    compile_candidate_snapshot,
-)
+from dartwork_mpl._colors._catalog import CatalogSnapshot
 from dartwork_mpl._colors._gates import (
     GateReport,
     GateViolation,
@@ -29,12 +26,6 @@ from dartwork_mpl._colors._gates import (
     load_quality_baseline,
 )
 from dartwork_mpl._colors._ssot import load_color_v6_ssot
-
-
-@pytest.fixture(scope="module")
-def candidate_catalog() -> CatalogSnapshot:
-    """Compile the live candidate exactly once for all mutation gates."""
-    return compile_candidate_snapshot()
 
 
 @pytest.fixture(scope="module")

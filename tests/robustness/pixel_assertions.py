@@ -65,7 +65,15 @@ def assert_no_edge_overflow(
 
     `side` ∈ {"left", "right", "top", "bottom"}.
     """
-    arr = figure_to_rgba(fig)
+    _assert_blank_edge(
+        figure_to_rgba(fig), side=side, min_white_px=min_white_px
+    )
+
+
+def _assert_blank_edge(
+    arr: np.ndarray, *, side: str, min_white_px: int
+) -> None:
+    """Reject non-white pixels in one edge of an already rendered buffer."""
     h, w, _ = arr.shape
     probe = min(_PROBE_PX, min_white_px)
 
@@ -88,9 +96,10 @@ def assert_no_edge_overflow(
 
 
 def assert_minimum_white_border(fig: Figure, *, min_px: int = 4) -> None:
-    """Assert all four edges have at least `min_px` blank pixels."""
+    """Check all four edges of one fresh rendering for blank margins."""
+    arr = figure_to_rgba(fig)
     for side in ("left", "right", "top", "bottom"):
-        assert_no_edge_overflow(fig, side=side, min_white_px=min_px)
+        _assert_blank_edge(arr, side=side, min_white_px=min_px)
 
 
 def _iter_visible_text_artists(fig: Figure) -> Iterator[tuple[Text, bool]]:

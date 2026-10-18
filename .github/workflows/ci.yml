@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# Cancel superseded PR validation; push runs keep their existing behavior.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # Public PR validation runs on disposable GitHub-hosted machines.
 # Other events retain the existing ml-main route.
 jobs:
@@ -72,8 +77,7 @@ jobs:
 
       # Keep the coverage gate on one representative interpreter. The
       # remaining matrix jobs still run the full test suite for version
-      # compatibility, but skip coverage instrumentation and the duplicate
-      # integration smoke below.
+      # compatibility, but skip coverage instrumentation.
       - name: Run tests with coverage
         if: matrix.python-version == '3.12'
         env:
@@ -82,7 +86,7 @@ jobs:
           # Recheck compatibility before adding branches or dynamic contexts.
           COVERAGE_CORE: sysmon
           COVERAGE_DEBUG: core
-        run: uv run pytest tests/ -v --cov --cov-report=term-missing
+        run: uv run pytest tests/ -v --cov --cov-report=term-missing --junitxml="$RUNNER_TEMP/pytest-full.xml"
 
       - name: Run tests
         if: matrix.python-version != '3.12'
@@ -90,39 +94,19 @@ jobs:
           MPLBACKEND: Agg
         run: uv run pytest tests/ -v --no-cov
 
-      # Explicit guardrail: the integration / MCP / CLI / drift tests
-      # all import ``fastmcp`` via ``pytest.importorskip``. With
-      # ``--all-extras`` they should never skip, but the silent-skip
-      # mode of importorskip means a regression in the extras
-      # mapping would hide them from the main pytest pass. This
-      # step parses the run output and fails if **any** of those
-      # files contributed zero collected items.
+      # Prove every protected module contributed a passing executed case in
+      # the same full-suite run. A missing optional extra must not silently
+      # skip a whole module. Pytest's own nonzero status still fails the job.
       - name: Assert MCP / integration tests actually ran
         if: matrix.python-version == '3.12'
-        env:
-          MPLBACKEND: Agg
-        run: |
-          uv run pytest \
-            tests/test_mcp.py \
-            tests/test_integration.py \
-            tests/test_cli.py \
-            tests/test_drift.py \
-            -v --no-cov \
-          | tee /tmp/integration-output.log
-          # Fail if any of the files collected 0 items (silent skip
-          # of an entire file would otherwise pass CI). The summary
-          # line looks like ``=== 27 passed in 1.5s ===``. The digit
-          # guard on ``0 passed`` avoids matching counts that merely
-          # end in zero (``130 passed`` contains ``0 passed``).
-          if grep -E "no tests ran|(^|[^0-9])0 passed" /tmp/integration-output.log; then
-            echo "::error::Integration tests collected 0 items"
-            exit 1
-          fi
+        run: uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"
 
   # Sanity check: the *base* install (no [mcp] extra) must still
-  # import and pass the non-MCP tests. Catches regressions where a
+  # import, render, and save. Catches regressions where a
   # core module accidentally requires fastmcp at import time.
   test-no-extras:
+    env:
+      UV_PYTHON: "3.12"
     runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
     steps:
       - uses: actions/checkout@v6
@@ -137,7 +121,14 @@ jobs:
         run: uv sync --no-dev
       - name: Base-install smoke (import + exercise core, no extras/dev)
         run: |
-          uv run python -c "
+          uv run --no-sync python -c "
+          from importlib.util import find_spec
+
+          # Prove uv did not sync default dev dependencies back into this
+          # environment, and that optional extras remain optional.
+          for module in ('pytest', 'sphinx', 'pandas', 'fastmcp', 'IPython', 'fastapi'):
+              assert find_spec(module) is None, f'{module} unexpectedly installed'
+
           import matplotlib
           matplotlib.use('Agg')
           import os
@@ -200,6 +191,7 @@ jobs:
   # Two gates: (1) -W turns Sphinx warnings into build failures; (2) the
   # ``builder-inited`` hook rejects stale generated authorities before deploy.
   docs:
+    if: github.event_name == 'pull_request'
     runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
     # Pin the docs build to a single modern interpreter. Without this,
     # `uv sync` floats the build venv to the requires-python floor (3.10),
