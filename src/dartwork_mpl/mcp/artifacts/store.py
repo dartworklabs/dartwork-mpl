@@ -415,7 +415,12 @@ def _remove_owned(
 def _cleanup_expired(
     root_fd: int, now: datetime, *, exclude: ArtifactId | None = None
 ) -> None:
-    """Lazily remove only fully verified expired UUID bundles; leave unknowns."""
+    """Read only metadata for live bundles; fully reverify expiry before removal.
+
+    The bounded, no-follow manifest preflight only selects candidates. Removal
+    still requires complete bundle validation and its own expiry/identity checks;
+    invalid or unsafe preflight metadata is preserved without reading payloads.
+    """
     try:
         names = os.listdir(root_fd)
     except OSError:
@@ -427,6 +432,18 @@ def _cleanup_expired(
         try:
             fd = _open_directory(root_fd, name)
             try:
+                raw = _read_file(
+                    fd, ArtifactMember.MANIFEST.value, MAX_MANIFEST_BYTES
+                )
+                if isinstance(raw, ArtifactTooLarge):
+                    continue
+                manifest = parse_manifest(raw)
+                if (
+                    isinstance(manifest, CorruptArtifact)
+                    or manifest.artifact_id != parsed
+                    or not is_expired(manifest, now)
+                ):
+                    continue
                 evidence: dict[str, tuple[int, int]] = {}
                 bundle = _read_bundle(fd, parsed, evidence=evidence)
                 if isinstance(bundle, StoredBundle) and is_expired(

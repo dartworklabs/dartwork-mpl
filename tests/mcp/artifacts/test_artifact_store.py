@@ -7,6 +7,7 @@ import stat
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import Event
@@ -587,6 +588,174 @@ def test_lazy_cleanup_requires_fully_validated_expired_bundles(
     assert isinstance(
         store.load(corrupt.manifest.artifact_id, later), CorruptArtifact
     )
+
+
+@pytest.mark.parametrize("operation", ["load", "read_member", "publish"])
+def test_unexpired_cleanup_reads_only_unrelated_manifests(
+    tmp_path: Path,
+    plots: tuple[bytes, bytes],
+    monkeypatch: pytest.MonkeyPatch,
+    operation: str,
+) -> None:
+    """Retained payloads add no read cost to another bundle's access/publication."""
+    root = tmp_path / "artifacts"
+    store = configured(root)
+    large_plots = (plots[0].ljust(1024 * 1024, b"\0"), plots[1])
+    bundles = [published(store, large_plots, "# live!\n") for _ in range(12)]
+    selected = bundles[0]
+    selected_id = selected.manifest.artifact_id
+    identities = {}
+    for bundle in bundles:
+        for member in ArtifactMember:
+            info = (
+                root / bundle.manifest.artifact_id.value / member.value
+            ).stat()
+            identities[(info.st_dev, info.st_ino)] = (
+                bundle.manifest.artifact_id,
+                member,
+            )
+    reads: list[tuple[ArtifactId, ArtifactMember, int]] = []
+    real_read = disk.os.read
+
+    def observe_read(fd: int, count: int) -> bytes:
+        """Measure actual OS bytes without replacing any managed file contents."""
+        info = os.fstat(fd)
+        data = real_read(fd, count)
+        identity = identities.get((info.st_dev, info.st_ino))
+        if identity is not None and data:
+            reads.append((*identity, len(data)))
+        return data
+
+    with monkeypatch.context() as patch:
+        patch.setattr(disk.os, "read", observe_read)
+        if operation == "load":
+            assert store.load(selected_id, NOW) == selected
+        elif operation == "read_member":
+            assert store.read_member(
+                selected_id, ArtifactMember.SOURCE, NOW
+            ) == ArtifactBytes(b"# live!\n", ArtifactMember.SOURCE.mime_type)
+        else:
+            created = published(store, plots)
+            assert created.contents[ArtifactMember.PNG] == plots[0]
+            assert created.contents[ArtifactMember.SOURCE] == SOURCE.encode()
+    unrelated = [
+        (identity, member, size)
+        for identity, member, size in reads
+        if operation == "publish" or identity != selected_id
+    ]
+    print(
+        f"{operation}: retained-store reads={len(reads)}, "
+        f"bytes={sum(size for _, _, size in reads)}, "
+        f"unrelated payload bytes="
+        f"{sum(size for _, member, size in unrelated if member != ArtifactMember.MANIFEST)}"
+    )
+    assert all(member == ArtifactMember.MANIFEST for _, member, _ in unrelated)
+    if operation != "publish":
+        assert {
+            member for identity, member, _ in reads if identity == selected_id
+        } == set(ArtifactMember)
+    assert all(
+        (root / bundle.manifest.artifact_id.value).is_dir()
+        for bundle in bundles
+    )
+
+
+def test_cleanup_rechecks_expiry_after_manifest_preflight(
+    tmp_path: Path, plots: tuple[bytes, bytes], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A now-live manifest substituted after preflight cannot authorize deletion."""
+    root = tmp_path / "artifacts"
+    store = configured(root)
+    expired = published(store, plots)
+    live = published(store, plots, now=NOW + timedelta(days=1))
+    folder = root / expired.manifest.artifact_id.value
+    info = folder.stat()
+    renewed = replace(
+        expired.manifest,
+        created_at=expired.manifest.created_at + timedelta(days=1),
+        expires_at=expired.manifest.expires_at + timedelta(days=1),
+    )
+    real_open = disk.os.open
+    manifest_opens = 0
+
+    def replace_before_verification(
+        path: Any, flags: int, mode: int = 0o777, *, dir_fd: int | None = None
+    ) -> int:
+        """Replace real metadata between its preflight and complete bundle reads."""
+        nonlocal manifest_opens
+        if path == "manifest.json" and dir_fd is not None:
+            opened = os.fstat(dir_fd)
+            if (opened.st_dev, opened.st_ino) == (info.st_dev, info.st_ino):
+                manifest_opens += 1
+                if manifest_opens == 2:
+                    (folder / "manifest.json").write_bytes(renewed.to_bytes())
+        return real_open(path, flags, mode, dir_fd=dir_fd)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(disk.os, "open", replace_before_verification)
+        assert (
+            store.load(live.manifest.artifact_id, NOW + timedelta(days=7))
+            == live
+        )
+    assert manifest_opens >= 2
+    assert folder.is_dir()
+    assert (folder / "manifest.json").read_bytes() == renewed.to_bytes()
+    assert (folder / "plot.png").read_bytes() == plots[0]
+    readback = store.load(expired.manifest.artifact_id, NOW + timedelta(days=7))
+    assert isinstance(readback, StoredBundle)
+    assert readback.manifest == renewed
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "malformed",
+        "id_mismatch",
+        "oversize",
+        "symlink",
+        "hardlink",
+        "permissions",
+    ],
+)
+def test_cleanup_preserves_invalid_manifest_preflight(
+    tmp_path: Path, plots: tuple[bytes, bytes], damage: str
+) -> None:
+    """Unsafe or invalid expired metadata never authorizes incidental removal."""
+    root = tmp_path / "artifacts"
+    store = configured(root)
+    candidate = published(store, plots)
+    live = published(store, plots, now=NOW + timedelta(days=1))
+    folder = root / candidate.manifest.artifact_id.value
+    manifest = folder / "manifest.json"
+    outside = tmp_path / "outside-manifest"
+    outside.write_bytes(candidate.manifest.to_bytes())
+    outside.chmod(0o600)
+    if damage == "malformed":
+        manifest.write_bytes(b"not JSON")
+    elif damage == "id_mismatch":
+        manifest.write_bytes(
+            replace(
+                candidate.manifest, artifact_id=live.manifest.artifact_id
+            ).to_bytes()
+        )
+    elif damage == "oversize":
+        with manifest.open("wb") as file:
+            file.truncate(disk.MAX_MANIFEST_BYTES + 1)
+    elif damage == "symlink":
+        manifest.unlink()
+        manifest.symlink_to(outside)
+    elif damage == "hardlink":
+        manifest.unlink()
+        os.link(outside, manifest)
+    else:
+        manifest.chmod(0o644)
+    before = manifest.read_bytes()
+    assert (
+        store.load(live.manifest.artifact_id, NOW + timedelta(days=7)) == live
+    )
+    assert manifest.read_bytes() == before
+    assert (folder / "plot.png").read_bytes() == plots[0]
+    assert outside.read_bytes() == candidate.manifest.to_bytes()
 
 
 def test_default_root_is_selected_once_and_initialized_lazily(
