@@ -16,6 +16,8 @@ from typing import Any
 import matplotlib.colors as mcolors
 from fastmcp import FastMCP
 
+from . import _assets
+
 __all__ = ["register_tools"]
 
 
@@ -51,38 +53,16 @@ _ASSET_DIR = Path(__file__).parent.parent / "asset"
 _TEMPLATE_DIR = _ASSET_DIR / "prompt" / "05-templates"
 _MPLSTYLE_DIR = _ASSET_DIR / "mplstyle"
 
-# Bundled template ids are bare stems (``bar``, ``scatter_density`` etc.).
-# ``render_template`` / ``compose_layered_plot`` execute or read the
-# resolved ``.py`` file, so ``plot_type`` MUST NOT be able to escape
-# ``_TEMPLATE_DIR`` — an unsanitized ``plot_type="../../../evil"`` would
-# otherwise turn these tools into arbitrary-file read/exec primitives.
-_TEMPLATE_STEM_RE = re.compile(r"\A[a-z0-9_]+\Z")
-
 
 def _resolve_template_path(
     plot_type: str, *, advanced: bool = False
 ) -> Path | None:
-    """Resolve a template id to its bundled ``.py`` path, or ``None``.
+    """Delegate template lookup to the shared confined MCP asset boundary.
 
-    Returns ``None`` for any id that is not a plain lowercase stem
-    (rejecting path separators, ``..``, absolute paths, empty strings)
-    or whose resolved location falls outside ``_TEMPLATE_DIR`` — a
-    defence-in-depth check so a stem regex change can't reopen traversal.
-    A ``None`` return means "no such template", identical to a missing
-    file, so callers keep their existing unknown-template handling.
+    Preserve the private compatibility surface while returning the resolved
+    regular file checked by that boundary, or None for invalid/missing IDs.
     """
-    stem = plot_type.lower()
-    if not _TEMPLATE_STEM_RE.match(stem):
-        return None
-    base = _TEMPLATE_DIR / "advanced" if advanced else _TEMPLATE_DIR
-    path = base / f"{stem}.py"
-    try:
-        resolved = path.resolve()
-        if not resolved.is_relative_to(base.resolve()):
-            return None
-    except OSError:
-        return None
-    return path if path.exists() else None
+    return _assets.resolve_template_path(plot_type, advanced=advanced)
 
 
 # ``helpers.quality.suggest_chart_type`` speaks in *chart semantics*

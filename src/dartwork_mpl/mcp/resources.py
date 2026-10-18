@@ -14,6 +14,7 @@ from fastmcp import FastMCP
 from matplotlib import font_manager
 
 from ..util import get_prompt
+from . import _assets
 
 __all__ = ["register_resources"]
 
@@ -165,7 +166,7 @@ def register_resources(mcp: FastMCP) -> None:
 
     @mcp.resource("dartwork-mpl://styles/{preset}")
     def style_preset(preset: str) -> str:
-        """Get the content of a specific dartwork-mpl mplstyle preset.
+        """Read a bundled style by a case-preserving bare ID, or return not-found text.
 
         Parameters
         ----------
@@ -177,8 +178,8 @@ def register_resources(mcp: FastMCP) -> None:
         font-poster, font-presentation, font-report, font-scientific,
         font-web, lang-kr, spine-no, spine-yes, theme-dark, theme-minimal.
         """
-        style_file = _MPLSTYLE_DIR / f"{preset}.mplstyle"
-        if not style_file.exists():
+        style_file = _assets.resolve_style_path(preset)
+        if style_file is None:
             available = sorted(
                 [p.stem for p in _MPLSTYLE_DIR.glob("*.mplstyle")]
             )
@@ -199,15 +200,15 @@ def register_resources(mcp: FastMCP) -> None:
 
     @mcp.resource("dartwork-mpl://templates/{plot_type}")
     def plot_templates(plot_type: str) -> str:
-        """Get the bundled Python template for a specific plot type.
+        """Read a bundled template by case-insensitive bare ID, or not-found text.
 
         Available types: bar, bar_grouped, bar_horizontal, boxplot,
         contour, heatmap, histogram, line, pie, plot_3d, polar,
         scatter, small_multiples, stacked_bar, tornado, twin_axis,
         violin, waterfall.
         """
-        path = _TEMPLATE_DIR / f"{plot_type.lower()}.py"
-        if not path.exists():
+        path = _assets.resolve_template_path(plot_type)
+        if path is None:
             available = sorted(p.stem for p in _TEMPLATE_DIR.glob("*.py"))
             return f"No template for {plot_type!r}. Available: {available}"
         return path.read_text(encoding="utf-8")
@@ -219,13 +220,15 @@ def register_resources(mcp: FastMCP) -> None:
         The advanced tier adds synthetic data, reference lines, value
         labels, a narrative title, and a source footnote. Falls back to
         the basic template if no advanced version exists yet — so the
-        ``suggest_chart_type`` / ``create_plot`` URIs always resolve.
+        ``suggest_chart_type`` / ``create_plot`` URIs always resolve. Both
+        tiers use the same confined bare-ID lookup; invalid IDs return
+        the existing not-found response.
         """
-        advanced = _TEMPLATE_DIR / "advanced" / f"{plot_type.lower()}.py"
-        if advanced.exists():
+        advanced = _assets.resolve_template_path(plot_type, advanced=True)
+        if advanced is not None:
             return advanced.read_text(encoding="utf-8")
-        basic = _TEMPLATE_DIR / f"{plot_type.lower()}.py"
-        if basic.exists():
+        basic = _assets.resolve_template_path(plot_type)
+        if basic is not None:
             return basic.read_text(encoding="utf-8")
         available = sorted(p.stem for p in _TEMPLATE_DIR.glob("*.py"))
         return f"No template for {plot_type!r}. Available: {available}"
