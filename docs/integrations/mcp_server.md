@@ -300,10 +300,10 @@ If all four work, the integration is fully operational.
 
 When the `dartwork-mpl` MCP server is connected, your AI assistant gains access to **resources**, **tools**, and **prompts** without you having to copy-paste documentation.
 
-The public inventory is fixed at **16 tools, 10 static resources, 4 resource
-templates, and 2 prompts**. The descriptions below explain the current color
-model without changing any of those names or schemas: `dc.*` construction uses
-OKLab L, OKLCH C/h, and ΔEOK. The modeled-relative-Y compatibility lock is an
+The current public inventory is **18 tools, 10 static resources, 9 resource
+templates, and 2 prompts**. Artifact delivery adds two tools and five templates;
+existing endpoints retain their names and schemas. In the current color model,
+`dc.*` construction uses OKLab L, OKLCH C/h, and ΔEOK. The modeled-relative-Y compatibility lock is an
 optional constraint for shipped exact-output compatibility and topology, not
 a second authoring space. CIELAB/CIEDE2000 and CVD are model-specific
 validation diagnostics; WCAG contrast luminance is a separate pairwise text
@@ -331,6 +331,11 @@ Read-only data that the AI assistant can retrieve on demand.
 | `dartwork-mpl://templates/list`           | Available plot template types                                               |
 | `dartwork-mpl://templates/{plot_type}`    | Boilerplate Python script for a specific plot type                          |
 | `dartwork-mpl://templates/advanced/{plot_type}` | Tier-2 (advanced) template for a plot type — synthetic data, reference lines, value labels, narrative title; falls back to the basic template |
+| `dartwork-mpl://artifacts/{artifact_id}/plot.png` | Verified PNG (`image/png`) |
+| `dartwork-mpl://artifacts/{artifact_id}/plot.pdf` | Verified PDF (`application/pdf`) |
+| `dartwork-mpl://artifacts/{artifact_id}/source.py` | Exact submitted UTF-8 source (`text/x-python`) |
+| `dartwork-mpl://artifacts/{artifact_id}/report.json` | Complete execution/validation report (`application/json`) |
+| `dartwork-mpl://artifacts/{artifact_id}/manifest.json` | Version 1 bundle manifest (`application/json`) |
 
 ### Tools
 
@@ -354,6 +359,139 @@ Callable functions the AI assistant can invoke during a conversation.
 | `validate_plot_data(plot_type, data_json)`  | Validate whether a data structure matches a plot type's requirements            |
 | `validate_generated_plot(code)`             | Execute a script in an isolated subprocess and return the `dm.validate_figure` report (overflow, clipped text, asymmetric margins). Lint-critical issues short-circuit before execution. |
 | `dartwork_mpl_info()`                       | Get a structured summary of all capabilities, presets, and templates            |
+| `render_plot(code, figure_var="fig", timeout_seconds=20.0, chart_type_hint=None)` | Execute trusted code once, validate the selected native Figure and deliver a durable five-file bundle |
+| `get_plot_artifact(artifact_id)` | Retrieve that bundle without executing code |
+
+### Plot execution and validation results
+
+`validate_generated_plot(code, figure_var="fig", timeout_seconds=20.0,
+chart_type_hint=None)` executes **trusted local snippets** with the Agg backend.
+The fresh subprocess isolates Matplotlib state; it is not an OS security
+sandbox. It inherits cwd and retains real file-save effects. Hostile code that
+mutates the runner is outside this contract.
+
+Every response includes `stdout` and `stderr` strings, `validation_complete`
+(boolean), `failed_checks` (original check IDs in run order), `lint`, and
+`visual_warnings`. Printed text, JSON-looking logs, low-level stdout writes and
+save messages remain logs; invalid UTF-8 log bytes use replacement characters.
+The internal JSON result travels through a private,
+absolute temporary file that is cleaned up after execution, including timeout.
+
+- `ok`: validation completed (`true`, `[]`); visual warnings may still exist.
+- `validation_incomplete`: tolerated check failures prevented completion
+  (`false`, original IDs). Each appears as a WARNING `CHECK_FAILED` with
+  `detail.check_id`; successful warnings remain in registry order.
+- `lint_blocked`, `exec_error`, `no_figure`, `timeout`: validation is incomplete
+  (`false`, `[]` unless failures were already acquired). Unexpected validation
+  exceptions are visible errors. Captured logs survive errors and timeout.
+
+`semantic_warnings` is present, possibly empty, exactly when `chart_type_hint`
+is supplied, including on failure. Native `dm.validate_figure` keeps returning
+its warning list; `quiet=True` suppresses printing without removing failures.
+
+### Durable plot artifacts
+
+`render_plot(code: str, figure_var: str = "fig", timeout_seconds: float = 20.0,
+chart_type_hint: str | None = None)` uses the same trusted-code execution and
+validation contract above. It exports the selected native Figure once through
+`dm.save_formats(..., formats=("png", "pdf"), validate=False,
+adopt_orphan_tick_font=False)`, preserving the validated Figure without adding
+style or layout. Existing template renderers still return base64 PNG or a local
+path; they do not publish artifact bundles.
+
+A successful render or `get_plot_artifact(artifact_id: str)` returns, in order,
+one PNG image, five MCP resource links in the table's artifact order, and JSON
+text. The JSON is identical to `structuredContent`: `schema_version=1`,
+`delivery_status="ready"`, `artifact_id`, UTC `created_at`/`expires_at`, `files`,
+and `validation`. Each file has `name`, `uri`, `mime_type`, `size_bytes` and
+`sha256`; the manifest omits its own digest to avoid recursive self-hashing.
+The persisted manifest lists only the four data files. URIs are MCP references,
+not HTTP URLs or local paths; use the connected client's resource reader.
+
+Delivery and validation are separate: a ready bundle can have validation status
+`ok` with warnings, or `validation_incomplete` with `validation_complete=false`
+and original `failed_checks` IDs. `report.json` retains the complete lint,
+visual/optional semantic warnings and original stdout/stderr. `source.py` is the
+exact submitted string encoded as UTF-8. Retrieval checks expiry, file sizes and
+hashes, returns the original timestamps and never runs source or extends expiry.
+
+This runnable example uses a real FastMCP Client and the configured local server.
+The snippet sets its own preset/layout and leaves saving to `render_plot`:
+
+```python
+import asyncio
+import json
+
+from fastmcp import Client
+from dartwork_mpl.mcp.server import mcp
+
+code = '''import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+
+dm.style.use("scientific")
+fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
+ax.plot([1, 2, 3], [2, 3, 2.8], linewidth=dm.lw(0))
+ax.set_xlabel("Iteration", fontsize=dm.fs(0))
+ax.set_ylabel("Value", fontsize=dm.fs(0))
+dm.simple_layout(fig)
+'''
+
+
+async def main():
+    """Render once, reopen metadata and read the original submitted source."""
+    async with Client(mcp) as client:
+        result = await client.call_tool("render_plot", {"code": code})
+        assert not result.is_error
+        metadata = result.structured_content
+        assert metadata == json.loads(result.content[-1].text)
+        print(metadata["artifact_id"], metadata["validation"])
+        reopened = await client.call_tool(
+            "get_plot_artifact", {"artifact_id": metadata["artifact_id"]}
+        )
+        assert reopened.structured_content == metadata
+        source = next(f for f in metadata["files"] if f["name"] == "source.py")
+        contents = await client.read_resource(source["uri"])
+        assert contents[0].text == code
+
+
+asyncio.run(main())
+```
+
+Keep the returned ID to reopen with `get_plot_artifact` after server restart;
+the server must use the same storage root and local OS user. Set
+`DARTWORK_MPL_ARTIFACT_DIR` in the server environment **before startup/import**
+to a nonempty absolute path with no symlink components, or use the default
+`~/.cache/dartwork-mpl/artifacts`. For a trusted operator-selected directory,
+resolve aliases first (for example, `Path(directory).resolve()` for macOS
+temporary paths); the server refuses symlinked components. Configuration binds
+once; requests cannot choose paths or roots. Directories/files are private (0700/0600). Unsafe roots
+and hosts without descriptor-relative no-follow opens and exclusive
+no-follow hard-link restoration return `configuration_error` for this capability;
+existing tools remain available. Local filesystem validation covers macOS with
+Python 3.10, not every OS/filesystem.
+
+Source is limited to 512 KiB UTF-8; timeout must be finite and in `(0, 120]`
+seconds. All five files together must fit 32 MiB. Oversize source/report/logs
+reject publication instead of truncating them. Bundles expire exactly seven days
+after publication; publication occurs after execution/export completes. Expired
+valid bundles are cleaned lazily on access. Unknown, corrupt or substituted
+objects are retained, including private quarantine when safe restoration
+collides. There is no global quota, background sweeper or delete API; the owner
+may need disk maintenance. Incomplete crash leftovers are never served.
+
+IDs are lowercase UUID4 hex references, not credentials. All clients of this
+server share the same trusted OS user's access. Code inherits that user's OS
+permissions and cwd/file-save effects; the subprocess is not an OS sandbox.
+
+Failures return `isError=true`, JSON text and matching structured metadata with
+`schema_version=1`, `delivery_status="error"`, `error_code` and a safe `message`.
+Execution/export failures also include the available `report`; no failure returns
+an artifact ID, image or links. Stable categories are `invalid_request`,
+`configuration_error`, `not_found`, `expired`, `corrupt`, `artifact_too_large`,
+`publication_error`, `lint_blocked`, `exec_error`, `no_figure`, and `timeout`.
+Resource read failures expose these categories through MCP resource errors;
+unroutable URIs can be rejected before a resource handler runs. Retrying render
+creates a fresh ID. An expired bundle may be `not_found` after lazy cleanup.
 
 ### Prompts
 

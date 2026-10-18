@@ -18,30 +18,18 @@ jobs:
     runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
     steps:
       - uses: actions/checkout@v6
-      # The local mypy hook shells out to ``uv run --frozen mypy`` so the runner
-      # needs ``uv`` on PATH before pre-commit fires.
-      #
-      # setup-uv MUST run before setup-python. setup-uv prepends
-      # ``~/.local/bin`` to PATH, and on the ml-main runner that directory
-      # holds the ``python``/``python3`` launcher that execs a uv-managed
-      # interpreter (dotfiles #94, 2026-09-11). uv-managed interpreters carry a
-      # PEP 668 EXTERNALLY-MANAGED marker, so with that launcher first on PATH
-      # ``pre-commit/action``'s ``python -m pip install pre-commit`` dies with
-      # ``error: externally-managed-environment`` before any hook runs.
-      # Running setup-python last puts its toolcache interpreter back in front.
-      - uses: astral-sh/setup-uv@v7
+      # pre-commit installs its hooks in isolated environments. setup-python
+      # also keeps pip off the self-hosted runner's externally managed Python.
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
-      # Pre-populate the uv-managed venv from the locked deps so the local
-      # mypy hook (`uv run --frozen mypy`) has every optional dependency
-      # available without re-resolving. `--frozen` guarantees the hook never
-      # rewrites uv.lock (which previously produced spurious "files were
-      # modified by this hook" failures on this required check).
-      - name: Sync uv environment (frozen, all extras + dev)
-        run: uv sync --frozen --all-extras --dev
+      # CI lint owns whole-package mypy in the locked all-extras environment.
+      # Skipping only this system hook removes the need for uv/project sync;
+      # the isolated Ruff hooks retain their broader all-files coverage.
       # pre-commit/action caches the per-hook environments under
       # ~/.cache/pre-commit, keyed off the .pre-commit-config.yaml hash,
       # so subsequent runs only pay the network cost when a hook is bumped.
       - uses: pre-commit/action@v3.0.1
+        env:
+          SKIP: mypy

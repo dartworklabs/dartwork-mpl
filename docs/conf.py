@@ -303,6 +303,8 @@ myst_heading_anchors = 3
 
 # -- Build hooks (extracted to _ext/build_hooks.py) ---------------------------
 sys.path.insert(0, str(Path(__file__).parent / "_ext"))
+# A named extension invalidates pre-resolver doctree caches on first adoption.
+extensions.append("build_hooks")
 
 from build_hooks import (  # noqa: E402
     cleanup_sg_execution_times,

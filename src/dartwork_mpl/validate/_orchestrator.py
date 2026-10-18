@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from .._helpers import get_renderer
 from ._checks import registered_checks
-from ._types import BBOX_ERRORS, VisualWarning
+from ._types import BBOX_ERRORS, Severity, VisualWarning
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -55,7 +55,10 @@ def validate_figure(
     Returns
     -------
     list[VisualWarning]
-        List of detected visual issues.
+        Detected issues in registry order, including ``CHECK_FAILED`` warnings
+        with the original ID in ``detail["check_id"]`` when a tolerated bbox
+        error prevents a check from completing. Quiet mode only changes output.
+        Unexpected check exceptions propagate to the caller.
     """
     # Render once so all bounding boxes are computed.
     fig.canvas.draw()
@@ -81,7 +84,6 @@ def validate_figure(
         selected = [check for check in selected if check.check_id in checks]
 
     warnings: list[VisualWarning] = []
-    errored: list[str] = []
     for check in selected:
         # Never crash the save pipeline, but don't silently swallow a
         # failed check either — a check that raises must not let the
@@ -89,7 +91,14 @@ def validate_figure(
         # Every check is invoked uniformly as ``fn(fig, renderer)``.
         result = _run_check_safely(partial(check.fn, fig, renderer))
         if result is None:
-            errored.append(check.check_id)
+            warnings.append(
+                VisualWarning(
+                    Severity.WARNING,
+                    "CHECK_FAILED",
+                    f"Check {check.check_id} could not run; validation is incomplete.",
+                    {"check_id": check.check_id},
+                )
+            )
         else:
             warnings.extend(result)
 
@@ -98,14 +107,6 @@ def validate_figure(
         if warnings:
             for w in warnings:
                 print(str(w), file=sys.stdout, flush=True)
-        elif errored:
-            print(
-                "[VISUAL] ⚠️ No issues found, but "
-                f"{len(errored)} check(s) could not run "
-                f"({', '.join(sorted(errored))}); result is incomplete.",
-                file=sys.stdout,
-                flush=True,
-            )
         else:
             print(
                 "[VISUAL] ✅ No visual issues detected.",

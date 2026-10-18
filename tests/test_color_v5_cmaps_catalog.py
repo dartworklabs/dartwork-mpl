@@ -10,7 +10,8 @@ from typing import cast
 import numpy as np
 import pytest
 
-from dartwork_mpl._colors import _cmaps, _conversion, _generate
+from dartwork_mpl._colors import _cmaps, _conversion
+from dartwork_mpl._colors._catalog import CatalogSnapshot
 
 DIRECT_32_SHA256 = (
     "90f393cc14afc230438078f014a422886cf09122491637aec11abe010be187d2"
@@ -56,14 +57,6 @@ def _canonical_sha256(value: object) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _compile_palette(*, luminance_lock: bool) -> dict[str, list[str]]:
-    """Call the future palette interface while inspect tests own its shape."""
-    function = cast(
-        Callable[..., dict[str, list[str]]], _generate.compile_palette
-    )
-    return function(luminance_lock=luminance_lock)
-
-
 def _compile_cmaps(
     palette: dict[str, list[str]], n: int, *, luminance_lock: bool
 ) -> dict[str, list[str]]:
@@ -86,25 +79,28 @@ def compatibility_snapshot() -> dict[str, object]:
 
 
 @pytest.fixture(scope="module")
-def locked_palette() -> dict[str, list[str]]:
-    """Compile the shipped palette once for all catalog tests."""
-    return _compile_palette(luminance_lock=True)
+def locked_palette(candidate_catalog: CatalogSnapshot) -> dict[str, list[str]]:
+    """Copy the real compiled palette without exposing shared mutable rows."""
+    return {name: list(row) for name, row in candidate_catalog.palette.items()}
 
 
 @pytest.fixture(scope="module")
 def locked_direct_32(
-    locked_palette: dict[str, list[str]],
+    candidate_catalog: CatalogSnapshot,
 ) -> dict[str, list[str]]:
-    """Compile the locked direct previews once."""
-    return _compile_cmaps(locked_palette, 32, luminance_lock=True)
+    """Copy the live compiler's locked direct previews for golden assertions."""
+    return {
+        name: list(row)
+        for name, row in candidate_catalog.cmaps_preview_32.items()
+    }
 
 
 @pytest.fixture(scope="module")
-def locked_full_256(
-    locked_palette: dict[str, list[str]],
-) -> dict[str, list[str]]:
-    """Compile the shipped full LUTs once despite their dense render cost."""
-    return _compile_cmaps(locked_palette, 256, luminance_lock=True)
+def locked_full_256(candidate_catalog: CatalogSnapshot) -> dict[str, list[str]]:
+    """Copy the live compiler's full LUTs while retaining exact golden checks."""
+    return {
+        name: list(row) for name, row in candidate_catalog.cmaps_256.items()
+    }
 
 
 def test_compile_cmaps_lock_is_true_and_keyword_only() -> None:

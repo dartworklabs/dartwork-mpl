@@ -92,12 +92,6 @@ def baseline_catalog() -> "_catalog.CatalogSnapshot":
     return _catalog.load_v5_snapshot()
 
 
-@pytest.fixture(scope="module")
-def candidate_catalog() -> "_catalog.CatalogSnapshot":
-    """Compile the live candidate catalog once for catalog tests."""
-    return _catalog.compile_candidate_snapshot()
-
-
 def test_current_catalog_matches_frozen_v5_exactly(
     baseline_catalog: "_catalog.CatalogSnapshot",
     candidate_catalog: "_catalog.CatalogSnapshot",
@@ -461,7 +455,9 @@ def test_vendor_and_mcp_loaders_match_frozen_discovery(
     """Parse bundled vendor assets and MCP decorator source without registries."""
     vendor_colors = _catalog.load_vendor_colors()
     vendor_names = _catalog.load_vendor_color_names()
-    discovery = _catalog.scan_mcp_discovery()
+    discovery = _catalog.project_legacy_mcp_discovery(
+        _catalog.scan_mcp_discovery()
+    )
 
     assert (
         len(vendor_colors),

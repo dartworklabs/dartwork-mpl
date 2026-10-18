@@ -37,6 +37,43 @@ _GALLERY_CATEGORIES = [
 ]
 
 
+def resolve_provenance_links(app, doctree):
+    """Keep the accepted artifact ADR's excluded design link navigable.
+
+    MyST resolves document links before Sphinx's missing-reference event, so
+    convert this one provenance target before reference resolution. Keep the
+    frozen ADR source intact and leave all other unresolved links to warn.
+    """
+    from docutils import nodes
+    from sphinx import addnodes
+
+    target = "superpowers/specs/2026-10-18-mcp-artifact-delivery-design"
+    if not (Path(app.srcdir) / f"{target}.md").is_file():
+        return
+    url = (
+        "https://github.com/dartworklabs/dartwork-mpl/blob/main/docs/"
+        f"{target}.md"
+    )
+    for node in doctree.findall(addnodes.pending_xref):
+        if (
+            node.get("refdomain") != "doc"
+            or node.get("reftype") != "myst"
+            or node.get("reftarget") != target
+        ):
+            continue
+        fragment = node.get("reftargetid")
+        refuri = f"{url}#{fragment}" if fragment else url
+        node.replace_self(
+            nodes.reference("", "", node[0].deepcopy(), refuri=refuri)
+        )
+
+
+def setup(app):
+    """Register link resolution with Sphinx's extension cache invalidation."""
+    app.connect("doctree-read", resolve_provenance_links)
+    return {"env_version": 1, "parallel_read_safe": True}
+
+
 def create_placeholder_index(app):
     """Create placeholder index.rst so toctree finds it before sphinx-gallery."""
     gallery_dir = Path(app.srcdir) / "examples_gallery"

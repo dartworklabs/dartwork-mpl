@@ -10,7 +10,9 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from matplotlib.patches import Rectangle
 
+import dartwork_mpl as dm
 from tests.robustness.pixel_assertions import (
     PixelAssertionError,
     assert_minimum_white_border,
@@ -54,11 +56,36 @@ class TestAssertNoEdgeOverflow:
 
 
 class TestAssertMinimumWhiteBorder:
+    """All four margins are checked against the current rendered Figure."""
+
     def test_default_white_border_passes(self) -> None:
         fig, ax = plt.subplots(figsize=(3, 3))
         ax.plot([1, 2, 3])
         # Default subplots_adjust leaves > 8 px white border.
         assert_minimum_white_border(fig, min_px=8)
+        plt.close(fig)
+
+    @pytest.mark.parametrize("side", ["left", "right", "top", "bottom"])
+    def test_new_edge_content_is_detected(self, side: str) -> None:
+        """A new colored edge must fail even after the same canvas passed."""
+        fig = plt.figure(figsize=dm.figsize("5cm", "square"))
+        fig.patch.set_facecolor("white")
+        assert_minimum_white_border(fig, min_px=8)
+        rectangles = {
+            "left": (0.0, 0.4, 0.05, 0.2),
+            "right": (0.95, 0.4, 0.05, 0.2),
+            "top": (0.4, 0.95, 0.2, 0.05),
+            "bottom": (0.4, 0.0, 0.2, 0.05),
+        }
+        x, y, width, height = rectangles[side]
+        fig.add_artist(
+            Rectangle(
+                (x, y), width, height, transform=fig.transFigure, color="red"
+            )
+        )
+
+        with pytest.raises(PixelAssertionError, match=side):
+            assert_minimum_white_border(fig, min_px=8)
         plt.close(fig)
 
 

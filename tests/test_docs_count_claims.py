@@ -193,7 +193,7 @@ def _n_basic_templates() -> int:
 @lru_cache(maxsize=1)
 def _mcp_decorator_counts() -> dict[str, int]:
     counts = {"tool": 0, "resource": 0, "resource_template": 0, "prompt": 0}
-    for path in (_REPO / "src" / "dartwork_mpl" / "mcp").glob("*.py"):
+    for path in (_REPO / "src" / "dartwork_mpl" / "mcp").rglob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -582,9 +582,9 @@ def test_color_and_discovery_contract_counts_are_exact() -> None:
         "registrations": 99,
         "typing_colors": 1272,
         "typing_colormaps": 99,
-        "mcp_tools": 16,
+        "mcp_tools": 18,
         "mcp_resources": 10,
-        "mcp_resource_templates": 4,
+        "mcp_resource_templates": 9,
         "mcp_prompts": 2,
     }
 
