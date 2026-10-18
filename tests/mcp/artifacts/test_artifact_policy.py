@@ -9,6 +9,8 @@ from uuid import UUID
 
 import pytest
 
+pytest.importorskip("fastmcp")
+
 from dartwork_mpl.mcp.artifacts import (
     ArtifactId,
     ArtifactMember,

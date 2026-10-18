@@ -14,6 +14,8 @@ from typing import Any
 
 import pytest
 
+pytest.importorskip("fastmcp")
+
 from dartwork_mpl.mcp.artifacts import (
     ArtifactBytes,
     ArtifactId,
@@ -640,11 +642,181 @@ def test_directory_swap_at_open_cannot_follow_outside_target(
     assert {item.name for item in outside.iterdir()} == {"sentinel"}
 
 
+@pytest.mark.parametrize("missing", ["O_NOFOLLOW", "link"])
 def test_missing_descriptor_support_refuses_only_new_capability(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, missing: str
 ) -> None:
     """Unsupported hosts refuse configuration without creating an unsafe store."""
     root = tmp_path / "artifacts"
-    monkeypatch.delattr(disk.os, "O_NOFOLLOW")
+    monkeypatch.delattr(disk.os, missing)
     assert isinstance(configure_store(str(root)), ConfigurationError)
     assert not root.exists()
+
+
+@pytest.mark.parametrize(
+    "boundary",
+    [
+        "after_validation",
+        "after_validation_same_bytes",
+        "before_isolation",
+        "same_bytes",
+        "before_unlink",
+    ],
+)
+def test_expired_cleanup_preserves_replaced_members(
+    tmp_path: Path,
+    plots: tuple[bytes, bytes],
+    monkeypatch: pytest.MonkeyPatch,
+    boundary: str,
+) -> None:
+    """External same-user replacement survives validation and deletion boundaries."""
+    root = tmp_path / "artifacts"
+    store = configured(root)
+    bundle = published(store, plots)
+    folder = root / bundle.manifest.artifact_id.value
+    png = folder / "plot.png"
+    replacement = (
+        plots[0]
+        if boundary in {"same_bytes", "after_validation_same_bytes"}
+        else b"unvalidated replacement"
+    )
+    changed = False
+
+    def replace_png() -> None:
+        """Retain the old inode and install an independently identifiable object."""
+        nonlocal changed
+        folder.mkdir(mode=0o700, exist_ok=True)
+        if png.exists():
+            png.rename(tmp_path / "previous-png")
+        png.write_bytes(replacement)
+        png.chmod(0o600)
+        changed = True
+
+    if boundary in {"after_validation", "after_validation_same_bytes"}:
+        original_remove = disk._remove_owned
+
+        def replace_before_cleanup(
+            root_fd: int, name: str, directory_fd: int, *, ready: bool
+        ) -> None:
+            """Change a member immediately after the complete outer validation."""
+            if ready and not changed:
+                replace_png()
+            original_remove(root_fd, name, directory_fd, ready=ready)
+
+        monkeypatch.setattr(disk, "_remove_owned", replace_before_cleanup)
+    elif boundary in {"before_isolation", "same_bytes"}:
+        original_rename = disk.os.rename
+
+        def replace_at_isolation(
+            source: Any,
+            target: Any,
+            *,
+            src_dir_fd: int | None = None,
+            dst_dir_fd: int | None = None,
+        ) -> None:
+            """Swap the candidate at its atomic rename instead of a sleep race."""
+            if source == "plot.png" and not changed:
+                replace_png()
+            original_rename(
+                source, target, src_dir_fd=src_dir_fd, dst_dir_fd=dst_dir_fd
+            )
+
+        monkeypatch.setattr(disk.os, "rename", replace_at_isolation)
+    else:
+        original_unlink = disk.os.unlink
+
+        def replace_at_unlink(path: Any, *, dir_fd: int | None = None) -> None:
+            """Install a replacement at the former stat-to-unlink boundary."""
+            if path == "plot.png" and not changed:
+                replace_png()
+            original_unlink(path, dir_fd=dir_fd)
+
+        monkeypatch.setattr(disk.os, "unlink", replace_at_unlink)
+    outcome = store.load(bundle.manifest.artifact_id, NOW + timedelta(days=7))
+    assert outcome == Expired(bundle.manifest.expires_at)
+    assert changed, boundary
+    assert png.exists(), boundary
+    assert png.read_bytes() == replacement, boundary
+
+
+def test_optional_fastmcp_absence_skips_both_artifact_modules() -> None:
+    """A core-only installation collects optional artifact tests as two skips."""
+    script = """
+import importlib.abc
+import sys
+import pytest
+
+class BlockFastMCP(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "fastmcp" or fullname.startswith("fastmcp."):
+            raise ModuleNotFoundError("No module named 'fastmcp'", name="fastmcp")
+
+sys.meta_path.insert(0, BlockFastMCP())
+code = pytest.main([
+    "--collect-only", "--no-cov", "-q",
+    "tests/mcp/artifacts/test_artifact_policy.py",
+    "tests/mcp/artifacts/test_artifact_store.py",
+])
+assert code == pytest.ExitCode.NO_TESTS_COLLECTED, code
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "2 skipped" in result.stdout, result.stdout
+    assert "ERROR collecting" not in result.stdout
+
+
+def test_cleanup_restore_collision_keeps_both_replacements(
+    tmp_path: Path, plots: tuple[bytes, bytes], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A colliding restoration keeps the isolated and newly installed objects."""
+    root = tmp_path / "artifacts"
+    store = configured(root)
+    bundle = published(store, plots)
+    folder = root / bundle.manifest.artifact_id.value
+    png = folder / "plot.png"
+    rename = disk.os.rename
+    changed = False
+
+    def substitute_and_collide(
+        source: Any,
+        target: Any,
+        *,
+        src_dir_fd: int | None = None,
+        dst_dir_fd: int | None = None,
+    ) -> None:
+        """Atomically isolate one substituted object and install another at home."""
+        nonlocal changed
+        if source == "plot.png" and not changed:
+            changed = True
+            png.rename(tmp_path / "original-png")
+            png.write_bytes(b"first replacement")
+            png.chmod(0o600)
+            rename(source, target, src_dir_fd=src_dir_fd, dst_dir_fd=dst_dir_fd)
+            png.write_bytes(b"second replacement")
+            png.chmod(0o600)
+            return
+        rename(source, target, src_dir_fd=src_dir_fd, dst_dir_fd=dst_dir_fd)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(disk.os, "rename", substitute_and_collide)
+        assert store.load(
+            bundle.manifest.artifact_id, NOW + timedelta(days=7)
+        ) == Expired(bundle.manifest.expires_at)
+    assert changed
+    assert png.read_bytes() == b"second replacement"
+    quarantines = [
+        path for path in root.iterdir() if path.name.startswith(".cleanup-")
+    ]
+    assert len(quarantines) == 1
+    preserved = quarantines[0] / "plot.png"
+    assert preserved.read_bytes() == b"first replacement"
+    assert stat.S_IMODE(quarantines[0].stat().st_mode) == 0o700
+    assert stat.S_IMODE(preserved.stat().st_mode) == 0o600
+    published(store, plots, now=NOW + timedelta(days=8))
+    assert preserved.read_bytes() == b"first replacement"
+    assert png.read_bytes() == b"second replacement"

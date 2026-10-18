@@ -9,11 +9,13 @@ import hashlib
 import json
 import os
 import stat
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import AbstractContextManager, contextmanager, suppress
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from threading import RLock
+from types import MappingProxyType
 from typing import Any
 from uuid import uuid4
 
@@ -59,12 +61,16 @@ def _descriptor_operations_available() -> bool:
     """Refuse unsafe fallback on hosts without the required handle operations."""
     flags = ("O_NOFOLLOW", "O_DIRECTORY", "O_NONBLOCK")
     calls = ("getuid", "fchmod", "fstat", "fsync")
-    operations = (os.open, os.mkdir, os.stat, os.unlink, os.rmdir, os.rename)
+    operations = ("open", "mkdir", "stat", "unlink", "rmdir", "rename", "link")
     return (
         all(hasattr(os, flag) for flag in flags)
         and all(hasattr(os, call) for call in calls)
-        and all(operation in os.supports_dir_fd for operation in operations)
+        and all(
+            getattr(os, operation, None) in os.supports_dir_fd
+            for operation in operations
+        )
         and os.listdir in os.supports_fd
+        and getattr(os, "link", None) in os.supports_follow_symlinks
     )
 
 
@@ -135,9 +141,14 @@ def _check_file(fd: int, *, private: bool) -> os.stat_result:
 
 
 def _read_file(
-    directory_fd: int, name: str, limit: int, *, private: bool = True
+    directory_fd: int,
+    name: str,
+    limit: int,
+    *,
+    private: bool = True,
+    evidence: dict[str, tuple[int, int]] | None = None,
 ) -> bytes | ArtifactTooLarge:
-    """Read at most the allowance from a verified no-follow opened regular file."""
+    """Read a bounded verified regular file; optionally capture its opened identity."""
     fd = os.open(name, _FILE_FLAGS, dir_fd=directory_fd)
     try:
         before = _check_file(fd, private=private)
@@ -174,6 +185,8 @@ def _read_file(
             raise OSError("Artifact member changed during reading")
         if not private:
             os.fsync(fd)
+        if evidence is not None:
+            evidence[name] = (after.st_dev, after.st_ino)
         return data
     finally:
         os.close(fd)
@@ -201,12 +214,18 @@ def _write_file(directory_fd: int, name: str, data: bytes) -> None:
 
 
 def _read_bundle(
-    directory_fd: int, artifact_id: ArtifactId
+    directory_fd: int,
+    artifact_id: ArtifactId,
+    *,
+    evidence: dict[str, tuple[int, int]] | None = None,
 ) -> StoredBundle | StoreFailure:
-    """Require the complete five-file marker shape and verify every size/digest."""
+    """Verify a complete bundle and optionally capture identities for safe expiry."""
     try:
         raw = _read_file(
-            directory_fd, ArtifactMember.MANIFEST.value, MAX_MANIFEST_BYTES
+            directory_fd,
+            ArtifactMember.MANIFEST.value,
+            MAX_MANIFEST_BYTES,
+            evidence=evidence,
         )
     except FileNotFoundError:
         return NotFound()
@@ -229,6 +248,7 @@ def _read_bundle(
             directory_fd,
             entry.member.value,
             MAX_BUNDLE_BYTES - sum(map(len, contents.values())),
+            evidence=evidence,
         )
         if isinstance(data, ArtifactTooLarge):
             return ArtifactTooLarge(
@@ -243,24 +263,136 @@ def _read_bundle(
     return StoredBundle(manifest, contents)
 
 
+@dataclass(frozen=True)
+class _CleanupSnapshot:
+    """Borrowed opened directory and immutable evidence from complete validation."""
+
+    directory_fd: int
+    bundle: StoredBundle
+    file_identities: Mapping[str, tuple[int, int]]
+
+    def __post_init__(self) -> None:
+        """Keep the captured identity map stable across external mutations."""
+        object.__setattr__(
+            self,
+            "file_identities",
+            MappingProxyType(dict(self.file_identities)),
+        )
+
+
+def _restore_isolated(
+    quarantine_fd: int, directory_fd: int, members: set[str]
+) -> None:
+    """Restore isolated objects exclusively; collisions retain both objects.
+
+    link creates the old name only if absent. A directory or unsupported object
+    that cannot be linked stays in quarantine instead of being deleted.
+    """
+    for member in sorted(members):
+        with suppress(OSError):
+            os.link(
+                member,
+                member,
+                src_dir_fd=quarantine_fd,
+                dst_dir_fd=directory_fd,
+                follow_symlinks=False,
+            )
+            os.unlink(member, dir_fd=quarantine_fd)
+
+
+def _remove_expired(
+    root_fd: int, name: str, snapshot: _CleanupSnapshot
+) -> None:
+    """Isolate all candidates atomically, verify actual objects, then delete.
+
+    The verified snapshot carries both bytes and opened inode identities. No
+    public member pathname is unlinked. Unknown or substituted candidates are
+    restored without overwriting new names, or retained in private quarantine.
+    Quarantine is operation-owned and excluded from normal UUID discovery; this
+    does not sandbox arbitrary same-user mutation inside private operation state.
+    """
+    directory_fd = snapshot.directory_fd
+    verified = snapshot.bundle
+    evidence = snapshot.file_identities
+    quarantine = ".cleanup-" + uuid4().hex
+    os.mkdir(quarantine, mode=0o700, dir_fd=root_fd)
+    quarantine_fd = _open_directory(root_fd, quarantine)
+    isolated: set[str] = set()
+    try:
+        for member in ArtifactMember:
+            os.rename(
+                member.value,
+                member.value,
+                src_dir_fd=directory_fd,
+                dst_dir_fd=quarantine_fd,
+            )
+            isolated.add(member.value)
+        for member in ArtifactMember:
+            expected = verified.contents[member]
+            actual_evidence: dict[str, tuple[int, int]] = {}
+            data = _read_file(
+                quarantine_fd,
+                member.value,
+                len(expected),
+                evidence=actual_evidence,
+            )
+            if (
+                data != expected
+                or actual_evidence.get(member.value) != evidence[member.value]
+            ):
+                return
+        if os.listdir(directory_fd):
+            return
+        # Isolate the empty directory as well: a new public UUID entry installed
+        # after this rename must never be the target of our final rmdir.
+        os.rename(name, ".bundle", src_dir_fd=root_fd, dst_dir_fd=quarantine_fd)
+        bundle_fd = _open_directory(quarantine_fd, ".bundle")
+        try:
+            if _identity(bundle_fd) != _identity(directory_fd) or os.listdir(
+                bundle_fd
+            ):
+                return
+        finally:
+            os.close(bundle_fd)
+        for member in ArtifactMember:
+            os.unlink(member.value, dir_fd=quarantine_fd)
+            isolated.remove(member.value)
+        os.rmdir(".bundle", dir_fd=quarantine_fd)
+    finally:
+        _restore_isolated(quarantine_fd, directory_fd, isolated)
+        try:
+            empty = not os.listdir(quarantine_fd)
+        finally:
+            os.close(quarantine_fd)
+        if empty:
+            os.rmdir(quarantine, dir_fd=root_fd)
+
+
 def _remove_owned(
-    root_fd: int, name: str, directory_fd: int, *, ready: bool
+    root_fd: int, name: str, directory: int | _CleanupSnapshot, *, ready: bool
 ) -> None:
     """Remove only literal known regular members of the pinned owned directory.
 
     Unexpected entries and links are preserved. No recursive deletion and no
     deletion by a user-provided pathname occurs, even for crash leftovers.
     """
+    directory_fd = (
+        directory.directory_fd
+        if isinstance(directory, _CleanupSnapshot)
+        else directory
+    )
     current = _open_directory(root_fd, name)
     try:
         if _identity(current) != _identity(directory_fd):
             return
     finally:
         os.close(current)
-    names = set(os.listdir(directory_fd))
-    allowed = _READY_NAMES if ready else _READY_NAMES | {_TEMP_MANIFEST}
-    if ready and names != _READY_NAMES:
+    if ready:
+        if isinstance(directory, _CleanupSnapshot):
+            _remove_expired(root_fd, name, directory)
         return
+    names = set(os.listdir(directory_fd))
+    allowed = _READY_NAMES | {_TEMP_MANIFEST}
     for member in sorted(names & allowed):
         try:
             fd = os.open(member, _FILE_FLAGS, dir_fd=directory_fd)
@@ -295,11 +427,17 @@ def _cleanup_expired(
         try:
             fd = _open_directory(root_fd, name)
             try:
-                bundle = _read_bundle(fd, parsed)
+                evidence: dict[str, tuple[int, int]] = {}
+                bundle = _read_bundle(fd, parsed, evidence=evidence)
                 if isinstance(bundle, StoredBundle) and is_expired(
                     bundle.manifest, now
                 ):
-                    _remove_owned(root_fd, name, fd, ready=True)
+                    _remove_owned(
+                        root_fd,
+                        name,
+                        _CleanupSnapshot(fd, bundle, evidence),
+                        ready=True,
+                    )
             finally:
                 os.close(fd)
         except OSError:
@@ -589,14 +727,18 @@ class ArtifactStore:
                         _cleanup_expired(root_fd, now)
                     return NotFound()
                 try:
-                    result = _read_bundle(fd, artifact_id)
+                    evidence: dict[str, tuple[int, int]] = {}
+                    result = _read_bundle(fd, artifact_id, evidence=evidence)
                     if isinstance(result, StoredBundle) and is_expired(
                         result.manifest, now
                     ):
                         expiry = result.manifest.expires_at
                         with suppress(OSError):
                             _remove_owned(
-                                root_fd, artifact_id.value, fd, ready=True
+                                root_fd,
+                                artifact_id.value,
+                                _CleanupSnapshot(fd, result, evidence),
+                                ready=True,
                             )
                         return Expired(expiry)
                 finally:
