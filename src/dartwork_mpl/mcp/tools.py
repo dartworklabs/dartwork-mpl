@@ -323,6 +323,21 @@ def register_tools(mcp: FastMCP) -> None:
         ``[SEVERITY] rule-id (line N): message`` entries, or a success
         line.
 
+        Literal cmap/color names in conventional ax/plt plotting calls
+        (and imported pyplot aliases) are checked against live matplotlib
+        registries without executing source. Discover valid colormaps via
+        ``sorted(matplotlib.colormaps)`` and named colors via
+        ``matplotlib.colors.get_named_colors_mapping()``; existing tools
+        ``get_color_value`` and ``list_color_families`` help inspect colors.
+        The resource ``dartwork-mpl://palette/colors`` lists exact package
+        color names and values.
+        For example, ``cmap="coolwarm"`` and ``color="dc.blue6"`` are valid.
+        Dynamic expressions and unknown receivers are left unchecked;
+        live custom names and explicit inline literal registrations are
+        accepted. Implicit/dynamic inline map registration defers map checks.
+        Direct named-color mapping updates and dynamic assignment keys
+        similarly defer color checks, while map checks still run.
+
         Parameters
         ----------
         code : str
@@ -355,6 +370,10 @@ def register_tools(mcp: FastMCP) -> None:
         Companion to :func:`lint_dartwork_mpl_code` which returns a
         formatted text report for human reading. This tool is preferred
         when an agent wants to programmatically pick fixes.
+
+        Valid names come from ``sorted(matplotlib.colormaps)`` and
+        ``matplotlib.colors.get_named_colors_mapping()``. Literal checks
+        share the text tool's static scope and never execute source.
 
         Parameters
         ----------

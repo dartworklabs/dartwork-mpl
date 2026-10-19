@@ -202,7 +202,7 @@ CURATED_META: dict[str, dict[str, str]] = {
         "label": "Trustworthy",
         "family": "Qualitative",
         "band": "medium-wide · teal + neutrals",
-        "intent": "The everyday DEFAULT — reach for this first for 4 to 8 "
+        "intent": "A general-purpose qualitative palette for 4 to 8 "
         "unrelated categories. Six evenly-spaced hues anchored on "
         "house teal plus two neutrals, muted enough to stay "
         "report-grade yet distinct enough that the series never "
@@ -328,7 +328,7 @@ CURATED_META: dict[str, dict[str, str]] = {
         "L* 30→86). Retuned once to clear a protanopia-model regression.",
         "application": "Up to 8 categories where you want depth + luxury. "
         "⚠ Smallest protan margin in the set (~4 in simulation) — where "
-        "color-vision safety matters, use Trustworthy or a Duo instead, or "
+        "color-vision accessibility matters, inspect the intended chart and "
         "reinforce identities with labels, markers, or line styles.",
         "bw": "min ΔL* 7.8",
         "cvd": "d7.6 / p4.2 / t16.3",

@@ -378,7 +378,7 @@ class TestMcpTools:
         clean_code = (
             "import dartwork_mpl as dm\n"
             'fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))\n'
-            'ax.plot([1, 2, 3], color="dc.blue500")\n'
+            'ax.plot([1, 2, 3], color="dc.blue6")\n'
             "dm.simple_layout(fig)\n"
             'dm.save_and_show(fig, "out")\n'
         )
@@ -455,7 +455,7 @@ class TestMcpTools:
         clean_code = (
             "import dartwork_mpl as dm\n"
             'fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))\n'
-            'ax.plot([1, 2, 3], color="dc.blue500")\n'
+            'ax.plot([1, 2, 3], color="dc.blue6")\n'
             "dm.simple_layout(fig)\n"
             'dm.save_and_show(fig, "out")\n'
         )

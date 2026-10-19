@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import dartwork_mpl as dm
 
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "wide"))
-ax.bar(["A", "B"], [1, 2], color="dc.blue500")
+ax.bar(["A", "B"], [1, 2], color="dc.blue6")
 dm.simple_layout(fig)
 dm.save_and_show(fig, "out")
 """
@@ -448,3 +448,172 @@ class TestAutoFixTableContract:
 
         fixed, _applied, _unfixed = apply_lint_fixes("x = dm.cm2in(13)\n")
         assert "dm.cm2in(13)" in fixed
+
+
+class TestLiteralColorNames:
+    """Static literal checks follow live registries without executing source."""
+
+    def test_invalid_literal_colormap_is_reported(self):
+        """A fabricated dc map is rejected at its literal source position."""
+        code = '\nax.imshow(data, cmap="dc.coolwarm")'
+        issues = [i for i in lint(code) if i.rule_id == "invalid-colormap-name"]
+        assert len(issues) == 1
+        assert issues[0].severity == "critical"
+        assert issues[0].line == 2
+        assert issues[0].column == code.index('"dc.coolwarm"')
+        assert "matplotlib.colormaps" in issues[0].fix_suggestion
+
+    def test_invalid_literal_color_is_reported(self):
+        """Unknown named colors in plotting kwargs are actionable errors."""
+        issues = lint('ax.plot(x, y, color="dc.not_a_color")')
+        assert any(i.rule_id == "invalid-color-name" for i in issues)
+
+    def test_valid_names_follow_live_registries(self):
+        """A deterministic registry sample and scalar color forms stay valid."""
+        import random
+
+        import matplotlib
+        from matplotlib.colors import get_named_colors_mapping
+
+        randomizer = random.Random(489)
+        maps = randomizer.sample(sorted(matplotlib.colormaps), 12)
+        colors = randomizer.sample(sorted(get_named_colors_mapping()), 12)
+        colors += ["C0", "C12", "#123456", "0.5", "none"]
+        for name in maps:
+            issues = lint(f"ax.imshow(data, cmap={name!r})")
+            assert not any(
+                i.rule_id == "invalid-colormap-name" for i in issues
+            ), name
+        for name in colors:
+            issues = lint(f"ax.plot(x, y, color={name!r})")
+            assert not any(i.rule_id == "invalid-color-name" for i in issues), (
+                name
+            )
+
+    def test_custom_runtime_registrations_are_live(self):
+        """Registry changes after earlier lint calls are accepted immediately."""
+        import matplotlib
+        from matplotlib.colors import ListedColormap, get_named_colors_mapping
+
+        map_name = "_dartwork_lint_test_map_489"
+        color_name = "_dartwork_lint_test_color_489"
+        code = (
+            f"ax.imshow(data, cmap={map_name!r})\n"
+            f"ax.plot(x, y, color={color_name!r})"
+        )
+        assert {i.rule_id for i in lint(code)} >= {
+            "invalid-colormap-name",
+            "invalid-color-name",
+        }
+        mapping = get_named_colors_mapping()
+        matplotlib.colormaps.register(
+            ListedColormap(["black", "white"], name=map_name)
+        )
+        mapping[color_name] = "#123456"
+        try:
+            assert not any(i.rule_id.startswith("invalid-") for i in lint(code))
+        finally:
+            matplotlib.colormaps.unregister(map_name)
+            del mapping[color_name]
+        assert {i.rule_id for i in lint(code)} >= {
+            "invalid-colormap-name",
+            "invalid-color-name",
+        }
+
+    def test_inline_registration_and_sentinels_are_not_rejected(self):
+        """Explicit registrations and context-specific color sentinels are legal."""
+        snippets = [
+            'import matplotlib as m\nm.colormaps.register(cmap, name="custom")\n'
+            'ax.imshow(data, cmap="custom")',
+            "from matplotlib import colormaps as maps\nmaps.register(custom_map)\n"
+            'ax.imshow(data, cmap="custom")',
+            "import matplotlib.colors as mc\n"
+            'mc.get_named_colors_mapping()["custom"] = "red"\n'
+            'ax.plot(x, y, color="custom")',
+            "from matplotlib.colors import get_named_colors_mapping as mapping\n"
+            'mapping()["custom"] = "red"\nax.plot(x, y, color="custom")',
+            'ax.scatter(x, y, edgecolor="face")',
+            'ax.scatter(x, y, edgecolor="FACE")',
+            'ax.plot(x, y, markerfacecolor="auto", markeredgecolor="auto")',
+            'ax.plot(x, y, markerfacecolor="AUTO", markeredgecolor="AUTO")',
+        ]
+        for code in snippets:
+            assert not any(
+                i.rule_id.startswith("invalid-") for i in lint(code)
+            ), code
+        assert any(
+            i.rule_id == "invalid-color-name"
+            for i in lint('ax.plot(x, y, color="auto")')
+        )
+
+    def test_pyplot_aliases_and_get_cmap_are_checked(self):
+        """Recognized pyplot calls share checks and preserve separate literals."""
+        code = (
+            "import matplotlib.pyplot as p\n"
+            'p.get_cmap("dc.coolwarm"); p.imshow(data, cmap="dc.coolwarm")\n'
+            "from matplotlib import pyplot as chart\n"
+            'chart.plot(x, y, color="dc.not_a_color")'
+        )
+        issues = [i for i in lint(code) if i.rule_id.startswith("invalid-")]
+        assert [i.rule_id for i in issues] == [
+            "invalid-colormap-name",
+            "invalid-colormap-name",
+            "invalid-color-name",
+        ]
+        assert len({i.column for i in issues}) == 3
+
+    def test_static_scope_never_executes_source(self, tmp_path):
+        """Imports, dynamic values, unrelated calls, comments and strings are inert."""
+        marker = tmp_path / "executed"
+        code = (
+            "import nonexistent_untrusted_module\n"
+            f'open({str(marker)!r}, "w").write("executed")\n'
+            '# ax.imshow(data, cmap="dc.coolwarm")\n'
+            "example = 'ax.plot(x, y, color=\"dc.not_a_color\")'\n"
+            "ax.imshow(data, cmap=choose_map())\n"
+            'ax.plot(x, y, color=f"dc.{name}")\n'
+            'other.imshow(data, cmap="dc.coolwarm")'
+        )
+        assert not any(i.rule_id.startswith("invalid-") for i in lint(code))
+        assert not marker.exists()
+
+    def test_generated_malformed_source_is_left_unchecked(self):
+        """Incomplete fragments never execute or crash the AST name detectors."""
+        import random
+        import string
+
+        randomizer = random.Random(489)
+        for _ in range(30):
+            fragment = "".join(randomizer.choices(string.ascii_letters, k=20))
+            issues = lint(f'ax.imshow({fragment}, cmap="dc.coolwarm"')
+            assert not any(i.rule_id.startswith("invalid-") for i in issues)
+
+    def test_unicode_location_matches_existing_character_offsets(self):
+        """Non-ASCII text before a literal cannot shift the reported location."""
+        code = 'ax.plot("한글", y, color="dc.not_a_color")'
+        issue = next(i for i in lint(code) if i.rule_id == "invalid-color-name")
+        assert issue.column == code.index('"dc.not_a_color"')
+
+    def test_inline_mapping_updates_and_dynamic_keys_defer_only_color_checks(
+        self,
+    ):
+        """Direct mapping mutations defer color checks without running registration."""
+        from matplotlib.colors import get_named_colors_mapping
+
+        name = "custom_review489"
+        registrations = [
+            f'mc.get_named_colors_mapping().update({name}="#ff0000")',
+            f'mc.get_named_colors_mapping().update({{{name!r}: "red"}})',
+            'mc.get_named_colors_mapping()[dynamic_key] = "red"',
+        ]
+        assert name not in get_named_colors_mapping()
+        for registration in registrations:
+            code = (
+                f"import matplotlib.colors as mc\n{registration}\n"
+                f"ax.plot([1, 2], color={name!r})\n"
+                'ax.imshow(data, cmap="dc.coolwarm")'
+            )
+            ids = {issue.rule_id for issue in lint(code)}
+            assert "invalid-color-name" not in ids
+            assert "invalid-colormap-name" in ids
+        assert name not in get_named_colors_mapping()

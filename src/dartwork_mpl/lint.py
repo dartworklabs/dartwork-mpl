@@ -5,9 +5,9 @@ Loads the anti-pattern catalog from
 source string. Used by the MCP ``lint_dartwork_mpl_code`` tool, the
 ``dartwork-mpl lint`` CLI, and CI drift tests.
 
-The catalog is the single source of truth: code never inlines rule
-text. Add or change rules in the YAML file; this module loads them
-verbatim.
+The catalog owns rule text and selects regex, substring, or static AST
+detectors. AST name checks consult the live public matplotlib registries;
+supplied source is never executed or imported.
 """
 
 from __future__ import annotations
@@ -22,12 +22,15 @@ __all__ = [
     "migrate_legacy_code",
 ]
 
+import ast
 import re
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
+from matplotlib import colormaps
+from matplotlib.colors import is_color_like
 
 _RULES_PATH: Path = (
     Path(__file__).parent / "asset" / "prompt" / "02-anti-patterns.yaml"
@@ -40,8 +43,8 @@ class Rule:
 
     id: str
     severity: str  # "critical" | "warning" | "info"
-    detector_kind: str  # "regex" | "substring"
-    detector_value: str  # pattern or literal
+    detector_kind: str  # "regex" | "substring" | "ast"
+    detector_value: str  # pattern, literal, or AST check name
     message: str
     why: str | None = None
     fix_suggestion: str | None = None
@@ -95,6 +98,11 @@ def load_rules(path: Path | None = None) -> list[Rule]:
             value = detector["pattern"]
         elif kind == "substring":
             value = detector["literal"]
+        elif kind == "ast" and detector.get("check") in {
+            "colormap-name",
+            "color-name",
+        }:
+            value = detector["check"]
         else:
             raise ValueError(
                 f"Unsupported detector kind {kind!r} in rule "
@@ -114,7 +122,247 @@ def load_rules(path: Path | None = None) -> list[Rule]:
     return rules
 
 
+_CMAP_CALLS = frozenset(
+    {
+        "imshow",
+        "matshow",
+        "scatter",
+        "pcolor",
+        "pcolormesh",
+        "contour",
+        "contourf",
+        "tripcolor",
+        "tricontour",
+        "tricontourf",
+        "hist2d",
+        "hexbin",
+    }
+)
+_COLOR_CALLS = frozenset(
+    {
+        "plot",
+        "scatter",
+        "bar",
+        "barh",
+        "hist",
+        "text",
+        "annotate",
+        "step",
+        "stairs",
+        "errorbar",
+        "fill",
+        "fill_between",
+        "fill_betweenx",
+        "axhline",
+        "axvline",
+        "axhspan",
+        "axvspan",
+    }
+)
+_COLOR_KEYWORDS = frozenset(
+    {"color", "facecolor", "edgecolor", "markerfacecolor", "markeredgecolor"}
+)
+
+
+def _dotted_name(node: ast.expr) -> str:
+    """Read only a simple name/attribute chain, without evaluating an expression."""
+    parts: list[str] = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if not isinstance(node, ast.Name):
+        return ""
+    return ".".join([node.id, *reversed(parts)])
+
+
+def _source_registrations(tree: ast.AST, check: str) -> set[str] | None:
+    """Exempt explicit registrations; unresolved mutations defer their name check.
+
+    Matplotlib import aliases are read as syntax only. Literal map names
+    passed with ``register(name=...)`` and direct named-color mapping
+    assignments are understood. Other map registrations may obtain their
+    names from arbitrary code, so map-name checking conservatively defers.
+    Direct named-color mapping updates and dynamic assignment keys likewise
+    defer color-name checking without evaluating the supplied mutation.
+    """
+    mpl_names = {"mpl", "matplotlib"}
+    cmap_names: set[str] = set()
+    color_modules = {"mcolors", "matplotlib.colors"}
+    color_mappings: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == "matplotlib":
+                    mpl_names.add(alias.asname or alias.name)
+                elif alias.name == "matplotlib.colors":
+                    color_modules.add(alias.asname or alias.name)
+        elif isinstance(node, ast.ImportFrom) and node.module == "matplotlib":
+            for alias in node.names:
+                if alias.name == "colormaps":
+                    cmap_names.add(alias.asname or alias.name)
+                elif alias.name == "colors":
+                    color_modules.add(alias.asname or alias.name)
+        elif (
+            isinstance(node, ast.ImportFrom)
+            and node.module == "matplotlib.colors"
+        ):
+            color_mappings.update(
+                alias.asname or alias.name
+                for alias in node.names
+                if alias.name == "get_named_colors_mapping"
+            )
+    registries = cmap_names | {f"{name}.colormaps" for name in mpl_names}
+    color_mappings.update(
+        f"{name}.get_named_colors_mapping" for name in color_modules
+    )
+    registrations: set[str] = set()
+    for node in ast.walk(tree):
+        if (
+            check == "colormap-name"
+            and isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "register"
+            and _dotted_name(node.func.value) in registries
+        ):
+            name = next(
+                (k.value for k in node.keywords if k.arg == "name"), None
+            )
+            if not isinstance(name, ast.Constant) or not isinstance(
+                name.value, str
+            ):
+                return None
+            registrations.add(name.value)
+        elif (
+            check == "color-name"
+            and isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "update"
+            and isinstance(node.func.value, ast.Call)
+            and _dotted_name(node.func.value.func) in color_mappings
+        ):
+            return None
+        elif check == "color-name" and isinstance(node, ast.Assign):
+            for target in node.targets:
+                if not (
+                    isinstance(target, ast.Subscript)
+                    and isinstance(target.value, ast.Call)
+                    and _dotted_name(target.value.func) in color_mappings
+                ):
+                    continue
+                if isinstance(target.slice, ast.Constant) and isinstance(
+                    target.slice.value, str
+                ):
+                    registrations.add(target.slice.value)
+                else:
+                    return None
+    return registrations
+
+
+def _scan_literal_names(code: str, rule: Rule) -> list[Issue]:
+    """Check literal names in conventional ax/plt calls, without evaluation.
+
+    Imported pyplot aliases are recognized too. Other receivers, dynamic
+    expressions, and syntactically incomplete source are left unchecked.
+    Live registries and explicit inline registrations are accepted; source
+    registration statements are inspected as syntax and never executed.
+    """
+    try:
+        tree = ast.parse(code)
+    except (SyntaxError, ValueError, RecursionError):
+        return []
+    registrations = _source_registrations(tree, rule.detector_value)
+    if registrations is None:
+        return []
+    pyplot_names = {"plt"}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            pyplot_names.update(
+                alias.asname
+                for alias in node.names
+                if alias.name == "matplotlib.pyplot" and alias.asname
+            )
+        elif isinstance(node, ast.ImportFrom) and node.module == "matplotlib":
+            pyplot_names.update(
+                alias.asname or alias.name
+                for alias in node.names
+                if alias.name == "pyplot"
+            )
+    lines = code.splitlines(keepends=True)
+    matches: list[Issue] = []
+    for node in ast.walk(tree):
+        if not (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+        ):
+            continue
+        receiver = node.func.value.id
+        method = node.func.attr
+        candidates: list[ast.expr] = []
+        if receiver not in pyplot_names | {"ax"}:
+            continue
+        if rule.detector_value == "colormap-name":
+            if method in _CMAP_CALLS:
+                candidates = [k.value for k in node.keywords if k.arg == "cmap"]
+            elif method == "get_cmap" and receiver in pyplot_names:
+                candidates = list(node.args[:1]) + [
+                    k.value for k in node.keywords if k.arg == "name"
+                ]
+        elif rule.detector_value == "color-name" and method in _COLOR_CALLS:
+            candidates = [
+                k.value for k in node.keywords if k.arg in _COLOR_KEYWORDS
+            ]
+        for value in candidates:
+            if not isinstance(value, ast.Constant) or not isinstance(
+                value.value, str
+            ):
+                continue
+            keyword = next(
+                (k.arg for k in node.keywords if k.value is value), None
+            )
+            sentinel = (
+                keyword in {"markerfacecolor", "markeredgecolor"}
+                and value.value.lower() == "auto"
+            ) or (
+                method == "scatter"
+                and keyword == "edgecolor"
+                and value.value.lower() == "face"
+            )
+            valid = (
+                value.value in registrations
+                or sentinel
+                or (
+                    value.value in colormaps
+                    if rule.detector_value == "colormap-name"
+                    else is_color_like(value.value)
+                )
+            )
+            if valid:
+                continue
+            # AST columns count UTF-8 bytes; Issue offsets follow the
+            # existing regex engine's absolute character positions.
+            prefix = lines[value.lineno - 1].encode("utf-8")[: value.col_offset]
+            offset = sum(map(len, lines[: value.lineno - 1])) + len(
+                prefix.decode("utf-8")
+            )
+            matches.append(
+                Issue(
+                    rule_id=rule.id,
+                    severity=rule.severity,
+                    message=rule.message,
+                    line=value.lineno,
+                    snippet=lines[value.lineno - 1].strip(),
+                    column=offset,
+                    fix_suggestion=rule.fix_suggestion,
+                )
+            )
+    return matches
+
+
 def _scan_one(code: str, rule: Rule) -> list[Issue]:
+    """Apply one catalog-selected detector and preserve source locations."""
+    if rule.detector_kind == "ast":
+        return _scan_literal_names(code, rule)
     matches: list[Issue] = []
     if rule.detector_kind == "regex":
         pattern = re.compile(rule.detector_value, re.MULTILINE)
@@ -163,7 +411,7 @@ def lint(code: str, *, rules: Iterable[Rule] | None = None) -> list[Issue]:
 
     .. note::
 
-        ``code`` must be **Python source**, not YAML/Markdown/JSON. The
+        ``code`` must be **Python source**, not YAML/Markdown/JSON. Most
         rules are regex-based, so feeding non-Python content (e.g. the
         anti-patterns YAML itself) will produce false positives.
 
