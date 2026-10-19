@@ -1,0 +1,3217 @@
+{
+  "requests": [
+    {
+      "id": "tornado-valid",
+      "arguments": {
+        "plot_type": "tornado",
+        "data_json": "{\"categories\": [\"a\", \"b\"], \"positive\": [1, 2], \"negative\": [-1, -2]}"
+      }
+    },
+    {
+      "id": "tornado-missing-fields",
+      "arguments": {
+        "plot_type": "tornado",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "scatter-valid",
+      "arguments": {
+        "plot_type": "scatter",
+        "data_json": "{\"x\": [1, 2], \"y\": [3, 4]}"
+      }
+    },
+    {
+      "id": "scatter-missing-fields",
+      "arguments": {
+        "plot_type": "scatter",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "bar-valid",
+      "arguments": {
+        "plot_type": "bar",
+        "data_json": "{\"categories\": [\"a\", \"b\"], \"values\": [1, 2]}"
+      }
+    },
+    {
+      "id": "bar-missing-fields",
+      "arguments": {
+        "plot_type": "bar",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "bar_horizontal-valid",
+      "arguments": {
+        "plot_type": "bar_horizontal",
+        "data_json": "{\"categories\": [\"a\", \"b\"], \"values\": [1, 2]}"
+      }
+    },
+    {
+      "id": "bar_horizontal-missing-fields",
+      "arguments": {
+        "plot_type": "bar_horizontal",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "bar_grouped-valid",
+      "arguments": {
+        "plot_type": "bar_grouped",
+        "data_json": "{\"categories\": [\"a\", \"b\"], \"series\": {\"one\": [1, 2]}}"
+      }
+    },
+    {
+      "id": "bar_grouped-missing-fields",
+      "arguments": {
+        "plot_type": "bar_grouped",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "heatmap-valid",
+      "arguments": {
+        "plot_type": "heatmap",
+        "data_json": "{\"matrix\": [[1, 2], [3, 4]]}"
+      }
+    },
+    {
+      "id": "heatmap-missing-fields",
+      "arguments": {
+        "plot_type": "heatmap",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "stacked_bar-valid",
+      "arguments": {
+        "plot_type": "stacked_bar",
+        "data_json": "{\"categories\": [\"a\", \"b\"], \"series\": {\"one\": [1, 2]}}"
+      }
+    },
+    {
+      "id": "stacked_bar-missing-fields",
+      "arguments": {
+        "plot_type": "stacked_bar",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "pie-valid",
+      "arguments": {
+        "plot_type": "pie",
+        "data_json": "{\"labels\": [\"a\", \"b\"], \"sizes\": [1, 2]}"
+      }
+    },
+    {
+      "id": "pie-missing-fields",
+      "arguments": {
+        "plot_type": "pie",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "line-valid",
+      "arguments": {
+        "plot_type": "line",
+        "data_json": "{\"x\": [1, 2], \"y\": [3, 4]}"
+      }
+    },
+    {
+      "id": "line-missing-fields",
+      "arguments": {
+        "plot_type": "line",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "violin-valid",
+      "arguments": {
+        "plot_type": "violin",
+        "data_json": "{\"series\": {\"one\": [1, 2, 3]}}"
+      }
+    },
+    {
+      "id": "violin-missing-fields",
+      "arguments": {
+        "plot_type": "violin",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "boxplot-valid",
+      "arguments": {
+        "plot_type": "boxplot",
+        "data_json": "{\"series\": {\"one\": [1, 2, 3]}}"
+      }
+    },
+    {
+      "id": "boxplot-missing-fields",
+      "arguments": {
+        "plot_type": "boxplot",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "histogram-valid",
+      "arguments": {
+        "plot_type": "histogram",
+        "data_json": "{\"values\": [1, 2, 3]}"
+      }
+    },
+    {
+      "id": "histogram-missing-fields",
+      "arguments": {
+        "plot_type": "histogram",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "contour-valid",
+      "arguments": {
+        "plot_type": "contour",
+        "data_json": "{\"Z\": [[1, 2], [3, 4]]}"
+      }
+    },
+    {
+      "id": "contour-missing-fields",
+      "arguments": {
+        "plot_type": "contour",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "twin_axis-valid",
+      "arguments": {
+        "plot_type": "twin_axis",
+        "data_json": "{\"x\": [1, 2], \"left\": {\"y\": [3, 4], \"label\": \"L\"}, \"right\": {\"y\": [5, 6], \"label\": \"R\"}}"
+      }
+    },
+    {
+      "id": "twin_axis-missing-fields",
+      "arguments": {
+        "plot_type": "twin_axis",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "waterfall-valid",
+      "arguments": {
+        "plot_type": "waterfall",
+        "data_json": "{\"labels\": [\"a\", \"b\"], \"deltas\": [1, -2]}"
+      }
+    },
+    {
+      "id": "waterfall-missing-fields",
+      "arguments": {
+        "plot_type": "waterfall",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "small_multiples-valid",
+      "arguments": {
+        "plot_type": "small_multiples",
+        "data_json": "{\"panels\": [{\"label\": \"a\", \"x\": [1, 2], \"y\": [3, 4]}]}"
+      }
+    },
+    {
+      "id": "small_multiples-missing-fields",
+      "arguments": {
+        "plot_type": "small_multiples",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "polar-valid",
+      "arguments": {
+        "plot_type": "polar",
+        "data_json": "{\"categories\": [\"a\", \"b\"], \"values\": [1, 2]}"
+      }
+    },
+    {
+      "id": "polar-missing-fields",
+      "arguments": {
+        "plot_type": "polar",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "plot_3d-valid",
+      "arguments": {
+        "plot_type": "plot_3d",
+        "data_json": "{\"x\": [1, 2], \"y\": [3, 4], \"z\": [5, 6]}"
+      }
+    },
+    {
+      "id": "plot_3d-missing-fields",
+      "arguments": {
+        "plot_type": "plot_3d",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "malformed-json",
+      "arguments": {
+        "plot_type": "scatter",
+        "data_json": "{bad"
+      }
+    },
+    {
+      "id": "unknown-name",
+      "arguments": {
+        "plot_type": "nonesuch",
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "unknown-malformed-precedence",
+      "arguments": {
+        "plot_type": "nonesuch",
+        "data_json": "{bad"
+      }
+    },
+    {
+      "id": "uppercase",
+      "arguments": {
+        "plot_type": "SCATTER",
+        "data_json": "{\"x\":[1],\"y\":[2]}"
+      }
+    },
+    {
+      "id": "whitespace",
+      "arguments": {
+        "plot_type": " scatter ",
+        "data_json": "{\"x\":[1],\"y\":[2]}"
+      }
+    },
+    {
+      "id": "top-list",
+      "arguments": {
+        "plot_type": "scatter",
+        "data_json": "[1,2]"
+      }
+    },
+    {
+      "id": "top-null",
+      "arguments": {
+        "plot_type": "scatter",
+        "data_json": "null"
+      }
+    },
+    {
+      "id": "top-string",
+      "arguments": {
+        "plot_type": "scatter",
+        "data_json": "\"abc\""
+      }
+    },
+    {
+      "id": "top-number",
+      "arguments": {
+        "plot_type": "scatter",
+        "data_json": "3"
+      }
+    },
+    {
+      "id": "top-bool",
+      "arguments": {
+        "plot_type": "scatter",
+        "data_json": "true"
+      }
+    },
+    {
+      "id": "scalar-fields",
+      "arguments": {
+        "plot_type": "scatter",
+        "data_json": "{\"x\":5,\"y\":6}"
+      }
+    },
+    {
+      "id": "mismatched-pairs",
+      "arguments": {
+        "plot_type": "scatter",
+        "data_json": "{\"x\":[1,2],\"y\":[3]}"
+      }
+    },
+    {
+      "id": "numeric-strings",
+      "arguments": {
+        "plot_type": "bar",
+        "data_json": "{\"categories\":[\"01\"],\"values\":[\"2.5\"]}"
+      }
+    },
+    {
+      "id": "bad-series-container",
+      "arguments": {
+        "plot_type": "bar_grouped",
+        "data_json": "{\"categories\":[\"a\"],\"series\":[[1]]}"
+      }
+    },
+    {
+      "id": "ragged-matrix",
+      "arguments": {
+        "plot_type": "heatmap",
+        "data_json": "{\"matrix\":[[1,2],[3]]}"
+      }
+    },
+    {
+      "id": "duplicate-key",
+      "arguments": {
+        "plot_type": "histogram",
+        "data_json": "{\"values\":[1],\"values\":[2]}"
+      }
+    },
+    {
+      "id": "nonfinite",
+      "arguments": {
+        "plot_type": "histogram",
+        "data_json": "{\"values\":[NaN,2]}"
+      }
+    },
+    {
+      "id": "wire-data-object",
+      "arguments": {
+        "plot_type": "scatter",
+        "data_json": {
+          "x": [
+            1
+          ],
+          "y": [
+            2
+          ]
+        }
+      }
+    },
+    {
+      "id": "wire-data-null",
+      "arguments": {
+        "plot_type": "scatter",
+        "data_json": null
+      }
+    },
+    {
+      "id": "wire-data-number",
+      "arguments": {
+        "plot_type": "scatter",
+        "data_json": 3
+      }
+    },
+    {
+      "id": "wire-data-list",
+      "arguments": {
+        "plot_type": "scatter",
+        "data_json": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "id": "wire-plot-number",
+      "arguments": {
+        "plot_type": 3,
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "wire-plot-null",
+      "arguments": {
+        "plot_type": null,
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "wire-plot-list",
+      "arguments": {
+        "plot_type": [],
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "wire-missing-plot",
+      "arguments": {
+        "data_json": "{}"
+      }
+    },
+    {
+      "id": "wire-missing-data",
+      "arguments": {
+        "plot_type": "scatter"
+      }
+    }
+  ],
+  "runtimes": {
+    "3.4.2": {
+      "baseline_sha": "226cddc5170ec21c514983264384ec1c65258ba3",
+      "tools_sha256": "897292d9211069fd42272f125db0b16f898efc3a901843a190fc0a8fa1ad171c",
+      "python": "3.10.20",
+      "fastmcp": "3.4.2",
+      "pydantic": "2.13.4",
+      "mcp": "1.27.2",
+      "validate_schema": {
+        "name": "validate_plot_data",
+        "title": null,
+        "description": "Validate whether data structure matches a plot type's requirements.",
+        "inputSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "plot_type": {
+              "type": "string",
+              "description": "Target plot type. Supports the full 18-template catalog\nadvertised by ``dartwork_mpl_info()``: ``'tornado'``,\n``'scatter'``, ``'bar'``, ``'bar_horizontal'``,\n``'bar_grouped'``, ``'heatmap'``, ``'stacked_bar'``,\n``'pie'``, ``'line'``, ``'violin'``, ``'boxplot'``,\n``'histogram'``, ``'contour'``, ``'twin_axis'``,\n``'waterfall'``, ``'small_multiples'``, ``'polar'``,\n``'plot_3d'``."
+            },
+            "data_json": {
+              "type": "string",
+              "description": "JSON string representing the data to validate. The expected\nstructure varies by plot type."
+            }
+          },
+          "required": [
+            "plot_type",
+            "data_json"
+          ],
+          "type": "object"
+        },
+        "outputSchema": {
+          "properties": {
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "result"
+          ],
+          "type": "object",
+          "x-fastmcp-wrap-result": true
+        },
+        "icons": null,
+        "annotations": null,
+        "meta": {
+          "fastmcp": {
+            "tags": []
+          }
+        },
+        "execution": null
+      },
+      "discovery": {
+        "tool_names": [
+          "fetch_github_document",
+          "get_color_value",
+          "mix_colors",
+          "list_color_families",
+          "lint_dartwork_mpl_code",
+          "lint_dartwork_mpl_code_json",
+          "find_template",
+          "apply_lint_fixes",
+          "render_template",
+          "migrate_legacy_code",
+          "validate_generated_plot",
+          "validate_plot_data",
+          "suggest_chart_type",
+          "compose_layered_plot",
+          "render_template_advanced",
+          "dartwork_mpl_info",
+          "render_plot",
+          "get_plot_artifact"
+        ],
+        "resource_uris": [
+          "dartwork-mpl://guide/agent-entry",
+          "dartwork-mpl://guide/policy",
+          "dartwork-mpl://guide/anti-patterns",
+          "dartwork-mpl://guide/recipes",
+          "dartwork-mpl://guide/migration",
+          "dartwork-mpl://api/index",
+          "dartwork-mpl://palette/colors",
+          "dartwork-mpl://palette/fonts",
+          "dartwork-mpl://styles/list",
+          "dartwork-mpl://templates/list"
+        ],
+        "resource_template_uris": [
+          "dartwork-mpl://api/{name}",
+          "dartwork-mpl://styles/{preset}",
+          "dartwork-mpl://templates/{plot_type}",
+          "dartwork-mpl://templates/advanced/{plot_type}",
+          "dartwork-mpl://artifacts/{artifact_id}/plot.png",
+          "dartwork-mpl://artifacts/{artifact_id}/plot.pdf",
+          "dartwork-mpl://artifacts/{artifact_id}/source.py",
+          "dartwork-mpl://artifacts/{artifact_id}/report.json",
+          "dartwork-mpl://artifacts/{artifact_id}/manifest.json"
+        ],
+        "prompt_names": [
+          "create_plot",
+          "style_review"
+        ]
+      },
+      "calls": [
+        {
+          "id": "tornado-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for tornado plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for tornado plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for tornado plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for tornado plot."
+          }
+        },
+        {
+          "id": "tornado-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'categories' key (list of category labels).\nNeed at least 'positive' and/or 'negative' value arrays."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'categories' key (list of category labels).\nNeed at least 'positive' and/or 'negative' value arrays.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'categories' key (list of category labels).\nNeed at least 'positive' and/or 'negative' value arrays."
+            },
+            "is_error": false,
+            "data": "Missing 'categories' key (list of category labels).\nNeed at least 'positive' and/or 'negative' value arrays."
+          }
+        },
+        {
+          "id": "scatter-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for scatter plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for scatter plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for scatter plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for scatter plot."
+          }
+        },
+        {
+          "id": "scatter-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+            },
+            "is_error": false,
+            "data": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+          }
+        },
+        {
+          "id": "bar-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for bar plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for bar plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for bar plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for bar plot."
+          }
+        },
+        {
+          "id": "bar-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values)."
+            },
+            "is_error": false,
+            "data": "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values)."
+          }
+        },
+        {
+          "id": "bar_horizontal-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for horizontal bar plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for horizontal bar plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for horizontal bar plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for horizontal bar plot."
+          }
+        },
+        {
+          "id": "bar_horizontal-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values)."
+            },
+            "is_error": false,
+            "data": "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values)."
+          }
+        },
+        {
+          "id": "bar_grouped-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for grouped bar plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for grouped bar plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for grouped bar plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for grouped bar plot."
+          }
+        },
+        {
+          "id": "bar_grouped-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values)."
+            },
+            "is_error": false,
+            "data": "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values)."
+          }
+        },
+        {
+          "id": "heatmap-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for heatmap."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for heatmap.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for heatmap."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for heatmap."
+          }
+        },
+        {
+          "id": "heatmap-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'matrix' key (2D array of numeric values)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'matrix' key (2D array of numeric values).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'matrix' key (2D array of numeric values)."
+            },
+            "is_error": false,
+            "data": "Missing 'matrix' key (2D array of numeric values)."
+          }
+        },
+        {
+          "id": "stacked_bar-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for stacked bar."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for stacked bar.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for stacked bar."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for stacked bar."
+          }
+        },
+        {
+          "id": "stacked_bar-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values)."
+            },
+            "is_error": false,
+            "data": "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values)."
+          }
+        },
+        {
+          "id": "pie-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for pie chart."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for pie chart.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for pie chart."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for pie chart."
+          }
+        },
+        {
+          "id": "pie-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'labels' key.\nMissing 'sizes' key (list of numeric values)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'labels' key.\nMissing 'sizes' key (list of numeric values).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'labels' key.\nMissing 'sizes' key (list of numeric values)."
+            },
+            "is_error": false,
+            "data": "Missing 'labels' key.\nMissing 'sizes' key (list of numeric values)."
+          }
+        },
+        {
+          "id": "line-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for line plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for line plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for line plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for line plot."
+          }
+        },
+        {
+          "id": "line-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'x' key (list of x values or time points).\nNeed 'y' (single series) or 'series' (dict of named series)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'x' key (list of x values or time points).\nNeed 'y' (single series) or 'series' (dict of named series).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'x' key (list of x values or time points).\nNeed 'y' (single series) or 'series' (dict of named series)."
+            },
+            "is_error": false,
+            "data": "Missing 'x' key (list of x values or time points).\nNeed 'y' (single series) or 'series' (dict of named series)."
+          }
+        },
+        {
+          "id": "violin-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for violin plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for violin plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for violin plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for violin plot."
+          }
+        },
+        {
+          "id": "violin-missing-fields",
+          "response": {
+            "raw_text": [
+              "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list)."
+            },
+            "is_error": false,
+            "data": "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list)."
+          }
+        },
+        {
+          "id": "boxplot-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for boxplot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for boxplot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for boxplot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for boxplot."
+          }
+        },
+        {
+          "id": "boxplot-missing-fields",
+          "response": {
+            "raw_text": [
+              "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list)."
+            },
+            "is_error": false,
+            "data": "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list)."
+          }
+        },
+        {
+          "id": "histogram-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for histogram."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for histogram.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for histogram."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for histogram."
+          }
+        },
+        {
+          "id": "histogram-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'values' key — a 1-D list of numeric samples."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'values' key — a 1-D list of numeric samples.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'values' key — a 1-D list of numeric samples."
+            },
+            "is_error": false,
+            "data": "Missing 'values' key — a 1-D list of numeric samples."
+          }
+        },
+        {
+          "id": "contour-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for contour plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for contour plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for contour plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for contour plot."
+          }
+        },
+        {
+          "id": "contour-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'Z' key — a 2-D array of values to contour."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'Z' key — a 2-D array of values to contour.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'Z' key — a 2-D array of values to contour."
+            },
+            "is_error": false,
+            "data": "Missing 'Z' key — a 2-D array of values to contour."
+          }
+        },
+        {
+          "id": "twin_axis-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for twin-axis plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for twin-axis plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for twin-axis plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for twin-axis plot."
+          }
+        },
+        {
+          "id": "twin_axis-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'x' key (list of shared x values).\nMissing 'left' key (dict with 'y' and 'label').\nMissing 'right' key (dict with 'y' and 'label')."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'x' key (list of shared x values).\nMissing 'left' key (dict with 'y' and 'label').\nMissing 'right' key (dict with 'y' and 'label').",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'x' key (list of shared x values).\nMissing 'left' key (dict with 'y' and 'label').\nMissing 'right' key (dict with 'y' and 'label')."
+            },
+            "is_error": false,
+            "data": "Missing 'x' key (list of shared x values).\nMissing 'left' key (dict with 'y' and 'label').\nMissing 'right' key (dict with 'y' and 'label')."
+          }
+        },
+        {
+          "id": "waterfall-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for waterfall plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for waterfall plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for waterfall plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for waterfall plot."
+          }
+        },
+        {
+          "id": "waterfall-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'labels' key (list of step labels).\nMissing 'deltas' key (list of signed numeric values)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'labels' key (list of step labels).\nMissing 'deltas' key (list of signed numeric values).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'labels' key (list of step labels).\nMissing 'deltas' key (list of signed numeric values)."
+            },
+            "is_error": false,
+            "data": "Missing 'labels' key (list of step labels).\nMissing 'deltas' key (list of signed numeric values)."
+          }
+        },
+        {
+          "id": "small_multiples-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for small multiples."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for small multiples.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for small multiples."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for small multiples."
+          }
+        },
+        {
+          "id": "small_multiples-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'panels' key (list of {label, x, y} panel dicts)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'panels' key (list of {label, x, y} panel dicts).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'panels' key (list of {label, x, y} panel dicts)."
+            },
+            "is_error": false,
+            "data": "Missing 'panels' key (list of {label, x, y} panel dicts)."
+          }
+        },
+        {
+          "id": "polar-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for polar plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for polar plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for polar plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for polar plot."
+          }
+        },
+        {
+          "id": "polar-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'categories' key (list of axis labels).\nMissing 'values' key (list, or dict of series_name -> list)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'categories' key (list of axis labels).\nMissing 'values' key (list, or dict of series_name -> list).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'categories' key (list of axis labels).\nMissing 'values' key (list, or dict of series_name -> list)."
+            },
+            "is_error": false,
+            "data": "Missing 'categories' key (list of axis labels).\nMissing 'values' key (list, or dict of series_name -> list)."
+          }
+        },
+        {
+          "id": "plot_3d-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for 3D plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for 3D plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for 3D plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for 3D plot."
+          }
+        },
+        {
+          "id": "plot_3d-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'x' key.\nMissing 'y' key.\nMissing 'z' key."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'x' key.\nMissing 'y' key.\nMissing 'z' key.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'x' key.\nMissing 'y' key.\nMissing 'z' key."
+            },
+            "is_error": false,
+            "data": "Missing 'x' key.\nMissing 'y' key.\nMissing 'z' key."
+          }
+        },
+        {
+          "id": "malformed-json",
+          "response": {
+            "raw_text": [
+              "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+            },
+            "is_error": false,
+            "data": "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+          }
+        },
+        {
+          "id": "unknown-name",
+          "response": {
+            "raw_text": [
+              "No validator for 'nonesuch'. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "No validator for 'nonesuch'. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "No validator for 'nonesuch'. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']"
+            },
+            "is_error": false,
+            "data": "No validator for 'nonesuch'. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']"
+          }
+        },
+        {
+          "id": "unknown-malformed-precedence",
+          "response": {
+            "raw_text": [
+              "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+            },
+            "is_error": false,
+            "data": "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+          }
+        },
+        {
+          "id": "uppercase",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for scatter plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for scatter plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for scatter plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for scatter plot."
+          }
+        },
+        {
+          "id": "whitespace",
+          "response": {
+            "raw_text": [
+              "No validator for ' scatter '. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "No validator for ' scatter '. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "No validator for ' scatter '. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']"
+            },
+            "is_error": false,
+            "data": "No validator for ' scatter '. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']"
+          }
+        },
+        {
+          "id": "top-list",
+          "response": {
+            "raw_text": [
+              "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+            },
+            "is_error": false,
+            "data": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+          }
+        },
+        {
+          "id": "top-null",
+          "response": {
+            "raw_text": [
+              "Invalid data structure for 'scatter': TypeError: argument of type 'NoneType' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Invalid data structure for 'scatter': TypeError: argument of type 'NoneType' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Invalid data structure for 'scatter': TypeError: argument of type 'NoneType' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            },
+            "is_error": false,
+            "data": "Invalid data structure for 'scatter': TypeError: argument of type 'NoneType' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+          }
+        },
+        {
+          "id": "top-string",
+          "response": {
+            "raw_text": [
+              "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+            },
+            "is_error": false,
+            "data": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+          }
+        },
+        {
+          "id": "top-number",
+          "response": {
+            "raw_text": [
+              "Invalid data structure for 'scatter': TypeError: argument of type 'int' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Invalid data structure for 'scatter': TypeError: argument of type 'int' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Invalid data structure for 'scatter': TypeError: argument of type 'int' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            },
+            "is_error": false,
+            "data": "Invalid data structure for 'scatter': TypeError: argument of type 'int' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+          }
+        },
+        {
+          "id": "top-bool",
+          "response": {
+            "raw_text": [
+              "Invalid data structure for 'scatter': TypeError: argument of type 'bool' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Invalid data structure for 'scatter': TypeError: argument of type 'bool' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Invalid data structure for 'scatter': TypeError: argument of type 'bool' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            },
+            "is_error": false,
+            "data": "Invalid data structure for 'scatter': TypeError: argument of type 'bool' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+          }
+        },
+        {
+          "id": "scalar-fields",
+          "response": {
+            "raw_text": [
+              "Invalid data structure for 'scatter': TypeError: object of type 'int' has no len(). Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Invalid data structure for 'scatter': TypeError: object of type 'int' has no len(). Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Invalid data structure for 'scatter': TypeError: object of type 'int' has no len(). Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            },
+            "is_error": false,
+            "data": "Invalid data structure for 'scatter': TypeError: object of type 'int' has no len(). Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+          }
+        },
+        {
+          "id": "mismatched-pairs",
+          "response": {
+            "raw_text": [
+              "Length mismatch: 'x' and 'y' must have equal length."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Length mismatch: 'x' and 'y' must have equal length.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Length mismatch: 'x' and 'y' must have equal length."
+            },
+            "is_error": false,
+            "data": "Length mismatch: 'x' and 'y' must have equal length."
+          }
+        },
+        {
+          "id": "numeric-strings",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for bar plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for bar plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for bar plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for bar plot."
+          }
+        },
+        {
+          "id": "bad-series-container",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for grouped bar plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for grouped bar plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for grouped bar plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for grouped bar plot."
+          }
+        },
+        {
+          "id": "ragged-matrix",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for heatmap."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for heatmap.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for heatmap."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for heatmap."
+          }
+        },
+        {
+          "id": "duplicate-key",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for histogram."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for histogram.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for histogram."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for histogram."
+          }
+        },
+        {
+          "id": "nonfinite",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for histogram."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for histogram.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for histogram."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for histogram."
+          }
+        },
+        {
+          "id": "wire-data-object",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value={'x': [1], 'y': [2]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value={'x': [1], 'y': [2]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-data-null",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-data-number",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value=3, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value=3, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-data-list",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value=[1, 2], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value=[1, 2], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-plot-number",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\nplot_type\n  Input should be a valid string [type=string_type, input_value=3, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\nplot_type\n  Input should be a valid string [type=string_type, input_value=3, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-plot-null",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\nplot_type\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\nplot_type\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-plot-list",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\nplot_type\n  Input should be a valid string [type=string_type, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\nplot_type\n  Input should be a valid string [type=string_type, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.13/v/string_type",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-missing-plot",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\nplot_type\n  Missing required argument [type=missing_argument, input_value={'data_json': '{}'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing_argument"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\nplot_type\n  Missing required argument [type=missing_argument, input_value={'data_json': '{}'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing_argument",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-missing-data",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\ndata_json\n  Missing required argument [type=missing_argument, input_value={'plot_type': 'scatter'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing_argument"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\ndata_json\n  Missing required argument [type=missing_argument, input_value={'plot_type': 'scatter'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing_argument",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        }
+      ]
+    },
+    "2.13.3": {
+      "baseline_sha": "226cddc5170ec21c514983264384ec1c65258ba3",
+      "tools_sha256": "897292d9211069fd42272f125db0b16f898efc3a901843a190fc0a8fa1ad171c",
+      "python": "3.10.20",
+      "fastmcp": "2.13.3",
+      "pydantic": "2.14.1",
+      "mcp": "1.22.0",
+      "validate_schema": {
+        "name": "validate_plot_data",
+        "title": null,
+        "description": "Validate whether data structure matches a plot type's requirements.\n\nParameters\n----------\nplot_type : str\n    Target plot type. Supports the full 18-template catalog\n    advertised by ``dartwork_mpl_info()``: ``'tornado'``,\n    ``'scatter'``, ``'bar'``, ``'bar_horizontal'``,\n    ``'bar_grouped'``, ``'heatmap'``, ``'stacked_bar'``,\n    ``'pie'``, ``'line'``, ``'violin'``, ``'boxplot'``,\n    ``'histogram'``, ``'contour'``, ``'twin_axis'``,\n    ``'waterfall'``, ``'small_multiples'``, ``'polar'``,\n    ``'plot_3d'``.\ndata_json : str\n    JSON string representing the data to validate. The expected\n    structure varies by plot type.\n\nReturns\n-------\nstr\n    Validation result with suggestions if issues are found.",
+        "inputSchema": {
+          "properties": {
+            "plot_type": {
+              "type": "string"
+            },
+            "data_json": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "plot_type",
+            "data_json"
+          ],
+          "type": "object"
+        },
+        "outputSchema": {
+          "description": "Generic wrapper for non-object return types.",
+          "properties": {
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "result"
+          ],
+          "type": "object",
+          "x-fastmcp-wrap-result": true
+        },
+        "icons": null,
+        "annotations": null,
+        "meta": {
+          "_fastmcp": {
+            "tags": []
+          }
+        }
+      },
+      "discovery": {
+        "tool_names": [
+          "fetch_github_document",
+          "get_color_value",
+          "mix_colors",
+          "list_color_families",
+          "lint_dartwork_mpl_code",
+          "lint_dartwork_mpl_code_json",
+          "find_template",
+          "apply_lint_fixes",
+          "render_template",
+          "migrate_legacy_code",
+          "validate_generated_plot",
+          "validate_plot_data",
+          "suggest_chart_type",
+          "compose_layered_plot",
+          "render_template_advanced",
+          "dartwork_mpl_info",
+          "render_plot",
+          "get_plot_artifact"
+        ],
+        "resource_uris": [
+          "dartwork-mpl://guide/agent-entry",
+          "dartwork-mpl://guide/policy",
+          "dartwork-mpl://guide/anti-patterns",
+          "dartwork-mpl://guide/recipes",
+          "dartwork-mpl://guide/migration",
+          "dartwork-mpl://api/index",
+          "dartwork-mpl://palette/colors",
+          "dartwork-mpl://palette/fonts",
+          "dartwork-mpl://styles/list",
+          "dartwork-mpl://templates/list"
+        ],
+        "resource_template_uris": [
+          "dartwork-mpl://api/{name}",
+          "dartwork-mpl://styles/{preset}",
+          "dartwork-mpl://templates/{plot_type}",
+          "dartwork-mpl://templates/advanced/{plot_type}",
+          "dartwork-mpl://artifacts/{artifact_id}/plot.png",
+          "dartwork-mpl://artifacts/{artifact_id}/plot.pdf",
+          "dartwork-mpl://artifacts/{artifact_id}/source.py",
+          "dartwork-mpl://artifacts/{artifact_id}/report.json",
+          "dartwork-mpl://artifacts/{artifact_id}/manifest.json"
+        ],
+        "prompt_names": [
+          "create_plot",
+          "style_review"
+        ]
+      },
+      "calls": [
+        {
+          "id": "tornado-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for tornado plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for tornado plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for tornado plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for tornado plot."
+          }
+        },
+        {
+          "id": "tornado-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'categories' key (list of category labels).\nNeed at least 'positive' and/or 'negative' value arrays."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'categories' key (list of category labels).\nNeed at least 'positive' and/or 'negative' value arrays.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'categories' key (list of category labels).\nNeed at least 'positive' and/or 'negative' value arrays."
+            },
+            "is_error": false,
+            "data": "Missing 'categories' key (list of category labels).\nNeed at least 'positive' and/or 'negative' value arrays."
+          }
+        },
+        {
+          "id": "scatter-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for scatter plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for scatter plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for scatter plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for scatter plot."
+          }
+        },
+        {
+          "id": "scatter-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+            },
+            "is_error": false,
+            "data": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+          }
+        },
+        {
+          "id": "bar-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for bar plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for bar plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for bar plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for bar plot."
+          }
+        },
+        {
+          "id": "bar-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values)."
+            },
+            "is_error": false,
+            "data": "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values)."
+          }
+        },
+        {
+          "id": "bar_horizontal-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for horizontal bar plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for horizontal bar plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for horizontal bar plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for horizontal bar plot."
+          }
+        },
+        {
+          "id": "bar_horizontal-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values)."
+            },
+            "is_error": false,
+            "data": "Missing 'categories' key (list of category labels).\nMissing 'values' key (list of numeric values)."
+          }
+        },
+        {
+          "id": "bar_grouped-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for grouped bar plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for grouped bar plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for grouped bar plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for grouped bar plot."
+          }
+        },
+        {
+          "id": "bar_grouped-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values)."
+            },
+            "is_error": false,
+            "data": "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values)."
+          }
+        },
+        {
+          "id": "heatmap-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for heatmap."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for heatmap.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for heatmap."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for heatmap."
+          }
+        },
+        {
+          "id": "heatmap-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'matrix' key (2D array of numeric values)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'matrix' key (2D array of numeric values).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'matrix' key (2D array of numeric values)."
+            },
+            "is_error": false,
+            "data": "Missing 'matrix' key (2D array of numeric values)."
+          }
+        },
+        {
+          "id": "stacked_bar-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for stacked bar."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for stacked bar.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for stacked bar."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for stacked bar."
+          }
+        },
+        {
+          "id": "stacked_bar-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values)."
+            },
+            "is_error": false,
+            "data": "Missing 'categories' key.\nMissing 'series' key (dict of series_name -> values)."
+          }
+        },
+        {
+          "id": "pie-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for pie chart."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for pie chart.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for pie chart."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for pie chart."
+          }
+        },
+        {
+          "id": "pie-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'labels' key.\nMissing 'sizes' key (list of numeric values)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'labels' key.\nMissing 'sizes' key (list of numeric values).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'labels' key.\nMissing 'sizes' key (list of numeric values)."
+            },
+            "is_error": false,
+            "data": "Missing 'labels' key.\nMissing 'sizes' key (list of numeric values)."
+          }
+        },
+        {
+          "id": "line-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for line plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for line plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for line plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for line plot."
+          }
+        },
+        {
+          "id": "line-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'x' key (list of x values or time points).\nNeed 'y' (single series) or 'series' (dict of named series)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'x' key (list of x values or time points).\nNeed 'y' (single series) or 'series' (dict of named series).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'x' key (list of x values or time points).\nNeed 'y' (single series) or 'series' (dict of named series)."
+            },
+            "is_error": false,
+            "data": "Missing 'x' key (list of x values or time points).\nNeed 'y' (single series) or 'series' (dict of named series)."
+          }
+        },
+        {
+          "id": "violin-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for violin plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for violin plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for violin plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for violin plot."
+          }
+        },
+        {
+          "id": "violin-missing-fields",
+          "response": {
+            "raw_text": [
+              "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list)."
+            },
+            "is_error": false,
+            "data": "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list)."
+          }
+        },
+        {
+          "id": "boxplot-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for boxplot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for boxplot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for boxplot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for boxplot."
+          }
+        },
+        {
+          "id": "boxplot-missing-fields",
+          "response": {
+            "raw_text": [
+              "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list)."
+            },
+            "is_error": false,
+            "data": "Need either 'groups' (list of labels) + 'values' (list of numeric lists), or 'series' (dict of label -> numeric list)."
+          }
+        },
+        {
+          "id": "histogram-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for histogram."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for histogram.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for histogram."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for histogram."
+          }
+        },
+        {
+          "id": "histogram-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'values' key — a 1-D list of numeric samples."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'values' key — a 1-D list of numeric samples.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'values' key — a 1-D list of numeric samples."
+            },
+            "is_error": false,
+            "data": "Missing 'values' key — a 1-D list of numeric samples."
+          }
+        },
+        {
+          "id": "contour-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for contour plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for contour plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for contour plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for contour plot."
+          }
+        },
+        {
+          "id": "contour-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'Z' key — a 2-D array of values to contour."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'Z' key — a 2-D array of values to contour.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'Z' key — a 2-D array of values to contour."
+            },
+            "is_error": false,
+            "data": "Missing 'Z' key — a 2-D array of values to contour."
+          }
+        },
+        {
+          "id": "twin_axis-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for twin-axis plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for twin-axis plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for twin-axis plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for twin-axis plot."
+          }
+        },
+        {
+          "id": "twin_axis-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'x' key (list of shared x values).\nMissing 'left' key (dict with 'y' and 'label').\nMissing 'right' key (dict with 'y' and 'label')."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'x' key (list of shared x values).\nMissing 'left' key (dict with 'y' and 'label').\nMissing 'right' key (dict with 'y' and 'label').",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'x' key (list of shared x values).\nMissing 'left' key (dict with 'y' and 'label').\nMissing 'right' key (dict with 'y' and 'label')."
+            },
+            "is_error": false,
+            "data": "Missing 'x' key (list of shared x values).\nMissing 'left' key (dict with 'y' and 'label').\nMissing 'right' key (dict with 'y' and 'label')."
+          }
+        },
+        {
+          "id": "waterfall-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for waterfall plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for waterfall plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for waterfall plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for waterfall plot."
+          }
+        },
+        {
+          "id": "waterfall-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'labels' key (list of step labels).\nMissing 'deltas' key (list of signed numeric values)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'labels' key (list of step labels).\nMissing 'deltas' key (list of signed numeric values).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'labels' key (list of step labels).\nMissing 'deltas' key (list of signed numeric values)."
+            },
+            "is_error": false,
+            "data": "Missing 'labels' key (list of step labels).\nMissing 'deltas' key (list of signed numeric values)."
+          }
+        },
+        {
+          "id": "small_multiples-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for small multiples."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for small multiples.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for small multiples."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for small multiples."
+          }
+        },
+        {
+          "id": "small_multiples-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'panels' key (list of {label, x, y} panel dicts)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'panels' key (list of {label, x, y} panel dicts).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'panels' key (list of {label, x, y} panel dicts)."
+            },
+            "is_error": false,
+            "data": "Missing 'panels' key (list of {label, x, y} panel dicts)."
+          }
+        },
+        {
+          "id": "polar-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for polar plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for polar plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for polar plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for polar plot."
+          }
+        },
+        {
+          "id": "polar-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'categories' key (list of axis labels).\nMissing 'values' key (list, or dict of series_name -> list)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'categories' key (list of axis labels).\nMissing 'values' key (list, or dict of series_name -> list).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'categories' key (list of axis labels).\nMissing 'values' key (list, or dict of series_name -> list)."
+            },
+            "is_error": false,
+            "data": "Missing 'categories' key (list of axis labels).\nMissing 'values' key (list, or dict of series_name -> list)."
+          }
+        },
+        {
+          "id": "plot_3d-valid",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for 3D plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for 3D plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for 3D plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for 3D plot."
+          }
+        },
+        {
+          "id": "plot_3d-missing-fields",
+          "response": {
+            "raw_text": [
+              "Missing 'x' key.\nMissing 'y' key.\nMissing 'z' key."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'x' key.\nMissing 'y' key.\nMissing 'z' key.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'x' key.\nMissing 'y' key.\nMissing 'z' key."
+            },
+            "is_error": false,
+            "data": "Missing 'x' key.\nMissing 'y' key.\nMissing 'z' key."
+          }
+        },
+        {
+          "id": "malformed-json",
+          "response": {
+            "raw_text": [
+              "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+            },
+            "is_error": false,
+            "data": "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+          }
+        },
+        {
+          "id": "unknown-name",
+          "response": {
+            "raw_text": [
+              "No validator for 'nonesuch'. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "No validator for 'nonesuch'. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "No validator for 'nonesuch'. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']"
+            },
+            "is_error": false,
+            "data": "No validator for 'nonesuch'. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']"
+          }
+        },
+        {
+          "id": "unknown-malformed-precedence",
+          "response": {
+            "raw_text": [
+              "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+            },
+            "is_error": false,
+            "data": "Invalid JSON: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)"
+          }
+        },
+        {
+          "id": "uppercase",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for scatter plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for scatter plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for scatter plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for scatter plot."
+          }
+        },
+        {
+          "id": "whitespace",
+          "response": {
+            "raw_text": [
+              "No validator for ' scatter '. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "No validator for ' scatter '. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "No validator for ' scatter '. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']"
+            },
+            "is_error": false,
+            "data": "No validator for ' scatter '. Available: ['tornado', 'scatter', 'bar', 'bar_horizontal', 'bar_grouped', 'heatmap', 'stacked_bar', 'pie', 'line', 'violin', 'boxplot', 'histogram', 'contour', 'twin_axis', 'waterfall', 'small_multiples', 'polar', 'plot_3d']"
+          }
+        },
+        {
+          "id": "top-list",
+          "response": {
+            "raw_text": [
+              "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+            },
+            "is_error": false,
+            "data": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+          }
+        },
+        {
+          "id": "top-null",
+          "response": {
+            "raw_text": [
+              "Invalid data structure for 'scatter': TypeError: argument of type 'NoneType' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Invalid data structure for 'scatter': TypeError: argument of type 'NoneType' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Invalid data structure for 'scatter': TypeError: argument of type 'NoneType' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            },
+            "is_error": false,
+            "data": "Invalid data structure for 'scatter': TypeError: argument of type 'NoneType' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+          }
+        },
+        {
+          "id": "top-string",
+          "response": {
+            "raw_text": [
+              "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates).",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+            },
+            "is_error": false,
+            "data": "Missing 'x' key (list of x-coordinates).\nMissing 'y' key (list of y-coordinates)."
+          }
+        },
+        {
+          "id": "top-number",
+          "response": {
+            "raw_text": [
+              "Invalid data structure for 'scatter': TypeError: argument of type 'int' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Invalid data structure for 'scatter': TypeError: argument of type 'int' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Invalid data structure for 'scatter': TypeError: argument of type 'int' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            },
+            "is_error": false,
+            "data": "Invalid data structure for 'scatter': TypeError: argument of type 'int' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+          }
+        },
+        {
+          "id": "top-bool",
+          "response": {
+            "raw_text": [
+              "Invalid data structure for 'scatter': TypeError: argument of type 'bool' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Invalid data structure for 'scatter': TypeError: argument of type 'bool' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Invalid data structure for 'scatter': TypeError: argument of type 'bool' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            },
+            "is_error": false,
+            "data": "Invalid data structure for 'scatter': TypeError: argument of type 'bool' is not iterable. Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+          }
+        },
+        {
+          "id": "scalar-fields",
+          "response": {
+            "raw_text": [
+              "Invalid data structure for 'scatter': TypeError: object of type 'int' has no len(). Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Invalid data structure for 'scatter': TypeError: object of type 'int' has no len(). Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Invalid data structure for 'scatter': TypeError: object of type 'int' has no len(). Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+            },
+            "is_error": false,
+            "data": "Invalid data structure for 'scatter': TypeError: object of type 'int' has no len(). Check that each field has the expected type (e.g. lists where lists are expected) and that the top-level payload is a JSON object."
+          }
+        },
+        {
+          "id": "mismatched-pairs",
+          "response": {
+            "raw_text": [
+              "Length mismatch: 'x' and 'y' must have equal length."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "Length mismatch: 'x' and 'y' must have equal length.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "Length mismatch: 'x' and 'y' must have equal length."
+            },
+            "is_error": false,
+            "data": "Length mismatch: 'x' and 'y' must have equal length."
+          }
+        },
+        {
+          "id": "numeric-strings",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for bar plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for bar plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for bar plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for bar plot."
+          }
+        },
+        {
+          "id": "bad-series-container",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for grouped bar plot."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for grouped bar plot.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for grouped bar plot."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for grouped bar plot."
+          }
+        },
+        {
+          "id": "ragged-matrix",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for heatmap."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for heatmap.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for heatmap."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for heatmap."
+          }
+        },
+        {
+          "id": "duplicate-key",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for histogram."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for histogram.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for histogram."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for histogram."
+          }
+        },
+        {
+          "id": "nonfinite",
+          "response": {
+            "raw_text": [
+              "✅ Data structure valid for histogram."
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "✅ Data structure valid for histogram.",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": {
+              "result": "✅ Data structure valid for histogram."
+            },
+            "is_error": false,
+            "data": "✅ Data structure valid for histogram."
+          }
+        },
+        {
+          "id": "wire-data-object",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value={'x': [1], 'y': [2]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value={'x': [1], 'y': [2]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-data-null",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-data-number",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value=3, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value=3, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-data-list",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value=[1, 2], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\ndata_json\n  Input should be a valid string [type=string_type, input_value=[1, 2], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-plot-number",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\nplot_type\n  Input should be a valid string [type=string_type, input_value=3, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\nplot_type\n  Input should be a valid string [type=string_type, input_value=3, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-plot-null",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\nplot_type\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\nplot_type\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-plot-list",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\nplot_type\n  Input should be a valid string [type=string_type, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\nplot_type\n  Input should be a valid string [type=string_type, input_value=[], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-missing-plot",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\nplot_type\n  Missing required argument [type=missing_argument, input_value={'data_json': '{}'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing_argument"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\nplot_type\n  Missing required argument [type=missing_argument, input_value={'data_json': '{}'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing_argument",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        },
+        {
+          "id": "wire-missing-data",
+          "response": {
+            "raw_text": [
+              "1 validation error for call[validate_plot_data]\ndata_json\n  Missing required argument [type=missing_argument, input_value={'plot_type': 'scatter'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing_argument"
+            ],
+            "content": [
+              {
+                "type": "text",
+                "text": "1 validation error for call[validate_plot_data]\ndata_json\n  Missing required argument [type=missing_argument, input_value={'plot_type': 'scatter'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing_argument",
+                "annotations": null,
+                "meta": null
+              }
+            ],
+            "structured_content": null,
+            "is_error": true,
+            "data": null
+          }
+        }
+      ]
+    }
+  }
+}
