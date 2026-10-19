@@ -94,6 +94,14 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
   `jet-cmap`). Use perceptually uniform options: `viridis`, `magma`,
   `cividis`, `plasma`, `inferno`. dartwork-mpl also registers
   domain-specific colormaps — see `dm.list_colors()` for the current set.
+- For eight ordered signed `blue_orange` bins, opt in locally:
+  `original8 = dm.colors("blue_orange", n=8)`;
+  `centered8 = original8[:4] + original8[4:][::-1]`.
+  Use a Matplotlib `ListedColormap(centered8)` with a `BoundaryNorm` and
+  nine symmetric bin edges. Zero is a boundary, with no neutral bin; the
+  arms retain unequal brightness. Do not register the local map or change
+  existing `n` selection rules. The continuous `dc.blue_orange` map already
+  has a light center. See `docs/color_system/palettes.md` for the recipe.
 
 ### Color construction and validation
 
