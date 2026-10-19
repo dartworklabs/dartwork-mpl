@@ -356,11 +356,101 @@ Callable functions the AI assistant can invoke during a conversation.
 | `render_template(plot_type)`                | Execute a bundled template in a subprocess and return the rendered PNG (base64 or path) for inline preview |
 | `render_template_advanced(plot_type)`       | Render the tier-2 (advanced) version of a bundled template — synthetic data, reference lines, value labels, and a narrative title, so it reads like a finished report figure |
 | `compose_layered_plot(plot_type, layers)`   | Return a template plus a checklist of annotation/composition layers to apply (guidance for the agent to edit, not a code rewriter) |
-| `validate_plot_data(plot_type, data_json)`  | Validate whether a data structure matches a plot type's requirements            |
+| `validate_plot_data(plot_type, data_json, report=False)` | Validate data; opt into a JSON-string report with reviewable suggestions |
 | `validate_generated_plot(code)`             | Execute a script in an isolated subprocess and return the `dm.validate_figure` report (overflow, clipped text, asymmetric margins). Lint-critical issues short-circuit before execution. |
 | `dartwork_mpl_info()`                       | Get a structured summary of all capabilities, presets, and templates            |
 | `render_plot(code, figure_var="fig", timeout_seconds=20.0, chart_type_hint=None)` | Execute trusted code once, validate the selected native Figure and deliver a durable five-file bundle |
 | `get_plot_artifact(artifact_id)` | Retrieve that bundle without executing code |
+
+### Reviewable plot-data suggestions
+
+`validate_plot_data(plot_type: str, data_json: str, report: bool = False) -> str`
+keeps its existing text response when `report` is omitted or false. With
+`report=True`, the same tool returns a version-1 JSON report **inside that
+string**. After decoding the MCP envelope, decode the string separately.
+For a connected FastMCP Python `client`:
+
+```python
+import json
+from decimal import Decimal
+
+result = await client.call_tool("validate_plot_data", {
+    "plot_type": "bar",
+    "data_json": '{"categories":["01","02"],"values":["1","2.5"]}',
+    "report": True,
+})
+report_text = result.content[0].text
+report = json.loads(report_text, parse_float=Decimal, parse_int=Decimal)
+# With structured content: json.loads(result.structured_content["result"],
+#                                    parse_float=Decimal, parse_int=Decimal)
+before = report["original"]["data"]
+after = report["candidate"]["data"]  # Present only when changes are proposed.
+# Inspect before, after, changes and remaining_issues before choosing data.
+```
+
+Within `Decimal`'s supported range, this decoding preserves mathematical values
+in returned JSON numbers, including originals outside binary64 range. For tokens
+whose exponent or precision exceeds your decoder's capacity, retain `report_text`
+or use a token-preserving decoder. The exact original `raw_json` remains
+authoritative. Selected members of this report:
+
+```json
+{
+  "status": "proposal",
+  "changes": [
+    {"path": "/values/0", "before": "1", "after": 1, "reason": "Declared numeric value; JSON type changes, review meaning.", "requires_review": true},
+    {"path": "/values/1", "before": "2.5", "after": 2.5, "reason": "Declared numeric value; JSON type changes, review meaning.", "requires_review": true}
+  ],
+  "candidate": {"data": {"categories": ["01", "02"], "values": [1, 2.5]}, "valid": true, "remaining_issues": []},
+  "requires_review": true,
+  "effects": "none"
+}
+```
+
+The original retains the exact admitted `raw_json` and parsed `data`. The caller
+compares before/after and chooses what to use; every proposed change requires
+review. `effects` is always `"none"`: the tool applies, renders and stores nothing.
+Templates remain standalone Python examples, with no JSON-to-renderer adapter.
+
+Reports cover exactly these five names (`plot_type` is lowercased, without trimming):
+
+| Plot type | Declared fields checked |
+| --- | --- |
+| `scatter` | Nonempty numeric arrays `x`, `y`, with equal lengths |
+| `bar`, `bar_horizontal` | Nonempty arrays: string `categories`, numeric `values`, with equal lengths |
+| `histogram` | Nonempty numeric `values`; optional `bins`: positive JSON integer token, or at least two nondecreasing numeric edges (duplicates allowed) |
+| `heatmap` | Numeric `matrix`, with nonempty rows of equal nonzero length |
+
+The other 13 recognized types return `unsupported`; `recognized` distinguishes
+unknown names. `scope.validity` is `"declared_fields_only"`. Unknown top-level
+fields are preserved and listed in `scope.unvalidated_paths`, without validation
+or conversion. Numeric-looking category labels such as `"01"` stay strings.
+Numeric fields require finite binary64 values without overflow or nonzero underflow.
+
+The only proposal converts a whole numeric string at a declared numeric array
+element, including bin edges. It accepts strict JSON-number grammar without
+whitespace, units or separators, and requires decimal equality after shortest
+binary64 serialization, finite conversion, no nonzero underflow, and integer-valued
+results within `±(2**53-1)`. Negative-zero strings are refused. Binary64 remains
+approximate, and a type change can change meaning; inspect each suggestion.
+Scalar `bins` accepts `10`, while `10.0`, `1e1` and `"10"` require manual input.
+
+Missing/type/shape errors, unsafe numbers, bool/null and length mismatches need
+manual input. For `scatter` data `{"x":[1,2],"y":[3]}`, `needs_input` identifies
+`/x` and related `/y` with lengths `[2,1]` and asks the caller to restore the
+intended aligned observations from the source. No values are added or removed.
+A mixed input `{"x":["1",2],"y":[3]}` yields a partial `proposal` with
+`candidate.valid:false` and the mismatch in `candidate.remaining_issues`.
+
+Limits are 65,536 UTF-8 input bytes, nesting depth 16, 10,000 value/key tokens,
+100 issue records **total** across `issues` and `candidate.remaining_issues`,
+100 changes, and 1,048,576 serialized report bytes. Exceeding any limit returns
+`rejected` / `limit_exceeded`, without payloads or silent truncation. If the plot
+name itself cannot fit a bounded refusal, it is returned as `""` with false
+membership/coverage and bounded name-size metadata. Duplicate keys, nonstandard
+NaN/Infinity tokens and malformed JSON are rejected without repair. Valid UTF-8
+syntax errors within the budgets retain exact raw text; Python strings that
+cannot encode as UTF-8 return `rejected` / `invalid_json` and omit `original`.
 
 ### Plot execution and validation results
 

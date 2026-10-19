@@ -17,6 +17,7 @@ import matplotlib.colors as mcolors
 from fastmcp import FastMCP
 
 from . import _assets
+from .data_repair import build_data_repair_report, serialize_data_repair_report
 
 __all__ = ["register_tools"]
 
@@ -704,7 +705,9 @@ def register_tools(mcp: FastMCP) -> None:
     # ── Data Validation Tool ─────────────────────────────────────────
 
     @mcp.tool()
-    def validate_plot_data(plot_type: str, data_json: str) -> str:
+    def validate_plot_data(
+        plot_type: str, data_json: str, report: bool = False
+    ) -> str:
         """Validate whether data structure matches a plot type's requirements.
 
         Parameters
@@ -721,17 +724,18 @@ def register_tools(mcp: FastMCP) -> None:
         data_json : str
             JSON string representing the data to validate. The expected
             structure varies by plot type.
+        report : bool, optional
+            Return a version-1 JSON report encoded in a string, with
+            reviewable suggestions for the five supported plot types.
+            Defaults to False for the existing validation messages.
 
         Returns
         -------
         str
-            Validation result with suggestions if issues are found.
+            Validation message, or a JSON-string report when report is True.
+            Reports preserve admitted originals and propose separate candidates;
+            they never apply changes or create other effects.
         """
-        try:
-            data = json.loads(data_json)
-        except json.JSONDecodeError as e:
-            return f"Invalid JSON: {e}"
-
         validators = {
             "tornado": _validate_tornado,
             "scatter": _validate_scatter,
@@ -752,6 +756,19 @@ def register_tools(mcp: FastMCP) -> None:
             "polar": _validate_polar,
             "plot_3d": _validate_plot_3d,
         }
+
+        if report:
+            normalized = plot_type.lower()
+            return serialize_data_repair_report(
+                build_data_repair_report(
+                    normalized, data_json, recognized=normalized in validators
+                )
+            )
+
+        try:
+            data = json.loads(data_json)
+        except json.JSONDecodeError as e:
+            return f"Invalid JSON: {e}"
 
         validator = validators.get(plot_type.lower())
         if validator is None:
