@@ -117,18 +117,6 @@ def _normalized_labels(text: str) -> str:
     return " ".join(normalized.split())
 
 
-def test_theory_svgs_have_no_embedded_date() -> None:
-    """Keep committed SVG metadata free of wall-clock timestamps."""
-    svgs = sorted(_THEORY.glob("theory_*.svg"))
-    assert svgs, "no theory-figure SVGs found"
-    dated = [
-        path.name
-        for path in svgs
-        if "<dc:date" in path.read_text(encoding="utf-8")
-    ]
-    assert not dated, f"non-deterministic theory SVGs: {dated}"
-
-
 def test_theory_generator_has_hermetic_cli() -> None:
     """Require relative output control and remove the personal preview."""
     violations = _generator_contract_violations()

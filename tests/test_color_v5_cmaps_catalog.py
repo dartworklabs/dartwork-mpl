@@ -146,10 +146,13 @@ def test_locked_full_256_matches_frozen_exact_hash(
 
 
 def test_unlocked_direct_32_is_complete_but_not_shipped(
-    locked_palette: dict[str, list[str]], locked_direct_32: dict[str, list[str]]
+    candidate_catalog: CatalogSnapshot, locked_direct_32: dict[str, list[str]]
 ) -> None:
     """Expose a direct-OKLCH diagnostic catalog behind the explicit opt-out."""
-    direct = _compile_cmaps(locked_palette, 32, luminance_lock=False)
+    direct = {
+        name: list(row)
+        for name, row in candidate_catalog.cmaps_unlocked_preview_32.items()
+    }
 
     assert set(direct) == set(locked_direct_32)
     assert {name: len(row) for name, row in direct.items()} == dict.fromkeys(
