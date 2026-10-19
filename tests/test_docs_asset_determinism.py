@@ -24,14 +24,6 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parents[1]
 _DOCS = Path(__file__).resolve().parents[1] / "docs"
 
-# Kept as a smoke check for the three generator-owned asset dirs covered by
-# the original PR. The whole-docs guard below is the net contract.
-_SVG_DIRS = (
-    _DOCS / "usage_guide" / "images",
-    _DOCS / "api" / "images",
-    _DOCS / "color_system" / "theory_figures",
-)
-
 _PRESET_COMPARE = _DOCS / "usage_guide" / "images" / "preset_compare.html"
 _STALE_COLOR_GENERATORS = (
     _DOCS / "_static" / "scripts" / "gen_palettes.py",
@@ -100,17 +92,6 @@ def _imports_package(path: Path, package: str) -> bool:
         ):
             return True
     return False
-
-
-def test_tracked_docs_svgs_have_no_embedded_date() -> None:
-    svgs = sorted(p for d in _SVG_DIRS for p in d.glob("*.svg"))
-    assert svgs, "no docs asset SVGs found"
-    dated = [
-        str(p.relative_to(_DOCS))
-        for p in svgs
-        if "<dc:date" in p.read_text(encoding="utf-8")
-    ]
-    assert not dated, f"non-deterministic (timestamped) docs SVGs: {dated}"
 
 
 def test_all_tracked_docs_svgs_have_no_embedded_date() -> None:
