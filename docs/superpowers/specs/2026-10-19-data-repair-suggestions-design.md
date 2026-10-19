@@ -1,9 +1,9 @@
 # Reviewable plot-data repair suggestions
 
-Status: **Draft — full design approval pending** (2026-10-19).
+Status: **Approved — implementation pending** (2026-10-19).
+User approval: **“이 설계로 구현 진행 (권장)”**, 2026-10-19, approves this exact design.
 User direction: propose concrete repairs for length/type errors, preserve the original,
-and expose before/after for review. Engineering choices below are agent recommendations,
-not previously approved user decisions. No implementation plan or product change is authorized by this draft.
+and expose before/after for review. Implementation follows the approved scope below.
 
 ## Outcome and boundary
 
@@ -141,6 +141,11 @@ A lexical resource scan is not a second semantic parse. Invalid Unicode is rejec
 When any limit is exceeded, return a small `rejected`/`limit_exceeded` report with the
 limit and observed count (or lower bound); omit payloads/candidate/changes and never claim valid.
 No silent truncation. Exact-original preservation applies to inputs admitted within these budgets.
+Bounded-refusal clarification (2026-10-19): if echoing a normalized `plot_type` would
+itself exceed the existing report-byte budget, use `plot_type:""`, `recognized:false`,
+`supported:false` and bounded issue metadata identifying `field:"plot_type"` and its
+byte count/lower bound. Handle escaping and invalid Unicode safely; normal names retain
+their exact normalized value. Candidate/output overflow uses the same payload-free refusal.
 
 Place the pure parser/report rules and typed outcomes in `src/dartwork_mpl/mcp/data_repair.py`,
 a declared public module of the existing MCP data-validation capability. `tools.py` only
