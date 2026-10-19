@@ -201,6 +201,22 @@ structured JSON.
 
 ---
 
+## Reviewable plot-data suggestions
+
+Call the existing MCP tool `validate_plot_data(plot_type, data_json, report=True)`
+to inspect numeric-string suggestions alongside preserved original data and a
+separate candidate. The default `report=False` keeps the existing text response;
+the opt-in report is JSON encoded inside the returned string and needs another
+decode after the MCP envelope.
+
+Coverage is `scatter`, `bar`, `bar_horizontal`, `histogram` and `heatmap`, limited
+to their declared fields. Unknown fields stay unchanged and unvalidated; a partial
+candidate can remain invalid. The caller reviews before/after and chooses data.
+The tool has `effects:"none"` and never applies, renders or stores changes;
+templates remain standalone Python examples.
+
+→ [Concrete call, report example, numeric rules and limits](../integrations/mcp_server.md#reviewable-plot-data-suggestions)
+
 ## Bundled AI assets
 
 | Asset | Use it for | Entry point |

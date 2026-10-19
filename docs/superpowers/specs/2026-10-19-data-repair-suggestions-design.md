@@ -65,7 +65,7 @@ original number tokens; converting for range checks must not rewrite unchanged n
 | --- | --- |
 | `scatter` | numeric `x`, numeric `y`; equal lengths; preserve observation order |
 | `bar`, `bar_horizontal` | string `categories`, numeric `values`; equal lengths; numeric-looking labels remain strings |
-| `histogram` | numeric `values`; optional `bins`: positive integer, or >=2 finite numeric edges in nondecreasing order; duplicate edges are permitted |
+| `histogram` | numeric `values`; optional `bins`: positive JSON integer token (`10`, not `10.0`, `1e1` or `"10"`), or >=2 finite numeric edges in nondecreasing order; duplicate edges are permitted |
 | `heatmap` | numeric `matrix`: nonempty rows, equal nonzero row lengths; no rectangularization |
 
 Only these five named types are supported. All other 13 recognized types return
@@ -98,15 +98,15 @@ label inference, merging representations or implicit application is allowed.
 ## Report contract v1
 
 All output is strict JSON. Omit inapplicable fields; absence is never a fake null payload.
-Use explicit typed internal outcomes for admitted, syntax-rejected and limit-rejected inputs;
+Use explicit typed internal outcomes for admitted, syntax-rejected, encoding-rejected and limit-rejected inputs;
 encode these at the boundary, rather than treating arbitrary exceptions as public outcomes.
 
 | Field | Meaning / presence |
 | --- | --- |
 | `version`, `plot_type`, `recognized`, `supported` | always: `1`, normalized name, catalog membership, repair coverage |
-| `status` | `rejected` for parser/limit refusal; `unsupported` for no coverage; `valid` for no scoped issues/changes; `needs_input` for issues without changes; `proposal` whenever changes exist |
+| `status` | `rejected` for parser/encoding/limit refusal; `unsupported` for no coverage; `valid` for no scoped issues/changes; `needs_input` for issues without changes; `proposal` whenever changes exist |
 | `scope` | always: supported field names, `unvalidated_paths`, and `validity: "declared_fields_only"`; empty paths if input cannot be inspected |
-| `original` | admitted input: `{raw_json, data}`; syntax rejection within limits: `{raw_json}`; limit refusal: omitted |
+| `original` | admitted input: `{raw_json, data}`; valid-UTF8 syntax rejection within limits: `{raw_json}`; encoding/limit refusal: omitted |
 | `issues` | original-input diagnostics: stable `code`, RFC 6901 `path`, `message`, concrete `action`; optional `related_paths`, `observed` (types/counts or numeric token) |
 | `changes` | ordered records `{path, before, after, reason, requires_review:true}`; JSON type is evident in before/after; never an executable patch |
 | `candidate` | present only with changes: `{data, valid, remaining_issues}`; detached copy; `valid` is scoped revalidation, not approval |
@@ -135,9 +135,13 @@ Such an out-of-range value receives a numeric token diagnostic, never JSON Infin
 For syntax rejection use root pointer `""` plus a character offset where available.
 
 Agent-chosen admission limits: 65,536 UTF-8 bytes, nesting depth 16, 10,000 value/key tokens,
-100 issue records and 100 changes, and 1,048,576 serialized report bytes. Enforce byte/depth/
+100 issue records total across `issues` plus `candidate.remaining_issues`, 100 changes,
+and 1,048,576 serialized report bytes. Enforce byte/depth/
 token budgets before semantic decoding, then record/output limits during traversal/encoding.
-A lexical resource scan is not a second semantic parse. Invalid Unicode is rejected safely.
+A lexical resource scan is not a second semantic parse. Invalid-UTF8 Python strings cannot
+meet byte admission: use a typed encoding refusal (`rejected` / `invalid_json`) without
+`original`; strict JSON escaping could recombine literal paired surrogates and misstate raw
+preservation. Valid UTF-8 syntax errors within limits retain exact raw text.
 When any limit is exceeded, return a small `rejected`/`limit_exceeded` report with the
 limit and observed count (or lower bound); omit payloads/candidate/changes and never claim valid.
 No silent truncation. Exact-original preservation applies to inputs admitted within these budgets.
@@ -147,8 +151,9 @@ itself exceed the existing report-byte budget, use `plot_type:""`, `recognized:f
 byte count/lower bound. Handle escaping and invalid Unicode safely; normal names retain
 their exact normalized value. Candidate/output overflow uses the same payload-free refusal.
 
-Place the pure parser/report rules and typed outcomes in `src/dartwork_mpl/mcp/data_repair.py`,
-a declared public module of the existing MCP data-validation capability. `tools.py` only
+Place report rules and typed outcomes in public `src/dartwork_mpl/mcp/data_repair.py`;
+private `_data_repair_json.py` beside it owns pure token parsing/encoding, imported one-way
+within the same MCP data-validation capability; the three public exports stay unchanged. `tools.py` only
 selects the old/new path and serializes the result; existing legacy validators remain there.
 Reuse the existing dispatch's catalog membership instead of maintaining another 18-name list.
 This is one capability, no new slice/shared abstraction; the pure module imports no transport,
