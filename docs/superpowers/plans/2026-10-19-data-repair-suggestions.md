@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-19-data-repair-suggestions-design.md`; approved by “이 설계로 구현 진행 (권장)” on 2026-10-19. Chain: approved brainstorming/spec → this writing-plans plan → delegated execution; no further approval gate is needed.
 
-**Status:** Implemented; local acceptance and whole-branch review passed through `6172a212`. M1/M2 fixes passed focused local checks; fix-wave re-review, updated docs build/PoC and remote CI pending; no merge or remote-CI success claimed.
+**Status:** Implemented; all local acceptance, whole-branch/fix-wave review, final docs build and updated PoC gates complete through `38f2ba9d`. PR, remote CI and merge remain pending; no remote-CI success claimed.
 
 ## Global Constraints
 
@@ -105,7 +105,7 @@ No Handbook exists; the following current source/test authority remains distinct
 - [x] **Step 4: Review local scope and record acceptance evidence.** All eight executable spec criteria, independent fixtures, import purity, entry-point policy/known gaps, unchanged dependencies/jobs/artifact/logging/baselines and targeted mutation evidence checked; scoped reviewers approved. Tested versions, first-red evidence, limits and commands recorded in `.superpowers/data-repair-2026-10-19/implementation/summary.md`; final whole-branch review remains separate below.
 - [x] **Step 5: Public documentation commit point.** Parent committed reviewed Task 3 public docs as `226cddc5` (`docs(mcp): explain reviewable data repair reports`). Parent retains the final acceptance-record commit and integration; worker performs no git mutation.
 - [x] **Final integration review:** whole branch through `6172a212` approved with no Critical/Important findings; M1/M2 addressed in a focused diagnostic/docs fix wave, M3 dependency warnings deferred.
-- [ ] **Final fix-wave re-review and delivery:** parent reviews the M1/M2 diff and refreshes affected docs build/PoC before integration. PR/remote CI and merge remain pending.
+- [x] **Final fix-wave re-review and delivery:** scoped M1/M2 re-review approved through `38f2ba9d`; final Sphinx `-W` build passed, updated MCP desktop/mobile PoC and all nine asset hashes verified over persistent Tailnet HTTPS. PR/remote CI and merge remain pending.
 
 ## Evidence and Handoff
 
@@ -121,4 +121,4 @@ Plan self-review: all eight acceptance criteria map to Tasks 1–3; public helpe
 - Integrated gate: 409 passed; Ruff lint/format on seven changed Python files and mypy on 107 source files clean; existing OpenTelemetry/Authlib deprecations disclosed. Local acceptance evidence and commands: `.superpowers/data-repair-2026-10-19/implementation/summary.md`.
 - Sphinx `-W` and actual public docs Client snippet passed; same-scale desktop/mobile rendered PoC and all eight images verified over persistent Tailnet HTTPS. Local rendered evidence: `.superpowers/data-repair-2026-10-19/docs-preview/`. Local operational reference outside the product repo: `~/scratch/dartwork-mpl-data-repair-preview-2026-10-19/delivery-report.md`.
 - Whole-branch review through `6172a212` approved; M1 now explicitly rejects unaudited FastMCP captures, M2 documents integer/float Decimal decoding and decoder limits. Fix-wave checks: 153 contract tests passed with one existing OpenTelemetry warning, Ruff lint/format, existing docs-example helper and focused decoder/runtime-diagnostic probes passed. M3 dependency deprecations remain deferred and visible.
-- No new dependency, CI job, registration or color/discovery baseline edit. Fix-wave re-review, updated docs build/PoC and remote CI remain pending; these local results do not establish merge readiness.
+- No new dependency, CI job, registration or color/discovery baseline edit. All local review/build/PoC gates complete through `38f2ba9d`; PR, remote CI and merge remain pending, so these local results do not establish merge readiness.
