@@ -209,6 +209,10 @@ around a light center; use it directly for continuous signed data.
 For an explicit two- or four-color subset of this local ordering:
 
 ```python
+import dartwork_mpl as dm
+
+original8 = dm.colors("blue_orange", n=8)
+centered8 = original8[:4] + original8[4:][::-1]
 centered2 = [centered8[i] for i in [0, 7]]
 centered4 = [centered8[i] for i in [0, 3, 4, 7]]
 # Build each subset's own ListedColormap and n + 1 signed bin edges.
