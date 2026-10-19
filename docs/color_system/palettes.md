@@ -56,7 +56,7 @@ potential color collisions, not observer guarantees.
 | Many unrelated categories, max distinctness | `vivid` or `neon` | Qualitative |
 | A few related series, one mood | a hue family sampled evenly, or `forest` | Sequential / Qualitative |
 | Ordered amount (rank) | one family ramp; `gray` if hue means nothing | Sequential / Neutral |
-| Ordered around a midpoint (+/- / change / correlation) | `blue_red`, `blue_orange`, `teal_amber`, or `green_purple` | Diverging API |
+| Ordered around a midpoint (+/- / change / correlation) | `blue_red`, `teal_amber`, or `green_purple`; for `blue_orange`, use the [signed-bin recipe](#blue-orange-for-signed-bins) | Diverging API / local recipe |
 | Soft, editorial, dense dashboards | `pastel` or `dusty` | Muted |
 | A specific mood (warm / earthy / luxury) | `ember`, `earth`, or `jewel` | Tone |
 | Highlight one series, mute the rest | `teal_accent`, `coral_accent`, or `dc.hl` + grays | Emphasis |
@@ -73,7 +73,8 @@ There are four discrete forms: Octave, the searched default cycle for everyday
 charts; 11 hand-tuned curated qualitative sets for muted, tonal, forest, and
 emphasis use cases; 20 generative single-hue families sampled for ordered and
 sequential work; and canonical diverging lists such as `blue_red`,
-`blue_orange`, `teal_amber`, and `green_purple` for centered data.
+`blue_orange`, `teal_amber`, and `green_purple`. For centered `blue_orange`
+bins, opt in to the ordering recipe below.
 
 :::{dropdown} Technical terms
 OKLab and OKLCH are used to construct and adjust colors. ΔEOK is a
@@ -171,9 +172,57 @@ grayscale and CVD metrics are validation metadata, not generation inputs.
 | Emphasis | `teal_accent`, `coral_accent` |
 
 The four canonical discrete diverging forms are `blue_red`, `blue_orange`,
-`teal_amber`, and `green_purple`. They are ordered encodings for centered data,
-not unordered categorical sets, so the explorer keeps them out of the
-qualitative rail.
+`teal_amber`, and `green_purple`. They belong to ordered rather than unordered
+categorical work, so the explorer keeps them out of the qualitative rail.
+The stored `blue_orange` orange arm runs dark to light; use the local recipe
+below when large positive values should be dark.
+
+### Blue-orange for signed bins
+
+For eight ordered bins around zero, reverse only the orange half of the
+existing eight-color list. This places the two pale colors next to zero and
+darker colors at both extremes, using exactly the same eight color values.
+
+```python
+import numpy as np
+from matplotlib.colors import BoundaryNorm, ListedColormap
+
+import dartwork_mpl as dm
+
+original8 = dm.colors("blue_orange", n=8)
+centered8 = original8[:4] + original8[4:][::-1]
+cmap = ListedColormap(centered8)
+norm = BoundaryNorm(np.linspace(-1, 1, 9), cmap.N)
+# ax.imshow(signed_data, cmap=cmap, norm=norm)
+```
+
+The local map is for ordered signed bins. It has **no neutral bin**: zero is
+the boundary between the two pale bins. The arms retain their existing
+brightness differences, so equal magnitudes on opposite sides do not imply
+equal visual strength.
+
+This recipe creates an unregistered Matplotlib object. Existing names,
+defaults, `dm.colors("blue_orange", n=...)` outputs, and the continuous
+`dc.blue_orange` map stay unchanged. The continuous map already has two poles
+around a light center; use it directly for continuous signed data.
+
+For an explicit two- or four-color subset of this local ordering:
+
+```python
+import dartwork_mpl as dm
+
+original8 = dm.colors("blue_orange", n=8)
+centered8 = original8[:4] + original8[4:][::-1]
+centered2 = [centered8[i] for i in [0, 7]]
+centered4 = [centered8[i] for i in [0, 3, 4, 7]]
+# Build each subset's own ListedColormap and n + 1 signed bin edges.
+```
+
+These are explicit indices into `centered8`, not new `n=2` or `n=4` API
+selection rules. See the
+[rendered comparison](../examples_gallery/02_color_system/plot_blue_orange_centered_bins.rst)
+for the same signed fields in the stored order, the local order, and the
+continuous reference.
 
 ### `colors` and `set_colors` options
 

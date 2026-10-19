@@ -30,6 +30,13 @@ plt.show()
   `dc.blue_red_r`.
 - Reverse qualitative colors with `dm.colors(..., reverse=True)`.
 
+`dm.colors("blue_orange")` returns the continuous map, with two poles around
+a light center. `dm.colors("blue_orange", n=8)` returns a separate designed
+list whose orange arm runs dark to light. For eight signed bins with dark
+extremes, use the opt-in
+[blue-orange signed-bin recipe](palettes.md#blue-orange-for-signed-bins).
+It reorders that list locally and leaves the continuous map unchanged.
+
 ---
 
 ## Choosing a map
