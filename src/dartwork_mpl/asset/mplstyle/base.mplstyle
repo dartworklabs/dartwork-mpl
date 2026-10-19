@@ -140,6 +140,7 @@ savefig.dpi:       300      # figure dots per inch or 'figure'
 savefig.facecolor: white        # figure face color when saving
 savefig.bbox:      standard    # {tight, standard}
 ps.fonttype:       42       # Output Type 3 (Type3) or Type 42 (TrueType)
+pdf.fonttype:      42       # Embed TrueType fonts in PDF output
 
 # v5 categorical cycle (spec §8) — 8 color-only entries. Kept color-only
 # (NOT a linestyle product) because a linestyle in the DEFAULT prop_cycle is

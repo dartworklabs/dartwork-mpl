@@ -36,6 +36,11 @@ dm.show("output/experiment.svg", size=540)  # display a saved file in notebooks
 - `show` displays an existing SVG/PNG for notebooks or reports
 - See [API › Save & Export](../api/io.rst) for argument details
 
+The built-in presets and legacy `dmpl` / `dmpl_light` styles embed
+TrueType fonts in PDFs by default (`pdf.fonttype: 42`). To use Type 3
+fonts instead, set `plt.rcParams["pdf.fonttype"] = 3` after applying the
+style, or wrap the save call in `plt.rc_context({"pdf.fonttype": 3})`.
+
 ## Reproducible exports
 
 `save_formats` makes SVG, PDF, and SVGZ reproducible by default for an

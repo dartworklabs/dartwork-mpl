@@ -721,7 +721,7 @@ ps.fonttype:       42       # Output Type 3 (Type3) or Type 42 (TrueType)
 ### PDF backend params
 #pdf.compression:    6  # integer from 0 to 9
                         # 0 disables compression (good for debugging)
-#pdf.fonttype:       3  # Output Type 3 (Type3) or Type 42 (TrueType)
+pdf.fonttype:      42  # Embed TrueType fonts in PDF output
 #pdf.use14corefonts: False
 #pdf.inheritcolor:   False
 
