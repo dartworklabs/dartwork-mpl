@@ -21,6 +21,14 @@ _FIXTURE = json.loads(
     ).read_text()
 )
 _REQUESTS = _FIXTURE["requests"]
+if fastmcp.__version__ not in _FIXTURE["runtimes"]:
+    pytest.fail(
+        f"FastMCP {fastmcp.__version__} has no audited legacy wire capture. "
+        f"Available captured versions: {', '.join(sorted(_FIXTURE['runtimes']))}. "
+        "Intentionally capture and audit this runtime against the prechange "
+        "tool before adding a baseline; never reuse another version's capture.",
+        pytrace=False,
+    )
 _BASELINE = _FIXTURE["runtimes"][fastmcp.__version__]
 _LEGACY = {item["id"]: item["response"] for item in _BASELINE["calls"]}
 _SUPPORTED = {"scatter", "bar", "bar_horizontal", "histogram", "heatmap"}

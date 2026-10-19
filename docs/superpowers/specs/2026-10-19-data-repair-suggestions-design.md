@@ -1,6 +1,6 @@
 # Reviewable plot-data repair suggestions
 
-Status: **Implemented — local acceptance passed; final whole-branch review and remote CI pending** (2026-10-19).
+Status: **Implemented — local acceptance and whole-branch review passed; fix-wave re-review and remote CI pending** (2026-10-19).
 User approval: **“이 설계로 구현 진행 (권장)”**, 2026-10-19, approves this exact design.
 User direction: propose concrete repairs for length/type errors, preserve the original, and expose before/after for review.
 
@@ -196,4 +196,4 @@ seeded generated properties instead of a dependency, and existing CI pytest; no 
 7. Existing MCP validation/hardening tests and focused new tests pass under `uv run pytest <affected files>`; changed rule tests first fail without the behavior or under a targeted mutation, then pass; run existing formatter/type checks only as required by the repository.
 8. Public MCP documentation states the JSON-string report, exact five-type scope, manual limits and no effects; no render/apply/store path or extra registration is introduced.
 
-Local acceptance: 409 integrated tests; 199 per FastMCP runtime; Ruff, mypy, Sphinx `-W`, real docs Client example and rendered Tailnet PoC passed. [Evidence ledger](../plans/2026-10-19-data-repair-suggestions.md#local-validation-ledger); final whole-branch review and remote CI remain pending; no merge claimed.
+Local acceptance: 409 integrated tests; 199 per FastMCP runtime; Ruff, mypy, Sphinx `-W`, real docs Client example and rendered Tailnet PoC passed. Whole-branch review approved; M1/M2 fixes passed 153 contract checks and focused probes. [Evidence ledger](../plans/2026-10-19-data-repair-suggestions.md#local-validation-ledger); fix-wave re-review, updated docs build/PoC and remote CI remain pending; no merge claimed.

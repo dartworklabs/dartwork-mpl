@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-19-data-repair-suggestions-design.md`; approved by “이 설계로 구현 진행 (권장)” on 2026-10-19. Chain: approved brainstorming/spec → this writing-plans plan → delegated execution; no further approval gate is needed.
 
-**Status:** Implemented; local acceptance passed at source head `7e83a153`. Final whole-branch review and remote CI pending; no merge or remote-CI success claimed.
+**Status:** Implemented; local acceptance and whole-branch review passed through `6172a212`. M1/M2 fixes passed focused local checks; fix-wave re-review, updated docs build/PoC and remote CI pending; no merge or remote-CI success claimed.
 
 ## Global Constraints
 
@@ -104,7 +104,8 @@ No Handbook exists; the following current source/test authority remains distinct
 - [x] **Step 3: Run the integrated affected gate once after final changes.** Run `uv run pytest tests/mcp/data_repair tests/test_mcp_data_repair_contract.py tests/test_mcp_tool_hardening.py tests/test_mcp_validators_complete.py tests/test_color_v6_comparison.py tests/test_shipped_colors_hash.py -q`; expected PASS with nonzero collection, untouched color/discovery baselines. Run `uv run ruff check` and `uv run ruff format --check` on changed Python files, then `uv run mypy src/dartwork_mpl/` as configured in existing CI. Broaden/repeat only for new failures or changes.
 - [x] **Step 4: Review local scope and record acceptance evidence.** All eight executable spec criteria, independent fixtures, import purity, entry-point policy/known gaps, unchanged dependencies/jobs/artifact/logging/baselines and targeted mutation evidence checked; scoped reviewers approved. Tested versions, first-red evidence, limits and commands recorded in `.superpowers/data-repair-2026-10-19/implementation/summary.md`; final whole-branch review remains separate below.
 - [x] **Step 5: Public documentation commit point.** Parent committed reviewed Task 3 public docs as `226cddc5` (`docs(mcp): explain reviewable data repair reports`). Parent retains the final acceptance-record commit and integration; worker performs no git mutation.
-- [ ] **Final integration review:** parent reviews the whole branch after the acceptance-record commit; resolve findings before integration. PR/remote CI and merge remain pending.
+- [x] **Final integration review:** whole branch through `6172a212` approved with no Critical/Important findings; M1/M2 addressed in a focused diagnostic/docs fix wave, M3 dependency warnings deferred.
+- [ ] **Final fix-wave re-review and delivery:** parent reviews the M1/M2 diff and refreshes affected docs build/PoC before integration. PR/remote CI and merge remain pending.
 
 ## Evidence and Handoff
 
@@ -119,4 +120,5 @@ Plan self-review: all eight acceptance criteria map to Tasks 1–3; public helpe
 - Task 2 committed `7e83a153`: 199 tests per actual FastMCP 2.13.3/3.4.2, 62 exact omitted and 60 exact false calls, two missing-required errors under the echoed-flag rule; scoped review approved by parent. Local runtime/capture evidence: `.superpowers/sdd/2026-10-19-data-repair-suggestions/task-2-report.md`.
 - Integrated gate: 409 passed; Ruff lint/format on seven changed Python files and mypy on 107 source files clean; existing OpenTelemetry/Authlib deprecations disclosed. Local acceptance evidence and commands: `.superpowers/data-repair-2026-10-19/implementation/summary.md`.
 - Sphinx `-W` and actual public docs Client snippet passed; same-scale desktop/mobile rendered PoC and all eight images verified over persistent Tailnet HTTPS. Local rendered evidence: `.superpowers/data-repair-2026-10-19/docs-preview/`. Local operational reference outside the product repo: `~/scratch/dartwork-mpl-data-repair-preview-2026-10-19/delivery-report.md`.
-- No new dependency, CI job, registration or color/discovery baseline edit. Final whole-branch review and remote CI are pending; these local results do not establish merge readiness.
+- Whole-branch review through `6172a212` approved; M1 now explicitly rejects unaudited FastMCP captures, M2 documents integer/float Decimal decoding and decoder limits. Fix-wave checks: 153 contract tests passed with one existing OpenTelemetry warning, Ruff lint/format, existing docs-example helper and focused decoder/runtime-diagnostic probes passed. M3 dependency deprecations remain deferred and visible.
+- No new dependency, CI job, registration or color/discovery baseline edit. Fix-wave re-review, updated docs build/PoC and remote CI remain pending; these local results do not establish merge readiness.

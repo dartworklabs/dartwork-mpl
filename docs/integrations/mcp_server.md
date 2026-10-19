@@ -379,16 +379,20 @@ result = await client.call_tool("validate_plot_data", {
     "data_json": '{"categories":["01","02"],"values":["1","2.5"]}',
     "report": True,
 })
-report = json.loads(result.content[0].text, parse_float=Decimal)
+report_text = result.content[0].text
+report = json.loads(report_text, parse_float=Decimal, parse_int=Decimal)
 # With structured content: json.loads(result.structured_content["result"],
-#                                    parse_float=Decimal)
+#                                    parse_float=Decimal, parse_int=Decimal)
 before = report["original"]["data"]
 after = report["candidate"]["data"]  # Present only when changes are proposed.
 # Inspect before, after, changes and remaining_issues before choosing data.
 ```
 
-`Decimal` decoding preserves mathematical values in returned JSON numbers,
-including originals outside binary64 range. Selected members of this report:
+Within `Decimal`'s supported range, this decoding preserves mathematical values
+in returned JSON numbers, including originals outside binary64 range. For tokens
+whose exponent or precision exceeds your decoder's capacity, retain `report_text`
+or use a token-preserving decoder. The exact original `raw_json` remains
+authoritative. Selected members of this report:
 
 ```json
 {
