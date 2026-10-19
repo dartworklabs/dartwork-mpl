@@ -720,9 +720,10 @@ from dartwork_mpl._colors import Color
 #   id          unique kebab-case identifier
 #   severity    critical | warning | info
 #   detector
-#     kind      regex | substring
+#     kind      regex | substring | ast
 #     pattern   regex pattern (Python re, MULTILINE) for kind=regex
 #     literal   literal substring (case-sensitive) for kind=substring
+#     check     colormap-name | color-name for kind=ast
 #   message     short user-facing text shown in the lint report
 #   why         (optional) longer rationale; shown only on demand
 #   fix_suggestion  (optional) one-line replacement or pointer
@@ -734,6 +735,45 @@ from dartwork_mpl._colors import Color
 
 version: 1
 rules:
+  - id: invalid-colormap-name
+    severity: critical
+    detector:
+      kind: ast
+      check: colormap-name
+    message: |
+      This literal colormap name is absent from the current matplotlib
+      registry. Color-family prefixes do not imply matching colormaps.
+      Discover valid names with sorted(matplotlib.colormaps).
+    why: |
+      Static checks cover cmap keywords on conventional ax/plt plotting
+      calls, imported pyplot aliases, and pyplot.get_cmap. Dynamic
+      expressions and unknown receivers are not evaluated. Live custom
+      maps and explicit inline register(name="...") declarations are accepted.
+      Registrations with dynamic or implicit names defer this check.
+      Registration statements in supplied source are never executed.
+    fix_suggestion: 'Choose an exact name from sorted(matplotlib.colormaps).'
+
+  - id: invalid-color-name
+    severity: critical
+    detector:
+      kind: ast
+      check: color-name
+    message: |
+      This literal color is not recognized by matplotlib. Discover named
+      colors with matplotlib.colors.get_named_colors_mapping(), or use
+      the existing get_color_value and list_color_families MCP tools.
+    why: |
+      Static checks cover scalar color, facecolor, edgecolor,
+      markerfacecolor, and markeredgecolor keywords on conventional
+      ax/plt plotting calls and imported pyplot aliases. Dynamic values
+      and unknown receivers are not evaluated. The live matplotlib
+      color parser accepts registered names, hex, grayscale and C0 tokens.
+      Direct literal assignments to get_named_colors_mapping() are also
+      recognized without executing the supplied registration code. Direct
+      mapping .update(...) calls and assignments with dynamic keys defer
+      color-name checks for that source; colormap-name checks still run.
+    fix_suggestion: 'Choose a valid color from matplotlib.colors.get_named_colors_mapping().'
+
   - id: figsize-direct
     severity: critical
     detector:

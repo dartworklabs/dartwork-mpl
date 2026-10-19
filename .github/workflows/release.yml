@@ -20,6 +20,9 @@ on:
       - "v*.*.*"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 # Single concurrent publish per ref; cancel stale runs.
 concurrency:
   group: publish-${{ github.ref }}
@@ -34,9 +37,13 @@ jobs:
     name: Test before release
     runs-on: [self-hosted, ml-main]
     steps:
-      - uses: actions/checkout@v6
+      # The quality-oracle regression test resolves and archives the frozen
+      # baseline commit, which is absent from a depth-one checkout.
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
@@ -64,11 +71,12 @@ jobs:
           uv run python docs/color_system/generate_theory_figures.py --check
       - name: Upload color-system comparison
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: color-system-comparison
           path: build/color-system-comparison
           if-no-files-found: warn
+          retention-days: 7
       - name: Run test suite
         run: uv run pytest tests/ -q
 
@@ -77,10 +85,10 @@ jobs:
     needs: test
     runs-on: [self-hosted, ml-main]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
@@ -141,10 +149,11 @@ jobs:
           fi
 
       - name: Upload distributions
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: dist
           path: dist/
+          retention-days: 7
 
   publish:
     name: Publish to PyPI
@@ -160,13 +169,13 @@ jobs:
       id-token: write
     steps:
       - name: Download distributions
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: dist
           path: dist/
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           # Skip (don't fail) if this version is already on PyPI — e.g.
           # a manual local ``uv publish`` beat the tag, or the tag run
@@ -183,7 +192,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       # CHANGELOG.md hard-wraps paragraphs at ~72 chars (Keep a Changelog
       # convention). GitHub Releases render single newlines as soft
