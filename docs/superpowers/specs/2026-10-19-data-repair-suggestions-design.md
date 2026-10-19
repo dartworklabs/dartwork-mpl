@@ -1,9 +1,8 @@
 # Reviewable plot-data repair suggestions
 
-Status: **Approved — implementation pending** (2026-10-19).
+Status: **Implemented — local acceptance passed; final whole-branch review and remote CI pending** (2026-10-19).
 User approval: **“이 설계로 구현 진행 (권장)”**, 2026-10-19, approves this exact design.
-User direction: propose concrete repairs for length/type errors, preserve the original,
-and expose before/after for review. Implementation follows the approved scope below.
+User direction: propose concrete repairs for length/type errors, preserve the original, and expose before/after for review.
 
 ## Outcome and boundary
 
@@ -48,7 +47,11 @@ No Handbook exists; do not initialize one. Current authority is the following so
 ## Public surface and compatibility
 
 Recommend `validate_plot_data(plot_type: str, data_json: str, report: bool = False) -> str`.
-Absent/false follows the exact existing parser, dispatch, strings, error precedence and MCP framing.
+Omitted calls retain exact existing parser, dispatch, strings, precedence and MCP framing (62 audited requests).
+Prechange explicit `report=False` was an unexpected keyword; the additive argument intentionally replaces that refusal.
+New false calls with both required fields match old omitted responses exactly (60 audited requests).
+For two missing-required false calls, the same framework error category/location/full envelope matches
+after removing only its echoed `report:False` input flag. Existing frameworks own argument validation; no override.
 True returns one versioned JSON report encoded in that string; clients decode `result` once.
 This preserves the output schema, at the cost of a second JSON decode for report consumers.
 A native typed-object union is rejected for this milestone because it broadens that schema.
@@ -188,7 +191,9 @@ seeded generated properties instead of a dependency, and existing CI pytest; no 
 2. Generated bounded inputs preserve raw input, unchanged data/tokens/order/lengths and extra fields; original/candidate share no mutable state. Identical calls produce identical reports; submitting a clean candidate proposes no further changes.
 3. Mixed candidate/manual failures revalidate honestly (`valid:false`, remaining paths); removing the recheck or accepting legacy checkmarks fails a focused test.
 4. Strict grammar, precision/portable integer bounds, overflow/underflow, bool/null, duplicates, nonfinite tokens, ragged/empty/wrong containers, bin decreases/duplicate acceptance and every budget boundary yield expected strict-JSON outcomes; arbitrary generated text never leaks an exception.
-5. Real FastMCP Client checks on 2.13.3 and installed 3.4.2 pin omitted/false responses against prechange captures for all 18 types plus representative malformed/unknown/argument-type cases; opt-in changes only the intended input schema, preserving string output schema/framing.
+5. Real FastMCP Client checks on 2.13.3 and installed 3.4.2 pin all 62 omitted and 60 required-fields-present false calls exactly, plus two missing-required false calls under the echoed-flag rule above; all 18 types, malformed/unknown/argument-type cases and unchanged string output schema/framing are covered.
 6. Existing discovery/color gates (`tests/test_color_v6_comparison.py`, `tests/test_shipped_colors_hash.py`) pass with untouched baselines; all registered identities and order remain unchanged.
 7. Existing MCP validation/hardening tests and focused new tests pass under `uv run pytest <affected files>`; changed rule tests first fail without the behavior or under a targeted mutation, then pass; run existing formatter/type checks only as required by the repository.
 8. Public MCP documentation states the JSON-string report, exact five-type scope, manual limits and no effects; no render/apply/store path or extra registration is introduced.
+
+Local acceptance: 409 integrated tests; 199 per FastMCP runtime; Ruff, mypy, Sphinx `-W`, real docs Client example and rendered Tailnet PoC passed. [Evidence ledger](../plans/2026-10-19-data-repair-suggestions.md#local-validation-ledger); final whole-branch review and remote CI remain pending; no merge claimed.
