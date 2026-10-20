@@ -4,7 +4,7 @@ orphan: true
 
 # Viewer boundary repair — #499
 
-Status: approved scope implemented locally on 2026-10-20; parent full-suite, final review and integration pending. User accepted local-only ("추천하는대로 갈게").
+Status: approved scope and local evidence complete on 2026-10-20 at `202db843`; parent confirmed pytest exit 0; upstream publication is tracked separately. User accepted local-only ("추천하는대로 갈게").
 That approval and #499 authorize this narrow local-only/create-only repair and plan; input defaults below grant no hosted access.
 ## 현재 권위와 상태
 
@@ -195,6 +195,6 @@ Reuse `~/scratch/dartwork-mpl-followups-2026-10-20/viewer499/poc/`'s fixture/lau
 If browser review is needed, parent owns a persistent project-defined Tailnet HTTPS review service;
 it must not expose this unauthenticated viewer's effect routes through a proxy.
 
-Local receipts under `~/scratch/dartwork-mpl-followups-2026-10-20/viewer499/`: boundary84/state45/files34; HTTP/security/checker295; installed-wheel HTTP18/zero skips + base-only smoke; client16/16; integrated desktop/mobile old200→new409, sentinel preserved (`poc/after-receipt.json`).
-Full-suite/JUnit, final independent review and parent integration remain pending; no hosted CI/PR/merge claim.
+Local receipts under `~/scratch/dartwork-mpl-followups-2026-10-20/`: `viewer499/review-fixes-r1/green-ui-modules.log` UI282/zero skips; `viewer499/http/wheel-r3/wheel-receipt.json` exact installed HTTP21 + alias-state2/zero skips, base-only smoke and cleanup; client16/16; desktop/mobile PoC shown inline, old200→new409 with existing hashes preserved (`viewer499/poc/after-receipt.json`).
+Local full-suite complete: `integration/pytest-final.log` + XML record 5871 passed/zero failures/errors/skips, coverage91.69% (required80%); `junit-guard-final.log` confirms33 modules. Ruff/mypy109 pass; `viewer499/implementation-review-r2/report.md` PASS/0 Critical/0 Important pins8 hashes. Local integration content verified; parent confirmed pytest exit 0; upstream publication separate; no hosted CI, release, merge, Windows or remote-auth claim.
 No preceding ADR freezes viewer binding; later remote writes, identity or grant changes need a separate ADR.
