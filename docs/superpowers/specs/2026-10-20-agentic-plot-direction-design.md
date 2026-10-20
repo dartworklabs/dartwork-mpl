@@ -4,7 +4,7 @@ orphan: true
 
 # 프롬프트만으로 만드는 그림: 독립 진단과 방향 제안
 
-2026-10-20 · 진단 기준 코드 `2c29e066` · **0단계 실행 승인·기준선/개선 평가 완료, Task 5·전체 브랜치 독립 검수 대기 중**
+2026-10-20 · 진단 기준 코드 `2c29e066` · **0단계 실행 승인·기준선/개선 평가 완료, Task 5·전체 브랜치 독립 검수 완료, 범위 한정 로컬 종료 승인**
 
 사용자의 “후속작업 진행하자. 계획짜봐”로 0단계 방향·계획을 채택했고, 이후 실행 승인을 받아
 [구현 계획](../plans/2026-10-20-agent-plot-loop.md)을 수행했다. 계획 작성 기준 `26b7eab1`은 역사적 기준이다.
@@ -46,7 +46,7 @@ Handbook은 없으며 초기화하지 않았다. 현재 권위는 [AGENTS](../..
 기준 4회·개선 4회를 각각 한 번 수행하고 원 기록을 보존했다. 두 FAILED smoke의 실제 인프라 증거에 한정한 명시적 admission으로 진행했으며, 새 성공 smoke bootstrap이나 추가 반복은 없었다. 실제 새 agent 회수는 scored episode에서 측정했다.
 기준선 line/bar의 최종 report 수신 누락은 실패다. bar는 evaluator NumPy scalar 직렬화 오류로 의미/pixel unchecked이며 이후 수정으로 기준선을 소급 통과시키지 않았다. scatter는 제품상 유효한 60초 요청을 모델에게 알리지 않은 evaluator 20초 제한이 거절해 artifact가 없고 비용은 미확인이다.
 개선 4회는 전달·선언검사·모델검토·독립 의미 replay·독립 시각검토·사람 코드 0을 통과했다. candidate_gate=true지만 compare exit1은 기준선 실패/unchecked를 보존한다. bar evaluator 버전 차이와 단일 episode 수로 일반 성능·프롬프트 인과는 입증하지 않는다.
-전역 chart hint의 custom2panel 경고도 남아 있다. 실제 PNG 14개·회수 bytes·정확한 source·엄격한 replay pixels는 [평가 안내](../../integrations/agent_plot_evaluation.md)에 연결했다. 기준선 수집 완료와 개선 quality gate를 구분하며 부모의 최종 통합 검수는 대기 중이다. 단계 1–3·website/login/community/docs 분리의 승인 경계는 그대로다.
+전역 chart hint의 custom2panel 경고도 남아 있다. 실제 PNG 14개·회수 bytes·정확한 source·엄격한 replay pixels는 [평가 안내](../../integrations/agent_plot_evaluation.md)에 연결했다. 기준선 수집 완료와 개선 quality gate를 구분하며 [최종 검수 기록](/Users/wonjun/.t3/worktrees/dartwork-mpl/t3-0c3dff26/.superpowers/sdd/2026-10-20-agent-plot-loop/final-review.md)는 검수 대상 HEAD `5ff1ef7e0bf219a1b77a95ee61036b98d3eae21c`의 범위 한정 로컬 종료를 승인했다. Critical/Important 0건이며 run_episode 감사 용이성 Minor 1건은 다음 lifecycle/generalization 변경으로 명시 유예했다. 단계 1–3·website/login/community/docs 분리의 승인 경계는 그대로다.
 
 ## 선택지와 추천 책임 경계
 

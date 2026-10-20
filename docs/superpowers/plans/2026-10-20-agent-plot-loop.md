@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12 대표 평가 환경, pytest, Matplotlib, 기존 FastMCP/MCP client, 설치 Claude CLI 2.1.303(실행 시 재확인).
 
-**Spec:** [채택한 0단계 방향](../specs/2026-10-20-agentic-plot-direction-design.md). 이력: 계획 작성 기준 `26b7eab1`; 이후 사용자가 0단계 실행을 승인했다. Task 1–4 구현·기준 4회/개선 4회 각 1회 완료, Task 5 통합 검증 완료; Task 5와 전체 브랜치의 부모 독립 검수 대기 중.
+**Spec:** [채택한 0단계 방향](../specs/2026-10-20-agentic-plot-direction-design.md). 이력: 계획 작성 기준 `26b7eab1`; 이후 사용자가 0단계 실행을 승인했다. Task 1–4 구현·기준 4회/개선 4회 각 1회 완료, Task 5 통합 검증 완료; Task 5와 전체 브랜치의 부모 독립 검수 완료, 범위 한정 로컬 종료 승인.
 
 ## Global Constraints
 
@@ -62,7 +62,7 @@ Handbook은 없고 초기화하지 않는다. ADR 0003의 `implementation pendin
 
 기준선 수집은 실패를 포함해 완료했다. line/bar 최종 report 수신 누락, bar scalar replay 오류(의미/pixel unchecked), scatter의 비공개 evaluator 20초 제한(제품상 유효한 60초 요청)을 보존한다. 두 FAILED smoke는 아래 승인 조정의 역사적 admission에 묶였으며 새 실행용 bootstrap이 아니다.
 개선 4회는 여섯 차원 모두 통과했고 candidate_gate=true다. compare exit1은 기준선 실패/unchecked를 보존한다. bar evaluator만 기준선 뒤 정규화 수정했으므로 일반 모델 성능·안내 인과를 주장하지 않는다. 전체 호출은 종료됐고 37.8/41 stage cap; effective effort·scatter 비용은 미확인이다.
-실제 14개 PNG·정확한 source·회수/픽셀·독립 시각 검토·사람 코드 0 증거는 [평가 안내](../../integrations/agent_plot_evaluation.md)에 연결했다. 최종 전체 시험 5,471 PASS·skip 0·coverage 91.69%, JUnit 여섯 보호 모듈과 문서 빌드 PASS를 확인했다. 커밋·증거는 실행 보고서에 남기며 Task 5/전체 브랜치 독립 최종 검수는 아직 대기 중이다. 단계 1–3 계약은 미승인이다.
+실제 14개 PNG·정확한 source·회수/픽셀·독립 시각 검토·사람 코드 0 증거는 [평가 안내](../../integrations/agent_plot_evaluation.md)에 연결했다. 최종 전체 시험 5,471 PASS·skip 0·coverage 91.69%, JUnit 여섯 보호 모듈과 문서 빌드 PASS를 확인했다. 커밋·증거는 실행 보고서에 남기며 [최종 검수 기록](/Users/wonjun/.t3/worktrees/dartwork-mpl/t3-0c3dff26/.superpowers/sdd/2026-10-20-agent-plot-loop/final-review.md)는 검수 대상 HEAD `5ff1ef7e0bf219a1b77a95ee61036b98d3eae21c`의 범위 한정 로컬 종료를 승인했다. Critical/Important 0건이며 run_episode 감사 용이성 Minor 1건은 다음 lifecycle/generalization 변경으로 명시 유예했다. 단계 1–3 계약은 미승인이다.
 
 ### Task 1: 네 고정 episode와 독립 artist oracle
 
