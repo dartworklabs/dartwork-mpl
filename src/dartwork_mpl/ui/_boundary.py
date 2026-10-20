@@ -635,7 +635,7 @@ def _active(
                     if part.strip()
                 ]
         model = _validate_model(model_cls, coerced)
-        if _bounded(model.model_dump(mode="json")) is not None:
+        if _bounded(model.model_dump(mode="json", by_alias=False)) is not None:
             return InvalidRequest(
                 "Parameters must remain bounded finite JSON values."
             )
