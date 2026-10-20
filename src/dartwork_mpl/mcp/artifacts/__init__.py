@@ -44,6 +44,7 @@ from .inputs import (
     InputStore,
     InputTransaction,
 )
+from .lifecycle import ArtifactRuntime
 from .policy import (
     ArtifactBytes,
     ArtifactId,
@@ -80,6 +81,7 @@ __all__ = [
     "ArtifactFailure",
     "ArtifactId",
     "ArtifactMember",
+    "ArtifactRuntime",
     "ArtifactStore",
     "ArtifactTooLarge",
     "CheckJob",

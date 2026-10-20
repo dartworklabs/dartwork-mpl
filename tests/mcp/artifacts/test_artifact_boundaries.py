@@ -322,3 +322,20 @@ def test_pure_policy_import_violations_are_rejected(module, target):
         assert_boundaries(
             [(f"dartwork_mpl.mcp.artifacts.{module}", target, None)], {}
         )
+
+
+@pytest.mark.parametrize("module", ["lifecycle", "transport"])
+def test_runtime_gateway_private_execution_import_is_rejected(module):
+    """Both new runtime and gateway may use only the existing public execution surface."""
+    _, surfaces = imports_and_surfaces()
+    with pytest.raises(AssertionError):
+        assert_boundaries(
+            [
+                (
+                    f"dartwork_mpl.mcp.artifacts.{module}",
+                    "dartwork_mpl.mcp.execution",
+                    "_private_runner",
+                )
+            ],
+            surfaces,
+        )

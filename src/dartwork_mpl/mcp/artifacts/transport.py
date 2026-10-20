@@ -12,7 +12,16 @@ from mcp.types import CallToolResult, ImageContent, ResourceLink, TextContent
 from pydantic import AnyUrl
 
 from ..execution import ExecutionRejected, ExportRejected
-from .delivery import ArtifactFailure, get_artifact, render_artifact
+from .delivery import (
+    ArtifactFailure,
+    delete_inputs,
+    get_artifact,
+    render_artifact,
+)
+from .input_access import InputsDisabled
+from .input_policy import parse_revision
+from .inputs import AbsentInputs, DeletedInputs
+from .lifecycle import ArtifactRuntime, run_owned
 from .policy import (
     ArtifactMember,
     ArtifactTooLarge,
@@ -150,10 +159,28 @@ _SCHEMA: dict[str, Any] = {
     ],
 }
 
+_DELETE_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "oneOf": [
+        {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["schema_version", "artifact_id", "state"],
+            "properties": {
+                "schema_version": {"const": 1},
+                "artifact_id": _SCHEMA["oneOf"][0]["properties"]["artifact_id"],
+                "state": {"enum": ["deleted", "absent"]},
+            },
+        },
+        _SCHEMA["oneOf"][1],
+    ],
+}
+
 # Registration-bound authority decisions, checked against actual discovery.
 ENTRY_POLICIES = {
     "render_plot": "local_user_store_bounded_execution",
     "get_plot_artifact": "local_user_store_verified_read",
+    "delete_plot_inputs": "local_operator_grant_bounded_delete",
     **{
         f"dartwork-mpl://artifacts/{{artifact_id}}/{member.value}": "local_user_store_verified_read"
         for member in ArtifactMember
@@ -280,16 +307,26 @@ def _result(outcome: StoredBundle | ArtifactFailure) -> ToolResult:
 
 
 def register_artifacts(
-    mcp: FastMCP, store: ArtifactStore | ConfigurationError
+    mcp: FastMCP,
+    store: ArtifactStore | ConfigurationError,
+    *,
+    runtime: ArtifactRuntime | None = None,
 ) -> None:
-    """Bind all artifact entry points to one configuration-authorized local store."""
+    """Bind artifact routes; only an explicitly supplied runtime enables retention.
+
+    Direct registration remains usable without a session owner or input policy.
+    """
+    if runtime is not None and not runtime.bind(mcp):
+        # An unknown SDK bridge cannot own resources; legacy routes still work.
+        runtime = None
 
     @mcp.tool(output_schema=_SCHEMA)
-    def render_plot(
+    async def render_plot(
         code: str,
         figure_var: str = "fig",
         timeout_seconds: float = 20.0,
         chart_type_hint: str | None = None,
+        revision: object | None = None,
     ) -> ToolResult:
         """Execute trusted plotting code once and deliver PNG/PDF/source/report.
 
@@ -297,21 +334,63 @@ def register_artifacts(
         seconds. Bundles total at most 32 MiB and remain retrievable for seven
         days through get_plot_artifact and the five linked resources. Code has
         the local server user's OS access; execution is not an OS sandbox.
+
+        Optional closed v1 revision explicitly selects a parent and/or Copy or
+        Retained inputs. Copy opens only an operator-granted logical root/file;
+        Retained selects fixed server-local snapshot bytes, never current upstream
+        data. Input-bearing source uses read-only dartwork_inputs[name] paths.
+        report.json contains creation-time selection/hash/child-locator receipts;
+        child creation time is publication time, not data capture/latest time.
+        Delete/expiry may remove inputs while the report remains readable. Actual
+        Retained admission checks availability; failures never substitute inputs.
         """
         request = parse_render_request(
             code, figure_var, timeout_seconds, chart_type_hint
         )
         if isinstance(request, InvalidRequest):
             return _result(request)
+        parsed = parse_revision(revision)
+        if isinstance(parsed, InvalidRequest):
+            return _result(parsed)
         if isinstance(store, ConfigurationError):
             return _result(store)
-        return _result(
-            render_artifact(store, request, lambda: datetime.now(timezone.utc))
-        )
+
+        def deliver() -> StoredBundle | ArtifactFailure:
+            """Use fresh clocks in synchronous delivery with disabled input authority."""
+            return render_artifact(
+                store,
+                request,
+                lambda: datetime.now(timezone.utc),
+                revision=parsed,
+            )
+
+        if runtime is None:
+            return _result(await run_owned(deliver))
+        # No await between this gate and admission: accepted work is counted
+        # before it can wait for the serial pipeline. Legacy calls also drain.
+        if not runtime.accepting:
+            return _result(ConfigurationError())
+        async with runtime.admission() as inputs:
+            return _result(
+                await run_owned(
+                    lambda: render_artifact(
+                        store,
+                        request,
+                        lambda: datetime.now(timezone.utc),
+                        revision=parsed,
+                        inputs=inputs,
+                    )
+                )
+            )
 
     @mcp.tool(output_schema=_SCHEMA)
     def get_plot_artifact(artifact_id: str) -> ToolResult:
-        """Read an existing artifact without executing any submitted code."""
+        """Read a verified artifact without execution or renewal.
+
+        report.json receipts identify fixed server-local input copies and selection
+        history. They do not assert current input availability or upstream freshness;
+        actual Retained admission rechecks the grant, expiry and commit.
+        """
         identity = parse_artifact_id(artifact_id)
         if isinstance(identity, InvalidRequest):
             return _result(identity)
@@ -394,3 +473,40 @@ def register_artifacts(
     def artifact_manifest(artifact_id: str) -> Any:
         """Read the published v1 manifest without a recursive self-digest."""
         return read(artifact_id, ArtifactMember.MANIFEST)
+
+    @mcp.tool(output_schema=_DELETE_SCHEMA)
+    async def delete_plot_inputs(artifact_id: str) -> ToolResult:
+        """Revoke this operator-granted input set, leaving artifacts and children intact.
+
+        Requires startup input policy. Returns deleted or absent only after safe
+        deletion barriers; unknown/unsafe residue stays counted and is an error.
+        """
+        identity = parse_artifact_id(artifact_id)
+        if isinstance(identity, InvalidRequest):
+            return _result(identity)
+        if runtime is None:
+            outcome = delete_inputs(InputsDisabled(), identity)
+        else:
+            if not runtime.accepting:
+                return _result(ConfigurationError())
+            async with runtime.admission() as inputs:
+                outcome = await run_owned(
+                    lambda: delete_inputs(inputs, identity)
+                )
+        if not isinstance(outcome, (DeletedInputs, AbsentInputs)):
+            return _result(outcome)
+        metadata = {
+            "schema_version": 1,
+            "artifact_id": outcome.artifact_id.value,
+            "state": "deleted"
+            if isinstance(outcome, DeletedInputs)
+            else "absent",
+        }
+        return ToolResult(
+            content=[
+                TextContent(
+                    type="text", text=json.dumps(metadata, ensure_ascii=False)
+                )
+            ],
+            structured_content=metadata,
+        )

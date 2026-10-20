@@ -9,7 +9,7 @@ import os
 
 from fastmcp import FastMCP
 
-from .artifacts import configure_store, register_artifacts
+from .artifacts import ArtifactRuntime, configure_store, register_artifacts
 from .prompts import register_prompts
 from .resources import register_resources
 from .tools import register_tools
@@ -23,9 +23,9 @@ mcp = FastMCP("dartwork-mpl")
 register_resources(mcp)
 register_tools(mcp)
 register_prompts(mcp)
-register_artifacts(
-    mcp, configure_store(os.environ.get("DARTWORK_MPL_ARTIFACT_DIR"))
-)
+_store = configure_store(os.environ.get("DARTWORK_MPL_ARTIFACT_DIR"))
+_runtime = ArtifactRuntime(_store, os.environ.get("DARTWORK_MPL_INPUT_POLICY"))
+register_artifacts(mcp, _store, runtime=_runtime)
 
 # Server entry point
 if __name__ == "__main__":

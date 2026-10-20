@@ -10,7 +10,7 @@ from dartwork_mpl._colors import _catalog  # noqa: E402
 from dartwork_mpl.mcp.server import mcp  # noqa: E402
 
 ADDITIONS = {
-    "tool_names": ("render_plot", "get_plot_artifact"),
+    "tool_names": ("render_plot", "get_plot_artifact", "delete_plot_inputs"),
     "resource_uris": (),
     "resource_template_uris": tuple(
         "dartwork-mpl://artifacts/{artifact_id}/" + name
@@ -61,6 +61,7 @@ def test_live_discovery_is_legacy_core_plus_exact_extension():
                 .text
             )
             assert_discovery(actual)
+            assert tuple(map(len, actual.values())) == (19, 10, 9, 2)
             assert actual == _catalog.scan_mcp_discovery()
             assert tuple(info["tools"]) == actual["tool_names"]
             assert (
@@ -76,7 +77,7 @@ def test_live_discovery_is_legacy_core_plus_exact_extension():
 
 
 def test_historical_projection_preserves_all_other_fields():
-    """Projection removes only seven literals and preserves unknown additions."""
+    """Projection removes only eight approved literals and preserves unknown additions."""
     live = _catalog.scan_mcp_discovery()
     projected = _catalog.project_legacy_mcp_discovery(live)
     assert projected == dict(_catalog.load_v5_snapshot().mcp_discovery)
