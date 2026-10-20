@@ -29,8 +29,10 @@ htmlcov/
 *.log
 .env
 
-# Claude Code agent harness — worktrees, transcripts, caches
-.claude/
+# Claude Code agent harness — worktrees, transcripts, caches. The skills
+# link is skm's and is committed (skm-basics §5).
+.claude/*
+!.claude/skills
 
 # Jupyter notebooks — use examples/ .py scripts instead
 *.ipynb
@@ -41,7 +43,7 @@ venv/
 *.swo
 *~
 .DS_Store
-.agent*
+.agent_simple_layout
 agent-playbooks
 
 # dartwork-mpl UI runtime files
