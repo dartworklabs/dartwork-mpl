@@ -18,6 +18,35 @@ MODULES = (
     "tests.test_integration",
     "tests.test_cli",
     "tests.test_drift",
+    "tests.mcp.agent_loop.test_oracle",
+    "tests.mcp.agent_loop.test_capture",
+    "tests.test_docs_mcp_tools",
+    "tests.test_docstring_catalogs",
+    "tests.test_mcp_asset_boundary",
+    "tests.test_mcp_data_repair_contract",
+    "tests.test_mcp_heavy_tools",
+    "tests.test_mcp_render_smoke",
+    "tests.test_mcp_tool_hardening",
+    "tests.test_mcp_validation_contract",
+    "tests.test_mcp_validators_complete",
+    "tests.mcp.artifacts.test_artifact_boundaries",
+    "tests.mcp.artifacts.test_artifact_discovery",
+    "tests.mcp.artifacts.test_artifact_entry_policies",
+    "tests.mcp.artifacts.test_artifact_execution",
+    "tests.mcp.artifacts.test_artifact_policy",
+    "tests.mcp.artifacts.test_artifact_protocol",
+    "tests.mcp.artifacts.test_artifact_store",
+    "tests.mcp.data_repair.test_limits",
+    "tests.mcp.data_repair.test_properties",
+    "tests.mcp.data_repair.test_reports",
+    "tests.test_ui_boundary",
+    "tests.test_ui_files",
+    "tests.test_ui_http_security",
+    "tests.test_ui_hardening",
+    "tests.test_ui_init",
+    "tests.test_ui_param",
+    "tests.test_ui_security",
+    "tests.test_ui_widget",
 )
 
 
@@ -53,20 +82,26 @@ def test_accepts_passed_cases_with_module_or_class_names(
     _report(path, [(module + suffix, None) for module in MODULES])
     result = _check(path)
     assert result.returncode == 0, result.stderr
-    assert "4 required modules" in result.stdout
+    assert f"{len(MODULES)} required modules" in result.stdout
 
 
-@pytest.mark.parametrize("outcome", ["missing", "skipped", "failure", "error"])
+@pytest.mark.parametrize(
+    "outcome", ["missing", "zero", "skipped", "failure", "error"]
+)
 @pytest.mark.parametrize("module", MODULES)
 def test_rejects_each_module_without_a_passed_case(
     tmp_path: Path, module: str, outcome: str
 ) -> None:
-    """Passing siblings cannot conceal one missing, skipped, or failed file."""
+    """Passing siblings cannot conceal a missing, empty, skipped, or failed file."""
     cases = [(sibling, None) for sibling in MODULES if sibling != module]
-    if outcome != "missing":
+    if outcome not in {"missing", "zero"}:
         cases.append((module + ".TestPublicAPI", outcome))
     path = tmp_path / "junit.xml"
     _report(path, cases)
+    if outcome == "zero":
+        tree = ET.parse(path)
+        ET.SubElement(tree.getroot(), "testsuite", name=module, tests="0")
+        tree.write(path)
     result = _check(path)
     assert result.returncode == 1
     assert module in result.stderr
@@ -109,9 +144,9 @@ def test_case_order_and_irrelevant_cases_cannot_change_module_gate(
     """Seeded reports preserve the gate under ordering and unrelated noise."""
     rng = random.Random(173)
     path = tmp_path / "junit.xml"
-    for iteration in range(12):
+    for iteration in range(2 * len(MODULES)):
         missing = MODULES[iteration % len(MODULES)]
-        passing = iteration % 2 == 0
+        passing = iteration < len(MODULES)
         cases = [
             (module, None) for module in MODULES if passing or module != missing
         ]
@@ -120,4 +155,30 @@ def test_case_order_and_irrelevant_cases_cannot_change_module_gate(
         rng.shuffle(cases)
         _report(path, cases)
         result = _check(path)
-        assert result.returncode == (0 if passing else 1), iteration
+        assert result.returncode == (0 if passing else 1), (
+            173,
+            iteration,
+            cases,
+        )
+
+
+@pytest.mark.parametrize("outcome", ["failure", "error"])
+@pytest.mark.parametrize("module", MODULES)
+def test_passing_sibling_does_not_conceal_protected_error(
+    tmp_path: Path, module: str, outcome: str
+) -> None:
+    """An executed protected error fails even if another case passed."""
+    path = tmp_path / "junit.xml"
+    _report(path, [(item, None) for item in MODULES] + [(module, outcome)])
+    result = _check(path)
+    assert result.returncode == 1
+    assert module in result.stderr
+
+
+def test_empty_report_cannot_prove_any_module(tmp_path: Path) -> None:
+    """A syntactically valid report with zero cases is a failed gate."""
+    path = tmp_path / "junit.xml"
+    _report(path, [])
+    result = _check(path)
+    assert result.returncode == 1
+    assert all(module in result.stderr for module in MODULES)

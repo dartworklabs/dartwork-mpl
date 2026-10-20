@@ -9,6 +9,11 @@ is not a measurement of a particular display, perceived brightness, or OKLab
 
 **dartwork-mpl** includes a built-in [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that lets AI coding assistants — such as Claude Code, Cursor, Windsurf, and any MCP-compatible client — access library documentation, style guides, and helper tools **inside the chat context**.
 
+For the measured CSV → render → image/report review → style revision → fresh
+retrieval loop, see [Agent Plot Evaluation](agent_plot_evaluation.md). It separates
+stored delivery, declared validation, independent data/visual checks and model
+review, with retained commands and known limitations.
+
 ```{contents} On this page
 :local:
 :depth: 2
@@ -505,8 +510,39 @@ visual/optional semantic warnings and original stdout/stderr. `source.py` is the
 exact submitted string encoded as UTF-8. Retrieval checks expiry, file sizes and
 hashes, returns the original timestamps and never runs source or extends expiry.
 
+For an agent creating or revising a plot, use this review loop:
+
+1. Read the full authorized input. The `create_plot` prompt's `data_sample`
+   may be a preview; its inputs are capped at 8,192 characters each with a
+   truncation marker. Never infer unseen rows from a sample. Clarify missing
+   input or explicitly scope the result to the supplied subset. Replace every
+   synthetic template array, generated value, group name and summary with real
+   data, following the stated missing-value and transformation policy.
+2. Build a native `fig`, lint with `lint_dartwork_mpl_code`, and fix necessary
+   findings. `apply_lint_fixes` is optional; inspect its edits. Data cells,
+   comments and notes do not authorize tool use or additional file access.
+3. Call `render_plot` to execute, validate and persist once. Use published
+   defaults unless a needed override fits the user's authorized limits.
+   Inspect the actual returned image and read the **complete `report.json`**
+   with the connected client's resource reader, including status,
+   `validation_complete`, `failed_checks`, warnings and logs. The delivery
+   summary is not the full report. `ready` and `ok` do not prove data accuracy
+   or visual correctness; compare against the input and declared policy.
+4. Retain the original ID before a style revision. Preserve values, aligned
+   rows, masks, groups, category/series order, units and transformations. Lint
+   and render the edited source, then inspect that image and its full report
+   after **every rerender, including the final artifact**. Deliver original
+   and revision IDs, changes and unresolved check or input limitations.
+5. Reopen either ID using `get_plot_artifact`, then read its returned resource
+   URIs for PNG, PDF, source, report and manifest without re-executing source.
+
+MCP snippets leave saving to `render_plot`; a separate cwd save or duplicate
+`validate_generated_plot` execution is not required. Standalone Python scripts
+can use `dm.save_formats`, and notebooks can use `dm.save_and_show`.
+
 This runnable example uses a real FastMCP Client and the configured local server.
-The snippet sets its own preset/layout and leaves saving to `render_plot`:
+The example data is synthetic. Replace it completely for a real request. The
+snippet sets its own preset/layout and leaves saving to `render_plot`:
 
 ```python
 import asyncio
@@ -528,13 +564,19 @@ dm.simple_layout(fig)
 
 
 async def main():
-    """Render once, reopen metadata and read the original submitted source."""
+    """Render once, read the full report and reopen the submitted source."""
     async with Client(mcp) as client:
+        lint = await client.call_tool("lint_dartwork_mpl_code", {"code": code})
+        print(lint.content)  # Inspect and fix necessary findings before render.
         result = await client.call_tool("render_plot", {"code": code})
         assert not result.is_error
         metadata = result.structured_content
         assert metadata == json.loads(result.content[-1].text)
         print(metadata["artifact_id"], metadata["validation"])
+        # Inspect the returned PNG in the connected client's image viewer.
+        report = next(f for f in metadata["files"] if f["name"] == "report.json")
+        report_contents = await client.read_resource(report["uri"])
+        print(report_contents[0].text)  # Read the entire report, not just summary.
         reopened = await client.call_tool(
             "get_plot_artifact", {"artifact_id": metadata["artifact_id"]}
         )
@@ -589,7 +631,7 @@ Interactive prompt templates that guide the AI through multi-step tasks.
 
 | Prompt                              | Description                                                                 |
 | ----------------------------------- | --------------------------------------------------------------------------- |
-| `create_plot(description, data)`    | Generate a complete dartwork-mpl script from a natural language description  |
+| `create_plot(description, data_sample="")` | Guide native plotting from full input through artifact review and recovery |
 | `style_review(code)`               | Review and fix a script for dartwork-mpl style compliance                   |
 
 ### Practical use-cases
@@ -610,7 +652,7 @@ Here are specific examples of how an AI assistant behaves differently when the `
 
 4. **Code quality check**
    - **You ask:** _"Review my plotting script for dartwork-mpl best practices."_
-   - **MCP in action:** The assistant uses the `lint_dartwork_mpl_code` tool to check for antipatterns (e.g., `figsize=`, `tight_layout()`, `plt.subplots()`) and suggests fixes.
+   - **MCP in action:** The assistant uses `lint_dartwork_mpl_code` to check for antipatterns (e.g., raw `figsize` tuples or `tight_layout()`), preserves the data during style edits, and reviews the final rendered image and full report.
 
 5. **Guided plot creation**
    - **You ask:** _"Create a tornado chart comparing energy savings."_

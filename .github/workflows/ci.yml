@@ -85,13 +85,21 @@ jobs:
           # Recheck compatibility before adding branches or dynamic contexts.
           COVERAGE_CORE: sysmon
           COVERAGE_DEBUG: core
-        run: uv run pytest tests/ -v --cov --cov-report=term-missing --junitxml="$RUNNER_TEMP/pytest-full.xml"
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run pytest tests/ -v --cov --cov-report=term-missing --durations=30 \
+            --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
 
       - name: Run tests
         if: matrix.python-version != '3.12'
         env:
           MPLBACKEND: Agg
-        run: uv run pytest tests/ -v --no-cov
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run pytest tests/ -v --no-cov --durations=30 \
+            --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
 
       # Prove every protected module contributed a passing executed case in
       # the same full-suite run. A missing optional extra must not silently
@@ -99,6 +107,17 @@ jobs:
       - name: Assert MCP / integration tests actually ran
         if: matrix.python-version == '3.12'
         run: uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"
+
+      - name: Preserve test execution evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pytest-python-${{ matrix.python-version }}
+          path: |
+            ${{ runner.temp }}/pytest-full.xml
+            ${{ runner.temp }}/pytest-summary.txt
+          if-no-files-found: warn
+          retention-days: 7
 
   # Sanity check: the *base* install (no [mcp] extra) must still
   # import, render, and save. Catches regressions where a

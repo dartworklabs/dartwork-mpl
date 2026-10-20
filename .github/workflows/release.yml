@@ -35,6 +35,8 @@ jobs:
   # publish to PyPI. `build`/`publish` now transitively require `test`.
   test:
     name: Test before release
+    env:
+      UV_PYTHON: "3.12"
     runs-on: [self-hosted, ml-main]
     steps:
       # The quality-oracle regression test resolves and archives the frozen
@@ -51,6 +53,12 @@ jobs:
         run: uv python install 3.12
       - name: Install dependencies
         run: uv sync --all-extras --dev
+      - name: Record release test interpreter
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run --no-sync python -c 'import sys; print(sys.version); print(sys.executable); assert sys.version_info[:2] == (3, 12)' \
+            | tee "$RUNNER_TEMP/python-runtime.txt"
       - name: Verify packaged color authorities
         run: |
           set -euo pipefail
@@ -78,10 +86,29 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: Run test suite
-        run: uv run pytest tests/ -q
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run pytest tests/ -q -rs --durations=30 \
+            --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
+      - name: Assert MCP / integration tests actually ran
+        run: uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"
+      - name: Preserve release test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-pytest-python-3.12
+          path: |
+            ${{ runner.temp }}/pytest-full.xml
+            ${{ runner.temp }}/pytest-summary.txt
+            ${{ runner.temp }}/python-runtime.txt
+          if-no-files-found: warn
+          retention-days: 7
 
   build:
     name: Build sdist + wheel
+    env:
+      UV_PYTHON: "3.12"
     needs: test
     runs-on: [self-hosted, ml-main]
     steps:
@@ -110,8 +137,11 @@ jobs:
             exit 1
           fi
 
+      - name: Record release build interpreter
+        run: uv run --no-project python -c 'import sys; print(sys.version); print(sys.executable); assert sys.version_info[:2] == (3, 12)'
+
       - name: Build distributions
-        run: uv build
+        run: uv build --python "$UV_PYTHON"
 
       - name: Wheel ↔ git-tracked tree parity
         # Positive packaging gate: the wheel's package payload must equal

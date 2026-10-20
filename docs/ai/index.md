@@ -8,9 +8,10 @@ tocdepth: 2
 dartwork-mpl is **built for the way Python plots are written in 2026**:
 a developer types intent into Cursor / Claude Code / Zed Agent panel,
 the agent calls matplotlib through dartwork-mpl, and a
-publication-ready figure comes out on the first try. Every API choice,
-default, prompt resource, and bundled file in this library exists to
-make that loop reliable.
+figure can be created, reviewed and revised through the existing tools.
+Presets and prompt resources guide that loop; generated plots still need
+data checks and visual review. See the [bounded live evaluation](../integrations/agent_plot_evaluation.md)
+for measured outcomes and limitations.
 
 This page is the **hub** — the 30-second setup, the IDE compatibility
 matrix, and the deep links into agent-specific guides. New to the
@@ -100,8 +101,8 @@ Even without MCP or file installation, dartwork-mpl's
 **one-right-way API** makes any agent's matplotlib output more
 reliable. Names like `dm.style.use("scientific")`, `dc.teal2`,
 `dm.figsize("13cm", "standard")`, and `dm.simple_layout(fig)` are
-unambiguous enough that LLMs reproduce them deterministically across
-conversations.
+concrete patterns an agent can follow. Check the resulting code, values and
+image; names alone do not guarantee identical output across conversations.
 
 ```python
 import matplotlib.pyplot as plt
@@ -166,8 +167,8 @@ rules that compound into reliable AI output:
 
 For every plotting task, there is one dartwork-mpl function — not
 three (`tight_layout` / `constrained_layout` / `subplots_adjust`).
-Agents pick the same path across runs, so generated code is
-reproducible.
+This gives agents a consistent starting point. Reproducibility still depends
+on the generated source, inputs and execution environment.
 :::
 
 :::{grid-item-card} 🎨 **Semantic names**
@@ -257,6 +258,7 @@ composition helper is reachable as `dm.<name>`.
 Why AI-Ready? <../integrations/why_ai_ready>
 AI-Assisted Development <../integrations/ai_assisted>
 MCP Server <../integrations/mcp_server>
+Agent Plot Evaluation <../integrations/agent_plot_evaluation>
 Designed for AI Agents (philosophy) <../philosophy/ai_native>
 AI Plot Templates (gallery) <../examples_gallery/09_ai_templates/index>
 ```
