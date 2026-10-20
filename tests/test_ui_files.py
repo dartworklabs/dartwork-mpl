@@ -4,6 +4,9 @@ import hashlib
 import io
 import os
 import random
+import stat
+import subprocess
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
@@ -145,9 +148,9 @@ def test_root_swapped_during_reservation_never_writes_replacement(
     reserve = fs._reserve_file
     with opened(primary, copy) as roots:
 
-        def reserve_then_swap(parent_fd: int, name: str) -> int:
+        def reserve_then_swap(parent_fd: int, name: str, **options: int) -> int:
             """Move the primary after a real reservation and supply a sentinel tree."""
-            fd = reserve(parent_fd, name)
+            fd = reserve(parent_fd, name, **options)
             if not (tmp_path / "old").exists():
                 primary.rename(tmp_path / "old")
                 primary.mkdir()
@@ -175,13 +178,13 @@ def test_late_create_conflicts_without_overwrite(
     reserve = fs._reserve_file
     calls = 0
 
-    def late_create(parent_fd: int, name: str) -> int:
+    def late_create(parent_fd: int, name: str, **options: int) -> int:
         """Introduce a real competing leaf immediately before its reservation."""
         nonlocal calls
         calls += 1
         if calls == 2:
             (copy / "a.png").write_bytes(b"late writer")
-        return reserve(parent_fd, name)
+        return reserve(parent_fd, name, **options)
 
     with opened(primary, copy) as roots:
         monkeypatch.setattr(fs, "_reserve_file", late_create)
@@ -460,9 +463,9 @@ def test_reserved_file_metadata_failure_closes_and_reports_unverified_file(
             )
         before = snapshot(tmp_path)
 
-        def acquire(parent_fd: int, name: str) -> int:
+        def acquire(parent_fd: int, name: str, **options: int) -> int:
             """Remember each exclusively created file before its metadata can fail."""
-            fd = reserve(parent_fd, name)
+            fd = reserve(parent_fd, name, **options)
             observed[name] = fd
             return fd
 
@@ -640,6 +643,57 @@ def test_state_updates_are_serialized_across_stores(tmp_path: Path) -> None:
         with ThreadPoolExecutor(max_workers=4) as executor:
             list(executor.map(increment, range(40)))
         assert stores[0].read("config", max_bytes=100) == b"40"
+
+
+_UMASK_CHILD = r"""
+import io, os, sys
+from pathlib import Path
+os.umask(0o022)
+from dartwork_mpl.ui import _files as fs
+from dartwork_mpl.ui._boundary import parse_output
+root, origin = Path(sys.argv[1]), Path(sys.argv[2])
+assert Path(fs.__file__).resolve() == origin.resolve()
+roots = fs.open_roots(root / "primary", [root / "copy"], cwd=root)
+assert isinstance(roots, fs.RootScope), roots
+with roots:
+    plan = fs.prepare_save(roots, parse_output("new/sub/fig.png"), include_copies=True)
+    assert isinstance(plan, fs.PreparedSave), plan
+    with plan:
+        receipt = fs.commit_save(plan, io.BytesIO(b"figure"))
+    assert isinstance(receipt, fs.SaveReceipt), receipt
+    store = fs.FixedStateStore(roots)
+    for kind in ("config", "presets"):
+        written = store.update(kind, max_bytes=64, edit=lambda old: b"{}")
+        assert isinstance(written, fs.StateWritten), written
+"""
+
+
+def test_outputs_follow_umask_while_state_stays_private(tmp_path: Path) -> None:
+    """With umask 022 in an isolated child, outputs are 0644, new parents 0755, state 0600."""
+    subprocess.run(
+        [sys.executable, "-c", _UMASK_CHILD, str(tmp_path), fs.__file__],
+        check=True,
+        timeout=60,
+    )
+    expected = {
+        "copy": 0o755,
+        "copy/new": 0o755,
+        "copy/new/sub": 0o755,
+        "copy/new/sub/fig.png": 0o644,
+        "primary": 0o755,
+        "primary/.dartwork_ui_config.json": 0o600,
+        "primary/.dartwork_ui_presets.json": 0o600,
+        "primary/new": 0o755,
+        "primary/new/sub": 0o755,
+        "primary/new/sub/fig.png": 0o644,
+    }
+    observed = {
+        path.relative_to(tmp_path).as_posix(): oct(
+            stat.S_IMODE(path.lstat().st_mode)
+        )
+        for path in sorted(tmp_path.rglob("*"))
+    }
+    assert observed == {name: oct(mode) for name, mode in expected.items()}
 
 
 def test_seeded_paths_keep_outside_sentinel(tmp_path: Path) -> None:
