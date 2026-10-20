@@ -1,0 +1,792 @@
+"""Pure viewer boundaries reject ambiguous input before effects or model use."""
+
+import ast
+import json
+import math
+import random
+from copy import deepcopy
+from pathlib import Path
+from typing import Literal
+
+import pytest
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
+
+from dartwork_mpl.ui import _boundary as boundary
+from dartwork_mpl.ui._param import ParamModel
+from dartwork_mpl.ui._widget import descriptors_from_model
+
+
+class Params(ParamModel):
+    """Defaults, constraints, aliases and list text remain supported."""
+
+    model_config = ConfigDict(extra="allow")
+    count: int = Field(default=3, ge=1, le=9, alias="wire_count")
+    values: list[float] = Field(default_factory=lambda: [1.0])
+    mode: Literal["line", "bar"] = "line"
+
+
+class Nested(BaseModel):
+    """Nested model extras must close without changing the supplied class."""
+
+    model_config = ConfigDict(extra="allow")
+    size: int = Field(default=2, ge=1, alias="wire_size")
+
+
+class NestedParams(ParamModel):
+    """Declared models close recursively while explicit dictionaries stay open."""
+
+    nested: Nested = Field(default_factory=Nested)
+    items: list[Nested] = Field(default_factory=list)
+    options: dict[str, object] = Field(default_factory=dict)
+
+
+class OptionalNestedParams(ParamModel):
+    """A union cannot bypass the closed language of a selected model branch."""
+
+    nested: None | Nested = None
+    other: str | Nested = "default"
+    sequence: str | list[Nested] = "default"
+
+
+class ValidatedParams(ParamModel):
+    """A model's own validators remain authoritative after parsing."""
+
+    count: int = 3
+
+    @field_validator("count")
+    @classmethod
+    def odd_count(cls, value: int) -> int:
+        """Reject even counts to expose accidental constraint bypasses."""
+        if value % 2 == 0:
+            raise ValueError("count must be odd")
+        return value
+
+
+def request(value, route="/api/render", model=Params):
+    """Exercise the public pure parser with actual UI descriptors."""
+    return boundary.parse_request(
+        route, value, model, descriptors_from_model(model)
+    )
+
+
+def headers(host=b"localhost:8501", **sources):
+    """Build raw ASGI headers without framework normalization."""
+    return [(b"host", host)] + [
+        (name.encode("ascii"), value.encode("ascii"))
+        for name, value in sources.items()
+    ]
+
+
+@pytest.mark.parametrize(
+    "host",
+    [
+        "0.0.0.0",
+        "::",
+        "example.org",
+        "192.0.2.1",
+        "127.0.0.1.evil",
+        "",
+        " localhost",
+        "[::1]",
+        "::1%lo0",
+    ],
+)
+def test_public_bind_rejected_before_effects(host):
+    """Only approved literal loopback binds can grant local effects."""
+    result = boundary.normalize_bind(host)
+    assert isinstance(result, boundary.StartupRejected)
+    assert "loopback" in result.detail
+
+
+@pytest.mark.parametrize(
+    "host, expected",
+    [
+        ("localhost", "127.0.0.1"),
+        ("LOCALHOST", "127.0.0.1"),
+        ("127.23.45.67", "127.23.45.67"),
+        ("::1", "::1"),
+        ("0:0:0:0:0:0:0:1", "::1"),
+    ],
+)
+def test_loopback_bind_is_normalized_without_dns(host, expected):
+    """Localhost mapping and every approved loopback literal are deterministic."""
+    assert boundary.normalize_bind(host) == expected
+
+
+@pytest.mark.parametrize(
+    "host",
+    [
+        b"evil.example:8501",
+        b"localhost.evil",
+        b"user@localhost:8501",
+        b"localhost/path",
+        b"localhost?x",
+        b"localhost#x",
+        b"localhost:",
+        b"localhost:abc",
+        b"localhost:65536",
+        b"localhost:0",
+        b"::1",
+        b"[::1]junk",
+        b" localhost",
+        b"localhost\t",
+        b"localhost:01",
+        b"localhost,localhost",
+    ],
+)
+def test_effect_denied_for_bad_authority(host):
+    """Host must be a complete unambiguous local HTTP authority."""
+    result = boundary.authorize_request(
+        "POST", "/api/render", headers(host), "127.0.0.1"
+    )
+    assert isinstance(result, boundary.AccessDenied)
+
+
+def test_every_source_is_checked_and_native_clients_are_allowed():
+    """A valid Origin cannot hide a foreign Referer; bind-port differences work."""
+    for supplied in [
+        [],
+        [*headers(), (b"host", b"localhost:8501")],
+        headers(origin="http://localhost:8501", referer="http://evil.example/"),
+        headers(origin="http://localhost:8501/path"),
+        headers(origin="http://localhost:8501?"),
+        headers(origin="https://localhost:8501"),
+        headers(referer="http://user@localhost:8501/"),
+        headers(referer="http://localhost:8501/#x"),
+        [
+            *headers(),
+            (b"origin", b"http://localhost:8501"),
+            (b"origin", b"http://localhost:8501"),
+        ],
+    ]:
+        assert isinstance(
+            boundary.authorize_request(
+                "POST", "/api/render", supplied, "127.0.0.1"
+            ),
+            boundary.AccessDenied,
+        )
+    for supplied in [
+        headers(),
+        headers(
+            origin="http://localhost:8501", referer="http://localhost:8501/a?b"
+        ),
+        headers(b"[::1]:8502", origin="http://[::1]:8502"),
+        headers(b"127.23.45.67:8765"),
+    ]:
+        assert isinstance(
+            boundary.authorize_request(
+                "POST", "/api/render", supplied, "127.23.45.67"
+            ),
+            boundary.LocalAccess,
+        )
+    assert isinstance(
+        boundary.authorize_request(
+            "POST", "/not-declared", headers(), "127.0.0.1"
+        ),
+        boundary.AccessDenied,
+    )
+    assert isinstance(
+        boundary.authorize_request(
+            "GET", "/api/health", headers(origin="foreign"), "127.0.0.1"
+        ),
+        boundary.LocalAccess,
+    )
+
+
+def test_unmatched_read_classification_preserves_host_checks_and_denies_effects():
+    """An explicit missing-read marker preserves 404 handling without new grants."""
+    for method in ("GET", "HEAD"):
+        assert isinstance(
+            boundary.authorize_request(
+                method, "<unmatched>", headers(), "127.0.0.1"
+            ),
+            boundary.LocalAccess,
+        )
+        assert isinstance(
+            boundary.authorize_request(
+                method, "<unmatched>", headers(b"evil.example"), "127.0.0.1"
+            ),
+            boundary.AccessDenied,
+        )
+    for method, route in [("POST", "<unmatched>"), ("GET", "/unclassified")]:
+        assert isinstance(
+            boundary.authorize_request(method, route, headers(), "127.0.0.1"),
+            boundary.AccessDenied,
+        )
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        b'{"n":1,"n":2}',
+        b'{"x":{"n":1,"n":2}}',
+        b"NaN",
+        b"Infinity",
+        b"-Infinity",
+        b"1e400",
+        b'"\xff"',
+        b'"\\ud800"',
+        b'"\\udfff"',
+        b"{} trailing",
+        b"01",
+        b"",
+    ],
+)
+def test_decoder_rejects_ambiguous_or_nonfinite_json(raw):
+    """Duplicate fields, invalid Unicode and nonfinite numbers never reach schemas."""
+    assert isinstance(
+        boundary.decode_json(raw, max_bytes=1024), boundary.MalformedInput
+    )
+
+
+def test_decoder_exact_limits_and_one_over():
+    """Every specified bound admits its exact limit and refuses one over."""
+    assert boundary.decode_json(b"true", max_bytes=4) is True
+    assert isinstance(
+        boundary.decode_json(b"true ", max_bytes=4), boundary.LimitExceeded
+    )
+    assert boundary.decode_json(b"9" * 640, max_bytes=1024) == int("9" * 640)
+    assert isinstance(
+        boundary.decode_json(b"9" * 641, max_bytes=1024), boundary.LimitExceeded
+    )
+    for limit, value, larger in [
+        (65536, "a" * 65536, "a" * 65537),
+        (65536, "é" * 32768, "é" * 32769),
+        (4096, [None] * 4096, [None] * 4097),
+    ]:
+        raw = json.dumps(value, ensure_ascii=False).encode()
+        assert boundary.decode_json(raw, max_bytes=len(raw)) == value, limit
+        raw = json.dumps(larger, ensure_ascii=False).encode()
+        assert isinstance(
+            boundary.decode_json(raw, max_bytes=len(raw)),
+            boundary.LimitExceeded,
+        )
+    assert boundary.decode_json(
+        b"[" * 16 + b"0" + b"]" * 16, max_bytes=1024
+    ) == nested(16)
+    assert isinstance(
+        boundary.decode_json(b"[" * 17 + b"0" + b"]" * 17, max_bytes=1024),
+        boundary.LimitExceeded,
+    )
+    assert isinstance(
+        boundary.decode_json(
+            b"[" * 10000 + b"0" + b"]" * 10000, max_bytes=32768
+        ),
+        boundary.MalformedInput,
+    )
+
+
+def nested(depth):
+    """Provide an independent expected nested JSON value for depth examples."""
+    value = 0
+    for _ in range(depth):
+        value = [value]
+    return value
+
+
+def test_total_json_value_bound_counts_values_in_all_containers():
+    """Many individually small containers cannot bypass the total-value bound."""
+    exact = [[None] * 4096 for _ in range(15)] + [[None] * 4079]
+    raw = json.dumps(exact).encode()
+    assert boundary.decode_json(raw, max_bytes=len(raw)) == exact
+    exact[-1].append(None)
+    raw = json.dumps(exact).encode()
+    assert isinstance(
+        boundary.decode_json(raw, max_bytes=len(raw)), boundary.LimitExceeded
+    )
+
+
+def test_active_fields_closed_even_when_model_extra_allows():
+    """Unknown and alias keys reject while declared names/defaults/list text validate."""
+    before = Params.model_config.copy(), Params.model_fields["count"].alias
+    for value in [
+        {"unknown": 1},
+        {"wire_count": 4},
+        {"count": 10},
+        {"count": 1.5},
+        {"values": "nan, 1"},
+        {"values": [1e300, math.inf]},
+    ]:
+        assert isinstance(request(value), boundary.InvalidRequest), value
+    result = request({"count": "5", "values": "1, 2.5, ,3"})
+    assert isinstance(result, boundary.ModelRequest)
+    assert result.model.count == 5
+    assert result.model.values == [1.0, 2.5, 3.0]
+    assert request({}).model.count == 3
+    assert before == (Params.model_config, Params.model_fields["count"].alias)
+    assert isinstance(
+        request({"count": 2}, model=ValidatedParams), boundary.InvalidRequest
+    )
+
+
+def test_nested_models_close_without_closing_explicit_dicts():
+    """Nested extras and aliases reject; explicitly open dictionaries keep content."""
+    for value in [
+        {"nested": {"extra": 1}},
+        {"nested": {"wire_size": 1}},
+        {"items": [{"size": 2, "extra": True}]},
+    ]:
+        assert isinstance(
+            request(value, model=NestedParams), boundary.InvalidRequest
+        )
+    result = request(
+        {
+            "nested": {"size": 4},
+            "items": [{"size": 3}],
+            "options": {"arbitrary": {"more": 1}},
+        },
+        model=NestedParams,
+    )
+    assert isinstance(result, boundary.ModelRequest)
+    assert result.model.nested.size == 4
+    assert result.model.items[0].size == 3
+    assert result.model.options == {"arbitrary": {"more": 1}}
+    assert Nested.model_config["extra"] == "allow"
+    assert Nested.model_fields["size"].alias == "wire_size"
+
+
+def test_union_branches_do_not_bypass_nested_model_closure():
+    """Null/string alternatives cannot smuggle nested model extra or alias keys."""
+    for value in [
+        {"nested": {"extra": 1}},
+        {"nested": {"wire_size": 4}},
+        {"other": {"extra": 1}},
+        {"sequence": [{"extra": 1}]},
+    ]:
+        assert isinstance(
+            request(value, model=OptionalNestedParams), boundary.InvalidRequest
+        )
+    result = request(
+        {"nested": {"size": 4}, "other": "still a string"},
+        model=OptionalNestedParams,
+    )
+    assert isinstance(result, boundary.ModelRequest)
+    assert result.model.nested.size == 4
+    assert result.model.other == "still a string"
+
+
+def test_default_factory_and_model_validators_keep_their_behavior():
+    """Alias-free parsing inherits hooks and defaults without repeated validation."""
+    calls = []
+
+    def default_count():
+        """Observe actual per-request default construction."""
+        calls.append("default")
+        return 3
+
+    class HookParams(ParamModel):
+        """A caller can attach defaults and validators to an aliased field."""
+
+        count: int = Field(default_factory=default_count, alias="wire_count")
+
+        @field_validator("count")
+        @classmethod
+        def count_hook(cls, value):
+            """Record one validation of an explicitly supplied value."""
+            calls.append("field")
+            return value + 1
+
+        @model_validator(mode="after")
+        def model_hook(self):
+            """Record one completed model validation."""
+            calls.append("model")
+            return self
+
+    result = request({}, model=HookParams)
+    assert isinstance(result, boundary.ModelRequest)
+    assert isinstance(result.model, HookParams)
+    assert result.model.count == 3
+    assert calls == ["default", "model"]
+    calls.clear()
+    result = request({"count": 4}, model=HookParams)
+    assert result.model.count == 5
+    assert calls == ["field", "model"]
+    assert HookParams.model_fields["count"].alias == "wire_count"
+
+
+@pytest.mark.parametrize("kind", ["direct", "list", "optional", "union"])
+def test_nested_validation_matches_one_native_pass(kind):
+    """Nested before/after hooks and union selection match native Pydantic once."""
+    calls = []
+
+    class TextChild(BaseModel):
+        """The first union arm must lose when its value type does not match."""
+
+        x: str
+
+    class Child(BaseModel):
+        """A visible after-hook change detects even one duplicate validation."""
+
+        x: int
+
+        @model_validator(mode="before")
+        @classmethod
+        def before_hook(cls, value):
+            """Record the raw nested validation pass."""
+            calls.append("child-before")
+            return value
+
+        @model_validator(mode="after")
+        def after_hook(self):
+            """Increment once so duplicate validation changes observable output."""
+            calls.append("child-after")
+            self.x += 1
+            return self
+
+    annotations = {
+        "direct": Child,
+        "list": list[Child],
+        "optional": None | Child,
+        "union": TextChild | Child,
+    }
+
+    class NestedHooks(ParamModel):
+        """An outer model retains its normal before/after execution order."""
+
+        child: annotations[kind]
+
+        @model_validator(mode="before")
+        @classmethod
+        def before_hook(cls, value):
+            """Record the raw outer validation pass."""
+            calls.append("outer-before")
+            return value
+
+        @model_validator(mode="after")
+        def after_hook(self):
+            """Record completion after the nested model validates."""
+            calls.append("outer-after")
+            return self
+
+    raw = {"child": [{"x": 1}, {"x": 2}] if kind == "list" else {"x": 1}}
+    expected = NestedHooks.model_validate(deepcopy(raw)).model_dump()
+    native_calls = calls.copy()
+    calls.clear()
+    parsed = boundary.parse_request(
+        "/api/render", deepcopy(raw), NestedHooks, []
+    )
+    assert isinstance(parsed, boundary.ModelRequest)
+    assert parsed.model.model_dump() == expected
+    assert calls == native_calls
+    assert calls.count("child-after") == (2 if kind == "list" else 1)
+
+
+def test_tab_values_are_structural_and_ids_unique():
+    """Inactive tabs accept obsolete values, but never unknown keys or duplicate ids."""
+    value = {
+        "params": {"count": 3},
+        "tabs": [{"id": 1, "name": "Old", "params": {"count": "obsolete"}}],
+        "figWidth": 70,
+    }
+    result = request(value, "/api/save-state")
+    assert isinstance(result, boundary.StateRequest)
+    assert result.tabs[0].params == {"count": "obsolete"}
+    for edit in [
+        {"tabs": value["tabs"] * 2},
+        {"tabs": [{"id": True, "name": "x", "params": {}}]},
+        {"tabs": [{"id": 1, "name": "x", "params": {"gone": 1}}]},
+        {"figWidth": 29},
+        {"figWidth": 101},
+        {"figWidth": True},
+        {"params": {"count": 100}},
+        {"extra": 1},
+    ]:
+        assert isinstance(
+            request({**value, **edit}, "/api/save-state"),
+            boundary.InvalidRequest,
+        ), edit
+    for count in [64, 65]:
+        body = {
+            "tabs": [{"id": i, "name": "x", "params": {}} for i in range(count)]
+        }
+        assert isinstance(
+            request(body, "/api/save-state"),
+            boundary.StateRequest if count == 64 else boundary.LimitExceeded,
+        )
+
+
+def test_complete_endpoint_shapes_and_label_limits():
+    """Endpoint schemas consume every field and preserve defaults only where allowed."""
+    assert isinstance(request({}, "/api/config"), boundary.StateRequest)
+    assert isinstance(
+        request({"params": {}}, "/api/save-server/script"), boundary.SaveRequest
+    )
+    assert isinstance(
+        request({"label": "é" * 128, "params": {}}, "/api/preset"),
+        boundary.PresetRequest,
+    )
+    assert isinstance(
+        request({"label": "é" * 129, "params": {}}, "/api/preset"),
+        boundary.LimitExceeded,
+    )
+    for route, value in [
+        ("/api/preset", {"label": "x"}),
+        ("/api/preset", {"label": 1, "params": {}}),
+        ("/api/preset", {"label": "x", "params": {}, "timestamp": "untrusted"}),
+        ("/api/save-server/script", {"params": {}, "filename": 1}),
+        ("/api/save-server/script", {"params": {}, "other": True}),
+        ("/api/render", []),
+        ("/unknown", {}),
+    ]:
+        assert isinstance(request(value, route), boundary.InvalidRequest), (
+            route,
+            value,
+        )
+
+
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "",
+        " ",
+        "/absolute",
+        "../outside",
+        "sub/../outside",
+        "./x",
+        "sub//x",
+        "sub/",
+        "x\x00y",
+        "sub\\file",
+        "C:drive",
+        "//host/file",
+        "é" * 129,
+    ],
+)
+def test_output_paths_reject_unsafe_components(filename):
+    """The portable path grammar refuses traversal and ambiguous separators."""
+    assert isinstance(boundary.parse_output(filename), boundary.InvalidOutput)
+
+
+def test_output_exact_size_and_constructor_invariant():
+    """Safe subpaths retain names and cannot be forged with illegal components."""
+    name = "/".join(["a" * 255] * 4)
+    assert len(name.encode()) == 1023
+    result = boundary.parse_output(name + "b")
+    assert isinstance(result, boundary.InvalidOutput)  # component bound
+    exact = "/".join(["a" * 255] * 3 + ["a" * 254, "x"])
+    assert len(exact.encode()) == 1024
+    parsed = boundary.parse_output(exact)
+    assert isinstance(parsed, boundary.RelativeOutput)
+    assert parsed.filename == exact
+    assert isinstance(
+        boundary.parse_output(exact + "x"), boundary.InvalidOutput
+    )
+    assert boundary.parse_output("sub dir/figure.svg").parts == (
+        "sub dir",
+        "figure.svg",
+    )
+    with pytest.raises(ValueError):
+        boundary.RelativeOutput(("..", "outside"))
+
+
+def test_stored_model_drift_projects_without_mutating_raw_values():
+    """Renamed fields project on reads; obsolete retained values are not corruption."""
+    value = {
+        "function": "old_function",
+        "params": {"count": "obsolete", "removed": [1, 2]},
+        "updated_at": "yesterday",
+        "tabs": [
+            {
+                "id": 3,
+                "name": "Old",
+                "params": {"count": 900, "removed": {"x": 1}},
+            }
+        ],
+        "figWidth": 999,
+    }
+    state = boundary.parse_stored("config", json.dumps(value).encode())
+    assert isinstance(state, boundary.StoredConfig)
+    projected = boundary.project_stored(state, frozenset({"count"}))
+    assert projected["params"] == {"count": "obsolete"}
+    assert projected["dropped_fields"] == ["removed"]
+    assert projected["tabs"][0]["params"] == {"count": 900}
+    assert projected["figWidth"] == 70
+    assert state.value == value
+    presets = [
+        {"label": "Old", "params": value["params"], "timestamp": "<img>"}
+    ]
+    state = boundary.parse_stored("presets", json.dumps(presets).encode())
+    assert isinstance(state, boundary.StoredPresets)
+    assert boundary.project_stored(state, frozenset({"count"}))[0][
+        "dropped_fields"
+    ] == ["removed"]
+    assert state.value == presets
+
+
+@pytest.mark.parametrize(
+    "kind, value",
+    [
+        ("config", []),
+        ("config", {}),
+        ("config", {"params": []}),
+        ("config", {"params": {}, "extra": 1}),
+        ("config", {"params": {}, "figWidth": True}),
+        (
+            "config",
+            {
+                "params": {},
+                "tabs": [
+                    {"id": 1, "name": "x", "params": {}},
+                    {"id": 1, "name": "x", "params": {}},
+                ],
+            },
+        ),
+        ("presets", {}),
+        ("presets", [1]),
+        ("presets", [{"label": "x", "params": {}, "extra": 1}]),
+        ("presets", [{"label": "x", "params": {}, "timestamp": []}]),
+    ],
+)
+def test_stored_structural_corruption_is_distinct_from_model_drift(kind, value):
+    """Malformed persisted containers and metadata never become empty defaults."""
+    assert isinstance(
+        boundary.parse_stored(kind, json.dumps(value).encode()),
+        boundary.InvalidStoredState,
+    )
+
+
+def test_stored_limits_and_outgoing_serialization_are_bounded():
+    """Stored counts and encoded next-state bytes are checked before replacement."""
+    entry = {"label": "x", "params": {}}
+    assert isinstance(
+        boundary.parse_stored("presets", json.dumps([entry] * 1000).encode()),
+        boundary.StoredPresets,
+    )
+    assert isinstance(
+        boundary.parse_stored("presets", json.dumps([entry] * 1001).encode()),
+        boundary.InvalidStoredState,
+    )
+    assert isinstance(
+        boundary.parse_stored("config", b" " * (1024 * 1024 + 1)),
+        boundary.InvalidStoredState,
+    )
+    expected = b'{\n  "params": {}\n}\n'
+    result = boundary.encode_state({"params": {}}, max_bytes=len(expected))
+    assert result == expected
+    assert isinstance(result, bytes)
+    assert isinstance(
+        boundary.encode_state({"params": {}}, max_bytes=len(result) - 1),
+        boundary.LimitExceeded,
+    )
+    assert isinstance(
+        boundary.encode_state({"params": {"x": math.nan}}, max_bytes=100),
+        boundary.MalformedInput,
+    )
+    assert isinstance(
+        boundary.encode_state({"params": {"x": 10**640}}, max_bytes=1024),
+        boundary.LimitExceeded,
+    )
+
+
+def test_seeded_inputs_always_parse_or_return_named_refusal():
+    """Arbitrary bytes and paths never crash and accepted paths cannot escape."""
+    rng = random.Random(499)
+    for _ in range(500):
+        raw = rng.randbytes(rng.randrange(150))
+        result = boundary.decode_json(raw, max_bytes=128)
+        assert isinstance(
+            result,
+            (
+                str,
+                int,
+                float,
+                bool,
+                list,
+                dict,
+                type(None),
+                boundary.InputFailure,
+            ),
+        ), raw
+        name = "".join(
+            chr(rng.randrange(0x110000)) for _ in range(rng.randrange(30))
+        )
+        result = boundary.parse_output(name)
+        assert isinstance(
+            result, (boundary.RelativeOutput, boundary.InputFailure)
+        ), repr(name)
+        if isinstance(result, boundary.RelativeOutput):
+            assert not Path(result.filename).is_absolute()
+            assert ".." not in Path(result.filename).parts
+            assert "\\" not in result.filename
+    for _ in range(200):
+        value = {
+            "count": rng.randrange(1, 10),
+            "values": [rng.random() for _ in range(rng.randrange(10))],
+        }
+        raw = json.dumps(value).encode()
+        assert boundary.decode_json(raw, max_bytes=1024) == value
+        parsed = request(value)
+        assert isinstance(parsed, boundary.ModelRequest)
+        assert parsed.model.count == value["count"]
+        assert parsed.model.values == value["values"]
+
+
+def route_inventory(source):
+    """Read actual app decorators plus framework-owned read registrations."""
+    routes = {
+        (method, path)
+        for path in [
+            "/openapi.json",
+            "/docs",
+            "/docs/oauth2-redirect",
+            "/redoc",
+        ]
+        for method in ["GET", "HEAD"]
+    }
+    for node in ast.walk(ast.parse(source)):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "app"
+            and node.func.attr
+            in {"get", "post", "put", "patch", "delete", "head", "options"}
+            and node.args
+            and isinstance(node.args[0], ast.Constant)
+        ):
+            routes.add((node.func.attr.upper(), node.args[0].value))
+    return routes
+
+
+def constructor_violations(source, module):
+    """Report direct RelativeOutput forging outside its boundary owner."""
+    return [
+        node.lineno
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Call)
+        and (
+            (
+                isinstance(node.func, ast.Name)
+                and node.func.id == "RelativeOutput"
+            )
+            or (
+                isinstance(node.func, ast.Attribute)
+                and node.func.attr == "RelativeOutput"
+            )
+        )
+        and module != "_boundary"
+    ]
+
+
+def test_route_inventory_and_handle_owner_guards_reject_injected_bypasses():
+    """Every registration needs policy and only the parser owns path construction."""
+    root = Path(__file__).resolve().parents[1] / "src/dartwork_mpl/ui"
+    actual = route_inventory((root / "ui.py").read_text())
+    assert actual <= boundary.ROUTE_POLICY.keys()
+    reduced = dict(boundary.ROUTE_POLICY)
+    reduced.pop(("POST", "/api/render"))
+    assert not actual <= reduced.keys()
+    assert (
+        not route_inventory('@app.post("/unclassified")\ndef extra(): pass')
+        <= boundary.ROUTE_POLICY.keys()
+    )
+    for path in root.glob("*.py"):
+        assert not constructor_violations(path.read_text(), path.stem), path
+    assert constructor_violations('RelativeOutput(("safe",))', "ui")
+    assert not constructor_violations('RelativeOutput(("safe",))', "_boundary")

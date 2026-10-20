@@ -23,6 +23,21 @@ let saveStateTimer = null;
 let _functionName = "figure";
 const DEBOUNCE_MS = 300;
 const SAVE_STATE_MS = 1000;
+const notifiedStateErrors = new Set();
+
+// Decode controlled API failures once; callers display the message as text.
+async function responseError(resp) {
+  const data = await resp.json().catch(() => ({}));
+  const detail = typeof data?.detail === "string" ? data.detail : (resp.statusText || "Request failed");
+  const code = typeof data?.code === "string" ? data.code : "http_" + resp.status;
+  return Object.assign(new Error(detail + " [" + code + "]"), { status: resp.status, code });
+}
+
+function reportDroppedFields(records) {
+  const fields = [...new Set(records.flatMap(record =>
+    Array.isArray(record?.dropped_fields) ? record.dropped_fields.filter(name => typeof name === "string") : []))];
+  if (fields.length) toast("Stored fields unavailable in this model: " + fields.join(", "), "error");
+}
 
 async function init() {
   const resp = await fetch("/api/descriptors");
@@ -38,10 +53,11 @@ async function init() {
   } catch (e) {}
 
   // Load saved config (params + tabs + figWidth)
-  const cfgResp = await fetch("/api/config");
   let saved = null;
   let savedFigWidth = null;
-  if (cfgResp.ok) {
+  try {
+    const cfgResp = await fetch("/api/config");
+    if (!cfgResp.ok) throw await responseError(cfgResp);
     const cfg = await cfgResp.json();
     if (cfg && cfg.params) saved = cfg.params;
     if (cfg && cfg.tabs && cfg.tabs.length) {
@@ -50,6 +66,9 @@ async function init() {
       nextTabId = Math.max(...tabs.map(t => t.id)) + 1;
     }
     if (cfg && cfg.figWidth) savedFigWidth = cfg.figWidth;
+    if (cfg) reportDroppedFields([cfg, ...(cfg.tabs || [])]);
+  } catch (err) {
+    toast("Saved state unavailable; using defaults. " + err.message, "error");
   }
 
   const activeTab = getActiveTab();
@@ -129,12 +148,20 @@ async function persistState() {
   // Strip cached images before saving
   const cleanTabs = tabs.map(t => ({ id: t.id, name: t.name, params: t.params }));
   try {
-    await fetch("/api/save-state", {
+    const resp = await fetch("/api/save-state", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ params, tabs: cleanTabs, figWidth: parseInt(document.getElementById("fig-width").value) }),
     });
-  } catch (e) {}
+    if (!resp.ok) throw await responseError(resp);
+  } catch (err) {
+    if (err.status === 409 || err.status === 501) {
+      const key = err.status + ":" + err.code;
+      if (notifiedStateErrors.has(key)) return;
+      notifiedStateErrors.add(key);
+    }
+    toast("Auto-save failed: " + err.message, "error");
+  }
 }
 
 function renderTabBar() {
@@ -501,31 +528,39 @@ async function savePreset() {
   const tab = getActiveTab();
   const params = tab ? tab.params : collectParams();
   try {
-    await fetch("/api/preset", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ label, params }) });
+    const resp = await fetch("/api/preset", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ label, params }) });
+    if (!resp.ok) throw await responseError(resp);
     document.getElementById("preset-name").value = "";
     toast("Saved: " + label, "success");
-  } catch (err) { toast("Save failed", "error"); }
+  } catch (err) { toast("Save failed: " + err.message, "error"); }
 }
 
 async function showLoadModal() {
   const list = document.getElementById("preset-list");
   list.innerHTML = '<div style="color:var(--text-muted);padding:10px;text-align:center">Loading...</div>';
   document.getElementById("load-modal").classList.add("active");
-  const resp = await fetch("/api/presets");
-  const presets = await resp.json();
-  if (!presets.length) {
-    list.innerHTML = '<div style="color:var(--text-muted);padding:16px;text-align:center">No presets</div>';
-    return;
-  }
-  list.innerHTML = presets.map((p, i) => `
+  window._presets = [];
+  try {
+    const resp = await fetch("/api/presets");
+    if (!resp.ok) throw await responseError(resp);
+    const presets = await resp.json();
+    if (!presets.length) {
+      list.innerHTML = '<div style="color:var(--text-muted);padding:16px;text-align:center">No presets</div>';
+      return;
+    }
+    list.innerHTML = presets.map((p, i) => `
     <div class="preset-item">
       <span onclick="loadPreset(${i})" style="flex:1;cursor:pointer">
         <strong>${esc(p.label)}</strong>
-        <span style="color:var(--text-muted);font-size:11px;margin-left:6px">${p.timestamp?.slice(0,19)||""}</span>
+        <span style="color:var(--text-muted);font-size:11px;margin-left:6px">${esc(p.timestamp?.slice(0,19)||"")}</span>
       </span>
       <button class="preset-delete" onclick="deletePreset(${i}, event)" title="Delete">&times;</button>
     </div>`).join("");
-  window._presets = presets;
+    window._presets = presets;
+    reportDroppedFields(presets);
+  } catch (err) {
+    list.textContent = "Load failed: " + err.message;
+  }
 }
 function closeLoadModal() { document.getElementById("load-modal").classList.remove("active"); }
 

@@ -4,21 +4,20 @@ orphan: true
 
 # Viewer boundary repair — #499
 
-Status: approved scope; independent review r1 reconciled on 2026-10-20; implementation pending. User accepted local-only ("추천하는대로 갈게").
+Status: approved scope implemented locally on 2026-10-20; parent full-suite, final review and integration pending. User accepted local-only ("추천하는대로 갈게").
 That approval and #499 authorize this narrow local-only/create-only repair and plan; input defaults below grant no hosted access.
 ## 현재 권위와 상태
 
 - **질문 종류:** 현재 실재 / 현재 계약 / 변경 의도.
 - **role: purpose; path: `AGENTS.md`; 실제 정본:** project/user instructions.
-  Native matplotlib objects, optional viewer, <=200-line designs, executable acceptance,
-  shipped-color freeze, and actual before/after UI PoC before merge/deployment apply.
+  Native matplotlib objects, optional viewer, <=200-line designs, executable acceptance, shipped-color freeze, and actual before/after UI PoC before merge/deployment apply.
 - **role: architecture; paths:** `src/dartwork_mpl/ui/ui.py`,
-  `src/dartwork_mpl/ui/_config.py`, `src/dartwork_mpl/ui/_scripts.py`.
+  `src/dartwork_mpl/ui/{_boundary.py,_files.py,_config.py,_scripts.py}`.
   `run(figure_fn, param_model=None, *, title, copy_to, host, port)` owns startup and HTTP routes;
   persistence uses fixed viewer filenames; client scripts manage tabs, saves, presets, reload.
-  Current public bind disables Host allowlisting; no user authentication exists.
+  Local-only startup and strict Host allowlisting are implemented; no user authentication exists.
 - **role: verification; paths:** `tests/test_ui_security.py`, `tests/test_ui_param.py`, `pyproject.toml`.
-  Existing helper tests allow public hosts and miss real HTTP copy/overwrite failures.
+  Baseline helper tests allowed public hosts and missed real HTTP failures; new socket tests cover them.
   Python >=3.10; pytest collects `tests/`; the optional `ui` extra supplies FastAPI/Pydantic/uvicorn.
 - No `docs/handbook/index.md` or legacy Handbook exists; these actual authorities are used directly.
   This repair does not initialize a Handbook. `docs/api/ui.rst` and `docs/usage_guide/interactive.md`
@@ -32,7 +31,7 @@ That approval and #499 authorize this narrow local-only/create-only repair and p
 3. Preserve the approved website/login/community/docs separation; no account system, remote service,
    viewer removal, framework rewrite, hostile-code sandbox, MCP or color/prompt changes.
 4. Preserve supported ParamModel declared types, defaults, constraints and documented list-text input;
-   active-request validation must not silently clamp numbers/drop fields or mutate the supplied model.
+   active-request validation (`ModelRequest`) must not clamp/drop fields or mutate the supplied model.
    Stored-model drift is projected explicitly on reads, without rewriting stored data.
 ## 설계 이유와 제약
 
@@ -48,8 +47,8 @@ That approval and #499 authorize this narrow local-only/create-only repair and p
   No cross-root filesystem transaction exists; neither validation nor thread timeout is an OS sandbox.
 ## 충돌·미확인
 
-- **Adopted target versus current reality:** local-only startup is approved; public-bind acceptance
-  remains in shipped code/tests until this repair. Intentional overwrite is excluded from P0.
+- **Adopted target versus current reality:** local-only startup is implemented in this worktree;
+  no merge/deployment or hosted CI is claimed. Intentional overwrite is excluded from P0.
 - Numeric input limits are measured against repository examples, not private user collections.
   Compatibility beyond those samples remains unknown; limits must be documented and fail explicitly.
 - Race-safe filesystem primitives must be capability-checked before startup filesystem effects.
@@ -73,7 +72,7 @@ Reads receive an explicit local-read policy; changing routes receive local-effec
 The local-effect grant is startup-selected loopback-only operation, not Origin/Host as authentication.
 Cover POST render/export/script, save-state/config/preset, save-server image/script, DELETE preset,
 and POST reload. Rendering executes the trusted callback, so it is an effect even without persistence.
-Unclassified mutating methods/routes deny (403); a registration inventory check fails on any omission.
+GET/HEAD `<unmatched>` retain normal404 after Host checks; unknown registered templates and all unknown mutations deny403; registration inventory checks omissions.
 Every request requires a valid Host hostname in {`localhost`, `127.0.0.1`, `::1`, selected bind literal}.
 Reject missing/duplicate/malformed/foreign Host (403), including userinfo/path/query/fragment/bad ports.
 For effects, independently check each supplied Origin and Referer: valid `http` URL, exact same authority
@@ -81,7 +80,7 @@ as Host, no userinfo/fragment; Origin has no path/query, Referer may. Never comp
 Malformed/duplicate/foreign sources reject (403); absent sources permit native clients. Ignore forwarded headers.
 
 ### Confined create-only outputs and bounded state updates
-Accept `copy_to` as one `str | os.PathLike` or a list thereof; `expanduser`, resolve relative to startup CWD,
+Public run spells runtime-resolvable `str | os.PathLike[str] | list[str | os.PathLike[str]] | None`; `expanduser`, resolve relative to startup CWD,
 canonicalize script/copy roots independently, deduplicate `(st_dev, st_ino)`, and open directory handles.
 Missing configured roots may be created only from startup configuration; root authority is the pinned directory object.
 Use private typed Root/RelativeOutput/PreparedSave handles constructed only by this boundary.
@@ -112,9 +111,9 @@ This is best-effort rollback, not cross-root atomicity; concurrent readers may o
 Generated automatic names use collision-resistant suffixes and the same exclusive-create rule.
 
 Config/preset writes use only the two fixed filenames below the pinned script root, a separate typed
-sink, bounded read-modify-write, and sibling staging plus handle-relative atomic replacement.
+sink, bounded read-modify-write, and sibling staging plus handle-relative atomic replacement; open_roots returns RootScope | FileFailure.
 Reject symlink/nonregular state files; serialize read-modify-write within this process only.
-Multiple viewer processes sharing a directory can still lose updates (last replacement wins).
+StateUnchanged returns a no-write callback miss under the lock; multiple processes can still lose updates (last replacement wins).
 Replacement intentionally updates only these viewer-owned names, never a request-supplied filename.
 Malformed JSON/UTF-8/top-level/entry shape or over-limit existing state returns controlled 409
 (`invalid_stored_state`) on the relevant API; preserve the original bytes and refuse updates/deletes.
@@ -141,7 +140,7 @@ list-text coercion exactly once, then Pydantic validation/defaults; reject non-f
 after coercion too. Preserve default behavior; do not introduce startup default rejection.
 State schema: active params object, tabs of {id,name,params} with unique integer ids (not booleans), bounded
 names and declared-key bounded JSON params (no current-model value constraints on tabs); figWidth integer 30..100.
-Omitted fields retain defaults. Preset save: label string and params object; server save: params/optional filename.
+Omitted tabs/figWidth preserve stored values (`StateRequest.tabs: tuple[Tab,...] | None = None`); other omissions retain defaults. Preset save: label string and params object; server save: params/optional filename.
 On-disk schemas additionally admit only existing function/updated_at and preset timestamp metadata.
 
 Measured through actual _config save functions: 5 shipped/documented models; maximum 18 fields,
@@ -196,5 +195,6 @@ Reuse `~/scratch/dartwork-mpl-followups-2026-10-20/viewer499/poc/`'s fixture/lau
 If browser review is needed, parent owns a persistent project-defined Tailnet HTTPS review service;
 it must not expose this unauthenticated viewer's effect routes through a proxy.
 
-No preceding ADR freezes viewer binding. This spec records the approved local-only/create-only repair;
-an ADR is required if later preserving remote writes, introducing identity, or changing these grants.
+Local receipts under `~/scratch/dartwork-mpl-followups-2026-10-20/viewer499/`: boundary84/state45/files34; HTTP/security/checker295; installed-wheel HTTP18/zero skips + base-only smoke; client16/16; integrated desktop/mobile old200→new409, sentinel preserved (`poc/after-receipt.json`).
+Full-suite/JUnit, final independent review and parent integration remain pending; no hosted CI/PR/merge claim.
+No preceding ADR freezes viewer binding; later remote writes, identity or grant changes need a separate ADR.

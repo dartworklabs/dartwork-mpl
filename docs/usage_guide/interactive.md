@@ -170,9 +170,96 @@ run(
 )
 ```
 
-Every "Save to Server" click also writes a copy into each path in
-`copy_to`, so you can iterate in the UI and keep your manuscript /
-slides up to date without manual copying.
+Each image **Save to Server** creates a new file in the script directory
+and each `copy_to` directory. Choose a new filename on every save, such as
+`scatter-v2.png`: copies use the same create-only rule, so a collision at
+any destination returns **409 — file exists; choose a new name**. This
+does not repeatedly overwrite a manuscript figure. Script saves stay in
+the script directory.
+
+`copy_to` accepts a single string or `os.PathLike`, a list of either, or
+`None`. `~` expands, relative roots use the working directory at startup,
+and paths referring to the same directory are deduplicated. Output names
+may include safe relative subdirectories. Absolute paths, traversal,
+symlinks and non-directory parents are refused. No overwrite control is
+provided; automatic names also use exclusive creation.
+
+## Local access and recovery
+
+The viewer accepts loopback IP binds (`127.0.0.0/8`, `::1`) and maps
+`localhost` directly to `127.0.0.1`. The default stays `127.0.0.1:8501`.
+Other hostnames, wildcard and non-loopback binds are rejected before
+startup or writes. Host is checked on every route; each supplied Origin
+and Referer must match it for effects, including rendering and reload.
+Forwarded headers grant no access. Hosted use and reverse proxies are
+outside this local development contract. Loopback establishes network
+locality, not a person's identity; local processes and callbacks are trusted.
+
+The viewer saves configuration and presets in `.dartwork_ui_config.json`
+and `.dartwork_ui_presets.json` beside the script. Invalid or oversized
+existing files return **409** with code `invalid_stored_state`; their bytes
+are preserved and updates/deletes are refused. The UI reports the error
+and keeps default controls and **Reset** available. Reset restores active
+parameter defaults; it does not repair or delete a stored file. Repeated
+auto-save failures with the same 409/501 code are notified once per page.
+A rejected preset save never reports success, and a failed preset read
+reports its error instead of an empty collection.
+
+After a model changes, reads omit removed field names and report them as
+`dropped_fields` in config and each preset. Reading does not rewrite the
+file. Other preset entries retain their JSON values when one is added or
+deleted. A retained field with an obsolete type or range can still return
+**422** when used; **Reset** restores current defaults.
+
+Safe filesystem operations require no-follow opens and directory-handle
+primitives. If they are unavailable, affected state/save operations return
+**501** while rendering and downloads remain usable. The package's general
+OS-independent support does not imply these capabilities on every OS.
+
+Image copies use best-effort rollback across destinations. This is not a
+cross-root transaction: readers may see provisional files, and a crash or
+failed cleanup may leave new files. A partial-save **503** reports affected
+relative paths; retry with a new name. Directory handles prevent path
+redirection, but do not promise protection against a malicious same-owner
+process moving authorized directories or racing cleanup. State updates use
+atomic replacement and serialize within one process; separate viewer
+processes sharing a directory can lose updates (last replacement wins).
+
+Callbacks run serially as trusted arbitrary Python. There is no hard CPU,
+memory or execution deadline guarantee and no hostile-code sandbox.
+
+### Input limits and API errors
+
+JSON-bearing requests require `application/json`, an absent or UTF-8
+charset, and no Content-Encoding. Active parameters accept only declared
+field names, including nested model fields; explicitly open dictionaries
+remain open within the limits. Limits include UTF-8 bytes:
+
+| Input | Limit |
+| --- | --- |
+| Request body / config file | 1 MiB each |
+| Preset file | 8 MiB |
+| JSON depth / total values / entries per container | 16 / 65,536 / 4,096 |
+| String / integer token | 64 KiB / 640 digits |
+| Tabs / presets | 64 / 1,000 |
+| Preset or tab label | 256 bytes |
+| Relative output path | 1,024 bytes plus platform component limits |
+| Active figure width | Integer 30..100; invalid stored widths use the UI default |
+
+Errors include human-readable `detail` and a stable `code`:
+
+| Status | Meaning |
+| --- | --- |
+| 400 | Malformed, duplicate-key or non-finite JSON; unsafe path |
+| 403 | Local access policy or unclassified effect refusal |
+| 404 | Missing preset or route |
+| 409 | Existing output, changed root/target, or invalid stored state |
+| 413 | Request or next serialized state exceeds a limit |
+| 415 | Unsupported media type, charset or content encoding |
+| 422 | Invalid schema, unknown field or invalid active value |
+| 500 | Trusted callback failed (`callback_failed`); no traceback details |
+| 501 | Safe filesystem primitives unavailable (`unsupported_filesystem_capability`) |
+| 503 | Filesystem I/O or partial-save failure |
 
 ## Reproducible code export
 

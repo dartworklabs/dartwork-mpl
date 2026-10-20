@@ -23,145 +23,74 @@ import base64
 import inspect
 import io
 import os
-import shutil
 import sys
+import tempfile
 import textwrap
-from collections.abc import Callable
+import threading
+import time
+from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, TypeVar, cast
-from urllib.parse import urlsplit
+from uuid import uuid4
 
 import matplotlib
 import matplotlib.pyplot as plt
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from matplotlib.backend_bases import FigureCanvasBase
 from matplotlib.figure import Figure
-from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.requests import ClientDisconnect
+from starlette.routing import Match
 
 from ..util import save_formats
-from ._config import (
-    delete_preset,
-    load_config,
-    load_presets,
-    save_config,
-    save_preset,
-    set_base_dir,
+from ._boundary import (
+    MAX_REQUEST_BYTES,
+    AccessDenied,
+    InputFailure,
+    InvalidRequest,
+    JsonValue,
+    LimitExceeded,
+    MalformedInput,
+    ModelRequest,
+    ParsedRequest,
+    PresetRequest,
+    SaveRequest,
+    StartupRejected,
+    StateRequest,
+    authorize_request,
+    decode_json,
+    normalize_bind,
+    parse_output,
+    parse_request,
+)
+from ._config import ConfigLoaded, PresetNotFound, PresetsLoaded, ViewerState
+from ._files import (
+    FileFailure,
+    FilesystemCapabilities,
+    FixedStateStore,
+    MissingState,
+    PartialSave,
+    PreparedSave,
+    RootScope,
+    SaveReceipt,
+    StateWritten,
+    commit_save,
+    open_roots,
+    prepare_save,
 )
 from ._param import ParamModel
 from ._template import get_html
 from ._widget import descriptors_from_model
 
-# Use non-interactive backend for server usage
 matplotlib.use("Agg")
-
-# Image formats the export endpoints accept — matplotlib's own supported
-# savefig filetypes. Validating against this set turns an unknown ``fmt``
-# (e.g. a typo or a probe) into a clean 400 instead of an internal 500
-# from ``savefig(format=<bogus>)``.
 _SUPPORTED_EXPORT_FORMATS: frozenset[str] = frozenset(
     FigureCanvasBase.get_supported_filetypes()
 )
-
-
-# ============================================================================
-# Request / response models
-# ============================================================================
-
-
-class PresetSaveRequest(BaseModel):
-    """Request body for saving a preset."""
-
-    label: str
-    params: dict[str, Any]
-
-
-class ServerSaveRequest(BaseModel):
-    """Request body for server-side save with optional name."""
-
-    params: dict[str, Any]
-    filename: str | None = None
-
-
-def _safe_output_path(base: Path, filename: str) -> Path:
-    """Resolve *filename* strictly under *base*.
-
-    Rejects empty names and any value that escapes *base* via ``..``
-    components or an absolute path, so a client-supplied ``filename``
-    cannot write outside the script directory (path traversal). Raises
-    ``HTTPException(400)`` for the FastAPI handler to surface as a clean
-    client error.
-    """
-    cleaned = filename.strip()
-    if not cleaned:
-        raise HTTPException(
-            status_code=400, detail="filename must not be empty"
-        )
-    base_resolved = base.resolve()
-    candidate = (base_resolved / cleaned).resolve()
-    if not candidate.is_relative_to(base_resolved):
-        raise HTTPException(
-            status_code=400,
-            detail="filename must stay within the output directory",
-        )
-    return candidate
-
-
-_MUTATING_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
-
-
-def _is_cross_origin(
-    method: str, origin: str | None, referer: str | None, host: str | None
-) -> bool:
-    """Whether a state-changing request looks cross-origin (CSRF).
-
-    Returns ``True`` only for a mutating method whose ``Origin`` (or, if
-    absent, ``Referer``) names a different ``host:port`` than the request
-    ``Host``. Read methods, and requests carrying neither ``Origin`` nor
-    ``Referer`` (non-browser clients such as curl — not a CSRF vector),
-    return ``False``.
-    """
-    if method.upper() not in _MUTATING_METHODS:
-        return False
-    source = origin or referer
-    if source is None or host is None:
-        return False
-    return urlsplit(source).netloc != host
-
-
-def _allowed_hostnames(host: str) -> set[str] | None:
-    """Hostnames a browser may legitimately send in the ``Host`` header.
-
-    Returns ``None`` when the server binds a public interface
-    (``0.0.0.0`` / ``::``), where the set of valid external hostnames
-    can't be pinned. Otherwise returns the loopback names plus the
-    configured bind host. Used to reject DNS-rebinding requests: an
-    attacker page on ``evil.com`` that rebinds DNS to ``127.0.0.1``
-    sends ``Origin == Host == evil.com`` (so the same-origin check
-    passes), but ``evil.com`` is not an allowed Host here.
-    """
-    if host in ("0.0.0.0", "::"):
-        return None
-    return {"127.0.0.1", "localhost", "::1", host.lower()}
-
-
-def _host_allowed(host_header: str | None, allowed: set[str] | None) -> bool:
-    """Whether the request ``Host`` header names an allowed hostname.
-
-    ``allowed=None`` (public bind) permits any host. A missing ``Host``
-    is permitted — non-browser clients (curl) aren't a DNS-rebinding
-    vector. The port is stripped before comparison (via ``urlsplit`` so
-    IPv6 ``[::1]:8501`` parses) so the check survives the port-retry
-    fallback.
-    """
-    if allowed is None or host_header is None:
-        return True
-    hostname = urlsplit(f"//{host_header}").hostname
-    if hostname is None:
-        return False
-    return hostname in allowed
 
 
 def _figure_to_bytes(
@@ -183,9 +112,519 @@ def _figure_to_bytes(
         plt.close(fig)
 
 
-# ============================================================================
-# Public API
-# ============================================================================
+def _refusal_response(
+    failure: InputFailure | AccessDenied | FileFailure | PresetNotFound,
+) -> JSONResponse:
+    """Map named refusals once, exposing stable codes and relative partial paths only."""
+    body: dict[str, Any] = {"detail": failure.detail, "code": failure.code}
+    if isinstance(failure, PartialSave):
+        body["paths"] = list(failure.paths)
+    return JSONResponse(body, status_code=failure.status_code)
+
+
+def _matched_route(app: FastAPI, request: Request) -> str | None:
+    """Match actual registrations before routing; method/path misses have no grant."""
+    path_exists = False
+    for route in app.routes:
+        match, _ = route.matches(request.scope)
+        if match is Match.FULL:
+            return cast(str, getattr(route, "path", None))
+        path_exists = path_exists or match is Match.PARTIAL
+    if not path_exists and request.method in {"GET", "HEAD"}:
+        return "<unmatched>"
+    return None
+
+
+async def _request_json(
+    request: Request,
+) -> JsonValue | InputFailure | JSONResponse:
+    """Read once with a streaming byte cap and require plain UTF-8 JSON media."""
+    media = request.headers.getlist("content-type")
+    if len(media) != 1 or request.headers.getlist("content-encoding"):
+        return JSONResponse(
+            {
+                "detail": "Use unencoded application/json with UTF-8.",
+                "code": "unsupported_media_type",
+            },
+            status_code=415,
+        )
+    parts = [part.strip().lower() for part in media[0].split(";")]
+    if (
+        parts[0] != "application/json"
+        or any(
+            part not in {"charset=utf-8", 'charset="utf-8"'}
+            for part in parts[1:]
+        )
+        or len(parts) > 2
+    ):
+        return JSONResponse(
+            {
+                "detail": "Use unencoded application/json with UTF-8.",
+                "code": "unsupported_media_type",
+            },
+            status_code=415,
+        )
+    chunks: list[bytes] = []
+    size = 0
+    try:
+        async for chunk in request.stream():
+            size += len(chunk)
+            if size > MAX_REQUEST_BYTES:
+                return LimitExceeded()
+            chunks.append(chunk)
+    except ClientDisconnect:
+        return MalformedInput()
+    return decode_json(b"".join(chunks), max_bytes=MAX_REQUEST_BYTES)
+
+
+def _create_app(
+    figure_fn: Callable[[Any], Figure],
+    param_model: type[ParamModel],
+    *,
+    title: str,
+    script_root: Path,
+    copy_to: str | os.PathLike[str] | list[str | os.PathLike[str]] | None,
+    host: str,
+    restart: Callable[[], None] | None = None,
+    capabilities: FilesystemCapabilities | None = None,
+) -> FastAPI:
+    """Own local HTTP policy, root lifetimes and serial trusted callback effects.
+
+    Invalid binds fail before filesystem access. Persistence startup refusals remain
+    API values so missing capabilities do not disable rendering or downloads.
+    ``restart`` is an owned observer seam; production passes delayed exec explicitly.
+    """
+    normalized_host = normalize_bind(host)
+    if isinstance(normalized_host, StartupRejected):
+        raise ValueError(normalized_host.detail)
+    startup_cwd = Path.cwd()
+    descriptors = descriptors_from_model(param_model)
+    descriptor_dicts = [descriptor.to_dict() for descriptor in descriptors]
+
+    @asynccontextmanager
+    async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        """Acquire roots once at startup and release every descriptor at shutdown."""
+        roots = open_roots(
+            script_root, copy_to, cwd=startup_cwd, capabilities=capabilities
+        )
+        application.state.viewer_roots = roots
+        application.state.viewer_state = (
+            ViewerState(
+                FixedStateStore(roots), frozenset(param_model.model_fields)
+            )
+            if isinstance(roots, RootScope)
+            else roots
+        )
+        try:
+            yield
+        finally:
+            if isinstance(roots, RootScope):
+                roots.close()
+
+    app = FastAPI(title=title, lifespan=lifespan)
+
+    @app.middleware("http")
+    async def local_policy(request: Request, call_next: Any) -> Response:
+        """Mediate every registered route and deny unknown effects before request parsing."""
+        access = authorize_request(
+            request.method,
+            _matched_route(app, request),
+            request.scope["headers"],
+            normalized_host,
+        )
+        if isinstance(access, AccessDenied):
+            return _refusal_response(access)
+        return cast(Response, await call_next(request))
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_failure(
+        _request: Request, failure: StarletteHTTPException
+    ) -> JSONResponse:
+        """Keep intentional transport errors in the detail/code error contract."""
+        return JSONResponse(
+            {
+                "detail": failure.detail,
+                "code": "not_found"
+                if failure.status_code == 404
+                else "invalid_request",
+            },
+            status_code=failure.status_code,
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def request_failure(
+        _request: Request, _failure: RequestValidationError
+    ) -> JSONResponse:
+        """Reject malformed route parameters without echoing untrusted values."""
+        return _refusal_response(InvalidRequest())
+
+    async def parsed_body(
+        request: Request, template: str
+    ) -> ParsedRequest | JSONResponse:
+        """Recognize the complete bounded endpoint language without downstream raw reads."""
+        value = await _request_json(request)
+        if isinstance(value, JSONResponse):
+            return value
+        if isinstance(value, InputFailure):
+            return _refusal_response(value)
+        parsed = parse_request(template, value, param_model, descriptors)
+        return (
+            _refusal_response(parsed)
+            if isinstance(parsed, InputFailure)
+            else parsed
+        )
+
+    def state() -> ViewerState | FileFailure:
+        """Borrow the lifespan-owned state capability, including startup refusal values."""
+        return cast(ViewerState | FileFailure, app.state.viewer_state)
+
+    def render_bytes(model: ParamModel, fmt: str) -> bytes | JSONResponse:
+        """Run callbacks synchronously in the event loop and contain trusted callback errors."""
+        try:
+            return _figure_to_bytes(figure_fn, model, fmt)
+        except Exception:  # noqa: BLE001 -- trusted callbacks may raise arbitrary errors
+            return JSONResponse(
+                {
+                    "detail": "The figure callback failed.",
+                    "code": "callback_failed",
+                },
+                status_code=500,
+            )
+
+    def save_image(
+        parsed: SaveRequest, fmt: str
+    ) -> SaveReceipt | FileFailure | InputFailure | JSONResponse:
+        """Plan every sink before a callback; stage unchanged save_formats bytes privately."""
+        roots = cast(RootScope | FileFailure, app.state.viewer_roots)
+        if not isinstance(roots, RootScope):
+            return roots
+        name = (
+            parsed.output.filename
+            if parsed.output
+            else f"{figure_fn.__name__}_{_timestamp_slug()}"
+        )
+        for extension in (".png", ".svg", ".pdf"):
+            if name.lower().endswith(extension):
+                fmt, name = extension[1:], name[: -len(extension)]
+                break
+        output = parse_output(f"{name}.{fmt}")
+        if isinstance(output, InputFailure):
+            return output
+        plan = prepare_save(roots, output, include_copies=True)
+        if not isinstance(plan, PreparedSave):
+            return plan
+        result: SaveReceipt | FileFailure | InputFailure | JSONResponse
+        try:
+            with tempfile.TemporaryDirectory(
+                prefix="dartwork-viewer-"
+            ) as staging:
+                fig = figure_fn(parsed.model)
+                try:
+                    basename = Path(output.filename).name
+                    stem = Path(staging) / basename[: -len(fmt) - 1]
+                    save_formats(
+                        fig, str(stem), formats=(fmt,), bbox_inches=None
+                    )
+                finally:
+                    plt.close(fig)
+                with (Path(staging) / basename).open("rb") as source:
+                    result = commit_save(plan, source)
+        except Exception:  # noqa: BLE001 -- contain arbitrary trusted callback/source failures
+            result = JSONResponse(
+                {
+                    "detail": "The figure callback or image export failed.",
+                    "code": "callback_failed",
+                },
+                status_code=500,
+            )
+        finally:
+            cleanup = plan.close()
+        return cleanup if cleanup is not None else result
+
+    def save_script(
+        parsed: SaveRequest,
+    ) -> SaveReceipt | FileFailure | InputFailure | JSONResponse:
+        """Prepare the primary script sink before source generation and create it exclusively."""
+        roots = cast(RootScope | FileFailure, app.state.viewer_roots)
+        if not isinstance(roots, RootScope):
+            return roots
+        name = (
+            parsed.output.filename
+            if parsed.output
+            else f"{figure_fn.__name__}_{_timestamp_slug()}"
+        )
+        if name.lower().endswith(".py"):
+            name = name[:-3]
+        output = parse_output(f"{name}.py")
+        if isinstance(output, InputFailure):
+            return output
+        plan = prepare_save(roots, output, include_copies=False)
+        if not isinstance(plan, PreparedSave):
+            return plan
+        result: SaveReceipt | FileFailure | InputFailure | JSONResponse
+        try:
+            code = _generate_script(
+                parsed.model, param_model, figure_fn, script_root
+            )
+            result = commit_save(plan, io.BytesIO(code.encode("utf-8")))
+        except Exception:  # noqa: BLE001 -- contain arbitrary trusted callback/source failures
+            result = JSONResponse(
+                {
+                    "detail": "Script generation failed.",
+                    "code": "callback_failed",
+                },
+                status_code=500,
+            )
+        finally:
+            cleanup = plan.close()
+        return cleanup if cleanup is not None else result
+
+    @app.get("/", response_class=HTMLResponse)
+    async def index() -> str:
+        """Serve the existing viewer client with its escaped configured title."""
+        return get_html(title=title)
+
+    @app.get("/api/descriptors")
+    async def get_descriptors() -> list[dict[str, Any]]:
+        """Expose supported controls and defaults from the supplied model."""
+        return descriptor_dicts
+
+    @app.post("/api/render", response_model=None)
+    async def render(request: Request) -> dict[str, str] | JSONResponse:
+        """Render the parsed active model once as the existing base64 PNG response."""
+        parsed = await parsed_body(request, "/api/render")
+        if isinstance(parsed, JSONResponse):
+            return parsed
+        assert isinstance(parsed, ModelRequest)
+        data = render_bytes(parsed.model, "png")
+        return (
+            data
+            if isinstance(data, JSONResponse)
+            else {"image": base64.b64encode(data).decode("ascii")}
+        )
+
+    @app.post("/api/export/{fmt}", response_model=None)
+    async def export(fmt: str, request: Request) -> Response:
+        """Download one supported format from the same validated active model language."""
+        _validate_export_format(fmt)
+        fmt = fmt.lower()
+        parsed = await parsed_body(request, "/api/export/{fmt}")
+        if isinstance(parsed, JSONResponse):
+            return parsed
+        assert isinstance(parsed, ModelRequest)
+        data = render_bytes(parsed.model, fmt)
+        return (
+            data
+            if isinstance(data, JSONResponse)
+            else Response(
+                data,
+                media_type={
+                    "png": "image/png",
+                    "svg": "image/svg+xml",
+                    "pdf": "application/pdf",
+                }.get(fmt, "application/octet-stream"),
+                headers={
+                    "Content-Disposition": f'attachment; filename="figure.{fmt}"'
+                },
+            )
+        )
+
+    @app.get("/api/config", response_model=None)
+    async def get_config() -> dict[str, JsonValue] | JSONResponse:
+        """Project stored config without rewriting drift or malformed bytes."""
+        store = state()
+        if not isinstance(store, ViewerState):
+            return _refusal_response(store)
+        result = store.load_config()
+        if isinstance(result, MissingState):
+            return {}
+        return (
+            result.value
+            if isinstance(result, ConfigLoaded)
+            else _refusal_response(result)
+        )
+
+    @app.get("/api/meta")
+    async def get_meta() -> dict[str, str]:
+        """Preserve the frontend's configured function-name default."""
+        return {"function_name": figure_fn.__name__}
+
+    @app.post("/api/config", response_model=None)
+    @app.post("/api/save-state", response_model=None)
+    async def post_config(request: Request) -> dict[str, str] | JSONResponse:
+        """Update only fixed config from a complete active/config-tab request."""
+        template = cast(str, request.scope["route"].path)
+        parsed = await parsed_body(request, template)
+        if isinstance(parsed, JSONResponse):
+            return parsed
+        assert isinstance(parsed, StateRequest)
+        store = state()
+        if not isinstance(store, ViewerState):
+            return _refusal_response(store)
+        result = store.save_config(parsed, figure_fn.__name__)
+        return (
+            {"status": "ok"}
+            if isinstance(result, StateWritten)
+            else _refusal_response(result)
+        )
+
+    @app.post("/api/preset", response_model=None)
+    async def save_preset_endpoint(
+        request: Request,
+    ) -> dict[str, str] | JSONResponse:
+        """Append a validated preset without projecting unrelated historical entries."""
+        parsed = await parsed_body(request, "/api/preset")
+        if isinstance(parsed, JSONResponse):
+            return parsed
+        assert isinstance(parsed, PresetRequest)
+        store = state()
+        if not isinstance(store, ViewerState):
+            return _refusal_response(store)
+        result = store.save_preset(parsed)
+        return (
+            {"status": "ok"}
+            if isinstance(result, StateWritten)
+            else _refusal_response(result)
+        )
+
+    @app.get("/api/presets", response_model=None)
+    async def get_presets() -> list[dict[str, JsonValue]] | JSONResponse:
+        """Preserve list success shape and explicitly refuse unsafe stored-state reads."""
+        store = state()
+        if not isinstance(store, ViewerState):
+            return _refusal_response(store)
+        result = store.load_presets()
+        return (
+            result.value
+            if isinstance(result, PresetsLoaded)
+            else _refusal_response(result)
+        )
+
+    @app.delete("/api/preset/{index}", response_model=None)
+    async def delete_preset_endpoint(
+        index: int,
+    ) -> dict[str, str] | JSONResponse:
+        """Delete one fixed-state preset, accepting a bodyless request and named misses."""
+        store = state()
+        if not isinstance(store, ViewerState):
+            return _refusal_response(store)
+        result = store.delete_preset(index)
+        return (
+            {"status": "ok"}
+            if isinstance(result, StateWritten)
+            else _refusal_response(result)
+        )
+
+    @app.get("/api/defaults")
+    async def get_defaults() -> dict[str, Any]:
+        """Return usable model defaults independently of stored-state corruption or drift."""
+        return {
+            descriptor.name: descriptor.default for descriptor in descriptors
+        }
+
+    @app.post("/api/script", response_model=None)
+    async def generate_script(request: Request) -> Response:
+        """Download source after bounded active-model validation without persistence."""
+        parsed = await parsed_body(request, "/api/script")
+        if isinstance(parsed, JSONResponse):
+            return parsed
+        assert isinstance(parsed, ModelRequest)
+        try:
+            code = _generate_script(
+                parsed.model, param_model, figure_fn, script_root
+            )
+        except Exception:  # noqa: BLE001 -- contain arbitrary trusted callback/source failures
+            return JSONResponse(
+                {
+                    "detail": "Script generation failed.",
+                    "code": "callback_failed",
+                },
+                status_code=500,
+            )
+        return Response(
+            code.encode("utf-8"),
+            media_type="text/x-python",
+            headers={
+                "Content-Disposition": 'attachment; filename="generate_figure.py"'
+            },
+        )
+
+    @app.post("/api/save-server/image/{fmt}", response_model=None)
+    async def save_image_server(
+        fmt: str, request: Request
+    ) -> dict[str, Any] | JSONResponse:
+        """Save one staged image to every prechecked create-only destination."""
+        _validate_export_format(fmt)
+        parsed = await parsed_body(request, "/api/save-server/image/{fmt}")
+        if isinstance(parsed, JSONResponse):
+            return parsed
+        assert isinstance(parsed, SaveRequest)
+        result = save_image(parsed, fmt.lower())
+        if isinstance(result, JSONResponse):
+            return result
+        if not isinstance(result, SaveReceipt):
+            return _refusal_response(result)
+        return {
+            "status": "ok",
+            "path": result.primary_display,
+            "filename": result.primary,
+            "copied_to": list(result.copy_displays),
+        }
+
+    @app.post("/api/save-server/script", response_model=None)
+    async def save_script_server(
+        request: Request,
+    ) -> dict[str, str] | JSONResponse:
+        """Save source only below the script root, preserving every existing target."""
+        parsed = await parsed_body(request, "/api/save-server/script")
+        if isinstance(parsed, JSONResponse):
+            return parsed
+        assert isinstance(parsed, SaveRequest)
+        result = save_script(parsed)
+        if isinstance(result, JSONResponse):
+            return result
+        if not isinstance(result, SaveReceipt):
+            return _refusal_response(result)
+        return {
+            "status": "ok",
+            "path": result.primary_display,
+            "filename": result.primary,
+        }
+
+    @app.post("/api/reload", response_model=None)
+    async def reload_server() -> dict[str, str] | JSONResponse:
+        """Invoke the owned restart capability once; no request body/code selects the effect."""
+        if restart is not None:
+            try:
+                restart()
+            except Exception:  # noqa: BLE001 -- contain arbitrary trusted callback/source failures
+                return JSONResponse(
+                    {
+                        "detail": "Viewer restart failed.",
+                        "code": "restart_failed",
+                    },
+                    status_code=500,
+                )
+        return {"status": "reloading"}
+
+    @app.get("/api/health")
+    async def health() -> dict[str, str]:
+        """Retain the frontend heartbeat independently of persistence capability."""
+        return {"status": "ok"}
+
+    return app
+
+
+def _schedule_restart() -> None:
+    """Defer the trusted process exec until the response can leave the socket."""
+
+    def execute() -> None:
+        """Restart the original executable/argv after the existing response delay."""
+        time.sleep(0.3)
+        os.execv(sys.executable, [sys.executable, *sys.argv])
+
+    threading.Thread(target=execute, daemon=True).start()
+
 
 _P = TypeVar("_P", bound=ParamModel)
 
@@ -195,307 +634,87 @@ def run(
     param_model: type[ParamModel] | None = None,
     *,
     title: str = "Dartwork Viewer",
-    copy_to: list[Path] | Path | None = None,
+    copy_to: str
+    | os.PathLike[str]
+    | list[str | os.PathLike[str]]
+    | None = None,
     host: str = "127.0.0.1",
     port: int = 8501,
 ) -> None:
-    """Launch the FastAPI-based interactive figure viewer.
+    """Launch the local FastAPI-based interactive figure viewer.
 
     Parameters
     ----------
     figure_fn : callable
-        A function accepting a single ``ParamModel`` instance and
-        returning a ``matplotlib.figure.Figure``.
+        Trusted function accepting one ParamModel and returning a matplotlib Figure.
     param_model : type[ParamModel], optional
-        Pydantic model class defining the parameters.
-        If omitted, it is auto-extracted from the function's type hints.
+        Parameter class, extracted from the function annotations when omitted.
     title : str
         Page and app title.
-    copy_to : list[Path] | Path | None
-        Additional directories to copy saved images to.
-        When a user saves an image via the UI, it is first saved to the
-        script directory and then copied to each listed directory.
-        Useful for mirroring outputs to a paper's ``images/`` folder.
+    copy_to : str | os.PathLike[str] | list[str | os.PathLike[str]] | None
+        Additional image-save directories. Expand ~ and resolve relative roots
+        against startup CWD; deduplicate directory objects. Image/script outputs
+        are create-only below the script directory; copies are create-only at
+        every root. Choose a new relative filename on conflict (409). Scripts
+        are not copied to copy_to.
     host : str
-        Server host address. Default is ``"127.0.0.1"``.
+        Loopback literal (127.0.0.0/8 or ::1), or localhost (mapped directly to
+        127.0.0.1). Other hosts reject before filesystem or server effects.
     port : int
-        Server port number. Default is ``8501``.
+        Initial server port; occupied ports retain the existing increment retry.
 
     Raises
     ------
+    ValueError
+        The bind is not an approved loopback address.
     TypeError
-        If the function signature does not match
-        ``(params: ParamModel) -> Figure``.
+        Function annotations cannot supply a ParamModel subclass.
+
+    Notes
+    -----
+    Local processes and callbacks are trusted; loopback does not identify a
+    person. Hosted/proxy access is outside this contract. Required no-follow
+    directory-handle primitives are checked; unavailable persistence returns
+    501 (unsupported_filesystem_capability), while render/download stay usable.
+    Saves use best-effort rollback, not a cross-root transaction. Crashes or
+    failed cleanup may leave new files; partial-save 503 lists relative paths.
+    Malicious same-owner directory moves and cleanup races are outside the
+    guarantee. State updates serialize within one process; separate processes
+    can lose updates (last replacement wins). Callbacks are serial without a
+    hard CPU, memory or deadline bound. Failures expose detail/code; callback
+    errors return 500 (callback_failed), without payload/traceback details.
+    Requests/config: 1 MiB; presets: 8 MiB; JSON depth: 16; values: 65,536;
+    container entries: 4,096; strings: 64 KiB; integer tokens: 640 digits;
+    tabs: 64; presets: 1,000; labels: 256 bytes; output paths: 1,024 bytes
+    plus platform component limits; active figWidth: 30..100. Corrupt state
+    returns 409 (invalid_stored_state), preserving bytes. Reads project field
+    drift with dropped_fields; retained invalid active values can return 422.
+    Reset restores controls, not stored files. See docs/api/ui.rst and the
+    interactive usage guide for schemas, statuses and recovery.
     """
-    # ── Extract / validate param model ────────────────────────────
+    normalized = normalize_bind(host)
+    if isinstance(normalized, StartupRejected):
+        raise ValueError(normalized.detail)
     if param_model is None:
         param_model = _extract_param_model(figure_fn)
-
-    # Set base dir to script location for config persistence
-    script_path = Path(sys.argv[0]).resolve().parent
-    set_base_dir(script_path)
-
-    # Normalize copy_to into a list of Paths
-    if copy_to is None:
-        copy_targets: list[Path] = []
-    elif isinstance(copy_to, Path):
-        copy_targets = [copy_to]
-    else:
-        copy_targets = list(copy_to)
-
-    # Resolve parameter descriptors from the model
-    descriptors = descriptors_from_model(param_model)
-    descriptor_dicts = [d.to_dict() for d in descriptors]
-
-    # Hostnames the CSRF guard will accept (DNS-rebinding defense).
-    allowed_hostnames = _allowed_hostnames(host)
-
-    # ── FastAPI app ──────────────────────────────────────────────────
-    app = FastAPI(title=title)
-
-    @app.middleware("http")
-    async def _same_origin_guard(request: Request, call_next: Any) -> Any:
-        # CSRF defense: state-changing requests must originate from the
-        # same origin as the page. Browsers always attach Origin (and
-        # usually Referer) to cross-site fetch/XHR, so a foreign page
-        # cannot drive side-effecting endpoints (``/api/reload`` →
-        # ``os.execv``, ``/api/save-server/*`` file writes, preset/config
-        # writes). Same-origin UI calls send Origin == Host and pass;
-        # non-browser clients (curl) send neither and are allowed — they
-        # are not a CSRF vector.
-        #
-        # The Host allowlist is the DNS-rebinding defense: without it a
-        # rebound ``evil.com -> 127.0.0.1`` page sends matching
-        # Origin/Host and slips past the same-origin check below.
-        if not _host_allowed(request.headers.get("host"), allowed_hostnames):
-            return JSONResponse({"detail": "host not allowed"}, status_code=403)
-        if _is_cross_origin(
-            request.method,
-            request.headers.get("origin"),
-            request.headers.get("referer"),
-            request.headers.get("host"),
-        ):
-            return JSONResponse(
-                {"detail": "cross-origin request rejected"}, status_code=403
-            )
-        return await call_next(request)
-
-    @app.get("/", response_class=HTMLResponse)
-    async def index() -> str:
-        return get_html(title=title)
-
-    @app.get("/api/descriptors")
-    async def get_descriptors() -> list[dict[str, Any]]:
-        return descriptor_dicts
-
-    @app.post("/api/render", response_model=None)
-    async def render(params: dict[str, Any]) -> dict[str, str] | JSONResponse:
-        try:
-            model = _build_model(params, param_model, descriptors)
-        except Exception as exc:  # noqa: BLE001
-            error_msg = _format_validation_error(exc)
-            return JSONResponse(status_code=422, content={"detail": error_msg})
-        png = _figure_to_bytes(figure_fn, cast(_P, model), "png")
-        b64 = base64.b64encode(png).decode("ascii")
-
-        return {"image": b64}
-
-    @app.post("/api/save-state")
-    async def save_state(body: dict[str, Any]) -> dict[str, str]:
-        """Save full UI state to config."""
-        tabs = body.get("tabs", [])
-        params = body.get("params", {})
-        fig_width = body.get("figWidth")
-        save_config(
-            params,
-            function_name=figure_fn.__name__,
-            tabs=tabs,
-            fig_width=fig_width,
-        )
-        return {"status": "ok"}
-
-    @app.post("/api/export/{fmt}")
-    async def export(fmt: str, params: dict[str, Any]) -> Response:
-        _validate_export_format(fmt)
-        model = _build_model_checked(params, param_model, descriptors)
-        data = _figure_to_bytes(figure_fn, cast(_P, model), fmt)
-
-        mime_map = {
-            "png": "image/png",
-            "svg": "image/svg+xml",
-            "pdf": "application/pdf",
-        }
-        return Response(
-            content=data,
-            media_type=mime_map.get(fmt, "application/octet-stream"),
-            headers={
-                "Content-Disposition": f'attachment; filename="figure.{fmt}"'
-            },
-        )
-
-    @app.get("/api/config")
-    async def get_config() -> dict[str, Any]:
-        """Return saved config (params + tabs)."""
-        return load_config() or {}
-
-    @app.get("/api/meta")
-    async def get_meta() -> dict[str, str]:
-        """Return metadata for frontend defaults."""
-        return {"function_name": figure_fn.__name__}
-
-    @app.post("/api/config")
-    async def post_config(params: dict[str, Any]) -> dict[str, str]:
-        save_config(params, function_name=figure_fn.__name__)
-        return {"status": "ok"}
-
-    @app.post("/api/preset")
-    async def save_preset_endpoint(req: PresetSaveRequest) -> dict[str, str]:
-        save_preset(req.label, req.params)
-        return {"status": "ok"}
-
-    @app.get("/api/presets")
-    async def get_presets() -> list[dict[str, Any]]:
-        return load_presets()
-
-    @app.delete("/api/preset/{index}", response_model=None)
-    async def delete_preset_endpoint(
-        index: int,
-    ) -> dict[str, str] | JSONResponse:
-        """Delete a preset by index."""
-        ok = delete_preset(index)
-        if not ok:
-            return JSONResponse(
-                status_code=404, content={"detail": "Preset not found"}
-            )
-        return {"status": "ok"}
-
-    @app.get("/api/defaults")
-    async def get_defaults() -> dict[str, Any]:
-        """Return default parameter values for reset."""
-        return {d.name: d.default for d in descriptors}
-
-    # ── Script generation ────────────────────────────────────────────
-
-    @app.post("/api/script")
-    async def generate_script(params: dict[str, Any]) -> Response:
-        """Generate a standalone Python script and return as download."""
-        model = _build_model_checked(params, param_model, descriptors)
-        code = _generate_script(model, param_model, figure_fn, script_path)
-        return Response(
-            content=code.encode("utf-8"),
-            media_type="text/x-python",
-            headers={
-                "Content-Disposition": 'attachment; filename="generate_figure.py"'
-            },
-        )
-
-    # ── Server-side save ─────────────────────────────────────────────
-
-    @app.post("/api/save-server/image/{fmt}")
-    async def save_image_server(
-        fmt: str, req: ServerSaveRequest
-    ) -> dict[str, Any]:
-        """Save figure image to the script directory."""
-        _validate_export_format(fmt)
-        model = _build_model_checked(req.params, param_model, descriptors)
-        fig = figure_fn(cast(_P, model))
-        # Always close the figure — a failure while resolving the output
-        # path or in save_formats would otherwise leak it.
-        try:
-            if req.filename:
-                # User may provide full name with extension
-                name = req.filename
-                # Check if user specified a different image ext
-                known_exts = (".png", ".svg", ".pdf")
-                for ext in known_exts:
-                    if name.lower().endswith(ext):
-                        fmt = ext[1:]  # override format
-                        name = name[: -len(ext)]
-                        break
-                stem = name
-            else:
-                ts = _timestamp_slug()
-                stem = f"{figure_fn.__name__}_{ts}"
-            safe_target = _safe_output_path(script_path, f"{stem}.{fmt}")
-            image_stem = str(safe_target.with_suffix(""))
-
-            save_formats(fig, image_stem, formats=(fmt,), bbox_inches=None)
-        finally:
-            plt.close(fig)
-
-        filename = f"{stem}.{fmt}"
-        saved_path = Path(image_stem + f".{fmt}")
-
-        # Copy to additional directories
-        copied_paths: list[str] = []
-        for dest_dir in copy_targets:
-            dest_dir.mkdir(parents=True, exist_ok=True)
-            dest = dest_dir / filename
-            shutil.copy2(saved_path, dest)
-            copied_paths.append(str(dest))
-
-        # Server-side logging
-        print(f"  \u2713 Saved: {saved_path}")
-        for cp in copied_paths:
-            print(f"  \u2713 Copied: {cp}")
-
-        return {
-            "status": "ok",
-            "path": str(saved_path),
-            "filename": filename,
-            "copied_to": copied_paths,
-        }
-
-    @app.post("/api/save-server/script")
-    async def save_script_server(req: ServerSaveRequest) -> dict[str, str]:
-        """Save standalone Python script to the script dir."""
-        model = _build_model_checked(req.params, param_model, descriptors)
-        code = _generate_script(model, param_model, figure_fn, script_path)
-
-        if req.filename:
-            name = req.filename
-            # Strip .py if user included it (prevent .py.py)
-            if name.lower().endswith(".py"):
-                name = name[:-3]
-            filename = f"{name}.py"
-        else:
-            ts = _timestamp_slug()
-            filename = f"{figure_fn.__name__}_{ts}.py"
-        out_path = _safe_output_path(script_path, filename)
-        out_path.write_text(code, encoding="utf-8")
-
-        return {"status": "ok", "path": str(out_path), "filename": filename}
-
-    # ── Reload ───────────────────────────────────────────────────────
-
-    @app.post("/api/reload")
-    async def reload_server() -> dict[str, str]:
-        """Restart the server process to pick up code changes."""
-        import threading
-
-        def _restart() -> None:
-            import time
-
-            time.sleep(0.3)  # Let the response return first
-            os.execv(sys.executable, [sys.executable, *sys.argv])
-
-        threading.Thread(target=_restart, daemon=True).start()
-        return {"status": "reloading"}
-
-    # ── Health check (heartbeat for frontend) ────────────────────────
-
-    @app.get("/api/health")
-    async def health() -> dict[str, str]:
-        """Return server health status for frontend heartbeat."""
-        return {"status": "ok"}
-
-    # ── Launch (retry ports if in use) ──────────────────────────────
+    app = _create_app(
+        figure_fn,
+        param_model,
+        title=title,
+        script_root=Path(sys.argv[0]).resolve().parent,
+        copy_to=copy_to,
+        host=normalized,
+        restart=_schedule_restart,
+    )
     current_port = port
     while True:
         try:
             print("\n  Dartwork Viewer running at:")
-            print(f"  \033[1;36mhttp://{host}:{current_port}\033[0m\n")
-            uvicorn.run(app, host=host, port=current_port, log_level="warning")
+            url_host = f"[{normalized}]" if ":" in normalized else normalized
+            print(f"  \033[1;36mhttp://{url_host}:{current_port}\033[0m\n")
+            uvicorn.run(
+                app, host=normalized, port=current_port, log_level="warning"
+            )
             break
         except SystemExit:
             current_port += 1
@@ -679,7 +898,7 @@ def _parse_list(value: Any, item_type: type) -> list[Any]:
 
 def _timestamp_slug() -> str:
     """Return a compact timestamp string for filenames."""
-    return datetime.now().strftime("%Y%m%d_%H%M%S")
+    return datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid4().hex[:12]
 
 
 def _generate_script(

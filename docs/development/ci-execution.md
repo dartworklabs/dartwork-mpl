@@ -45,9 +45,9 @@ collection, without another full-suite run.
 | Optional MCP consumers | `test_docs_mcp_tools`, `test_docstring_catalogs`, `test_mcp_asset_boundary`, `test_mcp_data_repair_contract`, `test_mcp_heavy_tools`, `test_mcp_render_smoke`, `test_mcp_tool_hardening`, `test_mcp_validation_contract`, `test_mcp_validators_complete` |
 | Durable MCP artifacts | With prefix `tests.mcp.artifacts.`: `test_artifact_boundaries`, `test_artifact_discovery`, `test_artifact_entry_policies`, `test_artifact_execution`, `test_artifact_policy`, `test_artifact_protocol`, `test_artifact_store` |
 | Data repair collection | With prefix `tests.mcp.data_repair.`: `test_limits`, `test_properties`, `test_reports` |
-| Optional UI consumers | `test_ui_hardening`, `test_ui_init`, `test_ui_param`, `test_ui_security`, `test_ui_widget` |
+| Optional UI consumers | `test_ui_boundary`, `test_ui_files`, `test_ui_http_security`, `test_ui_hardening`, `test_ui_init`, `test_ui_param`, `test_ui_security`, `test_ui_widget` |
 
-All 30 modules must contribute a passed executed case. Missing modules,
+All 33 modules must contribute a passed executed case. Missing modules,
 zero-test suites, and modules whose cases all skip fail. Any failure/error in
 a protected module also fails, even alongside a passed case. Class-based
 pytest names are accepted; similarly named sibling modules cannot count.
