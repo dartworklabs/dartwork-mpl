@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import random
 import re
 import shlex
 import sys
@@ -65,7 +66,6 @@ _CHECK_COMMANDS = (
         "--check",
     ),
 )
-_SHELL_SEPARATOR = re.compile(r"\s*(?:&&|\|\||;)\s*")
 _ENV_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 
 
@@ -133,29 +133,61 @@ def _job_steps(job: Mapping[str, object]) -> tuple[Mapping[str, object], ...]:
 
 
 def _shell_commands(script: str) -> tuple[tuple[str, ...], ...]:
-    """Tokenize executable shell commands, excluding YAML comments."""
-    logical_lines: list[str] = []
-    continuation = ""
-    for raw_line in script.splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
+    """Inspect simple workflow commands, respecting quotes and comments.
+
+    This handles command separators, pipelines and escaped newlines, not
+    arbitrary shell grammar such as substitutions, heredocs or compound jobs.
+    ``shlex`` then decodes each command's argument vector.
+    """
+    segments: list[str] = []
+    segment: list[str] = []
+    quote = ""
+    escaped = False
+    comment = False
+    for index, character in enumerate(script):
+        if comment:
+            if character != "\n":
+                continue
+            comment = False
+        if escaped:
+            escaped = False
+            if character == "\n":
+                segment.pop()  # Shell line continuation removes both bytes.
+            else:
+                segment.append(character)
             continue
-        if line.endswith("\\"):
-            continuation += f"{line[:-1].rstrip()} "
-            continue
-        logical_lines.append(f"{continuation}{line}")
-        continuation = ""
-    if continuation:
-        logical_lines.append(continuation.rstrip())
+        if character == "\\" and quote != "'":
+            escaped = True
+            segment.append(character)
+        elif quote:
+            segment.append(character)
+            if character == quote:
+                quote = ""
+        elif character in "'\"":
+            quote = character
+            segment.append(character)
+        elif character == "#":
+            comment = True
+        elif character in ";|\n" or (
+            character == "&"
+            and (
+                script.startswith("&&", index)
+                or (index > 0 and script[index - 1] == "&")
+            )
+        ):
+            segments.append("".join(segment))
+            segment = []
+        else:
+            segment.append(character)
+    segments.append("".join(segment))
 
     commands: list[tuple[str, ...]] = []
-    for logical_line in logical_lines:
-        for segment in _SHELL_SEPARATOR.split(logical_line):
-            tokens = tuple(shlex.split(segment, comments=True, posix=True))
-            while tokens and _ENV_ASSIGNMENT.match(tokens[0]):
-                tokens = tokens[1:]
-            if tokens:
-                commands.append(tokens)
+    for text in segments:
+        tokens = tuple(shlex.split(text, comments=True, posix=True))
+        while tokens and _ENV_ASSIGNMENT.match(tokens[0]):
+            tokens = tokens[1:]
+        if tokens:
+            commands.append(tokens)
     return tuple(commands)
 
 
@@ -247,6 +279,83 @@ def _write_text(path: Path, text: str) -> None:
     """Write one temporary hook fixture, creating its parents."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("script", "expected"),
+    (
+        (
+            "python -c 'import sys; print(sys.version)' | tee runtime.txt",
+            (
+                ("python", "-c", "import sys; print(sys.version)"),
+                ("tee", "runtime.txt"),
+            ),
+        ),
+        (
+            'echo "a;b && c || d | e"; echo ";"',
+            (("echo", "a;b && c || d | e"), ("echo", ";")),
+        ),
+        (
+            "echo escaped\\;argument&&first || second; third\nfourth",
+            (
+                ("echo", "escaped;argument"),
+                ("first",),
+                ("second",),
+                ("third",),
+                ("fourth",),
+            ),
+        ),
+        (
+            "MODE=check uv run \\\npython -m dartwork_mpl._colors._build --check\nnext",
+            (_CHECK_COMMANDS[0], ("next",)),
+        ),
+        (
+            "echo visible # ignored; fake && also_fake\nnext",
+            (("echo", "visible"), ("next",)),
+        ),
+        (
+            'uv run pytest 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"',
+            (
+                ("uv", "run", "pytest", "2>&1"),
+                ("tee", "$RUNNER_TEMP/pytest-summary.txt"),
+            ),
+        ),
+    ),
+)
+def test_shell_commands_preserves_quoted_arguments_and_real_boundaries(
+    script: str, expected: tuple[tuple[str, ...], ...]
+) -> None:
+    """Shell punctuation inside arguments must not invent executable gates."""
+    assert _shell_commands(script) == expected
+
+
+def test_shell_commands_round_trips_quoted_arguments() -> None:
+    """Shell-quoted argument vectors retain punctuation and command count."""
+    generator = random.Random(470)
+    alphabet = "abc ;&|#'\"\\\n"
+    for _ in range(16):
+        arguments = tuple(
+            "".join(generator.choices(alphabet, k=12)) for _ in range(3)
+        )
+        command = ("echo", *arguments)
+        assert _shell_commands(shlex.join(command)) == (command,)
+
+
+@pytest.mark.parametrize(
+    "script",
+    (
+        "echo gate-was-removed",
+        "echo 'unrelated; uv run python -m dartwork_mpl._colors._build --check'",
+        "echo visible # absent; uv run python -m dartwork_mpl._colors._build --check",
+    ),
+)
+def test_workflow_command_check_rejects_missing_or_nonexecuted_gate(
+    script: str,
+) -> None:
+    """Removed gates and gate text in quotes or comments cannot pass checks."""
+    commands = _step_commands(({"run": script},))
+    with pytest.raises(pytest.fail.Exception, match="missing workflow command"):
+        _command_index(commands, _CHECK_COMMANDS[0])
 
 
 @pytest.mark.parametrize(
