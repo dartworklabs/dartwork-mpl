@@ -1,5 +1,6 @@
-"""Shared trusted-snippet execution; export uses the very Figure validated once."""
+"""Trusted-snippet execution with optional private input paths, without authorization."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -54,14 +55,25 @@ def export_plot(
     chart_type_hint: str | None,
     *,
     output_stem: Path,
+    input_paths: Mapping[str, str] | None = None,
 ) -> ExportedPlot | ExecutionRejected | ExportRejected:
-    """Validate and export one selected Figure in a single child execution."""
+    """Validate and export one selected Figure in a single child execution.
+
+    Nonempty ``input_paths`` supplies a read-only ``dartwork_inputs`` mapping
+    in the snippet globals. The caller owns authorization and file lifetime;
+    this runner neither checks nor copies those files. Names and paths must
+    be strings (otherwise TypeError is raised before launch). None or an
+    empty mapping uses the legacy source-only protocol and injects nothing.
+    Source, cwd, inherited environment, logs and execution outcomes retain
+    their existing semantics; trusted code can expose the paths itself.
+    """
     report = _run(
         code,
         figure_var,
         timeout_seconds,
         chart_type_hint,
         output_stem=output_stem,
+        input_paths=input_paths,
     )
     if report.pop("_export_failed", False):
         return ExportRejected(report)
@@ -77,8 +89,18 @@ def _run(
     chart_type_hint: str | None,
     *,
     output_stem: Path | None,
+    input_paths: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
-    """Run the common checkpoint protocol without changing cwd or snippet effects."""
+    """Run a child and remove its checkpoint on return, error or timeout.
+
+    Opt-in stdin is one ASCII JSON mapping line, a newline, then the exact
+    submitted source. JSON escapes embedded newlines; the child parses data
+    without eval and reads the remaining stream as source. Only a protocol
+    marker enters argv, never mapping data; environment and cwd are inherited.
+    A malformed private frame follows the existing exec_error outcome.
+    Invalid caller mapping types raise TypeError before launch. File access
+    policy and asynchronous call cancellation/draining belong to callers.
+    """
     import json
     import subprocess
     import sys
@@ -86,6 +108,16 @@ def _run(
     from tempfile import TemporaryDirectory
 
     from dartwork_mpl.lint import lint as _lint
+
+    if input_paths is not None:
+        if not isinstance(input_paths, Mapping):
+            raise TypeError("input_paths must map string names to string paths")
+        input_paths = dict(input_paths)
+        if not all(
+            isinstance(name, str) and isinstance(path, str)
+            for name, path in input_paths.items()
+        ):
+            raise TypeError("input_paths must map string names to string paths")
 
     def _finalize(payload: dict[str, Any]) -> dict[str, Any]:
         """Keep logs and completion fields consistent on every outcome.
@@ -147,8 +179,19 @@ def _run(
                 channel.write(encoded)
 
         ns: dict = {{"__name__": "__sandbox__"}}
-        user_code = sys.stdin.read()
+        has_inputs = sys.argv[2:] == ["--dartwork-inputs-v1"]
+        user_code = "" if has_inputs else sys.stdin.read()
         try:
+            if has_inputs:
+                from types import MappingProxyType
+                input_paths = json.loads(sys.stdin.readline())
+                if not isinstance(input_paths, dict) or not all(
+                    isinstance(name, str) and isinstance(path, str)
+                    for name, path in input_paths.items()
+                ):
+                    raise TypeError("Invalid private input mapping")
+                ns["dartwork_inputs"] = MappingProxyType(input_paths)
+                user_code = sys.stdin.read()
             exec(compile(user_code, "<agent-snippet>", "exec"), ns)
             fig = ns.get({figure_var!r})
             if fig is None:
@@ -320,10 +363,15 @@ def _run(
     # Cwd stays inherited so snippet save destinations retain their meaning.
     with TemporaryDirectory(prefix="dartwork-mpl-validate-") as directory:
         result_path = Path(directory).resolve() / "result.json"
+        args = [sys.executable, "-c", runner, str(result_path)]
+        stdin = code
+        if input_paths:
+            args.append("--dartwork-inputs-v1")
+            stdin = json.dumps(input_paths, ensure_ascii=True) + "\n" + code
         try:
             proc = subprocess.run(
-                [sys.executable, "-c", runner, str(result_path)],
-                input=code,
+                args,
+                input=stdin,
                 capture_output=True,
                 text=True,
                 encoding="utf-8",

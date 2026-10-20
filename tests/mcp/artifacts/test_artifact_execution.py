@@ -1,8 +1,13 @@
 """Real child execution pins selected-Figure export and inherited validator effects."""
 
 import io
+import json
+import os
+import random
 import re
+import subprocess
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import matplotlib.image as mpimg
 import pytest
@@ -154,3 +159,318 @@ def test_export_stderr_contains_only_original_user_output(tmp_path, stderr):
     assert isinstance(result, ExportedPlot), result
     assert result.report["stderr"] == stderr
     assert (tmp_path / "plot.png").exists()
+
+
+@pytest.fixture
+def input_workspace(tmp_path):
+    """Remove every fixture input and output even when a mapping assertion fails."""
+    with TemporaryDirectory(prefix="mapping-", dir=tmp_path) as directory:
+        yield Path(directory)
+
+
+def test_input_mapping_reads_distinct_csvs_and_exports_native_values(
+    input_workspace,
+):
+    """Actual staged CSV bytes supply independent native artists through a read-only map."""
+    first = input_workspace / "first.csv"
+    second = input_workspace / "second.csv"
+    first.write_text("x,y,include\n2,20,1\n1,,1\n3,30,0\n4,40,1\n")
+    second.write_text("x,y\n5,50\n6,60\n")
+    paths = {"measurements": str(first), "comparison": str(second)}
+    code = (
+        FIGURE
+        + """import csv
+from collections.abc import Mapping
+assert isinstance(dartwork_inputs, Mapping)
+assert set(dartwork_inputs) == {'measurements', 'comparison'}
+try:
+    dartwork_inputs['measurements'] = dartwork_inputs['comparison']
+except TypeError:
+    pass
+else:
+    raise AssertionError('mapping must be read-only')
+with open(dartwork_inputs['measurements'], newline='') as stream:
+    rows = [row for row in csv.DictReader(stream) if row['y'] and row['include'] == '1']
+ax.lines[0].set_data([int(row['x']) for row in rows], [int(row['y']) for row in rows])
+assert list(ax.lines[0].get_xdata()) == [2, 4]
+assert list(ax.lines[0].get_ydata()) == [20, 40]
+with open(dartwork_inputs['comparison'], newline='') as stream:
+    rows = list(csv.DictReader(stream))
+line, = ax.plot([int(row['x']) for row in rows], [int(row['y']) for row in rows], linewidth=dm.lw(0))
+assert list(line.get_xdata()) == [5, 6]
+assert list(line.get_ydata()) == [50, 60]
+print('checked [2, 4] [20, 40]; [5, 6] [50, 60]')
+"""
+    )
+    result = export_plot(
+        code,
+        "fig",
+        20,
+        "line",
+        output_stem=input_workspace / "plot",
+        input_paths=paths,
+    )
+    assert isinstance(result, ExportedPlot), result
+    assert (
+        result.report["stdout"] == "checked [2, 4] [20, 40]; [5, 6] [50, 60]\n"
+    )
+    assert result.report["semantic_warnings"] == []
+    assert (
+        (input_workspace / "plot.png")
+        .read_bytes()
+        .startswith(b"\x89PNG\r\n\x1a\n")
+    )
+    assert (input_workspace / "plot.pdf").read_bytes().startswith(b"%PDF-")
+    assert paths == {"measurements": str(first), "comparison": str(second)}
+
+
+@pytest.mark.parametrize("input_paths", [None, {}])
+def test_no_inputs_leave_the_reserved_global_absent(
+    input_workspace, input_paths
+):
+    """Neither omitted inputs nor an empty map introduces a snippet global."""
+    code = FIGURE + "assert 'dartwork_inputs' not in globals()\n"
+    result = export_plot(
+        code,
+        "fig",
+        20,
+        None,
+        output_stem=input_workspace / "plot",
+        input_paths=input_paths,
+    )
+    assert isinstance(result, ExportedPlot), result
+
+
+def test_private_stdin_keeps_paths_out_of_argv_environment_and_source(
+    input_workspace, monkeypatch
+):
+    """The real subprocess receives paths only in its private frame and exact source after it."""
+    source_file = input_workspace / 'private-한글-"-\\-\n.csv'
+    source_file.write_text("x,y\n7,70\n")
+    paths = {"measurements": str(source_file)}
+    submitted = (
+        "# exact source: 한글, CRLF and trailing whitespace  \r\n"
+        + FIGURE
+        + """import os, sys
+assert open(dartwork_inputs['measurements']).read() == 'x,y\\n7,70\\n'
+for path in dartwork_inputs.values():
+    assert all(path not in arg for arg in sys.orig_argv)
+    assert all(path not in value for value in os.environ.values())
+print('frame checked')
+"""
+    )
+    before = submitted.encode("utf-8")
+    observed = []
+    real_run = subprocess.run
+
+    def observe_run(args, **kwargs):
+        """Observe the subprocess adapter's wire bytes while still executing its real child."""
+        observed.append((args, kwargs["input"], kwargs.get("env")))
+        return real_run(args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", observe_run)
+    result = export_plot(
+        submitted,
+        "fig",
+        20,
+        None,
+        output_stem=input_workspace / "plot",
+        input_paths=paths,
+    )
+    assert isinstance(result, ExportedPlot), result
+    assert result.report["stdout"] == "frame checked\n"
+    assert submitted.encode("utf-8") == before
+    assert len(observed) == 1
+    args, wire, environment = observed[0]
+    header, source = wire.split("\n", 1)
+    assert json.loads(header) == paths
+    assert source.encode("utf-8") == before
+    assert all(str(source_file) not in arg for arg in args)
+    assert environment is None
+    assert not Path(args[3]).parent.exists()
+
+
+def test_seeded_private_mapping_roundtrip_preserves_path_strings(
+    input_workspace,
+):
+    """Seeded Unicode and code-like filenames survive framing as data, without evaluation."""
+    rng = random.Random(2381)
+    alphabet = "abc123한글é\"'\\\n\r()[]{}; "
+    paths = {}
+    for index in range(8):
+        name = f"input_{index}"
+        filename = "".join(rng.choice(alphabet) for _ in range(24))
+        fixture = input_workspace / filename
+        fixture.write_text(str(index))
+        paths[name] = str(fixture)
+    code = (
+        FIGURE
+        + """import json
+for index in range(8):
+    assert open(dartwork_inputs[f'input_{index}']).read() == str(index)
+print(json.dumps(dict(dartwork_inputs), ensure_ascii=True))
+"""
+    )
+    result = export_plot(
+        code,
+        "fig",
+        20,
+        None,
+        output_stem=input_workspace / "plot",
+        input_paths=paths,
+    )
+    assert isinstance(result, ExportedPlot), result
+    assert json.loads(result.report["stdout"]) == paths, (2381, paths)
+
+
+@pytest.mark.parametrize(
+    "invalid", [[], {1: "path"}, {"data": 1}, {"data": Path("path")}]
+)
+def test_invalid_internal_mapping_types_fail_before_launch(
+    input_workspace, invalid
+):
+    """Caller programming errors reject malformed map types without executing source."""
+    marker = input_workspace / "executed"
+    code = f"from pathlib import Path\nPath({str(marker)!r}).touch()"
+    with pytest.raises(
+        TypeError, match="input_paths must map string names to string paths"
+    ):
+        export_plot(
+            code,
+            "fig",
+            20,
+            None,
+            output_stem=input_workspace / "plot",
+            input_paths=invalid,
+        )
+    assert not list(input_workspace.iterdir())
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        "not JSON",
+        "[]",
+        '{"data": 1}',
+        "__import__('builtins').print('EVALUATED') or {}",
+    ],
+)
+def test_malformed_private_frame_rejects_without_executing_source(
+    input_workspace, monkeypatch, header
+):
+    """Damaged private transport returns the existing exec_error and removes its checkpoint."""
+    marker = input_workspace / "executed"
+    code = f"from pathlib import Path\nPath({str(marker)!r}).touch()"
+    real_run = subprocess.run
+    channels = []
+
+    def damage_frame(args, **kwargs):
+        """Inject a damaged wire header at this subprocess adapter while running its real child."""
+        channels.append(Path(args[3]).parent)
+        _, source = kwargs["input"].split("\n", 1)
+        kwargs["input"] = header + "\n" + source
+        return real_run(args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", damage_frame)
+    result = export_plot(
+        code,
+        "fig",
+        20,
+        None,
+        output_stem=input_workspace / "plot",
+        input_paths={"data": "unused"},
+    )
+    assert isinstance(result, ExecutionRejected), result
+    assert result.report["status"] == "exec_error"
+    assert result.report["exc_type"] in {"JSONDecodeError", "TypeError"}
+    assert len(channels) == 1
+    assert not channels[0].exists()
+    assert not list(input_workspace.iterdir())
+
+
+def test_mapping_preserves_controlled_legacy_report_and_logs(
+    input_workspace, monkeypatch
+):
+    """Opt-in injection preserves stable report bytes, cwd/environment and original logs."""
+    monkeypatch.chdir(input_workspace)
+    monkeypatch.setenv("DARTWORK_MAPPING_TEST", "inherited")
+    code = (
+        FIGURE
+        + """import os, sys
+assert os.environ['DARTWORK_MAPPING_TEST'] == 'inherited'
+with open('relative.txt', 'w') as stream:
+    stream.write('cwd inherited')
+print('  stdout spaces  ')
+print('  stderr spaces  ', file=sys.stderr)
+"""
+    )
+    legacy = export_plot(
+        code, "fig", 20, None, output_stem=input_workspace / "legacy"
+    )
+    mapped = export_plot(
+        code,
+        "fig",
+        20,
+        None,
+        output_stem=input_workspace / "mapped",
+        input_paths={"unused": str(input_workspace / "relative.txt")},
+    )
+    assert isinstance(legacy, ExportedPlot), legacy
+    assert isinstance(mapped, ExportedPlot), mapped
+    assert (
+        json.dumps(mapped.report, sort_keys=True).encode()
+        == json.dumps(legacy.report, sort_keys=True).encode()
+    )
+    assert mapped.report["stdout"] == "  stdout spaces  \n"
+    assert mapped.report["stderr"] == "  stderr spaces  \n"
+    assert (input_workspace / "relative.txt").read_text() == "cwd inherited"
+    assert (input_workspace / "legacy.png").read_bytes() == (
+        input_workspace / "mapped.png"
+    ).read_bytes()
+    validated = validate_plot(code)
+    assert validated["status"] == "ok"
+    assert validated["stdout"] == "  stdout spaces  \n"
+    assert validated["stderr"] == "stderr spaces"
+
+
+@pytest.mark.parametrize(
+    ("ending", "status", "timeout"),
+    [
+        ("raise ValueError('mapping failure')", "exec_error", 20),
+        ("import time; time.sleep(60)", "timeout", 4),
+        ("pass", "no_figure", 20),
+    ],
+)
+def test_mapping_failure_reaps_child_and_removes_private_channel(
+    input_workspace, ending, status, timeout
+):
+    """After mapped execution fails or times out, its child and checkpoint directory are gone."""
+    fixture = input_workspace / "fixture.csv"
+    fixture.write_text("x,y\n1,10\n")
+    code = (
+        """import json, os, sys
+assert open(dartwork_inputs['data']).read() == 'x,y\\n1,10\\n'
+print(json.dumps({'pid': os.getpid(), 'channel': sys.argv[1]}), flush=True)
+"""
+        + ending
+    )
+    result = export_plot(
+        code,
+        "fig",
+        timeout,
+        None,
+        output_stem=input_workspace / "plot",
+        input_paths={"data": str(fixture)},
+    )
+    assert isinstance(result, ExecutionRejected), result
+    assert result.report["status"] == status
+    evidence = json.loads(result.report["stdout"])
+    assert not Path(evidence["channel"]).parent.exists()
+    with pytest.raises(ProcessLookupError):
+        os.kill(evidence["pid"], 0)
+    assert sorted(path.name for path in input_workspace.iterdir()) == [
+        "fixture.csv"
+    ]
+    if status == "exec_error":
+        assert result.report["exc_type"] == "ValueError"
+        assert result.report["exc_msg"] == "mapping failure"
