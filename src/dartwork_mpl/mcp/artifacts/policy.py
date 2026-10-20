@@ -372,9 +372,15 @@ def parse_artifact_id(raw: str) -> ArtifactId | InvalidRequest:
         )
 
 
-def _bounded_json(raw: bytes) -> Any:
+def _bounded_json(
+    raw: bytes,
+    *,
+    max_bytes: int = MAX_MANIFEST_BYTES,
+    max_depth: int = 8,
+    max_fields: int = 128,
+) -> Any:
     """Bound JSON before recursive decoding and reject duplicate/nonfinite values."""
-    if not isinstance(raw, bytes) or len(raw) > MAX_MANIFEST_BYTES:
+    if not isinstance(raw, bytes) or len(raw) > max_bytes:
         raise ValueError("Manifest exceeds parser byte bound")
     text = raw.decode("utf-8")
     depth = 0
@@ -391,7 +397,7 @@ def _bounded_json(raw: bytes) -> Any:
             quoted = True
         elif char in "[{":
             depth += 1
-            if depth > 8:
+            if depth > max_depth:
                 raise ValueError("Manifest exceeds parser depth bound")
         elif char in "]}":
             depth -= 1
@@ -401,7 +407,7 @@ def _bounded_json(raw: bytes) -> Any:
         """Reject duplicate keys and cap all object fields during decoding."""
         nonlocal fields
         fields += len(pairs)
-        if fields > 128 or len(dict(pairs)) != len(pairs):
+        if fields > max_fields or len(dict(pairs)) != len(pairs):
             raise ValueError("Ambiguous or excessive manifest fields")
         return dict(pairs)
 

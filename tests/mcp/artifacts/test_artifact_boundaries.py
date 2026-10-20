@@ -24,6 +24,10 @@ ALLOWED = {
     ("wiring", "artifacts"),
     ("wiring", "legacy"),
 }
+PURE = {
+    "dartwork_mpl.mcp.artifacts.policy",
+    "dartwork_mpl.mcp.artifacts.input_policy",
+}
 
 
 def slice_of(module):
@@ -119,21 +123,26 @@ def assert_boundaries(edges, surfaces):
     graph = {}
     for source, target, name in edges:
         if not target.startswith("dartwork_mpl"):
-            if source == "dartwork_mpl.mcp.artifacts.policy":
-                assert target.split(".")[0] not in {
-                    "os",
-                    "pathlib",
-                    "fastmcp",
-                    "mcp",
-                    "subprocess",
-                    "io",
+            if source in PURE:
+                assert target.split(".")[0] in {
+                    "hashlib",
+                    "json",
+                    "keyword",
+                    "math",
+                    "re",
+                    "collections",
+                    "dataclasses",
+                    "datetime",
+                    "enum",
+                    "types",
+                    "typing",
                 }
             if slice_of(source) == "core":
                 assert target.split(".")[0] not in {"fastmcp", "mcp"}
             continue
         first, second = slice_of(source), slice_of(target)
         graph.setdefault(source, set()).add(target)
-        if source.endswith("artifacts.policy"):
+        if source in PURE:
             assert target == "dartwork_mpl.mcp.artifacts.policy", (
                 "decision dependency",
                 source,
@@ -268,7 +277,12 @@ def test_legal_in_slice_import_is_accepted():
                 "dartwork_mpl.mcp.artifacts.delivery",
                 "dartwork_mpl.mcp.artifacts.policy",
                 "RenderRequest",
-            )
+            ),
+            (
+                "dartwork_mpl.mcp.artifacts.input_policy",
+                "dartwork_mpl.mcp.artifacts.policy",
+                "ArtifactId",
+            ),
         ],
         {},
     )
@@ -287,3 +301,24 @@ def test_core_remains_importable_without_fastmcp():
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "core imported"
+
+
+@pytest.mark.parametrize("module", ["policy", "input_policy"])
+@pytest.mark.parametrize(
+    "target",
+    [
+        "os",
+        "pathlib",
+        "subprocess",
+        "io",
+        "fastmcp",
+        "dartwork_mpl.mcp.artifacts.store",
+        "dartwork_mpl.mcp.execution",
+    ],
+)
+def test_pure_policy_import_violations_are_rejected(module, target):
+    """Both pure modules reject I/O and shell dependencies, even inside artifacts."""
+    with pytest.raises(AssertionError):
+        assert_boundaries(
+            [(f"dartwork_mpl.mcp.artifacts.{module}", target, None)], {}
+        )
