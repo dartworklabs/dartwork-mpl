@@ -133,10 +133,10 @@ def read_artists(fig: Figure) -> dict[str, Any]:
                     unchecked.append(f"{prefix}: invisible bar")
                 panel["bars"].append(
                     {
-                        "x": patch.get_x() + patch.get_width() / 2,
-                        "y": patch.get_y(),
-                        "height": patch.get_height(),
-                        "width": patch.get_width(),
+                        "x": float(patch.get_x() + patch.get_width() / 2),
+                        "y": float(patch.get_y()),
+                        "height": float(patch.get_height()),
+                        "width": float(patch.get_width()),
                         "label": container.get_label(),
                     }
                 )

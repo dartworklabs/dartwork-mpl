@@ -3,6 +3,7 @@
 import csv
 import hashlib
 import importlib.util
+import json
 import random
 from pathlib import Path
 
@@ -18,6 +19,29 @@ assert SPEC is not None and SPEC.loader is not None
 oracle = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(oracle)
 CASES = ("line", "groupedbar", "scatter", "custom2panel")
+
+
+@pytest.mark.parametrize("dtype", [np.int32, np.int64, np.float32, np.float64])
+def test_native_bar_numeric_observations_round_trip_json(dtype):
+    """Native NumPy bar scalars retain numeric geometry across capture JSON."""
+    dm.style.use("scientific")
+    fig, ax = plt.subplots(figsize=dm.figsize("6cm", "square"))
+    try:
+        ax.bar([0], np.array([11], dtype=dtype), label="control")
+        observed = oracle.read_artists(fig)
+        recovered = json.loads(json.dumps(observed, allow_nan=False))
+        assert recovered["panels"][0]["bars"] == [
+            {
+                "x": 0.0,
+                "y": 0.0,
+                "height": 11.0,
+                "width": 0.8,
+                "label": "control",
+            }
+        ]
+        assert recovered["unchecked"] == []
+    finally:
+        plt.close(fig)
 
 
 def rows(case: str) -> list[dict]:
