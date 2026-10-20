@@ -119,7 +119,7 @@ class ViewerState:
     def save_config(
         self, parsed: StateRequest, function_name: str
     ) -> StateWriteResult:
-        """Replace valid/missing config with bounded parsed state; corrupt bytes block edits."""
+        """Persist declared parameter names; bounded edits preserve corrupt existing bytes."""
 
         def edit(raw: bytes | MissingState) -> bytes | StateEditRefusal:
             """Check historical structure while locked, then encode the complete new config."""
@@ -130,7 +130,9 @@ class ViewerState:
             try:
                 value: dict[str, JsonValue] = {
                     "function": function_name,
-                    "params": parsed.model.model_dump(mode="json"),
+                    "params": parsed.model.model_dump(
+                        mode="json", by_alias=False
+                    ),
                     "updated_at": datetime.now(timezone.utc).isoformat(),
                 }
             except (ValueError, TypeError, OverflowError, RecursionError):
@@ -153,7 +155,7 @@ class ViewerState:
         )
 
     def save_preset(self, parsed: PresetRequest) -> StateWriteResult:
-        """Append one bounded preset under the process lock without projecting old entries."""
+        """Append declared parameter names under lock without projecting old entries."""
 
         def edit(raw: bytes | MissingState) -> bytes | StateEditRefusal:
             """Retain every old JSON value and refuse corruption or the preset count cap."""
@@ -170,7 +172,9 @@ class ViewerState:
                 entries.append(
                     {
                         "label": parsed.label,
-                        "params": parsed.model.model_dump(mode="json"),
+                        "params": parsed.model.model_dump(
+                            mode="json", by_alias=False
+                        ),
                         "timestamp": datetime.now(timezone.utc).isoformat(),
                     }
                 )

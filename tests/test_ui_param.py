@@ -15,7 +15,7 @@ from typing import Literal
 from unittest.mock import patch
 
 import pytest
-from pydantic import Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from dartwork_mpl.ui import _config as config
 from dartwork_mpl.ui._boundary import (
@@ -26,6 +26,7 @@ from dartwork_mpl.ui._boundary import (
     PresetRequest,
     StateRequest,
     Tab,
+    parse_request,
 )
 from dartwork_mpl.ui._config import (
     CONFIG_FILENAME,
@@ -571,6 +572,67 @@ def test_config_serializes_supported_model_types_and_optional_fields(
     assert value["figWidth"] == 80
     assert value["function"] == "plot"
     assert value["updated_at"].endswith("+00:00")
+
+
+@pytest.mark.parametrize("kind", ["config", "presets"])
+def test_alias_serialization_round_trips_declared_state_names(
+    tmp_path: Path, kind: str
+) -> None:
+    """Successful config/preset saves retain declared values despite native alias dumps."""
+
+    class AliasedChild(BaseModel):
+        """Nested native serialization aliases must stay out of stored params."""
+
+        model_config = ConfigDict(serialize_by_alias=True)
+        count: int = Field(default=2, alias="wire_child_count")
+
+    class AliasedParams(ParamModel):
+        """Caller serialization settings remain available inside trusted callbacks."""
+
+        model_config = ConfigDict(serialize_by_alias=True)
+        count: int = Field(default=3, alias="wire_count")
+        child: AliasedChild = Field(alias="wire_child")
+
+    expected = {"count": 5, "child": {"count": 7}}
+    original_config = AliasedParams.model_config.copy()
+    child_config = AliasedChild.model_config.copy()
+    body = (
+        expected if kind == "config" else {"label": "alias", "params": expected}
+    )
+    parsed = parse_request(
+        "/api/config" if kind == "config" else "/api/preset",
+        body,
+        AliasedParams,
+        descriptors_from_model(AliasedParams),
+    )
+    assert isinstance(
+        parsed, StateRequest if kind == "config" else PresetRequest
+    )
+    assert parsed.model.model_dump(mode="json") == {
+        "wire_count": 5,
+        "wire_child": {"wire_child_count": 7},
+    }
+    with _state_at(tmp_path, frozenset(AliasedParams.model_fields)) as state:
+        if isinstance(parsed, StateRequest):
+            assert isinstance(state.save_config(parsed, "plot"), StateWritten)
+            loaded = state.load_config()
+            assert isinstance(loaded, config.ConfigLoaded)
+            entry = loaded.value
+            filename = CONFIG_FILENAME
+        else:
+            assert isinstance(state.save_preset(parsed), StateWritten)
+            loaded_presets = state.load_presets()
+            assert isinstance(loaded_presets, config.PresetsLoaded)
+            entry = loaded_presets.value[0]
+            filename = PRESET_FILENAME
+        assert entry["params"] == expected
+        assert entry["dropped_fields"] == []
+    stored = json.loads((tmp_path / filename).read_bytes())
+    assert (stored if kind == "config" else stored[0])["params"] == expected
+    assert AliasedParams.model_config == original_config
+    assert AliasedChild.model_config == child_config
+    assert AliasedParams.model_fields["count"].alias == "wire_count"
+    assert AliasedChild.model_fields["count"].alias == "wire_child_count"
 
 
 def test_serialized_config_overflow_preserves_previous_bytes(
