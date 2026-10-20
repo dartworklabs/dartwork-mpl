@@ -6,8 +6,14 @@ ordinary data coordinates. Unsupported artists or ambiguous mappings are
 explicitly unchecked and cannot produce a passing assessment.
 """
 
+import argparse
+import ast
 import hashlib
 import json
+import os
+import signal
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -16,7 +22,7 @@ from matplotlib.collections import PathCollection
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
-__all__ = ["assess", "load_episode", "read_artists"]
+__all__ = ["assess", "load_episode", "read_artists", "replay"]
 
 _FIXTURES = (
     Path(__file__).resolve().parents[1] / "tests/mcp/agent_loop/fixtures"
@@ -266,3 +272,228 @@ def assess(case_id: str, observed: dict[str, Any]) -> dict[str, Any]:
         "violations": violations,
         "unchecked": unchecked,
     }
+
+
+def _replay_inputs(source: bytes, csv: Path) -> list[str]:
+    """Conservatively mark unsupported imports and file inputs before replay.
+
+    This static review is deliberately incomplete and is not an OS sandbox.
+    Only ordinary fixture readers and local plot exports are supported.
+    """
+    tree = ast.parse(source)
+    unchecked = []
+    literals = {
+        target.id: node.value.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        and isinstance(node.value, ast.Constant)
+        and isinstance(node.value.value, str)
+        for target in node.targets
+        if isinstance(target, ast.Name)
+    }
+    allowed = {
+        "csv",
+        "pathlib",
+        "numpy",
+        "pandas",
+        "matplotlib",
+        "dartwork_mpl",
+        "math",
+    }
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            names = (
+                [alias.name for alias in node.names]
+                if isinstance(node, ast.Import)
+                else [node.module or ""]
+            )
+            if any(name.split(".")[0] not in allowed for name in names):
+                unchecked.append("unsupported import/input dependency")
+        if isinstance(node, ast.Attribute) and node.attr in {
+            "random",
+            "default_rng",
+            "rand",
+            "randn",
+            "now",
+            "today",
+            "time",
+            "urlopen",
+            "request",
+            "getenv",
+            "environ",
+            "read_bytes",
+            "write_text",
+            "write_bytes",
+        }:
+            unchecked.append("network/time/random/external IO dependency")
+        if isinstance(node, ast.Call):
+            name = (
+                node.func.id
+                if isinstance(node.func, ast.Name)
+                else node.func.attr
+                if isinstance(node.func, ast.Attribute)
+                else ""
+            )
+            if name in {
+                "open",
+                "read_csv",
+                "loadtxt",
+                "genfromtxt",
+                "read_text",
+            }:
+                argument = node.args[0] if node.args else None
+                path = (
+                    argument.value
+                    if isinstance(argument, ast.Constant)
+                    and isinstance(argument.value, str)
+                    else literals.get(argument.id)
+                    if isinstance(argument, ast.Name)
+                    else None
+                )
+                if path is None:
+                    unchecked.append("unresolved file input")
+                elif (csv.parent / path).resolve() != csv.resolve():
+                    unchecked.append("file input outside fixed CSV")
+            if name in {"eval", "exec", "compile", "__import__"}:
+                unchecked.append("dynamic execution dependency")
+    return sorted(set(unchecked))
+
+
+def replay(
+    source: Path,
+    csv: Path,
+    case_id: str,
+    output_dir: Path,
+    figure_var: str = "fig",
+    *,
+    timeout_seconds: float = 20,
+) -> dict[str, Any]:
+    """Replay exact source in a fresh bounded process before fixture cleanup.
+
+    The original owned CSV directory is retained as cwd so absolute CSV paths
+    work without edits. Return observed artists and a separate oracle result;
+    this does not establish facts about the original execution's internals.
+    """
+    source, csv, output_dir = (
+        source.resolve(),
+        csv.resolve(),
+        output_dir.resolve(),
+    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    raw, fixture = source.read_bytes(), csv.read_bytes()
+    result: dict[str, Any] = {
+        "status": "unchecked",
+        "source_sha256": hashlib.sha256(raw).hexdigest(),
+        "csv_sha256": hashlib.sha256(fixture).hexdigest(),
+        "cwd_mode": "original_owned_workspace",
+        "figure_var": figure_var,
+    }
+    try:
+        unknown = _replay_inputs(raw, csv)
+    except SyntaxError as exc:
+        unknown = [f"invalid source: {exc.msg}"]
+    if unknown:
+        result["unchecked"] = unknown
+    else:
+        argv = [
+            sys.executable,
+            str(Path(__file__).resolve()),
+            "_replay",
+            str(source),
+            str(output_dir),
+            figure_var,
+        ]
+        env = {
+            key: os.environ[key]
+            for key in (
+                "PATH",
+                "HOME",
+                "TMPDIR",
+                "LANG",
+                "LC_ALL",
+                "VIRTUAL_ENV",
+            )
+            if key in os.environ
+        }
+        env.update(MPLBACKEND="Agg", PYTHONHASHSEED="0")
+        with (
+            (output_dir / "stdout.txt").open("wb") as stdout,
+            (output_dir / "stderr.txt").open("wb") as stderr,
+        ):
+            process = subprocess.Popen(
+                argv,
+                cwd=csv.parent,
+                env=env,
+                stdout=stdout,
+                stderr=stderr,
+                start_new_session=True,
+            )
+            try:
+                code = process.wait(timeout=min(20, timeout_seconds))
+            except subprocess.TimeoutExpired:
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait()
+                code = -signal.SIGKILL
+        observed_path = output_dir / "observed.json"
+        if code == 0 and observed_path.exists():
+            result.update(
+                status="ok", observed=json.loads(observed_path.read_text())
+            )
+            result["assessment"] = assess(case_id, result["observed"])
+            result["png_sha256"] = hashlib.sha256(
+                (output_dir / "plot.png").read_bytes()
+            ).hexdigest()
+        else:
+            result.update(
+                status="failed",
+                stop_reason="timeout"
+                if code == -signal.SIGKILL
+                else "execution_error",
+                returncode=code,
+            )
+    if csv.read_bytes() != fixture:
+        result.update(status="failed", stop_reason="fixture_changed")
+    (output_dir / "result.json").write_text(json.dumps(result, indent=2))
+    return result
+
+
+def _replay_child(source: Path, output: Path, figure_var: str) -> None:
+    """Execute unchanged UTF-8 bytes once and snapshot the explicitly named figure."""
+    namespace: dict[str, Any] = {
+        "__name__": "__main__",
+        "__file__": str(source),
+    }
+    exec(compile(source.read_bytes(), str(source), "exec"), namespace)
+    fig = namespace[figure_var]
+    if not isinstance(fig, Figure):
+        raise TypeError("figure_var does not name a native Figure")
+    fig.canvas.draw()
+    (output / "observed.json").write_text(json.dumps(read_artists(fig)))
+    fig.savefig(output / "plot.png")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("command", choices=("replay", "_replay"))
+    parser.add_argument("source", type=Path)
+    parser.add_argument("output", type=Path)
+    parser.add_argument("figure_var", nargs="?", default="fig")
+    parser.add_argument("--csv", type=Path)
+    parser.add_argument("--case", choices=_CASES)
+    args = parser.parse_args()
+    if args.command == "_replay":
+        _replay_child(args.source, args.output, args.figure_var)
+    elif args.csv is None or args.case is None:
+        parser.error("replay requires --csv and --case")
+    else:
+        print(
+            json.dumps(
+                replay(
+                    args.source,
+                    args.csv,
+                    args.case,
+                    args.output,
+                    args.figure_var,
+                )
+            )
+        )

@@ -121,6 +121,12 @@ assert assess("custom2panel", read_artists(styled_fig))["violations"] == []
 
 **Expected:** `AGENT_EVAL_ROOT=~/scratch/dartwork-mpl-agent-loop-eval-2026-10-20` 아래 네 기준선의 성공/실패·실제 agent transcript·원판/수정판 멤버가 보존된다. 모델의 oracle 접근 흔적은 오염이며 cwd 분리만으로 접근 불가를 주장하지 않는다.
 
+#### 실행 조정 — 2026-10-20 부모 승인
+
+Task 2 Step 10의 full-smoke 선행조건만 아래로 대체한다. 두 smoke는 FAILED 그대로 보존한다. 실제 이미지·전체 report 수신, 같은 세션 resume, 모델·scope·정리와 실제 stdio 시험 증거를 두 실패 기록의 hash에 묶은 명시적 evaluator admission으로 기준선 실행을 허용한다. 새 host agent 회수는 미확인이며 첫 scored episode에서 처음 측정한다.
+캡처·설정·모델·입력·oracle 오염·도구·한도·정리 실패는 episode를 중단한다. 이미지/report 검토의 workflow 누락은 채점 실패로 유지하되 선택 artifact와 원 render 인자가 온전하면 예정된 수정·새 회수까지 진행한다. 어느 workflow 실패든 최종 status는 failed이며 infrastructure_status와 구분한다.
+추가 smoke·재시도·모델 수리·호출·예산·시간 증액은 없다. 원장과 125분/$41 상한을 유지하고 기준4/개선4를 각 1회만 실행한다. 부모의 독립 Task 2 코드 검수 후 기준선을 실행하며, 두 smoke를 성공으로 바꾸거나 scripted 회수를 agent 회수로 간주하지 않는다.
+
 ### Task 3: 기존 prompt와 entry를 전달·검토·수정·재조회로 연결
 
 **Files:** Modify `src/dartwork_mpl/mcp/prompts.py`, `src/dartwork_mpl/asset/prompt/00-index.md`, `docs/integrations/mcp_server.md`.
