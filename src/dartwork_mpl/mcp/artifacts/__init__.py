@@ -1,6 +1,11 @@
 """Declared durable artifact values, use cases and MCP registration surface."""
 
-from .delivery import ArtifactFailure, get_artifact, render_artifact
+from .delivery import (
+    ArtifactFailure,
+    delete_inputs,
+    get_artifact,
+    render_artifact,
+)
 from .input_access import (
     InputGrant,
     InputsDisabled,
@@ -124,6 +129,7 @@ __all__ = [
     "classify_provenance",
     "configure_store",
     "copy_inputs",
+    "delete_inputs",
     "get_artifact",
     "is_expired",
     "parse_artifact_id",
