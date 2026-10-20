@@ -10,6 +10,7 @@ import json
 import math
 import re
 import types
+from contextlib import suppress
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from functools import lru_cache
@@ -614,7 +615,14 @@ def _active(
     model_cls: type[ParamModel],
     descriptors: list[ParamDescriptor],
 ) -> ParamModel | InvalidRequest:
-    """Apply documented list-text coercion once, preserve defaults and reject value drift."""
+    """Apply documented list-text and numeric-choice coercion once, then validate natively.
+
+    A numeric ``Literal`` choice arrives from a browser select, or from state the
+    base viewer saved, as text (``"2"``; JS renders ``1.0`` as ``"1"``). Such text
+    gets the base viewer's single ``int()``/``float()`` conversion; text that does
+    not convert stays unchanged so native validation rejects it. Membership,
+    bounds, nonfinite values and the caller's validators remain native.
+    """
     if not isinstance(value, dict):
         return InvalidRequest()
     coerced: dict[str, Any] = dict(value)
@@ -634,6 +642,16 @@ def _active(
                     for part in item.split(",")
                     if part.strip()
                 ]
+            elif (
+                descriptor.choices
+                and descriptor.type_name in ("int", "float")
+                and isinstance(item, str)
+                and item not in descriptor.choices
+            ):
+                with suppress(ValueError):
+                    coerced[descriptor.name] = (
+                        int if descriptor.type_name == "int" else float
+                    )(item)
         model = _validate_model(model_cls, coerced)
         if _bounded(model.model_dump(mode="json", by_alias=False)) is not None:
             return InvalidRequest(

@@ -31,6 +31,21 @@ class Params(ParamModel):
     mode: Literal["line", "bar"] = "line"
 
 
+class NumericChoiceParams(ParamModel):
+    """Numeric Literal choices arrive from browser selects as strings."""
+
+    model_config = ConfigDict(extra="allow")
+    ncols: Literal[1, 2, 3] = 1
+    ratio: Literal[0.5, 1.0] = 0.5
+    count: int = Field(default=3, ge=1, le=9)
+    mode: Literal["line", "bar"] = "line"
+
+
+def browser_choice(value: float) -> str:
+    """Spell a numeric choice as a select option does (JS ``String(1.0) == "1"``)."""
+    return str(int(value)) if float(value).is_integer() else repr(value)
+
+
 class Nested(BaseModel):
     """Nested model extras must close without changing the supplied class."""
 
@@ -323,6 +338,132 @@ def test_active_fields_closed_even_when_model_extra_allows():
     assert isinstance(
         request({"count": 2}, model=ValidatedParams), boundary.InvalidRequest
     )
+
+
+@pytest.mark.parametrize(
+    "route, wrap",
+    [
+        ("/api/render", lambda params: params),
+        ("/api/save-state", lambda params: {"params": params}),
+        ("/api/preset", lambda params: {"label": "p", "params": params}),
+    ],
+)
+def test_numeric_choice_strings_convert_once_to_declared_members(route, wrap):
+    """Select strings ("2", float "1") become typed members on every model route."""
+    before = NumericChoiceParams.model_config.copy()
+    result = request(
+        wrap({"ncols": "2", "ratio": "1", "mode": "bar"}),
+        route=route,
+        model=NumericChoiceParams,
+    )
+    assert isinstance(
+        result,
+        (boundary.ModelRequest, boundary.StateRequest, boundary.PresetRequest),
+    ), result
+    assert (result.model.ncols, type(result.model.ncols)) == (2, int)
+    assert (result.model.ratio, type(result.model.ratio)) == (1.0, float)
+    assert result.model.mode == "bar"
+    native = request(
+        wrap({"ncols": 3, "ratio": 0.5}), route=route, model=NumericChoiceParams
+    )
+    assert (native.model.ncols, native.model.ratio) == (3, 0.5)
+    assert NumericChoiceParams.model_config == before
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        {"ncols": "4"},
+        {"ncols": "2.0"},
+        {"ncols": "2.7"},
+        {"ncols": " "},
+        {"ncols": "nan"},
+        {"ratio": "2"},
+        {"ratio": "nan"},
+        {"ratio": "inf"},
+        {"ratio": "-Infinity"},
+        {"ratio": "1e400"},
+        {"count": "10"},
+        {"mode": "2"},
+        {"unknown": "2"},
+    ],
+)
+def test_numeric_choice_conversion_keeps_membership_bounds_and_names(value):
+    """Conversion never truncates, admits nonmembers or nonfinite values, or opens names."""
+    assert isinstance(
+        request(value, model=NumericChoiceParams), boundary.InvalidRequest
+    ), value
+
+
+def test_numeric_choice_conversion_runs_the_caller_validator_once():
+    """A converted choice still reaches the caller's own hooks exactly once."""
+    calls = []
+
+    class HookChoices(ParamModel):
+        """Record field and model validation for a numeric Literal choice."""
+
+        ncols: Literal[1, 2, 3] = 1
+
+        @field_validator("ncols")
+        @classmethod
+        def ncols_hook(cls, value):
+            """Record the typed value that native validation hands to the caller."""
+            calls.append(("field", value, type(value)))
+            return value
+
+        @model_validator(mode="after")
+        def model_hook(self):
+            """Record one completed model validation."""
+            calls.append(("model",))
+            return self
+
+    result = request({"ncols": "3"}, model=HookChoices)
+    assert isinstance(result, boundary.ModelRequest)
+    assert calls == [("field", 3, int), ("model",)]
+
+
+def test_numeric_choice_browser_spelling_round_trips_and_noise_never_crashes():
+    """Every declared choice survives its select spelling; arbitrary text parses or refuses."""
+    for ncols in (1, 2, 3):
+        for ratio in (0.5, 1.0):
+            parsed = request(
+                {
+                    "ncols": browser_choice(ncols),
+                    "ratio": browser_choice(ratio),
+                },
+                model=NumericChoiceParams,
+            )
+            assert isinstance(parsed, boundary.ModelRequest)
+            assert (parsed.model.ncols, parsed.model.ratio) == (ncols, ratio)
+    rng = random.Random(4991)
+    alphabet = "0123456789.-+eE_ inNaf"
+    for _ in range(500):
+        text = "".join(rng.choice(alphabet) for _ in range(rng.randrange(1, 8)))
+        for field in ("ncols", "ratio"):
+            parsed = request({field: text}, model=NumericChoiceParams)
+            assert isinstance(
+                parsed, (boundary.ModelRequest, boundary.InvalidRequest)
+            ), (field, text)
+            if isinstance(parsed, boundary.ModelRequest):
+                chosen = getattr(parsed.model, field)
+                assert chosen in ((1, 2, 3) if field == "ncols" else (0.5, 1.0))
+                assert math.isfinite(chosen)
+
+
+def test_old_numeric_choice_strings_in_stored_presets_remain_usable():
+    """Raw historical select strings survive storage projection and parse as choices."""
+    raw = json.dumps(
+        [{"label": "old", "params": {"ncols": "2", "ratio": "1"}}]
+    ).encode()
+    stored = boundary.parse_stored("presets", raw)
+    assert isinstance(stored, boundary.StoredPresets)
+    (entry,) = boundary.project_stored(
+        stored, frozenset(NumericChoiceParams.model_fields)
+    )
+    assert entry["params"] == {"ncols": "2", "ratio": "1"}
+    parsed = request(entry["params"], model=NumericChoiceParams)
+    assert isinstance(parsed, boundary.ModelRequest)
+    assert (parsed.model.ncols, parsed.model.ratio) == (2, 1.0)
 
 
 def test_nested_models_close_without_closing_explicit_dicts():

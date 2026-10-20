@@ -2,8 +2,9 @@
 
 Startup configuration grants directory-object authority. Requests provide only
 parsed relative outputs; preparation pins every destination before rendering.
-Outputs are create-only with best-effort rollback, never a cross-root transaction.
-Fixed state uses two separately owned names and atomic sibling replacement.
+Outputs are create-only with best-effort rollback, never a cross-root transaction;
+their files and new parents follow the process umask like an ordinary save.
+Fixed state uses two separately owned private names and atomic sibling replacement.
 """
 
 import errno
@@ -199,12 +200,22 @@ def _open_directory(parent_fd: int, name: str) -> int:
     return os.open(name, _directory_flags(), dir_fd=parent_fd)
 
 
-def _reserve_file(parent_fd: int, name: str) -> int:
-    """Exclusively create a new regular file; never open or truncate an old one."""
+# Saved outputs keep the modes of an ordinary save (savefig, copy, mkdir): the
+# process umask governs them. Only fixed viewer state is private.
+_OUTPUT_FILE_MODE = 0o666
+_OUTPUT_DIRECTORY_MODE = 0o777
+_STATE_FILE_MODE = 0o600
+
+
+def _reserve_file(parent_fd: int, name: str, *, mode: int) -> int:
+    """Exclusively create a new regular file; never open or truncate an old one.
+
+    ``mode`` is the requested creation mode before the process umask applies.
+    """
     return os.open(
         name,
         os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
-        0o600,
+        mode,
         dir_fd=parent_fd,
     )
 
@@ -470,7 +481,10 @@ def _inspect_target(target: _Target) -> FileFailure | None:
 
 
 def _complete_parents(scope: RootScope, target: _Target) -> FileFailure | None:
-    """Create safe missing parents only after the complete destination set validated."""
+    """Create safe missing parents only after the complete destination set validated.
+
+    New parents take the umask-governed mode of an ordinary ``mkdir``.
+    """
     try:
         for part in target.missing:
             refusal = _verify_target(scope, target)
@@ -478,7 +492,9 @@ def _complete_parents(scope: RootScope, target: _Target) -> FileFailure | None:
                 return refusal
             created = False
             try:
-                os.mkdir(part, 0o700, dir_fd=target.chain[-1].fd)
+                os.mkdir(
+                    part, _OUTPUT_DIRECTORY_MODE, dir_fd=target.chain[-1].fd
+                )
                 created = True
                 target.unverified += (
                     _UnverifiedDirectory(
@@ -687,7 +703,8 @@ def commit_save(
 
     Another writer's late creation conflicts. Provisional new files may be visible
     to readers. A crash may leave them, and same-owner adversarial renames are not
-    covered by a global atomicity guarantee.
+    covered by a global atomicity guarantee. New files take the umask-governed
+    mode of an ordinary save.
     """
     if plan._closed:
         return RootConflict("This prepared save has already been closed.")
@@ -699,7 +716,11 @@ def commit_save(
                 refusal = _verify_target(plan._roots, target)
                 if refusal is not None:
                     break
-                fd = _reserve_file(target.chain[-1].fd, target.output.parts[-1])
+                fd = _reserve_file(
+                    target.chain[-1].fd,
+                    target.output.parts[-1],
+                    mode=_OUTPUT_FILE_MODE,
+                )
                 files.append(_UnverifiedFile(target, fd))
                 files[-1] = _Reserved(target, fd, _identity(_stat_handle(fd)))
             if refusal is None:
@@ -823,7 +844,10 @@ class FixedStateStore:
         max_bytes: int,
         edit: Callable[[bytes | MissingState], bytes | StateEditRefusal],
     ) -> StateWritten | StateEditRefusal | FileFailure:
-        """Lock read/edit/bound/staging/replacement; refused edits preserve old bytes."""
+        """Lock read/edit/bound/staging/replacement; refused edits preserve old bytes.
+
+        Staging is created private (0600), so the replaced state stays private.
+        """
         with _STATE_LOCK:
             previous = self.read(kind, max_bytes=max_bytes)
             if not isinstance(previous, (bytes, MissingState)):
@@ -844,7 +868,7 @@ class FixedStateStore:
             created = False
             result: StateWritten | FileFailure = FileIOFailure()
             try:
-                fd = _reserve_file(root.fd, staging)
+                fd = _reserve_file(root.fd, staging, mode=_STATE_FILE_MODE)
                 created = True
                 identity = _identity(_stat_handle(fd))
                 _write_file(fd, proposed)

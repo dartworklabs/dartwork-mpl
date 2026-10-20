@@ -10,6 +10,7 @@ import importlib.metadata
 import json
 import os
 import socket
+import stat
 import subprocess
 import sys
 import time
@@ -26,6 +27,10 @@ import dartwork_mpl
 _BOOTSTRAP = r"""
 import asyncio, json, os, socket, sys, threading
 from pathlib import Path
+from typing import Literal
+# Pin this child's own umask so saved-file modes are deterministic; the test
+# process's umask is never touched.
+os.umask(0o022)
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from pydantic import Field
@@ -41,6 +46,8 @@ class Params(ParamModel):
     opacity: float = Field(default=0.5, ge=0, le=1)
     values: list[int] = Field(default=[1, 2])
     fail: bool = False
+    ncols: Literal[1, 2, 3] = 1
+    ratio: Literal[0.5, 1.0] = 0.5
     class Config:
         extra = "allow"
 def plot(params: Params) -> Figure:
@@ -464,6 +471,158 @@ def test_real_http_downloads_and_reload(tmp_path: Path) -> None:
         assert viewer.request("DELETE", "/api/preset/9")[0] == 404
         assert viewer.request("POST", "/api/reload")[0] == 200
         assert (tmp_path / "restarts").read_text() == "restart\n"
+
+
+def test_real_http_numeric_choices_accept_select_strings(
+    tmp_path: Path,
+) -> None:
+    """Select strings for numeric Literal choices work on every model route; nonmembers stay 422."""
+    browser = {"ncols": "2", "ratio": "1"}
+    with _viewer(tmp_path) as viewer:
+        for path in ("/api/render", "/api/export/png", "/api/script"):
+            status, body = viewer.request("POST", path, browser)
+            assert status == 200, (path, body)
+        status, body = viewer.request(
+            "POST",
+            "/api/save-state",
+            {
+                "params": browser,
+                "tabs": [{"id": 1, "name": "Tab 1", "params": browser}],
+                "figWidth": 70,
+            },
+        )
+        assert status == 200, body
+        config = json.loads(
+            (tmp_path / "script" / ".dartwork_ui_config.json").read_text()
+        )
+        assert (config["params"]["ncols"], config["params"]["ratio"]) == (
+            2,
+            1.0,
+        )
+        assert type(config["params"]["ncols"]) is int
+        assert type(config["params"]["ratio"]) is float
+        status, body = viewer.request(
+            "POST", "/api/preset", {"label": "browser", "params": browser}
+        )
+        assert status == 200, body
+        (preset,) = json.loads(
+            (tmp_path / "script" / ".dartwork_ui_presets.json").read_text()
+        )
+        assert (preset["params"]["ncols"], preset["params"]["ratio"]) == (
+            2,
+            1.0,
+        )
+        status, body = viewer.request(
+            "POST",
+            "/api/save-server/image/png",
+            {"params": browser, "filename": "choice.png"},
+        )
+        assert status == 200, body
+        before = viewer.manifest()
+        for bad in (
+            {"ncols": "4"},
+            {"ncols": "2.5"},
+            {"ncols": "2.0"},
+            {"ratio": "2"},
+            {"ratio": "nan"},
+            {"ratio": "inf"},
+        ):
+            for method, path, value in (
+                ("POST", "/api/render", bad),
+                ("POST", "/api/save-state", {"params": bad}),
+                ("POST", "/api/preset", {"label": "bad", "params": bad}),
+            ):
+                status, body = viewer.request(method, path, value)
+                assert status == 422, (path, bad, body)
+        assert viewer.manifest() == before
+
+
+def test_real_http_old_string_choices_in_saved_state_remain_usable(
+    tmp_path: Path,
+) -> None:
+    """Presets/config saved by the base viewer with select strings load and render again."""
+    with _viewer(tmp_path) as viewer:
+        presets = tmp_path / "script" / ".dartwork_ui_presets.json"
+        presets.write_text(
+            json.dumps(
+                [
+                    {
+                        "label": "old",
+                        "params": {"ncols": "2", "ratio": "1", "opacity": 0.3},
+                        "timestamp": "2026-10-01T00:00:00",
+                    }
+                ]
+            )
+        )
+        config = tmp_path / "script" / ".dartwork_ui_config.json"
+        config.write_text(
+            json.dumps({"params": {"ncols": "3", "ratio": "0.5"}})
+        )
+        status, body = viewer.request("GET", "/api/presets")
+        assert status == 200, body
+        (entry,) = json.loads(body)
+        assert entry["params"] == {"ncols": "2", "ratio": "1", "opacity": 0.3}
+        status, body = viewer.request("POST", "/api/render", entry["params"])
+        assert status == 200, body
+        status, body = viewer.request(
+            "POST", "/api/preset", {"label": "again", "params": entry["params"]}
+        )
+        assert status == 200, body
+        status, body = viewer.request("GET", "/api/config")
+        assert status == 200, body
+        params = json.loads(body)["params"]
+        assert params == {"ncols": "3", "ratio": "0.5"}
+        status, body = viewer.request("POST", "/api/render", params)
+        assert status == 200, body
+
+
+def test_real_http_saved_outputs_follow_umask_and_state_stays_private(
+    tmp_path: Path,
+) -> None:
+    """Under the child's umask 022 outputs are 0644, new folders 0755, state 0600."""
+
+    def mode(relative: str) -> int:
+        """Read permission bits from the test process, independent of the child."""
+        return stat.S_IMODE((tmp_path / relative).lstat().st_mode)
+
+    with _viewer(tmp_path) as viewer:
+        status, body = viewer.request(
+            "POST",
+            "/api/save-server/image/png",
+            {"params": {}, "filename": "fresh/sub/fig.png"},
+        )
+        assert status == 200, body
+        status, body = viewer.request(
+            "POST",
+            "/api/save-server/script",
+            {"params": {}, "filename": "scripts/new/fig"},
+        )
+        assert status == 200, body
+        assert (
+            viewer.request("POST", "/api/save-state", {"params": {}})[0] == 200
+        )
+        assert (
+            viewer.request("POST", "/api/preset", {"label": "p", "params": {}})[
+                0
+            ]
+            == 200
+        )
+    expected = {
+        **{
+            f"{root}/fresh/sub/fig.png": 0o644
+            for root in ("script", "copy", "copy2")
+        },
+        **{f"{root}/fresh": 0o755 for root in ("script", "copy", "copy2")},
+        **{f"{root}/fresh/sub": 0o755 for root in ("script", "copy", "copy2")},
+        "script/scripts/new/fig.py": 0o644,
+        "script/scripts": 0o755,
+        "script/scripts/new": 0o755,
+        "script/.dartwork_ui_config.json": 0o600,
+        "script/.dartwork_ui_presets.json": 0o600,
+    }
+    assert {name: oct(mode(name)) for name in expected} == {
+        name: oct(value) for name, value in expected.items()
+    }
 
 
 def test_real_http_unsupported_filesystem_keeps_render(tmp_path: Path) -> None:
