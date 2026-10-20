@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 # Allow a newer push to cancel an in-flight pre-commit run on the same ref.
 concurrency:
   group: pre-commit-${{ github.ref }}
@@ -17,10 +20,10 @@ jobs:
     name: Run pre-commit on changed files
     runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       # pre-commit installs its hooks in isolated environments. setup-python
       # also keeps pip off the self-hosted runner's externally managed Python.
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
           cache: pip
@@ -30,6 +33,6 @@ jobs:
       # pre-commit/action caches the per-hook environments under
       # ~/.cache/pre-commit, keyed off the .pre-commit-config.yaml hash,
       # so subsequent runs only pay the network cost when a hook is bumped.
-      - uses: pre-commit/action@v3.0.1
+      - uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd # v3.0.1
         env:
           SKIP: mypy
