@@ -1,6 +1,13 @@
 """Declared durable artifact values, use cases and MCP registration surface."""
 
 from .delivery import ArtifactFailure, get_artifact, render_artifact
+from .input_access import (
+    InputGrant,
+    InputsDisabled,
+    OwnedInputFD,
+    authorize_inputs,
+)
+from .input_io import CheckJob, CopyJob, check_copies, copy_inputs
 from .input_policy import (
     CopyInput,
     CopySelection,
@@ -22,6 +29,15 @@ from .input_policy import (
     classify_provenance,
     parse_input_metadata,
     parse_revision,
+)
+from .inputs import (
+    AbsentInputs,
+    CommitObserver,
+    DeletedInputs,
+    InputFailure,
+    InputStage,
+    InputStore,
+    InputTransaction,
 )
 from .policy import (
     ArtifactBytes,
@@ -54,27 +70,39 @@ from .store import (
 from .transport import register_artifacts
 
 __all__ = [
+    "AbsentInputs",
     "ArtifactBytes",
     "ArtifactFailure",
     "ArtifactId",
     "ArtifactMember",
     "ArtifactStore",
     "ArtifactTooLarge",
+    "CheckJob",
     "CommitObservation",
+    "CommitObserver",
     "ConfigurationError",
     "CopyInput",
+    "CopyJob",
     "CopySelection",
     "CorruptArtifact",
+    "DeletedInputs",
     "Expired",
     "FileEntry",
+    "InputFailure",
     "InputFile",
+    "InputGrant",
     "InputMetadata",
+    "InputStage",
+    "InputStore",
+    "InputTransaction",
+    "InputsDisabled",
     "InvalidProvenance",
     "InvalidRequest",
     "KnownProvenance",
     "LegacyProvenance",
     "Manifest",
     "NotFound",
+    "OwnedInputFD",
     "PinnedParent",
     "Provenance",
     "ProvenanceInput",
@@ -89,10 +117,13 @@ __all__ = [
     "StoredBundle",
     "UnsupportedProvenance",
     "ValidationSummary",
+    "authorize_inputs",
     "build_provenance",
     "can_reserve",
+    "check_copies",
     "classify_provenance",
     "configure_store",
+    "copy_inputs",
     "get_artifact",
     "is_expired",
     "parse_artifact_id",
