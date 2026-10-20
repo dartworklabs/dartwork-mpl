@@ -10,13 +10,13 @@ import argparse
 import ast
 import contextlib
 import hashlib
-import io
 import json
 import os
 import selectors
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -555,15 +555,19 @@ def replay(
             if key in os.environ
         }
         env.update(MPLBACKEND="Agg", PYTHONHASHSEED="0")
-        process = _watch_replay(
-            argv,
-            csv.parent,
-            env,
-            output_dir,
-            root,
-            data_limit,
-            min(20, timeout_seconds),
-        )
+        with tempfile.TemporaryDirectory(
+            prefix="agent-replay-export-", dir=csv.parent
+        ) as staging:
+            argv.extend(("--export-dir", staging))
+            process = _watch_replay(
+                argv,
+                csv.parent,
+                env,
+                output_dir,
+                root,
+                data_limit,
+                min(20, timeout_seconds),
+            )
         result["process"] = process
         code = process["returncode"]
         observed_path = output_dir / "observed.json"
@@ -576,6 +580,13 @@ def replay(
                 status="ok", observed=json.loads(observed_path.read_text())
             )
             result["assessment"] = assess(case_id, result["observed"])
+            result["export"] = {
+                "api": "dartwork_mpl.save_formats",
+                "formats": ["png", "pdf"],
+                "validate": False,
+                "adopt_orphan_tick_font": False,
+                "staging": "owned_workspace",
+            }
             result["png_sha256"] = hashlib.sha256(
                 (output_dir / "plot.png").read_bytes()
             ).hexdigest()
@@ -618,6 +629,7 @@ def _replay_child(
     figure_var: str,
     evidence_root: Path,
     max_evidence_bytes: int,
+    export_dir: Path,
 ) -> None:
     """Execute unchanged UTF-8 bytes once and snapshot the explicitly named figure."""
     namespace: dict[str, Any] = {
@@ -638,11 +650,19 @@ def _replay_child(
         max_evidence_bytes,
     ):
         raise SystemExit(75)
-    png = io.BytesIO()
-    fig.savefig(png, format="png")
+    import dartwork_mpl as dm
+
+    stem = export_dir / "plot"
+    dm.save_formats(
+        fig,
+        str(stem),
+        formats=("png", "pdf"),
+        validate=False,
+        adopt_orphan_tick_font=False,
+    )
     if not _replay_write(
         output / "plot.png",
-        png.getvalue(),
+        stem.with_suffix(".png").read_bytes(),
         evidence_root,
         Path.cwd(),
         max_evidence_bytes,
@@ -659,6 +679,7 @@ if __name__ == "__main__":
     parser.add_argument("--csv", type=Path)
     parser.add_argument("--case", choices=_CASES)
     parser.add_argument("--evidence-root", type=Path)
+    parser.add_argument("--export-dir", type=Path)
     parser.add_argument(
         "--max-evidence-bytes", type=int, default=128 * 1024 * 1024
     )
@@ -670,6 +691,7 @@ if __name__ == "__main__":
             args.figure_var,
             args.evidence_root or args.output,
             args.max_evidence_bytes,
+            args.export_dir or args.output,
         )
     elif args.csv is None or args.case is None:
         parser.error("replay requires --csv and --case")

@@ -1,6 +1,7 @@
 """Real stdio, files and owned process trees pin evaluation capture boundaries."""
 
 import asyncio
+import base64
 import hashlib
 import json
 import os
@@ -223,10 +224,43 @@ figure, ax = plt.subplots(figsize=dm.figsize('6cm', 'square'))
 ax.plot([float(r['x']) for r in rows], [float(r['y']) for r in rows], linewidth=dm.lw(0))
 dm.simple_layout(figure)
 """)
+    import io
+
+    import matplotlib.image as mpimg
+    import numpy as np
+
+    async def original_png():
+        """Render identical bytes through the production stdio exporter first."""
+        parameters = StdioServerParameters(
+            command=str(Path(sys.executable).parent / "dartwork-mpl-mcp"),
+            env={
+                **os.environ,
+                "DARTWORK_MPL_ARTIFACT_DIR": str(tmp_path / "original-store"),
+            },
+            cwd=str(tmp_path),
+        )
+        async with (
+            stdio_client(parameters) as (reader, writer),
+            ClientSession(reader, writer) as client,
+        ):
+            await client.initialize()
+            rendered = await client.call_tool(
+                "render_plot",
+                {"code": source.read_text(), "figure_var": "figure"},
+            )
+            assert rendered.structuredContent["delivery_status"] == "ready"
+            return base64.b64decode(rendered.content[0].data)
+
     before = source.read_bytes(), csv.read_bytes()
+    original = asyncio.run(original_png())
     result = replay(source, csv, "line", tmp_path / "replay", "figure")
+    np.testing.assert_array_equal(
+        mpimg.imread(io.BytesIO(original)),
+        mpimg.imread(tmp_path / "replay/plot.png"),
+    )
     assert result["status"] == "ok"
     assert result["source_sha256"] == hashlib.sha256(before[0]).hexdigest()
+    assert result["export"]["api"] == "dartwork_mpl.save_formats"
     assert result["observed"]["panels"][0]["lines"][0]["xy"] == [[1.0, 2.0]]
     assert (tmp_path / "replay/plot.png").read_bytes().startswith(b"\x89PNG")
     assert (source.read_bytes(), csv.read_bytes()) == before
