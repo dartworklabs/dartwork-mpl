@@ -29,7 +29,7 @@ ADR 0003's implementation-pending prose is historical drift; actual code and the
 artifact delivery design show implementation. This proposal edits neither record.
 
 A recovered source cannot recover deleted CSV bytes by identity alone. The
-[lifecycle proposal](../superpowers/specs/2026-10-20-plot-revision-input-lifecycle-design.md)
+[lifecycle proposal](https://github.com/dartworklabs/dartwork-mpl/blob/3bdf3fa022c80f1be952ca56b8b53ef0a8009d98/docs/superpowers/specs/2026-10-20-plot-revision-input-lifecycle-design.md)
 therefore recommends explicit, operator-authorized whole-file copies. That is a
 new data-retention and API contract, not a consequence of the open report dict.
 
@@ -38,7 +38,7 @@ both lifecycle adoption and this bounded exception were explained, the user said
 “좋아 진행해” and asked where inputs are stored, how users select them, and how
 updated data avoids confusion. This is the go-ahead receipt for that explained
 scope; it is not approval inferred from this ADR's existence. Exact wording and
-new receipt engineering details are separated in the [freshness supplement](../superpowers/specs/2026-10-20-plot-revision-input-freshness-design.md).
+new receipt engineering details are separated in the [freshness supplement](https://github.com/dartworklabs/dartwork-mpl/blob/3bdf3fa022c80f1be952ca56b8b53ef0a8009d98/docs/superpowers/specs/2026-10-20-plot-revision-input-freshness-design.md).
 This record remains a working proposal while those documents are reconciled;
 that label does not cancel the receipt or require the same approval again.
 No actual input policy/grant or product change has been deployed.

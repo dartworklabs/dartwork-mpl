@@ -11,6 +11,7 @@ import io
 import json
 import os
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -239,15 +240,7 @@ async def stdio(journey, *, artifact_root=None, home=None):
             )
             # Existing Task6 deliberate-disconnect noise is not expected in
             # these normal sessions; leave any new traceback visible as failure.
-            info["unexpected_diagnostics"] = [
-                line
-                for line in stderr.splitlines()
-                if (
-                    "Traceback (most recent call last)" in line
-                    or "ClosedResourceError" in line
-                    or "ResourceWarning" in line
-                )
-            ]
+            info["unexpected_diagnostics"] = unexpected_diagnostics(stderr)
             assert not info["unexpected_diagnostics"], stderr
     finally:
         info["process_absent"] = pid is not None and not process_alive(pid)
@@ -991,3 +984,97 @@ def test_client_comparison_is_invariant_to_order_but_not_identity():
             "unavailable",
             "ask_for_input_selection",
         )
+
+
+def unexpected_diagnostics(stderr):
+    """Allow exact observed warning bodies; expose new warnings and resource faults.
+
+    Runtime-dependent path prefixes vary, but warning classes/messages and the
+    Authlib continuation must match the retained normal-session evidence.
+    """
+    lines = stderr.splitlines()
+    unexpected = []
+    known_context = set()
+    for index, line in enumerate(lines):
+        if index in known_context:
+            continue
+        if any(
+            token in line
+            for token in (
+                "Traceback (most recent call last)",
+                "ClosedResourceError",
+                "ResourceWarning",
+            )
+        ):
+            unexpected.append(line)
+        elif re.search(r"\b(?:[A-Za-z_]\w*)?Warning\b", line):
+            if line == RUNPY_WARNING:
+                continue
+            if re.fullmatch(
+                r".+/python3\.10/runpy\.py:126: RuntimeWarning: "
+                + re.escape(RUNPY_WARNING.split("RuntimeWarning: ", 1)[1]),
+                line,
+            ) and lines[index + 1 : index + 2] == [
+                "  warn(RuntimeWarning(msg))"
+            ]:
+                known_context.add(index + 1)
+                continue
+            if re.fullmatch(
+                r".+/fastmcp/server/auth/providers/jwt\.py:10: AuthlibDeprecationWarning: "
+                r"authlib\.jose module is deprecated, please use joserfc instead\.",
+                line,
+            ) and lines[index + 1 : index + 3] == [
+                "It will be compatible before version 2.0.0.",
+                "  from authlib.jose import JsonWebKey, JsonWebToken",
+            ]:
+                continue
+            unexpected.append(line)
+    return unexpected
+
+
+RUNPY_WARNING = "<frozen runpy>:128: RuntimeWarning: 'dartwork_mpl.mcp.server' found in sys.modules after import of package 'dartwork_mpl.mcp', but prior to execution of 'dartwork_mpl.mcp.server'; this may result in unpredictable behaviour"
+RUNPY_310_WARNING = (
+    "/fixture/lib/python3.10/runpy.py:126: RuntimeWarning: "
+    + RUNPY_WARNING.split("RuntimeWarning: ", 1)[1]
+    + "\n  warn(RuntimeWarning(msg))"
+)
+AUTHLIB_WARNING = "/fixture/site-packages/fastmcp/server/auth/providers/jwt.py:10: AuthlibDeprecationWarning: authlib.jose module is deprecated, please use joserfc instead.\nIt will be compatible before version 2.0.0.\n  from authlib.jose import JsonWebKey, JsonWebToken"
+
+
+@pytest.mark.parametrize(
+    "stderr",
+    [
+        "",
+        RUNPY_WARNING,
+        RUNPY_310_WARNING,
+        AUTHLIB_WARNING,
+        RUNPY_WARNING + "\n" + AUTHLIB_WARNING,
+    ],
+)
+def test_normal_stderr_accepts_exact_known_warnings(stderr):
+    """Only observed runpy/Authlib messages qualify as known normal noise."""
+    assert unexpected_diagnostics(stderr) == []
+
+
+@pytest.mark.parametrize(
+    "stderr",
+    [
+        "fixture.py:1: Warning: new warning",
+        "fixture.py:1: UserWarning: new warning",
+        RUNPY_310_WARNING.replace("unpredictable behaviour", "new behaviour"),
+        RUNPY_310_WARNING + "\nfixture.py:1: UserWarning: additional warning",
+        "  warn(RuntimeWarning(msg))",
+        "fixture.py:1: FutureWarning: new warning",
+        RUNPY_WARNING.replace("unpredictable behaviour", "new behaviour"),
+        AUTHLIB_WARNING.replace("please use joserfc instead.", "new advice."),
+        AUTHLIB_WARNING.replace("before version 2.0.0", "before version 3.0.0"),
+        "fixture.py:1: AuthlibDeprecationWarning: unrelated message",
+        "Traceback (most recent call last):",
+        "anyio.ClosedResourceError",
+        "fixture.py:1: ResourceWarning: unclosed file",
+        RUNPY_WARNING + "\nfixture.py:1: RuntimeWarning: additional warning",
+    ],
+)
+def test_normal_stderr_exposes_unknown_warnings_and_resource_faults(stderr):
+    """Known warning text cannot conceal an additional warning or ownership fault."""
+    assert unexpected_diagnostics(stderr), stderr

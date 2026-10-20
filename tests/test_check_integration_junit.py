@@ -36,6 +36,15 @@ MODULES = (
     "tests.mcp.artifacts.test_artifact_policy",
     "tests.mcp.artifacts.test_artifact_protocol",
     "tests.mcp.artifacts.test_artifact_store",
+    "tests.mcp.artifacts.test_input_access",
+    "tests.mcp.artifacts.test_input_commit_observer",
+    "tests.mcp.artifacts.test_input_delivery",
+    "tests.mcp.artifacts.test_input_io",
+    "tests.mcp.artifacts.test_input_lifecycle",
+    "tests.mcp.artifacts.test_input_policy",
+    "tests.mcp.artifacts.test_input_recovery",
+    "tests.mcp.artifacts.test_input_stdio",
+    "tests.mcp.artifacts.test_input_store",
     "tests.mcp.data_repair.test_limits",
     "tests.mcp.data_repair.test_properties",
     "tests.mcp.data_repair.test_reports",
@@ -50,10 +59,13 @@ MODULES = (
 )
 
 
-def _check(path: Path) -> subprocess.CompletedProcess[str]:
+def _check(
+    path: Path, scope: str | None = None
+) -> subprocess.CompletedProcess[str]:
     """Run the public CLI against a real report without any project imports."""
     return subprocess.run(
-        [sys.executable, str(CHECKER), str(path)],
+        [sys.executable, str(CHECKER), str(path)]
+        + (["--scope", scope] if scope is not None else []),
         capture_output=True,
         text=True,
         check=False,
@@ -182,3 +194,74 @@ def test_empty_report_cannot_prove_any_module(tmp_path: Path) -> None:
     result = _check(path)
     assert result.returncode == 1
     assert all(module in result.stderr for module in MODULES)
+
+
+ARTIFACT_MODULES = (
+    "tests.mcp.artifacts.test_artifact_boundaries",
+    "tests.mcp.artifacts.test_artifact_discovery",
+    "tests.mcp.artifacts.test_artifact_entry_policies",
+    "tests.mcp.artifacts.test_artifact_execution",
+    "tests.mcp.artifacts.test_artifact_policy",
+    "tests.mcp.artifacts.test_artifact_protocol",
+    "tests.mcp.artifacts.test_artifact_store",
+    "tests.mcp.artifacts.test_input_access",
+    "tests.mcp.artifacts.test_input_commit_observer",
+    "tests.mcp.artifacts.test_input_delivery",
+    "tests.mcp.artifacts.test_input_io",
+    "tests.mcp.artifacts.test_input_lifecycle",
+    "tests.mcp.artifacts.test_input_policy",
+    "tests.mcp.artifacts.test_input_recovery",
+    "tests.mcp.artifacts.test_input_stdio",
+    "tests.mcp.artifacts.test_input_store",
+)
+
+
+def test_artifact_scope_accepts_only_its_complete_inventory(tmp_path):
+    """The focused matrix proves all sixteen files without rerunning the repo."""
+    path = tmp_path / "junit.xml"
+    _report(path, [(module, None) for module in ARTIFACT_MODULES])
+    result = _check(path, "artifacts")
+    assert result.returncode == 0, result.stderr
+    assert "16 required modules" in result.stdout
+
+
+@pytest.mark.parametrize("module", ARTIFACT_MODULES)
+@pytest.mark.parametrize(
+    "outcome", ["missing", "zero", "skipped", "failure", "error"]
+)
+def test_artifact_scope_rejects_each_unexecuted_module(
+    tmp_path, module, outcome
+):
+    """Every focused inventory member must supply its own passing witness."""
+    path = tmp_path / "junit.xml"
+    cases = [(m, None) for m in ARTIFACT_MODULES if m != module]
+    if outcome not in {"missing", "zero"}:
+        cases.append((module, outcome))
+    _report(path, cases)
+    if outcome == "zero":
+        tree = ET.parse(path)
+        ET.SubElement(tree.getroot(), "testsuite", name=module, tests="0")
+        tree.write(path)
+    result = _check(path, "artifacts")
+    assert result.returncode == 1
+    assert module in result.stderr
+
+
+@pytest.mark.parametrize("module", ARTIFACT_MODULES)
+def test_artifact_scope_rejects_partial_optional_skips(tmp_path, module):
+    """A passing sibling cannot hide an optional-runtime skip in this matrix."""
+    path = tmp_path / "junit.xml"
+    _report(path, [(m, None) for m in ARTIFACT_MODULES] + [(module, "skipped")])
+    result = _check(path, "artifacts")
+    assert result.returncode == 1
+    assert module in result.stderr
+    assert "skipped" in result.stderr
+
+
+def test_unknown_scope_cannot_silently_select_a_partial_gate(tmp_path):
+    """CLI inventory selection is closed rather than an arbitrary prefix filter."""
+    path = tmp_path / "junit.xml"
+    _report(path, [(m, None) for m in MODULES])
+    result = _check(path, "unknown")
+    assert result.returncode == 2
+    assert "invalid choice" in result.stderr

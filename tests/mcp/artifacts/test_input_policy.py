@@ -131,17 +131,6 @@ def test_revision_is_closed_and_bounded():
         {"schema_version": 1, "inputs": [copy_wire(), copy_wire()]},
         {**valid, "extra": {"a": {"b": {"c": {}}}}},
     ]
-    oversized = {**valid, "extra": ""}
-    oversized["extra"] = "x" * (
-        16 * 1024
-        + 1
-        - len(json.dumps(oversized, separators=(",", ":")).encode())
-    )
-    assert (
-        len(json.dumps(oversized, separators=(",", ":")).encode())
-        == 16 * 1024 + 1
-    )
-    bad.append(oversized)
     assert parse_revision(None) is None
     for raw in bad[1:]:
         result = parse_revision(raw)
@@ -516,3 +505,51 @@ def test_seeded_malformed_fields_and_paths_never_escape_parser():
         ),
         InvalidRequest,
     )
+
+
+def test_revision_canonical_utf8_byte_limit_is_exact():
+    """Otherwise-valid closed requests isolate 16 KiB acceptance and +1 refusal."""
+    for size in (16 * 1024, 16 * 1024 + 1):
+        raw = {
+            "schema_version": 1,
+            "inputs": [
+                copy_wire(name=f"input{i}", path="\x01" * 300) for i in range(8)
+            ],
+        }
+        remaining = size - len(
+            json.dumps(raw, ensure_ascii=False, separators=(",", ":")).encode(
+                "utf-8"
+            )
+        )
+        assert remaining > 0
+        raw["inputs"][-1]["relative_path"] += "\x01" * (
+            remaining // 6
+        ) + "a" * (remaining % 6)
+        assert (
+            len(
+                json.dumps(
+                    raw, ensure_ascii=False, separators=(",", ":")
+                ).encode("utf-8")
+            )
+            == size
+        )
+        assert len(raw["inputs"]) == 8
+        assert len({entry["name"] for entry in raw["inputs"]}) == 8
+        for entry in raw["inputs"]:
+            path = entry["relative_path"]
+            assert 0 < len(path.encode("utf-8")) <= 1024
+            assert not any(c in path for c in ("\x00", "\\"))
+            assert all(part not in {"", ".", ".."} for part in path.split("/"))
+            assert set(entry) == {
+                "kind",
+                "name",
+                "root_id",
+                "relative_path",
+                "sha256",
+            }
+        result = parse_revision(raw)
+        if size == 16 * 1024:
+            assert isinstance(result, Revision), result
+        else:
+            assert isinstance(result, InvalidRequest), result
+            assert result.field == "revision"

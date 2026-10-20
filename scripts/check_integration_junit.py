@@ -35,6 +35,15 @@ REQUIRED_MODULES = (
     "tests.mcp.artifacts.test_artifact_policy",
     "tests.mcp.artifacts.test_artifact_protocol",
     "tests.mcp.artifacts.test_artifact_store",
+    "tests.mcp.artifacts.test_input_access",
+    "tests.mcp.artifacts.test_input_commit_observer",
+    "tests.mcp.artifacts.test_input_delivery",
+    "tests.mcp.artifacts.test_input_io",
+    "tests.mcp.artifacts.test_input_lifecycle",
+    "tests.mcp.artifacts.test_input_policy",
+    "tests.mcp.artifacts.test_input_recovery",
+    "tests.mcp.artifacts.test_input_stdio",
+    "tests.mcp.artifacts.test_input_store",
     "tests.mcp.data_repair.test_limits",
     "tests.mcp.data_repair.test_properties",
     "tests.mcp.data_repair.test_reports",
@@ -49,11 +58,38 @@ REQUIRED_MODULES = (
 )
 
 
+# Closed focused inventory; independent CLI tests pin every member.
+ARTIFACT_MODULES = (
+    "tests.mcp.artifacts.test_artifact_boundaries",
+    "tests.mcp.artifacts.test_artifact_discovery",
+    "tests.mcp.artifacts.test_artifact_entry_policies",
+    "tests.mcp.artifacts.test_artifact_execution",
+    "tests.mcp.artifacts.test_artifact_policy",
+    "tests.mcp.artifacts.test_artifact_protocol",
+    "tests.mcp.artifacts.test_artifact_store",
+    "tests.mcp.artifacts.test_input_access",
+    "tests.mcp.artifacts.test_input_commit_observer",
+    "tests.mcp.artifacts.test_input_delivery",
+    "tests.mcp.artifacts.test_input_io",
+    "tests.mcp.artifacts.test_input_lifecycle",
+    "tests.mcp.artifacts.test_input_policy",
+    "tests.mcp.artifacts.test_input_recovery",
+    "tests.mcp.artifacts.test_input_stdio",
+    "tests.mcp.artifacts.test_input_store",
+)
+
+
 def main() -> int:
     """Read pytest XML; reject unproven modules and protected errors."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("report", type=Path)
+    parser.add_argument(
+        "--scope", choices=("full", "artifacts"), default="full"
+    )
     args = parser.parse_args()
+    required = (
+        ARTIFACT_MODULES if args.scope == "artifacts" else REQUIRED_MODULES
+    )
     try:
         root = ET.parse(args.report).getroot()
         if root.tag not in {"testsuites", "testsuite"}:
@@ -67,9 +103,10 @@ def main() -> int:
 
     passed_modules = set()
     failed_modules = set()
+    skipped_modules = set()
     for case in root.iter("testcase"):
         classname = case.get("classname", "")
-        for module in REQUIRED_MODULES:
+        for module in required:
             if classname != module and not classname.startswith(module + "."):
                 continue
             if any(
@@ -77,9 +114,18 @@ def main() -> int:
                 for outcome in ("failure", "error")
             ):
                 failed_modules.add(module)
-            elif case.find("skipped") is None:
+            elif case.find("skipped") is not None:
+                skipped_modules.add(module)
+            else:
                 passed_modules.add(module)
-    missing = set(REQUIRED_MODULES) - passed_modules
+    missing = set(required) - passed_modules
+    if args.scope == "artifacts" and skipped_modules:
+        print(
+            "Required artifact modules contain skipped cases: "
+            + ", ".join(sorted(skipped_modules)),
+            file=sys.stderr,
+        )
+        return 1
     if failed_modules:
         print(
             "Required modules contain failures/errors: "
@@ -95,7 +141,7 @@ def main() -> int:
         return 1
     if failed_modules:
         return 1
-    print(f"OK: {len(REQUIRED_MODULES)} required modules passed executed tests")
+    print(f"OK: {len(required)} required modules passed executed tests")
     return 0
 
 

@@ -305,9 +305,10 @@ If all four work, the integration is fully operational.
 
 When the `dartwork-mpl` MCP server is connected, your AI assistant gains access to **resources**, **tools**, and **prompts** without you having to copy-paste documentation.
 
-The current public inventory is **18 tools, 10 static resources, 9 resource
-templates, and 2 prompts**. Artifact delivery adds two tools and five templates;
-existing endpoints retain their names and schemas. In the current color model,
+The current branch inventory is **19 tools, 10 static resources, 9 resource
+templates, and 2 prompts**. Artifact delivery supplies two tools and five
+templates; input retention appends `delete_plot_inputs` and optional `revision`
+to `render_plot`. Existing output envelopes remain unchanged. In the current color model,
 `dc.*` construction uses OKLab L, OKLCH C/h, and ΔEOK. The modeled-relative-Y compatibility lock is an
 optional constraint for shipped exact-output compatibility and topology, not
 a second authoring space. CIELAB/CIEDE2000 and CVD are model-specific
@@ -344,7 +345,8 @@ Read-only data that the AI assistant can retrieve on demand.
 
 ### Tools
 
-Callable functions the AI assistant can invoke during a conversation.
+The current branch exposes **19 tools, 10 static resources, 9 resource templates
+and 2 prompts**. Callable functions the AI assistant can invoke:
 
 | Tool                                        | Description                                                                     |
 | ------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -364,8 +366,9 @@ Callable functions the AI assistant can invoke during a conversation.
 | `validate_plot_data(plot_type, data_json, report=False)` | Validate data; opt into a JSON-string report with reviewable suggestions |
 | `validate_generated_plot(code)`             | Execute a script in an isolated subprocess and return the `dm.validate_figure` report (overflow, clipped text, asymmetric margins). Lint-critical issues short-circuit before execution. |
 | `dartwork_mpl_info()`                       | Get a structured summary of all capabilities, presets, and templates            |
-| `render_plot(code, figure_var="fig", timeout_seconds=20.0, chart_type_hint=None)` | Execute trusted code once, validate the selected native Figure and deliver a durable five-file bundle |
+| `render_plot(code, figure_var="fig", timeout_seconds=20.0, chart_type_hint=None, revision=None)` | Execute trusted code once; optionally pin a parent and explicitly copy/reuse named inputs |
 | `get_plot_artifact(artifact_id)` | Retrieve that bundle without executing code |
+| `delete_plot_inputs(artifact_id)` | Revoke and delete one operator-authorized retained input set; leave its artifact bundle intact |
 
 ### Reviewable plot-data suggestions
 
@@ -487,7 +490,7 @@ its warning list; `quiet=True` suppresses printing without removing failures.
 ### Durable plot artifacts
 
 `render_plot(code: str, figure_var: str = "fig", timeout_seconds: float = 20.0,
-chart_type_hint: str | None = None)` uses the same trusted-code execution and
+chart_type_hint: str | None = None, revision: object | None = None)` uses the same trusted-code execution and
 validation contract above. It exports the selected native Figure once through
 `dm.save_formats(..., formats=("png", "pdf"), validate=False,
 adopt_orphan_tick_font=False)`, preserving the validated Figure without adding
@@ -608,8 +611,9 @@ reject publication instead of truncating them. Bundles expire exactly seven days
 after publication; publication occurs after execution/export completes. Expired
 valid bundles are cleaned lazily on access. Unknown, corrupt or substituted
 objects are retained, including private quarantine when safe restoration
-collides. There is no global quota, background sweeper or delete API; the owner
-may need disk maintenance. Incomplete crash leftovers are never served.
+collides. The artifact bundle store has no global quota, background sweeper or
+bundle-delete API; the owner may need disk maintenance. The separate retained
+input store has the limits and deletion behavior below. Incomplete crash leftovers are never served.
 
 IDs are lowercase UUID4 hex references, not credentials. All clients of this
 server share the same trusted OS user's access. Code inherits that user's OS
@@ -624,6 +628,174 @@ an artifact ID, image or links. Stable categories are `invalid_request`,
 Resource read failures expose these categories through MCP resource errors;
 unroutable URIs can be rejected before a resource handler runs. Retrying render
 creates a fresh ID. An expired bundle may be `not_found` after lazy cleanup.
+
+#### Explicit input retention and server-host storage
+
+The current branch implements opt-in revisions; this guide does not claim a
+released deployment or an actual input grant. `revision=None` preserves the
+legacy render path, with no provenance or injected input mapping. A parent-only
+revision needs a live verified parent bundle but no input policy. It pins that
+parent's manifest/source digests at admission; it does not execute the parent.
+
+Retained bytes live on the **MCP server host**, in the operator's private
+`storage_dir`, selected by the startup-only `DARTWORK_MPL_INPUT_POLICY` JSON.
+There is no deployed path supplied by this guide. When that variable is unset,
+Copy, Retained and input deletion are denied; legacy render/get still work.
+The operator supplies allowed `root_id` values and usage instructions to clients.
+For the exact directory, the operator checks `storage_dir` in that policy;
+`dartwork_mpl_info` does not expose policy paths. A client PC or original folder
+is not implicitly the storage host/location.
+
+The closed policy has only `schema_version:1`, absolute `storage_dir`, and
+`copy_roots:{root_id:absolute_directory}`. Installing it grants unattended
+copy/reuse/delete within those bounds to the local server OS operator. Requests,
+source, hashes and model/data content confer no permission. This documentation
+installs no policy. The policy must be an operator-owned no-follow regular file,
+with canonical non-symlink ancestors owned by root/operator and no group/other
+writes. Storage/copy roots must exist; macOS aliases must be resolved by the
+operator. Stored directories/files use 0700/0600. Same-host local storage outside
+`datasets` is an operator precondition; configured artifact/copy-root overlap is
+rejected, without a universal mount detector. Copy roots may overlap each other.
+Startup pins root descriptors; replacement requires restart. Unsupported safe
+operations or invalid configuration disable retention with `configuration_error`.
+
+#### Choose Copy or Retained for each logical input
+
+`revision` is closed version 1 with `parent_artifact_id` and/or nonempty `inputs`.
+It permits at most 8 unique names, 16 KiB compact UTF-8 JSON and depth 4.
+Names/root IDs match `[A-Za-z0-9_-]{1,64}`; IDs are lowercase UUID4 hex and
+`sha256` is lowercase SHA-256 hex. Copy paths are relative POSIX paths, at most
+1024 UTF-8 bytes, without empty/`.`/`..` components, backslash, NUL or an absolute
+prefix. Unknown keys/types are rejected without path normalization.
+
+| User request | Explicit choice and client responsibility |
+| --- | --- |
+| “Use the previous data; change only color.” | Deliberately select Retained for every required input. It uses fixed bytes with unknown upstream freshness. |
+| “Use the current file.” | Obtain the authorized current file and its fresh expected hash, then Copy. No automatic fallback to Retained or automatic acceptance of a changed digest. |
+| “Redraw it.” | The client resolves ambiguous data choice with the user; failure or missing context is not snapshot consent. |
+| “A old, B current.” | Select Retained A and Copy B separately; describe each input rather than labeling the entire plot latest. |
+
+For an already connected `client`, these argument fragments use operator-supplied
+`root_id="research"`, a known allowed relative path and an independently obtained
+`expected_sha256` for its current bytes. They are not a grant or a file lookup:
+
+```python
+copy_input = {"kind": "copy", "name": "measurements", "root_id": "research",
+              "relative_path": "run/data.csv", "sha256": expected_sha256}
+revision = {"schema_version": 1, "inputs": [copy_input]}
+# Pass revision alongside the exact submitted code to render_plot.
+```
+
+Input-bearing execution injects a read-only `dartwork_inputs` name→path mapping
+through a private stdin/FD channel. The submitted source must actually consume
+its logical names, for example:
+
+```python
+import csv
+with open(dartwork_inputs["measurements"], newline="") as stream:
+    rows = list(csv.DictReader(stream))
+```
+
+If recovered source opens an old path, explicitly edit that expression to
+`dartwork_inputs["measurements"]` and submit the edited exact source. The server
+does no source rewriting, dependency discovery or original-path restoration.
+Standalone execution requires the caller to supply the mapping. cwd, inherited
+environment and existing Python timeout semantics remain unchanged.
+
+After a successful render, read the entire `report.json` resource. Its optional
+`provenance` v1 contains `parent` (null or pinned ID/manifest/source hashes),
+`inputs` and `reproducibility:"not_claimed"`. Each entry contains `name`,
+`sha256`, `size_bytes`, `retained:{artifact_id,name}`,
+`selection:{kind:"copy"}` or `{kind:"retained",artifact_id,input_name}`, and
+`evidence:"copied_and_boundary_checked"`. Receipt/locator/errors add no policy
+paths or original basename; exact source, existing stdout/stderr, tracebacks
+and automatic exception messages can still expose private paths/content.
+
+To reuse one entry from that report, map its child locator's **name** to the
+next request's **input_name**; the request's `name` is the new logical name:
+
+```python
+entry = report["provenance"]["inputs"][0]
+retained_input = {"kind": "retained", "name": entry["name"],
+                  "artifact_id": entry["retained"]["artifact_id"],
+                  "input_name": entry["retained"]["name"],
+                  "sha256": entry["sha256"]}
+revision = {"schema_version": 1, "parent_artifact_id": previous_artifact_id,
+            "inputs": [retained_input]}
+```
+
+The new receipt's `selection` identifies the previous selected set/input;
+its `retained` locator identifies the new child's independently owned copy.
+These are immutable creation-time receipts, not live availability. Deleted or
+expired inputs can leave the historical report readable. **Only actual Retained
+admission** checks current grant, expiry, revocation, commit and bytes. Parent
+and input copies admitted while live stay pinned through execution even if they
+expire meanwhile. A healthy child remains readable when its parent is missing,
+expired or corrupt; ancestor lookup and input admission are separate operations.
+
+Clients should show each input's name, Copy/Retained choice, selected snapshot ID
+when applicable, child expiry and unknown upstream freshness. Display, parent
+comparison and ambiguity handling are client responsibilities, not server-enforced
+UI or proof of arbitrary LLM behavior. For style-only work, compare the entire
+required input-name set and hashes with the parent; changed/missing/renamed names
+need an explicit choice. Legacy/unsupported/invalid provenance is incomparable;
+never infer a match from basenames, row counts or source strings. Equal hashes
+prove equal bytes, not shared upstream identity or meaning. The server has no
+style-intent field or automatic style-only rejection. It never watches, refreshes
+or overwrites upstream data and promises no latest-data/as-of/capture semantics.
+
+#### Independent lifetime, limits and deletion
+
+Every child owns new independent whole-file bytes with its artifact's ID and
+publication instant, expiring exactly seven days later. The child publication
+clock is not data capture time. Reads never renew either lifetime. Renewal is
+only by an explicitly requested independent child copy, which may keep the same
+old data beyond its original seven days without making it fresher. Deletion and
+expiry do not cascade to committed children or delete any of the five members.
+The v1 bundle remains five members, six manifest keys and combined 32 MiB.
+
+Input copying is bounded to 8 files × 8 MiB and 32 MiB payload per request;
+the private store permits 512 MiB/128 sets, including metadata, pending/reserved
+and revoked residue, with no live eviction or overrides. Copy/post-check phases
+have 10s/5s deadlines, 64 KiB chunks and at most 65 MiB combined data reads;
+worker reclamation and Python execution are outside a universal wall-clock bound.
+Safe descriptor walks reject symlinks/nonregular files; this is not an OS sandbox.
+Retention render/delete/maintenance are serial; a second same-host server cannot
+own the same startup lock. Cross-host exclusion is not promised. Shutdown stops
+admission and drains/reclaims workers before descriptors and lock close.
+
+`await client.call_tool("delete_plot_inputs", {"artifact_id": selected_id})`
+revokes one complete input set under the existing operator grant, leaving source,
+report, images and other children's copies intact. It returns
+`{schema_version:1,artifact_id,state:"deleted"|"absent"}` or the existing error arm.
+Valid/live metadata or a matching bundle is not required for manual deletion:
+
+| Input-set state | Deletion and recovery behavior |
+| --- | --- |
+| live | Revoke and remove owned fixed files. |
+| expired-unswept | Delete without requiring a live admission. |
+| revoked residue | Retry the common deletion protocol. |
+| corrupt / metadata-less | Remove only verified owned fixed files; do not guess publication/expiry. |
+| uncommitted orphan | Startup removes only positively owned pending namespaces. |
+| unknown commit | Manual deletion is allowed; automatic cleanup waits for its own verified expiry. |
+
+The common durability sequence is atomic `.revoked` creation → marker file fsync
+→ set-directory fsync → payload unlink → metadata unlink → set-directory fsync
+→ marker unlink → rmdir → storage-root fsync. `absent` also requires verified
+safe absence and root fsync. Failed barriers never report success. Unknown/unsafe
+residue stays counted and returns `publication_error`; cleanup is nonrecursive.
+Marker persistence failure removes no payload and guarantees denial only in the
+current process, without a restart revocation guarantee.
+
+Missing/changed artifact roots, HOME or missing/damaged bundles never prove
+committed inputs unpublished. Preserve/count them; restoring the original root
+before expiry permits reuse. Corrupt residue can require operator repair/manual
+delete. Startup, each operation and 60s maintenance clean eligible sets after
+active work drains. Expiry denies reuse immediately, but offline bytes remain
+until next startup. A lost render response can leave a counted set whose ID the
+client does not know, until expiry/offline cleanup; no listing or idempotency key
+exists. Unlink is not secure erase or backup/derived-copy removal. Fsync ordering
+and process-crash recovery do not promise hardware power-loss durability.
 
 ### Prompts
 
