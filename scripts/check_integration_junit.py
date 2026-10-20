@@ -14,6 +14,8 @@ REQUIRED_MODULES = (
     "tests.test_integration",
     "tests.test_cli",
     "tests.test_drift",
+    "tests.mcp.agent_loop.test_oracle",
+    "tests.mcp.agent_loop.test_capture",
 )
 
 

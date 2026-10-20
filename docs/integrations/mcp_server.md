@@ -9,6 +9,11 @@ is not a measurement of a particular display, perceived brightness, or OKLab
 
 **dartwork-mpl** includes a built-in [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that lets AI coding assistants — such as Claude Code, Cursor, Windsurf, and any MCP-compatible client — access library documentation, style guides, and helper tools **inside the chat context**.
 
+For the measured CSV → render → image/report review → style revision → fresh
+retrieval loop, see [Agent Plot Evaluation](agent_plot_evaluation.md). It separates
+stored delivery, declared validation, independent data/visual checks and model
+review, with retained commands and known limitations.
+
 ```{contents} On this page
 :local:
 :depth: 2

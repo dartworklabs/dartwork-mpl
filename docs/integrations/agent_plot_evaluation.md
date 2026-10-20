@@ -14,42 +14,64 @@ export UV_PYTHON=3.12
 uv run --no-sync pytest tests/mcp/agent_loop/test_capture.py tests/mcp/agent_loop/test_oracle.py -q
 ```
 
-Before spending any live budget, inspect the installed host's help/version and
-select the current middle tier and supported effort from its live catalog. Save
-`runtime/selection.json` beneath the evidence root, with `model`, `effort`,
-`provider`, `checked_at`, and the selected `catalog_model` record. The runner has
-no model alias or fallback. Authentication uses the host's existing normal
-mechanism; the runner copies no credential files or secret environment values.
+## Repeat retained evaluations without model calls
+
+The retained phase-0 evidence is at
+`~/scratch/dartwork-mpl-agent-loop-eval-2026-10-20`. These commands only read saved
+members, replay observations and review sidecars; they do not execute source or
+invoke a model. Keep the evidence tree intact, including `runtime/` and the frozen
+baseline record.
 
 ```sh
+export UV_PYTHON=3.12
 export AGENT_EVAL_ROOT="$HOME/scratch/dartwork-mpl-agent-loop-eval-2026-10-20"
-uv run --no-sync python scripts/run_agent_plot_eval.py smoke --output-root "$AGENT_EVAL_ROOT"
-uv run --no-sync python scripts/run_agent_plot_eval.py run --label baseline --cases all --output-root "$AGENT_EVAL_ROOT"
+uv run --no-sync python scripts/evaluate_agent_plot.py evaluate --run "$AGENT_EVAL_ROOT/candidate/line"
+uv run --no-sync python scripts/evaluate_agent_plot.py compare --baseline "$AGENT_EVAL_ROOT/baseline" --candidate "$AGENT_EVAL_ROOT/candidate"
 ```
 
-Both the scored CLI and exported `run_episode` require the explicit phase-0
-admission record described below, before any context collector or host work. Each case/label runs once, and existing evidence is never overwritten. The approved comparison has
-four baseline and four candidate cases. Candidate runs use `--label candidate`.
-Do not run either corpus without its spending authorization.
+`evaluate --run DIR` prints one episode's JSON and exits 0 only when all six
+independent dimensions pass: `delivery`, `declared_validation`, `model_review`,
+`semantic_replay`, `visual_review`, and `human_code_edits`. Failure or unchecked
+returns 1. The same command works for each of the four case directories.
+`compare` prints both labels and `candidate_gate`; its overall exit also requires
+the baseline to pass. This frozen comparison intentionally exits 1 while
+`candidate_gate` is true. An incomplete baseline must remain visible.
 
-The first actual smoke revealed that the host advertises built-in agents/plugins
-even in restricted mode. The initial incomplete failure remains under
-`smoke/line`. A specifically authorized harness repair uses `smoke-repair`, with
-three USD 0.2 caps; it is not a general retry option. Together with the first
-invoked USD 0.4 cap, smoke invocation caps would total USD 1.0 if all stages ran. Both actual smoke
-records remain FAILED: the repaired revision omitted its final report review.
-Only USD 0.8 of smoke stage caps was invoked; no further preflight is permitted.
-Unknown agents/plugins, custom plugin paths
-or sources, skills, additional directories, unexpected tools and other MCP
-servers still fail capture.
+## Authorized phase-0 live procedure (historical)
 
-The parent approved a narrow sequencing adjustment after this workflow failure.
-`runtime/admission-decision.json` binds both unchanged FAILED smoke hashes to the
-observed image/full-report receipt, actual resume, model/scope/cleanup and real
-stdio recovery tests. Its policy is `phase0-observed-infrastructure-2026-10-20`;
-its `fresh_agent_recovery` must explicitly remain `unverified`. Baseline execution
-is pending independent code review. The first scored episode measures live fresh
-recovery; a reconstructed store or deterministic collector cannot prove it.
+Live capture is manual opt-in in one representative Python 3.12 environment,
+with a separately approved corpus, model selection, admission and spending cap.
+It is outside pytest and PR jobs. The current corpus is consumed and immutable;
+the following records what was executed, rather than a fresh-run bootstrap.
+Do not rerun these commands against it or reset its ledger.
+
+Before those calls, the operator inspected the installed host's help/version and
+live model catalog, saving `runtime/selection.json` with `model`, `effort`,
+`provider`, `checked_at`, and `catalog_model`. There is no alias or fallback.
+Authentication used the host's normal existing mechanism; no credential files or
+secret environment values were copied. The commands were the runner's `smoke`,
+then authorized `smoke-repair`, then `run --label baseline --cases all` and
+`run --label candidate --cases all`, each with `--output-root "$AGENT_EVAL_ROOT"`.
+Each scored label/case ran once. A new evaluation requires its own bounded
+execution/admission decision; the present runner does not offer generic successful
+smoke admission or a corpus retry procedure.
+
+The first smoke received an actual image/full report but failed because the host
+advertised built-in agents/plugins in restricted mode. An exact built-in metadata
+allowlist repaired that capture rejection. Unknown/custom context stays rejected.
+The specifically authorized repair used three USD 0.2 stage caps from the
+original uninvoked allocation. It failed the model workflow: the final revised
+artifact's full report was not read. Both records remain FAILED under `smoke/line`
+and `smoke-repair/line`; no further preflight occurred.
+
+Both the CLI and exported `run_episode` require
+`runtime/admission-decision.json` before context collection or host work. Its
+`phase0-observed-infrastructure-2026-10-20` policy binds those two unchanged
+failed smoke hashes and independent code-review approval to observed model,
+image/full-report receipt, resume, scope, cleanup and real stdio tests.
+`fresh_agent_recovery` remains `unverified` in that historical admission; the
+scored episodes subsequently measured actual new-agent recovery. This was an
+explicit infrastructure admission, never a passing model-workflow result.
 
 Each episode records `infrastructure_status`, `workflow_status` and
 `agent_recovery_status`. Capture/config/model/fixture/oracle/tool/bounds/cleanup
@@ -119,8 +141,66 @@ isolation or complete reproducibility. Private workspaces/stores are removed in
 finally; retained evidence belongs in the research checkout or scratch, never
 `datasets`.
 
-Replay can also be invoked explicitly for an available original CSV/workspace:
+## Results and limits of this comparison
 
-```sh
-uv run --no-sync python scripts/evaluate_agent_plot.py replay /absolute/source.py /absolute/replay-output fig --csv /absolute/input.csv --case line
-```
+All four candidate `evaluate` calls exit 0. Their selected original/revision
+bundles pass the independent data/row/mask/group/panel oracle, strict saved replay
+pixels, both retrieval paths, review receipts, cleanup and explicit zero human
+plotting-code edits. Four frozen baseline run hashes still match.
+
+| Case | Preserved baseline result | Candidate result |
+| --- | --- | --- |
+| line | Final revision full-report receipt missing; other dimensions pass | Six dimensions pass |
+| groupedbar | Final report receipt missing; native NumPy scalar JSON serialization broke both saved replays, leaving semantics/pixels unchecked | Six dimensions pass |
+| scatter | No artifact: a production-valid 60-second request hit an undisclosed evaluator-only 20-second cap | Six dimensions pass, including the final sentinel row |
+| custom2panel | Six dimensions pass; global chart-hint warning retained | Six dimensions pass; same warning retained |
+
+The evaluator's four-field numeric normalization was fixed after the baseline
+(`e71e0b46`) and before candidate capture (`810b4541`). Baseline grouped-bar
+replays were never reconstructed or rerendered after cleanup. The scatter cap
+was absent from model input and within the production API's allowed timeout;
+its failure is not a demonstrated model/user-contract violation. These confounds
+and four single episodes do not establish general model performance or prompt
+causality. Baseline collection completion and candidate quality are separate.
+
+Both custom2panel full reports expose `line_no_lines` for the scatter panel
+because one global line hint covers both axes. Their complete status and empty
+`failed_checks` do not erase this warning or prove data accuracy. Host previews
+can resize larger images; actual decoded, artifact-correlated image receipt is
+recorded separately from independent evaluator visual review. Five-member
+recovery remains byte-exact, and replay versus stored PNG compares decoded
+pixels strictly. The evaluator independently read all 14 retained original/
+revision PNGs; baseline scatter has explicit missing tiles. No human wrote or
+repaired the model's plotting Python.
+
+Two failed smokes plus eight scored attempts invoked USD 37.8 of the USD 41
+stage-cap budget, within the original 7,500-second corpus clock. Known reported
+costs sum to USD 3.1587164; this is not the billing total because baseline scatter
+cost is unknown. Configured effort is recorded; effective effort remains null.
+
+Execution receipts, frozen hashes, independent visual/zero-edit attestations,
+and the actual equal-scale image PoC are retained in
+`~/scratch/dartwork-mpl-agent-loop-execution-2026-10-20/task-4-evidence/`
+(`comparison.json`, `command-receipts.json`, `evaluator-versions.json`,
+`independent-visual-and-human-review.json`, `visual-review.html`). The PoC was
+previewed at desktop/mobile widths before any merge or deployment. Source and
+member evidence survives owned cwd/store cleanup; replaying source that needs a
+removed absolute CSV path is not supported by this read-only comparison.
+
+## Cheap CI and follow-up scope
+
+The existing `tests/` collection runs the oracle and real stdio capture tests.
+The Python 3.12 coverage job's existing
+`scripts/check_integration_junit.py REPORT.xml` requires a passing executed case
+from each protected module, including `tests.mcp.agent_loop.test_oracle` and
+`tests.mcp.agent_loop.test_capture`. Missing or only skipped/failed/error cases
+fail that guard; pytest itself still rejects any failed case. No model job,
+additional matrix, dependency or repeated suite is added.
+
+This guide connects #483's agent loop. Updating #482's roadmap criteria remains
+a proposal; #499 viewer repair and #470 measured CI are independent tracks.
+Other P0 work stays on the backlog. Immutable run/revision and retained-input
+permission/lifetime/deletion, wire/discovery changes, hosted execution, website/
+login/community and separate docs require their own approved scope. Phase 0
+keeps native Figure/Axes, the five-member v1 bundle's seven-day retention,
+18/10/9/2 discovery and trusted local execution contracts.

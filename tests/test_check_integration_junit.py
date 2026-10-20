@@ -18,6 +18,8 @@ MODULES = (
     "tests.test_integration",
     "tests.test_cli",
     "tests.test_drift",
+    "tests.mcp.agent_loop.test_oracle",
+    "tests.mcp.agent_loop.test_capture",
 )
 
 
@@ -53,7 +55,7 @@ def test_accepts_passed_cases_with_module_or_class_names(
     _report(path, [(module + suffix, None) for module in MODULES])
     result = _check(path)
     assert result.returncode == 0, result.stderr
-    assert "4 required modules" in result.stdout
+    assert "6 required modules" in result.stdout
 
 
 @pytest.mark.parametrize("outcome", ["missing", "skipped", "failure", "error"])
