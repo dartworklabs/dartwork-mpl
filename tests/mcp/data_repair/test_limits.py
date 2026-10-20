@@ -153,7 +153,9 @@ def test_output_overflow_discards_whole_payload_without_truncation() -> None:
 
 
 @pytest.mark.parametrize(
-    "name", ["A" * 1_048_577, "\x00" * 180_000, "😀" * 90_000]
+    "name",
+    ["A" * 1_048_577, "\x00" * 180_000, "😀" * 90_000],
+    ids=("over-budget-ascii", "over-budget-escaped-nul", "over-budget-emoji"),
 )
 def test_plot_name_that_cannot_fit_has_explicit_empty_name_refusal(
     name: str,
@@ -167,7 +169,15 @@ def test_plot_name_that_cannot_fit_has_explicit_empty_name_refusal(
     assert len(text.encode("utf-8")) <= 1_048_576
 
 
-@pytest.mark.parametrize("name", ["A" * 1_046_576, 'A"\\\n\ud800', " scatter "])
+@pytest.mark.parametrize(
+    "name",
+    ["A" * 1_046_576, 'A"\\\n\ud800', " scatter "],
+    ids=(
+        "near-budget-ascii",
+        "escaped-invalid-unicode",
+        "padded-supported-name",
+    ),
+)
 def test_names_that_fit_keep_normalized_exact_value(name: str) -> None:
     """Escaping or invalid raw Unicode never requires a gratuitous name rewrite."""
     text, actual = response("{}", name)
