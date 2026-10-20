@@ -140,7 +140,7 @@ list-text coercion exactly once, then Pydantic validation/defaults; reject non-f
 after coercion too. Preserve default behavior; do not introduce startup default rejection.
 State schema: active params object, tabs of {id,name,params} with unique integer ids (not booleans), bounded
 names and declared-key bounded JSON params (no current-model value constraints on tabs); figWidth integer 30..100.
-Omitted tabs/figWidth preserve stored values (`StateRequest.tabs: tuple[Tab,...] | None = None`); other omissions retain defaults. Preset save: label string and params object; server save: params/optional filename.
+Omitted fields use endpoint defaults: save-state writes empty tabs when omitted; config replacement omits unspecified optional fields, including figWidth. Preset save: label string and params object; server save: params/optional filename.
 On-disk schemas additionally admit only existing function/updated_at and preset timestamp metadata.
 
 Measured through actual _config save functions: 5 shipped/documented models; maximum 18 fields,
