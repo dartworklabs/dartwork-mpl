@@ -467,20 +467,24 @@ def test_input_roots_accept_absent_artifact_sibling_of_existing_input_roots(
 
 
 @pytest.mark.parametrize("alias", [False, True])
-def test_input_roots_reject_absent_artifact_under_existing_storage(
+def test_input_roots_check_absent_artifact_under_case_variant_storage(
     tmp_path: Path, alias: bool
 ) -> None:
-    """Storage's opened identity rejects even a missing artifact alias descendant."""
+    """Real storage aliases overlap; distinct case siblings keep artifacts lazy."""
     storage = tmp_path / "inputs"
     storage.mkdir(mode=0o700)
     parent = storage.with_name("INPUTS") if alias else storage
     if not parent.exists():
-        pytest.skip("Filesystem has no directory case aliases")
-    assert parent.samefile(storage)
+        parent.mkdir(mode=0o700)
+    same_storage = parent.samefile(storage)
     root = parent / "missing" / "artifacts"
     store = configured(root)
     before = snapshot(tmp_path)
-    assert isinstance(store.check_input_roots(storage, ()), ConfigurationError)
+    result = store.check_input_roots(storage, ())
+    if same_storage:
+        assert isinstance(result, ConfigurationError)
+    else:
+        assert result is None
     assert snapshot(tmp_path) == before
     assert not root.parent.exists()
 
@@ -489,16 +493,16 @@ def test_input_roots_reject_absent_artifact_under_existing_storage(
 @pytest.mark.parametrize(
     "relation", ["equal", "storage_parent", "storage_child"]
 )
-def test_input_roots_reject_absent_case_alias_overlap(
+def test_input_roots_check_absent_case_variant_overlap(
     tmp_path: Path, other_root: str, relation: str
 ) -> None:
-    """Absent case aliases later form real equal/ancestor roots, never a grant."""
+    """Missing inputs refuse; provisioned case variants follow object ancestry."""
     probe = tmp_path / "CaseProbe"
     probe.mkdir(mode=0o700)
     probe_alias = tmp_path / "CASEPROBE"
     if not probe_alias.exists():
-        pytest.skip("Filesystem has no directory case aliases")
-    assert probe.samefile(probe_alias)
+        probe_alias.mkdir(mode=0o700)
+    case_aliases = probe.samefile(probe_alias)
 
     root = tmp_path / ("artifacts" if other_root == "artifact" else "copies")
     storage = root.with_name(root.name.upper())
@@ -521,42 +525,61 @@ def test_input_roots_reject_absent_case_alias_overlap(
     assert not root.exists()
     assert not storage.exists()
 
-    # Provision only after the read-only call, proving the real alias relation.
+    # Both filesystems refuse unresolved input roots, without creating anything.
+    assert isinstance(result, ConfigurationError)
+    # Provision afterwards to distinguish actual aliases from distinct objects.
     storage.mkdir(mode=0o700, parents=True)
     root.mkdir(mode=0o700, parents=True, exist_ok=True)
     if relation == "equal":
-        assert root.samefile(storage)
+        overlaps = root.samefile(storage)
     elif relation == "storage_parent":
-        assert root.parent.samefile(storage)
+        overlaps = root.parent.samefile(storage)
     else:
-        assert storage.parent.samefile(root)
-    assert isinstance(result, ConfigurationError)
+        overlaps = storage.parent.samefile(root)
+    assert overlaps == case_aliases
+    before = snapshot(tmp_path)
+    result = store.check_input_roots(storage, copies)
+    if overlaps:
+        assert isinstance(result, ConfigurationError)
+    else:
+        assert result is None
+    assert snapshot(tmp_path) == before
 
 
-def test_input_roots_reject_same_objects_with_distinct_case_paths(
+def test_input_roots_distinguish_objects_with_distinct_case_paths(
     tmp_path: Path,
 ) -> None:
-    """On case-insensitive filesystems, object aliases bypass no overlap rule."""
+    """Case aliases are denied; independently opened case siblings are separate."""
     root = tmp_path / "artifacts"
     root.mkdir(mode=0o700)
     alias = root.with_name("ARTIFACTS")
     if not alias.exists():
-        pytest.skip("Filesystem has no directory case aliases")
-    assert (root.stat().st_dev, root.stat().st_ino) == (
-        alias.stat().st_dev,
-        alias.stat().st_ino,
-    )
+        alias.mkdir(mode=0o700)
+    same_root = root.samefile(alias)
+    # Existing distinct directories and their descendants must remain usable.
+    if not same_root:
+        (alias / "new").mkdir(mode=0o700)
     store = configured(root)
+    before = snapshot(tmp_path)
     for candidate in (alias, alias / "new"):
-        assert isinstance(
-            store.check_input_roots(candidate, ()), ConfigurationError
-        )
+        result = store.check_input_roots(candidate, ())
+        if same_root:
+            assert isinstance(result, ConfigurationError)
+        else:
+            assert result is None
+    assert snapshot(tmp_path) == before
     storage = tmp_path / "inputs"
     storage.mkdir(mode=0o700)
-    assert isinstance(
-        store.check_input_roots(storage, (storage.with_name("INPUTS"),)),
-        ConfigurationError,
-    )
+    copy = storage.with_name("INPUTS")
+    if not copy.exists():
+        copy.mkdir(mode=0o700)
+    before = snapshot(tmp_path)
+    result = store.check_input_roots(storage, (copy,))
+    if storage.samefile(copy):
+        assert isinstance(result, ConfigurationError)
+    else:
+        assert result is None
+    assert snapshot(tmp_path) == before
 
 
 def test_input_root_overlap_is_symmetric_for_seeded_descendants(

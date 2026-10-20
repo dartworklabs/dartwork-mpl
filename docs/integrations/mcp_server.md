@@ -638,7 +638,8 @@ revision needs a live verified parent bundle but no input policy. It pins that
 parent's manifest/source digests at admission; it does not execute the parent.
 
 Retained bytes live on the **MCP server host**, in the operator's private
-`storage_dir`, selected by the startup-only `DARTWORK_MPL_INPUT_POLICY` JSON.
+`storage_dir`. The startup-only `DARTWORK_MPL_INPUT_POLICY` environment variable
+contains the absolute path to the operator-owned JSON policy file, not inline JSON.
 There is no deployed path supplied by this guide. When that variable is unset,
 Copy, Retained and input deletion are denied; legacy render/get still work.
 The operator supplies allowed `root_id` values and usage instructions to clients.
