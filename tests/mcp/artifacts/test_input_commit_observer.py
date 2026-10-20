@@ -388,8 +388,10 @@ def test_input_roots_reject_overlap_without_creating_directories(
     assert isinstance(
         store.check_input_roots(storage, (storage / "new",)), ConfigurationError
     )
+    storage.mkdir(mode=0o700)
+    before = snapshot(tmp_path)
     assert store.check_input_roots(storage, (copy, nested_copy)) is None
-    assert not storage.exists()
+    assert snapshot(tmp_path) == before
     assert not (root / "new").exists()
     root.rmdir()
     assert isinstance(
@@ -400,7 +402,7 @@ def test_input_roots_reject_overlap_without_creating_directories(
 def test_input_roots_check_absent_artifact_path_and_aliases(
     tmp_path: Path,
 ) -> None:
-    """Lexical overlap is rejected before creation and symlinks cannot authorize it."""
+    """Unresolved roots and symlinks cannot authorize input storage separation."""
     root = tmp_path / "artifacts"
     store = configured(root)
     storage = tmp_path / "inputs"
@@ -419,9 +421,116 @@ def test_input_roots_check_absent_artifact_path_and_aliases(
         assert isinstance(
             store.check_input_roots(candidate, copies), ConfigurationError
         )
-    assert store.check_input_roots(storage, (copy,)) is None
+    before = snapshot(tmp_path)
+    assert isinstance(
+        store.check_input_roots(storage, (copy,)), ConfigurationError
+    )
+    assert snapshot(tmp_path) == before
     assert not root.exists()
     assert not storage.exists()
+
+
+@pytest.mark.parametrize("missing", ["storage", "copy"])
+def test_input_roots_refuse_unresolved_separation_without_writes(
+    tmp_path: Path, missing: str
+) -> None:
+    """Missing storage/copy roots supply no identity proving safe separation."""
+    roots = {
+        "artifact": tmp_path / "artifacts",
+        "storage": tmp_path / "inputs",
+        "copy": tmp_path / "copies",
+    }
+    for name, path in roots.items():
+        if name != missing:
+            path.mkdir(mode=0o700)
+    store = configured(roots["artifact"])
+    before = snapshot(tmp_path)
+    result = store.check_input_roots(roots["storage"], (roots["copy"],))
+    assert snapshot(tmp_path) == before
+    assert isinstance(result, ConfigurationError)
+
+
+def test_input_roots_accept_absent_artifact_sibling_of_existing_input_roots(
+    tmp_path: Path,
+) -> None:
+    """Safe existing input roots preserve lazy creation of a missing artifact root."""
+    root = tmp_path / "future" / "artifacts"
+    storage = tmp_path / "inputs"
+    storage.mkdir(mode=0o700)
+    copy = tmp_path / "copies"
+    copy.mkdir(mode=0o700)
+    store = configured(root)
+    before = snapshot(tmp_path)
+    assert store.check_input_roots(storage, (copy,)) is None
+    assert snapshot(tmp_path) == before
+    assert not root.parent.exists()
+
+
+@pytest.mark.parametrize("alias", [False, True])
+def test_input_roots_reject_absent_artifact_under_existing_storage(
+    tmp_path: Path, alias: bool
+) -> None:
+    """Storage's opened identity rejects even a missing artifact alias descendant."""
+    storage = tmp_path / "inputs"
+    storage.mkdir(mode=0o700)
+    parent = storage.with_name("INPUTS") if alias else storage
+    if not parent.exists():
+        pytest.skip("Filesystem has no directory case aliases")
+    assert parent.samefile(storage)
+    root = parent / "missing" / "artifacts"
+    store = configured(root)
+    before = snapshot(tmp_path)
+    assert isinstance(store.check_input_roots(storage, ()), ConfigurationError)
+    assert snapshot(tmp_path) == before
+    assert not root.parent.exists()
+
+
+@pytest.mark.parametrize("other_root", ["artifact", "copy"])
+@pytest.mark.parametrize(
+    "relation", ["equal", "storage_parent", "storage_child"]
+)
+def test_input_roots_reject_absent_case_alias_overlap(
+    tmp_path: Path, other_root: str, relation: str
+) -> None:
+    """Absent case aliases later form real equal/ancestor roots, never a grant."""
+    probe = tmp_path / "CaseProbe"
+    probe.mkdir(mode=0o700)
+    probe_alias = tmp_path / "CASEPROBE"
+    if not probe_alias.exists():
+        pytest.skip("Filesystem has no directory case aliases")
+    assert probe.samefile(probe_alias)
+
+    root = tmp_path / ("artifacts" if other_root == "artifact" else "copies")
+    storage = root.with_name(root.name.upper())
+    if relation == "storage_parent":
+        root /= "nested"
+    elif relation == "storage_child":
+        storage /= "nested"
+    if other_root == "artifact":
+        store = configured(root)
+        copies: tuple[Path, ...] = ()
+    else:
+        artifact_root = tmp_path / "artifacts"
+        artifact_root.mkdir(mode=0o700)
+        store = configured(artifact_root)
+        copies = (root,)
+
+    before = snapshot(tmp_path)
+    result = store.check_input_roots(storage, copies)
+    assert snapshot(tmp_path) == before
+    assert not root.exists()
+    assert not storage.exists()
+
+    # Provision only after the read-only call, proving the real alias relation.
+    storage.mkdir(mode=0o700, parents=True)
+    root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if relation == "equal":
+        assert root.samefile(storage)
+    elif relation == "storage_parent":
+        assert root.parent.samefile(storage)
+    else:
+        assert storage.parent.samefile(root)
+    assert isinstance(result, ConfigurationError)
 
 
 def test_input_roots_reject_same_objects_with_distinct_case_paths(
@@ -455,19 +564,23 @@ def test_input_root_overlap_is_symmetric_for_seeded_descendants(
 ) -> None:
     """Generated ancestor/descendant storage pairs are always denied both ways."""
     rng = random.Random(20261020)
-    store = configured(tmp_path / "artifacts")
+    artifact_root = tmp_path / "artifacts"
+    artifact_root.mkdir(mode=0o700)
+    store = configured(artifact_root)
     for _ in range(32):
         ancestor = tmp_path / "inputs" / f"root-{rng.randrange(1000)}"
         descendant = ancestor.joinpath(
             *(f"n{rng.randrange(1000)}" for _ in range(rng.randint(1, 4)))
         )
+        descendant.mkdir(mode=0o700, parents=True, exist_ok=True)
+        before = snapshot(tmp_path)
         assert isinstance(
             store.check_input_roots(ancestor, (descendant,)), ConfigurationError
         )
         assert isinstance(
             store.check_input_roots(descendant, (ancestor,)), ConfigurationError
         )
-    assert not (tmp_path / "inputs").exists()
+        assert snapshot(tmp_path) == before
 
 
 def test_input_roots_reject_artifact_root_replacement_during_check(
@@ -476,23 +589,23 @@ def test_input_roots_reject_artifact_root_replacement_during_check(
     """An overlap result cannot authorize a root replaced during observation."""
     root = tmp_path / "artifacts"
     root.mkdir(mode=0o700)
+    storage = tmp_path / "inputs"
+    storage.mkdir(mode=0o700)
     store = configured(root)
     real_ancestry = disk._root_ancestry
 
     def replace_after_walk(
-        path: Path,
+        path: Path, *, allow_missing: bool = False
     ) -> dict[tuple[int, int], tuple[str, ...]]:
         """Replace the real root after reading its actual ancestry evidence."""
-        result = real_ancestry(path)
+        result = real_ancestry(path, allow_missing=allow_missing)
         if path == root:
             root.rename(tmp_path / "original-root")
             root.mkdir(mode=0o700)
         return result
 
     monkeypatch.setattr(disk, "_root_ancestry", replace_after_walk)
-    assert isinstance(
-        store.check_input_roots(tmp_path / "inputs", ()), ConfigurationError
-    )
+    assert isinstance(store.check_input_roots(storage, ()), ConfigurationError)
     assert list(root.iterdir()) == []
     assert list((tmp_path / "original-root").iterdir()) == []
 

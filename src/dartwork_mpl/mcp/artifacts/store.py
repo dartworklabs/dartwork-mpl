@@ -269,13 +269,16 @@ def _observe_manifest(
         os.close(directory_fd)
 
 
-def _root_ancestry(root: Path) -> dict[tuple[int, int], tuple[str, ...]]:
+def _root_ancestry(
+    root: Path, *, allow_missing: bool = False
+) -> dict[tuple[int, int], tuple[str, ...]]:
     """Map opened ancestor objects to remaining lexical components, read-only.
 
-    Missing suffixes are allowed so overlap can be rejected before either root
-    is created. Every existing component is opened without following symlinks;
-    aliases of the same directory are compared by device/inode, not realpath.
-    Invalid paths or unsafe/unobservable components raise OSError/ValueError.
+    Components are opened without following symlinks; aliases use device/inode,
+    not realpath. Only an unpinned artifact root may have an unresolved suffix,
+    via allow_missing, when compared with fully observed input storage. Missing
+    input roots and invalid/unsafe/unobservable paths raise OSError/ValueError.
+    No directory is created or case/normalization rule guessed.
     """
     if not root.is_absolute() or ".." in root.parts or "\x00" in str(root):
         raise ValueError("Expected an absolute root without parent components")
@@ -287,7 +290,9 @@ def _root_ancestry(root: Path) -> dict[tuple[int, int], tuple[str, ...]]:
             try:
                 child = _open_directory(fd, remaining[0], private=False)
             except FileNotFoundError:
-                break
+                if allow_missing:
+                    break
+                raise
             os.close(fd)
             fd = child
             remaining = remaining[1:]
@@ -301,13 +306,15 @@ def _roots_overlap(
     first: Mapping[tuple[int, int], tuple[str, ...]],
     second: Mapping[tuple[int, int], tuple[str, ...]],
 ) -> bool:
-    """Detect equal/ancestor locations, including shared objects with absent tails."""
-    for identity in first.keys() & second.keys():
-        left, right = first[identity], second[identity]
-        shorter = min(len(left), len(right))
-        if left[:shorter] == right[:shorter]:
-            return True
-    return False
+    """Detect an opened root object shared by both directory ancestries.
+
+    At least one root must be fully observed. An unresolved artifact suffix is
+    separated from existing storage unless it first visits that storage object.
+    """
+    return any(
+        not first[identity] or not second[identity]
+        for identity in first.keys() & second.keys()
+    )
 
 
 def _write_file(directory_fd: int, name: str, data: bytes) -> None:
@@ -717,7 +724,10 @@ class ArtifactStore:
 
         Refuse storage equal to, above or below the artifact root or any copy
         root, using no-follow ancestor handles and device/inode identities.
-        Missing roots are not created; copy roots may overlap one another.
+        Storage and copy roots must already exist; unresolved input roots return
+        ConfigurationError. An unpinned absent artifact root remains lazy when
+        its observed ancestors prove separation from the existing storage.
+        Nothing is created, and copy roots may overlap one another.
         A pinned artifact root must still be present and unchanged. This only
         checks separation, not the input grant's ownership/mode policy, local
         filesystem/datasets preconditions or authorization to copy any file.
@@ -741,7 +751,11 @@ class ArtifactStore:
                     finally:
                         os.close(fd)
                 storage = _root_ancestry(storage_dir)
-                for root in (self._root, *copy_roots):
+                if _roots_overlap(
+                    storage, _root_ancestry(self._root, allow_missing=True)
+                ):
+                    return ConfigurationError()
+                for root in copy_roots:
                     if _roots_overlap(storage, _root_ancestry(root)):
                         return ConfigurationError()
                 current_fd = _walk_root(self._root, create=False)
