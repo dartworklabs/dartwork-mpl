@@ -989,8 +989,8 @@ def test_client_comparison_is_invariant_to_order_but_not_identity():
 def unexpected_diagnostics(stderr):
     """Allow exact observed warning bodies; expose new warnings and resource faults.
 
-    Runtime-dependent path prefixes vary, but warning classes/messages and the
-    Authlib continuation must match the retained normal-session evidence.
+    Runtime-dependent paths/line numbers vary, but warning origins, classes,
+    messages and source continuations must match normal-session evidence.
     """
     lines = stderr.splitlines()
     unexpected = []
@@ -1008,10 +1008,14 @@ def unexpected_diagnostics(stderr):
         ):
             unexpected.append(line)
         elif re.search(r"\b(?:[A-Za-z_]\w*)?Warning\b", line):
-            if line == RUNPY_WARNING:
+            if re.fullmatch(
+                r"<frozen runpy>:[1-9]\d*: RuntimeWarning: "
+                + re.escape(RUNPY_WARNING.split("RuntimeWarning: ", 1)[1]),
+                line,
+            ):
                 continue
             if re.fullmatch(
-                r".+/python3\.10/runpy\.py:126: RuntimeWarning: "
+                r".+/python3\.\d+/runpy\.py:[1-9]\d*: RuntimeWarning: "
                 + re.escape(RUNPY_WARNING.split("RuntimeWarning: ", 1)[1]),
                 line,
             ) and lines[index + 1 : index + 2] == [
@@ -1046,6 +1050,7 @@ AUTHLIB_WARNING = "/fixture/site-packages/fastmcp/server/auth/providers/jwt.py:1
     [
         "",
         RUNPY_WARNING,
+        RUNPY_WARNING.replace(":128:", ":130:"),
         RUNPY_310_WARNING,
         AUTHLIB_WARNING,
         RUNPY_WARNING + "\n" + AUTHLIB_WARNING,
@@ -1056,16 +1061,42 @@ def test_normal_stderr_accepts_exact_known_warnings(stderr):
     assert unexpected_diagnostics(stderr) == []
 
 
+def test_known_runpy_warning_is_invariant_to_source_line():
+    """Runpy location changes preserve only the exact warning and source context."""
+    rng = random.Random(20261021)
+    body = RUNPY_WARNING.split("RuntimeWarning: ", 1)[1]
+    for line in [128, 130, *(rng.randint(1, 10000) for _ in range(32))]:
+        frozen = f"<frozen runpy>:{line}: RuntimeWarning: {body}"
+        minor = rng.randint(10, 14)
+        source = (
+            f"/fixture/lib/python3.{minor}/runpy.py:{line}: RuntimeWarning: "
+            f"{body}\n  warn(RuntimeWarning(msg))"
+        )
+        for stderr in (frozen, source):
+            assert unexpected_diagnostics(stderr) == [], stderr
+
+
 @pytest.mark.parametrize(
     "stderr",
     [
         "fixture.py:1: Warning: new warning",
         "fixture.py:1: UserWarning: new warning",
         RUNPY_310_WARNING.replace("unpredictable behaviour", "new behaviour"),
+        RUNPY_310_WARNING.replace("dartwork_mpl.mcp.server", "other.server"),
+        RUNPY_310_WARNING.replace("RuntimeWarning:", "UserWarning:"),
+        RUNPY_310_WARNING.replace("runpy.py:", "unrelated.py:"),
+        RUNPY_310_WARNING.split("\n", 1)[0],
+        RUNPY_310_WARNING.replace(
+            "  warn(RuntimeWarning(msg))", "  other(msg)"
+        ),
         RUNPY_310_WARNING + "\nfixture.py:1: UserWarning: additional warning",
         "  warn(RuntimeWarning(msg))",
         "fixture.py:1: FutureWarning: new warning",
         RUNPY_WARNING.replace("unpredictable behaviour", "new behaviour"),
+        RUNPY_WARNING.replace("dartwork_mpl.mcp.server", "other.server"),
+        RUNPY_WARNING.replace("RuntimeWarning:", "UserWarning:"),
+        RUNPY_WARNING.replace("<frozen runpy>", "<frozen unrelated>"),
+        RUNPY_WARNING.replace(":128:", ":unknown:"),
         AUTHLIB_WARNING.replace("please use joserfc instead.", "new advice."),
         AUTHLIB_WARNING.replace("before version 2.0.0", "before version 3.0.0"),
         "fixture.py:1: AuthlibDeprecationWarning: unrelated message",
