@@ -1,0 +1,9 @@
+version = 2
+
+[[repo]]
+name = "architecting"
+remote = "git@github.com:dartworklabs/skills-architecting.git"
+
+[[repo]]
+name = "coding"
+remote = "git@github.com:dartworklabs/skills-coding.git"
