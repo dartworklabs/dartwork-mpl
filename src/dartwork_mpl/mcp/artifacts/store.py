@@ -5,6 +5,7 @@ The local OS user still owns the files and trusted export receives a pathname;
 this is not a sandbox for code executing with that same user's privileges.
 """
 
+import errno
 import hashlib
 import json
 import os
@@ -16,7 +17,7 @@ from datetime import datetime
 from pathlib import Path
 from threading import RLock
 from types import MappingProxyType
-from typing import Any
+from typing import Any, TypeAlias
 from uuid import uuid4
 
 from .policy import (
@@ -53,8 +54,20 @@ _DIRECTORY_FLAGS = (
     os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
 )
 _FILE_FLAGS = (
-    os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    os.O_RDONLY
+    | getattr(os, "O_NOFOLLOW", 0)
+    | getattr(os, "O_NONBLOCK", 0)
+    | getattr(os, "O_NOCTTY", 0)
 )
+
+#: Read-only commit evidence; only NotFound proves an observed marker's absence.
+CommitObservation: TypeAlias = (
+    Manifest | NotFound | CorruptArtifact | PublicationError
+)
+
+
+class _UnsafeArtifactObject(OSError):
+    """Distinguish verified unsafe objects from an inability to observe disk."""
 
 
 def _descriptor_operations_available() -> bool:
@@ -84,11 +97,11 @@ def _check_directory(fd: int, *, private: bool) -> None:
     """Reject non-directories and unsafe ownership/mode on private objects."""
     info = os.fstat(fd)
     if not stat.S_ISDIR(info.st_mode):
-        raise OSError("Artifact directory is invalid")
+        raise _UnsafeArtifactObject("Artifact directory is invalid")
     if private and (
         info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o700
     ):
-        raise OSError("Artifact directory is not private")
+        raise _UnsafeArtifactObject("Artifact directory is not private")
 
 
 def _open_directory(parent_fd: int, name: str, *, private: bool = True) -> int:
@@ -134,9 +147,11 @@ def _check_file(fd: int, *, private: bool) -> os.stat_result:
         or info.st_uid != os.getuid()
         or info.st_nlink != 1
     ):
-        raise OSError("Artifact member is not an owned regular file")
+        raise _UnsafeArtifactObject(
+            "Artifact member is not an owned regular file"
+        )
     if private and stat.S_IMODE(info.st_mode) != 0o600:
-        raise OSError("Artifact member is not private")
+        raise _UnsafeArtifactObject("Artifact member is not private")
     return info
 
 
@@ -182,7 +197,9 @@ def _read_file(
             after.st_mtime_ns,
             after.st_ctime_ns,
         ) or len(data) != before.st_size:
-            raise OSError("Artifact member changed during reading")
+            raise _UnsafeArtifactObject(
+                "Artifact member changed during reading"
+            )
         if not private:
             os.fsync(fd)
         if evidence is not None:
@@ -190,6 +207,107 @@ def _read_file(
         return data
     finally:
         os.close(fd)
+
+
+def _observation_error(error: OSError) -> CorruptArtifact | PublicationError:
+    """Report unsafe stored objects as corrupt, operational uncertainty as error."""
+    if isinstance(error, _UnsafeArtifactObject) or error.errno in {
+        errno.ELOOP,
+        errno.ENOTDIR,
+    }:
+        return CorruptArtifact()
+    return PublicationError()
+
+
+def _observe_manifest(
+    root_fd: int, artifact_id: ArtifactId
+) -> CommitObservation:
+    """Read only a bounded commit marker under one pinned private directory.
+
+    A verified missing directory/marker is NotFound; unsafe or invalid metadata
+    is CorruptArtifact. I/O failure or a directory replaced during observation
+    is PublicationError. No member payload, expiry cleanup or write is involved.
+    """
+    try:
+        directory_fd = _open_directory(root_fd, artifact_id.value)
+    except FileNotFoundError:
+        return NotFound()
+    except OSError as error:
+        return _observation_error(error)
+    try:
+        result: CommitObservation
+        try:
+            raw = _read_file(
+                directory_fd, ArtifactMember.MANIFEST.value, MAX_MANIFEST_BYTES
+            )
+            result = (
+                CorruptArtifact()
+                if isinstance(raw, ArtifactTooLarge)
+                else parse_manifest(raw)
+            )
+            if (
+                isinstance(result, Manifest)
+                and result.artifact_id != artifact_id
+            ):
+                result = CorruptArtifact()
+        except FileNotFoundError:
+            result = NotFound()
+        except OSError as error:
+            result = _observation_error(error)
+        # Do not mistake a detached directory's marker/miss for the current name.
+        try:
+            current_fd = _open_directory(root_fd, artifact_id.value)
+            try:
+                if _identity(current_fd) != _identity(directory_fd):
+                    return PublicationError()
+            finally:
+                os.close(current_fd)
+        except OSError:
+            return PublicationError()
+        return result
+    finally:
+        os.close(directory_fd)
+
+
+def _root_ancestry(root: Path) -> dict[tuple[int, int], tuple[str, ...]]:
+    """Map opened ancestor objects to remaining lexical components, read-only.
+
+    Missing suffixes are allowed so overlap can be rejected before either root
+    is created. Every existing component is opened without following symlinks;
+    aliases of the same directory are compared by device/inode, not realpath.
+    Invalid paths or unsafe/unobservable components raise OSError/ValueError.
+    """
+    if not root.is_absolute() or ".." in root.parts or "\x00" in str(root):
+        raise ValueError("Expected an absolute root without parent components")
+    fd = os.open(root.anchor, _DIRECTORY_FLAGS)
+    try:
+        remaining = root.parts[1:]
+        ancestry = {_identity(fd): remaining}
+        while remaining:
+            try:
+                child = _open_directory(fd, remaining[0], private=False)
+            except FileNotFoundError:
+                break
+            os.close(fd)
+            fd = child
+            remaining = remaining[1:]
+            ancestry[_identity(fd)] = remaining
+        return ancestry
+    finally:
+        os.close(fd)
+
+
+def _roots_overlap(
+    first: Mapping[tuple[int, int], tuple[str, ...]],
+    second: Mapping[tuple[int, int], tuple[str, ...]],
+) -> bool:
+    """Detect equal/ancestor locations, including shared objects with absent tails."""
+    for identity in first.keys() & second.keys():
+        left, right = first[identity], second[identity]
+        shorter = min(len(left), len(right))
+        if left[:shorter] == right[:shorter]:
+            return True
+    return False
 
 
 def _write_file(directory_fd: int, name: str, data: bytes) -> None:
@@ -462,7 +580,7 @@ def _cleanup_expired(
 
 
 class StagedBundle:
-    """Opaque operation-owned export stage; only its trusted output stem is public."""
+    """Opaque export ownership with a read-only ID and trusted exporter stem."""
 
     __slots__ = (
         "_active",
@@ -493,6 +611,15 @@ class StagedBundle:
         self._output_stem = output_stem
         self._active = True
         self._published = False
+
+    @property
+    def artifact_id(self) -> ArtifactId:
+        """Return the reserved immutable ID, still usable after stage exit.
+
+        This identifies an attempted publication; it does not prove a commit or
+        expose the stage's ownership token, descriptors or private directory.
+        """
+        return self._artifact_id
 
     @property
     def output_stem(self) -> Path:
@@ -529,6 +656,107 @@ class ArtifactStore:
                 raise OSError("Artifact root was replaced")
             self._root_identity = opened
             return fd
+
+    def _open_observation_root(self) -> int:
+        """Open/bind an existing private root without mkdir or accepting replacement.
+
+        Missing, unsafe and replaced roots raise OSError, never a safe miss.
+        The initialization lock shares identity pinning with legacy staging.
+        """
+        with self._initialization_lock:
+            fd = _walk_root(self._root, create=False)
+            if fd is None:
+                raise OSError("Artifact root is unavailable")
+            try:
+                opened = _identity(fd)
+                if (
+                    self._root_identity is not None
+                    and opened != self._root_identity
+                ):
+                    raise OSError("Artifact root was replaced")
+                self._root_identity = opened
+                return fd
+            except OSError:
+                os.close(fd)
+                raise
+
+    def observe_commit(self, artifact_id: ArtifactId) -> CommitObservation:
+        """Observe a commit marker without creating, cleaning or loading bundles.
+
+        Call after artifact-stage exit when settling paired input publication.
+        Read at most 512 KiB plus one overrun byte, verify the requested ID and
+        v1 timestamp invariants, and return the parsed Manifest even if expired.
+        The caller compares its expected creation/expiry instants. This does not
+        verify payloads or prove a failed fsync durable. A safe missing bundle or
+        marker is NotFound; invalid/unsafe metadata is CorruptArtifact; missing,
+        replaced or unobservable roots and operational failures are
+        PublicationError. Ambiguous outcomes never authorize input rollback.
+        """
+        if not isinstance(artifact_id, ArtifactId):
+            raise TypeError("Expected a parsed artifact identity")
+        try:
+            root_fd = self._open_observation_root()
+            try:
+                result = _observe_manifest(root_fd, artifact_id)
+                current_fd = self._open_observation_root()
+                try:
+                    if _identity(current_fd) != _identity(root_fd):
+                        return PublicationError()
+                finally:
+                    os.close(current_fd)
+                return result
+            finally:
+                os.close(root_fd)
+        except OSError:
+            return PublicationError()
+
+    def check_input_roots(
+        self, storage_dir: Path, copy_roots: tuple[Path, ...]
+    ) -> ConfigurationError | None:
+        """Read-only overlap check for operator-supplied input policy roots.
+
+        Refuse storage equal to, above or below the artifact root or any copy
+        root, using no-follow ancestor handles and device/inode identities.
+        Missing roots are not created; copy roots may overlap one another.
+        A pinned artifact root must still be present and unchanged. This only
+        checks separation, not the input grant's ownership/mode policy, local
+        filesystem/datasets preconditions or authorization to copy any file.
+        Unsafe paths and observation failures return a path-free refusal.
+        """
+        try:
+            with self._initialization_lock:
+                fd = _walk_root(self._root, create=False)
+                expected_identity = None
+                if fd is None:
+                    if self._root_identity is not None:
+                        return ConfigurationError()
+                else:
+                    try:
+                        expected_identity = _identity(fd)
+                        if (
+                            self._root_identity is not None
+                            and expected_identity != self._root_identity
+                        ):
+                            return ConfigurationError()
+                    finally:
+                        os.close(fd)
+                storage = _root_ancestry(storage_dir)
+                for root in (self._root, *copy_roots):
+                    if _roots_overlap(storage, _root_ancestry(root)):
+                        return ConfigurationError()
+                current_fd = _walk_root(self._root, create=False)
+                if current_fd is None:
+                    if expected_identity is not None:
+                        return ConfigurationError()
+                else:
+                    try:
+                        if _identity(current_fd) != expected_identity:
+                            return ConfigurationError()
+                    finally:
+                        os.close(current_fd)
+            return None
+        except (OSError, ValueError):
+            return ConfigurationError()
 
     def staging(self) -> AbstractContextManager[StagedBundle]:
         """Reserve a unique private export stage, cleaning it on exit unless ready.

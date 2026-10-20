@@ -45,7 +45,12 @@ from .policy import (
     parse_manifest,
     parse_render_request,
 )
-from .store import ArtifactStore, StagedBundle, configure_store
+from .store import (
+    ArtifactStore,
+    CommitObservation,
+    StagedBundle,
+    configure_store,
+)
 from .transport import register_artifacts
 
 __all__ = [
@@ -55,6 +60,7 @@ __all__ = [
     "ArtifactMember",
     "ArtifactStore",
     "ArtifactTooLarge",
+    "CommitObservation",
     "ConfigurationError",
     "CopyInput",
     "CopySelection",
