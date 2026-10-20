@@ -315,7 +315,7 @@ async def recover(client, journey, label, artifact_id):
     manifest = json.loads(bodies["manifest.json"])
     assert set(manifest) == MANIFEST_KEYS
     assert datetime.fromisoformat(
-        manifest["expires_at"]
+        manifest["expires_at"].replace("Z", "+00:00")
     ) - datetime.fromisoformat(
         manifest["created_at"].replace("Z", "+00:00")
     ) == timedelta(days=7)

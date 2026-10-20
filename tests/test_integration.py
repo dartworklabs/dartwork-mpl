@@ -49,6 +49,7 @@ EXPECTED_MCP_TOOLS: frozenset[str] = frozenset(
         "dartwork_mpl_info",
         "render_plot",
         "get_plot_artifact",
+        "delete_plot_inputs",
     }
 )
 

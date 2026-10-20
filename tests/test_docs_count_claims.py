@@ -582,7 +582,7 @@ def test_color_and_discovery_contract_counts_are_exact() -> None:
         "registrations": 99,
         "typing_colors": 1272,
         "typing_colormaps": 99,
-        "mcp_tools": 18,
+        "mcp_tools": 19,
         "mcp_resources": 10,
         "mcp_resource_templates": 9,
         "mcp_prompts": 2,
