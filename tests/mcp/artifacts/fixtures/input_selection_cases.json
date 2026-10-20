@@ -1,0 +1,532 @@
+[
+  {
+    "name": "same-name-same-hash",
+    "parent_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "child_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "expected_comparison": "same",
+    "expected_guidance": "snapshot_origin_unverified"
+  },
+  {
+    "name": "same-name-changed-hash",
+    "parent_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "child_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "expected_comparison": "different",
+    "expected_guidance": "confirm_changed_bytes"
+  },
+  {
+    "name": "renamed-never-automatched",
+    "parent_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "child_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "renamed",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "renamed"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "expected_comparison": "unavailable",
+    "expected_guidance": "ask_for_input_selection"
+  },
+  {
+    "name": "missing-input",
+    "parent_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          },
+          {
+            "name": "control",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "control"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "child_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "expected_comparison": "unavailable",
+    "expected_guidance": "ask_for_input_selection"
+  },
+  {
+    "name": "added-input",
+    "parent_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "child_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          },
+          {
+            "name": "control",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "control"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "expected_comparison": "unavailable",
+    "expected_guidance": "ask_for_input_selection"
+  },
+  {
+    "name": "legacy-parent",
+    "parent_report": {},
+    "child_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "expected_comparison": "unavailable",
+    "expected_guidance": "ask_for_input_selection"
+  },
+  {
+    "name": "unsupported-parent",
+    "parent_report": {
+      "provenance": {
+        "schema_version": 2
+      }
+    },
+    "child_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "expected_comparison": "unavailable",
+    "expected_guidance": "ask_for_input_selection"
+  },
+  {
+    "name": "invalid-parent",
+    "parent_report": {
+      "provenance": {
+        "schema_version": 1
+      }
+    },
+    "child_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "expected_comparison": "unavailable",
+    "expected_guidance": "ask_for_input_selection"
+  },
+  {
+    "name": "legacy-child",
+    "parent_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "child_report": {},
+    "expected_comparison": "unavailable",
+    "expected_guidance": "ask_for_input_selection"
+  },
+  {
+    "name": "unsupported-child",
+    "parent_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "child_report": {
+      "provenance": {
+        "schema_version": 2
+      }
+    },
+    "expected_comparison": "unavailable",
+    "expected_guidance": "ask_for_input_selection"
+  },
+  {
+    "name": "invalid-child",
+    "parent_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "child_report": {
+      "provenance": {
+        "schema_version": 1
+      }
+    },
+    "expected_comparison": "unavailable",
+    "expected_guidance": "ask_for_input_selection"
+  },
+  {
+    "name": "same-set-different-order",
+    "parent_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          },
+          {
+            "name": "control",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "control"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "child_report": {
+      "provenance": {
+        "schema_version": 1,
+        "parent": null,
+        "inputs": [
+          {
+            "name": "control",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "control"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          },
+          {
+            "name": "measurements",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 42,
+            "retained": {
+              "artifact_id": "00000000000040008000000000000001",
+              "name": "measurements"
+            },
+            "selection": {
+              "kind": "copy"
+            },
+            "evidence": "copied_and_boundary_checked"
+          }
+        ],
+        "reproducibility": "not_claimed"
+      }
+    },
+    "expected_comparison": "same",
+    "expected_guidance": "snapshot_origin_unverified"
+  }
+]
