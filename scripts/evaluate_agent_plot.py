@@ -56,7 +56,9 @@ def read_artists(fig: Figure) -> dict[str, Any]:
     Panels are ordered by rendered horizontal position, not creation order.
     Bar labels are cross-checked with category/group geometry during assessment.
     Extra or unsupported data artists, transforms and overlapping panels remain
-    unchecked; text, spines, grids and legends are outside this data-only oracle.
+    unchecked. Reversed bar x axes and internally rotated rectangles are outside
+    the supported left/right, vertical-bar mapping. Text, spines, grids and
+    legends are outside this data-only oracle.
     """
     panels = []
     unchecked = []
@@ -107,10 +109,16 @@ def read_artists(fig: Figure) -> dict[str, Any]:
                 continue
             if container.orientation != "vertical":
                 unchecked.append(f"{prefix}: horizontal bars")
+            if ax.xaxis_inverted():
+                unchecked.append(f"{prefix}: reversed bar category/group axis")
             for patch in container.patches:
                 bar_patches.add(patch)
                 if patch.get_data_transform() is not ax.transData:
                     unchecked.append(f"{prefix}: bar outside data coordinates")
+                if not np.isclose(
+                    patch.get_angle() % 360, 0, rtol=0, atol=1e-9
+                ):
+                    unchecked.append(f"{prefix}: internally rotated bar")
                 if not patch.get_visible():
                     unchecked.append(f"{prefix}: invisible bar")
                 panel["bars"].append(

@@ -294,3 +294,46 @@ def test_panel_creation_order_is_not_panel_assignment():
         )
     finally:
         plt.close(fig)
+
+
+def test_inverted_grouped_bar_order_is_unchecked():
+    """Reversed screen category/group order cannot pass the fixed left/right task."""
+    fig = make_figure("groupedbar")
+    try:
+        assert oracle.assess("groupedbar", oracle.read_artists(fig))["passed"]
+        ax = fig.axes[0]
+        ax.invert_xaxis()
+        fig.canvas.draw()
+        centers = ax.transData.transform(
+            [[value, 0] for value in ax.get_xticks()]
+        )
+        labels = [tick.get_text() for tick in ax.get_xticklabels()]
+        assert [labels[index] for index in np.argsort(centers[:, 0])] == [
+            "C",
+            "B",
+            "A",
+        ]
+        assessment = oracle.assess("groupedbar", oracle.read_artists(fig))
+        assert assessment["passed"] is False
+        assert assessment["unchecked"]
+    finally:
+        plt.close(fig)
+
+
+@pytest.mark.parametrize("angle", [45, 90], ids=["45", "90"])
+def test_rotated_grouped_bar_geometry_is_unchecked(angle):
+    """Internal Rectangle rotation changes rendered vertices despite stored height."""
+    fig = make_figure("groupedbar")
+    try:
+        assert oracle.assess("groupedbar", oracle.read_artists(fig))["passed"]
+        patch = fig.axes[0].patches[0]
+        original = patch.get_transform().transform(patch.get_path().vertices)
+        patch.set_angle(angle)
+        fig.canvas.draw()
+        rotated = patch.get_transform().transform(patch.get_path().vertices)
+        assert not np.allclose(original, rotated)
+        assessment = oracle.assess("groupedbar", oracle.read_artists(fig))
+        assert assessment["passed"] is False
+        assert assessment["unchecked"]
+    finally:
+        plt.close(fig)
