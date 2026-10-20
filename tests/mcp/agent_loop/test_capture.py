@@ -462,8 +462,38 @@ def test_repair_admission_only_accepts_recorded_builtin_harness_failure():
         assert not _repair_admission(changed, 0.4), mutation
 
 
+def _write_test_admission(root: Path, review: str = "passed") -> None:
+    """Create evaluator-owned admission evidence for an account-free host fixture."""
+    (root / "runtime").mkdir(parents=True, exist_ok=True)
+    smoke_runs = {}
+    for relative in ("smoke/line/run.json", "smoke-repair/line/run.json"):
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"status": "failed"}))
+        smoke_runs[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+    record = {
+        "policy": "phase0-observed-infrastructure-2026-10-20",
+        "code_review": review,
+        "smoke_runs": smoke_runs,
+        "fresh_agent_recovery": "unverified",
+        "observed": dict.fromkeys(
+            (
+                "image",
+                "full_report",
+                "resume",
+                "configured_model",
+                "cleanup",
+                "real_stdio_recovery",
+            ),
+            True,
+        ),
+    }
+    (root / "runtime/admission-decision.json").write_text(json.dumps(record))
+
+
+@pytest.mark.parametrize("replay_limited", [False, True])
 def test_failed_revision_keeps_exact_replay_before_workspace_cleanup(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, replay_limited
 ):
     """A final report omission still preserves replay evidence before CSV deletion."""
     import time
@@ -478,6 +508,7 @@ def test_failed_revision_keeps_exact_replay_before_workspace_cleanup(
     (root / "corpus.json").write_text(
         json.dumps({"started_at": time.time(), "attempts": []})
     )
+    _write_test_admission(root)
     host = tmp_path / "owned-host"
     # Our synthetic host adapter executes the real stdio server, not a model.
     # Its revision deliberately omits report access. No live account is invoked.
@@ -537,8 +568,37 @@ asyncio.run(main())
     )
     host.chmod(0o700)
     monkeypatch.setattr(capture, "_HOST", host)
+    if replay_limited:
+        real_replay = capture.replay
+
+        def lowered_replay(*args, **kwargs):
+            """Apply a tiny remaining replay allowance without changing source bytes."""
+            evidence = args[3].parents[1]
+            used = sum(
+                path.stat().st_size
+                for path in evidence.rglob("*")
+                if path.is_file()
+            )
+            kwargs.update(
+                evidence_root=evidence, max_evidence_bytes=used + 2048
+            )
+            return real_replay(*args, **kwargs)
+
+        monkeypatch.setattr(capture, "replay", lowered_replay)
     directory = capture.run_episode("line", "baseline", root)
     state = json.loads((directory / "run.json").read_text())
+    if replay_limited:
+        assert state["stop_reason"] == "replay_evidence_limit"
+        assert state["status"] == "failed"
+        assert state["infrastructure_status"] == "failed"
+        assert list(state["stages"]) == ["original"]
+        assert state["replays"]["original"]["stop_reason"] == "evidence_limit"
+        assert not (directory / "revision").exists()
+        assert not (directory / "recovery").exists()
+        ledger = json.loads((root / "corpus.json").read_text())
+        assert set(ledger["stage_invocations"]) == {"baseline/line/original"}
+        assert state["workspace_cleanup"]
+        return
     assert state["stages"]["recovery"]["review"]["status"] == "ok"
     assert state["status"] == "failed"
     assert state["stop_reason"] == "workflow_failed"
@@ -631,3 +691,97 @@ def test_evidence_copies_and_appends_refuse_bytes_above_ceiling(tmp_path):
     assert _write_bytes(target, b"12", tmp_path, max_bytes=10)
     assert not _write_bytes(target, b"3", tmp_path, append=True, max_bytes=10)
     assert target.read_bytes() == b"12"
+
+
+@pytest.mark.parametrize("label", ["baseline", "candidate"])
+@pytest.mark.parametrize("admission", ["missing", "pending", "changed"])
+def test_public_episode_rejects_admission_before_collector_or_host(
+    tmp_path, monkeypatch, label, admission
+):
+    """Every scored entry point enforces the review decision before external work."""
+    import run_agent_plot_eval as capture
+
+    root = tmp_path / "corpus"
+    _write_test_admission(
+        root, "pending" if admission == "pending" else "passed"
+    )
+    (root / "runtime/selection.json").write_text(
+        json.dumps({"model": "selected", "effort": "high"})
+    )
+    if admission == "missing":
+        (root / "runtime/admission-decision.json").unlink()
+    elif admission == "changed":
+        (root / "smoke/line/run.json").write_text(json.dumps({"status": "ok"}))
+    calls = []
+
+    def collector_tripwire(request, output_dir):
+        """Record an erroneously reached owned adapter without starting any host."""
+        calls.append("collector")
+        return {"status": "failed", "reason": "tripwire"}
+
+    monkeypatch.setattr(capture, "_collect", collector_tripwire)
+    directory = capture.run_episode("line", label, root)
+    state = json.loads((directory / "run.json").read_text())
+    assert calls == []
+    assert state["status"] == "failed"
+    assert state["stop_reason"] == "admission_rejected"
+    assert state["admission_decision"]["status"] == "failed"
+    assert state["stages"] == {}
+    assert not (directory / "original").exists()
+    assert not (root / "corpus.json").exists()
+
+
+@pytest.mark.parametrize("output", ["stdout", "stderr", "members"])
+def test_replay_enforces_shared_evidence_limit_during_execution(
+    tmp_path, output
+):
+    """Replay streams and generated members cannot consume prior episode capacity."""
+    csv = tmp_path / "input.csv"
+    csv.write_text("x,y\n1,2\n")
+    source = tmp_path / "source.py"
+    source.write_text(
+        """import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+dm.style.use('scientific')
+fig, ax = plt.subplots(figsize=dm.figsize('6cm', 'square'))
+ax.plot([1], [2], linewidth=dm.lw(0))
+dm.simple_layout(fig)
+"""
+        + (
+            "print('x' * (512 * 1024))\n"
+            if output == "stdout"
+            else "raise ValueError('x' * (512 * 1024))\n"
+            if output == "stderr"
+            else ""
+        )
+    )
+    cap = 128 * 1024 if output != "members" else 4 * 1024
+    (tmp_path / "prior-evidence").write_bytes(b"a" * (cap // 2))
+    before = csv.read_bytes(), source.read_bytes()
+    result = replay(
+        source,
+        csv,
+        "line",
+        tmp_path / "replay",
+        evidence_root=tmp_path,
+        max_evidence_bytes=cap,
+    )
+    assert result["status"] == "failed"
+    assert result["stop_reason"] == "evidence_limit"
+    assert result["process"]["cleanup_ok"]
+    assert (csv.read_bytes(), source.read_bytes()) == before
+    assert (
+        sum(
+            path.stat().st_size
+            for path in tmp_path.rglob("*")
+            if path.is_file()
+        )
+        <= cap
+    )
+    assert (
+        json.loads((tmp_path / "replay/result.json").read_text())["stop_reason"]
+        == "evidence_limit"
+    )
+    if output != "members":
+        partial = tmp_path / "replay" / (output + ".txt")
+        assert 0 < partial.stat().st_size < 512 * 1024

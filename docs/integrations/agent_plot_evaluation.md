@@ -27,8 +27,8 @@ uv run --no-sync python scripts/run_agent_plot_eval.py smoke --output-root "$AGE
 uv run --no-sync python scripts/run_agent_plot_eval.py run --label baseline --cases all --output-root "$AGENT_EVAL_ROOT"
 ```
 
-The scored command requires the explicit phase-0 admission record described
-below. Each case/label runs once, and existing evidence is never overwritten. The approved comparison has
+Both the scored CLI and exported `run_episode` require the explicit phase-0
+admission record described below, before any context collector or host work. Each case/label runs once, and existing evidence is never overwritten. The approved comparison has
 four baseline and four candidate cases. Candidate runs use `--label candidate`.
 Do not run either corpus without its spending authorization.
 
@@ -94,8 +94,13 @@ The configured bounds are USD 2/2/1 for scored stages, USD 41 across invoked
 stage caps, 125 minutes for the complete corpus, 15 minutes per scored episode,
 5 minutes per host process, 24 observed MCP/resource calls per episode, 512 KiB
 source, 32 MiB per bundle, 128 MiB evidence and 20 seconds for render/replay.
-Remaining corpus/episode time bounds host stages, collectors and replay. The
-external watchdog retains partial streams and terminates observed owned
+Remaining corpus/episode time bounds host stages, collectors and replay. Replay
+counts shared episode evidence plus files in the owned cwd during execution.
+Its pipes retain only the remaining capacity; controlled observation/PNG/result
+writes check capacity before persistence, reserving metadata space. A replay
+byte/time/cleanup failure stops before any next host stage or budget reservation.
+Source-created files are observed at poll boundaries, rather than controlled by
+an OS filesystem quota. The external watchdog retains partial streams and terminates observed owned
 descendants, including separate process groups. No hard token/turn cap is
 claimed. Call limits are observed in the stream, rather than an MCP proxy that
 authorizes each request before it reaches the server.

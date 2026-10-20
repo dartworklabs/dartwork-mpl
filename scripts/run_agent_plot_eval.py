@@ -748,11 +748,38 @@ def run_episode(case_id: str, label: str, output_root: Path) -> Path:
         "candidate",
     ):
         raise ValueError("unknown case or evaluation label")
+    output_root = output_root.resolve()
+    evidence = output_root / label / case_id
+    evidence.mkdir(parents=True, exist_ok=False)
+    admission = (
+        _admission_decision(output_root)
+        if label in ("baseline", "candidate")
+        else None
+    )
+    if admission is not None and admission["status"] != "ok":
+        _dump(
+            evidence / "run.json",
+            {
+                "status": "failed",
+                "stop_reason": "admission_rejected",
+                "case_id": case_id,
+                "label": label,
+                "admission_decision": admission,
+                "infrastructure_status": "failed",
+                "workflow_status": "unverified",
+                "agent_recovery_status": "unverified",
+                "stages": {},
+                "artifact_ids": [],
+                "usage_tokens": None,
+                "cost_usd": None,
+                "workspace_cleanup": True,
+            },
+        )
+        return evidence
+
     from matplotlib import font_manager
 
     episode = load_episode(case_id)
-    evidence = output_root.resolve() / label / case_id
-    evidence.mkdir(parents=True, exist_ok=False)
     selection = json.loads((output_root / "runtime/selection.json").read_text())
     model, effort = selection["model"], selection["effort"]
     fixture = Path(episode["csv_path"]).read_bytes()
@@ -776,9 +803,7 @@ def run_episode(case_id: str, label: str, output_root: Path) -> Path:
         "infrastructure_status": "pending",
         "workflow_status": "pending",
         "agent_recovery_status": "unverified",
-        "admission_decision": _admission_decision(output_root)
-        if label in ("baseline", "candidate")
-        else None,
+        "admission_decision": admission,
         "artifact_ids": [],
         "versions": {
             "python": sys.version,
@@ -1031,7 +1056,17 @@ def run_episode(case_id: str, label: str, output_root: Path) -> Path:
                         timeout_seconds=min(
                             20, max(0.01, deadline - time.time())
                         ),
+                        evidence_root=evidence,
+                        max_evidence_bytes=128 * 1024 * 1024,
                     )
+                    replay_stop = state["replays"][stage].get("stop_reason")
+                    if replay_stop in {
+                        "evidence_limit",
+                        "timeout",
+                        "cleanup_failed",
+                    }:
+                        state["stop_reason"] = "replay_" + replay_stop
+                        return evidence
             recovered = recover(
                 state["artifact_ids"],
                 store,

@@ -8,12 +8,16 @@ explicitly unchecked and cannot produce a passing assessment.
 
 import argparse
 import ast
+import contextlib
 import hashlib
+import io
 import json
 import os
+import selectors
 import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -359,6 +363,120 @@ def _replay_inputs(source: bytes, csv: Path) -> list[str]:
     return sorted(set(unchecked))
 
 
+def _replay_bytes(root: Path, cwd: Path) -> int:
+    """Count shared retained evidence and owned replay cwd files once per path."""
+    paths = {
+        path
+        for base in (root, cwd)
+        for path in base.rglob("*")
+        if path.is_file() and not path.is_symlink()
+    }
+    total = 0
+    for path in paths:
+        # Local exporters may rename a temporary file between listing and stat.
+        with contextlib.suppress(FileNotFoundError):
+            total += path.stat().st_size
+    return total
+
+
+def _replay_write(
+    path: Path, data: bytes, root: Path, cwd: Path, limit: int
+) -> bool:
+    """Account controlled generated members and metadata before writing bytes."""
+    replaced = path.stat().st_size if path.exists() else 0
+    if _replay_bytes(root, cwd) - replaced + len(data) > limit:
+        return False
+    path.write_bytes(data)
+    return True
+
+
+def _watch_replay(
+    argv: list[str],
+    cwd: Path,
+    env: dict[str, str],
+    output: Path,
+    root: Path,
+    limit: int,
+    timeout: float,
+) -> dict[str, Any]:
+    """Bound replay pipes and observe shared generated files while its group runs.
+
+    Source writes remain trusted local IO, observed at poll boundaries rather
+    than constrained by an OS filesystem quota. Controlled writes are checked
+    before persistence. Partial stdout/stderr is retained up to capacity.
+    """
+    started = time.monotonic()
+    process = subprocess.Popen(
+        argv,
+        cwd=cwd,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        start_new_session=True,
+    )
+    assert process.stdout is not None and process.stderr is not None
+    selector = selectors.DefaultSelector()
+    selector.register(process.stdout, selectors.EVENT_READ, "stdout")
+    selector.register(process.stderr, selectors.EVENT_READ, "stderr")
+    reason = "exit"
+    try:
+        with (
+            (output / "stdout.txt").open("wb") as stdout,
+            (output / "stderr.txt").open("wb") as stderr,
+        ):
+            while selector.get_map():
+                if _replay_bytes(root, cwd) > limit:
+                    reason = "evidence_limit"
+                    break
+                if time.monotonic() - started >= timeout:
+                    reason = "timeout"
+                    break
+                for key, _ in selector.select(timeout=0.025):
+                    chunk = os.read(key.fd, 65536)
+                    if not chunk:
+                        selector.unregister(key.fileobj)
+                        continue
+                    available = max(0, limit - _replay_bytes(root, cwd))
+                    target = stdout if key.data == "stdout" else stderr
+                    target.write(chunk[:available])
+                    target.flush()
+                    if len(chunk) > available:
+                        reason = "evidence_limit"
+                        break
+                if reason != "exit":
+                    break
+            if reason == "exit":
+                try:
+                    process.wait(
+                        timeout=max(
+                            0.001, timeout - (time.monotonic() - started)
+                        )
+                    )
+                except subprocess.TimeoutExpired:
+                    reason = "timeout"
+            if _replay_bytes(root, cwd) > limit or process.returncode == 75:
+                reason = "evidence_limit"
+    finally:
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGKILL)
+        process.wait()
+        selector.close()
+        process.stdout.close()
+        process.stderr.close()
+    try:
+        os.killpg(process.pid, 0)
+    except ProcessLookupError:
+        cleanup = True
+    else:
+        cleanup = False
+    return {
+        "stop_reason": reason if cleanup else "cleanup_failed",
+        "returncode": process.returncode,
+        "cleanup_ok": cleanup,
+        "elapsed_seconds": time.monotonic() - started,
+    }
+
+
 def replay(
     source: Path,
     csv: Path,
@@ -367,12 +485,16 @@ def replay(
     figure_var: str = "fig",
     *,
     timeout_seconds: float = 20,
+    evidence_root: Path | None = None,
+    max_evidence_bytes: int = 128 * 1024 * 1024,
 ) -> dict[str, Any]:
     """Replay exact source in a fresh bounded process before fixture cleanup.
 
     The original owned CSV directory is retained as cwd so absolute CSV paths
     work without edits. Return observed artists and a separate oracle result;
     this does not establish facts about the original execution's internals.
+    Shared evidence and owned-cwd files count toward max_evidence_bytes. Pipes
+    and controlled members are bounded; source IO is observed, without an OS filesystem quota.
     """
     source, csv, output_dir = (
         source.resolve(),
@@ -380,6 +502,9 @@ def replay(
         output_dir.resolve(),
     )
     output_dir.mkdir(parents=True, exist_ok=True)
+    root = evidence_root.resolve() if evidence_root is not None else output_dir
+    # Reserve space for explicit failure/result metadata and caller finalization.
+    data_limit = max_evidence_bytes - min(64 * 1024, max_evidence_bytes // 4)
     raw, fixture = source.read_bytes(), csv.read_bytes()
     result: dict[str, Any] = {
         "status": "unchecked",
@@ -392,7 +517,17 @@ def replay(
         unknown = _replay_inputs(raw, csv)
     except SyntaxError as exc:
         unknown = [f"invalid source: {exc.msg}"]
-    if unknown:
+    if _replay_bytes(root, csv.parent) > data_limit:
+        result.update(
+            status="failed",
+            stop_reason="evidence_limit",
+            process={
+                "stop_reason": "evidence_limit",
+                "cleanup_ok": True,
+                "launched": False,
+            },
+        )
+    elif unknown:
         result["unchecked"] = unknown
     else:
         argv = [
@@ -402,6 +537,10 @@ def replay(
             str(source),
             str(output_dir),
             figure_var,
+            "--evidence-root",
+            str(root),
+            "--max-evidence-bytes",
+            str(data_limit),
         ]
         env = {
             key: os.environ[key]
@@ -416,26 +555,23 @@ def replay(
             if key in os.environ
         }
         env.update(MPLBACKEND="Agg", PYTHONHASHSEED="0")
-        with (
-            (output_dir / "stdout.txt").open("wb") as stdout,
-            (output_dir / "stderr.txt").open("wb") as stderr,
-        ):
-            process = subprocess.Popen(
-                argv,
-                cwd=csv.parent,
-                env=env,
-                stdout=stdout,
-                stderr=stderr,
-                start_new_session=True,
-            )
-            try:
-                code = process.wait(timeout=min(20, timeout_seconds))
-            except subprocess.TimeoutExpired:
-                os.killpg(process.pid, signal.SIGKILL)
-                process.wait()
-                code = -signal.SIGKILL
+        process = _watch_replay(
+            argv,
+            csv.parent,
+            env,
+            output_dir,
+            root,
+            data_limit,
+            min(20, timeout_seconds),
+        )
+        result["process"] = process
+        code = process["returncode"]
         observed_path = output_dir / "observed.json"
-        if code == 0 and observed_path.exists():
+        if (
+            process["stop_reason"] == "exit"
+            and code == 0
+            and observed_path.exists()
+        ):
             result.update(
                 status="ok", observed=json.loads(observed_path.read_text())
             )
@@ -446,18 +582,43 @@ def replay(
         else:
             result.update(
                 status="failed",
-                stop_reason="timeout"
-                if code == -signal.SIGKILL
+                stop_reason=process["stop_reason"]
+                if process["stop_reason"] != "exit"
                 else "execution_error",
                 returncode=code,
             )
     if csv.read_bytes() != fixture:
         result.update(status="failed", stop_reason="fixture_changed")
-    (output_dir / "result.json").write_text(json.dumps(result, indent=2))
+    payload = json.dumps(result, indent=2).encode("utf-8")
+    if not _replay_write(
+        output_dir / "result.json",
+        payload,
+        root,
+        csv.parent,
+        max_evidence_bytes,
+    ):
+        result.pop("observed", None)
+        result.pop("assessment", None)
+        result.update(status="failed", stop_reason="evidence_limit")
+        payload = json.dumps(result, indent=2).encode("utf-8")
+        if not _replay_write(
+            output_dir / "result.json",
+            payload,
+            root,
+            csv.parent,
+            max_evidence_bytes,
+        ):
+            result["result_record_saved"] = False
     return result
 
 
-def _replay_child(source: Path, output: Path, figure_var: str) -> None:
+def _replay_child(
+    source: Path,
+    output: Path,
+    figure_var: str,
+    evidence_root: Path,
+    max_evidence_bytes: int,
+) -> None:
     """Execute unchanged UTF-8 bytes once and snapshot the explicitly named figure."""
     namespace: dict[str, Any] = {
         "__name__": "__main__",
@@ -468,8 +629,25 @@ def _replay_child(source: Path, output: Path, figure_var: str) -> None:
     if not isinstance(fig, Figure):
         raise TypeError("figure_var does not name a native Figure")
     fig.canvas.draw()
-    (output / "observed.json").write_text(json.dumps(read_artists(fig)))
-    fig.savefig(output / "plot.png")
+    observed = json.dumps(read_artists(fig)).encode("utf-8")
+    if not _replay_write(
+        output / "observed.json",
+        observed,
+        evidence_root,
+        Path.cwd(),
+        max_evidence_bytes,
+    ):
+        raise SystemExit(75)
+    png = io.BytesIO()
+    fig.savefig(png, format="png")
+    if not _replay_write(
+        output / "plot.png",
+        png.getvalue(),
+        evidence_root,
+        Path.cwd(),
+        max_evidence_bytes,
+    ):
+        raise SystemExit(75)
 
 
 if __name__ == "__main__":
@@ -480,9 +658,19 @@ if __name__ == "__main__":
     parser.add_argument("figure_var", nargs="?", default="fig")
     parser.add_argument("--csv", type=Path)
     parser.add_argument("--case", choices=_CASES)
+    parser.add_argument("--evidence-root", type=Path)
+    parser.add_argument(
+        "--max-evidence-bytes", type=int, default=128 * 1024 * 1024
+    )
     args = parser.parse_args()
     if args.command == "_replay":
-        _replay_child(args.source, args.output, args.figure_var)
+        _replay_child(
+            args.source,
+            args.output,
+            args.figure_var,
+            args.evidence_root or args.output,
+            args.max_evidence_bytes,
+        )
     elif args.csv is None or args.case is None:
         parser.error("replay requires --csv and --case")
     else:
@@ -494,6 +682,8 @@ if __name__ == "__main__":
                     args.case,
                     args.output,
                     args.figure_var,
+                    evidence_root=args.evidence_root,
+                    max_evidence_bytes=args.max_evidence_bytes,
                 )
             )
         )
