@@ -140,10 +140,17 @@ def _report(wire: dict[str, Any], name: str) -> dict[str, Any]:
 
 
 def test_discovery_retains_exact_identities_and_order(wire):
-    """The optional input adds no tool, resource, template or prompt identity."""
-    assert wire["discovery"] == _BASELINE["discovery"]
+    """Preserve historical identities/order plus the approved input-delete tool."""
+    expected_live = {
+        **_BASELINE["discovery"],
+        "tool_names": [
+            *_BASELINE["discovery"]["tool_names"],
+            "delete_plot_inputs",
+        ],
+    }
+    assert wire["discovery"] == expected_live
     assert [len(items) for items in wire["discovery"].values()] == [
-        18,
+        19,
         10,
         9,
         2,

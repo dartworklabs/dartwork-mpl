@@ -27,10 +27,14 @@ def assert_entry_policies(routes):
     assert set(routes) == KNOWN_GAPS | ENTRY_POLICIES.keys()
     assert KNOWN_GAPS.isdisjoint(ENTRY_POLICIES)
     assert ENTRY_POLICIES["render_plot"] == "local_user_store_bounded_execution"
+    assert (
+        ENTRY_POLICIES["delete_plot_inputs"]
+        == "local_operator_grant_bounded_delete"
+    )
     assert all(
         policy == "local_user_store_verified_read"
         for route, policy in ENTRY_POLICIES.items()
-        if route != "render_plot"
+        if route not in {"render_plot", "delete_plot_inputs"}
     )
 
 
@@ -38,6 +42,15 @@ def assert_constructors(sources):
     """Only configuration wiring mints a handle; requests can never choose roots."""
     for name, source in sources.items():
         tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.ImportFrom)
+                and node.module
+                and node.module.endswith("input_access")
+            ):
+                assert name == "mcp/artifacts/input_access.py" or all(
+                    not alias.name.startswith("_") for alias in node.names
+                ), (name, "private authority import")
         aliases = {
             alias.asname or alias.name: alias.name
             for node in ast.walk(tree)
@@ -59,6 +72,28 @@ def assert_constructors(sources):
                 assert name == "mcp/server.py", (name, target)
             if target == "ArtifactStore":
                 assert name == "mcp/artifacts/store.py", (name, target)
+            if target == "ArtifactRuntime":
+                assert name == "mcp/server.py", (name, target)
+            if (
+                isinstance(node.func, ast.Attribute)
+                and node.func.attr == "open"
+                and isinstance(node.func.value, ast.Name)
+                and aliases.get(node.func.value.id, node.func.value.id)
+                == "InputStore"
+            ):
+                assert name == "mcp/artifacts/lifecycle.py", (
+                    name,
+                    "InputStore.open",
+                )
+            if target == "InputStore":
+                assert name == "mcp/artifacts/inputs.py", (name, target)
+            if target == "InputGrant":
+                assert name == "mcp/artifacts/input_access.py", (name, target)
+            if target == "authorize_inputs":
+                assert name in {
+                    "mcp/server.py",
+                    "mcp/artifacts/lifecycle.py",
+                }, (name, target)
 
 
 def test_registered_entries_have_explicit_policy_or_named_identity_gap():
@@ -96,7 +131,17 @@ def test_undeclared_registration_is_rejected(route):
 
 
 @pytest.mark.parametrize(
-    "call", ["configure_store(root)", "ArtifactStore(root)"]
+    "call",
+    [
+        "configure_store(root)",
+        "ArtifactStore(root)",
+        "InputGrant(key, root, roots)",
+        "authorize_inputs(path, callback)",
+        "access.InputGrant(key, root, roots)",
+        "access.authorize_inputs(path, callback)",
+        "ArtifactRuntime(store, path)",
+        "InputStore.open(grant, now)",
+    ],
 )
 def test_request_handle_construction_is_rejected(call):
     """An illicit handle construction site cannot expand request authority."""
@@ -106,3 +151,39 @@ def test_request_handle_construction_is_rejected(call):
                 "mcp/artifacts/transport.py": f"def illicit(root):\n    return {call}\n"
             }
         )
+
+
+def test_aliased_input_authority_import_is_rejected():
+    """Import aliases cannot hide unauthorized construction or policy rereads."""
+    for symbol in ("InputGrant", "authorize_inputs"):
+        with pytest.raises(AssertionError):
+            assert_constructors(
+                {
+                    "mcp/artifacts/transport.py": f"from .input_access import {symbol} as mint\nmint(None, None)\n"
+                }
+            )
+    with pytest.raises(AssertionError):
+        assert_constructors(
+            {
+                "mcp/artifacts/transport.py": "from .input_access import _KEY as authority\n"
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    "site",
+    [
+        "mcp/artifacts/lifecycle.py",
+        "mcp/artifacts/transport.py",
+        "mcp/execution.py",
+    ],
+)
+def test_runtime_and_gateway_cannot_mint_raw_input_authority(site):
+    """Lifecycle authorizes through the one factory; no gateway can mint a grant."""
+    for symbol in ("InputGrant", "InputStore"):
+        with pytest.raises(AssertionError):
+            assert_constructors(
+                {
+                    site: f"from .input_access import {symbol} as mint\nmint(key, root, roots)\n"
+                }
+            )

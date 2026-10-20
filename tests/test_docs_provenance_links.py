@@ -120,7 +120,7 @@ def test_accepted_adr_links_render_to_repository_without_source_edits(
     result, output = _build(docs_project)
     assert result.returncode == 0, result.stdout + result.stderr
     for page, captions in {
-        "adr/index.html": ["evidence", "current evidence"],
+        "adr/index.html": ["artifact delivery 설계의 검증 기록"],
         "adr/0003-allow-scoped-mcp-artifact-discovery.html": [
             "artifact design"
         ],

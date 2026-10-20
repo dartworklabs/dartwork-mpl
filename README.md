@@ -174,11 +174,16 @@ fonts. List them with `dm.list_styles()`.
 
 dartwork-mpl ships a built-in **Model Context Protocol** server so AI coding
 assistants pull the current policy guides, color palettes, lint catalog, and
-helper tools straight into the chat — no copy-pasting docs. It exposes **18 tools**
+helper tools straight into the chat — no copy-pasting docs. It exposes **19 tools**
 (lint + auto-fix, figure validation, render, color lookup, info, chart-type
-recommender, layered-plot composer, advanced-tier render, durable artifact delivery), **10 resources +
+recommender, layered-plot composer, advanced-tier render, durable artifact delivery and retained-input deletion), **10 resources +
 9 resource templates** (the prompt corpus + 18 basic + 18 tier-2 advanced plot
-templates + five artifact members), and **2 prompts**.
+templates + five artifact members), and **2 prompts**. Optional revisions select
+Copy of current authorized bytes or Retained fixed bytes in operator-selected
+private server-host storage; unset policy denies input access. Historical receipts
+do not prove availability or upstream freshness. Clients explain each input choice;
+see the [MCP guide](docs/integrations/mcp_server.md) for hashes, independent
+seven-day child copies and deletion limits.
 
 ```shell
 pip install "dartwork-mpl[mcp]"     # installs fastmcp + httpx; adds the dartwork-mpl-mcp script

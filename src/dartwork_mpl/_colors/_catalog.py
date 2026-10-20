@@ -1070,9 +1070,13 @@ def scan_mcp_discovery() -> dict[str, tuple[str, ...]]:
 def project_legacy_mcp_discovery(
     discovery: Mapping[str, Sequence[str]],
 ) -> dict[str, tuple[str, ...]]:
-    """Project only ADR 0003's seven additions for frozen historical comparisons."""
+    """Project exactly eight ADR 0003/0004 additions for historical comparisons."""
     additions = {
-        "tool_names": {"render_plot", "get_plot_artifact"},
+        "tool_names": {
+            "render_plot",
+            "get_plot_artifact",
+            "delete_plot_inputs",
+        },
         "resource_template_uris": {
             "dartwork-mpl://artifacts/{artifact_id}/plot.png",
             "dartwork-mpl://artifacts/{artifact_id}/plot.pdf",

@@ -83,9 +83,9 @@ _SUGGEST_TO_TEMPLATE: dict[str, str] = {
     "hexbin": "scatter",
 }
 
-# ``@mcp.tool()\n    def <name>(`` — empty- and keyword-arg forms.
+# Sync/async ``@mcp.tool()`` — empty- and keyword-arg forms.
 _TOOL_DEF_RE = re.compile(
-    r"@mcp\.tool\([^)]*\)\s*\n\s*def\s+(\w+)\s*\(", re.MULTILINE
+    r"@mcp\.tool\([^)]*\)\s*\n\s*(?:async\s+)?def\s+(\w+)\s*\(", re.MULTILINE
 )
 # ``@mcp.resource("<uri>"...)`` — first string arg is the URI; ``\s*``
 # spans the newline used by the multi-line (mime_type) form.

@@ -72,8 +72,8 @@ below) for the complete list. The most common ones AI agents trip on:
 
 For Claude Code / Cursor / any MCP client, see the step-by-step setup
 in [`docs/integrations/mcp_server.md`](docs/integrations/mcp_server.md).
-The server exposes 18 tools (lint + auto-fix + figure validation + render + color lookup + info
-+ chart-type recommender + layered-plot composer + advanced-tier render + durable artifact delivery), 10 resources +
+The server exposes 19 tools (lint + auto-fix + figure validation + render + color lookup + info
++ chart-type recommender + layered-plot composer + advanced-tier render + durable artifact delivery + retained-input deletion), 10 resources +
 9 resource templates (the prompt corpus + 18 basic + 18 tier-2 advanced plot templates + five artifact members), and 2 prompts. The tools you'll
 use most:
 
@@ -82,6 +82,14 @@ use most:
 - `dartwork_mpl_info()` — package version + capability summary.
 - `render_plot(code)` — execute trusted plotting code once; return PNG, PDF, exact source, report and manifest.
 - `get_plot_artifact(artifact_id)` — reopen that bundle without execution for seven days via MCP resources.
+- `render_plot(..., revision=...)` — explicitly choose Copy of current authorized bytes or Retained fixed bytes; requires operator input policy for inputs.
+- `delete_plot_inputs(artifact_id)` — revoke one retained input set; bundles and independent children remain.
+
+Inputs are kept in the operator-selected private `storage_dir` on the server
+host. Unset policy denies Copy/Retained/delete. Historical report receipts do
+not prove current availability or upstream freshness; actual Retained admission
+checks reuse. Clients handle per-input display and ambiguous data choices. See
+the MCP guide for hashes, seven-day child copies and deletion limits.
 
 When MCP is unavailable, the same anti-pattern catalog is reachable
 through `dm.list_prompts()` + `dm.get_prompt("02-anti-patterns")`

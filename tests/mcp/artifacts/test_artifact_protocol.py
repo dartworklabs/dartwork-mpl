@@ -70,8 +70,10 @@ def test_render_retrieve_and_read_all_resources(tmp_path):
                     "figure_var",
                     "timeout_seconds",
                     "chart_type_hint",
+                    "revision",
                 },
                 "get_plot_artifact": {"artifact_id"},
+                "delete_plot_inputs": {"artifact_id"},
             }
             rendered = await client.call_tool("render_plot", {"code": SOURCE})
             value = metadata(rendered)
@@ -380,6 +382,62 @@ def test_stored_failures_and_publication_errors_are_safe(
                     raise_on_error=False,
                 ),
                 expected,
+            )
+
+    asyncio.run(workflow())
+
+
+def test_revision_closed_parse_and_delete_disabled_wire(tmp_path):
+    """Malformed revision refuses before delivery and direct registration grants nothing."""
+
+    async def workflow():
+        """New arguments preserve the existing error arm and exact tool order."""
+        async with fastmcp.Client(server(tmp_path / "store")) as client:
+            tools = await client.list_tools()
+            assert [tool.name for tool in tools] == [
+                "render_plot",
+                "get_plot_artifact",
+                "delete_plot_inputs",
+            ]
+            assert (
+                tools[0].inputSchema["properties"]["revision"]["default"]
+                is None
+            )
+            assert tools[0].outputSchema == tools[1].outputSchema
+            assert (
+                tools[2].outputSchema["oneOf"][1]
+                == tools[0].outputSchema["oneOf"][1]
+            )
+            for raw in (
+                {},
+                {"schema_version": 1, "extra": True},
+                [],
+                True,
+                {"schema_version": 1, "inputs": []},
+            ):
+                metadata(
+                    await client.call_tool(
+                        "render_plot",
+                        {"code": SOURCE, "revision": raw},
+                        raise_on_error=False,
+                    ),
+                    "invalid_request",
+                )
+            metadata(
+                await client.call_tool(
+                    "delete_plot_inputs",
+                    {"artifact_id": uuid4().hex},
+                    raise_on_error=False,
+                ),
+                "configuration_error",
+            )
+            metadata(
+                await client.call_tool(
+                    "delete_plot_inputs",
+                    {"artifact_id": "../bad"},
+                    raise_on_error=False,
+                ),
+                "invalid_request",
             )
 
     asyncio.run(workflow())
