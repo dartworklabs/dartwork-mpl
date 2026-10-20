@@ -1,10 +1,14 @@
 """Observe real matplotlib geometry independently of agent code and reports."""
 
+import base64
 import csv
 import hashlib
 import importlib.util
 import json
 import random
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -42,6 +46,378 @@ def test_native_bar_numeric_observations_round_trip_json(dtype):
         assert recovered["unchecked"] == []
     finally:
         plt.close(fig)
+
+
+def saved_episode(root: Path, case: str) -> Path:
+    """Build evaluator-owned retained receipts using real CSV/native PNG files."""
+    directory = root / case
+    directory.mkdir(parents=True)
+    shutil.copyfile(
+        oracle.load_episode(case)["csv_path"], directory / "input.csv"
+    )
+    state = {
+        "case_id": case,
+        "status": "ok",
+        "stop_reason": "completed",
+        "infrastructure_status": "ok",
+        "workspace_cleanup": True,
+        "csv_sha256": oracle.load_episode(case)["expected"]["csv_sha256"],
+        "configured_model": "fixture-model",
+        "configured_effort": "high",
+        "effective_models": ["fixture-model"],
+        "versions": {"python": "3.12"},
+        "font": {"sha256": "fixture-font"},
+        "server_entry_sha256": "fixture-server",
+        "environment": {},
+        "stages": {},
+        "artifact_ids": [],
+        "recovery_hashes": {},
+    }
+    review = {
+        "reviewer": "fixture evaluator",
+        "visual_review": {},
+        "human_code_edits": {
+            "edits": 0,
+            "interventions": [],
+            "attested_by": "fixture evaluator",
+            "provenance": "synthetic account-free evidence, no source interventions",
+            "source_sha256": {},
+        },
+    }
+    recovery_events = []
+    for number, stage in enumerate(("original", "revision"), 1):
+        path = directory / stage
+        path.mkdir()
+        identity = f"{number:032x}"
+        fig = make_figure(case)
+        try:
+            fig.canvas.draw()
+            observed = oracle.read_artists(fig)
+            dm.save_formats(
+                fig,
+                str(path / "plot"),
+                formats=("png", "pdf"),
+                validate=False,
+                adopt_orphan_tick_font=False,
+            )
+        finally:
+            plt.close(fig)
+        source = f"# retained synthetic {case} {stage}; comparison never executes this file\n"
+        (path / "source.py").write_text(source)
+        report = {
+            "status": "ok",
+            "validation_complete": True,
+            "failed_checks": [],
+            "visual_warnings": [],
+            "semantic_warnings": [],
+            "lint": [],
+        }
+        if case == "custom2panel":
+            report["semantic_warnings"] = [
+                {
+                    "check_id": "line_no_lines",
+                    "message": "global line hint reached the right scatter panel",
+                }
+            ]
+        (path / "report.json").write_text(json.dumps(report))
+        members = [
+            {
+                "name": name,
+                "size_bytes": (path / name).stat().st_size,
+                "sha256": hashlib.sha256(
+                    (path / name).read_bytes()
+                ).hexdigest(),
+            }
+            for name in ("plot.png", "plot.pdf", "source.py", "report.json")
+        ]
+        manifest = {
+            "schema_version": 1,
+            "artifact_id": identity,
+            "files": members,
+            "validation": {
+                key: report[key]
+                for key in ("status", "validation_complete", "failed_checks")
+            },
+        }
+        (path / "manifest.json").write_text(json.dumps(manifest))
+        arguments = {"code": source}
+        (path / "render-arguments.json").write_text(json.dumps(arguments))
+
+        def receipts(
+            recovery=False,
+            *,
+            stage=stage,
+            identity=identity,
+            path=path,
+            arguments=arguments,
+            members=members,
+            report=report,
+        ):
+            """Model actual call/result framing and exact image/report wire bytes."""
+            tool = "get_plot_artifact" if recovery else "render_plot"
+            call_id = stage + tool
+            report_id = stage + "report"
+            calls = [
+                {
+                    "type": "tool_use",
+                    "id": call_id,
+                    "name": "mcp__dartwork_mpl__" + tool,
+                    "input": {"artifact_id": identity}
+                    if recovery
+                    else arguments,
+                },
+                {
+                    "type": "tool_use",
+                    "id": report_id,
+                    "name": "ReadMcpResourceTool",
+                    "input": {
+                        "uri": f"dartwork-mpl://artifacts/{identity}/report.json"
+                    },
+                },
+            ]
+            results = [
+                {
+                    "type": "tool_result",
+                    "tool_use_id": call_id,
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "data": base64.b64encode(
+                                    (path / "plot.png").read_bytes()
+                                ).decode()
+                            },
+                        },
+                        {
+                            "type": "text",
+                            "text": json.dumps(
+                                {
+                                    "artifact_id": identity,
+                                    "delivery_status": "ready",
+                                    "files": members,
+                                }
+                            ),
+                        },
+                    ],
+                },
+                {
+                    "type": "tool_result",
+                    "tool_use_id": report_id,
+                    "content": json.dumps(report),
+                },
+            ]
+            return [
+                {"type": "assistant", "message": {"content": calls}},
+                {"type": "user", "message": {"content": results}},
+                {
+                    "type": "result",
+                    "subtype": "success",
+                    "session_id": "fresh" if recovery else "initial",
+                    "modelUsage": {"fixture-model": {}},
+                },
+            ]
+
+        events = receipts()
+        (path / "events.jsonl").write_text(
+            "".join(json.dumps(event) + "\n" for event in events)
+        )
+        recovery_events.extend(receipts(True))
+        hashes = {
+            name: hashlib.sha256((path / name).read_bytes()).hexdigest()
+            for name in (
+                "plot.png",
+                "plot.pdf",
+                "source.py",
+                "report.json",
+                "manifest.json",
+            )
+        }
+        for target in (path / "collected", directory / "recovery/independent"):
+            shutil.copytree(
+                path,
+                target / identity,
+                ignore=shutil.ignore_patterns("collected"),
+            )
+            hash_path = target / "hashes.json"
+            saved = (
+                json.loads(hash_path.read_text()) if hash_path.exists() else {}
+            )
+            hash_path.write_text(json.dumps({**saved, identity: hashes}))
+        replay_path = directory / "replay" / stage
+        replay_path.mkdir(parents=True)
+        shutil.copyfile(path / "plot.png", replay_path / "plot.png")
+        (replay_path / "observed.json").write_text(json.dumps(observed))
+        result = {
+            "status": "ok",
+            "source_sha256": hashes["source.py"],
+            "csv_sha256": state["csv_sha256"],
+            "figure_var": "fig",
+            "observed": observed,
+            "png_sha256": hashes["plot.png"],
+            "export": {
+                "api": "dartwork_mpl.save_formats",
+                "formats": ["png", "pdf"],
+                "validate": False,
+                "adopt_orphan_tick_font": False,
+                "staging": "owned_workspace",
+            },
+        }
+        (replay_path / "result.json").write_text(json.dumps(result))
+        state["artifact_ids"].append(identity)
+        state["stages"][stage] = {
+            "review": {"artifact_id": identity, "session_id": "initial"}
+        }
+        state["recovery_hashes"][identity] = hashes
+        review["visual_review"][stage] = {
+            "png_sha256": hashes["plot.png"],
+            **dict.fromkeys(
+                ("labels", "units", "panels", "clipping", "readability"),
+                "passed",
+            ),
+            "notes": "fixture review of the real retained PNG",
+        }
+        review["human_code_edits"]["source_sha256"][stage] = hashes["source.py"]
+    state["stages"]["recovery"] = {"review": {"session_id": "fresh"}}
+    (directory / "recovery/events.jsonl").write_text(
+        "".join(json.dumps(event) + "\n" for event in recovery_events)
+    )
+    (directory / "run.json").write_text(json.dumps(state))
+    (directory / "evaluator-review.json").write_text(json.dumps(review))
+    return directory
+
+
+def test_compare_retained_cases_and_cli_keep_failures_and_unknowns(tmp_path):
+    """Public compare/evaluate accept complete evidence and reject changed facts."""
+    baseline, candidate = tmp_path / "baseline", tmp_path / "candidate"
+    for case in CASES:
+        saved_episode(baseline, case)
+    (baseline / "frozen-baseline.json").write_text(
+        json.dumps(
+            {
+                "cases": [
+                    {
+                        "case": case,
+                        "run_sha256": hashlib.sha256(
+                            (baseline / case / "run.json").read_bytes()
+                        ).hexdigest(),
+                    }
+                    for case in CASES
+                ]
+            }
+        )
+    )
+    shutil.copytree(baseline, candidate)
+    assert oracle.compare(baseline, candidate)["passed"]
+    comparison_command = [
+        sys.executable,
+        str(MODULE),
+        "compare",
+        "--baseline",
+        str(baseline),
+        "--candidate",
+        str(candidate),
+    ]
+    assert (
+        subprocess.run(comparison_command, capture_output=True).returncode == 0
+    )
+    baseline_run = baseline / "line/run.json"
+    frozen_bytes = baseline_run.read_bytes()
+    changed_environment = json.loads(frozen_bytes)
+    changed_environment["environment"] = {"LANG": "changed"}
+    baseline_run.write_text(json.dumps(changed_environment))
+    compared = oracle.compare(baseline, candidate)
+    assert compared["candidate_gate"]
+    assert compared["frozen_baseline_errors"] == ["line"]
+    assert compared["comparability_errors"] == ["line"]
+    baseline_run.write_bytes(frozen_bytes)
+    command = [
+        sys.executable,
+        str(MODULE),
+        "evaluate",
+        "--run",
+        str(candidate / "line"),
+    ]
+    assert subprocess.run(command, capture_output=True).returncode == 0
+    source = candidate / "line/revision/source.py"
+    source.write_bytes(source.read_bytes() + b"# altered\n")
+    changed = oracle.evaluate(candidate / "line")
+    assert not changed["dimensions"]["delivery"]["passed"]
+    assert not oracle.compare(baseline, candidate)["candidate_gate"]
+    assert subprocess.run(command, capture_output=True).returncode == 1
+    assert (
+        subprocess.run(comparison_command, capture_output=True).returncode == 1
+    )
+
+
+def test_evaluate_distinguishes_receipts_pixels_data_and_attestation(tmp_path):
+    """Ready reports cannot conceal missing receipts, pixel drift or data changes."""
+    directory = saved_episode(tmp_path, "line")
+    assert oracle.evaluate(directory)["passed"]
+    import io
+
+    from PIL import Image
+
+    events_path = directory / "revision/events.jsonl"
+    events = [json.loads(line) for line in events_path.read_text().splitlines()]
+    image_source = events[1]["message"]["content"][0]["content"][0]["source"]
+    with Image.open(io.BytesIO(base64.b64decode(image_source["data"]))) as full:
+        preview = io.BytesIO()
+        full.resize((full.width // 2, full.height // 2)).save(
+            preview, format="PNG"
+        )
+    image_source["data"] = base64.b64encode(preview.getvalue()).decode()
+    events_path.write_text(
+        "".join(json.dumps(event) + "\n" for event in events)
+    )
+    resized = oracle.evaluate(directory)
+    assert resized["passed"]
+    assert (
+        resized["dimensions"]["model_review"]["stages"]["revision"][
+            "image_receipts"
+        ][0]["exact_artifact_png"]
+        is False
+    )
+    review = directory / "evaluator-review.json"
+    review.unlink()
+    unknown = oracle.evaluate(directory)["dimensions"]
+    assert unknown["human_code_edits"]["status"] == "unchecked"
+    assert unknown["visual_review"]["status"] == "unchecked"
+    assert (
+        subprocess.run(
+            [sys.executable, str(MODULE), "evaluate", "--run", str(directory)],
+            capture_output=True,
+        ).returncode
+        == 1
+    )
+    events[1]["message"]["content"].pop()
+    events_path.write_text(
+        "".join(json.dumps(event) + "\n" for event in events)
+    )
+    dimensions = oracle.evaluate(directory)["dimensions"]
+    assert dimensions["declared_validation"]["passed"]
+    assert dimensions["model_review"]["status"] == "failed"
+    observed_path = directory / "replay/revision/observed.json"
+    observed = json.loads(observed_path.read_text())
+    observed["panels"][0]["lines"][0]["xy"][0][1] = 0
+    observed_path.write_text(json.dumps(observed))
+    replay_path = observed_path.with_name("result.json")
+    result = json.loads(replay_path.read_text())
+    result["observed"] = observed
+    replay_path.write_text(json.dumps(result))
+    assert (
+        oracle.evaluate(directory)["dimensions"]["semantic_replay"]["status"]
+        == "failed"
+    )
+    png = observed_path.with_name("plot.png")
+    image = Image.open(png).convert("RGBA")
+    image.putpixel((0, 0), (0, 0, 0, 255))
+    image.save(png)
+    result["png_sha256"] = hashlib.sha256(png.read_bytes()).hexdigest()
+    replay_path.write_text(json.dumps(result))
+    assert (
+        oracle.evaluate(directory)["dimensions"]["semantic_replay"]["status"]
+        == "unchecked"
+    )
 
 
 def rows(case: str) -> list[dict]:

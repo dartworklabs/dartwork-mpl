@@ -26,7 +26,14 @@ from matplotlib.collections import PathCollection
 from matplotlib.container import BarContainer
 from matplotlib.figure import Figure
 
-__all__ = ["assess", "load_episode", "read_artists", "replay"]
+__all__ = [
+    "assess",
+    "compare",
+    "evaluate",
+    "load_episode",
+    "read_artists",
+    "replay",
+]
 
 _FIXTURES = (
     Path(__file__).resolve().parents[1] / "tests/mcp/agent_loop/fixtures"
@@ -670,13 +677,631 @@ def _replay_child(
         raise SystemExit(75)
 
 
+def _json(path: Path) -> dict[str, Any]:
+    """Read retained evaluator evidence; never execute the referenced source."""
+    value = json.loads(path.read_text())
+    if not isinstance(value, dict):
+        raise ValueError(f"expected retained JSON object: {path.name}")
+    return value
+
+
+def _sha(path: Path) -> str:
+    """Identify exact retained bytes independently of recorded hash fields."""
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _wire_objects(value: Any) -> Any:
+    """Decode nested JSON wire payloads without interpreting model prose."""
+    if isinstance(value, dict):
+        yield value
+        for item in value.values():
+            yield from _wire_objects(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _wire_objects(item)
+    elif isinstance(value, str) and value.lstrip().startswith(("{", "[")):
+        try:
+            nested = json.loads(value)
+        except (ValueError, RecursionError):
+            return
+        yield from _wire_objects(nested)
+
+
+def _events(path: Path) -> list[dict[str, Any]]:
+    """Use actual assistant calls and correlated user receipts, excluding echoes."""
+    return [json.loads(line) for line in path.read_text().splitlines()]
+
+
+def _calls_and_results(
+    events: list[dict[str, Any]],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Index complete tool events by the host's tool-use identifier."""
+    calls, results = {}, {}
+    for event in events:
+        blocks = event.get("message", {}).get("content", [])
+        if not isinstance(blocks, list):
+            continue
+        for block in blocks:
+            if not isinstance(block, dict):
+                continue
+            if (
+                event.get("type") == "assistant"
+                and block.get("type") == "tool_use"
+            ):
+                calls[block["id"]] = block
+            elif (
+                event.get("type") == "user"
+                and block.get("type") == "tool_result"
+            ):
+                results[block["tool_use_id"]] = block
+    return calls, results
+
+
+def _terminal(events: list[dict[str, Any]]) -> dict[str, Any]:
+    """Identify the actual completed host session from its terminal wire event."""
+    result = next(
+        (event for event in reversed(events) if event.get("type") == "result"),
+        {},
+    )
+    if (
+        not result.get("session_id")
+        or result.get("is_error")
+        or result.get("subtype") != "success"
+    ):
+        raise ValueError("missing successful host terminal/session event")
+    return result
+
+
+def _receipt(
+    events: list[dict[str, Any]], identity: str, bundle: Path
+) -> dict[str, Any]:
+    """Bind a decoded image and exact full report to successful results for this ID.
+
+    Hosts can resize images before writing their event stream. Record that
+    distinction; original/replay pixel equality is a separate semantic check.
+    """
+    import base64
+    import io
+
+    from PIL import Image
+
+    calls, results = _calls_and_results(events)
+    image, report, rendered_source = False, False, False
+    png = bundle.joinpath("plot.png").read_bytes()
+    source = bundle.joinpath("source.py").read_bytes()
+    expected_report = _json(bundle / "report.json")
+    image_receipts = {}
+    for call_id, call in calls.items():
+        result = results.get(call_id, {})
+        if not result or result.get("is_error"):
+            continue
+        objects = list(_wire_objects(result))
+        if call.get("name") in {
+            "mcp__dartwork_mpl__render_plot",
+            "mcp__dartwork_mpl__get_plot_artifact",
+        } and any(
+            obj.get("artifact_id") == identity
+            and obj.get("delivery_status") == "ready"
+            for obj in objects
+        ):
+            rendered_source |= (
+                call.get("name") == "mcp__dartwork_mpl__render_plot"
+                and call.get("input", {}).get("code", "").encode() == source
+                and call.get("input") == _json(bundle / "render-arguments.json")
+            )
+            for obj in objects:
+                if obj.get("type") == "image":
+                    encoded = obj.get("source", {}).get(
+                        "data", obj.get("data", "")
+                    )
+                    try:
+                        raw = base64.b64decode(encoded, validate=True)
+                        with Image.open(io.BytesIO(raw)) as decoded:
+                            size = decoded.size
+                            decoded.verify()
+                        image = True
+                        digest = hashlib.sha256(raw).hexdigest()
+                        image_receipts[digest] = {
+                            "sha256": digest,
+                            "dimensions": list(size),
+                            "exact_artifact_png": raw == png,
+                        }
+                    except (OSError, ValueError):
+                        continue
+        if (
+            call.get("name") == "ReadMcpResourceTool"
+            and call.get("input", {}).get("uri")
+            == f"dartwork-mpl://artifacts/{identity}/report.json"
+        ):
+            report |= expected_report in objects
+    return {
+        "image": image,
+        "full_report": report,
+        "rendered_source": rendered_source,
+        "image_receipts": list(image_receipts.values()),
+    }
+
+
+def _gate(status: str, **evidence: Any) -> dict[str, Any]:
+    """Keep failed and unchecked outcomes distinct in the public evaluation."""
+    return {"status": status, "passed": status == "passed", **evidence}
+
+
+def _bundle(stage: Path, identity: str) -> dict[str, Any]:
+    """Verify manifest members, collector identity and exact render arguments."""
+    names = {
+        "plot.png",
+        "plot.pdf",
+        "source.py",
+        "report.json",
+        "manifest.json",
+    }
+    if (
+        not isinstance(identity, str)
+        or len(identity) != 32
+        or any(c not in "0123456789abcdef" for c in identity)
+    ):
+        raise ValueError("invalid retained artifact identity")
+    manifest = _json(stage / "manifest.json")
+    members = manifest["files"]
+    if (
+        manifest.get("schema_version") != 1
+        or manifest.get("artifact_id") != identity
+    ):
+        raise ValueError("manifest identity/schema mismatch")
+    if len(members) != 4 or {entry["name"] for entry in members} != names - {
+        "manifest.json"
+    }:
+        raise ValueError("manifest member set mismatch")
+    hashes = {name: _sha(stage / name) for name in names}
+    for entry in members:
+        path = stage / entry["name"]
+        if (
+            path.stat().st_size != entry["size_bytes"]
+            or hashes[entry["name"]] != entry["sha256"]
+        ):
+            raise ValueError("manifest member size/hash mismatch")
+    collected = stage / "collected"
+    if _json(collected / "hashes.json").get(identity) != hashes:
+        raise ValueError("collected hash identity mismatch")
+    if any(
+        (collected / identity / name).read_bytes()
+        != (stage / name).read_bytes()
+        for name in names
+    ):
+        raise ValueError("collected member bytes mismatch")
+    arguments = _json(stage / "render-arguments.json")
+    source = stage.joinpath("source.py").read_bytes()
+    if arguments.get("code", "").encode() != source:
+        raise ValueError("source/render-argument mismatch")
+    events = _events(stage / "events.jsonl")
+    receipt = _receipt(events, identity, stage)
+    if not receipt["rendered_source"]:
+        raise ValueError("source not bound to selected render result")
+    return {
+        "artifact_id": identity,
+        "hashes": hashes,
+        "receipt": receipt,
+        "arguments": arguments,
+        "terminal": _terminal(events),
+    }
+
+
+def _saved_semantics(
+    run: Path, stage: str, case_id: str, bundle: dict[str, Any]
+) -> dict[str, Any]:
+    """Transfer supported replay observations only after exact-source/pixel checks."""
+    import matplotlib.image as mpimg
+
+    directory = run / "replay" / stage
+    replayed = _json(directory / "result.json")
+    if replayed.get("status") != "ok":
+        return _gate(
+            "unchecked",
+            reason="retained replay did not complete",
+            replay=replayed,
+        )
+    if (
+        replayed.get("source_sha256") != bundle["hashes"]["source.py"]
+        or replayed.get("csv_sha256")
+        != load_episode(case_id)["expected"]["csv_sha256"]
+    ):
+        return _gate(
+            "unchecked", reason="replay source/fixture identity mismatch"
+        )
+    if replayed.get("figure_var") != bundle["arguments"].get(
+        "figure_var", "fig"
+    ):
+        return _gate("unchecked", reason="replay figure argument mismatch")
+    expected_export = {
+        "api": "dartwork_mpl.save_formats",
+        "formats": ["png", "pdf"],
+        "validate": False,
+        "adopt_orphan_tick_font": False,
+        "staging": "owned_workspace",
+    }
+    if replayed.get("export") != expected_export or replayed.get(
+        "png_sha256"
+    ) != _sha(directory / "plot.png"):
+        return _gate("unchecked", reason="replay export identity mismatch")
+    original = mpimg.imread(run / stage / "plot.png")
+    replay_png = mpimg.imread(directory / "plot.png")
+    same = np.array_equal(original, replay_png)
+    if not same:
+        return _gate(
+            "unchecked",
+            reason="decoded replay pixels differ from original",
+            pixels_equal=False,
+        )
+    observed = _json(directory / "observed.json")
+    if observed != replayed.get("observed"):
+        return _gate(
+            "unchecked", reason="retained observation identity mismatch"
+        )
+    assessment = assess(case_id, observed)
+    return _gate(
+        "passed"
+        if assessment["passed"]
+        else "unchecked"
+        if assessment["unchecked"]
+        else "failed",
+        pixels_equal=True,
+        assessment=assessment,
+        replay_png_sha256=_sha(directory / "plot.png"),
+    )
+
+
+def evaluate(run: Path) -> dict[str, Any]:
+    """Assess one retained episode without source execution or baseline repair.
+
+    Independent image review and no-human-edit attestations live in the optional
+    evaluator-owned ``evaluator-review.json`` sidecar, bound to exact PNG/source
+    hashes. Missing evidence remains unchecked. CLI exit is nonzero for either
+    failed or unchecked dimensions.
+    """
+    run = run.resolve()
+    try:
+        state = _json(run / "run.json")
+        case_id = state["case_id"]
+        expected = load_episode(case_id)["expected"]
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return _gate(
+            "unchecked",
+            run=str(run),
+            reason=f"missing/invalid run evidence: {exc}",
+        )
+    dimensions: dict[str, Any] = {}
+    bundles, semantics, reports, receipts, errors = {}, {}, {}, {}, {}
+    for stage in ("original", "revision"):
+        try:
+            identity = state["stages"][stage]["review"]["artifact_id"]
+            bundle = _bundle(run / stage, identity)
+            if bundle["terminal"]["session_id"] != state["stages"][stage][
+                "review"
+            ]["session_id"] or set(
+                bundle["terminal"].get("modelUsage", {})
+            ) != {state["configured_model"]}:
+                raise ValueError("captured session/model identity mismatch")
+            bundles[stage] = bundle
+            report = _json(run / stage / "report.json")
+            manifest = _json(run / stage / "manifest.json")
+            good_report = (
+                report.get("status") == "ok"
+                and report.get("validation_complete") is True
+                and report.get("failed_checks") == []
+            )
+            good_report &= manifest.get("validation") == {
+                key: report[key]
+                for key in ("status", "validation_complete", "failed_checks")
+            }
+            reports[stage] = _gate(
+                "passed" if good_report else "failed", report=report
+            )
+            receipt = bundle["receipt"]
+            receipts[stage] = _gate(
+                "passed"
+                if receipt["image"] and receipt["full_report"]
+                else "failed",
+                **receipt,
+            )
+            try:
+                semantics[stage] = _saved_semantics(run, stage, case_id, bundle)
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                semantics[stage] = _gate("unchecked", reason=str(exc))
+        except (OSError, ValueError, KeyError, TypeError) as exc:  # noqa: PERF203
+            errors[stage] = str(exc)
+            semantics.setdefault(stage, _gate("unchecked", reason=str(exc)))
+    recovery = _gate(
+        "unchecked", reason="both original/revision bundles required"
+    )
+    if len(bundles) == 2:
+        try:
+            ids = {bundle["artifact_id"] for bundle in bundles.values()}
+            if len(ids) != 2 or set(state["artifact_ids"]) != ids:
+                raise ValueError("original/revision artifact ID set mismatch")
+            events = _events(run / "recovery/events.jsonl")
+            calls, _ = _calls_and_results(events)
+            requested = {
+                call.get("input", {}).get("artifact_id")
+                for call in calls.values()
+                if call.get("name") == "mcp__dartwork_mpl__get_plot_artifact"
+            }
+            if not ids.issubset(requested) or any(
+                "render" in call.get("name", "")
+                or "validate_generated_plot" in call.get("name", "")
+                for call in calls.values()
+            ):
+                raise ValueError(
+                    "fresh agent did not retrieve both IDs without execution"
+                )
+            initial_session = state["stages"]["original"]["review"][
+                "session_id"
+            ]
+            revision_session = state["stages"]["revision"]["review"][
+                "session_id"
+            ]
+            recovery_session = state["stages"]["recovery"]["review"][
+                "session_id"
+            ]
+            if _terminal(events)["session_id"] != recovery_session:
+                raise ValueError(
+                    "fresh-agent terminal/session identity mismatch"
+                )
+            if (
+                not initial_session
+                or initial_session != revision_session
+                or not recovery_session
+                or initial_session == recovery_session
+            ):
+                raise ValueError("resume/fresh-agent session identity mismatch")
+            mechanical = run / "recovery/independent"
+            recovery_receipts = {}
+            for stage, bundle in bundles.items():
+                identity = bundle["artifact_id"]
+                recovery_receipts[identity] = _receipt(
+                    events, identity, run / stage
+                )
+                if (
+                    not recovery_receipts[identity]["image"]
+                    or not recovery_receipts[identity]["full_report"]
+                ):
+                    raise ValueError(
+                        "fresh agent image/full-report receipt missing"
+                    )
+                hashes = {
+                    name: _sha(mechanical / identity / name)
+                    for name in bundle["hashes"]
+                }
+                if (
+                    hashes != bundle["hashes"]
+                    or _json(mechanical / "hashes.json").get(identity) != hashes
+                    or state.get("recovery_hashes", {}).get(identity) != hashes
+                ):
+                    raise ValueError(
+                        "independent five-member recovery mismatch"
+                    )
+            recovery = _gate(
+                "passed",
+                agent_receipts=recovery_receipts,
+                five_members_per_id=True,
+                fresh_session=True,
+                no_execution=True,
+            )
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            recovery = _gate("failed", reason=str(exc))
+    infrastructure = (
+        state.get("infrastructure_status") == "ok"
+        and state.get("workspace_cleanup") is True
+        and state.get("csv_sha256") == expected["csv_sha256"]
+        and (run / "input.csv").is_file()
+        and _sha(run / "input.csv") == expected["csv_sha256"]
+    )
+    dimensions["delivery"] = _gate(
+        "passed"
+        if infrastructure
+        and len(bundles) == 2
+        and recovery["passed"]
+        and not errors
+        else "failed",
+        stages={
+            stage: {
+                "artifact_id": bundle["artifact_id"],
+                "hashes": bundle["hashes"],
+            }
+            for stage, bundle in bundles.items()
+        },
+        recovery=recovery,
+        errors=errors,
+    )
+    for name, stages in (
+        ("declared_validation", reports),
+        ("model_review", receipts),
+        ("semantic_replay", semantics),
+    ):
+        statuses = [item["status"] for item in stages.values()]
+        status = (
+            "failed"
+            if "failed" in statuses
+            else "unchecked"
+            if len(stages) != 2 or "unchecked" in statuses
+            else "passed"
+        )
+        dimensions[name] = _gate(status, stages=stages)
+    dimensions["semantic_replay"]["style_data_unchanged"] = _gate(
+        dimensions["semantic_replay"]["status"],
+        basis="Original and revision independently match the same pinned rows, masks, groups and panels after decoded-pixel identity checks.",
+    )
+    try:
+        review = _json(run / "evaluator-review.json")
+    except (OSError, ValueError):
+        review = {}
+    visual = review.get("visual_review", {})
+    facets = ("labels", "units", "panels", "clipping", "readability")
+    visual_ok = (
+        len(bundles) == 2
+        and bool(review.get("reviewer"))
+        and all(
+            visual.get(stage, {}).get("png_sha256")
+            == bundle["hashes"]["plot.png"]
+            and all(
+                visual.get(stage, {}).get(key) == "passed" for key in facets
+            )
+            and bool(visual.get(stage, {}).get("notes"))
+            for stage, bundle in bundles.items()
+        )
+    )
+    dimensions["visual_review"] = _gate(
+        "passed" if visual_ok else "unchecked" if not visual else "failed",
+        reviewer=review.get("reviewer"),
+        stages=visual,
+    )
+    attested = review.get("human_code_edits", {})
+    source_hashes = {
+        stage: bundle["hashes"]["source.py"]
+        for stage, bundle in bundles.items()
+    }
+    edits_ok = (
+        bool(attested.get("attested_by"))
+        and bool(attested.get("provenance"))
+        and type(attested.get("edits")) is int
+        and attested["edits"] == 0
+        and attested.get("interventions") == []
+        and attested.get("source_sha256") == source_hashes
+    )
+    dimensions["human_code_edits"] = _gate(
+        "passed" if edits_ok else "unchecked" if not attested else "failed",
+        attestation=attested,
+        actual_source_sha256=source_hashes,
+    )
+    statuses = [item["status"] for item in dimensions.values()]
+    status = (
+        "failed"
+        if "failed" in statuses
+        else "unchecked"
+        if "unchecked" in statuses
+        else "passed"
+    )
+    return _gate(
+        status,
+        run=str(run),
+        run_sha256=_sha(run / "run.json"),
+        case_id=case_id,
+        recorded_status=state.get("status"),
+        stop_reason=state.get("stop_reason"),
+        dimensions=dimensions,
+    )
+
+
+def compare(baseline: Path, candidate: Path) -> dict[str, Any]:
+    """Compare all four once-only episodes while preserving failures and unknowns."""
+    cases: dict[str, Any] = {}
+    comparability_errors: list[str] = []
+    for case in _CASES:
+        before, after = evaluate(baseline / case), evaluate(candidate / case)
+        environment = {}
+        try:
+            old, new = (
+                _json(baseline / case / "run.json"),
+                _json(candidate / case / "run.json"),
+            )
+            for key in (
+                "configured_model",
+                "configured_effort",
+                "versions",
+                "font",
+                "server_entry_sha256",
+                "environment",
+                "csv_sha256",
+            ):
+                environment[key] = (
+                    old.get(key) == new.get(key) and key in old and key in new
+                )
+            for label, state in (("baseline", old), ("candidate", new)):
+                environment[label + "_observed_model"] = bool(
+                    state.get("effective_models")
+                ) and set(state["effective_models"]) == {
+                    state.get("configured_model")
+                }
+            configured = (
+                old.get("configured_model"),
+                old.get("configured_effort"),
+            )
+            if not all(environment.values()):
+                comparability_errors.append(case)
+        except (OSError, ValueError, KeyError, TypeError):
+            configured = None
+            comparability_errors.append(case)
+        cases[case] = {
+            "baseline": before,
+            "candidate": after,
+            "environment": environment,
+            "configured": configured,
+            "review_receipts": {
+                label: result.get("dimensions", {})
+                .get("model_review", {})
+                .get("status", "unchecked")
+                for label, result in (
+                    ("baseline", before),
+                    ("candidate", after),
+                )
+            },
+        }
+    frozen_errors: list[str] = []
+    try:
+        frozen = _json(baseline / "frozen-baseline.json")
+        if len(frozen["cases"]) != 4 or {
+            item["case"] for item in frozen["cases"]
+        } != set(_CASES):
+            raise ValueError("frozen case set mismatch")
+        frozen_errors.extend(
+            item["case"]
+            for item in frozen["cases"]
+            if item["run_sha256"] != _sha(baseline / item["case"] / "run.json")
+        )
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        frozen_errors.append(str(exc))
+    passed = (
+        not comparability_errors
+        and not frozen_errors
+        and all(
+            pair[label]["passed"]
+            for pair in cases.values()
+            for label in ("baseline", "candidate")
+        )
+    )
+    return _gate(
+        "passed" if passed else "failed",
+        cases=cases,
+        candidate_gate=all(
+            pair["candidate"]["passed"] for pair in cases.values()
+        ),
+        baseline_gate=all(
+            pair["baseline"]["passed"] for pair in cases.values()
+        ),
+        comparability_errors=comparability_errors,
+        frozen_baseline_errors=frozen_errors,
+        limitations=[
+            "Four single episodes do not establish general model performance or prompt causality.",
+            "Configured effort can match while effective effort remains unobserved.",
+            "Candidate evaluator normalizes native bar numeric scalars; baseline failed bar replay remains unchecked and is not reconstructed.",
+            "Baseline scatter requested production-valid 60 seconds, rejected by hidden evaluator 20-second cap; not a user/tool-contract or causal prompt failure.",
+            "Dynamic or external replay inputs remain unchecked; no new source execution occurs during comparison.",
+        ],
+    )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("replay", "_replay"))
-    parser.add_argument("source", type=Path)
-    parser.add_argument("output", type=Path)
+    parser.add_argument(
+        "command", choices=("replay", "_replay", "evaluate", "compare")
+    )
+    parser.add_argument("source", type=Path, nargs="?")
+    parser.add_argument("output", type=Path, nargs="?")
     parser.add_argument("figure_var", nargs="?", default="fig")
     parser.add_argument("--csv", type=Path)
+    parser.add_argument("--run", type=Path)
+    parser.add_argument("--baseline", type=Path)
+    parser.add_argument("--candidate", type=Path)
     parser.add_argument("--case", choices=_CASES)
     parser.add_argument("--evidence-root", type=Path)
     parser.add_argument("--export-dir", type=Path)
@@ -684,6 +1309,19 @@ if __name__ == "__main__":
         "--max-evidence-bytes", type=int, default=128 * 1024 * 1024
     )
     args = parser.parse_args()
+    if args.command in {"evaluate", "compare"}:
+        if args.command == "evaluate":
+            if args.run is None:
+                parser.error("evaluate requires --run")
+            result = evaluate(args.run)
+        else:
+            if args.baseline is None or args.candidate is None:
+                parser.error("compare requires --baseline and --candidate")
+            result = compare(args.baseline, args.candidate)
+        print(json.dumps(result, indent=2))
+        raise SystemExit(0 if result["passed"] else 1)
+    if args.source is None or args.output is None:
+        parser.error("replay requires source and output")
     if args.command == "_replay":
         _replay_child(
             args.source,

@@ -14,7 +14,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
-from evaluate_agent_plot import replay
+from evaluate_agent_plot import evaluate, replay
 from run_agent_plot_eval import (
     _admission_decision,
     _repair_admission,
@@ -667,6 +667,13 @@ asyncio.run(main())
     assert not Path(invocation["cwd"]).exists()
     assert (directory / "revision/source.py").read_bytes()
     assert (directory / "replay/revision/plot.png").exists()
+    evaluated = evaluate(directory)
+    assert evaluated["dimensions"]["delivery"]["passed"]
+    assert evaluated["dimensions"]["declared_validation"]["passed"]
+    assert evaluated["dimensions"]["semantic_replay"]["passed"]
+    assert evaluated["dimensions"]["model_review"]["status"] == "failed"
+    assert evaluated["dimensions"]["visual_review"]["status"] == "unchecked"
+    assert evaluated["dimensions"]["human_code_edits"]["status"] == "unchecked"
 
 
 def test_scored_admission_binds_both_failed_smokes_and_unknown_agent_recovery(
