@@ -460,13 +460,37 @@ NaN/Infinity tokens and malformed JSON are rejected without repair. Valid UTF-8
 syntax errors within the budgets retain exact raw text; Python strings that
 cannot encode as UTF-8 return `rejected` / `invalid_json` and omit `original`.
 
+### Raw documents and template previews
+
+`fetch_github_document(url)` accepts HTTPS on the canonical
+`raw.githubusercontent.com` host, without credentials or a nondefault port.
+Owner, repository, ref, path and query remain free choices. Every redirect is
+checked before connection, with at most five hops. One 10-second total deadline
+covers requests, redirects and body reads. The fetch requests identity encoding
+and rejects other content encodings. It accepts at most 1 MiB of actual raw body
+bytes, regardless of `Content-Length`; UTF-8 replacement can produce up to 3 MiB
+of UTF-8 text. The supported MCP extra includes HTTPX; there is one async fetch
+path. Responses and clients close on failure, timeout and cancellation.
+
+Both template renderers keep diagnostic channels within 64 KiB UTF-8, including
+visible truncation markers. Render errors retain the existing 2,000-character
+presentation ceiling, with room reserved for a complete marker. A successful
+`return_format="path"` creates a unique, private (0600), regular PNG file and
+returns its absolute path after closing it. Callers own that persistent temporary
+file's lifetime. Exclusive creation protects existing names and symlinks; it does
+not promise protection from a local actor replacing a path after publication.
+
 ### Plot execution and validation results
 
 `validate_generated_plot(code, figure_var="fig", timeout_seconds=20.0,
 chart_type_hint=None)` executes **trusted local snippets** with the Agg backend.
 The fresh subprocess isolates Matplotlib state; it is not an OS security
 sandbox. It inherits cwd and retains real file-save effects. Hostile code that
-mutates the runner is outside this contract.
+mutates the runner is outside this contract. Source must be valid UTF-8 and at
+most 512 KiB; timeout must be an actual finite numeric value in `(0, 120]` seconds.
+Invalid source/timeout returns `exec_error` before lint or execution. Handleable
+AST memory/recursion failures also return an incomplete safe error; this does
+not guarantee recovery from interpreter termination or global memory exhaustion.
 
 Every response includes `stdout` and `stderr` strings, `validation_complete`
 (boolean), `failed_checks` (original check IDs in run order), `lint`, and
@@ -474,6 +498,14 @@ Every response includes `stdout` and `stderr` strings, `validation_complete`
 save messages remain logs; invalid UTF-8 log bytes use replacement characters.
 The internal JSON result travels through a private,
 absolute temporary file that is cleaned up after execution, including timeout.
+Each diagnostic channel retains at most 64 KiB UTF-8, including a visible marker
+such as `[dartwork-mpl: stdout truncated; retained prefix only]` and any timeout
+text. Excess is discarded during collection. Completed logs normalize CRLF and
+lone CR to LF; timeout logs preserve those original characters after UTF-8
+replacement. Legacy stderr keeps its surrounding-whitespace stripping and
+timeout text. Only finite stdin framing uses a private temporary file; output
+logs never spool. The runner reaps its direct child and closes its own resources;
+trusted descendants remain outside process-tree supervision.
 
 - `ok`: validation completed (`true`, `[]`); visual warnings may still exist.
 - `validation_incomplete`: tolerated check failures prevented completion
@@ -607,7 +639,12 @@ Python 3.10, not every OS/filesystem.
 
 Source is limited to 512 KiB UTF-8; timeout must be finite and in `(0, 120]`
 seconds. All five files together must fit 32 MiB. Oversize source/report/logs
-reject publication instead of truncating them. Bundles expire exactly seven days
+reject publication instead of truncating them. Successful artifact reports keep
+original processed logs, including stderr whitespace. Capture retains at most a
+combined 32 MiB of logs for the selected normal/timeout view; exceeding that limit
+returns `artifact_too_large`, an incomplete report with bounded diagnostic
+prefixes, and no artifact ID, image or links. The exact serialized five-file size
+check remains final, including JSON escaping. Bundles expire exactly seven days
 after publication; publication occurs after execution/export completes. Expired
 valid bundles are cleaned lazily on access. Unknown, corrupt or substituted
 objects are retained, including private quarantine when safe restoration
