@@ -6,7 +6,7 @@ import contextlib
 from typing import TYPE_CHECKING
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
-from ._registry import register_check
+from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -101,3 +101,11 @@ def check_margin_asymmetry(
             )
 
     return warnings
+
+
+@register_fix("MARGIN_ASYMMETRY")
+def _fix_margin_asymmetry(warning: VisualWarning) -> list[str]:
+    side = warning.detail.get("side", "")
+    if side in ("left", "right"):
+        return ["# Center horizontally\ndm.simple_layout(fig)"]
+    return ["# Center vertically\ndm.simple_layout(fig)"]

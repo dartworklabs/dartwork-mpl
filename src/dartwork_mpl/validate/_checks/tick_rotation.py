@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
-from ._registry import register_check
+from ._registry import register_check, register_fix
 from ._tick_utils import adjacent_bboxes_overlap, iter_view_ticks
 
 if TYPE_CHECKING:
@@ -121,3 +121,14 @@ def check_tick_rotation(
             )
 
     return warnings
+
+
+@register_fix("TICK_ROTATION")
+def _fix_tick_rotation(warning: VisualWarning) -> list[str]:
+    rotation = warning.detail.get("recommended_rotation", 45)
+    return [
+        "# Adjust x tick label rotation\n"
+        f"dm.rotate_tick_labels(ax, axis='x', rotation={rotation})",
+        "# Or reduce tick density\n"
+        "ax.xaxis.set_major_locator(plt.MaxNLocator(nbins=6))",
+    ]
