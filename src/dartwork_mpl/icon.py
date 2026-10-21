@@ -12,6 +12,7 @@ Examples
 ...         fontproperties=mdi, fontsize=20)
 """
 
+import difflib
 import threading
 from pathlib import Path
 
@@ -32,6 +33,29 @@ _REGISTRY: dict[str, str] = {
 }
 
 __all__ = ["ensure_loaded", "icon_font", "icon_font_path", "list_icon_fonts"]
+
+
+def _did_you_mean(value: str, candidates: list[str]) -> str | None:
+    """Return the single closest match to ``value`` from ``candidates``
+    or ``None`` if no entry is close enough.
+
+    Wraps :func:`difflib.get_close_matches` with the cutoff dartwork-mpl
+    uses everywhere a "did you mean" hint is shown (0.5 — close enough
+    to catch typos like ``"sceintific"`` / ``"reort"`` but far enough
+    to avoid suggesting unrelated keys for completely wrong input).
+    """
+    matches = difflib.get_close_matches(
+        value.strip().lower(), [c.lower() for c in candidates], n=1, cutoff=0.5
+    )
+    if not matches:
+        return None
+    # Return the original-case spelling so the user sees the canonical
+    # form rather than the lowercased lookup key.
+    lowered = matches[0]
+    for c in candidates:
+        if c.lower() == lowered:
+            return c
+    return lowered
 
 
 def icon_font_path(name: str = "mdi") -> Path:
@@ -66,8 +90,6 @@ def icon_font_path(name: str = "mdi") -> Path:
     ensure_loaded()
 
     if name not in _REGISTRY:
-        from .style import _did_you_mean
-
         available = sorted(_REGISTRY)
         hint = _did_you_mean(name, available)
         raise ValueError(

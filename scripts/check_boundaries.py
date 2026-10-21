@@ -54,7 +54,7 @@ ENTRY_POINTS = frozenset(
 )
 
 # Units holding business-agnostic mechanism. They import no slice.
-PLATFORM = frozenset({"dartwork_mpl._figure_geometry"})
+PLATFORM = frozenset({"dartwork_mpl._figure_geometry", "dartwork_mpl._rc"})
 
 # Units holding one capability each.
 SLICES = frozenset(
@@ -142,7 +142,7 @@ DECISIONS: Mapping[str, str] = {
 # plan step that removes it. The list only shrinks.
 DEBT: Mapping[str, str] = {
     "cycle: dartwork_mpl, dartwork_mpl.templates, dartwork_mpl.validate_fixes": "C12, L2",
-    "cycle: dartwork_mpl._colors, dartwork_mpl._luminance, dartwork_mpl.style": "C2, K1",
+    "cycle: dartwork_mpl._colors, dartwork_mpl._luminance": "K1",
     "entry point import: dartwork_mpl.mcp.resources -> dartwork_mpl": "M6",
     "entry point import: dartwork_mpl.mcp.tools -> dartwork_mpl": "M4",
     "entry point import: dartwork_mpl.templates.diverging_bar -> dartwork_mpl": "C12",
@@ -160,7 +160,6 @@ DEBT: Mapping[str, str] = {
     "private import: dartwork_mpl -> dartwork_mpl.formatting.recommend_tick_decimals": "C8",
     "private import: dartwork_mpl -> dartwork_mpl.formatting.rotate_tick_labels": "C8",
     "private import: dartwork_mpl -> dartwork_mpl.validate_fixes.validate_with_fixes": "L2",
-    "private import: dartwork_mpl._colors._api -> dartwork_mpl.style._style_lock": "C2",
     "private import: dartwork_mpl._colors._contrast -> dartwork_mpl._luminance._contrast_ratio": "K1",
     "private import: dartwork_mpl._luminance -> dartwork_mpl._colors._conversion": "K1",
     "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.CYCLIC": "K5",
@@ -171,7 +170,6 @@ DEBT: Mapping[str, str] = {
     "private import: dartwork_mpl.diagnostics._colors -> dartwork_mpl._colors._loader.COLOR_LIBRARIES": "K5",
     "private import: dartwork_mpl.diagnostics._fonts -> dartwork_mpl.font._FONT_DIR": "C4",
     "private import: dartwork_mpl.helpers.labels -> dartwork_mpl._colors._loader.ensure_loaded": "K4",
-    "private import: dartwork_mpl.icon -> dartwork_mpl.style._did_you_mean": "C2",
     "private import: dartwork_mpl.mcp.resources -> dartwork_mpl._colors._loader.COLOR_LIBRARIES": "K4",
     "private import: dartwork_mpl.mcp.tools -> dartwork_mpl._colors._loader.COLOR_LIBRARIES": "K4",
     "private import: dartwork_mpl.style -> dartwork_mpl._colors._semantic.SEMANTIC_TOKEN_NAMES": "K4",

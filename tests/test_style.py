@@ -192,14 +192,6 @@ class TestStyleStack:
 class TestThreadSafety:
     """Tests for thread-safe style application."""
 
-    def test_module_has_lock(self) -> None:
-        """style module should expose a threading.Lock as ``_style_lock``."""
-        import threading
-
-        assert hasattr(style_module, "_style_lock")
-        sample_lock = threading.Lock()
-        assert type(style_module._style_lock) is type(sample_lock)
-
     def test_concurrent_use_no_error(self) -> None:
         """Concurrent ``dm.style.use(...)`` calls must not corrupt the
         global rcParams or raise registration errors."""

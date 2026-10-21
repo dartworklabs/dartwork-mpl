@@ -8,21 +8,16 @@ import contextlib
 import copy
 import difflib
 import json
-import threading
 from collections.abc import Iterator
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 from matplotlib import RcParams
 
+from ._rc import rc_lock
+
 __all__ = ["Style", "list_styles", "load_style_dict", "style", "style_path"]
 
-
-# Module-level lock guarding global matplotlib state mutations
-# (rcParams, style.use). Without this, concurrent ``dm.style.use(...)``
-# calls from multiple threads can interleave rcParams updates and
-# corrupt the active style.
-_style_lock: threading.Lock = threading.Lock()
 
 # Deep copies of normalized values written by the last successful preset stack.
 # Contexts merge temporary preset writes and restore the immediate outer copy.
@@ -363,7 +358,7 @@ class Style:
         incoming_keys = _style_declared_keys(style_names)
 
         # Serialize global rcParams + style application across threads.
-        with _style_lock:
+        with rc_lock:
             user_overrides = _snapshot_user_rcparams()
             plt.rcParams.update(plt.rcParamsDefault)  # type: ignore[attr-defined]
             plt.style.use(
@@ -472,7 +467,7 @@ class Style:
 
         self.stack(style_list)
         if kwargs:
-            with _style_lock:
+            with rc_lock:
                 plt.rcParams.update(validated_overrides)
                 # Explicit kwargs are known caller intent, even at equal values.
                 for key in validated_overrides:
@@ -537,7 +532,7 @@ class Style:
         try:
             with plt.style.context(style_list):
                 # Retain inherited silent-key ownership; snapshot before kwargs.
-                with _style_lock:
+                with rc_lock:
                     _dm_preset_values.update(
                         {
                             key: copy.deepcopy(plt.rcParams[key])
@@ -550,7 +545,7 @@ class Style:
                 apply_semantic("kr" if is_kr else "default")
                 yield
         finally:
-            with _style_lock:
+            with rc_lock:
                 _dm_preset_values.clear()
                 _dm_preset_values.update(saved_ownership)
             for token, value in saved.items():
