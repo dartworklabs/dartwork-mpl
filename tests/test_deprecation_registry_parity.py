@@ -5,7 +5,7 @@ drifted apart (``auto_layout`` had a runtime hint but no lint/codemod
 coverage; ``style_spines``/``auto_select_colors`` were lint-flagged but
 raised a bare AttributeError):
 
-1. runtime ``dartwork_mpl._REMOVED_NAMES`` (``__getattr__`` hints),
+1. runtime ``dartwork_mpl._compat._REMOVED_NAMES`` (``__getattr__`` hints),
 2. the lint SSOT ``asset/prompt/02-anti-patterns.yaml``,
 3. the codemod ``dartwork_mpl.lint._MIGRATE_HINTS``.
 
@@ -21,7 +21,7 @@ from importlib.resources import files
 import pytest
 import yaml
 
-from dartwork_mpl import _REMOVED_NAMES
+from dartwork_mpl._compat import _REMOVED_NAMES
 from dartwork_mpl.lint import _MIGRATE_HINTS
 
 

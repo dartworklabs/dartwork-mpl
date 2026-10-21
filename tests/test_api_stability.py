@@ -7,7 +7,7 @@ import inspect
 import pytest
 
 import dartwork_mpl as dm
-from dartwork_mpl import _DEPRECATED_NAMES, _REMOVED_NAMES, _Deprecation
+from dartwork_mpl._compat import _DEPRECATED_NAMES, _REMOVED_NAMES, _Deprecation
 
 
 def test_deprecated_and_removed_are_disjoint() -> None:

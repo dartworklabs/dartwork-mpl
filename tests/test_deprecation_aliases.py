@@ -116,7 +116,7 @@ def test_xplot_submodule_import_raises():
 
 def _removed_names_from_source() -> dict[str, tuple[str, str]]:
     """The runtime removal map itself — so this guard can never lag it."""
-    from dartwork_mpl import _REMOVED_NAMES
+    from dartwork_mpl._compat import _REMOVED_NAMES
 
     return _REMOVED_NAMES
 
