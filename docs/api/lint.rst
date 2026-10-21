@@ -3,12 +3,11 @@ Lint (``dm.lint``)
 
 Static checker against the dartwork-mpl anti-pattern catalog (0.4+).
 
-``dm.lint`` runs a Python source string through the 15-rule
-anti-pattern catalog shipped at
-``asset/prompt/02-anti-patterns.yaml``. It is the same engine
-behind the MCP ``lint_dartwork_mpl_code`` tool and the
-``dartwork-mpl lint`` CLI, so editor integrations, CI, and AI
-assistants all see the same violations.
+``dm.lint_code(source)`` checks a Python source string against the
+anti-pattern catalog shipped at ``asset/prompt/02-anti-patterns.yaml``.
+The MCP ``lint_dartwork_mpl_code`` tool uses the same engine, so
+Python callers and AI assistants see the same violations.
+No lint CLI is provided.
 
 Quick start
 -----------
@@ -16,6 +15,7 @@ Quick start
 .. code-block:: python
 
    import dartwork_mpl as dm
+   from dartwork_mpl.lint import format_report
 
    source = """
    import matplotlib.pyplot as plt
@@ -23,18 +23,25 @@ Quick start
    plt.tight_layout()
    """
 
-   issues = dm.lint.lint(source)
+   issues = dm.lint_code(source)
    for issue in issues:
        print(issue.rule_id, issue.severity, issue.message)
 
    # Or render a human-readable report
-   print(dm.lint.format_report(issues))
+   print(format_report(issues))
 
 Each rule entry has an ``id``, ``severity``
 (``critical`` / ``warning`` / ``info``), a short ``message``, an
 optional ``why`` blurb, and a recommended ``fix_suggestion``. The
 catalog lives in YAML so adding or tightening a rule is a single
 file edit; the lint engine reloads it on call.
+
+``load_rules(path)`` rejects unsupported severity, detector kind/check,
+invalid regex patterns, and malformed containers or required fields with
+contextual ``ValueError`` at load time. Previously some invalid catalogs
+loaded successfully or raised incidental access errors. Empty mappings
+and empty ``rules`` lists remain valid; filesystem and YAML syntax errors
+retain their native exceptions.
 
 Catalog highlights
 ------------------
@@ -47,7 +54,7 @@ Catalog highlights
   rejected because they carry no unit.
 - ``tight-layout`` — ``plt.tight_layout()`` is forbidden; use
   ``dm.simple_layout(fig)``.
-- ``width-token`` — deprecated 0.3 width tokens
+- ``deprecated-width-token`` — deprecated 0.3 width tokens
   (``dm.SW`` / ``MW`` / ``TW`` / ``DW``).
 - ``oversize-width`` — widths beyond 17 cm break most page layouts.
 - ``fontsize-literal`` / ``linewidth-literal`` — pass numeric values

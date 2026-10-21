@@ -27,7 +27,7 @@ import io
 import json
 import re
 import tokenize
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -88,33 +88,74 @@ def load_rules(path: Path | None = None) -> list[Rule]:
     Returns
     -------
     list[Rule]
-        Parsed rule objects in declaration order.
+        Parsed rule objects in declaration order. An empty mapping or
+        explicit empty ``rules`` list returns an empty list.
+
+    Raises
+    ------
+    ValueError
+        If catalog containers or required rule fields are malformed,
+        severity is unsupported, a detector kind/check is unsupported,
+        or a regex is not a valid string pattern. These invalid-input
+        errors are reported at load time with catalog/rule context.
+        Filesystem and YAML syntax errors retain their native exceptions.
     """
     yaml_path = path or _RULES_PATH
     with yaml_path.open("r", encoding="utf-8") as fh:
         data = yaml.safe_load(fh)
+    if not isinstance(data, Mapping):
+        raise ValueError(f"Catalog {yaml_path} must be a mapping")
+    entries = data.get("rules", [])
+    if not isinstance(entries, list):
+        raise ValueError(f"Catalog {yaml_path} rules must be a list")
     rules: list[Rule] = []
-    for entry in data.get("rules", []):
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, Mapping):
+            raise ValueError(f"Rule entry {index} must be a mapping")
+        context = f"rule {entry.get('id')!r} (entry {index})"
+        for field in ("id", "message"):
+            if not isinstance(entry.get(field), str):
+                raise ValueError(
+                    f"Invalid {field} in {context}: expected a string"
+                )
+        severity = entry.get("severity")
+        if not isinstance(severity, str) or severity not in {
+            "critical",
+            "warning",
+            "info",
+        }:
+            raise ValueError(f"Unsupported severity {severity!r} in {context}")
         detector = entry.get("detector", {})
+        if not isinstance(detector, Mapping):
+            raise ValueError(f"Detector in {context} must be a mapping")
         kind = detector.get("kind", "regex")
         if kind == "regex":
-            value = detector["pattern"]
+            value = detector.get("pattern")
+            if not isinstance(value, str):
+                raise ValueError(
+                    f"Invalid regex in {context}: expected a string pattern"
+                )
+            try:
+                re.compile(value, re.MULTILINE)
+            except re.error as exc:
+                raise ValueError(f"Invalid regex in {context}: {exc}") from exc
         elif kind == "substring":
-            value = detector["literal"]
-        elif kind == "ast" and detector.get("check") in {
+            value = detector.get("literal")
+            if not isinstance(value, str):
+                raise ValueError(
+                    f"Invalid substring in {context}: expected a string literal"
+                )
+        elif kind == "ast" and detector.get("check") in (
             "colormap-name",
             "color-name",
-        }:
+        ):
             value = detector["check"]
         else:
-            raise ValueError(
-                f"Unsupported detector kind {kind!r} in rule "
-                f"{entry.get('id')!r}"
-            )
+            raise ValueError(f"Unsupported detector kind {kind!r} in {context}")
         rules.append(
             Rule(
                 id=entry["id"],
-                severity=entry["severity"],
+                severity=severity,
                 detector_kind=kind,
                 detector_value=value,
                 message=entry["message"].rstrip(),
