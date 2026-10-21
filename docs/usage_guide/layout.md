@@ -162,6 +162,7 @@ the explicit native local margins above are the legitimate margin path.
 The physical padding is a starting point for these labels, not a universal fit;
 render, measure and adjust local margins if content does not fit.
 
+<!-- snippet: no-run -->
 ```python
 from dataclasses import asdict
 from pathlib import Path
