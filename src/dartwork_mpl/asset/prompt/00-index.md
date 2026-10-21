@@ -72,7 +72,12 @@ is not a measurement of a particular display, perceived brightness, or OKLab
   question only for material target ambiguity. Discover native properties
   with `type(artist)`, getters, `properties()`, `help(type(artist))` or the
   official documentation for the installed matplotlib version.
-- After plotting, call `dm.simple_layout(fig)`. For MCP, leave native `fig`
+- After plotting ordinary figures, call `dm.simple_layout(fig)`. Exact
+  whole-canvas SubFigure recipes instead use native local GridSpec margins;
+  passing a SubFigure to this helper raises missing `get_size_inches`.
+  Nested GridSpec calls adjust root outer margins, not local regions. Measure
+  container allocations and Axes data/content bounds separately (see recipes).
+  For MCP, leave native `fig`
   for `render_plot` to persist. For standalone scripts/notebooks, save with
   `dm.save_formats(fig, "name")` or `dm.save_and_show(fig, "name")`.
 - Never call `tight_layout()`, `plt.style.use()`, raw `figsize=(w, h)`
@@ -117,3 +122,37 @@ is not a measurement of a particular display, perceived brightness, or OKLab
    seven days on the same configured server/store; MCP URIs are not web links
    or local paths. For standalone Python/notebooks, validate the native Figure
    as needed and save with `dm.save_formats` or `dm.save_and_show`.
+
+## Installed Python route (no MCP or checkout)
+
+```python
+from importlib.resources import files
+from pathlib import Path
+import dartwork_mpl as dm
+
+print(dm.get_agent_doc("AGENTS"))
+print(dm.get_prompt("01-policy"))
+print(dm.get_prompt("03-recipes"))
+print(dm.get_prompt("02-anti-patterns"))
+
+# Ranking metadata is available without MCP; source_path is repo-relative.
+root = files("dartwork_mpl").joinpath("asset", "prompt", "05-templates")
+Path("output").mkdir(exist_ok=True)
+for tier in ("basic", "advanced"):
+    match = dm.find_template("line time series", top_k=1, tier=tier)[0]
+    folder = root if tier == "basic" else root.joinpath("advanced")
+    source = folder.joinpath(f"{match['template_id']}.py").read_text(encoding="utf-8")
+    print(tier, match["template_id"], match["source_path"])
+    Path(f"output/template-{tier}.py").write_text(source, encoding="utf-8")
+    print(source)  # inspect/adapt; retrieving a template does not execute it
+```
+
+Use `dm.lint_code(code)` for code findings and `dm.validate_figure(fig)` for
+the full visual warning list (retain detail and `CHECK_FAILED`). Then save
+PNG/PDF via `dm.save_formats`; it returns `None`, not a clean-validation result.
+Open the actual PNG and PDF/rasterized page before claiming image review.
+Keep source/full reports/artifacts per revision using separate stems. The
+`03-recipes` guide contains an executable review loop and native panel layouts.
+`dm.validate_data` filters NaN/Inf rows by default; use `allow_nan=True` plus
+separate shape/alignment/infinity checks for meaningful gaps. It is distinct
+from MCP `validate_plot_data`, which takes chart-specific JSON.

@@ -219,6 +219,47 @@ See [native styling recipes](recipes.md). Agents can read the bundled native
 examples with `dm.get_prompt("03-recipes")` in installed Python, or the MCP
 `dartwork-mpl://guide/recipes` resource; `dm.get_prompt("01-policy")` gives the policy.
 
+## Installed Python agents: read, execute, review, revise
+
+No MCP or repository checkout is required. Read installed guidance and both
+template tiers with existing Python APIs:
+
+```python
+from importlib.resources import files
+from pathlib import Path
+import dartwork_mpl as dm
+
+print(dm.get_agent_doc("AGENTS"))
+print(dm.get_prompt("01-policy"))
+print(dm.get_prompt("03-recipes"))
+print(dm.get_prompt("02-anti-patterns"))
+
+# Ranking metadata is available without MCP; source_path is repo-relative.
+root = files("dartwork_mpl").joinpath("asset", "prompt", "05-templates")
+Path("output").mkdir(exist_ok=True)
+for tier in ("basic", "advanced"):
+    match = dm.find_template("line time series", top_k=1, tier=tier)[0]
+    folder = root if tier == "basic" else root.joinpath("advanced")
+    source = folder.joinpath(f"{match['template_id']}.py").read_text(encoding="utf-8")
+    print(tier, match["template_id"], match["source_path"])
+    Path(f"output/template-{tier}.py").write_text(source, encoding="utf-8")
+    print(source)  # inspect/adapt; retrieving a template does not execute it
+```
+
+Use `dm.lint_code(code)` for source findings and `dm.validate_figure(fig)` for
+the full visual warning list. Keep all fields, including `CHECK_FAILED`;
+`dm.save_formats` returns `None`, not a validation report. Save PNG/PDF with
+`bbox_inches=None`, open the real images and inspect them before handoff.
+`dm.validate_data` filters NaN/Inf rows by default; to keep missing-reading line
+gaps use `allow_nan=True` with separate shape/alignment/finite-value checks.
+It is distinct from the MCP `validate_plot_data` tool.
+
+Follow the [complete executable workflow](../ai/installed_python.md) for a
+native Figure, full report, PNG/PDF review and a separate-stem revision.
+Use [native multi-panel recipes](layout.md#native-multi-panel-layouts) or
+`dm.get_prompt("03-recipes")` for equal grids, global ratios, spans/nesting and
+whole-canvas 70:30 or independent 40:60 / 70:30 rows.
+
 ## Creating Figures with `dm.figsize`
 
 `dm.figsize(width, aspect)` is the sanctioned way to size a figure. It

@@ -30,7 +30,10 @@ def validate_data(
     require_same_length : bool
         Whether x and y must have the same length
     allow_nan : bool
-        Whether to allow NaN values
+        Whether to retain NaN/Inf values. The default filters them and aligned
+        rows, which can close a missing-observation line gap. Use True for
+        intentional gaps, with separate shape, alignment, infinity and domain
+        checks; this option alone does not validate those properties.
     min_points : int
         Minimum number of data points required
 

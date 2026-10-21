@@ -58,7 +58,12 @@ dm.save_formats(fig, "out", formats=("png", "pdf"))     # 4. multi-format save
   units don't have to match — `dm.figsize("13cm", "5in")` is fine.
 - **Never call**: `plt.tight_layout()`, raw `figsize=(w, h)` tuples on
   `plt.subplots` / `plt.figure`. Always wrap with `dm.figsize(...)`
-  and call `dm.simple_layout(fig)` after plotting.
+  and call `dm.simple_layout(fig)` after plotting ordinary figures. For exact
+  whole-canvas SubFigure containers, use native local margins instead; do not
+  pass a SubFigure to this helper (missing `get_size_inches`). Nested GridSpec
+  calls adjust root outer margins, not independent local regions. Measure
+  container and Axes bounds separately; read `dm.get_prompt("03-recipes")` for
+  executable equal, ratio, spanning/nested and 70:30 / row-specific recipes.
 - **Presets supply defaults; explicit user customization wins.** Use
   native matplotlib artist properties for any chart type, including line
   colors/widths/dashes, spines, ticks, tick labels, axis labels and grids.
@@ -125,6 +130,22 @@ the MCP guide for hashes, seven-day child copies and deletion limits.
 When MCP is unavailable, the same anti-pattern catalog is reachable
 through `dm.list_prompts()` + `dm.get_prompt("02-anti-patterns")`
 inside Python.
+
+## Installed Python agents (no MCP or checkout)
+
+Read `dm.get_agent_doc("AGENTS")` and `dm.get_prompt("00-index")` first; the
+index shows how to retrieve bundled basic/advanced source with
+`importlib.resources` (`find_template.source_path` is repo-relative metadata).
+`dm.lint_code(code)` returns source findings; `dm.validate_figure(fig)` returns
+full visual findings, including `detail` and incomplete-check `CHECK_FAILED`.
+`dm.validate_data` filters NaN/Inf rows by default: keep meaningful line gaps
+with `allow_nan=True` plus separate shape/alignment/infinity checks. It is
+not the MCP `validate_plot_data` tool. Follow the executable Python review loop
+in `dm.get_prompt("03-recipes")` or [installed workflow](docs/ai/installed_python.md):
+native Figure → full report → saved PNG/PDF → actual image review → separate
+revision stem and handoff. `save_formats` returns `None`, saves on warnings,
+and is not clean-validation evidence. Retain exact source, reports, original
+artifacts and advisory warnings; report any missing image-review capability.
 
 ## Design documents and agent work
 

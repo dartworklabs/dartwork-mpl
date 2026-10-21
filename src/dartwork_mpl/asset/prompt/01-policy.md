@@ -116,6 +116,12 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
 - `dm.auto_layout(fig)` was removed in 0.5.4 — call `simple_layout`
   directly (the legacy `padding` inches arg maps to `margin`).
 - `tight_layout()` is **forbidden** (lint critical).
+- For nested GridSpec, this helper updates root outer margins; it does not
+  solve nested local margins. `SubFigure` is not accepted (missing
+  `get_size_inches`). For exact whole-canvas allocations use native SubFigure
+  containers, zero inter-container gaps and native local GridSpec margins.
+  Measure container bounds, Axes data bounds and content extents separately;
+  do not silently alter allocations. See the executable `03-recipes` guide.
 
 ## Color
 
@@ -216,3 +222,17 @@ Apply the preset first, then retained overrides, then local artist edits.
   different look — it restores the previous style on exit so the
   preset does not leak into later figures.
 - Never call `plt.style.use(...)`.
+
+## Installed Python validation and handoff
+
+Read `dm.get_agent_doc("AGENTS")`, policy/recipes with `dm.get_prompt`, then
+retrieve basic/advanced template source via `importlib.resources` as shown in
+`00-index` (`find_template.source_path` is repository-relative metadata).
+`dm.validate_data` defaults to filtering NaN/Inf rows; preserve meaningful
+blank/NaN line gaps with `allow_nan=True` plus separate shape/alignment and
+infinity checks. This is distinct from MCP `validate_plot_data`.
+Run `dm.lint_code(code)` and capture the full `dm.validate_figure(fig)` warning
+objects, including detail and `CHECK_FAILED`; save exact source/full reports
+and PNG/PDF, open the actual images, then revise to a new stem and review again.
+`save_formats` returns `None` and still saves on warnings; it cannot certify
+clean validation. Report retained advisories and any unavailable image review.
