@@ -169,6 +169,8 @@ exclude_patterns = [
     # provenance but not part of the public documentation surface. They
     # were emitting toctree / xref warnings on every build.
     "superpowers/**",
+    # The structure refactor plan and its audits (ADR 0005), same reason.
+    "development/structure-refactor/**",
     "development/api_audit.md",
     "development/config-roadmap.md",
     "development/naming-audit.md",
