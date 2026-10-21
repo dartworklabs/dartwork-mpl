@@ -37,7 +37,7 @@ jobs:
       # Required pre-commit checks own all-files Ruff lint and formatting.
       # Keep package typing in the locked all-extras environment here.
       - name: Type check (mypy)
-        run: uv run mypy src/dartwork_mpl/
+        run: uv run mypy
 
   test:
     runs-on: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-24.04"]' || '["self-hosted", "ml-main"]') }}

@@ -765,6 +765,7 @@ ui = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "dartwork-mpl", extra = ["mcp", "notebook", "ui"] },
     { name = "diagrams" },
     { name = "joblib" },
     { name = "mypy" },
@@ -808,6 +809,7 @@ provides-extras = ["notebook", "mcp", "ui"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "dartwork-mpl", extras = ["mcp", "notebook", "ui"] },
     { name = "diagrams", specifier = ">=0.24.4" },
     { name = "joblib", specifier = ">=1.3.0" },
     { name = "mypy", specifier = ">=1.8.0" },
