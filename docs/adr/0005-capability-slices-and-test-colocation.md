@@ -10,7 +10,7 @@ orphan: true
 | **날짜** | 2026-10-22 |
 | **결정자** | 프로젝트 소유자 (2026-10-22 구조 리팩터 요청: "인터페이스를 제외한 파일트리·타입 전부, limn 수준으로 엄격하게") |
 | **대체** | 없음. ADR 0001–0004의 동결은 그대로 유지한다 |
-| **근거 자료** | [구조 리팩터 계획](../development/structure-refactor/README.md), 같은 폴더의 `audit/*.md` 6개 |
+| **근거 자료** | [구조 리팩터 계획](https://github.com/dartworklabs/dartwork-mpl/blob/main/docs/development/structure-refactor/README.md), 같은 폴더의 `audit/*.md` 6개 |
 
 ## 맥락
 
@@ -104,5 +104,5 @@ orphan: true
 
 ## 결과
 
-- 실행 순서와 진행 상태는 [구조 리팩터 계획](../development/structure-refactor/README.md)이 맡는다.
+- 실행 순서와 진행 상태는 [구조 리팩터 계획](https://github.com/dartworklabs/dartwork-mpl/blob/main/docs/development/structure-refactor/README.md)이 맡는다.
 - 이 ADR이 다루지 않는 사람 결정은 계획 문서의 "사람 결정 대기" 절에 모은다.

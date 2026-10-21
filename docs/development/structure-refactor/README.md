@@ -27,8 +27,8 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | lint·format | `uv run ruff check . && uv run ruff format --check .` | 0 |
 | 타입 | `uv run mypy` (G3 이후. 그 전에는 `uv run mypy src/dartwork_mpl/`, all-extras 환경) | 0 |
 | 테스트 | `uv run pytest -q -n auto` (전체) | 실패 0 |
-| 테스트 id 보존 | `uv run python tools/test_id_map.py --against origin/main` (G1 이후) | lost 0, duplicated 0 |
-| 경계 | `uv run python tools/check_boundaries.py` (G4 이후) | 위반 0, `DEBT`는 증가 금지 |
+| 테스트 id 보존 | `uv run python scripts/test_id_map.py --ref origin/main` (G1 이후) | lost 0, duplicated 0 |
+| 경계 | `uv run python scripts/check_boundaries.py` (G4 이후) | 위반 0, `DEBT`는 증가 금지 |
 | 색 동결 | `tests/test_shipped_colors_hash.py`, `python -m dartwork_mpl._colors._build --check` | 통과. digest 재생성 금지 |
 | MCP 동결 | `tests/test_mcp.py`, discovery 비교 테스트, artifact digest 테스트 | 통과. 기대값 재생성 금지 |
 | 패키징 | `uv build --wheel` 후 wheel 안 `/tests/` 0 (G2 이후 테스트로 고정) | 0 |
@@ -46,10 +46,10 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 
 | ID | 내용 | 상태 |
 | --- | --- | --- |
-| G1 | `tools/test_id_map.py`: collect-only id를 기준 ref와 비교(lost/duplicated/new) + 자체 테스트 | 대기 |
+| G1 | `scripts/test_id_map.py`: collect-only id를 기준 ref와 비교(lost/duplicated/new) + 자체 테스트 | 대기 |
 | G2 | 동거 수집 기반: 루트 `conftest.py`로 격리 fixture 승격, `tests/support/`, `--import-mode=importlib`, `testpaths=["tests","src/dartwork_mpl"]`, CI·release `pytest` 경로 제거, wheel `**/tests/**` exclude + 패키징 테스트, coverage omit | 대기 |
 | G3 | mypy: `files`, 동거 테스트 exclude, `exhaustive-match`, `strict_equality`, 완화 override를 모듈 단위로 축소, dev 그룹에 extras, 명령 `uv run mypy` 통일 | 대기 |
-| G4 | `tools/check_boundaries.py` + `tests/architecture/test_boundaries.py`(주입 위반 5종 실패, 슬라이스 내부 import 통과), 현재 위반 `DEBT` 등재, CI 단계 | 대기 |
+| G4 | `scripts/check_boundaries.py` + `tests/architecture/test_boundaries.py`(주입 위반 5종 실패, 슬라이스 내부 import 통과), 현재 위반 `DEBT` 등재, CI 단계 | 대기 |
 | G5 | 루트 테스트 재배치: `tests/{contracts,docs,tools,architecture}/`, `scripts/check_integration_junit.py` 보호 목록과 CLAUDE.md·AGENTS.md 경로 갱신 | 대기 |
 
 ### 2단계 — 이동 (영역마다 순서대로. 영역끼리는 병행할 수 있다. 각 PR은 그 슬라이스의 테스트도 함께 옮긴다)
