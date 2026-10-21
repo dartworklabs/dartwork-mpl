@@ -441,3 +441,65 @@ def test_revision_closed_parse_and_delete_disabled_wire(tmp_path):
             )
 
     asyncio.run(workflow())
+
+
+def test_log_overrun_has_only_incomplete_bounded_report_and_no_publication(
+    tmp_path, monkeypatch
+):
+    """A scaled real-child overrun uses existing metadata and never publishes clipped success."""
+    from dartwork_mpl.mcp.artifacts import policy
+
+    monkeypatch.setattr(policy, "MAX_BUNDLE_BYTES", 128 * 1024)
+    root = tmp_path / "store"
+
+    async def workflow():
+        """Traverse genuine MCP delivery and ensure refused logs create no artifact resources."""
+        async with fastmcp.Client(server(root)) as client:
+            result = await client.call_tool(
+                "render_plot",
+                {
+                    "code": SOURCE
+                    + "import os\nos.write(1, b'x' * 200000)\nos.write(2, b' y ' * 70000)\n"
+                },
+                raise_on_error=False,
+            )
+            value = metadata(result, "artifact_too_large")
+            assert "files" not in value
+            report = value["report"]
+            assert report["status"] == "exec_error"
+            assert report["validation_complete"] is False
+            assert "_artifact_logs_too_large" not in report
+            assert report["stderr"].startswith("  stderr  \n y ")
+            for channel in ("stdout", "stderr"):
+                assert len(report[channel].encode()) <= 65536
+                assert (
+                    f"{channel} truncated; retained prefix only"
+                    in report[channel]
+                )
+            assert not list(root.glob("*/manifest.json"))
+
+    asyncio.run(workflow())
+
+
+def test_moderate_artifact_logs_remain_exact_original_channels(tmp_path):
+    """Successful 200,000-byte channels retain original processed logs and whitespace."""
+
+    async def workflow():
+        """Read the persisted report through its native MCP resource."""
+        async with fastmcp.Client(server(tmp_path / "store")) as client:
+            source = SOURCE[: SOURCE.index("print('  stdout")]
+            source += "import os\nos.write(1, b'x' * 200000)\nos.write(2, b' ' + b'y' * 199998 + b' ')\n"
+            result = await client.call_tool("render_plot", {"code": source})
+            value = metadata(result)
+            report_uri = next(
+                entry["uri"]
+                for entry in value["files"]
+                if entry["name"] == "report.json"
+            )
+            blocks = await client.read_resource(report_uri)
+            report = json.loads(blocks[0].text)
+            assert report["stdout"] == "x" * 200000
+            assert report["stderr"] == " " + "y" * 199998 + " "
+            assert "truncated" not in report["stdout"] + report["stderr"]
+
+    asyncio.run(workflow())

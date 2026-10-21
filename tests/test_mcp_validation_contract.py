@@ -240,3 +240,332 @@ def test_private_channel_is_absolute_and_cleaned(ending, status, timeout):
     assert channel.is_absolute()
     assert not channel.exists()
     assert not channel.parent.exists()
+
+
+@pytest.mark.parametrize(
+    ("code", "timeout"),
+    [(None, 20), ("\ud800", 20), ("#" * (512 * 1024 + 1), 20)]
+    + [
+        ("pass", value)
+        for value in (
+            True,
+            "2",
+            0,
+            -1,
+            121,
+            float("nan"),
+            float("inf"),
+            10**1000,
+        )
+    ],
+    ids=[
+        "nontext",
+        "surrogate",
+        "oversource",
+        "bool",
+        "string",
+        "zero",
+        "negative",
+        "over120",
+        "nan",
+        "infinity",
+        "huge_integer",
+    ],
+)
+def test_source_timeout_refusal_precedes_execution(code, timeout):
+    """Malformed admission returns the legacy safe envelope before lint or launch."""
+    try:
+        result = _validate(
+            code, timeout_seconds=timeout, chart_type_hint="line"
+        )
+    except Exception as exc:
+        result = exc
+    assert isinstance(result, dict), type(result).__name__
+    assert result["status"] == "exec_error", result
+    assert result["validation_complete"] is False
+    assert (
+        result["lint"]
+        == result["visual_warnings"]
+        == result["failed_checks"]
+        == []
+    )
+    assert result["stdout"] == ""
+    assert result["semantic_warnings"] == []
+    assert "code:" in result["stderr"] or "timeout_seconds:" in result["stderr"]
+
+
+@pytest.mark.parametrize("fault", [MemoryError, RecursionError])
+def test_handleable_ast_failure_never_executes_source(
+    tmp_path, monkeypatch, fault
+):
+    """MCP preflight recognizes resource failures even when lint swallows them."""
+    import ast
+
+    marker = tmp_path / "executed"
+    code = f"from pathlib import Path\nPath({str(marker)!r}).touch()"
+
+    def fail_parse(*args, **kwargs):
+        """Inject a handleable parser fault without exhausting host resources."""
+        raise fault("private parser diagnostic must not leak")
+
+    tool = asyncio.run(_server().get_tool("validate_generated_plot"))
+    with monkeypatch.context() as patch:
+        patch.setattr(ast, "parse", fail_parse)
+        try:
+            result = tool.fn(code)
+        except Exception as exc:
+            result = exc
+    assert not marker.exists()
+    assert isinstance(result, dict), type(result).__name__
+    assert result["status"] == "exec_error"
+    assert result["exc_type"] == fault.__name__
+    assert "private parser diagnostic" not in result["stderr"]
+    assert result["validation_complete"] is False
+
+
+def test_legacy_log_overrun_retains_bounded_marked_prefixes():
+    """Actual low-level writes cannot accumulate unbounded validator diagnostics."""
+    result = _validate(
+        "import os\nos.write(1, b'x' * 200000)\nos.write(2, b'y' * 200000)\n"
+    )
+    assert result["status"] == "no_figure", result
+    for channel, prefix in (("stdout", "x"), ("stderr", "y")):
+        assert len(result[channel].encode("utf-8")) <= 65536
+        assert result[channel].startswith(prefix * 100)
+        assert result[channel].endswith(
+            f"\n[dartwork-mpl: {channel} truncated; retained prefix only]\n"
+        )
+
+
+@pytest.mark.parametrize("artifact", [False, True])
+@pytest.mark.parametrize("times_out", [False, True])
+def test_completed_and_timeout_logs_equal_finite_baseline_rules(
+    tmp_path, artifact, times_out
+):
+    """Real children retain CR/LF/invalid-UTF8/space semantics for the selected outcome."""
+    from dartwork_mpl.mcp.execution import ExecutionRejected, export_plot
+
+    stdout = b"A\r\nB\rC\xe2\x82\xac\xff"
+    stderr = b" \r\nE\rF\xe2\x82\xac\xff \r\n"
+    code = (
+        f"import os, time\nos.write(1, {stdout[:8]!r})\ntime.sleep(0.01)\nos.write(1, {stdout[8:]!r})\nos.write(2, {stderr!r})\n"
+        + ("time.sleep(60)\n" if times_out else "")
+    )
+    timeout = 3 if times_out else 20
+    if artifact:
+        outcome = export_plot(
+            code, "fig", timeout, None, output_stem=tmp_path / "plot"
+        )
+        assert isinstance(outcome, ExecutionRejected), outcome
+        result = outcome.report
+    else:
+        result = _validate(code, timeout_seconds=timeout)
+    expected_out = stdout.decode("utf-8", "replace")
+    expected_err = stderr.decode("utf-8", "replace")
+    if not times_out:
+        expected_out = expected_out.replace("\r\n", "\n").replace("\r", "\n")
+        expected_err = expected_err.replace("\r\n", "\n").replace("\r", "\n")
+    if not artifact:
+        expected_err = expected_err.strip()
+        if times_out:
+            expected_err += "\nSubprocess exceeded 3s timeout."
+    assert result["status"] == ("timeout" if times_out else "no_figure"), result
+    assert result["stdout"] == expected_out
+    assert result["stderr"] == expected_err
+
+
+def test_seeded_collector_prefix_and_saturation_properties():
+    """Every incremental update stays bounded; complete selected logs match an independent decoder."""
+    import random
+
+    from dartwork_mpl.mcp._capture import _Capture
+
+    rng = random.Random(49821)
+    alphabet = (
+        b"a",
+        b" ",
+        b"\r",
+        b"\n",
+        b"\xff",
+        "한".encode(),
+        b"\xe2",
+        b"\x82\xac",
+    )
+    for _ in range(32):
+        chunks = [
+            rng.choice(alphabet) * rng.randrange(1, 1500) for _ in range(64)
+        ]
+        raw = b"".join(chunks)
+        capture = _Capture(None, True)
+        for channel in ("stdout", "stderr"):
+            for chunk in chunks:
+                for start in range(0, len(chunk), 8192):
+                    capture.feed(channel, chunk[start : start + 8192])
+                    assert capture.retained_bytes <= 6 * 65536, (
+                        49821,
+                        len(raw),
+                    )
+            capture.feed(channel, b"", final=True)
+        decoded = raw.decode("utf-8", "replace")
+        for view, reference in (
+            (capture.timeout, decoded),
+            (capture.normal, decoded.replace("\r\n", "\n").replace("\r", "\n")),
+        ):
+            out, err = view.logs()
+            for actual, expected, channel in (
+                (out, reference, "stdout"),
+                (err, reference.strip(), "stderr"),
+            ):
+                assert len(actual.encode()) <= 65536, (49821, len(raw))
+                marker = f"\n[dartwork-mpl: {channel} truncated; retained prefix only]\n"
+                if len(expected.encode()) <= 65536:
+                    assert actual == expected, (49821, len(raw))
+                else:
+                    assert actual.endswith(marker), (49821, len(raw))
+                    assert expected.startswith(actual[: -len(marker)]), (
+                        49821,
+                        len(raw),
+                    )
+
+
+@pytest.mark.parametrize("extra", [0, 1])
+def test_artifact_log_budget_selects_completion_view_at_exact_and_first_excess(
+    extra,
+):
+    """Unused timeout-view overflow cannot refuse normalized under-cap success."""
+    from dartwork_mpl.mcp._capture import _Capture
+
+    capture = _Capture(128, False)
+    raw = b"\r\n" * (128 + extra)
+    for start in range(0, len(raw), 3):
+        capture.feed("stdout", raw[start : start + 3])
+        assert capture.retained_bytes <= 256
+    for channel in ("stdout", "stderr"):
+        capture.feed(channel, b"", final=True)
+    assert capture.normal.overrun is bool(extra)
+    assert capture.timeout.overrun is True
+    if not extra:
+        assert capture.normal.logs() == ("\n" * 128, "")
+    else:
+        assert (
+            "stdout truncated; retained prefix only" in capture.normal.logs()[0]
+        )
+
+
+def test_seeded_source_timeout_parser_is_total_and_boundary_controls_execute():
+    """Finite generated source/options always parse or refuse, with exact legal controls."""
+    import random
+
+    from dartwork_mpl.mcp.artifacts.policy import (
+        InvalidRequest,
+        RenderRequest,
+        parse_render_request,
+    )
+
+    rng = random.Random(49822)
+    values = [
+        None,
+        True,
+        False,
+        "3",
+        {},
+        [],
+        0,
+        -1,
+        121,
+        float("nan"),
+        float("inf"),
+        10**1000,
+    ]
+    for _ in range(100):
+        code = rng.choice(["pass", "#한글", "\udfff", 5, None])
+        timeout = rng.choice([*values, rng.uniform(0.01, 120)])
+        result = parse_render_request(code, timeout_seconds=timeout)
+        assert isinstance(result, (RenderRequest, InvalidRequest)), (
+            49822,
+            repr(code),
+            timeout,
+        )
+    assert isinstance(
+        parse_render_request("#" * 524288, timeout_seconds=120), RenderRequest
+    )
+    assert isinstance(parse_render_request("#" * 524289), InvalidRequest)
+    result = _validate(
+        "#" * 524288,
+        figure_var="not an identifier",
+        chart_type_hint=False,
+        timeout_seconds=120,
+    )
+    assert result["status"] == "no_figure", result
+    assert result["semantic_warnings"] == []
+
+
+def test_timeout_diagnostic_counts_marker_and_timeout_decoration_inside_byte_cap():
+    """Actual invalid-byte expansion and timeout decoration share the selected channel budget."""
+    result = _validate(
+        "import os, time\nos.write(2, b'\\xff' * 30000)\ntime.sleep(60)\n",
+        timeout_seconds=2,
+    )
+    assert result["status"] == "timeout", result
+    assert len(result["stderr"].encode()) <= 65536
+    assert "stderr truncated; retained prefix only]" in result["stderr"]
+    assert result["stderr"].endswith("Subprocess exceeded 2s timeout.")
+
+
+@pytest.mark.parametrize("fault", [MemoryError, RecursionError])
+def test_escaping_lint_resource_failure_returns_safe_incomplete_error(
+    monkeypatch, fault
+):
+    """Resource exceptions escaping lint are also refused after a successful preflight."""
+    import dartwork_mpl.lint as lint_module
+
+    def failed_lint(code):
+        """Inject only the existing lint surface's handleable resource error."""
+        raise fault("private lint details")
+
+    monkeypatch.setattr(lint_module, "lint", failed_lint)
+    result = _validate("pass")
+    assert result["status"] == "exec_error"
+    assert result["exc_type"] == fault.__name__
+    assert result["validation_complete"] is False
+    assert "private lint details" not in result["stderr"]
+
+
+def test_legacy_nonidentifier_and_false_hint_keep_last_pyplot_fallback():
+    """Source/timeout reuse does not import render's unrelated option restrictions."""
+    result = _validate(
+        _FIGURE, figure_var="not an identifier", chart_type_hint=False
+    )
+    assert result["status"] == "ok", result
+    assert result["validation_complete"] is True
+    assert result["semantic_warnings"] == []
+
+
+@pytest.mark.parametrize("budget", [0, -1, False])
+def test_internal_capture_budget_rejects_impossible_constructor_values(budget):
+    """Private capture state cannot be created with a nonpositive or boolean shared budget."""
+    from dartwork_mpl.mcp._capture import _Capture
+
+    with pytest.raises(ValueError, match="positive integer"):
+        _Capture(budget, False)
+
+
+def test_child_deadline_survives_early_stdout_stderr_close():
+    """Closing both pipes cannot turn the direct child's wait into an unbounded wait."""
+    import sys
+    import time
+
+    from dartwork_mpl.mcp._capture import run_child
+
+    start = time.monotonic()
+    result = run_child(
+        [
+            sys.executable,
+            "-c",
+            "import os,time; os.close(1); os.close(2); time.sleep(0.3)",
+        ],
+        timeout_seconds=0.05,
+    )
+    assert result.timed_out is True
+    assert result.returncode != 0
+    assert time.monotonic() - start < 1

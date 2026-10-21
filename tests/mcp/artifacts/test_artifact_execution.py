@@ -5,7 +5,6 @@ import json
 import os
 import random
 import re
-import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -13,6 +12,7 @@ import matplotlib.image as mpimg
 import pytest
 
 pytest.importorskip("fastmcp")
+from dartwork_mpl.mcp import _capture
 from dartwork_mpl.mcp.execution import (
     ExecutionRejected,
     ExportedPlot,
@@ -261,14 +261,14 @@ print('frame checked')
     )
     before = submitted.encode("utf-8")
     observed = []
-    real_run = subprocess.run
+    real_run = _capture.run_child
 
     def observe_run(args, **kwargs):
         """Observe the subprocess adapter's wire bytes while still executing its real child."""
-        observed.append((args, kwargs["input"], kwargs.get("env")))
+        observed.append((args, kwargs["stdin"], kwargs.get("env")))
         return real_run(args, **kwargs)
 
-    monkeypatch.setattr(subprocess, "run", observe_run)
+    monkeypatch.setattr(_capture, "run_child", observe_run)
     result = export_plot(
         submitted,
         "fig",
@@ -361,17 +361,17 @@ def test_malformed_private_frame_rejects_without_executing_source(
     """Damaged private transport returns the existing exec_error and removes its checkpoint."""
     marker = input_workspace / "executed"
     code = f"from pathlib import Path\nPath({str(marker)!r}).touch()"
-    real_run = subprocess.run
+    real_run = _capture.run_child
     channels = []
 
     def damage_frame(args, **kwargs):
         """Inject a damaged wire header at this subprocess adapter while running its real child."""
         channels.append(Path(args[3]).parent)
-        _, source = kwargs["input"].split("\n", 1)
-        kwargs["input"] = header + "\n" + source
+        _, source = kwargs["stdin"].split("\n", 1)
+        kwargs["stdin"] = header + "\n" + source
         return real_run(args, **kwargs)
 
-    monkeypatch.setattr(subprocess, "run", damage_frame)
+    monkeypatch.setattr(_capture, "run_child", damage_frame)
     result = export_plot(
         code,
         "fig",
