@@ -7,7 +7,7 @@ raised a bare AttributeError):
 
 1. runtime ``dartwork_mpl._compat._REMOVED_NAMES`` (``__getattr__`` hints),
 2. the lint SSOT ``asset/prompt/02-anti-patterns.yaml``,
-3. the codemod ``dartwork_mpl.lint._MIGRATE_HINTS``.
+3. the codemod ``dartwork_mpl.lint.migrate._MIGRATE_HINTS``.
 
 These tests assert that every runtime-removed name is *mentioned* by at
 least one lint rule and one codemod hint, so a future removal added to
@@ -22,7 +22,7 @@ import pytest
 import yaml
 
 from dartwork_mpl._compat import _REMOVED_NAMES
-from dartwork_mpl.lint import _MIGRATE_HINTS
+from dartwork_mpl.lint.migrate import _MIGRATE_HINTS
 
 
 def _lint_rules_corpus() -> str:
