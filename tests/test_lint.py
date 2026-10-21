@@ -2,7 +2,22 @@
 
 from __future__ import annotations
 
-from dartwork_mpl.lint import Issue, Rule, format_report, lint, load_rules
+import ast
+import io
+import random
+import tokenize
+
+import pytest
+
+from dartwork_mpl.lint import (
+    Issue,
+    Rule,
+    apply_lint_fixes,
+    format_report,
+    lint,
+    load_rules,
+    migrate_legacy_code,
+)
 
 GOOD_CODE = """
 import matplotlib.pyplot as plt
@@ -617,3 +632,562 @@ class TestLiteralColorNames:
             assert "invalid-color-name" not in ids
             assert "invalid-colormap-name" in ids
         assert name not in get_named_colors_mapping()
+
+
+class TestExecutableDetectionBoundary:
+    """Built-in executable rules need syntax and an applicable receiver."""
+
+    @pytest.mark.parametrize(
+        "code",
+        [
+            '# plt.tight_layout()\ntext = "plt.tight_layout()"\n',
+            "def tight_layout():\n    return 'local'\ntight_layout()\n",
+            "import matplotlib.pyplot as plt\n"
+            "class Local:\n"
+            "    def tight_layout(self):\n        return 'local'\n"
+            "plt = Local()\nresult = plt.tight_layout()\n",
+            "class Local:\n"
+            "    def draw(self):\n        self.fig.tight_layout()\n",
+            "ax.figure.tight_layout()\n",
+        ],
+        ids=[
+            "mentions",
+            "local-definition",
+            "rebound-plt",
+            "self",
+            "ax-figure",
+        ],
+    )
+    def test_no_false_critical_for_mentions_or_unproven_methods(self, code):
+        """C1 mentions and local/attribute methods are not matplotlib calls."""
+        assert not [
+            issue for issue in lint(code) if issue.severity == "critical"
+        ]
+
+    def test_aliases_keep_style_and_scalar_axes_advisories(self):
+        """C1 pyplot/dm aliases and a direct single Axes retain useful findings."""
+        code = (
+            "import matplotlib.pyplot as p\nimport dartwork_mpl as d\n"
+            'p.style.use("ggplot")\n'
+            'fig, ax2 = p.subplots(figsize=d.figsize("20cm", "standard"))\n'
+            'ax2.plot([0, 1], [0, 1], color="#ff0000", '
+            "fontsize=12, linewidth=2)\n"
+        )
+        issues = {issue.rule_id: issue for issue in lint(code)}
+        assert issues.keys() >= {
+            "plt-style-use",
+            "fontsize-literal",
+            "linewidth-literal",
+            "raw-hex-color",
+            "oversize-width",
+        }
+        assert issues["plt-style-use"].severity == "warning"
+        assert issues["fontsize-literal"].severity == "warning"
+
+    @pytest.mark.parametrize(
+        "binding", ["ax = other\n", "del ax\n", "ax, unused = other\n"]
+    )
+    def test_explicit_conflicts_suppress_canonical_axes_convention(
+        self, binding
+    ):
+        """An omitted import is conventional; an explicit conflicting binding is not."""
+        code = binding + 'ax.plot(x, y, color="dc.not_a_color", fontsize=12)\n'
+        assert not {issue.rule_id for issue in lint(code)} & {
+            "invalid-color-name",
+            "fontsize-literal",
+        }
+
+    def test_parameters_shadow_all_canonical_receiver_conventions(self):
+        """Parameters denote caller objects rather than implicit plotting bindings."""
+        code = (
+            "def draw(plt, ax, fig, dm):\n"
+            "    plt.tight_layout()\n"
+            '    ax.plot(x, y, color="dc.not_a_color", fontsize=12)\n'
+            '    fig.savefig("out.png")\n'
+            "    dm.subplots()\n"
+        )
+        assert lint(code) == []
+
+    @pytest.mark.parametrize(
+        "arguments", ["2, 1", "nrows=count", "1, 1, squeeze=False"]
+    )
+    def test_array_or_unknown_axes_do_not_gain_scalar_axes_rules(
+        self, arguments
+    ):
+        """A direct subplots tuple alone cannot prove its second target is scalar."""
+        code = (
+            "import matplotlib.pyplot as p\n"
+            f"f, ax2 = p.subplots({arguments})\n"
+            'ax2.plot(x, y, color="dc.not_a_color", fontsize=12)\n'
+        )
+        assert not {issue.rule_id for issue in lint(code)} & {
+            "invalid-color-name",
+            "fontsize-literal",
+        }
+
+    def test_text_only_and_custom_detectors_keep_their_contract(self):
+        """Syntax-aware built-ins do not suppress deliberate caller text searches."""
+        code = '# Zero-Resize plt.tight_layout()\ntext = "plt.tight_layout()"\n'
+        assert any(
+            issue.rule_id == "zero-resize-mention" for issue in lint(code)
+        )
+        rules = [
+            Rule("custom-regex", "warning", "regex", r"tight_layout", "seen"),
+            Rule("custom-text", "info", "substring", "plt.", "seen"),
+        ]
+        issues = lint(code, rules=rules)
+        assert [issue.rule_id for issue in issues].count("custom-regex") == 2
+        assert [issue.rule_id for issue in issues].count("custom-text") == 2
+
+
+class TestProvenAutoFix:
+    """A fix requires local binding proof and preserves every refused source byte."""
+
+    @pytest.mark.parametrize(
+        ("imports", "construction", "owner"),
+        [
+            ("import matplotlib.pyplot as p", "f = p.figure()", "d"),
+            ("from matplotlib import pyplot as p", "f, ax = p.subplots()", "d"),
+            ("import matplotlib.pyplot", "f = matplotlib.pyplot.figure()", "d"),
+        ],
+    )
+    def test_complete_proven_figure_call_is_fixed(
+        self, imports, construction, owner
+    ):
+        """Proven pyplot Figure constructors preserve the actual receiver."""
+        code = f"{imports}\nimport dartwork_mpl as {owner}\n{construction}\nf.tight_layout()\n"
+        fixed, applied, unfixed = apply_lint_fixes(code)
+        assert fixed == code.replace(
+            "f.tight_layout()", f"{owner}.simple_layout(f)"
+        )
+        assert [(issue.rule_id, issue.column) for issue in applied] == [
+            ("tight-layout", code.index("tight_layout"))
+        ]
+        assert unfixed == []
+        assert apply_lint_fixes(fixed) == (fixed, [], [])
+
+    @pytest.mark.parametrize(
+        ("imports", "constructor"),
+        [
+            ("from matplotlib.figure import Figure as F", "F"),
+            ("from matplotlib.figure import Figure", "Figure"),
+        ],
+    )
+    def test_bare_figure_constructor_is_detected_but_exactly_unfixed(
+        self, imports, constructor
+    ):
+        """A working native bare Figure cannot be rewritten to a renderer failure."""
+        # These two constructors formerly shared the safe-fix expectation above.
+        # Native tight_layout supplies a renderer; dm.simple_layout requires one.
+        code = (
+            f"{imports}\nimport dartwork_mpl as d\n"
+            f'f = {constructor}(figsize=d.figsize("13cm", "standard"))\n'
+            "f.add_subplot().plot([0, 1], [0, 1])\n"
+            "f.tight_layout()\nresult = len(f.axes)\n"
+        )
+        fixed, applied, unfixed = apply_lint_fixes(code)
+        assert fixed == code
+        assert applied == []
+        assert [(issue.rule_id, issue.severity) for issue in unfixed] == [
+            ("tight-layout", "critical")
+        ]
+        for source in (code, fixed):
+            namespace = {}
+            exec(compile(source, "trusted-bare-figure.py", "exec"), namespace)
+            assert namespace["result"] == 1
+
+    def test_nonaliased_dm_import_uses_its_real_bound_name(self):
+        """A nonaliased package import establishes dartwork_mpl, never an invented dm."""
+        code = (
+            "import matplotlib.pyplot as p\nimport dartwork_mpl\n"
+            'p.style.use("scientific")\nf = p.figure()\nf.tight_layout()\n'
+        )
+        fixed, applied, unfixed = apply_lint_fixes(code)
+        assert fixed == code.replace(
+            "p.style.use", "dartwork_mpl.style.use"
+        ).replace("f.tight_layout()", "dartwork_mpl.simple_layout(f)")
+        assert len(applied) == 2
+        assert unfixed == []
+
+    @pytest.mark.parametrize(
+        "statement",
+        [
+            "self.fig.tight_layout()",
+            "ax.figure.tight_layout()",
+            "plt.tight_layout()",
+            "unknown.tight_layout()",
+            "fig.tight_layout(pad=1)",
+            "fig.tight_layout(*args)",
+        ],
+    )
+    def test_unsafe_layout_calls_are_exactly_refused(self, statement):
+        """C2 refuses attribute suffix edits, implicit figures, and nonempty calls."""
+        code = (
+            "import matplotlib.pyplot as plt\nimport dartwork_mpl as dm\n"
+            "fig, ax = plt.subplots()\n" + statement + "\n"
+        )
+        fixed, applied, unfixed = apply_lint_fixes(code)
+        assert fixed == code
+        assert applied == []
+        tight = [issue for issue in unfixed if issue.rule_id == "tight-layout"]
+        if statement.startswith(("fig.", "plt.")):
+            assert len(tight) == 1 and tight[0].severity == "critical"
+        else:
+            assert tight == []
+
+    @pytest.mark.parametrize(
+        "code",
+        [
+            "import matplotlib.pyplot as plt\nplt.tight_layout()\n",
+            "import matplotlib.pyplot as plt\nfig = plt.figure()\nfig.tight_layout()\n",
+            "import dartwork_mpl as dm\nfig.tight_layout()\n",
+            'import matplotlib.pyplot as plt\nplt.style.use("scientific")\n',
+        ],
+    )
+    def test_missing_names_do_not_gain_invented_bindings(self, code):
+        """Canonical snippet diagnostics do not authorize an autofix binding."""
+        fixed, applied, unfixed = apply_lint_fixes(code)
+        assert fixed == code
+        assert applied == []
+        assert unfixed
+
+    @pytest.mark.parametrize(
+        "argument", ['"ggplot"', '"not-a-preset"', '["scientific"]', "name"]
+    )
+    def test_unsupported_or_dynamic_style_is_unfixed(self, argument):
+        """C2 ggplot and nonliteral or list requests cannot become dm presets."""
+        code = (
+            "import matplotlib.pyplot as p\nimport dartwork_mpl as d\n"
+            f"p.style.use({argument})\n"
+        )
+        fixed, applied, unfixed = apply_lint_fixes(code)
+        assert fixed == code
+        assert applied == []
+        assert [(issue.rule_id, issue.severity) for issue in unfixed] == [
+            ("plt-style-use", "warning")
+        ]
+
+    @pytest.mark.parametrize(
+        "preset", ["scientific", "presentation-kr", "report"]
+    )
+    def test_supported_single_literal_style_uses_proven_alias(self, preset):
+        """Supported preset families keep literal spelling and receiver aliases."""
+        code = (
+            "from matplotlib import pyplot as chart\n"
+            "import dartwork_mpl as drawing\n"
+            f"chart.style.use({preset!r})\n"
+        )
+        fixed, applied, unfixed = apply_lint_fixes(code)
+        assert fixed == code.replace("chart.style.use", "drawing.style.use")
+        assert len(applied) == 1
+        assert applied[0].column == code.index("chart.style.use")
+        assert unfixed == []
+
+    @pytest.mark.parametrize(
+        "interruption",
+        [
+            "p = other\n",
+            "d = other\n",
+            "del p\n",
+            "del d\n",
+            "p.style = other\n",
+            "p.style.use = replacement\n",
+            "d.style.use = replacement\n",
+        ],
+    )
+    def test_rebound_or_overwritten_style_owners_do_not_authorize_fix(
+        self, interruption
+    ):
+        """Relevant owner and attribute writes prevent safe-looking style edits."""
+        code = (
+            "import matplotlib.pyplot as p\nimport dartwork_mpl as d\n"
+            + interruption
+            + 'p.style.use("scientific")\n'
+        )
+        assert apply_lint_fixes(code)[0:2] == (code, [])
+
+    @pytest.mark.parametrize(
+        "interruption",
+        [
+            "fig = other\n",
+            "del fig\n",
+            "dm = other\n",
+            "fig.tight_layout = replacement\n",
+            "dm.simple_layout = replacement\n",
+            "if condition:\n    fig = other\n",
+            "for fig in others:\n    pass\n",
+            "try:\n    fig = other\nexcept Exception:\n    pass\n",
+        ],
+    )
+    def test_invalidated_bindings_never_authorize_layout_edits(
+        self, interruption
+    ):
+        """Assignments, deletes, relevant writes and ambiguous flow remove proof."""
+        code = (
+            "import matplotlib.pyplot as plt\nimport dartwork_mpl as dm\n"
+            "fig = plt.figure()\n" + interruption + "fig.tight_layout()\n"
+        )
+        fixed, applied, _unfixed = apply_lint_fixes(code)
+        assert fixed == code
+        assert applied == []
+
+    @pytest.mark.parametrize(
+        "code",
+        [
+            "import matplotlib.pyplot as p\nimport dartwork_mpl as d\n"
+            "f = p.figure()\ndef draw():\n    f.tight_layout()\n",
+            "def draw(f, d):\n    f.tight_layout()\n",
+            "import matplotlib.pyplot as p\nimport dartwork_mpl as d\n"
+            "f = p.figure()\ng = f\ng.tight_layout()\n",
+            "import matplotlib.pyplot as p\nimport dartwork_mpl as d\n"
+            "f = p.figure()\ndef draw():\n    global f, d\n    f.tight_layout()\n",
+            "def outer():\n    import matplotlib.pyplot as p\n"
+            "    import dartwork_mpl as d\n    f = p.figure()\n"
+            "    def inner():\n        nonlocal f\n        f.tight_layout()\n",
+        ],
+    )
+    def test_outer_scope_and_arbitrary_aliases_supply_no_fix_proof(self, code):
+        """The initial proof envelope has neither inherited nor inferred aliases."""
+        assert apply_lint_fixes(code)[0:2] == (code, [])
+
+    def test_later_unconditional_import_and_constructor_restore_proof(self):
+        """A new explicit binding after conflicting flow permits a later local fix."""
+        code = (
+            "import matplotlib.pyplot as p\nimport dartwork_mpl as d\n"
+            "f = p.figure()\nif condition:\n    f = other\n"
+            "import matplotlib.pyplot as p\nimport dartwork_mpl as d\n"
+            "f = p.figure()\nf.tight_layout()\n"
+        )
+        fixed, applied, unfixed = apply_lint_fixes(code)
+        assert fixed == code.replace("f.tight_layout()", "d.simple_layout(f)")
+        assert len(applied) == 1
+        assert unfixed == []
+
+    def test_local_imports_in_complete_function_scope_authorize_fix(self):
+        """Local direct imports dominate a call without relying on outer facts."""
+        code = (
+            "def draw():\n    import matplotlib.pyplot as p\n"
+            "    import dartwork_mpl as d\n    f = p.figure()\n"
+            "    f.tight_layout()\n"
+        )
+        fixed, applied, unfixed = apply_lint_fixes(code)
+        assert fixed == code.replace("f.tight_layout()", "d.simple_layout(f)")
+        assert len(applied) == 1
+        assert unfixed == []
+
+    def test_fixed_trusted_fixture_runs_actual_style_and_layout(self):
+        """Only this owned fixture executes; accepted fixes reach real dm paths."""
+        code = (
+            "import matplotlib.pyplot as p\nimport dartwork_mpl as d\n"
+            'p.style.use("scientific")\n'
+            'f, ax2 = p.subplots(figsize=d.figsize("13cm", "standard"))\n'
+            "ax2.plot([0, 1], [0, 1])\nf.tight_layout()\n"
+            "result = len(f.axes)\n"
+        )
+        fixed, applied, unfixed = apply_lint_fixes(code)
+        assert len(applied) == 2 and unfixed == []
+        namespace = {}
+        exec(compile(fixed, "trusted-fixed-fixture.py", "exec"), namespace)
+        assert namespace["result"] == 1
+
+
+class TestAutoFixOccurrenceIdentity:
+    """Applied locations refer to the original and survivors to the returned source."""
+
+    def test_mixed_same_line_unicode_crlf_occurrences_do_not_overlap(self):
+        """A moved unfixable occurrence cannot be reported as applied as well."""
+        code = (
+            "import matplotlib.pyplot as p\r\nimport dartwork_mpl as d\r\n"
+            "label = '한글 🧭'\r\nf = p.figure()\r\n"
+            "f.tight_layout(); f.tight_layout(pad=1); f.tight_layout(); "
+            'p.style.use("scientific"); p.style.use("ggplot")\r\n'
+        )
+        first = code.index("tight_layout")
+        survivor = code.index("tight_layout", first + 1)
+        third = code.index("tight_layout", survivor + 1)
+        style = code.index('p.style.use("scientific")')
+        fixed, applied, unfixed = apply_lint_fixes(code)
+        applied_keys = {(issue.rule_id, issue.column) for issue in applied}
+        assert applied_keys == {
+            ("tight-layout", first),
+            ("tight-layout", third),
+            ("plt-style-use", style),
+        }
+        assert len(applied) == 3
+        original_survivors = {
+            ("tight-layout", survivor),
+            ("plt-style-use", code.index('p.style.use("ggplot")')),
+        }
+        assert applied_keys.isdisjoint(original_survivors)
+        assert {(issue.rule_id, issue.column) for issue in unfixed} == {
+            ("tight-layout", fixed.index("tight_layout")),
+            ("plt-style-use", fixed.index('p.style.use("ggplot")')),
+        }
+        assert unfixed == lint(fixed)
+        assert fixed.count("\r\n") == code.count("\r\n")
+        assert apply_lint_fixes(fixed) == (fixed, [], unfixed)
+
+    def test_canonical_c2_comment_is_neither_applied_nor_unfixed(self):
+        """C2 fixes one real call while retaining the inert later comment exactly."""
+        code = (
+            "import matplotlib.pyplot as plt\nimport dartwork_mpl as dm\n"
+            'dm.style.use("scientific")\n'
+            'fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))\n'
+            "fig.tight_layout()\n# plt.tight_layout()\nresult = len(fig.axes)\n"
+        )
+        fixed, applied, unfixed = apply_lint_fixes(code)
+        assert fixed == code.replace(
+            "fig.tight_layout()", "dm.simple_layout(fig)"
+        )
+        assert len(applied) == 1
+        assert applied[0].column == code.index("tight_layout")
+        assert unfixed == []
+
+
+def _literal_values(source):
+    """Read original literal values as an independent preservation oracle."""
+    return [
+        node.value
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Constant)
+    ]
+
+
+def _comments(source):
+    """Read comment tokens without executing the submitted Python source."""
+    return [
+        token.string
+        for token in tokenize.generate_tokens(io.StringIO(source).readline)
+        if token.type == tokenize.COMMENT
+    ]
+
+
+def _seeded_static_fixtures():
+    """Build exactly 48 bounded valid fixtures using the accepted seed 314159."""
+    rng = random.Random(314159)
+    fixtures = []
+    for index in range(48):
+        pyplot = rng.choice(["plt", "p", "chart"])
+        package = rng.choice(["dm", "d", "drawing"])
+        figure = rng.choice(["fig", "f", "canvas"])
+        newline = rng.choice(["\n", "\r\n"])
+        prefix = (
+            f"import matplotlib.pyplot as {pyplot}\n"
+            f"import dartwork_mpl as {package}\n"
+            "label = '한글 🧭'\n"
+            'note = """literal\nplt.tight_layout()\ndm.SW\n'
+            'plt.style.use("scientific")\n"""\n'
+            "# plt.tight_layout(); dm.SW; color='#ff0000'\n"
+        )
+        style = (
+            f'{pyplot}.style.use(\n    "scientific"\n)'
+            if index % 2
+            else f'{pyplot}.style.use("scientific")'
+        )
+        creation = rng.choice(
+            [
+                f"{figure} = {pyplot}.figure()",
+                f"{figure}, axis = {pyplot}.subplots()",
+            ]
+        )
+        call = (
+            f"{figure}.tight_layout(\n)"
+            if index % 4 == 0
+            else f"{figure}.tight_layout()"
+        )
+        count = 2 if index % 3 == 0 else 1
+        body = f"{style}\n{creation}\n" + "; ".join([call] * count) + "\n"
+        fixed_body = body.replace(
+            f"{pyplot}.style.use", f"{package}.style.use"
+        ).replace(call, f"{package}.simple_layout({figure})")
+        suffix = (
+            f'{figure}.tight_layout(pad=0.2); {pyplot}.style.use("ggplot")\n'
+            "width = \\\n    dm.SW\n"
+        )
+        source = (prefix + body + suffix).replace("\n", newline)
+        expected = (prefix + fixed_body + suffix).replace("\n", newline)
+        fixtures.append((source, expected, count + 1, newline))
+    return fixtures
+
+
+class TestSeededSourcePreservation:
+    """Bounded generated sources pin byte, literal, identity and refusal invariants."""
+
+    def test_48_valid_sources_preserve_literals_bytes_and_idempotence(self):
+        """Seed 314159 covers aliases, repeats, Unicode, CRLF and continuations."""
+        fixtures = _seeded_static_fixtures()
+        assert len(fixtures) == 48
+        for index, (source, expected, expected_count, newline) in enumerate(
+            fixtures
+        ):
+            evidence = f"seed=314159 case={index} source={source!r}"
+            before = lint(source)
+            fixed, applied, unfixed = apply_lint_fixes(source)
+            assert fixed == expected, evidence
+            assert len(applied) == expected_count, evidence
+            assert {(i.rule_id, i.column) for i in applied} <= {
+                (i.rule_id, i.column) for i in before
+            }, evidence
+            assert unfixed == lint(fixed), evidence
+            assert (
+                len([i for i in unfixed if i.rule_id == "tight-layout"]) == 1
+            ), evidence
+            assert (
+                len([i for i in unfixed if i.rule_id == "plt-style-use"]) == 1
+            ), evidence
+            assert _literal_values(fixed) == _literal_values(source), evidence
+            assert _comments(fixed) == _comments(source), evidence
+            assert apply_lint_fixes(fixed) == (fixed, [], unfixed), evidence
+            migrated = migrate_legacy_code(source)
+            try:
+                ast.parse(migrated)
+            except (SyntaxError, ValueError) as error:
+                pytest.fail(f"{evidence} migration became invalid: {error}")
+            assert _literal_values(migrated) == _literal_values(source), (
+                evidence
+            )
+            assert all(
+                comment in _comments(migrated) for comment in _comments(source)
+            ), evidence
+            assert migrate_legacy_code(migrated) == migrated, evidence
+            if newline == "\r\n":
+                assert "\n" not in migrated.replace("\r\n", ""), evidence
+
+    def test_24_malformed_sources_are_exactly_refused(self):
+        """AST and tokenization failures preserve every original character."""
+        mutations = [
+            "\n(\n",
+            '\ntext = """unterminated\n',
+            "\nif :\n    pass\n",
+            "\n    unexpected_indent = 1\n",
+            "\ntext = 'unterminated\n",
+            "\x00",
+        ]
+        for index, (source, _expected, _count, _newline) in enumerate(
+            _seeded_static_fixtures()[:24]
+        ):
+            malformed = source + mutations[index % len(mutations)]
+            evidence = f"seed=314159 malformed={index} source={malformed!r}"
+            with pytest.raises((SyntaxError, ValueError)):
+                ast.parse(malformed)
+            fixed, applied, unfixed = apply_lint_fixes(malformed)
+            assert fixed == malformed, evidence
+            assert applied == [], evidence
+            assert not [
+                issue for issue in unfixed if issue.severity == "critical"
+            ], evidence
+            assert migrate_legacy_code(malformed) == malformed, evidence
+
+    def test_all_static_functions_leave_untrusted_source_inert(self, tmp_path):
+        """Scanning/fixing/migrating may parse a source string but never execute it."""
+        marker = tmp_path / "must-not-execute"
+        source = (
+            "import nonexistent_untrusted_module\n"
+            f'open({str(marker)!r}, "w").write("executed")\n'
+            "import matplotlib.pyplot as p\nimport dartwork_mpl as d\n"
+            'p.style.use("scientific")\nf = p.figure()\nf.tight_layout()\n'
+        )
+        lint(source)
+        apply_lint_fixes(source)
+        migrate_legacy_code(source)
+        assert not marker.exists()

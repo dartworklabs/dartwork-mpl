@@ -23,8 +23,11 @@ __all__ = [
 ]
 
 import ast
+import io
+import json
 import re
-from collections.abc import Callable, Iterable
+import tokenize
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -54,7 +57,7 @@ class Rule:
 class Issue:
     """A detected violation.
 
-    ``column`` is the absolute byte offset of the match in the source
+    ``column`` is the absolute character offset of the match in the source
     string (0-indexed). It is included to disambiguate multiple
     violations on the same line — ``(rule_id, line)`` alone collapses
     them and hides the second occurrence from auto-fixers.
@@ -258,59 +261,619 @@ def _source_registrations(tree: ast.AST, check: str) -> set[str] | None:
     return registrations
 
 
-def _scan_literal_names(code: str, rule: Rule) -> list[Issue]:
-    """Check literal names in conventional ax/plt calls, without evaluation.
+_CANONICAL = {"plt": "pyplot", "ax": "axes", "fig": "figure", "dm": "dm"}
+_RELEVANT_ATTRIBUTES = {
+    "tight_layout",
+    "simple_layout",
+    "style",
+    "figure",
+    "subplots",
+    "savefig",
+    "show",
+    "figsize",
+    "get_cmap",
+    *_CMAP_CALLS,
+    *_COLOR_CALLS,
+}
 
-    Imported pyplot aliases are recognized too. Other receivers, dynamic
-    expressions, and syntactically incomplete source are left unchecked.
-    Live registries and explicit inline registrations are accepted; source
-    registration statements are inspected as syntax and never executed.
-    """
+
+def _bound_names(node: ast.AST) -> set[str]:
+    """Find writes in this lexical scope without inheriting nested scope bodies."""
+    names: set[str] = set()
+
+    def visit(current: ast.AST) -> None:
+        """Collect binding syntax only, never evaluate a target or declaration."""
+        if isinstance(
+            current, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+        ):
+            names.add(current.name)
+            return
+        if isinstance(current, ast.Name) and isinstance(
+            current.ctx, (ast.Store, ast.Del)
+        ):
+            names.add(current.id)
+        elif isinstance(current, ast.arg):
+            names.add(current.arg)
+        elif isinstance(current, (ast.Global, ast.Nonlocal)):
+            names.update(current.names)
+        elif isinstance(current, ast.Import):
+            names.update(
+                alias.asname or alias.name.split(".")[0]
+                for alias in current.names
+            )
+        elif isinstance(current, ast.ImportFrom):
+            names.update(alias.asname or alias.name for alias in current.names)
+        elif (
+            isinstance(current, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar))
+            and current.name
+        ):
+            names.add(current.name)
+        elif isinstance(current, ast.MatchMapping) and current.rest:
+            names.add(current.rest)
+        for child in ast.iter_child_nodes(current):
+            visit(child)
+
+    for child in ast.iter_child_nodes(node):
+        visit(child)
+    return names
+
+
+class _Syntax:
+    """Parsed source, character spans and conservative per-expression binding facts."""
+
+    def __init__(
+        self, code: str, tree: ast.Module, tokens: list[tokenize.TokenInfo]
+    ):
+        """Read lexical syntax once; each scope starts without inherited proof."""
+        self.code = code
+        self.tree = tree
+        self.tokens = tokens
+        self.lines = code.splitlines(keepends=True)
+        self.starts = [0]
+        for line in self.lines:
+            self.starts.append(self.starts[-1] + len(line))
+        self.facts: dict[int, dict[str, str | None]] = {}
+        self.parents = {
+            id(child): node
+            for node in ast.walk(tree)
+            for child in ast.iter_child_nodes(node)
+        }
+        self.protected = [
+            (self.token_offset(token.start), self.token_offset(token.end))
+            for token in tokens
+            if token.type in (tokenize.STRING, tokenize.COMMENT)
+        ]
+        self.protected.extend(
+            self.span(node)
+            for node in ast.walk(tree)
+            if isinstance(node, ast.JoinedStr)
+        )
+        self._statements(tree.body, {})
+
+    def token_offset(self, point: tuple[int, int]) -> int:
+        """Convert tokenizer character columns to absolute source offsets."""
+        row, column = point
+        return self.starts[min(row - 1, len(self.starts) - 1)] + column
+
+    def offset(self, row: int, column: int) -> int:
+        """Convert AST UTF-8 byte columns without normalizing source bytes."""
+        line = self.lines[row - 1]
+        return self.starts[row - 1] + len(
+            line.encode("utf-8")[:column].decode("utf-8")
+        )
+
+    def span(self, node: ast.AST) -> tuple[int, int]:
+        """Return the complete AST node's half-open character span."""
+        if not isinstance(node, (ast.expr, ast.stmt, ast.keyword)):
+            raise ValueError(
+                "A source span requires an expression or statement"
+            )
+        if node.end_lineno is None or node.end_col_offset is None:
+            raise ValueError("The parsed node has no complete source span")
+        return (
+            self.offset(node.lineno, node.col_offset),
+            self.offset(node.end_lineno, node.end_col_offset),
+        )
+
+    def kind(self, node: ast.AST, *, conventional: bool = False) -> str | None:
+        """Resolve only explicit imported owners or a canonical snippet receiver."""
+        name = _dotted_name(node) if isinstance(node, ast.expr) else ""
+        env = self.facts.get(id(node), {})
+        if name in env:
+            kind = env[name]
+            # A native constructor proves Figure type, not renderer readiness.
+            return "figure" if kind == "bare-figure" else kind
+        if conventional and isinstance(node, ast.Name) and node.id not in env:
+            return _CANONICAL.get(node.id)
+        return None
+
+    def owner(
+        self, node: ast.expr, *, conventional: bool = False
+    ) -> tuple[ast.expr, list[str], str | None]:
+        """Split an attribute chain at an explicitly recognized module/object owner."""
+        parts: list[str] = []
+        current = node
+        while True:
+            kind = self.kind(current, conventional=conventional)
+            if kind:
+                return current, list(reversed(parts)), kind
+            if not isinstance(current, ast.Attribute):
+                return current, [], None
+            parts.append(current.attr)
+            current = current.value
+
+    def _invalidate(self, target: ast.AST, env: dict[str, str | None]) -> None:
+        """Invalidate explicit writes, including relevant tracked attribute writes."""
+        if isinstance(target, ast.Name):
+            for key in list(env):
+                if key == target.id or key.startswith(target.id + "."):
+                    env[key] = None
+            env[target.id] = None
+        elif isinstance(target, (ast.Tuple, ast.List)):
+            for item in target.elts:
+                self._invalidate(item, env)
+        elif isinstance(target, ast.Starred):
+            self._invalidate(target.value, env)
+        elif isinstance(target, ast.Attribute):
+            dotted = _dotted_name(target)
+            owners = sorted({*env, *_CANONICAL}, key=len, reverse=True)
+            for owner in owners:
+                if not dotted.startswith(owner + "."):
+                    continue
+                attribute = dotted[len(owner) + 1 :].split(".")[0]
+                kind = env.get(owner, _CANONICAL.get(owner))
+                if attribute in _RELEVANT_ATTRIBUTES or kind == "dm":
+                    self._invalidate(ast.Name(id=owner.split(".")[0]), env)
+                break
+
+    def _expression(
+        self, node: ast.AST | None, env: dict[str, str | None]
+    ) -> None:
+        """Record facts at each expression without carrying proof into new scopes."""
+        if node is None:
+            return
+        self.facts[id(node)] = dict(env)
+        if isinstance(node, ast.Lambda):
+            local = dict.fromkeys(_bound_names(node))
+            self._expression(node.body, local)
+            return
+        if isinstance(
+            node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)
+        ):
+            local = dict.fromkeys(_bound_names(node))
+            for child in ast.iter_child_nodes(node):
+                self._expression(child, local)
+            return
+        for child in ast.iter_child_nodes(node):
+            self._expression(child, env)
+        if isinstance(node, ast.NamedExpr):
+            self._invalidate(node.target, env)
+
+    def _constructor(self, value: ast.expr | None) -> str | None:
+        """Recognize direct Figure and pyplot construction, never arbitrary aliases."""
+        if not isinstance(value, ast.Call):
+            return None
+        if self.kind(value.func) == "figure-class":
+            return "bare-figure"
+        if (
+            isinstance(value.func, ast.Attribute)
+            and self.kind(value.func.value) == "pyplot"
+            and value.func.attr in {"figure", "subplots"}
+        ):
+            return value.func.attr
+        return None
+
+    def _assign(
+        self,
+        target: ast.expr,
+        value: ast.expr | None,
+        env: dict[str, str | None],
+    ) -> None:
+        """Commit only direct constructor facts after invalidating assignment targets."""
+        self._invalidate(target, env)
+        kind = self._constructor(value)
+        if isinstance(target, ast.Name) and kind in {"figure", "bare-figure"}:
+            env[target.id] = kind
+        elif (
+            kind == "subplots"
+            and isinstance(target, (ast.Tuple, ast.List))
+            and len(target.elts) == 2
+        ):
+            figure, axes = target.elts
+            if isinstance(figure, ast.Name):
+                env[figure.id] = "figure"
+            if (
+                isinstance(axes, ast.Name)
+                and isinstance(value, ast.Call)
+                and _single_axes(value)
+            ):
+                env[axes.id] = "axes"
+
+    def _statements(
+        self, statements: list[ast.stmt], env: dict[str, str | None]
+    ) -> None:
+        """Follow straight-line statements, invalidating ambiguous-flow writes."""
+        for statement in statements:
+            self.facts[id(statement)] = dict(env)
+            if isinstance(statement, ast.Import):
+                for alias in statement.names:
+                    bound = alias.asname or alias.name.split(".")[0]
+                    self._invalidate(ast.Name(id=bound), env)
+                    if alias.name == "matplotlib.pyplot":
+                        env[alias.asname or alias.name] = "pyplot"
+                    elif alias.name == "dartwork_mpl":
+                        env[bound] = "dm"
+            elif isinstance(statement, ast.ImportFrom):
+                if any(alias.name == "*" for alias in statement.names):
+                    for name in {*env, *_CANONICAL}:
+                        env[name] = None
+                for alias in statement.names:
+                    bound = alias.asname or alias.name
+                    self._invalidate(ast.Name(id=bound), env)
+                    if (
+                        statement.module == "matplotlib"
+                        and alias.name == "pyplot"
+                    ):
+                        env[bound] = "pyplot"
+                    elif (
+                        statement.module == "matplotlib.figure"
+                        and alias.name == "Figure"
+                    ):
+                        env[bound] = "figure-class"
+            elif isinstance(
+                statement, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)
+            ):
+                for child in ast.iter_child_nodes(statement):
+                    if not isinstance(child, ast.stmt):
+                        self._expression(child, env)
+                self._invalidate(ast.Name(id=statement.name), env)
+                local = dict.fromkeys(_bound_names(statement))
+                self._statements(statement.body, local)
+            elif isinstance(statement, ast.Assign):
+                self._expression(statement.value, env)
+                for target in statement.targets:
+                    self._expression(target, env)
+                    self._assign(target, statement.value, env)
+            elif isinstance(statement, ast.AnnAssign):
+                self._expression(statement.annotation, env)
+                self._expression(statement.value, env)
+                self._expression(statement.target, env)
+                self._assign(statement.target, statement.value, env)
+            elif isinstance(statement, (ast.AugAssign, ast.Delete)):
+                self._expression(statement, env)
+                targets = (
+                    statement.targets
+                    if isinstance(statement, ast.Delete)
+                    else [statement.target]
+                )
+                for target in targets:
+                    self._invalidate(target, env)
+            elif isinstance(statement, (ast.Global, ast.Nonlocal)):
+                for name in statement.names:
+                    self._invalidate(ast.Name(id=name), env)
+            elif (
+                isinstance(
+                    statement,
+                    (
+                        ast.If,
+                        ast.For,
+                        ast.AsyncFor,
+                        ast.While,
+                        ast.Try,
+                        ast.With,
+                        ast.AsyncWith,
+                        ast.Match,
+                    ),
+                )
+                or type(statement).__name__ == "TryStar"
+            ):
+                names = _bound_names(statement)
+                for name in names:
+                    self._invalidate(ast.Name(id=name), env)
+                for node in ast.walk(statement):
+                    if isinstance(node, ast.Attribute) and isinstance(
+                        node.ctx, (ast.Store, ast.Del)
+                    ):
+                        self._invalidate(node, env)
+                for child in ast.iter_child_nodes(statement):
+                    if isinstance(child, ast.stmt):
+                        self._statements([child], dict(env))
+                    else:
+                        self._flow_child(child, dict(env))
+                for name in names:
+                    self._invalidate(ast.Name(id=name), env)
+            else:
+                self._expression(statement, env)
+
+    def _flow_child(self, node: ast.AST, env: dict[str, str | None]) -> None:
+        """Read handlers/cases under conservative flow facts without merging proof."""
+        self.facts[id(node)] = dict(env)
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, ast.stmt):
+                self._statements([child], env)
+            else:
+                self._expression(child, env)
+
+
+def _single_axes(call: ast.Call) -> bool:
+    """Prove only a statically single, squeezed subplots result is scalar Axes."""
+    if len(call.args) > 2 or any(
+        keyword.arg is None for keyword in call.keywords
+    ):
+        return False
+    values = {
+        "nrows": call.args[0] if call.args else None,
+        "ncols": call.args[1] if len(call.args) > 1 else None,
+    }
+    for keyword in call.keywords:
+        if keyword.arg in values:
+            values[keyword.arg] = keyword.value
+        elif keyword.arg == "squeeze" and not (
+            isinstance(keyword.value, ast.Constant)
+            and keyword.value.value is True
+        ):
+            return False
+    return all(
+        value is None
+        or (
+            isinstance(value, ast.Constant)
+            and type(value.value) is int
+            and value.value == 1
+        )
+        for value in values.values()
+    )
+
+
+def _parse_source(code: str) -> _Syntax | None:
+    """Refuse malformed AST/token streams completely; submitted source stays inert."""
     try:
         tree = ast.parse(code)
-    except (SyntaxError, ValueError, RecursionError):
+        tokens = list(tokenize.generate_tokens(io.StringIO(code).readline))
+        if any(
+            token.type == tokenize.ERRORTOKEN and not token.string.isspace()
+            for token in tokens
+        ):
+            return None
+        return _Syntax(code, tree, tokens)
+    except (
+        SyntaxError,
+        ValueError,
+        RecursionError,
+        UnicodeError,
+        tokenize.TokenError,
+    ):
+        return None
+
+
+def _issue(code: str, rule: Rule, offset: int) -> Issue:
+    """Keep catalog fields and public absolute character locations unchanged."""
+    line = code.count("\n", 0, offset) + 1
+    return Issue(
+        rule.id,
+        rule.severity,
+        rule.message,
+        line,
+        code.splitlines()[line - 1].strip(),
+        offset,
+        rule.fix_suggestion,
+    )
+
+
+def _method_offset(syntax: _Syntax, node: ast.Attribute) -> int:
+    """Locate the actual method identifier, even after Unicode or spaced dots."""
+    return syntax.span(node)[1] - len(node.attr)
+
+
+def _call_owner(
+    syntax: _Syntax, call: ast.Call, *, conventional: bool = False
+) -> tuple[ast.expr, list[str], str | None]:
+    """Read only recognized owners of an actual call expression."""
+    return syntax.owner(call.func, conventional=conventional)
+
+
+def _builtin_matches(syntax: _Syntax, rule: Rule) -> list[Issue]:
+    """Apply catalog rules to executable syntax while retaining actual literal rules."""
+    if rule.detector_kind == "ast":
+        return _scan_literal_names(syntax.code, rule, syntax)
+    offsets: set[int] = set()
+    for node in ast.walk(syntax.tree):
+        if isinstance(node, ast.Call):
+            owner, path, kind = _call_owner(syntax, node, conventional=True)
+            method = path[-1] if path else ""
+            start = syntax.span(owner)[0]
+            direct = len(path) == 1
+            native = kind in {"pyplot", "axes", "figure"} and direct
+            constructors = (
+                kind == "pyplot" and path in (["figure"], ["subplots"])
+            ) or (kind == "figure-class" and not path)
+            if (
+                rule.id == "tight-layout"
+                and native
+                and kind in {"pyplot", "figure"}
+                and method == "tight_layout"
+                and isinstance(node.func, ast.Attribute)
+            ):
+                offsets.add(_method_offset(syntax, node.func))
+            elif (
+                (
+                    rule.id == "plt-style-use"
+                    and kind == "pyplot"
+                    and path == ["style", "use"]
+                )
+                or (
+                    rule.id == "plt-show-only"
+                    and kind == "pyplot"
+                    and path == ["show"]
+                    and not node.args
+                    and not node.keywords
+                )
+                or (
+                    rule.id == "savefig-direct"
+                    and native
+                    and kind in {"pyplot", "figure"}
+                    and method == "savefig"
+                )
+                or (
+                    rule.id == "dpi-arg"
+                    and constructors
+                    and kind == "pyplot"
+                    and any(keyword.arg == "dpi" for keyword in node.keywords)
+                )
+            ):
+                offsets.add(start)
+            elif (
+                rule.id == "multirow-subplots-no-gridspec-kw"
+                and kind == "pyplot"
+                and path == ["subplots"]
+            ):
+                rows = next(
+                    (
+                        keyword.value
+                        for keyword in node.keywords
+                        if keyword.arg == "nrows"
+                    ),
+                    node.args[0] if node.args else None,
+                )
+                if (
+                    isinstance(rows, ast.Constant)
+                    and type(rows.value) is int
+                    and rows.value >= 2
+                    and not any(
+                        keyword.arg in {"gridspec_kw", "sharex", "sharey", None}
+                        for keyword in node.keywords
+                    )
+                ):
+                    offsets.add(start)
+            elif (
+                rule.id in {"figsize-direct", "cm2in-figsize"} and constructors
+            ):
+                for keyword in node.keywords:
+                    if keyword.arg != "figsize" or not isinstance(
+                        keyword.value, ast.Tuple
+                    ):
+                        continue
+                    if rule.id == "figsize-direct" or any(
+                        isinstance(item, ast.Attribute)
+                        and item.attr == "cm2in"
+                        and syntax.kind(item.value, conventional=True) == "dm"
+                        for item in ast.walk(keyword.value)
+                    ):
+                        offsets.add(syntax.span(keyword)[0])
+            elif (
+                rule.id == "raw-width-number"
+                and kind == "dm"
+                and path == ["figsize"]
+                and node.args
+            ):
+                argument = syntax.code[slice(*syntax.span(node.args[0]))]
+                if re.fullmatch(r"-?\d+(?:\.\d+)?", argument):
+                    offsets.add(start)
+            elif rule.id == "oversize-width":
+                values = (
+                    [(node.args[0], start)]
+                    if kind == "dm" and path == ["figsize"] and node.args
+                    else []
+                )
+                if kind in {"dm", "pyplot", "figure", "axes"}:
+                    values += [
+                        (keyword.value, syntax.span(keyword)[0])
+                        for keyword in node.keywords
+                        if keyword.arg == "width"
+                    ]
+                for value, offset in values:
+                    if (
+                        isinstance(value, ast.Constant)
+                        and isinstance(value.value, str)
+                        and re.fullmatch(r"\d+(?:\.\d+)?cm", value.value)
+                        and float(value.value[:-2]) > 17
+                    ):
+                        offsets.add(offset)
+            elif (
+                rule.id
+                in {
+                    "raw-hex-color",
+                    "fontsize-literal",
+                    "linewidth-literal",
+                    "jet-cmap",
+                }
+                and native
+            ):
+                pattern = re.compile(rule.detector_value)
+                for keyword in node.keywords:
+                    text = syntax.code[slice(*syntax.span(keyword))]
+                    match = pattern.match(text)
+                    if match:
+                        offsets.add(syntax.span(keyword)[0] + match.start())
+        if (
+            (rule.id.startswith("dm-") or rule.id == "deprecated-width-token")
+            and isinstance(node, ast.Attribute)
+            and isinstance(node.ctx, ast.Load)
+        ):
+            owner, path, kind = syntax.owner(node, conventional=True)
+            if kind == "dm" and path:
+                text = "dm." + ".".join(path)
+                if rule.id in {
+                    "dm-subplots-removed",
+                    "dm-spines-removed",
+                    "dm-legacy-wrappers-removed",
+                    "dm-auto-select-colors-renamed",
+                    "dm-auto-layout-removed",
+                    "dm-named-renamed",
+                }:
+                    parent = syntax.parents.get(id(node))
+                    if (
+                        not isinstance(parent, ast.Call)
+                        or parent.func is not node
+                    ):
+                        continue
+                    text += "("
+                if re.fullmatch(rule.detector_value, text) or (
+                    re.match(rule.detector_value, text)
+                    and not isinstance(
+                        syntax.parents.get(id(node)), ast.Attribute
+                    )
+                ):
+                    offsets.add(syntax.span(owner)[0])
+    return [_issue(syntax.code, rule, offset) for offset in sorted(offsets)]
+
+
+def _scan_literal_names(
+    code: str, rule: Rule, syntax: _Syntax | None = None
+) -> list[Issue]:
+    """Check actual literal arguments on proven or conventional plotting receivers."""
+    syntax = syntax or _parse_source(code)
+    if syntax is None:
         return []
-    registrations = _source_registrations(tree, rule.detector_value)
+    registrations = _source_registrations(syntax.tree, rule.detector_value)
     if registrations is None:
         return []
-    pyplot_names = {"plt"}
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            pyplot_names.update(
-                alias.asname
-                for alias in node.names
-                if alias.name == "matplotlib.pyplot" and alias.asname
-            )
-        elif isinstance(node, ast.ImportFrom) and node.module == "matplotlib":
-            pyplot_names.update(
-                alias.asname or alias.name
-                for alias in node.names
-                if alias.name == "pyplot"
-            )
-    lines = code.splitlines(keepends=True)
     matches: list[Issue] = []
-    for node in ast.walk(tree):
-        if not (
-            isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Attribute)
-            and isinstance(node.func.value, ast.Name)
-        ):
+    for node in ast.walk(syntax.tree):
+        if not isinstance(node, ast.Call):
             continue
-        receiver = node.func.value.id
-        method = node.func.attr
+        _owner, path, kind = _call_owner(syntax, node, conventional=True)
+        if kind not in {"pyplot", "axes"} or len(path) != 1:
+            continue
+        method = path[0]
         candidates: list[ast.expr] = []
-        if receiver not in pyplot_names | {"ax"}:
-            continue
         if rule.detector_value == "colormap-name":
             if method in _CMAP_CALLS:
-                candidates = [k.value for k in node.keywords if k.arg == "cmap"]
-            elif method == "get_cmap" and receiver in pyplot_names:
+                candidates = [
+                    keyword.value
+                    for keyword in node.keywords
+                    if keyword.arg == "cmap"
+                ]
+            elif method == "get_cmap" and kind == "pyplot":
                 candidates = list(node.args[:1]) + [
-                    k.value for k in node.keywords if k.arg == "name"
+                    keyword.value
+                    for keyword in node.keywords
+                    if keyword.arg == "name"
                 ]
         elif rule.detector_value == "color-name" and method in _COLOR_CALLS:
             candidates = [
-                k.value for k in node.keywords if k.arg in _COLOR_KEYWORDS
+                keyword.value
+                for keyword in node.keywords
+                if keyword.arg in _COLOR_KEYWORDS
             ]
         for value in candidates:
             if not isinstance(value, ast.Constant) or not isinstance(
@@ -318,7 +881,12 @@ def _scan_literal_names(code: str, rule: Rule) -> list[Issue]:
             ):
                 continue
             keyword = next(
-                (k.arg for k in node.keywords if k.value is value), None
+                (
+                    keyword.arg
+                    for keyword in node.keywords
+                    if keyword.value is value
+                ),
+                None,
             )
             sentinel = (
                 keyword in {"markerfacecolor", "markeredgecolor"}
@@ -337,26 +905,9 @@ def _scan_literal_names(code: str, rule: Rule) -> list[Issue]:
                     else is_color_like(value.value)
                 )
             )
-            if valid:
-                continue
-            # AST columns count UTF-8 bytes; Issue offsets follow the
-            # existing regex engine's absolute character positions.
-            prefix = lines[value.lineno - 1].encode("utf-8")[: value.col_offset]
-            offset = sum(map(len, lines[: value.lineno - 1])) + len(
-                prefix.decode("utf-8")
-            )
-            matches.append(
-                Issue(
-                    rule_id=rule.id,
-                    severity=rule.severity,
-                    message=rule.message,
-                    line=value.lineno,
-                    snippet=lines[value.lineno - 1].strip(),
-                    column=offset,
-                    fix_suggestion=rule.fix_suggestion,
-                )
-            )
-    return matches
+            if not valid:
+                matches.append(_issue(code, rule, syntax.span(value)[0]))
+    return sorted(matches, key=lambda issue: issue.column or 0)
 
 
 def _scan_one(code: str, rule: Rule) -> list[Issue]:
@@ -412,8 +963,8 @@ def lint(code: str, *, rules: Iterable[Rule] | None = None) -> list[Issue]:
     .. note::
 
         ``code`` must be **Python source**, not YAML/Markdown/JSON. Most
-        rules are regex-based, so feeding non-Python content (e.g. the
-        anti-patterns YAML itself) will produce false positives.
+        built-in executable rules require complete Python syntax. Deliberate
+        text-only and custom regex/substring rules still inspect raw text.
 
     Parameters
     ----------
@@ -430,7 +981,10 @@ def lint(code: str, *, rules: Iterable[Rule] | None = None) -> list[Issue]:
         ``(rule_id, column)`` so multiple violations on the same line
         are reported separately.
     """
-    rule_list = list(rules) if rules is not None else load_rules()
+    catalog = load_rules()
+    rule_list = list(rules) if rules is not None else catalog
+    bundled = {rule.id: rule for rule in catalog}
+    syntax = _parse_source(code)
     issues: list[Issue] = []
     # Dedupe by (rule_id, absolute match offset). ``column`` is the
     # absolute character offset of the match, which is unique per
@@ -439,7 +993,11 @@ def lint(code: str, *, rules: Iterable[Rule] | None = None) -> list[Issue]:
     # the second match from agents trying to auto-fix.
     seen: set[tuple[str, int | None]] = set()
     for rule in rule_list:
-        for issue in _scan_one(code, rule):
+        if rule == bundled.get(rule.id) and rule.detector_kind != "substring":
+            matches = [] if syntax is None else _builtin_matches(syntax, rule)
+        else:
+            matches = _scan_one(code, rule)
+        for issue in matches:
             key = (issue.rule_id, issue.column)
             if key in seen:
                 continue
@@ -481,35 +1039,7 @@ def format_report(issues: list[Issue]) -> str:
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------------------
-# 0.3 → 0.4 source rewriter (T4 in 0.5+ AI-readiness roadmap).
-#
-# Splits its job into two passes:
-#   1. Safe textual substitutions that the agent can rely on
-#      mechanically (``plt.style.use`` → ``dm.style.use``).
-#   2. Patterns whose replacement depends on context — the ``dm.cm2in``
-#      helper (returned inches; the correct rewrite depends on whether
-#      it sits inside a ``figsize=``), the deprecated width tokens, the
-#      removed ``dm.subplots`` / ``dm.figure``, ``figsize=(w, h)`` raw
-#      tuples, ``tight_layout()`` calls, and the removed
-#      ``dm.agent_utils`` / ``dm.xplot`` namespaces. Those get a
-#      one-line ``# TODO(dm-migrate): …`` comment inserted directly
-#      above the offending line.
-#
-# The function is intentionally regex-only. AST-based migration is in
-# the spec's "Out of Scope" list.
-# ---------------------------------------------------------------------------
-
-# NOTE: ``dm.cm2in`` is deliberately NOT a safe rewrite. ``cm2in``
-# returned a float (inches); ``dm.cm`` returns a ``Length``. A blind
-# ``dm.cm2in`` → ``dm.cm`` swap produces broken ``figsize=(dm.cm(9), …)``
-# code AND erases the token the ``cm2in-figsize`` critical lint rule keys
-# on. It is handled as a context-dependent hint below (mirrors the same
-# reasoning in ``_AUTO_FIX_TABLE``).
-_MIGRATE_SAFE_REWRITES: tuple[tuple[re.Pattern[str], str], ...] = (
-    (re.compile(r"\bplt\.style\.use\b"), "dm.style.use"),
-)
-
+# Legacy migration hint wording remains owned by the existing catalog below.
 _MODEL_B_REMOVED_COLOR_NAMES: tuple[str, ...] = (
     "get_\u0070alette",
     "set_\u0063ycle",
@@ -679,237 +1209,333 @@ _MIGRATE_HINTS: tuple[tuple[re.Pattern[str], str], ...] = (
 )
 
 
-def migrate_legacy_code(code: str) -> str:
-    """Best-effort regex rewrite from 0.3-era to 0.4 dartwork-mpl idioms.
-
-    Two passes:
-
-    1. **Safe substitutions** are applied in place
-       (``plt.style.use`` → ``dm.style.use``).
-    2. **Context-dependent patterns** (``dm.cm2in``, deprecated width
-       tokens, the removed ``dm.subplots`` / ``dm.figure``, raw
-       ``figsize=(w,h)`` tuples, ``tight_layout()`` calls, and the
-       removed ``dm.agent_utils`` / ``dm.xplot`` namespaces) get a
-       ``# TODO(dm-migrate): …`` comment inserted above the offending
-       line so the agent can see what to change without losing the
-       original code. Re-running on already-migrated output is
-       idempotent — existing hint comments are not re-flagged.
-
-    Parameters
-    ----------
-    code : str
-        0.3-era Python source.
-
-    Returns
-    -------
-    str
-        Rewritten source. Always returned (never raises). Use
-        :func:`lint` on the result to confirm no critical issues
-        remain after the agent applies the manual hints.
-
-    Notes
-    -----
-    AST-based migration is intentionally out of scope (see
-    ``docs/superpowers/specs/2026-05-01-ai-readiness-0.5-roadmap.md``,
-    "Out of Scope"). Inputs that don't match any pattern are returned
-    unchanged.
-    """
-    # Pass 1: safe in-place substitutions.
-    for pattern, replacement in _MIGRATE_SAFE_REWRITES:
-        code = pattern.sub(replacement, code)
-
-    # Pass 2: emit hint comments above any line containing a context-
-    # dependent pattern. Multiple matches on one line produce multiple
-    # hints (one per pattern, in declaration order). Indentation is
-    # copied from the matched line so the comments align.
-    output_lines: list[str] = []
-    for line in code.splitlines(keepends=True):
-        body = line.rstrip("\r\n")
-        line_terminator = line[len(body) :]
-        # A source's final line may have no trailing newline. The
-        # injected ``# TODO(dm-migrate): ...`` comment then concatenates
-        # with the original code on join, turning that statement into
-        # part of the comment text. Force ``\n`` for the comment line
-        # whenever the original had no terminator.
-        comment_terminator = line_terminator or "\n"
-        # Idempotency guard 1: a hint comment can itself contain a pattern
-        # token (the ``dm.cm2in`` / ``dm.SW`` hint text), so never re-flag
-        # our own injected comments.
-        if body.lstrip().startswith("# TODO(dm-migrate):"):
-            output_lines.append(line)
-            continue
-        leading_ws_match = re.match(r"\s*", body)
-        indent = leading_ws_match.group(0) if leading_ws_match else ""
-        # Idempotency guard 2: the offending code line is left in place
-        # (only annotated), so on a re-run it still matches its pattern.
-        # Skip any hint that already sits in the contiguous hint block
-        # directly above this line so re-runs don't stack duplicates.
-        # Multiple *distinct* hints for one line are still allowed.
-        existing_hints: set[str] = set()
-        for prev in reversed(output_lines):
-            if prev.lstrip().startswith("# TODO(dm-migrate):"):
-                existing_hints.add(prev.strip())
-            else:
-                break
-        for pattern, hint in _MIGRATE_HINTS:
-            if pattern.search(body):
-                hint_line = (
-                    f"{indent}# TODO(dm-migrate): {hint}{comment_terminator}"
-                )
-                if hint_line.strip() not in existing_hints:
-                    output_lines.append(hint_line)
-        output_lines.append(line)
-    return "".join(output_lines)
-
-
-# ---------------------------------------------------------------------------
-# Auto-fix
-# ---------------------------------------------------------------------------
-#
-# ``apply_lint_fixes`` performs mechanical, identifier-level rewrites
-# for a curated subset of lint rules. Lint detector patterns only catch
-# the *start* of a violation (``\bplt\.tight_layout\s*\(``), so they
-# can't be used as substitution patterns directly — we'd lose the
-# trailing ``)``. Instead each entry below pairs a *bounded* search
-# pattern with its replacement.
-#
-# Anything more invasive (figsize tuple → ``dm.figsize`` choice of
-# width and aspect, dpi removal that needs argument-list rebalancing)
-# is intentionally left to the caller, who can pair this helper with
-# ``migrate_legacy_code`` or the MCP ``apply_lint_fixes`` flow.
-
-
-def _rewrite_tight_layout(match: re.Match[str]) -> str:
-    """Rewrite ``<recv>.tight_layout()`` preserving the receiver name."""
-    receiver = match.group(1)
-    figure = "fig" if receiver == "plt" else receiver
-    return f"dm.simple_layout({figure})"
-
-
-def _protected_spans(code: str) -> list[tuple[int, int]]:
-    """Absolute ``(start, end)`` offsets of string / comment tokens.
-
-    Auto-fix substitutions must not rewrite text inside string literals
-    or comments (e.g. a docstring mentioning ``plt.tight_layout()``), so
-    those regions are masked out. Returns ``[]`` if the source can't be
-    tokenized (malformed snippet) — the caller then falls back to a
-    plain whole-source substitution.
-    """
-    import io
-    import tokenize
-
-    # Map 1-based line number → absolute offset of that line's start.
-    line_starts = [0]
-    for line in code.splitlines(keepends=True):
-        line_starts.append(line_starts[-1] + len(line))
-
-    def _abs(row: int, col: int) -> int:
-        return line_starts[row - 1] + col
-
-    try:
-        toks = list(tokenize.generate_tokens(io.StringIO(code).readline))
-    except (tokenize.TokenError, IndentationError, SyntaxError):
-        return []
-    return [
-        (_abs(*tok.start), _abs(*tok.end))
-        for tok in toks
-        # FSTRING_* tokens exist on 3.12+; guard by name.
-        if tok.type in (tokenize.STRING, tokenize.COMMENT)
-        or tokenize.tok_name.get(tok.type, "").startswith("FSTRING")
-    ]
-
-
-def _sub_outside_strings(
-    pattern: re.Pattern[str],
-    repl: str | Callable[[re.Match[str]], str],
-    code: str,
-) -> str:
-    """``pattern.sub`` applied only outside string / comment regions."""
-    protected = _protected_spans(code)
-    if not protected:
-        return pattern.sub(repl, code)
-
-    def _guarded(match: re.Match[str]) -> str:
-        s, e = match.span()
-        for ps, pe in protected:
-            if s < pe and e > ps:  # overlaps a protected span
-                return match.group(0)
-        return repl(match) if callable(repl) else match.expand(repl)
-
-    return pattern.sub(_guarded, code)
-
-
-_AUTO_FIX_TABLE: tuple[
-    tuple[str, re.Pattern[str], str | Callable[[re.Match[str]], str]], ...
-] = (
-    # rule_id, search regex, replacement.
-    #
-    # Each rule_id MUST be a real id in the anti-pattern SSOT
-    # (02-anti-patterns.yaml) — the ``apply_lint_fixes`` diff keys on it,
-    # and a label with no matching rule is silently dead. A test
-    # (``test_auto_fix_rule_ids_exist_in_ssot``) enforces this.
-    #
-    # ``dm.cm2in`` is deliberately NOT auto-fixed: the only SSOT rule for
-    # it is ``cm2in-figsize`` (the ``figsize=(dm.cm2in(...), ...)`` form),
-    # whose correct rewrite is ``figsize=dm.figsize("<n>cm", "<aspect>")``
-    # — context-dependent, not a token swap. A bare ``dm.cm2in → dm.cm``
-    # substitution would be *wrong* (``cm2in`` returns inches, ``cm``
-    # returns a Length), so we leave it to ``migrate_legacy_code``.
-    ("plt-style-use", re.compile(r"\bplt\.style\.use\b"), "dm.style.use"),
-    # plt.tight_layout() / <fig>.tight_layout() → dm.simple_layout(<fig>).
-    # The receiver is preserved so ``myfig.tight_layout()`` rewrites to
-    # ``dm.simple_layout(myfig)`` rather than the canonical-but-wrong
-    # ``dm.simple_layout(fig)`` (which would reference an undefined name).
-    # A ``plt`` receiver has no figure handle, so it falls back to the
-    # canonical ``fig`` used across every template and recipe.
-    (
-        "tight-layout",
-        re.compile(r"\b(plt|[A-Za-z_][A-Za-z0-9_]*)\.tight_layout\s*\(\s*\)"),
-        _rewrite_tight_layout,
-    ),
+# The table declares the supported actions and their catalog identities.
+# Public Issue fields remain independent of this private dispatch metadata.
+_AUTO_FIX_TABLE = (
+    ("plt-style-use", "style", "style.use"),
+    ("tight-layout", "layout", "simple_layout"),
 )
 
 
+@dataclass(frozen=True)
+class _Edit:
+    """A bounded source replacement expressed in original character offsets."""
+
+    start: int
+    end: int
+    text: str
+
+
+@dataclass(frozen=True)
+class _Fix:
+    """One original occurrence and the nonoverlapping edits that remove it."""
+
+    issue: Issue
+    identity: tuple[str, int, int, int]
+    edits: tuple[_Edit, ...]
+
+
+def _dm_owner(syntax: _Syntax, node: ast.expr) -> str | None:
+    """Choose an existing direct dm import from this exact expression's scope."""
+    return next(
+        (
+            name
+            for name, kind in syntax.facts.get(id(node), {}).items()
+            if kind == "dm" and "." not in name
+        ),
+        None,
+    )
+
+
+def _supported_preset(value: ast.expr) -> bool:
+    """Read shipped preset file names without importing or executing submitted code."""
+    if not isinstance(value, ast.Constant) or not isinstance(value.value, str):
+        return False
+    with (Path(__file__).parent / "asset/mplstyle/presets.json").open(
+        encoding="utf-8"
+    ) as handle:
+        presets = json.load(handle)
+    return value.value in presets
+
+
+def _planned_fixes(
+    syntax: _Syntax, before: list[Issue], *, layout: bool = True
+) -> list[_Fix]:
+    """Plan only complete locally proven calls; never infer missing imports or figures."""
+    by_key = {(issue.rule_id, issue.column): issue for issue in before}
+    fixes: list[_Fix] = []
+    ids = {rule_id for rule_id, _action, _method in _AUTO_FIX_TABLE}
+    for node in ast.walk(syntax.tree):
+        if not isinstance(node, ast.Call):
+            continue
+        owner, path, kind = _call_owner(syntax, node)
+        package = _dm_owner(syntax, node.func)
+        if package is None:
+            continue
+        rule_id = ""
+        edits: tuple[_Edit, ...] = ()
+        if (
+            kind == "pyplot"
+            and path == ["style", "use"]
+            and len(node.args) == 1
+            and not node.keywords
+            and _supported_preset(node.args[0])
+        ):
+            rule_id = "plt-style-use"
+            start, end = syntax.span(owner)
+            offset = start
+            edits = (_Edit(start, end, package),)
+        elif (
+            layout
+            and isinstance(owner, ast.Name)
+            and kind == "figure"
+            and syntax.facts.get(id(owner), {}).get(owner.id) == "figure"
+            and path == ["tight_layout"]
+            and isinstance(node.func, ast.Attribute)
+            and not node.args
+            and not node.keywords
+        ):
+            rule_id = "tight-layout"
+            start, end = syntax.span(node)
+            offset = _method_offset(syntax, node.func)
+            comments = [
+                token
+                for token in syntax.tokens
+                if token.type == tokenize.COMMENT
+                and start <= syntax.token_offset(token.start) < end
+            ]
+            if comments:
+                function_start, function_end = syntax.span(node.func)
+                opening = syntax.code.index("(", function_end, end)
+                edits = (
+                    _Edit(
+                        function_start, function_end, f"{package}.simple_layout"
+                    ),
+                    _Edit(opening + 1, opening + 1, owner.id),
+                )
+            else:
+                edits = (
+                    _Edit(start, end, f"{package}.simple_layout({owner.id})"),
+                )
+        if rule_id not in ids:
+            continue
+        issue = by_key.get((rule_id, offset))
+        if issue is not None:
+            span = syntax.span(node)
+            fixes.append(_Fix(issue, (rule_id, *span, len(fixes)), edits))
+    return sorted(fixes, key=lambda fix: fix.identity[1])
+
+
+def _apply_edits(code: str, edits: list[_Edit]) -> str | None:
+    """Apply original-span edits once, refusing overlaps or invalid complete output."""
+    ordered = sorted(edits, key=lambda edit: (edit.start, edit.end))
+    end = -1
+    for edit in ordered:
+        if edit.start < end:
+            return None
+        end = edit.end
+    result = code
+    for edit in reversed(ordered):
+        result = result[: edit.start] + edit.text + result[edit.end :]
+    return result if _parse_source(result) is not None else None
+
+
+def _original_offset(offset: int, edits: list[_Edit]) -> int | None:
+    """Map a surviving result occurrence back to its original character position."""
+    delta = 0
+    for edit in sorted(edits, key=lambda item: (item.start, item.end)):
+        start = edit.start + delta
+        end = start + len(edit.text)
+        if offset < start:
+            break
+        if start <= offset < end:
+            return None
+        delta += len(edit.text) - (edit.end - edit.start)
+    return offset - delta
+
+
 def apply_lint_fixes(code: str) -> tuple[str, list[Issue], list[Issue]]:
-    """Apply safe mechanical fixes for a curated subset of lint rules.
+    """Fix proven local calls while preserving refused source and occurrence identity.
 
-    Performs identifier- and call-level rewrites for rules whose
-    replacement does not depend on caller-supplied parameters
-    (currently ``plt-style-use`` and the no-arg form of
-    ``tight-layout``). Each rule is applied as a whole-source
-    regex substitution, after which the linter re-runs to compute the
-    diff between ``before`` and ``after`` issue sets.
-
-    Parameters
-    ----------
-    code : str
-        Python source.
-
-    Returns
-    -------
-    tuple[str, list[Issue], list[Issue]]
-        ``(fixed_code, applied_issues, unfixed_issues)`` —
-        ``applied`` mirrors issues that disappear after the rewrite;
-        ``unfixed`` is what still trips the linter (typically
-        context-dependent rules like ``figsize-direct``).
+    Applied Issue locations refer to the original source. Unfixed locations refer
+    to the returned source. Malformed input is returned exactly with no applied
+    issues; neither parsing nor rewriting executes supplied Python.
     """
     before = lint(code)
-
-    fixable_ids = {rule_id for rule_id, _, _ in _AUTO_FIX_TABLE}
-    for _rule_id, pattern, replacement in _AUTO_FIX_TABLE:
-        code = _sub_outside_strings(pattern, replacement, code)
-
-    after = lint(code)
-    after_signatures = {(i.rule_id, i.line, i.column) for i in after}
-    # An issue is "applied" only if this function could fix its rule and
-    # the issue is gone. Restricting to ``fixable_ids`` prevents a
-    # non-fixable issue (e.g. ``figsize-direct``) whose column merely
-    # shifted after a same-line rewrite from being falsely reported as
-    # both applied and still-unfixed.
+    syntax = _parse_source(code)
+    if syntax is None:
+        return code, [], before
+    fixes = _planned_fixes(syntax, before)
+    edits = [edit for fix in fixes for edit in fix.edits]
+    result = _apply_edits(code, edits)
+    if result is None:
+        return code, [], before
+    after = lint(result)
+    survivors = {
+        (issue.rule_id, _original_offset(issue.column, edits))
+        for issue in after
+        if issue.column is not None
+    }
     applied = [
-        i
-        for i in before
-        if i.rule_id in fixable_ids
-        and (i.rule_id, i.line, i.column) not in after_signatures
+        fix.issue
+        for fix in fixes
+        if (fix.issue.rule_id, fix.issue.column) not in survivors
     ]
-    return code, applied, after
+    # Preserve the catalog's public declaration order within original locations.
+    applied_keys = {(issue.rule_id, issue.column) for issue in applied}
+    return (
+        result,
+        [
+            issue
+            for issue in before
+            if (issue.rule_id, issue.column) in applied_keys
+        ],
+        after,
+    )
+
+
+def _statement_boundary(
+    syntax: _Syntax, node: ast.AST
+) -> tuple[int, str, str] | None:
+    """Find a physical line start before the containing executable logical statement."""
+    current: ast.AST | None = node
+    while current is not None:
+        if isinstance(current, ast.stmt):
+            start, _end = syntax.span(current)
+            line_start = syntax.starts[current.lineno - 1]
+            indent = syntax.code[line_start:start]
+            if not indent.strip():
+                line = syntax.lines[current.lineno - 1]
+                newline = (
+                    "\r\n"
+                    if line.endswith("\r\n")
+                    else "\n"
+                    if line.endswith("\n")
+                    else "\r\n"
+                    if "\r\n" in syntax.code
+                    else "\n"
+                )
+                return line_start, indent, newline
+        current = syntax.parents.get(id(current))
+    # A later semicolon-separated statement shares the earlier statement's
+    # physical boundary even though that earlier statement is not its parent.
+    for statement in ast.walk(syntax.tree):
+        if not isinstance(statement, ast.stmt) or statement.lineno != getattr(
+            node, "lineno", None
+        ):
+            continue
+        start, _end = syntax.span(statement)
+        line_start = syntax.starts[statement.lineno - 1]
+        indent = syntax.code[line_start:start]
+        if not indent.strip() and start <= syntax.span(node)[0]:
+            line = syntax.lines[statement.lineno - 1]
+            newline = (
+                "\r\n"
+                if line.endswith("\r\n")
+                else "\n"
+                if line.endswith("\n")
+                else "\r\n"
+                if "\r\n" in syntax.code
+                else "\n"
+            )
+            return line_start, indent, newline
+    return None
+
+
+def _migration_hints(syntax: _Syntax) -> list[_Edit]:
+    """Add legacy hints only at executable logical boundaries, outside literals."""
+    insertions: dict[int, tuple[str, str, set[int]]] = {}
+    for node in ast.walk(syntax.tree):
+        start: int | None = None
+        kind: str | None = None
+        text = ""
+        allowed: set[int] = set()
+        if isinstance(node, (ast.Attribute, ast.Call, ast.Subscript)):
+            expression = (
+                node.func
+                if isinstance(node, ast.Call)
+                else node.value
+                if isinstance(node, ast.Subscript)
+                else node
+            )
+            owner, path, kind = syntax.owner(expression, conventional=True)
+            if kind == "dm" and path:
+                start, end = syntax.span(node)
+                owner_end = syntax.span(owner)[1]
+                text = "dm" + syntax.code[owner_end:end]
+                allowed = set(range(len(_MIGRATE_HINTS))) - {5, 6, 7}
+            elif isinstance(node, ast.Call) and kind in {"figure", "pyplot"}:
+                if path == ["tight_layout"]:
+                    start, end = syntax.span(node.func)
+                    text = syntax.code[start:end] + "("
+                    allowed = {6}
+                if path in (["figure"], ["subplots"]):
+                    for keyword in node.keywords:
+                        if keyword.arg == "figsize" and isinstance(
+                            keyword.value, ast.Tuple
+                        ):
+                            boundary = _statement_boundary(syntax, node)
+                            if boundary:
+                                offset, indent, newline = boundary
+                                entry = insertions.setdefault(
+                                    offset, (indent, newline, set())
+                                )
+                                entry[2].add(5)
+        elif (
+            isinstance(node, ast.ImportFrom)
+            and node.module
+            and node.module.startswith("dm.agent_utils")
+        ):
+            start, end = syntax.span(node)
+            text = syntax.code[start:end]
+            allowed = {7}
+        if start is None or any(
+            left <= start < right for left, right in syntax.protected
+        ):
+            continue
+        for index in allowed:
+            pattern, _hint = _MIGRATE_HINTS[index]
+            match = pattern.search(text)
+            if match is None or (
+                index != 7 and kind == "dm" and match.start() != 0
+            ):
+                continue
+            boundary = _statement_boundary(syntax, node)
+            if boundary:
+                offset, indent, newline = boundary
+                entry = insertions.setdefault(offset, (indent, newline, set()))
+                entry[2].add(index)
+    edits: list[_Edit] = []
+    for offset, (indent, newline, indexes) in sorted(insertions.items()):
+        existing: set[str] = set()
+        for line in reversed(syntax.code[:offset].splitlines()):
+            if line.lstrip().startswith("# TODO(dm-migrate):"):
+                existing.add(line.strip())
+            else:
+                break
+        comments = [
+            f"{indent}# TODO(dm-migrate): {_MIGRATE_HINTS[index][1]}{newline}"
+            for index in sorted(indexes)
+            if f"# TODO(dm-migrate): {_MIGRATE_HINTS[index][1]}" not in existing
+        ]
+        if comments:
+            edits.append(_Edit(offset, offset, "".join(comments)))
+    return edits
+
+
+def migrate_legacy_code(code: str) -> str:
+    """Rewrite proven supported styles and annotate executable legacy statements.
+
+    Comments, literal values and all bytes outside explicit edits are preserved.
+    Unsafe style calls and malformed AST/token streams are returned unchanged.
+    Hints never split continuations, inline suites or multiline literal contents.
+    """
+    syntax = _parse_source(code)
+    if syntax is None:
+        return code
+    fixes = _planned_fixes(syntax, lint(code), layout=False)
+    edits = [edit for fix in fixes for edit in fix.edits] + _migration_hints(
+        syntax
+    )
+    result = _apply_edits(code, edits)
+    return code if result is None else result
