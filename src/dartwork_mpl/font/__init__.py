@@ -34,7 +34,7 @@ _EXPECTED_MIN_FONTS: int = 5
 # Bundled font directory — single source, also consumed by
 # ``diagnostics._fonts.plot_fonts`` (which used to rebuild the same
 # path with os.path idioms).
-_FONT_DIR: Path = Path(__file__).parent / "asset" / "font"
+_FONT_DIR: Path = Path(__file__).parent.parent / "asset" / "font"
 _FONT_SUFFIXES: frozenset[str] = frozenset({".ttf", ".otf"})
 _BUNDLED_FONT_WEIGHT_OVERRIDES: Mapping[str, int] = MappingProxyType(
     {

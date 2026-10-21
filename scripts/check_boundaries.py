@@ -96,6 +96,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.annotation", "dartwork_mpl.scale"): (
         "annotation text defaults to a size relative to the active preset"
     ),
+    ("dartwork_mpl.diagnostics", "dartwork_mpl.font"): (
+        "the font diagnostic draws the bundled font files"
+    ),
     ("dartwork_mpl.explore", "dartwork_mpl._colors"): (
         "the explorer browses the shipped colour families"
     ),
@@ -168,7 +171,6 @@ DEBT: Mapping[str, str] = {
     "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.QUALITATIVE": "K5",
     "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.SEQUENTIAL": "K5",
     "private import: dartwork_mpl.diagnostics._colors -> dartwork_mpl._colors._loader.COLOR_LIBRARIES": "K5",
-    "private import: dartwork_mpl.diagnostics._fonts -> dartwork_mpl.font._FONT_DIR": "C4",
     "private import: dartwork_mpl.helpers.labels -> dartwork_mpl._colors._loader.ensure_loaded": "K4",
     "private import: dartwork_mpl.mcp.resources -> dartwork_mpl._colors._loader.COLOR_LIBRARIES": "K4",
     "private import: dartwork_mpl.mcp.tools -> dartwork_mpl._colors._loader.COLOR_LIBRARIES": "K4",
