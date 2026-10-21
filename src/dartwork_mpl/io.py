@@ -12,8 +12,10 @@ import gzip
 import io
 import os
 import warnings
+from collections.abc import Callable
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from types import ModuleType
 from typing import Any
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
@@ -133,9 +135,11 @@ def _check_save_format(
     if backend is not None:
         from matplotlib.backends.registry import backend_registry
 
-        canvas_class = backend_registry.load_backend_module(
-            backend
-        ).FigureCanvas
+        # Matplotlib documents this loader but does not annotate its signature.
+        load_backend_module: Callable[[str], ModuleType] = (
+            backend_registry.load_backend_module
+        )
+        canvas_class = load_backend_module(backend).FigureCanvas
         if not hasattr(canvas_class, f"print_{effective}"):
             raise ValueError(
                 f"The {backend!r} backend does not support {effective} output"

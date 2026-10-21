@@ -492,7 +492,7 @@ class _Syntax:
     def _statements(
         self, statements: list[ast.stmt], env: dict[str, str | None]
     ) -> None:
-        """Follow straight-line statements, invalidating ambiguous-flow writes."""
+        """Track absolute-import facts; local imports and flow invalidate names."""
         for statement in statements:
             self.facts[id(statement)] = dict(env)
             if isinstance(statement, ast.Import):
@@ -511,12 +511,14 @@ class _Syntax:
                     bound = alias.asname or alias.name
                     self._invalidate(ast.Name(id=bound), env)
                     if (
-                        statement.module == "matplotlib"
+                        statement.level == 0
+                        and statement.module == "matplotlib"
                         and alias.name == "pyplot"
                     ):
                         env[bound] = "pyplot"
                     elif (
-                        statement.module == "matplotlib.figure"
+                        statement.level == 0
+                        and statement.module == "matplotlib.figure"
                         and alias.name == "Figure"
                     ):
                         env[bound] = "figure-class"

@@ -262,10 +262,13 @@ class TestMcpSurfaceContract:
         assert "tight-layout" in rule_ids
 
     def test_apply_lint_fixes_round_trip(self) -> None:
+        """Live MCP serialization retains safe style and Figure rewrites."""
         bad = (
             "import matplotlib.pyplot as plt\n"
-            "plt.style.use('ggplot')\n"
-            "plt.tight_layout()\n"
+            "import dartwork_mpl as dm\n"
+            "plt.style.use('scientific')\n"
+            "fig = plt.figure()\n"
+            "fig.tight_layout()\n"
         )
         result = self._run(
             self.mcp.call_tool("apply_lint_fixes", {"code": bad})
@@ -275,6 +278,24 @@ class TestMcpSurfaceContract:
         assert "dm.simple_layout" in payload["fixed_code"]
         applied_ids = {i["rule_id"] for i in payload["applied"]}
         assert {"plt-style-use", "tight-layout"} <= applied_ids
+
+    def test_apply_lint_fixes_preserves_unsupported_source(self) -> None:
+        """Live MCP preserves unsupported style and unproven layout source."""
+        code = (
+            "import matplotlib.pyplot as plt\n"
+            "plt.style.use('ggplot')\n"
+            "plt.tight_layout()\n"
+        )
+        result = self._run(
+            self.mcp.call_tool("apply_lint_fixes", {"code": code})
+        )
+        payload = json.loads(result.content[0].text)
+        assert payload["fixed_code"] == code
+        assert payload["applied"] == []
+        assert {issue["rule_id"] for issue in payload["unfixed"]} == {
+            "plt-style-use",
+            "tight-layout",
+        }
 
 
 class TestAgentDocAccess:

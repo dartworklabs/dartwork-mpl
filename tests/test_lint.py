@@ -740,6 +740,65 @@ class TestExecutableDetectionBoundary:
         assert [issue.rule_id for issue in issues].count("custom-text") == 2
 
 
+class TestRelativeImports:
+    """Local modules named matplotlib never prove native plotting receivers."""
+
+    @pytest.mark.parametrize("level", [".", ".."])
+    @pytest.mark.parametrize("receiver", ["p", "plt", "pyplot"])
+    @pytest.mark.parametrize("operation", ["lint", "fix", "migrate"])
+    def test_relative_pyplot_import_preserves_unrelated_methods(
+        self, level, receiver, operation
+    ):
+        """Relative pyplot names neither justify diagnostics nor source edits."""
+        alias = "" if receiver == "pyplot" else f" as {receiver}"
+        code = (
+            "import dartwork_mpl as dm\n"
+            f"from {level}matplotlib import pyplot{alias}\n"
+            f'{receiver}.style.use("scientific")\n'
+            f"fig = {receiver}.figure()\nfig.tight_layout()\n"
+        )
+        if operation == "lint":
+            assert lint(code) == []
+        elif operation == "fix":
+            assert apply_lint_fixes(code) == (code, [], [])
+        else:
+            assert migrate_legacy_code(code) == code
+
+    @pytest.mark.parametrize("level", [".", ".."])
+    @pytest.mark.parametrize("constructor", ["F", "Figure"])
+    @pytest.mark.parametrize("operation", ["lint", "fix", "migrate"])
+    def test_relative_figure_import_preserves_unrelated_methods(
+        self, level, constructor, operation
+    ):
+        """A relative Figure constructor grants no native type or layout hint."""
+        alias = "" if constructor == "Figure" else f" as {constructor}"
+        code = (
+            "import dartwork_mpl as dm\n"
+            f"from {level}matplotlib.figure import Figure{alias}\n"
+            f"fig = {constructor}()\nfig.tight_layout()\n"
+        )
+        if operation == "lint":
+            assert lint(code) == []
+        elif operation == "fix":
+            assert apply_lint_fixes(code) == (code, [], [])
+        else:
+            assert migrate_legacy_code(code) == code
+
+    @pytest.mark.parametrize("level", [".", ".."])
+    def test_relative_import_shadows_existing_canonical_pyplot_proof(
+        self, level
+    ):
+        """An explicit local import invalidates prior and conventional plt facts."""
+        code = (
+            "import matplotlib.pyplot as plt\nimport dartwork_mpl as dm\n"
+            f"from {level}matplotlib import pyplot as plt\n"
+            'plt.style.use("scientific")\nplt.tight_layout()\n'
+        )
+        assert lint(code) == []
+        assert apply_lint_fixes(code) == (code, [], [])
+        assert migrate_legacy_code(code) == code
+
+
 class TestProvenAutoFix:
     """A fix requires local binding proof and preserves every refused source byte."""
 
