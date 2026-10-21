@@ -8,15 +8,6 @@ import sys
 from datetime import timedelta
 
 import pytest
-from test_input_store import (
-    NOW,
-    api,
-    fixture,
-    identity,
-    manifest,
-    publish,
-    selection,
-)
 
 from dartwork_mpl.mcp.artifacts import (
     InputMetadata,
@@ -24,8 +15,18 @@ from dartwork_mpl.mcp.artifacts import (
     PublicationError,
     RetainedInput,
 )
+from tests.mcp.artifacts.input_fixtures import (
+    NOW,
+    STATES,
+    api,
+    fixture,
+    identity,
+    manifest,
+    publish,
+    seed,
+    selection,
+)
 
-STATES = ("live", "expired", "revoked", "corrupt", "pending", "unknown")
 BARRIERS = (
     "marker_create",
     "marker_write",
@@ -38,38 +39,6 @@ BARRIERS = (
     "rmdir",
     "root_fsync",
 )
-
-
-def seed(storage, source, store, state):
-    """Create all six deletion targets using real committed bytes or owned pending."""
-    spec = selection(source)
-    specs = (
-        spec,
-        *(
-            type(spec)(
-                f"extra{index}", spec.root_id, spec.relative_path, spec.sha256
-            )
-            for index in range(1, 8)
-        ),
-    )
-    metadata = publish(store, identity(), specs)
-    folder = storage / identity().value
-    if state == "expired":
-        metadata = InputMetadata(
-            identity(),
-            NOW - timedelta(days=8),
-            NOW - timedelta(days=1),
-            metadata.files,
-        )
-        (folder / "inputs.json").write_bytes(metadata.to_bytes())
-    elif state == "revoked":
-        (folder / ".revoked").write_bytes(b"1")
-        (folder / ".revoked").chmod(0o600)
-    elif state == "corrupt":
-        (folder / "inputs.json").unlink()
-    elif state == "pending":
-        folder = folder.rename(storage / (".pending-" + identity().value))
-    return folder, spec, metadata
 
 
 @pytest.mark.parametrize("state", STATES)

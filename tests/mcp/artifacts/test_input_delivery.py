@@ -10,8 +10,6 @@ from datetime import timedelta
 from types import SimpleNamespace
 
 import pytest
-from test_input_recovery import STATES, seed
-from test_input_store import NOW, fixture, identity, selection
 
 from dartwork_mpl.mcp import execution
 from dartwork_mpl.mcp.artifacts import (
@@ -41,6 +39,14 @@ from dartwork_mpl.mcp.artifacts import (
     render_artifact,
 )
 from dartwork_mpl.mcp.artifacts import store as disk
+from tests.mcp.artifacts.input_fixtures import (
+    NOW,
+    STATES,
+    fixture,
+    identity,
+    seed,
+    selection,
+)
 
 FIGURE = """import matplotlib.pyplot as plt
 import dartwork_mpl as dm
@@ -852,7 +858,7 @@ def test_failed_input_commit_stays_failed_despite_ambiguous_observation(
         if observation == "matching":
             # Use a real bundle to construct the valid public observation value;
             # this is observer uncertainty, not an actual second publication.
-            from test_input_store import manifest
+            from tests.mcp.artifacts.input_fixtures import manifest
 
             return manifest(metadata[-1])
         return (

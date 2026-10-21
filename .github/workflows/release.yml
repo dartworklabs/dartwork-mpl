@@ -89,7 +89,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uv run pytest tests/ -q -rs --durations=30 \
+          uv run pytest -q -rs --durations=30 \
             --junitxml="$RUNNER_TEMP/pytest-full.xml" 2>&1 | tee "$RUNNER_TEMP/pytest-summary.txt"
       - name: Assert MCP / integration tests actually ran
         run: uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"
