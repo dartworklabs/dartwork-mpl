@@ -126,6 +126,12 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp", "dartwork_mpl.prompt"): (
         "the MCP server serves the bundled prompt corpus"
     ),
+    ("dartwork_mpl.templates", "dartwork_mpl.scale"): (
+        "a template sizes its text relative to the active preset"
+    ),
+    ("dartwork_mpl.templates", "dartwork_mpl.units"): (
+        "a template's default figure size is a physical width and aspect"
+    ),
     ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
         "the tick-decimal check recommends the precision the formatter uses"
     ),
@@ -147,11 +153,10 @@ DECISIONS: Mapping[str, str] = {
 # Known violations at the start of the refactor (ADR 0005), each with the
 # plan step that removes it. The list only shrinks.
 DEBT: Mapping[str, str] = {
-    "cycle: dartwork_mpl, dartwork_mpl.templates, dartwork_mpl.validate_fixes": "C12, L2",
+    "cycle: dartwork_mpl, dartwork_mpl.validate_fixes": "L2",
     "cycle: dartwork_mpl._colors, dartwork_mpl._luminance": "K1",
     "entry point import: dartwork_mpl.mcp.resources -> dartwork_mpl": "M6",
     "entry point import: dartwork_mpl.mcp.tools -> dartwork_mpl": "M4",
-    "entry point import: dartwork_mpl.templates.diverging_bar -> dartwork_mpl": "C12",
     "entry point import: dartwork_mpl.validate_fixes -> dartwork_mpl": "L2",
     "missing __all__: dartwork_mpl._luminance": "K1",
     "missing __all__: dartwork_mpl.validate_fixes": "L2",

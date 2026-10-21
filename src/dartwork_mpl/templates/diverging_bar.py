@@ -15,7 +15,8 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.transforms import blended_transform_factory
 
-import dartwork_mpl as dm
+from ..scale import fs, fw
+from ..units import figsize as _figsize
 
 
 def plot_diverging_bar(
@@ -206,7 +207,7 @@ def plot_diverging_bar(
 
     # Set default figure size: 12 cm x 12 cm.
     if figsize is None:
-        figsize = dm.figsize("12cm", "square")
+        figsize = _figsize("12cm", "square")
 
     # Set default colors
     if colors is None:
@@ -289,7 +290,7 @@ def plot_diverging_bar(
     # y-coord)
     for i, label in enumerate(labels_list):
         # Bold 'Total' label using dm.fw
-        weight = dm.fw(1) if label == "Total" else dm.fw(0)
+        weight = fw(1) if label == "Total" else fw(0)
 
         ax.text(
             base_x,
@@ -298,7 +299,7 @@ def plot_diverging_bar(
             ha="left",
             va="center",
             transform=transform,
-            fontsize=dm.fs(0),
+            fontsize=fs(0),
             fontweight=weight,
             wrap=True,
         )
@@ -313,7 +314,7 @@ def plot_diverging_bar(
             f"{int(width)}",
             ha="right",
             va="center",
-            fontsize=dm.fs(-1),
+            fontsize=fs(-1),
         )
 
     # Positive values: label on the right side of the bar
@@ -325,18 +326,13 @@ def plot_diverging_bar(
             f"{int(width)}",
             ha="left",
             va="center",
-            fontsize=dm.fs(-1),
+            fontsize=fs(-1),
         )
 
     # Add title at the top
     # Positioned at base_x (figure x-coord) and title_y (figure y-coord)
     fig.text(
-        base_x,
-        title_y,
-        title,
-        fontsize=dm.fs(2),
-        fontweight=dm.fw(1),
-        ha="left",
+        base_x, title_y, title, fontsize=fs(2), fontweight=fw(1), ha="left"
     )
 
     # Add custom legend
@@ -347,7 +343,7 @@ def plot_diverging_bar(
         bbox_to_anchor=(base_x, legend_y),
         ncol=2,
         frameon=False,
-        fontsize=dm.fs(0),
+        fontsize=fs(0),
         borderaxespad=0,
         columnspacing=1.5,
     )
