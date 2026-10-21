@@ -134,6 +134,8 @@ from .templates import plot_diverging_bar
 from .units import (
     Length,
     cm,
+    col1,
+    col2,
     figsize,
     figsize_grid,
     inch,
@@ -145,10 +147,6 @@ from .units import (
 
 # Color utilities
 from .util import make_offset, mix_colors, pseudo_alpha, set_decimal
-
-# Academic column-width sugar (0.4+).
-col1: Length = cm(9)
-col2: Length = cm(17)
 
 # Public surfaces that are provisional -- shape may change in a minor
 # release without a full deprecation cycle. Documented in
