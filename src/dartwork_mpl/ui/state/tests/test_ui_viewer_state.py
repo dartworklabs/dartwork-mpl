@@ -1,8 +1,4 @@
-"""Unit tests for dartwork_mpl.ui parameter introspection and config.
-
-These tests cover the pure-Python logic of descriptor extraction
-and config persistence — no server required.
-"""
+"""ViewerState over a real fixed-file store: projected reads, bounded edits, drift and corruption."""
 
 from __future__ import annotations
 
@@ -11,13 +7,16 @@ import random
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from pydantic import BaseModel, ConfigDict, Field
 
-from dartwork_mpl.ui import _config as config
-from dartwork_mpl.ui._boundary import (
+from dartwork_mpl.ui.params import ParamModel
+from dartwork_mpl.ui.params._descriptors import descriptors_from_model
+from dartwork_mpl.ui.platform.fs import RootScope, open_roots
+from dartwork_mpl.ui.platform.json_bounds import LimitExceeded
+from dartwork_mpl.ui.state import _viewer_state as config
+from dartwork_mpl.ui.state._language import (
     MAX_CONFIG_BYTES,
     MAX_PRESET_BYTES,
     InvalidStoredState,
@@ -26,113 +25,15 @@ from dartwork_mpl.ui._boundary import (
     Tab,
     parse_request,
 )
-from dartwork_mpl.ui._config import PRESET_FILENAME, load_presets, save_preset
-from dartwork_mpl.ui._files import FixedStateStore, MissingState, StateWritten
-from dartwork_mpl.ui.params import ParamModel
-from dartwork_mpl.ui.params._descriptors import descriptors_from_model
-from dartwork_mpl.ui.platform.fs import RootScope, open_roots
-from dartwork_mpl.ui.platform.json_bounds import LimitExceeded
+from dartwork_mpl.ui.state._store import (
+    FixedStateStore,
+    MissingState,
+    StateWritten,
+)
 
-# The viewer's fixed config file name (a file-format contract).
+# The viewer's fixed state file names (a file-format contract).
 CONFIG_FILENAME = ".dartwork_ui_config.json"
-
-# ============================================================================
-# Tests: descriptors_from_model
-# ============================================================================
-
-
-# ============================================================================
-# Tests: config persistence
-# ============================================================================
-
-
-class TestConfigPersistence:
-    """Test save/load of the legacy preset file helpers."""
-
-    def test_save_and_load_preset_json(self, tmp_path: Path) -> None:
-        """Presets are saved to and loaded from JSON."""
-        preset_file = tmp_path / PRESET_FILENAME
-        with patch(
-            "dartwork_mpl.ui._config._preset_path", return_value=preset_file
-        ):
-            save_preset("test_a", {"n": 1})
-            save_preset("test_b", {"n": 2})
-            presets = load_presets()
-
-        assert len(presets) == 2
-        assert presets[0]["label"] == "test_a"
-        assert presets[0]["params"]["n"] == 1
-        assert presets[1]["label"] == "test_b"
-
-    def test_load_presets_corrupt_json(self, tmp_path: Path) -> None:
-        """Corrupt preset file returns empty list."""
-        preset_file = tmp_path / PRESET_FILENAME
-        preset_file.write_text("not valid json", encoding="utf-8")
-        with patch(
-            "dartwork_mpl.ui._config._preset_path", return_value=preset_file
-        ):
-            assert load_presets() == []
-
-    def test_load_presets_non_list_json(self, tmp_path: Path) -> None:
-        """Preset file with a non-list JSON returns empty list."""
-        preset_file = tmp_path / PRESET_FILENAME
-        preset_file.write_text('{"not": "a list"}', encoding="utf-8")
-        with patch(
-            "dartwork_mpl.ui._config._preset_path", return_value=preset_file
-        ):
-            assert load_presets() == []
-
-
-# ============================================================================
-# Tests: set_base_dir & _serializable
-# ============================================================================
-
-
-class TestConfigInternals:
-    """Tests for internal config helpers."""
-
-    def test_set_and_get_base_dir(self, tmp_path: Path) -> None:
-        """set_base_dir sets the directory used by path helpers."""
-        from dartwork_mpl.ui._config import _get_base_dir, set_base_dir
-
-        try:
-            set_base_dir(tmp_path)
-            assert _get_base_dir() == tmp_path
-        finally:
-            # Restore
-            import dartwork_mpl.ui._config as cfg
-
-            cfg._base_dir = None
-
-    def test_serializable_scalar_types(self) -> None:
-        """Scalar types pass through unchanged."""
-        from dartwork_mpl.ui._config import _serializable
-
-        result = _serializable(
-            {"i": 42, "f": 3.14, "s": "hello", "b": True, "n": None}
-        )
-        assert result == {
-            "i": 42,
-            "f": 3.14,
-            "s": "hello",
-            "b": True,
-            "n": None,
-        }
-
-    def test_serializable_list_and_tuple(self) -> None:
-        """Lists pass through, tuples are converted to lists."""
-        from dartwork_mpl.ui._config import _serializable
-
-        result = _serializable({"lst": [1, 2], "tup": (3, 4)})
-        assert result["lst"] == [1, 2]
-        assert result["tup"] == [3, 4]
-
-    def test_serializable_unknown_type(self) -> None:
-        """Unknown types are str()-ified."""
-        from dartwork_mpl.ui._config import _serializable
-
-        result = _serializable({"obj": {"nested": True}})
-        assert isinstance(result["obj"], str)
+PRESET_FILENAME = ".dartwork_ui_presets.json"
 
 
 class _StateParams(ParamModel):

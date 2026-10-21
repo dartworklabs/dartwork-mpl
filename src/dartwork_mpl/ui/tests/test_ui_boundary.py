@@ -17,10 +17,30 @@ from pydantic import (
     model_validator,
 )
 
-from dartwork_mpl.ui import _boundary as boundary
-from dartwork_mpl.ui.params import ParamModel
+from dartwork_mpl.ui._boundary import ROUTE_POLICY
+from dartwork_mpl.ui.params import InvalidRequest, ModelRequest, ParamModel
 from dartwork_mpl.ui.params._descriptors import descriptors_from_model
 from dartwork_mpl.ui.platform import json_bounds
+from dartwork_mpl.ui.render._routes import parse_request as render_request
+from dartwork_mpl.ui.saving import (
+    InvalidOutput,
+    RelativeOutput,
+    SaveInputFailure,
+    SaveRequest,
+    parse_output,
+)
+from dartwork_mpl.ui.script._routes import parse_request as script_request
+from dartwork_mpl.ui.state._language import (
+    InvalidStoredState,
+    PresetRequest,
+    StateRequest,
+    StoredConfig,
+    StoredPresets,
+    encode_state,
+    parse_stored,
+    project_stored,
+)
+from dartwork_mpl.ui.state._language import parse_request as state_request
 
 
 class Params(ParamModel):
@@ -84,11 +104,24 @@ class ValidatedParams(ParamModel):
         return value
 
 
+# Each sub-slice parses its own routes; an unknown route is refused by any.
+PARSERS = {
+    "/api/render": render_request,
+    "/api/export/{fmt}": render_request,
+    "/api/save-server/image/{fmt}": render_request,
+    "/api/script": script_request,
+    "/api/save-server/script": script_request,
+}
+
+
+def parse_request(route, value, model, descriptors):
+    """Dispatch to the parser of the sub-slice that owns ``route``."""
+    return PARSERS.get(route, state_request)(route, value, model, descriptors)
+
+
 def request(value, route="/api/render", model=Params):
     """Exercise the public pure parser with actual UI descriptors."""
-    return boundary.parse_request(
-        route, value, model, descriptors_from_model(model)
-    )
+    return parse_request(route, value, model, descriptors_from_model(model))
 
 
 def test_active_fields_closed_even_when_model_extra_allows():
@@ -102,15 +135,15 @@ def test_active_fields_closed_even_when_model_extra_allows():
         {"values": "nan, 1"},
         {"values": [1e300, math.inf]},
     ]:
-        assert isinstance(request(value), boundary.InvalidRequest), value
+        assert isinstance(request(value), InvalidRequest), value
     result = request({"count": "5", "values": "1, 2.5, ,3"})
-    assert isinstance(result, boundary.ModelRequest)
+    assert isinstance(result, ModelRequest)
     assert result.model.count == 5
     assert result.model.values == [1.0, 2.5, 3.0]
     assert request({}).model.count == 3
     assert before == (Params.model_config, Params.model_fields["count"].alias)
     assert isinstance(
-        request({"count": 2}, model=ValidatedParams), boundary.InvalidRequest
+        request({"count": 2}, model=ValidatedParams), InvalidRequest
     )
 
 
@@ -130,10 +163,9 @@ def test_numeric_choice_strings_convert_once_to_declared_members(route, wrap):
         route=route,
         model=NumericChoiceParams,
     )
-    assert isinstance(
-        result,
-        (boundary.ModelRequest, boundary.StateRequest, boundary.PresetRequest),
-    ), result
+    assert isinstance(result, (ModelRequest, StateRequest, PresetRequest)), (
+        result
+    )
     assert (result.model.ncols, type(result.model.ncols)) == (2, int)
     assert (result.model.ratio, type(result.model.ratio)) == (1.0, float)
     assert result.model.mode == "bar"
@@ -165,7 +197,7 @@ def test_numeric_choice_strings_convert_once_to_declared_members(route, wrap):
 def test_numeric_choice_conversion_keeps_membership_bounds_and_names(value):
     """Conversion never truncates, admits nonmembers or nonfinite values, or opens names."""
     assert isinstance(
-        request(value, model=NumericChoiceParams), boundary.InvalidRequest
+        request(value, model=NumericChoiceParams), InvalidRequest
     ), value
 
 
@@ -192,7 +224,7 @@ def test_numeric_choice_conversion_runs_the_caller_validator_once():
             return self
 
     result = request({"ncols": "3"}, model=HookChoices)
-    assert isinstance(result, boundary.ModelRequest)
+    assert isinstance(result, ModelRequest)
     assert calls == [("field", 3, int), ("model",)]
 
 
@@ -207,7 +239,7 @@ def test_numeric_choice_browser_spelling_round_trips_and_noise_never_crashes():
                 },
                 model=NumericChoiceParams,
             )
-            assert isinstance(parsed, boundary.ModelRequest)
+            assert isinstance(parsed, ModelRequest)
             assert (parsed.model.ncols, parsed.model.ratio) == (ncols, ratio)
     rng = random.Random(4991)
     alphabet = "0123456789.-+eE_ inNaf"
@@ -215,10 +247,11 @@ def test_numeric_choice_browser_spelling_round_trips_and_noise_never_crashes():
         text = "".join(rng.choice(alphabet) for _ in range(rng.randrange(1, 8)))
         for field in ("ncols", "ratio"):
             parsed = request({field: text}, model=NumericChoiceParams)
-            assert isinstance(
-                parsed, (boundary.ModelRequest, boundary.InvalidRequest)
-            ), (field, text)
-            if isinstance(parsed, boundary.ModelRequest):
+            assert isinstance(parsed, (ModelRequest, InvalidRequest)), (
+                field,
+                text,
+            )
+            if isinstance(parsed, ModelRequest):
                 chosen = getattr(parsed.model, field)
                 assert chosen in ((1, 2, 3) if field == "ncols" else (0.5, 1.0))
                 assert math.isfinite(chosen)
@@ -229,14 +262,14 @@ def test_old_numeric_choice_strings_in_stored_presets_remain_usable():
     raw = json.dumps(
         [{"label": "old", "params": {"ncols": "2", "ratio": "1"}}]
     ).encode()
-    stored = boundary.parse_stored("presets", raw)
-    assert isinstance(stored, boundary.StoredPresets)
-    (entry,) = boundary.project_stored(
+    stored = parse_stored("presets", raw)
+    assert isinstance(stored, StoredPresets)
+    (entry,) = project_stored(
         stored, frozenset(NumericChoiceParams.model_fields)
     )
     assert entry["params"] == {"ncols": "2", "ratio": "1"}
     parsed = request(entry["params"], model=NumericChoiceParams)
-    assert isinstance(parsed, boundary.ModelRequest)
+    assert isinstance(parsed, ModelRequest)
     assert (parsed.model.ncols, parsed.model.ratio) == (2, 1.0)
 
 
@@ -247,9 +280,7 @@ def test_nested_models_close_without_closing_explicit_dicts():
         {"nested": {"wire_size": 1}},
         {"items": [{"size": 2, "extra": True}]},
     ]:
-        assert isinstance(
-            request(value, model=NestedParams), boundary.InvalidRequest
-        )
+        assert isinstance(request(value, model=NestedParams), InvalidRequest)
     result = request(
         {
             "nested": {"size": 4},
@@ -258,7 +289,7 @@ def test_nested_models_close_without_closing_explicit_dicts():
         },
         model=NestedParams,
     )
-    assert isinstance(result, boundary.ModelRequest)
+    assert isinstance(result, ModelRequest)
     assert result.model.nested.size == 4
     assert result.model.items[0].size == 3
     assert result.model.options == {"arbitrary": {"more": 1}}
@@ -275,13 +306,13 @@ def test_union_branches_do_not_bypass_nested_model_closure():
         {"sequence": [{"extra": 1}]},
     ]:
         assert isinstance(
-            request(value, model=OptionalNestedParams), boundary.InvalidRequest
+            request(value, model=OptionalNestedParams), InvalidRequest
         )
     result = request(
         {"nested": {"size": 4}, "other": "still a string"},
         model=OptionalNestedParams,
     )
-    assert isinstance(result, boundary.ModelRequest)
+    assert isinstance(result, ModelRequest)
     assert result.model.nested.size == 4
     assert result.model.other == "still a string"
 
@@ -314,7 +345,7 @@ def test_default_factory_and_model_validators_keep_their_behavior():
             return self
 
     result = request({}, model=HookParams)
-    assert isinstance(result, boundary.ModelRequest)
+    assert isinstance(result, ModelRequest)
     assert isinstance(result.model, HookParams)
     assert result.model.count == 3
     assert calls == ["default", "model"]
@@ -383,10 +414,8 @@ def test_nested_validation_matches_one_native_pass(kind):
     expected = NestedHooks.model_validate(deepcopy(raw)).model_dump()
     native_calls = calls.copy()
     calls.clear()
-    parsed = boundary.parse_request(
-        "/api/render", deepcopy(raw), NestedHooks, []
-    )
-    assert isinstance(parsed, boundary.ModelRequest)
+    parsed = parse_request("/api/render", deepcopy(raw), NestedHooks, [])
+    assert isinstance(parsed, ModelRequest)
     assert parsed.model.model_dump() == expected
     assert calls == native_calls
     assert calls.count("child-after") == (2 if kind == "list" else 1)
@@ -400,7 +429,7 @@ def test_tab_values_are_structural_and_ids_unique():
         "figWidth": 70,
     }
     result = request(value, "/api/save-state")
-    assert isinstance(result, boundary.StateRequest)
+    assert isinstance(result, StateRequest)
     assert result.tabs[0].params == {"count": "obsolete"}
     for edit in [
         {"tabs": value["tabs"] * 2},
@@ -413,8 +442,7 @@ def test_tab_values_are_structural_and_ids_unique():
         {"extra": 1},
     ]:
         assert isinstance(
-            request({**value, **edit}, "/api/save-state"),
-            boundary.InvalidRequest,
+            request({**value, **edit}, "/api/save-state"), InvalidRequest
         ), edit
     for count in [64, 65]:
         body = {
@@ -422,19 +450,19 @@ def test_tab_values_are_structural_and_ids_unique():
         }
         assert isinstance(
             request(body, "/api/save-state"),
-            boundary.StateRequest if count == 64 else json_bounds.LimitExceeded,
+            StateRequest if count == 64 else json_bounds.LimitExceeded,
         )
 
 
 def test_complete_endpoint_shapes_and_label_limits():
     """Endpoint schemas consume every field and preserve defaults only where allowed."""
-    assert isinstance(request({}, "/api/config"), boundary.StateRequest)
+    assert isinstance(request({}, "/api/config"), StateRequest)
     assert isinstance(
-        request({"params": {}}, "/api/save-server/script"), boundary.SaveRequest
+        request({"params": {}}, "/api/save-server/script"), SaveRequest
     )
     assert isinstance(
         request({"label": "é" * 128, "params": {}}, "/api/preset"),
-        boundary.PresetRequest,
+        PresetRequest,
     )
     assert isinstance(
         request({"label": "é" * 129, "params": {}}, "/api/preset"),
@@ -449,10 +477,7 @@ def test_complete_endpoint_shapes_and_label_limits():
         ("/api/render", []),
         ("/unknown", {}),
     ]:
-        assert isinstance(request(value, route), boundary.InvalidRequest), (
-            route,
-            value,
-        )
+        assert isinstance(request(value, route), InvalidRequest), (route, value)
 
 
 @pytest.mark.parametrize(
@@ -475,29 +500,24 @@ def test_complete_endpoint_shapes_and_label_limits():
 )
 def test_output_paths_reject_unsafe_components(filename):
     """The portable path grammar refuses traversal and ambiguous separators."""
-    assert isinstance(boundary.parse_output(filename), boundary.InvalidOutput)
+    assert isinstance(parse_output(filename), InvalidOutput)
 
 
 def test_output_exact_size_and_constructor_invariant():
     """Safe subpaths retain names and cannot be forged with illegal components."""
     name = "/".join(["a" * 255] * 4)
     assert len(name.encode()) == 1023
-    result = boundary.parse_output(name + "b")
-    assert isinstance(result, boundary.InvalidOutput)  # component bound
+    result = parse_output(name + "b")
+    assert isinstance(result, InvalidOutput)  # component bound
     exact = "/".join(["a" * 255] * 3 + ["a" * 254, "x"])
     assert len(exact.encode()) == 1024
-    parsed = boundary.parse_output(exact)
-    assert isinstance(parsed, boundary.RelativeOutput)
+    parsed = parse_output(exact)
+    assert isinstance(parsed, RelativeOutput)
     assert parsed.filename == exact
-    assert isinstance(
-        boundary.parse_output(exact + "x"), boundary.InvalidOutput
-    )
-    assert boundary.parse_output("sub dir/figure.svg").parts == (
-        "sub dir",
-        "figure.svg",
-    )
+    assert isinstance(parse_output(exact + "x"), InvalidOutput)
+    assert parse_output("sub dir/figure.svg").parts == ("sub dir", "figure.svg")
     with pytest.raises(ValueError):
-        boundary.RelativeOutput(("..", "outside"))
+        RelativeOutput(("..", "outside"))
 
 
 def test_stored_model_drift_projects_without_mutating_raw_values():
@@ -515,9 +535,9 @@ def test_stored_model_drift_projects_without_mutating_raw_values():
         ],
         "figWidth": 999,
     }
-    state = boundary.parse_stored("config", json.dumps(value).encode())
-    assert isinstance(state, boundary.StoredConfig)
-    projected = boundary.project_stored(state, frozenset({"count"}))
+    state = parse_stored("config", json.dumps(value).encode())
+    assert isinstance(state, StoredConfig)
+    projected = project_stored(state, frozenset({"count"}))
     assert projected["params"] == {"count": "obsolete"}
     assert projected["dropped_fields"] == ["removed"]
     assert projected["tabs"][0]["params"] == {"count": 900}
@@ -526,11 +546,11 @@ def test_stored_model_drift_projects_without_mutating_raw_values():
     presets = [
         {"label": "Old", "params": value["params"], "timestamp": "<img>"}
     ]
-    state = boundary.parse_stored("presets", json.dumps(presets).encode())
-    assert isinstance(state, boundary.StoredPresets)
-    assert boundary.project_stored(state, frozenset({"count"}))[0][
-        "dropped_fields"
-    ] == ["removed"]
+    state = parse_stored("presets", json.dumps(presets).encode())
+    assert isinstance(state, StoredPresets)
+    assert project_stored(state, frozenset({"count"}))[0]["dropped_fields"] == [
+        "removed"
+    ]
     assert state.value == presets
 
 
@@ -561,8 +581,7 @@ def test_stored_model_drift_projects_without_mutating_raw_values():
 def test_stored_structural_corruption_is_distinct_from_model_drift(kind, value):
     """Malformed persisted containers and metadata never become empty defaults."""
     assert isinstance(
-        boundary.parse_stored(kind, json.dumps(value).encode()),
-        boundary.InvalidStoredState,
+        parse_stored(kind, json.dumps(value).encode()), InvalidStoredState
     )
 
 
@@ -570,31 +589,30 @@ def test_stored_limits_and_outgoing_serialization_are_bounded():
     """Stored counts and encoded next-state bytes are checked before replacement."""
     entry = {"label": "x", "params": {}}
     assert isinstance(
-        boundary.parse_stored("presets", json.dumps([entry] * 1000).encode()),
-        boundary.StoredPresets,
+        parse_stored("presets", json.dumps([entry] * 1000).encode()),
+        StoredPresets,
     )
     assert isinstance(
-        boundary.parse_stored("presets", json.dumps([entry] * 1001).encode()),
-        boundary.InvalidStoredState,
+        parse_stored("presets", json.dumps([entry] * 1001).encode()),
+        InvalidStoredState,
     )
     assert isinstance(
-        boundary.parse_stored("config", b" " * (1024 * 1024 + 1)),
-        boundary.InvalidStoredState,
+        parse_stored("config", b" " * (1024 * 1024 + 1)), InvalidStoredState
     )
     expected = b'{\n  "params": {}\n}\n'
-    result = boundary.encode_state({"params": {}}, max_bytes=len(expected))
+    result = encode_state({"params": {}}, max_bytes=len(expected))
     assert result == expected
     assert isinstance(result, bytes)
     assert isinstance(
-        boundary.encode_state({"params": {}}, max_bytes=len(result) - 1),
+        encode_state({"params": {}}, max_bytes=len(result) - 1),
         json_bounds.LimitExceeded,
     )
     assert isinstance(
-        boundary.encode_state({"params": {"x": math.nan}}, max_bytes=100),
+        encode_state({"params": {"x": math.nan}}, max_bytes=100),
         json_bounds.MalformedInput,
     )
     assert isinstance(
-        boundary.encode_state({"params": {"x": 10**640}}, max_bytes=1024),
+        encode_state({"params": {"x": 10**640}}, max_bytes=1024),
         json_bounds.LimitExceeded,
     )
 
@@ -607,25 +625,16 @@ def test_seeded_inputs_always_parse_or_return_named_refusal():
         result = json_bounds.decode_json(raw, max_bytes=128)
         assert isinstance(
             result,
-            (
-                str,
-                int,
-                float,
-                bool,
-                list,
-                dict,
-                type(None),
-                boundary.InputFailure,
-            ),
+            (str, int, float, bool, list, dict, type(None), SaveInputFailure),
         ), raw
         name = "".join(
             chr(rng.randrange(0x110000)) for _ in range(rng.randrange(30))
         )
-        result = boundary.parse_output(name)
-        assert isinstance(
-            result, (boundary.RelativeOutput, boundary.InputFailure)
-        ), repr(name)
-        if isinstance(result, boundary.RelativeOutput):
+        result = parse_output(name)
+        assert isinstance(result, (RelativeOutput, SaveInputFailure)), repr(
+            name
+        )
+        if isinstance(result, RelativeOutput):
             assert not Path(result.filename).is_absolute()
             assert ".." not in Path(result.filename).parts
             assert "\\" not in result.filename
@@ -637,13 +646,13 @@ def test_seeded_inputs_always_parse_or_return_named_refusal():
         raw = json.dumps(value).encode()
         assert json_bounds.decode_json(raw, max_bytes=1024) == value
         parsed = request(value)
-        assert isinstance(parsed, boundary.ModelRequest)
+        assert isinstance(parsed, ModelRequest)
         assert parsed.model.count == value["count"]
         assert parsed.model.values == value["values"]
 
 
 def route_inventory(source):
-    """Read actual app decorators plus framework-owned read registrations."""
+    """Read actual app/router decorators plus framework-owned read registrations."""
     routes = {
         (method, path)
         for path in [
@@ -659,7 +668,7 @@ def route_inventory(source):
             isinstance(node, ast.Call)
             and isinstance(node.func, ast.Attribute)
             and isinstance(node.func.value, ast.Name)
-            and node.func.value.id == "app"
+            and node.func.value.id in {"app", "router"}
             and node.func.attr
             in {"get", "post", "put", "patch", "delete", "head", "options"}
             and node.args
@@ -685,25 +694,31 @@ def constructor_violations(source, module):
                 and node.func.attr == "RelativeOutput"
             )
         )
-        and module != "_boundary"
+        and module != "_output"
     ]
 
 
 def test_route_inventory_and_handle_owner_guards_reject_injected_bypasses():
     """Every registration needs policy and only the parser owns path construction."""
-    root = Path(__file__).resolve().parents[1] / "src/dartwork_mpl/ui"
-    actual = route_inventory((root / "ui.py").read_text())
-    assert actual <= boundary.ROUTE_POLICY.keys()
-    reduced = dict(boundary.ROUTE_POLICY)
+    root = Path(__file__).resolve().parents[1]
+    actual = set().union(
+        *(
+            route_inventory(path.read_text())
+            for path in root.rglob("*.py")
+            if "tests" not in path.relative_to(root).parts
+        )
+    )
+    assert actual <= ROUTE_POLICY.keys()
+    reduced = dict(ROUTE_POLICY)
     reduced.pop(("POST", "/api/render"))
     assert not actual <= reduced.keys()
     assert (
         not route_inventory('@app.post("/unclassified")\ndef extra(): pass')
-        <= boundary.ROUTE_POLICY.keys()
+        <= ROUTE_POLICY.keys()
     )
     for path in root.rglob("*.py"):
         if "tests" in path.relative_to(root).parts:
             continue
         assert not constructor_violations(path.read_text(), path.stem), path
     assert constructor_violations('RelativeOutput(("safe",))', "ui")
-    assert not constructor_violations('RelativeOutput(("safe",))', "_boundary")
+    assert not constructor_violations('RelativeOutput(("safe",))', "_output")

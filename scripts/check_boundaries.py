@@ -59,6 +59,8 @@ ENTRY_POINTS = frozenset(
         # `python -m dartwork_mpl.mcp.server` / `dartwork-mpl-ui`
         "dartwork_mpl.mcp.server",
         "dartwork_mpl.ui.__main__",
+        # `dartwork_mpl.ui.run`: mounts every viewer sub-slice's routes
+        "dartwork_mpl.ui.ui",
     }
 )
 
@@ -67,11 +69,13 @@ PLATFORM = frozenset(
     {
         "dartwork_mpl._figure_geometry",
         "dartwork_mpl._rc",
-        # The viewer's loopback access checks, directory handles and
-        # bounded JSON decoder; the package initializer only names them.
+        # The viewer's loopback access checks, directory handles, HTTP body
+        # and refusal helpers and bounded JSON decoder; the package
+        # initializer only names them.
         "dartwork_mpl.ui.platform",
         "dartwork_mpl.ui.platform.access",
         "dartwork_mpl.ui.platform.fs",
+        "dartwork_mpl.ui.platform.http",
         "dartwork_mpl.ui.platform.json_bounds",
     }
 )
@@ -103,7 +107,11 @@ SLICES = frozenset(
         # The viewer's sub-slices (ADR 0005, audit ui-cli §4).
         "dartwork_mpl.ui.page",
         "dartwork_mpl.ui.params",
+        "dartwork_mpl.ui.render",
+        "dartwork_mpl.ui.saving",
         "dartwork_mpl.ui.scaffold",
+        "dartwork_mpl.ui.script",
+        "dartwork_mpl.ui.state",
         "dartwork_mpl.units",
         "dartwork_mpl.util",
         "dartwork_mpl.validate",
@@ -165,8 +173,38 @@ ALLOWED: Mapping[tuple[str, str], str] = {
         "the viewer builds its controls and parses requests from the user's"
         " parameter model"
     ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.render"): (
+        "the viewer mounts the preview, download and image-save routes"
+    ),
     ("dartwork_mpl.ui", "dartwork_mpl.ui.scaffold"): (
         "the dartwork-mpl-ui init command copies the scaffold project"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.script"): (
+        "the viewer mounts the reproducing-script routes"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.state"): (
+        "the viewer opens the saved-state store at startup and mounts its routes"
+    ),
+    ("dartwork_mpl.ui.render", "dartwork_mpl.io"): (
+        "a server image save writes the figure with save_formats, as a user would"
+    ),
+    ("dartwork_mpl.ui.render", "dartwork_mpl.ui.params"): (
+        "a render validates the request's active values against the user's model"
+    ),
+    ("dartwork_mpl.ui.render", "dartwork_mpl.ui.saving"): (
+        "a server image save writes through the confined output slots"
+    ),
+    ("dartwork_mpl.ui.saving", "dartwork_mpl.ui.params"): (
+        "a server-save request carries the user's validated active values"
+    ),
+    ("dartwork_mpl.ui.script", "dartwork_mpl.ui.params"): (
+        "the script embeds the model's source and the active values"
+    ),
+    ("dartwork_mpl.ui.script", "dartwork_mpl.ui.saving"): (
+        "a server script save writes through the confined output slots"
+    ),
+    ("dartwork_mpl.ui.state", "dartwork_mpl.ui.params"): (
+        "saved state holds the active values and the model's declared field names"
     ),
     ("dartwork_mpl.style", "dartwork_mpl.font"): (
         "a preset may name bundled fonts, which must be registered first"
@@ -221,7 +259,6 @@ DEBT: Mapping[str, str] = {
     "private import: dartwork_mpl.validate.agent_requirements -> dartwork_mpl.helpers.quality._MIN_RECOMMENDED_DPI": "C11",
     "undeclared dependency: dartwork_mpl.helpers -> dartwork_mpl.scale": "C11",
     "undeclared dependency: dartwork_mpl.mcp -> dartwork_mpl.util": "C9",
-    "undeclared dependency: dartwork_mpl.ui -> dartwork_mpl.util": "C9",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl._colors": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.annotation": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.formatting": "C10",

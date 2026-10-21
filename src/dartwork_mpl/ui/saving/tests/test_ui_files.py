@@ -7,19 +7,14 @@ import random
 import stat
 import subprocess
 import sys
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
 
-from dartwork_mpl.ui import _files as files
-from dartwork_mpl.ui._boundary import (
-    InvalidStoredState,
-    RelativeOutput,
-    parse_output,
-)
+from dartwork_mpl.ui import saving
 from dartwork_mpl.ui.platform import fs
-from dartwork_mpl.ui.platform.json_bounds import LimitExceeded
+from dartwork_mpl.ui.saving import RelativeOutput, _plan, parse_output
+from dartwork_mpl.ui.state import _store as state
 
 
 def snapshot(root: Path) -> dict[str, str]:
@@ -50,15 +45,13 @@ def output(name: str) -> RelativeOutput:
     return result
 
 
-def save(
-    roots: fs.RootScope, name: str
-) -> files.SaveReceipt | files.FileFailure:
+def save(roots: fs.RootScope, name: str) -> saving.SaveReceipt | fs.FsFailure:
     """Drive preparation and streaming together against the real filesystem."""
-    plan = files.prepare_save(roots, output(name), include_copies=True)
-    if not isinstance(plan, files.PreparedSave):
+    plan = saving.prepare_save(roots, output(name), include_copies=True)
+    if not isinstance(plan, saving.PreparedSave):
         return plan
     with plan:
-        return files.commit_save(plan, io.BytesIO(b"new figure bytes"))
+        return saving.commit_save(plan, io.BytesIO(b"new figure bytes"))
 
 
 @pytest.mark.parametrize("destination", ["primary", "copy"])
@@ -119,15 +112,15 @@ def test_pinned_parent_replacement_is_detected(tmp_path: Path) -> None:
     primary = tmp_path / "primary"
     (primary / "sub").mkdir(parents=True)
     with opened(primary) as roots:
-        plan = files.prepare_save(
+        plan = saving.prepare_save(
             roots, output("sub/a.png"), include_copies=True
         )
-        assert isinstance(plan, files.PreparedSave)
+        assert isinstance(plan, saving.PreparedSave)
         (primary / "sub").rename(primary / "moved")
         (primary / "sub").mkdir()
         before = snapshot(tmp_path)
         with plan:
-            result = files.commit_save(plan, io.BytesIO(b"new"))
+            result = saving.commit_save(plan, io.BytesIO(b"new"))
     assert isinstance(result, fs.RootConflict)
     assert snapshot(tmp_path) == before
 
@@ -265,7 +258,7 @@ def test_normalized_roots_aliases_and_streaming(tmp_path: Path) -> None:
     primary, copy = tmp_path / "primary", tmp_path / "copy"
     with opened(primary, [primary, "copy", copy]) as roots:
         result = save(roots, "safe/sub/a.svg")
-        assert isinstance(result, files.SaveReceipt)
+        assert isinstance(result, saving.SaveReceipt)
         assert result.primary == "safe/sub/a.svg"
         assert result.copies == ("safe/sub/a.svg",)
         assert (primary / result.primary).read_bytes() == b"new figure bytes"
@@ -278,7 +271,7 @@ def test_single_string_and_home_expansion(
     """A configured string is one path, and tilde expansion precedes root opening."""
     monkeypatch.setenv("HOME", str(tmp_path))
     with opened(tmp_path / "primary", "~/paper") as roots:
-        assert isinstance(save(roots, "a.pdf"), files.SaveReceipt)
+        assert isinstance(save(roots, "a.pdf"), saving.SaveReceipt)
     assert (tmp_path / "paper" / "a.pdf").is_file()
 
 
@@ -288,60 +281,16 @@ def test_close_is_idempotent_and_abandoned_plan_cleans_parents(
     """Explicit close releases descriptors and removes an unused plan's new folders."""
     roots = opened(tmp_path / "primary")
     before = snapshot(tmp_path)
-    plan = files.prepare_save(
+    plan = saving.prepare_save(
         roots, output("unused/sub/a.png"), include_copies=False
     )
-    assert isinstance(plan, files.PreparedSave)
+    assert isinstance(plan, saving.PreparedSave)
     plan.close()
     plan.close()
     assert snapshot(tmp_path) == before
     roots.close()
     roots.close()
     assert isinstance(save(roots, "a.png"), fs.RootConflict)
-
-
-def test_state_replace_preserves_corrupt_bytes_when_edit_refuses(
-    tmp_path: Path,
-) -> None:
-    """State edits may refuse corrupt bytes without creating a staging file."""
-    with opened(tmp_path / "primary") as roots:
-        path = tmp_path / "primary" / ".dartwork_ui_config.json"
-        path.write_bytes(b"broken\xff")
-        before = snapshot(tmp_path)
-        store = files.FixedStateStore(roots)
-        result = store.update(
-            "config", max_bytes=1024, edit=lambda _old: InvalidStoredState()
-        )
-        assert isinstance(result, InvalidStoredState)
-        assert snapshot(tmp_path) == before
-
-
-def test_state_unchanged_never_creates_or_replaces_bytes(
-    tmp_path: Path,
-) -> None:
-    """A locked no-write decision preserves both missing and existing fixed state."""
-    with opened(tmp_path / "primary") as roots:
-        store = files.FixedStateStore(roots)
-        for initial in (None, b"original state"):
-            if initial is not None:
-                assert isinstance(
-                    store.update(
-                        "presets",
-                        max_bytes=100,
-                        edit=lambda old, value=initial: value,
-                    ),
-                    files.StateWritten,
-                )
-            before = snapshot(tmp_path)
-            assert isinstance(
-                store.update(
-                    "presets",
-                    max_bytes=100,
-                    edit=lambda old: files.StateUnchanged(),
-                ),
-                files.StateUnchanged,
-            )
-            assert snapshot(tmp_path) == before
 
 
 @pytest.mark.parametrize(
@@ -379,7 +328,7 @@ def test_directory_acquisition_failure_closes_fds_and_reports_unknown_entries(
 
         monkeypatch.setattr(fs, "open_directory", acquire)
         monkeypatch.setattr(fs, "stat_handle", stat_acquired)
-        result = files.prepare_save(
+        result = saving.prepare_save(
             roots, output(f"{part}/a.png"), include_copies=False
         )
         if failure == "existing-stat":
@@ -392,8 +341,8 @@ def test_directory_acquisition_failure_closes_fds_and_reports_unknown_entries(
         for fd in observed:
             with pytest.raises(OSError):
                 os.fstat(fd)
-        assert files._SAVE_LOCK.acquire(blocking=False)
-        files._SAVE_LOCK.release()
+        assert _plan._SAVE_LOCK.acquire(blocking=False)
+        _plan._SAVE_LOCK.release()
 
 
 @pytest.mark.parametrize("sink", ["output", "state"])
@@ -406,13 +355,13 @@ def test_reserved_file_metadata_failure_closes_and_reports_unverified_file(
     observed: dict[str, int] = {}
     with opened(primary) as roots:
         (primary / "sentinel").write_bytes(b"keep")
-        store = files.FixedStateStore(roots)
+        store = state.FixedStateStore(roots)
         if sink == "state":
             assert isinstance(
                 store.update(
                     "config", max_bytes=100, edit=lambda old: b"old bytes"
                 ),
-                files.StateWritten,
+                state.StateWritten,
             )
         before = snapshot(tmp_path)
 
@@ -445,8 +394,8 @@ def test_reserved_file_metadata_failure_closes_and_reports_unverified_file(
         }
         with pytest.raises(OSError):
             os.fstat(fd)
-        assert files._SAVE_LOCK.acquire(blocking=False)
-        files._SAVE_LOCK.release()
+        assert _plan._SAVE_LOCK.acquire(blocking=False)
+        _plan._SAVE_LOCK.release()
 
 
 def test_unexpected_source_error_rolls_back_and_releases_plan(
@@ -463,16 +412,16 @@ def test_unexpected_source_error_rolls_back_and_releases_plan(
 
     with opened(tmp_path / "primary", tmp_path / "copy") as roots:
         before = snapshot(tmp_path)
-        plan = files.prepare_save(
+        plan = saving.prepare_save(
             roots, output("new/a.png"), include_copies=True
         )
-        assert isinstance(plan, files.PreparedSave)
+        assert isinstance(plan, saving.PreparedSave)
         try:
-            result = files.commit_save(plan, BrokenSource())
+            result = saving.commit_save(plan, BrokenSource())
             assert isinstance(result, fs.FileIOFailure)
             assert snapshot(tmp_path) == before
-            assert files._SAVE_LOCK.acquire(blocking=False)
-            files._SAVE_LOCK.release()
+            assert _plan._SAVE_LOCK.acquire(blocking=False)
+            _plan._SAVE_LOCK.release()
         finally:
             plan.close()
 
@@ -491,145 +440,49 @@ def test_source_cancellation_cleans_reservations_before_propagating(
 
     with opened(tmp_path / "primary") as roots:
         before = snapshot(tmp_path)
-        plan = files.prepare_save(
+        plan = saving.prepare_save(
             roots, output("new/a.png"), include_copies=False
         )
-        assert isinstance(plan, files.PreparedSave)
+        assert isinstance(plan, saving.PreparedSave)
         try:
             with pytest.raises(KeyboardInterrupt):
-                files.commit_save(plan, InterruptedSource())
+                saving.commit_save(plan, InterruptedSource())
             assert snapshot(tmp_path) == before
-            assert files._SAVE_LOCK.acquire(blocking=False)
-            files._SAVE_LOCK.release()
+            assert _plan._SAVE_LOCK.acquire(blocking=False)
+            _plan._SAVE_LOCK.release()
         finally:
             plan.close()
-
-
-def test_state_missing_replace_bounds_and_fixed_names(tmp_path: Path) -> None:
-    """Only fixed names are updated, and both old and next bytes are bounded."""
-    with opened(tmp_path / "primary") as roots:
-        store = files.FixedStateStore(roots)
-        assert isinstance(store.read("config", max_bytes=8), files.MissingState)
-        assert isinstance(
-            store.update("config", max_bytes=8, edit=lambda old: b"12345678"),
-            files.StateWritten,
-        )
-        assert store.read("config", max_bytes=8) == b"12345678"
-        before = snapshot(tmp_path)
-        assert isinstance(
-            store.update("config", max_bytes=8, edit=lambda old: b"123456789"),
-            LimitExceeded,
-        )
-        assert isinstance(store.read("config", max_bytes=7), InvalidStoredState)
-        assert snapshot(tmp_path) == before
-        assert set(before) == {"primary", "primary/.dartwork_ui_config.json"}
-
-
-@pytest.mark.parametrize("nonregular", ["symlink", "directory", "fifo"])
-def test_state_nonregular_refused_without_external_changes(
-    tmp_path: Path, nonregular: str
-) -> None:
-    """State reads and edits never follow links or block on special files."""
-    primary = tmp_path / "primary"
-    primary.mkdir()
-    outside = tmp_path / "sentinel"
-    outside.write_bytes(b"keep")
-    path = primary / ".dartwork_ui_presets.json"
-    if nonregular == "symlink":
-        path.symlink_to(outside)
-    elif nonregular == "directory":
-        path.mkdir()
-    else:
-        os.mkfifo(path)
-    with opened(primary) as roots:
-        store = files.FixedStateStore(roots)
-        assert isinstance(
-            store.read("presets", max_bytes=100), InvalidStoredState
-        )
-        assert isinstance(
-            store.update("presets", max_bytes=100, edit=lambda old: b"[]"),
-            InvalidStoredState,
-        )
-    assert outside.read_bytes() == b"keep"
-    assert path.is_symlink() if nonregular == "symlink" else path.exists()
-
-
-def test_state_replacement_failure_preserves_old_bytes(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Atomic replace failure leaves the original state and no sibling staging files."""
-    with opened(tmp_path / "primary") as roots:
-        store = files.FixedStateStore(roots)
-        assert isinstance(
-            store.update("config", max_bytes=100, edit=lambda old: b"old"),
-            files.StateWritten,
-        )
-        before = snapshot(tmp_path)
-
-        def refuse_replace(
-            parent_fd: int, staging: str, destination: str
-        ) -> None:
-            """Fail only the owned state replacement operation."""
-            raise OSError("controlled replacement failure")
-
-        monkeypatch.setattr(files, "_replace_state", refuse_replace)
-        assert isinstance(
-            store.update("config", max_bytes=100, edit=lambda old: b"next"),
-            fs.FileIOFailure,
-        )
-        assert snapshot(tmp_path) == before
-
-
-def test_state_updates_are_serialized_across_stores(tmp_path: Path) -> None:
-    """Every read/edit/write is one process transaction even across separate scopes."""
-    primary = tmp_path / "primary"
-    with opened(primary) as first, opened(primary) as second:
-        stores = [files.FixedStateStore(first), files.FixedStateStore(second)]
-
-        def increment(index: int) -> None:
-            """Increment persisted state through independently constructed stores."""
-            result = stores[index % 2].update(
-                "config",
-                max_bytes=100,
-                edit=lambda old: str(
-                    (0 if isinstance(old, files.MissingState) else int(old)) + 1
-                ).encode(),
-            )
-            assert isinstance(result, files.StateWritten), result
-
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            list(executor.map(increment, range(40)))
-        assert stores[0].read("config", max_bytes=100) == b"40"
 
 
 _UMASK_CHILD = r"""
 import io, os, sys
 from pathlib import Path
 os.umask(0o022)
-from dartwork_mpl.ui import _files as files
-from dartwork_mpl.ui._boundary import parse_output
+from dartwork_mpl.ui import saving
 from dartwork_mpl.ui.platform import fs
+from dartwork_mpl.ui.saving import _plan, parse_output
+from dartwork_mpl.ui.state import _store as state
 root, origin = Path(sys.argv[1]), Path(sys.argv[2])
-assert Path(files.__file__).resolve() == origin.resolve()
+assert Path(_plan.__file__).resolve() == origin.resolve()
 roots = fs.open_roots(root / "primary", [root / "copy"], cwd=root)
 assert isinstance(roots, fs.RootScope), roots
 with roots:
-    plan = files.prepare_save(roots, parse_output("new/sub/fig.png"), include_copies=True)
-    assert isinstance(plan, files.PreparedSave), plan
+    plan = saving.prepare_save(roots, parse_output("new/sub/fig.png"), include_copies=True)
+    assert isinstance(plan, saving.PreparedSave), plan
     with plan:
-        receipt = files.commit_save(plan, io.BytesIO(b"figure"))
-    assert isinstance(receipt, files.SaveReceipt), receipt
-    store = files.FixedStateStore(roots)
+        receipt = saving.commit_save(plan, io.BytesIO(b"figure"))
+    assert isinstance(receipt, saving.SaveReceipt), receipt
+    store = state.FixedStateStore(roots)
     for kind in ("config", "presets"):
         written = store.update(kind, max_bytes=64, edit=lambda old: b"{}")
-        assert isinstance(written, files.StateWritten), written
+        assert isinstance(written, state.StateWritten), written
 """
 
 
 def test_outputs_follow_umask_while_state_stays_private(tmp_path: Path) -> None:
     """With umask 022 in an isolated child, outputs are 0644, new parents 0755, state 0600."""
     subprocess.run(
-        [sys.executable, "-c", _UMASK_CHILD, str(tmp_path), files.__file__],
+        [sys.executable, "-c", _UMASK_CHILD, str(tmp_path), _plan.__file__],
         check=True,
         timeout=60,
     )
@@ -672,11 +525,11 @@ def test_seeded_paths_keep_outside_sentinel(tmp_path: Path) -> None:
             )
             parsed = parse_output(name)
             if isinstance(parsed, RelativeOutput):
-                plan = files.prepare_save(roots, parsed, include_copies=False)
-                if isinstance(plan, files.PreparedSave):
+                plan = saving.prepare_save(roots, parsed, include_copies=False)
+                if isinstance(plan, saving.PreparedSave):
                     with plan:
                         assert isinstance(
-                            files.commit_save(plan, io.BytesIO(b"value")),
-                            (files.SaveReceipt, fs.TargetConflict),
+                            saving.commit_save(plan, io.BytesIO(b"value")),
+                            (saving.SaveReceipt, fs.TargetConflict),
                         )
             assert hashlib.sha256(sentinel.read_bytes()).hexdigest() == expected
