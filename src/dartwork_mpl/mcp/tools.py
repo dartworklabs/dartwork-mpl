@@ -19,7 +19,7 @@ import httpx
 import matplotlib.colors as mcolors
 from fastmcp import FastMCP
 
-from . import _assets
+from ._platform import resolve_template_path
 from .data_repair import build_data_repair_report, serialize_data_repair_report
 
 __all__ = ["register_tools"]
@@ -66,7 +66,7 @@ def _resolve_template_path(
     Preserve the private compatibility surface while returning the resolved
     regular file checked by that boundary, or None for invalid/missing IDs.
     """
-    return _assets.resolve_template_path(plot_type, advanced=advanced)
+    return resolve_template_path(plot_type, advanced=advanced)
 
 
 # ``helpers.quality.suggest_chart_type`` speaks in *chart semantics*
@@ -632,7 +632,7 @@ def register_tools(mcp: FastMCP) -> None:
         import textwrap
         from pathlib import Path as _Path
 
-        from .execution import (
+        from ._platform import (
             diagnostic,
             publish_png,
             run_child,
@@ -1174,7 +1174,7 @@ def register_tools(mcp: FastMCP) -> None:
         import textwrap
         from pathlib import Path as _Path
 
-        from .execution import (
+        from ._platform import (
             diagnostic,
             publish_png,
             run_child,

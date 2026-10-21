@@ -47,6 +47,7 @@ REQUIRED_MODULES = (
     "tests.mcp.data_repair.test_limits",
     "tests.mcp.data_repair.test_properties",
     "tests.mcp.data_repair.test_reports",
+    "src.dartwork_mpl.mcp._platform.tests.test_process",
     "src.dartwork_mpl.ui.tests.test_ui_boundary",
     "src.dartwork_mpl.ui.saving.tests.test_ui_files",
     "tests.test_ui_http_security",

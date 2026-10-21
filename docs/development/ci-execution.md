@@ -47,9 +47,10 @@ collection, without another full-suite run.
 | Durable MCP artifacts | With prefix `tests.mcp.artifacts.`: `test_artifact_boundaries`, `test_artifact_discovery`, `test_artifact_entry_policies`, `test_artifact_execution`, `test_artifact_policy`, `test_artifact_protocol`, `test_artifact_store` |
 | Retained input contracts | With prefix `tests.mcp.artifacts.`: `test_input_access`, `test_input_commit_observer`, `test_input_delivery`, `test_input_io`, `test_input_lifecycle`, `test_input_policy`, `test_input_recovery`, `test_input_stdio`, `test_input_store` |
 | Data repair collection | With prefix `tests.mcp.data_repair.`: `test_limits`, `test_properties`, `test_reports` |
+| MCP slice-owned tests | No prefix: `src.dartwork_mpl.mcp._platform.tests.test_process` |
 | Optional UI consumers | `test_ui_boundary`, `test_ui_files`, `test_ui_http_security`, `test_ui_hardening`, `test_ui_init`, `test_ui_viewer_state`, `test_ui_render`, `test_ui_widget`, `test_ui_wire_golden` |
 
-All 42 modules must contribute a passed executed case. Missing modules,
+All 44 modules must contribute a passed executed case. Missing modules,
 zero-test suites, and modules whose cases all skip fail. Any failure/error in
 a protected module also fails, even alongside a passed case. Class-based
 pytest names are accepted; similarly named sibling modules cannot count.

@@ -285,3 +285,43 @@ def test_sub_slices_inside_a_slice_do_not_depend_on_the_enclosing_initializer():
         "platform reaches slice: dartwork_mpl.ui.platform -> dartwork_mpl.ui.params"
         in checker.violations(platform_up, NESTED_PACKAGES, NESTED)
     )
+
+
+MCP_NESTED = checker.Layout(
+    entry_points=frozenset({P}),
+    platform=frozenset({f"{P}.mcp._platform"}),
+    slices=frozenset({f"{P}.mcp"}),
+    allowed={},
+    decisions={},
+)
+MCP_NESTED_CODE = {
+    P: "from .mcp import mcp\n",
+    f"{P}.mcp": '__all__ = ["mcp"]\nfrom .tools import mcp\n',
+    f"{P}.mcp.tools": "from ._platform import run_child\nmcp = run_child\n",
+    f"{P}.mcp._platform": (
+        '__all__ = ["run_child"]\nfrom .process import run_child\n'
+    ),
+    f"{P}.mcp._platform.process": "def run_child(): ...\n",
+}
+MCP_NESTED_PACKAGES = {P, f"{P}.mcp", f"{P}.mcp._platform"}
+
+
+def test_a_unit_nested_in_another_does_not_depend_on_its_enclosing_package():
+    """Importing its own modules runs the enclosing initializer first, but adds no edge to it."""
+    assert (
+        checker.violations(MCP_NESTED_CODE, MCP_NESTED_PACKAGES, MCP_NESTED)
+        == []
+    )
+
+
+def test_a_nested_platform_reaching_its_enclosing_slice_is_rejected():
+    """Nesting exempts only the enclosing initializer, not the enclosing slice's modules."""
+    code = dict(MCP_NESTED_CODE)
+    code[f"{P}.mcp._platform.process"] = (
+        "def run_child():\n    from ..tools import mcp\n"
+    )
+    errors = checker.violations(code, MCP_NESTED_PACKAGES, MCP_NESTED)
+    assert (
+        "platform reaches slice: dartwork_mpl.mcp._platform -> dartwork_mpl.mcp"
+        in errors
+    )

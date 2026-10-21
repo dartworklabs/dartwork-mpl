@@ -11,13 +11,14 @@ import pytest
 
 pytest.importorskip("fastmcp")
 ROOT = Path(__file__).resolve().parents[3] / "src" / "dartwork_mpl"
-# Named retained edges: old MCP handlers/assets/prompts/resources and CLI wiring.
+# Named retained edges: old MCP handlers/prompts/resources and CLI wiring.
 LEGACY = {
     "dartwork_mpl.mcp.tools",
     "dartwork_mpl.mcp.resources",
     "dartwork_mpl.mcp.prompts",
-    "dartwork_mpl.mcp._assets",
 }
+# Business-agnostic MCP mechanism (child capture, asset confinement).
+PLATFORM = "dartwork_mpl.mcp._platform"
 ALLOWED = {
     ("artifacts", "execution"),
     ("legacy", "execution"),
@@ -31,10 +32,12 @@ PURE = {
 
 
 def slice_of(module):
-    """Assign capability roles; execution owns its private bounded collector."""
+    """Assign capability roles; the bounded collector is MCP platform mechanism."""
     if module.startswith("dartwork_mpl.mcp.artifacts"):
         return "artifacts"
-    if module in {"dartwork_mpl.mcp.execution", "dartwork_mpl.mcp._capture"}:
+    if module == PLATFORM or module.startswith(PLATFORM + "."):
+        return "platform"
+    if module == "dartwork_mpl.mcp.execution":
         return "execution"
     if module in LEGACY:
         return "legacy"
@@ -151,6 +154,23 @@ def assert_boundaries(edges, surfaces):
                 target,
             )
         if first == second:
+            continue
+        if first == "platform":
+            raise AssertionError(("platform reaches feature", source, target))
+        if second == "platform":
+            # Any MCP feature may use the mechanism, only through its surface;
+            # core must stay importable without the MCP package.
+            assert first != "core", (
+                "core reaches MCP platform",
+                source,
+                target,
+            )
+            assert target == PLATFORM and name in surfaces.get(target, set()), (
+                "private surface",
+                source,
+                target,
+                name,
+            )
             continue
         if second == "core":
             # Existing public APIs used by execution and retained MCP handlers.
@@ -346,36 +366,32 @@ def test_runtime_gateway_private_execution_import_is_rejected(module):
 @pytest.mark.parametrize(
     "source", ["dartwork_mpl.mcp.tools", "dartwork_mpl.mcp.artifacts.transport"]
 )
-def test_capture_helpers_remain_private_to_execution(source):
-    """Legacy and artifact callers must cross the declared execution surface."""
+def test_capture_module_is_reached_only_through_the_platform_surface(source):
+    """Legacy and artifact callers must cross the declared platform surface."""
     _, surfaces = imports_and_surfaces()
     with pytest.raises(AssertionError, match="private surface"):
         assert_boundaries(
-            [(source, "dartwork_mpl.mcp._capture", "run_child")], surfaces
+            [(source, "dartwork_mpl.mcp._platform.process", "run_child")],
+            surfaces,
         )
 
 
 @pytest.mark.parametrize("indirect", [False, True])
 def test_core_cannot_reach_execution_through_capture(indirect):
-    """Classifying the collector never grants core an execution dependency."""
-    edges = [("dartwork_mpl.bridge", "dartwork_mpl.mcp._capture", "run_child")]
+    """Classifying the collector never grants core an MCP dependency."""
+    edges = [("dartwork_mpl.bridge", PLATFORM, "run_child")]
     if indirect:
         edges.append(("dartwork_mpl.shared", "dartwork_mpl.bridge", None))
+    _, surfaces = imports_and_surfaces()
     with pytest.raises(AssertionError):
-        assert_boundaries(edges, {})
+        assert_boundaries(edges, surfaces)
 
 
-def test_execution_can_use_its_private_capture_module():
-    """The collector belongs to execution rather than becoming a core gateway."""
+def test_execution_can_use_the_platform_capture_surface():
+    """The collector serves execution through the platform surface, not as a core gateway."""
+    _, surfaces = imports_and_surfaces()
     assert_boundaries(
-        [
-            (
-                "dartwork_mpl.mcp.execution",
-                "dartwork_mpl.mcp._capture",
-                "run_child",
-            )
-        ],
-        {},
+        [("dartwork_mpl.mcp.execution", PLATFORM, "run_child")], surfaces
     )
 
 
@@ -386,7 +402,7 @@ def test_capture_cannot_reverse_the_artifact_dependency():
         assert_boundaries(
             [
                 (
-                    "dartwork_mpl.mcp._capture",
+                    "dartwork_mpl.mcp._platform.process",
                     "dartwork_mpl.mcp.artifacts",
                     "render_artifact",
                 )

@@ -69,6 +69,8 @@ PLATFORM = frozenset(
     {
         "dartwork_mpl._figure_geometry",
         "dartwork_mpl._rc",
+        # MCP process capture and asset confinement.
+        "dartwork_mpl.mcp._platform",
         # The viewer's loopback access checks, directory handles, HTTP body
         # and refusal helpers and bounded JSON decoder; the package
         # initializer only names them.

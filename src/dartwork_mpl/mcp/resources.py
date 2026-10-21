@@ -14,7 +14,7 @@ from fastmcp import FastMCP
 from matplotlib import font_manager
 
 from ..util import get_prompt
-from . import _assets
+from ._platform import resolve_style_path, resolve_template_path
 
 __all__ = ["register_resources"]
 
@@ -178,7 +178,7 @@ def register_resources(mcp: FastMCP) -> None:
         font-poster, font-presentation, font-report, font-scientific,
         font-web, lang-kr, spine-no, spine-yes, theme-dark, theme-minimal.
         """
-        style_file = _assets.resolve_style_path(preset)
+        style_file = resolve_style_path(preset)
         if style_file is None:
             available = sorted(
                 [p.stem for p in _MPLSTYLE_DIR.glob("*.mplstyle")]
@@ -207,7 +207,7 @@ def register_resources(mcp: FastMCP) -> None:
         scatter, small_multiples, stacked_bar, tornado, twin_axis,
         violin, waterfall.
         """
-        path = _assets.resolve_template_path(plot_type)
+        path = resolve_template_path(plot_type)
         if path is None:
             available = sorted(p.stem for p in _TEMPLATE_DIR.glob("*.py"))
             return f"No template for {plot_type!r}. Available: {available}"
@@ -224,10 +224,10 @@ def register_resources(mcp: FastMCP) -> None:
         tiers use the same confined bare-ID lookup; invalid IDs return
         the existing not-found response.
         """
-        advanced = _assets.resolve_template_path(plot_type, advanced=True)
+        advanced = resolve_template_path(plot_type, advanced=True)
         if advanced is not None:
             return advanced.read_text(encoding="utf-8")
-        basic = _assets.resolve_template_path(plot_type)
+        basic = resolve_template_path(plot_type)
         if basic is not None:
             return basic.read_text(encoding="utf-8")
         available = sorted(p.stem for p in _TEMPLATE_DIR.glob("*.py"))

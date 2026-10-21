@@ -9,7 +9,7 @@ from pathlib import Path
 
 __all__ = ["resolve_style_path", "resolve_template_path"]
 
-_ASSET_DIR = Path(__file__).parent.parent / "asset"
+_ASSET_DIR = Path(__file__).parents[2] / "asset"
 _TEMPLATE_DIR = _ASSET_DIR / "prompt" / "05-templates"
 _MPLSTYLE_DIR = _ASSET_DIR / "mplstyle"
 _TEMPLATE_ID_RE = re.compile(r"[a-z0-9_]+")

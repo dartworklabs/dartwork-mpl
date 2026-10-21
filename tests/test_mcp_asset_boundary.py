@@ -11,7 +11,8 @@ import pytest
 
 fastmcp = pytest.importorskip("fastmcp")
 
-from dartwork_mpl.mcp import _assets, resources, tools  # noqa: E402
+from dartwork_mpl.mcp import resources, tools  # noqa: E402
+from dartwork_mpl.mcp._platform import assets as _assets  # noqa: E402
 
 _SENTINEL = "OUTSIDE_ASSET_CONTENT_DO_NOT_RETURN"
 _ROUTES = (
