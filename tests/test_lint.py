@@ -8,6 +8,7 @@ import random
 import tokenize
 
 import pytest
+import yaml
 
 from dartwork_mpl.lint import (
     Issue,
@@ -1250,3 +1251,224 @@ class TestSeededSourcePreservation:
         apply_lint_fixes(source)
         migrate_legacy_code(source)
         assert not marker.exists()
+
+
+class TestCatalogBoundary:
+    """Catalog loads reject malformed rules before any source scan can occur."""
+
+    @staticmethod
+    def write_catalog(tmp_path, document):
+        """Write actual YAML so tests observe the public file-loading boundary."""
+        path = tmp_path / "rules.yaml"
+        path.write_text(
+            yaml.safe_dump(document, sort_keys=False), encoding="utf-8"
+        )
+        return path
+
+    @staticmethod
+    def entry(**changes):
+        """Provide one valid rule whose selected field a case can replace."""
+        return {
+            "id": "probe",
+            "severity": "warning",
+            "message": "seen\n",
+            "detector": {"pattern": "needle"},
+            **changes,
+        }
+
+    @pytest.mark.parametrize("severity", ["critcal", 7, None, [], {}, True])
+    def test_invalid_severity_rejected_at_load(self, tmp_path, severity):
+        """Invalid severity values never escape as successfully loaded Rules."""
+        path = self.write_catalog(
+            tmp_path, {"rules": [self.entry(severity=severity)]}
+        )
+        with pytest.raises(ValueError, match="severity.*probe"):
+            load_rules(path)
+
+    @pytest.mark.parametrize("rule_id", ["probe", "tight-layout"])
+    @pytest.mark.parametrize("pattern", ["(", "[", 7, None, [], {}])
+    def test_invalid_regex_rejected_at_load(self, tmp_path, rule_id, pattern):
+        """Regex type and grammar are checked even for builtin detector IDs."""
+        path = self.write_catalog(
+            tmp_path,
+            {"rules": [self.entry(id=rule_id, detector={"pattern": pattern})]},
+        )
+        with pytest.raises(ValueError, match=f"regex.*{rule_id}"):
+            load_rules(path)
+
+    @pytest.mark.parametrize(
+        "document",
+        [
+            None,
+            [],
+            "rules",
+            {"rules": None},
+            {"rules": {}},
+            {"rules": "bad"},
+            {"rules": [7]},
+            {"rules": [{"detector": []}]},
+        ],
+    )
+    def test_invalid_catalog_structure_has_context(self, tmp_path, document):
+        """Malformed containers reject with a catalog or rule context."""
+        path = self.write_catalog(tmp_path, document)
+        with pytest.raises(ValueError, match="[Cc]atalog|[Rr]ule"):
+            load_rules(path)
+
+    @pytest.mark.parametrize("field", ["id", "severity", "message", "detector"])
+    def test_missing_required_fields_have_context(self, tmp_path, field):
+        """Missing construction fields reject consistently at catalog load."""
+        entry = self.entry()
+        del entry[field]
+        path = self.write_catalog(tmp_path, {"rules": [entry]})
+        with pytest.raises(ValueError, match="[Rr]ule"):
+            load_rules(path)
+
+    def test_seeded_malformed_fields_and_shapes_reject(self, tmp_path):
+        """Finite seed-500 malformed inputs reject without leaking access errors."""
+        rng = random.Random(500)
+        mutations = (
+            [{"severity": "bad-" + str(rng.randrange(10000))} for _ in range(8)]
+            + [{"id": value} for value in [None, 3, [], {}]]
+            + [{"message": value} for value in [None, 3, [], {}]]
+            + [
+                {"detector": {"kind": value}}
+                for value in [None, 3, [], {}, "unknown"]
+            ]
+            + [
+                {"detector": {"kind": "ast", "check": value}}
+                for value in [None, 3, [], {}, "unknown"]
+            ]
+            + [
+                {"detector": {"pattern": "(" * rng.randrange(1, 8)}}
+                for _ in range(8)
+            ]
+            + [
+                {"detector": {"kind": "substring", "literal": value}}
+                for value in [None, 3, [], {}]
+            ]
+            + [{"detector": value} for value in [None, 3, "bad", []]]
+            + [
+                {"detector": {"kind": "substring"}},
+                {"detector": {"kind": "ast"}},
+            ]
+        )
+        rng.shuffle(mutations)
+        for index, mutation in enumerate(mutations):
+            path = self.write_catalog(
+                tmp_path, {"rules": [self.entry(**mutation)]}
+            )
+            with pytest.raises(ValueError, match="rule") as caught:
+                load_rules(path)
+            assert str(caught.value), (500, index, mutation)
+
+    @pytest.mark.parametrize("document", [{}, {"rules": []}])
+    def test_empty_catalogs_remain_valid(self, tmp_path, document):
+        """An absent rules key and explicit empty list still load as no rules."""
+        assert load_rules(self.write_catalog(tmp_path, document)) == []
+
+    def test_supported_detectors_defaults_and_open_metadata(self, tmp_path):
+        """Valid kinds retain strings, defaults, optional metadata, and order."""
+        entries = [
+            self.entry(
+                id="implicit",
+                detector={"pattern": "^needle$"},
+                why={"open": True},
+                extra="ignored",
+            ),
+            self.entry(
+                id="explicit",
+                severity="critical",
+                detector={"kind": "regex", "pattern": "needle"},
+            ),
+            self.entry(
+                id="text",
+                severity="info",
+                detector={"kind": "substring", "literal": ""},
+                fix_suggestion=7,
+            ),
+            self.entry(
+                id="map", detector={"kind": "ast", "check": "colormap-name"}
+            ),
+            self.entry(
+                id="color", detector={"kind": "ast", "check": "color-name"}
+            ),
+        ]
+        rules = load_rules(
+            self.write_catalog(
+                tmp_path, {"version": "ignored", "rules": entries}
+            )
+        )
+        assert [
+            (r.id, r.severity, r.detector_kind, r.detector_value) for r in rules
+        ] == [
+            ("implicit", "warning", "regex", "^needle$"),
+            ("explicit", "critical", "regex", "needle"),
+            ("text", "info", "substring", ""),
+            ("map", "warning", "ast", "colormap-name"),
+            ("color", "warning", "ast", "color-name"),
+        ]
+        assert rules[0].message == "seen"
+        assert rules[0].why == {"open": True}
+        assert rules[2].fix_suggestion == 7
+        assert [
+            issue.line for issue in lint("other\nneedle\n", rules=rules[:1])
+        ] == [2]
+        assert lint("plt.tight_layout()", rules=[]) == []
+        assert (
+            Rule("direct", "custom", "custom", "value", "message").severity
+            == "custom"
+        )
+
+    def test_path_reread_preserves_old_snapshot_and_custom_override(
+        self, tmp_path
+    ):
+        """Same-path reloads observe edits while previous rule lists remain values."""
+        path = self.write_catalog(
+            tmp_path,
+            {
+                "rules": [
+                    self.entry(
+                        id="tight-layout",
+                        detector={"kind": "substring", "literal": "needle"},
+                    ),
+                    self.entry(
+                        id="second",
+                        severity="info",
+                        detector={"pattern": "other"},
+                    ),
+                ]
+            },
+        )
+        first = load_rules(path)
+        self.write_catalog(
+            tmp_path,
+            {
+                "rules": [
+                    self.entry(
+                        severity="critical", detector={"pattern": "changed"}
+                    )
+                ]
+            },
+        )
+        second = load_rules(path)
+        issues = lint("other needle", rules=first)
+        assert [
+            (issue.rule_id, issue.severity, issue.snippet) for issue in issues
+        ] == [
+            ("tight-layout", "warning", "other needle"),
+            ("second", "info", "other needle"),
+        ]
+        assert [issue.rule_id for issue in lint("changed", rules=second)] == [
+            "probe"
+        ]
+        assert lint("changed", rules=first) == []
+
+    def test_filesystem_and_yaml_syntax_errors_remain_native(self, tmp_path):
+        """Catalog validation does not conceal file access or YAML parse failures."""
+        with pytest.raises(FileNotFoundError):
+            load_rules(tmp_path / "missing.yaml")
+        path = tmp_path / "broken.yaml"
+        path.write_text("rules: [", encoding="utf-8")
+        with pytest.raises(yaml.YAMLError):
+            load_rules(path)
