@@ -57,17 +57,35 @@ class TestFindTemplate:
 
 
 class TestApplyLintFixes:
+    """The MCP adapter applies proven rewrites and preserves refused source."""
+
     def setup_method(self) -> None:
         self.apply = _tools_map()["apply_lint_fixes"]
 
     def test_rewrites_tight_layout(self) -> None:
+        """An imported dm alias permits rewriting a proven Figure receiver."""
         out = self.apply(
             "import matplotlib.pyplot as plt\n"
+            "import dartwork_mpl as dm\n"
             "fig = plt.figure()\n"
             "fig.tight_layout()\n"
         )
         assert out["applied"], "tight_layout() must be an applied fix"
         assert "simple_layout" in out["fixed_code"]
+
+    def test_preserves_tight_layout_without_dm_import(self) -> None:
+        """Missing dm bindings remain exact source and an unfixed diagnostic."""
+        code = (
+            "import matplotlib.pyplot as plt\n"
+            "fig = plt.figure()\n"
+            "fig.tight_layout()\n"
+        )
+        out = self.apply(code)
+        assert out["fixed_code"] == code
+        assert out["applied"] == []
+        assert {issue["rule_id"] for issue in out["unfixed"]} == {
+            "tight-layout"
+        }
 
     def test_clean_code_has_no_fixes(self) -> None:
         out = self.apply("x = 1\n")

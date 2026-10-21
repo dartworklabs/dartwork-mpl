@@ -22,7 +22,7 @@ import pytest
 import yaml
 
 from dartwork_mpl import _REMOVED_NAMES
-from dartwork_mpl.lint import _MIGRATE_HINTS, _MIGRATE_SAFE_REWRITES
+from dartwork_mpl.lint import _MIGRATE_HINTS
 
 
 def _lint_rules_corpus() -> str:
@@ -40,11 +40,8 @@ def _lint_rules_corpus() -> str:
 
 
 def _codemod_corpus() -> str:
-    """Every pattern + hint of the migrator, joined."""
+    """Removed-name patterns and hints remain covered without rewrite internals."""
     parts: list[str] = []
-    for pattern, replacement in _MIGRATE_SAFE_REWRITES:
-        parts.append(pattern.pattern)
-        parts.append(replacement)
     for pattern, hint in _MIGRATE_HINTS:
         parts.append(pattern.pattern)
         parts.append(hint)

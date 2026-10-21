@@ -15,6 +15,7 @@ __all__ = [
     "RgbViewIterator",
 ]
 
+import math
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any
@@ -26,6 +27,20 @@ from ._conversion import _linear_srgb_to_oklab, _srgb_to_linear
 
 if TYPE_CHECKING:
     from ._color import Color
+
+
+def _finite_component(value: float, space: str, component: str) -> float:
+    """Convert a component, rejecting nonfinite values before any color writes.
+
+    Preserve float conversion errors; NaN and either infinity raise ValueError
+    in the same style as the Color constructors. No range policy is applied.
+    """
+    numeric = float(value)
+    if not math.isfinite(numeric):
+        raise ValueError(
+            f"{space} component {component}={numeric!r} must be a finite number"
+        )
+    return numeric
 
 
 # ============================================================================
@@ -153,7 +168,8 @@ class OklabView(_BaseColorView):
 
     @L.setter
     def L(self, value: float) -> None:
-        self._color._L = float(value)
+        """Set finite OKLab L; reject nonfinite input without changing the color."""
+        self._color._L = _finite_component(value, "OKLab", "L")
 
     @property
     def a(self) -> float:
@@ -162,7 +178,8 @@ class OklabView(_BaseColorView):
 
     @a.setter
     def a(self, value: float) -> None:
-        self._color._a = float(value)
+        """Set finite OKLab a; reject nonfinite input without changing the color."""
+        self._color._a = _finite_component(value, "OKLab", "a")
 
     @property
     def b(self) -> float:
@@ -171,7 +188,8 @@ class OklabView(_BaseColorView):
 
     @b.setter
     def b(self, value: float) -> None:
-        self._color._b = float(value)
+        """Set finite OKLab b; reject nonfinite input without changing the color."""
+        self._color._b = _finite_component(value, "OKLab", "b")
 
     def __repr__(self) -> str:
         return f"OklabView(L={self.L:.4f}, a={self.a:.4f}, b={self.b:.4f})"
@@ -221,7 +239,7 @@ class OklchView(_BaseColorView):
         return self._color.to_oklch()
 
     def _update_oklab(self, L: float, C: float, h: float) -> None:
-        """Update Color from OKLCH values.
+        """Compute replacement OKLab coordinates before committing Color writes.
 
         Parameters
         ----------
@@ -233,9 +251,8 @@ class OklchView(_BaseColorView):
             Hue in degrees.
         """
         _, a, b = conversion._oklch_degrees_to_oklab(L, C, h)
-        self._color._L = float(L)
-        self._color._a = float(a)
-        self._color._b = float(b)
+        coordinates = float(L), float(a), float(b)
+        self._color._L, self._color._a, self._color._b = coordinates
 
     @property
     def L(self) -> float:
@@ -245,8 +262,10 @@ class OklchView(_BaseColorView):
 
     @L.setter
     def L(self, value: float) -> None:
+        """Set finite lightness without adding a range bound or mutating on rejection."""
+        numeric = _finite_component(value, "OKLCH", "L")
         _, C, h = self._get_oklch()
-        self._update_oklab(float(value), C, h)
+        self._update_oklab(numeric, C, h)
 
     @property
     def C(self) -> float:
@@ -256,10 +275,12 @@ class OklchView(_BaseColorView):
 
     @C.setter
     def C(self, value: float) -> None:
+        """Set finite chroma, retaining the original negative-input comparison first."""
         if value < 0:
             raise ValueError("Chroma must be >= 0")
+        numeric = _finite_component(value, "OKLCH", "C")
         L, _, h = self._get_oklch()
-        self._update_oklab(L, float(value), h)
+        self._update_oklab(L, numeric, h)
 
     @property
     def h(self) -> float:
@@ -269,8 +290,10 @@ class OklchView(_BaseColorView):
 
     @h.setter
     def h(self, value: float) -> None:
+        """Normalize finite hue to [0, 360), rejecting nonfinite input before writes."""
+        numeric = _finite_component(value, "OKLCH", "h")
         L, C, _ = self._get_oklch()
-        h_normalized: float = float(value) % 360.0
+        h_normalized = numeric % 360.0
         self._update_oklab(L, C, h_normalized)
 
     def __repr__(self) -> str:
@@ -320,7 +343,9 @@ class RgbView(_BaseColorView):
         return self._color.to_rgb()
 
     def _update_oklab(self, r: float, g: float, b: float) -> None:
-        """Update Color from RGB values.
+        """Compute replacement OKLab coordinates before committing Color writes.
+
+        Preserve clamping and the existing RGB no-op source-precision guard.
 
         Parameters
         ----------
@@ -351,9 +376,8 @@ class RgbView(_BaseColorView):
         L, a, b_val = _linear_srgb_to_oklab(
             float(r_lin), float(g_lin), float(b_lin)
         )
-        self._color._L = float(L)
-        self._color._a = float(a)
-        self._color._b = float(b_val)
+        coordinates = float(L), float(a), float(b_val)
+        self._color._L, self._color._a, self._color._b = coordinates
 
     @property
     def r(self) -> float:
@@ -363,8 +387,10 @@ class RgbView(_BaseColorView):
 
     @r.setter
     def r(self, value: float) -> None:
+        """Set finite RGB r, retaining clamping and rejecting before color writes."""
+        numeric = _finite_component(value, "RGB", "r")
         _, g, b = self._get_rgb()
-        self._update_oklab(float(value), g, b)
+        self._update_oklab(numeric, g, b)
 
     @property
     def g(self) -> float:
@@ -374,8 +400,10 @@ class RgbView(_BaseColorView):
 
     @g.setter
     def g(self, value: float) -> None:
+        """Set finite RGB g, retaining clamping and rejecting before color writes."""
+        numeric = _finite_component(value, "RGB", "g")
         r, _, b = self._get_rgb()
-        self._update_oklab(r, float(value), b)
+        self._update_oklab(r, numeric, b)
 
     @property
     def b(self) -> float:
@@ -385,8 +413,10 @@ class RgbView(_BaseColorView):
 
     @b.setter
     def b(self, value: float) -> None:
+        """Set finite RGB b, retaining clamping and rejecting before color writes."""
+        numeric = _finite_component(value, "RGB", "b")
         r, g, _ = self._get_rgb()
-        self._update_oklab(r, g, float(value))
+        self._update_oklab(r, g, numeric)
 
     def __repr__(self) -> str:
         return f"RgbView(r={self.r:.4f}, g={self.g:.4f}, b={self.b:.4f})"

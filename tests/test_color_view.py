@@ -1,5 +1,8 @@
 """Tests for Color View classes (OklabView, OklchView, RgbView)."""
 
+import math
+import random
+
 import pytest
 
 from dartwork_mpl._colors import Color
@@ -417,3 +420,134 @@ class TestBackwardCompatibility:
         assert abs(r_old - r_new) < 1e-10
         assert abs(g_old - g_new) < 1e-10
         assert abs(b_old - b_new) < 1e-10
+
+
+_COMPONENTS = (
+    ("oklab", "L"),
+    ("oklab", "a"),
+    ("oklab", "b"),
+    ("oklch", "L"),
+    ("oklch", "C"),
+    ("oklch", "h"),
+    ("rgb", "r"),
+    ("rgb", "g"),
+    ("rgb", "b"),
+)
+_NONFINITE = (math.nan, math.inf, -math.inf)
+
+
+@pytest.mark.parametrize(("space", "component"), _COMPONENTS)
+@pytest.mark.parametrize("value", _NONFINITE, ids=("nan", "inf", "minus-inf"))
+def test_nonfinite_assignment_preserves_source(space, component, value):
+    """Every component rejects nonfinite input before any canonical coordinate changes."""
+    color = Color.from_oklab(0.7, 0.1, 0.2)
+    before = color.to_oklab()
+    with pytest.raises(ValueError):
+        setattr(getattr(color, space), component, value)
+    assert color.to_oklab() == before
+
+
+def test_seeded_nonfinite_assignments_preserve_source():
+    """All 864 bounded assignments reject without mutating their seeded source colors."""
+    seed = 271828
+    rng = random.Random(seed)
+    failures = []
+    checked = 0
+    for index in range(32):
+        start = (
+            rng.uniform(0, 1),
+            rng.uniform(-0.25, 0.25),
+            rng.uniform(-0.25, 0.25),
+        )
+        for space, component in _COMPONENTS:
+            for value in _NONFINITE:
+                color = Color.from_oklab(*start)
+                before = color.to_oklab()
+                rejected = False
+                try:
+                    setattr(getattr(color, space), component, value)
+                except ValueError:
+                    rejected = True
+                after = color.to_oklab()
+                checked += 1
+                if not rejected or after != before:
+                    failures.append(
+                        (
+                            seed,
+                            index,
+                            start,
+                            space,
+                            component,
+                            value,
+                            rejected,
+                            before,
+                            after,
+                        )
+                    )
+    assert checked == 864
+    assert not failures, (
+        f"{len(failures)} failures; first inputs: {failures[:3]!r}"
+    )
+
+
+@pytest.mark.parametrize(("space", "component"), _COMPONENTS)
+@pytest.mark.parametrize("value", [None, object(), "not-a-number"])
+def test_nonnumeric_assignment_retains_rejection_and_source(
+    space, component, value
+):
+    """Existing float conversion and chroma comparison reject invalid values without writes."""
+    color = Color.from_oklab(0.7, 0.1, 0.2)
+    before = color.to_oklab()
+    expected = (
+        ValueError
+        if isinstance(value, str) and (space, component) != ("oklch", "C")
+        else TypeError
+    )
+    with pytest.raises(expected):
+        setattr(getattr(color, space), component, value)
+    assert color.to_oklab() == before
+
+
+@pytest.mark.parametrize(("space", "component"), _COMPONENTS)
+def test_numeric_strings_keep_existing_conversion_behavior(space, component):
+    """Numeric strings stay accepted except chroma's existing comparison TypeError."""
+    string_color = Color.from_oklab(0.7, 0.1, 0.2)
+    numeric_color = Color.from_oklab(0.7, 0.1, 0.2)
+    if (space, component) == ("oklch", "C"):
+        before = string_color.to_oklab()
+        with pytest.raises(TypeError):
+            string_color.oklch.C = "0.2"
+        assert string_color.to_oklab() == before
+    else:
+        setattr(getattr(string_color, space), component, "0.2")
+        setattr(getattr(numeric_color, space), component, 0.2)
+        assert string_color.to_oklab() == numeric_color.to_oklab()
+
+
+@pytest.mark.parametrize("space", ["oklab", "oklch"])
+def test_finite_lightness_outside_unit_interval_remains_allowed(space):
+    """Finite extreme lightness is not turned into a new range rejection or clamp."""
+    color = Color.from_oklab(0.7, 0.1, 0.2)
+    getattr(color, space).L = 2.0
+    assert color.oklab.L == 2.0
+
+
+@pytest.mark.parametrize("component", ["r", "g", "b"])
+@pytest.mark.parametrize(("value", "clamped"), [(2.0, 1.0), (-2.0, 0.0)])
+def test_finite_rgb_extremes_keep_clamping(component, value, clamped):
+    """Finite RGB extremes keep their existing clamp and conversion path."""
+    color = Color.from_rgb(0.4, 0.5, 0.6)
+    expected = Color.from_rgb(0.4, 0.5, 0.6)
+    setattr(color.rgb, component, value)
+    setattr(expected.rgb, component, clamped)
+    assert color.to_oklab() == expected.to_oklab()
+
+
+@pytest.mark.parametrize("component", ["r", "g", "b"])
+def test_rgb_noop_keeps_out_of_gamut_source_precision(component):
+    """Assigning the current RGB component must preserve all original OKLab bits."""
+    color = Color.from_oklab(0.7, 0.3, 0.2)
+    assert not color.in_gamut()
+    before = color.to_oklab()
+    setattr(color.rgb, component, getattr(color.rgb, component))
+    assert color.to_oklab() == before

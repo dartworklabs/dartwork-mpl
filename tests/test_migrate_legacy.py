@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+import ast
+import io
+import tokenize
+
+import pytest
+
 import dartwork_mpl as dm
 from dartwork_mpl.lint import migrate_legacy_code
 
@@ -10,7 +16,12 @@ class TestSafeSubstitutions:
     """Pass 1 — patterns whose 0.4 replacement is unambiguous."""
 
     def test_plt_style_use_becomes_dm_style_use(self) -> None:
-        out = migrate_legacy_code('plt.style.use("scientific")')
+        """A supported preset rewrites only with both owner imports present."""
+        # The former implicit-name fixture was unsafe under the accepted proof rule.
+        out = migrate_legacy_code(
+            "import matplotlib.pyplot as plt\nimport dartwork_mpl as dm\n"
+            'plt.style.use("scientific")'
+        )
         assert 'dm.style.use("scientific")' in out
         assert "plt.style.use" not in out
 
@@ -20,7 +31,12 @@ class TestSafeSubstitutions:
         assert out == "fig, ax = plt.subplots()"
 
     def test_safe_pass_does_not_add_hint_comments(self) -> None:
-        out = migrate_legacy_code('plt.style.use("x")\n')
+        """A proven supported style replacement needs no migration hint."""
+        # "x" is unsupported and no longer represents a safe style replacement.
+        out = migrate_legacy_code(
+            "import matplotlib.pyplot as plt\nimport dartwork_mpl as dm\n"
+            'plt.style.use("scientific")\n'
+        )
         assert "TODO(dm-migrate)" not in out
 
 
@@ -98,7 +114,11 @@ class TestHintComments:
         assert 'dm.subplots(width="13cm")' in out  # original kept
 
     def test_indent_is_preserved_in_hint(self) -> None:
-        out = migrate_legacy_code("    w = dm.SW\n")
+        """A hint inside a valid function preserves its statement indentation."""
+        # Standalone indentation is malformed source, which must now be refused.
+        out = migrate_legacy_code(
+            "def measure():\n    import dartwork_mpl as dm\n    w = dm.SW\n"
+        )
         # The TODO comment should sit at the same indent as the
         # offending line so the result remains syntactically valid.
         assert "    # TODO(dm-migrate):" in out
@@ -142,9 +162,168 @@ class TestNativeApiSurface:
     def test_lint_code_round_trip_on_safe_pass(self) -> None:
         """After the safe substitutions, the resulting source should
         carry no critical issues from the same patterns."""
-        legacy = 'import matplotlib.pyplot as plt\nplt.style.use("x")\n'
+        # Keep the original round-trip intent with supported, explicitly bound names.
+        legacy = (
+            "import matplotlib.pyplot as plt\nimport dartwork_mpl as dm\n"
+            'plt.style.use("scientific")\n'
+        )
         rewritten = migrate_legacy_code(legacy)
         issues = dm.lint_code(rewritten)
         # The ``plt.style.use`` rule should no longer fire; any
         # remaining issues must come from rules we didn't touch.
         assert not any(i.rule_id == "plt-style-use" for i in issues)
+
+
+class TestMigrationPreservation:
+    """Migration edits executable syntax while preserving literal and comment bytes."""
+
+    @pytest.mark.parametrize(
+        "source",
+        [
+            'text = """example\nplt.tight_layout()\n"""\n',
+            'text = """plt.style.use("scientific")\ndm.SW\n"""\n',
+            'text = f"plt.tight_layout(); dm.SW; {value}"\n',
+            '# plt.style.use("scientific"); plt.tight_layout(); dm.SW\n',
+        ],
+        ids=["c3-triple", "style-in-triple", "fstring-text", "comment"],
+    )
+    def test_inert_literal_and_comment_sources_are_exactly_preserved(
+        self, source
+    ):
+        """C3 requires exact source and triple/f-string value preservation."""
+        migrated = migrate_legacy_code(source)
+        assert migrated == source
+        assert ast.dump(ast.parse(migrated)) == ast.dump(ast.parse(source))
+
+    @pytest.mark.parametrize(
+        "source",
+        [
+            'text = """unterminated\nplt.tight_layout()\n',
+            'plt.style.use("scientific")\n(\n',
+            "    w = dm.SW\n",
+            'text = "unterminated\nplt.tight_layout()\n',
+            "w = dm.SW\n\x00",
+        ],
+        ids=["c3-triple", "open-paren", "indent", "quote", "null"],
+    )
+    def test_malformed_source_is_exactly_refused(self, source):
+        """Migration refusal on malformed source is a new accepted regression."""
+        assert migrate_legacy_code(source) == source
+
+    @pytest.mark.parametrize(
+        "call",
+        [
+            'plt.style.use("ggplot")',
+            'plt.style.use(["scientific"])',
+            "plt.style.use(name)",
+            'unknown.style.use("scientific")',
+        ],
+    )
+    def test_unsupported_or_unproven_style_calls_are_exactly_refused(
+        self, call
+    ):
+        """Supported spelling alone cannot manufacture a safe dm style call."""
+        source = (
+            "import matplotlib.pyplot as plt\nimport dartwork_mpl as dm\n"
+            f"{call}\n"
+        )
+        assert migrate_legacy_code(source) == source
+
+    def test_style_fragment_without_dm_binding_is_exactly_refused(self):
+        """Omitted imports remain useful diagnostics rather than rewrite authority."""
+        source = (
+            'import matplotlib.pyplot as plt\nplt.style.use("scientific")\n'
+        )
+        assert migrate_legacy_code(source) == source
+
+    def test_alias_style_replacement_preserves_all_other_bytes(self):
+        """Only a proven owner changes, including with Unicode, CRLF and a comment."""
+        source = (
+            "import matplotlib.pyplot as p\r\nimport dartwork_mpl as d\r\n"
+            "label = '한글 🧭'\r\n"
+            'p.style.use(\r\n    "scientific"\r\n)  # retain this\r\n'
+        )
+        expected = source.replace("p.style.use(", "d.style.use(")
+        assert migrate_legacy_code(source) == expected
+        assert migrate_legacy_code(expected) == expected
+
+    @pytest.mark.parametrize(
+        "statement",
+        [
+            "value = (\n    dm.SW,\n    dm.WIDTHS['MW'],\n)\n",
+            "value = \\\n    dm.SW\n",
+            "if ready: value = dm.SW\n",
+            "def width(): return dm.SW\n",
+        ],
+        ids=["parenthesized", "backslash", "inline-if", "inline-function"],
+    )
+    def test_hints_use_logical_statement_boundaries(self, statement):
+        """A hint may precede a statement or defer, but cannot split its continuation."""
+        source = "import dartwork_mpl as dm\n" + statement
+        out = migrate_legacy_code(source)
+        try:
+            ast.parse(out)
+        except (SyntaxError, ValueError) as error:
+            pytest.fail(f"migration split a logical statement: {error}\n{out}")
+        assert statement in out
+        assert "TODO(dm-migrate)" not in out[out.index(statement) :]
+        assert migrate_legacy_code(out) == out
+
+    @pytest.mark.parametrize("newline", ["\n", "\r\n"])
+    @pytest.mark.parametrize("final_newline", [False, True])
+    def test_hint_preserves_statement_and_existing_newline_bytes(
+        self, newline, final_newline
+    ):
+        """Inserted hints retain the executable line and the source newline convention."""
+        ending = newline if final_newline else ""
+        source = (
+            "import dartwork_mpl as dm" + newline + "width = dm.SW" + ending
+        )
+        out = migrate_legacy_code(source)
+        assert "TODO(dm-migrate)" in out
+        assert out.endswith("width = dm.SW" + ending)
+        retained = "".join(
+            line
+            for line in out.splitlines(keepends=True)
+            if not line.lstrip().startswith("# TODO(dm-migrate):")
+        )
+        assert retained == source
+        if newline == "\r\n":
+            assert "\n" not in out.replace("\r\n", "")
+        assert migrate_legacy_code(out) == out
+
+    def test_real_hints_leave_original_comments_and_fstring_text_unchanged(
+        self,
+    ):
+        """Executable legacy syntax can gain hints beside preserved inert examples."""
+        source = (
+            "import dartwork_mpl as dm\n"
+            "# retained: dm.SW; plt.tight_layout()\n"
+            'text = f"literal dm.SW; plt.tight_layout(); {name}"\n'
+            "width = dm.SW\n"
+        )
+        out = migrate_legacy_code(source)
+        assert "TODO(dm-migrate)" in out
+        before_values = [
+            node.value
+            for node in ast.walk(ast.parse(source))
+            if isinstance(node, ast.Constant)
+        ]
+        after_values = [
+            node.value
+            for node in ast.walk(ast.parse(out))
+            if isinstance(node, ast.Constant)
+        ]
+        assert after_values == before_values
+        comments = [
+            token.string
+            for token in tokenize.generate_tokens(io.StringIO(out).readline)
+            if token.type == tokenize.COMMENT
+        ]
+        assert "# retained: dm.SW; plt.tight_layout()" in comments
+        retained = "".join(
+            line
+            for line in out.splitlines(keepends=True)
+            if not line.lstrip().startswith("# TODO(dm-migrate):")
+        )
+        assert retained == source
