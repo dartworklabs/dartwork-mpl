@@ -24,8 +24,6 @@ import matplotlib.pyplot as plt
 from matplotlib.backend_bases import get_registered_canvas_class
 from matplotlib.figure import Figure
 
-from ._helpers import create_parent_path
-
 # Image extensions matplotlib's savefig knows how to write — if a caller
 # passes a path that already ends with one of these, we strip it so the
 # requested ``formats`` are appended cleanly instead of producing
@@ -268,7 +266,7 @@ def save_formats(
         validate_figure(fig, quiet=validate_quiet)
 
     image_stem = _normalize_image_stem(image_stem)
-    create_parent_path(image_stem)
+    Path(image_stem).parent.mkdir(parents=True, exist_ok=True)
     # Salt SVG element ids with the output basename so a re-render of an
     # unchanged figure is byte-identical (see the Reproducibility note).
     salt = Path(image_stem).name
@@ -456,7 +454,7 @@ def save_and_show(
         finally:
             Path(tmp_path).unlink(missing_ok=True)
     else:
-        create_parent_path(image_path)
+        Path(image_path).parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(image_path, bbox_inches=None, **kwargs)
         # matplotlib appends the default format when the path has no
         # recognised extension (``"first"`` -> ``"first.png"``), so

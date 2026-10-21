@@ -6,7 +6,7 @@ import sys
 from functools import partial
 from typing import TYPE_CHECKING
 
-from .._helpers import get_renderer
+from .._figure_geometry import get_renderer
 from ._checks import registered_checks
 from ._types import BBOX_ERRORS, Severity, VisualWarning
 

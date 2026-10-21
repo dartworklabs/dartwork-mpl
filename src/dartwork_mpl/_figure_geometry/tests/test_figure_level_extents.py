@@ -1,6 +1,6 @@
 """Tests for the shared figure-level artist extent iterator.
 
-``_helpers.iter_figure_level_extents`` is the single source three sites
+``_figure_geometry.iter_figure_level_extents`` is the single source three sites
 now share — ``layout._figure_artist_reservations``, ``layout.tight_crop``,
 and the ``OVERFLOW`` check — for walking ``fig.suptitle`` / ``fig.text`` /
 ``fig.legend`` with one guard triplet. These tests pin the guard and the
@@ -13,7 +13,10 @@ from __future__ import annotations
 import matplotlib
 import matplotlib.pyplot as plt
 
-from dartwork_mpl._helpers import get_renderer, iter_figure_level_extents
+from dartwork_mpl._figure_geometry import (
+    get_renderer,
+    iter_figure_level_extents,
+)
 from dartwork_mpl.layout import tight_crop
 
 matplotlib.use("Agg")  # Non-interactive backend for testing.

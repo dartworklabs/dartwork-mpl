@@ -30,7 +30,7 @@ from matplotlib.legend import Legend
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox
 
-from ._helpers import BBOX_ERRORS, get_renderer
+from ._figure_geometry import BBOX_ERRORS, get_renderer
 from .scale import fs
 
 if TYPE_CHECKING:

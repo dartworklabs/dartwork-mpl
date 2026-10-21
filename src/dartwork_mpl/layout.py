@@ -30,11 +30,11 @@ from matplotlib.gridspec import (
 )
 from matplotlib.transforms import Bbox
 
-# ``BBOX_ERRORS`` is shared with the validation checks via ``_helpers``
+# ``BBOX_ERRORS`` is shared with the validation checks via ``_figure_geometry``
 # — one source for the bbox-measurement exception set (the two modules
 # used to carry identical private copies).
-from ._helpers import BBOX_ERRORS as _BBOX_ERRORS
-from ._helpers import get_renderer, iter_figure_level_extents
+from ._figure_geometry import BBOX_ERRORS as _BBOX_ERRORS
+from ._figure_geometry import get_renderer, iter_figure_level_extents
 from .units import Length
 
 if TYPE_CHECKING:

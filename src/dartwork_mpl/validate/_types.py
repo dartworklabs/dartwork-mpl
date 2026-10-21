@@ -14,7 +14,7 @@ from typing import Any, ClassVar
 # Re-exported from the shared internal helper so the layout engine and
 # the validation checks suppress the identical exception set (the two
 # used to carry private copies that could drift).
-from .._helpers import BBOX_ERRORS
+from .._figure_geometry import BBOX_ERRORS
 
 __all__ = ["BBOX_ERRORS", "Severity", "VisualWarning"]
 

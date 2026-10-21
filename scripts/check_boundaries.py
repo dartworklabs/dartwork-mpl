@@ -54,7 +54,7 @@ ENTRY_POINTS = frozenset(
 )
 
 # Units holding business-agnostic mechanism. They import no slice.
-PLATFORM = frozenset({"dartwork_mpl._helpers"})
+PLATFORM = frozenset({"dartwork_mpl._figure_geometry"})
 
 # Units holding one capability each.
 SLICES = frozenset(
@@ -147,7 +147,6 @@ DEBT: Mapping[str, str] = {
     "entry point import: dartwork_mpl.mcp.tools -> dartwork_mpl": "M4",
     "entry point import: dartwork_mpl.templates.diverging_bar -> dartwork_mpl": "C12",
     "entry point import: dartwork_mpl.validate_fixes -> dartwork_mpl": "L2",
-    "missing __all__: dartwork_mpl._helpers": "C1",
     "missing __all__: dartwork_mpl._luminance": "K1",
     "missing __all__: dartwork_mpl.formatting": "C8",
     "missing __all__: dartwork_mpl.validate_fixes": "L2",
@@ -164,8 +163,6 @@ DEBT: Mapping[str, str] = {
     "private import: dartwork_mpl._colors._api -> dartwork_mpl.style._style_lock": "C2",
     "private import: dartwork_mpl._colors._contrast -> dartwork_mpl._luminance._contrast_ratio": "K1",
     "private import: dartwork_mpl._luminance -> dartwork_mpl._colors._conversion": "K1",
-    "private import: dartwork_mpl.annotation -> dartwork_mpl._helpers.BBOX_ERRORS": "C1",
-    "private import: dartwork_mpl.annotation -> dartwork_mpl._helpers.get_renderer": "C1",
     "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.CYCLIC": "K5",
     "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.DIVERGING": "K5",
     "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.MULTI_HUE": "K5",
@@ -175,13 +172,8 @@ DEBT: Mapping[str, str] = {
     "private import: dartwork_mpl.diagnostics._fonts -> dartwork_mpl.font._FONT_DIR": "C4",
     "private import: dartwork_mpl.helpers.labels -> dartwork_mpl._colors._loader.ensure_loaded": "K4",
     "private import: dartwork_mpl.icon -> dartwork_mpl.style._did_you_mean": "C2",
-    "private import: dartwork_mpl.io -> dartwork_mpl._helpers.create_parent_path": "C1",
-    "private import: dartwork_mpl.layout -> dartwork_mpl._helpers.BBOX_ERRORS": "C1",
-    "private import: dartwork_mpl.layout -> dartwork_mpl._helpers.get_renderer": "C1",
-    "private import: dartwork_mpl.layout -> dartwork_mpl._helpers.iter_figure_level_extents": "C1",
     "private import: dartwork_mpl.mcp.resources -> dartwork_mpl._colors._loader.COLOR_LIBRARIES": "K4",
     "private import: dartwork_mpl.mcp.tools -> dartwork_mpl._colors._loader.COLOR_LIBRARIES": "K4",
-    "private import: dartwork_mpl.prompt -> dartwork_mpl._helpers.create_parent_path": "C1",
     "private import: dartwork_mpl.style -> dartwork_mpl._colors._semantic.SEMANTIC_TOKEN_NAMES": "K4",
     "private import: dartwork_mpl.style -> dartwork_mpl._colors._semantic.apply_semantic": "K4",
     "private import: dartwork_mpl.validate._checks._luminance -> dartwork_mpl._luminance._contrast_ratio": "K1",
@@ -189,11 +181,8 @@ DEBT: Mapping[str, str] = {
     "private import: dartwork_mpl.validate._checks._luminance -> dartwork_mpl._luminance._rel_lum": "K1",
     "private import: dartwork_mpl.validate._checks.grayscale_safety -> dartwork_mpl._colors._conversion._srgb_to_oklab": "K3",
     "private import: dartwork_mpl.validate._checks.grayscale_safety -> dartwork_mpl._colors._conversion.relative_y_srgb_d65": "K3",
-    "private import: dartwork_mpl.validate._checks.overflow -> dartwork_mpl._helpers.iter_figure_level_extents": "C1",
     "private import: dartwork_mpl.validate._checks.text_contrast -> dartwork_mpl._luminance._contrast_ratio": "K1",
     "private import: dartwork_mpl.validate._checks.tick_decimal -> dartwork_mpl.formatting.recommend_tick_decimals": "C8",
-    "private import: dartwork_mpl.validate._orchestrator -> dartwork_mpl._helpers.get_renderer": "C1",
-    "private import: dartwork_mpl.validate._types -> dartwork_mpl._helpers.BBOX_ERRORS": "C1",
     "private import: dartwork_mpl.validate_fixes -> dartwork_mpl.helpers.quality._MIN_RECOMMENDED_DPI": "L2",
     "undeclared dependency: dartwork_mpl.helpers -> dartwork_mpl.scale": "C11",
     "undeclared dependency: dartwork_mpl.mcp -> dartwork_mpl.util": "C9",
