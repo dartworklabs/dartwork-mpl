@@ -101,6 +101,9 @@ only-include = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/dartwork_mpl"]
+# Slice-owned tests sit inside the package tree (ADR 0005) but never ship;
+# tests/architecture/test_packaging.py builds the wheel and checks this.
+exclude = ["**/tests/**", "**/test_*.py", "**/conftest.py"]
 
 # Agent entry-point files are bundled inside the wheel under
 # ``dartwork_mpl/asset/agent/`` so installations from PyPI can read
@@ -173,8 +176,12 @@ dev = [
 # Run with coverage: uv run pytest --cov=src/dartwork_mpl --cov-report=html
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src"]
+# Cross-cutting suites live in tests/; slice-owned tests live next to their
+# code in src/dartwork_mpl/**/tests/ (ADR 0005). importlib mode lets test
+# modules in different directories share a file name; "." makes the
+# `tests.*` helper modules importable from either tree.
+testpaths = ["tests", "src/dartwork_mpl"]
+pythonpath = ["src", "."]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -182,6 +189,7 @@ addopts = [
     "-v",
     "--strict-markers",
     "--tb=short",
+    "--import-mode=importlib",
 ]
 markers = [
     "mpl_image_compare: pytest-mpl figure comparison (see tests/visual)",
@@ -261,6 +269,17 @@ split-on-trailing-comma = false
     "BLE001",
     "RUF002",
 ]
+# Slice-owned tests (ADR 0005) follow the same test-code allowances.
+"src/dartwork_mpl/**/tests/**/*.py" = [
+    "RUF059",
+    "SIM117",
+    "RUF043",
+    "PERF401",
+    "PERF102",
+    "SIM105",
+    "BLE001",
+    "RUF002",
+]
 
 [tool.mypy]
 # `uv run mypy` (no arguments) is the one command, locally and in CI. Every
@@ -319,7 +338,7 @@ source = ["src/dartwork_mpl"]
 # the optional `dartwork-mpl-ui` viewer (FastAPI app + a 1.5k-line HTML
 # template) whose web layer is not unit-tested; it is omitted so the
 # core fail-under threshold reflects covered code, not the viewer.
-omit = ["*/ui/*"]
+omit = ["*/ui/*", "*/tests/*", "*/test_*.py", "*/conftest.py"]
 
 [tool.coverage.report]
 show_missing = true

@@ -115,7 +115,14 @@ def _iter_files(root: Path) -> list[Path]:
 
 
 def _iter_shipped_files() -> list[Path]:
-    return _iter_files(_SRC_ROOT)
+    """Files under the package that ship: slice-owned tests (ADR 0005) do not."""
+    return [
+        path
+        for path in _iter_files(_SRC_ROOT)
+        if "tests" not in path.relative_to(_SRC_ROOT).parts
+        and not path.name.startswith("test_")
+        and path.name != "conftest.py"
+    ]
 
 
 def _iter_docs_and_examples_files() -> list[Path]:

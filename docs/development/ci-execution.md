@@ -10,7 +10,7 @@ policy remains in `pyproject.toml`.
 
 | Gate | Workflow and local command | Durable output |
 | --- | --- | --- |
-| Full suite, Python 3.10–3.13 | `.github/workflows/ci.yml`: `uv run pytest tests/ -v --no-cov --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"`; 3.12 uses `--cov --cov-report=term-missing` instead of `--no-cov` | `pytest-python-<version>` artifact |
+| Full suite, Python 3.10–3.13 | `.github/workflows/ci.yml`: `uv run pytest -v --no-cov --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"`; 3.12 uses `--cov --cov-report=term-missing` instead of `--no-cov` | `pytest-python-<version>` artifact |
 | Release full suite, Python 3.12 | `.github/workflows/release.yml`: `uv run pytest tests/ -q -rs --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"` | `release-pytest-python-3.12` artifact |
 | All-extras module execution | Both workflows, after successful full pytest (CI 3.12): `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"` | Guard step log and same-run JUnit |
 | FastMCP 2.13.3 / locked 3.4.2 artifact contracts, Python 3.12 | `test-mcp-artifacts` in `.github/workflows/ci.yml`: `uv run --no-sync --with "fastmcp==<version>" pytest tests/mcp/artifacts -q --no-cov --junitxml="$RUNNER_TEMP/pytest-artifacts.xml"`, then `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-artifacts.xml" --scope artifacts` | `mcp-artifacts-<version>`: runtime JSON, same-run JUnit and raw pytest summary |
