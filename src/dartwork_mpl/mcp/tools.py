@@ -20,7 +20,7 @@ import matplotlib.colors as mcolors
 from fastmcp import FastMCP
 
 from ._platform import resolve_template_path
-from .data_repair import build_data_repair_report, serialize_data_repair_report
+from .plot_data import build_data_repair_report, serialize_data_repair_report
 
 __all__ = ["register_tools"]
 

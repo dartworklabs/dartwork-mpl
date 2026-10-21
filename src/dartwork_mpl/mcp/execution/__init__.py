@@ -165,7 +165,7 @@ def _run(
 
     from dartwork_mpl.lint import lint as _lint
 
-    from ._platform import run_child
+    from .._platform import run_child
 
     if input_paths is not None:
         if not isinstance(input_paths, Mapping):

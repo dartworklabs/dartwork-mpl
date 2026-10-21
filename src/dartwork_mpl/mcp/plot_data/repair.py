@@ -13,7 +13,7 @@ from decimal import Decimal, InvalidOperation
 from itertools import pairwise
 from typing import TypeAlias
 
-from ._data_repair_json import (
+from .repair_json import (
     _REPORT_BYTES,
     _constant,
     _DuplicateKey,
