@@ -5,6 +5,7 @@ matplotlib styles from the package's built-in style library.
 """
 
 import contextlib
+import copy
 import difflib
 import json
 import threading
@@ -23,11 +24,9 @@ __all__ = ["Style", "list_styles", "load_style_dict", "style", "style_path"]
 # corrupt the active style.
 _style_lock: threading.Lock = threading.Lock()
 
-# Keys that any dartwork-mpl preset has declared during this process.
-# Used to tell *the user's own* rcParams apart from residue left by a
-# previously-applied dm preset, so switching presets performs a clean
-# swap instead of leaking the prior theme (a "franken-theme").
-_dm_managed_keys: set[str] = set()
+# Deep copies of normalized values written by the last successful preset stack.
+# Contexts merge temporary preset writes and restore the immediate outer copy.
+_dm_preset_values: dict[str, object] = {}
 
 
 def _did_you_mean(value: str, candidates: list[str]) -> str | None:
@@ -73,24 +72,22 @@ def _rcparam_differs(value: object, default: object) -> bool:
         return repr(value) != repr(default)
 
 
-def _snapshot_user_rcparams(exclude: set[str]) -> dict[str, object]:
-    """Capture rcParams the *user* set away from matplotlib's default.
+def _snapshot_user_rcparams() -> dict[str, object]:
+    """Copy detectable caller edits before a preset reset.
 
-    Used by :meth:`Style.stack` to preserve caller configuration across
-    the ``rcParams.update(rcParamsDefault)`` reset that style switching
-    performs. Keys in ``exclude`` (those any dm preset has managed) are
-    skipped: a value differing from the default there is residue from a
-    previously-applied preset, not user intent, and preserving it would
-    leak the prior theme into the next preset.
+    Prior-owned values equal to their saved preset value are residue; differing
+    values are caller edits even when equal to Matplotlib's default. For other
+    keys retain nondefault values. Native same-value writes are unobservable.
     """
     defaults = plt.rcParamsDefault  # type: ignore[attr-defined]
     overrides: dict[str, object] = {}
     for key in list(plt.rcParams):
-        if key not in defaults or key in exclude:
+        if key not in defaults:
             continue
         current = plt.rcParams[key]
-        if _rcparam_differs(current, defaults[key]):
-            overrides[key] = current
+        reference = _dm_preset_values.get(key, defaults[key])
+        if _rcparam_differs(current, reference):
+            overrides[key] = copy.deepcopy(current)
     return overrides
 
 
@@ -160,9 +157,13 @@ def style_path(name: str) -> Path:
 
     Raises
     ------
+    TypeError
+        If the style name is not a string.
     ValueError
         If the specified style name cannot be found.
     """
+    if not isinstance(name, str):
+        raise TypeError(f"style name must be str, got {type(name).__name__}")
     path: Path = Path(__file__).parent / f"asset/mplstyle/{name}.mplstyle"
     if not path.exists():
         available = list_styles()
@@ -231,6 +232,13 @@ def load_style_dict(name: str) -> dict[str, float | str]:
     dict[str, float | str]
         Dictionary of style parameters. Values are converted to float
         where possible; otherwise they are kept as strings.
+
+    Raises
+    ------
+    TypeError
+        If the style name is not a string.
+    ValueError
+        If the named style file does not exist.
     """
     # Load key, value pair from mplstyle files.
     path: Path = style_path(name)
@@ -328,7 +336,9 @@ class Style:
         Stack multiple styles in order.
 
         Applies multiple style files sequentially. Later styles override
-        values set by earlier ones for the same keys.
+        values set by earlier ones for the same keys. Detectable caller edits
+        survive on incoming-silent keys; unchanged prior preset values reset.
+        Preset-produced mutable values are copied before caller overrides.
 
         Parameters
         ----------
@@ -354,23 +364,18 @@ class Style:
 
         # Serialize global rcParams + style application across threads.
         with _style_lock:
-            # Snapshot rcParams the *user* set away from matplotlib's
-            # default *before* the reset below, so genuine caller config
-            # (svg.hashsalt for reproducible builds, savefig.dpi, …)
-            # survives the switch. Exclude keys any dm preset has managed
-            # — a differing value there is residue from the previously
-            # applied preset, and preserving it would leak the old theme.
-            user_overrides = _snapshot_user_rcparams(exclude=_dm_managed_keys)
+            user_overrides = _snapshot_user_rcparams()
             plt.rcParams.update(plt.rcParamsDefault)  # type: ignore[attr-defined]
             plt.style.use(
                 [style_path(style_name) for style_name in style_names]
             )
-            # Reinstate user overrides for keys the incoming preset does
-            # not declare; the preset wins on every key it declares.
+            # Capture normalized preset values before caller overrides.
+            preset_values = {
+                key: copy.deepcopy(plt.rcParams[key]) for key in incoming_keys
+            }
             _restore_untouched_user_rcparams(user_overrides, incoming_keys)
-            # Remember these keys so the next switch treats their values
-            # as preset residue rather than user intent.
-            _dm_managed_keys.update(incoming_keys)
+            _dm_preset_values.clear()
+            _dm_preset_values.update(preset_values)
 
             # Locale-aware semantic tokens (dc.pos/neg/ref/hl) applied at the
             # choke point use() funnels through, so direct stack() callers and
@@ -393,6 +398,11 @@ class Style:
         Resolve the complete request and validate overrides in isolated rcParams
         before font loading or changes to live style, semantics or bookkeeping.
         Successful requests retain the usual preset and caller-override order.
+        Detectable native edits survive when the incoming preset is silent;
+        incoming declarations win and current kwargs apply last. A native
+        same-value rewrite is indistinguishable from unchanged preset residue;
+        pass that override with or after the later switch. Explicit kwargs are
+        known caller intent, including when equal to a preset value.
 
         Parameters
         ----------
@@ -419,6 +429,8 @@ class Style:
 
         Raises
         ------
+        TypeError
+            If a preset name or list member is not a string.
         KeyError
             If the preset name is unknown or an override key is invalid.
         ValueError
@@ -432,7 +444,13 @@ class Style:
         >>> dm.style.use("presentation-kr", font_size=16)
         >>> dm.style.use(["scientific", "dark"])  # Stack multiple presets
         """
-        # Handle both single string and list of strings
+        # Reject name types before string suggestions or any live mutation.
+        names = preset_name if isinstance(preset_name, list) else [preset_name]
+        for name in names:
+            if not isinstance(name, str):
+                raise TypeError(
+                    f"preset name must be str, got {type(name).__name__}"
+                )
         if isinstance(preset_name, list):
             # Stack multiple presets in order
             style_list = []
@@ -456,13 +474,21 @@ class Style:
         if kwargs:
             with _style_lock:
                 plt.rcParams.update(validated_overrides)
+                # Explicit kwargs are known caller intent, even at equal values.
+                for key in validated_overrides:
+                    _dm_preset_values.pop(key, None)
 
     @contextlib.contextmanager
     def context(
         self, preset_name: str, **kwargs: float | str
     ) -> Iterator[None]:
         """
-        Context manager that temporarily applies a style within a code block.
+        Temporarily apply a style, restoring rcParams, semantics and ownership.
+
+        Body use() calls, exceptions and nested scopes restore the immediate
+        outer tracking at exit. Preset-only normalized values are recorded before
+        kwargs; inherited keys remain tracked. Non-string names raise TypeError
+        before mutation; unknown strings retain KeyError suggestions.
 
         Parameters
         ----------
@@ -484,18 +510,20 @@ class Style:
         from one thread (matplotlib itself is not thread-safe for
         concurrent rcParams mutation).
         """
+        if not isinstance(preset_name, str):
+            raise TypeError(
+                f"preset name must be str, got {type(preset_name).__name__}"
+            )
         if preset_name not in self.presets:
             raise KeyError(self._unknown_preset_message(preset_name))
 
-        style_list: list[Path | dict[str, float | str]] = [
-            style_path(style_name) for style_name in self.presets[preset_name]
-        ]
-
-        if kwargs:
-            overrides: dict[str, float | str] = {}
-            for k, v in kwargs.items():
-                overrides[_resolve_rcparam_key(k)] = v
-            style_list.append(overrides)
+        names = self.presets[preset_name]
+        style_list = [style_path(name) for name in names]
+        incoming_keys = _style_declared_keys(names)
+        overrides = RcParams(
+            {_resolve_rcparam_key(k): v for k, v in kwargs.items()}
+        )
+        saved_ownership = copy.deepcopy(_dm_preset_values)
 
         import matplotlib.colors as mcolors
 
@@ -508,9 +536,23 @@ class Style:
         )
         try:
             with plt.style.context(style_list):
+                # Retain inherited silent-key ownership; snapshot before kwargs.
+                with _style_lock:
+                    _dm_preset_values.update(
+                        {
+                            key: copy.deepcopy(plt.rcParams[key])
+                            for key in incoming_keys
+                        }
+                    )
+                    plt.rcParams.update(overrides)
+                    for key in overrides:
+                        _dm_preset_values.pop(key, None)
                 apply_semantic("kr" if is_kr else "default")
                 yield
         finally:
+            with _style_lock:
+                _dm_preset_values.clear()
+                _dm_preset_values.update(saved_ownership)
             for token, value in saved.items():
                 if value is None:
                     mapping.pop(token, None)

@@ -34,6 +34,11 @@ _DEFAULT_LINESTYLES = ("-", "--", ":")
 
 
 def _family_name(name: str) -> str:
+    """Normalize a string family token; reject nonstrings before string methods."""
+    if not isinstance(name, str):
+        raise TypeError(
+            f"color family name must be str, got {type(name).__name__}"
+        )
     return name[3:] if name.startswith("dc.") else name
 
 
@@ -97,7 +102,8 @@ def colors(
     Bare family names (``"aurora"``) and registered names
     (``"dc.aurora"``) are equivalent. ``n=None`` returns the matplotlib
     colormap for that family; ``n=int`` returns the deterministic designed
-    discrete form as hex strings.
+    discrete form as hex strings. Non-string names raise TypeError; unknown
+    strings retain ValueError with nearest-name suggestions.
     """
     family_name = _resolve_family_name(name)
     family = FAMILIES[family_name]
@@ -205,7 +211,11 @@ def show_colors(
     names: Iterable[str] | None = None,
     n: int | None = None,
 ) -> Figure:
-    """Return a compact preview figure for Model B color families."""
+    """Return a compact preview figure for Model B color families.
+
+    Non-string name members raise TypeError before creating a figure; unknown
+    strings raise ValueError with nearest-name suggestions.
+    """
     kind_filter = _validate_kind(kind)
     if names is None:
         selected_names = [

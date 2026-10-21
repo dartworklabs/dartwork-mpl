@@ -61,6 +61,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Colormap registration reuses exact package-owned maps on reload/retry and
+  preflights static external collisions before adding missing maps.
+- Preset switches preserve detectable caller edits on incoming-silent keys;
+  temporary contexts restore preset ownership with native rcParams and semantics.
+  Same-value native writes remain indistinguishable from preset residue.
+- `set_decimal()` follows new ticks after data/view changes while retaining
+  locators and Python fixed-point rounding. Proven non-string style/family name
+  errors now raise descriptive `TypeError` before state changes.
+
 - **`TICK_DECIMAL` now enforces axis-wide decimal consistency.** Mixed
   numeric tick labels such as `17.5, 20, 22.5` now warn as non-uniform,
   while fractional-step labels such as `17.5, 20.0, 22.5` remain valid.

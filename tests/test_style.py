@@ -378,7 +378,7 @@ def _style_state():
     return (
         copy.deepcopy(dict(mpl.rcParams)),
         {name: mapping[name] for name in SEMANTIC_TOKEN_NAMES},
-        set(style_module._dm_managed_keys),
+        copy.deepcopy(style_module._dm_preset_values),
     )
 
 
@@ -388,16 +388,16 @@ def _restore_style_test_state(state):
 
     mpl.rcParams.update(state[0])
     get_named_colors_mapping().update(state[1])
-    style_module._dm_managed_keys.clear()
-    style_module._dm_managed_keys.update(state[2])
+    style_module._dm_preset_values.clear()
+    style_module._dm_preset_values.update(copy.deepcopy(state[2]))
 
 
 @pytest.fixture
 def isolated_style_state():
-    """Give preservation tests fresh managed-key history and restore all test state."""
+    """Give preservation tests fresh preset ownership and restore all test state."""
     saved = _style_state()
     try:
-        style_module._dm_managed_keys.clear()
+        style_module._dm_preset_values.clear()
         dm.style.use("scientific")
         yield
     finally:
@@ -414,8 +414,8 @@ _STYLE_REJECTIONS = [
     ("presentation-kr", {"axes.labelsize": "invalid-size"}, ValueError),
     ("unknown-preset", {}, KeyError),
     (["presentation-kr", "unknown-preset"], {}, KeyError),
-    (["presentation-kr", 7], {}, AttributeError),
-    (7, {}, AttributeError),
+    (["presentation-kr", 7], {}, TypeError),
+    (7, {}, TypeError),
 ]
 
 
@@ -508,3 +508,166 @@ def test_generator_rc_value_is_consumed_once(isolated_style_state):
         "scientific", font_family=(name for name in ["DejaVu Sans", "serif"])
     )
     assert mpl.rcParams["font.family"] == ["DejaVu Sans", "serif"]
+
+
+@pytest.mark.parametrize("history", ["scientific", "dark"])
+@pytest.mark.parametrize("override", ["#a1b2c3", "black"])
+def test_detectable_native_edit_survives_silent_preset(
+    isolated_style_state, history, override
+):
+    """The same caller edge edit survives regardless of the preceding theme."""
+    dm.style.use(history)
+    mpl.rcParams["axes.edgecolor"] = override
+    mpl.rcParams["font.size"] = 99
+    mpl.rcParams["pdf.compression"] = 0
+    dm.style.use("scientific")
+    assert mpl.rcParams["axes.edgecolor"] == override
+    assert mpl.rcParams["font.size"] == 7.5
+    assert mpl.rcParams["pdf.compression"] == 0
+
+
+def test_context_body_transition_matches_ordinary_transition(
+    isolated_style_state,
+):
+    """Temporary dark ownership is known when a body switches to scientific."""
+    start = _style_state()
+    dm.style.use("dark")
+    dm.style.use("scientific")
+    control = _style_state()[:2]
+    _restore_style_test_state(start)
+    with dm.style.context("dark"):
+        dm.style.use("scientific")
+        assert _style_state()[:2] == control
+        assert mpl.rcParams["axes.edgecolor"] == "black"
+
+
+@pytest.mark.parametrize("exit_path", ["normal", "exception", "nested"])
+@pytest.mark.parametrize("override", [None, "#a1b2c3"])
+def test_context_restores_full_state_and_next_transition(
+    isolated_style_state, exit_path, override
+):
+    """Normal, exceptional and nested exits restore public state and ownership lifetime."""
+    dm.style.use("dark")
+    if override is not None:
+        mpl.rcParams["axes.edgecolor"] = override
+    outer = _style_state()
+    dm.style.use("scientific")
+    control = _style_state()[:2]
+    _restore_style_test_state(outer)
+    try:
+        with dm.style.context("report"):
+            report = _style_state()
+            if exit_path == "nested":
+                with dm.style.context("scientific-kr"):
+                    assert _style_state()[1] != report[1]
+                    dm.style.use("dark-kr")
+                assert _style_state()[:2] == report[:2]
+            dm.style.use("scientific")
+            assert mpl.rcParams["axes.edgecolor"] == (override or "black")
+            if exit_path == "exception":
+                raise RuntimeError("body exit probe")
+    except RuntimeError as error:
+        assert str(error) == "body exit probe"
+    assert _style_state()[:2] == outer[:2]
+    dm.style.use("scientific")
+    assert _style_state()[:2] == control
+    assert mpl.rcParams["axes.edgecolor"] == (override or "black")
+
+
+def test_context_and_use_kwargs_remain_caller_overrides(isolated_style_state):
+    """Known kwargs apply last and remain detectable on a later silent-key switch."""
+    with dm.style.context("dark", axes_edgecolor="#a1b2c3", font_size=19):
+        assert mpl.rcParams["font.size"] == 19
+        dm.style.use("scientific")
+        assert mpl.rcParams["axes.edgecolor"] == "#a1b2c3"
+        assert mpl.rcParams["font.size"] == 7.5
+    dm.style.use("dark", axes_edgecolor="#a1b2c3")
+    dm.style.use("scientific")
+    assert mpl.rcParams["axes.edgecolor"] == "#a1b2c3"
+    dm.style.use("dark")
+    assert mpl.rcParams["axes.edgecolor"] == "#555555"
+
+
+def test_mutable_preset_value_snapshot_survives_in_place_edit(
+    isolated_style_state,
+):
+    """Mutating a preset-produced list cannot mutate its ownership snapshot."""
+    dm.style.stack(["base"])
+    mpl.rcParams["font.family"].append("serif")
+    expected = list(mpl.rcParams["font.family"])
+    dm.style.stack(["theme-dark"])
+    assert mpl.rcParams["font.family"] == expected
+
+
+def test_seeded_silent_key_edit_sequences_preserve_declared_priority(
+    isolated_style_state,
+):
+    """Seed501 finite native edit/use sequences obey silent-key and incoming priority."""
+    import random
+
+    rng = random.Random(501)
+    for step in range(24):
+        dm.style.use(rng.choice(["dark", "report", "scientific", "dark-kr"]))
+        override = f"#{rng.randrange(0x1000000):06x}"
+        mpl.rcParams["axes.edgecolor"] = override
+        mpl.rcParams["font.size"] = rng.randrange(30, 100)
+        incoming = rng.choice(["scientific", "report"])
+        dm.style.use(incoming)
+        assert mpl.rcParams["axes.edgecolor"] == override, (501, step, override)
+        assert (
+            mpl.rcParams["font.size"]
+            == {"scientific": 7.5, "report": 8.0}[incoming]
+        ), (501, step, incoming)
+        dm.style.use("dark")
+        assert mpl.rcParams["axes.edgecolor"] == "#555555", (501, step)
+        dm.style.use("scientific")
+        assert mpl.rcParams["axes.edgecolor"] == "black", (501, step)
+
+
+@pytest.mark.parametrize("value", [7, None, ["scientific", 7]])
+def test_wrong_preset_name_has_descriptive_typeerror(
+    isolated_style_state, value
+):
+    """Invalid name types fail clearly before semantic or style mutation."""
+    before = _style_state()
+    with pytest.raises(TypeError, match="preset.*str"):
+        dm.style.use(value)
+    assert _style_state()[:2] == before[:2]
+
+
+@pytest.mark.parametrize("function", [style_path, load_style_dict])
+def test_wrong_style_name_has_descriptive_typeerror(function):
+    """File-name boundaries reject nonstrings before string methods or file lookup."""
+    with pytest.raises(TypeError, match="style.*str"):
+        function(7)
+
+
+def test_wrong_context_name_preserves_state(isolated_style_state):
+    """A malformed temporary preset cannot alter the outer state."""
+    before = _style_state()
+    with pytest.raises(TypeError, match="preset.*str"):
+        with dm.style.context(7):
+            raise AssertionError("invalid context entered")
+    assert _style_state()[:2] == before[:2]
+
+
+@pytest.mark.parametrize("path", ["use", "context"])
+def test_explicit_same_value_kwargs_survive_while_native_residue_resets(
+    isolated_style_state, path
+):
+    """Known same-value kwargs retain intent; indistinguishable native writes reset."""
+    dm.style.use("dark")
+    mpl.rcParams["axes.edgecolor"] = "#555555"
+    dm.style.use("scientific")
+    assert mpl.rcParams["axes.edgecolor"] == "black"
+    dm.style.use("dark")
+    if path == "use":
+        dm.style.use("dark", axes_edgecolor="#555555")
+        dm.style.use("scientific")
+        assert mpl.rcParams["axes.edgecolor"] == "#555555"
+    else:
+        with dm.style.context("dark", axes_edgecolor="#555555"):
+            dm.style.use("scientific")
+            assert mpl.rcParams["axes.edgecolor"] == "#555555"
+        dm.style.use("scientific")
+        assert mpl.rcParams["axes.edgecolor"] == "black"

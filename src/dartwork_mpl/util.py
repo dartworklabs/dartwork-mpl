@@ -41,13 +41,19 @@ __all__ = [
 import matplotlib.colors as mcolors
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.ticker import FuncFormatter
 from matplotlib.transforms import ScaledTranslation
 
 from ._colors import Color
 
 
 def set_decimal(ax: Axes, xn: int | None = None, yn: int | None = None) -> None:
-    """Fix the number of decimal places displayed on tick labels.
+    """Format current and future ticks with Python fixed-point precision.
+
+    Keep each axis's locator and view limits, including after data changes.
+    Half-even rounding and negative zero follow Python float formatting.
+    Invalid precision raises immediately before installing that axis's formatter;
+    an axis requested as None is untouched. Return None.
 
     Parameters
     ----------
@@ -61,14 +67,16 @@ def set_decimal(ax: Axes, xn: int | None = None, yn: int | None = None) -> None:
         If None, the y-axis is left unchanged.
     """
     if xn is not None:
-        xticks = ax.get_xticks()
-        ax.set_xticks(xticks)
-        ax.set_xticklabels([f"{x:.{xn}f}" for x in xticks])
+        format(0.0, f".{xn}f")  # Validate before changing this axis.
+        ax.xaxis.set_major_formatter(
+            FuncFormatter(lambda value, _position: f"{value:.{xn}f}")
+        )
 
     if yn is not None:
-        yticks = ax.get_yticks()
-        ax.set_yticks(yticks)
-        ax.set_yticklabels([f"{y:.{yn}f}" for y in yticks])
+        format(0.0, f".{yn}f")
+        ax.yaxis.set_major_formatter(
+            FuncFormatter(lambda value, _position: f"{value:.{yn}f}")
+        )
 
 
 def mix_colors(
