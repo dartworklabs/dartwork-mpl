@@ -56,6 +56,7 @@ MODULES = (
     "tests.test_ui_param",
     "tests.test_ui_security",
     "tests.test_ui_widget",
+    "src.dartwork_mpl.ui.tests.test_ui_wire_golden",
 )
 
 
