@@ -101,7 +101,7 @@ exclude = ["**/tests/**", "**/test_*.py", "**/conftest.py"]
 - 검증: `uv build --wheel` 후 `unzip -l ... | grep -c /tests/`가 0이어야 한다. 이 확인을 `tests/architecture/test_packaging.py`로 고정한다.
 
 ### 3.3 ruff D 규칙
-```toml
+```text
 select = [..., "D100","D101","D102","D103","D104","D105","D106","D107"]
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [...기존, "D102","D103","D104","D105","D106","D107"]
