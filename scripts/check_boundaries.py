@@ -126,6 +126,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp", "dartwork_mpl.prompt"): (
         "the MCP server serves the bundled prompt corpus"
     ),
+    ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
+        "the tick-decimal check recommends the precision the formatter uses"
+    ),
     ("dartwork_mpl.style", "dartwork_mpl.font"): (
         "a preset may name bundled fonts, which must be registered first"
     ),
@@ -151,17 +154,7 @@ DEBT: Mapping[str, str] = {
     "entry point import: dartwork_mpl.templates.diverging_bar -> dartwork_mpl": "C12",
     "entry point import: dartwork_mpl.validate_fixes -> dartwork_mpl": "L2",
     "missing __all__: dartwork_mpl._luminance": "K1",
-    "missing __all__: dartwork_mpl.formatting": "C8",
     "missing __all__: dartwork_mpl.validate_fixes": "L2",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.avoid_tick_overlap": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.format_axis_billions": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.format_axis_currency": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.format_axis_millions": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.format_axis_myriad": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.format_axis_si": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.format_axis_year": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.recommend_tick_decimals": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.rotate_tick_labels": "C8",
     "private import: dartwork_mpl -> dartwork_mpl.validate_fixes.validate_with_fixes": "L2",
     "private import: dartwork_mpl._colors._contrast -> dartwork_mpl._luminance._contrast_ratio": "K1",
     "private import: dartwork_mpl._luminance -> dartwork_mpl._colors._conversion": "K1",
@@ -182,13 +175,13 @@ DEBT: Mapping[str, str] = {
     "private import: dartwork_mpl.validate._checks.grayscale_safety -> dartwork_mpl._colors._conversion._srgb_to_oklab": "K3",
     "private import: dartwork_mpl.validate._checks.grayscale_safety -> dartwork_mpl._colors._conversion.relative_y_srgb_d65": "K3",
     "private import: dartwork_mpl.validate._checks.text_contrast -> dartwork_mpl._luminance._contrast_ratio": "K1",
-    "private import: dartwork_mpl.validate._checks.tick_decimal -> dartwork_mpl.formatting.recommend_tick_decimals": "C8",
     "private import: dartwork_mpl.validate_fixes -> dartwork_mpl.helpers.quality._MIN_RECOMMENDED_DPI": "L2",
     "undeclared dependency: dartwork_mpl.helpers -> dartwork_mpl.scale": "C11",
     "undeclared dependency: dartwork_mpl.mcp -> dartwork_mpl.util": "C9",
     "undeclared dependency: dartwork_mpl.ui -> dartwork_mpl.util": "C9",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl._colors": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.annotation": "C10",
+    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.formatting": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.io": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.layout": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.prompt": "C10",

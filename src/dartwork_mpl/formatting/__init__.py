@@ -14,6 +14,19 @@ from typing import Any, Literal
 import matplotlib.ticker as ticker
 from matplotlib.axes import Axes
 
+__all__ = [
+    "avoid_tick_overlap",
+    "format_axis_billions",
+    "format_axis_currency",
+    "format_axis_millions",
+    "format_axis_myriad",
+    "format_axis_si",
+    "format_axis_year",
+    "recommend_tick_decimals",
+    "rotate_tick_labels",
+    "set_decimal",
+]
+
 _YEAR_SUFFIX = {"ko": "년", "ja": "年", "zh": "年", "en": ""}
 
 
@@ -499,3 +512,35 @@ def avoid_tick_overlap(
             for label in visible:
                 label.set_rotation(rotation)
                 label.set_verticalalignment("center")
+
+
+def set_decimal(ax: Axes, xn: int | None = None, yn: int | None = None) -> None:
+    """Format current and future ticks with Python fixed-point precision.
+
+    Keep each axis's locator and view limits, including after data changes.
+    Half-even rounding and negative zero follow Python float formatting.
+    Invalid precision raises immediately before installing that axis's formatter;
+    an axis requested as None is untouched. Return None.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The Axes to modify.
+    xn : int | None, optional
+        Number of decimal places for x-axis tick labels.
+        If None, the x-axis is left unchanged.
+    yn : int | None, optional
+        Number of decimal places for y-axis tick labels.
+        If None, the y-axis is left unchanged.
+    """
+    if xn is not None:
+        format(0.0, f".{xn}f")  # Validate before changing this axis.
+        ax.xaxis.set_major_formatter(
+            ticker.FuncFormatter(lambda value, _position: f"{value:.{xn}f}")
+        )
+
+    if yn is not None:
+        format(0.0, f".{yn}f")
+        ax.yaxis.set_major_formatter(
+            ticker.FuncFormatter(lambda value, _position: f"{value:.{yn}f}")
+        )

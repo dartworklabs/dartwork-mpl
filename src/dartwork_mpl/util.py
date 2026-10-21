@@ -12,6 +12,7 @@ import math
 # Re-exports for backward compatibility - these were moved to
 # dedicated modules but many consumers still import from util.
 from .annotation import arrow_axis, label_axes, make_offset
+from .formatting import set_decimal
 from .io import save_and_show, save_formats, show
 from .layout import get_bounding_box, simple_layout
 from .prompt import copy_prompt, get_prompt, list_prompts, prompt_path
@@ -39,42 +40,8 @@ __all__ = [
 ]
 
 import matplotlib.colors as mcolors
-from matplotlib.axes import Axes
-from matplotlib.ticker import FuncFormatter
 
 from ._colors import Color
-
-
-def set_decimal(ax: Axes, xn: int | None = None, yn: int | None = None) -> None:
-    """Format current and future ticks with Python fixed-point precision.
-
-    Keep each axis's locator and view limits, including after data changes.
-    Half-even rounding and negative zero follow Python float formatting.
-    Invalid precision raises immediately before installing that axis's formatter;
-    an axis requested as None is untouched. Return None.
-
-    Parameters
-    ----------
-    ax : matplotlib.axes.Axes
-        The Axes to modify.
-    xn : int | None, optional
-        Number of decimal places for x-axis tick labels.
-        If None, the x-axis is left unchanged.
-    yn : int | None, optional
-        Number of decimal places for y-axis tick labels.
-        If None, the y-axis is left unchanged.
-    """
-    if xn is not None:
-        format(0.0, f".{xn}f")  # Validate before changing this axis.
-        ax.xaxis.set_major_formatter(
-            FuncFormatter(lambda value, _position: f"{value:.{xn}f}")
-        )
-
-    if yn is not None:
-        format(0.0, f".{yn}f")
-        ax.yaxis.set_major_formatter(
-            FuncFormatter(lambda value, _position: f"{value:.{yn}f}")
-        )
 
 
 def mix_colors(
