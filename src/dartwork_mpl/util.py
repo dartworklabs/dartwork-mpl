@@ -11,7 +11,7 @@ import math
 
 # Re-exports for backward compatibility - these were moved to
 # dedicated modules but many consumers still import from util.
-from .annotation import arrow_axis, label_axes
+from .annotation import arrow_axis, label_axes, make_offset
 from .io import save_and_show, save_formats, show
 from .layout import get_bounding_box, simple_layout
 from .prompt import copy_prompt, get_prompt, list_prompts, prompt_path
@@ -40,9 +40,7 @@ __all__ = [
 
 import matplotlib.colors as mcolors
 from matplotlib.axes import Axes
-from matplotlib.figure import Figure
 from matplotlib.ticker import FuncFormatter
-from matplotlib.transforms import ScaledTranslation
 
 from ._colors import Color
 
@@ -163,24 +161,3 @@ def pseudo_alpha(
         RGB tuple of the composited color.
     """
     return mix_colors(color, background, alpha=alpha)
-
-
-def make_offset(x: float, y: float, fig: Figure) -> ScaledTranslation:
-    """Create a translation offset transform for positioning figure elements.
-
-    Parameters
-    ----------
-    x : float
-        Horizontal offset in points.
-    y : float
-        Vertical offset in points.
-    fig : matplotlib.figure.Figure
-        The Figure whose DPI scale is used.
-
-    Returns
-    -------
-    matplotlib.transforms.ScaledTranslation
-        A translation transform that can be added to other transforms.
-    """
-    dx, dy = x / 72, y / 72
-    return ScaledTranslation(dx, dy, fig.dpi_scale_trans)
