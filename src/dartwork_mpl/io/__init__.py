@@ -251,17 +251,17 @@ def save_formats(
         _check_save_format(fig, out, fmt, kwargs)
 
     if adopt_orphan_tick_font is None:
-        from .config import config
+        from ..config import config
 
         adopt_orphan_tick_font = config.adopt_orphan_tick_font
 
     if adopt_orphan_tick_font:
-        from .layout import adopt_axis_label_font
+        from ..layout import adopt_axis_label_font
 
         adopt_axis_label_font(fig)
 
     if validate:
-        from .validate import validate_figure
+        from ..validate import validate_figure
 
         validate_figure(fig, quiet=validate_quiet)
 
@@ -434,12 +434,12 @@ def save_and_show(
         Additional keyword arguments passed to ``savefig``.
     """
     if adopt_orphan_tick_font is None:
-        from .config import config
+        from ..config import config
 
         adopt_orphan_tick_font = config.adopt_orphan_tick_font
 
     if adopt_orphan_tick_font:
-        from .layout import adopt_axis_label_font
+        from ..layout import adopt_axis_label_font
 
         adopt_axis_label_font(fig)
 
