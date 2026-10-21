@@ -121,6 +121,10 @@ packages = ["src/dartwork_mpl"]
 
 [dependency-groups]
 dev = [
+    # Every optional extra, so a plain `uv sync` gives the environment CI
+    # type-checks and tests in (`uv sync --all-extras --dev`): `uv run mypy`
+    # then means the same thing on every machine.
+    "dartwork-mpl[mcp,notebook,ui]",
     # Docs example scripts only (KDE/Voronoi/MCMC galleries). Nothing
     # under src/ imports scipy.
     "scipy>=1.15.2",
@@ -259,38 +263,53 @@ split-on-trailing-comma = false
 ]
 
 [tool.mypy]
+# `uv run mypy` (no arguments) is the one command, locally and in CI. Every
+# module under src/dartwork_mpl is checked strictly; a new module is checked
+# without being listed.
+files = ["src/dartwork_mpl"]
 python_version = "3.10"
 strict = true
-ignore_missing_imports = true
-# asset/prompt/05-templates/*.py are bundled documentation samples,
-# not package source. They are intentionally untyped scripts.
+# == between types that cannot overlap is an error (stated again so it
+# stays on independently of `strict`).
+strict_equality = true
+# A `match` over a closed union that misses a case is an error (ADR 0005).
+enable_error_code = ["exhaustive-match"]
 exclude = [
+    # asset/prompt/05-templates/*.py are bundled documentation samples,
+    # not package source. They are intentionally untyped scripts.
     'asset/prompt/05-templates/.*\.py$',
+    # Slice-owned tests (ADR 0005) are tests, not package source.
+    '^src/dartwork_mpl/(?:.*/)?(?:tests/|test_[^/]*\.py$|conftest\.py$)',
 ]
 
-# FastMCP and FastAPI route/tool/resource decorators are dynamically
-# typed at the framework level; under `ignore_missing_imports = true`
-# they resolve to `Any`, which trips mypy's strict
-# `disallow_untyped_decorators` on every handler. The handlers are
-# correctly typed in the source — the decorator is the only `Any`.
-# Same story for Pydantic `BaseModel` subclasses in the UI layer:
-# the base class resolves to `Any`, which trips
-# `disallow_subclassing_any`. Relax these two checks for the affected
-# subpackages only; the rest of the package keeps full strict mode.
+# Third-party gaps, each scoped to the one module that has it.
+#
+# fontTools ships no type information.
 [[tool.mypy.overrides]]
-module = ["dartwork_mpl.mcp.*", "dartwork_mpl.ui.*"]
-disallow_untyped_decorators = false
-disallow_subclassing_any = false
+module = ["fontTools.*"]
+ignore_missing_imports = true
 
 # InquirerPy's `inquirer` submodule exposes `text` and `select` via
 # dynamic attribute access; they are not listed in `__all__`, so mypy
-# strict raises attr-defined on every access.  Skipping follow_imports
-# for the whole InquirerPy namespace suppresses those false positives
+# strict raises attr-defined on every access. Skipping follow_imports
+# for the InquirerPy namespace suppresses those false positives
 # without touching the call sites.
 [[tool.mypy.overrides]]
 module = ["InquirerPy.*"]
 ignore_missing_imports = true
 follow_imports = "skip"
+
+# `fastmcp.tools.tool` is a real module on FastMCP 2 but a runtime alias on
+# FastMCP 3 (both are supported, see the CI artifact matrix), so mypy cannot
+# resolve it and `ToolResult` is `Any`; the one class that subclasses it to
+# keep structured errors on both majors is the only place that needs this.
+[[tool.mypy.overrides]]
+module = ["fastmcp.tools.tool"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["dartwork_mpl.mcp.artifacts.transport"]
+disallow_subclassing_any = false
 
 [tool.coverage.run]
 source = ["src/dartwork_mpl"]
