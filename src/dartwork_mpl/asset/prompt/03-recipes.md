@@ -10,9 +10,11 @@ A short cookbook keyed by user intent. Each entry shows the canonical
 > dm.style.use("scientific")   # or "report" / "presentation" / "minimal" / "*-kr"
 > ```
 >
-> Font sizes and *data* line widths are expressed as `dm.fs(n)` /
-> `dm.lw(n)` / `dm.fw(n)` offsets from the active preset so the same
-> code re-targets cleanly when you swap presets.
+> Presets provide defaults. Use `dm.fs(n)` / `dm.lw(n)` / `dm.fw(n)` for
+> preset-relative intent; retain explicit absolute user values and colors.
+> Literal-size/width warnings remain advisory: inspect and report them.
+> The 18 templates are starters; native matplotlib chart types and properties
+> remain available. Choose unspecified defaults from the data and purpose.
 >
 > Sub-1 **hairline literals** (`linewidth=0.3` for separator edges,
 > `linewidth=0.5` for dashed reference lines) are kept as raw numbers
@@ -20,6 +22,69 @@ A short cookbook keyed by user intent. Each entry shows the canonical
 > a stable positive value across presets. ``dm.lw(-1)`` would resolve
 > to ``0`` for most presets, collapsing edges into the "no border"
 > idiom.
+
+## "Report style, only axis labels one step larger"
+
+Agents translate the request into native artist edits; users need not write
+plotting code. Apply the preset before creating artists or restoring retained
+overrides. On an existing report figure, edit only the selected label Texts:
+
+```python
+for label in (ax.xaxis.label, ax.yaxis.label):
+    label.set_fontsize(label.get_fontsize() + 1)  # one more = current + 1 pt
+# Keep the existing axes/layout when the enlarged labels still fit.
+```
+
+Keep the existing axes/layout if labels still fit. If a refit is necessary,
+reuse the original `simple_layout` kwargs, grid and margin settings; do not
+blindly rerun its margin=0 defaults. Disclose any necessary movement of axes
+or an anchored legend rather than claiming pixel-position invariance.
+
+For an explicit preset-relative request, `label.set_fontsize(dm.fs(1))` uses
+global `font.size + 1 pt`, not `axes.labelsize` or the current label size.
+Repeat current-relative edits from the retained current value. For an absolute
+request use `label.set_fontsize(12)` exactly. `dm.fw(1)` adds 100 to the global
+base weight, while `dm.lw(1)` adds 1 pt to the global base line width.
+
+## "A selected line: exact width, color and dash/dot spacing"
+
+Resolve the series/panel first; `line` below is its saved existing artist
+handle. Apply only the requested setters; do not append another `ax.plot` line.
+For a request changing its width, color and nominal dash/dot path lengths:
+
+```python
+with plt.rc_context({"lines.scale_dashes": False}):
+    line.set_linewidth(2.5)
+    line.set_color("#235fa4")
+    line.set_linestyle((0, (4, 2, 1, 2)))
+```
+
+This preserves the cap style. Change caps only when requested. The tuple gives
+offset and alternating nominal on/off path lengths in points; round caps
+extend visible ink and shorten visible gaps. Without `scale_dashes=False`,
+lengths scale with line width by default. Keep that local context around line
+creation or any later setter that rescales dashes when physical lengths must
+stay fixed. For relative width use `line.get_linewidth() + delta`.
+Check the rendered result; no single dash tuple fits every chart purpose.
+
+## "Only the left spine, x ticks, y tick labels or y grid"
+
+These are independent examples: apply only the line(s) matching the request to
+the resolved `ax`. Do not execute the whole block for a single-property edit.
+
+```python
+ax.spines["left"].set_color("black")
+ax.spines["left"].set_linewidth(0.7)
+ax.tick_params(axis="x", which="major", length=4, width=0.7)
+ax.tick_params(axis="y", which="major", labelcolor="#235fa4", labelsize=10)
+ax.grid(axis="y", which="major", visible=True, color="0.8", linewidth=0.3)
+```
+
+Axis labels (`ax.xaxis.label`, `ax.yaxis.label`) differ from tick labels
+(`ax.get_xticklabels()`, `ax.get_yticklabels()`). Inspect `type(artist)`,
+`artist.properties()`, getters or `help(type(artist))`; consult official docs
+for the installed matplotlib version for unsupported or unfamiliar properties.
+Ask one short question only if panel/series/property scope is materially unclear.
 
 ## "Exact canvas width and height (cm, mm or inches)"
 

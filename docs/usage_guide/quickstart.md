@@ -149,9 +149,11 @@ columns or venue width; for slides ask about 16:9/4:3 and full-slide/inset use.
 Reuse already supplied context. For a quick draft, state a provisional preset
 and size and invite correction. Use a `-kr` preset only for Korean plot text,
 not simply because the conversation is Korean. A geometry-only edit keeps the
-selected preset, data and other style choices. Font sizes come from that
-preset via `dm.fs(0)` / `rcParams["font.size"]`; adjust relatively with
-`dm.fs(n)`, `dm.fw(n)` and `dm.lw(n)`.
+selected preset, data and other style choices. Presets supply defaults;
+explicit user overrides take priority. Use `dm.fs(n)`, `dm.fw(n)` and
+`dm.lw(n)` for preset-relative changes; retain requested absolute sizes,
+widths and colors. Literal-size/width lint warnings are advisory: inspect
+and report them without replacing explicit values or hiding warnings.
 
 Both width and height are freely chosen physical dimensions. For example,
 this complete script requests 24 × 12 cm using mixed units:
@@ -181,6 +183,41 @@ with GridSpec/nested GridSpec is also valid for custom panel allocations.
 pixel density, not physical size; PNG sizes quantize to whole pixels while
 PDF retains physical page size. The `oversize-width` lint warning above
 17 cm asks for a page-fit review; it must not override an explicit size.
+
+## Prompt-driven native customization
+
+Ask for the change in ordinary language, for example “Use report style and
+make only the axis labels one step larger.” The agent selects the native
+matplotlib label Text objects; the user need not supply plotting code.
+On an existing report figure, the corresponding edit is:
+
+```python
+for label in (ax.xaxis.label, ax.yaxis.label):
+    label.set_fontsize(label.get_fontsize() + 1)
+```
+
+This changes only axis-label size and retains tick labels, title, legend,
+data, colors, canvas and preset. Keep existing axes/layout when labels still
+fit. If a refit is necessary, reuse the original `simple_layout` kwargs, grid
+and margins instead of blindly rerunning margin=0 defaults. Disclose necessary
+axes or anchored-legend movement rather than promising fixed pixel positions.
+One current-relative step is +1 pt; repeating “one more” increments the retained current value.
+`dm.fs(1)` instead means global `font.size + 1 pt`; it does not inspect the
+current label or its role-specific default. `dm.lw(n)` adds `n` pt to global
+`lines.linewidth`, and `dm.fw(n)` adds `100*n` to global `font.weight`.
+An absolute request such as “12 pt” retains that exact value.
+
+Apply the preset before retained overrides and local artist edits. Use native
+setters for lines/custom dashes, spines, ticks, tick labels, axis labels, grids
+and other supported properties. Discover them through getters,
+`artist.properties()`, `help(type(artist))` or official docs for the installed
+matplotlib version. Resolve the panel/series/artist before editing; ask one
+short question only for material ambiguity. The 18 templates are starting
+points, not chart limits. Choose unspecified defaults from data, purpose,
+panel density and categorical text; avoid unsolicited palette/legend changes.
+See [native styling recipes](recipes.md). Agents can read the bundled native
+examples with `dm.get_prompt("03-recipes")` in installed Python, or the MCP
+`dartwork-mpl://guide/recipes` resource; `dm.get_prompt("01-policy")` gives the policy.
 
 ## Creating Figures with `dm.figsize`
 

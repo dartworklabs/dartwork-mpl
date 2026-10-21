@@ -13,6 +13,11 @@ Rules in this document are split into two tiers:
   the design, but not currently checked by the lint engine. Treat
   these as guidance for human authors and AI agents both.
 
+Critical lint gates and data/trust constraints remain binding. Supported
+explicit aesthetic choices (including colormap or rotation) take priority over
+aesthetic warning recommendations: explain/report warnings without silently
+normalizing the user's choice. Warning/info findings are not critical gates.
+
 ## Purpose, preset and initial size
 
 Use this priority: explicit user width/height/style and journal/template
@@ -29,10 +34,9 @@ sizes with template dimensions or a 17 cm suggestion.
 
 These are draft suggestions, not universal journal/slide standards or caps.
 Choose an initial height using `dm.figsize` and the panel/label complexity.
-Font sizes come from the active preset (`rcParams["font.size"]` / `dm.fs(0)`);
-use `dm.fs(n)`, `dm.fw(n)` and `dm.lw(n)` for relative adjustments, with no
-universal numeric font default. Use `-kr` only when the plot contains Korean
-text, not merely because the conversation is Korean.
+Choose defaults from data, chart purpose, panel density and categorical text;
+there is no universal ratio or numeric font size. Reuse the recommender/templates.
+Use `-kr` only for Korean plot text, not merely a Korean conversation.
 
 Ask **one short, self-contained question** only when missing information
 materially affects the result. Reuse context already given. For example:
@@ -115,17 +119,15 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
 
 ## Color
 
-- Use named palettes: `oc.*` (Open Color), `tw.*` (Tailwind),
-  `dc.*` (dartwork core), `md.*` (Material), `ad.*` (Ant),
-  `cu.*` (Chakra), `pr.*` (Primer).
-- **Enforced.** Raw hex strings (`color="#abcdef"`) work but trigger
-  a lint info — prefer named tokens (`raw-hex-color`).
-- **Enforced.** For colormaps, avoid `jet` and other rainbow
-  colormaps (`hsv`, `gist_rainbow`, `gist_ncar`, `nipy_spectral`,
-  `rainbow`); they misrepresent ordinal data (lint warning:
-  `jet-cmap`). Use perceptually uniform options: `viridis`, `magma`,
-  `cividis`, `plasma`, `inferno`. dartwork-mpl also registers
-  domain-specific colormaps — see `dm.list_colors()` for the current set.
+- Prefer named palette defaults: `oc.*`, `tw.*`, `dc.*`, `md.*`, `ad.*`,
+  `cu.*`, `pr.*`. User-specified hex/native matplotlib colors remain valid.
+  Raw hex may trigger advisory lint info (`raw-hex-color`); retain explicit colors.
+- **Advisory warning.** For unspecified colormap choices, prefer perceptually
+  uniform `viridis`, `magma`, `cividis`, `plasma` or `inferno`. `jet`, `hsv`,
+  `gist_rainbow`, `gist_ncar`, `nipy_spectral` and `rainbow` trigger `jet-cmap`
+  for risks to ordinal interpretation. Retain an explicit supported choice;
+  explain/report the warning instead of silently substituting another map.
+  See `dm.list_colors()` for domain-specific maps.
 - For eight ordered signed `blue_orange` bins, opt in locally:
   `original8 = dm.colors("blue_orange", n=8)`;
   `centered8 = original8[:4] + original8[4:][::-1]`.
@@ -156,38 +158,35 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
   contrast luminance is a separate pairwise text-contrast calculation and
   must not be confused with the catalog's modeled-relative-Y lock.
 
-## Font and weight
+## Native customization, fonts and strokes
 
-- **Enforced.** Do **not** pass `fontsize=<literal>` (lint warning:
-  `fontsize-literal`). Use `dm.fs(n)` for an offset from the active
-  style's base size, or rely on style defaults. Typical offsets:
-  `dm.fs(-1)` for tick / legend / annotation text, `dm.fs(0)` for
-  body, `dm.fs(1)` for emphasized labels, `dm.fs(2..4)` for titles
-  and section headings.
-- **Enforced.** Do **not** pass `linewidth=<literal>` / `lw=<literal>`
-  with an integer-part ≥ 1 (lint warning: `linewidth-literal`). Use
-  `dm.lw(n)` instead — typical offsets: `dm.lw(0)` for the body line,
-  `dm.lw(1)` for emphasized strokes, `dm.lw(2..)` for poster work.
-- Sub-1 **hairline literals** (`linewidth=0.3` for separator edges,
-  `linewidth=0.5` for dashed reference lines) are explicitly allowed
-  by the lint engine *and recommended* for elements that must keep a
-  small positive width regardless of preset. ``dm.lw(-1)`` is *not*
-  a drop-in replacement for these — most presets set
-  ``rcParams['lines.linewidth'] = 1.0``, which makes ``dm.lw(-1)``
-  resolve to ``0.0`` and collapses the edge into the "no border"
-  idiom (often invisibly).
-- `linewidth=0` is always fine — the canonical "no border" idiom.
-- Same recommendation for `dm.fw(n)` (weight). Each step is +100; use
-  `dm.fw(1)` for "bold" relative to the preset, `dm.fw(-1)` for a
-  lighter accent.
-- **Bundled templates always call `dm.style.use(...)` first and pipe
-  fonts/weights/data-line widths through `dm.fs` / `dm.fw` /
-  `dm.lw`.** Edge hairlines stay as literal `0.3` so they remain
-  visible across presets. Treat this split as the recommended idiom
-  for new agent-authored scripts — a literal font size or line width
-  pinned to a single preset will look wrong as soon as the user
-  switches to `presentation` or `*-kr`, but hairline separators
-  *should* stay at a fixed pixel width.
+Presets supply defaults, not a closed property schema. Native matplotlib
+artists support line width/color/custom dashes, spines, ticks, tick labels,
+axis labels, grids and other valid properties; 18 templates are starters, not
+chart limits. Discover properties with `type(artist)`, getters, `properties()`,
+`help(type(artist))` or official docs for the installed matplotlib version.
+Resolve the panel/series/artist; ask one short question only if material target
+ambiguity remains. Change only requested properties. Preserve data, unrelated
+style, canvas, legend and preset; do not add unsolicited palette/legend changes.
+Apply the preset first, then retained overrides, then local artist edits.
+
+- For preset-relative defaults use `dm.fs(n)`, `dm.lw(n)`, `dm.fw(n)`.
+  `fs` = global `font.size` + `n` pt; `lw` = global `lines.linewidth` + `n` pt;
+  `fw` = global `font.weight` + `100*n`. Fractional offsets are accepted.
+  These helpers do not read an artist's current value or a role-specific base.
+- For relative-to-current edits use the target's getter plus the requested
+  delta. Repeated “one more step” increments the retained current override,
+  rather than resetting to `dm.fs(1)`. Axis-label-only changes edit label Text
+  objects, preserving tick labels; do not change global `font.size`.
+- Explicit absolute values win, including `fontsize=12` or `linewidth=1.5`.
+  `fontsize-literal` / `linewidth-literal` still produce advisory warnings:
+  review and report them; preserve explicit values rather than hiding warnings
+  or replacing them with base defaults. The auto-fixer does not rewrite them.
+- Keep true hairlines literal (`linewidth=0.3` / `0.5`); `dm.lw(-1)` can become
+  zero on presets with a 1 pt base and disable the edge. `linewidth=0` disables
+  a border. Custom dash lengths scale with line width by default; if exact
+  physical on/off lengths are requested, use local `lines.scale_dashes=False`
+  before creation and setters that rescale dashes. See scoped recipes.
 
 ## Save and display
 
@@ -206,11 +205,9 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
 
 ## Style presets
 
-- **Always call `dm.style.use(...)` (or `dm.style.stack([...])`) before
-  building the figure.** A figure that relies on whatever style was
-  active by accident will look inconsistent across notebooks. Every
-  bundled template in `05-templates/` opens with
-  `dm.style.use("scientific")` for exactly this reason.
+- Call `dm.style.use(...)` (or `dm.style.stack([...])`) before building the
+  figure and applying retained user overrides; a later preset reset can
+  replace rcParams overrides. Local artist edits follow the preset.
 - Available presets: `scientific`, `report`, `presentation`,
   `minimal`, plus their `-kr` Korean variants.
 - Korean plot text → `*-kr` variants (`scientific-kr`, `report-kr`,

@@ -1236,8 +1236,18 @@ def register_tools(mcp: FastMCP) -> None:
                     ),
                     "default_dpi": "Controlled by the active style preset.",
                     "font": (
-                        "Sans-serif family; sizes scaled via dm.fs(n), "
-                        "weights via dm.fw(n), line widths via dm.lw(n)."
+                        "Presets supply defaults; explicit scoped user values win. "
+                        "dm.fs(n)/dm.lw(n) add n pt to global font.size/lines.linewidth; "
+                        "dm.fw(n) adds 100*n weight units. For one more step use the "
+                        "current artist getter plus delta; retain exact absolute values. "
+                        "Literal-size/width warnings are advisory: review/report them, "
+                        "never erase explicit intent or hide warnings. Apply the preset "
+                        "before retained overrides and local edits. Change only requested "
+                        "artist properties; preserve data, unrelated style, canvas, legend "
+                        "and preset. Axis labels differ from tick labels; avoid global "
+                        "font changes for label-only edits. Native setters/properties/help "
+                        "or official installed-version docs expose further properties. "
+                        "The 18 templates are starters, not limits on native chart types."
                     ),
                     "save_format": (
                         "Use dm.save_formats(fig, 'name', formats=('png','pdf'), "
@@ -1248,8 +1258,8 @@ def register_tools(mcp: FastMCP) -> None:
                     ),
                     "color": (
                         "Use named palettes (oc.*, tw.*, dc.*, md.*, "
-                        "ad.*, cu.*, pr.*); raw hex is allowed but "
-                        "discouraged. dc.* construction uses OKLab L, "
+                        "ad.*, cu.*, pr.*) for defaults; retain user-specified hex "
+                        "or native matplotlib colors. dc.* construction uses OKLab L, "
                         "OKLCH C/h, and ΔEOK. Modeled relative Y is an "
                         "optional shipped-output compatibility lock, not an "
                         "authoring space or a display measurement. "

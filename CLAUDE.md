@@ -59,13 +59,26 @@ dm.save_formats(fig, "out", formats=("png", "pdf"))     # 4. multi-format save
 - **Never call**: `plt.tight_layout()`, raw `figsize=(w, h)` tuples on
   `plt.subplots` / `plt.figure`. Always wrap with `dm.figsize(...)`
   and call `dm.simple_layout(fig)` after plotting.
-- **Always size fonts, data-line widths, and weights relative to the
-  active preset**: `fontsize=dm.fs(n)`, `linewidth=dm.lw(n)`,
-  `fontweight=dm.fw(n)`. Each is an integer offset from the preset's
-  base value (`0` = base, `+1` / `-1` = step up/down). Literals like
-  `fontsize=12` or `linewidth=1.5` are lint-warning anti-patterns —
-  they look wrong as soon as the user swaps to `presentation` or a
-  `*-kr` preset.
+- **Presets supply defaults; explicit user customization wins.** Use
+  native matplotlib artist properties for any chart type, including line
+  colors/widths/dashes, spines, ticks, tick labels, axis labels and grids.
+  The 18 templates are starters, not a limit. Choose defaults from data,
+  purpose, panel density and categorical text; reuse the recommender/templates.
+- For preset-relative changes use `dm.fs(n)` / `dm.lw(n)` / `dm.fw(n)`:
+  `fs` adds `n` pt to global `font.size`, `lw` adds `n` pt to global
+  `lines.linewidth`, and `fw` adds `100*n` weight units. These helpers do
+  not read a role's or artist's current value. For “one more step,” use the
+  target's getter plus the requested delta; retain explicit absolute values.
+  Literal font sizes/line widths may still warn: review and report those
+  advisories without replacing an explicit request or hiding the warnings.
+- Resolve the requested panel/series/artist and change only its requested
+  properties. Preserve data, unrelated style, canvas, legend and preset.
+  Apply the preset before retained overrides and local edits. For axis-label
+  changes edit label Text objects, not global `font.size` or tick labels.
+  Ask one short question only if a materially ambiguous target remains.
+  Prefer named palette defaults; user-specified hex and native colors work.
+  Discover native properties with `type(artist)`, getters, `properties()`,
+  `help(type(artist))` or official docs for the installed matplotlib version.
 - **Sub-1 hairline literals stay as literals**: `linewidth=0.3` for
   separator edges, `linewidth=0.5` for dashed reference / grid lines.
   ``dm.lw(-1)`` is *not* a drop-in — it resolves to `0.0` with most
@@ -82,8 +95,9 @@ below) for the complete list. The most common ones AI agents trip on:
 
 1. **`figsize=(w, h)` literal** — wrap with `dm.figsize("<n>cm", "<aspect>")`.
 2. **`plt.tight_layout()`** — use `dm.simple_layout(fig)` instead.
-3. **Raw `fontsize=` / `linewidth=` literals** — use `dm.fs(n)` / `dm.lw(n)` so
-   they track the active preset.
+3. **Unrequested fixed `fontsize=` / `linewidth=` literals** — prefer
+   `dm.fs(n)` / `dm.lw(n)` for defaults. Literal warnings are advisory;
+   preserve explicit absolute user values and report relevant warnings.
 
 ## MCP server
 
