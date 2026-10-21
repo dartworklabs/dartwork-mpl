@@ -247,8 +247,7 @@ def _atomic_write_text(path: Path, text: str) -> None:
         raise
 
 
-# Default file names
-CONFIG_FILENAME = ".dartwork_ui_config.json"
+# Default file name
 PRESET_FILENAME = ".dartwork_ui_presets.json"
 
 # Base directory — set to the script's parent directory by ui.run()
@@ -283,17 +282,6 @@ def _get_base_dir() -> Path:
     return _base_dir if _base_dir is not None else Path.cwd()
 
 
-def _config_path() -> Path:
-    """Return the full path to the config file.
-
-    Returns
-    ----------
-    Path
-        Path to ``.dartwork_ui_config.json``.
-    """
-    return _get_base_dir() / CONFIG_FILENAME
-
-
 def _preset_path() -> Path:
     """Return the full path to the presets file.
 
@@ -303,65 +291,6 @@ def _preset_path() -> Path:
         Path to ``.dartwork_ui_presets.json``.
     """
     return _get_base_dir() / PRESET_FILENAME
-
-
-# ============================================================================
-# Save / Load current config
-# ============================================================================
-
-
-def save_config(
-    params: dict[str, Any],
-    function_name: str = "",
-    tabs: list[dict[str, Any]] | None = None,
-    fig_width: int | None = None,
-) -> None:
-    """Persist state to ``.dartwork_ui_config.json``.
-
-    Parameters
-    ----------
-    params : dict
-        Current parameter values.
-    function_name : str
-        Name of the figure generator function.
-    tabs : list[dict], optional
-        Tab state to persist.
-    fig_width : int, optional
-        Figure display width percentage.
-    """
-    data: dict[str, Any] = {
-        "function": function_name,
-        "params": _serializable(params),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }
-    if tabs is not None:
-        data["tabs"] = tabs
-    if fig_width is not None:
-        data["figWidth"] = fig_width
-    _atomic_write_text(
-        _config_path(), json.dumps(data, indent=2, ensure_ascii=False) + "\n"
-    )
-
-
-def load_config() -> dict[str, Any] | None:
-    """Load full config from ``.dartwork_ui_config.json``.
-
-    Returns
-    ----------
-    dict or None
-        The full config (``params``, ``tabs``, etc.),
-        or ``None`` if the file doesn't exist.
-    """
-    path = _config_path()
-    if not path.exists():
-        return None
-    try:
-        from typing import cast
-
-        data = json.loads(path.read_text(encoding="utf-8"))
-        return cast(dict[str, Any], data)
-    except (json.JSONDecodeError, KeyError):
-        return None
 
 
 # ============================================================================
@@ -399,28 +328,6 @@ def load_presets() -> list[dict[str, Any]]:
         Each dict has ``label``, ``params``, and ``timestamp``.
     """
     return _load_preset_file()
-
-
-def delete_preset(index: int) -> bool:
-    """Delete a preset by its index.
-
-    Parameters
-    ----------
-    index : int
-        Zero-based index of the preset to delete.
-
-    Returns
-    -------
-    bool
-        ``True`` if the preset was deleted, ``False`` if
-        the index is out of range.
-    """
-    presets = _load_preset_file()
-    if index < 0 or index >= len(presets):
-        return False
-    presets.pop(index)
-    _write_preset_file(presets)
-    return True
 
 
 def _load_preset_file() -> list[dict[str, Any]]:

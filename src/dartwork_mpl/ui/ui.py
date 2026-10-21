@@ -726,35 +726,6 @@ def run(
 # ============================================================================
 
 
-def _format_validation_error(exc: Exception) -> str:
-    """Format a Pydantic ValidationError into a readable string.
-
-    Parameters
-    ----------
-    exc : Exception
-        The exception to format. If it is a Pydantic
-        ``ValidationError``, field-level details are
-        extracted.
-
-    Returns
-    ----------
-    str
-        Human-readable error message.
-    """
-    try:
-        from pydantic import ValidationError
-
-        if isinstance(exc, ValidationError):
-            parts: list[str] = []
-            for err in exc.errors():
-                loc = " → ".join(str(x) for x in err["loc"])
-                parts.append(f"{loc}: {err['msg']}")
-            return "; ".join(parts)
-    except ImportError:
-        pass
-    return str(exc)
-
-
 def _validate_export_format(fmt: str) -> None:
     """Reject an unsupported export format with a 400 (not a 500).
 
@@ -769,65 +740,6 @@ def _validate_export_format(fmt: str) -> None:
                 f"{', '.join(sorted(_SUPPORTED_EXPORT_FORMATS))}."
             ),
         )
-
-
-def _build_model_checked(
-    raw_params: dict[str, Any],
-    model_cls: type[ParamModel],
-    descriptors: list[Any],
-) -> ParamModel:
-    """``_build_model`` that maps a validation failure to a 422.
-
-    The render endpoint already returns 422 for bad params; the export /
-    script / save-server endpoints used the raw builder and surfaced the
-    same failures as a generic 500. This makes their contract consistent.
-    """
-    try:
-        return _build_model(raw_params, model_cls, descriptors)
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(
-            status_code=422, detail=_format_validation_error(exc)
-        ) from exc
-
-
-def _build_model(
-    raw_params: dict[str, Any],
-    model_cls: type[ParamModel],
-    descriptors: list[Any],
-) -> ParamModel:
-    """Coerce raw params from the frontend and build a model instance.
-
-    Handles type coercion for scalars and parsing of comma-separated
-    strings for list/tuple fields.
-    """
-    coerced: dict[str, Any] = {}
-
-    type_map = {d.name: d.type_name for d in descriptors}
-
-    for k, v in raw_params.items():
-        tname = type_map.get(k, "str")
-
-        try:
-            if tname == "int":
-                coerced[k] = int(v)
-            elif tname == "float":
-                coerced[k] = float(v)
-            elif tname == "bool":
-                coerced[k] = bool(v) if isinstance(v, bool) else v
-            elif tname == "list_int":
-                coerced[k] = _parse_list(v, int)
-            elif tname == "list_float":
-                coerced[k] = _parse_list(v, float)
-            elif tname == "list_str":
-                coerced[k] = _parse_list(v, str)
-            else:
-                coerced[k] = v
-        except (ValueError, TypeError):
-            coerced[k] = v
-
-    return model_cls(**coerced)
 
 
 def _extract_param_model(fn: Callable[..., Any]) -> type[ParamModel]:
@@ -884,16 +796,6 @@ def _extract_param_model(fn: Callable[..., Any]) -> type[ParamModel]:
         )
 
     return param_type
-
-
-def _parse_list(value: Any, item_type: type) -> list[Any]:
-    """Parse a comma-separated string or existing list into typed list."""
-    if isinstance(value, list):
-        return [item_type(x) for x in value]
-    if isinstance(value, str):
-        raw = [s.strip() for s in value.split(",") if s.strip()]
-        return [item_type(x) for x in raw]
-    return [item_type(value)]
 
 
 def _timestamp_slug() -> str:

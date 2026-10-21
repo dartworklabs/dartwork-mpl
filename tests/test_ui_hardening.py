@@ -1,11 +1,9 @@
 """UI hardening (#236, domain F).
 
-Covers the export/build/preset-write robustness fixes:
+Covers the export/preset-write robustness fixes:
 
 - ``_validate_export_format`` → 400 (not an internal 500) for an
   unsupported ``fmt``,
-- ``_build_model_checked`` → 422 for invalid params on the
-  export/script/save-server endpoints (parity with /api/render),
 - ``_atomic_write_text`` writes presets/config atomically.
 """
 
@@ -19,12 +17,10 @@ import pytest
 pytest.importorskip("fastapi")
 
 from fastapi import HTTPException
-from pydantic import BaseModel
 
 from dartwork_mpl.ui._config import _atomic_write_text
 from dartwork_mpl.ui.ui import (
     _SUPPORTED_EXPORT_FORMATS,
-    _build_model_checked,
     _validate_export_format,
 )
 
@@ -47,21 +43,6 @@ class TestValidateExportFormat:
     def test_case_insensitive(self) -> None:
         # Upper-case extensions normalize before the membership test.
         _validate_export_format("PNG")
-
-
-class _Model(BaseModel):
-    x: int
-
-
-class TestBuildModelChecked:
-    def test_valid_params_build(self) -> None:
-        model = _build_model_checked({"x": "5"}, _Model, [])
-        assert model.x == 5
-
-    def test_invalid_params_are_422_not_500(self) -> None:
-        with pytest.raises(HTTPException) as ei:
-            _build_model_checked({"x": "not-an-int"}, _Model, [])
-        assert ei.value.status_code == 422
 
 
 class TestAtomicWriteText:

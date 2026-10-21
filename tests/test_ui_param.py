@@ -28,15 +28,7 @@ from dartwork_mpl.ui._boundary import (
     Tab,
     parse_request,
 )
-from dartwork_mpl.ui._config import (
-    CONFIG_FILENAME,
-    PRESET_FILENAME,
-    delete_preset,
-    load_config,
-    load_presets,
-    save_config,
-    save_preset,
-)
+from dartwork_mpl.ui._config import PRESET_FILENAME, load_presets, save_preset
 from dartwork_mpl.ui._files import (
     FixedStateStore,
     MissingState,
@@ -46,6 +38,9 @@ from dartwork_mpl.ui._files import (
 )
 from dartwork_mpl.ui._param import ParamModel
 from dartwork_mpl.ui._widget import descriptors_from_model
+
+# The viewer's fixed config file name (a file-format contract).
+CONFIG_FILENAME = ".dartwork_ui_config.json"
 
 # ============================================================================
 # Tests: descriptors_from_model
@@ -196,26 +191,7 @@ class TestDescriptorsFromModel:
 
 
 class TestConfigPersistence:
-    """Test save/load of config and history files."""
-
-    def test_save_and_load_config(self, tmp_path: Path) -> None:
-        config_file = tmp_path / CONFIG_FILENAME
-        with patch(
-            "dartwork_mpl.ui._config._config_path", return_value=config_file
-        ):
-            save_config({"n": 42, "alpha": 0.7}, function_name="test_fn")
-            loaded = load_config()
-
-        assert loaded is not None
-        assert loaded["params"]["n"] == 42
-        assert loaded["params"]["alpha"] == 0.7
-
-    def test_load_config_missing(self, tmp_path: Path) -> None:
-        config_file = tmp_path / CONFIG_FILENAME
-        with patch(
-            "dartwork_mpl.ui._config._config_path", return_value=config_file
-        ):
-            assert load_config() is None
+    """Test save/load of the legacy preset file helpers."""
 
     def test_save_and_load_preset_json(self, tmp_path: Path) -> None:
         """Presets are saved to and loaded from JSON."""
@@ -231,62 +207,6 @@ class TestConfigPersistence:
         assert presets[0]["label"] == "test_a"
         assert presets[0]["params"]["n"] == 1
         assert presets[1]["label"] == "test_b"
-
-    def test_delete_preset(self, tmp_path: Path) -> None:
-        """Deleting a preset removes it from the list."""
-        preset_file = tmp_path / PRESET_FILENAME
-        with patch(
-            "dartwork_mpl.ui._config._preset_path", return_value=preset_file
-        ):
-            save_preset("a", {"x": 1})
-            save_preset("b", {"x": 2})
-            save_preset("c", {"x": 3})
-
-            ok = delete_preset(1)  # delete "b"
-            assert ok is True
-
-            remaining = load_presets()
-            assert len(remaining) == 2
-            assert remaining[0]["label"] == "a"
-            assert remaining[1]["label"] == "c"
-
-    def test_delete_preset_invalid_index(self, tmp_path: Path) -> None:
-        """Deleting with invalid index returns False."""
-        preset_file = tmp_path / PRESET_FILENAME
-        with patch(
-            "dartwork_mpl.ui._config._preset_path", return_value=preset_file
-        ):
-            save_preset("a", {"x": 1})
-            assert delete_preset(5) is False
-            assert delete_preset(-1) is False
-            assert len(load_presets()) == 1
-
-    def test_save_config_with_tabs_and_fig_width(self, tmp_path: Path) -> None:
-        """save_config persists tabs and figWidth when given."""
-        config_file = tmp_path / CONFIG_FILENAME
-        with patch(
-            "dartwork_mpl.ui._config._config_path", return_value=config_file
-        ):
-            save_config(
-                {"n": 1},
-                function_name="fn",
-                tabs=[{"id": "tab1"}],
-                fig_width=80,
-            )
-            loaded = load_config()
-
-        assert loaded is not None
-        assert loaded["tabs"] == [{"id": "tab1"}]
-        assert loaded["figWidth"] == 80
-
-    def test_load_config_corrupt_json(self, tmp_path: Path) -> None:
-        """Corrupt JSON returns None instead of crashing."""
-        config_file = tmp_path / CONFIG_FILENAME
-        config_file.write_text("{invalid json!!!", encoding="utf-8")
-        with patch(
-            "dartwork_mpl.ui._config._config_path", return_value=config_file
-        ):
-            assert load_config() is None
 
     def test_load_presets_corrupt_json(self, tmp_path: Path) -> None:
         """Corrupt preset file returns empty list."""
