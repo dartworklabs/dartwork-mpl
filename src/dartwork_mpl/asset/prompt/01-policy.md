@@ -13,11 +13,47 @@ Rules in this document are split into two tiers:
   the design, but not currently checked by the lint engine. Treat
   these as guidance for human authors and AI agents both.
 
+Critical lint gates and data/trust constraints remain binding. Supported
+explicit aesthetic choices (including colormap or rotation) take priority over
+aesthetic warning recommendations: explain/report warnings without silently
+normalizing the user's choice. Warning/info findings are not critical gates.
+
+## Purpose, preset and initial size
+
+Use this priority: explicit user width/height/style and journal/template
+constraints, then prior project context, then inferred purpose defaults.
+Keep a selected preset (including `scientific` or `report`) during geometry-only
+edits; preserve the data and other style choices. Do not replace explicit
+sizes with template dimensions or a 17 cm suggestion.
+
+| Purpose keywords (examples) | Existing preset | Provisional size guidance |
+|---|---|---|
+| paper, journal, 논문 | `scientific` | `dm.col1` (9 cm) or `dm.col2` (17 cm) are rough candidates; confirm venue/column width for final publication |
+| report, document, dashboard, 보고서, 문서 | `report` | 13–17 cm is a rough starting range; fit the page/content width and panel complexity |
+| talk, slides, presentation, 발표 | `presentation` | fit the slide ratio and full-slide/inset placement; a slide-sized canvas is not implied by the preset |
+
+These are draft suggestions, not universal journal/slide standards or caps.
+Choose an initial height using `dm.figsize` and the panel/label complexity.
+Choose defaults from data, chart purpose, panel density and categorical text;
+there is no universal ratio or numeric font size. Reuse the recommender/templates.
+Use `-kr` only for Korean plot text, not merely a Korean conversation.
+
+Ask **one short, self-contained question** only when missing information
+materially affects the result. Reuse context already given. For example:
+“Is this paper figure single- or double-column, and what is its target width?”;
+“Is the slide 16:9 or 4:3, and is this a full-slide chart or an inset?”;
+“For this report, what page/content width or preferred figure size should I use?”
+Do not require a setup form for every plot or silently assume ambiguous final
+publication sizing. For a quick draft, state a reasonable provisional
+preset/size and invite correction instead of blocking.
+
 ## Width
 
-- **Enforced.** `plt.subplots(figsize=dm.figsize(width, aspect))` is
-  the only legal way to size a figure. `dm.subplots` and `dm.figure`
-  were removed (lint critical: `dm-subplots-removed`).
+- Use native `plt.subplots(figsize=dm.figsize(width, aspect))` or
+  `plt.figure(figsize=dm.figsize(width, aspect))`, including native GridSpec
+  and nested GridSpec for row-specific panel allocations. Figure/Axes remain
+  native matplotlib objects. `dm.subplots` and `dm.figure` were removed
+  (lint critical: `dm-subplots-removed`).
 - **Enforced.** Raw `figsize=(w, h)` tuples are forbidden — always
   go through `dm.figsize` (lint critical: `figsize-direct`).
 - `width` accepts:
@@ -33,13 +69,13 @@ Rules in this document are split into two tiers:
     (= 17 cm).
 - **Enforced.** Bare `int` / `float` widths are rejected (lint
   critical: `raw-width-number`) — the unit must always be explicit.
-- **Enforced.** Keep widths at or below 17 cm — most page layouts
-  break beyond that (lint warning: `oversize-width`).
-- **Recommended.** Snap widths to the 0.5 cm grid (9.0, 9.5, 10.0…)
-  for cross-figure consistency.
-- **Recommended.** Within one project, keep the number of distinct
-  widths ≤ 5; many small variations make multi-figure reports look
-  ragged.
+- Width and height are freely chosen physical dimensions; 17 cm is not an
+  API maximum. The `oversize-width` lint warning flags literal cm widths above
+  17 cm for a page-fit review. Retain explicitly requested or template-required
+  dimensions; only reduce/split a figure when the intended page requires it.
+- **Recommended.** For a coordinated set of page figures, a 0.5 cm grid and
+  a small set of widths can improve consistency. These suggestions do not
+  override requested dimensions.
 
 ## Aspect or height (the second `dm.figsize` argument)
 
@@ -83,17 +119,15 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
 
 ## Color
 
-- Use named palettes: `oc.*` (Open Color), `tw.*` (Tailwind),
-  `dc.*` (dartwork core), `md.*` (Material), `ad.*` (Ant),
-  `cu.*` (Chakra), `pr.*` (Primer).
-- **Enforced.** Raw hex strings (`color="#abcdef"`) work but trigger
-  a lint info — prefer named tokens (`raw-hex-color`).
-- **Enforced.** For colormaps, avoid `jet` and other rainbow
-  colormaps (`hsv`, `gist_rainbow`, `gist_ncar`, `nipy_spectral`,
-  `rainbow`); they misrepresent ordinal data (lint warning:
-  `jet-cmap`). Use perceptually uniform options: `viridis`, `magma`,
-  `cividis`, `plasma`, `inferno`. dartwork-mpl also registers
-  domain-specific colormaps — see `dm.list_colors()` for the current set.
+- Prefer named palette defaults: `oc.*`, `tw.*`, `dc.*`, `md.*`, `ad.*`,
+  `cu.*`, `pr.*`. User-specified hex/native matplotlib colors remain valid.
+  Raw hex may trigger advisory lint info (`raw-hex-color`); retain explicit colors.
+- **Advisory warning.** For unspecified colormap choices, prefer perceptually
+  uniform `viridis`, `magma`, `cividis`, `plasma` or `inferno`. `jet`, `hsv`,
+  `gist_rainbow`, `gist_ncar`, `nipy_spectral` and `rainbow` trigger `jet-cmap`
+  for risks to ordinal interpretation. Retain an explicit supported choice;
+  explain/report the warning instead of silently substituting another map.
+  See `dm.list_colors()` for domain-specific maps.
 - For eight ordered signed `blue_orange` bins, opt in locally:
   `original8 = dm.colors("blue_orange", n=8)`;
   `centered8 = original8[:4] + original8[4:][::-1]`.
@@ -124,45 +158,46 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
   contrast luminance is a separate pairwise text-contrast calculation and
   must not be confused with the catalog's modeled-relative-Y lock.
 
-## Font and weight
+## Native customization, fonts and strokes
 
-- **Enforced.** Do **not** pass `fontsize=<literal>` (lint warning:
-  `fontsize-literal`). Use `dm.fs(n)` for an offset from the active
-  style's base size, or rely on style defaults. Typical offsets:
-  `dm.fs(-1)` for tick / legend / annotation text, `dm.fs(0)` for
-  body, `dm.fs(1)` for emphasized labels, `dm.fs(2..4)` for titles
-  and section headings.
-- **Enforced.** Do **not** pass `linewidth=<literal>` / `lw=<literal>`
-  with an integer-part ≥ 1 (lint warning: `linewidth-literal`). Use
-  `dm.lw(n)` instead — typical offsets: `dm.lw(0)` for the body line,
-  `dm.lw(1)` for emphasized strokes, `dm.lw(2..)` for poster work.
-- Sub-1 **hairline literals** (`linewidth=0.3` for separator edges,
-  `linewidth=0.5` for dashed reference lines) are explicitly allowed
-  by the lint engine *and recommended* for elements that must keep a
-  small positive width regardless of preset. ``dm.lw(-1)`` is *not*
-  a drop-in replacement for these — most presets set
-  ``rcParams['lines.linewidth'] = 1.0``, which makes ``dm.lw(-1)``
-  resolve to ``0.0`` and collapses the edge into the "no border"
-  idiom (often invisibly).
-- `linewidth=0` is always fine — the canonical "no border" idiom.
-- Same recommendation for `dm.fw(n)` (weight). Each step is +100; use
-  `dm.fw(1)` for "bold" relative to the preset, `dm.fw(-1)` for a
-  lighter accent.
-- **Bundled templates always call `dm.style.use(...)` first and pipe
-  fonts/weights/data-line widths through `dm.fs` / `dm.fw` /
-  `dm.lw`.** Edge hairlines stay as literal `0.3` so they remain
-  visible across presets. Treat this split as the recommended idiom
-  for new agent-authored scripts — a literal font size or line width
-  pinned to a single preset will look wrong as soon as the user
-  switches to `presentation` or `*-kr`, but hairline separators
-  *should* stay at a fixed pixel width.
+Presets supply defaults, not a closed property schema. Native matplotlib
+artists support line width/color/custom dashes, spines, ticks, tick labels,
+axis labels, grids and other valid properties; 18 templates are starters, not
+chart limits. Discover properties with `type(artist)`, getters, `properties()`,
+`help(type(artist))` or official docs for the installed matplotlib version.
+Resolve the panel/series/artist; ask one short question only if material target
+ambiguity remains. Change only requested properties. Preserve data, unrelated
+style, canvas, legend and preset; do not add unsolicited palette/legend changes.
+Apply the preset first, then retained overrides, then local artist edits.
+
+- For preset-relative defaults use `dm.fs(n)`, `dm.lw(n)`, `dm.fw(n)`.
+  `fs` = global `font.size` + `n` pt; `lw` = global `lines.linewidth` + `n` pt;
+  `fw` = global `font.weight` + `100*n`. Fractional offsets are accepted.
+  These helpers do not read an artist's current value or a role-specific base.
+- For relative-to-current edits use the target's getter plus the requested
+  delta. Repeated “one more step” increments the retained current override,
+  rather than resetting to `dm.fs(1)`. Axis-label-only changes edit label Text
+  objects, preserving tick labels; do not change global `font.size`.
+- Explicit absolute values win, including `fontsize=12` or `linewidth=1.5`.
+  `fontsize-literal` / `linewidth-literal` still produce advisory warnings:
+  review and report them; preserve explicit values rather than hiding warnings
+  or replacing them with base defaults. The auto-fixer does not rewrite them.
+- Keep true hairlines literal (`linewidth=0.3` / `0.5`); `dm.lw(-1)` can become
+  zero on presets with a 1 pt base and disable the edge. `linewidth=0` disables
+  a border. Custom dash lengths scale with line width by default; if exact
+  physical on/off lengths are requested, use local `lines.scale_dashes=False`
+  before creation and setters that rescale dashes. See scoped recipes.
 
 ## Save and display
 
 - Prefer `dm.save_and_show(fig, "name")` for notebooks (saves +
   inline preview).
-- Prefer `dm.save_formats(fig, "name", formats=("png","svg"))` for
-  scripts (multi-format, no preview).
+- Prefer `dm.save_formats(fig, "name", formats=("png","pdf"),
+  bbox_inches=None)` for scripts (multi-format, no preview). `None` is already
+  the default and preserves the requested canvas; `bbox_inches="tight"` crops
+  to content and can change exported dimensions. Layout changes axes margins,
+  not the canvas. DPI controls raster pixel density, not physical width/height;
+  PNG dimensions quantize to whole pixels, while PDF keeps physical page size.
 - **Enforced.** Direct `fig.savefig(...)` / `plt.savefig(...)`
   bypasses the dartwork save preset (lint warning: `savefig-direct`).
 - Never end a figure with just `plt.show()` — the rendered artifact
@@ -170,15 +205,13 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
 
 ## Style presets
 
-- **Always call `dm.style.use(...)` (or `dm.style.stack([...])`) before
-  building the figure.** A figure that relies on whatever style was
-  active by accident will look inconsistent across notebooks. Every
-  bundled template in `05-templates/` opens with
-  `dm.style.use("scientific")` for exactly this reason.
+- Call `dm.style.use(...)` (or `dm.style.stack([...])`) before building the
+  figure and applying retained user overrides; a later preset reset can
+  replace rcParams overrides. Local artist edits follow the preset.
 - Available presets: `scientific`, `report`, `presentation`,
   `minimal`, plus their `-kr` Korean variants.
-- Korean text → `*-kr` variants (`scientific-kr`, `report-kr`,
-  `presentation-kr`).
+- Korean plot text → `*-kr` variants (`scientific-kr`, `report-kr`,
+  `presentation-kr`); conversation language alone does not select a variant.
 - Use `dm.style.context("preset")` when a single block needs a
   different look — it restores the previous style on exit so the
   preset does not leak into later figures.

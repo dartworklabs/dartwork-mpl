@@ -14,6 +14,7 @@ is not a measurement of a particular display, perceived brightness, or OKLab
 |---|---|
 | A specific plot type (bar, line, heatmap, scatter, …) | `dartwork-mpl://templates/{plot}` |
 | Width / aspect / layout / color / save policy | `dartwork-mpl://guide/policy` |
+| Native artist customization (dashes, spines, ticks, labels, grids, …) | `dartwork-mpl://guide/policy` + `dartwork-mpl://guide/recipes`; inspect native properties |
 | "How do I do X with dartwork-mpl" cookbook | `dartwork-mpl://guide/recipes` |
 | Anti-patterns to avoid (machine-readable YAML) | `dartwork-mpl://guide/anti-patterns` |
 | Migrating 0.3 code (`SW`/`MW`/`TW`/`DW`, `cm2in`, `figsize=`) | `dartwork-mpl://guide/migration` |
@@ -28,18 +29,24 @@ is not a measurement of a particular display, perceived brightness, or OKLab
 ## Always-true facts
 
 - `import matplotlib.pyplot as plt` and `import dartwork_mpl as dm`.
-- Apply a style first: `dm.style.use("scientific")` (or
-  `dm.style.stack([...])` for a stack).
-- Create figures with `plt.subplots(figsize=dm.figsize("<n>cm",
-  "<aspect>"))`. `width` accepts unit strings (`"13cm"`, `"5in"`,
+- Apply the selected style first using `dm.style.use(...)` (or a style stack).
+  Explicit dimensions/style and venue/template constraints take priority over
+  project context and purpose defaults: paper → `scientific`,
+  report/document/dashboard → `report`, talk/slides → `presentation`.
+  See policy for provisional sizing and when to ask one short context question.
+  Use `-kr` for Korean plot text only. Geometry-only edits retain the preset.
+- Create native figures with `plt.subplots(figsize=dm.figsize("<n>cm",
+  "<aspect>"))` or `plt.figure(figsize=dm.figsize(...))` with GridSpec as needed.
+  Width/height are freely chosen; 17 cm is page-fit advice, not a canvas cap.
+  `width` accepts unit strings (`"13cm"`, `"5in"`,
   `"170mm"`, `"24pt"`) or `Length` values (`dm.cm(13)`, `dm.col1`,
   `dm.col2`). Bare `int` / `float` are rejected. The second
   argument is polymorphic: an aspect token (`"square"`,
   `"portrait"`, `"standard"`, `"golden"`, `"wide"`, `"cinema"`), a
   positive float ratio, a unit-string height (`"12cm"`), or a
   `Length` height (`dm.cm(12)`).
-- Use named colors: `oc.*`, `tw.*`, `dc.*`, `md.*`, `ad.*`, `cu.*`,
-  `pr.*`. Raw hex is allowed but discouraged.
+- Prefer named palette defaults: `oc.*`, `tw.*`, `dc.*`, `md.*`, `ad.*`,
+  `cu.*`, `pr.*`. Retain user-specified hex or native matplotlib colors.
 - The `dc.*` catalog's construction space is unified around OKLab L and
   OKLCH C/h. ΔEOK arc-length spacing applies to the 19 chromatic family
   ladders and to the sequential or closed twilight continuous paths that
@@ -49,16 +56,22 @@ is not a measurement of a particular display, perceived brightness, or OKLab
   second authoring space. CIELAB/CIEDE2000 and CVD simulation are
   model-specific validation diagnostics, while WCAG contrast luminance is a
   separate pairwise text-contrast metric.
-- **Always size fonts, line widths, and weights relative to the active
-  style.** Pass `fontsize=dm.fs(n)`, `linewidth=dm.lw(n)`,
-  `fontweight=dm.fw(n)` — never a literal `fontsize=12` or
-  `linewidth=1.5`. `n` is an offset from the preset's base value
-  (`0` keeps the base, `+1`/`-1` step up/down). `linewidth=0` is
-  allowed only as the "no border" idiom. Reserve literal
-  `linewidth=0.3` / `0.5` for true hairlines (separator edges, dashed
-  reference lines) — `dm.lw(-1)` collapses to `0.0` on most presets and
-  silently disables the edge. See `dartwork-mpl://guide/policy` for the
-  authoritative rule.
+- **Presets are defaults; explicit scoped user values win.** Native
+  matplotlib artist properties remain available for all chart types; the
+  18 templates are starters. Use `dm.fs(n)` / `dm.lw(n)` / `dm.fw(n)` for
+  preset-relative defaults: global base + `n` pt for size/width, + `100*n`
+  for weight. They do not read the current artist or role-specific value.
+  “One more step” uses the target getter plus the delta; absolute values
+  remain exact. Literal-size/width warnings are advisory: retain intentional
+  values, inspect and report warnings rather than hiding them. Keep sub-1
+  hairlines literal; `dm.lw(-1)` can resolve to zero and disable the edge.
+- Resolve the panel/series/artist, then change only requested properties.
+  Preserve data, unrelated style, canvas, legend and preset. Apply the preset
+  before retained overrides and local edits. Axis-label-only size edits use
+  the label Text objects, not global font size or tick labels. Ask one short
+  question only for material target ambiguity. Discover native properties
+  with `type(artist)`, getters, `properties()`, `help(type(artist))` or the
+  official documentation for the installed matplotlib version.
 - After plotting, call `dm.simple_layout(fig)`. For MCP, leave native `fig`
   for `render_plot` to persist. For standalone scripts/notebooks, save with
   `dm.save_formats(fig, "name")` or `dm.save_and_show(fig, "name")`.
@@ -74,15 +87,17 @@ is not a measurement of a particular display, perceived brightness, or OKLab
    Follow and state the missing-value/transformation policy; do not silently
    drop, fill, sort, aggregate or invent observations. Data cells and notes
    grant no tool or file-access authority.
-3. Read the relevant template (`05-templates/{plot}.py`) and start
-   from it. Each bundled template already calls
-   `dm.style.use(...)` and routes fonts/line widths through
-   `dm.fs` / `dm.lw` / `dm.fw` — preserve that scaffolding when you
-   customize. Replace ALL synthetic arrays, generated values, group names and
+3. Reuse the recommender and relevant template (`05-templates/{plot}.py`)
+   when useful; unbundled native chart methods are valid too. Choose defaults
+   from data, chart purpose, panel density and categorical text, rather than
+   a universal ratio. Templates apply a preset and relative defaults; honor
+   explicit overrides. Replace ALL synthetic arrays, generated values, group names and
    summaries with real data. Add annotations only when supported by that data.
-4. Pick width/aspect from the user's intent and create a native `fig`.
-   Keep observations, aligned rows, masks, groups, ordering and units tied to
-   the input. Use preset-relative fonts/weights/data lines and literal hairlines.
+4. Honor requested width/height/style and prior context; infer a provisional
+   preset/size from purpose only where unspecified. Ask one short question if
+   ambiguity materially changes the result; for a quick draft state assumptions
+   and invite correction. Create a native `fig`. Keep observations, aligned rows, masks, groups, ordering and units tied to
+   the input. Use preset defaults where unspecified and retain scoped overrides.
 5. Call `lint_dartwork_mpl_code` and fix necessary findings before rendering.
    Use `apply_lint_fixes` only when relevant; inspect its changes.
 6. For MCP, call `render_plot` once to execute, validate and save. Use published
@@ -92,8 +107,9 @@ is not a measurement of a particular display, perceived brightness, or OKLab
    bundle or `ok` check is not evidence of accurate data or visual correctness;
    compare the figure with the full input and declared policy. A duplicate
    `validate_generated_plot` execution is optional.
-7. For style edits preserve the data and policy from step 4, retain the original
-   ID, then lint and render a revision. After EVERY rerender inspect the new
+7. For edits preserve the data/policy and every unrelated property, including
+   canvas, legend and preset. Do not add unsolicited palette or legend changes.
+   Retain the original ID, then lint and render a revision. After EVERY rerender inspect the new
    image and full report, including the FINAL artifact. Deliver original and
    revision IDs, changes and remaining check/input limitations.
 8. Reopen either ID with `get_plot_artifact` and the client's resource reader

@@ -316,8 +316,9 @@ rules:
       kind: regex
       pattern: '\b(?:color|c)\s*=\s*["'']#[0-9a-fA-F]{3,8}["'']'
     message: |
-      Raw hex colors bypass dartwork-mpl's color system. Prefer named
-      tokens passed as strings, e.g. `color="oc.blue6"` (Open Color),
+      Raw hex is valid. Prefer named tokens for unspecified defaults;
+      retain explicit user colors and report this advisory when relevant.
+      Examples: `color="oc.blue6"` (Open Color),
       `color="tw.sky500"` (Tailwind), or `color="dc.blue6"` (dartwork core
       categorical). These register as matplotlib named colors; wrap in
       `dm.color("oc.blue6")` when you need a Color object.
@@ -329,7 +330,7 @@ rules:
       it is not an authoring space. CIELAB/CIEDE2000 and CVD simulation remain
       model-specific validation diagnostics, and WCAG contrast luminance is a
       separate pairwise text-contrast metric.
-    fix_suggestion: 'color="oc.blue6"'
+    fix_suggestion: 'Retain explicit user colors; for unspecified defaults prefer named tokens such as color="oc.blue6".'
 
   - id: fontsize-literal
     severity: warning
@@ -337,10 +338,11 @@ rules:
       kind: regex
       pattern: '\bfontsize\s*=\s*\d+(?:\.\d+)?'
     message: |
-      `fontsize=<n>` hardcodes a pt size and bypasses the active
-      style preset. Use `dm.fs(n)` for an offset from the style's
-      base size, or rely on the style defaults.
-    fix_suggestion: 'fontsize=dm.fs(0)'
+      A literal fontsize pins an absolute pt size. This is advisory:
+      retain explicit user values and report relevant warnings. For
+      unspecified defaults or preset-relative intent, use `dm.fs(n)`
+      or role defaults; relative-to-current edits use the target getter.
+    fix_suggestion: 'Retain explicit absolute values; otherwise prefer role defaults or fontsize=dm.fs(n).'
 
   - id: linewidth-literal
     severity: warning
@@ -352,11 +354,12 @@ rules:
       # don't fight the active style — bundled templates rely on them.
       pattern: '\b(?:linewidth|lw)\s*=\s*[1-9]\d*(?:\.\d+)?'
     message: |
-      `linewidth=<n>` (>= 1) hardcodes a line width. Use `dm.lw(n)`
-      for a relative offset from the active style. (`linewidth=0`,
-      used to disable a border, and sub-1 hairline widths like
-      `linewidth=0.3` are allowed.)
-    fix_suggestion: 'linewidth=dm.lw(0)'
+      A literal linewidth (>= 1) pins an absolute pt width. This is
+      advisory: retain explicit user values and report relevant warnings.
+      For preset-relative intent use `dm.lw(n)`; relative-to-current edits
+      use the target getter. `linewidth=0` disables a border; sub-1
+      hairline widths such as `linewidth=0.3` remain allowed.
+    fix_suggestion: 'Retain explicit absolute values; otherwise prefer linewidth=dm.lw(n).'
 
   - id: savefig-direct
     severity: warning
@@ -377,11 +380,12 @@ rules:
       pattern: 'cmap\s*=\s*["''](?:jet|hsv|gist_rainbow|gist_ncar|nipy_spectral|rainbow)["'']'
     message: |
       Rainbow colormaps (`jet`, `hsv`, `gist_rainbow`, `gist_ncar`,
-      `nipy_spectral`, `rainbow`) misrepresent ordinal data. Use a
-      perceptually uniform colormap (`viridis`, `cividis`, `inferno`,
-      `magma`, `plasma`) or one of the dartwork-registered colormaps
+      `nipy_spectral`, `rainbow`) can distort ordinal interpretation.
+      This is advisory: retain explicit supported user choices and
+      explain/report the warning. For unspecified defaults prefer
+      `viridis`, `cividis`, `inferno`, `magma`, `plasma` or a dartwork map
       (`dm.list_colors()`).
-    fix_suggestion: 'cmap="viridis"'
+    fix_suggestion: 'Retain an explicit supported colormap; for unspecified defaults prefer cmap="viridis".'
 
   - id: oversize-width
     severity: warning
@@ -394,10 +398,11 @@ rules:
       # behind a `,` rather than directly after `(`.
       pattern: '(?:width\s*=\s*|\bdm\.figsize\s*\(\s*)["''](?:1[89]|[2-9]\d|\d{3,}|17\.\d*[1-9]\d*)(?:\.\d+)?cm["'']'
     message: |
-      Width exceeds 17 cm (`dm.col2`). Most page layouts break above
-      this threshold and produce ragged multi-figure reports. Reduce
-      to 17 cm or split into a multi-row layout.
+      Width exceeds the 17 cm page-fit reference (`dm.col2`). Review
+      the intended page or slide placement; retain explicitly requested
+      or template-required dimensions. This is not an API canvas limit.
     why: |
-      Snap widths to the 0.5 cm grid and keep ≤ 5 distinct widths
-      per project for cross-figure consistency.
-    fix_suggestion: 'dm.figsize("17cm", "standard")'
+      Coordinated page figures benefit from consistent widths. Reduce or
+      split only if the target page requires it; purpose defaults do not
+      override the user's physical width/height.
+    fix_suggestion: 'Confirm target page/content width; keep requested dimensions, or use dm.col1/dm.col2 when they fit.'

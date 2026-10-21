@@ -130,6 +130,95 @@ weight and stroke width.
 Source of truth: `src/dartwork_mpl/asset/mplstyle/font-*.mplstyle`. If
 those values change, regenerate this table.
 
+## Choosing a purpose and canvas
+
+Explicit width/height/style and journal/template constraints take priority,
+then prior project context, then purpose defaults. Start with these draft
+suggestions and adjust for panel/label complexity:
+
+| Context | Existing preset | Initial sizing decision |
+|---|---|---|
+| Paper / journal / 논문 | `scientific` | `dm.col1` (9 cm) or `dm.col2` (17 cm) can be starting points; confirm the venue's actual column width for final publication |
+| Report / document / dashboard / 보고서 | `report` | 13–17 cm can be a starting range; use the available page/content width |
+| Talk / slides / presentation / 발표 | `presentation` | use the slide ratio and intended full-slide/inset placement |
+
+These are suggestions, not universal standards or size limits. If context is
+materially ambiguous, ask one short question such as “What page/content width
+or preferred figure size should I use?” For papers ask about single/double
+columns or venue width; for slides ask about 16:9/4:3 and full-slide/inset use.
+Reuse already supplied context. For a quick draft, state a provisional preset
+and size and invite correction. Use a `-kr` preset only for Korean plot text,
+not simply because the conversation is Korean. A geometry-only edit keeps the
+selected preset, data and other style choices. Presets supply defaults;
+explicit user overrides take priority. Use `dm.fs(n)`, `dm.fw(n)` and
+`dm.lw(n)` for preset-relative changes; retain requested absolute sizes,
+widths and colors. Literal-size/width lint warnings are advisory: inspect
+and report them without replacing explicit values or hiding warnings.
+
+Both width and height are freely chosen physical dimensions. For example,
+this complete script requests 24 × 12 cm using mixed units:
+
+<!-- canvas-explicit-height-example -->
+```python
+import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+
+dm.style.use("report")  # illustrative choice for a report
+fig, ax = plt.subplots(figsize=dm.figsize("24cm", "120mm"))
+ax.plot([0, 1, 2], [1, 3, 2], linewidth=dm.lw(0))
+ax.set_xlabel("Time")
+ax.set_ylabel("Value", fontsize=dm.fs(0), fontweight=dm.fw(0))
+dm.simple_layout(fig, margin="2%")
+dm.save_formats(fig, "output/explicit-canvas", formats=("png", "pdf"),
+                bbox_inches=None)
+plt.close(fig)
+```
+
+The same canvas can use `dm.figsize("240mm", "120mm")` or
+`dm.figsize(dm.inch(24 / 2.54), dm.inch(12 / 2.54))`. Native `plt.figure`
+with GridSpec/nested GridSpec is also valid for custom panel allocations.
+`dm.simple_layout` adjusts content margins without resizing the canvas.
+`bbox_inches=None` is already the export default and retains that canvas;
+`"tight"` crops to content and can change its dimensions. DPI controls PNG
+pixel density, not physical size; PNG sizes quantize to whole pixels while
+PDF retains physical page size. The `oversize-width` lint warning above
+17 cm asks for a page-fit review; it must not override an explicit size.
+
+## Prompt-driven native customization
+
+Ask for the change in ordinary language, for example “Use report style and
+make only the axis labels one step larger.” The agent selects the native
+matplotlib label Text objects; the user need not supply plotting code.
+On an existing report figure, the corresponding edit is:
+
+```python
+for label in (ax.xaxis.label, ax.yaxis.label):
+    label.set_fontsize(label.get_fontsize() + 1)
+```
+
+This changes only axis-label size and retains tick labels, title, legend,
+data, colors, canvas and preset. Keep existing axes/layout when labels still
+fit. If a refit is necessary, reuse the original `simple_layout` kwargs, grid
+and margins instead of blindly rerunning margin=0 defaults. Disclose necessary
+axes or anchored-legend movement rather than promising fixed pixel positions.
+One current-relative step is +1 pt; repeating “one more” increments the retained current value.
+`dm.fs(1)` instead means global `font.size + 1 pt`; it does not inspect the
+current label or its role-specific default. `dm.lw(n)` adds `n` pt to global
+`lines.linewidth`, and `dm.fw(n)` adds `100*n` to global `font.weight`.
+An absolute request such as “12 pt” retains that exact value.
+
+Apply the preset before retained overrides and local artist edits. Use native
+setters for lines/custom dashes, spines, ticks, tick labels, axis labels, grids
+and other supported properties. Discover them through getters,
+`artist.properties()`, `help(type(artist))` or official docs for the installed
+matplotlib version. Resolve the panel/series/artist before editing; ask one
+short question only for material ambiguity. The 18 templates are starting
+points, not chart limits. Choose unspecified defaults from data, purpose,
+panel density and categorical text; avoid unsolicited palette/legend changes.
+See [native styling recipes](recipes.md). Agents can read the bundled native
+examples with `dm.get_prompt("03-recipes")` in installed Python, or the MCP
+`dartwork-mpl://guide/recipes` resource; `dm.get_prompt("01-policy")` gives the policy.
+
 ## Creating Figures with `dm.figsize`
 
 `dm.figsize(width, aspect)` is the sanctioned way to size a figure. It
