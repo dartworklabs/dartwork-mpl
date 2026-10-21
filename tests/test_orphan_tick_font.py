@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import matplotlib
 import matplotlib.pyplot as plt
+import pytest
 
 matplotlib.use("Agg")
 
@@ -538,3 +539,62 @@ class TestWarnOnOrphanTickAdoption:
         with dm.config.override(warn_on_orphan_tick_adoption=True):
             assert dm.config.warn_on_orphan_tick_adoption
         assert not dm.config.warn_on_orphan_tick_adoption
+
+
+@pytest.mark.parametrize("formats", [("jpgg",), ("png", "jpgg")])
+def test_rejected_formats_preserve_orphan_fonts_and_figure(tmp_path, formats):
+    """Capability failure leaves tick fonts, positions, artists and canvas intact."""
+    dm.style.use("scientific")
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot([0, 1], [0, 1], linewidth=dm.lw(0))
+    ax.tick_params(labelsize=dm.fs(-2))
+    fig.canvas.draw()
+    texts = [
+        *ax.get_xticklabels(),
+        *ax.get_yticklabels(),
+        ax.xaxis.get_offset_text(),
+        ax.yaxis.get_offset_text(),
+    ]
+    before_fonts = [text.get_fontproperties().copy() for text in texts]
+    before_bounds = ax.get_position().bounds
+    before_children = fig.get_children()
+    before_canvas = fig.canvas
+    before_rc = dict(plt.rcParams)
+    with pytest.raises(ValueError, match="jpgg"):
+        dm.save_formats(
+            fig,
+            str(tmp_path / "absent" / "plot"),
+            formats=formats,
+            adopt_orphan_tick_font=True,
+        )
+    assert [text.get_fontproperties() for text in texts] == before_fonts
+    assert ax.get_position().bounds == before_bounds
+    assert fig.get_children() == before_children
+    assert fig.canvas is before_canvas
+    assert dict(plt.rcParams) == before_rc
+    assert not (tmp_path / "absent").exists()
+
+
+def test_empty_formats_preserve_successful_adoption_and_directory_effects(
+    tmp_path,
+):
+    """An empty one-shot iterable still adopts orphan fonts and creates parents."""
+    dm.style.use("scientific")
+    fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+    ax.plot([0, 1], [0, 1], linewidth=dm.lw(0))
+    ax.tick_params(labelsize=dm.fs(-2))
+    fig.canvas.draw()
+    assert _x_tick(ax).get_fontsize() != ax.xaxis.label.get_fontsize()
+    assert (
+        dm.save_formats(
+            fig,
+            str(tmp_path / "nested" / "plot"),
+            formats=iter(()),
+            adopt_orphan_tick_font=True,
+            validate=False,
+        )
+        is None
+    )
+    assert _x_tick(ax).get_fontsize() == ax.xaxis.label.get_fontsize()
+    assert (tmp_path / "nested").is_dir()
+    assert list((tmp_path / "nested").iterdir()) == []

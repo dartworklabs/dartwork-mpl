@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import gzip
 import time
+import warnings
 from pathlib import Path
 
 import matplotlib
 import matplotlib.pyplot as plt
+import pytest
 
 matplotlib.use("Agg")
 
@@ -476,3 +478,370 @@ class TestSaveAndShowNonSvgAudit:
         png.write_bytes(b"\x89PNG\r\n\x1a\n not really")
         with pytest.raises(ValueError, match="SVG"):
             dm.show(str(png))
+
+
+class TestSaveFormatsPreflight:
+    """Rejected effective formats have no dm effects; valid save paths stay native."""
+
+    @pytest.mark.parametrize("formats", [("jpgg",), ("png", "jpgg")])
+    def test_bad_format_rejects_before_files_or_diagnostics(
+        self, tmp_path, capsys, formats
+    ) -> None:
+        """First and later failures precede stem warnings, diagnostics and mkdir."""
+        import dartwork_mpl as dm
+
+        dm.style.use("scientific")
+        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+        ax.plot([0, 1], [0, 1], linewidth=dm.lw(0))
+        ax.set_title("Deliberately oversized title", fontsize=dm.fs(20))
+        before = dict(plt.rcParams)
+        capsys.readouterr()
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            with pytest.raises(ValueError, match="jpgg"):
+                dm.save_formats(
+                    fig,
+                    str(tmp_path / "absent" / "plot.png"),
+                    formats=formats,
+                    adopt_orphan_tick_font=True,
+                )
+        assert not (tmp_path / "absent").exists()
+        assert dict(plt.rcParams) == before
+        assert not caught
+        assert capsys.readouterr().out == ""
+
+    @pytest.mark.parametrize(
+        "formats", [[".png", "pdf", "svg"], (".png", "pdf", "svg")]
+    )
+    def test_lists_and_dotted_formats_write_real_files(self, tmp_path, formats):
+        """Current accepted containers and leading dots retain valid output bytes."""
+        import dartwork_mpl as dm
+
+        fig, ax = plt.subplots(figsize=dm.figsize("9cm", "standard"))
+        ax.plot([0, 1], [0, 1])
+        dm.simple_layout(fig)
+        assert (
+            dm.save_formats(
+                fig,
+                str(tmp_path / "plot"),
+                formats=formats,
+                validate=False,
+                dpi=72,
+            )
+            is None
+        )
+        assert (
+            (tmp_path / "plot.png")
+            .read_bytes()
+            .startswith(b"\x89PNG\r\n\x1a\n")
+        )
+        assert (tmp_path / "plot.pdf").read_bytes().startswith(b"%PDF-")
+        assert b"<svg" in (tmp_path / "plot.svg").read_bytes()
+
+    def test_single_use_generator_is_consumed_once_before_saving(
+        self, tmp_path
+    ):
+        """A yielded format cannot interleave dm effects before planning finishes."""
+        import dartwork_mpl as dm
+
+        fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+        seen = []
+
+        def formats():
+            """Check that no output is created while collecting the ordered plan."""
+            for fmt in ("svg", "png", "pdf"):
+                assert not (tmp_path / "nested").exists()
+                seen.append(fmt)
+                yield fmt
+
+        assert (
+            dm.save_formats(
+                fig,
+                str(tmp_path / "nested" / "plot"),
+                formats=formats(),
+                validate=False,
+            )
+            is None
+        )
+        assert seen == ["svg", "png", "pdf"]
+        assert {p.suffix for p in (tmp_path / "nested").iterdir()} == {
+            ".svg",
+            ".png",
+            ".pdf",
+        }
+
+    @pytest.mark.parametrize("override", [None, "PNG"])
+    def test_actual_effective_format_and_caller_kwargs(
+        self, tmp_path, override
+    ):
+        """None infers from the path; an explicit format wins over its extension."""
+        from PIL import Image
+
+        import dartwork_mpl as dm
+
+        fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+        extension = "png" if override is None else "jpgg"
+        metadata = {"Description": "caller-metadata"}
+        assert (
+            dm.save_formats(
+                fig,
+                str(tmp_path / "plot"),
+                formats=(extension,),
+                format=override,
+                metadata=metadata,
+                dpi=72,
+                bbox_inches=None,
+                validate=False,
+            )
+            is None
+        )
+        out = tmp_path / f"plot.{extension}"
+        with Image.open(out) as image:
+            assert image.format == "PNG"
+            assert image.info["Description"] == "caller-metadata"
+            assert image.width == round(fig.get_figwidth() * 72)
+        assert metadata == {"Description": "caller-metadata"}
+
+    def test_empty_explicit_format_rejects_before_directory(self, tmp_path):
+        """An empty explicit format must not become a default-format alias."""
+        import dartwork_mpl as dm
+
+        fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+        with pytest.raises(ValueError, match="Format ''"):
+            dm.save_formats(
+                fig,
+                str(tmp_path / "absent" / "plot"),
+                formats=("png",),
+                format="",
+                validate=False,
+            )
+        assert not (tmp_path / "absent").exists()
+
+    def test_current_canvas_method_wins_over_supported_filetype_catalog(
+        self, tmp_path
+    ):
+        """A native canvas extension works without a registered format entry."""
+        from matplotlib.backends.backend_agg import FigureCanvasAgg
+
+        import dartwork_mpl as dm
+
+        class CustomCanvas(FigureCanvasAgg):
+            """Expose a private output format without changing catalog metadata."""
+
+            print_dmcustom = FigureCanvasAgg.print_png
+
+        fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+        canvas = CustomCanvas(fig)
+        assert "dmcustom" not in canvas.get_supported_filetypes()
+        assert (
+            dm.save_formats(
+                fig,
+                str(tmp_path / "plot"),
+                formats=("dmcustom",),
+                validate=False,
+            )
+            is None
+        )
+        assert fig.canvas is canvas
+        assert (tmp_path / "plot.dmcustom").read_bytes().startswith(b"\x89PNG")
+
+    def test_registered_fallback_need_not_have_class_print_attribute(
+        self, tmp_path
+    ):
+        """Matplotlib permits a registered canvas whose printer is instance-created."""
+        from matplotlib import backend_bases
+        from matplotlib.backends.backend_agg import FigureCanvasAgg
+
+        import dartwork_mpl as dm
+
+        class LateCanvas(FigureCanvasAgg):
+            """Install the native PNG printer only when Matplotlib constructs us."""
+
+            def __init__(self, figure):
+                """Add the extension's printer after attaching to the figure."""
+                super().__init__(figure)
+                self.print_dmlate = self.print_png
+
+        backends = backend_bases._default_backends.copy()
+        filetypes = backend_bases._default_filetypes.copy()
+        fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+        canvas = fig.canvas
+        try:
+            backend_bases.register_backend("dmlate", LateCanvas, "test")
+            assert not hasattr(LateCanvas, "print_dmlate")
+            dm.save_formats(
+                fig, str(tmp_path / "plot"), formats=("dmlate",), validate=False
+            )
+            assert (
+                (tmp_path / "plot.dmlate").read_bytes().startswith(b"\x89PNG")
+            )
+            assert fig.canvas is canvas
+        finally:
+            backend_bases._default_backends.clear()
+            backend_bases._default_backends.update(backends)
+            backend_bases._default_filetypes.clear()
+            backend_bases._default_filetypes.update(filetypes)
+
+    def test_explicit_installed_backend_capability_precedes_effects(
+        self, tmp_path
+    ):
+        """Agg saves PNG; SVG backend rejects PNG before creating any directory."""
+        import dartwork_mpl as dm
+
+        fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+        canvas = fig.canvas
+        dm.save_formats(
+            fig,
+            str(tmp_path / "supported"),
+            formats=("png",),
+            backend="agg",
+            validate=False,
+        )
+        assert (tmp_path / "supported.png").read_bytes().startswith(b"\x89PNG")
+        with pytest.raises(ValueError, match="backend does not support png"):
+            dm.save_formats(
+                fig,
+                str(tmp_path / "absent" / "plot"),
+                formats=("png",),
+                backend="svg",
+                validate=False,
+            )
+        assert not (tmp_path / "absent").exists()
+        assert fig.canvas is canvas
+
+    def test_svgz_still_forces_svg_and_rejects_duplicate_format(self, tmp_path):
+        """SVGZ keeps its inner SVG backend and existing duplicate kwarg error."""
+        import dartwork_mpl as dm
+
+        fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+        dm.save_formats(
+            fig,
+            str(tmp_path / "plot"),
+            formats=("svgz",),
+            backend="svg",
+            validate=False,
+        )
+        assert b"<svg" in gzip.decompress((tmp_path / "plot.svgz").read_bytes())
+        with pytest.raises(TypeError, match=r"multiple values.*format"):
+            dm.save_formats(
+                fig,
+                str(tmp_path / "duplicate"),
+                formats=("svgz",),
+                format="png",
+                validate=False,
+            )
+
+    def test_missing_extension_uses_current_canvas_default(self, tmp_path):
+        """An empty member retains Matplotlib's default extension fallback."""
+        import dartwork_mpl as dm
+
+        fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+        with plt.rc_context({"savefig.format": "png"}):
+            assert (
+                dm.save_formats(
+                    fig,
+                    str(tmp_path / "default"),
+                    formats=("",),
+                    format=None,
+                    validate=False,
+                )
+                is None
+            )
+        assert (tmp_path / "default.png").read_bytes().startswith(b"\x89PNG")
+
+    def test_generator_save_order_matches_requested_order(
+        self, tmp_path, monkeypatch
+    ):
+        """The retained one-shot plan executes in caller order, with real saves."""
+        import dartwork_mpl as dm
+
+        fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+        original = fig.savefig
+        saved = []
+
+        def save(path, **kwargs):
+            """Observe output order while retaining the actual writer."""
+            saved.append(Path(path).suffix)
+            return original(path, **kwargs)
+
+        monkeypatch.setattr(fig, "savefig", save)
+        dm.save_formats(
+            fig,
+            str(tmp_path / "plot"),
+            formats=(fmt for fmt in ("svg", "png", "pdf")),
+            validate=False,
+        )
+        assert saved == [".svg", ".png", ".pdf"]
+
+    def test_preflight_never_constructs_or_attaches_registered_canvas(
+        self, tmp_path
+    ):
+        """A later invalid format rejects before any registered canvas constructor."""
+        from matplotlib import backend_bases
+        from matplotlib.backends.backend_agg import FigureCanvasAgg
+
+        import dartwork_mpl as dm
+
+        constructed = []
+
+        class CountedCanvas(FigureCanvasAgg):
+            """Track construction independently of the figure's restored canvas."""
+
+            print_dmcounted = FigureCanvasAgg.print_png
+
+            def __init__(self, figure):
+                """Record every actual Matplotlib canvas attachment."""
+                constructed.append(figure)
+                super().__init__(figure)
+
+        backends = backend_bases._default_backends.copy()
+        filetypes = backend_bases._default_filetypes.copy()
+        fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+        canvas = fig.canvas
+        try:
+            backend_bases.register_backend("dmcounted", CountedCanvas, "test")
+            with pytest.raises(ValueError, match="jpgg"):
+                dm.save_formats(
+                    fig,
+                    str(tmp_path / "absent" / "plot"),
+                    formats=("dmcounted", "jpgg"),
+                    validate=False,
+                )
+            assert constructed == []
+            assert fig.canvas is canvas
+            assert not (tmp_path / "absent").exists()
+        finally:
+            backend_bases._default_backends.clear()
+            backend_bases._default_backends.update(backends)
+            backend_bases._default_filetypes.clear()
+            backend_bases._default_filetypes.update(filetypes)
+
+    def test_svgz_preflights_inner_svg_capability(self, tmp_path):
+        """Agg rejects SVGZ's inner SVG before directory or adoption effects."""
+        import dartwork_mpl as dm
+
+        fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+        with pytest.raises(ValueError, match="backend does not support svg"):
+            dm.save_formats(
+                fig,
+                str(tmp_path / "absent" / "plot"),
+                formats=("svgz",),
+                backend="agg",
+                validate=False,
+            )
+        assert not (tmp_path / "absent").exists()
+
+    def test_explicit_invalid_format_wins_over_valid_member(self, tmp_path):
+        """An invalid caller override rejects even when the member itself is PNG."""
+        import dartwork_mpl as dm
+
+        fig = plt.figure(figsize=dm.figsize("9cm", "standard"))
+        with pytest.raises(ValueError, match="jpgg"):
+            dm.save_formats(
+                fig,
+                str(tmp_path / "absent" / "plot"),
+                formats=("png",),
+                format="jpgg",
+                validate=False,
+            )
+        assert not (tmp_path / "absent").exists()

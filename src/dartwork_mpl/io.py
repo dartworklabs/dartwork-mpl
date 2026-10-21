@@ -10,6 +10,7 @@ __all__ = ["save_and_show", "save_formats", "show"]
 
 import gzip
 import io
+import os
 import warnings
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -18,6 +19,7 @@ from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 
 import matplotlib.pyplot as plt
+from matplotlib.backend_bases import get_registered_canvas_class
 from matplotlib.figure import Figure
 
 from ._helpers import create_parent_path
@@ -45,7 +47,7 @@ _KNOWN_IMAGE_SUFFIXES = frozenset(
 )
 
 
-def _normalize_image_stem(image_stem: str) -> str:
+def _normalize_image_stem(image_stem: str, *, warn: bool = True) -> str:
     """Strip a trailing image suffix from ``image_stem`` if present.
 
     Callers occasionally pass ``"out/chart.png"`` instead of the
@@ -55,20 +57,22 @@ def _normalize_image_stem(image_stem: str) -> str:
     ``chart.png.png`` and ``chart.png.svg`` — silent file-naming
     bugs that pollute output directories. Normalize once at the
     boundary and emit a :class:`UserWarning` so call sites can be
-    cleaned up over time.
+    cleaned up over time. ``warn=False`` computes the same path silently
+    while preparing an output plan before any dm save effects.
     """
     suffix = Path(image_stem).suffix.lower()
     if suffix in _KNOWN_IMAGE_SUFFIXES:
         normalized = image_stem[: -len(suffix)]
-        warnings.warn(
-            (
-                f"save_formats: image_stem {image_stem!r} ends with image "
-                f"suffix {suffix!r}; stripping to {normalized!r}. "
-                "Pass the path *without* an extension to silence this."
-            ),
-            UserWarning,
-            stacklevel=3,
-        )
+        if warn:
+            warnings.warn(
+                (
+                    f"save_formats: image_stem {image_stem!r} ends with image "
+                    f"suffix {suffix!r}; stripping to {normalized!r}. "
+                    "Pass the path *without* an extension to silence this."
+                ),
+                UserWarning,
+                stacklevel=3,
+            )
         return normalized
     return image_stem
 
@@ -107,6 +111,43 @@ def _save_deterministic_svgz(
         gzip.GzipFile(fileobj=raw, mode="wb", mtime=0) as compressed,
     ):
         compressed.write(buf.getvalue())
+
+
+def _check_save_format(
+    fig: Figure, out: str, fmt: str, kwargs: dict[str, Any]
+) -> None:
+    """Reject unsupported effective formats without constructing a canvas.
+
+    Match Matplotlib's current-canvas-first selection and explicit backend
+    class check. Registered fallbacks may install their print method during
+    construction, which remains on the real save path. SVGZ saves inner SVG;
+    arbitrary kwargs, rendering and filesystem failures are not preflighted.
+    """
+    effective = "svg" if fmt == "svgz" else kwargs.get("format")
+    if effective is None:
+        effective = os.path.splitext(out)[1][1:]
+        if effective == "":
+            effective = fig.canvas.get_default_filetype()
+    effective = effective.lower()
+    backend = kwargs.get("backend")
+    if backend is not None:
+        from matplotlib.backends.registry import backend_registry
+
+        canvas_class = backend_registry.load_backend_module(
+            backend
+        ).FigureCanvas
+        if not hasattr(canvas_class, f"print_{effective}"):
+            raise ValueError(
+                f"The {backend!r} backend does not support {effective} output"
+            )
+    elif not hasattr(fig.canvas, f"print_{effective}"):
+        if get_registered_canvas_class(effective) is None:
+            raise ValueError(
+                "Format {!r} is not supported (supported formats: {})".format(
+                    effective,
+                    ", ".join(sorted(fig.canvas.get_supported_filetypes())),
+                )
+            )
 
 
 def save_formats(
@@ -180,6 +221,11 @@ def save_formats(
     (a non-``None`` ambient salt is never overridden). No global rcParams
     state is mutated — the salt is applied via a scoped ``rc_context``.
 
+    Unsupported effective formats/backends reject before adoption, validation,
+    stem warnings or output creation. This does not roll back rendering,
+    arbitrary keyword or filesystem failures. An empty format iterable retains
+    the normal adoption, validation and parent-directory effects.
+
     When the adoption is on (whether via this keyword or the
     :data:`dartwork_mpl.config` default), this call **mutates the
     figure**: it restyles the tick-label fonts of any unlabeled axis,
@@ -192,6 +238,16 @@ def save_formats(
     re-layout on the next draw (expected matplotlib behavior). Pass
     ``adopt_orphan_tick_font=False`` to keep the figure untouched.
     """
+    # Resolve every requested call before adoption, validation or output effects.
+    # Retain the plan so lists and one-shot iterables are consumed only once.
+    planned_stem = _normalize_image_stem(image_stem, warn=False)
+    outputs = []
+    for fmt in formats:
+        fmt = fmt.lstrip(".")
+        outputs.append((fmt, f"{planned_stem}.{fmt}"))
+    for fmt, out in outputs:
+        _check_save_format(fig, out, fmt, kwargs)
+
     if adopt_orphan_tick_font is None:
         from .config import config
 
@@ -213,11 +269,7 @@ def save_formats(
     # unchanged figure is byte-identical (see the Reproducibility note).
     salt = Path(image_stem).name
     caller_metadata = kwargs.get("metadata")
-    for fmt in formats:
-        # Accept both ``"png"`` and ``".png"`` — without the lstrip a
-        # leading-dot format produced ``name..png``.
-        fmt = fmt.lstrip(".")
-        out = f"{image_stem}.{fmt}"
+    for fmt, out in outputs:
         if fmt in ("svg", "svgz"):
             svg_kwargs = dict(kwargs)
             svg_kwargs["metadata"] = _with_reproducible_metadata(
