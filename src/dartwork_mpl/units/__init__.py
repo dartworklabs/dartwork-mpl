@@ -60,6 +60,17 @@ _WIDTH_UNIT_SYNONYMS: dict[str, str] = {
     "pts": "pt",
 }
 
+# Pixels are not a physical unit: a pixel count becomes a length only once
+# a DPI is chosen. Width/height parsers answer these with a DPI hint
+# instead of the nearest physical unit (difflib would offer "pt").
+_PIXEL_UNITS: frozenset[str] = frozenset({"px", "pixel", "pixels"})
+
+# "W:H" ratio strings as written for screens and slides ("16:9", "4:3",
+# "2.39:1"). Width comes first, so height = width * H / W.
+_RATIO_RE = re.compile(
+    r"^\s*(?P<w>\d+(?:\.\d+)?)\s*:\s*(?P<h>\d+(?:\.\d+)?)\s*$"
+)
+
 # Named aspect tokens: ratio = height / width.
 #
 # Adding a token: keep the ratio meaningfully distinct from existing
@@ -451,6 +462,8 @@ def _suggest_width_correction(text: str) -> str:
     letters = re.search(r"[A-Za-z]+", text)
     if letters is not None:
         unit_word = letters.group(0).lower()
+        if unit_word in _PIXEL_UNITS:
+            return _pixel_hint(text)
         canonical = _WIDTH_UNIT_SYNONYMS.get(unit_word)
         if canonical is None:
             close = difflib.get_close_matches(
@@ -465,6 +478,32 @@ def _suggest_width_correction(text: str) -> str:
             f"(got unit-like fragment {unit_word!r})."
         )
     return f" Use '<number>{_KNOWN_WIDTH_UNITS[0]}', '<number>in', or '<number>mm'."
+
+
+def _pixel_hint(text: str) -> str:
+    """Explain that a pixel count needs a DPI before it is a length."""
+    number = re.sub(r"[A-Za-z\s]", "", text) or "<n>"
+    return (
+        f" 'px' has no physical size until a DPI is chosen "
+        f"(inches = pixels / DPI). Give a physical length such as '13cm', "
+        f"or convert it yourself: {number} px at 200 DPI is "
+        f"dm.inch({number} / 200), saved with dm.save_formats(..., dpi=200)."
+    )
+
+
+def _parse_ratio_string(text: str) -> float | None:
+    """Return height/width for a ``"W:H"`` string, or ``None`` if not one."""
+    match = _RATIO_RE.match(text)
+    if match is None:
+        return None
+    w = float(match.group("w"))
+    h = float(match.group("h"))
+    if not (math.isfinite(w) and math.isfinite(h)) or w <= 0 or h <= 0:
+        raise ValueError(
+            f"aspect ratio {text!r} needs two positive numbers as "
+            f"'width:height', e.g. '16:9' or '4:3'."
+        )
+    return h / w
 
 
 def parse_width(value: str | Length) -> float:
@@ -577,7 +616,7 @@ def figsize(
         ``int``/``float`` are rejected — the unit must always be
         explicit.
     aspect : str | int | float | Length, optional
-        Specifies the figure's *height* in one of four forms; the
+        Specifies the figure's *height* in one of five forms; the
         first matching form wins:
 
         1. **Aspect token** — any key of :data:`ASPECT_TOKENS`
@@ -585,16 +624,20 @@ def figsize(
            see :func:`list_aspect_tokens` for the full registry). Sets
            ``height = width * ratio`` where the ratio is taken from
            :data:`ASPECT_TOKENS`. Default ``"standard"`` (3 : 4).
-        2. **Numeric ratio** (positive ``int`` / ``float``,
+        2. **Ratio string** ``"W:H"`` — ``"16:9"``, ``"4:3"``,
+           ``"2.39:1"``. Width comes first, as on screens, so
+           ``height = width * H / W``.
+        3. **Numeric ratio** (positive ``int`` / ``float``,
            non-``bool``) — interpreted as ``height / width``.
-        3. **Unit-suffix string** — ``"12cm"``, ``"5in"``, ``"170mm"``,
+        4. **Unit-suffix string** — ``"12cm"``, ``"5in"``, ``"170mm"``,
            ``"24pt"``. Interpreted as a literal height. The unit
            need not match the width's unit.
-        4. **Length value** — ``dm.cm(12)``, ``dm.col1``, etc.
+        5. **Length value** — ``dm.cm(12)``, ``dm.col1``, etc.
            Interpreted as a literal height.
 
         Bare numeric strings (``"0.5"``) and unknown aspect tokens
-        raise :class:`ValueError` with a "did-you-mean" hint.
+        raise :class:`ValueError` with a "did-you-mean" hint. Pixel
+        sizes (``"1920px"``) raise with a note that pixels need a DPI.
 
     Returns
     -------
@@ -617,6 +660,8 @@ def figsize(
     (5.118..., 3.149...)
     >>> dm.figsize("13cm", "wide")                       # token (≈ 8.67 cm)
     (5.118..., 3.412...)
+    >>> dm.figsize("13cm", "13:8")                       # "W:H" ratio
+    (5.118..., 3.149...)
 
     Common idioms:
 
@@ -637,7 +682,8 @@ def _resolve_height(w_in: float, aspect: str | int | float | Length) -> float:
     1. ``Length`` instance → literal height.
     2. ``str`` with a recognised aspect token → ``w_in * ratio``.
     3. ``str`` with a unit suffix (cm/in/mm/pt) → literal height.
-    4. ``int`` / ``float`` → ``w_in * ratio`` via :func:`parse_aspect`.
+    4. ``"W:H"`` str, ``int`` / ``float`` → ``w_in * ratio`` via
+       :func:`parse_aspect`.
     5. Anything else → :func:`parse_aspect` for the standard error.
     """
     if isinstance(aspect, Length):
@@ -666,11 +712,17 @@ def _resolve_height(w_in: float, aspect: str | int | float | Length) -> float:
 def _suggest_aspect_correction(value: str) -> str:
     """Build a one-sentence "did you mean" suffix for an unknown aspect.
 
-    Recognises three failure shapes: numeric literals quoted as strings
-    (``"0.75"``), close-but-misspelt token names (``"sqaure"``), and
-    everything else (no suggestion appended). Returns either a leading-
-    space-prefixed suggestion or an empty string.
+    Recognises five failure shapes: pixel heights (``"1080px"``),
+    malformed ratio strings (``"16:"``), numeric literals quoted as
+    strings (``"0.75"``), close-but-misspelt token names (``"sqaure"``),
+    and everything else (no suggestion appended). Returns either a
+    leading-space-prefixed suggestion or an empty string.
     """
+    unit = re.fullmatch(r"\s*[\d.]+\s*([A-Za-z]+)\s*", value)
+    if unit is not None and unit.group(1).lower() in _PIXEL_UNITS:
+        return _pixel_hint(value)
+    if ":" in value:
+        return " Write a ratio as 'width:height', e.g. '16:9' or '4:3'."
     try:
         as_number = float(value)
     except ValueError:
@@ -691,11 +743,11 @@ def parse_aspect(value: str | int | float) -> float:
     Parameters
     ----------
     value : str | int | float
-        Either a known aspect token (any key of
-        :data:`ASPECT_TOKENS` — ``"square"``, ``"standard"``,
-        ``"wide"``, ``"slide"``, …; see :func:`list_aspect_tokens`)
-        or a positive number interpreted directly as
-        ``height / width``.
+        A known aspect token (any key of :data:`ASPECT_TOKENS` —
+        ``"square"``, ``"standard"``, ``"wide"``, ``"slide"``, …; see
+        :func:`list_aspect_tokens`), a ``"W:H"`` ratio string such as
+        ``"16:9"`` (height / width = H / W), or a positive number
+        interpreted directly as ``height / width``.
 
     Returns
     -------
@@ -722,7 +774,10 @@ def parse_aspect(value: str | int | float) -> float:
             f"aspect must be str, int, or float (got {type(value).__name__})"
         )
 
-    key = value.strip().lower()
+    key = value.strip().strip('"').strip("'").lower()
+    ratio_from_string = _parse_ratio_string(key)
+    if ratio_from_string is not None:
+        return ratio_from_string
     if key not in ASPECT_TOKENS:
         raise ValueError(
             f"unknown aspect token {value!r}; known: "
