@@ -11,7 +11,7 @@ from fastmcp.tools.tool import ToolResult
 from mcp.types import CallToolResult, ImageContent, ResourceLink, TextContent
 from pydantic import AnyUrl
 
-from ..execution import ExecutionRejected, ExportRejected
+from ..execution import ExecutionRejected, ExportRejected, LogLimitRejected
 from .delivery import (
     ArtifactFailure,
     delete_inputs,
@@ -202,7 +202,10 @@ class _ArtifactErrorResult(ToolResult):
 
 def _failure_metadata(failure: ArtifactFailure) -> dict[str, Any]:
     """Map typed refusals to stable categories without infrastructure paths."""
-    if isinstance(failure, ExecutionRejected):
+    if isinstance(failure, LogLimitRejected):
+        code = "artifact_too_large"
+        message = "Artifact exceeds the byte limit."
+    elif isinstance(failure, ExecutionRejected):
         code = failure.report["status"]
         message = "Plot execution did not complete."
     else:

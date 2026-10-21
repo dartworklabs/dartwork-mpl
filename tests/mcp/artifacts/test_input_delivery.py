@@ -96,6 +96,36 @@ def delete_api(inputs, artifact_id):
     return delivery.delete_inputs(inputs, artifact_id)
 
 
+@pytest.mark.parametrize("mode", ["legacy", "revision", "inputs"])
+def test_every_delivery_path_applies_artifact_log_budget(
+    rig, monkeypatch, mode
+):
+    """Real legacy, revision and input exports refuse excess logs before publication."""
+    from dartwork_mpl.mcp.artifacts import policy
+
+    parent = None
+    if mode == "revision":
+        bundle = render(rig)
+        assert isinstance(bundle, StoredBundle), bundle
+        parent = bundle.manifest.artifact_id
+    published = set(rig.root.rglob("manifest.json"))
+    monkeypatch.setattr(policy, "MAX_BUNDLE_BYTES", 128 * 1024)
+    specs = (
+        None
+        if mode == "legacy"
+        else [selection(rig.source)]
+        if mode == "inputs"
+        else []
+    )
+    code = "import os\nos.write(1, b'x' * 200000)\n" + FIGURE
+    result = render(rig, code, specs=specs, parent=parent)
+    assert isinstance(result, execution.ExecutionRejected), result
+    assert isinstance(result, execution.LogLimitRejected)
+    assert result.report["status"] == "exec_error"
+    assert result.report["validation_complete"] is False
+    assert set(rig.root.rglob("manifest.json")) == published
+
+
 def test_legacy_bytes_and_optin_mapping(rig, monkeypatch):
     """One controlled ExportedPlot keeps legacy source/report/log/envelope bytes."""
     import fastmcp
@@ -125,9 +155,10 @@ def test_legacy_bytes_and_optin_mapping(rig, monkeypatch):
         expected = expected_store.publish(stage, code.encode(), report, NOW)
     assert isinstance(expected, StoredBundle)
 
-    def controlled_export(*args, output_stem, **kwargs):
-        """The legacy arm must not add even an empty input_paths keyword."""
+    def controlled_export(*args, output_stem, log_limit_bytes, **kwargs):
+        """Legacy export supplies its log budget without an input_paths keyword."""
         assert args == (code, "fig", 20.0, None)
+        assert log_limit_bytes == 32 * 1024 * 1024
         assert not kwargs
         for suffix, data in images.items():
             output_stem.with_suffix(suffix).write_bytes(data)

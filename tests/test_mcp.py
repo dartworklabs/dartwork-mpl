@@ -6,8 +6,9 @@ All tests are skipped when ``fastmcp`` is not installed.
 
 from __future__ import annotations
 
+import asyncio
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -275,44 +276,52 @@ class TestMcpTools:
         assert mock_mcp.tool.call_count >= 8
 
     def test_fetch_github_document_success(self) -> None:
-        """fetch_github_document returns content on success."""
+        """The registered async callback returns its owned adapter's document text."""
         from dartwork_mpl.mcp.tools import register_tools
 
         mock_mcp = MagicMock()
         captured = _capture_decorators(mock_mcp, "tool")
         register_tools(mock_mcp)
-
-        mock_resp = MagicMock()
-        mock_resp.text = "# Hello World"
-
-        with patch("httpx.get", return_value=mock_resp):
-            result = captured["fetch_github_document"](
-                "https://raw.githubusercontent.com/dartworklabs/dartwork-mpl/main/README.md"
+        with patch(
+            "dartwork_mpl.mcp.tools._fetch_raw_github",
+            new=AsyncMock(return_value="# Hello World"),
+        ):
+            result = asyncio.run(
+                captured["fetch_github_document"](
+                    "https://raw.githubusercontent.com/dartworklabs/dartwork-mpl/main/README.md"
+                )
             )
-            assert result == "# Hello World"
+        assert result == "# Hello World"
 
     def test_fetch_github_document_error(self) -> None:
-        """fetch_github_document raises ValueError on failure."""
+        """The registered callback preserves the adapter's safe ValueError outcome."""
         from dartwork_mpl.mcp.tools import register_tools
 
         mock_mcp = MagicMock()
         captured = _capture_decorators(mock_mcp, "tool")
         register_tools(mock_mcp)
-
-        with patch("httpx.get", side_effect=Exception("timeout")):
+        with patch(
+            "dartwork_mpl.mcp.tools._fetch_raw_github",
+            new=AsyncMock(
+                side_effect=ValueError(
+                    "Failed to fetch Raw document: total deadline exceeded."
+                )
+            ),
+        ):
             with pytest.raises(ValueError, match="Failed"):
-                captured["fetch_github_document"](
-                    "https://raw.githubusercontent.com/dartworklabs/foo.md"
+                asyncio.run(
+                    captured["fetch_github_document"](
+                        "https://raw.githubusercontent.com/dartworklabs/foo.md"
+                    )
                 )
 
     def test_fetch_github_document_rejects_non_allowlist(self) -> None:
-        """fetch_github_document rejects non-raw.githubusercontent.com URLs."""
+        """The callback refuses non-Raw destinations before a connection."""
         from dartwork_mpl.mcp.tools import register_tools
 
         mock_mcp = MagicMock()
         captured = _capture_decorators(mock_mcp, "tool")
         register_tools(mock_mcp)
-
         for bad in (
             "http://raw.githubusercontent.com/foo",
             "https://example.com/file.md",
@@ -320,7 +329,7 @@ class TestMcpTools:
             "ftp://server/x",
         ):
             with pytest.raises(ValueError, match="raw.githubusercontent.com"):
-                captured["fetch_github_document"](bad)
+                asyncio.run(captured["fetch_github_document"](bad))
 
     def test_get_color_value_known(self) -> None:
         """get_color_value returns hex for a known color."""
@@ -1198,19 +1207,26 @@ class TestMcpAgenticReliability:
         primitive = info["style_presets"]["primitive_mplstyle"]
         assert sorted(primitive) == expected
 
-    def test_fetch_github_document_error_includes_detail(self) -> None:
-        """The failure message surfaces the underlying error detail so an
-        agent can distinguish a 404 from a timeout and self-correct."""
+    def test_fetch_github_document_error_includes_safe_status(self) -> None:
+        """Safe HTTP status detail remains available without provider payloads or paths."""
         from dartwork_mpl.mcp.tools import register_tools
 
         mock_mcp = MagicMock()
         captured = _capture_decorators(mock_mcp, "tool")
         register_tools(mock_mcp)
-
-        with patch("httpx.get", side_effect=Exception("connect timed out")):
-            with pytest.raises(ValueError, match="connect timed out"):
-                captured["fetch_github_document"](
-                    "https://raw.githubusercontent.com/dartworklabs/foo.md"
+        with patch(
+            "dartwork_mpl.mcp.tools._fetch_raw_github",
+            new=AsyncMock(
+                side_effect=ValueError(
+                    "Failed to fetch Raw document: HTTP 404."
+                )
+            ),
+        ):
+            with pytest.raises(ValueError, match="HTTP 404"):
+                asyncio.run(
+                    captured["fetch_github_document"](
+                        "https://raw.githubusercontent.com/dartworklabs/foo.md"
+                    )
                 )
 
     def test_mix_colors_rejects_out_of_range_ratio(self) -> None:

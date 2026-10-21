@@ -31,10 +31,10 @@ PURE = {
 
 
 def slice_of(module):
-    """Assign concrete repository modules to capability or existing-layer roles."""
+    """Assign capability roles; execution owns its private bounded collector."""
     if module.startswith("dartwork_mpl.mcp.artifacts"):
         return "artifacts"
-    if module == "dartwork_mpl.mcp.execution":
+    if module in {"dartwork_mpl.mcp.execution", "dartwork_mpl.mcp._capture"}:
         return "execution"
     if module in LEGACY:
         return "legacy"
@@ -335,6 +335,58 @@ def test_runtime_gateway_private_execution_import_is_rejected(module):
                     f"dartwork_mpl.mcp.artifacts.{module}",
                     "dartwork_mpl.mcp.execution",
                     "_private_runner",
+                )
+            ],
+            surfaces,
+        )
+
+
+@pytest.mark.parametrize(
+    "source", ["dartwork_mpl.mcp.tools", "dartwork_mpl.mcp.artifacts.transport"]
+)
+def test_capture_helpers_remain_private_to_execution(source):
+    """Legacy and artifact callers must cross the declared execution surface."""
+    _, surfaces = imports_and_surfaces()
+    with pytest.raises(AssertionError, match="private surface"):
+        assert_boundaries(
+            [(source, "dartwork_mpl.mcp._capture", "run_child")], surfaces
+        )
+
+
+@pytest.mark.parametrize("indirect", [False, True])
+def test_core_cannot_reach_execution_through_capture(indirect):
+    """Classifying the collector never grants core an execution dependency."""
+    edges = [("dartwork_mpl.bridge", "dartwork_mpl.mcp._capture", "run_child")]
+    if indirect:
+        edges.append(("dartwork_mpl.shared", "dartwork_mpl.bridge", None))
+    with pytest.raises(AssertionError):
+        assert_boundaries(edges, {})
+
+
+def test_execution_can_use_its_private_capture_module():
+    """The collector belongs to execution rather than becoming a core gateway."""
+    assert_boundaries(
+        [
+            (
+                "dartwork_mpl.mcp.execution",
+                "dartwork_mpl.mcp._capture",
+                "run_child",
+            )
+        ],
+        {},
+    )
+
+
+def test_capture_cannot_reverse_the_artifact_dependency():
+    """Execution helpers cannot reach artifact policy or its declared surface."""
+    _, surfaces = imports_and_surfaces()
+    with pytest.raises(AssertionError):
+        assert_boundaries(
+            [
+                (
+                    "dartwork_mpl.mcp._capture",
+                    "dartwork_mpl.mcp.artifacts",
+                    "render_artifact",
                 )
             ],
             surfaces,

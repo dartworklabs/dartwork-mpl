@@ -5,14 +5,17 @@ for accessing dartwork-mpl documentation, color manipulation,
 code linting, and data validation.
 """
 
+import asyncio
 import json
 import math
 import re
+import time
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
 from pathlib import Path
 from typing import Any
 
+import httpx
 import matplotlib.colors as mcolors
 from fastmcp import FastMCP
 
@@ -139,6 +142,132 @@ def _discover_primitive_mplstyles() -> list[str]:
     return sorted(p.stem for p in _MPLSTYLE_DIR.glob("*.mplstyle"))
 
 
+_FETCH_BYTES = 1024 * 1024
+_FETCH_SECONDS = 10.0
+_FETCH_REDIRECTS = 5
+
+
+def _raw_github_url(value: str | httpx.URL) -> httpx.URL:
+    """Parse the exact HTTPS Raw GitHub URL sent to HTTPX, or refuse it.
+
+    Repository/ref/path/query remain unrestricted. Fragments are removed;
+    credentials, noncanonical hosts and nondefault ports never reach a client.
+    """
+    try:
+        url = httpx.URL(value)
+    except (httpx.InvalidURL, TypeError) as exc:
+        raise ValueError(
+            "Expected an HTTPS raw.githubusercontent.com URL."
+        ) from exc
+    if (
+        url.scheme != "https"
+        or url.raw_host != b"raw.githubusercontent.com"
+        or url.port not in (None, 443)
+        or url.userinfo
+    ):
+        raise ValueError(
+            "Expected an HTTPS raw.githubusercontent.com URL without credentials or a nondefault port."
+        )
+    return url.copy_with(fragment=None)
+
+
+async def _fetch_raw_github(
+    value: str,
+    *,
+    transport: httpx.AsyncBaseTransport | None = None,
+    timeout_seconds: float = _FETCH_SECONDS,
+) -> str:
+    """Fetch bounded identity Raw text through one owned async HTTPX client.
+
+    A total deadline covers redirects and all body reads. Each redirect is
+    validated before its request; every response/client closes on refusal,
+    timeout and external cancellation. Adapter-visible reads exceed the 1 MiB
+    body cap by at most one 8 KiB chunk; replacement text is at most 3 MiB UTF-8.
+    """
+    url = _raw_github_url(value)
+    deadline = time.monotonic() + timeout_seconds
+
+    async def transfer() -> str:
+        """Read raw chunks without decompression, following only checked redirects."""
+        current = url
+        async with httpx.AsyncClient(
+            transport=transport,
+            follow_redirects=False,
+            headers={"Accept-Encoding": "identity"},
+        ) as client:
+            for hops in range(_FETCH_REDIRECTS + 1):
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise asyncio.TimeoutError
+                async with client.stream(
+                    "GET", current, timeout=remaining
+                ) as response:
+                    if response.is_redirect:
+                        if hops == _FETCH_REDIRECTS:
+                            raise ValueError(
+                                "Raw document redirect limit exceeded."
+                            )
+                        location = response.headers.get("location")
+                        if not location:
+                            raise ValueError(
+                                "Raw document redirect has no destination."
+                            )
+                        try:
+                            target = current.join(location)
+                        except httpx.InvalidURL as exc:
+                            raise ValueError(
+                                "Expected an HTTPS raw.githubusercontent.com redirect URL."
+                            ) from exc
+                        current = _raw_github_url(target)
+                        continue
+                    response.raise_for_status()
+                    encoding = (
+                        response.headers.get("content-encoding", "identity")
+                        .strip()
+                        .lower()
+                    )
+                    if encoding != "identity":
+                        raise ValueError(
+                            "Raw document must use identity content encoding."
+                        )
+                    length = response.headers.get("content-length")
+                    if length is not None:
+                        try:
+                            declared = int(length)
+                        except ValueError as exc:
+                            raise ValueError(
+                                "Raw document has an invalid content length."
+                            ) from exc
+                        if declared < 0 or declared > _FETCH_BYTES:
+                            raise ValueError(
+                                "Raw document exceeds the 1 MiB byte limit."
+                            )
+                    body = bytearray()
+                    async for chunk in response.aiter_raw(chunk_size=8 * 1024):
+                        if len(body) + len(chunk) > _FETCH_BYTES:
+                            raise ValueError(
+                                "Raw document exceeds the 1 MiB byte limit."
+                            )
+                        body.extend(chunk)
+                    return body.decode("utf-8", "replace")
+        raise ValueError("Raw document redirect limit exceeded.")
+
+    try:
+        return await asyncio.wait_for(transfer(), timeout_seconds)
+    except asyncio.TimeoutError as exc:
+        raise ValueError(
+            "Failed to fetch Raw document: total deadline exceeded."
+        ) from exc
+    except httpx.HTTPStatusError as exc:
+        raise ValueError(
+            f"Failed to fetch Raw document: HTTP {exc.response.status_code}."
+        ) from exc
+    except httpx.HTTPError as exc:
+        raise ValueError(
+            f"Failed to fetch Raw document: {type(exc).__name__}."
+        ) from exc
+
+
 def register_tools(mcp: FastMCP) -> None:
     """
     Register all tools with the MCP server.
@@ -152,14 +281,16 @@ def register_tools(mcp: FastMCP) -> None:
     # ── GitHub Document Fetch ────────────────────────────────────────
 
     @mcp.tool()
-    def fetch_github_document(url: str) -> str:
+    async def fetch_github_document(url: str) -> str:
         """Fetch document content from a GitHub Raw URL.
 
         Only ``https://raw.githubusercontent.com/`` URLs are accepted —
         other schemes (``file://``, ``http://``, ``ftp://``) and other
-        hosts are rejected. This is a defence-in-depth check; the tool
-        is intended for fetching dartwork-mpl docs from the canonical
-        GitHub Raw host.
+        hosts, credentials and nondefault ports are rejected before connection.
+        At most five redirects are checked the same way. One ten-second total
+        deadline covers redirects and body streaming. Only identity encoding
+        and at most1 MiB received bytes are accepted; UTF-8 replacement may
+        produce up to3 MiB UTF-8 text. Responses close on every exit.
 
         Parameters
         ----------
@@ -178,32 +309,7 @@ def register_tools(mcp: FastMCP) -> None:
             If the URL is not on ``raw.githubusercontent.com`` or the
             request fails.
         """
-        allowed_prefix = "https://raw.githubusercontent.com/"
-        if not url.startswith(allowed_prefix):
-            raise ValueError(
-                f"fetch_github_document only accepts URLs starting with "
-                f"{allowed_prefix!r}; got {url!r}"
-            )
-        try:
-            import httpx
-
-            response = httpx.get(url, timeout=10.0)
-            response.raise_for_status()
-            return response.text
-        except ImportError:
-            from urllib.request import urlopen
-
-            try:
-                with urlopen(url, timeout=10) as response:
-                    return str(response.read().decode("utf-8"))
-            except Exception as exc:
-                raise ValueError(
-                    f"Failed to fetch {url}: {type(exc).__name__}: {exc}"
-                ) from exc
-        except Exception as exc:
-            raise ValueError(
-                f"Failed to fetch {url}: {type(exc).__name__}: {exc}"
-            ) from exc
+        return await _fetch_raw_github(url)
 
     # ── Color Tools ──────────────────────────────────────────────────
 
@@ -363,7 +469,7 @@ def register_tools(mcp: FastMCP) -> None:
         - ``rule_id``: str (e.g. ``"figsize-direct"``)
         - ``severity``: ``"critical" | "warning" | "info"``
         - ``line``: int (1-based) or ``None``
-        - ``column``: int (0-based, byte offset within source) or ``None``
+        - ``column``: int (absolute zero-based Python character offset within source) or ``None``
         - ``message``: str
         - ``fix_suggestion``: str | ``None``
 
@@ -507,9 +613,11 @@ def register_tools(mcp: FastMCP) -> None:
             ``"base64"`` (default) returns a base64-encoded PNG string
             under the ``png_base64`` key. ``"path"`` returns the
             temp-file path under ``"png_path"`` instead. Use the path
-            variant only when the MCP client can read local files.
+            variant only when the MCP client can read local files. Each successful
+            path is a unique0600 regular temp file; callers own its lifetime.
         timeout_seconds : float, optional
-            Hard timeout for the subprocess. Default 30 s.
+            Hard timeout for the subprocess. Default 30 s. Diagnostic channels are
+            bounded to64 KiB UTF-8, including any visible truncation marker.
 
         Returns
         -------
@@ -519,11 +627,17 @@ def register_tools(mcp: FastMCP) -> None:
             "png_path": str|None, "stderr": str}``.
         """
         import base64
-        import subprocess
         import sys
         import tempfile
         import textwrap
         from pathlib import Path as _Path
+
+        from .execution import (
+            diagnostic,
+            publish_png,
+            run_child,
+            strip_diagnostic,
+        )
 
         template_dir = _TEMPLATE_DIR
         path = _resolve_template_path(plot_type)
@@ -560,20 +674,16 @@ def register_tools(mcp: FastMCP) -> None:
                 path=str(path),
             )
 
-            try:
-                proc = subprocess.run(
-                    [sys.executable, "-c", runner],
-                    capture_output=True,
-                    text=True,
-                    timeout=timeout_seconds,
-                )
-            except subprocess.TimeoutExpired as exc:
+            proc = run_child(
+                [sys.executable, "-c", runner], timeout_seconds=timeout_seconds
+            )
+            if proc.timed_out:
                 return {
                     "status": "timeout",
                     "plot_type": plot_type,
                     "png_base64": None,
                     "png_path": None,
-                    "stderr": (f"Render exceeded {exc.timeout}s timeout."),
+                    "stderr": f"Render exceeded {timeout_seconds}s timeout.",
                 }
 
             pngs = sorted(out_base.parent.glob("*.png"))
@@ -583,31 +693,49 @@ def register_tools(mcp: FastMCP) -> None:
                     "plot_type": plot_type,
                     "png_base64": None,
                     "png_path": None,
-                    "stderr": (proc.stderr or proc.stdout)[:2000],
+                    "stderr": diagnostic(
+                        proc.stderr or proc.stdout,
+                        "stderr" if proc.stderr else "stdout",
+                        char_limit=2000,
+                        marked=(
+                            proc.stderr_truncated
+                            if proc.stderr
+                            else proc.stdout_truncated
+                        ),
+                    ),
                 }
 
             png_bytes = pngs[0].read_bytes()
             if return_format == "path":
-                # Copy out of the TemporaryDirectory before it
-                # cleans up, but stash in a stable location the
-                # caller can read.
-                persistent = _Path(tempfile.gettempdir()) / (
-                    f"dartwork-mpl-render-{plot_type}.png"
-                )
-                persistent.write_bytes(png_bytes)
+                try:
+                    persistent = publish_png(
+                        png_bytes, f"dartwork-mpl-render-{plot_type}-"
+                    )
+                except OSError:
+                    return {
+                        "status": "render_error",
+                        "plot_type": plot_type,
+                        "png_base64": None,
+                        "png_path": None,
+                        "stderr": "Template output publication failed.",
+                    }
                 return {
                     "status": "ok",
                     "plot_type": plot_type,
                     "png_base64": None,
                     "png_path": str(persistent),
-                    "stderr": proc.stderr.strip(),
+                    "stderr": strip_diagnostic(
+                        proc.stderr, "stderr", marked=proc.stderr_truncated
+                    ),
                 }
             return {
                 "status": "ok",
                 "plot_type": plot_type,
                 "png_base64": base64.b64encode(png_bytes).decode("ascii"),
                 "png_path": None,
-                "stderr": proc.stderr.strip(),
+                "stderr": strip_diagnostic(
+                    proc.stderr, "stderr", marked=proc.stderr_truncated
+                ),
             }
 
     @mcp.tool()
@@ -1029,7 +1157,8 @@ def register_tools(mcp: FastMCP) -> None:
             ``"base64"`` (default) or ``"path"`` — same as
             :func:`render_template`.
         timeout_seconds : float, optional
-            Hard subprocess timeout. Default 30 s.
+            Hard subprocess timeout. Default 30 s. Diagnostics retain bounded
+            prefixes and complete markers; render errors fit2,000 characters.
 
         Returns
         -------
@@ -1040,11 +1169,17 @@ def register_tools(mcp: FastMCP) -> None:
             "stderr": str}``.
         """
         import base64
-        import subprocess
         import sys
         import tempfile
         import textwrap
         from pathlib import Path as _Path
+
+        from .execution import (
+            diagnostic,
+            publish_png,
+            run_child,
+            strip_diagnostic,
+        )
 
         template_dir = _TEMPLATE_DIR
         advanced_path = _resolve_template_path(plot_type, advanced=True)
@@ -1092,21 +1227,17 @@ def register_tools(mcp: FastMCP) -> None:
                 path=str(path),
             )
 
-            try:
-                proc = subprocess.run(
-                    [sys.executable, "-c", runner],
-                    capture_output=True,
-                    text=True,
-                    timeout=timeout_seconds,
-                )
-            except subprocess.TimeoutExpired as exc:
+            proc = run_child(
+                [sys.executable, "-c", runner], timeout_seconds=timeout_seconds
+            )
+            if proc.timed_out:
                 return {
                     "status": "timeout",
                     "plot_type": plot_type,
                     "tier": tier,
                     "png_base64": None,
                     "png_path": None,
-                    "stderr": f"Render exceeded {exc.timeout}s timeout.",
+                    "stderr": f"Render exceeded {timeout_seconds}s timeout.",
                 }
 
             pngs = sorted(out_base.parent.glob("*.png"))
@@ -1117,23 +1248,43 @@ def register_tools(mcp: FastMCP) -> None:
                     "tier": tier,
                     "png_base64": None,
                     "png_path": None,
-                    "stderr": (proc.stderr or proc.stdout)[:2000],
+                    "stderr": diagnostic(
+                        proc.stderr or proc.stdout,
+                        "stderr" if proc.stderr else "stdout",
+                        char_limit=2000,
+                        marked=(
+                            proc.stderr_truncated
+                            if proc.stderr
+                            else proc.stdout_truncated
+                        ),
+                    ),
                 }
 
             png_bytes = pngs[0].read_bytes()
             status = "fell_back" if fell_back else "ok"
             if return_format == "path":
-                persistent = _Path(tempfile.gettempdir()) / (
-                    f"dartwork-mpl-render-advanced-{plot_type}.png"
-                )
-                persistent.write_bytes(png_bytes)
+                try:
+                    persistent = publish_png(
+                        png_bytes, f"dartwork-mpl-render-advanced-{plot_type}-"
+                    )
+                except OSError:
+                    return {
+                        "status": "render_error",
+                        "plot_type": plot_type,
+                        "tier": tier,
+                        "png_base64": None,
+                        "png_path": None,
+                        "stderr": "Template output publication failed.",
+                    }
                 return {
                     "status": status,
                     "plot_type": plot_type,
                     "tier": tier,
                     "png_base64": None,
                     "png_path": str(persistent),
-                    "stderr": proc.stderr.strip(),
+                    "stderr": strip_diagnostic(
+                        proc.stderr, "stderr", marked=proc.stderr_truncated
+                    ),
                 }
             return {
                 "status": status,
@@ -1141,7 +1292,9 @@ def register_tools(mcp: FastMCP) -> None:
                 "tier": tier,
                 "png_base64": base64.b64encode(png_bytes).decode("ascii"),
                 "png_path": None,
-                "stderr": proc.stderr.strip(),
+                "stderr": strip_diagnostic(
+                    proc.stderr, "stderr", marked=proc.stderr_truncated
+                ),
             }
 
     # ── Utility Info Tool ────────────────────────────────────────────

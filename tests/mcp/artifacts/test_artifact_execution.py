@@ -5,7 +5,6 @@ import json
 import os
 import random
 import re
-import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -13,6 +12,7 @@ import matplotlib.image as mpimg
 import pytest
 
 pytest.importorskip("fastmcp")
+from dartwork_mpl.mcp import _capture
 from dartwork_mpl.mcp.execution import (
     ExecutionRejected,
     ExportedPlot,
@@ -161,6 +161,41 @@ def test_export_stderr_contains_only_original_user_output(tmp_path, stderr):
     assert (tmp_path / "plot.png").exists()
 
 
+def test_export_refuses_caller_bounded_logs_through_declared_result(tmp_path):
+    """A real child overrun returns a declared refusal without private wire flags."""
+    from dartwork_mpl.mcp import execution
+
+    assert "LogLimitRejected" in execution.__all__
+    result = export_plot(
+        "import os\nos.write(1, b'x' * 2048)\n",
+        "fig",
+        20,
+        None,
+        output_stem=tmp_path / "plot",
+        log_limit_bytes=1024,
+    )
+    assert isinstance(result, execution.LogLimitRejected), result
+    assert result.report["status"] == "exec_error"
+    assert result.report["validation_complete"] is False
+    assert "_artifact_logs_too_large" not in result.report
+    assert not list(tmp_path.iterdir())
+
+
+def test_export_cannot_disable_log_limit_before_child_launch(tmp_path):
+    """The new keyword cannot switch an export to legacy capture by passing None."""
+    marker = tmp_path / "executed"
+    with pytest.raises(ValueError, match="positive integer"):
+        export_plot(
+            f"from pathlib import Path\nPath({str(marker)!r}).touch()\n",
+            "fig",
+            20,
+            None,
+            output_stem=tmp_path / "plot",
+            log_limit_bytes=None,
+        )
+    assert not marker.exists()
+
+
 @pytest.fixture
 def input_workspace(tmp_path):
     """Remove every fixture input and output even when a mapping assertion fails."""
@@ -261,14 +296,14 @@ print('frame checked')
     )
     before = submitted.encode("utf-8")
     observed = []
-    real_run = subprocess.run
+    real_run = _capture.run_child
 
     def observe_run(args, **kwargs):
         """Observe the subprocess adapter's wire bytes while still executing its real child."""
-        observed.append((args, kwargs["input"], kwargs.get("env")))
+        observed.append((args, kwargs["stdin"], kwargs.get("env")))
         return real_run(args, **kwargs)
 
-    monkeypatch.setattr(subprocess, "run", observe_run)
+    monkeypatch.setattr(_capture, "run_child", observe_run)
     result = export_plot(
         submitted,
         "fig",
@@ -361,17 +396,17 @@ def test_malformed_private_frame_rejects_without_executing_source(
     """Damaged private transport returns the existing exec_error and removes its checkpoint."""
     marker = input_workspace / "executed"
     code = f"from pathlib import Path\nPath({str(marker)!r}).touch()"
-    real_run = subprocess.run
+    real_run = _capture.run_child
     channels = []
 
     def damage_frame(args, **kwargs):
         """Inject a damaged wire header at this subprocess adapter while running its real child."""
         channels.append(Path(args[3]).parent)
-        _, source = kwargs["input"].split("\n", 1)
-        kwargs["input"] = header + "\n" + source
+        _, source = kwargs["stdin"].split("\n", 1)
+        kwargs["stdin"] = header + "\n" + source
         return real_run(args, **kwargs)
 
-    monkeypatch.setattr(subprocess, "run", damage_frame)
+    monkeypatch.setattr(_capture, "run_child", damage_frame)
     result = export_plot(
         code,
         "fig",

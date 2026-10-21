@@ -1,17 +1,30 @@
 """Trusted-snippet execution with optional private input paths, without authorization."""
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from ._capture import diagnostic, publish_png, run_child, strip_diagnostic
+
 __all__ = [
     "ExecutionRejected",
     "ExportRejected",
     "ExportedPlot",
+    "LogLimitRejected",
+    "diagnostic",
     "export_plot",
+    "publish_png",
+    "run_child",
+    "strip_diagnostic",
     "validate_plot",
 ]
+
+# Direct execution callers retain the existing ceiling. Artifact delivery
+# supplies its own authoritative bundle allowance through log_limit_bytes.
+_DEFAULT_EXPORT_LOG_BYTES = 32 * 1024 * 1024
+_MAX_SOURCE_BYTES = 512 * 1024
 
 
 @dataclass(frozen=True)
@@ -29,11 +42,40 @@ class ExecutionRejected:
 
 
 @dataclass(frozen=True)
+class LogLimitRejected(ExecutionRejected):
+    """A bounded incomplete report whose original logs exceed the caller's limit."""
+
+
+@dataclass(frozen=True)
 class ExportRejected:
     """Export failed after validation, retaining its evidence without paths."""
 
     report: dict[str, Any]
     message: str = "Artifact export failed."
+
+
+def _source_timeout_error(code: str, timeout_seconds: float) -> str | None:
+    """Return safe legacy admission diagnostics, without artifact dependencies.
+
+    Execution owns these source/timeout checks; render independently parses its
+    richer request. Keep their existing limits/messages equal while retaining
+    legacy figure/hint handling. No caller content enters a refusal message.
+    """
+    try:
+        if (
+            not isinstance(code, str)
+            or len(code.encode("utf-8")) > _MAX_SOURCE_BYTES
+        ):
+            return "code: Source must be at most 512 KiB of UTF-8."
+    except UnicodeError:
+        return "code: Source must be valid UTF-8."
+    if (
+        type(timeout_seconds) not in (int, float)
+        or not 0 < timeout_seconds <= 120
+        or not math.isfinite(timeout_seconds)
+    ):
+        return "timeout_seconds: Timeout must be finite and in (0, 120]."
+    return None
 
 
 def validate_plot(
@@ -42,7 +84,12 @@ def validate_plot(
     timeout_seconds: float = 20.0,
     chart_type_hint: str | None = None,
 ) -> dict[str, Any]:
-    """Execute the historical validator with its unchanged envelope and logs."""
+    """Execute trusted source with legacy outcomes and bounded diagnostic logs.
+
+    Source/timeout admission shares render's existing limits; unrelated legacy
+    figure/hint values retain their behavior. No code runs on admission or
+    handleable AST-resource refusal. This is not an OS security sandbox.
+    """
     return _run(
         code, figure_var, timeout_seconds, chart_type_hint, output_stem=None
     )
@@ -56,6 +103,7 @@ def export_plot(
     *,
     output_stem: Path,
     input_paths: Mapping[str, str] | None = None,
+    log_limit_bytes: int = _DEFAULT_EXPORT_LOG_BYTES,
 ) -> ExportedPlot | ExecutionRejected | ExportRejected:
     """Validate and export one selected Figure in a single child execution.
 
@@ -64,9 +112,15 @@ def export_plot(
     this runner neither checks nor copies those files. Names and paths must
     be strings (otherwise TypeError is raised before launch). None or an
     empty mapping uses the legacy source-only protocol and injects nothing.
-    Source, cwd, inherited environment, logs and execution outcomes retain
-    their existing semantics; trusted code can expose the paths itself.
+    Source, cwd and inherited environment retain their existing semantics;
+    trusted code can expose the paths itself. Accepted processed logs remain
+    exact; logs exceeding positive ``log_limit_bytes`` return LogLimitRejected
+    with bounded diagnostics. Direct callers retain the 32 MiB default; artifact
+    callers supply their own bundle allowance. An invalid limit raises ValueError
+    before child launch. The wire schema and execution statuses are unchanged.
     """
+    if type(log_limit_bytes) is not int or log_limit_bytes <= 0:
+        raise ValueError("Shared log budget must be a positive integer")
     report = _run(
         code,
         figure_var,
@@ -74,8 +128,12 @@ def export_plot(
         chart_type_hint,
         output_stem=output_stem,
         input_paths=input_paths,
+        log_limit_bytes=log_limit_bytes,
     )
-    if report.pop("_export_failed", False):
+    export_failed = report.pop("_export_failed", False)
+    if report.pop("_artifact_logs_too_large", False):
+        return LogLimitRejected(report)
+    if export_failed:
         return ExportRejected(report)
     if report["status"] in {"ok", "validation_incomplete"}:
         return ExportedPlot(report)
@@ -90,6 +148,7 @@ def _run(
     *,
     output_stem: Path | None,
     input_paths: Mapping[str, str] | None = None,
+    log_limit_bytes: int | None = None,
 ) -> dict[str, Any]:
     """Run a child and remove its checkpoint on return, error or timeout.
 
@@ -99,15 +158,20 @@ def _run(
     marker enters argv, never mapping data; environment and cwd are inherited.
     A malformed private frame follows the existing exec_error outcome.
     Invalid caller mapping types raise TypeError before launch. File access
-    policy and asynchronous call cancellation/draining belong to callers.
+    policy and asynchronous call cancellation/draining belong to callers. Export
+    callers supply a positive shared log limit; legacy validation uses per-channel
+    diagnostic limits. Invalid limits raise ValueError before child launch.
     """
+    import ast
     import json
-    import subprocess
     import sys
     import textwrap
+    from contextlib import suppress
     from tempfile import TemporaryDirectory
 
     from dartwork_mpl.lint import lint as _lint
+
+    from ._capture import run_child
 
     if input_paths is not None:
         if not isinstance(input_paths, Mapping):
@@ -135,16 +199,42 @@ def _run(
             payload.setdefault("semantic_warnings", [])
         return payload
 
-    lint_issues = [
-        {
-            "rule_id": i.rule_id,
-            "severity": i.severity,
-            "line": i.line,
-            "message": i.message,
-            "fix_suggestion": i.fix_suggestion,
-        }
-        for i in _lint(code)
-    ]
+    # Match render's code/timeout admission without a reverse feature import.
+    # Legacy figure/hint handling retains its independent existing behavior.
+    admission_error = _source_timeout_error(code, timeout_seconds)
+    if admission_error is not None:
+        return _finalize(
+            {"status": "exec_error", "lint": [], "stderr": admission_error}
+        )
+
+    def _resource_failure(exc: MemoryError | RecursionError) -> dict[str, Any]:
+        """Refuse a handleable parser/lint resource fault without source or paths."""
+        return _finalize(
+            {
+                "status": "exec_error",
+                "lint": [],
+                "exc_type": type(exc).__name__,
+                "stderr": "Python source analysis exceeded available parser resources.",
+            }
+        )
+
+    try:
+        # lint intentionally tolerates some parse failures, including recursion;
+        # MCP must recognize a resource refusal before invoking trusted source.
+        with suppress(SyntaxError, ValueError, UnicodeError):
+            ast.parse(code)
+        lint_issues = [
+            {
+                "rule_id": i.rule_id,
+                "severity": i.severity,
+                "line": i.line,
+                "message": i.message,
+                "fix_suggestion": i.fix_suggestion,
+            }
+            for i in _lint(code)
+        ]
+    except (MemoryError, RecursionError) as exc:
+        return _resource_failure(exc)
     critical = [i for i in lint_issues if i["severity"] == "critical"]
     if critical:
         return _finalize(
@@ -353,12 +443,6 @@ def _run(
             return {"status": "exec_error"}
         return result if isinstance(result, dict) else {"status": "exec_error"}
 
-    def _log_text(value: str | bytes | None) -> str:
-        """Normalize timeout logs, which may be bytes despite text=True."""
-        if isinstance(value, bytes):
-            return value.decode("utf-8", errors="replace")
-        return value or ""
-
     # The private absolute channel is removed on success, error and timeout.
     # Cwd stays inherited so snippet save destinations retain their meaning.
     with TemporaryDirectory(prefix="dartwork-mpl-validate-") as directory:
@@ -368,41 +452,22 @@ def _run(
         if input_paths:
             args.append("--dartwork-inputs-v1")
             stdin = json.dumps(input_paths, ensure_ascii=True) + "\n" + code
-        try:
-            proc = subprocess.run(
-                args,
-                input=stdin,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=timeout_seconds,
-            )
-        except subprocess.TimeoutExpired as exc:
-            payload = _read_result(result_path)
-            payload.update(
-                {
-                    "status": "timeout",
-                    "lint": lint_issues,
-                    "stdout": _log_text(exc.stdout),
-                    "stderr": (
-                        (
-                            _log_text(exc.stderr).strip()
-                            + f"\nSubprocess exceeded {exc.timeout}s timeout."
-                        ).strip()
-                        if output_stem is None
-                        else _log_text(exc.stderr)
-                    ),
-                }
-            )
-            return _finalize(payload)
-
+        proc = run_child(
+            args,
+            stdin=stdin,
+            timeout_seconds=timeout_seconds,
+            shared_log_limit=log_limit_bytes,
+            strip_stderr=output_stem is None,
+            timeout_message=output_stem is None,
+        )
         payload = _read_result(result_path)
-        if proc.returncode != 0:
+        if proc.timed_out:
+            payload["status"] = "timeout"
+        elif proc.returncode != 0:
             payload["status"] = "exec_error"
+        if proc.log_overrun:
+            payload.update(status="exec_error", _artifact_logs_too_large=True)
         payload["lint"] = lint_issues
         payload["stdout"] = proc.stdout
-        payload["stderr"] = (
-            proc.stderr.strip() if output_stem is None else proc.stderr
-        )
+        payload["stderr"] = proc.stderr
         return _finalize(payload)

@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import TypeAlias
 
 from ..execution import ExecutionRejected, ExportRejected, export_plot
+from . import policy
 from .input_access import InputsDisabled
 from .input_policy import (
     InputMetadata,
@@ -67,6 +68,7 @@ def render_artifact(
     calls own the serial transaction through synchronous execution, one postcheck,
     paired publication and post-artifact-exit settlement. Cancellation propagates
     after that settlement; asynchronous admission/draining belongs to the caller.
+    Every export receives the artifact policy's current combined log allowance.
     """
     if revision is not None:
         return _render_revision(store, request, clock, revision, inputs)
@@ -78,6 +80,7 @@ def render_artifact(
                 request.timeout_seconds,
                 request.chart_type_hint,
                 output_stem=stage.output_stem,
+                log_limit_bytes=policy.MAX_BUNDLE_BYTES,
             )
             if isinstance(outcome, (ExecutionRejected, ExportRejected)):
                 return outcome
@@ -100,6 +103,7 @@ def _render_revision(
     Input policy is required only for nonempty selections. A pinned parent's later
     expiry/corruption cannot change this child's receipt or validation. Filesystem
     errors refuse publication without disclosing configuration or original paths.
+    Export uses the artifact policy's current combined log allowance.
     """
     try:
         if not revision.inputs:
@@ -113,6 +117,7 @@ def _render_revision(
                     request.timeout_seconds,
                     request.chart_type_hint,
                     output_stem=stage.output_stem,
+                    log_limit_bytes=policy.MAX_BUNDLE_BYTES,
                 )
                 if isinstance(outcome, (ExecutionRejected, ExportRejected)):
                     return outcome
@@ -203,7 +208,8 @@ def _publish_inputs(
     Postcheck runs exactly once after successful export. Both commits receive the
     same freshly sampled completion instant; only both successful returns can be
     Ready. The new receipt overrides any exporter-authored provenance, leaving
-    the original report value and submitted UTF-8 source unchanged.
+    the original report value and submitted UTF-8 source unchanged. Export uses
+    the artifact policy's current combined log allowance.
     """
     outcome = export_plot(
         request.code,
@@ -212,6 +218,7 @@ def _publish_inputs(
         request.chart_type_hint,
         output_stem=stage.output_stem,
         input_paths=copied.execution_inputs,
+        log_limit_bytes=policy.MAX_BUNDLE_BYTES,
     )
     if isinstance(outcome, (ExecutionRejected, ExportRejected)):
         return outcome
