@@ -129,3 +129,20 @@ def test_old_color_vocabulary_removed_from_package_root(name: str) -> None:
         match=r"Model B color API.*dm\.(colors|set_colors|list_colors|show_colors)",
     ):
         getattr(dm, name)
+
+
+@pytest.mark.parametrize("name", [123, None, ["blue"]])
+def test_family_name_type_errors_are_descriptive(name) -> None:
+    """Non-string family names fail at their owning public boundary."""
+    with pytest.raises(TypeError, match="family.*str"):
+        dm.colors(name)
+
+
+def test_preview_family_member_type_error_precedes_figure_creation() -> None:
+    """Malformed preview members fail clearly before any figure is created."""
+    before = plt.get_fignums()
+    with pytest.raises(TypeError, match="family.*str"):
+        dm.show_colors(names=["blue", 123])
+    assert plt.get_fignums() == before
+    with pytest.raises(ValueError, match="Nearest names: blue"):
+        dm.colors("bluue")
