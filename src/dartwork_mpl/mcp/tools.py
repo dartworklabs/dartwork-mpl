@@ -632,7 +632,7 @@ def register_tools(mcp: FastMCP) -> None:
         import textwrap
         from pathlib import Path as _Path
 
-        from ._capture import (
+        from .execution import (
             diagnostic,
             publish_png,
             run_child,
@@ -1174,7 +1174,7 @@ def register_tools(mcp: FastMCP) -> None:
         import textwrap
         from pathlib import Path as _Path
 
-        from ._capture import (
+        from .execution import (
             diagnostic,
             publish_png,
             run_child,

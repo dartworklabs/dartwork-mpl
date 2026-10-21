@@ -2,6 +2,7 @@
 
 Status: adopted for implementation under the user-authorized reliability restoration; parent adoption includes MCP-I1.
 Original frozen design review: FAIL C0/I1; its newline contradiction is corrected below, not relabeled PASS.
+PR517 CI exposed a second missed contradiction: parser reuse created execution→artifacts while the accepted artifact design requires artifacts→execution only. This correction restores that boundary; the earlier implementation/review did not satisfy it.
 Base: `d2b6d0b1ce8897d24398aa5a4de5d97f23ab2a05` (2026-10-21).
 Authority: user approved the concrete repair proposal with 고; this records bounded implementation choices, not a new execution-approval gate.
 Named brainstorming/writing-plans skills were unavailable in the parent's bounded search; neither is claimed invoked.
@@ -38,17 +39,16 @@ Frozen evidence names below refer to the parent handoff, outside the product tre
   identity.
 - Assets: parent process/diagnostic memory, private execution checkpoints, template output files, artifact bytes and outbound Raw GitHub fetch work.
 - Inputs: source/options at registered callbacks; child stdout/stderr bytes; template copy destination; fetch URL, redirect Location, response encoding/body.
-- Enforcement: existing `parse_render_request` source/timeout admission; MCP-owned preflight/runner collection; exclusive output-file descriptor; one fetch URL constructor and
+- Enforcement: execution-owned source/timeout admission, independent artifact `parse_render_request`; MCP preflight/runner collection; exclusive output-file descriptor; one fetch URL constructor and
   bounded adapter.
 - Scope propagates through existing parsed render requests, inherited execution context and the existing artifact store. No new cross-user or hosted authority is introduced.
 - No per-call approval, env stripping, cwd isolation, arbitrary repo allowlist, network sandbox, process-tree supervisor or hosted identity model.
 
 ## Request and AST handling
 
-- Reuse existing `parse_render_request` admission for UTF-8 source<=524,288 bytes and actual numeric finite timeout in(0,120], default 20 seconds. Validator borrows only these two
-  checks using neutral parser defaults for figure/hint.
-- Validator maps InvalidRequest to existing `status="exec_error"`, empty lint/warnings/logs/checks, `validation_complete=false`, and bounded `stderr` containing field plus existing
-  safe parser message.
+- Execution owns UTF-8 source<=524,288 bytes and actual numeric finite timeout in(0,120], default 20s; artifact policy independently parses its richer request without other-feature imports.
+  Seeded contract cases keep source/timeout limits and safe messages equal, preserving independent legacy figure/hint behavior.
+- Validator maps its admission refusal to existing `status="exec_error"`, empty lint/warnings/logs/checks, `validation_complete=false`, and bounded `stderr` with the same field/message.
 - Semantic warnings retain existing presence iff a chart hint was supplied; no new status or wire field. Render retains existing `invalid_request` envelope.
 - Preserve actual validator figure_var/chart_type_hint handling and named/last-pyplot fallback; do not import render's additional option restrictions into this source/timeout
   repair.
@@ -73,7 +73,7 @@ Frozen evidence names below refer to the parent handoff, outside the product tre
   remain; artifact stderr whitespace stays exact. Independent bounded normal/timeout views choose truncation/refusal only from the actual outcome. One invalid byte may expand to3 UTF-8 bytes.
 - At most8 KiB raw reads and24 KiB UTF-8 decoded chunks. Retained payload ceiling: legacy6*64 KiB across four prefixes/two pending-strip buffers; artifacts2*32 MiB across independent
   views. Marker/timeout decoration fit inside returned64 KiB. CRLF-heavy normal success must not be refused due to overflow of its unused timeout view.
-- Artifact mode uses an independent **combined32 MiB UTF-8 log retention budget per outcome view**, supplied from existing `MAX_BUNDLE_BYTES`; successful bundles retain the exact original
+- Artifact mode uses an independent **combined32 MiB UTF-8 log retention budget per outcome view**, passed by every artifact delivery path as keyword-only `export_plot(log_limit_bytes=MAX_BUNDLE_BYTES)`; accepted bundles retain the exact original
   processed logs, including stderr whitespace.
 - This is the minimal artifact split: log bytes alone over 32 MiB necessarily exceeded the prior serialized bundle budget. Below this budget, existing exact JSON/source/PNG/PDF
   total checks still decide publication, including JSON escaping expansion.
@@ -117,14 +117,17 @@ Frozen evidence names below refer to the parent handoff, outside the product tre
 
 ## Changes, ownership and compatibility
 
-- MCP owner: `src/dartwork_mpl/mcp/execution.py`, internal `_capture.py`, `tools.py`, narrow `artifacts/transport.py` error mapping, existing MCP boundary tests and MCP guide. No changes
+- MCP owner: `src/dartwork_mpl/mcp/execution.py`, internal `_capture.py`, `tools.py`, artifact delivery budget injection/transport error mapping, existing MCP tests and guide. No changes
   to storage/privacy/retention policy.
 - Lint owner: `lint.py` and catalog remain untouched by this proposal. No private parse-result import or cross-slice authority graph is added.
-- Keep validator policy reuse behind the MCP boundary; verify no import cycle or new core-only optional import. Existing `execution -> lint` public call remains; proposed validator
-  request parsing uses the existing artifact policy parser surface. No new external dependency, runtime, package, public API or repository-wide graph gate.
+- Keep the accepted artifacts→execution dependency one way; `execution -> lint` stays public. Classify only `_capture.py` as private execution intent; legacy tools import its operations
+  through execution's declared exports. `LogLimitRejected` is a declared Python outcome mapped to existing `artifact_too_large`, without a wire field.
+- `export_plot` gains an optional keyword-only Python limit; registered MCP signatures/discovery/schemas stay unchanged. Existing direct callers retain an execution-owned 32 MiB default;
+  artifact callers always pass their authoritative policy value. This small default duplication avoids a reverse feature dependency. No dependency/runtime/package/new graph gate.
+- Preserve the existing boundary module's ALLOWED edges, private-surface, core-path, cycle and pure-policy checks; add helper/private-path negatives and execute the entire module.
+  Earlier selected 329 tests omitted this gate; PR517 CI's failure is the restoration oracle, not evidence of prior conformance.
 - Docs must distinguish validator truncation from artifact exact-log refusal and document fetch limits, without changing discovery 19/10/9/2 or shipped color digests.
-- Visible marker/refusal wording needs an actual rendered before/after PoC before merge. This diagnosis supplies no candidate implementation/PoC yet; plot image design itself is
-  unchanged.
+- Marker/refusal wording requires its rendered before/after PoC before merge. This boundary restoration changes no visible wording or plot design.
 
 ## Executable verification and stopping rule
 

@@ -15,7 +15,7 @@ Runtime: read-only host venv; Python 3.12.13/FastMCP 3.4.2/httpx0.28.1. Keep -B/
 - [x] Step3: Confirm 64 KiB legacy/channel, 32 MiB artifact/shared, 8 KiB reads, 10-second total fetch, 1 MiB identity body, 5 redirects and exact marker with parent scope review.
   Expected: concrete bounded implementation choices recorded; no new API/dependency/CI gate or generic user reapproval.
 - [x] Step4: Assign MCP source/tests/guide to one worker; leave lint.py/catalog with lint owner; coordinate existing artifact budget caller only if needed.
-  Expected: no simultaneous ownership of lint.py; no unrelated shared helper or public surface expansion.
+  Expected: no simultaneous ownership of lint.py; no unrelated shared helper or registered MCP surface expansion.
 Commit point: none; review gate only.
 
 ## Task 2 — source/timeout and handleable AST failure envelopes
@@ -24,12 +24,12 @@ Commit point: none; review gate only.
   Expected baseline red: nontext/invalid-UTF8/524,289-byte source, NaN/Inf/nonpositive/over120 timeout return existing exec_error envelope before side effects, rather than raising/launching.
 - [x] Step2: Add legal boundary and seeded finite-value controls; preserve the validator's actual figure_var/hint behavior.
   Expected: 512 KiB valid UTF-8 and numeric timeout in(0,120] remain accepted; no accidental restriction of last-pyplot fallback.
-- [x] Step3: Reuse existing render request source/timeout admission with neutral defaults for its unrelated fields; map refusal to legacy fields only.
+- [x] Step3: Implement execution-owned source/timeout admission with render-equivalent limits/messages; map refusal to legacy fields only.
   Expected: lint/warnings/checks/log strings/completion and optional semantic key remain compatible; render invalid_request unchanged.
 - [x] Step4: Add MCP-owned AST preflight plus resource-error catch, preserving existing syntax fallback and source inertness.
   Expected baseline red then green: injected MemoryError and RecursionError become exec_error; no execution marker; no lint private imports or catalog edits.
 - [x] Step5: Run focused validation/hardening cases; review extra parse cost on<=512 KiB and safe diagnostics.
-  Expected: no new core optional import or cycle from parser reuse; raw failure/success runs saved; unexpected interpreter termination remains outside promise.
+  Expected: independent seeded admission contract matches render without a reverse artifact import; unexpected interpreter termination remains outside promise.
 Commit point: one logical request/parser reliability change after review.
 
 ## Task 3 — bounded capture without clipping successful artifacts
@@ -40,8 +40,8 @@ Commit point: one logical request/parser reliability change after review.
   Expected: selected-view UTF-8 legacy strings<=65,536 bytes each including markers/timeout text; normal normalizes CR/LF, timeout preserves CR/LF; low-level writes survive and excess never accumulates.
 - [x] Step3: Implement owned bounded output polling and finite private stdin file, reads<=8 KiB, incremental replacement/newline normalization and bounded suffix reservation.
   Expected: neither output pipe blocks the other; input-file seekability is an adopted internal choice, not an output spool, no unbounded run(capture_output=True) or disk spool in affected paths; excess discarded during read.
-- [x] Step4: Supply existing artifact 32 MiB shared log budget without copying this numerical policy into another independent owner.
-  Expected: accepted 200,000-byte stdout/stderr artifact logs remain exact; existing serialized total 32 MiB check remains authoritative.
+- [x] Step4: Every artifact delivery path passes its authoritative 32 MiB policy through optional keyword-only export_plot(log_limit_bytes=...); direct callers keep an execution-owned 32 MiB fallback.
+  Expected: accepted 200,000-byte logs stay exact; existing serialized total 32 MiB check stays authoritative; small fallback duplication prevents reverse dependency.
 - [x] Step5: Exercise overrun through a scaled internal capture budget and existing artifact transport.
   Expected: existing artifact_too_large envelope, incomplete marked diagnostic prefixes, no ID/image/resource links/published bundle; never claim an original total from partial observations.
 - [x] Step6: Verify success/error/timeout cleanup of child, owned pipe/writer/drain workers and checkpoint; retain current lifecycle cancellation/draining.
@@ -86,7 +86,7 @@ Commit point: one logical fetch reliability change.
   Expected: 19/10/9/2; named/fallback render PNG equals native cwd save; requery equal; five resource lengths/hashes/source/PDF; validator completion; namespace/SystemExit unchanged.
 - [x] Step4: Repeat simulated missing optional imports and existing core-only CI contract review.
   Expected: base import/render/save works and CLI exits1 with existing install hint; report simulation versus real installation accurately.
-- [x] Step5: Run affected existing tests, for example `python -B -m pytest -p no:cacheprovider tests/test_mcp_validation_contract.py tests/test_mcp_tool_hardening.py tests/test_mcp_render_smoke.py tests/mcp/artifacts/test_artifact_execution.py tests/mcp/artifacts/test_artifact_protocol.py --no-cov`.
+- [x] Step5: Run the full tests/mcp/artifacts/test_artifact_boundaries.py gate plus affected existing tests, for example `python -B -m pytest -p no:cacheprovider tests/test_mcp_validation_contract.py tests/test_mcp_tool_hardening.py tests/test_mcp_render_smoke.py tests/mcp/artifacts/test_artifact_execution.py tests/mcp/artifacts/test_artifact_protocol.py --no-cov`.
   Expected: targeted pass with executed cases, baseline regression reds preserved. Add other affected cases only for changed concern.
 - [ ] Step6: Run repository Ruff/mypy on changed Python and existing relevant doc-authority checks; parent runs required integration gates after target reconciliation.
   Expected: no new CI gate; current Python 3.10–3.13 and FastMCP 2.13.3/3.4.2 compatibility remains a CI requirement, not a falsely claimed local run.
@@ -94,5 +94,16 @@ Commit point: one logical fetch reliability change.
   Expected: complete repair against mechanical evidence; report any remaining runtime/cancellation paths not exercised.
 Commit point: documentation/PoC evidence and integration record after independent review.
 
-Worker handoff: local affected checks and actual candidate stdio proofs are complete; original failed/adapted-environment receipts are retained.
+## Task 7 — PR517 boundary restoration
+
+PR517 CI found that earlier parser-reuse/no-cycle claims contradicted the accepted one-way artifact dependency. The earlier selected 329 cases omitted the boundary module.
+
+- [x] Reproduce the unchanged full boundary module failure, preserve receipts, and restore artifacts→declared execution without changing ALLOWED.
+- [x] Keep `_capture` private to execution; route template helpers through declared exports and expose `LogLimitRejected` as a Python outcome only.
+- [x] Supply artifact-owned log allowance in legacy/revision/input delivery paths; preserve direct Python caller defaults and update the strict existing fake.
+- [x] Verify the entire boundary module, affected real callers and pure admission properties, Ruff/format.
+- [ ] Parent reruns combined checks/full mypy and exact candidate CI.
+- [ ] Parent reviews the new frozen diff; original local review/test PASS is historical and does not establish conformance for changed bytes.
+
+Worker handoff: original local affected checks and actual candidate stdio proofs are complete; original failed/adapted-environment receipts are retained.
 Step6 remains open for parent integration/CI and Step7 for independent final review. The rendered PoC must be presented before merge.

@@ -220,7 +220,7 @@ def test_template_publication_failure_has_safe_existing_error(
     tmp_path, monkeypatch, name
 ):
     """Owned publication errors return render_error without a private path or published name."""
-    from dartwork_mpl.mcp import _capture, tools
+    from dartwork_mpl.mcp import execution, tools
 
     template = tmp_path / "template.py"
     template.write_text(
@@ -234,7 +234,7 @@ def test_template_publication_failure_has_safe_existing_error(
         """Inject only the owned PNG publication adapter's filesystem failure."""
         raise OSError("private /publication/canary")
 
-    monkeypatch.setattr(_capture, "publish_png", fail_publication)
+    monkeypatch.setattr(execution, "publish_png", fail_publication)
     result = _tools_map()[name]("line", return_format="path")
     assert result["status"] == "render_error"
     assert result["png_path"] is result["png_base64"] is None

@@ -453,9 +453,10 @@ def test_artifact_log_budget_selects_completion_view_at_exact_and_first_excess(
 
 
 def test_seeded_source_timeout_parser_is_total_and_boundary_controls_execute():
-    """Finite generated source/options always parse or refuse, with exact legal controls."""
+    """Independent render/execution admission agrees, including legal legacy options."""
     import random
 
+    from dartwork_mpl.mcp import execution
     from dartwork_mpl.mcp.artifacts.policy import (
         InvalidRequest,
         RenderRequest,
@@ -463,6 +464,7 @@ def test_seeded_source_timeout_parser_is_total_and_boundary_controls_execute():
     )
 
     rng = random.Random(49822)
+    assert hasattr(execution, "_source_timeout_error")
     values = [
         None,
         True,
@@ -486,6 +488,12 @@ def test_seeded_source_timeout_parser_is_total_and_boundary_controls_execute():
             repr(code),
             timeout,
         )
+        expected = (
+            f"{result.field}: {result.message}"
+            if isinstance(result, InvalidRequest)
+            else None
+        )
+        assert execution._source_timeout_error(code, timeout) == expected
     assert isinstance(
         parse_render_request("#" * 524288, timeout_seconds=120), RenderRequest
     )
