@@ -18,7 +18,7 @@ from pathlib import Path
 
 from matplotlib import font_manager as fm
 
-_ICON_DIR: Path = Path(__file__).parent / "asset/icon"
+_ICON_DIR: Path = Path(__file__).parent.parent / "asset/icon"
 
 # NOTE: ``fa-solid`` and ``fa-regular`` share the family name
 # "Font Awesome 6 Free" (weights 900/400), so addressing them by bare
