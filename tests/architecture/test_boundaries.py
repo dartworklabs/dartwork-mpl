@@ -186,3 +186,60 @@ def test_listed_debt_passes_and_stale_debt_fails(tmp_path):
     assert checker.check(package, layout, {missing: "C5", stale: "C2"}) == [
         f"stale debt: {stale}"
     ]
+
+
+SHIM_LAYOUT = checker.Layout(
+    entry_points=LAYOUT.entry_points,
+    platform=LAYOUT.platform,
+    slices=LAYOUT.slices,
+    allowed={
+        **LAYOUT.allowed,
+        (f"{P}.style", f"{P}.layout"): "a preset applies the layout",
+    },
+    decisions=LAYOUT.decisions,
+    shims={f"{P}.layout_compat": f"{P}.layout"},
+)
+SHIM = '__all__ = ["simple_layout"]\nfrom .layout._impl import simple_layout\n'
+# style reaches layout only through the shim's surface.
+SHIM_IMPORTER = (
+    '__all__ = ["use"]\nfrom .layout_compat import simple_layout\n'
+    "import dartwork_mpl.layout_compat\ndef use(): ...\n"
+)
+
+
+def run_shim(**changes: str) -> list[str]:
+    """Violations of LEGAL plus a layout shim, with ``changes`` applied as in ``run``."""
+    code = {**LEGAL, f"{P}.layout_compat": SHIM, f"{P}.style": SHIM_IMPORTER}
+    for key, source in changes.items():
+        code[f"{P}.{key.replace('__', '.')}"] = source
+    return checker.violations(code, PACKAGES, SHIM_LAYOUT)
+
+
+def test_a_shim_re_exporting_its_owners_private_name_passes():
+    """A shim belongs to its owner, and importers may use the names its __all__ lists."""
+    assert run_shim() == []
+
+
+def test_importing_a_name_a_shim_does_not_list_is_a_private_import():
+    """The shim's __all__ is its surface; anything else it holds stays private."""
+    importer = SHIM_IMPORTER + "from .layout_compat import solve\n"
+    assert run_shim(style=importer) == [
+        f"private import: {P}.style -> {P}.layout_compat.solve"
+    ]
+
+
+def test_a_shim_importing_a_third_units_private_module_is_rejected():
+    """Shim ownership covers only its owner's private code."""
+    shim = SHIM + "from .units._length import parse\n"
+    assert run_shim(layout_compat=shim) == [
+        f"private import: {P}.layout_compat -> {P}.units._length.parse"
+    ]
+
+
+def test_a_shim_without_literal_all_is_rejected():
+    """Without __all__ no name of the shim is public, so its importers fail too."""
+    shim = "from .layout._impl import simple_layout\n"
+    assert run_shim(layout_compat=shim) == [
+        f"missing __all__: {P}.layout_compat",
+        f"private import: {P}.style -> {P}.layout_compat.simple_layout",
+    ]

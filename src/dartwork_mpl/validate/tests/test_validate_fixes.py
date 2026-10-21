@@ -99,7 +99,7 @@ class TestStyleAppliedIsFigureLocal:
     process-global ``plt.rcParams`` (which is mutated independently)."""
 
     def test_custom_font_size_detected(self) -> None:
-        from dartwork_mpl.validate_fixes import _style_applied
+        from dartwork_mpl.validate.agent_requirements import _style_applied
 
         fig, ax = plt.subplots()
         ax.plot([1, 2, 3])
@@ -113,7 +113,7 @@ class TestStyleAppliedIsFigureLocal:
         # so dartwork's import-time style does not leak in.)
         import matplotlib as mpl
 
-        from dartwork_mpl.validate_fixes import _style_applied
+        from dartwork_mpl.validate.agent_requirements import _style_applied
 
         with mpl.rc_context(mpl.rcParamsDefault):
             fig, ax = plt.subplots()
