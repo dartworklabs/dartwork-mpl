@@ -24,8 +24,7 @@ from typing import NewType, TypeAlias
 
 import numpy as np
 
-from . import _conversion as conversion
-from . import _gamut as gamut
+from .model import conversion, gamut
 
 Rgb: TypeAlias = tuple[float, float, float]
 RelativeY = NewType("RelativeY", float)

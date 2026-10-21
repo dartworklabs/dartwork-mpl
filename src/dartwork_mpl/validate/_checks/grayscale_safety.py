@@ -95,7 +95,8 @@ def check_grayscale_safety(
     """
     # Resolve the canonical color kernel lazily.  A module-level import would
     # reintroduce the cold-import cycle through ``validate`` and ``_colors``.
-    from ..._colors._conversion import _srgb_to_oklab, relative_y_srgb_d65
+    from ..._colors.model import relative_y_srgb_d65
+    from ..._colors.model import srgb_to_oklab as _srgb_to_oklab
 
     collisions: list[_Collision] = []
     seen: set[tuple[str, str]] = set()

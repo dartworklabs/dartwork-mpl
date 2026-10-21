@@ -11,13 +11,14 @@ from typing import cast
 
 import pytest
 
-from dartwork_mpl._colors import _conversion, _generate, _tone
+from dartwork_mpl._colors import _generate, _tone
 from dartwork_mpl._colors._recipe import (
     FAMILIES,
     FAMILY_PARAMS,
     TONE_TOP,
     FamilyParams,
 )
+from dartwork_mpl._colors.model import _conversion
 
 Rgb = tuple[float, float, float]
 PALETTE_SHA256 = (

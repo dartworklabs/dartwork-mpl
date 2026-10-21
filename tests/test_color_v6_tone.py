@@ -345,7 +345,9 @@ def test_locked_solver_matches_pinned_modeled_relative_y_result() -> None:
 
 def test_unlocked_tone_uses_tone_as_actual_oklab_l() -> None:
     tone = _tone()
-    conversion = importlib.import_module("dartwork_mpl._colors._conversion")
+    conversion = importlib.import_module(
+        "dartwork_mpl._colors.model._conversion"
+    )
 
     rgb = tone.render_oklch_at_tone(
         tone=0.5, chroma=0.165, hue=238.0, luminance_lock=False

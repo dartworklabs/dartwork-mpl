@@ -334,8 +334,8 @@ def test_manifest_numeric_policies_equal_runtime_policy_objects(
     v6_ssot: dict[str, object],
 ) -> None:
     """Keep packaged numeric authority synchronized with runtime searches."""
-    from dartwork_mpl._colors._gamut import SRGB_GAMUT_POLICY
     from dartwork_mpl._colors._tone import SHIPPED_TONE_POLICY
+    from dartwork_mpl._colors.model._gamut import SRGB_GAMUT_POLICY
 
     policies = cast(dict[str, dict[str, object]], v6_ssot["policies"])
     gamut = policies["gamut"]
@@ -948,13 +948,13 @@ def test_build_and_catalog_use_the_validated_v6_accessor() -> None:
 def test_candidate_provenance_hashes_all_v6_construction_authorities() -> None:
     """Include tone, gamut, accessor, and packaged v6 bytes in reports."""
     import dartwork_mpl._colors._catalog as _catalog
-    import dartwork_mpl._colors._gamut as _gamut
     import dartwork_mpl._colors._ssot as _ssot
     import dartwork_mpl._colors._tone as _tone
+    import dartwork_mpl._colors.model._gamut as _gamut
 
     source_hashes = _catalog._candidate_source_hashes()
     paths = {
-        "src/dartwork_mpl/_colors/_gamut.py": Path(_gamut.__file__),
+        "src/dartwork_mpl/_colors/model/_gamut.py": Path(_gamut.__file__),
         "src/dartwork_mpl/_colors/_ssot.py": Path(_ssot.__file__),
         "src/dartwork_mpl/_colors/_tone.py": Path(_tone.__file__),
         "src/dartwork_mpl/asset/color/color_v6_ssot.json": V6_SSOT_PATH,

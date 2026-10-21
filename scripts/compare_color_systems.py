@@ -21,25 +21,51 @@ from typing import NoReturn, Protocol, cast
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _COLORS_DIR = (_REPO_ROOT / "src" / "dartwork_mpl" / "_colors").resolve()
 _AUDIT_NAMESPACE = "_dartwork_mpl_color_audit"
-_AUDIT_SOURCE_STEMS = (
-    "_catalog",
-    "_cmaps",
-    "_comparison",
-    "_compatibility_metrics",
-    "_conversion",
-    "_curated",
-    "_cycles",
-    "_gamut",
-    "_gates",
-    "_generate",
-    "_recipe",
-    "_ssot",
-    "_tone",
+# Source files below ``_colors/`` that the construction and comparison closure
+# imports. A sub-package is listed by its ``__init__.py``.
+_AUDIT_SOURCE_FILES = (
+    "_catalog.py",
+    "_cmaps.py",
+    "_comparison.py",
+    "_compatibility_metrics.py",
+    "_curated.py",
+    "_cycles.py",
+    "_gates.py",
+    "_generate.py",
+    "_recipe.py",
+    "_ssot.py",
+    "_tone.py",
+    "model/__init__.py",
+    "model/_color.py",
+    "model/_conversion.py",
+    "model/_gamut.py",
+    "model/_views.py",
 )
+
+
+def _audit_name(relative: str) -> str:
+    """Return the private alias module name of one ``_colors/`` source file."""
+    parts = Path(relative).with_suffix("").parts
+    if parts[-1] == "__init__":
+        parts = parts[:-1]
+    return ".".join((_AUDIT_NAMESPACE, *parts))
+
+
 _AUDIT_SOURCE_PATHS: Mapping[str, Path] = MappingProxyType(
     {
-        f"{_AUDIT_NAMESPACE}.{stem}": (_COLORS_DIR / f"{stem}.py").resolve()
-        for stem in _AUDIT_SOURCE_STEMS
+        _audit_name(relative): (_COLORS_DIR / relative).resolve()
+        for relative in _AUDIT_SOURCE_FILES
+    }
+)
+# Search directory of every alias package, the root included.
+_AUDIT_PACKAGE_DIRS: Mapping[str, Path] = MappingProxyType(
+    {
+        _AUDIT_NAMESPACE: _COLORS_DIR,
+        **{
+            _audit_name(relative): (_COLORS_DIR / relative).resolve().parent
+            for relative in _AUDIT_SOURCE_FILES
+            if Path(relative).name == "__init__.py"
+        },
     }
 )
 _AUDIT_CATALOG_NAME = f"{_AUDIT_NAMESPACE}._catalog"
@@ -188,7 +214,8 @@ class _AuditSourceFinder(MetaPathFinder):
             raise RuntimeError(
                 f"color-audit module has invalid search path: {fullname}"
             ) from error
-        if search_path != (_COLORS_DIR,):
+        parent = fullname.rpartition(".")[0]
+        if search_path != (_AUDIT_PACKAGE_DIRS.get(parent),):
             raise RuntimeError(
                 f"color-audit module has another search path: {fullname}"
             )
@@ -196,7 +223,15 @@ class _AuditSourceFinder(MetaPathFinder):
         if loader is None:
             loader = _AuditSourceLoader.from_source(fullname, source)
             self._loaders[fullname] = loader
-        specification = ModuleSpec(fullname, loader, origin=str(source))
+        package_dir = _AUDIT_PACKAGE_DIRS.get(fullname)
+        specification = ModuleSpec(
+            fullname,
+            loader,
+            origin=str(source),
+            is_package=package_dir is not None,
+        )
+        if package_dir is not None:
+            specification.submodule_search_locations = [str(package_dir)]
         specification.has_location = True
         return specification
 
@@ -310,8 +345,16 @@ def _validate_file_module(
     specification: ModuleSpec,
 ) -> None:
     """Require one alias to retain its owned loader, spec, and source."""
-    if module.__name__ != name or module.__package__ != _AUDIT_NAMESPACE:
+    package_dir = _AUDIT_PACKAGE_DIRS.get(name)
+    expected_package = name if package_dir else name.rpartition(".")[0]
+    if module.__name__ != name or module.__package__ != expected_package:
         raise RuntimeError(f"color-audit module identity drifted: {name}")
+    if package_dir is not None:
+        paths = tuple(
+            Path(value).resolve() for value in getattr(module, "__path__", ())
+        )
+        if paths != (package_dir,):
+            raise RuntimeError(f"color-audit package path drifted: {name}")
     if module.__spec__ is not specification:
         raise RuntimeError(f"color-audit module spec was replaced: {name}")
     if specification.name != name or specification.loader is not loader:
@@ -381,8 +424,8 @@ def _capture_audit_provenance(
         if not isinstance(specification, ModuleSpec):
             raise RuntimeError(f"color-audit module has no valid spec: {name}")
         _validate_file_module(name, module, loader, specification)
-        leaf = name.rpartition(".")[2]
-        if getattr(package, leaf, None) is not module:
+        parent, _, leaf = name.rpartition(".")
+        if getattr(modules[parent], leaf, None) is not module:
             raise RuntimeError(f"color-audit package binding drifted: {name}")
         records[name] = _AuditModuleProvenance(
             module=module,
@@ -433,8 +476,8 @@ def _reuse_audit_modules(
         _validate_file_module(
             name, record.module, record.loader, record.specification
         )
-        leaf = name.rpartition(".")[2]
-        if getattr(package, leaf, None) is not record.module:
+        parent, _, leaf = name.rpartition(".")
+        if getattr(cached[parent].module, leaf, None) is not record.module:
             raise RuntimeError(f"color-audit package binding drifted: {name}")
     catalog = cached[_AUDIT_CATALOG_NAME].module
     comparison = cached[_AUDIT_COMPARISON_NAME].module

@@ -15,7 +15,7 @@ import pytest
 
 
 def _gamut() -> ModuleType:
-    return importlib.import_module("dartwork_mpl._colors._gamut")
+    return importlib.import_module("dartwork_mpl._colors.model._gamut")
 
 
 def test_srgb_gamut_policy_is_pinned_frozen_and_slotted() -> None:
@@ -295,7 +295,9 @@ def test_mapping_grid_is_finite_and_bounded(
 
 
 def test_degree_conversion_wrappers_round_trip_and_normalize_hue() -> None:
-    conversion = importlib.import_module("dartwork_mpl._colors._conversion")
+    conversion = importlib.import_module(
+        "dartwork_mpl._colors.model._conversion"
+    )
 
     lab = conversion._oklch_degrees_to_oklab(0.7, 0.2, -60.0)
     actual = conversion._oklab_to_oklch_degrees(*lab)

@@ -49,6 +49,7 @@ _COLOR_ASSET_DIR = _PACKAGE_DIR / "asset" / "color"
 _MCP_DIR = _PACKAGE_DIR / "mcp"
 _DARK_STYLE_PATH = _PACKAGE_DIR / "asset" / "mplstyle" / "theme-dark.mplstyle"
 _SEMANTIC_SOURCE_PATH = Path(__file__).with_name("_semantic.py")
+_MODEL_DIR = Path(__file__).with_name("model")
 _V5_COMPAT_PATH = (
     _REPO_ROOT
     / "docs"
@@ -1353,15 +1354,10 @@ def _candidate_source_hashes() -> dict[str, str]:
         "src/dartwork_mpl/_colors/_curated.py": Path(_curated.__file__),
         "src/dartwork_mpl/_colors/_cycles.py": Path(_cycles.__file__),
         "src/dartwork_mpl/_colors/_generate.py": Path(_generate.__file__),
-        "src/dartwork_mpl/_colors/_gamut.py": Path(__file__).with_name(
-            "_gamut.py"
-        ),
-        "src/dartwork_mpl/_colors/_color.py": Path(__file__).with_name(
-            "_color.py"
-        ),
-        "src/dartwork_mpl/_colors/_conversion.py": Path(__file__).with_name(
-            "_conversion.py"
-        ),
+        "src/dartwork_mpl/_colors/model/_gamut.py": _MODEL_DIR / "_gamut.py",
+        "src/dartwork_mpl/_colors/model/_color.py": _MODEL_DIR / "_color.py",
+        "src/dartwork_mpl/_colors/model/_conversion.py": _MODEL_DIR
+        / "_conversion.py",
         "src/dartwork_mpl/_colors/_metrics.py": Path(__file__).with_name(
             "_metrics.py"
         ),

@@ -1259,15 +1259,18 @@ def _assert_owned_audit_bootstrap(
         f"{alias}._cmaps",
         f"{alias}._comparison",
         f"{alias}._compatibility_metrics",
-        f"{alias}._conversion",
         f"{alias}._curated",
         f"{alias}._cycles",
-        f"{alias}._gamut",
         f"{alias}._gates",
         f"{alias}._generate",
         f"{alias}._recipe",
         f"{alias}._ssot",
         f"{alias}._tone",
+        f"{alias}.model",
+        f"{alias}.model._color",
+        f"{alias}.model._conversion",
+        f"{alias}.model._gamut",
+        f"{alias}.model._views",
     }
 
     assert set(records) == expected_names
@@ -1281,8 +1284,11 @@ def _assert_owned_audit_bootstrap(
     for name in sorted(expected_names - {alias}):
         record = records[name]
         module = sys.modules[name]
+        relative = Path(*name.split(".")[1:])
         expected_source = (
-            cli._COLORS_DIR / f"{name.rpartition('.')[2]}.py"
+            cli._COLORS_DIR / relative / "__init__.py"
+            if (cli._COLORS_DIR / relative).is_dir()
+            else cli._COLORS_DIR / relative.with_suffix(".py")
         ).resolve()
         assert record.module is module
         assert isinstance(record.loader, cli._AuditSourceLoader)
@@ -1915,17 +1921,29 @@ def test_comparison_import_closure_excludes_runtime_registries() -> None:
                 if node.module is not None:
                     external.add(node.module.split(".")[0])
                 continue
+            base = source_path.parent
+            for _ in range(node.level - 1):
+                base = base.parent
             module_names = (
-                [node.module]
+                [f"{node.module}.{alias.name}" for alias in node.names]
                 if node.module is not None
                 else [alias.name for alias in node.names]
             )
             for module_name in module_names:
-                local_name = module_name.split(".", maxsplit=1)[0]
-                target = colors_dir / f"{local_name}.py"
-                if target.is_file():
-                    imported.add(local_name)
-                    pending.append(target)
+                # Follow every prefix naming a module or package below
+                # ``_colors/``: importing a sub-package module also runs its
+                # package initializer.
+                parts = module_name.split(".")
+                for end in range(1, len(parts) + 1):
+                    stem = base.joinpath(*parts[:end])
+                    target = (
+                        stem / "__init__.py"
+                        if stem.is_dir()
+                        else stem.with_suffix(".py")
+                    )
+                    if target.is_file() and target.is_relative_to(colors_dir):
+                        imported.add(parts[end - 1])
+                        pending.append(target)
     forbidden = {
         "_generated",
         "_semantic",

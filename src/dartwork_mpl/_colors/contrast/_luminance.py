@@ -1,23 +1,21 @@
-"""Shared WCAG luminance and contrast helpers.
+"""WCAG relative luminance and contrast ratio.
 
-Private package-level utilities used by validation checks and public color
-helpers. Not part of the public API.
+Private to the contrast sub-slice; validation reaches these through the
+``dartwork_mpl._colors.contrast`` surface. Not part of the public API.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 
+from ..model import conversion
+
 RGB = Sequence[float]
 
 
 def _linearized(channel: float) -> float:
     """Convert an sRGB channel in 0..1 to linear light."""
-    # Lazy module import avoids a cold-import cycle through
-    # top-level package -> validate -> _luminance -> _colors -> _contrast.
     # Attribute lookup stays dynamic so delegation remains observable.
-    from ._colors import _conversion as conversion
-
     return float(conversion._srgb_to_linear(channel))
 
 

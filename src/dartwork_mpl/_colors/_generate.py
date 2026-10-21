@@ -9,7 +9,6 @@ from bisect import bisect_left
 from collections.abc import Callable
 from typing import TypeAlias
 
-from . import _conversion as conversion
 from . import _tone as tone
 from ._recipe import (
     FAMILIES,
@@ -22,6 +21,7 @@ from ._recipe import (
     TONE_TOP,
     FamilyParams,
 )
+from .model import conversion
 
 __all__ = [
     "compile_family",

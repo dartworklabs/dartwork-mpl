@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 import matplotlib.colors as mcolors
 from matplotlib.text import Text
 
-from ..._luminance import _contrast_ratio
+from ..._colors.contrast import contrast_ratio as _contrast_ratio
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._registry import register_check
 

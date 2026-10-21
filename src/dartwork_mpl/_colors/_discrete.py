@@ -4,9 +4,10 @@ import math
 from collections.abc import Sequence
 from typing import NamedTuple
 
-from . import _conversion, _curated, _generated
+from . import _curated, _generated
 from ._families import DIVERGING, FAMILIES
 from ._generated import CMAPS_256, MULTI_HUE_DISCRETE_INDICES
+from .model import conversion as _conversion
 
 __all__ = ["DIVERGING_CANONICALS", "GENERATED_DIVERGING", "discrete_colors"]
 

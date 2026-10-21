@@ -10,8 +10,9 @@ from typing import cast
 import numpy as np
 import pytest
 
-from dartwork_mpl._colors import _cmaps, _conversion
+from dartwork_mpl._colors import _cmaps
 from dartwork_mpl._colors._catalog import CatalogSnapshot
+from dartwork_mpl._colors.model import _conversion
 
 DIRECT_32_SHA256 = (
     "90f393cc14afc230438078f014a422886cf09122491637aec11abe010be187d2"

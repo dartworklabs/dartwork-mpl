@@ -9,9 +9,9 @@ from bisect import bisect_left
 from collections.abc import Callable
 from typing import TypeAlias
 
-from . import _conversion as conversion
 from . import _tone as tone
 from ._recipe import FAMILIES, FAMILY_PARAMS, GAMUT_CHROMA_FRAC
+from .model import conversion
 
 __all__ = [
     "ANCHORS",

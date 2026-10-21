@@ -10,7 +10,7 @@ from typing import Any
 
 import matplotlib.colors as mcolors
 
-from .._luminance import _contrast_ratio
+from ._luminance import _contrast_ratio
 
 _DEFAULT_LIGHT_INK = "white"
 _DEFAULT_DARK_INK = "black"

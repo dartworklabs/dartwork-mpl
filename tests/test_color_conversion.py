@@ -13,8 +13,8 @@ import numpy as np
 import pytest
 
 from dartwork_mpl._colors import Color
-from dartwork_mpl._colors import _conversion as conversion
-from dartwork_mpl._colors._conversion import (
+from dartwork_mpl._colors.model import _conversion as conversion
+from dartwork_mpl._colors.model._conversion import (
     _linear_srgb_to_oklab,
     _linear_to_srgb,
     _oklab_to_linear_srgb,
@@ -492,7 +492,7 @@ def test_cold_package_import_succeeds_in_subprocess() -> None:
             "-c",
             (
                 "import dartwork_mpl; "
-                "from dartwork_mpl._luminance import _contrast_ratio; "
+                "from dartwork_mpl._colors.contrast import contrast_ratio as _contrast_ratio; "
                 "assert _contrast_ratio((0,0,0),(1,1,1)) == 21.0; "
                 "print(dartwork_mpl.__version__)"
             ),
