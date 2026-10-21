@@ -55,6 +55,159 @@ dm.simple_layout(fig, gs=gs)
 > automatically. Only add manual margins when you need fine positional control
 > (e.g., making room for a colorbar or external legend).
 
+## Native multi-panel layouts
+
+Use this setup, choose **one** construction below, then run the shared drawing
+and export block. These are executable native matplotlib recipes, not another
+layout API. Keep the existing preset, data, colors, fonts, legend and retained
+scoped overrides when adapting an existing figure. The example uses a provisional
+20 × 16 cm canvas; choose physical dimensions for your page or slide.
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+import dartwork_mpl as dm
+
+# Reuse the selected preset for geometry-only revisions.
+dm.style.use("scientific")  # report/document: report; talk/slides: presentation
+x = np.linspace(0, 12, 121)
+fig = plt.figure(figsize=dm.figsize("20cm", "16cm"))
+```
+
+### Equal grid
+
+```python
+gs = fig.add_gridspec(2, 2, wspace=0.5, hspace=0.65)
+axes = {name: fig.add_subplot(gs[i // 2, i % 2])
+        for i, name in enumerate("ABCD")}
+```
+
+### Global row and column ratios
+
+Every row shares the 2:1 column widths; every column shares the 3:2 row heights.
+These ratios concern data rectangles inside the grid, excluding gaps and outer
+content margins. They do not partition the entire canvas into percentages.
+
+```python
+gs = fig.add_gridspec(2, 2, width_ratios=[2, 1], height_ratios=[3, 2],
+                      wspace=0.5, hspace=0.65)
+axes = {name: fig.add_subplot(gs[i // 2, i % 2])
+        for i, name in enumerate("ABCD")}
+```
+
+### Spanning, asymmetric and nested
+
+A spans both rows; D spans the lower right region. B/C share a nested grid.
+The shared finish fits outer margins through the root `gs`; nested spacing
+remains a native local choice.
+
+```python
+gs = fig.add_gridspec(2, 3, wspace=0.75, hspace=0.65)
+inner = gs[0, 1:].subgridspec(1, 2, width_ratios=[1, 2], wspace=0.8)
+axes = {"A": fig.add_subplot(gs[:, 0]),
+        "B": fig.add_subplot(inner[0, 0]),
+        "C": fig.add_subplot(inner[0, 1]),
+        "D": fig.add_subplot(gs[1, 1:])}
+```
+
+### Whole-canvas top 70%, bottom 30%
+
+Here `SubFigure` regions include all local labels and padding. Zero container
+spacing makes their heights exactly 70%/30% of the canvas. This explicit 2×1
+construction gives each row one full-width plot. Data rectangles become smaller
+after local margins.
+
+```python
+rows = list(fig.subfigures(2, 1, height_ratios=[7, 3], hspace=0))
+panels = rows
+axes = {}
+for name, panel in zip("AB", panels):
+    width_cm = panel.bbox.width / fig.dpi * 2.54
+    height_cm = panel.bbox.height / fig.dpi * 2.54
+    local = panel.add_gridspec(
+        1, 1, left=1.15 / width_cm, right=1 - 0.45 / width_cm,
+        bottom=1.05 / height_cm, top=1 - 0.80 / height_cm)
+    axes[name] = panel.add_subplot(local[0])
+```
+
+For a 2×2 variant with two equal panels per row, replace `panels = rows` with
+`panels = [panel for row in rows for panel in row.subfigures(1, 2, wspace=0)]`
+and use `zip("ABCD", panels)`. The row containers remain exactly 70%/30%.
+
+### Whole-canvas rows 50:50, top widths 40:60, bottom 70:30
+
+A single global `width_ratios` cannot express this. Allocate independent native
+containers within each row. Every percentage includes that panel's labels and
+padding; it is not a promise about its Axes data width.
+
+```python
+rows = list(fig.subfigures(2, 1, height_ratios=[1, 1], hspace=0))
+panels = [*rows[0].subfigures(1, 2, width_ratios=[4, 6], wspace=0),
+          *rows[1].subfigures(1, 2, width_ratios=[7, 3], wspace=0)]
+axes = {}
+for name, panel in zip("ABCD", panels):
+    width_cm = panel.bbox.width / fig.dpi * 2.54
+    height_cm = panel.bbox.height / fig.dpi * 2.54
+    local = panel.add_gridspec(
+        1, 1, left=1.15 / width_cm, right=1 - 0.45 / width_cm,
+        bottom=1.05 / height_cm, top=1 - 0.80 / height_cm)
+    axes[name] = panel.add_subplot(local[0])
+```
+
+### Shared drawing, measurement and export
+
+Run this after the chosen construction. For the three ordinary grids use the
+`simple_layout` line. For either whole-canvas container recipe **omit that line**:
+the explicit native local margins above are the legitimate margin path.
+The physical padding is a starting point for these labels, not a universal fit;
+render, measure and adjust local margins if content does not fit.
+
+<!-- snippet: no-run -->
+```python
+from dataclasses import asdict
+from pathlib import Path
+import json
+from matplotlib.ticker import MaxNLocator
+
+for i, (name, ax) in enumerate(axes.items()):
+    ax.plot(x, np.sin(x + i), color="oc.blue9", label="Series 1")
+    ax.plot(x, np.cos(x + i), color="oc.orange7", label="Series 2")
+    ax.set(title=f"{name} · Signal", xlabel="Time (s)", ylabel="Response")
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=4))
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
+    ax.legend(loc="upper right", ncol=2)
+
+# Ordinary GridSpec recipes only; omit for either SubFigure recipe.
+dm.simple_layout(fig, gs=gs, margin="2mm")
+fig.canvas.draw()
+renderer = fig.canvas.get_renderer()
+geometry = {"canvas_px": list(fig.bbox.bounds),
+            "axes_data_px": {k: list(a.bbox.bounds) for k, a in axes.items()},
+            "axes_content_px": {k: list(a.get_tightbbox(renderer).bounds)
+                                for k, a in axes.items()}}
+# For either container recipe, also record the allocated regions:
+# geometry["rows_px"] = [list(row.bbox.bounds) for row in rows]
+# geometry["panels_px"] = [list(panel.bbox.bounds) for panel in panels]
+# Divide row heights by fig.bbox.height; panel widths by their row width.
+# Compare those fractions to the requested ratios, separately from Axes bounds.
+report = [asdict(item) for item in dm.validate_figure(fig)]
+Path("output").mkdir(exist_ok=True)
+Path("output/layout-geometry.json").write_text(json.dumps(geometry, indent=2))
+Path("output/layout-report.json").write_text(json.dumps(report, indent=2))
+dm.save_formats(fig, "output/layout-v1", formats=("png", "pdf"),
+                bbox_inches=None)
+```
+
+`dm.simple_layout` needs a parent `Figure`; passing a `SubFigure` raises
+`AttributeError` for missing `get_size_inches`. Passing a nested GridSpec with a
+parent Figure walks to its root GridSpec and adjusts root outer margins; it
+does not solve each nested region independently. Calling it on the root Figure
+of a SubFigure tree is not a local-margin solution either. Do not insert fake
+helper calls or silently change requested allocations to make validation pass.
+Read the full report (including `CHECK_FAILED`), inspect the actual PNG and PDF,
+and retain heuristic/advisory warnings with any explanation. Save a revision to
+a new stem such as `layout-v2`; keep v1, exact source and geometry for review.
+
 ### Adding a buffer with `margin`
 
 The default `simple_layout(fig)` snaps axes content (labels, ticks,

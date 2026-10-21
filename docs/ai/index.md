@@ -19,6 +19,13 @@ library? Start here, then jump to your tool.
 
 ---
 
+## Installed Python (core package, no MCP)
+
+Start with the [executable installed Python workflow](installed_python.md):
+read bundled guidance and basic/advanced template source, preserve missing-data
+gaps, lint code, validate the native Figure, save PNG/PDF, inspect the actual
+images and hand off a separate-stem revision with full reports.
+
 ## 30-second setup
 
 ::::{tab-set}
@@ -245,7 +252,7 @@ composition helper is reachable as `dm.<name>`.
 | Place the legend without overlapping data | `dm.optimize_legend(ax, ...)` |
 | Run heuristic quality checks on a figure | `dm.check_figure_quality(fig)` |
 | Save with hi-res presets in multiple formats | `dm.save_formats(fig, "out")` |
-| Lint generated code before returning it | `lint_dartwork_mpl_code(code)` (MCP tool) |
+| Lint generated code before returning it | `dm.lint_code(code)` (Python) or `lint_dartwork_mpl_code(code)` (MCP) |
 
 ---
 
@@ -255,6 +262,7 @@ composition helper is reachable as `dm.<name>`.
 :maxdepth: 1
 :titlesonly:
 
+Installed Python workflow <installed_python>
 Why AI-Ready? <../integrations/why_ai_ready>
 AI-Assisted Development <../integrations/ai_assisted>
 MCP Server <../integrations/mcp_server>

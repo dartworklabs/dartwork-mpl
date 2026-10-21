@@ -83,6 +83,12 @@ When `validate=True` is passed to `save_formats()`, validation runs before
 saving. If issues are found, they're printed as warnings — the file is still
 saved, but you'll know what to fix.
 
+For a complete native Figure → full JSON report → PNG/PDF → actual image
+review → separate-stem revision, use the [installed Python workflow](../ai/installed_python.md).
+`save_formats` returns `None` and saves despite warnings; capture the returned
+`validate_figure` objects separately, including `detail` and `CHECK_FAILED`.
+Opening the actual image is a separate step from reading the report or filename.
+
 **Available checks:** overflow detection, text overlap (within and across
 axes), legend overflow, tick crowding, tick-unit duplication, tick rotation,
 tick decimal precision, empty axes, margin asymmetry, pie label offsets, and

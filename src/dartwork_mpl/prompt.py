@@ -154,6 +154,11 @@ def find_template(
         When ``tier`` is non-``None`` each entry also carries
         ``"tier"`` so callers using ``"all"`` can distinguish.
         Empty list when ``intent`` is blank or no template overlaps.
+        ``source_path`` is repository-relative gallery metadata, not an
+        installed filesystem path. Read bundled source with
+        ``importlib.resources.files("dartwork_mpl").joinpath("asset", "prompt",
+        "05-templates", f"{template_id}.py").read_text(encoding="utf-8")``;
+        insert ``"advanced"`` before the filename for the advanced tier.
     """
     if not _TEMPLATE_INDEX_PATH.exists():
         return []

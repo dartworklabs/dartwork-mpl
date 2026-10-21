@@ -190,6 +190,10 @@ Companions:
 # alone is appended (used for the top-level title block).
 _LLMS_FULL_SOURCES: list[tuple[str, str | None]] = [
     ("\n\n---\n## Quickstart\n", "docs/usage_guide/quickstart.md"),
+    (
+        "\n\n---\n## Native plot and installed Python recipes\n",
+        "src/dartwork_mpl/asset/prompt/03-recipes.md",
+    ),
     ("\n\n---\n## Migration guide\n", "docs/migration.md"),
     (
         "\n\n---\n## Anti-pattern catalog (SSOT, YAML)\n",

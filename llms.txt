@@ -32,3 +32,13 @@ wheel under `dartwork_mpl/asset/prompt/`.
 - [Changelog](https://github.com/dartworklabs/dartwork-mpl/blob/main/CHANGELOG.md): release notes.
 - [0.4 design spec](https://dartworklabs.github.io/dartwork-mpl/superpowers/specs/2026-04-29-dartwork-mpl-ai-readiness-design.html): rationale for the 0.4 API surface.
 - [0.5+ roadmap spec](https://dartworklabs.github.io/dartwork-mpl/superpowers/specs/2026-05-01-ai-readiness-0.5-roadmap.html): plan for closing remaining AI affordance gaps.
+
+## Installed Python route
+
+Read `dm.get_agent_doc("AGENTS")` and `dm.get_prompt("00-index")` for bundled
+basic/advanced template source retrieval, then `dm.get_prompt("03-recipes")`
+for native multi-panel containers and the full lint/validate/export/image-review
+revision loop. `find_template.source_path` is repo-relative metadata, not an
+installed path. `save_formats` returns None, not validation evidence; preserve
+NaN gaps intentionally with separate shape/domain checks.
+- [Installed Python workflow](https://dartworklabs.github.io/dartwork-mpl/ai/installed_python.html): core package, full reports, actual PNG/PDF review and separate-stem revisions.
