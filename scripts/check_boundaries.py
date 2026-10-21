@@ -3,7 +3,8 @@
 Every production module under ``src/dartwork_mpl`` belongs to one unit: a
 slice (a capability), a platform unit (mechanism with no business), or an
 entry point module that only wires. Ownership is by the longest unit prefix,
-so a sub-slice can be declared inside a slice later. A unit's surface is its
+so a sub-slice can be declared inside a slice; the enclosing package's
+initializer is not a dependency of the modules it contains. A unit's surface is its
 own module (the package ``__init__`` or the single file) and the names in its
 literal ``__all__``; everything else is private.
 
@@ -62,7 +63,17 @@ ENTRY_POINTS = frozenset(
 )
 
 # Units holding business-agnostic mechanism. They import no slice.
-PLATFORM = frozenset({"dartwork_mpl._figure_geometry", "dartwork_mpl._rc"})
+PLATFORM = frozenset(
+    {
+        "dartwork_mpl._figure_geometry",
+        "dartwork_mpl._rc",
+        # The viewer's loopback access checks, directory handles and
+        # bounded JSON decoder.
+        "dartwork_mpl.ui.platform.access",
+        "dartwork_mpl.ui.platform.fs",
+        "dartwork_mpl.ui.platform.json_bounds",
+    }
+)
 
 # Units holding one capability each.
 SLICES = frozenset(
@@ -404,11 +415,18 @@ def violations(
             target = submodule if submodule in code else base
             # Python runs every parent package's initializer before the
             # module; the root initializer is the entry point and is judged
-            # by the explicit import rule below, not as a graph edge.
+            # by the explicit import rule below, not as a graph edge. A
+            # parent package that also encloses the importing module was
+            # initialized before that module ran, so reaching below it adds
+            # no dependency (a sub-slice importing inside its own slice).
             parts = target.split(".")
             touched = {target}
             touched.update(
-                ".".join(parts[:end]) for end in range(2, len(parts))
+                parent
+                for parent in (
+                    ".".join(parts[:end]) for end in range(2, len(parts))
+                )
+                if not name.startswith(parent + ".")
             )
             if source_node is not None:
                 for module in touched:

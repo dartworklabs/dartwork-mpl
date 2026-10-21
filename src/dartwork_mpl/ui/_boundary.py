@@ -1,20 +1,18 @@
-"""Pure local-viewer policy and bounded wire/state languages.
+"""Pure viewer route grants and the bounded request/state languages.
 
-No function opens files or sockets. The HTTP shell supplies bytes, route names
-and startup facts; the filesystem shell consumes only parsed relative outputs.
+No function opens files or sockets. The HTTP shell supplies decoded JSON and
+route names; the filesystem shell consumes only parsed relative outputs.
+Local access checks and the JSON decoder live in ``platform``.
 """
 
 from __future__ import annotations
 
 import json
-import math
-import re
 import types
 from contextlib import suppress
 from copy import copy, deepcopy
 from dataclasses import dataclass
 from functools import lru_cache
-from ipaddress import ip_address
 from typing import (
     TYPE_CHECKING,
     Annotated,
@@ -28,53 +26,32 @@ from typing import (
     get_args,
     get_origin,
 )
-from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ValidationError, create_model
 
 from ._param import ParamModel
-
-if TYPE_CHECKING:
-    from os import PathLike
-
-    from ._widget import ParamDescriptor
-
-CopyTo: TypeAlias = "str | PathLike[str] | list[str | PathLike[str]] | None"
-StateKind: TypeAlias = Literal["config", "presets"]
-JsonValue: TypeAlias = (
-    str | int | float | bool | None | list["JsonValue"] | dict[str, "JsonValue"]
+from .platform.access import Grant
+from .platform.json_bounds import (
+    MAX_REQUEST_BYTES,
+    JsonValue,
+    LimitExceeded,
+    MalformedInput,
+    bounded,
+    decode_json,
 )
 
-MAX_REQUEST_BYTES = 1024 * 1024
+if TYPE_CHECKING:
+    from ._widget import ParamDescriptor
+
+StateKind: TypeAlias = Literal["config", "presets"]
+
 MAX_CONFIG_BYTES = MAX_REQUEST_BYTES
 MAX_PRESET_BYTES = 8 * 1024 * 1024
-MAX_DEPTH = 16
-MAX_VALUES = 65536
-MAX_CONTAINER = 4096
-MAX_STRING_BYTES = 65536
 MAX_TABS = 64
 MAX_PRESETS = 1000
 MAX_LABEL_BYTES = 256
 MAX_OUTPUT_BYTES = 1024
 DEFAULT_FIG_WIDTH = 70
-
-
-@dataclass(frozen=True)
-class MalformedInput:
-    """The bytes do not express one unambiguous finite UTF-8 JSON value."""
-
-    detail: str = "Input must be unambiguous finite UTF-8 JSON."
-    status_code: ClassVar[int] = 400
-    code: ClassVar[str] = "invalid_json"
-
-
-@dataclass(frozen=True)
-class LimitExceeded:
-    """An input or proposed serialized state exceeds an approved bound."""
-
-    detail: str = "Input exceeds the viewer limits."
-    status_code: ClassVar[int] = 413
-    code: ClassVar[str] = "input_too_large"
 
 
 @dataclass(frozen=True)
@@ -101,23 +78,6 @@ InputFailure: TypeAlias = (
 
 
 @dataclass(frozen=True)
-class AccessDenied:
-    """The request has no local grant or contains an invalid authority."""
-
-    detail: str = "Request is outside the local viewer policy."
-    status_code: ClassVar[int] = 403
-    code: ClassVar[str] = "local_access_denied"
-
-
-@dataclass(frozen=True)
-class StartupRejected:
-    """The configured bind cannot grant approved loopback-only operation."""
-
-    detail: str = "Use localhost or a loopback IP literal for the viewer host."
-    code: ClassVar[str] = "invalid_bind"
-
-
-@dataclass(frozen=True)
 class InvalidStoredState:
     """Existing state is structurally invalid and must retain its original bytes."""
 
@@ -126,16 +86,9 @@ class InvalidStoredState:
     code: ClassVar[str] = "invalid_stored_state"
 
 
-@dataclass(frozen=True)
-class LocalAccess:
-    """A named route is admitted by the startup-selected local-only grant."""
-
-    scope: Literal["local-read", "local-effect"]
-
-
 # The approved local-only policy grants these effects to native local clients.
 # Host and browser source checks constrain that grant; they are not identity.
-ROUTE_POLICY: dict[tuple[str, str], Literal["local-read", "local-effect"]] = {
+ROUTE_POLICY: dict[tuple[str, str], Grant] = {
     ("GET", "/openapi.json"): "local-read",
     ("HEAD", "/openapi.json"): "local-read",
     ("GET", "/docs"): "local-read",
@@ -166,208 +119,9 @@ ROUTE_POLICY: dict[tuple[str, str], Literal["local-read", "local-effect"]] = {
 }
 
 
-def normalize_bind(host: str) -> str | StartupRejected:
-    """Normalize approved literal loopback binds without consulting DNS."""
-    if host.lower() == "localhost":
-        return "127.0.0.1"
-    if "%" in host:
-        return StartupRejected()
-    try:
-        address = ip_address(host)
-    except ValueError:
-        return StartupRejected()
-    return str(address) if address.is_loopback else StartupRejected()
-
-
-def _authority(value: str) -> tuple[str, str | None] | None:
-    """Recognize the entire ASCII HTTP authority, including a valid optional port."""
-    match = re.fullmatch(
-        r"(\[[0-9A-Fa-f:]+\]|[A-Za-z0-9.]+)(?::([1-9][0-9]{0,4}))?", value
-    )
-    if match is None:
-        return None
-    name, port = match.groups()
-    if port is not None and int(port) > 65535:
-        return None
-    if name.startswith("["):
-        try:
-            address = ip_address(name[1:-1])
-        except ValueError:
-            return None
-        if address.version != 6:
-            return None
-        name = str(address)
-    else:
-        name = name.lower()
-    return name, port
-
-
-def _source_matches(
-    value: str, authority: tuple[str, str | None], *, origin: bool
-) -> bool:
-    """Match a complete HTTP source URL without browser/parser ambiguity."""
-    if (
-        any(ord(char) <= 32 or ord(char) >= 127 for char in value)
-        or "\\" in value
-        or "#" in value
-    ):
-        return False
-    try:
-        parsed = urlsplit(value)
-    except ValueError:
-        return False
-    if parsed.scheme != "http" or _authority(parsed.netloc) != authority:
-        return False
-    return not origin or (not parsed.path and "?" not in value)
-
-
-def authorize_request(
-    method: str,
-    route_template: str | None,
-    raw_headers: list[tuple[bytes, bytes]],
-    bind_host: str,
-) -> LocalAccess | AccessDenied:
-    """Admit only classified routes with a valid local Host and each effect source."""
-    scope = ROUTE_POLICY.get((method.upper(), route_template or ""))
-    normalized = normalize_bind(bind_host)
-    if scope is None or isinstance(normalized, StartupRejected):
-        return AccessDenied()
-    selected: dict[bytes, list[str]] = {
-        b"host": [],
-        b"origin": [],
-        b"referer": [],
-    }
-    for name, value in raw_headers:
-        if name.lower() in selected:
-            try:
-                selected[name.lower()].append(value.decode("ascii"))
-            except UnicodeDecodeError:
-                return AccessDenied()
-    if len(selected[b"host"]) != 1:
-        return AccessDenied()
-    authority = _authority(selected[b"host"][0])
-    if authority is None or authority[0] not in {
-        "localhost",
-        "127.0.0.1",
-        "::1",
-        normalized,
-    }:
-        return AccessDenied()
-    if scope == "local-effect":
-        for name in (b"origin", b"referer"):
-            values = selected[name]
-            if len(values) > 1 or (
-                values
-                and not _source_matches(
-                    values[0], authority, origin=name == b"origin"
-                )
-            ):
-                return AccessDenied()
-    return LocalAccess(scope)
-
-
-class _BadJson(ValueError):
-    """Internal stdlib parser signal converted to a named malformed-input value."""
-
-
-class _JsonLimit(ValueError):
-    """Internal stdlib parser signal converted to a named limit refusal."""
-
-
-def _pairs(pairs: list[tuple[str, JsonValue]]) -> dict[str, JsonValue]:
-    """Reject duplicate object keys at every nesting level during JSON decoding."""
-    result: dict[str, JsonValue] = {}
-    for key, value in pairs:
-        if key in result:
-            raise _BadJson
-        result[key] = value
-    return result
-
-
-def _integer(token: str) -> int:
-    """Bound integer work independently of the interpreter-wide digit setting."""
-    if len(token.lstrip("-")) > 640:
-        raise _JsonLimit
-    return int(token)
-
-
-def _float(token: str) -> float:
-    """Reject numeric overflow as well as explicit nonfinite JSON constants."""
-    value = float(token)
-    if not math.isfinite(value):
-        raise _BadJson
-    return value
-
-
-def _constant(token: str) -> JsonValue:
-    """Stdlib's permissive NaN/Infinity tokens are outside this JSON language."""
-    raise _BadJson
-
-
-def _bounded(value: object) -> MalformedInput | LimitExceeded | None:
-    """Iteratively bound full JSON trees, including object keys and Unicode bytes."""
-    pending = [(value, 0)]
-    count = 0
-    while pending:
-        item, depth = pending.pop()
-        count += 1
-        if count > MAX_VALUES or depth > MAX_DEPTH:
-            return LimitExceeded()
-        if isinstance(item, str):
-            try:
-                if len(item.encode("utf-8")) > MAX_STRING_BYTES:
-                    return LimitExceeded()
-            except UnicodeEncodeError:
-                return MalformedInput()
-        elif isinstance(item, (list, dict)):
-            if len(item) > MAX_CONTAINER:
-                return LimitExceeded()
-            if isinstance(item, dict):
-                for key in item:
-                    if not isinstance(key, str):
-                        return MalformedInput()
-                    try:
-                        if len(key.encode("utf-8")) > MAX_STRING_BYTES:
-                            return LimitExceeded()
-                    except UnicodeEncodeError:
-                        return MalformedInput()
-                pending.extend((child, depth + 1) for child in item.values())
-            else:
-                pending.extend((child, depth + 1) for child in item)
-        elif isinstance(item, float):
-            if not math.isfinite(item):
-                return MalformedInput()
-        elif isinstance(item, int):
-            if abs(item) >= 10**640:
-                return LimitExceeded()
-        elif item is not None and not isinstance(item, (int, bool)):
-            return MalformedInput()
-    return None
-
-
-def decode_json(raw: bytes, *, max_bytes: int) -> JsonValue | InputFailure:
-    """Decode one bounded JSON value; malformed syntax is 400 and bounds are 413."""
-    if len(raw) > max_bytes:
-        return LimitExceeded()
-    try:
-        value: JsonValue = json.loads(
-            raw.decode("utf-8"),
-            object_pairs_hook=_pairs,
-            parse_int=_integer,
-            parse_float=_float,
-            parse_constant=_constant,
-        )
-    except _JsonLimit:
-        return LimitExceeded()
-    except (UnicodeDecodeError, json.JSONDecodeError, _BadJson, RecursionError):
-        return MalformedInput()
-    refusal = _bounded(value)
-    return refusal if refusal is not None else value
-
-
 def encode_state(value: JsonValue, *, max_bytes: int) -> bytes | InputFailure:
     """Bound the complete next-state value and its UTF-8 serialization before writes."""
-    refusal = _bounded(value)
+    refusal = bounded(value)
     if refusal is not None:
         return refusal
     try:
@@ -653,7 +407,7 @@ def _active(
                         int if descriptor.type_name == "int" else float
                     )(item)
         model = _validate_model(model_cls, coerced)
-        if _bounded(model.model_dump(mode="json", by_alias=False)) is not None:
+        if bounded(model.model_dump(mode="json", by_alias=False)) is not None:
             return InvalidRequest(
                 "Parameters must remain bounded finite JSON values."
             )
@@ -711,7 +465,7 @@ def parse_request(
     descriptors: list[ParamDescriptor],
 ) -> ParsedRequest | InputFailure:
     """Consume the entire endpoint schema and return values the shell can use directly."""
-    refusal = _bounded(value)
+    refusal = bounded(value)
     if refusal is not None:
         return (
             refusal if isinstance(refusal, LimitExceeded) else InvalidRequest()

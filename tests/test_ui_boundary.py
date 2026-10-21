@@ -20,6 +20,7 @@ from pydantic import (
 from dartwork_mpl.ui import _boundary as boundary
 from dartwork_mpl.ui._param import ParamModel
 from dartwork_mpl.ui._widget import descriptors_from_model
+from dartwork_mpl.ui.platform import json_bounds
 
 
 class Params(ParamModel):
@@ -87,233 +88,6 @@ def request(value, route="/api/render", model=Params):
     """Exercise the public pure parser with actual UI descriptors."""
     return boundary.parse_request(
         route, value, model, descriptors_from_model(model)
-    )
-
-
-def headers(host=b"localhost:8501", **sources):
-    """Build raw ASGI headers without framework normalization."""
-    return [(b"host", host)] + [
-        (name.encode("ascii"), value.encode("ascii"))
-        for name, value in sources.items()
-    ]
-
-
-@pytest.mark.parametrize(
-    "host",
-    [
-        "0.0.0.0",
-        "::",
-        "example.org",
-        "192.0.2.1",
-        "127.0.0.1.evil",
-        "",
-        " localhost",
-        "[::1]",
-        "::1%lo0",
-    ],
-)
-def test_public_bind_rejected_before_effects(host):
-    """Only approved literal loopback binds can grant local effects."""
-    result = boundary.normalize_bind(host)
-    assert isinstance(result, boundary.StartupRejected)
-    assert "loopback" in result.detail
-
-
-@pytest.mark.parametrize(
-    "host, expected",
-    [
-        ("localhost", "127.0.0.1"),
-        ("LOCALHOST", "127.0.0.1"),
-        ("127.23.45.67", "127.23.45.67"),
-        ("::1", "::1"),
-        ("0:0:0:0:0:0:0:1", "::1"),
-    ],
-)
-def test_loopback_bind_is_normalized_without_dns(host, expected):
-    """Localhost mapping and every approved loopback literal are deterministic."""
-    assert boundary.normalize_bind(host) == expected
-
-
-@pytest.mark.parametrize(
-    "host",
-    [
-        b"evil.example:8501",
-        b"localhost.evil",
-        b"user@localhost:8501",
-        b"localhost/path",
-        b"localhost?x",
-        b"localhost#x",
-        b"localhost:",
-        b"localhost:abc",
-        b"localhost:65536",
-        b"localhost:0",
-        b"::1",
-        b"[::1]junk",
-        b" localhost",
-        b"localhost\t",
-        b"localhost:01",
-        b"localhost,localhost",
-    ],
-)
-def test_effect_denied_for_bad_authority(host):
-    """Host must be a complete unambiguous local HTTP authority."""
-    result = boundary.authorize_request(
-        "POST", "/api/render", headers(host), "127.0.0.1"
-    )
-    assert isinstance(result, boundary.AccessDenied)
-
-
-def test_every_source_is_checked_and_native_clients_are_allowed():
-    """A valid Origin cannot hide a foreign Referer; bind-port differences work."""
-    for supplied in [
-        [],
-        [*headers(), (b"host", b"localhost:8501")],
-        headers(origin="http://localhost:8501", referer="http://evil.example/"),
-        headers(origin="http://localhost:8501/path"),
-        headers(origin="http://localhost:8501?"),
-        headers(origin="https://localhost:8501"),
-        headers(referer="http://user@localhost:8501/"),
-        headers(referer="http://localhost:8501/#x"),
-        [
-            *headers(),
-            (b"origin", b"http://localhost:8501"),
-            (b"origin", b"http://localhost:8501"),
-        ],
-    ]:
-        assert isinstance(
-            boundary.authorize_request(
-                "POST", "/api/render", supplied, "127.0.0.1"
-            ),
-            boundary.AccessDenied,
-        )
-    for supplied in [
-        headers(),
-        headers(
-            origin="http://localhost:8501", referer="http://localhost:8501/a?b"
-        ),
-        headers(b"[::1]:8502", origin="http://[::1]:8502"),
-        headers(b"127.23.45.67:8765"),
-    ]:
-        assert isinstance(
-            boundary.authorize_request(
-                "POST", "/api/render", supplied, "127.23.45.67"
-            ),
-            boundary.LocalAccess,
-        )
-    assert isinstance(
-        boundary.authorize_request(
-            "POST", "/not-declared", headers(), "127.0.0.1"
-        ),
-        boundary.AccessDenied,
-    )
-    assert isinstance(
-        boundary.authorize_request(
-            "GET", "/api/health", headers(origin="foreign"), "127.0.0.1"
-        ),
-        boundary.LocalAccess,
-    )
-
-
-def test_unmatched_read_classification_preserves_host_checks_and_denies_effects():
-    """An explicit missing-read marker preserves 404 handling without new grants."""
-    for method in ("GET", "HEAD"):
-        assert isinstance(
-            boundary.authorize_request(
-                method, "<unmatched>", headers(), "127.0.0.1"
-            ),
-            boundary.LocalAccess,
-        )
-        assert isinstance(
-            boundary.authorize_request(
-                method, "<unmatched>", headers(b"evil.example"), "127.0.0.1"
-            ),
-            boundary.AccessDenied,
-        )
-    for method, route in [("POST", "<unmatched>"), ("GET", "/unclassified")]:
-        assert isinstance(
-            boundary.authorize_request(method, route, headers(), "127.0.0.1"),
-            boundary.AccessDenied,
-        )
-
-
-@pytest.mark.parametrize(
-    "raw",
-    [
-        b'{"n":1,"n":2}',
-        b'{"x":{"n":1,"n":2}}',
-        b"NaN",
-        b"Infinity",
-        b"-Infinity",
-        b"1e400",
-        b'"\xff"',
-        b'"\\ud800"',
-        b'"\\udfff"',
-        b"{} trailing",
-        b"01",
-        b"",
-    ],
-)
-def test_decoder_rejects_ambiguous_or_nonfinite_json(raw):
-    """Duplicate fields, invalid Unicode and nonfinite numbers never reach schemas."""
-    assert isinstance(
-        boundary.decode_json(raw, max_bytes=1024), boundary.MalformedInput
-    )
-
-
-def test_decoder_exact_limits_and_one_over():
-    """Every specified bound admits its exact limit and refuses one over."""
-    assert boundary.decode_json(b"true", max_bytes=4) is True
-    assert isinstance(
-        boundary.decode_json(b"true ", max_bytes=4), boundary.LimitExceeded
-    )
-    assert boundary.decode_json(b"9" * 640, max_bytes=1024) == int("9" * 640)
-    assert isinstance(
-        boundary.decode_json(b"9" * 641, max_bytes=1024), boundary.LimitExceeded
-    )
-    for limit, value, larger in [
-        (65536, "a" * 65536, "a" * 65537),
-        (65536, "é" * 32768, "é" * 32769),
-        (4096, [None] * 4096, [None] * 4097),
-    ]:
-        raw = json.dumps(value, ensure_ascii=False).encode()
-        assert boundary.decode_json(raw, max_bytes=len(raw)) == value, limit
-        raw = json.dumps(larger, ensure_ascii=False).encode()
-        assert isinstance(
-            boundary.decode_json(raw, max_bytes=len(raw)),
-            boundary.LimitExceeded,
-        )
-    assert boundary.decode_json(
-        b"[" * 16 + b"0" + b"]" * 16, max_bytes=1024
-    ) == nested(16)
-    assert isinstance(
-        boundary.decode_json(b"[" * 17 + b"0" + b"]" * 17, max_bytes=1024),
-        boundary.LimitExceeded,
-    )
-    assert isinstance(
-        boundary.decode_json(
-            b"[" * 10000 + b"0" + b"]" * 10000, max_bytes=32768
-        ),
-        boundary.MalformedInput,
-    )
-
-
-def nested(depth):
-    """Provide an independent expected nested JSON value for depth examples."""
-    value = 0
-    for _ in range(depth):
-        value = [value]
-    return value
-
-
-def test_total_json_value_bound_counts_values_in_all_containers():
-    """Many individually small containers cannot bypass the total-value bound."""
-    exact = [[None] * 4096 for _ in range(15)] + [[None] * 4079]
-    raw = json.dumps(exact).encode()
-    assert boundary.decode_json(raw, max_bytes=len(raw)) == exact
-    exact[-1].append(None)
-    raw = json.dumps(exact).encode()
-    assert isinstance(
-        boundary.decode_json(raw, max_bytes=len(raw)), boundary.LimitExceeded
     )
 
 
@@ -648,7 +422,7 @@ def test_tab_values_are_structural_and_ids_unique():
         }
         assert isinstance(
             request(body, "/api/save-state"),
-            boundary.StateRequest if count == 64 else boundary.LimitExceeded,
+            boundary.StateRequest if count == 64 else json_bounds.LimitExceeded,
         )
 
 
@@ -664,7 +438,7 @@ def test_complete_endpoint_shapes_and_label_limits():
     )
     assert isinstance(
         request({"label": "é" * 129, "params": {}}, "/api/preset"),
-        boundary.LimitExceeded,
+        json_bounds.LimitExceeded,
     )
     for route, value in [
         ("/api/preset", {"label": "x"}),
@@ -813,15 +587,15 @@ def test_stored_limits_and_outgoing_serialization_are_bounded():
     assert isinstance(result, bytes)
     assert isinstance(
         boundary.encode_state({"params": {}}, max_bytes=len(result) - 1),
-        boundary.LimitExceeded,
+        json_bounds.LimitExceeded,
     )
     assert isinstance(
         boundary.encode_state({"params": {"x": math.nan}}, max_bytes=100),
-        boundary.MalformedInput,
+        json_bounds.MalformedInput,
     )
     assert isinstance(
         boundary.encode_state({"params": {"x": 10**640}}, max_bytes=1024),
-        boundary.LimitExceeded,
+        json_bounds.LimitExceeded,
     )
 
 
@@ -830,7 +604,7 @@ def test_seeded_inputs_always_parse_or_return_named_refusal():
     rng = random.Random(499)
     for _ in range(500):
         raw = rng.randbytes(rng.randrange(150))
-        result = boundary.decode_json(raw, max_bytes=128)
+        result = json_bounds.decode_json(raw, max_bytes=128)
         assert isinstance(
             result,
             (
@@ -861,7 +635,7 @@ def test_seeded_inputs_always_parse_or_return_named_refusal():
             "values": [rng.random() for _ in range(rng.randrange(10))],
         }
         raw = json.dumps(value).encode()
-        assert boundary.decode_json(raw, max_bytes=1024) == value
+        assert json_bounds.decode_json(raw, max_bytes=1024) == value
         parsed = request(value)
         assert isinstance(parsed, boundary.ModelRequest)
         assert parsed.model.count == value["count"]

@@ -27,8 +27,6 @@ from ._boundary import (
     InputFailure,
     InvalidRequest,
     InvalidStoredState,
-    JsonValue,
-    LimitExceeded,
     PresetRequest,
     StateRequest,
     StoredConfig,
@@ -45,6 +43,7 @@ from ._files import (
     StateUnchanged,
     StateWritten,
 )
+from .platform.json_bounds import JsonValue, LimitExceeded
 
 
 @dataclass(frozen=True)

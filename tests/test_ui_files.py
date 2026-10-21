@@ -8,18 +8,18 @@ import stat
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-from dartwork_mpl.ui import _files as fs
+from dartwork_mpl.ui import _files as files
 from dartwork_mpl.ui._boundary import (
     InvalidStoredState,
-    LimitExceeded,
     RelativeOutput,
     parse_output,
 )
+from dartwork_mpl.ui.platform import fs
+from dartwork_mpl.ui.platform.json_bounds import LimitExceeded
 
 
 def snapshot(root: Path) -> dict[str, str]:
@@ -50,13 +50,15 @@ def output(name: str) -> RelativeOutput:
     return result
 
 
-def save(roots: fs.RootScope, name: str) -> fs.SaveReceipt | fs.FileFailure:
+def save(
+    roots: fs.RootScope, name: str
+) -> files.SaveReceipt | files.FileFailure:
     """Drive preparation and streaming together against the real filesystem."""
-    plan = fs.prepare_save(roots, output(name), include_copies=True)
-    if not isinstance(plan, fs.PreparedSave):
+    plan = files.prepare_save(roots, output(name), include_copies=True)
+    if not isinstance(plan, files.PreparedSave):
         return plan
     with plan:
-        return fs.commit_save(plan, io.BytesIO(b"new figure bytes"))
+        return files.commit_save(plan, io.BytesIO(b"new figure bytes"))
 
 
 @pytest.mark.parametrize("destination", ["primary", "copy"])
@@ -117,13 +119,15 @@ def test_pinned_parent_replacement_is_detected(tmp_path: Path) -> None:
     primary = tmp_path / "primary"
     (primary / "sub").mkdir(parents=True)
     with opened(primary) as roots:
-        plan = fs.prepare_save(roots, output("sub/a.png"), include_copies=True)
-        assert isinstance(plan, fs.PreparedSave)
+        plan = files.prepare_save(
+            roots, output("sub/a.png"), include_copies=True
+        )
+        assert isinstance(plan, files.PreparedSave)
         (primary / "sub").rename(primary / "moved")
         (primary / "sub").mkdir()
         before = snapshot(tmp_path)
         with plan:
-            result = fs.commit_save(plan, io.BytesIO(b"new"))
+            result = files.commit_save(plan, io.BytesIO(b"new"))
     assert isinstance(result, fs.RootConflict)
     assert snapshot(tmp_path) == before
 
@@ -145,7 +149,7 @@ def test_root_swapped_during_reservation_never_writes_replacement(
 ) -> None:
     """A swap inside exclusive reservation is detected and cleans the pinned old file."""
     primary, copy = tmp_path / "primary", tmp_path / "copy"
-    reserve = fs._reserve_file
+    reserve = fs.reserve_file
     with opened(primary, copy) as roots:
 
         def reserve_then_swap(parent_fd: int, name: str, **options: int) -> int:
@@ -157,7 +161,7 @@ def test_root_swapped_during_reservation_never_writes_replacement(
                 (primary / "sentinel").write_bytes(b"replacement preserved")
             return fd
 
-        monkeypatch.setattr(fs, "_reserve_file", reserve_then_swap)
+        monkeypatch.setattr(fs, "reserve_file", reserve_then_swap)
         result = save(roots, "a.png")
     assert isinstance(result, fs.RootConflict)
     assert snapshot(tmp_path) == {
@@ -175,7 +179,7 @@ def test_late_create_conflicts_without_overwrite(
 ) -> None:
     """Exclusive reservation preserves a late writer's bytes and rolls back ours."""
     primary, copy = tmp_path / "primary", tmp_path / "copy"
-    reserve = fs._reserve_file
+    reserve = fs.reserve_file
     calls = 0
 
     def late_create(parent_fd: int, name: str, **options: int) -> int:
@@ -187,7 +191,7 @@ def test_late_create_conflicts_without_overwrite(
         return reserve(parent_fd, name, **options)
 
     with opened(primary, copy) as roots:
-        monkeypatch.setattr(fs, "_reserve_file", late_create)
+        monkeypatch.setattr(fs, "reserve_file", late_create)
         result = save(roots, "a.png")
     assert isinstance(result, fs.TargetConflict)
     assert not (primary / "a.png").exists()
@@ -202,7 +206,7 @@ def test_failed_second_write_rolls_back_owned_files(
     with opened(primary, copy) as roots:
         (copy / "old").write_bytes(b"keep")
         before = snapshot(tmp_path)
-        write = fs._write_file
+        write = fs.write_file
         calls = 0
 
         def fail_second(fd: int, data: bytes) -> None:
@@ -213,7 +217,7 @@ def test_failed_second_write_rolls_back_owned_files(
                 raise OSError("controlled sink failure")
             write(fd, data)
 
-        monkeypatch.setattr(fs, "_write_file", fail_second)
+        monkeypatch.setattr(fs, "write_file", fail_second)
         result = save(roots, "new/sub/a.png")
     assert isinstance(result, fs.FileIOFailure)
     assert snapshot(tmp_path) == before
@@ -225,7 +229,7 @@ def test_failed_cleanup_reports_relative_partial_paths(
     """Cleanup failure reports exactly the remaining file without absolute paths."""
     primary, copy = tmp_path / "primary", tmp_path / "copy"
     with opened(primary, copy) as roots:
-        write, remove = fs._write_file, fs._remove_file
+        write, remove = fs.write_file, fs.remove_file
         calls = 0
 
         def fail_second(fd: int, data: bytes) -> None:
@@ -244,8 +248,8 @@ def test_failed_cleanup_reports_relative_partial_paths(
                 raise OSError("controlled cleanup failure")
             return remove(parent_fd, name, identity)
 
-        monkeypatch.setattr(fs, "_write_file", fail_second)
-        monkeypatch.setattr(fs, "_remove_file", leave_primary)
+        monkeypatch.setattr(fs, "write_file", fail_second)
+        monkeypatch.setattr(fs, "remove_file", leave_primary)
         result = save(roots, "a.png")
     assert isinstance(result, fs.PartialSave)
     assert result.paths == ("primary/a.png",)
@@ -261,7 +265,7 @@ def test_normalized_roots_aliases_and_streaming(tmp_path: Path) -> None:
     primary, copy = tmp_path / "primary", tmp_path / "copy"
     with opened(primary, [primary, "copy", copy]) as roots:
         result = save(roots, "safe/sub/a.svg")
-        assert isinstance(result, fs.SaveReceipt)
+        assert isinstance(result, files.SaveReceipt)
         assert result.primary == "safe/sub/a.svg"
         assert result.copies == ("safe/sub/a.svg",)
         assert (primary / result.primary).read_bytes() == b"new figure bytes"
@@ -274,59 +278,8 @@ def test_single_string_and_home_expansion(
     """A configured string is one path, and tilde expansion precedes root opening."""
     monkeypatch.setenv("HOME", str(tmp_path))
     with opened(tmp_path / "primary", "~/paper") as roots:
-        assert isinstance(save(roots, "a.pdf"), fs.SaveReceipt)
+        assert isinstance(save(roots, "a.pdf"), files.SaveReceipt)
     assert (tmp_path / "paper" / "a.pdf").is_file()
-
-
-def test_unsupported_capability_creates_nothing(tmp_path: Path) -> None:
-    """An unavailable required primitive fails before even configured roots exist."""
-    unavailable = replace(fs.detect_capabilities(), dir_fd_rename=False)
-    before = snapshot(tmp_path)
-    result = fs.open_roots(
-        tmp_path / "primary", "copy", cwd=tmp_path, capabilities=unavailable
-    )
-    assert isinstance(result, fs.UnsupportedFilesystem)
-    assert snapshot(tmp_path) == before
-
-
-def test_bad_second_root_refuses_before_root_creation(tmp_path: Path) -> None:
-    """A configured file cannot be a directory root or cause partial startup creation."""
-    copy = tmp_path / "copy"
-    copy.write_bytes(b"keep")
-    before = snapshot(tmp_path)
-    result = fs.open_roots(tmp_path / "primary", copy, cwd=tmp_path)
-    assert isinstance(result, fs.TargetConflict)
-    assert snapshot(tmp_path) == before
-
-
-def test_capability_detection_uses_supported_rename() -> None:
-    """macOS supports dir-fd rename although replace is absent from the support set."""
-    capabilities = fs.detect_capabilities()
-    assert capabilities.dir_fd_rename == (os.rename in os.supports_dir_fd)
-    assert capabilities.supported
-
-
-def test_partial_startup_closes_opened_handles(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Failure at a later configured root releases all previously acquired fds."""
-    open_root = fs._open_root
-    observed = []
-
-    def fail_second(path: Path) -> int:
-        """Capture the primary's real descriptor then fail a later root."""
-        if observed:
-            raise OSError("controlled startup failure")
-        fd = open_root(path)
-        observed.append(fd)
-        return fd
-
-    monkeypatch.setattr(fs, "_open_root", fail_second)
-    result = fs.open_roots(tmp_path / "primary", "copy", cwd=tmp_path)
-    assert isinstance(result, fs.FileIOFailure)
-    for fd in observed:
-        with pytest.raises(OSError):
-            os.fstat(fd)
 
 
 def test_close_is_idempotent_and_abandoned_plan_cleans_parents(
@@ -335,10 +288,10 @@ def test_close_is_idempotent_and_abandoned_plan_cleans_parents(
     """Explicit close releases descriptors and removes an unused plan's new folders."""
     roots = opened(tmp_path / "primary")
     before = snapshot(tmp_path)
-    plan = fs.prepare_save(
+    plan = files.prepare_save(
         roots, output("unused/sub/a.png"), include_copies=False
     )
-    assert isinstance(plan, fs.PreparedSave)
+    assert isinstance(plan, files.PreparedSave)
     plan.close()
     plan.close()
     assert snapshot(tmp_path) == before
@@ -355,7 +308,7 @@ def test_state_replace_preserves_corrupt_bytes_when_edit_refuses(
         path = tmp_path / "primary" / ".dartwork_ui_config.json"
         path.write_bytes(b"broken\xff")
         before = snapshot(tmp_path)
-        store = fs.FixedStateStore(roots)
+        store = files.FixedStateStore(roots)
         result = store.update(
             "config", max_bytes=1024, edit=lambda _old: InvalidStoredState()
         )
@@ -368,7 +321,7 @@ def test_state_unchanged_never_creates_or_replaces_bytes(
 ) -> None:
     """A locked no-write decision preserves both missing and existing fixed state."""
     with opened(tmp_path / "primary") as roots:
-        store = fs.FixedStateStore(roots)
+        store = files.FixedStateStore(roots)
         for initial in (None, b"original state"):
             if initial is not None:
                 assert isinstance(
@@ -377,16 +330,16 @@ def test_state_unchanged_never_creates_or_replaces_bytes(
                         max_bytes=100,
                         edit=lambda old, value=initial: value,
                     ),
-                    fs.StateWritten,
+                    files.StateWritten,
                 )
             before = snapshot(tmp_path)
             assert isinstance(
                 store.update(
                     "presets",
                     max_bytes=100,
-                    edit=lambda old: fs.StateUnchanged(),
+                    edit=lambda old: files.StateUnchanged(),
                 ),
-                fs.StateUnchanged,
+                files.StateUnchanged,
             )
             assert snapshot(tmp_path) == before
 
@@ -402,7 +355,7 @@ def test_directory_acquisition_failure_closes_fds_and_reports_unknown_entries(
     part = "existing" if failure == "existing-stat" else "new"
     observed: list[int] = []
     fail_fds: set[int] = set()
-    open_directory, stat_handle = fs._open_directory, fs._stat_handle
+    open_directory, stat_handle = fs.open_directory, fs.stat_handle
     with opened(primary) as roots:
         (primary / "sentinel").write_bytes(b"keep")
         if failure == "existing-stat":
@@ -424,9 +377,9 @@ def test_directory_acquisition_failure_closes_fds_and_reports_unknown_entries(
                 raise OSError("controlled acquired-directory metadata failure")
             return stat_handle(fd)
 
-        monkeypatch.setattr(fs, "_open_directory", acquire)
-        monkeypatch.setattr(fs, "_stat_handle", stat_acquired)
-        result = fs.prepare_save(
+        monkeypatch.setattr(fs, "open_directory", acquire)
+        monkeypatch.setattr(fs, "stat_handle", stat_acquired)
+        result = files.prepare_save(
             roots, output(f"{part}/a.png"), include_copies=False
         )
         if failure == "existing-stat":
@@ -439,8 +392,8 @@ def test_directory_acquisition_failure_closes_fds_and_reports_unknown_entries(
         for fd in observed:
             with pytest.raises(OSError):
                 os.fstat(fd)
-        assert fs._SAVE_LOCK.acquire(blocking=False)
-        fs._SAVE_LOCK.release()
+        assert files._SAVE_LOCK.acquire(blocking=False)
+        files._SAVE_LOCK.release()
 
 
 @pytest.mark.parametrize("sink", ["output", "state"])
@@ -449,17 +402,17 @@ def test_reserved_file_metadata_failure_closes_and_reports_unverified_file(
 ) -> None:
     """An acquired file without verified identity is closed and never blindly unlinked."""
     primary = tmp_path / "primary"
-    reserve, stat_handle = fs._reserve_file, fs._stat_handle
+    reserve, stat_handle = fs.reserve_file, fs.stat_handle
     observed: dict[str, int] = {}
     with opened(primary) as roots:
         (primary / "sentinel").write_bytes(b"keep")
-        store = fs.FixedStateStore(roots)
+        store = files.FixedStateStore(roots)
         if sink == "state":
             assert isinstance(
                 store.update(
                     "config", max_bytes=100, edit=lambda old: b"old bytes"
                 ),
-                fs.StateWritten,
+                files.StateWritten,
             )
         before = snapshot(tmp_path)
 
@@ -475,8 +428,8 @@ def test_reserved_file_metadata_failure_closes_and_reports_unverified_file(
                 raise OSError("controlled acquired-file metadata failure")
             return stat_handle(fd)
 
-        monkeypatch.setattr(fs, "_reserve_file", acquire)
-        monkeypatch.setattr(fs, "_stat_handle", stat_acquired)
+        monkeypatch.setattr(fs, "reserve_file", acquire)
+        monkeypatch.setattr(fs, "stat_handle", stat_acquired)
         if sink == "output":
             result = save(roots, "a.png")
         else:
@@ -492,8 +445,8 @@ def test_reserved_file_metadata_failure_closes_and_reports_unverified_file(
         }
         with pytest.raises(OSError):
             os.fstat(fd)
-        assert fs._SAVE_LOCK.acquire(blocking=False)
-        fs._SAVE_LOCK.release()
+        assert files._SAVE_LOCK.acquire(blocking=False)
+        files._SAVE_LOCK.release()
 
 
 def test_unexpected_source_error_rolls_back_and_releases_plan(
@@ -510,14 +463,16 @@ def test_unexpected_source_error_rolls_back_and_releases_plan(
 
     with opened(tmp_path / "primary", tmp_path / "copy") as roots:
         before = snapshot(tmp_path)
-        plan = fs.prepare_save(roots, output("new/a.png"), include_copies=True)
-        assert isinstance(plan, fs.PreparedSave)
+        plan = files.prepare_save(
+            roots, output("new/a.png"), include_copies=True
+        )
+        assert isinstance(plan, files.PreparedSave)
         try:
-            result = fs.commit_save(plan, BrokenSource())
+            result = files.commit_save(plan, BrokenSource())
             assert isinstance(result, fs.FileIOFailure)
             assert snapshot(tmp_path) == before
-            assert fs._SAVE_LOCK.acquire(blocking=False)
-            fs._SAVE_LOCK.release()
+            assert files._SAVE_LOCK.acquire(blocking=False)
+            files._SAVE_LOCK.release()
         finally:
             plan.close()
 
@@ -536,14 +491,16 @@ def test_source_cancellation_cleans_reservations_before_propagating(
 
     with opened(tmp_path / "primary") as roots:
         before = snapshot(tmp_path)
-        plan = fs.prepare_save(roots, output("new/a.png"), include_copies=False)
-        assert isinstance(plan, fs.PreparedSave)
+        plan = files.prepare_save(
+            roots, output("new/a.png"), include_copies=False
+        )
+        assert isinstance(plan, files.PreparedSave)
         try:
             with pytest.raises(KeyboardInterrupt):
-                fs.commit_save(plan, InterruptedSource())
+                files.commit_save(plan, InterruptedSource())
             assert snapshot(tmp_path) == before
-            assert fs._SAVE_LOCK.acquire(blocking=False)
-            fs._SAVE_LOCK.release()
+            assert files._SAVE_LOCK.acquire(blocking=False)
+            files._SAVE_LOCK.release()
         finally:
             plan.close()
 
@@ -551,11 +508,11 @@ def test_source_cancellation_cleans_reservations_before_propagating(
 def test_state_missing_replace_bounds_and_fixed_names(tmp_path: Path) -> None:
     """Only fixed names are updated, and both old and next bytes are bounded."""
     with opened(tmp_path / "primary") as roots:
-        store = fs.FixedStateStore(roots)
-        assert isinstance(store.read("config", max_bytes=8), fs.MissingState)
+        store = files.FixedStateStore(roots)
+        assert isinstance(store.read("config", max_bytes=8), files.MissingState)
         assert isinstance(
             store.update("config", max_bytes=8, edit=lambda old: b"12345678"),
-            fs.StateWritten,
+            files.StateWritten,
         )
         assert store.read("config", max_bytes=8) == b"12345678"
         before = snapshot(tmp_path)
@@ -585,7 +542,7 @@ def test_state_nonregular_refused_without_external_changes(
     else:
         os.mkfifo(path)
     with opened(primary) as roots:
-        store = fs.FixedStateStore(roots)
+        store = files.FixedStateStore(roots)
         assert isinstance(
             store.read("presets", max_bytes=100), InvalidStoredState
         )
@@ -602,10 +559,10 @@ def test_state_replacement_failure_preserves_old_bytes(
 ) -> None:
     """Atomic replace failure leaves the original state and no sibling staging files."""
     with opened(tmp_path / "primary") as roots:
-        store = fs.FixedStateStore(roots)
+        store = files.FixedStateStore(roots)
         assert isinstance(
             store.update("config", max_bytes=100, edit=lambda old: b"old"),
-            fs.StateWritten,
+            files.StateWritten,
         )
         before = snapshot(tmp_path)
 
@@ -615,7 +572,7 @@ def test_state_replacement_failure_preserves_old_bytes(
             """Fail only the owned state replacement operation."""
             raise OSError("controlled replacement failure")
 
-        monkeypatch.setattr(fs, "_replace_state", refuse_replace)
+        monkeypatch.setattr(files, "_replace_state", refuse_replace)
         assert isinstance(
             store.update("config", max_bytes=100, edit=lambda old: b"next"),
             fs.FileIOFailure,
@@ -627,7 +584,7 @@ def test_state_updates_are_serialized_across_stores(tmp_path: Path) -> None:
     """Every read/edit/write is one process transaction even across separate scopes."""
     primary = tmp_path / "primary"
     with opened(primary) as first, opened(primary) as second:
-        stores = [fs.FixedStateStore(first), fs.FixedStateStore(second)]
+        stores = [files.FixedStateStore(first), files.FixedStateStore(second)]
 
         def increment(index: int) -> None:
             """Increment persisted state through independently constructed stores."""
@@ -635,10 +592,10 @@ def test_state_updates_are_serialized_across_stores(tmp_path: Path) -> None:
                 "config",
                 max_bytes=100,
                 edit=lambda old: str(
-                    (0 if isinstance(old, fs.MissingState) else int(old)) + 1
+                    (0 if isinstance(old, files.MissingState) else int(old)) + 1
                 ).encode(),
             )
-            assert isinstance(result, fs.StateWritten), result
+            assert isinstance(result, files.StateWritten), result
 
         with ThreadPoolExecutor(max_workers=4) as executor:
             list(executor.map(increment, range(40)))
@@ -649,29 +606,30 @@ _UMASK_CHILD = r"""
 import io, os, sys
 from pathlib import Path
 os.umask(0o022)
-from dartwork_mpl.ui import _files as fs
+from dartwork_mpl.ui import _files as files
 from dartwork_mpl.ui._boundary import parse_output
+from dartwork_mpl.ui.platform import fs
 root, origin = Path(sys.argv[1]), Path(sys.argv[2])
-assert Path(fs.__file__).resolve() == origin.resolve()
+assert Path(files.__file__).resolve() == origin.resolve()
 roots = fs.open_roots(root / "primary", [root / "copy"], cwd=root)
 assert isinstance(roots, fs.RootScope), roots
 with roots:
-    plan = fs.prepare_save(roots, parse_output("new/sub/fig.png"), include_copies=True)
-    assert isinstance(plan, fs.PreparedSave), plan
+    plan = files.prepare_save(roots, parse_output("new/sub/fig.png"), include_copies=True)
+    assert isinstance(plan, files.PreparedSave), plan
     with plan:
-        receipt = fs.commit_save(plan, io.BytesIO(b"figure"))
-    assert isinstance(receipt, fs.SaveReceipt), receipt
-    store = fs.FixedStateStore(roots)
+        receipt = files.commit_save(plan, io.BytesIO(b"figure"))
+    assert isinstance(receipt, files.SaveReceipt), receipt
+    store = files.FixedStateStore(roots)
     for kind in ("config", "presets"):
         written = store.update(kind, max_bytes=64, edit=lambda old: b"{}")
-        assert isinstance(written, fs.StateWritten), written
+        assert isinstance(written, files.StateWritten), written
 """
 
 
 def test_outputs_follow_umask_while_state_stays_private(tmp_path: Path) -> None:
     """With umask 022 in an isolated child, outputs are 0644, new parents 0755, state 0600."""
     subprocess.run(
-        [sys.executable, "-c", _UMASK_CHILD, str(tmp_path), fs.__file__],
+        [sys.executable, "-c", _UMASK_CHILD, str(tmp_path), files.__file__],
         check=True,
         timeout=60,
     )
@@ -714,11 +672,11 @@ def test_seeded_paths_keep_outside_sentinel(tmp_path: Path) -> None:
             )
             parsed = parse_output(name)
             if isinstance(parsed, RelativeOutput):
-                plan = fs.prepare_save(roots, parsed, include_copies=False)
-                if isinstance(plan, fs.PreparedSave):
+                plan = files.prepare_save(roots, parsed, include_copies=False)
+                if isinstance(plan, files.PreparedSave):
                     with plan:
                         assert isinstance(
-                            fs.commit_save(plan, io.BytesIO(b"value")),
-                            (fs.SaveReceipt, fs.TargetConflict),
+                            files.commit_save(plan, io.BytesIO(b"value")),
+                            (files.SaveReceipt, fs.TargetConflict),
                         )
             assert hashlib.sha256(sentinel.read_bytes()).hexdigest() == expected

@@ -105,6 +105,19 @@ class Collections(unittest.TestCase):
         rep = compare(BEFORE, BEFORE, "Nothing -> Something\n+ Missing")
         self.assertEqual((len(rep.unused), rep.failures), (2, 2))
 
+    def test_a_hash_inside_a_test_id_is_not_a_comment(self):
+        """'#' starts a comment only at a line start or after a space, so a parametrized id may hold one."""
+        before = ["tests/test_a.py::test_x[a#b]"]
+        after = ["tests/test_c.py::test_x[a#b]"]
+        self.assertEqual(
+            compare(
+                before,
+                after,
+                "# moved\ntest_a::test_x[a#b] -> test_c::test_x[a#b]  # why",
+            ).failures,
+            0,
+        )
+
     def test_a_malformed_map_line_is_a_usage_error(self):
         """A line that is neither a rename, +, - nor ~ entry stops the run with exit status 2."""
         with self.assertRaises(SystemExit) as cm:

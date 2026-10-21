@@ -243,3 +243,45 @@ def test_a_shim_without_literal_all_is_rejected():
         f"missing __all__: {P}.layout_compat",
         f"private import: {P}.style -> {P}.layout_compat.simple_layout",
     ]
+
+
+NESTED = checker.Layout(
+    entry_points=frozenset({P}),
+    platform=frozenset({f"{P}.ui.platform"}),
+    slices=frozenset({f"{P}.ui", f"{P}.ui.params"}),
+    allowed={(f"{P}.ui", f"{P}.ui.params"): "the viewer mounts the controls"},
+    decisions={},
+)
+NESTED_LEGAL = {
+    P: "from .ui import run\n",
+    f"{P}.ui": (
+        '__all__ = ["run"]\n'
+        "def __getattr__(name):\n    from .app import run\n    return run\n"
+    ),
+    f"{P}.ui.app": "from .params import controls\ndef run(): ...\n",
+    f"{P}.ui.params": '__all__ = ["controls"]\nfrom ._impl import controls\n',
+    f"{P}.ui.params._impl": "from ..platform import limit\ncontrols = 1\n",
+    f"{P}.ui.platform": '__all__ = ["limit"]\nfrom ._json import limit\n',
+    f"{P}.ui.platform._json": "limit = 1\n",
+}
+NESTED_PACKAGES = {P, f"{P}.ui", f"{P}.ui.params", f"{P}.ui.platform"}
+
+
+def test_sub_slices_inside_a_slice_do_not_depend_on_the_enclosing_initializer():
+    """A sub-slice or nested platform importing below its own enclosing package adds no edge to it."""
+    assert checker.violations(NESTED_LEGAL, NESTED_PACKAGES, NESTED) == []
+    reaching_up = {
+        **NESTED_LEGAL,
+        f"{P}.ui.params._impl": "from .. import run\ncontrols = 1\n",
+    }
+    assert "cycle: dartwork_mpl.ui, dartwork_mpl.ui.params" in (
+        checker.violations(reaching_up, NESTED_PACKAGES, NESTED)
+    )
+    platform_up = {
+        **NESTED_LEGAL,
+        f"{P}.ui.platform._json": "from ..params import controls\nlimit = 1\n",
+    }
+    assert (
+        "platform reaches slice: dartwork_mpl.ui.platform -> dartwork_mpl.ui.params"
+        in checker.violations(platform_up, NESTED_PACKAGES, NESTED)
+    )

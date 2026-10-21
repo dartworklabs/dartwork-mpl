@@ -49,43 +49,50 @@ from starlette.routing import Match
 
 from ..util import save_formats
 from ._boundary import (
-    MAX_REQUEST_BYTES,
-    AccessDenied,
+    ROUTE_POLICY,
     InputFailure,
     InvalidRequest,
-    JsonValue,
-    LimitExceeded,
-    MalformedInput,
     ModelRequest,
     ParsedRequest,
     PresetRequest,
     SaveRequest,
-    StartupRejected,
     StateRequest,
-    authorize_request,
-    decode_json,
-    normalize_bind,
     parse_output,
     parse_request,
 )
 from ._config import ConfigLoaded, PresetNotFound, PresetsLoaded, ViewerState
 from ._files import (
     FileFailure,
-    FilesystemCapabilities,
     FixedStateStore,
     MissingState,
-    PartialSave,
     PreparedSave,
-    RootScope,
     SaveReceipt,
     StateWritten,
     commit_save,
-    open_roots,
     prepare_save,
 )
 from ._param import ParamModel
 from ._template import get_html
 from ._widget import descriptors_from_model
+from .platform.access import (
+    AccessDenied,
+    StartupRejected,
+    authorize_request,
+    normalize_bind,
+)
+from .platform.fs import (
+    FilesystemCapabilities,
+    PartialSave,
+    RootScope,
+    open_roots,
+)
+from .platform.json_bounds import (
+    MAX_REQUEST_BYTES,
+    JsonValue,
+    LimitExceeded,
+    MalformedInput,
+    decode_json,
+)
 
 matplotlib.use("Agg")
 _SUPPORTED_EXPORT_FORMATS: frozenset[str] = frozenset(
@@ -231,6 +238,7 @@ def _create_app(
             _matched_route(app, request),
             request.scope["headers"],
             normalized_host,
+            ROUTE_POLICY,
         )
         if isinstance(access, AccessDenied):
             return _refusal_response(access)

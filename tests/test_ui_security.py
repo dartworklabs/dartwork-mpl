@@ -13,69 +13,8 @@ import pytest
 # The viewer lives behind the optional ``ui`` extra (fastapi/uvicorn).
 pytest.importorskip("fastapi")
 
-from dartwork_mpl.ui._boundary import (
-    AccessDenied,
-    InputFailure,
-    LocalAccess,
-    StartupRejected,
-    authorize_request,
-    normalize_bind,
-    parse_output,
-)
+from dartwork_mpl.ui._boundary import InputFailure, parse_output
 from dartwork_mpl.ui._template import get_html
-
-
-class TestLocalRequestPolicy:
-    """The single policy denies foreign/missing authorities and checks each source."""
-
-    @pytest.mark.parametrize("source", ["origin", "referer"])
-    def test_foreign_source_denied(self, source: str) -> None:
-        """Each browser source is independently checked before an effect."""
-        result = authorize_request(
-            "POST",
-            "/api/render",
-            [
-                (b"host", b"localhost:8501"),
-                (source.encode(), b"http://evil.example"),
-            ],
-            "127.0.0.1",
-        )
-        assert isinstance(result, AccessDenied)
-
-    def test_native_and_same_authority_allowed(self) -> None:
-        """Native clients omit sources; local browser clients use the request authority."""
-        for source in (
-            [],
-            [
-                (b"origin", b"http://localhost:9999"),
-                (b"referer", b"http://localhost:9999/page"),
-            ],
-        ):
-            result = authorize_request(
-                "POST",
-                "/api/render",
-                [(b"host", b"localhost:9999"), *source],
-                "127.0.0.1",
-            )
-            assert isinstance(result, LocalAccess)
-
-    @pytest.mark.parametrize(
-        "host", [None, b"evil.example", b"localhost:invalid", b"user@localhost"]
-    )
-    def test_bad_host_denied(self, host: bytes | None) -> None:
-        """All reads and effects require one complete valid local Host authority."""
-        headers = [] if host is None else [(b"host", host)]
-        assert isinstance(
-            authorize_request("GET", "/api/health", headers, "127.0.0.1"),
-            AccessDenied,
-        )
-
-    @pytest.mark.parametrize(
-        "host", ["0.0.0.0", "::", "192.0.2.1", "example.test"]
-    )
-    def test_public_bind_rejected(self, host: str) -> None:
-        """Unapproved bind addresses cannot issue a local-effect grant."""
-        assert isinstance(normalize_bind(host), StartupRejected)
 
 
 class TestOutputLanguage:

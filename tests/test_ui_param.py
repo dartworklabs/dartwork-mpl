@@ -22,22 +22,17 @@ from dartwork_mpl.ui._boundary import (
     MAX_CONFIG_BYTES,
     MAX_PRESET_BYTES,
     InvalidStoredState,
-    LimitExceeded,
     PresetRequest,
     StateRequest,
     Tab,
     parse_request,
 )
 from dartwork_mpl.ui._config import PRESET_FILENAME, load_presets, save_preset
-from dartwork_mpl.ui._files import (
-    FixedStateStore,
-    MissingState,
-    RootScope,
-    StateWritten,
-    open_roots,
-)
+from dartwork_mpl.ui._files import FixedStateStore, MissingState, StateWritten
 from dartwork_mpl.ui._param import ParamModel
 from dartwork_mpl.ui._widget import descriptors_from_model
+from dartwork_mpl.ui.platform.fs import RootScope, open_roots
+from dartwork_mpl.ui.platform.json_bounds import LimitExceeded
 
 # The viewer's fixed config file name (a file-format contract).
 CONFIG_FILENAME = ".dartwork_ui_config.json"
