@@ -13,9 +13,9 @@ blocks are genuinely brace-unescaped.
 
 from __future__ import annotations
 
-from dartwork_mpl.ui._scripts import JS_BLOCK
-from dartwork_mpl.ui._styles import CSS_BLOCK
-from dartwork_mpl.ui._template import get_html
+from dartwork_mpl.ui.page import get_html
+from dartwork_mpl.ui.page._scripts import JS_BLOCK
+from dartwork_mpl.ui.page._styles import CSS_BLOCK
 
 
 class TestTemplateSplit:

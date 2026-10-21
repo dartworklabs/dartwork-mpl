@@ -1,13 +1,13 @@
-"""Tests for ui/_widget.py internal helper functions.
+"""Tests for ui/params/_descriptors.py internal helper functions.
 
-The high-level descriptors_from_model() is already tested in test_ui_param.py.
+The high-level descriptors_from_model() is already tested in test_ui_descriptors.py.
 This file covers the lower-level helpers: _humanize, _type_name,
 _serialize_default, and ParamDescriptor.
 """
 
 from __future__ import annotations
 
-from dartwork_mpl.ui._widget import (
+from dartwork_mpl.ui.params._descriptors import (
     ParamDescriptor,
     _humanize,
     _serialize_default,

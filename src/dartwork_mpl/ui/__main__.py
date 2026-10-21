@@ -14,7 +14,7 @@ Usage (non-interactive)::
 import argparse
 import sys
 
-from ._scaffold import scaffold
+from .scaffold import scaffold
 
 
 def _interactive_init() -> None:

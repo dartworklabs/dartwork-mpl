@@ -1,10 +1,10 @@
-"""Tests for ui/_scaffold.py project scaffolding."""
+"""Tests for ui/scaffold project scaffolding."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from dartwork_mpl.ui._scaffold import scaffold
+from dartwork_mpl.ui.scaffold import scaffold
 
 
 class TestScaffold:

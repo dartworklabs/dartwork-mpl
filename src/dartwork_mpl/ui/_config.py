@@ -25,7 +25,6 @@ from ._boundary import (
     MAX_PRESET_BYTES,
     MAX_PRESETS,
     InputFailure,
-    InvalidRequest,
     InvalidStoredState,
     PresetRequest,
     StateRequest,
@@ -43,6 +42,7 @@ from ._files import (
     StateUnchanged,
     StateWritten,
 )
+from .params import InvalidRequest
 from .platform.json_bounds import JsonValue, LimitExceeded
 
 

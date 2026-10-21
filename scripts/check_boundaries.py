@@ -68,7 +68,8 @@ PLATFORM = frozenset(
         "dartwork_mpl._figure_geometry",
         "dartwork_mpl._rc",
         # The viewer's loopback access checks, directory handles and
-        # bounded JSON decoder.
+        # bounded JSON decoder; the package initializer only names them.
+        "dartwork_mpl.ui.platform",
         "dartwork_mpl.ui.platform.access",
         "dartwork_mpl.ui.platform.fs",
         "dartwork_mpl.ui.platform.json_bounds",
@@ -99,6 +100,10 @@ SLICES = frozenset(
         "dartwork_mpl.templates",
         "dartwork_mpl.tokens",
         "dartwork_mpl.ui",
+        # The viewer's sub-slices (ADR 0005, audit ui-cli §4).
+        "dartwork_mpl.ui.page",
+        "dartwork_mpl.ui.params",
+        "dartwork_mpl.ui.scaffold",
         "dartwork_mpl.units",
         "dartwork_mpl.util",
         "dartwork_mpl.validate",
@@ -152,6 +157,16 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
         "the tick-decimal check recommends the precision the formatter uses"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.page"): (
+        "the viewer app serves the page that renders its controls"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.params"): (
+        "the viewer builds its controls and parses requests from the user's"
+        " parameter model"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.scaffold"): (
+        "the dartwork-mpl-ui init command copies the scaffold project"
     ),
     ("dartwork_mpl.style", "dartwork_mpl.font"): (
         "a preset may name bundled fonts, which must be registered first"
@@ -219,7 +234,7 @@ DEBT: Mapping[str, str] = {
 # Package paths that hold user-facing sample code, not package source: the
 # bundled prompt templates and the UI scaffold templates copied into user
 # projects (they import `dartwork_mpl` as any user would).
-EXCLUDED_DIRS = (("asset",), ("ui", "templates"))
+EXCLUDED_DIRS = (("asset",), ("ui", "scaffold", "templates"))
 
 
 @dataclass(frozen=True)

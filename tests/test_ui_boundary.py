@@ -18,8 +18,8 @@ from pydantic import (
 )
 
 from dartwork_mpl.ui import _boundary as boundary
-from dartwork_mpl.ui._param import ParamModel
-from dartwork_mpl.ui._widget import descriptors_from_model
+from dartwork_mpl.ui.params import ParamModel
+from dartwork_mpl.ui.params._descriptors import descriptors_from_model
 from dartwork_mpl.ui.platform import json_bounds
 
 
@@ -701,7 +701,9 @@ def test_route_inventory_and_handle_owner_guards_reject_injected_bypasses():
         not route_inventory('@app.post("/unclassified")\ndef extra(): pass')
         <= boundary.ROUTE_POLICY.keys()
     )
-    for path in root.glob("*.py"):
+    for path in root.rglob("*.py"):
+        if "tests" in path.relative_to(root).parts:
+            continue
         assert not constructor_violations(path.read_text(), path.stem), path
     assert constructor_violations('RelativeOutput(("safe",))', "ui")
     assert not constructor_violations('RelativeOutput(("safe",))', "_boundary")

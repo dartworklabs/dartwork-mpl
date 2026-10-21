@@ -19,7 +19,7 @@ import typing
 from dataclasses import asdict, dataclass, field
 from typing import Any, get_args, get_origin
 
-from ._param import ParamModel
+from ._model import ParamModel
 
 # ============================================================================
 # Parameter descriptor
