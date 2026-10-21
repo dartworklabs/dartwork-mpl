@@ -28,10 +28,16 @@ is not a measurement of a particular display, perceived brightness, or OKLab
 ## Always-true facts
 
 - `import matplotlib.pyplot as plt` and `import dartwork_mpl as dm`.
-- Apply a style first: `dm.style.use("scientific")` (or
-  `dm.style.stack([...])` for a stack).
-- Create figures with `plt.subplots(figsize=dm.figsize("<n>cm",
-  "<aspect>"))`. `width` accepts unit strings (`"13cm"`, `"5in"`,
+- Apply the selected style first using `dm.style.use(...)` (or a style stack).
+  Explicit dimensions/style and venue/template constraints take priority over
+  project context and purpose defaults: paper → `scientific`,
+  report/document/dashboard → `report`, talk/slides → `presentation`.
+  See policy for provisional sizing and when to ask one short context question.
+  Use `-kr` for Korean plot text only. Geometry-only edits retain the preset.
+- Create native figures with `plt.subplots(figsize=dm.figsize("<n>cm",
+  "<aspect>"))` or `plt.figure(figsize=dm.figsize(...))` with GridSpec as needed.
+  Width/height are freely chosen; 17 cm is page-fit advice, not a canvas cap.
+  `width` accepts unit strings (`"13cm"`, `"5in"`,
   `"170mm"`, `"24pt"`) or `Length` values (`dm.cm(13)`, `dm.col1`,
   `dm.col2`). Bare `int` / `float` are rejected. The second
   argument is polymorphic: an aspect token (`"square"`,
@@ -80,8 +86,10 @@ is not a measurement of a particular display, perceived brightness, or OKLab
    `dm.fs` / `dm.lw` / `dm.fw` — preserve that scaffolding when you
    customize. Replace ALL synthetic arrays, generated values, group names and
    summaries with real data. Add annotations only when supported by that data.
-4. Pick width/aspect from the user's intent and create a native `fig`.
-   Keep observations, aligned rows, masks, groups, ordering and units tied to
+4. Honor requested width/height/style and prior context; infer a provisional
+   preset/size from purpose only where unspecified. Ask one short question if
+   ambiguity materially changes the result; for a quick draft state assumptions
+   and invite correction. Create a native `fig`. Keep observations, aligned rows, masks, groups, ordering and units tied to
    the input. Use preset-relative fonts/weights/data lines and literal hairlines.
 5. Call `lint_dartwork_mpl_code` and fix necessary findings before rendering.
    Use `apply_lint_fixes` only when relevant; inspect its changes.
@@ -92,8 +100,8 @@ is not a measurement of a particular display, perceived brightness, or OKLab
    bundle or `ok` check is not evidence of accurate data or visual correctness;
    compare the figure with the full input and declared policy. A duplicate
    `validate_generated_plot` execution is optional.
-7. For style edits preserve the data and policy from step 4, retain the original
-   ID, then lint and render a revision. After EVERY rerender inspect the new
+7. For style edits preserve the data and policy from step 4; geometry-only
+   edits also retain the selected preset. Retain the original ID, then lint and render a revision. After EVERY rerender inspect the new
    image and full report, including the FINAL artifact. Deliver original and
    revision IDs, changes and remaining check/input limitations.
 8. Reopen either ID with `get_plot_artifact` and the client's resource reader

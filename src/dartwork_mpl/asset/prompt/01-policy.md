@@ -13,11 +13,43 @@ Rules in this document are split into two tiers:
   the design, but not currently checked by the lint engine. Treat
   these as guidance for human authors and AI agents both.
 
+## Purpose, preset and initial size
+
+Use this priority: explicit user width/height/style and journal/template
+constraints, then prior project context, then inferred purpose defaults.
+Keep a selected preset (including `scientific` or `report`) during geometry-only
+edits; preserve the data and other style choices. Do not replace explicit
+sizes with template dimensions or a 17 cm suggestion.
+
+| Purpose keywords (examples) | Existing preset | Provisional size guidance |
+|---|---|---|
+| paper, journal, 논문 | `scientific` | `dm.col1` (9 cm) or `dm.col2` (17 cm) are rough candidates; confirm venue/column width for final publication |
+| report, document, dashboard, 보고서, 문서 | `report` | 13–17 cm is a rough starting range; fit the page/content width and panel complexity |
+| talk, slides, presentation, 발표 | `presentation` | fit the slide ratio and full-slide/inset placement; a slide-sized canvas is not implied by the preset |
+
+These are draft suggestions, not universal journal/slide standards or caps.
+Choose an initial height using `dm.figsize` and the panel/label complexity.
+Font sizes come from the active preset (`rcParams["font.size"]` / `dm.fs(0)`);
+use `dm.fs(n)`, `dm.fw(n)` and `dm.lw(n)` for relative adjustments, with no
+universal numeric font default. Use `-kr` only when the plot contains Korean
+text, not merely because the conversation is Korean.
+
+Ask **one short, self-contained question** only when missing information
+materially affects the result. Reuse context already given. For example:
+“Is this paper figure single- or double-column, and what is its target width?”;
+“Is the slide 16:9 or 4:3, and is this a full-slide chart or an inset?”;
+“For this report, what page/content width or preferred figure size should I use?”
+Do not require a setup form for every plot or silently assume ambiguous final
+publication sizing. For a quick draft, state a reasonable provisional
+preset/size and invite correction instead of blocking.
+
 ## Width
 
-- **Enforced.** `plt.subplots(figsize=dm.figsize(width, aspect))` is
-  the only legal way to size a figure. `dm.subplots` and `dm.figure`
-  were removed (lint critical: `dm-subplots-removed`).
+- Use native `plt.subplots(figsize=dm.figsize(width, aspect))` or
+  `plt.figure(figsize=dm.figsize(width, aspect))`, including native GridSpec
+  and nested GridSpec for row-specific panel allocations. Figure/Axes remain
+  native matplotlib objects. `dm.subplots` and `dm.figure` were removed
+  (lint critical: `dm-subplots-removed`).
 - **Enforced.** Raw `figsize=(w, h)` tuples are forbidden — always
   go through `dm.figsize` (lint critical: `figsize-direct`).
 - `width` accepts:
@@ -33,13 +65,13 @@ Rules in this document are split into two tiers:
     (= 17 cm).
 - **Enforced.** Bare `int` / `float` widths are rejected (lint
   critical: `raw-width-number`) — the unit must always be explicit.
-- **Enforced.** Keep widths at or below 17 cm — most page layouts
-  break beyond that (lint warning: `oversize-width`).
-- **Recommended.** Snap widths to the 0.5 cm grid (9.0, 9.5, 10.0…)
-  for cross-figure consistency.
-- **Recommended.** Within one project, keep the number of distinct
-  widths ≤ 5; many small variations make multi-figure reports look
-  ragged.
+- Width and height are freely chosen physical dimensions; 17 cm is not an
+  API maximum. The `oversize-width` lint warning flags literal cm widths above
+  17 cm for a page-fit review. Retain explicitly requested or template-required
+  dimensions; only reduce/split a figure when the intended page requires it.
+- **Recommended.** For a coordinated set of page figures, a 0.5 cm grid and
+  a small set of widths can improve consistency. These suggestions do not
+  override requested dimensions.
 
 ## Aspect or height (the second `dm.figsize` argument)
 
@@ -161,8 +193,12 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
 
 - Prefer `dm.save_and_show(fig, "name")` for notebooks (saves +
   inline preview).
-- Prefer `dm.save_formats(fig, "name", formats=("png","svg"))` for
-  scripts (multi-format, no preview).
+- Prefer `dm.save_formats(fig, "name", formats=("png","pdf"),
+  bbox_inches=None)` for scripts (multi-format, no preview). `None` is already
+  the default and preserves the requested canvas; `bbox_inches="tight"` crops
+  to content and can change exported dimensions. Layout changes axes margins,
+  not the canvas. DPI controls raster pixel density, not physical width/height;
+  PNG dimensions quantize to whole pixels, while PDF keeps physical page size.
 - **Enforced.** Direct `fig.savefig(...)` / `plt.savefig(...)`
   bypasses the dartwork save preset (lint warning: `savefig-direct`).
 - Never end a figure with just `plt.show()` — the rendered artifact
@@ -177,8 +213,8 @@ Bare numeric strings (`"0.5"`) raise `ValueError` with a
   `dm.style.use("scientific")` for exactly this reason.
 - Available presets: `scientific`, `report`, `presentation`,
   `minimal`, plus their `-kr` Korean variants.
-- Korean text → `*-kr` variants (`scientific-kr`, `report-kr`,
-  `presentation-kr`).
+- Korean plot text → `*-kr` variants (`scientific-kr`, `report-kr`,
+  `presentation-kr`); conversation language alone does not select a variant.
 - Use `dm.style.context("preset")` when a single block needs a
   different look — it restores the previous style on exit so the
   preset does not leak into later figures.

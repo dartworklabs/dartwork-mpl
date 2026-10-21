@@ -21,6 +21,49 @@ A short cookbook keyed by user intent. Each entry shows the canonical
 > to ``0`` for most presets, collapsing edges into the "no border"
 > idiom.
 
+## "Exact canvas width and height (cm, mm or inches)"
+
+Choose the preset by the policy's purpose/context rules first. This complete
+example uses `report` as an illustrative selection and writes three equivalent
+24 × 12 cm canvases using existing unit forms:
+
+<!-- canvas-units-example -->
+```python
+import matplotlib.pyplot as plt
+import dartwork_mpl as dm
+
+dm.style.use("report")
+for name, size in (
+    ("cm", dm.figsize("24cm", "12cm")),
+    ("mm", dm.figsize("240mm", "120mm")),
+    ("in", dm.figsize(dm.inch(24 / 2.54), dm.inch(12 / 2.54))),
+):
+    fig, ax = plt.subplots(figsize=size)
+    ax.plot([0, 1, 2], [1, 3, 2], linewidth=dm.lw(0))
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Value", fontsize=dm.fs(0), fontweight=dm.fw(0))
+    dm.simple_layout(fig, margin="2%")
+    dm.save_formats(fig, f"output/canvas-{name}", formats=("png", "pdf"),
+                    bbox_inches=None)
+    plt.close(fig)
+```
+
+`bbox_inches=None` (the existing default) retains the canvas; `"tight"`
+crops to content. DPI determines raster pixel density, not physical size;
+PNG dimensions quantize to whole pixels. The `oversize-width` warning asks for
+page-fit review and must not silently shrink an explicit 24 cm request.
+
+For multi-panel work, native `plt.figure` + GridSpec/nested GridSpec are valid.
+GridSpec ratios apply inside its assigned bounds: outer margins and
+`wspace`/`hspace` mean a 7:3 grid alone does not allocate 70%/30% of the
+whole canvas. For exact whole-canvas regions, use native container allocation
+(e.g. `SubFigure`), keep titles, labels and local padding inside each container,
+and measure the container bounding boxes to verify the requested allocation.
+Keep that allocation distinct from row-specific ratios: two 50:50 rows can
+contain 40:60 columns above and 70:30 columns below. Retain the selected preset
+and data when changing geometry alone. Do not pass a `SubFigure` directly to
+`dm.simple_layout`; this helper requires a parent `Figure`.
+
 ## "Bar chart"
 
 ```python
@@ -202,5 +245,5 @@ dm.simple_layout(fig)
 
 ```python
 dm.save_formats(fig, "output/figure", formats=("svg", "png", "pdf"),
-                bbox_inches="tight", dpi=300)
+                bbox_inches=None, dpi=300)
 ```

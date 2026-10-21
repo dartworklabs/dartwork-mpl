@@ -394,10 +394,11 @@ rules:
       # behind a `,` rather than directly after `(`.
       pattern: '(?:width\s*=\s*|\bdm\.figsize\s*\(\s*)["''](?:1[89]|[2-9]\d|\d{3,}|17\.\d*[1-9]\d*)(?:\.\d+)?cm["'']'
     message: |
-      Width exceeds 17 cm (`dm.col2`). Most page layouts break above
-      this threshold and produce ragged multi-figure reports. Reduce
-      to 17 cm or split into a multi-row layout.
+      Width exceeds the 17 cm page-fit reference (`dm.col2`). Review
+      the intended page or slide placement; retain explicitly requested
+      or template-required dimensions. This is not an API canvas limit.
     why: |
-      Snap widths to the 0.5 cm grid and keep ≤ 5 distinct widths
-      per project for cross-figure consistency.
-    fix_suggestion: 'dm.figsize("17cm", "standard")'
+      Coordinated page figures benefit from consistent widths. Reduce or
+      split only if the target page requires it; purpose defaults do not
+      override the user's physical width/height.
+    fix_suggestion: 'Confirm target page/content width; keep requested dimensions, or use dm.col1/dm.col2 when they fit.'

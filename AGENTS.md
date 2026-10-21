@@ -31,6 +31,23 @@ dm.simple_layout(fig)                            # 3. deterministic content-awar
 dm.save_formats(fig, "out", formats=("png", "pdf"))     # 4. multi-format save
 ```
 
+- Honor explicit width/height/style and journal/template constraints first,
+  then prior project context, then purpose defaults: paper/journal →
+  `scientific`, report/document/dashboard → `report`, talk/slides →
+  `presentation`. Start with a reasonable draft size for the panel complexity:
+  paper 9/17 cm (`dm.col1`/`dm.col2`) and report 13–17 cm are suggestions,
+  not standards or caps. Slide size depends on ratio and full-slide/inset use.
+  Ask one short context/preferred-size question only if missing information
+  materially affects the result; don't reask known context. For a quick draft,
+  state a provisional preset/size and invite correction. Use `-kr` only for
+  Korean plot text. Geometry-only edits preserve the selected preset/data/style.
+- Width and height are free physical dimensions: for example,
+  `dm.figsize("24cm", "120mm")` or `dm.figsize("10in", "5in")`.
+  Native `plt.figure` + GridSpec/nested GridSpec are valid alongside
+  `plt.subplots`. The 17 cm lint warning is page-fit advice, not a maximum;
+  retain requested dimensions. To preserve export size, use
+  `dm.save_formats(..., bbox_inches=None)` (the default); `"tight"` crops.
+  DPI changes raster density, not physical canvas size.
 - **`dm.figsize(width, aspect)`**: returns the inch tuple matplotlib's
   `figsize=` expects. `width` must be a unit string (`"13cm"`,
   `"5in"`, `"170mm"`, `"24pt"`) or a `Length` value (`dm.cm(13)`,
