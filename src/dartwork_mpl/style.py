@@ -12,6 +12,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+from matplotlib import RcParams
 
 __all__ = ["Style", "list_styles", "load_style_dict", "style", "style_path"]
 
@@ -389,6 +390,9 @@ class Style:
 
         This is the recommended way to apply styles in this module.
         Presets are pre-optimized combinations of styles for specific use cases.
+        Resolve the complete request and validate overrides in isolated rcParams
+        before font loading or changes to live style, semantics or bookkeeping.
+        Successful requests retain the usual preset and caller-override order.
 
         Parameters
         ----------
@@ -416,7 +420,10 @@ class Style:
         Raises
         ------
         KeyError
-            If the requested preset name is not found in the presets dictionary.
+            If the preset name is unknown or an override key is invalid.
+        ValueError
+            If an override value fails Matplotlib's rcParam validation. Rejected
+            requests leave the active style and semantic tokens unchanged.
 
         Examples
         --------
@@ -433,19 +440,22 @@ class Style:
                 if name not in self.presets:
                     raise KeyError(self._unknown_preset_message(name))
                 style_list.extend(self.presets[name])
-            self.stack(style_list)
         else:
             # Single preset
             if preset_name not in self.presets:
                 raise KeyError(self._unknown_preset_message(preset_name))
-            self.stack(self.presets[preset_name])
+            style_list = self.presets[preset_name]
 
+        # Resolve aliases before validation so the last canonical-key value wins.
+        # Keep normalized values: validating a supported one-shot iterable twice
+        # would exhaust it before the live update.
+        overrides = {_resolve_rcparam_key(k): v for k, v in kwargs.items()}
+        validated_overrides = RcParams(overrides)
+
+        self.stack(style_list)
         if kwargs:
-            overrides = {}
-            for k, v in kwargs.items():
-                overrides[_resolve_rcparam_key(k)] = v
             with _style_lock:
-                plt.rcParams.update(overrides)
+                plt.rcParams.update(validated_overrides)
 
     @contextlib.contextmanager
     def context(

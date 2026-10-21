@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import importlib
 from concurrent.futures import ThreadPoolExecutor
 
@@ -365,3 +366,145 @@ class TestStyleAuditRegressions:
         assert isinstance(fc, str) and not fc.startswith('"')
         # The unwrapped value must be a valid matplotlib colour.
         mcolors.to_rgb(fc)
+
+
+def _style_state():
+    """Snapshot full live rcParams, semantic tokens and preset bookkeeping."""
+    from matplotlib.colors import get_named_colors_mapping
+
+    from dartwork_mpl._colors._semantic import SEMANTIC_TOKEN_NAMES
+
+    mapping = get_named_colors_mapping()
+    return (
+        copy.deepcopy(dict(mpl.rcParams)),
+        {name: mapping[name] for name in SEMANTIC_TOKEN_NAMES},
+        set(style_module._dm_managed_keys),
+    )
+
+
+def _restore_style_test_state(state):
+    """Restore test setup so control and rejected paths start from identical state."""
+    from matplotlib.colors import get_named_colors_mapping
+
+    mpl.rcParams.update(state[0])
+    get_named_colors_mapping().update(state[1])
+    style_module._dm_managed_keys.clear()
+    style_module._dm_managed_keys.update(state[2])
+
+
+@pytest.fixture
+def isolated_style_state():
+    """Give preservation tests fresh managed-key history and restore all test state."""
+    saved = _style_state()
+    try:
+        style_module._dm_managed_keys.clear()
+        dm.style.use("scientific")
+        yield
+    finally:
+        _restore_style_test_state(saved)
+
+
+_STYLE_REJECTIONS = [
+    ("presentation-kr", {"font_size": 13, "not_an_rc_option": 1}, KeyError),
+    (
+        "presentation-kr",
+        {"font_size": 13, "axes_labelsize": "invalid-size"},
+        ValueError,
+    ),
+    ("presentation-kr", {"axes.labelsize": "invalid-size"}, ValueError),
+    ("unknown-preset", {}, KeyError),
+    (["presentation-kr", "unknown-preset"], {}, KeyError),
+    (["presentation-kr", 7], {}, AttributeError),
+    (7, {}, AttributeError),
+]
+
+
+@pytest.mark.parametrize(("preset", "kwargs", "error"), _STYLE_REJECTIONS)
+def test_rejected_style_preserves_immediate_and_subsequent_state(
+    isolated_style_state, preset, kwargs, error
+):
+    """Rejection preserves full current state and the next public style transition."""
+    mpl.rcParams["pdf.compression"] = 0
+    before = _style_state()
+    # Run the successful control before the rejected branch, from the same state.
+    dm.style.use("scientific")
+    control = _style_state()
+    _restore_style_test_state(before)
+    with pytest.raises(error):
+        dm.style.use(preset, **kwargs)
+    assert _style_state()[:2] == before[:2]
+    dm.style.use("scientific")
+    assert _style_state()[:2] == control[:2]
+
+
+def test_invalid_style_does_not_load_fonts(isolated_style_state, monkeypatch):
+    """The owned font-loader boundary is reached only after complete validation."""
+    font_module = importlib.import_module("dartwork_mpl.font")
+    original = font_module.ensure_loaded
+    called = []
+
+    def load_fonts():
+        """Observe real font-loader calls without replacing their behavior."""
+        called.append(True)
+        return original()
+
+    monkeypatch.setattr(font_module, "ensure_loaded", load_fonts)
+    with pytest.raises(ValueError):
+        dm.style.use(
+            "presentation-kr", font_size=13, axes_labelsize="invalid-size"
+        )
+    assert called == []
+
+
+def test_rejected_style_preserves_semantic_tokens(isolated_style_state):
+    """An invalid Korean preset cannot leave the financial color roles switched."""
+    before = _style_state()[1]
+    with pytest.raises(KeyError):
+        dm.style.use("presentation-kr", not_an_rc_option=1)
+    assert _style_state()[1] == before
+
+
+@pytest.mark.parametrize(
+    "presets",
+    [["scientific", "presentation-kr"], ["presentation-kr", "scientific"]],
+)
+def test_valid_preset_list_keeps_order_and_caller_precedence(
+    isolated_style_state, presets
+):
+    """Ordered preset lists still apply the final font layer and then caller kwargs."""
+    expected = 10.5 if presets[-1] == "presentation-kr" else 7.5
+    assert dm.style.use(presets) is None
+    assert mpl.rcParams["font.size"] == expected
+    dm.style.use(presets, font_size=14)
+    assert mpl.rcParams["font.size"] == 14
+
+
+def test_empty_style_list_keeps_successful_override_path(isolated_style_state):
+    """An empty list still runs the existing successful stack and override path."""
+    mpl.rcParams["pdf.compression"] = 0
+    assert dm.style.use([], font_size=13) is None
+    assert mpl.rcParams["font.size"] == 13
+    assert mpl.rcParams["pdf.compression"] == 0
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"font_size": "invalid-but-shadowed", "font.size": 12},
+        {"font.size": 13, "font_size": 12},
+    ],
+)
+def test_alias_collisions_retain_last_value_precedence(
+    isolated_style_state, kwargs
+):
+    """Resolve alias collisions before validating the winning caller value."""
+    dm.style.use("scientific", **kwargs)
+    assert mpl.rcParams["font.size"] == 12
+
+
+def test_generator_rc_value_is_consumed_once(isolated_style_state):
+    """A supported one-shot font-family value keeps its validated contents."""
+    dm.style.use(
+        "scientific", font_family=(name for name in ["DejaVu Sans", "serif"])
+    )
+    assert mpl.rcParams["font.family"] == ["DejaVu Sans", "serif"]
