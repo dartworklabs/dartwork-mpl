@@ -109,7 +109,7 @@ def candidate_catalog() -> CatalogSnapshot:
 
 @pytest.fixture(autouse=True)
 def _matplotlib_state_isolation() -> Iterator[None]:
-    """Close figures, reset rcParams, and restore ``dm.config``.
+    """Close figures, reset rcParams/preset ownership, and restore ``dm.config``.
 
     Yields control to the test, then performs cleanup unconditionally.
     """
@@ -131,3 +131,8 @@ def _matplotlib_state_isolation() -> Iterator[None]:
     # Restore matplotlib's compiled-in defaults so style mutations from
     # one test don't bleed into the next.
     mpl.rcdefaults()
+    # Ownership describes the live preset values, so it cannot outlive the
+    # rcdefaults reset above. Keep the private dictionary's identity stable.
+    from dartwork_mpl.style import _dm_preset_values
+
+    _dm_preset_values.clear()
