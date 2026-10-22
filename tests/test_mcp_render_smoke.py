@@ -141,14 +141,14 @@ def test_path_output_is_unique_regular_private_and_preserves_owned_symlink(
     import tempfile
     from pathlib import Path
 
-    from dartwork_mpl.mcp import tools
+    from dartwork_mpl.mcp.templates import bundled
 
     template = tmp_path / "template.py"
     template.write_text(
         "from pathlib import Path\nPath('out.png').write_bytes(b'owned-png-bytes')\n"
     )
     monkeypatch.setattr(
-        tools, "_resolve_template_path", lambda *args, **kwargs: template
+        bundled, "_resolve_template_path", lambda *args, **kwargs: template
     )
     legacy = Path(tempfile.gettempdir()) / (
         "dartwork-mpl-render-advanced-line.png"
@@ -195,14 +195,14 @@ def test_template_error_presentation_reserves_complete_truncation_marker(
     tmp_path, monkeypatch, name
 ):
     """Actual oversized template stderr fits 2,000 characters with a complete visible marker."""
-    from dartwork_mpl.mcp import tools
+    from dartwork_mpl.mcp.templates import bundled
 
     template = tmp_path / "error.py"
     template.write_text(
         "import os\nos.write(2, b'e' * 100000)\nraise ValueError('stop')\n"
     )
     monkeypatch.setattr(
-        tools, "_resolve_template_path", lambda *args, **kwargs: template
+        bundled, "_resolve_template_path", lambda *args, **kwargs: template
     )
     result = _tools_map()[name]("line")
     assert result["status"] == "render_error"
@@ -220,14 +220,15 @@ def test_template_publication_failure_has_safe_existing_error(
     tmp_path, monkeypatch, name
 ):
     """Owned publication errors return render_error without a private path or published name."""
-    from dartwork_mpl.mcp import _platform, tools
+    from dartwork_mpl.mcp import _platform
+    from dartwork_mpl.mcp.templates import bundled
 
     template = tmp_path / "template.py"
     template.write_text(
         "from pathlib import Path\nPath('out.png').write_bytes(b'owned-png-bytes')\n"
     )
     monkeypatch.setattr(
-        tools, "_resolve_template_path", lambda *args, **kwargs: template
+        bundled, "_resolve_template_path", lambda *args, **kwargs: template
     )
 
     def fail_publication(*args, **kwargs):
@@ -260,8 +261,8 @@ def test_template_success_preserves_literal_stderr_and_marks_only_real_overrun(
     """Real basic/advanced PNG callbacks strip user text and mark genuine overruns."""
     from pathlib import Path
 
-    from dartwork_mpl.mcp import tools
     from dartwork_mpl.mcp._platform import assets as _assets
+    from dartwork_mpl.mcp.templates import bundled
 
     template_dir = tmp_path / "templates"
     (template_dir / "advanced").mkdir(parents=True)
@@ -281,7 +282,7 @@ def test_template_success_preserves_literal_stderr_and_marks_only_real_overrun(
         f"os.write(2, {raw_stderr!r})\n"
     )
     monkeypatch.setattr(_assets, "_TEMPLATE_DIR", template_dir)
-    monkeypatch.setattr(tools, "_TEMPLATE_DIR", template_dir)
+    monkeypatch.setattr(bundled, "_TEMPLATE_DIR", template_dir)
     result = _tools_map()[name]("owned", return_format=return_format)
     try:
         assert result["status"] == "ok", result

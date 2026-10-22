@@ -14,17 +14,13 @@ from fastmcp import FastMCP
 from matplotlib import font_manager
 
 from ..util import get_prompt
-from ._platform import resolve_style_path, resolve_template_path
+from . import templates
 
 __all__ = ["register_resources"]
-
-# Path to bundled mplstyle files
-_MPLSTYLE_DIR = Path(__file__).parent.parent / "asset" / "mplstyle"
 
 # Path to the SSOT prompt directory (00-index, 01-policy, 03-recipes,
 # 05-templates/, _legacy/, ...)
 _PROMPT_DIR = Path(__file__).parent.parent / "asset" / "prompt"
-_TEMPLATE_DIR = _PROMPT_DIR / "05-templates"
 _MODELED_Y_LIMITATION = (
     "Modeled relative CIE Y (`relative_y`) is calculated from nominal D65 "
     "sRGB; it is not a measurement of a particular display, perceived "
@@ -159,10 +155,7 @@ def register_resources(mcp: FastMCP) -> None:
         Returns a JSON array of preset names (without .mplstyle extension)
         that can be queried individually via dartwork-mpl://styles/{preset}.
         """
-        if not _MPLSTYLE_DIR.exists():
-            return json.dumps([])
-        presets = sorted([p.stem for p in _MPLSTYLE_DIR.glob("*.mplstyle")])
-        return json.dumps(presets, indent=2)
+        return templates.style_list()
 
     @mcp.resource("dartwork-mpl://styles/{preset}")
     def style_preset(preset: str) -> str:
@@ -178,13 +171,7 @@ def register_resources(mcp: FastMCP) -> None:
         font-poster, font-presentation, font-report, font-scientific,
         font-web, lang-kr, spine-no, spine-yes, theme-dark, theme-minimal.
         """
-        style_file = resolve_style_path(preset)
-        if style_file is None:
-            available = sorted(
-                [p.stem for p in _MPLSTYLE_DIR.glob("*.mplstyle")]
-            )
-            return f"Style preset '{preset}' not found. Available presets: {available}"
-        return style_file.read_text(encoding="utf-8")
+        return templates.style_source(preset)
 
     # ── Plot Template Resources ──────────────────────────────────────
     #
@@ -195,8 +182,7 @@ def register_resources(mcp: FastMCP) -> None:
     @mcp.resource("dartwork-mpl://templates/list")
     def templates_list() -> str:
         """List all available plot template types."""
-        names = sorted(p.stem for p in _TEMPLATE_DIR.glob("*.py"))
-        return json.dumps(names, indent=2)
+        return templates.template_list()
 
     @mcp.resource("dartwork-mpl://templates/{plot_type}")
     def plot_templates(plot_type: str) -> str:
@@ -207,11 +193,7 @@ def register_resources(mcp: FastMCP) -> None:
         scatter, small_multiples, stacked_bar, tornado, twin_axis,
         violin, waterfall.
         """
-        path = resolve_template_path(plot_type)
-        if path is None:
-            available = sorted(p.stem for p in _TEMPLATE_DIR.glob("*.py"))
-            return f"No template for {plot_type!r}. Available: {available}"
-        return path.read_text(encoding="utf-8")
+        return templates.template_source(plot_type)
 
     @mcp.resource("dartwork-mpl://templates/advanced/{plot_type}")
     def plot_templates_advanced(plot_type: str) -> str:
@@ -224,11 +206,4 @@ def register_resources(mcp: FastMCP) -> None:
         tiers use the same confined bare-ID lookup; invalid IDs return
         the existing not-found response.
         """
-        advanced = resolve_template_path(plot_type, advanced=True)
-        if advanced is not None:
-            return advanced.read_text(encoding="utf-8")
-        basic = resolve_template_path(plot_type)
-        if basic is not None:
-            return basic.read_text(encoding="utf-8")
-        available = sorted(p.stem for p in _TEMPLATE_DIR.glob("*.py"))
-        return f"No template for {plot_type!r}. Available: {available}"
+        return templates.advanced_template_source(plot_type)

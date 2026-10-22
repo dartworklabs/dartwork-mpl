@@ -4,11 +4,9 @@ Wraps ``dm.suggest_chart_type`` and normalises its label to a bundled
 template stem so the returned template URIs always resolve.
 """
 
-from pathlib import Path
 from typing import Any
 
-# The bundled plot templates (same location the template tools read).
-_TEMPLATE_DIR = Path(__file__).parents[2] / "asset" / "prompt" / "05-templates"
+from .. import templates
 
 # ``helpers.quality.suggest_chart_type`` speaks in *chart semantics*
 # (``grouped_bar``, ``scatter_density``, ``hexbin``, …) while the bundled
@@ -48,16 +46,14 @@ def suggest(
     # the rationale when it differs.
     recommended = _SUGGEST_TO_TEMPLATE.get(raw, raw)
 
-    basic_path = _TEMPLATE_DIR / f"{recommended}.py"
-    advanced_path = _TEMPLATE_DIR / "advanced" / f"{recommended}.py"
     basic_uri = (
         f"dartwork-mpl://templates/{recommended}"
-        if basic_path.exists()
+        if templates.exists(recommended)
         else "dartwork-mpl://templates/bar"
     )
     advanced_uri = (
         f"dartwork-mpl://templates/advanced/{recommended}"
-        if advanced_path.exists()
+        if templates.exists(recommended, advanced=True)
         else None
     )
 

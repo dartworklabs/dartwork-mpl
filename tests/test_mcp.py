@@ -1037,7 +1037,8 @@ class TestMcpTools:
     ) -> None:
         """Every recommender output resolves to a real template stem and
         a matching (non-fallback) basic template URI (H3)."""
-        from dartwork_mpl.mcp.tools import _TEMPLATE_DIR, register_tools
+        from dartwork_mpl.mcp.templates.bundled import _TEMPLATE_DIR
+        from dartwork_mpl.mcp.tools import register_tools
 
         mock_mcp = MagicMock()
         captured = _capture_decorators(mock_mcp, "tool")
@@ -1058,10 +1059,8 @@ class TestMcpTools:
         """Parity guard: every ``_SUGGEST_TO_TEMPLATE`` target is a
         bundled template stem, so the mapping can't silently rot when
         templates are renamed."""
-        from dartwork_mpl.mcp.recommend.chart_type import (
-            _SUGGEST_TO_TEMPLATE,
-            _TEMPLATE_DIR,
-        )
+        from dartwork_mpl.mcp.recommend.chart_type import _SUGGEST_TO_TEMPLATE
+        from dartwork_mpl.mcp.templates.bundled import _TEMPLATE_DIR
 
         stems = {p.stem for p in _TEMPLATE_DIR.glob("*.py")}
         for target in _SUGGEST_TO_TEMPLATE.values():
@@ -1183,7 +1182,7 @@ class TestMcpAgenticReliability:
 
     def test_info_plot_templates_match_bundle(self) -> None:
         """info['plot_templates'] equals the bundled 05-templates/*.py set."""
-        from dartwork_mpl.mcp import resources as _res
+        from dartwork_mpl.mcp.templates import bundled as _res
         from dartwork_mpl.mcp.tools import register_tools
 
         expected = sorted(p.stem for p in _res._TEMPLATE_DIR.glob("*.py"))
@@ -1197,7 +1196,7 @@ class TestMcpAgenticReliability:
 
     def test_info_primitive_mplstyle_match_bundle(self) -> None:
         """info primitive_mplstyle equals the bundled *.mplstyle set."""
-        from dartwork_mpl.mcp import resources as _res
+        from dartwork_mpl.mcp.templates import bundled as _res
         from dartwork_mpl.mcp.tools import register_tools
 
         expected = sorted(p.stem for p in _res._MPLSTYLE_DIR.glob("*.mplstyle"))
@@ -1292,13 +1291,16 @@ class TestMcpTemplatePathTraversal:
         ],
     )
     def test_resolver_rejects_traversal(self, evil: str) -> None:
-        from dartwork_mpl.mcp.tools import _resolve_template_path
+        from dartwork_mpl.mcp.templates.bundled import _resolve_template_path
 
         assert _resolve_template_path(evil) is None
         assert _resolve_template_path(evil, advanced=True) is None
 
     def test_resolver_accepts_bundled_stems(self) -> None:
-        from dartwork_mpl.mcp.tools import _TEMPLATE_DIR, _resolve_template_path
+        from dartwork_mpl.mcp.templates.bundled import (
+            _TEMPLATE_DIR,
+            _resolve_template_path,
+        )
 
         assert _resolve_template_path("bar") == _TEMPLATE_DIR / "bar.py"
         # case-insensitive stem

@@ -5,30 +5,14 @@ for accessing dartwork-mpl documentation, color manipulation,
 code linting, and data validation.
 """
 
-from pathlib import Path
 from typing import Any
 
 from fastmcp import FastMCP
 
-from . import catalog, colors, docs_fetch, recommend
-from ._platform import resolve_template_path
+from . import catalog, colors, docs_fetch, lint, recommend, templates
 from .plot_data import validate_data
 
 __all__ = ["register_tools"]
-
-_ASSET_DIR = Path(__file__).parent.parent / "asset"
-_TEMPLATE_DIR = _ASSET_DIR / "prompt" / "05-templates"
-
-
-def _resolve_template_path(
-    plot_type: str, *, advanced: bool = False
-) -> Path | None:
-    """Delegate template lookup to the shared confined MCP asset boundary.
-
-    Preserve the private compatibility surface while returning the resolved
-    regular file checked by that boundary, or None for invalid/missing IDs.
-    """
-    return resolve_template_path(plot_type, advanced=advanced)
 
 
 def register_tools(mcp: FastMCP) -> None:
@@ -166,10 +150,7 @@ def register_tools(mcp: FastMCP) -> None:
         str
             Lint report.
         """
-        from dartwork_mpl.lint import format_report
-        from dartwork_mpl.lint import lint as _lint
-
-        return format_report(_lint(code))
+        return lint.lint_text(code)
 
     @mcp.tool()
     def lint_dartwork_mpl_code_json(code: str) -> list[dict[str, Any]]:
@@ -203,19 +184,7 @@ def register_tools(mcp: FastMCP) -> None:
         list[dict]
             Structured issues; an empty list means no issues found.
         """
-        from dartwork_mpl.lint import lint as _lint
-
-        return [
-            {
-                "rule_id": i.rule_id,
-                "severity": i.severity,
-                "line": i.line,
-                "column": i.column,
-                "message": i.message,
-                "fix_suggestion": i.fix_suggestion,
-            }
-            for i in _lint(code)
-        ]
+        return lint.lint_records(code)
 
     @mcp.tool()
     def find_template(
@@ -253,9 +222,7 @@ def register_tools(mcp: FastMCP) -> None:
             ``"tier"`` when ``tier`` is non-``None``). Empty list when
             ``intent`` is blank or no template overlaps.
         """
-        from dartwork_mpl.prompt import find_template as _find_template
-
-        return _find_template(intent, top_k=top_k, tier=tier)
+        return templates.find(intent, top_k, tier)
 
     @mcp.tool()
     def apply_lint_fixes(code: str) -> dict[str, Any]:
@@ -283,25 +250,7 @@ def register_tools(mcp: FastMCP) -> None:
             "unfixed": list[Issue]}``. Each Issue is a dict shaped
             like :func:`lint_dartwork_mpl_code_json` entries.
         """
-        from dartwork_mpl.lint import apply_lint_fixes as _apply
-
-        fixed_code, applied, unfixed = _apply(code)
-
-        def _serialise(issue: Any) -> dict[str, Any]:
-            return {
-                "rule_id": issue.rule_id,
-                "severity": issue.severity,
-                "line": issue.line,
-                "column": issue.column,
-                "message": issue.message,
-                "fix_suggestion": issue.fix_suggestion,
-            }
-
-        return {
-            "fixed_code": fixed_code,
-            "applied": [_serialise(i) for i in applied],
-            "unfixed": [_serialise(i) for i in unfixed],
-        }
+        return lint.fix_code(code)
 
     @mcp.tool()
     def render_template(
@@ -338,117 +287,7 @@ def register_tools(mcp: FastMCP) -> None:
             "timeout", "plot_type": str, "png_base64": str|None,
             "png_path": str|None, "stderr": str}``.
         """
-        import base64
-        import sys
-        import tempfile
-        import textwrap
-        from pathlib import Path as _Path
-
-        from ._platform import (
-            diagnostic,
-            publish_png,
-            run_child,
-            strip_diagnostic,
-        )
-
-        template_dir = _TEMPLATE_DIR
-        path = _resolve_template_path(plot_type)
-        if path is None:
-            available = sorted(p.stem for p in template_dir.glob("*.py"))
-            return {
-                "status": "unknown_template",
-                "plot_type": plot_type,
-                "png_base64": None,
-                "png_path": None,
-                "stderr": (
-                    f"No template named {plot_type!r}. Available: {available}"
-                ),
-            }
-
-        with tempfile.TemporaryDirectory() as tmp:
-            out_base = _Path(tmp) / "out"
-            # The template ends with ``dm.save_formats(fig, "<name>")``
-            # which writes to ``<cwd>/<name>.png``. We just need to
-            # run it in our tmp dir and read whatever PNG appears.
-            runner = textwrap.dedent(
-                """\
-                import os, sys
-                os.chdir({tmp!r})
-                import matplotlib
-                matplotlib.use("Agg")
-                sys.path.insert(0, {tmpdir!r})
-                exec(compile(open({path!r}).read(), {path!r}, "exec"),
-                     {{"__name__": "__render__"}})
-                """
-            ).format(
-                tmp=str(out_base.parent),
-                tmpdir=str(out_base.parent),
-                path=str(path),
-            )
-
-            proc = run_child(
-                [sys.executable, "-c", runner], timeout_seconds=timeout_seconds
-            )
-            if proc.timed_out:
-                return {
-                    "status": "timeout",
-                    "plot_type": plot_type,
-                    "png_base64": None,
-                    "png_path": None,
-                    "stderr": f"Render exceeded {timeout_seconds}s timeout.",
-                }
-
-            pngs = sorted(out_base.parent.glob("*.png"))
-            if proc.returncode != 0 or not pngs:
-                return {
-                    "status": "render_error",
-                    "plot_type": plot_type,
-                    "png_base64": None,
-                    "png_path": None,
-                    "stderr": diagnostic(
-                        proc.stderr or proc.stdout,
-                        "stderr" if proc.stderr else "stdout",
-                        char_limit=2000,
-                        marked=(
-                            proc.stderr_truncated
-                            if proc.stderr
-                            else proc.stdout_truncated
-                        ),
-                    ),
-                }
-
-            png_bytes = pngs[0].read_bytes()
-            if return_format == "path":
-                try:
-                    persistent = publish_png(
-                        png_bytes, f"dartwork-mpl-render-{plot_type}-"
-                    )
-                except OSError:
-                    return {
-                        "status": "render_error",
-                        "plot_type": plot_type,
-                        "png_base64": None,
-                        "png_path": None,
-                        "stderr": "Template output publication failed.",
-                    }
-                return {
-                    "status": "ok",
-                    "plot_type": plot_type,
-                    "png_base64": None,
-                    "png_path": str(persistent),
-                    "stderr": strip_diagnostic(
-                        proc.stderr, "stderr", marked=proc.stderr_truncated
-                    ),
-                }
-            return {
-                "status": "ok",
-                "plot_type": plot_type,
-                "png_base64": base64.b64encode(png_bytes).decode("ascii"),
-                "png_path": None,
-                "stderr": strip_diagnostic(
-                    proc.stderr, "stderr", marked=proc.stderr_truncated
-                ),
-            }
+        return templates.render_basic(plot_type, return_format, timeout_seconds)
 
     @mcp.tool()
     def migrate_legacy_code(code: str) -> str:
@@ -482,9 +321,7 @@ def register_tools(mcp: FastMCP) -> None:
             above the lines that need agent attention. Inputs without
             matching patterns are returned unchanged.
         """
-        from dartwork_mpl.lint import migrate_legacy_code as _migrate
-
-        return _migrate(code)
+        return lint.migrate_code(code)
 
     # ── Figure Validation Tool (execute + validate) ──────────────────
 
@@ -685,68 +522,7 @@ def register_tools(mcp: FastMCP) -> None:
             requested layers that are NOT yet in the canonical
             template and would need to be added by hand.
         """
-        layers = list(layers or [])
-        template_dir = _TEMPLATE_DIR
-        if tier == "advanced":
-            path = _resolve_template_path(plot_type, advanced=True)
-            if path is None:
-                # Fall back to basic if advanced doesn't exist yet.
-                path = _resolve_template_path(plot_type)
-                tier = "basic"
-        elif tier == "basic":
-            path = _resolve_template_path(plot_type)
-        else:
-            return {
-                "status": "invalid_tier",
-                "tier": tier,
-                "code": "",
-                "layers": layers,
-                "applied": [],
-                "missing": [],
-            }
-
-        if path is None:
-            available = sorted(p.stem for p in template_dir.glob("*.py"))
-            return {
-                "status": "unknown_template",
-                "tier": tier,
-                "code": (
-                    f"No template named {plot_type!r}. Available: {available}"
-                ),
-                "layers": layers,
-                "applied": [],
-                "missing": layers,
-            }
-
-        code = path.read_text(encoding="utf-8")
-
-        # Heuristic detection — purely lexical so it stays cheap and
-        # lets the agent see "yes, the advanced template already does
-        # this, no need to add it again."
-        detect_patterns = {
-            "reference_line": ("axhline(", "axvline("),
-            "event_window": ("axvspan(", "axhspan("),
-            "value_labels": ("ax.text(", "ax.bar_label("),
-            "trendline": ("np.polyfit", "polyfit"),
-            "highlight": ("dc.amber5", "accent", 'marker="D"'),
-            "callout": ("ax.annotate(", "arrowprops="),
-            "gradient_palette": ("dm.cspace(", ".cspace("),
-            "source_footnote": ("fig.text(", "Source:"),
-        }
-        applied: list[str] = []
-        for layer, patterns in detect_patterns.items():
-            if any(p in code for p in patterns):
-                applied.append(layer)
-        missing = [layer for layer in layers if layer not in applied]
-
-        return {
-            "status": "ok",
-            "tier": tier,
-            "code": code,
-            "layers": layers,
-            "applied": applied,
-            "missing": missing,
-        }
+        return templates.compose(plot_type, layers, tier)
 
     @mcp.tool()
     def render_template_advanced(
@@ -784,134 +560,9 @@ def register_tools(mcp: FastMCP) -> None:
             "png_base64": str|None, "png_path": str|None,
             "stderr": str}``.
         """
-        import base64
-        import sys
-        import tempfile
-        import textwrap
-        from pathlib import Path as _Path
-
-        from ._platform import (
-            diagnostic,
-            publish_png,
-            run_child,
-            strip_diagnostic,
+        return templates.render_advanced(
+            plot_type, return_format, timeout_seconds
         )
-
-        template_dir = _TEMPLATE_DIR
-        advanced_path = _resolve_template_path(plot_type, advanced=True)
-        basic_path = _resolve_template_path(plot_type)
-
-        if advanced_path is not None:
-            path = advanced_path
-            tier = "advanced"
-            fell_back = False
-        elif basic_path is not None:
-            path = basic_path
-            tier = "basic"
-            fell_back = True
-        else:
-            available = sorted(p.stem for p in template_dir.glob("*.py"))
-            return {
-                "status": "unknown_template",
-                "plot_type": plot_type,
-                "tier": "none",
-                "png_base64": None,
-                "png_path": None,
-                "stderr": (
-                    f"No template named {plot_type!r}. "
-                    f"Available basic: {available}. "
-                    f"Available advanced: "
-                    f"{sorted(p.stem for p in (template_dir / 'advanced').glob('*.py'))}."
-                ),
-            }
-
-        with tempfile.TemporaryDirectory() as tmp:
-            out_base = _Path(tmp) / "out"
-            runner = textwrap.dedent(
-                """\
-                import os, sys
-                os.chdir({tmp!r})
-                import matplotlib
-                matplotlib.use("Agg")
-                sys.path.insert(0, {tmpdir!r})
-                exec(compile(open({path!r}).read(), {path!r}, "exec"),
-                     {{"__name__": "__render__"}})
-                """
-            ).format(
-                tmp=str(out_base.parent),
-                tmpdir=str(out_base.parent),
-                path=str(path),
-            )
-
-            proc = run_child(
-                [sys.executable, "-c", runner], timeout_seconds=timeout_seconds
-            )
-            if proc.timed_out:
-                return {
-                    "status": "timeout",
-                    "plot_type": plot_type,
-                    "tier": tier,
-                    "png_base64": None,
-                    "png_path": None,
-                    "stderr": f"Render exceeded {timeout_seconds}s timeout.",
-                }
-
-            pngs = sorted(out_base.parent.glob("*.png"))
-            if proc.returncode != 0 or not pngs:
-                return {
-                    "status": "render_error",
-                    "plot_type": plot_type,
-                    "tier": tier,
-                    "png_base64": None,
-                    "png_path": None,
-                    "stderr": diagnostic(
-                        proc.stderr or proc.stdout,
-                        "stderr" if proc.stderr else "stdout",
-                        char_limit=2000,
-                        marked=(
-                            proc.stderr_truncated
-                            if proc.stderr
-                            else proc.stdout_truncated
-                        ),
-                    ),
-                }
-
-            png_bytes = pngs[0].read_bytes()
-            status = "fell_back" if fell_back else "ok"
-            if return_format == "path":
-                try:
-                    persistent = publish_png(
-                        png_bytes, f"dartwork-mpl-render-advanced-{plot_type}-"
-                    )
-                except OSError:
-                    return {
-                        "status": "render_error",
-                        "plot_type": plot_type,
-                        "tier": tier,
-                        "png_base64": None,
-                        "png_path": None,
-                        "stderr": "Template output publication failed.",
-                    }
-                return {
-                    "status": status,
-                    "plot_type": plot_type,
-                    "tier": tier,
-                    "png_base64": None,
-                    "png_path": str(persistent),
-                    "stderr": strip_diagnostic(
-                        proc.stderr, "stderr", marked=proc.stderr_truncated
-                    ),
-                }
-            return {
-                "status": status,
-                "plot_type": plot_type,
-                "tier": tier,
-                "png_base64": base64.b64encode(png_bytes).decode("ascii"),
-                "png_path": None,
-                "stderr": strip_diagnostic(
-                    proc.stderr, "stderr", marked=proc.stderr_truncated
-                ),
-            }
 
     # ── Utility Info Tool ────────────────────────────────────────────
 

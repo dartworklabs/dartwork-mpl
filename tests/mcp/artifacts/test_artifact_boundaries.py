@@ -11,12 +11,8 @@ import pytest
 
 pytest.importorskip("fastmcp")
 ROOT = Path(__file__).resolve().parents[3] / "src" / "dartwork_mpl"
-# Named retained edges: old MCP handlers/prompts/resources and CLI wiring.
-LEGACY = {
-    "dartwork_mpl.mcp.tools",
-    "dartwork_mpl.mcp.resources",
-    "dartwork_mpl.mcp.prompts",
-}
+# Retained MCP handlers ("legacy"): the tools/resources/prompts wiring tables
+# and the mcp sub-slices their bodies delegate to; plus CLI/server wiring.
 # Business-agnostic MCP mechanism (child capture, asset confinement).
 PLATFORM = "dartwork_mpl.mcp._platform"
 ALLOWED = {
@@ -39,14 +35,14 @@ def slice_of(module):
         return "platform"
     if module == "dartwork_mpl.mcp.execution":
         return "execution"
-    if module in LEGACY:
-        return "legacy"
     if module in {
         "dartwork_mpl.mcp",
         "dartwork_mpl.mcp.server",
         "dartwork_mpl.cli",
     }:
         return "wiring"
+    if module.startswith("dartwork_mpl.mcp."):
+        return "legacy"
     return "core"
 
 
@@ -165,12 +161,10 @@ def assert_boundaries(edges, surfaces):
                 source,
                 target,
             )
-            assert target == PLATFORM and name in surfaces.get(target, set()), (
-                "private surface",
-                source,
-                target,
-                name,
-            )
+            # ``from .. import _platform`` imports the surface module itself.
+            assert target == PLATFORM and (
+                name is None or name in surfaces.get(target, set())
+            ), ("private surface", source, target, name)
             continue
         if second == "core":
             # Existing public APIs used by execution and retained MCP handlers.
