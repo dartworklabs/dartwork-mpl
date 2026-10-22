@@ -49,16 +49,10 @@ def slice_of(module):
 def imports_and_surfaces():
     """Parse every production import and declared surface without importing MCP."""
     trees = {}
-    packages = set()
     for path in ROOT.rglob("*.py"):
-        if "asset" in path.parts:
+        if "asset" in path.parts or "tests" in path.parts:
+            # Bundled sample code and colocated slice tests are not production.
             continue
-        if (
-            "tests" in path.relative_to(ROOT).parts
-            or path.name.startswith("test_")
-            or path.name == "conftest.py"
-        ):
-            continue  # slice-owned tests (ADR 0005) are not production code
         relative = path.relative_to(ROOT.parent).with_suffix("")
         parts = (
             relative.parts[:-1]
@@ -66,7 +60,7 @@ def imports_and_surfaces():
             else relative.parts
         )
         tree = ast.parse(path.read_text())
-        if path.name == "execution.py":
+        if ".".join(parts) == "dartwork_mpl.mcp.execution":
             # The shared runner intentionally embeds Python for its one child.
             for node in tuple(ast.walk(tree)):
                 if (
@@ -79,8 +73,6 @@ def imports_and_surfaces():
                     )
                     tree.body.extend(ast.parse(child).body)
         trees[".".join(parts)] = tree
-        if relative.name == "__init__":
-            packages.add(".".join(parts))
     surfaces = {}
     edges = []
     for module, tree in trees.items():
@@ -94,10 +86,14 @@ def imports_and_surfaces():
             if isinstance(node, ast.Import):
                 edges.extend((module, alias.name, None) for alias in node.names)
             if isinstance(node, ast.ImportFrom):
-                # A package's relative imports resolve against itself, a
-                # plain module's against its parent package.
+                # A package's initializer resolves relative imports against
+                # itself, wherever in the file the import appears.
                 package = (
-                    module if module in packages else module.rpartition(".")[0]
+                    module
+                    if (
+                        ROOT.parent.joinpath(*module.split(".")) / "__init__.py"
+                    ).exists()
+                    else module.rpartition(".")[0]
                 )
                 target = (
                     importlib.util.resolve_name(

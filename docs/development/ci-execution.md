@@ -50,7 +50,7 @@ collection, without another full-suite run.
 | MCP slice-owned tests | No prefix: `src.dartwork_mpl.mcp._platform.tests.test_process`, `src.dartwork_mpl.mcp.docs_fetch.tests.test_raw_github` |
 | Optional UI consumers | `test_ui_boundary`, `test_ui_files`, `test_ui_http_security`, `test_ui_hardening`, `test_ui_init`, `test_ui_viewer_state`, `test_ui_render`, `test_ui_widget`, `test_ui_wire_golden` |
 
-All 44 modules must contribute a passed executed case. Missing modules,
+All 45 modules must contribute a passed executed case. Missing modules,
 zero-test suites, and modules whose cases all skip fail. Any failure/error in
 a protected module also fails, even alongside a passed case. Class-based
 pytest names are accepted; similarly named sibling modules cannot count.
