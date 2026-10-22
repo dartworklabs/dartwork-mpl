@@ -136,6 +136,7 @@ for i, (d, b, h, total) in enumerate(
             ha="center",
             va="bottom",
             fontsize=dm.fs(-1),
+            fontweight=dm.fw(1),
             color=colors[i],
         )
 

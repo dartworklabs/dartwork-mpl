@@ -96,7 +96,7 @@ Millions and billions
    # Dataset size in millions of rows
    dataset_rows = np.array([1.2e6, 2.5e6, 4.8e6, 8.3e6])
    ax1.bar(range(len(dataset_rows)), dataset_rows, color="dc.teal2")
-   dm.format_axis_millions(ax1, axis="y")  # 1.2M, 2.5M, …
+   dm.format_axis_millions(ax1, axis="y")  # 0, 2M, 4M, …
    ax1.set_title("Dataset rows")
 
    # World population in billions
@@ -151,7 +151,7 @@ SI prefixes
    power = np.array([1e-9, 1e-6, 1e-3, 1, 1e3])
    ax2.bar(range(len(power)), power, color="dc.orange2")
    ax2.set_yscale("log")
-   dm.format_axis_si(ax2, axis="y")  # 1n, 1μ, 1m, 1, 1k
+   dm.format_axis_si(ax2, axis="y")  # 0.001, 1, 1k: a unit per tick on log
    ax2.set_ylabel("Power (W)")
 
    dm.simple_layout(fig)
@@ -278,11 +278,17 @@ Best practices
 
 1. **Pick the smallest unit that reads cleanly.** ``format_axis_millions``
    beats raw ``1,200,000`` on a tight axis.
-2. **Decimal places.** 0–1 for general audiences, 2–3 for technical or
-   currency values.
-3. **Currency placement** follows local convention — prefix for USD,
+2. **Decimal places.** Leave ``decimals`` unset on the ``format_axis_*``
+   helpers: each axis then prints the fewest decimals that keep every tick
+   exact (``200``, not ``200.0``; ``17.5, 20.0, 22.5`` for a half step).
+   Pass an integer only when a fixed precision is part of the message.
+3. **One unit per axis.** ``format_axis_si`` and ``format_axis_myriad``
+   share one unit across the axis: ``unit="max"`` (default) follows the
+   largest tick, ``unit="whole"`` keeps whole numbers, and a prefix such as
+   ``unit="k"`` fixes it.
+4. **Currency placement** follows local convention — prefix for USD,
    suffix for EUR.
-4. **SI prefixes** belong in scientific / engineering contexts; mixing
+5. **SI prefixes** belong in scientific / engineering contexts; mixing
    them with comma-grouped thousands looks inconsistent.
 
 See also
