@@ -11,7 +11,7 @@ from __future__ import annotations
 import matplotlib.colors as mcolors
 from matplotlib.figure import Figure
 
-from ..helpers.quality import _MIN_RECOMMENDED_DPI
+from ..helpers import MIN_RECOMMENDED_DPI
 from ._orchestrator import validate_figure
 from ._types import Severity
 
@@ -67,7 +67,7 @@ def check_agent_requirements(fig: Figure) -> dict[str, bool]:
 
     # Check DPI — threshold comes from the single source in
     # helpers.quality so the two checks can never drift apart again.
-    requirements["high_dpi"] = fig.dpi >= _MIN_RECOMMENDED_DPI
+    requirements["high_dpi"] = fig.dpi >= MIN_RECOMMENDED_DPI
 
     # Check if a (dartwork) style preset was applied — figure-local, not
     # the process-global rcParams (which any later style.use / rcdefaults

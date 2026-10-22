@@ -15,7 +15,7 @@ from typing import Any
 import matplotlib.pyplot as plt
 from matplotlib import RcParams
 
-from ._rc import rc_lock
+from .._rc import rc_lock
 
 __all__ = [
     "Style",
@@ -167,7 +167,9 @@ def style_path(name: str) -> Path:
     """
     if not isinstance(name, str):
         raise TypeError(f"style name must be str, got {type(name).__name__}")
-    path: Path = Path(__file__).parent / f"asset/mplstyle/{name}.mplstyle"
+    path: Path = (
+        Path(__file__).parent.parent / f"asset/mplstyle/{name}.mplstyle"
+    )
     if not path.exists():
         available = list_styles()
         hint = _did_you_mean(name, available)
@@ -189,7 +191,7 @@ def list_styles() -> list[str]:
     list[str]
         List of style names.
     """
-    path: Path = Path(__file__).parent / "asset/mplstyle"
+    path: Path = Path(__file__).parent.parent / "asset/mplstyle"
     return sorted([p.stem for p in path.glob("*.mplstyle")])
 
 
@@ -305,7 +307,7 @@ class Style:
         Path
             Path to the presets.json file containing combined style presets.
         """
-        return Path(__file__).parent / "asset/mplstyle/presets.json"
+        return Path(__file__).parent.parent / "asset/mplstyle/presets.json"
 
     def load_presets(self) -> None:
         """
@@ -354,7 +356,7 @@ class Style:
         >>> import dartwork_mpl as dm
         >>> dm.style.stack(["base", "font-scientific", "lang-kr"])
         """
-        from .font import ensure_loaded as ensure_fonts_loaded
+        from ..font import ensure_loaded as ensure_fonts_loaded
 
         # Ensure fonts are registered before Matplotlib tries to resolve
         # them (v5 colormaps register eagerly at import time).
@@ -385,7 +387,7 @@ class Style:
             # use() both get locale semantics. KR is detected from the STYLE
             # names (they carry "lang-kr" for Korean presets). Under the lock
             # for the same reason the rcParams mutation above is.
-            from ._colors.registry import apply_semantic
+            from .._colors.registry import apply_semantic
 
             is_kr = any(
                 "lang-kr" in nm or nm.endswith("-kr") for nm in style_names
@@ -530,7 +532,7 @@ class Style:
 
         import matplotlib.colors as mcolors
 
-        from ._colors.registry import SEMANTIC_TOKEN_NAMES, apply_semantic
+        from .._colors.registry import SEMANTIC_TOKEN_NAMES, apply_semantic
 
         mapping = mcolors.get_named_colors_mapping()
         saved = {t: mapping.get(t) for t in SEMANTIC_TOKEN_NAMES}

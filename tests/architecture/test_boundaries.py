@@ -64,6 +64,11 @@ def test_repository_respects_its_boundaries_apart_from_listed_debt():
     assert checker.check(ROOT / "src" / "dartwork_mpl") == []
 
 
+def test_the_debt_list_is_empty():
+    """Every violation found at the start of the refactor is gone; new ones cannot be listed as debt (ADR 0005)."""
+    assert dict(checker.DEBT) == {}
+
+
 def test_every_debt_entry_names_the_plan_step_that_removes_it():
     """A debt entry without a plan ID would never be scheduled for removal."""
     known = {"C", "K", "L", "U", "M", "T", "D"}

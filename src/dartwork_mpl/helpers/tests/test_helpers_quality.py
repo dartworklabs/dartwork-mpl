@@ -103,12 +103,12 @@ class TestCheckFigureQuality:
         """DPI >= the recommended threshold must not flag.
 
         The threshold and the advice text now share one constant
-        (_MIN_RECOMMENDED_DPI = 200); previously the check used 150 while
+        (MIN_RECOMMENDED_DPI = 200); previously the check used 150 while
         the message said 200.
         """
-        from dartwork_mpl.helpers.quality import _MIN_RECOMMENDED_DPI
+        from dartwork_mpl.helpers.quality import MIN_RECOMMENDED_DPI
 
-        fig, ax = plt.subplots(dpi=_MIN_RECOMMENDED_DPI)
+        fig, ax = plt.subplots(dpi=MIN_RECOMMENDED_DPI)
         ax.plot([1, 2], [3, 4])
         ax.set_xlabel("x")
         ax.set_ylabel("y")
@@ -126,9 +126,9 @@ class TestCheckFigureQuality:
         """
         from matplotlib.figure import Figure
 
-        from dartwork_mpl.helpers.quality import _MIN_RECOMMENDED_DPI
+        from dartwork_mpl.helpers.quality import MIN_RECOMMENDED_DPI
 
-        fig = Figure(dpi=_MIN_RECOMMENDED_DPI - 1)
+        fig = Figure(dpi=MIN_RECOMMENDED_DPI - 1)
         ax = fig.subplots()
         ax.plot([1, 2], [3, 4])
         ax.set_xlabel("x")
@@ -136,7 +136,7 @@ class TestCheckFigureQuality:
         issues = check_figure_quality(fig)
         low = [i for i in issues if "Low DPI" in i]
         assert low
-        assert f"at least {_MIN_RECOMMENDED_DPI}" in low[0]
+        assert f"at least {MIN_RECOMMENDED_DPI}" in low[0]
 
     def test_too_many_ticks_flagged(self) -> None:
         """>20 fixed ticks on either axis should be flagged."""

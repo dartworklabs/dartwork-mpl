@@ -9,11 +9,12 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
-# Minimum DPI dartwork recommends for raster output. Single source for
-# both the check threshold and the advice text so they can never drift
-# (they did: the threshold was 150 while the message said 200). Matches
-# the ``high_dpi`` bar in ``validate_fixes.check_agent_requirements``.
-_MIN_RECOMMENDED_DPI = 200
+__all__ = ["MIN_RECOMMENDED_DPI", "check_figure_quality", "suggest_chart_type"]
+
+#: Minimum DPI dartwork recommends for raster output. The one source for this
+#: check's threshold and advice text and for the ``high_dpi`` requirement of
+#: ``validate_fixes.check_agent_requirements`` (they once drifted to 150 vs 200).
+MIN_RECOMMENDED_DPI = 200
 
 
 def suggest_chart_type(
@@ -99,9 +100,9 @@ def check_figure_quality(fig: Figure) -> list[str]:
     issues = []
 
     # Check DPI
-    if fig.dpi < _MIN_RECOMMENDED_DPI:
+    if fig.dpi < MIN_RECOMMENDED_DPI:
         issues.append(
-            f"Low DPI ({fig.dpi}), should be at least {_MIN_RECOMMENDED_DPI}"
+            f"Low DPI ({fig.dpi}), should be at least {MIN_RECOMMENDED_DPI}"
         )
 
     # Check if style was applied

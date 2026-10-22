@@ -7,10 +7,8 @@ The edit planning here is shared with :mod:`.migrate`.
 from __future__ import annotations
 
 import ast
-import json
 import tokenize
 from dataclasses import dataclass
-from pathlib import Path
 
 from .catalog import Issue
 from .detect import _call_owner, _method_offset, lint
@@ -55,14 +53,16 @@ def _dm_owner(syntax: _Syntax, node: ast.expr) -> str | None:
 
 
 def _supported_preset(value: ast.expr) -> bool:
-    """Read shipped preset file names without importing or executing submitted code."""
+    """Whether ``value`` is a string literal naming a shipped preset.
+
+    Reads the style slice's preset registry; submitted code is never
+    imported or executed.
+    """
     if not isinstance(value, ast.Constant) or not isinstance(value.value, str):
         return False
-    with (Path(__file__).parent.parent / "asset/mplstyle/presets.json").open(
-        encoding="utf-8"
-    ) as handle:
-        presets = json.load(handle)
-    return value.value in presets
+    from ..style import style as shipped_style
+
+    return value.value in shipped_style.presets_dict()
 
 
 def _planned_fixes(

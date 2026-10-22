@@ -3,7 +3,6 @@
 import json
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _pkg_version
-from pathlib import Path
 
 from .discovery import (
     _discover_plot_templates,
@@ -35,35 +34,16 @@ def _version_surface() -> str:
 def info_payload() -> str:
     """The tool's JSON reply (2-space indent).
 
-    Composite presets come from the bundled ``presets.json`` (a fixed list
-    when it is unreadable or corrupt); tools, resources, prompts, templates
-    and primitive styles come from ``discovery``.
+    Composite presets come from the style slice's registry (the bundled
+    ``presets.json``, loaded once when ``dartwork_mpl`` is imported); tools,
+    resources, prompts, templates and primitive styles come from
+    ``discovery``.
     """
-    # Resolve composite preset names dynamically from the bundled
-    # presets.json so this stays in sync with the actual style
-    # registry.
-    presets_path = (
-        Path(__file__).parents[2] / "asset" / "mplstyle" / "presets.json"
-    )
-    try:
-        composite_presets = sorted(
-            json.loads(presets_path.read_text(encoding="utf-8")).keys()
-        )
-    except (OSError, ValueError):
-        # OSError: ``read_text`` failed (file missing / unreadable).
-        # ValueError: ``json.loads`` raised ``JSONDecodeError`` (a
-        # ValueError subclass) on a corrupt presets bundle. Either
-        # way we fall back to the static list.
-        composite_presets = [
-            "scientific",
-            "report",
-            "report-kr",
-            "presentation",
-            "poster",
-            "minimal",
-            "web",
-            "dark",
-        ]
+    # The style slice's preset registry, so this stays in sync with the
+    # presets ``dm.style.use`` accepts.
+    from ...style import style as shipped_style
+
+    composite_presets = sorted(shipped_style.presets_dict())
 
     return json.dumps(
         {

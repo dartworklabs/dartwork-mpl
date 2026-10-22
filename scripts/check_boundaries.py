@@ -58,6 +58,8 @@ ENTRY_POINTS = frozenset(
         # the root's removed/deprecated-name registry behind its __getattr__
         "dartwork_mpl._compat",
         "dartwork_mpl.cli",
+        # compatibility re-exports of names that moved to their owners
+        "dartwork_mpl.util",
         # `python -m dartwork_mpl.mcp.server` / `dartwork-mpl-ui`
         "dartwork_mpl.mcp.server",
         # The MCP wiring tables the discovery scanners read (ADR 0001 A1).
@@ -95,6 +97,7 @@ SLICES = frozenset(
         "dartwork_mpl._colors",
         "dartwork_mpl._colors._curated",
         "dartwork_mpl._colors._ssot",
+        "dartwork_mpl._colors.blend",
         "dartwork_mpl._colors.catalog",
         "dartwork_mpl._colors.construction",
         "dartwork_mpl._colors.contrast",
@@ -141,7 +144,6 @@ SLICES = frozenset(
         "dartwork_mpl.ui.script",
         "dartwork_mpl.ui.state",
         "dartwork_mpl.units",
-        "dartwork_mpl.util",
         "dartwork_mpl.validate",
     }
 )
@@ -166,6 +168,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl._colors", "dartwork_mpl._colors.verify"): (
         "the colour build command refuses to publish a catalogue that fails the gates or the exact comparison"
+    ),
+    ("dartwork_mpl._colors.blend", "dartwork_mpl._colors.model"): (
+        "blending converts through the colour model's OKLab representation"
     ),
     ("dartwork_mpl._colors.catalog", "dartwork_mpl._colors._curated"): (
         "the family taxonomy and discrete forms include the curated palettes"
@@ -227,6 +232,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.helpers", "dartwork_mpl._colors.registry"): (
         "label helpers resolve dc.* colour names, which must be registered"
     ),
+    ("dartwork_mpl.helpers", "dartwork_mpl.scale"): (
+        "legend and label helpers size text relative to the active preset"
+    ),
     ("dartwork_mpl.io", "dartwork_mpl.config"): (
         "saving applies the user's export defaults from dm.config"
     ),
@@ -244,6 +252,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.mcp", "dartwork_mpl._colors.registry"): (
         "the MCP colour tool and resource list the registered colour libraries"
+    ),
+    ("dartwork_mpl.lint", "dartwork_mpl.style"): (
+        "the preset autofix only rewrites to a shipped preset name"
     ),
     ("dartwork_mpl.mcp", "dartwork_mpl.mcp.artifacts"): (
         "the server mounts the durable plot-artifact tools and resources"
@@ -278,8 +289,11 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp.artifacts", "dartwork_mpl.mcp.execution"): (
         "an artifact bundle is the output of one validated plot execution"
     ),
-    ("dartwork_mpl.mcp.colors", "dartwork_mpl.util"): (
+    ("dartwork_mpl.mcp.colors", "dartwork_mpl._colors.blend"): (
         "the mix_colors tool must return exactly what dm.mix_colors blends"
+    ),
+    ("dartwork_mpl.mcp.catalog", "dartwork_mpl.style"): (
+        "the capability summary lists the presets dm.style.use accepts"
     ),
     ("dartwork_mpl.mcp.execution", "dartwork_mpl.lint"): (
         "plot validation lints the source before executing it"
@@ -357,6 +371,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.validate", "dartwork_mpl._colors.model"): (
         "the grayscale check compares colours in the model's OKLab and Y"
     ),
+    ("dartwork_mpl.validate", "dartwork_mpl.helpers"): (
+        "the agent high_dpi requirement is the figure quality check's minimum DPI"
+    ),
     ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
         "the tick-decimal check recommends the precision the formatter uses"
     ),
@@ -402,18 +419,9 @@ PINNED: Mapping[str, str] = {
 }
 
 # Known violations at the start of the refactor (ADR 0005), each with the
-# plan step that removes it. The list only shrinks.
-DEBT: Mapping[str, str] = {
-    "private import: dartwork_mpl.validate.agent_requirements -> dartwork_mpl.helpers.quality._MIN_RECOMMENDED_DPI": "C11",
-    "undeclared dependency: dartwork_mpl.helpers -> dartwork_mpl.scale": "C11",
-    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl._colors": "C10",
-    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.annotation": "C10",
-    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.formatting": "C10",
-    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.io": "C10",
-    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.layout": "C10",
-    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.prompt": "C10",
-    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.scale": "C10",
-}
+# plan step that removed it. Every one is resolved; the list stays empty
+# (tests/architecture/test_boundaries.py) so a new violation fails outright.
+DEBT: Mapping[str, str] = {}
 
 # Package paths that hold user-facing sample code, not package source: the
 # bundled prompt templates and the UI scaffold templates copied into user

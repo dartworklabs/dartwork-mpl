@@ -61,6 +61,9 @@ from ._colors import (
     show_colors,
 )
 
+# Color utilities
+from ._colors.blend import mix_colors, pseudo_alpha
+
 # Import bundled agent-onboarding helpers
 from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc
 
@@ -71,6 +74,7 @@ from .annotation import (
     arrow_axis,
     label_axes,
     label_hline,
+    make_offset,
     place_legend,
     wrap_axis_label,
     wrap_axis_labels,
@@ -93,6 +97,7 @@ from .formatting import (
     format_axis_year,
     recommend_tick_decimals,
     rotate_tick_labels,
+    set_decimal,
 )
 
 # Import icon module exports
@@ -149,9 +154,6 @@ from .units import (
     mm,
     pt,
 )
-
-# Color utilities
-from .util import make_offset, mix_colors, pseudo_alpha, set_decimal
 
 # Public surfaces that are provisional -- shape may change in a minor
 # release without a full deprecation cycle. Documented in
