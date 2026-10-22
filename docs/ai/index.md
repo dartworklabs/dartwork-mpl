@@ -45,11 +45,13 @@ python -m dartwork_mpl.skills install    # .claude/skills + .agents/skills
 
 The command links `.claude/skills/dartwork-mpl` (Claude Code) and
 `.agents/skills/dartwork-mpl` (Codex) to the folder inside the installed
-package, so the skill always matches the installed version. `--claude` or
-`--codex` installs for one agent, `--dest ~` for your user account, and
-`--copy` copies instead of linking where symlinks are unavailable (rerun it
-after upgrading). It never overwrites a folder it did not create unless you
-pass `--force`. `python -m dartwork_mpl.skills path` prints the folder.
+package, so the skill always matches the installed version; moving or
+recreating that Python environment needs a rerun. `--claude` or `--codex`
+installs for one agent, `--dest ~` for your user account, and `--copy`
+copies instead of linking (no symlinks, or to check the skill into the
+repository; rerun it after upgrading). It never overwrites a folder it did
+not create, or a copy whose files you edited, unless you pass `--force`.
+`python -m dartwork_mpl.skills path` prints the folder.
 
 Claude Code also ships a general `/dataviz` skill. The dartwork-mpl skill
 tells the agent how the two fit: for matplotlib figures the active preset is
