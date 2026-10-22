@@ -1,10 +1,12 @@
 """TICK_DECIMAL: excessive, missing, or ambiguous tick decimals.
 
 Decimal consistency is judged among ticks that share a unit suffix, so an
-axis that changes unit part-way (``7,500만`` then ``1.25억``) or puts a bare
-zero under suffixed ticks (``0.0, 0.5k, 1.0k``) needs one decimal count per
-unit, not one per axis. Precision advice uses the rendered (scaled)
-numbers, so ``0.25k, 0.50k`` is a 0.25 step, not a 250 step.
+axis that changes unit part-way (``7,500만`` then ``1.25억``) needs one
+decimal count per unit, not one per axis. A bare ``0`` carries no unit and
+needs no decimals, so ``-1.0M, -0.5M, 0, 0.5M, 1.0M`` and ``0, 0.5, 1.0``
+are uniform: the ``.0`` on ``1.0M`` is what the half step needs. Precision
+advice uses the rendered (scaled) numbers, so ``0.25k, 0.50k`` is a 0.25
+step, not a 250 step.
 """
 
 from __future__ import annotations
@@ -145,6 +147,10 @@ def _tick_rows(
     return rows
 
 
+def _is_bare_zero(row: _TickRow) -> bool:
+    return row.rendered == 0 and row.decimals == 0 and not row.suffix
+
+
 def _unit_groups(rows: list[_TickRow]) -> list[list[_TickRow]]:
     """Rows grouped by unit suffix, in first-seen order."""
     groups: dict[str, list[_TickRow]] = {}
@@ -183,7 +189,9 @@ def _axis_warnings(
             ),
         )
 
-    groups = [group for group in _unit_groups(rows) if len(group) >= 2]
+    # A bare "0" is unit-less: it joins no group's decimal count.
+    unit_rows = [row for row in rows if not _is_bare_zero(row)]
+    groups = [group for group in _unit_groups(unit_rows) if len(group) >= 2]
 
     for group in groups:
         places = sorted({row.decimals for row in group})

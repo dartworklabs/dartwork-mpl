@@ -117,6 +117,41 @@ class TestTickDecimalTrailingZero:
         assert _hits(fig, "TICK_DECIMAL") == []
         plt.close(fig)
 
+    @pytest.mark.parametrize(
+        "ticks,labels",
+        [
+            # The .0 on 1.0M is what the half step needs; 0 has no unit.
+            (
+                [-1e6, -5e5, 0, 5e5, 1e6],
+                ["-1.0M", "-0.5M", "0", "0.5M", "1.0M"],
+            ),
+            ([0, 0.5, 1.0, 1.5], ["0", "0.5", "1.0", "1.5"]),
+            (
+                [0, 250, 500, 750, 1000],
+                ["0", "0.25k", "0.50k", "0.75k", "1.00k"],
+            ),
+        ],
+    )
+    def test_decimals_the_axis_needs_are_clean(
+        self, ticks: list[float], labels: list[str]
+    ) -> None:
+        fig = _tick_fig(ticks, labels)
+        hits = _hits(fig, "TICK_DECIMAL")
+        plt.close(fig)
+        assert hits == []
+
+    def test_bare_zero_does_not_hide_trailing_zeros(self) -> None:
+        fig = _tick_fig([0, 1, 2, 3], ["0", "1.0", "2.0", "3.0"])
+        hits = _hits(fig, "TICK_DECIMAL")
+        plt.close(fig)
+        assert [h.detail["reason"] for h in hits] == ["trailing_zero"]
+
+    def test_mixed_decimals_beside_a_bare_zero_still_warn(self) -> None:
+        fig = _tick_fig([0, 17.5, 20, 22.5], ["0", "17.5", "20", "22.5"])
+        hits = _hits(fig, "TICK_DECIMAL")
+        plt.close(fig)
+        assert [h.detail["reason"] for h in hits] == ["non_uniform"]
+
     def test_scaled_precision_is_judged_on_rendered_numbers(self) -> None:
         # 0.25k steps need two decimals; a 250 raw step would say zero.
         ticks = [250, 500, 750, 1000]
