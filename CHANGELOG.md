@@ -37,17 +37,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - **No meaningless decimals on scaled axes (#523).** `format_axis_si`,
-  `format_axis_millions`, `format_axis_billions` and `format_axis_myriad`
-  default to `decimals=None`: one decimal count per axis (per unit for
-  myriad), the fewest that render every visible tick exactly. Integer ticks
-  print `200`, `0`, `1k` instead of `200.0`, `0.0`, `1.0k`; half steps stay
-  exact (`1.25k`, `1.75억` no longer round to `1.2k`, `1.8억`); fractional
-  steps keep the count on every tick. `format_axis_si` uses one unit per
+  `format_axis_millions` and `format_axis_billions` default to
+  `decimals=None`: one decimal count per axis, the fewest that render every
+  visible tick exactly. Integer ticks print `200`, `0`, `1M` instead of
+  `200.0`, `0.0`, `1.0M`; half steps stay exact (1250 no longer rounds to
+  `1.2k`); fractional steps keep the count on every tick. `format_axis_si` uses one unit per
   linear axis, whole numbers first: of none/k/M/G/T, the unit in which every
   visible tick is whole and the longest label is shortest (`0, 200 … 1,200`
   rather than `200.0 … 1.0k, 1.2k`); numbers of 1000 and more get thousands
   separators, and log axes keep a prefix per tick. An explicit integer
   `decimals=` keeps the previous per-tick output.
+- `format_axis_myriad` also defaults to `decimals=None`: each tick keeps its
+  unit and ticks sharing a unit share decimals (`1.75억` no longer rounds
+  to `1.8억`). The Korean display is pending the user's choice.
 - **`TICK_DECIMAL` trailing zeros are now a WARNING**, and decimal
   consistency is judged per unit suffix on the rendered numbers. The new
   **`VALUE_LABEL_DECIMAL`** check warns when every numeric value label in an

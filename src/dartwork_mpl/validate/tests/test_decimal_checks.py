@@ -96,12 +96,12 @@ class TestTickDecimalTrailingZero:
         assert hits == []
 
     @pytest.mark.filterwarnings("ignore:Glyph .* missing from font")
-    def test_dm_myriad_default_validates_clean(self) -> None:
-        # 7,500만 then 1.00억: decimals are uniform within each unit.
-        fig, ax = plt.subplots(figsize=(5, 3))
-        ax.set_yticks([i * 2.5e7 for i in range(8)])
-        ax.set_ylim(0, 1.75e8)
-        dm.format_axis_myriad(ax, axis="y")
+    def test_unit_change_is_judged_per_unit(self) -> None:
+        # Fixed labels, not a formatter: 7,500만 then 1.00억 keeps decimals
+        # uniform within each unit, so the axis is not "non-uniform".
+        ticks = [2.5e7, 5e7, 7.5e7, 1e8, 1.25e8]
+        labels = ["2,500만", "5,000만", "7,500만", "1.00억", "1.25억"]
+        fig = _tick_fig(ticks, labels)
         hits = _hits(fig, "TICK_DECIMAL")
         plt.close(fig)
         assert hits == []

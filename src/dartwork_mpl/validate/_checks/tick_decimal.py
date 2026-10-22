@@ -1,10 +1,10 @@
 """TICK_DECIMAL: excessive, missing, or ambiguous tick decimals.
 
-Decimal consistency is judged among ticks that share a unit suffix, so a
-myriad axis (``7,500만, 1.00억, 1.25억``) or an SI axis with a bare zero
-(``0.0, 0.5k, 1.0k``) is read as the formatter wrote it: one decimal count
-per unit. Precision advice uses the rendered (scaled) numbers, so
-``0.25k, 0.50k`` is a 0.25 step, not a 250 step.
+Decimal consistency is judged among ticks that share a unit suffix, so an
+axis that changes unit part-way (``7,500만`` then ``1.25억``) or puts a bare
+zero under suffixed ticks (``0.0, 0.5k, 1.0k``) needs one decimal count per
+unit, not one per axis. Precision advice uses the rendered (scaled)
+numbers, so ``0.25k, 0.50k`` is a 0.25 step, not a 250 step.
 """
 
 from __future__ import annotations

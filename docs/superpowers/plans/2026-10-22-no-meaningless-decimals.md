@@ -6,7 +6,7 @@ User instruction (2026-10-22): "의미없는 소수점은 항상 신경쓰도록
 Add-on (same day): numeric value labels on bars and lines are one weight step heavier
 (`fontweight=dm.fw(1)`). Nothing else about the visual style changes.
 
-Base: `origin/main` 7d35b7af (already contains the #525–#534 slice refactor, so the
+Base: `origin/main` 2fa337c4 (contains the #525–#538 slice and typing refactor, so the
 formatters live in `src/dartwork_mpl/formatting/`).
 
 ## Decisions
@@ -23,14 +23,17 @@ formatters live in `src/dartwork_mpl/formatting/`).
   (`0, 200 … 1,200`; `-1,000k … 1,000k`); fewest decimals only when no unit is whole. The first
   rule (prefix from the largest tick) printed `0.2k … 1.2k` and `0.25k … 2.00k` and was
   rejected. Thousands separators on every auto formatter. Log axes: per-tick prefix/decimals.
-- **Myriad.** Each tick keeps its ladder unit (existing behaviour); ticks sharing a unit share
-  decimals (`7,500만, 1.00억, 1.25억`). One unit per axis was not adopted (not requested).
+- **Myriad (pending the user's choice).** Each tick keeps its ladder unit (existing
+  behaviour); ticks sharing a unit share decimals (`7,500만, 1.00억, 1.25억`). Only
+  `format_axis_myriad`, `MyriadFormatter` and its own tests encode this output.
 - **Zero.** No prefix/suffix/sign; uses the axis decimal count, so `0` on integer axes and
   `0.0` beside `0.5M` (keeps `TICK_DECIMAL` uniformity and the line_signals zero glyph).
 - **Explicit `decimals=<int>`** keeps the previous per-tick `FuncFormatter`, byte for byte.
 - **Validator.** `TICK_DECIMAL` trailing zero → WARNING naming the formatter option; uniformity
   and precision judged per unit suffix on the rendered numbers. New `VALUE_LABEL_DECIMAL`
   (order 56): all short numeric `ax.texts` labels whole numbers but some print `.0` → WARNING.
+  Details are one `TypedDict` per variant (TICK_DECIMAL carries a `reason` literal) built with
+  `_detail.wire`; the fix handlers read them back with `_detail.choice` / `number` (#537).
 - **annotate_value / set_decimal.** `annotate_value` takes a caller string (no number
   formatting); `set_decimal` honours explicit precision only. Neither adds decimals; the add-on
   makes `annotate_value` default to `fontweight=fw(1)` unless `fontweight`/`weight` is passed.
