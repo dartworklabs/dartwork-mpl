@@ -9,6 +9,7 @@ repository-wide bootstrap and state isolation live in the root
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -32,14 +33,46 @@ def v5_ssot() -> dict:
 
 
 @pytest.fixture(scope="session")
-def candidate_catalog() -> CatalogSnapshot:
+def candidate_catalog(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> CatalogSnapshot:
     """Compile current source once into a deeply immutable color snapshot.
 
     Golden comparisons and mutation gates share these real compiler outputs;
     tests of changed compiler inputs still invoke the compiler independently.
+
+    Under pytest-xdist every worker is its own session, so a plain session
+    fixture would compile the candidate once per worker (~1 min each). The
+    first worker compiles and publishes ``to_json()`` into the run's shared
+    temp root; the others wait on the lock and rebuild the snapshot with
+    ``from_payload``. That round trip is exact: the rebuilt snapshot compares
+    equal field by field, with identical container types and JSON bytes.
     """
     from dartwork_mpl._colors.construction._catalog import (
+        CatalogSnapshot,
         compile_candidate_snapshot,
     )
 
-    return compile_candidate_snapshot()
+    if "PYTEST_XDIST_WORKER" not in os.environ:
+        return compile_candidate_snapshot()
+    try:
+        import fcntl
+    except ImportError:  # no POSIX lock: each worker compiles for itself
+        return compile_candidate_snapshot()
+
+    shared_root = tmp_path_factory.getbasetemp().parent
+    published = shared_root / "candidate_catalog.json"
+    with (shared_root / "candidate_catalog.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            if published.is_file():
+                return CatalogSnapshot.from_payload(
+                    json.loads(published.read_text(encoding="utf-8"))
+                )
+            snapshot = compile_candidate_snapshot()
+            partial = published.with_suffix(".partial")
+            partial.write_text(snapshot.to_json(), encoding="utf-8")
+            partial.replace(published)
+            return snapshot
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
