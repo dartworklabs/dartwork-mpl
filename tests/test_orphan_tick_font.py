@@ -33,6 +33,8 @@ def _y_tick(ax):
 
 
 class TestAdoptCore:
+    """Ticks of an unlabeled axis adopt the axis-label font; labeled axes are untouched."""
+
     def test_unlabeled_x_adopts_axis_label_font(self) -> None:
         """x has no label -> x ticks take xaxis.label size+weight+family+style."""
         dm.style.use("scientific")
@@ -117,6 +119,8 @@ class TestAdoptCore:
 
 
 class TestAdoptPublic:
+    """The public ``adopt_axis_label_font`` draws before applying and tolerates empty figures."""
+
     def test_public_draws_and_applies(self) -> None:
         """adopt_axis_label_font draws then applies (no manual draw needed)."""
         dm.style.use("scientific")
@@ -133,6 +137,8 @@ class TestAdoptPublic:
 
 
 class TestSimpleLayoutIntegration:
+    """``simple_layout`` adopts the font only on request and sizes margins for it."""
+
     def test_simple_layout_keeps_tick_font_by_default(self) -> None:
         dm.style.use("scientific")
         fig, ax = plt.subplots(figsize=dm.figsize("12cm", "standard"))

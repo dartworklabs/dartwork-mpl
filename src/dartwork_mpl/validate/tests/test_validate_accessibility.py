@@ -33,6 +33,8 @@ def _warnings_for(fig: Figure, check_id: str) -> list[VisualWarning]:
 
 
 class TestTextContrast:
+    """Text contrast severity against the effective background (bbox, patch, axes)."""
+
     def test_light_gray_title_on_white_warns(self) -> None:
         fig, ax = _new_figure()
         ax.plot([1, 2, 3], [1, 4, 9])
@@ -181,6 +183,8 @@ class TestTextContrast:
 
 
 class TestMinFontSize:
+    """Text below the minimum readable size is reported."""
+
     def test_tiny_text_warns(self) -> None:
         fig, ax = _new_figure()
         ax.plot([1, 2, 3], [1, 4, 9])
@@ -207,6 +211,8 @@ class TestMinFontSize:
 
 
 class TestGrayscaleSafety:
+    """Series that collapse in grayscale are reported per panel, once per clash."""
+
     def test_same_luminance_series_emit_info(self) -> None:
         fig, ax = _new_figure()
         ax.plot([1, 2, 3], [1, 4, 9], color="#ff0000")

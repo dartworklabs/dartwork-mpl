@@ -164,6 +164,8 @@ class TestStyleContext:
 
 
 class TestPresetsDict:
+    """``presets_dict`` returns a copy, so callers cannot mutate the live presets."""
+
     def test_returns_dict_copy(self) -> None:
         d = dm.style.presets_dict()
         assert isinstance(d, dict)

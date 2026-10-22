@@ -8,6 +8,8 @@ from dartwork_mpl.ui.page import get_html
 
 
 class TestTemplateEscaping:
+    """HTML page template escapes the title and every dynamic interpolation."""
+
     def test_title_is_escaped(self) -> None:
         doc = get_html(title="<script>alert(1)</script>")
         assert "<script>alert(1)</script>" not in doc

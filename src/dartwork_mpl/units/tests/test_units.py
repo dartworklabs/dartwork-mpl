@@ -124,6 +124,8 @@ class TestLengthViews:
 
 
 class TestLengthRepr:
+    """``Length`` repr switches between cm and inches by magnitude."""
+
     def test_repr_uses_inches_for_large(self):
         assert "in" in repr(inch(5))
 
@@ -133,6 +135,8 @@ class TestLengthRepr:
 
 
 class TestParseWidth:
+    """Width parsing accepts unit strings and ``Length`` and rejects unitless or invalid input."""
+
     @pytest.mark.parametrize(
         "value,expected_in",
         [
@@ -293,6 +297,8 @@ class TestParseAspectSelfCorrection:
 
 
 class TestParseAspect:
+    """Aspect tokens and numeric ratios resolve; unknown, non-positive and bool fail."""
+
     @pytest.mark.parametrize(
         "name,ratio",
         [
@@ -454,6 +460,10 @@ class TestFigsizeHeightForm:
 
 
 class TestPublicSurface:
+    """Unit constructors, column widths and ``figsize`` are exported from ``dm``;
+    the removed ``inches`` helper is not.
+    """
+
     def test_unit_constructors_exposed_at_top_level(self):
         import dartwork_mpl as dm
 

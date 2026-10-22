@@ -61,6 +61,8 @@ _CHANGELOG_SAMPLE = """# Changelog
 
 
 class TestExtractSection:
+    """Finding a version's CHANGELOG section, missing versions and empty sections."""
+
     def test_finds_target_version(self, mod) -> None:
         body = mod.extract_section(_CHANGELOG_SAMPLE, "0.5.3")
         assert "### Added" in body
@@ -80,6 +82,8 @@ class TestExtractSection:
 
 
 class TestReflow:
+    """Reflowing CHANGELOG markdown into release-note lines without breaking structure."""
+
     def test_paragraph_collapses_to_one_line(self, mod) -> None:
         out = mod.reflow(
             "- **18 templates** under\n  `path/` — one per template.\n"
