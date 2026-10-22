@@ -71,6 +71,7 @@ print(sorted(model.properties())[:8])   # every property the artist has
 | label line ends instead of a legend | `ax.annotate(...)` at each last point, remove legend |
 | fewer ticks | `ax.xaxis.set_major_locator(MaxNLocator(nbins=5))` |
 | 12000 → 12k | `dm.format_axis_si(ax)` |
+| show the values on bars or points | `ax.bar_label(bars, fmt="{:.0f}", fontweight=dm.fw(1))`, see below |
 | bigger or wider figure | rebuild with a new `dm.figsize`; keep the preset |
 
 ```python
@@ -87,6 +88,26 @@ Repeated "one more step" adds to the current value again; it does not reset
 to `dm.fs(1)`. An absolute request ("12 pt") is set exactly. Keep the
 existing layout when the result still fits; refit only with the arguments
 the script already used.
+
+## Value labels
+
+Numbers written on bars or at line points are one weight step heavier than
+body text (`fontweight=dm.fw(1)`) and carry no meaningless decimals. Titles,
+axis labels, ticks and legends keep the preset weight.
+
+```python
+fig, (bar_ax, line_ax) = plt.subplots(
+    1, 2, figsize=dm.figsize("17cm", "7cm"), gridspec_kw={"wspace": 0.3}
+)
+bars = bar_ax.bar(["A", "B", "C"], [12, 30, 21])
+bar_ax.bar_label(bars, fmt="{:.0f}", padding=2, fontweight=dm.fw(1))
+days, visits = np.arange(1, 8), np.array([40, 42, 47, 45, 51, 58, 63])
+line_ax.plot(days, visits)
+line_ax.text(days[-1], visits[-1], f" {visits[-1]}", va="center",
+             fontweight=dm.fw(1))
+dm.simple_layout(fig)
+plt.close(fig)
+```
 
 ## Broad requests: "make it look better"
 

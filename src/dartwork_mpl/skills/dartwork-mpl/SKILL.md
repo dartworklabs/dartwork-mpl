@@ -60,9 +60,8 @@ and template numbers are placeholders to replace, never to keep.
 
 ## Values
 
-- Leave `color=` out by default so the preset's cycle applies. Named colours
-  when asked or to emphasise: `dc.blue6` (family + step, 0 light to 9 dark);
-  `oc.*`, `tw.*` too. Palettes, colormaps: `references/colors.md`.
+- Leave `color=` out so the preset cycle applies; name one when asked or to
+  emphasise (`dc.blue6`: family + step 0–9). More: `references/colors.md`.
 - `dm.fs(n)` = preset font size + n pt, `dm.lw(n)` = preset line width + n pt,
   `dm.fw(n)` = preset weight + 100·n. They read the preset, not an artist.
   One step bigger on an artist: `t.set_fontsize(t.get_fontsize() + 1)`.
@@ -72,6 +71,8 @@ and template numbers are placeholders to replace, never to keep.
   `200.0`, `0.0`, `1.0k`; otherwise the decimals the data need, one count per
   axis (`17.5, 20.0, 22.5`). `dm.format_axis_si` / `_myriad` / `_millions` /
   `_billions` choose decimals by default; an explicit `decimals=` is exact.
+- Numeric value labels on bars and lines (`ax.bar_label`, `ax.text`) use
+  `fontweight=dm.fw(1)`; titles, axis labels, ticks and legends keep theirs.
 
 ## Edits
 
@@ -116,5 +117,4 @@ legend on every chart (2+ series: legend or direct labels). Use `dm.figsize`.
 | Korean plot text | `references/korean.md` |
 | render, inspect, revise script; findings; lint | `references/review-loop.md` |
 | starting from a bundled template | `references/templates.md` |
-
-Deeper: `dm.get_prompt(name)` for `03-recipes`, `01-policy`, `02-anti-patterns`.
+| the full cookbook, policy, lint catalog | `dm.get_prompt("03-recipes")`, `"01-policy"`, `"02-anti-patterns"` |

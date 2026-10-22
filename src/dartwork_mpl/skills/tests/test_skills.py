@@ -124,6 +124,20 @@ def test_router_states_the_rules_agents_get_wrong() -> None:
     )
     assert "meaningless decimals" in review
     assert "`17.5, 20.0, 22.5`" in review
+
+
+def test_value_labels_are_one_weight_step_heavier() -> None:
+    """User request 2026-10-22: numeric value labels use dm.fw(1)."""
+    text = SKILL_MD.read_text(encoding="utf-8")
+    values = text.split("## Values", 1)[1].split("## ", 1)[0]
+    assert "value labels" in values and "fontweight=dm.fw(1)" in values
+    editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
+    section = editing.split("## Value labels", 1)[1].split("\n## ", 1)[0]
+    (block,) = _FENCE.findall(section)
+    for call in ("bar_label(", ".text("):
+        line = next(ln for ln in block.split("\n") if call in ln)
+        call_text = block[block.index(line) :].split(")\n", 1)[0]
+        assert "fontweight=dm.fw(1)" in call_text, call
     editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
     for getter in (
         "get_lines()",
