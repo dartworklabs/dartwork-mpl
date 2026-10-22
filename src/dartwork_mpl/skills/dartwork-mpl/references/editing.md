@@ -1,11 +1,20 @@
 # Editing an existing figure
 
-"Make the axis labels bigger", "move the legend", "only the left panel":
-each names artists. Find them, change only the asked property, keep the
-data, preset, canvas size, colours, legend and every other property, then
-save under a new stem and look at the result.
+Two kinds of request:
 
-## Find the target
+- **"Only X"** ("make the axis labels bigger", "move the legend", "thicker
+  line for Model"): find exactly that artist, change only the asked
+  property, and leave everything else as it was: data, preset, canvas size,
+  colours, legend, other text, layout arguments.
+- **Broad** ("make it look better", "더 보기 좋게", "clean this up"): keep
+  the data, the preset and the chart type, fix what the rendered image
+  shows, and list every change in your answer.
+
+Either way: keep the original script and its outputs, write the revision as
+a new script (`plot-v2.py`) with a new output stem (`figure-v2`), render it
+and look at the PNG before you answer.
+
+## Find the target with getters
 
 The figure below stands in for the user's existing script.
 
@@ -23,23 +32,34 @@ fig, (left, right) = plt.subplots(
 )
 left.plot(x, np.sin(x), label="Measured")
 left.plot(x, np.sin(x) * 0.9, label="Model")
-left.set(title="Response", xlabel="Time (s)", ylabel="Signal")
+left.set_title("Response")
+left.set_title("(a)", loc="left")
+left.set(xlabel="Time (s)", ylabel="Signal")
 left.legend()
 right.plot(x, np.sin(x) * 0.1, color="dc.gray5")
 right.set(title="Error", xlabel="Time (s)")
 dm.simple_layout(fig)
 
+# A panel by its title; titles have three slots: loc="center", "left", "right".
 error_ax = next(a for a in fig.axes if a.get_title() == "Error")
-model = next(ln for ln in left.get_lines() if ln.get_label() == "Model")
-titles = [t for t in fig.findobj(Text) if t.get_text() == "Response"]
-print(type(model).__name__, model.get_linewidth(), model.get_color())
+panel_a = next(a for a in fig.axes if a.get_title(loc="left") == "(a)")
+# A series by its legend label.
+model = next(ln for ln in panel_a.get_lines() if ln.get_label() == "Model")
+# Any text by its content.
+response = [t for t in fig.findobj(Text) if t.get_text() == "Response"]
+print(model.get_linewidth(), model.get_color(), model.get_linestyle())
+print(sorted(model.properties())[:8])   # every property the artist has
 ```
 
-`artist.properties()`, the getters and `help(type(artist))` list what an
-artist accepts. Axis labels (`ax.xaxis.label`) are not tick labels
-(`ax.get_xticklabels()`).
+- Lines `ax.get_lines()`, bars and patches `ax.patches`, scatter and
+  images `ax.collections` / `ax.images`, legend `ax.get_legend()`, axis
+  labels `ax.xaxis.label` (not tick labels, which are `ax.get_xticklabels()`).
+- `artist.properties()`, getters and `help(type(artist))` say what a
+  setter accepts. Edit the existing artist; do not plot a second copy.
+- If two artists match and the request does not say which, ask one short
+  question.
 
-## Common requests
+## Common "only X" requests
 
 | Request | Change |
 |---|---|
@@ -54,7 +74,7 @@ artist accepts. Axis labels (`ax.xaxis.label`) are not tick labels
 | bigger or wider figure | rebuild with a new `dm.figsize`; keep the preset |
 
 ```python
-for t in (left.xaxis.label, left.yaxis.label):
+for t in (panel_a.xaxis.label, panel_a.yaxis.label):
     t.set_fontsize(t.get_fontsize() + 1)
 model.set_linewidth(model.get_linewidth() + 0.5)
 error_ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
@@ -64,12 +84,11 @@ plt.close(fig)
 ```
 
 Repeated "one more step" adds to the current value again; it does not reset
-to `dm.fs(1)`. An absolute request ("12 pt") is set exactly.
+to `dm.fs(1)`. An absolute request ("12 pt") is set exactly. Keep the
+existing layout when the result still fits; refit only with the arguments
+the script already used.
 
-## "Make it look better" / "더 보기 좋게"
-
-A vague request is a normal request. Keep the preset's fonts, spines and
-grid, the data and the chart type; improve what the figure communicates.
+## Broad requests: "make it look better"
 
 1. Render and look. Name the two or three biggest problems.
 2. Fix in this order, only what the image shows:
@@ -81,7 +100,8 @@ grid, the data and the chart type; improve what the figure communicates.
    - many competing colours: one accent, the rest `dc.gray4`;
    - unclear labels: add units, "Time (s)";
    - cramped or empty panels: aspect token, `hspace` / `wspace`.
-3. Save as the next version, look again, and list each change in one line.
+3. Keep the preset's fonts, spines and grid, the data and the chart type.
+4. Save as the next version, look again, and list each change in one line.
 
 Ask one short question only when the purpose (paper, report or slides) is
 unknown and would change the answer.

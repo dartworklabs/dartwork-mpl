@@ -1,6 +1,6 @@
 ---
 name: dartwork-mpl
-description: matplotlib plot, chart, figure, graph, 그래프, 그림, 플롯, 차트 with dartwork-mpl (import dartwork_mpl as dm). Use whenever Python code creates, edits, resizes, restyles, saves or reviews a static figure for a paper, report, document, dashboard or slides in a project where dartwork-mpl is installed. Covers the style preset, physical size with dm.figsize, dm.simple_layout margins, dm.save_formats, colour names, Korean text, natural-language edits and the render-inspect-revise loop. For these figures it takes precedence over generic web dataviz advice.
+description: matplotlib plot, chart, figure, graph, 그래프, 그림, 플롯, 차트 with dartwork-mpl (import dartwork_mpl as dm). Use whenever Python code creates, edits, resizes, restyles, saves or reviews a static figure for a paper, report, document, dashboard or slides in a project where dartwork-mpl is installed. Covers the style preset, physical size with dm.figsize, dm.simple_layout margins, dm.save_formats, keeping data and NaN gaps intact, natural-language edits of one target and the render-inspect-revise loop. Also read it when a generic dataviz skill is active, for how dartwork-mpl figures differ.
 license: MIT
 ---
 
@@ -37,36 +37,31 @@ earlier choices in the project, then:
 Add `-kr` (`report-kr`) only when the plot text is Korean; the chat language
 does not decide it. Keep the chosen preset through later edits.
 
-## Size: `dm.figsize(width, second)`
+## Size, layout, save
 
-- width: `"13cm"`, `"5in"`, `"170mm"`, `"24pt"`, `dm.cm(13)`, `dm.col1` (9 cm),
-  `dm.col2` (17 cm). Bare numbers are rejected.
-- second: an aspect token, `"16:9"` (width:height), a number (height/width)
-  or a height (`"8cm"`, `dm.cm(8)`).
-- Aspect tokens: `tall` 2:3, `portrait` 4:5, `square` 1:1, `standard` 4:3
-  (default), `a4` √2:1, `wide` 3:2, `golden` 1.618:1, `slide` 16:9,
-  `cinema` 2:1, `panoramic` 3:1.
+- `dm.figsize(width, second)`. width: `"13cm"`, `"5in"`, `"170mm"`, `dm.cm(13)`,
+  `dm.col1` (9 cm), `dm.col2` (17 cm); bare numbers are rejected. second: an
+  aspect token (`standard` default 4:3, `wide` 3:2, `slide` 16:9, ...),
+  `"16:9"` (width:height), a number (height/width) or a height (`"8cm"`).
 - Drafts: paper 9 or 17 cm, report 13–17 cm, slides by ratio and placement.
   Not limits: keep any size the user asks for, wider than 17 cm included.
-- Pixels need a DPI: 1920 px at 200 DPI is `dm.inch(1920 / 200)` with
-  `dm.save_formats(..., dpi=200)`.
-
-## Layout and save
-
 - `dm.simple_layout(fig)` after everything is drawn (labels, legend,
-  colorbar) sets the outer margins. Never `plt.tight_layout()`. More room:
-  `margin="2mm"` or one side `mr="1cm"`. Panel gaps stay yours:
-  `gridspec_kw={"hspace": 0.5, "wspace": 0.35}`.
+  colorbar) sets the outer margins; never `plt.tight_layout()`. Room:
+  `margin="2mm"` or `mr="1cm"`. Gaps between panels (`hspace`, `wspace`) stay yours.
 - `dm.save_formats` keeps the exact canvas and prints `[VISUAL]` findings.
-- Grids, ratios, mosaics, twin axes, panel labels, outside legends:
-  `references/sizing-and-layout.md`.
+
+## Data
+
+Plot the user's values as given. Never drop, fill, sort, aggregate, clip or
+invent rows silently; state every transformation you make. Missing values
+stay visible gaps: `dm.validate_data` drops NaN/Inf rows by default, so use
+`allow_nan=True` where a gap means something. A preview is not the dataset,
+and template numbers are placeholders to replace, never to keep.
 
 ## Values
 
-- Colours by name wherever matplotlib takes one: `dc.teal3`, `dc.blue6`,
-  `dc.gray4` (steps 0 light to 9 dark); also `oc.*`, `tw.*`, `md.*`, `ad.*`,
-  `cu.*`, `pr.*`. Cycle: `dm.set_colors("dc.octave")`. Colormaps:
-  `cmap="viridis"`, `cmap="dc.aurora"`. More: `references/colors.md`.
+- Colours by name: `dc.teal3` (family + step, 0 light to 9 dark); `oc.*`,
+  `tw.*` and other libraries too. Palettes, colormaps: `references/colors.md`.
 - `dm.fs(n)` = preset font size + n pt, `dm.lw(n)` = preset line width + n pt,
   `dm.fw(n)` = preset weight + 100·n. They read the preset, not an artist.
   One step bigger on an artist: `t.set_fontsize(t.get_fontsize() + 1)`.
@@ -75,29 +70,32 @@ does not decide it. Keep the chosen preset through later edits.
 
 ## Edits
 
-Find the exact target (panel, series, artist, property), change only that,
-and keep data, preset, canvas size, colours, legend and every other property.
+"Only X" requests: find that artist (panel, series, label, title), change only
+the asked property, keep data, preset, canvas, colours, legend and the rest.
 Axis-label edits touch the label Text objects, not `font.size` or ticks.
-Ask one short question only when the target is truly ambiguous. Vague asks
-("make it look better", "더 보기 좋게") are normal requests: follow the
-checklist in `references/editing.md` and list what you changed.
+Keep the original script; write the revision as a new script and stem.
+Broad asks ("make it look better", "더 보기 좋게") are normal requests:
+keep data and preset, fix what the image shows, list each change. Ask one
+short question only when the target is truly ambiguous.
 
 ## Review loop (every figure and revision; script: `references/review-loop.md`)
 
 1. Save under a versioned stem: `output/figure-v1`.
-2. Open the PNG and look: clipped or overlapping text, legend over data,
-   crowded ticks, wasted space, wrong data.
+2. Open the PNG with your image tool and look: clipped or overlapping text,
+   legend over data, crowded ticks, wasted space, wrong data. If you cannot
+   view images, say the figure was not visually reviewed.
 3. Read `dm.validate_figure(fig, quiet=True)`: fix WARNING, weigh INFO.
+   `CHECK_FAILED` means a check did not run: report validation as incomplete.
 4. Change only what is needed or requested.
 5. Save `figure-v2`, keep v1, look again. Report changes and kept warnings.
 
-## Next to /dataviz or other generic chart advice
+## When /dataviz or other generic chart advice is also active
 
-For matplotlib figures here the active preset is the design system and the
-output is a static file (print, PDF, slides). Skip web-only advice: hover,
-tooltips, rounded bar ends, placeholder palettes, pixel line widths, a legend
-on every chart (2+ series get a legend or direct labels). Size with
-`dm.figsize` in physical units. Chart-choice and honest-axis advice applies.
+Use it for chart choice and honest axes. For how the figure is built, the
+active dartwork-mpl preset is the design system and the output is a static
+file (print, PDF, slides): skip hover, tooltips, rounded bar ends,
+placeholder palettes, pixel line widths and a legend on every chart (2+
+series get a legend or direct labels). Size with `dm.figsize`, not pixels.
 
 ## Never
 
@@ -108,11 +106,11 @@ on every chart (2+ series get a legend or direct labels). Size with
 
 | Need | Read |
 |---|---|
-| sizes, grids, ratios, mosaics, twin axes, panel labels | `references/sizing-and-layout.md` |
-| natural-language edits, finding the artist, "make it better" | `references/editing.md` |
+| tokens, pixels, grids, ratios, mosaics, twin axes, panel labels | `references/sizing-and-layout.md` |
+| finding the artist, one-target edits, "make it better" | `references/editing.md` |
 | colour names, palettes, colormaps, one highlighted series | `references/colors.md` |
 | Korean plot text | `references/korean.md` |
-| render, inspect, revise script; lint | `references/review-loop.md` |
+| render, inspect, revise script; findings; lint | `references/review-loop.md` |
 | starting from a bundled template | `references/templates.md` |
 
 Deeper: `dm.get_prompt("03-recipes")`, `dm.get_prompt("01-policy")`,

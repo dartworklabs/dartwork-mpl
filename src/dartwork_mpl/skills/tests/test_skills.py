@@ -101,6 +101,30 @@ def test_references_are_one_level_deep_and_all_routed() -> None:
     assert not other, f"unexpected files in the skill folder: {other}"
 
 
+def test_router_states_the_rules_agents_get_wrong() -> None:
+    """Data fidelity, one-target edits, looking at the PNG, incomplete checks."""
+    text = SKILL_MD.read_text(encoding="utf-8")
+    for rule in (
+        "Never drop, fill, sort, aggregate",
+        "allow_nan=True",
+        "change only",
+        "new script and stem",
+        "Open the PNG",
+        "CHECK_FAILED",
+        "not visually reviewed",
+    ):
+        assert rule in text, rule
+    editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
+    for getter in (
+        "get_lines()",
+        "get_label()",
+        'get_title(loc="left")',
+        "properties()",
+        "plot-v2.py",
+    ):
+        assert getter in editing, getter
+
+
 def test_skill_states_how_to_coexist_with_dataviz() -> None:
     text = SKILL_MD.read_text(encoding="utf-8")
     assert "/dataviz" in text
@@ -146,12 +170,23 @@ def test_python_blocks_run_and_pass_lint(
 
 
 def test_listed_aspect_tokens_and_presets_match_runtime() -> None:
-    text = SKILL_MD.read_text(encoding="utf-8")
-    line = next(
-        ln for ln in text.split("\n- ") if ln.startswith("Aspect tokens")
+    sizing = (SKILL / "references" / "sizing-and-layout.md").read_text(
+        encoding="utf-8"
     )
-    listed = set(re.findall(r"`(\w+)`", line))
-    assert listed == set(dm.list_aspect_tokens())
+    paragraph = sizing.split("Aspect tokens (width:height):", 1)[1]
+    pairs = re.findall(
+        r"`(\w+)`\s+([\d.√]+):([\d.]+)", paragraph.split("\n\n")[0]
+    )
+    runtime = dm.list_aspect_tokens()
+    assert {name for name, _, _ in pairs} == set(runtime)
+    for name, w, h in pairs:
+        width = 2**0.5 if w == "√2" else float(w)
+        assert float(h) / width == pytest.approx(runtime[name], rel=1e-3), name
+    text = SKILL_MD.read_text(encoding="utf-8")
+    in_router = re.findall(r"`(\w+)`\s+(?:default\s+)?([\d.]+):([\d.]+)", text)
+    assert in_router
+    for name, w, h in in_router:
+        assert float(h) / float(w) == pytest.approx(runtime[name], rel=1e-3)
     table = text.split("## Preset by purpose", 1)[1].split("##", 1)[0]
     presets = set(re.findall(r"`([a-z]+)`", table))
     base = {name for name in dm.style.presets if not name.endswith("-kr")}

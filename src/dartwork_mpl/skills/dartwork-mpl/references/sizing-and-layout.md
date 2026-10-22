@@ -21,10 +21,19 @@ dm.figsize_grid("6cm", "square", ncols=3, nrows=2, gap="0.6cm")  # panel-sized
 print(dm.list_aspect_tokens())   # {token: height / width}
 ```
 
+Aspect tokens (width:height): `tall` 2:3, `portrait` 4:5, `square` 1:1,
+`standard` 4:3 (default), `a4` √2:1, `wide` 3:2, `golden` 1.618:1, `slide`
+16:9, `cinema` 2:1, `panoramic` 3:1.
+
 Keep a size the user asked for. The `oversize-width` lint above 17 cm is
 page-fit advice, not a limit. DPI changes pixel density, never the physical
 size. `dm.save_formats(..., bbox_inches="tight")` crops and changes the size;
 the default `None` keeps it.
+
+Pixels are not a physical unit, so `"1920px"` is rejected. Pick the DPI and
+convert: 1920 × 1080 px at 200 DPI is
+`dm.figsize(dm.inch(1920 / 200), dm.inch(1080 / 200))`, saved with
+`dm.save_formats(fig, stem, formats=("png",), dpi=200)`.
 
 ## Margins: `dm.simple_layout`
 
