@@ -276,8 +276,10 @@ def install_skill(
     Raises
     ------
     SkillInstallError
-        If a destination holds something else or an edited copy and
-        ``force`` is false, or a link or copy cannot be built. Every
+        If a target's skills directory resolves outside ``dest`` (through a
+        linked ``.claude``, ``.agents`` or ``skills`` folder), if a
+        destination holds something else or an edited copy and ``force`` is
+        false, or if a link or copy cannot be built. Every
         destination is checked and every replacement staged before any is
         swapped in; a failed swap restores the previous install.
     """
@@ -290,12 +292,26 @@ def install_skill(
             f"got {names!r}"
         )
 
+    # ``dest`` itself may be a link; it is the root. Below it, a linked
+    # ``.claude`` / ``.agents`` / ``skills`` folder must stay inside the root
+    # (``.claude/skills -> ../.agents/skills`` does), or the install would land
+    # somewhere the caller did not name.
+    root = base.resolve()
+    resolved = {name: (base / TARGETS[name]).resolve() for name in names}
+    for name, key in resolved.items():
+        if key != root and root not in key.parents:
+            raise SkillInstallError(
+                f"{base / TARGETS[name]} resolves to {key}, outside {root}; "
+                f"nothing was installed. Pass that location as --dest to "
+                f"install there."
+            )
+
     plans: list[tuple[str, Path, Action, str]] = []
     first_by_dir: dict[Path, Path] = {}
     for name in names:
         skills_dir = base / TARGETS[name]
         link = skills_dir / SKILL_NAME
-        key = skills_dir.resolve()
+        key = resolved[name]
         if key in first_by_dir:
             plans.append(
                 (name, link, "shared", f"same directory as {first_by_dir[key]}")

@@ -463,6 +463,38 @@ def test_shared_skills_directory_is_installed_once(tmp_path: Path) -> None:
     assert _is_link_to_skill(tmp_path / ".agents/skills" / SKILL_NAME)
 
 
+@pytest.mark.parametrize("linked", [".agents", ".claude/skills"])
+def test_linked_folder_leading_outside_the_destination_is_refused(
+    tmp_path: Path, linked: str
+) -> None:
+    """A linked parent must not carry the install outside the named root."""
+    project, outside = tmp_path / "project", tmp_path / "outside"
+    project.mkdir()
+    outside.mkdir()
+    (project / linked).parent.mkdir(parents=True, exist_ok=True)
+    (project / linked).symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(SkillInstallError, match="outside"):
+        install_skill(project)
+    assert list(outside.iterdir()) == []
+    assert not (project / ".claude/skills" / SKILL_NAME).is_symlink()
+    assert not (project / ".agents/skills" / SKILL_NAME).is_symlink()
+
+    # The same place is fine when it is named as the destination itself.
+    (result,) = install_skill(outside, targets=["codex"])
+    assert result.action == "linked"
+
+
+def test_destination_that_is_itself_a_link_is_the_root(tmp_path: Path) -> None:
+    real = tmp_path / "real-project"
+    real.mkdir()
+    alias = tmp_path / "alias"
+    alias.symlink_to(real, target_is_directory=True)
+    results = install_skill(alias)
+    assert [r.action for r in results] == ["linked", "linked"]
+    assert _is_link_to_skill(real / ".agents/skills" / SKILL_NAME)
+
+
 def test_unknown_target_is_rejected(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="targets"):
         install_skill(tmp_path, targets=["cursor"])
