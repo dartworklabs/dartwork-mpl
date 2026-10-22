@@ -1,0 +1,37 @@
+# e01-label-step-en — edit / en / report
+id: e01-label-step-en
+kind: edit
+lang: en
+purpose: report
+held_out: false
+prompt: Make only the axis labels one step larger.
+data: [gdp_growth.csv]
+base: b01_gdp_lines.py
+edit_scope: explicit
+target: [ax*.xlabel.fontsize, ax*.ylabel.fontsize]
+oracle:
+- type: fontsize_delta
+  group: spec
+  name: axis labels +1 step
+  key: ax0.?label.fontsize
+  min: 0.5
+  max: 3.0
+- type: series
+  group: values
+  name: country series
+  file: gdp_growth.csv
+  x:
+    col: year
+    kind: num
+  identity: named
+  series:
+  - y: Korea
+    aliases: [Korea, 한국]
+  - y: Japan
+    aliases: [Japan, 일본]
+  - y: United States
+    aliases: [United States, USA, US, 미국]
+  - y: Germany
+    aliases: [Germany, 독일]
+  - y: France
+    aliases: [France, 프랑스]

@@ -1,0 +1,38 @@
+# e03-panel-width — edit / en / report
+id: e03-panel-width
+kind: edit
+lang: en
+purpose: report
+held_out: false
+prompt: Make the second panel twice as wide as the first one.
+data: [energy_mix.csv]
+base: b03_two_panel.py
+edit_scope: explicit
+target: [ax*.position, ax*.legend.loc, ax*.xlim, ax*.ylim]
+oracle:
+- type: panel_ratio
+  group: spec
+  name: widths 1:2
+  axis: width
+  ratios: [1, 2]
+  tol: 0.04
+- type: series
+  group: values
+  name: source lines
+  file: energy_mix.csv
+  x:
+    col: year
+    kind: num
+  identity: named
+  series:
+  - y: coal
+    aliases: [coal, 석탄]
+  - y: gas
+    aliases: [gas, 가스]
+  - y: nuclear
+    aliases: [nuclear, 원자력]
+  - y: hydro
+    aliases: [hydro, 수력]
+  - y: wind_solar
+    aliases: [wind, solar, 풍력, 태양]
+  artists: [line]

@@ -1,0 +1,24 @@
+# e04-legend-outside — edit / en / paper / held-out
+id: e04-legend-outside
+kind: edit
+lang: en
+purpose: paper
+held_out: true
+prompt: Move the legend outside the plot area, to the right.
+data: [plants.csv]
+base: b04_scatter_species.py
+edit_scope: explicit
+target: [ax*.legend.loc, ax*.position]
+oracle:
+- type: legend
+  group: spec
+  name: legend outside right
+  outside: right
+- type: points
+  group: values
+  name: points per species
+  file: plants.csv
+  x: leaf_length_cm
+  y: leaf_width_cm
+  by:
+    col: species

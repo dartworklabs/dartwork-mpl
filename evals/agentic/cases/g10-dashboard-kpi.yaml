@@ -1,0 +1,31 @@
+# g10-dashboard-kpi — generate / en / report
+id: g10-dashboard-kpi
+kind: generate
+lang: en
+purpose: report
+held_out: false
+prompt: Build a 2x2 dashboard of the four monthly KPIs (revenue, active users, churn, NPS) for 2024.
+data: [kpi_monthly.csv]
+oracle:
+- type: series
+  group: values
+  name: one named panel per KPI
+  file: kpi_monthly.csv
+  x:
+    col: month
+    kind: order
+  identity: named
+  series:
+  - y: revenue_musd
+    aliases: [revenue]
+  - y: active_users
+    aliases: [active users, users, MAU]
+  - y: churn_pct
+    aliases: [churn]
+  - y: nps
+    aliases: [NPS, net promoter]
+- type: grid
+  group: spec
+  name: 2 x 2 layout
+  rows: 2
+  cols: 2

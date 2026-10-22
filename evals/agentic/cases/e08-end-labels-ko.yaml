@@ -1,0 +1,49 @@
+# e08-end-labels-ko — edit / ko / report / held-out
+id: e08-end-labels-ko
+kind: edit
+lang: ko
+purpose: report
+held_out: true
+prompt: 범례 대신 각 선의 끝에 이름을 붙여 주세요.
+data: [energy_mix.csv]
+base: b06_energy_lines.py
+edit_scope: explicit
+target: [ax*.legend.*, ax*.position, ax*.xlim]
+oracle:
+- type: end_labels
+  group: spec
+  name: names at line ends, no legend
+  file: energy_mix.csv
+  x:
+    col: year
+    kind: num
+  series:
+  - y: coal
+    aliases: [Coal, 석탄]
+  - y: gas
+    aliases: [Gas, 가스]
+  - y: nuclear
+    aliases: [Nuclear, 원자력]
+  - y: hydro
+    aliases: [Hydro, 수력]
+  - y: wind_solar
+    aliases: [Wind, Solar, 풍력, 태양]
+- type: series
+  group: values
+  name: source lines
+  file: energy_mix.csv
+  x:
+    col: year
+    kind: num
+  identity: named
+  series:
+  - y: coal
+    aliases: [Coal, 석탄]
+  - y: gas
+    aliases: [Gas, 가스]
+  - y: nuclear
+    aliases: [Nuclear, 원자력]
+  - y: hydro
+    aliases: [Hydro, 수력]
+  - y: wind_solar
+    aliases: [Wind, Solar, 풍력, 태양]

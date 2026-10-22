@@ -1,0 +1,42 @@
+# e09-look-better-en — edit / en / report
+id: e09-look-better-en
+kind: edit
+lang: en
+purpose: report
+held_out: false
+prompt: Make it look better.
+data: [web_traffic.csv]
+base: b07_traffic_cluttered.py
+edit_scope: broad
+target: ['*']
+oracle:
+- type: series
+  group: values
+  name: sessions kept
+  file: web_traffic.csv
+  x:
+    col: week_start
+    kind: order
+  identity: any
+  series:
+  - y: sessions
+    aliases: [session]
+- type: any_of
+  group: values
+  name: signups kept (raw or x30)
+  checks:
+  - type: series
+    group: values
+    name: signups
+    file: web_traffic.csv
+    x:
+      col: week_start
+      kind: order
+    identity: any
+    series:
+    - y: signups
+      aliases: [signup]
+    scales: [1, 30]
+- type: defects_not_worse
+  group: spec
+  name: no more defects than before

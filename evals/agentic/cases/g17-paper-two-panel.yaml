@@ -1,0 +1,78 @@
+# g17-paper-two-panel — generate / en / paper
+id: g17-paper-two-panel
+kind: generate
+lang: en
+purpose: paper
+held_out: false
+prompt: 'For a paper (double-column figure): panel (a) shows GDP growth lines for the five countries, and panel
+  (b) shows each country''s average growth over 2012-2023 as bars. Label the panels a and b.'
+data: [gdp_growth.csv]
+oracle:
+- type: series
+  group: values
+  name: country series
+  file: gdp_growth.csv
+  x:
+    col: year
+    kind: num
+  identity: named
+  series:
+  - y: Korea
+    aliases: [Korea, 한국]
+  - y: Japan
+    aliases: [Japan, 일본]
+  - y: United States
+    aliases: [United States, USA, US, 미국]
+  - y: Germany
+    aliases: [Germany, 독일]
+  - y: France
+    aliases: [France, 프랑스]
+  artists: [line]
+- type: any_of
+  group: values
+  name: NaN-aware country means as bars
+  checks:
+  - type: bars
+    group: values
+    name: country -> NaN-aware mean (h)
+    file: gdp_growth.csv
+    columns: [Korea, Japan, United States, Germany, France]
+    aliases:
+      Korea: [Korea, 한국]
+      Japan: [Japan, 일본]
+      United States: [United States, USA, US, 미국]
+      Germany: [Germany, 독일]
+      France: [France, 프랑스]
+    agg: mean
+    orientation: h
+  - type: bars
+    group: values
+    name: country -> NaN-aware mean (v)
+    file: gdp_growth.csv
+    columns: [Korea, Japan, United States, Germany, France]
+    aliases:
+      Korea: [Korea, 한국]
+      Japan: [Japan, 일본]
+      United States: [United States, USA, US, 미국]
+      Germany: [Germany, 독일]
+      France: [France, 프랑스]
+    agg: mean
+    orientation: v
+- type: count
+  group: spec
+  name: two panels
+  n: 2
+- type: regex
+  group: spec
+  name: panel labels a/b
+  pattern: ^\s*\(?[aAbB]\)?[.:]?\s*$
+  min: 2
+- type: size
+  group: spec
+  name: double-column width
+  min_width: 14
+  max_width: 18.5
+- type: preset
+  group: spec
+  name: scientific preset
+  prefix: [scientific]

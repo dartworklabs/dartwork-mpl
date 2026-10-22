@@ -1,0 +1,17 @@
+# g06-hist-response — generate / en / report
+id: g06-hist-response
+kind: generate
+lang: en
+purpose: report
+held_out: false
+prompt: Compare the response-time distributions of variant A and variant B.
+data: [response_times.csv]
+oracle:
+- type: dist
+  group: values
+  name: both distributions drawn from all rows
+  file: response_times.csv
+  value: response_ms
+  by:
+    col: variant
+  accept: [hist, box, violin, kde]

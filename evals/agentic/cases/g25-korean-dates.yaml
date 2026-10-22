@@ -1,0 +1,26 @@
+# g25-korean-dates — generate / ko / report
+id: g25-korean-dates
+kind: generate
+lang: ko
+purpose: report
+held_out: false
+prompt: 일별 방문자 수를 선 그래프로 그려 주세요. x축 날짜는 '1월 5일'처럼 한국어로 표시해 주세요.
+data: [visitors_daily.csv]
+oracle:
+- type: series
+  group: values
+  name: daily visitors with gap
+  file: visitors_daily.csv
+  x:
+    col: 날짜
+    kind: date
+  identity: any
+  series:
+  - y: 방문자수
+    aliases: [방문]
+- type: regex
+  group: spec
+  name: Korean date ticks
+  pattern: \d+\s*월\s*\d+\s*일
+  roles: [xtick]
+  min: 3

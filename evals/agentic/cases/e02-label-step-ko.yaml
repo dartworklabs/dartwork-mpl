@@ -1,0 +1,30 @@
+# e02-label-step-ko — edit / ko / report
+id: e02-label-step-ko
+kind: edit
+lang: ko
+purpose: report
+held_out: false
+prompt: 축 이름 글자만 한 단계 키워 주세요.
+data: [korea_monthly_sales.csv]
+base: b02_kr_sales_bar.py
+edit_scope: explicit
+target: [ax*.xlabel.fontsize, ax*.ylabel.fontsize]
+oracle:
+- type: fontsize_delta
+  group: spec
+  name: axis labels +1 step
+  key: ax0.?label.fontsize
+  min: 0.5
+  max: 3.0
+- type: series
+  group: values
+  name: sales bars
+  file: korea_monthly_sales.csv
+  x:
+    col: 월
+    kind: order
+  identity: any
+  series:
+  - y: 매출액(억원)
+    aliases: [매출]
+  artists: [bars]

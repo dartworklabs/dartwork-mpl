@@ -1,0 +1,50 @@
+# g09-small-multiples-ko — generate / ko / report
+id: g09-small-multiples-ko
+kind: generate
+lang: ko
+purpose: report
+held_out: false
+prompt: 도시별 월평균 기온을 도시마다 작은 패널 하나씩(small multiples) 그려 주세요. 모든 패널의 y축 범위는 같게 해 주세요.
+data: [city_temps.csv]
+oracle:
+- type: series
+  group: values
+  name: one named panel per city
+  file: city_temps.csv
+  x:
+    col: month
+    kind: date
+  identity: named
+  series:
+  - y: temp_c
+    aliases: [Seoul, 서울]
+    where:
+      city: Seoul
+  - y: temp_c
+    aliases: [Busan, 부산]
+    where:
+      city: Busan
+  - y: temp_c
+    aliases: [Daegu, 대구]
+    where:
+      city: Daegu
+  - y: temp_c
+    aliases: [Gwangju, 광주]
+    where:
+      city: Gwangju
+  - y: temp_c
+    aliases: [Daejeon, 대전]
+    where:
+      city: Daejeon
+  - y: temp_c
+    aliases: [Incheon, 인천]
+    where:
+      city: Incheon
+- type: count
+  group: spec
+  name: six panels
+  n: 6
+- type: same_lim
+  group: spec
+  name: shared y range
+  axis: y

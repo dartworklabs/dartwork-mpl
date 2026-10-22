@@ -1,0 +1,23 @@
+# e14-log-y-ko — edit / ko / report / held-out
+id: e14-log-y-ko
+kind: edit
+lang: ko
+purpose: report
+held_out: true
+prompt: y축을 로그 스케일로 바꿔 주세요.
+data: [country_stats.csv]
+base: b12_country_scatter.py
+edit_scope: explicit
+target: [ax*.yscale, ax*.ylim, ax*.ytick.*, ax*.position]
+oracle:
+- type: scale
+  group: spec
+  name: log y
+  axis: y
+  value: log
+- type: points
+  group: values
+  name: 12 countries
+  file: country_stats.csv
+  x: gdp_per_capita_kusd
+  y: population_m

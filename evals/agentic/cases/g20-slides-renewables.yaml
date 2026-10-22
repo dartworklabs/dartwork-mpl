@@ -1,0 +1,31 @@
+# g20-slides-renewables — generate / en / slides / held-out
+id: g20-slides-renewables
+kind: generate
+lang: en
+purpose: slides
+held_out: true
+prompt: 'A full-slide 16:9 chart for a talk: the share of renewables (hydro plus wind and solar) in total generation
+  from 2000 to 2023.'
+data: [energy_mix.csv]
+oracle:
+- type: series
+  group: values
+  name: renewable share by year
+  file: energy_mix.csv
+  x:
+    col: year
+    kind: num
+  identity: any
+  series:
+  - expr: (hydro + wind_solar) / (coal + gas + nuclear + hydro + wind_solar) * 100
+    aliases: [renewable, share]
+  scales: [1, 0.01]
+- type: size
+  group: spec
+  name: '16:9'
+  aspect: 0.5625
+  aspect_tol: 0.03
+- type: preset
+  group: spec
+  name: presentation preset
+  prefix: [presentation]

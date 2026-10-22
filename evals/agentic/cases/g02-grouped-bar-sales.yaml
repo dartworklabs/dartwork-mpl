@@ -1,0 +1,19 @@
+# g02-grouped-bar-sales — generate / en / report
+id: g02-grouped-bar-sales
+kind: generate
+lang: en
+purpose: report
+held_out: false
+prompt: Make a grouped bar chart of quarterly revenue, with one bar per region in each quarter.
+data: [quarterly_sales.csv]
+oracle:
+- type: bars
+  group: values
+  name: quarter x region -> revenue
+  file: quarterly_sales.csv
+  category:
+    col: quarter
+  series:
+    col: region
+  value: revenue
+  orientation: v

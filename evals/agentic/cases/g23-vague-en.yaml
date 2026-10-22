@@ -1,0 +1,28 @@
+# g23-vague-en — generate / en / unspecified
+id: g23-vague-en
+kind: generate
+lang: en
+purpose: unspecified
+held_out: false
+prompt: Make a nice chart of this data.
+data: [gdp_growth.csv]
+oracle:
+- type: series
+  group: values
+  name: country series
+  file: gdp_growth.csv
+  x:
+    col: year
+    kind: num
+  identity: named
+  series:
+  - y: Korea
+    aliases: [Korea, 한국]
+  - y: Japan
+    aliases: [Japan, 일본]
+  - y: United States
+    aliases: [United States, USA, US, 미국]
+  - y: Germany
+    aliases: [Germany, 독일]
+  - y: France
+    aliases: [France, 프랑스]

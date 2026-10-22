@@ -1,0 +1,30 @@
+# e06-highlight-bar-ko — edit / ko / report
+id: e06-highlight-bar-ko
+kind: edit
+lang: ko
+purpose: report
+held_out: false
+prompt: 한국 막대만 강조하고 나머지 나라 막대는 회색으로 바꿔 주세요.
+data: [gdp_growth.csv]
+base: b05_country_barh.py
+edit_scope: explicit
+target: [ax*.bars.*.colors]
+oracle:
+- type: highlight
+  group: spec
+  name: Korea bar coloured, others grey
+  kind: bar
+  aliases: [Korea, 한국]
+- type: bars
+  group: values
+  name: country -> NaN-aware mean (h)
+  file: gdp_growth.csv
+  columns: [Korea, Japan, United States, Germany, France]
+  aliases:
+    Korea: [Korea, 한국]
+    Japan: [Japan, 일본]
+    United States: [United States, USA, US, 미국]
+    Germany: [Germany, 독일]
+    France: [France, 프랑스]
+  agg: mean
+  orientation: h
