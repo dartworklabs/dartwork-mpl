@@ -232,13 +232,50 @@ def _stage(link: Path, *, copy: bool) -> Path:
     return staged
 
 
-def _swap_in(staged: Path, link: Path) -> None:
-    """Move ``staged`` to ``link``; on failure the old ``link`` is restored."""
+Fingerprint = tuple[str, ...] | None
+
+
+def _fingerprint(path: Path) -> Fingerprint:
+    """What is at ``path`` right now, links not followed (``None``: nothing)."""
+    try:
+        mode = os.lstat(path).st_mode
+    except FileNotFoundError:
+        return None
+    if stat.S_ISLNK(mode):
+        return ("link", os.readlink(path))
+    if stat.S_ISDIR(mode):
+        return ("dir", *(f"{k}={v}" for k, v in _inventory(path).items()))
+    if stat.S_ISREG(mode):
+        return ("file", hashlib.sha256(path.read_bytes()).hexdigest())
+    return ("special", f"{stat.S_IFMT(mode):o}")
+
+
+def _changed(link: Path, workdir: Path) -> SkillInstallError:
+    shutil.rmtree(workdir, ignore_errors=True)
+    return SkillInstallError(
+        f"{link} changed while the skill was being installed; it was left "
+        f"as it is now. Check it and rerun the command."
+    )
+
+
+def _swap_in(staged: Path, link: Path, expected: Fingerprint) -> None:
+    """Move ``staged`` to ``link``; on failure the old ``link`` is restored.
+
+    ``expected`` is what was at ``link`` when it was inspected. If anything
+    changed since (even with ``force``), nothing is replaced.
+    """
     workdir = staged.parent
     backup = workdir / "previous"
+    if _fingerprint(link) != expected:
+        raise _changed(link, workdir)
     try:
-        if link.exists() or link.is_symlink():
+        if expected is not None:
             os.replace(link, backup)
+            # A write that landed between the check above and the rename is
+            # in ``backup`` now: compare again and put it back if so.
+            if _fingerprint(backup) != expected:
+                os.replace(backup, link)
+                raise _changed(link, workdir)
             try:
                 os.replace(staged, link)
             except OSError:
@@ -328,6 +365,7 @@ def install_skill(
             )
 
     plans: list[tuple[str, Path, Action, str]] = []
+    inspected: dict[Path, Fingerprint] = {}
     first_by_dir: dict[Path, Path] = {}
     for name in names:
         skills_dir = base / TARGETS[name]
@@ -339,6 +377,7 @@ def install_skill(
             )
             continue
         first_by_dir[key] = link
+        inspected[link] = _fingerprint(link)
         plans.append((name, link, _plan(link, copy=copy, force=force), ""))
 
     staged: dict[Path, Path] = {}
@@ -355,7 +394,7 @@ def install_skill(
     try:
         for name, link, action, detail in plans:
             if link in staged:
-                _swap_in(staged.pop(link), link)
+                _swap_in(staged.pop(link), link, inspected[link])
             results.append(InstallResult(name, link, action, detail))
     finally:
         for path in staged.values():

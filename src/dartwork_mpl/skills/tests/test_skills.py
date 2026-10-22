@@ -435,6 +435,70 @@ def test_failed_swap_keeps_the_previous_install(
     assert not _leftovers(copy.parent)
 
 
+@pytest.mark.parametrize("force", [False, True], ids=["plain", "force"])
+def test_edit_made_while_staging_is_kept_and_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, force: bool
+) -> None:
+    """A user edit between inspection and the swap is never overwritten."""
+    install_skill(tmp_path, targets=["codex"], copy=True)
+    copy = tmp_path / ".agents/skills" / SKILL_NAME
+    real_stage = skills_module._stage
+
+    def stage_then_edit(link: Path, *, copy: bool) -> Path:
+        staged = real_stage(link, copy=copy)
+        (link / "SKILL.md").write_text("edit made meanwhile", encoding="utf-8")
+        return staged
+
+    monkeypatch.setattr(skills_module, "_stage", stage_then_edit)
+    with pytest.raises(SkillInstallError, match="changed while"):
+        install_skill(tmp_path, targets=["codex"], force=force)
+    assert (copy / "SKILL.md").read_text(encoding="utf-8") == (
+        "edit made meanwhile"
+    )
+    assert not copy.is_symlink()
+    assert not _leftovers(copy.parent)
+
+
+def test_edit_landing_just_before_the_rename_is_put_back(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install_skill(tmp_path, targets=["codex"], copy=True)
+    copy = tmp_path / ".agents/skills" / SKILL_NAME
+    real_replace = os.replace
+
+    def edit_then_replace(src: Path, dst: Path) -> None:
+        if Path(src) == copy:  # moving the old copy aside
+            (copy / "SKILL.md").write_text("late edit", encoding="utf-8")
+        real_replace(src, dst)
+
+    monkeypatch.setattr(skills_module.os, "replace", edit_then_replace)
+    with pytest.raises(SkillInstallError, match="changed while"):
+        install_skill(tmp_path, targets=["codex"])
+    assert (copy / "SKILL.md").read_text(encoding="utf-8") == "late edit"
+    assert not _leftovers(copy.parent)
+
+
+def test_link_repointed_while_staging_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install_skill(tmp_path, targets=["claude"])
+    link = tmp_path / ".claude/skills" / SKILL_NAME
+    mine = tmp_path / "my-skill"
+    mine.mkdir()
+    real_stage = skills_module._stage
+
+    def stage_then_repoint(link_path: Path, *, copy: bool) -> Path:
+        staged = real_stage(link_path, copy=copy)
+        link_path.unlink()
+        link_path.symlink_to(mine, target_is_directory=True)
+        return staged
+
+    monkeypatch.setattr(skills_module, "_stage", stage_then_repoint)
+    with pytest.raises(SkillInstallError, match="changed while"):
+        install_skill(tmp_path, targets=["claude"], copy=True)
+    assert link.resolve() == mine
+
+
 def test_failed_staging_changes_nothing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
