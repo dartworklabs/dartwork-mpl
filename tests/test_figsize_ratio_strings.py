@@ -52,6 +52,22 @@ def test_malformed_or_non_positive_ratio_strings_are_rejected(bad):
         dm.figsize("13cm", bad)
 
 
+@pytest.mark.parametrize(
+    "ratio",
+    [
+        "0." + "0" * 307 + "1:10",  # h / w overflows to inf
+        "10:0." + "0" * 324 + "1",  # h underflows to 0.0
+        "1" + "0" * 300 + ":0." + "0" * 299 + "1",  # h / w underflows to 0.0
+    ],
+    ids=["overflow", "zero-height", "underflow"],
+)
+def test_ratio_strings_with_extreme_quotients_are_rejected(ratio):
+    with pytest.raises(ValueError, match="positive"):
+        dm.figsize("13cm", ratio)
+    with pytest.raises(ValueError, match="positive"):
+        parse_aspect(ratio)
+
+
 @pytest.mark.parametrize("width", ["1920px", "1920 px", "800pixels"])
 def test_pixel_width_explains_dpi_instead_of_suggesting_pt(width):
     with pytest.raises(ValueError) as excinfo:

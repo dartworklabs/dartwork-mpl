@@ -503,7 +503,14 @@ def _parse_ratio_string(text: str) -> float | None:
             f"aspect ratio {text!r} needs two positive numbers as "
             f"'width:height', e.g. '16:9' or '4:3'."
         )
-    return h / w
+    ratio = h / w
+    if not math.isfinite(ratio) or ratio <= 0:
+        # Each side can be positive and finite while their quotient
+        # overflows to inf or underflows to 0.0 (e.g. "1e-308:10").
+        raise ValueError(
+            f"aspect must be positive and finite (got {ratio} from {text!r})"
+        )
+    return ratio
 
 
 def parse_width(value: str | Length) -> float:
