@@ -259,6 +259,25 @@ def test_generic_examples_leave_colour_to_the_preset() -> None:
         assert "color=" not in block
 
 
+def test_every_dm_name_and_prompt_the_skill_mentions_exists() -> None:
+    """Prose and code name ``dm.*`` APIs and prompt guides; refactors must keep them."""
+    text = "\n".join(p.read_text(encoding="utf-8") for p in _DOCS)
+    removed = {"dm.subplots", "dm.figure"}  # the router's "Never" list
+    for dotted in removed:
+        with pytest.raises(AttributeError, match="removed"):
+            getattr(dm, dotted.split(".", 1)[1])
+    names = {n.rstrip(".") for n in re.findall(r"\bdm\.[A-Za-z_][\w.]*", text)}
+    assert len(names - removed) > 25
+    for dotted in sorted(names - removed):
+        target: object = dm
+        for part in dotted.split(".")[1:]:
+            target = getattr(target, part)
+    for kind in ("si", "myriad", "millions", "billions"):  # "_myriad" shorthand
+        assert callable(getattr(dm, f"format_axis_{kind}"))
+    guides = set(re.findall(r'"(0[0-3]-[a-z-]+)"', text))
+    assert guides and guides <= set(dm.list_prompts())
+
+
 def test_every_colour_or_colormap_name_exists() -> None:
     """Prose names (not only code) are copied by agents; each must resolve."""
     named = set(mcolors.get_named_colors_mapping())
