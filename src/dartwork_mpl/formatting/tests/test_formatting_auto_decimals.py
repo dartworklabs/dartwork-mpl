@@ -18,7 +18,7 @@ from matplotlib.axes import Axes
 matplotlib.use("Agg")
 
 import dartwork_mpl as dm
-from dartwork_mpl.formatting._axis_wide import fewest_exact_decimals
+from dartwork_mpl.formatting._decimals import fewest_exact_decimals
 
 
 def _drawn_labels(ax: Axes, which: str = "y") -> list[str]:
@@ -69,6 +69,8 @@ class TestFewestExactDecimals:
             ([1e6 + 2, 1e6 + 4], 0),
             ([], 0),
             ([float("nan"), 3.0], 0),
+            ([1e-9], 9),  # a log-axis decade still prints exactly
+            ([5.551115123125783e-17, 0.2, 0.4], 1),  # zero-tick float noise
         ],
     )
     def test_fewest_exact(self, values: list[float], expected: int) -> None:
@@ -77,6 +79,9 @@ class TestFewestExactDecimals:
     def test_irregular_values_fall_back_to_distinct(self) -> None:
         # Thirds never render exactly; one decimal already keeps them apart.
         assert fewest_exact_decimals([1 / 3, 2 / 3, 1.0]) == 1
+
+    def test_irregular_lone_value_keeps_three_significant_digits(self) -> None:
+        assert fewest_exact_decimals([1 / 3]) == 3
 
 
 class TestFormatAxisSiAuto:
@@ -134,6 +139,10 @@ class TestFormatAxisSiAuto:
     def test_log_axis_uses_a_prefix_per_tick(self) -> None:
         labels = _labels(dm.format_axis_si, (1, 1e6), log=True)
         assert labels == ["1", "10", "100", "1k", "10k", "100k", "1M"]
+
+    def test_log_axis_sub_unit_ticks_take_their_own_decimals(self) -> None:
+        labels = _labels(dm.format_axis_si, (0.01, 100), log=True)
+        assert labels == ["0.01", "0.1", "1", "10", "100"]
 
     def test_explicit_decimals_keep_legacy_labels(self) -> None:
         labels = _labels(dm.format_axis_si, (0, 1300), decimals=1)

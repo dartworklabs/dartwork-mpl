@@ -7,7 +7,7 @@ tick labels, and other matplotlib elements.
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from itertools import pairwise
 from typing import Any, Literal
 
@@ -15,6 +15,7 @@ import matplotlib.ticker as ticker
 from matplotlib.axes import Axes
 
 from ._axis_wide import MyriadFormatter, ScaledFormatter, SIFormatter
+from ._decimals import recommend_tick_decimals
 
 __all__ = [
     "avoid_tick_overlap",
@@ -40,35 +41,6 @@ def _set_formatter(
         ax.yaxis.set_major_formatter(make())
     if axis in ("x", "both"):
         ax.xaxis.set_major_formatter(make())
-
-
-def recommend_tick_decimals(values: Sequence[float]) -> int:
-    """Recommend the minimum decimal places needed for numeric tick values.
-
-    The recommendation is based on the smallest positive step between
-    adjacent sorted values, with a conservative cap of four decimals.
-    Duplicate and non-finite values are ignored.
-    """
-    finite: list[float] = []
-    for value in values:
-        try:
-            numeric = float(value)
-        except (TypeError, ValueError):
-            continue
-        if math.isfinite(numeric):
-            finite.append(numeric)
-    if len(finite) < 2:
-        return 0
-
-    ordered = sorted(finite)
-    diffs = [
-        right - left for left, right in pairwise(ordered) if right - left > 0
-    ]
-    if not diffs:
-        return 0
-
-    step = min(diffs)
-    return min(4, max(0, math.ceil(-math.log10(step) - 1e-9)))
 
 
 def format_axis_year(

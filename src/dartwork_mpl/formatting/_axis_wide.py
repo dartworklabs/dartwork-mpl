@@ -7,6 +7,8 @@ integer ticks into ``200.0`` and ``1.0k`` and rounds half steps such as
 from the ticks the axis actually shows: the fewest decimals that render
 every tick exactly and distinctly, so integer ticks print no decimals and
 fractional steps keep the same count on every tick (``17.5, 20.0, 22.5``).
+On log and other non-linear scales each tick is its own decade, so each
+tick takes the fewest decimals it needs (``0.1, 1, 10``).
 """
 
 from __future__ import annotations
@@ -18,17 +20,11 @@ from dataclasses import dataclass
 import matplotlib.ticker as ticker
 import numpy as np
 
-__all__ = [
-    "MyriadFormatter",
-    "SIFormatter",
-    "ScaledFormatter",
-    "fewest_exact_decimals",
-]
+from ._decimals import fewest_exact_decimals
 
-# Decimal counts tried before falling back to "distinct only" rendering.
-_MAX_DECIMALS = 6
-_EXACT_REL_TOL = 1e-9
-_EXACT_ABS_TOL = 1e-6
+__all__ = ["MyriadFormatter", "SIFormatter", "ScaledFormatter"]
+
+_PREFIX_TOL = 1e-9
 
 _SI_PREFIXES: tuple[tuple[float, str], ...] = (
     (1e12, "T"),
@@ -36,36 +32,6 @@ _SI_PREFIXES: tuple[tuple[float, str], ...] = (
     (1e6, "M"),
     (1e3, "k"),
 )
-
-
-def _is_exact(value: float, decimals: int) -> bool:
-    scaled = value * 10.0**decimals
-    return math.isclose(
-        scaled, round(scaled), rel_tol=_EXACT_REL_TOL, abs_tol=_EXACT_ABS_TOL
-    )
-
-
-def _all_distinct(values: Sequence[float], decimals: int) -> bool:
-    return len({f"{value:.{decimals}f}" for value in values}) == len(values)
-
-
-def fewest_exact_decimals(values: Sequence[float]) -> int:
-    """Fewest decimals that render every value exactly and distinctly.
-
-    Returns ``0`` when every value is an integer. Values that no count up
-    to six decimals renders exactly (irregular steps such as thirds) get
-    the fewest decimals that still keep the values apart.
-    """
-    finite = sorted({float(v) for v in values if math.isfinite(v)})
-    for decimals in range(_MAX_DECIMALS + 1):
-        if all(_is_exact(v, decimals) for v in finite) and _all_distinct(
-            finite, decimals
-        ):
-            return decimals
-    for decimals in range(_MAX_DECIMALS + 1):
-        if _all_distinct(finite, decimals):
-            return decimals
-    return _MAX_DECIMALS
 
 
 @dataclass(frozen=True)
@@ -76,10 +42,15 @@ class _Unit:
 
 @dataclass(frozen=True)
 class _Plan:
-    """One axis decision: a shared unit (or per-tick units) and decimals."""
+    """One axis decision: a shared unit (or per-tick units) and decimals.
+
+    ``decimals`` maps a unit label to its decimal count. ``per_value``
+    marks a non-linear axis, where every tick settles its own decimals.
+    """
 
     axis_unit: _Unit | None
     decimals: dict[str, int]
+    per_value: bool = False
 
 
 class ScaledFormatter(ticker.Formatter):
@@ -99,7 +70,7 @@ class ScaledFormatter(ticker.Formatter):
         self._plan: _Plan | None = None
 
     # -- unit hooks -----------------------------------------------------
-    def _axis_unit(self, values: Sequence[float]) -> _Unit | None:
+    def _axis_unit(self, values: Sequence[float], linear: bool) -> _Unit | None:
         """The unit every tick shares, or ``None`` to pick one per tick."""
         return self._unit
 
@@ -111,9 +82,16 @@ class ScaledFormatter(ticker.Formatter):
         return f"{sign}{number}{unit}"
 
     # -- decision -------------------------------------------------------
+    def _is_linear(self) -> bool:
+        get_scale = getattr(self.axis, "get_scale", None)
+        return get_scale is None or get_scale() == "linear"
+
     def _make_plan(self, values: Sequence[float]) -> _Plan:
         finite = [v for v in values if math.isfinite(v)]
-        axis_unit = self._axis_unit(finite)
+        linear = self._is_linear()
+        axis_unit = self._axis_unit(finite, linear)
+        if not linear:
+            return _Plan(axis_unit, {}, per_value=True)
         groups: dict[str, list[float]] = {}
         for value in finite:
             unit = axis_unit or self._value_unit(abs(value))
@@ -160,7 +138,7 @@ class ScaledFormatter(ticker.Formatter):
         )
         unit = plan.axis_unit or self._value_unit(abs(value))
         scaled = abs(value) / unit.factor
-        decimals = plan.decimals.get(unit.label)
+        decimals = None if plan.per_value else plan.decimals.get(unit.label)
         if decimals is None:
             decimals = fewest_exact_decimals([scaled])
         spec = f",.{decimals}f" if self._grouping else f".{decimals}f"
@@ -176,23 +154,19 @@ class SIFormatter(ScaledFormatter):
     On a linear axis the prefix comes from the largest visible ``|tick|``
     and applies to every tick, so an axis never mixes ``800`` with
     ``1.2k``. Log and other non-linear scales span decades, so each tick
-    takes its own prefix there and decimals are settled per prefix.
+    takes its own prefix and decimals there.
     """
 
     @staticmethod
     def _prefix_for(magnitude: float) -> _Unit:
         for factor, prefix in _SI_PREFIXES:
             # Tolerate float noise so a 999.9999999 tick still reads 1k.
-            if magnitude >= factor * (1 - _EXACT_REL_TOL):
+            if magnitude >= factor * (1 - _PREFIX_TOL):
                 return _Unit(factor, prefix)
         return _Unit(1.0, "")
 
-    def _axis_unit(self, values: Sequence[float]) -> _Unit | None:
-        axis = self.axis
-        get_scale = getattr(axis, "get_scale", None)
-        if get_scale is not None and get_scale() != "linear":
-            return None
-        if not values:
+    def _axis_unit(self, values: Sequence[float], linear: bool) -> _Unit | None:
+        if not linear or not values:
             return None
         return self._prefix_for(max(abs(v) for v in values))
 
@@ -218,7 +192,7 @@ class MyriadFormatter(ScaledFormatter):
         self._ladder = tuple(ladder)
         self._currency = currency
 
-    def _axis_unit(self, values: Sequence[float]) -> _Unit | None:
+    def _axis_unit(self, values: Sequence[float], linear: bool) -> _Unit | None:
         return None
 
     def _value_unit(self, magnitude: float) -> _Unit:
