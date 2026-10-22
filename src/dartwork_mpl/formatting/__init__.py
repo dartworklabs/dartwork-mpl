@@ -363,17 +363,22 @@ def format_axis_si(
 ) -> None:
     """Format axis tick labels with SI prefixes (k, M, G, T).
 
-    With the default ``decimals=None`` the labels follow two axis-wide
-    rules, settled from the ticks inside the view on every draw:
+    With the default ``decimals=None`` the labels follow axis-wide rules,
+    settled from the ticks inside the view on every draw:
 
-    - **One prefix per axis.** The largest visible ``|tick|`` picks the
-      prefix and every tick uses it, so an axis reads ``0.8k, 1.0k, 1.2k``
-      rather than mixing ``800`` and ``1.2k``. Below 1000 there is no
-      prefix. Log and other non-linear scales span decades, so there each
-      tick takes its own prefix (``1, 10, 100, 1k, 10k``).
+    - **One unit per axis, whole numbers first.** Every tick shares one
+      unit among none, ``k``, ``M``, ``G`` and ``T``. Of the units in which
+      every visible tick is a whole number, the one with the shortest
+      longest label wins: ``0, 200 … 1,200`` (not ``0.2k … 1.2k``),
+      ``0, 1k … 5k``, ``-1M … 1M``. Only when no unit gives whole numbers
+      does the unit with the fewest decimals win. Log and other non-linear
+      scales span decades, so there each tick takes its own prefix
+      (``1, 10, 100, 1k, 10k``).
     - **One decimal count per axis.** The fewest decimals that render every
-      scaled tick exactly: ``0, 50, 100`` and ``1k, 2k`` print none, while
-      ``0.25k, 0.50k, 0.75k`` keep two on every tick.
+      scaled tick exactly: whole-number axes print none, while a fractional
+      step keeps the same count on every tick (``0.0, 0.5, 1.0``).
+    - Numbers of 1000 and more carry thousands separators (``1,200``,
+      ``1,000k``).
 
     The zero tick never carries a prefix or a sign and uses the axis
     decimal count (``0`` on an integer axis).
@@ -391,7 +396,7 @@ def format_axis_si(
 
     Examples
     --------
-    >>> format_axis_si(ax)  # 0, 50, 100 … or 0.5M, 1.0M, 1.5M
+    >>> format_axis_si(ax)  # 0, 200, … 1,200  or  0, 1M, 2M
     """
     if decimals is None:
         _set_formatter(ax, axis, SIFormatter)

@@ -109,17 +109,37 @@ class TestFormatAxisSiAuto:
             "5k",
         ]
 
-    def test_one_prefix_per_axis(self) -> None:
-        # Largest visible tick 1.2k picks "k" for every tick: no 800 vs 1.2k.
+    def test_integers_first_beats_a_fractional_prefix(self) -> None:
+        # "k" would need 0.2k; no prefix keeps whole numbers (with a comma).
         labels = _labels(dm.format_axis_si, (0, 1300))
-        assert labels == ["0.0", "0.2k", "0.4k", "0.6k", "0.8k", "1.0k", "1.2k"]
+        assert labels == ["0", "200", "400", "600", "800", "1,000", "1,200"]
 
-    def test_fractional_step_keeps_one_count_and_exact_values(self) -> None:
-        # 1250 must not round to "1.2k"; every tick carries two decimals.
-        labels = _labels(dm.format_axis_si, (0, 2100))
-        assert labels[1:4] == ["0.25k", "0.50k", "0.75k"]
-        assert "1.25k" in labels
-        assert {len(label.split(".")[1].rstrip("k")) for label in labels} == {2}
+    def test_quarter_steps_stay_whole_without_prefix(self) -> None:
+        # 1250 used to print as "1.2k"; it is now an exact whole number.
+        ticks = [i * 250.0 for i in range(9)]
+        labels = _labels(dm.format_axis_si, (0, 2000), ticks=ticks)
+        assert labels == [
+            "0",
+            "250",
+            "500",
+            "750",
+            "1,000",
+            "1,250",
+            "1,500",
+            "1,750",
+            "2,000",
+        ]
+
+    def test_shortest_whole_number_unit_wins(self) -> None:
+        # Whole in none and in k; "1,000k" is shorter than "1,000,000".
+        ticks = [-1e6, -5e5, 0, 5e5, 1e6]
+        labels = _labels(dm.format_axis_si, (-1e6, 1e6), ticks=ticks)
+        assert labels == ["-1,000k", "-500k", "0", "500k", "1,000k"]
+
+    def test_fractional_axis_keeps_axis_wide_decimals(self) -> None:
+        ticks = [0.0, 0.5, 1.0, 1.5]
+        labels = _labels(dm.format_axis_si, (0, 1.5), ticks=ticks)
+        assert labels == ["0.0", "0.5", "1.0", "1.5"]
 
     def test_out_of_view_tick_does_not_pick_the_prefix(self) -> None:
         # The locator also returns 1000 (beyond 950); it must not force "k".
@@ -166,7 +186,7 @@ class TestFormatAxisSiAuto:
                 ax.xaxis.get_major_formatter()
                 is not ax.yaxis.get_major_formatter()
             )
-            assert _drawn_labels(ax, "x")[-1] == "3.0k"
+            assert _drawn_labels(ax, "x")[-1] == "3,000"
             assert _drawn_labels(ax, "y") == [
                 "0",
                 "50",
@@ -188,7 +208,7 @@ class TestFormatAxisSiAuto:
                 "0",
                 "999",
                 "1k",
-                "1.5k",
+                "1,500",
                 "-2M",
             ]
         finally:

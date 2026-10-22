@@ -8,7 +8,8 @@ from the ticks the axis actually shows: the fewest decimals that render
 every tick exactly and distinctly, so integer ticks print no decimals and
 fractional steps keep the same count on every tick (``17.5, 20.0, 22.5``).
 On log and other non-linear scales each tick is its own decade, so each
-tick takes the fewest decimals it needs (``0.1, 1, 10``).
+tick takes the fewest decimals it needs (``0.1, 1, 10``). Numbers of 1000
+and more carry thousands separators (``1,200``).
 """
 
 from __future__ import annotations
@@ -62,8 +63,6 @@ class ScaledFormatter(ticker.Formatter):
     ticks inside the view interval vote. A value that rounds to zero prints
     as a bare zero with the axis decimals and no suffix.
     """
-
-    _grouping = False
 
     def __init__(self, factor: float = 1.0, suffix: str = "") -> None:
         self._unit = _Unit(factor, suffix)
@@ -141,20 +140,37 @@ class ScaledFormatter(ticker.Formatter):
         decimals = None if plan.per_value else plan.decimals.get(unit.label)
         if decimals is None:
             decimals = fewest_exact_decimals([scaled])
-        spec = f",.{decimals}f" if self._grouping else f".{decimals}f"
-        number = format(scaled, spec)
+        number = format(scaled, f",.{decimals}f")
         if float(number.replace(",", "")) == 0:
             return f"{0:.{decimals}f}"
         return self._compose("-" if value < 0 else "", number, unit.label)
 
 
+def _unit_cost(values: Sequence[float], unit: _Unit) -> tuple[int, int, float]:
+    """``(decimals, longest label, factor)`` for printing ``values`` in ``unit``."""
+    scaled = [abs(v) / unit.factor for v in values]
+    decimals = fewest_exact_decimals(scaled)
+    longest = 0
+    for value, magnitude in zip(values, scaled, strict=True):
+        number = format(magnitude, f",.{decimals}f")
+        if float(number.replace(",", "")) == 0:
+            label = number
+        else:
+            label = ("-" if value < 0 else "") + number + unit.label
+        longest = max(longest, len(label))
+    return decimals, longest, unit.factor
+
+
 class SIFormatter(ScaledFormatter):
     """SI-prefix ticks (``k``, ``M``, ``G``, ``T``) with one prefix per axis.
 
-    On a linear axis the prefix comes from the largest visible ``|tick|``
-    and applies to every tick, so an axis never mixes ``800`` with
-    ``1.2k``. Log and other non-linear scales span decades, so each tick
-    takes its own prefix and decimals there.
+    On a linear axis every tick shares one unit among none/k/M/G/T, chosen
+    integers first: of the units in which every visible tick is a whole
+    number, the one whose longest label is shortest (``0, 200 … 1,200``;
+    ``0, 1k … 5k``; ``-1M … 1M``). Only when no unit gives whole numbers
+    does the unit with the fewest decimals win (``0.0, 0.2, 0.4``). Log and
+    other non-linear scales span decades, so each tick takes its own prefix
+    and decimals there.
     """
 
     @staticmethod
@@ -168,7 +184,11 @@ class SIFormatter(ScaledFormatter):
     def _axis_unit(self, values: Sequence[float], linear: bool) -> _Unit | None:
         if not linear or not values:
             return None
-        return self._prefix_for(max(abs(v) for v in values))
+        candidates = [
+            _Unit(1.0, ""),
+            *(_Unit(f, p) for f, p in reversed(_SI_PREFIXES)),
+        ]
+        return min(candidates, key=lambda unit: _unit_cost(values, unit))
 
     def _value_unit(self, magnitude: float) -> _Unit:
         return self._prefix_for(magnitude)
@@ -182,8 +202,6 @@ class MyriadFormatter(ScaledFormatter):
     count, so ``1.00억, 1.25억, 1.50억`` stay aligned while ``5,000만``
     keeps none.
     """
-
-    _grouping = True
 
     def __init__(
         self, ladder: Sequence[tuple[int, str]], currency: str = ""
