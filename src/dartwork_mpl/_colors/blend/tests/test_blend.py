@@ -5,7 +5,7 @@ from __future__ import annotations
 import matplotlib
 import pytest
 
-from dartwork_mpl._colors.model import mix_colors, pseudo_alpha
+from dartwork_mpl._colors.blend import mix_colors, pseudo_alpha
 
 
 class TestMixColors:

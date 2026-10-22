@@ -7,7 +7,7 @@ working. tests/test_util.py pins that every name is its owner's object.
 
 from __future__ import annotations
 
-from ._colors.model import mix_colors, pseudo_alpha
+from ._colors.blend import mix_colors, pseudo_alpha
 from .annotation import arrow_axis, label_axes, make_offset
 from .formatting import set_decimal
 from .io import save_and_show, save_formats, show

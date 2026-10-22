@@ -62,7 +62,7 @@ from ._colors import (
 )
 
 # Color utilities
-from ._colors.model import mix_colors, pseudo_alpha
+from ._colors.blend import mix_colors, pseudo_alpha
 
 # Import bundled agent-onboarding helpers
 from .agent import AGENT_DOCS, agent_doc_path, get_agent_doc

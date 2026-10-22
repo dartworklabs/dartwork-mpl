@@ -1,8 +1,9 @@
 """OKLab colour blending and alpha flattening over :class:`Color` values.
 
-Part of the colour model sub-slice; exported as ``dm.mix_colors`` and
-``dm.pseudo_alpha`` (and through the ``dartwork_mpl.util`` compatibility
-module).
+Its own colour sub-slice on top of the model (it stays out of the model so
+the colour-comparison audit closure keeps its listed files); exported as
+``dm.mix_colors`` and ``dm.pseudo_alpha`` and through the
+``dartwork_mpl.util`` compatibility module.
 """
 
 from __future__ import annotations
@@ -11,7 +12,9 @@ import math
 
 import matplotlib.colors as mcolors
 
-from ._color import Color
+from ..model import Color
+
+__all__ = ["mix_colors", "pseudo_alpha"]
 
 
 def mix_colors(

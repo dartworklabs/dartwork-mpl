@@ -46,7 +46,7 @@ def mix(color1: str, color2: str, ratio: float) -> str:
             "Error: ratio must be between 0.0 and 1.0 "
             f"(weight of color1), got {ratio!r}."
         )
-    from ..._colors.model import mix_colors as _mix_oklab
+    from ..._colors.blend import mix_colors as _mix_oklab
 
     try:
         return mcolors.to_hex(_mix_oklab(color1, color2, alpha=ratio))

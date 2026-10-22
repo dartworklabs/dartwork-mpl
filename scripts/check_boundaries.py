@@ -97,6 +97,7 @@ SLICES = frozenset(
         "dartwork_mpl._colors",
         "dartwork_mpl._colors._curated",
         "dartwork_mpl._colors._ssot",
+        "dartwork_mpl._colors.blend",
         "dartwork_mpl._colors.catalog",
         "dartwork_mpl._colors.construction",
         "dartwork_mpl._colors.contrast",
@@ -167,6 +168,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl._colors", "dartwork_mpl._colors.verify"): (
         "the colour build command refuses to publish a catalogue that fails the gates or the exact comparison"
+    ),
+    ("dartwork_mpl._colors.blend", "dartwork_mpl._colors.model"): (
+        "blending converts through the colour model's OKLab representation"
     ),
     ("dartwork_mpl._colors.catalog", "dartwork_mpl._colors._curated"): (
         "the family taxonomy and discrete forms include the curated palettes"
@@ -285,7 +289,7 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp.artifacts", "dartwork_mpl.mcp.execution"): (
         "an artifact bundle is the output of one validated plot execution"
     ),
-    ("dartwork_mpl.mcp.colors", "dartwork_mpl._colors.model"): (
+    ("dartwork_mpl.mcp.colors", "dartwork_mpl._colors.blend"): (
         "the mix_colors tool must return exactly what dm.mix_colors blends"
     ),
     ("dartwork_mpl.mcp.catalog", "dartwork_mpl.style"): (

@@ -13,7 +13,6 @@ delegation). Narrowing those two namespaces to named functions is phase-3 work.
 
 from . import _conversion as conversion
 from . import _gamut as gamut
-from ._blend import mix_colors, pseudo_alpha
 from ._color import Color, color, cspace, hex, oklab, oklch, rgb
 from ._conversion import _srgb_to_oklab as srgb_to_oklab
 from ._conversion import relative_y_srgb_d65
@@ -39,10 +38,8 @@ __all__ = [
     "cspace",
     "gamut",
     "hex",
-    "mix_colors",
     "oklab",
     "oklch",
-    "pseudo_alpha",
     "relative_y_srgb_d65",
     "rgb",
     "srgb_to_oklab",
