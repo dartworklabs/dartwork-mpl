@@ -51,13 +51,13 @@ from matplotlib.colors import ListedColormap  # noqa: E402
 
 import dartwork_mpl as dm  # noqa: E402
 from dartwork_mpl._colors import _curated as CUR  # noqa: E402
-from dartwork_mpl._colors import _gates as GA  # noqa: E402
-from dartwork_mpl._colors import _generate as GEN  # noqa: E402
 from dartwork_mpl._colors import _generated as G  # noqa: E402
 from dartwork_mpl._colors import _metrics as M  # noqa: E402
-from dartwork_mpl._colors import _recipe as R  # noqa: E402
-from dartwork_mpl._colors import _tone as TONE  # noqa: E402
+from dartwork_mpl._colors.construction import _generate as GEN  # noqa: E402
+from dartwork_mpl._colors.construction import _recipe as R  # noqa: E402
+from dartwork_mpl._colors.construction import _tone as TONE  # noqa: E402
 from dartwork_mpl._colors.model import _conversion as CONV  # noqa: E402
+from dartwork_mpl._colors.verify import _gates as GA  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_OUTPUT_DIR = HERE / "theory_figures"

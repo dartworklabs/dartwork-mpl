@@ -1,8 +1,9 @@
-"""Color-system fixtures shared by the color tests still under ``tests/``.
+"""Color-system fixtures shared by the colour slice's colocated tests.
 
-The repository-wide bootstrap and state isolation live in the root
-``conftest.py``. These fixtures move to the color slice's own
-``tests/conftest.py`` when its tests are colocated (ADR 0005).
+Applies to every test below ``src/dartwork_mpl/_colors/`` (build, verify and
+the authority tests); all users of these fixtures live there. The
+repository-wide bootstrap and state isolation live in the root
+``conftest.py`` (ADR 0005).
 """
 
 from __future__ import annotations
@@ -14,9 +15,9 @@ from typing import TYPE_CHECKING
 import pytest
 
 if TYPE_CHECKING:
-    from dartwork_mpl._colors._catalog import CatalogSnapshot
+    from dartwork_mpl._colors.construction._catalog import CatalogSnapshot
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 _SSOT_PATH = (
     _REPO_ROOT
     / "docs/superpowers/specs/assets"
@@ -37,6 +38,8 @@ def candidate_catalog() -> CatalogSnapshot:
     Golden comparisons and mutation gates share these real compiler outputs;
     tests of changed compiler inputs still invoke the compiler independently.
     """
-    from dartwork_mpl._colors._catalog import compile_candidate_snapshot
+    from dartwork_mpl._colors.construction._catalog import (
+        compile_candidate_snapshot,
+    )
 
     return compile_candidate_snapshot()

@@ -24,22 +24,25 @@ _AUDIT_NAMESPACE = "_dartwork_mpl_color_audit"
 # Source files below ``_colors/`` that the construction and comparison closure
 # imports. A sub-package is listed by its ``__init__.py``.
 _AUDIT_SOURCE_FILES = (
-    "_catalog.py",
-    "_cmaps.py",
-    "_comparison.py",
     "_compatibility_metrics.py",
     "_curated.py",
-    "_cycles.py",
-    "_gates.py",
-    "_generate.py",
-    "_recipe.py",
     "_ssot.py",
-    "_tone.py",
+    "construction/__init__.py",
+    "construction/_catalog.py",
+    "construction/_cmaps.py",
+    "construction/_cycles.py",
+    "construction/_generate.py",
+    "construction/_publish.py",
+    "construction/_recipe.py",
+    "construction/_tone.py",
     "model/__init__.py",
     "model/_color.py",
     "model/_conversion.py",
     "model/_gamut.py",
     "model/_views.py",
+    "verify/__init__.py",
+    "verify/_comparison.py",
+    "verify/_gates.py",
 )
 
 
@@ -68,8 +71,8 @@ _AUDIT_PACKAGE_DIRS: Mapping[str, Path] = MappingProxyType(
         },
     }
 )
-_AUDIT_CATALOG_NAME = f"{_AUDIT_NAMESPACE}._catalog"
-_AUDIT_COMPARISON_NAME = f"{_AUDIT_NAMESPACE}._comparison"
+_AUDIT_CATALOG_NAME = f"{_AUDIT_NAMESPACE}.construction._catalog"
+_AUDIT_COMPARISON_NAME = f"{_AUDIT_NAMESPACE}.verify._comparison"
 _STANDARD_IMPORT = builtins.__import__
 _AUDIT_BUILTINS_TEMPLATE: Mapping[str, object] = MappingProxyType(
     {**vars(builtins), "__import__": _STANDARD_IMPORT}

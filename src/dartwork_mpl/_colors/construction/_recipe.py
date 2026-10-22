@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import cast
 
-from ._ssot import load_color_v6_ssot
+from .._ssot import load_color_v6_ssot
 from ._tone import NeutralTone, neutral_tone
 
 __all__ = [

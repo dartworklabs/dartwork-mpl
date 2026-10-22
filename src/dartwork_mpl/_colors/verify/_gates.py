@@ -15,8 +15,8 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Protocol, cast
 
-from . import _compatibility_metrics as oracle
-from . import _ssot
+from .. import _compatibility_metrics as oracle
+from .. import _ssot
 
 __all__ = [
     "QUALITY_BASELINE_SEMANTIC_SHA256",
@@ -35,7 +35,7 @@ __all__ = [
     "load_quality_baseline",
 ]
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
+_REPO_ROOT = Path(__file__).resolve().parents[4]
 _QUALITY_PATH = (
     _REPO_ROOT
     / "docs"

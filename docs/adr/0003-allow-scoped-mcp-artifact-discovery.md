@@ -12,7 +12,7 @@ orphan: true
 
 The next roadmap milestone delivers an agent-generated plot's image, source and
 validation report as a persistent MCP bundle. It needs dedicated tool/resource
-registrations. ADR 0001 A1 makes `tests/test_color_v6_comparison.py::EXACT_FIELDS`
+registrations. ADR 0001 A1 makes `src/dartwork_mpl/_colors/verify/tests/test_color_v6_comparison.py::EXACT_FIELDS`
 authoritative; that tuple includes `mcp_discovery`. The current live source scan
 must equal frozen discovery exactly, including names/order. This is a binding
 contract, not an incidental stale count assertion.

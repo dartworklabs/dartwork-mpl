@@ -11,8 +11,8 @@ from typing import cast
 
 import pytest
 
-from dartwork_mpl._colors import _generate, _tone
-from dartwork_mpl._colors._recipe import (
+from dartwork_mpl._colors.construction import _generate, _tone
+from dartwork_mpl._colors.construction._recipe import (
     FAMILIES,
     FAMILY_PARAMS,
     TONE_TOP,

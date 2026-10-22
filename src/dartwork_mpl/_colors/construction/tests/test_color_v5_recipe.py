@@ -6,7 +6,7 @@ from typing import cast
 
 import pytest
 
-from dartwork_mpl._colors import _recipe
+from dartwork_mpl._colors.construction import _recipe
 
 EXPECTED_FAMILY_TONES = {
     "red": 0.4999999833333344,
@@ -162,7 +162,7 @@ def test_cycle_print_ssot_maps_to_octave_print_spec(
     v5_ssot: Mapping[str, object],
 ) -> None:
     """Keep the historical-named cycle independent from tone migration."""
-    from dartwork_mpl._colors._cycles import CYCLE_SPECS
+    from dartwork_mpl._colors.construction._cycles import CYCLE_SPECS
 
     expected = [
         ["blue", 5],

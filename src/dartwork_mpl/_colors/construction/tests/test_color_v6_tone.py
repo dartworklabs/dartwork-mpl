@@ -16,7 +16,7 @@ import pytest
 
 
 def _tone() -> ModuleType:
-    return importlib.import_module("dartwork_mpl._colors._tone")
+    return importlib.import_module("dartwork_mpl._colors.construction._tone")
 
 
 def test_shipped_tone_policy_is_pinned_frozen_and_slotted() -> None:

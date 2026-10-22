@@ -10,8 +10,8 @@ from typing import cast
 import numpy as np
 import pytest
 
-from dartwork_mpl._colors import _cmaps
-from dartwork_mpl._colors._catalog import CatalogSnapshot
+from dartwork_mpl._colors.construction import _cmaps
+from dartwork_mpl._colors.construction._catalog import CatalogSnapshot
 from dartwork_mpl._colors.model import _conversion
 
 DIRECT_32_SHA256 = (
@@ -70,7 +70,7 @@ def _compile_cmaps(
 def compatibility_snapshot() -> dict[str, object]:
     """Load the immutable full-LUT fixture once for exact comparison."""
     path = (
-        Path(__file__).resolve().parents[1]
+        Path(__file__).resolve().parents[5]
         / "docs/superpowers/specs/assets/2026-07-14-oklab-centered-"
         "color-system/color_v5_compatibility.json"
     )

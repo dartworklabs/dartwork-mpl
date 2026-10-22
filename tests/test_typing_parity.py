@@ -68,8 +68,8 @@ def _fake_catalog(
     add_sourceless_module: bool = False,
 ) -> ModuleType:
     """Build a minimal catalog double for scoped-loader behavior tests."""
-    catalog = ModuleType(f"{namespace}._catalog")
-    catalog.__file__ = str(module.COLORS_DIR / "_catalog.py")
+    catalog = ModuleType(f"{namespace}.construction._catalog")
+    catalog.__file__ = str(module.COLORS_DIR / "construction" / "_catalog.py")
 
     def compile_candidate() -> object:
         """Return a candidate unless candidate compilation is under test."""
@@ -117,10 +117,12 @@ def _install_fake_catalog_import(
 
     def import_module(name: str) -> ModuleType:
         """Install the fake closure or raise during the import stage."""
-        assert name == f"{namespace}._catalog"
+        assert name == f"{namespace}.construction._catalog"
         if failure_stage == "import":
             partial = ModuleType(f"{namespace}._partial")
-            partial.__file__ = str(module.COLORS_DIR / "_catalog.py")
+            partial.__file__ = str(
+                module.COLORS_DIR / "construction" / "_catalog.py"
+            )
             sys.modules[partial.__name__] = partial
             raise RuntimeError("expected import failure")
         catalog = _fake_catalog(
@@ -301,7 +303,9 @@ def test_source_payload_rejects_preexisting_alias_closure(
     else:
         preexisting_name = f"{namespace}._orphan"
         preexisting = ModuleType(preexisting_name)
-        preexisting.__file__ = str(module.COLORS_DIR / "_catalog.py")
+        preexisting.__file__ = str(
+            module.COLORS_DIR / "construction" / "_catalog.py"
+        )
     sys.modules[preexisting_name] = preexisting
 
     def unexpected_import(name: str) -> ModuleType:
@@ -466,4 +470,7 @@ def test_build_uses_isolated_source_candidate_without_registry_mutation(
     assert audit["cmap_registry_unchanged"] is True
     assert audit["named_registry_unchanged"] is True
     assert audit["alias_modules"] == []
-    assert "_dartwork_mpl_typing_source._catalog" in audit["alias_requests"]
+    assert (
+        "_dartwork_mpl_typing_source.construction._catalog"
+        in audit["alias_requests"]
+    )

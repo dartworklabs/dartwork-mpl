@@ -21,7 +21,7 @@ from itertools import pairwise
 from types import MappingProxyType
 from typing import Protocol, TypeAlias, cast
 
-from . import _compatibility_metrics as oracle
+from .. import _compatibility_metrics as oracle
 from . import _gates as gates
 
 __all__ = [

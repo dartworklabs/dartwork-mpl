@@ -16,8 +16,9 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Literal, TypeAlias, cast
 
-from . import _cmaps, _curated, _cycles, _generate
-from ._ssot import load_color_v6_ssot
+from .. import _curated
+from .._ssot import load_color_v6_ssot
+from . import _cmaps, _cycles, _generate
 
 __all__ = [
     "CatalogSnapshot",
@@ -43,13 +44,13 @@ StringRows: TypeAlias = Mapping[str, tuple[str, ...]]
 VendorColors: TypeAlias = Mapping[str, str]
 PublicInventory: TypeAlias = tuple[Mapping[str, object], ...]
 
-_PACKAGE_DIR = Path(__file__).resolve().parents[1]
-_REPO_ROOT = Path(__file__).resolve().parents[3]
+_COLORS_DIR = Path(__file__).resolve().parents[1]
+_PACKAGE_DIR = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[4]
 _COLOR_ASSET_DIR = _PACKAGE_DIR / "asset" / "color"
 _MCP_DIR = _PACKAGE_DIR / "mcp"
 _DARK_STYLE_PATH = _PACKAGE_DIR / "asset" / "mplstyle" / "theme-dark.mplstyle"
-_SEMANTIC_SOURCE_PATH = Path(__file__).with_name("_semantic.py")
-_MODEL_DIR = Path(__file__).with_name("model")
+_SEMANTIC_SOURCE_PATH = _COLORS_DIR / "_semantic.py"
 _V5_COMPAT_PATH = (
     _REPO_ROOT
     / "docs"
@@ -1349,28 +1350,28 @@ def _candidate_inventory(candidate: CatalogSnapshot) -> dict[str, int]:
 def _candidate_source_hashes() -> dict[str, str]:
     """Hash live compiler and declarative sources used by candidate assembly."""
     paths = {
-        "src/dartwork_mpl/_colors/_catalog.py": Path(__file__),
-        "src/dartwork_mpl/_colors/_cmaps.py": Path(_cmaps.__file__),
-        "src/dartwork_mpl/_colors/_curated.py": Path(_curated.__file__),
-        "src/dartwork_mpl/_colors/_cycles.py": Path(_cycles.__file__),
-        "src/dartwork_mpl/_colors/_generate.py": Path(_generate.__file__),
-        "src/dartwork_mpl/_colors/model/_gamut.py": _MODEL_DIR / "_gamut.py",
-        "src/dartwork_mpl/_colors/model/_color.py": _MODEL_DIR / "_color.py",
-        "src/dartwork_mpl/_colors/model/_conversion.py": _MODEL_DIR
-        / "_conversion.py",
-        "src/dartwork_mpl/_colors/_metrics.py": Path(__file__).with_name(
-            "_metrics.py"
-        ),
-        "src/dartwork_mpl/_colors/_recipe.py": Path(__file__).with_name(
-            "_recipe.py"
-        ),
-        "src/dartwork_mpl/_colors/_semantic.py": _SEMANTIC_SOURCE_PATH,
-        "src/dartwork_mpl/_colors/_ssot.py": Path(__file__).with_name(
-            "_ssot.py"
-        ),
-        "src/dartwork_mpl/_colors/_tone.py": Path(__file__).with_name(
-            "_tone.py"
-        ),
+        "src/dartwork_mpl/_colors/construction/_catalog.py": _COLORS_DIR
+        / "construction/_catalog.py",
+        "src/dartwork_mpl/_colors/construction/_cmaps.py": _COLORS_DIR
+        / "construction/_cmaps.py",
+        "src/dartwork_mpl/_colors/_curated.py": _COLORS_DIR / "_curated.py",
+        "src/dartwork_mpl/_colors/construction/_cycles.py": _COLORS_DIR
+        / "construction/_cycles.py",
+        "src/dartwork_mpl/_colors/construction/_generate.py": _COLORS_DIR
+        / "construction/_generate.py",
+        "src/dartwork_mpl/_colors/model/_gamut.py": _COLORS_DIR
+        / "model/_gamut.py",
+        "src/dartwork_mpl/_colors/model/_color.py": _COLORS_DIR
+        / "model/_color.py",
+        "src/dartwork_mpl/_colors/model/_conversion.py": _COLORS_DIR
+        / "model/_conversion.py",
+        "src/dartwork_mpl/_colors/_metrics.py": _COLORS_DIR / "_metrics.py",
+        "src/dartwork_mpl/_colors/construction/_recipe.py": _COLORS_DIR
+        / "construction/_recipe.py",
+        "src/dartwork_mpl/_colors/_semantic.py": _COLORS_DIR / "_semantic.py",
+        "src/dartwork_mpl/_colors/_ssot.py": _COLORS_DIR / "_ssot.py",
+        "src/dartwork_mpl/_colors/construction/_tone.py": _COLORS_DIR
+        / "construction/_tone.py",
         "src/dartwork_mpl/asset/mplstyle/theme-dark.mplstyle": (
             _DARK_STYLE_PATH
         ),

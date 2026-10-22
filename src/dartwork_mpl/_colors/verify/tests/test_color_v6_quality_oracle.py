@@ -13,9 +13,9 @@ from typing import cast
 import pytest
 
 from dartwork_mpl._colors import _compatibility_metrics as oracle
-from dartwork_mpl._colors._comparison import matches_recorded_quality
+from dartwork_mpl._colors.verify._comparison import matches_recorded_quality
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[5]
 ORACLE_PATH = REPO_ROOT / "src/dartwork_mpl/_colors/_compatibility_metrics.py"
 QUALITY_PATH = (
     REPO_ROOT

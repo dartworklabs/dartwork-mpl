@@ -25,8 +25,8 @@ import matplotlib as mpl
 import pytest
 
 from dartwork_mpl._colors._compatibility_metrics import ordered_quality
-from dartwork_mpl._colors._gates import gate_cycle
 from dartwork_mpl._colors._generated import CMAPS_256, CYCLES
+from dartwork_mpl._colors.verify._gates import gate_cycle
 from tests._docs_color_oracles import chroma_r_squared
 
 _REPO = Path(__file__).resolve().parents[1]

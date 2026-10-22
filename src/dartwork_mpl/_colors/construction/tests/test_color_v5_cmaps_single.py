@@ -6,7 +6,7 @@ from typing import cast
 
 import pytest
 
-from dartwork_mpl._colors import _cmaps, _tone
+from dartwork_mpl._colors.construction import _cmaps, _tone
 
 Rgb = tuple[float, float, float]
 

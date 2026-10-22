@@ -15,7 +15,7 @@ from typing import cast
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[5]
 BUILDER_PATH = REPO_ROOT / "scripts/build_color_v6_ssot.py"
 V6_SSOT_PATH = REPO_ROOT / "src/dartwork_mpl/asset/color/color_v6_ssot.json"
 COMPATIBILITY_PATH = (
@@ -334,7 +334,7 @@ def test_manifest_numeric_policies_equal_runtime_policy_objects(
     v6_ssot: dict[str, object],
 ) -> None:
     """Keep packaged numeric authority synchronized with runtime searches."""
-    from dartwork_mpl._colors._tone import SHIPPED_TONE_POLICY
+    from dartwork_mpl._colors.construction._tone import SHIPPED_TONE_POLICY
     from dartwork_mpl._colors.model._gamut import SRGB_GAMUT_POLICY
 
     policies = cast(dict[str, dict[str, object]], v6_ssot["policies"])
@@ -621,10 +621,10 @@ def test_v6_builder_has_no_candidate_compiler_import_boundary() -> None:
 
     forbidden = {
         "dartwork_mpl",
-        "dartwork_mpl._colors._catalog",
-        "dartwork_mpl._colors._cmaps",
-        "dartwork_mpl._colors._generate",
-        "dartwork_mpl._colors._recipe",
+        "dartwork_mpl._colors.construction._catalog",
+        "dartwork_mpl._colors.construction._cmaps",
+        "dartwork_mpl._colors.construction._generate",
+        "dartwork_mpl._colors.construction._recipe",
     }
     assert imported.isdisjoint(forbidden)
 
@@ -870,8 +870,16 @@ def test_validated_accessor_rejects_impossible_duplicate_contract(
 
 
 def _module_tree(name: str) -> ast.Module:
-    """Parse one color construction module without importing it."""
-    path = REPO_ROOT / f"src/dartwork_mpl/_colors/{name}.py"
+    """Parse one color module, found by its file stem below ``_colors/``, without importing it."""
+    colors_dir = REPO_ROOT / "src/dartwork_mpl/_colors"
+    (path,) = (
+        candidate
+        for candidate in (
+            colors_dir / f"{name}.py",
+            *sorted(colors_dir.glob(f"*/{name}.py")),
+        )
+        if candidate.is_file()
+    )
     return ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 
 
@@ -935,7 +943,7 @@ def test_recipe_ast_has_only_neutral_tone_lightness_names() -> None:
 def test_build_and_catalog_use_the_validated_v6_accessor() -> None:
     """Prevent recipe/index copies and candidate borrowing from v5 fixtures."""
     recipe_tree = _module_tree("_recipe")
-    build_tree = _module_tree("_build")
+    build_tree = _module_tree("_publish")
     catalog_tree = _module_tree("_catalog")
     candidate_tree = _function_tree(catalog_tree, "compile_candidate_snapshot")
 
@@ -947,16 +955,16 @@ def test_build_and_catalog_use_the_validated_v6_accessor() -> None:
 
 def test_candidate_provenance_hashes_all_v6_construction_authorities() -> None:
     """Include tone, gamut, accessor, and packaged v6 bytes in reports."""
-    import dartwork_mpl._colors._catalog as _catalog
     import dartwork_mpl._colors._ssot as _ssot
-    import dartwork_mpl._colors._tone as _tone
+    import dartwork_mpl._colors.construction._catalog as _catalog
+    import dartwork_mpl._colors.construction._tone as _tone
     import dartwork_mpl._colors.model._gamut as _gamut
 
     source_hashes = _catalog._candidate_source_hashes()
     paths = {
         "src/dartwork_mpl/_colors/model/_gamut.py": Path(_gamut.__file__),
         "src/dartwork_mpl/_colors/_ssot.py": Path(_ssot.__file__),
-        "src/dartwork_mpl/_colors/_tone.py": Path(_tone.__file__),
+        "src/dartwork_mpl/_colors/construction/_tone.py": Path(_tone.__file__),
         "src/dartwork_mpl/asset/color/color_v6_ssot.json": V6_SSOT_PATH,
     }
 
@@ -1162,7 +1170,7 @@ def test_palette_and_cmap_construction_ast_is_oklab_y_only() -> None:
 
 def test_removed_legacy_solver_names_are_not_module_attributes() -> None:
     """Prevent private callers from keeping the transitional route alive."""
-    from dartwork_mpl._colors import _cmaps, _generate
+    from dartwork_mpl._colors.construction import _cmaps, _generate
 
     forbidden = {"_compatibility_level", "gamut_max_chroma", "solve_swatch_rgb"}
 
@@ -1249,7 +1257,7 @@ def test_discrete_multi_hue_reads_generated_indices_and_lut() -> None:
 
 def test_build_reads_v6_indices_from_the_validated_accessor() -> None:
     """Generate the frozen table from the packaged v6 authority."""
-    build_tree = _module_tree("_build")
+    build_tree = _module_tree("_publish")
     build_source = ast.unparse(build_tree)
 
     assert "load_color_v6_ssot" in _called_names(build_tree)
@@ -1270,7 +1278,7 @@ def test_candidate_reads_v6_indices_without_borrowing_the_v5_baseline() -> None:
 
 def test_build_and_catalog_do_not_copy_large_index_rows() -> None:
     """Keep the packaged v6 JSON as the sole multi-hue index literal."""
-    build_tree = _module_tree("_build")
+    build_tree = _module_tree("_publish")
     catalog_tree = _module_tree("_catalog")
 
     assert _large_integer_sequences(build_tree) == []

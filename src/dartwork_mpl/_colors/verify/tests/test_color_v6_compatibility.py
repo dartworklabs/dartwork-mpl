@@ -8,7 +8,7 @@ from typing import cast
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[5]
 COMPAT_PATH = (
     REPO_ROOT
     / "docs"

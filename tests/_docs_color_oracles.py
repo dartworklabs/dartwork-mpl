@@ -3,7 +3,7 @@
 
 def chroma_r_squared() -> float:
     """Recompute ordinary in-sample R² for the authored chroma catalog."""
-    from dartwork_mpl._colors import _recipe as recipe
+    from dartwork_mpl._colors.construction import _recipe as recipe
 
     observed = [params.cmax for params in recipe.FAMILY_PARAMS.values()]
     fitted = [

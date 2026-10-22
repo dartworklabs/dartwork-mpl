@@ -12,7 +12,7 @@ import pytest
 
 from dartwork_mpl._build_entry import is_color_build_invocation
 
-_REPO_ROOT = Path(__file__).resolve().parents[1]
+_REPO_ROOT = Path(__file__).resolve().parents[5]
 _PACKAGE_SOURCE = _REPO_ROOT / "src" / "dartwork_mpl"
 _BASELINE_ASSETS = (
     _REPO_ROOT

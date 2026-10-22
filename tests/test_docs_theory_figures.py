@@ -291,7 +291,7 @@ def test_theory_catalog_names_every_public_family() -> None:
     """Show all 20 single-hue and all 13 qualitative families."""
     from dartwork_mpl._colors._curated import CURATED_QUALITATIVE_ORDER
     from dartwork_mpl._colors._generated import CYCLES
-    from dartwork_mpl._colors._recipe import FAMILIES
+    from dartwork_mpl._colors.construction._recipe import FAMILIES
 
     single_hue = (*FAMILIES, "gray")
     qualitative = (*CURATED_QUALITATIVE_ORDER, *CYCLES)

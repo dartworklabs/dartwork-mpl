@@ -138,7 +138,7 @@ def _write_dc_sheet(images_dir: Path, label: str, mapping: dict) -> Path:
     numeric step order. Swatches are interactive (hover → name+hex).
     """
     from dartwork_mpl._colors._generated import PALETTE
-    from dartwork_mpl._colors._recipe import FAMILIES
+    from dartwork_mpl._colors.construction._recipe import FAMILIES
 
     order = [*FAMILIES, "gray"]
 
@@ -183,7 +183,7 @@ def _write_dc_family_sheet(images_dir: Path) -> Path:
     reads as one continuous system. Swatches are interactive (hover → name).
     """
     from dartwork_mpl._colors._generated import PALETTE
-    from dartwork_mpl._colors._recipe import FAMILIES
+    from dartwork_mpl._colors.construction._recipe import FAMILIES
 
     order = [*FAMILIES, "gray"]  # hue order, achromatic last
 

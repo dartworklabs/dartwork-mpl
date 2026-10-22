@@ -11,7 +11,7 @@ from types import ModuleType
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[5]
 SCRIPT_PATHS = {
     "build_color_v6_ssot": REPO_ROOT / "scripts/build_color_v6_ssot.py",
     "freeze_color_v5_compatibility": (

@@ -12,9 +12,11 @@ from typing import cast
 import pytest
 
 from dartwork_mpl._colors import _compatibility_metrics as oracle
-from dartwork_mpl._colors import _gates, _ssot
-from dartwork_mpl._colors._catalog import CatalogSnapshot
-from dartwork_mpl._colors._gates import (
+from dartwork_mpl._colors import _ssot
+from dartwork_mpl._colors._ssot import load_color_v6_ssot
+from dartwork_mpl._colors.construction._catalog import CatalogSnapshot
+from dartwork_mpl._colors.verify import _gates
+from dartwork_mpl._colors.verify._gates import (
     GateReport,
     GateViolation,
     check_all,
@@ -25,7 +27,6 @@ from dartwork_mpl._colors._gates import (
     gate_seq_cmap,
     load_quality_baseline,
 )
-from dartwork_mpl._colors._ssot import load_color_v6_ssot
 
 
 @pytest.fixture(scope="module")
