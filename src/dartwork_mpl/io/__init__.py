@@ -8,15 +8,17 @@ from __future__ import annotations
 
 __all__ = ["save_and_show", "save_formats", "show"]
 
+import contextlib
 import gzip
 import io
 import os
 import warnings
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from types import ModuleType
-from typing import Any
+from typing import Any, TypeAlias
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 
@@ -113,8 +115,51 @@ def _save_deterministic_svgz(
         compressed.write(buf.getvalue())
 
 
+@dataclass(frozen=True)
+class _SvgOutput:
+    """An ``svg`` output (``compressed``: ``svgz``) saved with a pinned id salt and no date."""
+
+    path: str
+    compressed: bool
+
+
+@dataclass(frozen=True)
+class _PdfOutput:
+    """A ``pdf`` output saved without its creation timestamp."""
+
+    path: str
+
+
+@dataclass(frozen=True)
+class _PlainOutput:
+    """Any other output, passed to ``savefig`` as given (matplotlib picks the writer)."""
+
+    path: str
+
+
+_SaveFormat: TypeAlias = _SvgOutput | _PdfOutput | _PlainOutput
+
+
+def _parse_save_format(fmt: str, stem: str) -> _SaveFormat:
+    """Parse one ``formats`` entry into the output it asks for at ``stem.<fmt>``.
+
+    A leading ``.`` is dropped. Only exact lowercase ``svg``/``svgz``/``pdf``
+    get the reproducible treatment; any other spelling is a plain output.
+    Support for the format is checked separately by :func:`_check_save_format`.
+    """
+    ext = fmt.lstrip(".")
+    path = f"{stem}.{ext}"
+    match ext:
+        case "svg" | "svgz":
+            return _SvgOutput(path, compressed=ext == "svgz")
+        case "pdf":
+            return _PdfOutput(path)
+        case _:
+            return _PlainOutput(path)
+
+
 def _check_save_format(
-    fig: Figure, out: str, fmt: str, kwargs: dict[str, Any]
+    fig: Figure, output: _SaveFormat, kwargs: dict[str, Any]
 ) -> None:
     """Reject unsupported effective formats without constructing a canvas.
 
@@ -123,7 +168,9 @@ def _check_save_format(
     construction, which remains on the real save path. SVGZ saves inner SVG;
     arbitrary kwargs, rendering and filesystem failures are not preflighted.
     """
-    effective = "svg" if fmt == "svgz" else kwargs.get("format")
+    out = output.path
+    compressed = isinstance(output, _SvgOutput) and output.compressed
+    effective = "svg" if compressed else kwargs.get("format")
     if effective is None:
         effective = os.path.splitext(out)[1][1:]
         if effective == "":
@@ -243,12 +290,9 @@ def save_formats(
     # Resolve every requested call before adoption, validation or output effects.
     # Retain the plan so lists and one-shot iterables are consumed only once.
     planned_stem = _normalize_image_stem(image_stem, warn=False)
-    outputs = []
-    for fmt in formats:
-        fmt = fmt.lstrip(".")
-        outputs.append((fmt, f"{planned_stem}.{fmt}"))
-    for fmt, out in outputs:
-        _check_save_format(fig, out, fmt, kwargs)
+    outputs = [_parse_save_format(fmt, planned_stem) for fmt in formats]
+    for output in outputs:
+        _check_save_format(fig, output, kwargs)
 
     if adopt_orphan_tick_font is None:
         from ..config import config
@@ -270,9 +314,27 @@ def save_formats(
     # Salt SVG element ids with the output basename so a re-render of an
     # unchanged figure is byte-identical (see the Reproducibility note).
     salt = Path(image_stem).name
+    for output in outputs:
+        _write_output(fig, output, bbox_inches, salt, kwargs)
+
+
+def _write_output(
+    fig: Figure,
+    output: _SaveFormat,
+    bbox_inches: str | None,
+    salt: str,
+    kwargs: dict[str, Any],
+) -> None:
+    """Save ``fig`` to one planned output.
+
+    SVG/SVGZ drop ``Date`` from the metadata and, unless ``svg.hashsalt`` is
+    already set, salt element ids with ``salt``; SVGZ gets a fixed gzip
+    timestamp. PDF drops ``CreationDate``. A caller ``metadata`` key always
+    wins. Other outputs use ``savefig`` unchanged. Write errors propagate.
+    """
     caller_metadata = kwargs.get("metadata")
-    for fmt, out in outputs:
-        if fmt in ("svg", "svgz"):
+    match output:
+        case _SvgOutput(path=out, compressed=compressed):
             svg_kwargs = dict(kwargs)
             svg_kwargs["metadata"] = _with_reproducible_metadata(
                 caller_metadata, "Date"
@@ -280,26 +342,23 @@ def save_formats(
             # Only pin the hashsalt when the caller hasn't set one globally
             # — a user who configured ``svg.hashsalt`` for their own
             # reproducible build keeps it.
-            if plt.rcParams["svg.hashsalt"] is None:
-                with plt.rc_context({"svg.hashsalt": salt}):
-                    if fmt == "svgz":
-                        _save_deterministic_svgz(
-                            fig, out, bbox_inches, svg_kwargs
-                        )
-                    else:
-                        fig.savefig(out, bbox_inches=bbox_inches, **svg_kwargs)
-            else:
-                if fmt == "svgz":
+            salted = (
+                plt.rc_context({"svg.hashsalt": salt})
+                if plt.rcParams["svg.hashsalt"] is None
+                else contextlib.nullcontext()
+            )
+            with salted:
+                if compressed:
                     _save_deterministic_svgz(fig, out, bbox_inches, svg_kwargs)
                 else:
                     fig.savefig(out, bbox_inches=bbox_inches, **svg_kwargs)
-        elif fmt == "pdf":
+        case _PdfOutput(path=out):
             pdf_kwargs = dict(kwargs)
             pdf_kwargs["metadata"] = _with_reproducible_metadata(
                 caller_metadata, "CreationDate"
             )
             fig.savefig(out, bbox_inches=bbox_inches, **pdf_kwargs)
-        else:
+        case _PlainOutput(path=out):
             fig.savefig(out, bbox_inches=bbox_inches, **kwargs)
 
 

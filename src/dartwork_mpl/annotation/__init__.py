@@ -22,8 +22,9 @@ __all__ = [
 
 import re
 import string
+from dataclasses import dataclass
 from itertools import pairwise
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -43,6 +44,79 @@ HorizontalAlign = Literal["left", "center", "right"]
 VerticalAlign = Literal[
     "bottom", "baseline", "center", "center_baseline", "top"
 ]
+
+# Internal vocabularies. The public parameters stay ``str``; each entry point
+# parses its string once into one of these and the helpers take only them.
+_ValueSide = Literal["above", "below", "right", "left"]
+_Corner = Literal["upper left", "upper right", "lower left", "lower right"]
+_HlineSide = Literal["above", "below"]
+_HlineAnchor = Literal["left", "center", "right"]
+_Axis = Literal["x", "y"]
+_LegendCandidate = Literal[
+    "upper right",
+    "upper left",
+    "lower left",
+    "lower right",
+    "upper center",
+    "lower center",
+]
+
+
+def _parse_value_side(side: str) -> _ValueSide | Literal["auto"]:
+    """Return ``annotate_value``'s ``side`` as its literal; raise ``ValueError`` if unknown."""
+    match side:
+        case "auto" | "above" | "below" | "left" | "right":
+            return side
+        case _:
+            raise ValueError(
+                "side must be 'auto', 'above', 'below', 'left', or 'right'"
+            )
+
+
+def _parse_corner(loc: str) -> _Corner:
+    """Return ``annotate_corner``'s ``loc`` as its literal; raise ``ValueError`` if unknown."""
+    match loc:
+        case "upper left" | "upper right" | "lower left" | "lower right":
+            return loc
+        case _:
+            raise ValueError(
+                "loc must be 'upper left', 'upper right', 'lower left', "
+                "or 'lower right'"
+            )
+
+
+def _parse_hline_side(side: str) -> _HlineSide:
+    """Return ``label_hline``'s ``side`` as its literal; raise ``ValueError`` if unknown."""
+    match side:
+        case "above" | "below":
+            return side
+        case _:
+            raise ValueError("side must be 'above' or 'below'")
+
+
+def _parse_hline_x(x: str | float) -> _HlineAnchor | Literal["auto"] | float:
+    """Return ``label_hline``'s ``x`` as an anchor literal, ``"auto"`` or an axes fraction.
+
+    Raises ``ValueError`` for any other string.
+    """
+    if not isinstance(x, str):
+        return float(x)
+    match x:
+        case "auto" | "left" | "center" | "right":
+            return x
+        case _:
+            raise ValueError(
+                "x must be 'auto', 'left', 'center', 'right', or a float"
+            )
+
+
+def _parse_axis(axis: str, message: str) -> _Axis:
+    """Return ``"x"`` or ``"y"``; raise ``ValueError(message)`` for anything else."""
+    match axis:
+        case "x" | "y":
+            return axis
+        case _:
+            raise ValueError(message)
 
 
 def _auto_panel_labels(n: int) -> list[str]:
@@ -274,21 +348,25 @@ def _set_annotation_offset(text: Text, offset: tuple[float, float]) -> None:
 
 
 def _annotation_side_spec(
-    side: str, offset_pt: float
+    side: _ValueSide, offset_pt: float
 ) -> tuple[tuple[float, float], HorizontalAlign, VerticalAlign]:
+    """Return the point offset and alignment that put a label on ``side`` of its point."""
     offset = float(offset_pt)
-    specs: dict[
-        str, tuple[tuple[float, float], HorizontalAlign, VerticalAlign]
-    ] = {
-        "above": ((0.0, offset), "center", "bottom"),
-        "below": ((0.0, -offset), "center", "top"),
-        "right": ((offset, 0.0), "left", "center"),
-        "left": ((-offset, 0.0), "right", "center"),
-    }
-    return specs[side]
+    match side:
+        case "above":
+            return (0.0, offset), "center", "bottom"
+        case "below":
+            return (0.0, -offset), "center", "top"
+        case "right":
+            return (offset, 0.0), "left", "center"
+        case "left":
+            return (-offset, 0.0), "right", "center"
 
 
-def _apply_annotation_side(text: Text, side: str, offset_pt: float) -> None:
+def _apply_annotation_side(
+    text: Text, side: _ValueSide, offset_pt: float
+) -> None:
+    """Move ``text`` to ``side`` of its anchor point, ``offset_pt`` points away."""
     offset, ha, va = _annotation_side_spec(side, offset_pt)
     text.set_horizontalalignment(ha)
     text.set_verticalalignment(va)
@@ -328,13 +406,10 @@ def annotate_value(
     """
     if fontsize is None:
         fontsize = fs(-2)
-    if side not in {"auto", "above", "below", "left", "right"}:
-        raise ValueError(
-            "side must be 'auto', 'above', 'below', 'left', or 'right'"
-        )
+    requested = _parse_value_side(side)
 
     existing_texts = list(ax.texts)
-    initial_side = "above" if side == "auto" else side
+    initial_side: _ValueSide = "above" if requested == "auto" else requested
     offset, ha, va = _annotation_side_spec(initial_side, offset_pt)
 
     ann = ax.annotate(
@@ -350,7 +425,7 @@ def annotate_value(
         **kw,
     )
 
-    if side != "auto":
+    if requested != "auto":
         return ann
 
     fig, renderer = _renderer_for_axes(ax)
@@ -365,9 +440,9 @@ def annotate_value(
         *_collection_bboxes(ax),
         *_text_bboxes(existing_texts, renderer),
     ]
-    scores: list[tuple[float, str]] = []
+    scores: list[tuple[float, _ValueSide]] = []
 
-    vertical_sides = ("above", "below")
+    vertical_sides: tuple[_ValueSide, ...] = ("above", "below")
     for candidate in vertical_sides:
         _apply_annotation_side(ann, candidate, offset_pt)
         bbox = _annotation_extent(ann, fig, renderer)
@@ -381,7 +456,8 @@ def annotate_value(
         if outside > 0:
             break
 
-    for candidate in ("right", "left"):
+    horizontal_sides: tuple[_ValueSide, ...] = ("right", "left")
+    for candidate in horizontal_sides:
         _apply_annotation_side(ann, candidate, offset_pt)
         bbox = _annotation_extent(ann, fig, renderer)
         if bbox is None:
@@ -401,7 +477,7 @@ def annotate_value(
 
 
 _CORNER_SPECS: dict[
-    str,
+    _Corner,
     tuple[
         tuple[float, float], tuple[float, float], HorizontalAlign, VerticalAlign
     ],
@@ -413,14 +489,21 @@ _CORNER_SPECS: dict[
 }
 
 
-def _corner_order(loc: str) -> list[str]:
-    order = ["upper left", "upper right", "lower left", "lower right"]
+def _corner_order(loc: _Corner) -> list[_Corner]:
+    """Return the corners to try: ``loc`` first, then the rest in reading order."""
+    order: list[_Corner] = [
+        "upper left",
+        "upper right",
+        "lower left",
+        "lower right",
+    ]
     if loc == "upper left":
         return order
     return [loc, *[candidate for candidate in order if candidate != loc]]
 
 
-def _apply_corner(text: Text, loc: str, inset_pt: float) -> None:
+def _apply_corner(text: Text, loc: _Corner, inset_pt: float) -> None:
+    """Align ``text`` to corner ``loc`` and inset it ``inset_pt`` points inward."""
     _anchor, offset_direction, ha, va = _CORNER_SPECS[loc]
     text.set_horizontalalignment(ha)
     text.set_verticalalignment(va)
@@ -453,14 +536,10 @@ def annotate_corner(
     """
     if fontsize is None:
         fontsize = fs(-2)
-    if loc not in _CORNER_SPECS:
-        raise ValueError(
-            "loc must be 'upper left', 'upper right', 'lower left', "
-            "or 'lower right'"
-        )
+    corner = _parse_corner(loc)
 
     existing_texts = list(ax.texts)
-    anchor, offset_direction, ha, va = _CORNER_SPECS[loc]
+    anchor, offset_direction, ha, va = _CORNER_SPECS[corner]
     ann = ax.annotate(
         text,
         xy=anchor,
@@ -491,8 +570,8 @@ def annotate_corner(
         *_text_bboxes(existing_texts, renderer),
     ]
 
-    scores: list[tuple[float, str]] = []
-    for candidate in _corner_order(loc):
+    scores: list[tuple[float, _Corner]] = []
+    for candidate in _corner_order(corner):
         anchor, _offset_direction, _ha, _va = _CORNER_SPECS[candidate]
         ann.xy = anchor
         _apply_corner(ann, candidate, inset_pt)
@@ -569,20 +648,23 @@ def _visible_hline_span(ax: Axes, y: float) -> tuple[float, float]:
 
 
 def _hline_x_spec(
-    ax: Axes, y: float, x: str | float
+    ax: Axes, y: float, x: _HlineAnchor | float
 ) -> tuple[float, HorizontalAlign]:
+    """Return the data x and alignment for a label at anchor ``x`` of the line at ``y``.
+
+    A float ``x`` is an axes fraction; an anchor attaches to the visible
+    line's left end, right end or midpoint.
+    """
     left, right = _visible_hline_span(ax, y)
-    if isinstance(x, str):
-        if x == "left":
+    match x:
+        case "left":
             return left, "left"
-        if x == "right":
+        case "right":
             return right, "right"
-        if x == "center":
+        case "center":
             return (left + right) / 2.0, "center"
-        raise ValueError(
-            "x must be 'auto', 'left', 'center', 'right', or a float"
-        )
-    return _axes_fraction_to_data_x(ax, float(x), y), "center"
+        case float():
+            return _axes_fraction_to_data_x(ax, x, y), "center"
 
 
 def label_hline(
@@ -607,13 +689,13 @@ def label_hline(
     """
     if fontsize is None:
         fontsize = fs(-2)
-    if side not in {"above", "below"}:
-        raise ValueError("side must be 'above' or 'below'")
+    line_side = _parse_hline_side(side)
+    anchor = _parse_hline_x(x)
 
-    va = "bottom" if side == "above" else "top"
-    offset = (0.0, float(gap_pt) if side == "above" else -float(gap_pt))
+    va = "bottom" if line_side == "above" else "top"
+    offset = (0.0, float(gap_pt) if line_side == "above" else -float(gap_pt))
     existing_texts = list(ax.texts)
-    x_pos, ha = _hline_x_spec(ax, y, "right" if x == "auto" else x)
+    x_pos, ha = _hline_x_spec(ax, y, "right" if anchor == "auto" else anchor)
     ann = ax.annotate(
         text,
         xy=(x_pos, y),
@@ -626,7 +708,7 @@ def label_hline(
         annotation_clip=kw.pop("annotation_clip", False),
         **kw,
     )
-    if x != "auto":
+    if anchor != "auto":
         return ann
 
     fig, renderer = _renderer_for_axes(ax)
@@ -639,8 +721,9 @@ def label_hline(
         *_collection_bboxes(ax),
         *_text_bboxes(existing_texts, renderer),
     ]
-    scores: list[tuple[float, str]] = []
-    for candidate in ("right", "left"):
+    scores: list[tuple[float, _HlineAnchor]] = []
+    end_anchors: tuple[_HlineAnchor, ...] = ("right", "left")
+    for candidate in end_anchors:
         x_pos, ha = _hline_x_spec(ax, y, candidate)
         ann.xy = (x_pos, y)
         ann.set_horizontalalignment(ha)
@@ -670,7 +753,64 @@ def _legend_for_loc(
     loc: str,
     legend_kw: dict[str, Any],
 ) -> Legend:
+    """Draw (replacing any existing) the axes legend at matplotlib location ``loc``."""
     return ax.legend(handles, labels, loc=loc, **legend_kw)
+
+
+@dataclass(frozen=True)
+class _MeasuredLegend:
+    """A trial legend placement whose rendered box was measured.
+
+    ``score`` is the overlap/outside penalty (lower is better) and
+    ``collision_free`` says the box touches no data and stays inside the axes.
+    """
+
+    loc: _LegendCandidate
+    ncol: int
+    score: float
+    collision_free: bool
+
+
+@dataclass(frozen=True)
+class _UnmeasuredLegend:
+    """A trial legend placement whose rendered box could not be measured."""
+
+    loc: _LegendCandidate
+    ncol: int
+
+
+_LegendTrial: TypeAlias = _MeasuredLegend | _UnmeasuredLegend
+
+
+def _trial_score(trial: _LegendTrial) -> float:
+    """Return the trial's penalty; an unmeasured trial ranks last (``inf``)."""
+    match trial:
+        case _MeasuredLegend(score=score):
+            return score
+        case _UnmeasuredLegend():
+            return float("inf")
+
+
+def _best_trial(trials: list[_LegendTrial]) -> _LegendTrial:
+    """Return the lowest-penalty trial, the earliest one on a tie.
+
+    ``trials`` must be non-empty (``ValueError`` otherwise).
+    """
+    return min(trials, key=_trial_score)
+
+
+def _mark_placement(legend: Legend, trial: _LegendTrial) -> None:
+    """Set the documented ``_dm_collision_free`` / ``_dm_collision_score`` attributes.
+
+    An unmeasured placement reports ``False`` and ``inf``.
+    """
+    match trial:
+        case _MeasuredLegend(score=score, collision_free=collision_free):
+            pass
+        case _UnmeasuredLegend():
+            score, collision_free = float("inf"), False
+    legend._dm_collision_free = collision_free  # type: ignore[attr-defined]
+    legend._dm_collision_score = score  # type: ignore[attr-defined]
 
 
 def _score_legend_candidate(
@@ -736,7 +876,7 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
         axes_bbox = ax.get_window_extent(renderer)
     except BBOX_ERRORS:
         axes_bbox = Bbox.null()
-    candidates = (
+    candidates: tuple[_LegendCandidate, ...] = (
         "upper right",
         "upper left",
         "lower left",
@@ -744,7 +884,7 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
         "upper center",
         "lower center",
     )
-    scores: list[tuple[float, str, int, bool]] = []
+    trials: list[_LegendTrial] = []
     for ncol in ncols:
         legend_kw = dict(kw)
         legend_kw["ncol"] = ncol
@@ -756,29 +896,30 @@ def place_legend(ax: Axes, *, loc: str = "best", **kw: Any) -> Legend | None:
             try:
                 bbox = legend.get_window_extent(renderer)
             except BBOX_ERRORS:
-                score = float("inf")
-                collision_free = False
+                trials.append(_UnmeasuredLegend(candidate, ncol))
             else:
-                score = _score_legend_candidate(
-                    bbox, data_bboxes, axes_bbox, ncol
+                trials.append(
+                    _MeasuredLegend(
+                        candidate,
+                        ncol,
+                        score=_score_legend_candidate(
+                            bbox, data_bboxes, axes_bbox, ncol
+                        ),
+                        collision_free=(
+                            _collision_area(bbox, data_bboxes) <= 0
+                            and _outside_area(bbox, axes_bbox) <= 0
+                        ),
+                    )
                 )
-                collision_free = (
-                    _collision_area(bbox, data_bboxes) <= 0
-                    and _outside_area(bbox, axes_bbox) <= 0
-                )
-            scores.append((score, candidate, ncol, collision_free))
             legend.remove()
 
-    best_score, best_loc, best_ncol, collision_free = min(
-        scores, key=lambda item: item[0]
-    )
+    best = _best_trial(trials)
     legend_kw = dict(kw)
-    legend_kw["ncol"] = best_ncol
+    legend_kw["ncol"] = best.ncol
     legend = _legend_for_loc(
-        ax, list(handles), list(labels), best_loc, legend_kw
+        ax, list(handles), list(labels), best.loc, legend_kw
     )
-    legend._dm_collision_free = collision_free  # type: ignore[attr-defined]
-    legend._dm_collision_score = best_score  # type: ignore[attr-defined]
+    _mark_placement(legend, best)
     return legend
 
 
@@ -825,12 +966,11 @@ def wrap_axis_label(ax: Axes, axis: str = "y", max_frac: float = 1.0) -> bool:
     to the second line when wrapping is needed. Returns ``True`` only when the
     label text changed.
     """
-    if axis not in {"x", "y"}:
-        raise ValueError("axis must be 'x' or 'y'")
+    which = _parse_axis(axis, "axis must be 'x' or 'y'")
     if max_frac <= 0:
         raise ValueError("max_frac must be positive")
 
-    label = ax.xaxis.label if axis == "x" else ax.yaxis.label
+    label = ax.xaxis.label if which == "x" else ax.yaxis.label
     raw_text = label.get_text()
     wrapped = _split_label_two_lines(raw_text)
     if wrapped is None:
@@ -842,8 +982,8 @@ def wrap_axis_label(ax: Axes, axis: str = "y", max_frac: float = 1.0) -> bool:
         axes_bbox = ax.get_window_extent(renderer)
     except BBOX_ERRORS:
         return False
-    rendered_length = text_bbox.width if axis == "x" else text_bbox.height
-    axis_length = axes_bbox.width if axis == "x" else axes_bbox.height
+    rendered_length = text_bbox.width if which == "x" else text_bbox.height
+    axis_length = axes_bbox.width if which == "x" else axes_bbox.height
     if rendered_length <= axis_length * float(max_frac):
         return False
 
@@ -859,10 +999,11 @@ def wrap_axis_labels(
     ``axis`` may be ``"x"``, ``"y"``, or ``"both"``. The returned list
     contains the label Text objects that were changed.
     """
-    if axis not in {"x", "y", "both"}:
-        raise ValueError("axis must be 'x', 'y', or 'both'")
-
-    axes_to_wrap = ("x", "y") if axis == "both" else (axis,)
+    axes_to_wrap: tuple[_Axis, ...] = (
+        ("x", "y")
+        if axis == "both"
+        else (_parse_axis(axis, "axis must be 'x', 'y', or 'both'"),)
+    )
     changed: list[Text] = []
     for ax in fig.axes:
         for axis_name in axes_to_wrap:
@@ -922,11 +1063,11 @@ def arrow_axis(
     """
     if fontsize is None:
         fontsize = fs(-1)
-    if direction not in ("x", "y"):
-        raise ValueError(
-            f"direction must be 'x' or 'y', got {direction!r}. "
-            "(Any other value would silently draw a y-axis arrow.)"
-        )
+    along = _parse_axis(
+        direction,
+        f"direction must be 'x' or 'y', got {direction!r}. "
+        "(Any other value would silently draw a y-axis arrow.)",
+    )
     if fontsize_label is None:
         fontsize_label = fs(0)
     if arrow_kw is None:
@@ -942,11 +1083,11 @@ def arrow_axis(
     renderer = get_renderer(fig)
     inv = ax.transAxes.inverted()
     rot_kw: dict[str, Any] = (
-        {"rotation": 90, "rotation_mode": "anchor"} if direction == "y" else {}
+        {"rotation": 90, "rotation_mode": "anchor"} if along == "y" else {}
     )
 
     # ── place texts ──────────────────────────────────────────
-    if direction == "x":
+    if along == "x":
         p_lo: tuple[float, float] = (0.0, float(offset))
         p_hi: tuple[float, float] = (1.0, float(offset))
         p_lb: tuple[float, float] = (0.5, float(offset))
@@ -999,7 +1140,7 @@ def arrow_axis(
         bb = t.get_window_extent(renderer)
         return inv.transform([[bb.x0, bb.y0], [bb.x1, bb.y1]])
 
-    i = 0 if direction == "x" else 1
+    i = 0 if along == "x" else 1
     lo_end = _edges(t_lo)[1][i]
     hi_start = _edges(t_hi)[0][i]
     lb_lo = _edges(t_lb)[0][i]
@@ -1007,7 +1148,7 @@ def arrow_axis(
 
     # ── draw arrows ──────────────────────────────────────────
     def _arrow(tip: float, tail: float) -> None:
-        if direction == "x":
+        if along == "x":
             ax.annotate(
                 "",
                 xy=(tip, offset),
