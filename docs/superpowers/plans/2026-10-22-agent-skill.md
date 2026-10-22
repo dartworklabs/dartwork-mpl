@@ -1,8 +1,8 @@
 # Agent entry: installable skill and guidance diet (#523 phase 1)
 
-Branch `t3/p1-agent-skill-20261022`, based on `main` `3acf03db`. Decision
-context: the agentic-workflow masterplan (PR #524), phase 1. No pull request
-is opened by this work.
+Branch `t3/p1-agent-skill-20261022`, ported onto the refactored `main`
+`f8ec26e5` (ADR 0005 stack #525–#536). Decision context: the agentic-workflow
+masterplan (PR #524), phase 1. No pull request is opened by this work.
 
 ## Problem (measured on `c332c7ab`)
 
@@ -43,13 +43,16 @@ recipe drew panel labels twice, `.cursor/rules` taught removed APIs, and
    signature and frozen asset paths (`asset/agent/AGENTS.md`, `CLAUDE.md`,
    ADR 0005) with the same 54-line consumer entry pointing to the skill.
    Repo-root `AGENTS.md` / `CLAUDE.md` stay mirrored contributor docs.
-5. **`dm.figsize` tolerance.** `"W:H"` strings in `figsize`, `figsize_grid`,
-   `parse_aspect` (quotient must be positive and finite); `px` input
-   explains DPI. Old inputs return old values.
-6. **MCP prompt text** loses "0.4". Names, order, docstrings, arguments and
-   the discovery snapshot are unchanged; no expectation was regenerated.
-7. **Not touched:** styles, presets, fonts, colours, MCP tools, `prompt.py`,
-   `__init__.py`, `layout.py`, `validate/_checks/`, `evals/agentic/`.
+5. **`dm.figsize` tolerance** (`units/__init__.py`). `"W:H"` strings in
+   `figsize`, `figsize_grid`, `parse_aspect` (quotient must be positive and
+   finite); `px` input explains DPI. Old inputs return old values.
+6. **MCP prompt text** (`mcp/guides/prompts.py` after the refactor) loses
+   "0.4". Names, order, docstrings, arguments and the discovery snapshot are
+   unchanged; no expectation was regenerated.
+7. **Slice.** `dartwork_mpl.skills` is a slice in `scripts/check_boundaries.py`
+   (stdlib only; its `__main__` imports only its own package).
+8. **Not touched:** styles, presets, fonts, colours, MCP tools, the package
+   root, `layout`, `validate`, `evals/agentic/`.
 
 ## Measurements (chars / 4 ≈ tokens)
 
@@ -63,27 +66,26 @@ recipe drew panel labels twice, `.cursor/rules` taught removed APIs, and
 
 ## Verification
 
-- `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy`
-  (118 files), `scripts/check_boundaries.py`: pass.
+- After the port: `uv run ruff check .`, `ruff format --check .`,
+  `uv run mypy` (191 files), `scripts/check_boundaries.py` pass;
+  `scripts/test_id_map.py --ref origin/main`: 7,114 → 7,209, the 95 new ids
+  are this branch's tests, 0 lost, 0 duplicated.
 - Full suite, CI commands, in a clone whose directories are not
   group-writable (MCP input fixtures require it; this worktree's parents
-  are 0775): Python 3.12 with coverage at `e1d40a5c` 7,018 passed, 0 failed,
-  coverage 92.05 %, `check_integration_junit.py` "OK: 42 required modules";
-  Python 3.10 at `1788a5e5` 7,015 passed, 2 skipped, 0 failed. Earlier runs
-  caught finance words in the Korean reference (fixed in `a8e8e5d8`).
-- `sphinx-build -W` (full gallery) at `1788a5e5`: 0 warnings, `llms-full.txt`
-  untouched; it was regenerated only via `generate_llms_full_txt(write=True)`.
-- `uv build --wheel`: skill (`__init__`, `__main__`, `SKILL.md`, six
-  references), `asset/agent/{AGENTS,CLAUDE}.md` (consumer entry) and
-  `llms*.txt` ship; no `tests/`. `tests/architecture/test_packaging.py`
-  checks this.
-- `tests/test_shipped_colors_hash.py` passes; no digest was regenerated.
-- Trial merge of the #525–#528 stack (`refactor/core-d`) into this branch:
-  no conflicts; the `units.py` edit followed the rename to
-  `units/__init__.py`; boundaries, skill, figsize, packaging and parity
-  tests pass on the merged tree (306 tests).
-- Real path, wheel in an empty project: install linked both targets, rerun
-  `unchanged`; `--copy` replaced the link; an edited copy was refused and
+  are 0775), with per-run `TMPDIR`, at `5a14357a`: Python 3.12 with coverage
+  7,210 passed, 0 failed, coverage 92.32 %, `check_integration_junit.py`
+  "OK: 45 required modules"; Python 3.10 7,208 passed, 2 skipped, 0 failed.
+- Pixel baselines (`tests/visual`, `--mpl`): 14 passed. Colour hash passes;
+  no digest was regenerated.
+- Rendering on `f8ec26e5` vs this branch, decoded RGBA: 18 basic and five
+  advanced templates (line, bar_grouped, waterfall, twin_axis, contour),
+  0 differing pixels in all 23.
+- `sphinx-build -W` (full gallery): 0 warnings, `llms-full.txt` untouched; it
+  was regenerated only via `generate_llms_full_txt(write=True)`.
+- `uv build --wheel` contents are checked by `tests/architecture/test_packaging.py`.
+- Real path: `install` into scratch projects linked both targets (rerun
+  `unchanged`); `--copy` copied both, rerun `unchanged`, copy identical to
+  the source apart from its marker. Earlier: an edited copy was refused and
   `--force` replaced it; no staging folders left. Headless smoke runs (one
   each, not an evaluation): Claude Code listed the skill and, asked in
   Korean for a report line chart, invoked it, used `report` + `dm.figsize`,
@@ -97,17 +99,16 @@ recipe drew panel labels twice, `.cursor/rules` taught removed APIs, and
 `src/dartwork_mpl/skills/tests/test_skills.py` (format limits, routing,
 router rules, `/dataviz` text, every Python block run and linted, colour
 names, lists vs runtime, installer safety on real directories, CLI),
-`tests/test_figsize_ratio_strings.py`, `tests/test_agent_docs_runtime.py`
-(corpus lists, panel-label recipe, MCP prompt version, AI hub claims,
-mirrors, frozen asset paths), `tests/architecture/test_packaging.py`.
+`src/dartwork_mpl/units/tests/test_figsize_ratio_strings.py`,
+`tests/test_agent_docs_runtime.py` (corpus lists, panel-label recipe, MCP
+prompt version, AI hub claims, mirrors, frozen asset paths),
+`tests/architecture/test_packaging.py`. The skill test also resolves every
+`dm.*` name and prompt guide the skill mentions.
 
 ## Open issues and follow-ups
 
 - Phase 1's pass condition (skill beats no-skill on the phase 0 set) needs
   the `evals/agentic/` baseline; the smoke runs are not that evidence.
-- Overlap with #525–#528: `scripts/check_boundaries.py` (one `SLICES` line,
-  all four PRs), `tests/test_deprecation_registry_parity.py` (#528, other
-  hunk), `src/dartwork_mpl/units.py` (#526 renames it). All merge cleanly.
 - `references/editing.md` shows `set_title(..., loc="left")`; phase 2 fixes
   layout and checks that ignore left titles today.
 - This repository's `.agents/skills` is managed by skm; the skill is not
