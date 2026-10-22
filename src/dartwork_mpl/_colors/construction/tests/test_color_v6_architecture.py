@@ -1,6 +1,7 @@
 """Architecture and provenance tests for the packaged color v6 SSOT."""
 
 import ast
+import dataclasses
 import hashlib
 import importlib.util
 import json
@@ -636,16 +637,61 @@ def test_validated_accessor_returns_deeply_immutable_data(
     from dartwork_mpl._colors._ssot import load_color_v6_ssot
 
     loaded = load_color_v6_ssot()
-    recipe = cast(Mapping[str, object], loaded["recipe"])
-    family_params = cast(Mapping[str, object], recipe["family_params"])
-    red = cast(Mapping[str, object], family_params["red"])
+    raw_recipe = cast(dict[str, dict[str, object]], v6_ssot["recipe"])
+    raw_policies = cast(dict[str, dict[str, object]], v6_ssot["policies"])
 
-    assert _thaw(loaded) == v6_ssot
     assert load_color_v6_ssot() is loaded
+    assert (loaded.schema, loaded.baseline_commit) == (
+        v6_ssot["schema"],
+        v6_ssot["baseline_commit"],
+    )
+    assert dict(loaded.section_hashes) == v6_ssot["section_hashes"]
+    for name in (
+        "baselines",
+        "coordinates",
+        "migration",
+        "row_contracts",
+        "multi_hue_discrete_indices",
+    ):
+        assert _thaw(getattr(loaded, name)) == v6_ssot[name], name
+    assert list(loaded.recipe.family_order) == raw_recipe["family_order"]
+    assert {
+        name: dataclasses.asdict(row)
+        for name, row in loaded.recipe.family_params.items()
+    } == raw_recipe["family_params"]
+    assert {
+        name: list(curve) for name, curve in loaded.recipe.fourier.items()
+    } == raw_recipe["fourier"]
+    constants = loaded.recipe.constants
+    assert {
+        "TONE_TOP": constants.tone_top,
+        "SHAPE_Q": constants.shape_q,
+        "SHAPE_R": constants.shape_r,
+        "GAMUT_CHROMA_FRAC": constants.gamut_chroma_frac,
+        "GRAY_TONE_FLOOR": constants.gray_tone_floor,
+        "GRAY_TINT_HUE": constants.gray_tint_hue,
+        "GRAY_C_PROFILE": list(constants.gray_c_profile),
+        "TONE_DERIVATION_GRID": constants.tone_derivation_grid,
+    } == raw_recipe["constants"]
+    policies = loaded.policies
+    assert dataclasses.asdict(policies.gamut) == raw_policies["gamut"]
+    assert dataclasses.asdict(policies.tone) == raw_policies["tone"]
+    assert {
+        "gate_pipeline": policies.cvd.gate_pipeline,
+        "models_by_deficiency": dict(policies.cvd.models_by_deficiency),
+        "role": policies.cvd.role,
+    } == raw_policies["cvd"]
+    assert {
+        "multi_hue_vivid_cutoffs": dict(
+            policies.presentation.multi_hue_vivid_cutoffs
+        )
+    } == raw_policies["presentation"]
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        loaded.recipe.family_params["red"].tone_floor = 0.0  # type: ignore[misc]
     with pytest.raises(TypeError):
-        cast(dict[str, object], recipe)["changed"] = True
+        cast(dict[str, object], loaded.recipe.family_params)["changed"] = 1
     with pytest.raises(TypeError):
-        cast(dict[str, object], red)["tone_floor"] = 0.0
+        cast(dict[str, object], loaded.row_contracts)["changed"] = True
 
 
 def test_validated_accessor_rejects_section_hash_drift(tmp_path: Path) -> None:

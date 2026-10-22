@@ -1,17 +1,183 @@
-"""Validated immutable access to the packaged v6 color authority."""
+"""Parsed immutable access to the packaged v6 color authority.
+
+``load_color_v6_ssot`` reads ``asset/color/color_v6_ssot.json`` once,
+checks every hash, provenance pin, range and shape, and returns a
+``ColorAuthority``: typed sections that consumers read as attributes, so
+no consumer re-narrows the JSON. The JSON file and its pinned section
+hashes are the authority; these types are its parsed form and are built
+only by the loader (their range rules are checked there, not again by the
+dataclasses).
+"""
 
 import hashlib
 import json
 import math
 import re
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from functools import lru_cache
 from itertools import pairwise
 from pathlib import Path
 from types import MappingProxyType
-from typing import cast
+from typing import TypeAlias, cast
 
-__all__ = ["load_color_v6_ssot"]
+__all__ = [
+    "ColorAuthority",
+    "CvdPolicy",
+    "GamutPolicy",
+    "Policies",
+    "PresentationPolicy",
+    "Recipe",
+    "RecipeConstants",
+    "RecipeFamily",
+    "TonePolicy",
+    "load_color_v6_ssot",
+]
+
+JsonMapping: TypeAlias = Mapping[str, object]
+"""A deeply frozen JSON object (``MappingProxyType`` and tuples)."""
+
+
+@dataclass(frozen=True, slots=True)
+class GamutPolicy:
+    """sRGB gamut mapping: bisect OKLCH chroma, keeping lightness and hue.
+
+    ``iterations`` is positive, ``max_chroma_upper`` positive and
+    ``tolerance`` non-negative.
+    """
+
+    iterations: int
+    max_chroma_upper: float
+    strategy: str
+    tolerance: float
+
+
+@dataclass(frozen=True, slots=True)
+class TonePolicy:
+    """Neutral-tone search budgets and chroma bounds.
+
+    The three iteration counts are positive; ``catalog_chroma_fraction``
+    is in (0, 1]; ``0 < probe_chroma <= max_chroma_upper``.
+    """
+
+    catalog_chroma_fraction: float
+    luminance_search_iterations: int
+    max_chroma_search_iterations: int
+    max_chroma_tone_iterations: int
+    max_chroma_upper: float
+    probe_chroma: float
+
+
+@dataclass(frozen=True, slots=True)
+class CvdPolicy:
+    """Colour-vision-deficiency simulation used for validation only.
+
+    ``models_by_deficiency`` names a non-empty model for exactly
+    ``protan``, ``deutan`` and ``tritan``.
+    """
+
+    gate_pipeline: str
+    models_by_deficiency: Mapping[str, str]
+    role: str
+
+
+@dataclass(frozen=True, slots=True)
+class PresentationPolicy:
+    """Documentation-only presentation choices.
+
+    ``multi_hue_vivid_cutoffs`` maps each of the nine multi-hue families to
+    a 64-step preview index in ``[0, 64)``.
+    """
+
+    multi_hue_vivid_cutoffs: Mapping[str, int]
+
+
+@dataclass(frozen=True, slots=True)
+class Policies:
+    """Construction and validation policy domains of the authority."""
+
+    gamut: GamutPolicy
+    tone: TonePolicy
+    cvd: CvdPolicy
+    presentation: PresentationPolicy
+
+
+@dataclass(frozen=True, slots=True)
+class RecipeFamily:
+    """One sequential family's recipe row, every value a finite float.
+
+    ``gamma`` is positive, ``tp`` in (0, 1], ``cmax`` non-negative, and
+    ``cend``, ``c0`` and ``tone_floor`` in [0, 1].
+    """
+
+    h0: float
+    dh: float
+    gamma: float
+    tp: float
+    cmax: float
+    tone_floor: float
+    cend: float
+    c0: float
+
+
+@dataclass(frozen=True, slots=True)
+class RecipeConstants:
+    """Shared recipe constants; tones are in [0, 1].
+
+    ``gray_c_profile`` holds ten non-negative chroma values;
+    ``tone_derivation_grid``, ``shape_q`` and ``shape_r`` are positive and
+    ``gamut_chroma_frac`` is in (0, 1].
+    """
+
+    tone_top: float
+    shape_q: float
+    shape_r: float
+    gamut_chroma_frac: float
+    gray_tone_floor: float
+    gray_tint_hue: float
+    gray_c_profile: tuple[float, ...]
+    tone_derivation_grid: float
+
+
+@dataclass(frozen=True, slots=True)
+class Recipe:
+    """The operational palette recipe.
+
+    ``family_order`` lists the 19 recipe families; ``family_params`` has a
+    row for exactly those names. ``fourier`` holds the four extension
+    curves (``cmax_k3``, ``tone_floor_k3``: 7 coefficients; ``cend_k2``,
+    ``c0_k2``: 5).
+    """
+
+    family_order: tuple[str, ...]
+    family_params: Mapping[str, RecipeFamily]
+    fourier: Mapping[str, tuple[float, ...]]
+    constants: RecipeConstants
+
+
+@dataclass(frozen=True, slots=True)
+class ColorAuthority:
+    """The parsed, validated, immutable v6 colour authority.
+
+    ``recipe`` and ``policies`` are typed. The remaining sections keep
+    their frozen JSON form: ``baselines`` and ``migration`` are provenance
+    nothing computes from; ``coordinates``, ``row_contracts`` and
+    ``multi_hue_discrete_indices`` are read by the build and gates.
+    ``section_hashes`` maps every other top-level section name to its
+    canonical SHA-256.
+    """
+
+    schema: str
+    baseline_commit: str
+    baselines: JsonMapping
+    coordinates: JsonMapping
+    migration: JsonMapping
+    policies: Policies
+    recipe: Recipe
+    row_contracts: JsonMapping
+    multi_hue_discrete_indices: JsonMapping
+    section_hashes: Mapping[str, str]
+
 
 _SSOT_PATH = (
     Path(__file__).resolve().parents[1] / "asset/color/color_v6_ssot.json"
@@ -408,8 +574,8 @@ def _validate_migration(payload: Mapping[str, object]) -> None:
         raise RuntimeError("migration provenance does not match")
 
 
-def _validate_policies(payload: Mapping[str, object]) -> None:
-    """Validate deterministic construction and validation policy domains."""
+def _parse_policies(payload: Mapping[str, object]) -> Policies:
+    """Parse deterministic construction and validation policy domains."""
     policies = _require_mapping(payload["policies"], "policies")
     if set(policies) != {"gamut", "tone", "cvd", "presentation"}:
         raise RuntimeError("policy sections do not match")
@@ -422,14 +588,27 @@ def _validate_policies(payload: Mapping[str, object]) -> None:
         "tolerance",
     }:
         raise RuntimeError("gamut policy fields do not match")
-    if _require_integer(gamut["iterations"], "gamut iterations") <= 0:
+    gamut_iterations = _require_integer(gamut["iterations"], "gamut iterations")
+    if gamut_iterations <= 0:
         raise RuntimeError("gamut iterations must be positive")
-    if _require_real(gamut["max_chroma_upper"], "gamut maximum") <= 0.0:
+    gamut_maximum = _require_real(gamut["max_chroma_upper"], "gamut maximum")
+    if gamut_maximum <= 0.0:
         raise RuntimeError("gamut maximum chroma must be positive")
-    if _require_real(gamut["tolerance"], "gamut tolerance") < 0.0:
+    gamut_tolerance = _require_real(gamut["tolerance"], "gamut tolerance")
+    if gamut_tolerance < 0.0:
         raise RuntimeError("gamut tolerance must be non-negative")
-    if gamut["strategy"] != "preserve OKLCH L/h and reduce C":
+    gamut_strategy = gamut["strategy"]
+    if (
+        not isinstance(gamut_strategy, str)
+        or gamut_strategy != "preserve OKLCH L/h and reduce C"
+    ):
         raise RuntimeError("gamut strategy does not match")
+    gamut_policy = GamutPolicy(
+        iterations=gamut_iterations,
+        max_chroma_upper=gamut_maximum,
+        strategy=gamut_strategy,
+        tolerance=gamut_tolerance,
+    )
 
     tone = _require_mapping(policies["tone"], "tone policy")
     expected_tone_fields = {
@@ -442,12 +621,16 @@ def _validate_policies(payload: Mapping[str, object]) -> None:
     }
     if set(tone) != expected_tone_fields:
         raise RuntimeError("tone policy fields do not match")
+    iterations: dict[str, int] = {}
     for field in (
         "luminance_search_iterations",
         "max_chroma_search_iterations",
         "max_chroma_tone_iterations",
     ):
-        if _require_integer(tone[field], f"tone policy {field}") <= 0:
+        iterations[field] = _require_integer(
+            tone[field], f"tone policy {field}"
+        )
+        if iterations[field] <= 0:
             raise RuntimeError(f"tone policy {field} must be positive")
     fraction = _require_real(
         tone["catalog_chroma_fraction"], "tone catalog chroma fraction"
@@ -458,19 +641,44 @@ def _validate_policies(payload: Mapping[str, object]) -> None:
     probe = _require_real(tone["probe_chroma"], "tone probe chroma")
     if max_chroma <= 0.0 or not 0.0 < probe <= max_chroma:
         raise RuntimeError("tone chroma bounds are malformed")
+    tone_policy = TonePolicy(
+        catalog_chroma_fraction=fraction,
+        luminance_search_iterations=iterations["luminance_search_iterations"],
+        max_chroma_search_iterations=iterations["max_chroma_search_iterations"],
+        max_chroma_tone_iterations=iterations["max_chroma_tone_iterations"],
+        max_chroma_upper=max_chroma,
+        probe_chroma=probe,
+    )
 
     cvd = _require_mapping(policies["cvd"], "CVD policy")
     if set(cvd) != {"gate_pipeline", "models_by_deficiency", "role"}:
         raise RuntimeError("CVD policy fields do not match")
     models = _require_mapping(cvd["models_by_deficiency"], "CVD models")
-    if set(models) != {"protan", "deutan", "tritan"} or not all(
-        isinstance(value, str) and value for value in models.values()
+    model_names = {
+        deficiency: model
+        for deficiency, model in models.items()
+        if isinstance(model, str) and model
+    }
+    if set(models) != {"protan", "deutan", "tritan"} or len(model_names) != len(
+        models
     ):
         raise RuntimeError("CVD model authority is malformed")
-    if not isinstance(cvd["gate_pipeline"], str) or not cvd["gate_pipeline"]:
+    gate_pipeline = cvd["gate_pipeline"]
+    if not isinstance(gate_pipeline, str) or not gate_pipeline:
         raise RuntimeError("CVD gate pipeline must be a non-empty string")
-    if cvd["role"] != "model-specific validation only":
+    cvd_role = cvd["role"]
+    if (
+        not isinstance(cvd_role, str)
+        or cvd_role != "model-specific validation only"
+    ):
         raise RuntimeError("CVD role must remain validation-only")
+    cvd_policy = CvdPolicy(
+        gate_pipeline=gate_pipeline,
+        models_by_deficiency=MappingProxyType(
+            dict(sorted(model_names.items()))
+        ),
+        role=cvd_role,
+    )
 
     presentation = _require_mapping(
         policies["presentation"], "presentation policy"
@@ -482,6 +690,7 @@ def _validate_policies(payload: Mapping[str, object]) -> None:
     )
     if set(cutoffs) != _MULTI_HUE_FAMILIES:
         raise RuntimeError("multi-hue vivid cutoff family set does not match")
+    parsed_cutoffs: dict[str, int] = {}
     for family, raw_cutoff in cutoffs.items():
         cutoff = _require_integer(
             raw_cutoff, f"multi-hue vivid cutoff {family}"
@@ -490,10 +699,21 @@ def _validate_policies(payload: Mapping[str, object]) -> None:
             raise RuntimeError(
                 f"multi-hue vivid cutoff {family} is out of range"
             )
+        parsed_cutoffs[family] = cutoff
+    return Policies(
+        gamut=gamut_policy,
+        tone=tone_policy,
+        cvd=cvd_policy,
+        presentation=PresentationPolicy(
+            multi_hue_vivid_cutoffs=MappingProxyType(
+                dict(sorted(parsed_cutoffs.items()))
+            )
+        ),
+    )
 
 
-def _validate_recipe(payload: Mapping[str, object]) -> None:
-    """Validate operational recipe shape and every neutral-tone value."""
+def _parse_recipe(payload: Mapping[str, object]) -> Recipe:
+    """Parse operational recipe shape and every neutral-tone value."""
     recipe = _require_mapping(payload["recipe"], "recipe")
     if set(recipe) != {"family_order", "family_params", "fourier", "constants"}:
         raise RuntimeError("recipe sections do not match the v6 contract")
@@ -520,12 +740,16 @@ def _validate_recipe(payload: Mapping[str, object]) -> None:
         "cend",
         "c0",
     }
+    family_names = tuple(name for name in family_order if isinstance(name, str))
+    parsed_families: dict[str, RecipeFamily] = {}
     for family, raw_params in family_params.items():
         params = _require_mapping(raw_params, f"recipe family {family}")
         if set(params) != parameter_fields:
             raise RuntimeError(f"recipe family {family} fields do not match")
-        for field, raw_value in params.items():
-            _require_real(raw_value, f"recipe family {family}.{field}")
+        values = {
+            field: _require_real(raw_value, f"recipe family {family}.{field}")
+            for field, raw_value in params.items()
+        }
         gamma = _require_real(params["gamma"], f"recipe family {family}.gamma")
         if gamma <= 0.0:
             raise RuntimeError(f"recipe family {family}.gamma must be positive")
@@ -552,6 +776,16 @@ def _validate_recipe(payload: Mapping[str, object]) -> None:
         )
         if not 0.0 <= tone_floor <= 1.0:
             raise RuntimeError(f"recipe family {family} tone is out of range")
+        parsed_families[family] = RecipeFamily(
+            h0=values["h0"],
+            dh=values["dh"],
+            gamma=gamma,
+            tp=peak,
+            cmax=maximum_chroma,
+            tone_floor=tone_floor,
+            cend=values["cend"],
+            c0=values["c0"],
+        )
 
     constants = _require_mapping(recipe["constants"], "recipe constants")
     expected_constants = {
@@ -566,10 +800,12 @@ def _validate_recipe(payload: Mapping[str, object]) -> None:
     }
     if set(constants) != expected_constants:
         raise RuntimeError("recipe constants do not match the v6 contract")
+    exponents: dict[str, float] = {}
     for name in ("SHAPE_Q", "SHAPE_R"):
         exponent = _require_real(constants[name], f"recipe constant {name}")
         if exponent <= 0.0:
             raise RuntimeError(f"recipe constant {name} must be positive")
+        exponents[name] = exponent
     chroma_fraction = _require_real(
         constants["GAMUT_CHROMA_FRAC"], "recipe constant GAMUT_CHROMA_FRAC"
     )
@@ -577,7 +813,9 @@ def _validate_recipe(payload: Mapping[str, object]) -> None:
         raise RuntimeError(
             "recipe constant GAMUT_CHROMA_FRAC must be in (0, 1]"
         )
-    _require_real(constants["GRAY_TINT_HUE"], "recipe constant GRAY_TINT_HUE")
+    gray_tint_hue = _require_real(
+        constants["GRAY_TINT_HUE"], "recipe constant GRAY_TINT_HUE"
+    )
     gray_profile = _require_sequence(
         constants["GRAY_C_PROFILE"], "recipe constant GRAY_C_PROFILE"
     )
@@ -585,6 +823,7 @@ def _validate_recipe(payload: Mapping[str, object]) -> None:
         raise RuntimeError(
             "recipe constant GRAY_C_PROFILE must contain ten values"
         )
+    gray_chroma: list[float] = []
     for index, value in enumerate(gray_profile):
         chroma = _require_real(
             value, f"recipe constant GRAY_C_PROFILE[{index}]"
@@ -593,10 +832,13 @@ def _validate_recipe(payload: Mapping[str, object]) -> None:
             raise RuntimeError(
                 "recipe constant GRAY_C_PROFILE values must be non-negative"
             )
+        gray_chroma.append(chroma)
+    tones: dict[str, float] = {}
     for name in ("TONE_TOP", "GRAY_TONE_FLOOR"):
         tone = _require_real(constants[name], f"recipe constant {name}")
         if not 0.0 <= tone <= 1.0:
             raise RuntimeError(f"recipe constant {name} tone is out of range")
+        tones[name] = tone
     grid = _require_real(
         constants["TONE_DERIVATION_GRID"], "tone derivation grid"
     )
@@ -612,12 +854,30 @@ def _validate_recipe(payload: Mapping[str, object]) -> None:
     }
     if set(fourier) != set(expected_lengths):
         raise RuntimeError("recipe Fourier curves do not match")
+    curves: dict[str, tuple[float, ...]] = {}
     for name, expected_length in expected_lengths.items():
         coefficients = _require_sequence(fourier[name], f"Fourier {name}")
         if len(coefficients) != expected_length:
             raise RuntimeError(f"Fourier {name} has the wrong length")
-        for index, value in enumerate(coefficients):
+        curves[name] = tuple(
             _require_real(value, f"Fourier {name}[{index}]")
+            for index, value in enumerate(coefficients)
+        )
+    return Recipe(
+        family_order=family_names,
+        family_params=MappingProxyType(dict(sorted(parsed_families.items()))),
+        fourier=MappingProxyType(dict(sorted(curves.items()))),
+        constants=RecipeConstants(
+            tone_top=tones["TONE_TOP"],
+            shape_q=exponents["SHAPE_Q"],
+            shape_r=exponents["SHAPE_R"],
+            gamut_chroma_frac=chroma_fraction,
+            gray_tone_floor=tones["GRAY_TONE_FLOOR"],
+            gray_tint_hue=gray_tint_hue,
+            gray_c_profile=tuple(gray_chroma),
+            tone_derivation_grid=grid,
+        ),
+    )
 
 
 def _validate_row_contracts(payload: Mapping[str, object]) -> None:
@@ -769,8 +1029,16 @@ def _freeze(value: object) -> object:
     raise RuntimeError(f"unsupported SSOT value type: {type(value).__name__}")
 
 
-def _load_color_v6_ssot(path: Path) -> Mapping[str, object]:
-    """Load, validate, and deeply freeze one v6 authority file.
+def _freeze_mapping(value: object) -> JsonMapping:
+    """Deeply freeze one validated JSON object section."""
+    frozen = _freeze(value)
+    if not isinstance(frozen, Mapping):
+        raise RuntimeError("SSOT section must be a string-keyed object")
+    return cast(JsonMapping, frozen)
+
+
+def _load_color_v6_ssot(path: Path) -> ColorAuthority:
+    """Load, validate, and parse one v6 authority file.
 
     Parameters
     ----------
@@ -779,8 +1047,8 @@ def _load_color_v6_ssot(path: Path) -> Mapping[str, object]:
 
     Returns
     -------
-    collections.abc.Mapping[str, object]
-        Deeply immutable validated authority.
+    ColorAuthority
+        The parsed authority; its untyped sections are deeply frozen.
 
     Raises
     ------
@@ -804,15 +1072,35 @@ def _load_color_v6_ssot(path: Path) -> Mapping[str, object]:
     _validate_provenance(payload)
     _validate_coordinates(payload)
     _validate_migration(payload)
-    _validate_policies(payload)
-    _validate_recipe(payload)
+    policies = _parse_policies(payload)
+    recipe = _parse_recipe(payload)
     _validate_row_contracts(payload)
     _validate_multi_hue_indices(payload)
     _validate_audited_section_hashes(payload)
-    return cast(Mapping[str, object], _freeze(payload))
+    section_hashes = _require_mapping(payload["section_hashes"], "hashes")
+    return ColorAuthority(
+        schema=_SCHEMA,
+        baseline_commit=_BASELINE_COMMIT,
+        baselines=_freeze_mapping(payload["baselines"]),
+        coordinates=_freeze_mapping(payload["coordinates"]),
+        migration=_freeze_mapping(payload["migration"]),
+        policies=policies,
+        recipe=recipe,
+        row_contracts=_freeze_mapping(payload["row_contracts"]),
+        multi_hue_discrete_indices=_freeze_mapping(
+            payload["multi_hue_discrete_indices"]
+        ),
+        section_hashes=MappingProxyType(
+            {
+                name: digest
+                for name, digest in sorted(section_hashes.items())
+                if isinstance(digest, str)
+            }
+        ),
+    )
 
 
 @lru_cache(maxsize=1)
-def load_color_v6_ssot() -> Mapping[str, object]:
-    """Return the cached, validated, deeply immutable v6 authority."""
+def load_color_v6_ssot() -> ColorAuthority:
+    """Return the cached, validated, parsed v6 authority."""
     return _load_color_v6_ssot(_SSOT_PATH)

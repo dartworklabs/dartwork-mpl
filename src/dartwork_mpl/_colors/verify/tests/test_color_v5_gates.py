@@ -48,7 +48,7 @@ def test_row_contracts_use_validated_v6_accessor(
     authority = load_color_v6_ssot()
     calls = 0
 
-    def load_authority() -> Mapping[str, object]:
+    def load_authority() -> _ssot.ColorAuthority:
         nonlocal calls
         calls += 1
         return authority
@@ -64,7 +64,7 @@ def test_row_contracts_use_validated_v6_accessor(
     contracts = _gates._load_row_contracts()
 
     assert calls == 1
-    assert contracts is authority["row_contracts"]
+    assert contracts is authority.row_contracts
 
 
 def _mapping(value: object, label: str) -> Mapping[str, object]:
@@ -787,7 +787,7 @@ def test_evaluate_catalog_names_duplicate_row_contract_regression(
     )
     authority = load_color_v6_ssot()
     expected = _baseline_number(
-        authority, "row_contracts", "palette", "amber", field
+        authority.row_contracts, "palette", "amber", field
     )
 
     assert violation.allowed == expected

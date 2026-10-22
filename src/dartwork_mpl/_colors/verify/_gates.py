@@ -336,13 +336,10 @@ def _plain_json_value(value: object) -> object:
 
 def _load_row_contracts() -> Mapping[str, object]:
     """Load the independently hash-pinned v6 row-contract section."""
-    payload = _ssot.load_color_v6_ssot()
-    contracts = _as_mapping(payload.get("row_contracts"))
-    section_hashes = _as_mapping(payload.get("section_hashes"))
-    if contracts is None or section_hashes is None:
-        raise RuntimeError("v6 row-contract authority is missing")
+    authority = _ssot.load_color_v6_ssot()
+    contracts = authority.row_contracts
     actual = oracle.canonical_json_sha256(_plain_json_value(contracts))
-    embedded = section_hashes.get("row_contracts")
+    embedded = authority.section_hashes.get("row_contracts")
     if actual != _ROW_CONTRACTS_SHA256 or embedded != _ROW_CONTRACTS_SHA256:
         raise RuntimeError("v6 row-contract authority SHA-256 differs")
     return contracts

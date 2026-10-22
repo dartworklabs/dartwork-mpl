@@ -107,19 +107,9 @@ GROUPS = [
     ("Cyclic", CYCLIC),
 ]
 
-_COLOR_AUTHORITY = load_color_v6_ssot()
-_PRESENTATION_POLICY = cast(
-    Mapping[str, object],
-    cast(Mapping[str, object], _COLOR_AUTHORITY["policies"])["presentation"],
-)
-_MULTI_HUE_VIVID_CUTOFFS = cast(
-    Mapping[str, int], _PRESENTATION_POLICY["multi_hue_vivid_cutoffs"]
-)
-_CVD_POLICY = cast(
-    Mapping[str, object],
-    cast(Mapping[str, object], _COLOR_AUTHORITY["policies"])["cvd"],
-)
-_CVD_MODELS = dict(cast(Mapping[str, str], _CVD_POLICY["models_by_deficiency"]))
+_COLOR_POLICIES = load_color_v6_ssot().policies
+_MULTI_HUE_VIVID_CUTOFFS = _COLOR_POLICIES.presentation.multi_hue_vivid_cutoffs
+_CVD_MODELS = dict(_COLOR_POLICIES.cvd.models_by_deficiency)
 _CVD_Y_STEP_TOLERANCE = 0.004
 
 # 16 demo plots spanning raster fields, strokes, glyph grids, profiles, and mesh.

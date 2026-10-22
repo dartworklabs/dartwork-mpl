@@ -1428,7 +1428,7 @@ def compile_candidate_snapshot() -> CatalogSnapshot:
     frozen_indices = _freeze_index_rows(
         cast(
             Mapping[str, Mapping[str, Sequence[int]]],
-            authority["multi_hue_discrete_indices"],
+            authority.multi_hue_discrete_indices,
         )
     )
     discrete, reverse_discrete, multi_hue_indices = _derive_discrete(

@@ -65,7 +65,7 @@ def render_generated(candidate: CatalogSnapshot) -> str:
     authority = load_color_v6_ssot()
     multi_hue_indices = cast(
         Mapping[str, Mapping[str, Sequence[int]]],
-        authority["multi_hue_discrete_indices"],
+        authority.multi_hue_discrete_indices,
     )
     body = (
         _fmt("PALETTE", candidate.palette)
