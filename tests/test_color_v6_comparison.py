@@ -21,10 +21,10 @@ from typing import cast
 
 import pytest
 
-import dartwork_mpl._colors._catalog as _catalog
-import dartwork_mpl._colors._comparison as _comparison
 import dartwork_mpl._colors._compatibility_metrics as oracle
-from dartwork_mpl._colors import _cmaps, _generate
+import dartwork_mpl._colors.construction._catalog as _catalog
+import dartwork_mpl._colors.verify._comparison as _comparison
+from dartwork_mpl._colors.construction import _cmaps, _generate
 
 EXACT_FIELDS = (
     "palette",
@@ -353,36 +353,76 @@ def test_candidate_snapshot_isolates_unlocked_compiler_failure(
     assert unlocked["error"] == candidate.cmaps_unlocked_preview_error
 
 
-def test_catalog_import_boundary_excludes_generated_candidate_surfaces() -> (
-    None
-):
-    """Keep the complete candidate import closure outside circular modules."""
-    assert _catalog.__file__ is not None
-    colors_dir = Path(_catalog.__file__).parent
-    pending = [Path(_catalog.__file__)]
+_COLORS_SOURCE_DIR = Path(oracle.__file__).resolve().parent
+
+
+def _color_import_closure(start: Path) -> tuple[set[str], set[str]]:
+    """Follow relative imports from ``start`` through ``_colors/`` sources.
+
+    Returns the stems of the reached ``_colors`` modules and packages, and the
+    top-level names of every absolute import met on the way.
+    """
+    colors_dir = _COLORS_SOURCE_DIR
+    pending = [start]
     visited: set[Path] = set()
     imported: set[str] = set()
+    external: set[str] = set()
     while pending:
         source_path = pending.pop()
         if source_path in visited:
             continue
         visited.add(source_path)
+        # A sub-package module runs its package initializer first. The
+        # ``_colors`` root initializer is not followed: the build and the
+        # isolated audit load these sources without it.
+        package_init = source_path.parent / "__init__.py"
+        if source_path.parent != colors_dir and package_init.is_file():
+            pending.append(package_init)
         tree = ast.parse(source_path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
-            if not isinstance(node, ast.ImportFrom) or node.level != 1:
+            if isinstance(node, ast.Import):
+                external.update(
+                    alias.name.split(".")[0] for alias in node.names
+                )
                 continue
+            if not isinstance(node, ast.ImportFrom):
+                continue
+            if node.level == 0:
+                if node.module is not None:
+                    external.add(node.module.split(".")[0])
+                continue
+            base = source_path.parent
+            for _ in range(node.level - 1):
+                base = base.parent
             module_names = (
-                [node.module]
+                [f"{node.module}.{alias.name}" for alias in node.names]
                 if node.module is not None
                 else [alias.name for alias in node.names]
             )
             for module_name in module_names:
-                local_name = module_name.split(".", maxsplit=1)[0]
-                target = colors_dir / f"{local_name}.py"
-                if not target.is_file():
-                    continue
-                imported.add(local_name)
-                pending.append(target)
+                # Follow every prefix naming a module or package below
+                # ``_colors/``: importing a sub-package module also runs its
+                # package initializer.
+                parts = module_name.split(".")
+                for end in range(1, len(parts) + 1):
+                    stem = base.joinpath(*parts[:end])
+                    target = (
+                        stem / "__init__.py"
+                        if stem.is_dir()
+                        else stem.with_suffix(".py")
+                    )
+                    if target.is_file() and target.is_relative_to(colors_dir):
+                        imported.add(parts[end - 1])
+                        pending.append(target)
+    return imported, external
+
+
+def test_catalog_import_boundary_excludes_generated_candidate_surfaces() -> (
+    None
+):
+    """Keep the complete candidate import closure outside circular modules."""
+    assert _catalog.__file__ is not None
+    imported, _external = _color_import_closure(Path(_catalog.__file__))
     forbidden = {
         "_generated",
         "_semantic",
@@ -1255,19 +1295,25 @@ def _assert_owned_audit_bootstrap(
     records = cast(Mapping[str, SimpleNamespace], cli._AUDIT_MODULE_CACHE)
     expected_names = {
         alias,
-        f"{alias}._catalog",
-        f"{alias}._cmaps",
-        f"{alias}._comparison",
+        f"{alias}.construction._catalog",
+        f"{alias}.construction._cmaps",
+        f"{alias}.verify._comparison",
         f"{alias}._compatibility_metrics",
-        f"{alias}._conversion",
         f"{alias}._curated",
-        f"{alias}._cycles",
-        f"{alias}._gamut",
-        f"{alias}._gates",
-        f"{alias}._generate",
-        f"{alias}._recipe",
+        f"{alias}.construction._cycles",
+        f"{alias}.verify._gates",
+        f"{alias}.construction._generate",
+        f"{alias}.construction._recipe",
         f"{alias}._ssot",
-        f"{alias}._tone",
+        f"{alias}.construction._tone",
+        f"{alias}.construction",
+        f"{alias}.construction._publish",
+        f"{alias}.model",
+        f"{alias}.model._color",
+        f"{alias}.model._conversion",
+        f"{alias}.model._gamut",
+        f"{alias}.model._views",
+        f"{alias}.verify",
     }
 
     assert set(records) == expected_names
@@ -1281,8 +1327,11 @@ def _assert_owned_audit_bootstrap(
     for name in sorted(expected_names - {alias}):
         record = records[name]
         module = sys.modules[name]
+        relative = Path(*name.split(".")[1:])
         expected_source = (
-            cli._COLORS_DIR / f"{name.rpartition('.')[2]}.py"
+            cli._COLORS_DIR / relative / "__init__.py"
+            if (cli._COLORS_DIR / relative).is_dir()
+            else cli._COLORS_DIR / relative.with_suffix(".py")
         ).resolve()
         assert record.module is module
         assert isinstance(record.loader, cli._AuditSourceLoader)
@@ -1297,8 +1346,8 @@ def _assert_owned_audit_bootstrap(
             record.source_sha256
             == hashlib.sha256(expected_source.read_bytes()).hexdigest()
         )
-    assert catalog is sys.modules[f"{alias}._catalog"]
-    assert comparison is sys.modules[f"{alias}._comparison"]
+    assert catalog is sys.modules[f"{alias}.construction._catalog"]
+    assert comparison is sys.modules[f"{alias}.verify._comparison"]
 
 
 @pytest.fixture(autouse=True)
@@ -1512,7 +1561,10 @@ def test_audit_bootstrap_cleans_created_namespace_after_import_failure(
 
     def fail_comparison(path: Path) -> bytes:
         """Fail while the owned loader reads the comparison source."""
-        if path.resolve() == (cli._COLORS_DIR / "_comparison.py").resolve():
+        if (
+            path.resolve()
+            == (cli._COLORS_DIR / "verify" / "_comparison.py").resolve()
+        ):
             raise ImportError("injected comparison import failure")
         return real_read_bytes(path)
 
@@ -1529,8 +1581,8 @@ def test_audit_bootstrap_cleans_created_namespace_after_import_failure(
     )
     try:
         catalog, comparison = cli._load_audit_modules()
-        assert catalog.__name__ == f"{alias}._catalog"
-        assert comparison.__name__ == f"{alias}._comparison"
+        assert catalog.__name__ == f"{alias}.construction._catalog"
+        assert comparison.__name__ == f"{alias}.verify._comparison"
     finally:
         _remove_audit_aliases(alias)
 
@@ -1563,15 +1615,15 @@ def test_audit_first_bootstrap_rejects_same_tree_forged_false_pass(
     alias = "_dartwork_mpl_color_audit"
     _remove_audit_aliases(alias)
     package = cli._new_audit_namespace()
-    catalog_name = f"{alias}._catalog"
-    comparison_name = f"{alias}._comparison"
+    catalog_name = f"{alias}.construction._catalog"
+    comparison_name = f"{alias}.verify._comparison"
     forged_catalog = ModuleType(catalog_name)
     forged_comparison = ModuleType(comparison_name)
     _configure_forged_audit_module(
-        forged_catalog, cli._COLORS_DIR / "_catalog.py"
+        forged_catalog, cli._COLORS_DIR / "construction" / "_catalog.py"
     )
     _configure_forged_audit_module(
-        forged_comparison, cli._COLORS_DIR / "_comparison.py"
+        forged_comparison, cli._COLORS_DIR / "verify" / "_comparison.py"
     )
     monkeypatch.setitem(sys.modules, alias, package)
     monkeypatch.setitem(sys.modules, catalog_name, forged_catalog)
@@ -1592,8 +1644,12 @@ def test_audit_cold_bootstrap_owns_source_despite_forged_import_dispatch(
     alias = "_dartwork_mpl_color_audit"
     dispatched: list[str] = []
     sources = {
-        f"{alias}._catalog": cli._COLORS_DIR / "_catalog.py",
-        f"{alias}._comparison": cli._COLORS_DIR / "_comparison.py",
+        f"{alias}.construction._catalog": cli._COLORS_DIR
+        / "construction"
+        / "_catalog.py",
+        f"{alias}.verify._comparison": cli._COLORS_DIR
+        / "verify"
+        / "_comparison.py",
     }
 
     def forged_import(name: str, package: str | None = None) -> ModuleType:
@@ -1625,8 +1681,12 @@ def test_audit_cold_bootstrap_owns_source_despite_ambient_finder(
     queried: list[str] = []
     executed: list[str] = []
     sources = {
-        f"{alias}._catalog": cli._COLORS_DIR / "_catalog.py",
-        f"{alias}._comparison": cli._COLORS_DIR / "_comparison.py",
+        f"{alias}.construction._catalog": cli._COLORS_DIR
+        / "construction"
+        / "_catalog.py",
+        f"{alias}.verify._comparison": cli._COLORS_DIR
+        / "verify"
+        / "_comparison.py",
     }
 
     class ForgedLoader(Loader):
@@ -1706,8 +1766,8 @@ def test_validate_file_module_requires_completed_source_execution() -> None:
     """Reject plausible metadata when this loader never executed the source."""
     cli = _load_cli()
     alias = "_dartwork_mpl_color_audit"
-    name = f"{alias}._catalog"
-    source = (cli._COLORS_DIR / "_catalog.py").resolve()
+    name = f"{alias}.construction._catalog"
+    source = (cli._COLORS_DIR / "construction" / "_catalog.py").resolve()
     loader = cli._AuditSourceLoader.from_source(name, source)
     specification = ModuleSpec(name, loader, origin=str(source))
     specification.has_location = True
@@ -1763,9 +1823,11 @@ def test_audit_bootstrap_rejects_cached_module_replacement(
     _remove_audit_aliases(alias)
     try:
         cli._load_audit_modules()
-        catalog_name = f"{alias}._catalog"
+        catalog_name = f"{alias}.construction._catalog"
         forged_catalog = ModuleType(catalog_name)
-        forged_catalog.__file__ = str(cli._COLORS_DIR / "_catalog.py")
+        forged_catalog.__file__ = str(
+            cli._COLORS_DIR / "construction" / "_catalog.py"
+        )
         sys.modules[catalog_name] = forged_catalog
 
         with pytest.raises(RuntimeError, match="replaced"):
@@ -1785,7 +1847,9 @@ def test_audit_bootstrap_rejects_module_injected_after_bootstrap(
         cli._load_audit_modules()
         injected_name = f"{alias}._forged"
         injected = ModuleType(injected_name)
-        injected.__file__ = str(cli._COLORS_DIR / "_catalog.py")
+        injected.__file__ = str(
+            cli._COLORS_DIR / "construction" / "_catalog.py"
+        )
         monkeypatch.setitem(sys.modules, injected_name, injected)
 
         with pytest.raises(RuntimeError, match="injected"):
@@ -1892,40 +1956,7 @@ def test_cli_removes_stale_report_before_json_failure(
 def test_comparison_import_closure_excludes_runtime_registries() -> None:
     """Keep report generation independent from generated/runtime registries."""
     assert _comparison.__file__ is not None
-    colors_dir = Path(_comparison.__file__).parent
-    pending = [Path(_comparison.__file__)]
-    visited: set[Path] = set()
-    imported: set[str] = set()
-    external: set[str] = set()
-    while pending:
-        source_path = pending.pop()
-        if source_path in visited:
-            continue
-        visited.add(source_path)
-        tree = ast.parse(source_path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                external.update(
-                    alias.name.split(".")[0] for alias in node.names
-                )
-                continue
-            if not isinstance(node, ast.ImportFrom):
-                continue
-            if node.level == 0:
-                if node.module is not None:
-                    external.add(node.module.split(".")[0])
-                continue
-            module_names = (
-                [node.module]
-                if node.module is not None
-                else [alias.name for alias in node.names]
-            )
-            for module_name in module_names:
-                local_name = module_name.split(".", maxsplit=1)[0]
-                target = colors_dir / f"{local_name}.py"
-                if target.is_file():
-                    imported.add(local_name)
-                    pending.append(target)
+    imported, external = _color_import_closure(Path(_comparison.__file__))
     forbidden = {
         "_generated",
         "_semantic",
@@ -2058,8 +2089,8 @@ def test_real_cli_subprocess_uses_isolated_source_audit_namespace(
     assert audit["named_registry_delta"] == []
     assert audit["escaped_alias_files"] == []
     assert {
-        "_dartwork_mpl_color_audit._catalog",
-        "_dartwork_mpl_color_audit._comparison",
+        "_dartwork_mpl_color_audit.construction._catalog",
+        "_dartwork_mpl_color_audit.verify._comparison",
     } <= set(audit["alias_files"])
     assert (output / "index.html").is_file()
     assert json.loads((output / "report.json").read_text())["passed"] is True

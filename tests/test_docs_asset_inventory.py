@@ -7,9 +7,9 @@ from pathlib import Path
 
 import dartwork_mpl as dm
 from dartwork_mpl import font
-from dartwork_mpl._colors._families import QUALITATIVE
 from dartwork_mpl._colors._generated import CMAPS_256
-from dartwork_mpl._colors._loader import COLOR_LIBRARIES
+from dartwork_mpl._colors.catalog._families import QUALITATIVE
+from dartwork_mpl._colors.registry._loader import COLOR_LIBRARIES
 
 _REPO = Path(__file__).resolve().parents[1]
 _WORKFLOWS = tuple(

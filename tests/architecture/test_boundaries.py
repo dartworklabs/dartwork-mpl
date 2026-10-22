@@ -325,3 +325,77 @@ def test_a_nested_platform_reaching_its_enclosing_slice_is_rejected():
         "platform reaches slice: dartwork_mpl.mcp._platform -> dartwork_mpl.mcp"
         in errors
     )
+
+
+SUB_LAYOUT = checker.Layout(
+    entry_points=frozenset({P}),
+    platform=frozenset(),
+    slices=frozenset({f"{P}.colors", f"{P}.colors.model", f"{P}.colors.ink"}),
+    allowed={
+        (
+            f"{P}.colors",
+            f"{P}.colors.model",
+        ): "the package re-exports the model",
+        (
+            f"{P}.colors",
+            f"{P}.colors.ink",
+        ): "the package re-exports ink helpers",
+        (f"{P}.colors.ink", f"{P}.colors.model"): "ink contrast uses the model",
+    },
+    decisions={},
+)
+SUB_LEGAL = {
+    P: "from .colors import Color\n",
+    f"{P}.colors": (
+        '__all__ = ["Color", "ink"]\n'
+        "from .model import Color\nfrom .ink import ink\n"
+    ),
+    f"{P}.colors.model": '__all__ = ["Color"]\nfrom ._color import Color\n',
+    f"{P}.colors.model._color": "class Color: ...\n",
+    f"{P}.colors.ink": '__all__ = ["ink"]\nfrom ._ink import ink\n',
+    f"{P}.colors.ink._ink": (
+        "from dartwork_mpl.colors.model import Color\ndef ink(): ...\n"
+    ),
+}
+SUB_PACKAGES = {P, f"{P}.colors", f"{P}.colors.model", f"{P}.colors.ink"}
+
+
+def test_a_pinned_module_belongs_to_its_declared_owner_not_its_folder():
+    """A module whose path is fixed elsewhere is private to its pinned owner."""
+    layout = checker.Layout(
+        SUB_LAYOUT.entry_points,
+        SUB_LAYOUT.platform,
+        SUB_LAYOUT.slices,
+        SUB_LAYOUT.allowed,
+        SUB_LAYOUT.decisions,
+        pinned={f"{P}.colors._table": f"{P}.colors.model"},
+    )
+    code = dict(SUB_LEGAL)
+    code[f"{P}.colors._table"] = "TABLE = {}\n"
+    code[f"{P}.colors.model._color"] = (
+        "from .._table import TABLE\nclass Color: ...\n"
+    )
+    assert checker.violations(code, SUB_PACKAGES, layout) == []
+
+    code[f"{P}.colors.ink._ink"] = (
+        "from dartwork_mpl.colors._table import TABLE\n"
+        "from dartwork_mpl.colors.model import Color\ndef ink(): ...\n"
+    )
+    errors = checker.violations(code, SUB_PACKAGES, layout)
+    assert errors == [
+        "private import: dartwork_mpl.colors.ink._ink"
+        " -> dartwork_mpl.colors._table.TABLE"
+    ]
+
+
+def test_a_sub_slice_importing_a_sibling_does_not_cycle_through_its_parent():
+    """The parent's initializer already ran before its sub-slice; only real edges count."""
+    assert checker.violations(SUB_LEGAL, SUB_PACKAGES, SUB_LAYOUT) == []
+
+
+def test_a_sub_slice_importing_its_parent_surface_is_still_a_cycle():
+    """ink -> colors closes a real cycle with the parent's re-export of ink."""
+    code = dict(SUB_LEGAL)
+    code[f"{P}.colors.ink._ink"] = "from dartwork_mpl.colors import Color\n"
+    errors = checker.violations(code, SUB_PACKAGES, SUB_LAYOUT)
+    assert "cycle: dartwork_mpl.colors, dartwork_mpl.colors.ink" in errors

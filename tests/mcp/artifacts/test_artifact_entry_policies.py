@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 fastmcp = pytest.importorskip("fastmcp")
-from dartwork_mpl._colors import _catalog  # noqa: E402
+from dartwork_mpl._colors.construction import _catalog  # noqa: E402
 from dartwork_mpl.mcp.artifacts.transport import ENTRY_POLICIES  # noqa: E402
 from dartwork_mpl.mcp.server import mcp  # noqa: E402
 

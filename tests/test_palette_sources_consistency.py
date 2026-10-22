@@ -6,7 +6,7 @@ import matplotlib.colors as mcolors
 
 import dartwork_mpl as dm
 from dartwork_mpl._colors import _generated
-from dartwork_mpl._colors._loader import ensure_loaded
+from dartwork_mpl._colors.registry._loader import ensure_loaded
 
 
 def test_generated_palette_registers_every_v5_token_hex_for_hex() -> None:

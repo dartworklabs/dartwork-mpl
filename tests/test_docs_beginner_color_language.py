@@ -32,7 +32,7 @@ PUBLIC_COLOR_LANGUAGE_PATHS = (
 
 
 RUNTIME_COLOR_LANGUAGE_PATHS = (
-    "src/dartwork_mpl/_colors/_comparison.py",
+    "src/dartwork_mpl/_colors/verify/_comparison.py",
     "src/dartwork_mpl/_colors/_curated.py",
     "src/dartwork_mpl/mcp/prompts.py",
     "src/dartwork_mpl/mcp/resources.py",
@@ -58,10 +58,10 @@ RUNTIME_COLOR_LANGUAGE_PATHS = (
 )
 
 MODELED_Y_SOURCE_PATHS = (
-    "src/dartwork_mpl/_colors/_conversion.py",
-    "src/dartwork_mpl/_colors/_discrete.py",
+    "src/dartwork_mpl/_colors/model/_conversion.py",
+    "src/dartwork_mpl/_colors/catalog/_discrete.py",
     "src/dartwork_mpl/asset/mplstyle/theme-dark.mplstyle",
-    "src/dartwork_mpl/_colors/_cycles.py",
+    "src/dartwork_mpl/_colors/construction/_cycles.py",
 )
 
 PHYSICAL_OUTPUT_PATTERN = re.compile(

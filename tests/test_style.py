@@ -364,7 +364,7 @@ def _style_state():
     """Snapshot full live rcParams, semantic tokens and preset bookkeeping."""
     from matplotlib.colors import get_named_colors_mapping
 
-    from dartwork_mpl._colors._semantic import SEMANTIC_TOKEN_NAMES
+    from dartwork_mpl._colors.registry._semantic import SEMANTIC_TOKEN_NAMES
 
     mapping = get_named_colors_mapping()
     return (

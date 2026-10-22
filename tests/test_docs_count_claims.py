@@ -104,7 +104,7 @@ def _n_v5_cmaps() -> int:
 
 
 def _n_qualitative_cmaps() -> int:
-    from dartwork_mpl._colors._families import QUALITATIVE
+    from dartwork_mpl._colors.catalog._families import QUALITATIVE
 
     return len(QUALITATIVE)
 
@@ -116,8 +116,8 @@ def _n_listed_colormaps() -> int:
 
 
 def _n_registrations() -> int:
-    from dartwork_mpl._colors._families import QUALITATIVE
     from dartwork_mpl._colors._generated import CMAPS_256
+    from dartwork_mpl._colors.catalog._families import QUALITATIVE
 
     return 2 * len(CMAPS_256) + len(QUALITATIVE)
 
@@ -592,7 +592,7 @@ def test_color_and_discovery_contract_counts_are_exact() -> None:
 def test_public_color_list_order_values_and_signatures_remain_frozen() -> None:
     """Task-9 prose/comment edits must not alter the public Model-B surface."""
     import dartwork_mpl as dm
-    from dartwork_mpl._colors._catalog import load_v5_snapshot
+    from dartwork_mpl._colors.construction._catalog import load_v5_snapshot
 
     baseline = load_v5_snapshot()
     assert dm.list_colors() == [

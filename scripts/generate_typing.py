@@ -112,7 +112,7 @@ def _validate_source_modules(catalog: ModuleType) -> None:
 
     catalog_source = getattr(catalog, "__file__", None)
     if catalog_source is None or Path(catalog_source).resolve() != (
-        expected_root / "_catalog.py"
+        expected_root / "construction" / "_catalog.py"
     ):
         raise RuntimeError("typing source catalog has an unexpected path")
 
@@ -141,7 +141,9 @@ def _load_source_catalog() -> ModuleType:
     package = _new_source_namespace()
     sys.modules[_SOURCE_NAMESPACE] = package
 
-    catalog = importlib.import_module(f"{_SOURCE_NAMESPACE}._catalog")
+    catalog = importlib.import_module(
+        f"{_SOURCE_NAMESPACE}.construction._catalog"
+    )
     _validate_source_modules(catalog)
     return catalog
 

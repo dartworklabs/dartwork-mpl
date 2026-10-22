@@ -105,7 +105,7 @@ def register_resources(mcp: FastMCP) -> None:
         sRGB; it is not a measurement of a particular display, perceived
         brightness, or OKLab `L`.
         """
-        from .._colors._loader import COLOR_LIBRARIES
+        from .._colors.registry import COLOR_LIBRARIES
 
         return colors.palette(COLOR_LIBRARIES)
 

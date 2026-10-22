@@ -6,8 +6,6 @@ from pathlib import Path
 
 import pytest
 
-from dartwork_mpl import _luminance as luminance
-from dartwork_mpl._colors import _conversion as conversion
 from dartwork_mpl._colors import _metrics as metrics
 from dartwork_mpl._colors._metrics import (
     cvd_rgb,
@@ -18,6 +16,8 @@ from dartwork_mpl._colors._metrics import (
     lab_l_rgb,
     rgb_from_hex,
 )
+from dartwork_mpl._colors.contrast import _luminance as luminance
+from dartwork_mpl._colors.model import _conversion as conversion
 
 _SHARMA_SOURCE_SHA256 = (
     "44aebb39107128328add54fbef5ac8ee89909e50508f448a1580adea2058a4b8"
