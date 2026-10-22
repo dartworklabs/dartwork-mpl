@@ -109,10 +109,10 @@ exclude = ["**/tests/**", "**/test_*.py", "**/conftest.py"]
 # ``dartwork_mpl/asset/agent/`` so installations from PyPI can read
 # them via ``importlib.resources``. The repo-root copies remain the
 # canonical source for GitHub-raw fetches. The consumer agent entry
-# (``dm.get_agent_doc("AGENTS")``) is ordinary package data at
-# src/dartwork_mpl/asset/agent/AGENTS.md, and the agent skill ships from
-# src/dartwork_mpl/skills/; the repo-root AGENTS.md / CLAUDE.md are
-# contributor documents and stay out of the wheel.
+# (``dm.get_agent_doc("AGENTS")`` / ``("CLAUDE")``) is ordinary package data
+# at src/dartwork_mpl/asset/agent/{AGENTS,CLAUDE}.md, and the agent skill
+# ships from src/dartwork_mpl/skills/; the repo-root AGENTS.md / CLAUDE.md
+# are contributor documents and stay out of the wheel.
 #
 # Destinations are package-relative — Hatch does NOT strip ``src/``
 # for ``force-include`` the way it does for the ``packages = [...]``

@@ -1,10 +1,11 @@
 """Bundled agent-onboarding files (``AGENTS``, ``CLAUDE``, ``llms``,
 ``llms-full``).
 
-``AGENTS`` and ``CLAUDE`` both name the short consumer entry for coding
-agents working in a project that has dartwork-mpl installed. It is package
-data at ``dartwork_mpl/asset/agent/AGENTS.md`` and points to the bundled
-skill (:mod:`dartwork_mpl.skills`). The repository's own ``AGENTS.md`` /
+``AGENTS`` and ``CLAUDE`` both hold the short consumer entry for coding
+agents working in a project that has dartwork-mpl installed, pointing to the
+bundled skill (:mod:`dartwork_mpl.skills`). They are package data at
+``dartwork_mpl/asset/agent/AGENTS.md`` and ``CLAUDE.md`` (identical, the
+same asset paths as before). The repository's own root ``AGENTS.md`` /
 ``CLAUDE.md`` are contributor documents and are not shipped.
 
 ``llms`` and ``llms-full`` live at the repo root for GitHub-raw consumption;
@@ -26,18 +27,18 @@ __all__ = ["AGENT_DOCS", "agent_doc_path", "get_agent_doc"]
 # Canonical names of the agent-onboarding documents shipped with the wheel.
 AGENT_DOCS: tuple[str, ...] = ("AGENTS", "CLAUDE", "llms", "llms-full")
 
-# Name -> file name under ``asset/agent/``. ``CLAUDE`` is the same consumer
-# entry as ``AGENTS``.
+# Name -> file name under ``asset/agent/``.
 _FILENAMES: dict[str, str] = {
     "AGENTS": "AGENTS.md",
-    "CLAUDE": "AGENTS.md",
+    "CLAUDE": "CLAUDE.md",
     "llms": "llms.txt",
     "llms-full": "llms-full.txt",
 }
 
 # Files that are package data in ``src/dartwork_mpl/asset/agent/`` in every
-# install; the rest are force-included from the repo root into the wheel.
-_PACKAGE_DOCS: frozenset[str] = frozenset({"AGENTS.md"})
+# install (the consumer entry, mirrored under both names); the rest are
+# force-included from the repo root into the wheel.
+_PACKAGE_DOCS: frozenset[str] = frozenset({"AGENTS.md", "CLAUDE.md"})
 
 # In the wheel every file lands under ``dartwork_mpl/asset/agent/``; in an
 # editable checkout the force-included ones live at the repo root instead,

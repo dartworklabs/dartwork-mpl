@@ -78,9 +78,10 @@ def test_wheel_ships_the_agent_skill_and_consumer_entry(tmp_path):
 
     ``python -m dartwork_mpl.skills install`` links to the installed
     ``dartwork_mpl/skills/dartwork-mpl``, so ``SKILL.md`` and every reference
-    must ship. ``dm.get_agent_doc("AGENTS")`` reads
-    ``dartwork_mpl/asset/agent/AGENTS.md``, which must be the consumer entry,
-    not the repository's contributor ``AGENTS.md``.
+    must ship. ``dm.get_agent_doc("AGENTS")`` / ``("CLAUDE")`` read
+    ``dartwork_mpl/asset/agent/AGENTS.md`` / ``CLAUDE.md`` (asset paths kept,
+    ADR 0005), which must be the consumer entry, not the repository's
+    contributor files.
     """
     project = tmp_path / "project"
     project.mkdir()
@@ -111,14 +112,16 @@ def test_wheel_ships_the_agent_skill_and_consumer_entry(tmp_path):
         "dartwork_mpl/skills/__init__.py",
         "dartwork_mpl/skills/__main__.py",
         "dartwork_mpl/asset/agent/AGENTS.md",
+        "dartwork_mpl/asset/agent/CLAUDE.md",
         "dartwork_mpl/asset/agent/llms.txt",
         "dartwork_mpl/asset/agent/llms-full.txt",
     } <= members
     assert not any(m.startswith("dartwork_mpl/skills/tests/") for m in members)
-    assert "dartwork_mpl/asset/agent/CLAUDE.md" not in members
 
     (wheel,) = (tmp_path / "dist").glob("*.whl")
+    consumer = (source / "asset" / "agent" / "AGENTS.md").read_bytes()
     with zipfile.ZipFile(wheel) as archive:
-        entry = archive.read("dartwork_mpl/asset/agent/AGENTS.md")
-    assert entry == (source / "asset" / "agent" / "AGENTS.md").read_bytes()
-    assert entry != (ROOT / "AGENTS.md").read_bytes()
+        for name in ("AGENTS.md", "CLAUDE.md"):
+            entry = archive.read(f"dartwork_mpl/asset/agent/{name}")
+            assert entry == consumer
+            assert entry != (ROOT / name).read_bytes()
