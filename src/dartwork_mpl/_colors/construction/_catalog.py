@@ -1382,7 +1382,8 @@ def _candidate_source_hashes() -> dict[str, str]:
         / "model/_color.py",
         "src/dartwork_mpl/_colors/model/_conversion.py": _COLORS_DIR
         / "model/_conversion.py",
-        "src/dartwork_mpl/_colors/_metrics.py": _COLORS_DIR / "_metrics.py",
+        "src/dartwork_mpl/_colors/model/_metrics.py": _COLORS_DIR
+        / "model/_metrics.py",
         "src/dartwork_mpl/_colors/construction/_recipe.py": _COLORS_DIR
         / "construction/_recipe.py",
         "src/dartwork_mpl/_colors/registry/_semantic.py": _SEMANTIC_SOURCE_PATH,

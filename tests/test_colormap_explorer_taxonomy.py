@@ -288,7 +288,7 @@ def test_unclipped_dark_ends_would_fail_the_guard() -> None:
     """
     import math
 
-    from dartwork_mpl._colors._metrics import lab_from_rgb, rgb_from_hex
+    from dartwork_mpl._colors.model._metrics import lab_from_rgb, rgb_from_hex
 
     def chroma(hex_color: str) -> float:
         _l, a, b = lab_from_rgb(rgb_from_hex(hex_color))
