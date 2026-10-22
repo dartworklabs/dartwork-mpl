@@ -651,6 +651,7 @@ def test_every_discrete_form_has_quality_and_singletons_use_null() -> None:
         assert singleton["normal_delta_e_ok"] is None
 
 
+@pytest.mark.color_pipeline
 def test_generator_is_byte_identical_and_uses_archived_baseline(
     tmp_path: Path,
 ) -> None:

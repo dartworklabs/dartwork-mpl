@@ -302,6 +302,7 @@ def test_candidate_mutations_reach_derived_consumers(
     )
 
 
+@pytest.mark.color_pipeline
 def test_candidate_snapshot_isolates_unlocked_compiler_failure(
     monkeypatch: pytest.MonkeyPatch,
     baseline_catalog: "_catalog.CatalogSnapshot",
@@ -1971,6 +1972,7 @@ def test_comparison_import_closure_excludes_runtime_registries() -> None:
     assert external.isdisjoint({"dartwork_mpl", "matplotlib"})
 
 
+@pytest.mark.color_pipeline
 def test_real_cli_subprocess_uses_isolated_source_audit_namespace(
     tmp_path: Path,
 ) -> None:

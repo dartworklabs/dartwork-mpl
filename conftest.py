@@ -78,6 +78,23 @@ for path in (_SRC_PATH, _METADATA_PATH):
 os.environ["PYTHONPATH"] = os.pathsep.join(_PYTHONPATH_PARTS)
 
 
+# Fixtures whose value is a full colour-pipeline compile (~1 min). A test that
+# requests one is a colour-pipeline test whether or not it says so, so it is
+# marked here rather than by hand; see the ``color_pipeline`` marker in
+# pyproject.toml. Subprocess build/regeneration tests carry the marker
+# explicitly.
+_COLOR_PIPELINE_FIXTURES = frozenset({"candidate_catalog", "comparison_report"})
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Mark every test that depends on a colour-pipeline compile fixture."""
+    for item in items:
+        if _COLOR_PIPELINE_FIXTURES.intersection(
+            getattr(item, "fixturenames", ())
+        ):
+            item.add_marker(pytest.mark.color_pipeline)
+
+
 @pytest.fixture(autouse=True)
 def _matplotlib_state_isolation() -> Iterator[None]:
     """Close figures, reset rcParams/preset ownership, and restore ``dm.config``.

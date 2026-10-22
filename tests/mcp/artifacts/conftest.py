@@ -19,14 +19,25 @@ def owned_input_root():
         assert stat.S_ISDIR(info.st_mode) and not ancestor.is_symlink()
         assert info.st_uid in {0, os.geteuid()} and not info.st_mode & 0o022
     build = root / "build"
-    build.mkdir(mode=0o700, exist_ok=True)
     fixtures = build / "input-lifecycle-fixtures"
-    fixtures.mkdir(mode=0o700, exist_ok=True)
-    for path in (build, fixtures):
-        info = path.lstat()
-        assert stat.S_ISDIR(info.st_mode) and info.st_uid == os.geteuid()
-        assert not info.st_mode & 0o022
-    folder = Path(tempfile.mkdtemp(prefix="task3-", dir=fixtures))
+    # Parallel workers (pytest-xdist) share these two parents, and every
+    # teardown below removes them once empty. Another worker's teardown can
+    # therefore delete them between our mkdir and mkdtemp; recreate and retry
+    # instead of failing. Each test still gets its own private folder.
+    for attempt in range(20):
+        try:
+            build.mkdir(mode=0o700, exist_ok=True)
+            fixtures.mkdir(mode=0o700, exist_ok=True)
+            for path in (build, fixtures):
+                info = path.lstat()
+                assert stat.S_ISDIR(info.st_mode)
+                assert info.st_uid == os.geteuid()
+                assert not info.st_mode & 0o022
+            folder = Path(tempfile.mkdtemp(prefix="task3-", dir=fixtures))
+            break
+        except FileNotFoundError:
+            if attempt == 19:
+                raise
     try:
         yield folder
     finally:
