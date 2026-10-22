@@ -12,6 +12,7 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from cycler import cycler
 
+from .._rc import rc_lock
 from ._discrete import discrete_colors
 from ._families import FAMILIES, Family, FamilyKind
 from ._register import ensure_registered
@@ -159,9 +160,7 @@ def set_colors(
         prop_cycle = cycler(linestyle=list(_DEFAULT_LINESTYLES)) * prop_cycle
 
     if ax is None:
-        from ..style import _style_lock
-
-        with _style_lock:
+        with rc_lock:
             plt.rcParams["axes.prop_cycle"] = prop_cycle
     else:
         ax.set_prop_cycle(prop_cycle)

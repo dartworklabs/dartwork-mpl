@@ -12,13 +12,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-_FONT_DIR = (
-    Path(__file__).resolve().parents[1]
-    / "src"
-    / "dartwork_mpl"
-    / "asset"
-    / "font"
-)
+_FONT_DIR = Path(__file__).resolve().parents[2] / "asset" / "font"
 _LICENSES = _FONT_DIR / "licenses"
 
 # filename-prefix -> license file stem. A new family fails this test

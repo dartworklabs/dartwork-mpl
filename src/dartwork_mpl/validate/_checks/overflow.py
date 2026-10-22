@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ..._helpers import iter_figure_level_extents
+from ..._figure_geometry import iter_figure_level_extents
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._registry import register_check
 

@@ -46,6 +46,8 @@ ENTRY_POINTS = frozenset(
     {
         "dartwork_mpl",
         "dartwork_mpl._build_entry",
+        # the root's removed/deprecated-name registry behind its __getattr__
+        "dartwork_mpl._compat",
         "dartwork_mpl.cli",
         # `python -m dartwork_mpl.mcp.server` / `dartwork-mpl-ui`
         "dartwork_mpl.mcp.server",
@@ -54,7 +56,7 @@ ENTRY_POINTS = frozenset(
 )
 
 # Units holding business-agnostic mechanism. They import no slice.
-PLATFORM = frozenset({"dartwork_mpl._helpers"})
+PLATFORM = frozenset({"dartwork_mpl._figure_geometry", "dartwork_mpl._rc"})
 
 # Units holding one capability each.
 SLICES = frozenset(
@@ -96,6 +98,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.annotation", "dartwork_mpl.scale"): (
         "annotation text defaults to a size relative to the active preset"
     ),
+    ("dartwork_mpl.diagnostics", "dartwork_mpl.font"): (
+        "the font diagnostic draws the bundled font files"
+    ),
     ("dartwork_mpl.explore", "dartwork_mpl._colors"): (
         "the explorer browses the shipped colour families"
     ),
@@ -123,6 +128,15 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp", "dartwork_mpl.prompt"): (
         "the MCP server serves the bundled prompt corpus"
     ),
+    ("dartwork_mpl.templates", "dartwork_mpl.scale"): (
+        "a template sizes its text relative to the active preset"
+    ),
+    ("dartwork_mpl.templates", "dartwork_mpl.units"): (
+        "a template's default figure size is a physical width and aspect"
+    ),
+    ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
+        "the tick-decimal check recommends the precision the formatter uses"
+    ),
     ("dartwork_mpl.style", "dartwork_mpl.font"): (
         "a preset may name bundled fonts, which must be registered first"
     ),
@@ -141,47 +155,25 @@ DECISIONS: Mapping[str, str] = {
 # Known violations at the start of the refactor (ADR 0005), each with the
 # plan step that removes it. The list only shrinks.
 DEBT: Mapping[str, str] = {
-    "cycle: dartwork_mpl, dartwork_mpl.templates, dartwork_mpl.validate_fixes": "C12, L2",
-    "cycle: dartwork_mpl._colors, dartwork_mpl._luminance, dartwork_mpl.style": "C2, K1",
+    "cycle: dartwork_mpl, dartwork_mpl.validate_fixes": "L2",
+    "cycle: dartwork_mpl._colors, dartwork_mpl._luminance": "K1",
     "entry point import: dartwork_mpl.mcp.resources -> dartwork_mpl": "M6",
     "entry point import: dartwork_mpl.mcp.tools -> dartwork_mpl": "M4",
-    "entry point import: dartwork_mpl.templates.diverging_bar -> dartwork_mpl": "C12",
     "entry point import: dartwork_mpl.validate_fixes -> dartwork_mpl": "L2",
-    "missing __all__: dartwork_mpl._helpers": "C1",
     "missing __all__: dartwork_mpl._luminance": "K1",
-    "missing __all__: dartwork_mpl.formatting": "C8",
     "missing __all__: dartwork_mpl.validate_fixes": "L2",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.avoid_tick_overlap": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.format_axis_billions": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.format_axis_currency": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.format_axis_millions": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.format_axis_myriad": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.format_axis_si": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.format_axis_year": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.recommend_tick_decimals": "C8",
-    "private import: dartwork_mpl -> dartwork_mpl.formatting.rotate_tick_labels": "C8",
     "private import: dartwork_mpl -> dartwork_mpl.validate_fixes.validate_with_fixes": "L2",
-    "private import: dartwork_mpl._colors._api -> dartwork_mpl.style._style_lock": "C2",
     "private import: dartwork_mpl._colors._contrast -> dartwork_mpl._luminance._contrast_ratio": "K1",
     "private import: dartwork_mpl._luminance -> dartwork_mpl._colors._conversion": "K1",
-    "private import: dartwork_mpl.annotation -> dartwork_mpl._helpers.BBOX_ERRORS": "C1",
-    "private import: dartwork_mpl.annotation -> dartwork_mpl._helpers.get_renderer": "C1",
     "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.CYCLIC": "K5",
     "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.DIVERGING": "K5",
     "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.MULTI_HUE": "K5",
     "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.QUALITATIVE": "K5",
     "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.SEQUENTIAL": "K5",
     "private import: dartwork_mpl.diagnostics._colors -> dartwork_mpl._colors._loader.COLOR_LIBRARIES": "K5",
-    "private import: dartwork_mpl.diagnostics._fonts -> dartwork_mpl.font._FONT_DIR": "C4",
     "private import: dartwork_mpl.helpers.labels -> dartwork_mpl._colors._loader.ensure_loaded": "K4",
-    "private import: dartwork_mpl.icon -> dartwork_mpl.style._did_you_mean": "C2",
-    "private import: dartwork_mpl.io -> dartwork_mpl._helpers.create_parent_path": "C1",
-    "private import: dartwork_mpl.layout -> dartwork_mpl._helpers.BBOX_ERRORS": "C1",
-    "private import: dartwork_mpl.layout -> dartwork_mpl._helpers.get_renderer": "C1",
-    "private import: dartwork_mpl.layout -> dartwork_mpl._helpers.iter_figure_level_extents": "C1",
     "private import: dartwork_mpl.mcp.resources -> dartwork_mpl._colors._loader.COLOR_LIBRARIES": "K4",
     "private import: dartwork_mpl.mcp.tools -> dartwork_mpl._colors._loader.COLOR_LIBRARIES": "K4",
-    "private import: dartwork_mpl.prompt -> dartwork_mpl._helpers.create_parent_path": "C1",
     "private import: dartwork_mpl.style -> dartwork_mpl._colors._semantic.SEMANTIC_TOKEN_NAMES": "K4",
     "private import: dartwork_mpl.style -> dartwork_mpl._colors._semantic.apply_semantic": "K4",
     "private import: dartwork_mpl.validate._checks._luminance -> dartwork_mpl._luminance._contrast_ratio": "K1",
@@ -189,17 +181,14 @@ DEBT: Mapping[str, str] = {
     "private import: dartwork_mpl.validate._checks._luminance -> dartwork_mpl._luminance._rel_lum": "K1",
     "private import: dartwork_mpl.validate._checks.grayscale_safety -> dartwork_mpl._colors._conversion._srgb_to_oklab": "K3",
     "private import: dartwork_mpl.validate._checks.grayscale_safety -> dartwork_mpl._colors._conversion.relative_y_srgb_d65": "K3",
-    "private import: dartwork_mpl.validate._checks.overflow -> dartwork_mpl._helpers.iter_figure_level_extents": "C1",
     "private import: dartwork_mpl.validate._checks.text_contrast -> dartwork_mpl._luminance._contrast_ratio": "K1",
-    "private import: dartwork_mpl.validate._checks.tick_decimal -> dartwork_mpl.formatting.recommend_tick_decimals": "C8",
-    "private import: dartwork_mpl.validate._orchestrator -> dartwork_mpl._helpers.get_renderer": "C1",
-    "private import: dartwork_mpl.validate._types -> dartwork_mpl._helpers.BBOX_ERRORS": "C1",
     "private import: dartwork_mpl.validate_fixes -> dartwork_mpl.helpers.quality._MIN_RECOMMENDED_DPI": "L2",
     "undeclared dependency: dartwork_mpl.helpers -> dartwork_mpl.scale": "C11",
     "undeclared dependency: dartwork_mpl.mcp -> dartwork_mpl.util": "C9",
     "undeclared dependency: dartwork_mpl.ui -> dartwork_mpl.util": "C9",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl._colors": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.annotation": "C10",
+    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.formatting": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.io": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.layout": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.prompt": "C10",

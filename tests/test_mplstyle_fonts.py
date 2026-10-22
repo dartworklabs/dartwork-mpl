@@ -21,7 +21,9 @@ from pathlib import Path
 
 def _contract_families() -> tuple[str, ...]:
     spec = importlib.util.spec_from_file_location(
-        "_test_font_contract", Path(__file__).with_name("test_font.py")
+        "_test_font_contract",
+        Path(__file__).resolve().parents[1]
+        / "src/dartwork_mpl/font/tests/test_font.py",
     )
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)

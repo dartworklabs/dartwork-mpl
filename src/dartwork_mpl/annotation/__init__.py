@@ -14,6 +14,7 @@ __all__ = [
     "arrow_axis",
     "label_axes",
     "label_hline",
+    "make_offset",
     "place_legend",
     "wrap_axis_label",
     "wrap_axis_labels",
@@ -26,12 +27,13 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 from matplotlib.text import Text
-from matplotlib.transforms import Bbox
+from matplotlib.transforms import Bbox, ScaledTranslation
 
-from ._helpers import BBOX_ERRORS, get_renderer
-from .scale import fs
+from .._figure_geometry import BBOX_ERRORS, get_renderer
+from ..scale import fs
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -1026,3 +1028,24 @@ def arrow_axis(
 
     _arrow(lo_end + pad, lb_lo - pad)
     _arrow(hi_start - pad, lb_hi + pad)
+
+
+def make_offset(x: float, y: float, fig: Figure) -> ScaledTranslation:
+    """Create a translation offset transform for positioning figure elements.
+
+    Parameters
+    ----------
+    x : float
+        Horizontal offset in points.
+    y : float
+        Vertical offset in points.
+    fig : matplotlib.figure.Figure
+        The Figure whose DPI scale is used.
+
+    Returns
+    -------
+    matplotlib.transforms.ScaledTranslation
+        A translation transform that can be added to other transforms.
+    """
+    dx, dy = x / 72, y / 72
+    return ScaledTranslation(dx, dy, fig.dpi_scale_trans)

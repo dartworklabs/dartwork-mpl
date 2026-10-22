@@ -107,9 +107,9 @@ def plot_fonts(
     if font_dir is None:
         # Single source: the same bundled directory the font loader
         # registers from (previously rebuilt here with os.path idioms).
-        from ..font import _FONT_DIR
+        from ..font import get_font_dir
 
-        font_dir = str(_FONT_DIR)
+        font_dir = str(get_font_dir())
 
     # Collect font files
     extensions = {".ttf", ".otf"}

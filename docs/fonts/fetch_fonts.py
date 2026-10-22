@@ -395,7 +395,7 @@ def plan() -> list[dict]:
         # The Noto Sans Symbols / Symbols 2 families (added 2026-07 for
         # scientific/report special-character coverage) come from the same
         # notofonts upstream and are covered by LICENSE-NotoSans (one OFL
-        # text per upstream project — see tests/test_font_licenses.py).
+        # text per upstream project — see src/dartwork_mpl/font/tests/test_font_licenses.py).
         {
             "family": "Inter",
             "kind": "release-zip",

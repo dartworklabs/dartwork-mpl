@@ -30,12 +30,12 @@ from matplotlib.gridspec import (
 )
 from matplotlib.transforms import Bbox
 
-# ``BBOX_ERRORS`` is shared with the validation checks via ``_helpers``
+# ``BBOX_ERRORS`` is shared with the validation checks via ``_figure_geometry``
 # — one source for the bbox-measurement exception set (the two modules
 # used to carry identical private copies).
-from ._helpers import BBOX_ERRORS as _BBOX_ERRORS
-from ._helpers import get_renderer, iter_figure_level_extents
-from .units import Length
+from .._figure_geometry import BBOX_ERRORS as _BBOX_ERRORS
+from .._figure_geometry import get_renderer, iter_figure_level_extents
+from ..units import Length
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -153,10 +153,10 @@ def _axes_content_extent_px(
     Walks texts, title, axis labels, view-limited tick labels, axis
     offset text, and legend, plus the axes' own window extent so the
     result is never smaller than the plot area. This is *almost* the
-    artist set ``_measure_overflow`` walks, with three deliberate
+    artist set the layout tests' ``measure_overflow`` oracle walks, with three deliberate
     deltas: the offset text and the axes window extent are only
     measured here, and the ``_LEGEND_FRAME_PAD`` slack is only added
-    there — so do not treat ``_measure_overflow`` as an exact
+    there — so do not treat that oracle as an exact
     post-``simple_layout`` invariant.
 
     Returns ``None`` for invisible axes (a hidden panel must not
@@ -199,7 +199,7 @@ def _axes_content_extent_px(
     # Tick labels — only those whose tick position falls inside the
     # current view interval. Auto-generated ticks outside the data
     # range (e.g. ``10^16`` on a log axis with data up to ``10^9``)
-    # are ignored, mirroring ``_measure_overflow``.
+    # are ignored, mirroring the layout tests' ``measure_overflow``.
     for axis in (ax.xaxis, ax.yaxis):
         # ``get_view_interval`` returns the pair *reversed* on an inverted
         # axis (e.g. ``[1.05, -0.05]`` after ``invert_yaxis()``); sort so
@@ -350,7 +350,7 @@ def _adopt_axis_label_font_core(fig: Figure) -> None:
                 continue
 
     if mutated_axes:
-        from .config import config
+        from ..config import config
 
         if config.warn_on_orphan_tick_adoption:
             warnings.warn(
@@ -483,7 +483,7 @@ def simple_layout(
         return
 
     if adopt_orphan_tick_font is None:
-        from .config import config
+        from ..config import config
 
         adopt_orphan_tick_font = config.adopt_orphan_tick_font
 
@@ -708,96 +708,6 @@ def _solve_layout_step(
         delta_px = float("inf")
 
     return (new_l, new_r, new_b, new_t), delta_px
-
-
-# ─────────────────────────────────────────────────────────────────────
-# diagnostic helpers (kept for backwards compatibility with tests
-# that import them directly).
-# ─────────────────────────────────────────────────────────────────────
-
-
-def _measure_overflow(fig: Figure) -> dict[str, float]:
-    """Measure per-side overflow of all visible artists beyond figure bounds.
-
-    Returns a ``{"left", "right", "bottom", "top"}`` dict in display pixels.
-    Used only by the legend-regression tests in ``tests/test_layout.py``;
-    not called by :func:`simple_layout` itself. Note the measured artist
-    set deliberately differs from ``_axes_content_extent_px`` (see its
-    docstring), so this is not an exact post-layout invariant.
-    """
-    fig.canvas.draw()
-    renderer = get_renderer(fig)
-
-    canvas_w, canvas_h = fig.canvas.get_width_height()
-    bx0, by0 = 0.0, 0.0
-    bx1, by1 = float(canvas_w), float(canvas_h)
-
-    overflow: dict[str, float] = {
-        "left": 0.0,
-        "right": 0.0,
-        "bottom": 0.0,
-        "top": 0.0,
-    }
-
-    for ax in fig.axes:
-        for txt in [*ax.texts, ax.title, ax.xaxis.label, ax.yaxis.label]:
-            if (
-                txt is None
-                or not txt.get_visible()
-                or not txt.get_text().strip()
-            ):
-                continue
-            try:
-                ext = txt.get_window_extent(renderer)
-            except _BBOX_ERRORS:
-                continue
-            overflow["left"] = max(overflow["left"], bx0 - ext.x0)
-            overflow["right"] = max(overflow["right"], ext.x1 - bx1)
-            overflow["bottom"] = max(overflow["bottom"], by0 - ext.y0)
-            overflow["top"] = max(overflow["top"], ext.y1 - by1)
-
-        for axis in (ax.xaxis, ax.yaxis):
-            # Sort: inverted axes report the view interval reversed, which
-            # would make every in-view tick fail the range test below.
-            vmin, vmax = sorted(axis.get_view_interval())
-            tol = abs(vmax - vmin) * 1e-5
-            for tick in axis.get_ticklabels():
-                if not tick.get_visible() or not tick.get_text().strip():
-                    continue
-                try:
-                    ext = tick.get_window_extent(renderer)
-                    pos = tick.get_position()
-                except _BBOX_ERRORS:
-                    continue
-                val = pos[0] if axis is ax.xaxis else pos[1]
-                if val < vmin - tol or val > vmax + tol:
-                    continue
-                overflow["left"] = max(overflow["left"], bx0 - ext.x0)
-                overflow["right"] = max(overflow["right"], ext.x1 - bx1)
-                overflow["bottom"] = max(overflow["bottom"], by0 - ext.y0)
-                overflow["top"] = max(overflow["top"], ext.y1 - by1)
-
-        legend = ax.get_legend()
-        if legend is not None and legend.get_visible():
-            leg_ext = None
-            with contextlib.suppress(*_BBOX_ERRORS):
-                leg_ext = legend.get_window_extent(renderer)
-            if leg_ext is not None and leg_ext.width > 0 and leg_ext.height > 0:
-                _LEGEND_FRAME_PAD = 2.0
-                overflow["left"] = max(
-                    overflow["left"], bx0 - (leg_ext.x0 - _LEGEND_FRAME_PAD)
-                )
-                overflow["right"] = max(
-                    overflow["right"], (leg_ext.x1 + _LEGEND_FRAME_PAD) - bx1
-                )
-                overflow["bottom"] = max(
-                    overflow["bottom"], by0 - (leg_ext.y0 - _LEGEND_FRAME_PAD)
-                )
-                overflow["top"] = max(
-                    overflow["top"], (leg_ext.y1 + _LEGEND_FRAME_PAD) - by1
-                )
-
-    return overflow
 
 
 # ─────────────────────────────────────────────────────────────────────

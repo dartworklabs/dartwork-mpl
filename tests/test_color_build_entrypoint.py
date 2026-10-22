@@ -220,14 +220,10 @@ def test_ordinary_import_preserves_eager_inventory_and_reload(
             "tokens",
             "validate_fixes",
         }
-        private = {
-            "_Deprecation",
-            "_DEPRECATED_NAMES",
-            "_REMOVED_NAMES",
-            "__getattr__",
-        }
+        compat = {"_Deprecation", "_DEPRECATED_NAMES", "_REMOVED_NAMES"}
         assert public <= set(dm.__all__)
-        assert all(hasattr(dm, name) for name in modules | private)
+        assert all(hasattr(dm, name) for name in modules | {"__getattr__"})
+        assert all(hasattr(dm._compat, name) for name in compat)
         assert dm.__version__
         assert mpl.colors.get_named_colors_mapping()["dc.blue0"] == (
             _generated.PALETTE["blue"][0]
@@ -241,7 +237,7 @@ def test_ordinary_import_preserves_eager_inventory_and_reload(
         assert mpl.axes.Axes.twinx is patched_twinx
         assert getattr(patched_twinx, "__dm_patched__", False)
         assert public <= set(dm.__all__)
-        assert all(hasattr(dm, name) for name in modules | private)
+        assert all(hasattr(dm, name) for name in modules | {"__getattr__"})
         assert "dc.aurora" in mpl.colormaps
         """
     )

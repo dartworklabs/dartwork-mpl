@@ -29,7 +29,7 @@ ScatterLevel = Literal["small", "default", "emphasis"]
 SpacingLevel = Literal["xs", "sm", "md", "lg", "xl"]
 
 _TOKEN_PATH = (
-    Path(__file__).parent / "asset" / "tokens" / "semantic_tokens.json"
+    Path(__file__).parent.parent / "asset" / "tokens" / "semantic_tokens.json"
 )
 
 _FALLBACK_TOKENS: _TokenData = {

@@ -18,6 +18,8 @@ __all__ = [
     "DEFAULT_ASPECT",
     "Length",
     "cm",
+    "col1",
+    "col2",
     "figsize",
     "figsize_grid",
     "inch",
@@ -417,6 +419,12 @@ def mm(value: float) -> Length:
 def pt(value: float) -> Length:
     """Construct a :class:`Length` from PostScript points."""
     return Length.from_pt(value)
+
+
+#: Academic single- and double-column figure widths (0.4+), as ``dm.col1``
+#: and ``dm.col2``.
+col1: Length = cm(9)
+col2: Length = cm(17)
 
 
 def length(value: str | Length) -> Length:

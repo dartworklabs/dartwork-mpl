@@ -1,12 +1,15 @@
-"""Shared internal helpers.
+"""Figure measurement mechanism shared by layout, annotation and validation.
 
-Small utilities used by multiple modules. Not part of the public API.
+Platform code (ADR 0005): it knows matplotlib's renderer and artist extents
+and nothing about any capability, and it imports no slice. Not part of the
+public API.
 """
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+__all__ = ["BBOX_ERRORS", "get_renderer", "iter_figure_level_extents"]
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -25,23 +28,6 @@ BBOX_ERRORS: tuple[type[BaseException], ...] = (
     ValueError,
     AttributeError,
 )
-
-
-def create_parent_path(path: str | Path) -> None:
-    """Create parent directory if it doesn't exist.
-
-    Parameters
-    ----------
-    path : str or Path
-        Path whose parent directory will be created.
-    """
-    # ``exist_ok=True`` (and dropping the pre-existence check) makes this
-    # idempotent and free of the check-then-create TOCTOU race: two
-    # concurrent saves into the same new directory would otherwise let one
-    # win the ``exists()`` check and the other raise ``FileExistsError``
-    # from ``mkdir``.
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
 
 
 def get_renderer(fig: Figure | SubFigure) -> RendererBase:

@@ -19,8 +19,6 @@ import warnings
 from pathlib import Path
 from shutil import copy2
 
-from ._helpers import create_parent_path
-
 _PROMPT_DIR: Path = Path(__file__).parent / "asset/prompt"
 
 # Canonical prompt corpus (T5/R3a). ``list_prompts`` warns when a
@@ -261,7 +259,7 @@ def copy_prompt(name: str, destination: str | Path) -> Path:
     if dest_path.is_dir() or (not dest_path.exists() and not dest_path.suffix):
         dest_path = dest_path / source_path.name
 
-    create_parent_path(dest_path)
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
     copy2(source_path, dest_path)
 
     return dest_path

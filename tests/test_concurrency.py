@@ -275,7 +275,7 @@ class TestStyleStackConcurrency:
 
     def test_concurrent_stack_via_classmethod(self) -> None:
         """Drive ``Style.stack`` directly (bypassing ``use``) from many
-        threads. The ``with _style_lock:`` block in ``stack`` is the
+        threads. The ``with rc_lock:`` block in ``stack`` is the
         critical section being exercised here.
         """
 

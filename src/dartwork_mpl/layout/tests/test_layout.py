@@ -2,16 +2,102 @@
 
 from __future__ import annotations
 
+import contextlib
+
 import matplotlib
 import matplotlib.pyplot as plt
 
 matplotlib.use("Agg")
 
-from dartwork_mpl.layout import (
-    _measure_overflow,
-    get_bounding_box,
-    simple_layout,
-)
+from matplotlib.figure import Figure
+
+from dartwork_mpl._figure_geometry import BBOX_ERRORS as _BBOX_ERRORS
+from dartwork_mpl._figure_geometry import get_renderer
+from dartwork_mpl.layout import get_bounding_box, simple_layout
+
+
+def measure_overflow(fig: Figure) -> dict[str, float]:
+    """Measure per-side overflow of all visible artists beyond figure bounds.
+
+    Returns a ``{"left", "right", "bottom", "top"}`` dict in display pixels.
+    The legend-regression tests' oracle; :func:`simple_layout` never calls
+    it. Note the measured artist
+    set deliberately differs from ``_axes_content_extent_px`` (see its
+    docstring), so this is not an exact post-layout invariant.
+    """
+    fig.canvas.draw()
+    renderer = get_renderer(fig)
+
+    canvas_w, canvas_h = fig.canvas.get_width_height()
+    bx0, by0 = 0.0, 0.0
+    bx1, by1 = float(canvas_w), float(canvas_h)
+
+    overflow: dict[str, float] = {
+        "left": 0.0,
+        "right": 0.0,
+        "bottom": 0.0,
+        "top": 0.0,
+    }
+
+    for ax in fig.axes:
+        for txt in [*ax.texts, ax.title, ax.xaxis.label, ax.yaxis.label]:
+            if (
+                txt is None
+                or not txt.get_visible()
+                or not txt.get_text().strip()
+            ):
+                continue
+            try:
+                ext = txt.get_window_extent(renderer)
+            except _BBOX_ERRORS:
+                continue
+            overflow["left"] = max(overflow["left"], bx0 - ext.x0)
+            overflow["right"] = max(overflow["right"], ext.x1 - bx1)
+            overflow["bottom"] = max(overflow["bottom"], by0 - ext.y0)
+            overflow["top"] = max(overflow["top"], ext.y1 - by1)
+
+        for axis in (ax.xaxis, ax.yaxis):
+            # Sort: inverted axes report the view interval reversed, which
+            # would make every in-view tick fail the range test below.
+            vmin, vmax = sorted(axis.get_view_interval())
+            tol = abs(vmax - vmin) * 1e-5
+            for tick in axis.get_ticklabels():
+                if not tick.get_visible() or not tick.get_text().strip():
+                    continue
+                try:
+                    ext = tick.get_window_extent(renderer)
+                    pos = tick.get_position()
+                except _BBOX_ERRORS:
+                    continue
+                val = pos[0] if axis is ax.xaxis else pos[1]
+                if val < vmin - tol or val > vmax + tol:
+                    continue
+                overflow["left"] = max(overflow["left"], bx0 - ext.x0)
+                overflow["right"] = max(overflow["right"], ext.x1 - bx1)
+                overflow["bottom"] = max(overflow["bottom"], by0 - ext.y0)
+                overflow["top"] = max(overflow["top"], ext.y1 - by1)
+
+        legend = ax.get_legend()
+        if legend is not None and legend.get_visible():
+            leg_ext = None
+            with contextlib.suppress(*_BBOX_ERRORS):
+                leg_ext = legend.get_window_extent(renderer)
+            if leg_ext is not None and leg_ext.width > 0 and leg_ext.height > 0:
+                _LEGEND_FRAME_PAD = 2.0
+                overflow["left"] = max(
+                    overflow["left"], bx0 - (leg_ext.x0 - _LEGEND_FRAME_PAD)
+                )
+                overflow["right"] = max(
+                    overflow["right"], (leg_ext.x1 + _LEGEND_FRAME_PAD) - bx1
+                )
+                overflow["bottom"] = max(
+                    overflow["bottom"], by0 - (leg_ext.y0 - _LEGEND_FRAME_PAD)
+                )
+                overflow["top"] = max(
+                    overflow["top"], (leg_ext.y1 + _LEGEND_FRAME_PAD) - by1
+                )
+
+    return overflow
 
 
 class TestGetBoundingBox:
@@ -164,7 +250,7 @@ class TestMeasureOverflowLegend:
             ax.plot([0, 1], [i, i + 1], label=f"S{i:02d}")
         ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", fontsize=8)
         ax.set_ylabel("Y")
-        overflow = _measure_overflow(fig)
+        overflow = measure_overflow(fig)
         assert overflow["right"] > 5.0, (
             f"legend outside axes should contribute right overflow; "
             f"got {overflow}"
@@ -177,7 +263,7 @@ class TestMeasureOverflowLegend:
         fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
         ax.plot([1, 2, 3])
         ax.set_ylabel("Y")
-        overflow = _measure_overflow(fig)
+        overflow = measure_overflow(fig)
         assert all(v == 0.0 for v in overflow.values()), overflow
         plt.close(fig)
 
@@ -188,7 +274,7 @@ class TestMeasureOverflowLegend:
         ax.plot([1, 2, 3], label="A")
         ax.legend(loc="best")
         ax.set_ylabel("Y")
-        overflow = _measure_overflow(fig)
+        overflow = measure_overflow(fig)
         assert all(v == 0.0 for v in overflow.values()), overflow
         plt.close(fig)
 
