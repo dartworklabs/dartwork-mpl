@@ -58,6 +58,8 @@ ENTRY_POINTS = frozenset(
         # the root's removed/deprecated-name registry behind its __getattr__
         "dartwork_mpl._compat",
         "dartwork_mpl.cli",
+        # compatibility re-exports of names that moved to their owners
+        "dartwork_mpl.util",
         # `python -m dartwork_mpl.mcp.server` / `dartwork-mpl-ui`
         "dartwork_mpl.mcp.server",
         # The MCP wiring tables the discovery scanners read (ADR 0001 A1).
@@ -141,7 +143,6 @@ SLICES = frozenset(
         "dartwork_mpl.ui.script",
         "dartwork_mpl.ui.state",
         "dartwork_mpl.units",
-        "dartwork_mpl.util",
         "dartwork_mpl.validate",
     }
 )
@@ -278,7 +279,7 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp.artifacts", "dartwork_mpl.mcp.execution"): (
         "an artifact bundle is the output of one validated plot execution"
     ),
-    ("dartwork_mpl.mcp.colors", "dartwork_mpl.util"): (
+    ("dartwork_mpl.mcp.colors", "dartwork_mpl._colors.model"): (
         "the mix_colors tool must return exactly what dm.mix_colors blends"
     ),
     ("dartwork_mpl.mcp.execution", "dartwork_mpl.lint"): (
@@ -406,13 +407,6 @@ PINNED: Mapping[str, str] = {
 DEBT: Mapping[str, str] = {
     "private import: dartwork_mpl.validate.agent_requirements -> dartwork_mpl.helpers.quality._MIN_RECOMMENDED_DPI": "C11",
     "undeclared dependency: dartwork_mpl.helpers -> dartwork_mpl.scale": "C11",
-    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl._colors": "C10",
-    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.annotation": "C10",
-    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.formatting": "C10",
-    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.io": "C10",
-    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.layout": "C10",
-    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.prompt": "C10",
-    "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.scale": "C10",
 }
 
 # Package paths that hold user-facing sample code, not package source: the
