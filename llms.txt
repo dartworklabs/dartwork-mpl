@@ -5,11 +5,14 @@
 > OKLCH color system, content-aware layout (`simple_layout`), visual
 > validation, and an MCP server for AI coding assistants.
 
-For agents: read `CLAUDE.md` (or `AGENTS.md`) at the repo root for
-the 30-second onboarding. For a single-file ingestion of the canonical
-docs, fetch `llms-full.txt`. The anti-pattern catalog
-(`02-anti-patterns.yaml`) and the prompt corpus are bundled in the
-wheel under `dartwork_mpl/asset/prompt/`.
+For agents using dartwork-mpl: run `python -m dartwork_mpl.skills install`
+in the project to load the bundled skill (`SKILL.md` + references) into
+Claude Code (`.claude/skills`) and Codex (`.agents/skills`), or read
+`dm.get_agent_doc("AGENTS")` for the short consumer entry. The repo-root
+`CLAUDE.md` / `AGENTS.md` are for contributors to this repository. For a
+single-file ingestion of the canonical docs, fetch `llms-full.txt`. The
+anti-pattern catalog (`02-anti-patterns.yaml`) and the prompt corpus are
+bundled in the wheel under `dartwork_mpl/asset/prompt/`.
 
 ## Docs
 
@@ -35,7 +38,8 @@ wheel under `dartwork_mpl/asset/prompt/`.
 
 ## Installed Python route
 
-Read `dm.get_agent_doc("AGENTS")` and `dm.get_prompt("00-index")` for bundled
+Install the skill (`python -m dartwork_mpl.skills install`) or read
+`dm.get_agent_doc("AGENTS")`; `dm.get_prompt("00-index")` covers bundled
 basic/advanced template source retrieval, then `dm.get_prompt("03-recipes")`
 for native multi-panel containers and the full lint/validate/export/image-review
 revision loop. `find_template.source_path` is repo-relative metadata, not an
