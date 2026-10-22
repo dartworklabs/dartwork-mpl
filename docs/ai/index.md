@@ -50,8 +50,10 @@ recreating that Python environment needs a rerun. `--claude` or `--codex`
 installs for one agent, `--dest ~` for your user account, and `--copy`
 copies instead of linking (no symlinks, or to check the skill into the
 repository; rerun it after upgrading). It never overwrites a folder it did
-not create, or a copy whose files you edited, unless you pass `--force`.
-`python -m dartwork_mpl.skills path` prints the folder.
+not create, or a copy whose files you edited, unless you pass `--force`, and
+never one that changed while it ran. A link is replaced in one atomic
+rename; an interrupted copy replacement is recovered on the next `install`
+or `path` run. `python -m dartwork_mpl.skills path` prints the folder.
 
 Claude Code also ships a general `/dataviz` skill. The dartwork-mpl skill
 tells the agent how the two fit: for matplotlib figures the active preset is

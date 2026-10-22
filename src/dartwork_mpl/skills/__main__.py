@@ -10,6 +10,7 @@ from pathlib import Path
 from . import (
     TARGETS,
     SkillInstallError,
+    _recover_all,
     install_skill,
     skill_path,
     skill_version,
@@ -56,7 +57,11 @@ def _parser() -> argparse.ArgumentParser:
         help="replace a file or folder this installer did not create, or a "
         "copy with local edits",
     )
-    sub.add_parser("path", help="print the folder that holds SKILL.md")
+    sub.add_parser(
+        "path",
+        help="print the folder that holds SKILL.md (and put back a copy an "
+        "interrupted install left aside in this project)",
+    )
     return parser
 
 
@@ -71,6 +76,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the command line; return the process exit status."""
     args = _parser().parse_args(argv)
     if args.command == "path":
+        # An interrupted copy replacement in this project is put back here
+        # too, so the agent that runs `path` finds the skill again.
+        for restored in _recover_all("."):
+            print(
+                f"note: put back {restored} after an interrupted install",
+                file=sys.stderr,
+            )
         print(skill_path())
         return 0
 

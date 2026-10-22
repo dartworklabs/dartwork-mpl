@@ -23,8 +23,13 @@ Installing is idempotent and conservative:
   local edits. A copy with local edits, and anything else at the
   destination, is left alone unless ``force`` is set.
 - Every destination is checked, and every new link or copy is built under a
-  temporary name next to it, before anything is replaced. The old install
-  is renamed aside and restored if the swap fails.
+  temporary name next to it, before anything is replaced. If the
+  destination changed since it was checked, nothing is replaced.
+- A new link replaces nothing, a link or a file in one atomic rename.
+  Replacing a directory (a copy) takes two renames: an error or Ctrl-C
+  between them puts the old one back at once, and after a hard stop
+  (killed process, power loss) the next ``install`` or ``path`` run for that
+  directory puts it back. Run one install per directory at a time.
 """
 
 from __future__ import annotations
@@ -63,6 +68,8 @@ _SOURCE = Path(__file__).resolve().parent / SKILL_NAME
 # Written into copies: package version and the inventory of what was copied
 # (every path with its type, and the SHA-256 of each regular file).
 _COPY_MARKER = ".dartwork-mpl-skill.json"
+# Staging folders next to a destination; a hard stop can leave one behind.
+_WORKDIR_PREFIX = f".{SKILL_NAME}-install-"
 # Tail of every link this installer makes, in any environment.
 _SOURCE_TAIL = ("dartwork_mpl", "skills", SKILL_NAME)
 
@@ -203,7 +210,7 @@ def _stage(link: Path, *, copy: bool) -> Path:
     filesystem as ``link`` so the later rename is a rename, not a copy.
     """
     link.parent.mkdir(parents=True, exist_ok=True)
-    workdir = Path(tempfile.mkdtemp(prefix=f".{SKILL_NAME}-", dir=link.parent))
+    workdir = Path(tempfile.mkdtemp(prefix=_WORKDIR_PREFIX, dir=link.parent))
     staged = workdir / SKILL_NAME
     try:
         if copy:
@@ -263,27 +270,50 @@ def _swap_in(staged: Path, link: Path, expected: Fingerprint) -> None:
 
     ``expected`` is what was at ``link`` when it was inspected. If anything
     changed since (even with ``force``), nothing is replaced.
+
+    A new link over nothing, a link or a file is one atomic rename. Anything
+    involving a directory takes two renames (old aside, new in); an
+    exception between them puts the old one back at once, and a hard stop
+    leaves it in ``<workdir>/previous`` for :func:`_recover` to put back.
     """
     workdir = staged.parent
     backup = workdir / "previous"
     if _fingerprint(link) != expected:
         raise _changed(link, workdir)
+    one_rename = expected is None or (
+        expected[0] != "dir" and staged.is_symlink()
+    )
+    moved_aside = False
     try:
-        if expected is not None:
+        if one_rename:
+            os.replace(staged, link)
+        else:
             os.replace(link, backup)
+            moved_aside = True
             # A write that landed between the check above and the rename is
             # in ``backup`` now: compare again and put it back if so.
             if _fingerprint(backup) != expected:
                 os.replace(backup, link)
+                moved_aside = False
                 raise _changed(link, workdir)
-            try:
-                os.replace(staged, link)
-            except OSError:
-                os.replace(backup, link)
-                raise
-        else:
             os.replace(staged, link)
-    except OSError as exc:
+            moved_aside = False
+    except BaseException as exc:
+        # KeyboardInterrupt included: never leave the destination empty.
+        if moved_aside and _fingerprint(link) is None:
+            os.replace(backup, link)
+        if not isinstance(exc, OSError):
+            shutil.rmtree(workdir, ignore_errors=True)
+            raise
+        if backup.exists() or backup.is_symlink():
+            raise SkillInstallError(
+                f"could not replace {link} ({exc}); the previous install "
+                f"was moved to {backup}."
+            ) from exc
+        shutil.rmtree(workdir, ignore_errors=True)
+        raise SkillInstallError(
+            f"could not replace {link} ({exc}); the previous install was kept."
+        ) from exc
         if backup.exists() or backup.is_symlink():
             raise SkillInstallError(
                 f"could not replace {link} ({exc}); the previous install "
@@ -296,6 +326,45 @@ def _swap_in(staged: Path, link: Path, expected: Fingerprint) -> None:
     # The old install (if any) sits in workdir as "previous"; rmtree removes a
     # symlink there without following it.
     shutil.rmtree(workdir, ignore_errors=True)
+
+
+def _recover(skills_dir: Path) -> list[Path]:
+    """Undo replacements a hard stop left half done in ``skills_dir``.
+
+    A staging folder that still holds ``previous`` while the destination is
+    missing is an interrupted copy replacement: ``previous`` is put back.
+    Every staging folder is then removed. Two installs running at once in
+    the same directory are not supported.
+    """
+    link = skills_dir / SKILL_NAME
+    restored: list[Path] = []
+    for workdir in sorted(skills_dir.glob(_WORKDIR_PREFIX + "*")):
+        if workdir.is_symlink() or not workdir.is_dir():
+            continue
+        previous = workdir / "previous"
+        if os.path.lexists(previous) and not os.path.lexists(link):
+            os.replace(previous, link)
+            restored.append(link)
+        shutil.rmtree(workdir, ignore_errors=True)
+    return restored
+
+
+def _recover_all(
+    dest: str | os.PathLike[str] = ".", targets: Iterable[str] = TARGETS
+) -> list[Path]:
+    """:func:`_recover` for each target's skills directory inside ``dest``."""
+    base = Path(dest).expanduser()
+    root = base.resolve()
+    restored: list[Path] = []
+    seen: set[Path] = set()
+    for name in targets:
+        skills_dir = base / TARGETS[name]
+        key = skills_dir.resolve()
+        inside = key == root or root in key.parents
+        if inside and key not in seen and skills_dir.is_dir():
+            seen.add(key)
+            restored += _recover(skills_dir)
+    return restored
 
 
 def install_skill(
@@ -364,6 +433,8 @@ def install_skill(
                 f"install there."
             )
 
+    restored = set(_recover_all(base, names))
+
     plans: list[tuple[str, Path, Action, str]] = []
     inspected: dict[Path, Fingerprint] = {}
     first_by_dir: dict[Path, Path] = {}
@@ -378,7 +449,12 @@ def install_skill(
             continue
         first_by_dir[key] = link
         inspected[link] = _fingerprint(link)
-        plans.append((name, link, _plan(link, copy=copy, force=force), ""))
+        note = (
+            "put back an interrupted replacement first"
+            if link in restored
+            else ""
+        )
+        plans.append((name, link, _plan(link, copy=copy, force=force), note))
 
     staged: dict[Path, Path] = {}
     try:

@@ -499,6 +499,96 @@ def test_link_repointed_while_staging_is_refused(
     assert link.resolve() == mine
 
 
+def _snapshot(path: Path) -> dict[str, bytes]:
+    return {
+        p.relative_to(path).as_posix(): p.read_bytes()
+        for p in path.rglob("*")
+        if p.is_file()
+    }
+
+
+def test_link_over_link_is_one_atomic_rename(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    old = tmp_path / "old-venv/site-packages/dartwork_mpl/skills" / SKILL_NAME
+    link = tmp_path / ".claude/skills" / SKILL_NAME
+    link.parent.mkdir(parents=True)
+    link.symlink_to(old, target_is_directory=True)
+    calls: list[tuple[Path, Path]] = []
+    real_replace = os.replace
+
+    def record(src: Path, dst: Path) -> None:
+        calls.append((Path(src), Path(dst)))
+        real_replace(src, dst)
+
+    monkeypatch.setattr(skills_module.os, "replace", record)
+    (result,) = install_skill(tmp_path, targets=["claude"])
+    assert result.action == "replaced"
+    assert [dst for _, dst in calls] == [link]  # never moved aside
+    assert _is_link_to_skill(link)
+
+
+def test_interrupt_while_replacing_a_copy_puts_it_back_at_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install_skill(tmp_path, targets=["codex"], copy=True)
+    copy = tmp_path / ".agents/skills" / SKILL_NAME
+    before = _snapshot(copy)
+    real_replace = os.replace
+
+    def interrupt_placing(src: Path, dst: Path) -> None:
+        if Path(dst) == copy and Path(src).name == SKILL_NAME:
+            raise KeyboardInterrupt
+        real_replace(src, dst)
+
+    monkeypatch.setattr(skills_module.os, "replace", interrupt_placing)
+    with pytest.raises(KeyboardInterrupt):
+        install_skill(tmp_path, targets=["codex"])
+    assert not copy.is_symlink()
+    assert _snapshot(copy) == before
+    assert not _leftovers(copy.parent)
+
+
+@pytest.mark.parametrize("next_run", ["install", "path"])
+def test_hard_stop_mid_replacement_is_recovered_on_the_next_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    next_run: str,
+) -> None:
+    """A stop that also defeats the immediate restore is fixed next time."""
+    install_skill(tmp_path, targets=["codex"], copy=True)
+    copy = tmp_path / ".agents/skills" / SKILL_NAME
+    before = _snapshot(copy)
+    real_replace = os.replace
+
+    def stop_hard(src: Path, dst: Path) -> None:
+        if Path(dst) == copy:  # placing the new install or restoring the old
+            raise KeyboardInterrupt
+        real_replace(src, dst)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(skills_module.os, "replace", stop_hard)
+        with pytest.raises(KeyboardInterrupt):
+            install_skill(tmp_path, targets=["codex"])
+    assert not os.path.lexists(copy)
+    stranded = list(copy.parent.glob(".dartwork-mpl-install-*/previous"))
+    assert len(stranded) == 1
+
+    if next_run == "install":
+        (result,) = install_skill(tmp_path, targets=["codex"], copy=True)
+        assert result.action == "unchanged"
+        assert "interrupted" in result.detail
+    else:
+        monkeypatch.chdir(tmp_path)
+        assert main(["path"]) == 0
+        captured = capsys.readouterr()
+        assert captured.out.strip() == str(SKILL)
+        assert "interrupted" in captured.err
+    assert _snapshot(copy) == before
+    assert not _leftovers(copy.parent)
+
+
 def test_failed_staging_changes_nothing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

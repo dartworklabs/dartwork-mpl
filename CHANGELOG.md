@@ -40,9 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `python -m dartwork_mpl.skills install [--claude] [--codex] [--dest DIR]
   [--copy] [--force]` links it into `.claude/skills` (Claude Code) and
   `.agents/skills` (Codex) so it follows upgrades; `... skills path` prints
-  the folder. `--copy` copies record a SHA-256 per file and are never
-  overwritten after local edits without `--force`; replacements are staged
-  and swapped so a failure keeps the previous install. The skill also says
+  the folder. `--copy` copies record an inventory of their entries and are
+  never overwritten after local edits without `--force`, nor when they change
+  during the install. A link is replaced in one atomic rename; an
+  interrupted copy replacement is recovered on the next `install` or `path`
+  run. Linked `.claude`/`.agents` folders may not lead outside `--dest`. The skill also says
   how to use it alongside Claude Code's `/dataviz` skill.
 - `dm.figsize` accepts `"W:H"` ratio strings as its second argument
   (`dm.figsize("13cm", "16:9")`); so do `dm.figsize_grid` and
