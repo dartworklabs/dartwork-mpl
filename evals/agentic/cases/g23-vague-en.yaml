@@ -6,6 +6,7 @@ purpose: unspecified
 held_out: false
 prompt: Make a nice chart of this data.
 data: [gdp_growth.csv]
+auxiliary: [reference_lines]
 oracle:
 - type: series
   group: values

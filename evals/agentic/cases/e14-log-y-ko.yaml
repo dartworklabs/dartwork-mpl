@@ -8,7 +8,7 @@ prompt: y축을 로그 스케일로 바꿔 주세요.
 data: [country_stats.csv]
 base: b12_country_scatter.py
 edit_scope: explicit
-target: [ax*.yscale, ax*.ylim, ax*.ytick.*, ax*.position]
+target: [ax*.yscale, ax*.ylim, ax*.yticks, ax*.ytick.*, ax*.position, ax*.*.pos]
 oracle:
 - type: scale
   group: spec

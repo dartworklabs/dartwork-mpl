@@ -16,6 +16,7 @@ oracle:
   series:
     col: region
   value: revenue
+  layout: stacked
 - type: size
   group: spec
   name: 17 x 9 cm

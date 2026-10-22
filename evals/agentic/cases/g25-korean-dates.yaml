@@ -18,6 +18,7 @@ oracle:
   series:
   - y: 방문자수
     aliases: [방문]
+  artists: [line]
 - type: regex
   group: spec
   name: Korean date ticks

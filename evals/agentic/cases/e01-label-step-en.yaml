@@ -9,6 +9,7 @@ data: [gdp_growth.csv]
 base: b01_gdp_lines.py
 edit_scope: explicit
 target: [ax*.xlabel.fontsize, ax*.ylabel.fontsize]
+auxiliary: [reference_lines]
 oracle:
 - type: fontsize_delta
   group: spec

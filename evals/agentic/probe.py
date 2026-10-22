@@ -39,11 +39,11 @@ from matplotlib.collections import (
     PolyCollection,
     QuadMesh,
 )
-from matplotlib.container import BarContainer
+from matplotlib.container import BarContainer, ErrorbarContainer
 from matplotlib.figure import Figure
 from matplotlib.image import AxesImage
 from matplotlib.legend import Legend
-from matplotlib.patches import Polygon, Rectangle
+from matplotlib.patches import PathPatch, Polygon, Rectangle
 from matplotlib.text import Text
 
 MAX_POINTS = 4000
@@ -155,6 +155,46 @@ def _text_quad(t: Text, renderer) -> np.ndarray:
 
 
 # --------------------------------------------------------------- patches
+def _patch_legend() -> None:
+    """Remember which original artist each legend entry stands for.
+
+    Legends draw proxy handles, so the handle -> label pairs are captured
+    when the legend is built; series identity then does not depend on
+    ``label=`` (e.g. ``ax.legend(handles, labels)`` with ``_nolegend_`` lines).
+    """
+    if getattr(Legend.__init__, "_eval_wrapped", False):
+        return
+    orig_init = Legend.__init__
+
+    def init(self, parent, handles, labels, *args, **kwargs):
+        orig_init(self, parent, handles, labels, *args, **kwargs)
+        self._eval_pairs = [
+            (h, str(lab)) for h, lab in zip(handles, labels, strict=False)
+        ]
+
+    init._eval_wrapped = True
+    Legend.__init__ = init
+
+
+_patch_legend()
+
+
+def _legend_names(fig: Figure) -> dict[int, list[str]]:
+    """id(original artist or container) -> legend texts naming it (visible legends only)."""
+    out: dict[int, list[str]] = {}
+    legends = [ax.get_legend() for ax in fig.get_axes()] + list(fig.legends)
+    for lg in legends:
+        if lg is None or not lg.get_visible():
+            continue
+        for handle, label in getattr(lg, "_eval_pairs", []):
+            targets = [handle]
+            if isinstance(handle, ErrorbarContainer) and handle.lines:
+                targets.append(handle.lines[0])
+            for t in targets:
+                out.setdefault(id(t), []).append(label)
+    return out
+
+
 def _install_patches(use_dm: bool) -> None:
     orig_savefig = Figure.savefig
 
@@ -389,7 +429,70 @@ def _ticks(axis, lo: float, hi: float) -> list:
     return out
 
 
-def _axes_data(ax, i: int, renderer) -> dict:
+def _alpha(artist, color=None) -> float:
+    """Artist alpha times the colour's own alpha (1.0 when unset)."""
+    a = artist.get_alpha()
+    a = 1.0 if a is None else float(a)
+    if color is not None:
+        try:
+            rgba = mcolors.to_rgba_array(color)
+            a *= float(rgba[:, 3].max()) if len(rgba) else 0.0
+        except (ValueError, TypeError):
+            pass
+    return round(a, 4)
+
+
+def _none_style(v) -> bool:
+    return v in (None, "None", "none", "", " ")
+
+
+def _line_visible(ln) -> bool:
+    if not ln.get_visible() or _alpha(ln, ln.get_color()) <= 0:
+        return False
+    stroke = not _none_style(ln.get_linestyle()) and ln.get_linewidth() > 0
+    marks = not _none_style(ln.get_marker()) and ln.get_markersize() > 0
+    return bool(stroke or marks)
+
+
+def _patch_visible(p) -> bool:
+    if not p.get_visible():
+        return False
+    face = _alpha(p, p.get_facecolor()) > 0 and p.get_fill()
+    edge = _alpha(p, p.get_edgecolor()) > 0 and p.get_linewidth() > 0
+    return bool(face or edge)
+
+
+def _coll_visible(c) -> bool:
+    if not c.get_visible():
+        return False
+    sizes = c.get_sizes() if hasattr(c, "get_sizes") else [1]
+    if len(sizes) and float(np.max(sizes)) <= 0:
+        return False
+    face = _alpha(c, c.get_facecolor()) > 0
+    lws = c.get_linewidth()
+    edge = (
+        _alpha(c, c.get_edgecolor()) > 0 and len(lws) and float(np.max(lws)) > 0
+    )
+    return bool(face or edge)
+
+
+def _seg(x0, y0, x1, y1) -> tuple[str, list] | None:
+    if abs(y0 - y1) < 1e-9 and x0 != x1:
+        return "h", [
+            round(float(min(x0, x1)), 6),
+            round(float(max(x0, x1)), 6),
+            round(float(y0), 6),
+        ]
+    if abs(x0 - x1) < 1e-9 and y0 != y1:
+        return "v", [
+            round(float(x0), 6),
+            round(float(min(y0, y1)), 6),
+            round(float(max(y0, y1)), 6),
+        ]
+    return None
+
+
+def _axes_data(ax, i: int, renderer, names: dict[int, list[str]]) -> dict:
     inv = ax.transData.inverted()
     fig_bb = ax.figure.bbox
     d: dict = {
@@ -398,6 +501,7 @@ def _axes_data(ax, i: int, renderer) -> dict:
         "bars": [],
         "scatter": [],
         "polys": [],
+        "paths": [],
         "hsegs": [],
         "vsegs": [],
         "images": [],
@@ -406,6 +510,14 @@ def _axes_data(ax, i: int, renderer) -> dict:
         "xticks": _ticks(ax.xaxis, *ax.get_xlim()),
         "yticks": _ticks(ax.yaxis, *ax.get_ylim()),
     }
+    parts: dict[int, str] = {}
+    for c in ax.containers:
+        if isinstance(c, ErrorbarContainer):
+            data_line, caps, _ = c.lines
+            if data_line is not None:
+                parts[id(data_line)] = "errorbar_data"
+            for cap in caps:
+                parts[id(cap)] = "errorbar_cap"
     for ln in ax.get_lines():
         xy = ln.get_xydata()[:MAX_POINTS]
         ok = np.all(np.isfinite(xy), axis=1)
@@ -413,39 +525,28 @@ def _axes_data(ax, i: int, renderer) -> dict:
         if ok.any():
             ex, ey = ln.get_transform().transform(xy[ok][-1])
             end = [round(ex / fig_bb.width, 4), round(ey / fig_bb.height, 4)]
-        d["lines"].append(
-            {
-                "label": ln.get_label(),
-                "x": _floats(xy[:, 0]),
-                "y": _floats(xy[:, 1]),
-                "color": _hex(ln.get_color()),
-                "lw": round(float(ln.get_linewidth()), 3),
-                "ls": str(ln.get_linestyle()),
-                "marker": str(ln.get_marker()),
-                "visible": bool(ln.get_visible()),
-                "zorder": ln.get_zorder(),
-                "data": bool(ln.get_transform().contains_branch(ax.transData)),
-                "end": end,
-            }
-        )
-        if len(xy) == 2 and np.all(np.isfinite(xy)) and d["lines"][-1]["data"]:
-            (x0, y0), (x1, y1) = xy
-            if abs(y0 - y1) < 1e-12 and x0 != x1:
-                d["hsegs"].append(
-                    [
-                        round(float(min(x0, x1)), 6),
-                        round(float(max(x0, x1)), 6),
-                        round(float(y0), 6),
-                    ]
-                )
-            elif abs(x0 - x1) < 1e-12 and y0 != y1:
-                d["vsegs"].append(
-                    [
-                        round(float(x0), 6),
-                        round(float(min(y0, y1)), 6),
-                        round(float(max(y0, y1)), 6),
-                    ]
-                )
+        rec = {
+            "label": ln.get_label(),
+            "legend": names.get(id(ln), []),
+            "x": _floats(xy[:, 0]),
+            "y": _floats(xy[:, 1]),
+            "color": _hex(ln.get_color()),
+            "alpha": _alpha(ln, ln.get_color()),
+            "lw": round(float(ln.get_linewidth()), 3),
+            "ls": str(ln.get_linestyle()),
+            "marker": str(ln.get_marker()),
+            "ms": round(float(ln.get_markersize()), 3),
+            "visible": _line_visible(ln),
+            "zorder": ln.get_zorder(),
+            "data": bool(ln.get_transform().contains_branch(ax.transData)),
+            "part": parts.get(id(ln)),
+            "end": end,
+        }
+        d["lines"].append(rec)
+        if len(xy) == 2 and np.all(np.isfinite(xy)) and rec["data"]:
+            seg = _seg(*xy[0], *xy[1])
+            if seg:
+                d["hsegs" if seg[0] == "h" else "vsegs"].append(seg[1])
     in_bars = set()
     for c in ax.containers:
         if isinstance(c, BarContainer):
@@ -465,12 +566,14 @@ def _axes_data(ax, i: int, renderer) -> dict:
                 )
             label = c.get_label()
             if (not label or label.startswith("_")) and rects:
-                label = (
-                    rects[0].get_label()
-                )  # ax.hist labels the first patch, not the container
+                label = rects[0].get_label()  # ax.hist labels the first patch
+            legend = names.get(id(c), []) + (
+                names.get(id(rects[0]), []) if rects else []
+            )
             d["bars"].append(
                 {
                     "label": label,
+                    "legend": legend,
                     "orientation": "h" if horiz else "v",
                     "values": _floats(
                         [
@@ -499,16 +602,39 @@ def _axes_data(ax, i: int, renderer) -> dict:
                         [r.get_y() if horiz else r.get_x() for r in rects]
                     ),
                     "colors": [_hex(r.get_facecolor()) for r in rects],
+                    "alpha": _alpha(rects[0], rects[0].get_facecolor())
+                    if rects
+                    else 0.0,
+                    "vis": [_patch_visible(r) for r in rects],
+                    "visible": any(_patch_visible(r) for r in rects),
                     "ext": exts,
                 }
             )
     ax_bb = ax.bbox
     for patch in ax.patches:
-        if (
-            id(patch) in in_bars
-            or not isinstance(patch, (Rectangle, Polygon))
-            or not patch.get_visible()
+        if id(patch) in in_bars or not patch.get_visible():
+            continue
+        if isinstance(patch, PathPatch) or (
+            isinstance(patch, Polygon)
+            and patch.get_transform().contains_branch(ax.transData)
         ):
+            v = inv.transform(
+                patch.get_transform().transform(patch.get_path().vertices)
+            )
+            v = v[np.all(np.isfinite(v), axis=1)]
+            if len(v):
+                d["paths"].append(
+                    {
+                        "bbox": [
+                            round(float(v[:, 0].min()), 6),
+                            round(float(v[:, 1].min()), 6),
+                            round(float(v[:, 0].max()), 6),
+                            round(float(v[:, 1].max()), 6),
+                        ],
+                        "visible": _patch_visible(patch),
+                    }
+                )
+        if not isinstance(patch, (Rectangle, Polygon)):
             continue
         e = patch.get_window_extent(renderer)
         if (
@@ -530,11 +656,14 @@ def _axes_data(ax, i: int, renderer) -> dict:
             d["scatter"].append(
                 {
                     "label": coll.get_label(),
+                    "legend": names.get(id(coll), []),
                     "x": _floats(xy[:, 0]),
                     "y": _floats(xy[:, 1]),
                     "colors": sorted({_hex(c) for c in fc})[:20]
                     if len(fc)
                     else [],
+                    "alpha": _alpha(coll, fc if len(fc) else None),
+                    "visible": _coll_visible(coll),
                 }
             )
         elif isinstance(coll, QuadMesh):
@@ -549,22 +678,10 @@ def _axes_data(ax, i: int, renderer) -> dict:
                     coll.get_transform().transform(np.asarray(seg, dtype=float))
                 )
                 if len(seg) == 2 and np.all(np.isfinite(seg)):
-                    (x0, y0), (x1, y1) = seg
-                    if abs(y0 - y1) < 1e-9 and x0 != x1:
-                        d["hsegs"].append(
-                            [
-                                round(float(min(x0, x1)), 6),
-                                round(float(max(x0, x1)), 6),
-                                round(float(y0), 6),
-                            ]
-                        )
-                    elif abs(x0 - x1) < 1e-9 and y0 != y1:
-                        d["vsegs"].append(
-                            [
-                                round(float(x0), 6),
-                                round(float(min(y0, y1)), 6),
-                                round(float(max(y0, y1)), 6),
-                            ]
+                    found = _seg(*seg[0], *seg[1])
+                    if found:
+                        d["hsegs" if found[0] == "h" else "vsegs"].append(
+                            found[1]
                         )
         elif isinstance(coll, PolyCollection):
             xs, ys = [], []
@@ -575,11 +692,13 @@ def _axes_data(ax, i: int, renderer) -> dict:
             d["polys"].append(
                 {
                     "label": coll.get_label(),
+                    "legend": names.get(id(coll), []),
                     "x": _floats(xs[:MAX_POINTS]),
                     "y": _floats(ys[:MAX_POINTS]),
                     "color": _hex(coll.get_facecolor()[0])
                     if len(coll.get_facecolor())
                     else None,
+                    "visible": _coll_visible(coll),
                 }
             )
     for im in ax.images:
@@ -614,28 +733,67 @@ def _r4(v) -> float:
     return float(f"{v:.4g}")
 
 
-def _text_props(p: dict, key: str, t: Text) -> None:
+def _text_props(p: dict, key: str, t: Text, renderer, fig_bb) -> None:
+    """Content, style and placement of one text (placement in figure fraction)."""
     p[f"{key}.text"] = t.get_text()
     p[f"{key}.fontsize"] = round(t.get_fontsize(), 3)
     p[f"{key}.fontweight"] = str(t.get_fontweight())
     p[f"{key}.color"] = _hex(t.get_color())
+    p[f"{key}.alpha"] = _alpha(t, t.get_color())
+    p[f"{key}.rotation"] = round(float(t.get_rotation()), 2)
+    bb = t.get_window_extent(renderer)
+    p[f"{key}.pos"] = [
+        round((bb.x0 + bb.x1) / 2 / fig_bb.width, 3),
+        round((bb.y0 + bb.y1) / 2 / fig_bb.height, 3),
+    ]
 
 
-def _props(fig: Figure, axes: list, data: list[dict], legends: dict) -> dict:
+def _keyname(s: str) -> str:
+    return " ".join(s.split())[:40].replace(".", "_") or "#"
+
+
+def _props(
+    fig: Figure, axes: list, data: list[dict], legends: dict, renderer
+) -> dict:
     """Flat property map used for edit-case preservation diffs."""
+    fig_bb = fig.bbox
     p: dict = {
         "figure.size_in": [round(v, 3) for v in fig.get_size_inches()],
         "figure.n_axes": len(axes),
     }
     st = getattr(fig, "_suptitle", None)
     if st is not None and st.get_text():
-        _text_props(p, "figure.suptitle", st)
+        _text_props(p, "figure.suptitle", st, renderer, fig_bb)
+    seen: Counter[str] = Counter()
+
+    def unique(key: str) -> str:
+        seen[key] += 1
+        return key if seen[key] == 1 else f"{key}#{seen[key]}"
+
+    for t in fig.texts:
+        if t.get_visible() and t.get_text().strip():
+            _text_props(
+                p,
+                unique(f"figure.text:{_keyname(t.get_text())}"),
+                t,
+                renderer,
+                fig_bb,
+            )
+    for key, lg in legends.items():
+        k = key if key.startswith("fig") else key.replace("ax", "ax", 1)
+        p[f"{k}.legend.loc"] = lg["loc"]
+        p[f"{k}.legend.texts"] = lg["texts"]
+        p[f"{k}.legend.fontsize"] = lg["fontsize"]
+        p[f"{k}.legend.bbox"] = [round(v, 3) for v in lg["bbox"]]
     for i, ax in enumerate(axes):
         k = f"ax{i}"
         p[f"{k}.position"] = [round(v, 3) for v in ax.get_position().bounds]
+        p[f"{k}.visible"] = bool(ax.get_visible() and ax.axison)
         p[f"{k}.xscale"], p[f"{k}.yscale"] = ax.get_xscale(), ax.get_yscale()
         p[f"{k}.xlim"] = [_r4(v) for v in ax.get_xlim()]
         p[f"{k}.ylim"] = [_r4(v) for v in ax.get_ylim()]
+        p[f"{k}.xticks"] = [[_r4(loc), txt] for loc, txt in data[i]["xticks"]]
+        p[f"{k}.yticks"] = [[_r4(loc), txt] for loc, txt in data[i]["yticks"]]
         for side, sp in ax.spines.items():
             p[f"{k}.spine.{side}"] = [
                 bool(sp.get_visible()),
@@ -649,8 +807,8 @@ def _props(fig: Figure, axes: list, data: list[dict], legends: dict) -> dict:
             ("xlabel", ax.xaxis.label),
             ("ylabel", ax.yaxis.label),
         ):
-            if t.get_text():
-                _text_props(p, f"{k}.{role}", t)
+            if t.get_text() and t.get_visible():
+                _text_props(p, f"{k}.{role}", t, renderer, fig_bb)
         for axis, role in ((ax.xaxis, "xtick"), (ax.yaxis, "ytick")):
             labels = [
                 t
@@ -658,14 +816,20 @@ def _props(fig: Figure, axes: list, data: list[dict], legends: dict) -> dict:
                 if t.get_visible() and t.get_text()
             ]
             if labels:
-                p[f"{k}.{role}.fontsize"] = round(labels[0].get_fontsize(), 3)
-                p[f"{k}.{role}.color"] = _hex(labels[0].get_color())
-        if f"ax{i}" in legends:
-            lg = legends[f"ax{i}"]
-            p[f"{k}.legend.loc"] = lg["loc"]
-            p[f"{k}.legend.texts"] = lg["texts"]
-            p[f"{k}.legend.fontsize"] = lg["fontsize"]
-        seen: Counter[str] = Counter()
+                t = labels[0]
+                p[f"{k}.{role}.fontsize"] = round(t.get_fontsize(), 3)
+                p[f"{k}.{role}.color"] = _hex(t.get_color())
+                p[f"{k}.{role}.fontweight"] = str(t.get_fontweight())
+                p[f"{k}.{role}.rotation"] = round(float(t.get_rotation()), 2)
+        for t in ax.texts:
+            if t.get_visible() and t.get_text().strip():
+                _text_props(
+                    p,
+                    unique(f"{k}.text:{_keyname(t.get_text())}"),
+                    t,
+                    renderer,
+                    fig_bb,
+                )
         for kind, items in (
             ("line", data[i]["lines"]),
             ("bars", data[i]["bars"]),
@@ -677,22 +841,26 @@ def _props(fig: Figure, axes: list, data: list[dict], legends: dict) -> dict:
                     if a["label"] and not a["label"].startswith("_")
                     else f"#{j}"
                 )
-                seen[f"{kind}.{name}"] += 1
-                if seen[f"{kind}.{name}"] > 1:
-                    name = f"{name}#{seen[f'{kind}.{name}']}"
-                q = f"{k}.{kind}.{name.replace('.', '_')}"
+                q = unique(f"{k}.{kind}.{name.replace('.', '_')}")
+                p[f"{q}.visible"] = a["visible"]
+                p[f"{q}.alpha"] = a["alpha"]
                 if kind == "line":
-                    (
-                        p[f"{q}.color"],
-                        p[f"{q}.lw"],
-                        p[f"{q}.ls"],
-                        p[f"{q}.marker"],
-                    ) = a["color"], a["lw"], a["ls"], a["marker"]
+                    p[f"{q}.color"], p[f"{q}.lw"], p[f"{q}.ls"] = (
+                        a["color"],
+                        a["lw"],
+                        a["ls"],
+                    )
+                    p[f"{q}.marker"], p[f"{q}.ms"] = a["marker"], a["ms"]
+                    p[f"{q}.zorder"] = a["zorder"]
                     p[f"{q}.data"] = _digest(a["x"]) + ":" + _digest(a["y"])
                 elif kind == "bars":
                     p[f"{q}.colors"] = a["colors"]
                     p[f"{q}.data"] = (
-                        _digest(a["pos"]) + ":" + _digest(a["values"])
+                        _digest(a["pos"])
+                        + ":"
+                        + _digest(a["values"])
+                        + ":"
+                        + _digest(a["base"])
                     )
                 else:
                     p[f"{q}.colors"] = a["colors"]
@@ -744,7 +912,8 @@ def snapshot(fig: Figure, save: dict | None) -> dict:
                 "clip_on": bool(t.get_clip_on()),
             }
         )
-    data = [_axes_data(ax, i, renderer) for i, ax in enumerate(axes)]
+    names = _legend_names(fig)
+    data = [_axes_data(ax, i, renderer, names) for i, ax in enumerate(axes)]
     legends: dict = {}
     for i, ax in enumerate(axes):
         lg = ax.get_legend()
@@ -813,7 +982,7 @@ def snapshot(fig: Figure, save: dict | None) -> dict:
         "axes": meta,
         "data": data,
         "legends": legends,
-        "props": _props(fig, axes, data, legends),
+        "props": _props(fig, axes, data, legends, renderer),
         "dm_findings": findings,
     }
 

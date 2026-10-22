@@ -6,6 +6,7 @@ purpose: paper
 held_out: false
 prompt: Scatter leaf width against leaf length, coloured by species, with a straight-line fit for each species.
 data: [plants.csv]
+auxiliary: [fit_lines]
 oracle:
 - type: points
   group: values

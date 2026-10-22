@@ -8,7 +8,7 @@ prompt: Move the legend outside the plot area, to the right.
 data: [plants.csv]
 base: b04_scatter_species.py
 edit_scope: explicit
-target: [ax*.legend.loc, ax*.position]
+target: [ax*.legend.loc, ax*.legend.bbox, ax*.position, ax*.xticks, ax*.yticks, ax*.*.pos]
 oracle:
 - type: legend
   group: spec

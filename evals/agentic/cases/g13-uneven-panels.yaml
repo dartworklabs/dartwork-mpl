@@ -21,6 +21,7 @@ oracle:
     aliases: [output]
   - y: defect_rate_pct
     aliases: [defect]
+  panels: distinct
 - type: panel_ratio
   group: spec
   name: 70/30 heights

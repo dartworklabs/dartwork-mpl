@@ -8,7 +8,8 @@ prompt: Highlight Korea and make the other countries grey.
 data: [gdp_growth.csv]
 base: b01_gdp_lines.py
 edit_scope: explicit
-target: [ax*.line.*.color, ax*.line.*.lw, ax*.line.*.marker]
+target: [ax*.line.*.color, ax*.line.*.lw, ax*.line.*.marker, ax*.line.*.ms, ax*.line.*.alpha, ax*.line.*.zorder]
+auxiliary: [reference_lines]
 oracle:
 - type: highlight
   group: spec

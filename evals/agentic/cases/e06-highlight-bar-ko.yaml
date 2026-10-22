@@ -8,7 +8,7 @@ prompt: 한국 막대만 강조하고 나머지 나라 막대는 회색으로 �
 data: [gdp_growth.csv]
 base: b05_country_barh.py
 edit_scope: explicit
-target: [ax*.bars.*.colors]
+target: [ax*.bars.*.colors, ax*.bars.*.alpha]
 oracle:
 - type: highlight
   group: spec

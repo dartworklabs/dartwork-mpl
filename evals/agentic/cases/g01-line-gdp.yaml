@@ -6,6 +6,7 @@ purpose: report
 held_out: false
 prompt: Plot real GDP growth for all five countries from 2012 to 2023 as a line chart.
 data: [gdp_growth.csv]
+auxiliary: [reference_lines]
 oracle:
 - type: series
   group: values
@@ -26,3 +27,4 @@ oracle:
     aliases: [Germany, 독일]
   - y: France
     aliases: [France, 프랑스]
+  artists: [line]

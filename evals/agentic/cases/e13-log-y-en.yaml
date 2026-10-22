@@ -8,7 +8,7 @@ prompt: Use a log scale for the y axis.
 data: [user_growth.csv]
 base: b11_user_growth.py
 edit_scope: explicit
-target: [ax*.yscale, ax*.ylim, ax*.ytick.*, ax*.position]
+target: [ax*.yscale, ax*.ylim, ax*.yticks, ax*.ytick.*, ax*.position, ax*.legend.bbox, ax*.*.pos]
 oracle:
 - type: scale
   group: spec

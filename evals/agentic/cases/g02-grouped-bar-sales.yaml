@@ -17,3 +17,4 @@ oracle:
     col: region
   value: revenue
   orientation: v
+  layout: grouped

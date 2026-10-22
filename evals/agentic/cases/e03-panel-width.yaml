@@ -8,7 +8,7 @@ prompt: Make the second panel twice as wide as the first one.
 data: [energy_mix.csv]
 base: b03_two_panel.py
 edit_scope: explicit
-target: [ax*.position, ax*.legend.loc, ax*.xlim, ax*.ylim]
+target: [ax*.position, ax*.legend.loc, ax*.legend.bbox, ax*.xlim, ax*.ylim, ax*.xticks, ax*.yticks, ax*.*.pos]
 oracle:
 - type: panel_ratio
   group: spec
@@ -36,3 +36,17 @@ oracle:
   - y: wind_solar
     aliases: [wind, solar, 풍력, 태양]
   artists: [line]
+- type: bars
+  group: values
+  name: 2023 mix bars
+  file: energy_mix.csv
+  columns: [coal, gas, nuclear, hydro, wind_solar]
+  aliases:
+    coal: [coal, 석탄]
+    gas: [gas, 가스]
+    nuclear: [nuclear, 원자력]
+    hydro: [hydro, 수력]
+    wind_solar: [wind, solar, 풍력, 태양]
+  where:
+    year: 2023
+  orientation: h

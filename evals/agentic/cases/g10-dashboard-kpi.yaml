@@ -24,6 +24,7 @@ oracle:
     aliases: [churn]
   - y: nps
     aliases: [NPS, net promoter]
+  panels: distinct
 - type: grid
   group: spec
   name: 2 x 2 layout

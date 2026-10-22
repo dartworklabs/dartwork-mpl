@@ -129,6 +129,7 @@ def defects(probe: dict) -> dict:
         or lg["cover"]["poly_frac"] > 0.02
     ]
     dups = _duplicates(texts)
+    decimals = meaningless_decimals(texts)
     counts = {
         "text_outside": len(outside),
         "text_clipped": len(clipped),
@@ -136,6 +137,7 @@ def defects(probe: dict) -> dict:
         "legend_covers_data": len(cover),
         "duplicate_text": len(dups),
         "missing_glyphs": 1 if probe.get("missing_glyphs") else 0,
+        "meaningless_decimals": len(decimals),
     }
     counts["total"] = sum(counts.values())
     details = {
@@ -145,8 +147,54 @@ def defects(probe: dict) -> dict:
         "legend_covers_data": cover,
         "duplicate_text": dups,
         "missing_glyphs": (probe.get("missing_glyphs") or [])[:5],
+        "meaningless_decimals": decimals,
     }
     return {"counts": counts, "details": details, "bbox_tight": tight}
+
+
+# A plain number with an optional currency prefix and a unit/scale suffix
+# (k, M, %, per mille, degrees, Korean units and counters, x, times).
+_NUMBER = re.compile(
+    "^[\\s$\u20ac\u20a9\u00a3]*([+\\-\u2212]?\\d[\\d,]*(?:\\.(\\d+))?)\\s*"
+    "(?:[kKMBGT]|%|\u2030|\u00b0[CF]?|\uc6d0|\uc5b5|\ub9cc|\ucc9c|\uc870|"
+    "\uba85|\uac74|\uac1c|x|\u00d7)?\\s*$"
+)
+
+
+def _parse_number(s: str) -> tuple[float, str] | None:
+    """(value, decimal digits) for a plain numeric label, else None."""
+    m = _NUMBER.match(s.strip())
+    if not m:
+        return None
+    value = float(m.group(1).replace(",", "").replace("\u2212", "-"))
+    return value, m.group(2) or ""
+
+
+def meaningless_decimals(texts: list[dict]) -> list[str]:
+    """Integer-valued numeric labels rendered with trailing zeros (200.0, 1.0k).
+
+    Checked per axis tick set and per axes' value labels: a group is flagged
+    only when every numeric label in it is integer-valued and at least one
+    shows a zero-only decimal part. Mixed steps (17.5, 20.0, 22.5) are fine.
+    """
+    groups: dict[str, list[tuple[float, str, str]]] = {}
+    for t in texts:
+        if t["role"] in ("xtick", "ytick"):
+            name = f"ax{t['ax']} {t['role'][0]} ticks"
+        elif t["role"] in ("text", "annotation") and t["ax"] is not None:
+            name = f"ax{t['ax']} value labels"
+        else:
+            continue
+        parsed = _parse_number(t["s"])
+        if parsed:
+            groups.setdefault(name, []).append((*parsed, t["s"].strip()))
+    out = []
+    for name, items in groups.items():
+        integral = all(float(v).is_integer() for v, _, _ in items)
+        padded = [s for _, dec, s in items if dec and set(dec) == {"0"}]
+        if integral and padded:
+            out.append(f"{name}: {', '.join(padded[:4])}")
+    return out
 
 
 def _duplicates(texts: list[dict]) -> list[str]:
@@ -175,26 +223,45 @@ def _duplicates(texts: list[dict]) -> list[str]:
 
 
 # ------------------------------------------------------------ preservation
+PLACEMENT_KEYS = (".position", ".pos", ".bbox")
+
+
 def _same(key: str, a, b) -> bool:
     if isinstance(a, list) and isinstance(b, list):
         return len(a) == len(b) and all(
             _same(key, x, y) for x, y in zip(a, b, strict=True)
         )
-    if isinstance(a, float) and isinstance(b, float):
-        if key.endswith(".position"):
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+        if isinstance(a, bool) or isinstance(b, bool):
+            return a == b
+        if key.endswith(PLACEMENT_KEYS):
             return abs(a - b) <= POSITION_TOL
         return math.isclose(a, b, rel_tol=1e-3, abs_tol=1e-3)
     return a == b
 
 
-def preservation(base: dict, edit: dict, scope: str, target: list[str]) -> dict:
+def preservation(
+    base: dict | None, edit: dict | None, scope: str, target: list[str]
+) -> dict:
     """Diff the flat property maps of the base and edited figures.
 
-    ``explicit`` edits: every base property no ``target`` pattern matches must be
-    unchanged (within tolerance), so ``ok`` is a hard result. ``broad`` edits:
-    the diff is reported only (``ok`` is None); data preservation is enforced by
-    the oracle's data contracts instead.
+    ``explicit`` edits: every base property no ``target`` pattern matches must
+    be unchanged (placement keys within POSITION_TOL), and no new non-target
+    property may appear (an added line, text or legend fails). A missing base
+    or edited snapshot fails. ``broad`` edits: the diff is reported only
+    (``ok`` is None); data preservation is enforced by the data contracts.
     """
+    if not base or not edit:
+        return {
+            "scope": scope,
+            "checked": 0,
+            "changed": [],
+            "changed_n": 0,
+            "added": [],
+            "rate": None,
+            "ok": False if scope == "explicit" else None,
+            "error": "missing base or edited snapshot",
+        }
 
     def is_target(k: str) -> bool:
         return any(fnmatch.fnmatchcase(k, p) for p in target)
@@ -210,6 +277,7 @@ def preservation(base: dict, edit: dict, scope: str, target: list[str]) -> dict:
         "changed": changed[:60],
         "changed_n": len(changed),
         "added": added[:30],
+        "added_n": len(added),
         "rate": round(1 - len(changed) / len(keys), 4) if keys else None,
-        "ok": (not changed) if scope == "explicit" else None,
+        "ok": (not changed and not added) if scope == "explicit" else None,
     }

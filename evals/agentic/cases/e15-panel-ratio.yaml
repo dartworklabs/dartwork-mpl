@@ -8,7 +8,7 @@ prompt: 'Make the top panel taller: split the height 70/30 instead of 50/50.'
 data: [plant_output.csv]
 base: b13_stacked_panels.py
 edit_scope: explicit
-target: [ax*.position, ax*.ylim, ax*.ytick.*]
+target: [ax*.position, ax*.ylim, ax*.yticks, ax*.ytick.*, ax*.*.pos]
 oracle:
 - type: panel_ratio
   group: spec

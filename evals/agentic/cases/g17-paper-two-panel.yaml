@@ -7,6 +7,7 @@ held_out: false
 prompt: 'For a paper (double-column figure): panel (a) shows GDP growth lines for the five countries, and panel
   (b) shows each country''s average growth over 2012-2023 as bars. Label the panels a and b.'
 data: [gdp_growth.csv]
+auxiliary: [reference_lines]
 oracle:
 - type: series
   group: values
