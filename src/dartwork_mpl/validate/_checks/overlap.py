@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
+from ._detail import wire
 from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
@@ -12,6 +13,14 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
 __all__ = ["check_overlap"]
+
+
+class OverlapDetail(TypedDict):
+    """Two labels of one Axes overlap with intersection-over-union ``iou``."""
+
+    label_a: str
+    label_b: str
+    iou: float
 
 
 @register_check("OVERLAP", order=20)
@@ -60,11 +69,13 @@ def check_overlap(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
                             severity=Severity.WARNING,
                             check_id="OVERLAP",
                             message=f"Labels {name_a!r} and {name_b!r} overlap (IoU={iou:.2f})",
-                            detail={
-                                "label_a": name_a,
-                                "label_b": name_b,
-                                "iou": round(iou, 2),
-                            },
+                            detail=wire(
+                                OverlapDetail(
+                                    label_a=name_a,
+                                    label_b=name_b,
+                                    iou=round(iou, 2),
+                                )
+                            ),
                         )
                     )
 

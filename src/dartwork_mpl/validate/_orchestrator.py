@@ -3,35 +3,75 @@
 from __future__ import annotations
 
 import sys
-from functools import partial
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, TypeAlias, TypedDict
 
 from .._figure_geometry import get_renderer
-from ._checks import registered_checks
+from ._checks import RegisteredCheck, registered_checks
+from ._checks._detail import wire
 from ._types import BBOX_ERRORS, Severity, VisualWarning
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
+    from matplotlib.backend_bases import RendererBase
     from matplotlib.figure import Figure
 
 __all__ = ["validate_figure"]
 
 
+@dataclass(frozen=True)
+class CheckCompleted:
+    """A check ran to the end; ``warnings`` may be empty (a clean result)."""
+
+    warnings: list[VisualWarning]
+
+
+@dataclass(frozen=True)
+class CheckFailed:
+    """A tolerated bbox error stopped the check; the figure is not proven clean."""
+
+    check_id: str
+
+
+CheckOutcome: TypeAlias = CheckCompleted | CheckFailed
+
+
+class CheckFailedDetail(TypedDict):
+    """Wire detail of a ``CHECK_FAILED`` warning: the check that could not run."""
+
+    check_id: str
+
+
 def _run_check_safely(
-    check_fn: Callable[[], list[VisualWarning]],
-) -> list[VisualWarning] | None:
-    """Run one check, returning its warnings or ``None`` if it errored.
+    check: RegisteredCheck, fig: Figure, renderer: RendererBase
+) -> CheckOutcome:
+    """Run one check as ``fn(fig, renderer)``; a bbox error is ``CheckFailed``.
 
     Isolating the ``try`` here (rather than inside the orchestration
     loop) keeps a failing check from crashing the save pipeline while
     still letting the caller distinguish "ran clean" from "could not
-    run" — the latter must never be reported as a clean figure.
+    run" — the latter must never be reported as a clean figure. Any
+    other exception is a defect and propagates.
     """
     try:
-        return check_fn()
+        return CheckCompleted(check.fn(fig, renderer))
     except BBOX_ERRORS:
-        return None
+        return CheckFailed(check.check_id)
+
+
+def _outcome_warnings(outcome: CheckOutcome) -> list[VisualWarning]:
+    """The public warnings for one outcome; a failure becomes ``CHECK_FAILED``."""
+    match outcome:
+        case CheckCompleted(warnings):
+            return warnings
+        case CheckFailed(check_id):
+            return [
+                VisualWarning(
+                    Severity.WARNING,
+                    "CHECK_FAILED",
+                    f"Check {check_id} could not run; validation is incomplete.",
+                    wire(CheckFailedDetail(check_id=check_id)),
+                )
+            ]
 
 
 def validate_figure(
@@ -89,18 +129,9 @@ def validate_figure(
         # failed check either — a check that raises must not let the
         # figure be reported "clean" as if it had run and found nothing.
         # Every check is invoked uniformly as ``fn(fig, renderer)``.
-        result = _run_check_safely(partial(check.fn, fig, renderer))
-        if result is None:
-            warnings.append(
-                VisualWarning(
-                    Severity.WARNING,
-                    "CHECK_FAILED",
-                    f"Check {check.check_id} could not run; validation is incomplete.",
-                    {"check_id": check.check_id},
-                )
-            )
-        else:
-            warnings.extend(result)
+        warnings.extend(
+            _outcome_warnings(_run_check_safely(check, fig, renderer))
+        )
 
     # Structured stdout output for agent consumption.
     if not quiet:

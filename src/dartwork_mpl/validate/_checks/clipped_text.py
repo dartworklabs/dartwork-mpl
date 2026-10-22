@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
+from ._detail import wire
 from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
@@ -12,6 +13,14 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
 __all__ = ["check_clipped_text"]
+
+
+class ClippedTextDetail(TypedDict):
+    """A text artist is clipped by its Axes by ``margin_px`` pixels."""
+
+    text: str
+    margin_px: float
+
 
 # A label is clipped only when its bbox extends *past* the canvas edge
 # (negative margin) by more than this tolerance. A label sitting flush
@@ -122,10 +131,11 @@ def check_clipped_text(
                         f"Text {label!r} extends past the canvas edge "
                         f"(margin: {margin:.1f}px)"
                     ),
-                    detail={
-                        "text": txt.get_text(),
-                        "margin_px": round(margin, 1),
-                    },
+                    detail=wire(
+                        ClippedTextDetail(
+                            text=txt.get_text(), margin_px=round(margin, 1)
+                        )
+                    ),
                 )
             )
     return warnings

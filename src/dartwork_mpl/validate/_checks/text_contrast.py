@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass, replace
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import matplotlib.colors as mcolors
 from matplotlib.text import Text
 
 from ..._colors.contrast import contrast_ratio as _contrast_ratio
 from .._types import BBOX_ERRORS, Severity, VisualWarning
+from ._detail import wire
 from ._registry import register_check
 
 if TYPE_CHECKING:
@@ -34,21 +35,46 @@ _BOLD_WEIGHTS = frozenset(
 _RGBA = tuple[float, float, float, float]
 
 
-@dataclass
+class TextContrastDetail(TypedDict):
+    """Texts sharing one colour pair fall below the WCAG AA ``threshold``."""
+
+    ratio: float
+    threshold: float
+    minimum_threshold: float
+    sample: str
+    samples: list[str]
+    count: int
+    text_color: str
+    background_color: str
+    large_text: bool
+    omitted_groups: int
+
+
+@dataclass(frozen=True)
 class _ContrastGroup:
+    """Texts sharing (severity, text colour, background, threshold).
+
+    The contrast facts are those of the first text seen; ``samples`` holds
+    at most ``_MAX_SAMPLES_PER_GROUP`` of the ``count`` texts.
+    """
+
     severity: Severity
     ratio: float
     threshold: float
     text_hex: str
     background_hex: str
     large_text: bool
-    samples: list[str] = field(default_factory=list)
+    samples: tuple[str, ...] = ()
     count: int = 0
 
-    def add_sample(self, sample: str) -> None:
-        self.count += 1
-        if len(self.samples) < _MAX_SAMPLES_PER_GROUP:
-            self.samples.append(sample)
+    def with_sample(self, sample: str) -> _ContrastGroup:
+        """Count one more text, keeping its sample while there is room."""
+        samples = (
+            (*self.samples, sample)
+            if len(self.samples) < _MAX_SAMPLES_PER_GROUP
+            else self.samples
+        )
+        return replace(self, samples=samples, count=self.count + 1)
 
 
 def _rgba(color: Any) -> _RGBA | None:
@@ -259,8 +285,7 @@ def check_text_contrast(
                 background_hex=bg_hex,
                 large_text=large_text,
             )
-            groups[key] = group
-        group.add_sample(_sample(text.get_text()))
+        groups[key] = group.with_sample(_sample(text.get_text()))
 
     warnings: list[VisualWarning] = []
     total_groups = len(groups)
@@ -277,18 +302,20 @@ def check_text_contrast(
                     f"{group.threshold:.1f}:1 AA threshold for {scope}"
                     f"{extra} (sample: {sample!r})"
                 ),
-                detail={
-                    "ratio": round(group.ratio, 2),
-                    "threshold": group.threshold,
-                    "minimum_threshold": _LARGE_AA_THRESHOLD,
-                    "sample": sample,
-                    "samples": group.samples,
-                    "count": group.count,
-                    "text_color": group.text_hex,
-                    "background_color": group.background_hex,
-                    "large_text": group.large_text,
-                    "omitted_groups": max(0, total_groups - _MAX_GROUPS),
-                },
+                detail=wire(
+                    TextContrastDetail(
+                        ratio=round(group.ratio, 2),
+                        threshold=group.threshold,
+                        minimum_threshold=_LARGE_AA_THRESHOLD,
+                        sample=sample,
+                        samples=list(group.samples),
+                        count=group.count,
+                        text_color=group.text_hex,
+                        background_color=group.background_hex,
+                        large_text=group.large_text,
+                        omitted_groups=max(0, total_groups - _MAX_GROUPS),
+                    )
+                ),
             )
         )
 

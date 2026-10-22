@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
+from ._detail import wire
 from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
@@ -12,6 +13,29 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
 __all__ = ["check_legend_overflow"]
+
+
+class LegendAreaDetail(TypedDict):
+    """An Axes legend covers ``ratio`` of its Axes, above ``threshold``."""
+
+    axes_index: int
+    ratio: float
+    threshold: float
+
+
+class LegendSpillDetail(TypedDict):
+    """An Axes legend spills ``overflow_px`` past the figure."""
+
+    axes_index: int
+    overflow_px: float
+
+
+class FigureLegendSpillDetail(TypedDict):
+    """A figure legend spills past the figure; it belongs to no Axes."""
+
+    axes_index: None
+    overflow_px: float
+
 
 _THRESHOLD = 0.30  # 30% of axes area
 
@@ -72,11 +96,13 @@ def check_legend_overflow(
                         f"Legend occupies {ratio:.1%} of axes[{i}] area "
                         f"(threshold: {_THRESHOLD:.0%})"
                     ),
-                    detail={
-                        "axes_index": i,
-                        "ratio": round(ratio, 3),
-                        "threshold": _THRESHOLD,
-                    },
+                    detail=wire(
+                        LegendAreaDetail(
+                            axes_index=i,
+                            ratio=round(ratio, 3),
+                            threshold=_THRESHOLD,
+                        )
+                    ),
                 )
             )
         else:
@@ -91,10 +117,11 @@ def check_legend_overflow(
                             f"past the figure edge (anchored outside "
                             f"the axes)"
                         ),
-                        detail={
-                            "axes_index": i,
-                            "overflow_px": round(spill, 1),
-                        },
+                        detail=wire(
+                            LegendSpillDetail(
+                                axes_index=i, overflow_px=round(spill, 1)
+                            )
+                        ),
                     )
                 )
 
@@ -117,7 +144,11 @@ def check_legend_overflow(
                         f"Figure legend extends {spill:.0f}px past the "
                         f"figure edge"
                     ),
-                    detail={"axes_index": None, "overflow_px": round(spill, 1)},
+                    detail=wire(
+                        FigureLegendSpillDetail(
+                            axes_index=None, overflow_px=round(spill, 1)
+                        )
+                    ),
                 )
             )
 

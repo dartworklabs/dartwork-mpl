@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, TypedDict
 from matplotlib.text import Text
 
 from .._types import Severity, VisualWarning
+from ._detail import wire
 from ._registry import register_check
 
 if TYPE_CHECKING:
@@ -25,6 +26,17 @@ _SAMPLE_CHARS = 40
 class _FontSample(TypedDict):
     sample: str
     size_pt: float
+
+
+class MinFontSizeDetail(TypedDict):
+    """``count`` texts are below ``min_pt``; the first is ``size_pt``."""
+
+    size_pt: float
+    min_pt: float
+    sample: str
+    samples: list[_FontSample]
+    count: int
+    omitted: int
 
 
 def _sample(value: str) -> str:
@@ -77,13 +89,15 @@ def check_min_font_size(
                 f"{_MIN_PT:.1f} pt minimum{extra} "
                 f"(sample: {first['sample']!r})"
             ),
-            detail={
-                "size_pt": first["size_pt"],
-                "min_pt": _MIN_PT,
-                "sample": first["sample"],
-                "samples": samples,
-                "count": count,
-                "omitted": max(0, count - len(samples)),
-            },
+            detail=wire(
+                MinFontSizeDetail(
+                    size_pt=first["size_pt"],
+                    min_pt=_MIN_PT,
+                    sample=first["sample"],
+                    samples=samples,
+                    count=count,
+                    omitted=max(0, count - len(samples)),
+                )
+            ),
         )
     ]

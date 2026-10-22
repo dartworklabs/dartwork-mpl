@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 import matplotlib.colors as mcolors
 
 from .._types import Severity, VisualWarning
+from ._detail import wire
 from ._luminance import _rel_lum
 from ._registry import register_check
 
@@ -38,6 +39,18 @@ class _Collision(TypedDict):
     delta_y: float
     delta_e_ok: float
     delta_l: float
+
+
+class GrayscaleSafetyDetail(TypedDict):
+    """``count`` colour pairs collide in grayscale; up to six are listed."""
+
+    delta_y_threshold: float
+    delta_l_threshold: float
+    metric_model: str
+    alpha_policy: str
+    pairs: list[_Collision]
+    count: int
+    omitted: int
 
 
 def _rgba(color: Any) -> _RGBA | None:
@@ -181,18 +194,20 @@ def check_grayscale_safety(
                 "compositing found source-RGB pairs below its ΔY threshold; "
                 f"inspect ΔEOK separation: {pair_text}"
             ),
-            detail={
-                "delta_y_threshold": _DELTA_Y,
-                # Deprecated WCAG compatibility alias; do not reinterpret.
-                "delta_l_threshold": _DELTA_L,
-                "metric_model": "project_modeled_relative_y_srgb_d65",
-                "alpha_policy": (
-                    "ignore_zero_alpha_compare_positive_alpha_source_rgb_"
-                    "before_compositing"
-                ),
-                "pairs": shown,
-                "count": len(collisions),
-                "omitted": omitted,
-            },
+            detail=wire(
+                GrayscaleSafetyDetail(
+                    delta_y_threshold=_DELTA_Y,
+                    # Deprecated WCAG compatibility alias; do not reinterpret.
+                    delta_l_threshold=_DELTA_L,
+                    metric_model="project_modeled_relative_y_srgb_d65",
+                    alpha_policy=(
+                        "ignore_zero_alpha_compare_positive_alpha_source_rgb_"
+                        "before_compositing"
+                    ),
+                    pairs=shown,
+                    count=len(collisions),
+                    omitted=omitted,
+                )
+            ),
         )
     ]
