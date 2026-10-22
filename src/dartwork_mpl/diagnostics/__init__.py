@@ -9,8 +9,9 @@ dartwork-mpl assets:
 - :func:`plot_fonts` — render registered font families with weight
   spectrum and pangram samples.
 
-The implementation is split across ``_colormaps`` / ``_colors`` /
-``_fonts`` submodules (#235).
+This package is the public entry point: the colour diagnostics live in
+the colour slice (``dartwork_mpl._colors.diagnostics``) and are
+re-exported here; the font preview lives in ``_fonts``.
 
 These functions used to live in the ``dartwork_mpl.asset_viz``
 subpackage; that import path was removed in 0.5.4.
@@ -18,13 +19,9 @@ subpackage; that import path was removed in 0.5.4.
 
 from __future__ import annotations
 
-from ._colormaps import classify_cmap, render_cmap_catalog
-
-# Re-exported for backwards compatibility: tests and a few callers import
-# this private swatch-grid helper from ``dartwork_mpl.diagnostics``
-# directly (it predates the package split, #235).
-from ._colors import (
-    _plot_single_library,  # noqa: F401  (re-export)
+from .._colors.diagnostics import (
+    classify_cmap,
+    render_cmap_catalog,
     render_color_catalog,
 )
 from ._fonts import plot_fonts

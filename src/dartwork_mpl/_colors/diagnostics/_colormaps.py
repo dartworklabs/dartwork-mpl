@@ -10,13 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
-from .._colors.catalog import (
-    CYCLIC,
-    DIVERGING,
-    MULTI_HUE,
-    QUALITATIVE,
-    SEQUENTIAL,
-)
+from ..catalog import CYCLIC, DIVERGING, MULTI_HUE, QUALITATIVE, SEQUENTIAL
 
 if TYPE_CHECKING:
     from matplotlib.colors import Colormap

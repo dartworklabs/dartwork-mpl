@@ -196,7 +196,7 @@ def _load_colors() -> None:
     # code in the same process may use ``color="xkcd:..."``; mutating the
     # process-global mapping to declutter our own galleries would break
     # that unrelated code. The colour galleries instead filter ``xkcd:``
-    # at display time (see diagnostics/_colors.py).
+    # at display time (see _colors/diagnostics/_colors.py).
 
 
 _loaded: bool = False

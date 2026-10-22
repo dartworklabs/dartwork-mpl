@@ -6,7 +6,7 @@ import inspect
 
 import pytest
 
-from dartwork_mpl.diagnostics import _colors
+from dartwork_mpl._colors.diagnostics import _colors
 
 
 @pytest.mark.parametrize(
