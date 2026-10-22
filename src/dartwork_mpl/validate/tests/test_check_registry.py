@@ -42,6 +42,8 @@ _EXPECTED_ORDER = [
 
 
 class TestRegistryContents:
+    """The validation check registry holds every expected check in a stable order."""
+
     def test_all_expected_checks_registered_in_order(self) -> None:
         ids = [c.check_id for c in registered_checks()]
         assert ids == _EXPECTED_ORDER
@@ -63,6 +65,8 @@ class TestRegistryContents:
 
 
 class TestRegistryGuards:
+    """Registering a duplicate check id fails without changing the registry."""
+
     def test_duplicate_registration_raises(self) -> None:
         """Re-registering an existing id must raise without polluting
         the registry (the dispatch table stays unambiguous)."""
@@ -78,6 +82,8 @@ class TestRegistryGuards:
 
 
 class TestOrchestratorParity:
+    """``validate_figure`` accepts exactly the registered ids and dispatches uniformly."""
+
     def test_valid_ids_match_registry(self) -> None:
         """``validate_figure``'s accepted ids are exactly the registry's."""
         fig, ax = plt.subplots(figsize=(4, 3))

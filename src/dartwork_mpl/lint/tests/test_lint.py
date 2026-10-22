@@ -48,6 +48,8 @@ import dartwork_mpl as dm
 
 
 class TestLoadRules:
+    """The bundled anti-pattern rule catalog loads and contains the expected rule ids."""
+
     def test_returns_nonempty_rule_list(self):
         rules = load_rules()
         assert isinstance(rules, list)
@@ -83,6 +85,8 @@ class TestLoadRules:
 
 
 class TestLint:
+    """Detection of core anti-patterns and the line and message reported per issue."""
+
     def test_good_code_has_no_critical_issues(self):
         issues = lint(GOOD_CODE)
         criticals = [i for i in issues if i.severity == "critical"]
@@ -111,6 +115,8 @@ class TestLint:
 
 
 class TestRuleApplication:
+    """Linting with a caller-supplied rule subset applies only those rules."""
+
     def test_custom_rules_subset(self):
         all_rules = load_rules()
         subset = [r for r in all_rules if r.id == "figsize-direct"]
@@ -122,6 +128,8 @@ class TestRuleApplication:
 
 
 class TestIssue:
+    """Lint issues are immutable values."""
+
     def test_issue_is_frozen_dataclass(self):
         issue = Issue(
             rule_id="figsize-direct", severity="critical", message="msg", line=5

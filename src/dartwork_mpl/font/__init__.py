@@ -109,26 +109,49 @@ class FontFamily:
 
     @property
     def weights(self) -> tuple[int, ...]:
+        """Sorted distinct OS/2 weight classes across the bundled files.
+
+        Every measured property reads the bundled font files with fontTools
+        on first access (cached per family) and raises ``KeyError`` when the
+        family has no bundled files.
+        """
         return _measure(self.name).weights
 
     @property
     def italic(self) -> bool:
+        """Whether any bundled file of the family is an italic face."""
         return _measure(self.name).italic
 
     @property
     def tnum(self) -> bool:
+        """Alias of :attr:`tnum_available`, kept for backward compatibility."""
         return _measure(self.name).tnum_available
 
     @property
     def tnum_available(self) -> bool:
+        """Whether any bundled file declares the OpenType ``tnum`` feature.
+
+        This is browser (CSS) tabular-numeral support; matplotlib does not
+        apply OpenType features, so see :attr:`numeric_axes` for charts.
+        """
         return _measure(self.name).tnum_available
 
     @property
     def mono(self) -> bool:
+        """Whether any bundled file is fixed-pitch.
+
+        True when the ``post`` table flags it or the probe glyphs
+        ``0123456789ilW`` share one advance width.
+        """
         return _measure(self.name).fixed_pitch
 
     @property
     def numeric_axes(self) -> bool:
+        """Whether tick labels line up without OpenType features.
+
+        True when the default face (upright, normal width, weight closest
+        to 400) has equal-advance digits, or the family is fixed-pitch.
+        """
         measurement = _measure(self.name)
         return (
             measurement.default_digit_widths_uniform or measurement.fixed_pitch
@@ -136,14 +159,25 @@ class FontFamily:
 
     @property
     def chart_glyphs(self) -> tuple[str, ...]:
+        """Chart symbols the family's combined cmap covers, in probe order.
+
+        The probe set is minus, times, plus-minus, right arrow, degree, mu,
+        sigma and Delta; a missing symbol falls back to another font.
+        """
         return _measure(self.name).chart_glyphs
 
     @property
     def hangul(self) -> bool:
+        """Whether the family's combined cmap covers the Hangul probe text."""
         return _measure(self.name).hangul
 
     @property
     def licenses(self) -> tuple[str, ...]:
+        """Sorted license tags of the bundled files.
+
+        Each file is classified from its name table as ``"Apache-2.0"``,
+        ``"OFL-1.1"`` or ``"unknown"``.
+        """
         return _measure(self.name).licenses
 
 

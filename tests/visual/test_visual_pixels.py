@@ -1,3 +1,9 @@
+"""Pixel comparison of every scenario against its baseline PNG.
+
+One test per scenario is generated at import time so each baseline has its
+own test id; pytest-mpl compares against the baselines only under ``--mpl``.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Callable

@@ -1,3 +1,9 @@
+"""Sphinx configuration for the dartwork-mpl documentation site.
+
+Importing it pins SVG output (``SOURCE_DATE_EPOCH`` and ``svg.hashsalt``) so
+rebuilt assets are byte-identical, and puts ``../src`` first on ``sys.path``.
+"""
+
 import datetime
 import importlib.metadata
 import os
@@ -321,6 +327,13 @@ from build_hooks import (  # noqa: E402
 
 
 def setup(app):
+    """Register the build-time asset hooks with Sphinx.
+
+    On ``builder-inited`` it cleans stale gallery output first, then writes a
+    placeholder index and gallery assets, copies fonts and writes
+    ``llms-full.txt`` and the template index; manual indices are written before
+    docs are read. Declares the extension safe for parallel reading.
+    """
     # Cleanup runs first so sphinx-gallery starts from a clean slate
     # (priority < 500 = default; lower number runs earlier).
     app.connect("builder-inited", cleanup_sg_execution_times, priority=100)

@@ -19,6 +19,10 @@ from dartwork_mpl.ui.page._styles import CSS_BLOCK
 
 
 class TestTemplateSplit:
+    """CSS and JS blocks of the page template survive embedding byte for byte,
+    with the escaped title as the only interpolation.
+    """
+
     def test_blocks_are_nonempty_strings(self) -> None:
         assert isinstance(CSS_BLOCK, str) and CSS_BLOCK.strip()
         assert isinstance(JS_BLOCK, str) and JS_BLOCK.strip()

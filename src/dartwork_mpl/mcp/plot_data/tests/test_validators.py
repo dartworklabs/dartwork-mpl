@@ -30,6 +30,8 @@ def _message(plot_type: str):
 
 
 class TestSimpleShapeValidators:
+    """Shape checks for bar, grouped bar, waterfall and polar payloads."""
+
     def test_bar_horizontal(self) -> None:
         assert _message("bar_horizontal")(
             {"categories": ["a", "b"], "values": [1, 2]}
@@ -74,6 +76,8 @@ class TestSimpleShapeValidators:
 
 
 class TestTwinAxis:
+    """Twin-axis payloads need both sides with y series matching x in length."""
+
     def test_valid(self) -> None:
         out = _message("twin_axis")(
             {
@@ -105,6 +109,8 @@ class TestTwinAxis:
 
 
 class TestSmallMultiples:
+    """Small-multiples payloads need a list of complete, equal-length panels."""
+
     def test_valid(self) -> None:
         out = _message("small_multiples")(
             {"panels": [{"label": "p", "x": [1, 2], "y": [3, 4]}]}
@@ -130,6 +136,8 @@ class TestSmallMultiples:
 
 
 class TestPlot3D:
+    """3D scatter and surface payloads: required keys and consistent dimensions."""
+
     def test_scatter_valid(self) -> None:
         out = _message("plot_3d")({"x": [1, 2], "y": [3, 4], "z": [5, 6]})
         assert out.startswith(_OK)
@@ -155,6 +163,8 @@ class TestPlot3D:
 
 
 class TestGroupedSampleValidators:
+    """Violin and boxplot payloads: accepted shapes, group/value agreement, numeric samples."""
+
     def test_violin_valid_pair_and_series(self) -> None:
         assert _message("violin")(
             {"groups": ["a", "b"], "values": [[1, 2], [3, 4]]}
@@ -182,6 +192,8 @@ class TestGroupedSampleValidators:
 
 
 class TestHistogramContour:
+    """Histogram values and bins, and contour grids that must be rectangular 2D."""
+
     def test_histogram_valid(self) -> None:
         assert _message("histogram")({"values": [1, 2, 3, 4]}).startswith(_OK)
 

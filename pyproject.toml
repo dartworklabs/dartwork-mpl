@@ -210,6 +210,8 @@ skip-magic-trailing-comma = true
 line-ending = "auto"
 
 [tool.ruff.lint]
+# D100-D107 cover production code (src, scripts, docs scripts); D100-D101
+# also cover tests.
 select = [
     "E",
     "W",
@@ -223,6 +225,14 @@ select = [
     "SIM",
     "PERF",
     "RUF",
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D106",
+    "D107",
 ]
 ignore = ["E501"]
 
@@ -268,6 +278,14 @@ split-on-trailing-comma = false
     "SIM105",
     "BLE001",
     "RUF002",
+    # Every test module and class has a docstring; test functions are
+    # described by their names.
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D106",
+    "D107",
 ]
 # Slice-owned tests (ADR 0005) follow the same test-code allowances.
 "src/dartwork_mpl/**/tests/**/*.py" = [
@@ -279,6 +297,14 @@ split-on-trailing-comma = false
     "SIM105",
     "BLE001",
     "RUF002",
+    # Every test module and class has a docstring; test functions are
+    # described by their names.
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D106",
+    "D107",
 ]
 
 [tool.mypy]

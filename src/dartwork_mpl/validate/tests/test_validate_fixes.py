@@ -33,6 +33,8 @@ def _figure_clean():
 
 
 class TestGetFixSuggestions:
+    """Fix suggestions per check id, empty for an unknown id."""
+
     def test_returns_list_for_overflow(self) -> None:
         warning = VisualWarning(
             check_id="OVERFLOW",
@@ -59,6 +61,8 @@ class TestGetFixSuggestions:
 
 
 class TestValidateWithFixes:
+    """Validation with fix suggestions and auto-apply, and its top-level alias."""
+
     def test_clean_figure_has_no_warnings(self) -> None:
         fig, _ax = _figure_clean()
         warnings, applied = dm.validate_with_fixes(fig, verbose=False)
@@ -83,6 +87,8 @@ class TestValidateWithFixes:
 
 
 class TestCheckAgentRequirements:
+    """Agent requirement check returns booleans under the documented keys."""
+
     def test_returns_dict_of_bools(self) -> None:
         fig, _ax = _figure_clean()
         result = dm.validate_fixes.check_agent_requirements(fig)
@@ -242,6 +248,8 @@ class TestAutoApplyAppliesLayoutOnce:
 
 
 class TestGenerateValidationReport:
+    """Validation report is rendered as a string."""
+
     def test_returns_report_string(self) -> None:
         fig, _ax = _figure_clean()
         report = dm.validate_fixes.generate_validation_report(fig)

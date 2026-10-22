@@ -37,6 +37,8 @@ def _tools_map() -> dict:
 
 
 class TestFindTemplate:
+    """``find_template`` ranks matches, returns nothing for a blank intent, tags tiers."""
+
     def setup_method(self) -> None:
         self.find = _tools_map()["find_template"]
 
@@ -93,6 +95,8 @@ class TestApplyLintFixes:
 
 
 class TestRenderTemplateUnknown:
+    """``render_template`` reports an unknown id without starting a render."""
+
     def setup_method(self) -> None:
         self.render = _tools_map()["render_template"]
 
@@ -106,6 +110,8 @@ class TestRenderTemplateUnknown:
 
 
 class TestSuggestChartType:
+    """``suggest_chart_type`` recommends a template id that resolves."""
+
     def setup_method(self) -> None:
         self.suggest = _tools_map()["suggest_chart_type"]
 
@@ -117,6 +123,8 @@ class TestSuggestChartType:
 
 
 class TestDartworkMplInfo:
+    """``dartwork_mpl_info`` reports the package name, version and capability surface."""
+
     def setup_method(self) -> None:
         self.info = _tools_map()["dartwork_mpl_info"]
 

@@ -130,6 +130,11 @@ def reflow(text: str) -> str:
 
 
 def main(argv: list[str]) -> int:
+    """Print the reflowed CHANGELOG section for ``argv[2]`` to stdout.
+
+    ``argv`` is ``[prog, CHANGELOG.md, VERSION]``. Returns 1 on a usage error
+    and 2 when the version has no section.
+    """
     if len(argv) != 3:
         print(
             "usage: extract_release_notes.py CHANGELOG.md VERSION",

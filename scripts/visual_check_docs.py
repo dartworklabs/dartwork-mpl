@@ -201,6 +201,10 @@ PAGE_CHECK_JS = r"""
 
 
 def list_pages(root: Path) -> list[str]:
+    """Return built HTML pages under ``root`` as sorted ``/``-separated relative paths.
+
+    Skips ``_modules``, ``_static`` and ``_sources``.
+    """
     skip_dirs = {"_modules", "_static", "_sources"}
     out: list[str] = []
     for p in root.rglob("*.html"):
@@ -211,6 +215,13 @@ def list_pages(root: Path) -> list[str]:
 
 
 def audit_page(browser, base: str, path: str) -> dict:
+    """Load one page in a new Chromium tab and return its issue report.
+
+    Runs the in-page checks in ``PAGE_CHECK_JS`` and adds console and page
+    errors; failed-resource console messages that mention neither ``.svg`` nor
+    ``.png`` are dropped. A navigation or evaluation failure becomes a single
+    issue. The tab is always closed.
+    """
     page = browser.new_page(viewport={"width": 1280, "height": 800})
     console_errors: list[str] = []
     page_errors: list[str] = []
@@ -269,6 +280,11 @@ def audit_page(browser, base: str, path: str) -> dict:
 
 
 def main() -> int:
+    """Render every built page in headless Chromium and write a JSON report.
+
+    Needs Playwright with Chromium and the site served at ``--base``. Returns 0
+    when no issues were found and 1 otherwise.
+    """
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--base", default="http://localhost:8080")
     ap.add_argument(

@@ -24,6 +24,10 @@ fig, ax = plt.subplots(figsize=dm.figsize("14cm", "square"))
 
 
 def create_islamic_star(center, size, n_points=8):
+    """Return the vertices of an ``n_points``-pointed star, alternating outer and inner.
+
+    Inner vertices sit at 0.4 of ``size``, rotated half a step.
+    """
     outer_points = []
     inner_points = []
     for i in range(n_points):

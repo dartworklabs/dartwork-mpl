@@ -28,6 +28,10 @@ def _extents(fig, **kwargs):
 
 
 class TestIterFigureLevelExtents:
+    """Which figure-level artists (suptitle, figtext, legends) count as layout extents,
+    and that blank or invisible ones are skipped.
+    """
+
     def test_yields_suptitle_figtext_and_legend(self) -> None:
         fig, ax = plt.subplots(figsize=(6, 4))
         (line,) = ax.plot([1, 2, 3], [1, 2, 3], label="s")

@@ -173,6 +173,12 @@ class Length:
     __slots__ = ("_inch",)
 
     def __init__(self, value: str | Length) -> None:
+        """Parse a unit string or copy another :class:`Length`.
+
+        Raises ``TypeError`` for bare numbers (``bool`` included) and any
+        other non-``str`` type, and ``ValueError`` for a malformed string
+        or a value that is not positive and finite.
+        """
         if isinstance(value, Length):
             self._inch: float = value._inch
             return
@@ -257,26 +263,42 @@ class Length:
     # ------------------------------------------------------------------ #
 
     def __add__(self, other: Length) -> Length:
+        """Return the sum as a :class:`Length`.
+
+        Adding a bare number raises ``TypeError``; pick a unit first.
+        """
         if not isinstance(other, Length):
             return NotImplemented
         return Length._from_inch(self._inch + other._inch)
 
     def __radd__(self, other: Length) -> Length:
+        """Return ``other + self``; only :class:`Length` operands are accepted."""
         if not isinstance(other, Length):
             return NotImplemented
         return Length._from_inch(other._inch + self._inch)
 
     def __sub__(self, other: Length) -> Length:
+        """Return the difference as a :class:`Length`.
+
+        The result is not validated, so it may be zero or negative. A bare
+        number operand raises ``TypeError``.
+        """
         if not isinstance(other, Length):
             return NotImplemented
         return Length._from_inch(self._inch - other._inch)
 
     def __rsub__(self, other: Length) -> Length:
+        """Return ``other - self``; only :class:`Length` operands are accepted."""
         if not isinstance(other, Length):
             return NotImplemented
         return Length._from_inch(other._inch - self._inch)
 
     def __mul__(self, other: float) -> Length:
+        """Scale by an ``int`` or ``float`` and return a :class:`Length`.
+
+        Multiplying by another :class:`Length`, a ``bool`` or a non-number
+        raises ``TypeError``.
+        """
         # ``Length * Length`` (area) has no representation here.
         # ``bool`` is an ``int`` subclass — reject before the numeric
         # branch so ``cm(9) * True`` doesn't silently scale by 1.
@@ -287,9 +309,16 @@ class Length:
         return Length._from_inch(self._inch * float(other))
 
     def __rmul__(self, other: float) -> Length:
+        """Return ``other * self``, with the same operand rules as ``*``."""
         return self.__mul__(other)
 
     def __truediv__(self, other: float | Length) -> Length | float:
+        """Divide by a number to get a :class:`Length`, or by a :class:`Length`.
+
+        Dividing by another :class:`Length` returns a dimensionless
+        ``float`` ratio. A ``bool`` or non-number divisor raises
+        ``TypeError``; a zero divisor raises ``ZeroDivisionError``.
+        """
         if isinstance(other, Length):
             # Ratio of two lengths — dimensionless float.
             return self._inch / other._inch
@@ -298,9 +327,11 @@ class Length:
         return Length._from_inch(self._inch / float(other))
 
     def __neg__(self) -> Length:
+        """Return the negated :class:`Length` (not validated to be positive)."""
         return Length._from_inch(-self._inch)
 
     def __abs__(self) -> Length:
+        """Return the :class:`Length` with a non-negative magnitude."""
         return Length._from_inch(abs(self._inch))
 
     # ------------------------------------------------------------------ #
@@ -308,34 +339,41 @@ class Length:
     # ------------------------------------------------------------------ #
 
     def __eq__(self, other: object) -> bool:
+        """Compare exact inch values; a non-:class:`Length` is never equal."""
         if isinstance(other, Length):
             return self._inch == other._inch
         return NotImplemented
 
     def __lt__(self, other: Length) -> bool:
+        """Order by inch value; comparing with a non-:class:`Length` raises ``TypeError``."""
         if not isinstance(other, Length):
             return NotImplemented
         return self._inch < other._inch
 
     def __le__(self, other: Length) -> bool:
+        """Order by inch value; comparing with a non-:class:`Length` raises ``TypeError``."""
         if not isinstance(other, Length):
             return NotImplemented
         return self._inch <= other._inch
 
     def __gt__(self, other: Length) -> bool:
+        """Order by inch value; comparing with a non-:class:`Length` raises ``TypeError``."""
         if not isinstance(other, Length):
             return NotImplemented
         return self._inch > other._inch
 
     def __ge__(self, other: Length) -> bool:
+        """Order by inch value; comparing with a non-:class:`Length` raises ``TypeError``."""
         if not isinstance(other, Length):
             return NotImplemented
         return self._inch >= other._inch
 
     def __hash__(self) -> int:
+        """Hash consistently with ``==``: equal inch values hash equally."""
         return hash((Length, self._inch))
 
     def __repr__(self) -> str:
+        """Show centimeters below one inch and inches otherwise, to 4 decimals."""
         # Show cm at sub-decimeter scales, otherwise prefer inches —
         # matches how users typically thought about the value at input.
         if self._inch < 1.0:

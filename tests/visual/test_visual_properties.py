@@ -1,3 +1,7 @@
+"""Structural checks of every scenario's figure: artist counts, palette colors,
+text content, y labels and a bundled active font.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
