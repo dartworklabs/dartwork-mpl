@@ -290,10 +290,27 @@ def _copy_project(src: Path, dst: Path) -> None:
 
 
 def _saved(probe: dict, ext: str) -> str | None:
-    for s in reversed(probe.get("saves", [])):
-        p = Path(s.get("abspath") or "")
+    """This re-run's ``out/figure.<ext>``, or None.
+
+    A matplotlib save to that path counts. So does a byte copy of the last
+    save of that format (save ``out/figure-v2``, then copy it to
+    ``out/figure``, as a versioned-stem workflow does): the re-run directory
+    starts without ``out/`` (``SKIP``), so the copy is this run's output.
+    """
+    saves = [Path(s.get("abspath") or "") for s in probe.get("saves", [])]
+    for p in reversed(saves):
         if p.name == f"figure.{ext}" and p.parent.name == "out":
             return str(p)
+    last = next((p for p in reversed(saves) if p.suffix == f".{ext}"), None)
+    if last is None or not probe.get("script"):
+        return None
+    target = Path(probe["script"]).parent / "out" / f"figure.{ext}"
+    if (
+        last.is_file()
+        and target.is_file()
+        and target.read_bytes() == last.read_bytes()
+    ):
+        return str(target)
     return None
 
 

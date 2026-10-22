@@ -493,6 +493,37 @@ def test_r28_contaminated_run_is_never_a_success(tmp_path):
     assert not score.score_unit(case, unit)["task_success"]
 
 
+_COPY_TO_FIGURE = """
+import shutil
+for ext in ("png", "pdf"):
+    shutil.copyfile(f"out/figure-v2.{ext}", f"out/figure.{ext}")
+"""
+
+
+def test_r45_versioned_save_copied_to_the_requested_path_counts(tmp_path):
+    """A skill-style save to out/figure-v2 then a byte copy to out/figure."""
+    ref = (HERE / "fixtures" / "reference" / "g01-line-gdp.py").read_text()
+    src = ref.replace('"out/figure"', '"out/figure-v2"') + _COPY_TO_FIGURE
+    case, unit = _unit(tmp_path, "g01-line-gdp", src)
+    r = score.score_unit(case, unit)
+    assert r["rerun_ok"] and r["rerun_matches"] and r["task_success"], r.get(
+        "rerun_error"
+    )
+
+
+def test_r46_copy_of_an_earlier_save_does_not_count(tmp_path):
+    """The copy must be the last save: an older version is not this figure."""
+    ref = (HERE / "fixtures" / "reference" / "g01-line-gdp.py").read_text()
+    src = (
+        ref.replace('"out/figure"', '"out/figure-v2"')
+        + "ax.set_title('v3')\n"
+        + 'dm.save_formats(fig, "out/figure-v3", formats=("png", "pdf"))\n'
+        + _COPY_TO_FIGURE
+    )
+    case, unit = _unit(tmp_path, "g01-line-gdp", src)
+    assert not score.score_unit(case, unit)["rerun_ok"]
+
+
 # ------------------------------------------------------------ item 6: inspection
 def _final(tmp_path: Path) -> tuple[Path, float]:
     fig = fx.gdp_fig()
