@@ -28,6 +28,7 @@ fig, ax = plt.subplots(figsize=dm.figsize("14cm", "square"))
 
 
 def fibonacci_spiral(n_points=1000):
+    """Return ``(x, y, theta)`` of a golden-ratio logarithmic spiral over four turns."""
     golden_ratio = (1 + np.sqrt(5)) / 2
     theta = np.linspace(0, 8 * np.pi, n_points)
     r = np.exp(theta / (2 * np.pi / np.log(golden_ratio)))

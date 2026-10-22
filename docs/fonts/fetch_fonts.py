@@ -81,6 +81,7 @@ def dir_urls(repo: str, path: str) -> dict[str, str]:
 
 
 def fetch(url: str) -> bytes:
+    """Download ``url`` and return the body; HTTP and network errors propagate."""
     req = urllib.request.Request(url, headers={"User-Agent": "dm-fetch"})
     with urllib.request.urlopen(req, timeout=60) as r:
         return r.read()
@@ -112,6 +113,11 @@ def want_std_faces(
 
 # ── per-family source manifest ──────────────────────────────────────
 def plan() -> list[dict]:
+    """Return the fetch spec for every bundled font family.
+
+    Each spec's ``kind`` selects the download handler in :func:`main`; the
+    other keys name the upstream repo, file selection and license file.
+    """
     return [
         {
             # The current Google Fonts Roboto family is a wdth,wght variable
@@ -547,6 +553,10 @@ def plan() -> list[dict]:
 
 
 def write_license(spec: dict) -> None:
+    """Download the spec's license file into ``licenses/``, if it names one.
+
+    A failure is printed rather than raised so the font files still count.
+    """
     if not spec.get("license"):
         return
     repo, path, out = spec["license"]
@@ -561,6 +571,11 @@ def write_license(spec: dict) -> None:
 
 
 def do_gh_dir(spec: dict, added: list[str]) -> None:
+    """Download the wanted faces from a GitHub directory into the font dir.
+
+    Faces missing upstream are reported and skipped. Each written file name is
+    appended to ``added``; the license is fetched last.
+    """
     urls = dir_urls(spec["repo"], spec["path"])
     targets = want_std_faces(
         spec["stem"], spec["weights"], spec["italics"], spec["ext"]
@@ -576,6 +591,12 @@ def do_gh_dir(spec: dict, added: list[str]) -> None:
 
 
 def do_release_zip(spec: dict, added: list[str]) -> None:
+    """Extract the wanted faces from a GitHub release zip into the font dir.
+
+    Uses ``release_tag`` or the latest release, and an explicit ``file_map`` or
+    case-insensitive face names. Raises ``StopIteration`` when no asset name
+    contains ``asset_contains``.
+    """
     release_tag = spec.get("release_tag")
     endpoint = (
         f"repos/{spec['repo']}/releases/tags/{release_tag}"
@@ -616,6 +637,7 @@ def do_release_zip(spec: dict, added: list[str]) -> None:
 
 
 def do_repo_zip(spec: dict, added: list[str]) -> None:
+    """Extract the numbered weights (``<stem>-<label>.<ext>``) from a zip stored in a repo."""
     meta = gh_json(
         f"repos/{spec['repo']}/contents/{spec['zip_name'].replace(' ', '%20')}"
     )
@@ -767,6 +789,7 @@ def _expand_unicode_ranges(ranges: list[tuple[int, int]]) -> list[int]:
 
 
 def verify() -> None:
+    """Print the bundled font families on disk and any file FreeType cannot open."""
     from matplotlib import ft2font
 
     bad = []
@@ -787,6 +810,11 @@ def verify() -> None:
 
 
 def main() -> None:
+    """Fetch the planned families (or ``--only`` some) into the font dir, then verify.
+
+    Needs the ``gh`` CLI and network access. A failing family is reported and
+    the rest continue; ``--verify`` only checks what is on disk.
+    """
     ap = argparse.ArgumentParser()
     ap.add_argument("--verify", action="store_true")
     ap.add_argument(

@@ -1472,6 +1472,12 @@ def _demo_coverage_table(red_demo_ramp: list[str]) -> list[dict]:
 
 
 def build_payload() -> dict:
+    """Collect every shipped colormap with its group, kind and demo data.
+
+    Raises ``AssertionError`` when the group taxonomy does not partition exactly
+    the 43 shipped maps, or when a sequential or multi-hue map's darkest demo
+    swatch falls below 0.55 of its peak chroma.
+    """
     order = [key for _, keys in GROUPS for key in keys]
     actual = set(CMAPS_256)
     missing = sorted(actual - set(order))

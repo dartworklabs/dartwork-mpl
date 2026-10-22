@@ -50,6 +50,11 @@ def _row(family: font.FontFamily) -> str:
 
 
 def build() -> str:
+    """Return the typography matrix HTML, one row per curated font family.
+
+    Every family is measured from its bundled font files, so the first call
+    opens all of them.
+    """
     rows = "\n".join(_row(family) for family in font.font_families().values())
     return f"""<!-- GENERATED FILE - do not edit by hand.
      Source: docs/_static/scripts/build_typography_matrix.py
@@ -69,6 +74,7 @@ def build() -> str:
 
 
 def main() -> None:
+    """Write :func:`build` output to ``typography_matrix.html``, overwriting it."""
     html_text = build()
     OUT.write_text(html_text, encoding="utf-8")
     print(f"wrote {OUT}")

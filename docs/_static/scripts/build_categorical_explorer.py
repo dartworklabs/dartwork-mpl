@@ -133,6 +133,12 @@ def _demo_coverage_table(selected: int = 8) -> list[dict]:
 
 
 def build_payload() -> dict:
+    """Collect the categorical explorer's data from the color sources.
+
+    Reads the generated cycles, the curated qualitative sets and the cycle CVD
+    metrics, and returns the palettes, their rail groups and display order, the
+    CVD model, the demo library and the default selections.
+    """
     g = runpy.run_path(str(GENERATED))
     cycles = g["CYCLES"]
     c = runpy.run_path(str(CURATED_MOD))
