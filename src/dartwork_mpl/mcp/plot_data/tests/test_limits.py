@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import pytest
 
-from dartwork_mpl.mcp.data_repair import (
+from dartwork_mpl.mcp.plot_data import (
     build_data_repair_report,
     serialize_data_repair_report,
 )

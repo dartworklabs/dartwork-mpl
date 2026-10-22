@@ -12,7 +12,7 @@ import matplotlib.image as mpimg
 import pytest
 
 pytest.importorskip("fastmcp")
-from dartwork_mpl.mcp import _capture
+from dartwork_mpl.mcp import _platform
 from dartwork_mpl.mcp.execution import (
     ExecutionRejected,
     ExportedPlot,
@@ -296,14 +296,14 @@ print('frame checked')
     )
     before = submitted.encode("utf-8")
     observed = []
-    real_run = _capture.run_child
+    real_run = _platform.run_child
 
     def observe_run(args, **kwargs):
         """Observe the subprocess adapter's wire bytes while still executing its real child."""
         observed.append((args, kwargs["stdin"], kwargs.get("env")))
         return real_run(args, **kwargs)
 
-    monkeypatch.setattr(_capture, "run_child", observe_run)
+    monkeypatch.setattr(_platform, "run_child", observe_run)
     result = export_plot(
         submitted,
         "fig",
@@ -396,7 +396,7 @@ def test_malformed_private_frame_rejects_without_executing_source(
     """Damaged private transport returns the existing exec_error and removes its checkpoint."""
     marker = input_workspace / "executed"
     code = f"from pathlib import Path\nPath({str(marker)!r}).touch()"
-    real_run = _capture.run_child
+    real_run = _platform.run_child
     channels = []
 
     def damage_frame(args, **kwargs):
@@ -406,7 +406,7 @@ def test_malformed_private_frame_rejects_without_executing_source(
         kwargs["stdin"] = header + "\n" + source
         return real_run(args, **kwargs)
 
-    monkeypatch.setattr(_capture, "run_child", damage_frame)
+    monkeypatch.setattr(_platform, "run_child", damage_frame)
     result = export_plot(
         code,
         "fig",

@@ -24,7 +24,9 @@ import dartwork_mpl as dm
 
 fastmcp = pytest.importorskip("fastmcp")
 
-from dartwork_mpl.mcp.tools import _discover_plot_templates  # noqa: E402
+from dartwork_mpl.mcp.catalog.discovery import (  # noqa: E402
+    _discover_plot_templates,
+)
 
 # Tools we promise to keep on the MCP surface. Adding or removing one
 # is a deliberate decision — this test forces the choice into the

@@ -6,18 +6,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from ._capture import diagnostic, publish_png, run_child, strip_diagnostic
-
 __all__ = [
     "ExecutionRejected",
     "ExportRejected",
     "ExportedPlot",
     "LogLimitRejected",
-    "diagnostic",
     "export_plot",
-    "publish_png",
-    "run_child",
-    "strip_diagnostic",
     "validate_plot",
 ]
 
@@ -171,7 +165,7 @@ def _run(
 
     from dartwork_mpl.lint import lint as _lint
 
-    from ._capture import run_child
+    from .._platform import run_child
 
     if input_paths is not None:
         if not isinstance(input_paths, Mapping):

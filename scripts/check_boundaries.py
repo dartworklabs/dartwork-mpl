@@ -58,6 +58,11 @@ ENTRY_POINTS = frozenset(
         "dartwork_mpl.cli",
         # `python -m dartwork_mpl.mcp.server` / `dartwork-mpl-ui`
         "dartwork_mpl.mcp.server",
+        # The MCP wiring tables the discovery scanners read (ADR 0001 A1).
+        "dartwork_mpl.mcp.artifacts.transport",
+        "dartwork_mpl.mcp.prompts",
+        "dartwork_mpl.mcp.resources",
+        "dartwork_mpl.mcp.tools",
         "dartwork_mpl.ui.__main__",
         # `dartwork_mpl.ui.run`: mounts every viewer sub-slice's routes
         "dartwork_mpl.ui.ui",
@@ -69,6 +74,8 @@ PLATFORM = frozenset(
     {
         "dartwork_mpl._figure_geometry",
         "dartwork_mpl._rc",
+        # MCP process capture and asset confinement.
+        "dartwork_mpl.mcp._platform",
         # The viewer's loopback access checks, directory handles, HTTP body
         # and refusal helpers and bounded JSON decoder; the package
         # initializer only names them.
@@ -98,6 +105,16 @@ SLICES = frozenset(
         "dartwork_mpl.layout",
         "dartwork_mpl.lint",
         "dartwork_mpl.mcp",
+        "dartwork_mpl.mcp.artifacts",
+        "dartwork_mpl.mcp.catalog",
+        "dartwork_mpl.mcp.colors",
+        "dartwork_mpl.mcp.docs_fetch",
+        "dartwork_mpl.mcp.execution",
+        "dartwork_mpl.mcp.guides",
+        "dartwork_mpl.mcp.lint",
+        "dartwork_mpl.mcp.plot_data",
+        "dartwork_mpl.mcp.recommend",
+        "dartwork_mpl.mcp.templates",
         "dartwork_mpl.prompt",
         "dartwork_mpl.scale",
         "dartwork_mpl.style",
@@ -150,12 +167,6 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.layout", "dartwork_mpl.units"): (
         "margins are given as physical lengths"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.lint"): (
-        "the MCP server exposes the anti-pattern linter as tools"
-    ),
-    ("dartwork_mpl.mcp", "dartwork_mpl.prompt"): (
-        "the MCP server serves the bundled prompt corpus"
     ),
     ("dartwork_mpl.templates", "dartwork_mpl.scale"): (
         "a template sizes its text relative to the active preset"
@@ -212,6 +223,60 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.validate", "dartwork_mpl.layout"): (
         "the auto-applied validation fix is re-running the content-aware layout"
     ),
+    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.artifacts"): (
+        "the server mounts the durable plot-artifact tools and resources"
+    ),
+    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.catalog"): (
+        "the tables expose the capability summary and the font list"
+    ),
+    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.colors"): (
+        "the tables expose the colour lookups and the colour palette"
+    ),
+    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.docs_fetch"): (
+        "the tools table exposes the Raw document fetch as fetch_github_document"
+    ),
+    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.execution"): (
+        "the tools table exposes plot validation as validate_generated_plot"
+    ),
+    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.guides"): (
+        "the resources and prompts tables serve the guides, API index and prompts"
+    ),
+    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.lint"): (
+        "the tools table exposes the anti-pattern linter as tools"
+    ),
+    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.plot_data"): (
+        "the tools table exposes data validation as validate_plot_data"
+    ),
+    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.recommend"): (
+        "the tools table exposes chart recommendation as suggest_chart_type"
+    ),
+    ("dartwork_mpl.mcp", "dartwork_mpl.mcp.templates"): (
+        "the tools and resources tables expose the bundled templates and styles"
+    ),
+    ("dartwork_mpl.mcp.artifacts", "dartwork_mpl.mcp.execution"): (
+        "an artifact bundle is the output of one validated plot execution"
+    ),
+    ("dartwork_mpl.mcp.colors", "dartwork_mpl.util"): (
+        "the mix_colors tool must return exactly what dm.mix_colors blends"
+    ),
+    ("dartwork_mpl.mcp.execution", "dartwork_mpl.lint"): (
+        "plot validation lints the source before executing it"
+    ),
+    ("dartwork_mpl.mcp.guides", "dartwork_mpl.prompt"): (
+        "the guide resources serve the bundled prompt corpus"
+    ),
+    ("dartwork_mpl.mcp.lint", "dartwork_mpl.lint"): (
+        "the MCP lint tools expose dm.lint's anti-pattern linter"
+    ),
+    ("dartwork_mpl.mcp.recommend", "dartwork_mpl.helpers"): (
+        "the suggest_chart_type tool wraps dm.suggest_chart_type's heuristic"
+    ),
+    ("dartwork_mpl.mcp.recommend", "dartwork_mpl.mcp.templates"): (
+        "a recommendation links only templates that exist, closing the recommend -> pull-template loop"
+    ),
+    ("dartwork_mpl.mcp.templates", "dartwork_mpl.prompt"): (
+        "find_template ranks the prompt corpus's bundled template index"
+    ),
 }
 
 # Compatibility shims: public module path -> the unit that owns its contents.
@@ -228,14 +293,18 @@ DECISIONS: Mapping[str, str] = {
     "dartwork_mpl.mcp.artifacts.input_policy": (
         "retained-input revision rules decide from parsed values"
     ),
+    "dartwork_mpl.mcp.plot_data.repair": (
+        "data-repair reports are built from the submitted payload alone"
+    ),
+    "dartwork_mpl.mcp.plot_data.validators": (
+        "a data-shape verdict is decided from the decoded payload alone"
+    ),
 }
 
 # Known violations at the start of the refactor (ADR 0005), each with the
 # plan step that removes it. The list only shrinks.
 DEBT: Mapping[str, str] = {
     "cycle: dartwork_mpl._colors, dartwork_mpl._luminance": "K1",
-    "entry point import: dartwork_mpl.mcp.resources -> dartwork_mpl": "M6",
-    "entry point import: dartwork_mpl.mcp.tools -> dartwork_mpl": "M4",
     "missing __all__: dartwork_mpl._luminance": "K1",
     "private import: dartwork_mpl._colors._contrast -> dartwork_mpl._luminance._contrast_ratio": "K1",
     "private import: dartwork_mpl._luminance -> dartwork_mpl._colors._conversion": "K1",
@@ -258,7 +327,6 @@ DEBT: Mapping[str, str] = {
     "private import: dartwork_mpl.validate._checks.text_contrast -> dartwork_mpl._luminance._contrast_ratio": "K1",
     "private import: dartwork_mpl.validate.agent_requirements -> dartwork_mpl.helpers.quality._MIN_RECOMMENDED_DPI": "C11",
     "undeclared dependency: dartwork_mpl.helpers -> dartwork_mpl.scale": "C11",
-    "undeclared dependency: dartwork_mpl.mcp -> dartwork_mpl.util": "C9",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl._colors": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.annotation": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.formatting": "C10",

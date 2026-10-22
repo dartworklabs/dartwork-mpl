@@ -11,7 +11,9 @@ import pytest
 
 fastmcp = pytest.importorskip("fastmcp")
 
-from dartwork_mpl.mcp import _assets, resources, tools  # noqa: E402
+from dartwork_mpl.mcp import resources, tools  # noqa: E402
+from dartwork_mpl.mcp._platform import assets as _assets  # noqa: E402
+from dartwork_mpl.mcp.templates import bundled  # noqa: E402
 
 _SENTINEL = "OUTSIDE_ASSET_CONTENT_DO_NOT_RETURN"
 _ROUTES = (
@@ -77,7 +79,7 @@ def asset_roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         (directory / f"loop{suffix}").symlink_to(f"loop{suffix}")
         (directory / f"broken{suffix}").symlink_to(f"missing{suffix}")
     # All readers see the same isolated installation of bundled assets.
-    for owner in (resources, tools, _assets):
+    for owner in (bundled, _assets):
         monkeypatch.setattr(owner, "_TEMPLATE_DIR", templates)
         monkeypatch.setattr(owner, "_MPLSTYLE_DIR", styles)
     return tmp_path

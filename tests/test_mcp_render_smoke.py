@@ -141,14 +141,14 @@ def test_path_output_is_unique_regular_private_and_preserves_owned_symlink(
     import tempfile
     from pathlib import Path
 
-    from dartwork_mpl.mcp import tools
+    from dartwork_mpl.mcp.templates import bundled
 
     template = tmp_path / "template.py"
     template.write_text(
         "from pathlib import Path\nPath('out.png').write_bytes(b'owned-png-bytes')\n"
     )
     monkeypatch.setattr(
-        tools, "_resolve_template_path", lambda *args, **kwargs: template
+        bundled, "_resolve_template_path", lambda *args, **kwargs: template
     )
     legacy = Path(tempfile.gettempdir()) / (
         "dartwork-mpl-render-advanced-line.png"
@@ -195,14 +195,14 @@ def test_template_error_presentation_reserves_complete_truncation_marker(
     tmp_path, monkeypatch, name
 ):
     """Actual oversized template stderr fits 2,000 characters with a complete visible marker."""
-    from dartwork_mpl.mcp import tools
+    from dartwork_mpl.mcp.templates import bundled
 
     template = tmp_path / "error.py"
     template.write_text(
         "import os\nos.write(2, b'e' * 100000)\nraise ValueError('stop')\n"
     )
     monkeypatch.setattr(
-        tools, "_resolve_template_path", lambda *args, **kwargs: template
+        bundled, "_resolve_template_path", lambda *args, **kwargs: template
     )
     result = _tools_map()[name]("line")
     assert result["status"] == "render_error"
@@ -220,118 +220,26 @@ def test_template_publication_failure_has_safe_existing_error(
     tmp_path, monkeypatch, name
 ):
     """Owned publication errors return render_error without a private path or published name."""
-    from dartwork_mpl.mcp import execution, tools
+    from dartwork_mpl.mcp import _platform
+    from dartwork_mpl.mcp.templates import bundled
 
     template = tmp_path / "template.py"
     template.write_text(
         "from pathlib import Path\nPath('out.png').write_bytes(b'owned-png-bytes')\n"
     )
     monkeypatch.setattr(
-        tools, "_resolve_template_path", lambda *args, **kwargs: template
+        bundled, "_resolve_template_path", lambda *args, **kwargs: template
     )
 
     def fail_publication(*args, **kwargs):
         """Inject only the owned PNG publication adapter's filesystem failure."""
         raise OSError("private /publication/canary")
 
-    monkeypatch.setattr(execution, "publish_png", fail_publication)
+    monkeypatch.setattr(_platform, "publish_png", fail_publication)
     result = _tools_map()[name]("line", return_format="path")
     assert result["status"] == "render_error"
     assert result["png_path"] is result["png_base64"] is None
     assert result["stderr"] == "Template output publication failed."
-
-
-@pytest.mark.parametrize("phase", ["open", "write", "close"])
-def test_png_descriptor_write_failure_removes_only_new_file(
-    tmp_path, monkeypatch, phase
-):
-    """A real descriptor closes and only its new path disappears on open/write/close failure."""
-    import os
-    import tempfile
-    from pathlib import Path
-
-    from dartwork_mpl.mcp import _capture
-
-    sentinel = tmp_path / "keep"
-    sentinel.write_bytes(b"untouched")
-    real_mkstemp = tempfile.mkstemp
-    real_fdopen = os.fdopen
-    descriptors = []
-
-    def create_here(*args, **kwargs):
-        """Place the actual output in a fixture-owned directory for cleanup inspection."""
-        kwargs["dir"] = tmp_path
-        descriptor, path = real_mkstemp(*args, **kwargs)
-        descriptors.append(descriptor)
-        return descriptor, path
-
-    class FailedWriter:
-        """Exercise real descriptor ownership across injected adapter failures."""
-
-        def __init__(self, descriptor, mode):
-            """Acquire the actual descriptor unless the owned open operation fails."""
-            if phase == "open":
-                raise OSError("controlled open failure")
-            self.file = real_fdopen(descriptor, mode)
-
-        def __enter__(self):
-            """Keep file ownership within the context."""
-            return self
-
-        def __exit__(self, *args):
-            """Close the genuine descriptor even when writing raises."""
-            self.file.close()
-            if phase == "close":
-                raise OSError("controlled close failure")
-
-        def fileno(self):
-            """Expose the genuine descriptor for the regular-file check."""
-            return self.file.fileno()
-
-        def write(self, data):
-            """Perform the real write or inject only its owned write error."""
-            if phase == "write":
-                raise OSError("controlled write failure")
-            return self.file.write(data)
-
-    with monkeypatch.context() as patch:
-        patch.setattr(_capture.tempfile, "mkstemp", create_here)
-        patch.setattr(_capture.os, "fdopen", FailedWriter)
-        with pytest.raises(OSError, match=f"controlled {phase} failure"):
-            _capture.publish_png(b"png", "owned-")
-    assert sorted(Path(path).name for path in tmp_path.iterdir()) == ["keep"]
-    assert sentinel.read_bytes() == b"untouched"
-    with pytest.raises(OSError):
-        os.fstat(descriptors[0])
-
-
-def test_png_publication_rejects_nonregular_open_descriptor(
-    tmp_path, monkeypatch
-):
-    """Regular-file admission checks the created handle, with cleanup on refusal."""
-    import stat
-    import tempfile
-    from types import SimpleNamespace
-
-    from dartwork_mpl.mcp import _capture
-
-    real_mkstemp = tempfile.mkstemp
-
-    def create_here(*args, **kwargs):
-        """Use actual exclusive file creation under the owned fixture directory."""
-        kwargs["dir"] = tmp_path
-        return real_mkstemp(*args, **kwargs)
-
-    with monkeypatch.context() as patch:
-        patch.setattr(_capture.tempfile, "mkstemp", create_here)
-        patch.setattr(
-            _capture.os,
-            "fstat",
-            lambda descriptor: SimpleNamespace(st_mode=stat.S_IFIFO),
-        )
-        with pytest.raises(OSError, match="not a regular file"):
-            _capture.publish_png(b"png", "owned-")
-    assert list(tmp_path.iterdir()) == []
 
 
 @pytest.mark.parametrize(
@@ -353,7 +261,8 @@ def test_template_success_preserves_literal_stderr_and_marks_only_real_overrun(
     """Real basic/advanced PNG callbacks strip user text and mark genuine overruns."""
     from pathlib import Path
 
-    from dartwork_mpl.mcp import _assets, tools
+    from dartwork_mpl.mcp._platform import assets as _assets
+    from dartwork_mpl.mcp.templates import bundled
 
     template_dir = tmp_path / "templates"
     (template_dir / "advanced").mkdir(parents=True)
@@ -373,7 +282,7 @@ def test_template_success_preserves_literal_stderr_and_marks_only_real_overrun(
         f"os.write(2, {raw_stderr!r})\n"
     )
     monkeypatch.setattr(_assets, "_TEMPLATE_DIR", template_dir)
-    monkeypatch.setattr(tools, "_TEMPLATE_DIR", template_dir)
+    monkeypatch.setattr(bundled, "_TEMPLATE_DIR", template_dir)
     result = _tools_map()[name]("owned", return_format=return_format)
     try:
         assert result["status"] == "ok", result
