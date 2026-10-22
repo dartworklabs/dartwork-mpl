@@ -23,6 +23,7 @@ from typing import TypeAlias, cast
 
 __all__ = [
     "ColorAuthority",
+    "Coordinates",
     "CvdPolicy",
     "GamutPolicy",
     "Policies",
@@ -30,8 +31,12 @@ __all__ = [
     "Recipe",
     "RecipeConstants",
     "RecipeFamily",
+    "RowContract",
+    "RowContracts",
     "TonePolicy",
     "load_color_v6_ssot",
+    "multi_hue_index_rows_json",
+    "row_contracts_json",
 ]
 
 JsonMapping: TypeAlias = Mapping[str, object]
@@ -156,26 +161,115 @@ class Recipe:
 
 
 @dataclass(frozen=True, slots=True)
+class Coordinates:
+    """Coordinate roles of the colour system.
+
+    The four role strings are fixed by the v6 contract;
+    ``relative_y_coefficients`` are the nominal D65 sRGB luminance weights
+    (summing to exactly 1.0) and ``validation_only`` names the spaces used
+    only to validate, never to author.
+    """
+
+    authoring: str
+    canonical: str
+    neutral_tone: str
+    output: str
+    relative_y_coefficients: tuple[float, float, float]
+    validation_only: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class RowContract:
+    """The frozen v5 shape of one shipped colour row.
+
+    ``count`` is the row length; ``1 <= unique_count <= count``,
+    ``0 <= adjacent_duplicate_count < count`` and
+    ``1 <= max_run_length <= adjacent_duplicate_count + 1``.
+    ``canonical_sha256`` is the row's canonical JSON digest.
+    """
+
+    canonical_sha256: str
+    count: int
+    unique_count: int
+    adjacent_duplicate_count: int
+    max_run_length: int
+
+    def __post_init__(self) -> None:
+        """Reject counts no row of ``count`` colours can have."""
+        count = self.count
+        unique = self.unique_count
+        adjacent = self.adjacent_duplicate_count
+        run = self.max_run_length
+        if not (
+            1 <= unique <= count
+            and 0 <= adjacent < count
+            and 1 <= run <= count
+            and unique <= count - adjacent
+            and run <= adjacent + 1
+            and (adjacent == 0) == (run == 1)
+        ):
+            raise ValueError(
+                "row contract counts are impossible: "
+                f"count={count}, unique={unique}, adjacent={adjacent}, "
+                f"max_run={run}"
+            )
+
+    def to_json(self) -> dict[str, object]:
+        """Return the record exactly as the authority JSON stores it."""
+        return {
+            "adjacent_duplicate_count": self.adjacent_duplicate_count,
+            "canonical_sha256": self.canonical_sha256,
+            "count": self.count,
+            "max_run_length": self.max_run_length,
+            "unique_count": self.unique_count,
+        }
+
+
+RowContracts: TypeAlias = Mapping[str, Mapping[str, RowContract]]
+"""Row contracts by section (``palette``, ``full_256``, ...) then row name."""
+
+MultiHueIndexRows: TypeAlias = Mapping[str, Mapping[str, tuple[int, ...]]]
+"""Frozen LUT indices by multi-hue family, then form size (``"1"``..``"8"``)."""
+
+
+def row_contracts_json(contracts: RowContracts) -> dict[str, object]:
+    """Return the row-contract section as the authority JSON stores it.
+
+    Its canonical SHA-256 equals the pinned ``row_contracts`` section hash.
+    """
+    return {
+        section: {name: record.to_json() for name, record in rows.items()}
+        for section, rows in contracts.items()
+    }
+
+
+def multi_hue_index_rows_json(rows: MultiHueIndexRows) -> dict[str, object]:
+    """Return the multi-hue index section as the authority JSON stores it."""
+    return {
+        family: {size: list(indices) for size, indices in forms.items()}
+        for family, forms in rows.items()
+    }
+
+
+@dataclass(frozen=True, slots=True)
 class ColorAuthority:
     """The parsed, validated, immutable v6 colour authority.
 
-    ``recipe`` and ``policies`` are typed. The remaining sections keep
-    their frozen JSON form: ``baselines`` and ``migration`` are provenance
-    nothing computes from; ``coordinates``, ``row_contracts`` and
-    ``multi_hue_discrete_indices`` are read by the build and gates.
-    ``section_hashes`` maps every other top-level section name to its
-    canonical SHA-256.
+    Every section the build, gates and documentation read is typed.
+    ``baselines`` and ``migration`` keep their frozen JSON form: they are
+    provenance that nothing computes from. ``section_hashes`` maps every
+    other top-level section name to its canonical SHA-256.
     """
 
     schema: str
     baseline_commit: str
     baselines: JsonMapping
-    coordinates: JsonMapping
+    coordinates: Coordinates
     migration: JsonMapping
     policies: Policies
     recipe: Recipe
-    row_contracts: JsonMapping
-    multi_hue_discrete_indices: JsonMapping
+    row_contracts: RowContracts
+    multi_hue_discrete_indices: MultiHueIndexRows
     section_hashes: Mapping[str, str]
 
 
@@ -497,8 +591,8 @@ def _validate_provenance(payload: Mapping[str, object]) -> None:
         raise RuntimeError("baseline authority must not contain candidate data")
 
 
-def _validate_coordinates(payload: Mapping[str, object]) -> None:
-    """Validate coordinate roles and the modeled relative-Y row."""
+def _parse_coordinates(payload: Mapping[str, object]) -> Coordinates:
+    """Parse coordinate roles and the modeled relative-Y row."""
     coordinates = _require_mapping(payload["coordinates"], "coordinates")
     expected_fields = {
         "authoring",
@@ -539,6 +633,14 @@ def _validate_coordinates(payload: Mapping[str, object]) -> None:
     )
     if tuple(validation_only) != ("CIELAB", "CIEDE2000", "Machado/BVM CVD"):
         raise RuntimeError("validation-only coordinate roles do not match")
+    return Coordinates(
+        authoring=expected_strings["authoring"],
+        canonical=expected_strings["canonical"],
+        neutral_tone=expected_strings["neutral_tone"],
+        output=expected_strings["output"],
+        relative_y_coefficients=expected_coefficients,
+        validation_only=("CIELAB", "CIEDE2000", "Machado/BVM CVD"),
+    )
 
 
 def _validate_migration(payload: Mapping[str, object]) -> None:
@@ -880,8 +982,8 @@ def _parse_recipe(payload: Mapping[str, object]) -> Recipe:
     )
 
 
-def _validate_row_contracts(payload: Mapping[str, object]) -> None:
-    """Validate cardinality and shape of all 671 frozen row contracts."""
+def _parse_row_contracts(payload: Mapping[str, object]) -> RowContracts:
+    """Parse cardinality and shape of all 671 frozen row contracts."""
     contracts = _require_mapping(payload["row_contracts"], "row contracts")
     if set(contracts) != set(_ROW_CONTRACT_COUNTS):
         raise RuntimeError("row contract sections do not match")
@@ -900,7 +1002,9 @@ def _validate_row_contracts(payload: Mapping[str, object]) -> None:
         "curated_rows": 8,
         "dark_cycle": 7,
     }
+    parsed: dict[str, Mapping[str, RowContract]] = {}
     for section, expected_count in _ROW_CONTRACT_COUNTS.items():
+        parsed_rows: dict[str, RowContract] = {}
         rows = _require_mapping(contracts[section], f"row contracts {section}")
         if len(rows) != expected_count:
             raise RuntimeError(
@@ -972,16 +1076,29 @@ def _validate_row_contracts(payload: Mapping[str, object]) -> None:
                 raise RuntimeError(
                     f"row contract {section}.{name} run is impossible"
                 )
+            parsed_rows[name] = RowContract(
+                canonical_sha256=digest,
+                count=count,
+                unique_count=unique,
+                adjacent_duplicate_count=adjacent,
+                max_run_length=max_run,
+            )
+        parsed[section] = MappingProxyType(dict(sorted(parsed_rows.items())))
+    return MappingProxyType(dict(sorted(parsed.items())))
 
 
-def _validate_multi_hue_indices(payload: Mapping[str, object]) -> None:
-    """Validate each shipped discrete index row against the LUT domain."""
+def _parse_multi_hue_indices(
+    payload: Mapping[str, object],
+) -> MultiHueIndexRows:
+    """Parse each shipped discrete index row against the LUT domain."""
     families = _require_mapping(
         payload["multi_hue_discrete_indices"], "multi-hue indices"
     )
     if set(families) != _MULTI_HUE_FAMILIES:
         raise RuntimeError("multi-hue index family set does not match")
+    parsed: dict[str, Mapping[str, tuple[int, ...]]] = {}
     for family, raw_forms in families.items():
+        parsed_forms: dict[str, tuple[int, ...]] = {}
         forms = _require_mapping(raw_forms, f"multi-hue {family}")
         if set(forms) != {str(size) for size in range(1, 9)}:
             raise RuntimeError(f"multi-hue {family} size set does not match")
@@ -1013,6 +1130,9 @@ def _validate_multi_hue_indices(payload: Mapping[str, object]) -> None:
                 raise RuntimeError(
                     f"multi-hue {family}.{size} indices must increase"
                 )
+            parsed_forms[size] = tuple(checked)
+        parsed[family] = MappingProxyType(dict(sorted(parsed_forms.items())))
+    return MappingProxyType(dict(sorted(parsed.items())))
 
 
 def _freeze(value: object) -> object:
@@ -1070,26 +1190,24 @@ def _load_color_v6_ssot(path: Path) -> ColorAuthority:
         raise RuntimeError("color v6 SSOT schema does not match")
     _validate_section_hashes(payload)
     _validate_provenance(payload)
-    _validate_coordinates(payload)
+    coordinates = _parse_coordinates(payload)
     _validate_migration(payload)
     policies = _parse_policies(payload)
     recipe = _parse_recipe(payload)
-    _validate_row_contracts(payload)
-    _validate_multi_hue_indices(payload)
+    row_contracts = _parse_row_contracts(payload)
+    multi_hue_indices = _parse_multi_hue_indices(payload)
     _validate_audited_section_hashes(payload)
     section_hashes = _require_mapping(payload["section_hashes"], "hashes")
     return ColorAuthority(
         schema=_SCHEMA,
         baseline_commit=_BASELINE_COMMIT,
         baselines=_freeze_mapping(payload["baselines"]),
-        coordinates=_freeze_mapping(payload["coordinates"]),
+        coordinates=coordinates,
         migration=_freeze_mapping(payload["migration"]),
         policies=policies,
         recipe=recipe,
-        row_contracts=_freeze_mapping(payload["row_contracts"]),
-        multi_hue_discrete_indices=_freeze_mapping(
-            payload["multi_hue_discrete_indices"]
-        ),
+        row_contracts=row_contracts,
+        multi_hue_discrete_indices=multi_hue_indices,
         section_hashes=MappingProxyType(
             {
                 name: digest

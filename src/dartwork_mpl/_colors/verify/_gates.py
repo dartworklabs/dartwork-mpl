@@ -318,27 +318,11 @@ def load_quality_baseline() -> dict[str, object]:
     )
 
 
-def _plain_json_value(value: object) -> object:
-    """Copy frozen accessor data into containers accepted by JSON hashing."""
-    if isinstance(value, Mapping):
-        if not all(isinstance(key, str) for key in value):
-            raise RuntimeError("v6 row-contract authority has non-string keys")
-        return {
-            str(key): _plain_json_value(item)
-            for key, item in sorted(value.items())
-        }
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-        return [_plain_json_value(item) for item in value]
-    if value is None or isinstance(value, (bool, int, float, str)):
-        return value
-    raise RuntimeError("v6 row-contract authority is not JSON-shaped")
-
-
-def _load_row_contracts() -> Mapping[str, object]:
+def _load_row_contracts() -> _ssot.RowContracts:
     """Load the independently hash-pinned v6 row-contract section."""
     authority = _ssot.load_color_v6_ssot()
     contracts = authority.row_contracts
-    actual = oracle.canonical_json_sha256(_plain_json_value(contracts))
+    actual = oracle.canonical_json_sha256(_ssot.row_contracts_json(contracts))
     embedded = authority.section_hashes.get("row_contracts")
     if actual != _ROW_CONTRACTS_SHA256 or embedded != _ROW_CONTRACTS_SHA256:
         raise RuntimeError("v6 row-contract authority SHA-256 differs")
@@ -993,18 +977,15 @@ def _candidate_contract_rows(
 
 
 def _evaluate_row_contracts(
-    candidate: CatalogSnapshot, contracts_value: object
+    candidate: CatalogSnapshot, contracts: _ssot.RowContracts
 ) -> tuple[GateViolation, ...]:
     """Require every candidate row shape to be no worse than its v5 contract."""
-    contracts = _as_mapping(contracts_value)
-    if contracts is None:
-        raise RuntimeError("row contracts must be a string-keyed object")
     candidate_sections = _candidate_contract_rows(candidate)
     violations: list[GateViolation] = []
     for section in sorted(contracts):
-        baseline_rows = _as_mapping(contracts[section])
+        baseline_rows = contracts[section]
         candidate_rows = candidate_sections.get(section)
-        if baseline_rows is None or candidate_rows is None:
+        if candidate_rows is None:
             _gate_invalid(
                 violations,
                 asset=section,
@@ -1017,9 +998,9 @@ def _evaluate_row_contracts(
                 f"/row_contracts/{_pointer_token(section)}/"
                 f"{_pointer_token(asset)}"
             )
-            baseline = _as_mapping(baseline_rows[asset])
+            baseline = baseline_rows[asset]
             candidate_row = candidate_rows.get(asset)
-            if baseline is None or candidate_row is None:
+            if candidate_row is None:
                 _gate_invalid(
                     violations,
                     asset=asset,
@@ -1040,23 +1021,26 @@ def _evaluate_row_contracts(
                 violations,
                 asset=asset,
                 metric=f"{metric}/count",
-                baseline=baseline.get("count", _MISSING),
+                baseline=baseline.count,
                 candidate=observed["count"],
             )
             _gate_number(
                 violations,
                 asset=asset,
                 metric=f"{metric}/unique_count",
-                baseline=baseline.get("unique_count", _MISSING),
+                baseline=baseline.unique_count,
                 candidate=observed["unique_count"],
                 relation=">=",
             )
-            for field_name in ("adjacent_duplicate_count", "max_run_length"):
+            for field_name, allowed in (
+                ("adjacent_duplicate_count", baseline.adjacent_duplicate_count),
+                ("max_run_length", baseline.max_run_length),
+            ):
                 _gate_number(
                     violations,
                     asset=asset,
                     metric=f"{metric}/{field_name}",
-                    baseline=baseline.get(field_name, _MISSING),
+                    baseline=allowed,
                     candidate=observed[field_name],
                     relation="<=",
                 )

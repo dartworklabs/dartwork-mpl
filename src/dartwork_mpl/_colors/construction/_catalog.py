@@ -1425,12 +1425,7 @@ def compile_candidate_snapshot() -> CatalogSnapshot:
     diverging_canonicals = _derive_diverging_canonicals(taxonomy, palette)
     semantic_coordinates, semantic_colors = _resolve_semantic(palette)
     dark_coordinates, dark_cycle = _resolve_dark_cycle(palette)
-    frozen_indices = _freeze_index_rows(
-        cast(
-            Mapping[str, Mapping[str, Sequence[int]]],
-            authority.multi_hue_discrete_indices,
-        )
-    )
+    frozen_indices = _freeze_index_rows(authority.multi_hue_discrete_indices)
     discrete, reverse_discrete, multi_hue_indices = _derive_discrete(
         taxonomy,
         palette,

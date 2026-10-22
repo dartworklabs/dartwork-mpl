@@ -786,8 +786,8 @@ def test_evaluate_catalog_names_duplicate_row_contract_regression(
         rule=rule,
     )
     authority = load_color_v6_ssot()
-    expected = _baseline_number(
-        authority.row_contracts, "palette", "amber", field
+    expected = float(
+        getattr(authority.row_contracts["palette"]["amber"], field)
     )
 
     assert violation.allowed == expected

@@ -634,6 +634,7 @@ def test_validated_accessor_returns_deeply_immutable_data(
     v6_ssot: dict[str, object],
 ) -> None:
     """Expose one cached read-only authority to every production consumer."""
+    from dartwork_mpl._colors import _ssot
     from dartwork_mpl._colors._ssot import load_color_v6_ssot
 
     loaded = load_color_v6_ssot()
@@ -646,14 +647,34 @@ def test_validated_accessor_returns_deeply_immutable_data(
         v6_ssot["baseline_commit"],
     )
     assert dict(loaded.section_hashes) == v6_ssot["section_hashes"]
-    for name in (
-        "baselines",
-        "coordinates",
-        "migration",
-        "row_contracts",
-        "multi_hue_discrete_indices",
-    ):
+    for name in ("baselines", "migration"):
         assert _thaw(getattr(loaded, name)) == v6_ssot[name], name
+    coordinates = dataclasses.asdict(loaded.coordinates)
+    assert {
+        **coordinates,
+        "relative_y_coefficients": list(coordinates["relative_y_coefficients"]),
+        "validation_only": list(coordinates["validation_only"]),
+    } == v6_ssot["coordinates"]
+    assert (
+        _ssot.row_contracts_json(loaded.row_contracts)
+        == v6_ssot["row_contracts"]
+    )
+    assert (
+        _ssot.multi_hue_index_rows_json(loaded.multi_hue_discrete_indices)
+        == v6_ssot["multi_hue_discrete_indices"]
+    )
+    assert (
+        _canonical_sha256(_ssot.row_contracts_json(loaded.row_contracts))
+        == cast(dict[str, str], v6_ssot["section_hashes"])["row_contracts"]
+    )
+    assert (
+        _canonical_sha256(
+            _ssot.multi_hue_index_rows_json(loaded.multi_hue_discrete_indices)
+        )
+        == cast(dict[str, str], v6_ssot["section_hashes"])[
+            "multi_hue_discrete_indices"
+        ]
+    )
     assert list(loaded.recipe.family_order) == raw_recipe["family_order"]
     assert {
         name: dataclasses.asdict(row)
