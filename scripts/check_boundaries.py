@@ -409,7 +409,8 @@ PINNED: Mapping[str, str] = {
 }
 
 # Known violations at the start of the refactor (ADR 0005), each with the
-# plan step that removes it. The list only shrinks.
+# plan step that removed it. Every one is resolved; the list stays empty
+# (tests/architecture/test_boundaries.py) so a new violation fails outright.
 DEBT: Mapping[str, str] = {}
 
 # Package paths that hold user-facing sample code, not package source: the
