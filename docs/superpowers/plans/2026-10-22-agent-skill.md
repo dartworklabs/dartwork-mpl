@@ -21,26 +21,31 @@ recipe drew panel labels twice, `.cursor/rules` taught removed APIs, and
    (sizing-and-layout, editing, colors, korean, review-loop, templates).
    The description leads with trigger words. The router carries what agents
    get wrong: data and NaN gaps kept, one-target edits with a new script and
-   stem, opening the PNG, `CHECK_FAILED` = incomplete validation. Catalogs
-   (all aspect tokens, pixels, palettes) live in references.
+   stem, opening the PNG, `CHECK_FAILED` = incomplete validation; per the
+   user (2026-10-22) no meaningless decimals and value labels at
+   `dm.fw(1)`. Generic examples omit `color=`.
+   Catalogs (all aspect tokens, pixels, palettes) live in references.
 2. **`/dataviz` guidance, no precedence claim.** Hosts do not rank skills;
    the text says how to use both when both are active (chart choice there,
    construction here: preset, static output, physical size).
 3. **Installer, additions only.** `python -m dartwork_mpl.skills install
    [--claude] [--codex] [--dest DIR] [--copy] [--force]`, `... path`, and
    `skill_version()`. Symlinks by default (library-skills convention).
-   Copies record SHA-256 per file; an edited copy, foreign content or an
-   unreadable marker is refused without `--force`. Every replacement is
-   staged next to its destination first and swapped by rename, restoring the
-   old install if the swap fails. A `.claude/skills -> .agents/skills` link
-   (skm) is installed once. The CLI prints the source path and version and
-   says links follow the Python environment.
+   Copies record an lstat inventory (types, file SHA-256, link targets); an
+   edited or restructured copy, foreign content or an unreadable marker is
+   refused without `--force`. Targets resolving outside `--dest` through a
+   linked parent are refused. The destination is re-checked just before the
+   swap (refused if changed, `--force` included). A link replaces a link in
+   one rename; a copy swap restores at once on any exception, and after a
+   hard stop the next `install` or `path` puts the old copy back. A
+   `.claude/skills -> .agents/skills` link (skm) is installed once.
 4. **Consumer entry.** `dm.get_agent_doc("AGENTS")` / `("CLAUDE")` keep their
    signature and frozen asset paths (`asset/agent/AGENTS.md`, `CLAUDE.md`,
-   ADR 0005) with the same 53-line consumer entry pointing to the skill.
+   ADR 0005) with the same 54-line consumer entry pointing to the skill.
    Repo-root `AGENTS.md` / `CLAUDE.md` stay mirrored contributor docs.
 5. **`dm.figsize` tolerance.** `"W:H"` strings in `figsize`, `figsize_grid`,
-   `parse_aspect`; `px` input explains DPI. Old inputs return old values.
+   `parse_aspect` (quotient must be positive and finite); `px` input
+   explains DPI. Old inputs return old values.
 6. **MCP prompt text** loses "0.4". Names, order, docstrings, arguments and
    the discovery snapshot are unchanged; no expectation was regenerated.
 7. **Not touched:** styles, presets, fonts, colours, MCP tools, `prompt.py`,
@@ -50,26 +55,24 @@ recipe drew panel labels twice, `.cursor/rules` taught removed APIs, and
 
 | Surface | Lines | Chars | ≈ tokens |
 |---|---|---|---|
-| `SKILL.md` | 117 | 5,937 | 1,484 |
-| consumer entry | 53 | 2,301 | 575 |
-| SKILL.md + entry | 170 | 8,238 | 2,060 |
-| six references (on demand) | 455 | 18,314 | 4,578 |
+| `SKILL.md` | 120 | 6,340 | 1,585 |
+| consumer entry | 54 | 2,363 | 591 |
+| SKILL.md + entry | 174 | 8,703 | 2,176 |
+| six references (on demand) | 481 | 19,418 | 4,854 |
 | old documented path | 1,537 | 74,504 | 18,626 |
 
 ## Verification
 
 - `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy`
   (118 files), `scripts/check_boundaries.py`: pass.
-- Full suite, CI commands, at `a8e8e5d8` in a clone whose directories are
-  not group-writable (the MCP input fixtures require that; this worktree's
-  parents are 0775): Python 3.12 with coverage 6,998 passed, 0 failed,
-  coverage 92.04 % (gate 80 %), `check_integration_junit.py` "OK: 42
-  required modules"; Python 3.10 6,996 passed, 2 skipped, 0 failed. The run
-  before that caught finance vocabulary in the Korean reference
-  (`test_domain_neutrality`), fixed in `a8e8e5d8`.
-- `sphinx-build -W` (full gallery): build succeeded, 0 warnings,
-  `llms-full.txt` untouched. `llms-full.txt` was regenerated only through
-  `docs/_ext/build_hooks.generate_llms_full_txt(write=True)`.
+- Full suite, CI commands, in a clone whose directories are not
+  group-writable (MCP input fixtures require it; this worktree's parents
+  are 0775): Python 3.12 with coverage at `e1d40a5c` 7,018 passed, 0 failed,
+  coverage 92.05 %, `check_integration_junit.py` "OK: 42 required modules";
+  Python 3.10 at `1788a5e5` 7,015 passed, 2 skipped, 0 failed. Earlier runs
+  caught finance words in the Korean reference (fixed in `a8e8e5d8`).
+- `sphinx-build -W` (full gallery) at `1788a5e5`: 0 warnings, `llms-full.txt`
+  untouched; it was regenerated only via `generate_llms_full_txt(write=True)`.
 - `uv build --wheel`: skill (`__init__`, `__main__`, `SKILL.md`, six
   references), `asset/agent/{AGENTS,CLAUDE}.md` (consumer entry) and
   `llms*.txt` ship; no `tests/`. `tests/architecture/test_packaging.py`
@@ -109,5 +112,8 @@ mirrors, frozen asset paths), `tests/architecture/test_packaging.py`.
   layout and checks that ignore left titles today.
 - This repository's `.agents/skills` is managed by skm; the skill is not
   linked into it.
-- `make_palette` returns `oc.*` names while docs recommend `dc.*`; the skill
-  does not route to it.
+- The skill says `dm.format_axis_si/_myriad/_millions/_billions` choose
+  decimals by default; that holds once the parallel formatter branch lands
+  (today their default is `decimals=1`).
+- `dm.validate_data(..., allow_nan=True)` keeps Inf as well as NaN; the
+  skill does not repeat the 03-recipes note on checking finiteness.
