@@ -756,21 +756,34 @@ def _gate_surface(metric: str) -> str:
 
 
 def _adapt_gate_violation(item: gates.GateViolation) -> Violation:
-    """Adapt one shared raw gate decision to the comparison report schema."""
-    if item.metric == "/candidate":
-        code = "candidate_quality_invalid"
-    elif item.rule == "valid":
-        code = "quality_metric_invalid"
-    else:
-        code = "quality_regression"
+    """Adapt one shared raw gate decision to the comparison report schema.
+
+    A numeric gate reports its allowed and observed values; failures with
+    no numeric operands keep the report's established ``(1.0, 0.0)``.
+    """
+    baseline: float
+    candidate: float
+    match item:
+        case gates.InvalidCandidate():
+            code = "candidate_quality_invalid"
+            baseline, candidate = 1.0, 0.0
+        case gates.InvalidMetric():
+            code = "quality_metric_invalid"
+            baseline, candidate = 1.0, 0.0
+        case gates.UnequalValues():
+            code = "quality_regression"
+            baseline, candidate = 1.0, 0.0
+        case gates.ThresholdViolation():
+            code = "quality_regression"
+            baseline, candidate = item.allowed, item.observed
     return Violation(
         code=code,
         surface=_gate_surface(item.metric),
         asset=item.asset,
         path=item.metric,
         message=item.message,
-        baseline=item.allowed,
-        candidate=item.observed,
+        baseline=baseline,
+        candidate=candidate,
     )
 
 

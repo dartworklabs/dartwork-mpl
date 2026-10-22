@@ -19,13 +19,19 @@ from dartwork_mpl._colors.verify import _gates
 from dartwork_mpl._colors.verify._gates import (
     GateReport,
     GateViolation,
+    InvalidCandidate,
+    InvalidMetric,
+    ThresholdViolation,
+    UnequalValues,
     check_all,
     gate_cycle,
     gate_cyclic_cmap,
+    gate_decision_text,
     gate_div_cmap,
     gate_ladder,
     gate_seq_cmap,
     load_quality_baseline,
+    violation_order,
 )
 
 
@@ -100,6 +106,7 @@ def _require_violation(
     )
     assert len(matches) == 1, report.violations
     violation = matches[0]
+    assert isinstance(violation, ThresholdViolation), violation
     assert violation.rule == rule
     assert violation.message
     assert math.isfinite(violation.observed)
@@ -209,7 +216,7 @@ def test_cmap_gates_pass_ssot(v5_ssot):
 
 def test_gate_violation_is_frozen_sortable_and_raw() -> None:
     """Keep shared gate decisions deterministic and mutation-proof."""
-    later = GateViolation(
+    later = ThresholdViolation(
         asset="zeta",
         metric="/metric/zeta",
         observed=2.0,
@@ -217,7 +224,7 @@ def test_gate_violation_is_frozen_sortable_and_raw() -> None:
         rule="<=",
         message="zeta regressed",
     )
-    earlier = GateViolation(
+    earlier = ThresholdViolation(
         asset="alpha",
         metric="/metric/alpha",
         observed=0.0,
@@ -226,7 +233,10 @@ def test_gate_violation_is_frozen_sortable_and_raw() -> None:
         message="alpha regressed",
     )
 
-    assert tuple(sorted((later, earlier))) == (earlier, later)
+    assert tuple(sorted((later, earlier), key=violation_order)) == (
+        earlier,
+        later,
+    )
     with pytest.raises(FrozenInstanceError):
         earlier.metric = "/mutated"  # type: ignore[misc]
 
@@ -255,12 +265,110 @@ def test_gate_violation_rejects_non_raw_numbers(
     values[field] = value
 
     with pytest.raises(error):
-        GateViolation(**values)  # type: ignore[arg-type]
+        ThresholdViolation(**values)  # type: ignore[arg-type]
+
+
+def test_threshold_violation_rejects_an_unknown_rule() -> None:
+    """Only equality, floor and ceiling relations are gate decisions."""
+    with pytest.raises(ValueError, match="unknown gate relation"):
+        ThresholdViolation(
+            asset="amber",
+            metric="/metrics/palette/amber/step_cv",
+            rule="valid",  # type: ignore[arg-type]
+            observed=0.0,
+            allowed=1.0,
+            message="not a relation",
+        )
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda: InvalidMetric(asset=1, metric="/m", message="x"),  # type: ignore[arg-type]
+        lambda: UnequalValues(asset="a", metric=None, message="x"),  # type: ignore[arg-type]
+        lambda: InvalidCandidate(message=3),  # type: ignore[arg-type]
+    ],
+    ids=["invalid-metric", "unequal-values", "invalid-candidate"],
+)
+def test_operandless_failures_reject_non_string_fields(build) -> None:
+    """Failures without operands still name their asset and metric as text."""
+    with pytest.raises(TypeError, match="must be a string"):
+        build()
+
+
+def test_invalid_candidate_is_reported_against_the_whole_catalog() -> None:
+    """The unmeasurable-candidate failure has one fixed asset and path."""
+    violation = InvalidCandidate(message="ValueError: bad hex")
+
+    assert (violation.asset, violation.metric) == ("catalog", "/candidate")
+
+
+def test_failures_on_one_path_order_numeric_before_invalid() -> None:
+    """Keep the build's historical failure order without filler operands."""
+    invalid = InvalidMetric(asset="amber", metric="/m", message="a missing")
+    unequal = UnequalValues(asset="amber", metric="/m", message="z unequal")
+    threshold = ThresholdViolation(
+        asset="amber",
+        metric="/m",
+        rule=">=",
+        observed=0.0,
+        allowed=1.0,
+        message="z floor",
+    )
+    other = InvalidMetric(asset="aa", metric="/z", message="b")
+
+    report = GateReport(violations=(invalid, threshold, unequal, other))
+
+    assert report.violations == (other, unequal, threshold, invalid)
+
+
+@pytest.mark.parametrize(
+    ("violation", "text"),
+    [
+        (
+            ThresholdViolation(
+                asset="a",
+                metric="/m",
+                rule="<=",
+                observed=2,
+                allowed=1.5,
+                message="m",
+            ),
+            "2.0 <= 1.5",
+        ),
+        (UnequalValues(asset="a", metric="/m", message="m"), "0.0 == 1.0"),
+        (InvalidMetric(asset="a", metric="/m", message="m"), "0.0 valid 1.0"),
+        (InvalidCandidate(message="m"), "0.0 valid 1.0"),
+    ],
+    ids=["threshold", "unequal", "invalid-metric", "invalid-candidate"],
+)
+def test_gate_decision_text_keeps_the_printed_format(
+    violation: GateViolation, text: str
+) -> None:
+    """The GATE FAIL line format is the build CLI's output contract."""
+    assert gate_decision_text(violation) == text
+
+
+def test_unequal_non_numeric_operands_have_no_numeric_decision() -> None:
+    """A string-versus-number equality failure records no raw operands."""
+    violations: list[GateViolation] = []
+
+    _gates._gate_equal(
+        violations, asset="a", metric="/m", baseline=1, candidate="1"
+    )
+
+    assert violations == [
+        UnequalValues(
+            asset="a",
+            metric="/m",
+            message="candidate value '1' must equal frozen value 1",
+        )
+    ]
 
 
 def test_gate_report_sorts_and_freezes_violations() -> None:
     """Expose one sorted tuple as the shared build/report decision."""
-    later = GateViolation(
+    later = ThresholdViolation(
         asset="zeta",
         metric="/metric/zeta",
         observed=2.0,
@@ -268,7 +376,7 @@ def test_gate_report_sorts_and_freezes_violations() -> None:
         rule="<=",
         message="zeta regressed",
     )
-    earlier = GateViolation(
+    earlier = ThresholdViolation(
         asset="alpha",
         metric="/metric/alpha",
         observed=0.0,
@@ -359,7 +467,7 @@ def test_check_all_does_not_compare_direct_rows_to_full_lut_topology(
 def test_evaluate_catalog_names_sequential_direction_regression(
     candidate_catalog: CatalogSnapshot, quality_baseline: Mapping[str, object]
 ) -> None:
-    """Encode an ordered-family direction flip as a numeric equality gate."""
+    """Report an ordered-family direction flip as an unequal label pair."""
     row = candidate_catalog.palette["amber"]
     mutated = replace(
         candidate_catalog,
@@ -370,15 +478,31 @@ def test_evaluate_catalog_names_sequential_direction_regression(
 
     report = _gates.evaluate_catalog(mutated, quality_baseline)
 
-    violation = _require_violation(
-        report,
-        asset="amber",
-        metric="/metrics/palette/amber/direction",
-        rule="==",
-    )
-    assert violation.observed != violation.allowed
-    assert violation.observed in {-1.0, 0.0, 1.0}
-    assert violation.allowed in {-1.0, 0.0, 1.0}
+    matches = [
+        violation
+        for violation in report.violations
+        if violation.asset == "amber"
+        and violation.metric == "/metrics/palette/amber/direction"
+    ]
+    assert matches == [
+        UnequalValues(
+            asset="amber",
+            metric="/metrics/palette/amber/direction",
+            message=(
+                "candidate value 'increasing' must equal frozen value "
+                "'decreasing'"
+            ),
+        )
+    ] or matches == [
+        UnequalValues(
+            asset="amber",
+            metric="/metrics/palette/amber/direction",
+            message=(
+                "candidate value 'decreasing' must equal frozen value "
+                "'increasing'"
+            ),
+        )
+    ]
 
 
 def test_evaluate_catalog_names_sequential_y_order_regression(

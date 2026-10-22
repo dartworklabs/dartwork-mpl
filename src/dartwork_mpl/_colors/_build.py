@@ -13,8 +13,10 @@ from .construction import atomic_write_text as _atomic_write_text
 from .construction import compile_candidate_snapshot, load_v5_snapshot
 from .construction import render_generated as _render_generated
 from .verify import (
+    GateViolation,
     compare_exact_surfaces,
     evaluate_catalog,
+    gate_decision_text,
     load_quality_baseline,
 )
 
@@ -31,16 +33,12 @@ def _has_exact_mismatches(comparisons: Mapping[str, object]) -> bool:
     )
 
 
-def _print_gate_failures(violations: Sequence[object]) -> None:
+def _print_gate_failures(violations: Sequence[GateViolation]) -> None:
     """Render shared gate failures without imposing a second policy."""
     for violation in violations:
-        asset = getattr(violation, "asset", "catalog")
-        metric = getattr(violation, "metric", "unknown")
-        observed = getattr(violation, "observed", "unknown")
-        allowed = getattr(violation, "allowed", "unknown")
-        rule = getattr(violation, "rule", "unknown")
         print(
-            f"GATE FAIL: {asset} {metric}: {observed} {rule} {allowed}",
+            f"GATE FAIL: {violation.asset} {violation.metric}: "
+            f"{gate_decision_text(violation)}",
             file=sys.stderr,
         )
 

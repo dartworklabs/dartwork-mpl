@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from itertools import pairwise
 from pathlib import Path
 from types import MappingProxyType
-from typing import Protocol, cast
+from typing import ClassVar, Literal, Protocol, TypeAlias, cast
 
 from .. import _compatibility_metrics as oracle
 from .. import _ssot
@@ -24,15 +24,21 @@ __all__ = [
     "QUALITY_ORACLE_SHA256",
     "GateReport",
     "GateViolation",
+    "InvalidCandidate",
+    "InvalidMetric",
+    "ThresholdViolation",
+    "UnequalValues",
     "check_all",
     "evaluate_catalog",
     "evaluate_quality_metrics",
     "gate_cycle",
     "gate_cyclic_cmap",
+    "gate_decision_text",
     "gate_div_cmap",
     "gate_ladder",
     "gate_seq_cmap",
     "load_quality_baseline",
+    "violation_order",
 ]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -108,30 +114,167 @@ def _freeze(value: object) -> object:
     raise TypeError(f"unsupported gate value: {type(value).__name__}")
 
 
-@dataclass(frozen=True, slots=True, order=True)
-class GateViolation:
-    """One sortable gate failure expressed with raw finite decision values."""
+Relation: TypeAlias = Literal["==", ">=", "<="]
+"""How a candidate raw value must relate to its allowed value."""
+
+
+def _require_text(value: object, name: str) -> None:
+    """Reject a non-string identifying field of a gate failure."""
+    if not isinstance(value, str):
+        raise TypeError(f"{name} must be a string")
+
+
+def _raw_number(value: object, name: str) -> float:
+    """Return a finite non-boolean raw number or reject it."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise TypeError(f"{name} must be a finite raw number")
+    normalized = float(value)
+    if not math.isfinite(normalized):
+        raise ValueError(f"{name} must be a finite raw number")
+    return normalized
+
+
+@dataclass(frozen=True, slots=True)
+class ThresholdViolation:
+    """A measured raw value on the wrong side of its allowed value.
+
+    ``rule`` says how ``observed`` had to relate to ``allowed`` (``==``
+    for exact gates, ``>=``/``<=`` for floors and ceilings). Both numbers
+    are finite raw values (booleans are rejected); integers are stored as
+    floats.
+    """
 
     asset: str
     metric: str
-    rule: str
+    rule: Relation
     observed: float
     allowed: float
     message: str
 
     def __post_init__(self) -> None:
         """Normalize numeric inputs and reject rounded/non-finite sentinels."""
-        for name in ("asset", "metric", "rule", "message"):
-            if not isinstance(getattr(self, name), str):
-                raise TypeError(f"{name} must be a string")
+        for name in ("asset", "metric", "message"):
+            _require_text(getattr(self, name), name)
+        if self.rule not in ("==", ">=", "<="):
+            raise ValueError(f"unknown gate relation {self.rule!r}")
         for name in ("observed", "allowed"):
-            value = getattr(self, name)
-            if isinstance(value, bool) or not isinstance(value, (int, float)):
-                raise TypeError(f"{name} must be a finite raw number")
-            normalized = float(value)
-            if not math.isfinite(normalized):
-                raise ValueError(f"{name} must be a finite raw number")
-            object.__setattr__(self, name, normalized)
+            object.__setattr__(
+                self, name, _raw_number(getattr(self, name), name)
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class UnequalValues:
+    """An exact gate whose operands differ but are not both numbers.
+
+    The operands are not comparable on a number line, so no observed or
+    allowed value is recorded; ``message`` names both operands.
+    """
+
+    asset: str
+    metric: str
+    message: str
+
+    def __post_init__(self) -> None:
+        """Reject non-string identifying fields."""
+        for name in ("asset", "metric", "message"):
+            _require_text(getattr(self, name), name)
+
+
+@dataclass(frozen=True, slots=True)
+class InvalidMetric:
+    """A required metric or contract that is missing or malformed."""
+
+    asset: str
+    metric: str
+    message: str
+
+    def __post_init__(self) -> None:
+        """Reject non-string identifying fields."""
+        for name in ("asset", "metric", "message"):
+            _require_text(getattr(self, name), name)
+
+
+@dataclass(frozen=True, slots=True)
+class InvalidCandidate:
+    """The candidate catalogue could not be measured at all.
+
+    It is reported against the whole catalogue: ``asset`` is always
+    ``"catalog"`` and ``metric`` always ``"/candidate"``. ``message`` names
+    the error the oracle raised.
+    """
+
+    asset: ClassVar[str] = "catalog"
+    metric: ClassVar[str] = "/candidate"
+    message: str
+
+    def __post_init__(self) -> None:
+        """Reject a non-string message."""
+        _require_text(self.message, "message")
+
+
+GateViolation: TypeAlias = (
+    ThresholdViolation | UnequalValues | InvalidMetric | InvalidCandidate
+)
+"""One gate failure; a report holds them in :func:`violation_order`."""
+
+
+def gate_decision_text(violation: GateViolation) -> str:
+    """Return the ``observed rule allowed`` text the gate reports print.
+
+    Failures without raw operands keep the text the build has always
+    printed: an unequal non-numeric pair reads ``0.0 == 1.0`` and a missing
+    or malformed metric reads ``0.0 valid 1.0``.
+    """
+    match violation:
+        case ThresholdViolation():
+            return f"{violation.observed} {violation.rule} {violation.allowed}"
+        case UnequalValues():
+            return "0.0 == 1.0"
+        case InvalidMetric() | InvalidCandidate():
+            return "0.0 valid 1.0"
+
+
+def violation_order(
+    violation: GateViolation,
+) -> tuple[str, str, int, str, float, float, str]:
+    """Return the sort key that fixes the order of gate failures.
+
+    Failures order by asset and metric path. On one path, numeric failures
+    come first (by rule, observed, allowed, message), then unequal and
+    invalid ones by message — the order the build has always printed.
+    """
+    match violation:
+        case ThresholdViolation():
+            return (
+                violation.asset,
+                violation.metric,
+                0,
+                violation.rule,
+                violation.observed,
+                violation.allowed,
+                violation.message,
+            )
+        case UnequalValues():
+            return (
+                violation.asset,
+                violation.metric,
+                0,
+                "==",
+                0.0,
+                1.0,
+                violation.message,
+            )
+        case InvalidMetric() | InvalidCandidate():
+            return (
+                violation.asset,
+                violation.metric,
+                1,
+                "",
+                0.0,
+                0.0,
+                violation.message,
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,7 +287,11 @@ class GateReport:
 
     def __post_init__(self) -> None:
         """Sort failures and detach all retained metric containers."""
-        object.__setattr__(self, "violations", tuple(sorted(self.violations)))
+        object.__setattr__(
+            self,
+            "violations",
+            tuple(sorted(self.violations, key=violation_order)),
+        )
         object.__setattr__(
             self,
             "candidate_metrics",
@@ -225,52 +372,23 @@ def _pointer_token(value: str) -> str:
 
 def _failed_equality_values(
     baseline: object, candidate: object
-) -> tuple[float, float]:
-    """Represent arbitrary failed equality operands with finite raw values."""
+) -> tuple[float, float] | None:
+    """Return the failed equality operands as raw numbers, if both are."""
     old = _number(baseline)
     new = _number(candidate)
     if old is not None and new is not None:
         return new, old
     if isinstance(baseline, bool) and isinstance(candidate, bool):
         return float(candidate), float(baseline)
-    return 0.0, 1.0
-
-
-def _append_violation(
-    violations: list[GateViolation],
-    *,
-    asset: str,
-    metric: str,
-    observed: float,
-    allowed: float,
-    rule: str,
-    message: str,
-) -> None:
-    """Append one validated raw-value failure."""
-    violations.append(
-        GateViolation(
-            asset=asset,
-            metric=metric,
-            observed=observed,
-            allowed=allowed,
-            rule=rule,
-            message=message,
-        )
-    )
+    return None
 
 
 def _gate_invalid(
     violations: list[GateViolation], *, asset: str, metric: str, message: str
 ) -> None:
-    """Record a malformed required metric without non-finite sentinels."""
-    _append_violation(
-        violations,
-        asset=asset,
-        metric=metric,
-        observed=0.0,
-        allowed=1.0,
-        rule="valid",
-        message=message,
+    """Record a malformed or missing required metric."""
+    violations.append(
+        InvalidMetric(asset=asset, metric=metric, message=message)
     )
 
 
@@ -293,18 +411,25 @@ def _gate_equal(
         return
     if type(baseline) is type(candidate) and baseline == candidate:
         return
-    observed, allowed = _failed_equality_values(baseline, candidate)
-    _append_violation(
-        violations,
-        asset=asset,
-        metric=metric,
-        observed=observed,
-        allowed=allowed,
-        rule="==",
-        message=(
-            f"candidate value {candidate!r} must equal frozen value "
-            f"{baseline!r}"
-        ),
+    message = (
+        f"candidate value {candidate!r} must equal frozen value {baseline!r}"
+    )
+    operands = _failed_equality_values(baseline, candidate)
+    if operands is None:
+        violations.append(
+            UnequalValues(asset=asset, metric=metric, message=message)
+        )
+        return
+    observed, allowed = operands
+    violations.append(
+        ThresholdViolation(
+            asset=asset,
+            metric=metric,
+            observed=observed,
+            allowed=allowed,
+            rule="==",
+            message=message,
+        )
     )
 
 
@@ -336,7 +461,7 @@ def _gate_number(
     metric: str,
     baseline: object,
     candidate: object,
-    relation: str,
+    relation: Literal[">=", "<="],
     ceiling: float | None = None,
 ) -> None:
     """Apply one finite raw-number lower or upper bound."""
@@ -361,14 +486,15 @@ def _gate_number(
     if passed:
         return
     comparator = "at least" if relation == ">=" else "at most"
-    _append_violation(
-        violations,
-        asset=asset,
-        metric=metric,
-        observed=new,
-        allowed=threshold,
-        rule=relation,
-        message=f"candidate raw value must be {comparator} {threshold!r}",
+    violations.append(
+        ThresholdViolation(
+            asset=asset,
+            metric=metric,
+            observed=new,
+            allowed=threshold,
+            rule=relation,
+            message=f"candidate raw value must be {comparator} {threshold!r}",
+        )
     )
 
 
@@ -379,7 +505,7 @@ def _gate_summary_leaves(
     metric: str,
     baseline: object,
     candidate: object,
-    relation: str,
+    relation: Literal[">=", "<="],
 ) -> None:
     """Gate every raw numeric leaf of one summary mapping."""
     old = _as_mapping(baseline)
@@ -466,17 +592,19 @@ def _compare_ordered_record(
                     message="local 8-bit relative-Y record is malformed",
                 )
             elif margin < 0.0:
-                _append_violation(
-                    violations,
-                    asset=asset,
-                    metric=quantization_metric,
-                    observed=margin,
-                    allowed=0.0,
-                    rule=">=",
-                    message=(
-                        "candidate modeled-relative-Y ordering is impossible "
-                        f"within the local 8-bit cells at pair {pair_index}"
-                    ),
+                violations.append(
+                    ThresholdViolation(
+                        asset=asset,
+                        metric=quantization_metric,
+                        observed=margin,
+                        allowed=0.0,
+                        rule=">=",
+                        message=(
+                            "candidate modeled-relative-Y ordering is "
+                            "impossible within the local 8-bit cells at "
+                            f"pair {pair_index}"
+                        ),
+                    )
                 )
     if not monotonic_floors:
         return
@@ -984,14 +1112,7 @@ def evaluate_catalog(
         TypeError,
         ValueError,
     ) as error:
-        violation = GateViolation(
-            asset="catalog",
-            metric="/candidate",
-            observed=0.0,
-            allowed=1.0,
-            rule="valid",
-            message=f"{type(error).__name__}: {error}",
-        )
+        violation = InvalidCandidate(message=f"{type(error).__name__}: {error}")
         return GateReport(violations=(violation,))
 
     quality_violations = evaluate_quality_metrics(
@@ -1177,8 +1298,8 @@ def check_all(
         baseline_subset, candidate_subset, taxonomy
     )
     failures.extend(
-        f"{item.asset} {item.metric}: {item.observed} {item.rule} "
-        f"{item.allowed} ({item.message})"
+        f"{item.asset} {item.metric}: {gate_decision_text(item)} "
+        f"({item.message})"
         for item in violations
     )
     return sorted(failures)
