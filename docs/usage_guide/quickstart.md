@@ -433,7 +433,7 @@ pip install "dartwork-mpl[ui]"
 dartwork-mpl-ui init ./my-viewer --example simple
 
 # 2. run it — opens the viewer in your default browser
-cd my-viewer && python viewer.py
+cd my-viewer && python app.py
 ```
 
 → [Interactive UI guide](interactive.md)
