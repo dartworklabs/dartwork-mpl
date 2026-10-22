@@ -7,12 +7,14 @@ tick labels, and other matplotlib elements.
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from itertools import pairwise
 from typing import Any, Literal
 
 import matplotlib.ticker as ticker
 from matplotlib.axes import Axes
+
+from ._axis_wide import MyriadFormatter, ScaledFormatter, SIFormatter
 
 __all__ = [
     "avoid_tick_overlap",
@@ -28,6 +30,16 @@ __all__ = [
 ]
 
 _YEAR_SUFFIX = {"ko": "년", "ja": "年", "zh": "年", "en": ""}
+
+
+def _set_formatter(
+    ax: Axes, axis: str, make: Callable[[], ticker.Formatter]
+) -> None:
+    # Axis-wide formatters keep per-axis state, so each axis gets its own.
+    if axis in ("y", "both"):
+        ax.yaxis.set_major_formatter(make())
+    if axis in ("x", "both"):
+        ax.xaxis.set_major_formatter(make())
 
 
 def recommend_tick_decimals(values: Sequence[float]) -> int:
@@ -118,10 +130,16 @@ def format_axis_myriad(
     axis: str = "y",
     *,
     locale: str = "ko",
-    decimals: int = 1,
+    decimals: int | None = None,
     currency: str = "",
 ) -> None:
     """Format axis ticks using East-Asian myriad units.
+
+    Each tick takes the largest unit it reaches (``8,000``, ``1,230만``,
+    ``1.5억``). With the default ``decimals=None`` the ticks that share a
+    unit share one decimal count: the fewest that render each of them
+    exactly, so integer ticks print no decimals (``1억, 2억``) and a
+    fractional step keeps the count on every tick (``1.00억, 1.25억``).
 
     Parameters
     ----------
@@ -132,7 +150,9 @@ def format_axis_myriad(
     locale:
         Unit ladder locale: "ko", "zh", or "ja".
     decimals:
-        Number of decimal places before trailing zero trimming.
+        ``None`` (default) chooses decimals per unit as above. An integer
+        rounds every unit tick to that many places and then trims trailing
+        zeros per tick.
     currency:
         Optional currency prefix inserted after the sign.
     """
@@ -142,10 +162,16 @@ def format_axis_myriad(
         )
     if axis not in {"x", "y", "both"}:
         raise ValueError("axis must be one of 'x', 'y', or 'both'")
-    if decimals < 0:
+    if decimals is not None and decimals < 0:
         raise ValueError("decimals must be non-negative")
 
     unit_ladder = _MYRIAD_UNIT_LADDERS[locale]
+
+    if decimals is None:
+        _set_formatter(
+            ax, axis, lambda: MyriadFormatter(unit_ladder, currency=currency)
+        )
+        return
 
     def _format_myriad(value: float, _pos: int | None = None) -> str:
         if value == 0:
@@ -178,7 +204,7 @@ def format_axis_millions(
     ax: Axes,
     axis: Literal["x", "y", "both"] = "y",
     suffix: str = "M",
-    decimals: int = 1,
+    decimals: int | None = None,
 ) -> None:
     """Format axis tick labels in millions.
 
@@ -190,13 +216,21 @@ def format_axis_millions(
         Which axis to format
     suffix : str
         Suffix to add (default: "M")
-    decimals : int
-        Number of decimal places
+    decimals : int | None
+        ``None`` (default) chooses one decimal count per axis from the
+        visible ticks after dividing by 10^6: the fewest that render every
+        tick exactly, so ``1M, 2M`` print no decimals and ``0.5M, 1.0M``
+        keep one on every tick. The zero tick prints without the suffix
+        and with the axis decimal count. An integer fixes the decimal
+        places.
 
     Examples
     --------
     >>> format_axis_millions(ax)  # Show as 1.5M instead of 1500000
     """
+    if decimals is None:
+        _set_formatter(ax, axis, lambda: ScaledFormatter(1e6, suffix))
+        return
 
     def millions_formatter(x: float, pos: int) -> str:
         """Internal formatter function for millions scale.
@@ -233,7 +267,7 @@ def format_axis_billions(
     ax: Axes,
     axis: Literal["x", "y", "both"] = "y",
     suffix: str = "B",
-    decimals: int = 1,
+    decimals: int | None = None,
 ) -> None:
     """Format axis tick labels in billions.
 
@@ -245,13 +279,18 @@ def format_axis_billions(
         Which axis to format
     suffix : str
         Suffix to add (default: "B")
-    decimals : int
-        Number of decimal places
+    decimals : int | None
+        ``None`` (default) chooses one decimal count per axis from the
+        visible ticks after dividing by 10^9, as in
+        :func:`format_axis_millions`. An integer fixes the decimal places.
 
     Examples
     --------
     >>> format_axis_billions(ax)  # Show as 1.5B instead of 1500000000
     """
+    if decimals is None:
+        _set_formatter(ax, axis, lambda: ScaledFormatter(1e9, suffix))
+        return
 
     def billions_formatter(x: float, pos: int) -> str:
         """Internal formatter function for billions scale.
@@ -348,9 +387,24 @@ def format_axis_currency(
 
 
 def format_axis_si(
-    ax: Axes, axis: Literal["x", "y", "both"] = "y", decimals: int = 1
+    ax: Axes, axis: Literal["x", "y", "both"] = "y", decimals: int | None = None
 ) -> None:
-    """Format axis tick labels with SI prefixes (k, M, G, etc.).
+    """Format axis tick labels with SI prefixes (k, M, G, T).
+
+    With the default ``decimals=None`` the labels follow two axis-wide
+    rules, settled from the ticks inside the view on every draw:
+
+    - **One prefix per axis.** The largest visible ``|tick|`` picks the
+      prefix and every tick uses it, so an axis reads ``0.8k, 1.0k, 1.2k``
+      rather than mixing ``800`` and ``1.2k``. Below 1000 there is no
+      prefix. Log and other non-linear scales span decades, so there each
+      tick takes its own prefix (``1, 10, 100, 1k, 10k``).
+    - **One decimal count per axis.** The fewest decimals that render every
+      scaled tick exactly: ``0, 50, 100`` and ``1k, 2k`` print none, while
+      ``0.25k, 0.50k, 0.75k`` keep two on every tick.
+
+    The zero tick never carries a prefix or a sign and uses the axis
+    decimal count (``0`` on an integer axis).
 
     Parameters
     ----------
@@ -358,13 +412,18 @@ def format_axis_si(
         Matplotlib axes
     axis : Literal["x", "y", "both"]
         Which axis to format
-    decimals : int
-        Number of decimal places
+    decimals : int | None
+        ``None`` (default) applies the rules above. An integer formats
+        each tick on its own with that many decimals and a per-tick
+        prefix (``800.0``, ``1.2k``).
 
     Examples
     --------
-    >>> format_axis_si(ax)  # Show as 1.5k, 2.3M, etc.
+    >>> format_axis_si(ax)  # 0, 50, 100 … or 0.5M, 1.0M, 1.5M
     """
+    if decimals is None:
+        _set_formatter(ax, axis, SIFormatter)
+        return
 
     def si_formatter(x: float, pos: int) -> str:
         """Internal formatter function for SI prefix notation.
