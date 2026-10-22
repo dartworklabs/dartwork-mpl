@@ -1,8 +1,9 @@
-"""Print ``dm.lint_code`` findings for one source file as JSON.
+"""Print ``dm.lint_code`` findings for one source as JSON.
 
-Runs inside the unit's own venv (the wheel under test), isolated::
+``score.py`` runs this with a trusted interpreter (the run's wheel installed
+outside every project), inside a read-only bwrap, source on stdin::
 
-    .venv/bin/python -I lint_source.py plot.py
+    python -I lint_source.py -   < plot.py
 """
 
 from __future__ import annotations
@@ -15,8 +16,11 @@ import dartwork_mpl as dm
 
 
 def main() -> int:
-    with open(sys.argv[1], encoding="utf-8", errors="replace") as f:
-        source = f.read()
+    if sys.argv[1] == "-":  # source on stdin (the harness's sandboxed lint)
+        source = sys.stdin.read()
+    else:
+        with open(sys.argv[1], encoding="utf-8", errors="replace") as f:
+            source = f.read()
     issues = dm.lint_code(source)
     print(
         json.dumps(

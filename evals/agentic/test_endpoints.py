@@ -14,6 +14,7 @@ import pytest
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import common  # noqa: E402
 import compare  # noqa: E402
 import conformance  # noqa: E402
 import score  # noqa: E402
@@ -91,8 +92,8 @@ def test_lint_counts_findings_of_the_final_source(tmp_path):
     good = tmp_path / "good.py"
     good.write_text(CLEAN)
     case = {"id": "x"}
-    m_bad = score.source_metrics(case, PYTHON, bad)
-    m_good = score.source_metrics(case, PYTHON, good)
+    m_bad = score.source_metrics(case, bad)
+    m_good = score.source_metrics(case, good)
     assert m_bad["lint_clean"] is False
     assert {"figsize-direct", "tight-layout"} <= set(m_bad["lint"]["rules"])
     assert m_good["lint_findings"] == 0 and m_good["lint_clean"] is True
@@ -100,7 +101,7 @@ def test_lint_counts_findings_of_the_final_source(tmp_path):
 
 
 def test_missing_source_is_not_clean(tmp_path):
-    m = score.source_metrics({"id": "x"}, PYTHON, tmp_path / "nope.py")
+    m = score.source_metrics({"id": "x"}, tmp_path / "nope.py")
     assert (
         m["lint_clean"] is None
         and not compare.per_case(
@@ -116,8 +117,56 @@ def test_info_findings_are_reported_but_not_counted(tmp_path):
             "ax.plot([1, 2, 3])", 'ax.plot([1, 2, 3], color="#1f77b4")'
         )
     )
-    m = score.source_metrics({"id": "x"}, PYTHON, src)
+    m = score.source_metrics({"id": "x"}, src)
     assert (
         m["lint"]["rules"].get("raw-hex-color") and m["lint_findings_all"] >= 1
     )
     assert m["lint_findings"] == 0 and m["lint_clean"] is True
+
+
+BAD = (
+    "import matplotlib.pyplot as plt\nfig, ax = plt.subplots(figsize=(4, 3))\n"
+    "ax.plot([1, 2])\nplt.tight_layout()\nfig.savefig('out/figure.png')\n"
+)
+
+
+def test_a_patched_project_venv_cannot_clean_the_lint(tmp_path):
+    """The agent can write its venv: a lint_code that returns [] must not count."""
+    unit = tmp_path / "run" / "claude" / "g01-line-gdp" / "noskill-r1"
+    project = tmp_path / "work" / "abc"
+    (project / ".venv" / "bin").mkdir(parents=True)
+    unit.mkdir(parents=True)
+    fake = project / ".venv" / "bin" / "python"
+    fake.write_text(
+        '#!/bin/sh\necho \'{"findings": 0, "rules": {}, "severity": {}}\'\n'
+    )
+    fake.chmod(0o755)
+    (project / "plot.py").write_text(BAD)
+    common.write_json(
+        unit / "run.json",
+        {"host": "claude", "project": str(project), "started_ts": 0},
+    )
+    case = common.load_cases(["g01-line-gdp"])[0]
+    rec = score.score_unit(case, unit)
+    assert rec["lint_findings"] >= 2 and rec["lint_clean"] is False
+    assert rec["lint"]["interpreter"] != str(fake)
+    assert rec["lint"]["sandbox"] == "bwrap-ro"
+
+
+def test_lint_records_the_trusted_interpreter_and_wheel(tmp_path):
+    run = tmp_path / "run"
+    (run / "wheel").mkdir(parents=True)
+    src = tmp_path / "p.py"
+    src.write_text(BAD)
+    m = score.source_metrics({"id": "x"}, src, run)  # no wheel: harness env
+    assert m["lint"]["interpreter"] == sys.executable
+    assert m["lint"]["wheel_sha256"] is None
+
+
+def test_override_count_never_runs_project_code(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        score.subprocess, "run", lambda *a, **k: calls.append(a) or None
+    )
+    over = conformance.preset_overrides('plt.rcParams["font.size"] = 9\n')
+    assert over["total"] == 1 and not calls

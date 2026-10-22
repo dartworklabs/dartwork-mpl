@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import sys
 from argparse import Namespace
+from itertools import pairwise
 from pathlib import Path
 
 import pytest
@@ -168,7 +169,15 @@ def test_tool_workdir_outside_the_project(tree):
 
 
 # ------------------------------------------------------------ 2. recheck never clears
-def _unit(tmp_path, tree, *, sandbox: bool, at_run: bool, transcript: str):
+def _unit(
+    tmp_path,
+    tree,
+    *,
+    sandbox: bool,
+    at_run: bool,
+    transcript: str,
+    mounts: list[str] = (),
+):
     unit = (
         tmp_path / "records" / "run" / "claude" / "g01-line-gdp" / "noskill-r1"
     )
@@ -179,6 +188,7 @@ def _unit(tmp_path, tree, *, sandbox: bool, at_run: bool, transcript: str):
         cmd = [
             "bwrap",
             *[a for h in hide for a in ("--tmpfs", str(h))],
+            *mounts,
             "--bind",
             str(tree.project),
             str(tree.project),
@@ -313,3 +323,86 @@ def test_skill_arms_refuse_to_run_without_the_sandbox(tmp_path, monkeypatch):
     with pytest.raises(SystemExit) as exc:
         runner.main()
     assert exc.value.code == 2
+
+
+# ------------------------------------------------------------ sandbox coverage (addendum 2)
+OTHER_CLAUDE = str(
+    Path.home() / ".claude" / "projects" / "-home-x-other" / "s1.jsonl"
+)
+OTHER_CODEX = str(
+    Path.home()
+    / ".codex"
+    / "sessions"
+    / "2026"
+    / "10"
+    / "22"
+    / "rollout-1-other.jsonl"
+)
+
+
+@pytest.mark.parametrize("path", [OTHER_CLAUDE, OTHER_CODEX])
+def test_sandboxed_unit_reading_another_units_transcript_is_contaminated(
+    tmp_path, tree, path
+):
+    unit = _unit(
+        tmp_path, tree, sandbox=True, at_run=False, transcript=f"cat {path}"
+    )
+    r = _score(unit)
+    assert r["sandboxed"] is True and r["contaminated"] is True
+    assert r["contamination_text"]["gating"]
+
+
+def test_sandboxed_unit_touching_only_its_project_is_clean(tmp_path, tree):
+    unit = _unit(
+        tmp_path,
+        tree,
+        sandbox=True,
+        at_run=False,
+        transcript="ls data && .venv/bin/python plot.py && ls out",
+    )
+    r = _score(unit)
+    assert r["contaminated"] is False and not r["contamination_text"]["flagged"]
+
+
+def test_a_store_the_sandbox_replaced_is_advisory(tmp_path, tree):
+    store = str(Path.home() / ".claude" / "projects")
+    unit = _unit(
+        tmp_path,
+        tree,
+        sandbox=True,
+        at_run=False,
+        transcript=f"cat {OTHER_CLAUDE}",
+        mounts=["--tmpfs", store],
+    )
+    r = _score(unit)
+    assert r["contamination_text"]["flagged"] and r["contaminated"] is False
+
+
+def test_grading_names_gate_even_under_the_sandbox(tmp_path, tree):
+    unit = _unit(
+        tmp_path,
+        tree,
+        sandbox=True,
+        at_run=False,
+        transcript="grep -r x ../../evals/agentic/cases",
+    )
+    assert _score(unit)["contaminated"] is True
+
+
+def test_sandbox_hides_home_stores_and_gives_codex_its_own_sessions(tmp_path):
+    args, sessions = runner.home_store_mounts("codex", tmp_path / "stores")
+    targets = {b for a, b in pairwise(args) if a == "--tmpfs"}
+    binds = {
+        args[i + 2]: args[i + 1]
+        for i, a in enumerate(args[:-2])
+        if a == "--bind"
+    }
+    codex_sessions = str(Path.home() / ".codex" / "sessions")
+    if Path(codex_sessions).is_dir():
+        assert binds[codex_sessions] == str(sessions)
+    claude_projects = str(Path.home() / ".claude" / "projects")
+    if Path(claude_projects).is_dir():
+        assert claude_projects in targets
+    assert not any(".sqlite" in t for t in [*targets, *binds])
+    args, sessions = runner.home_store_mounts("claude", tmp_path / "stores2")
+    assert sessions is None

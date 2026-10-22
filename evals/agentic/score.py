@@ -36,6 +36,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -53,6 +54,7 @@ from common import (
     read_json,
     write_json,
 )
+from contamination import gating
 from PIL import Image
 from summary import summary_md
 
@@ -75,29 +77,125 @@ RERUN_TIMEOUT = 300
 ASPECT_TOL = 0.02
 
 
-def lint_final_source(python: Path, plot: Path) -> dict:
-    """``dm.lint_code`` findings for the final source, with the unit's own wheel."""
+_LINTERS: dict = {}
+_LINTER_LOCK = threading.Lock()
+
+
+def trusted_linter(run_dir: Path | None) -> dict:
+    """An interpreter the agents never touched, with the run's wheel installed.
+
+    The run's wheel (``RUN/wheel/*.whl``) is checked against the manifest's
+    sha256 and installed into ``ROOT/lint-envs/<sha>`` (outside every
+    project) once per wheel. Without a run wheel (unit tests, selftest) the
+    harness's own interpreter is used.
+    """
+    whl = next((run_dir / "wheel").glob("*.whl"), None) if run_dir else None
+    if whl is None:
+        return {
+            "python": sys.executable,
+            "wheel_sha256": None,
+            "env": "harness",
+        }
+    digest = hashlib.sha256(whl.read_bytes()).hexdigest()
+    want = (
+        (read_json(run_dir / "manifest.json") or {}).get("wheel") or {}
+    ).get("sha256")
+    if want and want != digest:
+        raise RuntimeError(f"{whl} does not match the manifest wheel sha256")
+    with _LINTER_LOCK:
+        if digest not in _LINTERS:
+            env = run_dir.parent / "lint-envs" / digest[:16]
+            py = env / "bin" / "python"
+            if not py.exists():
+                cfg = (read_json(run_dir / "manifest.json") or {}).get(
+                    "config"
+                ) or {}
+                subprocess.run(
+                    [
+                        "uv",
+                        "venv",
+                        "--quiet",
+                        "--python",
+                        cfg.get("python", "3.12"),
+                        str(env),
+                    ],
+                    check=True,
+                )
+                subprocess.run(
+                    [
+                        "uv",
+                        "pip",
+                        "install",
+                        "--quiet",
+                        "--python",
+                        str(py),
+                        str(whl),
+                    ],
+                    check=True,
+                    timeout=900,
+                )
+            _LINTERS[digest] = {
+                "python": str(py),
+                "wheel_sha256": digest,
+                "env": str(env),
+            }
+    return _LINTERS[digest]
+
+
+def lint_final_source(linter: dict, plot: Path) -> dict:
+    """``dm.lint_code`` of the final source with the trusted interpreter.
+
+    Runs inside bwrap with a read-only root and the repo, records and work
+    trees hidden (only the linter's environment re-exposed, read-only); the
+    source goes in on stdin and is parsed, never executed.
+    """
+    py = linter["python"]
+    hide = [
+        *runner.repo_roots(),
+        DEFAULT_ROOT.resolve(),
+        runner.DEFAULT_WORK.resolve(),
+    ]
+    argv = ["bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc"]
+    argv += [a for h in hide for a in ("--tmpfs", str(h))]
+    argv += ["--tmpfs", "/tmp"]
+    if linter["env"] != "harness":
+        argv += ["--ro-bind", linter["env"], linter["env"]]
+    else:  # the harness venv and its editable source live in the repo
+        for keep in (Path(sys.prefix), REPO / "src"):
+            argv += ["--ro-bind", str(keep), str(keep)]
+    code = LINT.read_text(encoding="utf-8")
     try:
         proc = subprocess.run(
-            [str(python), "-I", str(LINT), str(plot)],
+            [*argv, "--", py, "-I", "-c", code, "-"],
+            input=plot.read_text(encoding="utf-8", errors="replace"),
             capture_output=True,
             text=True,
             timeout=120,
-            stdin=subprocess.DEVNULL,
             env={
                 "PATH": "/usr/bin:/bin",
                 "HOME": str(Path.home()),
                 "LANG": "C.UTF-8",
+                "MPLCONFIGDIR": "/tmp/mpl",
             },
         )
-        return json.loads(proc.stdout.strip().splitlines()[-1])
+        out = json.loads(proc.stdout.strip().splitlines()[-1])
     except (subprocess.TimeoutExpired, ValueError, IndexError) as exc:
-        return {"findings": None, "error": f"{type(exc).__name__}: {exc}"}
+        out = {"findings": None, "error": f"{type(exc).__name__}: {exc}"}
+    return {
+        **out,
+        "interpreter": py,
+        "wheel_sha256": linter["wheel_sha256"],
+        "sandbox": "bwrap-ro",
+    }
 
 
-def source_metrics(case: dict, python: Path, plot: Path) -> dict:
-    """API conformance (lint) and unrequested preset overrides of the final plot.py."""
-    if not plot.exists() or not python.exists():
+def source_metrics(case: dict, plot: Path, run_dir: Path | None = None) -> dict:
+    """API conformance (lint) and unrequested preset overrides of the final plot.py.
+
+    Nothing from the project is executed: the lint runs with ``trusted_linter``
+    and the override count parses the source in this process.
+    """
+    if not plot.exists():
         return {
             "lint": None,
             "lint_findings": None,
@@ -106,7 +204,7 @@ def source_metrics(case: dict, python: Path, plot: Path) -> dict:
             "preset_overrides": None,
             "preset_overrides_total": None,
         }
-    lint = lint_final_source(python, plot)
+    lint = lint_final_source(trusted_linter(run_dir), plot)
     over = conformance.preset_overrides(
         plot.read_text(encoding="utf-8", errors="replace"),
         tuple(case.get("allowed_overrides", [])),
@@ -415,9 +513,10 @@ def score_unit(case: dict, unit: Path) -> dict:
         }
     )
     rec["inspection_observed"] = (run.get("inspection") or {}).get("observed")
-    # Under the sandbox the tmpfs hiding is the enforcement and the text
-    # evidence is advisory; without it the text evidence gates. Either way
-    # the run-time flag and the recheck are OR-ed: a recheck never clears.
+    # The run-time flag and the recheck are OR-ed: a recheck never clears.
+    # Without the sandbox every finding gates. Under it, findings the sandbox
+    # neutralised (paths it hid) are advisory; grading names and paths it did
+    # not hide (e.g. another session's transcript under HOME) still gate.
     at_run = run.get("contamination")
     recheck = runner.recheck_contamination(run, unit)
     flagged = bool((at_run or {}).get("contaminated")) or bool(
@@ -432,11 +531,14 @@ def score_unit(case: dict, unit: Path) -> dict:
         "at_run": at_run,
         "recheck": recheck,
     }
-    rec["contaminated"] = flagged and not rec["sandboxed"]
+    covered = runner.covered_by_sandbox(run)
+    gate = gating(at_run, covered) + gating(recheck, covered)
+    rec["contamination_text"]["gating"] = gate[:20]
+    rec["contaminated"] = flagged and (not rec["sandboxed"] or bool(gate))
     rec["execution_success"], rec["execution_problems"] = execution(
         unit, project, run
     )
-    rec.update(source_metrics(case, python, project / "plot.py"))
+    rec.update(source_metrics(case, project / "plot.py", unit.parents[2]))
     if not (project / "plot.py").exists() or not python.exists():
         rec.update(
             rerun_ok=False,

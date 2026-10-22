@@ -19,7 +19,13 @@ transcript objects and reports any sign that grading files were reached:
   the project is a hit;
 * **names**: ``evals/agentic``, ``fixtures/reference``, ``score.json``,
   ``manifest.json``, ``run_meta.json`` anywhere is a hit (package text that
-  mentions them can trip this; it fails closed).
+  mentions them can trip this; it fails closed);
+* **transcript stores**: other sessions' transcripts and histories under
+  HOME (``~/.claude/projects``, ``~/.codex/sessions``, Codex sqlite stores,
+  ...; ``transcript_stores``) count as grading roots.
+
+Under the sandbox, ``gating`` keeps the findings it did not neutralise
+(names, and roots not hidden by a tmpfs or a per-unit bind) gating.
 
 Strings are scanned raw (JSON is decoded first), so ``\\n``, ``\\t`` and
 ``\\"`` separate words.
@@ -33,7 +39,7 @@ import os
 import re
 from pathlib import Path
 
-RULE = "resolved-path-v3"
+RULE = "resolved-path-v4"
 NAME_MARKERS = (
     "evals/agentic",
     "fixtures/reference",
@@ -155,21 +161,76 @@ def _resolve(path: str, cwd: str) -> str:
     return os.path.realpath(os.path.normpath(path))
 
 
+def transcript_stores(home: str = HOME) -> list[str]:
+    """Other sessions' transcripts and histories under HOME (Claude Code, Codex).
+
+    Not grading files, but they hold other units' work and the operator's
+    sessions, so reaching them is contamination too. ``run.py`` hides or
+    replaces them inside the sandbox (``home_store_mounts``).
+    """
+    claude, codex = Path(home) / ".claude", Path(home) / ".codex"
+    paths = [
+        claude / "projects",
+        claude / "file-history",
+        claude / "sessions",
+        claude / "todos",
+        claude / "plans",
+        claude / "history.jsonl",
+        codex / "sessions",
+        codex / "archived_sessions",
+        codex / "history.jsonl",
+        codex / "session_index.jsonl",
+        codex / "log",
+        *sorted(codex.glob("*.sqlite*")),
+        *sorted(codex.glob("accounts/*/sessions")),
+    ]
+    return [str(p) for p in paths]
+
+
 class _Scan:
-    def __init__(self, roots: list, work_root: Path, project: Path):
+    def __init__(
+        self,
+        roots: list,
+        work_root: Path,
+        project: Path,
+        stores: list | None = None,
+        exempt: list | None = None,
+    ):
         self.grading = sorted(
             {os.path.realpath(str(r)) for r in roots if os.path.isabs(str(r))}
         )
+        self.stores = sorted(
+            {
+                os.path.realpath(str(r))
+                for r in (transcript_stores() if stores is None else stores)
+            }
+        )
+        # absolute entries exempt a subtree, relative ones a file-name suffix
+        self.exempt = [
+            os.path.realpath(e) if os.path.isabs(e) else e
+            for e in map(str, exempt or [])
+        ]
         self.work = os.path.realpath(str(work_root))
         self.own = os.path.realpath(str(project))
-        self.hits: set[str] = set()
+        self.found: dict[str, dict] = {}
 
-    def graded(self, path: str) -> bool:
-        if _inside(path, self.own):
-            return False
-        return any(_inside(path, r) for r in self.grading) or (
-            path != self.work and _inside(path, self.work)
-        )
+    def add(self, label: str, kind: str, root: str | None = None) -> None:
+        self.found.setdefault(label, {"kind": kind, "root": root})
+
+    def root_of(self, path: str) -> str | None:
+        """The grading root (repo, records, another project, a store) ``path`` is in."""
+        if _inside(path, self.own) or any(
+            _inside(path, e) if e.startswith("/") else path.endswith(e)
+            for e in self.exempt
+        ):
+            return None
+        for r in [*self.grading, *self.stores]:
+            if _inside(path, r):
+                return r
+        if path != self.work and _inside(path, self.work):
+            rel = path[len(self.work) + 1 :]
+            return os.path.join(self.work, rel.split("/")[0])
+        return None
 
     def _sibling(self, comps: list[str]) -> bool:
         """Pattern components can select a project other than this one."""
@@ -179,28 +240,31 @@ class _Scan:
         nxt = comps[len(work)]
         return nxt != os.path.basename(self.own)
 
-    def expands_into_grading(self, word: str, cwd: str) -> bool:
-        """A glob/expansion in a command that could reach grading files.
+    def expands_into_grading(self, word: str, cwd: str) -> str | None:
+        """The grading root a glob/expansion in a command could reach, else None.
 
         Either its literal prefix (before ``*?[$`{``, with at least one named
-        component) is a string prefix of a grading root or of another
+        component) is a string prefix of a grading root, a store or another
         project, or the pattern, component by component (unknown expansions
-        as ``*``, ``**`` as any depth), reaches a grading root.
+        as ``*``, ``**`` as any depth), reaches one.
         """
         cut = min((word.index(c) for c in EXPANSION if c in word), default=None)
         if cut is None:
-            return False
+            return None
+        targets = [*self.grading, *self.stores]
         literal = word[:cut]
         if literal.strip("/"):
             lit = _resolve(literal, cwd) + (
                 "/" if literal.endswith("/") else ""
             )
-            if not _inside(lit.rstrip("/"), self.own) and (
-                any(r.startswith(lit) for r in self.grading)
-                or (self.work + "/").startswith(lit)
-                or lit.startswith(self.work + "/")
-            ):
-                return True
+            if not _inside(lit.rstrip("/"), self.own):
+                hit = next((r for r in targets if r.startswith(lit)), None)
+                if hit:
+                    return hit
+                if (self.work + "/").startswith(lit) or lit.startswith(
+                    self.work + "/"
+                ):
+                    return self.work
         pattern = re.sub(
             r"\$\{[^}]*\}?|\$\(?\w*\)?|`[^`]*`?|\{[^}]*\}?", "*", word
         )
@@ -208,23 +272,27 @@ class _Scan:
         if not pattern.startswith("/"):
             pattern = os.path.join(cwd, pattern)
         comps = [c for c in os.path.normpath(pattern).split("/") if c]
-        return any(
-            _reaches(comps, [c for c in r.split("/") if c])
-            for r in self.grading
-        ) or self._sibling(comps)
+        hit = next(
+            (
+                r
+                for r in targets
+                if _reaches(comps, [c for c in r.split("/") if c])
+            ),
+            None,
+        )
+        return hit or (self.work if self._sibling(comps) else None)
 
     def word(self, raw: str, cwd: str) -> None:
         w = _expand(raw)
         cut = min((w.index(c) for c in EXPANSION if c in w), default=None)
         literal = w if cut is None else w[:cut]
-        for m in ABSOLUTE.finditer(literal):
-            path = _resolve(m.group(0), cwd)
-            if self.graded(path):
-                self.hits.add(path)
+        paths = [_resolve(m.group(0), cwd) for m in ABSOLUTE.finditer(literal)]
         if (not literal.startswith("/") and "/" in literal) or literal == "..":
-            path = _resolve(literal, cwd)
-            if self.graded(path):
-                self.hits.add(path)
+            paths.append(_resolve(literal, cwd))
+        for path in paths:
+            root = self.root_of(path)
+            if root:
+                self.add(path, "path", root)
 
     def text(self, s: str, cwd: str, globs: bool = False) -> None:
         s = URL.sub(" ", s)
@@ -234,8 +302,9 @@ class _Scan:
             return
         for tok in re.split(r"[\s'\"();|&<>]+", s):
             for piece in re.split(r"[=:]", tok):
-                if piece and self.expands_into_grading(_expand(piece), cwd):
-                    self.hits.add(f"glob into grading root: {piece}")
+                root = piece and self.expands_into_grading(_expand(piece), cwd)
+                if root:
+                    self.add(f"glob into grading root: {piece}", "glob", root)
 
     def command(self, s: str) -> None:
         """Scan a tool-call string segment by segment, following cd/pushd."""
@@ -253,26 +322,60 @@ class _Scan:
                     else HOME  # bare cd goes home; cd - is unknown
                 )
                 if not _inside(dest, self.own):
-                    self.hits.add(f"left the project: {seg.strip()[:80]}")
+                    self.add(f"left the project: {seg.strip()[:80]}", "cd")
                 cwd = dest
 
 
 def contamination(
-    texts: list, roots: list, work_root: Path, project: Path
+    texts: list,
+    roots: list,
+    work_root: Path,
+    project: Path,
+    stores: list | None = None,
+    exempt: list | None = None,
 ) -> dict:
-    """Hits of every rule above over tool calls and outputs; ``contaminated`` if any."""
-    scan = _Scan(roots, work_root, project)
+    """Findings of every rule above over tool calls and outputs; ``contaminated`` if any.
+
+    ``findings`` maps each hit to its ``kind`` (``path``, ``glob``, ``cd``,
+    ``workdir``, ``name``) and, for paths and globs, the grading ``root``
+    reached; ``score.py`` uses the root to decide whether the sandbox hid it.
+    ``stores`` defaults to ``transcript_stores()``; ``exempt`` paths (this
+    unit's own rollouts) are never hits.
+    """
+    scan = _Scan(roots, work_root, project, stores, exempt)
     for role, s in _normalise(texts):
         if not isinstance(s, str):
             continue
-        scan.hits.update(f"name: {m}" for m in NAME_MARKERS if m in s)
+        for m in NAME_MARKERS:
+            if m in s:
+                scan.add(f"name: {m}", "name")
         if role == "workdir":
             dest = _resolve(_expand(s), scan.own)
             if not _inside(dest, scan.own):
-                scan.hits.add(f"left the project: workdir {s[:80]}")
+                scan.add(f"left the project: workdir {s[:80]}", "workdir")
         elif role == "input":
             scan.command(s)
         else:
             scan.text(s, scan.own)
-    hits = sorted(scan.hits)
-    return {"contaminated": bool(hits), "hits": hits[:20], "rule": RULE}
+    hits = sorted(scan.found)
+    return {
+        "contaminated": bool(hits),
+        "hits": hits[:20],
+        "findings": [{"hit": h, **scan.found[h]} for h in hits[:200]],
+        "rule": RULE,
+    }
+
+
+def gating(result: dict | None, covered) -> list[dict]:
+    """Findings the sandbox did not neutralise: grading names, and paths or
+    globs whose root ``covered(root)`` says was not hidden in the sandbox."""
+    return [
+        f
+        for f in (result or {}).get("findings") or []
+        if f["kind"] == "name"
+        or (
+            f["kind"] in ("path", "glob")
+            and f.get("root")
+            and not covered(f["root"])
+        )
+    ]

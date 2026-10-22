@@ -59,7 +59,7 @@ from common import (
     read_json,
     write_json,
 )
-from contamination import contamination, tool_strings
+from contamination import contamination, tool_strings, transcript_stores
 from PIL import Image
 
 TOOLS = ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill"]
@@ -380,12 +380,45 @@ def host_context(host: str, home: Path) -> dict:
     }
 
 
-def sandbox_wrap(argv: list[str], project: Path, hide: list[Path]) -> list[str]:
-    """Optional bwrap: mount empty tmpfs over the repo, records and other projects."""
+def home_store_mounts(host: str, stores: Path) -> tuple[list[str], Path | None]:
+    """bwrap args that hide other sessions' transcripts and histories under HOME.
+
+    Directories get an empty tmpfs, files an empty per-unit copy, except the
+    Codex sessions directory of a Codex unit, which is a fresh per-unit
+    directory (``stores/codex-sessions``) so the harness still reads this
+    unit's own rollouts. Codex's sqlite stores stay (Codex needs them);
+    reading them is gating text evidence instead. Returns the args and the
+    per-unit Codex sessions directory (None for Claude).
+    """
+    stores.mkdir(parents=True, exist_ok=True)
+    args: list[str] = []
+    sessions = None
+    for raw in transcript_stores():
+        path = Path(raw)
+        if ".sqlite" in path.name:
+            continue  # Codex sqlite stores: needed by Codex itself
+        if path.is_dir():
+            if host == "codex" and path == Path.home() / ".codex" / "sessions":
+                sessions = stores / "codex-sessions"
+                sessions.mkdir(exist_ok=True)
+                args += ["--bind", str(sessions), str(path)]
+            else:
+                args += ["--tmpfs", str(path)]
+        elif path.is_file():
+            blank = stores / f"blank-{path.parent.name}-{path.name}"
+            blank.touch()
+            args += ["--bind", str(blank), str(path)]
+    return args, sessions
+
+
+def sandbox_wrap(
+    argv: list[str], project: Path, hide: list[Path], extra: list[str] = ()
+) -> list[str]:
+    """Optional bwrap: tmpfs over the repo, records and other projects (+ ``extra`` mounts)."""
     args = ["bwrap", "--dev-bind", "/", "/"]
     for p in hide:
         args += ["--tmpfs", str(p)]
-    return [*args, "--bind", str(project), str(project), "--", *argv]
+    return [*args, *extra, "--bind", str(project), str(project), "--", *argv]
 
 
 # ------------------------------------------------------------ rollouts / monitor
@@ -402,9 +435,9 @@ def _jsonl(path: Path) -> list[dict]:
     return [e for e in map(parse, lines) if isinstance(e, dict)]
 
 
-def _session_dirs(home: Path) -> list[Path]:
+def _session_dirs(home: Path, roots: list[Path] | None = None) -> list[Path]:
     days = {date.today() + timedelta(days=k) for k in (-1, 0, 1)}
-    roots = [home / "sessions", *home.glob("accounts/*/sessions")]
+    roots = roots or [home / "sessions", *home.glob("accounts/*/sessions")]
     return [
         r / f"{d:%Y/%m/%d}"
         for r in roots
@@ -422,12 +455,14 @@ def _meta(path: Path) -> dict:
 
 
 def codex_rollouts(
-    home: Path, thread: str | None
+    home: Path, thread: str | None, roots: list[Path] | None = None
 ) -> tuple[Path | None, list[Path]]:
     """The parent rollout and every (transitive) sub-agent rollout of ``thread``."""
     if not thread:
         return None, []
-    files = [p for d in _session_dirs(home) for p in d.glob("rollout-*.jsonl")]
+    files = [
+        p for d in _session_dirs(home, roots) for p in d.glob("rollout-*.jsonl")
+    ]
     parent = next(
         (p for p in files if p.name.endswith(f"{thread}.jsonl")), None
     )
@@ -459,7 +494,13 @@ def _total(u: dict) -> int:
 class CodexMonitor:
     """Kill the run when parent + sub-agent tokens exceed the manifest budget."""
 
-    def __init__(self, home: Path, transcript: Path, budget: int):
+    def __init__(
+        self,
+        home: Path,
+        transcript: Path,
+        budget: int,
+        roots: list[Path] | None = None,
+    ):
         self.home, self.transcript, self.budget, self.thread, self.last = (
             home,
             transcript,
@@ -467,12 +508,13 @@ class CodexMonitor:
             None,
             0,
         )
+        self.roots = roots
 
     def __call__(self) -> bool:
         if not self.thread:
             first = _jsonl(self.transcript)[:1]
             self.thread = first[0].get("thread_id") if first else None
-        parent, subs = codex_rollouts(self.home, self.thread)
+        parent, subs = codex_rollouts(self.home, self.thread, self.roots)
         self.last = sum(_total(_usage(_jsonl(p))) for p in [parent, *subs] if p)
         return self.last > self.budget
 
@@ -755,8 +797,28 @@ def grading_roots(rec: dict, unit: Path) -> list[Path]:
 
 
 def _hidden(rec: dict) -> list[Path]:
+    """Paths the sandbox replaced: tmpfs targets and bind destinations but the project."""
     cmd = rec.get("command") or []
-    return [Path(b) for a, b in pairwise(cmd) if a == "--tmpfs"]
+    if "--" in cmd:
+        cmd = cmd[: cmd.index("--")]
+    out = [Path(b) for a, b in pairwise(cmd) if a == "--tmpfs"]
+    out += [
+        Path(cmd[i + 2])
+        for i, a in enumerate(cmd[:-2])
+        if a == "--bind" and cmd[i + 2] != rec.get("project")
+    ]
+    return out
+
+
+def covered_by_sandbox(rec: dict):
+    """``covered(root)``: the unit's sandbox hid or replaced ``root``."""
+    hidden = [os.path.realpath(str(p)) for p in _hidden(rec)]
+
+    def covered(root: str) -> bool:
+        r = os.path.realpath(root)
+        return any(r == h or r.startswith(h.rstrip("/") + "/") for h in hidden)
+
+    return covered
 
 
 def sandboxed(rec: dict, unit: Path) -> bool:
@@ -784,11 +846,19 @@ def recheck_contamination(rec: dict, unit: Path) -> dict | None:
     lines = _jsonl(unit / "transcript.jsonl")
     rolls = [_jsonl(p) for p in sorted(unit.glob("rollout*.jsonl"))]
     project = Path(rec["project"])
+    own = [  # this unit's own rollouts (by thread id) in the sessions store
+        f"{t}.jsonl"
+        for r in rolls
+        for e in r[:1]
+        for t in [(e.get("payload") or {}).get("id")]
+        if t
+    ]
     return contamination(
         tool_strings(rec["host"], lines, rolls),
         grading_roots(rec, unit),
         project.parent,
         project,
+        exempt=own,
     )
 
 
@@ -927,6 +997,12 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
             rec["skill"]["sha256"] = rec["skill_install"]["sha256"]
         prompt = full_prompt(case)
         (unit / "prompt.txt").write_text(prompt, encoding="utf-8")
+        mounts, sessions = (
+            home_store_mounts(host, unit / "home-stores")
+            if cfg["hide_grading"]
+            else ([], None)
+        )
+        roots = [sessions] if sessions else None
         if host == "claude":
             argv = claude_cmd(prompt, cfg)
             env = base_env(
@@ -944,9 +1020,10 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
                 home,
                 unit / "transcript.jsonl",
                 cfg["budgets"]["codex"]["token_budget"],
+                roots,
             )
         if cfg["hide_grading"]:
-            argv = sandbox_wrap(argv, project, hide)
+            argv = sandbox_wrap(argv, project, hide, mounts)
         rec["command"] = argv
         if a.dry_run:
             write_json(unit / "run.json", {**rec, "dry_run": True})
@@ -974,7 +1051,7 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
             thread = next(
                 (e.get("thread_id") for e in lines if e.get("thread_id")), None
             )
-            parent, sub_paths = codex_rollouts(home, thread)
+            parent, sub_paths = codex_rollouts(home, thread, roots)
             if parent:
                 shutil.copy(parent, unit / "rollout.jsonl")
                 rollout = _jsonl(unit / "rollout.jsonl")
