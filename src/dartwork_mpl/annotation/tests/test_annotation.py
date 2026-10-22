@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import matplotlib
 import matplotlib.pyplot as plt
+import pytest
 from matplotlib.patches import Rectangle
 
 matplotlib.use("Agg")
@@ -186,6 +187,24 @@ class TestAnnotateValue:
         assert text.get_verticalalignment() == "center"
         assert text.xyann == (-3.0, 0.0)
         assert text.arrow_patch is not None
+        plt.close(fig)
+
+
+class TestAnnotateValueWeight:
+    """Value labels are one weight step above the preset base (2026-10-22)."""
+
+    def test_default_weight_is_one_step_heavier(self) -> None:
+        dm.style.use("scientific")
+        fig, ax = plt.subplots()
+        text = annotate_value(ax, 0.5, 0.5, "42", side="above")
+        assert text.get_fontweight() == dm.fw(1)
+        plt.close(fig)
+
+    @pytest.mark.parametrize("key", ["fontweight", "weight"])
+    def test_explicit_weight_wins(self, key: str) -> None:
+        fig, ax = plt.subplots()
+        text = annotate_value(ax, 0.5, 0.5, "42", side="above", **{key: 300})
+        assert text.get_fontweight() == 300
         plt.close(fig)
 
 
