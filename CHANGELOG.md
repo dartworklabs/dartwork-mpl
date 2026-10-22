@@ -36,6 +36,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **No meaningless decimals on scaled axes (#523).** `format_axis_si`,
+  `format_axis_millions`, `format_axis_billions` and `format_axis_myriad`
+  default to `decimals=None`: one decimal count per axis (per unit for
+  myriad), the fewest that render every visible tick exactly. Integer ticks
+  print `200`, `0`, `1k` instead of `200.0`, `0.0`, `1.0k`; half steps stay
+  exact (`1.25k`, `1.75억` no longer round to `1.2k`, `1.8억`); fractional
+  steps keep the count on every tick. `format_axis_si` uses one prefix per
+  linear axis, chosen from the largest visible tick (`0.8k, 1.0k, 1.2k`
+  rather than `800.0, 1.0k, 1.2k`); log axes keep a prefix per tick. An
+  explicit integer `decimals=` keeps the previous per-tick output.
+- **`TICK_DECIMAL` trailing zeros are now a WARNING**, and decimal
+  consistency is judged per unit suffix on the rendered numbers. The new
+  **`VALUE_LABEL_DECIMAL`** check warns when every numeric value label in an
+  axes is a whole number but some print trailing zeros.
+- **Value labels on bars and lines are one weight step heavier.**
+  `dm.annotate_value()` defaults to `fontweight=fw(1)` unless `fontweight` or
+  `weight` is passed; the advanced bar_grouped, waterfall, tornado and line
+  templates now match the templates that already did this.
 - `format_axis_year` prints two-digit tick years by default (`2025` -> `25년`,
   `25年`, `25`). Four-digit tick years double the tick width and crowd
   neighbouring labels; the company-analysis harness now rejects them
