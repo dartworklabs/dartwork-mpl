@@ -1,11 +1,16 @@
-# Korean plot text
+# Plot text language and Korean presets
 
-Pick a `-kr` preset when any label, title, legend or annotation is Korean:
-`scientific-kr`, `report-kr`, `presentation-kr`, `minimal-kr`, `poster-kr`,
-`web-kr`, `dark-kr`. It keeps the base preset's sizes and adds bundled
-Korean fonts (Paperlogy first, Noto Sans CJK KR as fallback). The chat
-language does not decide it: an English figure requested in Korean uses the
-plain preset.
+Plot text is English by default, whatever language the chat uses: a figure
+requested in Korean gets English titles and labels and the plain preset.
+Write Korean, or any other language, when the user asks for it. Data values
+(city names, categories) stay as given, and an edit keeps the language the
+figure already has.
+
+Pick a `-kr` preset when any label, title, legend, annotation or data value
+on the figure is Korean: `scientific-kr`, `report-kr`, `presentation-kr`,
+`minimal-kr`, `poster-kr`, `web-kr`, `dark-kr`. It keeps the base preset's
+sizes and adds bundled Korean fonts (Paperlogy first, Noto Sans CJK KR as
+fallback).
 
 ```python
 import matplotlib.pyplot as plt
@@ -28,3 +33,11 @@ plt.close(fig)
   bundled math and symbol fallbacks.
 - Korean number formats: `dm.format_axis_myriad(ax)` (만/억 units) and
   `dm.format_axis_year(ax)` (`25년`).
+
+## Other languages
+
+Latin, Greek, Cyrillic, Korean and common Japanese text render with the
+bundled fonts. Chinese, Arabic, Thai, Devanagari and other scripts can lack
+glyphs: matplotlib warns `Glyph … missing from font(s)` and the PNG shows
+boxes. Tell the user which text cannot render and ask which installed font
+to use.

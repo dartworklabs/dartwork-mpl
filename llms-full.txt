@@ -161,8 +161,9 @@ materially ambiguous, ask one short question such as “What page/content width
 or preferred figure size should I use?” For papers ask about single/double
 columns or venue width; for slides ask about 16:9/4:3 and full-slide/inset use.
 Reuse already supplied context. For a quick draft, state a provisional preset
-and size and invite correction. Use a `-kr` preset only for Korean plot text,
-not simply because the conversation is Korean. A geometry-only edit keeps the
+and size and invite correction. Plot text is English unless the user asks for
+another language, whatever the conversation language; use a `-kr` preset for
+Korean text. A geometry-only edit keeps the
 selected preset, data and other style choices. Presets supply defaults;
 explicit user overrides take priority. Use `dm.fs(n)`, `dm.fw(n)` and
 `dm.lw(n)` for preset-relative changes; retain requested absolute sizes,

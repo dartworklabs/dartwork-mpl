@@ -84,7 +84,8 @@ Ask one short self-contained question only if missing context materially
 affects the result (paper column/venue width; slide 16:9/4:3 and full-slide/inset;
 report page/content width or preferred size). Do not reask supplied context or
 force a setup form. For a quick draft, state a provisional preset/size and
-invite correction. Use `-kr` only for Korean plot text, not conversation language.
+invite correction. Plot text is English unless the user asks for another
+language, whatever the conversation language; use `-kr` for Korean text.
 For every edit preserve data and all unrelated style/canvas/legend/preset
 choices; do not add unsolicited palette or legend changes. Apply the preset
 before retained overrides and local artist edits. Choose unspecified defaults

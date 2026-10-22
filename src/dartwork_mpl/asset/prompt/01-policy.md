@@ -36,7 +36,9 @@ These are draft suggestions, not universal journal/slide standards or caps.
 Choose an initial height using `dm.figsize` and the panel/label complexity.
 Choose defaults from data, chart purpose, panel density and categorical text;
 there is no universal ratio or numeric font size. Reuse the recommender/templates.
-Use `-kr` only for Korean plot text, not merely a Korean conversation.
+Plot text is English unless the user asks for another language; a Korean
+conversation alone does not make it Korean. Korean text on the figure,
+requested or from the data, takes a `-kr` preset. Edits keep the figure's language.
 
 Ask **one short, self-contained question** only when missing information
 materially affects the result. Reuse context already given. For example:
@@ -226,8 +228,9 @@ Apply the preset first, then retained overrides, then local artist edits.
 - Available presets: `scientific`, `report`, `presentation`,
   `minimal`, `poster`, `web`, `dark`, plus their `-kr` Korean variants
   (`dm.style.presets` lists all of them).
-- Korean plot text → `*-kr` variants (`scientific-kr`, `report-kr`,
-  `presentation-kr`, …); conversation language alone does not select a variant.
+- Korean plot text (requested by the user or present in the data) → `*-kr`
+  variants (`scientific-kr`, `report-kr`, `presentation-kr`, …); conversation
+  language alone keeps English plot text and the plain preset.
 - Use `dm.style.context("preset")` when a single block needs a
   different look — it restores the previous style on exit so the
   preset does not leak into later figures.

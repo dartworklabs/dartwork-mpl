@@ -34,7 +34,8 @@ is not a measurement of a particular display, perceived brightness, or OKLab
   project context and purpose defaults: paper → `scientific`,
   report/document/dashboard → `report`, talk/slides → `presentation`.
   See policy for provisional sizing and when to ask one short context question.
-  Use `-kr` for Korean plot text only. Geometry-only edits retain the preset.
+  Plot text is English unless the user asks for another language; `-kr` for
+  Korean text. Geometry-only edits retain the preset.
 - Create native figures with `plt.subplots(figsize=dm.figsize("<n>cm",
   "<aspect>"))` or `plt.figure(figsize=dm.figsize(...))` with GridSpec as needed.
   Width/height are freely chosen; 17 cm is page-fit advice, not a canvas cap.
