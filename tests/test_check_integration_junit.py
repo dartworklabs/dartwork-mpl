@@ -28,7 +28,7 @@ MODULES = (
     "tests.test_mcp_render_smoke",
     "tests.test_mcp_tool_hardening",
     "tests.test_mcp_validation_contract",
-    "tests.test_mcp_validators_complete",
+    "src.dartwork_mpl.mcp.plot_data.tests.test_validators",
     "tests.mcp.artifacts.test_artifact_boundaries",
     "tests.mcp.artifacts.test_artifact_discovery",
     "tests.mcp.artifacts.test_artifact_entry_policies",
