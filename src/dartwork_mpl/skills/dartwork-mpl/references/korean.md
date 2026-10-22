@@ -13,10 +13,10 @@ import dartwork_mpl as dm
 
 dm.style.use("report-kr")
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
-ax.bar(["1월", "2월", "3월"], [12.5, -3.0, 8.1], color="dc.blue5")
-ax.set(xlabel="월", ylabel="매출 증감 (억 원)", title="분기 매출")
+ax.bar(["1월", "2월", "3월"], [-2.4, 0.6, 6.1], color="dc.blue5")
+ax.set(xlabel="월", ylabel="평균 기온 (°C)", title="1분기 서울 기온")
 dm.simple_layout(fig)
-dm.save_formats(fig, "output/sales-kr", formats=("png", "pdf"))
+dm.save_formats(fig, "output/temperature-kr", formats=("png", "pdf"))
 plt.close(fig)
 ```
 
