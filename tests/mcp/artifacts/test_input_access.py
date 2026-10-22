@@ -12,12 +12,9 @@ from pathlib import Path
 
 import pytest
 
-from dartwork_mpl.mcp.artifacts import (
-    ConfigurationError,
-    CopyInput,
-    InvalidRequest,
-    configure_store,
-)
+from dartwork_mpl.mcp.artifacts import configure_store
+from dartwork_mpl.mcp.artifacts.input_policy import CopyInput
+from dartwork_mpl.mcp.artifacts.policy import ConfigurationError, InvalidRequest
 
 
 def access():
@@ -350,7 +347,10 @@ def unsupported_import(name, *args, **kwargs):
 builtins.__import__ = unsupported_import
 if sys.argv[2] == 'descriptor':
     del os.O_NOFOLLOW
-from dartwork_mpl.mcp.artifacts import parse_render_request, ConfigurationError
+from dartwork_mpl.mcp.artifacts.policy import (
+    parse_render_request,
+    ConfigurationError,
+)
 from dartwork_mpl.mcp.artifacts import input_access as access
 from dartwork_mpl.mcp.artifacts import input_io as io
 if sys.argv[2] == 'process':

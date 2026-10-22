@@ -14,18 +14,18 @@ import pytest
 
 pytest.importorskip("fastmcp")
 
-from dartwork_mpl.mcp.artifacts import (
+from dartwork_mpl.mcp.artifacts import configure_store
+from dartwork_mpl.mcp.artifacts import store as disk
+from dartwork_mpl.mcp.artifacts.policy import (
     ArtifactId,
-    ArtifactStore,
     ConfigurationError,
     CorruptArtifact,
     Manifest,
     NotFound,
     PublicationError,
     StoredBundle,
-    configure_store,
 )
-from dartwork_mpl.mcp.artifacts import store as disk
+from dartwork_mpl.mcp.artifacts.store import ArtifactStore
 
 NOW = datetime(2026, 10, 20, 1, 2, 3, 456789, tzinfo=timezone.utc)
 MANIFEST_LIMIT = 512 * 1024

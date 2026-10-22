@@ -38,12 +38,14 @@ from .policy import (
 from .store import ArtifactStore
 
 # Public resource wrappers were introduced in FastMCP 3. FastMCP 2 uses the
-# decorator's MIME and converts raw bytes/text itself.
+# decorator's MIME and converts raw bytes/text itself; there the names stay
+# unbound and only _RESOURCE_WRAPPERS is read.
 try:
     from fastmcp.resources import ResourceContent, ResourceResult
 except ImportError:
-    ResourceContent = None  # type: ignore[assignment,misc]
-    ResourceResult = None  # type: ignore[assignment,misc]
+    _RESOURCE_WRAPPERS = False
+else:
+    _RESOURCE_WRAPPERS = True
 
 _SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -429,7 +431,7 @@ def register_artifacts(
                 data: bytes | str = outcome.data
                 if member not in (ArtifactMember.PNG, ArtifactMember.PDF):
                     data = outcome.data.decode("utf-8")
-                if ResourceResult is not None and ResourceContent is not None:
+                if _RESOURCE_WRAPPERS:
                     return ResourceResult(
                         contents=[
                             ResourceContent(data, mime_type=member.mime_type)

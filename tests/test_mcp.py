@@ -1148,10 +1148,8 @@ class TestMcpAgenticReliability:
         mock_mcp = MagicMock()
         captured = _capture_decorators(mock_mcp, "tool")
         register_tools(mock_mcp)
-        from dartwork_mpl.mcp.artifacts import (
-            ConfigurationError,
-            register_artifacts,
-        )
+        from dartwork_mpl.mcp.artifacts import register_artifacts
+        from dartwork_mpl.mcp.artifacts.policy import ConfigurationError
 
         register_artifacts(mock_mcp, ConfigurationError())
 
@@ -1170,10 +1168,8 @@ class TestMcpAgenticReliability:
         res_mcp = MagicMock()
         resources = _capture_decorators(res_mcp, "resource")
         register_resources(res_mcp)
-        from dartwork_mpl.mcp.artifacts import (
-            ConfigurationError,
-            register_artifacts,
-        )
+        from dartwork_mpl.mcp.artifacts import register_artifacts
+        from dartwork_mpl.mcp.artifacts.policy import ConfigurationError
 
         register_artifacts(res_mcp, ConfigurationError())
 

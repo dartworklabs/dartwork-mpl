@@ -17,17 +17,21 @@ import pytest
 
 fastmcp = pytest.importorskip("fastmcp")
 from dartwork_mpl.mcp.artifacts import (  # noqa: E402
-    ArtifactStore,
-    ConfigurationError,
-    InputGrant,
-    InputStore,
-    RenderRequest,
-    Revision,
-    authorize_inputs,
     configure_store,
     register_artifacts,
-    render_artifact,
 )
+from dartwork_mpl.mcp.artifacts.delivery import render_artifact  # noqa: E402
+from dartwork_mpl.mcp.artifacts.input_access import (  # noqa: E402
+    InputGrant,
+    authorize_inputs,
+)
+from dartwork_mpl.mcp.artifacts.input_policy import Revision  # noqa: E402
+from dartwork_mpl.mcp.artifacts.inputs import InputStore  # noqa: E402
+from dartwork_mpl.mcp.artifacts.policy import (  # noqa: E402
+    ConfigurationError,
+    RenderRequest,
+)
+from dartwork_mpl.mcp.artifacts.store import ArtifactStore  # noqa: E402
 
 FIGURE = """import matplotlib.pyplot as plt
 import dartwork_mpl as dm
@@ -427,7 +431,7 @@ def test_cancelled_call_and_final_close_keep_lock_fds_and_reap(
     path, storage, source, store = fixture(owned_input_root)
     runtime = module.ArtifactRuntime(store, str(path))
     spec = revision(source)
-    from dartwork_mpl.mcp.artifacts import parse_revision
+    from dartwork_mpl.mcp.artifacts.input_policy import parse_revision
 
     parsed = parse_revision(spec)
     assert isinstance(parsed, Revision)

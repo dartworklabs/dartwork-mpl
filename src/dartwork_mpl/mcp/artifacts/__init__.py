@@ -1,144 +1,15 @@
-"""Declared durable artifact values, use cases and MCP registration surface."""
+"""Durable plot artifacts: the MCP render/retrieve/delete routes and their storage.
 
-from .delivery import (
-    ArtifactFailure,
-    delete_inputs,
-    get_artifact,
-    render_artifact,
-)
-from .input_access import (
-    InputGrant,
-    InputsDisabled,
-    OwnedInputFD,
-    authorize_inputs,
-)
-from .input_io import CheckJob, CopyJob, check_copies, copy_inputs
-from .input_policy import (
-    CopyInput,
-    CopySelection,
-    InputFile,
-    InputMetadata,
-    InvalidProvenance,
-    KnownProvenance,
-    LegacyProvenance,
-    PinnedParent,
-    Provenance,
-    ProvenanceInput,
-    RetainedInput,
-    RetainedLocator,
-    RetainedSelection,
-    Revision,
-    UnsupportedProvenance,
-    build_provenance,
-    can_reserve,
-    classify_provenance,
-    parse_input_metadata,
-    parse_revision,
-)
-from .inputs import (
-    AbsentInputs,
-    CommitObserver,
-    DeletedInputs,
-    InputFailure,
-    InputStage,
-    InputStore,
-    InputTransaction,
-)
+The surface is what server wiring needs: ``configure_store`` resolves the
+artifact root, ``ArtifactRuntime`` owns the optional input lifecycle and
+``register_artifacts`` binds the tools and resources. Everything else is
+internal to this slice; its values, use cases and policies live in the
+submodules (``policy``, ``store``, ``delivery``, ``inputs``, ``input_*``,
+``lifecycle``, ``transport``), which tests import directly.
+"""
+
 from .lifecycle import ArtifactRuntime
-from .policy import (
-    ArtifactBytes,
-    ArtifactId,
-    ArtifactMember,
-    ArtifactTooLarge,
-    ConfigurationError,
-    CorruptArtifact,
-    Expired,
-    FileEntry,
-    InvalidRequest,
-    Manifest,
-    NotFound,
-    PublicationError,
-    RenderRequest,
-    StoredBundle,
-    StoreFailure,
-    ValidationSummary,
-    is_expired,
-    parse_artifact_id,
-    parse_manifest,
-    parse_render_request,
-)
-from .store import (
-    ArtifactStore,
-    CommitObservation,
-    StagedBundle,
-    configure_store,
-)
+from .store import configure_store
 from .transport import register_artifacts
 
-__all__ = [
-    "AbsentInputs",
-    "ArtifactBytes",
-    "ArtifactFailure",
-    "ArtifactId",
-    "ArtifactMember",
-    "ArtifactRuntime",
-    "ArtifactStore",
-    "ArtifactTooLarge",
-    "CheckJob",
-    "CommitObservation",
-    "CommitObserver",
-    "ConfigurationError",
-    "CopyInput",
-    "CopyJob",
-    "CopySelection",
-    "CorruptArtifact",
-    "DeletedInputs",
-    "Expired",
-    "FileEntry",
-    "InputFailure",
-    "InputFile",
-    "InputGrant",
-    "InputMetadata",
-    "InputStage",
-    "InputStore",
-    "InputTransaction",
-    "InputsDisabled",
-    "InvalidProvenance",
-    "InvalidRequest",
-    "KnownProvenance",
-    "LegacyProvenance",
-    "Manifest",
-    "NotFound",
-    "OwnedInputFD",
-    "PinnedParent",
-    "Provenance",
-    "ProvenanceInput",
-    "PublicationError",
-    "RenderRequest",
-    "RetainedInput",
-    "RetainedLocator",
-    "RetainedSelection",
-    "Revision",
-    "StagedBundle",
-    "StoreFailure",
-    "StoredBundle",
-    "UnsupportedProvenance",
-    "ValidationSummary",
-    "authorize_inputs",
-    "build_provenance",
-    "can_reserve",
-    "check_copies",
-    "classify_provenance",
-    "configure_store",
-    "copy_inputs",
-    "delete_inputs",
-    "get_artifact",
-    "is_expired",
-    "parse_artifact_id",
-    "parse_input_metadata",
-    "parse_manifest",
-    "parse_render_request",
-    "parse_revision",
-    "register_artifacts",
-    "render_artifact",
-]
+__all__ = ["ArtifactRuntime", "configure_store", "register_artifacts"]

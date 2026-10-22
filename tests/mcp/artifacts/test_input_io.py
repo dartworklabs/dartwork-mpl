@@ -13,11 +13,8 @@ import time
 
 import pytest
 
-from dartwork_mpl.mcp.artifacts import (
-    InputFile,
-    InvalidRequest,
-    PublicationError,
-)
+from dartwork_mpl.mcp.artifacts.input_policy import InputFile
+from dartwork_mpl.mcp.artifacts.policy import InvalidRequest, PublicationError
 
 MIB = 1024 * 1024
 

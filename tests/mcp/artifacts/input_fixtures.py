@@ -10,19 +10,16 @@ import importlib
 import json
 from datetime import datetime, timedelta, timezone
 
-from dartwork_mpl.mcp.artifacts import (
-    ArtifactId,
-    ConfigurationError,
-    CopyInput,
-    InputMetadata,
-    Manifest,
-    NotFound,
-    configure_store,
-)
+from dartwork_mpl.mcp.artifacts import configure_store
 from dartwork_mpl.mcp.artifacts.input_access import InputGrant, authorize_inputs
+from dartwork_mpl.mcp.artifacts.input_policy import CopyInput, InputMetadata
 from dartwork_mpl.mcp.artifacts.policy import (
     DATA_MEMBERS,
+    ArtifactId,
+    ConfigurationError,
     FileEntry,
+    Manifest,
+    NotFound,
     ValidationSummary,
 )
 
@@ -30,10 +27,8 @@ NOW = datetime(2030, 1, 1, tzinfo=timezone.utc)
 
 
 def api():
-    """Missing production surfaces fail as assertions during the required RED."""
-    package = importlib.import_module("dartwork_mpl.mcp.artifacts")
-    assert hasattr(package, "InputStore"), "input store surface is missing"
-    return package
+    """The input-store module (``InputStore``, ``InputStage`` and its outcomes)."""
+    return importlib.import_module("dartwork_mpl.mcp.artifacts.inputs")
 
 
 def identity(n=1):
