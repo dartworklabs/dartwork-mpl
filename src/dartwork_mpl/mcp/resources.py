@@ -5,22 +5,12 @@ color palettes, fonts, styles, and plot templates
 through the Model Context Protocol.
 """
 
-import inspect
-import json
-from pathlib import Path
-
-import matplotlib.colors as mcolors
 from fastmcp import FastMCP
-from matplotlib import font_manager
 
-from ..util import get_prompt
-from . import templates
+from . import catalog, colors, guides, templates
 
 __all__ = ["register_resources"]
 
-# Path to the SSOT prompt directory (00-index, 01-policy, 03-recipes,
-# 05-templates/, _legacy/, ...)
-_PROMPT_DIR = Path(__file__).parent.parent / "asset" / "prompt"
 _MODELED_Y_LIMITATION = (
     "Modeled relative CIE Y (`relative_y`) is calculated from nominal D65 "
     "sRGB; it is not a measurement of a particular display, perceived "
@@ -46,25 +36,24 @@ def register_resources(mcp: FastMCP) -> None:
     @mcp.resource("dartwork-mpl://guide/agent-entry")
     def agent_entry() -> str:
         """Agent entry point — decision tree + always-true facts."""
-        return get_prompt("00-index")
+        return guides.guide_text("00-index")
 
     @mcp.resource("dartwork-mpl://guide/policy")
     def policy() -> str:
         """Policy: layout plus the OKLab/OKLCH color-metric split."""
-        return get_prompt("01-policy")
+        return guides.guide_text("01-policy")
 
     @mcp.resource(
         "dartwork-mpl://guide/anti-patterns", mime_type="application/yaml"
     )
     def anti_patterns() -> str:
         """Machine-readable anti-pattern catalog (the lint engine source)."""
-        path = _PROMPT_DIR / "02-anti-patterns.yaml"
-        return path.read_text(encoding="utf-8")
+        return guides.anti_pattern_catalog()
 
     @mcp.resource("dartwork-mpl://guide/recipes")
     def recipes() -> str:
         """Intent → function-call cookbook."""
-        return get_prompt("03-recipes")
+        return guides.guide_text("03-recipes")
 
     @mcp.resource("dartwork-mpl://guide/migration")
     def migration_guide() -> str:
@@ -77,12 +66,7 @@ def register_resources(mcp: FastMCP) -> None:
         so that the prompt corpus has a single source of truth in the
         rendered docs rather than a stub-and-fallback split.
         """
-        return (
-            "0.3 → 0.4 migration guide: "
-            "https://dartworklabs.github.io/dartwork-mpl/migration.html\n\n"
-            "For an automated rewrite, call the migrate_legacy_code MCP "
-            "tool (or dm.migrate_legacy_code in Python)."
-        )
+        return guides.migration_pointer()
 
     # ── API Reference ────────────────────────────────────────────────
 
@@ -91,7 +75,7 @@ def register_resources(mcp: FastMCP) -> None:
         """List of public dartwork-mpl callables (from __all__)."""
         from .. import __all__ as public_names
 
-        return json.dumps(sorted(public_names), indent=2)
+        return guides.api_index(public_names)
 
     @mcp.resource("dartwork-mpl://api/{name}")
     def api_function(name: str) -> str:
@@ -104,16 +88,7 @@ def register_resources(mcp: FastMCP) -> None:
         """
         import dartwork_mpl as dm
 
-        if not hasattr(dm, name):
-            return f"No public name {name!r}. See dartwork-mpl://api/index."
-        obj = getattr(dm, name)
-        try:
-            sig = str(inspect.signature(obj))
-        except (TypeError, ValueError):
-            sig = "(...)"
-        doc = inspect.getdoc(obj) or ""
-        first_para = doc.split("\n\n", 1)[0]
-        return f"{name}{sig}\n\n{first_para}"
+        return guides.api_entry(dm, name)
 
     # ── Palette Resources ────────────────────────────────────────────
 
@@ -132,19 +107,12 @@ def register_resources(mcp: FastMCP) -> None:
         """
         from .._colors._loader import COLOR_LIBRARIES
 
-        prefixes = [prefix for _key, prefix, _fn, _label in COLOR_LIBRARIES]
-        colors = {
-            k: mcolors.to_hex(v)
-            for k, v in mcolors.get_named_colors_mapping().items()
-            if any(k.startswith(prefix) for prefix in prefixes)
-        }
-        return json.dumps(colors, indent=2)
+        return colors.palette(COLOR_LIBRARIES)
 
     @mcp.resource("dartwork-mpl://palette/fonts")
     def palette_fonts() -> str:
         """Get a sorted list of all fonts available to matplotlib."""
-        fonts = sorted({f.name for f in font_manager.fontManager.ttflist})
-        return json.dumps(fonts, indent=2)
+        return catalog.font_names()
 
     # ── Style Preset Resources ───────────────────────────────────────
 

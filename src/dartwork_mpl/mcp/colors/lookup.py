@@ -1,4 +1,4 @@
-"""Colour lookups behind the ``get_color_value``, ``mix_colors`` and ``list_color_families`` tools.
+"""Colour lookups behind the colour tools and the ``dartwork-mpl://palette/colors`` resource.
 
 Each function returns the tool's exact reply string; lookup and blending
 failures become messages, not exceptions.
@@ -81,3 +81,18 @@ def list_families(libraries: Sequence[tuple[str, str, str, str]]) -> str:
                 "sample": sample,
             }
     return json.dumps(families, indent=2)
+
+
+def palette(libraries: Sequence[tuple[str, str, str, str]]) -> str:
+    """JSON object of every registered colour under a library prefix: name -> hex.
+
+    ``libraries`` are ``(key, prefix, source, label)`` rows
+    (``dartwork-mpl://palette/colors``).
+    """
+    prefixes = [prefix for _key, prefix, _fn, _label in libraries]
+    colors = {
+        k: mcolors.to_hex(v)
+        for k, v in mcolors.get_named_colors_mapping().items()
+        if any(k.startswith(prefix) for prefix in prefixes)
+    }
+    return json.dumps(colors, indent=2)

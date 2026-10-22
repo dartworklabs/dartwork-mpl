@@ -37,6 +37,23 @@ RUNTIME_COLOR_LANGUAGE_PATHS = (
     "src/dartwork_mpl/mcp/prompts.py",
     "src/dartwork_mpl/mcp/resources.py",
     "src/dartwork_mpl/mcp/tools.py",
+    # The bodies the three MCP wiring tables delegate to (ADR 0005 M3-M6).
+    "src/dartwork_mpl/mcp/catalog/discovery.py",
+    "src/dartwork_mpl/mcp/catalog/fonts.py",
+    "src/dartwork_mpl/mcp/catalog/info.py",
+    "src/dartwork_mpl/mcp/colors/lookup.py",
+    "src/dartwork_mpl/mcp/docs_fetch/raw_github.py",
+    "src/dartwork_mpl/mcp/guides/api.py",
+    "src/dartwork_mpl/mcp/guides/corpus.py",
+    "src/dartwork_mpl/mcp/guides/prompts.py",
+    "src/dartwork_mpl/mcp/lint/linter.py",
+    "src/dartwork_mpl/mcp/plot_data/validate.py",
+    "src/dartwork_mpl/mcp/plot_data/validators.py",
+    "src/dartwork_mpl/mcp/recommend/chart_type.py",
+    "src/dartwork_mpl/mcp/templates/bundled.py",
+    "src/dartwork_mpl/mcp/templates/compose.py",
+    "src/dartwork_mpl/mcp/templates/find.py",
+    "src/dartwork_mpl/mcp/templates/render.py",
     "src/dartwork_mpl/validate/_checks/grayscale_safety.py",
 )
 
