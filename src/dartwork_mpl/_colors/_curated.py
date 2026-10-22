@@ -19,6 +19,9 @@ neither diagnostic participates in construction.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from types import MappingProxyType
+
 CURATED_QUALITATIVE_ORDER: tuple[str, ...] = (
     "trustworthy",
     "vivid",
@@ -44,7 +47,7 @@ CURATED_ORDER: tuple[str, ...] = (
     CURATED_QUALITATIVE_ORDER + CURATED_DIVERGING_ORDER
 )
 
-CURATED: dict[str, tuple[str, ...]] = {
+_CURATED_ROWS: dict[str, tuple[str, ...]] = {
     "trustworthy": (
         "#06655a",
         "#72a6db",
@@ -197,7 +200,11 @@ CURATED: dict[str, tuple[str, ...]] = {
     ),
 }
 
-CURATED_META: dict[str, dict[str, str]] = {
+CURATED: Mapping[str, tuple[str, ...]] = MappingProxyType(_CURATED_ROWS)
+"""Read-only curated rows by set name (the literal is not kept by name)."""
+del _CURATED_ROWS
+
+_CURATED_META_ROWS: dict[str, dict[str, str]] = {
     "trustworthy": {
         "label": "Trustworthy",
         "family": "Qualitative",
@@ -455,6 +462,12 @@ CURATED_META: dict[str, dict[str, str]] = {
         "kind": "diverging",
     },
 }
+
+CURATED_META: Mapping[str, Mapping[str, str]] = MappingProxyType(
+    {name: MappingProxyType(row) for name, row in _CURATED_META_ROWS.items()}
+)
+"""Read-only explanatory copy by set name."""
+del _CURATED_META_ROWS
 
 __all__ = [
     "CURATED",

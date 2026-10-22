@@ -8,7 +8,9 @@ shipped authority. It never imports the colour model, so the oracle stays
 independent of the code it grades.
 
 Surface: ``evaluate_catalog``, ``load_quality_baseline``, ``GateReport``,
-``compare_exact_surfaces``, ``compare_catalog``, ``render_comparison_html``.
+the gate-failure union ``GateViolation`` and its variants
+(``ThresholdViolation``, ``UnequalValues``, ``InvalidMetric``,
+``InvalidCandidate``), ``gate_decision_text``, ``compare_exact_surfaces``, ``compare_catalog``, ``render_comparison_html``.
 """
 
 from ._comparison import (
@@ -16,13 +18,29 @@ from ._comparison import (
     compare_exact_surfaces,
     render_comparison_html,
 )
-from ._gates import GateReport, evaluate_catalog, load_quality_baseline
+from ._gates import (
+    GateReport,
+    GateViolation,
+    InvalidCandidate,
+    InvalidMetric,
+    ThresholdViolation,
+    UnequalValues,
+    evaluate_catalog,
+    gate_decision_text,
+    load_quality_baseline,
+)
 
 __all__ = [
     "GateReport",
+    "GateViolation",
+    "InvalidCandidate",
+    "InvalidMetric",
+    "ThresholdViolation",
+    "UnequalValues",
     "compare_catalog",
     "compare_exact_surfaces",
     "evaluate_catalog",
+    "gate_decision_text",
     "load_quality_baseline",
     "render_comparison_html",
 ]

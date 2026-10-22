@@ -751,6 +751,19 @@ def _palette_coordinate(node: ast.AST) -> PaletteCoordinate:
     return family.value, index.value
 
 
+def _proxied_dict(node: ast.AST) -> ast.AST:
+    """Return the dict literal inside ``MappingProxyType({...})``, else ``node``."""
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "MappingProxyType"
+        and len(node.args) == 1
+        and not node.keywords
+    ):
+        return node.args[0]
+    return node
+
+
 def _coordinate_dict(node: ast.AST) -> dict[str, PaletteCoordinate]:
     """Parse a semantic token dictionary from source AST."""
     if not isinstance(node, ast.Dict):
@@ -776,7 +789,7 @@ def _semantic_declarations() -> dict[str, dict[str, PaletteCoordinate]]:
             and node.value is not None
             and node.target.id in {"_MAPS", "_COMMON"}
         ):
-            assignments[node.target.id] = node.value
+            assignments[node.target.id] = _proxied_dict(node.value)
     if set(assignments) != {"_MAPS", "_COMMON"}:
         raise ValueError("semantic declarations are incomplete")
 
@@ -792,7 +805,10 @@ def _semantic_declarations() -> dict[str, dict[str, PaletteCoordinate]]:
             key_node.value, str
         ):
             raise ValueError("semantic locale must be a string literal")
-        locales[key_node.value] = {**common, **_coordinate_dict(value_node)}
+        locales[key_node.value] = {
+            **common,
+            **_coordinate_dict(_proxied_dict(value_node)),
+        }
     return locales
 
 
@@ -1230,30 +1246,31 @@ def _derive_discrete(
                 for size, indices in frozen_multi_hue_indices[name].items()
             }
         for n in range(1, _MAX_DISCRETE_N[kind] + 1):
-            if kind == "sequential":
-                colors = _sequential_discrete(palette[name], n)
-            elif kind == "diverging":
-                colors = _diverging_discrete(
-                    diverging_canonicals[name], cmaps_256[name], n
-                )
-            elif kind == "multi-hue":
-                colors = [
-                    cmaps_256[name][index]
-                    for index in multi_hue_indices[name][str(n)]
-                ]
-            elif kind == "cyclic":
-                row = cmaps_256[name]
-                colors = [
-                    row[min(int(index * len(row) / n), len(row) - 1)]
-                    for index in range(n)
-                ]
-            else:
-                qualitative_row = cycles.get(name)
-                if qualitative_row is None:
-                    qualitative_row = _curated.CURATED.get(name)
-                if qualitative_row is None:
-                    raise ValueError(f"missing qualitative row for {name}")
-                colors = list(qualitative_row[:n])
+            match kind:
+                case "sequential":
+                    colors = _sequential_discrete(palette[name], n)
+                case "diverging":
+                    colors = _diverging_discrete(
+                        diverging_canonicals[name], cmaps_256[name], n
+                    )
+                case "multi-hue":
+                    colors = [
+                        cmaps_256[name][index]
+                        for index in multi_hue_indices[name][str(n)]
+                    ]
+                case "cyclic":
+                    row = cmaps_256[name]
+                    colors = [
+                        row[min(int(index * len(row) / n), len(row) - 1)]
+                        for index in range(n)
+                    ]
+                case "qualitative":
+                    qualitative_row = cycles.get(name)
+                    if qualitative_row is None:
+                        qualitative_row = _curated.CURATED.get(name)
+                    if qualitative_row is None:
+                        raise ValueError(f"missing qualitative row for {name}")
+                    colors = list(qualitative_row[:n])
             forms[str(n)] = colors
         discrete[name] = forms
         reverse_discrete[name] = {
@@ -1424,12 +1441,7 @@ def compile_candidate_snapshot() -> CatalogSnapshot:
     diverging_canonicals = _derive_diverging_canonicals(taxonomy, palette)
     semantic_coordinates, semantic_colors = _resolve_semantic(palette)
     dark_coordinates, dark_cycle = _resolve_dark_cycle(palette)
-    frozen_indices = _freeze_index_rows(
-        cast(
-            Mapping[str, Mapping[str, Sequence[int]]],
-            authority["multi_hue_discrete_indices"],
-        )
-    )
+    frozen_indices = _freeze_index_rows(authority.multi_hue_discrete_indices)
     discrete, reverse_discrete, multi_hue_indices = _derive_discrete(
         taxonomy,
         palette,

@@ -1,13 +1,23 @@
 """Designed discrete forms for Model B color families."""
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from types import MappingProxyType
 from typing import NamedTuple
 
 from .. import _curated, _generated
 from .._generated import CMAPS_256, MULTI_HUE_DISCRETE_INDICES
 from ..model import conversion as _conversion
-from ._families import DIVERGING, FAMILIES
+from ._families import (
+    DIVERGING,
+    FAMILIES,
+    CyclicFamily,
+    DivergingFamily,
+    Family,
+    MultiHueFamily,
+    QualitativeFamily,
+    SequentialFamily,
+)
 
 __all__ = ["DIVERGING_CANONICALS", "GENERATED_DIVERGING", "discrete_colors"]
 
@@ -23,14 +33,16 @@ def _generated_diverging_canonical(name: str) -> tuple[str, ...]:
     )
 
 
-DIVERGING_CANONICALS: dict[str, tuple[str, ...]] = {
-    name: (
-        tuple(_curated.CURATED[name])
-        if name in _curated.CURATED_DIVERGING_ORDER
-        else _generated_diverging_canonical(name)
-    )
-    for name in DIVERGING
-}
+DIVERGING_CANONICALS: Mapping[str, tuple[str, ...]] = MappingProxyType(
+    {
+        name: (
+            tuple(_curated.CURATED[name])
+            if name in _curated.CURATED_DIVERGING_ORDER
+            else _generated_diverging_canonical(name)
+        )
+        for name in DIVERGING
+    }
+)
 
 _VIVID_CHROMA_FLOOR_RATIO = 0.6
 
@@ -47,23 +59,25 @@ def _family_name(name: str) -> str:
     return name[3:] if name.startswith("dc.") else name
 
 
-def _max_n(name: str) -> int:
-    family = FAMILIES[name]
-    if family.kind == "sequential":
-        return 10
-    if family.kind == "diverging":
-        return 9
-    if family.kind == "multi-hue":
-        return 8
-    if family.kind == "cyclic":
-        return 24
-    return int(family.discrete_size or 0)
+def _max_n(family: Family) -> int:
+    """Return the largest ``n`` a family's designed discrete form accepts."""
+    match family:
+        case SequentialFamily():
+            return 10
+        case DivergingFamily():
+            return 9
+        case MultiHueFamily():
+            return 8
+        case CyclicFamily():
+            return 24
+        case QualitativeFamily(discrete_size=size):
+            return size
 
 
 def _raise_bad_n(name: str, n: int) -> None:
     family = FAMILIES[name]
     raise ValueError(
-        f"{name!r} is a {family.kind} family with max n={_max_n(name)}; "
+        f"{name!r} is a {family.kind} family with max n={_max_n(family)}; "
         f"got n={n}"
     )
 
@@ -73,7 +87,7 @@ def _validate(name: str, n: int) -> None:
         raise ValueError(f"unknown color family {name!r}")
     if isinstance(n, bool) or not isinstance(n, int):
         raise ValueError(f"n must be an integer for {name!r}")
-    if n < 1 or n > _max_n(name):
+    if n < 1 or n > _max_n(FAMILIES[name]):
         _raise_bad_n(name, n)
 
 
@@ -180,15 +194,15 @@ def discrete_colors(name: str, n: int, *, reverse: bool = False) -> list[str]:
     """
     family_name = _family_name(name)
     _validate(family_name, n)
-    family = FAMILIES[family_name]
-    if family.kind == "sequential":
-        colors = _sequential(family_name, n)
-    elif family.kind == "diverging":
-        colors = _diverging(family_name, n)
-    elif family.kind == "multi-hue":
-        colors = _multi_hue(family_name, n)
-    elif family.kind == "cyclic":
-        colors = _cyclic(family_name, n)
-    else:
-        colors = _qualitative(family_name, n)
+    match FAMILIES[family_name]:
+        case SequentialFamily():
+            colors = _sequential(family_name, n)
+        case DivergingFamily():
+            colors = _diverging(family_name, n)
+        case MultiHueFamily():
+            colors = _multi_hue(family_name, n)
+        case CyclicFamily():
+            colors = _cyclic(family_name, n)
+        case QualitativeFamily():
+            colors = _qualitative(family_name, n)
     return list(reversed(colors)) if reverse else colors

@@ -24,6 +24,7 @@ import pytest
 import dartwork_mpl._colors._compatibility_metrics as oracle
 import dartwork_mpl._colors.construction._catalog as _catalog
 import dartwork_mpl._colors.verify._comparison as _comparison
+import dartwork_mpl._colors.verify._gates as _gates
 from dartwork_mpl._colors.construction import _cmaps, _generate
 
 EXACT_FIELDS = (
@@ -1050,12 +1051,8 @@ def test_exported_exact_mismatch_defensively_freezes_nested_values() -> None:
     """Make the public frozen DTO immutable even outside factory paths."""
     baseline = {"nested": ["original"]}
     candidate = {"nested": ["candidate"]}
-    mismatch = _comparison.ExactMismatch(
-        path="/probe",
-        baseline_present=True,
-        candidate_present=True,
-        baseline=baseline,
-        candidate=candidate,
+    mismatch = _comparison.ChangedLeaf(
+        path="/probe", baseline=baseline, candidate=candidate
     )
 
     baseline["nested"].append("mutated")
@@ -1144,19 +1141,20 @@ def test_html_escapes_hostile_report_text(
     comparison_report: "_comparison.ComparisonReport",
 ) -> None:
     """Escape violations and paths before inserting them into standalone HTML."""
-    hostile = _comparison.Violation(
-        code="injected",
+    hostile = _comparison.QualityMetricInvalid(
         surface="<script>alert(1)</script>",
-        asset='bad" name',
-        path="/<unsafe>&",
-        message="<b>unsafe</b>",
-        baseline=None,
-        candidate=None,
+        gate=_gates.InvalidMetric(
+            asset='bad" name', metric="/<unsafe>&", message="<b>unsafe</b>"
+        ),
     )
     report = dataclasses.replace(
         comparison_report,
-        passed=False,
-        violations=tuple(sorted((*comparison_report.violations, hostile))),
+        violations=tuple(
+            sorted(
+                (*comparison_report.violations, hostile),
+                key=_comparison.violation_order,
+            )
+        ),
     )
 
     rendered = _comparison.render_comparison_html(report)
@@ -1170,18 +1168,16 @@ def test_html_exposes_violation_values_as_escaped_deterministic_json(
     comparison_report: "_comparison.ComparisonReport",
 ) -> None:
     """Show the raw gate operands without permitting HTML injection."""
-    violation = _comparison.Violation(
-        code="exact_mismatch",
+    violation = _comparison.ExactLeafMismatch(
         surface="vendor_colors",
         asset="probe",
-        path="/vendor_colors/probe",
-        message="values differ",
-        baseline={"z": True, "a": ["<old>", 1]},
-        candidate='</code><script>alert("candidate")</script>',
+        mismatch=_comparison.ChangedLeaf(
+            path="/vendor_colors/probe",
+            baseline={"z": True, "a": ["<old>", 1]},
+            candidate='</code><script>alert("candidate")</script>',
+        ),
     )
-    report = dataclasses.replace(
-        comparison_report, passed=False, violations=(violation,)
-    )
+    report = dataclasses.replace(comparison_report, violations=(violation,))
     report_json = report.to_json()
 
     rendered = _comparison.render_comparison_html(report)
@@ -1212,18 +1208,14 @@ def test_violation_detaches_structured_values_from_caller_mutation(
             {"nested": [False, None]},
         ]
     }
-    violation = _comparison.Violation(
-        code="exact_mismatch",
+    violation = _comparison.ExactLeafMismatch(
         surface="vendor_colors",
         asset="probe",
-        path="/vendor_colors/probe",
-        message="values differ",
-        baseline=baseline,
-        candidate=candidate,
+        mismatch=_comparison.ChangedLeaf(
+            path="/vendor_colors/probe", baseline=baseline, candidate=candidate
+        ),
     )
-    report = dataclasses.replace(
-        comparison_report, passed=False, violations=(violation,)
-    )
+    report = dataclasses.replace(comparison_report, violations=(violation,))
     report_json = report.to_json().encode("utf-8")
     report_html = _comparison.render_comparison_html(report).encode("utf-8")
 
@@ -1302,6 +1294,7 @@ def _assert_owned_audit_bootstrap(
         f"{alias}._curated",
         f"{alias}.construction._cycles",
         f"{alias}.verify._gates",
+        f"{alias}.verify._json",
         f"{alias}.construction._generate",
         f"{alias}.construction._recipe",
         f"{alias}._ssot",
@@ -1400,7 +1393,14 @@ def test_cli_writes_failure_artifacts_before_returning_one(
 ) -> None:
     """Preserve a trustworthy failing report for local and CI inspection."""
     cli = _load_cli()
-    failing = dataclasses.replace(comparison_report, passed=False)
+    failing = dataclasses.replace(
+        comparison_report,
+        violations=(
+            _comparison.CandidateQualityInvalid(
+                gate=_gates.InvalidCandidate(message="ValueError: probe")
+            ),
+        ),
+    )
     monkeypatch.setattr(cli, "load_v5_snapshot", lambda: baseline_catalog)
     monkeypatch.setattr(
         cli, "compile_candidate_snapshot", lambda: candidate_catalog

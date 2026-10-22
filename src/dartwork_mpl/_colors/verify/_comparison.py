@@ -16,25 +16,37 @@ import json
 import math
 import re
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from itertools import pairwise
 from types import MappingProxyType
-from typing import Protocol, TypeAlias, cast
+from typing import ClassVar, Protocol, TypeAlias, cast
 
 from .. import _compatibility_metrics as oracle
 from . import _gates as gates
+from ._json import as_mapping as _as_mapping
+from ._json import finite_number as _number
+from ._json import freeze
+from ._json import thaw as _thaw
 
 __all__ = [
+    "AddedLeaf",
+    "CandidateQualityInvalid",
+    "ChangedLeaf",
     "ComparisonReport",
+    "ExactLeafMismatch",
     "ExactMismatch",
     "ExactSurfaceComparison",
     "HexRowComparison",
     "QualityComparison",
+    "QualityMetricInvalid",
+    "QualityRegression",
+    "RemovedLeaf",
     "Violation",
     "compare_catalog",
     "compare_exact_surfaces",
     "compare_quality_metrics",
     "render_comparison_html",
+    "violation_order",
 ]
 
 JsonMapping: TypeAlias = Mapping[str, object]
@@ -107,38 +119,9 @@ class CatalogSnapshot(Protocol):
         ...
 
 
-def _freeze(value: object) -> object:
-    """Copy JSON-like data into deterministic immutable containers."""
-    if isinstance(value, Mapping):
-        if not all(isinstance(key, str) for key in value):
-            raise TypeError("comparison mappings require string keys")
-        return MappingProxyType(
-            {str(key): _freeze(item) for key, item in sorted(value.items())}
-        )
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-        return tuple(_freeze(item) for item in value)
-    if value is None or isinstance(value, (bool, int, float, str)):
-        return value
-    raise TypeError(f"unsupported comparison value: {type(value).__name__}")
-
-
-def _thaw(value: object) -> object:
-    """Return fresh JSON containers for immutable comparison data."""
-    if isinstance(value, Mapping):
-        return {
-            str(key): _thaw(item)
-            for key, item in sorted(
-                value.items(), key=lambda pair: str(pair[0])
-            )
-        }
-    if isinstance(value, tuple):
-        return [_thaw(item) for item in value]
-    return value
-
-
 def _freeze_mapping(value: Mapping[str, object]) -> JsonMapping:
     """Narrow the result of recursive freezing to a mapping."""
-    return cast(JsonMapping, _freeze(value))
+    return cast(JsonMapping, freeze(value, subject="comparison"))
 
 
 def _summary_payload(summary: MaybeSummary) -> object:
@@ -146,30 +129,79 @@ def _summary_payload(summary: MaybeSummary) -> object:
     return None if summary is None else summary.to_json_value()
 
 
+def _leaf_payload(
+    path: str, baseline: object, candidate: object
+) -> dict[str, object]:
+    """Return the report's leaf shape; an absent side is null, flag false."""
+    return {
+        "baseline": None if baseline is _MISSING else _thaw(baseline),
+        "baseline_present": baseline is not _MISSING,
+        "candidate": None if candidate is _MISSING else _thaw(candidate),
+        "candidate_present": candidate is not _MISSING,
+        "path": path,
+    }
+
+
 @dataclass(frozen=True, slots=True)
-class ExactMismatch:
-    """One exact-surface leaf mismatch represented by a JSON pointer."""
+class AddedLeaf:
+    """A leaf only the candidate has, at JSON pointer ``path``."""
 
     path: str
-    baseline_present: bool
-    candidate_present: bool
+    candidate: object
+
+    def __post_init__(self) -> None:
+        """Detach the retained leaf from caller-owned containers."""
+        object.__setattr__(
+            self, "candidate", freeze(self.candidate, subject="comparison")
+        )
+
+    def to_payload(self) -> dict[str, object]:
+        """Return the report shape: null baseline, ``baseline_present`` false."""
+        return _leaf_payload(self.path, _MISSING, self.candidate)
+
+
+@dataclass(frozen=True, slots=True)
+class RemovedLeaf:
+    """A leaf only the baseline has, at JSON pointer ``path``."""
+
+    path: str
+    baseline: object
+
+    def __post_init__(self) -> None:
+        """Detach the retained leaf from caller-owned containers."""
+        object.__setattr__(
+            self, "baseline", freeze(self.baseline, subject="comparison")
+        )
+
+    def to_payload(self) -> dict[str, object]:
+        """Return the report shape: null candidate, ``candidate_present`` false."""
+        return _leaf_payload(self.path, self.baseline, _MISSING)
+
+
+@dataclass(frozen=True, slots=True)
+class ChangedLeaf:
+    """A leaf both sides have with different values or JSON types."""
+
+    path: str
     baseline: object
     candidate: object
 
     def __post_init__(self) -> None:
-        """Detach retained mismatch leaves from caller-owned containers."""
-        object.__setattr__(self, "baseline", _freeze(self.baseline))
-        object.__setattr__(self, "candidate", _freeze(self.candidate))
+        """Detach both retained leaves from caller-owned containers."""
+        object.__setattr__(
+            self, "baseline", freeze(self.baseline, subject="comparison")
+        )
+        object.__setattr__(
+            self, "candidate", freeze(self.candidate, subject="comparison")
+        )
 
     def to_payload(self) -> dict[str, object]:
-        """Return a JSON-safe explicit representation."""
-        return {
-            "baseline": _thaw(self.baseline),
-            "baseline_present": self.baseline_present,
-            "candidate": _thaw(self.candidate),
-            "candidate_present": self.candidate_present,
-            "path": self.path,
-        }
+        """Return the report shape with both sides present."""
+        return _leaf_payload(self.path, self.baseline, self.candidate)
+
+
+ExactMismatch: TypeAlias = AddedLeaf | RemovedLeaf | ChangedLeaf
+"""One exact-surface leaf mismatch represented by a JSON pointer."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -290,34 +322,167 @@ class HexRowComparison:
         }
 
 
-@dataclass(frozen=True, slots=True, order=True)
-class Violation:
-    """Stable quality or validity failure suitable for sorted output."""
+@dataclass(frozen=True, slots=True)
+class QualityRegression:
+    """A candidate quality metric that fails its shared raw-value gate."""
 
-    code: str
+    code: ClassVar[str] = "quality_regression"
     surface: str
-    asset: str
-    path: str
-    message: str
-    baseline: object = field(compare=False)
-    candidate: object = field(compare=False)
+    gate: gates.ThresholdViolation | gates.UnequalValues
 
-    def __post_init__(self) -> None:
-        """Detach retained decision operands from caller-owned containers."""
-        object.__setattr__(self, "baseline", _freeze(self.baseline))
-        object.__setattr__(self, "candidate", _freeze(self.candidate))
+    @property
+    def asset(self) -> str:
+        """Return the gated asset name."""
+        return self.gate.asset
+
+    @property
+    def path(self) -> str:
+        """Return the gated metric's JSON pointer."""
+        return self.gate.metric
+
+    @property
+    def message(self) -> str:
+        """Return the gate's decision text."""
+        return self.gate.message
 
     def to_payload(self) -> dict[str, object]:
         """Return a JSON-safe explicit representation."""
-        return {
-            "asset": self.asset,
-            "baseline": _thaw(self.baseline),
-            "candidate": _thaw(self.candidate),
-            "code": self.code,
-            "message": self.message,
-            "path": self.path,
-            "surface": self.surface,
-        }
+        return _violation_payload(self)
+
+
+@dataclass(frozen=True, slots=True)
+class QualityMetricInvalid:
+    """A required quality metric that is missing or malformed."""
+
+    code: ClassVar[str] = "quality_metric_invalid"
+    surface: str
+    gate: gates.InvalidMetric
+
+    @property
+    def asset(self) -> str:
+        """Return the asset whose metric is invalid."""
+        return self.gate.asset
+
+    @property
+    def path(self) -> str:
+        """Return the invalid metric's JSON pointer."""
+        return self.gate.metric
+
+    @property
+    def message(self) -> str:
+        """Return what is wrong with the metric."""
+        return self.gate.message
+
+    def to_payload(self) -> dict[str, object]:
+        """Return a JSON-safe explicit representation."""
+        return _violation_payload(self)
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateQualityInvalid:
+    """The candidate catalogue could not be measured by the oracle."""
+
+    code: ClassVar[str] = "candidate_quality_invalid"
+    surface: ClassVar[str] = "candidate"
+    gate: gates.InvalidCandidate
+
+    @property
+    def asset(self) -> str:
+        """Return ``"catalog"``: the failure concerns the whole catalogue."""
+        return self.gate.asset
+
+    @property
+    def path(self) -> str:
+        """Return ``"/candidate"``."""
+        return self.gate.metric
+
+    @property
+    def message(self) -> str:
+        """Return the oracle error that stopped measurement."""
+        return self.gate.message
+
+    def to_payload(self) -> dict[str, object]:
+        """Return a JSON-safe explicit representation."""
+        return _violation_payload(self)
+
+
+@dataclass(frozen=True, slots=True)
+class ExactLeafMismatch:
+    """One exact-surface leaf that differs from the frozen v5 catalogue."""
+
+    code: ClassVar[str] = "exact_mismatch"
+    message: ClassVar[str] = "candidate leaf differs from frozen v5"
+    surface: str
+    asset: str
+    mismatch: ExactMismatch
+
+    @property
+    def path(self) -> str:
+        """Return the mismatched leaf's JSON pointer."""
+        return self.mismatch.path
+
+    def to_payload(self) -> dict[str, object]:
+        """Return a JSON-safe explicit representation."""
+        return _violation_payload(self)
+
+
+Violation: TypeAlias = (
+    QualityRegression
+    | QualityMetricInvalid
+    | CandidateQualityInvalid
+    | ExactLeafMismatch
+)
+"""One report failure; reports hold them in :func:`violation_order`."""
+
+
+def violation_order(violation: Violation) -> tuple[str, str, str, str, str]:
+    """Return the sort key of report failures: code, surface, asset, path, message."""
+    return (
+        violation.code,
+        violation.surface,
+        violation.asset,
+        violation.path,
+        violation.message,
+    )
+
+
+def _violation_operands(violation: Violation) -> tuple[object, object]:
+    """Return the report's ``(baseline, candidate)`` operands of a failure.
+
+    A numeric gate reports its allowed and observed values. Failures with
+    no numeric operands keep the report's established encoding
+    ``(1.0, 0.0)``. An exact mismatch reports its leaves, null for an
+    absent side.
+    """
+    match violation:
+        case QualityRegression(gate=gate):
+            if isinstance(gate, gates.ThresholdViolation):
+                return gate.allowed, gate.observed
+            return 1.0, 0.0
+        case QualityMetricInvalid() | CandidateQualityInvalid():
+            return 1.0, 0.0
+        case ExactLeafMismatch(mismatch=leaf):
+            match leaf:
+                case AddedLeaf():
+                    return None, leaf.candidate
+                case RemovedLeaf():
+                    return leaf.baseline, None
+                case ChangedLeaf():
+                    return leaf.baseline, leaf.candidate
+
+
+def _violation_payload(violation: Violation) -> dict[str, object]:
+    """Return the report's JSON shape of one failure."""
+    baseline, candidate = _violation_operands(violation)
+    return {
+        "asset": violation.asset,
+        "baseline": _thaw(baseline),
+        "candidate": _thaw(candidate),
+        "code": violation.code,
+        "message": violation.message,
+        "path": violation.path,
+        "surface": violation.surface,
+    }
 
 
 @dataclass(frozen=True, slots=True)
@@ -371,7 +536,6 @@ class ComparisonReport:
     """Immutable machine-readable gate record and human diagnostics."""
 
     schema: str
-    passed: bool
     baseline_source: JsonMapping
     candidate_source: JsonMapping
     inventory: JsonMapping
@@ -409,6 +573,11 @@ class ComparisonReport:
             "taxonomy",
             MappingProxyType(dict(sorted(self.taxonomy.items()))),
         )
+
+    @property
+    def passed(self) -> bool:
+        """Return whether the report holds no violation."""
+        return not self.violations
 
     @property
     def total_exact_mismatches(self) -> int:
@@ -475,16 +644,12 @@ def _json_pointer_token(value: object) -> str:
 def _mismatch_leaf(
     path: str, baseline: object, candidate: object
 ) -> ExactMismatch:
-    """Construct one leaf mismatch with explicit presence flags."""
-    baseline_present = baseline is not _MISSING
-    candidate_present = candidate is not _MISSING
-    return ExactMismatch(
-        path=path,
-        baseline_present=baseline_present,
-        candidate_present=candidate_present,
-        baseline=None if not baseline_present else _freeze(baseline),
-        candidate=None if not candidate_present else _freeze(candidate),
-    )
+    """Construct one leaf mismatch; ``_MISSING`` marks an absent side."""
+    if baseline is _MISSING:
+        return AddedLeaf(path=path, candidate=candidate)
+    if candidate is _MISSING:
+        return RemovedLeaf(path=path, baseline=baseline)
+    return ChangedLeaf(path=path, baseline=baseline, candidate=candidate)
 
 
 def _walk_exact(
@@ -719,26 +884,9 @@ def _compare_hex_row(
     )
 
 
-def _as_mapping(value: object) -> Mapping[str, object] | None:
-    """Return a string-keyed mapping or ``None`` for malformed metrics."""
-    if not isinstance(value, Mapping) or not all(
-        isinstance(key, str) for key in value
-    ):
-        return None
-    return cast(Mapping[str, object], value)
-
-
-def _number(value: object) -> float | None:
-    """Return one finite non-boolean number or ``None``."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    result = float(value)
-    return result if math.isfinite(result) else None
-
-
 def _display_missing(value: object) -> object:
     """Normalize the private missing marker for report serialization."""
-    return None if value is _MISSING else _freeze(value)
+    return None if value is _MISSING else freeze(value, subject="comparison")
 
 
 def _gate_surface(metric: str) -> str:
@@ -757,21 +905,17 @@ def _gate_surface(metric: str) -> str:
 
 def _adapt_gate_violation(item: gates.GateViolation) -> Violation:
     """Adapt one shared raw gate decision to the comparison report schema."""
-    if item.metric == "/candidate":
-        code = "candidate_quality_invalid"
-    elif item.rule == "valid":
-        code = "quality_metric_invalid"
-    else:
-        code = "quality_regression"
-    return Violation(
-        code=code,
-        surface=_gate_surface(item.metric),
-        asset=item.asset,
-        path=item.metric,
-        message=item.message,
-        baseline=item.allowed,
-        candidate=item.observed,
-    )
+    match item:
+        case gates.InvalidCandidate():
+            return CandidateQualityInvalid(gate=item)
+        case gates.InvalidMetric():
+            return QualityMetricInvalid(
+                surface=_gate_surface(item.metric), gate=item
+            )
+        case gates.ThresholdViolation() | gates.UnequalValues():
+            return QualityRegression(
+                surface=_gate_surface(item.metric), gate=item
+            )
 
 
 def compare_quality_metrics(
@@ -782,10 +926,13 @@ def compare_quality_metrics(
     """Adapt the shared raw-value gate policy into report violations."""
     return tuple(
         sorted(
-            _adapt_gate_violation(item)
-            for item in gates.evaluate_quality_metrics(
-                baseline_metrics, candidate_metrics, taxonomy
-            )
+            (
+                _adapt_gate_violation(item)
+                for item in gates.evaluate_quality_metrics(
+                    baseline_metrics, candidate_metrics, taxonomy
+                )
+            ),
+            key=violation_order,
         )
     )
 
@@ -891,7 +1038,10 @@ def _quality_comparison(
     candidate_metrics = gate_report.candidate_metrics
     candidate_extrema = gate_report.candidate_global_extrema
     quality_violations = tuple(
-        sorted(_adapt_gate_violation(item) for item in gate_report.violations)
+        sorted(
+            (_adapt_gate_violation(item) for item in gate_report.violations),
+            key=violation_order,
+        )
     )
     policy = cast(Mapping[str, object], fixture["policy"])
     quality = QualityComparison(
@@ -903,7 +1053,7 @@ def _quality_comparison(
         policy=policy,
         fixture_sha256=gates.QUALITY_FIXTURE_SHA256,
         oracle_sha256=gates.QUALITY_ORACLE_SHA256,
-        violations=tuple(sorted(quality_violations)),
+        violations=quality_violations,
     )
     return quality, baseline_previews
 
@@ -918,17 +1068,11 @@ def _exact_violations(
             path_parts = mismatch.path.strip("/").split("/")
             asset = path_parts[1] if len(path_parts) > 1 else surface
             result.append(
-                Violation(
-                    code="exact_mismatch",
-                    surface=surface,
-                    asset=asset,
-                    path=mismatch.path,
-                    message="candidate leaf differs from frozen v5",
-                    baseline=mismatch.baseline,
-                    candidate=mismatch.candidate,
+                ExactLeafMismatch(
+                    surface=surface, asset=asset, mismatch=mismatch
                 )
             )
-    return tuple(sorted(result))
+    return tuple(sorted(result, key=violation_order))
 
 
 def _row_comparisons(
@@ -1129,7 +1273,12 @@ def compare_catalog(
         baseline_previews=baseline_previews,
         candidate_previews=candidate.cmaps_preview_32,
     )
-    violations = tuple(sorted((*_exact_violations(exact), *quality.violations)))
+    violations = tuple(
+        sorted(
+            (*_exact_violations(exact), *quality.violations),
+            key=violation_order,
+        )
+    )
     inventory = {
         "baseline": dict(baseline.inventory),
         "candidate": dict(candidate.inventory),
@@ -1153,7 +1302,6 @@ def compare_catalog(
     }
     return ComparisonReport(
         schema=_COMPARISON_SCHEMA,
-        passed=not violations,
         baseline_source=_source_payload(baseline, baseline=True),
         candidate_source=_source_payload(candidate, baseline=False),
         inventory=inventory,
@@ -1516,11 +1664,12 @@ def _violations_panel(violations: Sequence[Violation]) -> str:
             f"<td>{html.escape(item.asset)}</td>"
             f"<td><code>{html.escape(item.path)}</code></td>"
             f"<td>{html.escape(item.message)}</td>"
-            f"<td><code>{_escaped_json(item.baseline)}</code></td>"
-            f"<td><code>{_escaped_json(item.candidate)}</code></td>"
+            f"<td><code>{_escaped_json(payload['baseline'])}</code></td>"
+            f"<td><code>{_escaped_json(payload['candidate'])}</code></td>"
             "</tr>"
         )
         for item in violations
+        for payload in (item.to_payload(),)
     ]
     return (
         "<table><thead><tr><th>code</th><th>surface</th><th>asset</th>"
