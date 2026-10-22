@@ -151,7 +151,7 @@ SI prefixes
    power = np.array([1e-9, 1e-6, 1e-3, 1, 1e3])
    ax2.bar(range(len(power)), power, color="dc.orange2")
    ax2.set_yscale("log")
-   dm.format_axis_si(ax2, axis="y")  # 0.001, 1, 1k (no sub-unit prefixes)
+   dm.format_axis_si(ax2, axis="y")  # 0.001, 1, 1k: a unit per tick on log
    ax2.set_ylabel("Power (W)")
 
    dm.simple_layout(fig)
@@ -282,9 +282,13 @@ Best practices
    helpers: each axis then prints the fewest decimals that keep every tick
    exact (``200``, not ``200.0``; ``17.5, 20.0, 22.5`` for a half step).
    Pass an integer only when a fixed precision is part of the message.
-3. **Currency placement** follows local convention — prefix for USD,
+3. **One unit per axis.** ``format_axis_si`` and ``format_axis_myriad``
+   share one unit across the axis: ``unit="max"`` (default) follows the
+   largest tick, ``unit="whole"`` keeps whole numbers, and a prefix such as
+   ``unit="k"`` fixes it.
+4. **Currency placement** follows local convention — prefix for USD,
    suffix for EUR.
-4. **SI prefixes** belong in scientific / engineering contexts; mixing
+5. **SI prefixes** belong in scientific / engineering contexts; mixing
    them with comma-grouped thousands looks inconsistent.
 
 See also

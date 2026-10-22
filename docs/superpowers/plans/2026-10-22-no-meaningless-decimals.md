@@ -18,16 +18,14 @@ formatters live in `src/dartwork_mpl/formatting/`).
   (`formatting/_decimals.py:fewest_exact_decimals`). `recommend_tick_decimals` (step rule) is
   not reused for the exact path because a 2.5 step needs one decimal, not zero; it is the
   fallback for irregular values. Called without a draw, a value decides for itself.
-- **SI prefix (revised after PoC review).** One unit per linear axis, whole numbers first: of
-  none/k/M/G/T, the units in which every visible tick is whole, then the shortest longest label
-  (`0, 200 … 1,200`; `-1,000k … 1,000k`); fewest decimals only when no unit is whole. The first
-  rule (prefix from the largest tick) printed `0.2k … 1.2k` and `0.25k … 2.00k` and was
-  rejected. Thousands separators on every auto formatter. Log axes: per-tick prefix/decimals.
-- **Myriad (pending the user's choice).** Each tick keeps its ladder unit (existing
-  behaviour); ticks sharing a unit share decimals (`7,500만, 1.00억, 1.25억`). Only
-  `format_axis_myriad`, `MyriadFormatter` and its own tests encode this output.
-- **Zero.** No prefix/suffix/sign; uses the axis decimal count, so `0` on integer axes and
-  `0.0` beside `0.5M` (keeps `TICK_DECIMAL` uniformity and the line_signals zero glyph).
+- **Unit (user decision 2026-10-22: "최대 단위를 기준으로 잡거나, 일관된 단위를 잡는 거 …
+  그래야 자리수가 직관적임").** An axis never mixes units. `format_axis_si` / `_myriad` take
+  `unit=`: `"max"` (default) is the unit of the largest visible tick (`0, 0.2k … 1.2k`;
+  `0, 0.25억 … 1.75억`); `"whole"` is the integers-first rule tried in round 2 (`0, 200 …
+  1,200`); a ladder label fixes the unit. One `AxisUnitFormatter` serves all four helpers
+  (millions/billions are a one-rung ladder). Log axes: unit and decimals per tick.
+- **Zero.** Always a bare `0`; TICK_DECIMAL treats a bare `0` as unit-less, so
+  `-1.0M, -0.5M, 0, 0.5M, 1.0M` validates clean.
 - **Explicit `decimals=<int>`** keeps the previous per-tick `FuncFormatter`, byte for byte.
 - **Validator.** `TICK_DECIMAL` trailing zero → WARNING naming the formatter option; uniformity
   and precision judged per unit suffix on the rendered numbers. New `VALUE_LABEL_DECIMAL`
