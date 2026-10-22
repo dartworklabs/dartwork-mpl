@@ -13,11 +13,23 @@ from collections.abc import Iterable
 from matplotlib import colormaps
 from matplotlib.colors import is_color_like
 
-from .catalog import Issue, Rule, load_rules
+from .catalog import (
+    Issue,
+    Rule,
+    _AstCheck,
+    _AstNameDetector,
+    _RegexDetector,
+    _rule_detector,
+    _SubstringDetector,
+    _UnsupportedDetector,
+    load_rules,
+)
 from .syntax import (
     _CMAP_CALLS,
     _COLOR_CALLS,
     _COLOR_KEYWORDS,
+    SourceRejected,
+    _OwnerKind,
     _parse_source,
     _source_registrations,
     _Syntax,
@@ -45,15 +57,16 @@ def _method_offset(syntax: _Syntax, node: ast.Attribute) -> int:
 
 def _call_owner(
     syntax: _Syntax, call: ast.Call, *, conventional: bool = False
-) -> tuple[ast.expr, list[str], str | None]:
+) -> tuple[ast.expr, list[str], _OwnerKind | None]:
     """Read only recognized owners of an actual call expression."""
     return syntax.owner(call.func, conventional=conventional)
 
 
 def _builtin_matches(syntax: _Syntax, rule: Rule) -> list[Issue]:
     """Apply catalog rules to executable syntax while retaining actual literal rules."""
-    if rule.detector_kind == "ast":
-        return _scan_literal_names(syntax.code, rule, syntax)
+    detector = _rule_detector(rule)
+    if isinstance(detector, _AstNameDetector):
+        return _scan_literal_names(syntax, rule, detector.check)
     offsets: set[int] = set()
     for node in ast.walk(syntax.tree):
         if isinstance(node, ast.Call):
@@ -217,13 +230,11 @@ def _builtin_matches(syntax: _Syntax, rule: Rule) -> list[Issue]:
 
 
 def _scan_literal_names(
-    code: str, rule: Rule, syntax: _Syntax | None = None
+    syntax: _Syntax, rule: Rule, check: _AstCheck
 ) -> list[Issue]:
     """Check actual literal arguments on proven or conventional plotting receivers."""
-    syntax = syntax or _parse_source(code)
-    if syntax is None:
-        return []
-    registrations = _source_registrations(syntax.tree, rule.detector_value)
+    code = syntax.code
+    registrations = _source_registrations(syntax.tree, check)
     if registrations is None:
         return []
     matches: list[Issue] = []
@@ -235,7 +246,7 @@ def _scan_literal_names(
             continue
         method = path[0]
         candidates: list[ast.expr] = []
-        if rule.detector_value == "colormap-name":
+        if check == "colormap-name":
             if method in _CMAP_CALLS:
                 candidates = [
                     keyword.value
@@ -248,7 +259,7 @@ def _scan_literal_names(
                     for keyword in node.keywords
                     if keyword.arg == "name"
                 ]
-        elif rule.detector_value == "color-name" and method in _COLOR_CALLS:
+        elif check == "color-name" and method in _COLOR_CALLS:
             candidates = [
                 keyword.value
                 for keyword in node.keywords
@@ -280,7 +291,7 @@ def _scan_literal_names(
                 or sentinel
                 or (
                     value.value in colormaps
-                    if rule.detector_value == "colormap-name"
+                    if check == "colormap-name"
                     else is_color_like(value.value)
                 )
             )
@@ -290,50 +301,52 @@ def _scan_literal_names(
 
 
 def _scan_one(code: str, rule: Rule) -> list[Issue]:
-    """Apply one catalog-selected detector and preserve source locations."""
-    if rule.detector_kind == "ast":
-        return _scan_literal_names(code, rule)
-    matches: list[Issue] = []
-    if rule.detector_kind == "regex":
-        pattern = re.compile(rule.detector_value, re.MULTILINE)
-        for m in pattern.finditer(code):
-            line = code.count("\n", 0, m.start()) + 1
-            snippet = code.splitlines()[line - 1].strip() if code else None
-            matches.append(
-                Issue(
-                    rule_id=rule.id,
-                    severity=rule.severity,
-                    message=rule.message,
-                    line=line,
-                    snippet=snippet,
-                    column=m.start(),
-                    fix_suggestion=rule.fix_suggestion,
-                )
-            )
-    elif rule.detector_kind == "substring":
-        idx = 0
-        while True:
-            found = code.find(rule.detector_value, idx)
-            if found < 0:
-                break
-            line = code.count("\n", 0, found) + 1
-            # Populate ``snippet`` symmetrically with the regex branch —
-            # it used to be regex-only, so substring issues rendered
-            # without their offending line.
-            snippet = code.splitlines()[line - 1].strip() if code else None
-            matches.append(
-                Issue(
-                    rule_id=rule.id,
-                    severity=rule.severity,
-                    message=rule.message,
-                    line=line,
-                    snippet=snippet,
-                    column=found,
-                    fix_suggestion=rule.fix_suggestion,
-                )
-            )
-            idx = found + len(rule.detector_value)
-    return matches
+    """Apply one catalog-selected detector and preserve source locations.
+
+    A rule whose detector this engine does not implement matches nothing.
+    """
+    match _rule_detector(rule):
+        case _AstNameDetector(check):
+            syntax = _parse_source(code)
+            if isinstance(syntax, SourceRejected):
+                return []
+            return _scan_literal_names(syntax, rule, check)
+        case _RegexDetector(pattern):
+            compiled = re.compile(pattern, re.MULTILINE)
+            return [
+                _text_issue(code, rule, m.start())
+                for m in compiled.finditer(code)
+            ]
+        case _SubstringDetector(literal):
+            matches: list[Issue] = []
+            idx = 0
+            while True:
+                found = code.find(literal, idx)
+                if found < 0:
+                    break
+                matches.append(_text_issue(code, rule, found))
+                idx = found + len(literal)
+            return matches
+        case _UnsupportedDetector():
+            return []
+
+
+def _text_issue(code: str, rule: Rule, offset: int) -> Issue:
+    """Build a raw-text match; regex and substring rules share this shape.
+
+    Unlike ``_issue`` the snippet is ``None`` for empty source.
+    """
+    line = code.count("\n", 0, offset) + 1
+    snippet = code.splitlines()[line - 1].strip() if code else None
+    return Issue(
+        rule_id=rule.id,
+        severity=rule.severity,
+        message=rule.message,
+        line=line,
+        snippet=snippet,
+        column=offset,
+        fix_suggestion=rule.fix_suggestion,
+    )
 
 
 def lint(code: str, *, rules: Iterable[Rule] | None = None) -> list[Issue]:
@@ -373,7 +386,11 @@ def lint(code: str, *, rules: Iterable[Rule] | None = None) -> list[Issue]:
     seen: set[tuple[str, int | None]] = set()
     for rule in rule_list:
         if rule == bundled.get(rule.id) and rule.detector_kind != "substring":
-            matches = [] if syntax is None else _builtin_matches(syntax, rule)
+            matches = (
+                []
+                if isinstance(syntax, SourceRejected)
+                else _builtin_matches(syntax, rule)
+            )
         else:
             matches = _scan_one(code, rule)
         for issue in matches:
