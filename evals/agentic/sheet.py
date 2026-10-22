@@ -59,9 +59,10 @@ def _caption(score: dict | None) -> str:
         return "not scored"
     yn = {True: "yes", False: "no", None: "-"}
     d = (score.get("defects") or {}).get("total", "-")
+    flag = " | CONTAMINATED" if score.get("contaminated") else ""
     return (
         f"exec {yn[score.get('execution_success')]} | task {yn[score.get('task_success')]} | "
-        f"inspected {yn[score.get('inspection_observed')]} | defects {d}"
+        f"inspected {yn[score.get('inspection_observed')]} | defects {d}{flag}"
     )
 
 

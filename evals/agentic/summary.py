@@ -5,7 +5,7 @@ from __future__ import annotations
 import statistics
 from pathlib import Path
 
-from compare import compare_rows, table
+from compare import compare_runs, table
 
 KINDS = [
     "text_outside",
@@ -14,6 +14,7 @@ KINDS = [
     "legend_covers_data",
     "duplicate_text",
     "missing_glyphs",
+    "meaningless_decimals",
 ]
 
 
@@ -32,37 +33,41 @@ def _frac(rs, key):
 
 def _checks(rs, group):
     p = sum((r.get(group) or {}).get("passed", 0) for r in rs)
+    u = sum((r.get(group) or {}).get("unchecked", 0) for r in rs)
     t = sum((r.get(group) or {}).get("total", 0) for r in rs)
-    return f"{p}/{t}" if t else "-"
+    return (f"{p}/{t}" + (f" ({u} unchecked)" if u else "")) if t else "-"
+
+
+def _arm(r):
+    return r.get("arm") or "noskill"
 
 
 def summary_md(rows: list[dict], run_dir: Path) -> str:
     out = [
         f"# Agent eval summary — `{run_dir.name}`",
         "",
-        "| host | arm | model | units | execution | task | inspected | median turns | median tokens "
-        "| median time (s) | defects (units with any) | values checks | spec checks | explicit edits preserved |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "| host | arm | model | units | execution | task | contaminated | inspected | median turns "
+        "| median tokens | median time (s) | defects (units with any) | values checks | spec checks "
+        "| explicit edits preserved |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
-    groups = sorted({(r["host"], r.get("arm") or "noskill") for r in rows})
+    groups = sorted({(r["host"], _arm(r)) for r in rows})
     for host, arm in groups:
-        rs = [
-            r
-            for r in rows
-            if r["host"] == host and (r.get("arm") or "noskill") == arm
-        ]
+        rs = [r for r in rows if r["host"] == host and _arm(r) == arm]
         explicit = [
             r
             for r in rs
             if (r.get("preservation") or {}).get("scope") == "explicit"
         ]
         insp = [r for r in rs if r.get("inspection_observed") is not None]
+        defects = [r.get("defects") or {} for r in rs]
         out.append(
             f"| {host} | {arm} | {rs[0].get('model')} | {len(rs)} | {_frac(rs, 'execution_success')} "
-            f"| {_frac(rs, 'task_success')} | {_frac(insp, 'inspection_observed') if insp else 'n/a'} "
+            f"| {_frac(rs, 'task_success')} | {_frac(rs, 'contaminated')} "
+            f"| {_frac(insp, 'inspection_observed') if insp else 'n/a'} "
             f"| {_fmt(_med([r.get('turns') for r in rs]))} | {_fmt(_med([(r.get('tokens') or {}).get('total') for r in rs]))} "
             f"| {_fmt(_med([r.get('wall_s') for r in rs]))} "
-            f"| {sum((r.get('defects') or {}).get('total', 0) for r in rs)} ({sum(bool((r.get('defects') or {}).get('total')) for r in rs)}) "
+            f"| {sum(d.get('total', 0) for d in defects)} ({sum(bool(d.get('total')) for d in defects)}) "
             f"| {_checks(rs, 'values')} | {_checks(rs, 'spec')} "
             f"| {sum(bool(r['preservation']['ok']) for r in explicit)}/{len(explicit)} |"
         )
@@ -74,11 +79,7 @@ def summary_md(rows: list[dict], run_dir: Path) -> str:
         "|---|---|" + "---|" * len(KINDS),
     ]
     for host, arm in groups:
-        rs = [
-            r
-            for r in rows
-            if r["host"] == host and (r.get("arm") or "noskill") == arm
-        ]
+        rs = [r for r in rows if r["host"] == host and _arm(r) == arm]
         out.append(
             f"| {host} | {arm} | "
             + " | ".join(
@@ -87,51 +88,50 @@ def summary_md(rows: list[dict], run_dir: Path) -> str:
             )
             + " |"
         )
-    arms = {r.get("arm") for r in rows}
-    if {"noskill", "skill"} <= arms:
+    if {"noskill", "skill"} <= {_arm(r) for r in rows}:
+        results, labels = compare_runs(
+            run_dir, None, "task_success", missing_as_failure=False
+        )
         out += [
             "",
-            "## Paired comparison (skill vs noskill, case-level bootstrap)",
+            "## Paired comparison (skill vs noskill, manifest-validated, case-level bootstrap)",
             "",
-            table(
-                compare_rows(
-                    [r for r in rows if r.get("arm") == "noskill"],
-                    [r for r in rows if r.get("arm") == "skill"],
-                ),
-                "noskill",
-                "skill",
-            ),
+            table(results, *labels),
         ]
     out += [
         "",
         "## Units",
         "",
-        "| case | host | arm/rep | exec | task | inspected | turns | tokens | time (s) | defects | values | spec | preserved | failed checks |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "| case | host | arm/rep | exec | task | inspected | stop | turns | tokens | time (s) | defects | values "
+        "| spec | preserved | failed checks |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in sorted(
-        rows,
-        key=lambda r: (
-            r["case"],
-            r["host"],
-            r.get("arm") or "",
-            r.get("rep") or 0,
-        ),
+        rows, key=lambda r: (r["case"], r["host"], _arm(r), r.get("rep") or 0)
     ):
-        failed = [c["name"] for c in r.get("checks", []) if not c["ok"]]
+        failed = [
+            f"{c['name']}{'' if c['ok'] is False else ' (unchecked)'}"
+            for c in r.get("checks", [])
+            if c["ok"] is not True
+        ]
+        failed += [f"execution: {p}" for p in r.get("execution_problems") or []]
         if r.get("execution_success") and not r.get("rerun_matches"):
-            failed.append("re-run does not reproduce artifact")
+            failed.append("re-run does not reproduce the artifact")
+        if r.get("contaminated"):
+            failed.append("contaminated")
         pres = r.get("preservation") or {}
         if pres.get("ok") is False:
-            failed.append(f"changed {pres['changed_n']} non-target props")
+            failed.append(
+                f"changed {pres['changed_n']} / added {pres.get('added_n', 0)} non-target props"
+            )
         flag = " (held-out)" if r.get("held_out") else ""
         insp = r.get("inspection_observed")
         out.append(
-            f"| {r['case']}{flag} | {r['host']} | {r.get('arm')}/{r.get('rep')} | {'yes' if r.get('execution_success') else 'NO'} "
+            f"| {r['case']}{flag} | {r['host']} | {_arm(r)}/{r.get('rep')} | {'yes' if r.get('execution_success') else 'NO'} "
             f"| {'yes' if r.get('task_success') else 'NO'} | {'-' if insp is None else 'yes' if insp else 'no'} "
-            f"| {_fmt(r.get('turns'))} | {_fmt((r.get('tokens') or {}).get('total'))} | {_fmt(r.get('wall_s'))} "
-            f"| {(r.get('defects') or {}).get('total', '-')} | {_checks([r], 'values')} | {_checks([r], 'spec')} "
-            f"| {pres.get('rate', '-') if pres else '-'} | {', '.join(failed) or '-'} |"
+            f"| {r.get('termination') or '-'} | {_fmt(r.get('turns'))} | {_fmt((r.get('tokens') or {}).get('total'))} "
+            f"| {_fmt(r.get('wall_s'))} | {(r.get('defects') or {}).get('total', '-')} | {_checks([r], 'values')} "
+            f"| {_checks([r], 'spec')} | {pres.get('rate', '-') if pres else '-'} | {'; '.join(failed) or '-'} |"
         )
     out += ["", "Metric definitions: `evals/agentic/README.md`."]
     return "\n".join(out) + "\n"

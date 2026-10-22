@@ -3,19 +3,21 @@
     uv run python evals/agentic/score.py RUN_DIR [--host claude] [--case g01-line-gdp]
     uv run python evals/agentic/score.py --selftest
 
-Per run unit (``RUN_DIR/<host>/<case>/<arm>-r<k>/``):
+Per run unit (``RUN_DIR/<host>/<case>/<arm>-r<k>/``, the records tree):
 
-* ``execution_success`` — the agent's own run left a valid ``out/figure.png``
-  and ``out/figure.pdf`` written during the run (the copies preserved in
-  ``artifacts/`` right after the host exited) and a ``plot.py``.
-* ``rerun_ok`` / ``rerun_matches`` — ``plot.py`` re-run in its venv in a fresh
-  process via ``probe.py`` saves both files again and the PNG reproduces the
-  original artifact. Oracle checks read the re-run figure, so they only count
-  when it reproduces the original.
-* ``task_success`` — execution_success, a reproducing re-run, every oracle
-  check, and (explicit edits) preservation of every non-target property.
-* ``inspection_observed`` — from ``run.json``: the host's tool events show the
-  agent viewed an image identical to the final PNG.
+* ``execution_success``: the agent's own run left ``out/figure.png`` and
+  ``out/figure.pdf`` (copied to ``artifacts/`` when the host exited) that are
+  valid (PNG decodes; the PDF parses and renders a page whose aspect matches
+  the PNG), were written during the run, and are not older than the final
+  ``plot.py`` (an edit that was never executed fails).
+* ``rerun_ok`` / ``rerun_matches``: ``plot.py`` re-run in a fresh process in
+  the unit's venv saves both files again, the re-run PDF is valid, and the
+  re-run PNG is pixel-identical to the original (measured same-env noise: 0).
+  Oracle checks read the re-run figure, so they only count when it matches.
+* ``task_success``: execution, a matching re-run, every check ``ok`` (an
+  unchecked result is not a pass), explicit-edit preservation, and no
+  contamination (the agent touched grading files: never a success).
+* ``inspection_observed``: from ``run.json`` (see run.py).
 """
 
 from __future__ import annotations
@@ -23,9 +25,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -41,7 +45,7 @@ from common import (
     read_json,
     write_json,
 )
-from matplotlib import image as mimage
+from PIL import Image
 from summary import summary_md
 
 PROBE = EVAL_DIR / "probe.py"
@@ -53,8 +57,10 @@ SKIP = {
     ".mplconfig",
     ".claude",
     ".agents",
+    ".wheel",
 }
 RERUN_TIMEOUT = 300
+ASPECT_TOL = 0.02
 
 
 def run_probe(python: Path, workdir: Path, script: str = "plot.py") -> dict:
@@ -106,43 +112,140 @@ def _copy_project(src: Path, dst: Path) -> None:
 
 def _saved(probe: dict, ext: str) -> str | None:
     for s in reversed(probe.get("saves", [])):
-        p = Path(s["abspath"] or "")
+        p = Path(s.get("abspath") or "")
         if p.name == f"figure.{ext}" and p.parent.name == "out":
             return str(p)
     return None
 
 
-def valid_png(path: Path) -> bool:
+# ------------------------------------------------------------ artifact checks
+def png_pixels(path: Path) -> np.ndarray | None:
     try:
-        head = path.read_bytes()[:24]
-    except OSError:
-        return False
-    return (
-        head[:8] == b"\x89PNG\r\n\x1a\n"
-        and int.from_bytes(head[16:20], "big") > 0
-        and int.from_bytes(head[20:24], "big") > 0
-    )
+        with Image.open(path) as im:
+            return np.asarray(im.convert("RGBA"))
+    except (OSError, ValueError, SyntaxError):
+        return None
+
+
+def valid_png(path: Path) -> bool:
+    px = png_pixels(path)
+    return px is not None and px.shape[0] > 0 and px.shape[1] > 0
+
+
+def pdf_check(path: Path, png: Path | None = None) -> tuple[bool, str]:
+    """Parse the PDF (pdfinfo), render page 1 (pdftoppm), compare its aspect with the PNG."""
+    if not path.exists() or path.stat().st_size == 0:
+        return False, "missing or empty"
+    if shutil.which("pdfinfo"):
+        r = subprocess.run(
+            ["pdfinfo", str(path)], capture_output=True, text=True, timeout=60
+        )
+        pages = re.search(r"^Pages:\s+(\d+)", r.stdout, re.M)
+        size = re.search(
+            r"^Page size:\s+([\d.]+) x ([\d.]+) pts", r.stdout, re.M
+        )
+        if r.returncode or not pages or int(pages.group(1)) < 1 or not size:
+            return (
+                False,
+                f"pdfinfo failed: {(r.stderr or r.stdout).strip()[:160]}",
+            )
+        w, h = float(size.group(1)), float(size.group(2))
+    else:  # fallback: at least one page object with a media box
+        data = path.read_bytes()
+        box = re.search(
+            rb"/MediaBox\s*\[\s*([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s*\]",
+            data,
+        )
+        if not re.search(rb"/Type\s*/Page\b", data) or not box:
+            return False, "no page object with a MediaBox"
+        x0, y0, x1, y1 = (float(v) for v in box.groups())
+        w, h = x1 - x0, y1 - y0
+    if shutil.which("pdftoppm"):
+        with tempfile.TemporaryDirectory(dir=path.parent) as tmp:
+            r = subprocess.run(
+                [
+                    "pdftoppm",
+                    "-r",
+                    "12",
+                    "-png",
+                    "-singlefile",
+                    "-f",
+                    "1",
+                    "-l",
+                    "1",
+                    str(path),
+                    str(Path(tmp) / "page"),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            if r.returncode or not (Path(tmp) / "page.png").exists():
+                return (
+                    False,
+                    f"pdftoppm could not render page 1: {r.stderr.strip()[:160]}",
+                )
+    if w <= 0 or h <= 0:
+        return False, "degenerate page size"
+    if png is not None:
+        px = png_pixels(png)
+        if px is None:
+            return False, "no PNG to compare"
+        want = px.shape[0] / px.shape[1]
+        if abs(h / w - want) > ASPECT_TOL * want:
+            return False, f"page aspect {h / w:.3f} vs PNG {want:.3f}"
+    return True, f"page {w:.0f}x{h:.0f} pt"
 
 
 def valid_pdf(path: Path) -> bool:
-    try:
-        data = path.read_bytes()
-    except OSError:
-        return False
-    return data[:5] == b"%PDF-" and b"%%EOF" in data[-2048:]
+    return pdf_check(path)[0]
 
 
-def png_matches(a: Path, b: Path, tol: float = 0.01) -> bool:
-    try:
-        x, y = mimage.imread(a), mimage.imread(b)
-    except (OSError, ValueError, SyntaxError):
-        return False
+def png_matches(a: Path, b: Path) -> bool:
+    """Exact decoded-pixel equality (same-env re-runs are deterministic)."""
+    x, y = png_pixels(a), png_pixels(b)
     return (
-        x.shape == y.shape
-        and float(np.abs(x.astype(float) - y.astype(float)).mean()) <= tol
+        x is not None
+        and y is not None
+        and x.shape == y.shape
+        and bool(np.array_equal(x, y))
     )
 
 
+def execution(unit: Path, project: Path, run: dict) -> tuple[bool, list[str]]:
+    """Was the final plot.py executed by the agent, leaving valid outputs?"""
+    art = unit / "artifacts"
+    png, pdf, plot = art / "figure.png", art / "figure.pdf", project / "plot.py"
+    why = []
+    if not plot.exists():
+        why.append("no plot.py")
+    if not valid_png(png):
+        why.append("original PNG missing or undecodable")
+    ok_pdf, detail = pdf_check(pdf, png if valid_png(png) else None)
+    if not ok_pdf:
+        why.append(f"original PDF invalid ({detail})")
+    started = run.get("started_ts")
+    for f in (png, pdf):
+        if (
+            f.exists()
+            and started is not None
+            and f.stat().st_mtime < started - 1
+        ):
+            why.append(f"{f.name} was not written during the run")
+        if (
+            f.exists()
+            and plot.exists()
+            and f.stat().st_mtime < plot.stat().st_mtime
+        ):
+            why.append(
+                f"{f.name} is older than the final plot.py (last edit never executed)"
+            )
+    if started is None:
+        why.append("no run start time recorded")
+    return not why, why
+
+
+# ------------------------------------------------------------ evaluation
 def evaluate(case: dict, probe: dict, base: dict | None) -> dict:
     """Oracle, defects and preservation for one re-run (shared with the self-test)."""
     rec: dict = {
@@ -161,18 +264,29 @@ def evaluate(case: dict, probe: dict, base: dict | None) -> dict:
         d["details"],
         d["bbox_tight"],
     )
-    rec["checks"] = oracle.check_oracle(case["oracle"], probe, base)
+    rec["checks"] = oracle.check_oracle(
+        case["oracle"],
+        probe,
+        base,
+        auxiliary=case.get("auxiliary", []),
+        figure=True,
+    )
     for group in ("values", "spec"):
         sub = [c for c in rec["checks"] if c["group"] == group]
-        rec[group] = {"passed": sum(c["ok"] for c in sub), "total": len(sub)}
-    if case["kind"] == "edit" and base and base.get("snapshot"):
+        rec[group] = {
+            "passed": sum(c["ok"] is True for c in sub),
+            "unchecked": sum(c["ok"] is None for c in sub),
+            "total": len(sub),
+        }
+    if case["kind"] == "edit":
         rec["preservation"] = metrics.preservation(
-            base["snapshot"]["props"],
+            ((base or {}).get("snapshot") or {}).get("props"),
             probe["snapshot"]["props"],
             case["edit_scope"],
             case["target"],
         )
-        rec["base_defects"] = metrics.defects(base)["counts"]
+        if base and base.get("snapshot"):
+            rec["base_defects"] = metrics.defects(base)["counts"]
     rec["dm"] = {
         "styles": probe.get("styles"),
         "calls": probe.get("calls"),
@@ -184,23 +298,24 @@ def evaluate(case: dict, probe: dict, base: dict | None) -> dict:
     return rec
 
 
-def _checks_pass(rec: dict) -> bool:
+def checks_pass(rec: dict) -> bool:
     pres = rec.get("preservation")
     return (
         bool(rec.get("checks"))
-        and all(c["ok"] for c in rec["checks"])
+        and all(c["ok"] is True for c in rec["checks"])
         and (pres is None or pres["ok"] is not False)
     )
 
 
 def score_unit(case: dict, unit: Path) -> dict:
     run = read_json(unit / "run.json") or {}
-    project, art = unit / "project", unit / "artifacts"
+    project = Path(run.get("project") or unit / "project")
     python = project / ".venv" / "bin" / "python"
     rec = {
         k: run.get(k)
         for k in (
             "run_id",
+            "unit_id",
             "host",
             "arm",
             "rep",
@@ -208,14 +323,18 @@ def score_unit(case: dict, unit: Path) -> dict:
             "effort",
             "exit_code",
             "timed_out",
+            "termination",
             "host_error",
             "wall_s",
             "turns",
             "tokens",
             "cost_usd",
             "skill",
+            "skill_usage",
+            "skills_invoked",
             "host_version",
             "inspection",
+            "contamination",
             "harness_error",
         )
     }
@@ -231,13 +350,11 @@ def score_unit(case: dict, unit: Path) -> dict:
         }
     )
     rec["inspection_observed"] = (run.get("inspection") or {}).get("observed")
-    arts = run.get("artifacts") or {}
-    rec["execution_success"] = bool(
-        (project / "plot.py").exists()
-        and valid_png(art / "figure.png")
-        and valid_pdf(art / "figure.pdf")
-        and arts.get("png_fresh")
-        and arts.get("pdf_fresh")
+    rec["contaminated"] = bool(
+        (run.get("contamination") or {}).get("contaminated")
+    )
+    rec["execution_success"], rec["execution_problems"] = execution(
+        unit, project, run
     )
     if not (project / "plot.py").exists() or not python.exists():
         rec.update(
@@ -260,17 +377,25 @@ def score_unit(case: dict, unit: Path) -> dict:
         shutil.copy(FIXTURES / "base" / case["base"], bdir / "plot.py")
         base = run_probe(python, bdir)
     rec.update(evaluate(case, probe, base))
-    rerun_png = _saved(probe, "png")
+    rerun_png, rerun_pdf = _saved(probe, "png"), _saved(probe, "pdf")
+    rerun_pdf_ok = (
+        bool(rerun_pdf)
+        and pdf_check(Path(rerun_pdf), Path(rerun_png) if rerun_png else None)[
+            0
+        ]
+    )
+    rec["rerun_ok"] = bool(rec["rerun_ok"] and rerun_pdf_ok)
     rec["rerun_matches"] = bool(
         rerun_png
         and rec["execution_success"]
-        and png_matches(Path(rerun_png), art / "figure.png")
+        and png_matches(Path(rerun_png), unit / "artifacts" / "figure.png")
     )
     rec["task_success"] = bool(
         rec["execution_success"]
         and rec["rerun_ok"]
         and rec["rerun_matches"]
-        and _checks_pass(rec)
+        and checks_pass(rec)
+        and not rec["contaminated"]
     )
     return rec
 
@@ -303,7 +428,10 @@ def score_run(
     fresh = {r["unit"] for r in rows}
     allrows = [r for r in prior if r.get("unit") not in fresh] + rows
     path.write_text(
-        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in allrows)
+        "".join(
+            json.dumps(r, ensure_ascii=False, default=str) + "\n"
+            for r in allrows
+        )
     )
     (run_dir / "summary.md").write_text(
         summary_md(allrows, run_dir), encoding="utf-8"
@@ -335,17 +463,29 @@ def _selftest_case(case: dict, out_root: Path, python: Path) -> str:
         shutil.copytree(FIXTURES / "data", work / "base" / "data")
         shutil.copy(FIXTURES / "base" / case["base"], work / "base" / "plot.py")
         base = run_probe(python, work / "base")
-    rec = evaluate(case, run_probe(python, work / "agent"), base)
-    bad = [f"{c['name']}: {c['detail']}" for c in rec["checks"] if not c["ok"]]
+    probe = run_probe(python, work / "agent")
+    rec = evaluate(case, probe, base)
+    bad = [
+        f"{c['name']}: {c['ok']} {c['detail']}"
+        for c in rec["checks"]
+        if c["ok"] is not True
+    ]
     if not rec["rerun_ok"]:
         bad.append(f"rerun failed: {rec.get('rerun_error')}")
+    pdf = _saved(probe, "pdf")
+    if pdf and not pdf_check(Path(pdf), Path(_saved(probe, "png") or ""))[0]:
+        bad.append(
+            f"PDF invalid: {pdf_check(Path(pdf), Path(_saved(probe, 'png') or ''))[1]}"
+        )
     known = _known_defects(ref)
     for kind, n in (rec.get("defects") or {}).items():
         if kind != "total" and n > known.get(kind, 0):
             bad.append(f"defect {kind}={n} {rec['defect_details'].get(kind)}")
     pres = rec.get("preservation")
     if pres and pres["ok"] is False:
-        bad.append(f"preservation changed {pres['changed']}")
+        bad.append(
+            f"preservation changed {pres['changed']} added {pres.get('added')}"
+        )
     note = (
         f" (base defects {rec['base_defects']['total']})"
         if rec.get("base_defects")
