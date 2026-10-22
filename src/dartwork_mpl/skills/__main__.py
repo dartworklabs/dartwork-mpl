@@ -7,7 +7,13 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from . import TARGETS, SkillInstallError, install_skill, skill_path
+from . import (
+    TARGETS,
+    SkillInstallError,
+    install_skill,
+    skill_path,
+    skill_version,
+)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -41,13 +47,14 @@ def _parser() -> argparse.ArgumentParser:
     install.add_argument(
         "--copy",
         action="store_true",
-        help="copy instead of symlinking (for systems without symlinks); "
-        "rerun after upgrading dartwork-mpl",
+        help="copy instead of symlinking (no symlinks, or to check the skill "
+        "into the repository); rerun after upgrading dartwork-mpl",
     )
     install.add_argument(
         "--force",
         action="store_true",
-        help="replace a file or folder this installer did not create",
+        help="replace a file or folder this installer did not create, or a "
+        "copy with local edits",
     )
     sub.add_parser("path", help="print the folder that holds SKILL.md")
     return parser
@@ -79,13 +86,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 1
 
+    print(f"dartwork-mpl {skill_version()} skill: {skill_path()}")
     for result in results:
         line = f"{result.action:<9} {_shown(result.path)}"
-        if result.action in ("linked", "replaced") and not args.copy:
-            line += f" -> {skill_path()}"
         if result.detail:
             line += f" ({result.detail})"
         print(line)
+    if not args.copy:
+        print(
+            "note: the links point into this Python environment; moving or "
+            "recreating it breaks them until you rerun this command. Use "
+            "--copy for a copy you can check into the repository."
+        )
     if any(r.action in ("linked", "copied", "replaced") for r in results):
         print("If the skill does not appear, start a new agent session.")
     return 0

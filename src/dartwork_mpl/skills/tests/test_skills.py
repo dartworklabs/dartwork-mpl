@@ -9,6 +9,9 @@ copies, foreign folders and the ``.claude/skills -> .agents/skills`` link).
 
 from __future__ import annotations
 
+import hashlib
+import json
+import os
 import re
 from pathlib import Path
 
@@ -19,11 +22,13 @@ import pytest
 import yaml
 
 import dartwork_mpl as dm
+import dartwork_mpl.skills as skills_module
 from dartwork_mpl.skills import (
     SKILL_NAME,
     SkillInstallError,
     install_skill,
     skill_path,
+    skill_version,
 )
 from dartwork_mpl.skills.__main__ import main
 
@@ -211,27 +216,142 @@ def test_install_one_target(tmp_path: Path) -> None:
     assert not (tmp_path / ".claude").exists()
 
 
-def test_copy_mode_marks_and_refreshes_its_copy(tmp_path: Path) -> None:
+_MARKER = ".dartwork-mpl-skill.json"
+
+
+def _leftovers(skills_dir: Path) -> list[str]:
+    """Temporary staging folders the installer left behind."""
+    return [p.name for p in skills_dir.iterdir() if p.name != SKILL_NAME]
+
+
+def test_copy_records_hashes_and_is_idempotent(tmp_path: Path) -> None:
     (result,) = install_skill(tmp_path, targets=["claude"], copy=True)
     copy = tmp_path / ".claude/skills" / SKILL_NAME
     assert result.action == "copied"
     assert copy.is_dir() and not copy.is_symlink()
     assert (copy / "SKILL.md").read_bytes() == SKILL_MD.read_bytes()
-    assert (copy / ".dartwork-mpl-skill").is_file()
+    marker = json.loads((copy / _MARKER).read_text(encoding="utf-8"))
+    assert marker["version"] == skill_version()
+    assert (
+        marker["files"]["SKILL.md"]
+        == hashlib.sha256(SKILL_MD.read_bytes()).hexdigest()
+    )
+    assert set(marker["files"]) == {
+        p.relative_to(SKILL).as_posix() for p in SKILL.rglob("*") if p.is_file()
+    }
 
     (again,) = install_skill(tmp_path, targets=["claude"], copy=True)
     assert again.action == "unchanged"
+    assert not _leftovers(copy.parent)
 
-    (copy / "references" / "korean.md").write_text("stale", encoding="utf-8")
+
+def test_untouched_copy_from_an_older_version_is_refreshed(
+    tmp_path: Path,
+) -> None:
+    """A copy whose files still match its own record is safe to replace."""
+    install_skill(tmp_path, targets=["claude"], copy=True)
+    copy = tmp_path / ".claude/skills" / SKILL_NAME
+    old = copy / "references" / "korean.md"
+    old.write_text("from an older dartwork-mpl", encoding="utf-8")
+    marker = json.loads((copy / _MARKER).read_text(encoding="utf-8"))
+    marker["files"]["references/korean.md"] = hashlib.sha256(
+        old.read_bytes()
+    ).hexdigest()
+    (copy / _MARKER).write_text(json.dumps(marker), encoding="utf-8")
+
     (refreshed,) = install_skill(tmp_path, targets=["claude"], copy=True)
     assert refreshed.action == "replaced"
-    assert (copy / "references" / "korean.md").read_bytes() == (
-        SKILL / "references" / "korean.md"
-    ).read_bytes()
+    assert old.read_bytes() == (SKILL / "references" / "korean.md").read_bytes()
+    assert not _leftovers(copy.parent)
 
+
+@pytest.mark.parametrize("copy_again", [True, False], ids=["copy", "link"])
+def test_edited_copy_is_refused_unless_forced(
+    tmp_path: Path, copy_again: bool
+) -> None:
+    install_skill(tmp_path, targets=["claude"], copy=True)
+    copy = tmp_path / ".claude/skills" / SKILL_NAME
+    edited = copy / "references" / "korean.md"
+    edited.write_text("my team's Korean notes", encoding="utf-8")
+
+    with pytest.raises(SkillInstallError, match=r"references/korean\.md"):
+        install_skill(tmp_path, targets=["claude"], copy=copy_again)
+    assert edited.read_text(encoding="utf-8") == "my team's Korean notes"
+
+    (forced,) = install_skill(
+        tmp_path, targets=["claude"], copy=copy_again, force=True
+    )
+    assert forced.action == "replaced"
+    assert _is_link_to_skill(copy) is not copy_again
+    assert (
+        edited.read_bytes() == (SKILL / "references" / "korean.md").read_bytes()
+    )
+
+
+def test_copy_with_an_unreadable_marker_is_refused(tmp_path: Path) -> None:
+    install_skill(tmp_path, targets=["codex"], copy=True)
+    copy = tmp_path / ".agents/skills" / SKILL_NAME
+    (copy / _MARKER).write_text("not json", encoding="utf-8")
+    with pytest.raises(SkillInstallError, match="unreadable"):
+        install_skill(tmp_path, targets=["codex"], copy=True)
+
+
+def test_failed_swap_keeps_the_previous_install(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install_skill(tmp_path, targets=["claude"], copy=True)
+    copy = tmp_path / ".claude/skills" / SKILL_NAME
+    before = {
+        p.relative_to(copy).as_posix(): p.read_bytes()
+        for p in copy.rglob("*")
+        if p.is_file()
+    }
+    real_replace = os.replace
+
+    def fail_into_place(src: Path, dst: Path) -> None:
+        if Path(dst) == copy and Path(src).name == SKILL_NAME:
+            raise OSError("disk full")
+        real_replace(src, dst)
+
+    monkeypatch.setattr(skills_module.os, "replace", fail_into_place)
+    with pytest.raises(SkillInstallError, match="previous install was kept"):
+        install_skill(tmp_path, targets=["claude"], force=True)
+
+    after = {
+        p.relative_to(copy).as_posix(): p.read_bytes()
+        for p in copy.rglob("*")
+        if p.is_file()
+    }
+    assert not copy.is_symlink()
+    assert after == before
+    assert not _leftovers(copy.parent)
+
+
+def test_failed_staging_changes_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failure while building the new copy leaves every target untouched."""
+    install_skill(tmp_path)  # links for both agents
+
+    def no_space(*_args: object, **_kwargs: object) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(skills_module.shutil, "copytree", no_space)
+    with pytest.raises(SkillInstallError, match="disk full"):
+        install_skill(tmp_path, copy=True)
+    for rel in (".claude/skills", ".agents/skills"):
+        assert _is_link_to_skill(tmp_path / rel / SKILL_NAME)
+        assert not _leftovers(tmp_path / rel)
+
+
+def test_relinking_replaces_a_copy_with_a_link(tmp_path: Path) -> None:
+    install_skill(tmp_path, targets=["claude"], copy=True)
     (linked,) = install_skill(tmp_path, targets=["claude"])
+    link = tmp_path / ".claude/skills" / SKILL_NAME
     assert linked.action == "replaced"
-    assert _is_link_to_skill(copy)
+    assert _is_link_to_skill(link)
+    (again,) = install_skill(tmp_path, targets=["claude"])
+    assert again.action == "unchanged"
 
 
 def test_foreign_folder_is_refused_before_anything_changes(
@@ -294,14 +414,15 @@ def test_cli_install_path_and_refusal(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert main(["install", "--claude", "--dest", str(tmp_path)]) == 0
-    out = capsys.readouterr().out
-    assert out.startswith("linked")
-    assert str(SKILL) in out
+    out = capsys.readouterr().out.splitlines()
+    assert out[0] == f"dartwork-mpl {skill_version()} skill: {SKILL}"
+    assert out[1].startswith("linked")
+    assert any("--copy" in line and "environment" in line for line in out)
     assert _is_link_to_skill(tmp_path / ".claude/skills" / SKILL_NAME)
     assert not (tmp_path / ".agents").exists()
 
     assert main(["install", "--claude", "--dest", str(tmp_path)]) == 0
-    assert capsys.readouterr().out.startswith("unchanged")
+    assert capsys.readouterr().out.splitlines()[1].startswith("unchanged")
 
     assert main(["path"]) == 0
     assert capsys.readouterr().out.strip() == str(SKILL)
@@ -321,3 +442,4 @@ def test_symlink_failure_suggests_copy(
     monkeypatch.setattr(Path, "symlink_to", refuse)
     with pytest.raises(SkillInstallError, match="--copy"):
         install_skill(tmp_path, targets=["claude"])
+    assert not _leftovers(tmp_path / ".claude/skills")
