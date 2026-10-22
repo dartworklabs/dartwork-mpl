@@ -60,7 +60,9 @@ change (section below) that reclassified a false failure.
   project. The bare `../` substring rule and the name fragments (`evals/agentic`,
   `manifest.json`, ...) are gone. `score.py` recomputes contamination from the stored
   transcripts, so a rescore applies the rule; the run-time value stays as
-  `contamination_at_run`.
+  `contamination_at_run`. *Superseded by the fail-closed round:* the sandbox is the
+  enforcement, the name markers are back as a backstop, and the run-time flag and the
+  recheck are OR-ed into `contamination_text` (see the README).
 - **b. Naming** (`views.panel_names`). A panel names a series by its centre/left/right
   title or y label (titles via the public `ax.get_title(loc)`), else by a text inside the
   panel, else (single data panel) by the suptitle or a figure text — regardless of how many

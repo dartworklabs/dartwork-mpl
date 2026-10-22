@@ -2,7 +2,8 @@
 
     uv run python evals/agentic/run.py --host claude --case g01-line-gdp
     uv run python evals/agentic/run.py --jobs 4                         # 40 cases x both hosts
-    uv run python evals/agentic/run.py --wheel W.whl --ab-skill SKILL_DIR --reps 2 --jobs 4
+    uv run python evals/agentic/run.py --wheel W.whl --ab-skill SKILL_DIR --reps 2 --jobs 4 --hide-grading
+    uv run python evals/agentic/run.py --wheel W.whl --ab-skill-install --hide-grading  # wheel's installer
 
 Two trees per run:
 
@@ -19,6 +20,11 @@ environment and per-host budgets from the manifest (identical across arms).
 After a run, transcripts are scanned for any access to grading files
 (``contamination``), and ``inspection`` is bound to the final PNG. Score with
 ``score.py``.
+
+Skill arms are decision experiments: they require ``--hide-grading``. The
+skill reaches the project either as a copied folder (``--ab-skill DIR``) or
+through the wheel's own installer (``--ab-skill-install``: ``python -m
+dartwork_mpl.skills install`` in the project before the host starts).
 """
 
 from __future__ import annotations
@@ -53,9 +59,11 @@ from common import (
     read_json,
     write_json,
 )
+from contamination import contamination, tool_strings
 from PIL import Image
 
 TOOLS = ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill"]
+INSTALLED_SKILL = "dartwork-mpl"  # name the wheel's installer uses
 ENV_KEEP = (
     "HOME",
     "USER",
@@ -168,7 +176,7 @@ def prepare(
     unit: Path,
     wheel: dict,
     python: str,
-    skill: Path | None,
+    skill: Path | str | None,
 ) -> dict:
     """Agent-visible project: only the case inputs, its own venv and (edits) the base figure."""
     project.mkdir(parents=True)
@@ -210,7 +218,30 @@ def prepare(
         shutil.copy(FIXTURES / "base" / case["base"], project / "plot.py")
         sh([str(py), "plot.py"], cwd=project, env=env, timeout=300)
         shutil.copytree(project / "out", unit / "base_out", dirs_exist_ok=True)
-    if skill:
+    if skill == "install":
+        out = sh(
+            [str(py), "-m", "dartwork_mpl.skills", "install"],
+            cwd=project,
+            env=env,
+        )
+        found = {
+            dest: project / dest / INSTALLED_SKILL / "SKILL.md"
+            for dest in (".claude/skills", ".agents/skills")
+        }
+        missing = [d for d, f in found.items() if not f.is_file()]
+        if missing:
+            raise RuntimeError(f"skill installer left no SKILL.md in {missing}")
+        link = project / ".claude/skills" / INSTALLED_SKILL
+        info["skill_install"] = {
+            "output": out.strip()[-2000:],
+            "sha256": sha256(found[".claude/skills"]),
+            "link": os.readlink(link) if link.is_symlink() else None,
+            "inside_project": all(
+                str(f.resolve()).startswith(str(project.resolve()) + "/")
+                for f in found.values()
+            ),
+        }
+    elif skill:
         for dest in (".claude/skills", ".agents/skills"):
             shutil.copytree(skill, project / dest / skill.name)
     (project / ".gitignore").write_text(
@@ -715,123 +746,46 @@ def inspection(
     }
 
 
-def _tool_text(
-    host: str, lines: list[dict], rollouts: list[list[dict]]
-) -> list[str]:
-    """Text of every tool call and tool output (not instructions or prompts)."""
-    out = []
-    if host == "claude":
-        out += [
-            json.dumps(
-                item.get("input") or item.get("content"), ensure_ascii=False
-            )
-            for e in lines
-            for item in (e.get("message") or {}).get("content") or []
-            if isinstance(item, dict)
-            and item.get("type") in ("tool_use", "tool_result")
-        ]
-    else:
-        out += [
-            json.dumps(e.get("item"), ensure_ascii=False)
-            for e in lines
-            if e.get("type", "").startswith("item.")
-        ]
-        for r in rollouts:
-            for e in r:
-                p = e.get("payload") or {}
-                if p.get("type") in (
-                    "function_call",
-                    "custom_tool_call",
-                    "custom_tool_call_output",
-                    "function_call_output",
-                ):
-                    out.append(json.dumps(p, ensure_ascii=False))
-    return out
-
-
-PATH_TOKEN = re.compile(r"[\w.@+~-]*/[\w.@+~/-]*")
-CONTAMINATION_RULE = "resolved-path-v2"
-
-
-def _resolved_paths(text: str, project: Path) -> set[str]:
-    """Paths named in one tool call or output, resolved against the project.
-
-    Absolute and ``~`` paths are taken as written; relative paths matter
-    only when they climb (``..``) and are resolved from the project, which
-    is every agent's working directory. Symlinks are resolved.
-    """
-    out = set()
-    for tok in PATH_TOKEN.findall(text):
-        if tok.endswith(".") and not tok.endswith(("..", "/.")):
-            tok = tok[:-1]  # sentence full stop
-        if tok.startswith("~"):
-            tok = os.path.expanduser(tok)
-        elif not tok.startswith("/"):
-            if ".." not in tok.split("/"):
-                continue
-            tok = os.path.join(project, tok)
-        if tok.startswith("//"):
-            continue  # URL remainder (https://...)
-        out.add(os.path.realpath(os.path.normpath(tok)))
-    return out
-
-
-def _inside(path: str, root: str) -> bool:
-    return path == root or path.startswith(root.rstrip("/") + "/")
-
-
-def contamination(
-    texts: list[str], roots: list, work_root: Path, project: Path
-) -> dict:
-    """An access whose resolved path lies in a grading root marks the run contaminated.
-
-    Grading roots are the repo checkouts (cases, references, scorer), the
-    records tree and every other project under ``work_root``. Each path a
-    tool call or its output names is resolved against the project (see
-    ``_resolved_paths``); a bare ``../`` that stays in the project (``.venv``
-    internals) or reaches only ``work_root`` itself is not an access to
-    grading files. Only absolute ``roots`` count; name fragments such as
-    ``evals/agentic`` are no longer matched as substrings.
-    """
-    grading = sorted(
-        {os.path.realpath(str(r)) for r in roots if os.path.isabs(str(r))}
-    )
-    work = os.path.realpath(str(work_root))
-    own = os.path.realpath(str(project))
-    hits = set()
-    for t in texts:
-        for path in _resolved_paths(t, project):
-            if _inside(path, own):
-                continue
-            if any(_inside(path, r) for r in grading) or (
-                path != work and _inside(path, work)  # another agent's project
-            ):
-                hits.add(path)
-    hits = sorted(hits)
-    return {
-        "contaminated": bool(hits),
-        "hits": hits[:20],
-        "rule": CONTAMINATION_RULE,
-    }
-
-
 def grading_roots(rec: dict, unit: Path) -> list[Path]:
-    """Grading roots of a recorded unit: what the sandbox hid, else the repo and records."""
-    cmd = rec.get("command") or []
-    hidden = [Path(b) for a, b in pairwise(cmd) if a == "--tmpfs"]
+    """Grading roots of a recorded unit: what the sandbox hid, plus the repo and records."""
     work = Path(rec["project"]).parent if rec.get("project") else None
-    return sorted({*hidden, *repo_roots(), unit.parents[3].resolve()} - {work})
+    return sorted(
+        {*_hidden(rec), *repo_roots(), unit.parents[3].resolve()} - {work}
+    )
+
+
+def _hidden(rec: dict) -> list[Path]:
+    cmd = rec.get("command") or []
+    return [Path(b) for a, b in pairwise(cmd) if a == "--tmpfs"]
+
+
+def sandboxed(rec: dict, unit: Path) -> bool:
+    """The unit ran under bwrap with the records, the work root and this repo hidden."""
+    cmd = rec.get("command") or []
+    if not cmd or Path(cmd[0]).name != "bwrap" or not rec.get("project"):
+        return False
+    hidden = [str(p) for p in _hidden(rec)]
+
+    def covered(path: Path) -> bool:
+        p = str(path.resolve())
+        return any(p == h or p.startswith(h.rstrip("/") + "/") for h in hidden)
+
+    return (
+        covered(unit.parents[3])
+        and str(Path(rec["project"]).parent) in hidden
+        and covered(REPO)
+    )
 
 
 def recheck_contamination(rec: dict, unit: Path) -> dict | None:
-    """Recompute contamination of a recorded unit from its stored transcript and rollouts."""
+    """Recompute text contamination of a recorded unit from its stored transcript and rollouts."""
     if not rec.get("project") or not (unit / "transcript.jsonl").exists():
         return None
     lines = _jsonl(unit / "transcript.jsonl")
     rolls = [_jsonl(p) for p in sorted(unit.glob("rollout*.jsonl"))]
     project = Path(rec["project"])
     return contamination(
-        _tool_text(rec["host"], lines, rolls),
+        tool_strings(rec["host"], lines, rolls),
         grading_roots(rec, unit),
         project.parent,
         project,
@@ -932,7 +886,14 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
         )
     unit.mkdir(parents=True)
     project = a.work_root / secrets.token_hex(8)
-    skill = a.skill_dir if arm == "skill" else None
+    skill = (
+        ("install" if getattr(a, "skill_install", False) else a.skill_dir)
+        if arm == "skill"
+        else None
+    )
+    skill_name = (
+        INSTALLED_SKILL if skill == "install" else skill.name if skill else None
+    )
     home = codex_home(a)
     rec: dict = {
         "run_id": run_dir.name,
@@ -947,6 +908,8 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
         "wheel": {k: meta["wheel"][k] for k in ("name", "sha256")},
         "project": str(project),
         "skill": {"name": skill.name, "sha256": sha256(skill / "SKILL.md")}
+        if isinstance(skill, Path)
+        else {"name": INSTALLED_SKILL, "mode": "install"}
         if skill
         else None,
         "model": cfg["models"][host],
@@ -960,6 +923,8 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
         rec.update(
             prepare(case, project, unit, meta["wheel"], cfg["python"], skill)
         )
+        if skill == "install":
+            rec["skill"]["sha256"] = rec["skill_install"]["sha256"]
         prompt = full_prompt(case)
         (unit / "prompt.txt").write_text(prompt, encoding="utf-8")
         if host == "claude":
@@ -1053,16 +1018,13 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
             final_ts,
         )
         rec["contamination"] = contamination(
-            _tool_text(host, lines, [rollout, *subs]),
+            tool_strings(host, lines, [rollout, *subs]),
             hide[:-1],
             a.work_root.resolve(),
             project,
         )
         rec["skill_usage"] = skill_usage(
-            skill.name if skill else None,
-            host,
-            parsed,
-            rollout + [e for s in subs for e in s],
+            skill_name, host, parsed, rollout + [e for s in subs for e in s]
         )
         rec["skills_invoked"] = skills_invoked(host, parsed, [rollout, *subs])
         git = ["git", "-C", str(project)]
@@ -1107,6 +1069,11 @@ def config_from(a) -> dict:
         "suffix_version": SUFFIX_VERSION,
         "hide_grading": a.hide_grading,
         "codex_home": str(codex_home(a)) if a.codex_home else None,
+        **(
+            {"skill_install": INSTALLED_SKILL}
+            if getattr(a, "ab_skill_install", False)
+            else {}
+        ),
     }
 
 
@@ -1186,6 +1153,12 @@ def main() -> int:
         type=Path,
         help="skill folder: run both arms (noskill, skill) on the same wheel",
     )
+    arm.add_argument(
+        "--ab-skill-install",
+        action="store_true",
+        help="run both arms; the skill arm installs the wheel's own skill "
+        "(python -m dartwork_mpl.skills install) before the host starts",
+    )
     ap.add_argument("--reps", type=int, default=1)
     ap.add_argument(
         "--seed",
@@ -1249,13 +1222,18 @@ def main() -> int:
     if a.hide_grading and not shutil.which("bwrap"):
         ap.error("--hide-grading needs bwrap")
     a.work_root.mkdir(parents=True, exist_ok=True)
+    a.skill_install = a.ab_skill_install
     arms = (
         ["noskill", "skill"]
-        if a.ab_skill
+        if a.ab_skill or a.ab_skill_install
         else ["skill"]
         if a.with_skill
         else ["noskill"]
     )
+    if "skill" in arms and not a.hide_grading:
+        ap.error(
+            "skill arms are decision experiments: they require --hide-grading"
+        )
     hosts = a.host or ["claude", "codex"]
     cases = load_cases(a.case)
     seed = (

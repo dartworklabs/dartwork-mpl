@@ -15,11 +15,14 @@ Per run unit (``RUN_DIR/<host>/<case>/<arm>-r<k>/``, the records tree):
   re-run PNG is pixel-identical to the original (measured same-env noise: 0).
   Oracle checks read the re-run figure, so they only count when it matches.
 * ``task_success``: execution, a matching re-run, every check ``ok`` (an
-  unchecked result is not a pass), explicit-edit preservation, and no
-  contamination (the agent touched grading files: never a success).
-* ``contamination``: recomputed from the stored transcript and rollouts with
-  the current rule (run.py ``contamination``); the value recorded at run
-  time is kept as ``contamination_at_run``.
+  unchecked result is not a pass), explicit-edit preservation, and not
+  ``contaminated``.
+* ``sandboxed``: the unit ran under ``--hide-grading`` with the records, the
+  work root and this repo hidden; then the sandbox is the enforcement.
+* ``contamination_text``: text evidence (``contamination.py``): the run-time
+  result OR a recheck of the stored transcript with the current rule, never
+  cleared. It sets ``contaminated`` (never a success) only for unsandboxed
+  units; under the sandbox it is an advisory field.
 * ``inspection_observed``: from ``run.json`` (see run.py).
 """
 
@@ -36,6 +39,7 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+import conformance
 import metrics
 import numpy as np
 import oracle
@@ -53,6 +57,10 @@ from PIL import Image
 from summary import summary_md
 
 PROBE = EVAL_DIR / "probe.py"
+LINT = EVAL_DIR / "lint_source.py"
+# Anti-pattern findings for the conformance endpoint; "info" rules (e.g. a hex
+# colour literal) are informational in the catalog and reported separately.
+LINT_SEVERITIES = ("critical", "warning")
 SKIP = {
     ".venv",
     ".git",
@@ -65,6 +73,58 @@ SKIP = {
 }
 RERUN_TIMEOUT = 300
 ASPECT_TOL = 0.02
+
+
+def lint_final_source(python: Path, plot: Path) -> dict:
+    """``dm.lint_code`` findings for the final source, with the unit's own wheel."""
+    try:
+        proc = subprocess.run(
+            [str(python), "-I", str(LINT), str(plot)],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            stdin=subprocess.DEVNULL,
+            env={
+                "PATH": "/usr/bin:/bin",
+                "HOME": str(Path.home()),
+                "LANG": "C.UTF-8",
+            },
+        )
+        return json.loads(proc.stdout.strip().splitlines()[-1])
+    except (subprocess.TimeoutExpired, ValueError, IndexError) as exc:
+        return {"findings": None, "error": f"{type(exc).__name__}: {exc}"}
+
+
+def source_metrics(case: dict, python: Path, plot: Path) -> dict:
+    """API conformance (lint) and unrequested preset overrides of the final plot.py."""
+    if not plot.exists() or not python.exists():
+        return {
+            "lint": None,
+            "lint_findings": None,
+            "lint_findings_all": None,
+            "lint_clean": None,
+            "preset_overrides": None,
+            "preset_overrides_total": None,
+        }
+    lint = lint_final_source(python, plot)
+    over = conformance.preset_overrides(
+        plot.read_text(encoding="utf-8", errors="replace"),
+        tuple(case.get("allowed_overrides", [])),
+    )
+    sev = lint.get("severity") or {}
+    n = (
+        None
+        if lint.get("findings") is None
+        else sum(v for k, v in sev.items() if k in LINT_SEVERITIES)
+    )
+    return {
+        "lint": lint,
+        "lint_findings": n,
+        "lint_findings_all": lint.get("findings"),
+        "lint_clean": None if n is None else n == 0,
+        "preset_overrides": over,
+        "preset_overrides_total": over.get("total"),
+    }
 
 
 def run_probe(python: Path, workdir: Path, script: str = "plot.py") -> dict:
@@ -355,18 +415,28 @@ def score_unit(case: dict, unit: Path) -> dict:
         }
     )
     rec["inspection_observed"] = (run.get("inspection") or {}).get("observed")
-    # Recomputed from the stored transcript with the current rule, so a
-    # rescore applies rule fixes without rerunning the agent.
-    rec["contamination_at_run"] = run.get("contamination")
+    # Under the sandbox the tmpfs hiding is the enforcement and the text
+    # evidence is advisory; without it the text evidence gates. Either way
+    # the run-time flag and the recheck are OR-ed: a recheck never clears.
+    at_run = run.get("contamination")
     recheck = runner.recheck_contamination(run, unit)
-    if recheck is not None:
-        rec["contamination"] = recheck
-    rec["contaminated"] = bool(
-        (rec.get("contamination") or {}).get("contaminated")
+    flagged = bool((at_run or {}).get("contaminated")) or bool(
+        (recheck or {}).get("contaminated")
     )
+    rec["sandboxed"] = runner.sandboxed(run, unit)
+    rec["contamination_text"] = {
+        "flagged": flagged,
+        "hits": sorted(
+            {*(at_run or {}).get("hits", []), *(recheck or {}).get("hits", [])}
+        )[:20],
+        "at_run": at_run,
+        "recheck": recheck,
+    }
+    rec["contaminated"] = flagged and not rec["sandboxed"]
     rec["execution_success"], rec["execution_problems"] = execution(
         unit, project, run
     )
+    rec.update(source_metrics(case, python, project / "plot.py"))
     if not (project / "plot.py").exists() or not python.exists():
         rec.update(
             rerun_ok=False,

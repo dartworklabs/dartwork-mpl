@@ -5,7 +5,7 @@ from __future__ import annotations
 import statistics
 from pathlib import Path
 
-from compare import compare_runs, table
+from compare import endpoint_table, preregistered
 
 KINDS = [
     "text_outside",
@@ -42,14 +42,26 @@ def _arm(r):
     return r.get("arm") or "noskill"
 
 
+def _mean(xs):
+    xs = [x for x in xs if x is not None]
+    return f"{statistics.mean(xs):.2f}" if xs else "-"
+
+
+def _text_flags(rs):
+    return sum(
+        bool((r.get("contamination_text") or {}).get("flagged")) for r in rs
+    )
+
+
 def summary_md(rows: list[dict], run_dir: Path) -> str:
     out = [
         f"# Agent eval summary — `{run_dir.name}`",
         "",
-        "| host | arm | model | units | execution | task | contaminated | inspected | median turns "
+        "| host | arm | model | units | sandboxed | execution | task | contaminated "
+        "| text flags (advisory) | inspected | lint clean | overrides/unit | median turns "
         "| median tokens | median time (s) | defects (units with any) | values checks | spec checks "
         "| explicit edits preserved |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     groups = sorted({(r["host"], _arm(r)) for r in rows})
     for host, arm in groups:
@@ -62,9 +74,11 @@ def summary_md(rows: list[dict], run_dir: Path) -> str:
         insp = [r for r in rs if r.get("inspection_observed") is not None]
         defects = [r.get("defects") or {} for r in rs]
         out.append(
-            f"| {host} | {arm} | {rs[0].get('model')} | {len(rs)} | {_frac(rs, 'execution_success')} "
-            f"| {_frac(rs, 'task_success')} | {_frac(rs, 'contaminated')} "
+            f"| {host} | {arm} | {rs[0].get('model')} | {len(rs)} | {_frac(rs, 'sandboxed')} "
+            f"| {_frac(rs, 'execution_success')} "
+            f"| {_frac(rs, 'task_success')} | {_frac(rs, 'contaminated')} | {_text_flags(rs)} "
             f"| {_frac(insp, 'inspection_observed') if insp else 'n/a'} "
+            f"| {_frac(rs, 'lint_clean')} | {_mean([r.get('preset_overrides_total') for r in rs])} "
             f"| {_fmt(_med([r.get('turns') for r in rs]))} | {_fmt(_med([(r.get('tokens') or {}).get('total') for r in rs]))} "
             f"| {_fmt(_med([r.get('wall_s') for r in rs]))} "
             f"| {sum(d.get('total', 0) for d in defects)} ({sum(bool(d.get('total')) for d in defects)}) "
@@ -89,22 +103,38 @@ def summary_md(rows: list[dict], run_dir: Path) -> str:
             + " |"
         )
     if {"noskill", "skill"} <= {_arm(r) for r in rows}:
-        results, labels = compare_runs(
-            run_dir, None, "task_success", missing_as_failure=False
-        )
+        results, labels = preregistered(run_dir, None, missing_as_failure=False)
         out += [
             "",
-            "## Paired comparison (skill vs noskill, manifest-validated, case-level bootstrap)",
+            "## Pre-registered A/B (manifest-validated, case-level bootstrap)",
             "",
-            table(results, *labels),
+            endpoint_table(results, *labels),
+        ]
+    lint_rules: dict = {}
+    for r in rows:
+        for k, v in ((r.get("lint") or {}).get("rules") or {}).items():
+            lint_rules[(r["host"], _arm(r), k)] = (
+                lint_rules.get((r["host"], _arm(r), k), 0) + v
+            )
+    if lint_rules:
+        out += [
+            "",
+            "Lint findings by rule (sum over units; `dm.lint_code` of the wheel under test):",
+            "",
+            "| host | arm | rule | findings |",
+            "|---|---|---|---|",
+            *(
+                f"| {h} | {a} | {k} | {v} |"
+                for (h, a, k), v in sorted(lint_rules.items())
+            ),
         ]
     out += [
         "",
         "## Units",
         "",
-        "| case | host | arm/rep | exec | task | inspected | stop | turns | tokens | time (s) | defects | values "
-        "| spec | preserved | failed checks |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "| case | host | arm/rep | exec | task | inspected | lint | overrides | stop | turns | tokens "
+        "| time (s) | defects | values | spec | preserved | failed checks |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in sorted(
         rows, key=lambda r: (r["case"], r["host"], _arm(r), r.get("rep") or 0)
@@ -119,6 +149,8 @@ def summary_md(rows: list[dict], run_dir: Path) -> str:
             failed.append("re-run does not reproduce the artifact")
         if r.get("contaminated"):
             failed.append("contaminated")
+        elif (r.get("contamination_text") or {}).get("flagged"):
+            failed.append("text contamination flag (advisory: sandboxed)")
         pres = r.get("preservation") or {}
         if pres.get("ok") is False:
             failed.append(
@@ -129,6 +161,7 @@ def summary_md(rows: list[dict], run_dir: Path) -> str:
         out.append(
             f"| {r['case']}{flag} | {r['host']} | {_arm(r)}/{r.get('rep')} | {'yes' if r.get('execution_success') else 'NO'} "
             f"| {'yes' if r.get('task_success') else 'NO'} | {'-' if insp is None else 'yes' if insp else 'no'} "
+            f"| {_fmt(r.get('lint_findings'))} | {_fmt(r.get('preset_overrides_total'))} "
             f"| {r.get('termination') or '-'} | {_fmt(r.get('turns'))} | {_fmt((r.get('tokens') or {}).get('total'))} "
             f"| {_fmt(r.get('wall_s'))} | {(r.get('defects') or {}).get('total', '-')} | {_checks([r], 'values')} "
             f"| {_checks([r], 'spec')} | {pres.get('rate', '-') if pres else '-'} | {'; '.join(failed) or '-'} |"

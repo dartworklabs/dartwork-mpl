@@ -27,11 +27,16 @@ by hand.
 | `metrics.py` | Layout defects and edit preservation. |
 | `score.py` | Scores a run, or runs the selftest. |
 | `summary.py` | Writes `summary.md`. |
-| `compare.py` | Paired A/B statistics. |
+| `compare.py` | Paired A/B statistics and the pre-registered endpoints (`PREREGISTERED`). |
+| `contamination.py` | Text evidence of grading-file access (fail-closed backstop to the sandbox). |
+| `conformance.py` | Unrequested preset overrides in the final source (AST). |
+| `lint_source.py` | `dm.lint_code` of the final source, run in the unit's venv. |
 | `sheet.py` | Contact sheets. |
 | `test_scorer.py` | Mutation controls. |
 | `test_regressions.py` | Round-2 review probes, pinned as regression controls. |
 | `test_calibration.py` | Real-baseline controls: audited-correct units pass, true failures and fabricated mutations fail. |
+| `test_contamination.py` | Fail-closed contamination: tokenizer, each backstop, OR-never-clear, sandbox gating. |
+| `test_endpoints.py` | Lint and override metrics; the plan doc and `compare.py` state the same endpoints. |
 
 ## Trees, and what the agent sees
 
@@ -61,27 +66,37 @@ Cases, oracles, references and scorer code stay in this repository. The prompt
 suffix (`common.SUFFIX`) states only the library, the interpreter and the output
 paths. Prompts never name a skill.
 
-**Contamination.** After each run, every path named in a tool call or tool
-output (from the Claude transcript, or the Codex stream and rollouts) is
-resolved: absolute and `~` paths as written, relative paths that climb (`..`)
-from the project, symlinks followed. An access is contamination when the
-resolved path lies in a grading root:
+**Contamination fails closed.** The enforcement is the sandbox:
+`--hide-grading` runs each host inside `bwrap`, mounting empty `tmpfs` over the
+repo, the records root and the work root and re-binding only the unit's
+project (checked with both hosts, including Codex's own sandbox nested
+inside). Plain filesystem access cannot hide `~/scratch`, which contains both
+trees, so skill (decision) runs refuse to start without it, the manifest
+records it, and `compare.py`/`summary.py` block every verdict when any unit
+ran without it (`sandboxed` per unit: bwrap with the records, the work root
+and this repo hidden).
 
-- a repo checkout (cases, references, scorer);
-- the records tree;
-- another project under the work root.
+Text evidence (`contamination.py`) reads the decoded transcript objects (the
+Claude transcript; the Codex stream and rollouts) as raw strings, so `\n`,
+`\t` and `\"` separate words. A hit is:
 
-A `../` that stays in the project (`.venv` internals) or reaches only the work
-root itself is not an access. A hit sets `contaminated=true`. A contaminated
-unit is never a task success, and it counts as a failure in comparisons.
-`score.py` recomputes this from the stored transcripts with the current rule,
-keeping the run-time value as `contamination_at_run`.
+- a path that resolves into a grading root: a repo checkout, the records tree
+  or another project (absolute anywhere in a word, `~`/`$HOME`, or relative to
+  the current directory, which `cd`/`pushd`/`workdir` move; `//` collapses
+  except after a URL scheme);
+- in a command, a glob or expansion (`*?[$`{`) whose literal prefix is a
+  string prefix of a grading root or another project, or whose pattern reaches
+  one component by component;
+- `cd`/`pushd` or a tool `workdir` outside the project;
+- a grading file name: `evals/agentic`, `fixtures/reference`, `score.json`,
+  `manifest.json`, `run_meta.json` (package text that mentions them can trip
+  this; it fails closed).
 
-Plain filesystem access cannot hide `~/scratch` itself, which contains both
-trees. Pass `--hide-grading` to run each host inside `bwrap`. It mounts empty
-`tmpfs` over the repo, the records root and the work root, then re-binds only
-the unit's project. This was checked with both hosts, including Codex's own
-sandbox nested inside. It is off by default.
+`score.py` ORs the run-time result with a recheck of the stored transcript
+under the current rule; a recheck never clears a flag. The result is kept as
+`contamination_text`. Without the sandbox it sets `contaminated` (never a
+success, a failure in comparisons); under the sandbox it is advisory and
+reported (`text flags` in the summary).
 
 ## Host isolation and budgets
 
@@ -128,7 +143,8 @@ Use `uv run python evals/agentic/...` from the repo root.
 ```sh
 # 1. Harness self-checks. No model calls.
 uv run python evals/agentic/score.py --selftest   # 40 references, 7 controls, fixture checksums
-uv run pytest evals/agentic/test_scorer.py evals/agentic/test_regressions.py evals/agentic/test_calibration.py -q
+uv run pytest evals/agentic/test_scorer.py evals/agentic/test_regressions.py \
+    evals/agentic/test_calibration.py evals/agentic/test_contamination.py evals/agentic/test_endpoints.py -q
 
 # 2. Smoke run (3 Claude units + 1 Codex unit in one run id), then score and draw sheets.
 R=smoke-$(date +%Y%m%d-%H%M)
@@ -145,11 +161,15 @@ uv run python evals/agentic/run.py --run-id baseline-$(date +%Y%m%d) --jobs 4 \
 uv run python evals/agentic/score.py ~/scratch/dartwork-mpl-evals/baseline-$(date +%Y%m%d)
 uv run python evals/agentic/sheet.py ~/scratch/dartwork-mpl-evals/baseline-$(date +%Y%m%d)
 
-# 4. Skill A/B. Same wheel; both arms in one run; seeded random order; repetitions.
-uv run python evals/agentic/run.py --run-id skill-ab-$(date +%Y%m%d) --jobs 4 --reps 2 \
-    --wheel PATH/TO/SAME.whl --ab-skill PATH/TO/skills/dartwork-mpl
+# 4. Skill A/B. Same wheel; both arms in one run; seeded random order; repetitions;
+#    sandbox required. --ab-skill-install runs the wheel's own installer in the
+#    project (python -m dartwork_mpl.skills install); --ab-skill DIR copies a folder.
+cc-swap job --prefer quota -- uv run python evals/agentic/run.py --run-id skill-ab-$(date +%Y%m%d) \
+    --jobs 4 --reps 2 --hide-grading --claude-model sonnet \
+    --wheel PATH/TO/SAME.whl --ab-skill-install
 uv run python evals/agentic/score.py ~/scratch/dartwork-mpl-evals/skill-ab-$(date +%Y%m%d)
-uv run python evals/agentic/compare.py ~/scratch/dartwork-mpl-evals/skill-ab-$(date +%Y%m%d)
+uv run python evals/agentic/compare.py ~/scratch/dartwork-mpl-evals/skill-ab-$(date +%Y%m%d)   # pre-registered endpoints
+uv run python evals/agentic/compare.py RUN --metric task_success                             # one metric
 uv run python evals/agentic/compare.py --a RUN_A --b RUN_B   # two runs; manifests validated
 ```
 
@@ -293,6 +313,20 @@ comparison tables report them separately.
     `worse` needs a CI upper bound < 0.
   - Tokens use a 10% noninferiority margin. Any unknown usage blocks the token
     verdict.
+  - Any unsandboxed unit, or a manifest without `hide_grading`, blocks every
+    verdict.
+  - **Pre-registered skill A/B** (`compare.PREREGISTERED`, also in the plan
+    doc; the default output): primaries `inspection_observed` and API
+    conformance (`lint_clean`: zero `dm.lint_code` findings of severity
+    critical or warning in the final source, with the wheel under test), each
+    `improved` at ≥ 0.10 with a CI lower bound > 0; guardrails task success
+    (noninferior at 5 points) and tokens (10%); secondaries descriptive:
+    defects, meaningless decimals, preset overrides, lint findings, tokens,
+    turns, time.
+- **Source conformance (per unit).** `lint_findings` (critical + warning),
+  `lint_findings_all` and per-rule counts from `dm.lint_code`;
+  `preset_overrides` (`conformance.py`: rcParams writes, font changes,
+  figure/axes facecolor, non-dartwork style sheets; distinct source lines).
 
 Aesthetic preference is not a gate. Look at `sheet-<host>-<arm>.png`; edit
 cases show the before and after figures side by side.
