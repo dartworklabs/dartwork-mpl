@@ -307,6 +307,8 @@ def _axes_content_extent_px(
     # rule in ``validate_fixes.check_agent_requirements``.
     if not ax.get_visible():
         return None
+    if getattr(ax, "name", None) == "3d":
+        return _axes3d_extent_px(ax, renderer)
 
     pts: list[tuple[float, float]] = []
 
@@ -415,6 +417,33 @@ def _fixable_text_span(
     elif anchor_x >= apos.x1 - 0.5:
         x0 = max(x0, apos.x0)
     return x0, x1
+
+
+def _axes3d_extent_px(
+    ax: Axes, renderer: RendererBase
+) -> tuple[float, float, float, float] | None:
+    """Return the ``(x0, x1, y0, y1)`` content extent of an mplot3d axes.
+
+    mplot3d places tick labels at projected positions and leaves stale
+    ones on ticks outside the view, so the per-tick walk of
+    ``_axes_content_extent_px`` reads extents thousands of px off the
+    canvas and the layout shrinks the axes into a corner. The 3-D axes'
+    own tight bbox unions its window, in-view tick labels, titles and
+    texts; its layout-only form drops the axis labels, so each axis's
+    full tight bbox is added back.
+    """
+    boxes: list[Bbox] = []
+    for artist in (ax, ax.xaxis, ax.yaxis, getattr(ax, "zaxis", None)):
+        if artist is None or not artist.get_visible():
+            continue
+        with contextlib.suppress(*_BBOX_ERRORS):
+            bb = artist.get_tightbbox(renderer)
+            if bb is not None and bb.width > 0 and bb.height > 0:
+                boxes.append(bb)
+    if not boxes:
+        return None
+    union = Bbox.union(boxes)
+    return union.x0, union.x1, union.y0, union.y1
 
 
 def _resolve_gridspec(

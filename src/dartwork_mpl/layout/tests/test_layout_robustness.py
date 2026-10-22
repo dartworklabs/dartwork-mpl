@@ -19,6 +19,7 @@ import pytest
 import dartwork_mpl as dm
 from dartwork_mpl import layout
 
+PRESETS = ("scientific", "report", "presentation")
 TOL_PX = 0.5
 OVERSIZED = "A headline far too long for any canvas these tests draw. " * 3
 
@@ -198,3 +199,41 @@ class TestFigureTextEdges:
             positions.append(ax.get_position().bounds)
             plt.close(fig)
         assert positions[0] == pytest.approx(positions[1], abs=1e-9)
+
+
+class TestAxes3D:
+    def _surface(self, preset: str):
+        dm.style.use(preset)
+        fig = plt.figure(figsize=dm.figsize("13cm", "square"))
+        ax = fig.add_subplot(111, projection="3d")
+        grid = np.linspace(-2, 2, 20)
+        x, y = np.meshgrid(grid, grid)
+        ax.plot_surface(x, y, np.exp(-(x**2 + y**2)))
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("z (energy)")
+        return fig, ax
+
+    @pytest.mark.parametrize("preset", PRESETS)
+    def test_3d_axes_fill_the_canvas(self, preset: str) -> None:
+        fig, ax = self._surface(preset)
+        ax.set_title("Surface")
+        dm.simple_layout(fig)
+        pos = ax.get_position()
+        # Main shrank the axes to 0.001 x 0.001 of the canvas.
+        assert pos.width > 0.6
+        assert pos.height > 0.6
+        assert not _outside_canvas(fig, ax.title)
+        plt.close(fig)
+
+    @pytest.mark.parametrize(("elev", "azim"), [(35, -120), (10, 30)])
+    def test_turned_camera_keeps_axis_labels_on_canvas(
+        self, elev: float, azim: float
+    ) -> None:
+        fig, ax = self._surface("report")
+        ax.view_init(elev=elev, azim=azim)
+        dm.simple_layout(fig)
+        for label in (ax.xaxis.label, ax.yaxis.label, ax.zaxis.label):
+            assert not _outside_canvas(fig, label), label.get_text()
+        assert ax.get_position().width > 0.5
+        plt.close(fig)
