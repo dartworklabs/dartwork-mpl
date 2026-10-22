@@ -87,3 +87,49 @@ def test_cross_axes_sees_a_lower_panels_left_title() -> None:
     }
     assert any("title" in pair for pair in roles), roles
     plt.close(fig)
+
+
+def _twins(twin: str):
+    dm.style.use("scientific")
+    fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+    ax.plot([0, 1, 2], [1, 2, 3])
+    ax.set_xlabel("x")
+    ax.set_ylabel("left")
+    other = getattr(ax, twin)()
+    other.plot([0, 1, 2], [30, 10, 20], color="C1")
+    other.set_ylabel("right")
+    other.set_xlabel("top")
+    return fig, ax, other
+
+
+@pytest.mark.parametrize("twin", ["twinx", "twiny"])
+def test_clean_twin_axes_are_not_a_cross_axes_overlap(twin: str) -> None:
+    fig, _ax, _other = _twins(twin)
+    dm.simple_layout(fig)
+    assert _warnings(fig, ("CROSS_AXES_OVERLAP",)) == []
+    plt.close(fig)
+
+
+@pytest.mark.parametrize("twin", ["twinx", "twiny"])
+def test_colliding_twin_titles_are_still_reported(twin: str) -> None:
+    fig, ax, other = _twins(twin)
+    ax.set_title("Host headline")
+    other.set_title("Twin headline")
+    dm.simple_layout(fig)
+    roles = {
+        (w.detail["role_a"], w.detail["role_b"])
+        for w in _warnings(fig, ("CROSS_AXES_OVERLAP",))
+    }
+    assert roles == {("title", "title")}
+    plt.close(fig)
+
+
+def test_shared_axis_panels_in_separate_boxes_are_still_checked() -> None:
+    dm.style.use("scientific")
+    fig, axes = plt.subplots(2, 1, figsize=dm.figsize("9cm", 0.75), sharex=True)
+    for ax in axes:
+        ax.plot([1, 3, 2])
+        ax.set_xlabel("Time", fontsize=dm.fs(2))
+        ax.set_title("Panel headline", fontsize=dm.fs(4))
+    assert _warnings(fig, ("CROSS_AXES_OVERLAP",)) != []
+    plt.close(fig)
