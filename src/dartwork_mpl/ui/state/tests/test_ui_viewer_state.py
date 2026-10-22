@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 from pydantic import BaseModel, ConfigDict, Field
 
+from dartwork_mpl.ui._refusals import refusal_response
 from dartwork_mpl.ui.params import ParamModel
 from dartwork_mpl.ui.params._descriptors import controls_from_model
 from dartwork_mpl.ui.platform.fs import RootScope, open_roots
@@ -206,7 +207,9 @@ def test_structural_corruption_blocks_update_delete(
             ]
         )
         assert all(isinstance(result, InvalidStoredState) for result in results)
-        assert all(result.status_code == 409 for result in results)
+        assert all(
+            refusal_response(result).status_code == 409 for result in results
+        )
     assert path.read_bytes() == raw
 
 
@@ -330,7 +333,7 @@ def test_serialized_config_overflow_preserves_previous_bytes(
     with _state_at(tmp_path, frozenset({"values"})) as state:
         result = state.save_config(ParamsUpdate(model), "plot")
         assert isinstance(result, LimitExceeded)
-        assert result.status_code == 413
+        assert refusal_response(result).status_code == 413
     assert path.read_bytes() == raw
 
 
@@ -350,7 +353,7 @@ def test_one_thousand_presets_is_exact_append_boundary(tmp_path: Path) -> None:
         raw = path.read_bytes()
         result = state.save_preset(PresetRequest("overflow", _StateParams()))
         assert isinstance(result, LimitExceeded)
-        assert result.status_code == 413
+        assert refusal_response(result).status_code == 413
         assert path.read_bytes() == raw
         assert isinstance(state.delete_preset(999), StateWritten)
         raw = path.read_bytes()

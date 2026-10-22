@@ -1,15 +1,17 @@
 """The render routes: the live PNG preview, format downloads and server image saves.
 
 Each route parses its own body language (the active model, or a save
-request) and its ``{fmt}`` segment before any callback runs. Surface (through
-the ``render`` package): ``routes`` and ``GRANTS``.
+request) and its ``{fmt}`` segment before any callback runs. Refusals go to
+the injected ``refuse`` edge, which owns their HTTP status. Surface (through
+the ``render`` package): ``routes``, ``GRANTS``, ``RenderRefusal`` and
+``UnsupportedFormat``.
 """
 
 import base64
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, TypeAlias, TypeVar
 
 import matplotlib.pyplot as plt
 from fastapi import APIRouter, Request
@@ -26,7 +28,7 @@ from ..params import (
 )
 from ..platform.access import Grant
 from ..platform.fs import FsFailure, RootScope
-from ..platform.http import refusal_response, request_json
+from ..platform.http import CallbackFailed, UnsupportedMediaType, request_json
 from ..platform.json_bounds import JsonValue
 from ..saving import (
     PreparedSave,
@@ -39,9 +41,23 @@ from ..saving import (
     prepare_save,
     requested_name,
 )
-from ._figure import ExportFormat, _figure_to_bytes, parse_export_format
+from ._figure import (
+    ExportFormat,
+    UnsupportedFormat,
+    _figure_to_bytes,
+    parse_export_format,
+)
 
 _Parsed = TypeVar("_Parsed")
+
+# Every refusal these routes can answer with.
+RenderRefusal: TypeAlias = (
+    UnsupportedMediaType
+    | SaveInputFailure
+    | UnsupportedFormat
+    | FsFailure
+    | CallbackFailed
+)
 
 # Local-only grants for the routes below (the entry point composes them).
 GRANTS: dict[tuple[str, str], Grant] = {
@@ -57,8 +73,12 @@ def routes(
     param_model: type[ParamModel],
     descriptors: list[Control],
     roots: Callable[[], RootScope | FsFailure],
+    refuse: Callable[[RenderRefusal], JSONResponse],
 ) -> APIRouter:
-    """Serve renders of ``figure_fn``; ``roots`` borrows the lifespan-owned output roots."""
+    """Serve renders of ``figure_fn``; ``roots`` borrows the lifespan-owned output roots.
+
+    ``refuse`` turns each refusal into its error response.
+    """
     router = APIRouter()
 
     async def parsed_body(
@@ -70,15 +90,11 @@ def routes(
         Media, decoding and parser refusals come back as their error responses.
         """
         value = await request_json(request)
-        if isinstance(value, JSONResponse):
-            return value
-        if isinstance(value, InputFailure):
-            return refusal_response(value)
+        if isinstance(value, UnsupportedMediaType | InputFailure):
+            return refuse(value)
         parsed = parse(value)
         return (
-            refusal_response(parsed)
-            if isinstance(parsed, SaveInputFailure)
-            else parsed
+            refuse(parsed) if isinstance(parsed, SaveInputFailure) else parsed
         )
 
     def model_request(value: JsonValue) -> ModelRequest | InputFailure:
@@ -89,22 +105,16 @@ def routes(
         """Parse a server-save body against ``param_model``."""
         return parse_save_request(value, param_model, descriptors)
 
-    def render_bytes(model: ParamModel, fmt: str) -> bytes | JSONResponse:
+    def render_bytes(model: ParamModel, fmt: str) -> bytes | CallbackFailed:
         """Run callbacks synchronously in the event loop and contain trusted callback errors."""
         try:
             return _figure_to_bytes(figure_fn, model, fmt)
         except Exception:  # noqa: BLE001 -- trusted callbacks may raise arbitrary errors
-            return JSONResponse(
-                {
-                    "detail": "The figure callback failed.",
-                    "code": "callback_failed",
-                },
-                status_code=500,
-            )
+            return CallbackFailed("The figure callback failed.")
 
     def save_image(
         parsed: SaveRequest, fmt: str
-    ) -> SaveReceipt | FsFailure | SaveInputFailure | JSONResponse:
+    ) -> SaveReceipt | FsFailure | SaveInputFailure | CallbackFailed:
         """Plan every sink before a callback; stage unchanged save_formats bytes privately.
 
         A ``.png``/``.svg``/``.pdf`` suffix on the requested name overrides
@@ -124,7 +134,7 @@ def routes(
         plan = prepare_save(scope, output, include_copies=True)
         if not isinstance(plan, PreparedSave):
             return plan
-        result: SaveReceipt | FsFailure | SaveInputFailure | JSONResponse
+        result: SaveReceipt | FsFailure | SaveInputFailure | CallbackFailed
         try:
             with tempfile.TemporaryDirectory(
                 prefix="dartwork-viewer-"
@@ -141,12 +151,8 @@ def routes(
                 with (Path(staging) / basename).open("rb") as source:
                     result = commit_save(plan, source)
         except Exception:  # noqa: BLE001 -- contain arbitrary trusted callback/source failures
-            result = JSONResponse(
-                {
-                    "detail": "The figure callback or image export failed.",
-                    "code": "callback_failed",
-                },
-                status_code=500,
+            result = CallbackFailed(
+                "The figure callback or image export failed."
             )
         finally:
             cleanup = plan.close()
@@ -159,26 +165,24 @@ def routes(
         if isinstance(parsed, JSONResponse):
             return parsed
         data = render_bytes(parsed.model, "png")
-        return (
-            data
-            if isinstance(data, JSONResponse)
-            else {"image": base64.b64encode(data).decode("ascii")}
-        )
+        if isinstance(data, CallbackFailed):
+            return refuse(data)
+        return {"image": base64.b64encode(data).decode("ascii")}
 
     @router.post("/api/export/{fmt}", response_model=None)
     async def export(fmt: str, request: Request) -> Response:
         """Download one supported format from the same validated active model language."""
         export_format = parse_export_format(fmt)
         if not isinstance(export_format, ExportFormat):
-            return refusal_response(export_format)
+            return refuse(export_format)
         fmt = export_format.name
         parsed = await parsed_body(request, model_request)
         if isinstance(parsed, JSONResponse):
             return parsed
         data = render_bytes(parsed.model, fmt)
         return (
-            data
-            if isinstance(data, JSONResponse)
+            refuse(data)
+            if isinstance(data, CallbackFailed)
             else Response(
                 data,
                 media_type={
@@ -199,17 +203,15 @@ def routes(
         """Save one staged image to every prechecked create-only destination."""
         export_format = parse_export_format(fmt)
         if not isinstance(export_format, ExportFormat):
-            return refusal_response(export_format)
+            return refuse(export_format)
         parsed: SaveRequest | JSONResponse = await parsed_body(
             request, save_request
         )
         if isinstance(parsed, JSONResponse):
             return parsed
         result = save_image(parsed, export_format.name)
-        if isinstance(result, JSONResponse):
-            return result
         if not isinstance(result, SaveReceipt):
-            return refusal_response(result)
+            return refuse(result)
         return {
             "status": "ok",
             "path": result.primary_display,

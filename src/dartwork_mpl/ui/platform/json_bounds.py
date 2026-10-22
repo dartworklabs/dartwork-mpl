@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass
-from typing import ClassVar, TypeAlias
+from typing import TypeAlias
 
 __all__ = [
     "MAX_CONTAINER",
@@ -42,8 +42,6 @@ class MalformedInput:
     """The bytes do not express one unambiguous finite UTF-8 JSON value."""
 
     detail: str = "Input must be unambiguous finite UTF-8 JSON."
-    status_code: ClassVar[int] = 400
-    code: ClassVar[str] = "invalid_json"
 
 
 @dataclass(frozen=True)
@@ -51,8 +49,6 @@ class LimitExceeded:
     """An input or proposed serialized state exceeds an approved bound."""
 
     detail: str = "Input exceeds the viewer limits."
-    status_code: ClassVar[int] = 413
-    code: ClassVar[str] = "input_too_large"
 
 
 class _BadJson(ValueError):

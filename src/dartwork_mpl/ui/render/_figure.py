@@ -9,7 +9,7 @@ the ``render`` package): none; the routes in this slice use it. Tests reach
 import io
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import Any
 
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import FigureCanvasBase
@@ -56,8 +56,6 @@ class UnsupportedFormat:
     """The requested export format is not one matplotlib can write; the detail lists them."""
 
     detail: str
-    status_code: ClassVar[int] = 400
-    code: ClassVar[str] = "invalid_request"
 
 
 def parse_export_format(fmt: str) -> ExportFormat | UnsupportedFormat:

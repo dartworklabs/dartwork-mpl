@@ -13,7 +13,7 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from ipaddress import ip_address
-from typing import ClassVar, Literal, TypeAlias
+from typing import Literal, TypeAlias
 from urllib.parse import urlsplit
 
 __all__ = [
@@ -33,8 +33,6 @@ class AccessDenied:
     """The request has no local grant or contains an invalid authority."""
 
     detail: str = "Request is outside the local viewer policy."
-    status_code: ClassVar[int] = 403
-    code: ClassVar[str] = "local_access_denied"
 
 
 @dataclass(frozen=True)
@@ -42,7 +40,6 @@ class StartupRejected:
     """The configured bind cannot grant approved loopback-only operation."""
 
     detail: str = "Use localhost or a loopback IP literal for the viewer host."
-    code: ClassVar[str] = "invalid_bind"
 
 
 @dataclass(frozen=True)

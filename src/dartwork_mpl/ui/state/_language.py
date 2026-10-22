@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, ClassVar, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias
 
 from ..params import (
     InputFailure,
@@ -48,8 +48,6 @@ class InvalidStoredState:
     """Existing state is structurally invalid and must retain its original bytes."""
 
     detail: str = "Stored viewer state is invalid; preserve the existing file."
-    status_code: ClassVar[int] = 409
-    code: ClassVar[str] = "invalid_stored_state"
 
 
 def encode_state(value: JsonValue, *, max_bytes: int) -> bytes | InputFailure:

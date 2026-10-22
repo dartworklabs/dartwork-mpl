@@ -13,7 +13,7 @@ import pytest
 # The viewer lives behind the optional ``ui`` extra (fastapi/uvicorn).
 pytest.importorskip("fastapi")
 
-from dartwork_mpl.ui.platform.http import refusal_response
+from dartwork_mpl.ui._refusals import refusal_response
 from dartwork_mpl.ui.render._figure import (
     _SUPPORTED_EXPORT_FORMATS,
     ExportFormat,

@@ -44,6 +44,7 @@ from starlette.routing import Match
 
 from . import page, params, render, script
 from ._boundary import ROUTE_POLICY
+from ._refusals import RestartFailed, refusal_response
 from .params import (
     InvalidRequest,
     ParamModel,
@@ -62,7 +63,6 @@ from .platform.fs import (
     RootScope,
     open_roots,
 )
-from .platform.http import refusal_response
 from .state import FileFailure, FixedStateStore, ViewerState
 from .state import routes as state_routes
 
@@ -181,6 +181,7 @@ def _create_app(
             param_model=param_model,
             descriptors=descriptors,
             roots=roots,
+            refuse=refusal_response,
         )
     )
     app.include_router(
@@ -189,6 +190,7 @@ def _create_app(
             descriptors=descriptors,
             function_name=figure_fn.__name__,
             state=state,
+            refuse=refusal_response,
         )
     )
     app.include_router(
@@ -198,6 +200,7 @@ def _create_app(
             descriptors=descriptors,
             script_root=script_root,
             roots=roots,
+            refuse=refusal_response,
         )
     )
 
@@ -208,13 +211,7 @@ def _create_app(
             try:
                 restart()
             except Exception:  # noqa: BLE001 -- contain arbitrary trusted callback/source failures
-                return JSONResponse(
-                    {
-                        "detail": "Viewer restart failed.",
-                        "code": "restart_failed",
-                    },
-                    status_code=500,
-                )
+                return refusal_response(RestartFailed())
         return {"status": "reloading"}
 
     return app

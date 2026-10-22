@@ -7,7 +7,7 @@ processes can still lose concurrent updates.
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import ClassVar, TypeAlias
+from typing import TypeAlias
 
 from ..params import InputFailure, InvalidRequest
 from ..platform.json_bounds import JsonValue, LimitExceeded
@@ -58,8 +58,6 @@ class PresetNotFound:
 
     index: int
     detail: str = "Preset index does not exist."
-    status_code: ClassVar[int] = 404
-    code: ClassVar[str] = "preset_not_found"
 
 
 StateWriteResult: TypeAlias = StateWritten | InputFailure | FileFailure

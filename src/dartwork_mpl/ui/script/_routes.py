@@ -1,14 +1,15 @@
 """The script routes: download the reproducing script, or save it below the script root.
 
 Each route parses its own body language (the active model, or a save
-request) before generating source. Surface (through the ``script`` package):
-``routes`` and ``GRANTS``.
+request) before generating source. Refusals go to the injected ``refuse``
+edge, which owns their HTTP status. Surface (through the ``script`` package):
+``routes``, ``GRANTS`` and ``ScriptRefusal``.
 """
 
 import io
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, TypeAlias, TypeVar
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response
@@ -23,7 +24,7 @@ from ..params import (
 )
 from ..platform.access import Grant
 from ..platform.fs import FsFailure, RootScope
-from ..platform.http import refusal_response, request_json
+from ..platform.http import CallbackFailed, UnsupportedMediaType, request_json
 from ..platform.json_bounds import JsonValue
 from ..saving import (
     PreparedSave,
@@ -40,6 +41,13 @@ from ._generate import _generate_script
 
 _Parsed = TypeVar("_Parsed")
 
+# Every refusal these routes can answer with.
+ScriptRefusal: TypeAlias = (
+    UnsupportedMediaType | SaveInputFailure | FsFailure | CallbackFailed
+)
+
+_GENERATION_FAILED = "Script generation failed."
+
 # Local-only grants for the routes below (the entry point composes them).
 GRANTS: dict[tuple[str, str], Grant] = {
     ("POST", "/api/script"): "local-effect",
@@ -54,8 +62,12 @@ def routes(
     descriptors: list[Control],
     script_root: Path,
     roots: Callable[[], RootScope | FsFailure],
+    refuse: Callable[[ScriptRefusal], JSONResponse],
 ) -> APIRouter:
-    """Serve scripts for ``figure_fn``; ``roots`` borrows the lifespan-owned output roots."""
+    """Serve scripts for ``figure_fn``; ``roots`` borrows the lifespan-owned output roots.
+
+    ``refuse`` turns each refusal into its error response.
+    """
     router = APIRouter()
 
     async def parsed_body(
@@ -67,15 +79,11 @@ def routes(
         Media, decoding and parser refusals come back as their error responses.
         """
         value = await request_json(request)
-        if isinstance(value, JSONResponse):
-            return value
-        if isinstance(value, InputFailure):
-            return refusal_response(value)
+        if isinstance(value, UnsupportedMediaType | InputFailure):
+            return refuse(value)
         parsed = parse(value)
         return (
-            refusal_response(parsed)
-            if isinstance(parsed, SaveInputFailure)
-            else parsed
+            refuse(parsed) if isinstance(parsed, SaveInputFailure) else parsed
         )
 
     def model_request(value: JsonValue) -> ModelRequest | InputFailure:
@@ -88,7 +96,7 @@ def routes(
 
     def save_script(
         parsed: SaveRequest,
-    ) -> SaveReceipt | FsFailure | SaveInputFailure | JSONResponse:
+    ) -> SaveReceipt | FsFailure | SaveInputFailure | CallbackFailed:
         """Prepare the primary script sink before source generation and create it exclusively.
 
         The saved name always ends in a single ``.py``.
@@ -105,20 +113,14 @@ def routes(
         plan = prepare_save(scope, output, include_copies=False)
         if not isinstance(plan, PreparedSave):
             return plan
-        result: SaveReceipt | FsFailure | SaveInputFailure | JSONResponse
+        result: SaveReceipt | FsFailure | SaveInputFailure | CallbackFailed
         try:
             code = _generate_script(
                 parsed.model, param_model, figure_fn, script_root
             )
             result = commit_save(plan, io.BytesIO(code.encode("utf-8")))
         except Exception:  # noqa: BLE001 -- contain arbitrary trusted callback/source failures
-            result = JSONResponse(
-                {
-                    "detail": "Script generation failed.",
-                    "code": "callback_failed",
-                },
-                status_code=500,
-            )
+            result = CallbackFailed(_GENERATION_FAILED)
         finally:
             cleanup = plan.close()
         return cleanup if cleanup is not None else result
@@ -134,13 +136,7 @@ def routes(
                 parsed.model, param_model, figure_fn, script_root
             )
         except Exception:  # noqa: BLE001 -- contain arbitrary trusted callback/source failures
-            return JSONResponse(
-                {
-                    "detail": "Script generation failed.",
-                    "code": "callback_failed",
-                },
-                status_code=500,
-            )
+            return refuse(CallbackFailed(_GENERATION_FAILED))
         return Response(
             code.encode("utf-8"),
             media_type="text/x-python",
@@ -160,10 +156,8 @@ def routes(
         if isinstance(parsed, JSONResponse):
             return parsed
         result = save_script(parsed)
-        if isinstance(result, JSONResponse):
-            return result
         if not isinstance(result, SaveReceipt):
-            return refusal_response(result)
+            return refuse(result)
         return {
             "status": "ok",
             "path": result.primary_display,

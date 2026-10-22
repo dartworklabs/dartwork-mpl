@@ -15,16 +15,7 @@ from contextlib import suppress
 from copy import copy
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import (
-    Annotated,
-    Any,
-    ClassVar,
-    ForwardRef,
-    Union,
-    cast,
-    get_args,
-    get_origin,
-)
+from typing import Annotated, Any, ForwardRef, Union, cast, get_args, get_origin
 
 from pydantic import BaseModel, ValidationError, create_model
 
@@ -46,8 +37,6 @@ class InvalidRequest:
     """A complete decoded request does not match the endpoint/model schema."""
 
     detail: str = "Input does not match the viewer request schema."
-    status_code: ClassVar[int] = 422
-    code: ClassVar[str] = "invalid_request"
 
 
 # How comma-separated list text converts per item kind. ``bool`` has no entry:
