@@ -151,6 +151,10 @@ dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
     "pytest-mpl>=0.17",
+    # CI runs the suite with `-n auto`; local runs stay serial unless you
+    # pass -n yourself (never put -n in addopts: scripts/test_id_map.py
+    # runs its own --collect-only).
+    "pytest-xdist>=3.8.0",
     "ruff>=0.4.0",
     "shibuya>=2025.11.10",
     "sphinx>=8.1.3",
