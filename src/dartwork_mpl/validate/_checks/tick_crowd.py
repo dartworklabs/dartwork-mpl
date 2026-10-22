@@ -7,9 +7,10 @@ ticks-per-inch density.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, TypedDict
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
+from ._detail import AXES, Axis, choice, number, wire
 from ._registry import register_check, register_fix
 from ._tick_utils import iter_view_ticks
 
@@ -29,6 +30,15 @@ _TICK_CROWD_MIN_GAP_FRAC = 0.15
 # measured (e.g. a renderer that refuses get_window_extent). The measured
 # path is font- and label-length-aware and is preferred.
 _TICK_CROWD_FALLBACK_DENSITY = 4.0
+
+
+class TickCrowdDetail(TypedDict):
+    """``count`` tick labels crowd one axis; ``occupancy`` when measured."""
+
+    axis: Axis
+    axes_index: int
+    count: int
+    occupancy: float | None
 
 
 def _tick_crowd_for_axis(
@@ -120,16 +130,18 @@ def check_tick_crowding(
                         f"{axis_name.upper()}-axis[{i}] has {len(ticks)} "
                         f"ticks in {span_in:.2f}in ({detail_extra})"
                     ),
-                    detail={
-                        "axis": axis_name,
-                        "axes_index": i,
-                        "count": len(ticks),
-                        "occupancy": (
-                            round(occupancy, 2)
-                            if measured and occupancy is not None
-                            else None
-                        ),
-                    },
+                    detail=wire(
+                        TickCrowdDetail(
+                            axis=axis_name,
+                            axes_index=i,
+                            count=len(ticks),
+                            occupancy=(
+                                round(occupancy, 2)
+                                if measured and occupancy is not None
+                                else None
+                            ),
+                        )
+                    ),
                 )
             )
 
@@ -139,8 +151,8 @@ def check_tick_crowding(
 @register_fix("TICK_CROWD")
 def _fix_tick_crowd(warning: VisualWarning) -> list[str]:
     suggestions: list[str] = []
-    axis = warning.detail.get("axis", "")
-    count = warning.detail.get("count", 0)
+    axis = choice(warning.detail, "axis", AXES)
+    count = number(warning.detail, "count", 0)
     if axis == "x":
         suggestions.append(
             f"# Reduce x-ticks\nax.xaxis.set_major_locator(plt.MaxNLocator(nbins={count // 2}))"
