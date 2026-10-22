@@ -17,9 +17,11 @@ Command line::
 Installing is idempotent and conservative:
 
 - A link this installer made (in any environment) is replaced in place.
-- A copy records the SHA-256 of every file it wrote. It is refreshed only
-  while those files are unchanged; a copy with local edits, and anything
-  else at the destination, is left alone unless ``force`` is set.
+- A copy records every entry it wrote (type, and SHA-256 for files). It is
+  refreshed only while that inventory is unchanged; edited, added, removed
+  or retyped entries (an extra folder, a file turned into a link) count as
+  local edits. A copy with local edits, and anything else at the
+  destination, is left alone unless ``force`` is set.
 - Every destination is checked, and every new link or copy is built under a
   temporary name next to it, before anything is replaced. The old install
   is renamed aside and restored if the swap fails.
@@ -31,6 +33,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import tempfile
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -57,7 +60,8 @@ TARGETS: dict[str, str] = {
 }
 
 _SOURCE = Path(__file__).resolve().parent / SKILL_NAME
-# Written into copies: package version and the SHA-256 of each copied file.
+# Written into copies: package version and the inventory of what was copied
+# (every path with its type, and the SHA-256 of each regular file).
 _COPY_MARKER = ".dartwork-mpl-skill.json"
 # Tail of every link this installer makes, in any environment.
 _SOURCE_TAIL = ("dartwork_mpl", "skills", SKILL_NAME)
@@ -96,31 +100,48 @@ def skill_version() -> str:
         return "unknown"
 
 
-def _digests(root: Path) -> dict[str, str]:
-    """SHA-256 of every file under ``root``, keyed by POSIX relative path."""
-    return {
-        p.relative_to(root).as_posix(): hashlib.sha256(
-            p.read_bytes()
-        ).hexdigest()
-        for p in sorted(root.rglob("*"))
-        if p.is_file()
-        and p.name != _COPY_MARKER
-        and "__pycache__" not in p.parts
-    }
+def _inventory(root: Path) -> dict[str, str]:
+    """Every entry below ``root``, found with ``lstat`` (links not followed).
+
+    Maps the POSIX relative path to ``"dir"``, ``"file:<sha256>"``,
+    ``"link:<target>"`` or ``"special:<mode>"``, so added, removed or
+    retyped entries change the result as well as edited file contents.
+    """
+    entries: dict[str, str] = {}
+    for dirpath, dirnames, filenames in os.walk(root):
+        for name in (*dirnames, *filenames):
+            path = Path(dirpath, name)
+            rel = path.relative_to(root).as_posix()
+            mode = os.lstat(path).st_mode
+            if stat.S_ISLNK(mode):
+                entries[rel] = "link:" + os.readlink(path)
+            elif stat.S_ISDIR(mode):
+                entries[rel] = "dir"
+            elif stat.S_ISREG(mode):
+                digest = hashlib.sha256(path.read_bytes()).hexdigest()
+                entries[rel] = "file:" + digest
+            else:
+                entries[rel] = f"special:{stat.S_IFMT(mode):o}"
+    return dict(sorted(entries.items()))
 
 
-def _recorded_digests(copy: Path) -> dict[str, str] | None:
-    """The file digests a copy's marker recorded, or ``None`` if unreadable."""
+def _content(root: Path) -> dict[str, str]:
+    """:func:`_inventory` without the copy marker."""
+    return {k: v for k, v in _inventory(root).items() if k != _COPY_MARKER}
+
+
+def _recorded(copy: Path) -> dict[str, str] | None:
+    """The inventory a copy's marker recorded, or ``None`` if unreadable."""
     try:
         data = json.loads((copy / _COPY_MARKER).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
-    files = data.get("files") if isinstance(data, dict) else None
-    if not isinstance(files, dict) or not all(
-        isinstance(k, str) and isinstance(v, str) for k, v in files.items()
+    entries = data.get("entries") if isinstance(data, dict) else None
+    if not isinstance(entries, dict) or not all(
+        isinstance(k, str) and isinstance(v, str) for k, v in entries.items()
     ):
         return None
-    return dict(files)
+    return dict(entries)
 
 
 def _is_installer_link(link: Path) -> bool:
@@ -137,10 +158,10 @@ def _plan(link: Path, *, copy: bool, force: bool) -> Action:
         if _is_installer_link(link) or force:
             return "replaced"
     elif link.is_dir() and (link / _COPY_MARKER).is_file():
-        current = _digests(link)
-        recorded = _recorded_digests(link)
+        current = _content(link)
+        recorded = _recorded(link)
         if recorded is not None and current == recorded:
-            if copy and current == _digests(_SOURCE):
+            if copy and current == _content(_SOURCE):
                 return "unchanged"
             return "replaced"
         if force:
@@ -195,7 +216,7 @@ def _stage(link: Path, *, copy: bool) -> Path:
                 "source": str(_SOURCE),
                 "note": "Copied by `python -m dartwork_mpl.skills install "
                 "--copy`; rerun it after upgrading dartwork-mpl.",
-                "files": _digests(staged),
+                "entries": _content(staged),
             }
             (staged / _COPY_MARKER).write_text(
                 json.dumps(marker, indent=2) + "\n", encoding="utf-8"

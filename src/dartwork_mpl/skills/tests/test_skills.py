@@ -13,6 +13,8 @@ import hashlib
 import json
 import os
 import re
+import shutil
+from collections.abc import Callable
 from pathlib import Path
 
 import matplotlib as mpl
@@ -290,12 +292,14 @@ def test_copy_records_hashes_and_is_idempotent(tmp_path: Path) -> None:
     assert (copy / "SKILL.md").read_bytes() == SKILL_MD.read_bytes()
     marker = json.loads((copy / _MARKER).read_text(encoding="utf-8"))
     assert marker["version"] == skill_version()
+    entries = marker["entries"]
     assert (
-        marker["files"]["SKILL.md"]
-        == hashlib.sha256(SKILL_MD.read_bytes()).hexdigest()
+        entries["SKILL.md"]
+        == "file:" + hashlib.sha256(SKILL_MD.read_bytes()).hexdigest()
     )
-    assert set(marker["files"]) == {
-        p.relative_to(SKILL).as_posix() for p in SKILL.rglob("*") if p.is_file()
+    assert entries["references"] == "dir"
+    assert set(entries) == {
+        p.relative_to(SKILL).as_posix() for p in SKILL.rglob("*")
     }
 
     (again,) = install_skill(tmp_path, targets=["claude"], copy=True)
@@ -312,9 +316,9 @@ def test_untouched_copy_from_an_older_version_is_refreshed(
     old = copy / "references" / "korean.md"
     old.write_text("from an older dartwork-mpl", encoding="utf-8")
     marker = json.loads((copy / _MARKER).read_text(encoding="utf-8"))
-    marker["files"]["references/korean.md"] = hashlib.sha256(
-        old.read_bytes()
-    ).hexdigest()
+    marker["entries"]["references/korean.md"] = (
+        "file:" + hashlib.sha256(old.read_bytes()).hexdigest()
+    )
     (copy / _MARKER).write_text(json.dumps(marker), encoding="utf-8")
 
     (refreshed,) = install_skill(tmp_path, targets=["claude"], copy=True)
@@ -344,6 +348,52 @@ def test_edited_copy_is_refused_unless_forced(
     assert (
         edited.read_bytes() == (SKILL / "references" / "korean.md").read_bytes()
     )
+
+
+def _add_folder(copy: Path, outside: Path) -> str:
+    (copy / "my-notes").mkdir()
+    return "my-notes"
+
+
+def _add_folder_link(copy: Path, outside: Path) -> str:
+    (outside / "keep.txt").write_text("user notes", encoding="utf-8")
+    (copy / "linked-notes").symlink_to(outside, target_is_directory=True)
+    return "linked-notes"
+
+
+def _file_to_link(copy: Path, outside: Path) -> str:
+    same = outside / "SKILL.md"
+    same.write_bytes((copy / "SKILL.md").read_bytes())
+    (copy / "SKILL.md").unlink()
+    (copy / "SKILL.md").symlink_to(same)
+    return "SKILL.md"
+
+
+def _remove_folder(copy: Path, outside: Path) -> str:
+    shutil.rmtree(copy / "references")
+    return "references"
+
+
+@pytest.mark.parametrize(
+    "change", [_add_folder, _add_folder_link, _file_to_link, _remove_folder]
+)
+def test_structural_changes_to_a_copy_count_as_local_edits(
+    tmp_path: Path, change: Callable[[Path, Path], str]
+) -> None:
+    """Hashes of regular files alone missed added folders and retyped files."""
+    install_skill(tmp_path, targets=["codex"], copy=True)
+    copy = tmp_path / ".agents/skills" / SKILL_NAME
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    name = change(copy, outside)
+    before = sorted(p.name for p in copy.iterdir())
+    outside_before = sorted(p.name for p in outside.iterdir())
+
+    for copy_again in (True, False):
+        with pytest.raises(SkillInstallError, match=re.escape(name)):
+            install_skill(tmp_path, targets=["codex"], copy=copy_again)
+    assert sorted(p.name for p in copy.iterdir()) == before
+    assert sorted(p.name for p in outside.iterdir()) == outside_before
 
 
 def test_copy_with_an_unreadable_marker_is_refused(tmp_path: Path) -> None:
