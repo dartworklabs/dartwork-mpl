@@ -70,6 +70,28 @@ def test_mcp_prompt_text_pins_no_package_version() -> None:
     assert not re.search(r"\b\d+\.\d+ (?:policy|invocations|SSOT)\b", source)
 
 
+def test_ai_hub_size_claims_track_the_files() -> None:
+    """docs/ai/index.md called llms-full.txt "≈ 45 KB" when it was 76 KB."""
+    claims = [
+        (line, float(size))
+        for line in (ROOT / "docs/ai/index.md").read_text("utf-8").splitlines()
+        for size in re.findall(r"≈ (\d+(?:\.\d+)?) KB", line)
+    ]
+    assert claims
+    for line, size in claims:
+        name = "llms-full.txt" if "llms-full.txt" in line else "llms.txt"
+        assert name in line, line
+        actual_kb = (ROOT / name).stat().st_size / 1000
+        assert abs(size - actual_kb) <= 0.3 * actual_kb, (line, actual_kb)
+
+
+def test_ai_hub_names_only_files_that_exist() -> None:
+    text = (ROOT / "docs/ai/index.md").read_text("utf-8")
+    assert "repo-root `GEMINI.md`" not in text
+    codex = next(ln for ln in text.splitlines() if "**OpenAI Codex CLI**" in ln)
+    assert "❌" not in codex, "Codex supports MCP (codex mcp add)"
+
+
 def test_contributor_entry_files_stay_mirrored() -> None:
     assert (ROOT / "CLAUDE.md").read_bytes() == (
         ROOT / "AGENTS.md"
