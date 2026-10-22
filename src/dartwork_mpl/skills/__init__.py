@@ -56,7 +56,11 @@ Action = Literal["linked", "copied", "replaced", "unchanged", "shared"]
 
 
 class SkillInstallError(RuntimeError):
-    """The skill could not be installed; nothing was changed."""
+    """The skill could not be installed.
+
+    Foreign content is reported before anything changes. A failed symlink
+    is reported after earlier targets in the same call were installed.
+    """
 
 
 @dataclass(frozen=True)
