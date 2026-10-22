@@ -807,7 +807,11 @@ def _figure_artist_reservations(
 
 # Figure text whose centre lies in this outer band of the canvas height
 # (horizontal text) or width (vertical text) reserves that band's edge.
+# The centre is rebuilt from a pixel bbox, so text placed exactly on the
+# boundary lands 1e-16 either side depending on dpi; the tolerance (in
+# figure fraction) keeps the boundary inclusive at every dpi.
 _EDGE_BAND = 0.15
+_EDGE_BAND_TOL = 1e-9
 
 _Edge: TypeAlias = Literal["left", "right", "bottom", "top"]
 
@@ -839,9 +843,9 @@ def _reservation_edge(
     if get_rotation is not None:
         vertical = 45.0 <= get_rotation() % 180.0 <= 135.0
         centre = xc if vertical else yc
-        if centre <= _EDGE_BAND:
+        if centre <= _EDGE_BAND + _EDGE_BAND_TOL:
             return "left" if vertical else "bottom"
-        if centre >= 1.0 - _EDGE_BAND:
+        if centre >= 1.0 - _EDGE_BAND - _EDGE_BAND_TOL:
             return "right" if vertical else "top"
     dists: dict[_Edge, float] = {
         "left": x0f,

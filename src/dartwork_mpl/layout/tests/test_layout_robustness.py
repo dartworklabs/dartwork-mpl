@@ -200,6 +200,44 @@ class TestFigureTextEdges:
             plt.close(fig)
         assert positions[0] == pytest.approx(positions[1], abs=1e-9)
 
+    @pytest.mark.parametrize("dpi", [100, 300])
+    @pytest.mark.parametrize(
+        ("y", "edge"),
+        [
+            (0.15, "bottom"),
+            (0.85, "top"),
+            (0.10, "bottom"),
+            (0.90, "top"),
+            (0.20, "left"),
+            (0.80, "left"),
+        ],
+    )
+    def test_edge_band_boundary_is_inclusive_at_any_dpi(
+        self, y: float, edge: str, dpi: int
+    ) -> None:
+        """At y=0.85 the rebuilt centre was 0.8500000000000001 at 100 dpi
+        (top) but 0.8499999999999999 at 300 dpi (left, axes pushed right)."""
+        dm.style.use("scientific")
+        fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"), dpi=dpi)
+        ax.plot([0, 1], [0, 1])
+        note = fig.text(0.01, y, "A meaningful subtitle goes here", va="center")
+        dm.simple_layout(fig)
+        ext, canvas = _extent(fig, note), fig.bbox
+        got = layout._reservation_edge(
+            fig,
+            note,
+            ext.x0 / canvas.width,
+            ext.x1 / canvas.width,
+            ext.y0 / canvas.height,
+            ext.y1 / canvas.height,
+        )
+        assert got == edge
+        if edge == "left":
+            assert ax.get_position().x0 > 0.2
+        else:
+            assert ax.get_position().x0 < 0.1
+        plt.close(fig)
+
 
 class TestAxes3D:
     def _surface(self, preset: str):
