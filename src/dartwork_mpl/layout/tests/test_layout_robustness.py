@@ -13,9 +13,11 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 
 import dartwork_mpl as dm
+from dartwork_mpl import layout
 
 TOL_PX = 0.5
 OVERSIZED = "A headline far too long for any canvas these tests draw. " * 3
@@ -105,3 +107,94 @@ class TestSideTitles:
             plt.close(fig)
         assert widths[OVERSIZED] == pytest.approx(widths[None], abs=1e-3)
         assert flagged
+
+
+def _nearest_edge(fig, art, x0f, x1f, y0f, y1f) -> str:
+    """The edge rule on main: the nearest canvas edge by distance."""
+    dists = {"left": x0f, "right": 1 - x1f, "bottom": y0f, "top": 1 - y1f}
+    return min(dists, key=lambda k: dists[k])
+
+
+class TestFigureTextEdges:
+    def _report(self):
+        dm.style.use("report")
+        fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
+        ax.plot(np.arange(12), np.linspace(10, 21, 12))
+        ax.set_xlabel("Month")
+        ax.set_ylabel("Revenue")
+        return fig, ax
+
+    def _content(self, fig, ax):
+        return _extent(fig, ax).union(
+            [_extent(fig, ax.yaxis.label), _extent(fig, ax.xaxis.label)]
+        )
+
+    def test_left_aligned_suptitle_and_subtitle_reserve_the_top(self) -> None:
+        fig, ax = self._report()
+        fig.suptitle("Revenue doubled in a year", x=0.01, ha="left")
+        subtitle = fig.text(0.01, 0.92, "Monthly revenue", va="top")
+        dm.simple_layout(fig)
+        # Main measured the suptitle as a left-edge artist: x0 0.38.
+        assert ax.get_position().x0 < 0.15
+        content = self._content(fig, ax)
+        assert content.y1 <= _extent(fig, subtitle).y0 + TOL_PX
+        plt.close(fig)
+
+    def test_bottom_left_source_note_reserves_the_bottom(self) -> None:
+        fig, ax = self._report()
+        note = fig.text(0.01, 0.01, "Source: internal", va="bottom")
+        dm.simple_layout(fig)
+        assert ax.get_position().x0 < 0.15
+        assert _extent(fig, ax.xaxis.label).y0 >= _extent(fig, note).y1 - TOL_PX
+        plt.close(fig)
+
+    def test_supylabel_still_reserves_the_left(self) -> None:
+        fig, ax = self._report()
+        sup = fig.supylabel("Shared y")
+        dm.simple_layout(fig)
+        assert _extent(fig, ax.yaxis.label).x0 >= _extent(fig, sup).x1 - TOL_PX
+        assert ax.get_position().y1 > 0.9
+        plt.close(fig)
+
+    def test_rotated_side_note_reserves_the_right(self) -> None:
+        fig, ax = self._report()
+        note = fig.text(
+            0.99, 0.5, "Side note", rotation=90, ha="right", va="center"
+        )
+        dm.simple_layout(fig)
+        assert self._content(fig, ax).x1 <= _extent(fig, note).x0 + TOL_PX
+        assert ax.get_position().y1 > 0.9
+        plt.close(fig)
+
+    @pytest.mark.parametrize(
+        "place",
+        [
+            {"x": 0.5, "y": 0.5, "s": "DRAFT", "ha": "center", "va": "center"},
+            {"x": 0.01, "y": 0.49, "s": "(b)", "va": "top"},
+        ],
+        ids=["central-overlay", "mid-height-side-label"],
+    )
+    def test_text_off_the_edge_bands_keeps_the_nearest_edge(
+        self, place, monkeypatch
+    ) -> None:
+        positions = []
+        for rule in (None, _nearest_edge):
+            if rule is not None:
+                monkeypatch.setattr(layout, "_reservation_edge", rule)
+            fig, ax = self._report()
+            fig.text(**place)
+            dm.simple_layout(fig)
+            positions.append(ax.get_position().bounds)
+            plt.close(fig)
+        assert positions[0] == pytest.approx(positions[1], abs=1e-9)
+
+    def test_text_outside_the_layout_reserves_nothing(self) -> None:
+        positions = []
+        for add_note in (False, True):
+            fig, ax = self._report()
+            if add_note:
+                fig.text(0.01, 0.01, "Not in layout").set_in_layout(False)
+            dm.simple_layout(fig)
+            positions.append(ax.get_position().bounds)
+            plt.close(fig)
+        assert positions[0] == pytest.approx(positions[1], abs=1e-9)
