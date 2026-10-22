@@ -12,6 +12,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import matplotlib as mpl
+import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import pytest
 import yaml
@@ -168,6 +170,18 @@ def test_korean_reference_lists_every_kr_preset() -> None:
     text = (SKILL / "references" / "korean.md").read_text(encoding="utf-8")
     listed = set(re.findall(r"`([a-z]+-kr)`", text))
     assert listed == {n for n in dm.style.presets if n.endswith("-kr")}
+
+
+def test_every_colour_or_colormap_name_exists() -> None:
+    """Prose names (not only code) are copied by agents; each must resolve."""
+    named = set(mcolors.get_named_colors_mapping())
+    cmaps = set(mpl.colormaps)
+    text = "\n".join(p.read_text(encoding="utf-8") for p in _DOCS)
+    names = set(
+        re.findall(r"\b(?:dc|oc|tw|md|ad|cu|pr)\.[a-z][a-z_0-9]*", text)
+    )
+    assert len(names) > 20
+    assert not {n for n in names if n not in named | cmaps}
 
 
 # ---------------------------------------------------------------- installer
