@@ -15,9 +15,9 @@ from fastapi.responses import JSONResponse, Response
 from matplotlib.figure import Figure
 
 from ..params import (
+    Control,
     InputFailure,
     ModelRequest,
-    ParamDescriptor,
     ParamModel,
     parse_model_request,
 )
@@ -51,7 +51,7 @@ def routes(
     *,
     figure_fn: Callable[[Any], Figure],
     param_model: type[ParamModel],
-    descriptors: list[ParamDescriptor],
+    descriptors: list[Control],
     script_root: Path,
     roots: Callable[[], RootScope | FsFailure],
 ) -> APIRouter:

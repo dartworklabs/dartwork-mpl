@@ -12,7 +12,7 @@ import pytest
 from pydantic import BaseModel, ConfigDict, Field
 
 from dartwork_mpl.ui.params import ParamModel
-from dartwork_mpl.ui.params._descriptors import descriptors_from_model
+from dartwork_mpl.ui.params._descriptors import controls_from_model
 from dartwork_mpl.ui.platform.fs import RootScope, open_roots
 from dartwork_mpl.ui.platform.json_bounds import LimitExceeded
 from dartwork_mpl.ui.state import _viewer_state as config
@@ -282,7 +282,7 @@ def test_alias_serialization_round_trips_declared_state_names(
         expected if kind == "config" else {"label": "alias", "params": expected}
     )
     parse = parse_params_update if kind == "config" else parse_preset_request
-    parsed = parse(body, AliasedParams, descriptors_from_model(AliasedParams))
+    parsed = parse(body, AliasedParams, controls_from_model(AliasedParams))
     assert isinstance(
         parsed, ParamsUpdate if kind == "config" else PresetRequest
     )

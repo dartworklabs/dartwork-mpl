@@ -1,16 +1,17 @@
 """The viewer's parameter controls: the user's model, its controls and the active values.
 
-``ParamModel`` is the public base class users subclass. The descriptors
-derived from it are the ``/api/descriptors`` wire DTOs the page renders as
-controls; ``parse_active`` turns a request's active values into a model
-instance. ``routes`` serves the descriptors and defaults. Needs the ``ui``
+``ParamModel`` is the public base class users subclass. The controls derived
+from it (``Control``, one variant per kind) are what the page renders;
+``controls_wire`` projects them onto the ``/api/descriptors`` wire DTOs.
+``parse_active`` turns a request's active values into a model instance.
+``routes`` serves the descriptors and defaults. Needs the ``ui``
 extra: pydantic always, fastapi only once ``routes``/``GRANTS`` are used.
 """
 
 from typing import TYPE_CHECKING, Any
 
 from ._active import InvalidRequest, parse_active
-from ._descriptors import ParamDescriptor, descriptors_from_model
+from ._descriptors import Control, controls_from_model, controls_wire
 from ._model import ParamModel
 from ._requests import (
     InputFailure,
@@ -25,12 +26,13 @@ if TYPE_CHECKING:
 
 __all__ = [
     "GRANTS",
+    "Control",
     "InputFailure",
     "InvalidRequest",
     "ModelRequest",
-    "ParamDescriptor",
     "ParamModel",
-    "descriptors_from_model",
+    "controls_from_model",
+    "controls_wire",
     "extract_param_model",
     "parse_active",
     "parse_model_request",

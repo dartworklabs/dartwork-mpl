@@ -20,7 +20,7 @@ from ..platform.json_bounds import (
     bounded,
 )
 from ._active import InvalidRequest, parse_active
-from ._descriptors import ParamDescriptor
+from ._descriptors import Control
 from ._model import ParamModel
 
 # The refusals a request body can produce before any route-specific rule.
@@ -49,9 +49,7 @@ def request_object(
 
 
 def parse_model_request(
-    value: JsonValue,
-    model_cls: type[ParamModel],
-    descriptors: list[ParamDescriptor],
+    value: JsonValue, model_cls: type[ParamModel], descriptors: list[Control]
 ) -> ModelRequest | InputFailure:
     """Parse a decoded body that is exactly the active parameters.
 

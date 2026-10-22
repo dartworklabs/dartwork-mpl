@@ -15,9 +15,9 @@ from typing import TypeAlias
 from uuid import uuid4
 
 from ..params import (
+    Control,
     InputFailure,
     InvalidRequest,
-    ParamDescriptor,
     ParamModel,
     parse_active,
     request_object,
@@ -47,9 +47,7 @@ SaveRequest: TypeAlias = AutoNamedSave | NamedSave
 
 
 def parse_save_request(
-    value: JsonValue,
-    model_cls: type[ParamModel],
-    descriptors: list[ParamDescriptor],
+    value: JsonValue, model_cls: type[ParamModel], descriptors: list[Control]
 ) -> SaveRequest | SaveInputFailure:
     """Parse a server-save body: ``params`` and an optional ``filename``.
 

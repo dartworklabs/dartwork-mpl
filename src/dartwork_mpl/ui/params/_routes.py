@@ -8,7 +8,7 @@ from typing import Any
 from fastapi import APIRouter
 
 from ..platform.access import Grant
-from ._descriptors import ParamDescriptor
+from ._descriptors import Control, controls_wire
 
 # Local-only grants for the routes below (the entry point composes them).
 GRANTS: dict[tuple[str, str], Grant] = {
@@ -17,10 +17,10 @@ GRANTS: dict[tuple[str, str], Grant] = {
 }
 
 
-def routes(descriptors: list[ParamDescriptor]) -> APIRouter:
+def routes(descriptors: list[Control]) -> APIRouter:
     """Serve the controls and defaults derived once from the user's model."""
     router = APIRouter()
-    descriptor_dicts = [descriptor.to_dict() for descriptor in descriptors]
+    descriptor_dicts = controls_wire(descriptors)
 
     @router.get("/api/descriptors")
     async def get_descriptors() -> list[dict[str, Any]]:

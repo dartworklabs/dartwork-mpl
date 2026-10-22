@@ -24,7 +24,7 @@ from dartwork_mpl.ui.params import (
     ParamModel,
     parse_model_request,
 )
-from dartwork_mpl.ui.params._descriptors import descriptors_from_model
+from dartwork_mpl.ui.params._descriptors import controls_from_model
 from dartwork_mpl.ui.platform import json_bounds
 from dartwork_mpl.ui.saving import (
     AutoNamedSave,
@@ -138,7 +138,7 @@ def parse_request(route, value, model, descriptors):
 
 def request(value, route="/api/render", model=Params):
     """Exercise the public pure parser with actual UI descriptors."""
-    return parse_request(route, value, model, descriptors_from_model(model))
+    return parse_request(route, value, model, controls_from_model(model))
 
 
 def test_active_fields_closed_even_when_model_extra_allows():

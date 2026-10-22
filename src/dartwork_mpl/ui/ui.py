@@ -47,7 +47,7 @@ from ._boundary import ROUTE_POLICY
 from .params import (
     InvalidRequest,
     ParamModel,
-    descriptors_from_model,
+    controls_from_model,
     extract_param_model,
 )
 from .platform.access import (
@@ -103,7 +103,7 @@ def _create_app(
     if isinstance(normalized_host, StartupRejected):
         raise ValueError(normalized_host.detail)
     startup_cwd = Path.cwd()
-    descriptors = descriptors_from_model(param_model)
+    descriptors = controls_from_model(param_model)
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:

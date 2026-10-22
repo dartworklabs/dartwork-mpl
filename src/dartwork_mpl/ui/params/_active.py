@@ -10,6 +10,7 @@ the ``params`` package): ``InvalidRequest`` and ``parse_active``.
 from __future__ import annotations
 
 import types
+from collections.abc import Callable
 from contextlib import suppress
 from copy import copy
 from dataclasses import dataclass
@@ -28,7 +29,15 @@ from typing import (
 from pydantic import BaseModel, ValidationError, create_model
 
 from ..platform.json_bounds import JsonValue, bounded
-from ._descriptors import ParamDescriptor
+from ._descriptors import (
+    BoolControl,
+    ChoiceControl,
+    Control,
+    ListControl,
+    NumberControl,
+    Scalar,
+    TextControl,
+)
 from ._model import ParamModel
 
 
@@ -39,6 +48,16 @@ class InvalidRequest:
     detail: str = "Input does not match the viewer request schema."
     status_code: ClassVar[int] = 422
     code: ClassVar[str] = "invalid_request"
+
+
+# How comma-separated list text converts per item kind. ``bool`` has no entry:
+# list[bool] text raises KeyError (an answered-500 defect kept as before, so
+# the wire does not change in a types-only refactor).
+_LIST_ITEMS: dict[Scalar, Callable[[str], object]] = {
+    "int": int,
+    "float": float,
+    "str": str,
+}
 
 
 @lru_cache(maxsize=128)
@@ -172,9 +191,7 @@ def _validate_model(model_cls: type[BaseModel], value: Any) -> BaseModel:
 
 
 def parse_active(
-    value: JsonValue,
-    model_cls: type[ParamModel],
-    descriptors: list[ParamDescriptor],
+    value: JsonValue, model_cls: type[ParamModel], descriptors: list[Control]
 ) -> ParamModel | InvalidRequest:
     """Apply documented list-text and numeric-choice coercion once, then validate natively.
 
@@ -188,31 +205,32 @@ def parse_active(
         return InvalidRequest()
     coerced: dict[str, Any] = dict(value)
     try:
-        for descriptor in descriptors:
-            item = coerced.get(descriptor.name)
-            if descriptor.type_name.startswith("list_") and isinstance(
-                item, str
-            ):
-                convert = {
-                    "list_int": int,
-                    "list_float": float,
-                    "list_str": str,
-                }[descriptor.type_name]
-                coerced[descriptor.name] = [
-                    convert(part.strip())
-                    for part in item.split(",")
-                    if part.strip()
-                ]
-            elif (
-                descriptor.choices
-                and descriptor.type_name in ("int", "float")
-                and isinstance(item, str)
-                and item not in descriptor.choices
-            ):
-                with suppress(ValueError):
-                    coerced[descriptor.name] = (
-                        int if descriptor.type_name == "int" else float
-                    )(item)
+        for control in descriptors:
+            item = coerced.get(control.name)
+            if not isinstance(item, str):
+                continue
+            match control:
+                case ListControl(item=kind):
+                    convert = _LIST_ITEMS[kind]
+                    coerced[control.name] = [
+                        convert(part.strip())
+                        for part in item.split(",")
+                        if part.strip()
+                    ]
+                case ChoiceControl(
+                    choices=choices, value_kind=("int" | "float") as kind
+                ) if choices and item not in choices:
+                    with suppress(ValueError):
+                        coerced[control.name] = (
+                            int if kind == "int" else float
+                        )(item)
+                case (
+                    NumberControl()
+                    | BoolControl()
+                    | TextControl()
+                    | ChoiceControl()
+                ):
+                    pass
         model = _validate_model(model_cls, coerced)
         if bounded(model.model_dump(mode="json", by_alias=False)) is not None:
             return InvalidRequest(

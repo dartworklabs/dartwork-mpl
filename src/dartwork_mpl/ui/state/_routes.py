@@ -12,7 +12,7 @@ from typing import TypeVar
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
-from ..params import InputFailure, ParamDescriptor, ParamModel
+from ..params import Control, InputFailure, ParamModel
 from ..platform.access import Grant
 from ..platform.http import refusal_response, request_json
 from ..platform.json_bounds import JsonValue
@@ -42,7 +42,7 @@ _Parsed = TypeVar("_Parsed")
 def routes(
     *,
     param_model: type[ParamModel],
-    descriptors: list[ParamDescriptor],
+    descriptors: list[Control],
     function_name: str,
     state: Callable[[], ViewerState | FileFailure],
 ) -> APIRouter:
@@ -52,8 +52,7 @@ def routes(
     async def parsed_body(
         request: Request,
         parse: Callable[
-            [JsonValue, type[ParamModel], list[ParamDescriptor]],
-            _Parsed | InputFailure,
+            [JsonValue, type[ParamModel], list[Control]], _Parsed | InputFailure
         ],
     ) -> _Parsed | JSONResponse:
         """Read the bounded body once and parse it with the route's own parser.
@@ -75,7 +74,7 @@ def routes(
     async def save_config(
         request: Request,
         parse: Callable[
-            [JsonValue, type[ParamModel], list[ParamDescriptor]],
+            [JsonValue, type[ParamModel], list[Control]],
             StateUpdate | InputFailure,
         ],
     ) -> dict[str, str] | JSONResponse:

@@ -18,9 +18,9 @@ from matplotlib.figure import Figure
 
 from ...io import save_formats
 from ..params import (
+    Control,
     InputFailure,
     ModelRequest,
-    ParamDescriptor,
     ParamModel,
     parse_model_request,
 )
@@ -55,7 +55,7 @@ def routes(
     *,
     figure_fn: Callable[[Any], Figure],
     param_model: type[ParamModel],
-    descriptors: list[ParamDescriptor],
+    descriptors: list[Control],
     roots: Callable[[], RootScope | FsFailure],
 ) -> APIRouter:
     """Serve renders of ``figure_fn``; ``roots`` borrows the lifespan-owned output roots."""

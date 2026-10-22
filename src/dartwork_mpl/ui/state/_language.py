@@ -33,7 +33,7 @@ from ..platform.json_bounds import (
 )
 
 if TYPE_CHECKING:
-    from ..params import ParamDescriptor
+    from ..params import Control
 
 MAX_CONFIG_BYTES = MAX_REQUEST_BYTES
 MAX_PRESET_BYTES = 8 * 1024 * 1024
@@ -202,9 +202,7 @@ def _tabs(
 
 
 def parse_params_update(
-    value: JsonValue,
-    model_cls: type[ParamModel],
-    descriptors: list[ParamDescriptor],
+    value: JsonValue, model_cls: type[ParamModel], descriptors: list[Control]
 ) -> ParamsUpdate | InputFailure:
     """Parse an ``/api/config`` body, which is exactly the active parameters; pure.
 
@@ -221,9 +219,7 @@ def parse_params_update(
 
 
 def parse_full_state_update(
-    value: JsonValue,
-    model_cls: type[ParamModel],
-    descriptors: list[ParamDescriptor],
+    value: JsonValue, model_cls: type[ParamModel], descriptors: list[Control]
 ) -> FullStateUpdate | InputFailure:
     """Parse an ``/api/save-state`` body: optional ``params``, ``tabs`` and ``figWidth``; pure.
 
@@ -253,9 +249,7 @@ def parse_full_state_update(
 
 
 def parse_preset_request(
-    value: JsonValue,
-    model_cls: type[ParamModel],
-    descriptors: list[ParamDescriptor],
+    value: JsonValue, model_cls: type[ParamModel], descriptors: list[Control]
 ) -> PresetRequest | InputFailure:
     """Parse an ``/api/preset`` body: exactly ``label`` and ``params``; pure.
 
