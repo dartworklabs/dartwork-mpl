@@ -7,6 +7,8 @@ example/heatmaps/multivariate_normal_*
 
 # 예외 처리: examples 디렉토리의 CSV 파일 허용
 examples/**/*.csv
+# Frozen agent-eval inputs (small, pinned by SHA256SUMS)
+!evals/agentic/fixtures/data/*.csv
 
 
 _build/
