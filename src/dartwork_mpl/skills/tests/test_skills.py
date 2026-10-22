@@ -126,6 +126,28 @@ def test_router_states_the_rules_agents_get_wrong() -> None:
     assert "`17.5, 20.0, 22.5`" in review
 
 
+def test_plot_text_is_english_unless_the_user_asks() -> None:
+    """User decision 2026-10-22: English by default; an explicit request wins."""
+    text = SKILL_MD.read_text(encoding="utf-8")
+    assert "English whatever the chat language" in text
+    assert "only when the user asks" in text
+    korean = (SKILL / "references" / "korean.md").read_text(encoding="utf-8")
+    assert "English by default" in korean
+    assert "keeps the language" in korean
+    assert "missing from font(s)" in korean
+
+
+def test_one_unit_per_axis() -> None:
+    """User decision 2026-10-22: one unit per axis, the largest tick's by default."""
+    text = SKILL_MD.read_text(encoding="utf-8")
+    assert "One unit per axis" in text and "largest tick's unit" in text
+    assert 'unit="whole"' in text
+    review = (SKILL / "references" / "review-loop.md").read_text(
+        encoding="utf-8"
+    )
+    assert "one axis uses one unit" in review
+
+
 def test_value_labels_are_one_weight_step_heavier() -> None:
     """User request 2026-10-22: numeric value labels use dm.fw(1)."""
     text = SKILL_MD.read_text(encoding="utf-8")

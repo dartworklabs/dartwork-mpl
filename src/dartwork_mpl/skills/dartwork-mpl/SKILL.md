@@ -24,8 +24,7 @@ dm.save_formats(fig, "output/figure-v1", formats=("png", "pdf"))  # 4. save
 
 ## Preset by purpose
 
-Explicit user size or style and journal/template rules come first, then
-earlier choices in the project, then:
+User size or style and journal/template rules first, then earlier project choices:
 
 | Purpose | Preset |
 |---|---|
@@ -34,11 +33,9 @@ earlier choices in the project, then:
 | talk, slides, 발표 | `presentation` |
 | poster · web page · dark background · sparse | `poster` · `web` · `dark` · `minimal` |
 
-Plot text you write (titles, axis labels, legends, notes) is English,
-whatever language the chat uses. Write another language only when the user
-asks for it ("제목은 한국어로", "in Japanese"). Korean text on the figure,
-asked for or from the data, takes the `-kr` preset (`report-kr`). Edits keep
-the figure's language and the chosen preset.
+Plot text you write is English whatever the chat language; another language
+only when the user asks ("제목은 한국어로"). Korean on the figure, asked for or
+from the data, takes `-kr` (`report-kr`); edits keep its language and preset.
 
 ## Size, layout, save
 
@@ -56,10 +53,9 @@ the figure's language and the chosen preset.
 ## Data
 
 Plot the user's values as given. Never drop, fill, sort, aggregate, clip or
-invent rows silently; state every transformation you make. Missing values
-stay visible gaps: `dm.validate_data` drops NaN/Inf rows by default, so use
-`allow_nan=True` where a gap means something. A preview is not the dataset,
-and template numbers are placeholders to replace, never to keep.
+invent rows silently; state every transformation. Missing values stay visible
+gaps (`dm.validate_data` drops NaN/Inf rows unless `allow_nan=True`). A preview
+is not the dataset; template numbers are placeholders, never data.
 
 ## Values
 
@@ -70,13 +66,11 @@ and template numbers are placeholders to replace, never to keep.
   One step bigger on an artist: `t.set_fontsize(t.get_fontsize() + 1)`.
 - Explicit user values win exactly (`fontsize=12`, `"#235fa4"`), even when
   lint flags literals. Hairlines stay literal (`linewidth=0.3`).
-- No meaningless decimals in tick or value labels: `200`, `0`, `1k, 2k`,
-  never `200.0`, `0.0`, `1.0k, 2.0k`. When one label needs a decimal, the
-  whole axis shares the count (`17.5, 20.0, 22.5`; `0.5M, 1.0M`).
-- One unit per axis, never mixed per tick. `dm.format_axis_si` / `_myriad`
-  use the largest tick's unit (`0, 0.25억 … 1.75억`); `unit="whole"` takes
-  the unit where every tick is an integer (`2,500만 … 17,500만`); `unit="k"`
-  or `"만"` fixes one. They choose decimals; an explicit `decimals=` is exact.
+- No meaningless decimals: `200`, `0`, `1k, 2k`, not `200.0`, `0.0`, `1.0k, 2.0k`;
+  if one label needs a decimal the axis shares it (`17.5, 20.0`; `0.5M, 1.0M`).
+- One unit per axis. `dm.format_axis_si` / `_myriad` use the largest tick's unit
+  (`0.25억 … 1.75억`); `unit="whole"` an all-integer one (`2,500만 … 17,500만`),
+  `unit="k"` / `"만"` a fixed one. An explicit `decimals=` is exact.
 - Numeric value labels on bars and lines (`ax.bar_label`, `ax.text`) use
   `fontweight=dm.fw(1)`; titles, axis labels, ticks and legends keep theirs.
 
@@ -84,20 +78,18 @@ and template numbers are placeholders to replace, never to keep.
 
 "Only X" requests: find that artist (panel, series, label, title), change only
 the asked property, keep data, preset, canvas, colours, legend and the rest.
-Axis-label edits touch the label Text objects, not `font.size` or ticks.
-Keep the original script; write the revision as a new script and stem.
-Broad asks ("make it look better", "더 보기 좋게") are normal requests:
-keep data and preset, fix what the image shows, list each change. Ask one
-short question only when the target is truly ambiguous.
+Axis-label edits touch the label Text objects, not `font.size` or ticks. Keep
+the original script; write the revision as a new script and stem. Broad asks
+("make it look better", "더 보기 좋게") are normal: keep data and preset, fix
+what the image shows, list each change. Ask one short question only when the
+target is truly ambiguous.
 
 ## Review loop (every figure and revision; script: `references/review-loop.md`)
 
-1. Save under a versioned stem: `output/figure-v1`. A path the user names
-   gets the final version.
-2. Open the PNG with your image tool (Claude Code: Read; Codex: view_image)
-   and look: clipped or overlapping text, legend over data, crowded ticks,
-   wasted space, wrong data. If you cannot view images, say the figure was
-   not visually reviewed.
+1. Save `output/figure-v1` (a path the user names gets the final version).
+2. Open the PNG (Claude Code: Read; Codex: view_image) and look: clipped or
+   overlapping text, legend over data, crowded ticks, wasted space, wrong data.
+   If you cannot view images, say the figure was not visually reviewed.
 3. Read `dm.validate_figure(fig, quiet=True)`: fix WARNING, weigh INFO.
    `CHECK_FAILED` means a check did not run: report validation as incomplete.
 4. Change only what is needed or requested.
