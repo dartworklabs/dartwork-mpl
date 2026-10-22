@@ -19,22 +19,18 @@ rule 2). Aesthetics are not a gate.
   with the pinned wheel, the rendered base for edits). Repo paths are
   stripped from the child `PATH`.
 - **Contamination fails closed.** `--hide-grading` (bwrap tmpfs over the repo,
-  records and work root; only the project re-bound) is the enforcement, and
-  skill (decision) runs require it; `compare.py`/`summary.py` block every
-  verdict if any unit ran without it. Text evidence (`contamination.py`:
-  resolved paths in raw decoded tool strings, globs from grading ancestors,
-  `cd`/`workdir` out of the project, grading file names) is OR-ed between run
-  time and rescore and never cleared; it gates unsandboxed units and is
-  advisory (`contamination_text`) under the sandbox.
+  records, work root and HOME transcript stores; Codex gets a per-unit
+  sessions dir) is the enforcement; skill runs require it and any unsandboxed
+  unit blocks every verdict. Text evidence (`contamination.py`: paths, globs,
+  `cd`/`workdir`, grading names; HOME transcript and Codex sqlite stores
+  count) is OR-ed run time + rescore, never cleared; it gates unsandboxed
+  units, and under the sandbox only what the sandbox neutralised is advisory.
 - **Hosts.** Claude: project-only settings, no MCP, user CLAUDE.md excluded,
   no auto-memory, 7 tools including Skill. Codex: user config, rules,
-  plugins, memories, apps and user skills off; `workspace-write`; rollouts
-  (code-mode `exec`, `view_image`, sub-agents) are the evidence. Budgets in
-  the manifest, identical across arms: Claude 20 turns, $5, 300 s; Codex
-  300 s and 1.5M tokens including sub-agents. `termination` is recorded.
-- **Skill arm.** `--ab-skill-install` runs the wheel's own installer
-  (`python -m dartwork_mpl.skills install`) in the project before the host
-  starts; `--ab-skill DIR` copies a folder.
+  plugins, memories, apps and user skills off; rollouts are the evidence.
+  Budgets identical across arms (Claude 20 turns, $5, 300 s; Codex 300 s,
+  1.5M tokens). Skill arm: `--ab-skill-install` runs the wheel's installer
+  (`python -m dartwork_mpl.skills install`) in the project first.
 - **Scoring.** Execution: valid PNG and PDF from the final source, written
   during the run. Re-run pixel-identical (same-env noise 0). Data contracts
   bind identity, coordinates, order, multiplicity and NaN masks over visible
@@ -45,8 +41,9 @@ rule 2). Aesthetics are not a gate.
 - **Inspection.** An image view after the last write, at least 400 px, equal
   to the final PNG by sha256 or after the host's measured resize.
 - **Source conformance.** `dm.lint_code` findings of the final `plot.py`,
-  linted with the wheel under test, and unrequested preset overrides counted
-  from its AST (`conformance.py`).
+  linted by a trusted interpreter (the run's sha-verified wheel installed
+  outside every project, read-only bwrap; never the agent-writable venv), and
+  unrequested preset overrides counted from its AST (`conformance.py`).
 
 ## Pre-registered skill A/B endpoints (2026-10-22, before any skill-arm run)
 
@@ -77,37 +74,46 @@ Contaminated units count as failures; any unsandboxed unit blocks every verdict.
 
 ## Self-validation (no model calls)
 
-- `score.py --selftest`: 40 references, 7 broken-figure controls, fixture
-  checksums.
-- `test_scorer.py` (24 mutation tests) and `test_regressions.py` (52 review
-  probes; 45 fail on 407bda8d's scorer, 7 companions pass on both).
-- `test_calibration.py` (24 controls from the real baseline; the 13
-  audited-correct units fail on the pre-calibration scorer).
-- `test_contamination.py` (42): tokenizer, each backstop, OR-never-clear,
-  sandbox gating; disabling any one backstop fails at least one control.
-- `test_endpoints.py`: override kinds, lint counting, pre-registration sync.
+- `score.py --selftest` (40 references, 7 controls); `test_scorer.py` (24),
+  `test_regressions.py` (52 review probes), `test_calibration.py` (24 from
+  the real baseline; the 13 audited-correct units fail the old scorer).
+- `test_contamination.py` (50): tokenizer, each backstop, OR-never-clear,
+  sandbox gating and coverage (another unit's transcript gates; own project
+  is clean); disabling any one backstop fails at least one control.
+- `test_endpoints.py` (22): override kinds, lint counting, a patched project
+  venv cannot clean the lint, pre-registration sync.
 - Default `pytest` collects none of `evals/`.
 
 ## Baseline `baseline-main-20261022` (80 units, no skill, sandboxed)
 
-Audited unit by unit; 25 of 26 failures were scorer false failures, fixed by
-general rules and rescored from the stored records without reruns. The one
-remaining failure is true (codex g23 never executed its last edit). New
-metrics rescored the same way: lint findings (critical + warning) claude 13,
-codex 27 (most: literal font sizes/widths, oversize width); overrides are
-mostly figure/axes facecolor; meaningless decimals 0. Text flags are advisory
-(sandboxed): 7 from the old `../` rule, 2 Claude `cd`s into its bundled skills.
+25 of 26 failures were scorer false failures (audit), rescored without
+reruns; codex g23 never executed its last edit. Lint findings: claude 13,
+codex 27 (literal sizes/widths, oversize width); overrides mostly facecolor;
+advisory text flags: 7 old `../` hits, 2 Claude `cd`s into its bundled skills.
 
 | host | task success | inspected | lint clean | overrides/unit | text flags (advisory) |
 |---|---|---|---|---|---|
 | claude (`sonnet`, high) | 40/40 | 30/40 | 29/40 | 0.12 (2 units) | 6 |
 | codex (`gpt-6-astra`, medium) | 39/40 | 31/40 | 24/40 | 0.65 (13 units) | 3 |
 
+## Pilot `pilot-skill-20261022` (16 units, one p1 wheel `22f1a059`, sandboxed)
+
+4 cases (e01, e15, g02, g09) x 2 hosts x 2 arms; every skill unit discovered
+and invoked the installed skill; all 16 succeeded; no contamination flags.
+n = 4 cases per host, so every primary is `inconclusive` (by design).
+
+| host | inspected no -> skill | lint clean | task | tokens/unit | wall/unit |
+|---|---|---|---|---|---|
+| claude | 3/4 -> 4/4 | 2/4 -> 4/4 | 4/4 -> 4/4 | 157k -> 98k | 31 s -> 23 s |
+| codex | 3/4 -> 2/4 | 3/4 -> 4/4 | 4/4 -> 4/4 | 720k -> 353k | 145 s -> 71 s |
+
 ## Not done / limitations
 
-- The full A/B (40 cases x 2 hosts x 2 arms x 2 reps = 320 units) has not run.
+- The full A/B (40 x 2 hosts x 2 arms x 2 reps = 320 units) has not run;
+  estimate ~120M tokens (Claude ~33M, about $24 at list price; Codex ~90M),
+  about 2.5 h at `--jobs 4` including project setup.
 - The Codex global `AGENTS.md` is isolated only with `--codex-home`; Codex
   sub-agents are allowed and counted (`--codex-no-subagents` for parity).
-- Name markers can fire on package text that mentions them; under the
-  sandbox they are advisory.
+- Name markers can fire on package text that mentions them, and they gate
+  even under the sandbox (fail closed).
 - Lint counts depend on the wheel's linter: compare arms on one wheel only.

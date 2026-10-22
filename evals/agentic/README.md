@@ -30,8 +30,9 @@ by hand.
 | `compare.py` | Paired A/B statistics and the pre-registered endpoints (`PREREGISTERED`). |
 | `contamination.py` | Text evidence of grading-file access (fail-closed backstop to the sandbox). |
 | `conformance.py` | Unrequested preset overrides in the final source (AST). |
-| `lint_source.py` | `dm.lint_code` of the final source, run in the unit's venv. |
+| `lint_source.py` | `dm.lint_code` of the final source, run by a trusted interpreter in a read-only bwrap. |
 | `sheet.py` | Contact sheets. |
+| `ab_sheet.py` | A/B sheet: per host and case, noskill and skill figures at one scale with their scores. |
 | `test_scorer.py` | Mutation controls. |
 | `test_regressions.py` | Round-2 review probes, pinned as regression controls. |
 | `test_calibration.py` | Real-baseline controls: audited-correct units pass, true failures and fabricated mutations fail. |
@@ -70,7 +71,12 @@ paths. Prompts never name a skill.
 `--hide-grading` runs each host inside `bwrap`, mounting empty `tmpfs` over the
 repo, the records root and the work root and re-binding only the unit's
 project (checked with both hosts, including Codex's own sandbox nested
-inside). Plain filesystem access cannot hide `~/scratch`, which contains both
+inside). It also hides other sessions' transcripts and histories under HOME
+(`~/.claude/projects`, `file-history`, `sessions`, `history.jsonl`;
+`~/.codex/archived_sessions`, `history.jsonl`, `session_index.jsonl`, `log`):
+directories get an empty tmpfs, files an empty per-unit copy, and a Codex
+unit gets a fresh per-unit `~/.codex/sessions` (the harness reads its own
+rollouts there). Codex's sqlite stores stay visible because Codex needs them. Plain filesystem access cannot hide `~/scratch`, which contains both
 trees, so skill (decision) runs refuse to start without it, the manifest
 records it, and `compare.py`/`summary.py` block every verdict when any unit
 ran without it (`sandboxed` per unit: bwrap with the records, the work root
@@ -92,11 +98,15 @@ Claude transcript; the Codex stream and rollouts) as raw strings, so `\n`,
   `manifest.json`, `run_meta.json` (package text that mentions them can trip
   this; it fails closed).
 
-`score.py` ORs the run-time result with a recheck of the stored transcript
-under the current rule; a recheck never clears a flag. The result is kept as
-`contamination_text`. Without the sandbox it sets `contaminated` (never a
-success, a failure in comparisons); under the sandbox it is advisory and
-reported (`text flags` in the summary).
+Those HOME transcript stores (and the Codex sqlite stores) are grading roots
+for the text evidence too. `score.py` ORs the run-time result with a recheck
+of the stored transcript under the current rule; a recheck never clears a
+flag. The result is kept as `contamination_text`. Without the sandbox every
+finding sets `contaminated` (never a success, a failure in comparisons).
+Under the sandbox, findings it neutralised (a path inside a root it hid or
+replaced) are advisory and reported (`text flags` in the summary), while
+grading names and paths it did not hide (e.g. another session's transcript,
+a Codex sqlite store) still set `contaminated` (`contamination_text.gating`).
 
 ## Host isolation and budgets
 
@@ -170,6 +180,7 @@ cc-swap job --prefer quota -- uv run python evals/agentic/run.py --run-id skill-
 uv run python evals/agentic/score.py ~/scratch/dartwork-mpl-evals/skill-ab-$(date +%Y%m%d)
 uv run python evals/agentic/compare.py ~/scratch/dartwork-mpl-evals/skill-ab-$(date +%Y%m%d)   # pre-registered endpoints
 uv run python evals/agentic/compare.py RUN --metric task_success                             # one metric
+uv run python evals/agentic/ab_sheet.py ~/scratch/dartwork-mpl-evals/skill-ab-$(date +%Y%m%d)    # writes ab-sheet.png
 uv run python evals/agentic/compare.py --a RUN_A --b RUN_B   # two runs; manifests validated
 ```
 
@@ -324,9 +335,15 @@ comparison tables report them separately.
     defects, meaningless decimals, preset overrides, lint findings, tokens,
     turns, time.
 - **Source conformance (per unit).** `lint_findings` (critical + warning),
-  `lint_findings_all` and per-rule counts from `dm.lint_code`;
+  `lint_findings_all` and per-rule counts from `dm.lint_code`, run with a
+  trusted interpreter, never the agent-writable project venv: the run's wheel
+  (checked against the manifest sha256) installed into `ROOT/lint-envs/<sha>`
+  outside every project, inside a read-only bwrap with the repo, records and
+  work trees hidden, the source on stdin (`lint.interpreter`,
+  `lint.wheel_sha256` are recorded);
   `preset_overrides` (`conformance.py`: rcParams writes, font changes,
-  figure/axes facecolor, non-dartwork style sheets; distinct source lines).
+  figure/axes facecolor, non-dartwork style sheets; distinct source lines;
+  parsed in the harness, nothing from the project executed).
 
 Aesthetic preference is not a gate. Look at `sheet-<host>-<arm>.png`; edit
 cases show the before and after figures side by side.
