@@ -1,133 +1,56 @@
-"""Semantic design-token accessors for dartwork-mpl."""
+"""Semantic design-token accessors for dartwork-mpl.
 
-from __future__ import annotations
+The roles come only from the shipped ``asset/tokens/semantic_tokens.json``,
+parsed once at import by :mod:`._table`; there is no in-code copy. Size and
+weight accessors resolve against the active preset's ``rcParams`` at call
+time. The surface is ``__all__``.
+"""
 
-import json
-from collections.abc import Mapping
 from pathlib import Path
-from typing import Literal, TypedDict, cast
 
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import font_scalings
 
-
-class _ResolvedToken(TypedDict):
-    rcparam: str
-    offset: float
-    multiplier: float
-
-
-class _TokenData(TypedDict):
-    version: str
-    type_scale: dict[str, _ResolvedToken]
-    lw_ladder: dict[str, _ResolvedToken]
-    scatter_size: dict[str, float]
-    spacing: dict[str, float]
-
-
-ScatterLevel = Literal["small", "default", "emphasis"]
-SpacingLevel = Literal["xs", "sm", "md", "lg", "xl"]
+from ._table import (
+    RcToken,
+    ScatterLevel,
+    SpacingLevel,
+    TokenFileMalformed,
+    TokenFileUnreadable,
+    TokenLoad,
+    TokenTable,
+    TypeRole,
+    WeightRole,
+    read_tokens,
+)
 
 _TOKEN_PATH = (
     Path(__file__).parent.parent / "asset" / "tokens" / "semantic_tokens.json"
 )
 
-_FALLBACK_TOKENS: _TokenData = {
-    "version": "2",
-    "type_scale": {
-        "annotation": {
-            "rcparam": "font.size",
-            "offset": -1.0,
-            "multiplier": 1.0,
-        },
-        "tick": {
-            "rcparam": "xtick.labelsize",
-            "offset": 0.0,
-            "multiplier": 1.0,
-        },
-        "body": {"rcparam": "font.size", "offset": 0.0, "multiplier": 1.0},
-        "label": {
-            "rcparam": "axes.labelsize",
-            "offset": 0.0,
-            "multiplier": 1.0,
-        },
-        "title": {
-            "rcparam": "axes.titlesize",
-            "offset": 0.0,
-            "multiplier": 1.0,
-        },
-        "emphasis": {"rcparam": "font.size", "offset": 1.5, "multiplier": 1.0},
-    },
-    "lw_ladder": {
-        "hairline": {
-            "rcparam": "lines.linewidth",
-            "offset": 0.0,
-            "multiplier": 0.3,
-        },
-        "reference": {
-            "rcparam": "lines.linewidth",
-            "offset": 0.0,
-            "multiplier": 0.3,
-        },
-        "trend": {
-            "rcparam": "lines.linewidth",
-            "offset": 0.0,
-            "multiplier": 1.0,
-        },
-        "emphasis": {
-            "rcparam": "lines.linewidth",
-            "offset": 0.0,
-            "multiplier": 1.6,
-        },
-    },
-    "scatter_size": {"small": 16.0, "default": 30.0, "emphasis": 45.0},
-    "spacing": {"xs": 2.0, "sm": 4.0, "md": 8.0, "lg": 12.0, "xl": 16.0},
-}
+# Read once at import. A damaged file does not break ``import dartwork_mpl``;
+# it surfaces as an error on the first token access (see ``_table``).
+_LOADED: TokenLoad = read_tokens(_TOKEN_PATH)
 
 
-def _as_float(value: object) -> float:
-    if isinstance(value, (int, float, str)):
-        return float(value)
-    raise TypeError(f"expected a number, got {type(value).__name__}")
+def _table() -> TokenTable:
+    """Return the shipped token table.
 
-
-def _coerce_token(token: Mapping[str, object]) -> _ResolvedToken:
-    return {
-        "rcparam": str(token["rcparam"]),
-        "offset": _as_float(token.get("offset", 0.0)),
-        "multiplier": _as_float(token.get("multiplier", 1.0)),
-    }
-
-
-def _coerce_token_map(value: object) -> dict[str, _ResolvedToken]:
-    raw_tokens = cast(Mapping[str, object], value)
-    return {
-        str(name): _coerce_token(cast(Mapping[str, object], token))
-        for name, token in raw_tokens.items()
-    }
-
-
-def _coerce_float_map(value: object) -> dict[str, float]:
-    raw_values = cast(Mapping[str, object], value)
-    return {str(name): _as_float(size) for name, size in raw_values.items()}
-
-
-def _load_tokens() -> _TokenData:
-    try:
-        raw = json.loads(_TOKEN_PATH.read_text(encoding="utf-8"))
-        raw_tokens = cast(Mapping[str, object], raw)
-        return {
-            "version": str(raw_tokens["version"]),
-            "type_scale": _coerce_token_map(raw_tokens["type_scale"]),
-            "lw_ladder": _coerce_token_map(raw_tokens["lw_ladder"]),
-            "scatter_size": _coerce_float_map(raw_tokens["scatter_size"]),
-            "spacing": _coerce_float_map(raw_tokens["spacing"]),
-        }
-    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError):
-        return _FALLBACK_TOKENS
-
-
-_TOKENS = _load_tokens()
+    Raises ``RuntimeError`` naming the file and the problem when the shipped
+    file was unreadable or malformed at import: that is a damaged
+    installation, not a caller error.
+    """
+    match _LOADED:
+        case TokenTable():
+            return _LOADED
+        case TokenFileUnreadable(path=path, detail=detail):
+            problem = f"cannot be read ({detail})"
+        case TokenFileMalformed(path=path, detail=detail):
+            problem = f"is malformed ({detail})"
+    raise RuntimeError(
+        f"dartwork-mpl's semantic token file {path} {problem}; "
+        "reinstall dartwork-mpl."
+    )
 
 
 def _rcparam_float(rcparam: str) -> float:
@@ -142,22 +65,25 @@ def _rcparam_float(rcparam: str) -> float:
         return float(plt.rcParams["font.size"])
 
 
-def _resolve(token: _ResolvedToken) -> float:
-    base = _rcparam_float(token["rcparam"])
-    return (base + token["offset"]) * token["multiplier"]
+def _resolve(token: RcToken) -> float:
+    """Return ``(rcParams[token.rcparam] + offset) * multiplier`` for the active preset."""
+    base = _rcparam_float(token.rcparam)
+    return (base + token.offset) * token.multiplier
 
 
-def _type_scale(name: str) -> float:
-    return _resolve(_TOKENS["type_scale"][name])
+def _type_scale(name: TypeRole) -> float:
+    """Return the resolved text size of type role ``name``."""
+    return _resolve(_table().type_scale[name])
 
 
-def _line_weight(name: str) -> float:
-    return _resolve(_TOKENS["lw_ladder"][name])
+def _line_weight(name: WeightRole) -> float:
+    """Return the resolved stroke width of line-weight role ``name``."""
+    return _resolve(_table().lw_ladder[name])
 
 
 def version() -> str:
     """Return the semantic-token schema version."""
-    return _TOKENS["version"]
+    return _table().version
 
 
 def fs_annotation() -> float:
@@ -212,7 +138,7 @@ def lw_emphasis() -> float:
 
 def scatter_size(level: ScatterLevel = "default") -> float:
     """Return the scatter marker area for the requested semantic level."""
-    sizes = _TOKENS["scatter_size"]
+    sizes = _table().scatter_size
     if level not in sizes:
         valid = ", ".join(sorted(sizes))
         raise ValueError(
@@ -223,7 +149,7 @@ def scatter_size(level: ScatterLevel = "default") -> float:
 
 def space(level: SpacingLevel = "md") -> float:
     """Return the spacing value in points for the requested semantic level."""
-    spacing = _TOKENS["spacing"]
+    spacing = _table().spacing
     if level not in spacing:
         valid = ", ".join(sorted(spacing))
         raise ValueError(
