@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .._types import Severity, VisualWarning
-from ._registry import register_check
+from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -66,3 +66,11 @@ def check_empty_axes(
             )
 
     return warnings
+
+
+@register_fix("EMPTY_AXES")
+def _fix_empty_axes(_warning: VisualWarning) -> list[str]:
+    return [
+        "# Remove empty axes\nax.remove()",
+        "# Or hide it\nax.set_visible(False)",
+    ]

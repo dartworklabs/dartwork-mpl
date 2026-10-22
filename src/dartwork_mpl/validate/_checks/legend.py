@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
-from ._registry import register_check
+from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -122,3 +122,12 @@ def check_legend_overflow(
             )
 
     return warnings
+
+
+@register_fix("LEGEND_OVERFLOW")
+def _fix_legend_overflow(_warning: VisualWarning) -> list[str]:
+    return [
+        "# Move legend outside\nax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')",
+        "# Reduce legend columns\nax.legend(ncol=1)",
+        "# Reduce legend font\nax.legend(fontsize=dm.fs(-2))",
+    ]

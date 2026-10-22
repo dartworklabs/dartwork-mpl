@@ -7,6 +7,12 @@ so a sub-slice can be declared inside a slice later. A unit's surface is its
 own module (the package ``__init__`` or the single file) and the names in its
 literal ``__all__``; everything else is private.
 
+A compatibility shim (``SHIMS``) keeps a public module path whose contents
+moved into a unit. The shim belongs to that owner unit, so its imports of the
+owner's private modules are internal, and it is a second surface module of
+the owner: importers of the shim are judged against the shim's own literal
+``__all__`` (a shim without one is a ``missing __all__``).
+
 Reported violations, one stable line each (no line numbers, so a debt entry
 survives unrelated edits):
 
@@ -35,7 +41,7 @@ from __future__ import annotations
 import ast
 import sys
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 PACKAGE = "dartwork_mpl"
@@ -85,7 +91,6 @@ SLICES = frozenset(
         "dartwork_mpl.units",
         "dartwork_mpl.util",
         "dartwork_mpl.validate",
-        "dartwork_mpl.validate_fixes",
     }
 )
 
@@ -140,6 +145,15 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.style", "dartwork_mpl.font"): (
         "a preset may name bundled fonts, which must be registered first"
     ),
+    ("dartwork_mpl.validate", "dartwork_mpl.layout"): (
+        "the auto-applied validation fix is re-running the content-aware layout"
+    ),
+}
+
+# Compatibility shims: public module path -> the unit that owns its contents.
+SHIMS: Mapping[str, str] = {
+    # dm.validate_fixes predates the validate slice's fix modules.
+    "dartwork_mpl.validate_fixes": "dartwork_mpl.validate"
 }
 
 # Modules holding pure decisions: they import no other unit, surfaces included.
@@ -155,14 +169,10 @@ DECISIONS: Mapping[str, str] = {
 # Known violations at the start of the refactor (ADR 0005), each with the
 # plan step that removes it. The list only shrinks.
 DEBT: Mapping[str, str] = {
-    "cycle: dartwork_mpl, dartwork_mpl.validate_fixes": "L2",
     "cycle: dartwork_mpl._colors, dartwork_mpl._luminance": "K1",
     "entry point import: dartwork_mpl.mcp.resources -> dartwork_mpl": "M6",
     "entry point import: dartwork_mpl.mcp.tools -> dartwork_mpl": "M4",
-    "entry point import: dartwork_mpl.validate_fixes -> dartwork_mpl": "L2",
     "missing __all__: dartwork_mpl._luminance": "K1",
-    "missing __all__: dartwork_mpl.validate_fixes": "L2",
-    "private import: dartwork_mpl -> dartwork_mpl.validate_fixes.validate_with_fixes": "L2",
     "private import: dartwork_mpl._colors._contrast -> dartwork_mpl._luminance._contrast_ratio": "K1",
     "private import: dartwork_mpl._luminance -> dartwork_mpl._colors._conversion": "K1",
     "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.CYCLIC": "K5",
@@ -182,7 +192,7 @@ DEBT: Mapping[str, str] = {
     "private import: dartwork_mpl.validate._checks.grayscale_safety -> dartwork_mpl._colors._conversion._srgb_to_oklab": "K3",
     "private import: dartwork_mpl.validate._checks.grayscale_safety -> dartwork_mpl._colors._conversion.relative_y_srgb_d65": "K3",
     "private import: dartwork_mpl.validate._checks.text_contrast -> dartwork_mpl._luminance._contrast_ratio": "K1",
-    "private import: dartwork_mpl.validate_fixes -> dartwork_mpl.helpers.quality._MIN_RECOMMENDED_DPI": "L2",
+    "private import: dartwork_mpl.validate.agent_requirements -> dartwork_mpl.helpers.quality._MIN_RECOMMENDED_DPI": "C11",
     "undeclared dependency: dartwork_mpl.helpers -> dartwork_mpl.scale": "C11",
     "undeclared dependency: dartwork_mpl.mcp -> dartwork_mpl.util": "C9",
     "undeclared dependency: dartwork_mpl.ui -> dartwork_mpl.util": "C9",
@@ -193,7 +203,6 @@ DEBT: Mapping[str, str] = {
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.layout": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.prompt": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.scale": "C10",
-    "undeclared dependency: dartwork_mpl.validate_fixes -> dartwork_mpl.validate": "L2",
 }
 
 # Package paths that hold user-facing sample code, not package source: the
@@ -211,6 +220,7 @@ class Layout:
     slices: frozenset[str]
     allowed: Mapping[tuple[str, str], str]
     decisions: Mapping[str, str]
+    shims: Mapping[str, str] = field(default_factory=dict)
 
     @property
     def units(self) -> frozenset[str]:
@@ -218,7 +228,9 @@ class Layout:
         return self.platform | self.slices
 
 
-REPOSITORY_LAYOUT = Layout(ENTRY_POINTS, PLATFORM, SLICES, ALLOWED, DECISIONS)
+REPOSITORY_LAYOUT = Layout(
+    ENTRY_POINTS, PLATFORM, SLICES, ALLOWED, DECISIONS, SHIMS
+)
 
 
 def is_test(rel: Path) -> bool:
@@ -251,7 +263,9 @@ def read_sources(root: Path) -> tuple[dict[str, str], set[str]]:
 
 
 def owner(module: str, layout: Layout) -> str | None:
-    """The unit owning ``module`` by longest dotted prefix, or None."""
+    """The unit owning ``module``: a shim's owner, else by longest dotted prefix, or None."""
+    if module in layout.shims:
+        return layout.shims[module]
     best = None
     for unit in layout.units:
         if (module == unit or module.startswith(unit + ".")) and (
@@ -362,6 +376,11 @@ def violations(
             surfaces[unit] = exports(trees[unit])
             if surfaces[unit] is None:
                 errors.add(f"missing __all__: {unit}")
+    for shim in sorted(layout.shims):
+        if shim in trees:
+            surfaces[shim] = exports(trees[shim])
+            if surfaces[shim] is None:
+                errors.add(f"missing __all__: {shim}")
     for name in code:
         if name not in layout.entry_points and owner(name, layout) is None:
             errors.add(f"unowned module: {name}")
@@ -409,12 +428,21 @@ def violations(
             target_unit = owner(target, layout)
             if target_unit is None or target_unit == source_unit:
                 continue
-            surface = surfaces.get(target_unit) or set()
-            is_surface = target == target_unit and (
-                symbol is None or symbol in surface or submodule == target
-            )
-            if submodule == target and target != target_unit:
-                is_surface = False
+            if target in layout.shims:
+                # The shim module itself, or a name its __all__ lists.
+                shim_surface = surfaces.get(target) or set()
+                is_surface = (
+                    symbol is None
+                    or submodule == target
+                    or symbol in shim_surface
+                )
+            else:
+                surface = surfaces.get(target_unit) or set()
+                is_surface = target == target_unit and (
+                    symbol is None or symbol in surface or submodule == target
+                )
+                if submodule == target and target != target_unit:
+                    is_surface = False
             shown = submodule if submodule else base
             if not is_surface:
                 errors.add(f"private import: {name} -> {shown}")

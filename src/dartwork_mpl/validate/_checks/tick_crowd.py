@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
-from ._registry import register_check
+from ._registry import register_check, register_fix
 from ._tick_utils import iter_view_ticks
 
 if TYPE_CHECKING:
@@ -134,3 +134,22 @@ def check_tick_crowding(
             )
 
     return warnings
+
+
+@register_fix("TICK_CROWD")
+def _fix_tick_crowd(warning: VisualWarning) -> list[str]:
+    suggestions: list[str] = []
+    axis = warning.detail.get("axis", "")
+    count = warning.detail.get("count", 0)
+    if axis == "x":
+        suggestions.append(
+            f"# Reduce x-ticks\nax.xaxis.set_major_locator(plt.MaxNLocator(nbins={count // 2}))"
+        )
+        suggestions.append(
+            "# Rotate labels\nax.tick_params(axis='x', rotation=45)"
+        )
+    else:
+        suggestions.append(
+            f"# Reduce y-ticks\nax.yaxis.set_major_locator(plt.MaxNLocator(nbins={count // 2}))"
+        )
+    return suggestions

@@ -1,4 +1,4 @@
-"""Decorator-based registry for visual-validation checks.
+"""Decorator-based registry for visual-validation checks and their fixes.
 
 Each check self-registers with ``@register_check(id, order=...)`` so the
 check id, its call site, and its run order all live in the check module
@@ -7,10 +7,10 @@ orchestrator, where a new or renamed check could silently drift out of
 sync with its id (and, worse, run *zero* checks while reporting a figure
 clean).
 
-Mirrors the ``register_fix`` registry in
-:mod:`dartwork_mpl.validate_fixes` and the ``Rule`` registry in
-:mod:`dartwork_mpl.lint` — one decorator per unit, all discoverable
-through a single dispatcher.
+Each check's fix-suggestion handler registers here too, with
+``@register_fix(id)`` next to the check in the same module (re-exported
+as :func:`dartwork_mpl.validate_fixes.register_fix`), so a check and the
+fix that reads its ``detail`` change in one file.
 
 Every check is invoked uniformly as ``fn(fig, renderer)`` and returns a
 ``list[VisualWarning]``. Checks that don't need the renderer
@@ -23,10 +23,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, TypeVar
+from typing import TypeVar
 
-if TYPE_CHECKING:
-    from .._types import VisualWarning
+from .._types import VisualWarning
 
 # Identity-decorator TypeVar: registering a check returns the *same*
 # function with its exact signature preserved (so ``check_overflow``
@@ -83,3 +82,39 @@ def registered_checks() -> list[RegisteredCheck]:
     checks were ever registered at the same ``order``.
     """
     return sorted(_REGISTRY.values(), key=lambda c: (c.order, c.check_id))
+
+
+# ───────────────────────────────────────────────────────
+# Per-check fix-handler registry
+# ───────────────────────────────────────────────────────
+#
+# Each handler takes the VisualWarning and returns a list of code-snippet
+# strings the agent (or human reader) can apply. Handlers are pure —
+# no side-effects, no figure mutation. A check's handler sits next to the
+# check in its module under ``@register_fix("MY_CHECK_ID")``; no edits to
+# ``get_fix_suggestions``, no edits to ``check_agent_requirements`` aside
+# from optionally tracking the new check in its severity grouping.
+
+FixHandler = Callable[[VisualWarning], list[str]]
+
+_FIX_HANDLERS: dict[str, FixHandler] = {}
+
+
+def register_fix(check_id: str) -> Callable[[FixHandler], FixHandler]:
+    """Decorator: register a fix-suggestion handler under ``check_id``.
+
+    The handler runs only when ``get_fix_suggestions(warning)`` is called
+    with a warning whose ``check_id`` matches. Multiple registrations
+    under the same ID raise — the dispatch table must stay
+    deterministic.
+    """
+
+    def deco(fn: FixHandler) -> FixHandler:
+        if check_id in _FIX_HANDLERS:
+            raise RuntimeError(
+                f"Duplicate fix handler registered for {check_id!r}"
+            )
+        _FIX_HANDLERS[check_id] = fn
+        return fn
+
+    return deco

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
-from ._registry import register_check
+from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -129,3 +129,14 @@ def check_clipped_text(
                 )
             )
     return warnings
+
+
+@register_fix("CLIPPED_TEXT")
+def _fix_clipped_text(_warning: VisualWarning) -> list[str]:
+    return [
+        "# Run the simple_layout pass\ndm.simple_layout(fig)",
+        "# Or rotate the offending label\n"
+        "dm.rotate_tick_labels(ax, axis='x', rotation=45)",
+        "# Or shrink the font\n"
+        "ax.tick_params(axis='both', labelsize=dm.fs(-2))",
+    ]

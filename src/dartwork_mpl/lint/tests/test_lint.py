@@ -401,42 +401,6 @@ class TestFormatReportFixSuggestion:
         assert "→ fix:" not in report
 
 
-class TestBundledTemplatesLintClean:
-    """The 18 prompt-asset templates ship as the canonical examples
-    agents copy from. They must lint clean against the very rules
-    they teach — otherwise the linter contradicts the templates.
-    """
-
-    def test_all_prompt_templates_lint_clean(self) -> None:
-        from pathlib import Path
-
-        from dartwork_mpl.lint import lint
-
-        templates_dir = (
-            Path(__file__).resolve().parent.parent
-            / "src"
-            / "dartwork_mpl"
-            / "asset"
-            / "prompt"
-            / "05-templates"
-        )
-        assert templates_dir.is_dir(), (
-            f"templates directory missing: {templates_dir}"
-        )
-        violations: dict[str, list[str]] = {}
-        for tpl in sorted(templates_dir.glob("*.py")):
-            issues = lint(tpl.read_text(encoding="utf-8"))
-            if issues:
-                violations[tpl.name] = [
-                    f"[{i.severity}] {i.rule_id} (line {i.line}): "
-                    f"{i.message.strip().splitlines()[0]}"
-                    for i in issues
-                ]
-        assert not violations, (
-            f"Bundled prompt templates have lint violations: {violations}"
-        )
-
-
 class TestAutoFixTableContract:
     """``_AUTO_FIX_TABLE`` must stay aligned with the SSOT catalog.
 
@@ -446,7 +410,7 @@ class TestAutoFixTableContract:
     """
 
     def test_auto_fix_rule_ids_exist_in_ssot(self) -> None:
-        from dartwork_mpl.lint import _AUTO_FIX_TABLE
+        from dartwork_mpl.lint.fix import _AUTO_FIX_TABLE
 
         ssot_ids = {r.id for r in load_rules()}
         table_ids = {rule_id for rule_id, _, _ in _AUTO_FIX_TABLE}

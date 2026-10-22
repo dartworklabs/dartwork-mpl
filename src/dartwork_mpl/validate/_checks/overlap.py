@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
-from ._registry import register_check
+from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -69,3 +69,12 @@ def check_overlap(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
                     )
 
     return warnings
+
+
+@register_fix("OVERLAP")
+def _fix_overlap(_warning: VisualWarning) -> list[str]:
+    return [
+        "# Adjust text positions\nax.text(..., ha='left')  # Change alignment",
+        "# Use simple_layout\ndm.simple_layout(fig)",
+        "# Reduce font size\nax.legend(fontsize=dm.fs(-1))",
+    ]

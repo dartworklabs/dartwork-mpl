@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .._types import Severity, VisualWarning
-from ._registry import register_check
+from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -90,3 +90,9 @@ def check_pie_label_offset(
         break  # only check the first pie axes
 
     return warnings
+
+
+@register_fix("PIE_LABEL_OFFSET")
+def _fix_pie_label_offset(warning: VisualWarning) -> list[str]:
+    ideal_r = warning.detail.get("ideal_r", 0.7)
+    return [f"# Adjust label position\nax.pie(..., pctdistance={ideal_r:.2f})"]

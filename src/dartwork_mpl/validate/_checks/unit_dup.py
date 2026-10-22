@@ -6,7 +6,7 @@ import re
 from typing import TYPE_CHECKING, Literal
 
 from .._types import Severity, VisualWarning
-from ._registry import register_check
+from ._registry import register_check, register_fix
 from ._tick_utils import iter_view_ticks, split_tick_affixes
 
 if TYPE_CHECKING:
@@ -132,3 +132,14 @@ def check_unit_dup(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
             )
 
     return warnings
+
+
+@register_fix("UNIT_DUP")
+def _fix_unit_dup(warning: VisualWarning) -> list[str]:
+    axis = warning.detail.get("axis", "y")
+    return [
+        "# Keep the unit in the axis label only\n"
+        f"ax.{axis}axis.set_major_formatter(mticker.PercentFormatter(symbol=''))",
+        "# Or use a bare numeric formatter\n"
+        f"ax.{axis}axis.set_major_formatter(mticker.StrMethodFormatter('{{x:g}}'))",
+    ]

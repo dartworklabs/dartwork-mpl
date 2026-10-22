@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from ..._figure_geometry import iter_figure_level_extents
 from .._types import BBOX_ERRORS, Severity, VisualWarning
-from ._registry import register_check
+from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
     from matplotlib.backend_bases import RendererBase
@@ -166,3 +166,41 @@ def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
             )
 
     return warnings
+
+
+@register_fix("OVERFLOW")
+def _fix_overflow(warning: VisualWarning) -> list[str]:
+    suggestions: list[str] = []
+    side = warning.detail.get("side", "")
+    px = warning.detail.get("px", 0)
+    # Clamp the suggested fractions into a valid band: matplotlib
+    # requires left/bottom < right/top, all within [0, 1]. Unclamped,
+    # a large overflow (px ≈ 90 on a small figure) produced
+    # copy-paste suggestions like ``subplots_adjust(left=1.05)`` that
+    # raise ValueError when applied.
+    grow = min(0.45, 0.15 + px / 100)
+    shrink_right = max(0.55, 0.95 - px / 100)
+    shrink_top = max(0.55, 0.9 - px / 100)
+    if side == "left":
+        suggestions.append(
+            f"# Increase left margin\nfig.subplots_adjust(left={grow:.2f})"
+        )
+        suggestions.append("# Or use simple_layout\ndm.simple_layout(fig)")
+    elif side == "right":
+        suggestions.append(
+            "# Increase right margin\n"
+            f"fig.subplots_adjust(right={shrink_right:.2f})"
+        )
+        suggestions.append("# Or use simple_layout\ndm.simple_layout(fig)")
+    elif side == "bottom":
+        suggestions.append(
+            f"# Increase bottom margin\nfig.subplots_adjust(bottom={grow:.2f})"
+        )
+        suggestions.append(
+            "# Rotate x-tick labels\nax.tick_params(axis='x', rotation=45)"
+        )
+    elif side == "top":
+        suggestions.append(
+            f"# Increase top margin\nfig.subplots_adjust(top={shrink_top:.2f})"
+        )
+    return suggestions

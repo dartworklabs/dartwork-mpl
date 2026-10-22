@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Literal
 
 from ...formatting import recommend_tick_decimals
 from .._types import Severity, VisualWarning
-from ._registry import register_check
+from ._registry import register_check, register_fix
 from ._tick_utils import iter_view_ticks, split_tick_affixes
 
 if TYPE_CHECKING:
@@ -172,3 +172,15 @@ def check_tick_decimal(
                 )
 
     return warnings
+
+
+@register_fix("TICK_DECIMAL")
+def _fix_tick_decimal(warning: VisualWarning) -> list[str]:
+    axis = warning.detail.get("axis", "y")
+    decimals = int(warning.detail.get("recommended_decimals", 0))
+    return [
+        "# Match tick precision to the tick step\n"
+        f"ax.{axis}axis.set_major_formatter(mticker.StrMethodFormatter('{{x:.{decimals}f}}'))",
+        "# Or let matplotlib choose compact numeric labels\n"
+        f"ax.{axis}axis.set_major_formatter(mticker.ScalarFormatter())",
+    ]
