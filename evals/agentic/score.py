@@ -17,6 +17,9 @@ Per run unit (``RUN_DIR/<host>/<case>/<arm>-r<k>/``, the records tree):
 * ``task_success``: execution, a matching re-run, every check ``ok`` (an
   unchecked result is not a pass), explicit-edit preservation, and no
   contamination (the agent touched grading files: never a success).
+* ``contamination``: recomputed from the stored transcript and rollouts with
+  the current rule (run.py ``contamination``); the value recorded at run
+  time is kept as ``contamination_at_run``.
 * ``inspection_observed``: from ``run.json`` (see run.py).
 """
 
@@ -36,6 +39,7 @@ from pathlib import Path
 import metrics
 import numpy as np
 import oracle
+import run as runner
 from common import (
     DEFAULT_ROOT,
     EVAL_DIR,
@@ -350,8 +354,14 @@ def score_unit(case: dict, unit: Path) -> dict:
         }
     )
     rec["inspection_observed"] = (run.get("inspection") or {}).get("observed")
+    # Recomputed from the stored transcript with the current rule, so a
+    # rescore applies rule fixes without rerunning the agent.
+    rec["contamination_at_run"] = run.get("contamination")
+    recheck = runner.recheck_contamination(run, unit)
+    if recheck is not None:
+        rec["contamination"] = recheck
     rec["contaminated"] = bool(
-        (run.get("contamination") or {}).get("contaminated")
+        (rec.get("contamination") or {}).get("contaminated")
     )
     rec["execution_success"], rec["execution_problems"] = execution(
         unit, project, run

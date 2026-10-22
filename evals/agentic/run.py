@@ -39,6 +39,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
+from itertools import pairwise
 from pathlib import Path
 
 import numpy as np
@@ -748,37 +749,93 @@ def _tool_text(
     return out
 
 
-def contamination(
-    texts: list[str], markers: list[str], work_root: Path, project: Path
-) -> dict:
-    """Any access to the repo, records, eval files or another project marks the run contaminated.
+PATH_TOKEN = re.compile(r"[\w.@+~-]*/[\w.@+~/-]*")
+CONTAMINATION_RULE = "resolved-path-v2"
 
-    Absolute-path markers match only on a path boundary, so the records root
-    ``.../dartwork-mpl-evals`` does not match the work root ``.../dartwork-mpl-evals-work``.
+
+def _resolved_paths(text: str, project: Path) -> set[str]:
+    """Paths named in one tool call or output, resolved against the project.
+
+    Absolute and ``~`` paths are taken as written; relative paths matter
+    only when they climb (``..``) and are resolved from the project, which
+    is every agent's working directory. Symlinks are resolved.
     """
-    hits = []
-    other = re.compile(
-        re.escape(str(work_root))
-        + r"/(?!"
-        + re.escape(project.name)
-        + r"(?:/|$|[^\w.-]))[\w.-]+"
+    out = set()
+    for tok in PATH_TOKEN.findall(text):
+        if tok.endswith(".") and not tok.endswith(("..", "/.")):
+            tok = tok[:-1]  # sentence full stop
+        if tok.startswith("~"):
+            tok = os.path.expanduser(tok)
+        elif not tok.startswith("/"):
+            if ".." not in tok.split("/"):
+                continue
+            tok = os.path.join(project, tok)
+        if tok.startswith("//"):
+            continue  # URL remainder (https://...)
+        out.add(os.path.realpath(os.path.normpath(tok)))
+    return out
+
+
+def _inside(path: str, root: str) -> bool:
+    return path == root or path.startswith(root.rstrip("/") + "/")
+
+
+def contamination(
+    texts: list[str], roots: list, work_root: Path, project: Path
+) -> dict:
+    """An access whose resolved path lies in a grading root marks the run contaminated.
+
+    Grading roots are the repo checkouts (cases, references, scorer), the
+    records tree and every other project under ``work_root``. Each path a
+    tool call or its output names is resolved against the project (see
+    ``_resolved_paths``); a bare ``../`` that stays in the project (``.venv``
+    internals) or reaches only ``work_root`` itself is not an access to
+    grading files. Only absolute ``roots`` count; name fragments such as
+    ``evals/agentic`` are no longer matched as substrings.
+    """
+    grading = sorted(
+        {os.path.realpath(str(r)) for r in roots if os.path.isabs(str(r))}
     )
-    patterns = [
-        (
-            m,
-            re.compile(re.escape(m) + r"(?=/|$|[^\w.-])")
-            if m.startswith("/")
-            else None,
-        )
-        for m in markers
-    ]
+    work = os.path.realpath(str(work_root))
+    own = os.path.realpath(str(project))
+    hits = set()
     for t in texts:
-        hits += [m for m, rx in patterns if (rx.search(t) if rx else m in t)]
-        hits += other.findall(t)
-        if "../" in t and '"command"' in t:
-            hits.append("relative path escape '../'")
-    hits = sorted(set(hits))
-    return {"contaminated": bool(hits), "hits": hits[:20]}
+        for path in _resolved_paths(t, project):
+            if _inside(path, own):
+                continue
+            if any(_inside(path, r) for r in grading) or (
+                path != work and _inside(path, work)  # another agent's project
+            ):
+                hits.add(path)
+    hits = sorted(hits)
+    return {
+        "contaminated": bool(hits),
+        "hits": hits[:20],
+        "rule": CONTAMINATION_RULE,
+    }
+
+
+def grading_roots(rec: dict, unit: Path) -> list[Path]:
+    """Grading roots of a recorded unit: what the sandbox hid, else the repo and records."""
+    cmd = rec.get("command") or []
+    hidden = [Path(b) for a, b in pairwise(cmd) if a == "--tmpfs"]
+    work = Path(rec["project"]).parent if rec.get("project") else None
+    return sorted({*hidden, *repo_roots(), unit.parents[3].resolve()} - {work})
+
+
+def recheck_contamination(rec: dict, unit: Path) -> dict | None:
+    """Recompute contamination of a recorded unit from its stored transcript and rollouts."""
+    if not rec.get("project") or not (unit / "transcript.jsonl").exists():
+        return None
+    lines = _jsonl(unit / "transcript.jsonl")
+    rolls = [_jsonl(p) for p in sorted(unit.glob("rollout*.jsonl"))]
+    project = Path(rec["project"])
+    return contamination(
+        _tool_text(rec["host"], lines, rolls),
+        grading_roots(rec, unit),
+        project.parent,
+        project,
+    )
 
 
 def skill_usage(
@@ -995,17 +1052,9 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
             unit / "artifacts" / "figure.png",
             final_ts,
         )
-        markers = [
-            *map(str, hide[:-1]),
-            "evals/agentic",
-            "fixtures/reference",
-            "run_meta.json",
-            "manifest.json",
-            "score.json",
-        ]
         rec["contamination"] = contamination(
             _tool_text(host, lines, [rollout, *subs]),
-            markers,
+            hide[:-1],
             a.work_root.resolve(),
             project,
         )
