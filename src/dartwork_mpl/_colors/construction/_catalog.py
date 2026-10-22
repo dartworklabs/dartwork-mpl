@@ -1230,30 +1230,31 @@ def _derive_discrete(
                 for size, indices in frozen_multi_hue_indices[name].items()
             }
         for n in range(1, _MAX_DISCRETE_N[kind] + 1):
-            if kind == "sequential":
-                colors = _sequential_discrete(palette[name], n)
-            elif kind == "diverging":
-                colors = _diverging_discrete(
-                    diverging_canonicals[name], cmaps_256[name], n
-                )
-            elif kind == "multi-hue":
-                colors = [
-                    cmaps_256[name][index]
-                    for index in multi_hue_indices[name][str(n)]
-                ]
-            elif kind == "cyclic":
-                row = cmaps_256[name]
-                colors = [
-                    row[min(int(index * len(row) / n), len(row) - 1)]
-                    for index in range(n)
-                ]
-            else:
-                qualitative_row = cycles.get(name)
-                if qualitative_row is None:
-                    qualitative_row = _curated.CURATED.get(name)
-                if qualitative_row is None:
-                    raise ValueError(f"missing qualitative row for {name}")
-                colors = list(qualitative_row[:n])
+            match kind:
+                case "sequential":
+                    colors = _sequential_discrete(palette[name], n)
+                case "diverging":
+                    colors = _diverging_discrete(
+                        diverging_canonicals[name], cmaps_256[name], n
+                    )
+                case "multi-hue":
+                    colors = [
+                        cmaps_256[name][index]
+                        for index in multi_hue_indices[name][str(n)]
+                    ]
+                case "cyclic":
+                    row = cmaps_256[name]
+                    colors = [
+                        row[min(int(index * len(row) / n), len(row) - 1)]
+                        for index in range(n)
+                    ]
+                case "qualitative":
+                    qualitative_row = cycles.get(name)
+                    if qualitative_row is None:
+                        qualitative_row = _curated.CURATED.get(name)
+                    if qualitative_row is None:
+                        raise ValueError(f"missing qualitative row for {name}")
+                    colors = list(qualitative_row[:n])
             forms[str(n)] = colors
         discrete[name] = forms
         reverse_discrete[name] = {

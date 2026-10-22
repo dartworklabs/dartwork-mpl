@@ -7,9 +7,18 @@ from collections.abc import Mapping
 from functools import cache
 from typing import cast
 
+import pytest
+
 from dartwork_mpl._colors import _compatibility_metrics as oracle
 from dartwork_mpl._colors import _curated, _generated
-from dartwork_mpl._colors.catalog._families import FAMILIES
+from dartwork_mpl._colors.catalog._families import (
+    FAMILIES,
+    CyclicFamily,
+    DivergingFamily,
+    MultiHueFamily,
+    QualitativeFamily,
+    SequentialFamily,
+)
 from dartwork_mpl._colors.verify._gates import (
     evaluate_quality_metrics,
     load_quality_baseline,
@@ -129,17 +138,33 @@ def test_family_partition_matches_model_b_catalog() -> None:
 
 def test_family_discrete_sizes_match_model_b_forms() -> None:
     for name in EXPECTED["sequential"]:
-        assert FAMILIES[name].has_continuous
-        assert FAMILIES[name].discrete_size == 10
+        assert FAMILIES[name] == SequentialFamily(discrete_size=10)
     for name in EXPECTED["diverging"]:
-        assert FAMILIES[name].has_continuous
-        assert FAMILIES[name].discrete_size == 8
-    for name in EXPECTED["multi-hue"] | EXPECTED["cyclic"]:
-        assert FAMILIES[name].has_continuous
-        assert FAMILIES[name].discrete_size is None
+        assert FAMILIES[name] == DivergingFamily(discrete_size=8)
+    for name in EXPECTED["multi-hue"]:
+        assert FAMILIES[name] == MultiHueFamily()
+    for name in EXPECTED["cyclic"]:
+        assert FAMILIES[name] == CyclicFamily()
     for name in EXPECTED["qualitative"]:
-        assert not FAMILIES[name].has_continuous
-        assert FAMILIES[name].discrete_size == 8
+        assert FAMILIES[name] == QualitativeFamily(discrete_size=8)
+
+
+@pytest.mark.parametrize(
+    "variant", [SequentialFamily, DivergingFamily, QualitativeFamily]
+)
+@pytest.mark.parametrize("size", [0, -1, True])
+def test_family_variants_reject_a_form_without_colours(
+    variant: type[SequentialFamily | DivergingFamily | QualitativeFamily],
+    size: int,
+) -> None:
+    with pytest.raises(ValueError, match="discrete_size must be a positive"):
+        variant(discrete_size=size)
+
+
+def test_family_kind_is_the_variant_label() -> None:
+    assert {type(family).kind for family in FAMILIES.values()} == set(EXPECTED)
+    for name, family in FAMILIES.items():
+        assert name in EXPECTED[family.kind]
 
 
 def test_sequential_and_multi_hue_lut_keep_raw_y_oklab_topology() -> None:
