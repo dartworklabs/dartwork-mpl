@@ -8,7 +8,11 @@ prompt: Highlight Korea and make the other countries grey.
 data: [gdp_growth.csv]
 base: b01_gdp_lines.py
 edit_scope: explicit
-target: [ax*.line.*.color, ax*.line.*.lw, ax*.line.*.marker, ax*.line.*.ms, ax*.line.*.alpha, ax*.line.*.zorder]
+# Greying the other series makes legend colours ambiguous, so the highlight may
+# replace the legend with one direct label per series (and shrink the plot to fit).
+target: [ax*.line.*.color, ax*.line.*.lw, ax*.line.*.marker, ax*.line.*.ms, ax*.line.*.alpha, ax*.line.*.zorder,
+  ax*.line.*.label, ax*.legend.*, 'ax*.text:*', ax*.position, ax*.xlim, ax*.*.pos]
+max_new_texts: 5
 auxiliary: [reference_lines]
 oracle:
 - type: highlight

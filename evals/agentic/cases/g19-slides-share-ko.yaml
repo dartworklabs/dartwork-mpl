@@ -13,6 +13,8 @@ oracle:
   file: market_share.csv
   category:
     col: company
+    aliases:
+      Others: [Others, Other, 기타]
   value: share_pct
   scales: [1, 0.01]
 - type: preset

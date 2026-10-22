@@ -14,11 +14,13 @@ from __future__ import annotations
 import math
 from itertools import pairwise
 
+import derived
 import estimators
 import numpy as np
 from metrics import TICK_ROLES
 from spec_checks import SPEC_CHECKS, saved_size_cm
 from views import (
+    SCALE_UNITS,
     candidates,
     center,
     data_axes,
@@ -37,6 +39,7 @@ from views import (
     series_match,
     table,
     texts,
+    unit_text,
 )
 
 DATA_CONTRACTS = {
@@ -68,17 +71,36 @@ def c_series(c, probe, base):
         if k["kind"] in c.get("artists", ["line", "bars", "scatter"])
     ]
     kind = (c.get("x") or {"kind": "order"})["kind"]
+    every = [s["aliases"] for s in c["series"]]
     used: set = set()
-    axes, problems = [], []
+    axes, problems, notes = [], [], []
     for s in c["series"]:
         xs, ys = expected_series(c, s)
+        label = s["aliases"][0]
         hits = [
             k
             for k in cands
             if k["id"] not in used
             and series_match(k, xs, ys, kind, c.get("scales", [1]))
         ]
-        label = s["aliases"][0]
+        if (
+            not hits
+        ):  # one consistent display scale, accepted only with its unit visible
+            for f in SCALE_UNITS:
+                scaled = [
+                    k
+                    for k in cands
+                    if k["id"] not in used
+                    and series_match(k, xs, ys, kind, (f,))
+                    and unit_text(snap, {k["ax"]}, f)
+                ]
+                if scaled:
+                    hits = scaled
+                    notes.append(
+                        f"{label} plotted x{f:g} with unit "
+                        f"'{unit_text(snap, {scaled[0]['ax']}, f)}'"
+                    )
+                    break
         if not hits:
             problems.append(
                 f"{label}: no visible artist with this data/order/NaN mask"
@@ -90,7 +112,7 @@ def c_series(c, probe, base):
                 for k in hits
                 if any(
                     named(t, s["aliases"])
-                    for t in identity_texts(snap, k, allc)
+                    for t in identity_texts(snap, k, every)
                 )
             ]
             if not hits:
@@ -113,7 +135,9 @@ def c_series(c, probe, base):
         problems.append("series that need their own panels share one")
     return (
         not problems,
-        "; ".join(problems) or "all series matched one-to-one with identity",
+        "; ".join(
+            problems or ["all series matched one-to-one with identity", *notes]
+        ),
         used,
     )
 
@@ -185,6 +209,20 @@ def _layout_problems(matched: list[tuple], layout: str) -> list[str]:
 
 
 def c_bars(c, probe, base):
+    """Category (and series) -> value for every bar; a display scale needs its unit visible."""
+    res = _bars_once(c, probe)
+    if res[0]:
+        return res
+    snap = probe["snapshot"]
+    for f in SCALE_UNITS:
+        ok, detail, ids = _bars_once({**c, "scales": [f]}, probe)
+        unit = unit_text(snap, {i for _, i, _ in ids}, f) if ok else None
+        if unit:
+            return True, f"{detail}; plotted x{f:g} with unit '{unit}'", ids
+    return res
+
+
+def _bars_once(c, probe):
     obs = [
         b
         for b in observed_bars(probe["snapshot"])
@@ -451,7 +489,7 @@ def c_dist(c, probe, base):
     """Each group must be drawn by one accepted form recomputed from its raw values."""
     snap = probe["snapshot"]
     aliases = c["by"].get("aliases") or {}
-    accept = c.get("accept", ["hist", "box", "violin", "kde"])
+    accept = c.get("accept", ["hist", "box", "violin", "kde", "ecdf"])
     status, problems, used = {}, [], set()
     for g, vals in _dist_groups(c).items():
         al = [g, *aliases.get(g, [])]
@@ -467,6 +505,19 @@ def c_dist(c, probe, base):
                         if estimators.hist_ok(b, vals):
                             passed = True
                             used.add(("bars", i, j))
+                for j, st in enumerate(d.get("steps", [])):
+                    if st["visible"] and any(
+                        named(n, al) for n in [st["label"], *st["legend"]]
+                    ):
+                        seen = True
+                        if any(
+                            estimators.edges_hist_ok(
+                                o["edges"], o["values"], vals
+                            )
+                            for o in st["outlines"]
+                        ):
+                            passed = True
+                            used.add(("steps", i, j))
             if "kde" in accept:
                 for j, ln in enumerate(d["lines"]):
                     if (
@@ -482,6 +533,19 @@ def c_dist(c, probe, base):
                         if estimators.kde_ok(ln["x"], ln["y"], vals):
                             passed = True
                             used.add(("line", i, j))
+            if "ecdf" in accept:
+                for j, ln in enumerate(d["lines"]):
+                    if (
+                        ln["data"]
+                        and ln["visible"]
+                        and any(
+                            named(n, al)
+                            for n in [ln["label"], *ln.get("legend", [])]
+                        )
+                        and estimators.ecdf_ok(ln["x"], ln["y"], vals)
+                    ):
+                        seen = passed = True
+                        used.add(("line", i, j))
             if "box" in accept:
                 ok, ids = _box(d, al, vals, i)
                 if ok is not None:
@@ -719,8 +783,59 @@ def _reference(k: dict) -> bool:
     return len(ys) >= 2 and (np.ptp(ys) == 0 or np.ptp(xs) == 0)
 
 
-def unexplained(snap: dict, matched: set, auxiliary: list[str]) -> list[str]:
+def _flat(checks: list[dict]) -> list[dict]:
     out = []
+    for c in checks:
+        out += _flat(c["checks"]) if c["type"] == "any_of" else [c]
+    return out
+
+
+def input_pools(checks: list[dict], snap: dict, matched: set) -> derived.Pools:
+    """Value groups, observation pairs and data files the contracts declare, plus claimed points."""
+    groups, dist, pairs, files = [], [], [], set()
+    for c in _flat(checks):
+        if "file" not in c:
+            continue
+        files.add(c["file"])
+        if c["type"] == "series":
+            kind = (c.get("x") or {"kind": "order"})["kind"]
+            for s in c["series"]:
+                xs, ys = expected_series(c, s)
+                groups.append(fin(ys))
+                if kind in ("num", "date"):
+                    pairs.append(
+                        [
+                            (a, b)
+                            for a, b in zip(xs, ys, strict=True)
+                            if None not in (a, b)
+                        ]
+                    )
+        elif c["type"] == "dist":
+            dist += list(_dist_groups(c).values())
+        elif c["type"] in ("points", "fits"):
+            for pts in _groups(c).values():
+                ok = [(a, b) for a, b in pts if None not in (a, b)]
+                pairs.append(ok)
+                groups += [[a for a, _ in ok], [b for _, b in ok]]
+        elif c["type"] == "bars":
+            groups.append(fin(expected_bars(c).values()))
+    claimed = [k for k in candidates(snap) if k["id"] in matched]
+    return derived.build(groups, dist, pairs, files, claimed)
+
+
+def unexplained(
+    snap: dict,
+    matched: set,
+    auxiliary: list[str],
+    checks: list[dict] | None = None,
+) -> tuple[list[str], dict]:
+    """Visible data artists no contract claimed and no derivation rule explains.
+
+    Returns the unexplained artists and, for the explained-by-derivation ones,
+    the rule that explained each (reported in the check detail).
+    """
+    pools = input_pools(checks or [], snap, matched)
+    out, why = [], {}
     for k in candidates(snap):
         if k["id"] in matched:
             continue
@@ -732,17 +847,21 @@ def unexplained(snap: dict, matched: set, auxiliary: list[str]) -> list[str]:
             continue
         if k["kind"] == "line" and "fit_lines" in auxiliary and _straight(k):
             continue
+        rule = derived.reason(k, snap, pools)
+        if rule:
+            why[rule] = why.get(rule, 0) + 1
+            continue
         out.append(
             f"{k['kind']} {_label_names(k) or k['label']} on axes {k['ax']}"
         )
-    return out
+    return out, why
 
 
 def c_any_of(c, probe, base):
     res = check_oracle(c["checks"], probe, base)
     states = [r["ok"] for r in res]
     ok = True if True in states else (None if None in states else False)
-    used = set().union(*(r.get("matched", set()) for r in res if r["ok"]))
+    used = set().union(*(r.get("matched", set()) for r in res))
     return (
         ok,
         "; ".join(f"{r['name']}:{r['ok']} ({r['detail']})" for r in res),
@@ -781,8 +900,7 @@ def check_oracle(
         except Exception as exc:  # noqa: BLE001 - a malformed figure fails the check, not the run
             res = (False, f"error: {type(exc).__name__}: {exc}")
         ok, detail, used = (*res, set()) if len(res) == 2 else res
-        if ok:
-            matched |= used
+        matched |= used  # claimed even when the contract fails: it already fails the figure
         out.append(
             {
                 "type": chk["type"],
@@ -796,7 +914,10 @@ def check_oracle(
     if figure and any(
         c["type"] in DATA_CONTRACTS or c["type"] == "any_of" for c in checks
     ):
-        extra = unexplained(probe["snapshot"], matched, auxiliary or [])
+        extra, why = unexplained(
+            probe["snapshot"], matched, auxiliary or [], checks
+        )
+        derived_note = ", ".join(f"{n} {r}" for r, n in sorted(why.items()))
         out.append(
             {
                 "type": "explained",
@@ -804,7 +925,8 @@ def check_oracle(
                 "name": "no unexplained data artists",
                 "ok": not extra,
                 "detail": "; ".join(extra[:8])
-                or "every visible data artist is accounted for",
+                or "every visible data artist is accounted for"
+                + (f" (derived: {derived_note})" if why else ""),
                 "matched": set(),
             }
         )

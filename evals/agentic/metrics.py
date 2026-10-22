@@ -240,16 +240,32 @@ def _same(key: str, a, b) -> bool:
     return a == b
 
 
+def _new_texts(base: dict, edit: dict) -> set[str]:
+    """Texts (axes or figure) present in the edit but not in the base."""
+    return {
+        k.rsplit(".", 1)[0]
+        for k in edit
+        if k not in base and re.match(r"(ax\d+|figure)\.text:", k)
+    }
+
+
 def preservation(
-    base: dict | None, edit: dict | None, scope: str, target: list[str]
+    base: dict | None,
+    edit: dict | None,
+    scope: str,
+    target: list[str],
+    max_new_texts: int | None = None,
 ) -> dict:
     """Diff the flat property maps of the base and edited figures.
 
     ``explicit`` edits: every base property no ``target`` pattern matches must
     be unchanged (placement keys within POSITION_TOL), and no new non-target
-    property may appear (an added line, text or legend fails). A missing base
-    or edited snapshot fails. ``broad`` edits: the diff is reported only
-    (``ok`` is None); data preservation is enforced by the data contracts.
+    property may appear (an added line, text or legend fails). ``target`` is
+    the case's declared set of properties the requested change legitimately
+    touches; when it admits new texts, ``max_new_texts`` caps how many (e.g.
+    one end label per series). A missing base or edited snapshot fails.
+    ``broad`` edits: the diff is reported only (``ok`` is None); data
+    preservation is enforced by the data contracts.
     """
     if not base or not edit:
         return {
@@ -271,6 +287,8 @@ def preservation(
         k for k in keys if k not in edit or not _same(k, base[k], edit[k])
     )
     added = sorted(k for k in edit if k not in base and not is_target(k))
+    new_texts = sorted(_new_texts(base, edit))
+    too_many = max_new_texts is not None and len(new_texts) > max_new_texts
     return {
         "scope": scope,
         "checked": len(keys),
@@ -278,6 +296,10 @@ def preservation(
         "changed_n": len(changed),
         "added": added[:30],
         "added_n": len(added),
+        "new_texts": new_texts[:30],
+        "max_new_texts": max_new_texts,
         "rate": round(1 - len(changed) / len(keys), 4) if keys else None,
-        "ok": (not changed and not added) if scope == "explicit" else None,
+        "ok": (not changed and not added and not too_many)
+        if scope == "explicit"
+        else None,
     }

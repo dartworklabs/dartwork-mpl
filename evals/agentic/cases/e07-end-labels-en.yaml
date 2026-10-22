@@ -8,7 +8,8 @@ prompt: Label each line at its end instead of using a legend.
 data: [gdp_growth.csv]
 base: b01_gdp_lines.py
 edit_scope: explicit
-target: [ax*.legend.*, ax*.position, ax*.xlim, ax*.xticks, 'ax*.text:*', ax*.*.pos]
+target: [ax*.legend.*, ax*.line.*.label, ax*.position, ax*.xlim, ax*.xticks, 'ax*.text:*', ax*.*.pos]
+max_new_texts: 5
 oracle:
 - type: end_labels
   group: spec

@@ -288,6 +288,7 @@ def evaluate(case: dict, probe: dict, base: dict | None) -> dict:
             probe["snapshot"]["props"],
             case["edit_scope"],
             case["target"],
+            case.get("max_new_texts"),
         )
         if base and base.get("snapshot"):
             rec["base_defects"] = metrics.defects(base)["counts"]

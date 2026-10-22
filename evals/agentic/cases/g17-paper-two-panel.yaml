@@ -63,11 +63,10 @@ oracle:
   group: spec
   name: two panels
   n: 2
-- type: regex
+- type: panel_labels
   group: spec
   name: panel labels a/b
-  pattern: ^\s*\(?[aAbB]\)?[.:]?\s*$
-  min: 2
+  labels: [a, b]
 - type: size
   group: spec
   name: double-column width

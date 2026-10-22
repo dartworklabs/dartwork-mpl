@@ -13,6 +13,7 @@ import numpy as np
 from metrics import TICK_ROLES, defects
 from views import (
     candidates,
+    center,
     data_axes,
     expected_series,
     named,
@@ -43,6 +44,59 @@ def c_regex(c, probe, base):
         if pat.search(t["s"])
     )
     return n >= c.get("min", 1), f"{n} texts match {c['pattern']!r}"
+
+
+PANEL_LABEL_ROLES = {"title", "title_left", "title_right", "text", "annotation"}
+
+
+def c_panel_labels(c, probe, base):
+    """Each panel label (a, b, ...) leads a text of its own data panel.
+
+    A label is the text's first token, optionally in brackets or followed
+    by ``.``/``:`` (``a``, ``(a)``, ``A.``, ``(a) Annual growth``). Figure
+    texts belong to the panel whose top-left corner is nearest.
+    """
+    snap = probe["snapshot"]
+    panels = {a["index"]: a["position"] for a in snap["axes"] if a["has_data"]}
+
+    def owner(t):
+        if t["ax"] is not None:
+            return t["ax"] if t["role"] in PANEL_LABEL_ROLES else None
+        if t["role"] != "figtext" or not panels:
+            return None
+        cx, cy = center(t)
+        return min(
+            panels,
+            key=lambda i: (
+                (cx - panels[i][0]) ** 2
+                + (cy - panels[i][1] - panels[i][3]) ** 2
+            ),
+        )
+
+    found: dict[str, set] = {}
+    for lab in c["labels"]:
+        rx = re.compile(
+            rf"^\s*[(\[]?{re.escape(lab)}[)\].:]?(?=\s|$)", re.IGNORECASE
+        )
+        found[lab] = {
+            o
+            for t in snap["texts"]
+            if rx.search(t["s"]) and (o := owner(t)) is not None
+        }
+    used: set = set()
+    missing = []
+    for lab, owners in found.items():
+        free = sorted(owners - used)
+        if free:
+            used.add(free[0])
+        else:
+            missing.append(lab)
+    return (
+        not missing,
+        f"labels without their own panel: {missing}"
+        if missing
+        else f"labels {list(found)} lead texts of distinct panels",
+    )
 
 
 def saved_size_cm(probe: dict) -> tuple[float, float]:
@@ -285,6 +339,7 @@ def c_not_worse(c, probe, base):
 SPEC_CHECKS = {
     "text": c_text,
     "regex": c_regex,
+    "panel_labels": c_panel_labels,
     "size": c_size,
     "scale": c_scale,
     "twin": c_twin,

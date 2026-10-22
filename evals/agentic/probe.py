@@ -34,6 +34,7 @@ import numpy as np
 from matplotlib import colors as mcolors
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.collections import (
+    Collection,
     LineCollection,
     PathCollection,
     PolyCollection,
@@ -43,7 +44,8 @@ from matplotlib.container import BarContainer, ErrorbarContainer
 from matplotlib.figure import Figure
 from matplotlib.image import AxesImage
 from matplotlib.legend import Legend
-from matplotlib.patches import PathPatch, Polygon, Rectangle
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch, PathPatch, Polygon, Rectangle, StepPatch
 from matplotlib.text import Text
 
 MAX_POINTS = 4000
@@ -179,17 +181,64 @@ def _patch_legend() -> None:
 _patch_legend()
 
 
+def _colors_of(a) -> set[str]:
+    """Primary colours of a drawn artist or a legend handle (hex, alpha dropped)."""
+    if isinstance(a, BarContainer):
+        cs = [p.get_facecolor() for p in a.patches[:1]]
+    elif isinstance(a, Line2D):
+        cs = [a.get_color()]
+        if a.get_marker() not in (None, "None", "none", "", " "):
+            cs.append(a.get_markerfacecolor())
+    elif isinstance(a, Collection):
+        cs = list(a.get_facecolor()) or list(a.get_edgecolor())
+    elif isinstance(a, Patch):
+        cs = [a.get_facecolor()] if a.get_fill() else [a.get_edgecolor()]
+    else:
+        cs = []
+    return {h for h in map(_hex, cs) if h}
+
+
+def _is_proxy(handle) -> bool:
+    """A legend handle that is not itself drawn (``Line2D([], [])``, ``Patch(color=...)``)."""
+    return (
+        isinstance(handle, (Line2D, Patch, Collection))
+        and getattr(handle, "axes", None) is None
+    )
+
+
 def _legend_names(fig: Figure) -> dict[int, list[str]]:
-    """id(original artist or container) -> legend texts naming it (visible legends only)."""
+    """id(original artist or container) -> legend texts naming it (visible legends only).
+
+    A proxy handle (not drawn itself) names every data artist of the
+    legend's axes with the same colour, provided no other entry of that
+    legend uses that colour.
+    """
     out: dict[int, list[str]] = {}
     legends = [ax.get_legend() for ax in fig.get_axes()] + list(fig.legends)
     for lg in legends:
         if lg is None or not lg.get_visible():
             continue
-        for handle, label in getattr(lg, "_eval_pairs", []):
+        pairs = getattr(lg, "_eval_pairs", [])
+        proxies = [(h, lab, _colors_of(h)) for h, lab in pairs if _is_proxy(h)]
+        owners = Counter(c for _, _, cs in proxies for c in cs)
+        scope = [lg.axes] if lg.axes is not None else fig.get_axes()
+        drawn = [
+            a
+            for ax in scope
+            for a in (
+                *ax.get_lines(),
+                *ax.collections,
+                *ax.patches,
+                *ax.containers,
+            )
+        ]
+        for handle, label in pairs:
             targets = [handle]
             if isinstance(handle, ErrorbarContainer) and handle.lines:
                 targets.append(handle.lines[0])
+            if _is_proxy(handle):
+                cs = {c for c in _colors_of(handle) if owners[c] == 1}
+                targets += [a for a in drawn if cs & _colors_of(a)]
             for t in targets:
                 out.setdefault(id(t), []).append(label)
     return out
@@ -267,6 +316,34 @@ def _install_patches(use_dm: bool) -> None:
 
 
 # --------------------------------------------------------------- snapshot
+def _titles(ax) -> list[tuple[str, Text]]:
+    """Centre, left and right title artists, found through the public API.
+
+    ``ax.get_title(loc)`` gives each title's text; the artist is the child
+    Text with that text and that alignment that is not an ``ax.text`` call.
+    """
+    out = [("title", ax.title)]
+    own = {id(t) for t in ax.texts} | {id(ax.title)}
+    kids = [
+        c for c in ax.get_children() if isinstance(c, Text) and id(c) not in own
+    ]
+    for role, loc in (("title_left", "left"), ("title_right", "right")):
+        s = ax.get_title(loc)
+        hit = next(
+            (
+                c
+                for c in kids
+                if s
+                and c.get_text() == s
+                and c.get_horizontalalignment() == loc
+            ),
+            None,
+        )
+        if hit is not None:
+            out.append((role, hit))
+    return out
+
+
 def _roles(fig: Figure, axes: list) -> dict[int, tuple[str, int | None]]:
     roles: dict[int, tuple[str, int | None]] = {}
     for name, attr in (
@@ -285,9 +362,7 @@ def _roles(fig: Figure, axes: list) -> dict[int, tuple[str, int | None]]:
         roles[id(lg.get_title())] = ("legend_title", None)
     for i, ax in enumerate(axes):
         for role, t in (
-            ("title", ax.title),
-            ("title_left", ax._left_title),
-            ("title_right", ax._right_title),
+            *_titles(ax),
             ("xlabel", ax.xaxis.label),
             ("ylabel", ax.yaxis.label),
             ("offset", ax.xaxis.offsetText),
@@ -492,6 +567,60 @@ def _seg(x0, y0, x1, y1) -> tuple[str, list] | None:
     return None
 
 
+def _step_outline(patch, inv) -> dict | None:
+    """Bin edges and heights of a step histogram patch (``stairs`` or ``hist`` step types).
+
+    ``StepPatch`` gives them directly. A ``Polygon`` in data coordinates is
+    read from its outline: left-to-right horizontal runs (vertical bins) or
+    bottom-to-top vertical runs (horizontal bins), contiguous and at least
+    three bins long. A monotonic outline can read both ways, so every valid
+    reading is kept in ``outlines`` and a check accepts any of them.
+    """
+    if not patch.get_transform().contains_branch(patch.axes.transData):
+        return None
+    if isinstance(patch, StepPatch):
+        values, edges, baseline = patch.get_data()
+        base = np.broadcast_to(
+            np.asarray(0 if baseline is None else baseline, dtype=float),
+            np.shape(values),
+        )
+        orient = "h" if patch.orientation == "horizontal" else "v"
+        heights = _floats(np.asarray(values, dtype=float) - base)
+        return {
+            "outlines": [
+                {
+                    "orientation": orient,
+                    "edges": _floats(edges),
+                    "values": heights,
+                }
+            ]
+        }
+    if not isinstance(patch, Polygon):
+        return None
+    v = inv.transform(patch.get_transform().transform(patch.get_xy()))
+    if not np.all(np.isfinite(v)):
+        return None
+    span = float(np.ptp(v)) or 1.0
+    outlines = []
+    for orient, a, b in (("v", 0, 1), ("h", 1, 0)):
+        runs = [
+            (p[a], q[a], p[b])
+            for p, q in pairwise(v)
+            if p[b] == q[b] and q[a] > p[a]
+        ]
+        if len(runs) >= 3 and all(
+            abs(r[1] - s[0]) <= 1e-9 * span for r, s in pairwise(runs)
+        ):
+            outlines.append(
+                {
+                    "orientation": orient,
+                    "edges": _floats([runs[0][0], *[r[1] for r in runs]]),
+                    "values": _floats([r[2] for r in runs]),
+                }
+            )
+    return {"outlines": outlines} if outlines else None
+
+
 def _axes_data(ax, i: int, renderer, names: dict[int, list[str]]) -> dict:
     inv = ax.transData.inverted()
     fig_bb = ax.figure.bbox
@@ -502,6 +631,7 @@ def _axes_data(ax, i: int, renderer, names: dict[int, list[str]]) -> dict:
         "scatter": [],
         "polys": [],
         "paths": [],
+        "steps": [],
         "hsegs": [],
         "vsegs": [],
         "images": [],
@@ -521,8 +651,13 @@ def _axes_data(ax, i: int, renderer, names: dict[int, list[str]]) -> dict:
     for ln in ax.get_lines():
         xy = ln.get_xydata()[:MAX_POINTS]
         ok = np.all(np.isfinite(xy), axis=1)
-        end = None
+        end, figxy = None, None
         if ok.any():
+            disp = ln.get_transform().transform(xy[ok][:8])
+            figxy = [
+                [round(px / fig_bb.width, 4), round(py / fig_bb.height, 4)]
+                for px, py in disp
+            ]
             ex, ey = ln.get_transform().transform(xy[ok][-1])
             end = [round(ex / fig_bb.width, 4), round(ey / fig_bb.height, 4)]
         rec = {
@@ -541,6 +676,7 @@ def _axes_data(ax, i: int, renderer, names: dict[int, list[str]]) -> dict:
             "data": bool(ln.get_transform().contains_branch(ax.transData)),
             "part": parts.get(id(ln)),
             "end": end,
+            "figxy": figxy if ok.sum() <= 8 else None,
         }
         d["lines"].append(rec)
         if len(xy) == 2 and np.all(np.isfinite(xy)) and rec["data"]:
@@ -614,6 +750,21 @@ def _axes_data(ax, i: int, renderer, names: dict[int, list[str]]) -> dict:
     for patch in ax.patches:
         if id(patch) in in_bars or not patch.get_visible():
             continue
+        step = _step_outline(patch, inv)
+        if step:
+            d["steps"].append(
+                {
+                    **step,
+                    "label": patch.get_label(),
+                    "legend": names.get(id(patch), []),
+                    "color": _hex(
+                        patch.get_facecolor()
+                        if patch.get_fill()
+                        else patch.get_edgecolor()
+                    ),
+                    "visible": _patch_visible(patch),
+                }
+            )
         if isinstance(patch, PathPatch) or (
             isinstance(patch, Polygon)
             and patch.get_transform().contains_branch(ax.transData)
@@ -801,9 +952,7 @@ def _props(
                 round(sp.get_linewidth(), 3),
             ]
         for role, t in (
-            ("title", ax.title),
-            ("title_left", ax._left_title),
-            ("title_right", ax._right_title),
+            *_titles(ax),
             ("xlabel", ax.xaxis.label),
             ("ylabel", ax.yaxis.label),
         ):
@@ -835,13 +984,21 @@ def _props(
             ("bars", data[i]["bars"]),
             ("scatter", data[i]["scatter"]),
         ):
-            for j, a in enumerate(items):
-                name = (
-                    a["label"]
-                    if a["label"] and not a["label"].startswith("_")
-                    else f"#{j}"
+            for a in items:
+                # Keyed by the data it draws, so relabelling or re-ordering
+                # artists does not look like a change of every property.
+                digest = (
+                    _digest(a["pos"])[:4]
+                    + _digest(a["values"])[:4]
+                    + _digest(a["base"])[:4]
+                    if kind == "bars"
+                    else _digest(a["x"])[:6] + _digest(a["y"])[:6]
                 )
-                q = unique(f"{k}.{kind}.{name.replace('.', '_')}")
+                q = unique(f"{k}.{kind}.{digest}")
+                label = a["label"]
+                p[f"{q}.label"] = (
+                    label if label and not label.startswith("_") else None
+                )
                 p[f"{q}.visible"] = a["visible"]
                 p[f"{q}.alpha"] = a["alpha"]
                 if kind == "line":
@@ -852,19 +1009,8 @@ def _props(
                     )
                     p[f"{q}.marker"], p[f"{q}.ms"] = a["marker"], a["ms"]
                     p[f"{q}.zorder"] = a["zorder"]
-                    p[f"{q}.data"] = _digest(a["x"]) + ":" + _digest(a["y"])
-                elif kind == "bars":
-                    p[f"{q}.colors"] = a["colors"]
-                    p[f"{q}.data"] = (
-                        _digest(a["pos"])
-                        + ":"
-                        + _digest(a["values"])
-                        + ":"
-                        + _digest(a["base"])
-                    )
                 else:
                     p[f"{q}.colors"] = a["colors"]
-                    p[f"{q}.data"] = _digest(a["x"]) + ":" + _digest(a["y"])
     return p
 
 

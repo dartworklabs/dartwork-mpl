@@ -14,4 +14,4 @@ oracle:
   value: response_ms
   by:
     col: variant
-  accept: [hist, box, violin, kde]
+  accept: [hist, box, violin, kde, ecdf]

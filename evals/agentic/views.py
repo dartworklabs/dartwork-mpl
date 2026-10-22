@@ -14,10 +14,10 @@ from itertools import pairwise
 from pathlib import Path
 
 import numpy as np
-from metrics import TICK_ROLES
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "data"
 NAMING_ROLES = {"title", "title_left", "title_right", "ylabel"}
+END_LABEL_ROLES = {"text", "annotation", "figtext"}
 NUM_RE = re.compile(r"[-+]?\d+(?:\.\d+)?")
 
 
@@ -199,19 +199,54 @@ def candidates(snap: dict) -> list[dict]:
     return out
 
 
-def identity_texts(snap: dict, cand: dict, all_cands: list[dict]) -> list[str]:
-    """Texts that name ``cand``: its label, legend entries for it, its panel (if alone there), an end label."""
+def panel_names(snap: dict, ax: int, series: list[list[str]]) -> list[str]:
+    """Texts by which panel ``ax`` names one series of ``series`` (alias lists).
+
+    Tiers, first that names anything wins: the panel's centre/left/right
+    titles and y label; then texts placed inside the panel; then, for a
+    figure with a single data panel, the suptitle and figure texts. Within a
+    tier only texts that name exactly one series count (a combined title
+    such as "Sessions and signups" names no single artist); if those name
+    different series, the top-most one (read first) decides. A tier whose
+    texts all name several series names none: a reader could not tell
+    which artist is which.
+    """
+    tiers = [
+        texts(snap, NAMING_ROLES, ax=ax),
+        texts(snap, {"text", "annotation"}, ax=ax),
+        texts(snap, {"suptitle", "figtext"})
+        if len(data_axes(snap)) == 1
+        else [],
+    ]
+    for tier in tiers:
+        naming = [
+            (t, {k for k, al in enumerate(series) if named(t["s"], al)})
+            for t in tier
+        ]
+        naming = [(t, ks) for t, ks in naming if ks]
+        if not naming:
+            continue
+        single = [(t, ks) for t, ks in naming if len(ks) == 1]
+        if not single:
+            return []
+        _, top = max(single, key=lambda n: (center(n[0])[1], -center(n[0])[0]))
+        return [t["s"] for t, ks in single if ks == top]
+    return []
+
+
+def identity_texts(
+    snap: dict, cand: dict, series: list[list[str]]
+) -> list[str]:
+    """Texts that name ``cand``: its label, its legend entries, its panel's name, an end label."""
     names = list(cand.get("legend") or [])
     if cand["label"] and not cand["label"].startswith("_"):
         names.append(cand["label"])
-    peers = [
-        c for c in all_cands if c["ax"] == cand["ax"] and len(fin(c["y"])) >= 3
-    ]
-    if len(peers) <= 1:
-        names += [t["s"] for t in texts(snap, NAMING_ROLES, ax=cand["ax"])]
+    names += panel_names(snap, cand["ax"], series)
     if cand["end"]:
         ex, ey = cand["end"]
-        for t in texts(snap, exclude=TICK_ROLES | {"legend", "legend_title"}):
+        for t in texts(snap, END_LABEL_ROLES):
+            if t["ax"] not in (cand["ax"], None):
+                continue  # another panel's text is not this line's label
             q = np.asarray(t["quad"])
             if (
                 -0.03 <= q[:, 0].min() - ex <= 0.15
@@ -219,6 +254,31 @@ def identity_texts(snap: dict, cand: dict, all_cands: list[dict]) -> list[str]:
             ):
                 names.append(t["s"])
     return names
+
+
+# Display scale factors (plotted = value * factor) and the visible unit that
+# must accompany each one: a label, title, legend or tick formatter text.
+SCALE_UNITS = {
+    1e-3: r"thousand|000s|'000|\(k\)|\bk\)|\d\s?k\b|\(천|천\s?(명|단위|건|원|개)",
+    1e-4: r"\(만|만\s?(명|단위|건|원|개)",
+    1e-6: r"million|\bmn\b|\(m\)|\d\s?m\b|백만",
+    1e-8: r"억",
+    1e-9: r"billion|\bbn\b|\(b\)|\d\s?b\b|십억",
+    1e2: r"%|percent|퍼센트",
+    1e-2: r"%|percent|퍼센트",
+}
+
+
+def unit_text(snap: dict, axes: set[int], factor: float) -> str | None:
+    """A visible text in ``axes`` (or figure-level, single panel) stating the unit of ``factor``."""
+    pattern = SCALE_UNITS.get(factor)
+    if not pattern:
+        return None
+    rx = re.compile(pattern, re.IGNORECASE)
+    pool = [t for t in snap["texts"] if t["ax"] in axes]
+    if len(data_axes(snap)) == 1:
+        pool += [t for t in snap["texts"] if t["ax"] is None]
+    return next((t["s"] for t in pool if rx.search(t["s"])), None)
 
 
 def nearest_tick(ticks: list, pos: float) -> str | None:

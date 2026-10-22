@@ -8,7 +8,8 @@ prompt: 범례 대신 각 선의 끝에 이름을 붙여 주세요.
 data: [energy_mix.csv]
 base: b06_energy_lines.py
 edit_scope: explicit
-target: [ax*.legend.*, ax*.position, ax*.xlim, ax*.xticks, 'ax*.text:*', ax*.*.pos]
+target: [ax*.legend.*, ax*.line.*.label, ax*.position, ax*.xlim, ax*.xticks, 'ax*.text:*', ax*.*.pos]
+max_new_texts: 5
 oracle:
 - type: end_labels
   group: spec

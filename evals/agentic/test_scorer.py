@@ -289,5 +289,8 @@ def test_explicit_preservation_flags_non_target_change():
     target = ["ax*.xlabel.fontsize"]
     assert metrics.preservation(base, same, "explicit", target)["ok"] is True
     res = metrics.preservation(base, changed, "explicit", target)
-    assert res["ok"] is False and res["changed"] == ["ax0.line.Korea.lw"]
+    # series properties are keyed by the data they draw; the one change is Korea's width
+    (key,) = res["changed"]
+    assert res["ok"] is False and key.endswith(".lw")
+    assert base[key.removesuffix(".lw") + ".label"] == "Korea"
     assert metrics.preservation(base, changed, "broad", ["*"])["ok"] is None

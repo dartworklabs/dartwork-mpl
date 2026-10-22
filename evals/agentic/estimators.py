@@ -9,7 +9,13 @@ Each form is recomputed from the frozen raw observations:
   positive scale factor, a Gaussian kernel density of the raw values for some
   bandwidth (searched, then refined) within ``KDE_TOL`` of the peak;
 * box: the median line and the box edges (Q1, Q3, linear percentiles) at the
-  group's tick.
+  group's tick;
+* ECDF: every distinct observation is a vertex, and at every vertex the
+  height lies between the share (or percent, or count) of observations < x
+  and <= x: its jump at an observation, exactly the share elsewhere.
+
+Step histograms (``stairs``, ``hist(histtype="step"|"stepfilled")``) are read
+as bin edges plus heights and checked like bars.
 """
 
 from __future__ import annotations
@@ -32,15 +38,50 @@ def hist_ok(bar: dict, vals: np.ndarray) -> bool:
         e0[1:], e0[:-1] + w[:-1], rtol=0, atol=1e-6 * (np.ptp(e0) or 1)
     ):
         return False  # not contiguous bins
-    counts = np.histogram(vals, bins=np.append(e0, e0[-1] + w[-1]))[0].astype(
-        float
-    )
-    n = len(vals)
+    return edges_hist_ok(np.append(e0, e0[-1] + w[-1]), h, vals)
+
+
+def edges_hist_ok(edges, heights, vals: np.ndarray) -> bool:
+    """Heights equal the counts of ``vals`` in ``edges`` (or density, fraction, percent)."""
+    edges = np.asarray(edges, dtype=float)
+    h = np.asarray(heights, dtype=float)
+    if (
+        len(h) < 3
+        or len(edges) != len(h) + 1
+        or not np.all(np.isfinite(h))
+        or not np.all(np.diff(edges) > 0)
+    ):
+        return False
+    counts = np.histogram(vals, bins=edges)[0].astype(float)
+    n, w = len(vals), np.diff(edges)
     if counts.sum() != n:
         return False
     return any(
         np.allclose(h, f, rtol=1e-6, atol=1e-9)
         for f in (counts, counts / (n * w), counts / n, counts / n * 100)
+    )
+
+
+def ecdf_ok(xs, ys, vals: np.ndarray) -> bool:
+    """The drawn vertices are the empirical CDF of ``vals`` (share, percent or count)."""
+    xs, ys = np.asarray(xs, dtype=float), np.asarray(ys, dtype=float)
+    ok = np.isfinite(xs) & np.isfinite(ys)
+    xs, ys = xs[ok], ys[ok]
+    v = np.sort(np.asarray(vals, dtype=float))
+    if len(xs) < 3 or len(v) < 2:
+        return False
+    tol = 1e-6 * max(1.0, float(np.abs(v).max()))
+    if not all(np.any(np.abs(xs - u) <= tol) for u in np.unique(v)):
+        return False  # some observation is not drawn
+    n = len(v)
+    upto = np.searchsorted(v, xs + tol, side="right") / n  # share <= x
+    below = np.searchsorted(v, xs - tol, side="left") / n  # share < x
+    return any(
+        bool(
+            np.all(ys >= below * s - 1e-9 * s)
+            and np.all(ys <= upto * s + 1e-9 * s)
+        )
+        for s in (1.0, 100.0, float(n))
     )
 
 
