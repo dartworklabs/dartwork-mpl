@@ -60,6 +60,16 @@ def test_policy_presets_match_runtime() -> None:
     assert kr == {f"{name}-kr" for name in BASE_PRESETS}
 
 
+def test_mcp_prompt_text_pins_no_package_version() -> None:
+    """The prompts said "dartwork-mpl 0.4" long after 0.5 shipped."""
+    source = "\n".join(
+        (ROOT / "src/dartwork_mpl/mcp" / rel).read_text("utf-8")
+        for rel in ("prompts.py", "guides/prompts.py")
+    )
+    assert not re.search(r"dartwork-mpl \d+\.\d", source)
+    assert not re.search(r"\b\d+\.\d+ (?:policy|invocations|SSOT)\b", source)
+
+
 def test_contributor_entry_files_stay_mirrored() -> None:
     assert (ROOT / "CLAUDE.md").read_bytes() == (
         ROOT / "AGENTS.md"

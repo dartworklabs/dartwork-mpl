@@ -47,7 +47,7 @@ def create_plot_text(description: str, data_sample: str) -> str:
 This may be a preview or truncated input. Confirm its coverage before plotting.
 """
 
-    return f"""You are an expert data visualization engineer using **dartwork-mpl 0.4**, a publication-quality matplotlib design system.
+    return f"""You are an expert data visualization engineer using **dartwork-mpl**, a publication-quality matplotlib design system.
 
 ## Task
 Generate a complete Python script that creates the following plot:
@@ -283,7 +283,7 @@ dm.simple_layout(fig, margin=dm.inch(0.08))
 def style_review_text(code: str) -> str:
     """The ``style_review`` prompt for ``code`` (capped at ``_MAX_INPUT_CHARS``)."""
     code = _truncate(code, "code")
-    return f"""You are a strict code reviewer for **dartwork-mpl 0.4**, a publication-quality matplotlib design system.
+    return f"""You are a strict code reviewer for **dartwork-mpl**, a publication-quality matplotlib design system.
 
 ## Code to Review
 ```python
@@ -350,8 +350,8 @@ report advisories without silently normalizing the user's choice.
 - [ ] Data construction is cleanly separated from plotting logic.
 
 ## Reference resources
-- `dartwork-mpl://guide/policy` — full 0.4 policy.
-- `dartwork-mpl://guide/recipes` — canonical 0.4 invocations per intent.
+- `dartwork-mpl://guide/policy` — full policy.
+- `dartwork-mpl://guide/recipes` — canonical invocations per intent.
 - `dartwork-mpl://guide/anti-patterns` — the lint engine source.
 
 ## Output Format

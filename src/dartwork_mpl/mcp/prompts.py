@@ -2,7 +2,7 @@
 
 This module defines interactive prompts that guide users through
 creating and reviewing dartwork-mpl plots. The wording is aligned
-with the 0.4 SSOT in ``asset/prompt/`` (00-index, 01-policy,
+with the SSOT in ``asset/prompt/`` (00-index, 01-policy,
 02-anti-patterns, 03-recipes, 05-templates).
 
 The prompt strings deliberately *describe* forbidden patterns
