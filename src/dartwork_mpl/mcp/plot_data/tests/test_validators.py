@@ -221,3 +221,46 @@ class TestHistogramContour:
         assert "equal length" in _validators._validate_contour(
             {"Z": [[1, 2], [3]]}
         )
+
+
+class TestValidators:
+    """Individual ``_validate_*`` helpers' issue branches."""
+
+    def test_tornado_valid_and_mismatch(self) -> None:
+        assert _validators._validate_tornado(
+            {"categories": ["a"], "positive": [1]}
+        ).startswith("✅")
+        assert "Length mismatch" in _validators._validate_tornado(
+            {"categories": ["a", "b"], "positive": [1]}
+        )
+
+    def test_bar_missing_and_mismatch(self) -> None:
+        assert "Missing 'values'" in _validators._validate_bar(
+            {"categories": ["a"]}
+        )
+        assert "Length mismatch" in _validators._validate_bar(
+            {"categories": ["a", "b"], "values": [1]}
+        )
+
+    def test_heatmap_requires_2d(self) -> None:
+        assert "2D array" in _validators._validate_heatmap(
+            {"matrix": [1, 2, 3]}
+        )
+        assert _validators._validate_heatmap(
+            {"matrix": [[1, 2], [3, 4]]}
+        ).startswith("✅")
+
+    def test_stacked_bar_series_length(self) -> None:
+        out = _validators._validate_stacked_bar(
+            {"categories": ["a", "b"], "series": {"s1": [1]}}
+        )
+        assert "s1" in out and "length" in out.lower()
+
+    def test_pie_length_mismatch(self) -> None:
+        assert "Length mismatch" in _validators._validate_pie(
+            {"labels": ["a", "b"], "sizes": [1]}
+        )
+
+    def test_line_needs_y_or_series(self) -> None:
+        out = _validators._validate_line({"x": [1, 2, 3]})
+        assert "y" in out.lower() and "series" in out.lower()

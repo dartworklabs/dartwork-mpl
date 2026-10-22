@@ -27,7 +27,10 @@ import pytest
 
 pytest.importorskip("fastmcp")
 
-from dartwork_mpl.mcp.tools import _discover_resource_uris, _discover_tool_names
+from dartwork_mpl.mcp.catalog.discovery import (
+    _discover_resource_uris,
+    _discover_tool_names,
+)
 
 _DOC = (
     Path(__file__).resolve().parents[1]

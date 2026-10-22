@@ -5,57 +5,19 @@ for accessing dartwork-mpl documentation, color manipulation,
 code linting, and data validation.
 """
 
-import asyncio
-import json
-import math
-import re
-import time
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version as _pkg_version
 from pathlib import Path
 from typing import Any
 
-import httpx
-import matplotlib.colors as mcolors
 from fastmcp import FastMCP
 
+from . import catalog, colors, docs_fetch, recommend
 from ._platform import resolve_template_path
 from .plot_data import validate_data
 
 __all__ = ["register_tools"]
 
-
-def _version_surface() -> str:
-    """Major.minor of the installed dartwork-mpl (e.g. ``"0.5"``).
-
-    Derived from the distribution metadata so the advertised surface
-    tracks the actual release instead of a hand-maintained literal —
-    the same registry-derivation principle used for the tool/template
-    catalog below. Note this reflects the *installed* metadata, so an
-    editable dev checkout reports the version captured at install time
-    until it is reinstalled.
-    """
-    try:
-        ver = _pkg_version("dartwork-mpl")
-    except PackageNotFoundError:
-        return "unknown"
-    parts = ver.split(".")
-    return ".".join(parts[:2]) if len(parts) >= 2 else ver
-
-
-# ── Agentic-catalog discovery ────────────────────────────────────────
-#
-# ``dartwork_mpl_info`` advertises the live MCP surface (tools,
-# resources, plot templates, primitive styles). Deriving these from the
-# registry — the decorator source for tools/resources/prompts, the
-# bundled asset dirs for templates/styles — rather than a hand-maintained
-# literal means adding a tool or template can never silently drift the
-# advertised catalog out of sync. (We scan the source instead of FastMCP
-# private state, which moved between fastmcp 2.x and 3.x.)
-
 _ASSET_DIR = Path(__file__).parent.parent / "asset"
 _TEMPLATE_DIR = _ASSET_DIR / "prompt" / "05-templates"
-_MPLSTYLE_DIR = _ASSET_DIR / "mplstyle"
 
 
 def _resolve_template_path(
@@ -67,205 +29,6 @@ def _resolve_template_path(
     regular file checked by that boundary, or None for invalid/missing IDs.
     """
     return resolve_template_path(plot_type, advanced=advanced)
-
-
-# ``helpers.quality.suggest_chart_type`` speaks in *chart semantics*
-# (``grouped_bar``, ``scatter_density``, ``hexbin``, …) while the bundled
-# templates are keyed by canonical stems (``bar_grouped``, ``scatter``,
-# …). This mapping normalizes recommender output to the template
-# vocabulary before template URIs are built — without it, six of the
-# recommender's output classes silently fell back to the wrong ``bar``
-# template (or ``None``), breaking the advertised recommend →
-# pull-template loop. Ids that already are template stems pass through.
-_SUGGEST_TO_TEMPLATE: dict[str, str] = {
-    "grouped_bar": "bar_grouped",
-    "count_bar": "bar",
-    "bar_line": "line",
-    "multi_line": "line",
-    "scatter_density": "scatter",
-    "hexbin": "scatter",
-}
-
-# Sync/async ``@mcp.tool()`` — empty- and keyword-arg forms.
-_TOOL_DEF_RE = re.compile(
-    r"@mcp\.tool\([^)]*\)\s*\n\s*(?:async\s+)?def\s+(\w+)\s*\(", re.MULTILINE
-)
-# ``@mcp.resource("<uri>"...)`` — first string arg is the URI; ``\s*``
-# spans the newline used by the multi-line (mime_type) form.
-_RESOURCE_URI_RE = re.compile(r"""@mcp\.resource\(\s*["']([^"']+)["']""")
-# ``@mcp.prompt(...)\n    def <name>(`` in prompts.py.
-_PROMPT_DEF_RE = re.compile(
-    r"@mcp\.prompt\([^)]*\)\s*\n\s*def\s+(\w+)\s*\(", re.MULTILINE
-)
-
-
-def _scan_source(filename: str, pattern: re.Pattern[str]) -> list[str]:
-    """Return ``pattern`` captures from a sibling module's source.
-
-    Returns ``[]`` when the file is unreadable rather than falling back
-    to a stale literal — an empty catalog is honest; a drifting hardcoded
-    one is not.
-    """
-    try:
-        src = (Path(__file__).parent / filename).read_text(encoding="utf-8")
-    except OSError:
-        return []
-    return pattern.findall(src)
-
-
-def _discover_tool_names() -> list[str]:
-    """Full tool identities in server order, including artifact registrations."""
-    return _scan_source("tools.py", _TOOL_DEF_RE) + _scan_source(
-        "artifacts/transport.py", _TOOL_DEF_RE
-    )
-
-
-def _discover_resource_uris() -> list[str]:
-    """All static and template URIs, including the artifact capability."""
-    return _scan_source("resources.py", _RESOURCE_URI_RE) + _scan_source(
-        "artifacts/transport.py", _RESOURCE_URI_RE
-    )
-
-
-def _discover_prompt_names() -> list[str]:
-    """Names of every ``@mcp.prompt()`` in prompts.py."""
-    return _scan_source("prompts.py", _PROMPT_DEF_RE)
-
-
-def _discover_plot_templates() -> list[str]:
-    """Stems of the bundled ``05-templates/*.py`` plot templates."""
-    return sorted(p.stem for p in _TEMPLATE_DIR.glob("*.py"))
-
-
-def _discover_primitive_mplstyles() -> list[str]:
-    """Stems of the bundled primitive ``*.mplstyle`` files."""
-    return sorted(p.stem for p in _MPLSTYLE_DIR.glob("*.mplstyle"))
-
-
-_FETCH_BYTES = 1024 * 1024
-_FETCH_SECONDS = 10.0
-_FETCH_REDIRECTS = 5
-
-
-def _raw_github_url(value: str | httpx.URL) -> httpx.URL:
-    """Parse the exact HTTPS Raw GitHub URL sent to HTTPX, or refuse it.
-
-    Repository/ref/path/query remain unrestricted. Fragments are removed;
-    credentials, noncanonical hosts and nondefault ports never reach a client.
-    """
-    try:
-        url = httpx.URL(value)
-    except (httpx.InvalidURL, TypeError) as exc:
-        raise ValueError(
-            "Expected an HTTPS raw.githubusercontent.com URL."
-        ) from exc
-    if (
-        url.scheme != "https"
-        or url.raw_host != b"raw.githubusercontent.com"
-        or url.port not in (None, 443)
-        or url.userinfo
-    ):
-        raise ValueError(
-            "Expected an HTTPS raw.githubusercontent.com URL without credentials or a nondefault port."
-        )
-    return url.copy_with(fragment=None)
-
-
-async def _fetch_raw_github(
-    value: str,
-    *,
-    transport: httpx.AsyncBaseTransport | None = None,
-    timeout_seconds: float = _FETCH_SECONDS,
-) -> str:
-    """Fetch bounded identity Raw text through one owned async HTTPX client.
-
-    A total deadline covers redirects and all body reads. Each redirect is
-    validated before its request; every response/client closes on refusal,
-    timeout and external cancellation. Adapter-visible reads exceed the 1 MiB
-    body cap by at most one 8 KiB chunk; replacement text is at most 3 MiB UTF-8.
-    """
-    url = _raw_github_url(value)
-    deadline = time.monotonic() + timeout_seconds
-
-    async def transfer() -> str:
-        """Read raw chunks without decompression, following only checked redirects."""
-        current = url
-        async with httpx.AsyncClient(
-            transport=transport,
-            follow_redirects=False,
-            headers={"Accept-Encoding": "identity"},
-        ) as client:
-            for hops in range(_FETCH_REDIRECTS + 1):
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    raise asyncio.TimeoutError
-                async with client.stream(
-                    "GET", current, timeout=remaining
-                ) as response:
-                    if response.is_redirect:
-                        if hops == _FETCH_REDIRECTS:
-                            raise ValueError(
-                                "Raw document redirect limit exceeded."
-                            )
-                        location = response.headers.get("location")
-                        if not location:
-                            raise ValueError(
-                                "Raw document redirect has no destination."
-                            )
-                        try:
-                            target = current.join(location)
-                        except httpx.InvalidURL as exc:
-                            raise ValueError(
-                                "Expected an HTTPS raw.githubusercontent.com redirect URL."
-                            ) from exc
-                        current = _raw_github_url(target)
-                        continue
-                    response.raise_for_status()
-                    encoding = (
-                        response.headers.get("content-encoding", "identity")
-                        .strip()
-                        .lower()
-                    )
-                    if encoding != "identity":
-                        raise ValueError(
-                            "Raw document must use identity content encoding."
-                        )
-                    length = response.headers.get("content-length")
-                    if length is not None:
-                        try:
-                            declared = int(length)
-                        except ValueError as exc:
-                            raise ValueError(
-                                "Raw document has an invalid content length."
-                            ) from exc
-                        if declared < 0 or declared > _FETCH_BYTES:
-                            raise ValueError(
-                                "Raw document exceeds the 1 MiB byte limit."
-                            )
-                    body = bytearray()
-                    async for chunk in response.aiter_raw(chunk_size=8 * 1024):
-                        if len(body) + len(chunk) > _FETCH_BYTES:
-                            raise ValueError(
-                                "Raw document exceeds the 1 MiB byte limit."
-                            )
-                        body.extend(chunk)
-                    return body.decode("utf-8", "replace")
-        raise ValueError("Raw document redirect limit exceeded.")
-
-    try:
-        return await asyncio.wait_for(transfer(), timeout_seconds)
-    except asyncio.TimeoutError as exc:
-        raise ValueError(
-            "Failed to fetch Raw document: total deadline exceeded."
-        ) from exc
-    except httpx.HTTPStatusError as exc:
-        raise ValueError(
-            f"Failed to fetch Raw document: HTTP {exc.response.status_code}."
-        ) from exc
-    except httpx.HTTPError as exc:
-        raise ValueError(
-            f"Failed to fetch Raw document: {type(exc).__name__}."
-        ) from exc
 
 
 def register_tools(mcp: FastMCP) -> None:
@@ -309,7 +72,7 @@ def register_tools(mcp: FastMCP) -> None:
             If the URL is not on ``raw.githubusercontent.com`` or the
             request fails.
         """
-        return await _fetch_raw_github(url)
+        return await docs_fetch.fetch_raw_github(url)
 
     # ── Color Tools ──────────────────────────────────────────────────
 
@@ -327,18 +90,7 @@ def register_tools(mcp: FastMCP) -> None:
         str
             Hex color code (e.g. '#3b82f6') or an error message.
         """
-        try:
-            return mcolors.to_hex(mcolors.get_named_colors_mapping()[name])
-        except KeyError:
-            # Suggest similar colors
-            all_names = list(mcolors.get_named_colors_mapping().keys())
-            suggestions = [n for n in all_names if name.lower() in n.lower()][
-                :5
-            ]
-            msg = f"Color '{name}' not found."
-            if suggestions:
-                msg += f" Similar: {suggestions}"
-            return msg
+        return colors.color_value(name)
 
     @mcp.tool()
     def mix_colors(color1: str, color2: str, ratio: float = 0.5) -> str:
@@ -365,32 +117,7 @@ def register_tools(mcp: FastMCP) -> None:
         str
             Hex code of the blended color.
         """
-        # Validate ``ratio`` up front: an out-of-[0, 1] or non-finite
-        # weight extrapolates beyond the two endpoints, yielding RGB
-        # outside [0, 1] and a malformed hex. Reject it with an
-        # actionable message instead of leaking matplotlib's downstream
-        # "RGBA values should be within 0-1 range" / NaN errors.
-        if not math.isfinite(ratio):
-            return (
-                "Error: ratio must be a finite number between 0.0 and 1.0 "
-                f"(weight of color1), got {ratio!r}."
-            )
-        if not 0.0 <= ratio <= 1.0:
-            return (
-                "Error: ratio must be between 0.0 and 1.0 "
-                f"(weight of color1), got {ratio!r}."
-            )
-        from ..util import mix_colors as _mix_oklab
-
-        try:
-            return mcolors.to_hex(_mix_oklab(color1, color2, alpha=ratio))
-        except (ValueError, KeyError, TypeError) as e:
-            # ``to_rgb`` (inside the public helper) raises ``ValueError``
-            # for unknown / malformed colors and ``KeyError`` for missing
-            # names; ``TypeError`` for non-string inputs. We intentionally
-            # do not surface the full traceback to the agent — the
-            # message is enough.
-            return f"Error blending colors: {e}"
+        return colors.mix(color1, color2, ratio)
 
     @mcp.tool()
     def list_color_families() -> str:
@@ -401,22 +128,7 @@ def register_tools(mcp: FastMCP) -> None:
         """
         from .._colors._loader import COLOR_LIBRARIES
 
-        mapping = mcolors.get_named_colors_mapping()
-        prefixes = [prefix for _key, prefix, _fn, _label in COLOR_LIBRARIES]
-        families = {}
-        for prefix in prefixes:
-            colors = {
-                k: mcolors.to_hex(v)
-                for k, v in mapping.items()
-                if k.startswith(prefix)
-            }
-            if colors:
-                sample = dict(list(colors.items())[:5])
-                families[prefix.rstrip(".")] = {
-                    "count": len(colors),
-                    "sample": sample,
-                }
-        return json.dumps(families, indent=2)
+        return colors.list_families(COLOR_LIBRARIES)
 
     # ── Code Linting Tool ────────────────────────────────────────────
 
@@ -927,52 +639,7 @@ def register_tools(mcp: FastMCP) -> None:
             ``advanced_template_uri`` is ``None`` when no tier-2 version
             exists yet for the recommended plot type.
         """
-        from .. import suggest_chart_type as _suggest
-
-        raw = _suggest(
-            x_type=x_type, y_type=y_type, n_points=n_points, n_series=n_series
-        )
-        # Normalize recommender semantics to the template vocabulary so
-        # the returned id and URIs always resolve (see
-        # ``_SUGGEST_TO_TEMPLATE``). The raw semantic label is kept in
-        # the rationale when it differs.
-        recommended = _SUGGEST_TO_TEMPLATE.get(raw, raw)
-
-        basic_path = _TEMPLATE_DIR / f"{recommended}.py"
-        advanced_path = _TEMPLATE_DIR / "advanced" / f"{recommended}.py"
-        basic_uri = (
-            f"dartwork-mpl://templates/{recommended}"
-            if basic_path.exists()
-            else "dartwork-mpl://templates/bar"
-        )
-        advanced_uri = (
-            f"dartwork-mpl://templates/advanced/{recommended}"
-            if advanced_path.exists()
-            else None
-        )
-
-        semantic_note = (
-            f" (recommender semantic: {raw!r} — rendered with the "
-            f"{recommended!r} template)"
-            if raw != recommended
-            else ""
-        )
-        rationale = (
-            f"x={x_type}, y={y_type}, n_points={n_points}, "
-            f"n_series={n_series} → recommended: {recommended!r}"
-            f"{semantic_note}. "
-            "Tier-1 templates show the minimal API call; tier-2 (advanced) "
-            "templates add reference lines, value labels, narrative title, "
-            "and source footnote — copy the advanced version when you "
-            "want the agent's generated plot to read like a finished "
-            "report figure."
-        )
-        return {
-            "recommended": recommended,
-            "basic_template_uri": basic_uri,
-            "advanced_template_uri": advanced_uri,
-            "rationale": rationale,
-        }
+        return recommend.suggest(x_type, y_type, n_points, n_series)
 
     @mcp.tool()
     def compose_layered_plot(
@@ -1257,133 +924,4 @@ def register_tools(mcp: FastMCP) -> None:
         design-language SSOT in ``asset/prompt/`` (00-index, 01-policy,
         02-anti-patterns, 03-recipes, 05-templates).
         """
-        # Resolve composite preset names dynamically from the bundled
-        # presets.json so this stays in sync with the actual style
-        # registry.
-        presets_path = (
-            Path(__file__).parent.parent / "asset" / "mplstyle" / "presets.json"
-        )
-        try:
-            composite_presets = sorted(
-                json.loads(presets_path.read_text(encoding="utf-8")).keys()
-            )
-        except (OSError, ValueError):
-            # OSError: ``read_text`` failed (file missing / unreadable).
-            # ValueError: ``json.loads`` raised ``JSONDecodeError`` (a
-            # ValueError subclass) on a corrupt presets bundle. Either
-            # way we fall back to the static list.
-            composite_presets = [
-                "scientific",
-                "report",
-                "report-kr",
-                "presentation",
-                "poster",
-                "minimal",
-                "web",
-                "dark",
-            ]
-
-        return json.dumps(
-            {
-                "name": "dartwork-mpl",
-                "version_surface": _version_surface(),
-                "description": "Publication-quality matplotlib design system",
-                "design_system_apis": {
-                    "semantic_tokens": (
-                        "dm.tokens.fs_*/lw_*/space/scatter_size + as_dict()/version()"
-                        " - preset-tracking design tokens"
-                    ),
-                    "locale_formatters": (
-                        "dm.format_axis_myriad (East-Asian 10^4 labels), "
-                        "dm.format_axis_year (two-digit year + suffix)"
-                    ),
-                    "grid_sizing": (
-                        "dm.figsize_grid(panel_width, aspect, ncols=, nrows=, gap=)"
-                        " - per-panel physical sizing"
-                    ),
-                    "accessibility": (
-                        "dm.validate_figure now includes TEXT_CONTRAST / MIN_FONT_SIZE / "
-                        "GRAYSCALE_SAFETY checks"
-                    ),
-                },
-                "design_rules": {
-                    "width_aspect": (
-                        "Use native plt.subplots or plt.figure with figsize=dm.figsize(...), "
-                        "including GridSpec/nested GridSpec. "
-                        "width accepts unit strings (cm/in/mm/pt) or Length "
-                        "values (dm.cm/inch/mm/pt, dm.col1, dm.col2); bare "
-                        "int/float are rejected. aspect is one of "
-                        "{square, portrait, standard, golden, wide, "
-                        "cinema} or a positive height/width ratio, unit-string height "
-                        "or Length height. Explicit width and height are freely chosen. "
-                        "Explicit dimensions/style and venue/template constraints > "
-                        "prior project context > purpose defaults: paper -> scientific; "
-                        "report/document/dashboard -> report; talk/slides -> presentation. "
-                        "Paper 9/17 cm and report 13-17 cm are draft candidates, not standards/caps. "
-                        "Slide ratio/full-slide/inset and panel complexity inform initial size. "
-                        "Ask one short question only for material ambiguity; reuse known context. "
-                        "For quick drafts state provisional preset/size. "
-                        "Use -kr for Korean plot text only. Geometry-only edits retain preset/data/style."
-                    ),
-                    "max_width": (
-                        "No API maximum; 17 cm is a page-fit lint reference. "
-                        "Retain explicit user or template dimensions."
-                    ),
-                    "layout": (
-                        "Call dm.simple_layout(fig) after plotting. "
-                        "Default margin=0 snaps content flush to the "
-                        "figure edge; pass margin='2%' or dm.mm(2) for "
-                        "a buffer. dm.auto_layout was removed in 0.5.4; use dm.simple_layout. "
-                        "tight_layout() is forbidden."
-                    ),
-                    "default_dpi": "Controlled by the active style preset.",
-                    "font": (
-                        "Presets supply defaults; explicit scoped user values win. "
-                        "dm.fs(n)/dm.lw(n) add n pt to global font.size/lines.linewidth; "
-                        "dm.fw(n) adds 100*n weight units. For one more step use the "
-                        "current artist getter plus delta; retain exact absolute values. "
-                        "Literal-size/width warnings are advisory: review/report them, "
-                        "never erase explicit intent or hide warnings. Apply the preset "
-                        "before retained overrides and local edits. Change only requested "
-                        "artist properties; preserve data, unrelated style, canvas, legend "
-                        "and preset. Axis labels differ from tick labels; avoid global "
-                        "font changes for label-only edits. Native setters/properties/help "
-                        "or official installed-version docs expose further properties. "
-                        "The 18 templates are starters, not limits on native chart types."
-                    ),
-                    "save_format": (
-                        "Use dm.save_formats(fig, 'name', formats=('png','pdf'), "
-                        "dpi=300) for scripts or dm.save_and_show(fig, 'name') "
-                        "for notebooks. Keep bbox_inches=None (the default) for exact "
-                        "physical canvas size; tight crops to content. DPI controls raster "
-                        "density; PNG sizes quantize to whole pixels."
-                    ),
-                    "color": (
-                        "Use named palettes (oc.*, tw.*, dc.*, md.*, "
-                        "ad.*, cu.*, pr.*) for defaults; retain user-specified hex "
-                        "or native matplotlib colors. dc.* construction uses OKLab L, "
-                        "OKLCH C/h, and ΔEOK. Modeled relative Y is an "
-                        "optional shipped-output compatibility lock, not an "
-                        "authoring space or a display measurement. "
-                        "CIELAB/CIEDE2000 and named CVD simulations are "
-                        "model-specific diagnostics; WCAG contrast "
-                        "luminance is separate."
-                    ),
-                    "retired_policies": [
-                        "Zero-Resize Policy (retired in 0.4.0; replaced "
-                        "by free-form width input plus a lint consistency "
-                        "guard). Mentioning the phrase triggers the "
-                        "`zero-resize-mention` lint warning."
-                    ],
-                },
-                "resources": _discover_resource_uris(),
-                "tools": _discover_tool_names(),
-                "prompts": _discover_prompt_names(),
-                "style_presets": {
-                    "composite": composite_presets,
-                    "primitive_mplstyle": _discover_primitive_mplstyles(),
-                },
-                "plot_templates": _discover_plot_templates(),
-            },
-            indent=2,
-        )
+        return catalog.info_payload()

@@ -283,7 +283,7 @@ class TestMcpTools:
         captured = _capture_decorators(mock_mcp, "tool")
         register_tools(mock_mcp)
         with patch(
-            "dartwork_mpl.mcp.tools._fetch_raw_github",
+            "dartwork_mpl.mcp.docs_fetch.fetch_raw_github",
             new=AsyncMock(return_value="# Hello World"),
         ):
             result = asyncio.run(
@@ -301,7 +301,7 @@ class TestMcpTools:
         captured = _capture_decorators(mock_mcp, "tool")
         register_tools(mock_mcp)
         with patch(
-            "dartwork_mpl.mcp.tools._fetch_raw_github",
+            "dartwork_mpl.mcp.docs_fetch.fetch_raw_github",
             new=AsyncMock(
                 side_effect=ValueError(
                     "Failed to fetch Raw document: total deadline exceeded."
@@ -1058,7 +1058,10 @@ class TestMcpTools:
         """Parity guard: every ``_SUGGEST_TO_TEMPLATE`` target is a
         bundled template stem, so the mapping can't silently rot when
         templates are renamed."""
-        from dartwork_mpl.mcp.tools import _SUGGEST_TO_TEMPLATE, _TEMPLATE_DIR
+        from dartwork_mpl.mcp.recommend.chart_type import (
+            _SUGGEST_TO_TEMPLATE,
+            _TEMPLATE_DIR,
+        )
 
         stems = {p.stem for p in _TEMPLATE_DIR.glob("*.py")}
         for target in _SUGGEST_TO_TEMPLATE.values():
@@ -1215,7 +1218,7 @@ class TestMcpAgenticReliability:
         captured = _capture_decorators(mock_mcp, "tool")
         register_tools(mock_mcp)
         with patch(
-            "dartwork_mpl.mcp.tools._fetch_raw_github",
+            "dartwork_mpl.mcp.docs_fetch.fetch_raw_github",
             new=AsyncMock(
                 side_effect=ValueError(
                     "Failed to fetch Raw document: HTTP 404."

@@ -49,6 +49,7 @@ MODULES = (
     "src.dartwork_mpl.mcp.plot_data.tests.test_properties",
     "src.dartwork_mpl.mcp.plot_data.tests.test_reports",
     "src.dartwork_mpl.mcp._platform.tests.test_process",
+    "src.dartwork_mpl.mcp.docs_fetch.tests.test_raw_github",
     "src.dartwork_mpl.ui.tests.test_ui_boundary",
     "src.dartwork_mpl.ui.saving.tests.test_ui_files",
     "tests.test_ui_http_security",
