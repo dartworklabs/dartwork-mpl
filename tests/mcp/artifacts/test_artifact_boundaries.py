@@ -33,7 +33,9 @@ def slice_of(module):
         return "artifacts"
     if module == PLATFORM or module.startswith(PLATFORM + "."):
         return "platform"
-    if module == "dartwork_mpl.mcp.execution":
+    if module == "dartwork_mpl.mcp.execution" or module.startswith(
+        "dartwork_mpl.mcp.execution."
+    ):
         return "execution"
     if module in {
         "dartwork_mpl.mcp",

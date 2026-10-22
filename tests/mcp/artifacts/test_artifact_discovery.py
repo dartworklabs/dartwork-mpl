@@ -110,10 +110,8 @@ def test_discovery_gate_rejects_unapproved_changes(mutation):
 @pytest.mark.parametrize("kind", ["tool", "resource"])
 def test_actual_extra_registration_fails_discovery_gate(kind):
     """An additional genuine registration cannot hide behind source filtering."""
-    from dartwork_mpl.mcp.artifacts import (
-        ConfigurationError,
-        register_artifacts,
-    )
+    from dartwork_mpl.mcp.artifacts import register_artifacts
+    from dartwork_mpl.mcp.artifacts.policy import ConfigurationError
     from dartwork_mpl.mcp.prompts import register_prompts
     from dartwork_mpl.mcp.resources import register_resources
     from dartwork_mpl.mcp.tools import register_tools

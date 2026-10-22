@@ -9,11 +9,11 @@ from datetime import timedelta
 
 import pytest
 
-from dartwork_mpl.mcp.artifacts import (
-    InputMetadata,
+from dartwork_mpl.mcp.artifacts.input_policy import InputMetadata, RetainedInput
+from dartwork_mpl.mcp.artifacts.policy import (
     NotFound,
     PublicationError,
-    RetainedInput,
+    StoredBundle,
 )
 from tests.mcp.artifacts.input_fixtures import (
     NOW,
@@ -190,7 +190,10 @@ def restart(policy, artifact_path, now, script="", home=None):
         """
 import json, sys
 from datetime import datetime
-from dartwork_mpl.mcp.artifacts import *
+from dartwork_mpl.mcp.artifacts import configure_store
+from dartwork_mpl.mcp.artifacts.inputs import InputStage, InputStore
+from dartwork_mpl.mcp.artifacts.input_policy import CopyInput, InputMetadata, RetainedInput
+from dartwork_mpl.mcp.artifacts.policy import ArtifactId, PublicationError
 from dartwork_mpl.mcp.artifacts.input_access import authorize_inputs, InputGrant
 policy, artifact_path, instant = sys.argv[1:]
 artifacts = configure_store(None if artifact_path == "__default__" else artifact_path)
@@ -257,7 +260,7 @@ def test_restart_preserves_committed_sets_when_artifact_root_changes(
                 },
                 NOW,
             )
-            assert isinstance(bundle, api().StoredBundle), bundle
+            assert isinstance(bundle, StoredBundle), bundle
         assert tx.settle(stage, artifacts.observe_commit(parent_id)) is None
     store.close()
     grant.close()

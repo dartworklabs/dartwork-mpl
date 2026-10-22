@@ -14,16 +14,18 @@ from pathlib import Path
 
 import pytest
 
-from dartwork_mpl.mcp.artifacts import (
+from dartwork_mpl.mcp.artifacts.input_policy import (
+    InputMetadata,
+    RetainedInput,
+    can_reserve,
+)
+from dartwork_mpl.mcp.artifacts.policy import (
     ConfigurationError,
     CorruptArtifact,
     Expired,
-    InputMetadata,
     InvalidRequest,
     NotFound,
     PublicationError,
-    RetainedInput,
-    can_reserve,
 )
 from tests.mcp.artifacts.input_fixtures import (
     NOW,
@@ -394,7 +396,10 @@ def test_real_second_process_cannot_take_startup_lock(owned_input_root):
     code = """
 import sys
 from datetime import datetime
-from dartwork_mpl.mcp.artifacts import *
+from dartwork_mpl.mcp.artifacts import configure_store
+from dartwork_mpl.mcp.artifacts.input_access import InputGrant, authorize_inputs
+from dartwork_mpl.mcp.artifacts.inputs import InputStore
+from dartwork_mpl.mcp.artifacts.policy import ConfigurationError
 artifacts = configure_store(sys.argv[2])
 grant = authorize_inputs(sys.argv[1], artifacts.check_input_roots)
 assert isinstance(grant, InputGrant)
