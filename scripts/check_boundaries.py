@@ -228,6 +228,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.helpers", "dartwork_mpl._colors.registry"): (
         "label helpers resolve dc.* colour names, which must be registered"
     ),
+    ("dartwork_mpl.helpers", "dartwork_mpl.scale"): (
+        "legend and label helpers size text relative to the active preset"
+    ),
     ("dartwork_mpl.io", "dartwork_mpl.config"): (
         "saving applies the user's export defaults from dm.config"
     ),
@@ -358,6 +361,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.validate", "dartwork_mpl._colors.model"): (
         "the grayscale check compares colours in the model's OKLab and Y"
     ),
+    ("dartwork_mpl.validate", "dartwork_mpl.helpers"): (
+        "the agent high_dpi requirement is the figure quality check's minimum DPI"
+    ),
     ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
         "the tick-decimal check recommends the precision the formatter uses"
     ),
@@ -404,10 +410,7 @@ PINNED: Mapping[str, str] = {
 
 # Known violations at the start of the refactor (ADR 0005), each with the
 # plan step that removes it. The list only shrinks.
-DEBT: Mapping[str, str] = {
-    "private import: dartwork_mpl.validate.agent_requirements -> dartwork_mpl.helpers.quality._MIN_RECOMMENDED_DPI": "C11",
-    "undeclared dependency: dartwork_mpl.helpers -> dartwork_mpl.scale": "C11",
-}
+DEBT: Mapping[str, str] = {}
 
 # Package paths that hold user-facing sample code, not package source: the
 # bundled prompt templates and the UI scaffold templates copied into user
