@@ -70,3 +70,55 @@ def test_wheel_excludes_colocated_tests_and_keeps_package_modules(tmp_path):
         "dartwork_mpl/probe/__init__.py",
         "dartwork_mpl/probe/rules.py",
     ]
+
+
+@pytest.mark.skipif(shutil.which("uv") is None, reason="needs the uv CLI")
+def test_wheel_ships_the_agent_skill_and_consumer_entry(tmp_path):
+    """The real skill folder and consumer entry land in the wheel; contributor docs do not.
+
+    ``python -m dartwork_mpl.skills install`` links to the installed
+    ``dartwork_mpl/skills/dartwork-mpl``, so ``SKILL.md`` and every reference
+    must ship. ``dm.get_agent_doc("AGENTS")`` reads
+    ``dartwork_mpl/asset/agent/AGENTS.md``, which must be the consumer entry,
+    not the repository's contributor ``AGENTS.md``.
+    """
+    project = tmp_path / "project"
+    project.mkdir()
+    for name in _BUILD_INPUTS:
+        shutil.copy2(ROOT / name, project / name)
+    source = ROOT / "src" / "dartwork_mpl"
+    package = project / "src" / "dartwork_mpl"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    shutil.copytree(
+        source / "skills",
+        package / "skills",
+        ignore=shutil.ignore_patterns("__pycache__"),
+    )
+    shutil.copytree(source / "asset" / "agent", package / "asset" / "agent")
+
+    members = set(_wheel_members(project, tmp_path / "dist"))
+
+    skill = source / "skills" / "dartwork-mpl"
+    expected = {
+        f"dartwork_mpl/skills/dartwork-mpl/{p.relative_to(skill).as_posix()}"
+        for p in skill.rglob("*")
+        if p.is_file()
+    }
+    assert "dartwork_mpl/skills/dartwork-mpl/SKILL.md" in expected
+    assert expected <= members
+    assert {
+        "dartwork_mpl/skills/__init__.py",
+        "dartwork_mpl/skills/__main__.py",
+        "dartwork_mpl/asset/agent/AGENTS.md",
+        "dartwork_mpl/asset/agent/llms.txt",
+        "dartwork_mpl/asset/agent/llms-full.txt",
+    } <= members
+    assert not any(m.startswith("dartwork_mpl/skills/tests/") for m in members)
+    assert "dartwork_mpl/asset/agent/CLAUDE.md" not in members
+
+    (wheel,) = (tmp_path / "dist").glob("*.whl")
+    with zipfile.ZipFile(wheel) as archive:
+        entry = archive.read("dartwork_mpl/asset/agent/AGENTS.md")
+    assert entry == (source / "asset" / "agent" / "AGENTS.md").read_bytes()
+    assert entry != (ROOT / "AGENTS.md").read_bytes()

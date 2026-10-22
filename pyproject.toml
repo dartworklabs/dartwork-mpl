@@ -105,10 +105,14 @@ packages = ["src/dartwork_mpl"]
 # tests/architecture/test_packaging.py builds the wheel and checks this.
 exclude = ["**/tests/**", "**/test_*.py", "**/conftest.py"]
 
-# Agent entry-point files are bundled inside the wheel under
+# The llms index files are bundled inside the wheel under
 # ``dartwork_mpl/asset/agent/`` so installations from PyPI can read
 # them via ``importlib.resources``. The repo-root copies remain the
-# canonical source for GitHub-raw fetches.
+# canonical source for GitHub-raw fetches. The consumer agent entry
+# (``dm.get_agent_doc("AGENTS")``) is ordinary package data at
+# src/dartwork_mpl/asset/agent/AGENTS.md, and the agent skill ships from
+# src/dartwork_mpl/skills/; the repo-root AGENTS.md / CLAUDE.md are
+# contributor documents and stay out of the wheel.
 #
 # Destinations are package-relative — Hatch does NOT strip ``src/``
 # for ``force-include`` the way it does for the ``packages = [...]``
@@ -117,8 +121,6 @@ exclude = ["**/tests/**", "**/test_*.py", "**/conftest.py"]
 # ``importlib.resources`` couldn't reach them under
 # ``dartwork_mpl.asset.agent``.
 [tool.hatch.build.targets.wheel.force-include]
-"CLAUDE.md" = "dartwork_mpl/asset/agent/CLAUDE.md"
-"AGENTS.md" = "dartwork_mpl/asset/agent/AGENTS.md"
 "llms.txt" = "dartwork_mpl/asset/agent/llms.txt"
 "llms-full.txt" = "dartwork_mpl/asset/agent/llms-full.txt"
 
