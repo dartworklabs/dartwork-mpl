@@ -135,7 +135,7 @@ topology가 변한다. 현행 파라미터의 단순 치환 실험은 팔레트�
 - 런타임 색 표면의 판정기: `tests/test_shipped_colors_hash.py`. named 1,272 ·
   colormaps 99×256 · presets 588 · discrete 1,344 · curated 15의 sha256을
   각각 고정한다. 색이 바뀌면 어느 표면이 바뀌었는지까지 알려준다.
-- 18개 exact surface의 목록은 `src/dartwork_mpl/_colors/verify/tests/test_color_v6_comparison.py::EXACT_FIELDS`가
+- 18개 exact surface의 목록은 `tests/test_color_v6_comparison.py::EXACT_FIELDS`가
   정본이다. **문서는 이 목록을 복제하지 않는다** — 복제본은 반드시 어긋난다.
 - v5 비교 baseline은 커밋 `6be8cb56`이다. 이 커밋은 main `12d16bac`의
   문서 전용 자식이므로 `src/` 트리는 둘이 동일하다.

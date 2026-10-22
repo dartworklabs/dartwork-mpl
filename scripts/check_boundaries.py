@@ -53,6 +53,8 @@ ENTRY_POINTS = frozenset(
     {
         "dartwork_mpl",
         "dartwork_mpl._build_entry",
+        # `python -m dartwork_mpl._colors._build`
+        "dartwork_mpl._colors._build",
         # the root's removed/deprecated-name registry behind its __getattr__
         "dartwork_mpl._compat",
         "dartwork_mpl.cli",
@@ -91,7 +93,16 @@ PLATFORM = frozenset(
 SLICES = frozenset(
     {
         "dartwork_mpl._colors",
-        "dartwork_mpl._luminance",
+        "dartwork_mpl._colors._curated",
+        "dartwork_mpl._colors._ssot",
+        "dartwork_mpl._colors.catalog",
+        "dartwork_mpl._colors.construction",
+        "dartwork_mpl._colors.contrast",
+        "dartwork_mpl._colors.diagnostics",
+        "dartwork_mpl._colors.families_api",
+        "dartwork_mpl._colors.model",
+        "dartwork_mpl._colors.registry",
+        "dartwork_mpl._colors.verify",
         "dartwork_mpl.agent",
         "dartwork_mpl.annotation",
         "dartwork_mpl.config",
@@ -138,11 +149,71 @@ SLICES = frozenset(
 # (from slice, to slice) -> the business fact that requires the dependency.
 # A slice may import another slice's surface only with an entry here.
 ALLOWED: Mapping[tuple[str, str], str] = {
-    ("dartwork_mpl._colors", "dartwork_mpl.units"): (
+    ("dartwork_mpl._colors", "dartwork_mpl._colors.construction"): (
+        "the colour build command compiles the candidate catalogue and publishes the generated module"
+    ),
+    ("dartwork_mpl._colors", "dartwork_mpl._colors.contrast"): (
+        "the documented colour package re-exports the contrast ink helpers"
+    ),
+    ("dartwork_mpl._colors", "dartwork_mpl._colors.families_api"): (
+        "the documented colour package re-exports dm.colors and its siblings"
+    ),
+    ("dartwork_mpl._colors", "dartwork_mpl._colors.model"): (
+        "the documented colour package re-exports Color and its views, and its docs-only metrics module computes with the model's conversions"
+    ),
+    ("dartwork_mpl._colors", "dartwork_mpl._colors.registry"): (
+        "importing the colour package registers the shipped colours, colormaps and semantic tokens with matplotlib"
+    ),
+    ("dartwork_mpl._colors", "dartwork_mpl._colors.verify"): (
+        "the colour build command refuses to publish a catalogue that fails the gates or the exact comparison"
+    ),
+    ("dartwork_mpl._colors.catalog", "dartwork_mpl._colors._curated"): (
+        "the family taxonomy and discrete forms include the curated palettes"
+    ),
+    ("dartwork_mpl._colors.catalog", "dartwork_mpl._colors.model"): (
+        "multi-hue discrete forms are chosen by the model's relative Y"
+    ),
+    ("dartwork_mpl._colors.construction", "dartwork_mpl._colors._curated"): (
+        "the curated palettes are construction inputs"
+    ),
+    ("dartwork_mpl._colors.construction", "dartwork_mpl._colors._ssot"): (
+        "construction compiles from the validated v6 authority"
+    ),
+    ("dartwork_mpl._colors.construction", "dartwork_mpl._colors.model"): (
+        "construction computes with the model's conversion and gamut mapping"
+    ),
+    ("dartwork_mpl._colors.contrast", "dartwork_mpl._colors.model"): (
+        "WCAG luminance must linearise sRGB with the model's one definition"
+    ),
+    ("dartwork_mpl._colors.diagnostics", "dartwork_mpl._colors.catalog"): (
+        "the colormap catalogue groups colormaps by shipped family kind"
+    ),
+    ("dartwork_mpl._colors.diagnostics", "dartwork_mpl._colors.registry"): (
+        "the colour catalogue draws every registered colour library"
+    ),
+    ("dartwork_mpl._colors.families_api", "dartwork_mpl._colors.catalog"): (
+        "names resolve to the shipped families and their discrete forms"
+    ),
+    ("dartwork_mpl._colors.families_api", "dartwork_mpl._colors.registry"): (
+        "a colormap lookup needs the shipped colormaps registered first"
+    ),
+    ("dartwork_mpl._colors.families_api", "dartwork_mpl.units"): (
         "show_colors sizes its swatch figure with the physical-width API"
+    ),
+    ("dartwork_mpl._colors.registry", "dartwork_mpl._colors._curated"): (
+        "the curated palettes are registered as named colours and colormaps"
+    ),
+    ("dartwork_mpl._colors.registry", "dartwork_mpl._colors.catalog"): (
+        "matplotlib registration publishes the shipped catalogue values"
+    ),
+    ("dartwork_mpl._colors.verify", "dartwork_mpl._colors._ssot"): (
+        "the gates read the quality baseline the validated authority pins"
     ),
     ("dartwork_mpl.annotation", "dartwork_mpl.scale"): (
         "annotation text defaults to a size relative to the active preset"
+    ),
+    ("dartwork_mpl.diagnostics", "dartwork_mpl._colors.diagnostics"): (
+        "the public diagnostics entry re-exports the colour diagnostics"
     ),
     ("dartwork_mpl.diagnostics", "dartwork_mpl.font"): (
         "the font diagnostic draws the bundled font files"
@@ -152,6 +223,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.explore", "dartwork_mpl.diagnostics"): (
         "the explorer draws the colour and font diagnostics it lists"
+    ),
+    ("dartwork_mpl.helpers", "dartwork_mpl._colors.registry"): (
+        "label helpers resolve dc.* colour names, which must be registered"
     ),
     ("dartwork_mpl.io", "dartwork_mpl.config"): (
         "saving applies the user's export defaults from dm.config"
@@ -168,60 +242,8 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.layout", "dartwork_mpl.units"): (
         "margins are given as physical lengths"
     ),
-    ("dartwork_mpl.templates", "dartwork_mpl.scale"): (
-        "a template sizes its text relative to the active preset"
-    ),
-    ("dartwork_mpl.templates", "dartwork_mpl.units"): (
-        "a template's default figure size is a physical width and aspect"
-    ),
-    ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
-        "the tick-decimal check recommends the precision the formatter uses"
-    ),
-    ("dartwork_mpl.ui", "dartwork_mpl.ui.page"): (
-        "the viewer app serves the page that renders its controls"
-    ),
-    ("dartwork_mpl.ui", "dartwork_mpl.ui.params"): (
-        "the viewer builds its controls and parses requests from the user's"
-        " parameter model"
-    ),
-    ("dartwork_mpl.ui", "dartwork_mpl.ui.render"): (
-        "the viewer mounts the preview, download and image-save routes"
-    ),
-    ("dartwork_mpl.ui", "dartwork_mpl.ui.scaffold"): (
-        "the dartwork-mpl-ui init command copies the scaffold project"
-    ),
-    ("dartwork_mpl.ui", "dartwork_mpl.ui.script"): (
-        "the viewer mounts the reproducing-script routes"
-    ),
-    ("dartwork_mpl.ui", "dartwork_mpl.ui.state"): (
-        "the viewer opens the saved-state store at startup and mounts its routes"
-    ),
-    ("dartwork_mpl.ui.render", "dartwork_mpl.io"): (
-        "a server image save writes the figure with save_formats, as a user would"
-    ),
-    ("dartwork_mpl.ui.render", "dartwork_mpl.ui.params"): (
-        "a render validates the request's active values against the user's model"
-    ),
-    ("dartwork_mpl.ui.render", "dartwork_mpl.ui.saving"): (
-        "a server image save writes through the confined output slots"
-    ),
-    ("dartwork_mpl.ui.saving", "dartwork_mpl.ui.params"): (
-        "a server-save request carries the user's validated active values"
-    ),
-    ("dartwork_mpl.ui.script", "dartwork_mpl.ui.params"): (
-        "the script embeds the model's source and the active values"
-    ),
-    ("dartwork_mpl.ui.script", "dartwork_mpl.ui.saving"): (
-        "a server script save writes through the confined output slots"
-    ),
-    ("dartwork_mpl.ui.state", "dartwork_mpl.ui.params"): (
-        "saved state holds the active values and the model's declared field names"
-    ),
-    ("dartwork_mpl.style", "dartwork_mpl.font"): (
-        "a preset may name bundled fonts, which must be registered first"
-    ),
-    ("dartwork_mpl.validate", "dartwork_mpl.layout"): (
-        "the auto-applied validation fix is re-running the content-aware layout"
+    ("dartwork_mpl.mcp", "dartwork_mpl._colors.registry"): (
+        "the MCP colour tool and resource list the registered colour libraries"
     ),
     ("dartwork_mpl.mcp", "dartwork_mpl.mcp.artifacts"): (
         "the server mounts the durable plot-artifact tools and resources"
@@ -277,6 +299,70 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp.templates", "dartwork_mpl.prompt"): (
         "find_template ranks the prompt corpus's bundled template index"
     ),
+    ("dartwork_mpl.style", "dartwork_mpl._colors.registry"): (
+        "a preset switch re-applies the locale's semantic colour tokens"
+    ),
+    ("dartwork_mpl.style", "dartwork_mpl.font"): (
+        "a preset may name bundled fonts, which must be registered first"
+    ),
+    ("dartwork_mpl.templates", "dartwork_mpl.scale"): (
+        "a template sizes its text relative to the active preset"
+    ),
+    ("dartwork_mpl.templates", "dartwork_mpl.units"): (
+        "a template's default figure size is a physical width and aspect"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.page"): (
+        "the viewer app serves the page that renders its controls"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.params"): (
+        "the viewer builds its controls and parses requests from the user's"
+        " parameter model"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.render"): (
+        "the viewer mounts the preview, download and image-save routes"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.scaffold"): (
+        "the dartwork-mpl-ui init command copies the scaffold project"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.script"): (
+        "the viewer mounts the reproducing-script routes"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.state"): (
+        "the viewer opens the saved-state store at startup and mounts its routes"
+    ),
+    ("dartwork_mpl.ui.render", "dartwork_mpl.io"): (
+        "a server image save writes the figure with save_formats, as a user would"
+    ),
+    ("dartwork_mpl.ui.render", "dartwork_mpl.ui.params"): (
+        "a render validates the request's active values against the user's model"
+    ),
+    ("dartwork_mpl.ui.render", "dartwork_mpl.ui.saving"): (
+        "a server image save writes through the confined output slots"
+    ),
+    ("dartwork_mpl.ui.saving", "dartwork_mpl.ui.params"): (
+        "a server-save request carries the user's validated active values"
+    ),
+    ("dartwork_mpl.ui.script", "dartwork_mpl.ui.params"): (
+        "the script embeds the model's source and the active values"
+    ),
+    ("dartwork_mpl.ui.script", "dartwork_mpl.ui.saving"): (
+        "a server script save writes through the confined output slots"
+    ),
+    ("dartwork_mpl.ui.state", "dartwork_mpl.ui.params"): (
+        "saved state holds the active values and the model's declared field names"
+    ),
+    ("dartwork_mpl.validate", "dartwork_mpl._colors.contrast"): (
+        "the text-contrast and grayscale checks judge WCAG contrast"
+    ),
+    ("dartwork_mpl.validate", "dartwork_mpl._colors.model"): (
+        "the grayscale check compares colours in the model's OKLab and Y"
+    ),
+    ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
+        "the tick-decimal check recommends the precision the formatter uses"
+    ),
+    ("dartwork_mpl.validate", "dartwork_mpl.layout"): (
+        "the auto-applied validation fix is re-running the content-aware layout"
+    ),
 }
 
 # Compatibility shims: public module path -> the unit that owns its contents.
@@ -301,30 +387,23 @@ DECISIONS: Mapping[str, str] = {
     ),
 }
 
+# Modules whose file path is fixed outside their owner's folder, with the
+# unit that owns them. Prefix ownership would give them to the enclosing
+# package; these paths are pinned elsewhere, so the module cannot move.
+PINNED: Mapping[str, str] = {
+    # written by `python -m dartwork_mpl._colors._build` and excluded by
+    # path from ruff; its values are the shipped catalogue
+    "dartwork_mpl._colors._generated": "dartwork_mpl._colors.catalog",
+    # regenerated by scripts/generate_typing.py at this path
+    "dartwork_mpl._colors._typing": "dartwork_mpl._colors.catalog",
+    # the independent quality oracle; its path and SHA-256 are pinned in
+    # asset/color/color_v6_ssot.json and the frozen quality fixture
+    "dartwork_mpl._colors._compatibility_metrics": "dartwork_mpl._colors.verify",
+}
+
 # Known violations at the start of the refactor (ADR 0005), each with the
 # plan step that removes it. The list only shrinks.
 DEBT: Mapping[str, str] = {
-    "cycle: dartwork_mpl._colors, dartwork_mpl._luminance": "K1",
-    "missing __all__: dartwork_mpl._luminance": "K1",
-    "private import: dartwork_mpl._colors._contrast -> dartwork_mpl._luminance._contrast_ratio": "K1",
-    "private import: dartwork_mpl._luminance -> dartwork_mpl._colors._conversion": "K1",
-    "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.CYCLIC": "K5",
-    "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.DIVERGING": "K5",
-    "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.MULTI_HUE": "K5",
-    "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.QUALITATIVE": "K5",
-    "private import: dartwork_mpl.diagnostics._colormaps -> dartwork_mpl._colors._families.SEQUENTIAL": "K5",
-    "private import: dartwork_mpl.diagnostics._colors -> dartwork_mpl._colors._loader.COLOR_LIBRARIES": "K5",
-    "private import: dartwork_mpl.helpers.labels -> dartwork_mpl._colors._loader.ensure_loaded": "K4",
-    "private import: dartwork_mpl.mcp.resources -> dartwork_mpl._colors._loader.COLOR_LIBRARIES": "K4",
-    "private import: dartwork_mpl.mcp.tools -> dartwork_mpl._colors._loader.COLOR_LIBRARIES": "K4",
-    "private import: dartwork_mpl.style -> dartwork_mpl._colors._semantic.SEMANTIC_TOKEN_NAMES": "K4",
-    "private import: dartwork_mpl.style -> dartwork_mpl._colors._semantic.apply_semantic": "K4",
-    "private import: dartwork_mpl.validate._checks._luminance -> dartwork_mpl._luminance._contrast_ratio": "K1",
-    "private import: dartwork_mpl.validate._checks._luminance -> dartwork_mpl._luminance._linearized": "K1",
-    "private import: dartwork_mpl.validate._checks._luminance -> dartwork_mpl._luminance._rel_lum": "K1",
-    "private import: dartwork_mpl.validate._checks.grayscale_safety -> dartwork_mpl._colors._conversion._srgb_to_oklab": "K3",
-    "private import: dartwork_mpl.validate._checks.grayscale_safety -> dartwork_mpl._colors._conversion.relative_y_srgb_d65": "K3",
-    "private import: dartwork_mpl.validate._checks.text_contrast -> dartwork_mpl._luminance._contrast_ratio": "K1",
     "private import: dartwork_mpl.validate.agent_requirements -> dartwork_mpl.helpers.quality._MIN_RECOMMENDED_DPI": "C11",
     "undeclared dependency: dartwork_mpl.helpers -> dartwork_mpl.scale": "C11",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl._colors": "C10",
@@ -352,6 +431,7 @@ class Layout:
     allowed: Mapping[tuple[str, str], str]
     decisions: Mapping[str, str]
     shims: Mapping[str, str] = field(default_factory=dict)
+    pinned: Mapping[str, str] = field(default_factory=dict)
 
     @property
     def units(self) -> frozenset[str]:
@@ -360,7 +440,7 @@ class Layout:
 
 
 REPOSITORY_LAYOUT = Layout(
-    ENTRY_POINTS, PLATFORM, SLICES, ALLOWED, DECISIONS, SHIMS
+    ENTRY_POINTS, PLATFORM, SLICES, ALLOWED, DECISIONS, SHIMS, PINNED
 )
 
 
@@ -394,9 +474,11 @@ def read_sources(root: Path) -> tuple[dict[str, str], set[str]]:
 
 
 def owner(module: str, layout: Layout) -> str | None:
-    """The unit owning ``module``: a shim's owner, else by longest dotted prefix, or None."""
+    """The unit owning ``module``: a shim's or pinned module's owner, else by longest dotted prefix, or None."""
     if module in layout.shims:
         return layout.shims[module]
+    if module in layout.pinned:
+        return layout.pinned[module]
     best = None
     for unit in layout.units:
         if (module == unit or module.startswith(unit + ".")) and (
