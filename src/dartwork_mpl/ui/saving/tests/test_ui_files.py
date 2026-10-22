@@ -14,6 +14,7 @@ import pytest
 from dartwork_mpl.ui import saving
 from dartwork_mpl.ui.platform import fs
 from dartwork_mpl.ui.saving import RelativeOutput, _plan, parse_output
+from dartwork_mpl.ui.state import StateFile
 from dartwork_mpl.ui.state import _store as state
 
 
@@ -359,7 +360,9 @@ def test_reserved_file_metadata_failure_closes_and_reports_unverified_file(
         if sink == "state":
             assert isinstance(
                 store.update(
-                    "config", max_bytes=100, edit=lambda old: b"old bytes"
+                    StateFile.CONFIG,
+                    max_bytes=100,
+                    edit=lambda old: b"old bytes",
                 ),
                 state.StateWritten,
             )
@@ -383,7 +386,7 @@ def test_reserved_file_metadata_failure_closes_and_reports_unverified_file(
             result = save(roots, "a.png")
         else:
             result = store.update(
-                "config", max_bytes=100, edit=lambda old: b"next bytes"
+                StateFile.CONFIG, max_bytes=100, edit=lambda old: b"next bytes"
             )
         assert isinstance(result, fs.PartialSave)
         ((name, fd),) = observed.items()
@@ -461,6 +464,7 @@ os.umask(0o022)
 from dartwork_mpl.ui import saving
 from dartwork_mpl.ui.platform import fs
 from dartwork_mpl.ui.saving import _plan, parse_output
+from dartwork_mpl.ui.state import StateFile
 from dartwork_mpl.ui.state import _store as state
 root, origin = Path(sys.argv[1]), Path(sys.argv[2])
 assert Path(_plan.__file__).resolve() == origin.resolve()
@@ -473,7 +477,7 @@ with roots:
         receipt = saving.commit_save(plan, io.BytesIO(b"figure"))
     assert isinstance(receipt, saving.SaveReceipt), receipt
     store = state.FixedStateStore(roots)
-    for kind in ("config", "presets"):
+    for kind in (StateFile.CONFIG, StateFile.PRESETS):
         written = store.update(kind, max_bytes=64, edit=lambda old: b"{}")
         assert isinstance(written, state.StateWritten), written
 """

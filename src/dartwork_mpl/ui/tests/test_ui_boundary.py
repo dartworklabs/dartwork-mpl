@@ -41,15 +41,19 @@ from dartwork_mpl.ui.state._language import (
     FullStateUpdate,
     InvalidStoredState,
     ParamsUpdate,
+    Preset,
     PresetRequest,
     StoredConfig,
     StoredPresets,
+    Tab,
     encode_state,
+    parse_config,
     parse_full_state_update,
     parse_params_update,
     parse_preset_request,
-    parse_stored,
-    project_stored,
+    parse_presets,
+    project_config,
+    project_presets,
 )
 
 
@@ -275,9 +279,9 @@ def test_old_numeric_choice_strings_in_stored_presets_remain_usable():
     raw = json.dumps(
         [{"label": "old", "params": {"ncols": "2", "ratio": "1"}}]
     ).encode()
-    stored = parse_stored("presets", raw)
+    stored = parse_presets(raw)
     assert isinstance(stored, StoredPresets)
-    (entry,) = project_stored(
+    (entry,) = project_presets(
         stored, frozenset(NumericChoiceParams.model_fields)
     )
     assert entry["params"] == {"ncols": "2", "ratio": "1"}
@@ -583,23 +587,26 @@ def test_stored_model_drift_projects_without_mutating_raw_values():
         ],
         "figWidth": 999,
     }
-    state = parse_stored("config", json.dumps(value).encode())
+    state = parse_config(json.dumps(value).encode())
     assert isinstance(state, StoredConfig)
-    projected = project_stored(state, frozenset({"count"}))
+    projected = project_config(state, frozenset({"count"}))
     assert projected["params"] == {"count": "obsolete"}
     assert projected["dropped_fields"] == ["removed"]
     assert projected["tabs"][0]["params"] == {"count": 900}
     assert projected["figWidth"] == 70
-    assert state.value == value
+    assert state.to_json() == value
     presets = [
         {"label": "Old", "params": value["params"], "timestamp": "<img>"}
     ]
-    state = parse_stored("presets", json.dumps(presets).encode())
-    assert isinstance(state, StoredPresets)
-    assert project_stored(state, frozenset({"count"}))[0]["dropped_fields"] == [
-        "removed"
-    ]
-    assert state.value == presets
+    presets_state = parse_presets(json.dumps(presets).encode())
+    assert isinstance(presets_state, StoredPresets)
+    assert project_presets(presets_state, frozenset({"count"}))[0][
+        "dropped_fields"
+    ] == ["removed"]
+    assert presets_state.to_json() == presets
+
+
+PARSE_STORED = {"config": parse_config, "presets": parse_presets}
 
 
 @pytest.mark.parametrize(
@@ -624,28 +631,72 @@ def test_stored_model_drift_projects_without_mutating_raw_values():
         ("presets", [1]),
         ("presets", [{"label": "x", "params": {}, "extra": 1}]),
         ("presets", [{"label": "x", "params": {}, "timestamp": []}]),
+        ("config", {"params": {}, "figWidth": None}),
+        ("config", {"params": {}, "function": None}),
+        ("presets", [{"label": "x", "params": {}, "timestamp": None}]),
+        ("presets", [{"label": "x" * 257, "params": {}}]),
     ],
 )
 def test_stored_structural_corruption_is_distinct_from_model_drift(kind, value):
     """Malformed persisted containers and metadata never become empty defaults."""
     assert isinstance(
-        parse_stored(kind, json.dumps(value).encode()), InvalidStoredState
+        PARSE_STORED[kind](json.dumps(value).encode()), InvalidStoredState
     )
+
+
+def test_stored_member_order_survives_projection_and_rewrite():
+    """Hand-ordered objects read back, and re-encode, in the order the file spelled them."""
+    value = {
+        "figWidth": 40,
+        "tabs": [{"params": {"count": 2}, "name": "t", "id": 7}],
+        "params": {"count": 4},
+        "function": "f",
+    }
+    state = parse_config(json.dumps(value).encode())
+    assert isinstance(state, StoredConfig)
+    projected = project_config(state, frozenset({"count"}))
+    assert list(projected) == [*value, "dropped_fields"]
+    assert list(projected["tabs"][0]) == [
+        "params",
+        "name",
+        "id",
+        "dropped_fields",
+    ]
+    entries = [{"params": {}, "timestamp": "t", "label": "old"}]
+    presets = parse_presets(json.dumps(entries).encode())
+    assert isinstance(presets, StoredPresets)
+    assert json.dumps(presets.to_json()) == json.dumps(entries)
+
+
+def test_stored_values_reject_illegal_construction():
+    """Member orders must list exactly the members; labels and preset counts keep their bounds."""
+    with pytest.raises(ValueError):
+        Tab(1, "x", {}, ("id", "name"))
+    with pytest.raises(ValueError):
+        Tab(1, "x" * 257, {})
+    with pytest.raises(ValueError):
+        Preset("x", {}, None, ("label", "params", "timestamp"))
+    with pytest.raises(ValueError):
+        StoredConfig({}, None, None, None, None, ("params", "params"))
+    with pytest.raises(ValueError):
+        StoredPresets((Preset("x", {}, None, ("label", "params")),) * 1001)
+    assert Preset("x", {}, None, ("params", "label")).to_json() == {
+        "params": {},
+        "label": "x",
+    }
 
 
 def test_stored_limits_and_outgoing_serialization_are_bounded():
     """Stored counts and encoded next-state bytes are checked before replacement."""
     entry = {"label": "x", "params": {}}
     assert isinstance(
-        parse_stored("presets", json.dumps([entry] * 1000).encode()),
-        StoredPresets,
+        parse_presets(json.dumps([entry] * 1000).encode()), StoredPresets
     )
     assert isinstance(
-        parse_stored("presets", json.dumps([entry] * 1001).encode()),
-        InvalidStoredState,
+        parse_presets(json.dumps([entry] * 1001).encode()), InvalidStoredState
     )
     assert isinstance(
-        parse_stored("config", b" " * (1024 * 1024 + 1)), InvalidStoredState
+        parse_config(b" " * (1024 * 1024 + 1)), InvalidStoredState
     )
     expected = b'{\n  "params": {}\n}\n'
     result = encode_state({"params": {}}, max_bytes=len(expected))

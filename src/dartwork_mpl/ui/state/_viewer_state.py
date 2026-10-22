@@ -7,10 +7,11 @@ processes can still lose concurrent updates.
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import ClassVar, TypeAlias, cast
+from typing import ClassVar, TypeAlias
 
 from ..params import InputFailure, InvalidRequest
 from ..platform.json_bounds import JsonValue, LimitExceeded
+from ._files import StateFile
 from ._language import (
     MAX_CONFIG_BYTES,
     MAX_PRESET_BYTES,
@@ -18,19 +19,20 @@ from ._language import (
     FullStateUpdate,
     InvalidStoredState,
     ParamsUpdate,
+    Preset,
     PresetRequest,
     StateUpdate,
-    StoredConfig,
     StoredPresets,
     encode_state,
-    parse_stored,
-    project_stored,
+    parse_config,
+    parse_presets,
+    project_config,
+    project_presets,
 )
 from ._store import (
     FileFailure,
     FixedStateStore,
     MissingState,
-    StateEditRefusal,
     StateUnchanged,
     StateWritten,
 )
@@ -80,29 +82,25 @@ class ViewerState:
 
     def load_config(self) -> ConfigLoaded | MissingState | FileFailure:
         """Read projected config or a named miss/refusal, preserving all stored bytes."""
-        raw = self._store.read("config", max_bytes=MAX_CONFIG_BYTES)
+        raw = self._store.read(StateFile.CONFIG, max_bytes=MAX_CONFIG_BYTES)
         if not isinstance(raw, bytes):
             return raw
-        stored = parse_stored("config", raw)
-        if not isinstance(stored, StoredConfig):
-            return InvalidStoredState()
-        projected = project_stored(stored, self._field_names)
-        # parse_stored established the config object before this projection.
-        return ConfigLoaded(cast(dict[str, JsonValue], projected))
+        stored = parse_config(raw)
+        if isinstance(stored, InvalidStoredState):
+            return stored
+        return ConfigLoaded(project_config(stored, self._field_names))
 
     def load_presets(self) -> PresetsLoaded | FileFailure:
         """Return projected presets (empty if missing), refusing structural corruption."""
-        raw = self._store.read("presets", max_bytes=MAX_PRESET_BYTES)
+        raw = self._store.read(StateFile.PRESETS, max_bytes=MAX_PRESET_BYTES)
         if isinstance(raw, MissingState):
             return PresetsLoaded([])
         if not isinstance(raw, bytes):
             return raw
-        stored = parse_stored("presets", raw)
-        if not isinstance(stored, StoredPresets):
-            return InvalidStoredState()
-        projected = project_stored(stored, self._field_names)
-        # parse_stored established an array of preset objects, preserved by projection.
-        return PresetsLoaded(cast(list[dict[str, JsonValue]], projected))
+        stored = parse_presets(raw)
+        if isinstance(stored, InvalidStoredState):
+            return stored
+        return PresetsLoaded(project_presets(stored, self._field_names))
 
     def save_config(
         self, update: StateUpdate, function_name: str
@@ -113,10 +111,12 @@ class ViewerState:
         ``FullStateUpdate`` adds ``tabs`` and, when given, ``figWidth``.
         """
 
-        def edit(raw: bytes | MissingState) -> bytes | StateEditRefusal:
+        def edit(
+            raw: bytes | MissingState,
+        ) -> bytes | InvalidStoredState | InputFailure:
             """Check historical structure while locked, then encode the complete new config."""
             if isinstance(raw, bytes) and isinstance(
-                parse_stored("config", raw), InvalidStoredState
+                parse_config(raw), InvalidStoredState
             ):
                 return InvalidStoredState()
             try:
@@ -143,50 +143,42 @@ class ViewerState:
                         value["figWidth"] = fig_width.value
             return encode_state(value, max_bytes=MAX_CONFIG_BYTES)
 
-        # This editor never returns the store's optional no-change outcome.
-        return cast(
-            StateWriteResult,
-            self._store.update("config", max_bytes=MAX_CONFIG_BYTES, edit=edit),
+        return self._store.update(
+            StateFile.CONFIG, max_bytes=MAX_CONFIG_BYTES, edit=edit
         )
 
     def save_preset(self, parsed: PresetRequest) -> StateWriteResult:
         """Append declared parameter names under lock without projecting old entries."""
 
-        def edit(raw: bytes | MissingState) -> bytes | StateEditRefusal:
-            """Retain every old JSON value and refuse corruption or the preset count cap."""
+        def edit(
+            raw: bytes | MissingState,
+        ) -> bytes | InvalidStoredState | InputFailure:
+            """Retain every old entry as stored and refuse corruption or the preset count cap."""
             if isinstance(raw, MissingState):
-                entries: list[dict[str, JsonValue]] = []
+                entries: tuple[Preset, ...] = ()
             else:
-                stored = parse_stored("presets", raw)
-                if not isinstance(stored, StoredPresets):
-                    return InvalidStoredState()
-                entries = stored.value
+                stored = parse_presets(raw)
+                if isinstance(stored, InvalidStoredState):
+                    return stored
+                entries = stored.entries
             if len(entries) >= MAX_PRESETS:
                 return LimitExceeded()
             try:
-                entries.append(
-                    {
-                        "label": parsed.label,
-                        "params": parsed.model.model_dump(
-                            mode="json", by_alias=False
-                        ),
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
-                    }
-                )
+                params = parsed.model.model_dump(mode="json", by_alias=False)
             except (ValueError, TypeError, OverflowError, RecursionError):
                 return InvalidRequest(
                     "Parameters cannot be serialized as finite JSON."
                 )
+            added = Preset(
+                parsed.label, params, datetime.now(timezone.utc).isoformat()
+            )
             return encode_state(
-                cast(list[JsonValue], entries), max_bytes=MAX_PRESET_BYTES
+                StoredPresets((*entries, added)).to_json(),
+                max_bytes=MAX_PRESET_BYTES,
             )
 
-        # This editor never returns the store's optional no-change outcome.
-        return cast(
-            StateWriteResult,
-            self._store.update(
-                "presets", max_bytes=MAX_PRESET_BYTES, edit=edit
-            ),
+        return self._store.update(
+            StateFile.PRESETS, max_bytes=MAX_PRESET_BYTES, edit=edit
         )
 
     def delete_preset(self, index: int) -> StateWriteResult | PresetNotFound:
@@ -194,26 +186,23 @@ class ViewerState:
 
         def edit(
             raw: bytes | MissingState,
-        ) -> bytes | StateEditRefusal | StateUnchanged:
+        ) -> bytes | InvalidStoredState | InputFailure | StateUnchanged:
             """Resolve the index only after parsing current state inside the store lock."""
             if isinstance(raw, MissingState):
                 return StateUnchanged()
-            stored = parse_stored("presets", raw)
-            if not isinstance(stored, StoredPresets):
-                return InvalidStoredState()
-            if index < 0 or index >= len(stored.value):
+            stored = parse_presets(raw)
+            if isinstance(stored, InvalidStoredState):
+                return stored
+            if index < 0 or index >= len(stored.entries):
                 return StateUnchanged()
-            entries = stored.value
-            entries.pop(index)
+            kept = stored.entries[:index] + stored.entries[index + 1 :]
             return encode_state(
-                cast(list[JsonValue], entries), max_bytes=MAX_PRESET_BYTES
+                StoredPresets(kept).to_json(), max_bytes=MAX_PRESET_BYTES
             )
 
-        result = self._store.update(
-            "presets", max_bytes=MAX_PRESET_BYTES, edit=edit
+        result: StateWriteResult | StateUnchanged = self._store.update(
+            StateFile.PRESETS, max_bytes=MAX_PRESET_BYTES, edit=edit
         )
-        return (
-            PresetNotFound(index)
-            if isinstance(result, StateUnchanged)
-            else result
-        )
+        if isinstance(result, StateUnchanged):
+            return PresetNotFound(index)
+        return result
