@@ -1,15 +1,17 @@
 """Render the user's figure callback to bytes in one export format.
 
-Surface (through the ``render`` package): none; the routes in this slice use
-it. Tests reach ``_figure_to_bytes`` and the export-format check directly.
+Also parses the ``{fmt}`` path segment of the export and image-save routes
+into an ``ExportFormat`` or an ``UnsupportedFormat`` refusal. Surface (through
+the ``render`` package): none; the routes in this slice use it. Tests reach
+``_figure_to_bytes`` and ``parse_export_format`` directly.
 """
 
 import io
 from collections.abc import Callable
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, ClassVar
 
 import matplotlib.pyplot as plt
-from fastapi import HTTPException
 from matplotlib.backend_bases import FigureCanvasBase
 from matplotlib.figure import Figure
 
@@ -37,17 +39,36 @@ def _figure_to_bytes(
         plt.close(fig)
 
 
-def _validate_export_format(fmt: str) -> None:
-    """Reject an unsupported export format with a 400 (not a 500).
+@dataclass(frozen=True)
+class ExportFormat:
+    """A lower-case file format matplotlib's canvas can write; built by ``parse_export_format``."""
 
-    Without this, ``savefig(format=<bogus>)`` raises deep in matplotlib
-    and FastAPI returns an opaque 500.
+    name: str
+
+    def __post_init__(self) -> None:
+        """Reject a name that is not a lower-case supported format (a caller defect)."""
+        if self.name not in _SUPPORTED_EXPORT_FORMATS:
+            raise ValueError(f"Unsupported export format {self.name!r}")
+
+
+@dataclass(frozen=True)
+class UnsupportedFormat:
+    """The requested export format is not one matplotlib can write; the detail lists them."""
+
+    detail: str
+    status_code: ClassVar[int] = 400
+    code: ClassVar[str] = "invalid_request"
+
+
+def parse_export_format(fmt: str) -> ExportFormat | UnsupportedFormat:
+    """Parse a route's format segment case-insensitively; pure.
+
+    Refusing here keeps a bogus format from reaching ``savefig``, which would
+    raise deep in matplotlib and surface as an opaque 500.
     """
     if fmt.lower() not in _SUPPORTED_EXPORT_FORMATS:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Unsupported export format {fmt!r}. Supported: "
-                f"{', '.join(sorted(_SUPPORTED_EXPORT_FORMATS))}."
-            ),
+        return UnsupportedFormat(
+            f"Unsupported export format {fmt!r}. Supported: "
+            f"{', '.join(sorted(_SUPPORTED_EXPORT_FORMATS))}."
         )
+    return ExportFormat(fmt.lower())

@@ -2,9 +2,10 @@
 
 Every viewer request body is first a bounded JSON object (``request_object``);
 render, export and script downloads then carry nothing but the validated
-active model (``ModelRequest``). Surface (through the ``params`` package):
-``InputFailure``, ``ModelRequest``, ``request_object`` and
-``parse_model_request``.
+active model (``ModelRequest``, parsed by ``parse_model_request``). Each
+route calls the parser of its own body language; no parser dispatches on a
+route string. Surface (through the ``params`` package): ``InputFailure``,
+``ModelRequest``, ``request_object`` and ``parse_model_request``.
 """
 
 from __future__ import annotations
@@ -48,12 +49,21 @@ def request_object(
 
 
 def parse_model_request(
-    value: dict[str, JsonValue],
+    value: JsonValue,
     model_cls: type[ParamModel],
     descriptors: list[ParamDescriptor],
-) -> ModelRequest | InvalidRequest:
-    """Read a body that is exactly the active parameters."""
-    model = parse_active(value, model_cls, descriptors)
+) -> ModelRequest | InputFailure:
+    """Parse a decoded body that is exactly the active parameters.
+
+    Returns ``LimitExceeded`` when the tree breaks a size bound and
+    ``InvalidRequest`` when it is not an object or does not validate against
+    ``model_cls`` (after the documented list-text and numeric-choice
+    coercion). Pure: no I/O.
+    """
+    body = request_object(value)
+    if not isinstance(body, dict):
+        return body
+    model = parse_active(body, model_cls, descriptors)
     if isinstance(model, InvalidRequest):
         return model
     return ModelRequest(model)

@@ -1,12 +1,14 @@
 """The script routes: download the reproducing script, or save it below the script root.
 
-Surface (through the ``script`` package): ``routes`` and ``GRANTS``.
+Each route parses its own body language (the active model, or a save
+request) before generating source. Surface (through the ``script`` package):
+``routes`` and ``GRANTS``.
 """
 
 import io
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response
@@ -14,12 +16,10 @@ from matplotlib.figure import Figure
 
 from ..params import (
     InputFailure,
-    InvalidRequest,
     ModelRequest,
     ParamDescriptor,
     ParamModel,
     parse_model_request,
-    request_object,
 )
 from ..platform.access import Grant
 from ..platform.fs import FsFailure, RootScope
@@ -34,32 +34,17 @@ from ..saving import (
     parse_output,
     parse_save_request,
     prepare_save,
-    timestamp_slug,
+    requested_name,
 )
 from ._generate import _generate_script
+
+_Parsed = TypeVar("_Parsed")
 
 # Local-only grants for the routes below (the entry point composes them).
 GRANTS: dict[tuple[str, str], Grant] = {
     ("POST", "/api/script"): "local-effect",
     ("POST", "/api/save-server/script"): "local-effect",
 }
-
-
-def parse_request(
-    route_template: str,
-    value: JsonValue,
-    model_cls: type[ParamModel],
-    descriptors: list[ParamDescriptor],
-) -> ModelRequest | SaveRequest | SaveInputFailure:
-    """Consume the entire endpoint schema and return values the shell can use directly."""
-    body = request_object(value)
-    if not isinstance(body, dict):
-        return body
-    if route_template == "/api/script":
-        return parse_model_request(body, model_cls, descriptors)
-    if route_template == "/api/save-server/script":
-        return parse_save_request(body, model_cls, descriptors)
-    return InvalidRequest()
 
 
 def routes(
@@ -74,33 +59,44 @@ def routes(
     router = APIRouter()
 
     async def parsed_body(
-        request: Request, template: str
-    ) -> ModelRequest | SaveRequest | JSONResponse:
-        """Recognize the complete bounded endpoint language without downstream raw reads."""
+        request: Request,
+        parse: Callable[[JsonValue], _Parsed | SaveInputFailure],
+    ) -> _Parsed | JSONResponse:
+        """Read the bounded body once and parse it with the route's own parser.
+
+        Media, decoding and parser refusals come back as their error responses.
+        """
         value = await request_json(request)
         if isinstance(value, JSONResponse):
             return value
         if isinstance(value, InputFailure):
             return refusal_response(value)
-        parsed = parse_request(template, value, param_model, descriptors)
+        parsed = parse(value)
         return (
             refusal_response(parsed)
             if isinstance(parsed, SaveInputFailure)
             else parsed
         )
 
+    def model_request(value: JsonValue) -> ModelRequest | InputFailure:
+        """Parse a body that is exactly the active parameters of ``param_model``."""
+        return parse_model_request(value, param_model, descriptors)
+
+    def save_request(value: JsonValue) -> SaveRequest | SaveInputFailure:
+        """Parse a server-save body against ``param_model``."""
+        return parse_save_request(value, param_model, descriptors)
+
     def save_script(
         parsed: SaveRequest,
     ) -> SaveReceipt | FsFailure | SaveInputFailure | JSONResponse:
-        """Prepare the primary script sink before source generation and create it exclusively."""
+        """Prepare the primary script sink before source generation and create it exclusively.
+
+        The saved name always ends in a single ``.py``.
+        """
         scope = roots()
         if not isinstance(scope, RootScope):
             return scope
-        name = (
-            parsed.output.filename
-            if parsed.output
-            else f"{figure_fn.__name__}_{timestamp_slug()}"
-        )
+        name = requested_name(parsed, figure_fn.__name__)
         if name.lower().endswith(".py"):
             name = name[:-3]
         output = parse_output(f"{name}.py")
@@ -130,10 +126,9 @@ def routes(
     @router.post("/api/script", response_model=None)
     async def generate_script(request: Request) -> Response:
         """Download source after bounded active-model validation without persistence."""
-        parsed = await parsed_body(request, "/api/script")
+        parsed = await parsed_body(request, model_request)
         if isinstance(parsed, JSONResponse):
             return parsed
-        assert isinstance(parsed, ModelRequest)
         try:
             code = _generate_script(
                 parsed.model, param_model, figure_fn, script_root
@@ -159,10 +154,11 @@ def routes(
         request: Request,
     ) -> dict[str, str] | JSONResponse:
         """Save source only below the script root, preserving every existing target."""
-        parsed = await parsed_body(request, "/api/save-server/script")
+        parsed: SaveRequest | JSONResponse = await parsed_body(
+            request, save_request
+        )
         if isinstance(parsed, JSONResponse):
             return parsed
-        assert isinstance(parsed, SaveRequest)
         result = save_script(parsed)
         if isinstance(result, JSONResponse):
             return result

@@ -1,8 +1,10 @@
 """The viewer-state languages: config/preset request bodies and the stored state files.
 
-Pure: no function opens files. Requests are parsed into ``StateRequest`` /
-``PresetRequest``; stored bytes are parsed structurally (model drift is not
-corruption) and projected onto the current model's declared fields.
+Pure: no function opens files. Each state route has its own request parser:
+``/api/config`` bodies become a ``ParamsUpdate``, ``/api/save-state`` bodies a
+``FullStateUpdate`` and ``/api/preset`` bodies a ``PresetRequest``. Stored
+bytes are parsed structurally (model drift is not corruption) and projected
+onto the current model's declared fields.
 """
 
 from __future__ import annotations
@@ -75,12 +77,38 @@ class Tab:
 
 
 @dataclass(frozen=True)
-class StateRequest:
-    """A config edit distinguishes omitted tab/width fields from explicit values."""
+class FigWidth:
+    """The active figure width the page shows, an integer percentage in 30..100."""
+
+    value: int
+
+    def __post_init__(self) -> None:
+        """Reject a width outside 30..100 or a non-``int`` (``bool`` included)."""
+        if type(self.value) is not int or not 30 <= self.value <= 100:
+            raise ValueError("figWidth must be an integer in 30..100")
+
+
+@dataclass(frozen=True)
+class ParamsUpdate:
+    """``/api/config``: replace the stored config with the active model alone (no tabs, no width)."""
 
     model: ParamModel
-    tabs: tuple[Tab, ...] | None = None
-    fig_width: int | None = None
+
+
+@dataclass(frozen=True)
+class FullStateUpdate:
+    """``/api/save-state``: the active model, every inactive tab and an optional width.
+
+    ``tabs`` is empty when the body omitted it; ``fig_width`` is ``None`` when
+    the body omitted ``figWidth``, and then the stored config has no width.
+    """
+
+    model: ParamModel
+    tabs: tuple[Tab, ...]
+    fig_width: FigWidth | None
+
+
+StateUpdate: TypeAlias = ParamsUpdate | FullStateUpdate
 
 
 @dataclass(frozen=True)
@@ -136,49 +164,85 @@ def _tabs(
     return tuple(result)
 
 
-def parse_request(
-    route_template: str,
+def parse_params_update(
     value: JsonValue,
     model_cls: type[ParamModel],
     descriptors: list[ParamDescriptor],
-) -> StateRequest | PresetRequest | InputFailure:
-    """Consume the entire endpoint schema and return values the shell can use directly."""
+) -> ParamsUpdate | InputFailure:
+    """Parse an ``/api/config`` body, which is exactly the active parameters; pure.
+
+    Refusals: ``LimitExceeded`` over the size bounds, ``InvalidRequest`` for a
+    non-object or parameters that do not validate.
+    """
     body = request_object(value)
     if not isinstance(body, dict):
         return body
-    if route_template == "/api/config":
-        model = parse_active(body, model_cls, descriptors)
-        if isinstance(model, InvalidRequest):
-            return model
-        return StateRequest(model)
-    if route_template == "/api/save-state":
-        if body.keys() - {"params", "tabs", "figWidth"}:
-            return InvalidRequest()
-        model = parse_active(body.get("params", {}), model_cls, descriptors)
-        if isinstance(model, InvalidRequest):
-            return model
-        tabs = _tabs(body.get("tabs", []), frozenset(model_cls.model_fields))
-        if isinstance(tabs, InputFailure):
-            return tabs
-        width = body.get("figWidth")
-        if "figWidth" in body and (
-            type(width) is not int or not 30 <= width <= 100
-        ):
-            return InvalidRequest()
-        return StateRequest(model, tabs, cast(int | None, width))
-    if route_template == "/api/preset":
-        if body.keys() != {"label", "params"}:
-            return InvalidRequest()
-        label_refusal = _label(body["label"])
-        if label_refusal is not None:
-            return label_refusal
-        model = parse_active(body["params"], model_cls, descriptors)
-        return (
-            model
-            if isinstance(model, InvalidRequest)
-            else PresetRequest(cast(str, body["label"]), model)
-        )
-    return InvalidRequest()
+    model = parse_active(body, model_cls, descriptors)
+    if isinstance(model, InvalidRequest):
+        return model
+    return ParamsUpdate(model)
+
+
+def parse_full_state_update(
+    value: JsonValue,
+    model_cls: type[ParamModel],
+    descriptors: list[ParamDescriptor],
+) -> FullStateUpdate | InputFailure:
+    """Parse an ``/api/save-state`` body: optional ``params``, ``tabs`` and ``figWidth``; pure.
+
+    Omitted ``params`` means the model defaults, omitted ``tabs`` none.
+    Refusals: ``LimitExceeded`` over the size bounds, more than 64 tabs or a
+    label over 256 bytes; ``InvalidRequest`` for unknown keys, invalid
+    parameters, malformed or duplicate tabs, tab params naming undeclared
+    fields, or a width that is not an integer in 30..100.
+    """
+    body = request_object(value)
+    if not isinstance(body, dict):
+        return body
+    if body.keys() - {"params", "tabs", "figWidth"}:
+        return InvalidRequest()
+    model = parse_active(body.get("params", {}), model_cls, descriptors)
+    if isinstance(model, InvalidRequest):
+        return model
+    tabs = _tabs(body.get("tabs", []), frozenset(model_cls.model_fields))
+    if isinstance(tabs, InputFailure):
+        return tabs
+    if "figWidth" not in body:
+        return FullStateUpdate(model, tabs, None)
+    width = body["figWidth"]
+    if type(width) is not int or not 30 <= width <= 100:
+        return InvalidRequest()
+    return FullStateUpdate(model, tabs, FigWidth(width))
+
+
+def parse_preset_request(
+    value: JsonValue,
+    model_cls: type[ParamModel],
+    descriptors: list[ParamDescriptor],
+) -> PresetRequest | InputFailure:
+    """Parse an ``/api/preset`` body: exactly ``label`` and ``params``; pure.
+
+    Refusals: ``LimitExceeded`` over the size bounds or for a label over 256
+    bytes; ``InvalidRequest`` for other keys, a non-string label or invalid
+    parameters.
+    """
+    body = request_object(value)
+    if not isinstance(body, dict):
+        return body
+    if body.keys() != {"label", "params"}:
+        return InvalidRequest()
+    label = body["label"]
+    if not isinstance(label, str):
+        return InvalidRequest()
+    label_refusal = _label(label)
+    if label_refusal is not None:
+        return label_refusal
+    model = parse_active(body["params"], model_cls, descriptors)
+    return (
+        model
+        if isinstance(model, InvalidRequest)
+        else PresetRequest(label, model)
+    )
 
 
 @dataclass(frozen=True)

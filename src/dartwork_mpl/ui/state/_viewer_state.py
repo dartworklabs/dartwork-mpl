@@ -15,9 +15,11 @@ from ._language import (
     MAX_CONFIG_BYTES,
     MAX_PRESET_BYTES,
     MAX_PRESETS,
+    FullStateUpdate,
     InvalidStoredState,
+    ParamsUpdate,
     PresetRequest,
-    StateRequest,
+    StateUpdate,
     StoredConfig,
     StoredPresets,
     encode_state,
@@ -103,9 +105,13 @@ class ViewerState:
         return PresetsLoaded(cast(list[dict[str, JsonValue]], projected))
 
     def save_config(
-        self, parsed: StateRequest, function_name: str
+        self, update: StateUpdate, function_name: str
     ) -> StateWriteResult:
-        """Persist declared parameter names; bounded edits preserve corrupt existing bytes."""
+        """Replace the stored config with ``update``; corrupt existing bytes are kept and refused.
+
+        A ``ParamsUpdate`` writes ``function``, ``params`` and ``updated_at``; a
+        ``FullStateUpdate`` adds ``tabs`` and, when given, ``figWidth``.
+        """
 
         def edit(raw: bytes | MissingState) -> bytes | StateEditRefusal:
             """Check historical structure while locked, then encode the complete new config."""
@@ -116,7 +122,7 @@ class ViewerState:
             try:
                 value: dict[str, JsonValue] = {
                     "function": function_name,
-                    "params": parsed.model.model_dump(
+                    "params": update.model.model_dump(
                         mode="json", by_alias=False
                     ),
                     "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -125,13 +131,16 @@ class ViewerState:
                 return InvalidRequest(
                     "Parameters cannot be serialized as finite JSON."
                 )
-            if parsed.tabs is not None:
-                value["tabs"] = [
-                    {"id": tab.id, "name": tab.name, "params": tab.params}
-                    for tab in parsed.tabs
-                ]
-            if parsed.fig_width is not None:
-                value["figWidth"] = parsed.fig_width
+            match update:
+                case ParamsUpdate():
+                    pass
+                case FullStateUpdate(tabs=tabs, fig_width=fig_width):
+                    value["tabs"] = [
+                        {"id": tab.id, "name": tab.name, "params": tab.params}
+                        for tab in tabs
+                    ]
+                    if fig_width is not None:
+                        value["figWidth"] = fig_width.value
             return encode_state(value, max_bytes=MAX_CONFIG_BYTES)
 
         # This editor never returns the store's optional no-change outcome.

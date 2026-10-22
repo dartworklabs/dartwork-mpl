@@ -18,29 +18,39 @@ from pydantic import (
 )
 
 from dartwork_mpl.ui._boundary import ROUTE_POLICY
-from dartwork_mpl.ui.params import InvalidRequest, ModelRequest, ParamModel
+from dartwork_mpl.ui.params import (
+    InvalidRequest,
+    ModelRequest,
+    ParamModel,
+    parse_model_request,
+)
 from dartwork_mpl.ui.params._descriptors import descriptors_from_model
 from dartwork_mpl.ui.platform import json_bounds
-from dartwork_mpl.ui.render._routes import parse_request as render_request
 from dartwork_mpl.ui.saving import (
+    AutoNamedSave,
     InvalidOutput,
+    NamedSave,
     RelativeOutput,
     SaveInputFailure,
-    SaveRequest,
     parse_output,
+    parse_save_request,
+    requested_name,
 )
-from dartwork_mpl.ui.script._routes import parse_request as script_request
 from dartwork_mpl.ui.state._language import (
+    FigWidth,
+    FullStateUpdate,
     InvalidStoredState,
+    ParamsUpdate,
     PresetRequest,
-    StateRequest,
     StoredConfig,
     StoredPresets,
     encode_state,
+    parse_full_state_update,
+    parse_params_update,
+    parse_preset_request,
     parse_stored,
     project_stored,
 )
-from dartwork_mpl.ui.state._language import parse_request as state_request
 
 
 class Params(ParamModel):
@@ -104,19 +114,22 @@ class ValidatedParams(ParamModel):
         return value
 
 
-# Each sub-slice parses its own routes; an unknown route is refused by any.
+# The body parser each route calls (no parser dispatches on a route string).
 PARSERS = {
-    "/api/render": render_request,
-    "/api/export/{fmt}": render_request,
-    "/api/save-server/image/{fmt}": render_request,
-    "/api/script": script_request,
-    "/api/save-server/script": script_request,
+    "/api/render": parse_model_request,
+    "/api/export/{fmt}": parse_model_request,
+    "/api/save-server/image/{fmt}": parse_save_request,
+    "/api/script": parse_model_request,
+    "/api/save-server/script": parse_save_request,
+    "/api/config": parse_params_update,
+    "/api/save-state": parse_full_state_update,
+    "/api/preset": parse_preset_request,
 }
 
 
 def parse_request(route, value, model, descriptors):
-    """Dispatch to the parser of the sub-slice that owns ``route``."""
-    return PARSERS.get(route, state_request)(route, value, model, descriptors)
+    """Parse ``value`` with the parser of the route ``route``."""
+    return PARSERS[route](value, model, descriptors)
 
 
 def request(value, route="/api/render", model=Params):
@@ -163,7 +176,7 @@ def test_numeric_choice_strings_convert_once_to_declared_members(route, wrap):
         route=route,
         model=NumericChoiceParams,
     )
-    assert isinstance(result, (ModelRequest, StateRequest, PresetRequest)), (
+    assert isinstance(result, (ModelRequest, FullStateUpdate, PresetRequest)), (
         result
     )
     assert (result.model.ncols, type(result.model.ncols)) == (2, int)
@@ -429,8 +442,9 @@ def test_tab_values_are_structural_and_ids_unique():
         "figWidth": 70,
     }
     result = request(value, "/api/save-state")
-    assert isinstance(result, StateRequest)
+    assert isinstance(result, FullStateUpdate)
     assert result.tabs[0].params == {"count": "obsolete"}
+    assert result.fig_width == FigWidth(70)
     for edit in [
         {"tabs": value["tabs"] * 2},
         {"tabs": [{"id": True, "name": "x", "params": {}}]},
@@ -450,16 +464,28 @@ def test_tab_values_are_structural_and_ids_unique():
         }
         assert isinstance(
             request(body, "/api/save-state"),
-            StateRequest if count == 64 else json_bounds.LimitExceeded,
+            FullStateUpdate if count == 64 else json_bounds.LimitExceeded,
         )
 
 
 def test_complete_endpoint_shapes_and_label_limits():
     """Endpoint schemas consume every field and preserve defaults only where allowed."""
-    assert isinstance(request({}, "/api/config"), StateRequest)
+    assert isinstance(request({}, "/api/config"), ParamsUpdate)
+    full = request({}, "/api/save-state")
+    assert isinstance(full, FullStateUpdate)
+    assert (full.model.count, full.tabs, full.fig_width) == (3, (), None)
     assert isinstance(
-        request({"params": {}}, "/api/save-server/script"), SaveRequest
+        request({"params": {}}, "/api/save-server/script"), AutoNamedSave
     )
+    assert isinstance(
+        request({"params": {}, "filename": None}, "/api/save-server/script"),
+        AutoNamedSave,
+    )
+    named = request(
+        {"params": {}, "filename": "sub/out"}, "/api/save-server/script"
+    )
+    assert isinstance(named, NamedSave)
+    assert named.output == RelativeOutput(("sub", "out"))
     assert isinstance(
         request({"label": "é" * 128, "params": {}}, "/api/preset"),
         PresetRequest,
@@ -475,9 +501,31 @@ def test_complete_endpoint_shapes_and_label_limits():
         ("/api/save-server/script", {"params": {}, "filename": 1}),
         ("/api/save-server/script", {"params": {}, "other": True}),
         ("/api/render", []),
-        ("/unknown", {}),
+        ("/api/config", []),
+        ("/api/save-state", []),
+        ("/api/preset", []),
+        ("/api/save-server/image/{fmt}", []),
     ]:
         assert isinstance(request(value, route), InvalidRequest), (route, value)
+
+
+def test_requested_name_is_the_parsed_output_or_a_fresh_timestamped_name():
+    """A named save keeps its relative name; an unnamed one gets function_timestamp."""
+    model = Params()
+    output = parse_output("sub/figure")
+    assert isinstance(output, RelativeOutput)
+    assert requested_name(NamedSave(model, output), "plot") == "sub/figure"
+    first = requested_name(AutoNamedSave(model), "plot")
+    assert first.startswith("plot_")
+    assert first != requested_name(AutoNamedSave(model), "plot")
+
+
+@pytest.mark.parametrize("width", [29, 101, True, 70.0])
+def test_fig_width_rejects_values_outside_its_range(width):
+    """Only an int in 30..100 can be built; the parser refuses the rest first."""
+    with pytest.raises(ValueError):
+        FigWidth(width)
+    assert FigWidth(30).value == 30 and FigWidth(100).value == 100
 
 
 @pytest.mark.parametrize(
