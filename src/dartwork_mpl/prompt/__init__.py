@@ -19,7 +19,7 @@ import warnings
 from pathlib import Path
 from shutil import copy2
 
-_PROMPT_DIR: Path = Path(__file__).parent / "asset/prompt"
+_PROMPT_DIR: Path = Path(__file__).parent.parent / "asset/prompt"
 
 # Canonical prompt corpus (T5/R3a). ``list_prompts`` warns when a
 # supported prompt file outside this set appears next to it. The
