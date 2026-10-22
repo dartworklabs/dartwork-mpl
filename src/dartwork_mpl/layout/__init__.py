@@ -19,7 +19,8 @@ __all__ = [
 
 import contextlib
 import warnings
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from matplotlib.figure import Figure
 from matplotlib.gridspec import (
@@ -103,40 +104,174 @@ def get_bounding_box(boxes: list[Bbox]) -> tuple[float, float, float, float]:
 # ─────────────────────────────────────────────────────────────────────
 
 
-def _parse_margin(
-    value: Length | str | float | int | None, fig_extent_inch: float
-) -> float | None:
-    """Convert a margin spec to a figure-fraction (0-1) along one axis.
+@dataclass(frozen=True)
+class _PercentMargin:
+    """A margin written as ``"<n>%"``: ``percent`` hundredths of the figure extent."""
 
-    Accepts:
+    percent: float
 
-    - ``None`` → returns ``None`` (caller substitutes the default).
-    - :class:`Length` → ``length.inch / fig_extent_inch``.
-    - ``str`` ``"5%"`` → ``0.05``.
-    - ``str`` parseable by :class:`Length` (``"5mm"``, ``"0.5cm"``,
-      ``"0.1in"``, ``"24pt"``) → as Length.
-    - ``int`` / ``float`` → already a fraction (``0.05`` = 5 %).
 
-    Returns
-    -------
-    float | None
-        Margin in figure-fraction, or ``None`` if the input was
-        ``None``.
+@dataclass(frozen=True)
+class _PhysicalMargin:
+    """A margin given as a physical :class:`Length` (or a unit string)."""
+
+    length: Length
+
+
+@dataclass(frozen=True)
+class _FractionMargin:
+    """A margin given as a bare number: already a figure fraction."""
+
+    fraction: float
+
+
+_Margin: TypeAlias = _PercentMargin | _PhysicalMargin | _FractionMargin
+
+
+def _parse_margin(value: Length | str | float | int) -> _Margin:
+    """Parse one public margin spec into its :data:`_Margin` variant.
+
+    Accepts a :class:`Length`; a ``"5%"`` percentage string; a unit string
+    :class:`Length` parses (``"5mm"``, ``"0.5cm"``, ``"0.1in"``, ``"24pt"``);
+    or a non-bool ``int`` / ``float`` figure fraction (``0.05`` = 5 %).
+    Raises ``ValueError`` for an unparseable string and ``TypeError`` for
+    any other type.
     """
-    if value is None:
-        return None
     if isinstance(value, Length):
-        return value.inch / fig_extent_inch
+        return _PhysicalMargin(value)
     if isinstance(value, str):
         s = value.strip()
         if s.endswith("%"):
-            return float(s[:-1]) / 100.0
-        return Length(s).inch / fig_extent_inch
+            return _PercentMargin(float(s[:-1]))
+        return _PhysicalMargin(Length(s))
     if isinstance(value, (int, float)) and not isinstance(value, bool):
-        return float(value)
+        return _FractionMargin(float(value))
     raise TypeError(
         f"margin must be Length, str, or number; got {type(value).__name__}"
     )
+
+
+def _margin_fraction(margin: _Margin, fig_extent_inch: float) -> float:
+    """Return ``margin`` as a fraction of a figure extent of ``fig_extent_inch`` inches."""
+    match margin:
+        case _PercentMargin(percent=percent):
+            return percent / 100.0
+        case _PhysicalMargin(length=length):
+            return length.inch / fig_extent_inch
+        case _FractionMargin(fraction=fraction):
+            return fraction
+
+
+@dataclass(frozen=True)
+class _Sides:
+    """One value per figure edge (figure fractions for margins and reservations)."""
+
+    left: float
+    right: float
+    bottom: float
+    top: float
+
+
+@dataclass(frozen=True)
+class _MarginSpec:
+    """The margin of every edge, each side parsed once from ``simple_layout``'s arguments."""
+
+    left: _Margin
+    right: _Margin
+    bottom: _Margin
+    top: _Margin
+
+    def fractions(self, fig_w_in: float, fig_h_in: float) -> _Sides:
+        """Return the margins as figure fractions: left/right of the width, bottom/top of the height."""
+        return _Sides(
+            left=_margin_fraction(self.left, fig_w_in),
+            right=_margin_fraction(self.right, fig_w_in),
+            bottom=_margin_fraction(self.bottom, fig_h_in),
+            top=_margin_fraction(self.top, fig_h_in),
+        )
+
+
+def _parse_margins(
+    margin: Length | str | float | None,
+    ml: Length | str | float | None,
+    mr: Length | str | float | None,
+    mt: Length | str | float | None,
+    mb: Length | str | float | None,
+) -> _MarginSpec:
+    """Parse ``simple_layout``'s margins: each per-side value, else ``margin``.
+
+    ``margin=None`` means no margin. Parses ``margin`` first, then ``ml``,
+    ``mr``, ``mt``, ``mb``, so the first bad value in that order raises (see
+    :func:`_parse_margin`).
+    """
+    base = _FractionMargin(0.0) if margin is None else _parse_margin(margin)
+
+    def side(value: Length | str | float | None) -> _Margin:
+        """Return the parsed per-side ``value``, or ``margin``'s when it is ``None``."""
+        return base if value is None else _parse_margin(value)
+
+    left, right, top, bottom = side(ml), side(mr), side(mt), side(mb)
+    return _MarginSpec(left=left, right=right, bottom=bottom, top=top)
+
+
+@dataclass(frozen=True)
+class _GridEdges:
+    """GridSpec ``left/right/bottom/top`` in figure fraction."""
+
+    left: float
+    right: float
+    bottom: float
+    top: float
+
+
+@dataclass(frozen=True)
+class _LayoutStep:
+    """One solver iteration: the new edges and the largest edge move in pixels."""
+
+    edges: _GridEdges
+    delta_px: float
+
+
+def _solve_edges(
+    overhang: _Sides,
+    reserved: _Sides,
+    margins: _Sides,
+    last_edges: _GridEdges | None,
+    fw_px: float,
+    fh_px: float,
+) -> _LayoutStep:
+    """Compute GridSpec edges that put the axes content ``margins`` from each figure edge.
+
+    Pure arithmetic, no measurement. ``overhang`` is how far the measured
+    content sticks out of the axes boxes on each side and ``reserved`` the
+    room figure-level artists claim, both in figure fraction. Edges are
+    clamped into ``[0, 1]`` keeping ``_EDGE_EPSILON`` between opposite edges.
+    ``delta_px`` is the largest edge move from ``last_edges`` in display
+    pixels, or ``inf`` when there is no previous step.
+    """
+    new_l = reserved.left + margins.left + overhang.left
+    new_r = (1.0 - reserved.right) - margins.right - overhang.right
+    new_b = reserved.bottom + margins.bottom + overhang.bottom
+    new_t = (1.0 - reserved.top) - margins.top - overhang.top
+
+    # Sanity clamp: keep edges in [0, 1] and ensure at least
+    # ``_EDGE_EPSILON`` slack between left/right and bottom/top.
+    new_l = max(0.0, min(new_l, 1.0 - _EDGE_EPSILON))
+    new_r = min(1.0, max(new_r, new_l + _EDGE_EPSILON))
+    new_b = max(0.0, min(new_b, 1.0 - _EDGE_EPSILON))
+    new_t = min(1.0, max(new_t, new_b + _EDGE_EPSILON))
+
+    if last_edges is not None:
+        delta_px = max(
+            abs(new_l - last_edges.left) * fw_px,
+            abs(new_r - last_edges.right) * fw_px,
+            abs(new_b - last_edges.bottom) * fh_px,
+            abs(new_t - last_edges.top) * fh_px,
+        )
+    else:
+        delta_px = float("inf")
+
+    return _LayoutStep(_GridEdges(new_l, new_r, new_b, new_t), delta_px)
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -502,24 +637,9 @@ def simple_layout(
         return
 
     fw_in, fh_in = fig.get_size_inches()
+    margins = _parse_margins(margin, ml, mr, mt, mb).fractions(fw_in, fh_in)
 
-    # Resolve each side: per-side override else `margin`.
-    base_h = _parse_margin(margin, fw_in) or 0.0
-    base_v = _parse_margin(margin, fh_in) or 0.0
-    ml_f = _parse_margin(ml, fw_in)
-    mr_f = _parse_margin(mr, fw_in)
-    mt_f = _parse_margin(mt, fh_in)
-    mb_f = _parse_margin(mb, fh_in)
-    if ml_f is None:
-        ml_f = base_h
-    if mr_f is None:
-        mr_f = base_h
-    if mt_f is None:
-        mt_f = base_v
-    if mb_f is None:
-        mb_f = base_v
-
-    last: tuple[float, float, float, float] | None = None
+    last: _GridEdges | None = None
     # Filter target axes by the gridspec the caller actually pointed at
     # (the *immediate* one), not the root that ``_resolve_gridspec``
     # walks to for ``.update()``. ``ax.get_gridspec()`` returns the
@@ -536,44 +656,41 @@ def simple_layout(
     gs_id = id(requested_gs)
 
     for it in range(_MAX_ITER):
-        result = _solve_layout_step(
+        step = _solve_layout_step(
             fig,
-            ml_f=ml_f,
-            mr_f=mr_f,
-            mt_f=mt_f,
-            mb_f=mb_f,
+            margins=margins,
             use_all_axes=use_all_axes,
             gs_id=gs_id,
             last_edges=last,
             adopt_orphan_tick_font=adopt_orphan_tick_font,
         )
-        if result is None:
+        if step is None:
             return
-        new_edges, delta_px = result
+        new_edges = step.edges
 
         if verbose:
             print(
                 f"[simple_layout] iter {it + 1}: "
-                f"L={new_edges[0]:.3f} R={new_edges[1]:.3f} "
-                f"B={new_edges[2]:.3f} T={new_edges[3]:.3f}  "
-                f"Δ={delta_px:.2f}px"
+                f"L={new_edges.left:.3f} R={new_edges.right:.3f} "
+                f"B={new_edges.bottom:.3f} T={new_edges.top:.3f}  "
+                f"Δ={step.delta_px:.2f}px"
             )
 
         actual_gs.update(
-            left=new_edges[0],
-            right=new_edges[1],
-            bottom=new_edges[2],
-            top=new_edges[3],
+            left=new_edges.left,
+            right=new_edges.right,
+            bottom=new_edges.bottom,
+            top=new_edges.top,
         )
         last = new_edges
 
-        if delta_px < _CONVERGE_TOL_PX:
+        if step.delta_px < _CONVERGE_TOL_PX:
             return
 
 
 def _figure_artist_reservations(
     fig: Figure, renderer: Any, fw_px: float, fh_px: float
-) -> tuple[float, float, float, float]:
+) -> _Sides:
     """Space (in figure fraction) each edge must reserve for fig-level artists.
 
     ``simple_layout`` sizes the GridSpec from per-*axes* content, so
@@ -581,8 +698,8 @@ def _figure_artist_reservations(
     — are otherwise invisible to it and end up overlapping the axes once
     the gridspec is pushed flush to the edge. Each such artist is assigned
     to its nearest figure edge and that edge reserves the artist's extent
-    so the axes region is pulled in to clear it. Returns
-    ``(res_l, res_r, res_b, res_t)``; all zero when no figure-level
+    so the axes region is pulled in to clear it. Returns the reservation
+    per edge in figure fraction; all zero when no figure-level
     artists are present (so the layout math is unchanged in the common
     case).
     """
@@ -606,37 +723,31 @@ def _figure_artist_reservations(
             res_b = max(res_b, y1f)
         else:  # top
             res_t = max(res_t, 1.0 - y0f)
-    return res_l, res_r, res_b, res_t
+    return _Sides(left=res_l, right=res_r, bottom=res_b, top=res_t)
 
 
 def _solve_layout_step(
     fig: Figure,
     *,
-    ml_f: float,
-    mr_f: float,
-    mt_f: float,
-    mb_f: float,
+    margins: _Sides,
     use_all_axes: bool,
     gs_id: int,
-    last_edges: tuple[float, float, float, float] | None,
+    last_edges: _GridEdges | None,
     adopt_orphan_tick_font: bool,
-) -> tuple[tuple[float, float, float, float], float] | None:
-    """Run one iteration of the ``simple_layout`` direct-calc solver.
+) -> _LayoutStep | None:
+    """Measure the figure once and solve one iteration of ``simple_layout``.
 
-    Returns a ``(new_edges, delta_px)`` pair, or ``None`` if the figure
-    has no measurable axes (in which case the caller should bail out).
+    Returns the step, or ``None`` if the figure has no measurable axes (in
+    which case the caller should bail out).
 
     Each step:
 
     1. Draws the canvas so artist bboxes are populated.
     2. Optionally adopts the axis-label font on orphan-label axes
        (so the measurement reflects the post-restyle ticks).
-    3. Measures the content extent of every target axes.
-    4. Computes new GridSpec edges that place the union extent at the
-       requested per-side margin from the figure edge.
-    5. Clamps the edges into ``[0, 1]`` with ``_EDGE_EPSILON`` slack.
-    6. Computes the per-edge px delta from ``last_edges`` (or ``inf``
-       on the first iteration so the caller doesn't converge early).
+    3. Measures the content overhang of every target axes and the room
+       figure-level artists reserve.
+    4. Hands those measurements to the pure :func:`_solve_edges`.
 
     The caller writes the returned edges into the GridSpec and decides
     whether to stop iterating based on ``delta_px``.
@@ -681,33 +792,11 @@ def _solve_layout_step(
 
     # Reserve room for figure-level artists (suptitle / fig.legend /
     # fig.text) so the gridspec doesn't push axes content on top of them.
-    res_l, res_r, res_b, res_t = _figure_artist_reservations(
-        fig, renderer, fw_px, fh_px
+    reserved = _figure_artist_reservations(fig, renderer, fw_px, fh_px)
+    overhang = _Sides(
+        left=max(oh_l), right=max(oh_r), bottom=max(oh_b), top=max(oh_t)
     )
-
-    new_l = res_l + ml_f + max(oh_l)
-    new_r = (1.0 - res_r) - mr_f - max(oh_r)
-    new_b = res_b + mb_f + max(oh_b)
-    new_t = (1.0 - res_t) - mt_f - max(oh_t)
-
-    # Sanity clamp: keep edges in [0, 1] and ensure at least
-    # ``_EDGE_EPSILON`` slack between left/right and bottom/top.
-    new_l = max(0.0, min(new_l, 1.0 - _EDGE_EPSILON))
-    new_r = min(1.0, max(new_r, new_l + _EDGE_EPSILON))
-    new_b = max(0.0, min(new_b, 1.0 - _EDGE_EPSILON))
-    new_t = min(1.0, max(new_t, new_b + _EDGE_EPSILON))
-
-    if last_edges is not None:
-        delta_px = max(
-            abs(new_l - last_edges[0]) * fw_px,
-            abs(new_r - last_edges[1]) * fw_px,
-            abs(new_b - last_edges[2]) * fh_px,
-            abs(new_t - last_edges[3]) * fh_px,
-        )
-    else:
-        delta_px = float("inf")
-
-    return (new_l, new_r, new_b, new_t), delta_px
+    return _solve_edges(overhang, reserved, margins, last_edges, fw_px, fh_px)
 
 
 # ─────────────────────────────────────────────────────────────────────
