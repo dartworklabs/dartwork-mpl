@@ -18,8 +18,15 @@ from dartwork_mpl.mcp.execution import (
     ExportedPlot,
     ExportRejected,
     export_plot,
+    to_wire,
     validate_plot,
 )
+
+
+def validate_report(*args, **kwargs):
+    """The legacy ``validate_generated_plot`` report of one validation run."""
+    return to_wire(validate_plot(*args, **kwargs))
+
 
 FIGURE = """import matplotlib.pyplot as plt
 import dartwork_mpl as dm
@@ -80,7 +87,7 @@ dm.save_formats(fig, {str(tmp_path / "reference")!r}, formats=('png',), validate
 def test_validator_contract_survives_runner_extraction(tmp_path, monkeypatch):
     """Cwd, snippet saves, fallback and hint-dependent semantics remain native."""
     monkeypatch.chdir(tmp_path)
-    result = validate_plot(
+    result = validate_report(
         FIGURE + "dm.save_formats(fig, 'native', formats=('png',))\ndel fig\n",
         "missing",
         chart_type_hint="line",
@@ -88,8 +95,8 @@ def test_validator_contract_survives_runner_extraction(tmp_path, monkeypatch):
     assert result["status"] == "ok"
     assert result["semantic_warnings"] == []
     assert Path("native.png").exists()
-    assert "semantic_warnings" not in validate_plot(FIGURE)
-    invalid = validate_plot("fig = 4")
+    assert "semantic_warnings" not in validate_report(FIGURE)
+    invalid = validate_report("fig = 4")
     assert invalid["status"] == "exec_error"
     assert invalid["exc_type"] == "AttributeError"
     assert invalid["exc_msg"] == "'int' object has no attribute 'canvas'"
@@ -462,7 +469,7 @@ print('  stderr spaces  ', file=sys.stderr)
     assert (input_workspace / "legacy.png").read_bytes() == (
         input_workspace / "mapped.png"
     ).read_bytes()
-    validated = validate_plot(code)
+    validated = validate_report(code)
     assert validated["status"] == "ok"
     assert validated["stdout"] == "  stdout spaces  \n"
     assert validated["stderr"] == "stderr spaces"

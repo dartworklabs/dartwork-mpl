@@ -236,7 +236,9 @@ def _failure_metadata(failure: ArtifactFailure) -> dict[str, Any]:
         "error_code": code,
         "message": message,
     }
-    if isinstance(failure, (ExecutionRejected, ExportRejected)):
+    if isinstance(
+        failure, (ExecutionRejected, LogLimitRejected, ExportRejected)
+    ):
         metadata["report"] = failure.report
     return metadata
 

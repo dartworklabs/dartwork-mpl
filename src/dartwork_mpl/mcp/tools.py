@@ -394,9 +394,11 @@ def register_tools(mcp: FastMCP) -> None:
           the runner; this is not a security sandbox. Internal results use a
           private temporary file that is cleaned up independently of logs.
         """
-        from .execution import validate_plot
+        from .execution import to_wire, validate_plot
 
-        return validate_plot(code, figure_var, timeout_seconds, chart_type_hint)
+        return to_wire(
+            validate_plot(code, figure_var, timeout_seconds, chart_type_hint)
+        )
 
     # ── Data Validation Tool ─────────────────────────────────────────
 
