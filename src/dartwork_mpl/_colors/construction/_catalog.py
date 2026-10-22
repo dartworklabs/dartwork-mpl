@@ -50,7 +50,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _COLOR_ASSET_DIR = _PACKAGE_DIR / "asset" / "color"
 _MCP_DIR = _PACKAGE_DIR / "mcp"
 _DARK_STYLE_PATH = _PACKAGE_DIR / "asset" / "mplstyle" / "theme-dark.mplstyle"
-_SEMANTIC_SOURCE_PATH = _COLORS_DIR / "_semantic.py"
+_SEMANTIC_SOURCE_PATH = _COLORS_DIR / "registry" / "_semantic.py"
 _V5_COMPAT_PATH = (
     _REPO_ROOT
     / "docs"
@@ -1368,7 +1368,7 @@ def _candidate_source_hashes() -> dict[str, str]:
         "src/dartwork_mpl/_colors/_metrics.py": _COLORS_DIR / "_metrics.py",
         "src/dartwork_mpl/_colors/construction/_recipe.py": _COLORS_DIR
         / "construction/_recipe.py",
-        "src/dartwork_mpl/_colors/_semantic.py": _COLORS_DIR / "_semantic.py",
+        "src/dartwork_mpl/_colors/registry/_semantic.py": _SEMANTIC_SOURCE_PATH,
         "src/dartwork_mpl/_colors/_ssot.py": _COLORS_DIR / "_ssot.py",
         "src/dartwork_mpl/_colors/construction/_tone.py": _COLORS_DIR
         / "construction/_tone.py",

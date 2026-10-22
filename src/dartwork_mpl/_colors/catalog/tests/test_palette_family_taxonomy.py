@@ -16,7 +16,7 @@ from unittest.mock import patch
 
 from dartwork_mpl._colors import _curated, _generated
 
-_REPO = Path(__file__).resolve().parents[1]
+_REPO = Path(__file__).resolve().parents[5]
 _SCRIPTS = _REPO / "docs" / "_static" / "scripts"
 _EXPLORER = _REPO / "docs" / "_static" / "categorical_explorer.html"
 _DESIGN_CSS = _REPO / "docs" / "_static" / "dartwork-design.css"

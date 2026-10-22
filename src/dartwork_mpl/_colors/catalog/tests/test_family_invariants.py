@@ -9,7 +9,7 @@ from typing import cast
 
 from dartwork_mpl._colors import _compatibility_metrics as oracle
 from dartwork_mpl._colors import _curated, _generated
-from dartwork_mpl._colors._families import FAMILIES
+from dartwork_mpl._colors.catalog._families import FAMILIES
 from dartwork_mpl._colors.verify._gates import (
     evaluate_quality_metrics,
     load_quality_baseline,

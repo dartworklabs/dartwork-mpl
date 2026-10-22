@@ -13,8 +13,11 @@ import pytest
 import dartwork_mpl  # noqa: F401  (registers color names)
 import dartwork_mpl._colors._compatibility_metrics as oracle
 from dartwork_mpl._colors import _curated, _generated
-from dartwork_mpl._colors._discrete import DIVERGING_CANONICALS, discrete_colors
-from dartwork_mpl._colors._families import (
+from dartwork_mpl._colors.catalog._discrete import (
+    DIVERGING_CANONICALS,
+    discrete_colors,
+)
+from dartwork_mpl._colors.catalog._families import (
     CYCLIC,
     DIVERGING,
     FAMILIES,
@@ -24,7 +27,7 @@ from dartwork_mpl._colors._families import (
 )
 from dartwork_mpl._colors.verify._comparison import matches_recorded_quality
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[5]
 COMPATIBILITY_PATH = (
     REPO_ROOT
     / "docs/superpowers/specs/assets/2026-07-14-oklab-centered-color-system"

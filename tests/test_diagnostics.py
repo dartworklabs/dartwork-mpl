@@ -306,7 +306,7 @@ class TestClassificationOverridesParity:
 
     def test_overrides_match_bundled_cmaps_exactly(self) -> None:
         import dartwork_mpl.diagnostics._colormaps as dcm
-        from dartwork_mpl._colors._families import FAMILIES
+        from dartwork_mpl._colors.catalog._families import FAMILIES
 
         expected = {f"dc.{name}" for name in FAMILIES}
         overrides = set(dcm._CLASSIFICATION_OVERRIDES)

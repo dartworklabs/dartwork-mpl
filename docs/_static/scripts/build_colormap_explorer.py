@@ -39,10 +39,14 @@ from dartwork_mpl._colors._compatibility_metrics import (
     simulate_cvd_hex,
     srgb_to_oklab,
 )
-from dartwork_mpl._colors._discrete import _chroma, _vivid_cutoff, _VividCutoff
 from dartwork_mpl._colors._generated import CMAPS_256
 from dartwork_mpl._colors._metrics import de2000_hex, lab_from_rgb, rgb_from_hex
 from dartwork_mpl._colors._ssot import load_color_v6_ssot
+from dartwork_mpl._colors.catalog._discrete import (
+    _chroma,
+    _vivid_cutoff,
+    _VividCutoff,
+)
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = SCRIPT_DIR.parents[2]

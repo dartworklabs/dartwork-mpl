@@ -12,10 +12,9 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from cycler import cycler
 
-from .._rc import rc_lock
-from ._discrete import discrete_colors
-from ._families import FAMILIES, Family, FamilyKind
-from ._register import ensure_registered
+from ..._rc import rc_lock
+from ..catalog import FAMILIES, Family, FamilyKind, discrete_colors
+from ..registry import ensure_registered
 
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
@@ -233,7 +232,7 @@ def show_colors(
     if not selected_names:
         raise ValueError("No color families match the requested preview.")
 
-    from ..units import figsize, inch
+    from ...units import figsize, inch
 
     row_count = len(selected_names)
     fig_height = max(1.2, 0.42 * row_count + 0.4)

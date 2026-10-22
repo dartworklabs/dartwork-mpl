@@ -17,8 +17,8 @@ import threading
 import matplotlib as mpl
 import matplotlib.colors as mcolors
 
-from ._curated import CURATED, CURATED_QUALITATIVE_ORDER
-from ._generated import CMAPS_256, CYCLES
+from .._curated import CURATED, CURATED_QUALITATIVE_ORDER
+from ..catalog import CMAPS_256, CYCLES
 
 __all__ = ["ensure_registered"]
 

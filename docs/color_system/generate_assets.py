@@ -29,7 +29,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 import dartwork_mpl as dm
-from dartwork_mpl._colors._loader import COLOR_LIBRARIES
+from dartwork_mpl._colors.registry._loader import COLOR_LIBRARIES
 
 # Sane defaults for how we display things.
 CATEGORY_ORDER = [
@@ -48,7 +48,7 @@ CATEGORY_BLURBS: dict[str, str] = {
     "Categorical": "Distinct steps with little interpolation. Use for discrete classes.",
 }
 
-# Derived from the colour-library SSOT (dartwork_mpl._colors._loader).
+# Derived from the colour-library SSOT (dartwork_mpl._colors.registry._loader).
 COLOR_LIBRARY_ORDER = [key for key, _p, _f, _lbl in COLOR_LIBRARIES]
 COLOR_LIBRARY_LABELS = {key: label for key, _p, _f, label in COLOR_LIBRARIES}
 
@@ -218,7 +218,7 @@ def _write_dc_family_sheet(images_dir: Path) -> Path:
 
 def _save_color_sheets_html(images_dir: Path) -> list[Path]:
     """Generate HTML fragment files for each color library."""
-    from dartwork_mpl._colors._loader import ensure_loaded
+    from dartwork_mpl._colors.registry._loader import ensure_loaded
 
     ensure_loaded()
     mapping = mpl.colors.get_named_colors_mapping()

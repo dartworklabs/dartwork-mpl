@@ -59,7 +59,7 @@ RUNTIME_COLOR_LANGUAGE_PATHS = (
 
 MODELED_Y_SOURCE_PATHS = (
     "src/dartwork_mpl/_colors/model/_conversion.py",
-    "src/dartwork_mpl/_colors/_discrete.py",
+    "src/dartwork_mpl/_colors/catalog/_discrete.py",
     "src/dartwork_mpl/asset/mplstyle/theme-dark.mplstyle",
     "src/dartwork_mpl/_colors/construction/_cycles.py",
 )

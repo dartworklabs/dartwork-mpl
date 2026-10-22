@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.patches import FancyBboxPatch
 
-from .._colors._loader import COLOR_LIBRARIES
+from .._colors.registry import COLOR_LIBRARIES
 
 if TYPE_CHECKING:
     pass
@@ -54,7 +54,7 @@ def _extract_number_from_color_name(color_name: str) -> int | None:
     name = color_name
     # Prefixes derive from the COLOR_LIBRARIES SSOT (like the other
     # consumers in this module) instead of a re-hardcoded list.
-    from .._colors._loader import COLOR_LIBRARIES
+    from .._colors.registry import COLOR_LIBRARIES
 
     for prefix in [lib[1] for lib in COLOR_LIBRARIES]:
         if name.startswith(prefix):

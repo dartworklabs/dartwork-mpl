@@ -31,7 +31,7 @@ def test_reload_and_partial_retry_preserve_all_native_maps() -> None:
         import random
         import matplotlib as mpl
         import dartwork_mpl
-        reg = importlib.import_module('dartwork_mpl._colors._register')
+        reg = importlib.import_module('dartwork_mpl._colors.registry._register')
         expected = {n: mpl.colormaps[n] for n in mpl.colormaps if n.startswith('dc.')}
         assert len(expected) == 99
         rng = random.Random(501)
@@ -88,7 +88,7 @@ def test_existing_equal_lut_requires_package_provenance_and_exact_metadata(
         import matplotlib as mpl
         from matplotlib.colors import ListedColormap
         import dartwork_mpl
-        reg = importlib.import_module('dartwork_mpl._colors._register')
+        reg = importlib.import_module('dartwork_mpl._colors.registry._register')
         name = 'dc.aurora'
         original = mpl.colormaps[name]
         changed = original.copy()

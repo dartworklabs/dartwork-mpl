@@ -104,7 +104,7 @@ def _n_v5_cmaps() -> int:
 
 
 def _n_qualitative_cmaps() -> int:
-    from dartwork_mpl._colors._families import QUALITATIVE
+    from dartwork_mpl._colors.catalog._families import QUALITATIVE
 
     return len(QUALITATIVE)
 
@@ -116,8 +116,8 @@ def _n_listed_colormaps() -> int:
 
 
 def _n_registrations() -> int:
-    from dartwork_mpl._colors._families import QUALITATIVE
     from dartwork_mpl._colors._generated import CMAPS_256
+    from dartwork_mpl._colors.catalog._families import QUALITATIVE
 
     return 2 * len(CMAPS_256) + len(QUALITATIVE)
 

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import matplotlib.colors as mcolors
 
-from ._generated import PALETTE
+from ..catalog import PALETTE
 
 __all__ = ["SEMANTIC_TOKEN_NAMES", "apply_semantic"]
 

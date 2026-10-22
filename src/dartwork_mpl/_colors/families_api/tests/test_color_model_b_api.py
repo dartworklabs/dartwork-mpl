@@ -7,8 +7,8 @@ import pytest
 
 import dartwork_mpl as dm
 from dartwork_mpl._colors import _generated
-from dartwork_mpl._colors._discrete import discrete_colors
-from dartwork_mpl._colors._families import QUALITATIVE
+from dartwork_mpl._colors.catalog._discrete import discrete_colors
+from dartwork_mpl._colors.catalog._families import QUALITATIVE
 
 
 def test_colors_returns_registered_colormap_for_continuous_family() -> None:

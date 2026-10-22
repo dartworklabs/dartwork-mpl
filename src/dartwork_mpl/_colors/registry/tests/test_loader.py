@@ -7,7 +7,10 @@ import typing
 import matplotlib.colors as mcolors
 
 from dartwork_mpl._colors import _generated
-from dartwork_mpl._colors._loader import _load_json_palette, ensure_loaded
+from dartwork_mpl._colors.registry._loader import (
+    _load_json_palette,
+    ensure_loaded,
+)
 
 
 class TestEnsureLoaded:
@@ -90,7 +93,7 @@ class TestEnsureLoaded:
         drift the count out of sync.
         """
         from dartwork_mpl._colors import _curated, _generated
-        from dartwork_mpl._colors._discrete import GENERATED_DIVERGING
+        from dartwork_mpl._colors.catalog._discrete import GENERATED_DIVERGING
 
         ensure_loaded()
         mapping = mcolors.get_named_colors_mapping()

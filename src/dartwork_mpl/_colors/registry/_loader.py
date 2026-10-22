@@ -19,9 +19,8 @@ from typing import TYPE_CHECKING
 
 import matplotlib.colors as mcolors
 
-from ._curated import CURATED
-from ._discrete import DIVERGING_CANONICALS, GENERATED_DIVERGING
-from ._generated import PALETTE
+from .._curated import CURATED
+from ..catalog import DIVERGING_CANONICALS, GENERATED_DIVERGING, PALETTE
 
 if TYPE_CHECKING:
     # ``Traversable`` moved from ``importlib.abc`` (3.10) to

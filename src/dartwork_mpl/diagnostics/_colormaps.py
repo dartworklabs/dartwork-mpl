@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 
-from .._colors._families import (
+from .._colors.catalog import (
     CYCLIC,
     DIVERGING,
     MULTI_HUE,

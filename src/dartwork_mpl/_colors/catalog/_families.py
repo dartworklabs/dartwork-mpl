@@ -11,7 +11,7 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Literal
 
-from . import _curated, _generated
+from .. import _curated, _generated
 
 FamilyKind = Literal[
     "sequential", "multi-hue", "diverging", "cyclic", "qualitative"
