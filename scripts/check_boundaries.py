@@ -3,7 +3,8 @@
 Every production module under ``src/dartwork_mpl`` belongs to one unit: a
 slice (a capability), a platform unit (mechanism with no business), or an
 entry point module that only wires. Ownership is by the longest unit prefix,
-so a sub-slice can be declared inside a slice later. A unit's surface is its
+so a sub-slice can be declared inside a slice; the enclosing package's
+initializer is not a dependency of the modules it contains. A unit's surface is its
 own module (the package ``__init__`` or the single file) and the names in its
 literal ``__all__``; everything else is private.
 
@@ -58,11 +59,26 @@ ENTRY_POINTS = frozenset(
         # `python -m dartwork_mpl.mcp.server` / `dartwork-mpl-ui`
         "dartwork_mpl.mcp.server",
         "dartwork_mpl.ui.__main__",
+        # `dartwork_mpl.ui.run`: mounts every viewer sub-slice's routes
+        "dartwork_mpl.ui.ui",
     }
 )
 
 # Units holding business-agnostic mechanism. They import no slice.
-PLATFORM = frozenset({"dartwork_mpl._figure_geometry", "dartwork_mpl._rc"})
+PLATFORM = frozenset(
+    {
+        "dartwork_mpl._figure_geometry",
+        "dartwork_mpl._rc",
+        # The viewer's loopback access checks, directory handles, HTTP body
+        # and refusal helpers and bounded JSON decoder; the package
+        # initializer only names them.
+        "dartwork_mpl.ui.platform",
+        "dartwork_mpl.ui.platform.access",
+        "dartwork_mpl.ui.platform.fs",
+        "dartwork_mpl.ui.platform.http",
+        "dartwork_mpl.ui.platform.json_bounds",
+    }
+)
 
 # Units holding one capability each.
 SLICES = frozenset(
@@ -88,6 +104,14 @@ SLICES = frozenset(
         "dartwork_mpl.templates",
         "dartwork_mpl.tokens",
         "dartwork_mpl.ui",
+        # The viewer's sub-slices (ADR 0005, audit ui-cli §4).
+        "dartwork_mpl.ui.page",
+        "dartwork_mpl.ui.params",
+        "dartwork_mpl.ui.render",
+        "dartwork_mpl.ui.saving",
+        "dartwork_mpl.ui.scaffold",
+        "dartwork_mpl.ui.script",
+        "dartwork_mpl.ui.state",
         "dartwork_mpl.units",
         "dartwork_mpl.util",
         "dartwork_mpl.validate",
@@ -142,6 +166,46 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.validate", "dartwork_mpl.formatting"): (
         "the tick-decimal check recommends the precision the formatter uses"
     ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.page"): (
+        "the viewer app serves the page that renders its controls"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.params"): (
+        "the viewer builds its controls and parses requests from the user's"
+        " parameter model"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.render"): (
+        "the viewer mounts the preview, download and image-save routes"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.scaffold"): (
+        "the dartwork-mpl-ui init command copies the scaffold project"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.script"): (
+        "the viewer mounts the reproducing-script routes"
+    ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.state"): (
+        "the viewer opens the saved-state store at startup and mounts its routes"
+    ),
+    ("dartwork_mpl.ui.render", "dartwork_mpl.io"): (
+        "a server image save writes the figure with save_formats, as a user would"
+    ),
+    ("dartwork_mpl.ui.render", "dartwork_mpl.ui.params"): (
+        "a render validates the request's active values against the user's model"
+    ),
+    ("dartwork_mpl.ui.render", "dartwork_mpl.ui.saving"): (
+        "a server image save writes through the confined output slots"
+    ),
+    ("dartwork_mpl.ui.saving", "dartwork_mpl.ui.params"): (
+        "a server-save request carries the user's validated active values"
+    ),
+    ("dartwork_mpl.ui.script", "dartwork_mpl.ui.params"): (
+        "the script embeds the model's source and the active values"
+    ),
+    ("dartwork_mpl.ui.script", "dartwork_mpl.ui.saving"): (
+        "a server script save writes through the confined output slots"
+    ),
+    ("dartwork_mpl.ui.state", "dartwork_mpl.ui.params"): (
+        "saved state holds the active values and the model's declared field names"
+    ),
     ("dartwork_mpl.style", "dartwork_mpl.font"): (
         "a preset may name bundled fonts, which must be registered first"
     ),
@@ -195,7 +259,6 @@ DEBT: Mapping[str, str] = {
     "private import: dartwork_mpl.validate.agent_requirements -> dartwork_mpl.helpers.quality._MIN_RECOMMENDED_DPI": "C11",
     "undeclared dependency: dartwork_mpl.helpers -> dartwork_mpl.scale": "C11",
     "undeclared dependency: dartwork_mpl.mcp -> dartwork_mpl.util": "C9",
-    "undeclared dependency: dartwork_mpl.ui -> dartwork_mpl.util": "C9",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl._colors": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.annotation": "C10",
     "undeclared dependency: dartwork_mpl.util -> dartwork_mpl.formatting": "C10",
@@ -208,7 +271,7 @@ DEBT: Mapping[str, str] = {
 # Package paths that hold user-facing sample code, not package source: the
 # bundled prompt templates and the UI scaffold templates copied into user
 # projects (they import `dartwork_mpl` as any user would).
-EXCLUDED_DIRS = (("asset",), ("ui", "templates"))
+EXCLUDED_DIRS = (("asset",), ("ui", "scaffold", "templates"))
 
 
 @dataclass(frozen=True)
@@ -404,11 +467,18 @@ def violations(
             target = submodule if submodule in code else base
             # Python runs every parent package's initializer before the
             # module; the root initializer is the entry point and is judged
-            # by the explicit import rule below, not as a graph edge.
+            # by the explicit import rule below, not as a graph edge. A
+            # parent package that also encloses the importing module was
+            # initialized before that module ran, so reaching below it adds
+            # no dependency (a sub-slice importing inside its own slice).
             parts = target.split(".")
             touched = {target}
             touched.update(
-                ".".join(parts[:end]) for end in range(2, len(parts))
+                parent
+                for parent in (
+                    ".".join(parts[:end]) for end in range(2, len(parts))
+                )
+                if not name.startswith(parent + ".")
             )
             if source_node is not None:
                 for module in touched:

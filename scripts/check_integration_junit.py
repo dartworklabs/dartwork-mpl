@@ -47,14 +47,15 @@ REQUIRED_MODULES = (
     "tests.mcp.data_repair.test_limits",
     "tests.mcp.data_repair.test_properties",
     "tests.mcp.data_repair.test_reports",
-    "tests.test_ui_boundary",
-    "tests.test_ui_files",
+    "src.dartwork_mpl.ui.tests.test_ui_boundary",
+    "src.dartwork_mpl.ui.saving.tests.test_ui_files",
     "tests.test_ui_http_security",
-    "tests.test_ui_hardening",
-    "tests.test_ui_init",
-    "tests.test_ui_param",
-    "tests.test_ui_security",
-    "tests.test_ui_widget",
+    "src.dartwork_mpl.ui.render.tests.test_ui_hardening",
+    "src.dartwork_mpl.ui.tests.test_ui_init",
+    "src.dartwork_mpl.ui.state.tests.test_ui_viewer_state",
+    "src.dartwork_mpl.ui.render.tests.test_ui_render",
+    "src.dartwork_mpl.ui.params.tests.test_ui_widget",
+    "src.dartwork_mpl.ui.tests.test_ui_wire_golden",
 )
 
 

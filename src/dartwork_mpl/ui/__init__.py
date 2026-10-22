@@ -20,7 +20,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ._param import ParamModel
+    from .params import ParamModel
     from .ui import run
 
 __all__ = ["ParamModel", "run"]
@@ -38,7 +38,7 @@ def __getattr__(name: str) -> Any:
     actually required.
     """
     if name == "ParamModel":
-        from ._param import ParamModel
+        from .params import ParamModel
 
         return ParamModel
     if name == "run":

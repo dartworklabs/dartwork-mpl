@@ -37,7 +37,7 @@ from pydantic import Field
 import dartwork_mpl as dm
 from dartwork_mpl.ui import ParamModel
 from dartwork_mpl.ui import ui
-from dartwork_mpl.ui._files import FilesystemCapabilities
+from dartwork_mpl.ui.platform.fs import FilesystemCapabilities
 import uvicorn
 root, expected, unsupported, copy_mode = sys.argv[1:]
 root = Path(root)
@@ -79,17 +79,17 @@ if copy_mode == "invalid-root":
     (root / "bad-root").write_bytes(b"not-a-directory")
     copies = [root / "copy", root / "bad-root"]
 if copy_mode in {"write-failure", "cleanup-failure"}:
-    from dartwork_mpl.ui import _files
-    original_write = _files._write_file
+    from dartwork_mpl.ui.platform import fs
+    original_write = fs.write_file
     writes = 0
     def fail_second(fd, data):
         global writes
         writes += 1
         if writes == 2: raise OSError("SECRET_IO_PAYLOAD")
         original_write(fd, data)
-    _files._write_file = fail_second
+    fs.write_file = fail_second
     if copy_mode == "cleanup-failure":
-        _files._remove_file = lambda *args: False
+        fs.remove_file = lambda *args: False
 app = ui._create_app(plot, Params, title="HTTP fixture", script_root=root / "script", copy_to=copies, host="127.0.0.1", restart=restart, capabilities=capabilities)
 def serve(app):
     sock = socket.socket()

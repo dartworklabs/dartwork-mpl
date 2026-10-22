@@ -14,7 +14,7 @@ and reports what does not match:
 It exits 1 when any lost, duplicated, new or unused-map entry remains; ambiguous keys are listed for review but do not
 fail the run (per-module copies such as ModuleBoundary are meant to share a key). It exits 2 on a usage error.
 
-The rename map is a text file, one entry per line (# starts a comment):
+The rename map is a text file, one entry per line (# at the start or after a space starts a comment):
 
   OldClass -> NewClass                                  every test of a class
   tests/test_x.py::OldClass -> NewClass                 only that file's class (when the class name is not unique)
@@ -224,7 +224,8 @@ def read_map(text: str) -> RenameMap:
     """Parse a rename map (see the module docstring); a malformed line is a usage error (exit 2)."""
     m = RenameMap()
     for n, raw in enumerate(text.splitlines(), 1):
-        line = raw.split("#", 1)[0].strip()
+        # A comment starts a line or follows whitespace, so a test id may hold "#".
+        line = re.split(r"(?:^|\s)#", raw, maxsplit=1)[0].strip()
         if not line:
             continue
         if line[0] in "+-" and line[1:2] == " ":
