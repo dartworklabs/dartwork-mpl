@@ -36,7 +36,7 @@ left.set_title("Response")
 left.set_title("(a)", loc="left")
 left.set(xlabel="Time (s)", ylabel="Signal")
 left.legend()
-right.plot(x, np.sin(x) * 0.1, color="dc.gray5")
+right.plot(x, np.sin(x) * 0.1)
 right.set(title="Error", xlabel="Time (s)")
 dm.simple_layout(fig)
 

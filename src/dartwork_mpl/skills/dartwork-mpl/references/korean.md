@@ -13,7 +13,7 @@ import dartwork_mpl as dm
 
 dm.style.use("report-kr")
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))
-ax.bar(["1월", "2월", "3월"], [-2.4, 0.6, 6.1], color="dc.blue5")
+ax.bar(["1월", "2월", "3월"], [-2.4, 0.6, 6.1])
 ax.set(xlabel="월", ylabel="평균 기온 (°C)", title="1분기 서울 기온")
 dm.simple_layout(fig)
 dm.save_formats(fig, "output/temperature-kr", formats=("png", "pdf"))

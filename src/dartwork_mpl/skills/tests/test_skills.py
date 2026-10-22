@@ -212,6 +212,29 @@ def test_korean_reference_lists_every_kr_preset() -> None:
     assert listed == {n for n in dm.style.presets if n.endswith("-kr")}
 
 
+def test_generic_examples_leave_colour_to_the_preset() -> None:
+    """Copied examples must not pin a pale colour (dc.teal3 is 1.56:1 on white).
+
+    Introductory and generic examples omit ``color=`` so the preset cycle
+    applies; only the recipes about colour (highlighting, twin axes) set it.
+    """
+    generic = [
+        SKILL_MD,
+        CONSUMER_ENTRY,
+        SKILL / "references" / "editing.md",
+        SKILL / "references" / "korean.md",
+    ]
+    for doc in generic:
+        for block in _FENCE.findall(doc.read_text(encoding="utf-8")):
+            assert "color=" not in block, doc.name
+    sizing = (SKILL / "references" / "sizing-and-layout.md").read_text(
+        encoding="utf-8"
+    )
+    grids = sizing.split("## Equal grid", 1)[1].split("## Twin axes", 1)[0]
+    for block in _FENCE.findall(grids):
+        assert "color=" not in block
+
+
 def test_every_colour_or_colormap_name_exists() -> None:
     """Prose names (not only code) are copied by agents; each must resolve."""
     named = set(mcolors.get_named_colors_mapping())

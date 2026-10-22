@@ -15,7 +15,7 @@ import dartwork_mpl as dm
 
 dm.style.use("report")                                          # 1. preset first
 fig, ax = plt.subplots(figsize=dm.figsize("13cm", "standard"))  # 2. physical size
-ax.plot([0, 1, 2], [1, 3, 2], color="dc.teal3")
+ax.plot([0, 1, 2], [1, 3, 2])                                  # preset colours
 ax.set(xlabel="Time (s)", ylabel="Response")
 dm.simple_layout(fig)                                           # 3. after drawing
 dm.save_formats(fig, "output/figure-v1", formats=("png", "pdf"))  # 4. save
@@ -60,8 +60,9 @@ and template numbers are placeholders to replace, never to keep.
 
 ## Values
 
-- Colours by name: `dc.teal3` (family + step, 0 light to 9 dark); `oc.*`,
-  `tw.*` and other libraries too. Palettes, colormaps: `references/colors.md`.
+- Leave `color=` out by default so the preset's cycle applies. Named colours
+  when asked or to emphasise: `dc.blue6` (family + step, 0 light to 9 dark);
+  `oc.*`, `tw.*` too. Palettes, colormaps: `references/colors.md`.
 - `dm.fs(n)` = preset font size + n pt, `dm.lw(n)` = preset line width + n pt,
   `dm.fw(n)` = preset weight + 100·n. They read the preset, not an artist.
   One step bigger on an artist: `t.set_fontsize(t.get_fontsize() + 1)`.

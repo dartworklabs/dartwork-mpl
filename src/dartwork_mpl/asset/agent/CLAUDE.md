@@ -36,7 +36,8 @@ dm.save_formats(fig, "output/figure-v1", formats=("png", "pdf"))
   an aspect token (`"standard"`, `"wide"`, `"slide"`, ...), `"16:9"`, a
   number (height / width) or a height (`"8cm"`). Never `figsize=(w, h)`.
 - `-kr` presets (`report-kr`) only when the plot text is Korean.
-- Colours by name (`color="dc.teal3"`); explicit user values always win.
+- Leave `color=` out so the preset cycle applies; named colours
+  (`"dc.blue6"`) when asked or to emphasise; explicit user values win.
 - Plot values as given: never silently drop, fill or sort rows; keep NaN
   gaps visible (`dm.validate_data(..., allow_nan=True)`).
 - Edit only what was asked; keep data, preset, size and everything else.

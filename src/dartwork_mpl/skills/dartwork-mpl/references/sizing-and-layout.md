@@ -54,7 +54,7 @@ fig, axes = plt.subplots(
     gridspec_kw={"hspace": 0.35, "wspace": 0.3},
 )
 for i, ax in enumerate(axes.flat):
-    ax.plot(x, np.sin(x + i), color="dc.blue6")
+    ax.plot(x, np.sin(x + i))
     ax.set_ylabel("Response")
 for ax in axes[-1]:
     ax.set_xlabel("Time (s)")
@@ -75,7 +75,7 @@ fig, (main, side) = plt.subplots(
     gridspec_kw={"width_ratios": [2, 1], "wspace": 0.35},
 )
 main.plot(x, np.sin(x))
-side.hist(np.sin(x), bins=12, orientation="horizontal", color="dc.gray4")
+side.hist(np.sin(x), bins=12, orientation="horizontal")
 dm.simple_layout(fig)
 plt.close(fig)
 
@@ -84,7 +84,7 @@ fig, axd = plt.subplot_mosaic(
     gridspec_kw={"hspace": 0.5, "wspace": 0.4},
 )
 for name, ax in axd.items():
-    ax.plot(x, np.cos(x), color="dc.teal3")
+    ax.plot(x, np.cos(x))
     ax.set_title(name)
 dm.label_axes([axd[k] for k in "ABCD"])
 dm.simple_layout(fig)
