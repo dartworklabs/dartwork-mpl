@@ -1,0 +1,36 @@
+# calibration control: baseline-main-20261022 claude/e05-highlight-korea-en - must pass: highlight replaces the legend with one direct label per series
+"""GDP growth by country, 2012-2023 (report)."""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+import dartwork_mpl as dm
+
+dm.style.use("report")
+
+df = pd.read_csv("data/gdp_growth.csv")
+countries = ["Korea", "Japan", "United States", "Germany", "France"]
+
+highlight = "Korea"
+# Nudge end labels apart (data units) so the clustered 2023 values stay legible
+label_dy = {"Japan": 0.25, "France": -0.3}
+fig, ax = plt.subplots(figsize=dm.figsize("14cm", "golden"))
+for name in countries:
+    if name == highlight:
+        continue
+    ax.plot(df["year"], df[name], color="dc.gray4", linewidth=1, marker="o", markersize=2.5, zorder=2)
+    ax.annotate(name, (df["year"].iloc[-1], df[name].iloc[-1] + label_dy.get(name, 0)), xytext=(4, 0),
+                textcoords="offset points", va="center", color="dc.gray7")
+ax.plot(df["year"], df[highlight], color="dc.blue6", linewidth=2, marker="o", markersize=3.5, zorder=3)
+ax.annotate(highlight, (df["year"].iloc[-1], df[highlight].iloc[-1]), xytext=(4, 0),
+            textcoords="offset points", va="center", color="dc.blue8", fontweight="bold")
+ax.axhline(0, color="0.5", linewidth=0.5, linestyle="--")
+ax.set_xlabel("Year")
+ax.set_ylabel("Real GDP growth (%)")
+ax.set_title("Real GDP growth, 2012-2023")
+
+dm.simple_layout(fig)
+Path("out").mkdir(exist_ok=True)
+dm.save_formats(fig, "out/figure", formats=("png", "pdf"))

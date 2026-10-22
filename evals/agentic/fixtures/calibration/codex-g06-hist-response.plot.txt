@@ -1,0 +1,130 @@
+# calibration control: baseline-main-20261022 codex/g06-hist-response - must pass: stairs fractions, labelled ECDF lines, p95 markers
+"""Compare all observed response times; run with `.venv/bin/python plot.py`."""
+
+from dataclasses import asdict
+import hashlib
+import json
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.ticker import PercentFormatter, MultipleLocator
+import numpy as np
+import pandas as pd
+import dartwork_mpl as dm
+
+ROOT = Path(__file__).resolve().parent
+OUT = ROOT / "out"
+SOURCE = ROOT / "data" / "response_times.csv"
+
+
+def main():
+    OUT.mkdir(exist_ok=True)
+    frame = pd.read_csv(SOURCE)
+    if list(frame.columns) != ["variant", "response_ms"]:
+        raise ValueError("Expected variant,response_ms columns")
+    if frame.isna().any().any() or set(frame.variant) != {"A", "B"}:
+        raise ValueError("Missing observations or unexpected variant")
+    values = {v: frame.loc[frame.variant.eq(v), "response_ms"].to_numpy(float)
+              for v in ("A", "B")}
+    if any(not np.isfinite(x).all() or (x < 0).any() or len(x) != 200
+           for x in values.values()):
+        raise ValueError("Expected 200 finite nonnegative observations per variant")
+
+    summary = pd.DataFrame([
+        {"variant": v, "n": len(x), "min_ms": x.min(),
+         "median_ms": np.quantile(x, .5, method="linear"),
+         "p95_ms": np.quantile(x, .95, method="linear"),
+         "max_ms": x.max(), "mean_ms": x.mean()}
+        for v, x in values.items()
+    ]).set_index("variant")
+    summary.to_csv(OUT / "summary.csv", float_format="%.6f")
+
+    dm.style.use("report")
+    colors = {"A": "oc.blue8", "B": "oc.orange8"}
+    fig, axes = plt.subplots(1, 2, figsize=dm.figsize("20cm", "13cm"))
+    hist, ecdf = axes
+    bins = np.arange(0, 601, 25, dtype=float)
+    if frame.response_ms.max() > bins[-1]:
+        bins = np.arange(0, np.ceil(frame.response_ms.max() / 25) * 25 + 1, 25)
+
+    for v, x in values.items():
+        counts, _ = np.histogram(x, bins=bins)
+        hist.stairs(counts / len(x), bins, fill=True, alpha=.14,
+                    color=colors[v], linewidth=0)
+        hist.stairs(counts / len(x), bins, color=colors[v],
+                    linewidth=dm.lw(.3), label=f"Variant {v}",
+                    linestyle="-" if v == "A" else (0, (4, 1.7)))
+        ordered = np.sort(x)
+        ecdf.step(np.r_[0, ordered, bins[-1]],
+                  np.r_[0, np.arange(1, len(x) + 1) / len(x), 1],
+                  where="post", color=colors[v], linewidth=dm.lw(.3),
+                  linestyle="-" if v == "A" else (0, (4, 1.7)),
+                  label=f"Variant {v}")
+        p95 = summary.loc[v, "p95_ms"]
+        ecdf.scatter(p95, .95, color=colors[v], s=18, zorder=5,
+                     edgecolors="white", linewidths=.5)
+
+    for ax in axes:
+        ax.set_xlim(0, bins[-1])
+        ax.set_xlabel("Response time (ms)")
+        ax.xaxis.set_major_locator(MultipleLocator(150))
+        ax.yaxis.set_major_formatter(PercentFormatter(1, decimals=0))
+        ax.grid(axis="y", color="oc.gray2", linewidth=.5)
+        ax.grid(axis="x", visible=False)
+        ax.set_axisbelow(True)
+        ax.spines[["top", "right"]].set_visible(False)
+
+    hist.set_title("01   Distribution", loc="left", fontweight=dm.fw(1),
+                   fontsize=dm.fs(0), pad=11)
+    hist.set_ylabel("Requests per 25 ms bin")
+    hist.set_ylim(bottom=0)
+    hist.yaxis.set_major_locator(MultipleLocator(.05))
+    hist.legend(frameon=False, loc="upper right", fontsize=dm.fs(-1))
+    ecdf.set_title("02   Cumulative share", loc="left", fontweight=dm.fw(1),
+                   fontsize=dm.fs(0), pad=11)
+    ecdf.set_ylabel("Requests completed")
+    ecdf.set_ylim(0, 1.04)
+    ecdf.set_yticks([0, .25, .5, .75, .95, 1])
+    ecdf.axhline(.95, color="oc.gray5", linewidth=.5, linestyle=(0, (2, 3)))
+
+    dm.simple_layout(fig, margin="3mm", mt="5.15cm", mb="1.7cm")
+    fig.text(.075, .946, "Response times across two variants",
+             fontsize=dm.fs(4), fontweight=dm.fw(2), va="top")
+    fig.text(.075, .875, "200 observations per variant  /  Lower response time is better",
+             fontsize=dm.fs(-1), color="oc.gray7", va="top")
+    for v, left in (("A", .075), ("B", .55)):
+        row = summary.loc[v]
+        text_color = colors[v] if v == "A" else "tw.orange800"
+        fig.text(left, .785, f"VARIANT {v}", color=text_color,
+                 fontsize=dm.fs(-1), fontweight=dm.fw(2))
+        fig.text(left, .732, f"Median  {row.median_ms:.1f} ms", fontsize=dm.fs(0),
+                 fontweight=dm.fw(1), color=text_color)
+        fig.text(left, .686, f"95th percentile  {row.p95_ms:.1f} ms",
+                 fontsize=dm.fs(-1), color="oc.gray7")
+    fig.text(.075, .054, "All 400 observations shown; no trimming or missing values. Shared 25 ms bins.",
+             fontsize=dm.fs(-2), color="oc.gray7")
+    fig.text(.075, .022, "Dots mark p95 (linear interpolation). Source: data/response_times.csv",
+             fontsize=dm.fs(-2), color="oc.gray7")
+
+    code = Path(__file__).read_text()
+    report = {
+        "input_sha256": hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
+        "rows_read": len(frame), "rows_dropped": 0,
+        "quantile_method": "numpy.quantile(method='linear')",
+        "histogram_bin_edges_ms": bins.tolist(),
+        "histogram_counts": {v: np.histogram(x, bins)[0].tolist() for v, x in values.items()},
+        "lint": [asdict(item) for item in dm.lint_code(code)],
+        "visual": [asdict(item) for item in dm.validate_figure(fig)],
+    }
+    (OUT / "validation.json").write_text(json.dumps(report, indent=2))
+    dm.save_formats(fig, str(OUT / "figure"), formats=("png", "pdf"),
+                    bbox_inches=None, dpi=300)
+    plt.close(fig)
+    print(summary.to_string(float_format=lambda x: f"{x:.2f}"))
+    print(json.dumps({"lint": report["lint"], "visual": report["visual"]}, indent=2))
+
+
+if __name__ == "__main__":
+    main()

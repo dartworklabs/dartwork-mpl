@@ -1,0 +1,123 @@
+# calibration control: baseline-main-20261022 codex/g24-vague-ko - must pass: leader lines from each series end to its label
+"""Render quarterly regional sales. Run with `.venv/bin/python plot.py`."""
+
+from __future__ import annotations
+
+import csv
+from dataclasses import asdict
+import json
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.ticker import StrMethodFormatter
+import dartwork_mpl as dm
+
+
+ROOT = Path(__file__).resolve().parent
+OUT = ROOT / "out"
+QUARTERS = ("Q1", "Q2", "Q3", "Q4")
+
+
+def read_sales() -> dict[str, list[int]]:
+    """Keep every observation; reject missing, repeated or invalid cells."""
+    records: dict[str, dict[str, int]] = {}
+    with (ROOT / "data/quarterly_sales.csv").open(newline="", encoding="utf-8-sig") as f:
+        for row in csv.DictReader(f):
+            region, quarter = row["region"], row["quarter"]
+            value = int(row["revenue"].replace(",", ""))
+            if quarter not in QUARTERS or value < 0:
+                raise ValueError(f"Invalid observation: {row!r}")
+            bucket = records.setdefault(region, {})
+            if quarter in bucket:
+                raise ValueError(f"Repeated observation: {region}, {quarter}")
+            bucket[quarter] = value
+    if len(records) != 4 or any(set(values) != set(QUARTERS) for values in records.values()):
+        raise ValueError("Expected four complete regional series with Q1–Q4 values")
+    return {region: [values[q] for q in QUARTERS] for region, values in records.items()}
+
+
+def main() -> None:
+    sales = read_sales()
+    OUT.mkdir(exist_ok=True)
+    dm.style.use("report")
+    fig, ax = plt.subplots(figsize=dm.figsize("10.5in", "6.4in"))
+    background = "#FCFBF8"
+    ink, secondary = "#242E36", "#65717A"
+    fig.set_facecolor(background)
+    ax.set_facecolor(background)
+
+    styles = {
+        "East": ("oc.blue8", "o"),
+        "North": ("oc.grape7", "s"),
+        "South": ("oc.teal8", "D"),
+        "West": ("oc.orange9", "^"),
+    }
+    # Separate the close East/North labels without moving any data points.
+    label_y = {"East": 1675, "North": 1545, "South": 1210, "West": 1030}
+    summary = {}
+    for region in sorted(sales, key=lambda r: sales[r][-1], reverse=True):
+        values = sales[region]
+        palette, marker = styles[region]
+        color = dm.color(palette).to_hex()
+        growth = 100 * (values[-1] / values[0] - 1)
+        summary[region] = {"revenue": dict(zip(QUARTERS, values)), "q1_to_q4_growth_pct": growth}
+        ax.plot(range(4), values, color=color, linewidth=dm.lw(1.5), marker=marker,
+                markersize=dm.fs(-1.5), markeredgecolor=background,
+                markeredgewidth=1.2, solid_capstyle="round", zorder=3)
+        ax.plot([3.04, 3.19, 3.28], [values[-1], label_y[region], label_y[region]],
+                color=color, linewidth=0.8, alpha=0.7, clip_on=False)
+        label_color = dm.mix_colors(color, ink, 0.15)
+        ax.text(3.34, label_y[region] + 12, f"{region}  {values[-1]:,}",
+                fontsize=dm.fs(4), fontweight=dm.fw(2), color=label_color, va="bottom")
+        ax.text(3.34, label_y[region] - 9, f"+{growth:.1f}% from Q1",
+                fontsize=dm.fs(2), color=secondary, va="top")
+
+    ax.set_xlim(-0.13, 4.23)
+    ax.set_ylim(650, 1800)
+    ax.set_xticks(range(4), QUARTERS)
+    ax.set_yticks([800, 1000, 1200, 1400, 1600, 1800])
+    ax.yaxis.set_major_formatter(StrMethodFormatter("{x:,.0f}"))
+    ax.tick_params(axis="both", which="both", length=0, labelsize=dm.fs(3), colors=secondary)
+    ax.tick_params(axis="x", pad=13)
+    ax.tick_params(axis="y", pad=10)
+    ax.set_axisbelow(True)
+    ax.grid(False)
+    # Grid ends with the observed quarters, leaving a clear label column.
+    for y in ax.get_yticks():
+        ax.hlines(y, 0, 3, color="#E2E4E2", linewidth=0.6, zorder=0)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    fig.text(0.085, 0.936, "QUARTERLY SALES · REGIONAL PERFORMANCE", color=secondary,
+             fontsize=dm.fs(2), fontweight=dm.fw(2))
+    fig.text(0.085, 0.863, "Every region finishes higher", color=ink,
+             fontsize=dm.fs(18), fontweight=dm.fw(3))
+    fig.text(0.085, 0.809, "East leads Q4 revenue; West records the strongest growth from Q1.",
+             color=secondary, fontsize=dm.fs(4))
+    fig.text(0.085, 0.736, "Revenue", color=secondary, fontsize=dm.fs(2))
+    fig.text(0.085, 0.045, "Source: quarterly_sales.csv  ·  Revenue as reported; currency and year not specified.",
+             color=secondary, fontsize=dm.fs(1))
+
+    dm.simple_layout(fig)
+    # Reserve a consistent editorial header, source line and direct-label area.
+    ax.set_position([0.085, 0.145, 0.87, 0.57])
+    fig.canvas.draw()
+    report = {
+        "data_policy": "All 16 observations used; comma thousands separators removed; no aggregation or imputation.",
+        "series": summary,
+        "lint": [asdict(issue) for issue in dm.lint_code(Path(__file__).read_text())],
+        "visual_validation": [asdict(warning) for warning in dm.validate_figure(fig, quiet=True)],
+    }
+    (OUT / "validation.json").write_text(json.dumps(report, indent=2, default=str) + "\n")
+    dm.save_formats(fig, str(OUT / "figure"), formats=("png", "pdf"), dpi=220,
+                    facecolor=background, validate=False)
+    plt.close(fig)
+    print(json.dumps(summary, indent=2))
+    print(f"Saved {OUT / 'figure.png'} and {OUT / 'figure.pdf'}")
+
+
+if __name__ == "__main__":
+    main()
