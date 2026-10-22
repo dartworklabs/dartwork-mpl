@@ -132,3 +132,38 @@ class TestNamedRefusals:
         assert _original_offset(3, edits) == InsideEdit()
         assert _original_offset(1, edits) == 1
         assert _original_offset(6, edits) == 3
+
+
+class TestBuiltinDetectorTable:
+    """Every bundled rule has exactly one way to be detected."""
+
+    def test_table_and_text_only_rules_cover_the_catalog(self) -> None:
+        """Table ids and text-only ids partition the bundled catalog ids."""
+        from dartwork_mpl.lint.detect import (
+            _BUILTIN_DETECTORS,
+            _TEXT_ONLY_RULES,
+        )
+
+        catalog = {rule.id for rule in load_rules()}
+        table = set(_BUILTIN_DETECTORS)
+        assert not table & _TEXT_ONLY_RULES
+        assert table | _TEXT_ONLY_RULES == catalog
+
+    def test_text_only_rules_are_raw_text_detectors(self) -> None:
+        """A text-only rule must carry a catalog detector that scans raw text."""
+        from dartwork_mpl.lint.detect import _TEXT_ONLY_RULES
+
+        for rule in load_rules():
+            if rule.id in _TEXT_ONLY_RULES:
+                assert isinstance(
+                    _rule_detector(rule), (_RegexDetector, _SubstringDetector)
+                )
+
+    def test_literal_name_rules_use_their_ast_check(self) -> None:
+        """AST-detector rules in the table are the literal-name rules."""
+        from dartwork_mpl.lint.detect import _BUILTIN_DETECTORS, _literal_names
+
+        for rule in load_rules():
+            is_ast = isinstance(_rule_detector(rule), _AstNameDetector)
+            uses_names = _BUILTIN_DETECTORS.get(rule.id) is _literal_names
+            assert is_ast == uses_names, rule.id
