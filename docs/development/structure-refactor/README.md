@@ -18,7 +18,7 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 3. **다른 작업과 겹치지 않게 한다.** 시작 전에 `gh pr list`와 최근 24시간의 `git log origin/main -- <대상 경로>`를 확인한다.
    대상 경로를 건드리는 열린 PR이 있으면 그 영역은 미루고 다른 영역을 먼저 진행한다.
    `mcp/tools.py`, `lint.py`, `style.py`, `io.py`는 변경이 잦으므로 PR을 짧게 열고 바로 머지한다.
-4. **PR마다 이 문서의 진행 표를 갱신한다.** 상태와 PR 번호를 적는다.
+4. **진행 표는 머지된 PR을 묶어 갱신한다.** 이동 PR마다 이 파일을 고치면 병행 PR끼리 충돌하므로, 상태와 PR 번호는 별도 문서 PR로 모아 적는다.
 
 ## PR마다 통과해야 할 판정 (외부 판정기)
 
@@ -58,58 +58,59 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 
 | ID | 내용 | 상태 |
 | --- | --- | --- |
-| C1 | `_helpers` 해체 → platform `_figure_geometry`, `create_parent_path`는 소유자에게 | 대기 |
-| C2 | platform `_rc`(rcParams 잠금, did_you_mean): `style`⇄`_colors`, `icon`→`style` 순환 제거 | 대기 |
+| C1 | `_helpers` 해체 → platform `_figure_geometry`, `create_parent_path`는 소유자에게 | #525–#528 |
+| C2 | platform `_rc`(rcParams 잠금, did_you_mean): `style`⇄`_colors`, `icon`→`style` 순환 제거 | #525–#528 |
 | C3 | style 표면 `preset_names`/`preset_chain`: lint·mcp·_colors의 `presets.json` 직접 읽기 제거 | 대기 |
-| C4 | `font/` 패키지 + `icon` 흡수(`icon.py` shim), diagnostics의 `_FONT_DIR` 누출 제거 | 대기 |
-| C5 | `units/` 패키지, `col1/col2`를 units로 | 대기 |
-| C6 | `layout/` 패키지(이동만), 테스트 전용 `_measure_overflow`를 테스트 지원 코드로 | 대기 |
-| C7 | `annotation/` 패키지, `optimize_legend`·`make_offset` 흡수(`helpers/labels` shim) | 대기 |
-| C8 | `formatting/` 패키지 + `set_decimal` 흡수 + `__all__` | 대기 |
-| C9 | `io/` 패키지, ui·mcp가 `util` 대신 소유자를 import | 대기 |
+| C4 | `font/` 패키지, diagnostics의 `_FONT_DIR` 누출 제거(공개 `get_font_dir`). **icon은 흡수하지 않음**: 이름(`ensure_loaded`)과 변경 이유가 달라 잘못된 추상화 | #525–#528 |
+| C5 | `units/` 패키지, `col1/col2`를 units로 | #525–#528 |
+| C6 | `layout/` 패키지(이동만), 테스트 전용 `_measure_overflow`를 테스트 지원 코드로 | #525–#528 |
+| C7 | `annotation/` 패키지, `make_offset` 흡수. `optimize_legend`는 C11로 이월 | #525–#528 |
+| C8 | `formatting/` 패키지 + `set_decimal` 흡수 + `__all__` | #525–#528 |
+| C9 | `io/` 패키지. ui는 U5, mcp는 M6에서 `util` 대신 소유자 import | #525–#528 |
 | C10 | `util.py` → shim 전용, `mix_colors`/`pseudo_alpha` → `_colors` | 대기 |
 | C11 | `helpers/` → shim 전용, 각 항목을 소유 슬라이스로 | 대기 |
-| C12 | `templates`의 루트 import 제거, `__init__` 배선화(`_compat.py`, twinx 패치는 style로) | 대기 |
+| C13 | 테스트를 가진 단일 파일 슬라이스 `scale`·`tokens`·`icon`·`explore`를 같은 이름 패키지로(테스트 동거). `config`·`agent`는 전용 테스트가 없어 유지 | #526 |
+| C12 | `templates`의 루트 import 제거, `__init__` 배선화(`_compat.py`, twinx 패치는 style로) | #525–#528 |
 
 **colors** ([감사](audit/colors.md) §5. `_compatibility_metrics.py`는 움직이지 않는다)
 
 | ID | 내용 | 상태 |
 | --- | --- | --- |
-| K1 | `_luminance`를 `_colors/contrast`로 흡수해 순환 제거 | 대기 |
-| K2 | `build/`·`verify/` 순수 이동, `_build.py`는 진입점만 | 대기 |
-| K3 | `model/`·`contrast/` 슬라이스, validate의 `_conversion` 비공개 접근을 표면으로 | 대기 |
-| K4 | `catalog/`·`registry/`·`families_api` 슬라이스, mcp·helpers·style import를 표면으로 | 대기 |
-| K5 | `diagnostics` 재배치(색은 `_colors/diagnostics`, 폰트는 font로), 진입점은 재노출만 | 대기 |
+| K1 | `_luminance`를 `_colors/contrast`로 흡수해 순환 제거 | #533 |
+| K2 | `construction/`·`verify/` 순수 이동(`build/`는 pytest `norecursedirs`에 걸려 개명), `_build.py`는 진입점만 | #533 |
+| K3 | `model/`·`contrast/` 슬라이스, validate의 `_conversion` 비공개 접근을 표면으로 | #533 |
+| K4 | `catalog/`·`registry/`·`families_api` 슬라이스, mcp·helpers·style import를 표면으로 | #533 |
+| K5 | `diagnostics` 재배치(색은 `_colors/diagnostics`, 폰트는 font로), 진입점은 재노출만 | #533 |
 
 **lint·validate** ([감사](audit/lint-validate.md) §5)
 
 | ID | 내용 | 상태 |
 | --- | --- | --- |
-| L1 | `lint.py` → `lint/` 패키지(catalog, syntax, detect, report, fix, migrate) 순수 이동 | 대기 |
-| L2 | `validate_fixes.py` → `validate/fixes.py`·`agent_requirements.py` + shim(`__all__` 명시) | 대기 |
-| L3 | check마다 fix handler를 `validate/checks/<check>.py`로, 레지스트리 하나로 | 대기 |
+| L1 | `lint.py` → `lint/` 패키지(catalog, syntax, detect, report, fix, migrate) 순수 이동 | #529 |
+| L2 | `validate_fixes.py` → `validate/fixes.py`·`agent_requirements.py` + shim(`__all__` 명시) | #529 |
+| L3 | check마다 fix handler를 `validate/checks/<check>.py`로, 레지스트리 하나로 | #529 |
 
 **ui** ([감사](audit/ui-cli.md) §5)
 
 | ID | 내용 | 상태 |
 | --- | --- | --- |
-| U1 | 와이어 골든: 라우트 응답 키, `/api/descriptors`, 상태 파일 바이트 고정 | 대기 |
-| U2 | 호출자 없는 코드 제거(`_config.py:227-485`, `ui.py:729-831,889-897`) | 대기 |
-| U3 | `ui/platform/`(json, fs, access) 이동 | 대기 |
-| U4 | `params/`·`page/`·`scaffold/` 이동 | 대기 |
-| U5 | `state/`·`saving/`·`render/`·`script/` + 슬라이스별 router·GRANTS, `ui.py`는 mount만 | 대기 |
+| U1 | 와이어 골든: 라우트 응답 키, `/api/descriptors`, 상태 파일 바이트 고정 | #530 |
+| U2 | 호출자 없는 코드 제거. `save_preset`/`load_presets`는 `docs/migration.md`가 대체 API로 안내해 유지(H8) | #530 |
+| U3 | `ui/platform/`(json, fs, access) 이동 | #530 |
+| U4 | `params/`·`page/`·`scaffold/` 이동 | #530 |
+| U5 | `state/`·`saving/`·`render/`·`script/` + 슬라이스별 router·GRANTS, `ui.py`는 mount만 | #530 |
 | U6 | `prompt/` 패키지가 `asset/prompt` 경로의 유일한 소유자(lint·mcp는 표면 사용) | 대기 |
 
 **mcp** ([감사](audit/mcp.md) §5. 배선 표 네 파일은 데코레이터·docstring을 바이트 그대로 둔다)
 
 | ID | 내용 | 상태 |
 | --- | --- | --- |
-| M1 | `_platform/`(process, assets) 이동 | 대기 |
-| M2 | `execution/`, `plot_data/`(repair) 패키지 이동 | 대기 |
-| M3 | `_validate_*` 18개 → `plot_data/validators.py` | 대기 |
-| M4 | `docs_fetch/`·`colors/`·`recommend/`·`catalog/` 본문 이동, tools.py는 위임만 | 대기 |
-| M5 | `lint/`·`templates/` 이동, 두 템플릿 러너를 하나로 | 대기 |
-| M6 | `guides/`: resources·prompts 본문 이동 | 대기 |
+| M1 | `_platform/`(process, assets) 이동 | #532 |
+| M2 | `execution/`, `plot_data/`(repair) 패키지 이동 | #532 |
+| M3 | `_validate_*` 18개 → `plot_data/validators.py` | #532 |
+| M4 | `docs_fetch/`·`colors/`·`recommend/`·`catalog/` 본문 이동, tools.py는 위임만 | #532 |
+| M5 | `lint/`·`templates/` 이동. 두 렌더러는 실행부만 공유, 응답 구성은 분리(tier·`fell_back` 등이 다름) | #532 |
+| M6 | `guides/`: resources·prompts 본문 이동 | #532 |
 
 ### 3단계 — 타입 (내부 표현만. 와이어·공개 반환 형태는 바이트 동일)
 
@@ -142,6 +143,11 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | D2 | `DEBT = {}`로 경계 검사 강제 전환 | 대기 |
 | D3 | 정리: pre-commit job 이름, 없는 `colors/_generated` exclude, 색 산출물 검사 3중 중복 | 대기 |
 
+## 진행 중 정해진 도구 규칙
+
+- 경계 검사기: `SHIMS`(호환 shim → 소유 단위, shim의 `__all__`이 두 번째 표면), `PINNED`(경로가 고정된 모듈 → 소유 단위), 자기를 감싼 부모 패키지는 의존으로 세지 않음. 셋 다 주입 테스트가 있다.
+- 스택 PR은 main 대상이 아니면 CI가 돌지 않는다. 끝 PR을 main 대상으로 열어 한 번에 검증하고 merge commit으로 머지한다.
+
 ## 사람 결정 대기 (이 리팩터가 스스로 바꾸지 않는다)
 
 | ID | 내용 | 이유 |
@@ -153,3 +159,5 @@ PR마다 통과해야 할 기계 판정, 진행 상태를 맡는다. 근거는 `
 | H5 | 공개 파라미터 `Literal` 축소, `lint.Rule` detector union, `Issue.line` non-Optional, `VisualWarning` frozen | 공개 정적 계약 변경 |
 | H6 | src 안에 소비자가 없는 `_colors/_metrics.py`의 이전·제거 | docs 스크립트가 사용 |
 | H7 | CLAUDE.md·AGENTS.md의 "18 tools"(실제 19개) 문구 | 별도 문서 수정 |
+| H8 | `ui/_config.py`의 레거시 `save_preset`/`load_presets` 제거 | `docs/migration.md`가 대체 API로 안내 |
+| H9 | ADR 0001·0003이 적은 모듈 경로(`_colors/_gates.py` 등)는 이동 전 경로다. 수락된 ADR 원문은 고치지 않는다 | 현재 위치는 `scripts/check_boundaries.py`와 `audit/colors.md` |
