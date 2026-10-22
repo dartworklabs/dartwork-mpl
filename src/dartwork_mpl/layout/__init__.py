@@ -35,7 +35,11 @@ from matplotlib.transforms import Bbox
 # — one source for the bbox-measurement exception set (the two modules
 # used to carry identical private copies).
 from .._figure_geometry import BBOX_ERRORS as _BBOX_ERRORS
-from .._figure_geometry import get_renderer, iter_figure_level_extents
+from .._figure_geometry import (
+    axes_text_artists,
+    get_renderer,
+    iter_figure_level_extents,
+)
 from ..units import Length
 
 if TYPE_CHECKING:
@@ -317,9 +321,8 @@ def _axes_content_extent_px(
         pts.append((apos.x0, apos.y0))
         pts.append((apos.x1, apos.y1))
 
-    # Texts, title, axis labels.
-    text_artists = [*ax.texts, ax.title, ax.xaxis.label, ax.yaxis.label]
-    for txt in text_artists:
+    # Texts, centre/left/right titles, axis labels.
+    for txt in axes_text_artists(ax):
         if txt is None or not txt.get_visible() or not txt.get_text().strip():
             continue
         try:
@@ -328,8 +331,9 @@ def _axes_content_extent_px(
             continue
         if ext.width <= 0 or ext.height <= 0:
             continue
-        pts.append((ext.x0, ext.y0))
-        pts.append((ext.x1, ext.y1))
+        x0, x1 = _fixable_text_span(txt, ext, apos, fig.bbox.width)
+        pts.append((x0, ext.y0))
+        pts.append((x1, ext.y1))
 
     # Tick labels — only those whose tick position falls inside the
     # current view interval. Auto-generated ticks outside the data
@@ -382,6 +386,35 @@ def _axes_content_extent_px(
     xs = [p[0] for p in pts]
     ys = [p[1] for p in pts]
     return min(xs), max(xs), min(ys), max(ys)
+
+
+def _fixable_text_span(
+    txt: Text, ext: Bbox, apos: Bbox | None, canvas_w_px: float
+) -> tuple[float, float]:
+    """Return the horizontal span of ``txt`` that moving axes edges can fix.
+
+    The solver treats an overhang as moving with the nearest axes edge.
+    Text anchored at or left of the left edge (a ``loc="left"`` title, a
+    subtitle at ``transAxes`` x=0) stays put when the right edge moves, so
+    chasing its overhang past the right edge shrank the axes on every
+    iteration, down to 0.001 of the canvas; the same holds mirrored on the
+    right. Text wider than the canvas cannot fit at all. Those overhangs
+    are dropped here; the visual checks still report the overflow.
+    """
+    x0, x1 = ext.x0, ext.x1
+    if apos is None or apos.width <= 0:
+        return x0, x1
+    if ext.width > canvas_w_px:
+        return max(x0, apos.x0), min(x1, apos.x1)
+    try:
+        anchor_x = txt.get_transform().transform(txt.get_unitless_position())[0]
+    except _BBOX_ERRORS:
+        return x0, x1
+    if anchor_x <= apos.x0 + 0.5:
+        x1 = min(x1, apos.x1)
+    elif anchor_x >= apos.x1 - 0.5:
+        x0 = max(x0, apos.x0)
+    return x0, x1
 
 
 def _resolve_gridspec(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
+from ..._figure_geometry import axes_titles
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check
@@ -49,7 +50,7 @@ def check_cross_axes_overlap(
         except BBOX_ERRORS:
             ax_bbox = None
         candidates: list[tuple[str, Any]] = [
-            ("title", ax.title),
+            *(("title", title) for title in axes_titles(ax).values()),
             ("xlabel", ax.xaxis.label),
             ("ylabel", ax.yaxis.label),
         ]
