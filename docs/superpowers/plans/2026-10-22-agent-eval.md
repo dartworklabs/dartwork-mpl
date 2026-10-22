@@ -1,11 +1,11 @@
 # #523 phase 0: natural-language agent eval and baseline harness
 
-Status: the harness is implemented. Round-2 review fixes are pinned by
-regression controls, and the harness is smoke-tested. The full baseline, the
+Status: the harness is implemented, smoke-tested, and calibrated against the
+full baseline (`evals/agentic/calibration/2026-10-22-baseline-audit.md`). The
 pilot and the A/B comparison have not been run; the orchestrator runs them.
-Branch: `t3/p0-agent-eval-20261022`, from `origin/main` `c332c7ab`. Details and
-commands: `evals/agentic/README.md`. The eval is the external decider
-(CLAUDE.md rule 2). Aesthetics are not a gate.
+Branch: `t3/p0-agent-eval-20261022`, rebased on `origin/main` `f8ec26e5`.
+Details and commands: `evals/agentic/README.md`. The eval is the external
+decider (CLAUDE.md rule 2). Aesthetics are not a gate.
 
 ## Design
 
@@ -13,7 +13,8 @@ commands: `evals/agentic/README.md`. The eval is the external decider
   - 40 cases: 25 generate and 15 edit, in EN and KO, for paper, report,
     slides and vague purposes. Prompts are natural language only.
   - 10 are `held_out` and must not be used while tuning.
-  - Edits declare `edit_scope: explicit|broad` and `target` patterns.
+  - Edits declare `edit_scope: explicit|broad`, `target` patterns (what the
+    request may touch) and optionally `max_new_texts`.
   - Cases may declare `auxiliary` kinds (`reference_lines`, `fit_lines`).
 - **Trees.**
   - Records (`~/scratch/dartwork-mpl-evals/<run>`): an append-only manifest,
@@ -22,8 +23,8 @@ commands: `evals/agentic/README.md`. The eval is the external decider
     case inputs, their own venv with the pinned wheel installed from a
     project-local copy, and for edits the rendered base.
   - Repo paths are stripped from the child `PATH`.
-  - Contamination scan: any tool access to the repo, records, eval files or
-    another project fails the unit.
+  - Contamination: a path named in any tool call or output that resolves
+    into the repo, the records or another project fails the unit.
   - `--hide-grading` runs hosts in bwrap. It was checked with both hosts.
 - **Hosts.**
   - Claude: project-only settings, no MCP, the user's CLAUDE.md excluded, no
@@ -45,16 +46,18 @@ commands: `evals/agentic/README.md`. The eval is the external decider
   - The re-run must be pixel-identical (measured same-env noise is 0).
   - Data contracts bind identity, including legend handles, plus coordinates,
     order, multiplicity and NaN masks, over visible artists only.
-  - Every visible data artist must be explained by a contract or a declared
-    auxiliary.
+  - Every visible data artist must be explained by a contract, a declared
+    auxiliary, or a derivation from the input (`derived.py`: references,
+    repeats of claimed points, input columns, jitter, ECDF, statistics, fits,
+    leaders). A display scale needs its unit visible.
   - Grouped and stacked bar layouts, cumulative stacks and distinct panels are
     contracts.
   - Distributions are estimator contracts recomputed from raw rows:
-    histogram counts, a Gaussian KDE with fitted bandwidth (2% of peak), box
-    median and quartiles, violin KDE shape. An unrecognised form is
-    *unchecked*, never a pass.
-  - Explicit edits fail on any changed or added non-target property: ticks,
-    texts, alpha, rotation, position, legend bbox and so on.
+    histogram counts (bars or steps), ECDF, a Gaussian KDE with fitted
+    bandwidth (2% of peak), box median and quartiles, violin KDE shape. An
+    unrecognised form is *unchecked*, never a pass.
+  - Explicit edits fail on any changed or added non-target property (series
+    keyed by their data): ticks, texts, alpha, rotation, position, legend.
 - **Inspection.** A successful image tool result counts only if it is
   timestamped after the last write to `plot.py`/outputs, at least 400 px, and
   equal to the final PNG by sha256 or after the host's measured resize (Claude
@@ -85,35 +88,33 @@ commands: `evals/agentic/README.md`. The eval is the external decider
   pass on both: a true KDE, a declared reference line, an only-target edit, a
   10-point gain, an executed reference, clean decimals, and scatter-for-line
   (already rejected before, for another reason).
-- Default `pytest` collects 6914 tests, none from `evals/`. dm true positives:
-  lost `loc="left"` titles (g17, g18) and a narrowed panel's legend over data (e03).
+- `pytest evals/agentic/test_calibration.py`: 24 controls from the real
+  baseline (13 audited-correct units pass and fail on the pre-calibration
+  scorer; the unexecuted edit and 6 fabricating mutations fail; 4 contamination).
+- Default `pytest` collects none of `evals/`.
 
-## Smoke results
+## Smoke and baseline results
 
-Run `smoke-20261022-r2`: the main wheel, no skill. Claude is `sonnet` (resolved
-to `claude-sonnet-5-5`) with high effort. Codex is `gpt-6-astra` with medium
-effort; its sub-agent ran `gpt-6.1-sol`.
+Smoke `smoke-20261022-r2` (3 Claude + 1 Codex units): all executed, succeeded
+and were inspected. Baseline `baseline-main-20261022` (80 units, no skill,
+`--hide-grading`) was audited unit by unit; 25 of 26 failures were scorer false
+failures, fixed by general rules and rescored without reruns:
 
-| Case | Host | Exec | Task | Inspected | Turns | Tokens | Time (s) | Defects | Stop |
-|---|---|---|---|---|---|---|---|---|---|
-| g01-line-gdp | claude | yes | yes | yes (sha256; 1 stale view ignored) | 15 | 359,824 | 60 | 0 | completed |
-| g14-korean-combo | claude | yes | yes | yes (sha256) | 17 | 391,876 | 54 | 0 | completed |
-| e01-label-step-en | claude | yes | yes; preserved | no | 5 | 61,571 | 14 | 0 | completed |
-| g01-line-gdp | codex | yes | yes | yes (host-resize) | 22 | 639,151 (1 sub-agent) | 108 | 0 | completed |
+| host | task success before → after | contaminated before → after |
+|---|---|---|
+| claude (`sonnet`, high) | 28/40 → 40/40 | 4 → 0 |
+| codex (`gpt-6-astra`, medium) | 26/40 → 39/40 | 3 → 0 |
 
-The contact sheets agree with the scores. Claude loaded `/dataviz` in both
-generate cases. The smoke run found one more harness bug: the records root is a
-string prefix of the work root, which flagged every unit as contaminated.
-Markers now match on a path boundary (control r45), and the Claude units were
-re-derived.
+The one remaining failure is true: codex g23 never executed its last edit.
 
 ## Not done / limitations
 
-- The full 40×2 baseline, the pilot and the A/B comparison have not been run.
+- The pilot and the A/B comparison have not been run.
 - The Codex global `AGENTS.md` is isolated only with `--codex-home`.
 - Codex sub-agents are allowed (the default) and counted.
   `--codex-no-subagents` gives parity runs.
 - `~/scratch` contains both trees; only `--hide-grading` hides the records
   from a determined agent. Without it, access is detected, not prevented.
-- Uncovered forms are unchecked, never passed: step histograms, ECDF, boxes
-  without readable edges.
+- Uncovered forms are unchecked, never passed (e.g. boxes without readable
+  edges). The baseline saturates near 100%, so the A/B needs harder cases or
+  reps to separate arms.

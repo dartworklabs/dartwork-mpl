@@ -10,16 +10,19 @@ by hand.
 
 | Path | Role |
 |---|---|
-| `cases/*.yaml` | 40 cases: 25 `generate` and 15 `edit`. Each has `id`, `kind`, `lang`, `purpose`, `held_out`, `prompt`, `data`, `oracle` and an optional `auxiliary`. Edit cases add `base`, `edit_scope` and `target`. |
+| `cases/*.yaml` | 40 cases: 25 `generate` and 15 `edit`. Each has `id`, `kind`, `lang`, `purpose`, `held_out`, `prompt`, `data`, `oracle` and an optional `auxiliary`. Edit cases add `base`, `edit_scope`, `target` (the properties the requested change may touch) and optionally `max_new_texts`. |
 | `fixtures/data/*.csv` | Frozen inputs, pinned by `SHA256SUMS`. `make_fixtures.py` records how they were made. |
 | `fixtures/base/` | The starting `plot.py` for each edit case. |
 | `fixtures/reference/` | One correct solution per case. Only `--selftest` uses them. |
 | `fixtures/controls/` | 7 deliberately broken figures. Each one must trip its detector. |
+| `fixtures/calibration/` | Agents' final `plot.py` from the real baseline, verbatim (`*.plot.txt`), with provenance in `index.json`. |
+| `calibration/` | Audits of real runs: every failing unit, judged from its figure and source. |
 | `run.py` | Creates the projects, runs the hosts and gathers evidence. |
 | `probe.py` | Re-runs `plot.py` and snapshots the figure. |
 | `views.py` | Fixture access and snapshot views. |
 | `oracle.py` | Data contracts and the runner. |
-| `estimators.py` | Histogram, KDE and box contracts. |
+| `estimators.py` | Histogram (bars and steps), KDE, ECDF and box contracts. |
+| `derived.py` | Rules that explain unclaimed artists derived from the input. |
 | `spec_checks.py` | Request checks. |
 | `metrics.py` | Layout defects and edit preservation. |
 | `score.py` | Scores a run, or runs the selftest. |
@@ -28,6 +31,7 @@ by hand.
 | `sheet.py` | Contact sheets. |
 | `test_scorer.py` | Mutation controls. |
 | `test_regressions.py` | Round-2 review probes, pinned as regression controls. |
+| `test_calibration.py` | Real-baseline controls: audited-correct units pass, true failures and fabricated mutations fail. |
 
 ## Trees, and what the agent sees
 
@@ -57,17 +61,21 @@ Cases, oracles, references and scorer code stay in this repository. The prompt
 suffix (`common.SUFFIX`) states only the library, the interpreter and the output
 paths. Prompts never name a skill.
 
-**Contamination.** After each run, every tool call and tool output (from the
-Claude transcript, or the Codex stream and rollouts) is scanned for:
+**Contamination.** After each run, every path named in a tool call or tool
+output (from the Claude transcript, or the Codex stream and rollouts) is
+resolved: absolute and `~` paths as written, relative paths that climb (`..`)
+from the project, symlinks followed. An access is contamination when the
+resolved path lies in a grading root:
 
-- the repo or records paths;
-- `evals/agentic`, `fixtures/reference`, `manifest.json`, `run_meta.json`,
-  `score.json`;
-- another project under the work root;
-- a `../` escape in a command.
+- a repo checkout (cases, references, scorer);
+- the records tree;
+- another project under the work root.
 
-A hit sets `contaminated=true`. A contaminated unit is never a task success, and
-it counts as a failure in comparisons.
+A `../` that stays in the project (`.venv` internals) or reaches only the work
+root itself is not an access. A hit sets `contaminated=true`. A contaminated
+unit is never a task success, and it counts as a failure in comparisons.
+`score.py` recomputes this from the stored transcripts with the current rule,
+keeping the run-time value as `contamination_at_run`.
 
 Plain filesystem access cannot hide `~/scratch` itself, which contains both
 trees. Pass `--hide-grading` to run each host inside `bwrap`. It mounts empty
@@ -120,7 +128,7 @@ Use `uv run python evals/agentic/...` from the repo root.
 ```sh
 # 1. Harness self-checks. No model calls.
 uv run python evals/agentic/score.py --selftest   # 40 references, 7 controls, fixture checksums
-uv run pytest evals/agentic/test_scorer.py evals/agentic/test_regressions.py -q
+uv run pytest evals/agentic/test_scorer.py evals/agentic/test_regressions.py evals/agentic/test_calibration.py -q
 
 # 2. Smoke run (3 Claude units + 1 Codex unit in one run id), then score and draw sheets.
 R=smoke-$(date +%Y%m%d-%H%M)
@@ -208,8 +216,20 @@ comparison tables report them separately.
 - **Oracle `values` contracts.** These bind identity, coordinates, order,
   multiplicity and NaN masks, and claim the artists they explain. Only
   *visible* artists count: hidden, alpha 0, or no stroke and no marker is
-  invisible. Identity comes from a label, a legend handle (`label=` is not
-  required), a panel title or ylabel, or an end label.
+  invisible. Identity comes from:
+  - a label, or a legend handle (`label=` is not required; a proxy handle
+    names the same-coloured artists of its axes when no other entry shares
+    the colour);
+  - the panel's name: its centre, left or right title or y label; else a text
+    inside the panel; else, with one data panel, the suptitle or a figure
+    text. Only texts naming exactly one series count, and the top-most wins,
+    so "Sessions and signups" names nothing and a unit subtitle does not
+    override the title;
+  - an end label: a text or annotation of the same panel next to the line end.
+
+  A display scale (thousands, millions, percent, ...) is accepted only as one
+  factor for the whole artist and only when a visible text of its panel
+  states the unit (`Active users (thousands)`, `12k`, `%`).
   - `series`: one-to-one; an extra artist labelled as a series fails;
     `panels: distinct` puts each series in its own axes.
   - `bars`: category → value, plus `layout: grouped` (side by side from 0) or
@@ -217,7 +237,8 @@ comparison tables report them separately.
   - `points`.
   - `fits`.
   - `dist`: per-group estimator contracts recomputed from the raw rows:
-    - histogram counts in the drawn bins;
+    - histogram counts in the drawn bins (bars, `stairs`, `step`/`stepfilled`);
+    - an ECDF: every observation a vertex, each height within its jump;
     - a Gaussian KDE, up to one scale factor, for a fitted bandwidth, within
       2% of the peak;
     - box median and Q1/Q3 at the labelled tick;
@@ -229,9 +250,15 @@ comparison tables report them separately.
   - `errorbars`.
   - `span`.
 
-  Finally, every visible data artist must be claimed by a contract or match a
-  declared `auxiliary` kind (`reference_lines`, `fit_lines`). Errorbar caps
-  are always auxiliary.
+  Finally, every visible data artist must be claimed by a contract (failing
+  contracts claim too), match a declared `auxiliary` kind (`reference_lines`,
+  `fit_lines`), or be derivable from the input (`derived.py`): a constant
+  reference line; a repeat of claimed points (context copies, endpoint
+  markers); a contiguous run of an input column; jittered observations of a
+  distribution group; an ECDF; points at a group's mean, median, min, max or
+  quantile; a least-squares fit; a short leader line from a claimed point to a
+  text. Made-up values match none of these. Errorbar caps are always
+  auxiliary.
 - **Oracle `spec` checks.** These cover the request: size, aspect, preset,
   scale, twin axes, panel ratio, grid, shared limits, legend placement, sorting,
   highlight, end labels, label font-size delta, and "no more defects than the
@@ -242,15 +269,20 @@ comparison tables report them separately.
   - spines;
   - text, size, weight, colour, alpha, rotation and position for each role and
     each annotation;
-  - line colour, width, style, marker, alpha, visibility and data digest
-    (including the NaN mask);
-  - bar and scatter colours, alpha and data;
+  - line label, colour, width, style, marker, alpha and visibility, keyed by
+    the line's data digest (including the NaN mask), so relabelling or
+    re-ordering is not a change of every property and changed data is;
+  - bar and scatter labels, colours and alpha, keyed the same way;
   - legend location, texts, size and bbox.
 
   Placements (`.position`, `.pos`, `.bbox`) are compared with a 0.03 figure
   fraction tolerance. For `explicit` edits, a missing base snapshot, any
-  changed non-target property, or any **added** non-target property fails. For
-  `broad` edits, only the data contracts are hard checks.
+  changed non-target property, any **added** non-target property, or more new
+  texts than `max_new_texts` fails. `target` declares what the requested
+  change legitimately touches: a highlight may restyle every series and
+  replace the legend with one direct label per series; end labels may remove
+  the legend and the series labels. For `broad` edits, only the data
+  contracts are hard checks.
 - **Comparison (`compare.py`).**
   - Rows are validated against the manifest's planned units. A missing or
     duplicate unit makes the result **incomplete**, unless you pass
