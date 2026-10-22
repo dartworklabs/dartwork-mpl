@@ -69,7 +69,8 @@ that one is a false positive.
 ## Revise
 
 1. Change only what the image, a WARNING or the user asked for.
-2. Save under the next stem (`output/figure-v2`) and keep v1.
+2. Save under the next stem (`output/figure-v2`) and keep v1. If the user
+   named an output path, write the final version there too.
 3. Look at the new PNG again.
 4. Report what changed, which warnings remain and why.
 

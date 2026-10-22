@@ -92,7 +92,8 @@ short question only when the target is truly ambiguous.
 
 ## Review loop (every figure and revision; script: `references/review-loop.md`)
 
-1. Save under a versioned stem: `output/figure-v1`.
+1. Save under a versioned stem: `output/figure-v1`. A path the user names
+   gets the final version.
 2. Open the PNG with your image tool (Claude Code: Read; Codex: view_image)
    and look: clipped or overlapping text, legend over data, crowded ticks,
    wasted space, wrong data. If you cannot view images, say the figure was
