@@ -14,7 +14,7 @@ from typing import Any, Literal
 import matplotlib.ticker as ticker
 from matplotlib.axes import Axes
 
-from ._axis_wide import MyriadFormatter, ScaledFormatter, SIFormatter
+from ._axis_wide import AxisUnitFormatter, Unit
 from ._decimals import recommend_tick_decimals
 
 __all__ = [
@@ -31,6 +31,14 @@ __all__ = [
 ]
 
 _YEAR_SUFFIX = {"ko": "년", "ja": "年", "zh": "年", "en": ""}
+
+_SI_LADDER = (
+    Unit(1.0, ""),
+    Unit(1e3, "k"),
+    Unit(1e6, "M"),
+    Unit(1e9, "G"),
+    Unit(1e12, "T"),
+)
 
 
 def _set_formatter(
@@ -104,14 +112,29 @@ def format_axis_myriad(
     locale: str = "ko",
     decimals: int | None = None,
     currency: str = "",
+    unit: str = "max",
 ) -> None:
     """Format axis ticks using East-Asian myriad units.
 
-    Each tick takes the largest unit it reaches (``8,000``, ``1,230만``,
-    ``1.5억``). With the default ``decimals=None`` the ticks that share a
-    unit share one decimal count: the fewest that render each of them
-    exactly, so integer ticks print no decimals (``1억, 2억``) and a
-    fractional step keeps the count on every tick (``1.00억, 1.25억``).
+    The whole axis shares one unit from the ladder none/만/억/조/경
+    (zh: 万/亿/兆/京, ja: 万/億/兆/京) and one decimal count, settled from
+    the visible ticks on every draw, so an axis never mixes ``7,500만``
+    with ``1.25억`` and digit counts read at a glance:
+
+    - ``unit="max"`` (default): the unit of the largest visible
+      ``|tick|`` — ``0, 0.25억 … 1.75억``. Below 10,000 the ticks are plain
+      numbers with thousands separators (``0, 2,000 … 8,000``).
+    - ``unit="whole"``: a unit in which every visible tick is a whole
+      number, and of those the one whose longest label is shortest
+      (``0, 2,500만 … 17,500만``); with no such unit, the fewest decimals.
+    - A ladder label (``""``, ``"만"``, ``"억"``, ``"조"``, ``"경"`` or the
+      locale's equivalents) fixes that unit.
+
+    Decimals are the fewest that render every visible tick exactly in the
+    chosen unit (none on a whole-number axis, ``0.25억, 0.50억`` on a
+    quarter step). Zero prints as ``0``; scaled values of 1000 and more
+    carry thousands separators. On a log axis the ticks span decades, which
+    cannot share one unit, so each tick takes its own.
 
     Parameters
     ----------
@@ -122,11 +145,14 @@ def format_axis_myriad(
     locale:
         Unit ladder locale: "ko", "zh", or "ja".
     decimals:
-        ``None`` (default) chooses decimals per unit as above. An integer
-        rounds every unit tick to that many places and then trims trailing
-        zeros per tick.
+        ``None`` (default) chooses decimals as above. An integer with the
+        default ``unit`` keeps the previous per-tick output: each tick takes
+        its own unit, is rounded to that many places and trims trailing
+        zeros. With another ``unit`` an integer fixes the decimal count.
     currency:
         Optional currency prefix inserted after the sign.
+    unit:
+        ``"max"`` (default), ``"whole"`` or a ladder label, as above.
     """
     if locale not in _MYRIAD_UNIT_LADDERS:
         raise ValueError(
@@ -138,10 +164,19 @@ def format_axis_myriad(
         raise ValueError("decimals must be non-negative")
 
     unit_ladder = _MYRIAD_UNIT_LADDERS[locale]
+    ladder = [Unit(1.0, ""), *(Unit(float(t), u) for t, u in unit_ladder)]
+    # Validate ``unit`` before touching the axes.
+    AxisUnitFormatter(ladder, unit)
 
-    if decimals is None:
+    if decimals is not None and unit == "max":
+        legacy_decimals = decimals
+    else:
         _set_formatter(
-            ax, axis, lambda: MyriadFormatter(unit_ladder, currency=currency)
+            ax,
+            axis,
+            lambda: AxisUnitFormatter(
+                ladder, unit, decimals=decimals, currency=currency
+            ),
         )
         return
 
@@ -160,8 +195,8 @@ def format_axis_myriad(
             item for item in unit_ladder if item[0] <= abs_value
         )
         scaled = abs_value / threshold
-        formatted = f"{scaled:,.{decimals}f}"
-        if decimals > 0:
+        formatted = f"{scaled:,.{legacy_decimals}f}"
+        if legacy_decimals > 0:
             formatted = formatted.rstrip("0").rstrip(".")
         return f"{prefix}{formatted}{unit}"
 
@@ -192,16 +227,18 @@ def format_axis_millions(
         ``None`` (default) chooses one decimal count per axis from the
         visible ticks after dividing by 10^6: the fewest that render every
         tick exactly, so ``1M, 2M`` print no decimals and ``0.5M, 1.0M``
-        keep one on every tick. The zero tick prints without the suffix
-        and with the axis decimal count. An integer fixes the decimal
-        places.
+        keep one on every tick. Zero prints as ``0``; scaled values of 1000
+        and more carry thousands separators. An integer fixes the decimal
+        places (previous output).
 
     Examples
     --------
     >>> format_axis_millions(ax)  # Show as 1.5M instead of 1500000
     """
     if decimals is None:
-        _set_formatter(ax, axis, lambda: ScaledFormatter(1e6, suffix))
+        _set_formatter(
+            ax, axis, lambda: AxisUnitFormatter([Unit(1e6, suffix)], suffix)
+        )
         return
 
     def millions_formatter(x: float, pos: int) -> str:
@@ -261,7 +298,9 @@ def format_axis_billions(
     >>> format_axis_billions(ax)  # Show as 1.5B instead of 1500000000
     """
     if decimals is None:
-        _set_formatter(ax, axis, lambda: ScaledFormatter(1e9, suffix))
+        _set_formatter(
+            ax, axis, lambda: AxisUnitFormatter([Unit(1e9, suffix)], suffix)
+        )
         return
 
     def billions_formatter(x: float, pos: int) -> str:
@@ -359,29 +398,34 @@ def format_axis_currency(
 
 
 def format_axis_si(
-    ax: Axes, axis: Literal["x", "y", "both"] = "y", decimals: int | None = None
+    ax: Axes,
+    axis: Literal["x", "y", "both"] = "y",
+    decimals: int | None = None,
+    unit: str = "max",
 ) -> None:
     """Format axis tick labels with SI prefixes (k, M, G, T).
 
-    With the default ``decimals=None`` the labels follow axis-wide rules,
-    settled from the ticks inside the view on every draw:
+    The whole axis shares one unit from the ladder none/k/M/G/T and one
+    decimal count, settled from the ticks inside the view on every draw, so
+    an axis never mixes ``800`` with ``1.2k`` and digit counts read at a
+    glance:
 
-    - **One unit per axis, whole numbers first.** Every tick shares one
-      unit among none, ``k``, ``M``, ``G`` and ``T``. Of the units in which
-      every visible tick is a whole number, the one with the shortest
-      longest label wins: ``0, 200 … 1,200`` (not ``0.2k … 1.2k``),
-      ``0, 1k … 5k``, ``-1M … 1M``. Only when no unit gives whole numbers
-      does the unit with the fewest decimals win. Log and other non-linear
-      scales span decades, so there each tick takes its own prefix
-      (``1, 10, 100, 1k, 10k``).
-    - **One decimal count per axis.** The fewest decimals that render every
-      scaled tick exactly: whole-number axes print none, while a fractional
-      step keeps the same count on every tick (``0.0, 0.5, 1.0``).
-    - Numbers of 1000 and more carry thousands separators (``1,200``,
-      ``1,000k``).
+    - ``unit="max"`` (default): the unit of the largest visible ``|tick|``
+      — ``0, 0.2k … 1.2k``; ``-1.0M, -0.5M, 0, 0.5M, 1.0M``. Below 1000 the
+      ticks are plain numbers (``0, 200 … 800``).
+    - ``unit="whole"``: a unit in which every visible tick is a whole
+      number, and of those the one whose longest label is shortest
+      (``0, 200 … 1,200``; ``-1,000k … 1,000k``); with no such unit, the
+      fewest decimals.
+    - ``""``, ``"k"``, ``"M"``, ``"G"`` or ``"T"`` fixes that unit.
 
-    The zero tick never carries a prefix or a sign and uses the axis
-    decimal count (``0`` on an integer axis).
+    Decimals are the fewest that render every visible tick exactly in the
+    chosen unit: none on a whole-number axis (``0, 1k … 5k``), and the same
+    count on every tick of a fractional step (``0.25k, 0.50k``). Zero prints
+    as ``0``; scaled values of 1000 and more carry thousands separators
+    (``1,200``, ``1,000k``). Log and other non-linear scales span decades,
+    which cannot share one unit, so there each tick takes its own prefix
+    and decimals (``0.1, 1, 10, 1k``).
 
     Parameters
     ----------
@@ -390,16 +434,27 @@ def format_axis_si(
     axis : Literal["x", "y", "both"]
         Which axis to format
     decimals : int | None
-        ``None`` (default) applies the rules above. An integer formats
-        each tick on its own with that many decimals and a per-tick
-        prefix (``800.0``, ``1.2k``).
+        ``None`` (default) chooses decimals as above. An integer with the
+        default ``unit`` keeps the previous output: each tick on its own
+        with that many decimals and a per-tick prefix (``800.0``, ``1.2k``).
+        With another ``unit`` an integer fixes the decimal count.
+    unit : str
+        ``"max"`` (default), ``"whole"``, or a fixed prefix, as above.
 
     Examples
     --------
-    >>> format_axis_si(ax)  # 0, 200, … 1,200  or  0, 1M, 2M
+    >>> format_axis_si(ax)  # 0, 0.2k … 1.2k  or  0, 1M, 2M
+    >>> format_axis_si(ax, unit="whole")  # 0, 200 … 1,200
+    >>> format_axis_si(ax, unit="k")  # 0, 500k, 1,000k
     """
-    if decimals is None:
-        _set_formatter(ax, axis, SIFormatter)
+    # Validate ``unit`` before touching the axes.
+    AxisUnitFormatter(_SI_LADDER, unit)
+    if decimals is None or unit != "max":
+        _set_formatter(
+            ax,
+            axis,
+            lambda: AxisUnitFormatter(_SI_LADDER, unit, decimals=decimals),
+        )
         return
 
     def si_formatter(x: float, pos: int) -> str:

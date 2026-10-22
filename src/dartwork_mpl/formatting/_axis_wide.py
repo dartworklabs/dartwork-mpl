@@ -1,15 +1,24 @@
-"""Tick formatters that settle unit and decimals once per axis.
+"""Tick formatters that settle one unit and one decimal count per axis.
 
 The ``decimals=None`` default of ``format_axis_si`` / ``_millions`` /
-``_billions`` / ``_myriad`` installs one of these. A fixed ``.1f`` turns
-integer ticks into ``200.0`` and ``1.0k`` and rounds half steps such as
-``1250`` to ``1.2k``. These formatters choose one decimal count per unit
-from the ticks the axis actually shows: the fewest decimals that render
-every tick exactly and distinctly, so integer ticks print no decimals and
-fractional steps keep the same count on every tick (``17.5, 20.0, 22.5``).
-On log and other non-linear scales each tick is its own decade, so each
-tick takes the fewest decimals it needs (``0.1, 1, 10``). Numbers of 1000
-and more carry thousands separators (``1,200``).
+``_billions`` / ``_myriad`` installs :class:`AxisUnitFormatter`. A fixed
+``.1f`` turns integer ticks into ``200.0`` and ``1.0k``, rounds half steps
+such as ``1250`` to ``1.2k``, and a per-tick unit mixes ``800`` with
+``1.2k`` on one axis. This formatter decides once per axis, from the ticks
+the axis actually shows:
+
+- **One unit for the whole axis**, picked from a unit ladder (none/k/M/G/T,
+  or none/만/억/조/경) by a rule: ``"max"`` takes the unit of the largest
+  visible ``|tick|``, so digit counts read at a glance; ``"whole"`` takes a
+  unit in which every tick is a whole number; a ladder label fixes the unit.
+- **One decimal count for the whole axis**: the fewest decimals that render
+  every scaled tick exactly and distinctly, so integer ticks print none and
+  fractional steps keep the same count on every tick (``0.5M, 1.0M``).
+- Zero prints as ``0``; numbers of 1000 and more carry thousands separators.
+
+On log and other non-linear scales the ticks span decades, which cannot
+share one unit (``0.000001k`` beside ``1,000k``), so there each tick takes
+its own unit and the fewest decimals it needs (``0.1, 1, 10, 1k``).
 """
 
 from __future__ import annotations
@@ -23,62 +32,100 @@ import numpy as np
 
 from ._decimals import fewest_exact_decimals
 
-__all__ = ["MyriadFormatter", "SIFormatter", "ScaledFormatter"]
+__all__ = ["UNIT_RULES", "AxisUnitFormatter", "Unit"]
 
-_PREFIX_TOL = 1e-9
+UNIT_RULES = ("max", "whole")
+"""Unit rules besides naming one ladder label."""
 
-_SI_PREFIXES: tuple[tuple[float, str], ...] = (
-    (1e12, "T"),
-    (1e9, "G"),
-    (1e6, "M"),
-    (1e3, "k"),
-)
+_TOL = 1e-9
 
 
 @dataclass(frozen=True)
-class _Unit:
+class Unit:
+    """One rung of a unit ladder: divide by ``factor``, append ``label``."""
+
     factor: float
     label: str
 
 
 @dataclass(frozen=True)
 class _Plan:
-    """One axis decision: a shared unit (or per-tick units) and decimals.
+    """One axis decision.
 
-    ``decimals`` maps a unit label to its decimal count. ``per_value``
-    marks a non-linear axis, where every tick settles its own decimals.
+    ``axis_unit`` is ``None`` on a non-linear axis (a unit per tick);
+    ``decimals`` is ``None`` when each tick settles its own.
     """
 
-    axis_unit: _Unit | None
-    decimals: dict[str, int]
-    per_value: bool = False
+    axis_unit: Unit | None
+    decimals: int | None
 
 
-class ScaledFormatter(ticker.Formatter):
-    """Format ticks as ``value / factor`` plus a fixed suffix.
+class AxisUnitFormatter(ticker.Formatter):
+    """Format ticks with one unit and one decimal count per axis.
 
-    Used by ``format_axis_millions`` and ``format_axis_billions``. The
-    decimal count is chosen once per axis in :meth:`set_locs`, which
-    :meth:`format_ticks` calls with every major tick on each draw. Only the
-    ticks inside the view interval vote. A value that rounds to zero prints
-    as a bare zero with the axis decimals and no suffix.
+    ``unit`` is ``"max"`` (the unit of the largest visible ``|tick|``),
+    ``"whole"`` (a unit in which every visible tick is whole; of those, the
+    one with the shortest longest label; with no such unit, the fewest
+    decimals) or one ladder label (that unit, always). ``decimals`` fixes
+    the decimal count instead of choosing it.
+
+    The decision is made in :meth:`set_locs`, which :meth:`format_ticks`
+    calls with every major tick on each draw; only ticks inside the view
+    interval vote. Called without a draw, a value decides for itself.
     """
 
-    def __init__(self, factor: float = 1.0, suffix: str = "") -> None:
-        self._unit = _Unit(factor, suffix)
+    def __init__(
+        self,
+        ladder: Sequence[Unit],
+        unit: str = "max",
+        *,
+        decimals: int | None = None,
+        currency: str = "",
+    ) -> None:
+        self._ladder = tuple(sorted(ladder, key=lambda rung: rung.factor))
+        self._fixed = next(
+            (rung for rung in self._ladder if rung.label == unit), None
+        )
+        if unit not in UNIT_RULES and self._fixed is None:
+            labels = ", ".join(repr(rung.label) for rung in self._ladder)
+            raise ValueError(
+                f"unit must be 'max', 'whole' or one of {labels} (got {unit!r})"
+            )
+        self._rule = unit
+        self._decimals = decimals
+        self._currency = currency
         self._plan: _Plan | None = None
 
-    # -- unit hooks -----------------------------------------------------
-    def _axis_unit(self, values: Sequence[float], linear: bool) -> _Unit | None:
-        """The unit every tick shares, or ``None`` to pick one per tick."""
-        return self._unit
+    # -- unit choice ----------------------------------------------------
+    def _max_unit(self, magnitude: float) -> Unit:
+        """The largest rung at or below ``magnitude`` (else the smallest)."""
+        chosen = self._ladder[0]
+        for rung in self._ladder:
+            # Tolerate float noise so a 999.9999999 tick still reads 1k.
+            if magnitude >= rung.factor * (1 - _TOL):
+                chosen = rung
+        return chosen
 
-    def _value_unit(self, magnitude: float) -> _Unit:
-        """Unit for one tick when the axis has no shared unit."""
-        return self._unit
+    def _label(self, value: float, unit: Unit, decimals: int) -> str:
+        number = format(abs(value) / unit.factor, f",.{decimals}f")
+        if float(number.replace(",", "")) == 0:
+            return "0" if self._decimals is None else f"{0:.{decimals}f}"
+        sign = "-" if value < 0 else ""
+        return f"{sign}{self._currency}{number}{unit.label}"
 
-    def _compose(self, sign: str, number: str, unit: str) -> str:
-        return f"{sign}{number}{unit}"
+    def _cost(
+        self, values: Sequence[float], unit: Unit
+    ) -> tuple[int, int, float]:
+        decimals = fewest_exact_decimals([abs(v) / unit.factor for v in values])
+        longest = max(len(self._label(v, unit, decimals)) for v in values)
+        return decimals, longest, unit.factor
+
+    def _axis_unit(self, values: Sequence[float]) -> Unit:
+        if self._fixed is not None:
+            return self._fixed
+        if self._rule == "whole":
+            return min(self._ladder, key=lambda rung: self._cost(values, rung))
+        return self._max_unit(max(abs(v) for v in values))
 
     # -- decision -------------------------------------------------------
     def _is_linear(self) -> bool:
@@ -87,19 +134,15 @@ class ScaledFormatter(ticker.Formatter):
 
     def _make_plan(self, values: Sequence[float]) -> _Plan:
         finite = [v for v in values if math.isfinite(v)]
-        linear = self._is_linear()
-        axis_unit = self._axis_unit(finite, linear)
-        if not linear:
-            return _Plan(axis_unit, {}, per_value=True)
-        groups: dict[str, list[float]] = {}
-        for value in finite:
-            unit = axis_unit or self._value_unit(abs(value))
-            groups.setdefault(unit.label, []).append(abs(value) / unit.factor)
-        decimals = {
-            label: fewest_exact_decimals(scaled)
-            for label, scaled in groups.items()
-        }
-        return _Plan(axis_unit, decimals)
+        if not self._is_linear() or not finite:
+            return _Plan(self._fixed, self._decimals)
+        unit = self._axis_unit(finite)
+        decimals = self._decimals
+        if decimals is None:
+            decimals = fewest_exact_decimals(
+                [abs(v) / unit.factor for v in finite]
+            )
+        return _Plan(unit, decimals)
 
     def _in_view(self, values: list[float]) -> list[float]:
         axis = self.axis
@@ -111,8 +154,8 @@ class ScaledFormatter(ticker.Formatter):
         # scales with each limit, not the span, so a log axis does not
         # pull in the decade below its lower limit.
         slack = 1e-12 * (high - low)
-        low -= 1e-9 * abs(low) + slack
-        high += 1e-9 * abs(high) + slack
+        low -= _TOL * abs(low) + slack
+        high += _TOL * abs(high) + slack
         shown = [v for v in values if low <= v <= high]
         return shown or values
 
@@ -135,91 +178,8 @@ class ScaledFormatter(ticker.Formatter):
         plan = (
             self._plan if self._plan is not None else self._make_plan([value])
         )
-        unit = plan.axis_unit or self._value_unit(abs(value))
-        scaled = abs(value) / unit.factor
-        decimals = None if plan.per_value else plan.decimals.get(unit.label)
+        unit = plan.axis_unit or self._max_unit(abs(value))
+        decimals = plan.decimals
         if decimals is None:
-            decimals = fewest_exact_decimals([scaled])
-        number = format(scaled, f",.{decimals}f")
-        if float(number.replace(",", "")) == 0:
-            return f"{0:.{decimals}f}"
-        return self._compose("-" if value < 0 else "", number, unit.label)
-
-
-def _unit_cost(values: Sequence[float], unit: _Unit) -> tuple[int, int, float]:
-    """``(decimals, longest label, factor)`` for printing ``values`` in ``unit``."""
-    scaled = [abs(v) / unit.factor for v in values]
-    decimals = fewest_exact_decimals(scaled)
-    longest = 0
-    for value, magnitude in zip(values, scaled, strict=True):
-        number = format(magnitude, f",.{decimals}f")
-        if float(number.replace(",", "")) == 0:
-            label = number
-        else:
-            label = ("-" if value < 0 else "") + number + unit.label
-        longest = max(longest, len(label))
-    return decimals, longest, unit.factor
-
-
-class SIFormatter(ScaledFormatter):
-    """SI-prefix ticks (``k``, ``M``, ``G``, ``T``) with one prefix per axis.
-
-    On a linear axis every tick shares one unit among none/k/M/G/T, chosen
-    integers first: of the units in which every visible tick is a whole
-    number, the one whose longest label is shortest (``0, 200 … 1,200``;
-    ``0, 1k … 5k``; ``-1M … 1M``). Only when no unit gives whole numbers
-    does the unit with the fewest decimals win (``0.0, 0.2, 0.4``). Log and
-    other non-linear scales span decades, so each tick takes its own prefix
-    and decimals there.
-    """
-
-    @staticmethod
-    def _prefix_for(magnitude: float) -> _Unit:
-        for factor, prefix in _SI_PREFIXES:
-            # Tolerate float noise so a 999.9999999 tick still reads 1k.
-            if magnitude >= factor * (1 - _PREFIX_TOL):
-                return _Unit(factor, prefix)
-        return _Unit(1.0, "")
-
-    def _axis_unit(self, values: Sequence[float], linear: bool) -> _Unit | None:
-        if not linear or not values:
-            return None
-        candidates = [
-            _Unit(1.0, ""),
-            *(_Unit(f, p) for f, p in reversed(_SI_PREFIXES)),
-        ]
-        return min(candidates, key=lambda unit: _unit_cost(values, unit))
-
-    def _value_unit(self, magnitude: float) -> _Unit:
-        return self._prefix_for(magnitude)
-
-
-class MyriadFormatter(ScaledFormatter):
-    """East-Asian myriad ticks (``만``/``억``/…) with per-unit decimals.
-
-    Each tick keeps its own unit from the ladder (below 10^4 ticks print
-    the plain grouped number). Ticks sharing a unit share one decimal
-    count, so ``1.00억, 1.25억, 1.50억`` stay aligned while ``5,000만``
-    keeps none.
-    """
-
-    def __init__(
-        self, ladder: Sequence[tuple[int, str]], currency: str = ""
-    ) -> None:
-        super().__init__()
-        self._ladder = tuple(ladder)
-        self._currency = currency
-
-    def _axis_unit(self, values: Sequence[float], linear: bool) -> _Unit | None:
-        return None
-
-    def _value_unit(self, magnitude: float) -> _Unit:
-        if magnitude < 10_000:
-            return _Unit(1.0, "")
-        threshold, label = max(
-            item for item in self._ladder if item[0] <= magnitude
-        )
-        return _Unit(float(threshold), label)
-
-    def _compose(self, sign: str, number: str, unit: str) -> str:
-        return f"{sign}{self._currency}{number}{unit}"
+            decimals = fewest_exact_decimals([abs(value) / unit.factor])
+        return self._label(value, unit, decimals)
