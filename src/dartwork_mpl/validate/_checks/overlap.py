@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, TypedDict
 
+from ..._figure_geometry import axes_text_artists
 from .._types import BBOX_ERRORS, Severity, VisualWarning
 from ._detail import wire
 from ._registry import register_check, register_fix
@@ -30,7 +31,7 @@ def check_overlap(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
 
     for ax in fig.axes:
         texts: list[tuple[str, Any]] = []
-        for txt in [*ax.texts, ax.title, ax.xaxis.label, ax.yaxis.label]:
+        for txt in axes_text_artists(ax):
             if (
                 txt is None
                 or not txt.get_visible()

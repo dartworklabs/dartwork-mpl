@@ -80,7 +80,7 @@ ax.set_xlabel("Market")
 # 8. Title + takeaway subtitle (narrative-led). Pad the title up so the
 #    subtitle line gets clear vertical separation.
 ax.set_title(
-    "Norway leads global BEV adoption by a wide margin",
+    "Norway leads global BEV adoption\nby a wide margin",
     fontsize=dm.fs(1),
     fontweight=dm.fw(1),
     loc="left",
