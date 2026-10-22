@@ -166,13 +166,24 @@ palette codemod and removed-name map.
 | `dark`         | Dark backgrounds for Jupyter and dark-mode slides |
 
 Each has a Korean `-kr` variant (`scientific-kr`, `report-kr`, …) with Korean-aware
-fonts. List them with `dm.list_styles()`.
+fonts. List them with `sorted(dm.style.presets)` (`dm.list_styles()` lists the
+underlying `.mplstyle` layers).
 
 <br/>
 
 ## AI-assisted development (MCP)
 
-dartwork-mpl ships a built-in **Model Context Protocol** server so AI coding
+**Claude Code / Codex.** The wheel bundles an agent skill. Run
+
+```shell
+python -m dartwork_mpl.skills install   # links .claude/skills and .agents/skills
+```
+
+once in your project and the agent loads dartwork-mpl's rules (preset,
+physical size, layout, saving, editing, render → inspect → revise) whenever a
+task involves a figure. The link follows package upgrades.
+
+dartwork-mpl also ships a built-in **Model Context Protocol** server so AI coding
 assistants pull the current policy guides, color palettes, lint catalog, and
 helper tools straight into the chat — no copy-pasting docs. It exposes **19 tools**
 (lint + auto-fix, figure validation, render, color lookup, info, chart-type
@@ -206,10 +217,11 @@ local-clone variant are covered in
 [`docs/integrations/mcp_server.md`](docs/integrations/mcp_server.md).
 
 > **No MCP?** The same corpus is bundled in the wheel and reachable from Python —
-> `dm.get_agent_doc("llms-full")` (also `"AGENTS"`, `"CLAUDE"`, `"llms"`) returns
-> the text, `dm.agent_doc_path(name)` its path. The repo-root
-> [`CLAUDE.md`](CLAUDE.md) / [`AGENTS.md`](AGENTS.md) / [`llms.txt`](llms.txt)
-> (per the [llmstxt.org](https://llmstxt.org) spec) are the 30-second onboarding.
+> `dm.get_agent_doc("llms-full")` (also `"llms"`, and `"AGENTS"` / `"CLAUDE"` for
+> the one-screen consumer entry) returns the text, `dm.agent_doc_path(name)` its
+> path. [`llms.txt`](llms.txt) follows the [llmstxt.org](https://llmstxt.org)
+> spec. The repo-root [`CLAUDE.md`](CLAUDE.md) / [`AGENTS.md`](AGENTS.md) are for
+> contributors to this repository.
 
 <br/>
 
