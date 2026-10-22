@@ -167,6 +167,7 @@ def test_color_literal_has_no_foreign_prefixes() -> None:
     assert not foreign, f"unexpected entries: {sorted(foreign)[:5]}"
 
 
+@pytest.mark.color_pipeline
 def test_generated_typing_source_is_byte_identical() -> None:
     """Pin the tracked module to the generator's in-memory result."""
     module = _load_generator()
@@ -176,6 +177,7 @@ def test_generated_typing_source_is_byte_identical() -> None:
     assert _TARGET.read_bytes() == expected
 
 
+@pytest.mark.color_pipeline
 def test_generate_typing_check_is_nonwriting() -> None:
     """Make the documented check command compare without touching output."""
     before_bytes = _TARGET.read_bytes()
@@ -222,6 +224,7 @@ def test_generate_typing_check_fails_closed_when_target_is_stale(
     assert target.stat().st_mtime_ns == before_mtime
 
 
+@pytest.mark.color_pipeline
 def test_check_rejects_target_matching_only_monkeypatched_registries(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -343,6 +346,7 @@ def test_source_payload_rejects_and_cleans_sourceless_alias_module(
         _clear_test_alias(namespace)
 
 
+@pytest.mark.color_pipeline
 def test_build_uses_isolated_source_candidate_without_registry_mutation(
     tmp_path: Path,
 ) -> None:

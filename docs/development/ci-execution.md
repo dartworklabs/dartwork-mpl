@@ -10,7 +10,7 @@ policy remains in `pyproject.toml`.
 
 | Gate | Workflow and local command | Durable output |
 | --- | --- | --- |
-| Full suite, Python 3.10–3.13 | `.github/workflows/ci.yml`: `uv run pytest -v -n auto --no-cov --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"`; 3.12 uses `--cov --cov-report=term-missing` instead of `--no-cov` | `pytest-python-<version>` artifact |
+| Full suite, Python 3.10–3.13 | `.github/workflows/ci.yml`: `uv run pytest -v -n auto -m "not color_pipeline" --no-cov --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"`; 3.12 runs every test (no `-m`) with `--cov --cov-report=term-missing` instead of `--no-cov` | `pytest-python-<version>` artifact |
 | Release full suite, Python 3.12 | `.github/workflows/release.yml`: `uv run pytest tests/ -q -rs --durations=30 --junitxml="$RUNNER_TEMP/pytest-full.xml"` | `release-pytest-python-3.12` artifact |
 | All-extras module execution | Both workflows, after successful full pytest (CI 3.12): `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-full.xml"` | Guard step log and same-run JUnit |
 | FastMCP 2.13.3 / locked 3.4.2 artifact contracts, Python 3.12 | `test-mcp-artifacts` in `.github/workflows/ci.yml`: `uv run --no-sync --with "fastmcp==<version>" pytest tests/mcp/artifacts -q --no-cov --junitxml="$RUNNER_TEMP/pytest-artifacts.xml"`, then `uv run --no-sync python scripts/check_integration_junit.py "$RUNNER_TEMP/pytest-artifacts.xml" --scope artifacts` | `mcp-artifacts-<version>`: runtime JSON, same-run JUnit and raw pytest summary |
@@ -23,6 +23,8 @@ days. The latter contains pytest output, including its slowest 30 durations.
 merged into the one JUnit report with unchanged module/class names, so the
 guard below reads it as before. `-n` lives on the CI command lines only, never
 in `addopts`: local runs and `scripts/test_id_map.py` stay serial.
+The `color_pipeline` marker (pyproject) selects the slow, interpreter-independent
+colour build/byte-identity checks; only the 3.12 job runs them.
 Release also includes `python-runtime.txt` (actual version and executable).
 Uploads run with `always()`; bash `set -euo pipefail` keeps pytest or version
 assertion failures visible through `tee`. Setup failures may leave no report;

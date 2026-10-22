@@ -197,6 +197,7 @@ addopts = [
 ]
 markers = [
     "mpl_image_compare: pytest-mpl figure comparison (see tests/visual)",
+    "color_pipeline: slow colour build/regeneration/byte-identity checks; interpreter-independent, so CI runs them on 3.12 only",
 ]
 
 [tool.ruff]

@@ -103,6 +103,7 @@ def _run_build(
 
 
 @pytest.mark.parametrize("state", ["missing", "syntax-broken"])
+@pytest.mark.color_pipeline
 def test_module_build_check_reaches_coordinator_without_repairing_default(
     state: _BuildArtifactState, tmp_path: Path, mpl_cache: Path
 ) -> None:
@@ -121,6 +122,7 @@ def test_module_build_check_reaches_coordinator_without_repairing_default(
 
 
 @pytest.mark.parametrize("state", ["missing", "syntax-broken"])
+@pytest.mark.color_pipeline
 def test_module_build_regenerates_default_before_normal_eager_import(
     state: _BuildArtifactState, tmp_path: Path, mpl_cache: Path
 ) -> None:
@@ -155,6 +157,7 @@ def test_module_build_regenerates_default_before_normal_eager_import(
     assert smoke.returncode == 0, smoke.stderr
 
 
+@pytest.mark.color_pipeline
 def test_module_build_honors_custom_output_while_default_is_missing(
     tmp_path: Path, mpl_cache: Path
 ) -> None:
