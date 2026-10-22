@@ -172,7 +172,7 @@ dev = [
 
 # Test configuration and commands
 # Run tests with: uv run pytest
-# Run specific test: uv run pytest tests/test_color_view.py
+# Run specific test: uv run pytest src/dartwork_mpl/_colors/model/tests/test_color_view.py
 # Run with coverage: uv run pytest --cov=src/dartwork_mpl --cov-report=html
 
 [tool.pytest.ini_options]

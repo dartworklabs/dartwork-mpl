@@ -485,7 +485,7 @@ def test_conversion_has_no_validation_or_luminance_import_edge() -> None:
 
 def test_cold_package_import_succeeds_in_subprocess() -> None:
     """Guard the conversion/luminance import order against a package cycle."""
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[5]
     result = subprocess.run(
         [
             sys.executable,
