@@ -257,3 +257,16 @@ def test_qualitative_members_keep_raw_cvd_separation_floors() -> None:
         {},
     )
     assert violations == ()
+
+
+def test_family_catalog_is_read_only() -> None:
+    from dartwork_mpl._colors.catalog import DIVERGING_CANONICALS
+
+    with pytest.raises(TypeError):
+        FAMILIES["new"] = CyclicFamily()  # type: ignore[index]
+    with pytest.raises(TypeError):
+        DIVERGING_CANONICALS["new"] = ()  # type: ignore[index]
+    with pytest.raises(TypeError):
+        _curated.CURATED["new"] = ()  # type: ignore[index]
+    with pytest.raises(TypeError):
+        _curated.CURATED_META["ember"]["intent"] = ""  # type: ignore[index]

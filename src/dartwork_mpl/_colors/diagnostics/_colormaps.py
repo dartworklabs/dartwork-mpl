@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
@@ -24,26 +26,30 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 # Category badge colors (background, text)
 # ---------------------------------------------------------------------------
-_CATEGORY_STYLE: dict[str, tuple[str, str]] = {
-    "Single-Hue": ("#e3f2fd", "#1565c0"),
-    "Multi-Hue": ("#e8f5e9", "#2e7d32"),
-    "Diverging": ("#fff3e0", "#e65100"),
-    "Cyclical": ("#f3e5f5", "#7b1fa2"),
-    "Categorical": ("#fce4ec", "#c62828"),
-}
+_CATEGORY_STYLE: Mapping[str, tuple[str, str]] = MappingProxyType(
+    {
+        "Single-Hue": ("#e3f2fd", "#1565c0"),
+        "Multi-Hue": ("#e8f5e9", "#2e7d32"),
+        "Diverging": ("#fff3e0", "#e65100"),
+        "Cyclical": ("#f3e5f5", "#7b1fa2"),
+        "Categorical": ("#fce4ec", "#c62828"),
+    }
+)
 
 
 # Override classification for standard dartwork v5 maps.
 # The HSV heuristic below mislabels these maps (single-hue family ramps read as
 # "Multi-Hue", warm scenes as "Single-Hue"), so the v5 taxonomy is pinned
 # explicitly from the authoritative catalog.
-_CLASSIFICATION_OVERRIDES: dict[str, str] = {
-    **{f"dc.{name}": "Single-Hue" for name in SEQUENTIAL},
-    **{f"dc.{name}": "Multi-Hue" for name in MULTI_HUE},
-    **{f"dc.{name}": "Diverging" for name in DIVERGING},
-    **{f"dc.{name}": "Cyclical" for name in CYCLIC},
-    **{f"dc.{name}": "Categorical" for name in QUALITATIVE},
-}
+_CLASSIFICATION_OVERRIDES: Mapping[str, str] = MappingProxyType(
+    {
+        **{f"dc.{name}": "Single-Hue" for name in SEQUENTIAL},
+        **{f"dc.{name}": "Multi-Hue" for name in MULTI_HUE},
+        **{f"dc.{name}": "Diverging" for name in DIVERGING},
+        **{f"dc.{name}": "Cyclical" for name in CYCLIC},
+        **{f"dc.{name}": "Categorical" for name in QUALITATIVE},
+    }
+)
 
 
 def classify_cmap(cmap: Colormap) -> str:

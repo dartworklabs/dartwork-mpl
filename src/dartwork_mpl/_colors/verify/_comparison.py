@@ -23,6 +23,10 @@ from typing import ClassVar, Protocol, TypeAlias, cast
 
 from .. import _compatibility_metrics as oracle
 from . import _gates as gates
+from ._json import as_mapping as _as_mapping
+from ._json import finite_number as _number
+from ._json import freeze
+from ._json import thaw as _thaw
 
 __all__ = [
     "AddedLeaf",
@@ -115,38 +119,9 @@ class CatalogSnapshot(Protocol):
         ...
 
 
-def _freeze(value: object) -> object:
-    """Copy JSON-like data into deterministic immutable containers."""
-    if isinstance(value, Mapping):
-        if not all(isinstance(key, str) for key in value):
-            raise TypeError("comparison mappings require string keys")
-        return MappingProxyType(
-            {str(key): _freeze(item) for key, item in sorted(value.items())}
-        )
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-        return tuple(_freeze(item) for item in value)
-    if value is None or isinstance(value, (bool, int, float, str)):
-        return value
-    raise TypeError(f"unsupported comparison value: {type(value).__name__}")
-
-
-def _thaw(value: object) -> object:
-    """Return fresh JSON containers for immutable comparison data."""
-    if isinstance(value, Mapping):
-        return {
-            str(key): _thaw(item)
-            for key, item in sorted(
-                value.items(), key=lambda pair: str(pair[0])
-            )
-        }
-    if isinstance(value, tuple):
-        return [_thaw(item) for item in value]
-    return value
-
-
 def _freeze_mapping(value: Mapping[str, object]) -> JsonMapping:
     """Narrow the result of recursive freezing to a mapping."""
-    return cast(JsonMapping, _freeze(value))
+    return cast(JsonMapping, freeze(value, subject="comparison"))
 
 
 def _summary_payload(summary: MaybeSummary) -> object:
@@ -176,7 +151,9 @@ class AddedLeaf:
 
     def __post_init__(self) -> None:
         """Detach the retained leaf from caller-owned containers."""
-        object.__setattr__(self, "candidate", _freeze(self.candidate))
+        object.__setattr__(
+            self, "candidate", freeze(self.candidate, subject="comparison")
+        )
 
     def to_payload(self) -> dict[str, object]:
         """Return the report shape: null baseline, ``baseline_present`` false."""
@@ -192,7 +169,9 @@ class RemovedLeaf:
 
     def __post_init__(self) -> None:
         """Detach the retained leaf from caller-owned containers."""
-        object.__setattr__(self, "baseline", _freeze(self.baseline))
+        object.__setattr__(
+            self, "baseline", freeze(self.baseline, subject="comparison")
+        )
 
     def to_payload(self) -> dict[str, object]:
         """Return the report shape: null candidate, ``candidate_present`` false."""
@@ -209,8 +188,12 @@ class ChangedLeaf:
 
     def __post_init__(self) -> None:
         """Detach both retained leaves from caller-owned containers."""
-        object.__setattr__(self, "baseline", _freeze(self.baseline))
-        object.__setattr__(self, "candidate", _freeze(self.candidate))
+        object.__setattr__(
+            self, "baseline", freeze(self.baseline, subject="comparison")
+        )
+        object.__setattr__(
+            self, "candidate", freeze(self.candidate, subject="comparison")
+        )
 
     def to_payload(self) -> dict[str, object]:
         """Return the report shape with both sides present."""
@@ -901,26 +884,9 @@ def _compare_hex_row(
     )
 
 
-def _as_mapping(value: object) -> Mapping[str, object] | None:
-    """Return a string-keyed mapping or ``None`` for malformed metrics."""
-    if not isinstance(value, Mapping) or not all(
-        isinstance(key, str) for key in value
-    ):
-        return None
-    return cast(Mapping[str, object], value)
-
-
-def _number(value: object) -> float | None:
-    """Return one finite non-boolean number or ``None``."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    result = float(value)
-    return result if math.isfinite(result) else None
-
-
 def _display_missing(value: object) -> object:
     """Normalize the private missing marker for report serialization."""
-    return None if value is _MISSING else _freeze(value)
+    return None if value is _MISSING else freeze(value, subject="comparison")
 
 
 def _gate_surface(metric: str) -> str:

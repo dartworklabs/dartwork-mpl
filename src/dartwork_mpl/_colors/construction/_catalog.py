@@ -751,6 +751,19 @@ def _palette_coordinate(node: ast.AST) -> PaletteCoordinate:
     return family.value, index.value
 
 
+def _proxied_dict(node: ast.AST) -> ast.AST:
+    """Return the dict literal inside ``MappingProxyType({...})``, else ``node``."""
+    if (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "MappingProxyType"
+        and len(node.args) == 1
+        and not node.keywords
+    ):
+        return node.args[0]
+    return node
+
+
 def _coordinate_dict(node: ast.AST) -> dict[str, PaletteCoordinate]:
     """Parse a semantic token dictionary from source AST."""
     if not isinstance(node, ast.Dict):
@@ -776,7 +789,7 @@ def _semantic_declarations() -> dict[str, dict[str, PaletteCoordinate]]:
             and node.value is not None
             and node.target.id in {"_MAPS", "_COMMON"}
         ):
-            assignments[node.target.id] = node.value
+            assignments[node.target.id] = _proxied_dict(node.value)
     if set(assignments) != {"_MAPS", "_COMMON"}:
         raise ValueError("semantic declarations are incomplete")
 
@@ -792,7 +805,10 @@ def _semantic_declarations() -> dict[str, dict[str, PaletteCoordinate]]:
             key_node.value, str
         ):
             raise ValueError("semantic locale must be a string literal")
-        locales[key_node.value] = {**common, **_coordinate_dict(value_node)}
+        locales[key_node.value] = {
+            **common,
+            **_coordinate_dict(_proxied_dict(value_node)),
+        }
     return locales
 
 

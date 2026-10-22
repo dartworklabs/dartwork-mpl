@@ -1,7 +1,8 @@
 """Designed discrete forms for Model B color families."""
 
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from types import MappingProxyType
 from typing import NamedTuple
 
 from .. import _curated, _generated
@@ -32,14 +33,16 @@ def _generated_diverging_canonical(name: str) -> tuple[str, ...]:
     )
 
 
-DIVERGING_CANONICALS: dict[str, tuple[str, ...]] = {
-    name: (
-        tuple(_curated.CURATED[name])
-        if name in _curated.CURATED_DIVERGING_ORDER
-        else _generated_diverging_canonical(name)
-    )
-    for name in DIVERGING
-}
+DIVERGING_CANONICALS: Mapping[str, tuple[str, ...]] = MappingProxyType(
+    {
+        name: (
+            tuple(_curated.CURATED[name])
+            if name in _curated.CURATED_DIVERGING_ORDER
+            else _generated_diverging_canonical(name)
+        )
+        for name in DIVERGING
+    }
+)
 
 _VIVID_CHROMA_FLOOR_RATIO = 0.6
 

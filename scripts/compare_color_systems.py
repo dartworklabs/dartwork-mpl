@@ -43,6 +43,7 @@ _AUDIT_SOURCE_FILES = (
     "verify/__init__.py",
     "verify/_comparison.py",
     "verify/_gates.py",
+    "verify/_json.py",
 )
 
 

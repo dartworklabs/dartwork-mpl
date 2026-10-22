@@ -1294,6 +1294,7 @@ def _assert_owned_audit_bootstrap(
         f"{alias}._curated",
         f"{alias}.construction._cycles",
         f"{alias}.verify._gates",
+        f"{alias}.verify._json",
         f"{alias}.construction._generate",
         f"{alias}.construction._recipe",
         f"{alias}._ssot",

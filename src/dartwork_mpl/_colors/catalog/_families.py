@@ -17,7 +17,9 @@ same for every value of a type.
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import ClassVar, Literal, TypeAlias
 
 from .. import _curated, _generated
@@ -119,13 +121,15 @@ QUALITATIVE: tuple[str, ...] = tuple(
     _curated.CURATED_QUALITATIVE_ORDER
 ) + tuple(_generated.CYCLES)
 
-FAMILIES: dict[str, Family] = {
-    **{name: SequentialFamily(discrete_size=10) for name in SEQUENTIAL},
-    **{name: MultiHueFamily() for name in MULTI_HUE},
-    **{name: DivergingFamily(discrete_size=8) for name in DIVERGING},
-    **{name: CyclicFamily() for name in CYCLIC},
-    **{name: QualitativeFamily(discrete_size=8) for name in QUALITATIVE},
-}
+FAMILIES: Mapping[str, Family] = MappingProxyType(
+    {
+        **{name: SequentialFamily(discrete_size=10) for name in SEQUENTIAL},
+        **{name: MultiHueFamily() for name in MULTI_HUE},
+        **{name: DivergingFamily(discrete_size=8) for name in DIVERGING},
+        **{name: CyclicFamily() for name in CYCLIC},
+        **{name: QualitativeFamily(discrete_size=8) for name in QUALITATIVE},
+    }
+)
 
 _EXPECTED_COUNTS = {
     "sequential": 20,

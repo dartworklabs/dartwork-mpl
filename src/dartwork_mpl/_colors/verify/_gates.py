@@ -12,11 +12,13 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from itertools import pairwise
 from pathlib import Path
-from types import MappingProxyType
 from typing import ClassVar, Literal, Protocol, TypeAlias, cast
 
 from .. import _compatibility_metrics as oracle
 from .. import _ssot
+from ._json import as_mapping as _as_mapping
+from ._json import finite_number as _number
+from ._json import freeze
 
 __all__ = [
     "QUALITY_BASELINE_SEMANTIC_SHA256",
@@ -97,21 +99,6 @@ class CatalogSnapshot(Protocol):
     def exact_payload(self) -> dict[str, object]:
         """Return the normalized exact compatibility surfaces."""
         ...
-
-
-def _freeze(value: object) -> object:
-    """Copy JSON-like gate diagnostics into deterministic immutable forms."""
-    if isinstance(value, Mapping):
-        if not all(isinstance(key, str) for key in value):
-            raise TypeError("gate mappings require string keys")
-        return MappingProxyType(
-            {str(key): _freeze(item) for key, item in sorted(value.items())}
-        )
-    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
-        return tuple(_freeze(item) for item in value)
-    if value is None or isinstance(value, (bool, int, float, str)):
-        return value
-    raise TypeError(f"unsupported gate value: {type(value).__name__}")
 
 
 Relation: TypeAlias = Literal["==", ">=", "<="]
@@ -295,12 +282,18 @@ class GateReport:
         object.__setattr__(
             self,
             "candidate_metrics",
-            cast(Mapping[str, object], _freeze(self.candidate_metrics)),
+            cast(
+                Mapping[str, object],
+                freeze(self.candidate_metrics, subject="gate"),
+            ),
         )
         object.__setattr__(
             self,
             "candidate_global_extrema",
-            cast(Mapping[str, object], _freeze(self.candidate_global_extrema)),
+            cast(
+                Mapping[str, object],
+                freeze(self.candidate_global_extrema, subject="gate"),
+            ),
         )
 
     @property
@@ -327,23 +320,6 @@ def _load_row_contracts() -> _ssot.RowContracts:
     if actual != _ROW_CONTRACTS_SHA256 or embedded != _ROW_CONTRACTS_SHA256:
         raise RuntimeError("v6 row-contract authority SHA-256 differs")
     return contracts
-
-
-def _as_mapping(value: object) -> Mapping[str, object] | None:
-    """Return a string-keyed mapping or ``None`` for malformed gate input."""
-    if not isinstance(value, Mapping) or not all(
-        isinstance(key, str) for key in value
-    ):
-        return None
-    return cast(Mapping[str, object], value)
-
-
-def _number(value: object) -> float | None:
-    """Return one finite non-boolean number or ``None``."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    result = float(value)
-    return result if math.isfinite(result) else None
 
 
 def _pointer_token(value: str) -> str:

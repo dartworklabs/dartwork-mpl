@@ -27,3 +27,17 @@ def test_v5_tokens_default_to_generated_values():
 
 def test_dm_alias_removed():
     assert "dm.blue6" not in _named()
+
+
+def test_color_libraries_are_named_immutable_rows() -> None:
+    from dartwork_mpl._colors.registry import COLOR_LIBRARIES, ColorLibrary
+
+    assert isinstance(COLOR_LIBRARIES, tuple)
+    assert all(isinstance(row, ColorLibrary) for row in COLOR_LIBRARIES)
+    key, prefix, source, label = COLOR_LIBRARIES[0]
+    assert (key, prefix, source, label) == (
+        "dc",
+        "dc.",
+        "_generated.PALETTE",
+        "dartwork Color",
+    )
