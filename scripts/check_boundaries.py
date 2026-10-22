@@ -249,6 +249,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.mcp", "dartwork_mpl._colors.registry"): (
         "the MCP colour tool and resource list the registered colour libraries"
     ),
+    ("dartwork_mpl.lint", "dartwork_mpl.style"): (
+        "the preset autofix only rewrites to a shipped preset name"
+    ),
     ("dartwork_mpl.mcp", "dartwork_mpl.mcp.artifacts"): (
         "the server mounts the durable plot-artifact tools and resources"
     ),
@@ -284,6 +287,9 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ),
     ("dartwork_mpl.mcp.colors", "dartwork_mpl._colors.model"): (
         "the mix_colors tool must return exactly what dm.mix_colors blends"
+    ),
+    ("dartwork_mpl.mcp.catalog", "dartwork_mpl.style"): (
+        "the capability summary lists the presets dm.style.use accepts"
     ),
     ("dartwork_mpl.mcp.execution", "dartwork_mpl.lint"): (
         "plot validation lints the source before executing it"
