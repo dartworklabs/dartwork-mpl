@@ -7,7 +7,7 @@ native invocation. For full templates see
 > **Before any recipe**, pick and apply a style preset:
 >
 > ```python
-> dm.style.use("scientific")   # or "report" / "presentation" / "minimal" / "*-kr"
+> dm.style.use("scientific")   # or "report" / "presentation" / "minimal" / "poster" / "web" / "dark" / "*-kr"
 > ```
 >
 > Presets provide defaults. Use `dm.fs(n)` / `dm.lw(n)` / `dm.fw(n)` for
@@ -434,13 +434,17 @@ dm.simple_layout(fig)
 ## "Multi-panel grid (a/b/c labels)"
 
 ```python
-fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"))
-for ax, panel in zip(axes.flat, "abcd"):
-    ax.text(0, 1, panel, transform=ax.transAxes + dm.make_offset(4, -4, fig),
-            fontweight=dm.fw(1), va="top")
-dm.label_axes(axes)
+fig, axes = plt.subplots(2, 2, figsize=dm.figsize("17cm", "standard"),
+                         gridspec_kw={"hspace": 0.5, "wspace": 0.35})
+dm.label_axes(axes)                    # a, b, c, d just above each top-left corner
 dm.simple_layout(fig)
 ```
+
+`dm.label_axes` draws each label once; pass `labels=["(a)", "(b)", …]` for
+another style. To place a label inside the panel corner instead, skip
+`label_axes` and draw it yourself:
+`ax.text(0, 1, "a", transform=ax.transAxes + dm.make_offset(4, -4, fig),
+fontweight=dm.fw(1), va="top")`.
 
 ## "Compare style presets side by side"
 

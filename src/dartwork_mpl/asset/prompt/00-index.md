@@ -41,10 +41,11 @@ is not a measurement of a particular display, perceived brightness, or OKLab
   `width` accepts unit strings (`"13cm"`, `"5in"`,
   `"170mm"`, `"24pt"`) or `Length` values (`dm.cm(13)`, `dm.col1`,
   `dm.col2`). Bare `int` / `float` are rejected. The second
-  argument is polymorphic: an aspect token (`"square"`,
-  `"portrait"`, `"standard"`, `"golden"`, `"wide"`, `"cinema"`), a
-  positive float ratio, a unit-string height (`"12cm"`), or a
-  `Length` height (`dm.cm(12)`).
+  argument is polymorphic: an aspect token (`"tall"`, `"portrait"`,
+  `"square"`, `"standard"`, `"a4"`, `"wide"`, `"golden"`, `"slide"`,
+  `"cinema"`, `"panoramic"`; see `dm.list_aspect_tokens()`), a
+  `"W:H"` ratio string (`"16:9"`), a positive float ratio, a
+  unit-string height (`"12cm"`), or a `Length` height (`dm.cm(12)`).
 - Prefer named palette defaults: `oc.*`, `tw.*`, `dc.*`, `md.*`, `ad.*`,
   `cu.*`, `pr.*`. Retain user-specified hex or native matplotlib colors.
 - The `dc.*` catalog's construction space is unified around OKLab L and
@@ -124,6 +125,10 @@ is not a measurement of a particular display, perceived brightness, or OKLab
    as needed and save with `dm.save_formats` or `dm.save_and_show`.
 
 ## Installed Python route (no MCP or checkout)
+
+Run `python -m dartwork_mpl.skills install` once in the project: Claude Code
+and Codex then load the bundled skill (`SKILL.md` + references) on demand.
+The calls below read the same guidance directly.
 
 ```python
 from importlib.resources import files
