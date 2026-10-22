@@ -131,6 +131,7 @@ SLICES = frozenset(
         "dartwork_mpl.mcp.templates",
         "dartwork_mpl.prompt",
         "dartwork_mpl.scale",
+        "dartwork_mpl.skills",
         "dartwork_mpl.style",
         "dartwork_mpl.templates",
         "dartwork_mpl.tokens",

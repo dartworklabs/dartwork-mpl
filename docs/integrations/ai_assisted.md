@@ -23,7 +23,9 @@ For detailed setup instructions, client configuration, verification steps, and t
 
 ### Alternative: File-Based LLM Integration
 
-If your AI assistant doesn't support MCP, point it at dartwork-mpl's bundled, LLM-readable corpus. The repository root ships ready-to-use onboarding files — `AGENTS.md`, `CLAUDE.md`, `llms.txt` (a ~2.5 KB index), and `llms-full.txt` (the full concatenated reference). The same files are reachable from Python:
+For Claude Code and Codex, the most direct route is the agent skill bundled in the wheel: run `python -m dartwork_mpl.skills install` once in the project (see the [AI hub](../ai/index.md#30-second-setup)).
+
+If your AI assistant doesn't support MCP or skills, point it at dartwork-mpl's bundled, LLM-readable corpus: a one-screen consumer entry (`"AGENTS"`, also returned for `"CLAUDE"`), `llms.txt` (a ~4 KB index), and `llms-full.txt` (the full concatenated reference). They are reachable from Python:
 
 ```python
 import dartwork_mpl as dm
@@ -109,16 +111,24 @@ dm.save_and_show(fig)
 3. **Document parameters** — especially dartwork-mpl-specific values like
    color names (`oc.*`, `tw.*`)
 
-### Working with AI: Be Specific
+### Working with AI: ask in your own words
 
-When asking AI to modify your plots, refer to specific parameters:
+Describe the change the way you would to a colleague. The agent resolves the
+words to a concrete edit, changes only that, keeps the rest of the figure and
+shows you the re-rendered result. Name exact values only when you already
+have them in mind.
 
-| ✅ Specific (better results)               | ❌ Vague (slower, error-prone) |
-| ------------------------------------------ | ------------------------------ |
-| "Change color to `dc.red2`"                | "Make it a bit redder"         |
-| "Set linewidth to 1.2"                     | "Make the line thicker"        |
-| "Resize to `dm.figsize(\"17cm\", \"wide\")`" | "Make the chart bigger"        |
-| "Add title `'Signal Response'`"            | "Make it look better"          |
+| You can say                                  | The agent does                                                        |
+| -------------------------------------------- | --------------------------------------------------------------------- |
+| "Make it a bit redder"                       | picks a red from the named palette (e.g. `dc.red5`) for that series   |
+| "Make the line thicker"                      | raises that line's width one step from its current value              |
+| "Make the chart bigger" / "fit a slide"      | rebuilds with a larger `dm.figsize`, keeping the preset and data      |
+| "Make it look better" / "더 보기 좋게"          | fixes what the rendered image shows (clipped text, legend over data, crowded ticks, competing colours) and lists each change |
+| "Change color to `dc.red2`", "linewidth 1.2" | applies the exact value                                               |
+
+Vague requests are first-class. If the purpose matters and is unknown
+(paper, report or slides), the agent asks one short question; otherwise it
+states its assumption and lets you correct it on the next turn.
 
 ## 3. Rapid Iteration with Autoreload
 

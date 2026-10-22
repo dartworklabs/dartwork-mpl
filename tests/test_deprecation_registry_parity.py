@@ -75,30 +75,40 @@ def test_fs_prefix_family_covered_everywhere() -> None:
 
 
 def test_agent_doc_bundle_matches_pyproject_force_include() -> None:
-    """The agent-doc filename list is hand-maintained in both
-    ``agent.AGENT_DOCS`` and pyproject's wheel ``force-include`` table —
-    keep them 1:1 so a doc added to one can't silently miss the wheel
-    (PA-2). Skipped on py<3.11 (no stdlib tomllib) or when running
-    against an installed wheel (pyproject not reachable)."""
+    """Every ``agent.AGENT_DOCS`` file reaches ``dartwork_mpl/asset/agent/``
+    in the wheel exactly one way: package data under
+    ``src/dartwork_mpl/asset/agent/`` or a repo-root file in pyproject's
+    wheel ``force-include`` table — so a doc added to one list can't
+    silently miss the wheel (PA-2). Skipped on py<3.11 (no stdlib
+    tomllib) or when running against an installed wheel (pyproject not
+    reachable)."""
     from pathlib import Path
 
     tomllib = pytest.importorskip("tomllib")
 
-    from dartwork_mpl.agent import _SUFFIXES, AGENT_DOCS
+    from dartwork_mpl.agent import _FILENAMES, _PACKAGE_DOCS, AGENT_DOCS
 
-    pyproject = Path(__file__).resolve().parent.parent / "pyproject.toml"
+    repo = Path(__file__).resolve().parent.parent
+    pyproject = repo / "pyproject.toml"
     if not pyproject.is_file():
         pytest.skip("pyproject.toml not reachable (installed-wheel run)")
     data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
     force_include = data["tool"]["hatch"]["build"]["targets"]["wheel"][
         "force-include"
     ]
-    bundled = {
-        src
+    prefix = "dartwork_mpl/asset/agent/"
+    forced = {
+        dest.removeprefix(prefix): src
         for src, dest in force_include.items()
-        if dest.startswith("dartwork_mpl/asset/agent/")
+        if dest.startswith(prefix)
     }
-    expected = {f"{name}{_SUFFIXES[name]}" for name in AGENT_DOCS}
-    assert bundled == expected, (
-        f"wheel bundle {sorted(bundled)} != AGENT_DOCS {sorted(expected)}"
+    assert all(forced[name] == name for name in forced), forced
+    package_dir = repo / "src" / "dartwork_mpl" / "asset" / "agent"
+    packaged = {p.name for p in package_dir.iterdir() if p.is_file()}
+    assert packaged == set(_PACKAGE_DOCS)
+    assert not set(forced) & packaged, "one source per shipped agent doc"
+    expected = {_FILENAMES[name] for name in AGENT_DOCS}
+    assert set(forced) | packaged == expected, (
+        f"wheel bundle {sorted(set(forced) | packaged)} != AGENT_DOCS "
+        f"{sorted(expected)}"
     )

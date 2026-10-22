@@ -34,6 +34,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   colour fails the test and names the surface that moved, with no colour-theory
   knowledge required to read the result.
 
+- **Agent skill in the wheel.** `src/dartwork_mpl/skills/dartwork-mpl/`
+  (`SKILL.md` plus references on sizing, editing, colours, Korean text, the
+  review loop and templates) ships with the package.
+  `python -m dartwork_mpl.skills install [--claude] [--codex] [--dest DIR]
+  [--copy] [--force]` links it into `.claude/skills` (Claude Code) and
+  `.agents/skills` (Codex) so it follows upgrades; `... skills path` prints
+  the folder. `--copy` copies record an inventory of their entries and are
+  never overwritten after local edits without `--force`, nor when they change
+  during the install. A link is replaced in one atomic rename; an
+  interrupted copy replacement is recovered on the next `install` or `path`
+  run. Linked `.claude`/`.agents` folders may not lead outside `--dest`. The skill also says
+  how to use it alongside Claude Code's `/dataviz` skill.
+- `dm.figsize` accepts `"W:H"` ratio strings as its second argument
+  (`dm.figsize("13cm", "16:9")`); so do `dm.figsize_grid` and
+  `parse_aspect`.
+
 ### Changed
 
 - `format_axis_year` prints two-digit tick years by default (`2025` -> `25년`,
@@ -58,6 +74,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   measurement, or stated limit, so a house style no longer reads as a law of
   vision. `relative_y` is described as modeled relative CIE Y from nominal D65
   sRGB rather than a measurement of any display.
+- `dm.get_agent_doc("AGENTS")` and `("CLAUDE")` return a one-screen consumer
+  entry that points to the skill instead of the repository's contributor
+  `AGENTS.md` (ADR and colour-freeze rules no longer reach installed users).
+  The repo-root `AGENTS.md` / `CLAUDE.md` are contributor docs and leave the
+  wheel. The four stale `.cursor/rules/*.mdc` files became one pointer.
 
 ### Fixed
 
@@ -74,6 +95,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   numeric tick labels such as `17.5, 20, 22.5` now warn as non-uniform,
   while fractional-step labels such as `17.5, 20.0, 22.5` remain valid.
   Trailing-zero advice now applies only to integer-valued tick sequences.
+- A pixel size such as `dm.figsize("1920px", ...)` was answered with "Did you
+  mean 'pt'"; the error now explains that pixels need a DPI and shows the
+  `dm.inch(px / dpi)` conversion.
+- Agent guidance matched the runtime again: the prompt corpus lists all ten
+  aspect tokens (`slide` 16:9 was missing) and all seven presets, the a/b/c
+  panel-label recipe draws each label once, the MCP prompts no longer say
+  "dartwork-mpl 0.4", and the AI hub shows Codex's MCP support, drops the
+  nonexistent `GEMINI.md` and states the real `llms*.txt` sizes. The
+  "Be Specific" guide now treats vague requests ("make it look better") as
+  normal ones.
 
 ## [0.5.6] - 2026-07-05
 
