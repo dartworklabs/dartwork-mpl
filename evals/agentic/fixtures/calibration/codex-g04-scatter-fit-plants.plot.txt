@@ -1,0 +1,102 @@
+# calibration control: baseline-main-20261022 codex/g04-scatter-fit-plants - must pass: proxy legend handles name the scatter and fit lines
+"""Plot measured leaf dimensions and separate ordinary least-squares fits."""
+
+from collections import defaultdict
+import csv
+import json
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import numpy as np
+import dartwork_mpl as dm
+
+
+ROOT = Path(__file__).resolve().parent
+OUT = ROOT / "out"
+
+
+def main():
+    OUT.mkdir(exist_ok=True)
+    groups = defaultdict(list)
+    omitted = defaultdict(int)
+    with (ROOT / "data/plants.csv").open(newline="") as source:
+        for row in csv.DictReader(source):
+            species = row["species"]
+            try:
+                pair = (float(row["leaf_length_cm"]), float(row["leaf_width_cm"]))
+            except ValueError:
+                omitted[species] += 1
+                continue
+            if not np.isfinite(pair).all():
+                omitted[species] += 1
+                continue
+            groups[species].append(pair)
+
+    dm.style.use("scientific")
+    fig, ax = plt.subplots(figsize=dm.figsize("17cm", "13cm"))
+    colors = ["tw.blue600", "tw.emerald600", "tw.orange600"]
+    markers = ["o", "s", "^"]
+    linestyles = ["-", "--", "-."]
+    handles, summary = [], {}
+    for species, color, marker, linestyle in zip(
+        sorted(groups), colors, markers, linestyles, strict=True
+    ):
+        values = np.asarray(groups[species])
+        x, y = values.T
+        # Fit with an intercept, using exactly the same complete pairs as the scatter.
+        slope, intercept = np.linalg.lstsq(
+            np.column_stack([x, np.ones_like(x)]), y, rcond=None
+        )[0]
+        fit_x = np.array([x.min(), x.max()])
+        ax.scatter(x, y, s=30, marker=marker, color=color, alpha=0.8,
+                   edgecolor="white", linewidth=0.5, zorder=3)
+        ax.plot(fit_x, slope * fit_x + intercept, color=color,
+                linestyle=linestyle, linewidth=dm.lw(0.6), zorder=4)
+        handles.append(Line2D([], [], color=color, marker=marker,
+                              linestyle=linestyle, markersize=5,
+                              linewidth=dm.lw(0.6),
+                              label=f"{species} (n = {len(x)})"))
+        summary[species] = {"complete_pairs": len(x),
+                            "omitted_rows": omitted[species],
+                            "slope": float(slope), "intercept": float(intercept)}
+
+    ax.set_xlabel("Leaf length (cm)")
+    ax.set_ylabel("Leaf width (cm)")
+    ax.set_title("Leaf dimensions by species", loc="left", pad=dm.fs(15),
+                 fontsize=dm.fs(3), fontweight=dm.fw(2))
+    ax.text(0, 1.025, "Points: individual leaves   ·   Lines: separate OLS fits",
+            transform=ax.transAxes, fontsize=dm.fs(-1), color="#58616b")
+    ax.set_xlim(2.5, 8.5)
+    ax.set_ylim(1.5, 3.85)
+    ax.set_xticks(np.arange(3, 9, 1))
+    ax.set_yticks(np.arange(1.5, 4, 0.5))
+    ax.grid(axis="y", color="#e6e9ed", linewidth=0.5)
+    ax.grid(axis="x", visible=False)
+    ax.set_axisbelow(True)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.legend(handles=handles, loc="upper left", frameon=False,
+              handlelength=2.6, labelspacing=0.7)
+    dm.simple_layout(fig, margin="4%")
+    # simple_layout sets GridSpec margins; reserve room for title and notes there.
+    ax.get_gridspec().update(left=0.13, right=0.96, bottom=0.21, top=0.80)
+    fig.text(0.12, 0.035,
+             "88 complete pairs shown; 2 rows with missing width omitted.\n"
+             "Fits span each species’ observed leaf lengths.",
+             fontsize=dm.fs(-2), color="#58616b", linespacing=1.5)
+
+    report = {
+        "groups": summary,
+        "source_lint": [str(item) for item in dm.lint_code(Path(__file__).read_text())],
+        "figure_validation": [str(item) for item in dm.validate_figure(fig)],
+    }
+    (OUT / "validation.json").write_text(json.dumps(report, indent=2) + "\n")
+    dm.save_formats(fig, str(OUT / "figure"), formats=("png", "pdf"), dpi=220)
+    plt.close(fig)
+    print(json.dumps(report, indent=2))
+
+
+if __name__ == "__main__":
+    main()

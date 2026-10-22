@@ -1,0 +1,26 @@
+# g03-barh-labels-survey — generate / en / report / held-out
+id: g03-barh-labels-survey
+kind: generate
+lang: en
+purpose: report
+held_out: true
+prompt: Show the feature satisfaction scores as a horizontal bar chart, sorted from highest to lowest, with each
+  score written at the end of its bar.
+data: [survey_scores.csv]
+oracle:
+- type: bars
+  group: values
+  name: feature -> score
+  file: survey_scores.csv
+  category:
+    col: feature
+  value: score
+  orientation: h
+- type: bar_labels
+  group: spec
+  name: score written at each bar end
+  atol: 0.051
+- type: bars_sorted
+  group: spec
+  name: sorted high to low
+  orientation: h

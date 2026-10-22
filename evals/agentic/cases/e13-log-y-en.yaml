@@ -1,0 +1,30 @@
+# e13-log-y-en — edit / en / report
+id: e13-log-y-en
+kind: edit
+lang: en
+purpose: report
+held_out: false
+prompt: Use a log scale for the y axis.
+data: [user_growth.csv]
+base: b11_user_growth.py
+edit_scope: explicit
+target: [ax*.yscale, ax*.ylim, ax*.yticks, ax*.ytick.*, ax*.position, ax*.legend.bbox, ax*.*.pos]
+oracle:
+- type: scale
+  group: spec
+  name: log y
+  axis: y
+  value: log
+- type: series
+  group: values
+  name: both apps
+  file: user_growth.csv
+  x:
+    col: month
+    kind: date
+  identity: named
+  series:
+  - y: app_alpha_users
+    aliases: [Alpha]
+  - y: app_beta_users
+    aliases: [Beta]

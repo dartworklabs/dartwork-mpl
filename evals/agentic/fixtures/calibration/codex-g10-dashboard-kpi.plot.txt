@@ -1,0 +1,117 @@
+# calibration control: baseline-main-20261022 codex/g10-dashboard-kpi - must pass: panel names are in-axes texts; a unit subtitle names another KPI
+"""Render a reproducible 2024 KPI dashboard from the complete local CSV."""
+
+from pathlib import Path
+import csv
+import json
+from dataclasses import asdict, is_dataclass
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
+import numpy as np
+import dartwork_mpl as dm
+
+
+ROOT = Path(__file__).resolve().parent
+OUT = ROOT / "out"
+
+
+def serializable(item):
+    if is_dataclass(item):
+        return asdict(item)
+    return vars(item) if hasattr(item, "__dict__") else str(item)
+
+
+def main():
+    OUT.mkdir(exist_ok=True)
+    source = ROOT / "data/kpi_monthly.csv"
+    with source.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    expected = [f"2024-{month:02d}" for month in range(1, 13)]
+    if [row["month"] for row in rows] != expected:
+        raise ValueError("Input must contain each month of 2024, in calendar order.")
+    keys = ["revenue_musd", "active_users", "churn_pct", "nps"]
+    data = {key: np.array([float(row[key]) for row in rows]) for key in keys}
+    if any(not np.isfinite(values).all() for values in data.values()):
+        raise ValueError("Missing and nonfinite values require an explicit plotting policy.")
+
+    dm.style.use("report")
+    ink = dm.color("oc.gray9").to_hex()
+    muted = dm.color("oc.gray7").to_hex()
+    grid = dm.color("oc.gray2").to_hex()
+    blue = dm.color("oc.blue8").to_hex()
+    teal = dm.color("oc.teal8").to_hex()
+    fig, axes = plt.subplots(2, 2, figsize=dm.figsize("30cm", "23cm"),
+                             gridspec_kw={"wspace": 0.27, "hspace": 0.95})
+    fig.set_facecolor("white")
+    x = np.arange(12)
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    settings = [
+        ("revenue_musd", "Revenue", "USD millions", blue, (40, 72), [40, 50, 60, 70],
+         f"${data['revenue_musd'][-1]:.1f}M", f"+{(data['revenue_musd'][-1] / data['revenue_musd'][0] - 1) * 100:.1f}% vs Jan"),
+        ("active_users", "Active users", "Users", blue, (17500, 31000), [18000, 22000, 26000, 30000],
+         f"{data['active_users'][-1]:,.0f}", f"+{(data['active_users'][-1] / data['active_users'][0] - 1) * 100:.1f}% vs Jan"),
+        ("churn_pct", "Churn rate", "% of users", teal, (3.1, 4.9), [3.2, 3.6, 4.0, 4.4, 4.8],
+         f"{data['churn_pct'][-1]:.2f}%", f"{data['churn_pct'][-1] - data['churn_pct'][0]:.2f} pp vs Jan"),
+        ("nps", "Net Promoter Score", "Score points", teal, (30, 45), [30, 35, 40, 45],
+         f"{data['nps'][-1]:.0f}", f"+{data['nps'][-1] - data['nps'][0]:.0f} points vs Jan"),
+    ]
+    for ax, (key, title, unit, color, ylim, yticks, headline, change) in zip(axes.flat, settings):
+        values = data[key]
+        ax.set_facecolor("white")
+        ax.text(0, 1.40, title, transform=ax.transAxes, color=ink,
+                fontsize=dm.fs(5), fontweight="bold", va="bottom")
+        ax.text(0, 1.16, headline, transform=ax.transAxes, color=color,
+                fontsize=dm.fs(16), fontweight="bold", va="bottom")
+        ax.text(1, 1.20, change, transform=ax.transAxes, color=muted,
+                fontsize=dm.fs(2), ha="right", va="bottom")
+        ax.text(0, 1.025, unit, transform=ax.transAxes, color=muted,
+                fontsize=dm.fs(1), va="bottom")
+        ax.plot(x, values, color=color, linewidth=dm.lw(1.1), marker="o",
+                markersize=3.4, markeredgewidth=0, zorder=3)
+        ax.plot(x[-1], values[-1], marker="o", color=color, markersize=5.5,
+                markeredgecolor="white", markeredgewidth=0.9, zorder=4)
+        ax.set(xlim=(-0.2, 11.2), ylim=ylim, xticks=x, xticklabels=months, yticks=yticks)
+        ax.grid(False)
+        ax.grid(axis="y", color=grid, linewidth=0.5, zorder=0)
+        ax.tick_params(axis="both", length=0, labelcolor=muted, labelsize=dm.fs(1), pad=6)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+        if key == "active_users":
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:,.0f}"))
+        elif key == "churn_pct":
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:.1f}"))
+
+    dm.simple_layout(fig, ml="1.8cm", mr="1.0cm", mt="5.1cm", mb="1.6cm")
+    fig.text(0.060, 0.955, "2024  /  MONTHLY PERFORMANCE", color=muted,
+             fontsize=dm.fs(2), fontweight="bold")
+    fig.text(0.060, 0.910, "Growth with stronger retention", color=ink,
+             fontsize=dm.fs(13), fontweight="bold")
+    fig.text(0.060, 0.875, "January–December 2024  ·  Headline values show December", color=muted,
+             fontsize=dm.fs(2))
+    fig.text(0.060, 0.035, "Source: data/kpi_monthly.csv  ·  12 monthly observations  ·  pp = percentage points",
+             color=muted, fontsize=dm.fs(0))
+    fig.text(0.966, 0.035, "2024 YEAR IN REVIEW", ha="right", color=muted, fontsize=dm.fs(0))
+
+    lint = dm.lint_code(Path(__file__).read_text(encoding="utf-8"))
+    visual = dm.validate_figure(fig, quiet=True)
+    report = {
+        "input": "data/kpi_monthly.csv", "rows": len(rows),
+        "data_policy": "Complete input, calendar order retained; no filtering, imputation or aggregation. Revenue already in USD millions. Comparisons are December minus January or relative to January, not year over year.",
+        "canvas_cm": [30, 23], "preset": "report",
+        "lint_findings": [serializable(item) for item in lint],
+        "visual_findings": [serializable(item) for item in visual],
+        "validation_complete": not any(getattr(item, "check_id", "") == "CHECK_FAILED" for item in visual),
+        "december": {key: float(values[-1]) for key, values in data.items()},
+    }
+    (OUT / "validation.json").write_text(json.dumps(report, indent=2, default=str) + "\n")
+    dm.save_formats(fig, str(OUT / "figure"), formats=("png", "pdf"), dpi=180,
+                    bbox_inches=None, validate=False)
+    plt.close(fig)
+    print(json.dumps(report, indent=2, default=str))
+
+
+if __name__ == "__main__":
+    main()

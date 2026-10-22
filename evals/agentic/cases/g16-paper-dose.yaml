@@ -1,0 +1,42 @@
+# g16-paper-dose — generate / en / paper
+id: g16-paper-dose
+kind: generate
+lang: en
+purpose: paper
+held_out: false
+prompt: 'Make a figure for a journal paper at single-column width: mean response versus dose with SEM error bars,
+  with the dose on a log axis.'
+data: [dose_response.csv]
+oracle:
+- type: series
+  group: values
+  name: dose -> mean
+  file: dose_response.csv
+  x:
+    col: dose_uM
+    kind: num
+  identity: any
+  series:
+  - y: response_pct
+    aliases: [response]
+- type: errorbars
+  group: values
+  name: mean ± SEM bars
+  file: dose_response.csv
+  x: dose_uM
+  y: response_pct
+  err: sem
+- type: scale
+  group: spec
+  name: log dose axis
+  axis: x
+  value: log
+- type: size
+  group: spec
+  name: single-column width
+  min_width: 7.5
+  max_width: 9.5
+- type: preset
+  group: spec
+  name: scientific preset
+  prefix: [scientific]

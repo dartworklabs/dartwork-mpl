@@ -1,0 +1,34 @@
+# e11-slides-en — edit / en / slides
+id: e11-slides-en
+kind: edit
+lang: en
+purpose: slides
+held_out: false
+prompt: Switch this figure to a slide format for a talk.
+data: [dose_response.csv]
+base: b09_paper_dose.py
+edit_scope: broad
+target: ['*']
+oracle:
+- type: preset
+  group: spec
+  name: presentation preset
+  prefix: [presentation]
+- type: series
+  group: values
+  name: dose -> mean
+  file: dose_response.csv
+  x:
+    col: dose_uM
+    kind: num
+  identity: any
+  series:
+  - y: response_pct
+    aliases: [response]
+- type: errorbars
+  group: values
+  name: mean ± SEM bars
+  file: dose_response.csv
+  x: dose_uM
+  y: response_pct
+  err: sem

@@ -1,0 +1,26 @@
+# g18-report-traffic — generate / en / report
+id: g18-report-traffic
+kind: generate
+lang: en
+purpose: report
+held_out: false
+prompt: 'Chart for our quarterly business report: weekly sessions and signups in 2024.'
+data: [web_traffic.csv]
+oracle:
+- type: series
+  group: values
+  name: sessions and signups (signup gap kept)
+  file: web_traffic.csv
+  x:
+    col: week_start
+    kind: date
+  identity: named
+  series:
+  - y: sessions
+    aliases: [session]
+  - y: signups
+    aliases: [signup, sign-up, sign up]
+- type: preset
+  group: spec
+  name: report preset
+  prefix: [report]

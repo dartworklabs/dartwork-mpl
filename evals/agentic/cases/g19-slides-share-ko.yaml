@@ -1,0 +1,23 @@
+# g19-slides-share-ko — generate / ko / slides
+id: g19-slides-share-ko
+kind: generate
+lang: ko
+purpose: slides
+held_out: false
+prompt: 발표 슬라이드에 넣을 2024년 회사별 시장점유율 막대그래프를 만들어 주세요.
+data: [market_share.csv]
+oracle:
+- type: bars
+  group: values
+  name: company -> share
+  file: market_share.csv
+  category:
+    col: company
+    aliases:
+      Others: [Others, Other, 기타]
+  value: share_pct
+  scales: [1, 0.01]
+- type: preset
+  group: spec
+  name: presentation preset
+  prefix: [presentation]

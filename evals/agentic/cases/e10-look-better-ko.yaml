@@ -1,0 +1,28 @@
+# e10-look-better-ko — edit / ko / report / held-out
+id: e10-look-better-ko
+kind: edit
+lang: ko
+purpose: report
+held_out: true
+prompt: 좀 더 보기 좋게 다듬어 주세요.
+data: [korea_monthly_sales.csv]
+base: b08_kr_combo_draft.py
+edit_scope: broad
+target: ['*']
+oracle:
+- type: series
+  group: values
+  name: sales and profit kept
+  file: korea_monthly_sales.csv
+  x:
+    col: 월
+    kind: order
+  identity: named
+  series:
+  - y: 매출액(억원)
+    aliases: [매출]
+  - y: 영업이익(억원)
+    aliases: [영업이익, 이익]
+- type: defects_not_worse
+  group: spec
+  name: no more defects than before

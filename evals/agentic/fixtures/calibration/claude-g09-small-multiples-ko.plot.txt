@@ -1,0 +1,59 @@
+# calibration control: baseline-main-20261022 claude/g09-small-multiples-ko - must pass: left titles name panels; grey context lines repeat other cities
+"""City monthly mean temperature: one small panel per city, shared y-range."""
+
+from pathlib import Path
+
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import pandas as pd
+
+import dartwork_mpl as dm
+
+ROOT = Path(__file__).resolve().parent
+OUT = ROOT / "out"
+OUT.mkdir(exist_ok=True)
+
+dm.style.use("scientific-kr")
+
+df = pd.read_csv(ROOT / "data" / "city_temps.csv", parse_dates=["month"])
+wide = df.pivot(index="month", columns="city", values="temp_c")
+# Warmest city (by overall mean) first, so panel order carries information.
+cities = wide.mean().sort_values(ascending=False).index.tolist()
+
+ncols, nrows = 3, 2
+fig, axes = plt.subplots(
+    nrows,
+    ncols,
+    figsize=dm.figsize("17cm", "9.5cm"),
+    sharex=True,
+    sharey=True,  # identical y range in every panel
+)
+
+# Common y range with a little headroom, rounded to 5 degrees.
+lo = int(wide.min().min() // 5 * 5)
+hi = int(-(-wide.max().max() // 5) * 5)
+
+for ax, city in zip(axes.flat, cities):
+    # Other cities as faint context lines, the focal city on top.
+    for other in cities:
+        if other != city:
+            ax.plot(wide.index, wide[other], color="oc.gray3", linewidth=0.6)
+    ax.plot(wide.index, wide[city], color="oc.blue6", linewidth=1.4)
+    ax.axhline(0, color="oc.gray5", linewidth=0.5, linestyle="--")
+    ax.set_title(city, loc="left", fontweight="bold")
+    ax.set_ylim(lo, hi)
+    ax.set_yticks(range(lo, hi + 1, 10))
+    ax.xaxis.set_major_locator(mdates.YearLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+    ax.grid(axis="y", color="oc.gray2", linewidth=0.3)
+
+for ax in axes[:, 0]:
+    ax.set_ylabel("월평균 기온 (°C)")
+
+# Reserve room above/below the panels, then place the figure-level texts there.
+dm.simple_layout(fig, margin="3mm", mt="14mm", mb="9mm")
+fig.text(0.01, 0.985, "도시별 월평균 기온 (2021–2023)", ha="left", va="top",
+         fontweight="bold", fontsize=dm.fs(2))
+fig.text(0.99, 0.01, "파란 선: 해당 도시 · 회색 선: 나머지 5개 도시 · 점선: 0 °C",
+         ha="right", va="bottom", color="oc.gray8")
+dm.save_formats(fig, str(OUT / "figure"), formats=("png", "pdf"))
