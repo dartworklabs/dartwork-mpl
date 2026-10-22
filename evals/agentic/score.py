@@ -29,9 +29,12 @@ Per run unit (``RUN_DIR/<host>/<case>/<arm>-r<k>/``, the records tree):
 from __future__ import annotations
 
 import argparse
+import atexit
 import hashlib
 import json
+import os
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -79,15 +82,54 @@ ASPECT_TOL = 0.02
 
 _LINTERS: dict = {}
 _LINTER_LOCK = threading.Lock()
+LINT_CACHE = Path.home() / ".cache" / "dartwork-mpl-evals" / "lint-envs"
+_SESSION: dict = {}
+
+
+def _session_dir() -> Path:
+    """This scoring session's own lint-env directory: new, mode 0700, removed at exit.
+
+    Created with an exclusive ``mkdir`` under a random name, so nothing
+    planted beforehand (in the records, a project or the cache) is ever
+    reused; envs are never looked up by path.
+    """
+    if "dir" not in _SESSION:
+        LINT_CACHE.mkdir(parents=True, exist_ok=True, mode=0o700)
+        d = LINT_CACHE / f"session-{os.getpid()}-{secrets.token_hex(6)}"
+        d.mkdir(mode=0o700)  # FileExistsError if it already exists
+        os.chmod(d, 0o700)
+        _SESSION["dir"] = d
+        atexit.register(shutil.rmtree, d, True)
+    return _SESSION["dir"]
+
+
+def _install_env(env: Path, whl: Path, python: str) -> None:
+    subprocess.run(
+        ["uv", "venv", "--quiet", "--python", python, str(env)], check=True
+    )
+    subprocess.run(
+        [
+            "uv",
+            "pip",
+            "install",
+            "--quiet",
+            "--python",
+            str(env / "bin" / "python"),
+            str(whl),
+        ],
+        check=True,
+        timeout=900,
+    )
 
 
 def trusted_linter(run_dir: Path | None) -> dict:
     """An interpreter the agents never touched, with the run's wheel installed.
 
     The run's wheel (``RUN/wheel/*.whl``) is checked against the manifest's
-    sha256 and installed into ``ROOT/lint-envs/<sha>`` (outside every
-    project) once per wheel. Without a run wheel (unit tests, selftest) the
-    harness's own interpreter is used.
+    sha256 and installed, once per wheel and scoring session, into this
+    session's own 0700 directory (``_session_dir``) outside every records and
+    work tree. Without a run wheel (unit tests, selftest) the harness's own
+    interpreter is used.
     """
     whl = next((run_dir / "wheel").glob("*.whl"), None) if run_dir else None
     if whl is None:
@@ -104,38 +146,13 @@ def trusted_linter(run_dir: Path | None) -> dict:
         raise RuntimeError(f"{whl} does not match the manifest wheel sha256")
     with _LINTER_LOCK:
         if digest not in _LINTERS:
-            env = run_dir.parent / "lint-envs" / digest[:16]
-            py = env / "bin" / "python"
-            if not py.exists():
-                cfg = (read_json(run_dir / "manifest.json") or {}).get(
-                    "config"
-                ) or {}
-                subprocess.run(
-                    [
-                        "uv",
-                        "venv",
-                        "--quiet",
-                        "--python",
-                        cfg.get("python", "3.12"),
-                        str(env),
-                    ],
-                    check=True,
-                )
-                subprocess.run(
-                    [
-                        "uv",
-                        "pip",
-                        "install",
-                        "--quiet",
-                        "--python",
-                        str(py),
-                        str(whl),
-                    ],
-                    check=True,
-                    timeout=900,
-                )
+            env = _session_dir() / digest[:16]
+            cfg = (read_json(run_dir / "manifest.json") or {}).get(
+                "config"
+            ) or {}
+            _install_env(env, whl, cfg.get("python", "3.12"))
             _LINTERS[digest] = {
-                "python": str(py),
+                "python": str(env / "bin" / "python"),
                 "wheel_sha256": digest,
                 "env": str(env),
             }

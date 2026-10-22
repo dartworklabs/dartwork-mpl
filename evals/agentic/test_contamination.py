@@ -177,6 +177,7 @@ def _unit(
     at_run: bool,
     transcript: str,
     mounts: list[str] = (),
+    own: list[str] = (),
 ):
     unit = (
         tmp_path / "records" / "run" / "claude" / "g01-line-gdp" / "noskill-r1"
@@ -203,6 +204,7 @@ def _unit(
             "contaminated": at_run,
             "hits": ["at run"] if at_run else [],
         },
+        "own_rollouts": {"host": [], "visible": list(own)},
     }
     common.write_json(unit / "run.json", rec)
     msg = {
@@ -406,3 +408,67 @@ def test_sandbox_hides_home_stores_and_gives_codex_its_own_sessions(tmp_path):
     assert not any(".sqlite" in t for t in [*targets, *binds])
     args, sessions = runner.home_store_mounts("claude", tmp_path / "stores2")
     assert sessions is None
+
+
+# ------------------------------------------------------------ exact own-rollout exemption (addendum 3)
+OWN = str(
+    Path.home()
+    / ".codex"
+    / "sessions"
+    / "2026"
+    / "10"
+    / "22"
+    / "rollout-2026-10-22T10-00-00-0aa1-thread.jsonl"
+)
+
+
+def test_only_the_recorded_own_rollout_path_is_exempt(tree):
+    same_name_elsewhere = str(
+        Path(OWN).parents[1] / "21" / Path(OWN).name
+    )  # another day dir
+    in_other_project = str(tree.work / "ffff0000aaaa1111" / Path(OWN).name)
+
+    def scan(path):
+        return cont.contamination(
+            [call(command=f"cat {path}")],
+            [REPO, tree.records],
+            tree.work,
+            tree.project,
+            exempt=[OWN],
+        )["contaminated"]
+
+    assert not scan(OWN)
+    assert scan(same_name_elsewhere)
+    assert scan(in_other_project)
+
+
+def test_recheck_uses_the_rollouts_recorded_at_run_time(tmp_path, tree):
+    clean = _unit(
+        tmp_path / "a",
+        tree,
+        sandbox=False,
+        at_run=False,
+        transcript=f"tail -1 {OWN}",
+        own=[OWN],
+    )
+    assert _score(clean)["contaminated"] is False
+    suffix_only = _unit(
+        tmp_path / "b",
+        tree,
+        sandbox=False,
+        at_run=False,
+        transcript=f"tail -1 /var/tmp/x/{Path(OWN).name}",
+        own=[OWN],
+    )
+    other = _unit(
+        tmp_path / "c",
+        tree,
+        sandbox=False,
+        at_run=False,
+        transcript=f"tail -1 {Path(OWN).parents[1] / '21' / Path(OWN).name}",
+        own=[OWN],
+    )
+    assert _score(other)["contaminated"] is True
+    assert (
+        _score(suffix_only)["contaminated"] is False
+    )  # /var/tmp: no grading root

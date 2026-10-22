@@ -7,7 +7,11 @@ Not collected by the default ``pytest`` run. Run explicitly:
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import stat
 import sys
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -161,6 +165,76 @@ def test_lint_records_the_trusted_interpreter_and_wheel(tmp_path):
     m = score.source_metrics({"id": "x"}, src, run)  # no wheel: harness env
     assert m["lint"]["interpreter"] == sys.executable
     assert m["lint"]["wheel_sha256"] is None
+
+
+def _mini_wheel(dest: Path) -> Path:
+    """A real wheel whose ``dartwork_mpl.lint_code`` always reports 3 findings."""
+    files = {
+        "dartwork_mpl/__init__.py": (
+            "from collections import namedtuple\n__version__ = '0.0.1'\n"
+            "Issue = namedtuple('Issue', 'rule_id severity')\n"
+            "def lint_code(code):\n"
+            "    return [Issue('wheel-check', 'critical')] * 3\n"
+        ),
+        "dartwork_mpl-0.0.1.dist-info/METADATA": (
+            "Metadata-Version: 2.1\nName: dartwork-mpl\nVersion: 0.0.1\n"
+        ),
+        "dartwork_mpl-0.0.1.dist-info/WHEEL": (
+            "Wheel-Version: 1.0\nGenerator: test\nRoot-Is-Purelib: true\n"
+            "Tag: py3-none-any\n"
+        ),
+    }
+    record = []
+    for name, text in files.items():
+        raw = text.encode()
+        h = base64.urlsafe_b64encode(hashlib.sha256(raw).digest()).rstrip(b"=")
+        record.append(f"{name},sha256={h.decode()},{len(raw)}")
+    record.append("dartwork_mpl-0.0.1.dist-info/RECORD,,")
+    files["dartwork_mpl-0.0.1.dist-info/RECORD"] = "\n".join(record) + "\n"
+    whl = dest / "dartwork_mpl-0.0.1-py3-none-any.whl"
+    with zipfile.ZipFile(whl, "w") as z:
+        for name, text in files.items():
+            z.writestr(name, text)
+    return whl
+
+
+def test_a_planted_lint_env_in_the_records_tree_is_ignored(tmp_path):
+    """Envs are built per scoring session in a fresh 0700 dir, never looked up by path."""
+    run = tmp_path / "records" / "run1"
+    (run / "wheel").mkdir(parents=True)
+    whl = _mini_wheel(run / "wheel")
+    digest = hashlib.sha256(whl.read_bytes()).hexdigest()
+    common.write_json(
+        run / "manifest.json",
+        {"wheel": {"sha256": digest}, "config": {"python": "3.12"}},
+    )
+    planted = run.parent / "lint-envs" / digest[:16] / "bin"
+    planted.mkdir(parents=True)
+    (planted / "python").write_text(
+        '#!/bin/sh\necho \'{"findings": 0, "rules": {}, "severity": {}}\'\n'
+    )
+    (planted / "python").chmod(0o755)
+    src = tmp_path / "p.py"
+    src.write_text(CLEAN)
+    m = score.source_metrics({"id": "x"}, src, run)
+    interp = Path(m["lint"]["interpreter"])
+    assert m["lint_findings"] == 3 and m["lint"]["rules"] == {"wheel-check": 3}
+    assert m["lint"]["wheel_sha256"] == digest
+    assert (
+        score.LINT_CACHE in interp.parents and run.parent not in interp.parents
+    )
+    session = interp.parents[2]
+    assert session.name.startswith("session-")
+    assert stat.S_IMODE(session.stat().st_mode) == 0o700
+
+
+def test_a_wheel_that_differs_from_the_manifest_is_refused(tmp_path):
+    run = tmp_path / "run"
+    (run / "wheel").mkdir(parents=True)
+    _mini_wheel(run / "wheel")
+    common.write_json(run / "manifest.json", {"wheel": {"sha256": "0" * 64}})
+    with pytest.raises(RuntimeError):
+        score.trusted_linter(run)
 
 
 def test_override_count_never_runs_project_code(tmp_path, monkeypatch):

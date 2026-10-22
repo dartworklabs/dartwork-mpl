@@ -205,11 +205,12 @@ class _Scan:
                 for r in (transcript_stores() if stores is None else stores)
             }
         )
-        # absolute entries exempt a subtree, relative ones a file-name suffix
-        self.exempt = [
-            os.path.realpath(e) if os.path.isabs(e) else e
+        # this unit's own rollout files, exactly as recorded at run time
+        self.exempt = {
+            os.path.realpath(e)
             for e in map(str, exempt or [])
-        ]
+            if os.path.isabs(e)
+        }
         self.work = os.path.realpath(str(work_root))
         self.own = os.path.realpath(str(project))
         self.found: dict[str, dict] = {}
@@ -219,10 +220,7 @@ class _Scan:
 
     def root_of(self, path: str) -> str | None:
         """The grading root (repo, records, another project, a store) ``path`` is in."""
-        if _inside(path, self.own) or any(
-            _inside(path, e) if e.startswith("/") else path.endswith(e)
-            for e in self.exempt
-        ):
+        if _inside(path, self.own) or path in self.exempt:
             return None
         for r in [*self.grading, *self.stores]:
             if _inside(path, r):
@@ -339,8 +337,9 @@ def contamination(
     ``findings`` maps each hit to its ``kind`` (``path``, ``glob``, ``cd``,
     ``workdir``, ``name``) and, for paths and globs, the grading ``root``
     reached; ``score.py`` uses the root to decide whether the sandbox hid it.
-    ``stores`` defaults to ``transcript_stores()``; ``exempt`` paths (this
-    unit's own rollouts) are never hits.
+    ``stores`` defaults to ``transcript_stores()``; ``exempt`` are this unit's
+    own rollout files as recorded at run time (absolute, compared for exact
+    equality after ``realpath``).
     """
     scan = _Scan(roots, work_root, project, stores, exempt)
     for role, s in _normalise(texts):

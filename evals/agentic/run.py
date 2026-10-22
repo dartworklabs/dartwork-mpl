@@ -846,13 +846,8 @@ def recheck_contamination(rec: dict, unit: Path) -> dict | None:
     lines = _jsonl(unit / "transcript.jsonl")
     rolls = [_jsonl(p) for p in sorted(unit.glob("rollout*.jsonl"))]
     project = Path(rec["project"])
-    own = [  # this unit's own rollouts (by thread id) in the sessions store
-        f"{t}.jsonl"
-        for r in rolls
-        for e in r[:1]
-        for t in [(e.get("payload") or {}).get("id")]
-        if t
-    ]
+    # only the exact paths recorded at run time; nothing derived afterwards
+    own = (rec.get("own_rollouts") or {}).get("visible") or []
     return contamination(
         tool_strings(rec["host"], lines, rolls),
         grading_roots(rec, unit),
@@ -1047,11 +1042,31 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
         rollout, subs = [], []
         if host == "claude":
             parsed = parse_claude(lines)
+            rec["own_rollouts"] = {  # --no-session-persistence: no files
+                "session_id": next(
+                    (e.get("session_id") for e in lines if e.get("session_id")),
+                    None,
+                ),
+                "host": [],
+                "visible": [],
+            }
         else:
             thread = next(
                 (e.get("thread_id") for e in lines if e.get("thread_id")), None
             )
             parent, sub_paths = codex_rollouts(home, thread, roots)
+            own = [q for q in [parent, *sub_paths] if q]
+            seen_as = Path.home() / ".codex" / "sessions"
+            rec["own_rollouts"] = {  # recorded while the harness owns them
+                "thread_id": thread,
+                "host": [str(q) for q in own],
+                "visible": [
+                    str(seen_as / q.relative_to(sessions))
+                    if sessions
+                    else str(q)
+                    for q in own
+                ],
+            }
             if parent:
                 shutil.copy(parent, unit / "rollout.jsonl")
                 rollout = _jsonl(unit / "rollout.jsonl")
@@ -1099,6 +1114,7 @@ def one(job: tuple, run_dir: Path, a, cfg: dict, meta: dict) -> dict:
             hide[:-1],
             a.work_root.resolve(),
             project,
+            exempt=rec["own_rollouts"]["visible"],
         )
         rec["skill_usage"] = skill_usage(
             skill_name, host, parsed, rollout + [e for s in subs for e in s]
