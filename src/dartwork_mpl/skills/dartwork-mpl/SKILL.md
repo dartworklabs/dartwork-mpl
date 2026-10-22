@@ -68,6 +68,10 @@ and template numbers are placeholders to replace, never to keep.
   One step bigger on an artist: `t.set_fontsize(t.get_fontsize() + 1)`.
 - Explicit user values win exactly (`fontsize=12`, `"#235fa4"`), even when
   lint flags literals. Hairlines stay literal (`linewidth=0.3`).
+- No meaningless decimals in tick or value labels: `200`, `0`, `1k`, never
+  `200.0`, `0.0`, `1.0k`; otherwise the decimals the data need, one count per
+  axis (`17.5, 20.0, 22.5`). `dm.format_axis_si` / `_myriad` / `_millions` /
+  `_billions` choose decimals by default; an explicit `decimals=` is exact.
 
 ## Edits
 
@@ -92,11 +96,10 @@ short question only when the target is truly ambiguous.
 
 ## When /dataviz or other generic chart advice is also active
 
-Use it for chart choice and honest axes. For how the figure is built, the
-active dartwork-mpl preset is the design system and the output is a static
-file (print, PDF, slides): skip hover, tooltips, rounded bar ends,
-placeholder palettes, pixel line widths and a legend on every chart (2+
-series get a legend or direct labels). Size with `dm.figsize`, not pixels.
+Use it for chart choice and honest axes. For construction the active preset
+is the design system and the output a static file (print, PDF, slides): skip
+hover, tooltips, rounded bar ends, placeholder palettes, pixel line widths, a
+legend on every chart (2+ series: legend or direct labels). Use `dm.figsize`.
 
 ## Never
 
@@ -114,5 +117,4 @@ series get a legend or direct labels). Size with `dm.figsize`, not pixels.
 | render, inspect, revise script; findings; lint | `references/review-loop.md` |
 | starting from a bundled template | `references/templates.md` |
 
-Deeper: `dm.get_prompt("03-recipes")`, `dm.get_prompt("01-policy")`,
-`dm.get_prompt("02-anti-patterns")`; signatures via `help(dm.figsize)`.
+Deeper: `dm.get_prompt(name)` for `03-recipes`, `01-policy`, `02-anti-patterns`.

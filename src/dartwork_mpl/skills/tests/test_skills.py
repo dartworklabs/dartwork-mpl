@@ -114,8 +114,16 @@ def test_router_states_the_rules_agents_get_wrong() -> None:
         "Open the PNG",
         "CHECK_FAILED",
         "not visually reviewed",
+        "No meaningless decimals",  # user instruction 2026-10-22
+        "`200.0`",
+        "`decimals=` is exact",
     ):
         assert rule in text, rule
+    review = (SKILL / "references" / "review-loop.md").read_text(
+        encoding="utf-8"
+    )
+    assert "meaningless decimals" in review
+    assert "`17.5, 20.0, 22.5`" in review
     editing = (SKILL / "references" / "editing.md").read_text(encoding="utf-8")
     for getter in (
         "get_lines()",

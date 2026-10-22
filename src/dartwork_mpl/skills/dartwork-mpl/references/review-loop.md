@@ -34,6 +34,11 @@ the file; Codex: view_image). Check that:
   readable at the printed size;
 - nothing overlaps: text on text, legend on data, labels between panels;
 - the plotted data matches the input (count, gaps, order, units);
+- tick and value labels carry no meaningless decimals: `200`, `0`, `1k`, not
+  `200.0`, `0.0`, `1.0k`; non-integer values get the decimals the data need,
+  the same count along an axis (`17.5, 20.0, 22.5` is fine). The SI, myriad,
+  millions and billions formatters choose decimals by default; an explicit
+  `decimals=` is used exactly, so set it to what the values need;
 - panel sizes and empty space look intended.
 
 If you cannot view images, say so in your answer instead of claiming the
