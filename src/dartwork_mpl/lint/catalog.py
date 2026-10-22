@@ -3,6 +3,13 @@
 Surface (re-exported by :mod:`dartwork_mpl.lint`): ``Rule``, ``Issue``,
 ``load_rules``. The bundled catalog is
 ``asset/prompt/02-anti-patterns.yaml``.
+
+Inside the lint package a rule's detector is the closed union
+``_Detector`` (``_RegexDetector | _SubstringDetector | _AstNameDetector``).
+``load_rules`` parses each YAML ``detector`` mapping into it once and fills
+the public ``Rule.detector_kind`` / ``detector_value`` strings from the
+parsed value; ``_rule_detector`` recovers the union from any ``Rule``,
+including one a caller built by hand.
 """
 
 from __future__ import annotations
@@ -11,12 +18,58 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal, TypeAlias
 
 import yaml
 
 _RULES_PATH: Path = (
     Path(__file__).parent.parent / "asset" / "prompt" / "02-anti-patterns.yaml"
 )
+
+_Severity: TypeAlias = Literal["critical", "warning", "info"]
+"""A catalog severity. ``load_rules`` admits only these three strings."""
+
+_SEVERITIES: tuple[_Severity, ...] = ("critical", "warning", "info")
+
+_AstCheck: TypeAlias = Literal["colormap-name", "color-name"]
+"""The static AST name checks the engine implements."""
+
+_AST_CHECKS: tuple[_AstCheck, ...] = ("colormap-name", "color-name")
+
+
+@dataclass(frozen=True)
+class _RegexDetector:
+    """A rule found by a regular expression; ``pattern`` compiles."""
+
+    pattern: str
+
+
+@dataclass(frozen=True)
+class _SubstringDetector:
+    """A rule found by a literal substring of the raw source text."""
+
+    literal: str
+
+
+@dataclass(frozen=True)
+class _AstNameDetector:
+    """A rule found by checking literal names against matplotlib's registries."""
+
+    check: _AstCheck
+
+
+_Detector: TypeAlias = _RegexDetector | _SubstringDetector | _AstNameDetector
+
+
+@dataclass(frozen=True)
+class _UnsupportedDetector:
+    """A hand-built ``Rule`` names a detector this engine does not implement.
+
+    Such a rule matches nothing; ``load_rules`` never produces one.
+    """
+
+    kind: str
+    value: str
 
 
 @dataclass(frozen=True)
@@ -53,6 +106,79 @@ class Issue:
     snippet: str | None = None
     column: int | None = None
     fix_suggestion: str | None = None
+
+
+def _detector_fields(detector: _Detector) -> tuple[str, str]:
+    """Return the public ``(detector_kind, detector_value)`` strings of a detector."""
+    match detector:
+        case _RegexDetector(pattern):
+            return "regex", pattern
+        case _SubstringDetector(literal):
+            return "substring", literal
+        case _AstNameDetector(check):
+            return "ast", check
+
+
+def _rule_detector(rule: Rule) -> _Detector | _UnsupportedDetector:
+    """Read a rule's public detector strings back into the detector union.
+
+    A regex detector's pattern is not recompiled here: a hand-built rule
+    with an invalid pattern still fails when it is scanned, as before.
+    """
+    kind, value = rule.detector_kind, rule.detector_value
+    if kind == "regex":
+        return _RegexDetector(value)
+    if kind == "substring":
+        return _SubstringDetector(value)
+    if kind == "ast":
+        for check in _AST_CHECKS:
+            if value == check:
+                return _AstNameDetector(check)
+    return _UnsupportedDetector(kind, value)
+
+
+def _parse_severity(raw: object, context: str) -> _Severity:
+    """Parse a YAML severity; raise ``ValueError`` naming the rule otherwise."""
+    for severity in _SEVERITIES:
+        if isinstance(raw, str) and raw == severity:
+            return severity
+    raise ValueError(f"Unsupported severity {raw!r} in {context}")
+
+
+def _parse_detector(raw: object, context: str) -> _Detector:
+    """Parse a YAML ``detector`` mapping; raise ``ValueError`` naming the rule.
+
+    ``kind`` defaults to ``"regex"``. A regex must compile with
+    ``re.MULTILINE``; a substring must be a string; an AST check must be
+    one of ``_AST_CHECKS``.
+    """
+    if not isinstance(raw, Mapping):
+        raise ValueError(f"Detector in {context} must be a mapping")
+    kind = raw.get("kind", "regex")
+    if kind == "regex":
+        pattern = raw.get("pattern")
+        if not isinstance(pattern, str):
+            raise ValueError(
+                f"Invalid regex in {context}: expected a string pattern"
+            )
+        try:
+            re.compile(pattern, re.MULTILINE)
+        except re.error as exc:
+            raise ValueError(f"Invalid regex in {context}: {exc}") from exc
+        return _RegexDetector(pattern)
+    if kind == "substring":
+        literal = raw.get("literal")
+        if not isinstance(literal, str):
+            raise ValueError(
+                f"Invalid substring in {context}: expected a string literal"
+            )
+        return _SubstringDetector(literal)
+    if kind == "ast":
+        check = raw.get("check")
+        for supported in _AST_CHECKS:
+            if isinstance(check, str) and check == supported:
+                return _AstNameDetector(supported)
+    raise ValueError(f"Unsupported detector kind {kind!r} in {context}")
 
 
 def load_rules(path: Path | None = None) -> list[Rule]:
@@ -92,52 +218,23 @@ def load_rules(path: Path | None = None) -> list[Rule]:
         if not isinstance(entry, Mapping):
             raise ValueError(f"Rule entry {index} must be a mapping")
         context = f"rule {entry.get('id')!r} (entry {index})"
-        for field in ("id", "message"):
-            if not isinstance(entry.get(field), str):
-                raise ValueError(
-                    f"Invalid {field} in {context}: expected a string"
-                )
-        severity = entry.get("severity")
-        if not isinstance(severity, str) or severity not in {
-            "critical",
-            "warning",
-            "info",
-        }:
-            raise ValueError(f"Unsupported severity {severity!r} in {context}")
-        detector = entry.get("detector", {})
-        if not isinstance(detector, Mapping):
-            raise ValueError(f"Detector in {context} must be a mapping")
-        kind = detector.get("kind", "regex")
-        if kind == "regex":
-            value = detector.get("pattern")
-            if not isinstance(value, str):
-                raise ValueError(
-                    f"Invalid regex in {context}: expected a string pattern"
-                )
-            try:
-                re.compile(value, re.MULTILINE)
-            except re.error as exc:
-                raise ValueError(f"Invalid regex in {context}: {exc}") from exc
-        elif kind == "substring":
-            value = detector.get("literal")
-            if not isinstance(value, str):
-                raise ValueError(
-                    f"Invalid substring in {context}: expected a string literal"
-                )
-        elif kind == "ast" and detector.get("check") in (
-            "colormap-name",
-            "color-name",
-        ):
-            value = detector["check"]
-        else:
-            raise ValueError(f"Unsupported detector kind {kind!r} in {context}")
+        rule_id = entry.get("id")
+        if not isinstance(rule_id, str):
+            raise ValueError(f"Invalid id in {context}: expected a string")
+        message = entry.get("message")
+        if not isinstance(message, str):
+            raise ValueError(f"Invalid message in {context}: expected a string")
+        severity = _parse_severity(entry.get("severity"), context)
+        kind, value = _detector_fields(
+            _parse_detector(entry.get("detector", {}), context)
+        )
         rules.append(
             Rule(
-                id=entry["id"],
+                id=rule_id,
                 severity=severity,
                 detector_kind=kind,
                 detector_value=value,
-                message=entry["message"].rstrip(),
+                message=message.rstrip(),
                 why=(entry.get("why") or None),
                 fix_suggestion=entry.get("fix_suggestion"),
             )

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from .._types import Severity, VisualWarning
+from ._detail import wire
 from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
@@ -12,6 +13,12 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
 __all__ = ["check_empty_axes"]
+
+
+class EmptyAxesDetail(TypedDict):
+    """The Axes at ``axes_index`` draws no data."""
+
+    axes_index: int
 
 
 @register_check("EMPTY_AXES", order=60)
@@ -61,7 +68,7 @@ def check_empty_axes(
                     severity=Severity.INFO,
                     check_id="EMPTY_AXES",
                     message=f"Axes[{i}] has no visible data",
-                    detail={"axes_index": i},
+                    detail=wire(EmptyAxesDetail(axes_index=i)),
                 )
             )
 

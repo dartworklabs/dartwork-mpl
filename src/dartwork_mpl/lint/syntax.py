@@ -2,7 +2,7 @@
 
 Private to :mod:`dartwork_mpl.lint`. ``_parse_source`` turns submitted
 source into a ``_Syntax`` (AST, tokens and per-node binding facts) without
-executing or importing it, or returns ``None`` when it cannot.
+executing or importing it, or returns ``SourceRejected`` when it cannot.
 """
 
 from __future__ import annotations
@@ -10,6 +10,22 @@ from __future__ import annotations
 import ast
 import io
 import tokenize
+from dataclasses import dataclass
+from typing import Literal, TypeAlias
+
+_OwnerKind: TypeAlias = Literal[
+    "pyplot", "axes", "figure", "figure-class", "dm"
+]
+"""What a recognised call owner is: the pyplot module, an Axes, a Figure,
+the ``matplotlib.figure.Figure`` class, or the dartwork_mpl package."""
+
+_Binding: TypeAlias = _OwnerKind | Literal["bare-figure"]
+"""A name-binding fact; ``"bare-figure"`` is a Figure built by the class
+constructor, read back as ``"figure"`` by ``_Syntax.kind``."""
+
+_Facts: TypeAlias = dict[str, _Binding | None]
+"""Names in scope mapped to their proven binding; ``None`` marks a name
+whose earlier proof was invalidated."""
 
 _CMAP_CALLS = frozenset(
     {
@@ -147,7 +163,12 @@ def _source_registrations(tree: ast.AST, check: str) -> set[str] | None:
     return registrations
 
 
-_CANONICAL = {"plt": "pyplot", "ax": "axes", "fig": "figure", "dm": "dm"}
+_CANONICAL: dict[str, _OwnerKind] = {
+    "plt": "pyplot",
+    "ax": "axes",
+    "fig": "figure",
+    "dm": "dm",
+}
 _RELEVANT_ATTRIBUTES = {
     "tight_layout",
     "simple_layout",
@@ -218,7 +239,7 @@ class _Syntax:
         self.starts = [0]
         for line in self.lines:
             self.starts.append(self.starts[-1] + len(line))
-        self.facts: dict[int, dict[str, str | None]] = {}
+        self.facts: dict[int, _Facts] = {}
         self.parents = {
             id(child): node
             for node in ast.walk(tree)
@@ -261,7 +282,9 @@ class _Syntax:
             self.offset(node.end_lineno, node.end_col_offset),
         )
 
-    def kind(self, node: ast.AST, *, conventional: bool = False) -> str | None:
+    def kind(
+        self, node: ast.AST, *, conventional: bool = False
+    ) -> _OwnerKind | None:
         """Resolve only explicit imported owners or a canonical snippet receiver."""
         name = _dotted_name(node) if isinstance(node, ast.expr) else ""
         env = self.facts.get(id(node), {})
@@ -275,7 +298,7 @@ class _Syntax:
 
     def owner(
         self, node: ast.expr, *, conventional: bool = False
-    ) -> tuple[ast.expr, list[str], str | None]:
+    ) -> tuple[ast.expr, list[str], _OwnerKind | None]:
         """Split an attribute chain at an explicitly recognized module/object owner."""
         parts: list[str] = []
         current = node
@@ -288,7 +311,7 @@ class _Syntax:
             parts.append(current.attr)
             current = current.value
 
-    def _invalidate(self, target: ast.AST, env: dict[str, str | None]) -> None:
+    def _invalidate(self, target: ast.AST, env: _Facts) -> None:
         """Invalidate explicit writes, including relevant tracked attribute writes."""
         if isinstance(target, ast.Name):
             for key in list(env):
@@ -312,9 +335,7 @@ class _Syntax:
                     self._invalidate(ast.Name(id=owner.split(".")[0]), env)
                 break
 
-    def _expression(
-        self, node: ast.AST | None, env: dict[str, str | None]
-    ) -> None:
+    def _expression(self, node: ast.AST | None, env: _Facts) -> None:
         """Record facts at each expression without carrying proof into new scopes."""
         if node is None:
             return
@@ -335,7 +356,9 @@ class _Syntax:
         if isinstance(node, ast.NamedExpr):
             self._invalidate(node.target, env)
 
-    def _constructor(self, value: ast.expr | None) -> str | None:
+    def _constructor(
+        self, value: ast.expr | None
+    ) -> Literal["bare-figure", "figure", "subplots"] | None:
         """Recognize direct Figure and pyplot construction, never arbitrary aliases."""
         if not isinstance(value, ast.Call):
             return None
@@ -344,21 +367,22 @@ class _Syntax:
         if (
             isinstance(value.func, ast.Attribute)
             and self.kind(value.func.value) == "pyplot"
-            and value.func.attr in {"figure", "subplots"}
         ):
-            return value.func.attr
+            if value.func.attr == "figure":
+                return "figure"
+            if value.func.attr == "subplots":
+                return "subplots"
         return None
 
     def _assign(
-        self,
-        target: ast.expr,
-        value: ast.expr | None,
-        env: dict[str, str | None],
+        self, target: ast.expr, value: ast.expr | None, env: _Facts
     ) -> None:
         """Commit only direct constructor facts after invalidating assignment targets."""
         self._invalidate(target, env)
         kind = self._constructor(value)
-        if isinstance(target, ast.Name) and kind in {"figure", "bare-figure"}:
+        if isinstance(target, ast.Name) and (
+            kind == "figure" or kind == "bare-figure"
+        ):
             env[target.id] = kind
         elif (
             kind == "subplots"
@@ -375,9 +399,7 @@ class _Syntax:
             ):
                 env[axes.id] = "axes"
 
-    def _statements(
-        self, statements: list[ast.stmt], env: dict[str, str | None]
-    ) -> None:
+    def _statements(self, statements: list[ast.stmt], env: _Facts) -> None:
         """Track absolute-import facts; local imports and flow invalidate names."""
         for statement in statements:
             self.facts[id(statement)] = dict(env)
@@ -473,7 +495,7 @@ class _Syntax:
             else:
                 self._expression(statement, env)
 
-    def _flow_child(self, node: ast.AST, env: dict[str, str | None]) -> None:
+    def _flow_child(self, node: ast.AST, env: _Facts) -> None:
         """Read handlers/cases under conservative flow facts without merging proof."""
         self.facts[id(node)] = dict(env)
         for child in ast.iter_child_nodes(node):
@@ -512,16 +534,34 @@ def _single_axes(call: ast.Call) -> bool:
     )
 
 
-def _parse_source(code: str) -> _Syntax | None:
+@dataclass(frozen=True)
+class SourceRejected:
+    """Submitted source could not be parsed into a complete AST and token stream.
+
+    Every caller answers it the same way (no AST rule matches, no edit is
+    made), so the cause is kept only as diagnostic text, e.g.
+    ``"SyntaxError: invalid syntax"`` or ``"error token '$'"``.
+    """
+
+    cause: str
+
+
+def _parse_source(code: str) -> _Syntax | SourceRejected:
     """Refuse malformed AST/token streams completely; submitted source stays inert."""
     try:
         tree = ast.parse(code)
         tokens = list(tokenize.generate_tokens(io.StringIO(code).readline))
-        if any(
-            token.type == tokenize.ERRORTOKEN and not token.string.isspace()
-            for token in tokens
-        ):
-            return None
+        error = next(
+            (
+                token
+                for token in tokens
+                if token.type == tokenize.ERRORTOKEN
+                and not token.string.isspace()
+            ),
+            None,
+        )
+        if error is not None:
+            return SourceRejected(f"error token {error.string!r}")
         return _Syntax(code, tree, tokens)
     except (
         SyntaxError,
@@ -529,5 +569,5 @@ def _parse_source(code: str) -> _Syntax | None:
         RecursionError,
         UnicodeError,
         tokenize.TokenError,
-    ):
-        return None
+    ) as exc:
+        return SourceRejected(f"{type(exc).__name__}: {exc}")

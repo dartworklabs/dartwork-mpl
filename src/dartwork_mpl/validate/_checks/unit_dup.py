@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, TypedDict
 
 from .._types import Severity, VisualWarning
+from ._detail import AXES, Axis, choice, wire
 from ._registry import register_check, register_fix
 from ._tick_utils import iter_view_ticks, split_tick_affixes
 
@@ -17,6 +18,16 @@ __all__ = ["check_unit_dup"]
 
 _AXIS_UNIT_RE = re.compile(r"[([]([^)\]]{1,16})[)\]]\s*$")
 _COMMON_AFFIX_THRESHOLD = 0.60
+
+
+class UnitDupDetail(TypedDict):
+    """The axis label declares a unit the tick labels repeat as an affix."""
+
+    axis: Axis
+    axes_index: int
+    label_unit: str
+    tick_affix: str
+    affix_kind: Literal["suffix", "prefix"]
 
 
 def _compact_token(text: str) -> str:
@@ -121,13 +132,15 @@ def check_unit_dup(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
                     severity=severity,
                     check_id="UNIT_DUP",
                     message=message,
-                    detail={
-                        "axis": axis_name,
-                        "axes_index": axes_index,
-                        "label_unit": label_unit,
-                        "tick_affix": selected_affix,
-                        "affix_kind": selected_kind,
-                    },
+                    detail=wire(
+                        UnitDupDetail(
+                            axis=axis_name,
+                            axes_index=axes_index,
+                            label_unit=label_unit,
+                            tick_affix=selected_affix,
+                            affix_kind=selected_kind,
+                        )
+                    ),
                 )
             )
 
@@ -136,7 +149,8 @@ def check_unit_dup(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
 
 @register_fix("UNIT_DUP")
 def _fix_unit_dup(warning: VisualWarning) -> list[str]:
-    axis = warning.detail.get("axis", "y")
+    """Formatter suggestions that drop the tick affix (default axis: y)."""
+    axis = choice(warning.detail, "axis", AXES) or "y"
     return [
         "# Keep the unit in the axis label only\n"
         f"ax.{axis}axis.set_major_formatter(mticker.PercentFormatter(symbol=''))",

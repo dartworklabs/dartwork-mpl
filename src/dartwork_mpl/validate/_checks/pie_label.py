@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from .._types import Severity, VisualWarning
+from ._detail import number, wire
 from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
@@ -14,6 +15,14 @@ if TYPE_CHECKING:
 __all__ = ["check_pie_label_offset"]
 
 _TOLERANCE_RATIO = 0.15  # 15% deviation
+
+
+class PieLabelDetail(TypedDict):
+    """A donut percentage label sits at ``actual_r`` instead of ``ideal_r``."""
+
+    text: str
+    actual_r: float
+    ideal_r: float
 
 
 @register_check("PIE_LABEL_OFFSET", order=80)
@@ -80,11 +89,13 @@ def check_pie_label_offset(
                             f"Donut label '{text_str}' at r={actual_r:.2f}, "
                             f"ideal center of wedge: r={ideal_r:.2f}"
                         ),
-                        detail={
-                            "text": text_str,
-                            "actual_r": round(actual_r, 2),
-                            "ideal_r": round(ideal_r, 2),
-                        },
+                        detail=wire(
+                            PieLabelDetail(
+                                text=text_str,
+                                actual_r=round(actual_r, 2),
+                                ideal_r=round(ideal_r, 2),
+                            )
+                        ),
                     )
                 )
         break  # only check the first pie axes
@@ -94,5 +105,6 @@ def check_pie_label_offset(
 
 @register_fix("PIE_LABEL_OFFSET")
 def _fix_pie_label_offset(warning: VisualWarning) -> list[str]:
-    ideal_r = warning.detail.get("ideal_r", 0.7)
+    """Move labels to the wedge centre radius (default 0.7)."""
+    ideal_r = number(warning.detail, "ideal_r", 0.7)
     return [f"# Adjust label position\nax.pie(..., pctdistance={ideal_r:.2f})"]

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, TypedDict
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
+from ._detail import number, wire
 from ._registry import register_check, register_fix
 from ._tick_utils import adjacent_bboxes_overlap, iter_view_ticks
 
@@ -17,6 +18,25 @@ __all__ = ["check_tick_rotation"]
 
 _ROTATION_EPS = 1e-6
 _UNROTATED_LABEL_PAD_PX = 4.0
+
+
+class TickRotationUnneededDetail(TypedDict):
+    """Rotated x tick labels would fit their slots unrotated."""
+
+    axis: Literal["x"]
+    axes_index: int
+    recommended_rotation: Literal[0]
+    max_unrotated_width_px: float
+    slot_width_px: float
+
+
+class TickRotationNeededDetail(TypedDict):
+    """Unrotated x tick labels overlap their neighbours."""
+
+    axis: Literal["x"]
+    axes_index: int
+    recommended_rotation: Literal[45]
+    tick_count: int
 
 
 def _is_math_text(text: str) -> bool:
@@ -84,13 +104,15 @@ def check_tick_rotation(
                             f"(max label {max(widths):.1f}px, "
                             f"slot {slot_width:.1f}px)"
                         ),
-                        detail={
-                            "axis": "x",
-                            "axes_index": axes_index,
-                            "recommended_rotation": 0,
-                            "max_unrotated_width_px": round(max(widths), 2),
-                            "slot_width_px": round(slot_width, 2),
-                        },
+                        detail=wire(
+                            TickRotationUnneededDetail(
+                                axis="x",
+                                axes_index=axes_index,
+                                recommended_rotation=0,
+                                max_unrotated_width_px=round(max(widths), 2),
+                                slot_width_px=round(slot_width, 2),
+                            )
+                        ),
                     )
                 )
             continue
@@ -111,12 +133,14 @@ def check_tick_rotation(
                         f"X-axis[{axes_index}]: 라벨 겹침 — "
                         "45° 회전 또는 틱 수 축소 권장"
                     ),
-                    detail={
-                        "axis": "x",
-                        "axes_index": axes_index,
-                        "recommended_rotation": 45,
-                        "tick_count": len(ticks),
-                    },
+                    detail=wire(
+                        TickRotationNeededDetail(
+                            axis="x",
+                            axes_index=axes_index,
+                            recommended_rotation=45,
+                            tick_count=len(ticks),
+                        )
+                    ),
                 )
             )
 
@@ -125,7 +149,8 @@ def check_tick_rotation(
 
 @register_fix("TICK_ROTATION")
 def _fix_tick_rotation(warning: VisualWarning) -> list[str]:
-    rotation = warning.detail.get("recommended_rotation", 45)
+    """Rotate to the recommended angle (default 45) or thin the ticks."""
+    rotation = number(warning.detail, "recommended_rotation", 45)
     return [
         "# Adjust x tick label rotation\n"
         f"dm.rotate_tick_labels(ax, axis='x', rotation={rotation})",

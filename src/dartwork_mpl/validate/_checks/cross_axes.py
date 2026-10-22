@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from .._types import BBOX_ERRORS, Severity, VisualWarning
+from ._detail import wire
 from ._registry import register_check
 
 if TYPE_CHECKING:
@@ -12,6 +13,16 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
 __all__ = ["check_cross_axes_overlap"]
+
+
+class CrossAxesOverlapDetail(TypedDict):
+    """Text of two different Axes overlaps by ``ratio`` of the smaller box."""
+
+    axes_a: int
+    role_a: str
+    axes_b: int
+    role_b: str
+    ratio: float
 
 
 @register_check("CROSS_AXES_OVERLAP", order=30)
@@ -131,13 +142,15 @@ def check_cross_axes_overlap(
                         f"GridSpec hspace/wspace or pass "
                         f"gridspec_kw={{'hspace': ..., 'wspace': ...}}."
                     ),
-                    detail={
-                        "axes_a": idx_a,
-                        "role_a": role_a,
-                        "axes_b": idx_b,
-                        "role_b": role_b,
-                        "ratio": round(ratio, 2),
-                    },
+                    detail=wire(
+                        CrossAxesOverlapDetail(
+                            axes_a=idx_a,
+                            role_a=role_a,
+                            axes_b=idx_b,
+                            role_b=role_b,
+                            ratio=round(ratio, 2),
+                        )
+                    ),
                 )
             )
     return warnings

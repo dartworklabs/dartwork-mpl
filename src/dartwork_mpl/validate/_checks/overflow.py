@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 from ..._figure_geometry import iter_figure_level_extents
 from .._types import BBOX_ERRORS, Severity, VisualWarning
+from ._detail import SIDES, Side, choice, number, wire
 from ._registry import register_check, register_fix
 
 if TYPE_CHECKING:
@@ -13,6 +14,24 @@ if TYPE_CHECKING:
     from matplotlib.figure import Figure
 
 __all__ = ["check_overflow"]
+
+
+class OverflowTextDetail(TypedDict):
+    """A text artist past one figure edge, by ``px`` pixels."""
+
+    text: str
+    side: Side
+    px: float
+
+
+class OverflowTickDetail(TypedDict):
+    """A tick label past the figure; no single edge is reported."""
+
+    text: str
+    px: float
+
+
+OverflowDetail = OverflowTextDetail | OverflowTickDetail
 
 
 @register_check("OVERFLOW", order=10)
@@ -50,7 +69,7 @@ def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
             overflow = max(dx_left, dx_right, dy_bottom, dy_top)
             if overflow > 2.0:  # > 2 px tolerance
                 label = repr(txt.get_text()[:40])
-                side = (
+                side: Side = (
                     "left"
                     if dx_left == overflow
                     else "right"
@@ -64,11 +83,13 @@ def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
                         severity=Severity.WARNING,
                         check_id="OVERFLOW",
                         message=f"Text {label} exceeds figure bounds ({side} by {overflow:.1f}px)",
-                        detail={
-                            "text": txt.get_text(),
-                            "side": side,
-                            "px": round(overflow, 1),
-                        },
+                        detail=wire(
+                            OverflowTextDetail(
+                                text=txt.get_text(),
+                                side=side,
+                                px=round(overflow, 1),
+                            )
+                        ),
                     )
                 )
 
@@ -118,10 +139,11 @@ def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
                             severity=Severity.WARNING,
                             check_id="OVERFLOW",
                             message=f"Tick label {tick.get_text()[:20]!r} overflows figure by {overflow:.1f}px",
-                            detail={
-                                "text": tick.get_text(),
-                                "px": round(overflow, 1),
-                            },
+                            detail=wire(
+                                OverflowTickDetail(
+                                    text=tick.get_text(), px=round(overflow, 1)
+                                )
+                            ),
                         )
                     )
                     break  # one per axis is enough
@@ -157,11 +179,13 @@ def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
                         f"Figure text {label} exceeds figure bounds "
                         f"({side} by {overflow:.1f}px)"
                     ),
-                    detail={
-                        "text": txt.get_text(),
-                        "side": side,
-                        "px": round(overflow, 1),
-                    },
+                    detail=wire(
+                        OverflowTextDetail(
+                            text=txt.get_text(),
+                            side=side,
+                            px=round(overflow, 1),
+                        )
+                    ),
                 )
             )
 
@@ -170,9 +194,13 @@ def check_overflow(fig: Figure, renderer: RendererBase) -> list[VisualWarning]:
 
 @register_fix("OVERFLOW")
 def _fix_overflow(warning: VisualWarning) -> list[str]:
+    """Margin or layout suggestions for the overflowing edge, if one is known."""
     suggestions: list[str] = []
-    side = warning.detail.get("side", "")
-    px = warning.detail.get("px", 0)
+    # A tick-label variant has no ``side``; it gets no edge suggestion.
+    side = choice(warning.detail, "side", SIDES)
+    if side is None:
+        return suggestions
+    px = number(warning.detail, "px", 0)
     # Clamp the suggested fractions into a valid band: matplotlib
     # requires left/bottom < right/top, all within [0, 1]. Unclamped,
     # a large overflow (px ≈ 90 on a small figure) produced

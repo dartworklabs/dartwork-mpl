@@ -413,7 +413,7 @@ class TestAutoFixTableContract:
         from dartwork_mpl.lint.fix import _AUTO_FIX_TABLE
 
         ssot_ids = {r.id for r in load_rules()}
-        table_ids = {rule_id for rule_id, _, _ in _AUTO_FIX_TABLE}
+        table_ids = set(_AUTO_FIX_TABLE)
         orphans = table_ids - ssot_ids
         assert not orphans, (
             f"_AUTO_FIX_TABLE references rule_ids absent from the "

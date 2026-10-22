@@ -859,14 +859,19 @@ class TestValidateAuditRegressions:
 
     def test_errored_check_does_not_report_clean(self, capsys) -> None:
         from dartwork_mpl.validate import _types
-        from dartwork_mpl.validate._orchestrator import _run_check_safely
+        from dartwork_mpl.validate._checks import RegisteredCheck
+        from dartwork_mpl.validate._orchestrator import (
+            CheckFailed,
+            _run_check_safely,
+        )
 
-        # A check raising a bbox error yields None (could-not-run),
-        # never an empty "ran clean" list.
-        def boom() -> list:
+        # A check raising a bbox error yields CheckFailed (could-not-run),
+        # never an empty "ran clean" result.
+        def boom(fig, renderer) -> list:
             raise _types.BBOX_ERRORS[0]("boom")
 
-        assert _run_check_safely(boom) is None
+        check = RegisteredCheck("BOOM", 0, boom)
+        assert _run_check_safely(check, None, None) == CheckFailed("BOOM")
 
 
 class TestFailedCheckReport:

@@ -12,7 +12,7 @@ import re
 
 from .detect import lint
 from .fix import _apply_edits, _Edit, _planned_fixes
-from .syntax import _parse_source, _Syntax
+from .syntax import SourceRejected, _OwnerKind, _parse_source, _Syntax
 
 # Legacy migration hint wording remains owned by the existing catalog below.
 _MODEL_B_REMOVED_COLOR_NAMES: tuple[str, ...] = (
@@ -237,7 +237,7 @@ def _migration_hints(syntax: _Syntax) -> list[_Edit]:
     insertions: dict[int, tuple[str, str, set[int]]] = {}
     for node in ast.walk(syntax.tree):
         start: int | None = None
-        kind: str | None = None
+        kind: _OwnerKind | None = None
         text = ""
         allowed: set[int] = set()
         if isinstance(node, (ast.Attribute, ast.Call, ast.Subscript)):
@@ -321,11 +321,11 @@ def migrate_legacy_code(code: str) -> str:
     Hints never split continuations, inline suites or multiline literal contents.
     """
     syntax = _parse_source(code)
-    if syntax is None:
+    if isinstance(syntax, SourceRejected):
         return code
     fixes = _planned_fixes(syntax, lint(code), layout=False)
     edits = [edit for fix in fixes for edit in fix.edits] + _migration_hints(
         syntax
     )
     result = _apply_edits(code, edits)
-    return code if result is None else result
+    return result if isinstance(result, str) else code

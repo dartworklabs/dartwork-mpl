@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from itertools import pairwise
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, TypedDict
 
 from ...formatting import recommend_tick_decimals
 from .._types import Severity, VisualWarning
+from ._detail import AXES, Axis, choice, number, wire
 from ._registry import register_check, register_fix
 from ._tick_utils import iter_view_ticks, split_tick_affixes
 
@@ -18,6 +19,34 @@ if TYPE_CHECKING:
 __all__ = ["check_tick_decimal"]
 
 _INTEGER_REL_TOL = 1e-9
+
+
+class TickDecimalDuplicateDetail(TypedDict):
+    """Rendered precision makes two adjacent tick labels identical."""
+
+    axis: Axis
+    axes_index: int
+    rendered_decimals: int
+    recommended_decimals: int
+    duplicate_label: str
+
+
+class TickDecimalMixedDetail(TypedDict):
+    """Tick labels on one axis use different numbers of decimal places."""
+
+    axis: Axis
+    axes_index: int
+    decimal_places: list[int]
+    recommended_decimals: int
+
+
+class TickDecimalPrecisionDetail(TypedDict):
+    """Tick labels carry more (or fewer) decimals than the step needs."""
+
+    axis: Axis
+    axes_index: int
+    rendered_decimals: int
+    recommended_decimals: int
 
 
 def _axis_value(tick: Text, axis: Literal["x", "y"]) -> float | None:
@@ -97,13 +126,15 @@ def check_tick_decimal(
                             "adjacent ticks render as the same string "
                             f"({duplicate[0]!r}); increase decimal places"
                         ),
-                        detail={
-                            "axis": axis_name,
-                            "axes_index": axes_index,
-                            "rendered_decimals": rendered_decimals,
-                            "recommended_decimals": recommended_decimals,
-                            "duplicate_label": duplicate[0],
-                        },
+                        detail=wire(
+                            TickDecimalDuplicateDetail(
+                                axis=axis_name,
+                                axes_index=axes_index,
+                                rendered_decimals=rendered_decimals,
+                                recommended_decimals=recommended_decimals,
+                                duplicate_label=duplicate[0],
+                            )
+                        ),
                     )
                 )
                 continue
@@ -119,12 +150,14 @@ def check_tick_decimal(
                             "non-uniform decimal places in numeric tick labels "
                             f"({unique_decimal_places})"
                         ),
-                        detail={
-                            "axis": axis_name,
-                            "axes_index": axes_index,
-                            "decimal_places": unique_decimal_places,
-                            "recommended_decimals": recommended_decimals,
-                        },
+                        detail=wire(
+                            TickDecimalMixedDetail(
+                                axis=axis_name,
+                                axes_index=axes_index,
+                                decimal_places=unique_decimal_places,
+                                recommended_decimals=recommended_decimals,
+                            )
+                        ),
                     )
                 )
                 continue
@@ -141,12 +174,14 @@ def check_tick_decimal(
                             "trailing zero in integer tick labels "
                             f"(example {rendered_texts[0]!r})"
                         ),
-                        detail={
-                            "axis": axis_name,
-                            "axes_index": axes_index,
-                            "rendered_decimals": rendered_decimals,
-                            "recommended_decimals": 0,
-                        },
+                        detail=wire(
+                            TickDecimalPrecisionDetail(
+                                axis=axis_name,
+                                axes_index=axes_index,
+                                rendered_decimals=rendered_decimals,
+                                recommended_decimals=0,
+                            )
+                        ),
                     )
                 )
                 continue
@@ -162,12 +197,14 @@ def check_tick_decimal(
                             f"({rendered_decimals} decimals; "
                             f"{recommended_decimals} recommended)"
                         ),
-                        detail={
-                            "axis": axis_name,
-                            "axes_index": axes_index,
-                            "rendered_decimals": rendered_decimals,
-                            "recommended_decimals": recommended_decimals,
-                        },
+                        detail=wire(
+                            TickDecimalPrecisionDetail(
+                                axis=axis_name,
+                                axes_index=axes_index,
+                                rendered_decimals=rendered_decimals,
+                                recommended_decimals=recommended_decimals,
+                            )
+                        ),
                     )
                 )
 
@@ -176,8 +213,9 @@ def check_tick_decimal(
 
 @register_fix("TICK_DECIMAL")
 def _fix_tick_decimal(warning: VisualWarning) -> list[str]:
-    axis = warning.detail.get("axis", "y")
-    decimals = int(warning.detail.get("recommended_decimals", 0))
+    """Formatter suggestions at the recommended precision (defaults: y, 0)."""
+    axis = choice(warning.detail, "axis", AXES) or "y"
+    decimals = int(number(warning.detail, "recommended_decimals", 0))
     return [
         "# Match tick precision to the tick step\n"
         f"ax.{axis}axis.set_major_formatter(mticker.StrMethodFormatter('{{x:.{decimals}f}}'))",
