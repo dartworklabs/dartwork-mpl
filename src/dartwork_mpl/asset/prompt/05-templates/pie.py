@@ -18,7 +18,7 @@ sizes = [35, 25, 25, 15]
 colors = ["dc.teal2", "dc.green2", "dc.orange2", "dc.red2"]
 
 fig, ax = plt.subplots(figsize=dm.figsize("11cm", "square"))
-ax.pie(sizes, labels=labels, colors=colors, autopct="%1.1f%%", startangle=90)
+ax.pie(sizes, labels=labels, colors=colors, autopct="%1.0f%%", startangle=90)
 ax.set_aspect("equal")
 ax.set_title("Composition", fontsize=dm.fs(1), fontweight=dm.fw(1))
 
