@@ -1,11 +1,9 @@
 # #523 phase 0: natural-language agent eval and baseline harness
 
-Status: the harness is implemented, smoke-tested and calibrated against the
-full baseline (`evals/agentic/calibration/2026-10-22-baseline-audit.md`). The
-skill A/B endpoints are pre-registered below, before any skill-arm run.
-Branch: `t3/p0-agent-eval-20261022`. Details and commands:
-`evals/agentic/README.md`. The eval is the external decider (CLAUDE.md
-rule 2). Aesthetics are not a gate.
+Status: implemented, smoke-tested, calibrated on the full baseline
+(`evals/agentic/calibration/`); A/B endpoints pre-registered below before any
+skill-arm run; pilot done. Details: `evals/agentic/README.md`. The eval is
+the external decider (CLAUDE.md rule 2); aesthetics are not a gate.
 
 ## Design
 
@@ -13,11 +11,9 @@ rule 2). Aesthetics are not a gate.
   KO, for paper, report, slides and vague purposes; 10 are `held_out`. Edits
   declare `edit_scope`, `target` (what the request may touch) and optionally
   `max_new_texts`; cases may declare `auxiliary` kinds.
-- **Trees.** Records (`~/scratch/dartwork-mpl-evals/<run>`: append-only
-  manifest, per-unit `run.json`, transcripts, artifacts, scores) and agent
-  projects (`~/scratch/dartwork-mpl-evals-work/<token>`: case inputs, own venv
-  with the pinned wheel, the rendered base for edits). Repo paths are
-  stripped from the child `PATH`.
+- **Trees.** Records (`~/scratch/dartwork-mpl-evals/<run>`) and agent
+  projects (`~/scratch/dartwork-mpl-evals-work/<token>`: inputs, own venv with
+  the pinned wheel, the rendered base for edits).
 - **Contamination fails closed.** `--hide-grading` (bwrap tmpfs over the repo,
   records, work root and HOME transcript stores; Codex gets a per-unit
   sessions dir) is the enforcement; skill runs require it and any unsandboxed
@@ -25,12 +21,10 @@ rule 2). Aesthetics are not a gate.
   `cd`/`workdir`, grading names; HOME transcript and Codex sqlite stores
   count) is OR-ed run time + rescore, never cleared; it gates unsandboxed
   units, and under the sandbox only what the sandbox neutralised is advisory.
-- **Hosts.** Claude: project-only settings, no MCP, user CLAUDE.md excluded,
-  no auto-memory, 7 tools including Skill. Codex: user config, rules,
-  plugins, memories, apps and user skills off; rollouts are the evidence.
-  Budgets identical across arms (Claude 20 turns, $5, 300 s; Codex 300 s,
-  1.5M tokens). Skill arm: `--ab-skill-install` runs the wheel's installer
-  (`python -m dartwork_mpl.skills install`) in the project first.
+- **Hosts.** Claude (project settings only, no MCP/CLAUDE.md/memory) and
+  Codex (user config, rules, plugins, memories, user skills off); identical
+  budgets per arm (Claude 20 turns, $5, 300 s; Codex 300 s, 1.5M tokens).
+  Skill arm: `--ab-skill-install` runs `python -m dartwork_mpl.skills install`.
 - **Scoring.** Execution: valid PNG and PDF from the final source, written
   during the run. Re-run pixel-identical (same-env noise 0). Data contracts
   bind identity, coordinates, order, multiplicity and NaN masks over visible
@@ -40,10 +34,18 @@ rule 2). Aesthetics are not a gate.
   edits fail on any non-target change (series keyed by their data).
 - **Inspection.** An image view after the last write, at least 400 px, equal
   to the final PNG by sha256 or after the host's measured resize.
-- **Source conformance.** `dm.lint_code` findings of the final `plot.py`,
-  linted by a trusted interpreter (the run's sha-verified wheel installed
-  outside every project, read-only bwrap; never the agent-writable venv), and
-  unrequested preset overrides counted from its AST (`conformance.py`).
+- **Source conformance.** `dm.lint_code` of the final `plot.py` by a fresh
+  per-session interpreter built from the sha-verified wheel (0700, read-only
+  bwrap), and preset overrides counted from its AST (`conformance.py`).
+
+## Threat model (stopping rule for review rounds)
+
+Agents are non-adversarial coding assistants; the risks are accidental access
+to grading data and broken environments, not gaming. The sandbox enforces;
+text detection is a fail-closed backstop; every score-affecting computation
+runs in harness-owned environments. Findings that need a deliberately
+adversarial agent are recorded as known limits (README), not fixed in this
+phase. Per CLAUDE.md rule 2, the mechanical controls are the decider.
 
 ## Pre-registered skill A/B endpoints (2026-10-22, before any skill-arm run)
 
@@ -77,11 +79,9 @@ Contaminated units count as failures; any unsandboxed unit blocks every verdict.
 - `score.py --selftest` (40 references, 7 controls); `test_scorer.py` (24),
   `test_regressions.py` (52 review probes), `test_calibration.py` (24 from
   the real baseline; the 13 audited-correct units fail the old scorer).
-- `test_contamination.py` (50): tokenizer, each backstop, OR-never-clear,
-  sandbox gating and coverage (another unit's transcript gates; own project
-  is clean); disabling any one backstop fails at least one control.
-- `test_endpoints.py` (22): override kinds, lint counting, a patched project
-  venv cannot clean the lint, pre-registration sync.
+- `test_contamination.py` (52): tokenizer, each backstop, OR-never-clear,
+  sandbox coverage, exact own-rollout exemption; `test_endpoints.py` (24):
+  lint/override counts, patched venv or planted env cannot clean the lint.
 - Default `pytest` collects none of `evals/`.
 
 ## Baseline `baseline-main-20261022` (80 units, no skill, sandboxed)

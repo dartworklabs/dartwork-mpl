@@ -6,6 +6,26 @@ is the project's external decider (CLAUDE.md rule 2). It is outside the
 package, not collected by the default `pytest` run, and not part of CI. Run it
 by hand.
 
+## Threat model (the stopping rule for review rounds)
+
+- The agents under test are non-adversarial coding assistants. The risks are
+  accidental access to grading data (cases, references, scores, other units'
+  work or transcripts) and broken environments, not deliberate gaming.
+- The sandbox (`--hide-grading`) is the enforcement. Text detection
+  (`contamination.py`) is a fail-closed backstop. Every score-affecting
+  computation (oracle re-run and probe, lint, AST counts) runs in
+  harness-owned environments: the probe re-runs a copy, the lint uses an
+  interpreter built per scoring session from the sha-verified wheel, the
+  AST counts parse in the harness.
+- Review findings that need a deliberately adversarial agent are recorded as
+  known limits (below), not fixed in this phase. Known limits: an agent could
+  tamper with its own venv so its *re-run* (not the lint) behaves differently
+  from its PNG; it could read Codex's sqlite stores (visible, but gating
+  text evidence); it could hide an access from the transcript (e.g. inside a
+  script it writes and runs), which only the sandbox stops.
+- This follows rule 2 of the repo's CLAUDE.md: the mechanical controls
+  (`test_*.py`, `--selftest`) are the decider, not further review rounds.
+
 ## Files
 
 | Path | Role |
@@ -99,7 +119,9 @@ Claude transcript; the Codex stream and rollouts) as raw strings, so `\n`,
   this; it fails closed).
 
 Those HOME transcript stores (and the Codex sqlite stores) are grading roots
-for the text evidence too. `score.py` ORs the run-time result with a recheck
+for the text evidence too; the only exemptions are this unit's own rollout
+files, recorded in `run.json` (`own_rollouts`, with the thread or session id)
+while the harness owns them and compared for exact path equality. `score.py` ORs the run-time result with a recheck
 of the stored transcript under the current rule; a recheck never clears a
 flag. The result is kept as `contamination_text`. Without the sandbox every
 finding sets `contaminated` (never a success, a failure in comparisons).
@@ -337,10 +359,11 @@ comparison tables report them separately.
 - **Source conformance (per unit).** `lint_findings` (critical + warning),
   `lint_findings_all` and per-rule counts from `dm.lint_code`, run with a
   trusted interpreter, never the agent-writable project venv: the run's wheel
-  (checked against the manifest sha256) installed into `ROOT/lint-envs/<sha>`
-  outside every project, inside a read-only bwrap with the repo, records and
-  work trees hidden, the source on stdin (`lint.interpreter`,
-  `lint.wheel_sha256` are recorded);
+  (checked against the manifest sha256) installed into a fresh mode-0700
+  directory per scoring session (`~/.cache/dartwork-mpl-evals/lint-envs/
+  session-*`, removed at exit; no env is ever looked up by path), run inside
+  a read-only bwrap with the repo, records and work trees hidden, the source
+  on stdin (`lint.interpreter`, `lint.wheel_sha256` are recorded);
   `preset_overrides` (`conformance.py`: rcParams writes, font changes,
   figure/axes facecolor, non-dartwork style sheets; distinct source lines;
   parsed in the harness, nothing from the project executed).
