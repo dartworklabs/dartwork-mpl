@@ -237,3 +237,23 @@ class TestAxes3D:
             assert not _outside_canvas(fig, label), label.get_text()
         assert ax.get_position().width > 0.5
         plt.close(fig)
+
+    @pytest.mark.parametrize("loc", ["center", "left", "right"])
+    def test_oversized_title_is_reported_not_chased(self, loc: str) -> None:
+        """The 3-D path used the native tight bbox, title included, and
+        collapsed the axes to 0.001 x 0.001 chasing an oversized title."""
+        widths = {}
+        for headline in ("Short", OVERSIZED):
+            dm.style.use("scientific")
+            fig = plt.figure(figsize=dm.figsize("13cm", "square"))
+            ax = fig.add_subplot(projection="3d")
+            ax.plot([0, 1], [0, 1], [0, 1])
+            ax.set(xlabel="x", ylabel="y", zlabel="z")
+            ax.set_title(headline, loc=loc)
+            dm.simple_layout(fig)
+            widths[headline] = ax.get_position().width
+            flagged = _flagged(fig, OVERSIZED)
+            plt.close(fig)
+        assert widths["Short"] > 0.6
+        assert widths[OVERSIZED] == pytest.approx(widths["Short"], abs=1e-3)
+        assert flagged

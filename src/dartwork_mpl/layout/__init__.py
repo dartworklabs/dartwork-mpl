@@ -37,6 +37,7 @@ from matplotlib.transforms import Bbox
 from .._figure_geometry import BBOX_ERRORS as _BBOX_ERRORS
 from .._figure_geometry import (
     axes_text_artists,
+    axes_titles,
     get_renderer,
     iter_figure_level_extents,
 )
@@ -308,7 +309,7 @@ def _axes_content_extent_px(
     if not ax.get_visible():
         return None
     if getattr(ax, "name", None) == "3d":
-        return _axes3d_extent_px(ax, renderer)
+        return _axes3d_extent_px(ax, renderer, fig.bbox.width)
 
     pts: list[tuple[float, float]] = []
 
@@ -420,26 +421,47 @@ def _fixable_text_span(
 
 
 def _axes3d_extent_px(
-    ax: Axes, renderer: RendererBase
+    ax: Axes, renderer: RendererBase, canvas_w_px: float
 ) -> tuple[float, float, float, float] | None:
     """Return the ``(x0, x1, y0, y1)`` content extent of an mplot3d axes.
 
     mplot3d places tick labels at projected positions and leaves stale
     ones on ticks outside the view, so the per-tick walk of
     ``_axes_content_extent_px`` reads extents thousands of px off the
-    canvas and the layout shrinks the axes into a corner. The 3-D axes'
-    own tight bbox unions its window, in-view tick labels, titles and
-    texts; its layout-only form drops the axis labels, so each axis's
-    full tight bbox is added back.
+    canvas and the layout shrinks the axes into a corner. Instead the
+    axes window, each axis's full tight bbox (in-view tick labels and the
+    axis label) and the legend are measured natively, while titles and
+    2-D texts go through :func:`_fixable_text_span` as on a 2-D axes, so
+    an oversized title is not chased. ``Text3D`` (``ax.text(x, y, z)``)
+    returns no tight bbox, so matplotlib's layouts skip it, and so does
+    this one.
     """
+    try:
+        window = ax.get_window_extent(renderer)
+    except _BBOX_ERRORS:
+        return None
     boxes: list[Bbox] = []
-    for artist in (ax, ax.xaxis, ax.yaxis, getattr(ax, "zaxis", None)):
+    if window.width > 0 and window.height > 0:
+        boxes.append(window)
+    zaxis = getattr(ax, "zaxis", None)
+    for artist in (ax.xaxis, ax.yaxis, zaxis, ax.get_legend()):
         if artist is None or not artist.get_visible():
             continue
         with contextlib.suppress(*_BBOX_ERRORS):
             bb = artist.get_tightbbox(renderer)
             if bb is not None and bb.width > 0 and bb.height > 0:
                 boxes.append(bb)
+    for txt in (*axes_titles(ax).values(), *ax.texts):
+        if not txt.get_visible() or not txt.get_text().strip():
+            continue
+        try:
+            ext = txt.get_tightbbox(renderer)
+        except _BBOX_ERRORS:
+            continue
+        if ext is None or ext.width <= 0 or ext.height <= 0:
+            continue
+        x0, x1 = _fixable_text_span(txt, ext, window, canvas_w_px)
+        boxes.append(Bbox.from_extents(x0, ext.y0, x1, ext.y1))
     if not boxes:
         return None
     union = Bbox.union(boxes)
