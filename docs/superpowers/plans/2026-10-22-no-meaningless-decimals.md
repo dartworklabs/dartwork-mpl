@@ -18,8 +18,11 @@ formatters live in `src/dartwork_mpl/formatting/`).
   (`formatting/_decimals.py:fewest_exact_decimals`). `recommend_tick_decimals` (step rule) is
   not reused for the exact path because a 2.5 step needs one decimal, not zero; it is the
   fallback for irregular values. Called without a draw, a value decides for itself.
-- **SI prefix.** One prefix per linear axis from the largest visible `|tick|` (no `800` next to
-  `1.2k`). Log/non-linear axes: prefix and decimals per tick (`0.1, 1, 10, 1k`).
+- **SI prefix (revised after PoC review).** One unit per linear axis, whole numbers first: of
+  none/k/M/G/T, the units in which every visible tick is whole, then the shortest longest label
+  (`0, 200 … 1,200`; `-1,000k … 1,000k`); fewest decimals only when no unit is whole. The first
+  rule (prefix from the largest tick) printed `0.2k … 1.2k` and `0.25k … 2.00k` and was
+  rejected. Thousands separators on every auto formatter. Log axes: per-tick prefix/decimals.
 - **Myriad.** Each tick keeps its ladder unit (existing behaviour); ticks sharing a unit share
   decimals (`7,500만, 1.00억, 1.25억`). One unit per axis was not adopted (not requested).
 - **Zero.** No prefix/suffix/sign; uses the axis decimal count, so `0` on integer axes and
@@ -47,6 +50,6 @@ formatters live in `src/dartwork_mpl/formatting/`).
 
 - `uv run ruff check . && uv run ruff format --check .`, `uv run mypy`.
 - Full `uv run pytest` (MCP input tests need a checkout with umask 022).
-- `uv run pytest tests/visual/test_visual_pixels.py --mpl --no-cov`: `line_signals` changes
-  (`500.0k` → `0.5M`); baseline not regenerated — owner decision.
+- `uv run pytest tests/visual/test_visual_pixels.py --mpl --no-cov`: only `line_signals`
+  changes; its regeneration is a separate last commit, kept or dropped on PoC approval.
 - `tests/test_shipped_colors_hash.py` unchanged and passing.
