@@ -98,6 +98,22 @@ def test_contributor_entry_files_stay_mirrored() -> None:
     ).read_bytes()
 
 
+def test_consumer_entry_keeps_both_frozen_asset_paths() -> None:
+    """ADR 0005 freezes asset/** paths: AGENTS.md and CLAUDE.md both stay.
+
+    Both names resolve to their own file under ``asset/agent/`` (as in every
+    wheel before), and both carry the same short consumer entry.
+    """
+    package = Path(dm.__file__).resolve().parent
+    paths = {
+        name: dm.agent_doc_path(name).resolve() for name in ("AGENTS", "CLAUDE")
+    }
+    for name, path in paths.items():
+        assert path.relative_to(package).as_posix() == f"asset/agent/{name}.md"
+    assert paths["AGENTS"].read_bytes() == paths["CLAUDE"].read_bytes()
+    assert paths["AGENTS"].read_bytes() != (ROOT / "AGENTS.md").read_bytes()
+
+
 def test_panel_label_recipe_draws_each_label_once() -> None:
     recipes = dm.get_prompt("03-recipes")
     section = _section(recipes, '## "Multi-panel grid (a/b/c labels)"')
