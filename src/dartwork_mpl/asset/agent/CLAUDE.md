@@ -12,11 +12,12 @@ python -m dartwork_mpl.skills install
 
 This links `.claude/skills/dartwork-mpl` (Claude Code) and
 `.agents/skills/dartwork-mpl` (Codex) to the skill inside the installed
-package, so it follows upgrades. `--claude` or `--codex` picks one agent,
-`--dest ~` installs for your user, `--copy` copies where symlinks fail
-(Windows), `--force` replaces a folder you made yourself. Without
-installing, `python -m dartwork_mpl.skills path` prints the folder; read its
-`SKILL.md` and `references/`.
+package, so it follows upgrades (recreating the environment needs a rerun).
+`--claude` or `--codex` picks one agent, `--dest ~` installs for your user,
+`--copy` copies (no symlinks, or to check it in), `--force` replaces a
+folder you made or edited yourself. Without installing,
+`python -m dartwork_mpl.skills path` prints the folder; read its `SKILL.md`
+and `references/`.
 
 ## The rules on one screen
 
@@ -36,9 +37,12 @@ dm.save_formats(fig, "output/figure-v1", formats=("png", "pdf"))
   number (height / width) or a height (`"8cm"`). Never `figsize=(w, h)`.
 - `-kr` presets (`report-kr`) only when the plot text is Korean.
 - Colours by name (`color="dc.teal3"`); explicit user values always win.
+- Plot values as given: never silently drop, fill or sort rows; keep NaN
+  gaps visible (`dm.validate_data(..., allow_nan=True)`).
 - Edit only what was asked; keep data, preset, size and everything else.
 - Open the saved PNG and read `dm.validate_figure(fig, quiet=True)` before
-  calling it done; save each revision under a new stem (`figure-v2`).
+  calling it done (`CHECK_FAILED` = incomplete validation, say so); save
+  each revision under a new stem (`figure-v2`).
 
 ## More
 
