@@ -8,9 +8,9 @@ import contextlib
 import copy
 import difflib
 import json
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import matplotlib.pyplot as plt
 from matplotlib import RcParams
@@ -223,6 +223,37 @@ def _strip_mplstyle_value(raw: str) -> str:
     return value
 
 
+# The locale whose semantic colour tokens (``dc.pos``/``dc.neg``) a style
+# activates. Decided once per style application by the two parsers below;
+# nothing else inspects style or preset names for a locale.
+_Locale = Literal["kr", "default"]
+
+
+def _is_korean_style(name: str) -> bool:
+    """Return whether a style or preset name marks Korean (``lang-kr`` / ``*-kr``)."""
+    return "lang-kr" in name or name.endswith("-kr")
+
+
+def _locale_of_styles(style_names: Iterable[str]) -> _Locale:
+    """Return the locale of a style stack: Korean if any style name marks Korean."""
+    return "kr" if any(_is_korean_style(n) for n in style_names) else "default"
+
+
+def _locale_of_preset(preset_name: str, style_names: Iterable[str]) -> _Locale:
+    """Return the locale :meth:`Style.context` applies for ``preset_name``.
+
+    Korean when the preset name ends in ``-kr`` or one of its styles contains
+    ``lang-kr``. For every shipped preset this equals
+    :func:`_locale_of_styles` of its styles (the rule ``use`` applies); the two
+    differ only for a caller-added preset that breaks the naming convention,
+    and that difference is kept as it was.
+    """
+    korean = preset_name.endswith("-kr") or any(
+        "lang-kr" in s for s in style_names
+    )
+    return "kr" if korean else "default"
+
+
 def load_style_dict(name: str) -> dict[str, float | str]:
     """
     Read key-value pairs from an mplstyle file.
@@ -389,10 +420,7 @@ class Style:
             # for the same reason the rcParams mutation above is.
             from .._colors.registry import apply_semantic
 
-            is_kr = any(
-                "lang-kr" in nm or nm.endswith("-kr") for nm in style_names
-            )
-            apply_semantic("kr" if is_kr else "default")
+            apply_semantic(_locale_of_styles(style_names))
 
     def use(self, preset_name: str | list[str], **kwargs: float | str) -> None:
         """
@@ -536,9 +564,7 @@ class Style:
 
         mapping = mcolors.get_named_colors_mapping()
         saved = {t: mapping.get(t) for t in SEMANTIC_TOKEN_NAMES}
-        is_kr = preset_name.endswith("-kr") or any(
-            "lang-kr" in s for s in self.presets[preset_name]
-        )
+        locale = _locale_of_preset(preset_name, names)
         try:
             with plt.style.context(style_list):
                 # Retain inherited silent-key ownership; snapshot before kwargs.
@@ -552,7 +578,7 @@ class Style:
                     plt.rcParams.update(overrides)
                     for key in overrides:
                         _dm_preset_values.pop(key, None)
-                apply_semantic("kr" if is_kr else "default")
+                apply_semantic(locale)
                 yield
         finally:
             with rc_lock:
