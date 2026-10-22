@@ -1,8 +1,10 @@
-"""Server-save requests: the validated parameters plus the output name, if one was given.
+"""Server-save requests: the validated parameters, with or without a chosen output name.
 
-Surface (through the ``saving`` package): ``SaveRequest``,
-``SaveInputFailure``, ``parse_save_request`` and ``timestamp_slug`` (the
-default output name's suffix).
+A body that names its output (``NamedSave``) and one that leaves the name to
+the viewer (``AutoNamedSave``) are different requests: only the second needs
+a generated, timestamped name. Surface (through the ``saving`` package):
+``AutoNamedSave``, ``NamedSave``, ``SaveRequest``, ``SaveInputFailure``,
+``parse_save_request``, ``requested_name`` and ``timestamp_slug``.
 """
 
 from __future__ import annotations
@@ -13,11 +15,12 @@ from typing import TypeAlias
 from uuid import uuid4
 
 from ..params import (
+    Control,
     InputFailure,
     InvalidRequest,
-    ParamDescriptor,
     ParamModel,
     parse_active,
+    request_object,
 )
 from ..platform.json_bounds import JsonValue
 from ._output import InvalidOutput, RelativeOutput, parse_output
@@ -26,35 +29,66 @@ SaveInputFailure: TypeAlias = InputFailure | InvalidOutput
 
 
 @dataclass(frozen=True)
-class SaveRequest:
-    """A server save carries a validated model and an optional parsed output name."""
+class AutoNamedSave:
+    """A server save whose body named no output; the viewer generates the name."""
 
     model: ParamModel
-    output: RelativeOutput | None = None
+
+
+@dataclass(frozen=True)
+class NamedSave:
+    """A server save to the parsed relative output name the body supplied."""
+
+    model: ParamModel
+    output: RelativeOutput
+
+
+SaveRequest: TypeAlias = AutoNamedSave | NamedSave
 
 
 def parse_save_request(
-    value: dict[str, JsonValue],
-    model_cls: type[ParamModel],
-    descriptors: list[ParamDescriptor],
+    value: JsonValue, model_cls: type[ParamModel], descriptors: list[Control]
 ) -> SaveRequest | SaveInputFailure:
-    """Read a server-save body: the active parameters and an optional output name."""
-    if "params" not in value or value.keys() - {"params", "filename"}:
+    """Parse a server-save body: ``params`` and an optional ``filename``.
+
+    An absent or ``null`` filename yields ``AutoNamedSave``; a string that is a
+    safe relative path yields ``NamedSave``. Refusals: ``LimitExceeded`` for a
+    tree over the size bounds, ``InvalidRequest`` for a non-object, unknown
+    keys, missing ``params``, a non-string filename or invalid parameters, and
+    ``InvalidOutput`` for an unsafe filename. Pure: no I/O.
+    """
+    body = request_object(value)
+    if not isinstance(body, dict):
+        return body
+    if "params" not in body or body.keys() - {"params", "filename"}:
         return InvalidRequest()
-    model = parse_active(value["params"], model_cls, descriptors)
+    model = parse_active(body["params"], model_cls, descriptors)
     if isinstance(model, InvalidRequest):
         return model
-    filename = value.get("filename")
+    filename = body.get("filename")
     if filename is None:
-        return SaveRequest(model)
+        return AutoNamedSave(model)
     if not isinstance(filename, str):
         return InvalidRequest()
     output = parse_output(filename)
     return (
         output
-        if isinstance(output, SaveInputFailure)
-        else SaveRequest(model, output)
+        if isinstance(output, InvalidOutput)
+        else NamedSave(model, output)
     )
+
+
+def requested_name(request: SaveRequest, function_name: str) -> str:
+    """Return the relative name a save asked for, or a fresh ``<function>_<timestamp>`` one.
+
+    The result has no extension rule applied; each saving route fixes its own
+    extension before parsing the final name with ``parse_output``.
+    """
+    match request:
+        case NamedSave(output=output):
+            return output.filename
+        case AutoNamedSave():
+            return f"{function_name}_{timestamp_slug()}"
 
 
 def timestamp_slug() -> str:

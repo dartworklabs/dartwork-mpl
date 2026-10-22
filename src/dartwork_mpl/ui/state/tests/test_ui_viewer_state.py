@@ -11,19 +11,23 @@ from pathlib import Path
 import pytest
 from pydantic import BaseModel, ConfigDict, Field
 
+from dartwork_mpl.ui._refusals import refusal_response
 from dartwork_mpl.ui.params import ParamModel
-from dartwork_mpl.ui.params._descriptors import descriptors_from_model
+from dartwork_mpl.ui.params._descriptors import controls_from_model
 from dartwork_mpl.ui.platform.fs import RootScope, open_roots
 from dartwork_mpl.ui.platform.json_bounds import LimitExceeded
 from dartwork_mpl.ui.state import _viewer_state as config
 from dartwork_mpl.ui.state._language import (
     MAX_CONFIG_BYTES,
     MAX_PRESET_BYTES,
+    FigWidth,
+    FullStateUpdate,
     InvalidStoredState,
+    ParamsUpdate,
     PresetRequest,
-    StateRequest,
     Tab,
-    parse_request,
+    parse_params_update,
+    parse_preset_request,
 )
 from dartwork_mpl.ui.state._store import (
     FixedStateStore,
@@ -193,7 +197,7 @@ def test_structural_corruption_blocks_update_delete(
         results = (
             [
                 state.load_config(),
-                state.save_config(StateRequest(_StateParams()), "plot"),
+                state.save_config(ParamsUpdate(_StateParams()), "plot"),
             ]
             if kind == "config"
             else [
@@ -203,7 +207,9 @@ def test_structural_corruption_blocks_update_delete(
             ]
         )
         assert all(isinstance(result, InvalidStoredState) for result in results)
-        assert all(result.status_code == 409 for result in results)
+        assert all(
+            refusal_response(result).status_code == 409 for result in results
+        )
     assert path.read_bytes() == raw
 
 
@@ -236,7 +242,9 @@ def test_config_serializes_supported_model_types_and_optional_fields(
     with _state_at(tmp_path, frozenset(Supported.model_fields)) as state:
         assert isinstance(
             state.save_config(
-                StateRequest(model, (Tab(2, "tab", {"coords": [3.0]}),), 80),
+                FullStateUpdate(
+                    model, (Tab(2, "tab", {"coords": [3.0]}),), FigWidth(80)
+                ),
                 "plot",
             ),
             StateWritten,
@@ -276,21 +284,17 @@ def test_alias_serialization_round_trips_declared_state_names(
     body = (
         expected if kind == "config" else {"label": "alias", "params": expected}
     )
-    parsed = parse_request(
-        "/api/config" if kind == "config" else "/api/preset",
-        body,
-        AliasedParams,
-        descriptors_from_model(AliasedParams),
-    )
+    parse = parse_params_update if kind == "config" else parse_preset_request
+    parsed = parse(body, AliasedParams, controls_from_model(AliasedParams))
     assert isinstance(
-        parsed, StateRequest if kind == "config" else PresetRequest
+        parsed, ParamsUpdate if kind == "config" else PresetRequest
     )
     assert parsed.model.model_dump(mode="json") == {
         "wire_count": 5,
         "wire_child": {"wire_child_count": 7},
     }
     with _state_at(tmp_path, frozenset(AliasedParams.model_fields)) as state:
-        if isinstance(parsed, StateRequest):
+        if isinstance(parsed, ParamsUpdate):
             assert isinstance(state.save_config(parsed, "plot"), StateWritten)
             loaded = state.load_config()
             assert isinstance(loaded, config.ConfigLoaded)
@@ -327,9 +331,9 @@ def test_serialized_config_overflow_preserves_previous_bytes(
     path.write_bytes(raw)
     model = Large(values=["x" * 50000] * 24)
     with _state_at(tmp_path, frozenset({"values"})) as state:
-        result = state.save_config(StateRequest(model), "plot")
+        result = state.save_config(ParamsUpdate(model), "plot")
         assert isinstance(result, LimitExceeded)
-        assert result.status_code == 413
+        assert refusal_response(result).status_code == 413
     assert path.read_bytes() == raw
 
 
@@ -349,7 +353,7 @@ def test_one_thousand_presets_is_exact_append_boundary(tmp_path: Path) -> None:
         raw = path.read_bytes()
         result = state.save_preset(PresetRequest("overflow", _StateParams()))
         assert isinstance(result, LimitExceeded)
-        assert result.status_code == 413
+        assert refusal_response(result).status_code == 413
         assert path.read_bytes() == raw
         assert isinstance(state.delete_preset(999), StateWritten)
         raw = path.read_bytes()

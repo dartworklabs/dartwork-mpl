@@ -14,7 +14,7 @@ import stat
 from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
-from typing import ClassVar, TypeAlias
+from typing import TypeAlias
 
 __all__ = [
     "CopyTo",
@@ -48,8 +48,6 @@ class UnsafeTarget:
     """A target cannot be traversed without following an unsafe filesystem object."""
 
     detail: str = "The output path contains an unsafe filesystem target."
-    status_code: ClassVar[int] = 400
-    code: ClassVar[str] = "unsafe_output_target"
 
 
 @dataclass(frozen=True)
@@ -57,8 +55,6 @@ class TargetConflict:
     """An output already exists and must be preserved; choose a new name."""
 
     detail: str = "File exists; choose a new name."
-    status_code: ClassVar[int] = 409
-    code: ClassVar[str] = "output_conflict"
 
 
 @dataclass(frozen=True)
@@ -68,8 +64,6 @@ class RootConflict:
     detail: str = (
         "The output directory changed; restart the viewer before saving."
     )
-    status_code: ClassVar[int] = 409
-    code: ClassVar[str] = "root_changed"
 
 
 @dataclass(frozen=True)
@@ -77,8 +71,6 @@ class UnsupportedFilesystem:
     """Required no-follow directory-handle operations are unavailable on this host."""
 
     detail: str = "This host lacks filesystem capabilities required for safe viewer persistence."
-    status_code: ClassVar[int] = 501
-    code: ClassVar[str] = "unsupported_filesystem_capability"
 
 
 @dataclass(frozen=True)
@@ -86,8 +78,6 @@ class FileIOFailure:
     """An I/O operation failed without disclosing exception paths or payloads."""
 
     detail: str = "The viewer could not complete the filesystem operation."
-    status_code: ClassVar[int] = 503
-    code: ClassVar[str] = "filesystem_unavailable"
 
 
 @dataclass(frozen=True)
@@ -98,8 +88,6 @@ class PartialSave:
     detail: str = (
         "The save failed and cleanup was incomplete; inspect the listed paths."
     )
-    status_code: ClassVar[int] = 503
-    code: ClassVar[str] = "partial_save"
 
 
 FsFailure: TypeAlias = (

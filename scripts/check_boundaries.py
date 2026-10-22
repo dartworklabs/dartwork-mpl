@@ -335,6 +335,10 @@ ALLOWED: Mapping[tuple[str, str], str] = {
     ("dartwork_mpl.ui", "dartwork_mpl.ui.render"): (
         "the viewer mounts the preview, download and image-save routes"
     ),
+    ("dartwork_mpl.ui", "dartwork_mpl.ui.saving"): (
+        "the viewer's HTTP edge answers a refused save name with its status"
+        " and code"
+    ),
     ("dartwork_mpl.ui", "dartwork_mpl.ui.scaffold"): (
         "the dartwork-mpl-ui init command copies the scaffold project"
     ),
