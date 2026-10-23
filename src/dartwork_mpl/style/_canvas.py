@@ -7,8 +7,13 @@ chosen from the chart kind and two density hints:
 
 - ``n_points <= 6`` and ``n_series <= 2`` on one axis: 9 cm;
 - a second y axis, ``n_series >= 4`` or ``n_points > 12``: 14.5 cm;
-- otherwise the kind's width. ``"matrix"``, ``"dense"``, ``"strip"`` and
-  panel grids ignore the hints.
+- otherwise the kind's width. ``"matrix"``, ``"dense"``, ``"strip"``,
+  ``"slide"`` and panel grids ignore the hints.
+
+Every kind but ``matrix``, ``dense``, ``strip`` and ``slide`` is 4:3, the
+:func:`~dartwork_mpl.figsize` default, so a request that names only a width
+(``dm.figsize(dm.col1)``) gets the same shape. ``"slide"`` is one full 16:9
+slide, 25.4 cm wide, under any preset.
 
 ``scientific`` presets map the tiers onto journal columns (9 or 17 cm);
 ``presentation`` and ``poster`` scale them by their font size over the
@@ -24,7 +29,7 @@ from dataclasses import dataclass
 
 from ..units import ASPECT_TOKENS, figsize
 
-__all__ = ["CANVAS_KINDS", "figsize_for"]
+__all__ = ["CANVAS_KINDS", "figsize_for", "grid_shape"]
 
 _REPORT_FONT_PT = 8.0
 _MAX_TIER_CM = 17.0
@@ -42,11 +47,12 @@ class _Kind:
     width_cm: float
     aspect: str | float
     fixed: bool = False
+    absolute: bool = False  # the same physical size under every preset
 
 
 CANVAS_KINDS: dict[str, _Kind] = {
     # Lines, bars, areas, scatter, distributions: everything not below.
-    "default": _Kind(12.0, "wide"),
+    "default": _Kind(12.0, "standard"),
     # Horizontal bars: room for long category labels.
     "barh": _Kind(14.5, "standard"),
     # Insets and half-width panels.
@@ -57,6 +63,8 @@ CANVAS_KINDS: dict[str, _Kind] = {
     "dense": _Kind(17.0, "cinema", fixed=True),
     # A full-width strip, e.g. one row of a dashboard.
     "strip": _Kind(17.0, 0.45, fixed=True),
+    # One whole 16:9 slide (10 in, the Google Slides and Keynote width).
+    "slide": _Kind(25.4, "slide", fixed=True, absolute=True),
 }
 
 
@@ -147,8 +155,8 @@ def figsize_for(
         A key of :data:`CANVAS_KINDS`: ``"default"`` (lines, bars, areas,
         scatter, distributions), ``"barh"`` (long category labels),
         ``"compact"`` (insets, half-width panels), ``"matrix"`` (heatmaps),
-        ``"dense"`` (long dense timelines) or ``"strip"`` (a full-width
-        strip).
+        ``"dense"`` (long dense timelines), ``"strip"`` (a full-width
+        strip) or ``"slide"`` (one whole 16:9 slide).
     n_points : int, optional
         Positions along the category or time axis (bars per group count
         once). Leave out for scatter, histograms and other point clouds.
@@ -157,9 +165,10 @@ def figsize_for(
     dual_axis : bool, optional
         True when a second y axis (``twinx``) is drawn.
     nrows, ncols : int, optional
-        Panel grid. Any grid larger than one panel takes the widest tier;
-        every panel keeps the kind's aspect, up to a 24 cm tall canvas
-        (16:9 of the width on slides).
+        Panel grid; :func:`grid_shape` picks them for ``n`` panels. Any grid
+        larger than one panel takes the widest tier; every panel keeps the
+        kind's aspect, up to a 24 cm tall canvas (16:9 of the width on
+        slides).
 
     Returns
     -------
@@ -184,6 +193,8 @@ def figsize_for(
 
     from . import _active_preset
 
+    if spec.absolute:
+        return figsize(f"{spec.width_cm:g}cm", spec.aspect)
     family, scale = _family(_active_preset)
     grid = nrows * ncols > 1
     width = (
@@ -200,3 +211,29 @@ def figsize_for(
     cap = width * _SLIDE_RATIO if family == "slides" else _MAX_HEIGHT_CM
     height = min(_half_cm(height), _half_cm(cap))
     return figsize(f"{width:g}cm", f"{height:g}cm")
+
+
+def grid_shape(n: int) -> tuple[int, int]:
+    """Return ``(nrows, ncols)`` for ``n`` small-multiple panels.
+
+    Up to three panels sit in one row; more fill a near-square grid with
+    ``ceil(sqrt(n))`` columns, wider than tall, so every agent lays out the
+    same request the same way::
+
+        nrows, ncols = dm.grid_shape(len(cities))  # 6 -> (2, 3)
+        fig, axes = plt.subplots(
+            nrows, ncols, figsize=dm.figsize_for(nrows=nrows, ncols=ncols)
+        )
+
+    Raises
+    ------
+    ValueError
+        If ``n`` is below 1.
+    TypeError
+        If ``n`` is not an int.
+    """
+    _check_count("n", n, 1)
+    if n <= 3:
+        return 1, n
+    ncols = math.ceil(math.sqrt(n))
+    return math.ceil(n / ncols), ncols

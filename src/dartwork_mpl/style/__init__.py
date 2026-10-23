@@ -16,12 +16,13 @@ import matplotlib.pyplot as plt
 from matplotlib import RcParams
 
 from .._rc import rc_lock
-from ._canvas import CANVAS_KINDS, figsize_for
+from ._canvas import CANVAS_KINDS, figsize_for, grid_shape
 
 __all__ = [
     "CANVAS_KINDS",
     "Style",
     "figsize_for",
+    "grid_shape",
     "install_twinx_patch",
     "list_styles",
     "load_style_dict",

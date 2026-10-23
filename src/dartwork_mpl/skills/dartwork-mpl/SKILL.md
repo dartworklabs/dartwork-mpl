@@ -43,8 +43,9 @@ from the data, takes `-kr` (`report-kr`); edits keep its language and preset.
 - No size asked: `dm.figsize_for(kind, n_points=, n_series=)` is the preset's
   canvas (report 9/12/14.5/17 cm by density, paper columns, slides scaled),
   the same for every agent and run. Count `n_points` (x positions) and
-  `n_series` from the data; `dual_axis=True` with `twinx`; `nrows=`/`ncols=`
-  for a grid; kind `"barh"` for long labels, `"matrix"` for a heatmap.
+  `n_series` from the data; `dual_axis=True` with `twinx`; kind `"barh"` long
+  labels, `"matrix"` heatmap, `"slide"` a whole 16:9 slide. n panels:
+  `nrows, ncols = dm.grid_shape(n)`, then `dm.figsize_for(nrows=, ncols=)`.
 - A size the user names wins, any size: `dm.figsize(width, second)`. width
   `"13cm"`, `"5in"`, `dm.col1` (9 cm), `dm.col2` (17 cm), never a bare number;
   second `standard` 4:3, `wide` 3:2, `slide` 16:9, `"16:9"`, a ratio or `"8cm"`.
@@ -57,11 +58,11 @@ from the data, takes `-kr` (`report-kr`); edits keep its language and preset.
 ## Look: the preset's, plus only what was asked
 
 Spines, grid, ticks, fonts, background and margins are the preset's; change
-them only on request. No title, subtitle, source note or extra panel unless
-asked (a caption or the slide carries the title); a vague ask gets one panel.
-A generic chart skill gives chart choice and honest axes; the output is a
-static file, so skip hover, tooltips, rounded bar ends, placeholder palettes,
-pixel line widths and a legend on every chart. Size with `dm.figsize_for`.
+them only on request. No figure title, subtitle, source note or extra panel
+unless asked (a caption or slide carries the title; small multiples name each
+panel); a vague ask gets one panel. A generic chart skill gives chart choice
+and honest axes; the output is a static file, so skip hover, tooltips,
+rounded bar ends, placeholder palettes, pixel widths, a legend on every chart.
 
 ## Data
 
@@ -92,9 +93,8 @@ is not the dataset; template numbers are placeholders, never data.
 the asked property, keep data, preset, canvas, colours, legend and the rest.
 Axis-label edits touch the label Text objects, not `font.size` or ticks. Keep
 the original script; write the revision as a new script and stem. Broad asks
-("make it look better", "더 보기 좋게") are normal: keep data, preset and the
-look rules, fix what the image shows, list each change; ask one short
-question only when the target is truly ambiguous.
+("make it look better", "더 보기 좋게"): keep data, preset and look rules, fix
+what the image shows, list each change; ask only if the target is ambiguous.
 
 ## Review loop (every figure and revision; script: `references/review-loop.md`)
 

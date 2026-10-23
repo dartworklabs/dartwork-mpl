@@ -12,12 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **The preset's default canvas (provisional).** `dm.figsize_for(kind,
   n_points=, n_series=, dual_axis=, nrows=, ncols=)` returns the active
   preset's figure size when a request names none: report widths 9 / 12 /
-  14.5 / 17 cm picked by chart kind and data density, journal columns under
-  `scientific`, and widths scaled by font size under `presentation` and
-  `poster`. The same request gets the same canvas from any agent. The bundled
-  skill uses it and states that spines, grid, ticks, fonts, background and
-  margins stay the preset's, with no title or extra panel unless asked.
-  Listed in `dm.EXPERIMENTAL`.
+  14.5 / 17 cm picked by chart kind and data density (4:3 like `dm.figsize`),
+  journal columns under `scientific`, widths scaled by font size under
+  `presentation` and `poster`, and `"slide"` for one whole 16:9 slide.
+  `dm.grid_shape(n)` lays out `n` small multiples. The same request gets the
+  same canvas from any agent. The bundled skill uses both and states that
+  spines, grid, ticks, fonts, background and margins stay the preset's, with
+  no figure title or extra panel unless asked. Both are in `dm.EXPERIMENTAL`.
 - Font corpus expanded to 20 families (262 files): Noto Serif and IBM Plex Serif
   added, Roboto/Roboto Mono completed with instanced weights + italics;
   registry-backed interactive font browser on the fonts page (faceted filters,
