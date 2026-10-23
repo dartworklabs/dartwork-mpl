@@ -68,6 +68,7 @@ for y_pos, lo, hi in zip(ys, low, high, strict=False):
         va="center",
         ha="right" if lo < 0 else "left",
         fontsize=dm.fs(-1),
+        fontweight=dm.fw(1),
         color=(pos_color if lo >= 0 else neg_color),
     )
     ax.text(
@@ -77,6 +78,7 @@ for y_pos, lo, hi in zip(ys, low, high, strict=False):
         va="center",
         ha="right" if hi < 0 else "left",
         fontsize=dm.fs(-1),
+        fontweight=dm.fw(1),
         color=(pos_color if hi >= 0 else neg_color),
     )
 
